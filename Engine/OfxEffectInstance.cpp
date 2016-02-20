@@ -200,9 +200,6 @@ struct OfxEffectInstancePrivate
     boost::weak_ptr<KnobButton> renderButton; //< render button for writers
     mutable QReadWriteLock preferencesLock;
     
-    mutable QMutex isRunningClipPreferencesMutex;
-    QThread* isRunningClipPreferences; //< set when running clip preferences
-    
     mutable QReadWriteLock renderSafetyLock;
     mutable RenderSafetyEnum renderSafety;
     mutable bool wasRenderSafetySet;
@@ -243,8 +240,6 @@ struct OfxEffectInstancePrivate
     , overlaySlaves()
     , renderButton()
     , preferencesLock(QReadWriteLock::Recursive)
-    , isRunningClipPreferencesMutex()
-    , isRunningClipPreferences(0)
     , renderSafetyLock()
     , renderSafety(eRenderSafetyUnsafe)
     , wasRenderSafetySet(false)
@@ -446,6 +441,8 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             }
             //////////////////////////////////////////////////////
             
+            ///Set default metadata since the OpenFX plug-in may fetch images in its constructor
+            setDefaultMetadata();
             
             {
                 ///Take the preferences lock so that it cannot be modified throughout the action.
@@ -1107,13 +1104,38 @@ OfxEffectInstance::mapContextToString(ContextEnum ctx)
 }
 
 
-QThread*
-OfxEffectInstance::isThreadRunningClipPreferences() const
+void
+OfxEffectInstance::onMetaDatasRefreshed(const NodeMetadata& metadata)
 {
-    QMutexLocker k(&_imp->isRunningClipPreferencesMutex);
-    return _imp->isRunningClipPreferences;
-}
+    
+    //////////////// Actually push to the clips the preferences and set the flags on the effect, protected by a write lock.
+    
+    {
+        QWriteLocker l(&_imp->preferencesLock);
+        const std::map<std::string,OFX::Host::ImageEffect::ClipInstance*>& clips = _imp->effect->getClips();
+        for (std::map<std::string,OFX::Host::ImageEffect::ClipInstance*>::const_iterator it = clips.begin()
+             ; it!=clips.end(); ++it) {
+            OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
+            assert(clip);
+            if (!clip) {
+                continue;
+            }
+            int inputNb = clip->getInputNb();
+            const ImageComponents& components = metadata.getImageComponents(inputNb);
+            
+            clip->setComponents(OfxClipInstance::natronsComponentsToOfxComponents(components));
+            clip->setPixelDepth(OfxClipInstance::natronsDepthToOfxDepth(metadata.getBitDepth(inputNb)));
+            clip->setAspectRatio(metadata.getPixelAspectRatio(inputNb));
+        }
+        
+        effectInstance()->updatePreferences_safe(metadata.getOutputFrameRate(),
+                                                 OfxClipInstance::natronsFieldingToOfxFielding(metadata.getOutputFielding()),
+                                                 OfxClipInstance::natronsPremultToOfxPremult(metadata.getOutputPremult()),
+                                                 metadata.getIsContinuous(),
+                                                 metadata.getIsFrameVarying());
+    }
 
+}
 
 StatusEnum
 OfxEffectInstance::getPreferredMetaDatas(NodeMetadata& metadata)
@@ -1124,11 +1146,10 @@ OfxEffectInstance::getPreferredMetaDatas(NodeMetadata& metadata)
     assert(_imp->context != eContextNone);
     assert( QThread::currentThread() == qApp->thread() );
     
+    StatusEnum stat;
     ////////////////////////////////////////////////////////////////
     ///////////////////////////////////
     ////////////////  Get plug-in render preferences
-    std::map<OfxClipInstance*,OfxImageEffectInstance::ClipPrefs> clipsPrefs;
-    OfxImageEffectInstance::EffectPrefs effectPrefs;
     {
         RECURSIVE_ACTION();
         /*
@@ -1139,64 +1160,14 @@ OfxEffectInstance::getPreferredMetaDatas(NodeMetadata& metadata)
          */
         SET_CAN_SET_VALUE(true);
         
-        ///Take the preferences lock so that it cannot be modified throughout the action.
-        QWriteLocker preferencesLocker(&_imp->preferencesLock);
+        ///First push the "default" meta-datas to the clips so that they get proper values
+        onMetaDatasRefreshed(metadata);
         
-        {
-            QMutexLocker k(&_imp->isRunningClipPreferencesMutex);
-            _imp->isRunningClipPreferences = QThread::currentThread();
-        }
-        if (!_imp->effect->getClipPreferences_safe(clipsPrefs,effectPrefs)) {
-            QMutexLocker k(&_imp->isRunningClipPreferencesMutex);
-            _imp->isRunningClipPreferences = 0;
-            return eStatusFailed;
-        }
-        
-        QMutexLocker k(&_imp->isRunningClipPreferencesMutex);
-        _imp->isRunningClipPreferences = 0;
+        ///It has been overriden and no data is actually set on the clip, everything will be set into the
+        ///metadata object
+        stat = _imp->effect->getClipPreferences_safe(metadata);
     }
-
-    metadata.frameRate = effectPrefs.frameRate;
-    metadata.outputPremult = OfxClipInstance::ofxPremultToNatronPremult(effectPrefs.premult);
-    metadata.outputFielding = OfxClipInstance::ofxFieldingToNatronFielding(effectPrefs.fielding);
-    metadata.isFrameVarying = effectPrefs.frameVarying;
-    metadata.canRenderAtNonframes = effectPrefs.continuous;
-    for (std::map<OfxClipInstance*,OfxImageEffectInstance::ClipPrefs>::const_iterator it = clipsPrefs.begin(); it != clipsPrefs.end(); ++it) {
-        
-        NodeMetadata::PerInputData* perClipData = 0;
-        if (it->first->isOutput()) {
-            perClipData = &metadata.outputData;
-        } else {
-            int inputIdx = it->first->getInputNb();
-            assert(inputIdx >= 0 && inputIdx < (int)metadata.inputsData.size());
-            perClipData = &metadata.inputsData[inputIdx];
-        }
-        assert(perClipData);
-        if (!perClipData) {
-            return eStatusFailed;
-        }
-        perClipData->pixelAspectRatio = it->second.par;
-        perClipData->components = OfxClipInstance::ofxComponentsToNatronComponents(it->second.components);
-        perClipData->bitdepth = OfxClipInstance::ofxDepthToNatronDepth(it->second.bitdepth);
-
-    }
-    //////////////// Actually push to the clips the preferences and set the flags on the effect, protected by a write lock.
-    
-    {
-        QWriteLocker l(&_imp->preferencesLock);
-        for (std::map<OfxClipInstance*,OfxImageEffectInstance::ClipPrefs>::const_iterator it = clipsPrefs.begin(); it != clipsPrefs.end(); ++it) {
-            it->first->setComponents(it->second.components);
-            
-            it->first->setPixelDepth(it->second.bitdepth);
-            
-            it->first->setAspectRatio(it->second.par);
-            
-        }
-        
-        effectInstance()->updatePreferences_safe(effectPrefs.frameRate, effectPrefs.fielding, effectPrefs.premult,
-                                                            effectPrefs.continuous, effectPrefs.frameVarying);
-    }
-    return eStatusOK;
+    return stat;
 
 }
 
@@ -1906,7 +1877,6 @@ OfxEffectInstance::render(const RenderActionArgs& args)
         
         if (!getNode()->hasPersistentMessage()) {
             QString err;
-            err.append(QObject::tr("Render failed: "));
             if (stat == kOfxStatErrImageFormat) {
                 err.append(QObject::tr("Bad image format was supplied by "));
                 err.append(NATRON_APPLICATION_NAME);
@@ -2516,8 +2486,8 @@ OfxEffectInstance::addAcceptedComponents(int inputNb,
         const std::vector<std::string> & supportedComps = clip->getSupportedComponents();
         for (U32 i = 0; i < supportedComps.size(); ++i) {
             try {
-                std::list<ImageComponents> ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]);
-                comps->insert(comps->end(), ofxComp.begin(), ofxComp.end());
+                ImageComponents ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]);
+                comps->push_back(ofxComp);
             } catch (const std::runtime_error &e) {
                 // ignore unsupported components
             }
@@ -2529,8 +2499,8 @@ OfxEffectInstance::addAcceptedComponents(int inputNb,
         const std::vector<std::string> & supportedComps = clip->getSupportedComponents();
         for (U32 i = 0; i < supportedComps.size(); ++i) {
             try {
-                std::list<ImageComponents> ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]);
-                comps->insert(comps->end(), ofxComp.begin(), ofxComp.end());
+                ImageComponents ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]);
+                comps->push_back(ofxComp);
             } catch (const std::runtime_error &e) {
                 // ignore unsupported components
             }
@@ -2597,8 +2567,8 @@ OfxEffectInstance::getComponentsNeededAndProduced(double time,
                 
                 std::vector<ImageComponents> compNeeded;
                 for (std::list<std::string>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-                    std::list<ImageComponents> ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(*it2);
-                    compNeeded.insert(compNeeded.end(), ofxComp.begin(), ofxComp.end());
+                    ImageComponents ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(*it2);
+                    compNeeded.push_back(ofxComp);
                 }
                 comps->insert(std::make_pair(index, compNeeded));
             }

@@ -25,8 +25,11 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <vector>
-#include <list>
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#endif
+
 
 #include "Global/GlobalDefines.h"
 #include "Engine/ImageComponents.h"
@@ -39,60 +42,65 @@ NATRON_NAMESPACE_ENTER;
  * everytimes refreshMetaDatas() is called.
  * The bitdepth and inputs components must have been validated against the plug-ins supported components/bitdepth
  *
- * The members are public because this class is only used in the implementation of getPreferredMetaDatas()
  **/
+struct NodeMetadataPrivate;
 class NodeMetadata
 {
     
 public:
     
-    struct PerInputData
-    {
-        //Either 1 or 2 components in the case of MotionVectors/Disparity
-        double pixelAspectRatio;
-        std::list<ImageComponents> components;
-        ImageBitDepthEnum bitdepth;
-        
-        PerInputData()
-        : pixelAspectRatio(1.)
-        , components()
-        , bitdepth(eImageBitDepthFloat)
-        {
-            
-        }
-    };
-    
-    //The premult in output of the node
-    ImagePremultiplicationEnum outputPremult;
-    
-    //The image fielding in output
-    ImageFieldingOrderEnum outputFielding;
-        
-    //The fps in output
-    double frameRate;
-    
-    
-    PerInputData outputData;
-    
-    //For each input specific datas
-    std::vector<PerInputData> inputsData;
-    
-    //True if the images can only be sampled continuously (eg: the clip is infact an animating roto spline and can be rendered anywhen).
-    //False if the images can only be sampled at discreet times (eg: the clip is a sequence of frames),
-    bool canRenderAtNonframes;
-
-    //True if the effect changes throughout the time
-    bool isFrameVarying;
     
     NodeMetadata();
     
+    NodeMetadata(const NodeMetadata& other);
+    
     ~NodeMetadata();
     
+    void clearAndResize(int inputCount);
+    
+    void operator=(const NodeMetadata& other);
     bool operator==(const NodeMetadata& other) const;
     bool operator!=(const NodeMetadata& other) const
     {
         return !(*this == other);
     }
+    
+    void setOutputPremult(ImagePremultiplicationEnum premult);
+    
+    ImagePremultiplicationEnum getOutputPremult() const;
+    
+    void setOutputFrameRate(double fps);
+    
+    double getOutputFrameRate() const;
+    
+    void setOutputFielding(ImageFieldingOrderEnum fielding);
+    
+    ImageFieldingOrderEnum getOutputFielding() const;
+    
+    void setIsContinuous(bool continuous);
+    
+    bool getIsContinuous() const;
+    
+    void setIsFrameVarying(bool varying);
+    
+    bool getIsFrameVarying() const;
+    
+    void setPixelAspectRatio(int inputNb, double par);
+    
+    double getPixelAspectRatio(int inputNb) const;
+    
+    void setBitDepth(int inputNb, ImageBitDepthEnum depth);
+    
+    ImageBitDepthEnum getBitDepth(int inputNb) const;
+    
+    void setImageComponents(int inputNb, const ImageComponents& components);
+    
+    const ImageComponents& getImageComponents(int inputNb) const;
+    
+    
+private:
+    
+    boost::scoped_ptr<NodeMetadataPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

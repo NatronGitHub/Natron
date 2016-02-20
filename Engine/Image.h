@@ -822,7 +822,8 @@ public:
                                  ImagePremultiplicationEnum outputPremult,
                                  ImagePremultiplicationEnum originalImagePremult,
                                  std::bitset<4> processChannels,
-                                 const boost::shared_ptr<Image>& originalImage);
+                                 const boost::shared_ptr<Image>& originalImage,
+                                 bool ignorePremult);
 
     void applyMaskMix(const RectI& roi,
                       const Image* maskImg,
@@ -892,46 +893,50 @@ private:
                                       bool maskInvert,
                                       float mix);
 
-    template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA, bool premult, bool originalPremult>
+    template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA, bool premult, bool originalPremult, bool ignorePremult>
     void copyUnProcessedChannelsForPremult(std::bitset<4> processChannels,
                                            const RectI& roi,
                                            const boost::shared_ptr<Image>& originalImage);
 
-    template <typename PIX, int maxValue, int srcNComps, int dstNComps>
+    template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool ignorePremult>
     void copyUnProcessedChannelsForPremult(bool premult, bool originalPremult,
                                            std::bitset<4> processChannels,
                                            const RectI& roi,
                                            const boost::shared_ptr<Image>& originalImage);
 
     template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA>
-    void copyUnProcessedChannelsForChannels(std::bitset<4> processChannels,
-                                            bool premult,
+    void copyUnProcessedChannelsForChannels(const std::bitset<4> processChannels,
+                                            const bool premult,
                                             const RectI& roi,
                                             const boost::shared_ptr<Image>& originalImage,
-                                            bool originalPremult);
+                                            const bool originalPremult,
+                                            const bool ignorePremult);
 
     template <typename PIX, int maxValue, int srcNComps, int dstNComps>
-    void copyUnProcessedChannelsForChannels(std::bitset<4> processChannels,
-                                            bool premult,
+    void copyUnProcessedChannelsForChannels(const std::bitset<4> processChannels,
+                                            const bool premult,
                                             const RectI& roi,
                                             const boost::shared_ptr<Image>& originalImage,
-                                            bool originalPremult);
+                                            const bool originalPremult,
+                                            const bool ignorePremult);
 
 
 
     template <typename PIX, int maxValue,int srcNComps, int dstNComps>
     void copyUnProcessedChannelsForComponents(bool premult,
                                               const RectI& roi,
-                                              std::bitset<4> processChannels,
+                                              const std::bitset<4> processChannels,
                                               const boost::shared_ptr<Image>& originalImage,
-                                              bool originalPremult);
+                                              const bool originalPremult,
+                                              const bool ignorePremult);
 
     template <typename PIX, int maxValue>
     void copyUnProcessedChannelsForDepth(bool premult,
                                          const RectI& roi,
                                          std::bitset<4> processChannels,
                                          const boost::shared_ptr<Image>& originalImage,
-                                         bool originalPremult);
+                                         bool originalPremult,
+                                         bool ignorePremult);
 
 
 

@@ -390,6 +390,7 @@ struct Node::Implementation
     //to the inputs in a thread-safe manner.
     EffectInstPtr  effect; //< the effect hosted by this node
     
+    ///The accepted components in input and in output of the plug-in
     ///These two are also protected by inputsMutex
     std::vector< std::list<ImageComponents> > inputsComponents;
     std::list<ImageComponents> outputComponents;
@@ -758,15 +759,13 @@ Node::load(const CreateNodeArgs& args)
             setValuesFromSerialization(list);
         }
         refreshAcceptedBitDepths();
-        
+        if (!args.serialization) {
+            _imp->effect->setDefaultMetadata();
+        }
     } else {
             //ofx plugin   
         _imp->effect = appPTR->createOFXEffect(thisShared, args.serialization.get(),args.paramValues,canOpenFileDialog,renderScaleSupportPreference == 1, &hasUsedFileDialog);
             assert(_imp->effect);
-    }
-    if (!args.serialization) {
-        //Setup clip preferences once at least so that values get initialized
-        _imp->effect->refreshMetaDatas_public(false);
     }
     _imp->effect->initializeOverlayInteract();
     
@@ -2735,11 +2734,7 @@ Node::makeInfoForInput(int inputNumber) const
 
 
     ImageBitDepthEnum depth = _imp->effect->getBitDepth(inputNumber);
-    { // get the preferred depth
-        std::list<ImageComponents> comps;
-        _imp->effect->getComponents(inputNumber, &comps);
-        assert(!comps.empty());
-    }
+  
 
     double time = getApp()->getTimeLine()->currentFrame();
     std::stringstream ss;
@@ -2912,7 +2907,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage, int render
     assert(disableNodeKnob);
     disableNodeKnob->setAnimationEnabled(false);
     disableNodeKnob->setDefaultValue(false);
-    disableNodeKnob->setIsClipPreferencesSlave(true);
+    disableNodeKnob->setIsMetadataSlave(true);
     disableNodeKnob->setName(kDisableNodeKnobName);
     disableNodeKnob->setAddNewLine(false);
     disableNodeKnob->setHintToolTip("When disabled, this node acts as a pass through.");
@@ -4023,7 +4018,7 @@ Node::initializeInputs()
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-    int inputCount = getMaxInputCount();
+    const int inputCount = getMaxInputCount();
     
     InputsV oldInputs;
     {
@@ -4055,7 +4050,12 @@ Node::initializeInputs()
         _imp->inputsComponents.resize(inputCount);
         for (int i = 0; i < inputCount; ++i) {
             _imp->inputsComponents[i].clear();
-            _imp->effect->addAcceptedComponents(i, &_imp->inputsComponents[i]);
+            if (_imp->effect->isInputMask(i)) {
+                //Force alpha for masks
+                _imp->inputsComponents[i].push_back(ImageComponents::getAlphaComponents());
+            } else {
+                _imp->effect->addAcceptedComponents(i, &_imp->inputsComponents[i]);
+            }
         }
         _imp->outputComponents.clear();
         _imp->effect->addAcceptedComponents(-1, &_imp->outputComponents);
@@ -5642,7 +5642,7 @@ Node::makePreviewImage(SequenceTime time,
         
         std::list<ImageComponents> requestedComps;
         ImageBitDepthEnum depth = effect->getBitDepth(-1);
-        effect->getComponents(-1, &requestedComps);
+        requestedComps.push_back(effect->getComponents(-1));
         
         
         
@@ -9275,7 +9275,9 @@ Node::checkForPremultWarningAndCheckboxes()
         return;
     }
     NodePtr prefInput = getPreferredInputNode();
-    if (!prefInput) {
+    
+    //Do not display a warning for Roto paint
+    if (!prefInput || _imp->effect->isRotoPaintNode()) {
         //No input, do not warn
         premultWarn->setSecret(true);
         return;
@@ -9804,10 +9806,8 @@ Node::getHostMixingValue(double time, ViewIdx view) const
 
 InspectorNode::InspectorNode(AppInstance* app,
                              const boost::shared_ptr<NodeCollection>& group,
-                             Plugin* plugin,
-                             int maxInputs)
+                             Plugin* plugin)
 : Node(app,group,plugin)
-, _maxInputs(maxInputs)
 {
 }
 
@@ -9827,7 +9827,7 @@ InspectorNode::connectInput(const NodePtr& input,
     }
     
     ///cannot connect more than _maxInputs inputs.
-    assert(inputNumber <= _maxInputs);
+    assert(inputNumber <= getMaxInputCount());
     
     assert(input);
     
@@ -9874,7 +9874,8 @@ InspectorNode::setActiveInputAndRefresh(int inputNb, bool /*fromViewer*/)
 {
     assert(QThread::currentThread() == qApp->thread());
     
-    if ( ( inputNb > (_maxInputs - 1) ) || (inputNb < 0) || (getInput(inputNb) == NULL) ) {
+    int maxInputs = getMaxInputCount();
+    if ( ( inputNb > (maxInputs - 1) ) || (inputNb < 0) || (getInput(inputNb) == NULL) ) {
         return;
     }
 
@@ -9935,7 +9936,8 @@ InspectorNode::getPreferredInputInternal(bool connected) const
         }
     }
     
-    for (int i = 0; i < _maxInputs; ++i) {
+    int maxInputs = getMaxInputCount();
+    for (int i = 0; i < maxInputs; ++i) {
         NodePtr inp = getInput(i);
         if ((!inp && !connected) || (inp && connected)) {
             return i;

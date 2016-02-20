@@ -178,15 +178,8 @@ OfxClipInstance::getUnmappedComponents() const
         ClipDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
 
         
-        std::list<ImageComponents> comps;
-        inputNode->getComponents(-1, &comps);
-        
-        ImageComponents comp;
-        if (comps.empty()) {
-            comp = comp = ImageComponents::getRGBAComponents();
-        } else {
-            comp = comps.front();
-        }
+        ImageComponents comp = inputNode->getComponents(-1);
+      
         
         //default to RGBA
         if (comp.getNumComponents() == 0) {
@@ -229,48 +222,11 @@ OfxClipInstance::getPremult() const
         return natronsPremultToOfxPremult(eImagePremultiplicationPremultiplied);
     }
     if (isOutput()) {
-        if (effect->isThreadRunningClipPreferences() == QThread::currentThread()) {
-            //During getClipPreferences we cannot return the value of the premult in output because it is not set yet
-            //compute it
-            std::list<ImageComponents> comps;
-            effect->getComponents(-1, &comps);
-            
-            ImageComponents comp;
-            if (!comps.empty()) {
-                comp = comps.front();
-            } else {
-                comp = ImageComponents::getRGBAComponents();
-            }
-            
-            if (comp == ImageComponents::getRGBComponents()) {
-                return natronsPremultToOfxPremult(eImagePremultiplicationOpaque);
-            } else if (comp == ImageComponents::getAlphaComponents()) {
-                return natronsPremultToOfxPremult(eImagePremultiplicationPremultiplied);
-            } else {
-                return natronsPremultToOfxPremult(eImagePremultiplicationPremultiplied);
-            }
-            
-        } else {
-            return natronsPremultToOfxPremult(effect->getPremult());
-        }
+        return natronsPremultToOfxPremult(effect->getPremult());
     } else {
-        EffectInstPtr associatedNode =  getAssociatedNode();
-        if (associatedNode) {
-            ImagePremultiplicationEnum premult = associatedNode->getPremult();
-            return natronsPremultToOfxPremult(premult);
-        }
-        
-        ///Input is not connected
-        
-        const std::string& comps = getUnmappedComponents(); // warning: getComponents() returns None if the clip is not connected
-        if (comps == kOfxImageComponentRGBA || comps == kOfxImageComponentAlpha) {
-            return natronsPremultToOfxPremult(eImagePremultiplicationPremultiplied);
-        }
-        
-        ///Default to opaque
-        return natronsPremultToOfxPremult(eImagePremultiplicationOpaque);
+        EffectInstPtr associatedNode = getAssociatedNode();
+        return associatedNode ? natronsPremultToOfxPremult(associatedNode->getPremult()) : natronsPremultToOfxPremult(eImagePremultiplicationPremultiplied);
     }
-    
    
 }
 
@@ -335,7 +291,11 @@ OfxClipInstance::getDimension(const std::string &name) const OFX_EXCEPTION_SPEC
 const std::string &
 OfxClipInstance::getComponents() const
 {
-    return OFX::Host::ImageEffect::ClipInstance::getComponents();
+    /*
+     The property returned by the clip might differ from the one held on the image if the associated effect
+     is identity or if the effect is multi-planar
+     */
+    return _components;
     
 }
 
@@ -346,16 +306,11 @@ OfxClipInstance::getComponents() const
 double
 OfxClipInstance::getAspectRatio() const
 {
-    if (isOutput() || getName() == CLIP_OFX_ROTO) {
-        return _imp->aspectRatio;
-    }
-    
-    EffectInstPtr inputNode = getAssociatedNode();
-    boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
-    if (!effect) {
-        return 1.;
-    }
-    return effect->getAspectRatio(getInputNb());
+    /*
+     The property returned by the clip might differ from the one held on the image if the associated effect 
+     is identity
+     */
+    return _imp->aspectRatio;
 }
 
 void
@@ -369,6 +324,10 @@ OfxClipInstance::setAspectRatio(double par)
 double
 OfxClipInstance::getFrameRate() const
 {
+    /*
+     The frame rate property cannot be held onto images, hence return the "actual" frame rate,
+     taking into account the node from which the image came from wrt the identity state
+     */
     boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
 
     if (isOutput() || getName() == CLIP_OFX_ROTO) {
@@ -738,9 +697,8 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
                     ///We are in the case of a multi-plane effect who did not specify correctly the needed components for an input
                     //fallback on the basic components indicated on the clip
                     //This could be the case for example for the Mask Input
-                    std::list<ImageComponents> comps = ofxComponentsToNatronComponents(getComponents());
-                    assert(comps.size() == 1);
-                    comp = comps.front();
+                    comp = ofxComponentsToNatronComponents(getComponents());
+                    assert(!comp.isPairedComponents());
                     foundCompsInTLS = true;
                     //qDebug() << _imp->nodeInstance->getScriptName_mt_safe().c_str() << " didn't specify any needed components via getClipComponents for clip " << getName().c_str();
                     
@@ -758,9 +716,8 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
             bool hasUserComps = effect->getNode()->getSelectedLayer(inputnb, &processChannels, &isAll,&comp);
             if (!hasUserComps) {
                 //There's no selector...fallback on the basic components indicated on the clip
-                std::list<ImageComponents> comps = ofxComponentsToNatronComponents(getComponents());
-                assert(comps.size() == 1);
-                comp = comps.front();
+                comp = ofxComponentsToNatronComponents(getComponents());
+                assert(!comp.isPairedComponents());
             } 
         }
 
@@ -851,9 +808,8 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
         nComps = image->getComponents().getNumComponents();
     } else {
         components = getComponents();
-        std::list<ImageComponents> natronComps = OfxClipInstance::ofxComponentsToNatronComponents(components);
-        assert(!natronComps.empty());
-        nComps = natronComps.front().getNumComponents();
+        ImageComponents natronComps = OfxClipInstance::ofxComponentsToNatronComponents(components);
+        nComps = natronComps.getNumComponents();
         //assert(nComps == image->getComponents().getNumComponents());
     }
 
@@ -900,9 +856,8 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane)
          so the components will not have been set on the TLS hence just use regular components.
          */
         if (natronPlane.getNumComponents() == 0 && effect->isMultiPlanar()) {
-            std::list<ImageComponents> comps = ofxComponentsToNatronComponents(_components);
-            assert(!comps.empty());
-            natronPlane = comps.front();
+            natronPlane = ofxComponentsToNatronComponents(getComponents());
+            assert(!natronPlane.isPairedComponents());
         }
         assert(natronPlane.getNumComponents() > 0);
         
@@ -972,10 +927,10 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane)
         ofxComponents = OfxClipInstance::natronsComponentsToOfxComponents(outputImage->getComponents());
         nComps = outputImage->getComponents().getNumComponents();
     } else {
-        std::list<ImageComponents> natronComps = OfxClipInstance::ofxComponentsToNatronComponents(_components);
-        assert(!natronComps.empty());
-        ofxComponents = _components;
-        nComps = natronComps.front().getNumComponents();
+        ofxComponents = getComponents();
+        ImageComponents natronComps = OfxClipInstance::ofxComponentsToNatronComponents(ofxComponents);
+        assert(!natronPlane.isPairedComponents());
+        nComps = natronComps.getNumComponents();
         assert(nComps == (int)outputImage->getComponentsCount());
         if (nComps != (int)outputImage->getComponentsCount()) {
             return 0;
@@ -1069,9 +1024,7 @@ OfxClipInstance::ofxPlaneToNatronPlane(const std::string& plane)
 {
     
     if (plane == kFnOfxImagePlaneColour) {
-        std::list<ImageComponents> comps = ofxComponentsToNatronComponents(getComponents());
-        assert(comps.size() == 1);
-        return comps.front();
+        return ofxComponentsToNatronComponents(getComponents());
     } else if (plane == kFnOfxImagePlaneBackwardMotionVector) {
         return ImageComponents::getBackwardMotionComponents();
     } else if (plane == kFnOfxImagePlaneForwardMotionVector) {
@@ -1120,34 +1073,32 @@ OfxClipInstance::natronsComponentsToOfxComponents(const ImageComponents& comp)
     }
 }
 
-std::list<ImageComponents>
+ImageComponents
 OfxClipInstance::ofxComponentsToNatronComponents(const std::string & comp)
 {
-    std::list<ImageComponents> ret;
     if (comp ==  kOfxImageComponentRGBA) {
-        ret.push_back(ImageComponents::getRGBAComponents());
+        return ImageComponents::getRGBAComponents();
     } else if (comp == kOfxImageComponentAlpha) {
-        ret.push_back(ImageComponents::getAlphaComponents());
+        return ImageComponents::getAlphaComponents();
     } else if (comp == kOfxImageComponentRGB) {
-        ret.push_back(ImageComponents::getRGBComponents());
+        return ImageComponents::getRGBComponents();
     } else if (comp == kOfxImageComponentNone) {
-        ret.push_back(ImageComponents::getNoneComponents());
+        return ImageComponents::getNoneComponents();
     } else if (comp == kFnOfxImageComponentMotionVectors) {
-        ret.push_back(ImageComponents::getForwardMotionComponents());
-        ret.push_back(ImageComponents::getBackwardMotionComponents());
+        return ImageComponents::getPairedMotionVectors();
+        return ImageComponents::getBackwardMotionComponents();
     } else if (comp == kFnOfxImageComponentStereoDisparity) {
-        ret.push_back(ImageComponents::getDisparityLeftComponents());
-        ret.push_back(ImageComponents::getDisparityRightComponents());
+        return ImageComponents::getPairedStereoDisparity();
     } else if (comp == kNatronOfxImageComponentXY) {
-        ret.push_back(ImageComponents::getXYComponents());
+        return ImageComponents::getXYComponents();
     } else {
         try {
-            ret.push_back(ofxCustomCompToNatronComp(comp));
+            return ofxCustomCompToNatronComp(comp);
         } catch (...) {
             
         }
     }
-    return ret;
+    return ImageComponents::getNoneComponents();
 }
 
 ImageBitDepthEnum

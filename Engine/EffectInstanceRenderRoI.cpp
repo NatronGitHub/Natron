@@ -354,7 +354,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             std::vector<ImageComponents> compVec;
             for (std::list<ImageComponents>::const_iterator it = args.components.begin(); it != args.components.end(); ++it) {
                 bool found = false;
-
+                assert(*it && !it->isPairedComponents());
                 //Change all needed comps in output to the requested components
                 for (std::vector<ImageComponents>::const_iterator it2 = foundOutputNeededComps->second.begin(); it2 != foundOutputNeededComps->second.end(); ++it2) {
                     if ( ( it2->isColorPlane() && it->isColorPlane() ) ) {
@@ -733,10 +733,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
      * that the plug-in expects.
      */
     ImageBitDepthEnum outputDepth = getBitDepth(-1);
-    std::list<ImageComponents> outputClipPrefComps;
-    getComponents(-1, &outputClipPrefComps);
-    assert( !outputClipPrefComps.empty() );
-
+    ImageComponents outputClipPrefComps = getComponents(-1);
+    
 
     boost::shared_ptr<ImagePlanesToRender> planesToRender(new ImagePlanesToRender);
     boost::shared_ptr<FramesNeededMap> framesNeeded(new FramesNeededMap);
@@ -1630,7 +1628,7 @@ EffectInstance::renderRoIInternal(double time,
                                   bool renderFullScaleThenDownscale,
                                   bool byPassCache,
                                   ImageBitDepthEnum outputClipPrefDepth,
-                                  const std::list<ImageComponents> & outputClipPrefsComps,
+                                  const ImageComponents& outputClipPrefsComps,
                                   const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
                                   const std::bitset<4> processChannels)
 {

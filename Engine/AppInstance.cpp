@@ -892,17 +892,16 @@ AppInstance::setGroupLabelIDAndVersion(const NodePtr& node,
  * @brief An inspector node is like a viewer node with hidden inputs that unfolds one after another.
  * This functions returns the number of inputs to use for inspectors or 0 for a regular node.
  **/
-static int isEntitledForInspector(Plugin* plugin,OFX::Host::ImageEffect::Descriptor* ofxDesc)  {
+static bool isEntitledForInspector(Plugin* plugin,OFX::Host::ImageEffect::Descriptor* ofxDesc)  {
     
-    if (plugin->getPluginID() == PLUGINID_NATRON_VIEWER) {
-        return 10;
-    } else if (plugin->getPluginID() == PLUGINID_NATRON_ROTOPAINT ||
-               plugin->getPluginID() == PLUGINID_NATRON_ROTO) {
-        return 11;
+    if (plugin->getPluginID() == PLUGINID_NATRON_VIEWER ||
+        plugin->getPluginID() == PLUGINID_NATRON_ROTOPAINT ||
+        plugin->getPluginID() == PLUGINID_NATRON_ROTO) {
+        return true;
     }
     
     if (!ofxDesc) {
-        return 0;
+        return false;
     }
     
     const std::vector<OFX::Host::ImageEffect::ClipDescriptor*>& clips = ofxDesc->getClipsByOrder();
@@ -912,7 +911,7 @@ static int isEntitledForInspector(Plugin* plugin,OFX::Host::ImageEffect::Descrip
         if (!(*it)->isOutput()) {
             if (!(*it)->isOptional()) {
                 if (!firstInput) {                    // allow one non-optional input
-                    return 0;
+                    return false;
                 }
             } else {
                 ++nInputs;
@@ -921,9 +920,9 @@ static int isEntitledForInspector(Plugin* plugin,OFX::Host::ImageEffect::Descrip
         }
     }
     if (nInputs > 4) {
-        return nInputs;
+        return true;
     }
-    return 0;
+    return false;
 }
 
 NodePtr
@@ -1015,12 +1014,12 @@ AppInstance::createNodeInternal(const CreateNodeArgs& args)
         }
     }
     
-    int nInputsForInspector = isEntitledForInspector(plugin,ofxDesc);
+    bool useInspector = isEntitledForInspector(plugin,ofxDesc);
     
-    if (!nInputsForInspector) {
-        node.reset( new Node(this, args.addToProject ? args.group : boost::shared_ptr<NodeCollection>(), plugin) );
+    if (!useInspector) {
+        node.reset(new Node(this, args.addToProject ? args.group : boost::shared_ptr<NodeCollection>(), plugin));
     } else {
-        node.reset( new InspectorNode(this, args.addToProject ? args.group : boost::shared_ptr<NodeCollection>(), plugin,nInputsForInspector) );
+        node.reset(new InspectorNode(this, args.addToProject ? args.group : boost::shared_ptr<NodeCollection>(), plugin));
     }
     
     {

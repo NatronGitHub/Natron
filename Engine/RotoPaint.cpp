@@ -47,10 +47,12 @@ struct RotoPaintPrivate
 {
     bool isPaintByDefault;
     boost::weak_ptr<KnobBool> premultKnob;
+    boost::weak_ptr<KnobBool> enabledKnobs[4];
     
     RotoPaintPrivate(bool isPaintByDefault)
     : isPaintByDefault(isPaintByDefault)
     , premultKnob()
+    , enabledKnobs()
     {
         
     }
@@ -113,21 +115,22 @@ RotoNode::getPluginDescription() const
 bool
 RotoPaint::isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const
 {
+    //Use our own selectors, we don't want Natron to copy back channels
     *defaultR = true;
     *defaultG = true;
     *defaultB = true;
     *defaultA = true;
-    return true;
+    return false;
 }
 
 bool
 RotoNode::isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const
 {
-    *defaultR = false;
-    *defaultG = false;
-    *defaultB = false;
-    *defaultA = true;
-    return true;
+    *defaultR = true;
+    *defaultG = true;
+    *defaultB = true;
+    *defaultA = false;
+    return false;
 }
 
 std::string
@@ -174,9 +177,29 @@ RotoPaint::initializeKnobs()
     //This page is created in the RotoContext, before initializeKnobs() is called.
     boost::shared_ptr<KnobPage> generalPage = boost::dynamic_pointer_cast<KnobPage>(getKnobByName("General"));
     assert(generalPage);
+    
 
     boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>(this, "Output", 1, false);
     generalPage->addKnob(sep);
+    
+    
+    std::string channelNames[4] = {"doRed","doGreen","doBlue","doAlpha"};
+    std::string channelLabels[4] = {"R","G","B","A"};
+    
+    bool defaultValues[4];
+    (void)isHostChannelSelectorSupported(&defaultValues[0], &defaultValues[1], &defaultValues[2], &defaultValues[3]);
+    for (int i = 0; i < 4; ++i) {
+        
+        boost::shared_ptr<KnobBool> enabled =  AppManager::createKnob<KnobBool>(this, channelLabels[i], 1, false);
+        enabled->setName(channelNames[i]);
+        enabled->setAnimationEnabled(false);
+        enabled->setAddNewLine(i == 3);
+        enabled->setDefaultValue(defaultValues[i]);
+        enabled->setHintToolTip("Enable drawing onto this channel");
+        generalPage->addKnob(enabled);
+        _imp->enabledKnobs[i] = enabled;
+    }
+
     
     boost::shared_ptr<KnobBool> premultKnob = AppManager::createKnob<KnobBool>(this, "Premultiply", 1, false);
     premultKnob->setName("premultiply");
@@ -185,6 +208,7 @@ RotoPaint::initializeKnobs()
                                 "being black and transparant.");
     premultKnob->setDefaultValue(false);
     premultKnob->setAnimationEnabled(false);
+    premultKnob->setIsMetadataSlave(true);
     _imp->premultKnob = premultKnob;
     generalPage->addKnob(premultKnob);
     
@@ -207,12 +231,12 @@ RotoPaint::knobChanged(KnobI* k,
 StatusEnum
 RotoPaint::getPreferredMetaDatas(NodeMetadata& metadata)
 {
-    
+    metadata.setImageComponents(-1, ImageComponents::getRGBAComponents());
     boost::shared_ptr<KnobBool> premultKnob = _imp->premultKnob.lock();
     assert(premultKnob);
     bool premultiply = premultKnob->getValue();
     if (premultiply) {
-        metadata.outputPremult = eImagePremultiplicationPremultiplied;
+        metadata.setOutputPremult(eImagePremultiplicationPremultiplied);
     } else {
         ImagePremultiplicationEnum srcPremult = eImagePremultiplicationOpaque;
         
@@ -222,9 +246,9 @@ RotoPaint::getPreferredMetaDatas(NodeMetadata& metadata)
         }
         bool processA = getNode()->getProcessChannel(3);
         if (srcPremult == eImagePremultiplicationOpaque && processA) {
-            metadata.outputPremult = eImagePremultiplicationUnPremultiplied;
+            metadata.setOutputPremult(eImagePremultiplicationUnPremultiplied);
         } else {
-            metadata.outputPremult = eImagePremultiplicationPremultiplied;
+            metadata.setOutputPremult(eImagePremultiplicationPremultiplied);
         }
     }
     return eStatusOK;
@@ -388,6 +412,10 @@ RotoPaint::render(const RenderActionArgs& args)
         
         RenderingFlagSetter flagIsRendering(bottomMerge.get());
 
+        std::bitset<4> copyChannels;
+        for (int i = 0; i < 4; ++i) {
+            copyChannels[i] = _imp->enabledKnobs[i].lock()->getValue();
+        }
         
         unsigned int mipMapLevel = Image::getLevelFromScale(args.mappedScale.x);
         RenderRoIArgs rotoPaintArgs(args.time,
@@ -422,6 +450,8 @@ RotoPaint::render(const RenderActionArgs& args)
         RectI bgImgRoI;
         ImagePtr bgImg;
         
+        ImagePremultiplicationEnum outputPremult = getPremult();
+        
         bool triedGetImage = false;
         
         for (std::list<std::pair<ImageComponents,boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
@@ -432,14 +462,14 @@ RotoPaint::render(const RenderActionArgs& args)
             if (rotoImagesIt == rotoPaintImages.end()) {
                 continue;
             }
-
-            if (!rotoImagesIt->second->getBounds().contains(args.roi)) {
-                if (!bgImg) {
-                    if (!triedGetImage) {
-                        bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, 0, false, false, &bgImgRoI);
-                        triedGetImage = true;
-                    }
+            if (!bgImg) {
+                if (!triedGetImage) {
+                    bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, 0, false, false, &bgImgRoI);
+                    triedGetImage = true;
                 }
+            }
+            if (!rotoImagesIt->second->getBounds().contains(args.roi)) {
+                
                 ///We first fill with the bg image because the bounds of the image produced by the last merge of the rotopaint tree
                 ///might not be equal to the bounds of the image produced by the rotopaint. This is because the RoD of the rotopaint is the
                 ///union of all the mask strokes bounds, whereas all nodes inside the rotopaint tree don't take the mask RoD into account.
@@ -517,6 +547,10 @@ RotoPaint::render(const RenderActionArgs& args)
             if (premultiply && plane->second->getComponents() == ImageComponents::getRGBAComponents()) {
                 plane->second->premultImage(args.roi);
             }
+            if (bgImg) {
+                plane->second->copyUnProcessedChannels(args.roi, outputPremult, bgImg->getPremultiplication(), copyChannels, bgImg, false);
+            }
+            
         }
     } // RenderingFlagSetter flagIsRendering(bottomMerge.get());
     

@@ -898,8 +898,8 @@ public:
      * @brief When a knob is clip preferences slaves, when its value changes, checkOFXClipPreferences will be called on the 
      * holder effect
      **/
-    virtual void setIsClipPreferencesSlave(bool slave) = 0;
-    virtual bool getIsClipPreferencesSlave() const = 0;
+    virtual void setIsMetadataSlave(bool slave) = 0;
+    virtual bool getIsMetadataSlave() const = 0;
 
     /**
      * @brief Set the text displayed by the tooltip when
@@ -1315,8 +1315,8 @@ public:
     virtual void setIsPersistant(bool b) OVERRIDE FINAL;
     virtual void setCanUndo(bool val) OVERRIDE FINAL;
     virtual bool getCanUndo() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setIsClipPreferencesSlave(bool slave) OVERRIDE FINAL;
-    virtual bool getIsClipPreferencesSlave() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setIsMetadataSlave(bool slave) OVERRIDE FINAL;
+    virtual bool getIsMetadataSlave() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setHintToolTip(const std::string & hint) OVERRIDE FINAL;
     virtual const std::string & getHintToolTip() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setCustomInteract(const boost::shared_ptr<OfxParamOverlayInteract> & interactDesc) OVERRIDE FINAL;

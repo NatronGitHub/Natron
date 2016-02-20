@@ -57,6 +57,7 @@
 #include "Engine/AppManager.h"
 #include "Engine/Format.h"
 #include "Engine/Node.h"
+#include "Engine/NodeMetadata.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/Project.h"
@@ -131,6 +132,27 @@ OfxImageEffectInstance::mainEntry(const char *action,
 {
     ThreadIsActionCaller_RAII t(this);
     return OFX::Host::ImageEffect::Instance::mainEntry(action, handle, inArgs, outArgs);
+}
+
+OfxStatus
+OfxImageEffectInstance::createInstanceAction()
+{
+    ///Overriden because the call to setDefaultClipPreferences is done in Natron
+    
+#       ifdef OFX_DEBUG_ACTIONS
+    std::cout << "OFX: "<<(void*)this<<"->"<<kOfxActionCreateInstance<<"()"<<std::endl;
+#       endif
+    // now tell the plug-in to create instance
+    OfxStatus st = mainEntry(kOfxActionCreateInstance,this->getHandle(),0,0);
+#       ifdef OFX_DEBUG_ACTIONS
+    std::cout << "OFX: "<<(void*)this<<"->"<<kOfxActionCreateInstance<<"()->"<<StatStr(st)<<std::endl;
+#       endif
+    
+    if (st == kOfxStatOK) {
+        _created = true;
+    }
+    
+    return st;
 }
 
 const std::string &
@@ -509,7 +531,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
         knob->setIconLabel(iconFilePath);
     }
     
-    knob->setIsClipPreferencesSlave(isClipPreferencesSlaveParam(paramName));
+    knob->setIsMetadataSlave(isClipPreferencesSlaveParam(paramName));
     knob->setIsPersistant(persistant);
     knob->setAnimationEnabled( descriptor.getCanAnimate() );
     knob->setSecretByDefault(secretByDefault);
@@ -834,84 +856,87 @@ OfxImageEffectInstance::areAllNonOptionalClipsConnected() const
     return true;
 }
 
-bool
-OfxImageEffectInstance::getClipPreferences_safe(std::map<OfxClipInstance*, ClipPrefs>& clipPrefs,EffectPrefs& effectPrefs)
+void
+OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata(NodeMetadata& metadata,
+                                                             OFX::Host::Property::Set &outArgs,
+                                                             std::map<OfxClipInstance*,int>& clipsMapping)
+{
+    static const OFX::Host::Property::PropSpec clipPrefsStuffs []=
+    {
+        { kOfxImageEffectPropFrameRate,          OFX::Host::Property::eDouble,  1, false,  "1" },
+        { kOfxImageEffectPropPreMultiplication,  OFX::Host::Property::eString,  1, false,  "" },
+        { kOfxImageClipPropFieldOrder,           OFX::Host::Property::eString,  1, false,  "" },
+        { kOfxImageClipPropContinuousSamples,    OFX::Host::Property::eInt,     1, false,  "0" },
+        { kOfxImageEffectFrameVarying,           OFX::Host::Property::eInt,     1, false,  "0" },
+        OFX::Host::Property::propSpecEnd
+    };
+    
+    outArgs.addProperties(clipPrefsStuffs);
+    
+    /// set the default for those
+    
+    /// is there multiple bit depth support? Depends on host, plugin and context
+    bool multiBitDepth = canCurrentlyHandleMultipleClipDepths();
+    
+    //Set the output frame rate according to what input clips have. Several inputs with different frame rates should be
+    //forbidden by the host.
+    double outputFrameRate = metadata.getOutputFrameRate();
+    outArgs.setDoubleProperty(kOfxImageEffectPropFrameRate, outputFrameRate);
+    outArgs.setStringProperty(kOfxImageEffectPropPreMultiplication, OfxClipInstance::natronsPremultToOfxPremult(metadata.getOutputPremult()));
+    outArgs.setStringProperty(kOfxImageClipPropFieldOrder, OfxClipInstance::natronsFieldingToOfxFielding(metadata.getOutputFielding()));
+    outArgs.setIntProperty(kOfxImageClipPropContinuousSamples, metadata.getIsContinuous());
+    outArgs.setIntProperty(kOfxImageEffectFrameVarying, metadata.getIsFrameVarying());
+    
+    /// now add the clip gubbins to the out args
+    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it=_clips.begin();
+        it!=_clips.end();
+        ++it) {
+        
+        OfxClipInstance *clip = dynamic_cast<OfxClipInstance*>(it->second);
+        assert(clip);
+        if (!clip) {
+            continue;
+        }
+        
+        int inputNb = clip->getInputNb();
+
+        clipsMapping[clip] = inputNb;
+        
+        std::string componentParamName = "OfxImageClipPropComponents_"+it->first;
+        std::string depthParamName     = "OfxImageClipPropDepth_"+it->first;
+        std::string parParamName       = "OfxImageClipPropPAR_"+it->first;
+        
+        OFX::Host::Property::PropSpec specComp = {componentParamName.c_str(),  OFX::Host::Property::eString, 0, false,          ""}; // note the support for multi-planar clips
+        outArgs.createProperty(specComp);
+
+        ImageComponents clipComponents = metadata.getImageComponents(inputNb);
+        
+        std::string clipComponentStr = OfxClipInstance::natronsComponentsToOfxComponents(clipComponents);
+        outArgs.setStringProperty(componentParamName.c_str(), clipComponentStr.c_str()); // as it is variable dimension, there is no default value, so we have to set it explicitly
+        
+        
+        const std::string& bitDepthStr = OfxClipInstance::natronsDepthToOfxDepth(metadata.getBitDepth(inputNb));
+        OFX::Host::Property::PropSpec specDep = {depthParamName.c_str(),       OFX::Host::Property::eString, 1, !multiBitDepth, bitDepthStr.c_str()};
+        outArgs.createProperty(specDep);
+        
+        OFX::Host::Property::PropSpec specPAR = {parParamName.c_str(),         OFX::Host::Property::eDouble, 1, false,          "1"};
+        outArgs.createProperty(specPAR);
+        outArgs.setDoubleProperty(parParamName, metadata.getPixelAspectRatio(inputNb));
+    }
+    
+    
+}
+
+StatusEnum
+OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs)
 {
     /// create the out args with the stuff that does not depend on individual clips
     OFX::Host::Property::Set outArgs;
     
-    double inputPar = 1.;
-    bool inputParSet = false;
-    bool mustWarnPar = false;
-    bool outputFrameRateSet = false;
-    double outputFrameRate = _outputFrameRate;
-    bool mustWarnFPS = false;
-    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it2 = _clips.begin(); it2 != _clips.end(); ++it2) {
-        if (!it2->second->isOutput() && it2->second->getConnected()) {
-            if (!inputParSet) {
-                inputPar = it2->second->getAspectRatio();
-                inputParSet = true;
-            } else if (inputPar != it2->second->getAspectRatio()) {
-                // We have several inputs with different aspect ratio, which should be forbidden by the host.
-                mustWarnPar = true;
-            }
-            
-            if (!outputFrameRateSet) {
-                outputFrameRate = it2->second->getFrameRate();
-                outputFrameRateSet = true;
-            } else if (std::abs(outputFrameRate - it2->second->getFrameRate()) > 0.01) {
-                // We have several inputs with different frame rates
-                mustWarnFPS = true;
-            }
-
-        }
-    }
-
     boost::shared_ptr<OfxEffectInstance> effect = _ofxEffectInstance.lock();
     
-    try {
-        setupClipPreferencesArgs(outArgs);
-    } catch (OFX::Host::Property::Exception) {
-        outArgs.setDoubleProperty("OfxImageClipPropPAR_Output" , inputPar);
-        outArgs.setDoubleProperty(kOfxImageEffectPropFrameRate, getFrameRate());
-    }
-    if (mustWarnPar) {
-        qDebug()
-        << "WARNING: getClipPreferences() for "
-        << effect->getScriptName_mt_safe().c_str()
-        << ": This node has several input clips with different pixel aspect ratio but it does "
-        "not support multiple input clips PAR. Your script or the GUI should have handled this "
-        "earlier (before connecting the node @see Node::canConnectInput) .";
-        outArgs.setDoubleProperty("OfxImageClipPropPAR_Output" , inputPar);
-
-    }
-    
-    if (mustWarnFPS) {
-        qDebug()
-        << "WARNING: getClipPreferences() for "
-        << effect->getScriptName_mt_safe().c_str()
-        << ": This node has several input clips with different frame rates but it does "
-        "not support it. Your script or the GUI should have handled this "
-        "earlier (before connecting the node @see Node::canConnectInput) .";
-        outArgs.setDoubleProperty(kOfxImageEffectPropFrameRate, getFrameRate());
-        std::string name = effect->getScriptName_mt_safe();
-        effect->setPersistentMessage(eMessageTypeWarning, "Several input clips with different pixel aspect ratio or different frame rates but it cannot handle it.");
-    }
-
-    if (mustWarnPar && !mustWarnFPS) {
-        std::string name = effect->getNode()->getLabel_mt_safe();
-        effect->setPersistentMessage(eMessageTypeWarning, "Several input clips with different pixel aspect ratio but it cannot handle it.");
-    } else if (!mustWarnPar && mustWarnFPS) {
-        std::string name = effect->getNode()->getLabel_mt_safe();
-        effect->setPersistentMessage(eMessageTypeWarning, "Several input clips with different frame rates but it cannot handle it.");
-    } else if (mustWarnPar && mustWarnFPS) {
-        std::string name = effect->getNode()->getLabel_mt_safe();
-        effect->setPersistentMessage(eMessageTypeWarning, "Several input clips with different pixel aspect ratio and different frame rates but it cannot handle it.");
-    } else {
-        if (effect->getNode()->hasPersistentMessage()) {
-            effect->clearPersistentMessage(false);
-        }
-    }
+    std::map<OfxClipInstance*,int> clipInputs;
+    setupClipPreferencesArgsFromMetadata(defaultPrefs,outArgs,clipInputs);
     
 
 #       ifdef OFX_DEBUG_ACTIONS
@@ -925,55 +950,73 @@ OfxImageEffectInstance::getClipPreferences_safe(std::map<OfxClipInstance*, ClipP
     std::cout << "OFX: "<<(void*)this<<"->"<<kOfxImageEffectActionGetClipPreferences<<"()->"<<OFX::StatStr(st);
 #       endif
     
-    if(st!=kOfxStatOK && st!=kOfxStatReplyDefault) {
-#       ifdef OFX_DEBUG_ACTIONS
-        std::cout << std::endl;
-#       endif
-        /// ouch
-        return false;
-    }
-    
 #       ifdef OFX_DEBUG_ACTIONS
     std::cout << ": ";
 #       endif
-    /// OK, go pump the components/depths back into the clips themselves
-    for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it=_clips.begin();
-        it!=_clips.end();
-        ++it) {
-        ClipPrefs prefs;
-        
-        std::string componentParamName = "OfxImageClipPropComponents_"+it->first;
-        std::string depthParamName = "OfxImageClipPropDepth_"+it->first;
-        std::string parParamName = "OfxImageClipPropPAR_"+it->first;
-        
+    
+    if (st == kOfxStatReplyDefault) {
 #       ifdef OFX_DEBUG_ACTIONS
-        std::cout << it->first<<"->"<<outArgs.getStringProperty(depthParamName)<<","<<outArgs.getStringProperty(componentParamName)<<","<<outArgs.getDoubleProperty(parParamName)<<" ";
+        std::cout << "default" << std::endl;
 #       endif
-        prefs.bitdepth = outArgs.getStringProperty(depthParamName);
-        prefs.components = outArgs.getStringProperty(componentParamName);
-        prefs.par = outArgs.getDoubleProperty(parParamName);
-        OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
-        assert(clip);
-        if (clip) {
-            clipPrefs.insert(std::make_pair(clip, prefs));
-        }
+        return eStatusReplyDefault;
     }
     
-    
-    effectPrefs.frameRate         = outArgs.getDoubleProperty(kOfxImageEffectPropFrameRate);
-    effectPrefs.fielding          = outArgs.getStringProperty(kOfxImageClipPropFieldOrder);
-    effectPrefs.premult           = outArgs.getStringProperty(kOfxImageEffectPropPreMultiplication);
-    effectPrefs.continuous        = outArgs.getIntProperty(kOfxImageClipPropContinuousSamples) != 0;
-    effectPrefs.frameVarying      = outArgs.getIntProperty(kOfxImageEffectFrameVarying) != 0;
-    
+    /// Only copy the meta-data if they actually changed
+    if (st != kOfxStatOK) {
 #       ifdef OFX_DEBUG_ACTIONS
-    std::cout << _outputFrameRate<<","<<_outputFielding<<","<<_outputPreMultiplication<<","<<_continuousSamples<<","<<_frameVarying<<std::endl;
+        std::cout << "error" << std::endl;
 #       endif
-    
-    
-    _clipPrefsDirty  = false;
-    
-    return true;
+        /// ouch
+        return eStatusFailed;
+    } else {
+        /// OK, go pump the components/depths back into the clips themselves
+        for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it=_clips.begin();
+            it!=_clips.end();
+            ++it) {
+            
+            OfxClipInstance *clip = dynamic_cast<OfxClipInstance*>(it->second);
+            assert(clip);
+            if (!clip) {
+                continue;
+            }
+            
+            std::string componentParamName = "OfxImageClipPropComponents_"+it->first;
+            std::string depthParamName = "OfxImageClipPropDepth_"+it->first;
+            std::string parParamName = "OfxImageClipPropPAR_"+it->first;
+            
+            std::map<OfxClipInstance*,int>::iterator foundClip = clipInputs.find(clip);
+            assert(foundClip != clipInputs.end());
+            if (foundClip == clipInputs.end()) {
+                continue;
+            }
+            int inputNb = foundClip->second;
+            
+#       ifdef OFX_DEBUG_ACTIONS
+            std::cout << it->first<<"->"<<outArgs.getStringProperty(depthParamName)<<","<<outArgs.getStringProperty(componentParamName)<<","<<outArgs.getDoubleProperty(parParamName)<<" ";
+#       endif
+            
+            defaultPrefs.setBitDepth(inputNb, OfxClipInstance::ofxDepthToNatronDepth(outArgs.getStringProperty(depthParamName)));
+            defaultPrefs.setImageComponents(inputNb, OfxClipInstance::ofxComponentsToNatronComponents(outArgs.getStringProperty(componentParamName)));
+            defaultPrefs.setPixelAspectRatio(inputNb, outArgs.getDoubleProperty(parParamName));
+            
+        }
+        
+        
+        defaultPrefs.setOutputFrameRate(outArgs.getDoubleProperty(kOfxImageEffectPropFrameRate));
+        defaultPrefs.setOutputFielding(OfxClipInstance::ofxFieldingToNatronFielding(outArgs.getStringProperty(kOfxImageClipPropFieldOrder)));
+        defaultPrefs.setOutputPremult(OfxClipInstance::ofxPremultToNatronPremult(outArgs.getStringProperty(kOfxImageEffectPropPreMultiplication)));
+        defaultPrefs.setIsContinuous(outArgs.getIntProperty(kOfxImageClipPropContinuousSamples) != 0);
+        defaultPrefs.setIsFrameVarying(outArgs.getIntProperty(kOfxImageEffectFrameVarying) != 0);
+        
+#       ifdef OFX_DEBUG_ACTIONS
+        std::cout << outArgs.getDoubleProperty(kOfxImageEffectPropFrameRate)<<","
+        <<outArgs.getStringProperty(kOfxImageClipPropFieldOrder)<<","
+        <<outArgs.getStringProperty(kOfxImageEffectPropPreMultiplication)<<","
+        <<outArgs.getIntProperty(kOfxImageClipPropContinuousSamples)<<","
+        <<outArgs.getIntProperty(kOfxImageEffectFrameVarying)<<std::endl;
+#       endif
+        return eStatusOK;
+    } //if (st == kOfxStatOK)
 
 }
 

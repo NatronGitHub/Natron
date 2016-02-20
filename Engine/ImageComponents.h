@@ -29,6 +29,7 @@
 #include <vector>
 
 #include "Global/Macros.h"
+#include <nuke/fnOfxExtensions.h>
 #include "Engine/EngineFwd.h"
 
 #define kNatronColorPlaneName "Color"
@@ -79,6 +80,12 @@ public:
                     const char** componentsName,
                     int count);
     
+    ImageComponents(const std::string& layerName,
+                    const std::string& pairedLayer,
+                    const std::string& globalCompName,
+                    const char** componentsName,
+                    int count);
+    
     ~ImageComponents();
     
     // Is it Alpha, RGB or RGBA
@@ -93,6 +100,12 @@ public:
     
     ///E.g color
     const std::string& getLayerName() const;
+    
+    //True if stereo disparity or motion vectors as per Nuke ofx multi-plane extension
+    bool isPairedComponents() const;
+    
+    //if isPairedComponents() returns true, return the other layer that is paired to this layer.
+    const std::string& getPairedLayerName() const;
     
     ///E.g ["r","g","b","a"]
     const std::vector<std::string>& getComponentsNames() const;
@@ -109,6 +122,16 @@ public:
     //For std::map
     bool operator<(const ImageComponents& other) const;
     
+    operator bool() const
+    {
+        return getNumComponents() > 0;
+    }
+    
+    bool operator!() const
+    {
+        return getNumComponents() == 0;
+    }
+    
     /*
      * These are default presets image components
      */
@@ -122,6 +145,10 @@ public:
     static const ImageComponents& getDisparityRightComponents();
     static const ImageComponents& getXYComponents();
     
+    //These are to be compatible with Nuke multi-plane extension and the Furnace plug-ins
+    static const ImageComponents& getPairedMotionVectors();
+    static const ImageComponents& getPairedStereoDisparity();
+    
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
     
@@ -129,7 +156,7 @@ private:
     
     
     
-    std::string _layerName;
+    std::string _layerName,_pairedLayer;
     std::vector<std::string> _componentNames;
     std::string _globalComponentsName;
 };

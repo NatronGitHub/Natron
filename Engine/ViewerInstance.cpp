@@ -278,10 +278,7 @@ ViewerInstance::invalidateUiContext()
 int
 ViewerInstance::getMaxInputCount() const
 {
-    // runs in the render thread or in the main thread
-    
-    //MT-safe
-    return getNode()->getMaxInputCount();
+    return 10;
 }
 
 void
@@ -1370,10 +1367,8 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         clearPersistentMessage(true);
     }
     
-    std::list<ImageComponents> components;
+    ImageComponents components = inArgs.activeInputToRender->getComponents(-1);
     ImageBitDepthEnum imageDepth = inArgs.activeInputToRender->getBitDepth(-1);
-    inArgs.activeInputToRender->getComponents(-1, &components);
-    assert(!components.empty());
     
 
     std::list<ImageComponents> requestedComponents;
@@ -3082,7 +3077,7 @@ ViewerInstance::onInputChanged(int /*inputNb*/)
 
 
 void
-ViewerInstance::onMetaDatasRefreshed()
+ViewerInstance::onMetaDatasRefreshed(const NodeMetadata& /*metadata*/)
 {
     Q_EMIT clipPreferencesChanged();
 }

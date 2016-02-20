@@ -2600,8 +2600,9 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
     RectI roi;
     
     std::list<ImageComponents> components;
+    components.push_back(effect->getComponents(-1));
     ImageBitDepthEnum imageDepth = effect->getBitDepth(-1);
-    effect->getComponents(-1, &components);
+    
     
     const double par = effect->getAspectRatio(-1);
     

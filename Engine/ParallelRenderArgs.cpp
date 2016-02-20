@@ -255,9 +255,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                 RenderScale scale(Image::getScaleFromMipMapLevel(originalMipMapLevel));
                                 
                                 ///Render the input image with the bit depth of its preference
-                                std::list<ImageComponents> inputPrefComps;
                                 ImageBitDepthEnum inputPrefDepth = inputEffect->getBitDepth(-1);
-                                inputEffect->getComponents(-1/*it2->first*/, &inputPrefComps);
                                 std::list<ImageComponents> componentsToRender;
                                 
                                 assert(compsNeeded);

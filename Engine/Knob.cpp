@@ -2652,13 +2652,13 @@ KnobHelper::getCanUndo() const
 
 
 void
-KnobHelper::setIsClipPreferencesSlave(bool slave)
+KnobHelper::setIsMetadataSlave(bool slave)
 {
     _imp->isClipPreferenceSlave = slave;
 }
 
 bool
-KnobHelper::getIsClipPreferencesSlave() const
+KnobHelper::getIsMetadataSlave() const
 {
     return _imp->isClipPreferenceSlave;
 }

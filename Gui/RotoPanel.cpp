@@ -1240,7 +1240,7 @@ RotoPanel::onRotoItemShapeColorChanged()
 }
 
 void
-RotoPanel::onRotoItemCompOperatorChanged(ViewIdx /*view*/, int /*dim*/,
+RotoPanel::onRotoItemCompOperatorChanged(ViewSpec /*view*/, int /*dim*/,
                                          int reason)
 {
     if ( (ValueChangedReasonEnum)reason == eValueChangedReasonSlaveRefresh ) {

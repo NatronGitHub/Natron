@@ -838,13 +838,9 @@ EffectInstance::getImage(int inputNb,
     
     ImageBitDepthEnum depth = getBitDepth(inputNb);
     
-    ImageComponents components,clipPrefComps;
-    {
-        std::list<ImageComponents> compsList;
-        getComponents(inputNb,&compsList);
-        assert(!compsList.empty());
-        clipPrefComps = compsList.front();
-    }
+    ImageComponents components;
+    ImageComponents clipPrefComps = getComponents(inputNb);
+
     if (layer) {
         components = *layer;
     } else {
@@ -950,10 +946,7 @@ EffectInstance::getImage(int inputNb,
         }
         qDebug() << "WARNING:"<< getNode()->getScriptName_mt_safe().c_str() << "requested" << cc.getComponentsGlobalName().c_str() << "but" << inputEffect->getScriptName_mt_safe().c_str() << "returned an image with"
         << inputImg->getComponents().getComponentsGlobalName().c_str();
-        std::list<ImageComponents> comps;
-        inputEffect->getComponents(-1, &comps);
-        assert(!comps.empty());
-        qDebug() << inputEffect->getScriptName_mt_safe().c_str() << "output clip preference is" << comps.front().getComponentsGlobalName().c_str();
+        qDebug() << inputEffect->getScriptName_mt_safe().c_str() << "output clip preference is" << inputEffect->getComponents(-1).getComponentsGlobalName().c_str();
     }
 
 #endif
@@ -1850,7 +1843,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
                                                       const double par,
                                                       const bool byPassCache,
                                                       const ImageBitDepthEnum outputClipPrefDepth,
-                                                      const std::list<ImageComponents> & outputClipPrefsComps,
+                                                      const ImageComponents & outputClipPrefsComps,
                                                       const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
                                                       const std::bitset<4>& processChannels,
                                                       const boost::shared_ptr<ImagePlanesToRender> & planes) // when MT, planes is a copy so there's is no data race
@@ -2110,7 +2103,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                                               const bool byPassCache,
                                               const bool bitmapMarkedForRendering,
                                               const ImageBitDepthEnum outputClipPrefDepth,
-                                              const std::list<ImageComponents> & outputClipPrefsComps,
+                                              const ImageComponents & outputClipPrefsComps,
                                               const std::bitset<4>& processChannels,
                                               const boost::shared_ptr<Image> & originalInputImage,
                                               const boost::shared_ptr<Image> & maskImage,
@@ -2149,20 +2142,16 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
 
     actionArgs.roi = renderMappedRectToRender;
 
-    assert( !outputClipPrefsComps.empty() );
-
     if (tls->currentRenderArgs.isIdentity) {
         std::list<ImageComponents> comps;
         
         for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
             //If color plane, request the preferred comp of the identity input
             if (tls->currentRenderArgs.identityInput && it->second.renderMappedImage->getComponents().isColorPlane()) {
-                std::list<ImageComponents> prefInputComps;
-                tls->currentRenderArgs.identityInput->getComponents(-1, &prefInputComps);
-                assert(!prefInputComps.empty());
-                comps.push_back(prefInputComps.front());
+                ImageComponents prefInputComps = tls->currentRenderArgs.identityInput->getComponents(-1);
+                comps.push_back(prefInputComps);
             } else {
-                comps.push_back( it->second.renderMappedImage->getComponents() );
+                comps.push_back(it->second.renderMappedImage->getComponents());
             }
         }
         assert( !comps.empty() );
@@ -2296,7 +2285,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
         if (multiPlanar) {
             prefComp = _publicInterface->getNode()->findClosestSupportedComponents( -1, it->second.renderMappedImage->getComponents() );
         } else {
-            prefComp = Node::findClosestInList(it->second.renderMappedImage->getComponents(), outputClipPrefsComps, multiPlanar);
+            prefComp = outputClipPrefsComps;
         }
 
         if ( ( it->second.renderMappedImage->usesBitMap() || ( prefComp != it->second.renderMappedImage->getComponents() ) ||
@@ -2460,7 +2449,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                 }
                 
                 if (mappedOriginalInputImage) {
-                    it->second.tmpImage->copyUnProcessedChannels(renderMappedRectToRender, planes.outputPremult, originalImagePremultiplication, processChannels, mappedOriginalInputImage);
+                    it->second.tmpImage->copyUnProcessedChannels(renderMappedRectToRender, planes.outputPremult, originalImagePremultiplication, processChannels, mappedOriginalInputImage, true);
                     if (useMaskMix) {
                         it->second.tmpImage->applyMaskMix(renderMappedRectToRender, maskImage.get(), mappedOriginalInputImage.get(), doMask, false, mix);
                     }
@@ -2524,7 +2513,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                     }
                 }
 
-                it->second.downscaleImage->copyUnProcessedChannels(actionArgs.roi, planes.outputPremult, originalImagePremultiplication, processChannels, originalInputImage);
+                it->second.downscaleImage->copyUnProcessedChannels(actionArgs.roi, planes.outputPremult, originalImagePremultiplication, processChannels, originalInputImage, true);
                 if (useMaskMix) {
                     it->second.downscaleImage->applyMaskMix(actionArgs.roi, maskImage.get(), originalInputImage.get(), doMask, false, mix);
                 }
@@ -3776,16 +3765,12 @@ EffectInstance::getComponentsNeededAndProduced(double time,
     *passThroughTime = time;
     *passThroughView = view;
 
-    std::list<ImageComponents> outputComp;
-    getComponents(-1, &outputComp);
+    ImageComponents outputComp = getComponents(-1);
 
     std::vector<ImageComponents> outputCompVec;
-    for (std::list<ImageComponents>::iterator it = outputComp.begin(); it != outputComp.end(); ++it) {
-        outputCompVec.push_back(*it);
-    }
-
-
-    comps->insert( std::make_pair(-1, outputCompVec) );
+    outputCompVec.push_back(outputComp);
+    
+    comps->insert(std::make_pair(-1, outputCompVec));
 
     NodePtr firstConnectedOptional;
     for (int i = 0; i < getMaxInputCount(); ++i) {
@@ -3797,14 +3782,12 @@ EffectInstance::getComponentsNeededAndProduced(double time,
             continue;
         }
 
-        std::list<ImageComponents> comp;
-        getComponents(i, &comp);
+        ImageComponents comp = getComponents(i);
 
         std::vector<ImageComponents> compVect;
-        for (std::list<ImageComponents>::iterator it = comp.begin(); it != comp.end(); ++it) {
-            compVect.push_back(*it);
-        }
-        comps->insert( std::make_pair(i, compVect) );
+        compVect.push_back(comp);
+        
+        comps->insert(std::make_pair(i, compVect));
 
         if ( !isInputOptional(i) ) {
             *passThroughInput = node;
@@ -3862,23 +3845,18 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
             ok = getNode()->getSelectedLayer(-1, processChannels, processAllRequested, &layer);
         }
 
-        std::list<ImageComponents> clipPrefsComps;
-        getComponents(-1, &clipPrefsComps);
+        ImageComponents clipPrefsComps = getComponents(-1);
         
         if (ok && layer.getNumComponents() != 0 && !layer.isColorPlane()) {
             
             compVec.push_back(layer);
             
-            for (std::list<ImageComponents>::iterator it = clipPrefsComps.begin(); it != clipPrefsComps.end(); ++it) {
-                if (!(*it).isColorPlane()) {
-                    compVec.push_back(*it);
-                }
+            if (!clipPrefsComps.isColorPlane()) {
+                compVec.push_back(clipPrefsComps);
             }
             
         } else {
-            for (std::list<ImageComponents>::iterator it = clipPrefsComps.begin(); it != clipPrefsComps.end(); ++it) {
-                compVec.push_back(*it);
-            }
+            compVec.push_back(clipPrefsComps);
         }
         
         comps->insert( std::make_pair(-1, compVec) );
@@ -3908,13 +3886,7 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
                     compVec.push_back(layer);
                 } else {
                     //Use regular clip preferences
-                    std::list<ImageComponents> components;
-                    getComponents(i, &components);
-                    for (std::list<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
-                        //if (it->isColorPlane()) {
-                        compVec.push_back(*it);
-                        //}
-                    }
+                    compVec.push_back(getComponents(i));
                 }
             } else if ( (channelMask != -1) && (maskComp.getNumComponents() > 0) ) {
                 std::vector<ImageComponents> compVec;
@@ -3922,13 +3894,7 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
                 comps->insert( std::make_pair(i, compVec) );
             } else {
                 //Use regular clip preferences
-                std::list<ImageComponents> components;
-                getComponents(i, &components);
-                for (std::list<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
-                    //if (it->isColorPlane()) {
-                    compVec.push_back(*it);
-                    //}
-                }
+                compVec.push_back(getComponents(i));
             }
             comps->insert( std::make_pair(i, compVec) );
         }
@@ -4097,7 +4063,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         originatedFromMainThread && reason != eValueChangedReasonTimeChanged) {
         
         ///Run the following only in the main-thread
-        if (k->getIsClipPreferencesSlave() && node->isNodeCreated()) {
+        if (k->getIsMetadataSlave() && node->isNodeCreated()) {
             refreshMetaDatas_public(true);
         }
         if (hasOverlay() && node->shouldDrawOverlay() && !node->hasHostOverlayForParam(k)) {
@@ -4541,93 +4507,202 @@ EffectInstance::isPaintingOverItselfEnabled() const
     return isDuringPaintStrokeCreationThreadLocal();
 }
 
+
+
 StatusEnum
 EffectInstance::getPreferredMetaDatas_public(NodeMetadata& metadata)
 {
-    StatusEnum stat = setDefaultMetadata(metadata);
+    StatusEnum stat = getDefaultMetadata(metadata);
     if (stat == eStatusFailed) {
         return stat;
     }
     return getPreferredMetaDatas(metadata);
 }
 
+static ImageComponents getUnmappedComponentsForInput(EffectInstance* self,
+                                                     int inputNb,
+                                                     const std::vector<EffectInstPtr>& inputs,
+                                                     const ImageComponents& firstNonOptionalConnectedInputComps)
+{
+    ImageComponents rawComps;
+    if (inputs[inputNb]) {
+        rawComps = inputs[inputNb]->getComponents(-1);
+    } else {
+        ///The node is not connected but optional, return the closest supported components
+        ///of the first connected non optional input.
+        rawComps = firstNonOptionalConnectedInputComps;
+    }
+    if (rawComps) {
+        if (!rawComps.isColorPlane()) {
+            //this is not the color plane, don't remap
+            return rawComps;
+        } else {
+            rawComps = self->findClosestSupportedComponents(inputNb, rawComps); //turn that into a comp the plugin expects on that clip
+            
+        }
+    }
+    if (!rawComps) {
+        rawComps = ImageComponents::getRGBAComponents(); // default to RGBA
+    }
+    return rawComps;
+}
+
 StatusEnum
-EffectInstance::setDefaultMetadata(NodeMetadata &metadata)
+EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
 {
     NodePtr node = getNode();
     if (!node) {
         return eStatusFailed;
     }
-    NodePtr prefInputNode = node->getPreferredInputNode();
-    EffectInstPtr prefInput;
-    if (prefInputNode) {
-        prefInput = prefInputNode->getEffectInstance();
-    }
-    int nInputs = getMaxInputCount();
-    metadata.inputsData.resize(nInputs);
     
-    metadata.canRenderAtNonframes = false;
-    metadata.outputFielding = eImageFieldingOrderNone;
-    metadata.isFrameVarying = node->hasAnimatedKnob();
+    const bool multiBitDepth = supportsMultipleClipsBitDepth();
+    
+    int nInputs = getMaxInputCount();
+    metadata.clearAndResize(nInputs);
 
-    if (!prefInput) {
-        Format f;
-        getApp()->getProject()->getProjectDefaultFormat(&f);
-        metadata.frameRate = getApp()->getProjectFrameRate();
-        metadata.outputPremult = eImagePremultiplicationPremultiplied;
-        metadata.outputData.bitdepth = eImageBitDepthFloat;
-        metadata.outputData.components.push_back(ImageComponents::getRGBAComponents());
-        metadata.outputData.pixelAspectRatio = f.getPixelAspectRatio();
-        for (int i = 0; i < nInputs; ++i) {
-            metadata.inputsData[i].components.push_back(ImageComponents::getRGBAComponents());
-            metadata.inputsData[i].pixelAspectRatio = f.getPixelAspectRatio();
-            metadata.inputsData[i].bitdepth = eImageBitDepthFloat;
-        }
-    } else {
-        metadata.frameRate = prefInput->getFrameRate();
-        metadata.outputPremult = prefInput->getPremult();
-        prefInput->getComponents(-1,&metadata.outputData.components);
-        metadata.outputData.bitdepth = prefInput->getBitDepth(-1);
-        metadata.outputData.pixelAspectRatio = prefInput->getAspectRatio(-1);
-
-        
-        for (int i = 0; i < nInputs; ++i) {
-            prefInput->getComponents(-1,&metadata.inputsData[i].components);
-            metadata.inputsData[i].pixelAspectRatio = metadata.outputData.pixelAspectRatio;
-            metadata.inputsData[i].bitdepth = metadata.outputData.bitdepth;
+    // OK find the deepest chromatic component on our input clips and the one with the
+    // most components
+    bool hasSetCompsAndDepth = false;
+    ImageBitDepthEnum deepestBitDepth = eImageBitDepthNone;
+    ImageComponents mostComponents;
+    
+    //Default to the project frame rate
+    double frameRate = getApp()->getProjectFrameRate();
+    
+    std::vector<EffectInstPtr> inputs(nInputs);
+    
+    // Find the components of the first non optional connected input
+    // They will be used for disconnected input
+    ImageComponents firstNonOptionalConnectedInputComps;
+    for (std::size_t i = 0; i < inputs.size(); ++i) {
+        inputs[i] = getInput(i);
+        if (!firstNonOptionalConnectedInputComps && inputs[i] && !isInputOptional(i)) {
+            firstNonOptionalConnectedInputComps = inputs[i]->getComponents(-1);
         }
     }
+    
+    ImagePremultiplicationEnum premult;
+    bool premultSet = false;
+    for (int i = 0; i < nInputs; ++i) {
+        const EffectInstPtr& input = inputs[i];
+        if (input) {
+            frameRate = std::max(frameRate, input->getFrameRate());
+        }
+        
+        ImageComponents rawComp = getUnmappedComponentsForInput(this, i, inputs, firstNonOptionalConnectedInputComps);
+       
+        ImageBitDepthEnum rawDepth = input ? input->getBitDepth(-1) : eImageBitDepthFloat;
+        ImagePremultiplicationEnum rawPreMult = input ? input->getPremult() : eImagePremultiplicationPremultiplied;
+        
+        if (rawComp.isColorPlane()) {
+            // Note: first chromatic input gives the default output premult too, even if not connected
+            // (else the output of generators may be opaque even if the host default is premultiplied)
+            if (rawComp == ImageComponents::getRGBAComponents() && (input || !premultSet)) {
+                if (rawPreMult == eImagePremultiplicationPremultiplied) {
+                    premult = eImagePremultiplicationPremultiplied;
+                    premultSet = true;
+                } else if (rawPreMult == eImagePremultiplicationUnPremultiplied && premult != eImagePremultiplicationPremultiplied) {
+                    premult = eImagePremultiplicationUnPremultiplied;
+                    premultSet = true;
+                }
+            }
+            
+            if (input) {
+                //Update deepest bitdepth and most components only if the infos are relevant, i.e: only if the clip is connected
+                hasSetCompsAndDepth = true;
+                if (getSizeOfForBitDepth(deepestBitDepth) < getSizeOfForBitDepth(rawDepth)) {
+                    deepestBitDepth = rawDepth;
+                }
+                
+                if (rawComp.getNumComponents() > mostComponents.getNumComponents()) {
+                    mostComponents = rawComp;
+                }
+                
+            }
+        }
+        
+    } // for each input
+
+    if (!hasSetCompsAndDepth) {
+        mostComponents = ImageComponents::getRGBAComponents();
+        deepestBitDepth = eImageBitDepthFloat;
+    }
+    
+    // set some stuff up
+    metadata.setOutputFrameRate(frameRate);
+    metadata.setOutputFielding(eImageFieldingOrderNone);
+    metadata.setIsFrameVarying(node->hasAnimatedKnob());
+    metadata.setIsContinuous(false);
+    
+    // now find the best depth that the plugin supports
+    deepestBitDepth = node->getClosestSupportedBitDepth(deepestBitDepth);
+    
+    // now add the input gubbins to the per inputs metadatas
+    for (int i = -1; i < (int)inputs.size(); ++i) {
+        
+        EffectInstance* effect = 0;
+        if (i >= 0) {
+            effect = inputs[i].get();
+        } else {
+            effect = this;
+        }
+    
+        
+        if (i == -1 || isInputOptional(i)) {
+            // "Optional input clips can always have their component types remapped"
+            // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#id482755
+            ImageBitDepthEnum depth = deepestBitDepth;
+            ImageComponents remappedComps;
+            if (!mostComponents.isColorPlane()) {
+                // hmm custom component type, don't touch it and pass it through
+                metadata.setImageComponents(i, mostComponents);
+            } else {
+                remappedComps = mostComponents;
+                remappedComps = findClosestSupportedComponents(i, remappedComps);
+                metadata.setImageComponents(i, remappedComps);
+                if (i == -1 && !premultSet &&
+                    (remappedComps == ImageComponents::getRGBAComponents() || remappedComps == ImageComponents::getAlphaComponents())) {
+                    premult = eImagePremultiplicationPremultiplied;
+                    premultSet = true;
+                }
+            }
+            
+            metadata.setBitDepth(i, depth);
+            
+        } else {
+            ImageComponents rawComps = getUnmappedComponentsForInput(this, i, inputs, firstNonOptionalConnectedInputComps);
+            ImageBitDepthEnum rawDepth = effect ? effect->getBitDepth(-1) : eImageBitDepthFloat;
+            
+            if (rawComps.isColorPlane()) {
+                ImageBitDepthEnum depth = multiBitDepth ? node->getClosestSupportedBitDepth(rawDepth) : deepestBitDepth;
+                metadata.setBitDepth(i,depth);
+            } else {
+                metadata.setBitDepth(i,rawDepth);
+            }
+            metadata.setImageComponents(i,rawComps);
+        }
+    }
+    // default to a reasonable value if there is no input
+    if (!premultSet) {
+        premult = eImagePremultiplicationOpaque;
+    }
+    // set output premultiplication
+    metadata.setOutputPremult(premult);
     return eStatusOK;
 }
 
-void
-EffectInstance::getComponents(int inputNb,  std::list<ImageComponents>* comps) const
+ImageComponents
+EffectInstance::getComponents(int inputNb) const
 {
     QMutexLocker k(&_imp->metadatasMutex);
-    if (inputNb == -1) {
-        *comps = _imp->metadatas.outputData.components;
-    } else {
-        if ((int)_imp->metadatas.inputsData.size() > inputNb) {
-            *comps = _imp->metadatas.inputsData[inputNb].components;
-        } else {
-            comps->push_back(ImageComponents::getNoneComponents());
-        }
-    }
+    return _imp->metadatas.getImageComponents(inputNb);
 }
 
 ImageBitDepthEnum
 EffectInstance::getBitDepth(int inputNb) const
 {
     QMutexLocker k(&_imp->metadatasMutex);
-    if (inputNb == -1) {
-        return _imp->metadatas.outputData.bitdepth;
-    } else {
-        if ((int)_imp->metadatas.inputsData.size() > inputNb) {
-            return _imp->metadatas.inputsData[inputNb].bitdepth;
-        } else {
-            return eImageBitDepthFloat;
-        }
-    }
+    return _imp->metadatas.getBitDepth(inputNb);
 }
 
 
@@ -4635,43 +4710,35 @@ double
 EffectInstance::getFrameRate() const
 {
     QMutexLocker k(&_imp->metadatasMutex);
-    return _imp->metadatas.frameRate;
+    return _imp->metadatas.getOutputFrameRate();
 }
 
 double
 EffectInstance::getAspectRatio(int inputNb) const
 {
     QMutexLocker k(&_imp->metadatasMutex);
-    if (inputNb == -1) {
-        return _imp->metadatas.outputData.pixelAspectRatio;
-    } else {
-        if ((int)_imp->metadatas.inputsData.size() > inputNb) {
-            return _imp->metadatas.inputsData[inputNb].pixelAspectRatio;
-        } else {
-            return 1.;
-        }
-    }
+    return _imp->metadatas.getPixelAspectRatio(inputNb);
 }
 
 ImagePremultiplicationEnum
 EffectInstance::getPremult() const
 {
     QMutexLocker k(&_imp->metadatasMutex);
-    return _imp->metadatas.outputPremult;
+    return _imp->metadatas.getOutputPremult();
 }
 
 bool
 EffectInstance::isFrameVarying() const
 {
     QMutexLocker k(&_imp->metadatasMutex);
-    return _imp->metadatas.isFrameVarying;
+    return _imp->metadatas.getIsFrameVarying();
 }
 
 bool
 EffectInstance::canRenderContinuously() const
 {
     QMutexLocker k(&_imp->metadatasMutex);
-    return _imp->metadatas.canRenderAtNonframes;
+    return _imp->metadatas.getIsContinuous();
 }
 
 /**
@@ -4681,7 +4748,7 @@ ImageFieldingOrderEnum
 EffectInstance::getFieldingOrder() const
 {
     QMutexLocker k(&_imp->metadatasMutex);
-    return _imp->metadatas.outputFielding;
+    return _imp->metadatas.getOutputFielding();
 }
 
 bool
@@ -4739,10 +4806,24 @@ static void setComponentsDirty_recursive(const Node* node, std::list<const Node*
     
 }
 
+void
+EffectInstance::setDefaultMetadata()
+{
+    NodeMetadata metadata;
+    StatusEnum stat = getDefaultMetadata(metadata);
+    if (stat == eStatusFailed) {
+        return;
+    }
+    {
+        QMutexLocker k(&_imp->metadatasMutex);
+        _imp->metadatas = metadata;
+    }
+    onMetaDatasRefreshed(metadata);
+}
+
 bool
 EffectInstance::refreshMetaDatas_internal()
 {
-    getNode()->checkForPremultWarningAndCheckboxes();
     
     NodeMetadata metadata;
     getPreferredMetaDatas_public(metadata);
@@ -4756,8 +4837,9 @@ EffectInstance::refreshMetaDatas_internal()
             _imp->metadatas = metadata;
         }
     }
+    onMetaDatasRefreshed(metadata);
     if (ret) {
-        onMetaDatasRefreshed();
+        getNode()->checkForPremultWarningAndCheckboxes();
     }
     return ret;
 }
@@ -4801,7 +4883,7 @@ EffectInstance::refreshMetaDatas_public(bool recurse)
  * check for warnings
  **/
 void
-EffectInstance::Implementation::checkMetadata(NodeMetadata &metadata)
+EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
 {
 
     NodePtr node = _publicInterface->getNode();
@@ -4809,36 +4891,35 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &metadata)
         return;
     }
     //Make sure it is valid
-    metadata.outputData.bitdepth = node->getClosestSupportedBitDepth(metadata.outputData.bitdepth);
-    for (std::list<ImageComponents>::iterator it = metadata.outputData.components.begin(); it != metadata.outputData.components.end(); ++it) {
-        *it = node->findClosestSupportedComponents(-1, *it);
-        
-        //Force opaque for RGB and premult for alpha
-        if (*it == ImageComponents::getRGBComponents()) {
-            metadata.outputPremult = eImagePremultiplicationOpaque;
-        } else if (*it == ImageComponents::getAlphaComponents()) {
-            metadata.outputPremult = eImagePremultiplicationPremultiplied;
-        }
-    }
-    
     int nInputs = node->getMaxInputCount();
-    for (int i = 0; i < nInputs; ++i) {
-        metadata.inputsData[i].bitdepth = node->getClosestSupportedBitDepth(metadata.inputsData[i].bitdepth);
-        for (std::list<ImageComponents>::iterator it = metadata.inputsData[i].components.begin(); it != metadata.inputsData[i].components.end(); ++it) {
-            *it = node->findClosestSupportedComponents(i, *it);
+    
+    for (int i = -1 ; i < nInputs; ++i) {
+        md.setBitDepth(i, node->getClosestSupportedBitDepth(md.getBitDepth(i)));
+        ImageComponents comps = md.getImageComponents(i);
+        bool isAlpha = false;
+        bool isRGB = false;
+        if (i == -1) {
+            if (comps == ImageComponents::getRGBComponents()) {
+                isRGB = true;
+            } else if (comps == ImageComponents::getAlphaComponents()) {
+                isAlpha = true;
+            }
+        }
+        if (comps.isColorPlane()) {
+            comps = node->findClosestSupportedComponents(i, comps);
+        }
+        md.setImageComponents(i, comps);
+        if (i == -1) {
+            //Force opaque for RGB and premult for alpha
+            if (isRGB) {
+                md.setOutputPremult(eImagePremultiplicationOpaque);
+            } else if (isAlpha) {
+                md.setOutputPremult(eImagePremultiplicationPremultiplied);
+            }
         }
     }
     
-    
-    /// Remap Disparity and Motion vectors to generic XY if possible
-    /// Commented out, not sure if needed anymore
-   /* if ((foundOutputPrefs->second.components == kFnOfxImageComponentMotionVectors ||
-         foundOutputPrefs->second.components == kFnOfxImageComponentStereoDisparity) &&
-        outputClip->isSupportedComponent(kNatronOfxImageComponentXY)) {
-        foundOutputPrefs->second.components = kNatronOfxImageComponentXY;
-        outputModified = true;
-    }*/
-    
+   
     
     ///Set a warning on the node if the bitdepth conversion from one of the input clip to the output clip is lossy
     QString bitDepthWarning;
@@ -4851,44 +4932,96 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &metadata)
     for (int i = 0; i < nInputs; ++i) {
         inputs[i] = _publicInterface->getInput(i);
     }
+    
+    
+    ImageBitDepthEnum outputDepth = md.getBitDepth(-1);
+    double outputPAR = md.getPixelAspectRatio(-1);
+    
+    double inputPar = 1.;
+    bool inputParSet = false;
+    bool mustWarnPar = false;
+    bool outputFrameRateSet = false;
+    double outputFrameRate = md.getOutputFrameRate();
+    bool mustWarnFPS = false;
+    
     for (int i = 0; i < nInputs; ++i) {
+        
         //Check that the bitdepths are all the same if the plug-in doesn't support multiple depths
-        if (!supportsMultipleDepth && metadata.inputsData[i].bitdepth != metadata.outputData.bitdepth) {
-            metadata.inputsData[i].bitdepth = metadata.outputData.bitdepth;
+        if (!supportsMultipleDepth && md.getBitDepth(i) != outputDepth) {
+            md.setBitDepth(i, outputDepth);
         }
         
         if (!inputs[i]) {
             continue;
         }
         
+        const double pixelAspect = md.getPixelAspectRatio(i);
+        const double fps = inputs[i]->getFrameRate();
+        
+        if (!supportsMultiplePARS) {
+            if (!inputParSet) {
+                inputPar = pixelAspect;
+                inputParSet = true;
+            } else if (inputPar != pixelAspect) {
+                // We have several inputs with different aspect ratio, which should be forbidden by the host.
+                mustWarnPar = true;
+            }
+        }
+        
+        if (!outputFrameRateSet) {
+            outputFrameRate = fps;
+            outputFrameRateSet = true;
+        } else if (std::abs(outputFrameRate - fps) > 0.01) {
+            // We have several inputs with different frame rates
+            mustWarnFPS = true;
+        }
         
         
-        ///Try to remap the input bitdepth to be the same as the output bitdepth
         ImageBitDepthEnum inputOutputDepth = inputs[i]->getBitDepth(-1);
         
-        
-        ///If the bit-depth conversion will be lossy, warn the user
-        if (Image::isBitDepthConversionLossy(inputOutputDepth, metadata.inputsData[i].bitdepth) ) {
+        //If the bit-depth conversion will be lossy, warn the user
+        if (Image::isBitDepthConversionLossy(inputOutputDepth, md.getBitDepth(i))) {
             bitDepthWarning.append(tr("This nodes converts higher bit depths images from its inputs to work. As "
                                "a result of this process, the quality of the images is degraded. The following conversions are done: \n"));
             bitDepthWarning.append(inputs[i]->getNode()->getLabel_mt_safe().c_str());
             bitDepthWarning.append(" (" + QString(Image::getDepthString(inputOutputDepth).c_str()) + ")");
             bitDepthWarning.append(" ----> ");
             bitDepthWarning.append(node->getLabel_mt_safe().c_str());
-            bitDepthWarning.append(" (" + QString(Image::getDepthString(metadata.inputsData[i].bitdepth).c_str()) + ")");
+            bitDepthWarning.append(" (" + QString(Image::getDepthString(md.getBitDepth(i)).c_str()) + ")");
             bitDepthWarning.append('\n');
             setBitDepthWarning = true;
         }
         
         
         
-        if (!supportsMultiplePARS && metadata.inputsData[i].pixelAspectRatio != metadata.outputData.pixelAspectRatio) {
+        if (!supportsMultiplePARS && pixelAspect != outputPAR) {
             qDebug() << node->getScriptName_mt_safe().c_str() << ": The input "<< inputs[i]->getNode()->getScriptName_mt_safe().c_str()
-            << ") has a pixel aspect ratio (" << metadata.inputsData[i].pixelAspectRatio
-            << ") different than the output clip (" << metadata.outputData.pixelAspectRatio << ") but it doesn't support multiple clips PAR. "
+            << ") has a pixel aspect ratio (" << md.getPixelAspectRatio(i)
+            << ") different than the output clip (" << outputPAR << ") but it doesn't support multiple clips PAR. "
             << "This should have been handled earlier before connecting the nodes, @see Node::canConnectInput.";
         }
         
+    }
+    
+#pragma message WARN("Do not use a persistent message here")
+    if (mustWarnFPS) {
+        node->setPersistentMessage(eMessageTypeWarning, QObject::tr("Several input with different pixel aspect ratio or different frame rates "
+                                                                    "is not handled correctly by this node, please adjust your graph.").toStdString());
+    }
+    
+    if (mustWarnPar && !mustWarnFPS) {
+        node->setPersistentMessage(eMessageTypeWarning, QObject::tr("Several input with different pixel aspect ratio is not "
+                                                                    "handled correctly by this node, please adjust your graph.").toStdString());
+    } else if (!mustWarnPar && mustWarnFPS) {
+        node->setPersistentMessage(eMessageTypeWarning, QObject::tr("Several input with different frame rates is not "
+                                                                    "handled correctly by this node, please adjust your graph.").toStdString());
+    } else if (mustWarnPar && mustWarnFPS) {
+        node->setPersistentMessage(eMessageTypeWarning, QObject::tr("Several input with different pixel aspect ratio and different "
+                                                                    "frame rates is not handled correctly by this node, please adjust your graph.").toStdString());
+    } else {
+        if (node->hasPersistentMessage()) {
+            node->clearPersistentMessage(false);
+        }
     }
     
     

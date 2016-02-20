@@ -294,7 +294,7 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    virtual int getMaxInputCount() const;
+    int getMaxInputCount() const;
 
     /**
      * @brief Returns true if the given input supports the given components. If inputNb equals -1
@@ -1364,22 +1364,14 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
     
-    int _maxInputs;
 
 public:
 
     InspectorNode(AppInstance* app,
                   const boost::shared_ptr<NodeCollection>& group,
-                  Plugin* plugin,
-                  int maxInputs);
+                  Plugin* plugin);
 
     virtual ~InspectorNode();
-
-    virtual int getMaxInputCount() const OVERRIDE
-    {
-        return _maxInputs;
-    }
-
 
 
     /**

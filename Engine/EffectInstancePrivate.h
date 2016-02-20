@@ -291,7 +291,7 @@ struct EffectInstance::Implementation
         double par;
         ImageBitDepthEnum outputClipPrefDepth;
         boost::shared_ptr<ComponentsNeededMap>  compsNeeded;
-        std::list<ImageComponents> outputClipPrefsComps;
+        ImageComponents outputClipPrefsComps;
         bool byPassCache;
         std::bitset<4> processChannels;
         boost::shared_ptr<ImagePlanesToRender> planes;
@@ -314,7 +314,7 @@ struct EffectInstance::Implementation
                                                   const double par,
                                                   const bool byPassCache,
                                                   const ImageBitDepthEnum outputClipPrefDepth,
-                                                  const std::list<ImageComponents> & outputClipPrefsComps,
+                                                  const ImageComponents & outputClipPrefsComps,
                                                   const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
                                                   const std::bitset<4>& processChannels,
                                                   const boost::shared_ptr<ImagePlanesToRender> & planes);
@@ -351,7 +351,7 @@ struct EffectInstance::Implementation
                                           const bool byPassCache,
                                           const bool bitmapMarkedForRendering,
                                           const ImageBitDepthEnum outputClipPrefDepth,
-                                          const std::list<ImageComponents> & outputClipPrefsComps,
+                                          const ImageComponents & outputClipPrefsComps,
                                           const std::bitset<4>& processChannels,
                                           const boost::shared_ptr<Image> & originalInputImage,
                                           const boost::shared_ptr<Image> & maskImage,

@@ -132,6 +132,23 @@ ImageComponents::ImageComponents(const std::string& layerName,
     }
 }
 
+ImageComponents::ImageComponents(const std::string& layerName,
+                const std::string& pairedLayer,
+                const std::string& globalCompName,
+                const char** componentsName,
+                int count)
+: _layerName(layerName)
+, _pairedLayer(pairedLayer)
+, _componentNames()
+, _globalComponentsName(globalCompName)
+{
+    _componentNames.resize(count);
+    for (int i = 0; i < count; ++i) {
+        _componentNames[i] = componentsName[i];
+    }
+}
+
+
 ImageComponents::~ImageComponents()
 {
     
@@ -221,6 +238,19 @@ ImageComponents::getComponentsGlobalName() const
     return _globalComponentsName;
 }
 
+
+bool
+ImageComponents::isPairedComponents() const
+{
+    return !_pairedLayer.empty();
+}
+
+const std::string&
+ImageComponents::getPairedLayerName() const
+{
+    return _pairedLayer;
+}
+
 const ImageComponents&
 ImageComponents::getNoneComponents()
 {
@@ -281,6 +311,21 @@ const ImageComponents&
 ImageComponents::getXYComponents()
 {
     static const ImageComponents comp("XY","xy",xyComps,2);
+    return comp;
+}
+
+const
+ImageComponents&
+ImageComponents::getPairedMotionVectors()
+{
+    static const ImageComponents comp(kFnOfxImagePlaneForwardMotionVector,kFnOfxImagePlaneBackwardMotionVector,kFnOfxImageComponentMotionVectors,motionComps,2);
+    return comp;
+}
+
+const ImageComponents&
+ImageComponents::getPairedStereoDisparity()
+{
+    static const ImageComponents comp(kFnOfxImagePlaneStereoDisparityLeft,kFnOfxImagePlaneStereoDisparityRight,kFnOfxImageComponentStereoDisparity,xyComps,2);
     return comp;
 }
 

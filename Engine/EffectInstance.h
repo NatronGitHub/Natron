@@ -649,12 +649,13 @@ public:
 
     virtual void onChannelsSelectorRefreshed() {}
 
+    void setDefaultMetadata();
 
 protected:
 
     bool refreshMetaDatas_internal();
 
-    virtual void onMetaDatasRefreshed() {}
+    virtual void onMetaDatasRefreshed(const NodeMetadata& /*metadata*/) {}
 
     bool refreshMetaDatas_recursive(std::list<Node*> & markedNodes);
 
@@ -686,7 +687,7 @@ protected:
 
 private:
 
-    StatusEnum setDefaultMetadata(NodeMetadata& metadata);
+    StatusEnum getDefaultMetadata(NodeMetadata& metadata);
 
 public:
 
@@ -700,11 +701,6 @@ public:
      * It is frame varying/animated if at least one of the node is animated/varying
     **/
     bool isFrameVaryingOrAnimated_Recursive() const;
-
-    /**
-     * @brief Returns the preferred output aspect ratio to render with
-     **/
-    double getAspectRatio(int inputNb) const;
 
     /**
      * @brief Returns the preferred output frame rate to render with
@@ -728,10 +724,11 @@ public:
     ImageFieldingOrderEnum getFieldingOrder() const;
 
     /**
-    * @brief Returns the depth and components for the given input.
+    * @brief Returns the pixel aspect ratio, depth and components for the given input.
     * If inputNb equals -1 then this function will check the output components.
     **/
-    void getComponents(int inputNb,  std::list<ImageComponents>* comps) const;
+    double getAspectRatio(int inputNb) const;
+    ImageComponents getComponents(int inputNb) const;
     ImageBitDepthEnum getBitDepth(int inputNb) const;
 
 
@@ -1851,7 +1848,7 @@ private:
                                           bool renderFullScaleThenDownscale,
                                           bool byPassCache,
                                           ImageBitDepthEnum outputClipPrefDepth,
-                                          const std::list<ImageComponents> & outputClipPrefsComps,
+                                          const ImageComponents& outputClipPrefsComps,
                                           const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
                                           std::bitset<4> processChannels);
 
