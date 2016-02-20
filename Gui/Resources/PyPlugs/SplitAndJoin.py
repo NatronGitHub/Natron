@@ -49,12 +49,13 @@ def createInstance(app,group):
     yposition = selectedNodePosition[1] + selectedNodeSize[1] * 3.
     xposition = selectedNodePosition[0] + selectedNodeSize[0] / 2. - totalWidth / 2.
 
-    joinViewsNode = app.createNode("net.sf.openfx.joinViewsPlugin")
+    joinViewsNode = app.createNode("fr.inria.built-in.JoinViews")
     joinViewsNode.setPosition(selectedNodePosition[0], yposition + selectedNodeSize[1] * 3.)
 
     for i, v in enumerate(views):
         oneViewNode = app.createNode("net.sf.openfx.oneViewPlugin")
         oneViewNode.setLabel(v)
+        oneViewNode.getParam("view").set(i)
         oneViewNode.setPosition(xposition,yposition)
         oneViewNode.connectInput(0,selNode)
         joinViewsNode.connectInput(nbviews - i - 1, oneViewNode)

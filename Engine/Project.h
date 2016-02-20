@@ -343,7 +343,8 @@ Q_SIGNALS:
     void projectNameChanged(QString name, bool modified);
 
     void knobsInitialized();
-    
+
+    void projectViewsChanged();
 
 private:
 

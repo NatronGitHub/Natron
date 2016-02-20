@@ -46,6 +46,8 @@ public:
     
     DiskCacheNode(NodePtr node);
     
+    virtual ~DiskCacheNode();
+    
     virtual int getMajorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return 1;

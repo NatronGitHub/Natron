@@ -1266,7 +1266,7 @@ Project::onKnobValueChanged(KnobI* knob,
             ///views change, notify all OneView nodes via getClipPreferences
             forceComputeInputDependentDataOnAllTrees();
         }
-        
+        Q_EMIT projectViewsChanged();
     } else if (knob == _imp->setupForStereoButton.get()) {
         setupProjectForStereo();
     } else if ( knob == _imp->formatKnob.get() ) {

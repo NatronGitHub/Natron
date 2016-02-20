@@ -56,6 +56,11 @@ DiskCacheNode::DiskCacheNode(NodePtr node)
     setSupportsRenderScaleMaybe(eSupportsYes);
 }
 
+DiskCacheNode::~DiskCacheNode()
+{
+    
+}
+
 
 void
 DiskCacheNode::addAcceptedComponents(int /*inputNb*/,std::list<ImageComponents>* comps)
@@ -128,7 +133,7 @@ DiskCacheNode::initializeKnobs()
 void
 DiskCacheNode::knobChanged(KnobI* k,
                            ValueChangedReasonEnum /*reason*/,
-                           ViewSpec view,
+                           ViewSpec /*view*/,
                            double /*time*/,
                            bool /*originatedFromMainThread*/)
 {

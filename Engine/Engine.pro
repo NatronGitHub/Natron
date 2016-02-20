@@ -109,6 +109,7 @@ SOURCES += \
     ImageMaskMix.cpp \
     ImageParamsSerialization.cpp \
     Interpolation.cpp \
+    JoinViewsNode.cpp \
     Knob.cpp \
     KnobSerialization.cpp \
     KnobFactory.cpp \
@@ -266,6 +267,7 @@ HEADERS += \
     ImageParams.h \
     ImageParamsSerialization.h \
     Interpolation.h \
+    JoinViewsNode.h \
     KeyHelper.h \
     Knob.h \
     KnobGuiI.h \
