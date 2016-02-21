@@ -887,14 +887,14 @@ SpinBox::setUseLineColor(bool use, const QColor& color)
 void
 KnobSpinBox::enterEvent(QEvent* e)
 {
-    mouseEnter(e);
+    mouseEnterDnD(e);
     SpinBox::enterEvent(e);
 }
 
 void
 KnobSpinBox::leaveEvent(QEvent* e)
 {
-    mouseLeave(e);
+    mouseLeaveDnD(e);
     SpinBox::leaveEvent(e);
 }
 
@@ -902,7 +902,7 @@ void
 KnobSpinBox::wheelEvent(QWheelEvent* e)
 {
     bool mustIgnore = false;
-    if (!mouseWheel(e)) {
+    if (!mouseWheelDnD(e)) {
         mustIgnore = true;
         ignoreWheelEvent = true;
     }
@@ -915,21 +915,21 @@ KnobSpinBox::wheelEvent(QWheelEvent* e)
 void
 KnobSpinBox::keyPressEvent(QKeyEvent* e)
 {
-    keyPress(e);
+    keyPressDnD(e);
     SpinBox::keyPressEvent(e);
 }
 
 void
 KnobSpinBox::keyReleaseEvent(QKeyEvent* e)
 {
-    keyRelease(e);
+    keyReleaseDnD(e);
     SpinBox::keyReleaseEvent(e);
 }
 
 void
 KnobSpinBox::mousePressEvent(QMouseEvent* e)
 {
-    if (!mousePress(e)) {
+    if (!mousePressDnD(e)) {
         SpinBox::mousePressEvent(e);
     }
 }
@@ -937,7 +937,7 @@ KnobSpinBox::mousePressEvent(QMouseEvent* e)
 void
 KnobSpinBox::mouseMoveEvent(QMouseEvent* e)
 {
-    if (!mouseMove(e)) {
+    if (!mouseMoveDnD(e)) {
         SpinBox::mouseMoveEvent(e);
     }
 }
@@ -945,7 +945,7 @@ KnobSpinBox::mouseMoveEvent(QMouseEvent* e)
 void
 KnobSpinBox::mouseReleaseEvent(QMouseEvent* e)
 {
-    mouseRelease(e);
+    mouseReleaseDnD(e);
     SpinBox::mouseReleaseEvent(e);
 
 }
@@ -953,7 +953,7 @@ KnobSpinBox::mouseReleaseEvent(QMouseEvent* e)
 void
 KnobSpinBox::dragEnterEvent(QDragEnterEvent* e)
 {
-    if (!dragEnter(e)) {
+    if (!dragEnterDnD(e)) {
         SpinBox::dragEnterEvent(e);
     }
 }
@@ -961,14 +961,14 @@ KnobSpinBox::dragEnterEvent(QDragEnterEvent* e)
 void
 KnobSpinBox::dragMoveEvent(QDragMoveEvent* e)
 {
-    if (!dragMove(e)) {
+    if (!dragMoveDnD(e)) {
         SpinBox::dragMoveEvent(e);
     }
 }
 void
 KnobSpinBox::dropEvent(QDropEvent* e)
 {
-    if (!drop(e)) {
+    if (!dropDnD(e)) {
         SpinBox::dropEvent(e);
     }
 }
@@ -976,7 +976,7 @@ KnobSpinBox::dropEvent(QDropEvent* e)
 void
 KnobSpinBox::focusInEvent(QFocusEvent* e)
 {
-    focusIn();
+    focusInDnD();
     SpinBox::focusInEvent(e);
     
     
@@ -993,7 +993,7 @@ KnobSpinBox::focusInEvent(QFocusEvent* e)
 void
 KnobSpinBox::focusOutEvent(QFocusEvent* e)
 {
-    focusOut();
+    focusOutDnD();
     SpinBox::focusOutEvent(e);
 }
 

@@ -100,35 +100,35 @@ Bool_CheckBox::getBackgroundColor(double *r,double *g,double *b) const
 void
 Bool_CheckBox::enterEvent(QEvent* e)
 {
-    mouseEnter(e);
+    mouseEnterDnD(e);
     AnimatedCheckBox::enterEvent(e);
 }
 
 void
 Bool_CheckBox::leaveEvent(QEvent* e)
 {
-    mouseLeave(e);
+    mouseLeaveDnD(e);
     AnimatedCheckBox::leaveEvent(e);
 }
 
 void
 Bool_CheckBox::keyPressEvent(QKeyEvent* e)
 {
-    keyPress(e);
+    keyPressDnD(e);
     AnimatedCheckBox::keyPressEvent(e);
 }
 
 void
 Bool_CheckBox::keyReleaseEvent(QKeyEvent* e)
 {
-    keyRelease(e);
+    keyReleaseDnD(e);
     AnimatedCheckBox::keyReleaseEvent(e);
 }
 
 void
 Bool_CheckBox::mousePressEvent(QMouseEvent* e)
 {
-    if (!mousePress(e)) {
+    if (!mousePressDnD(e)) {
         AnimatedCheckBox::mousePressEvent(e);
     }
 }
@@ -136,7 +136,7 @@ Bool_CheckBox::mousePressEvent(QMouseEvent* e)
 void
 Bool_CheckBox::mouseMoveEvent(QMouseEvent* e)
 {
-    if (!mouseMove(e)) {
+    if (!mouseMoveDnD(e)) {
         AnimatedCheckBox::mouseMoveEvent(e);
     }
 }
@@ -144,7 +144,7 @@ Bool_CheckBox::mouseMoveEvent(QMouseEvent* e)
 void
 Bool_CheckBox::mouseReleaseEvent(QMouseEvent* e)
 {
-    mouseRelease(e);
+    mouseReleaseDnD(e);
     AnimatedCheckBox::mouseReleaseEvent(e);
     
 }
@@ -152,7 +152,7 @@ Bool_CheckBox::mouseReleaseEvent(QMouseEvent* e)
 void
 Bool_CheckBox::dragEnterEvent(QDragEnterEvent* e)
 {
-    if (!dragEnter(e)) {
+    if (!dragEnterDnD(e)) {
         AnimatedCheckBox::dragEnterEvent(e);
     }
 }
@@ -160,14 +160,14 @@ Bool_CheckBox::dragEnterEvent(QDragEnterEvent* e)
 void
 Bool_CheckBox::dragMoveEvent(QDragMoveEvent* e)
 {
-    if (!dragMove(e)) {
+    if (!dragMoveDnD(e)) {
         AnimatedCheckBox::dragMoveEvent(e);
     }
 }
 void
 Bool_CheckBox::dropEvent(QDropEvent* e)
 {
-    if (!drop(e)) {
+    if (!dropDnD(e)) {
         AnimatedCheckBox::dropEvent(e);
     }
 }
@@ -175,14 +175,14 @@ Bool_CheckBox::dropEvent(QDropEvent* e)
 void
 Bool_CheckBox::focusInEvent(QFocusEvent* e)
 {
-    focusIn();
+    focusInDnD();
     AnimatedCheckBox::focusInEvent(e);
 }
 
 void
 Bool_CheckBox::focusOutEvent(QFocusEvent* e)
 {
-    focusOut();
+    focusOutDnD();
     AnimatedCheckBox::focusOutEvent(e);
 }
 

@@ -31,14 +31,6 @@
 #define KNOB_DND_MIME_DATA_KEY "KnobLink"
 
 
-class QDragEnterEvent;
-class QDragMoveEvent;
-class QDragLeaveEvent;
-class QDropEvent;
-class QMouseEvent;
-class QWidget;
-class QKeyEvent;
-
 NATRON_NAMESPACE_ENTER;
 
 struct KnobWidgetDnDPrivate;
@@ -52,19 +44,19 @@ public:
     
 protected:
     
-    void keyPress(QKeyEvent* e);
-    void keyRelease(QKeyEvent* e);
-    bool mousePress(QMouseEvent* e);
-    bool mouseMove(QMouseEvent* e);
-    void mouseRelease(QMouseEvent* e);
-    bool mouseWheel(QWheelEvent* e);
-    bool dragEnter(QDragEnterEvent* e);
-    bool dragMove(QDragMoveEvent* e);
-    bool drop(QDropEvent* e);
-    void mouseEnter(QEvent* e);
-    void mouseLeave(QEvent* e);
-    void focusOut();
-    void focusIn();
+    void keyPressDnD(QKeyEvent* e);
+    void keyReleaseDnD(QKeyEvent* e);
+    bool mousePressDnD(QMouseEvent* e);
+    bool mouseMoveDnD(QMouseEvent* e);
+    void mouseReleaseDnD(QMouseEvent* e);
+    bool mouseWheelDnD(QWheelEvent* e);
+    bool dragEnterDnD(QDragEnterEvent* e);
+    bool dragMoveDnD(QDragMoveEvent* e);
+    bool dropDnD(QDropEvent* e);
+    void mouseEnterDnD(QEvent* e);
+    void mouseLeaveDnD(QEvent* e);
+    void focusOutDnD();
+    void focusInDnD();
     
 private:
     

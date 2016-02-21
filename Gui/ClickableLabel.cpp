@@ -30,7 +30,9 @@
 #include <QEvent>
 #include <QStyle>
 
+#include "Gui/Label.h"
 #include "Gui/KnobGui.h"
+#include "Gui/KnobWidgetDnD.h"
 #include "Gui/GuiApplicationManager.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -138,41 +140,41 @@ KnobClickableLabel::KnobClickableLabel(const QPixmap& icon, KnobGui* knob, QWidg
 : ClickableLabel(icon, parent)
 , KnobWidgetDnD(knob,-1, this)
 {
-    knob->enableRightClickMenu(this,-1);
+    knob->enableRightClickMenu(this, -1);
 }
 
 KnobClickableLabel::KnobClickableLabel(const QString& text, KnobGui* knob, QWidget* parent)
 : ClickableLabel(text, parent)
-, KnobWidgetDnD(knob,-1, this)
+, KnobWidgetDnD(knob, -1, this)
 {
-    knob->enableRightClickMenu(this,-1);
+    knob->enableRightClickMenu(this, -1);
 }
 
 void
 KnobClickableLabel::enterEvent(QEvent* e)
 {
-    mouseEnter(e);
+    mouseEnterDnD(e);
     ClickableLabel::enterEvent(e);
 }
 
 void
 KnobClickableLabel::leaveEvent(QEvent* e)
 {
-    mouseLeave(e);
+    mouseLeaveDnD(e);
     ClickableLabel::leaveEvent(e);
 }
 
 void
 KnobClickableLabel::keyPressEvent(QKeyEvent* e)
 {
-    keyPress(e);
+    keyPressDnD(e);
     ClickableLabel::keyPressEvent(e);
 }
 
 void
 KnobClickableLabel::keyReleaseEvent(QKeyEvent* e)
 {
-    keyRelease(e);
+    keyReleaseDnD(e);
     ClickableLabel::keyReleaseEvent(e);
 }
 
@@ -180,7 +182,7 @@ KnobClickableLabel::keyReleaseEvent(QKeyEvent* e)
 void
 KnobClickableLabel::mousePressEvent(QMouseEvent* e)
 {
-    if (!mousePress(e)) {
+    if (!mousePressDnD(e)) {
         ClickableLabel::mousePressEvent(e);
     }
 }
@@ -188,7 +190,7 @@ KnobClickableLabel::mousePressEvent(QMouseEvent* e)
 void
 KnobClickableLabel::mouseMoveEvent(QMouseEvent* e)
 {
-    if (!mouseMove(e)) {
+    if (!mouseMoveDnD(e)) {
         ClickableLabel::mouseMoveEvent(e);
     }
 }
@@ -196,7 +198,7 @@ KnobClickableLabel::mouseMoveEvent(QMouseEvent* e)
 void
 KnobClickableLabel::mouseReleaseEvent(QMouseEvent* e)
 {
-    mouseRelease(e);
+    mouseReleaseDnD(e);
     ClickableLabel::mouseReleaseEvent(e);
     
 }
@@ -204,7 +206,7 @@ KnobClickableLabel::mouseReleaseEvent(QMouseEvent* e)
 void
 KnobClickableLabel::dragEnterEvent(QDragEnterEvent* e)
 {
-    if (!dragEnter(e)) {
+    if (!dragEnterDnD(e)) {
         ClickableLabel::dragEnterEvent(e);
     }
 }
@@ -212,14 +214,14 @@ KnobClickableLabel::dragEnterEvent(QDragEnterEvent* e)
 void
 KnobClickableLabel::dragMoveEvent(QDragMoveEvent* e)
 {
-    if (!dragMove(e)) {
+    if (!dragMoveDnD(e)) {
         ClickableLabel::dragMoveEvent(e);
     }
 }
 void
 KnobClickableLabel::dropEvent(QDropEvent* e)
 {
-    if (!drop(e)) {
+    if (!dropDnD(e)) {
         ClickableLabel::dropEvent(e);
     }
 }
@@ -227,14 +229,14 @@ KnobClickableLabel::dropEvent(QDropEvent* e)
 void
 KnobClickableLabel::focusInEvent(QFocusEvent* e)
 {
-    focusIn();
+    focusInDnD();
     ClickableLabel::focusInEvent(e);
 }
 
 void
 KnobClickableLabel::focusOutEvent(QFocusEvent* e)
 {
-    focusOut();
+    focusOutDnD();
     ClickableLabel::focusOutEvent(e);
 }
 

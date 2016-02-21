@@ -126,21 +126,21 @@ AnimatingTextEdit::setDirty(bool b)
 void
 AnimatingTextEdit::enterEvent(QEvent* e)
 {
-    mouseEnter(e);
+    mouseEnterDnD(e);
     QTextEdit::enterEvent(e);
 }
 
 void
 AnimatingTextEdit::leaveEvent(QEvent* e)
 {
-    mouseLeave(e);
+    mouseLeaveDnD(e);
     QTextEdit::leaveEvent(e);
 }
 
 void
 AnimatingTextEdit::keyPressEvent(QKeyEvent* e)
 {
-    keyPress(e);
+    keyPressDnD(e);
     if (modCASIsControl(e) && e->key() == Qt::Key_Return) {
         if (_hasChanged) {
             _hasChanged = false;
@@ -154,7 +154,7 @@ AnimatingTextEdit::keyPressEvent(QKeyEvent* e)
 void
 AnimatingTextEdit::keyReleaseEvent(QKeyEvent* e)
 {
-    keyRelease(e);
+    keyReleaseDnD(e);
     QTextEdit::keyReleaseEvent(e);
 }
 
@@ -173,7 +173,7 @@ AnimatingTextEdit::paintEvent(QPaintEvent* e)
 void
 AnimatingTextEdit::mousePressEvent(QMouseEvent* e)
 {
-    if (!mousePress(e)) {
+    if (!mousePressDnD(e)) {
         QTextEdit::mousePressEvent(e);
     }
 }
@@ -181,7 +181,7 @@ AnimatingTextEdit::mousePressEvent(QMouseEvent* e)
 void
 AnimatingTextEdit::mouseMoveEvent(QMouseEvent* e)
 {
-    if (!mouseMove(e)) {
+    if (!mouseMoveDnD(e)) {
         QTextEdit::mouseMoveEvent(e);
     }
 }
@@ -189,7 +189,7 @@ AnimatingTextEdit::mouseMoveEvent(QMouseEvent* e)
 void
 AnimatingTextEdit::mouseReleaseEvent(QMouseEvent* e)
 {
-    mouseRelease(e);
+    mouseReleaseDnD(e);
     QTextEdit::mouseReleaseEvent(e);
     
 }
@@ -197,7 +197,7 @@ AnimatingTextEdit::mouseReleaseEvent(QMouseEvent* e)
 void
 AnimatingTextEdit::dragEnterEvent(QDragEnterEvent* e)
 {
-    if (!dragEnter(e)) {
+    if (!dragEnterDnD(e)) {
         AnimatingTextEdit::dragEnterEvent(e);
     }
 }
@@ -205,14 +205,14 @@ AnimatingTextEdit::dragEnterEvent(QDragEnterEvent* e)
 void
 AnimatingTextEdit::dragMoveEvent(QDragMoveEvent* e)
 {
-    if (!dragMove(e)) {
+    if (!dragMoveDnD(e)) {
         AnimatingTextEdit::dragMoveEvent(e);
     }
 }
 void
 AnimatingTextEdit::dropEvent(QDropEvent* e)
 {
-    if (!drop(e)) {
+    if (!dropDnD(e)) {
         AnimatingTextEdit::dropEvent(e);
     }
 }
@@ -220,14 +220,14 @@ AnimatingTextEdit::dropEvent(QDropEvent* e)
 void
 AnimatingTextEdit::focusInEvent(QFocusEvent* e)
 {
-    focusIn();
+    focusInDnD();
     QTextEdit::focusInEvent(e);
 }
 
 void
 AnimatingTextEdit::focusOutEvent(QFocusEvent* e)
 {
-    focusOut();
+    focusOutDnD();
     if (_hasChanged) {
         _hasChanged = false;
         Q_EMIT editingFinished();
@@ -240,35 +240,35 @@ AnimatingTextEdit::focusOutEvent(QFocusEvent* e)
 void
 KnobLineEdit::enterEvent(QEvent* e)
 {
-    mouseEnter(e);
+    mouseEnterDnD(e);
     LineEdit::enterEvent(e);
 }
 
 void
 KnobLineEdit::leaveEvent(QEvent* e)
 {
-    mouseLeave(e);
+    mouseLeaveDnD(e);
     LineEdit::leaveEvent(e);
 }
 
 void
 KnobLineEdit::keyPressEvent(QKeyEvent* e)
 {
-    keyPress(e);
+    keyPressDnD(e);
     LineEdit::keyPressEvent(e);
 }
 
 void
 KnobLineEdit::keyReleaseEvent(QKeyEvent* e)
 {
-    keyRelease(e);
+    keyReleaseDnD(e);
     LineEdit::keyReleaseEvent(e);
 }
 
 void
 KnobLineEdit::mousePressEvent(QMouseEvent* e)
 {
-    if (!mousePress(e)) {
+    if (!mousePressDnD(e)) {
         LineEdit::mousePressEvent(e);
     }
 }
@@ -276,7 +276,7 @@ KnobLineEdit::mousePressEvent(QMouseEvent* e)
 void
 KnobLineEdit::mouseMoveEvent(QMouseEvent* e)
 {
-    if (!mouseMove(e)) {
+    if (!mouseMoveDnD(e)) {
         LineEdit::mouseMoveEvent(e);
     }
 }
@@ -284,7 +284,7 @@ KnobLineEdit::mouseMoveEvent(QMouseEvent* e)
 void
 KnobLineEdit::mouseReleaseEvent(QMouseEvent* e)
 {
-    mouseRelease(e);
+    mouseReleaseDnD(e);
     LineEdit::mouseReleaseEvent(e);
     
 }
@@ -292,7 +292,7 @@ KnobLineEdit::mouseReleaseEvent(QMouseEvent* e)
 void
 KnobLineEdit::dragEnterEvent(QDragEnterEvent* e)
 {
-    if (!dragEnter(e)) {
+    if (!dragEnterDnD(e)) {
         LineEdit::dragEnterEvent(e);
     }
 }
@@ -300,14 +300,14 @@ KnobLineEdit::dragEnterEvent(QDragEnterEvent* e)
 void
 KnobLineEdit::dragMoveEvent(QDragMoveEvent* e)
 {
-    if (!dragMove(e)) {
+    if (!dragMoveDnD(e)) {
         LineEdit::dragMoveEvent(e);
     }
 }
 void
 KnobLineEdit::dropEvent(QDropEvent* e)
 {
-    if (!drop(e)) {
+    if (!dropDnD(e)) {
         LineEdit::dropEvent(e);
     }
 }
@@ -315,14 +315,14 @@ KnobLineEdit::dropEvent(QDropEvent* e)
 void
 KnobLineEdit::focusInEvent(QFocusEvent* e)
 {
-    focusIn();
+    focusInDnD();
     LineEdit::focusInEvent(e);
 }
 
 void
 KnobLineEdit::focusOutEvent(QFocusEvent* e)
 {
-    focusOut();
+    focusOutDnD();
     LineEdit::focusOutEvent(e);
 }
 

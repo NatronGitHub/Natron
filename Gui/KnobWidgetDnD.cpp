@@ -88,7 +88,7 @@ KnobWidgetDnD::~KnobWidgetDnD()
 }
 
 bool
-KnobWidgetDnD::mousePress(QMouseEvent* e)
+KnobWidgetDnD::mousePressDnD(QMouseEvent* e)
 {
     _imp->userInputSinceFocusIn = true;
     if ( buttonDownIsLeft(e) && (modCASIsControl(e) || modCASIsControlShift(e))) {
@@ -100,7 +100,7 @@ KnobWidgetDnD::mousePress(QMouseEvent* e)
 }
 
 void
-KnobWidgetDnD::keyPress(QKeyEvent* e)
+KnobWidgetDnD::keyPressDnD(QKeyEvent* e)
 {
     //_imp->userInputSinceFocusIn = true;
     if (modCASIsControl(e)) {
@@ -114,7 +114,7 @@ KnobWidgetDnD::keyPress(QKeyEvent* e)
 }
 
 void
-KnobWidgetDnD::keyRelease(QKeyEvent* e)
+KnobWidgetDnD::keyReleaseDnD(QKeyEvent* e)
 {
     if (e->key() == Qt::Key_Control || e->key() == Qt::Key_Shift) {
         _imp->widget->unsetCursor();
@@ -123,7 +123,7 @@ KnobWidgetDnD::keyRelease(QKeyEvent* e)
 }
 
 bool
-KnobWidgetDnD::mouseMove(QMouseEvent* e)
+KnobWidgetDnD::mouseMoveDnD(QMouseEvent* e)
 {
     if (modCASIsControl(e)) {
         _imp->widget->setCursor(appPTR->getLinkToCursor());
@@ -148,7 +148,7 @@ KnobWidgetDnD::mouseMove(QMouseEvent* e)
 }
 
 void
-KnobWidgetDnD::mouseRelease(QMouseEvent* /*e*/)
+KnobWidgetDnD::mouseReleaseDnD(QMouseEvent* /*e*/)
 {
     _imp->dragging = false;
     _imp->widget->unsetCursor();
@@ -246,7 +246,7 @@ KnobWidgetDnD::startDrag()
 }
 
 bool
-KnobWidgetDnD::dragEnter(QDragEnterEvent* e)
+KnobWidgetDnD::dragEnterDnD(QDragEnterEvent* e)
 {
     if (e->source() == _imp->widget) {
         return false;
@@ -260,7 +260,7 @@ KnobWidgetDnD::dragEnter(QDragEnterEvent* e)
 }
 
 bool
-KnobWidgetDnD::dragMove(QDragMoveEvent* e)
+KnobWidgetDnD::dragMoveDnD(QDragMoveEvent* e)
 {
     if (e->source() == _imp->widget) {
         return false;
@@ -325,7 +325,7 @@ KnobWidgetDnDPrivate::canDrop(bool warn, bool setCursor) const
 }
 
 bool
-KnobWidgetDnD::drop(QDropEvent* e)
+KnobWidgetDnD::dropDnD(QDropEvent* e)
 {
     e->accept();
     QStringList formats = e->mimeData()->formats();
@@ -397,7 +397,7 @@ KnobWidgetDnD::drop(QDropEvent* e)
 }
 
 bool
-KnobWidgetDnD::mouseWheel(QWheelEvent* /*e*/)
+KnobWidgetDnD::mouseWheelDnD(QWheelEvent* /*e*/)
 {
     if (_imp->userInputSinceFocusIn) {
         return true;
@@ -406,7 +406,7 @@ KnobWidgetDnD::mouseWheel(QWheelEvent* /*e*/)
 }
 
 void
-KnobWidgetDnD::mouseEnter(QEvent* /*e*/)
+KnobWidgetDnD::mouseEnterDnD(QEvent* /*e*/)
 {
     if (Gui::isFocusStealingPossible() && _imp->widget->isEnabled()) {
         _imp->widget->setFocus();
@@ -414,7 +414,7 @@ KnobWidgetDnD::mouseEnter(QEvent* /*e*/)
 }
 
 void
-KnobWidgetDnD::mouseLeave(QEvent* /*e*/)
+KnobWidgetDnD::mouseLeaveDnD(QEvent* /*e*/)
 {
     if (_imp->widget->hasFocus() && !_imp->userInputSinceFocusIn) {
         _imp->widget->clearFocus();
@@ -422,13 +422,13 @@ KnobWidgetDnD::mouseLeave(QEvent* /*e*/)
 }
 
 void
-KnobWidgetDnD::focusIn()
+KnobWidgetDnD::focusInDnD()
 {
     _imp->userInputSinceFocusIn = false;
 }
 
 void
-KnobWidgetDnD::focusOut()
+KnobWidgetDnD::focusOutDnD()
 {
     _imp->userInputSinceFocusIn = false;
 }

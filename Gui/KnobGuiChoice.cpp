@@ -88,7 +88,7 @@ void
 KnobComboBox::wheelEvent(QWheelEvent *e)
 {
     bool mustIgnore = false;
-    if (!mouseWheel(e)) {
+    if (!mouseWheelDnD(e)) {
         mustIgnore = true;
         ignoreWheelEvent = true;
     }
@@ -101,35 +101,35 @@ KnobComboBox::wheelEvent(QWheelEvent *e)
 void
 KnobComboBox::enterEvent(QEvent* e)
 {
-    mouseEnter(e);
+    mouseEnterDnD(e);
     ComboBox::enterEvent(e);
 }
 
 void
 KnobComboBox::leaveEvent(QEvent* e)
 {
-    mouseLeave(e);
+    mouseLeaveDnD(e);
     ComboBox::leaveEvent(e);
 }
 
 void
 KnobComboBox::keyPressEvent(QKeyEvent* e)
 {
-    keyPress(e);
+    keyPressDnD(e);
     ComboBox::keyPressEvent(e);
 }
 
 void
 KnobComboBox::keyReleaseEvent(QKeyEvent* e)
 {
-    keyRelease(e);
+    keyReleaseDnD(e);
     ComboBox::keyReleaseEvent(e);
 }
 
 void
 KnobComboBox::mousePressEvent(QMouseEvent* e)
 {
-    if (!mousePress(e)) {
+    if (!mousePressDnD(e)) {
         ComboBox::mousePressEvent(e);
     }
 }
@@ -137,7 +137,7 @@ KnobComboBox::mousePressEvent(QMouseEvent* e)
 void
 KnobComboBox::mouseMoveEvent(QMouseEvent* e)
 {
-    if (!mouseMove(e)) {
+    if (!mouseMoveDnD(e)) {
         ComboBox::mouseMoveEvent(e);
     }
 }
@@ -145,7 +145,7 @@ KnobComboBox::mouseMoveEvent(QMouseEvent* e)
 void
 KnobComboBox::mouseReleaseEvent(QMouseEvent* e)
 {
-    mouseRelease(e);
+    mouseReleaseDnD(e);
     ComboBox::mouseReleaseEvent(e);
     
 }
@@ -153,7 +153,7 @@ KnobComboBox::mouseReleaseEvent(QMouseEvent* e)
 void
 KnobComboBox::dragEnterEvent(QDragEnterEvent* e)
 {
-    if (!dragEnter(e)) {
+    if (!dragEnterDnD(e)) {
         ComboBox::dragEnterEvent(e);
     }
 }
@@ -161,14 +161,14 @@ KnobComboBox::dragEnterEvent(QDragEnterEvent* e)
 void
 KnobComboBox::dragMoveEvent(QDragMoveEvent* e)
 {
-    if (!dragMove(e)) {
+    if (!dragMoveDnD(e)) {
         ComboBox::dragMoveEvent(e);
     }
 }
 void
 KnobComboBox::dropEvent(QDropEvent* e)
 {
-    if (!drop(e)) {
+    if (!dropDnD(e)) {
         ComboBox::dropEvent(e);
     }
 }
@@ -176,14 +176,14 @@ KnobComboBox::dropEvent(QDropEvent* e)
 void
 KnobComboBox::focusInEvent(QFocusEvent* e)
 {
-    focusIn();
+    focusInDnD();
     ComboBox::focusInEvent(e);
 }
 
 void
 KnobComboBox::focusOutEvent(QFocusEvent* e)
 {
-    focusOut();
+    focusOutDnD();
     ComboBox::focusOutEvent(e);
 }
 
