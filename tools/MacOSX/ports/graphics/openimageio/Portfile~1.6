@@ -13,7 +13,7 @@ PortGroup        qt4 1.0
 epoch        	 1
 
 fetch.type              git
-github.setup     OpenImageIO oiio 1.6.9 tags/Release-
+github.setup     OpenImageIO oiio 1.6.10 tags/Release-
 #github.version      ${version}-dist
 #github.tarball_from downloads
 
@@ -79,8 +79,9 @@ if {${configure.build_arch} eq "ppc"} {
 
 patch.pre_args	-p1
 patchfiles \
-    oiio-x86intrin.patch \
-    oiio-sha1.patch
+    oiio-pnm16.patch \
+    oiio-1.5.23-checkmaxmem.patch \
+    oiio-1.5.23-invalidatespec.patch
 
 cmake.out_of_source yes
 
