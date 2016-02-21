@@ -67,7 +67,7 @@ GroupInput::initializeKnobs()
 void
 GroupInput::knobChanged(KnobI* k,
                  ValueChangedReasonEnum /*reason*/,
-                 ViewSpec view,
+                 ViewSpec /*view*/,
                  double /*time*/,
                  bool /*originatedFromMainThread*/)
 {
@@ -75,11 +75,11 @@ GroupInput::knobChanged(KnobI* k,
         boost::shared_ptr<NodeCollection> group = getNode()->getGroup();
         group->notifyInputOptionalStateChanged(getNode());
     } else if (k == mask.lock().get()) {
-        bool isMask = mask.lock()->getValue(0 , ViewIdx(view));
+        bool isMask = mask.lock()->getValue();
         if (isMask) {
-            optional.lock()->setValue(true, ViewIdx(view));
+            optional.lock()->setValue(true);
         } else {
-            optional.lock()->setValue(false, ViewIdx(view));
+            optional.lock()->setValue(false);
         }
         boost::shared_ptr<NodeCollection> group = getNode()->getGroup();
         group->notifyInputMaskStateChanged(getNode());
