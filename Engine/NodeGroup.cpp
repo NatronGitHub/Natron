@@ -1213,6 +1213,12 @@ NodeGroup::isInputOptional(int inputNb) const
 }
 
 bool
+NodeGroup::isHostChannelSelectorSupported(bool* /*defaultR*/,bool* /*defaultG*/, bool* /*defaultB*/, bool* /*defaultA*/) const
+{
+    return false;
+}
+
+bool
 NodeGroup::isInputMask(int inputNb) const
 {
     
