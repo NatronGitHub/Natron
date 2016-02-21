@@ -88,6 +88,7 @@ class QUndoCommand;
 class QUndoGroup;
 class QUndoStack;
 class QVBoxLayout;
+class QWheelEvent;
 class QWidget;
 
 
