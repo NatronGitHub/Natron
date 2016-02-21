@@ -110,7 +110,7 @@ protected:
 
     void increment(int delta, int shift);
 
-    virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
+    virtual void wheelEvent(QWheelEvent* e) OVERRIDE ;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
     
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE;
@@ -146,6 +146,13 @@ private:
     ///Used by the stylesheet , they are Q_PROPERTIES
     int animation; // 0 = no animation, 1 = interpolated, 2 = equals keyframe value
     bool dirty;
+    
+protected:
+    
+    bool ignoreWheelEvent;
+    
+private:
+    
     boost::scoped_ptr<SpinBoxPrivate> _imp;
 };
 
@@ -174,6 +181,7 @@ public:
     
 private:
     
+    virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;

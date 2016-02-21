@@ -84,6 +84,19 @@ using std::make_pair;
 
 
 //=============================CHOICE_KNOB_GUI===================================
+void
+KnobComboBox::wheelEvent(QWheelEvent *e)
+{
+    bool mustIgnore = false;
+    if (!mouseWheel(e)) {
+        mustIgnore = true;
+        ignoreWheelEvent = true;
+    }
+    ComboBox::wheelEvent(e);
+    if (mustIgnore) {
+        ignoreWheelEvent = false;
+    }
+}
 
 void
 KnobComboBox::enterEvent(QEvent* e)

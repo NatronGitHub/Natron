@@ -396,6 +396,15 @@ KnobWidgetDnD::drop(QDropEvent* e)
     return false;
 }
 
+bool
+KnobWidgetDnD::mouseWheel(QWheelEvent* /*e*/)
+{
+    if (_imp->userInputSinceFocusIn) {
+        return true;
+    }
+    return false;
+}
+
 void
 KnobWidgetDnD::mouseEnter(QEvent* /*e*/)
 {

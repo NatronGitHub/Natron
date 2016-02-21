@@ -90,6 +90,10 @@ private:
     unsigned short _align;
 
     int _currentDelta; // accumulated wheel delta
+    
+protected:
+    
+    bool ignoreWheelEvent;
 
 public:
 
@@ -199,12 +203,12 @@ protected:
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
-    
+    virtual void wheelEvent(QWheelEvent *e) OVERRIDE ;
 private:
     
     
     
-    virtual void wheelEvent(QWheelEvent *e) OVERRIDE FINAL;
+    
     virtual QSize sizeHint() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;

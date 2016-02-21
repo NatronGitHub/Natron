@@ -95,6 +95,7 @@ ComboBox::ComboBox(QWidget* parent)
     , _validHints(false)
     , _align(Qt::AlignLeft | Qt::AlignVCenter | Qt::TextExpandTabs)
     , _currentDelta(0)
+    , ignoreWheelEvent(false)
 {
 
     setFrameShape(QFrame::Box);
@@ -388,6 +389,9 @@ ComboBox::mouseReleaseEvent(QMouseEvent* e)
 void
 ComboBox::wheelEvent(QWheelEvent *e)
 {
+    if (ignoreWheelEvent) {
+        return QFrame::wheelEvent(e);
+    }
     if (!hasFocus()) {
         return;
     }

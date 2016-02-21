@@ -57,6 +57,7 @@ protected:
     bool mousePress(QMouseEvent* e);
     bool mouseMove(QMouseEvent* e);
     void mouseRelease(QMouseEvent* e);
+    bool mouseWheel(QWheelEvent* e);
     bool dragEnter(QDragEnterEvent* e);
     bool dragMove(QDragMoveEvent* e);
     bool drop(QDropEvent* e);

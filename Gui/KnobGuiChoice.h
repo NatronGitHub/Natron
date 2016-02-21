@@ -71,6 +71,7 @@ public:
     
 private:
     
+    virtual void wheelEvent(QWheelEvent *e) OVERRIDE FINAL;
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;

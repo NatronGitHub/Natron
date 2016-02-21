@@ -108,6 +108,7 @@ SpinBox::SpinBox(QWidget* parent,
 : LineEdit(parent)
 , animation(0)
 , dirty(false)
+, ignoreWheelEvent(false)
 , _imp( new SpinBoxPrivate(type) )
 {
     QObject::connect( this, SIGNAL(returnPressed()), this, SLOT(interpretReturn()) );
@@ -607,6 +608,9 @@ SpinBox::increment(int delta,
 void
 SpinBox::wheelEvent(QWheelEvent* e)
 {
+    if (ignoreWheelEvent) {
+        return LineEdit::wheelEvent(e);
+    }
     if ( (e->orientation() != Qt::Vertical) ||
         ( e->delta() == 0) ||
         !isEnabled() ||
@@ -892,6 +896,20 @@ KnobSpinBox::leaveEvent(QEvent* e)
 {
     mouseLeave(e);
     SpinBox::leaveEvent(e);
+}
+
+void
+KnobSpinBox::wheelEvent(QWheelEvent* e)
+{
+    bool mustIgnore = false;
+    if (!mouseWheel(e)) {
+        mustIgnore = true;
+        ignoreWheelEvent = true;
+    }
+    SpinBox::wheelEvent(e);
+    if (mustIgnore) {
+        ignoreWheelEvent = false;
+    }
 }
 
 void
