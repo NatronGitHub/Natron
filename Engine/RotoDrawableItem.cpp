@@ -277,7 +277,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     }
     assert(_imp->mergeNode);
     
-    if (type != eRotoStrokeTypeSolid) {
+    if (type != eRotoStrokeTypeSolid && type != eRotoStrokeTypeSmear) {
         int maxInp = _imp->mergeNode->getMaxInputCount();
         for (int i = 0; i < maxInp; ++i) {
             if (_imp->mergeNode->getEffectInstance()->isInputMask(i)) {
