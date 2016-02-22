@@ -1,36 +1,27 @@
---- Portfile.orig	2015-05-29 09:09:28.000000000 +0200
-+++ Portfile	2015-09-01 11:45:52.000000000 +0200
-@@ -7,14 +7,14 @@
+--- Portfile.orig	2016-02-22 10:17:13.000000000 +0100
++++ Portfile	2016-02-22 10:16:57.000000000 +0100
+@@ -7,7 +7,8 @@
  # Keep relevant lines in sync between ImageMagick and p5-perlmagick.
  
  name                        ImageMagick
--version                     6.9.0-0
--revision                    1
-+version                     6.8.9-10
-+#revision                    1
+-version                     6.9.3-4
++version                     6.9.2-10
++revision                    2
  set reasonable_version      [lindex [split ${version} -] 0]
  homepage                    http://www.imagemagick.org/
  categories                  graphics devel
- maintainers                 ryandesign
- license                     Apache-2
--use_xz                      yes
-+use_bzip2                   yes
- platforms                   darwin
- use_parallel_build          yes
- 
-@@ -40,8 +40,9 @@
+@@ -39,8 +40,8 @@
                              ftp://ftp.sunet.se/pub/multimedia/graphics/ImageMagick \
                              ftp://sunsite.icm.edu.pl/packages/ImageMagick
  
--checksums                   rmd160  28eee0e91bc0cef91a6531808addc38c6c26f478 \
--                            sha256  12331c904c691cb128865fdc97e5f8a2654576f9b032e274b74dd7617aa1b9b6
-+# checksums for 6.8.9-10:
-+checksums           rmd160  3f3efb2acbe1353d11a64e707e8f618d6ca11f35 \
-+                    sha256  4e702c1c3b4632fde2a93af33dcd3d013a9ebfa598060aca11f06d80676ecbf4
+-checksums                   rmd160  8db13b61f2409d4349e6f191881a19f79c5536f8 \
+-                            sha256  0d4266940d27afb617fc8b3481ffdf63dd02ca13806d581ac5cb28638725c275
++checksums           rmd160  2189e2afddba54d5c1165c87786716d4c7172c74 \
++                    sha256  da2f6fba43d69f20ddb11783f13f77782b0b57783dde9cda39c9e5e733c2013c
  
  depends_lib                 port:bzip2 \
                              port:djvulibre \
-@@ -64,6 +65,8 @@
+@@ -63,6 +64,8 @@
                              port:expat \
                              port:libxml2
  
@@ -39,7 +30,7 @@
  # Magick-config etc. use pkg-config
  depends_lib-append          port:pkgconfig
  
-@@ -90,11 +93,14 @@
+@@ -89,11 +92,14 @@
                              --with-dps \
                              --with-bzlib \
                              --with-djvu \
@@ -55,12 +46,13 @@
                              --with-openjp2 \
                              --with-png \
                              --with-tiff \
-@@ -112,6 +118,64 @@
+@@ -111,6 +117,71 @@
                              --without-x \
                              --with-gs-font-dir=${prefix}/share/fonts/urw-fonts
  
 +variant natron conflicts x11 requires pango rsvg q32 hdri universal description {Natron version} {
-+    patchfiles-append magick-seed.diff magick-svg.diff
++    patchfiles-append pango-align-hack.diff
++    patchfiles-append xcf-layername.diff
 +    depends_lib-delete      port:ghostscript
 +    configure.args-replace  --with-dps --without-dps
 +    configure.args-replace  --with-gslib --without-gslib
@@ -74,9 +66,14 @@
 +    configure.args-replace  --with-jbig --without-jbig
 +    depends_lib-delete       port:jpeg
 +    configure.args-replace  --with-jpeg --without-jpeg
-+    # why not remove png support? maybe because freetype depends on png anyway?
-+    #depends_lib-delete       port:png
-+    #configure.args-replace  --with-png --without-png
++    # PNG is required for povray,openraster,krita plugin, see https://github.com/olear/openfx-arena/commit/48064135604d1c2d07362bc16cecc7a16a640d3e#commitcomment-14356716
++    # depends_lib-delete       port:png
++    # configure.args-replace  --with-png --without-png
++    # [FD] why LCMS and not LCMS2? because IM now only supports one LCMS (v2), so they removed the 'lcms2' option in favour of 'lcms'.
++    depends_lib-delete       port:lcms2
++    configure.args-replace  --with-lcms2 --without-lcms2
++    depends_lib-append       port:lcms
++    configure.args-replace  --without-lcms --with-lcms
 +    depends_lib-delete       port:openjpeg
 +    configure.args-replace  --with-openjp2 --without-openjp2
 +    depends_lib-delete       port:openexr
@@ -85,15 +82,16 @@
 +    configure.args-replace  --with-tiff --without-tiff
 +    depends_lib-delete       port:webp
 +    configure.args-replace  --with-webp --without-webp
-+    depends_lib-delete       port:zlib
-+    configure.args-replace  --with-zlib --without-zlib
++    # zlib is required by PNG
++    #depends_lib-delete       port:zlib
++    #configure.args-replace  --with-zlib --without-zlib
 +    depends_lib-delete       port:bzip2
 +    configure.args-replace  --with-bzlib --without-bzlib
 +    configure.args-replace  --enable-shared --disable-shared
 +    configure.args-replace  --with-modules --without-modules
 +    pre-extract {
-+        if {${version} != "6.8.9-10"} {
-+            ui_msg "Natron variant requires ImageMagick version 6.8.9-10 (this is ${version}), please modify the Portfile."
++        if {${version} != "6.9.2-10"} {
++            ui_msg "Natron variant requires ImageMagick version 6.9.2-10 (this is ${version}), please modify the Portfile."
 +            return -code error "incompatible ImageMagick version"
 +        }
 +    }
@@ -120,7 +118,7 @@
  test.run                    yes
  test.target                 check
  test.env                    DYLD_LIBRARY_PATH=${worksrcpath}/magick/.libs
-@@ -119,6 +183,14 @@
+@@ -118,6 +189,14 @@
  # ImageMagick uses .la files at runtime to find its coder modules.
  destroot.delete_la_files    no
  
@@ -135,7 +133,7 @@
  variant graphviz description {Support Graphviz} {
      depends_lib-append      path:bin/dot:graphviz
      configure.args-replace  --without-gvc --with-gvc
-@@ -153,6 +225,11 @@
+@@ -152,6 +231,11 @@
  
  default_variants            +x11
  
