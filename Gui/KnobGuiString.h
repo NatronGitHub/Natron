@@ -30,6 +30,10 @@
 #include <vector> // KnobGuiInt
 #include <list>
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#endif
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QObject>
@@ -51,14 +55,12 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Label.h"
 #include "Gui/LineEdit.h"
 #include "Gui/GuiFwd.h"
-#include "Gui/KnobWidgetDnD.h"
 
 
 NATRON_NAMESPACE_ENTER;
 
 class AnimatingTextEdit
     : public QTextEdit
-    , public KnobWidgetDnD
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -70,17 +72,10 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    AnimatingTextEdit(KnobGui* knob, int dimension, QWidget* parent = 0)
-    : QTextEdit(parent)
-    , KnobWidgetDnD(knob, dimension, this)
-    , animation(0), readOnlyNatron(false), _hasChanged(false), dirty(false)
-    {
-    }
-
-    virtual ~AnimatingTextEdit()
-    {
-    }
-
+    AnimatingTextEdit(KnobGui* knob, int dimension, QWidget* parent = 0);
+    
+    virtual ~AnimatingTextEdit();
+    
     int getAnimation() const
     {
         return animation;
@@ -123,26 +118,21 @@ private:
     virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE FINAL;
     virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
     virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
-    
 
-    
+private:
     int animation;
     bool readOnlyNatron; //< to bypass the readonly property of Qt that is bugged
     bool _hasChanged;
     bool dirty;
+    boost::scoped_ptr<KnobWidgetDnD> _dnd;
 };
 
-class KnobLineEdit : public LineEdit, public KnobWidgetDnD
+class KnobLineEdit : public LineEdit
 {
 public:
-    KnobLineEdit(KnobGui* knob,int dimension, QWidget* parent = 0)
-    : LineEdit(parent)
-    , KnobWidgetDnD(knob, dimension, this)
-    {}
-    
-    virtual ~KnobLineEdit() {
-        
-    }
+    KnobLineEdit(KnobGui* knob,int dimension, QWidget* parent = 0);
+
+    virtual ~KnobLineEdit();
     
 private:
     
@@ -159,7 +149,8 @@ private:
     virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
     virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
 
-    
+private:
+    boost::scoped_ptr<KnobWidgetDnD> _dnd;
 };
 
 /*****************************/

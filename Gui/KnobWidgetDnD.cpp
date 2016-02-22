@@ -61,7 +61,7 @@ struct KnobWidgetDnDPrivate
     QWidget* widget;
     bool userInputSinceFocusIn;
     
-    KnobWidgetDnDPrivate(KnobGui* knob,int dimension, QWidget* widget)
+    KnobWidgetDnDPrivate(KnobGui* knob, int dimension, QWidget* widget)
     : knob(knob)
     , dimension(dimension)
     , dragPos()
@@ -75,7 +75,7 @@ struct KnobWidgetDnDPrivate
     bool canDrop(bool warn,bool setCursor) const;
 };
 
-KnobWidgetDnD::KnobWidgetDnD(KnobGui* knob,int dimension, QWidget* widget)
+KnobWidgetDnD::KnobWidgetDnD(KnobGui* knob, int dimension, QWidget* widget)
 : _imp(new KnobWidgetDnDPrivate(knob, dimension, widget))
 {
     widget->setMouseTracking(true);
@@ -88,7 +88,7 @@ KnobWidgetDnD::~KnobWidgetDnD()
 }
 
 bool
-KnobWidgetDnD::mousePressDnD(QMouseEvent* e)
+KnobWidgetDnD::mousePress(QMouseEvent* e)
 {
     _imp->userInputSinceFocusIn = true;
     if ( buttonDownIsLeft(e) && (modCASIsControl(e) || modCASIsControlShift(e))) {
@@ -100,7 +100,7 @@ KnobWidgetDnD::mousePressDnD(QMouseEvent* e)
 }
 
 void
-KnobWidgetDnD::keyPressDnD(QKeyEvent* e)
+KnobWidgetDnD::keyPress(QKeyEvent* e)
 {
     //_imp->userInputSinceFocusIn = true;
     if (modCASIsControl(e)) {
@@ -114,7 +114,7 @@ KnobWidgetDnD::keyPressDnD(QKeyEvent* e)
 }
 
 void
-KnobWidgetDnD::keyReleaseDnD(QKeyEvent* e)
+KnobWidgetDnD::keyRelease(QKeyEvent* e)
 {
     if (e->key() == Qt::Key_Control || e->key() == Qt::Key_Shift) {
         _imp->widget->unsetCursor();
@@ -123,7 +123,7 @@ KnobWidgetDnD::keyReleaseDnD(QKeyEvent* e)
 }
 
 bool
-KnobWidgetDnD::mouseMoveDnD(QMouseEvent* e)
+KnobWidgetDnD::mouseMove(QMouseEvent* e)
 {
     if (modCASIsControl(e)) {
         _imp->widget->setCursor(appPTR->getLinkToCursor());
@@ -148,7 +148,7 @@ KnobWidgetDnD::mouseMoveDnD(QMouseEvent* e)
 }
 
 void
-KnobWidgetDnD::mouseReleaseDnD(QMouseEvent* /*e*/)
+KnobWidgetDnD::mouseRelease(QMouseEvent* /*e*/)
 {
     _imp->dragging = false;
     _imp->widget->unsetCursor();
@@ -246,7 +246,7 @@ KnobWidgetDnD::startDrag()
 }
 
 bool
-KnobWidgetDnD::dragEnterDnD(QDragEnterEvent* e)
+KnobWidgetDnD::dragEnter(QDragEnterEvent* e)
 {
     if (e->source() == _imp->widget) {
         return false;
@@ -260,7 +260,7 @@ KnobWidgetDnD::dragEnterDnD(QDragEnterEvent* e)
 }
 
 bool
-KnobWidgetDnD::dragMoveDnD(QDragMoveEvent* e)
+KnobWidgetDnD::dragMove(QDragMoveEvent* e)
 {
     if (e->source() == _imp->widget) {
         return false;
@@ -325,7 +325,7 @@ KnobWidgetDnDPrivate::canDrop(bool warn, bool setCursor) const
 }
 
 bool
-KnobWidgetDnD::dropDnD(QDropEvent* e)
+KnobWidgetDnD::drop(QDropEvent* e)
 {
     e->accept();
     QStringList formats = e->mimeData()->formats();
@@ -397,7 +397,7 @@ KnobWidgetDnD::dropDnD(QDropEvent* e)
 }
 
 bool
-KnobWidgetDnD::mouseWheelDnD(QWheelEvent* /*e*/)
+KnobWidgetDnD::mouseWheel(QWheelEvent* /*e*/)
 {
     if (_imp->userInputSinceFocusIn) {
         return true;
@@ -406,7 +406,7 @@ KnobWidgetDnD::mouseWheelDnD(QWheelEvent* /*e*/)
 }
 
 void
-KnobWidgetDnD::mouseEnterDnD(QEvent* /*e*/)
+KnobWidgetDnD::mouseEnter(QEvent* /*e*/)
 {
     if (Gui::isFocusStealingPossible() && _imp->widget->isEnabled()) {
         _imp->widget->setFocus();
@@ -414,7 +414,7 @@ KnobWidgetDnD::mouseEnterDnD(QEvent* /*e*/)
 }
 
 void
-KnobWidgetDnD::mouseLeaveDnD(QEvent* /*e*/)
+KnobWidgetDnD::mouseLeave(QEvent* /*e*/)
 {
     if (_imp->widget->hasFocus() && !_imp->userInputSinceFocusIn) {
         _imp->widget->clearFocus();
@@ -422,13 +422,13 @@ KnobWidgetDnD::mouseLeaveDnD(QEvent* /*e*/)
 }
 
 void
-KnobWidgetDnD::focusInDnD()
+KnobWidgetDnD::focusIn()
 {
     _imp->userInputSinceFocusIn = false;
 }
 
 void
-KnobWidgetDnD::focusOutDnD()
+KnobWidgetDnD::focusOut()
 {
     _imp->userInputSinceFocusIn = false;
 }

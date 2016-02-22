@@ -48,10 +48,11 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Global/Macros.h"
 
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/KnobGui.h"
+#include "Gui/KnobWidgetDnD.h"
 #include "Gui/SpinBoxValidator.h"
-#include "Gui/GuiApplicationManager.h"
 
 #define SPINBOX_MAX_WIDTH 50
 #define SPINBOX_MIN_WIDTH 35
@@ -884,17 +885,34 @@ SpinBox::setUseLineColor(bool use, const QColor& color)
     update();
 }
 
+
+
+KnobSpinBox::KnobSpinBox(QWidget* parent,
+            SpinBoxTypeEnum type,
+            KnobGui* knob,
+            int dimension)
+: SpinBox(parent,type)
+, knob(knob)
+, dimension(dimension)
+, _dnd(new KnobWidgetDnD(knob, dimension, this))
+{
+}
+
+KnobSpinBox::~KnobSpinBox()
+{
+}
+
 void
 KnobSpinBox::enterEvent(QEvent* e)
 {
-    mouseEnterDnD(e);
+    _dnd->mouseEnter(e);
     SpinBox::enterEvent(e);
 }
 
 void
 KnobSpinBox::leaveEvent(QEvent* e)
 {
-    mouseLeaveDnD(e);
+    _dnd->mouseLeave(e);
     SpinBox::leaveEvent(e);
 }
 
@@ -902,7 +920,7 @@ void
 KnobSpinBox::wheelEvent(QWheelEvent* e)
 {
     bool mustIgnore = false;
-    if (!mouseWheelDnD(e)) {
+    if (!_dnd->mouseWheel(e)) {
         mustIgnore = true;
         ignoreWheelEvent = true;
     }
@@ -915,21 +933,21 @@ KnobSpinBox::wheelEvent(QWheelEvent* e)
 void
 KnobSpinBox::keyPressEvent(QKeyEvent* e)
 {
-    keyPressDnD(e);
+    _dnd->keyPress(e);
     SpinBox::keyPressEvent(e);
 }
 
 void
 KnobSpinBox::keyReleaseEvent(QKeyEvent* e)
 {
-    keyReleaseDnD(e);
+    _dnd->keyRelease(e);
     SpinBox::keyReleaseEvent(e);
 }
 
 void
 KnobSpinBox::mousePressEvent(QMouseEvent* e)
 {
-    if (!mousePressDnD(e)) {
+    if (!_dnd->mousePress(e)) {
         SpinBox::mousePressEvent(e);
     }
 }
@@ -937,7 +955,7 @@ KnobSpinBox::mousePressEvent(QMouseEvent* e)
 void
 KnobSpinBox::mouseMoveEvent(QMouseEvent* e)
 {
-    if (!mouseMoveDnD(e)) {
+    if (!_dnd->mouseMove(e)) {
         SpinBox::mouseMoveEvent(e);
     }
 }
@@ -945,7 +963,7 @@ KnobSpinBox::mouseMoveEvent(QMouseEvent* e)
 void
 KnobSpinBox::mouseReleaseEvent(QMouseEvent* e)
 {
-    mouseReleaseDnD(e);
+    _dnd->mouseRelease(e);
     SpinBox::mouseReleaseEvent(e);
 
 }
@@ -953,7 +971,7 @@ KnobSpinBox::mouseReleaseEvent(QMouseEvent* e)
 void
 KnobSpinBox::dragEnterEvent(QDragEnterEvent* e)
 {
-    if (!dragEnterDnD(e)) {
+    if (!_dnd->dragEnter(e)) {
         SpinBox::dragEnterEvent(e);
     }
 }
@@ -961,14 +979,14 @@ KnobSpinBox::dragEnterEvent(QDragEnterEvent* e)
 void
 KnobSpinBox::dragMoveEvent(QDragMoveEvent* e)
 {
-    if (!dragMoveDnD(e)) {
+    if (!_dnd->dragMove(e)) {
         SpinBox::dragMoveEvent(e);
     }
 }
 void
 KnobSpinBox::dropEvent(QDropEvent* e)
 {
-    if (!dropDnD(e)) {
+    if (!_dnd->drop(e)) {
         SpinBox::dropEvent(e);
     }
 }
@@ -976,7 +994,7 @@ KnobSpinBox::dropEvent(QDropEvent* e)
 void
 KnobSpinBox::focusInEvent(QFocusEvent* e)
 {
-    focusInDnD();
+    _dnd->focusIn();
     SpinBox::focusInEvent(e);
     
     
@@ -993,7 +1011,7 @@ KnobSpinBox::focusInEvent(QFocusEvent* e)
 void
 KnobSpinBox::focusOutEvent(QFocusEvent* e)
 {
-    focusOutDnD();
+    _dnd->focusOut();
     SpinBox::focusOutEvent(e);
 }
 

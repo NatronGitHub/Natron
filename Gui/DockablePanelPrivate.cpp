@@ -48,6 +48,7 @@
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/KnobGui.h"
 #include "Gui/KnobGuiGroup.h" // for KnobGuiGroup
+#include "Gui/KnobWidgetDnD.h"
 #include "Gui/Label.h"
 #include "Gui/RightClickableWidget.h"
 #include "Gui/TabGroup.h"

@@ -69,6 +69,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/KnobUndoCommand.h"
+#include "Gui/KnobWidgetDnD.h"
 #include "Gui/Label.h"
 #include "Gui/NewLayerDialog.h"
 #include "Gui/ProjectGui.h"
@@ -93,6 +94,20 @@ using std::make_pair;
 
 
 //=============================STRING_KNOB_GUI===================================
+
+AnimatingTextEdit::AnimatingTextEdit(KnobGui* knob, int dimension, QWidget* parent)
+: QTextEdit(parent)
+, animation(0)
+, readOnlyNatron(false)
+, _hasChanged(false)
+, dirty(false)
+, _dnd(new KnobWidgetDnD(knob, dimension, this))
+{
+}
+
+AnimatingTextEdit::~AnimatingTextEdit()
+{
+}
 
 void
 AnimatingTextEdit::setAnimation(int v)
@@ -126,21 +141,21 @@ AnimatingTextEdit::setDirty(bool b)
 void
 AnimatingTextEdit::enterEvent(QEvent* e)
 {
-    mouseEnterDnD(e);
+    _dnd->mouseEnter(e);
     QTextEdit::enterEvent(e);
 }
 
 void
 AnimatingTextEdit::leaveEvent(QEvent* e)
 {
-    mouseLeaveDnD(e);
+    _dnd->mouseLeave(e);
     QTextEdit::leaveEvent(e);
 }
 
 void
 AnimatingTextEdit::keyPressEvent(QKeyEvent* e)
 {
-    keyPressDnD(e);
+    _dnd->keyPress(e);
     if (modCASIsControl(e) && e->key() == Qt::Key_Return) {
         if (_hasChanged) {
             _hasChanged = false;
@@ -154,7 +169,7 @@ AnimatingTextEdit::keyPressEvent(QKeyEvent* e)
 void
 AnimatingTextEdit::keyReleaseEvent(QKeyEvent* e)
 {
-    keyReleaseDnD(e);
+    _dnd->keyRelease(e);
     QTextEdit::keyReleaseEvent(e);
 }
 
@@ -173,7 +188,7 @@ AnimatingTextEdit::paintEvent(QPaintEvent* e)
 void
 AnimatingTextEdit::mousePressEvent(QMouseEvent* e)
 {
-    if (!mousePressDnD(e)) {
+    if (!_dnd->mousePress(e)) {
         QTextEdit::mousePressEvent(e);
     }
 }
@@ -181,7 +196,7 @@ AnimatingTextEdit::mousePressEvent(QMouseEvent* e)
 void
 AnimatingTextEdit::mouseMoveEvent(QMouseEvent* e)
 {
-    if (!mouseMoveDnD(e)) {
+    if (!_dnd->mouseMove(e)) {
         QTextEdit::mouseMoveEvent(e);
     }
 }
@@ -189,7 +204,7 @@ AnimatingTextEdit::mouseMoveEvent(QMouseEvent* e)
 void
 AnimatingTextEdit::mouseReleaseEvent(QMouseEvent* e)
 {
-    mouseReleaseDnD(e);
+    _dnd->mouseRelease(e);
     QTextEdit::mouseReleaseEvent(e);
     
 }
@@ -197,7 +212,7 @@ AnimatingTextEdit::mouseReleaseEvent(QMouseEvent* e)
 void
 AnimatingTextEdit::dragEnterEvent(QDragEnterEvent* e)
 {
-    if (!dragEnterDnD(e)) {
+    if (!_dnd->dragEnter(e)) {
         AnimatingTextEdit::dragEnterEvent(e);
     }
 }
@@ -205,14 +220,14 @@ AnimatingTextEdit::dragEnterEvent(QDragEnterEvent* e)
 void
 AnimatingTextEdit::dragMoveEvent(QDragMoveEvent* e)
 {
-    if (!dragMoveDnD(e)) {
+    if (!_dnd->dragMove(e)) {
         AnimatingTextEdit::dragMoveEvent(e);
     }
 }
 void
 AnimatingTextEdit::dropEvent(QDropEvent* e)
 {
-    if (!dropDnD(e)) {
+    if (!_dnd->drop(e)) {
         AnimatingTextEdit::dropEvent(e);
     }
 }
@@ -220,14 +235,14 @@ AnimatingTextEdit::dropEvent(QDropEvent* e)
 void
 AnimatingTextEdit::focusInEvent(QFocusEvent* e)
 {
-    focusInDnD();
+    _dnd->focusIn();
     QTextEdit::focusInEvent(e);
 }
 
 void
 AnimatingTextEdit::focusOutEvent(QFocusEvent* e)
 {
-    focusOutDnD();
+    _dnd->focusOut();
     if (_hasChanged) {
         _hasChanged = false;
         Q_EMIT editingFinished();
@@ -237,38 +252,46 @@ AnimatingTextEdit::focusOutEvent(QFocusEvent* e)
 }
 
 
+KnobLineEdit::KnobLineEdit(KnobGui* knob,int dimension, QWidget* parent)
+: LineEdit(parent)
+, _dnd(new KnobWidgetDnD(knob, dimension, this))
+{}
+
+KnobLineEdit::~KnobLineEdit() {
+}
+
 void
 KnobLineEdit::enterEvent(QEvent* e)
 {
-    mouseEnterDnD(e);
+    _dnd->mouseEnter(e);
     LineEdit::enterEvent(e);
 }
 
 void
 KnobLineEdit::leaveEvent(QEvent* e)
 {
-    mouseLeaveDnD(e);
+    _dnd->mouseLeave(e);
     LineEdit::leaveEvent(e);
 }
 
 void
 KnobLineEdit::keyPressEvent(QKeyEvent* e)
 {
-    keyPressDnD(e);
+    _dnd->keyPress(e);
     LineEdit::keyPressEvent(e);
 }
 
 void
 KnobLineEdit::keyReleaseEvent(QKeyEvent* e)
 {
-    keyReleaseDnD(e);
+    _dnd->keyRelease(e);
     LineEdit::keyReleaseEvent(e);
 }
 
 void
 KnobLineEdit::mousePressEvent(QMouseEvent* e)
 {
-    if (!mousePressDnD(e)) {
+    if (!_dnd->mousePress(e)) {
         LineEdit::mousePressEvent(e);
     }
 }
@@ -276,7 +299,7 @@ KnobLineEdit::mousePressEvent(QMouseEvent* e)
 void
 KnobLineEdit::mouseMoveEvent(QMouseEvent* e)
 {
-    if (!mouseMoveDnD(e)) {
+    if (!_dnd->mouseMove(e)) {
         LineEdit::mouseMoveEvent(e);
     }
 }
@@ -284,7 +307,7 @@ KnobLineEdit::mouseMoveEvent(QMouseEvent* e)
 void
 KnobLineEdit::mouseReleaseEvent(QMouseEvent* e)
 {
-    mouseReleaseDnD(e);
+    _dnd->mouseRelease(e);
     LineEdit::mouseReleaseEvent(e);
     
 }
@@ -292,7 +315,7 @@ KnobLineEdit::mouseReleaseEvent(QMouseEvent* e)
 void
 KnobLineEdit::dragEnterEvent(QDragEnterEvent* e)
 {
-    if (!dragEnterDnD(e)) {
+    if (!_dnd->dragEnter(e)) {
         LineEdit::dragEnterEvent(e);
     }
 }
@@ -300,14 +323,14 @@ KnobLineEdit::dragEnterEvent(QDragEnterEvent* e)
 void
 KnobLineEdit::dragMoveEvent(QDragMoveEvent* e)
 {
-    if (!dragMoveDnD(e)) {
+    if (!_dnd->dragMove(e)) {
         LineEdit::dragMoveEvent(e);
     }
 }
 void
 KnobLineEdit::dropEvent(QDropEvent* e)
 {
-    if (!dropDnD(e)) {
+    if (!_dnd->drop(e)) {
         LineEdit::dropEvent(e);
     }
 }
@@ -315,14 +338,14 @@ KnobLineEdit::dropEvent(QDropEvent* e)
 void
 KnobLineEdit::focusInEvent(QFocusEvent* e)
 {
-    focusInDnD();
+    _dnd->focusIn();
     LineEdit::focusInEvent(e);
 }
 
 void
 KnobLineEdit::focusOutEvent(QFocusEvent* e)
 {
-    focusOutDnD();
+    _dnd->focusOut();
     LineEdit::focusOutEvent(e);
 }
 

@@ -25,6 +25,10 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#endif
+
 #include "Global/Macros.h"
 
 CLANG_DIAG_OFF(deprecated)
@@ -34,9 +38,8 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/Macros.h"
-#include "Gui/GuiFwd.h"
-#include "Gui/KnobWidgetDnD.h"
 #include "Gui/Label.h"
+#include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
  
@@ -121,7 +124,7 @@ private:
 };
 
 
-class KnobClickableLabel : public ClickableLabel, public KnobWidgetDnD
+class KnobClickableLabel : public ClickableLabel
 {
   
 public:
@@ -130,9 +133,7 @@ public:
     
     KnobClickableLabel(const QString& text, KnobGui* knob, QWidget* parent = 0);
     
-    virtual ~KnobClickableLabel() {
-        
-    }
+    virtual ~KnobClickableLabel();
     
 private:
     
@@ -148,6 +149,8 @@ private:
     virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
+
+    boost::scoped_ptr<KnobWidgetDnD> _dnd;
 };
 
 NATRON_NAMESPACE_EXIT;

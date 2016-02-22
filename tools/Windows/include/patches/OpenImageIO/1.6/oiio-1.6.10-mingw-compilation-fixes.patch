@@ -179,28 +179,6 @@ index 95fd8f9..caf2b92 100644
  
  #include "OpenImageIO/strutil.h"
  #include "OpenImageIO/sysutil.h"
-diff --git a/src/libutil/filesystem.cpp b/src/libutil/filesystem.cpp
-index 72096a5..5388867 100644
---- a/src/libutil/filesystem.cpp
-+++ b/src/libutil/filesystem.cpp
-@@ -489,7 +489,7 @@ void
- Filesystem::open (std::ifstream &stream, string_view path,
-                   std::ios_base::openmode mode)
- {
--#ifdef _WIN32
-+#if defined(_WIN32) && !defined(__GNUC__)
-     // Windows std::ifstream accepts non-standard wchar_t* 
-     std::wstring wpath = Strutil::utf8_to_utf16(path);
-     stream.open (wpath.c_str(), mode);
-@@ -505,7 +505,7 @@ void
- Filesystem::open (std::ofstream &stream, string_view path,
-                   std::ios_base::openmode mode)
- {
--#ifdef _WIN32
-+#if defined(_WIN32) && !defined(__GNUC__)
-     // Windows std::ofstream accepts non-standard wchar_t*
-     std::wstring wpath = Strutil::utf8_to_utf16 (path);
-     stream.open (wpath.c_str(), mode);
 diff --git a/src/libutil/plugin.cpp b/src/libutil/plugin.cpp
 index 01c8f36..2789450 100644
 --- a/src/libutil/plugin.cpp

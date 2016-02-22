@@ -30,6 +30,10 @@
 #include <vector> // KnobGuiInt
 #include <list>
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#endif
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QObject>
@@ -45,34 +49,22 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ImageComponents.h"
 #include "Engine/EngineFwd.h"
 
+#include "Gui/AnimatedCheckBox.h"
 #include "Gui/CurveSelection.h"
 #include "Gui/KnobGui.h"
-#include "Gui/AnimatedCheckBox.h"
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
-#include "Gui/KnobWidgetDnD.h"
 
 NATRON_NAMESPACE_ENTER;
 
 //================================
 
-class Bool_CheckBox: public AnimatedCheckBox, public KnobWidgetDnD
+class Bool_CheckBox: public AnimatedCheckBox
 {
-    bool useCustomColor;
-    QColor customColor;
-    
 public:
+    Bool_CheckBox(KnobGui* knob, int dimension, QWidget* parent = 0);
     
-    Bool_CheckBox(KnobGui* knob, int dimension, QWidget* parent = 0)
-    : AnimatedCheckBox(parent)
-    , KnobWidgetDnD(knob, dimension, this)
-    , useCustomColor(false)
-    , customColor()
-    {
-    
-    }
-    
-    virtual ~Bool_CheckBox() {}
+    virtual ~Bool_CheckBox();
     
     void setCustomColor(const QColor& color, bool useCustom)
     {
@@ -97,7 +89,10 @@ private:
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
 
-    
+private:
+    bool useCustomColor;
+    QColor customColor;
+    boost::scoped_ptr<KnobWidgetDnD> _dnd;
 };
 
 class KnobGuiBool

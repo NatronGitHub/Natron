@@ -43,9 +43,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
-#include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h"
-#include "Gui/KnobWidgetDnD.h"
+#include "Gui/KnobWidgetDnD.h" // KNOB_DND_MIME_DATA_KEY
 
 NATRON_NAMESPACE_ENTER;
 

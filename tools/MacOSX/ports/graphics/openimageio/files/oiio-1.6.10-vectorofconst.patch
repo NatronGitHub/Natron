@@ -1,0 +1,20 @@
+--- oiio-Release-1.6.10/src/libOpenImageIO/imagebufalgo_pixelmath.cpp.orig	2016-02-22 12:06:09.000000000 +0100
++++ oiio-Release-1.6.10/src/libOpenImageIO/imagebufalgo_pixelmath.cpp	2016-02-22 12:06:13.000000000 +0100
+@@ -164,7 +164,7 @@
+ 
+     if (R.deep()) {
+         // Deep case
+-        array_view<const TypeDesc> channeltypes (R.deepdata()->channeltypes);
++        array_view<TypeDesc> channeltypes (R.deepdata()->channeltypes);
+         ImageBuf::Iterator<Rtype> r (R, roi);
+         ImageBuf::ConstIterator<Atype> a (A, roi);
+         for ( ;  !r.done();  ++r, ++a) {
+@@ -501,7 +501,7 @@
+ 
+     if (R.deep()) {
+         // Deep case
+-        array_view<const TypeDesc> channeltypes (R.deepdata()->channeltypes);
++        array_view<TypeDesc> channeltypes (R.deepdata()->channeltypes);
+         ImageBuf::Iterator<Rtype> r (R, roi);
+         ImageBuf::ConstIterator<Atype> a (A, roi);
+         for ( ;  !r.done();  ++r, ++a) {
