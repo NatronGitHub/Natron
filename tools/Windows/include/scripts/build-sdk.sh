@@ -134,17 +134,14 @@ if [ ! -f $INSTALL_PATH/bin/libOpenImageIO.dll ]; then
     tar xvf $SRC_PATH/$OIIO_TAR || exit 1
     cd oiio-Release-* || exit 1
     OIIO_PATCHES=$CWD/include/patches/OpenImageIO
-    #patch -p1 -i ${OIIO_PATCHES}/fix-mingw-w64.patch  || exit 1
-    patch -p1 -i ${OIIO_PATCHES}/fix-mingw-w64-16.patch  || exit 1
-    patch -p0 -i ${OIIO_PATCHES}/fix-mingw-w64-16.diff || exit 1
-    patch -p1 -i ${OIIO_PATCHES}/workaround-ansidecl-h-PTR-define-conflict.patch || exit 1
-    patch -p1 -i ${OIIO_PATCHES}/0001-MinGW-w64-include-winbase-h-early-for-TCHAR-types.patch  || exit 1
-    #patch -p1 -i ${OIIO_PATCHES}/oiio-exrthreads.patch || exit 1
-    #patch -p1 -i ${OIIO_PATCHES}/0002-Also-link-to-opencv_videoio-library.patch  || exit 1
-    patch -p1 -i ${OIIO_PATCHES}/oiio-pnm16.patch || exit 1
-    patch -p1 -i ${OIIO_PATCHES}/oiio-1.5.23-checkmaxmem.patch || exit 1
-    patch -p1 -i ${OIIO_PATCHES}/oiio-1.5.23-invalidatespec.patch || exit 1
-    #patch -p1 -i ${OIIO_PATCHES}/oiio-1.5.23-mingw-UTF8iostream.patch || exit 1
+    if [[ "$OIIO_TAR" = *-1.5.* ]]; then
+        patches=find $OIIO_PATCHES/1.5 -type f
+    elif [[ "$OIIO_TAR" = *-1.6.* ]]; then
+        patches=find $OIIO_PATCHES/1.6 -type f
+    fi
+    for p in $patches; do
+        patch -p1 -i $p || FAIL=1
+    done
     rm -rf build
     mkdir build || exit 1
     cd build || exit 1
