@@ -87,7 +87,6 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/Magick++.pc ]; then
     cd ImageMagick-* || exit 1
     patch -p1 < $INC_PATH/patches/ImageMagick/mingw.patch || exit 1
     patch -p0 < $INC_PATH/patches/ImageMagick/pango-align-hack.diff || exit 1
-    patch -p0 < $INC_PATH/patches/ImageMagick/xcf-layername.diff || exit 1
     patch -p0 < $INC_PATH/patches/ImageMagick/mingw-utf8.diff || exit 1
     env CFLAGS="-DMAGICKCORE_EXCLUDE_DEPRECATED=1" CXXFLAGS="-I${INSTALL_PATH}/include -DMAGICKCORE_EXCLUDE_DEPRECATED=1" LDFLAGS="-lz -lws2_32" ./configure --prefix=$INSTALL_PATH --with-magick-plus-plus=yes --with-quantum-depth=32 --without-dps --without-djvu --without-fftw --without-fpx --without-gslib --without-gvc --without-jbig --without-jpeg --with-lcms --without-openjp2 --without-lqr --without-lzma --without-openexr --with-pango --with-png --with-rsvg --without-tiff --without-webp --with-xml --without-zlib --without-bzlib --enable-static --disable-shared --enable-hdri --with-freetype --with-fontconfig --without-x --without-modules || exit 1
     make -j${MKJOBS} || exit 1
@@ -135,17 +134,17 @@ if [ ! -f $INSTALL_PATH/bin/libOpenImageIO.dll ]; then
     tar xvf $SRC_PATH/$OIIO_TAR || exit 1
     cd oiio-Release-* || exit 1
     OIIO_PATCHES=$CWD/include/patches/OpenImageIO
-    patch -p1 -i ${OIIO_PATCHES}/fix-mingw-w64.patch  || exit 1
-    # 1.6.x # patch -p1 -i ${OIIO_PATCHES}/fix-mingw-w64-16.patch  || exit 1
-    # 1.6.x # patch -p0 -i ${OIIO_PATCHES}/fix-mingw-w64-16.diff || exit 1
+    #patch -p1 -i ${OIIO_PATCHES}/fix-mingw-w64.patch  || exit 1
+    patch -p1 -i ${OIIO_PATCHES}/fix-mingw-w64-16.patch  || exit 1
+    patch -p0 -i ${OIIO_PATCHES}/fix-mingw-w64-16.diff || exit 1
     patch -p1 -i ${OIIO_PATCHES}/workaround-ansidecl-h-PTR-define-conflict.patch || exit 1
     patch -p1 -i ${OIIO_PATCHES}/0001-MinGW-w64-include-winbase-h-early-for-TCHAR-types.patch  || exit 1
-    patch -p1 -i ${OIIO_PATCHES}/oiio-exrthreads.patch || exit 1
+    #patch -p1 -i ${OIIO_PATCHES}/oiio-exrthreads.patch || exit 1
     #patch -p1 -i ${OIIO_PATCHES}/0002-Also-link-to-opencv_videoio-library.patch  || exit 1
     patch -p1 -i ${OIIO_PATCHES}/oiio-pnm16.patch || exit 1
     patch -p1 -i ${OIIO_PATCHES}/oiio-1.5.23-checkmaxmem.patch || exit 1
     patch -p1 -i ${OIIO_PATCHES}/oiio-1.5.23-invalidatespec.patch || exit 1
-    patch -p1 -i ${OIIO_PATCHES}/oiio-1.5.23-mingw-UTF8iostream.patch || exit 1
+    #patch -p1 -i ${OIIO_PATCHES}/oiio-1.5.23-mingw-UTF8iostream.patch || exit 1
     rm -rf build
     mkdir build || exit 1
     cd build || exit 1
