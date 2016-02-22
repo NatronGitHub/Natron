@@ -1,0 +1,24 @@
+--- oiio-Release-1.6.10/src/include/OpenImageIO/simd.h.orig	2016-02-21 20:30:32.000000000 +0100
++++ oiio-Release-1.6.10/src/include/OpenImageIO/simd.h	2016-02-22 08:56:39.000000000 +0100
+@@ -50,7 +50,21 @@
+ #include <OpenEXR/ImathVec.h>
+ 
+ #if (defined(__SSE2__) || (_MSC_VER >= 1300 && !_M_CEE_PURE)) && !defined(OIIO_NO_SSE)
++#if !defined(__GNUC__) || (OIIO_GNUC_VERSION > 40400 || __clang__)
+ #  include <immintrin.h>
++#else
++#  include <xmmintrin.h>
++#  include <emmintrin.h>
++#  if defined(__SSE3__)
++#    include <pmmintrin.h>
++#  endif
++#  if defined(__SSSE3__)
++#    include <tmmintrin.h>
++#  endif
++#  if (defined(__SSE4_1__) || defined(__SSE4_2__))
++#    include <smmintrin.h>
++#  endif
++#endif
+ #  if (defined(__i386__) || defined(__x86_64__)) && (OIIO_GNUC_VERSION > 40400 || __clang__)
+ #    include <x86intrin.h>
+ #  endif
