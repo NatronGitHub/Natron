@@ -7,8 +7,8 @@ PortGroup                   conflicts_build 1.0
 # Keep relevant lines in sync between ImageMagick and p5-perlmagick.
 
 name                        ImageMagick
-version                     6.9.2-10
-revision                    2
+version                     6.9.3-5
+revision                    1
 set reasonable_version      [lindex [split ${version} -] 0]
 homepage                    http://www.imagemagick.org/
 categories                  graphics devel
@@ -40,8 +40,8 @@ master_sites                http://www.imagemagick.org/download/ \
                             ftp://ftp.sunet.se/pub/multimedia/graphics/ImageMagick \
                             ftp://sunsite.icm.edu.pl/packages/ImageMagick
 
-checksums           rmd160  2189e2afddba54d5c1165c87786716d4c7172c74 \
-                    sha256  da2f6fba43d69f20ddb11783f13f77782b0b57783dde9cda39c9e5e733c2013c
+checksums           rmd160  5a03b372443db3d498dd66ccaa4709879f6158af \
+                    sha256  1546ae5717eaab221e0613393d78a0862e6d37869b1d1d54ccee3c62275837bf
 
 depends_lib                 port:bzip2 \
                             port:djvulibre \
@@ -119,7 +119,6 @@ configure.args              --enable-shared \
 
 variant natron conflicts x11 requires pango rsvg q32 hdri universal description {Natron version} {
     patchfiles-append pango-align-hack.diff
-    patchfiles-append xcf-layername.diff
     depends_lib-delete      port:ghostscript
     configure.args-replace  --with-dps --without-dps
     configure.args-replace  --with-gslib --without-gslib
@@ -157,8 +156,8 @@ variant natron conflicts x11 requires pango rsvg q32 hdri universal description 
     configure.args-replace  --enable-shared --disable-shared
     configure.args-replace  --with-modules --without-modules
     pre-extract {
-        if {${version} != "6.9.2-10"} {
-            ui_msg "Natron variant requires ImageMagick version 6.9.2-10 (this is ${version}), please modify the Portfile."
+        if {${version} != "6.9.3-5"} {
+            ui_msg "Natron variant requires ImageMagick version 6.9.3-5 (this is ${version}), please modify the Portfile."
             return -code error "incompatible ImageMagick version"
         }
     }
