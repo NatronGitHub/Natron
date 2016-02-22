@@ -27,7 +27,7 @@
 #include "Global/GlobalDefines.h"
 
 #include <fstream>
-#if defined(_WIN32) && defined(__GLIBCXX__)
+#if defined(__NATRON_WIN32__) && defined(__GLIBCXX__)
 #define FILESYSTEM_USE_STDIO_FILEBUF 1
 #include <ext/stdio_filebuf.h> // __gnu_cxx::stdio_filebuf
 #endif
@@ -40,8 +40,8 @@ NATRON_NAMESPACE_ENTER;
 
 namespace FStreamsSupport {
     
-#if FILESYSTEM_USE_STDIO_FILEBUF
-    typedef __gnu__cxx::stdio_filebuf<char> stdio_filebuf;
+#ifdef FILESYSTEM_USE_STDIO_FILEBUF
+    typedef __gnu_cxx::stdio_filebuf<char> stdio_filebuf;
 #else
     typedef std::basic_filebuf<char> stdio_filebuf;
 #endif
