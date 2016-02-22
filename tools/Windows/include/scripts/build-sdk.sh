@@ -135,12 +135,13 @@ if [ ! -f $INSTALL_PATH/bin/libOpenImageIO.dll ]; then
     cd oiio-Release-* || exit 1
     OIIO_PATCHES=$CWD/include/patches/OpenImageIO
     if [[ "$OIIO_TAR" = *-1.5.* ]]; then
-        patches=find $OIIO_PATCHES/1.5 -type f
+        patches=$(find "${OIIO_PATCHES}/1.5" -type f)
     elif [[ "$OIIO_TAR" = *-1.6.* ]]; then
-        patches=find $OIIO_PATCHES/1.6 -type f
+        patches=$(find "${OIIO_PATCHES}/1.6" -type f)
     fi
     for p in $patches; do
-        patch -p1 -i $p || FAIL=1
+		echo "Applying $p"
+        patch -p1 -i $p || exit 1
     done
     rm -rf build
     mkdir build || exit 1

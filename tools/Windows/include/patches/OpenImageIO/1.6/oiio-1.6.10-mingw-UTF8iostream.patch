@@ -46,7 +46,7 @@ index 78732f2..2bc3cf5 100644
  /// Read the entire contents of the named text file and place it in str,
  /// returning true on success, false on failure.
 diff --git a/src/libutil/filesystem.cpp b/src/libutil/filesystem.cpp
-index 72096a5..c1bd890 100644
+index 72096a5..bce452d 100644
 --- a/src/libutil/filesystem.cpp
 +++ b/src/libutil/filesystem.cpp
 @@ -40,14 +40,22 @@
@@ -72,6 +72,15 @@ index 72096a5..c1bd890 100644
  #else
  #include <unistd.h>
  #endif
+@@ -471,7 +479,7 @@ Filesystem::current_path()
+ FILE*
+ Filesystem::fopen (string_view path, string_view mode)
+ {
+-#ifdef _WIN32
++#if defined(_WIN32) && !defined(__GNUC__)
+     // on Windows fopen does not accept UTF-8 paths, so we convert to wide char
+     std::wstring wpath = Strutil::utf8_to_utf16 (path);
+     std::wstring wmode = Strutil::utf8_to_utf16 (mode);
 @@ -483,35 +491,188 @@ Filesystem::fopen (string_view path, string_view mode)
  #endif
  }
@@ -159,11 +168,8 @@ index 72096a5..c1bd890 100644
                    std::ios_base::openmode mode)
  {
 +    
- #ifdef _WIN32
--    // Windows std::ifstream accepts non-standard wchar_t* 
-     std::wstring wpath = Strutil::utf8_to_utf16(path);
--    stream.open (wpath.c_str(), mode);
--    stream.seekg (0, std::ios_base::beg); // force seek, otherwise broken
++#ifdef _WIN32
++    std::wstring wpath = Strutil::utf8_to_utf16(path);
 +#endif
 +    std::ifstream *ret = new std::ifstream();
 +    if (!ret) {
@@ -172,10 +178,9 @@ index 72096a5..c1bd890 100644
 +    try {
 +#ifdef _WIN32
 +        ret->open(wpath.c_str(),mode);
- #else
--    stream.open (path.c_str(), mode);
++#else
 +        ret->open(path.c_str(),mode);
- #endif
++#endif
 +    } catch (const std::exception & e) {
 +        delete ret;
 +        return 0;
@@ -193,8 +198,11 @@ index 72096a5..c1bd890 100644
 +open_ofstream_impl(string_view path,
 +                   std::ios_base::openmode mode)
 +{
-+#ifdef _WIN32
-+    std::wstring wpath = Strutil::utf8_to_utf16(path);
+ #ifdef _WIN32
+-    // Windows std::ifstream accepts non-standard wchar_t* 
+     std::wstring wpath = Strutil::utf8_to_utf16(path);
+-    stream.open (wpath.c_str(), mode);
+-    stream.seekg (0, std::ios_base::beg); // force seek, otherwise broken
 +#endif
 +    std::ofstream *ret = new std::ofstream();
 +    if (!ret) {
@@ -203,9 +211,10 @@ index 72096a5..c1bd890 100644
 +    try {
 +#ifdef _WIN32
 +        ret->open(wpath.c_str(),mode);
-+#else
+ #else
+-    stream.open (path.c_str(), mode);
 +        ret->open(path.c_str(),mode);
-+#endif
+ #endif
 +    } catch (const std::exception & e) {
 +        delete ret;
 +        return 0;
