@@ -68,6 +68,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/KnobUndoCommand.h"
+#include "Gui/KnobWidgetDnD.h"
 #include "Gui/Label.h"
 #include "Gui/NewLayerDialog.h"
 #include "Gui/ProjectGui.h"
@@ -84,11 +85,21 @@ using std::make_pair;
 
 
 //=============================CHOICE_KNOB_GUI===================================
+KnobComboBox::KnobComboBox(KnobGui* knob,int dimension, QWidget* parent)
+: ComboBox(parent)
+, _dnd(new KnobWidgetDnD(knob, dimension, this))
+{
+}
+
+KnobComboBox::~KnobComboBox()
+{
+}
+
 void
 KnobComboBox::wheelEvent(QWheelEvent *e)
 {
     bool mustIgnore = false;
-    if (!mouseWheelDnD(e)) {
+    if (!_dnd->mouseWheel(e)) {
         mustIgnore = true;
         ignoreWheelEvent = true;
     }
@@ -101,35 +112,35 @@ KnobComboBox::wheelEvent(QWheelEvent *e)
 void
 KnobComboBox::enterEvent(QEvent* e)
 {
-    mouseEnterDnD(e);
+    _dnd->mouseEnter(e);
     ComboBox::enterEvent(e);
 }
 
 void
 KnobComboBox::leaveEvent(QEvent* e)
 {
-    mouseLeaveDnD(e);
+    _dnd->mouseLeave(e);
     ComboBox::leaveEvent(e);
 }
 
 void
 KnobComboBox::keyPressEvent(QKeyEvent* e)
 {
-    keyPressDnD(e);
+    _dnd->keyPress(e);
     ComboBox::keyPressEvent(e);
 }
 
 void
 KnobComboBox::keyReleaseEvent(QKeyEvent* e)
 {
-    keyReleaseDnD(e);
+    _dnd->keyRelease(e);
     ComboBox::keyReleaseEvent(e);
 }
 
 void
 KnobComboBox::mousePressEvent(QMouseEvent* e)
 {
-    if (!mousePressDnD(e)) {
+    if (!_dnd->mousePress(e)) {
         ComboBox::mousePressEvent(e);
     }
 }
@@ -137,7 +148,7 @@ KnobComboBox::mousePressEvent(QMouseEvent* e)
 void
 KnobComboBox::mouseMoveEvent(QMouseEvent* e)
 {
-    if (!mouseMoveDnD(e)) {
+    if (!_dnd->mouseMove(e)) {
         ComboBox::mouseMoveEvent(e);
     }
 }
@@ -145,7 +156,7 @@ KnobComboBox::mouseMoveEvent(QMouseEvent* e)
 void
 KnobComboBox::mouseReleaseEvent(QMouseEvent* e)
 {
-    mouseReleaseDnD(e);
+    _dnd->mouseRelease(e);
     ComboBox::mouseReleaseEvent(e);
     
 }
@@ -153,7 +164,7 @@ KnobComboBox::mouseReleaseEvent(QMouseEvent* e)
 void
 KnobComboBox::dragEnterEvent(QDragEnterEvent* e)
 {
-    if (!dragEnterDnD(e)) {
+    if (!_dnd->dragEnter(e)) {
         ComboBox::dragEnterEvent(e);
     }
 }
@@ -161,14 +172,14 @@ KnobComboBox::dragEnterEvent(QDragEnterEvent* e)
 void
 KnobComboBox::dragMoveEvent(QDragMoveEvent* e)
 {
-    if (!dragMoveDnD(e)) {
+    if (!_dnd->dragMove(e)) {
         ComboBox::dragMoveEvent(e);
     }
 }
 void
 KnobComboBox::dropEvent(QDropEvent* e)
 {
-    if (!dropDnD(e)) {
+    if (!_dnd->drop(e)) {
         ComboBox::dropEvent(e);
     }
 }
@@ -176,14 +187,14 @@ KnobComboBox::dropEvent(QDropEvent* e)
 void
 KnobComboBox::focusInEvent(QFocusEvent* e)
 {
-    focusInDnD();
+    _dnd->focusIn();
     ComboBox::focusInEvent(e);
 }
 
 void
 KnobComboBox::focusOutEvent(QFocusEvent* e)
 {
-    focusOutDnD();
+    _dnd->focusOut();
     ComboBox::focusOutEvent(e);
 }
 

@@ -68,6 +68,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/KnobUndoCommand.h"
+#include "Gui/KnobWidgetDnD.h"
 #include "Gui/Label.h"
 #include "Gui/NewLayerDialog.h"
 #include "Gui/ProjectGui.h"
@@ -83,6 +84,18 @@ NATRON_NAMESPACE_ENTER;
 using std::make_pair;
 
 //==========================KnobBool_GUI======================================
+
+Bool_CheckBox::Bool_CheckBox(KnobGui* knob, int dimension, QWidget* parent)
+: AnimatedCheckBox(parent)
+, useCustomColor(false)
+, customColor()
+, _dnd(new KnobWidgetDnD(knob, dimension, this))
+{
+}
+
+Bool_CheckBox::~Bool_CheckBox()
+{
+}
 
 void
 Bool_CheckBox::getBackgroundColor(double *r,double *g,double *b) const
@@ -100,35 +113,35 @@ Bool_CheckBox::getBackgroundColor(double *r,double *g,double *b) const
 void
 Bool_CheckBox::enterEvent(QEvent* e)
 {
-    mouseEnterDnD(e);
+    _dnd->mouseEnter(e);
     AnimatedCheckBox::enterEvent(e);
 }
 
 void
 Bool_CheckBox::leaveEvent(QEvent* e)
 {
-    mouseLeaveDnD(e);
+    _dnd->mouseLeave(e);
     AnimatedCheckBox::leaveEvent(e);
 }
 
 void
 Bool_CheckBox::keyPressEvent(QKeyEvent* e)
 {
-    keyPressDnD(e);
+    _dnd->keyPress(e);
     AnimatedCheckBox::keyPressEvent(e);
 }
 
 void
 Bool_CheckBox::keyReleaseEvent(QKeyEvent* e)
 {
-    keyReleaseDnD(e);
+    _dnd->keyRelease(e);
     AnimatedCheckBox::keyReleaseEvent(e);
 }
 
 void
 Bool_CheckBox::mousePressEvent(QMouseEvent* e)
 {
-    if (!mousePressDnD(e)) {
+    if (!_dnd->mousePress(e)) {
         AnimatedCheckBox::mousePressEvent(e);
     }
 }
@@ -136,7 +149,7 @@ Bool_CheckBox::mousePressEvent(QMouseEvent* e)
 void
 Bool_CheckBox::mouseMoveEvent(QMouseEvent* e)
 {
-    if (!mouseMoveDnD(e)) {
+    if (!_dnd->mouseMove(e)) {
         AnimatedCheckBox::mouseMoveEvent(e);
     }
 }
@@ -144,7 +157,7 @@ Bool_CheckBox::mouseMoveEvent(QMouseEvent* e)
 void
 Bool_CheckBox::mouseReleaseEvent(QMouseEvent* e)
 {
-    mouseReleaseDnD(e);
+    _dnd->mouseRelease(e);
     AnimatedCheckBox::mouseReleaseEvent(e);
     
 }
@@ -152,7 +165,7 @@ Bool_CheckBox::mouseReleaseEvent(QMouseEvent* e)
 void
 Bool_CheckBox::dragEnterEvent(QDragEnterEvent* e)
 {
-    if (!dragEnterDnD(e)) {
+    if (!_dnd->dragEnter(e)) {
         AnimatedCheckBox::dragEnterEvent(e);
     }
 }
@@ -160,14 +173,14 @@ Bool_CheckBox::dragEnterEvent(QDragEnterEvent* e)
 void
 Bool_CheckBox::dragMoveEvent(QDragMoveEvent* e)
 {
-    if (!dragMoveDnD(e)) {
+    if (!_dnd->dragMove(e)) {
         AnimatedCheckBox::dragMoveEvent(e);
     }
 }
 void
 Bool_CheckBox::dropEvent(QDropEvent* e)
 {
-    if (!dropDnD(e)) {
+    if (!_dnd->drop(e)) {
         AnimatedCheckBox::dropEvent(e);
     }
 }
@@ -175,14 +188,14 @@ Bool_CheckBox::dropEvent(QDropEvent* e)
 void
 Bool_CheckBox::focusInEvent(QFocusEvent* e)
 {
-    focusInDnD();
+    _dnd->focusIn();
     AnimatedCheckBox::focusInEvent(e);
 }
 
 void
 Bool_CheckBox::focusOutEvent(QFocusEvent* e)
 {
-    focusOutDnD();
+    _dnd->focusOut();
     AnimatedCheckBox::focusOutEvent(e);
 }
 

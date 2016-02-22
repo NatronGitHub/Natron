@@ -33,7 +33,8 @@
 
 #include "Gui/LineEdit.h"
 #include "Gui/GuiFwd.h"
-#include "Gui/KnobWidgetDnD.h"
+
+
 NATRON_NAMESPACE_ENTER;
 
 struct SpinBoxPrivate;
@@ -156,28 +157,16 @@ private:
     boost::scoped_ptr<SpinBoxPrivate> _imp;
 };
 
-class KnobSpinBox : public SpinBox, public KnobWidgetDnD
+class KnobSpinBox : public SpinBox
 {
-    KnobGui* knob;
-    int dimension;
 public:
     
     KnobSpinBox(QWidget* parent,
                 SpinBoxTypeEnum type,
                 KnobGui* knob,
-                int dimension)
-    : SpinBox(parent,type)
-    , KnobWidgetDnD(knob, dimension, this)
-    , knob(knob)
-    , dimension(dimension)
-    {
-        
-    }
-    
-    virtual ~KnobSpinBox()
-    {
-        
-    }
+                int dimension);
+
+    virtual ~KnobSpinBox();
     
 private:
     
@@ -196,6 +185,10 @@ private:
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
 
+private:
+    KnobGui* knob;
+    int dimension;
+    boost::scoped_ptr<KnobWidgetDnD> _dnd;
 };
 
 NATRON_NAMESPACE_EXIT;

@@ -133,6 +133,7 @@ class KnobCurveGui;
 class KnobGui;
 class KnobGuiFactory;
 class KnobHolder;
+class KnobWidgetDnD;
 class LineEdit;
 class LinkArrow;
 class MenuWithToolTips;
