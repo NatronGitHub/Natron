@@ -1,55 +1,161 @@
 diff --git a/src/include/OpenImageIO/filesystem.h b/src/include/OpenImageIO/filesystem.h
-index 78732f2..2bc3cf5 100644
+index 78732f2..b47f961 100644
 --- a/src/include/OpenImageIO/filesystem.h
 +++ b/src/include/OpenImageIO/filesystem.h
-@@ -194,14 +194,38 @@ OIIO_API FILE *fopen (string_view path, string_view mode);
+@@ -45,6 +45,7 @@
+ #include <cstdio>
+ #include <ctime>
+ #include <fstream>
++#include <cassert>
+ #include <string>
+ #include <vector>
+ 
+@@ -52,9 +53,19 @@
+ #include "oiioversion.h"
+ #include "string_view.h"
+ 
++#if defined(_WIN32) && defined(__GLIBCXX__)
++#define FILESYSTEM_USE_STDIO_FILEBUF 1
++#include <ext/stdio_filebuf.h> // __gnu_cxx::stdio_filebuf
++#endif
+ 
+ OIIO_NAMESPACE_BEGIN
+ 
++#if FILESYSTEM_USE_STDIO_FILEBUF
++typedef __gnu__cxx::stdio_filebuf<char> stdio_filebuf;
++#else
++typedef std::basic_filebuf<char> stdio_filebuf;
++#endif
++
+ /// @namespace Filesystem
+ ///
+ /// @brief Platform-independent utilities for manipulating file names,
+@@ -192,17 +203,118 @@ OIIO_API FILE *fopen (string_view path, string_view mode);
+ /// Return the current (".") directory path.
+ ///
  OIIO_API std::string current_path ();
- 
+-
++    
++/// Deprecated: Will not work correctly on GCC with MingW, prefer
++/// the version below taking a IStreamWrapper*
  /// Version of std::ifstream.open that can handle UTF-8 paths
-+/// Open the file for reading with the given mode and set the stream
-+/// accordingly. Upon failure, stream is set to NULL.
-+/// Caller is responsible for calling delete on the returned stream
-+/// when done.
-+/// Usage:
-+/// std::ifstream* stream;
-+/// Filesystem::open(&stream, path);
-+/// if (stream) ...
-+/// delete stream;
  ///
--OIIO_API void open (std::ifstream &stream, string_view path,
--                    std::ios_base::openmode mode = std::ios_base::in);
-+/// To avoid memory leaks, the returned stream should be enclosed
-+/// as soon as possible in a RAII style structure, such as a smart ptr.
-+///
-+OIIO_API void open(std::istream** stream, string_view path,
-+                            std::ios_base::openmode mode  = std::ios_base::in);
- 
+ OIIO_API void open (std::ifstream &stream, string_view path,
+                     std::ios_base::openmode mode = std::ios_base::in);
+-
++    
++/// Deprecated: Will not work correctly on GCC with MingW, prefer
++/// the version below taking a OStreamWrapper*
  /// Version of std::ofstream.open that can handle UTF-8 paths
-+/// Open the file for reading with the given mode and set the stream
-+/// accordingly. Upon failure, stream is set to NULL.
-+/// Caller is responsible for calling delete on the returned stream
-+/// when done.
-+/// Usage:
-+/// std::ofstream* stream;
-+/// Filesystem::open(&stream, path);
-+/// if (stream) ...
-+/// delete stream;
-+///
-+/// To avoid memory leaks, the returned stream should be enclosed
-+/// as soon as possible in a RAII style structure, such as a smart ptr.
  ///
--OIIO_API void open (std::ofstream &stream, string_view path,
--                    std::ios_base::openmode mode = std::ios_base::out);
-+OIIO_API void open(std::ostream** stream, string_view path,
-+                            std::ios_base::openmode mode  = std::ios_base::out);
+ OIIO_API void open (std::ofstream &stream, string_view path,
+                     std::ios_base::openmode mode = std::ios_base::out);
  
++    
++/// To avoid memory leaks, the open functions below
++/// return this wrapper which ensure memory freeing in a RAII style.
++template <typename STREAM>
++class IOStreamWrapperTemplated
++{
++    
++public:
++    
++    IOStreamWrapperTemplated()
++    : _stream(0)
++    , _buffer(0)
++    {
++        
++    }
++    
++    IOStreamWrapperTemplated(STREAM* stream,
++                    stdio_filebuf* buffer = 0)
++    : _stream(stream)
++    , _buffer(buffer)
++    {
++        
++    }
++    
++    operator bool() const
++    {
++        return _stream ? (bool)(*_stream) : false;
++    }
++    
++    STREAM& operator*() const
++    {
++        assert(_stream);
++        return *_stream;
++    }
++    
++    //For convenience add this operator to access the stream
++    STREAM* operator->() const
++    {
++        assert(_stream);
++        return _stream;
++    }
++    
++    void setBuffers(STREAM* stream, stdio_filebuf* buffer = 0)
++    {
++        _stream = stream;
++        _buffer = buffer;
++    }
++    
++    ~IOStreamWrapperTemplated()
++    {
++        reset();
++    }
++    
++    void reset()
++    {
++        delete _stream;
++        
++        //According to istream/ostream documentation, the destructor does not
++        //delete the internal buffer. If we want the file to be closed, we need
++        //to delete it ourselves
++        delete _buffer;
++    }
++    
++private:
++    
++    STREAM* _stream;
++    stdio_filebuf* _buffer;
++    
++};
++
++typedef IOStreamWrapperTemplated<std::istream> IStreamWrapper;
++typedef IOStreamWrapperTemplated<std::ostream> OStreamWrapper;
++    
++/// Version of std::ifstream.open that can handle UTF-8 paths
++/// Open the file for reading with the given mode and set the stream
++/// accordingly.
++/// Usage:
++/// IStreamWrapper stream;
++/// Filesystem::open(&stream, path);
++/// if (!stream)
++///    // error
++///
++OIIO_API void open(IStreamWrapper* stream, string_view path,
++                            std::ios_base::openmode mode  = std::ios_base::in);
++
++/// Version of std::ofstream.open that can handle UTF-8 paths
++/// Open the file for reading with the given mode and set the stream
++/// accordingly.
++/// Usage:
++/// OStreamWrapper stream;
++/// Filesystem::open(&stream, path);
++/// if (!stream)
++///    // error
++///
++OIIO_API void open(OStreamWrapper* stream, string_view path,
++                            std::ios_base::openmode mode  = std::ios_base::out);
++
  /// Read the entire contents of the named text file and place it in str,
  /// returning true on success, false on failure.
+ OIIO_API bool read_text_file (string_view filename, std::string &str);
 diff --git a/src/libutil/filesystem.cpp b/src/libutil/filesystem.cpp
-index 72096a5..c1bd890 100644
+index 72096a5..ab9d773 100644
 --- a/src/libutil/filesystem.cpp
 +++ b/src/libutil/filesystem.cpp
-@@ -40,14 +40,22 @@
+@@ -40,14 +40,19 @@
  #include <boost/foreach.hpp>
  #include <boost/regex.hpp>
  
@@ -66,25 +172,46 @@ index 72096a5..c1bd890 100644
 +#include <fcntl.h>
 +#include <sys/stat.h>
 +#include <Share.h>
-+#ifdef __GLIBCXX__
-+#include <ext/stdio_filebuf.h> // __gnu_cxx::stdio_filebuf
-+#endif
  #else
  #include <unistd.h>
  #endif
-@@ -483,35 +491,188 @@ Filesystem::fopen (string_view path, string_view mode)
- #endif
+@@ -484,13 +489,13 @@ Filesystem::fopen (string_view path, string_view mode)
  }
  
-+#if defined(_WIN32) && defined(__GLIBCXX__)
+ 
+-
+ void
+ Filesystem::open (std::ifstream &stream, string_view path,
+                   std::ios_base::openmode mode)
+ {
+-#ifdef _WIN32
+-    // Windows std::ifstream accepts non-standard wchar_t* 
++#if defined(_WIN32) && !defined(__GNUC__)
++    // This will not work correctly on GCC with MingW
++    // Windows std::ifstream accepts non-standard wchar_t*
+     std::wstring wpath = Strutil::utf8_to_utf16(path);
+     stream.open (wpath.c_str(), mode);
+     stream.seekg (0, std::ios_base::beg); // force seek, otherwise broken
+@@ -505,7 +510,8 @@ void
+ Filesystem::open (std::ofstream &stream, string_view path,
+                   std::ios_base::openmode mode)
+ {
+-#ifdef _WIN32
++#if defined(_WIN32) && !defined(__GNUC__)
++    // This will not work correctly on GCC with MingW
+     // Windows std::ofstream accepts non-standard wchar_t*
+     std::wstring wpath = Strutil::utf8_to_utf16 (path);
+     stream.open (wpath.c_str(), mode);
+@@ -515,6 +521,200 @@ Filesystem::open (std::ofstream &stream, string_view path,
+ }
+ 
+ 
++#if FILESYSTEM_USE_STDIO_FILEBUF
 +// MingW uses GCC to build, but does not support having a wchar_t* passed as argument
 +// of ifstream::open or ofstream::open. To properly support UTF-8 encoding on MingW we must
 +// use the __gnu_cxx::stdio_filebuf GNU extension that can be used with _wfsopen and returned
 +// into a istream which share the same API as ifsteam. The same reasoning holds for ofstream.
- 
--
--void
--Filesystem::open (std::ifstream &stream, string_view path,
++
 +static int
 +ios_open_mode_to_oflag(std::ios_base::openmode mode)
 +{
@@ -109,11 +236,17 @@ index 72096a5..c1bd890 100644
 +    }
 +    return f;
 +}
-+    
-+static std::istream*
-+open_ifstream_impl(string_view path,
-+                   std::ios_base::openmode mode)
++
++template <typename STREAM, typename FSTREAM>
++bool
++open_fstream_impl(string_view path,
++                   std::ios_base::openmode mode,
++                   STREAM** stream,
++                   stdio_filebuf** buffer)
 +{
++    if (!stream || buffer) {
++        return false;
++    }
 +    std::wstring wpath = Strutil::utf8_to_utf16(path);
 +    int fd;
 +    int oflag = ios_open_mode_to_oflag(mode);
@@ -121,31 +254,19 @@ index 72096a5..c1bd890 100644
 +    if (errcode != 0) {
 +        return 0;
 +    }
-+    __gnu_cxx::stdio_filebuf<char>* buffer = new __gnu_cxx::stdio_filebuf<char>(fd, mode, 1);
-+    if (!buffer) {
-+        return 0;
++    *buffer = new OIIO_NAMESPACE::stdio_filebuf(fd, mode, 1);
++    if (!*buffer) {
++        return false;
 +    }
-+    return new std::istream(buffer);
++    *stream = new STREAM(*buffer);
++    if (!*stream) {
++        delete *buffer;
++        *buffer = 0;
++        return false;
++    }
++    return true;
 +}
-+    
-+static std::ostream*
-+open_ofstream_impl(string_view path,
-+                   std::ios_base::openmode mode)
-+{
-+    
-+    std::wstring wpath = Strutil::utf8_to_utf16(path);
-+    int fd;
-+    int oflag = ios_open_mode_to_oflag(mode);
-+    errno_t errcode = _wsopen_s(&fd, wpath.c_str(), oflag, _SH_DENYNO, _S_IREAD | _S_IWRITE);
-+    if (errcode != 0) {
-+        return 0;
-+    }
-+    __gnu_cxx::stdio_filebuf<char>* buffer = new __gnu_cxx::stdio_filebuf<char>(fd, mode, 1);
-+    if (!buffer) {
-+        return 0;
-+    }
-+    return new std::ostream(buffer);
-+}
++
 +#else // MSVC or Unix
 +    
 +#ifdef _WIN32
@@ -153,52 +274,28 @@ index 72096a5..c1bd890 100644
 +#error "open_ifstream_impl only supports GCC or MSVC"
 +#endif
 +#endif
-+    
-+static std::ifstream*
-+open_ifstream_impl(string_view path,
-                   std::ios_base::openmode mode)
- {
-+    
- #ifdef _WIN32
--    // Windows std::ifstream accepts non-standard wchar_t* 
-     std::wstring wpath = Strutil::utf8_to_utf16(path);
--    stream.open (wpath.c_str(), mode);
--    stream.seekg (0, std::ios_base::beg); // force seek, otherwise broken
-+#endif
-+    std::ifstream *ret = new std::ifstream();
-+    if (!ret) {
-+        return 0;
-+    }
-+    try {
-+#ifdef _WIN32
-+        ret->open(wpath.c_str(),mode);
- #else
--    stream.open (path.c_str(), mode);
-+        ret->open(path.c_str(),mode);
- #endif
-+    } catch (const std::exception & e) {
-+        delete ret;
-+        return 0;
-+    }
-+    
-+    if (!*ret) {
-+        delete ret;
-+        return 0;
-+    }
-+    
-+    return ret;
-+} // open_ifstream_impl
-+    
-+static std::ofstream*
-+open_ofstream_impl(string_view path,
-+                   std::ios_base::openmode mode)
++
++template <typename STREAM, typename FSTREAM>
++bool
++open_fstream_impl(string_view path,
++                   std::ios_base::openmode mode,
++                   STREAM** stream,
++                   stdio_filebuf** buffer)
 +{
++    if (!stream) {
++        return false;
++    }
++    
++    if (buffer) {
++        *buffer = 0;
++    }
++    
 +#ifdef _WIN32
 +    std::wstring wpath = Strutil::utf8_to_utf16(path);
 +#endif
-+    std::ofstream *ret = new std::ofstream();
++    FSTREAM* ret = new FSTREAM();
 +    if (!ret) {
-+        return 0;
++        return false;
 +    }
 +    try {
 +#ifdef _WIN32
@@ -208,84 +305,113 @@ index 72096a5..c1bd890 100644
 +#endif
 +    } catch (const std::exception & e) {
 +        delete ret;
-+        return 0;
++        return false;
 +    }
 +    
 +    if (!*ret) {
 +        delete ret;
-+        return 0;
++        return false;
 +    }
 +    
-+    return ret;
-+}
-+#endif //#if defined(_WIN32) &&  defined(__GLIBCXX__)
++    *stream = ret;
++    
++    return true;
++} // open_fstream_impl
++
++#endif //#if FILESYSTEM_USE_STDIO_FILEBUF
 +
 +
 +void
-+Filesystem::open (std::istream** stream,
++Filesystem::open (IStreamWrapper* stream,
 +                  string_view path,
 +                  std::ios_base::openmode mode)
 +{
 +    if (!stream) {
 +        return;
 +    }
-+    *stream = open_ifstream_impl(path, mode | std::ios_base::in);
-+    if (!*stream) {
++    
++    std::istream* rawStream = 0;
++    stdio_filebuf* buffer = 0;
++    if (!open_fstream_impl<std::istream, std::ifstream>(path, mode | std::ios_base::in, &rawStream, &buffer)) {
++        //Should have been freed
++        assert(!rawStream && !buffer);
++        delete rawStream;
++        delete buffer;
 +        return;
 +    }
++    
++    assert(rawStream);
++    if (!rawStream) {
++        return;
++    }
++    
 +    if (mode & std::ios_base::ate) {
-+        (*stream)->seekg (0, std::ios_base::end);
++        rawStream->seekg (0, std::ios_base::end);
 +    } else {
-+        (*stream)->seekg (0, std::ios_base::beg); // force seek, otherwise broken
++        rawStream->seekg (0, std::ios_base::beg); // force seek, otherwise broken
 +    }
-+    if ((*stream)->fail()) {
-+        delete *stream;
-+        *stream = 0;
++    if (rawStream->fail()) {
++        delete rawStream;
++        delete buffer;
++        return;
 +    }
- }
- 
- 
- 
- void
--Filesystem::open (std::ofstream &stream, string_view path,
-+Filesystem::open (std::ostream** stream,
++    
++    stream->setBuffers(rawStream, buffer);
++
++}
++
++
++
++void
++Filesystem::open (OStreamWrapper* stream,
 +                  string_view path,
-                   std::ios_base::openmode mode)
- {
--#ifdef _WIN32
--    // Windows std::ofstream accepts non-standard wchar_t*
--    std::wstring wpath = Strutil::utf8_to_utf16 (path);
--    stream.open (wpath.c_str(), mode);
--#else
--    stream.open (path.c_str(), mode);
--#endif
++                  std::ios_base::openmode mode)
++{
 +    if (!stream) {
 +        return;
 +    }
-+    *stream = open_ofstream_impl(path, mode | std::ios_base::out);
-+    if (!*stream) {
++    
++    std::ostream* rawStream = 0;
++    stdio_filebuf* buffer = 0;
++    if (!open_fstream_impl<std::ostream, std::ofstream>(path, mode | std::ios_base::out, &rawStream, &buffer)) {
++        //Should have been freed
++        assert(!rawStream && !buffer);
++        delete rawStream;
++        delete buffer;
 +        return;
 +    }
++    
++    assert(rawStream);
++    if (!rawStream) {
++        return;
++    }
++    
 +    if ((mode & std::ios_base::app) == 0) {
-+        (*stream)->seekp (0, std::ios_base::beg);
++        rawStream->seekp (0, std::ios_base::beg);
 +    }
-+    if ((*stream)->fail()) {
-+        delete *stream;
-+        *stream = 0;
++    if (rawStream->fail()) {
++        delete rawStream;
++        delete buffer;
++        return;
 +    }
- }
++    
++    stream->setBuffers(rawStream, buffer);
++
++}
++
++
  
- 
-@@ -523,13 +684,16 @@ Filesystem::read_text_file (string_view filename, std::string &str)
+ /// Read the entire contents of the named file and place it in str,
+ /// returning true on success, false on failure.
+@@ -523,13 +723,15 @@ Filesystem::read_text_file (string_view filename, std::string &str)
  {
      // For info on why this is the fastest method:
      // http://insanecoding.blogspot.com/2011/11/how-to-read-in-file-in-c.html
 -    std::ifstream in;
 -    Filesystem::open (in, filename);
 +    
-+    std::istream* inraw;
-+    Filesystem::open (&inraw, filename);
-+    shared_ptr<std::istream> in(inraw);
++    IStreamWrapper in;
++    Filesystem::open (&in, filename);
 +    
 +    
      // N.B. for binary read: open(in, filename, std::ios::in|std::ios::binary);
@@ -298,33 +424,20 @@ index 72096a5..c1bd890 100644
          return true;
      }
 diff --git a/src/openexr.imageio/exrinput.cpp b/src/openexr.imageio/exrinput.cpp
-index e53067f..e4685c2 100644
+index e53067f..34fe079 100644
 --- a/src/openexr.imageio/exrinput.cpp
 +++ b/src/openexr.imageio/exrinput.cpp
-@@ -85,6 +85,7 @@
- #include "OpenImageIO/filesystem.h"
- #include "OpenImageIO/imagebufalgo_util.h"
- 
-+#include <boost/scoped_ptr.hpp>
- #include <boost/scoped_array.hpp>
- 
- 
-@@ -100,7 +101,13 @@ public:
+@@ -100,7 +100,8 @@ public:
      OpenEXRInputStream (const char *filename) : Imf::IStream (filename) {
          // The reason we have this class is for this line, so that we
          // can correctly handle UTF-8 file paths on Windows
 -        Filesystem::open (ifs, filename, std::ios_base::binary);
-+        {
-+            std::istream* ifsraw;
-+            Filesystem::open (&ifsraw, filename, std::ios_base::binary);
-+            if (ifsraw) {
-+                ifs.reset(ifsraw);
-+            }
-+        }
++        
++        Filesystem::open (&ifs, filename, std::ios_base::binary);
          if (!ifs)
              Iex::throwErrnoExc ();
      }
-@@ -108,18 +115,23 @@ public:
+@@ -108,18 +109,23 @@ public:
          if (!ifs)
              throw Iex::InputExc ("Unexpected end of file.");
          errno = 0;
@@ -352,40 +465,26 @@ index e53067f..e4685c2 100644
      }
  
  private:
-@@ -131,7 +143,7 @@ private:
+@@ -131,7 +137,7 @@ private:
          }
          return true;
      }
 -    std::ifstream ifs;
-+    boost::scoped_ptr<std::istream> ifs;
++    Filesystem::IStreamWrapper ifs;
  };
  
  
 diff --git a/src/openexr.imageio/exroutput.cpp b/src/openexr.imageio/exroutput.cpp
-index 72f66a5..bae27f0 100644
+index 72f66a5..18c26d6 100644
 --- a/src/openexr.imageio/exroutput.cpp
 +++ b/src/openexr.imageio/exroutput.cpp
-@@ -36,6 +36,8 @@
- #include <iostream>
- #include <map>
- 
-+#include <boost/scoped_ptr.hpp>
-+
- #include <OpenEXR/ImfOutputFile.h>
- #include <OpenEXR/ImfTiledOutputFile.h>
- #include <OpenEXR/ImfChannelList.h>
-@@ -100,20 +102,32 @@ public:
+@@ -100,20 +100,27 @@ public:
      OpenEXROutputStream (const char *filename) : Imf::OStream(filename) {
          // The reason we have this class is for this line, so that we
          // can correctly handle UTF-8 file paths on Windows
 -        Filesystem::open (ofs, filename, std::ios_base::binary);
-+        {
-+            std::ostream* rawhandle;
-+            Filesystem::open (&rawhandle, filename, std::ios_base::binary);
-+            if (rawhandle) {
-+                ofs.reset(rawhandle);
-+            }
-+        }
++        Filesystem::open (&ofs, filename, std::ios_base::binary);
++
          if (!ofs)
              Iex::throwErrnoExc ();
      }
@@ -411,38 +510,37 @@ index 72f66a5..bae27f0 100644
          check_error ();
      }
  
-@@ -125,7 +139,7 @@ private:
+@@ -125,7 +132,7 @@ private:
              throw Iex::ErrnoExc ("File output failed.");
          }
      }
 -    std::ofstream ofs;
-+    boost::scoped_ptr<std::ostream> ofs;
++    Filesystem::OStreamWrapper ofs;
  };
  
  
 diff --git a/src/pnm.imageio/pnminput.cpp b/src/pnm.imageio/pnminput.cpp
-index 86c16f4..91481f2 100644
+index 86c16f4..5887b10 100644
 --- a/src/pnm.imageio/pnminput.cpp
 +++ b/src/pnm.imageio/pnminput.cpp
-@@ -32,6 +32,8 @@
+@@ -32,6 +32,7 @@
  #include <fstream>
  #include <cstdlib>
  
-+#include <boost/scoped_ptr.hpp>
 +
  #include "OpenImageIO/filesystem.h"
  #include "OpenImageIO/fmath.h"
  #include "OpenImageIO/imageio.h"
-@@ -53,7 +55,7 @@ private:
+@@ -53,7 +54,7 @@ private:
        P1, P2, P3, P4, P5, P6, Pf, PF
      };
  
 -    std::ifstream m_file;
-+    boost::scoped_ptr<std::istream> m_file;
++    Filesystem::IStreamWrapper m_file;
      std::streampos m_header_end_pos; // file position after the header
      std::string m_current_line; ///< Buffer the image pixels
      const char * m_pos;
-@@ -82,7 +84,7 @@ OIIO_PLUGIN_EXPORTS_END
+@@ -82,7 +83,7 @@ OIIO_PLUGIN_EXPORTS_END
  
  
  inline bool
@@ -451,7 +549,7 @@ index 86c16f4..91481f2 100644
  {   
      if (!file.good())
          return false;
-@@ -96,7 +98,7 @@ nextLine (std::ifstream &file, std::string &current_line, const char * &pos)
+@@ -96,7 +97,7 @@ nextLine (std::ifstream &file, std::string &current_line, const char * &pos)
  
  
  inline const char * 
@@ -460,7 +558,7 @@ index 86c16f4..91481f2 100644
  {		
      while (1) {
          while (isspace (*pos)) 
-@@ -112,7 +114,7 @@ nextToken (std::ifstream &file, std::string &current_line, const char * &pos)
+@@ -112,7 +113,7 @@ nextToken (std::ifstream &file, std::string &current_line, const char * &pos)
  
  
  inline const char *
@@ -469,7 +567,7 @@ index 86c16f4..91481f2 100644
                const char * & pos, char comment = '#')
  {		
      while (1) {
-@@ -128,7 +130,7 @@ skipComments (std::ifstream &file, std::string &current_line,
+@@ -128,7 +129,7 @@ skipComments (std::ifstream &file, std::string &current_line,
  
  
  inline bool
@@ -478,7 +576,7 @@ index 86c16f4..91481f2 100644
           const char * &pos, int &val, char comment = '#')
  {
      skipComments (file, current_line, pos, comment);
-@@ -152,7 +154,7 @@ invert (const T *read, T *write, imagesize_t nvals)
+@@ -152,7 +153,7 @@ invert (const T *read, T *write, imagesize_t nvals)
  
  template <class T> 
  inline bool 
@@ -487,7 +585,7 @@ index 86c16f4..91481f2 100644
                T *write, imagesize_t nvals, T max)
  {
      if (max)
-@@ -248,7 +250,7 @@ PNMInput::read_file_scanline (void * data, int y)
+@@ -248,7 +249,7 @@ PNMInput::read_file_scanline (void * data, int y)
  
      std::vector<unsigned char> buf;
      bool good = true;
@@ -496,7 +594,7 @@ index 86c16f4..91481f2 100644
          return false;
      int nsamples = m_spec.width * m_spec.nchannels;
  
-@@ -256,7 +258,7 @@ PNMInput::read_file_scanline (void * data, int y)
+@@ -256,7 +257,7 @@ PNMInput::read_file_scanline (void * data, int y)
      if (m_pnm_type == PF || m_pnm_type == Pf) {
          int file_scanline = m_spec.height - 1 - (y-m_spec.y);
          std::streampos offset = file_scanline * m_spec.scanline_bytes();
@@ -505,7 +603,7 @@ index 86c16f4..91481f2 100644
      }
  
      if ((m_pnm_type >= P4 && m_pnm_type <= P6) || m_pnm_type == PF || m_pnm_type == Pf){
-@@ -268,25 +270,25 @@ PNMInput::read_file_scanline (void * data, int y)
+@@ -268,25 +269,25 @@ PNMInput::read_file_scanline (void * data, int y)
          else
              numbytes = m_spec.scanline_bytes();
          buf.resize (numbytes);
@@ -536,7 +634,7 @@ index 86c16f4..91481f2 100644
                                        nsamples, (unsigned char)m_max_val);
              break;
          //Raw
-@@ -328,15 +330,15 @@ PNMInput::read_file_header ()
+@@ -328,15 +329,15 @@ PNMInput::read_file_header ()
  
      unsigned int width, height;
      char c;
@@ -555,7 +653,7 @@ index 86c16f4..91481f2 100644
      switch(c) {
        case '1':
          m_pnm_type = P1;
-@@ -367,23 +369,23 @@ PNMInput::read_file_header ()
+@@ -367,23 +368,23 @@ PNMInput::read_file_header ()
      }
      
      //Size
@@ -584,7 +682,7 @@ index 86c16f4..91481f2 100644
  
          if (m_pnm_type == P3 || m_pnm_type == P6)
              m_spec =  ImageSpec (width, height, 3, 
-@@ -406,14 +408,14 @@ PNMInput::read_file_header ()
+@@ -406,14 +407,14 @@ PNMInput::read_file_header ()
          return true;
      } else {
          //Read scaling factor
@@ -602,23 +700,19 @@ index 86c16f4..91481f2 100644
  
          if(m_pnm_type == PF) {
              m_spec = ImageSpec(width, height, 3, TypeDesc::FLOAT);
-@@ -444,9 +446,12 @@ bool
+@@ -444,9 +445,8 @@ bool
  PNMInput::open (const std::string &name, ImageSpec &newspec)
  {
      close(); //close previously opened file
 -
 -    Filesystem::open (m_file, name, std::ios::in|std::ios::binary);
 -
-+    std::istream* rawfile;
-+    Filesystem::open (&rawfile, name, std::ios::in|std::ios::binary);
-+    if (rawfile) {
-+        m_file.reset(rawfile);
-+    }
++    Filesystem::open (&m_file, name, std::ios::in|std::ios::binary);
 +    
      m_current_line = "";
      m_pos = m_current_line.c_str();
  
-@@ -462,8 +467,8 @@ PNMInput::open (const std::string &name, ImageSpec &newspec)
+@@ -462,8 +462,8 @@ PNMInput::open (const std::string &name, ImageSpec &newspec)
  bool
  PNMInput::close ()
  {
@@ -630,46 +724,27 @@ index 86c16f4..91481f2 100644
  }
  
 diff --git a/src/pnm.imageio/pnmoutput.cpp b/src/pnm.imageio/pnmoutput.cpp
-index 07735bc..efe08ef 100644
+index 07735bc..2258754 100644
 --- a/src/pnm.imageio/pnmoutput.cpp
 +++ b/src/pnm.imageio/pnmoutput.cpp
-@@ -30,6 +30,8 @@
- 
- #include <fstream>
- 
-+#include <boost/scoped_ptr.hpp>
-+
- #include "OpenImageIO/filesystem.h"
- #include "OpenImageIO/imageio.h"
- 
-@@ -51,7 +53,7 @@ public:
+@@ -51,7 +51,7 @@ public:
  
  private:
      std::string m_filename;           ///< Stash the filename
 -    std::ofstream m_file;
-+    boost::scoped_ptr<std::ostream> m_file;
++    Filesystem::OStreamWrapper m_file;
      unsigned int m_max_val, m_pnm_type;
      unsigned int m_dither;
      std::vector<unsigned char> m_scratch;
-@@ -186,27 +188,38 @@ PNMOutput::open (const std::string &name, const ImageSpec &userspec,
+@@ -186,27 +186,28 @@ PNMOutput::open (const std::string &name, const ImageSpec &userspec,
      if (!m_spec.get_int_attribute ("pnm:binary", 1)) 
      {
          m_pnm_type -= 3;
 -        Filesystem::open (m_file, name);
-+        {
-+            std::ostream* raw;
-+            Filesystem::open (&raw, name);
-+            if (raw) {
-+                m_file.reset(raw);
-+            }
-+        }
++        Filesystem::open (&m_file, name);
 +    }
 +    else {
-+        std::ostream* raw;
-+        Filesystem::open (&raw, name, std::ios::out|std::ios::binary);
-+        if (raw) {
-+            m_file.reset(raw);
-+        }
++        Filesystem::open (&m_file, name, std::ios::out|std::ios::binary);
      }
 -    else
 -        Filesystem::open (m_file, name, std::ios::out|std::ios::binary);
@@ -698,7 +773,7 @@ index 07735bc..efe08ef 100644
  }
  
  
-@@ -214,7 +227,7 @@ PNMOutput::open (const std::string &name, const ImageSpec &userspec,
+@@ -214,7 +215,7 @@ PNMOutput::open (const std::string &name, const ImageSpec &userspec,
  bool
  PNMOutput::close ()
  {
@@ -707,7 +782,7 @@ index 07735bc..efe08ef 100644
          return true;
      }
  
-@@ -227,7 +240,7 @@ PNMOutput::close ()
+@@ -227,7 +228,7 @@ PNMOutput::close ()
          std::vector<unsigned char>().swap (m_tilebuffer);
      }
  
@@ -716,7 +791,7 @@ index 07735bc..efe08ef 100644
      return true;  
  }
  
-@@ -237,7 +250,7 @@ bool
+@@ -237,7 +238,7 @@ bool
  PNMOutput::write_scanline (int y, int z, TypeDesc format,
          const void *data, stride_t xstride)
  {
@@ -725,7 +800,7 @@ index 07735bc..efe08ef 100644
          return false;
      if (z)
          return false;
-@@ -251,30 +264,30 @@ PNMOutput::write_scanline (int y, int z, TypeDesc format,
+@@ -251,30 +252,30 @@ PNMOutput::write_scanline (int y, int z, TypeDesc format,
  
      switch (m_pnm_type){
          case 1:
@@ -764,27 +839,19 @@ index 07735bc..efe08ef 100644
  
  
 diff --git a/src/psd.imageio/psdinput.cpp b/src/psd.imageio/psdinput.cpp
-index b2c5770..de3e872 100644
+index b2c5770..67cc4ba 100644
 --- a/src/psd.imageio/psdinput.cpp
 +++ b/src/psd.imageio/psdinput.cpp
-@@ -36,6 +36,7 @@
- #include <boost/bind.hpp>
- #include <boost/function.hpp>
- #include <boost/foreach.hpp>
-+#include <boost/scoped_ptr.hpp>
- 
- #include "psd_pvt.h"
- #include "jpeg_memory_src.h"
-@@ -196,7 +197,7 @@ private:
+@@ -196,7 +196,7 @@ private:
      };
  
      std::string m_filename;
 -    std::ifstream m_file;
-+    boost::scoped_ptr<std::istream> m_file;
++    Filesystem::IStreamWrapper m_file;
      //Current subimage
      int m_subimage;
      //Subimage count (1 + layer count)
-@@ -386,14 +387,14 @@ private:
+@@ -386,14 +386,14 @@ private:
      bool read_bige (TVariable &value)
      {
          TStorage buffer;
@@ -801,24 +868,20 @@ index b2c5770..de3e872 100644
      }
  
      int read_pascal_string (std::string &s, uint16_t mod_padding);
-@@ -543,8 +544,14 @@ bool
+@@ -543,8 +543,10 @@ bool
  PSDInput::open (const std::string &name, ImageSpec &newspec)
  {
      m_filename = name;
 -    Filesystem::open (m_file, name, std::ios::binary);
 -    if (!m_file.is_open ()) {
-+    {
-+        std::istream* raw;
-+        Filesystem::open (&raw, name, std::ios::binary);
-+        if (raw) {
-+            m_file.reset(raw);
-+        }
-+    }
++    
++    Filesystem::open (&m_file, name, std::ios::binary);
++    
 +    if (!m_file) {
          error ("\"%s\": failed to open file", name.c_str());
          return false;
      }
-@@ -759,7 +766,7 @@ void
+@@ -759,7 +761,7 @@ void
  PSDInput::init ()
  {
      m_filename.clear ();
@@ -827,7 +890,7 @@ index b2c5770..de3e872 100644
      m_subimage = -1;
      m_subimage_count = 0;
      m_specs.clear ();
-@@ -795,9 +802,9 @@ PSDInput::load_header ()
+@@ -795,9 +797,9 @@ PSDInput::load_header ()
  bool
  PSDInput::read_header ()
  {
@@ -839,7 +902,7 @@ index b2c5770..de3e872 100644
      read_bige<uint16_t> (m_header.channel_count);
      read_bige<uint32_t> (m_header.height);
      read_bige<uint32_t> (m_header.width);
-@@ -892,7 +899,7 @@ PSDInput::load_color_data ()
+@@ -892,7 +894,7 @@ PSDInput::load_color_data ()
  
      if (m_color_data.length) {
          m_color_data.data.resize (m_color_data.length);
@@ -848,7 +911,7 @@ index b2c5770..de3e872 100644
      }
      return check_io ();
  }
-@@ -926,9 +933,9 @@ PSDInput::load_resources ()
+@@ -926,9 +928,9 @@ PSDInput::load_resources ()
  
      ImageResourceBlock block;
      ImageResourceMap resources;
@@ -860,7 +923,7 @@ index b2c5770..de3e872 100644
          if (!read_resource (block) || !validate_resource (block))
              return false;
  
-@@ -940,7 +947,7 @@ PSDInput::load_resources ()
+@@ -940,7 +942,7 @@ PSDInput::load_resources ()
      if (!handle_resources (resources))
          return false;
  
@@ -869,7 +932,7 @@ index b2c5770..de3e872 100644
      return check_io ();
  }
  
-@@ -949,18 +956,18 @@ PSDInput::load_resources ()
+@@ -949,18 +951,18 @@ PSDInput::load_resources ()
  bool
  PSDInput::read_resource (ImageResourceBlock &block)
  {
@@ -892,7 +955,7 @@ index b2c5770..de3e872 100644
  
      return check_io ();
  }
-@@ -988,7 +995,7 @@ PSDInput::handle_resources (ImageResourceMap &resources)
+@@ -988,7 +990,7 @@ PSDInput::handle_resources (ImageResourceMap &resources)
          ImageResourceMap::const_iterator it (resources.find (loader.resource_id));
          // If a resource with that ID exists in the file, call the loader
          if (it != end) {
@@ -901,7 +964,7 @@ index b2c5770..de3e872 100644
              if (!check_io ())
                  return false;
  
-@@ -1115,7 +1122,7 @@ bool
+@@ -1115,7 +1117,7 @@ bool
  PSDInput::load_resource_1058 (uint32_t length)
  {
      std::string data (length, 0);
@@ -910,7 +973,7 @@ index b2c5770..de3e872 100644
          return false;
  
      if (!decode_exif (&data[0], length, m_composite_attribs) ||
-@@ -1141,7 +1148,7 @@ bool
+@@ -1141,7 +1143,7 @@ bool
  PSDInput::load_resource_1060 (uint32_t length)
  {
      std::string data (length, 0);
@@ -919,7 +982,7 @@ index b2c5770..de3e872 100644
          return false;
  
      // Store the XMP data for the composite and all other subimages
-@@ -1223,7 +1230,7 @@ PSDInput::load_resource_thumbnail (uint32_t length, bool isBGR)
+@@ -1223,7 +1225,7 @@ PSDInput::load_resource_thumbnail (uint32_t length, bool isBGR)
          return false;
      }
      std::string jpeg_data (jpeg_length, '\0');
@@ -928,7 +991,7 @@ index b2c5770..de3e872 100644
          return false;
  
      jpeg_create_decompress (&cinfo);
-@@ -1282,7 +1289,7 @@ PSDInput::load_layers ()
+@@ -1282,7 +1284,7 @@ PSDInput::load_layers ()
      else
          read_bige<uint64_t> (m_layer_mask_info.length);
  
@@ -937,7 +1000,7 @@ index b2c5770..de3e872 100644
      m_layer_mask_info.end = m_layer_mask_info.begin
                            + (std::streampos)m_layer_mask_info.length;
      if (!check_io ())
-@@ -1297,7 +1304,7 @@ PSDInput::load_layers ()
+@@ -1297,7 +1299,7 @@ PSDInput::load_layers ()
      else
          read_bige<uint64_t> (layer_info.length);
  
@@ -946,7 +1009,7 @@ index b2c5770..de3e872 100644
      layer_info.end = layer_info.begin + (std::streampos)layer_info.length;
      if (!check_io ())
          return false;
-@@ -1351,7 +1358,7 @@ PSDInput::load_layer (Layer &layer)
+@@ -1351,7 +1353,7 @@ PSDInput::load_layer (Layer &layer)
          layer.channel_id_map[channel_info.channel_id] = &channel_info;
      }
      char bm_signature[4];
@@ -955,7 +1018,7 @@ index b2c5770..de3e872 100644
      if (!check_io ())
          return false;
  
-@@ -1359,12 +1366,12 @@ PSDInput::load_layer (Layer &layer)
+@@ -1359,12 +1361,12 @@ PSDInput::load_layer (Layer &layer)
          error ("[Layer Record] Invalid blend mode signature");
          return false;
      }
@@ -970,7 +1033,7 @@ index b2c5770..de3e872 100644
      read_bige<uint32_t> (layer.extra_length);
      uint32_t extra_remaining = layer.extra_length;
      // layer mask data length
-@@ -1384,12 +1391,12 @@ PSDInput::load_layer (Layer &layer)
+@@ -1384,12 +1386,12 @@ PSDInput::load_layer (Layer &layer)
              read_bige<uint8_t> (layer.mask_data.default_color);
              read_bige<uint8_t> (layer.mask_data.flags);
              // skip padding
@@ -985,7 +1048,7 @@ index b2c5770..de3e872 100644
              read_bige<uint8_t> (layer.mask_data.flags);
              read_bige<uint8_t> (layer.mask_data.default_color);
              read_bige<uint32_t> (layer.mask_data.top);
-@@ -1409,7 +1416,7 @@ PSDInput::load_layer (Layer &layer)
+@@ -1409,7 +1411,7 @@ PSDInput::load_layer (Layer &layer)
      uint32_t lbr_length;
      read_bige<uint32_t> (lbr_length);
      // skip block
@@ -994,7 +1057,7 @@ index b2c5770..de3e872 100644
      extra_remaining -= (lbr_length + 4);
      if (!check_io ())
          return false;
-@@ -1420,8 +1427,8 @@ PSDInput::load_layer (Layer &layer)
+@@ -1420,8 +1422,8 @@ PSDInput::load_layer (Layer &layer)
          Layer::AdditionalInfo &info = layer.additional_info.back();
  
          char signature[4];
@@ -1005,7 +1068,7 @@ index b2c5770..de3e872 100644
          if (std::memcmp (signature, "8BIM", 4) != 0
                && std::memcmp (signature, "8B64", 4) != 0) {
              error ("[Additional Layer Info] invalid signature");
-@@ -1435,7 +1442,7 @@ PSDInput::load_layer (Layer &layer)
+@@ -1435,7 +1437,7 @@ PSDInput::load_layer (Layer &layer)
              read_bige<uint32_t> (info.length);
              extra_remaining -= 4;
          }
@@ -1014,7 +1077,7 @@ index b2c5770..de3e872 100644
          extra_remaining -= info.length;
      }
      return check_io ();
-@@ -1459,7 +1466,7 @@ PSDInput::load_layer_channels (Layer &layer)
+@@ -1459,7 +1461,7 @@ PSDInput::load_layer_channels (Layer &layer)
  bool
  PSDInput::load_layer_channel (Layer &layer, ChannelInfo &channel_info)
  {
@@ -1023,7 +1086,7 @@ index b2c5770..de3e872 100644
      if (channel_info.data_length >= 2) {
          read_bige<uint16_t> (channel_info.compression);
          if (!check_io ())
-@@ -1469,7 +1476,7 @@ PSDInput::load_layer_channel (Layer &layer, ChannelInfo &channel_info)
+@@ -1469,7 +1471,7 @@ PSDInput::load_layer_channel (Layer &layer, ChannelInfo &channel_info)
      if (channel_info.data_length <= 2)
          return true;
  
@@ -1032,7 +1095,7 @@ index b2c5770..de3e872 100644
      channel_info.row_pos.resize (layer.height);
      channel_info.row_length = (layer.width * m_header.depth + 7) / 8;
      switch (channel_info.compression) {
-@@ -1487,7 +1494,7 @@ PSDInput::load_layer_channel (Layer &layer, ChannelInfo &channel_info)
+@@ -1487,7 +1489,7 @@ PSDInput::load_layer_channel (Layer &layer, ChannelInfo &channel_info)
                  return false;
  
              // channel data is located after the RLE lengths
@@ -1041,7 +1104,7 @@ index b2c5770..de3e872 100644
              // subtract the RLE lengths read above
              channel_info.data_length = channel_info.data_length - (channel_info.data_pos - start_pos);
              if (layer.height) {
-@@ -1507,7 +1514,7 @@ PSDInput::load_layer_channel (Layer &layer, ChannelInfo &channel_info)
+@@ -1507,7 +1509,7 @@ PSDInput::load_layer_channel (Layer &layer, ChannelInfo &channel_info)
              return false;
  ;
      }
@@ -1050,7 +1113,7 @@ index b2c5770..de3e872 100644
      return check_io ();
  
  }
-@@ -1535,19 +1542,19 @@ PSDInput::load_global_mask_info ()
+@@ -1535,19 +1537,19 @@ PSDInput::load_global_mask_info ()
      if (!m_layer_mask_info.length)
          return true;
  
@@ -1074,7 +1137,7 @@ index b2c5770..de3e872 100644
      std::streampos end = start + (std::streampos)length;
      if (!check_io ())
          return false;
-@@ -1562,7 +1569,7 @@ PSDInput::load_global_mask_info ()
+@@ -1562,7 +1564,7 @@ PSDInput::load_global_mask_info ()
  
      read_bige<uint16_t> (m_global_mask_info.opacity);
      read_bige<int16_t> (m_global_mask_info.kind);
@@ -1083,7 +1146,7 @@ index b2c5770..de3e872 100644
      return check_io ();
  }
  
-@@ -1577,9 +1584,9 @@ PSDInput::load_global_additional ()
+@@ -1577,9 +1579,9 @@ PSDInput::load_global_additional ()
      char signature[4];
      char key[4];
      uint64_t length;
@@ -1095,7 +1158,7 @@ index b2c5770..de3e872 100644
          if (!check_io ())
              return false;
  
-@@ -1588,7 +1595,7 @@ PSDInput::load_global_additional ()
+@@ -1588,7 +1590,7 @@ PSDInput::load_global_additional ()
              error ("[Global Additional Layer Info] invalid signature");
              return false;
          }
@@ -1104,7 +1167,7 @@ index b2c5770..de3e872 100644
          if (!check_io ())
              return false;
  
-@@ -1607,10 +1614,10 @@ PSDInput::load_global_additional ()
+@@ -1607,10 +1609,10 @@ PSDInput::load_global_additional ()
          length = (length + 3) & ~3;
          remaining -= length;
          // skip it for now
@@ -1117,7 +1180,7 @@ index b2c5770..de3e872 100644
      return check_io ();
  }
  
-@@ -1644,7 +1651,7 @@ PSDInput::load_image_data ()
+@@ -1644,7 +1646,7 @@ PSDInput::load_image_data ()
      }
      BOOST_FOREACH (ChannelInfo &channel_info, m_image_data.channel_info) {
          channel_info.row_pos.resize (m_header.height);
@@ -1126,7 +1189,7 @@ index b2c5770..de3e872 100644
          channel_info.row_length = (m_header.width * m_header.depth + 7) / 8;
          switch (compression) {
              case Compression_Raw:
-@@ -1652,14 +1659,14 @@ PSDInput::load_image_data ()
+@@ -1652,14 +1654,14 @@ PSDInput::load_image_data ()
                  for (uint32_t i = 1; i < m_header.height; ++i)
                      channel_info.row_pos[i] = channel_info.row_pos[i - 1] + (std::streampos)row_length;
  
@@ -1143,7 +1206,7 @@ index b2c5770..de3e872 100644
                  break;
          }
      }
-@@ -1748,17 +1755,17 @@ PSDInput::read_channel_row (const ChannelInfo &channel_info, uint32_t row, char
+@@ -1748,17 +1750,17 @@ PSDInput::read_channel_row (const ChannelInfo &channel_info, uint32_t row, char
  
      uint32_t rle_length;
      channel_info.row_pos[row];
@@ -1164,7 +1227,7 @@ index b2c5770..de3e872 100644
              if (!check_io ())
                  return false;
  
-@@ -1907,18 +1914,18 @@ PSDInput::read_pascal_string (std::string &s, uint16_t mod_padding)
+@@ -1907,18 +1909,18 @@ PSDInput::read_pascal_string (std::string &s, uint16_t mod_padding)
      s.clear();
      uint8_t length;
      int bytes = 0;
