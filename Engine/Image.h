@@ -987,6 +987,7 @@ private:
 
 private:
     ImageBitDepthEnum _bitDepth;
+    int _depthBytesSize;
     Bitmap _bitmap;
     RectD _rod;     // rod in canonical coordinates (not the same as the OFX::Image RoD, which is in pixel coordinates)
     RectI _bounds;
@@ -994,6 +995,7 @@ private:
     ImageFieldingOrderEnum _fielding;
     ImagePremultiplicationEnum _premult;
     bool _useBitmap;
+    int _nbComponents;
 };
 
 //template <> inline unsigned char clamp(unsigned char v) { return v; }

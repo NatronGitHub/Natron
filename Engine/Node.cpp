@@ -1070,6 +1070,7 @@ Node::clearLastPaintStrokeRoD()
 
 void
 Node::getLastPaintStrokePoints(double time,
+                               unsigned int mipmapLevel,
                                std::list<std::list<std::pair<Point,double> > >* strokes,
                                int* strokeIndex) const
 {
@@ -1080,6 +1081,19 @@ Node::getLastPaintStrokePoints(double time,
     }
     if (duringPaintStroke) {
         getApp()->getLastPaintStrokePoints(strokes, strokeIndex);
+        //adapt to mipmaplevel if needed
+        if (mipmapLevel == 0) {
+            return;
+        }
+        int pot = 1 << mipmapLevel;
+        for (std::list<std::list<std::pair<Point,double> > >::iterator it = strokes->begin(); it!=strokes->end(); ++it) {
+            for (std::list<std::pair<Point,double> >::iterator it2 = it->begin(); it2 != it->end(); ++it2) {
+                std::pair<Point,double> &p = *it2;
+                p.first.x /= pot;
+                p.first.y /= pot;
+            }
+        }
+        
     } else {
         boost::shared_ptr<RotoDrawableItem> item = _imp->paintStroke.lock();
         RotoStrokeItem* stroke = dynamic_cast<RotoStrokeItem*>(item.get());
@@ -1087,7 +1101,7 @@ Node::getLastPaintStrokePoints(double time,
         if (!stroke) {
             throw std::logic_error("");
         }
-        stroke->evaluateStroke(0, time, strokes);
+        stroke->evaluateStroke(mipmapLevel, time, strokes);
         *strokeIndex = 0;
     }
 }

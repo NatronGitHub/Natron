@@ -215,11 +215,6 @@ public:
         return _components;
     }
 
-    void setComponents(const ImageComponents& comps)
-    {
-        _components = comps;
-    }
-    
     ImageFieldingOrderEnum getFieldingOrder() const
     {
         return _fielding;

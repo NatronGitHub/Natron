@@ -669,6 +669,8 @@ Image::Image(const ImageKey & key,
     , _useBitmap(true)
 {
     _bitDepth = params->getBitDepth();
+    _depthBytesSize = getSizeOfForBitDepth(_bitDepth);
+    _nbComponents = params->getComponents().getNumComponents();
     _rod = params->getRoD();
     _bounds = params->getBounds();
     _par = params->getPixelAspectRatio();
@@ -683,6 +685,8 @@ Image::Image(const ImageKey & key,
 , _useBitmap(false)
 {
     _bitDepth = params->getBitDepth();
+    _depthBytesSize = getSizeOfForBitDepth(_bitDepth);
+    _nbComponents = params->getComponents().getNumComponents();
     _rod = params->getRoD();
     _bounds = params->getBounds();
     _par = params->getPixelAspectRatio();
@@ -726,6 +730,8 @@ Image::Image(const ImageComponents& components,
                   );
 
     _bitDepth = bitdepth;
+    _depthBytesSize = getSizeOfForBitDepth(_bitDepth);
+    _nbComponents = components.getNumComponents();
     _rod = regionOfDefinition;
     _bounds = _params->getBounds();
     _par = par;
@@ -881,14 +887,13 @@ Image::pasteFromForDepth(const Image & srcImg,
     
     assert( getComponents() == srcImg.getComponents() );
 
-    int components = getComponents().getNumComponents();
     if (copyBitmap) {
         copyBitmapPortion(roi, srcImg);
     }
     // now we're safe: both images contain the area in roi
     
-    int srcRowElements = components * srcBounds.width();
-    int dstRowElements = components * bounds.width();
+    int srcRowElements = _nbComponents * srcBounds.width();
+    int dstRowElements = _nbComponents * bounds.width();
     
     const PIX* src = (const PIX*)srcImg.pixelAt(roi.x1, roi.y1);
     PIX* dst = (PIX*)pixelAt(roi.x1, roi.y1);
@@ -899,7 +904,7 @@ Image::pasteFromForDepth(const Image & srcImg,
          ++y,
          src += srcRowElements,
          dst += dstRowElements) {
-        memcpy(dst, src, roi.width() * sizeof(PIX) * components);
+        memcpy(dst, src, roi.width() * sizeof(PIX) * _nbComponents);
     }
 }
 
@@ -1185,9 +1190,7 @@ Image::fillForDepth(const RectI & roi_,
 {
     
 
-    const ImageComponents& comps = getComponents();
-    int nComps = comps.getNumComponents();
-    switch (nComps) {
+    switch (_nbComponents) {
         case 0:
             return;
             break;
@@ -1246,7 +1249,7 @@ Image::fillZero(const RectI& roi)
     if (!roi.intersect(_bounds, &intersection)) {
         return;
     }
-    std::size_t rowSize =  getComponents().getNumComponents();
+    std::size_t rowSize =  (std::size_t)_nbComponents;
     switch ( getBitDepth() ) {
         case eImageBitDepthByte:
             rowSize *= sizeof(unsigned char);
@@ -1279,7 +1282,7 @@ Image::fillBoundsZero()
 {
     QWriteLocker k(&_entryLock);
     
-    std::size_t rowSize =  getComponents().getNumComponents();
+    std::size_t rowSize =  (std::size_t)_nbComponents;
     switch ( getBitDepth() ) {
         case eImageBitDepthByte:
             rowSize *= sizeof(unsigned char);
@@ -1307,19 +1310,18 @@ unsigned char*
 Image::pixelAt(int x,
                int y)
 {
-    int compsCount = getComponents().getNumComponents();
 
-    if ( ( x < _bounds.left() ) || ( x >= _bounds.right() ) || ( y < _bounds.bottom() ) || ( y >= _bounds.top() )) {
+    if ( ( x < _bounds.x1 ) || ( x >= _bounds.x2 ) || ( y < _bounds.y1 ) || ( y >= _bounds.y2 )) {
         return NULL;
     } else {
-        int compDataSize = getSizeOfForBitDepth( getBitDepth() ) * compsCount;
         
         unsigned char* ret =  (unsigned char*)this->_data.writable();
         if (!ret) {
             return 0;
         }
-        ret = ret + (qint64)( y - _bounds.bottom() ) * compDataSize * _bounds.width()
-        + (qint64)( x - _bounds.left() ) * compDataSize;
+        int compDataSize = _depthBytesSize * _nbComponents;
+        ret = ret + (qint64)( y - _bounds.y1 ) * compDataSize * _bounds.width()
+        + (qint64)( x - _bounds.x1 ) * compDataSize;
         return ret;
     }
 }
@@ -1328,19 +1330,18 @@ const unsigned char*
 Image::pixelAt(int x,
                int y) const
 {
-    int compsCount = getComponents().getNumComponents();
     
-    if ( ( x < _bounds.left() ) || ( x >= _bounds.right() ) || ( y < _bounds.bottom() ) || ( y >= _bounds.top() )) {
+    if ( ( x < _bounds.x1 ) || ( x >= _bounds.x2 ) || ( y < _bounds.y1 ) || ( y >= _bounds.y2 )) {
         return NULL;
     } else {
-        int compDataSize = getSizeOfForBitDepth( getBitDepth() ) * compsCount;
         
         unsigned char* ret = (unsigned char*)this->_data.readable();
         if (!ret) {
             return 0;
         }
-        ret = ret + (qint64)( y - _bounds.bottom() ) * compDataSize * _bounds.width()
-        + (qint64)( x - _bounds.left() ) * compDataSize;
+        int compDataSize = _depthBytesSize * _nbComponents;
+        ret = ret + (qint64)( y - _bounds.y1 ) * compDataSize * _bounds.width()
+        + (qint64)( x - _bounds.x1 ) * compDataSize;
         return ret;
     }
 }
@@ -1348,7 +1349,7 @@ Image::pixelAt(int x,
 unsigned int
 Image::getComponentsCount() const
 {
-    return getComponents().getNumComponents();
+    return _nbComponents;
 }
 
 bool
@@ -1512,7 +1513,6 @@ Image::halveRoIForDepth(const RectI & roi,
     //           dstRoD.height()*2 <= roi.height());
     assert( getComponents() == output->getComponents() );
 
-    int nComponents = getComponents().getNumComponents();
     RectI dstRoI;
     RectI srcRoI = roi;
     srcRoI.intersect(srcBounds, &srcRoI); // intersect srcRoI with the region of definition
@@ -1530,12 +1530,12 @@ Image::halveRoIForDepth(const RectI & roi,
     PIX* const dstPixels          = (PIX*)output->pixelAt(dstBounds.x1,   dstBounds.y1);
     char* const dstBmPixels = output->_bitmap.getBitmapAt(dstBmBounds.x1, dstBmBounds.y1);
 
-    int srcRowSize = srcBounds.width() * nComponents;
-    int dstRowSize = dstBounds.width() * nComponents;
+    int srcRowSize = srcBounds.width() * _nbComponents;
+    int dstRowSize = dstBounds.width() * _nbComponents;
 
     // offset pointers so that srcData and dstData correspond to pixel (0,0)
-    const PIX* const srcData = srcPixels - (srcBounds.x1 * nComponents + srcRowSize * srcBounds.y1);
-    PIX* const dstData       = dstPixels - (dstBounds.x1 * nComponents + dstRowSize * dstBounds.y1);
+    const PIX* const srcData = srcPixels - (srcBounds.x1 * _nbComponents + srcRowSize * srcBounds.y1);
+    PIX* const dstData       = dstPixels - (dstBounds.x1 * _nbComponents + dstRowSize * dstBounds.y1);
 
     const int srcBmRowSize = srcBmBounds.width();
     const int dstBmRowSize = dstBmBounds.width();
@@ -1559,9 +1559,9 @@ Image::halveRoIForDepth(const RectI & roi,
         assert(sumH == 1 || sumH == 2);
         
         for (int x = dstRoI.x1; x < dstRoI.x2; ++x) {
-            const PIX* const srcPixStart    = srcLineStart   + x * 2 * nComponents;
+            const PIX* const srcPixStart    = srcLineStart   + x * 2 * _nbComponents;
             const char* const srcBmPixStart = srcBmLineStart + x * 2;
-            PIX* const dstPixStart          = dstLineStart   + x * nComponents;
+            PIX* const dstPixStart          = dstLineStart   + x * _nbComponents;
             char* const dstBmPixStart       = dstBmLineStart + x;
 
             // The current dst col, at y, covers the src cols x*2 (thisCol) and x*2+1 (nextCol).
@@ -1576,7 +1576,7 @@ Image::halveRoIForDepth(const RectI & roi,
             assert(0 < sum && sum <= 4);
 
             if (sum == 0) {// never happens
-                for (int k = 0; k < nComponents; ++k) {
+                for (int k = 0; k < _nbComponents; ++k) {
                     dstPixStart[k] = 0;
                 }
                 if (copyBitMap) {
@@ -1585,14 +1585,14 @@ Image::halveRoIForDepth(const RectI & roi,
                 continue;
             }
 
-            for (int k = 0; k < nComponents; ++k) {
+            for (int k = 0; k < _nbComponents; ++k) {
                 ///a b
                 ///c d
 
                 const PIX a = (pickThisCol && pickThisRow) ? *(srcPixStart + k) : 0;
-                const PIX b = (pickNextCol && pickThisRow) ? *(srcPixStart + k + nComponents) : 0;
+                const PIX b = (pickNextCol && pickThisRow) ? *(srcPixStart + k + _nbComponents) : 0;
                 const PIX c = (pickThisCol && pickNextRow) ? *(srcPixStart + k + srcRowSize): 0;
-                const PIX d = (pickNextCol && pickNextRow) ? *(srcPixStart + k + srcRowSize  + nComponents)  : 0;
+                const PIX d = (pickNextCol && pickNextRow) ? *(srcPixStart + k + srcRowSize  + _nbComponents)  : 0;
                 
                 assert(sumW == 2 || (sumW == 1 && ((a == 0 && c == 0) || (b == 0 && d == 0))));
                 assert(sumH == 2 || (sumH == 1 && ((a == 0 && b == 0) || (c == 0 && d == 0))));
@@ -1690,7 +1690,6 @@ Image::halve1DImageForDepth(const RectI & roi,
     
 
 
-    int components = getComponents().getNumComponents();
     int halfWidth = width / 2;
     int halfHeight = height / 2;
     if (height == 1) { //1 row
@@ -1700,19 +1699,19 @@ Image::halve1DImageForDepth(const RectI & roi,
         PIX* dst = (PIX*)output->pixelAt(dstBounds.x1, dstBounds.y1);
         assert(src && dst);
         for (int x = 0; x < halfWidth; ++x) {
-            for (int k = 0; k < components; ++k) {
-                *dst++ = PIX( (float)( *src + *(src + components) ) / 2. );
+            for (int k = 0; k < _nbComponents; ++k) {
+                *dst++ = PIX( (float)( *src + *(src + _nbComponents) ) / 2. );
                 ++src;
             }
-            src += components;
+            src += _nbComponents;
         }
     } else if (width == 1) {
-        int rowSize = srcBounds.width() * components;
+        int rowSize = srcBounds.width() * _nbComponents;
         const PIX* src = (const PIX*)pixelAt(roi.x1, roi.y1);
         PIX* dst = (PIX*)output->pixelAt(dstBounds.x1, dstBounds.y1);
         assert(src && dst);
         for (int y = 0; y < halfHeight; ++y) {
-            for (int k = 0; k < components; ++k) {
+            for (int k = 0; k < _nbComponents; ++k) {
                 *dst++ = PIX( (float)( *src + (*src + rowSize) ) / 2. );
                 ++src;
             }
@@ -1843,16 +1842,16 @@ Image::upscaleMipMapForDepth(const RectI & roi,
     int scale = 1 << (fromLevel - toLevel);
 
     assert( output->getComponents() == getComponents() );
-    int components = getComponents().getNumComponents();
-    if (components == 0) {
+
+    if (_nbComponents == 0) {
         return;
     }
     
     QWriteLocker k1(&output->_entryLock);
     QReadLocker k2(&_entryLock);
     
-    int srcRowSize = _bounds.width() * components;
-    int dstRowSize = output->_bounds.width() * components;
+    int srcRowSize = _bounds.width() * _nbComponents;
+    int dstRowSize = output->_bounds.width() * _nbComponents;
     const PIX *src = (const PIX*)pixelAt(srcRoi.x1, srcRoi.y1);
     PIX* dst = (PIX*)output->pixelAt(dstRoi.x1, dstRoi.y1);
     assert(src && dst);
@@ -1872,17 +1871,17 @@ Image::upscaleMipMapForDepth(const RectI & roi,
         const PIX * srcPix = srcLineStart;
         PIX * dstPixFirst = dstLineBatchStart;
         // fill the first line
-        for (int xo = dstRoi.x1; xo < dstRoi.x2; ++xi, srcPix += components, xo += xcount, dstPixFirst += xcount * components) {
+        for (int xo = dstRoi.x1; xo < dstRoi.x2; ++xi, srcPix += _nbComponents, xo += xcount, dstPixFirst += xcount * _nbComponents) {
             xcount = scale - (xo - xi * scale);
             xcount = std::min(xcount, dstRoi.x2 - xo);
             //assert(0 < xcount && xcount <= scale);
             // replicate srcPix as many times as necessary
             PIX * dstPix = dstPixFirst;
             //assert((srcPix-(PIX*)pixelAt(srcRoi.x1, srcRoi.y1)) % components == 0);
-            for (int i = 0; i < xcount; ++i, dstPix += components) {
-                assert( ( dstPix - (PIX*)output->pixelAt(dstRoi.x1, dstRoi.y1) ) % components == 0 );
-                assert(dstPix >= (PIX*)output->pixelAt(xo, yo) && dstPix < (PIX*)output->pixelAt(xo, yo) + xcount * components);
-                for (int c = 0; c < components; ++c) {
+            for (int i = 0; i < xcount; ++i, dstPix += _nbComponents) {
+                assert( ( dstPix - (PIX*)output->pixelAt(dstRoi.x1, dstRoi.y1) ) % _nbComponents == 0 );
+                assert(dstPix >= (PIX*)output->pixelAt(xo, yo) && dstPix < (PIX*)output->pixelAt(xo, yo) + xcount * _nbComponents);
+                for (int c = 0; c < _nbComponents; ++c) {
                     dstPix[c] = srcPix[c];
                 }
             }
@@ -1973,8 +1972,8 @@ Image::scaleBoxForDepth(const RectI & roi,
     PIX* dst = (PIX*)output->pixelAt(dstBounds.x1, dstBounds.y1);
     assert(src && dst);
     assert( output->getComponents() == getComponents() );
-    int components = getComponents().getNumComponents();
-    int rowSize = srcBounds.width() * components;
+
+    int rowSize = srcBounds.width() * _nbComponents;
     float totals[4];
 
     for (int y = 0; y < dstBounds.height(); ++y) {
@@ -2001,30 +2000,30 @@ Image::scaleBoxForDepth(const RectI & roi,
             totals[0] = totals[1] = totals[2] = totals[3] = 0.0;
 
             /// calculate the value for pixels in the 1st row
-            int xindex = lowx_int * components;
+            int xindex = lowx_int * _nbComponents;
             if ( (highy_int > lowy_int) && (highx_int > lowx_int) ) {
                 double y_percent = 1. - lowy_float;
                 double percent = y_percent * (1. - lowx_float);
                 const PIX* temp = src + xindex + lowy_int * rowSize;
                 const PIX* temp_index;
                 int k;
-                for (k = 0,temp_index = temp; k < components; ++k, ++temp_index) {
+                for (k = 0,temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
                     totals[k] += *temp_index * percent;
                 }
                 const PIX* left = temp;
                 for (int l = lowx_int + 1; l < highx_int; ++l) {
-                    temp += components;
-                    for (k = 0, temp_index = temp; k < components; ++k, ++temp_index) {
+                    temp += _nbComponents;
+                    for (k = 0, temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
                         totals[k] += *temp_index * y_percent;
                     }
                     ;
                 }
 
-                temp += components;
+                temp += _nbComponents;
                 const PIX* right = temp;
                 percent = y_percent * highx_float;
 
-                for (k = 0, temp_index = temp; k < components; ++k, ++temp_index) {
+                for (k = 0, temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
                     totals[k] += *temp_index * percent;
                 }
 
@@ -2032,18 +2031,18 @@ Image::scaleBoxForDepth(const RectI & roi,
                 y_percent = highy_float;
                 percent = y_percent * (1. - lowx_float);
                 temp = src + xindex + highy_int * rowSize;
-                for (k = 0, temp_index = temp; k < components; ++k, ++temp_index) {
+                for (k = 0, temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
                     totals[k] += *temp_index * percent;
                 }
                 for (int l = lowx_int + 1; l < highx_int; ++l) {
-                    temp += components;
-                    for (k = 0, temp_index = temp; k < components; ++k, ++temp_index) {
+                    temp += _nbComponents;
+                    for (k = 0, temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
                         totals[k] += *temp_index * y_percent;
                     }
                 }
-                temp += components;
+                temp += _nbComponents;
                 percent = y_percent * highx_float;
-                for (k = 0, temp_index = temp; k < components; ++k, ++temp_index) {
+                for (k = 0, temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
                     totals[k] += *temp_index * percent;
                 }
 
@@ -2051,7 +2050,7 @@ Image::scaleBoxForDepth(const RectI & roi,
                 for (int m = lowy_int + 1; m < highy_int; ++m) {
                     left += rowSize;
                     right += rowSize;
-                    for (k = 0; k < components; ++k, ++left, ++right) {
+                    for (k = 0; k < _nbComponents; ++k, ++left, ++right) {
                         totals[k] += *left * (1 - lowx_float) + *right * highx_float;
                     }
                 }
@@ -2061,18 +2060,18 @@ Image::scaleBoxForDepth(const RectI & roi,
                 const PIX* temp = src + xindex + lowy_int * rowSize;
                 const PIX* temp_index;
                 int k;
-                for (k = 0, temp_index = temp; k < components; ++k, ++temp_index) {
+                for (k = 0, temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
                     totals[k] += *temp_index * percent;
                 }
                 for (int m = lowy_int + 1; m < highy_int; ++m) {
                     temp += rowSize;
-                    for (k = 0, temp_index = temp; k < components; ++k, ++temp_index) {
+                    for (k = 0, temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
                         totals[k] += *temp_index * x_percent;
                     }
                 }
                 percent = x_percent * highy_float;
                 temp += rowSize;
-                for (k = 0, temp_index = temp; k < components; ++k, ++temp_index) {
+                for (k = 0, temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
                     totals[k] += *temp_index * percent;
                 }
             } else if (highx_int > lowx_int) {
@@ -2082,18 +2081,18 @@ Image::scaleBoxForDepth(const RectI & roi,
                 const PIX* temp = src + xindex + lowy_int * rowSize;
                 const PIX* temp_index;
 
-                for (k = 0, temp_index = temp; k < components; ++k, ++temp_index) {
+                for (k = 0, temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
                     totals[k] += *temp_index * percent;
                 }
                 for (int l = lowx_int + 1; l < highx_int; ++l) {
-                    temp += components;
-                    for (k = 0, temp_index = temp; k < components; ++k, ++temp_index) {
+                    temp += _nbComponents;
+                    for (k = 0, temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
                         totals[k] += *temp_index * y_percent;
                     }
                 }
-                temp += components;
+                temp += _nbComponents;
                 percent = y_percent * highx_float;
-                for (k = 0, temp_index = temp; k < components; ++k, ++temp_index) {
+                for (k = 0, temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
                     totals[k] += *temp_index * percent;
                 }
             } else {
@@ -2102,13 +2101,13 @@ Image::scaleBoxForDepth(const RectI & roi,
                 int k;
                 const PIX* temp_index;
 
-                for (k = 0, temp_index = temp; k < components; ++k, ++temp_index) {
+                for (k = 0, temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
                     totals[k] += *temp_index * percent;
                 }
             }
 
             /// this is for the pixels in the body
-            const PIX* temp0 = src + lowx_int + components + (lowy_int + 1) * rowSize;
+            const PIX* temp0 = src + lowx_int + _nbComponents + (lowy_int + 1) * rowSize;
             const PIX* temp;
 
             for (int m = lowy_int + 1; m < highy_int; ++m) {
@@ -2117,16 +2116,16 @@ Image::scaleBoxForDepth(const RectI & roi,
                     int k;
                     const PIX *temp_index;
 
-                    for (k = 0, temp_index = temp; k < components; ++k, ++temp_index) {
+                    for (k = 0, temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
                         totals[k] += *temp_index;
                     }
-                    temp += components;
+                    temp += _nbComponents;
                 }
                 temp0 += rowSize;
             }
 
-            int outindex = ( x + ( y * dstBounds.width() ) ) * components;
-            for (int k = 0; k < components; ++k) {
+            int outindex = ( x + ( y * dstBounds.width() ) ) * _nbComponents;
+            for (int k = 0; k < _nbComponents; ++k) {
                 dst[outindex + k] = PIX(totals[k] / area);
             }
             lowx_int = highx_int;

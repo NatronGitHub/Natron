@@ -447,7 +447,10 @@ public:
     
     bool isLastPaintStrokeBitmapCleared() const;
     void clearLastPaintStrokeRoD();
-    void getLastPaintStrokePoints(double time,std::list<std::list<std::pair<Point,double> > >* strokes, int* strokeIndex) const;
+    void getLastPaintStrokePoints(double time,
+                                  unsigned int mipmapLevel,
+                                  std::list<std::list<std::pair<Point,double> > >* strokes,
+                                  int* strokeIndex) const;
     boost::shared_ptr<Image> getOrRenderLastStrokeImage(unsigned int mipMapLevel,
                                                                 double par,
                                                                 const ImageComponents& components,

@@ -2131,8 +2131,8 @@ struct RotoContextPrivate
     }
     
     
-    void renderDot(cairo_t* cr,
-                   std::vector<cairo_pattern_t*>& dotPatterns,
+    static void renderDot(cairo_t* cr,
+                   std::vector<cairo_pattern_t*>* dotPatterns,
                    const Point &center,
                    double internalDotRadius,
                    double externalDotRadius,
@@ -2142,7 +2142,7 @@ struct RotoContextPrivate
                    double opacity);
 
     
-    double renderStroke(cairo_t* cr,
+    static double renderStroke(cairo_t* cr,
                         std::vector<cairo_pattern_t*>& dotPatterns,
                         const std::list<std::list<std::pair<Point,double> > >& strokes,
                         double distToNext,

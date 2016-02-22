@@ -2082,6 +2082,18 @@ RotoContext::evaluateNeatStrokeRender()
     }
 }
 
+CairoImageWrapper::~CairoImageWrapper()
+{
+    if (ctx) {
+        cairo_destroy(ctx);
+    }
+    ////Free the buffer used by Cairo
+    if (cairoImg) {
+        cairo_surface_destroy(cairoImg);
+    }
+
+}
+
 static void
 adjustToPointToScale(unsigned int mipmapLevel,
                      double &x,
@@ -2552,7 +2564,7 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
     
     
     ////Allocate the cairo temporary buffer
-    cairo_surface_t* cairoImg;
+    CairoImageWrapper imgWrapper;
 
     std::vector<unsigned char> buf;
     if (copyFromImage) {
@@ -2561,20 +2573,20 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
         buf.resize(memSize);
         memset(&buf.front(), 0, sizeof(unsigned char) * memSize);
         convertNatronImageToCairoImage<float, 1>(&buf.front(), srcNComps, stride, source.get(), pixelPointsBbox, pixelPointsBbox, shapeColor);
-        cairoImg = cairo_image_surface_create_for_data(&buf.front(), cairoImgFormat, pixelPointsBbox.width(), pixelPointsBbox.height(),
+        imgWrapper.cairoImg = cairo_image_surface_create_for_data(&buf.front(), cairoImgFormat, pixelPointsBbox.width(), pixelPointsBbox.height(),
                                                        stride);
        
     } else {
-        cairoImg = cairo_image_surface_create(cairoImgFormat, pixelPointsBbox.width(), pixelPointsBbox.height() );
-        cairo_surface_set_device_offset(cairoImg, -pixelPointsBbox.x1, -pixelPointsBbox.y1);
+        imgWrapper.cairoImg = cairo_image_surface_create(cairoImgFormat, pixelPointsBbox.width(), pixelPointsBbox.height() );
+        cairo_surface_set_device_offset(imgWrapper.cairoImg, -pixelPointsBbox.x1, -pixelPointsBbox.y1);
     }
-    if (cairo_surface_status(cairoImg) != CAIRO_STATUS_SUCCESS) {
+    if (cairo_surface_status(imgWrapper.cairoImg) != CAIRO_STATUS_SUCCESS) {
         return 0;
     }
-    cairo_surface_set_device_offset(cairoImg, -pixelPointsBbox.x1, -pixelPointsBbox.y1);
-    cairo_t* cr = cairo_create(cairoImg);
+    cairo_surface_set_device_offset(imgWrapper.cairoImg, -pixelPointsBbox.x1, -pixelPointsBbox.y1);
+    imgWrapper.ctx = cairo_create(imgWrapper.cairoImg);
     //cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD); // creates holes on self-overlapping shapes
-    cairo_set_fill_rule(cr, CAIRO_FILL_RULE_WINDING);
+    cairo_set_fill_rule(imgWrapper.ctx, CAIRO_FILL_RULE_WINDING);
     
     // these Roto shapes must be rendered WITHOUT antialias, or the junction between the inner
     // polygon and the feather zone will have artifacts. This is partly due to the fact that cairo
@@ -2582,7 +2594,7 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
     // Use a default feather distance of 1 pixel instead!
     // UPDATE: unfortunately, this produces less artifacts, but there are still some remaining (use opacity=0.5 to test)
     // maybe the inner polygon should be made of mesh patterns too?
-    cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
+    cairo_set_antialias(imgWrapper.ctx, CAIRO_ANTIALIAS_NONE);
     
     std::list<std::list<std::pair<Point,double> > > strokes;
     std::list<std::pair<Point,double> > toScalePoints;
@@ -2618,25 +2630,20 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
     
     
     double opacity = stroke->getOpacity(time);
-    distToNext = _imp->renderStroke(cr, dotPatterns, strokes, distToNext, stroke, doBuildUp, opacity, time, mipmapLevel);
+    distToNext = _imp->renderStroke(imgWrapper.ctx, dotPatterns, strokes, distToNext, stroke, doBuildUp, opacity, time, mipmapLevel);
     
     stroke->updatePatternCache(dotPatterns);
     
-    assert(cairo_surface_status(cairoImg) == CAIRO_STATUS_SUCCESS);
+    assert(cairo_surface_status(imgWrapper.cairoImg) == CAIRO_STATUS_SUCCESS);
     
     ///A call to cairo_surface_flush() is required before accessing the pixel data
     ///to ensure that all pending drawing operations are finished.
-    cairo_surface_flush(cairoImg);
+    cairo_surface_flush(imgWrapper.cairoImg);
     
     
     
-    convertCairoImageToNatronImage_noColor<float, 1>(cairoImg, srcNComps, source.get(), pixelPointsBbox, shapeColor, 1., false);
+    convertCairoImageToNatronImage_noColor<float, 1>(imgWrapper.cairoImg, srcNComps, source.get(), pixelPointsBbox, shapeColor, 1., false);
 
-    
-    cairo_destroy(cr);
-    ////Free the buffer used by Cairo
-    cairo_surface_destroy(cairoImg);
-    
     return distToNext;
 }
 
@@ -2813,14 +2820,16 @@ RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& strok
     
 
     ////Allocate the cairo temporary buffer
-    cairo_surface_t* cairoImg = cairo_image_surface_create(cairoImgFormat, roi.width(), roi.height() );
-    cairo_surface_set_device_offset(cairoImg, -roi.x1, -roi.y1);
-    if (cairo_surface_status(cairoImg) != CAIRO_STATUS_SUCCESS) {
+    CairoImageWrapper imgWrapper;
+    
+    imgWrapper.cairoImg = cairo_image_surface_create(cairoImgFormat, roi.width(), roi.height() );
+    cairo_surface_set_device_offset(imgWrapper.cairoImg, -roi.x1, -roi.y1);
+    if (cairo_surface_status(imgWrapper.cairoImg) != CAIRO_STATUS_SUCCESS) {
         return image;
     }
-    cairo_t* cr = cairo_create(cairoImg);
+    imgWrapper.ctx = cairo_create(imgWrapper.cairoImg);
     //cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD); // creates holes on self-overlapping shapes
-    cairo_set_fill_rule(cr, CAIRO_FILL_RULE_WINDING);
+    cairo_set_fill_rule(imgWrapper.ctx, CAIRO_FILL_RULE_WINDING);
     
     // these Roto shapes must be rendered WITHOUT antialias, or the junction between the inner
     // polygon and the feather zone will have artifacts. This is partly due to the fact that cairo
@@ -2828,7 +2837,7 @@ RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& strok
     // Use a default feather distance of 1 pixel instead!
     // UPDATE: unfortunately, this produces less artifacts, but there are still some remaining (use opacity=0.5 to test)
     // maybe the inner polygon should be made of mesh patterns too?
-    cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
+    cairo_set_antialias(imgWrapper.ctx, CAIRO_ANTIALIAS_NONE);
 
     
     double shapeColor[3];
@@ -2842,7 +2851,7 @@ RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& strok
         for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
             dotPatterns[i] = (cairo_pattern_t*)0;
         }
-        _imp->renderStroke(cr, dotPatterns, strokes, 0, stroke, doBuildUp, opacity, time, mipmapLevel);
+        _imp->renderStroke(imgWrapper.ctx, dotPatterns, strokes, 0, stroke, doBuildUp, opacity, time, mipmapLevel);
         
         for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
             if (dotPatterns[i]) {
@@ -2853,20 +2862,20 @@ RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& strok
         
         
     } else {
-        _imp->renderBezier(cr, isBezier, opacity, time, mipmapLevel);
+        _imp->renderBezier(imgWrapper.ctx, isBezier, opacity, time, mipmapLevel);
     }
     
     bool useOpacityToConvert = (isBezier != 0);
     
     switch (depth) {
         case eImageBitDepthFloat:
-            convertCairoImageToNatronImage_noColor<float, 1>(cairoImg, srcNComps, image.get(), roi, shapeColor, opacity, useOpacityToConvert);
+            convertCairoImageToNatronImage_noColor<float, 1>(imgWrapper.cairoImg, srcNComps, image.get(), roi, shapeColor, opacity, useOpacityToConvert);
             break;
         case eImageBitDepthByte:
-            convertCairoImageToNatronImage_noColor<unsigned char, 255>(cairoImg, srcNComps,  image.get(), roi,shapeColor, opacity, useOpacityToConvert);
+            convertCairoImageToNatronImage_noColor<unsigned char, 255>(imgWrapper.cairoImg, srcNComps,  image.get(), roi,shapeColor, opacity, useOpacityToConvert);
             break;
         case eImageBitDepthShort:
-            convertCairoImageToNatronImage_noColor<unsigned short, 65535>(cairoImg, srcNComps, image.get(), roi,shapeColor, opacity, useOpacityToConvert);
+            convertCairoImageToNatronImage_noColor<unsigned short, 65535>(imgWrapper.cairoImg, srcNComps, image.get(), roi,shapeColor, opacity, useOpacityToConvert);
             break;
         case eImageBitDepthHalf:
         case eImageBitDepthNone:
@@ -2875,18 +2884,11 @@ RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& strok
     }
 
     
-    assert(cairo_surface_status(cairoImg) == CAIRO_STATUS_SUCCESS);
+    assert(cairo_surface_status(imgWrapper.cairoImg) == CAIRO_STATUS_SUCCESS);
     
     ///A call to cairo_surface_flush() is required before accessing the pixel data
     ///to ensure that all pending drawing operations are finished.
-    cairo_surface_flush(cairoImg);
-    
-    
-    
-    cairo_destroy(cr);
-    ////Free the buffer used by Cairo
-    cairo_surface_destroy(cairoImg);
-
+    cairo_surface_flush(imgWrapper.cairoImg);
     
     return image;
 }
@@ -2911,7 +2913,7 @@ double hardnessGaussLookup(double f)
 
 void
 RotoContextPrivate::renderDot(cairo_t* cr,
-                              std::vector<cairo_pattern_t*>& dotPatterns,
+                              std::vector<cairo_pattern_t*>* dotPatterns,
                               const Point &center,
                               double internalDotRadius,
                               double externalDotRadius,
@@ -2926,8 +2928,8 @@ RotoContextPrivate::renderDot(cairo_t* cr,
         // sometimes, Qt gives a pressure level > 1... so we clamp it
         int pressureInt = int(std::max(0., std::min(pressure, 1.)) * (ROTO_PRESSURE_LEVELS-1) + 0.5);
         assert(pressureInt >= 0 && pressureInt < ROTO_PRESSURE_LEVELS);
-        if (dotPatterns[pressureInt]) {
-            pattern = dotPatterns[pressureInt];
+        if (dotPatterns && (*dotPatterns)[pressureInt]) {
+            pattern = (*dotPatterns)[pressureInt];
         } else {
             pattern = cairo_pattern_create_radial(0, 0, internalDotRadius, 0, 0, externalDotRadius);
             for (std::size_t i = 0; i < opacityStops.size(); ++i) {
@@ -3075,7 +3077,7 @@ RotoContextPrivate::renderStroke(cairo_t* cr,
             double internalDotRadius, externalDotRadius, spacing;
             std::vector<std::pair<double,double> > opacityStops;
             getRenderDotParams(alpha, brushSizePixel, brushHardness, brushSpacing, it->second, pressureAffectsOpacity, pressureAffectsSize, pressureAffectsHardness, &internalDotRadius, &externalDotRadius, &spacing, &opacityStops);
-            renderDot(cr, dotPatterns, it->first, internalDotRadius, externalDotRadius, it->second, doBuildup, opacityStops, alpha);
+            renderDot(cr, &dotPatterns, it->first, internalDotRadius, externalDotRadius, it->second, doBuildup, opacityStops, alpha);
             continue;
         }
         
@@ -3102,7 +3104,7 @@ RotoContextPrivate::renderStroke(cairo_t* cr,
                 double internalDotRadius, externalDotRadius, spacing;
                 std::vector<std::pair<double,double> > opacityStops;
                 getRenderDotParams(alpha, brushSizePixel, brushHardness, brushSpacing, pressure, pressureAffectsOpacity, pressureAffectsSize, pressureAffectsHardness, &internalDotRadius, &externalDotRadius, &spacing, &opacityStops);
-                renderDot(cr, dotPatterns, center, internalDotRadius, externalDotRadius, pressure, doBuildup, opacityStops, alpha);
+                renderDot(cr, &dotPatterns, center, internalDotRadius, externalDotRadius, pressure, doBuildup, opacityStops, alpha);
                 
                 distToNext += spacing;
             }
@@ -3118,7 +3120,42 @@ RotoContextPrivate::renderStroke(cairo_t* cr,
     return distToNext;
 }
 
-
+bool
+RotoContext::allocateAndRenderSingleDotStroke(int brushSizePixel, double brushHardness, double alpha, CairoImageWrapper& wrapper)
+{
+    wrapper.cairoImg = cairo_image_surface_create(CAIRO_FORMAT_A8, brushSizePixel + 1, brushSizePixel + 1);
+    cairo_surface_set_device_offset(wrapper.cairoImg, 0, 0);
+    if (cairo_surface_status(wrapper.cairoImg) != CAIRO_STATUS_SUCCESS) {
+        return false;
+    }
+    wrapper.ctx = cairo_create(wrapper.cairoImg);
+    //cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD); // creates holes on self-overlapping shapes
+    cairo_set_fill_rule(wrapper.ctx, CAIRO_FILL_RULE_WINDING);
+    
+    // these Roto shapes must be rendered WITHOUT antialias, or the junction between the inner
+    // polygon and the feather zone will have artifacts. This is partly due to the fact that cairo
+    // meshes are not antialiased.
+    // Use a default feather distance of 1 pixel instead!
+    // UPDATE: unfortunately, this produces less artifacts, but there are still some remaining (use opacity=0.5 to test)
+    // maybe the inner polygon should be made of mesh patterns too?
+    cairo_set_antialias(wrapper.ctx, CAIRO_ANTIALIAS_NONE);
+    
+    cairo_set_operator(wrapper.ctx, CAIRO_OPERATOR_OVER);
+    
+    double internalDotRadius, externalDotRadius, spacing;
+    std::vector<std::pair<double,double> > opacityStops;
+    
+    Natron::Point p;
+    p.x = brushSizePixel / 2.;
+    p.y = brushSizePixel / 2.;
+    
+    const double pressure = 1.;
+    const double brushspacing = 0.;
+    
+    getRenderDotParams(alpha, brushSizePixel, brushHardness, brushspacing, pressure, false, false, false, &internalDotRadius, &externalDotRadius, &spacing, &opacityStops);
+    RotoContextPrivate::renderDot(wrapper.ctx, 0, p, internalDotRadius, externalDotRadius, pressure, true, opacityStops, alpha);
+    return true;
+}
 
 void
 RotoContextPrivate::renderBezier(cairo_t* cr,const Bezier* bezier,double opacity, double time, unsigned int mipmapLevel)
