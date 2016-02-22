@@ -494,7 +494,8 @@ OutputEffectInstance::reportStats(int time,
     }
 
 
-    boost::shared_ptr<std::ostream> ofile = FStreamsSupport::open_ofstream(filename);
+    FStreamsSupport::OStreamWrapper ofile;
+    FStreamsSupport::open(&ofile,filename);
     if (!ofile) {
          std::cout << QObject::tr("Failure to write render statistics file.").toStdString() << std::endl;
         return;

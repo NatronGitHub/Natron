@@ -274,7 +274,8 @@ void saveCache(Cache<T>* cache)
 {
     
     std::string cacheRestoreFilePath = cache->getRestoreFilePath();
-    boost::shared_ptr<std::ostream> ofile = FStreamsSupport::open_ofstream(cacheRestoreFilePath);
+    FStreamsSupport::OStreamWrapper ofile;
+    FStreamsSupport::open(&ofile, cacheRestoreFilePath);
     if (!ofile) {
         std::cerr << "Failed to save cache to " << cacheRestoreFilePath.c_str() << std::endl;
         return;
@@ -306,7 +307,8 @@ void restoreCache(AppManagerPrivate* p, Cache<T>* cache)
 {
     if ( p->checkForCacheDiskStructure( cache->getCachePath() ) ) {
         std::string settingsFilePath = cache->getRestoreFilePath();
-        boost::shared_ptr<std::istream> ifile = FStreamsSupport::open_ifstream(settingsFilePath);
+        FStreamsSupport::IStreamWrapper ifile;
+        FStreamsSupport::open(&ifile, settingsFilePath);
         if (!ifile) {
             std::cerr << "Failure to open cache restore file at: " << settingsFilePath << std::endl;
             return;

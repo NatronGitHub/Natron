@@ -26,6 +26,12 @@
 // ***** END PYTHON BLOCK *****
 #include "Global/GlobalDefines.h"
 
+#include <fstream>
+#if defined(_WIN32) && defined(__GLIBCXX__)
+#define FILESYSTEM_USE_STDIO_FILEBUF 1
+#include <ext/stdio_filebuf.h> // __gnu_cxx::stdio_filebuf
+#endif
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
@@ -33,10 +39,88 @@
 NATRON_NAMESPACE_ENTER;
 
 namespace FStreamsSupport {
+    
+#if FILESYSTEM_USE_STDIO_FILEBUF
+    typedef __gnu__cxx::stdio_filebuf<char> stdio_filebuf;
+#else
+    typedef std::basic_filebuf<char> stdio_filebuf;
+#endif
+    
+/// To avoid memory leaks, the open functions below
+/// return this wrapper which ensure memory freeing in a RAII style.
+template <typename STREAM>
+class IOStreamWrapperTemplated
+{
+    
+public:
+    
+    IOStreamWrapperTemplated()
+    : _stream(0)
+    , _buffer(0)
+    {
+        
+    }
+    
+    IOStreamWrapperTemplated(STREAM* stream,
+                             stdio_filebuf* buffer = 0)
+    : _stream(stream)
+    , _buffer(buffer)
+    {
+        
+    }
+    
+    operator bool() const
+    {
+        return _stream ? (bool)(*_stream) : false;
+    }
+    
+    STREAM& operator*() const
+    {
+        assert(_stream);
+        return *_stream;
+    }
+    
+    //For convenience add this operator to access the stream
+    STREAM* operator->() const
+    {
+        assert(_stream);
+        return _stream;
+    }
+    
+    void setBuffers(STREAM* stream, stdio_filebuf* buffer = 0)
+    {
+        _stream = stream;
+        _buffer = buffer;
+    }
+    
+    ~IOStreamWrapperTemplated()
+    {
+        reset();
+    }
+    
+    void reset()
+    {
+        delete _stream;
+        
+        //According to istream/ostream documentation, the destructor does not
+        //delete the internal buffer. If we want the file to be closed, we need
+        //to delete it ourselves
+        delete _buffer;
+    }
+    
+private:
+    
+    STREAM* _stream;
+    stdio_filebuf* _buffer;
+    
+};
+    
+typedef IOStreamWrapperTemplated<std::istream> IStreamWrapper;
+typedef IOStreamWrapperTemplated<std::ostream> OStreamWrapper;
 
-boost::shared_ptr<std::istream> open_ifstream(const std::string& filename, std::ios_base::openmode mode = std::ios_base::in);
+void open(IStreamWrapper* stream,const std::string& filename, std::ios_base::openmode mode = std::ios_base::in);
 
-boost::shared_ptr<std::ostream> open_ofstream(const std::string& filename, std::ios_base::openmode mode = std::ios_base::out);
+void open(OStreamWrapper* stream,const std::string& filename, std::ios_base::openmode mode = std::ios_base::out);
 
 }
 

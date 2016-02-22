@@ -743,7 +743,8 @@ OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std::string,
     QString ofxCacheFilePath = getCacheFilePath();
     
     {
-        boost::shared_ptr<std::istream> ifs = FStreamsSupport::open_ifstream(ofxCacheFilePath.toStdString());
+        FStreamsSupport::IStreamWrapper ifs;
+        FStreamsSupport::open(&ifs,ofxCacheFilePath.toStdString());
         if (ifs) {
             try {
                 OFX::Host::PluginCache::getPluginCache()->readCache(*ifs);
@@ -905,7 +906,8 @@ OfxHost::writeOFXCache()
     QString ofxCachePath = getOFXCacheDirPath();
     QDir().mkpath(ofxCachePath);
     QString ofxCacheFilePath = getCacheFilePath();
-    boost::shared_ptr<std::ostream> ofile = FStreamsSupport::open_ofstream(ofxCacheFilePath.toStdString());
+    FStreamsSupport::OStreamWrapper ofile;
+    FStreamsSupport::open(&ofile, ofxCacheFilePath.toStdString());
     if (!ofile) {
         return;
     }

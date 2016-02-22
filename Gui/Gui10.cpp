@@ -304,7 +304,8 @@ Gui::exportLayout()
 
 
         
-        boost::shared_ptr<std::ostream> ofile = FStreamsSupport::open_ofstream(filename);
+        FStreamsSupport::OStreamWrapper ofile;
+        FStreamsSupport::open(&ofile, filename);
         if (!ofile) {
             Dialogs::errorDialog( tr("Error").toStdString()
                                  , tr("Failed to open file ").toStdString() + filename, false );

@@ -35,14 +35,14 @@
 
 NATRON_NAMESPACE_ENTER;
 
-namespace {
-
-#if defined(__NATRON_WIN32__) &&  defined(__GLIBCXX__)
-    // MingW uses GCC to build, but does not support having a wchar_t* passed as argument
-    // of ifstream::open or ofstream::open. To properly support UTF-8 encoding on MingW we must
-    // use the __gnu_cxx::stdio_filebuf GNU extension that can be used with _wfsopen and returned
-    // into a istream which share the same API as ifsteam. The same reasoning holds for ofstream.
+namespace  {
     
+#if FILESYSTEM_USE_STDIO_FILEBUF
+// MingW uses GCC to build, but does not support having a wchar_t* passed as argument
+// of ifstream::open or ofstream::open. To properly support UTF-8 encoding on MingW we must
+// use the __gnu_cxx::stdio_filebuf GNU extension that can be used with _wfsopen and returned
+// into a istream which share the same API as ifsteam. The same reasoning holds for ofstream.
+
 static int
 ios_open_mode_to_oflag(std::ios_base::openmode mode)
 {
@@ -67,147 +67,165 @@ ios_open_mode_to_oflag(std::ios_base::openmode mode)
     }
     return f;
 }
-    
-// MingW
-static std::istream* open_ifstream_impl(const std::string &filename, std::ios_base::openmode mode)
+
+template <typename STREAM, typename FSTREAM>
+bool
+open_fstream_impl(const std::string& path,
+                  std::ios_base::openmode mode,
+                  STREAM** stream,
+                  FStreamsSupport::stdio_filebuf** buffer)
 {
-    std::wstring wfilename = Global::s2ws(filename);
-    int oflag = ios_open_mode_to_oflag(mode);
+    if (!stream || buffer) {
+        return false;
+    }
+    std::wstring wpath = Global::s2ws(path);
     int fd;
-    errno_t errcode = _wsopen_s(&fd, wfilename.c_str(), oflag, _SH_DENYNO, _S_IREAD | _S_IWRITE);
-    if (errcode != 0 || fd == -1) {
+    int oflag = ios_open_mode_to_oflag(mode);
+    errno_t errcode = _wsopen_s(&fd, wpath.c_str(), oflag, _SH_DENYNO, _S_IREAD | _S_IWRITE);
+    if (errcode != 0) {
         return 0;
     }
-    __gnu_cxx::stdio_filebuf<char>* buffer = new __gnu_cxx::stdio_filebuf<char>(fd, mode, 1);
-    
-    
-    if (!buffer) {
-        return 0;
+    *buffer = new FStreamsSupport::stdio_filebuf(fd, mode, 1);
+    if (!*buffer) {
+        return false;
     }
-    return new std::istream(buffer);
+    *stream = new STREAM(*buffer);
+    if (!*stream) {
+        delete *buffer;
+        *buffer = 0;
+        return false;
+    }
+    return true;
 }
 
-static std::ostream* open_ofstream_impl(const std::string &filename, std::ios_base::openmode mode)
-{
-    std::wstring wfilename = Global::s2ws(filename);
-    int oflag = ios_open_mode_to_oflag(mode);
-    int fd;
-    errno_t errcode = _wsopen_s(&fd, wfilename.c_str(), oflag, _SH_DENYNO, _S_IREAD | _S_IWRITE);
-    if (errcode != 0 || fd == -1) {
-        return 0;
-    }
-    __gnu_cxx::stdio_filebuf<char>* buffer = new __gnu_cxx::stdio_filebuf<char>(fd, mode, 1);
-    if (!buffer) {
-        return 0;
-    }
-    return new std::ostream(buffer);
-}
-#else
-// Msvc or unix
-static std::ifstream* open_ifstream_impl(const std::string &filename, std::ios_base::openmode mode)
-{
-#if defined(__NATRON_WIN32__)
+#else // MSVC or Unix
+
+#ifdef _WIN32
 #ifndef _MSC_VER_
-#error "Windows builds only support GCC or MSVC"
+#error "open_ifstream_impl only supports GCC or MSVC"
 #endif
-    std::wstring wfilename = Global::s2ws(filename);
 #endif
-    std::ifstream *ret = new std::ifstream();
-    if (!ret) {
-        return 0;
-    }
-    try {
-        ret->open(
-#ifdef __NATRON_WIN32__
-                  wfilename.c_str(),
-#else
-                  filename.c_str(),
-#endif
-                  mode);
-    } catch (const std::exception & e) {
-        delete ret;
-        return 0;
-    }
-    
-    if (!*ret) {
-        delete ret;
-        return 0;
-    }
-    
-    return ret;
-} // open_ifstream_impl
 
-static std::ofstream* open_ofstream_impl(const std::string &filename, std::ios_base::openmode mode)
+template <typename STREAM, typename FSTREAM>
+bool
+open_fstream_impl(const std::string& path,
+                  std::ios_base::openmode mode,
+                  STREAM** stream,
+                  FStreamsSupport::stdio_filebuf** buffer)
 {
-#if defined(__NATRON_WIN32__)
-    std::wstring wfilename = Global::s2ws(filename);
+    if (!stream) {
+        return false;
+    }
+    
+    if (buffer) {
+        *buffer = 0;
+    }
+    
+#ifdef _WIN32
+    std::wstring wpath = Global::s2ws(path);
 #endif
-    std::ofstream *ret = new std::ofstream();
+    FSTREAM* ret = new FSTREAM();
     if (!ret) {
-        return 0;
+        return false;
     }
     try {
-        ret->open(
-#ifdef __NATRON_WIN32__
-                  wfilename.c_str(),
+#ifdef _WIN32
+        ret->open(wpath.c_str(),mode);
 #else
-                  filename.c_str(),
+        ret->open(path.c_str(),mode);
 #endif
-                  mode);
     } catch (const std::exception & e) {
         delete ret;
-        return 0;
+        return false;
     }
     
     if (!*ret) {
         delete ret;
-        return 0;
+        return false;
     }
     
-    return ret;
-}
-#endif //  defined(__NATRON_WIN32__) &&  defined(__GLIBCXX__)
+    *stream = ret;
+    
+    return true;
+} // open_fstream_impl
+
+#endif //#if FILESYSTEM_USE_STDIO_FILEBUF
 
 } // anon
 
 
-boost::shared_ptr<std::istream>
-FStreamsSupport::open_ifstream(const std::string& filename, std::ios_base::openmode mode)
+void
+FStreamsSupport::open (IStreamWrapper* stream,
+                  const std::string& filename,
+                  std::ios_base::openmode mode)
 {
-    std::istream* ret = open_ifstream_impl(filename, mode | std::ios_base::in);
-    if (ret) {
-        boost::shared_ptr<std::istream> stream(ret);
-        if (mode & std::ios_base::ate) {
-            stream->seekg (0, std::ios_base::end);
-        } else {
-            stream->seekg (0, std::ios_base::beg); // force seek, otherwise broken
-        }
-        if (stream->fail()) {
-            stream.reset();
-        }
-        return stream;
-    } else {
-        return boost::shared_ptr<std::istream>();
+    if (!stream) {
+        return;
     }
+    
+    std::istream* rawStream = 0;
+    stdio_filebuf* buffer = 0;
+    if (!open_fstream_impl<std::istream, std::ifstream>(filename, mode | std::ios_base::in, &rawStream, &buffer)) {
+        //Should have been freed
+        assert(!rawStream && !buffer);
+        delete rawStream;
+        delete buffer;
+        return;
+    }
+    
+    assert(rawStream);
+    if (!rawStream) {
+        return;
+    }
+    
+    if (mode & std::ios_base::ate) {
+        rawStream->seekg (0, std::ios_base::end);
+    } else {
+        rawStream->seekg (0, std::ios_base::beg); // force seek, otherwise broken
+    }
+    if (rawStream->fail()) {
+        delete rawStream;
+        delete buffer;
+        return;
+    }
+    
+    stream->setBuffers(rawStream, buffer);
+    
 }
 
 
-boost::shared_ptr<std::ostream>
-FStreamsSupport::open_ofstream(const std::string& filename, std::ios_base::openmode mode)
+void
+FStreamsSupport::open(OStreamWrapper* stream,const std::string& filename, std::ios_base::openmode mode)
 {
-    std::ostream* ret = open_ofstream_impl(filename, mode | std::ios_base::out);
-    if (ret) {
-        boost::shared_ptr<std::ostream> stream(ret);
-        if ((mode & std::ios_base::app) == 0) {
-            stream->seekp (0, std::ios_base::beg);
-        }
-        if (stream->fail()) {
-            stream.reset();
-        }
-        return stream;
-    } else {
-        return boost::shared_ptr<std::ostream>();
+    if (!stream) {
+        return;
     }
+    
+    std::ostream* rawStream = 0;
+    stdio_filebuf* buffer = 0;
+    if (!open_fstream_impl<std::ostream, std::ofstream>(filename, mode | std::ios_base::out, &rawStream, &buffer)) {
+        //Should have been freed
+        assert(!rawStream && !buffer);
+        delete rawStream;
+        delete buffer;
+        return;
+    }
+    
+    assert(rawStream);
+    if (!rawStream) {
+        return;
+    }
+    
+    if ((mode & std::ios_base::app) == 0) {
+        rawStream->seekp (0, std::ios_base::beg);
+    }
+    if (rawStream->fail()) {
+        delete rawStream;
+        delete buffer;
+        return;
+    }
+    
+    stream->setBuffers(rawStream, buffer);
 }
     
 

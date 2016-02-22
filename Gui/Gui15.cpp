@@ -62,7 +62,8 @@ Gui::importLayout()
     if ( dialog.exec() ) {
         std::string filename = dialog.selectedFiles();
         
-        boost::shared_ptr<std::istream> ifile = FStreamsSupport::open_ifstream(filename);
+        FStreamsSupport::IStreamWrapper ifile;
+        FStreamsSupport::open(&ifile, filename);
         if (!ifile) {
             Dialogs::errorDialog( tr("Error").toStdString(), tr("Failed to open file: ").toStdString() + filename, false );
             return;

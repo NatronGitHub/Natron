@@ -199,7 +199,8 @@ NodeSettingsPanel::onImportPresetsActionTriggered()
     
 
     
-    boost::shared_ptr<std::istream> ifile = FStreamsSupport::open_ifstream(filename);
+    FStreamsSupport::IStreamWrapper ifile;
+    FStreamsSupport::open(&ifile, filename);
     if (!ifile) {
         Dialogs::errorDialog( tr("Presets").toStdString(), tr("Failed to open file: ").toStdString() + filename, false );
         return;
@@ -256,7 +257,8 @@ NodeSettingsPanel::onExportPresetsActionTriggered()
     }
     
 
-    boost::shared_ptr<std::ostream> ofile = FStreamsSupport::open_ofstream(filename);
+    FStreamsSupport::OStreamWrapper ofile;
+    FStreamsSupport::open(&ofile, filename);
     if (!ofile) {
         Dialogs::errorDialog( tr("Presets").toStdString()
                              , tr("Failed to open file ").toStdString() + filename, false );

@@ -256,7 +256,8 @@ Project::loadProjectInternal(const QString & path,
     
     bool ret = false;
     
-    boost::shared_ptr<std::istream> ifile = FStreamsSupport::open_ifstream(filePath.toStdString());
+    FStreamsSupport::IStreamWrapper ifile;
+    FStreamsSupport::open(&ifile, filePath.toStdString());
     if (!ifile) {
         throw std::runtime_error(std::string("Failed to open ") + filePath.toStdString());
     }
@@ -504,7 +505,8 @@ Project::saveProjectInternal(const QString & path,
     tmpFilename.append( QString::number( time.toMSecsSinceEpoch() ) );
 
     {
-        boost::shared_ptr<std::ostream> ofile = FStreamsSupport::open_ofstream(tmpFilename.toStdString());
+        FStreamsSupport::OStreamWrapper ofile;
+        FStreamsSupport::open(&ofile, tmpFilename.toStdString());
         if (!ofile) {
             throw std::runtime_error(tr("Failed to open file ").toStdString() + tmpFilename.toStdString() );
         }
