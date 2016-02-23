@@ -201,7 +201,7 @@ static QString mapPathWithDriveLetterToPathWithNetworkShareName(const QString& p
 		TCHAR szDeviceName[512];
 		DWORD dwResult, cchBuff = sizeof(szDeviceName);
 #ifdef UNICODE
-        dwResult = WNetGetConnection(Global::s2ws(driveName.toStdString()).c_str(), szDeviceName, &cchBuff);
+        dwResult = WNetGetConnection(Global::utf8_to_utf16(driveName.toStdString()).c_str(), szDeviceName, &cchBuff);
 #else
 		dwResult = WNetGetConnection(driveName.toStdString().c_str(), szDeviceName, &cchBuff);
 #endif

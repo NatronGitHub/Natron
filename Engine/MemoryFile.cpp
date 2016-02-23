@@ -231,7 +231,7 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
        - R/W
     ********************************************************
     *********************************************************/
-    std::wstring wpath = Global::s2ws(path);
+    std::wstring wpath = Global::utf8_to_utf16(path);
     file_handle = ::CreateFileW(wpath.c_str(), GENERIC_READ | GENERIC_WRITE,
                                0, 0, windows_open_mode, FILE_ATTRIBUTE_NORMAL, 0);
 

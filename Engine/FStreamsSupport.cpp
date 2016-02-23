@@ -78,7 +78,7 @@ open_fstream_impl(const std::string& path,
     if (!stream || buffer) {
         return false;
     }
-    std::wstring wpath = Global::s2ws(path);
+    std::wstring wpath = Global::utf8_to_utf16(path);
     int fd;
     int oflag = ios_open_mode_to_oflag(mode);
     errno_t errcode = _wsopen_s(&fd, wpath.c_str(), oflag, _SH_DENYNO, _S_IREAD | _S_IWRITE);
@@ -122,7 +122,7 @@ open_fstream_impl(const std::string& path,
     }
     
 #ifdef _WIN32
-    std::wstring wpath = Global::s2ws(path);
+    std::wstring wpath = Global::utf8_to_utf16(path);
 #endif
     FSTREAM* ret = new FSTREAM();
     if (!ret) {

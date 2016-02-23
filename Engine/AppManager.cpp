@@ -2502,11 +2502,11 @@ AppManager::initPython(int argc,char* argv[])
     
 #ifndef IS_PYTHON_2
 #ifdef __NATRON_WIN32__
-    static const std::wstring pythonHome(Global::s2ws("."));
+    static const std::wstring pythonHome(Global::utf8_to_utf16("."));
 #elif defined(__NATRON_LINUX__)
-    static const std::wstring pythonHome(Global::s2ws("../lib"));
+    static const std::wstring pythonHome(Global::utf8_to_utf16("../lib"));
 #elif defined(__NATRON_OSX__)
-    static const std::wstring pythonHome(Global::s2ws("../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib"));
+    static const std::wstring pythonHome(Global::utf8_to_utf16("../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib"));
 #endif
     Py_SetPythonHome(const_cast<wchar_t*>(pythonHome.c_str()));
     PySys_SetArgv(argc, &_imp->args.front()); /// relative module import

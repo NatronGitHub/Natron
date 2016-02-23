@@ -832,7 +832,7 @@ private:
     {
 #ifdef _WIN32
         WIN32_FIND_DATAW FindFileData;
-        std::wstring wpath = Global::s2ws (filename);
+        std::wstring wpath = Global::utf8_to_utf16 (filename);
         HANDLE handle = FindFirstFileW(wpath.c_str(), &FindFileData) ;
         if (handle != INVALID_HANDLE_VALUE) {
             FindClose(handle);

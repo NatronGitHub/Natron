@@ -841,19 +841,19 @@ CallbacksManager::onDoExitOnMainThread(int exitCode, bool exitEvenIfDumpedReceiv
 #ifdef Q_OS_WIN32
 /*Converts a std::string to wide string*/
 static inline std::wstring
-s2ws(const std::string & s)
+utf8_to_utf16(const std::string & s)
 {
     
     
 #ifdef Q_OS_WIN32
-    int len;
-    int slength = (int)s.length() + 1;
-    len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
-    wchar_t* buf = new wchar_t[len];
-    MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
-    std::wstring r(buf);
-    delete[] buf;
-    return r;
+    std::wstring native;
+    
+    
+    native.resize(MultiByteToWideChar (CP_UTF8, 0, str.c_str(), -1, NULL, 0) -1);
+    MultiByteToWideChar (CP_UTF8, 0, str.c_str(), str.size(), &native[0], (int)native.size());
+    
+    return native;
+
 #else
     std::wstring dest;
     
@@ -936,9 +936,9 @@ CallbacksManager::createCrashGenerationServer()
 #elif defined(Q_OS_WIN32)
     _pipePath.replace("/","\\");
     std::string pipeName = _pipePath.toStdString();
-    std::wstring wpipeName = s2ws(pipeName);
+    std::wstring wpipeName = utf8_to_utf16(pipeName);
     std::string stdDumPath = _dumpDirPath.toStdString();
-    std::wstring stdWDumpPath = s2ws(stdDumPath);
+    std::wstring stdWDumpPath = utf8_to_utf16(stdDumPath);
     _crashServer = new CrashGenerationServer(wpipeName,
                                           0, // SECURITY ATTRS
                                           0, // on client connected cb

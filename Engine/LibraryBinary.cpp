@@ -91,7 +91,7 @@ LibraryBinary::loadBinary(const std::string & binaryPath)
     _binaryPath = binaryPath;
 #ifdef __NATRON_WIN32__
 #ifdef UNICODE
-    std::wstring ws = Global::s2ws(binaryPath);
+    std::wstring ws = Global::utf8_to_utf16(binaryPath);
     _library = LoadLibrary(ws.c_str());
 #else
     _library = LoadLibrary( binaryPath.c_str() );

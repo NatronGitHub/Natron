@@ -235,7 +235,7 @@ load(const wchar_t *libraryName,
         fullPathAttempt.append(fileName);
         
 #ifdef UNICODE
-        std::wstring ws = Global::s2ws(fullPathAttempt.toStdString());
+        std::wstring ws = Global::utf8_to_utf16(fullPathAttempt.toStdString());
         HINSTANCE inst = ::LoadLibrary( ws.c_str() );
 #else
         HINSTANCE inst = ::LoadLibrary( fullPathAttempt.toStdString().c_str() );
