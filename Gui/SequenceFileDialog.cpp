@@ -1059,6 +1059,8 @@ SequenceFileDialog::setDirectory(const QString &directory)
     }
 
     _selectionLineEdit->blockSignals(false);
+    
+    updateView(newDirectory);
 }
 
 
@@ -1087,7 +1089,6 @@ SequenceFileDialog::updateView(const QString &directory)
     assert(directoryItem);
     
     QModelIndex index = _model->index(directoryItem.get());
-    
     /*update the view to show the newly loaded directory*/
     setRootIndex(index);
     
@@ -1303,7 +1304,6 @@ SequenceItemDelegate::paint(QPainter * painter,
                             r);
 
 #endif
-
         painter->drawText(textRect,Qt::TextSingleLine,filename,&r);
 
     }

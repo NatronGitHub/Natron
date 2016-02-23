@@ -57,11 +57,13 @@ static QStringList getSplitPath(const QString& path)
 	bool isdriveOrRoot;
 #ifdef __NATRON_WIN32__
 	QString startPath = pathCpy.mid(0,3);
-	 isdriveOrRoot = FileSystemModel::isDriveName(startPath);
+    isdriveOrRoot = FileSystemModel::isDriveName(startPath);
 	if (isdriveOrRoot) {
 		pathCpy = pathCpy.remove(0,3);
 	}
-
+    if (pathCpy.size() > 0 && pathCpy[pathCpy.size() - 1] == QChar('/')) {
+        pathCpy = pathCpy.mid(0,pathCpy.size() - 1);
+    }
 	QStringList splitPath = pathCpy.split('/');
 	if (isdriveOrRoot) {
 		splitPath.prepend(startPath.mid(0,3));
@@ -72,15 +74,16 @@ static QStringList getSplitPath(const QString& path)
 	if (isdriveOrRoot) {
 		pathCpy = pathCpy.remove(0,1);
 	}
+    if (pathCpy.size() > 0 && pathCpy[pathCpy.size() - 1] == QChar('/')) {
+        pathCpy = pathCpy.mid(0,pathCpy.size() - 1);
+    }
 	QStringList splitPath = pathCpy.split('/');
 	if (isdriveOrRoot) {
 		splitPath.prepend("/");
 	}
 
 #endif
-	if (!isdriveOrRoot && pathCpy[pathCpy.size() - 1] == QChar('/')) {
-		pathCpy = pathCpy.mid(0,pathCpy.size() - 1);
-	} 
+	
 	return splitPath;
 }
 
@@ -958,6 +961,9 @@ FileSystemModel::setRootPath(const QString& path)
 {
     assert(QThread::currentThread() == qApp->thread());
     
+    if (path.isEmpty()) {
+        return;
+    }
     ///Check if the path exists
     {
         QDir dir(path);
@@ -971,8 +977,11 @@ FileSystemModel::setRootPath(const QString& path)
     
     ///Make sure the path exist
     boost::shared_ptr<FileSystemItem> item = _imp->mkPath(path);
-    
-    if (item && item != _imp->rootItem) {
+    assert(item);
+    if (!item) {
+        return;
+    }
+    if (item != _imp->rootItem) {
         
         delete _imp->watcher;
         _imp->watcher = new QFileSystemWatcher;
