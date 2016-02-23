@@ -22,7 +22,7 @@ index 78732f2..b47f961 100644
  OIIO_NAMESPACE_BEGIN
  
 +#if FILESYSTEM_USE_STDIO_FILEBUF
-+typedef __gnu_cxx::stdio_filebuf<char> stdio_filebuf;
++typedef __gnu__cxx::stdio_filebuf<char> stdio_filebuf;
 +#else
 +typedef std::basic_filebuf<char> stdio_filebuf;
 +#endif
@@ -423,6 +423,22 @@ index 72096a5..ab9d773 100644
          str = contents.str();
          return true;
      }
+diff --git a/src/libutil/strutil.cpp b/src/libutil/strutil.cpp
+index 954fd61..21e45a8 100644
+--- a/src/libutil/strutil.cpp
++++ b/src/libutil/strutil.cpp
+@@ -507,8 +507,9 @@ Strutil::utf8_to_utf16 (string_view str)
+ {
+     std::wstring native;
+     
+-    native.resize(MultiByteToWideChar (CP_UTF8, 0, str.c_str(), -1, NULL, 0));
+-    MultiByteToWideChar (CP_UTF8, 0, str.c_str(), -1, &native[0], (int)native.size());
++    
++    native.resize(MultiByteToWideChar (CP_UTF8, 0, str.c_str(), -1, NULL, 0) -1);
++    MultiByteToWideChar (CP_UTF8, 0, str.c_str(), str.size(), &native[0], (int)native.size());
+ 
+     return native;
+ }
 diff --git a/src/openexr.imageio/exrinput.cpp b/src/openexr.imageio/exrinput.cpp
 index e53067f..34fe079 100644
 --- a/src/openexr.imageio/exrinput.cpp
