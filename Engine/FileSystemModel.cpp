@@ -357,7 +357,6 @@ struct FileSystemModelPrivate
     boost::shared_ptr<FileSystemItem> rootItem;
     
     QString currentRootPath;
-    bool rootPathWatched;
     QStringList headers;
     
     QDir::Filters filters;
@@ -379,7 +378,6 @@ struct FileSystemModelPrivate
     , watcher(0)
     , rootItem()
     , currentRootPath()
-    , rootPathWatched(false)
     , headers()
     , filters(QDir::AllEntries | QDir::NoDotAndDotDot)
     , encodedRegexps()
@@ -970,8 +968,6 @@ FileSystemModel::setRootPath(const QString& path)
     
     _imp->currentRootPath = path;
     
-    ///Set it to false so that onDirectoryLoadedByGatherer will watch the content of the directory
-    _imp->rootPathWatched = false;
     
     ///Make sure the path exist
     boost::shared_ptr<FileSystemItem> item = _imp->mkPath(path);
@@ -1022,36 +1018,6 @@ FileSystemModel::onDirectoryLoadedByGatherer(const QString& directory)
         return;
     }
     
-    if (!_imp->rootPathWatched) {
-        assert(_imp->watcher);
-        
-        ///Watch all files in the directory and track changes
-        for (int i = 0; i < item->childCount(); ++i) {
-            boost::shared_ptr<FileSystemItem> child = item->childAt(i);
-            boost::shared_ptr<SequenceParsing::SequenceFromFiles> sequence = child->getSequence();
-            
-            if (sequence) {
-                ///Add all items in the sequence
-                if (sequence->isSingleFile()) {
-                    _imp->watcher->addPath(sequence->generateValidSequencePattern().c_str());
-                } else {
-                    const std::map<int,SequenceParsing::FileNameContent>& indexes = sequence->getFrameIndexes();
-                    for (std::map<int,SequenceParsing::FileNameContent>::const_iterator it = indexes.begin();
-                         it != indexes.end(); ++it) {
-                        _imp->watcher->addPath(it->second.absoluteFileName().c_str());
-                    }
-                }
-    
-            } else {
-                const QString& absolutePath = child->absoluteFilePath();
-                _imp->watcher->addPath(absolutePath);
-            }
-            
-        }
-        
-        ///Set it to true to prevent it from being re-watched
-        _imp->rootPathWatched = true;
-    }
     
     ///Finally notify the client that the directory is ready for use
     Q_EMIT directoryLoaded(directory);
