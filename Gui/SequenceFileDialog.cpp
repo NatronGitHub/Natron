@@ -528,7 +528,6 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _filterLayout->setContentsMargins(0,0,0,0);
     _filterLayout->setSpacing(0);
 
-    QString filter = FileSystemModel::generateRegexpFilterFromFileExtensions(_filters);
 
     if (_dialogMode == eFileDialogModeSave) {
         _fileExtensionCombo = new ComboBox(_filterWidget);
@@ -548,7 +547,6 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     if (_dialogMode != eFileDialogModeDir) {
         _filterLineEdit = new FileDialogLineEdit(_filterWidget);
         _filterLayout->addWidget(_filterLineEdit);
-        _filterLineEdit->setText(filter);
         QSize buttonSize( 15,_filterLineEdit->sizeHint().height() );
         QPixmap pixDropDown;
         appPTR->getIcon(NATRON_PIXMAP_COMBOBOX, &pixDropDown);
@@ -561,8 +559,6 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
         _filterLineLayout->addStretch();
     }
     
-    _model->setRegexpFilters(filter);
-
 
     _filterLineLayout->addWidget(_filterWidget);
     _cancelButton = new Button(tr("Cancel"),_filterLineWidget);
@@ -1986,18 +1982,7 @@ SequenceFileDialog::showFilterMenu()
 
     //QFont font(appFont,appFontSize);
     QFontMetrics fm(font());
-    
-    QString defaultString = FileSystemModel::generateRegexpFilterFromFileExtensions(_filters);
-    int w = fm.width(defaultString);
-    double percent = _filterLineEdit->width() / (double)w ;
-    if (percent < 1.) {
-        int nCharsToRemove = (1. - percent) * defaultString.size();
-        defaultString.remove(defaultString.size() - 1 - nCharsToRemove, nCharsToRemove);
-    }
-    
-    QAction *defaultFilters = new QAction(defaultString,this);
-    QObject::connect( defaultFilters, SIGNAL(triggered()), this, SLOT(defaultFiltersSlot()) );
-    actions.append(defaultFilters);
+  
 
     QAction *startSlash = new QAction("*/", this);
     QObject::connect( startSlash, SIGNAL(triggered()), this, SLOT(starSlashFilterSlot()) );
@@ -2021,14 +2006,6 @@ SequenceFileDialog::showFilterMenu()
     }
 }
 
-void
-SequenceFileDialog::defaultFiltersSlot()
-{
-    QString filter = FileSystemModel::generateRegexpFilterFromFileExtensions(_filters);
-
-    _filterLineEdit->setText(filter);
-    applyFilter(filter);
-}
 
 void
 SequenceFileDialog::dotStarFilterSlot()

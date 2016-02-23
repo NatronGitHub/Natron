@@ -768,11 +768,14 @@ FileSystemModel::setRegexpFilters(const QString& filters)
                 regExp.append( filters.at(i) );
                 ++i;
             }
-            ++i;
-            QRegExp rx(regExp,Qt::CaseInsensitive,QRegExp::Wildcard);
-            if ( rx.isValid() ) {
-                _imp->regexps.push_back(rx);
+            if (regExp != "*") {
+                QRegExp rx(regExp,Qt::CaseInsensitive,QRegExp::Wildcard);
+                if ( rx.isValid() ) {
+                    _imp->regexps.push_back(rx);
+                }
             }
+            ++i;
+            
         }
     }
     resetCompletly();

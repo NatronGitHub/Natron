@@ -490,7 +490,6 @@ public Q_SLOTS:
 
     ///apply a filter
     ///and refreshes the current directory.
-    void defaultFiltersSlot();
     void dotStarFilterSlot();
     void starSlashFilterSlot();
     void emptyFilterSlot();
