@@ -875,7 +875,7 @@ utf8_to_utf16(const std::string & s)
     return dest;
 #endif
     
-} // s2ws
+} // utf8_to_utf16
 #endif
 
 
