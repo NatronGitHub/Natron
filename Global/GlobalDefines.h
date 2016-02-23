@@ -171,8 +171,8 @@ utf8_to_utf16(const std::string & s)
     std::wstring native;
     
     
-    native.resize(MultiByteToWideChar (CP_UTF8, 0, str.c_str(), -1, NULL, 0) -1);
-    MultiByteToWideChar (CP_UTF8, 0, str.c_str(), str.size(), &native[0], (int)native.size());
+    native.resize(MultiByteToWideChar (CP_UTF8, 0, s.c_str(), -1, NULL, 0) -1);
+    MultiByteToWideChar (CP_UTF8, 0, s.c_str(), s.size(), &native[0], (int)native.size());
     
     return native;
     
