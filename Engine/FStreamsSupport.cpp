@@ -75,7 +75,7 @@ open_fstream_impl(const std::string& path,
                   STREAM** stream,
                   FStreamsSupport::stdio_filebuf** buffer)
 {
-    if (!stream || buffer) {
+    if (!stream || !buffer) {
         return false;
     }
     std::wstring wpath = Global::utf8_to_utf16(path);
@@ -83,7 +83,9 @@ open_fstream_impl(const std::string& path,
     int oflag = ios_open_mode_to_oflag(mode);
     errno_t errcode = _wsopen_s(&fd, wpath.c_str(), oflag, _SH_DENYNO, _S_IREAD | _S_IWRITE);
     if (errcode != 0) {
-        return 0;
+		*stream = 0;
+		*buffer = 0;
+        return false;
     }
     *buffer = new FStreamsSupport::stdio_filebuf(fd, mode, 1);
     if (!*buffer) {
