@@ -1,5 +1,5 @@
 diff --git a/src/include/OpenImageIO/filesystem.h b/src/include/OpenImageIO/filesystem.h
-index 78732f2..b47f961 100644
+index 78732f2..4b45014 100644
 --- a/src/include/OpenImageIO/filesystem.h
 +++ b/src/include/OpenImageIO/filesystem.h
 @@ -45,6 +45,7 @@
@@ -152,7 +152,7 @@ index 78732f2..b47f961 100644
  /// returning true on success, false on failure.
  OIIO_API bool read_text_file (string_view filename, std::string &str);
 diff --git a/src/libutil/filesystem.cpp b/src/libutil/filesystem.cpp
-index 72096a5..ab9d773 100644
+index 72096a5..2fa9f8d 100644
 --- a/src/libutil/filesystem.cpp
 +++ b/src/libutil/filesystem.cpp
 @@ -40,14 +40,19 @@
@@ -202,7 +202,7 @@ index 72096a5..ab9d773 100644
      // Windows std::ofstream accepts non-standard wchar_t*
      std::wstring wpath = Strutil::utf8_to_utf16 (path);
      stream.open (wpath.c_str(), mode);
-@@ -515,6 +521,200 @@ Filesystem::open (std::ofstream &stream, string_view path,
+@@ -515,6 +521,202 @@ Filesystem::open (std::ofstream &stream, string_view path,
  }
  
  
@@ -244,7 +244,7 @@ index 72096a5..ab9d773 100644
 +                   STREAM** stream,
 +                   stdio_filebuf** buffer)
 +{
-+    if (!stream || buffer) {
++    if (!stream || !buffer) {
 +        return false;
 +    }
 +    std::wstring wpath = Strutil::utf8_to_utf16(path);
@@ -252,7 +252,9 @@ index 72096a5..ab9d773 100644
 +    int oflag = ios_open_mode_to_oflag(mode);
 +    errno_t errcode = _wsopen_s(&fd, wpath.c_str(), oflag, _SH_DENYNO, _S_IREAD | _S_IWRITE);
 +    if (errcode != 0) {
-+        return 0;
++		*buffer = 0;
++		*stream = 0;
++        return false;
 +    }
 +    *buffer = new OIIO_NAMESPACE::stdio_filebuf(fd, mode, 1);
 +    if (!*buffer) {
@@ -403,7 +405,7 @@ index 72096a5..ab9d773 100644
  
  /// Read the entire contents of the named file and place it in str,
  /// returning true on success, false on failure.
-@@ -523,13 +723,15 @@ Filesystem::read_text_file (string_view filename, std::string &str)
+@@ -523,13 +725,15 @@ Filesystem::read_text_file (string_view filename, std::string &str)
  {
      // For info on why this is the fastest method:
      // http://insanecoding.blogspot.com/2011/11/how-to-read-in-file-in-c.html
