@@ -129,12 +129,12 @@ if [ "$REBUILD_EXR" = "1" ]; then
 fi
 if [ ! -f $INSTALL_PATH/lib/pkgconfig/IlmBase.pc ]; then
     cd $MINGW_PACKAGES_PATH/${MINGW_PREFIX}ilmbase || exit 1
-    makepkg-mingw -sLfC || exit 1
+    makepkg-mingw -sLfC --skipchecksums|| exit 1
     pacman --force --noconfirm -U ${PKG_PREFIX}ilmbase-2.2.0-2-any.pkg.tar.xz || exit 1
 fi
 if [ ! -f $INSTALL_PATH/lib/pkgconfig/OpenEXR.pc ]; then
     cd $MINGW_PACKAGES_PATH/${MINGW_PREFIX}openexr || exit 1
-    makepkg-mingw -sLfC || exit 1
+    makepkg-mingw -sLfC --skipchecksums || exit 1
     pacman --force --noconfirm -U ${PKG_PREFIX}openexr-2.2.0-2-any.pkg.tar.xz || exit 1
 fi
 
