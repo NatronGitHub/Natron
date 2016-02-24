@@ -556,6 +556,48 @@ static QString getVersionString()
     return versionStr;
 }
 
+static QString getLinuxVersionString()
+{
+    QFile os_release("/etc/os-release");
+    QFile redhat_release("/etc/redhat-release");
+    QFile debian_release("/etc/debian_version");
+    QString linux_release;
+    if (os_release.exists()) {
+        if (os_release.open(QIODevice::ReadOnly|QIODevice::Text)) {
+            QString os_release_data = os_release.readAll();
+            if (!os_release_data.isEmpty()) {
+                QStringList os_release_split = os_release_data.split("\n",QString::SkipEmptyParts);
+                for (int i = 0; i < os_release_split.size(); ++i) {
+                    if (os_release_split.at(i).startsWith("PRETTY_NAME=")) {
+                        linux_release = os_release_split.at(i);
+                        linux_release.replace("PRETTY_NAME=","").replace("\"","");
+                    }
+                }
+            }
+            os_release.close();
+        }
+    }
+    else if (redhat_release.exists()) {
+       if (redhat_release.open(QIODevice::ReadOnly|QIODevice::Text)) {
+           QString redhat_release_data = redhat_release.readAll();
+           if (!redhat_release_data.isEmpty()) {
+               linux_release = redhat_release_data;
+           }
+           redhat_release.close();
+       }
+    }
+    else if (debian_release.exists()) {
+       if (debian_release.open(QIODevice::ReadOnly|QIODevice::Text)) {
+           QString debian_release_data = debian_release.readAll();
+           if (!debian_release_data.isEmpty()) {
+               linux_release = "Debian " + debian_release_data;
+           }
+           debian_release.close();
+       }
+    }
+    return linux_release;
+}
+
 void
 CallbacksManager::uploadFileToRepository(const QString& filepath, const QString& comments)
 {
@@ -565,6 +607,9 @@ CallbacksManager::uploadFileToRepository(const QString& filepath, const QString&
     QString versionStr = getVersionString();
     const QString gitHash(GIT_COMMIT);
     const QString gitBranch(GIT_BRANCH);
+#ifdef Q_OS_LINUX
+    QString linuxVersion = getLinuxVersionString();
+#endif
 
 #ifndef REPORTER_CLI_ONLY
     assert(_dialog);
@@ -609,6 +654,11 @@ CallbacksManager::uploadFileToRepository(const QString& filepath, const QString&
     addTextHttpPart(multiPart, "guid", guidStr);
     addTextHttpPart(multiPart, "Comments", comments);
     addFileHttpPart(multiPart, "upload_file_minidump", filepath);
+#ifdef Q_OS_LINUX
+    if (!linuxVersion.isEmpty()) {
+        addTextHttpPart(multiPart, "LinuxVersion", linuxVersion);
+    }
+#endif
     
     QUrl url = QUrl::fromEncoded(QByteArray(UPLOAD_URL));
     QNetworkRequest request(url);
