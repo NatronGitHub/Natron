@@ -122,6 +122,22 @@ if [ ! -f $INSTALL_PATH/lib/libOpenColorIO.a ]; then
     cp ../LICENSE ../README $INSTALL_PATH/docs/ocio/ || exit 1
 fi
 
+
+# Install openexr
+if [ "$REBUILD_EXR" = "1" ]; then
+  rm -rf $INSTALL_PATH/lib/pkgconfig/{OpenEXR.pc,IlmBase.pc} $INSTALL_PATH/include/OpenEXR $INSTALL_PATH/{bin,lib}/libIlmImf* $INSTALL_PATH/{bin,lib}/libHalf* $INSTALL_PATH/{bin,lib}/libIex* $INSTALL_PATH/{bin,lib}/libIlm* $INSTALL_PATH/{bin,lib}/libImath*
+fi
+if [ ! -f $INSTALL_PATH/lib/pkgconfig/IlmBase.pc ]; then
+    cd $MINGW_PACKAGES_PATH/${MINGW_PREFIX}ilmbase || exit 1
+    makepkg-mingw -sLfC || exit 1
+    pacman --force --noconfirm -U ${PKG_PREFIX}ilmbase-2.2.0-2-any.pkg.tar.xz || exit 1
+fi
+if [ ! -f $INSTALL_PATH/lib/pkgconfig/OpenEXR.pc ]; then
+    cd $MINGW_PACKAGES_PATH/${MINGW_PREFIX}openexr || exit 1
+    makepkg-mingw -sLfC || exit 1
+    pacman --force --noconfirm -U ${PKG_PREFIX}openexr-2.2.0-2-any.pkg.tar.xz || exit 1
+fi
+
 # Install oiio
 if [ "$REBUILD_OIIO" = "1" ]; then
     rm -rf $INSTALL_PATH/lib/libOpenImage* $INSTALL_PATH/include/OpenImage* $INSTALL_PATH/bin/libOpenImage*
