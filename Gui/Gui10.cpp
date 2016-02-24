@@ -304,7 +304,7 @@ Gui::exportLayout()
 
 
         
-        FStreamsSupport::OStreamWrapper ofile;
+        FStreamsSupport::ofstream ofile;
         FStreamsSupport::open(&ofile, filename);
         if (!ofile) {
             Dialogs::errorDialog( tr("Error").toStdString()
@@ -313,7 +313,7 @@ Gui::exportLayout()
         }
 
         try {
-            boost::archive::xml_oarchive oArchive(*ofile);
+            boost::archive::xml_oarchive oArchive(ofile);
             GuiLayoutSerialization s;
             s.initialize(this);
             oArchive << boost::serialization::make_nvp("Layout", s);

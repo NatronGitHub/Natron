@@ -743,11 +743,11 @@ OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std::string,
     QString ofxCacheFilePath = getCacheFilePath();
     
     {
-        FStreamsSupport::IStreamWrapper ifs;
+        FStreamsSupport::ifstream ifs;
         FStreamsSupport::open(&ifs,ofxCacheFilePath.toStdString());
         if (ifs) {
             try {
-                OFX::Host::PluginCache::getPluginCache()->readCache(*ifs);
+                OFX::Host::PluginCache::getPluginCache()->readCache(ifs);
             } catch (const std::exception& e) {
                 qDebug() << "Failure to read OpenFX plug-ins cache: " << e.what();
             }
@@ -906,13 +906,13 @@ OfxHost::writeOFXCache()
     QString ofxCachePath = getOFXCacheDirPath();
     QDir().mkpath(ofxCachePath);
     QString ofxCacheFilePath = getCacheFilePath();
-    FStreamsSupport::OStreamWrapper ofile;
+    FStreamsSupport::ofstream ofile;
     FStreamsSupport::open(&ofile, ofxCacheFilePath.toStdString());
     if (!ofile) {
         return;
     }
     assert(OFX::Host::PluginCache::getPluginCache());
-    OFX::Host::PluginCache::getPluginCache()->writePluginCache(*ofile);
+    OFX::Host::PluginCache::getPluginCache()->writePluginCache(ofile);
 }
 
 void

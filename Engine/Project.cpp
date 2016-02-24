@@ -256,7 +256,7 @@ Project::loadProjectInternal(const QString & path,
     
     bool ret = false;
     
-    FStreamsSupport::IStreamWrapper ifile;
+    FStreamsSupport::ifstream ifile;
     FStreamsSupport::open(&ifile, filePath.toStdString());
     if (!ifile) {
         throw std::runtime_error(std::string("Failed to open ") + filePath.toStdString());
@@ -289,7 +289,7 @@ Project::loadProjectInternal(const QString & path,
     
     try {
         bool bgProject;
-        boost::archive::xml_iarchive iArchive(*ifile);
+        boost::archive::xml_iarchive iArchive(ifile);
         {
             FlagSetter __raii_loadingProjectInternal__(true,&_imp->isLoadingProjectInternal,&_imp->isLoadingProjectMutex);
             
@@ -505,7 +505,7 @@ Project::saveProjectInternal(const QString & path,
     tmpFilename.append( QString::number( time.toMSecsSinceEpoch() ) );
 
     {
-        FStreamsSupport::OStreamWrapper ofile;
+        FStreamsSupport::ofstream ofile;
         FStreamsSupport::open(&ofile, tmpFilename.toStdString());
         if (!ofile) {
             throw std::runtime_error(tr("Failed to open file ").toStdString() + tmpFilename.toStdString() );
@@ -522,7 +522,7 @@ Project::saveProjectInternal(const QString & path,
         }
         
         try {
-            boost::archive::xml_oarchive oArchive(*ofile);
+            boost::archive::xml_oarchive oArchive(ofile);
             bool bgProject = getApp()->isBackground();
             oArchive << boost::serialization::make_nvp("Background_project",bgProject);
             ProjectSerialization projectSerializationObj( getApp() );

@@ -254,6 +254,7 @@ HEADERS += \
     FrameParams.h \
     FrameParamsSerialization.h \
     FStreamsSupport.h \
+    fstream_mingw.h \
     GroupInput.h \
     GroupOutput.h \
     Hash64.h \

@@ -274,7 +274,7 @@ void saveCache(Cache<T>* cache)
 {
     
     std::string cacheRestoreFilePath = cache->getRestoreFilePath();
-    FStreamsSupport::OStreamWrapper ofile;
+    FStreamsSupport::ofstream ofile;
     FStreamsSupport::open(&ofile, cacheRestoreFilePath);
     if (!ofile) {
         std::cerr << "Failed to save cache to " << cacheRestoreFilePath.c_str() << std::endl;
@@ -286,7 +286,7 @@ void saveCache(Cache<T>* cache)
     cache->save(&toc);
     unsigned int version = cache->cacheVersion();
     try {
-        boost::archive::binary_oarchive oArchive(*ofile);
+        boost::archive::binary_oarchive oArchive(ofile);
         oArchive << version;
         oArchive << toc;
     } catch (const std::exception & e) {
@@ -307,7 +307,7 @@ void restoreCache(AppManagerPrivate* p, Cache<T>* cache)
 {
     if ( p->checkForCacheDiskStructure( cache->getCachePath() ) ) {
         std::string settingsFilePath = cache->getRestoreFilePath();
-        FStreamsSupport::IStreamWrapper ifile;
+        FStreamsSupport::ifstream ifile;
         FStreamsSupport::open(&ifile, settingsFilePath);
         if (!ifile) {
             std::cerr << "Failure to open cache restore file at: " << settingsFilePath << std::endl;
@@ -316,7 +316,7 @@ void restoreCache(AppManagerPrivate* p, Cache<T>* cache)
         typename Cache<T>::CacheTOC tableOfContents;
         unsigned int cacheVersion = 0x1; //< default to 1 before NATRON_CACHE_VERSION was introduced
         try {
-            boost::archive::binary_iarchive iArchive(*ifile);
+            boost::archive::binary_iarchive iArchive(ifile);
             if (cache->cacheVersion() >= NATRON_CACHE_VERSION) {
                 iArchive >> cacheVersion;
             }

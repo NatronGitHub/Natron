@@ -199,7 +199,7 @@ NodeSettingsPanel::onImportPresetsActionTriggered()
     
 
     
-    FStreamsSupport::IStreamWrapper ifile;
+    FStreamsSupport::ifstream ifile;
     FStreamsSupport::open(&ifile, filename);
     if (!ifile) {
         Dialogs::errorDialog( tr("Presets").toStdString(), tr("Failed to open file: ").toStdString() + filename, false );
@@ -210,7 +210,7 @@ NodeSettingsPanel::onImportPresetsActionTriggered()
     try {
 
         int nNodes;
-        boost::archive::xml_iarchive iArchive(*ifile);
+        boost::archive::xml_iarchive iArchive(ifile);
         iArchive >> boost::serialization::make_nvp("NodesCount",nNodes);
         for (int i = 0; i < nNodes ; ++i) {
             boost::shared_ptr<NodeSerialization> node(new NodeSerialization());
@@ -257,7 +257,7 @@ NodeSettingsPanel::onExportPresetsActionTriggered()
     }
     
 
-    FStreamsSupport::OStreamWrapper ofile;
+    FStreamsSupport::ofstream ofile;
     FStreamsSupport::open(&ofile, filename);
     if (!ofile) {
         Dialogs::errorDialog( tr("Presets").toStdString()
@@ -271,7 +271,7 @@ NodeSettingsPanel::onExportPresetsActionTriggered()
     try {
          
         int nNodes = nodeSerialization.size();
-        boost::archive::xml_oarchive oArchive(*ofile);
+        boost::archive::xml_oarchive oArchive(ofile);
         oArchive << boost::serialization::make_nvp("NodesCount",nNodes);
         for (std::list<boost::shared_ptr<NodeSerialization> >::iterator it = nodeSerialization.begin();
              it != nodeSerialization.end(); ++it) {

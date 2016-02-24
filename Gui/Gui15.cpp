@@ -62,7 +62,7 @@ Gui::importLayout()
     if ( dialog.exec() ) {
         std::string filename = dialog.selectedFiles();
         
-        FStreamsSupport::IStreamWrapper ifile;
+        FStreamsSupport::ifstream ifile;
         FStreamsSupport::open(&ifile, filename);
         if (!ifile) {
             Dialogs::errorDialog( tr("Error").toStdString(), tr("Failed to open file: ").toStdString() + filename, false );
@@ -70,7 +70,7 @@ Gui::importLayout()
         }
 
         try {
-            boost::archive::xml_iarchive iArchive(*ifile);
+            boost::archive::xml_iarchive iArchive(ifile);
             GuiLayoutSerialization s;
             iArchive >> boost::serialization::make_nvp("Layout", s);
             restoreLayout(true, false, s);

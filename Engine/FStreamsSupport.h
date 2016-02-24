@@ -26,103 +26,38 @@
 // ***** END PYTHON BLOCK *****
 #include "Global/GlobalDefines.h"
 
+#include <string>
 #include <fstream>
 #if defined(__NATRON_WIN32__) && defined(__GLIBCXX__)
-#define FILESYSTEM_USE_STDIO_FILEBUF 1
-#include <ext/stdio_filebuf.h> // __gnu_cxx::stdio_filebuf
+#define FSTREAM_USE_STDIO_FILEBUF 1
+#include "fstream_mingw.h"
 #endif
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#endif
 
 NATRON_NAMESPACE_ENTER;
 
+
 namespace FStreamsSupport {
     
-#ifdef FILESYSTEM_USE_STDIO_FILEBUF
-    typedef __gnu_cxx::stdio_filebuf<char> stdio_filebuf;
+#if FSTREAM_USE_STDIO_FILEBUF
+    // MingW uses GCC to build, but does not support having a wchar_t* passed as argument
+    // of ifstream::open or ofstream::open. To properly support UTF-8 encoding on MingW we must
+    // use the __gnu_cxx::stdio_filebuf GNU extension that can be used with _wfsopen and returned
+    // into a istream which share the same API as ifsteam. The same reasoning holds for ofstream.
+    typedef basic_ifstream<char> ifstream;
+    typedef basic_ofstream<char> ofstream;
 #else
-    typedef std::basic_filebuf<char> stdio_filebuf;
+    typedef std::ifstream ifstream;
+    typedef std::ofstream ofstream;
 #endif
     
-/// To avoid memory leaks, the open functions below
-/// return this wrapper which ensure memory freeing in a RAII style.
-template <typename STREAM>
-class IOStreamWrapperTemplated
-{
-    
-public:
-    
-    IOStreamWrapperTemplated()
-    : _stream(0)
-    , _buffer(0)
-    {
-        
-    }
-    
-    IOStreamWrapperTemplated(STREAM* stream,
-                             stdio_filebuf* buffer = 0)
-    : _stream(stream)
-    , _buffer(buffer)
-    {
-        
-    }
-    
-    operator bool() const
-    {
-        return _stream ? (bool)(*_stream) : false;
-    }
-    
-    STREAM& operator*() const
-    {
-        assert(_stream);
-        return *_stream;
-    }
-    
-    //For convenience add this operator to access the stream
-    STREAM* operator->() const
-    {
-        assert(_stream);
-        return _stream;
-    }
-    
-    void setBuffers(STREAM* stream, stdio_filebuf* buffer = 0)
-    {
-        _stream = stream;
-        _buffer = buffer;
-    }
-    
-    ~IOStreamWrapperTemplated()
-    {
-        reset();
-    }
-    
-    void reset()
-    {
-        delete _stream;
-        
-        //According to istream/ostream documentation, the destructor does not
-        //delete the internal buffer. If we want the file to be closed, we need
-        //to delete it ourselves
-        delete _buffer;
-    }
-    
-private:
-    
-    STREAM* _stream;
-    stdio_filebuf* _buffer;
-    
-};
-    
-typedef IOStreamWrapperTemplated<std::istream> IStreamWrapper;
-typedef IOStreamWrapperTemplated<std::ostream> OStreamWrapper;
 
-void open(IStreamWrapper* stream,const std::string& filename, std::ios_base::openmode mode = std::ios_base::in);
 
-void open(OStreamWrapper* stream,const std::string& filename, std::ios_base::openmode mode = std::ios_base::out);
+void open(ifstream* stream,const std::string& filename, std::ios_base::openmode mode = std::ios_base::in);
 
-}
+void open(ofstream* stream,const std::string& filename, std::ios_base::openmode mode = std::ios_base::out);
+
+} //FStreamsSupport
 
 NATRON_NAMESPACE_EXIT;
 
