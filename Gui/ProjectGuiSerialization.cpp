@@ -218,43 +218,46 @@ ApplicationWindowSerialization::initialize(bool mainWindow,
     if (mainWindow) {
         Gui* gui = dynamic_cast<Gui*>(widget);
         assert(gui);
-        QWidget* centralWidget = gui->getCentralWidget();
-        Splitter* isSplitter = dynamic_cast<Splitter*>(centralWidget);
-        TabWidget* isTabWidget = dynamic_cast<TabWidget*>(centralWidget);
+        if (gui) {
+            QWidget* centralWidget = gui->getCentralWidget();
+            Splitter* isSplitter = dynamic_cast<Splitter*>(centralWidget);
+            TabWidget* isTabWidget = dynamic_cast<TabWidget*>(centralWidget);
 
-        assert(isSplitter || isTabWidget);
+            assert(isSplitter || isTabWidget);
 
-        if (isSplitter) {
-            child_asSplitter = new SplitterSerialization;
-            child_asSplitter->initialize(isSplitter);
-        } else {
-            child_asPane = new PaneLayout;
-            child_asPane->initialize(isTabWidget);
+            if (isSplitter) {
+                child_asSplitter = new SplitterSerialization;
+                child_asSplitter->initialize(isSplitter);
+            } else if (isTabWidget) {
+                child_asPane = new PaneLayout;
+                child_asPane->initialize(isTabWidget);
+            }
         }
     } else {
         FloatingWidget* isFloating = dynamic_cast<FloatingWidget*>(widget);
         assert(isFloating);
+        if (isFloating) {
+            QWidget* embedded = isFloating->getEmbeddedWidget();
+            Splitter* isSplitter = dynamic_cast<Splitter*>(embedded);
+            TabWidget* isTabWidget = dynamic_cast<TabWidget*>(embedded);
+            DockablePanel* isPanel = dynamic_cast<DockablePanel*>(embedded);
+            assert(isSplitter || isTabWidget || isPanel);
 
-        QWidget* embedded = isFloating->getEmbeddedWidget();
-        Splitter* isSplitter = dynamic_cast<Splitter*>(embedded);
-        TabWidget* isTabWidget = dynamic_cast<TabWidget*>(embedded);
-        DockablePanel* isPanel = dynamic_cast<DockablePanel*>(embedded);
-        assert(isSplitter || isTabWidget || isPanel);
-
-        if (isSplitter) {
-            child_asSplitter = new SplitterSerialization;
-            child_asSplitter->initialize(isSplitter);
-        } else if (isTabWidget) {
-            child_asPane = new PaneLayout;
-            child_asPane->initialize(isTabWidget);
-        } else {
-            ///A named knob holder is a knob holder which has a unique name.
-            NamedKnobHolder* isNamedHolder = dynamic_cast<NamedKnobHolder*>( isPanel->getHolder() );
-            if (isNamedHolder) {
-                child_asDockablePanel = isNamedHolder->getScriptName_mt_safe();
-            } else {
-                ///This must be the project settings panel
-                child_asDockablePanel = kNatronProjectSettingsPanelSerializationName;
+            if (isSplitter) {
+                child_asSplitter = new SplitterSerialization;
+                child_asSplitter->initialize(isSplitter);
+            } else if (isTabWidget) {
+                child_asPane = new PaneLayout;
+                child_asPane->initialize(isTabWidget);
+            } else if (isPanel) {
+                ///A named knob holder is a knob holder which has a unique name.
+                NamedKnobHolder* isNamedHolder = dynamic_cast<NamedKnobHolder*>( isPanel->getHolder() );
+                if (isNamedHolder) {
+                    child_asDockablePanel = isNamedHolder->getScriptName_mt_safe();
+                } else {
+                    ///This must be the project settings panel
+                    child_asDockablePanel = kNatronProjectSettingsPanelSerializationName;
+                }
             }
         }
     }

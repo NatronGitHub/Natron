@@ -590,7 +590,9 @@ ShortCutEditor::onValidateButtonClicked()
     //only keybinds can be edited...
     KeyBoundAction* ka = dynamic_cast<KeyBoundAction*>(action);
     assert(ka);
-
+    if (!ka) {
+        return;
+    }
     Qt::KeyboardModifiers modifiers,altmodifiers;
     Qt::Key symbol,altsymbmol;
     extractKeySequence(seq, modifiers, symbol);
@@ -613,8 +615,6 @@ ShortCutEditor::onValidateButtonClicked()
                             return;
                         }
                     }
-                    
-                    
                 }
             }
         }
@@ -659,8 +659,7 @@ ShortCutEditor::onClearButtonClicked()
     KeyBoundAction* ka = dynamic_cast<KeyBoundAction*>(action);
     if (ma) {
         ma->button = Qt::NoButton;
-    } else {
-        assert(ka);
+    } else if (ka) {
         ka->currentShortcut.clear();
     }
 

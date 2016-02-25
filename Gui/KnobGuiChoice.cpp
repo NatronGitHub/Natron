@@ -307,9 +307,11 @@ KnobGuiChoice::onItemNewSelected()
         assert(holder);
         EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
         assert(effect);
-        assert(effect->getNode());
-        if (!effect->getNode()->addUserComponents(comps)) {
-            Dialogs::errorDialog(tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString());
+        if (effect) {
+            assert(effect->getNode());
+            if (!effect->getNode()->addUserComponents(comps)) {
+                Dialogs::errorDialog(tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString());
+            }
         }
     }
 }

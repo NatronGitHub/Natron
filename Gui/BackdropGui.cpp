@@ -89,7 +89,7 @@ BackdropGuiPrivate::getLabelValue() const
     assert(k);
     KnobString* isStr = dynamic_cast<KnobString*>(k.get());
     assert(isStr);
-    return isStr->getValue();
+    return isStr ? isStr->getValue() : "";
 }
 
 void

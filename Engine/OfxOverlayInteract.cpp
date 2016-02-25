@@ -185,7 +185,7 @@ OfxOverlayInteract::getSuggestedColour(double &r,
 {
     OfxImageEffectInstance* effect = dynamic_cast<OfxImageEffectInstance*>(&_instance);
     assert(effect && effect->getOfxEffectInstance());
-    return effect->getOfxEffectInstance()->getNode()->getOverlayColor(&r, &g, &b);
+    return effect ? effect->getOfxEffectInstance()->getNode()->getOverlayColor(&r, &g, &b) : false;
 }
 
 // overridden from OFX::Host::Interact::Instance

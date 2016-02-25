@@ -569,7 +569,10 @@ SetKeysInterpolationCommand::setNewInterpolation(bool undo)
         } else {
             BezierCPCurveGui* bezierCurve = dynamic_cast<BezierCPCurveGui*>(it->key->curve.get());
             assert(bezierCurve);
-            rotoToEvaluate.push_back(bezierCurve->getBezier()->getContext());
+            if (bezierCurve) {
+                assert(bezierCurve->getBezier());
+                rotoToEvaluate.push_back(bezierCurve->getBezier()->getContext());
+            }
         }
     }
 

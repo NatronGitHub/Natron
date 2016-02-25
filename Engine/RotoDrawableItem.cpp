@@ -306,7 +306,9 @@ RotoDrawableItem::createNodes(bool connectNodes)
     } else {
         op = eMergeCopy;
     }
-    mergeOp->setValueFromLabel(Merge::getOperatorString(op), 0);
+    if (mergeOp) {
+        mergeOp->setValueFromLabel(Merge::getOperatorString(op), 0);
+    }
     compOp->setValueFromLabel(Merge::getOperatorString(op), 0);
 
     if (isStroke) {
@@ -903,8 +905,10 @@ void
 RotoDrawableItem::save(RotoItemSerialization *obj) const
 {
     RotoDrawableItemSerialization* s = dynamic_cast<RotoDrawableItemSerialization*>(obj);
-
     assert(s);
+    if (!s) {
+        throw std::logic_error("RotoDrawableItem::save()");
+    }
     for (std::list<KnobPtr >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
         boost::shared_ptr<KnobSerialization> k(new KnobSerialization());
         serializeRotoKnob(*it,k.get());

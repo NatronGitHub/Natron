@@ -621,10 +621,11 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
                 KnobGuiGroup* parentParentGroupGui = dynamic_cast<KnobGuiGroup*>(findKnobGuiOrCreate(parentParent, true,
                                                                                                      ret->getFieldContainer()));
                 assert(parentParentGroupGui);
-                TabGroup* groupAsTab = parentParentGroupGui->getOrCreateTabWidget();
-                assert(groupAsTab);
-                layout = groupAsTab->addTab(closestParentGroupTab, closestParentGroupTab->getLabel().c_str());
-                
+                if (parentParentGroupGui) {
+                    TabGroup* groupAsTab = parentParentGroupGui->getOrCreateTabWidget();
+                    assert(groupAsTab);
+                    layout = groupAsTab->addTab(closestParentGroupTab, closestParentGroupTab->getLabel().c_str());
+                }
             } else if (parentParentIsPage) {
                 PageMap::iterator page = getOrCreatePage(parentParentIsPage);
                 assert(page != _pages.end());
@@ -716,8 +717,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
         ///increment the row count
         ++page->second.currentRow;
         
-        if (parentIsGroup) {
-            assert(parentGui);
+        if (parentIsGroup && parentGui) {
             parentGui->addKnob(ret);
         }
         

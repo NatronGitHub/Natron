@@ -1205,11 +1205,17 @@ NodeGroup::isInputOptional(int inputNb) const
     }
     GroupInput* input = dynamic_cast<GroupInput*>(n->getEffectInstance().get());
     assert(input);
+    if (!input) {
+        return false;
+    }
     KnobPtr knob = input->getKnobByName(kNatronGroupInputIsOptionalParamName);
     assert(knob);
+    if (!knob) {
+        return false;
+    }
     KnobBool* isBool = dynamic_cast<KnobBool*>(knob.get());
     assert(isBool);
-    return isBool->getValue();
+    return isBool ? isBool->getValue() : false;
 }
 
 bool
@@ -1239,11 +1245,17 @@ NodeGroup::isInputMask(int inputNb) const
     }
     GroupInput* input = dynamic_cast<GroupInput*>(n->getEffectInstance().get());
     assert(input);
+    if (!input) {
+        return false;
+    }
     KnobPtr knob = input->getKnobByName(kNatronGroupInputIsMaskParamName);
     assert(knob);
+    if (!knob) {
+        return false;
+    }
     KnobBool* isBool = dynamic_cast<KnobBool*>(knob.get());
     assert(isBool);
-    return isBool->getValue();
+    return isBool ? isBool->getValue() : false;
 }
 
 void
@@ -1257,7 +1269,9 @@ NodeGroup::initializeKnobs()
     _imp->exportAsTemplate->setName("exportAsPyPlug");
     _imp->exportAsTemplate->setHintToolTip("Export this group as a Python group script (PyPlug) that can be shared and/or later "
                                            "on re-used as a plug-in.");
-    isPage->addKnob(_imp->exportAsTemplate);
+    if (isPage) {
+        isPage->addKnob(_imp->exportAsTemplate);
+    }
 }
 
 void

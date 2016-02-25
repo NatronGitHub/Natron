@@ -619,6 +619,9 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
     for (std::list<OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it != params.end(); ++it) {
         OfxParamToKnob* paramToKnob = dynamic_cast<OfxParamToKnob*>(*it);
         assert(paramToKnob);
+        if (!paramToKnob) {
+            continue;
+        }
         OFX::Host::Interact::Descriptor & interactDesc = paramToKnob->getInteractDesc();
         if (interactDesc.getState() == OFX::Host::Interact::eDescribed) {
             KnobPtr knob = paramToKnob->getKnob();

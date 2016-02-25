@@ -60,7 +60,11 @@ NodeSerialization::NodeSerialization(const NodePtr & n,bool serializeInputs)
         _inputs.clear();
 
         if ( n->isOpenFXNode() ) {
-            dynamic_cast<OfxEffectInstance*>( n->getEffectInstance().get() )->syncPrivateData_other_thread();
+            OfxEffectInstance effect = dynamic_cast<OfxEffectInstance*>( n->getEffectInstance().get() );
+            assert(effect);
+            if (effect) {
+                effect->syncPrivateData_other_thread();
+            }
         }
 
         std::vector< KnobPtr >  knobs = n->getEffectInstance()->getKnobs_mt_safe();

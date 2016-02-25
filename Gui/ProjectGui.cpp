@@ -477,19 +477,21 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
         assert(gui_i);
         BackdropGui* bd = dynamic_cast<BackdropGui*>(gui_i.get());
         assert(bd);
-        bd->setVisibleSettingsPanel(false);
-        bd->resize(w,h);
-        KnobString* iStr = dynamic_cast<KnobString*>(labelSerialization.get());
-        assert(iStr);
-        if (iStr) {
-            bd->onLabelChanged(iStr->getValue().c_str());
+        if (bd) {
+            bd->setVisibleSettingsPanel(false);
+            bd->resize(w,h);
+            KnobString* iStr = dynamic_cast<KnobString*>(labelSerialization.get());
+            assert(iStr);
+            if (iStr) {
+                bd->onLabelChanged(iStr->getValue().c_str());
+            }
+            float r,g,b;
+            it->getColor(r, g, b);
+            QColor c;
+            c.setRgbF(r,g,b);
+            bd->setCurrentColor(c);
+            node->setLabel(it->getFullySpecifiedName());
         }
-        float r,g,b;
-        it->getColor(r, g, b);
-        QColor c;
-        c.setRgbF(r,g,b);
-        bd->setCurrentColor(c);
-        node->setLabel(it->getFullySpecifiedName());
     }
 
      _gui->getApp()->updateProjectLoadStatus(QObject::tr("Restoring settings panels"));

@@ -121,6 +121,9 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel, QWidget* parent)
 {
     NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(panel);
     assert(nodePanel);
+    if (!nodePanel) {
+        throw std::logic_error("PickKnobDialog::PickKnobDialog()");
+    }
     NodeGuiPtr nodeGui = nodePanel->getNode();
     NodePtr node = nodeGui->getNode();
     NodeGroup* isGroup = node->isEffectGroup();
@@ -334,8 +337,14 @@ PickKnobDialog::getSelectedKnob(bool* makeAlias,boost::shared_ptr<KnobPage>* pag
     
     boost::shared_ptr<NodeGuiI> selectedNodeGuiI = selectedNode->getNodeGui();
     assert(selectedNodeGuiI);
+    if (!selectedNodeGuiI) {
+        return 0;
+    }
     NodeGui* selectedNodeGui = dynamic_cast<NodeGui*>(selectedNodeGuiI.get());
     assert(selectedNodeGui);
+    if (!selectedNodeGui) {
+        return 0;
+    }
     NodeSettingsPanel* selectedPanel = selectedNodeGui->getSettingPanel();
     bool hadPanelVisible = selectedPanel && !selectedPanel->isClosed();
     if (!selectedPanel) {

@@ -624,18 +624,20 @@ public:
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
             assert(item);
-            int nbCacheMiss,nbCacheHits,nbCacheHitButDown;
-            stats.getCacheAccessInfos(&nbCacheMiss, &nbCacheHits, &nbCacheHitButDown);
-            nb += nbCacheMiss;
-            
-            QString str = QString::number(nb);
-            if (nodeUi) {
-                item->setTextColor(Qt::black);
-                item->setBackgroundColor(c);
-            }
-            item->setText(str);
-            if (!exists) {
-                view->setItem(row, COL_NB_CACHE_MISS, item);
+            if (item) {
+                int nbCacheMiss,nbCacheHits,nbCacheHitButDown;
+                stats.getCacheAccessInfos(&nbCacheMiss, &nbCacheHits, &nbCacheHitButDown);
+                nb += nbCacheMiss;
+
+                QString str = QString::number(nb);
+                if (nodeUi) {
+                    item->setTextColor(Qt::black);
+                    item->setBackgroundColor(c);
+                }
+                item->setText(str);
+                if (!exists) {
+                    view->setItem(row, COL_NB_CACHE_MISS, item);
+                }
             }
         }
         if (!exists) {

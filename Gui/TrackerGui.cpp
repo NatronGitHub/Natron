@@ -283,38 +283,39 @@ TrackerGui::drawOverlays(double time,
                 assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
                 KnobDouble* dblKnob = dynamic_cast<KnobDouble*>( newInstanceKnob.get() );
                 assert(dblKnob);
+                if (dblKnob) {
+                    //GLProtectMatrix p(GL_PROJECTION); // useless (we do two glTranslate in opposite directions)
+                    for (int l = 0; l < 2; ++l) {
+                        // shadow (uses GL_PROJECTION)
+                        glMatrixMode(GL_PROJECTION);
+                        int direction = (l == 0) ? 1 : -1;
+                        // translate (1,-1) pixels
+                        glTranslated(direction * pixelScaleX / 256, -direction * pixelScaleY / 256, 0);
+                        glMatrixMode(GL_MODELVIEW);
 
-                //GLProtectMatrix p(GL_PROJECTION); // useless (we do two glTranslate in opposite directions)
-                for (int l = 0; l < 2; ++l) {
-                    // shadow (uses GL_PROJECTION)
-                    glMatrixMode(GL_PROJECTION);
-                    int direction = (l == 0) ? 1 : -1;
-                    // translate (1,-1) pixels
-                    glTranslated(direction * pixelScaleX / 256, -direction * pixelScaleY / 256, 0);
-                    glMatrixMode(GL_MODELVIEW);
+                        if (l == 0) {
+                            glColor4d(0., 0., 0., 1.);
+                        } else {
+                            glColor4f(1., 1., 1., 1.);
+                        }
 
-                    if (l == 0) {
-                        glColor4d(0., 0., 0., 1.);
-                    } else {
-                        glColor4f(1., 1., 1., 1.);
+                        double x = dblKnob->getValue(0);
+                        double y = dblKnob->getValue(1);
+                        glPointSize(POINT_SIZE);
+                        glBegin(GL_POINTS);
+                        glVertex2d(x,y);
+                        glEnd();
+
+                        glBegin(GL_LINES);
+                        glVertex2d(x - CROSS_SIZE * pixelScaleX, y);
+                        glVertex2d(x + CROSS_SIZE * pixelScaleX, y);
+
+                        glVertex2d(x, y - CROSS_SIZE * pixelScaleY);
+                        glVertex2d(x, y + CROSS_SIZE * pixelScaleY);
+                        glEnd();
                     }
-
-                    double x = dblKnob->getValue(0);
-                    double y = dblKnob->getValue(1);
-                    glPointSize(POINT_SIZE);
-                    glBegin(GL_POINTS);
-                    glVertex2d(x,y);
-                    glEnd();
-
-                    glBegin(GL_LINES);
-                    glVertex2d(x - CROSS_SIZE * pixelScaleX, y);
-                    glVertex2d(x + CROSS_SIZE * pixelScaleX, y);
-
-                    glVertex2d(x, y - CROSS_SIZE * pixelScaleY);
-                    glVertex2d(x, y + CROSS_SIZE * pixelScaleY);
-                    glEnd();
+                    glPointSize(1.);
                 }
-                glPointSize(1.);
             }
         }
 
@@ -392,17 +393,19 @@ TrackerGui::penDown(double time,
         assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
         KnobDouble* dblKnob = dynamic_cast<KnobDouble*>( newInstanceKnob.get() );
         assert(dblKnob);
-        double x,y;
-        x = dblKnob->getValueAtTime(time, 0);
-        y = dblKnob->getValueAtTime(time, 1);
+        if (dblKnob) {
+            double x,y;
+            x = dblKnob->getValueAtTime(time, 0);
+            y = dblKnob->getValueAtTime(time, 1);
 
-        if ( ( pos.x() >= (x - selectionTol) ) && ( pos.x() <= (x + selectionTol) ) &&
-             ( pos.y() >= (y - selectionTol) ) && ( pos.y() <= (y + selectionTol) ) ) {
-            if (!it->second) {
-                _imp->panel->selectNode( instance, modCASIsShift(e) );
+            if ( ( pos.x() >= (x - selectionTol) ) && ( pos.x() <= (x + selectionTol) ) &&
+                ( pos.y() >= (y - selectionTol) ) && ( pos.y() <= (y + selectionTol) ) ) {
+                if (!it->second) {
+                    _imp->panel->selectNode( instance, modCASIsShift(e) );
 
+                }
+                didSomething = true;
             }
-            didSomething = true;
         }
     }
 
@@ -412,13 +415,15 @@ TrackerGui::penDown(double time,
         assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
         KnobDouble* dblKnob = dynamic_cast<KnobDouble*>( newInstanceKnob.get() );
         assert(dblKnob);
-        dblKnob->beginChanges();
-        dblKnob->blockValueChanges();
-        dblKnob->setValueAtTime(time, pos.x(), ViewSpec::all(), 0);
-        dblKnob->setValueAtTime(time, pos.y(), ViewSpec::all(), 1);
-        dblKnob->unblockValueChanges();
-        dblKnob->endChanges();
-        didSomething = true;
+        if (dblKnob) {
+            dblKnob->beginChanges();
+            dblKnob->blockValueChanges();
+            dblKnob->setValueAtTime(time, pos.x(), ViewSpec::all(), 0);
+            dblKnob->setValueAtTime(time, pos.y(), ViewSpec::all(), 1);
+            dblKnob->unblockValueChanges();
+            dblKnob->endChanges();
+            didSomething = true;
+        }
     }
 
     if ( !didSomething && !modCASIsShift(e) ) {
@@ -673,13 +678,15 @@ TrackerGui::updateSelectionFromSelectionRectangle(bool onRelease)
         assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
         KnobDouble* dblKnob = dynamic_cast<KnobDouble*>( newInstanceKnob.get() );
         assert(dblKnob);
-        double x,y;
-        x = dblKnob->getValue(0);
-        y = dblKnob->getValue(1);
-        if ( (x >= l) && (x <= r) && (y >= b) && (y <= t) ) {
-            ///assert that the node is really not part of the selection
-            assert( std::find( currentSelection.begin(),currentSelection.end(),instance.get() ) == currentSelection.end() );
-            currentSelection.push_back( instance.get() );
+        if (dblKnob) {
+            double x,y;
+            x = dblKnob->getValue(0);
+            y = dblKnob->getValue(1);
+            if ( (x >= l) && (x <= r) && (y >= b) && (y <= t) ) {
+                ///assert that the node is really not part of the selection
+                assert( std::find( currentSelection.begin(),currentSelection.end(),instance.get() ) == currentSelection.end() );
+                currentSelection.push_back( instance.get() );
+            }
         }
     }
     _imp->panel->selectNodes( currentSelection, (_imp->controlDown > 0) );

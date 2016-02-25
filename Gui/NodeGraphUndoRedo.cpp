@@ -1556,10 +1556,11 @@ GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,const Node
         QPointF nodePos = (*it)->getPos_mt_safe();
         groupPosition += nodePos;
     }
-    
-    if (!nodes.empty()) {
-        groupPosition.rx() /= nodes.size();
-        groupPosition.ry() /= nodes.size();
+
+    unsigned sz = nodes.size();
+    if (sz) {
+        groupPosition.rx() /= sz;
+        groupPosition.ry() /= sz;
     }
     
     CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP, eCreateNodeReasonInternal, _graph->getGroup());
@@ -1785,20 +1786,24 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,const std::list<NodeGuiP
             }
         }
         
+        {
+            NodeGraphI *graph_i = group->getNodeGraph();
+            assert(graph_i);
+            {
+                NodeGraph* thisGroupGraph = dynamic_cast<NodeGraph*>(graph_i);
+                assert(thisGroupGraph);
+                if (thisGroupGraph) {
+                    thisGroupGraph->copyNodes(nodesToCopy, cb);
+                }
+            }
+        }
+        std::list<std::pair<std::string,NodeGuiPtr > > newNodes;
+        _graph->pasteCliboard(cb,&newNodes);
+        
         boost::shared_ptr<NodeGuiI> groupGui_i = group->getNode()->getNodeGui();
         assert(groupGui_i);
         NodeGuiPtr groupGui = boost::dynamic_pointer_cast<NodeGui>(groupGui_i);
         assert(groupGui);
-        
-        NodeGraphI *graph_i = group->getNodeGraph();
-        assert(graph_i);
-        NodeGraph* thisGroupGraph = dynamic_cast<NodeGraph*>(graph_i);
-        assert(thisGroupGraph);
-        thisGroupGraph->copyNodes(nodesToCopy, cb);
-        
-        std::list<std::pair<std::string,NodeGuiPtr > > newNodes;
-        _graph->pasteCliboard(cb,&newNodes);
-        
         expandedGroup.group = groupGui;
         
         //This is the BBox of the new inlined nodes

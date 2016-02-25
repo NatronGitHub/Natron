@@ -695,11 +695,12 @@ PrecompNode::onPreRenderFinished()
     }
     OutputEffectInstance* writer = dynamic_cast<OutputEffectInstance*>(output->getEffectInstance().get());
     assert(writer);
-    RenderEngine* engine = writer->getRenderEngine();
-    if (engine) {
-        QObject::disconnect(engine, SIGNAL(renderFinished(int)), this, SLOT(onPreRenderFinished()));
+    if (writer) {
+        RenderEngine* engine = writer->getRenderEngine();
+        if (engine) {
+            QObject::disconnect(engine, SIGNAL(renderFinished(int)), this, SLOT(onPreRenderFinished()));
+        }
     }
-    
     _imp->refreshReadNodeInput();
 }
 

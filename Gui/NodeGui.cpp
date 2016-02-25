@@ -260,7 +260,7 @@ NodeGui::initialize(NodeGraph* dag,
         boost::shared_ptr<NodeGuiI> parentNodeGui_i = parent->getNodeGui();
         NodeGui* parentGui = dynamic_cast<NodeGui*>(parentNodeGui_i.get());
         assert(parentGui);
-        if (parentGui->isSettingsPanelOpened()) {
+        if (parentGui && parentGui->isSettingsPanelOpened()) {
             ensurePanelCreated();
             boost::shared_ptr<MultiInstancePanel> panel = parentGui->getMultiInstancePanel();
             assert(panel);
@@ -3188,30 +3188,29 @@ NodeGui::shouldDrawOverlay() const
         assert(gui_i);
         NodeGui *parentGui = dynamic_cast<NodeGui*>(gui_i.get());
         assert(parentGui);
+        if (parentGui) {
+            boost::shared_ptr<MultiInstancePanel> multiInstance = parentGui->getMultiInstancePanel();
+            assert(multiInstance);
 
-        boost::shared_ptr<MultiInstancePanel> multiInstance = parentGui->getMultiInstancePanel();
-        assert(multiInstance);
+            const std::list< std::pair<NodeWPtr,bool > >& instances = multiInstance->getInstances();
+            for (std::list< std::pair<NodeWPtr,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+                NodePtr instance = it->first.lock();
 
-        const std::list< std::pair<NodeWPtr,bool > >& instances = multiInstance->getInstances();
-        for (std::list< std::pair<NodeWPtr,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-            NodePtr instance = it->first.lock();
+                if (instance == internalNode) {
+                    if (parentGui->isSettingsPanelVisible() &&
+                        !parentGui->isSettingsPanelMinimized() &&
+                        instance->isActivated() &&
+                        it->second &&
+                        !instance->isNodeDisabled()) {
 
-            if (instance == internalNode) {
+                        return true;
+                    } else {
 
-                if (parentGui->isSettingsPanelVisible() &&
-                    !parentGui->isSettingsPanelMinimized() &&
-                    instance->isActivated() &&
-                    it->second &&
-                    !instance->isNodeDisabled()) {
-                    return true;
-                } else {
-                    return false;
+                        return false;
+                    }
                 }
-
             }
-
         }
-
     } else {
         if (!internalNode->isNodeDisabled() &&
             internalNode->isActivated() &&

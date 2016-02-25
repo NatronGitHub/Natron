@@ -2037,18 +2037,19 @@ TrackerPanelPrivate::getTrackInstancesForButton(std::list<KnobButton*>* trackBut
     
     KnobButton* prevBtn = dynamic_cast<KnobButton*>( publicInterface->getKnobByName(buttonName).get() );
     assert(prevBtn);
-    
-    for (std::list<Node*>::const_iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
-        if ( !(*it)->getEffectInstance() ) {
-            return false;
+    if (prevBtn) {
+        for (std::list<Node*>::const_iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
+            if ( !(*it)->getEffectInstance() ) {
+                return false;
+            }
+            if ( (*it)->isNodeDisabled() ) {
+                continue;
+            }
+            KnobPtr k = (*it)->getKnobByName( prevBtn->getName() );
+            KnobButton* bKnob = dynamic_cast<KnobButton*>( k.get() );
+            assert(bKnob);
+            trackButtons->push_back(bKnob);
         }
-        if ( (*it)->isNodeDisabled() ) {
-            continue;
-        }
-        KnobPtr k = (*it)->getKnobByName( prevBtn->getName() );
-        KnobButton* bKnob = dynamic_cast<KnobButton*>( k.get() );
-        assert(bKnob);
-        trackButtons->push_back(bKnob);
     }
     return true;
 }
@@ -2341,9 +2342,10 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
     assert(mainInstanceGui);
 
     QPointF mainInstancePos = mainInstanceGui->scenePos();
-    mainInstancePos = cornerPinGui->mapToParent( cornerPinGui->mapFromScene(mainInstancePos) );
-    cornerPinGui->refreshPosition( mainInstancePos.x() + mainInstanceGui->getSize().width() * 2, mainInstancePos.y() );
-
+    if (cornerPinGui) {
+        mainInstancePos = cornerPinGui->mapToParent( cornerPinGui->mapFromScene(mainInstancePos) );
+        cornerPinGui->refreshPosition( mainInstancePos.x() + mainInstanceGui->getSize().width() * 2, mainInstancePos.y() );
+    }
     boost::shared_ptr<KnobDouble> toPoints[4];
     boost::shared_ptr<KnobDouble>  fromPoints[4];
     
@@ -2363,12 +2365,13 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
         } else {
             EffectInstance* effect = dynamic_cast<EffectInstance*>(centers[i]->getHolder());
             assert(effect);
-            
-            std::stringstream ss;
-            ss << "thisGroup." << effect->getNode()->getFullyQualifiedName() << "." << centers[i]->getName() << ".get()[dimension]";
-            std::string expr = ss.str();
-            dynamic_cast<KnobI*>(toPoints[i].get())->setExpression(0, expr, false);
-            dynamic_cast<KnobI*>(toPoints[i].get())->setExpression(1, expr, false);
+            if (effect) {
+                std::stringstream ss;
+                ss << "thisGroup." << effect->getNode()->getFullyQualifiedName() << "." << centers[i]->getName() << ".get()[dimension]";
+                std::string expr = ss.str();
+                dynamic_cast<KnobI*>(toPoints[i].get())->setExpression(0, expr, false);
+                dynamic_cast<KnobI*>(toPoints[i].get())->setExpression(1, expr, false);
+            }
         }
     }
 

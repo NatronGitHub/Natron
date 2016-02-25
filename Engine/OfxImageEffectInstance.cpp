@@ -1073,7 +1073,9 @@ OfxImageEffectInstance::getInputsHoldingTransform(std::list<int>* inputs) const
             
             OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
             assert(clip);
-            inputs->push_back(clip->getInputNb());
+            if (clip) {
+                inputs->push_back(clip->getInputNb());
+            }
         }
     }
     return !inputs->empty();

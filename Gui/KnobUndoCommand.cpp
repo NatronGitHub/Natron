@@ -189,20 +189,16 @@ PasteUndoCommand::copyFrom(const KnobPtr& serializedKnob, bool isRedo)
             internalKnob->beginChanges();
             for (int i = 0; i < internalKnob->getDimension(); ++i) {
                 if (_imp->targetDimension == -1 || i == _imp->targetDimension) {
-                    if (isInt) {
-                        assert(isFromInt);
+                    if (isInt && isFromInt) {
                         int f = (i == _imp->targetDimension && _imp->fromDimension != -1) ? isFromInt->getValue(_imp->fromDimension) : isFromInt->getValue(i);
                         isInt->setValue(f, ViewIdx(0),i, eValueChangedReasonNatronInternalEdited, 0);
-                    } else if (isBool) {
-                        assert(isFromBool);
+                    } else if (isBool && isFromBool) {
                         bool f = (i == _imp->targetDimension && _imp->fromDimension != -1) ? isFromBool->getValue(_imp->fromDimension) : isFromBool->getValue(i);
                         isBool->setValue(f, ViewIdx(0),i, eValueChangedReasonNatronInternalEdited, 0);
-                    } else if (isDouble) {
-                        assert(isFromDouble);
+                    } else if (isDouble && isFromDouble) {
                         double f = (i == _imp->targetDimension && _imp->fromDimension != -1) ? isFromDouble->getValue(_imp->fromDimension) : isFromDouble->getValue(i);
                         isDouble->setValue(f, ViewIdx(0), i, eValueChangedReasonNatronInternalEdited, 0);
-                    } else if (isString) {
-                        assert(isFromString);
+                    } else if (isString && isFromString) {
                         std::string f = (i == _imp->targetDimension && _imp->fromDimension != -1) ? isFromString->getValue(_imp->fromDimension) : isFromString->getValue(i);
                         isString->setValue(f, ViewIdx(0),i, eValueChangedReasonNatronInternalEdited, 0);
                     }

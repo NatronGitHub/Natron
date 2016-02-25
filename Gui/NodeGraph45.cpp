@@ -603,12 +603,15 @@ void
 NodeGraph::onGroupNameChanged(const QString& /*name*/)
 {
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>(getGroup().get());
-    std::string label;
-    makeFullyQualifiedLabel(isGrp->getNode().get(),&label);
-    setLabel(label);
-    TabWidget* parent = dynamic_cast<TabWidget*>(parentWidget() );
-    if (parent) {
-        parent->setTabLabel(this, label.c_str());
+    assert(isGrp);
+    if (isGrp) {
+        std::string label;
+        makeFullyQualifiedLabel(isGrp->getNode().get(),&label);
+        setLabel(label);
+        TabWidget* parent = dynamic_cast<TabWidget*>(parentWidget() );
+        if (parent) {
+            parent->setTabLabel(this, label.c_str());
+        }
     }
 }
 

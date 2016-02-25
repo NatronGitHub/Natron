@@ -1594,10 +1594,13 @@ Node::loadKnob(const KnobPtr & knob,
                 const TypeExtraData* extraData = (*it)->getExtraData();
                 const ChoiceExtraData* choiceData = dynamic_cast<const ChoiceExtraData*>(extraData);
                 assert(choiceData);
-                
-                KnobChoice* choiceSerialized = dynamic_cast<KnobChoice*>(serializedKnob.get());
-                assert(choiceSerialized);
-                isChoice->choiceRestoration(choiceSerialized, choiceData);
+                if (choiceData) {
+                    KnobChoice* choiceSerialized = dynamic_cast<KnobChoice*>(serializedKnob.get());
+                    assert(choiceSerialized);
+                    if (choiceSerialized) {
+                        isChoice->choiceRestoration(choiceSerialized, choiceData);
+                    }
+                }
             } else {
                 if (updateKnobGui) {
                     knob->cloneAndUpdateGui(serializedKnob.get());
@@ -1805,7 +1808,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             }
             grp->setValue(isGrp->isOpened());
             restoreUserKnobsRecursive(isGrp->getChildren(), grp, page);
-        } else {
+        } else if (isRegular) {
             assert(isRegular->isUserKnob());
             KnobPtr sKnob = isRegular->getKnob();
             KnobPtr knob;
@@ -1837,15 +1840,17 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 }
                 const ValueExtraData* data = dynamic_cast<const ValueExtraData*>(isRegular->getExtraData());
                 assert(data);
-                std::vector<int> minimums,maximums,dminimums,dmaximums;
-                for (int i = 0; i < k->getDimension(); ++i) {
-                    minimums.push_back(data->min);
-                    maximums.push_back(data->max);
-                    dminimums.push_back(data->dmin);
-                    dmaximums.push_back(data->dmax);
+                if (data) {
+                    std::vector<int> minimums,maximums,dminimums,dmaximums;
+                    for (int i = 0; i < k->getDimension(); ++i) {
+                        minimums.push_back(data->min);
+                        maximums.push_back(data->max);
+                        dminimums.push_back(data->dmin);
+                        dmaximums.push_back(data->dmax);
+                    }
+                    k->setMinimumsAndMaximums(minimums, maximums);
+                    k->setDisplayMinimumsAndMaximums(dminimums, dmaximums);
                 }
-                k->setMinimumsAndMaximums(minimums, maximums);
-                k->setDisplayMinimumsAndMaximums(dminimums, dmaximums);
                 knob = k;
             } else if (isDbl) {
                 boost::shared_ptr<KnobDouble> k;
@@ -1860,15 +1865,17 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 }
                 const ValueExtraData* data = dynamic_cast<const ValueExtraData*>(isRegular->getExtraData());
                 assert(data);
-                std::vector<double> minimums,maximums,dminimums,dmaximums;
-                for (int i = 0; i < k->getDimension(); ++i) {
-                    minimums.push_back(data->min);
-                    maximums.push_back(data->max);
-                    dminimums.push_back(data->dmin);
-                    dmaximums.push_back(data->dmax);
+                if (data) {
+                    std::vector<double> minimums,maximums,dminimums,dmaximums;
+                    for (int i = 0; i < k->getDimension(); ++i) {
+                        minimums.push_back(data->min);
+                        maximums.push_back(data->max);
+                        dminimums.push_back(data->dmin);
+                        dmaximums.push_back(data->dmax);
+                    }
+                    k->setMinimumsAndMaximums(minimums, maximums);
+                    k->setDisplayMinimumsAndMaximums(dminimums, dmaximums);
                 }
-                k->setMinimumsAndMaximums(minimums, maximums);
-                k->setDisplayMinimumsAndMaximums(dminimums, dmaximums);
                 knob = k;
                 
                 if (isRegular->getUseHostOverlayHandle()) {
@@ -1903,7 +1910,9 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 }
                 const ChoiceExtraData* data = dynamic_cast<const ChoiceExtraData*>(isRegular->getExtraData());
                 assert(data);
-                k->populateChoices(data->_entries,data->_helpStrings);
+                if (data) {
+                    k->populateChoices(data->_entries, data->_helpStrings);
+                }
                 knob = k;
             } else if (isColor) {
                 boost::shared_ptr<KnobColor> k;
@@ -1918,15 +1927,17 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 }
                 const ValueExtraData* data = dynamic_cast<const ValueExtraData*>(isRegular->getExtraData());
                 assert(data);
-                std::vector<double> minimums,maximums,dminimums,dmaximums;
-                for (int i = 0; i < k->getDimension(); ++i) {
-                    minimums.push_back(data->min);
-                    maximums.push_back(data->max);
-                    dminimums.push_back(data->dmin);
-                    dmaximums.push_back(data->dmax);
+                if (data) {
+                    std::vector<double> minimums,maximums,dminimums,dmaximums;
+                    for (int i = 0; i < k->getDimension(); ++i) {
+                        minimums.push_back(data->min);
+                        maximums.push_back(data->max);
+                        dminimums.push_back(data->dmin);
+                        dmaximums.push_back(data->dmax);
+                    }
+                    k->setMinimumsAndMaximums(minimums, maximums);
+                    k->setDisplayMinimumsAndMaximums(dminimums, dmaximums);
                 }
-                k->setMinimumsAndMaximums(minimums, maximums);
-                k->setDisplayMinimumsAndMaximums(dminimums, dmaximums);
                 knob = k;
 
             } else if (isStr) {
@@ -6311,14 +6322,16 @@ Node::onAllKnobsSlaved(bool isSlave,
     if (isSlave) {
         EffectInstance* effect = dynamic_cast<EffectInstance*>(master);
         assert(effect);
-        NodePtr masterNode = effect->getNode();
-        {
-            QMutexLocker l(&_imp->masterNodeMutex);
-            _imp->masterNode = masterNode;
+        if (effect) {
+            NodePtr masterNode = effect->getNode();
+            {
+                QMutexLocker l(&_imp->masterNodeMutex);
+                _imp->masterNode = masterNode;
+            }
+            QObject::connect( masterNode.get(), SIGNAL(deactivated(bool)), this, SLOT(onMasterNodeDeactivated()) );
+            QObject::connect( masterNode.get(), SIGNAL(knobsAgeChanged(U64)), this, SLOT(setKnobsAge(U64)) );
+            QObject::connect( masterNode.get(), SIGNAL(previewImageChanged(int)), this, SLOT(refreshPreviewImage(int)) );
         }
-        QObject::connect( masterNode.get(), SIGNAL(deactivated(bool)), this, SLOT(onMasterNodeDeactivated()) );
-        QObject::connect( masterNode.get(), SIGNAL(knobsAgeChanged(U64)), this, SLOT(setKnobsAge(U64)) );
-        QObject::connect( masterNode.get(), SIGNAL(previewImageChanged(int)), this, SLOT(refreshPreviewImage(int)) );
     } else {
         NodePtr master = getMasterNode();
         QObject::disconnect( master.get(), SIGNAL(deactivated(bool)), this, SLOT(onMasterNodeDeactivated()) );
@@ -7434,9 +7447,10 @@ Node::onEffectKnobValueChanged(KnobI* what,
             assert(col);
             NodeGroup* isGrp = dynamic_cast<NodeGroup*>(col.get());
             assert(isGrp);
-            
-            ///Refresh input arrows of the node to reflect the state
-            isGrp->getNode()->initializeInputs();
+            if (isGrp) {
+                ///Refresh input arrows of the node to reflect the state
+                isGrp->getNode()->initializeInputs();
+            }
         }
     }
 }

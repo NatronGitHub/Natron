@@ -1341,7 +1341,9 @@ AddKnobDialogPrivate::setKnobMinMax(KnobI* knob)
     
     Knob<T>* k = dynamic_cast<Knob<T>*>(knob);
     assert(k);
-    
+    if (!k) {
+        return;
+    }
     std::vector<T> mins(dim),dmins(dim);
     std::vector<T> maxs(dim),dmaxs(dim);
     for (std::size_t i = 0; i < (std::size_t)dim; ++i) {
@@ -1368,7 +1370,6 @@ AddKnobDialogPrivate::setKnobMinMax(KnobI* knob)
     for (U32 i = 0; i < defValues.size(); ++i) {
         k->setDefaultValue(defValues[i],i);
     }
-
 }
 
 void

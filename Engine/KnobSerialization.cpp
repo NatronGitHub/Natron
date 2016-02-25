@@ -246,7 +246,9 @@ KnobSerialization::setChoiceExtraString(const std::string& label)
     assert(_extraData);
     ChoiceExtraData* cData = dynamic_cast<ChoiceExtraData*>(_extraData);
     assert(cData);
-    cData->_choiceString = label;
+    if (cData) {
+        cData->_choiceString = label;
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

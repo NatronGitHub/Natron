@@ -2313,7 +2313,9 @@ KnobHelper::clearExpression(int dimension,bool clearResults)
             
             KnobHelper* other = dynamic_cast<KnobHelper*>(it->first);
             assert(other);
-            
+            if (!other) {
+                continue;
+            }
             ListenerDimsMap otherListeners;
             {
                 QReadLocker otherMastersLocker(&other->_imp->mastersMutex);
@@ -3682,7 +3684,10 @@ KnobHelper::setKnobAsAliasOfThis(const KnobPtr& master, bool doAlias)
         if (isChoice) {
             KnobChoice* thisChoice = dynamic_cast<KnobChoice*>(this);
             assert(thisChoice);
-            isChoice->populateChoices(thisChoice->getEntries_mt_safe(),thisChoice->getEntriesHelp_mt_safe());
+            if (thisChoice) {
+                isChoice->populateChoices(thisChoice->getEntries_mt_safe(),
+                                          thisChoice->getEntriesHelp_mt_safe());
+            }
         }
     }
     beginChanges();

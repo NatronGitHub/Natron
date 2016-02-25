@@ -94,36 +94,38 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
                 if (isViewer) {
                     ViewerGL* viewer = dynamic_cast<ViewerGL*>(isViewer->getUiContext());
                     assert(viewer);
-                    ViewerTab* tab = viewer->getViewerTab();
-                    assert(tab);
-                    
-                    TabWidget* foundTab = 0;
-                    QWidget* parent = tab->parentWidget();
-                    while (parent) {
-                        foundTab = dynamic_cast<TabWidget*>(parent);
-                        if (foundTab) {
-                            break;
-                        }
-                        parent = parent->parentWidget();
-                    }
-                    if (foundTab) {
-                        foundTab->setCurrentWidget(tab);
-                    } else {
-                        
-                        //try to find a floating window
-                        FloatingWidget* floating = 0;
-                        parent = tab->parentWidget();
+                    if (viewer) {
+                        ViewerTab* tab = viewer->getViewerTab();
+                        assert(tab);
+
+                        TabWidget* foundTab = 0;
+                        QWidget* parent = tab->parentWidget();
                         while (parent) {
-                            floating = dynamic_cast<FloatingWidget*>(parent);
-                            if (floating) {
+                            foundTab = dynamic_cast<TabWidget*>(parent);
+                            if (foundTab) {
                                 break;
                             }
                             parent = parent->parentWidget();
                         }
-                        if (floating) {
-                            floating->activateWindow();
+                        if (foundTab) {
+                            foundTab->setCurrentWidget(tab);
+                        } else {
+
+                            //try to find a floating window
+                            FloatingWidget* floating = 0;
+                            parent = tab->parentWidget();
+                            while (parent) {
+                                floating = dynamic_cast<FloatingWidget*>(parent);
+                                if (floating) {
+                                    break;
+                                }
+                                parent = parent->parentWidget();
+                            }
+                            if (floating) {
+                                floating->activateWindow();
+                            }
                         }
-                    }
+                    } // if (viewer)
                 }
             }
         }
@@ -148,8 +150,9 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
                         
                         isParentTab = dynamic_cast<TabWidget*>(lastSelectedGraph->parentWidget());
                         assert(isParentTab);
-                        isParentTab->appendTab(graph,graph);
-                        
+                        if (isParentTab) {
+                            isParentTab->appendTab(graph,graph);
+                        }
                     }
                     QTimer::singleShot(25, graph, SLOT(centerOnAllNodes()));
                 }

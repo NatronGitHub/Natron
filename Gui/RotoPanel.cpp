@@ -828,7 +828,9 @@ RotoPanel::updateItemGui(QTreeWidgetItem* item)
         assert(w);
         ComboBox* cb = dynamic_cast<ComboBox*>(w);
         assert(cb);
-        cb->setCurrentIndex_no_emit( drawable->getCompositingOperator() );
+        if (cb) {
+            cb->setCurrentIndex_no_emit( drawable->getCompositingOperator() );
+        }
     }
 }
 

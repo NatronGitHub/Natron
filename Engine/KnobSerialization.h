@@ -616,8 +616,11 @@ class KnobSerialization : public KnobSerializationBase
                 //ChoiceExtraData* cData = new ChoiceExtraData;
                 assert(_extraData);
                 ChoiceExtraData* cData = dynamic_cast<ChoiceExtraData*>(_extraData);
-                ar & ::boost::serialization::make_nvp("ChoiceLabel",cData->_choiceString);
-                //_extraData = cData;
+                assert(cData);
+                if (cData) {
+                    ar & ::boost::serialization::make_nvp("ChoiceLabel", cData->_choiceString);
+                    //_extraData = cData;
+                }
             }
             
             
@@ -960,7 +963,7 @@ public:
         
         if (isGrp) {
             children = isGrp->getChildren();
-        } else {
+        } else if (isPage) {
             children = isPage->getChildren();
         }
         for (U32 i = 0; i < children.size(); ++i) {

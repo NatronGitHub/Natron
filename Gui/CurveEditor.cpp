@@ -944,32 +944,31 @@ CurveEditor::findCurve(KnobGui* knob,
     assert(effect);
     
     std::list<boost::shared_ptr<CurveGui> > ret;
-    
-    boost::shared_ptr<RotoContext> roto = effect->getNode()->getRotoContext();
-    if (roto) {
-        
-        for (std::list<RotoCurveEditorContext*>::const_iterator it =_imp->rotos.begin(); it != _imp->rotos.end(); ++it) {
-            if (roto == (*it)->getNode()->getNode()->getRotoContext()) {
-                std::list<NodeCurveEditorElement*> elems = (*it)->findElement(knob, dimension);
-                if (!elems.empty()) {
-                    for (std::list<NodeCurveEditorElement*>::iterator it2 = elems.begin(); it2 != elems.end(); ++it2) {
-                        ret.push_back((*it2)->getCurve());
+    if (effect) {
+        boost::shared_ptr<RotoContext> roto = effect->getNode()->getRotoContext();
+        if (roto) {
+            for (std::list<RotoCurveEditorContext*>::const_iterator it =_imp->rotos.begin(); it != _imp->rotos.end(); ++it) {
+                if (roto == (*it)->getNode()->getNode()->getRotoContext()) {
+                    std::list<NodeCurveEditorElement*> elems = (*it)->findElement(knob, dimension);
+                    if (!elems.empty()) {
+                        for (std::list<NodeCurveEditorElement*>::iterator it2 = elems.begin(); it2 != elems.end(); ++it2) {
+                            ret.push_back((*it2)->getCurve());
+                        }
+                        return ret;
                     }
+                }
+            }
+        } else {
+            for (std::list<NodeCurveEditorContext*>::const_iterator it = _imp->nodes.begin();
+                 it != _imp->nodes.end(); ++it) {
+                NodeCurveEditorElement* elem = (*it)->findElement(knob,dimension);
+                if (elem) {
+                    ret.push_back(elem->getCurve());
                     return ret;
                 }
             }
         }
-    } else {
-        for (std::list<NodeCurveEditorContext*>::const_iterator it = _imp->nodes.begin();
-             it != _imp->nodes.end(); ++it) {
-            NodeCurveEditorElement* elem = (*it)->findElement(knob,dimension);
-            if (elem) {
-                ret.push_back(elem->getCurve());
-                return ret;
-            }
-        }
     }
-
     return ret;
 }
 
@@ -1613,35 +1612,37 @@ CurveEditor::setSelectedCurve(const boost::shared_ptr<CurveGui>& curve)
         if (holder) {
             EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
             assert(effect);
-            ss << effect->getNode()->getFullyQualifiedName();
-            ss << '.';
-            ss << knob->getName();
-            if (knob->getDimension() > 1) {
+            if (effect) {
+                ss << effect->getNode()->getFullyQualifiedName();
                 ss << '.';
-                ss << knob->getDimensionName(knobCurve->getDimension());
+                ss << knob->getName();
+                if (knob->getDimension() > 1) {
+                    ss << '.';
+                    ss << knob->getDimensionName(knobCurve->getDimension());
+                }
+                _imp->knobLabel->setText(ss.str().c_str());
+                _imp->knobLabel->setAltered(false);
+                std::string expr = knob->getExpression(knobCurve->getDimension());
+                if (!expr.empty()) {
+                    _imp->knobLineEdit->setText(expr.c_str());
+                    double v = knob->getValueAtWithExpression(getGui()->getApp()->getTimeLine()->currentFrame(), ViewIdx(0), knobCurve->getDimension());
+                    _imp->resultLabel->setText("= " + QString::number(v));
+                } else {
+                    _imp->knobLineEdit->clear();
+                    _imp->resultLabel->setText("= ");
+                }
+                _imp->knobLineEdit->setReadOnly(false);
+                _imp->resultLabel->setAltered(false);
+                return;
             }
-            _imp->knobLabel->setText(ss.str().c_str());
-            _imp->knobLabel->setAltered(false);
-            std::string expr = knob->getExpression(knobCurve->getDimension());
-            if (!expr.empty()) {
-                _imp->knobLineEdit->setText(expr.c_str());
-                double v = knob->getValueAtWithExpression(getGui()->getApp()->getTimeLine()->currentFrame(), ViewIdx(0), knobCurve->getDimension());
-                _imp->resultLabel->setText("= " + QString::number(v));
-            } else {
-                _imp->knobLineEdit->clear();
-                _imp->resultLabel->setText("= ");
-            }
-            _imp->knobLineEdit->setReadOnly(false);
-            _imp->resultLabel->setAltered(false);
         }
-    } else {
-        _imp->knobLabel->setText(tr("No curve selected"));
-        _imp->knobLabel->setAltered(true);
-        _imp->knobLineEdit->clear();
-        _imp->knobLineEdit->setReadOnly(true);
-        _imp->resultLabel->setText("= ");
-        _imp->resultLabel->setAltered(true);
     }
+    _imp->knobLabel->setText(tr("No curve selected"));
+    _imp->knobLabel->setAltered(true);
+    _imp->knobLineEdit->clear();
+    _imp->knobLineEdit->setReadOnly(true);
+    _imp->resultLabel->setText("= ");
+    _imp->resultLabel->setAltered(true);
 }
 
 void

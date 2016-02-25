@@ -745,7 +745,9 @@ KnobGui::createDuplicateOnNode(EffectInstance* effect,
         boost::shared_ptr<NodeGuiI> groupNodeGuiI = effect->getNode()->getNodeGui();
         NodeGui* groupNodeGui = dynamic_cast<NodeGui*>(groupNodeGuiI.get());
         assert(groupNodeGui);
-        groupNodeGui->ensurePanelCreated();
+        if (groupNodeGui) {
+            groupNodeGui->ensurePanelCreated();
+        }
     }
     effect->getApp()->triggerAutoSave();
     return ret;

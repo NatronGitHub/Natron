@@ -478,7 +478,9 @@ Gui::removeViewerTab(ViewerTab* tab,
             assert(viewerI);
             ViewerGL* glViewer = dynamic_cast<ViewerGL*>(viewerI);
             assert(glViewer);
-            graph->setLastSelectedViewer( glViewer->getViewerTab() );
+            if (glViewer) {
+                graph->setLastSelectedViewer( glViewer->getViewerTab() );
+            }
             foundOne = true;
             break;
         }
