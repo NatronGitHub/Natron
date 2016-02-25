@@ -41,15 +41,21 @@ fi
 git clone $GIT_NATRON
 cd Natron || exit 1
 git checkout $NATRON_BRANCH || exit 1
+git pull origin $NATRON_BRANCH
 git submodule update -i --recursive || exit 1
+
 if [ "$BRANCH" = "workshop" ]; then
     # the snapshots are always built with the latest version of submodules
     git submodule foreach git pull origin master
 fi
 
+REL_GIT_VERSION=`git log|head -1|awk '{print $2}'`
+
 #Always bump NATRON_DEVEL_GIT, it is only used to version-stamp binaries
 NATRON_REL_V=`git log|head -1|awk '{print $2}'`
+
 sed -i "" -e "s/NATRON_DEVEL_GIT=.*/NATRON_DEVEL_GIT=${NATRON_REL_V}/" $CWD/commits-hash.sh || exit 1
+
 NATRON_MAJOR=`grep "define NATRON_VERSION_MAJOR" $TMP/Natron/Global/Macros.h | awk '{print $3}'`
 NATRON_MINOR=`grep "define NATRON_VERSION_MINOR" $TMP/Natron/Global/Macros.h | awk '{print $3}'`
 NATRON_REVISION=`grep "define NATRON_VERSION_REVISION" $TMP/Natron/Global/Macros.h | awk '{print $3}'`
@@ -61,8 +67,7 @@ echo
 sleep 2
 
 #Update GitVersion to have the correct hash
-cp $CWD/GitVersion.h Global/GitVersion.h || exit 1
-sed -i "" -e "s#__BRANCH__#${NATRON_BRANCH}#;s#__COMMIT__#${NATRON_REL_V}#"  Global/GitVersion.h || exit 1
+cat $CWD/GitVersion.h | sed "s#__BRANCH__#${NATRON_BRANCH}#;s#__COMMIT__#${REL_GIT_VERSION}#" > Global/GitVersion.h || exit 1
 
 #Generate config.pri
 cat > config.pri <<EOF
