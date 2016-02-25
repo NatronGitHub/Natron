@@ -136,8 +136,13 @@ echo "Building Natron $NATRON_REL_V from $NATRON_BRANCH against SDK $SDK_VERSION
 echo
 sleep 2
 
+# Plugins git hash
+IO_GIT_HASH=`cat $INSTALL_PATH/Plugins/IO.ofx.bundle-version.txt`
+MISC_GIT_HASH=`cat $INSTALL_PATH/Plugins/Misc.ofx.bundle-version.txt`
+ARENA_GIT_HASH=`cat $INSTALL_PATH/Plugins/Arena.ofx.bundle-version.txt`
+
 #Update GitVersion to have the correct hash
-cat $INC_PATH/natron/GitVersion.h | sed "s#__BRANCH__#${NATRON_BRANCH}#;s#__COMMIT__#${REL_GIT_VERSION}#" > Global/GitVersion.h || exit 1
+cat $INC_PATH/natron/GitVersion.h | sed "s#__BRANCH__#${NATRON_BRANCH}#;s#__COMMIT__#${REL_GIT_VERSION}#;s#__IO_COMMIT__#${IO_GIT_HASH}#;s#__MISC_COMMIT__#${MISC_GIT_HASH}#;s#__ARENA_COMMIT__#${ARENA_GIT_HASH}#" > Global/GitVersion.h || exit 1
 
 if [ "$PYV" = "3" ]; then
     cat $INC_PATH/natron/config_py3.pri > config.pri || exit 1

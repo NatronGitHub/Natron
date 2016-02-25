@@ -142,7 +142,19 @@ fi
 
 
 if [ "$NOBUILD" != "1" ]; then
-    if [ "$ONLY_PLUGINS" != "1" ]; then
+    if [ "$ONLY_NATRON" != "1" ]; then
+        log="$LOGS/plugins.$PKGOS$BIT.$TAG.log"
+        echo -n "Building Plugins (log in $log)..."
+        env MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER BUILD_CV=$CV BUILD_IO=$IO BUILD_MISC=$MISC BUILD_ARENA=$ARENA sh "$INC_PATH/scripts/build-plugins.sh" $BRANCH >& "$log" || FAIL=1
+        if [ "$FAIL" != "1" ]; then
+            echo OK
+        else
+            echo ERROR
+            echo "BUILD__ERROR" >> $log
+            cat "$log"
+        fi
+    fi
+    if [ "$FAIL" != "1" -a "$ONLY_PLUGINS" != "1" ]; then
         log="$LOGS/natron.$PKGOS$BIT.$TAG.log"
         echo -n "Building Natron (log in $log)..."
         env MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER DISABLE_BREAKPAD=$DISABLE_BREAKPAD sh "$INC_PATH/scripts/build-natron.sh" $BRANCH >& "$log" || FAIL=1
@@ -153,18 +165,6 @@ if [ "$NOBUILD" != "1" ]; then
             echo "BUILD__ERROR" >> $log
             cat "$log"
         fi
-    fi
-    if [ "$FAIL" != "1" -a "$ONLY_NATRON" != "1" ]; then
-        log="$LOGS/plugins.$PKGOS$BIT.$TAG.log"
-        echo -n "Building Plugins (log in $log)..."
-        env MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER BUILD_CV=$CV BUILD_IO=$IO BUILD_MISC=$MISC BUILD_ARENA=$ARENA sh "$INC_PATH/scripts/build-plugins.sh" $BRANCH >& "$log" || FAIL=1
-        if [ "$FAIL" != "1" ]; then
-            echo OK
-        else
-            echo ERROR
-            echo "BUILD__ERROR" >> $log
-            cat "$log"
-        fi  
     fi
 fi
 
@@ -183,6 +183,7 @@ fi
 
 if [ "$UNIT_TESTS" = "1" ]; then
   log="$LOGS/unit_tests.$PKGOS$BIT.$TAG.log"
+  echo "Running unit tests (log in $log) ..."
   if [ ! -d "$CWD/Natron-Tests" ]; then
     cd $CWD || exit 1
     git clone $GIT_UNIT || exit 1
