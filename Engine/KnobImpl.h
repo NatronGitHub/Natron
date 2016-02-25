@@ -1281,6 +1281,7 @@ Knob<T>::setValueAtTime(double time,
                         KeyFrame* newKey,
                         bool hasChanged)
 {
+    assert(newKey);
     assert(dimension >= 0 && dimension < getDimension());
     if (!canAnimate() || !isAnimationEnabled()) {
         qDebug() << "WARNING: Attempting to call setValueAtTime on " << getName().c_str() << " which does not have animation enabled.";
@@ -1402,7 +1403,7 @@ Knob<T>::setValueAtTime(double time,
     if (newKeyFrame) {
         ret = eValueChangedReturnCodeKeyframeAdded;
     }
-    if (newKey)
+
     if (holder) {
         holder->setHasAnimation(true);
     }

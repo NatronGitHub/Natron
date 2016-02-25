@@ -632,22 +632,25 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
             assert(master.second);
             
             assert(collec);
-            NodesList nodes = collec->getNodes();
-            if (isCollecGroup) {
-                nodes.push_back(isCollecGroup->getNode());
-            }
-            for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-                const std::vector< KnobPtr > & knobs = (*it)->getKnobs();
-                bool shouldStop = false;
-                for (U32 j = 0; j < knobs.size(); ++j) {
-                    if ( knobs[j].get() == master.second.get() ) {
-                        knobName.append((*it)->getScriptName() );
-                        shouldStop = true;
-                        break;
-                    }
+            if (collec) {
+                NodesList nodes = collec->getNodes();
+                if (isCollecGroup) {
+                    nodes.push_back(isCollecGroup->getNode());
                 }
-                if (shouldStop) {
-                    break;
+                for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+                    const std::vector< KnobPtr > & knobs = (*it)->getKnobs();
+                    bool shouldStop = false;
+                    for (U32 j = 0; j < knobs.size(); ++j) {
+                        if ( knobs[j].get() == master.second.get() ) {
+                            knobName.append((*it)->getScriptName() );
+                            shouldStop = true;
+                            break;
+                        }
+                    }
+                    if (shouldStop) {
+                        break;
+                        
+                    }
                 }
             }
             knobName.append(".");

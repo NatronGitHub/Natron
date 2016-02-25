@@ -2261,6 +2261,9 @@ void DopeSheetViewPrivate::createSelectionFromRect(const RectD &zoomCoordsRect, 
 
 void DopeSheetViewPrivate::moveCurrentFrameIndicator(double dt)
 {
+    if (!gui) {
+        return;
+    }
     gui->getApp()->setLastViewerUsingTimeline(NodePtr());
 
     double toTime = timeline->currentFrame() + dt;

@@ -1163,6 +1163,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             }
 
             assert(components);
+            if (!components) {
+                continue;
+            }
             getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, *key, renderMappedMipMapLevel,
                                                 renderFullScaleThenDownscale ? &upscaledImageBounds : &downscaledImageBounds,
                                                 &rod,

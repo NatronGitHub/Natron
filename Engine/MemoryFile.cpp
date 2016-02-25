@@ -379,7 +379,8 @@ MemoryFile::remove()
         if (_imp->data) {
             _imp->closeMapping();
         }
-        ::remove(_imp->path.c_str());
+        int ok = ::remove(_imp->path.c_str());
+        (void)ok;
         _imp->path.clear();
         _imp->data = 0;
     }

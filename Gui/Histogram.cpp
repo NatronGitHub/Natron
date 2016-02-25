@@ -487,8 +487,8 @@ boost::shared_ptr<Image> HistogramPrivate::getHistogramImage(RectI* imagePortion
         double par = 1.;
         ImageBitDepthEnum depth = eImageBitDepthFloat;
         ImageComponents comps;
-        ImagePremultiplicationEnum premult;
-        ImageFieldingOrderEnum fielding;
+        ImagePremultiplicationEnum premult = eImagePremultiplicationPremultiplied;
+        ImageFieldingOrderEnum fielding = eImageFieldingOrderNone;
         for (std::list<boost::shared_ptr<Image> >::const_iterator it = tiles.begin(); it!=tiles.end(); ++it) {
             if (bounds.isNull()) {
                 bounds = (*it)->getBounds();

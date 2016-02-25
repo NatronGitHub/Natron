@@ -1086,7 +1086,6 @@ OfxClipInstance::ofxComponentsToNatronComponents(const std::string & comp)
         return ImageComponents::getNoneComponents();
     } else if (comp == kFnOfxImageComponentMotionVectors) {
         return ImageComponents::getPairedMotionVectors();
-        return ImageComponents::getBackwardMotionComponents();
     } else if (comp == kFnOfxImageComponentStereoDisparity) {
         return ImageComponents::getPairedStereoDisparity();
     } else if (comp == kNatronOfxImageComponentXY) {
