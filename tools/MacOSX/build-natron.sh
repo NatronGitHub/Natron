@@ -62,7 +62,7 @@ sleep 2
 
 #Update GitVersion to have the correct hash
 cp $CWD/GitVersion.h Global/GitVersion.h || exit 1
-sed -i "" -e "s#__BRANCH__#${NATRON_BRANCH}#;s#__COMMIT__#${REL_GIT_VERSION}#"  Global/GitVersion.h || exit 1
+sed -i "" -e "s#__BRANCH__#${NATRON_BRANCH}#;s#__COMMIT__#${NATRON_REL_V}#"  Global/GitVersion.h || exit 1
 
 #Generate config.pri
 cat > config.pri <<EOF
