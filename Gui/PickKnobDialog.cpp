@@ -99,7 +99,7 @@ struct PickKnobDialogPrivate
 boost::shared_ptr<KnobGroup>
 PickKnobDialogPrivate::getSelectedGroup() const
 {
-    if (!groupCombo->isVisible()) {
+    if (pages.empty()) {
         return boost::shared_ptr<KnobGroup>();
     }
     std::string selectedItem = groupCombo->getCurrentIndexText().toStdString();
