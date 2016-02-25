@@ -115,7 +115,7 @@ REL_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 if [ "$MKSRC" = "1" ]; then
     cd .. || exit 1
     cp -a Natron Natron-$REL_GIT_VERSION || exit 1
-    (cd Naton-$REL_GIT_VERSION;find . -type d -name .git -exec rm -rf {} \;)
+    (cd Natron-$REL_GIT_VERSION;find . -type d -name .git -exec rm -rf {} \;)
     tar cvvJf $SRC_PATH/Natron-$REL_GIT_VERSION.tar.xz Natron-$REL_GIT_VERSION || exit 1
     rm -rf Natron-$REL_GIT_VERSION || exit 1
     cd Natron || exit 1 
@@ -136,6 +136,7 @@ echo "Building Natron $NATRON_REL_V from $NATRON_BRANCH against SDK $SDK_VERSION
 echo
 sleep 2
 
+#Update GitVersion to have the correct hash
 cat $INC_PATH/natron/GitVersion.h | sed "s#__BRANCH__#${NATRON_BRANCH}#;s#__COMMIT__#${REL_GIT_VERSION}#" > Global/GitVersion.h || exit 1
 
 if [ "$PYV" = "3" ]; then
