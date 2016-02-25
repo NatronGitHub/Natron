@@ -851,11 +851,6 @@ public:
     
     boost::shared_ptr<KnobBool> getDisabledKnob() const;
 
-    void toggleBitDepthWarning(bool on,
-                               const QString & tooltip)
-    {
-        Q_EMIT bitDepthWarningToggled(on, tooltip);
-    }
 
     std::string getNodeExtraLabel() const;
 
@@ -1155,9 +1150,27 @@ public:
     
     QString makeHTMLDocumentation() const;
     
+    enum StreamWarningEnum {
+        
+        //A bitdepth conversion occurs and converts to a lower bitdepth the stream,
+        //inducing a quality loss
+        eStreamWarningBitdepth,
+        
+        //The node has inputs with different aspect ratios but does not handle it
+        eStreamWarningPixelAspectRatio,
+        
+        //The node has inputs with different frame rates which may produce unwanted results
+        eStreamWarningFrameRate,
+    };
     
+    void setStreamWarning(StreamWarningEnum warning, const QString& message);
+    void setStreamWarnings(const std::map<StreamWarningEnum,QString>& warnings);
+    void clearStreamWarning(StreamWarningEnum warning);
+    void getStreamWarnings(std::map<StreamWarningEnum,QString>* warnings) const;
     
 private:
+    
+    bool setStreamWarningInternal(StreamWarningEnum warning, const QString& message);
     
     void computeHashRecursive(std::list<Node*>& marked);
     
@@ -1311,7 +1324,7 @@ Q_SIGNALS:
 
     void disabledKnobToggled(bool disabled);
 
-    void bitDepthWarningToggled(bool,QString);
+    void streamWarningsChanged();
     void nodeExtraLabelChanged(QString);
 
     

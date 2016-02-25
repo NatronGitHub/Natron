@@ -161,7 +161,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , _persistentMessage(NULL)
 , _stateIndicator(NULL)
 , _mergeHintActive(false)
-, _bitDepthWarning()
+, _streamIssuesWarning()
 , _disabledTopLeftBtmRight(NULL)
 , _disabledBtmLeftTopRight(NULL)
 , _inputEdges()
@@ -234,7 +234,7 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL(outputsChanged()),this,SLOT(refreshOutputEdgeVisibility()) );
     QObject::connect( internalNode.get(), SIGNAL(previewKnobToggled()),this,SLOT(onPreviewKnobToggled()) );
     QObject::connect( internalNode.get(), SIGNAL(disabledKnobToggled(bool)),this,SLOT(onDisabledKnobToggled(bool)) );
-    QObject::connect( internalNode.get(), SIGNAL(bitDepthWarningToggled(bool,QString)),this,SLOT(toggleBitDepthIndicator(bool,QString)) );
+    QObject::connect( internalNode.get(), SIGNAL(streamWarningsChanged()),this,SLOT(onStreamWarningsChanged()) );
     QObject::connect( internalNode.get(), SIGNAL(nodeExtraLabelChanged(QString)),this,SLOT(onNodeExtraLabelChanged(QString)) );
     QObject::connect( internalNode.get(), SIGNAL(outputLayerChanged()),this,SLOT(onOutputLayerChanged()) );
     QObject::connect( internalNode.get(), SIGNAL(hideInputsKnobChanged(bool)),this,SLOT(onHideInputsKnobValueChanged(bool)) );
@@ -590,10 +590,10 @@ NodeGui::createGui()
 
     double ellipseDiam = TO_DPIX(NATRON_ELLIPSE_WARN_DIAMETER);
 
-    _bitDepthWarning.reset(new NodeGuiIndicator(getDagGui(), depth + 2, "C",QPointF(bbox.x() + bbox.width() / 2, bbox.y()),
+    _streamIssuesWarning.reset(new NodeGuiIndicator(getDagGui(), depth + 2, "C",QPointF(bbox.x() + bbox.width() / 2, bbox.y()),
                                                 ellipseDiam,ellipseDiam,
                                             bitDepthGrad,QColor(0,0,0,255),this));
-    _bitDepthWarning->setActive(false);
+    _streamIssuesWarning->setActive(false);
 
 
     QGradientStops exprGrad;
@@ -859,7 +859,6 @@ NodeGui::resize(int width,
     }
 
     const QPointF topLeft = mapFromParent(pos());
-    const QPointF bottomRight(topLeft.x() + width,topLeft.y() + height);
     
     const bool hasPluginIcon = _pluginIcon != NULL;
     const int iconWidth = getPluginIconWidth();
@@ -872,6 +871,7 @@ NodeGui::resize(int width,
         _mtSafeHeight = height;
         
     }
+    const QPointF bottomRight(topLeft.x() + width,topLeft.y() + height);
 
 
     QRectF bbox(topLeft.x(),topLeft.y(),width,height);
@@ -913,7 +913,7 @@ NodeGui::resize(int width,
     metrics = QFontMetrics(f,0);
     int pMWidth = metrics.width(persistentMessage);
     QPointF bitDepthPos(topLeft.x() + iconWidth + (width - iconWidth) / 2,0);
-    _bitDepthWarning->refreshPosition(bitDepthPos);
+    _streamIssuesWarning->refreshPosition(bitDepthPos);
 
     if (_expressionIndicator) {
         _expressionIndicator->refreshPosition( topLeft + QPointF(width,0) );
@@ -922,7 +922,7 @@ NodeGui::resize(int width,
         _availableViewsIndicator->refreshPosition(topLeft);
     }
     if (_passThroughIndicator) {
-        _passThroughIndicator->refreshPosition(bottomRight );
+        _passThroughIndicator->refreshPosition(bottomRight);
     }
     
     int indicatorOffset = TO_DPIX(NATRON_STATE_INDICATOR_OFFSET);
@@ -2601,21 +2601,29 @@ NodeGui::onDisabledKnobToggled(bool disabled)
 }
 
 void
-NodeGui::toggleBitDepthIndicator(bool on,
-                                 const QString & tooltip)
+NodeGui::onStreamWarningsChanged()
 {
-    if (!_bitDepthWarning) {
+    if (!_streamIssuesWarning) {
         return;
     }
-    if (on) {
-        QString arrangedTt = GuiUtils::convertFromPlainText(tooltip.trimmed(), Qt::WhiteSpaceNormal);
-        setToolTip(arrangedTt);
-        _bitDepthWarning->setToolTip(arrangedTt);
-    } else {
-        setToolTip("");
-        _bitDepthWarning->setToolTip("");
+    
+    std::map<Node::StreamWarningEnum,QString> warnings;
+    getNode()->getStreamWarnings(&warnings);
+    if (warnings.empty()) {
+        _streamIssuesWarning->setActive(false);
     }
-    _bitDepthWarning->setActive(on);
+    QString tooltip;
+    for (std::map<Node::StreamWarningEnum,QString>::iterator it = warnings.begin(); it!=warnings.end(); ++it) {
+        if (it->second.isEmpty()) {
+            continue;
+        }
+        QString tt = "<p><br>" + tr("Stream issue:") + "</br></p>";
+        tt += GuiUtils::convertFromPlainText(it->second.trimmed(), Qt::WhiteSpaceNormal);
+    }
+    setToolTip(tooltip);
+    _streamIssuesWarning->setToolTip(tooltip);
+    _streamIssuesWarning->setActive(!tooltip.isEmpty());
+
 }
 
 ////////////////////////////////////////// NodeGuiIndicator ////////////////////////////////////////////////////////
@@ -2713,11 +2721,11 @@ NodeGuiIndicator::isActive() const
 }
 
 void
-NodeGuiIndicator::refreshPosition(const QPointF & topLeft)
+NodeGuiIndicator::refreshPosition(const QPointF & center)
 {
     QRectF r = _imp->ellipse->rect();
     int ellipseRad = r.width() / 2;
-    QPoint ellipsePos(topLeft.x() - ellipseRad, topLeft.y() - ellipseRad);
+    QPoint ellipsePos(center.x() - ellipseRad, center.y() - ellipseRad);
     QRectF ellipseRect( ellipsePos.x(), ellipsePos.y(), r.width(), r.height() );
 
     _imp->ellipse->setRect(ellipseRect);

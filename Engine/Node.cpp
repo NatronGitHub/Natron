@@ -99,7 +99,7 @@ namespace { // protect local classes in anonymous namespace
     typedef std::list<Node::KnobLink> KnobLinkList;
     typedef std::vector<NodeWPtr> InputsV;
     
-   
+    
     
     class ChannelSelector {
         
@@ -315,6 +315,7 @@ struct Node::Implementation
     , inputsModified()
     , refreshIdentityStateRequestsCount(0)
     , isRefreshingInputRelatedData(false)
+    , streamWarnings()
     {        
         ///Initialize timers
         gettimeofday(&lastRenderStartedSlotCallTime, 0);
@@ -566,7 +567,8 @@ struct Node::Implementation
     int refreshIdentityStateRequestsCount;
     
     int isRefreshingInputRelatedData; // only used by the main thread
-    
+  
+    std::map<Node::StreamWarningEnum, QString> streamWarnings;
 };
 
 class RefreshingInputData_RAII
@@ -1170,6 +1172,62 @@ Node::setProcessChannelsValues(bool doR, bool doG, bool doB, bool doA)
     if (eA) {
         eA->setValue(doA);
     }
+}
+
+bool
+Node::setStreamWarningInternal(StreamWarningEnum warning, const QString& message)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    std::map<Node::StreamWarningEnum, QString>::iterator found = _imp->streamWarnings.find(warning);
+    if (found == _imp->streamWarnings.end()) {
+        _imp->streamWarnings.insert(std::make_pair(warning,message));
+        return true;
+    } else {
+        if (found->second != message) {
+            found->second = message;
+            return true;
+        }
+    }
+    return false;
+}
+
+void
+Node::setStreamWarning(StreamWarningEnum warning, const QString& message)
+{
+    if (setStreamWarningInternal(warning, message)) {
+        Q_EMIT streamWarningsChanged();
+    }
+}
+
+void
+Node::setStreamWarnings(const std::map<StreamWarningEnum,QString>& warnings)
+{
+    bool changed = false;
+    for (std::map<StreamWarningEnum,QString>::const_iterator it = warnings.begin(); it!=warnings.end(); ++it) {
+        changed |= setStreamWarningInternal(it->first, it->second);
+    }
+    if (changed) {
+        Q_EMIT streamWarningsChanged();
+    }
+}
+
+void
+Node::clearStreamWarning(StreamWarningEnum warning)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    std::map<Node::StreamWarningEnum, QString>::iterator found = _imp->streamWarnings.find(warning);
+    if (found == _imp->streamWarnings.end() || found->second.isEmpty()) {
+        return;
+    }
+    found->second.clear();
+    Q_EMIT streamWarningsChanged();
+}
+
+void
+Node::getStreamWarnings(std::map<StreamWarningEnum,QString>* warnings) const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    *warnings = _imp->streamWarnings;
 }
 
 void

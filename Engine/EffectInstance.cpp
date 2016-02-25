@@ -4924,6 +4924,8 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
     
     ///Set a warning on the node if the bitdepth conversion from one of the input clip to the output clip is lossy
     QString bitDepthWarning;
+    bitDepthWarning.append(tr("This nodes converts higher bit depths images from its inputs to work. As "
+                              "a result of this process, the quality of the images is degraded. The following conversions are done: \n"));
     bool setBitDepthWarning = false;
     
     const bool supportsMultipleDepth = _publicInterface->supportsMultipleClipsBitDepth();
@@ -4982,8 +4984,7 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
         
         //If the bit-depth conversion will be lossy, warn the user
         if (Image::isBitDepthConversionLossy(inputOutputDepth, md.getBitDepth(i))) {
-            bitDepthWarning.append(tr("This nodes converts higher bit depths images from its inputs to work. As "
-                               "a result of this process, the quality of the images is degraded. The following conversions are done: \n"));
+            
             bitDepthWarning.append(inputs[i]->getNode()->getLabel_mt_safe().c_str());
             bitDepthWarning.append(" (" + QString(Image::getDepthString(inputOutputDepth).c_str()) + ")");
             bitDepthWarning.append(" ----> ");
@@ -5004,29 +5005,28 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
         
     }
     
-#pragma message WARN("Do not use a persistent message here")
+    std::map<Node::StreamWarningEnum,QString> warnings;
+    if (setBitDepthWarning) {
+        warnings[Node::eStreamWarningBitdepth] = bitDepthWarning;
+    }
+    
     if (mustWarnFPS) {
-        node->setPersistentMessage(eMessageTypeWarning, QObject::tr("Several input with different pixel aspect ratio or different frame rates "
-                                                                    "is not handled correctly by this node, please adjust your graph.").toStdString());
+        QString fpsWarning = QObject::tr("Several input with different different frame rates "
+                                         "is not handled correctly by this node. To remove this warning make sure all inputs have "
+                                         "the same frame-rate, either by adjusting project settings or the upstream Read node.");
+        warnings[Node::eStreamWarningFrameRate] = fpsWarning;
     }
     
-    if (mustWarnPar && !mustWarnFPS) {
-        node->setPersistentMessage(eMessageTypeWarning, QObject::tr("Several input with different pixel aspect ratio is not "
-                                                                    "handled correctly by this node, please adjust your graph.").toStdString());
-    } else if (!mustWarnPar && mustWarnFPS) {
-        node->setPersistentMessage(eMessageTypeWarning, QObject::tr("Several input with different frame rates is not "
-                                                                    "handled correctly by this node, please adjust your graph.").toStdString());
-    } else if (mustWarnPar && mustWarnFPS) {
-        node->setPersistentMessage(eMessageTypeWarning, QObject::tr("Several input with different pixel aspect ratio and different "
-                                                                    "frame rates is not handled correctly by this node, please adjust your graph.").toStdString());
-    } else {
-        if (node->hasPersistentMessage()) {
-            node->clearPersistentMessage(false);
-        }
+    if (mustWarnPar) {
+        QString parWarnings = QObject::tr("Several input with different pixel aspect ratio is not "
+                                          "handled correctly by this node and may yield unwanted results. Please adjust the "
+                                          "pixel aspect ratios of the inputs so that they match by using a Reformat node.");
+        warnings[Node::eStreamWarningPixelAspectRatio] = parWarnings;
     }
     
     
-    node->toggleBitDepthWarning(setBitDepthWarning, bitDepthWarning);
+    
+    node->setStreamWarnings(warnings);
     
 } //refreshMetaDataProxy
 
