@@ -197,6 +197,7 @@ KnobGui::isSecretRecursive() const
         }
         // prepare for next loop iteration
         parentKnob = parentKnob->getParentKnob();
+        parentIsGroup = dynamic_cast<KnobGroup*>(parentKnob.get());
     }
     return !showit;
 }

@@ -152,6 +152,7 @@ KnobGuiGroup::createWidget(QHBoxLayout* layout)
     if ( hasToolTip() ) {
         _button->setToolTip( toolTip() );
     }
+    _checked = _knob.lock()->getValue();
     _button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _button->setChecked(_checked);
     QObject::connect( _button, SIGNAL(checked(bool)), this, SLOT(setChecked(bool)) );
