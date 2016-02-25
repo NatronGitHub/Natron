@@ -2611,6 +2611,7 @@ NodeGui::onStreamWarningsChanged()
     getNode()->getStreamWarnings(&warnings);
     if (warnings.empty()) {
         _streamIssuesWarning->setActive(false);
+        return;
     }
     QString tooltip;
     for (std::map<Node::StreamWarningEnum,QString>::iterator it = warnings.begin(); it!=warnings.end(); ++it) {
@@ -2619,6 +2620,7 @@ NodeGui::onStreamWarningsChanged()
         }
         QString tt = "<p><br>" + tr("Stream issue:") + "</br></p>";
         tt += GuiUtils::convertFromPlainText(it->second.trimmed(), Qt::WhiteSpaceNormal);
+        tooltip += tt;
     }
     setToolTip(tooltip);
     _streamIssuesWarning->setToolTip(tooltip);

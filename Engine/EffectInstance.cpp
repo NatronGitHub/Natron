@@ -5008,6 +5008,8 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
     std::map<Node::StreamWarningEnum,QString> warnings;
     if (setBitDepthWarning) {
         warnings[Node::eStreamWarningBitdepth] = bitDepthWarning;
+    } else {
+        warnings[Node::eStreamWarningBitdepth] = QString();
     }
     
     if (mustWarnFPS) {
@@ -5015,6 +5017,8 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
                                          "is not handled correctly by this node. To remove this warning make sure all inputs have "
                                          "the same frame-rate, either by adjusting project settings or the upstream Read node.");
         warnings[Node::eStreamWarningFrameRate] = fpsWarning;
+    } else {
+        warnings[Node::eStreamWarningFrameRate] = QString();
     }
     
     if (mustWarnPar) {
@@ -5022,6 +5026,8 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
                                           "handled correctly by this node and may yield unwanted results. Please adjust the "
                                           "pixel aspect ratios of the inputs so that they match by using a Reformat node.");
         warnings[Node::eStreamWarningPixelAspectRatio] = parWarnings;
+    } else {
+        warnings[Node::eStreamWarningPixelAspectRatio] = QString();
     }
     
     
