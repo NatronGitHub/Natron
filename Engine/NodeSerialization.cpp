@@ -60,7 +60,7 @@ NodeSerialization::NodeSerialization(const NodePtr & n,bool serializeInputs)
         _inputs.clear();
 
         if ( n->isOpenFXNode() ) {
-            OfxEffectInstance effect = dynamic_cast<OfxEffectInstance*>( n->getEffectInstance().get() );
+            OfxEffectInstance* effect = dynamic_cast<OfxEffectInstance*>( n->getEffectInstance().get() );
             assert(effect);
             if (effect) {
                 effect->syncPrivateData_other_thread();
