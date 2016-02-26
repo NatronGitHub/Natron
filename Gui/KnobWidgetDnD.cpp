@@ -91,7 +91,7 @@ bool
 KnobWidgetDnD::mousePress(QMouseEvent* e)
 {
     _imp->userInputSinceFocusIn = true;
-    if ( buttonDownIsLeft(e) && (modCASIsControl(e) || modCASIsControlShift(e))) {
+    if ( buttonDownIsLeft(e) && (modCASIsControl(e) || modCASIsControlShift(e)) && _imp->knob->getKnob()->isEnabled(_imp->dimension)) {
         _imp->dragPos = e->pos();
         _imp->dragging = true;
         return true;
@@ -278,9 +278,13 @@ KnobWidgetDnDPrivate::canDrop(bool warn, bool setCursor) const
 {
     KnobPtr source;
     KnobPtr thisKnob = knob->getKnob();
+    if (thisKnob->isEnabled(dimension)) {
+        return false;
+    }
     int srcDim;
     QDrag* drag;
     knob->getGui()->getApp()->getKnobDnDData(&drag, &source, &srcDim);
+    
     
     bool ret = true;
     if (source) {
