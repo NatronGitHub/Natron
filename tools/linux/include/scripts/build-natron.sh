@@ -115,7 +115,7 @@ REL_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 if [ "$MKSRC" = "1" ]; then
     cd .. || exit 1
     cp -a Natron Natron-$REL_GIT_VERSION || exit 1
-    (cd Naton-$REL_GIT_VERSION;find . -type d -name .git -exec rm -rf {} \;)
+    (cd Natron-$REL_GIT_VERSION;find . -type d -name .git -exec rm -rf {} \;)
     tar cvvJf $SRC_PATH/Natron-$REL_GIT_VERSION.tar.xz Natron-$REL_GIT_VERSION || exit 1
     rm -rf Natron-$REL_GIT_VERSION || exit 1
     cd Natron || exit 1 
@@ -136,7 +136,23 @@ echo "Building Natron $NATRON_REL_V from $NATRON_BRANCH against SDK $SDK_VERSION
 echo
 sleep 2
 
-cat $INC_PATH/natron/GitVersion.h | sed "s#__BRANCH__#${NATRON_BRANCH}#;s#__COMMIT__#${REL_GIT_VERSION}#" > Global/GitVersion.h || exit 1
+# Plugins git hash
+IO_VERSION_FILE=$INSTALL_PATH/Plugins/IO.ofx.bundle-version.txt
+MISC_VERSION_FILE=$INSTALL_PATH/Plugins/Misc.ofx.bundle-version.txt
+ARENA_VERSION_FILE=$INSTALL_PATH/Plugins/Arena.ofx.bundle-version.txt
+
+if [ -f "$IO_VERSION_FILE" ]; then
+  IO_GIT_HASH=`cat ${IO_VERSION_FILE}`
+fi
+if [ -f "$MISC_VERSION_FILE" ]; then
+  MISC_GIT_HASH=`cat ${MISC_VERSION_FILE}`
+fi
+if [ -f "$ARENA_VERSION_FILE" ]; then
+  ARENA_GIT_HASH=`cat ${ARENA_VERSION_FILE}`
+fi
+
+#Update GitVersion to have the correct hash
+cat $INC_PATH/natron/GitVersion.h | sed "s#__BRANCH__#${NATRON_BRANCH}#;s#__COMMIT__#${REL_GIT_VERSION}#;s#__IO_COMMIT__#${IO_GIT_HASH}#;s#__MISC_COMMIT__#${MISC_GIT_HASH}#;s#__ARENA_COMMIT__#${ARENA_GIT_HASH}#" > Global/GitVersion.h || exit 1
 
 if [ "$PYV" = "3" ]; then
     cat $INC_PATH/natron/config_py3.pri > config.pri || exit 1

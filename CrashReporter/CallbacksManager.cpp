@@ -607,6 +607,9 @@ CallbacksManager::uploadFileToRepository(const QString& filepath, const QString&
     QString versionStr = getVersionString();
     const QString gitHash(GIT_COMMIT);
     const QString gitBranch(GIT_BRANCH);
+    const QString IOGitHash(IO_GIT_COMMIT);
+    const QString MiscGitHash(MISC_GIT_COMMIT);
+    const QString ArenaGitHash(ARENA_GIT_COMMIT);
 #ifdef Q_OS_LINUX
     QString linuxVersion = getLinuxVersionString();
 #endif
@@ -649,6 +652,9 @@ CallbacksManager::uploadFileToRepository(const QString& filepath, const QString&
     addTextHttpPart(multiPart, "ProductName", productName);
     addTextHttpPart(multiPart, "Version", versionStr);
     addTextHttpPart(multiPart, "GitHash", gitHash);
+    addTextHttpPart(multiPart, "IOGitHash", IOGitHash);
+    addTextHttpPart(multiPart, "MiscGitHash", MiscGitHash);
+    addTextHttpPart(multiPart, "ArenaGitHash", ArenaGitHash);
     addTextHttpPart(multiPart, "GitBranch", gitBranch);
     addTextHttpPart(multiPart, "Version", versionStr);
     addTextHttpPart(multiPart, "guid", guidStr);

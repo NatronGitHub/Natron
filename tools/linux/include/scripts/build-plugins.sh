@@ -137,6 +137,7 @@ if [ "$BUILD_MISC" = "1" ]; then
     make -C CImg CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp"  CONFIG=relwithdebinfo BITS=$BIT -j${MKJOBS} || exit 1
     make  CONFIG=relwithdebinfo BITS=$BIT -j${MKJOBS} || exit 1
     cp -a */Linux-$BIT-*/*.ofx.bundle $INSTALL_PATH/Plugins/ || exit 1
+    echo $MISC_V > $INSTALL_PATH/Plugins/Misc.ofx.bundle-version.txt || exit 1
 
     mkdir -p $INSTALL_PATH/docs/openfx-misc || exit 1
     cp LICENSE README* $INSTALL_PATH/docs/openfx-misc/ || exit 1
@@ -182,6 +183,7 @@ if [ "$BUILD_IO" = "1" ]; then
 
     make OIIO_HOME="${INSTALL_PATH}" SEEXPR_HOME="${INSTALL_PATH}" CONFIG=relwithdebinfo BITS=$BIT -j${MKJOBS} || exit 1
     cp -a IO/Linux-$BIT-*/IO.ofx.bundle $INSTALL_PATH/Plugins/ || exit 1
+    echo $IO_V > $INSTALL_PATH/Plugins/IO.ofx.bundle-version.txt || exit 1
 
     mkdir -p $INSTALL_PATH/docs/openfx-io || exit 1
     cp LICENSE README* $INSTALL_PATH/docs/openfx-io/ || exit 1
@@ -231,6 +233,7 @@ if [ "$BUILD_ARENA" = "1" ]; then
 
     make USE_SVG=1 USE_PANGO=1 STATIC=1 CONFIG=relwithdebinfo BITS=$BIT -j${MKJOBS} || exit 1
     cp -a Bundle/Linux-$BIT-*/Arena.ofx.bundle $INSTALL_PATH/Plugins/ || exit 1
+    echo $ARENA_V > $INSTALL_PATH/Plugins/Arena.ofx.bundle-version.txt || exit 1
 
     mkdir -p $INSTALL_PATH/docs/openfx-arena || exit 1
     cp LICENSE README.md $INSTALL_PATH/docs/openfx-arena/ || exit 1

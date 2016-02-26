@@ -167,7 +167,7 @@ rm -f $IO_LIBS/{liblcms*,libgcc*,libstdc*,libbz2*,libfont*,libfree*,libpng*,libj
   ln -sf ../../../../../lib/libfontconfig.so.1 .
   ln -sf ../../../../../lib/libfreetype.so.6 .
   ln -sf ../../../../../lib/libpng16.so.16 .
-  ln -sf ../../../../../lib/libjpeg.so.9 .
+  ln -sf ../../../../../lib/libjpeg.so.8 .
   ln -sf ../../../../../lib/libtiff.so.5 .
   ln -sf ../../../../../lib/libz.so.1 .
   ln -sf ../../../../../lib/libgcc_s.so.1 .
