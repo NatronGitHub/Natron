@@ -522,47 +522,15 @@ if [ ! -f "$INSTALL_PATH/bin/cppunit-config" ]; then
     fi
 fi
 
-# install librevenge
-if [ ! -f "$INSTALL_PATH/lib/pkgconfig/librevenge-0.0.pc" ]; then
-    cd "$TMP_PATH" || exit 1
-    if [ ! -f "$SRC_PATH/$REVENGE_TAR" ]; then
-        wget "$THIRD_PARTY_SRC_URL/$REVENGE_TAR" -O "$SRC_PATH/$REVENGE_TAR" || exit 1
-    fi
-    tar xvf "$SRC_PATH/$REVENGE_TAR" || exit 1
-    cd librevenge* || exit 1
-    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --disable-werror --prefix="$INSTALL_PATH" --disable-docs --enable-shared || exit 1
-    make -j1 || exit 1
-    make install || exit 1
-    if [ "$DDIR" != "" ]; then
-      make DESTDIR="${DDIR}" install || exit 1
-    fi
-fi
-
-# install libcdr
-if [ ! -f "$INSTALL_PATH/lib/pkgconfig/libcdr-0.1.pc" ]; then
-    cd "$TMP_PATH" || exit 1
-    if [ ! -f "$SRC_PATH/$CDR_TAR" ]; then
-        wget "$THIRD_PARTY_SRC_URL/$CDR_TAR" -O "$SRC_PATH/$CDR_TAR" || exit 1
-    fi
-    tar xvf "$SRC_PATH/$CDR_TAR" || exit 1
-    cd libcdr* || exit 1
-    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --disable-werror --prefix="$INSTALL_PATH" --disable-docs --enable-shared || exit 1
-    make -j1 || exit 1
-    make install || exit 1
-    if [ "$DDIR" != "" ]; then
-      make DESTDIR="${DDIR}" install || exit 1
-    fi
-fi
-
-# Install jpeg
-if [ ! -f $INSTALL_PATH/lib/libjpeg.so ]; then
+# Install turbo-jpeg
+if [ ! -f $INSTALL_PATH/lib/libturbojpeg.so.0.1.0 ]; then
     cd $TMP_PATH || exit 1
-    if [ ! -f $SRC_PATH/$JPG_TAR ]; then
-        wget $THIRD_PARTY_SRC_URL/$JPG_TAR -O $SRC_PATH/$JPG_TAR || exit 1
+    if [ ! -f $SRC_PATH/$TJPG_TAR ]; then
+        wget $THIRD_PARTY_SRC_URL/$TJPG_TAR -O $SRC_PATH/$TJPG_TAR || exit 1
     fi
-    tar xvf $SRC_PATH/$JPG_TAR || exit 1
-    cd jpeg-* || exit 1
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
+    tar xvf $SRC_PATH/$TJPG_TAR || exit 1
+    cd libjpeg-turbo-* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --with-jpeg8 --enable-shared --disable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     if [ "$DDIR" != "" ]; then
@@ -585,7 +553,6 @@ if [ ! -f $INSTALL_PATH/lib/libgif.so ]; then
       make DESTDIR="${DDIR}" install || exit 1
     fi
 fi
-
 
 # Install tiff
 if [ "$REBUILD_TIFF" = "1" ]; then
@@ -636,6 +603,38 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/lcms2.pc ]; then
     cd lcms2-* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
     make -j${MKJOBS} || exit 1
+    make install || exit 1
+    if [ "$DDIR" != "" ]; then
+      make DESTDIR="${DDIR}" install || exit 1
+    fi
+fi
+
+# install librevenge
+if [ ! -f "$INSTALL_PATH/lib/pkgconfig/librevenge-0.0.pc" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$REVENGE_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$REVENGE_TAR" -O "$SRC_PATH/$REVENGE_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$REVENGE_TAR" || exit 1
+    cd librevenge* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --disable-werror --prefix="$INSTALL_PATH" --disable-docs --enable-shared || exit 1
+    make -j1 || exit 1
+    make install || exit 1
+    if [ "$DDIR" != "" ]; then
+      make DESTDIR="${DDIR}" install || exit 1
+    fi
+fi
+
+# install libcdr
+if [ ! -f "$INSTALL_PATH/lib/pkgconfig/libcdr-0.1.pc" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$CDR_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$CDR_TAR" -O "$SRC_PATH/$CDR_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$CDR_TAR" || exit 1
+    cd libcdr* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --disable-werror --prefix="$INSTALL_PATH" --disable-docs --enable-shared || exit 1
+    make -j1 || exit 1
     make install || exit 1
     if [ "$DDIR" != "" ]; then
       make DESTDIR="${DDIR}" install || exit 1
