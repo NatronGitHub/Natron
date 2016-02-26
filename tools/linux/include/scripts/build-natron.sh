@@ -137,9 +137,19 @@ echo
 sleep 2
 
 # Plugins git hash
-IO_GIT_HASH=`cat $INSTALL_PATH/Plugins/IO.ofx.bundle-version.txt`
-MISC_GIT_HASH=`cat $INSTALL_PATH/Plugins/Misc.ofx.bundle-version.txt`
-ARENA_GIT_HASH=`cat $INSTALL_PATH/Plugins/Arena.ofx.bundle-version.txt`
+IO_VERSION_FILE=$INSTALL_PATH/Plugins/IO.ofx.bundle-version.txt
+MISC_VERSION_FILE=$INSTALL_PATH/Plugins/Misc.ofx.bundle-version.txt
+ARENA_VERSION_FILE=$INSTALL_PATH/Plugins/Arena.ofx.bundle-version.txt
+
+if [ -f "$IO_VERSION_FILE" ]; then
+  IO_GIT_HASH=`cat ${IO_VERSION_FILE}`
+fi
+if [ -f "$MISC_VERSION_FILE" ]; then
+  MISC_GIT_HASH=`cat ${MISC_VERSION_FILE}`
+fi
+if [ -f "$ARENA_VERSION_FILE" ]; then
+  ARENA_GIT_HASH=`cat ${ARENA_VERSION_FILE}`
+fi
 
 #Update GitVersion to have the correct hash
 cat $INC_PATH/natron/GitVersion.h | sed "s#__BRANCH__#${NATRON_BRANCH}#;s#__COMMIT__#${REL_GIT_VERSION}#;s#__IO_COMMIT__#${IO_GIT_HASH}#;s#__MISC_COMMIT__#${MISC_GIT_HASH}#;s#__ARENA_COMMIT__#${ARENA_GIT_HASH}#" > Global/GitVersion.h || exit 1
