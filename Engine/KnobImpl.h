@@ -1008,12 +1008,14 @@ Knob<T>::setValue(const T & v,
             curve = getCurve(view, dimension);
             if (curve) {
                 
-                makeKeyFrame(curve.get(), time,view, v,&k);
                 bool hasAnimation = curve->isAnimated();
                 bool hasKeyAtTime;
                 {
                     KeyFrame existingKey;
                     hasKeyAtTime = curve->getKeyFrameWithTime(time, &existingKey);
+                }
+                if (hasAnimation) {
+                    makeKeyFrame(curve.get(), time,view, v,&k);
                 }
                 if (hasAnimation && hasKeyAtTime) {
                     returnValue =  eValueChangedReturnCodeKeyframeModified;
