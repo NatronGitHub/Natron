@@ -536,13 +536,24 @@ ManageUserParamsDialog::onEditClickedInternal(const QList<QTreeWidgetItem*> &sel
         for (int i = 0; i < selection.size(); ++i) {
             for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
                 if (it->item == selection[i]) {
+                    KnobPtr oldParentKnob = it->knob->getParentKnob();
+                    
                     AddKnobDialog dialog(_imp->panel, it->knob, std::string(), std::string(), this);
                     if (dialog.exec()) {
                         int indexIndParent = -1;
                         QTreeWidgetItem* parent = it->item->parent();
+                        
+                        KnobPtr knob = dialog.getKnob();
+
+                        KnobPtr newParentKnob = knob->getParentKnob();
                         KnobPage* isPage = dynamic_cast<KnobPage*>(it->knob.get());
+                        
                         if (parent) {
-                            indexIndParent = parent->indexOfChild(it->item);
+                            if (oldParentKnob != newParentKnob) {
+                                indexIndParent = -1;
+                            } else {
+                                indexIndParent = parent->indexOfChild(it->item);
+                            }
                         } else {
                             if (isPage) {
                                 indexIndParent = isPage->getHolder()->getPageIndex(isPage);
@@ -553,7 +564,6 @@ ManageUserParamsDialog::onEditClickedInternal(const QList<QTreeWidgetItem*> &sel
                         
                         delete it->item;
                         _imp->items.erase(it);
-                        KnobPtr knob = dialog.getKnob();
                         QTreeWidgetItem* item = _imp->createItemForKnob(knob,indexIndParent);
                         if (item && !children.isEmpty()) {
                             item->insertChildren(0, children);
