@@ -107,23 +107,10 @@ ViewerTab::updateViewsMenu(const std::vector<std::string>& viewNames)
 
     _imp->viewsComboBox->clear();
     for (std::size_t i = 0;  i < viewNames.size(); ++i) {
-        if (viewNames[i] == "Left") {
-            ActionWithShortcut* leftAct = new ActionWithShortcut(kShortcutGroupViewer,
-                                                                 kShortcutIDShowLeftView,
-                                                                 kShortcutDescShowLeftView,
-                                                                 _imp->viewsComboBox);
-            _imp->viewsComboBox->addAction(leftAct);
-
-        } else if (viewNames[i] == "Right") {
-            ActionWithShortcut* rightAct = new ActionWithShortcut(kShortcutGroupViewer,
-                                                                  kShortcutIDShowRightView,
-                                                                  kShortcutDescShowRightView,
-                                                                  _imp->viewsComboBox);
-            _imp->viewsComboBox->addAction(rightAct);
-        } else {
-            _imp->viewsComboBox->addItem(viewNames[i].c_str());
-        }
+        _imp->viewsComboBox->addItem(viewNames[i].c_str());
     }
+    
+    
     if (viewNames.size() == 1) {
         _imp->viewsComboBox->hide();
     } else {
@@ -756,10 +743,10 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         if (getViewer()->hasFocus()) {
             switchInputAAndB();
         }
-    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDShowLeftView, modifiers, key) ) {
-        showView(0);
-    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDShowRightView, modifiers, key) ) {
-        showView(1);
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDPrevView, modifiers, key)) {
+        previousView();
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDNextView, modifiers, key)) {
+        nextView();
     } else {
         accept = false;
     }
@@ -874,12 +861,58 @@ ViewerTab::sizeHint() const
 }
 
 void
-ViewerTab::showView(int /* Qt slot, no ViewIdx */ view)
+ViewerTab::onViewsComboboxChanged(int index)
 {
     {
         QMutexLocker l(&_imp->currentViewMutex);
-        
-        _imp->currentViewIndex = ViewIdx(view);
+        _imp->currentViewIndex = ViewIdx(index);
+    }
+    abortRendering();
+    _imp->viewerNode->renderCurrentFrame(true);
+}
+
+void
+ViewerTab::previousView()
+{
+    ViewIdx idx;
+    {
+        QMutexLocker k(&_imp->currentViewMutex);
+        idx = _imp->currentViewIndex;
+    }
+    int nbViews = _imp->viewsComboBox->count();
+    if (idx.value() == 0) {
+        idx = ViewIdx(nbViews - 1);
+    } else {
+        idx = ViewIdx(idx.value() -1);
+    }
+    _imp->viewsComboBox->setCurrentIndex_no_emit(idx.value());
+    {
+        QMutexLocker k(&_imp->currentViewMutex);
+        _imp->currentViewIndex = idx;
+    }
+    abortRendering();
+    _imp->viewerNode->renderCurrentFrame(true);
+    
+}
+
+void
+ViewerTab::nextView()
+{
+    ViewIdx idx;
+    {
+        QMutexLocker k(&_imp->currentViewMutex);
+        idx = _imp->currentViewIndex;
+    }
+    int nbViews = _imp->viewsComboBox->count();
+    if (idx.value() == nbViews -1) {
+        idx = ViewIdx(0);
+    } else {
+        idx = ViewIdx(idx.value() + 1);
+    }
+    _imp->viewsComboBox->setCurrentIndex_no_emit(idx.value());
+    {
+        QMutexLocker k(&_imp->currentViewMutex);
+        _imp->currentViewIndex = idx;
     }
     abortRendering();
     _imp->viewerNode->renderCurrentFrame(true);

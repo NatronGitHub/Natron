@@ -957,7 +957,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     manageSlotsForInfoWidget(0,true);
 
     QObject::connect( _imp->clipToProjectFormatButton,SIGNAL(clicked(bool)),this,SLOT(onClipToProjectButtonToggle(bool)) );
-    QObject::connect( _imp->viewsComboBox,SIGNAL(currentIndexChanged(int)),this,SLOT(showView(int)) );
+    QObject::connect( _imp->viewsComboBox,SIGNAL(currentIndexChanged(int)),this,SLOT(onViewsComboboxChanged(int)) );
     QObject::connect( _imp->enableViewerRoI, SIGNAL(clicked(bool)), this, SLOT(onEnableViewerRoIButtonToggle(bool)) );
     QObject::connect( _imp->autoContrast,SIGNAL(clicked(bool)),this,SLOT(onAutoContrastChanged(bool)) );
     QObject::connect( _imp->renderScaleCombo,SIGNAL(currentIndexChanged(int)),this,SLOT(onRenderScaleComboIndexChanged(int)) );

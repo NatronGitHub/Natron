@@ -308,7 +308,7 @@ public Q_SLOTS:
 
     void refresh();
 
-    void showView(int /* Qt slot, no ViewIdx */ view);
+    void onViewsComboboxChanged(int  index);
 
     void onEnableViewerRoIButtonToggle(bool);
     
@@ -416,6 +416,9 @@ public Q_SLOTS:
     
     void nextLayer();
     void previousLayer();
+    
+    void previousView();
+    void nextView();
     
     void toggleTripleSync(bool toggled);
     

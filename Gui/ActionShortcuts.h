@@ -313,12 +313,11 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDSwitchInputAAndB "switchAB"
 #define kShortcutDescSwitchInputAAndB "Switch Input A and B"
 
-#define kShortcutIDShowLeftView "leftView"
-#define kShortcutDescShowLeftView "Left"
+#define kShortcutIDPrevView "prevView"
+#define kShortcutDescPrevView "Previous View"
 
-#define kShortcutIDShowRightView "rightView"
-#define kShortcutDescShowRightView "Right"
-
+#define kShortcutIDNextView "nextView"
+#define kShortcutDescNextView "Next View"
 ///////////PLAYER SHORTCUTS
 
 #define kShortcutIDActionPlayerPrevious "prev"
