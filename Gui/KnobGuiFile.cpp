@@ -65,7 +65,7 @@ NATRON_NAMESPACE_ENTER;
 
 //===========================FILE_KNOB_GUI=====================================
 KnobGuiFile::KnobGuiFile(KnobPtr knob,
-                           DockablePanel *container)
+                         DockablePanel *container)
     : KnobGui(knob, container)
     , _lineEdit(0)
     , _openFileButton(0)
@@ -175,12 +175,14 @@ KnobGuiFile::open_file()
 {
     std::vector<std::string> filters;
     boost::shared_ptr<KnobFile> knob = _knob.lock();
+    
     if ( !knob->isInputImageFile() ) {
         filters.push_back("*");
     } else {
-        EffectInstance* effect = dynamic_cast<EffectInstance*>( knob->getHolder() );
-        if (effect) {
-            filters = effect->supportedFileFormats();
+        std::map<std::string, std::string> readersForFormat;
+        appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
+        for (std::map<std::string, std::string>::iterator it = readersForFormat.begin(); it!=readersForFormat.end(); ++it) {
+            filters.push_back(it->first);
         }
     }
     std::string oldPattern = knob->getValue();
@@ -203,7 +205,7 @@ KnobGuiFile::open_file()
         path = SequenceParsing::removePath(selectedFile);
         updateLastOpened( path.c_str() );
         
-        pushUndoCommand( new KnobUndoCommand<std::string>(this,oldPattern,originalSelectedFile) );
+        pushUndoCommand( new KnobUndoCommand<std::string>(shared_from_this(),oldPattern,originalSelectedFile) );
     }
 }
 
@@ -335,7 +337,7 @@ void KnobGuiFile::onTextEdited()
     
     
     
-    pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,str ) );
+    pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),oldValue,str ) );
 }
 
 
@@ -412,7 +414,7 @@ KnobGuiFile::onMakeAbsoluteTriggered()
         std::string oldValue = knob->getValue();
         std::string newValue = oldValue;
         knob->getHolder()->getApp()->getProject()->canonicalizePath(newValue);
-        pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
+        pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),oldValue,newValue ) );
     }
 }
 
@@ -424,7 +426,7 @@ KnobGuiFile::onMakeRelativeTriggered()
         std::string oldValue = knob->getValue();
         std::string newValue = oldValue;
         knob->getHolder()->getApp()->getProject()->makeRelativeToProject(newValue);
-        pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
+        pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),oldValue,newValue ) );
     }
 
 }
@@ -437,7 +439,7 @@ KnobGuiFile::onSimplifyTriggered()
         std::string oldValue = knob->getValue();
         std::string newValue = oldValue;
         knob->getHolder()->getApp()->getProject()->simplifyPath(newValue);
-        pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
+        pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),oldValue,newValue ) );
     }
 }
 
@@ -537,9 +539,10 @@ KnobGuiOutputFile::open_file(bool openSequence)
     if ( !_knob.lock()->isOutputImageFile() ) {
         filters.push_back("*");
     } else {
-        EffectInstance* effect = dynamic_cast<EffectInstance*>( getKnob()->getHolder() );
-        if (effect) {
-            filters = effect->supportedFileFormats();
+        std::map<std::string, std::string> formats;
+        appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&formats);
+        for (std::map<std::string, std::string>::iterator it = formats.begin(); it!=formats.end(); ++it) {
+            filters.push_back(it->first);
         }
     }
 
@@ -550,7 +553,7 @@ KnobGuiOutputFile::open_file(bool openSequence)
         std::string newPattern = dialog.filesToSave();
         updateLastOpened( SequenceParsing::removePath(oldPattern).c_str() );
 
-        pushUndoCommand( new KnobUndoCommand<std::string>(this,oldPattern,newPattern) );
+        pushUndoCommand( new KnobUndoCommand<std::string>(shared_from_this(),oldPattern,newPattern) );
     }
 }
 
@@ -581,7 +584,7 @@ KnobGuiOutputFile::onTextEdited()
 //    }
 //
 //    
-    pushUndoCommand( new KnobUndoCommand<std::string>( this,_knob.lock()->getValue(),newPattern ) );
+    pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),_knob.lock()->getValue(),newPattern ) );
 }
 
 void
@@ -658,7 +661,7 @@ KnobGuiOutputFile::onMakeAbsoluteTriggered()
         std::string oldValue = knob->getValue();
         std::string newValue = oldValue;
         knob->getHolder()->getApp()->getProject()->canonicalizePath(newValue);
-        pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
+        pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),oldValue,newValue ) );
     }
 }
 
@@ -670,7 +673,7 @@ KnobGuiOutputFile::onMakeRelativeTriggered()
         std::string oldValue = knob->getValue();
         std::string newValue = oldValue;
         knob->getHolder()->getApp()->getProject()->makeRelativeToProject(newValue);
-        pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
+        pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),oldValue,newValue ) );
     }
     
 }
@@ -683,7 +686,7 @@ KnobGuiOutputFile::onSimplifyTriggered()
         std::string oldValue = knob->getValue();
         std::string newValue = oldValue;
         knob->getHolder()->getApp()->getProject()->simplifyPath(newValue);
-        pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
+        pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),oldValue,newValue ) );
     }
 }
 
@@ -940,7 +943,7 @@ KnobGuiPath::onAddButtonClicked()
         int rowCount = (int)_items.size();
         createItem(rowCount, QString(), newItemName);
         std::string newPath = rebuildPath();
-        pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newPath));
+        pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),oldValue,newPath));
     } else {
         std::vector<std::string> filters;
         SequenceFileDialog dialog( _mainContainer, filters, false, SequenceFileDialog::eFileDialogModeDir, _lastOpened.toStdString(),getGui(),true);
@@ -963,7 +966,7 @@ KnobGuiPath::onAddButtonClicked()
             
             
             
-            pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newPath ) );
+            pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),oldValue,newPath ) );
         }
     }
 }
@@ -996,7 +999,7 @@ KnobGuiPath::onEditButtonClicked()
             
             
             
-            pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newPath ) );
+            pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),oldValue,newPath ) );
         }
     }
 
@@ -1016,7 +1019,7 @@ KnobGuiPath::onOpenFileButtonClicked()
         
         std::string oldValue = _knob.lock()->getValue();
         
-        pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,dirPath ) );
+        pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),oldValue,dirPath ) );
     }
 
 }
@@ -1056,7 +1059,7 @@ KnobGuiPath::onRemoveButtonClicked()
     
     std::string newPath = rebuildPath();
     
-    pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newPath ) );
+    pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),oldValue,newPath ) );
 }
 
 
@@ -1080,7 +1083,7 @@ KnobGuiPath::onTextEdited()
     
     std::string oldValue = _knob.lock()->getValue();
     
-    pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,dirPath ) );
+    pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),oldValue,dirPath ) );
 }
 
 
@@ -1268,7 +1271,7 @@ KnobGuiPath::onItemDataChanged(TableItem* /*item*/)
             }
         }
         
-        pushUndoCommand( new KnobUndoCommand<std::string>( this,oldPath,newPath ) );
+        pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),oldPath,newPath ) );
     }
 }
 
@@ -1340,7 +1343,7 @@ KnobGuiPath::onMakeAbsoluteTriggered()
         std::string oldValue = knob->getValue();
         std::string newValue = oldValue;
         knob->getHolder()->getApp()->getProject()->canonicalizePath(newValue);
-        pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
+        pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),oldValue,newValue ) );
     }
 }
 
@@ -1352,7 +1355,7 @@ KnobGuiPath::onMakeRelativeTriggered()
         std::string oldValue = knob->getValue();
         std::string newValue = oldValue;
         knob->getHolder()->getApp()->getProject()->makeRelativeToProject(newValue);
-        pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
+        pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),oldValue,newValue ) );
     }
     
 }
@@ -1365,7 +1368,7 @@ KnobGuiPath::onSimplifyTriggered()
         std::string oldValue = knob->getValue();
         std::string newValue = oldValue;
         knob->getHolder()->getApp()->getProject()->simplifyPath(newValue);
-        pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
+        pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),oldValue,newValue ) );
     }
 }
 

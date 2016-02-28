@@ -804,7 +804,12 @@ Gui::renderSelectedNode()
         } else {
             if (selectedNodes.size() == 1) {
                 ///create a node and connect it to the node and use it to render
+#ifndef NATRON_ENABLE_IO_META_NODES
                 NodePtr writer = createWriter();
+#else
+                NodeGraph* graph = selectedNodes.front()->getDagGui();
+                NodePtr writer = getApp()->createWriter("", eCreateNodeReasonInternal, graph->getGroup());
+#endif
                 if (writer) {
                     AppInstance::RenderWork w;
                     w.writer = dynamic_cast<OutputEffectInstance*>( writer->getEffectInstance().get() );

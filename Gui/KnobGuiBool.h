@@ -62,7 +62,7 @@ NATRON_NAMESPACE_ENTER;
 class Bool_CheckBox: public AnimatedCheckBox
 {
 public:
-    Bool_CheckBox(KnobGui* knob, int dimension, QWidget* parent = 0);
+    Bool_CheckBox(const KnobGuiPtr& knob, int dimension, QWidget* parent = 0);
     
     virtual ~Bool_CheckBox();
     

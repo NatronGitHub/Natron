@@ -112,7 +112,7 @@ KnobGui::onSetExprActionTriggered()
     int dim = action->data().toInt();
     
   
-    EditExpressionDialog* dialog = new EditExpressionDialog(getGui(),dim,this,_imp->container);
+    EditExpressionDialog* dialog = new EditExpressionDialog(getGui(),dim,shared_from_this(),_imp->container);
     dialog->create(getKnob()->getExpression(dim == -1 ? 0 : dim).c_str(), true);
     QObject::connect( dialog,SIGNAL(accepted()),this,SLOT(onEditExprDialogFinished()) );
     QObject::connect( dialog,SIGNAL(rejected()),this,SLOT(onEditExprDialogFinished()) );
@@ -170,9 +170,13 @@ KnobGui::setSecret()
     }
     KnobGuiGroup* isGrp = dynamic_cast<KnobGuiGroup*>(this);
     if (isGrp) {
-        const std::list<KnobGui*>& children = isGrp->getChildren();
-        for (std::list<KnobGui*>::const_iterator it = children.begin(); it != children.end(); ++it) {
-            (*it)->setSecret();
+        const std::list<KnobGuiWPtr>& children = isGrp->getChildren();
+        for (std::list<KnobGuiWPtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
+            KnobGuiPtr k = it->lock();
+            if (!k) {
+                continue;
+            }
+            k->setSecret();
         }
     }
 }
@@ -190,7 +194,7 @@ KnobGui::isSecretRecursive() const
     KnobPtr parentKnob = knob->getParentKnob();
     KnobGroup* parentIsGroup = dynamic_cast<KnobGroup*>(parentKnob.get());
     while (showit && parentKnob && parentIsGroup) {
-        KnobGuiGroup* parentGui = dynamic_cast<KnobGuiGroup*>( _imp->container->getKnobGui(parentKnob) );
+        KnobGuiGroup* parentGui = dynamic_cast<KnobGuiGroup*>( _imp->container->getKnobGui(parentKnob).get() );
         // check for secretness and visibility of the group
         if ( parentKnob->getIsSecret() || ( parentGui && !parentGui->isChecked() ) ) {
             showit = false; // one of the including groups is folder, so this item is hidden
@@ -232,10 +236,11 @@ KnobGui::onRemoveAnimationActionTriggered()
     std::map<boost::shared_ptr<CurveGui> , std::vector<KeyFrame > > toRemove;
     
     
+    KnobGuiPtr thisShared = shared_from_this();
     for (int i = 0; i < knob->getDimension(); ++i) {
         
         if (dim == -1 || dim == i) {
-            std::list<boost::shared_ptr<CurveGui> > curves = getGui()->getCurveEditor()->findCurve(this, i);
+            std::list<boost::shared_ptr<CurveGui> > curves = getGui()->getCurveEditor()->findCurve(thisShared, i);
             for (std::list<boost::shared_ptr<CurveGui> >::iterator it = curves.begin(); it != curves.end(); ++it) {
                 KeyFrameSet keys = (*it)->getInternalCurve()->getKeyFrames_mt_safe();
                 
@@ -375,11 +380,12 @@ KnobGui::onSetKeyActionTriggered()
 
     AddKeysCommand::KeysToAddList toAdd;
     
+    KnobGuiPtr thisShared = shared_from_this();
     for (int i = 0; i < knob->getDimension(); ++i) {
         
         if (dim == -1 || i == dim) {
             
-            std::list<boost::shared_ptr<CurveGui> > curves = getGui()->getCurveEditor()->findCurve(this, i);
+            std::list<boost::shared_ptr<CurveGui> > curves = getGui()->getCurveEditor()->findCurve(thisShared, i);
             for (std::list<boost::shared_ptr<CurveGui> >::iterator it = curves.begin(); it != curves.end(); ++it) {
                 KeyFrame kf;
                 kf.setTime(time);
@@ -546,10 +552,13 @@ KnobGui::onRemoveKeyActionTriggered()
     //get the current time on the global timeline
     SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
     std::map<boost::shared_ptr<CurveGui> , std::vector<KeyFrame > > toRemove;
+    
+    KnobGuiPtr thisShared = shared_from_this();
+    
     for (int i = 0; i < knob->getDimension(); ++i) {
         
         if (dim == -1 || i == dim) {
-            std::list<boost::shared_ptr<CurveGui> > curves = getGui()->getCurveEditor()->findCurve(this, i);
+            std::list<boost::shared_ptr<CurveGui> > curves = getGui()->getCurveEditor()->findCurve(thisShared, i);
             for (std::list<boost::shared_ptr<CurveGui> >::iterator it = curves.begin(); it != curves.end(); ++it) {
                 
                 KeyFrame kf;
@@ -584,7 +593,8 @@ KnobGui::hide()
     }
 
     //also  hide the curve from the curve editor if there's any and the knob is not inside a group
-    if ( getKnob()->getHolder()->getApp() ) {
+    KnobPtr knob = getKnob();
+    if ( knob && knob->getHolder() && knob->getHolder()->getApp() ) {
         KnobPtr parent = getKnob()->getParentKnob();
         bool isSecret = true;
         while (parent) {
@@ -595,7 +605,7 @@ KnobGui::hide()
             parent = parent->getParentKnob();
         }
         if (isSecret) {
-            getGui()->getCurveEditor()->hideCurves(this);
+            getGui()->getCurveEditor()->hideCurves(shared_from_this());
         }
     }
 
@@ -603,7 +613,7 @@ KnobGui::hide()
     ////are hidden.
     bool shouldRemoveWidget = true;
     for (U32 i = 0; i < _imp->knobsOnSameLine.size(); ++i) {
-        KnobGui* sibling = _imp->container->getKnobGui(_imp->knobsOnSameLine[i].lock());
+        KnobGuiPtr sibling = _imp->container->getKnobGui(_imp->knobsOnSameLine[i].lock());
         if ( sibling && !sibling->isSecretRecursive() ) {
             shouldRemoveWidget = false;
         }
@@ -640,8 +650,9 @@ KnobGui::show(int /*index*/)
     }
 
     //also show the curve from the curve editor if there's any
-    if ( getKnob()->getHolder()->getApp() ) {
-        getGui()->getCurveEditor()->showCurves(this);
+    KnobPtr knob = getKnob();
+    if ( knob && knob->getHolder() && knob->getHolder()->getApp() ) {
+        getGui()->getCurveEditor()->showCurves(shared_from_this());
     }
 
     //if (_imp->isOnNewLine) {
@@ -694,12 +705,13 @@ KnobGui::setEnabledSlot()
     if (_imp->descriptionLabel) {
         _imp->descriptionLabel->setReadOnly( !knob->isEnabled(0) );
     }
-    if ( knob->getHolder()->getApp() ) {
+    KnobGuiPtr thisShared = shared_from_this();
+    if ( knob->getHolder() && knob->getHolder()->getApp() ) {
         for (int i = 0; i < knob->getDimension(); ++i) {
             if ( !knob->isEnabled(i) ) {
-                getGui()->getCurveEditor()->hideCurve(this,i);
+                getGui()->getCurveEditor()->hideCurve(thisShared,i);
             } else {
-                getGui()->getCurveEditor()->showCurve(this,i);
+                getGui()->getCurveEditor()->showCurve(thisShared,i);
             }
         }
     }

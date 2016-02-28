@@ -95,7 +95,7 @@ using std::make_pair;
 
 //=============================STRING_KNOB_GUI===================================
 
-AnimatingTextEdit::AnimatingTextEdit(KnobGui* knob, int dimension, QWidget* parent)
+AnimatingTextEdit::AnimatingTextEdit(const KnobGuiPtr& knob, int dimension, QWidget* parent)
 : QTextEdit(parent)
 , animation(0)
 , readOnlyNatron(false)
@@ -252,7 +252,7 @@ AnimatingTextEdit::focusOutEvent(QFocusEvent* e)
 }
 
 
-KnobLineEdit::KnobLineEdit(KnobGui* knob,int dimension, QWidget* parent)
+KnobLineEdit::KnobLineEdit(const KnobGuiPtr& knob,int dimension, QWidget* parent)
 : LineEdit(parent)
 , _dnd(new KnobWidgetDnD(knob, dimension, this))
 {}
@@ -381,7 +381,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
         _mainLayout->setSpacing(0);
 
         bool useRichText = knob->usesRichText();
-        _textEdit = new AnimatingTextEdit(this, 0, _container);
+        _textEdit = new AnimatingTextEdit(shared_from_this(), 0, _container);
         _textEdit->setAcceptRichText(useRichText);
 
 
@@ -475,7 +475,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
         //_label->setFont(QFont(appFont,appFontSize));
         layout->addWidget(_label);*/
     } else {
-        _lineEdit = new KnobLineEdit(this, 0, layout->parentWidget() );
+        _lineEdit = new KnobLineEdit(shared_from_this(), 0, layout->parentWidget() );
 
         if ( hasToolTip() ) {
             _lineEdit->setToolTip( toolTip() );
@@ -514,7 +514,7 @@ KnobGuiString::onLineChanged()
     std::string newText = _lineEdit->text().toStdString();
    
     if (oldText != newText) {
-        pushUndoCommand( new KnobUndoCommand<std::string>( this,oldText,newText) );
+        pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),oldText,newText) );
     }
 }
 
@@ -558,7 +558,7 @@ KnobGuiString::onTextChanged()
     if ( _knob.lock()->usesRichText() ) {
         txt = addHtmlTags(txt);
     }
-    pushUndoCommand( new KnobUndoCommand<std::string>( this,_knob.lock()->getValue(0),txt.toStdString() ) );
+    pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),_knob.lock()->getValue(0),txt.toStdString() ) );
 }
 
 QString
@@ -825,7 +825,7 @@ KnobGuiString::onCurrentFontChanged(const QFont & font)
         text.prepend(fontTag);
         text.append(kFontEndTag);
     }
-    pushUndoCommand( new KnobUndoCommand<std::string>( this,knob->getValue(0),text.toStdString() ) );
+    pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),knob->getValue(0),text.toStdString() ) );
 }
 
 QString
@@ -864,7 +864,7 @@ KnobGuiString::onFontSizeChanged(double size)
     text.remove( i, currentSize.size() );
     text.insert( i, QString::number(size) );
     _fontSize = size;
-    pushUndoCommand( new KnobUndoCommand<std::string>( this,knob->getValue(0),text.toStdString() ) );
+    pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),knob->getValue(0),text.toStdString() ) );
 }
 
 void
@@ -898,7 +898,7 @@ KnobGuiString::boldChanged(bool toggled)
     }
 
     _boldActivated = toggled;
-    pushUndoCommand( new KnobUndoCommand<std::string>( this,knob->getValue(0),text.toStdString() ) );
+    pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),knob->getValue(0),text.toStdString() ) );
 }
 
 void
@@ -925,7 +925,7 @@ KnobGuiString::colorFontButtonClicked()
 
         QString text( knob->getValue(0).c_str() );
         findReplaceColorName(text,_fontColor.name());
-        pushUndoCommand( new KnobUndoCommand<std::string>( this,knob->getValue(0),text.toStdString() ) );
+        pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),knob->getValue(0),text.toStdString() ) );
     }
     updateFontColorIcon(_fontColor);
 }
@@ -995,7 +995,7 @@ KnobGuiString::italicChanged(bool toggled)
         text.append(kItalicEndTag); //< this is always the last tag
     }
     _italicActivated = toggled;
-    pushUndoCommand( new KnobUndoCommand<std::string>( this,knob->getValue(0),text.toStdString() ) );
+    pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),knob->getValue(0),text.toStdString() ) );
 }
 
 QString

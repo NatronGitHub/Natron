@@ -40,6 +40,7 @@
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/TimeLine.h"
+#include "Engine/ReadNode.h"
 #include "Engine/ViewIdx.h"
 
 #include "Gui/ActionShortcuts.h"
@@ -220,10 +221,11 @@ Node *DopeSheetPrivate::getNearestReaderFromInputs_recursive(Node *node,std::lis
         }
 
         std::string pluginID = input->getPluginID();
-
-        if (pluginID == PLUGINID_OFX_READOIIO ||
-                pluginID == PLUGINID_OFX_READFFMPEG ||
-                pluginID == PLUGINID_OFX_READPFM) {
+#ifndef NATRON_ENABLE_IO_META_NODES
+        if (ReadNode::isBundledReader(pluginID)) {
+#else
+        if (pluginID == PLUGINID_NATRON_READ) {
+#endif
             return input.get();
         }
         else {
@@ -300,9 +302,11 @@ void DopeSheet::addNode(NodeGuiPtr nodeGui)
 
     std::string pluginID = node->getPluginID();
 
-    if (pluginID == PLUGINID_OFX_READOIIO
-            || pluginID == PLUGINID_OFX_READFFMPEG
-            || pluginID == PLUGINID_OFX_READPFM) {
+#ifndef NATRON_ENABLE_IO_META_NODES
+    if (ReadNode::isBundledReader(pluginID)) {
+#else
+    if (pluginID == PLUGINID_NATRON_READ) {
+#endif
         nodeType = eDopeSheetItemTypeReader;
     }
     else if (dynamic_cast<NodeGroup *>(effectInstance.get())) {
@@ -461,7 +465,7 @@ boost::shared_ptr<DSNode> DopeSheet::findDSNode(const KnobPtr &knob) const
     return boost::shared_ptr<DSNode>();
 }
 
-boost::shared_ptr<DSKnob> DopeSheet::findDSKnob(KnobGui *knobGui) const
+boost::shared_ptr<DSKnob> DopeSheet::findDSKnob(const KnobGui* knobGui) const
 {
     for (DSTreeItemNodeMap::const_iterator it = _imp->treeItemNodeMap.begin(); it != _imp->treeItemNodeMap.end(); ++it) {
         boost::shared_ptr<DSNode>dsNode = (*it).second;
@@ -471,7 +475,7 @@ boost::shared_ptr<DSKnob> DopeSheet::findDSKnob(KnobGui *knobGui) const
         for (DSTreeItemKnobMap::const_iterator knobIt = knobRows.begin(); knobIt != knobRows.end(); ++knobIt) {
             boost::shared_ptr<DSKnob> dsKnob = (*knobIt).second;
 
-            if (dsKnob->getKnobGui() == knobGui) {
+            if (dsKnob->getKnobGui().get() == knobGui) {
                 return dsKnob;
             }
         }
@@ -939,7 +943,11 @@ void DopeSheet::onNodeNameChanged(const QString &name)
 
 void DopeSheet::onKeyframeSetOrRemoved()
 {
-    boost::shared_ptr<DSKnob> dsKnob = findDSKnob(qobject_cast<KnobGui *>(sender()));
+    KnobGui* k = qobject_cast<KnobGui *>(sender());
+    if (!k) {
+        return;
+    }
+    boost::shared_ptr<DSKnob> dsKnob = findDSKnob(k);
     if (dsKnob) {
         Q_EMIT keyframeSetOrRemoved(dsKnob.get());
     }
@@ -959,14 +967,14 @@ public:
     /* attributes */
     int dimension;
     QTreeWidgetItem *nameItem;
-    KnobGui *knobGui;
-    KnobPtr knob;
+    KnobGuiWPtr knobGui;
+    KnobWPtr knob;
 };
 
 DSKnobPrivate::DSKnobPrivate() :
     dimension(-2),
     nameItem(0),
-    knobGui(0),
+    knobGui(),
     knob()
 {}
 
@@ -996,7 +1004,7 @@ DSKnobPrivate::~DSKnobPrivate()
  */
 DSKnob::DSKnob(int dimension,
                QTreeWidgetItem *nameItem,
-               KnobGui *knobGui) :
+               const KnobGuiPtr& knobGui) :
     _imp(new DSKnobPrivate)
 {
     assert(knobGui);
@@ -1041,14 +1049,14 @@ QTreeWidgetItem *DSKnob::findDimTreeItem(int dimension) const
  *
  *
  */
-KnobGui *DSKnob::getKnobGui() const
+KnobGuiPtr DSKnob::getKnobGui() const
 {
-    return _imp->knobGui;
+    return _imp->knobGui.lock();
 }
 
 KnobPtr DSKnob::getInternalKnob() const
 {
-    return _imp->knob;
+    return _imp->knob.lock();
 }
 
 /**
@@ -1251,7 +1259,7 @@ bool
 DopeSheetSelectionModel::hasSingleKeyFrameTimeSelected(double* time) const
 {
     bool timeSet = false;
-    KnobGui * knob = 0;
+    KnobGuiPtr  knob;
     if (_imp->selectedKeyframes.empty()) {
         return false;
     }
@@ -1423,15 +1431,15 @@ DSNode::DSNode(DopeSheet *model,
     _imp->nodeGui = nodeGui;
 
     // Create dope sheet knobs
-    const KnobsAndGuis &knobs = nodeGui->getKnobs();
+    const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > &knobs = nodeGui->getKnobs();
 
-    for (KnobsAndGuis::const_iterator it = knobs.begin();
+    for (std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> >::const_iterator it = knobs.begin();
          it != knobs.end(); ++it) {
         KnobPtr knob = it->first.lock();
         if (!knob) {
             continue;
         }
-        KnobGui *knobGui = it->second;
+        const KnobGuiPtr &knobGui = it->second;
 
         if (!knob->canAnimate() || !knob->isAnimationEnabled()) {
             continue;
@@ -1466,13 +1474,13 @@ DSNode::DSNode(DopeSheet *model,
             }
         }
 
-        QObject::connect(knobGui, SIGNAL(keyFrameSet()),
+        QObject::connect(knobGui.get(), SIGNAL(keyFrameSet()),
                          _imp->dopeSheetModel, SLOT(onKeyframeSetOrRemoved()));
 
-        QObject::connect(knobGui, SIGNAL(keyFrameRemoved()),
+        QObject::connect(knobGui.get(), SIGNAL(keyFrameRemoved()),
                          _imp->dopeSheetModel, SLOT(onKeyframeSetOrRemoved()));
         
-        QObject::connect(knobGui, SIGNAL(refreshDopeSheet()),
+        QObject::connect(knobGui.get(), SIGNAL(refreshDopeSheet()),
                          _imp->dopeSheetModel, SLOT(onKeyframeSetOrRemoved()));
     }
 

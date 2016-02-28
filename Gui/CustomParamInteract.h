@@ -53,7 +53,7 @@ class CustomParamInteract
     : public QGLWidget, public OverlaySupport
 {
 public:
-    CustomParamInteract(KnobGui* knob,
+    CustomParamInteract(const KnobGuiPtr& knob,
                         void* ofxParamHandle,
                         const boost::shared_ptr<OfxParamOverlayInteract> & entryPoint,
                         QWidget* parent = 0);

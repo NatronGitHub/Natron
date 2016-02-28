@@ -889,7 +889,7 @@ SpinBox::setUseLineColor(bool use, const QColor& color)
 
 KnobSpinBox::KnobSpinBox(QWidget* parent,
             SpinBoxTypeEnum type,
-            KnobGui* knob,
+            const KnobGuiPtr& knob,
             int dimension)
 : SpinBox(parent,type)
 , knob(knob)
@@ -999,7 +999,11 @@ KnobSpinBox::focusInEvent(QFocusEvent* e)
     
     
     //Set the expression so the user can edit it easily
-    std::string expr = knob->getKnob()->getExpression(dimension);
+    KnobGuiPtr k = knob.lock();
+    if (!k) {
+        return;
+    }
+    std::string expr = k->getKnob()->getExpression(dimension);
     if (expr.empty()) {
         return;
     } else {

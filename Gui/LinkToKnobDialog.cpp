@@ -97,7 +97,7 @@ NATRON_NAMESPACE_ENTER;
 
 struct LinkToKnobDialogPrivate
 {
-    KnobGui* fromKnob;
+    KnobGuiPtr fromKnob;
     QVBoxLayout* mainLayout;
     QHBoxLayout* firstLineLayout;
     QWidget* firstLine;
@@ -108,7 +108,7 @@ struct LinkToKnobDialogPrivate
     NodesList allNodes;
     std::map<QString,boost::shared_ptr<KnobI > > allKnobs;
 
-    LinkToKnobDialogPrivate(KnobGui* from)
+    LinkToKnobDialogPrivate(const KnobGuiPtr& from)
         : fromKnob(from)
         , mainLayout(0)
         , firstLineLayout(0)
@@ -123,7 +123,7 @@ struct LinkToKnobDialogPrivate
     }
 };
 
-LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,
+LinkToKnobDialog::LinkToKnobDialog(const KnobGuiPtr& from,
                                    QWidget* parent)
     : QDialog(parent)
       , _imp( new LinkToKnobDialogPrivate(from) )

@@ -41,12 +41,28 @@ NATRON_NAMESPACE_ENTER;
 
 
 /////////////// KnobGui
-KnobGui::KnobGui(const KnobPtr& knob,
+KnobGui::KnobGui(const KnobPtr& /*knob*/,
                  DockablePanel* container)
-: _imp( new KnobGuiPrivate(container) )
+: QObject()
+, KnobGuiI()
+, boost::enable_shared_from_this<KnobGui>()
+, _imp( new KnobGuiPrivate(container) )
 {
-    knob->setKnobGuiPointer(this);
-    KnobHelper* helper = dynamic_cast<KnobHelper*>( knob.get() );
+}
+
+KnobGui::~KnobGui()
+{
+
+}
+
+void
+KnobGui::initialize()
+{
+    KnobPtr knob = getKnob();
+    KnobGuiPtr thisShared = shared_from_this();
+    assert(thisShared);
+    knob->setKnobGuiPointer(thisShared);
+    KnobHelper* helper = dynamic_cast<KnobHelper*>(knob.get()) ;
     assert(helper);
     if (helper) {
         KnobSignalSlotHandler* handler = helper->getSignalSlotHandler().get();
@@ -79,10 +95,6 @@ KnobGui::KnobGui(const KnobPtr& knob,
             _imp->guiCurves[i].reset(new Curve(*(knob->getCurve(ViewIdx(0),i))));
         }
     }
-}
-
-KnobGui::~KnobGui()
-{
 
 }
 
@@ -95,29 +107,39 @@ KnobGui::getContainer()
 void
 KnobGui::removeGui()
 {
+    assert(!_imp->guiRemoved);
     for (std::vector< boost::weak_ptr< KnobI > >::iterator it = _imp->knobsOnSameLine.begin(); it != _imp->knobsOnSameLine.end(); ++it) {
-        KnobGui* kg = _imp->container->getKnobGui(it->lock());
-        assert(kg);
-        kg->_imp->removeFromKnobsOnSameLineVector(getKnob());
+        KnobGuiPtr kg = _imp->container->getKnobGui(it->lock());
+        if (kg) {
+            kg->_imp->removeFromKnobsOnSameLineVector(getKnob());
+        }
     }
     
     if (_imp->knobsOnSameLine.empty()) {
         if (_imp->isOnNewLine) {
-            delete _imp->labelContainer;
+            if (_imp->labelContainer) {
+                _imp->labelContainer->deleteLater();
+                _imp->labelContainer = 0;
+            }
         }
-        delete _imp->field;
+        if (_imp->field) {
+            _imp->field->deleteLater();
+            _imp->field = 0;
+        }
     } else {
-        delete _imp->descriptionLabel;
+        if (_imp->descriptionLabel) {
+            _imp->descriptionLabel->deleteLater();
+            _imp->descriptionLabel = 0;
+        }
         removeSpecificGui();
     }
     _imp->guiRemoved = true;
 }
 
 void
-KnobGui::callDeleteLater()
+KnobGui::setGuiRemoved()
 {
     _imp->guiRemoved = true;
-    deleteLater();
 }
 
 Gui*
@@ -139,6 +161,7 @@ KnobGui::pushUndoCommand(QUndoCommand* cmd)
         _imp->container->pushUndoCommand(cmd);
     } else {
         cmd->redo();
+        delete cmd;
     }
 }
 
@@ -151,6 +174,7 @@ KnobGui::createGUI(QGridLayout* containerLayout,
                    bool isOnNewLine,
                    const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine)
 {
+    _imp->guiRemoved = false;
     KnobPtr knob = getKnob();
 
     _imp->containerLayout = containerLayout;
@@ -177,7 +201,7 @@ KnobGui::createGUI(QGridLayout* containerLayout,
 
     boost::shared_ptr<OfxParamOverlayInteract> customInteract = knob->getCustomInteract();
     if (customInteract != 0) {
-        _imp->customInteract = new CustomParamInteract(this,knob->getOfxParamHandle(),customInteract);
+        _imp->customInteract = new CustomParamInteract(shared_from_this(),knob->getOfxParamHandle(),customInteract);
         layout->addWidget(_imp->customInteract);
     } else {
         createWidget(layout);
@@ -239,6 +263,18 @@ KnobGui::isLabelVisible() const
     KnobPtr knob = getKnob();
     KnobString* isStringKnob = dynamic_cast<KnobString*>(knob.get());
     return isStringKnob || (!knob->getLabel().empty() && knob->isLabelVisible());
+}
+
+bool
+KnobGui::isLabelOnSameColumn() const
+{
+    return false;
+}
+
+bool
+KnobGui::isLabelBold() const
+{
+    return false;
 }
 
 void

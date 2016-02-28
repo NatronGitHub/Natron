@@ -39,7 +39,7 @@ class AnimationButton
 
 public:
 
-    explicit AnimationButton(KnobGui* knob,
+    explicit AnimationButton(const KnobGuiPtr& knob,
                              QWidget* parent = 0)
         : Button(parent)
           , _dragging(false)
@@ -50,7 +50,7 @@ public:
         setFocusPolicy(Qt::NoFocus);
     }
 
-    explicit AnimationButton(KnobGui* knob,
+    explicit AnimationButton(const KnobGuiPtr& knob,
                              const QString & text,
                              QWidget * parent = 0)
         : Button(text,parent)
@@ -62,7 +62,7 @@ public:
         setFocusPolicy(Qt::NoFocus);
     }
 
-    AnimationButton(KnobGui* knob,
+    AnimationButton(const KnobGuiPtr& knob,
                     const QIcon & icon,
                     const QString & text,
                     QWidget * parent = 0)
@@ -94,7 +94,7 @@ private:
     virtual void keyReleaseEvent(QKeyEvent* e);
     QPoint _dragPos;
     bool _dragging;
-    KnobGui* _knob;
+    KnobGuiWPtr _knob;
 };
 
 NATRON_NAMESPACE_EXIT;

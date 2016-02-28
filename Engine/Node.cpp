@@ -73,6 +73,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Plugin.h"
 #include "Engine/PrecompNode.h"
 #include "Engine/Project.h"
+#include "Engine/ReadNode.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoStrokeItem.h"
@@ -82,6 +83,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/TLSHolder.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/WriteNode.h"
 
 ///The flickering of edges/nodes in the nodegraph will be refreshed
 ///at most every...
@@ -247,6 +249,9 @@ struct Node::Implementation
     , masterNodeMutex()
     , masterNode()
     , nodeLinks()
+#ifdef NATRON_ENABLE_IO_META_NODES
+    , ioContainer()
+#endif
     , frameIncrKnob()
     , nodeSettingsPage()
     , nodeLabelKnob()
@@ -446,6 +451,11 @@ struct Node::Implementation
     NodeWPtr masterNode; //< this points to the master when the node is a clone
     KnobLinkList nodeLinks; //< these point to the parents of the params links
     
+#ifdef NATRON_ENABLE_IO_META_NODES
+    //When creating a Reader or Writer node, this is a pointer to the "bundle" node that the user actually see.
+    NodeWPtr ioContainer;
+#endif
+    
     boost::weak_ptr<KnobInt> frameIncrKnob;
     
     boost::weak_ptr<KnobPage> nodeSettingsPage;
@@ -473,6 +483,7 @@ struct Node::Implementation
     boost::weak_ptr<KnobBool> enabledChan[4];
     boost::weak_ptr<KnobString> premultWarning;
     boost::weak_ptr<KnobDouble> mixWithSource;
+    boost::weak_ptr<KnobButton> renderButton; //< render button for writers
     
     FormatKnob pluginFormatKnobs;
     
@@ -665,6 +676,10 @@ Node::load(const CreateNodeArgs& args)
     assert(!_imp->effect);
     _imp->isPartOfProject = args.addToProject;
     
+#ifdef NATRON_ENABLE_IO_META_NODES
+    _imp->ioContainer = args.ioContainer;
+#endif
+    
     boost::shared_ptr<NodeCollection> group = getGroup();
 
     
@@ -686,7 +701,6 @@ Node::load(const CreateNodeArgs& args)
     if (binary) {
         func = binary->findFunction<EffectBuilder>("BuildEffect");
     }
-    bool isFileDialogPreviewReader = args.fixedName.contains(NATRON_FILE_DIALOG_PREVIEW_READER_NAME);
     
     bool nameSet = false;
     /*
@@ -724,8 +738,10 @@ Node::load(const CreateNodeArgs& args)
         }
     }
 
+#ifndef NATRON_ENABLE_IO_META_NODES
     bool hasUsedFileDialog = false;
-    bool canOpenFileDialog = args.reason == eCreateNodeReasonUserCreate && !args.serialization && args.paramValues.empty() && !isFileDialogPreviewReader;
+#endif
+    bool canOpenFileDialog = args.reason == eCreateNodeReasonUserCreate && !args.serialization && args.paramValues.empty() && getGroup();
 
     if (func.first) {
         /*
@@ -739,7 +755,13 @@ Node::load(const CreateNodeArgs& args)
         initializeInputs();
         initializeKnobs(renderScaleSupportPreference, args.serialization.get() != 0);
         
+        refreshAcceptedBitDepths();
+        if (!args.serialization) {
+            _imp->effect->setDefaultMetadata();
+        }
+        
         if (args.serialization) {
+            _imp->effect->onKnobsAboutToBeLoaded(args.serialization);
             loadKnobs(*args.serialization);
         }
         if (!args.paramValues.empty()) {
@@ -747,6 +769,7 @@ Node::load(const CreateNodeArgs& args)
         }
         
         
+#ifndef NATRON_ENABLE_IO_META_NODES
         std::string images;
         if (_imp->effect->isReader() && canOpenFileDialog) {
             images = getApp()->openImageFileDialog();
@@ -760,14 +783,16 @@ Node::load(const CreateNodeArgs& args)
             list.push_back(defaultFile);
             setValuesFromSerialization(list);
         }
-        refreshAcceptedBitDepths();
-        if (!args.serialization) {
-            _imp->effect->setDefaultMetadata();
-        }
+#endif
+        
     } else {
-            //ofx plugin   
+            //ofx plugin
+#ifndef NATRON_ENABLE_IO_META_NODES
         _imp->effect = appPTR->createOFXEffect(thisShared, args.serialization.get(),args.paramValues,canOpenFileDialog,renderScaleSupportPreference == 1, &hasUsedFileDialog);
-            assert(_imp->effect);
+#else
+        _imp->effect = appPTR->createOFXEffect(thisShared, args.serialization.get(),args.paramValues,renderScaleSupportPreference == 1);
+#endif
+        assert(_imp->effect);
     }
     _imp->effect->initializeOverlayInteract();
     
@@ -802,7 +827,11 @@ Node::load(const CreateNodeArgs& args)
                 pluginLabel = _imp->plugin->getPluginLabel();
             }
             try {
-                group->initNodeName(isMultiInstanceChild ? args.multiInstanceParentName + '_' : pluginLabel.toStdString(),&name);
+                if (group) {
+                    group->initNodeName(isMultiInstanceChild ? args.multiInstanceParentName + '_' : pluginLabel.toStdString(),&name);
+                } else {
+                    name = Python::makeNameScriptFriendly(pluginLabel.toStdString());
+                }
             } catch (...) {
                 
             }
@@ -858,11 +887,27 @@ Node::load(const CreateNodeArgs& args)
     _imp->nodeCreated = true;
     
     bool isLoadingPyPlug = getApp()->isCreatingPythonGroup();
+
+    _imp->effect->onEffectCreated(canOpenFileDialog);
+    
+#ifdef NATRON_ENABLE_IO_META_NODES
+    if (args.ioContainer) {
+        ReadNode* isReader = dynamic_cast<ReadNode*>(args.ioContainer->getEffectInstance().get());
+        if (isReader) {
+            isReader->setEmbeddedReader(thisShared);
+        } else {
+            WriteNode* isWriter = dynamic_cast<WriteNode*>(args.ioContainer->getEffectInstance().get());
+            assert(isWriter);
+            isWriter->setEmbeddedWriter(thisShared);
+        }
+    }
+#endif
     
     if (!getApp()->isCreatingNodeTree()) {
         refreshAllInputRelatedData(!args.serialization);
     }
-
+    
+    
     _imp->runOnNodeCreatedCB(!args.serialization && !isLoadingPyPlug);
     
     
@@ -880,12 +925,14 @@ Node::load(const CreateNodeArgs& args)
         }
     }
     
+#ifndef NATRON_ENABLE_IO_META_NODES
     if (hasUsedFileDialog) {
         KnobPtr fileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
         if (fileNameKnob) {
             fileNameKnob->evaluateValueChange(0, time, ViewIdx(0),eValueChangedReasonUserEdited);
         }
     }
+#endif
     
 } // load
 
@@ -3266,13 +3313,14 @@ Node::createMaskSelectors(const std::vector<std::pair<bool,bool> >& hasMaskChann
     } // for (int i = 0; i < inputsCount; ++i) {
 }
 
+#ifndef NATRON_ENABLE_IO_META_NODES
 void
 Node::createWriterFrameStepKnob(const boost::shared_ptr<KnobPage>& mainPage)
 {
     ///Find a  "lastFrame" parameter and add it after it
-    boost::shared_ptr<KnobInt> frameIncrKnob = AppManager::createKnob<KnobInt>(_imp->effect.get(), kWriteParamFrameStepLabel, 1 , false);
-    frameIncrKnob->setName(kWriteParamFrameStep);
-    frameIncrKnob->setHintToolTip(kWriteParamFrameStepHint);
+    boost::shared_ptr<KnobInt> frameIncrKnob = AppManager::createKnob<KnobInt>(_imp->effect.get(), kNatronWriteParamFrameStepLabel, 1 , false);
+    frameIncrKnob->setName(kNatronWriteParamFrameStep);
+    frameIncrKnob->setHintToolTip(kNatronWriteParamFrameStepHint);
     frameIncrKnob->setAnimationEnabled(false);
     frameIncrKnob->setMinimum(1);
     frameIncrKnob->setDefaultValue(1);
@@ -3292,6 +3340,7 @@ Node::createWriterFrameStepKnob(const boost::shared_ptr<KnobPage>& mainPage)
     }
     _imp->frameIncrKnob = frameIncrKnob;
 }
+#endif
 
 boost::shared_ptr<KnobPage>
 Node::getOrCreateMainPage()
@@ -3414,7 +3463,8 @@ Node::createChannelSelectors(const std::vector<std::pair<bool,bool> >& hasMaskCh
     bool skipSeparator = !mainPageChildren.empty() && dynamic_cast<KnobSeparator*>(mainPageChildren.back().get());
     
     if (!skipSeparator) {
-        boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>(_imp->effect.get(), "Advanced", 1, false);
+        boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>(_imp->effect.get(), "", 1, false);
+        sep->setName("advancedSep");
         mainPage->addKnob(sep);
     }
     
@@ -3432,6 +3482,12 @@ Node::createChannelSelectors(const std::vector<std::pair<bool,bool> >& hasMaskCh
 void
 Node::initializeDefaultKnobs(int renderScaleSupportPref,bool loadingSerialization)
 {
+    //Readers and Writers don't have default knobs since these knobs are on the ReadNode/WriteNode itself
+#ifdef NATRON_ENABLE_IO_META_NODES
+    if (_imp->ioContainer.lock()) {
+        return;
+    }
+#endif
     
     //Add the "Node" page
     boost::shared_ptr<KnobPage> settingsPage = AppManager::createKnob<KnobPage>(_imp->effect.get(), NATRON_PARAMETER_PAGE_NAME_EXTRA,1,false);
@@ -3531,7 +3587,16 @@ Node::initializeDefaultKnobs(int renderScaleSupportPref,bool loadingSerializatio
     
     if (_imp->effect->isWriter()) {
         //Create a frame step parameter for writers, and control it in OutputSchedulerThread.cpp
+#ifndef NATRON_ENABLE_IO_META_NODES
         createWriterFrameStepKnob(mainPage);
+#endif
+        
+        boost::shared_ptr<KnobButton> renderButton = AppManager::createKnob<KnobButton>(_imp->effect.get(), "Render", 1, false);
+        renderButton->setHintToolTip("Starts rendering the specified frame range.");
+        renderButton->setAsRenderButton();
+        renderButton->setName("startRender");
+        _imp->renderButton = renderButton;
+        mainPage->addKnob(renderButton);
         
         createPythonPage();
     }
@@ -3605,11 +3670,25 @@ Node::Implementation::createChannelSelector(int inputNb,const std::string & inpu
     } else {
         baseLayers.push_back("None");
     }
-    baseLayers.push_back(ImageComponents::getRGBAComponents().getComponentsGlobalName());
-    baseLayers.push_back(ImageComponents::getDisparityLeftComponents().getLayerName());
-    baseLayers.push_back(ImageComponents::getDisparityRightComponents().getLayerName());
-    baseLayers.push_back(ImageComponents::getForwardMotionComponents().getLayerName());
-    baseLayers.push_back(ImageComponents::getBackwardMotionComponents().getLayerName());
+    
+    std::map<std::string, int > defaultLayers;
+    {
+        int i = 0;
+        while (ImageComponents::defaultComponents[i][0] != 0) {
+            std::string layer = ImageComponents::defaultComponents[i][0];
+            if (layer != kNatronAlphaComponentsName && layer != kNatronRGBAComponentsName && layer != kNatronRGBComponentsName) {
+                //Do not add the color plane, because it is handled in a separate case to make sure it is always the first choice
+                defaultLayers[layer] = -1;
+            }
+            ++i;
+        }
+    }
+    baseLayers.push_back(kNatronRGBAPlaneUserName);
+    for (std::map<std::string, int>::iterator itl = defaultLayers.begin(); itl != defaultLayers.end(); ++itl) {
+        std::string choiceName = ImageComponents::mapNatronInternalPlaneNameToUserFriendlyPlaneName(itl->first);
+        baseLayers.push_back(choiceName);
+    }
+
     layer->populateChoices(baseLayers);
     int defVal;
     if (isOutput && effect->isPassThroughForNonRenderedPlanes() == EffectInstance::ePassThroughRenderAllRequestedPlanes) {
@@ -6040,6 +6119,13 @@ Node::setPersistentMessage(MessageTypeEnum type,
 {
     if ( !appPTR->isBackground() ) {
         //if the message is just an information, display a popup instead.
+#ifdef NATRON_ENABLE_IO_META_NODES
+        NodePtr ioContainer = getIOContainer();
+        if (ioContainer) {
+            ioContainer->setPersistentMessage(type, content);
+            return;
+        }
+#endif
         if (type == eMessageTypeInfo) {
             message(type,content);
             
@@ -6429,6 +6515,14 @@ Node::onMasterNodeDeactivated()
     _imp->effect->unslaveAllKnobs();
 }
 
+#ifdef NATRON_ENABLE_IO_META_NODES
+NodePtr
+Node::getIOContainer() const
+{
+    return _imp->ioContainer.lock();
+}
+#endif
+
 NodePtr
 Node::getMasterNode() const
 {
@@ -6804,7 +6898,16 @@ Node::computeFrameRangeForReader(const KnobI* fileKnob)
      hence may not exactly end-up with the same file sequence as what the user
      selected from the file dialog.
      */
-   
+    ReadNode* isReadNode = dynamic_cast<ReadNode*>(_imp->effect.get());
+    std::string pluginID;
+    if (isReadNode) {
+        NodePtr embeddedPlugin = isReadNode->getEmbeddedReader();
+        if (embeddedPlugin) {
+            pluginID = embeddedPlugin->getPluginID();
+        }
+    } else {
+        pluginID = getPluginID();
+    }
    
     int leftBound = INT_MIN;
     int rightBound = INT_MAX;
@@ -6820,7 +6923,7 @@ Node::computeFrameRangeForReader(const KnobI* fileKnob)
                 throw std::logic_error("Node::computeFrameRangeForReader");
             }
             
-            if (getPluginID() == PLUGINID_OFX_READFFMPEG) {
+            if (pluginID == PLUGINID_OFX_READFFMPEG) {
                 ///If the plug-in is a video, only ffmpeg may know how many frames there are
                 originalFrameRange->setValues(INT_MIN, INT_MAX, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
             } else {
@@ -7376,8 +7479,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
                 _imp->effect->getFrameRange_public(getHashValue(), &leftBound, &rightBound, true);
                 
                 if (leftBound != INT_MIN && rightBound != INT_MAX) {
-                    bool isFileDialogPreviewReader = getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) != std::string::npos;
-                    if (!isFileDialogPreviewReader) {
+                    if (getGroup()) {
                         getApp()->getProject()->unionFrameRangeWith(leftBound, rightBound);
                     }
                 }

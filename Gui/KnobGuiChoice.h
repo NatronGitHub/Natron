@@ -61,7 +61,7 @@ NATRON_NAMESPACE_ENTER;
 class KnobComboBox : public ComboBox
 {
 public:
-    KnobComboBox(KnobGui* knob,int dimension, QWidget* parent = 0);
+    KnobComboBox(const KnobGuiPtr& knob,int dimension, QWidget* parent = 0);
     
     virtual ~KnobComboBox();
     

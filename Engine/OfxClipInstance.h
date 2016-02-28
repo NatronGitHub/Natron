@@ -296,7 +296,9 @@ public:
 private:
 
 
-    
+    EffectInstPtr getEffectHolder() const;
+
+
     void getRegionOfDefinitionInternal(OfxTime time, ViewIdx view, unsigned int mipmapLevel,EffectInstance* associatedNode,
                                        OfxRectD* rod) const;
     

@@ -227,13 +227,13 @@ class DSKnob
 public:
     DSKnob(int dimension,
            QTreeWidgetItem *nameItem,
-           KnobGui *knobGui);
+           const KnobGuiPtr& knobGui);
     ~DSKnob();
     
     QTreeWidgetItem *getTreeItem() const;
     QTreeWidgetItem *findDimTreeItem(int dimension) const;
     
-    KnobGui *getKnobGui() const;
+    KnobGuiPtr getKnobGui() const;
     KnobPtr getInternalKnob() const;
     
     bool isMultiDimRoot() const;
@@ -352,7 +352,7 @@ public:
     boost::shared_ptr<DSNode> findDSNode(Node *node) const;
     boost::shared_ptr<DSNode> findDSNode(const KnobPtr &knob) const;
 
-    boost::shared_ptr<DSKnob> findDSKnob(KnobGui *knobGui) const;
+    boost::shared_ptr<DSKnob> findDSKnob(const KnobGui* knobGui) const;
 
     bool isPartOfGroup(DSNode *dsNode) const;
     boost::shared_ptr<DSNode> getGroupDSNode(DSNode *dsNode) const;

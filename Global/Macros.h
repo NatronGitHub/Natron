@@ -229,6 +229,10 @@ NATRON_VERSION_REVISION)
 //In this context, the reader of the bitmap should then wait for the pixel to be available.
 #define NATRON_ENABLE_TRIMAP 1
 
+//Use this to have all readers inside the same Read meta-node and all the writers
+//into the same Write meta-node
+//#define NATRON_ENABLE_IO_META_NODES 1
+
 //Uncomment to get access to ReadQt and WriteQt nodes. Note that they are no longer maintained and probably buggy.
 //#define NATRON_ENABLE_QT_IO_NODES
 

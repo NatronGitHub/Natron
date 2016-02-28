@@ -666,7 +666,7 @@ public Q_SLOTS:
 
     NodePtr createReader();
     NodePtr createWriter();
-
+    
     void renderAllWriters();
 
     void renderSelectedNode();

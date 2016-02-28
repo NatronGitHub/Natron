@@ -935,7 +935,15 @@ GuiApplicationManager::onPluginLoaded(Plugin* plugin)
     } else if (pluginID == PLUGINID_NATRON_DOT) {
         symbol = Qt::Key_Period;
         modifiers |= Qt::ShiftModifier;
-    } else {
+    }
+#ifdef NATRON_ENABLE_IO_META_NODES
+    else if (pluginID == PLUGINID_NATRON_READ) {
+        symbol = Qt::Key_R;
+    } else if (pluginID == PLUGINID_NATRON_WRITE) {
+        symbol = Qt::Key_W;
+    }
+#endif
+    else {
         hasShortcut = false;
     }
     plugin->setHasShortcut(hasShortcut);

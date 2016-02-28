@@ -71,11 +71,6 @@ CLANG_DIAG_ON(deprecated)
 #define kReadOIIOAvailableViewsKnobName "availableViews"
 #define kWriteOIIOParamViewsSelector "viewsSelector"
 
-#define kWriteParamFrameStep "frameIncr"
-#define kWriteParamFrameStepLabel "Frame Increment"
-#define kWriteParamFrameStepHint "The number of frames the timeline should step before rendering the new frame. " \
-"If 1, all frames will be rendered, if 2 only 1 frame out of 2, " \
-"etc. This number cannot be less than 1."
 
 
 
@@ -125,10 +120,8 @@ public:
     void loadKnobs(const NodeSerialization & serialization,bool updateKnobGui = false);
 
 
-private:
     void loadKnob(const KnobPtr & knob,const std::list< boost::shared_ptr<KnobSerialization> > & serialization,
                   bool updateKnobGui = false);
-public:
     
     ///Set values for Knobs given their serialization
     void setValuesFromSerialization(const std::list<boost::shared_ptr<KnobSerialization> >& paramValues);
@@ -819,6 +812,11 @@ public:
     void onKnobSlaved(KnobI* slave,KnobI* master,int dimension,bool isSlave);
 
     NodePtr getMasterNode() const;
+    
+#ifdef NATRON_ENABLE_IO_META_NODES
+    //When creating a Reader or Writer node, this is a pointer to the "bundle" node that the user actually see.
+    NodePtr getIOContainer() const;
+#endif
 
     /**
      * @brief Attemps to lock an image for render. If it successfully obtained the lock,
@@ -943,7 +941,9 @@ private:
     
     void createHostMixKnob(const boost::shared_ptr<KnobPage>& mainPage);
     
+#ifndef NATRON_ENABLE_IO_META_NODES
     void createWriterFrameStepKnob(const boost::shared_ptr<KnobPage>& mainPage);
+#endif
     
     void createMaskSelectors(const std::vector<std::pair<bool,bool> >& hasMaskChannelSelector,
                              const std::vector<std::string>& inputLabels,

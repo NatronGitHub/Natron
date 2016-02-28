@@ -150,6 +150,7 @@ SOURCES += \
     PyParameter.cpp \
     PyRoto.cpp \
     PySideCompat.cpp \
+    ReadNode.cpp \
     RectD.cpp \
     RectI.cpp \
     RenderStats.cpp \
@@ -170,6 +171,7 @@ SOURCES += \
     TLSHolder.cpp \
     Transform.cpp \
     ViewerInstance.cpp \
+    WriteNode.cpp \
     ../Global/ProcInfo.cpp \
     ../libs/SequenceParsing/SequenceParsing.cpp \
     NatronEngine/natronengine_module_wrapper.cpp \
@@ -319,6 +321,7 @@ HEADERS += \
     PyParameter.h \
     PyRoto.h \
     Pyside_Engine_Python.h \
+    ReadNode.h \
     RectD.h \
     RectDSerialization.h \
     RectI.h \
@@ -358,6 +361,7 @@ HEADERS += \
     ViewerInstance.h \
     ViewerInstancePrivate.h \
     ViewIdx.h \
+    WriteNode.h \
     ../Global/Enums.h \
     ../Global/GitVersion.h \
     ../Global/GLIncludes.h \

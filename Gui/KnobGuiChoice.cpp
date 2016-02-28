@@ -85,7 +85,7 @@ using std::make_pair;
 
 
 //=============================CHOICE_KNOB_GUI===================================
-KnobComboBox::KnobComboBox(KnobGui* knob,int dimension, QWidget* parent)
+KnobComboBox::KnobComboBox(const KnobGuiPtr& knob,int dimension, QWidget* parent)
 : ComboBox(parent)
 , _dnd(new KnobWidgetDnD(knob, dimension, this))
 {
@@ -217,13 +217,14 @@ KnobGuiChoice::~KnobGuiChoice()
 
 void KnobGuiChoice::removeSpecificGui()
 {
-    delete _comboBox;
+    _comboBox->deleteLater();
+    _comboBox = 0;
 }
 
 void
 KnobGuiChoice::createWidget(QHBoxLayout* layout)
 {
-    _comboBox = new KnobComboBox(this, 0, layout->parentWidget() );
+    _comboBox = new KnobComboBox(shared_from_this(), 0, layout->parentWidget() );
     _comboBox->setCascading(_knob.lock()->isCascading());
     onEntriesPopulated();
 
@@ -238,7 +239,7 @@ KnobGuiChoice::createWidget(QHBoxLayout* layout)
 void
 KnobGuiChoice::onCurrentIndexChanged(int i)
 {
-    pushUndoCommand( new KnobUndoCommand<int>(this,_knob.lock()->getValue(0),i, 0, false, 0) );
+    pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(),_knob.lock()->getValue(0),i, 0, false, 0) );
 }
 
 void

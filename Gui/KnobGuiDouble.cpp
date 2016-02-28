@@ -113,12 +113,15 @@ KnobGuiDouble::valueAccordingToType(bool normalize,
     
     KnobDouble::ValueIsNormalizedEnum state = _knob.lock()->getValueIsNormalized(dimension);
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
-    if (state != KnobDouble::eValueIsNormalizedNone) {
-        if (normalize) {
-            knob->normalize(dimension, time, value);
-        } else {
-            knob->denormalize(dimension, time, value);
+    SequenceTime time = 0;
+    if (knob && knob->getHolder() && knob->getHolder()->getApp()) {
+        time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
+        if (state != KnobDouble::eValueIsNormalizedNone) {
+            if (normalize) {
+                knob->normalize(dimension, time, value);
+            } else {
+                knob->denormalize(dimension, time, value);
+            }
         }
     }
 }
@@ -194,6 +197,8 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
     const std::vector<double > & mins = knob->getMinimums();
     const std::vector<double > & maxs = knob->getMaximums();
     const std::vector<int> &decimals = knob->getDecimals();
+    
+    KnobGuiPtr thisShared = shared_from_this();
     for (std::size_t i = 0; i < (std::size_t)dim; ++i) {
 
         QWidget *boxContainer = new QWidget( _container );
@@ -205,15 +210,15 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
         Label *subDesc = 0;
         if (dim != 1) {
             std::string dimLabel = getKnob()->getDimensionName(i);
-            if (!dimLabel.empty()) {
+            /*if (!dimLabel.empty()) {
                 dimLabel.append(":");
-            }
+            }*/
             subDesc = new Label(QString(dimLabel.c_str()), boxContainer);
             //subDesc->setFont( QFont(appFont,appFontSize) );
             boxContainerLayout->addWidget(subDesc);
         }
-        SpinBox *box = new KnobSpinBox(layout->parentWidget(), SpinBox::eSpinBoxTypeDouble, this , i);
-        NumericKnobValidator* validator = new NumericKnobValidator(box,this);
+        SpinBox *box = new KnobSpinBox(layout->parentWidget(), SpinBox::eSpinBoxTypeDouble, thisShared , i);
+        NumericKnobValidator* validator = new NumericKnobValidator(box,thisShared);
         box->setValidator(validator);
         QObject::connect( box, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()) );
         
@@ -307,7 +312,10 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
         
         bool showSlider = true;
         double firstDimensionValue;
-        SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
+        SequenceTime time = 0;
+        if (knob->getHolder() && knob->getHolder()->getApp()) {
+            time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
+        }
         for (int i = 0; i < dim ; ++i) {
             double v = knob->getValue(i);
             if (knob->getValueIsNormalized(i) != KnobDouble::eValueIsNormalizedNone) {
@@ -498,7 +506,10 @@ KnobGuiDouble::updateGUI(int dimension)
     assert(dimension == -1 || (dimension >= 0 && dimension < knobDim));
     double values[3];
     double refValue = 0.;
-    SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
+    SequenceTime time = 0;
+    if (knob->getHolder() && knob->getHolder()->getApp()) {
+        time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
+    }
     for (int i = 0; i < knobDim ; ++i) {
         double v = knob->getValue(i);
         if (knob->getValueIsNormalized(i) != KnobDouble::eValueIsNormalizedNone) {
@@ -634,11 +645,11 @@ KnobGuiDouble::sliderEditingEnd(double d)
             oldValues.push_back(knob->getValue(i));
             newValues.push_back(d);
         }
-        pushUndoCommand( new KnobUndoCommand<double>(this,oldValues,newValues,false) );
+        pushUndoCommand( new KnobUndoCommand<double>(shared_from_this(),oldValues,newValues,false) );
     } else {
         _spinBoxes[0].first->setValue(d);
         valueAccordingToType(true, 0, &d);
-        pushUndoCommand( new KnobUndoCommand<double>(this,knob->getValue(0),d,0,false) );
+        pushUndoCommand( new KnobUndoCommand<double>(shared_from_this(),knob->getValue(0),d,0,false) );
     }
 
 }
@@ -684,7 +695,7 @@ KnobGuiDouble::onSpinBoxValueChanged()
     if (_slider) {
         _slider->seekScalePosition(newValue);
     }
-    pushUndoCommand( new KnobUndoCommand<double>(this,oldValue, newValue, spinBoxDim ,false) );
+    pushUndoCommand( new KnobUndoCommand<double>(shared_from_this(),oldValue, newValue, spinBoxDim ,false) );
 }
 
 void

@@ -406,6 +406,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
 
     bool secretByDefault = descriptor.getSecret();
     bool enabledByDefault = descriptor.getEnabled();
+        
     if (descriptor.getType() == kOfxParamTypeInteger) {
         OfxIntegerInstance *ret = new OfxIntegerInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
@@ -511,6 +512,17 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     if (!instance) {
         throw std::runtime_error( std::string("Parameter ") + paramName + " has unknown OFX type " + descriptor.getType() );
     }
+    
+#ifdef NATRON_ENABLE_IO_META_NODES
+    /**
+     * For readers/writers embedded in a ReadNode or WriteNode, the holder will be the ReadNode and WriteNode
+     * but to ensure that all functions such as getKnobByName actually work, we add them to the knob vector so that
+     * interacting with the Reader or the container is actually the same.
+     **/
+    if (knob->getHolder() != getOfxEffectInstance().get()) {
+        getOfxEffectInstance()->addKnob(knob);
+    }
+#endif
     
     OfxParamToKnob* ptk = dynamic_cast<OfxParamToKnob*>(instance);
     assert(ptk);

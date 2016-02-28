@@ -671,8 +671,8 @@ std::vector<DopeSheetKey> DopeSheetViewPrivate::isNearByKeyframe(boost::shared_p
 
     for (DSTreeItemKnobMap::const_iterator it = dsKnobs.begin(); it != dsKnobs.end(); ++it) {
         boost::shared_ptr<DSKnob> dsKnob = (*it).second;
-        KnobGui *knobGui = dsKnob->getKnobGui();
-
+        KnobGuiPtr knobGui = dsKnob->getKnobGui();
+        assert(knobGui);
         int dim = dsKnob->getDimension();
 
         if (dim == -1) {
@@ -1830,11 +1830,17 @@ void DopeSheetViewPrivate::computeReaderRange(DSNode *reader)
     NodePtr node = reader->getInternalNode();
 
     Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameStartingTime).get());
-    assert(startingTimeKnob);
+    if (!startingTimeKnob) {
+        return;
+    }
     Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameFirstFrame).get());
-    assert(firstFrameKnob);
+    if (!firstFrameKnob) {
+        return;
+    }
     Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameLastFrame).get());
-    assert(lastFrameKnob);
+    if (!lastFrameKnob) {
+        return;
+    }
 
     int startingTimeValue = startingTimeKnob->getValue();
     int firstFrameValue = firstFrameKnob->getValue();
@@ -2037,12 +2043,12 @@ void DopeSheetViewPrivate::computeGroupRange(DSNode *group)
             times.insert(found->second.second);
         }
 
-        const KnobsAndGuis &knobs = nodeGui->getKnobs();
+        const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > &knobs = nodeGui->getKnobs();
 
-        for (KnobsAndGuis::const_iterator it = knobs.begin();
+        for (std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> >::const_iterator it = knobs.begin();
              it != knobs.end();
              ++it) {
-            KnobGui *knobGui = (*it).second;
+            const KnobGuiPtr& knobGui = (*it).second;
             KnobPtr knob = knobGui->getKnob();
 
             if (!knob->isAnimationEnabled() || !knob->hasAnimation()) {
@@ -2824,18 +2830,18 @@ void DopeSheetView::onNodeAdded(DSNode *dsNode)
 
     if (nodeType == eDopeSheetItemTypeCommon) {
         if (_imp->model->isPartOfGroup(dsNode)) {
-            const KnobsAndGuis &knobs = dsNode->getNodeGui()->getKnobs();
+            const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > &knobs = dsNode->getNodeGui()->getKnobs();
 
-            for (KnobsAndGuis::const_iterator knobIt = knobs.begin(); knobIt != knobs.end(); ++knobIt) {
+            for (std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> >::const_iterator knobIt = knobs.begin(); knobIt != knobs.end(); ++knobIt) {
                 KnobPtr knob = knobIt->first.lock();
-                KnobGui *knobGui = knobIt->second;
-                connect(knob->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(ViewIdx,int,double,double)),
+                const KnobGuiPtr& knobGui = knobIt->second;
+                connect(knob->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(ViewSpec,int,double,double)),
                         this, SLOT(onKeyframeChanged()));
 
-                connect(knobGui, SIGNAL(keyFrameSet()),
+                connect(knobGui.get(), SIGNAL(keyFrameSet()),
                         this, SLOT(onKeyframeChanged()));
 
-                connect(knobGui, SIGNAL(keyFrameRemoved()),
+                connect(knobGui.get(), SIGNAL(keyFrameRemoved()),
                         this, SLOT(onKeyframeChanged()));
             }
         }
@@ -2845,12 +2851,16 @@ void DopeSheetView::onNodeAdded(DSNode *dsNode)
     else if (nodeType == eDopeSheetItemTypeReader) {
         // The dopesheet view must refresh if the user set some values in the settings panel
         // so we connect some signals/slots
-        boost::shared_ptr<KnobSignalSlotHandler> lastFrameKnob =  node->getKnobByName(kReaderParamNameLastFrame)->getSignalSlotHandler();
+        KnobPtr lastFrameKnob = node->getKnobByName(kReaderParamNameLastFrame);
+        if (!lastFrameKnob) {
+            return;
+        }
+        boost::shared_ptr<KnobSignalSlotHandler> lastFrameKnobHandler =  lastFrameKnob->getSignalSlotHandler();
         assert(lastFrameKnob);
         boost::shared_ptr<KnobSignalSlotHandler> startingTimeKnob = node->getKnobByName(kReaderParamNameStartingTime)->getSignalSlotHandler();
         assert(startingTimeKnob);
 
-        connect(lastFrameKnob.get(), SIGNAL(valueChanged(ViewSpec,int,int)),
+        connect(lastFrameKnobHandler.get(), SIGNAL(valueChanged(ViewSpec,int,int)),
                 this, SLOT(onRangeNodeChanged(ViewSpec,int,int)));
 
         connect(startingTimeKnob.get(), SIGNAL(valueChanged(ViewSpec,int,int)),

@@ -2579,6 +2579,40 @@ Settings::populateSystemFonts(const QSettings& settings,const std::vector<std::s
 }
 
 void
+Settings::getReadersForFormat(const std::string& format, std::vector<std::string>* decoders)
+{
+    for (U32 i = 0; i < _readersMapping.size(); ++i) {
+        std::string name = _readersMapping[i]->getName();
+        std::size_t prefix = name.find("Reader_");
+        if (prefix != std::string::npos) {
+            name.erase(prefix,7);
+        }
+        if (name == format) {
+            const std::vector<std::string> entries = _readersMapping[i]->getEntries_mt_safe();
+            *decoders = entries;
+            break;
+        }
+    }
+}
+
+void
+Settings::getWritersForFormat(const std::string& format, std::vector<std::string>* encoders)
+{
+    for (U32 i = 0; i < _writersMapping.size(); ++i) {
+        std::string name = _writersMapping[i]->getName();
+        std::size_t prefix = name.find("Writer_");
+        if (prefix != std::string::npos) {
+            name.erase(prefix,7);
+        }
+        if (name == format) {
+            const std::vector<std::string> entries = _writersMapping[i]->getEntries_mt_safe();
+            *encoders = entries;
+            break;
+        }
+    }
+}
+
+void
 Settings::getFileFormatsForReadingAndReader(std::map<std::string,std::string>* formats)
 {
     for (U32 i = 0; i < _readersMapping.size(); ++i) {

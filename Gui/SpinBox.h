@@ -163,7 +163,7 @@ public:
     
     KnobSpinBox(QWidget* parent,
                 SpinBoxTypeEnum type,
-                KnobGui* knob,
+                const KnobGuiPtr& knob,
                 int dimension);
 
     virtual ~KnobSpinBox();
@@ -186,7 +186,7 @@ private:
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
 
 private:
-    KnobGui* knob;
+    KnobGuiWPtr knob;
     int dimension;
     boost::scoped_ptr<KnobWidgetDnD> _dnd;
 };

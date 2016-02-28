@@ -439,11 +439,15 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutDescActionTrackingStop "Stop Tracking"
 
 ///////////NODEGRAPH SHORTCUTS
+#ifndef NATRON_ENABLE_IO_META_NODES
+
 #define kShortcutIDActionGraphCreateReader "createReader"
 #define kShortcutDescActionGraphCreateReader "Create Reader"
 
 #define kShortcutIDActionGraphCreateWriter "createWriter"
 #define kShortcutDescActionGraphCreateWriter "Create Writer"
+
+#endif // #ifdef NATRON_ENABLE_IO_META_NODES
 
 #define kShortcutIDActionGraphRearrangeNodes "rearrange"
 #define kShortcutDescActionGraphRearrangeNodes "Rearrange Nodes"

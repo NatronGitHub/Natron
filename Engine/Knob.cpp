@@ -284,7 +284,7 @@ struct KnobHelperPrivate
     boost::shared_ptr<OfxParamOverlayInteract> customInteract;
     
     ///Pointer to the knobGui interface if it has any
-    KnobGuiI* gui;
+    boost::weak_ptr<KnobGuiI> gui;
     
     mutable QMutex mustCloneGuiCurvesMutex;
     /// Set to true if gui curves were modified by the user instead of the real internal curves.
@@ -362,7 +362,7 @@ struct KnobHelperPrivate
     , dynamicallyCreated(false)
     , userKnob(false)
     , customInteract()
-    , gui(0)
+    , gui()
     , mustCloneGuiCurvesMutex()
     , mustCloneGuiCurves()
     , mustCloneInternalCurves()
@@ -403,7 +403,7 @@ struct KnobHelperPrivate
         if (!holder) {
             return false;
         }
-        return !holder->isSetValueCurrentlyPossible() && gui;
+        return !holder->isSetValueCurrentlyPossible() && gui.lock();
     }
 };
 
@@ -421,6 +421,12 @@ KnobHelper::KnobHelper(KnobHolder* holder,
 KnobHelper::~KnobHelper()
 {
     
+}
+
+void
+KnobHelper::setHolder(KnobHolder* holder)
+{
+    _imp->holder = holder;
 }
 
 void
@@ -514,16 +520,16 @@ KnobHelper::deleteKnob()
 }
 
 void
-KnobHelper::setKnobGuiPointer(KnobGuiI* ptr)
+KnobHelper::setKnobGuiPointer(const boost::shared_ptr<KnobGuiI>& ptr)
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->gui = ptr;
 }
 
-KnobGuiI*
+boost::shared_ptr<KnobGuiI>
 KnobHelper::getKnobGuiPointer() const
 {
-    return _imp->gui;
+    return _imp->gui.lock();
 }
 
 bool
@@ -692,10 +698,12 @@ KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
     
     bool useGuiCurve = _imp->shouldUseGuiCurve();
     
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
     } else {
-        curve = _imp->gui->getCurve(view, dimension);
+        curve = hasGui->getCurve(view, dimension);
         setGuiCurveHasChanged(view, dimension,true);
     }
 
@@ -707,8 +715,8 @@ KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
         //qDebug() << e.what();
     }
     
-    if (!useGuiCurve && _imp->gui) {
-        boost::shared_ptr<Curve> guiCurve = _imp->gui->getCurve(view, dimension);
+    if (!useGuiCurve && hasGui) {
+        boost::shared_ptr<Curve> guiCurve = hasGui->getCurve(view, dimension);
         assert(guiCurve);
         guiCurve->removeKeyFrameWithTime(time);
     }
@@ -794,18 +802,20 @@ bool
 KnobHelper::moveValueAtTimeInternal(bool useGuiCurve, double time, ViewSpec view, int dimension,double dt,double dv,KeyFrame* newKey)
 {
     boost::shared_ptr<Curve> curve;
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
     } else {
-        curve = _imp->gui->getCurve(view, dimension);
+        assert(hasGui);
+        curve = hasGui->getCurve(view, dimension);
     }
     assert(curve);
     
     if (!curve->moveKeyFrameValueAndTime(time, dt, dv, newKey)) {
         return false;
     }
-    if (!useGuiCurve && _imp->gui) {
-        boost::shared_ptr<Curve> guiCurve = _imp->gui->getCurve(view, dimension);
+    if (!useGuiCurve && hasGui) {
+        boost::shared_ptr<Curve> guiCurve = hasGui->getCurve(view, dimension);
         assert(guiCurve);
         guiCurve->moveKeyFrameValueAndTime(time, dt, dv, 0);
         
@@ -907,10 +917,12 @@ bool
 KnobHelper::transformValueAtTimeInternal(bool useGuiCurve, double time, ViewSpec view, int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey)
 {
     boost::shared_ptr<Curve> curve;
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
     } else {
-        curve = _imp->gui->getCurve(view, dimension);
+        assert(hasGui);
+        curve = hasGui->getCurve(view, dimension);
     }
     assert(curve);
     
@@ -958,8 +970,8 @@ KnobHelper::transformValueAtTimeInternal(bool useGuiCurve, double time, ViewSpec
         return false;
     }
     
-    if (!useGuiCurve && _imp->gui) {
-        boost::shared_ptr<Curve> guiCurve = _imp->gui->getCurve(view, dimension);
+    if (!useGuiCurve && hasGui) {
+        boost::shared_ptr<Curve> guiCurve = hasGui->getCurve(view, dimension);
         try {
             guiCurve->setKeyFrameValueAndTime(p.x,p.y, keyindex, NULL);
         } catch (...) {
@@ -1016,11 +1028,13 @@ KnobHelper::cloneCurve(ViewSpec view,
 {
     assert(dimension >= 0 && dimension < (int)_imp->curves.size());
     boost::shared_ptr<Curve> thisCurve;
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
     bool useGuiCurve = _imp->shouldUseGuiCurve();
     if (!useGuiCurve) {
         thisCurve = _imp->curves[dimension];
     } else {
-        thisCurve = _imp->gui->getCurve(view, dimension);
+        assert(hasGui);
+        thisCurve = hasGui->getCurve(view, dimension);
         setGuiCurveHasChanged(view, dimension,true);
     }
     assert(thisCurve);
@@ -1066,11 +1080,12 @@ KnobHelper::setInterpolationAtTime(CurveChangeReason reason,
     boost::shared_ptr<Curve> curve;
     
     bool useGuiCurve = _imp->shouldUseGuiCurve();
-    
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
     } else {
-        curve = _imp->gui->getCurve(view, dimension);
+        assert(hasGui);
+        curve = hasGui->getCurve(view, dimension);
         setGuiCurveHasChanged(view, dimension,true);
     }
     assert(curve);
@@ -1082,8 +1097,8 @@ KnobHelper::setInterpolationAtTime(CurveChangeReason reason,
     
     *newKey = curve->setKeyFrameInterpolation(interpolation, keyIndex);
     
-    if (!useGuiCurve && _imp->gui) {
-        boost::shared_ptr<Curve> guiCurve = _imp->gui->getCurve(view, dimension);
+    if (!useGuiCurve && hasGui) {
+        boost::shared_ptr<Curve> guiCurve = hasGui->getCurve(view, dimension);
         assert(guiCurve);
         guiCurve->setKeyFrameInterpolation(interpolation, keyIndex);
     }
@@ -1119,13 +1134,14 @@ KnobHelper::moveDerivativesAtTime(CurveChangeReason reason,
     }
 
     boost::shared_ptr<Curve> curve;
-    
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
     bool useGuiCurve = _imp->shouldUseGuiCurve();
     
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
     } else {
-        curve = _imp->gui->getCurve(view, dimension);
+        assert(hasGui);
+        curve = hasGui->getCurve(view, dimension);
         setGuiCurveHasChanged(view, dimension,true);
     }
 
@@ -1139,8 +1155,8 @@ KnobHelper::moveDerivativesAtTime(CurveChangeReason reason,
     curve->setKeyFrameInterpolation(eKeyframeTypeFree, keyIndex);
     curve->setKeyFrameDerivatives(left, right, keyIndex);
     
-    if (!useGuiCurve && _imp->gui) {
-        boost::shared_ptr<Curve> guiCurve = _imp->gui->getCurve(view, dimension);
+    if (!useGuiCurve && hasGui) {
+        boost::shared_ptr<Curve> guiCurve = hasGui->getCurve(view, dimension);
         assert(guiCurve);
         guiCurve->setKeyFrameInterpolation(eKeyframeTypeFree, keyIndex);
         guiCurve->setKeyFrameDerivatives(left, right, keyIndex);
@@ -1179,11 +1195,12 @@ KnobHelper::moveDerivativeAtTime(CurveChangeReason reason,
     boost::shared_ptr<Curve> curve;
     
     bool useGuiCurve = _imp->shouldUseGuiCurve();
-    
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
     } else {
-        curve = _imp->gui->getCurve(view, dimension);
+        assert(hasGui);
+        curve = hasGui->getCurve(view, dimension);
         setGuiCurveHasChanged(view, dimension,true);
     }
     assert(curve);
@@ -1200,8 +1217,8 @@ KnobHelper::moveDerivativeAtTime(CurveChangeReason reason,
         curve->setKeyFrameRightDerivative(derivative, keyIndex);
     }
     
-    if (!useGuiCurve && _imp->gui) {
-        boost::shared_ptr<Curve> guiCurve = _imp->gui->getCurve(view, dimension);
+    if (!useGuiCurve && hasGui) {
+        boost::shared_ptr<Curve> guiCurve = hasGui->getCurve(view, dimension);
         assert(guiCurve);
         guiCurve->setKeyFrameInterpolation(eKeyframeTypeBroken, keyIndex);
         if (isLeft) {
@@ -1241,13 +1258,14 @@ KnobHelper::removeAnimation(ViewSpec view, int dimension,
     }
     
     boost::shared_ptr<Curve> curve;
-    
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
     bool useGuiCurve = _imp->shouldUseGuiCurve();
     
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
     } else {
-        curve = _imp->gui->getCurve(view, dimension);
+        assert(hasGui);
+        curve = hasGui->getCurve(view, dimension);
         setGuiCurveHasChanged(view, dimension,true);
     }
     
@@ -1331,9 +1349,14 @@ KnobHelper::cloneGuiCurvesIfNeeded(std::map<int,ValueChangedReasonEnum>& modifie
             hasChanged = true;
             boost::shared_ptr<Curve> curve = _imp->curves[i];
             assert(curve);
-            boost::shared_ptr<Curve> guicurve = _imp->gui->getCurve(ViewIdx(0),i);
-            assert(guicurve);
-            curve->clone(*guicurve);
+            boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+            boost::shared_ptr<Curve> guicurve;
+            if (hasGui) {
+                guicurve = hasGui->getCurve(ViewIdx(0),i);
+                assert(guicurve);
+                curve->clone(*guicurve);
+            }
+            
             _imp->mustCloneGuiCurves[i] = false;
             
             modifiedDimensions.insert(std::make_pair(i,eValueChangedReasonUserEdited));
@@ -1352,9 +1375,9 @@ KnobHelper::guiCurveCloneInternalCurve(CurveChangeReason curveChangeReason,
     if (!canAnimate()) {
         return;
     }
-
-    if (_imp->gui) {
-        boost::shared_ptr<Curve> guicurve = _imp->gui->getCurve(view, dimension);
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    if (hasGui) {
+        boost::shared_ptr<Curve> guicurve = hasGui->getCurve(view, dimension);
         assert(guicurve);
         guicurve->clone(*(_imp->curves[dimension]));
         if (_signalSlotHandler && reason != eValueChangedReasonUserEdited) {
@@ -1377,9 +1400,9 @@ KnobHelper::getGuiCurve(ViewSpec view,
         return master.second->getGuiCurve(view, master.first);
     }
 
-    
-    if (_imp->gui) {
-        return _imp->gui->getCurve(view, dimension);
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    if (hasGui) {
+        return hasGui->getCurve(view, dimension);
     } else {
         return boost::shared_ptr<Curve>();
     }
@@ -1493,8 +1516,8 @@ KnobHelper::evaluateValueChangeInternal(int dimension,
     if (_imp->holder) {
         app = _imp->holder->getApp();
     }
-    
-    bool guiFrozen = app && _imp->gui && _imp->gui->isGuiFrozenForPlayback();
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    bool guiFrozen = app && hasGui && hasGui->isGuiFrozenForPlayback();
     
     /// For eValueChangedReasonTimeChanged we never call the instanceChangedAction and evaluate otherwise it would just throttle
     /// the application responsiveness
@@ -1502,10 +1525,10 @@ KnobHelper::evaluateValueChangeInternal(int dimension,
         if (!app || !app->getProject()->isLoadingProject()) {
             
             if (_imp->holder->isEvaluationBlocked()) {
-                _imp->holder->appendValueChange(this, time, view, originalReason);
+                _imp->holder->appendValueChange(shared_from_this(), time, view, originalReason);
             } else {
                 _imp->holder->beginChanges();
-                _imp->holder->appendValueChange(this, time, view, originalReason);
+                _imp->holder->appendValueChange(shared_from_this(), time, view, originalReason);
                 _imp->holder->endChanges();
             }
             
@@ -2710,8 +2733,9 @@ KnobHelper::swapOpenGLBuffers()
 void
 KnobHelper::redraw()
 {
-    if (_imp->gui) {
-        _imp->gui->redraw();
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    if (hasGui) {
+        hasGui->redraw();
     }
 }
 
@@ -2719,8 +2743,9 @@ void
 KnobHelper::getViewportSize(double &width,
                             double &height) const
 {
-    if (_imp->gui) {
-        _imp->gui->getViewportSize(width, height);
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    if (hasGui) {
+        hasGui->getViewportSize(width, height);
     } else {
         width = 0;
         height = 0;
@@ -2731,8 +2756,9 @@ void
 KnobHelper::getPixelScale(double & xScale,
                           double & yScale) const
 {
-    if (_imp->gui) {
-        _imp->gui->getPixelScale(xScale, yScale);
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    if (hasGui) {
+        hasGui->getPixelScale(xScale, yScale);
     } else {
         xScale = 0;
         yScale = 0;
@@ -2744,8 +2770,9 @@ KnobHelper::getBackgroundColour(double &r,
                                 double &g,
                                 double &b) const
 {
-    if (_imp->gui) {
-        _imp->gui->getBackgroundColour(r, g, b);
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    if (hasGui) {
+        hasGui->getBackgroundColour(r, g, b);
     } else {
         r = 0;
         g = 0;
@@ -2756,16 +2783,18 @@ KnobHelper::getBackgroundColour(double &r,
 void
 KnobHelper::saveOpenGLContext()
 {
-    if (_imp->gui) {
-        _imp->gui->saveOpenGLContext();
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    if (hasGui) {
+        hasGui->saveOpenGLContext();
     }
 }
 
 void
 KnobHelper::restoreOpenGLContext()
 {
-    if (_imp->gui) {
-        _imp->gui->restoreOpenGLContext();
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    if (hasGui) {
+        hasGui->restoreOpenGLContext();
     }
 }
 
@@ -2795,8 +2824,9 @@ KnobHelper::isMastersPersistenceIgnored() const
 void
 KnobHelper::copyAnimationToClipboard() const
 {
-    if (_imp->gui) {
-        _imp->gui->copyAnimationToClipboard(-1);
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    if (hasGui) {
+        hasGui->copyAnimationToClipboard(-1);
     }
 }
 
@@ -2949,7 +2979,8 @@ KnobHelper::setAnimationLevel(ViewSpec view,
             _imp->animationLevel[dimension] = level;
         }
     }
-    if ( changed && _signalSlotHandler && _imp->gui && !_imp->gui->isGuiFrozenForPlayback() ) {
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    if ( changed && _signalSlotHandler && hasGui && !hasGui->isGuiFrozenForPlayback() ) {
         if (getExpression(dimension).empty()) {
             _signalSlotHandler->s_animationLevelChanged(view, dimension,(int)level );
         }
@@ -2987,13 +3018,14 @@ KnobHelper::deleteAnimationConditional(double time,
     assert( 0 <= dimension && dimension < getDimension() );
     
     boost::shared_ptr<Curve> curve;
-    
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
     bool useGuiCurve = _imp->shouldUseGuiCurve();
     
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
     } else {
-        curve = _imp->gui->getCurve(view, dimension);
+        assert(hasGui);
+        curve = hasGui->getCurve(view, dimension);
         setGuiCurveHasChanged(view, dimension,true);
     }
     
@@ -3644,7 +3676,7 @@ KnobHelper::createDuplicateOnNode(EffectInstance* effect,
         setKnobAsAliasOfThis(output, true);
     }
     if (refreshParams) {
-        effect->refreshKnobs();
+        effect->recreateUserKnobs(true);
     }
     return output;
 }
@@ -3657,13 +3689,24 @@ KnobI::areTypesCompatibleForSlave(KnobI* lhs, KnobI* rhs)
     }
     
     //These are compatible types
+    KnobInt* lhsIsInt = dynamic_cast<KnobInt*>(lhs);
+    KnobInt* rhsIsInt = dynamic_cast<KnobInt*>(rhs);
     KnobDouble* lhsIsDouble = dynamic_cast<KnobDouble*>(lhs);
     KnobColor* lhsIsColor = dynamic_cast<KnobColor*>(lhs);
     KnobDouble* rhsIsDouble = dynamic_cast<KnobDouble*>(rhs);
     KnobColor* rhsIsColor = dynamic_cast<KnobColor*>(rhs);
-    if ((lhsIsDouble || lhsIsColor) && (rhsIsColor || rhsIsDouble)) {
+    if ((lhsIsDouble || lhsIsColor || lhsIsInt) && (rhsIsColor || rhsIsDouble || rhsIsInt)) {
         return true;
     }
+    
+  /*  KnobChoice* lhsIsChoice = dynamic_cast<KnobChoice*>(lhs);
+    KnobChoice* rhsIsChoice = dynamic_cast<KnobChoice*>(rhs);
+    if (lhsIsChoice || rhsIsChoice) {
+        return false;
+    }
+    */
+
+    
     return false;
 }
 
@@ -3850,7 +3893,7 @@ KnobHolder::~KnobHolder()
     for (U32 i = 0; i < _imp->knobs.size(); ++i) {
         KnobHelper* helper = dynamic_cast<KnobHelper*>( _imp->knobs[i].get() );
         assert(helper);
-        if (helper) {
+        if (helper && helper->_imp->holder == this) {
             helper->_imp->holder = 0;
         }
     }
@@ -3923,11 +3966,11 @@ KnobHolder::discardPanelPointer()
 }
 
 void
-KnobHolder::refreshKnobs(bool keepCurPageIndex)
+KnobHolder::recreateUserKnobs(bool keepCurPageIndex)
 {
     assert(QThread::currentThread() == qApp->thread());
     if (_imp->settingsPanel) {
-        _imp->settingsPanel->scanForNewKnobs(keepCurPageIndex);
+        _imp->settingsPanel->recreateUserKnobs(keepCurPageIndex);
         EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
         if (isEffect) {
             isEffect->getNode()->declarePythonFields();
@@ -3935,7 +3978,18 @@ KnobHolder::refreshKnobs(bool keepCurPageIndex)
     }
 }
 
-
+void
+KnobHolder::recreateKnobs(bool keepCurPageIndex)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    if (_imp->settingsPanel) {
+        _imp->settingsPanel->refreshGuiForKnobsChanges(keepCurPageIndex);
+        EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
+        if (isEffect) {
+            isEffect->getNode()->declarePythonFields();
+        }
+    }
+}
 
 void
 KnobHolder::removeDynamicKnob(KnobI* knob)
@@ -4490,11 +4544,11 @@ KnobHolder::endChanges(bool discardEverything)
             }
         }
         ValueChangedReasonEnum reason = first->reason;
-        KnobI* knob = first->knob;
+        const KnobPtr& knob = first->knob;
         if (!isMT) {
-            Q_EMIT doEvaluateOnMainThread(knob, significant, refreshMetadata, reason);
+            Q_EMIT doEvaluateOnMainThread(knob.get(), significant, refreshMetadata, reason);
         } else {
-            evaluate_public(knob, significant, refreshMetadata, reason);
+            evaluate_public(knob.get(), significant, refreshMetadata, reason);
         }
     }
 }
@@ -4511,7 +4565,7 @@ KnobHolder::onDoValueChangeOnMainThread(KnobI* knob,
 }
 
 void
-KnobHolder::appendValueChange(KnobI* knob,
+KnobHolder::appendValueChange(const KnobPtr& knob,
                               double time,
                               ViewSpec view,
                               ValueChangedReasonEnum reason)
@@ -4529,9 +4583,9 @@ KnobHolder::appendValueChange(KnobI* knob,
         
         if (knob && !knob->isValueChangesBlocked()) {
             if (!k.originatedFromMainThread && !canHandleEvaluateOnChangeInOtherThread()) {
-                Q_EMIT doValueChangeOnMainThread(knob, reason, time, view, k.originatedFromMainThread);
+                Q_EMIT doValueChangeOnMainThread(knob.get(), reason, time, view, k.originatedFromMainThread);
             } else {
-                onKnobValueChanged_public(knob, reason, time, view, k.originatedFromMainThread);
+                onKnobValueChanged_public(knob.get(), reason, time, view, k.originatedFromMainThread);
             }
         }
         

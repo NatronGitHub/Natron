@@ -601,7 +601,7 @@ CurveGui::getKeyFrames() const
 
 KnobCurveGui::KnobCurveGui(CurveWidget *curveWidget,
                            boost::shared_ptr<Curve>  curve,
-                           KnobGui* knob,
+                           const KnobGuiPtr& knob,
                            int dimension,
                            const QString & name,
                            const QColor & color,
@@ -618,11 +618,11 @@ KnobCurveGui::KnobCurveGui(CurveWidget *curveWidget,
     }
     
     if (knob) {
-        QObject::connect( knob,SIGNAL( keyFrameSet() ),this,SLOT( onKnobInternalCurveChanged() ) );
-        QObject::connect( knob,SIGNAL( keyFrameRemoved() ),this,SLOT( onKnobInternalCurveChanged() ) );
-        QObject::connect( knob, SIGNAL( keyInterpolationChanged() ),this, SLOT( onKnobInterpolationChanged() ) );
-        QObject::connect( knob, SIGNAL( keyInterpolationChanged() ),this, SLOT( onKnobInterpolationChanged() ) );
-        QObject::connect( knob, SIGNAL( refreshCurveEditor() ),this, SLOT( onKnobInternalCurveChanged() ) );
+        QObject::connect( knob.get(),SIGNAL( keyFrameSet() ),this,SLOT( onKnobInternalCurveChanged() ) );
+        QObject::connect( knob.get(),SIGNAL( keyFrameRemoved() ),this,SLOT( onKnobInternalCurveChanged() ) );
+        QObject::connect( knob.get(), SIGNAL( keyInterpolationChanged() ),this, SLOT( onKnobInterpolationChanged() ) );
+        QObject::connect( knob.get(), SIGNAL( keyInterpolationChanged() ),this, SLOT( onKnobInterpolationChanged() ) );
+        QObject::connect( knob.get(), SIGNAL( refreshCurveEditor() ),this, SLOT( onKnobInternalCurveChanged() ) );
     }
 }
 
@@ -637,7 +637,7 @@ KnobCurveGui::KnobCurveGui(CurveWidget *curveWidget,
     : CurveGui(curveWidget,curve,name,color,thickness)
     , _roto(roto)
     , _internalKnob(knob)
-    , _knob(0)
+    , _knob()
     , _dimension(dimension)
 {
     // even when there is only one keyframe, there may be tangents!
@@ -696,7 +696,8 @@ KnobCurveGui::getInternalCurve() const
 KnobPtr
 KnobCurveGui::getInternalKnob() const
 {
-    return _knob ? _knob->getKnob() : _internalKnob;
+    KnobGuiPtr knob = getKnobGui();
+    return knob ? knob->getKnob() : _internalKnob;
 }
 
 int

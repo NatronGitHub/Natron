@@ -103,6 +103,10 @@ public:
     }
 
     void setSunken(bool s);
+    
+    void setBold(bool b);
+    
+    virtual bool canAlter() const OVERRIDE FINAL;
 
 Q_SIGNALS:
     void clicked(bool);
@@ -117,6 +121,7 @@ private:
 
 private:
     bool _toggled;
+    bool _bold;
     bool dirty;
     bool readOnly;
     int animation;
@@ -129,9 +134,9 @@ class KnobClickableLabel : public ClickableLabel
   
 public:
     
-    KnobClickableLabel(const QPixmap& icon, KnobGui* knob, QWidget* parent = 0);
+    KnobClickableLabel(const QPixmap& icon, const KnobGuiPtr& knob, QWidget* parent = 0);
     
-    KnobClickableLabel(const QString& text, KnobGui* knob, QWidget* parent = 0);
+    KnobClickableLabel(const QString& text, const KnobGuiPtr& knob, QWidget* parent = 0);
     
     virtual ~KnobClickableLabel();
     

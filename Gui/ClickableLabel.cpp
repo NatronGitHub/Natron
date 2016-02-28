@@ -40,11 +40,12 @@ NATRON_NAMESPACE_ENTER;
 ClickableLabel::ClickableLabel(const QString &text,
                                QWidget *parent)
     : Label(text, parent),
-      _toggled(false),
-      dirty(false),
-      readOnly(false),
-      animation(0),
-      sunkenStyle(false)
+    _toggled(false),
+    _bold(false),
+    dirty(false),
+    readOnly(false),
+    animation(0),
+    sunkenStyle(false)
 {
 }
 
@@ -92,12 +93,27 @@ void
 ClickableLabel::setText_overload(const QString & str)
 {
     QString paintTxt = str;
-
     if ( !isEnabled() ) {
         paintTxt.prepend("<font color=\"#000000\">");
         paintTxt.append("</font>");
     }
+    if (_bold) {
+        paintTxt.prepend("<b>");
+        paintTxt.append("</b>");
+    }
     setText(paintTxt);
+}
+
+void
+ClickableLabel::setBold(bool b)
+{
+    _bold = b;
+}
+
+bool
+ClickableLabel::canAlter() const
+{
+    return !_bold;
 }
 
 void
@@ -136,14 +152,14 @@ ClickableLabel::setSunken(bool s)
     }
 }
 
-KnobClickableLabel::KnobClickableLabel(const QPixmap& icon, KnobGui* knob, QWidget* parent )
+KnobClickableLabel::KnobClickableLabel(const QPixmap& icon, const KnobGuiPtr& knob, QWidget* parent )
 : ClickableLabel(icon, parent)
 , _dnd(new KnobWidgetDnD(knob,-1, this))
 {
     knob->enableRightClickMenu(this, -1);
 }
 
-KnobClickableLabel::KnobClickableLabel(const QString& text, KnobGui* knob, QWidget* parent)
+KnobClickableLabel::KnobClickableLabel(const QString& text, const KnobGuiPtr& knob, QWidget* parent)
 : ClickableLabel(text, parent)
 , _dnd(new KnobWidgetDnD(knob, -1, this))
 {

@@ -70,9 +70,12 @@ public:
                                               ContextEnum context,
                                               const NodeSerialization* serialization,
                                                const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                                              bool allowFileDialogs,
-                                              bool disableRenderScaleSupport,
-                                              bool *hasUsedFileDialog) = 0;
+                                              bool disableRenderScaleSupport
+#ifndef NATRON_ENABLE_IO_META_NODES
+                                              ,bool allowFileDialogs,
+                                              bool *hasUsedFileDialog
+#endif
+                                              ) = 0;
     static QStringList makePluginGrouping(const std::string & pluginIdentifier,
                                           int versionMajor, int versionMinor,
                                           const std::string & pluginLabel,
@@ -101,9 +104,12 @@ public:
                                       ContextEnum context,
                                       const NodeSerialization* serialization,
                                       const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                                      bool allowFileDialogs,
-                                      bool disableRenderScaleSupport,
-                                      bool *hasUsedFileDialog) OVERRIDE FINAL;
+                                      bool disableRenderScaleSupport
+#ifndef NATRON_ENABLE_IO_META_NODES
+                                      ,bool allowFileDialogs,
+                                      bool *hasUsedFileDialog
+#endif
+                                      ) OVERRIDE FINAL;
 
     OfxImageEffectInstance* effectInstance() WARN_UNUSED_RETURN;
     
@@ -133,6 +139,7 @@ public:
     virtual bool isGenerator() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isReader() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isWriter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isVideoWriter() const OVERRIDE FINAL WARN_UNUSED_RETURN ;
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isGeneratorAndFilter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isTrackerNode() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -141,7 +148,6 @@ public:
         return true;
     }
     virtual bool isEffectCreated() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool makePreviewByDefault() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -224,7 +230,6 @@ public:
     virtual bool supportsMultipleClipsBitDepth() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onInputChanged(int inputNo) OVERRIDE FINAL;
-    virtual std::vector<std::string> supportedFileFormats() const OVERRIDE FINAL;
     virtual StatusEnum beginSequenceRender(double first,
                                                    double last,
                                                    double step,
@@ -303,7 +308,6 @@ private:
 
     void tryInitializeOverlayInteracts();
 
-    void initializeContextDependentParams();
 
 
     

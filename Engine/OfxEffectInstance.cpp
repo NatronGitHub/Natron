@@ -70,6 +70,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/OfxParamInstance.h"
 #include "Engine/Project.h"
+#include "Engine/ReadNode.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
@@ -79,7 +80,6 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/TLSHolder.h"
 #endif
 
-#define READER_INPUT_NAME "Sync"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -197,7 +197,6 @@ struct OfxEffectInstancePrivate
     std::string natronPluginID; //< small cache to avoid calls to generateImageEffectClassName
     boost::scoped_ptr<OfxOverlayInteract> overlayInteract; // ptr to the overlay interact if any
     std::list< void* > overlaySlaves; //void* to actually a KnobI* but stored as void to avoid dereferencing
-    boost::weak_ptr<KnobButton> renderButton; //< render button for writers
     mutable QReadWriteLock preferencesLock;
     
     mutable QReadWriteLock renderSafetyLock;
@@ -238,7 +237,6 @@ struct OfxEffectInstancePrivate
     , natronPluginID()
     , overlayInteract()
     , overlaySlaves()
-    , renderButton()
     , preferencesLock(QReadWriteLock::Recursive)
     , renderSafetyLock()
     , renderSafety(eRenderSafetyUnsafe)
@@ -299,9 +297,12 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                                                 ContextEnum context,
                                                 const NodeSerialization* serialization,
                                                  const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                                                bool allowFileDialogs,
-                                                bool disableRenderScaleSupport,
-                                                bool *hasUsedFileDialog)
+                                                bool disableRenderScaleSupport
+#ifndef NATRON_ENABLE_IO_META_NODES
+                                                ,bool allowFileDialogs,
+                                                bool *hasUsedFileDialog
+#endif
+                                                )
 {
     /*Replicate of the code in OFX::Host::ImageEffect::ImageEffectPlugin::createInstance.
        We need to pass more parameters to the constructor . That means we cannot
@@ -316,9 +317,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
     assert( QThread::currentThread() == qApp->thread() );
     assert(plugin && desc && context != eContextNone);
     
-    
-    *hasUsedFileDialog = false;
-    
+        
     _imp->context = context;
 
     
@@ -399,8 +398,6 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             _imp->outputClip = dynamic_cast<OfxClipInstance*>(_imp->effect->getClip(kOfxImageEffectOutputClipName));
             assert(_imp->outputClip);
             
-            initializeContextDependentParams();
-            
             _imp->effect->addParamsToTheirParents();
             
             if (stat != kOfxStatOK) {
@@ -425,6 +422,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                 getNode()->setValuesFromSerialization(paramValues);
             }
             
+#ifndef NATRON_ENABLE_IO_META_NODES
             //////////////////////////////////////////////////////
             ///////For READERS & WRITERS only we open an image file dialog
             if (!getApp()->isCreatingPythonGroup() && allowFileDialogs && isReader() && !(serialization && !serialization->isNull()) && paramValues.empty()) {
@@ -440,6 +438,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                 getNode()->setValuesFromSerialization(list);
             }
             //////////////////////////////////////////////////////
+#endif
             
             ///Set default metadata since the OpenFX plug-in may fetch images in its constructor
             setDefaultMetadata();
@@ -523,18 +522,7 @@ OfxEffectInstance::isEffectCreated() const
     return _imp->created;
 }
 
-void
-OfxEffectInstance::initializeContextDependentParams()
-{
-    assert(_imp->context != eContextNone);
-    if ( isWriter() ) {
-        
-        boost::shared_ptr<KnobButton> b = AppManager::createKnob<KnobButton>(this, "Render", 1, false);
-        b->setHintToolTip("Starts rendering the specified frame range.");
-        b->setAsRenderButton();
-        _imp->renderButton = b;
-    }
-}
+
 
 std::string
 OfxEffectInstance::getPluginDescription() const
@@ -679,6 +667,12 @@ OfxEffectInstance::isReader() const
 {
     assert(_imp->context != eContextNone);
     return _imp->context == eContextReader;
+}
+
+bool
+OfxEffectInstance::isVideoWriter() const
+{
+    return isWriter() && getPluginID() == PLUGINID_OFX_WRITEFFMPEG;
 }
 
 bool
@@ -943,7 +937,7 @@ OfxEffectInstance::getInputLabel(int inputNb) const
     if (_imp->context != eContextReader) {
         return _imp->clipsInfos[inputNb].clip->getShortLabel();
     } else {
-        return READER_INPUT_NAME;
+        return NATRON_READER_INPUT_NAME;
     }
 }
 
@@ -1174,19 +1168,7 @@ OfxEffectInstance::getPreferredMetaDatas(NodeMetadata& metadata)
 
 }
 
-std::vector<std::string>
-OfxEffectInstance::supportedFileFormats() const
-{
-    assert(_imp->context != eContextNone);
-    int formatsCount = _imp->effect->getDescriptor().getProps().getDimension(kTuttleOfxImageEffectPropSupportedExtensions);
-    std::vector<std::string> formats(formatsCount);
-    for (int k = 0; k < formatsCount; ++k) {
-        formats[k] = _imp->effect->getDescriptor().getProps().getStringProperty(kTuttleOfxImageEffectPropSupportedExtensions,k);
-        std::transform(formats[k].begin(), formats[k].end(), formats[k].begin(), ::tolower);
-    }
 
-    return formats;
-}
 
 StatusEnum
 OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
@@ -1940,11 +1922,6 @@ OfxEffectInstance::renderThreadSafety() const
     }
 }
 
-bool
-OfxEffectInstance::makePreviewByDefault() const
-{
-    return isReader();
-}
 
 const std::string &
 OfxEffectInstance::getShortLabel() const

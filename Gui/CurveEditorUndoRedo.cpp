@@ -77,7 +77,10 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand, bool add)
         
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->first.get());
         BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(it->first.get());
-        KnobGui* guiKnob = isKnobCurve ? isKnobCurve->getKnobGui() : 0;
+        KnobGuiPtr guiKnob;
+        if (isKnobCurve) {
+            guiKnob = isKnobCurve->getKnobGui();
+        }
         KnobPtr knob;
         
         if (isKnobCurve) {
@@ -251,7 +254,10 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
         
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->first.get());
         BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(it->first.get());
-        KnobGui* guiKnob = isKnobCurve ? isKnobCurve->getKnobGui() : 0;
+        KnobGuiPtr guiKnob;
+        if (isKnobCurve) {
+            guiKnob = isKnobCurve->getKnobGui();
+        }
         
         KnobPtr knob;
         

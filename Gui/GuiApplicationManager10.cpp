@@ -393,7 +393,8 @@ GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
     
     ///If no viewer is found, create it
     if (!viewerFound) {
-        viewerFound = mainInstance->createNode(CreateNodeArgs(PLUGINID_NATRON_VIEWER, eCreateNodeReasonInternal, mainInstance->getProject()));
+        CreateNodeArgs args(PLUGINID_NATRON_VIEWER, eCreateNodeReasonInternal, mainInstance->getProject());
+        viewerFound = mainInstance->createNode(args);
     }
     if (viewerFound) {
         viewerFound->connectInput(readerNode, 0);
@@ -927,9 +928,11 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingStop, kShortcutDescActionTrackingStop, Qt::NoModifier, Qt::Key_Escape);
 
     ///Nodegraph
+#ifndef NATRON_ENABLE_IO_META_NODES
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateReader, kShortcutDescActionGraphCreateReader, Qt::NoModifier, Qt::Key_R);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateWriter, kShortcutDescActionGraphCreateWriter, Qt::NoModifier, Qt::Key_W);
-
+#endif
+    
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRearrangeNodes, kShortcutDescActionGraphRearrangeNodes, Qt::NoModifier, Qt::Key_L);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDisableNodes, kShortcutDescActionGraphDisableNodes, Qt::NoModifier, Qt::Key_D);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRemoveNodes, kShortcutDescActionGraphRemoveNodes, Qt::NoModifier, Qt::Key_Backspace);

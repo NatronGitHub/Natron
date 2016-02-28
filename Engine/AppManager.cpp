@@ -82,11 +82,13 @@
 #include "Engine/ProcessHandler.h" // ProcessInputChannel
 #include "Engine/Project.h"
 #include "Engine/PrecompNode.h"
+#include "Engine/ReadNode.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoSmear.h"
 #include "Engine/StandardPaths.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h" // RenderStatsMap
+#include "Engine/WriteNode.h"
 
 #if QT_VERSION < 0x050000
 Q_DECLARE_METATYPE(QAbstractSocket::SocketState)
@@ -1099,6 +1101,10 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
     registerBuiltInPlugin<RotoSmear>("", false, true);
     registerBuiltInPlugin<PrecompNode>(NATRON_IMAGES_PATH "precompNodeIcon.png", false, false);
     registerBuiltInPlugin<JoinViewsNode>(NATRON_IMAGES_PATH "joinViewsNode.png", false, false);
+#ifdef NATRON_ENABLE_IO_META_NODES
+    registerBuiltInPlugin<ReadNode>(NATRON_IMAGES_PATH "readImage.png", false, false);
+    registerBuiltInPlugin<WriteNode>(NATRON_IMAGES_PATH "writeImage.png", false, false);
+#endif
     if (!isBackground()) {
         registerBuiltInPlugin<ViewerInstance>(NATRON_IMAGES_PATH "viewer_icon.png", false, false);
     }
@@ -1460,6 +1466,13 @@ AppManager::registerPlugin(const QStringList & groups,
     Plugin* plugin = new Plugin(binary,pluginID,pluginLabel,pluginIconPath,groupIconPath,groups,pluginMutex,major,minor,
                                                 isReader,isWriter, isDeprecated);
     std::string stdID = pluginID.toStdString();
+    
+#ifdef NATRON_ENABLE_IO_META_NODES
+    if (ReadNode::isBundledReader(stdID) || WriteNode::isBundledWriter(stdID)) {
+        plugin->setForInternalUseOnly(true);
+    }
+#endif
+    
     PluginsMap::iterator found = _imp->_plugins.find(stdID);
     if (found != _imp->_plugins.end()) {
         found->second.insert(plugin);
@@ -1676,11 +1689,19 @@ EffectInstPtr
 AppManager::createOFXEffect(NodePtr node,
                             const NodeSerialization* serialization,
                             const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                            bool allowFileDialogs,
-                            bool disableRenderScaleSupport,
-                            bool *hasUsedFileDialog) const
+                            bool disableRenderScaleSupport
+#ifndef NATRON_ENABLE_IO_META_NODES
+                            ,bool allowFileDialogs,
+                            bool *hasUsedFileDialog
+#endif
+                            ) const
 {
-    return _imp->ofxHost->createOfxEffect(node,serialization,paramValues,allowFileDialogs,disableRenderScaleSupport,hasUsedFileDialog);
+    return _imp->ofxHost->createOfxEffect(node,serialization,paramValues,disableRenderScaleSupport
+#ifndef NATRON_ENABLE_IO_META_NODES
+                                          ,allowFileDialogs,
+                                          hasUsedFileDialog
+#endif
+                                          );
 }
 
 void

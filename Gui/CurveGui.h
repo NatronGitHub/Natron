@@ -177,7 +177,7 @@ public:
     
     KnobCurveGui(CurveWidget *curveWidget,
              boost::shared_ptr<Curve>  curve,
-             KnobGui* knob,
+             const KnobGuiPtr& knob,
              int dimension,
              const QString & name,
              const QColor & color,
@@ -197,9 +197,9 @@ public:
     
     virtual boost::shared_ptr<Curve>  getInternalCurve() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    KnobGui* getKnobGui() const
+    KnobGuiPtr getKnobGui() const
     {
-        return _knob;
+        return _knob.lock();
     }
     
     virtual double evaluate(bool useExpr,double x) const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -225,7 +225,7 @@ private:
     
     boost::shared_ptr<RotoContext> _roto;
     KnobPtr _internalKnob;
-    KnobGui* _knob; //< ptr to the knob holding this curve
+    KnobGuiWPtr _knob; //< ptr to the knob holding this curve
     int _dimension; //< which dimension is this curve representing
 };
 

@@ -231,6 +231,7 @@ typedef boost::weak_ptr<Node> NodeWPtr;
 typedef std::list<NodeWPtr> NodesWList;
 
 typedef boost::shared_ptr<KnobI> KnobPtr;
+typedef boost::weak_ptr<KnobI> KnobWPtr;
 typedef std::vector<KnobPtr> KnobsVec;
 
 

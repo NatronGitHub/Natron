@@ -220,7 +220,8 @@ Project::loadProject(const QString & path,
     } catch (const std::exception & e) {
         Dialogs::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading project").toStdString() + ": " + e.what() );
         if ( !getApp()->isBackground() ) {
-            getApp()->createNode(CreateNodeArgs(PLUGINID_NATRON_VIEWER, eCreateNodeReasonInternal, shared_from_this()));
+            CreateNodeArgs args(PLUGINID_NATRON_VIEWER, eCreateNodeReasonInternal, shared_from_this());
+            getApp()->createNode(args);
         }
 
         return false;
@@ -228,7 +229,8 @@ Project::loadProject(const QString & path,
 
         Dialogs::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Unkown error while loading project").toStdString() );
         if ( !getApp()->isBackground() ) {
-            getApp()->createNode(CreateNodeArgs(PLUGINID_NATRON_VIEWER, eCreateNodeReasonInternal, shared_from_this()));
+            CreateNodeArgs args(PLUGINID_NATRON_VIEWER, eCreateNodeReasonInternal, shared_from_this());
+            getApp()->createNode(args);
         }
 
         return false;
@@ -2145,7 +2147,8 @@ Project::createViewer()
         return;
     }
     
-    getApp()->createNode(CreateNodeArgs(PLUGINID_NATRON_VIEWER, eCreateNodeReasonInternal, shared_from_this()));
+    CreateNodeArgs args(PLUGINID_NATRON_VIEWER, eCreateNodeReasonInternal, shared_from_this());
+    getApp()->createNode(args);
 
 }
     

@@ -85,7 +85,7 @@ using std::make_pair;
 
 //==========================KnobBool_GUI======================================
 
-Bool_CheckBox::Bool_CheckBox(KnobGui* knob, int dimension, QWidget* parent)
+Bool_CheckBox::Bool_CheckBox(const KnobGuiPtr& knob, int dimension, QWidget* parent)
 : AnimatedCheckBox(parent)
 , useCustomColor(false)
 , customColor()
@@ -210,7 +210,7 @@ KnobGuiBool::KnobGuiBool(KnobPtr knob,
 void
 KnobGuiBool::createWidget(QHBoxLayout* layout)
 {
-    _checkBox = new Bool_CheckBox(this, 0,layout->parentWidget() );
+    _checkBox = new Bool_CheckBox(shared_from_this(), 0,layout->parentWidget() );
     onLabelChangedInternal();
     //_checkBox->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect( _checkBox, SIGNAL(clicked(bool)), this, SLOT(onCheckBoxStateChanged(bool)) );
@@ -297,13 +297,13 @@ KnobGuiBool::onLabelClicked(bool b)
         return;
     }
     _checkBox->setChecked(b);
-    pushUndoCommand( new KnobUndoCommand<bool>(this,_knob.lock()->getValue(0),b, 0, false) );
+    pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(),_knob.lock()->getValue(0),b, 0, false) );
 }
 
 void
 KnobGuiBool::onCheckBoxStateChanged(bool b)
 {
-    pushUndoCommand( new KnobUndoCommand<bool>(this,_knob.lock()->getValue(0),b, 0, false) );
+    pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(),_knob.lock()->getValue(0),b, 0, false) );
 }
 
 void

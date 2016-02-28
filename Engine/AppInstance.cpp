@@ -58,9 +58,11 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
 #include "Engine/ProcessHandler.h"
+#include "Engine/ReadNode.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/WriteNode.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -462,36 +464,7 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderW
     }
 }
 
-NodePtr
-AppInstance::createWriter(const std::string& filename,
-                          CreateNodeReason reason,
-                          const boost::shared_ptr<NodeCollection>& collection,
-                          int firstFrame, int lastFrame)
-{
-    std::map<std::string,std::string> writersForFormat;
-    appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
-    
-    QString fileCpy(filename.c_str());
-    std::string ext = QtCompat::removeFileExtension(fileCpy).toLower().toStdString();
-    std::map<std::string,std::string>::iterator found = writersForFormat.find(ext);
-    if ( found == writersForFormat.end() ) {
-        Dialogs::errorDialog( tr("Writer").toStdString(),
-                            tr("No plugin capable of encoding ").toStdString() + ext + tr(" was found.").toStdString(),false );
-        return NodePtr();
-    }
-    
-    
-    CreateNodeArgs args(found->second.c_str(), reason, collection);
-    args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filename));
-    if (firstFrame != INT_MIN && lastFrame != INT_MAX) {
-        args.paramValues.push_back(createDefaultValueForParam<int>("frameRange", 2));
-        args.paramValues.push_back(createDefaultValueForParam<int>("firstFrame", firstFrame));
-        args.paramValues.push_back(createDefaultValueForParam<int>("lastFrame", lastFrame));
-    }
-  
-    return createNode(args);
-    
-}
+
 
 void
 AppInstancePrivate::executeCommandLinePythonCommands(const CLArgs& args)
@@ -886,7 +859,54 @@ AppInstance::setGroupLabelIDAndVersion(const NodePtr& node,
     
 }
 
+#ifdef NATRON_ENABLE_IO_META_NODES
+NodePtr
+AppInstance::createReader(const std::string& filename, CreateNodeReason reason, const boost::shared_ptr<NodeCollection>& group)
+{
+    CreateNodeArgs args(PLUGINID_NATRON_READ,
+                        reason,
+                        group);
+    args.paramValues.push_back(createDefaultValueForParam(kOfxImageEffectFileParamName, filename));
+    return createNode(args);
+}
 
+#endif
+
+NodePtr
+AppInstance::createWriter(const std::string& filename,
+                          CreateNodeReason reason,
+                          const boost::shared_ptr<NodeCollection>& collection,
+                          int firstFrame, int lastFrame)
+{
+    
+#ifdef NATRON_ENABLE_IO_META_NODES
+    CreateNodeArgs args(PLUGINID_NATRON_WRITE, reason, collection);
+#else
+    std::map<std::string,std::string> writersForFormat;
+    appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
+    
+    QString fileCpy(filename.c_str());
+    std::string ext = QtCompat::removeFileExtension(fileCpy).toLower().toStdString();
+    std::map<std::string,std::string>::iterator found = writersForFormat.find(ext);
+    if ( found == writersForFormat.end() ) {
+        Dialogs::errorDialog( tr("Writer").toStdString(),
+                             tr("No plugin capable of encoding ").toStdString() + ext + tr(" was found.").toStdString(),false );
+        return NodePtr();
+    }
+    
+    
+    CreateNodeArgs args(found->second.c_str(), reason, collection);
+#endif
+    args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filename));
+    if (firstFrame != INT_MIN && lastFrame != INT_MAX) {
+        args.paramValues.push_back(createDefaultValueForParam<int>("frameRange", 2));
+        args.paramValues.push_back(createDefaultValueForParam<int>("firstFrame", firstFrame));
+        args.paramValues.push_back(createDefaultValueForParam<int>("lastFrame", lastFrame));
+    }
+    
+    return createNode(args);
+    
+}
 
 /**
  * @brief An inspector node is like a viewer node with hidden inputs that unfolds one after another.
@@ -926,7 +946,7 @@ static bool isEntitledForInspector(Plugin* plugin,OFX::Host::ImageEffect::Descri
 }
 
 NodePtr
-AppInstance::createNodeInternal(const CreateNodeArgs& args)
+AppInstance::createNodeInternal(CreateNodeArgs& args)
 {
     
     NodePtr node;
@@ -940,6 +960,17 @@ AppInstance::createNodeInternal(const CreateNodeArgs& args)
     } else {
         findId = args.pluginID;
     }
+    
+#ifdef NATRON_ENABLE_IO_META_NODES
+    //If it is a reader or writer, create a ReadNode or WriteNode
+    if (!args.ioContainer && ReadNode::isBundledReader(args.pluginID.toStdString())) {
+        args.paramValues.push_back(createDefaultValueForParam(kNatronReadNodeParamDecodingPluginID, args.pluginID.toStdString()));
+        findId = PLUGINID_NATRON_READ;
+    } else if (!args.ioContainer && WriteNode::isBundledWriter(args.pluginID.toStdString())) {
+        args.paramValues.push_back(createDefaultValueForParam(kNatronWriteNodeParamEncodingPluginID, args.pluginID.toStdString()));
+        findId = PLUGINID_NATRON_WRITE;
+    }
+#endif
     
     try {
         plugin = appPTR->getPluginBinary(findId,args.majorV,args.minorV,_imp->_projectCreatedWithLowerCaseIDs && args.reason == eCreateNodeReasonProjectLoad);
@@ -1164,7 +1195,7 @@ AppInstance::createNodeInternal(const CreateNodeArgs& args)
 } // createNodeInternal
 
 NodePtr
-AppInstance::createNode(const CreateNodeArgs & args)
+AppInstance::createNode(CreateNodeArgs & args)
 {
     return createNodeInternal(args);
 }
@@ -1369,7 +1400,7 @@ AppInstance::startWritersRendering(bool doBlockingRender, const std::list<Render
             QObject::connect(item.work.writer->getRenderEngine(), SIGNAL(renderFinished(int)), this, SLOT(onQueuedRenderFinished(int)), Qt::UniqueConnection);
         }
         
-        bool canPause = item.work.writer->getPluginID() != PLUGINID_OFX_WRITEFFMPEG;
+        bool canPause = !item.work.writer->isVideoWriter();
         
         if (!it->isRestart) {
             notifyRenderStarted(item.sequenceName,item.work.firstFrame,item.work.lastFrame, item.work.frameStep, canPause, item.work.writer, item.process);

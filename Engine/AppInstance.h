@@ -86,6 +86,9 @@ struct CreateNodeArgs
     //data from
     boost::shared_ptr<NodeSerialization> serialization;
     
+    //When creating a Reader or Writer node, this is a pointer to the "bundle" node that the user actually see.
+    NodePtr ioContainer;
+    
     explicit CreateNodeArgs(const QString& pluginID, CreateNodeReason reason, const boost::shared_ptr<NodeCollection>& group)
     : pluginID(pluginID)
     , majorV(-1)
@@ -100,6 +103,7 @@ struct CreateNodeArgs
     , createGui(true)
     , addToProject(true)
     , serialization()
+    , ioContainer()
     {
 
     }
@@ -180,7 +184,18 @@ public:
 
     /** @brief Create a new node  in the node graph.
      **/
-    NodePtr createNode(const CreateNodeArgs & args);
+    NodePtr createNode(CreateNodeArgs & args);
+    
+#ifdef NATRON_ENABLE_IO_META_NODES
+    NodePtr createReader(const std::string& filename, CreateNodeReason reason, const boost::shared_ptr<NodeCollection>& group);
+    
+#endif
+    
+    
+    NodePtr createWriter(const std::string& filename,
+                         CreateNodeReason reason,
+                         const boost::shared_ptr<NodeCollection>& collection,
+                         int firstFrame = INT_MIN, int lastFrame = INT_MAX);
   
     NodePtr getNodeByFullySpecifiedName(const std::string & name) const;
     
@@ -355,10 +370,6 @@ public:
     
     bool loadPythonScript(const QFileInfo& file);
     
-    NodePtr createWriter(const std::string& filename,
-                                         CreateNodeReason reason,
-                                         const boost::shared_ptr<NodeCollection>& collection,
-                                         int firstFrame = INT_MIN, int lastFrame = INT_MAX);
     virtual void queueRedrawForAllViewers() {}
     
     virtual void renderAllViewers(bool /* canAbort*/) {}
@@ -472,7 +483,7 @@ private:
     void getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderWork>& requests);
 
 
-    NodePtr createNodeInternal(const CreateNodeArgs& args);
+    NodePtr createNodeInternal(CreateNodeArgs& args);
     
     void setGroupLabelIDAndVersion(const NodePtr& node,
                                    const QString& pythonModulePath,

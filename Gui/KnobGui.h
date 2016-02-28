@@ -33,6 +33,7 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #endif
 
 CLANG_DIAG_OFF(deprecated)
@@ -63,7 +64,7 @@ NATRON_NAMESPACE_ENTER;
 struct KnobGuiPrivate;
 
 class KnobGui
-    : public QObject,public KnobGuiI
+: public QObject,public KnobGuiI, public boost::enable_shared_from_this<KnobGui>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -77,11 +78,13 @@ public:
 
     virtual ~KnobGui() OVERRIDE;
     
+    void initialize();
+    
     DockablePanel* getContainer();
     
     void removeGui();
     
-    void callDeleteLater();
+    void setGuiRemoved();
     
 protected:
     /**
@@ -143,6 +146,10 @@ public:
     void enableRightClickMenu(QWidget* widget,int dimension);
 
     virtual bool isLabelVisible() const;
+    
+    virtual bool isLabelOnSameColumn() const;
+    
+    virtual bool isLabelBold() const;
 
     QWidget* getFieldContainer() const;
 

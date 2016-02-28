@@ -74,6 +74,11 @@
 #define PLUGINID_OFX_WRITEFFMPEG  "fr.inria.openfx.WriteFFmpeg"
 #define PLUGINID_OFX_READPFM      "fr.inria.openfx.ReadPFM"
 #define PLUGINID_OFX_WRITEPFM     "fr.inria.openfx.WritePFM"
+#define PLUGINID_OFX_READMISC     "fr.inria.openfx.ReadMisc"
+#define PLUGINID_OFX_READPSD      "net.fxarena.openfx.ReadPSD"
+#define PLUGINID_OFX_READKRITA    "fr.inria.openfx.ReadKrita"
+#define PLUGINID_OFX_READSVG      "net.fxarena.openfx.ReadSVG"
+#define PLUGINID_OFX_READORA      "fr.inria.openfx.OpenRaster"
 
 #define PLUGINID_NATRON_VIEWER    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Viewer")
 #define PLUGINID_NATRON_DISKCACHE (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.DiskCache")
@@ -89,6 +94,8 @@
 #define PLUGINID_NATRON_ROTOSMEAR (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.RotoSmear")
 #define PLUGINID_NATRON_PRECOMP     (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Precomp")
 #define PLUGINID_NATRON_JOINVIEWS     (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.JoinViews")
+#define PLUGINID_NATRON_READ    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Read")
+#define PLUGINID_NATRON_WRITE    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Write")
 
 #define kNatronTLSEffectPointerProperty "NatronTLSEffectPointerProperty"
 
@@ -302,6 +309,13 @@ public:
      **/
     virtual bool isWriter() const WARN_UNUSED_RETURN
     {
+        return false;
+    }
+
+    /**
+     * @brief Basically returns true for WRITE_FFMPEG
+     **/
+    virtual bool isVideoWriter() const WARN_UNUSED_RETURN {
         return false;
     }
 
@@ -1041,7 +1055,7 @@ public:
      **/
     virtual bool makePreviewByDefault() const WARN_UNUSED_RETURN
     {
-        return false;
+        return isReader();
     }
 
     /**
@@ -1206,10 +1220,6 @@ public:
     {
     }
 
-    virtual std::vector<std::string> supportedFileFormats() const
-    {
-        return std::vector<std::string>();
-    }
 
     /**
      * @brief Called everytimes an input connection is changed
@@ -1521,8 +1531,14 @@ public:
         return false;
     }
 
+    virtual void onKnobsAboutToBeLoaded(const boost::shared_ptr<NodeSerialization>& /*serialization*/) {}
+
     virtual void onKnobsLoaded() {}
 
+    /**
+     * @brief Called after all knobs have been loaded and the nod ehas been created
+     **/
+    virtual void onEffectCreated(bool /*mayCreateFileDialog*/) {}
 
 private:
 
@@ -1802,6 +1818,10 @@ private:
 
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
+
+    friend class ReadNode;
+    friend class WriteNode;
+
     enum RenderRoIStatusEnum
     {
         eRenderRoIStatusImageAlreadyRendered = 0, // there was nothing left to render

@@ -358,6 +358,7 @@ NodeGui::initialize(NodeGraph* dag,
     }
 
     getNode()->initializeHostOverlays();
+    
 
 } // initialize
 
@@ -378,6 +379,7 @@ NodeGui::restoreStateAfterCreation()
     ///Refresh the name in the line edit
     onInternalNameChanged( internalNode->getLabel().c_str() );
     internalNode->refreshIdentityState();
+    onPersistentMessageChanged();
 }
 
 void
@@ -431,9 +433,12 @@ NodeGui::ensurePanelCreated()
             panel->onChildCreated(*it);
         }
         panel->setRedrawOnSelectionChanged(true);
-        if (!children.empty()) {
-            getDagGui()->getGui()->redrawAllViewers();
-        }
+        
+    }
+    
+    const std::list<ViewerTab*>& viewers = getDagGui()->getGui()->getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        (*it)->getViewer()->updatePersistentMessage();
     }
 }
 
@@ -912,7 +917,9 @@ NodeGui::resize(int width,
     f.setPixelSize(25);
     metrics = QFontMetrics(f,0);
     int pMWidth = metrics.width(persistentMessage);
-    QPointF bitDepthPos(topLeft.x() + iconWidth + (width - iconWidth) / 2,0);
+    
+    int midNodeX = topLeft.x() + iconWidth + (width - iconWidth) / 2;
+    QPointF bitDepthPos(midNodeX,0);
     _streamIssuesWarning->refreshPosition(bitDepthPos);
 
     if (_expressionIndicator) {
@@ -926,7 +933,7 @@ NodeGui::resize(int width,
     }
     
     int indicatorOffset = TO_DPIX(NATRON_STATE_INDICATOR_OFFSET);
-    _persistentMessage->setPos(topLeft.x() + (width / 2) - (pMWidth / 2), topLeft.y() + height / 2 - metrics.height() / 2);
+    _persistentMessage->setPos(midNodeX - (pMWidth / 2), topLeft.y() + height / 2 - metrics.height() / 2);
     _stateIndicator->setRect(topLeft.x() - indicatorOffset,topLeft.y() - indicatorOffset,
                              width + indicatorOffset * 2,height + indicatorOffset * 2);
    
@@ -2053,7 +2060,7 @@ NodeGui::paint(QPainter* /*painter*/,
     //nothing special
 }
 
-const std::map<boost::weak_ptr<KnobI>,KnobGui*> &
+const std::list<std::pair<boost::weak_ptr<KnobI>,KnobGuiPtr> > &
 NodeGui::getKnobs() const
 {
     assert(_settingsPanel);
@@ -2618,7 +2625,7 @@ NodeGui::onStreamWarningsChanged()
         if (it->second.isEmpty()) {
             continue;
         }
-        QString tt = "<p><br>" + tr("Stream issue:") + "</br></p>";
+        QString tt = "<p><b>" + tr("Stream issue:") + "</b></p>";
         tt += GuiUtils::convertFromPlainText(it->second.trimmed(), Qt::WhiteSpaceNormal);
         tooltip += tt;
     }

@@ -383,8 +383,8 @@ void HierarchyViewPrivate::checkKnobVisibleState(DSKnob *dsKnob)
 {
     int dim = dsKnob->getDimension();
 
-    KnobGui *knobGui = dsKnob->getKnobGui();
-
+    KnobGuiPtr knobGui = dsKnob->getKnobGui();
+    assert(knobGui);
     bool showContext = false;
 
     if (dsKnob->isMultiDimRoot()) {
@@ -987,7 +987,8 @@ void HierarchyView::onKeyframeSelectionChanged(bool recurse)
              ++toCheckIt) {
             boost::shared_ptr<DSKnob> dsKnob = (*toCheckIt);
 
-            KnobGui *knobGui = dsKnob->getKnobGui();
+            KnobGuiPtr knobGui = dsKnob->getKnobGui();
+            assert(knobGui);
             int dim = dsKnob->getDimension();
 
             KeyFrameSet keyframes = knobGui->getCurve(ViewIdx(0), dim)->getKeyFrames_mt_safe();

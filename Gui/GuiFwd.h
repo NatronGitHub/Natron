@@ -199,7 +199,8 @@ bool isHighDPIInternal(const QWidget* w);
 typedef boost::shared_ptr<NodeGui> NodeGuiPtr;
 typedef std::list<NodeGuiPtr> NodesGuiList;
 typedef boost::shared_ptr<ProgressTaskInfo> ProgressTaskInfoPtr;
-
+typedef boost::shared_ptr<KnobGui> KnobGuiPtr;
+typedef boost::weak_ptr<KnobGui> KnobGuiWPtr;
 NATRON_NAMESPACE_EXIT;
 
 

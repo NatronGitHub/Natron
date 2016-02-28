@@ -144,11 +144,12 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
     }
     layout->addWidget(_curveWidget);
 
+    KnobGuiPtr thisShared = shared_from_this();
 
     std::vector<boost::shared_ptr<CurveGui> > visibleCurves;
     for (int i = 0; i < knob->getDimension(); ++i) {
         QString curveName = knob->getDimensionName(i).c_str();
-        boost::shared_ptr<KnobCurveGui> curve(new KnobCurveGui(_curveWidget,knob->getParametricCurve(i),this,i,curveName,QColor(255,255,255),1.));
+        boost::shared_ptr<KnobCurveGui> curve(new KnobCurveGui(_curveWidget,knob->getParametricCurve(i),thisShared,i,curveName,QColor(255,255,255),1.));
         _curveWidget->addCurveAndSetColor(curve);
         QColor color;
         double r,g,b;

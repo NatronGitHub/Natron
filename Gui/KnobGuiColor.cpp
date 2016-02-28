@@ -154,36 +154,37 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
     const std::vector<double> & minimums = _knob->getMinimums();
     const std::vector<double> & maximums = _knob->getMaximums();
 #endif
+    KnobGuiPtr thisShared = shared_from_this();
     
-    _rBox = new KnobSpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble, this, 0);
+    _rBox = new KnobSpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble, thisShared, 0);
     {
-        NumericKnobValidator* validator = new NumericKnobValidator(_rBox,this);
+        NumericKnobValidator* validator = new NumericKnobValidator(_rBox,thisShared);
         _rBox->setValidator(validator);
     }
     
     QObject::connect( _rBox, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()) );
     
     if (_dimension >= 3) {
-        _gBox = new KnobSpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble, this, 1);
+        _gBox = new KnobSpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble, thisShared, 1);
         QObject::connect( _gBox, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()) );
         {
-            NumericKnobValidator* validator = new NumericKnobValidator(_gBox,this);
+            NumericKnobValidator* validator = new NumericKnobValidator(_gBox,thisShared);
             _gBox->setValidator(validator);
         }
         
-        _bBox = new KnobSpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble, this, 2);
+        _bBox = new KnobSpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble, thisShared, 2);
         QObject::connect( _bBox, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()) );
         
         {
-            NumericKnobValidator* validator = new NumericKnobValidator(_bBox,this);
+            NumericKnobValidator* validator = new NumericKnobValidator(_bBox,thisShared);
             _bBox->setValidator(validator);
         }
     }
     if (_dimension >= 4) {
-        _aBox = new KnobSpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble, this, 3);
+        _aBox = new KnobSpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble, thisShared, 3);
         QObject::connect( _aBox, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()) );
         {
-            NumericKnobValidator* validator = new NumericKnobValidator(_aBox,this);
+            NumericKnobValidator* validator = new NumericKnobValidator(_aBox,thisShared);
             _aBox->setValidator(validator);
         }
     }
@@ -207,9 +208,9 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
     boost::shared_ptr<KnobColor> knob = _knob.lock();
     
     std::string dimLabel = knob->getDimensionName(0);
-    if (!dimLabel.empty()) {
+    /*if (!dimLabel.empty()) {
         dimLabel.append(":");
-    }
+    }*/
     _rLabel = new Label(QString(dimLabel.c_str()).toLower(), boxContainers);
     //_rLabel->setFont(font);
     if ( hasToolTip() ) {
@@ -236,9 +237,9 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
         }
         
         dimLabel = knob->getDimensionName(1);
-        if (!dimLabel.empty()) {
+        /*if (!dimLabel.empty()) {
             dimLabel.append(":");
-        }
+        }*/
         
         _gLabel = new Label(QString(dimLabel.c_str()).toLower(), boxContainers);
         //_gLabel->setFont(font);
@@ -265,9 +266,9 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
         }
         
         dimLabel = knob->getDimensionName(2);
-        if (!dimLabel.empty()) {
+        /*if (!dimLabel.empty()) {
             dimLabel.append(":");
-        }
+        }*/
         
         _bLabel = new Label(QString(dimLabel.c_str()).toLower(), boxContainers);
         //_bLabel->setFont(font);
@@ -296,9 +297,9 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
         }
         
         dimLabel = knob->getDimensionName(3);
-        if (!dimLabel.empty()) {
+        /*if (!dimLabel.empty()) {
             dimLabel.append(":");
-        }
+        }*/
         
         _aLabel = new Label(QString(dimLabel.c_str()).toLower(), boxContainers);
         //_aLabel->setFont(font);
@@ -1014,7 +1015,7 @@ KnobGuiColor::onSpinBoxValueChanged()
         assert(spinboxdim != -1);
         newValue = isSpinbox->value();
         oldValue = _knob.lock()->getValue(spinboxdim);
-        pushUndoCommand( new KnobUndoCommand<double>(this,oldValue, newValue, spinboxdim ,false) );
+        pushUndoCommand( new KnobUndoCommand<double>(shared_from_this(),oldValue, newValue, spinboxdim ,false) );
     } else {
         // use the value of the first dimension only, and set all spinboxes
         newValue = _rBox->value();
@@ -1036,7 +1037,7 @@ KnobGuiColor::onSpinBoxValueChanged()
             newValues.push_back(newValue);
         }
         
-        pushUndoCommand( new KnobUndoCommand<double>(this,oldValues, newValues ,false) );
+        pushUndoCommand( new KnobUndoCommand<double>(shared_from_this(),oldValues, newValues ,false) );
 
     }
     if (_slider) {
@@ -1087,7 +1088,7 @@ KnobGuiColor::onColorChangedInternal()
     for (std::list<double>::iterator it = oldValues.begin() ; it != oldValues.end() ; ++it, ++itNew) {
         if (*it != *itNew) {
             updateLabel(r, g, b, a);
-            pushUndoCommand( new KnobUndoCommand<double>(this, oldValues, newValues,false) );
+            pushUndoCommand( new KnobUndoCommand<double>(shared_from_this(), oldValues, newValues,false) );
             break;
         }
     }

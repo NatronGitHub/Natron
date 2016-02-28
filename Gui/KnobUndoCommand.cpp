@@ -53,7 +53,7 @@ NATRON_NAMESPACE_ENTER;
 struct PasteUndoCommandPrivate
 {
     
-    KnobGui* knob;
+    KnobGuiPtr knob;
     KnobClipBoardType type;
     int fromDimension;
     int targetDimension;
@@ -61,7 +61,7 @@ struct PasteUndoCommandPrivate
     KnobPtr fromKnob;
     
     PasteUndoCommandPrivate()
-    : knob(0)
+    : knob()
     , type(eKnobClipBoardTypeCopyLink)
     , fromDimension(-1)
     , targetDimension(-1)
@@ -71,7 +71,7 @@ struct PasteUndoCommandPrivate
     }
 };
 
-PasteUndoCommand::PasteUndoCommand(KnobGui* knob,
+PasteUndoCommand::PasteUndoCommand(const KnobGuiPtr& knob,
                                    KnobClipBoardType type,
                                    int fromDimension,
                                    int targetDimension,
@@ -208,6 +208,9 @@ PasteUndoCommand::copyFrom(const KnobPtr& serializedKnob, bool isRedo)
             internalKnob->endChanges();
         }   break;
         case eKnobClipBoardTypeCopyLink: {
+            
+            //bool useExpression = !KnobI::areTypesCompatibleForSlave(internalKnob.get(), serializedKnob.get());
+            
             internalKnob->beginChanges();
             for (int i = 0; i < internalKnob->getDimension(); ++i) {
                 if (_imp->targetDimension == -1 || i == _imp->targetDimension) {
@@ -228,7 +231,7 @@ PasteUndoCommand::copyFrom(const KnobPtr& serializedKnob, bool isRedo)
     }
 } // redo
 
-MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(KnobGui* knob,
+MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobGuiPtr& knob,
                                                            ValueChangedReasonEnum reason,
                                                            bool createNew,
                                                            bool setKeyFrame,

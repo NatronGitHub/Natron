@@ -42,6 +42,9 @@ KnobGui::onInternalValueChanged(ViewSpec /*view*/,
                                 int dimension,
                                 int reason)
 {
+    if (_imp->guiRemoved) {
+        return;
+    }
     if (_imp->widgetCreated && (ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited) {
         updateGuiInternal(dimension);
         if (!getKnob()->getExpression(dimension).empty()) {
@@ -216,7 +219,7 @@ KnobGui::pasteClipBoard(int targetDimension)
         return;
     }
 
-    pushUndoCommand(new PasteUndoCommand(this,type, cbDim, targetDimension, fromKnob));
+    pushUndoCommand(new PasteUndoCommand(shared_from_this(),type, cbDim, targetDimension, fromKnob));
 } // pasteClipBoard
 
 
@@ -265,7 +268,7 @@ KnobGui::linkTo(int dimension)
         }
     }
     
-    LinkToKnobDialog dialog( this,_imp->copyRightClickMenu->parentWidget() );
+    LinkToKnobDialog dialog( shared_from_this(),_imp->copyRightClickMenu->parentWidget() );
 
     if ( dialog.exec() ) {
         KnobPtr  otherKnob = dialog.getSelectedKnobs();
@@ -423,13 +426,13 @@ KnobGui::onSetValueUsingUndoStack(const Variant & v,
     Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
 
     if (isInt) {
-        pushUndoCommand( new KnobUndoCommand<int>(this,isInt->getValue(dim),v.toInt(),dim) );
+        pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(),isInt->getValue(dim),v.toInt(),dim) );
     } else if (isBool) {
-        pushUndoCommand( new KnobUndoCommand<bool>(this,isBool->getValue(dim),v.toBool(),dim) );
+        pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(),isBool->getValue(dim),v.toBool(),dim) );
     } else if (isDouble) {
-        pushUndoCommand( new KnobUndoCommand<double>(this,isDouble->getValue(dim),v.toDouble(),dim) );
+        pushUndoCommand( new KnobUndoCommand<double>(shared_from_this(),isDouble->getValue(dim),v.toDouble(),dim) );
     } else if (isString) {
-        pushUndoCommand( new KnobUndoCommand<std::string>(this,isString->getValue(dim),v.toString().toStdString(),dim) );
+        pushUndoCommand( new KnobUndoCommand<std::string>(shared_from_this(),isString->getValue(dim),v.toString().toStdString(),dim) );
     }
 }
 
@@ -505,7 +508,7 @@ KnobGui::restoreOpenGLContext()
 void
 KnobGui::setKnobGuiPointer()
 {
-    getKnob()->setKnobGuiPointer(this);
+    getKnob()->setKnobGuiPointer(shared_from_this());
 }
 
 void
@@ -636,7 +639,7 @@ KnobGui::onAppendParamEditChanged(int reason,
                                   bool createNewCommand,
                                   bool setKeyFrame)
 {
-    pushUndoCommand( new MultipleKnobEditsUndoCommand(this,(ValueChangedReasonEnum)reason, createNewCommand, setKeyFrame, v, dimension, time) );
+    pushUndoCommand( new MultipleKnobEditsUndoCommand(shared_from_this(),(ValueChangedReasonEnum)reason, createNewCommand, setKeyFrame, v, dimension, time) );
 }
 
 void
@@ -729,6 +732,9 @@ KnobGui::onHelpChanged()
 void
 KnobGui::onHasModificationsChanged()
 {
+    if (_imp->guiRemoved) {
+        return;
+    }
     if (_imp->descriptionLabel) {
         bool hasModif = getKnob()->hasModifications();
         _imp->descriptionLabel->setAltered(!hasModif);
@@ -757,7 +763,7 @@ KnobGui::onLabelChanged()
             descriptionLabel = knob->getLabel();
         }
         
-        _imp->descriptionLabel->setText_overload(QString(QString(descriptionLabel.c_str()) + ":"));
+        _imp->descriptionLabel->setText_overload(QString(descriptionLabel.c_str()));
         onLabelChangedInternal();
     }
 }

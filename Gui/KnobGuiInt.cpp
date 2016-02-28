@@ -150,7 +150,7 @@ KnobGuiInt::createWidget(QHBoxLayout* layout)
     
     const std::vector<int > &mins = knob->getMinimums();
     const std::vector<int > &maxs = knob->getMaximums();
-    
+    KnobGuiPtr thisShared = shared_from_this();
     for (int i = 0; i < dim; ++i) {
 
         QWidget *boxContainer = new QWidget( _container );
@@ -162,15 +162,15 @@ KnobGuiInt::createWidget(QHBoxLayout* layout)
         Label *subDesc = 0;
         if (dim != 1) {
             std::string dimLabel = getKnob()->getDimensionName(i);
-            if (!dimLabel.empty()) {
+            /*if (!dimLabel.empty()) {
                 dimLabel.append(":");
-            }
+            }*/
             subDesc = new Label(QString(dimLabel.c_str()), boxContainer);
             //subDesc->setFont( QFont(appFont,appFontSize) );
             boxContainerLayout->addWidget(subDesc);
         }
-        SpinBox *box = new KnobSpinBox(layout->parentWidget(), SpinBox::eSpinBoxTypeInt, this, i);
-        NumericKnobValidator* validator = new NumericKnobValidator(box,this);
+        SpinBox *box = new KnobSpinBox(layout->parentWidget(), SpinBox::eSpinBoxTypeInt, thisShared, i);
+        NumericKnobValidator* validator = new NumericKnobValidator(box,thisShared);
         box->setValidator(validator);
         QObject::connect( box, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()) );
 
@@ -529,10 +529,10 @@ KnobGuiInt::sliderEditingEnd(double d)
             oldValues.push_back(knob->getValue(i));
             newValues.push_back(d);
         }
-        pushUndoCommand( new KnobUndoCommand<int>(this,oldValues,newValues,false) );
+        pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(),oldValues,newValues,false) );
     } else {
         _spinBoxes[0].first->setValue(d);
-        pushUndoCommand( new KnobUndoCommand<int>(this,knob->getValue(0),d,0,false) );
+        pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(),knob->getValue(0),d,0,false) );
     }
     
 }
@@ -576,7 +576,7 @@ KnobGuiInt::onSpinBoxValueChanged()
     if (_slider) {
         _slider->seekScalePosition(newValue);
     }
-    pushUndoCommand( new KnobUndoCommand<int>(this,oldValue, newValue, spinBoxDim ,false) );
+    pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(),oldValue, newValue, spinBoxDim ,false) );
 }
 
 void

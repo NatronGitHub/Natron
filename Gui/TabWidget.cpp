@@ -713,7 +713,8 @@ TabWidget::addNewViewer()
     if (!graph) {
         throw std::logic_error("");
     }
-    _imp->gui->getApp()->createNode(CreateNodeArgs(PLUGINID_NATRON_VIEWER, eCreateNodeReasonUserCreate, graph->getGroup()));
+    CreateNodeArgs args(PLUGINID_NATRON_VIEWER, eCreateNodeReasonUserCreate, graph->getGroup());
+    _imp->gui->getApp()->createNode(args);
     
 }
 

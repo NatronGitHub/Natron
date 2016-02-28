@@ -63,7 +63,7 @@ class KnobUndoCommand
 {
 public:
 
-    KnobUndoCommand(KnobGui *knob,
+    KnobUndoCommand(const KnobGuiPtr& knob,
                     const T &oldValue,
                     const T &newValue,
                     int dimension = 0,
@@ -87,7 +87,7 @@ public:
 
     ///We moved from std::vector to std::list instead because std::vector<bool> expands to a bit field(std::_Bit_reference)
     ///and produces an unresolved symbol error.
-    KnobUndoCommand(KnobGui *knob,
+    KnobUndoCommand(const KnobGuiPtr& knob,
                     const std::list<T> &oldValue,
                     const std::list<T> &newValue,
                     bool refreshGui = true,
@@ -256,7 +256,7 @@ private:
             return false;
         }
 
-        KnobGui *knob = knobCommand->_knob;
+        KnobGuiPtr knob = knobCommand->_knob;
         if ( (_knob != knob) || !_merge || !knobCommand->_merge || (_dimension != knobCommand->_dimension) ) {
             return false;
         }
@@ -272,7 +272,7 @@ private:
     int _dimension;
     std::list<T> _oldValue;
     std::list<T> _newValue;
-    KnobGui *_knob;
+    KnobGuiPtr _knob;
     std::vector<int> _valueChangedReturnCode;
     std::vector<KeyFrame> _newKeys;
     std::vector<KeyFrame>  _oldKeys;
@@ -299,7 +299,7 @@ class MultipleKnobEditsUndoCommand
     };
 
     ///For each knob, the second member points to a clone of the knob before the first redo() call was made
-    typedef std::map < KnobGui*, std::list<ValueToSet> >  ParamsMap;
+    typedef std::map < KnobGuiPtr, std::list<ValueToSet> >  ParamsMap;
     ParamsMap knobs;
     bool createNew;
     bool firstRedoCalled;
@@ -311,7 +311,7 @@ public:
      * @param createNew If true this command will not merge with a previous same command
      * @param setKeyFrame if true, the command will use setValueAtTime instead of setValue in the redo() command.
      **/
-    MultipleKnobEditsUndoCommand(KnobGui* knob,
+    MultipleKnobEditsUndoCommand(const KnobGuiPtr& knob,
                                  ValueChangedReasonEnum reason,
                                  bool createNew,
                                  bool setKeyFrame,
@@ -336,7 +336,7 @@ class PasteUndoCommand
     boost::scoped_ptr<PasteUndoCommandPrivate> _imp;
 public:
 
-    PasteUndoCommand(KnobGui* knob,
+    PasteUndoCommand(const KnobGuiPtr& knob,
                      KnobClipBoardType type,
                      int fromDimension,
                      int targetDimension,

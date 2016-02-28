@@ -309,7 +309,7 @@ PickKnobDialog::onPageComboIndexChanged(int index)
     }
 }
 
-KnobGui*
+KnobGuiPtr
 PickKnobDialog::getSelectedKnob(bool* makeAlias,boost::shared_ptr<KnobPage>* page,boost::shared_ptr<KnobGroup>* group) const
 {
     QString index = _imp->nodeSelectionCombo->text();
@@ -322,7 +322,7 @@ PickKnobDialog::getSelectedKnob(bool* makeAlias,boost::shared_ptr<KnobPage>* pag
         }
     }
     if (!selectedNode) {
-        return 0;
+        return KnobGuiPtr();
     }
     
     QString str = _imp->knobSelectionCombo->itemText( _imp->knobSelectionCombo->activeIndex() );
@@ -332,18 +332,18 @@ PickKnobDialog::getSelectedKnob(bool* makeAlias,boost::shared_ptr<KnobPage>* pag
     if ( it != _imp->allKnobs.end() ) {
         selectedKnob = it->second;
     } else {
-        return 0;
+        return KnobGuiPtr();
     }
     
     boost::shared_ptr<NodeGuiI> selectedNodeGuiI = selectedNode->getNodeGui();
     assert(selectedNodeGuiI);
     if (!selectedNodeGuiI) {
-        return 0;
+        return KnobGuiPtr();
     }
     NodeGui* selectedNodeGui = dynamic_cast<NodeGui*>(selectedNodeGuiI.get());
     assert(selectedNodeGui);
     if (!selectedNodeGui) {
-        return 0;
+        return KnobGuiPtr();
     }
     NodeSettingsPanel* selectedPanel = selectedNodeGui->getSettingPanel();
     bool hadPanelVisible = selectedPanel && !selectedPanel->isClosed();
@@ -353,7 +353,7 @@ PickKnobDialog::getSelectedKnob(bool* makeAlias,boost::shared_ptr<KnobPage>* pag
         selectedNodeGui->setVisibleSettingsPanel(false);
     }
     if (!selectedPanel) {
-        return 0;
+        return KnobGuiPtr();
     }
     if (!hadPanelVisible && selectedPanel) {
         selectedPanel->setClosed(true);
@@ -367,15 +367,16 @@ PickKnobDialog::getSelectedKnob(bool* makeAlias,boost::shared_ptr<KnobPage>* pag
     
     *group = _imp->getSelectedGroup();
     
-    const std::map<boost::weak_ptr<KnobI>,KnobGui*>& knobsMap = selectedPanel->getKnobs();
-    std::map<boost::weak_ptr<KnobI>,KnobGui*>::const_iterator found = knobsMap.find(selectedKnob);
-    if (found != knobsMap.end()) {
-        *makeAlias = _imp->useAliasCheckBox->isChecked();
-        return found->second;
+    const std::list<std::pair<boost::weak_ptr<KnobI>,KnobGuiPtr> >& knobsMap = selectedPanel->getKnobs();
+    for (std::list<std::pair<boost::weak_ptr<KnobI>,KnobGuiPtr> >::const_iterator it = knobsMap.begin(); it!=knobsMap.end(); ++it) {
+        if (it->first.lock() == selectedKnob) {
+            *makeAlias = _imp->useAliasCheckBox->isChecked();
+            return it->second;
+        }
     }
+
     
-    
-    return 0;
+    return KnobGuiPtr();
 }
 
 NATRON_NAMESPACE_EXIT;

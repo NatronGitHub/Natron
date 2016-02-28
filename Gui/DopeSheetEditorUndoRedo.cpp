@@ -31,6 +31,7 @@
 #include "Engine/Knob.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/ReadNode.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
@@ -96,9 +97,11 @@ void moveGroupNode(DopeSheetEditor* model, const NodePtr& node, double dt)
         NodeGroup* isChildGroup = (*it)->isEffectGroup();
         
         // Move readers
-        if (pluginID == PLUGINID_OFX_READOIIO ||
-            pluginID == PLUGINID_OFX_READFFMPEG ||
-            pluginID == PLUGINID_OFX_READPFM) {
+#ifndef NATRON_ENABLE_IO_META_NODES
+        if (ReadNode::isBundledReader(pluginID)) {
+#else
+        if (pluginID == PLUGINID_NATRON_READ) {
+#endif
             moveReader(*it, dt);
         } else if (pluginID == PLUGINID_OFX_TIMEOFFSET) {
             moveTimeOffset(*it, dt);
@@ -781,8 +784,8 @@ void DSRemoveKeysCommand::addOrRemoveKeyframe(bool add)
             continue;
         }
 
-        KnobGui *knobGui = knobContext->getKnobGui();
-
+        KnobGuiPtr knobGui = knobContext->getKnobGui();
+        assert(knobGui);
         if (add) {
             knobGui->setKeyframe(selected.key.getTime(), selected.key, knobContext->getDimension(), ViewIdx(0));
         }

@@ -844,7 +844,8 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
         pluginsToolButton->setMenu(menu);
         pluginsToolButton->setAction( menu->menuAction() );
     }
-
+    
+#ifndef NATRON_ENABLE_IO_META_NODES
     if (!plugin->getParent() && pluginsToolButton->getLabel() == PLUGIN_GROUP_IMAGE) {
         ///create 2 special actions to create a reader and a writer so the user doesn't have to guess what
         ///plugin to choose for reading/writing images, let Natron deal with it. THe user can still change
@@ -860,7 +861,7 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
         createReaderAction->setShortcutContext(Qt::WidgetShortcut);
         createReaderAction->setShortcut( QKeySequence(Qt::Key_R) );
         imageMenu->addAction(createReaderAction);
-
+        
         QAction* createWriterAction = new QAction(this);
         QObject::connect( createWriterAction, SIGNAL(triggered()), this, SLOT(createWriter()) );
         createWriterAction->setText( tr("Write") );
@@ -871,6 +872,7 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
         createWriterAction->setShortcut( QKeySequence(Qt::Key_W) );
         imageMenu->addAction(createWriterAction);
     }
+#endif
 
 
     //if it has a parent, add the new tool button as a child
@@ -1186,16 +1188,18 @@ Gui::createNewViewer()
     if (!graph) {
         throw std::logic_error("");
     }
-
-    ignore_result(_imp->_appInstance->createNode(CreateNodeArgs(PLUGINID_NATRON_VIEWER, eCreateNodeReasonUserCreate, graph->getGroup())));
+    CreateNodeArgs args(PLUGINID_NATRON_VIEWER, eCreateNodeReasonUserCreate, graph->getGroup());
+    ignore_result(_imp->_appInstance->createNode(args));
 }
+
+
 
 NodePtr
 Gui::createReader()
 {
     NodePtr ret;
     std::map<std::string, std::string> readersForFormat;
-
+    
     appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
     std::vector<std::string> filters;
     for (std::map<std::string, std::string>::const_iterator it = readersForFormat.begin(); it != readersForFormat.end(); ++it) {
@@ -1204,6 +1208,19 @@ Gui::createReader()
     std::string pattern = popOpenFileDialog( true, filters, _imp->_lastLoadSequenceOpenedDir.toStdString(), true );
     if ( !pattern.empty() ) {
         
+        NodeGraph* graph = 0;
+        if (_imp->_lastFocusedGraph) {
+            graph = _imp->_lastFocusedGraph;
+        } else {
+            graph = _imp->_nodeGraphArea;
+        }
+        boost::shared_ptr<NodeCollection> group = graph->getGroup();
+        assert(group);
+        
+#ifdef NATRON_ENABLE_IO_META_NODES
+        ret = getApp()->createReader(pattern,eCreateNodeReasonUserCreate, group);
+#else
+ 
         QString qpattern( pattern.c_str() );
         
         std::string patternCpy = pattern;
@@ -1215,25 +1232,18 @@ Gui::createReader()
         if ( found == readersForFormat.end() ) {
             errorDialog( tr("Reader").toStdString(), tr("No plugin capable of decoding ").toStdString() + ext + tr(" was found.").toStdString(), false);
         } else {
-            NodeGraph* graph = 0;
-            if (_imp->_lastFocusedGraph) {
-                graph = _imp->_lastFocusedGraph;
-            } else {
-                graph = _imp->_nodeGraphArea;
-            }
-            boost::shared_ptr<NodeCollection> group = graph->getGroup();
-            assert(group);
-
+            
+            
             CreateNodeArgs args(found->second.c_str(), eCreateNodeReasonUserCreate, group);
             args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern));
             ret = _imp->_appInstance->createNode(args);
-
+            
             if (!ret) {
                 return ret;
             }
         }
+#endif
     }
-
     return ret;
 }
 
@@ -1242,7 +1252,7 @@ Gui::createWriter()
 {
     NodePtr ret;
     std::map<std::string, std::string> writersForFormat;
-
+    
     appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
     std::vector<std::string> filters;
     for (std::map<std::string, std::string>::const_iterator it = writersForFormat.begin(); it != writersForFormat.end(); ++it) {
@@ -1263,10 +1273,10 @@ Gui::createWriter()
         }
         boost::shared_ptr<NodeCollection> group = graph->getGroup();
         assert(group);
-
+        
         ret =  getApp()->createWriter(file, eCreateNodeReasonUserCreate, group);
     }
-
+    
     return ret;
 }
 

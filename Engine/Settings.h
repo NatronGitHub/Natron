@@ -134,6 +134,10 @@ public:
     void getFileFormatsForReadingAndReader(std::map<std::string,std::string>* formats);
 
     void getFileFormatsForWritingAndWriter(std::map<std::string,std::string>* formats);
+    
+    void getReadersForFormat(const std::string& format, std::vector<std::string>* decoders);
+    
+    void getWritersForFormat(const std::string& format, std::vector<std::string>* encoders);
 
     ///save the settings to the application's settings
     void saveSettings(const std::vector<KnobI*>& settings,bool doWarnings);

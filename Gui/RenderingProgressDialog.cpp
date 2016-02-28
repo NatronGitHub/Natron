@@ -24,6 +24,8 @@
 
 #include "RenderingProgressDialog.h"
 
+#if 0
+
 #include <cmath>
 #include <stdexcept>
 
@@ -58,7 +60,6 @@ CLANG_DIAG_ON(uninitialized)
 #define NATRON_PROGRESS_DIALOG_ETA_REFRESH_MS 1000
 
 NATRON_NAMESPACE_ENTER;
-
 struct RenderingProgressDialogPrivate
 {
     Gui* _gui;
@@ -510,7 +511,11 @@ GeneralProgressDialog::closeEvent(QCloseEvent* /*e*/)
     
 }
 
+
 NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;
 #include "moc_RenderingProgressDialog.cpp"
+
+#endif
+

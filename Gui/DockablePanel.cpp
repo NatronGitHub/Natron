@@ -137,6 +137,8 @@ DockablePanel::DockablePanel(Gui* gui ,
 : QFrame(parent)
 , _imp(new DockablePanelPrivate(this,gui,holder,container,headerMode,useScrollAreasForTabs,defaultPageName,helpToolTip,stack))
 {
+    
+    QObject::connect(this, SIGNAL(deleteCurCmdLater()), this, SLOT(onDeleteCurCmdLater()), Qt::QueuedConnection);
     assert(holder);
     holder->setPanelPointer(this);
     
@@ -475,13 +477,10 @@ DockablePanel::~DockablePanel()
 
     ///Delete the knob gui if they weren't before
     ///normally the onKnobDeletion() function should have cleared them
-    for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
+    for (KnobsGuiMapping::const_iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
         if (it->second) {
             KnobPtr knob = it->first.lock();
-            if (knob) {
-                knob->setKnobGuiPointer(0);
-            }
-            it->second->callDeleteLater();
+            it->second->setGuiRemoved();
         }
     }
 }
@@ -787,16 +786,16 @@ DockablePanel::initializeKnobs()
     initializeKnobsInternal();
 }
 
-KnobGui*
+KnobGuiPtr
 DockablePanel::getKnobGui(const KnobPtr & knob) const
 {
-    for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
+    for (KnobsGuiMapping::const_iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
         if (it->first.lock() == knob) {
             return it->second;
         }
     }
 
-    return NULL;
+    return KnobGuiPtr();
 }
 
 
@@ -807,17 +806,31 @@ DockablePanel::getLastUndoCommand() const
 }
 
 void
-DockablePanel::pushUndoCommand(QUndoCommand* cmd)
+DockablePanel::refreshUndoRedoButtonsEnabledNess()
 {
-    if (!_imp->_gui) {
-        return;
-    }
-    _imp->_undoStack->setActive();
-    _imp->_undoStack->push(cmd);
     if (_imp->_undoButton && _imp->_redoButton) {
         _imp->_undoButton->setEnabled( _imp->_undoStack->canUndo() );
         _imp->_redoButton->setEnabled( _imp->_undoStack->canRedo() );
     }
+}
+
+void
+DockablePanel::pushUndoCommand(QUndoCommand* cmd)
+{
+    if (!_imp->_gui) {
+        delete cmd;
+        return;
+    }
+    _imp->_undoStack->setActive();
+    _imp->_cmdBeingPushed = cmd;
+    _imp->_clearedStackDuringPush = false;
+    _imp->_undoStack->push(cmd);
+    
+    //We may be in a situation where the command was not pushed because the stack was cleared
+    if (!_imp->_clearedStackDuringPush) {
+        _imp->_cmdBeingPushed = 0;
+    }
+    refreshUndoRedoButtonsEnabledNess();
 }
 
 void
@@ -930,9 +943,9 @@ DockablePanel::setClosedInternal(bool c)
     }
     
     ///Remove any color picker active
-    const std::map<boost::weak_ptr<KnobI>,KnobGui*>& knobs = getKnobs();
-    for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::const_iterator it = knobs.begin(); it!= knobs.end(); ++it) {
-        KnobGuiColor* ck = dynamic_cast<KnobGuiColor*>(it->second);
+    const KnobsGuiMapping& knobs = getKnobs();
+    for (KnobsGuiMapping::const_iterator it = knobs.begin(); it!= knobs.end(); ++it) {
+        KnobGuiColor* ck = dynamic_cast<KnobGuiColor*>(it->second.get());
         if (ck) {
             ck->setPickingEnabled(false);
         }
@@ -1172,9 +1185,9 @@ DockablePanel::deleteKnobGui(const KnobPtr& knob)
                 }
                 
             } else if (isParentGroup) {
-                std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator found  = _imp->_knobs.find(knob);
+                KnobsGuiMapping::iterator found  = _imp->findKnobGui(knob);
                 assert(found != _imp->_knobs.end());
-                KnobGuiGroup* parentGroupGui = dynamic_cast<KnobGuiGroup*>(found->second);
+                KnobGuiGroup* parentGroupGui = dynamic_cast<KnobGuiGroup*>(found->second.get());
                 assert(parentGroupGui);
                 TabGroup* groupAsTab = parentGroupGui->getOrCreateTabWidget();
                 if (groupAsTab) {
@@ -1185,20 +1198,16 @@ DockablePanel::deleteKnobGui(const KnobPtr& knob)
                 }
             }
             
-            std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.find(knob);
+            KnobsGuiMapping::iterator it  = _imp->findKnobGui(knob);
             if (it != _imp->_knobs.end()) {
-                it->first.lock()->setKnobGuiPointer(0);
-                delete it->second;
                 _imp->_knobs.erase(it);
             }
         
         } else {
             
-            std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.find(knob);
+            KnobsGuiMapping::iterator it  = _imp->findKnobGui(knob);
             if (it != _imp->_knobs.end()) {
                 it->second->removeGui();
-                it->first.lock()->setKnobGuiPointer(0);
-                delete it->second;
                 _imp->_knobs.erase(it);
             }
         }
@@ -1240,7 +1249,7 @@ DockablePanel::isMinimized() const
     return _imp->_minimized;
 }
 
-const std::map<boost::weak_ptr<KnobI>,KnobGui*> &
+const std::list<std::pair<boost::weak_ptr<KnobI>,KnobGuiPtr> > &
 DockablePanel::getKnobs() const
 {
     return _imp->_knobs;
@@ -1507,7 +1516,7 @@ DockablePanel::setKeyOnAllParameters()
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
 
     AddKeysCommand::KeysToAddList keys;
-    for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
+    for (KnobsGuiMapping::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
         KnobPtr knob = it->first.lock();
         if (knob->isAnimationEnabled()) {
             for (int i = 0; i < knob->getDimension(); ++i) {
@@ -1551,7 +1560,7 @@ void
 DockablePanel::removeAnimationOnAllParameters()
 {
     std::map< boost::shared_ptr<CurveGui> ,std::vector<KeyFrame > > keysToRemove;
-    for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
+    for (KnobsGuiMapping::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
         KnobPtr knob = it->first.lock();
         if (knob->isAnimationEnabled()) {
             for (int i = 0; i < knob->getDimension(); ++i) {
@@ -1645,7 +1654,7 @@ DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
 {
     if (checked) {
         _imp->_knobsVisibilityBeforeHideModif.clear();
-        for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
+        for (KnobsGuiMapping::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
             KnobPtr knob = it->first.lock();
             KnobGroup* isGroup = dynamic_cast<KnobGroup*>(knob.get());
             KnobParametric* isParametric = dynamic_cast<KnobParametric*>(knob.get());
@@ -1657,25 +1666,115 @@ DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
             }
         }
     } else {
-        for (std::map<KnobGui*,bool>::iterator it = _imp->_knobsVisibilityBeforeHideModif.begin();
+        for (std::map<KnobGuiWPtr,bool>::iterator it = _imp->_knobsVisibilityBeforeHideModif.begin();
              it != _imp->_knobsVisibilityBeforeHideModif.end(); ++it) {
-            if (!it->second) {
-                it->first->show();
+            KnobGuiPtr knobGui = it->first.lock();
+            if (!it->second && knobGui) {
+                knobGui->show();
             }
         }
     }
 }
 
 void
-DockablePanel::scanForNewKnobs(bool restorePageIndex)
+DockablePanel::refreshGuiForKnobsChanges(bool restorePageIndex)
+{
+    QString curTabName;
+    if (_imp->_pagesEnabled) {
+        if (restorePageIndex) {
+            curTabName = _imp->_tabWidget->tabText(_imp->_tabWidget->currentIndex());
+        }
+    }
+    
+    //Delete all knobs gui
+    {
+        KnobsGuiMapping mapping = _imp->_knobs;
+        _imp->_knobs.clear();
+        for (KnobsGuiMapping::iterator it = mapping.begin(); it!=mapping.end(); ++it) {
+            assert(it->second);
+            KnobPtr knob = it->first.lock();
+            if (knob) {
+                knob->setKnobGuiPointer(KnobGuiPtr());
+            }
+            it->second->removeGui();
+            it->second.reset();
+            
+        }
+    }
+    
+    //Now delete all pages
+    for (PageMap::iterator it = _imp->_pages.begin(); it!= _imp->_pages.end(); ++it) {
+        if (_imp->_tabWidget) {
+            int index = _imp->_tabWidget->indexOf(it->second.tab);
+            if (index != -1) {
+                _imp->_tabWidget->removeTab(index);
+            }
+        }
+        it->second.tab->deleteLater();
+        it->second.currentRow = 0;
+        
+    }
+    _imp->_pages.clear();
+    
+    //Clear undo/Redo stack so that KnobGui pointers are not lying around
+    if (_imp->_undoStack) {
+        _imp->_undoStack->clear();
+        _imp->_clearedStackDuringPush = true;
+        Q_EMIT deleteCurCmdLater();
+        refreshUndoRedoButtonsEnabledNess();
+    }
+    
+    recreateKnobs(curTabName, restorePageIndex);
+    _imp->refreshPagesSecretness();
+}
+
+
+void
+DockablePanel::onDeleteCurCmdLater()
+{
+    if (_imp->_cmdBeingPushed) {
+        _imp->_undoStack->clear();
+        //delete _imp->_cmdBeingPushed;
+        _imp->_cmdBeingPushed = 0;
+    }
+}
+
+void
+DockablePanel::recreateKnobs(const QString& curTabName,bool restorePageIndex)
+{
+    //Re-create knobs
+    const KnobsVec& knobs = _imp->_holder->getKnobs();
+    _imp->initializeKnobVector(knobs,NULL);
+    
+    _imp->refreshPagesOrder(curTabName, restorePageIndex);
+    
+    NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
+    
+    
+    ///Refresh the curve editor with potential new animated knobs
+    if (isNodePanel) {
+        NodeGuiPtr node = isNodePanel->getNode();
+        getGui()->getCurveEditor()->removeNode(node.get());
+        getGui()->getCurveEditor()->addNode(node);
+        
+        getGui()->removeNodeGuiFromDopeSheetEditor(node);
+        getGui()->addNodeGuiToDopeSheetEditor(node);
+    }
+
+}
+
+void
+DockablePanel::recreateUserKnobs(bool restorePageIndex)
 {
     
   
+    
+    const KnobsVec& knobs = _imp->_holder->getKnobs();
+
     std::list<KnobPage*> userPages;
     getUserPages(userPages);
     
     QString curTabName;
-    
     if (_imp->_pagesEnabled) {
         
         if (restorePageIndex) {
@@ -1692,72 +1791,12 @@ DockablePanel::scanForNewKnobs(bool restorePageIndex)
         
     } else {
         
-        KnobsVec knobs = _imp->_holder->getKnobs();
-        for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
             deleteKnobGui(*it);
         }
         
     }
-    
-    _imp->initializeKnobVector(_imp->_holder->getKnobs(),NULL);
-    
-    
-    ///Refresh pages order
-    if (_imp->_pagesEnabled) {
-        std::list<std::pair<QWidget*,QString> > orderedPages;
-        const KnobsVec& knobs = _imp->_holder->getKnobs();
-        
-        std::list<KnobPage*> pages;
-        for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-            KnobPage* isPage = dynamic_cast<KnobPage*>(it->get());
-            if (isPage) {
-                pages.push_back(isPage);
-            }
-        }
-        for (std::list<KnobPage*>::iterator it = pages.begin(); it!=pages.end(); ++it) {
-            
-            PageMap::iterator foundPage = _imp->_pages.find((*it)->getLabel().c_str());
-            if (foundPage != _imp->_pages.end()) {
-                if ((*it)->getChildren().size() > 0) {
-                    foundPage->second.tab->show();
-                    orderedPages.push_back(std::make_pair(foundPage->second.tab,foundPage->first));
-                } else {
-                    foundPage->second.tab->hide();
-                }
-            }
-            
-        }
-        
-        
-        _imp->_tabWidget->clear();
-        
-        
-        int index = 0;
-        int i = 0;
-        for (std::list<std::pair<QWidget*,QString> >::iterator it = orderedPages.begin(); it!=orderedPages.end(); ++it,++i) {
-            _imp->_tabWidget->addTab(it->first, it->second);
-            if (restorePageIndex && it->second == curTabName) {
-                index = i;
-            }
-        }
-        
-        if (index >= 0 && index < int(orderedPages.size())) {
-            _imp->_tabWidget->setCurrentIndex(index);
-        }
-    }
-    
-    NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
-
-    
-    ///Refresh the curve editor with potential new animated knobs
-    if (isNodePanel) {
-        NodeGuiPtr node = isNodePanel->getNode();
-        getGui()->getCurveEditor()->removeNode(node.get());
-        getGui()->getCurveEditor()->addNode(node);
-
-        getGui()->removeNodeGuiFromDopeSheetEditor(node);
-        getGui()->addNodeGuiToDopeSheetEditor(node);
-    }
+    recreateKnobs(curTabName, restorePageIndex);
 }
 
 namespace {

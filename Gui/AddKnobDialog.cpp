@@ -906,8 +906,8 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     }
     
     
-    const std::map<boost::weak_ptr<KnobI>,KnobGui*>& knobs = _imp->panel->getKnobs();
-    for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+    const std::list<std::pair<boost::weak_ptr<KnobI>,KnobGuiPtr> >& knobs = _imp->panel->getKnobs();
+    for (std::list<std::pair<boost::weak_ptr<KnobI>,KnobGuiPtr> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         KnobPtr knob = it->first.lock();
         if (!knob) {
             continue;

@@ -646,11 +646,14 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
 
 boost::shared_ptr<AbstractOfxEffectInstance>
 OfxHost::createOfxEffect(NodePtr node,
-                                 const NodeSerialization* serialization,
-                                 const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                                 bool allowFileDialogs,
-                                 bool disableRenderScaleSupport,
-                                 bool *hasUsedFileDialog)
+                         const NodeSerialization* serialization,
+                         const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
+                         bool disableRenderScaleSupport
+#ifndef NATRON_ENABLE_IO_META_NODES
+                         ,bool allowFileDialogs,
+                         bool *hasUsedFileDialog
+#endif
+)
 {
     assert(node);
     const Plugin* natronPlugin = node->getPlugin();
@@ -666,7 +669,12 @@ OfxHost::createOfxEffect(NodePtr node,
         node->setEffect(hostSideEffect);
     }
 
-    hostSideEffect->createOfxImageEffectInstance(plugin, desc, ctx,serialization,paramValues,allowFileDialogs,disableRenderScaleSupport,hasUsedFileDialog);
+    hostSideEffect->createOfxImageEffectInstance(plugin, desc, ctx,serialization,paramValues,disableRenderScaleSupport
+#ifndef NATRON_ENABLE_IO_META_NODES
+                                                 ,allowFileDialogs,
+                                                 hasUsedFileDialog
+#endif
+                                                 );
 
     return hostSideEffect;
 }
@@ -835,6 +843,7 @@ OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std::string,
         std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
         std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
         
+        const bool isDeprecated = p->getDescriptor().isDeprecated();
         
         Plugin* natronPlugin = appPTR->registerPlugin( groups,
                                                               openfxId.c_str(),
@@ -845,7 +854,7 @@ OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std::string,
                                                               foundWriter != contexts.end(),
                                                               new LibraryBinary(LibraryBinary::eLibraryTypeBuiltin),
                                                               p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe,
-                                                              p->getVersionMajor(), p->getVersionMinor(),p->getDescriptor().isDeprecated() );
+                                                              p->getVersionMajor(), p->getVersionMinor(),isDeprecated );
         bool isInternalOnly = openfxId == PLUGINID_OFX_ROTO;
         if (isInternalOnly) {
             natronPlugin->setForInternalUseOnly(true);
@@ -867,7 +876,7 @@ OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std::string,
         
 
 
-        if ( ( foundReader != contexts.end() ) && (formatsCount > 0) && readersMap ) {
+        if ( !isDeprecated && ( foundReader != contexts.end() ) && (formatsCount > 0) && readersMap ) {
             ///we're safe to assume that this plugin is a reader
             for (U32 k = 0; k < formats.size(); ++k) {
                 std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it;
@@ -881,7 +890,7 @@ OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std::string,
                     readersMap->insert( std::make_pair(formats[k], newVec) );
                 }
             }
-        } else if ( ( foundWriter != contexts.end() ) && (formatsCount > 0) && writersMap ) {
+        } else if ( !isDeprecated && ( foundWriter != contexts.end() ) && (formatsCount > 0) && writersMap ) {
             ///we're safe to assume that this plugin is a writer.
             for (U32 k = 0; k < formats.size(); ++k) {
                 std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it;

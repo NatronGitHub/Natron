@@ -51,6 +51,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "ofxCore.h"
 #include "ofxhParametricParam.h"
 
+#include "Engine/KnobTypes.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
@@ -92,14 +93,15 @@ class OfxParamToKnob : public QObject
     OFX::Host::Interact::Descriptor interactDesc;
     mutable QMutex dynamicPropModifiedMutex;
     bool _dynamicPropModified;
-    
+    boost::weak_ptr<EffectInstance> _effect;
     
 public:
    
 
-    OfxParamToKnob()
+    OfxParamToKnob(const EffectInstPtr& effect)
     : dynamicPropModifiedMutex()
     , _dynamicPropModified(false)
+    , _effect(effect)
     {
     }
 
@@ -111,7 +113,7 @@ public:
         return interactDesc;
     }
     
-    
+    EffectInstPtr getKnobHolder() const;
     
     void connectDynamicProperties();
     
@@ -121,7 +123,63 @@ public:
         //only for string-param for now
         std::string str;
     };
+    
+    
+    static std::string
+    getParamLabel(OFX::Host::Param::Instance* param)
+    {
+        std::string label = param->getLabel();
+        
+        if ( label.empty() ) {
+            label = param->getShortLabel();
+        }
+        if ( label.empty() ) {
+            label = param->getLongLabel();
+        }
+        if ( label.empty() ) {
+            label = param->getName();
+        }
+        
+        return label;
+    }
+    
+    
+    template <typename TYPE>
+    boost::shared_ptr<TYPE>
+    checkIfKnobExistsWithNameOrCreate(const std::string& scriptName, OFX::Host::Param::Instance* param, int dimension)
+    {
+        EffectInstPtr holder = getKnobHolder();
+        assert(holder);
+#ifdef NATRON_ENABLE_IO_META_NODES
+        const KnobsVec& knobs = holder->getKnobs();
+        for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+            if ((*it)->getName() == scriptName) {
+                boost::shared_ptr<TYPE> isType = boost::dynamic_pointer_cast<TYPE>(*it);
+                if (isType) {
+                    
+                    //Remove from the parent if it exists, because it will be added again afterwards
+                    KnobPtr parent = isType->getParentKnob();
+                    isType->setParentKnob(KnobPtr());
+                    KnobGroup* parentGroup = dynamic_cast<KnobGroup*>(parent.get());
+                    KnobPage* parentPage = dynamic_cast<KnobPage*>(parent.get());
+                    if (parentGroup) {
+                        parentGroup->removeKnob(isType.get());
+                    }
+                    if (parentPage) {
+                        parentPage->removeKnob(isType.get());
+                    }
+                    return isType;
+                }
+                break;
+            }
+        }
+#endif
+        boost::shared_ptr<TYPE> ret = AppManager::createKnob<TYPE>(holder.get(), getParamLabel(param), dimension);
+        return ret;
+    }
 
+    
+    
 public Q_SLOTS:
     
     /*
@@ -158,7 +216,7 @@ protected:
 
 
 class OfxPushButtonInstance
-    : public OFX::Host::Param::PushbuttonInstance, public OfxParamToKnob
+    : public OfxParamToKnob, public OFX::Host::Param::PushbuttonInstance
 {
 public:
     OfxPushButtonInstance(const boost::shared_ptr<OfxEffectInstance>& node,
@@ -619,7 +677,7 @@ private:
 };
 
 class OfxGroupInstance
-    : public OFX::Host::Param::GroupInstance, public OfxParamToKnob
+    : public OfxParamToKnob, public OFX::Host::Param::GroupInstance
 {
 public:
 
@@ -648,7 +706,7 @@ private:
 };
 
 class OfxPageInstance
-    : public OFX::Host::Param::PageInstance, public OfxParamToKnob
+    : public OfxParamToKnob, public OFX::Host::Param::PageInstance
 {
 public:
 

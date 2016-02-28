@@ -147,9 +147,9 @@ OfxClipInstance::getUnmappedBitDepth() const
     }
     
     ///Return the hightest bit depth supported by the plugin
-    boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
+    EffectInstPtr effect = getEffectHolder();
     if (effect) {
-        std::string ret = effect->effectInstance()->bestSupportedDepth(kOfxBitDepthFloat);
+        const std::string& ret = natronsDepthToOfxDepth(effect->getNode()->getClosestSupportedBitDepth(eImageBitDepthFloat));
         if (ret == floatStr) {
             return floatStr;
         } else if (ret == shortStr) {
@@ -217,7 +217,7 @@ OfxClipInstance::getUnmappedComponents() const
 const std::string &
 OfxClipInstance::getPremult() const
 {
-    boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
+    EffectInstPtr effect = getEffectHolder();
     if (!effect) {
         return natronsPremultToOfxPremult(eImagePremultiplicationPremultiplied);
     }
@@ -328,7 +328,7 @@ OfxClipInstance::getFrameRate() const
      The frame rate property cannot be held onto images, hence return the "actual" frame rate,
      taking into account the node from which the image came from wrt the identity state
      */
-    boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
+    EffectInstPtr effect = getEffectHolder();
 
     if (isOutput() || getName() == CLIP_OFX_ROTO) {
         return effect->getFrameRate();
@@ -354,15 +354,15 @@ void
 OfxClipInstance::getFrameRange(double &startFrame,
                                double &endFrame) const
 {
-    assert(_imp->nodeInstance.lock());
     EffectInstPtr n = getAssociatedNode();
     if (n) {
         U64 hash = n->getRenderHash();
         n->getFrameRange_public(hash,&startFrame, &endFrame);
         
     } else {
+        n = getEffectHolder();
         double first,last;
-        _imp->nodeInstance.lock()->getApp()->getFrameRange(&first, &last);
+        n->getApp()->getFrameRange(&first, &last);
         startFrame = first;
         endFrame = last;
     }
@@ -377,7 +377,7 @@ OfxClipInstance::getFrameRange(double &startFrame,
 const std::string &
 OfxClipInstance::getFieldOrder() const
 {
-    boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
+    EffectInstPtr effect = getEffectHolder();
     if (!effect) {
         return natronsFieldingToOfxFielding(eImageFieldingOrderNone);
     }
@@ -397,7 +397,7 @@ bool
 OfxClipInstance::getConnected() const
 {
     ///a roto brush is always connected
-    boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
+    EffectInstPtr effect = getEffectHolder();
     assert(effect);
     if ( (getName() == CLIP_OFX_ROTO) && effect->getNode()->isRotoNode() ) {
         return true;
@@ -460,7 +460,7 @@ OfxClipInstance::getUnmappedFrameRange(double &unmappedStartFrame,
 bool
 OfxClipInstance::getContinuousSamples() const
 {
-    boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
+    EffectInstPtr effect = getEffectHolder();
     if (!effect) {
         return false;
     }
@@ -482,7 +482,7 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,
 {
     
     boost::shared_ptr<RotoDrawableItem> attachedStroke;
-    boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
+    EffectInstPtr effect = getEffectHolder();
     if (effect) {
         assert(effect->getNode());
         attachedStroke = effect->getNode()->getAttachedRotoItem();
@@ -678,7 +678,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     
     assert(!isOutput());
 
-    boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
+    EffectInstPtr effect = getEffectHolder();
     assert(effect);
     int inputnb = getInputNb();
     //If components param is not set (i.e: the plug-in uses regular clipGetImage call) then figure out the plane from the TLS set in OfxEffectInstance::render
@@ -842,7 +842,7 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane)
         }
     }
 
-    boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
+    EffectInstPtr effect = getEffectHolder();
     
     ImageComponents natronPlane;
     if (!ofxPlane) {
@@ -1348,9 +1348,25 @@ OfxClipInstance::getInputNb() const
 }
 
 EffectInstPtr
-OfxClipInstance::getAssociatedNode() const
+OfxClipInstance::getEffectHolder() const
 {
     boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
+    if (!effect) {
+        return effect;
+    }
+#ifdef NATRON_ENABLE_IO_META_NODES
+    NodePtr ioContainer = effect->getNode()->getIOContainer();
+    if (ioContainer) {
+        return ioContainer->getEffectInstance();
+    }
+#endif
+    return effect;
+}
+
+EffectInstPtr
+OfxClipInstance::getAssociatedNode() const
+{
+    EffectInstPtr effect = getEffectHolder();
     assert(effect);
     if ( (getName() == CLIP_OFX_ROTO) && effect->getNode()->isRotoNode() ) {
         return effect;

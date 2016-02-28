@@ -303,7 +303,7 @@ Q_SIGNALS:
 
 struct KnobChange
 {
-    KnobI* knob;
+    KnobPtr knob;
     ValueChangedReasonEnum reason;
     bool originatedFromMainThread;
 };
@@ -351,8 +351,8 @@ public:
      * for Curve.
      **/
     virtual void populate() = 0;
-    virtual void setKnobGuiPointer(KnobGuiI* ptr) = 0;
-    virtual KnobGuiI* getKnobGuiPointer() const = 0;
+    virtual void setKnobGuiPointer(const boost::shared_ptr<KnobGuiI>& ptr) = 0;
+    virtual boost::shared_ptr<KnobGuiI> getKnobGuiPointer() const = 0;
     virtual bool getAllDimensionVisible() const = 0;
     
     static bool areTypesCompatibleForSlave(KnobI* lhs, KnobI* rhs);
@@ -743,6 +743,7 @@ public:
      * @brief Returns a pointer to the holder owning the knob.
      **/
     virtual KnobHolder* getHolder() const = 0;
+    virtual void setHolder(KnobHolder* holder) = 0;
 
     /**
      * @brief Get the knob dimension. MT-safe as it is static and never changes.
@@ -1144,8 +1145,8 @@ public:
     };
     typedef boost::shared_ptr<KnobTLSData> KnobDataTLSPtr;
     
-    virtual void setKnobGuiPointer(KnobGuiI* ptr) OVERRIDE FINAL;
-    virtual KnobGuiI* getKnobGuiPointer() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setKnobGuiPointer(const boost::shared_ptr<KnobGuiI>& ptr) OVERRIDE FINAL;
+    virtual boost::shared_ptr<KnobGuiI> getKnobGuiPointer() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual bool getAllDimensionVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     /**
@@ -1284,6 +1285,7 @@ public:
     virtual void hideLabel()  OVERRIDE FINAL;
     virtual bool isLabelVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual KnobHolder* getHolder() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setHolder(KnobHolder* holder) OVERRIDE FINAL;
     virtual int getDimension() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAddNewLine(bool newLine) OVERRIDE FINAL;
     virtual void setAddSeparator(bool addSep) OVERRIDE FINAL;
@@ -2000,7 +2002,9 @@ public:
     
     void discardPanelPointer();
     
-    void refreshKnobs(bool keepCurPageIndex = true);
+    void recreateUserKnobs(bool keepCurPageIndex);
+    
+    void recreateKnobs(bool keepCurPageIndex);
     
     /**
      * @brief Dynamically removes a knob (from the GUI also)
@@ -2142,7 +2146,7 @@ public:
     
     bool isEvaluationBlocked() const;
 
-    void appendValueChange(KnobI* knob,double time, ViewSpec view, ValueChangedReasonEnum reason);
+    void appendValueChange(const KnobPtr& knob,double time, ViewSpec view, ValueChangedReasonEnum reason);
     
     bool isSetValueCurrentlyPossible() const;
     

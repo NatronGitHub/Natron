@@ -150,6 +150,8 @@ DockablePanelPrivate::DockablePanelPrivate(DockablePanel* publicI,
 ,_redoButton(NULL)
 ,_restoreDefaultsButton(NULL)
 ,_minimized(false)
+,_cmdBeingPushed(0)
+, _clearedStackDuringPush(false)
 ,_undoStack(stack)
 ,_floating(false)
 ,_floatingWidget(NULL)
@@ -212,7 +214,7 @@ DockablePanelPrivate::initializeKnobVector(const std::vector< boost::shared_ptr<
             
         }
         
-        KnobGui* newGui = findKnobGuiOrCreate(knobs[i],makeNewLine,lastRowWidget,knobsOnSameLine);
+        KnobGuiPtr newGui = findKnobGuiOrCreate(knobs[i],makeNewLine,lastRowWidget,knobsOnSameLine);
         ///childrens cannot be on the same row than their parent
         if (!isGroup && newGui) {
             lastRowWidget = newGui->getFieldContainer();
@@ -222,23 +224,23 @@ DockablePanelPrivate::initializeKnobVector(const std::vector< boost::shared_ptr<
     _publicInterface->refreshTabWidgetMaxHeight();
 }
 
-KnobGui*
+KnobGuiPtr
 DockablePanelPrivate::createKnobGui(const KnobPtr &knob)
 {
-    boost::weak_ptr<KnobI> k = knob;
-    std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator found = _knobs.find(k);
+    KnobsGuiMapping::iterator found = findKnobGui(knob);
 
-    if ( found != _knobs.end() ) {
+    if (found != _knobs.end()) {
         return found->second;
     }
 
-    KnobGui* ret =  appPTR->createGuiForKnob(knob,_publicInterface);
+    KnobGuiPtr ret(appPTR->createGuiForKnob(knob,_publicInterface));
     if (!ret) {
         qDebug() << "Failed to create Knob GUI";
 
-        return NULL;
+        return ret;
     }
-    _knobs.insert( make_pair(knob, ret) );
+    ret->initialize();
+    _knobs.push_back(make_pair(knob, ret));
 
     return ret;
 }
@@ -328,7 +330,7 @@ static QPixmap getStandardIcon(QMessageBox::Icon icon, int size, QWidget* widget
     return QPixmap();
 }
 
-KnobGui*
+KnobGuiPtr
 DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
                                           bool makeNewLine,
                                           QWidget* lastRowWidget,
@@ -337,7 +339,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
     assert(knob);
     boost::shared_ptr<KnobGroup> isGroup = boost::dynamic_pointer_cast<KnobGroup>(knob);
     boost::shared_ptr<KnobPage> isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
-    for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
+    for (KnobsGuiMapping::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
         if ( (it->first.lock() == knob) && it->second ) {
             if (isPage) {
                 return it->second;
@@ -354,18 +356,18 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
     
     if (isPage) {
         if (isPage->getChildren().empty()) {
-            return 0;
+            return KnobGuiPtr();
         }
         getOrCreatePage(isPage);
         KnobsVec children = isPage->getChildren();
         initializeKnobVector(children, lastRowWidget);
-        return 0;
+        return KnobGuiPtr();
     }
     
     
-    KnobGui* ret = createKnobGui(knob);
+    KnobGuiPtr ret = createKnobGui(knob);
     if (!ret) {
-        return 0;
+        return KnobGuiPtr();
     }
     
     KnobPtr parentKnob = knob->getParentKnob();
@@ -374,7 +376,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
     KnobGuiGroup* parentGui = 0;
     /// if this knob is within a group, make sure the group is created so far
     if (parentIsGroup) {
-        parentGui = dynamic_cast<KnobGuiGroup*>( findKnobGuiOrCreate( parentKnob,true,ret->getFieldContainer() ) );
+        parentGui = dynamic_cast<KnobGuiGroup*>( findKnobGuiOrCreate( parentKnob,true,ret->getFieldContainer() ).get() );
     }
     
     ///So far the knob could have no parent, in which case we force it to be in the default page.
@@ -435,9 +437,9 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
                     assert(page != _pages.end());
                     parentTabGroup = page->second.groupAsTab;
                 } else {
-                    std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _knobs.find(parentParent);
+                    KnobsGuiMapping::iterator it = findKnobGui(parentParent);
                     assert(it != _knobs.end());
-                    KnobGuiGroup* parentParentGroupGui = dynamic_cast<KnobGuiGroup*>(it->second);
+                    KnobGuiGroup* parentParentGroupGui = dynamic_cast<KnobGuiGroup*>(it->second.get());
                     assert(parentParentGroupGui);
                     parentTabGroup = parentParentGroupGui->getOrCreateTabWidget();
                 }
@@ -571,10 +573,13 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
             }
             if (!pixmapSet) {
                 QString labelStr(descriptionLabel.c_str());
-                labelStr += ":";
+                /*labelStr += ":";*/
+                if (ret->isLabelBold()) {
+                    label->setBold(true);
+                }
                 label->setText_overload(labelStr );
             }
-            QObject::connect( label, SIGNAL(clicked(bool)), ret, SIGNAL(labelClicked(bool)) );
+            QObject::connect( label, SIGNAL(clicked(bool)), ret.get(), SIGNAL(labelClicked(bool)) );
                 
             
             if (makeNewLine) {
@@ -619,7 +624,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
             assert(parentParentIsGroup || parentParentIsPage);
             if (parentParentIsGroup) {
                 KnobGuiGroup* parentParentGroupGui = dynamic_cast<KnobGuiGroup*>(findKnobGuiOrCreate(parentParent, true,
-                                                                                                     ret->getFieldContainer()));
+                                                                                                     ret->getFieldContainer()).get());
                 assert(parentParentGroupGui);
                 if (parentParentGroupGui) {
                     TabGroup* groupAsTab = parentParentGroupGui->getOrCreateTabWidget();
@@ -648,11 +653,11 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
             if (closestParentGroupTab) {
                 rowIndex = layout->rowCount();
             } else if (parentGui && knob->isDynamicallyCreated()) {
-                const std::list<KnobGui*>& children = parentGui->getChildren();
+                const std::list<KnobGuiWPtr>& children = parentGui->getChildren();
                 if (children.empty()) {
                     rowIndex = parentGui->getActualIndexInLayout();
                 } else {
-                    rowIndex = children.back()->getActualIndexInLayout();
+                    rowIndex = children.back().lock()->getActualIndexInLayout();
                 }
                 ++rowIndex;
             } else {
@@ -661,8 +666,12 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
             
 
             
+            const bool labelOnSameColumn = ret->isLabelOnSameColumn();
             
-            if (!label || !ret->isLabelVisible() || label->text().isEmpty()) {
+            if (!label || !ret->isLabelVisible() || label->text().isEmpty() || labelOnSameColumn) {
+                if (labelOnSameColumn && label) {
+                    fieldLayout->insertWidget(0, labelContainer);
+                }
                 layout->addWidget(fieldContainer,rowIndex,0, 1, 2);
             } else {
                 
@@ -732,6 +741,68 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
     }
     return ret;
 } // findKnobGuiOrCreate
+
+KnobsGuiMapping::iterator
+DockablePanelPrivate::findKnobGui(const KnobPtr& knob)
+{
+    for (KnobsGuiMapping::iterator it = _knobs.begin(); it!=_knobs.end(); ++it) {
+        if (it->first.lock() == knob) {
+            return it;
+        }
+    }
+    return _knobs.end();
+}
+
+void
+DockablePanelPrivate::refreshPagesOrder(const QString& curTabName, bool restorePageIndex)
+{
+    if (!_pagesEnabled) {
+        return;
+    }
+    std::list<std::pair<QWidget*,QString> > orderedPages;
+    const KnobsVec& knobs = _holder->getKnobs();
+    
+    std::list<KnobPage*> pages;
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        KnobPage* isPage = dynamic_cast<KnobPage*>(it->get());
+        if (isPage) {
+            pages.push_back(isPage);
+        }
+    }
+    for (std::list<KnobPage*>::iterator it = pages.begin(); it!=pages.end(); ++it) {
+        
+        PageMap::iterator foundPage = _pages.find((*it)->getLabel().c_str());
+        if (foundPage != _pages.end()) {
+            if ((*it)->getChildren().size() > 0) {
+                foundPage->second.tab->show();
+                orderedPages.push_back(std::make_pair(foundPage->second.tab,foundPage->first));
+            } else {
+                foundPage->second.tab->hide();
+            }
+        }
+        
+    }
+    
+    
+    _tabWidget->clear();
+    
+    
+    int index = 0;
+    int i = 0;
+    for (std::list<std::pair<QWidget*,QString> >::iterator it = orderedPages.begin(); it!=orderedPages.end(); ++it,++i) {
+        _tabWidget->addTab(it->first, it->second);
+        if (restorePageIndex && it->second == curTabName) {
+            index = i;
+        }
+    }
+    
+    if (index >= 0 && index < int(orderedPages.size())) {
+        _tabWidget->setCurrentIndex(index);
+    }
+    
+    
+
+}
 
 PageMap::iterator
 DockablePanelPrivate::getOrCreatePage(const boost::shared_ptr<KnobPage>& page)

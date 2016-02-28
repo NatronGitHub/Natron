@@ -322,7 +322,7 @@ ManageUserParamsDialogPrivate::initializeKnobs(const KnobsVec& knobs,QTreeWidget
 void
 ManageUserParamsDialogPrivate::rebuildUserPages()
 {
-    panel->scanForNewKnobs();
+    panel->recreateUserKnobs(true);
 }
 
 void
@@ -333,7 +333,7 @@ ManageUserParamsDialog::onPickClicked()
         bool useAlias;
         boost::shared_ptr<KnobPage> page;
         boost::shared_ptr<KnobGroup> group;
-        KnobGui* selectedKnob = dialog.getSelectedKnob(&useAlias,&page,&group);
+        KnobGuiPtr selectedKnob = dialog.getSelectedKnob(&useAlias,&page,&group);
         if (!selectedKnob) {
             return;
         }
