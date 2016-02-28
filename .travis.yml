@@ -52,6 +52,29 @@ addons:
     - python-pyside
     - libpyside-dev
     - libshiboken-dev
+    # packages for building openfx-io:
+    - libavcodec-dev
+    - libavformat-dev
+    - libswscale-dev
+    - libavutil-dev
+    - libswresample-dev
+    - libtinyxml-dev
+    - liblcms2-dev
+    - libyaml-cpp-dev
+    - libboost-dev
+    - libopenexr-dev
+    - libilmbase-dev
+    - libopenjpeg-dev
+    - libtiff5-dev
+    - libjpeg-dev
+    - libpng-dev
+    - libboost-filesystem-dev
+    - libboost-regex-dev
+    - libboost-thread-dev
+    - libboost-system-dev
+    - libwebp-dev
+    - libfreetype6-dev
+    - libssl-dev
   coverity_scan:
     # customized build script URL
     # TRAVIS_REPO_SLUG: owner_name/repo_name of repository currently being built
