@@ -593,6 +593,9 @@ KnobChoice::typeName() const
     return typeNameStatic();
 }
 
+#ifdef DEBUG
+#pragma message WARN("When enabling multi-view knobs, make this multi-view too")
+#endif
 void
 KnobChoice::onInternalValueChanged(int dimension, double time, ViewSpec /*view*/)
 {

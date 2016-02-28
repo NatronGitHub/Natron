@@ -483,9 +483,6 @@ private:
     std::vector<std::string> _entries;
     std::vector<std::string> _entriesHelp;
     
-#ifdef DEBUG
-#pragma message WARN("When enabling multi-view knobs, make this multi-view too")
-#endif
     std::string _lastValidEntry; // protected by _entriesMutex
     bool _addNewChoice;
     static const std::string _typeNameStr;
