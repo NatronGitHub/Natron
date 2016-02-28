@@ -39,6 +39,8 @@ addons:
     - ubuntu-toolchain-r-test
     # get a recent ffmpeg (>=2.5) for precise from ppa:archivematica/externals(2.5.1) or ppa:pavlyshko/precise(2.6.1)
     - ppa:archivematica/externals
+    - kalakris-cmake
+    - pythonxy-devel
     packages:
     - gcc-4.9
     - g++-4.9
