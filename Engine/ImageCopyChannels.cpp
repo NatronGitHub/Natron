@@ -91,13 +91,14 @@ Image::copyUnProcessedChannelsForPremult(const std::bitset<4> processChannels,
                     dst_pixels[c] = src_pixels[c]; /* neither src nor dst is not premultiplied */ \
                 }                                                       \
             }
+
+            PIX dstAorig = maxValue;
 #else
 /*Just copy the channels, after all if the user unchecked a channel, we do not want to change the values behind his back. 
  Rather we display a warning in  the GUI.*/
 #define DOCHANNEL(c) dst_pixels[c] = (!src_pixels || c >= srcNComps) ? 0 : src_pixels[c];
 #endif
 
-            PIX dstAorig = maxValue;
             if (dstNComps == 1 || dstNComps == 4) {
 #             ifdef DEBUG
                 assert(dst_pixels[dstNComps - 1] == dst_pixels[dstNComps - 1]); // check for NaN
