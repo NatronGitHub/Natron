@@ -137,6 +137,7 @@ make -C CImg CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp" CPPFLAGS="-I${INSTAL
 make CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" CONFIG=relwithdebinfo BITS=$BIT -j${MKJOBS} || exit 1
 
 cp -a */MINGW${BIT}_NT-6.1-${BIT}-*/*.ofx.bundle $INSTALL_PATH/Plugins/ || exit 1
+echo $MISC_V > $INSTALL_PATH/Plugins/Misc.ofx.bundle-version.txt || exit 1
 
 mkdir -p $INSTALL_PATH/docs/openfx-misc || exit 1
 cp LICENSE README* $INSTALL_PATH/docs/openfx-misc/ || exit 1
@@ -183,6 +184,7 @@ sed -i "s/IOPLUG_DEVEL_GIT=.*/IOPLUG_DEVEL_GIT=${IO_V}/" $CWD/commits-hash.sh ||
 env CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" make CONFIG=relwithdebinfo BITS=$BIT -j${MKJOBS} || exit 1
 
 cp -a IO/MINGW${BIT}_NT-6.1-${BIT}-*/IO.ofx.bundle $INSTALL_PATH/Plugins/ || exit 1
+echo $IO_V > $INSTALL_PATH/Plugins/IO.ofx.bundle-version.txt || exit 1
 
 mkdir -p $INSTALL_PATH/docs/openfx-io || exit 1
 cp LICENSE README* $INSTALL_PATH/docs/openfx-io/ || exit 1
@@ -232,6 +234,7 @@ sed -i "s/ARENAPLUG_DEVEL_GIT=.*/ARENAPLUG_DEVEL_GIT=${ARENA_V}/" $CWD/commits-h
 
 env CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" make MINGW=1 USE_SVG=1 USE_PANGO=1 STATIC=1 CONFIG=relwithdebinfo BITS=$BIT -j${MKJOBS} || exit 1
 cp -a Bundle/MINGW${BIT}_NT-6.1-${BIT}-*/Arena.ofx.bundle $INSTALL_PATH/Plugins/ || exit 1
+echo $ARENA_V > $INSTALL_PATH/Plugins/Arena.ofx.bundle-version.txt || exit 1
 
 
 mkdir -p $INSTALL_PATH/docs/openfx-arena || exit 1

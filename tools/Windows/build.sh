@@ -133,20 +133,7 @@ fi
 
 
 if [ "$NOBUILD" != "1" ]; then
-    if [ "$ONLY_PLUGINS" != "1" ]; then
-        echo -n "Building Natron ... "
-        env NATRON_LICENSE=$NATRON_LICENSE MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER DISABLE_BREAKPAD=$DISABLE_BREAKPAD sh $INC_PATH/scripts/build-natron.sh $BIT $BRANCH >& $LOGS/natron.$PKGOS$BIT.$TAG.log || FAIL=1
-        if [ "$FAIL" != "1" ]; then
-            echo OK
-        else
-            echo ERROR
-            echo "BUILD__ERROR" >> $LOGS/natron.$PKGOS$BIT.$TAG.log
-            sleep 2
-            cat $LOGS/natron.$PKGOS$BIT.$TAG.log
-            rm -f $KILLSCRIPT
-        fi
-    fi
-    if [ "$FAIL" != "1" -a "$ONLY_NATRON" != "1" ]; then
+    if [ "$ONLY_NATRON" != "1" ]; then
         echo -n "Building Plugins ... "
         env NATRON_LICENSE=$NATRON_LICENSE MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CV=0 BUILD_IO=$IO BUILD_MISC=$MISC BUILD_ARENA=$ARENA sh $INC_PATH/scripts/build-plugins.sh $BIT $BRANCH >& $LOGS/plugins.$PKGOS$BIT.$TAG.log || FAIL=1
         if [ "$FAIL" != "1" ]; then
@@ -158,6 +145,19 @@ if [ "$NOBUILD" != "1" ]; then
             cat $LOGS/plugins.$PKGOS$BIT.$TAG.log
             rm -f $KILLSCRIPT
         fi  
+    fi
+    if [ "$FAIL" != "1" -a "$ONLY_PLUGINS" != "1" ]; then
+        echo -n "Building Natron ... "
+        env NATRON_LICENSE=$NATRON_LICENSE MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER DISABLE_BREAKPAD=$DISABLE_BREAKPAD sh $INC_PATH/scripts/build-natron.sh $BIT $BRANCH >& $LOGS/natron.$PKGOS$BIT.$TAG.log || FAIL=1
+        if [ "$FAIL" != "1" ]; then
+            echo OK
+        else
+            echo ERROR
+            echo "BUILD__ERROR" >> $LOGS/natron.$PKGOS$BIT.$TAG.log
+            sleep 2
+            cat $LOGS/natron.$PKGOS$BIT.$TAG.log
+            rm -f $KILLSCRIPT
+        fi
     fi
 fi
 

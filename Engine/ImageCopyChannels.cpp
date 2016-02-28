@@ -29,6 +29,10 @@
 
 #include <QDebug>
 
+// NATRON_COPY_CHANNELS_UNPREMULT:
+// Repremult R G and B if output is premult and alpha was modified.
+// We do not consider it a good thing, since the user explicitely deselected the channels, and expects
+// to get the values from input instead.
 //#define NATRON_COPY_CHANNELS_UNPREMULT
 
 NATRON_NAMESPACE_ENTER;
@@ -64,8 +68,11 @@ Image::copyUnProcessedChannelsForPremult(const std::bitset<4> processChannels,
                 srcA = src_pixels[srcNComps - 1];
             }
 
-#if 0
-#define DOCHANNEL(c)                                                    \
+#        ifdef NATRON_COPY_CHANNELS_UNPREMULT
+            // Repremult R G and B if output is premult and alpha was modified.
+            // We do not consider it a good thing, since the user explicitely deselected the channels, and expects
+            // to get the values from input instead.
+#           define DOCHANNEL(c)                                                    \
             if (srcNComps == 1 || !src_pixels || c >= srcNComps) {      \
                 dst_pixels[c] = 0;                                      \
             } else if (originalPremult) {                               \
@@ -91,18 +98,22 @@ Image::copyUnProcessedChannelsForPremult(const std::bitset<4> processChannels,
                     dst_pixels[c] = src_pixels[c]; /* neither src nor dst is not premultiplied */ \
                 }                                                       \
             }
-#else
-/*Just copy the channels, after all if the user unchecked a channel, we do not want to change the values behind his back. 
- Rather we display a warning in  the GUI.*/
-#define DOCHANNEL(c) dst_pixels[c] = (!src_pixels || c >= srcNComps) ? 0 : src_pixels[c];
-#endif
 
             PIX dstAorig = maxValue;
+#         else // !NATRON_COPY_CHANNELS_UNPREMULT
+            // Just copy the channels, after all if the user unchecked a channel,
+            // we do not want to change the values behind his back.
+            // Rather we display a warning in  the GUI.
+#           define DOCHANNEL(c) dst_pixels[c] = (!src_pixels || c >= srcNComps) ? 0 : src_pixels[c];
+#         endif // !NATRON_COPY_CHANNELS_UNPREMULT
+
             if (dstNComps == 1 || dstNComps == 4) {
 #             ifdef DEBUG
                 assert(dst_pixels[dstNComps - 1] == dst_pixels[dstNComps - 1]); // check for NaN
 #             endif
+#             ifdef NATRON_COPY_CHANNELS_UNPREMULT
                 dstAorig = dst_pixels[dstNComps - 1];
+#             endif // NATRON_COPY_CHANNELS_UNPREMULT
             }
             if (doR) {
 #             ifdef DEBUG
@@ -135,7 +146,7 @@ Image::copyUnProcessedChannelsForPremult(const std::bitset<4> processChannels,
 #             endif
             }
             if (doA) {
-#ifdef        NATRON_COPY_CHANNELS_UNPREMULT
+#             ifdef NATRON_COPY_CHANNELS_UNPREMULT
                 if (premult) {
                     if (dstAorig != 0) {
                         // unpremult, then premult
@@ -159,7 +170,7 @@ Image::copyUnProcessedChannelsForPremult(const std::bitset<4> processChannels,
                         }
                     }
                 }
-#             endif
+#             endif // NATRON_COPY_CHANNELS_UNPREMULT
                 if (dstNComps == 1 || dstNComps == 4) {
                     dst_pixels[dstNComps - 1] = srcA;
 #                 ifdef DEBUG
@@ -242,7 +253,7 @@ Image::copyUnProcessedChannelsForPremult(const bool premult,
 #             endif
             }
             if (doA) {
-#ifdef            NATRON_COPY_CHANNELS_UNPREMULT
+#             ifdef NATRON_COPY_CHANNELS_UNPREMULT
                 if (premult) {
                     if (dstAorig != 0) {
                         // unpremult, then premult
@@ -266,7 +277,7 @@ Image::copyUnProcessedChannelsForPremult(const bool premult,
                         }
                     }
                 }
-#              endif
+#              endif // NATRON_COPY_CHANNELS_UNPREMULT
                 if (dstNComps == 1 || dstNComps == 4) {
                     dst_pixels[dstNComps - 1] = srcA;
 #                 ifdef DEBUG
