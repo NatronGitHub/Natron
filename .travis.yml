@@ -67,7 +67,7 @@ addons:
     - libopenexr-dev
     - libilmbase-dev
     - libopenjpeg-dev
-    - libtiff5-dev
+    - libtiff4-dev
     - libjpeg-dev
     - libpng-dev
     - libboost-filesystem-dev
