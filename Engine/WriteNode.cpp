@@ -28,6 +28,8 @@
 
 #include "Global/QtCompat.h"
 
+#include <ofxNatron.h>
+
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/Node.h"
