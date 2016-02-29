@@ -54,14 +54,22 @@ depends_skip_archcheck txt2man
 compiler.blacklist apple-gcc-4.0 apple-gcc-4.2 gcc-3.3 gcc-4.0 gcc-4.2 macports-gcc-4.0 macports-gcc-4.2
 
 # The PowerPC build requires GCC >= 4.8, which doesn't recognize the -arch flag, and requires libatomic
-if {${configure.build_arch} eq "ppc"} {
-    compiler.blacklist-append macports-gcc-4.3 macports-gcc-4.4 macports-gcc-4.5 macports-gcc-4.6 macports-gcc-4.7 macports-clang-3.3 macports-clang-3.4 macports-clang-3.5 
-    # the following removes the flag "-arch ppc" put by cmake-1.0 portgroup in the pre-configure phase
-    pre-configure {
-        configure.args-delete -DCMAKE_OSX_ARCHITECTURES="${configure.build_arch}"
-    }
-    # -latomic is necessary on ppc for __atomic_fetch_add_8 and __atomic_exchange_8
-    configure.args-append -DCMAKE_SHARED_LINKER_FLAGS=-latomic -DCMAKE_EXE_LINKER_FLAGS=-latomic
+# Unfortunately, the resulting binaries don't work (at least on PPC), so we build without threads
+if {${configure.build_arch} eq "ppc" || ${configure.build_arch} eq "ppc64"} {
+     compiler.blacklist-append macports-clang-3.3 macports-clang-3.4 macports-clang-3.5
+#    compiler.blacklist-append macports-gcc-4.3 macports-gcc-4.4 macports-gcc-4.5 macports-gcc-4.6 macports-gcc-4.7
+#    # the following removes the flag "-arch ppc" put by cmake-1.0 portgroup in the pre-configure phase
+#    pre-configure {
+#        configure.args-delete -DCMAKE_OSX_ARCHITECTURES="${configure.build_arch}"
+#    }
+#    ## -latomic is necessary on ppc for __atomic_fetch_add_8 and __atomic_exchange_8
+#    configure.args-append -DCMAKE_SHARED_LINKER_FLAGS=-latomic -DCMAKE_EXE_LINKER_FLAGS=-latomic
+    # env PATH=/opt/local/libexec/qt4/bin:$PATH cmake .. -DNOTHREADS=ON -DCMAKE_BUILD_TYPE=Debug -DSTOP_ON_WARNING=OFF
+    configure.args-append -DNOTHREADS=ON -DSTOP_ON_WARNING=OFF
+    ## uncomment the following to compile with buggy thread support
+    # env PATH=/opt/local/libexec/qt4/bin:$PATH cmake .. -DCMAKE_C_COMPILER=gcc-mp-4.9 -DCMAKE_CXX_COMPILER=g++-mp-4.9 -DCMAKE_SHARED_LINKER_FLAGS=-latomic -DCMAKE_EXE_LINKER_FLAGS=-latomic -DCMAKE_BUILD_TYPE=Debug -DSTOP_ON_WARNING=OFF
+    ## -latomic is necessary on ppc for __atomic_fetch_add_8 and __atomic_exchange_8
+    #configure.args-append -DCMAKE_SHARED_LINKER_FLAGS=-latomic -DCMAKE_EXE_LINKER_FLAGS=-latomic
 }
 
 #post-extract {
@@ -84,6 +92,8 @@ patchfiles \
     oiio-1.5.23-invalidatespec.patch \
     oiio-1.6.10-simd.patch \
     oiio-1.6.10-vectorofconst.patch
+    oiio-sha1.patch \
+    oiio-nothreads.patch
 
 cmake.out_of_source yes
 
