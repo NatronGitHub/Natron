@@ -58,7 +58,7 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
-#define NATRON_PYPLUG_EXPORTER_VERSION 6
+#define NATRON_PYPLUG_EXPORTER_VERSION 7
 
 NATRON_NAMESPACE_ENTER;
 
@@ -1623,6 +1623,18 @@ static bool exportKnobValues(int indentLevel,
         return false;
     }
     
+    EffectInstance* holderIsEffect = dynamic_cast<EffectInstance*>(knob->getHolder());
+    
+    if (isChoice && holderIsEffect) {
+        //Do not serialize mask channel selector if the mask is not enabled
+        int maskInputNb = holderIsEffect->getNode()->isMaskChannelKnob(isChoice);
+        if (maskInputNb != -1) {
+            if (!holderIsEffect->getNode()->isMaskEnabled(maskInputNb)) {
+                return false;
+            }
+        }
+    }
+    
     int innerIdent = mustDefineParam ? 2 : 1;
     
     for (int i = 0; i < knob->getDimension(); ++i) {
@@ -1709,22 +1721,7 @@ static bool exportKnobValues(int indentLevel,
                     double v = isDouble->getValue(i, ViewIdx(0), true);
                     WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + NUM_VALUE(v) + ", " + NUM_INT(i) + ")");
                 } else if (isChoice) {
-                    WRITE_INDENT(innerIdent); WRITE_STATIC_LINE("options = param.getOptions()");
-                    WRITE_INDENT(innerIdent); WRITE_STATIC_LINE("foundOption = False");
-                    WRITE_INDENT(innerIdent); WRITE_STATIC_LINE("for i in range(len(options)):");
-                    WRITE_INDENT(innerIdent + 1); WRITE_STRING("if options[i] == " + ESC(isChoice->getActiveEntryText_mt_safe()) + ":");
-                    WRITE_INDENT(innerIdent + 2); WRITE_STATIC_LINE("param.setValue(i)");
-                    WRITE_INDENT(innerIdent + 2); WRITE_STATIC_LINE("foundOption = True");
-                    WRITE_INDENT(innerIdent + 2); WRITE_STATIC_LINE("break");
-                    WRITE_INDENT(innerIdent); WRITE_STATIC_LINE("if not foundOption:");
-                    std::stringstream error;
-                    error << "Could not set option for parameter " << isChoice->getName() ;
-                    KnobHolder* holder = isChoice->getHolder();
-                    EffectInstance* instance = dynamic_cast<EffectInstance*>(holder);
-                    if (instance) {
-                        error << " of node " << instance->getNode()->getFullyQualifiedName();
-                    }
-                    WRITE_INDENT(innerIdent + 1); WRITE_STRING("app.writeToScriptEditor(" + ESC(error.str()) + ")");
+                    WRITE_INDENT(innerIdent); WRITE_STRING("param.set(" + ESC(isChoice->getActiveEntryText_mt_safe()) + ")");
                 } else if (isInt) {
                     int v = isInt->getValue(i, ViewIdx(0), true);
                     WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + NUM_INT(v) + ", " + NUM_INT(i) + ")");

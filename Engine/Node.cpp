@@ -6611,7 +6611,16 @@ Node::findClosestSupportedComponents(int inputNb,
     return findClosestInList(comp, comps, _imp->effect->isMultiPlanar());
 }
 
-
+int
+Node::isMaskChannelKnob(const KnobI* knob) const
+{
+    for ( std::map<int, MaskSelector >::const_iterator it = _imp->maskSelectors.begin(); it!=_imp->maskSelectors.end(); ++it) {
+        if (it->second.channel.lock().get() == knob) {
+            return it->first;
+        }
+    }
+    return -1;
+}
 
 int
 Node::getMaskChannel(int inputNb,ImageComponents* comps,NodePtr* maskInput) const

@@ -317,6 +317,8 @@ public:
      * A = 3
      **/
     int getMaskChannel(int inputNb,ImageComponents* comps, NodePtr* maskInput) const;
+    
+    int isMaskChannelKnob(const KnobI* knob) const;
 
     /**
      * @brief Returns whether masking is enabled or not
