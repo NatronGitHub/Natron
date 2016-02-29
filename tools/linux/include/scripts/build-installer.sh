@@ -533,4 +533,19 @@ fi
 
 rm $REPO_DIR/installers/$ONLINE_INSTALL $REPO_DIR/installers/$BUNDLED_INSTALL
 
+# Unit tests
+if [ "$BIT" = "64" ]; then
+  UNIT_LOG="$REPO_DIR/logs/unit_tests.$PKGOS$BIT.$TAG.log"
+  if [ ! -d "$CWD/Natron-Tests" ]; then
+    cd $CWD || exit 1
+    git clone $GIT_UNIT || exit 1
+    cd Natron-Tests || exit 1
+  else
+    cd $CWD/Natron-Tests || exit 1
+    git pull
+  fi
+  echo "Running unit tests ..."
+  sh runOnServer.sh >& "$UNIT_LOG"
+fi
+
 echo "All Done!!!"

@@ -466,4 +466,30 @@ if [ "$NO_ZIP" != "1" ]; then
     (cd $ARCHIVE_DIR; zip -r ${ZIP_ARCHIVE_BASE}.zip ${ZIP_ARCHIVE_BASE} || exit 1; rm -rf ${ZIP_ARCHIVE_BASE};)
 fi
 
+
+# UnitTests
+if [ "$BIT" = "64" ]; then
+
+UNIT_TMP=$INSTALLER/UnitTests
+UNIT_LOG=$REPO_DIR/logs/unit_tests.$PKGOS$BIT.$TAG.log
+
+if [ ! -d "$UNIT_TMP" ]; then
+  mkdir -p "$UNIT_TMP" || exit 1
+fi
+cp -a $INSTALLER/packages/*/data/* $UNIT_TMP/ || exit 1
+cd $CWD || exit 1
+if [ -d "$CWD/Natron-Tests" ]; then 
+  cd Natron-Tests || exit 1
+  git pull
+else
+  git clone $GIT_UNIT || exit 1
+  cd Natron-Tests || exit 1
+fi
+echo "Running unit tests ..."
+export FONTCONFIG_PATH=$UNIT_TMP/Resources/etc/fonts/fonts.conf
+mkdir -p ~/.cache/INRIA/Natron/{ViewerCache,DiskCache}
+COMPARE=`pwd`/compare.exe sh runTests.sh $UNIT_TMP/bin/NatronRenderer >& "$UNIT_LOG"
+
+fi
+
 echo "All Done!!!"

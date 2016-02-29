@@ -41,7 +41,6 @@
 # BUILD_NUMBER=X: To be set to indicate the revision number of the build. For example RC1,RC2, RC3 etc...
 # TARSRC=1 : tar sources
 # NATRON_LICENSE=(GPL,COMMERCIAL)
-# UNIT_TESTS=1 : do unit tests
 
 # USAGE example: BUILD_CONFIG=STABLE BUILD_NUMBER=1 NATRON_LICENSE=GPL BUILD_CONFIG=SNAPSHOT build2.sh workshop<branch> 8<noThreads>
 
@@ -179,26 +178,6 @@ if [ "$NOPKG" != "1" -a "$FAIL" != "1" ]; then
         echo "BUILD__ERROR" >> $log
         cat "$log"
     fi 
-fi
-
-if [ "$UNIT_TESTS" = "1" ]; then
-  log="$LOGS/unit_tests.$PKGOS$BIT.$TAG.log"
-  echo "Running unit tests (log in $log) ..."
-  if [ ! -d "$CWD/Natron-Tests" ]; then
-    cd $CWD || exit 1
-    git clone $GIT_UNIT || exit 1
-    cd Natron-Tests || exit 1
-  else
-    cd $CWD/Natron-Tests || exit 1
-    git pull
-  fi
-  sh runOnServer.sh >& "$log"
-fi
-
-if [ "$BRANCH" = "workshop" ]; then
-    ONLINE_REPO_BRANCH=snapshots
-else
-    ONLINE_REPO_BRANCH=releases
 fi
 
 BIT_SUFFIX=bit
