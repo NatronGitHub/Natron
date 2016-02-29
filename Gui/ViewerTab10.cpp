@@ -234,8 +234,12 @@ ViewerTab::toggleStartBackward()
 void
 ViewerTab::startPause(bool b)
 {
+    
     abortRendering();
     if (b) {
+        if (getGui()->getApp()->checkAllReadersModificationDate(true)) {
+            return;
+        }
         getGui()->getApp()->setLastViewerUsingTimeline(_imp->viewerNode->getNode());
         std::vector<ViewIdx> viewsToRender;
         {
@@ -311,6 +315,9 @@ ViewerTab::onEngineStopped()
         _imp->play_Backward_Button->setDown(false);
         _imp->play_Backward_Button->setChecked(false);
     }
+    
+    _imp->currentFrameBox->setValue(_imp->viewerNode->getTimeline()->currentFrame());
+    
     if (getGui() && getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
         getGui()->onFreezeUIButtonClicked(false);
     } else {
@@ -325,6 +332,9 @@ ViewerTab::startBackward(bool b)
 {
     abortRendering();
     if (b) {
+        if (getGui()->getApp()->checkAllReadersModificationDate(true)) {
+            return;
+        }
         getGui()->getApp()->setLastViewerUsingTimeline(_imp->viewerNode->getNode());
         std::vector<ViewIdx> viewsToRender;
         {
@@ -390,12 +400,15 @@ ViewerTab::lastFrame()
 
 void
 ViewerTab::onTimeLineTimeChanged(SequenceTime time,
-                                 int /*reason*/)
+                                 int reason)
 {
     if (!getGui()) {
         return;
     }
-    _imp->currentFrameBox->setValue(time);
+    TimelineChangeReasonEnum r = (TimelineChangeReasonEnum)reason;
+    if (r != eTimelineChangeReasonPlaybackSeek) {
+        _imp->currentFrameBox->setValue(time);
+    }
     
     if (_imp->timeLineGui->getTimeline() != getGui()->getApp()->getTimeLine()) {
         _imp->viewerNode->renderCurrentFrame(true);
@@ -422,6 +435,9 @@ ViewerTab::centerViewer()
 void
 ViewerTab::refresh(bool enableRenderStats)
 {
+    //Check if readers files have changed on disk
+    getGui()->getApp()->checkAllReadersModificationDate(false);
+    
     _imp->viewerNode->forceFullComputationOnNextFrame();
     if (!enableRenderStats) {
         _imp->viewerNode->renderCurrentFrame(true);

@@ -2811,14 +2811,17 @@ void DopeSheetView::onTimeLineFrameChanged(SequenceTime sTime, int reason)
 
     _imp->computeTimelinePositions();
 
-    redraw();
+    if (isVisible()) {
+        redraw();
+    }
 }
 
 void DopeSheetView::onTimeLineBoundariesChanged(int, int)
 {
     running_in_main_thread();
-
-    redraw();
+    if (isVisible()) {
+        redraw();
+    }
 }
 
 void DopeSheetView::onNodeAdded(DSNode *dsNode)

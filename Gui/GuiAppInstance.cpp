@@ -53,6 +53,7 @@
 #include "Gui/BackdropGui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
+#include "Gui/KnobGuiFile.h"
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/ProgressPanel.h"
 #include "Gui/ViewerTab.h"
@@ -1492,6 +1493,32 @@ GuiAppInstance::getKnobDnDData(QDrag** drag, KnobPtr* knob, int* dimension) cons
     *knob = _imp->knobDnd.source.lock();
     *dimension = _imp->knobDnd.sourceDimension;
     *drag = _imp->knobDnd.drag;
+}
+
+bool
+GuiAppInstance::checkAllReadersModificationDate(bool errorAndWarn)
+{
+    NodesList allNodes;
+    SequenceTime time = getProject()->getCurrentTime();
+    getProject()->getNodes_recursive(allNodes, true);
+    bool changed =  false;
+    for (NodesList::iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
+        if ((*it)->getEffectInstance()->isReader()) {
+            KnobPtr fileKnobI = (*it)->getKnobByName(kOfxImageEffectFileParamName);
+            assert(fileKnobI);
+            if (!fileKnobI) {
+                continue;
+            }
+            boost::shared_ptr<KnobGuiI> knobUi_i = fileKnobI->getKnobGuiPointer();
+            KnobGuiFile* isFileKnob = dynamic_cast<KnobGuiFile*>(knobUi_i.get());
+            
+            if (!isFileKnob) {
+                continue;
+            }
+            changed |= isFileKnob->checkFileModificationAndWarn(time, errorAndWarn);
+        }
+    }
+    return changed;
 }
 
 NATRON_NAMESPACE_EXIT;

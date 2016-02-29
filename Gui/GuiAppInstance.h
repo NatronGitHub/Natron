@@ -190,6 +190,8 @@ public:
     void setKnobDnDData(QDrag* drag, const KnobPtr& knob, int dimension);
     void getKnobDnDData(QDrag** drag,  KnobPtr* knob, int* dimension) const;
     
+    bool checkAllReadersModificationDate(bool errorAndWarn);
+    
 public Q_SLOTS:
     
 

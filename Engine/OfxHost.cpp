@@ -757,7 +757,7 @@ OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std::string,
             try {
                 OFX::Host::PluginCache::getPluginCache()->readCache(ifs);
             } catch (const std::exception& e) {
-                qDebug() << "Failure to read OpenFX plug-ins cache: " << e.what();
+                appPTR->writeToErrorLog_mt_safe(QObject::tr("Failure to read OpenFX plug-ins cache: ") + QString(e.what()));
             }
         }
     }

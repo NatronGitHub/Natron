@@ -36,7 +36,6 @@
 #include <QApplication>
 #include <QStyledItemDelegate>
 #include <QAction>
-#include <QFileSystemWatcher>
 
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobFile.h"
@@ -71,13 +70,11 @@ KnobGuiFile::KnobGuiFile(KnobPtr knob,
     , _openFileButton(0)
     , _reloadButton(0)
     , _lastOpened()
-    , _watcher(new QFileSystemWatcher)
-    , _fileBeingWatched()
+    , _lastModificationDates()
 {
     boost::shared_ptr<KnobFile> k = boost::dynamic_pointer_cast<KnobFile>(knob);
     assert(k);
     QObject::connect( k.get(), SIGNAL(openFile()), this, SLOT(open_file()) );
-    QObject::connect(_watcher, SIGNAL(fileChanged(QString)), this, SLOT(watchedFileChanged()));
     _knob = k;
 
 }
@@ -90,7 +87,6 @@ void KnobGuiFile::removeSpecificGui()
 {
     delete _lineEdit;
     delete _openFileButton;
-    delete _watcher;
 }
 
 void
@@ -98,18 +94,16 @@ KnobGuiFile::createWidget(QHBoxLayout* layout)
 {
     
     boost::shared_ptr<KnobFile> knob = _knob.lock();
-    if (knob->getHolder() && knob->getEvaluateOnChange()) {
+    
+    EffectInstance* holderIsEffect = dynamic_cast<EffectInstance*>(knob->getHolder());
+    
+    if (holderIsEffect && holderIsEffect->isReader() && knob->getName() == kOfxImageEffectFileParamName) {
         boost::shared_ptr<TimeLine> timeline = getGui()->getApp()->getTimeLine();
         QObject::connect(timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onTimelineFrameChanged(SequenceTime,int)));
     }
     
-    QWidget *container = new QWidget( layout->parentWidget() );
-    QHBoxLayout *containerLayout = new QHBoxLayout(container);
-    container->setLayout(containerLayout);
-    containerLayout->setSpacing(0);
-    containerLayout->setContentsMargins(0, 0, 0, 0);
     
-    _lineEdit = new LineEdit(container);
+    _lineEdit = new LineEdit(layout->parentWidget());
     //layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     _lineEdit->setPlaceholderText( tr("File path...") );
     _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -120,7 +114,7 @@ KnobGuiFile::createWidget(QHBoxLayout* layout)
     QObject::connect( _lineEdit, SIGNAL(editingFinished()), this, SLOT(onTextEdited()) );
 
 
-    _openFileButton = new Button(container);
+    _openFileButton = new Button(layout->parentWidget());
     _openFileButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QPixmap pix;
     appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pix);
@@ -129,11 +123,11 @@ KnobGuiFile::createWidget(QHBoxLayout* layout)
     _openFileButton->setFocusPolicy(Qt::NoFocus); // exclude from tab focus
     QObject::connect( _openFileButton, SIGNAL(clicked()), this, SLOT(onButtonClicked()) );
     
-    containerLayout->addWidget(_lineEdit);
-    containerLayout->addWidget(_openFileButton);
+    layout->addWidget(_lineEdit);
+    layout->addWidget(_openFileButton);
     
     if (knob->getHolder()) {
-        _reloadButton = new Button(container);
+        _reloadButton = new Button(layout->parentWidget());
         _reloadButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         _reloadButton->setFocusPolicy(Qt::NoFocus);
         QPixmap pixRefresh;
@@ -141,9 +135,8 @@ KnobGuiFile::createWidget(QHBoxLayout* layout)
         _reloadButton->setIcon(QIcon(pixRefresh));
         _reloadButton->setToolTip(GuiUtils::convertFromPlainText(tr("Reload the file."), Qt::WhiteSpaceNormal));
         QObject::connect( _reloadButton, SIGNAL(clicked()), this, SLOT(onReloadClicked()) );
-        containerLayout->addWidget(_reloadButton);
+        layout->addWidget(_reloadButton);
     }
-    layout->addWidget(container);
     
 }
 
@@ -226,10 +219,7 @@ KnobGuiFile::updateGUI(int /*dimension*/)
     
     bool useNotifications = appPTR->getCurrentSettings()->notifyOnFileChange();
     if (useNotifications && knob->getHolder() && knob->getEvaluateOnChange() ) {
-        if (!_fileBeingWatched.empty()) {
-            _watcher->removePath(_fileBeingWatched.c_str());
-            _fileBeingWatched.clear();
-        }
+        
         
         std::string newValue = knob->getFileName(knob->getCurrentTime(), ViewIdx(0));
         if (knob->getHolder()->getApp()) {
@@ -237,16 +227,21 @@ KnobGuiFile::updateGUI(int /*dimension*/)
         }
         QString file(newValue.c_str());
         
+        //The sequence probably changed, clear modification dates
+        _lastModificationDates.clear();
+        
         if (QFile::exists(file)) {
-            _watcher->addPath(file);
+            //If the file exists at the current time, set the modification date in the tooltip
             QFileInfo info(file);
-            _lastModified = info.lastModified();
+            QDateTime dateTime = info.lastModified();
+            
+            _lastModificationDates[newValue] = dateTime;
             
             QString tt = toolTip();
             tt.append("\n\nLast modified: ");
-            tt.append(_lastModified.toString(Qt::SystemLocaleShortDate));
+            tt.append(dateTime.toString(Qt::SystemLocaleShortDate));
             _lineEdit->setToolTip(tt);
-            _fileBeingWatched = newValue;
+
         }
     }
 }
@@ -254,67 +249,73 @@ KnobGuiFile::updateGUI(int /*dimension*/)
 void
 KnobGuiFile::onTimelineFrameChanged(SequenceTime time,int /*reason*/)
 {
-    
+    checkFileModificationAndWarnInternal(false, time, false);
+}
+
+bool
+KnobGuiFile::checkFileModificationAndWarnInternal(bool doCheck, SequenceTime time, bool errorAndAbortRender)
+{
     bool useNotifications = appPTR->getCurrentSettings()->notifyOnFileChange();
     if (!useNotifications) {
-        return;
+        return false;
     }
     boost::shared_ptr<KnobFile> knob = _knob.lock();
+    EffectInstance* effect = dynamic_cast<EffectInstance*>(knob->getHolder());
+    assert(effect);
+    if (!effect) {
+        return false;
+    }
+    
     ///Get the current file, if it exists, add the file path to the file system watcher
     ///to get notified if the file changes.
     std::string filepath = knob->getFileName(time, knob->getCurrentView());
     if (!filepath.empty() && knob->getHolder() && knob->getHolder()->getApp()) {
         knob->getHolder()->getApp()->getProject()->canonicalizePath(filepath);
     }
-    if (filepath != _fileBeingWatched  && knob->getHolder() && knob->getEvaluateOnChange() ) {
-        
-        
-        if (!_fileBeingWatched.empty()) {
-            _watcher->removePath(_fileBeingWatched.c_str());
-            _fileBeingWatched.clear();
-        }
-        
-        QString qfilePath(filepath.c_str());
-        
-        if (QFile::exists(qfilePath)) {
-            _watcher->addPath(qfilePath);
-            _fileBeingWatched = filepath;
-            QFileInfo info(qfilePath);
-            _lastModified = info.lastModified();
-        }
-    }
-   
     
-
+    QString qfilePath(filepath.c_str());
+    if (!QFile::exists(qfilePath)) {
+        return false;
+    }
+    
+    QDateTime date;
+    
+    if (doCheck) {
+        QFileInfo info(qfilePath);
+        date = info.lastModified();
+    }
+    
+    std::map<std::string,QDateTime>::iterator foundModificationDate = _lastModificationDates.find(filepath);
+    
+    
+    //We already have a modification date
+    bool ret = false;
+    if (foundModificationDate != _lastModificationDates.end()) {
+        if (doCheck && date != foundModificationDate->second) {
+            if (errorAndAbortRender) {
+                QString warn = tr("The file ") + qfilePath + tr(" has changed on disk. Press reload file to load the new version of the file");
+                effect->setPersistentMessage(eMessageTypeError, warn.toStdString());
+                effect->abortAnyEvaluation();
+            }
+            effect->purgeCaches();
+            effect->getNode()->removeAllImagesFromCache(true);
+            _lastModificationDates.clear();
+            ret = true;
+        } else {
+            return false;
+        }
+        
+    }
+    _lastModificationDates.insert(std::make_pair(filepath, date));
+    return ret;
 }
 
-void
-KnobGuiFile::watchedFileChanged()
+
+bool
+KnobGuiFile::checkFileModificationAndWarn(SequenceTime time, bool errorAndAbortRender)
 {
-    ///The file has changed, trigger a new render.
     
-    ///Make sure the node doesn't hold any cache
-    boost::shared_ptr<KnobFile> knob = _knob.lock();
-    if (knob->getHolder()) {
-        EffectInstance* effect = dynamic_cast<EffectInstance*>(knob->getHolder());
-        if (effect) {
-            effect->purgeCaches();
-            
-            if (_reloadButton) {
-                QFileInfo fileMonitored(_fileBeingWatched.c_str());
-                if (fileMonitored.lastModified() != _lastModified) {
-                    QString warn = tr("The file ") + _lineEdit->text() + tr(" has changed on disk. Press reload file to load the new version of the file");
-                    effect->setPersistentMessage(eMessageTypeWarning, warn.toStdString());
-                }
-                
-            } else {
-                 knob->evaluateValueChange(0, knob->getCurrentTime() , ViewIdx(0), eValueChangedReasonNatronInternalEdited);
-            }
-        }
-        
-    }
-    
-    
+    return checkFileModificationAndWarnInternal(true, time, errorAndAbortRender);
 }
 
 void KnobGuiFile::onTextEdited()
@@ -361,7 +362,7 @@ KnobGuiFile::setEnabled()
     bool enabled = getKnob()->isEnabled(0);
 
     _openFileButton->setEnabled(enabled);
-    _lineEdit->setReadOnly(!enabled);
+    _lineEdit->setReadOnly_NoFocusRect(!enabled);
 }
 
 void
@@ -369,7 +370,7 @@ KnobGuiFile::setReadOnly(bool readOnly,
                           int /*dimension*/)
 {
     _openFileButton->setEnabled(!readOnly);
-    _lineEdit->setReadOnly(readOnly);
+    _lineEdit->setReadOnly_NoFocusRect(readOnly);
 }
 
 void
@@ -454,7 +455,7 @@ KnobGuiFile::reflectExpressionState(int /*dimension*/,bool hasExpr)
 {
     bool isEnabled = _knob.lock()->isEnabled(0);
     _lineEdit->setAnimation(3);
-    _lineEdit->setReadOnly(hasExpr || !isEnabled);
+    _lineEdit->setReadOnly_NoFocusRect(hasExpr || !isEnabled);
     _openFileButton->setEnabled(!hasExpr || isEnabled);
 }
 
@@ -607,7 +608,7 @@ KnobGuiOutputFile::setEnabled()
     bool enabled = getKnob()->isEnabled(0);
 
     _openFileButton->setEnabled(enabled);
-    _lineEdit->setReadOnly(!enabled);
+    _lineEdit->setReadOnly_NoFocusRect(!enabled);
 }
 
 void
@@ -615,7 +616,7 @@ KnobGuiOutputFile::setReadOnly(bool readOnly,
                                 int /*dimension*/)
 {
     _openFileButton->setEnabled(!readOnly);
-    _lineEdit->setReadOnly(readOnly);
+    _lineEdit->setReadOnly_NoFocusRect(readOnly);
 }
 
 void
@@ -695,7 +696,7 @@ KnobGuiOutputFile::reflectExpressionState(int /*dimension*/,bool hasExpr)
 {
     bool isEnabled = _knob.lock()->isEnabled(0);
     _lineEdit->setAnimation(3);
-    _lineEdit->setReadOnly(hasExpr || !isEnabled);
+    _lineEdit->setReadOnly_NoFocusRect(hasExpr || !isEnabled);
     _openFileButton->setEnabled(!hasExpr || isEnabled);
 }
 
@@ -1179,7 +1180,7 @@ KnobGuiPath::setEnabled()
         _addPathButton->setEnabled(enabled);
         _removePathButton->setEnabled(enabled);
     } else {
-        _lineEdit->setReadOnly(!enabled);
+        _lineEdit->setReadOnly_NoFocusRect(!enabled);
         _openFileButton->setEnabled(enabled);
     }
 }
@@ -1193,7 +1194,7 @@ KnobGuiPath::setReadOnly(bool readOnly,
         _addPathButton->setEnabled(!readOnly);
         _removePathButton->setEnabled(!readOnly);
     } else {
-        _lineEdit->setReadOnly(readOnly);
+        _lineEdit->setReadOnly_NoFocusRect(readOnly);
         _openFileButton->setEnabled(!readOnly);
     }
 }
@@ -1388,7 +1389,7 @@ KnobGuiPath::reflectExpressionState(int /*dimension*/,bool hasExpr)
     if (!knob->isMultiPath()) {
         bool isEnabled = _knob.lock()->isEnabled(0);
         _lineEdit->setAnimation(3);
-        _lineEdit->setReadOnly(hasExpr || !isEnabled);
+        _lineEdit->setReadOnly_NoFocusRect(hasExpr || !isEnabled);
         _openFileButton->setEnabled(!hasExpr || isEnabled);
     }
 }

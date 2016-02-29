@@ -750,7 +750,7 @@ KnobGuiDouble::setEnabled()
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         bool b = knob->isEnabled(i) && !knob->isSlave(i);
         //_spinBoxes[i].first->setEnabled(b);
-        _spinBoxes[i].first->setReadOnly(!b);
+        _spinBoxes[i].first->setReadOnly_NoFocusRect(!b);
         if (_spinBoxes[i].second) {
             _spinBoxes[i].second->setEnabled(b);
         }
@@ -766,7 +766,7 @@ KnobGuiDouble::setReadOnly(bool readOnly,
                             int dimension)
 {
     assert( dimension < (int)_spinBoxes.size() );
-    _spinBoxes[dimension].first->setReadOnly(readOnly);
+    _spinBoxes[dimension].first->setReadOnly_NoFocusRect(readOnly);
     if ( _slider && (dimension == 0) ) {
         _slider->setReadOnly(readOnly);
     }
@@ -793,7 +793,7 @@ KnobGuiDouble::reflectExpressionState(int dimension,
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
     if (hasExpr) {
         _spinBoxes[dimension].first->setAnimation(3);
-        //_spinBoxes[dimension].first->setReadOnly(true);
+        //_spinBoxes[dimension].first->setReadOnly_NoFocusRect(true);
         if (_slider) {
             _slider->setReadOnly(true);
         }
@@ -801,7 +801,7 @@ KnobGuiDouble::reflectExpressionState(int dimension,
         AnimationLevelEnum lvl = knob->getAnimationLevel(dimension);
         _spinBoxes[dimension].first->setAnimation((int)lvl);
         bool isEnabled = knob->isEnabled(dimension);
-        _spinBoxes[dimension].first->setReadOnly(!isEnabled);
+        _spinBoxes[dimension].first->setReadOnly_NoFocusRect(!isEnabled);
         if (_slider) {
             bool isEnabled0 = knob->isEnabled(0);
             _slider->setReadOnly(!isEnabled0);

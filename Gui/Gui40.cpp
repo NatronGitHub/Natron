@@ -893,10 +893,22 @@ Gui::onTimelineTimeAboutToChange()
 }
 
 void
-Gui::onTimeChanged(SequenceTime time,
+Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,
                          int reason)
 {
+    TimeLine* timeline = qobject_cast<TimeLine*>(sender());
+    if (timeline != getApp()->getTimeLine().get()) {
+        return;
+    }
+    
     assert(QThread::currentThread() == qApp->thread());
+    if (reason == eTimelineChangeReasonUserSeek ||
+        reason == eTimelineChangeReasonDopeSheetEditorSeek ||
+        reason == eTimelineChangeReasonCurveEditorSeek) {
+        if (getApp()->checkAllReadersModificationDate(true)) {
+            return;
+        }
+    }
     
     boost::shared_ptr<Project> project = getApp()->getProject();
     bool isPlayback = reason == eTimelineChangeReasonPlaybackSeek;

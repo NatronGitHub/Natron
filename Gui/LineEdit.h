@@ -72,6 +72,14 @@ public:
         return altered;
     }
 
+    void setReadOnly_NoFocusRect(bool readOnly)
+    {
+        setReadOnly(readOnly);
+        
+        //setReadonly set the flag but we don't want it
+        setAttribute(Qt::WA_MacShowFocusRect, 0);
+    }
+    
 Q_SIGNALS:
     
     void textDropped();
@@ -83,6 +91,7 @@ public Q_SLOTS:
     void onEditingFinished();
 
 protected:
+    
     
     virtual void paintEvent(QPaintEvent* e) OVERRIDE;
 

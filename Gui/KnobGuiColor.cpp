@@ -611,7 +611,7 @@ KnobGuiColor::setEnabled()
     bool enabled0 = r && knob->getExpression(0).empty();
 
     //_rBox->setEnabled(r);
-    _rBox->setReadOnly(!r);
+    _rBox->setReadOnly_NoFocusRect(!r);
     _rLabel->setEnabled(r);
 
     _slider->setReadOnly(!enabled0);
@@ -622,16 +622,16 @@ KnobGuiColor::setEnabled()
         bool g = knob->isEnabled(1) && !knob->isSlave(1);
         bool b = knob->isEnabled(2) && !knob->isSlave(2);
         //_gBox->setEnabled(g);
-        _gBox->setReadOnly(!g);
+        _gBox->setReadOnly_NoFocusRect(!g);
         _gLabel->setEnabled(g);
         //_bBox->setEnabled(b);
-        _bBox->setReadOnly(!b);
+        _bBox->setReadOnly_NoFocusRect(!b);
         _bLabel->setEnabled(b);
     }
     if (_dimension >= 4) {
         bool a = knob->isEnabled(3) && !knob->isSlave(3);
         //_aBox->setEnabled(a);
-        _aBox->setReadOnly(!a);
+        _aBox->setReadOnly_NoFocusRect(!a);
         _aLabel->setEnabled(a);
     }
     _colorLabel->setEnabledMode(enabled0);
@@ -833,19 +833,19 @@ KnobGuiColor::reflectExpressionState(int dimension,
     switch (dimension) {
         case 0:
             _rBox->setAnimation(3);
-            //_rBox->setReadOnly(hasExpr || !isEnabled);
+            //_rBox->setReadOnly_NoFocusRect(hasExpr || !isEnabled);
             break;
         case 1:
             _gBox->setAnimation(3);
-            //_gBox->setReadOnly(hasExpr || !isEnabled);
+            //_gBox->setReadOnly_NoFocusRect(hasExpr || !isEnabled);
             break;
         case 2:
             _bBox->setAnimation(3);
-            //_bBox->setReadOnly(hasExpr || !isEnabled);
+            //_bBox->setReadOnly_NoFocusRect(hasExpr || !isEnabled);
             break;
         case 3:
             _aBox->setAnimation(3);
-            //_aBox->setReadOnly(hasExpr || !isEnabled);
+            //_aBox->setReadOnly_NoFocusRect(hasExpr || !isEnabled);
             break;
         default:
             break;
@@ -1303,13 +1303,13 @@ KnobGuiColor::setReadOnly(bool readOnly,
                            int dimension)
 {
     if ( (dimension == 0) && _rBox ) {
-        _rBox->setReadOnly(readOnly);
+        _rBox->setReadOnly_NoFocusRect(readOnly);
     } else if ( (dimension == 1) && _gBox ) {
-        _gBox->setReadOnly(readOnly);
+        _gBox->setReadOnly_NoFocusRect(readOnly);
     } else if ( (dimension == 2) && _bBox ) {
-        _bBox->setReadOnly(readOnly);
+        _bBox->setReadOnly_NoFocusRect(readOnly);
     } else if ( (dimension == 3) && _aBox ) {
-        _aBox->setReadOnly(readOnly);
+        _aBox->setReadOnly_NoFocusRect(readOnly);
     } else {
         assert(false); //< dim invalid
     }

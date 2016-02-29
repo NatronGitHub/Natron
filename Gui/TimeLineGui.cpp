@@ -213,9 +213,9 @@ TimeLineGui::setTimeline(const boost::shared_ptr<TimeLine>& timeline)
     }
 
     //connect the internal timeline to the gui
-    QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onFrameChanged(SequenceTime,int)) );
+    QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onFrameChanged(SequenceTime,int)), Qt::UniqueConnection );
     
-    QObject::connect( _imp->gui->getApp(), SIGNAL(keyframeIndicatorsChanged()), this, SLOT(onKeyframesIndicatorsChanged()) );
+    QObject::connect( _imp->gui->getApp(), SIGNAL(keyframeIndicatorsChanged()), this, SLOT(onKeyframesIndicatorsChanged()),Qt::UniqueConnection );
 
     _imp->timeline = timeline;
 

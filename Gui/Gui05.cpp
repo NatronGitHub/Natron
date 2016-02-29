@@ -145,7 +145,7 @@ Gui::setupUi()
     QObject::connect( project.get(), SIGNAL(projectNameChanged(QString,bool)), this, SLOT(onProjectNameChanged(QString,bool)) );
     
     boost::shared_ptr<TimeLine> timeline = project->getTimeLine();
-    QObject::connect( timeline.get(),SIGNAL(frameChanged(SequenceTime,int)), this,SLOT(onTimeChanged(SequenceTime,int)) );
+    QObject::connect( timeline.get(),SIGNAL(frameChanged(SequenceTime,int)), this,SLOT(renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime,int)) );
     QObject::connect( timeline.get(),SIGNAL(frameAboutToChange()), this, SLOT(onTimelineTimeAboutToChange()));
 
     /*Searches recursively for all child objects of the given object,

@@ -1858,7 +1858,9 @@ CurveWidget::onTimeLineFrameChanged(SequenceTime,
         _imp->_timelineEnabled = true;
     }
     _imp->refreshTimelinePositions();
-    update();
+    if (isVisible()) {
+        update();
+    }
 }
 
 void

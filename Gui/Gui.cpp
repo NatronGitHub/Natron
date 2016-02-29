@@ -381,6 +381,7 @@ bool
 Gui::eventFilter(QObject *target,
                  QEvent* e)
 {
+
     if (_imp->_aboutToClose) {
         return true;
     }

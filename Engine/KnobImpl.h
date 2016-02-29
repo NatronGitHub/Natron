@@ -1937,8 +1937,18 @@ Knob<T>::onTimeChanged(bool isPlayback, double time)
         _signalSlotHandler->s_valueChanged(ViewSpec::all(), -1, eValueChangedReasonTimeChanged);
     }
     if (evaluateValueChangeOnTimeChange() && !isPlayback) {
-        //Some knobs like KnobFile do not animate but the plug-in may need to know the time has changed
-        evaluateValueChange(0, time, ViewIdx(0), eValueChangedReasonTimeChanged);
+        
+        KnobHolder* holder = getHolder();
+        if (holder) {
+            //Some knobs like KnobFile do not animate but the plug-in may need to know the time has changed
+            if (holder->isEvaluationBlocked()) {
+                holder->appendValueChange(shared_from_this(), time, ViewIdx(0), eValueChangedReasonTimeChanged);
+            } else {
+                holder->beginChanges();
+                holder->appendValueChange(shared_from_this(), time, ViewIdx(0), eValueChangedReasonTimeChanged);
+                holder->endChanges();
+            }
+        }
     }
 }
 
