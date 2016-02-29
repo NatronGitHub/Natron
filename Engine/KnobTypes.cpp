@@ -1066,6 +1066,20 @@ KnobString::hasContentWithoutHtmlTags() const
         return false;
     }
     
+    //First remove content in the NATRON_CUSTOM_HTML tags
+    const std::string customTagStart(NATRON_CUSTOM_HTML_TAG_START);
+    const std::string customTagEnd(NATRON_CUSTOM_HTML_TAG_END);
+    
+    std::size_t foundNatronCustomDataTag = str.find(customTagStart,0);
+    if (foundNatronCustomDataTag != std::string::npos) {
+        ///remove the current custom data
+        int foundNatronEndTag = str.find(customTagEnd,foundNatronCustomDataTag);
+        assert(foundNatronEndTag != std::string::npos);
+        
+        foundNatronEndTag += customTagEnd.size();
+        str.erase(foundNatronCustomDataTag, foundNatronEndTag - foundNatronCustomDataTag);
+    }
+    
     std::size_t foundOpen = str.find("<");
     if (foundOpen == std::string::npos) {
         return true;
