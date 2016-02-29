@@ -180,7 +180,7 @@ SpinBox::setValue_internal(double d,
             str.setNum(d, 'f', _imp->decimals);
             double toDouble = str.toDouble();
             if (d != toDouble) {
-                str.setNum(d, 'g', 15);
+                str.setNum(d, 'g', 8);
             }
         }   break;
         case eSpinBoxTypeInt:
