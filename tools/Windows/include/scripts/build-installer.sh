@@ -468,7 +468,7 @@ fi
 
 
 # UnitTests
-if [ "$BIT" = "64" ]; then
+if [ "$BIT" = "64" ] && [ "$UNIT_TEST" != "0" ]; then
 
 UNIT_TMP=$INSTALLER/UnitTests
 UNIT_LOG=$REPO_DIR/logs/unit_tests.$PKGOS$BIT.$TAG.log
