@@ -1599,8 +1599,10 @@ OfxEffectInstance::isIdentity(double time,
                               const RectI & renderWindow,
                               ViewIdx view,
                               double* inputTime,
+                              ViewIdx* inputView,
                               int* inputNb)
 {
+    *inputView = view;
     if (!_imp->created) {
         *inputNb = -1;
         *inputTime = 0;

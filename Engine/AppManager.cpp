@@ -79,6 +79,7 @@
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxHost.h"
+#include "Engine/OneViewNode.h"
 #include "Engine/ProcessHandler.h" // ProcessInputChannel
 #include "Engine/Project.h"
 #include "Engine/PrecompNode.h"
@@ -1101,6 +1102,7 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
     registerBuiltInPlugin<RotoSmear>("", false, true);
     registerBuiltInPlugin<PrecompNode>(NATRON_IMAGES_PATH "precompNodeIcon.png", false, false);
     registerBuiltInPlugin<JoinViewsNode>(NATRON_IMAGES_PATH "joinViewsNode.png", false, false);
+    registerBuiltInPlugin<OneViewNode>(NATRON_IMAGES_PATH "oneViewNode.png", false, false);
 #ifdef NATRON_ENABLE_IO_META_NODES
     registerBuiltInPlugin<ReadNode>(NATRON_IMAGES_PATH "readImage.png", false, false);
     registerBuiltInPlugin<WriteNode>(NATRON_IMAGES_PATH "writeImage.png", false, false);

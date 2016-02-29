@@ -55,6 +55,7 @@ struct IdentityResults
 {
     int inputIdentityNb;
     double inputIdentityTime;
+    ViewIdx inputView;
 };
 
 struct CompareActionsCacheKeys
@@ -104,9 +105,9 @@ public:
 
     void invalidateAll(U64 newHash);
 
-    bool getIdentityResult(U64 hash, double time, ViewIdx view, int* inputNbIdentity, double* identityTime);
+    bool getIdentityResult(U64 hash, double time, ViewIdx view, int* inputNbIdentity, ViewIdx *inputView, double* identityTime);
 
-    void setIdentityResult(U64 hash, double time, ViewIdx view, int inputNbIdentity, double identityTime);
+    void setIdentityResult(U64 hash, double time, ViewIdx view, int inputNbIdentity, ViewIdx inputView, double identityTime);
 
     bool getRoDResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, RectD* rod);
 

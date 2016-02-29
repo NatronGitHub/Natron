@@ -110,9 +110,9 @@ optimizeRectsToRender(EffectInstance* self,
             double identityInputTime = 0.;
             int identityInputNb = -1;
             bool identity = false;
-
+            ViewIdx inputIdentityView(view);
             if ( !splits[i].intersects(inputsRoDIntersection) ) {
-                identity = self->isIdentity_public(false, 0, time, renderMappedScale, splits[i], view, &identityInputTime, &identityInputNb);
+                identity = self->isIdentity_public(false, 0, time, renderMappedScale, splits[i], view, &identityInputTime, &inputIdentityView,&identityInputNb);
             } else {
                 identity = false;
             }
@@ -126,7 +126,7 @@ optimizeRectsToRender(EffectInstance* self,
                 EffectInstPtr identityInput = self->getInput(identityInputNb);
                 if (identityInput) {
                     for (;; ) {
-                        identity = identityInput->isIdentity_public(false, 0, time, renderMappedScale, splits[i], view, &identityInputTime, &identityInputNb);
+                        identity = identityInput->isIdentity_public(false, 0, time, renderMappedScale, splits[i], view, &identityInputTime,&inputIdentityView,  &identityInputNb);
                         if ( !identity || (identityInputNb == -2) ) {
                             break;
                         }
@@ -143,6 +143,7 @@ optimizeRectsToRender(EffectInstance* self,
                 }
                 r.identityInput = identityInput;
                 r.identityTime = identityInputTime;
+                r.identityView = inputIdentityView;
                 r.rect = splits[i];
                 finalRectsToRender->push_back(r);
             } else {
@@ -452,7 +453,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     {
         double inputTimeIdentity = 0.;
         int inputNbIdentity;
-
+        ViewIdx inputIdentityView(args.view);
         assert( !( (supportsRS == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
         bool identity;
         RectI pixelRod;
@@ -469,8 +470,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                     inputTimeIdentity = requestPassData->globalData.inputIdentityTime;
                     inputNbIdentity = requestPassData->globalData.identityInputNb;
                     identity = requestPassData->globalData.isIdentity;
+                    inputIdentityView = requestPassData->globalData.identityView;
                 } else {
-                    identity = isIdentity_public(true, nodeHash, args.time, renderMappedScale, pixelRod, args.view, &inputTimeIdentity, &inputNbIdentity);
+                    identity = isIdentity_public(true, nodeHash, args.time, renderMappedScale, pixelRod, args.view, &inputTimeIdentity, &inputIdentityView, &inputNbIdentity);
                 }
             } catch (...) {
                 return eRenderRoIRetCodeFailed;
@@ -500,6 +502,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
                     if (viewInvariance == eViewInvarianceAllViewsInvariant) {
                         argCpy->view = ViewIdx(0);
+                    } else {
+                        argCpy->view = inputIdentityView;
                     }
 
                     argCpy->preComputedRoD.clear(); //< clear as the RoD of the identity input might not be the same (reproducible with Blur)
@@ -526,6 +530,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
                 boost::scoped_ptr<RenderRoIArgs> inputArgs (new RenderRoIArgs(args));
                 inputArgs->time = inputTimeIdentity;
+                inputArgs->view = inputIdentityView;
 
                 // Make sure we do not hold the RoD for this effect
                 inputArgs->preComputedRoD.clear();

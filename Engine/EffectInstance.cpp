@@ -481,6 +481,7 @@ EffectInstance::retrieveGetImageDataUponFailure(const double time,
                                                 U64* nodeHash_p,
                                                 bool* isIdentity_p,
                                                 double* identityTime,
+                                                ViewIdx* inputView,
                                                 EffectInstPtr* identityInput_p,
                                                 bool* duringPaintStroke_p,
                                                 RectD* rod_p,
@@ -541,7 +542,7 @@ EffectInstance::retrieveGetImageDataUponFailure(const double time,
     rod.toPixelEnclosing(scale, getAspectRatio(-1), &pixelRod);
     try {
         int identityInputNb;
-        *isIdentity_p = isIdentity_public(true, nodeHash, time, scale, pixelRod, view, identityTime, &identityInputNb);
+        *isIdentity_p = isIdentity_public(true, nodeHash, time, scale, pixelRod, view, identityTime, inputView, &identityInputNb);
         if (*isIdentity_p) {
             if (identityInputNb >= 0) {
                 *identityInput_p = getInput(identityInputNb);
@@ -682,6 +683,7 @@ EffectInstance::getImage(int inputNb,
     bool isIdentity = false;
     EffectInstPtr identityInput;
     double inputIdentityTime = 0.;
+    ViewIdx inputIdentityView(view);
     U64 nodeHash;
     bool duringPaintStroke;
     /// Never by-pass the cache here because we already computed the image in renderRoI and by-passing the cache again can lead to
@@ -708,7 +710,7 @@ EffectInstance::getImage(int inputNb,
          This is either a huge bug or an unknown thread that called clipGetImage from the OpenFX plug-in.
          Make-up some reasonable arguments
          */
-        if (!retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &isIdentity, &inputIdentityTime, &identityInput, &duringPaintStroke, &thisRod, &inputsRoI, &optionalBounds)) {
+        if (!retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &isIdentity, &inputIdentityTime, &inputIdentityView, &identityInput, &duringPaintStroke, &thisRod, &inputsRoI, &optionalBounds)) {
             return ImagePtr();
         }
     } else {
@@ -3235,16 +3237,16 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
                                   const RectI & renderWindow,
                                   ViewIdx view,
                                   double* inputTime,
+                                  ViewIdx* inputView,
                                   int* inputNb)
 {
     assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.) ) );
-
+    
     if (useIdentityCache) {
         double timeF = 0.;
-        bool foundInCache = _imp->actionsCache.getIdentityResult(hash, time, view, inputNb, &timeF);
+        bool foundInCache = _imp->actionsCache.getIdentityResult(hash, time, view, inputNb, inputView, &timeF);
         if (foundInCache) {
             *inputTime = timeF;
-
             return *inputNb >= 0 || *inputNb == -2;
         }
     }
@@ -3260,15 +3262,18 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         ret = true;
         *inputNb = getNode()->getPreferredInput();
         *inputTime = time;
+        *inputView = view;
     } else if ( appPTR->isBackground() && (dynamic_cast<DiskCacheNode*>(this) != NULL) ) {
         ret = true;
         *inputNb = 0;
         *inputTime = time;
+        *inputView = view;
     } else {
         /// Don't call isIdentity if plugin is sequential only.
         if (getSequentialPreference() != eSequentialPreferenceOnlySequential) {
             try {
-                ret = isIdentity(time, scale, renderWindow, view, inputTime, inputNb);
+                *inputView = view;
+                ret = isIdentity(time, scale, renderWindow, view, inputTime, inputView, inputNb);
             } catch (...) {
                 throw;
             }
@@ -3277,10 +3282,11 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
     if (!ret) {
         *inputNb = -1;
         *inputTime = time;
+        *inputView = view;
     }
 
     if (useIdentityCache) {
-        _imp->actionsCache.setIdentityResult(hash, time, view, *inputNb, *inputTime);
+        _imp->actionsCache.setIdentityResult(hash, time, view, *inputNb, *inputView, *inputTime);
     }
 
     return ret;
@@ -3311,15 +3317,16 @@ EffectInstance::getRegionOfDefinition_publicInternal(U64 hash,
     if (useRenderWindow) {
         double inputTimeIdentity;
         int inputNbIdentity;
-        bool isIdentity = isIdentity_public(true, hash, time, scale, renderWindow, view, &inputTimeIdentity, &inputNbIdentity);
+        ViewIdx inputView;
+        bool isIdentity = isIdentity_public(true, hash, time, scale, renderWindow, view, &inputTimeIdentity, &inputView, &inputNbIdentity);
         if (isIdentity) {
             if (inputNbIdentity >= 0) {
                 EffectInstPtr input = getInput(inputNbIdentity);
                 if (input) {
-                    return input->getRegionOfDefinition_public(input->getRenderHash(), inputTimeIdentity, scale, view, rod, isProjectFormat);
+                    return input->getRegionOfDefinition_public(input->getRenderHash(), inputTimeIdentity, scale, inputView, rod, isProjectFormat);
                 }
             } else if (inputNbIdentity == -2) {
-                return getRegionOfDefinition_public(hash, inputTimeIdentity, scale, view, rod, isProjectFormat);
+                return getRegionOfDefinition_public(hash, inputTimeIdentity, scale, inputView, rod, isProjectFormat);
             } else {
                 return eStatusFailed;
             }
@@ -4327,7 +4334,8 @@ EffectInstance::getNearestNonIdentity(double time)
     
     double inputTimeIdentity;
     int inputNbIdentity;
-    if ( !isIdentity_public(true, hash, time, scale, frmt, ViewIdx(0), &inputTimeIdentity, &inputNbIdentity) ) {
+    ViewIdx inputView;
+    if ( !isIdentity_public(true, hash, time, scale, frmt, ViewIdx(0), &inputTimeIdentity, &inputView, &inputNbIdentity) ) {
         return shared_from_this();
     } else {
         if (inputNbIdentity < 0) {

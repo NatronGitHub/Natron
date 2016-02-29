@@ -96,6 +96,8 @@
 #define PLUGINID_NATRON_JOINVIEWS     (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.JoinViews")
 #define PLUGINID_NATRON_READ    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Read")
 #define PLUGINID_NATRON_WRITE    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Write")
+#define PLUGINID_NATRON_ONEVIEW    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.OneView")
+
 
 #define kNatronTLSEffectPointerProperty "NatronTLSEffectPointerProperty"
 
@@ -884,6 +886,7 @@ protected:
                             const RectI & /*roi*/,
                             ViewIdx /*view*/,
                             double* /*inputTime*/,
+                            ViewIdx* /*inputView*/,
                             int* /*inputNb*/) WARN_UNUSED_RETURN
     {
         return false;
@@ -898,6 +901,7 @@ public:
                            const RectI & renderWindow,
                            ViewIdx view,
                            double* inputTime,
+                           ViewIdx* inputView,
                            int* inputNb) WARN_UNUSED_RETURN;
 
     /**
@@ -1282,6 +1286,7 @@ public:
         EffectInstance::InputImagesMap imgs;
         double identityTime;
         bool isIdentity;
+        ViewIdx identityView;
     };
 
     struct ImagePlanesToRender
@@ -1913,6 +1918,7 @@ private:
                                          U64* nodeHash_p,
                                          bool* isIdentity_p,
                                          double* identityTime,
+                                         ViewIdx *inputView,
                                          EffectInstPtr* identityInput_p,
                                          bool* duringPaintStroke_p,
                                          RectD* rod_p,

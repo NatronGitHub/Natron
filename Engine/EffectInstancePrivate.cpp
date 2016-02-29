@@ -110,6 +110,7 @@ ActionsCache::getIdentityResult(U64 hash,
                                 double time,
                                 ViewIdx view,
                                 int* inputNbIdentity,
+                                ViewIdx *inputView,
                                 double* identityTime)
 {
     QMutexLocker l(&_cacheMutex);
@@ -125,7 +126,7 @@ ActionsCache::getIdentityResult(U64 hash,
             if ( found != it->_identityCache.end() ) {
                 *inputNbIdentity = found->second.inputIdentityNb;
                 *identityTime = found->second.inputIdentityTime;
-
+                *inputView = found->second.inputView;
                 return true;
             }
 
@@ -142,6 +143,7 @@ ActionsCache::setIdentityResult(U64 hash,
                                 double time,
                                 ViewIdx view,
                                 int inputNbIdentity,
+                                ViewIdx inputView,
                                 double identityTime)
 {
     QMutexLocker l(&_cacheMutex);
@@ -155,6 +157,7 @@ ActionsCache::setIdentityResult(U64 hash,
     IdentityResults & v = cache._identityCache[key];
     v.inputIdentityNb = inputNbIdentity;
     v.inputIdentityTime = identityTime;
+    v.inputView = inputView;
 }
 
 

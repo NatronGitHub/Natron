@@ -134,6 +134,7 @@ SOURCES += \
     OfxMemory.cpp \
     OfxOverlayInteract.cpp \
     OfxParamInstance.cpp \
+    OneViewNode.cpp \
     OutputEffectInstance.cpp \
     OutputSchedulerThread.cpp \
     ParallelRenderArgs.cpp \
@@ -214,7 +215,7 @@ SOURCES += \
     NatronEngine/userparamholder_wrapper.cpp \
     NatronEngine/rectd_wrapper.cpp \
     NatronEngine/recti_wrapper.cpp \
-    NatronEngine/separatorparam_wrapper.cpp
+    NatronEngine/separatorparam_wrapper.cpp \
 
 HEADERS += \
     AppInstance.h \
@@ -302,6 +303,7 @@ HEADERS += \
     OfxOverlayInteract.h \
     OfxMemory.h \
     OfxParamInstance.h \
+    OneViewNode.h \
     OpenGLViewerI.h \
     OutputEffectInstance.h \
     OutputSchedulerThread.h \

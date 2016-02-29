@@ -407,6 +407,7 @@ StatusEnum EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         ///Check identity
         fvRequest->globalData.identityInputNb = -1;
         fvRequest->globalData.inputIdentityTime = 0.;
+        fvRequest->globalData.identityView = view;
         
         RectI pixelRod;
         fvRequest->globalData.rod.toPixelEnclosing(mappedLevel, par, &pixelRod);
@@ -418,7 +419,7 @@ StatusEnum EffectInstance::getInputsRoIsFunctor(bool useTransforms,
             fvRequest->globalData.inputIdentityTime = time;
         } else {
             try {
-                fvRequest->globalData.isIdentity = effect->isIdentity_public(true, nodeRequest->nodeHash, time, nodeRequest->mappedScale, pixelRod, view, &fvRequest->globalData.inputIdentityTime, &fvRequest->globalData.identityInputNb);
+                fvRequest->globalData.isIdentity = effect->isIdentity_public(true, nodeRequest->nodeHash, time, nodeRequest->mappedScale, pixelRod, view, &fvRequest->globalData.inputIdentityTime, &fvRequest->globalData.identityView, &fvRequest->globalData.identityInputNb);
             } catch (...) {
                 return eStatusFailed;
             }
@@ -473,7 +474,7 @@ StatusEnum EffectInstance::getInputsRoIsFunctor(bool useTransforms,
             NodePtr inputIdentityNode = inputEffectIdentity->getNode();
             StatusEnum stat = getInputsRoIsFunctor(useTransforms,
                                                    fvRequest->globalData.inputIdentityTime,
-                                                   view,
+                                                   fvRequest->globalData.identityView,
                                                    originalMipMapLevel,
                                                    inputIdentityNode,
                                                    node,

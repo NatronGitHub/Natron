@@ -203,6 +203,7 @@ public:
                             const RectI & renderWindow, //!< render window in pixel coords
                             ViewIdx view,
                             double* inputTime,
+                            ViewIdx* inputView,
                             int* inputNb) OVERRIDE;
     virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void purgeCaches() OVERRIDE;

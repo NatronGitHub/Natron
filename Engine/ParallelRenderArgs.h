@@ -193,6 +193,7 @@ struct FrameViewRequestGlobalData
     //Identity data, set on first request
     bool isIdentity;
     int identityInputNb;
+    ViewIdx identityView;
     double inputIdentityTime;
 };
 

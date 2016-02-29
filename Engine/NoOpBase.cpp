@@ -62,13 +62,14 @@ bool
 NoOpBase::isIdentity(double time,
                      const RenderScale & /*scale*/,
                      const RectI & /*roi*/,
-                     ViewIdx /*view*/,
+                     ViewIdx view,
                      double* inputTime,
+                     ViewIdx* inputView,
                      int* inputNb)
 {
     *inputTime = time;
     *inputNb = 0;
-
+    *inputView = view;
     return true;
 }
 

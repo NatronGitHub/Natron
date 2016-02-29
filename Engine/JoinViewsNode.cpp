@@ -110,10 +110,12 @@ JoinViewsNode::isIdentity(double time,
                           const RectI & /*roi*/,
                           ViewIdx view,
                           double* inputTime,
+                          ViewIdx* inputView,
                           int* inputNb)
 {
     *inputTime = time;
     *inputNb = getMaxInputCount() - 1 - view.value();
+    *inputView = view;
     return true;
 }
 

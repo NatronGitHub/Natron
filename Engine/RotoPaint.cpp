@@ -318,8 +318,10 @@ RotoPaint::isIdentity(double time,
                       const RectI & roi,
                       ViewIdx view,
                       double* inputTime,
+                      ViewIdx* inputView,
                       int* inputNb)
 {
+    *inputView = view;
     NodePtr node = getNode();
     EffectInstPtr maskInput = getInput(ROTOPAINT_MASK_INPUT_INDEX);
     if (maskInput) {

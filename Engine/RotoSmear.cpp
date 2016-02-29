@@ -118,10 +118,12 @@ bool
 RotoSmear::isIdentity(double time,
                       const RenderScale & scale,
                       const RectI & roi,
-                      ViewIdx /*view*/,
+                      ViewIdx view,
                       double* inputTime,
+                      ViewIdx* inputView,
                       int* inputNb)
 {
+    *inputView = view;
     RectD maskRod;
     NodePtr node = getNode();
     node->getPaintStrokeRoD(time, &maskRod);

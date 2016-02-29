@@ -112,6 +112,7 @@ private:
                             const RectI & renderWindow,
                             ViewIdx view,
                             double* inputTime,
+                            ViewIdx* inputView,
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
 

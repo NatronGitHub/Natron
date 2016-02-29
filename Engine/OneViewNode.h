@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef ROTOSMEAR_H
-#define ROTOSMEAR_H
+#ifndef ENGINE_ONEVIEWNODE_H
+#define ENGINE_ONEVIEWNODE_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -25,28 +25,31 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Global/Macros.h"
 
+#include "Global/Macros.h"
 #include "Engine/EffectInstance.h"
-#include "Engine/ViewIdx.h"
-#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
-struct RotoSmearPrivate;
-class RotoSmear : public EffectInstance
+struct OneViewNodePrivate;
+class OneViewNode : public EffectInstance
 {
+    
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
+    
 public:
     
     static EffectInstance* BuildEffect(NodePtr n)
     {
-        return new RotoSmear(n);
+        return new OneViewNode(n);
     }
     
-    RotoSmear(NodePtr node);
+    OneViewNode(NodePtr n);
     
-    virtual ~RotoSmear();
-        
+    virtual ~OneViewNode();
+    
     virtual int getMajorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return 1;
@@ -57,39 +60,32 @@ public:
         return 0;
     }
     
-    virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual int getMaxInputCount() const OVERRIDE WARN_UNUSED_RETURN
     {
         return 1;
     }
-    
-    virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
-    
-    virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return PLUGINID_NATRON_ROTOSMEAR;
-    }
-    
-    virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return "Smear";
-    }
-    
-    virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN { return std::string(); }
 
-    virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL
-    {
-        grouping->push_back(PLUGIN_GROUP_PAINT);
-    }
     
-    virtual std::string getInputLabel (int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN {
-        return "Source";
+    virtual std::string getPluginID() const OVERRIDE WARN_UNUSED_RETURN;
+    
+    virtual std::string getPluginLabel() const OVERRIDE WARN_UNUSED_RETURN;
+    
+    virtual std::string getPluginDescription() const OVERRIDE WARN_UNUSED_RETURN;
+    
+    virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
+    
+    virtual std::string getInputLabel (int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool isInputMask(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return false;
     }
     
     virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return false;
     }
-    
+
     virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     
@@ -98,11 +94,10 @@ public:
     {
         return eRenderSafetyFullySafeFrame;
     }
-
-    // We cannot support tiles with our algorithm
+    
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return false;
+        return true;
     }
     
     virtual bool supportsMultiResolution() const OVERRIDE FINAL WARN_UNUSED_RETURN
@@ -110,36 +105,48 @@ public:
         return true;
     }
     
-    virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    
+    virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
+    
+    virtual bool isHostChannelSelectorSupported(bool* /*defaultR*/,bool* /*defaultG*/, bool* /*defaultB*/, bool* /*defaultA*/) const OVERRIDE WARN_UNUSED_RETURN
     {
         return false;
     }
-
-    virtual bool isPaintingOverItselfEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    
+    virtual bool isViewAware() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
     }
     
+    virtual ViewInvarianceLevel isViewInvariant() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return eViewInvarianceAllViewsVariant;
+    }
     
-
+    
+public Q_SLOTS:
+    
+    void onProjectViewsChanged();
+    
+    
 private:
+    
+    virtual void initializeKnobs() OVERRIDE FINAL;
 
-    virtual StatusEnum
-    getRegionOfDefinition(U64 hash,double time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
-
+    virtual FramesNeededMap getFramesNeeded(double time, ViewIdx view) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
     virtual bool isIdentity(double time,
-                        const RenderScale & scale,
-                        const RectI & roi,
-                        ViewIdx view,
-                        double* inputTime,
+                            const RenderScale & scale,
+                            const RectI & roi,
+                            ViewIdx view,
+                            double* inputTime,
                             ViewIdx* inputView,
-                        int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                            int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
+    boost::scoped_ptr<OneViewNodePrivate> _imp;
 
-    boost::scoped_ptr<RotoSmearPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // ROTOSMEAR_H
+#endif // ENGINE_ONEVIEWNODE_H

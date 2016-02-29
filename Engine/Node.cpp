@@ -62,6 +62,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Knob.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
+#include "Engine/OneViewNode.h"
 #include "Engine/LibraryBinary.h"
 #include "Engine/Log.h"
 #include "Engine/Lut.h"
@@ -7370,25 +7371,32 @@ Node::onRefreshIdentityStateRequestReceived()
     Format frmt;
     project->getProjectDefaultFormat(&frmt);
     
+    //The one view node might report it is identity, but we do not want it to display it
+    
+    
     bool isIdentity = false;
     int inputNb = -1;
-    for (int i = 0; i < nViews; ++i) {
-        int identityInputNb = -1;
-        bool isIdentityView = _imp->effect->isIdentity_public(true, hash, time, scale, frmt, ViewIdx(i), &inputTime, &identityInputNb);
-        if (i > 0 && (isIdentityView != isIdentity || identityInputNb != inputNb)) {
-            isIdentity = false;
-            inputNb = -1;
-            break;
+
+    OneViewNode* isOneView = dynamic_cast<OneViewNode*>(_imp->effect.get());
+    if (!isOneView) {
+        for (int i = 0; i < nViews; ++i) {
+            int identityInputNb = -1;
+            ViewIdx identityView;
+            bool isViewIdentity = _imp->effect->isIdentity_public(true, hash, time, scale, frmt, ViewIdx(i), &inputTime, &identityView, &identityInputNb);
+            if (i > 0 && (isViewIdentity != isIdentity || identityInputNb != inputNb || identityView.value() != i)) {
+                isIdentity = false;
+                inputNb = -1;
+                break;
+            }
+            isIdentity |= isViewIdentity;
+            inputNb = identityInputNb;
+            if (!isIdentity) {
+                break;
+            }
+            
         }
-        isIdentity |= isIdentityView;
-        inputNb = identityInputNb;
-        if (!isIdentity) {
-            break;
-        }
-        
     }
     
-   
     //Check for consistency across views or then say the effect is not identity since the UI cannot display 2 different states
     //depending on the view
     
@@ -8388,6 +8396,7 @@ static void addIdentityNodesRecursively(const Node* caller,
              */
             RenderScale scale(1.);
             double inputTimeId;
+            ViewIdx identityView;
             int inputNbId;
             U64 renderHash;
             
@@ -8401,7 +8410,7 @@ static void addIdentityNodesRecursively(const Node* caller,
             } else {
                 RectI pixelRod;
                 rod.toPixelEnclosing(scale, node->getEffectInstance()->getAspectRatio(-1), &pixelRod);
-                isIdentity = node->getEffectInstance()->isIdentity_public(true, renderHash, time, scale, pixelRod, view, &inputTimeId, &inputNbId);
+                isIdentity = node->getEffectInstance()->isIdentity_public(true, renderHash, time, scale, pixelRod, view, &inputTimeId, &identityView, &inputNbId);
             }
         }
         
