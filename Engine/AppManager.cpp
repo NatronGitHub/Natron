@@ -2473,6 +2473,13 @@ AppManager::initPython(int argc,char* argv[])
     toPrepend.append(binPath + "/../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib/python" NATRON_PY_VERSION_STRING);
     toPrepend.append(':');
     toPrepend.append(binPath + "/../Plugins");
+#ifdef DEBUG
+    // in debug mode, also prepend the local PySide directory
+    // homebrew's pyside directory
+    toPrepend.append(":/usr/local/Cellar/pyside/1.2.2_1/lib/python" NATRON_PY_VERSION_STRING "/site-packages");
+    // macport's pyside directory
+    toPrepend.append(":/opt/local/Library/Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib/python" NATRON_PY_VERSION_STRING "/site-packages");
+#endif
     if (!pathEmpty) {
         toPrepend.push_back(':');
     }
