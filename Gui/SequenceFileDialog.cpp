@@ -185,55 +185,7 @@ public:
 
 #endif // 0
 
-#ifdef __NATRON_WIN32__
 
-static QString mapPathWithDriveLetterToPathWithNetworkShareName(const QString& path)
-{
-	if (path.size() <= 2) {
-		return path;
-	}
-
-	QString ret;
-	if (path[0].isLetter() && path[1] == QChar(':')) {
-
-		QString driveName = path.mid(0,2);
-
-		TCHAR szDeviceName[512];
-		DWORD dwResult, cchBuff = sizeof(szDeviceName);
-#ifdef UNICODE
-        dwResult = WNetGetConnection(Global::utf8_to_utf16(driveName.toStdString()).c_str(), szDeviceName, &cchBuff);
-#else
-		dwResult = WNetGetConnection(driveName.toStdString().c_str(), szDeviceName, &cchBuff);
-#endif
-		if (dwResult == NO_ERROR) {
-			ret = path.mid(2,-1);
-
-			//Replace \\ with /
-#ifdef UNICODE
-            std::wstring wstr(szDeviceName);
-            std::string str = OFX::wideStringToString(wstr);
-            QString qDeviceName(str.c_str());
-#else
-            QString qDeviceName(szDeviceName);
-#endif
-			
-			qDeviceName.replace('\\','/');
-
-			//Make sure we remember the mapping
-			appPTR->registerUNCPath(qDeviceName, path[0]);
-
-			ret.prepend(qDeviceName);
-			return ret;
-		} 
-	}  
-	ret = path;
-	return ret;
-
-
-}
-
-
-#endif
 
 ///////////////////////// SequenceFileDialog
 
@@ -574,9 +526,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
 #ifndef __NATRON_WIN32__
     initialBookmarks.push_back( QUrl::fromLocalFile( QLatin1String("/") ) );
 #else
-
-    initialBookmarks.push_back( QUrl::fromLocalFile( QLatin1String("C:/") ) );
-
+    initialBookmarks.push_back( QUrl::fromLocalFile( QLatin1String("") ) );
 #endif
     
     _favoriteView->setModelAndUrls(_favoriteViewModel.get(), initialBookmarks);
@@ -1012,8 +962,9 @@ SequenceFileDialog::setDirectory(const QString &directory)
 {
 
     
+	
     QDir dir(directory);
-    if (!dir.exists()) {
+    if (!directory.isEmpty() && !dir.exists()) {
         return;
     }
    
@@ -1031,11 +982,11 @@ SequenceFileDialog::setDirectory(const QString &directory)
         return;
     }
 
-	#ifdef __NATRON_WIN32__
+#ifdef __NATRON_WIN32__
 	newDirectory = appPTR->mapUNCPathToPathWithDriveLetter(newDirectory);
 #endif
 	
-    if (!FileSystemModel::startsWithDriveName(newDirectory)) {
+    if (!newDirectory.isEmpty() && !FileSystemModel::startsWithDriveName(newDirectory)) {
         return;
     }
     
@@ -1392,15 +1343,15 @@ SequenceFileDialog::parentFolder()
 
     QString rootPath = _model->rootPath();
 
-
-    QDir dir(rootPath);
-    dir.cdUp();
-    newDir = dir.absolutePath();
-
 	if (FileSystemModel::isDriveName(rootPath)) {
 		newDir = "";
+	} else {
+		QDir dir(rootPath);
+		dir.cdUp();
+		newDir = dir.absolutePath();
 	}
 
+	
 #ifdef __NATRON_WIN32__
     if (FileSystemModel::isDriveName(newDir)) {
         _upButton->setEnabled(false);
@@ -1888,7 +1839,7 @@ SequenceFileDialog::selectedFiles()
     }
 
 #ifdef __NATRON_WIN32__
-	QString ret = mapPathWithDriveLetterToPathWithNetworkShareName(selection.c_str());
+	QString ret = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(selection.c_str());
 	selection = ret.toStdString();
 #endif
     return selection;
@@ -1915,7 +1866,7 @@ SequenceFileDialog::filesToSave()
     }
 
 #ifdef __NATRON_WIN32__
-    ret = mapPathWithDriveLetterToPathWithNetworkShareName(ret);
+    ret = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(ret);
 #endif
 
 	return ret.toStdString();
@@ -1942,7 +1893,7 @@ SequenceFileDialog::selectedDirectory() const
 
 
 #ifdef __NATRON_WIN32__
-	QString ret = mapPathWithDriveLetterToPathWithNetworkShareName(path.c_str());
+	QString ret = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(path.c_str());
 	path = ret.toStdString();
 #endif
 	
@@ -2087,7 +2038,7 @@ UrlModel::setUrl(const QModelIndex &index,
 {
     setData(index, url, UrlRole);
     if ( url.path().isEmpty() ) {
-        setData(index, /*fileSystemModel->myComputer()*/"" );
+        setData(index, /*fileSystemModel->myComputer()*/tr("Computer") );
         setData(index, fileSystemModel->myComputer(Qt::DecorationRole), Qt::DecorationRole);
     } else {
         QString newName;

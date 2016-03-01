@@ -28,6 +28,11 @@
 #include <cassert>
 #include <stdexcept>
 
+#ifdef __NATRON_WIN32__
+#include <windows.h>
+#endif
+
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QMutex>
@@ -449,6 +454,58 @@ FileSystemModel::FileSystemModel(SortableViewI* view)
 }
 
 ///////////////////////////////////////Overriden from QAbstractItemModel///////////////////////////////////////
+
+
+#ifdef __NATRON_WIN32__
+
+QString 
+FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(const QString& path)
+{
+	if (path.size() <= 2) {
+		return path;
+	}
+
+	QString ret;
+	if (path[0].isLetter() && path[1] == QChar(':')) {
+
+		QString driveName = path.mid(0,2);
+
+		TCHAR szDeviceName[512];
+		DWORD dwResult, cchBuff = sizeof(szDeviceName);
+#ifdef UNICODE
+        dwResult = WNetGetConnection(Global::utf8_to_utf16(driveName.toStdString()).c_str(), szDeviceName, &cchBuff);
+#else
+		dwResult = WNetGetConnection(driveName.toStdString().c_str(), szDeviceName, &cchBuff);
+#endif
+		if (dwResult == NO_ERROR) {
+			ret = path.mid(2,-1);
+
+			//Replace \\ with /
+#ifdef UNICODE
+            std::wstring wstr(szDeviceName);
+            std::string str = OFX::wideStringToString(wstr);
+            QString qDeviceName(str.c_str());
+#else
+            QString qDeviceName(szDeviceName);
+#endif
+			
+			qDeviceName.replace('\\','/');
+
+			//Make sure we remember the mapping
+			appPTR->registerUNCPath(qDeviceName, path[0]);
+
+			ret.prepend(qDeviceName);
+			return ret;
+		} 
+	}  
+	ret = path;
+	return ret;
+
+
+}
+
+
+#endif
 
 FileSystemModel::~FileSystemModel()
 {

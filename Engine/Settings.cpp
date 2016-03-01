@@ -1235,13 +1235,10 @@ Settings::initializeKnobsPlugins()
     std::string searchPath("/Library/OFX/Plugins");
 #elif defined(WINDOWS)
     
-#ifdef UNICODE
-    std::wstring basePath = std::wstring(OFX::Host::PluginCache::getStdOFXPluginPath(""));
-	basePath.append(std::wstring(__T(" and C:\\Program Files\\Common Files\\OFX\\Plugins")));
+    std::wstring basePath = std::wstring(OFX::Host::PluginCache::getStdOFXPluginPath());
+	basePath.append(std::wstring(L" and C:\\Program Files\\Common Files\\OFX\\Plugins"));
     std::string searchPath = OFX::wideStringToString(basePath);
-#else
-    std::string searchPath(OFX::Host::PluginCache::getStdOFXPluginPath("")  + std::string(" and C:\\Program Files\\Common Files\\OFX\\Plugins"));
-#endif
+
 #endif
     
     _extraPluginPaths->setHintToolTip( std::string("Extra search paths where " NATRON_APPLICATION_NAME
