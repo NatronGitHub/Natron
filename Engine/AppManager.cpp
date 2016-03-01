@@ -222,7 +222,9 @@ AppManager::AppManager()
 
     QObject::connect(this, SIGNAL(s_requestOFXDialogOnMainThread(OfxImageEffectInstance*,void*)), this, SLOT(onOFXDialogOnMainThreadReceived(OfxImageEffectInstance*,void*)));
 	
+#ifdef __NATRON_WIN32__
 	FileSystemModel::initDriveLettersToNetworkShareNamesMapping();
+#endif
 }
 
 void
