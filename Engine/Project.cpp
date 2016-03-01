@@ -1740,7 +1740,8 @@ Project::unescapeXML(const std::string &istr)
             char *tail = NULL;
             int errno_save = errno;
             bool hex = str[i+2] == 'x' || str[i+2] == 'X';
-            char *head = &str[i+ (hex ? 3 : 2)];
+            int prefix = hex ? 3 : 2; // prefix length: "&#" or "&#x"
+            char *head = &str[i+ prefix];
 
             errno = 0;
             unsigned long cp = std::strtoul(head, &tail, hex ? 16 : 10);
@@ -1751,7 +1752,7 @@ Project::unescapeXML(const std::string &istr)
                 return str;
             }
             // replace from '&' to ';' (thus the +1)
-            str.replace(i, tail - head + 1, 1, (char)cp);
+            str.replace(i, tail - head + 1 + prefix, 1, (char)cp);
         }
         i = str.find_first_of("&", i + 1);
     }
