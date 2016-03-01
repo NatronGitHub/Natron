@@ -1731,8 +1731,16 @@ SequenceFileDialog::onLookingComboboxChanged(const QString & /*path*/)
     
     QUrl url = index.data(UrlModel::UrlRole).toUrl();
     url = QtCompat::toLocalFileUrlFixed(url);
-    //enterDirectory(index);
-	setDirectory(url.path());
+
+	QString urlPath = url.path();
+	// On windows url.path() will return something starting with a /
+#ifdef __NATRON_WIN32__
+		if (urlPath.startsWith("/")) {
+			urlPath.remove(0,1);
+		}
+#endif
+	
+	setDirectory(urlPath);
 }
 
 QString
@@ -2101,7 +2109,7 @@ UrlModel::addUrls(const std::vector<QUrl> &list,
         startRow = rowCount();
     }
     startRow = qMin( startRow,rowCount() );
-    
+
     ///Remove already existant URLS
     ///Result is a pair new Url, clean url path
     std::vector<std::pair<QUrl,QString> > realList;
@@ -2115,7 +2123,7 @@ UrlModel::addUrls(const std::vector<QUrl> &list,
         const QString cleanUrl = QDir::cleanPath( url.toLocalFile() );
         
         QModelIndex idx = fileSystemModel->index(cleanUrl);
-        if ( !fileSystemModel->isDir(idx) ) {
+        if (!cleanUrl.isEmpty() && !fileSystemModel->isDir(idx) ) {
             continue;
         }
         
@@ -2170,6 +2178,7 @@ UrlModel::addUrls(const std::vector<QUrl> &list,
             insertRow(row);
         }
         QModelIndex idx = fileSystemModel->index(realList[i].second);
+
         setUrl(index(row, 0), realList[i].first, idx);
         watching.push_back( make_pair(idx, realList[i].second) );
         ++row;
