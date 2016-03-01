@@ -857,6 +857,8 @@ Node::load(const CreateNodeArgs& args)
         assert(nameSet);
         updateEffectLabelKnob(getScriptName().c_str());
     }
+    restoreSublabel();
+    
     if (args.addToProject) {
         declarePythonFields();
         if  (getRotoContext()) {
@@ -1619,7 +1621,48 @@ Node::loadKnobs(const NodeSerialization & serialization,bool updateKnobGui)
     
     setKnobsAge( serialization.getKnobsAge() );
     
+    
+    
     _imp->effect->onKnobsLoaded();
+}
+
+void
+Node::restoreSublabel()
+{
+    //Check if natron custom tags are present and insert them if needed
+    /// If the node has a sublabel, restore it in the label
+    boost::shared_ptr<KnobString> labelKnob = _imp->nodeLabelKnob.lock();
+    if (labelKnob) {
+        QString labeltext(labelKnob->getValue().c_str());
+        int foundNatronCustomTag = labeltext.indexOf(NATRON_CUSTOM_HTML_TAG_START);
+        if (foundNatronCustomTag == -1) {
+            KnobPtr sublabelKnob = getKnobByName(kNatronOfxParamStringSublabelName);
+            if (sublabelKnob) {
+                KnobString* sublabelKnobIsString = dynamic_cast<KnobString*>(sublabelKnob.get());
+                if (sublabelKnobIsString) {
+                    QString sublabel(sublabelKnobIsString->getValue(0).c_str());
+                    if (!sublabel.isEmpty()) {
+                        
+                        int fontEndTagFound = labeltext.lastIndexOf(kFontEndTag);
+                        if (fontEndTagFound == -1) {
+                            labeltext.append(NATRON_CUSTOM_HTML_TAG_START);
+                            labeltext.append('(' + sublabel + ')');
+                            labeltext.append(NATRON_CUSTOM_HTML_TAG_END);
+                        } else {
+                            --fontEndTagFound;
+                            QString toAppend(NATRON_CUSTOM_HTML_TAG_START);
+                            toAppend += '(';
+                            toAppend += sublabel;
+                            toAppend += ')';
+                            toAppend += NATRON_CUSTOM_HTML_TAG_END;
+                            labeltext.insert(fontEndTagFound, toAppend);
+                        }
+                        labelKnob->setValue(labeltext.toStdString());
+                    }
+                }
+            }
+        }
+    }
 }
 
 void

@@ -595,11 +595,12 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
     try {
         pluginHandle = plugin->getPluginHandle();
     } catch (...) {
-        throw std::runtime_error(std::string("Error: Description failed while loading ") + plugin->getIdentifier());
+        throw std::runtime_error(QObject::tr("Error: Description (kOfxActionLoad and kOfxActionDescribe) failed while loading ").toStdString() + plugin->getIdentifier());
     }
     
     if (!pluginHandle) {
-        throw std::runtime_error(std::string("Error: Description failed while loading ") + plugin->getIdentifier());
+        throw std::runtime_error(QObject::tr("Error: Description (kOfxActionLoad and kOfxActionDescribe) failed while loading ").toStdString() + plugin->getIdentifier());
+
     }
     assert(pluginHandle->getOfxPlugin() && pluginHandle->getOfxPlugin()->mainEntry);
     
@@ -607,7 +608,7 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
     
     std::string context = getContext_internal(contexts);
     if (context.empty()) {
-        throw std::invalid_argument(QObject::tr("OpenFX plug-in has no valid context.").toStdString());
+        throw std::invalid_argument(QObject::tr("OpenFX plug-in does not have any valid context.").toStdString());
     }
     
     OFX::Host::PluginHandle* ph = plugin->getPluginHandle();
@@ -618,7 +619,7 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
     //This will call kOfxImageEffectActionDescribeInContext
     desc = plugin->getContext(context);
     if (!desc) {
-        throw std::runtime_error(std::string("Failed to get description for OFX plugin in context ") + context);
+        throw std::runtime_error(std::string("Plug-in parameters and inputs description (kOfxImageEffectActionDescribeInContext) failed in context ") + context);
     }
     
     //Create the mask clip if needed

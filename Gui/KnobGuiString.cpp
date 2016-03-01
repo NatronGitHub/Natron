@@ -80,15 +80,6 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "ofxNatron.h"
 
-#define kFontSizeTag "<font size=\""
-#define kFontColorTag "color=\""
-#define kFontFaceTag "face=\""
-#define kFontEndTag "</font>"
-#define kBoldStartTag "<b>"
-#define kBoldEndTag "</b>"
-#define kItalicStartTag "<i>"
-#define kItalicEndTag "</i>"
-
 NATRON_NAMESPACE_ENTER;
 using std::make_pair;
 
@@ -610,27 +601,10 @@ void
 KnobGuiString::restoreTextInfoFromString()
 {
     boost::shared_ptr<KnobString> knob = _knob.lock();
-    QString text( knob->getValue(0).c_str() );
+    QString text( knob->getValue(0).c_str() );    
 
     if ( text.isEmpty() ) {
-        EffectInstance* effect = dynamic_cast<EffectInstance*>( knob->getHolder() );
-        /// If the node has a sublabel, restore it in the label
-        if ( effect && (knob->getName() == kUserLabelKnobName) ) {
-            KnobPtr knob = effect->getKnobByName(kNatronOfxParamStringSublabelName);
-            if (knob) {
-                KnobString* strKnob = dynamic_cast<KnobString*>( knob.get() );
-                if (strKnob) {
-                    QString sublabel = strKnob->getValue(0).c_str();
-                    if (!sublabel.isEmpty()) {
-                        text.append(NATRON_CUSTOM_HTML_TAG_START);
-                        text.append('(' + sublabel + ')');
-                        text.append(NATRON_CUSTOM_HTML_TAG_END);
-                    }
-                }
-            }
-        }
-
-
+        
         _fontSize = _fontSizeSpinBox->value();
         _fontColor = Qt::black;
         _fontFamily = _fontCombo->currentFont().family();

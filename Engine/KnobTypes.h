@@ -41,6 +41,15 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
+#define kFontSizeTag "<font size=\""
+#define kFontColorTag "color=\""
+#define kFontFaceTag "face=\""
+#define kFontEndTag "</font>"
+#define kBoldStartTag "<b>"
+#define kBoldEndTag "</b>"
+#define kItalicStartTag "<i>"
+#define kItalicEndTag "</i>"
+
 NATRON_NAMESPACE_ENTER;
 
 /******************************KnobInt**************************************/

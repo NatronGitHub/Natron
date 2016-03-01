@@ -268,6 +268,7 @@ NodeGui::initialize(NodeGraph* dag,
         }
     }
     
+    //Refresh the merge operator icon 
     if (internalNode->getPluginID() == PLUGINID_OFX_MERGE) {
         KnobPtr knob = internalNode->getKnobByName(kNatronOfxParamStringSublabelName);
         assert(knob);
@@ -740,7 +741,7 @@ void
 NodeGui::refreshSize()
 {
     QRectF bbox = boundingRect();
-    resize(bbox.width(),bbox.height());
+    resize(bbox.width(),bbox.height(), false, !_nodeLabel.isEmpty());
 }
 
 int
@@ -862,7 +863,7 @@ NodeGui::resize(int width,
     if (!canResize()) {
         return;
     }
-
+ 
     const QPointF topLeft = mapFromParent(pos());
     
     const bool hasPluginIcon = _pluginIcon != NULL;
@@ -2815,9 +2816,9 @@ NodeGui::setNameItemHtml(const QString & name,
     }
     QString textLabel;
     textLabel.append("<div align=\"center\">");
-    bool hasFontData = true;
     
-
+    
+    
     if ( !label.isEmpty() ) {
         QString labelCopy = label;
 
@@ -2836,47 +2837,72 @@ NodeGui::setNameItemHtml(const QString & name,
 
         ///add the node name into the html encoded label
         int startFontTag = labelCopy.indexOf("<font size=");
-        hasFontData = startFontTag != -1;
-        if (hasFontData) {
+        if (startFontTag != -1) {
             QString toFind("\">");
             int endFontTag = labelCopy.indexOf(toFind,startFontTag);
-            int i = endFontTag += toFind.size();
-            labelCopy.insert(i == -1 ? 0 : i, name + _channelsExtraLabel + "<br>");
+            if (endFontTag != -1) {
+                endFontTag += toFind.size();
+            }
+            
+            QString toInsert = name + _channelsExtraLabel + "<br>";
+            labelCopy.insert(endFontTag == -1 ? 0 : endFontTag, toInsert);
         } else {
             labelCopy.prepend(name + _channelsExtraLabel + "<br>");
+            ///Default to something not too bad
+            /*QString fontTag = (QString("<font size=\"%1\" color=\"%2\" face=\"%3\">")
+                               .arg(6)
+                               .arg( QColor(Qt::black).name() )
+                               .arg(QApplication::font().family()));
+            labelCopy.prepend(fontTag);
+            labelCopy.append("</font>");*/
+
         }
         textLabel.append(labelCopy);
 
     } else {
         ///Default to something not too bad
-        QString fontTag = (QString("<font size=\"%1\" color=\"%2\" face=\"%3\">")
+        /*QString fontTag = (QString("<font size=\"%1\" color=\"%2\" face=\"%3\">")
                            .arg(6)
                            .arg( QColor(Qt::black).name() )
                            .arg(QApplication::font().family()));
-        textLabel.append(fontTag);
+        textLabel.append(fontTag);*/
         textLabel.append(name);
         textLabel.append(_channelsExtraLabel);
-        textLabel.append("</font>");
+        //textLabel.append("</font>");
     }
     textLabel.append("</div>");
+    
+    int startFontTag = textLabel.indexOf("<font size=");
+    int endFontTag = -1;
+    if (startFontTag != -1) {
+        startFontTag = textLabel.indexOf("\">",startFontTag);
+    }
+    
     QString oldText = _nameItem->toHtml();
     if (textLabel == oldText) {
         return;
     }
-    _nameItem->setHtml(textLabel);
-    _nameItem->adjustSize();
-
-
+    
     QFont f;
-    QColor color;
-    if (hasFontData) {
+    QColor color = Qt::black;
+    if (startFontTag != -1) {
         KnobGuiString::parseFont(textLabel, &f, &color);
+        //Remove font from the HTML
+        textLabel.remove(startFontTag, endFontTag - startFontTag);
+    } else {
+        f = QApplication::font();
     }
     bool antialias = appPTR->getCurrentSettings()->isNodeGraphAntiAliasingEnabled();
     if (!antialias) {
         f.setStyleStrategy(QFont::NoAntialias);
     }
+    _nameItem->setDefaultTextColor(color);
+    
     _nameItem->setFont(f);
+
+    _nameItem->setHtml(textLabel);
+    _nameItem->adjustSize();
+
 
     QRectF bbox = boundingRect();
     resize(bbox.width(),bbox.height(),false,!label.isEmpty());
