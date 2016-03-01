@@ -262,7 +262,7 @@ KnobGuiFile::checkFileModificationAndWarnInternal(bool doCheck, SequenceTime tim
     boost::shared_ptr<KnobFile> knob = _knob.lock();
     EffectInstance* effect = dynamic_cast<EffectInstance*>(knob->getHolder());
     assert(effect);
-    if (!effect) {
+    if (!effect || !effect->getNode()->isActivated()) {
         return false;
     }
     

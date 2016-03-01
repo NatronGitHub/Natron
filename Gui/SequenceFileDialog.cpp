@@ -1401,11 +1401,22 @@ SequenceFileDialog::parentFolder()
 		newDir = "";
 	}
 
-	if (FileSystemModel::isDriveName(newDir)) {
-		_upButton->setEnabled(false);
-	} else {
-		 _upButton->setEnabled(true);
-	}
+#ifdef __NATRON_WIN32__
+    if (FileSystemModel::isDriveName(newDir)) {
+        _upButton->setEnabled(false);
+    } else {
+        _upButton->setEnabled(true);
+    }
+#else
+    if (FileSystemModel::isDriveName(newDir) || newDir.isEmpty()) {
+        _upButton->setEnabled(false);
+        return;
+    } else {
+        _upButton->setEnabled(true);
+    }
+    
+#endif
+	
 
     setDirectory(newDir);
 }

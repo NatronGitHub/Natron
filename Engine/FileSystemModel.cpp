@@ -961,13 +961,11 @@ FileSystemModel::setRootPath(const QString& path)
 {
     assert(QThread::currentThread() == qApp->thread());
     
-    if (path.isEmpty()) {
-        return;
-    }
+
     ///Check if the path exists
-    {
+    if (!path.isEmpty()) {
         QDir dir(path);
-        if ( !dir.exists() ) {
+        if (!dir.exists()) {
             return;
         }
     }
