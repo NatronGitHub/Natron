@@ -535,7 +535,7 @@ rm $REPO_DIR/installers/$ONLINE_INSTALL $REPO_DIR/installers/$BUNDLED_INSTALL
 
 # Unit tests
 if [ "$BIT" = "64" ] && [ "$UNIT_TEST" != "0" ]; then
-  UNIT_LOG="$REPO_DIR/logs/unit_tests.$PKGOS$BIT.$TAG.log"
+  UNIT_LOG="$REPO_DIR/logs/unit_tests.Linux$BIT.$TAG.log"
   if [ ! -d "$CWD/Natron-Tests" ]; then
     cd $CWD || exit 1
     git clone $GIT_UNIT || exit 1
