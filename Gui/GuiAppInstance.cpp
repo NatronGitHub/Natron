@@ -371,7 +371,9 @@ GuiAppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
             ///Otherwise just load the project specified.
             QString name = info.fileName();
             QString path = info.path();
-            path += QDir::separator();
+			if (!path.endsWith('/')) { 
+				path += '/';
+			}
             appPTR->setLoadingStatus(tr("Loading project: ") + path + name);
             getProject()->loadProject(path,name);
             ///remove any file open event that might have occured

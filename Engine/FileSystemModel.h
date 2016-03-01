@@ -202,6 +202,7 @@ public:
 		
 #ifdef __NATRON_WIN32__
 	static QString mapPathWithDriveLetterToPathWithNetworkShareName(const QString& path);
+	static void initDriveLettersToNetworkShareNamesMapping();
 #endif
 	
 	
@@ -256,7 +257,7 @@ public:
      * You may only use these methods once the directoryLoaded signal is sent, indicating that the worker thread
      * has gathered all info.
      **/
-    void setRootPath(const QString& path);
+    bool setRootPath(const QString& path);
     
     QVariant myComputer(int role = Qt::DisplayRole) const WARN_UNUSED_RETURN;
     

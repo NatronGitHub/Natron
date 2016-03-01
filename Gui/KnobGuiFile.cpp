@@ -280,17 +280,16 @@ KnobGuiFile::checkFileModificationAndWarnInternal(bool doCheck, SequenceTime tim
     
     QDateTime date;
     
-    if (doCheck) {
-        QFileInfo info(qfilePath);
-        date = info.lastModified();
-    }
-    
     std::map<std::string,QDateTime>::iterator foundModificationDate = _lastModificationDates.find(filepath);
     
-    
+	QFileInfo info(qfilePath);
+    date = info.lastModified();
+	
     //We already have a modification date
     bool ret = false;
     if (foundModificationDate != _lastModificationDates.end()) {
+		
+	
         if (doCheck && date != foundModificationDate->second) {
             if (errorAndAbortRender) {
                 QString warn = tr("The file ") + qfilePath + tr(" has changed on disk. Press reload file to load the new version of the file");
@@ -962,10 +961,10 @@ KnobGuiPath::onAddButtonClicked()
             int rowCount = (int)_items.size();
             
             QString varName = QString(tr("Path") + "%1").arg(rowCount);
+
             createItem(rowCount, dirPath.c_str(), varName);
+
             std::string newPath = rebuildPath();
-            
-            
             
             pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),oldValue,newPath ) );
         }
@@ -997,9 +996,7 @@ KnobGuiPath::onEditButtonClicked()
             
             found->second.value->setText(dirPath.c_str());
             std::string newPath = rebuildPath();
-            
-            
-            
+
             pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),oldValue,newPath ) );
         }
     }
@@ -1100,21 +1097,23 @@ void
 KnobGuiPath::updateGUI(int /*dimension*/)
 {
     boost::shared_ptr<KnobPath> knob = _knob.lock();
-    QString path(_knob.lock()->getValue().c_str());
+	std::string value = _knob.lock()->getValue();
+
     
     if (_knob.lock()->isMultiPath()) {
         std::vector<std::pair<std::string,std::string> > variables;
-        Project::makeEnvMapUnordered(path.toStdString(), variables);
+        Project::makeEnvMapUnordered(value, variables);
         
         
         _model->clear();
         _items.clear();
         int i = 0;
+
         for (std::vector<std::pair<std::string,std::string> >::const_iterator it = variables.begin(); it != variables.end(); ++it, ++i) {
             createItem(i, it->second.c_str(), it->first.c_str());
         }
     } else {
-        _lineEdit->setText(path);
+        _lineEdit->setText(value.c_str());
     }
 }
 
@@ -1298,7 +1297,10 @@ KnobGuiPath::rebuildPath() const
         path += Project::escapeXML(it->second.varName->text().toStdString());
         path += NATRON_ENV_VAR_NAME_END_TAG;
         path += NATRON_ENV_VAR_VALUE_START_TAG;
-        path += Project::escapeXML(it->second.value->text().toStdString());
+		std::string value = it->second.value->text().toStdString();
+		std::string escaped = Project::escapeXML(value);
+		assert(value == Project::unescapeXML(escaped));
+        path += escaped;
         path += NATRON_ENV_VAR_VALUE_END_TAG;
 
         // increment for next iteration

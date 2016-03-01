@@ -75,6 +75,7 @@
 #include "Engine/LibraryBinary.h"
 #include "Engine/Log.h"
 #include "Engine/Node.h"
+#include "Engine/FileSystemModel.h"
 #include "Engine/JoinViewsNode.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
@@ -220,6 +221,8 @@ AppManager::AppManager()
     _instance = this;
 
     QObject::connect(this, SIGNAL(s_requestOFXDialogOnMainThread(OfxImageEffectInstance*,void*)), this, SLOT(onOFXDialogOnMainThreadReceived(OfxImageEffectInstance*,void*)));
+	
+	FileSystemModel::initDriveLettersToNetworkShareNamesMapping();
 }
 
 void

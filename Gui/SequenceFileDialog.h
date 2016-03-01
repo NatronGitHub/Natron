@@ -327,8 +327,6 @@ public:
     ///set the view to show this model index which is a directory
     void setRootIndex(const QModelIndex & index);
 
-    ///Returns the same as SequenceParsing::removePath excepts that str is left untouched.
-    static QString getFilePath(const QString & str);
 
     ///Returns the selected pattern sequence or file name.
     ///Works only in eFileDialogModeOpen mode.
@@ -439,7 +437,7 @@ public Q_SLOTS:
     void enterDirectory(const QModelIndex & index);
 
     ///enters a directory and display its content in the file view.
-    void setDirectory(const QString &currentDirectory);
+    bool setDirectory(const QString &currentDirectory);
 
     ///same as setDirectory but with an url
     void seekUrl(const QUrl & url);
@@ -540,7 +538,7 @@ private:
 
     QByteArray saveState() const;
 
-    bool restoreState(const QByteArray & state, bool restoreDirectory);
+    bool restoreState(const QByteArray & state, bool restoreDirectory,bool* directoryRestored);
 
     void createViewerPreviewNode();
     

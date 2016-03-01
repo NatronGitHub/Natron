@@ -458,6 +458,20 @@ FileSystemModel::FileSystemModel(SortableViewI* view)
 
 #ifdef __NATRON_WIN32__
 
+void 
+FileSystemModel::initDriveLettersToNetworkShareNamesMapping()
+{
+	QFileInfoList drives = QDir::drives();
+	for (int i = 0; i < drives.size(); ++i) {
+	 // for drives, there is no filename
+        QString driveName  = drives[i].canonicalPath();
+		QString uncPath = mapPathWithDriveLetterToPathWithNetworkShareName(driveName);
+#ifdef DEBUG
+		qDebug() << "Filesystem: " << driveName << " = " << uncPath;
+#endif
+	}
+}
+
 QString 
 FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(const QString& path)
 {
@@ -1013,7 +1027,7 @@ FileSystemModelPrivate::getItemFromPath(const QString &path) const
     return rootItem->matchPath( splitPath, 0 );
 }
 
-void
+bool
 FileSystemModel::setRootPath(const QString& path)
 {
     assert(QThread::currentThread() == qApp->thread());
@@ -1023,7 +1037,7 @@ FileSystemModel::setRootPath(const QString& path)
     if (!path.isEmpty()) {
         QDir dir(path);
         if (!dir.exists()) {
-            return;
+            return false;
         }
     }
     
@@ -1034,7 +1048,7 @@ FileSystemModel::setRootPath(const QString& path)
     boost::shared_ptr<FileSystemItem> item = _imp->mkPath(path);
     assert(item);
     if (!item) {
-        return;
+        return false;
     }
     if (item != _imp->rootItem) {
         
@@ -1056,6 +1070,7 @@ FileSystemModel::setRootPath(const QString& path)
     }
     
     Q_EMIT rootPathChanged(path);
+	return true;
 }
 
 

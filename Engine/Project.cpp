@@ -503,7 +503,9 @@ Project::saveProjectInternal(const QString & path,
     
     ///Use a temporary file to save, so if Natron crashes it doesn't corrupt the user save.
     QString tmpFilename = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
-    tmpFilename.append( QDir::separator() );
+	if (!tmpFilename.endsWith('/')) {
+		tmpFilename.append('/');
+	}
     tmpFilename.append( QString::number( time.toMSecsSinceEpoch() ) );
 
     {
@@ -1482,7 +1484,12 @@ Project::clearAutoSavesDir()
         searchStr.append('.');
         int suffixPos = entry.indexOf(searchStr);
         if (suffixPos != -1) {
-            QFile::remove(savesDir.path() + QDir::separator() + entry);
+			QString dirToRemove = savesDir.path();
+			if (!dirToRemove.endsWith('/')) {
+				dirToRemove += '/';
+			}
+			dirToRemove += entry;
+            QFile::remove(dirToRemove);
         }
     }
 }
@@ -1490,7 +1497,12 @@ Project::clearAutoSavesDir()
 QString
 Project::autoSavesDir()
 {
-    return StandardPaths::writableLocation(StandardPaths::eStandardLocationData) + QDir::separator() + "Autosaves";
+	QString str = StandardPaths::writableLocation(StandardPaths::eStandardLocationData);
+	if (!str.endsWith('/')) {
+		str += '/';
+	}
+	str += "Autosaves";
+    return str;
 }
     
 void
@@ -1751,7 +1763,7 @@ Project::unescapeXML(const std::string &istr)
                 return str;
             }
             // replace from '&' to ';' (thus the +1)
-            str.replace(i, tail - head + 1, 1, (char)cp);
+            str.replace(i, tail - head + (hex ? 4 : 3), 1, (char)cp);
         }
         i = str.find_first_of("&", i + 1);
     }
@@ -1795,7 +1807,7 @@ void
         
         // In order to use XML tags, the text inside the tags has to be unescaped.
         variables.push_back(std::make_pair(unescapeXML(name), unescapeXML(value)));
-        
+		
         i = encoded.find(startNameTag,i);
     }
 }

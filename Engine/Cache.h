@@ -1138,8 +1138,9 @@ public:
     std::string getRestoreFilePath() const
     {
         QString newCachePath( getCachePath() );
-
-        newCachePath.append( QDir::separator() );
+		if (!newCachePath.endsWith('/')) {
+			newCachePath.append('/');
+		}
         newCachePath.append("restoreFile." NATRON_CACHE_FILE_EXT);
 
         return newCachePath.toStdString();

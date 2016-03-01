@@ -88,8 +88,8 @@ getDefaultOcioConfigPaths()
 {
     QString binaryPath = appPTR->getApplicationBinaryPath();
 
-    if ( !binaryPath.isEmpty() ) {
-        binaryPath += QDir::separator();
+    if ( !binaryPath.isEmpty() && !binaryPath.endsWith('/') ) {
+        binaryPath += '/';
     }
 #ifdef __NATRON_LINUX__
     QStringList ret;

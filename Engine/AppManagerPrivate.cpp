@@ -352,7 +352,12 @@ AppManagerPrivate::restoreCaches()
 bool
 AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath)
 {
-    QString settingsFilePath(cachePath + QDir::separator() + "restoreFile." NATRON_CACHE_FILE_EXT);
+	QString settingsFilePath = cachePath;
+	if (!settingsFilePath.endsWith('/')) {
+		settingsFilePath += '/';
+	}
+	settingsFilePath += "restoreFile.";
+	settingsFilePath += NATRON_CACHE_FILE_EXT;
 
     if ( !QFile::exists(settingsFilePath) ) {
         cleanUpCacheDiskStructure(cachePath);

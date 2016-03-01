@@ -356,8 +356,15 @@ ProcessInputChannel::initialize()
     QObject::connect( _backgroundIPCServer,SIGNAL(newConnection()),this,SLOT(onNewConnectionPending()) );
     QString serverName;
     {
-        QTemporaryFile tmpf( QDir::tempPath() + QDir::separator() + NATRON_APPLICATION_NAME "_INPUT_SOCKET"
-                             + QString::number( QCoreApplication::applicationPid() ) );
+		QString tmpFilePath = QDir::tempPath();
+		if (!tmpFilePath.endsWith('/')) {
+			tmpFilePath += '/';
+		}
+		tmpFilePath += NATRON_APPLICATION_NAME;
+		tmpFilePath += "_INPUT_SOCKET";
+		tmpFilePath += QString::number(QCoreApplication::applicationPid());
+		
+        QTemporaryFile tmpf(tmpFilePath);
         tmpf.open();
         serverName = tmpf.fileName();
         tmpf.remove();
