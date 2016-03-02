@@ -177,48 +177,129 @@ DockablePanelPrivate::DockablePanelPrivate(DockablePanel* publicI,
 }
 
 void
-DockablePanelPrivate::initializeKnobVector(const std::vector< boost::shared_ptr< KnobI> > & knobs,
+DockablePanelPrivate::initializeKnobVector(const KnobsVec& knobs,
                                            QWidget* lastRowWidget)
 {
+    std::list<boost::shared_ptr<KnobPage> > pages;
+
+    KnobsVec regularKnobs;
+    
+    //Extract pages first
     for (U32 i = 0; i < knobs.size(); ++i) {
 
-        bool makeNewLine = true;
-        KnobGroup *isGroup = dynamic_cast<KnobGroup*>(knobs[i].get());
         KnobPage *isPage = dynamic_cast<KnobPage*>(knobs[i].get());
+        if (isPage) {
+            pages.push_back(boost::dynamic_pointer_cast<KnobPage>(knobs[i]));
+            continue;
+        } else {
+            regularKnobs.push_back(knobs[i]);
+        }
+    }
+    for (std::list<boost::shared_ptr<KnobPage> >::iterator it = pages.begin(); it!=pages.end(); ++it) {
+        
+        //create page
+        (void)findKnobGuiOrCreate(*it,true,0,KnobsVec());
+        
+        KnobsVec children = (*it)->getChildren();
+        
+        KnobsVec::iterator prev = children.end();
+        for (KnobsVec::iterator it2 = children.begin(); it2!=children.end(); ++it2) {
+            bool makeNewLine = true;
+            KnobGroup *isGroup = dynamic_cast<KnobGroup*>(it2->get());
+            
+            ////The knob  will have a vector of all other knobs on the same line.
+            KnobsVec knobsOnSameLine;
+            
+            
+            //If the knob is dynamic (i:e created after the initial creation of knobs)
+            //it can be added as part of a group defined earlier hence we have to insert it at the proper index.
+            KnobPtr parentKnob = (*it2)->getParentKnob();
+            KnobGroup* isParentGroup = dynamic_cast<KnobGroup*>(parentKnob.get());
+            
+            
+            if (!isGroup) {
+                if (prev != children.end() && !(*prev)->isNewLineActivated() ) {
+                    makeNewLine = false;
+                }
+                if (isParentGroup) {
+                    KnobsVec  groupsiblings = isParentGroup->getChildren();
+                    findKnobsOnSameLine(groupsiblings, *it2, knobsOnSameLine);
+                    
+                } else {
+                    findKnobsOnSameLine(children, *it2, knobsOnSameLine);
+                }
+                
+            }
+            
+            KnobGuiPtr newGui = findKnobGuiOrCreate(*it2,makeNewLine,lastRowWidget,knobsOnSameLine);
+           
+            ///childrens cannot be on the same row than their parent
+            if (!isGroup && newGui) {
+                lastRowWidget = newGui->getFieldContainer();
+            }
+            
+            
+            std::vector<KnobPtr>::iterator foundRegular = std::find(regularKnobs.begin(), regularKnobs.end(), *it2);
+            if (foundRegular != regularKnobs.end()) {
+                regularKnobs.erase(foundRegular);
+            }
+            
+            
+            if (prev == children.end()) {
+                prev = children.begin();
+            } else {
+                ++prev;
+            }
+        }
+      
+    }
+    
+    //For knobs left,  create them
+    KnobsVec::iterator prev = regularKnobs.end();
+    for (KnobsVec::iterator it = regularKnobs.begin(); it != regularKnobs.end(); ++it) {
+        bool makeNewLine = true;
+        KnobGroup *isGroup = dynamic_cast<KnobGroup*>(it->get());
         
         ////The knob  will have a vector of all other knobs on the same line.
-        std::vector< boost::shared_ptr< KnobI > > knobsOnSameLine;
+        KnobsVec knobsOnSameLine;
         
         
         //If the knob is dynamic (i:e created after the initial creation of knobs)
         //it can be added as part of a group defined earlier hence we have to insert it at the proper index.
-        KnobPtr parentKnob = knobs[i]->getParentKnob();
+        KnobPtr parentKnob = (*it)->getParentKnob();
         KnobGroup* isParentGroup = dynamic_cast<KnobGroup*>(parentKnob.get());
-
         
-        if (!isPage && !isGroup) {
-            if ( (i > 0) && !knobs[i - 1]->isNewLineActivated() ) {
+        
+        if (!isGroup) {
+            if (prev != regularKnobs.end() && !(*prev)->isNewLineActivated() ) {
                 makeNewLine = false;
             }
             
             KnobPage* isParentPage = dynamic_cast<KnobPage*>(parentKnob.get());
             if (isParentPage) {
                 KnobsVec  children = isParentPage->getChildren();
-                findKnobsOnSameLine(children, knobs[i], knobsOnSameLine);
+                findKnobsOnSameLine(children, (*it), knobsOnSameLine);
             } else if (isParentGroup) {
                 KnobsVec  children = isParentGroup->getChildren();
-                findKnobsOnSameLine(children, knobs[i], knobsOnSameLine);
+                findKnobsOnSameLine(children, (*it), knobsOnSameLine);
             } else {
-                findKnobsOnSameLine(knobs, knobs[i], knobsOnSameLine);
+                findKnobsOnSameLine(regularKnobs, (*it), knobsOnSameLine);
             }
-            
         }
         
-        KnobGuiPtr newGui = findKnobGuiOrCreate(knobs[i],makeNewLine,lastRowWidget,knobsOnSameLine);
+        KnobGuiPtr newGui = findKnobGuiOrCreate(*it,makeNewLine,lastRowWidget,knobsOnSameLine);
+        
         ///childrens cannot be on the same row than their parent
         if (!isGroup && newGui) {
             lastRowWidget = newGui->getFieldContainer();
         }
+        
+        if (prev == regularKnobs.end()) {
+            prev = regularKnobs.begin();
+        } else {
+            ++prev;
+        }
+
     }
     
     _publicInterface->refreshTabWidgetMaxHeight();
@@ -363,8 +444,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
         initializeKnobVector(children, lastRowWidget);
         return KnobGuiPtr();
     }
-    
-    
+  
     KnobGuiPtr ret = createKnobGui(knob);
     if (!ret) {
         return KnobGuiPtr();
@@ -824,7 +904,7 @@ DockablePanelPrivate::getOrCreatePage(const boost::shared_ptr<KnobPage>& page)
         return found;
     }
     
-    
+
     QWidget* newTab;
     QWidget* layoutContainer;
     if (_useScrollAreasForTabs) {
