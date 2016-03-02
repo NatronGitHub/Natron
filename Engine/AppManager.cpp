@@ -2801,9 +2801,9 @@ AppManager::mapUNCPathToPathWithDriveLetter(const QString& uncPath) const
             ret.remove(0,it->second.size());
             QString drive;
             drive.append(it->first);
-            drive.append(':');
-            if (!ret.isEmpty() && !ret.startsWith('/')) {
-                drive.append('/');
+            drive.append(QLatin1Char(':'));
+            if (!ret.isEmpty() && !ret.startsWith(QLatin1Char('/'))) {
+                drive.append(QLatin1Char('/'));
             }
             ret.prepend(drive);
             return ret;

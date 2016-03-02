@@ -1854,7 +1854,7 @@ SequenceFileDialog::selectedFiles()
     }
 
 #ifdef __NATRON_WIN32__
-	QString ret = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(selection.c_str());
+	QString ret = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(QString::fromUtf8(selection.c_str()));
 	selection = ret.toStdString();
 #endif
     return selection;
@@ -1908,7 +1908,7 @@ SequenceFileDialog::selectedDirectory() const
 
 
 #ifdef __NATRON_WIN32__
-	QString ret = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(path.c_str());
+	QString ret = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(QString::fromUtf8(path.c_str()));
 	path = ret.toStdString();
 #endif
 	

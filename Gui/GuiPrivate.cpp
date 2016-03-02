@@ -717,7 +717,7 @@ GuiPrivate::saveGuiGeometry()
     settings.setValue(QString::fromUtf8("LastSaveSequenceDialogPath"), _lastSaveSequenceOpenedDir);
     settings.setValue(QString::fromUtf8("LastPluginDir"), _lastPluginDir);
 #ifdef __NATRON_WIN32__
-    settings.setValue("ApplicationConsoleVisible",applicationConsoleVisible);
+    settings.setValue(QString::fromUtf8("ApplicationConsoleVisible"),applicationConsoleVisible);
 #endif
 }
 

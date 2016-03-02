@@ -422,20 +422,20 @@ CallbacksManager::init(int& argc, char** argv)
 
     QStringList processArgs;
     for (int i = 0; i < argc; ++i) {
-        processArgs.push_back(QString(argv[i]));
+        processArgs.push_back(QString::fromUtf8(argv[i]));
     }
     if (enableBreakpad) {
-        processArgs.push_back(QString("--" NATRON_BREAKPAD_PROCESS_EXEC));
+        processArgs.push_back(QString::fromUtf8("--" NATRON_BREAKPAD_PROCESS_EXEC));
         processArgs.push_back(crashReporterBinaryFilePath);
-        processArgs.push_back(QString("--" NATRON_BREAKPAD_PROCESS_PID));
+        processArgs.push_back(QString::fromUtf8("--" NATRON_BREAKPAD_PROCESS_PID));
         qint64 crashReporterPid = qApp->applicationPid();
         QString pidStr = QString::number(crashReporterPid);
         processArgs.push_back(pidStr);
-        processArgs.push_back(QString("--" NATRON_BREAKPAD_CLIENT_FD_ARG));
+        processArgs.push_back(QString::fromUtf8("--" NATRON_BREAKPAD_CLIENT_FD_ARG));
         processArgs.push_back(QString::number(-1));
-        processArgs.push_back(QString("--" NATRON_BREAKPAD_PIPE_ARG));
+        processArgs.push_back(QString::fromUtf8("--" NATRON_BREAKPAD_PIPE_ARG));
         processArgs.push_back(_pipePath);
-        processArgs.push_back(QString("--" NATRON_BREAKPAD_COM_PIPE_ARG));
+        processArgs.push_back(QString::fromUtf8("--" NATRON_BREAKPAD_COM_PIPE_ARG));
         processArgs.push_back(_comPipePath);
     }
     
@@ -990,7 +990,7 @@ CallbacksManager::createCrashGenerationServer()
                                           true, // auto-generate dumps
                                           &stdDumpPath); // path to dump to
 #elif defined(Q_OS_WIN32)
-    _pipePath.replace("/","\\");
+    _pipePath.replace(QLatin1Char('/'),QLatin1Char('\\'));
     std::string pipeName = _pipePath.toStdString();
     std::wstring wpipeName = utf8_to_utf16(pipeName);
     std::string stdDumPath = _dumpDirPath.toStdString();
@@ -1023,8 +1023,8 @@ void
 CallbacksManager::onNatronProcessStdOutWrittenTo()
 {
 #ifndef NATRON_CRASH_REPORTER_USE_FORK
-    QString str(_natronProcess->readAllStandardOutput().data());
-    while (str.endsWith('\n')) {
+    QString str = QString::fromUtf8(_natronProcess->readAllStandardOutput().data());
+    while (str.endsWith(QLatin1Char('\n'))) {
         str.chop(1);
     }
     std::cout << str.toStdString() << std::endl;
@@ -1035,8 +1035,8 @@ void
 CallbacksManager::onNatronProcessStdErrWrittenTo()
 {
 #ifndef NATRON_CRASH_REPORTER_USE_FORK
-    QString str(_natronProcess->readAllStandardError().data());
-    while (str.endsWith('\n')) {
+    QString str = QString::fromUtf8(_natronProcess->readAllStandardError().data());
+    while (str.endsWith(QLatin1Char('\n'))) {
         str.chop(1);
     }
     std::cerr << str.toStdString() << std::endl;
@@ -1088,15 +1088,15 @@ CallbacksManager::initCrashGenerationServer()
 #ifndef Q_OS_WIN32
         _pipePath = tmpFileName;
 #else
-        int foundLastSlash = tmpFileName.lastIndexOf('/');
+        int foundLastSlash = tmpFileName.lastIndexOf(QLatin1Char('/'));
         if (foundLastSlash !=1) {
-            _pipePath = "//./pipe/";
+            _pipePath = QString::fromUtf8("//./pipe/");
             if (foundLastSlash < tmpFileName.size() - 1) {
-                QString toAppend("CRASH_PIPE_");
+                QString toAppend(QString::fromUtf8("CRASH_PIPE_"));
                 toAppend.append(tmpFileName.mid(foundLastSlash + 1));
                 _pipePath.append(toAppend);
             } else {
-                _pipePath.append("CRASH_PIPE_");
+                _pipePath.append(QString::fromUtf8("CRASH_PIPE_"));
                 _pipePath.append(tmpFileName);
             }
         }

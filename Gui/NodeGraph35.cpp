@@ -495,7 +495,7 @@ NodeGraph::dropEvent(QDropEvent* e)
         QString path = rl.toLocalFile();
 
 #ifdef __NATRON_WIN32__
-        if ( !path.isEmpty() && ( path.at(0) == QChar('/')  || path.at(0) == QChar('\\') ) ) {
+        if ( !path.isEmpty() && ( path.at(0) == QLatin1Char('/')  || path.at(0) == QLatin1Char('\\') ) ) {
             path = path.remove(0,1);
         }
 		path = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(path);

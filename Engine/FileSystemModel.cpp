@@ -480,7 +480,7 @@ FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(const QString&
 	}
 
 	QString ret;
-	if (path[0].isLetter() && path[1] == QChar(':')) {
+	if (path[0].isLetter() && path[1] == QLatin1Char(':')) {
 
 		QString driveName = path.mid(0,2);
 
@@ -498,12 +498,12 @@ FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(const QString&
 #ifdef UNICODE
             std::wstring wstr(szDeviceName);
             std::string str = OFX::wideStringToString(wstr);
-            QString qDeviceName(str.c_str());
+            QString qDeviceName(QString::fromUtf8(str.c_str()));
 #else
-            QString qDeviceName(szDeviceName);
+            QString qDeviceName = QString::fromUtf8(szDeviceName);
 #endif
 			
-			qDeviceName.replace('\\','/');
+			qDeviceName.replace(QLatin1Char('\\'),QLatin1Char('/'));
 
 			//Make sure we remember the mapping
 			appPTR->registerUNCPath(qDeviceName, path[0]);

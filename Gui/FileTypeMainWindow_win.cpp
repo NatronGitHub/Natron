@@ -58,7 +58,7 @@ DocumentWindow::DocumentWindow(QWidget* parent, Qt::WindowFlags flags) :
 QMainWindow(parent, flags),
 m_registerForDDE(false),
 m_appAtomName(),
-m_systemTopicAtomName("system"),
+m_systemTopicAtomName(QString::fromUtf8("system")),
 m_appAtom(0),
 m_systemTopicAtom(0)
 {
@@ -136,18 +136,18 @@ void DocumentWindow::registerFileType(const QString& documentId,
     if (!SetHkcrUserRegKey(documentId, fileTypeName))
         return;
 
-    if (!SetHkcrUserRegKey(QString("%1\\DefaultIcon").arg(documentId),
-                   QString("\"%1\",%2").arg(QDir::toNativeSeparators(qApp->applicationFilePath())).arg(appIconIndex)))
+    if (!SetHkcrUserRegKey(QString::fromUtf8("%1\\DefaultIcon").arg(documentId),
+                   QString::fromUtf8("\"%1\",%2").arg(QDir::toNativeSeparators(qApp->applicationFilePath())).arg(appIconIndex)))
         return;
 
     m_registerForDDE = registerForDDE;
 
     if(commands & DDEOpen)
-        registerCommand("Open", documentId, " %1", "[open(\"%1\")]");
+        registerCommand(QString::fromUtf8("Open"), documentId, QString::fromUtf8(" %1"), QString::fromUtf8("[open(\"%1\")]"));
     if(commands & DDENew)
-        registerCommand("New", documentId, "-new %1", "[new(\"%1\")]");
+        registerCommand(QString::fromUtf8("New"), documentId, QString::fromUtf8("-new %1"), QString::fromUtf8("[new(\"%1\")]"));
     if(commands & DDEPrint)
-        registerCommand("Print", documentId, "-print %1", "[print(\"%1\")]");
+        registerCommand(QString::fromUtf8("Print"), documentId, QString::fromUtf8("-print %1"), QString::fromUtf8("[print(\"%1\")]"));
 
     LONG lSize = _MAX_PATH * 2;
     wchar_t szTempBuffer[_MAX_PATH * 2];
@@ -164,7 +164,7 @@ void DocumentWindow::registerFileType(const QString& documentId,
         if (!SetHkcrUserRegKey(fileExtension, documentId))
             return;
 
-        SetHkcrUserRegKey(QString("%1\\ShellNew").arg(fileExtension), QLatin1String(""), QLatin1String("NullFile"));
+        SetHkcrUserRegKey(QString::fromUtf8("%1\\ShellNew").arg(fileExtension), QLatin1String(""), QLatin1String("NullFile"));
     }
 }
 
@@ -179,22 +179,22 @@ void DocumentWindow::registerCommand(const QString& command,
 
     if(!cmdLineArg.isEmpty())
     {
-        commandLine.append(QChar(' '));
+        commandLine.append(QLatin1Char(' '));
         commandLine.append(cmdLineArg);
     }
 
-    if (!SetHkcrUserRegKey(QString("%1\\shell\\%2\\command").arg(documentId).arg(command), commandLine))
+    if (!SetHkcrUserRegKey(QString::fromUtf8("%1\\shell\\%2\\command").arg(documentId).arg(command), commandLine))
         return;       // just skip it
 
     if(m_registerForDDE)
     {
-        if (!SetHkcrUserRegKey(QString("%1\\shell\\%2\\ddeexec").arg(documentId).arg(command), ddeCommand))
+        if (!SetHkcrUserRegKey(QString::fromUtf8("%1\\shell\\%2\\ddeexec").arg(documentId).arg(command), ddeCommand))
             return;
 
-        if (!SetHkcrUserRegKey(QString("%1\\shell\\%2\\ddeexec\\application").arg(documentId).arg(command), m_appAtomName))
+        if (!SetHkcrUserRegKey(QString::fromUtf8("%1\\shell\\%2\\ddeexec\\application").arg(documentId).arg(command), m_appAtomName))
             return;
 
-        if (!SetHkcrUserRegKey(QString("%1\\shell\\%2\\ddeexec\\topic").arg(documentId).arg(command), m_systemTopicAtomName))
+        if (!SetHkcrUserRegKey(QString::fromUtf8("%1\\shell\\%2\\ddeexec\\topic").arg(documentId).arg(command), m_systemTopicAtomName))
             return;
     }
 }
@@ -254,7 +254,7 @@ bool DocumentWindow::ddeExecute(MSG* message, long* result)
         return true;
     }
     
-   QRegExp regCommand("^\\[(\\w+)\\((.*)\\)\\]$");
+   QRegExp regCommand(QString::fromUtf8("^\\[(\\w+)\\((.*)\\)\\]$"));
     if(regCommand.exactMatch(command))
     {
         executeDdeCommand(regCommand.cap(1), regCommand.cap(2));
@@ -275,7 +275,7 @@ bool DocumentWindow::SetHkcrUserRegKey(QString key, const QString& value, const 
 {
     HKEY hKey;
 
-    key.prepend("Software\\Classes\\");
+    key.prepend(QString::fromUtf8("Software\\Classes\\"));
 
     LONG lRetVal = RegCreateKeyW(HKEY_CURRENT_USER,
                                 (const wchar_t*)key.utf16(),
@@ -293,32 +293,32 @@ bool DocumentWindow::SetHkcrUserRegKey(QString key, const QString& value, const 
         if(::RegCloseKey(hKey) == ERROR_SUCCESS && lResult == ERROR_SUCCESS)
             return true;
 
-        QMessageBox::warning(0, QString("Error in setting Registry values"),
-                             QString("registration database update failed for key '%s'.").arg(key));
+        QMessageBox::warning(0, QString::fromUtf8("Error in setting Registry values"),
+                             QString::fromUtf8("registration database update failed for key '%s'.").arg(key));
     }
     else
     {
         wchar_t buffer[4096];
         ::FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM, 0, lRetVal, 0, buffer, 4096, 0);
         QString szText = QString::fromUtf16((const ushort*)buffer);
-        QMessageBox::warning(this, QString("Error in setting Registry values"), szText);
+        QMessageBox::warning(this, QString::fromUtf8("Error in setting Registry values"), szText);
     }
     return false;
 }
 
 void DocumentWindow::executeDdeCommand(const QString& command, const QString& params)
 {
-    QRegExp regCommand("^\"(.*)\"$");
+    QRegExp regCommand(QString::fromUtf8("^\"(.*)\"$"));
     bool singleCommand = regCommand.exactMatch(params);
-    if((0 == command.compare("open", Qt::CaseInsensitive)) && singleCommand)
+    if((0 == command.compare(QString::fromUtf8("open"), Qt::CaseInsensitive)) && singleCommand)
     {
         ddeOpenFile(regCommand.cap(1));
     }
-    else if((0 == command.compare("new", Qt::CaseInsensitive)) && singleCommand)
+    else if((0 == command.compare(QString::fromUtf8("new"), Qt::CaseInsensitive)) && singleCommand)
     {
         ddeNewFile(regCommand.cap(1));
     }
-    else if((0 == command.compare("print", Qt::CaseInsensitive)) && singleCommand)
+    else if((0 == command.compare(QString::fromUtf8("print"), Qt::CaseInsensitive)) && singleCommand)
     {
         ddePrintFile(regCommand.cap(1));
     }
