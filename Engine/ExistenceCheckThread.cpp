@@ -77,7 +77,7 @@ ExistenceCheckerThread::ExistenceCheckerThread(const QString& checkMessage,
 : QThread()
 , _imp(new ExistenceCheckerThreadPrivate(checkMessage, acknowledgementMessage,comServerPipePath))
 {
-    setObjectName("CrashReporterAliveThread");
+    setObjectName(QString::fromUtf8("CrashReporterAliveThread"));
 }
 
 ExistenceCheckerThread::~ExistenceCheckerThread()
@@ -128,7 +128,7 @@ ExistenceCheckerThread::run()
 
         {
             QString tosend(_imp->checkMessage);
-            tosend.push_back('\n');
+            tosend.push_back(QChar::fromLatin1('\n'));
             _imp->socket->write(tosend.toStdString().c_str());
         }
         _imp->socket->flush();
@@ -137,8 +137,8 @@ ExistenceCheckerThread::run()
         while (_imp->socket->waitForReadyRead(NATRON_BREAKPAD_WAIT_FOR_CRASH_REPORTER_ACK_MS)) {
 
             //we received something, if it's not the ackknowledgement packet, recheck
-            QString str = _imp->socket->readLine();
-            while (str.endsWith('\n')) {
+            QString str = QString::fromUtf8(_imp->socket->readLine());
+            while (str.endsWith(QChar::fromLatin1('\n'))) {
                 str.chop(1);
             }
             if (str == _imp->acknowledgementMessage) {

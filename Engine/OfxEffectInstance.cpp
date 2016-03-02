@@ -544,11 +544,11 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         return;
     }
     
-    QString pluginID(getPluginID().c_str());
+    QString pluginID = QString::fromUtf8(getPluginID().c_str());
     /*
      Currently genarts plug-ins do not handle render scale properly for overlays
      */
-    if (pluginID.startsWith("com.genarts.")) {
+    if (pluginID.startsWith(QString::fromUtf8("com.genarts."))) {
         _imp->overlaysCanHandleRenderScale = false;
     }
     
@@ -713,160 +713,161 @@ ofxExtractAllPartsOfGrouping(const QString & pluginIdentifier,
                              const QString & str)
 {
     QString s(str);
-
-    s.replace( QChar('\\'),QChar('/') );
+    
+    std::string stdIdentifier = pluginIdentifier.toStdString();
+    s.replace( QLatin1Char('\\'),QLatin1Char('/') );
 
     QStringList out;
-    if ((pluginIdentifier.startsWith("com.genarts.sapphire.") || s.startsWith("Sapphire ") || s.startsWith(" Sapphire ")) &&
-        !s.startsWith("Sapphire/")) {
-        out.push_back("Sapphire");
+    if ((pluginIdentifier.startsWith(QString::fromUtf8("com.genarts.sapphire.")) || s.startsWith(QString::fromUtf8("Sapphire ")) || s.startsWith(QString::fromUtf8(" Sapphire "))) &&
+        !s.startsWith(QString::fromUtf8("Sapphire/"))) {
+        out.push_back(QString::fromUtf8("Sapphire"));
 
-    } else if ((pluginIdentifier.startsWith("com.genarts.monsters.") || s.startsWith("Monsters ") || s.startsWith(" Monsters ")) &&
-               !s.startsWith("Monsters/")) {
-        out.push_back("Monsters");
+    } else if ((pluginIdentifier.startsWith(QString::fromUtf8("com.genarts.monsters.")) || s.startsWith(QString::fromUtf8("Monsters ")) || s.startsWith(QString::fromUtf8(" Monsters "))) &&
+               !s.startsWith(QString::fromUtf8("Monsters/"))) {
+        out.push_back(QString::fromUtf8("Monsters"));
 
-    } else if ((pluginIdentifier == "uk.co.thefoundry.keylight.keylight") ||
-               (pluginIdentifier == "jp.co.ise.imagica:PrimattePlugin")) {
-        s = PLUGIN_GROUP_KEYER;
+    } else if ((pluginIdentifier == QString::fromUtf8("uk.co.thefoundry.keylight.keylight")) ||
+               (pluginIdentifier == QString::fromUtf8("jp.co.ise.imagica:PrimattePlugin"))) {
+        s = QString::fromUtf8(PLUGIN_GROUP_KEYER);
 
-    } else if ((pluginIdentifier == "uk.co.thefoundry.noisetools.denoise") ||
-               pluginIdentifier.startsWith("com.rubbermonkey:FilmConvert")) {
-        s = PLUGIN_GROUP_FILTER;
+    } else if ((pluginIdentifier == QString::fromUtf8("uk.co.thefoundry.noisetools.denoise")) ||
+               pluginIdentifier.startsWith(QString::fromUtf8("com.rubbermonkey:FilmConvert"))) {
+        s = QString::fromUtf8(PLUGIN_GROUP_FILTER);
 
-    } else if (pluginIdentifier.startsWith("com.NewBlue.Titler")) {
-        s = PLUGIN_GROUP_PAINT;
+    } else if (pluginIdentifier.startsWith(QString::fromUtf8("com.NewBlue.Titler"))) {
+        s = QString::fromUtf8(PLUGIN_GROUP_PAINT);
 
-    } else if (pluginIdentifier.startsWith("com.FXHOME.HitFilm")) {
+    } else if (pluginIdentifier.startsWith(QString::fromUtf8("com.FXHOME.HitFilm"))) {
         // HitFilm uses grouping such as "HitFilm - Keying - Matte Enhancement"
-        s.replace(" - ", "/");
+        s.replace(QString::fromUtf8(" - "), QString::fromUtf8("/"));
 
-    } else if (pluginIdentifier.startsWith("com.redgiantsoftware.Universe") && s.startsWith("Universe ")) {
+    } else if (pluginIdentifier.startsWith(QString::fromUtf8("com.redgiantsoftware.Universe")) && s.startsWith(QString::fromUtf8("Universe "))) {
         // Red Giant Universe uses grouping such as "Universe Blur"
-        out.push_back("Universe");
+        out.push_back(QString::fromUtf8("Universe"));
 
-    } else if (pluginIdentifier.startsWith("com.NewBlue.") && s.startsWith("NewBlue ")) {
+    } else if (pluginIdentifier.startsWith(QString::fromUtf8("com.NewBlue.")) && s.startsWith(QString::fromUtf8("NewBlue "))) {
         // NewBlueFX uses grouping such as "NewBlue Elements"
-        out.push_back("NewBlue");
+        out.push_back(QString::fromUtf8("NewBlue"));
 
-    } else if ( (pluginIdentifier == "tuttle.avreader") ||
-               (pluginIdentifier == "tuttle.avwriter") ||
-               (pluginIdentifier == "tuttle.dpxwriter") ||
-               (pluginIdentifier == "tuttle.exrreader") ||
-               (pluginIdentifier == "tuttle.exrwriter") ||
-               (pluginIdentifier == "tuttle.imagemagickreader") ||
-               (pluginIdentifier == "tuttle.jpeg2000reader") ||
-               (pluginIdentifier == "tuttle.jpeg2000writer") ||
-               (pluginIdentifier == "tuttle.jpegreader") ||
-               (pluginIdentifier == "tuttle.jpegwriter") ||
-               (pluginIdentifier == "tuttle.oiioreader") ||
-               (pluginIdentifier == "tuttle.oiiowriter") ||
-               (pluginIdentifier == "tuttle.pngreader") ||
-               (pluginIdentifier == "tuttle.pngwriter") ||
-               (pluginIdentifier == "tuttle.rawreader") ||
-               (pluginIdentifier == "tuttle.turbojpegreader") ||
-               (pluginIdentifier == "tuttle.turbojpegwriter") ) {
-        out.push_back(PLUGIN_GROUP_IMAGE);
-        if ( pluginIdentifier.endsWith("reader") ) {
-            s = PLUGIN_GROUP_IMAGE_READERS;
+    } else if ( (stdIdentifier == "tuttle.avreader") ||
+               (stdIdentifier == "tuttle.avwriter") ||
+               (stdIdentifier == "tuttle.dpxwriter") ||
+               (stdIdentifier == "tuttle.exrreader") ||
+               (stdIdentifier == "tuttle.exrwriter") ||
+               (stdIdentifier == "tuttle.imagemagickreader") ||
+               (stdIdentifier == "tuttle.jpeg2000reader") ||
+               (stdIdentifier == "tuttle.jpeg2000writer") ||
+               (stdIdentifier == "tuttle.jpegreader") ||
+               (stdIdentifier == "tuttle.jpegwriter") ||
+               (stdIdentifier == "tuttle.oiioreader") ||
+               (stdIdentifier == "tuttle.oiiowriter") ||
+               (stdIdentifier == "tuttle.pngreader") ||
+               (stdIdentifier == "tuttle.pngwriter") ||
+               (stdIdentifier == "tuttle.rawreader") ||
+               (stdIdentifier == "tuttle.turbojpegreader") ||
+               (stdIdentifier == "tuttle.turbojpegwriter") ) {
+        out.push_back(QString::fromUtf8(PLUGIN_GROUP_IMAGE));
+        if ( pluginIdentifier.endsWith(QString::fromUtf8("reader")) ) {
+            s = QString::fromUtf8(PLUGIN_GROUP_IMAGE_READERS);
         } else {
-            s = PLUGIN_GROUP_IMAGE_WRITERS;
+            s = QString::fromUtf8(PLUGIN_GROUP_IMAGE_WRITERS);
         }
 
-    } else if ( (pluginIdentifier == "tuttle.checkerboard") ||
-               (pluginIdentifier == "tuttle.colorbars") ||
-               (pluginIdentifier == "tuttle.colorcube") || // TuttleColorCube
-               (pluginIdentifier == "tuttle.colorgradient") ||
-               (pluginIdentifier == "tuttle.colorwheel") ||
-               (pluginIdentifier == "tuttle.constant") ||
-               (pluginIdentifier == "tuttle.inputbuffer") ||
-               (pluginIdentifier == "tuttle.outputbuffer") ||
-               (pluginIdentifier == "tuttle.ramp") ||
-               (pluginIdentifier == "tuttle.seexpr") ) {
-        s = PLUGIN_GROUP_IMAGE;
+    } else if ( (stdIdentifier == "tuttle.checkerboard") ||
+               (stdIdentifier == "tuttle.colorbars") ||
+               (stdIdentifier == "tuttle.colorcube") || // TuttleColorCube
+               (stdIdentifier == "tuttle.colorgradient") ||
+               (stdIdentifier == "tuttle.colorwheel") ||
+               (stdIdentifier == "tuttle.constant") ||
+               (stdIdentifier == "tuttle.inputbuffer") ||
+               (stdIdentifier == "tuttle.outputbuffer") ||
+               (stdIdentifier == "tuttle.ramp") ||
+               (stdIdentifier == "tuttle.seexpr") ) {
+        s = QString::fromUtf8(PLUGIN_GROUP_IMAGE);
 
-    } else if ( (pluginIdentifier == "tuttle.bitdepth") ||
-               (pluginIdentifier == "tuttle.colorgradation") ||
-               (pluginIdentifier == "tuttle.colorspace") ||
-               (pluginIdentifier == "tuttle.colorsuppress") ||
-               (pluginIdentifier == "tuttle.colortransfer") ||
-               (pluginIdentifier == "tuttle.colortransform") ||
-               (pluginIdentifier == "tuttle.ctl") ||
-               (pluginIdentifier == "tuttle.invert") ||
-               (pluginIdentifier == "tuttle.lut") ||
-               (pluginIdentifier == "tuttle.normalize") ) {
-        s = PLUGIN_GROUP_COLOR;
+    } else if ( (stdIdentifier == "tuttle.bitdepth") ||
+               (stdIdentifier == "tuttle.colorgradation") ||
+               (stdIdentifier == "tuttle.colorspace") ||
+               (stdIdentifier == "tuttle.colorsuppress") ||
+               (stdIdentifier == "tuttle.colortransfer") ||
+               (stdIdentifier == "tuttle.colortransform") ||
+               (stdIdentifier == "tuttle.ctl") ||
+               (stdIdentifier == "tuttle.invert") ||
+               (stdIdentifier == "tuttle.lut") ||
+               (stdIdentifier == "tuttle.normalize") ) {
+        s = QString::fromUtf8(PLUGIN_GROUP_COLOR);
 
-    } else if ( (pluginIdentifier == "tuttle.ocio.colorspace") ||
-               (pluginIdentifier == "tuttle.ocio.lut") ) {
-        out.push_back(PLUGIN_GROUP_COLOR);
-        s = "OCIO";
+    } else if ( (stdIdentifier == "tuttle.ocio.colorspace") ||
+               (stdIdentifier == "tuttle.ocio.lut") ) {
+        out.push_back(QString::fromUtf8(PLUGIN_GROUP_COLOR));
+        s = QString::fromUtf8("OCIO");
 
-    } else if ( (pluginIdentifier == "tuttle.gamma") ||
-               (pluginIdentifier == "tuttle.mathoperator") ) {
-        out.push_back(PLUGIN_GROUP_COLOR);
-        s = "Math";
+    } else if ( (stdIdentifier == "tuttle.gamma") ||
+               (stdIdentifier == "tuttle.mathoperator") ) {
+        out.push_back(QString::fromUtf8(PLUGIN_GROUP_COLOR));
+        s = QString::fromUtf8("Math");
 
-    } else if ( (pluginIdentifier == "tuttle.channelshuffle") ) {
-        s = PLUGIN_GROUP_CHANNEL;
+    } else if ( (stdIdentifier == "tuttle.channelshuffle") ) {
+        s = QString::fromUtf8(PLUGIN_GROUP_CHANNEL);
 
-    } else if ( (pluginIdentifier == "tuttle.component") ||
-               (pluginIdentifier == "tuttle.fade") ||
-               (pluginIdentifier == "tuttle.merge") ) {
-        s = PLUGIN_GROUP_MERGE;
+    } else if ( (stdIdentifier == "tuttle.component") ||
+               (stdIdentifier == "tuttle.fade") ||
+               (stdIdentifier == "tuttle.merge") ) {
+        s = QString::fromUtf8(PLUGIN_GROUP_MERGE);
 
-    } else if ( (pluginIdentifier == "tuttle.anisotropicdiffusion") ||
-                (pluginIdentifier == "tuttle.anisotropictensors") ||
-                (pluginIdentifier == "tuttle.blur") ||
-                (pluginIdentifier == "tuttle.convolution") ||
-                (pluginIdentifier == "tuttle.floodfill") ||
-                (pluginIdentifier == "tuttle.localmaxima") ||
-                (pluginIdentifier == "tuttle.nlmdenoiser") ||
-                (pluginIdentifier == "tuttle.sobel") ||
-                (pluginIdentifier == "tuttle.thinning") ) {
-        s = PLUGIN_GROUP_FILTER;
+    } else if ( (stdIdentifier == "tuttle.anisotropicdiffusion") ||
+                (stdIdentifier == "tuttle.anisotropictensors") ||
+                (stdIdentifier == "tuttle.blur") ||
+                (stdIdentifier == "tuttle.convolution") ||
+                (stdIdentifier == "tuttle.floodfill") ||
+                (stdIdentifier == "tuttle.localmaxima") ||
+                (stdIdentifier == "tuttle.nlmdenoiser") ||
+                (stdIdentifier == "tuttle.sobel") ||
+                (stdIdentifier == "tuttle.thinning") ) {
+        s = QString::fromUtf8(PLUGIN_GROUP_FILTER);
 
-    } else if ( (pluginIdentifier == "tuttle.crop") ||
-               (pluginIdentifier == "tuttle.flip") ||
-               (pluginIdentifier == "tuttle.lensdistort") ||
-               (pluginIdentifier == "tuttle.move2d") ||
-               (pluginIdentifier == "tuttle.pinning") ||
-               (pluginIdentifier == "tuttle.pushpixel") ||
-               (pluginIdentifier == "tuttle.resize") ||
-               (pluginIdentifier == "tuttle.swscale") ||
-               (pluginIdentifier == "tuttle.warp") ) {
-        s = PLUGIN_GROUP_TRANSFORM;
+    } else if ( (stdIdentifier == "tuttle.crop") ||
+               (stdIdentifier == "tuttle.flip") ||
+               (stdIdentifier == "tuttle.lensdistort") ||
+               (stdIdentifier == "tuttle.move2d") ||
+               (stdIdentifier == "tuttle.pinning") ||
+               (stdIdentifier == "tuttle.pushpixel") ||
+               (stdIdentifier == "tuttle.resize") ||
+               (stdIdentifier == "tuttle.swscale") ||
+               (stdIdentifier == "tuttle.warp") ) {
+        s = QString::fromUtf8(PLUGIN_GROUP_TRANSFORM);
 
-    } else if ( (pluginIdentifier == "tuttle.timeshift") ) {
-        s = PLUGIN_GROUP_TIME;
+    } else if ( (stdIdentifier == "tuttle.timeshift") ) {
+        s = QString::fromUtf8(PLUGIN_GROUP_TIME);
 
-    } else if ( (pluginIdentifier == "tuttle.text") ) {
-        s = PLUGIN_GROUP_PAINT;
+    } else if ( (stdIdentifier == "tuttle.text") ) {
+        s = QString::fromUtf8(PLUGIN_GROUP_PAINT);
 
-    } else if ( (pluginIdentifier == "tuttle.basickeyer") ||
-                (pluginIdentifier == "tuttle.colorspacekeyer") ||
-                (pluginIdentifier == "tuttle.histogramkeyer") ||
-                (pluginIdentifier == "tuttle.idkeyer") ) {
-        s = PLUGIN_GROUP_KEYER;
+    } else if ( (stdIdentifier == "tuttle.basickeyer") ||
+                (stdIdentifier == "tuttle.colorspacekeyer") ||
+                (stdIdentifier == "tuttle.histogramkeyer") ||
+                (stdIdentifier == "tuttle.idkeyer") ) {
+        s = QString::fromUtf8(PLUGIN_GROUP_KEYER);
 
-    } else if ( (pluginIdentifier == "tuttle.colorCube") || // TuttleColorCubeViewer
-               (pluginIdentifier == "tuttle.colorcubeviewer") ||
-               (pluginIdentifier == "tuttle.diff") ||
-               (pluginIdentifier == "tuttle.dummy") ||
-               (pluginIdentifier == "tuttle.histogram") ||
-               (pluginIdentifier == "tuttle.imagestatistics") ) {
-        s = PLUGIN_GROUP_OTHER;
+    } else if ( (stdIdentifier == "tuttle.colorCube") || // TuttleColorCubeViewer
+               (stdIdentifier == "tuttle.colorcubeviewer") ||
+               (stdIdentifier == "tuttle.diff") ||
+               (stdIdentifier == "tuttle.dummy") ||
+               (stdIdentifier == "tuttle.histogram") ||
+               (stdIdentifier == "tuttle.imagestatistics") ) {
+        s = QString::fromUtf8(PLUGIN_GROUP_OTHER);
         
-    } else if ( (pluginIdentifier == "tuttle.debugimageeffectapi") ) {
-        out.push_back(PLUGIN_GROUP_OTHER);
-        s = "Test";
+    } else if ( (stdIdentifier == "tuttle.debugimageeffectapi") ) {
+        out.push_back(QString::fromUtf8(PLUGIN_GROUP_OTHER));
+        s = QString::fromUtf8("Test");
     }
 
     // The following plugins are pretty much useless for use within Natron, keep them in the Tuttle group:
     /*
-       (pluginIdentifier == "tuttle.print") ||
-       (pluginIdentifier == "tuttle.viewer") ||
+       (stdIdentifier == "tuttle.print") ||
+       (stdIdentifier == "tuttle.viewer") ||
      */
-    return out + s.split('/');
+    return out + s.split(QLatin1Char('/'));
 } // ofxExtractAllPartsOfGrouping
 
 QStringList
@@ -877,7 +878,7 @@ AbstractOfxEffectInstance::makePluginGrouping(const std::string & pluginIdentifi
                                               const std::string & grouping)
 {
     //printf("%s,%s\n",pluginLabel.c_str(),grouping.c_str());
-    return ofxExtractAllPartsOfGrouping( pluginIdentifier.c_str(), versionMajor, versionMinor, pluginLabel.c_str(),grouping.c_str() );
+    return ofxExtractAllPartsOfGrouping( QString::fromUtf8(pluginIdentifier.c_str()), versionMajor, versionMinor, QString::fromUtf8(pluginLabel.c_str()),QString::fromUtf8(grouping.c_str()));
 }
 
 std::string
@@ -923,7 +924,7 @@ OfxEffectInstance::getPluginGrouping(std::list<std::string>* grouping) const
     std::string groupStr = effectInstance()->getPluginGrouping();
     std::string label = getPluginLabel();
     const OFX::Host::ImageEffect::ImageEffectPlugin *p = effectInstance()->getPlugin();
-    QStringList groups = ofxExtractAllPartsOfGrouping( p->getIdentifier().c_str(), p->getVersionMajor(), p->getVersionMinor(), label.c_str(), groupStr.c_str() );
+    QStringList groups = ofxExtractAllPartsOfGrouping(QString::fromUtf8( p->getIdentifier().c_str()), p->getVersionMajor(), p->getVersionMinor(), QString::fromUtf8(label.c_str()), QString::fromUtf8(groupStr.c_str()) );
     for (int i = 0; i < groups.size(); ++i) {
         grouping->push_back( groups[i].toStdString() );
     }
@@ -1866,7 +1867,7 @@ OfxEffectInstance::render(const RenderActionArgs& args)
             QString err;
             if (stat == kOfxStatErrImageFormat) {
                 err.append(QObject::tr("Bad image format was supplied by "));
-                err.append(NATRON_APPLICATION_NAME);
+                err.append(QString::fromUtf8(NATRON_APPLICATION_NAME));
             } else if (stat == kOfxStatErrMemory) {
                 err.append(QObject::tr("Out of memory!"));
             } else {

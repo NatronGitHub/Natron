@@ -81,7 +81,7 @@ public:
                            const QString & initialName = QString(),
                            const QString & helpToolTip = QString(),
                            bool createDefaultPage = false,
-                           const QString & defaultPageName = QString("Default"),
+                           const QString & defaultPageName = QString::fromUtf8("Default"),
                            QWidget *parent = 0);
 
     virtual ~DockablePanel() OVERRIDE;

@@ -165,7 +165,7 @@ KnobWidgetDnD::startDrag()
 {
     QDrag* drag = new QDrag(_imp->widget);
     QMimeData* mimeData = new QMimeData;
-    mimeData->setData(KNOB_DND_MIME_DATA_KEY, QByteArray());
+    mimeData->setData(QString::fromUtf8(KNOB_DND_MIME_DATA_KEY), QByteArray());
     drag->setMimeData(mimeData);
     
     KnobGuiPtr guiKnob = _imp->getKnob();
@@ -201,26 +201,26 @@ KnobWidgetDnD::startDrag()
     QString knobLine;
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(internalKnob->getHolder());
     if (isEffect) {
-        knobLine.append(isEffect->getNode()->getFullyQualifiedName().c_str());
-        knobLine += '.';
+        knobLine.append(QString::fromUtf8(isEffect->getNode()->getFullyQualifiedName().c_str()));
+        knobLine += QLatin1Char('.');
     }
-    knobLine += (internalKnob->getName().c_str());
+    knobLine += QString::fromUtf8(internalKnob->getName().c_str());
     
     
     if (internalKnob->getDimension() > 1) {
         if (dragDim != -1) {
-            knobLine += '.';
-            knobLine += internalKnob->getDimensionName(dragDim).c_str();
+            knobLine += QLatin1Char('.');
+            knobLine += QString::fromUtf8(internalKnob->getDimensionName(dragDim).c_str());
         } else {
             if (!isExprMult) {
-                knobLine += ' ';
+                knobLine += QLatin1Char(' ');
                 knobLine += QObject::tr("(all dimensions)");
             }
         }
     }
     
     if (isExprMult) {
-        knobLine += " * curve(frame, dimension)";
+        knobLine += QString::fromUtf8(" * curve(frame, dimension)");
     }
    
     QString textThirdLine;
@@ -258,7 +258,7 @@ KnobWidgetDnD::dragEnter(QDragEnterEvent* e)
         return false;
     }
     QStringList formats = e->mimeData()->formats();
-    if (formats.contains(KNOB_DND_MIME_DATA_KEY) && _imp->canDrop(false, true) ) {
+    if (formats.contains(QString::fromUtf8(KNOB_DND_MIME_DATA_KEY)) && _imp->canDrop(false, true) ) {
         e->acceptProposedAction();
         return true;
     }
@@ -272,7 +272,7 @@ KnobWidgetDnD::dragMove(QDragMoveEvent* e)
         return false;
     }
     QStringList formats = e->mimeData()->formats();
-    if (formats.contains(KNOB_DND_MIME_DATA_KEY) && _imp->canDrop(false, true) ) {
+    if (formats.contains(QString::fromUtf8(KNOB_DND_MIME_DATA_KEY)) && _imp->canDrop(false, true) ) {
         e->acceptProposedAction();
         return true;
     }
@@ -341,7 +341,7 @@ KnobWidgetDnD::drop(QDropEvent* e)
     e->accept();
     QStringList formats = e->mimeData()->formats();
     
-    if (formats.contains(KNOB_DND_MIME_DATA_KEY) && _imp->canDrop(true, false)) {
+    if (formats.contains(QString::fromUtf8(KNOB_DND_MIME_DATA_KEY)) && _imp->canDrop(true, false)) {
         
         KnobGuiPtr guiKnob = _imp->getKnob();
         KnobPtr source;

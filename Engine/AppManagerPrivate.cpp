@@ -143,8 +143,8 @@ AppManagerPrivate::initBreakpad(const QString& breakpadPipePath, const QString& 
      We check periodically that the crash reporter process is still alive. If the user killed it somehow, then we want
      the Natron process to terminate
      */
-    breakpadAliveThread.reset(new ExistenceCheckerThread(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK,
-                                                         NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK_ACK,
+    breakpadAliveThread.reset(new ExistenceCheckerThread(QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK),
+                                                         QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK_ACK),
                                                          breakpadComPipePath));
     QObject::connect(breakpadAliveThread.get(), SIGNAL(otherProcessUnreachable()), appPTR, SLOT(onCrashReporterNoLongerResponding()));
     breakpadAliveThread->start();
@@ -332,7 +332,7 @@ void restoreCache(AppManagerPrivate* p, Cache<T>* cache)
         }
         
         
-        QFile restoreFile( settingsFilePath.c_str() );
+        QFile restoreFile(QString::fromUtf8(settingsFilePath.c_str()));
         restoreFile.remove();
         
         cache->restore(tableOfContents);
@@ -353,11 +353,11 @@ bool
 AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath)
 {
 	QString settingsFilePath = cachePath;
-	if (!settingsFilePath.endsWith('/')) {
-		settingsFilePath += '/';
+    if (!settingsFilePath.endsWith(QChar::fromLatin1('/'))) {
+        settingsFilePath += QChar::fromLatin1('/');
 	}
-	settingsFilePath += "restoreFile.";
-	settingsFilePath += NATRON_CACHE_FILE_EXT;
+	settingsFilePath += QString::fromUtf8("restoreFile.");
+	settingsFilePath += QString::fromUtf8(NATRON_CACHE_FILE_EXT);
 
     if ( !QFile::exists(settingsFilePath) ) {
         cleanUpCacheDiskStructure(cachePath);
@@ -376,7 +376,7 @@ AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath)
         QString subFolder(cachePath);
         subFolder.append( QDir::separator() );
         subFolder.append(files[i]);
-        if ( ( subFolder.right(1) == QString(".") ) || ( subFolder.right(2) == QString("..") ) ) {
+        if ( ( subFolder.right(1) == QString::fromUtf8(".") ) || ( subFolder.right(2) == QString::fromUtf8("..") ) ) {
             continue;
         }
         QDir d(subFolder);
@@ -384,7 +384,7 @@ AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath)
             ++subFolderCount;
             QStringList items = d.entryList();
             for (int j = 0; j < items.size(); ++j) {
-                if ( ( items[j] != QString(".") ) && ( items[j] != QString("..") ) ) {
+                if ( ( items[j] != QString::fromUtf8(".") ) && ( items[j] != QString::fromUtf8("..") ) ) {
                     ++count;
                 }
             }
@@ -414,7 +414,7 @@ AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath)
         cacheFolder.removeRecursively();
     }
 #endif
-    cacheFolder.mkpath(".");
+    cacheFolder.mkpath(QChar::fromLatin1('.'));
 
     QStringList etr = cacheFolder.entryList(QDir::NoDotAndDotDot);
     // if not 256 subdirs, we re-create the cache
@@ -429,7 +429,7 @@ AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath)
             oss << std::hex <<  i;
             oss << std::hex << j;
             std::string str = oss.str();
-            cacheFolder.mkdir( str.c_str() );
+            cacheFolder.mkdir(QString::fromUtf8(str.c_str()));
         }
     }
 }

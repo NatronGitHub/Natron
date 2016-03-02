@@ -68,7 +68,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
     NodeGroup* isNodeGroup = dynamic_cast<NodeGroup*>(group.get());
     QString groupName;
     if (isNodeGroup) {
-        groupName = isNodeGroup->getNode()->getLabel().c_str();
+        groupName = QString::fromUtf8(isNodeGroup->getNode()->getLabel().c_str());
     } else {
         groupName = QObject::tr("top-level");
     }
@@ -116,7 +116,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 ///Create the parent
                 if (!foundParent) {
                     
-                    CreateNodeArgs args(pluginID.c_str(), eCreateNodeReasonInternal, group);
+                    CreateNodeArgs args(QString::fromUtf8(pluginID.c_str()), eCreateNodeReasonInternal, group);
                     NodePtr parent = group->getApplication()->createNode(args);
                     try {
                         parent->setScriptName((*it)->getMultiInstanceParentName().c_str());
@@ -137,10 +137,10 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             
             unsigned int savedPythonModuleVersion = (*it)->getPythonModuleVersion();
             
-            QString qPyModulePath(pythonModuleAbsolutePath.c_str());
+            QString qPyModulePath = QString::fromUtf8(pythonModuleAbsolutePath.c_str());
             //Workaround a bug introduced in Natron where we were not saving the .py extension
-            if (!qPyModulePath.endsWith(".py")) {
-                qPyModulePath.append(".py");
+            if (!qPyModulePath.endsWith(QString::fromUtf8(".py"))) {
+                qPyModulePath.append(QString::fromUtf8(".py"));
             }
             ///The path that has been saved in the project might not be corresponding on this computer.
             ///We need to search through all search paths for a match
@@ -152,10 +152,10 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             QStringList natronPaths = appPTR->getAllNonOFXPluginsPaths();
             for (int i = 0; i < natronPaths.size(); ++i) {
                 QString path = natronPaths[i];
-                if (!path.endsWith("/")) {
-                    path.append('/');
+                if (!path.endsWith(QLatin1Char('/'))) {
+                    path.append(QLatin1Char('/'));
                 }
-                path.append(pythonModuleUnPathed.c_str());
+                path.append(QString::fromUtf8(pythonModuleUnPathed.c_str()));
                 if (QFile::exists(path)) {
                     qPyModulePath = path;
                     break;
@@ -169,7 +169,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 std::string pythonPluginID,pythonPluginLabel,pythonIcFilePath,pythonGrouping,pythonDesc;
                 unsigned int pyVersion;
                 QString pythonModuleName = pythonModuleInfo.fileName();
-                if (pythonModuleName.endsWith(".py")) {
+                if (pythonModuleName.endsWith(QString::fromUtf8(".py"))) {
                     pythonModuleName = pythonModuleName.remove(pythonModuleName.size() - 3, 3);
                 }
                 
@@ -188,7 +188,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                         } else {
 
                             StandardButtonEnum rep = Dialogs::questionDialog(QObject::tr("New PyPlug version").toStdString(),
-                                                                             (QObject::tr("Version %1 of PyPlug \"%2\" was found.").arg(pyVersion).arg(stdModuleName.c_str()).toStdString() + '\n' +
+                                                                             (QObject::tr("Version %1 of PyPlug \"%2\" was found.").arg(pyVersion).arg(QString::fromUtf8(stdModuleName.c_str())).toStdString() + '\n' +
                                                                               QObject::tr("You are currently using version %1.").arg(savedPythonModuleVersion).toStdString() + '\n' +
                                                                               QObject::tr("Would you like to update your script to use the newer version?").toStdString()),
                                                                              false,
@@ -227,7 +227,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
         }
         
         if (!n) {
-            CreateNodeArgs args(pluginID.c_str(), eCreateNodeReasonProjectLoad, group);
+            CreateNodeArgs args(QString::fromUtf8(pluginID.c_str()), eCreateNodeReasonProjectLoad, group);
             args.multiInstanceParentName = (*it)->getMultiInstanceParentName();
             args.majorV = majorVersion;
             args.minorV = minorVersion;
@@ -236,7 +236,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
         }
         if (!n) {
             QString text( QObject::tr("ERROR: The node ") );
-            text.append( pluginID.c_str() );
+            text.append( QString::fromUtf8(pluginID.c_str()));
             text.append(QObject::tr(" version %1.%2").arg(majorVersion).arg(minorVersion));
             text.append( QObject::tr(" was found in the script but does not"
                                      " exist in the loaded plug-ins.") );
@@ -246,10 +246,10 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
         } else {
             if (!usingPythonModule && n->getPlugin() && n->getPlugin()->getMajorVersion() != (int)majorVersion) {
                 QString text( QObject::tr("WARNING: The node ") );
-                text.append((*it)->getNodeScriptName().c_str());
-                text.append(" (");
-                text.append( pluginID.c_str() );
-                text.append(")");
+                text.append(QString::fromUtf8((*it)->getNodeScriptName().c_str()));
+                text.append(QString::fromUtf8(" ("));
+                text.append(QString::fromUtf8(pluginID.c_str()));
+                text.append(QString::fromUtf8(")"));
                 text.append(QObject::tr(" version %1.%2").arg(majorVersion).arg(minorVersion));
                 text.append( QObject::tr(" was found in the script but was loaded"
                                          " with version %3.%4 instead").arg(n->getPlugin()->getMajorVersion()).arg(n->getPlugin()->getMinorVersion()) );
@@ -306,7 +306,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             NodePtr masterNode = it->first->getApp()->getNodeByFullySpecifiedName(masterNodeName);
             
             if (!masterNode) {
-                appPTR->writeToErrorLog_mt_safe(QString("Cannot restore the link between " + QString(it->second->getNodeScriptName().c_str()) + " and " + masterNodeName.c_str()));
+                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8("Cannot restore the link between ") + QString::fromUtf8(it->second->getNodeScriptName().c_str()) + QString::fromUtf8(" and ") + QString::fromUtf8(masterNodeName.c_str()));
                 mustShowErrorsLog = true;
             } else {
                 it->first->getEffectInstance()->slaveAllKnobs( masterNode->getEffectInstance().get(), true );
@@ -342,7 +342,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 }
                 int index = it->first->getInputNumberFromLabel(it2->first);
                 if (index == -1) {
-                    appPTR->writeToErrorLog_mt_safe(QString("Could not find input named ") + it2->first.c_str());
+                    appPTR->writeToErrorLog_mt_safe(QString::fromUtf8("Could not find input named ") + QString::fromUtf8(it2->first.c_str()));
                     continue;
                 }
                 if (!it2->second.empty() && !group->connectNodes(index, it2->second, it->first)) {
@@ -402,7 +402,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 }
                 int index = it->first->getInputNumberFromLabel(it2->first);
                 if (index == -1) {
-                    appPTR->writeToErrorLog_mt_safe(QString("Could not find input named ") + it2->first.c_str());
+                    appPTR->writeToErrorLog_mt_safe(QString::fromUtf8("Could not find input named ") + QString::fromUtf8(it2->first.c_str()));
                     continue;
                 }
                 if (!it2->second.empty() && !group->connectNodes(index, it2->second, it->first)) {

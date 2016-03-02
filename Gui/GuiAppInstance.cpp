@@ -281,8 +281,8 @@ GuiAppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
     QObject::connect(getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(projectFormatChanged(Format)));
 
     {
-        QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
-        if ( !settings.contains("checkForUpdates") ) {
+        QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
+        if ( !settings.contains(QString::fromUtf8("checkForUpdates")) ) {
             StandardButtonEnum reply = Dialogs::questionDialog(tr("Updates").toStdString(),
                                                                       tr("Do you want " NATRON_APPLICATION_NAME " to check for updates "
                                                                       "on launch of the application ?").toStdString(), false);
@@ -307,7 +307,7 @@ GuiAppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
 
     /// Create auto-save dir if it does not exists
     QDir dir = Project::autoSavesDir();
-    dir.mkpath(".");
+    dir.mkpath(QString::fromUtf8("."));
 
 
     if (getAppID() == 0) {
@@ -358,7 +358,7 @@ GuiAppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
     } else {
 
 
-        if (info.suffix() == "py") {
+        if (info.suffix() == QString::fromUtf8("py")) {
 
             appPTR->setLoadingStatus(tr("Loading script: ") + cl.getScriptFilename());
 
@@ -366,18 +366,16 @@ GuiAppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
             loadPythonScript(info);
             execOnProjectCreatedCallback();
 
-        } else if (info.suffix() == NATRON_PROJECT_FILE_EXT) {
+        } else if (info.suffix() == QString::fromUtf8(NATRON_PROJECT_FILE_EXT)) {
 
             ///Otherwise just load the project specified.
             QString name = info.fileName();
             QString path = info.path();
-			if (!path.endsWith('/')) { 
-				path += '/';
-			}
+            Global::ensureLastPathSeparator(path);
             appPTR->setLoadingStatus(tr("Loading project: ") + path + name);
             getProject()->loadProject(path,name);
             ///remove any file open event that might have occured
-            appPTR->setFileToOpen("");
+            appPTR->setFileToOpen(QString());
         } else {
             Dialogs::errorDialog(tr("Invalid file").toStdString(),
                                 tr(NATRON_APPLICATION_NAME " only accepts python scripts or .ntp project files").toStdString());
@@ -411,11 +409,11 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
     QStringList foundAutosaves;
     for (int i = 0; i < entries.size(); ++i) {
         const QString & entry = entries.at(i);
-        QString searchStr('.');
-        searchStr.append(NATRON_PROJECT_FILE_EXT);
-        searchStr.append(".autosave");
+        QString searchStr(QLatin1Char('.'));
+        searchStr.append(QString::fromUtf8(NATRON_PROJECT_FILE_EXT));
+        searchStr.append(QString::fromUtf8(".autosave"));
         int suffixPos = entry.indexOf(searchStr);
-        if (suffixPos == -1 || entry.contains("RENDER_SAVE")) {
+        if (suffixPos == -1 || entry.contains(QString::fromUtf8("RENDER_SAVE"))) {
             continue;
         }
         
@@ -443,13 +441,13 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
         const QString& autoSaveFileName = foundAutosaves[i];
         if (i == 0) {
             //Load the first one into the current instance of Natron, then open-up new instances
-            if (!getProject()->loadProject(savesDir.path() + '/', autoSaveFileName, true)) {
+            if (!getProject()->loadProject(savesDir.path() + QLatin1Char('/'), autoSaveFileName, true)) {
                 return false;
             }
         } else {
             CLArgs cl;
             AppInstance* newApp = appPTR->newAppInstance(cl, false);
-            if (!newApp->getProject()->loadProject(savesDir.path() + '/', autoSaveFileName, true)) {
+            if (!newApp->getProject()->loadProject(savesDir.path() + QLatin1Char('/'), autoSaveFileName, true)) {
                 return false;
             }
         }
@@ -1209,10 +1207,10 @@ GuiAppInstance::newProject()
 void
 GuiAppInstance::handleFileOpenEvent(const std::string &filename)
 {
-    QString fileCopy(filename.c_str());
-    fileCopy.replace('\\', '/');
+    QString fileCopy(QString::fromUtf8(filename.c_str()));
+    fileCopy.replace(QLatin1Char('\\'), QLatin1Char('/'));
     QString ext = QtCompat::removeFileExtension(fileCopy);
-    if (ext == NATRON_PROJECT_FILE_EXT) {
+    if (ext == QString::fromUtf8(NATRON_PROJECT_FILE_EXT)) {
         AppInstance* app = getGui()->openProject(filename);
         if (!app) {
             Dialogs::errorDialog(tr("Project").toStdString(), tr("Failed to open project").toStdString() + ' ' + filename);

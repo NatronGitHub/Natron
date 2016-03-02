@@ -393,8 +393,8 @@ CurveGui::drawCurve(int curveIndex,
                 
                 double xText = _curveWidget->toZoomCoordinates(10, 0).x();
                 
-                _curveWidget->renderText(xText, curveYRange.first, QString("min"), minMaxColor, _curveWidget->font());
-                _curveWidget->renderText(xText, curveYRange.second, QString("max"), minMaxColor, _curveWidget->font());
+                _curveWidget->renderText(xText, curveYRange.first, QString::fromUtf8("min"), minMaxColor, _curveWidget->font());
+                _curveWidget->renderText(xText, curveYRange.second, QString::fromUtf8("max"), minMaxColor, _curveWidget->font());
             }
             
         }
@@ -512,8 +512,8 @@ CurveGui::drawCurve(int curveIndex,
                     
                     double rounding = std::pow(10., CURVEWIDGET_DERIVATIVE_ROUND_PRECISION);
                     
-                    QString leftDerivStr = QString("l: %1").arg(std::floor((key.getLeftDerivative() * rounding) + 0.5) / rounding);
-                    QString rightDerivStr = QString("r: %1").arg(std::floor((key.getRightDerivative() * rounding) + 0.5) / rounding);
+                    QString leftDerivStr = QString::fromUtf8("l: %1").arg(std::floor((key.getLeftDerivative() * rounding) + 0.5) / rounding);
+                    QString rightDerivStr = QString::fromUtf8("r: %1").arg(std::floor((key.getRightDerivative() * rounding) + 0.5) / rounding);
                     
                     double yLeftWidgetCoord = _curveWidget->toWidgetCoordinates(0,isSelected->leftTan.second).y();
                     yLeftWidgetCoord += (m.height() + 4);
@@ -532,7 +532,7 @@ CurveGui::drawCurve(int curveIndex,
                 
                 
                 if (singleKey) { //if one keyframe, also draw the coordinates
-                    QString coordStr("x: %1, y: %2");
+                    QString coordStr = QString::fromUtf8("x: %1, y: %2");
                     coordStr = coordStr.arg(x).arg(y);
                     double yWidgetCoord = _curveWidget->toWidgetCoordinates( 0,key.getValue() ).y();
                     yWidgetCoord += (m.height() + 4);

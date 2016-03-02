@@ -142,10 +142,10 @@ CompleterLineEdit::filterText(const QString & txt)
         
         QString pattern;
         for (int i = 0; i < txt.size(); ++i) {
-            pattern.push_back('*');
+            pattern.push_back(QLatin1Char('*'));
             pattern.push_back(txt[i]);
         }
-        pattern.push_back('*');
+        pattern.push_back(QLatin1Char('*'));
         QRegExp expr(pattern,Qt::CaseInsensitive,QRegExp::WildcardUnix);
         for (PluginsNamesMap::iterator it = _imp->names.begin(); it != _imp->names.end(); ++it) {
             if ( it->second.first.contains(expr) ) {
@@ -279,7 +279,7 @@ void
 CompleterLineEdit::showCompleter()
 {
     _imp->listView->setFixedWidth(width());
-    filterText("");
+    filterText(QString());
 }
 
 struct NodeCreationDialogPrivate
@@ -298,15 +298,15 @@ struct NodeCreationDialogPrivate
 
 static int getPluginWeight(const QString& pluginID, int majVersion)
 {
-    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
-    QString propName(pluginID + QString::number(majVersion) + "_tab_weight");
+    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
+    QString propName(pluginID + QString::number(majVersion) + QString::fromUtf8("_tab_weight"));
     int curValue = settings.value(propName,QVariant(0)).toInt();
     return curValue;
 }
 
 static void incrementPluginWeight(const QString& pluginID,int majVersion) {
-    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
-    QString propName(pluginID + QString::number(majVersion) + "_tab_weight");
+    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
+    QString propName(pluginID + QString::number(majVersion) + QString::fromUtf8("_tab_weight"));
     int curValue = settings.value(propName,QVariant(0)).toInt();
     ++curValue;
     settings.setValue(propName, QVariant(curValue));
@@ -318,7 +318,7 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
 {
     setWindowTitle( tr("Node Creation Tool") );
     setWindowFlags(Qt::Window | Qt::CustomizeWindowHint);
-    setObjectName("nodeCreationDialog");
+    setObjectName(QString::fromUtf8("nodeCreationDialog"));
     setAttribute(Qt::WA_DeleteOnClose,false);
     _imp->layout = new QVBoxLayout(this);
     _imp->layout->setContentsMargins(0, 0, 0, 0);
@@ -348,7 +348,7 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
             
             idNamePair.second = p->generateUserFriendlyPluginID();
             
-            int indexOfBracket = idNamePair.second.lastIndexOf("  [");
+            int indexOfBracket = idNamePair.second.lastIndexOf(QString::fromUtf8("  ["));
             if (indexOfBracket != -1) {
                 idNamePair.first = idNamePair.second.left(indexOfBracket);
             }
@@ -376,7 +376,7 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
                 }
         
                 
-                int indexOfBracket = idNamePair.second.lastIndexOf("  [");
+                int indexOfBracket = idNamePair.second.lastIndexOf(QString::fromUtf8("  ["));
                 if (indexOfBracket != -1) {
                     idNamePair.first = idNamePair.second.left(indexOfBracket);
                 }

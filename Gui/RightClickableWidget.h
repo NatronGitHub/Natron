@@ -66,7 +66,7 @@ public:
     : QWidget(parent)
     , panel(panel)
     {
-        setObjectName("SettingsPanel");
+        setObjectName(QString::fromUtf8("SettingsPanel"));
     }
     
     virtual ~RightClickableWidget() {}

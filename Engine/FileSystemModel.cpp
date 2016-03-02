@@ -66,25 +66,25 @@ static QStringList getSplitPath(const QString& path)
 	if (isdriveOrRoot) {
 		pathCpy = pathCpy.remove(0,3);
 	}
-    if (pathCpy.size() > 0 && pathCpy[pathCpy.size() - 1] == QChar('/')) {
+    if (pathCpy.size() > 0 && pathCpy[pathCpy.size() - 1] == QChar::fromLatin1('/')) {
         pathCpy = pathCpy.mid(0,pathCpy.size() - 1);
     }
-	QStringList splitPath = pathCpy.split('/');
+	QStringList splitPath = pathCpy.split(QChar::fromLatin1('/'));
 	if (isdriveOrRoot) {
 		splitPath.prepend(startPath.mid(0,3));
 	}
 
 #else
-	 isdriveOrRoot = pathCpy.startsWith("/");
+    isdriveOrRoot = pathCpy.startsWith(QChar::fromLatin1('/'));
 	if (isdriveOrRoot) {
 		pathCpy = pathCpy.remove(0,1);
 	}
-    if (pathCpy.size() > 0 && pathCpy[pathCpy.size() - 1] == QChar('/')) {
+    if (pathCpy.size() > 0 && pathCpy[pathCpy.size() - 1] == QChar::fromLatin1('/')) {
         pathCpy = pathCpy.mid(0,pathCpy.size() - 1);
     }
-	QStringList splitPath = pathCpy.split('/');
+	QStringList splitPath = pathCpy.split(QChar::fromLatin1('/'));
 	if (isdriveOrRoot) {
-		splitPath.prepend("/");
+		splitPath.prepend(QChar::fromLatin1('/'));
 	}
 
 #endif
@@ -97,8 +97,8 @@ static QStringList getSplitPath(const QString& path)
 static QString generateChildAbsoluteName(FileSystemItem* parent,const QString& name)
 {
     QString childName = parent->absoluteFilePath();
-    if (!childName.endsWith('/')) {
-        childName.append('/');
+    if (!childName.endsWith(QChar::fromLatin1('/'))) {
+        childName.append(QChar::fromLatin1('/'));
     }
     childName.append(name);
     return childName;
@@ -138,7 +138,7 @@ struct FileSystemItemPrivate
     , absoluteFilePath()
     {
         if (!isDir) {
-            int lastDotPos = filename.lastIndexOf(QChar('.'));
+            int lastDotPos = filename.lastIndexOf(QChar::fromLatin1('.'));
             if (lastDotPos != - 1) {
                 fileExtension = filename.mid(lastDotPos + 1);
             }
@@ -281,11 +281,11 @@ FileSystemItem::addChild(const boost::shared_ptr<SequenceParsing::SequenceFromFi
     } else {
         std::string pattern = sequence->generateValidSequencePattern();
         SequenceParsing::removePath(pattern);
-        filename = pattern.c_str();
+        filename = QString::fromUtf8(pattern.c_str());
         if (!sequence->isSingleFile()) {
             pattern = sequence->generateUserFriendlySequencePatternFromValidPattern(pattern);
         }
-        userFriendlyFilename = pattern.c_str();
+        userFriendlyFilename = QString::fromUtf8(pattern.c_str());
     }
     
     
@@ -534,7 +534,7 @@ FileSystemModel::isDriveName(const QString& name)
 #ifdef __NATRON_WIN32__
 	return name.size() == 3 && name.at(0).isLetter() && name.at(1) == QLatin1Char(':') && (name.at(2) == QLatin1Char('/') || name.at(2) == QLatin1Char('\\'));
 #else
-	return name == "/";
+    return name == QString::fromUtf8("/");
 #endif
 }
 
@@ -544,7 +544,7 @@ FileSystemModel::startsWithDriveName(const QString& name)
 #ifdef __NATRON_WIN32__
     return name.size() >= 3 && name.at(0).isLetter() && name.at(1) == QLatin1Char(':') && (name.at(2) == QLatin1Char('/') || name.at(2) == QLatin1Char('\\'));
 #else
-    return name.startsWith("/");
+    return name.startsWith(QChar::fromLatin1('/'));
 #endif
 }
 
@@ -836,11 +836,11 @@ FileSystemModel::setRegexpFilters(const QString& filters)
         int i = 0;
         while ( i < filters.size() ) {
             QString regExp;
-            while ( i < filters.size() && filters.at(i) != QChar(' ') ) {
+            while ( i < filters.size() && filters.at(i) != QLatin1Char(' ') ) {
                 regExp.append( filters.at(i) );
                 ++i;
             }
-            if (regExp != "*") {
+            if (regExp != QString(QLatin1Char('*'))) {
                 QRegExp rx(regExp,Qt::CaseInsensitive,QRegExp::Wildcard);
                 if ( rx.isValid() ) {
                     _imp->regexps.push_back(rx);
@@ -859,12 +859,12 @@ FileSystemModel::generateRegexpFilterFromFileExtensions(const QStringList& exten
     QString ret;
     
     for (int i = 0; i < extensions.size(); ++i) {
-        if (extensions[i] != "*") {
-            ret.append("*.");
+        if (extensions[i] != QString::fromUtf8("*")) {
+            ret.append(QString::fromUtf8("*."));
         }
         ret.append( extensions[i] );
         if (i < extensions.size() - 1) {
-            ret.append(" ");
+            ret.append(QChar::fromLatin1(' '));
         }
     }
     return ret;

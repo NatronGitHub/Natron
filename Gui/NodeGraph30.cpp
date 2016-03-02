@@ -89,7 +89,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
         v = boost::dynamic_pointer_cast<InspectorNode>( lastUsedViewer->
                                                        getInternalNode()->getNode() );
     } else {
-        CreateNodeArgs args(PLUGINID_NATRON_VIEWER,
+        CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_VIEWER),
                        eCreateNodeReasonUserCreate,
                        getGroup());
         NodePtr viewerNode = getGui()->getApp()->createNode(args);

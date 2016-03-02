@@ -368,7 +368,7 @@ ReadNodePrivate::destroyReadNode()
 void
 ReadNodePrivate::createDefaultReadNode()
 {
-    CreateNodeArgs args(READ_NODE_DEFAULT_READER, eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
+    CreateNodeArgs args(QString::fromUtf8(READ_NODE_DEFAULT_READER), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
     args.createGui = false;
     args.addToProject = false;
     args.ioContainer = _publicInterface->getNode();
@@ -418,7 +418,7 @@ ReadNodePrivate::createReadNode(bool throwErrors, const std::string& filename, c
     SetCreatingReaderRAIIFlag creatingNode__(this);
     
     std::string filePattern = filename;
-    QString qpattern(filePattern.c_str());
+    QString qpattern = QString::fromUtf8(filePattern.c_str());
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
     std::string readerPluginID;
 
@@ -455,7 +455,7 @@ ReadNodePrivate::createReadNode(bool throwErrors, const std::string& filename, c
     if (readerPluginID.empty() && !serialization) {
         //Couldn't find any reader
         if (!ext.empty()) {
-            QString message = QObject::tr("No plugin capable of decoding") + ' ' + ext.c_str() + ' ' + QObject::tr("was found") + '.';
+            QString message = QObject::tr("No plugin capable of decoding") + QLatin1Char(' ') + QString::fromUtf8(ext.c_str()) + QLatin1Char(' ') + QObject::tr("was found") + QLatin1Char('.');
             //Dialogs::errorDialog(QObject::tr("Read").toStdString(), message.toStdString(), false);
             if (throwErrors) {
                 throw std::runtime_error(message.toStdString());
@@ -464,7 +464,7 @@ ReadNodePrivate::createReadNode(bool throwErrors, const std::string& filename, c
         defaultFallback = true;
        
     } else {
-        CreateNodeArgs args(readerPluginID.c_str(), serialization ? eCreateNodeReasonProjectLoad : eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
+        CreateNodeArgs args(QString::fromUtf8(readerPluginID.c_str()), serialization ? eCreateNodeReasonProjectLoad : eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
         args.createGui = false;
         args.addToProject = false;
         args.serialization = serialization;
@@ -521,14 +521,14 @@ ReadNodePrivate::refreshPluginSelectorKnob()
     entries.push_back(kPluginSelectorParamEntryDefault);
     help.push_back("Use the default plug-in chosen from the Preferences to read this file format");
     
-    QString qpattern(filePattern.c_str());
+    QString qpattern = QString::fromUtf8(filePattern.c_str());
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
     std::vector<std::string> readersForFormat;
 
     appPTR->getCurrentSettings()->getReadersForFormat(ext,&readersForFormat);
     std::string pluginID = appPTR->getCurrentSettings()->getReaderPluginIDForFileType(ext);
     for (std::size_t i = 0; i < readersForFormat.size(); ++i) {
-        Plugin* plugin = appPTR->getPluginBinary(readersForFormat[i].c_str(), -1, -1, false);
+        Plugin* plugin = appPTR->getPluginBinary(QString::fromUtf8(readersForFormat[i].c_str()), -1, -1, false);
         entries.push_back(plugin->getPluginID().toStdString());
         std::stringstream ss;
         ss << "Use " << plugin->getPluginLabel().toStdString() << " version ";

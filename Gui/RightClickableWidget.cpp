@@ -80,7 +80,7 @@ RightClickableWidget::enterEvent(QEvent* e)
     dynamic_cast<Histogram*>(currentFocus) ||
     dynamic_cast<NodeGraph*>(currentFocus) ||
     dynamic_cast<QToolButton*>(currentFocus) ||
-    currentFocus->objectName() == "Properties";
+    currentFocus->objectName() == QString::fromUtf8("Properties");
     
     if (canSetFocus) {
         setFocus();

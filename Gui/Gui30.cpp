@@ -86,7 +86,7 @@ Gui::errorDialog(const std::string & title,
         }
         ++_imp->_uiUsingMainThread;
         locker.unlock();
-        Q_EMIT doDialog(0, QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)eStandardButtonYes);
+        Q_EMIT doDialog(0, QString::fromUtf8( title.c_str() ), QString::fromUtf8( text.c_str() ), useHtml, buttons, (int)eStandardButtonYes);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
@@ -96,7 +96,7 @@ Gui::errorDialog(const std::string & title,
             QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
             ++_imp->_uiUsingMainThread;
         }
-        Q_EMIT doDialog(0, QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)eStandardButtonYes);
+        Q_EMIT doDialog(0, QString::fromUtf8( title.c_str() ), QString::fromUtf8( text.c_str() ), useHtml, buttons, (int)eStandardButtonYes);
     }
 }
 
@@ -123,7 +123,7 @@ Gui::errorDialog(const std::string & title,
         }
         ++_imp->_uiUsingMainThread;
         locker.unlock();
-        Q_EMIT doDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeError, QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)eStandardButtonOk );
+        Q_EMIT doDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeError, QString::fromUtf8( title.c_str() ), QString::fromUtf8( text.c_str() ), useHtml, buttons, (int)eStandardButtonOk );
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
@@ -134,7 +134,7 @@ Gui::errorDialog(const std::string & title,
             ++_imp->_uiUsingMainThread;
         }
         Q_EMIT doDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeError,
-                                               QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)eStandardButtonOk );
+                                               QString::fromUtf8( title.c_str() ), QString::fromUtf8( text.c_str() ), useHtml, buttons, (int)eStandardButtonOk );
     }
     *stopAsking = _imp->_lastStopAskingAnswer;
 }
@@ -161,7 +161,7 @@ Gui::warningDialog(const std::string & title,
         }
         ++_imp->_uiUsingMainThread;
         locker.unlock();
-        Q_EMIT doDialog(1, QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)eStandardButtonYes);
+        Q_EMIT doDialog(1, QString::fromUtf8( title.c_str() ), QString::fromUtf8( text.c_str() ), useHtml, buttons, (int)eStandardButtonYes);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
@@ -171,7 +171,7 @@ Gui::warningDialog(const std::string & title,
             QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
             ++_imp->_uiUsingMainThread;
         }
-        Q_EMIT doDialog(1, QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)eStandardButtonYes);
+        Q_EMIT doDialog(1, QString::fromUtf8( title.c_str() ), QString::fromUtf8( text.c_str() ), useHtml, buttons, (int)eStandardButtonYes);
     }
 }
 
@@ -198,7 +198,7 @@ Gui::warningDialog(const std::string & title,
         }
         ++_imp->_uiUsingMainThread;
         locker.unlock();
-        Q_EMIT doDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeWarning, QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)eStandardButtonOk );
+        Q_EMIT doDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeWarning, QString::fromUtf8( title.c_str() ), QString::fromUtf8( text.c_str() ), useHtml, buttons, (int)eStandardButtonOk );
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
@@ -209,7 +209,7 @@ Gui::warningDialog(const std::string & title,
             ++_imp->_uiUsingMainThread;
         }
         Q_EMIT doDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeWarning,
-                                               QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)eStandardButtonOk );
+                                               QString::fromUtf8( title.c_str() ), QString::fromUtf8( text.c_str() ), useHtml, buttons, (int)eStandardButtonOk );
     }
     *stopAsking = _imp->_lastStopAskingAnswer;
 }
@@ -237,7 +237,7 @@ Gui::informationDialog(const std::string & title,
         assert(!_imp->_uiUsingMainThread);
         ++_imp->_uiUsingMainThread;
         locker.unlock();
-        Q_EMIT doDialog(2, QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)eStandardButtonYes);
+        Q_EMIT doDialog(2, QString::fromUtf8( title.c_str() ), QString::fromUtf8( text.c_str() ), useHtml, buttons, (int)eStandardButtonYes);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
@@ -248,7 +248,7 @@ Gui::informationDialog(const std::string & title,
             assert(!_imp->_uiUsingMainThread);
             ++_imp->_uiUsingMainThread;
         }
-        Q_EMIT doDialog(2, QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)eStandardButtonYes);
+        Q_EMIT doDialog(2, QString::fromUtf8( title.c_str() ), QString::fromUtf8( text.c_str() ), useHtml, buttons, (int)eStandardButtonYes);
     }
 }
 
@@ -276,7 +276,7 @@ Gui::informationDialog(const std::string & title,
         assert(!_imp->_uiUsingMainThread);
         ++_imp->_uiUsingMainThread;
         locker.unlock();
-        Q_EMIT doDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeInformation, QString( title.c_str() ), QString( message.c_str() ), useHtml, buttons, (int)eStandardButtonOk );
+        Q_EMIT doDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeInformation, QString::fromUtf8( title.c_str() ), QString::fromUtf8( message.c_str() ), useHtml, buttons, (int)eStandardButtonOk );
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
@@ -287,7 +287,7 @@ Gui::informationDialog(const std::string & title,
             assert(!_imp->_uiUsingMainThread);
             ++_imp->_uiUsingMainThread;
         }
-        Q_EMIT doDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeInformation, QString( title.c_str() ), QString( message.c_str() ), useHtml, buttons, (int)eStandardButtonOk );
+        Q_EMIT doDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeInformation, QString::fromUtf8( title.c_str() ), QString::fromUtf8( message.c_str() ), useHtml, buttons, (int)eStandardButtonOk );
     }
     *stopAsking = _imp->_lastStopAskingAnswer;
 }
@@ -385,7 +385,7 @@ Gui::questionDialog(const std::string & title,
         assert(!_imp->_uiUsingMainThread);
         ++_imp->_uiUsingMainThread;
         locker.unlock();
-        Q_EMIT doDialog(3, QString( title.c_str() ), QString( message.c_str() ), useHtml, buttons, (int)defaultButton);
+        Q_EMIT doDialog(3, QString::fromUtf8( title.c_str() ), QString::fromUtf8( message.c_str() ), useHtml, buttons, (int)defaultButton);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
@@ -396,7 +396,7 @@ Gui::questionDialog(const std::string & title,
             assert(!_imp->_uiUsingMainThread);
             ++_imp->_uiUsingMainThread;
         }
-        Q_EMIT doDialog(3, QString( title.c_str() ), QString( message.c_str() ), useHtml, buttons, (int)defaultButton);
+        Q_EMIT doDialog(3, QString::fromUtf8( title.c_str() ), QString::fromUtf8( message.c_str() ), useHtml, buttons, (int)defaultButton);
     }
 
     return _imp->_lastQuestionDialogAnswer;
@@ -427,7 +427,7 @@ Gui::questionDialog(const std::string & title,
         ++_imp->_uiUsingMainThread;
         locker.unlock();
         Q_EMIT onDoDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeQuestion,
-                                                 QString( title.c_str() ), QString( message.c_str() ), useHtml, buttons, (int)defaultButton );
+                                                 QString::fromUtf8( title.c_str() ), QString::fromUtf8( message.c_str() ), useHtml, buttons, (int)defaultButton );
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
@@ -439,7 +439,7 @@ Gui::questionDialog(const std::string & title,
             ++_imp->_uiUsingMainThread;
         }
         Q_EMIT onDoDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeQuestion,
-                                                 QString( title.c_str() ), QString( message.c_str() ), useHtml, buttons, (int)defaultButton );
+                                                 QString::fromUtf8( title.c_str() ), QString::fromUtf8( message.c_str() ), useHtml, buttons, (int)defaultButton );
     }
 
     *stopAsking = _imp->_lastStopAskingAnswer;

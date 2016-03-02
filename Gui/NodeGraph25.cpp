@@ -411,13 +411,13 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                 Plugin* plugin = *it->second.rbegin();
                 
                 if ( plugin->getHasShortcut() ) {
-                    QString group(kShortcutGroupNodes);
+                    QString group = QString::fromUtf8(kShortcutGroupNodes);
                     QStringList groupingSplit = plugin->getGrouping();
                     for (int j = 0; j < groupingSplit.size(); ++j) {
-                        group.push_back('/');
+                        group.push_back(QLatin1Char('/'));
                         group.push_back(groupingSplit[j]);
                     }
-                    if ( isKeybind(group.toStdString().c_str(), plugin->getPluginID(), modifiers, key) ) {
+                    if ( isKeybind(group.toStdString(), plugin->getPluginID().toStdString(), modifiers, key) ) {
                         QPointF hint = mapToScene( mapFromGlobal( QCursor::pos() ) );
                         
                         CreateNodeArgs args(plugin->getPluginID(), eCreateNodeReasonUserCreate, getGroup());

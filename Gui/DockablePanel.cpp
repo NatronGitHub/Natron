@@ -97,7 +97,7 @@ public:
     
     
     OverlayColorButton(DockablePanel* panel,const QIcon& icon,QWidget* parent)
-    : Button(icon,"",parent)
+    : Button(icon,QString(),parent)
     , _panel(panel)
     {
         
@@ -160,7 +160,7 @@ DockablePanel::DockablePanel(Gui* gui ,
         
         const Plugin* plugin = isEffect->getNode()->getPlugin();
         pluginLabelVersioned = plugin->getPluginLabel();
-        QString toAppend = QString(" version %1.%2").arg(plugin->getMajorVersion()).arg(plugin->getMinorVersion());
+        QString toAppend = QString::fromUtf8(" version %1.%2").arg(plugin->getMajorVersion()).arg(plugin->getMinorVersion());
         pluginLabelVersioned.append(toAppend);
         
         
@@ -200,7 +200,7 @@ DockablePanel::DockablePanel(Gui* gui ,
             if (!iconFilePath.empty()) {
                
                 QPixmap ic;
-                if (ic.load(iconFilePath.c_str())) {
+                if (ic.load(QString::fromUtf8(iconFilePath.c_str()))) {
                     int size = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
                     if (std::max(ic.width(), ic.height()) != size) {
                         ic = ic.scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
@@ -217,7 +217,7 @@ DockablePanel::DockablePanel(Gui* gui ,
             
             QPixmap pixCenter;
             appPTR->getIcon(NATRON_PIXMAP_VIEWER_CENTER, iconSize, &pixCenter);
-            _imp->_centerNodeButton = new Button( QIcon(pixCenter),"",getHeaderWidget() );
+            _imp->_centerNodeButton = new Button( QIcon(pixCenter),QString(),getHeaderWidget() );
             _imp->_centerNodeButton->setFixedSize(mediumBSize);
             _imp->_centerNodeButton->setIconSize(mediumIconSize);
             _imp->_centerNodeButton->setToolTip(GuiUtils::convertFromPlainText(tr("Centers the node graph on this item."), Qt::WhiteSpaceNormal));
@@ -229,7 +229,7 @@ DockablePanel::DockablePanel(Gui* gui ,
             if (isGroup) {
                 QPixmap enterPix;
                 appPTR->getIcon(NATRON_PIXMAP_ENTER_GROUP, iconSize, &enterPix);
-                _imp->_enterInGroupButton = new Button(QIcon(enterPix),"",_imp->_headerWidget);
+                _imp->_enterInGroupButton = new Button(QIcon(enterPix),QString(),_imp->_headerWidget);
                 QObject::connect(_imp->_enterInGroupButton,SIGNAL(clicked(bool)),this,SLOT(onEnterInGroupClicked()));
                 QObject::connect(isGroup, SIGNAL(graphEditableChanged(bool)), this, SLOT(onSubGraphEditionChanged(bool)));
                 _imp->_enterInGroupButton->setFixedSize(mediumBSize);
@@ -240,7 +240,7 @@ DockablePanel::DockablePanel(Gui* gui ,
             
             QPixmap pixHelp;
             appPTR->getIcon(NATRON_PIXMAP_HELP_WIDGET, iconSize, &pixHelp);
-            _imp->_helpButton = new Button(QIcon(pixHelp),"",_imp->_headerWidget);
+            _imp->_helpButton = new Button(QIcon(pixHelp),QString(),_imp->_headerWidget);
             
             const Plugin* plugin = isEffect->getNode()->getPlugin();
             assert(plugin);
@@ -261,7 +261,7 @@ DockablePanel::DockablePanel(Gui* gui ,
             QIcon icHideShow;
             icHideShow.addPixmap(pixShow,QIcon::Normal,QIcon::Off);
             icHideShow.addPixmap(pixHide,QIcon::Normal,QIcon::On);
-            _imp->_hideUnmodifiedButton = new Button(icHideShow,"",_imp->_headerWidget);
+            _imp->_hideUnmodifiedButton = new Button(icHideShow,QString(),_imp->_headerWidget);
             _imp->_hideUnmodifiedButton->setToolTip(GuiUtils::convertFromPlainText(tr("Show/Hide all parameters without modifications."), Qt::WhiteSpaceNormal));
             _imp->_hideUnmodifiedButton->setFocusPolicy(Qt::NoFocus);
             _imp->_hideUnmodifiedButton->setFixedSize(mediumBSize);
@@ -279,21 +279,21 @@ DockablePanel::DockablePanel(Gui* gui ,
         QPixmap pixF;
         appPTR->getIcon(NATRON_PIXMAP_MAXIMIZE_WIDGET, iconSize, &pixF);
 
-        _imp->_minimize = new Button(QIcon(pixM),"",_imp->_headerWidget);
+        _imp->_minimize = new Button(QIcon(pixM),QString(),_imp->_headerWidget);
         _imp->_minimize->setFixedSize(mediumBSize);
         _imp->_minimize->setIconSize(mediumIconSize);
         _imp->_minimize->setCheckable(true);
         _imp->_minimize->setFocusPolicy(Qt::NoFocus);
         QObject::connect( _imp->_minimize,SIGNAL(toggled(bool)),this,SLOT(minimizeOrMaximize(bool)) );
 
-        _imp->_floatButton = new Button(QIcon(pixF),"",_imp->_headerWidget);
+        _imp->_floatButton = new Button(QIcon(pixF),QString(),_imp->_headerWidget);
         _imp->_floatButton->setFixedSize(mediumBSize);
         _imp->_floatButton->setIconSize(mediumIconSize);
         _imp->_floatButton->setFocusPolicy(Qt::NoFocus);
         QObject::connect( _imp->_floatButton,SIGNAL(clicked()),this,SLOT(floatPanel()) );
 
 
-        _imp->_cross = new Button(QIcon(pixC),"",_imp->_headerWidget);
+        _imp->_cross = new Button(QIcon(pixC),QString(),_imp->_headerWidget);
         _imp->_cross->setFixedSize(mediumBSize);
         _imp->_cross->setIconSize(mediumIconSize);
         _imp->_cross->setFocusPolicy(Qt::NoFocus);
@@ -313,12 +313,12 @@ DockablePanel::DockablePanel(Gui* gui ,
             p.fill(currentColor);
 
 
-            _imp->_colorButton = new Button(QIcon(p),"",_imp->_headerWidget);
+            _imp->_colorButton = new Button(QIcon(p),QString(),_imp->_headerWidget);
             _imp->_colorButton->setFixedSize(mediumBSize);
             _imp->_colorButton->setIconSize(mediumIconSize);
             _imp->_colorButton->setToolTip( GuiUtils::convertFromPlainText(tr("Set here the color of the node in the nodegraph. "
                                                                         "By default the color of the node is the one set in the "
-                                                                        "preferences of %1.").arg(NATRON_APPLICATION_NAME),
+                                                                        "preferences of %1.").arg(QString::fromUtf8(NATRON_APPLICATION_NAME)),
                                                                      Qt::WhiteSpaceNormal) );
             _imp->_colorButton->setFocusPolicy(Qt::NoFocus);
             QObject::connect( _imp->_colorButton,SIGNAL(clicked()),this,SLOT(onColorButtonClicked()) );
@@ -351,7 +351,7 @@ DockablePanel::DockablePanel(Gui* gui ,
         QIcon icUndo;
         icUndo.addPixmap(pixUndo,QIcon::Normal);
         icUndo.addPixmap(pixUndo_gray,QIcon::Disabled);
-        _imp->_undoButton = new Button(icUndo,"",_imp->_headerWidget);
+        _imp->_undoButton = new Button(icUndo,QString(),_imp->_headerWidget);
         _imp->_undoButton->setFixedSize(mediumBSize);
         _imp->_undoButton->setIconSize(mediumIconSize);
         _imp->_undoButton->setToolTip( GuiUtils::convertFromPlainText(tr("Undo the last change made to this operator."), Qt::WhiteSpaceNormal) );
@@ -364,7 +364,7 @@ DockablePanel::DockablePanel(Gui* gui ,
         QIcon icRedo;
         icRedo.addPixmap(pixRedo,QIcon::Normal);
         icRedo.addPixmap(pixRedo_gray,QIcon::Disabled);
-        _imp->_redoButton = new Button(icRedo,"",_imp->_headerWidget);
+        _imp->_redoButton = new Button(icRedo,QString(),_imp->_headerWidget);
         _imp->_redoButton->setFixedSize(mediumBSize);
         _imp->_redoButton->setIconSize(mediumIconSize);
         _imp->_redoButton->setToolTip( GuiUtils::convertFromPlainText(tr("Redo the last change undone to this operator."), Qt::WhiteSpaceNormal) );
@@ -375,7 +375,7 @@ DockablePanel::DockablePanel(Gui* gui ,
         appPTR->getIcon(NATRON_PIXMAP_RESTORE_DEFAULTS_ENABLED, iconSize, &pixRestore);
         QIcon icRestore;
         icRestore.addPixmap(pixRestore);
-        _imp->_restoreDefaultsButton = new Button(icRestore,"",_imp->_headerWidget);
+        _imp->_restoreDefaultsButton = new Button(icRestore,QString(),_imp->_headerWidget);
         _imp->_restoreDefaultsButton->setFixedSize(mediumBSize);
         _imp->_restoreDefaultsButton->setIconSize(mediumIconSize);
         _imp->_restoreDefaultsButton->setToolTip( GuiUtils::convertFromPlainText(tr("Restore default values for this operator."), Qt::WhiteSpaceNormal) );
@@ -387,7 +387,7 @@ DockablePanel::DockablePanel(Gui* gui ,
         if (headerMode != eHeaderModeReadOnlyName) {
             _imp->_nameLineEdit = new LineEdit(_imp->_headerWidget);
             if (isEffect) {
-                onNodeScriptChanged(isEffect->getScriptName().c_str());
+                onNodeScriptChanged(QString::fromUtf8(isEffect->getScriptName().c_str()));
                 QObject::connect(isEffect->getNode().get(),SIGNAL(scriptNameChanged(QString)),this, SLOT(onNodeScriptChanged(QString)));
             }
             _imp->_nameLineEdit->setText(initialName);
@@ -396,7 +396,7 @@ DockablePanel::DockablePanel(Gui* gui ,
         } else {
             _imp->_nameLabel = new Label(initialName,_imp->_headerWidget);
             if (isEffect) {
-                onNodeScriptChanged(isEffect->getScriptName().c_str());
+                onNodeScriptChanged(QString::fromUtf8(isEffect->getScriptName().c_str()));
             }
             _imp->_headerLayout->addWidget(_imp->_nameLabel);
         }
@@ -453,7 +453,7 @@ DockablePanel::DockablePanel(Gui* gui ,
     } else {
         DockablePanelTabWidget* tabWidget = new DockablePanelTabWidget(gui,this);
         _imp->_tabWidget = tabWidget;
-        tabWidget->getTabBar()->setObjectName("DockablePanelTabWidget");
+        tabWidget->getTabBar()->setObjectName(QString::fromUtf8("DockablePanelTabWidget"));
         _imp->_tabWidget->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Preferred);
     }
     QObject::connect(_imp->_tabWidget, SIGNAL(currentChanged(int)), this, SLOT(onPageIndexChanged(int)));
@@ -493,7 +493,7 @@ DockablePanel::onPageLabelChangedInternally()
         return;
     }
     KnobPtr knob = handler->getKnob();
-    QString newLabel(knob->getLabel().c_str());
+    QString newLabel = QString::fromUtf8(knob->getLabel().c_str());
     for (PageMap::iterator it = _imp->_pages.begin(); it != _imp->_pages.end(); ++it) {
         if (it->second.pageKnob.lock() == knob) {
             if (_imp->_tabWidget) {
@@ -547,8 +547,8 @@ void
 DockablePanel::setPluginIDAndVersion(const std::string& pluginLabel,const std::string& pluginID,unsigned int version)
 {
     if (_imp->_iconLabel) {
-        QString pluginLabelVersioned(pluginLabel.c_str());
-        QString toAppend = QString(" version %1").arg(version);
+        QString pluginLabelVersioned = QString::fromUtf8(pluginLabel.c_str());
+        QString toAppend = QString::fromUtf8(" version %1").arg(version);
         pluginLabelVersioned.append(toAppend);
         _imp->_iconLabel->setToolTip(pluginLabelVersioned);
     }
@@ -558,7 +558,7 @@ DockablePanel::setPluginIDAndVersion(const std::string& pluginLabel,const std::s
         
         EffectInstance* iseffect = dynamic_cast<EffectInstance*>(_imp->_holder);
         if (iseffect) {
-            _imp->_pluginID = pluginID.c_str();
+            _imp->_pluginID = QString::fromUtf8(pluginID.c_str());
             _imp->_pluginVersionMajor = version;
             _imp->_pluginVersionMinor = 0;
             _imp->_helpButton->setToolTip(helpString());
@@ -581,7 +581,7 @@ DockablePanel::setPluginIcon(const QPixmap& pix)
 void
 DockablePanel::setPluginDescription(const std::string& description)
 {
-    _imp->_helpToolTip = description.c_str();
+    _imp->_helpToolTip = QString::fromUtf8(description.c_str());
     _imp->_helpButton->setToolTip(helpString());
 }
 
@@ -590,9 +590,9 @@ void
 DockablePanel::onNodeScriptChanged(const QString& label)
 {
     if (_imp->_nameLineEdit) {
-        _imp->_nameLineEdit->setToolTip("<p>Script name: <br/><b><font size=4>" + label + "</b></font></p>");
+        _imp->_nameLineEdit->setToolTip(QString::fromUtf8("<p>Script name: <br/><b><font size=4>") + label + QString::fromUtf8("</b></font></p>"));
     } else if (_imp->_nameLabel) {
-        _imp->_nameLabel->setToolTip("<p>Script name: <br/><b><font size=4>" + label + "</b></font></p>");
+        _imp->_nameLabel->setToolTip(QString::fromUtf8("<p>Script name: <br/><b><font size=4>") + label + QString::fromUtf8("</b></font></p>"));
     }
 }
 
@@ -600,7 +600,7 @@ void
 DockablePanel::setUserPageActiveIndex()
 {
     for (int i = 0; i < _imp->_tabWidget->count(); ++i) {
-        if (_imp->_tabWidget->tabText(i) == NATRON_USER_MANAGED_KNOBS_PAGE_LABEL) {
+        if (_imp->_tabWidget->tabText(i) == QString::fromUtf8(NATRON_USER_MANAGED_KNOBS_PAGE_LABEL)) {
             _imp->_tabWidget->setCurrentIndex(i);
             _imp->refreshPagesSecretness();
             break;
@@ -612,7 +612,7 @@ void
 DockablePanel::setPageActiveIndex(const boost::shared_ptr<KnobPage>& page)
 {
     for (int i = 0; i < _imp->_tabWidget->count(); ++i) {
-        if (_imp->_tabWidget->tabText(i) == page->getLabel().c_str()) {
+        if (_imp->_tabWidget->tabText(i) == QString::fromUtf8(page->getLabel().c_str())) {
             _imp->_tabWidget->setCurrentIndex(i);
             _imp->refreshPagesSecretness();
             break;
@@ -706,7 +706,7 @@ DockablePanel::onLineEditNameEditingFinished()
     if (panel) {
         node = panel->getNode();
         assert(node);
-        oldName = QString(node->getNode()->getLabel().c_str());
+        oldName = QString::fromUtf8(node->getNode()->getLabel().c_str());
         
     }
     
@@ -866,13 +866,13 @@ DockablePanel::helpString() const
         //Prepend the plugin ID
         if (!_imp->_pluginID.isEmpty()) {
             QString pluginLabelVersioned(_imp->_pluginID);
-            QString toAppend = QString(" version %1.%2").arg(_imp->_pluginVersionMajor).arg(_imp->_pluginVersionMinor);
+            QString toAppend = QString::fromUtf8(" version %1.%2").arg(_imp->_pluginVersionMajor).arg(_imp->_pluginVersionMinor);
             pluginLabelVersioned.append(toAppend);
 
             if (!pluginLabelVersioned.isEmpty()) {
-                QString toPrepend("<p><b>");
+                QString toPrepend = QString::fromUtf8("<p><b>");
                 toPrepend.append(pluginLabelVersioned);
-                toPrepend.append("</b></p>");
+                toPrepend.append(QString::fromUtf8("</b></p>"));
                 tt.prepend(toPrepend);
             }
         }
@@ -1134,7 +1134,7 @@ DockablePanel::deleteKnobGui(const KnobPtr& knob)
 {
     KnobPage* isPage = dynamic_cast<KnobPage*>(knob.get());
     if (isPage && _imp->_pagesEnabled) {
-        PageMap::iterator found = _imp->_pages.find(isPage->getLabel().c_str());
+        PageMap::iterator found = _imp->_pages.find(QString::fromUtf8(isPage->getLabel().c_str()));
         if (found != _imp->_pages.end()) {
             if (_imp->_tabWidget) {
                 int index = _imp->_tabWidget->indexOf(found->second.tab);
@@ -1173,7 +1173,7 @@ DockablePanel::deleteKnobGui(const KnobPtr& knob)
             
             assert(isParentPage || isParentGroup);
             if (isParentPage) {
-                PageMap::iterator page = _imp->_pages.find(isParentPage->getLabel().c_str());
+                PageMap::iterator page = _imp->_pages.find(QString::fromUtf8(isParentPage->getLabel().c_str()));
                 assert(page != _imp->_pages.end());
                 TabGroup* groupAsTab = page->second.groupAsTab;
                 if (groupAsTab) {

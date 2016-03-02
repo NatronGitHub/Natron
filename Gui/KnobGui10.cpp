@@ -113,7 +113,7 @@ KnobGui::onSetExprActionTriggered()
     
   
     EditExpressionDialog* dialog = new EditExpressionDialog(getGui(),dim,shared_from_this(),_imp->container);
-    dialog->create(getKnob()->getExpression(dim == -1 ? 0 : dim).c_str(), true);
+    dialog->create(QString::fromUtf8(getKnob()->getExpression(dim == -1 ? 0 : dim).c_str()), true);
     QObject::connect( dialog,SIGNAL(accepted()),this,SLOT(onEditExprDialogFinished()) );
     QObject::connect( dialog,SIGNAL(rejected()),this,SLOT(onEditExprDialogFinished()) );
     
@@ -481,7 +481,7 @@ KnobGui::removeKeyframes(const std::vector<KeyFrame>& keys, int dimension, ViewS
 QString
 KnobGui::getScriptNameHtml() const
 {
-    return  QString("<font size = 4><b>%1</b></font>").arg( getKnob()->getName().c_str() );
+    return  QString::fromUtf8("<font size = 4><b>%1</b></font>").arg( QString::fromUtf8(getKnob()->getName().c_str()) );
 }
 
 QString
@@ -493,9 +493,9 @@ KnobGui::toolTip() const
     
     QString realTt;
     if (!isChoice) {
-        realTt.append( knob->getHintToolTip().c_str() );
+        realTt.append( QString::fromUtf8(knob->getHintToolTip().c_str()) );
     } else {
-        realTt.append( isChoice->getHintToolTipFull().c_str() );
+        realTt.append( QString::fromUtf8(isChoice->getHintToolTipFull().c_str()) );
     }
     
     std::vector<std::string> expressions;
@@ -510,12 +510,12 @@ KnobGui::toolTip() const
     QString exprTt;
     if (exprAllSame) {
         if (!expressions[0].empty()) {
-            exprTt = QString("ret = <b>%1</b><br />").arg(expressions[0].c_str());
+            exprTt = QString::fromUtf8("ret = <b>%1</b><br />").arg(QString::fromUtf8(expressions[0].c_str()));
         }
     } else {
         for (int i = 0; i < knob->getDimension(); ++i) {
             std::string dimName = knob->getDimensionName(i);
-            QString toAppend = QString("%1 = <b>%2</b><br />").arg(dimName.c_str()).arg(expressions[i].c_str());
+            QString toAppend = QString::fromUtf8("%1 = <b>%2</b><br />").arg(QString::fromUtf8(dimName.c_str())).arg(QString::fromUtf8(expressions[i].c_str()));
             exprTt.append(toAppend);
         }
     }

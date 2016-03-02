@@ -506,7 +506,7 @@ RotoGui::createToolAction(QToolButton* toolGroup,
     QAction *action = new QAction(icon,text,toolGroup);
 
     
-    action->setToolTip("<p>" + text + ": " + tooltip + "</p><p><b>" + tr("Keyboard shortcut:") + " " + shortcut.toString(QKeySequence::NativeText) + "</b></p>");
+    action->setToolTip(QString::fromUtf8("<p>") + text + QString::fromUtf8(": ") + tooltip + QString::fromUtf8("</p><p><b>") + tr("Keyboard shortcut:") + QString::fromUtf8(" ") + shortcut.toString(QKeySequence::NativeText) + QString::fromUtf8("</b></p>"));
 
     QPoint data;
     data.setX( (int)tool );
@@ -607,7 +607,7 @@ RotoGui::RotoGui(NodeGui* node,
     QSize medButtonSize(TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
     QSize medButtonIconSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
 
-    _imp->autoKeyingEnabled = new Button(autoKeyIc,"",_imp->selectionButtonsBar);
+    _imp->autoKeyingEnabled = new Button(autoKeyIc,QString(),_imp->selectionButtonsBar);
     _imp->autoKeyingEnabled->setFixedSize(medButtonSize);
     _imp->autoKeyingEnabled->setIconSize(medButtonIconSize);
     _imp->autoKeyingEnabled->setCheckable(true);
@@ -620,7 +620,7 @@ RotoGui::RotoGui(NodeGui* node,
     QIcon featherLinkIc;
     featherLinkIc.addPixmap(pixFeatherLinkEnabled,QIcon::Normal,QIcon::On);
     featherLinkIc.addPixmap(pixFeatherLinkDisabled,QIcon::Normal,QIcon::Off);
-    _imp->featherLinkEnabled = new Button(featherLinkIc,"",_imp->selectionButtonsBar);
+    _imp->featherLinkEnabled = new Button(featherLinkIc,QString(),_imp->selectionButtonsBar);
     _imp->featherLinkEnabled->setFixedSize(medButtonSize);
     _imp->featherLinkEnabled->setIconSize(medButtonIconSize);
     _imp->featherLinkEnabled->setCheckable(true);
@@ -634,7 +634,7 @@ RotoGui::RotoGui(NodeGui* node,
     QIcon enableFeatherIC;
     enableFeatherIC.addPixmap(pixFeatherEnabled,QIcon::Normal,QIcon::On);
     enableFeatherIC.addPixmap(pixFeatherDisabled,QIcon::Normal,QIcon::Off);
-    _imp->displayFeatherEnabled = new Button(enableFeatherIC,"",_imp->selectionButtonsBar);
+    _imp->displayFeatherEnabled = new Button(enableFeatherIC,QString(),_imp->selectionButtonsBar);
     _imp->displayFeatherEnabled->setFixedSize(medButtonSize);
     _imp->displayFeatherEnabled->setIconSize(medButtonIconSize);
     _imp->displayFeatherEnabled->setCheckable(true);
@@ -647,7 +647,7 @@ RotoGui::RotoGui(NodeGui* node,
     QIcon stickSelIc;
     stickSelIc.addPixmap(pixStickySelEnabled,QIcon::Normal,QIcon::On);
     stickSelIc.addPixmap(pixStickySelDisabled,QIcon::Normal,QIcon::Off);
-    _imp->stickySelectionEnabled = new Button(stickSelIc,"",_imp->selectionButtonsBar);
+    _imp->stickySelectionEnabled = new Button(stickSelIc,QString(),_imp->selectionButtonsBar);
     _imp->stickySelectionEnabled->setFixedSize(medButtonSize);
     _imp->stickySelectionEnabled->setIconSize(medButtonIconSize);
     _imp->stickySelectionEnabled->setCheckable(true);
@@ -661,7 +661,7 @@ RotoGui::RotoGui(NodeGui* node,
     QIcon bboxClickIc;
     bboxClickIc.addPixmap(pixBboxClickEnabled,QIcon::Normal,QIcon::On);
     bboxClickIc.addPixmap(pixBboxClickDisabled,QIcon::Normal,QIcon::Off);
-    _imp->bboxClickAnywhere = new Button(bboxClickIc,"",_imp->selectionButtonsBar);
+    _imp->bboxClickAnywhere = new Button(bboxClickIc,QString(),_imp->selectionButtonsBar);
     _imp->bboxClickAnywhere->setFixedSize(medButtonSize);
     _imp->bboxClickAnywhere->setIconSize(medButtonIconSize);
     _imp->bboxClickAnywhere->setCheckable(true);
@@ -677,7 +677,7 @@ RotoGui::RotoGui(NodeGui* node,
     QIcon rippleEditIc;
     rippleEditIc.addPixmap(pixRippleEnabled,QIcon::Normal,QIcon::On);
     rippleEditIc.addPixmap(pixRippleDisabled,QIcon::Normal,QIcon::Off);
-    _imp->rippleEditEnabled = new Button(rippleEditIc,"",_imp->selectionButtonsBar);
+    _imp->rippleEditEnabled = new Button(rippleEditIc,QString(),_imp->selectionButtonsBar);
     _imp->rippleEditEnabled->setFixedSize(medButtonSize);
     _imp->rippleEditEnabled->setIconSize(medButtonIconSize);
     _imp->rippleEditEnabled->setCheckable(true);
@@ -689,14 +689,14 @@ RotoGui::RotoGui(NodeGui* node,
     QObject::connect( _imp->rippleEditEnabled, SIGNAL(clicked(bool)), this, SLOT(onRippleEditButtonClicked(bool)) );
     _imp->selectionButtonsBarLayout->addWidget(_imp->rippleEditEnabled);
     
-    _imp->addKeyframeButton = new Button(QIcon(pixAddKey),"",_imp->selectionButtonsBar);
+    _imp->addKeyframeButton = new Button(QIcon(pixAddKey),QString(),_imp->selectionButtonsBar);
     _imp->addKeyframeButton->setFixedSize(medButtonSize);
     _imp->addKeyframeButton->setIconSize(medButtonIconSize);
     QObject::connect( _imp->addKeyframeButton, SIGNAL(clicked(bool)), this, SLOT(onAddKeyFrameClicked()) );
     _imp->addKeyframeButton->setToolTip(GuiUtils::convertFromPlainText(tr("Set a keyframe at the current time for the selected shape(s), if any."), Qt::WhiteSpaceNormal));
     _imp->selectionButtonsBarLayout->addWidget(_imp->addKeyframeButton);
     
-    _imp->removeKeyframeButton = new Button(QIcon(pixRemoveKey),"",_imp->selectionButtonsBar);
+    _imp->removeKeyframeButton = new Button(QIcon(pixRemoveKey),QString(),_imp->selectionButtonsBar);
     _imp->removeKeyframeButton->setFixedSize(medButtonSize);
     _imp->removeKeyframeButton->setIconSize(medButtonIconSize);
     QObject::connect( _imp->removeKeyframeButton, SIGNAL(clicked(bool)), this, SLOT(onRemoveKeyFrameClicked()) );
@@ -736,7 +736,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->brushButtonsBarLayout->addWidget(_imp->colorPickerLabel);
     QPixmap colorWheelPix;
     appPTR->getIcon(NATRON_PIXMAP_COLORWHEEL, TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), &colorWheelPix);
-    _imp->colorWheelButton = new Button(QIcon(colorWheelPix),"",_imp->brushButtonsBar);
+    _imp->colorWheelButton = new Button(QIcon(colorWheelPix),QString(),_imp->brushButtonsBar);
     _imp->colorWheelButton->setToolTip(GuiUtils::convertFromPlainText(tr("Open the color dialog."), Qt::WhiteSpaceNormal));
     _imp->colorWheelButton->setFixedSize(medButtonSize);
     _imp->colorWheelButton->setIconSize(medButtonIconSize);
@@ -751,7 +751,7 @@ RotoGui::RotoGui(NodeGui* node,
         Merge::getOperatorStrings(&operators, &tooltips);
         assert(operators.size() == tooltips.size());
         for (std::size_t i = 0; i < operators.size(); ++i) {
-            _imp->compositingOperatorButton->addItem(operators[i].c_str(),QIcon(),QKeySequence(),tooltips[i].c_str());
+            _imp->compositingOperatorButton->addItem(QString::fromUtf8(operators[i].c_str()),QIcon(),QKeySequence(),QString::fromUtf8(tooltips[i].c_str()));
         }
     }
     _imp->compositingOperatorButton->setCurrentIndex_no_emit((int)eMergeCopy);
@@ -788,7 +788,7 @@ RotoGui::RotoGui(NodeGui* node,
     QString pressOpatt = GuiUtils::convertFromPlainText(tr("If checked, the pressure of the pen will dynamically alter the opacity of the next "
                                                          "brush stroke."), Qt::WhiteSpaceNormal);
     
-    _imp->pressureOpacityButton = new Button(pressureIc,"",_imp->brushButtonsBar);
+    _imp->pressureOpacityButton = new Button(pressureIc,QString(),_imp->brushButtonsBar);
     QObject::connect(_imp->pressureOpacityButton, SIGNAL(clicked(bool)), this, SLOT(onPressureOpacityClicked(bool)));
     _imp->pressureOpacityButton->setToolTip(pressOpatt);
     _imp->pressureOpacityButton->setFixedSize(medButtonSize);
@@ -816,7 +816,7 @@ RotoGui::RotoGui(NodeGui* node,
     
     QString pressSizett = GuiUtils::convertFromPlainText(tr("If checked, the pressure of the pen will dynamically alter the size of the next "
                                                           "brush stroke."), Qt::WhiteSpaceNormal);
-    _imp->pressureSizeButton = new Button(pressureIc,"",_imp->brushButtonsBar);
+    _imp->pressureSizeButton = new Button(pressureIc,QString(),_imp->brushButtonsBar);
     QObject::connect(_imp->pressureSizeButton, SIGNAL(clicked(bool)), this, SLOT(onPressureSizeClicked(bool)));
     _imp->pressureSizeButton->setToolTip(pressSizett);
     _imp->pressureSizeButton->setFixedSize(medButtonSize);
@@ -843,7 +843,7 @@ RotoGui::RotoGui(NodeGui* node,
     
     QString pressHardnesstt = GuiUtils::convertFromPlainText(tr("If checked, the pressure of the pen will dynamically alter the hardness of the next "
                                                               "brush stroke."), Qt::WhiteSpaceNormal);
-    _imp->pressureHardnessButton = new Button(pressureIc,"",_imp->brushButtonsBar);
+    _imp->pressureHardnessButton = new Button(pressureIc,QString(),_imp->brushButtonsBar);
     QObject::connect(_imp->pressureHardnessButton, SIGNAL(clicked(bool)), this, SLOT(onPressureHardnessClicked(bool)));
     _imp->pressureHardnessButton->setToolTip(pressHardnesstt);
     _imp->pressureHardnessButton->setFixedSize(medButtonSize);
@@ -865,7 +865,7 @@ RotoGui::RotoGui(NodeGui* node,
     QIcon buildupIc;
     buildupIc.addPixmap(buildupOnPix,QIcon::Normal,QIcon::On);
     buildupIc.addPixmap(buildupOffPix,QIcon::Normal,QIcon::Off);
-    _imp->buildUpButton = new Button(buildupIc,"",_imp->brushButtonsBar);
+    _imp->buildUpButton = new Button(buildupIc,QString(),_imp->brushButtonsBar);
     QObject::connect(_imp->buildUpButton, SIGNAL(clicked(bool)), this, SLOT(onBuildupClicked(bool)));
     _imp->buildUpButton->setToolTip(builduptt);
     _imp->buildUpButton->setFixedSize(medButtonSize);
@@ -970,10 +970,10 @@ RotoGui::RotoGui(NodeGui* node,
     QKeySequence pointsEditionShortcut(Qt::Key_D);
     QAction* addPtsAct = createToolAction(_imp->pointsEditionTool, QIcon(pixAddPts), tr("Add points"),tr("add a new control point to the shape")
                                           ,pointsEditionShortcut, eRotoToolAddPoints);
-    createToolAction(_imp->pointsEditionTool, QIcon(pixRemovePts), tr("Remove points"),"",pointsEditionShortcut,eRotoToolRemovePoints);
-    createToolAction(_imp->pointsEditionTool, QIcon(pixCuspPts), tr("Cusp points"),"", pointsEditionShortcut,eRotoToolCuspPoints);
-    createToolAction(_imp->pointsEditionTool, QIcon(pixSmoothPts), tr("Smooth points"),"", pointsEditionShortcut,eRotoToolSmoothPoints);
-    createToolAction(_imp->pointsEditionTool, QIcon(pixOpenCloseCurve), tr("Open/Close curve"),"", pointsEditionShortcut,eRotoToolOpenCloseCurve);
+    createToolAction(_imp->pointsEditionTool, QIcon(pixRemovePts), tr("Remove points"),QString(),pointsEditionShortcut,eRotoToolRemovePoints);
+    createToolAction(_imp->pointsEditionTool, QIcon(pixCuspPts), tr("Cusp points"),QString(), pointsEditionShortcut,eRotoToolCuspPoints);
+    createToolAction(_imp->pointsEditionTool, QIcon(pixSmoothPts), tr("Smooth points"),QString(), pointsEditionShortcut,eRotoToolSmoothPoints);
+    createToolAction(_imp->pointsEditionTool, QIcon(pixOpenCloseCurve), tr("Open/Close curve"),QString(), pointsEditionShortcut,eRotoToolOpenCloseCurve);
     createToolAction(_imp->pointsEditionTool, QIcon(pixRemoveFeather), tr("Remove feather"),tr("set the feather point to be equal to the control point"), pointsEditionShortcut,eRotoToolRemoveFeatherPoints);
     _imp->pointsEditionTool->setDown(false);
     _imp->pointsEditionTool->setDefaultAction(addPtsAct);
@@ -985,7 +985,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->bezierEditionTool->setIconSize(rotoToolSize);
     _imp->bezierEditionTool->setPopupMode(QToolButton::InstantPopup);
     QObject::connect( _imp->bezierEditionTool, SIGNAL(triggered(QAction*)), this, SLOT(onToolActionTriggered(QAction*)) );
-    _imp->bezierEditionTool->setText("Bezier");
+    _imp->bezierEditionTool->setText(QString::fromUtf8("Bezier"));
     _imp->bezierEditionTool->setDown(!hasShapes && !effectIsPaint);
     
     
@@ -998,7 +998,7 @@ RotoGui::RotoGui(NodeGui* node,
     //createToolAction(_imp->bezierEditionTool, QIcon(), "B-Spline", eRotoToolDrawBSpline);
     
     createToolAction(_imp->bezierEditionTool, QIcon(pixEllipse), tr("Ellipse"),tr("Hold control to draw the ellipse from its center"),editBezierShortcut, eRotoToolDrawEllipse);
-    createToolAction(_imp->bezierEditionTool, QIcon(pixRectangle), tr("Rectangle"),"", editBezierShortcut,eRotoToolDrawRectangle);
+    createToolAction(_imp->bezierEditionTool, QIcon(pixRectangle), tr("Rectangle"),QString(), editBezierShortcut,eRotoToolDrawRectangle);
     _imp->bezierEditionTool->setDefaultAction(drawBezierAct);
     _imp->allTools.push_back(_imp->bezierEditionTool);
     _imp->toolbar->addWidget(_imp->bezierEditionTool);
@@ -1012,7 +1012,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->paintBrushTool->setIconSize(rotoToolSize);
     _imp->paintBrushTool->setPopupMode(QToolButton::InstantPopup);
     QObject::connect( _imp->paintBrushTool, SIGNAL(triggered(QAction*)), this, SLOT(onToolActionTriggered(QAction*)) );
-    _imp->paintBrushTool->setText("Brush");
+    _imp->paintBrushTool->setText(QString::fromUtf8("Brush"));
     _imp->paintBrushTool->setDown(!hasShapes && effectIsPaint);
     QKeySequence brushPaintShortcut(Qt::Key_N);
     QAction* brushPaintAct = createToolAction(_imp->paintBrushTool, QIcon(pixPaintBrush), tr("Brush"), tr("Freehand painting"), brushPaintShortcut, eRotoToolSolidBrush);
@@ -1030,7 +1030,7 @@ RotoGui::RotoGui(NodeGui* node,
         _imp->cloneBrushTool->setIconSize(rotoToolSize);
         _imp->cloneBrushTool->setPopupMode(QToolButton::InstantPopup);
         QObject::connect( _imp->cloneBrushTool, SIGNAL(triggered(QAction*)), this, SLOT(onToolActionTriggered(QAction*)) );
-        _imp->cloneBrushTool->setText("Clone");
+        _imp->cloneBrushTool->setText(QString::fromUtf8("Clone"));
         _imp->cloneBrushTool->setDown(false);
         QKeySequence cloneBrushShortcut(Qt::Key_C);
         QAction* cloneBrushAct = createToolAction(_imp->cloneBrushTool, QIcon(pixClone), tr("Clone"), tr("Clone a portion of the source image"), cloneBrushShortcut, eRotoToolClone);
@@ -1044,7 +1044,7 @@ RotoGui::RotoGui(NodeGui* node,
         _imp->effectBrushTool->setIconSize(rotoToolSize);
         _imp->effectBrushTool->setPopupMode(QToolButton::InstantPopup);
         QObject::connect( _imp->effectBrushTool, SIGNAL(triggered(QAction*)), this, SLOT(onToolActionTriggered(QAction*)) );
-        _imp->effectBrushTool->setText("Blur");
+        _imp->effectBrushTool->setText(QString::fromUtf8("Blur"));
         _imp->effectBrushTool->setDown(false);
         QKeySequence blurShortcut(Qt::Key_X);
         QAction* blurBrushAct = createToolAction(_imp->effectBrushTool, QIcon(pixBlur), tr("Blur"), tr("Blur a portion of the source image"), blurShortcut, eRotoToolBlur);
@@ -1059,7 +1059,7 @@ RotoGui::RotoGui(NodeGui* node,
         _imp->mergeBrushTool->setIconSize(rotoToolSize);
         _imp->mergeBrushTool->setPopupMode(QToolButton::InstantPopup);
         QObject::connect( _imp->mergeBrushTool, SIGNAL(triggered(QAction*)), this, SLOT(onToolActionTriggered(QAction*)) );
-        _imp->mergeBrushTool->setText("Dodge");
+        _imp->mergeBrushTool->setText(QString::fromUtf8("Dodge"));
         _imp->mergeBrushTool->setDown(false);
         QKeySequence dodgeBrushShortcut(Qt::Key_E);
         QAction* dodgeBrushAct = createToolAction(_imp->mergeBrushTool, QIcon(pixDodge), tr("Dodge"), tr("Make the source image brighter"), dodgeBrushShortcut, eRotoToolDodge);
@@ -4427,7 +4427,7 @@ RotoGui::pushUndoCommand(QUndoCommand* cmd)
 QString
 RotoGui::getNodeName() const
 {
-    return _imp->node->getNode()->getScriptName().c_str();
+    return QString::fromUtf8(_imp->node->getNode()->getScriptName().c_str());
 }
 
 RotoContext*
@@ -4803,7 +4803,7 @@ public:
         _choice = new ComboBox(this);
 
         for (std::vector< std::pair<std::string,boost::shared_ptr<KnobDouble> > >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-            _choice->addItem( it->first.c_str() );
+            _choice->addItem( QString::fromUtf8(it->first.c_str()) );
         }
 
         mainLayout->addWidget(_choice);

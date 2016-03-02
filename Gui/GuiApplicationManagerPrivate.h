@@ -110,21 +110,21 @@ struct GuiApplicationManagerPrivate
     void removePluginToolButtonInternal(const boost::shared_ptr<PluginGroupNode>& n,const QStringList& grouping);
     void removePluginToolButton(const QStringList& grouping);
 
-    void addStandardKeybind(const QString & grouping,const QString & id,
-                            const QString & description,QKeySequence::StandardKey key,
+    void addStandardKeybind(const std::string & grouping,const std::string & id,
+                            const std::string & description,QKeySequence::StandardKey key,
                             const Qt::KeyboardModifiers & fallbackmodifiers,Qt::Key fallbacksymbol);
 
-    void addKeybind(const QString & grouping,const QString & id,
-                    const QString & description,
+    void addKeybind(const std::string & grouping,const std::string & id,
+                    const std::string & description,
                     const Qt::KeyboardModifiers & modifiers,Qt::Key symbol);
     
-    void addKeybind(const QString & grouping,const QString & id,
-                    const QString & description,
+    void addKeybind(const std::string & grouping,const std::string & id,
+                    const std::string & description,
                     const Qt::KeyboardModifiers & modifiers,Qt::Key symbol,
                     const Qt::KeyboardModifiers & modifiersMask);
     
-    void addKeybind(const QString & grouping,const QString & id,
-                    const QString & description,
+    void addKeybind(const std::string & grouping,const std::string & id,
+                    const std::string & description,
                     const Qt::KeyboardModifiers & modifiers1,Qt::Key symbol1,
                     const Qt::KeyboardModifiers & modifiers2,Qt::Key symbol2);
     
@@ -136,8 +136,8 @@ struct GuiApplicationManagerPrivate
     
     void removeKeybind(const QString& grouping,const QString& id);
 
-    void addMouseShortcut(const QString & grouping,const QString & id,
-                          const QString & description,
+    void addMouseShortcut(const std::string & grouping,const std::string & id,
+                          const std::string & description,
                           const Qt::KeyboardModifiers & modifiers,Qt::MouseButton button);
     
     boost::shared_ptr<PluginGroupNode>  findPluginToolButtonInternal(const std::list<boost::shared_ptr<PluginGroupNode> >& children,

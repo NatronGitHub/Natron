@@ -173,8 +173,8 @@ Project::loadProject(const QString & path,
 
     try {
         QString realPath = path;
-        if (!realPath.endsWith('/')) {
-            realPath.push_back('/');
+        if (!realPath.endsWith(QLatin1Char('/'))) {
+            realPath.push_back(QLatin1Char('/'));
         }
         QString realName = name;
         
@@ -220,7 +220,7 @@ Project::loadProject(const QString & path,
     } catch (const std::exception & e) {
         Dialogs::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading project").toStdString() + ": " + e.what() );
         if ( !getApp()->isBackground() ) {
-            CreateNodeArgs args(PLUGINID_NATRON_VIEWER, eCreateNodeReasonInternal, shared_from_this());
+            CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonInternal, shared_from_this());
             getApp()->createNode(args);
         }
 
@@ -229,7 +229,7 @@ Project::loadProject(const QString & path,
 
         Dialogs::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Unkown error while loading project").toStdString() );
         if ( !getApp()->isBackground() ) {
-            CreateNodeArgs args(PLUGINID_NATRON_VIEWER, eCreateNodeReasonInternal, shared_from_this());
+            CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonInternal, shared_from_this());
             getApp()->createNode(args);
         }
 
@@ -253,7 +253,7 @@ Project::loadProjectInternal(const QString & path,
     QString filePath = path + name;
     qDebug() << "Loading project" << filePath;
     if ( !QFile::exists(filePath) ) {
-        throw std::invalid_argument( QString(filePath + " : no such file.").toStdString() );
+        throw std::invalid_argument( QString(filePath + QString::fromUtf8(" : no such file.")).toStdString() );
     }
     
     bool ret = false;
@@ -276,7 +276,7 @@ Project::loadProjectInternal(const QString & path,
             
             QString line = fs.readLine();
 
-            if (line.indexOf("Natron v1.0.0 RC2") != -1 || line.indexOf("Natron v1.0.0 RC3") != -1) {
+            if (line.indexOf(QString::fromUtf8("Natron v1.0.0 RC2")) != -1 || line.indexOf(QString::fromUtf8("Natron v1.0.0 RC3")) != -1) {
                 appPTR->setProjectCreatedDuringRC2Or3(true);
                 foundV = true;
                 break;
@@ -317,8 +317,8 @@ Project::loadProjectInternal(const QString & path,
     if (isAutoSave) {
         _imp->autoSetProjectFormat = false;
         if (!isUntitledAutosave) {
-            QString projectFilename(_imp->getProjectFilename().c_str());
-            int found = projectFilename.lastIndexOf(".autosave");
+            QString projectFilename = QString::fromUtf8(_imp->getProjectFilename().c_str());
+            int found = projectFilename.lastIndexOf(QString::fromUtf8(".autosave"));
             if (found != -1) {
                 _imp->setProjectFilename(projectFilename.left(found).toStdString());
             }
@@ -332,8 +332,8 @@ Project::loadProjectInternal(const QString & path,
         _imp->ageSinceLastSave = QDateTime();
         _imp->lastAutoSaveFilePath = filePath;
         
-        QString projectPath(_imp->getProjectPath().c_str());
-        QString projectFilename(_imp->getProjectFilename().c_str());
+        QString projectPath = QString::fromUtf8(_imp->getProjectPath().c_str());
+        QString projectFilename = QString::fromUtf8(_imp->getProjectFilename().c_str());
         Q_EMIT projectNameChanged(projectPath + projectFilename, true);
 
     } else {
@@ -455,7 +455,7 @@ Project::saveProjectInternal(const QString & path,
                              bool updateProjectProperties)
 {
     
-    bool isRenderSave = name.contains("RENDER_SAVE");
+    bool isRenderSave = name.contains(QString::fromUtf8("RENDER_SAVE"));
     QDateTime time = QDateTime::currentDateTime();
     QString timeStr = time.toString();
 
@@ -471,10 +471,10 @@ Project::saveProjectInternal(const QString & path,
         } else {
             filePath = path;
         }
-        filePath.append("/");
+        filePath.append(QLatin1Char('/'));
         filePath.append(name);
         if (!isRenderSave) {
-            filePath.append(".autosave");
+            filePath.append(QString::fromUtf8(".autosave"));
         }
         if (!isRenderSave) {
             if (appendTimeHash) {
@@ -485,7 +485,7 @@ Project::saveProjectInternal(const QString & path,
                 }
                 timeHash.computeHash();
                 QString timeHashStr = QString::number( timeHash.value() );
-                filePath.append("." + timeHashStr);
+                filePath.append(QLatin1Char('.') + timeHashStr);
             }
             
         }
@@ -499,13 +499,11 @@ Project::saveProjectInternal(const QString & path,
     }
     
     std::string newFilePath = _imp->runOnProjectSaveCallback(filePath.toStdString(), autoSave);
-    filePath = QString(newFilePath.c_str());
+    filePath = QString::fromUtf8(newFilePath.c_str());
     
     ///Use a temporary file to save, so if Natron crashes it doesn't corrupt the user save.
     QString tmpFilename = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
-	if (!tmpFilename.endsWith('/')) {
-		tmpFilename.append('/');
-	}
+    Global::ensureLastPathSeparator(tmpFilename);
     tmpFilename.append( QString::number( time.toMSecsSinceEpoch() ) );
 
     {
@@ -516,7 +514,7 @@ Project::saveProjectInternal(const QString & path,
         }
         
         ///Fix file paths before saving.
-        QString oldProjectPath(_imp->getProjectPath().c_str());
+        QString oldProjectPath = QString::fromUtf8(_imp->getProjectPath().c_str());
         
         if (!autoSave && updateProjectProperties) {
             _imp->autoSetProjectDirectory(path);
@@ -577,8 +575,8 @@ Project::saveProjectInternal(const QString & path,
         createLockFile();
     } else if (updateProjectProperties) {
         if (!isRenderSave) {
-            QString projectPath(_imp->getProjectPath().c_str());
-            QString projectFilename(_imp->getProjectFilename().c_str());
+            QString projectPath = QString::fromUtf8(_imp->getProjectPath().c_str());
+            QString projectFilename= QString::fromUtf8(_imp->getProjectFilename().c_str());
            Q_EMIT projectNameChanged(projectPath + projectFilename, true);
         }
     }
@@ -597,8 +595,8 @@ Project::autoSave()
         return;
     }
     
-    QString path(_imp->getProjectPath().c_str());
-    QString name(_imp->getProjectFilename().c_str());
+    QString path = QString::fromUtf8(_imp->getProjectPath().c_str());
+    QString name = QString::fromUtf8(_imp->getProjectFilename().c_str());
     saveProject_imp(path,name, true, true, 0);
 }
 
@@ -671,13 +669,13 @@ bool Project::findAutoSaveForProject(const QString& projectPath,const QString& p
     
     for (int i = 0; i < entries.size(); ++i) {
         const QString & entry = entries.at(i);
-        QString ntpExt(".");
-        ntpExt.append(NATRON_PROJECT_FILE_EXT);
+        QString ntpExt(QLatin1Char('.'));
+        ntpExt.append(QString::fromUtf8(NATRON_PROJECT_FILE_EXT));
         QString searchStr(ntpExt);
-        QString autosaveSuffix(".autosave");
+        QString autosaveSuffix(QString::fromUtf8(".autosave"));
         searchStr.append(autosaveSuffix);
         int suffixPos = entry.indexOf(searchStr);
-        if (suffixPos == -1 || entry.contains("RENDER_SAVE")) {
+        if (suffixPos == -1 || entry.contains(QString::fromUtf8("RENDER_SAVE"))) {
             continue;
         }
         QString filename = projectPath + entry.left(suffixPos + ntpExt.size());
@@ -1162,7 +1160,7 @@ Project::createProjectViews(const std::vector<std::string>& views)
 QString
 Project::getProjectFilename() const
 {
-    return _imp->getProjectFilename().c_str();
+    return QString::fromUtf8(_imp->getProjectFilename().c_str());
 }
 
 QString
@@ -1182,7 +1180,7 @@ Project::hasEverAutoSaved() const
 QString
 Project::getProjectPath() const
 {
-    return _imp->getProjectPath().c_str();
+    return QString::fromUtf8(_imp->getProjectPath().c_str());
 }
 
 bool
@@ -1348,23 +1346,23 @@ Project::isGraphWorthLess() const
 QString
 Project::getLockAbsoluteFilePath() const
 {
-    QString projectPath(_imp->getProjectPath().c_str());
-    QString projectFilename(_imp->getProjectFilename().c_str());
+    QString projectPath = QString::fromUtf8(_imp->getProjectPath().c_str());
+    QString projectFilename = QString::fromUtf8(_imp->getProjectFilename().c_str());
   
     if (projectPath.isEmpty()) {
         return QString();
     }
-    if (!projectPath.endsWith('/')) {
-        projectPath.append('/');
+    if (!projectPath.endsWith(QLatin1Char('/'))) {
+        projectPath.append(QLatin1Char('/'));
     }
-    QString lockFilePath = projectPath + projectFilename + ".lock";
+    QString lockFilePath = projectPath + projectFilename + QString::fromUtf8(".lock");
     return lockFilePath;
 }
     
 void
 Project::createLockFile()
 {
-    QString lastAuthor(_imp->lastAuthorName->getValue().c_str());
+    QString lastAuthor = QString::fromUtf8(_imp->lastAuthorName->getValue().c_str());
     QDateTime now = QDateTime::currentDateTime();
     QString lockFilePath = getLockAbsoluteFilePath();
     if (lockFilePath.isEmpty()) {
@@ -1400,10 +1398,8 @@ Project::getLockFileInfos(const QString& projectPath,
                           qint64* appPID) const
 {
     QString realPath = projectPath;
-    if (!realPath.endsWith('/')) {
-        realPath.append('/');
-    }
-    QString lockFilePath = realPath + projectName + ".lock";
+    Global::ensureLastPathSeparator(realPath);
+    QString lockFilePath = realPath + projectName + QString::fromUtf8(".lock");
     QFile f(lockFilePath);
     if (!f.open(QIODevice::ReadOnly)) {
         return false;
@@ -1450,14 +1446,11 @@ Project::removeLastAutosave()
      * Since we may have saved the project to an old project, overwritting the existing file, there might be 
      * a oldProject.ntp.autosave file next to it that belonged to the old project, make sure it gets removed too
      */
-    QString projectPath(_imp->getProjectPath().c_str());
-    QString projectFilename(_imp->getProjectFilename().c_str());
+    QString projectPath = QString::fromUtf8(_imp->getProjectPath().c_str());
+    QString projectFilename = QString::fromUtf8(_imp->getProjectFilename().c_str());
     
-    if (!projectPath.endsWith('/')) {
-        projectPath.append('/');
-    }
-    
-    QString autoSaveFilePath = projectPath + projectFilename + ".autosave";
+    Global::ensureLastPathSeparator(projectPath);
+    QString autoSaveFilePath = projectPath + projectFilename + QString::fromUtf8(".autosave");
     if (QFile::exists(autoSaveFilePath)) {
         QFile::remove(autoSaveFilePath);
     }
@@ -1475,18 +1468,18 @@ Project::clearAutoSavesDir()
         
         ///Do not remove the RENDER_SAVE used by the background processes to render because otherwise they may fail to start rendering.
         /// @see AppInstance::startWritersRendering
-        if (entry.contains("RENDER_SAVE")) {
+        if (entry.contains(QString::fromUtf8("RENDER_SAVE"))) {
             continue;
         }
         
-        QString searchStr('.');
-        searchStr.append(NATRON_PROJECT_FILE_EXT);
-        searchStr.append('.');
+        QString searchStr(QLatin1Char('.'));
+        searchStr.append(QString::fromUtf8(NATRON_PROJECT_FILE_EXT));
+        searchStr.append(QLatin1Char('.'));
         int suffixPos = entry.indexOf(searchStr);
         if (suffixPos != -1) {
 			QString dirToRemove = savesDir.path();
-			if (!dirToRemove.endsWith('/')) {
-				dirToRemove += '/';
+			if (!dirToRemove.endsWith(QLatin1Char('/'))) {
+				dirToRemove += QLatin1Char('/');
 			}
 			dirToRemove += entry;
             QFile::remove(dirToRemove);
@@ -1498,10 +1491,8 @@ QString
 Project::autoSavesDir()
 {
 	QString str = StandardPaths::writableLocation(StandardPaths::eStandardLocationData);
-	if (!str.endsWith('/')) {
-		str += '/';
-	}
-	str += "Autosaves";
+    Global::ensureLastPathSeparator(str);
+	str += QString::fromUtf8("Autosaves");
     return str;
 }
     
@@ -1526,8 +1517,8 @@ Project::reset(bool aboutToQuit)
     _imp->runOnProjectCloseCallback();
     
     QString lockFilePath = getLockAbsoluteFilePath();
-    QString projectPath(_imp->getProjectPath().c_str());
-    QString projectFilename(_imp->getProjectFilename().c_str());
+    QString projectPath = QString::fromUtf8(_imp->getProjectPath().c_str());
+    QString projectFilename = QString::fromUtf8(_imp->getProjectFilename().c_str());
     ///Remove the lock file if we own it
     if (QFile::exists(lockFilePath)) {
         QString author;
@@ -1556,7 +1547,7 @@ Project::reset(bool aboutToQuit)
         }
         getApp()->removeAllKeyframesIndicators();
         
-        Q_EMIT projectNameChanged(NATRON_PROJECT_UNTITLED, false);
+        Q_EMIT projectNameChanged(QString::fromUtf8(NATRON_PROJECT_UNTITLED), false);
         
         const KnobsVec & knobs = getKnobs();
         
@@ -1894,8 +1885,8 @@ Project::makeRelativeToVariable(const std::string& varName,const std::string& va
             str = '[' + varName + "]/" + str.substr(varValue.size() + 1,str.size());
         }
     } else {
-        QDir dir(varValue.c_str());
-        QString relative = dir.relativeFilePath(str.c_str());
+        QDir dir(QString::fromUtf8(varValue.c_str()));
+        QString relative = dir.relativeFilePath(QString::fromUtf8(str.c_str()));
         if (hasTrailingSep) {
             str = '[' + varName + ']' + relative.toStdString();
         } else {
@@ -1923,12 +1914,12 @@ Project::fixFilePath(const std::string& projectPathName,const std::string& newPr
     if (newProjectPath.empty()) {
         return true; //keep it absolute if the variables points to nothing
     } else {
-        QDir dir(newProjectPath.c_str());
+        QDir dir(QString::fromUtf8(newProjectPath.c_str()));
         if (!dir.exists()) {
             return false;
         }
         
-        filePath = dir.relativeFilePath(filePath.c_str()).toStdString();
+        filePath = dir.relativeFilePath(QString::fromUtf8(filePath.c_str())).toStdString();
         if (newProjectPath[newProjectPath.size() - 1] == '/') {
             filePath = '[' + projectPathName + ']' + filePath;
         } else {
@@ -1981,7 +1972,7 @@ Project::canonicalizePath(std::string& str)
         }
         
         ///Canonicalize
-        QFileInfo info(str.c_str());
+        QFileInfo info(QString::fromUtf8(str.c_str()));
         QString canonical =  info.canonicalFilePath();
         if ( canonical.isEmpty() && !str.empty() ) {
             return;
@@ -2159,7 +2150,7 @@ Project::createViewer()
         return;
     }
     
-    CreateNodeArgs args(PLUGINID_NATRON_VIEWER, eCreateNodeReasonInternal, shared_from_this());
+    CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonInternal, shared_from_this());
     getApp()->createNode(args);
 
 }
@@ -2292,7 +2283,7 @@ void Project::extractTreesFromNodes(const NodesList& nodes,std::list<Project::No
 bool Project::addFormat(const std::string& formatSpec)
 {
     Format f;
-    if (ProjectPrivate::generateFormatFromString(formatSpec.c_str(), &f)) {
+    if (ProjectPrivate::generateFormatFromString(QString::fromUtf8(formatSpec.c_str()), &f)) {
         QMutexLocker k(&_imp->formatMutex);
         tryAddProjectFormat(f);
         return true;

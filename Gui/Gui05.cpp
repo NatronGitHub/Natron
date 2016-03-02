@@ -93,7 +93,7 @@ Gui::setupUi()
 
     _imp->_leftRightSplitter = new Splitter(_imp->_centralWidget);
     _imp->_leftRightSplitter->setChildrenCollapsible(false);
-    _imp->_leftRightSplitter->setObjectName(kMainSplitterObjectName);
+    _imp->_leftRightSplitter->setObjectName(QString::fromUtf8(kMainSplitterObjectName));
     _imp->_splitters.push_back(_imp->_leftRightSplitter);
     _imp->_leftRightSplitter->setOrientation(Qt::Horizontal);
     _imp->_leftRightSplitter->setContentsMargins(0, 0, 0, 0);
@@ -216,7 +216,7 @@ Gui::createGroupGui(const NodePtr & group,
     QGraphicsScene* scene = new QGraphicsScene(this);
     scene->setItemIndexMethod(QGraphicsScene::NoIndex);
     NodeGraph* nodeGraph = new NodeGraph(this, collection, scene, this);
-    nodeGraph->setObjectName( group->getLabel().c_str() );
+    nodeGraph->setObjectName( QString::fromUtf8(group->getLabel().c_str()) );
     _imp->_groups.push_back(nodeGraph);
     if ( where && reason == eCreateNodeReasonUserCreate && !getApp()->isCreatingPythonGroup() ) {
         where->appendTab(nodeGraph, nodeGraph);

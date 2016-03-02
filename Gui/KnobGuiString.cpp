@@ -416,7 +416,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
             QIcon boldIcon;
             boldIcon.addPixmap(pixBoldChecked,QIcon::Normal,QIcon::On);
             boldIcon.addPixmap(pixBoldUnchecked,QIcon::Normal,QIcon::Off);
-            _setBoldButton = new Button(boldIcon,"",_richTextOptions);
+            _setBoldButton = new Button(boldIcon,QString(),_richTextOptions);
             _setBoldButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE,NATRON_MEDIUM_BUTTON_ICON_SIZE));
             _setBoldButton->setCheckable(true);
             _setBoldButton->setToolTip(GuiUtils::convertFromPlainText(tr("Bold."), Qt::WhiteSpaceNormal));
@@ -428,7 +428,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
             italicIcon.addPixmap(pixItalicChecked,QIcon::Normal,QIcon::On);
             italicIcon.addPixmap(pixItalicUnchecked,QIcon::Normal,QIcon::Off);
 
-            _setItalicButton = new Button(italicIcon,"",_richTextOptions);
+            _setItalicButton = new Button(italicIcon,QString(),_richTextOptions);
             _setItalicButton->setCheckable(true);
             _setItalicButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE,NATRON_MEDIUM_BUTTON_ICON_SIZE));
             _setItalicButton->setToolTip(GuiUtils::convertFromPlainText(tr("Italic."), Qt::WhiteSpaceNormal));
@@ -438,7 +438,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
 
             QPixmap pixBlack(15,15);
             pixBlack.fill(Qt::black);
-            _fontColorButton = new Button(QIcon(pixBlack),"",_richTextOptions);
+            _fontColorButton = new Button(QIcon(pixBlack),QString(),_richTextOptions);
             _fontColorButton->setCheckable(false);
             _fontColorButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE,NATRON_MEDIUM_BUTTON_ICON_SIZE));
             _fontColorButton->setToolTip(GuiUtils::convertFromPlainText(tr("Font color."), Qt::WhiteSpaceNormal));
@@ -558,31 +558,31 @@ KnobGuiString::addHtmlTags(QString text) const
     QString fontTag = makeFontTag(_fontFamily, _fontSize, _fontColor);
 
     text.prepend(fontTag);
-    text.append(kFontEndTag);
+    text.append(QString::fromUtf8(kFontEndTag));
 
     if (_boldActivated) {
-        text.prepend(kBoldStartTag);
-        text.append(kBoldEndTag);
+        text.prepend(QString::fromUtf8(kBoldStartTag));
+        text.append(QString::fromUtf8(kBoldEndTag));
     }
     if (_italicActivated) {
-        text.prepend(kItalicStartTag);
-        text.append(kItalicEndTag);
+        text.prepend(QString::fromUtf8(kItalicStartTag));
+        text.append(QString::fromUtf8(kItalicEndTag));
     }
 
     ///if the knob had custom data, set them
-    QString knobOldtext( _knob.lock()->getValue(0).c_str() );
-    QString startCustomTag(NATRON_CUSTOM_HTML_TAG_START);
+    QString knobOldtext = QString::fromUtf8( _knob.lock()->getValue(0).c_str() );
+    QString startCustomTag(QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START));
     int startCustomData = knobOldtext.indexOf(startCustomTag);
     if (startCustomData != -1) {
-        QString customEndTag(NATRON_CUSTOM_HTML_TAG_END);
+        QString customEndTag(QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_END));
         int endCustomData = knobOldtext.indexOf(customEndTag,startCustomData);
         assert(endCustomData != -1);
         startCustomData += startCustomTag.size();
 
-        int fontStart = text.indexOf(kFontSizeTag);
+        int fontStart = text.indexOf(QString::fromUtf8(kFontSizeTag));
         assert(fontStart != -1);
 
-        QString endFontTag("\">");
+        QString endFontTag(QString::fromUtf8("\">"));
         int fontTagEnd = text.indexOf(endFontTag,fontStart);
         assert(fontTagEnd != -1);
         fontTagEnd += endFontTag.size();
@@ -601,7 +601,7 @@ void
 KnobGuiString::restoreTextInfoFromString()
 {
     boost::shared_ptr<KnobString> knob = _knob.lock();
-    QString text( knob->getValue(0).c_str() );    
+    QString text = QString::fromUtf8( knob->getValue(0).c_str() );
 
     if ( text.isEmpty() ) {
         
@@ -612,12 +612,12 @@ KnobGuiString::restoreTextInfoFromString()
         _italicActivated = false;
         QString fontTag = makeFontTag(_fontFamily, _fontSize, _fontColor);
         text.prepend(fontTag);
-        text.append(kFontEndTag);
+        text.append(QString::fromUtf8(kFontEndTag));
 
 
         knob->setValue(text.toStdString());
     } else {
-        QString toFind = QString(kItalicStartTag);
+        QString toFind = QString::fromUtf8(kItalicStartTag);
         int i = text.indexOf(toFind);
         if (i != -1) {
             _italicActivated = true;
@@ -628,7 +628,7 @@ KnobGuiString::restoreTextInfoFromString()
         _setItalicButton->setChecked(_italicActivated);
         _setItalicButton->setDown(_italicActivated);
 
-        toFind = QString(kBoldStartTag);
+        toFind = QString::fromUtf8(kBoldStartTag);
         i = text.indexOf(toFind);
         if (i != -1) {
             _boldActivated = true;
@@ -641,7 +641,7 @@ KnobGuiString::restoreTextInfoFromString()
 
         QString fontSizeString;
         QString fontColorString;
-        toFind = QString(kFontSizeTag);
+        toFind = QString::fromUtf8(kFontSizeTag);
         i = text.indexOf(toFind);
         bool foundFontTag = false;
         if (i != -1) {
@@ -652,22 +652,22 @@ KnobGuiString::restoreTextInfoFromString()
                 ++i;
             }
         }
-        toFind = QString(kFontColorTag);
+        toFind = QString::fromUtf8(kFontColorTag);
         i = text.indexOf(toFind,i);
         assert( (!foundFontTag && i == -1) || (foundFontTag && i != -1) );
         if (i != -1) {
             i += toFind.size();
-            while ( i < text.size() && text.at(i) != QChar('"') ) {
+            while ( i < text.size() && text.at(i) != QLatin1Char('"') ) {
                 fontColorString.append( text.at(i) );
                 ++i;
             }
         }
-        toFind = QString(kFontFaceTag);
+        toFind = QString::fromUtf8(kFontFaceTag);
         i = text.indexOf(toFind,i);
         assert( (!foundFontTag && i == -1) || (foundFontTag && i != -1) );
         if (i != -1) {
             i += toFind.size();
-            while ( i < text.size() && text.at(i) != QChar('"') ) {
+            while ( i < text.size() && text.at(i) != QLatin1Char('"') ) {
                 _fontFamily.append( text.at(i) );
                 ++i;
             }
@@ -681,7 +681,7 @@ KnobGuiString::restoreTextInfoFromString()
             _italicActivated = false;
             QString fontTag = makeFontTag(_fontFamily, _fontSize, _fontColor);
             text.prepend(fontTag);
-            text.append(kFontEndTag);
+            text.append(QString::fromUtf8(kFontEndTag));
             knob->setValue(text.toStdString());
         } else {
             _fontCombo->setCurrentFont( QFont(_fontFamily) );
@@ -703,7 +703,7 @@ KnobGuiString::parseFont(const QString & label,
                           QFont *f,
                           QColor *color)
 {
-    QString toFind = QString(kFontSizeTag);
+    QString toFind = QString::fromUtf8(kFontSizeTag);
     int startFontTag = label.indexOf(toFind);
 
     assert(startFontTag != -1);
@@ -715,13 +715,13 @@ KnobGuiString::parseFont(const QString & label,
         ++j;
     }
 
-    toFind = QString(kFontFaceTag);
+    toFind = QString::fromUtf8(kFontFaceTag);
     startFontTag = label.indexOf(toFind,startFontTag);
     assert(startFontTag != -1);
     startFontTag += toFind.size();
     j = startFontTag;
     QString faceStr;
-    while ( j < label.size() && label.at(j) != QChar('"') ) {
+    while ( j < label.size() && label.at(j) != QLatin1Char('"') ) {
         faceStr.push_back( label.at(j) );
         ++j;
     }
@@ -730,7 +730,7 @@ KnobGuiString::parseFont(const QString & label,
     f->setFamily(faceStr);
     
     {
-        toFind = QString(kBoldStartTag);
+        toFind = QString::fromUtf8(kBoldStartTag);
         int foundBold = label.indexOf(toFind);
         if (foundBold != -1) {
             f->setBold(true);
@@ -738,20 +738,20 @@ KnobGuiString::parseFont(const QString & label,
     }
     
     {
-        toFind = QString(kItalicStartTag);
+        toFind = QString::fromUtf8(kItalicStartTag);
         int foundItalic = label.indexOf(toFind);
         if (foundItalic != -1) {
             f->setItalic(true);
         }
     }
     {
-        toFind = QString(kFontColorTag);
+        toFind = QString::fromUtf8(kFontColorTag);
         int foundColor = label.indexOf(toFind);
         if (foundColor != -1) {
             foundColor += toFind.size();
             QString currentColor;
             int j = foundColor;
-            while ( j < label.size() && label.at(j) != QChar('"') ) {
+            while ( j < label.size() && label.at(j) != QLatin1Char('"') ) {
                 currentColor.push_back( label.at(j) );
                 ++j;
             }
@@ -775,20 +775,20 @@ KnobGuiString::onCurrentFontChanged(const QFont & font)
     
     boost::shared_ptr<KnobString> knob = _knob.lock();
     assert(_textEdit);
-    QString text( knob->getValue(0).c_str() );
+    QString text = QString::fromUtf8( knob->getValue(0).c_str() );
     //find the first font tag
-    QString toFind = QString(kFontSizeTag);
+    QString toFind = QString::fromUtf8(kFontSizeTag);
     int i = text.indexOf(toFind);
     _fontFamily = font.family();
     if (i != -1) {
-        toFind = QString(kFontFaceTag);
+        toFind = QString::fromUtf8(kFontFaceTag);
         i = text.indexOf(toFind,i);
         assert(i != -1);
         i += toFind.size();
         ///erase the current font face (family)
         QString currentFontFace;
         int j = i;
-        while ( j < text.size() && text.at(j) != QChar('"') ) {
+        while ( j < text.size() && text.at(j) != QLatin1Char('"') ) {
             currentFontFace.push_back( text.at(j) );
             ++j;
         }
@@ -797,7 +797,7 @@ KnobGuiString::onCurrentFontChanged(const QFont & font)
     } else {
         QString fontTag = makeFontTag(_fontFamily,_fontSize,_fontColor);
         text.prepend(fontTag);
-        text.append(kFontEndTag);
+        text.append(QString::fromUtf8(kFontEndTag));
     }
     pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),knob->getValue(0),text.toStdString() ) );
 }
@@ -805,7 +805,7 @@ KnobGuiString::onCurrentFontChanged(const QFont & font)
 QString
 KnobGuiString::makeFontTag(const QString& family,int fontSize,const QColor& color)
 {
-    return QString(kFontSizeTag "%1\" " kFontColorTag "%2\" " kFontFaceTag "%3\">")
+    return QString::fromUtf8(kFontSizeTag "%1\" " kFontColorTag "%2\" " kFontFaceTag "%3\">")
     .arg(fontSize)
     .arg( color.name() )
     .arg(family);
@@ -814,7 +814,7 @@ KnobGuiString::makeFontTag(const QString& family,int fontSize,const QColor& colo
 QString
 KnobGuiString::decorateTextWithFontTag(const QString& family,int fontSize,const QColor& color,const QString& text)
 {
-    return makeFontTag(family, fontSize, color) + text + kFontEndTag;
+    return makeFontTag(family, fontSize, color) + text + QString::fromUtf8(kFontEndTag);
 }
 
 void
@@ -822,9 +822,9 @@ KnobGuiString::onFontSizeChanged(double size)
 {
     assert(_textEdit);
     boost::shared_ptr<KnobString> knob = _knob.lock();;
-    QString text( knob->getValue(0).c_str() );
+    QString text = QString::fromUtf8( knob->getValue(0).c_str() );
     //find the first font tag
-    QString toFind = QString(kFontSizeTag);
+    QString toFind = QString::fromUtf8(kFontSizeTag);
     int i = text.indexOf(toFind);
     assert(i != -1);
     i += toFind.size();
@@ -846,29 +846,29 @@ KnobGuiString::boldChanged(bool toggled)
 {
     assert(_textEdit);
     boost::shared_ptr<KnobString> knob = _knob.lock();
-    QString text( knob->getValue(0).c_str() );
-    QString toFind = QString(kBoldStartTag);
+    QString text = QString::fromUtf8( knob->getValue(0).c_str() );
+    QString toFind = QString::fromUtf8(kBoldStartTag);
     int i = text.indexOf(toFind);
 
     assert( (toggled && i == -1) || (!toggled && i != -1) );
 
     if (!toggled) {
         text.remove( i, toFind.size() );
-        toFind = QString(kBoldEndTag);
+        toFind = QString::fromUtf8(kBoldEndTag);
         i = text.lastIndexOf(toFind);
         assert (i != -1);
         text.remove( i,toFind.size() );
     } else {
         ///insert right prior to the font size
-        toFind = QString(kFontSizeTag);
+        toFind = QString::fromUtf8(kFontSizeTag);
         i = text.indexOf(toFind);
         assert(i != -1);
-        text.insert(i, kBoldStartTag);
-        toFind = QString(kFontEndTag);
+        text.insert(i, QString::fromUtf8(kBoldStartTag));
+        toFind = QString::fromUtf8(kFontEndTag);
         i = text.lastIndexOf(toFind);
         assert(i != -1);
         i += toFind.size();
-        text.insert(i, kBoldEndTag);
+        text.insert(i, QString::fromUtf8(kBoldEndTag));
     }
 
     _boldActivated = toggled;
@@ -897,7 +897,7 @@ KnobGuiString::colorFontButtonClicked()
     if ( dialog.exec() ) {
         _fontColor = dialog.currentColor();
 
-        QString text( knob->getValue(0).c_str() );
+        QString text = QString::fromUtf8( knob->getValue(0).c_str() );
         findReplaceColorName(text,_fontColor.name());
         pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),knob->getValue(0),text.toStdString() ) );
     }
@@ -908,24 +908,24 @@ void
 KnobGuiString::findReplaceColorName(QString& text,const QColor& color)
 {
     //find the first font tag
-    QString toFind = QString(kFontSizeTag);
+    QString toFind = QString::fromUtf8(kFontSizeTag);
     int i = text.indexOf(toFind);
     if (i != -1) {
-        toFind = QString(kFontColorTag);
+        toFind = QString::fromUtf8(kFontColorTag);
         int foundColorTag = text.indexOf(toFind,i);
         if (foundColorTag != -1) {
             foundColorTag += toFind.size();
             QString currentColor;
             int j = foundColorTag;
-            while ( j < text.size() && text.at(j) != QChar('"') ) {
+            while ( j < text.size() && text.at(j) != QLatin1Char('"') ) {
                 currentColor.push_back( text.at(j) );
                 ++j;
             }
             text.remove( foundColorTag,currentColor.size() );
             text.insert( foundColorTag, color.name() );
         } else {
-            text.insert(i, kFontColorTag);
-            text.insert(i + toFind.size(), color.name() + "\"");
+            text.insert(i, QString::fromUtf8(kFontColorTag));
+            text.insert(i + toFind.size(), color.name() + QString::fromUtf8("\""));
         }
     }
     
@@ -936,37 +936,37 @@ void
 KnobGuiString::italicChanged(bool toggled)
 {
     boost::shared_ptr<KnobString> knob = _knob.lock();
-    QString text( knob->getValue(0).c_str() );
+    QString text = QString::fromUtf8( knob->getValue(0).c_str() );
     //find the first font tag
-    QString toFind = QString(kFontSizeTag);
+    QString toFind = QString::fromUtf8(kFontSizeTag);
     int i = text.indexOf(toFind);
 
     assert(i != -1);
 
     ///search before i
-    toFind = QString(kItalicStartTag);
+    toFind = QString::fromUtf8(kItalicStartTag);
     int foundItalic = text.lastIndexOf(toFind,i);
     assert( (toggled && foundItalic == -1) || (!toggled && foundItalic != -1) );
     if (!toggled) {
         text.remove( foundItalic, toFind.size() );
-        toFind = QString(kItalicEndTag);
+        toFind = QString::fromUtf8(kItalicEndTag);
         foundItalic = text.lastIndexOf(toFind);
         assert(foundItalic != -1);
         text.remove( foundItalic, toFind.size() );
     } else {
-        int foundBold = text.lastIndexOf(kBoldStartTag,i);
+        int foundBold = text.lastIndexOf(QString::fromUtf8(kBoldStartTag),i);
         assert( (foundBold == -1 && !_boldActivated) || (foundBold != -1 && _boldActivated) );
 
         ///if bold is activated, insert prior to bold
         if (foundBold != -1) {
             foundBold = foundBold == 0 ? 0 : foundBold - 1;
-            text.insert(foundBold, kItalicStartTag);
+            text.insert(foundBold, QString::fromUtf8(kItalicStartTag));
         } else {
             //there's no bold
             i = i == 0 ? 0 : i - 1;
-            text.insert(i, kItalicStartTag);
+            text.insert(i, QString::fromUtf8(kItalicStartTag));
         }
-        text.append(kItalicEndTag); //< this is always the last tag
+        text.append(QString::fromUtf8(kItalicEndTag)); //< this is always the last tag
     }
     _italicActivated = toggled;
     pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),knob->getValue(0),text.toStdString() ) );
@@ -976,10 +976,10 @@ QString
 KnobGuiString::removeNatronHtmlTag(QString text)
 {
     ///we also remove any custom data added by natron so the user doesn't see it
-    int startCustomData = text.indexOf(NATRON_CUSTOM_HTML_TAG_START);
+    int startCustomData = text.indexOf(QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START));
 
     if (startCustomData != -1) {
-        QString endTag(NATRON_CUSTOM_HTML_TAG_END);
+        QString endTag(QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_END));
         int endCustomData = text.indexOf(endTag,startCustomData);
         assert(endCustomData != -1);
         endCustomData += endTag.size();
@@ -993,10 +993,10 @@ QString
 KnobGuiString::getNatronHtmlTagContent(QString text)
 {
     QString label = removeAutoAddedHtmlTags(text,false);
-    QString startTag(NATRON_CUSTOM_HTML_TAG_START);
+    QString startTag = QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START);
     int startCustomData = label.indexOf(startTag);
     if (startCustomData != -1) {
-        QString endTag(NATRON_CUSTOM_HTML_TAG_END);
+        QString endTag = QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_END);
         int endCustomData = label.indexOf(endTag,startCustomData);
         assert(endCustomData != -1);
         label = label.remove(endCustomData, endTag.size());
@@ -1009,10 +1009,10 @@ KnobGuiString::getNatronHtmlTagContent(QString text)
 QString
 KnobGuiString::removeAutoAddedHtmlTags(QString text,bool removeNatronTag)
 {
-    QString toFind = QString(kFontSizeTag);
+    QString toFind = QString::fromUtf8(kFontSizeTag);
     int i = text.indexOf(toFind);
     bool foundFontStart = i != -1;
-    QString boldStr(kBoldStartTag);
+    QString boldStr = QString::fromUtf8(kBoldStartTag);
     int foundBold = text.lastIndexOf(boldStr,i);
 
     ///Assert removed: the knob might be linked from elsewhere and the button might not have been pressed.
@@ -1020,7 +1020,7 @@ KnobGuiString::removeAutoAddedHtmlTags(QString text,bool removeNatronTag)
 
     if (foundBold != -1) {
         text.remove( foundBold, boldStr.size() );
-        boldStr = QString(kBoldEndTag);
+        boldStr = QString::fromUtf8(kBoldEndTag);
         foundBold = text.lastIndexOf(boldStr);
         assert(foundBold != -1);
         text.remove( foundBold,boldStr.size() );
@@ -1029,7 +1029,7 @@ KnobGuiString::removeAutoAddedHtmlTags(QString text,bool removeNatronTag)
     ///refresh the index
     i = text.indexOf(toFind);
 
-    QString italStr(kItalicStartTag);
+    QString italStr = QString::fromUtf8(kItalicStartTag);
     int foundItal = text.lastIndexOf(italStr,i);
 
     //Assert removed: the knob might be linked from elsewhere and the button might not have been pressed.
@@ -1037,7 +1037,7 @@ KnobGuiString::removeAutoAddedHtmlTags(QString text,bool removeNatronTag)
 
     if (foundItal != -1) {
         text.remove( foundItal, italStr.size() );
-        italStr = QString(kItalicEndTag);
+        italStr = QString::fromUtf8(kItalicEndTag);
         foundItal = text.lastIndexOf(italStr);
         assert(foundItal != -1);
         text.remove( foundItal,italStr.size() );
@@ -1046,7 +1046,7 @@ KnobGuiString::removeAutoAddedHtmlTags(QString text,bool removeNatronTag)
     ///refresh the index
     i = text.indexOf(toFind);
 
-    QString endTag("\">");
+    QString endTag = QString::fromUtf8("\">");
     int foundEndTag = text.indexOf(endTag,i);
     foundEndTag += endTag.size();
     if (foundFontStart) {
@@ -1054,7 +1054,7 @@ KnobGuiString::removeAutoAddedHtmlTags(QString text,bool removeNatronTag)
         text.remove(i,foundEndTag - i);
     }
 
-    endTag = QString(kFontEndTag);
+    endTag = QString::fromUtf8(kFontEndTag);
     foundEndTag = text.lastIndexOf(endTag);
     assert( (foundEndTag != -1 && foundFontStart) || !foundFontStart );
     if (foundEndTag != -1) {
@@ -1082,7 +1082,7 @@ KnobGuiString::updateGUI(int /*dimension*/)
         int pos = cursor.position();
         int selectionStart = cursor.selectionStart();
         int selectionEnd = cursor.selectionEnd();
-        QString txt( value.c_str() );
+        QString txt = QString::fromUtf8( value.c_str() );
         if (_knob.lock()->usesRichText()) {
             txt = removeAutoAddedHtmlTags(txt);
         }
@@ -1113,7 +1113,7 @@ KnobGuiString::updateGUI(int /*dimension*/)
         _label->setText(txt);*/
     } else {
         assert(_lineEdit);
-        _lineEdit->setText( value.c_str() );
+        _lineEdit->setText( QString::fromUtf8(value.c_str() ));
     }
 }
 

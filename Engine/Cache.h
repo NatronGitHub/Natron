@@ -96,7 +96,7 @@ public:
         , mustQuitCond()
         , mustQuit(false)
     {
-        setObjectName("CacheDeleter");
+        setObjectName(QString::fromUtf8("CacheDeleter"));
     }
 
     virtual ~DeleterThread()
@@ -223,7 +223,7 @@ public:
         , mustQuitCond()
         , mustQuit(false)
     {
-        setObjectName("CacheCleaner");
+        setObjectName(QString::fromUtf8("CacheCleaner"));
     }
 
     virtual ~CacheCleanerThread()
@@ -1126,11 +1126,8 @@ public:
     QString getCachePath() const
     {
         QString cacheFolderName( appPTR->getDiskCacheLocation() );
-
-        if ( !cacheFolderName.endsWith('\\') && !cacheFolderName.endsWith('/') ) {
-            cacheFolderName.append('/');
-        }
-        cacheFolderName.append( cacheName().c_str() );
+        Global::ensureLastPathSeparator(cacheFolderName);
+        cacheFolderName.append( QString::fromUtf8(cacheName().c_str()));
 
         return cacheFolderName;
     }
@@ -1138,10 +1135,8 @@ public:
     std::string getRestoreFilePath() const
     {
         QString newCachePath( getCachePath() );
-		if (!newCachePath.endsWith('/')) {
-			newCachePath.append('/');
-		}
-        newCachePath.append("restoreFile." NATRON_CACHE_FILE_EXT);
+        Global::ensureLastPathSeparator(newCachePath);
+        newCachePath.append(QString::fromUtf8("restoreFile." NATRON_CACHE_FILE_EXT));
 
         return newCachePath.toStdString();
     }

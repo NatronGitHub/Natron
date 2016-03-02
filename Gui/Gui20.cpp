@@ -102,33 +102,33 @@ getPixmapForGrouping(QPixmap* pixmap,
                      const QString & grouping)
 {
     PixmapEnum e = NATRON_PIXMAP_OTHER_PLUGINS;
-    if (grouping == PLUGIN_GROUP_COLOR) {
+    if (grouping == QString::fromUtf8(PLUGIN_GROUP_COLOR)) {
         e = NATRON_PIXMAP_COLOR_GROUPING;
-    } else if (grouping == PLUGIN_GROUP_FILTER) {
+    } else if (grouping == QString::fromUtf8(PLUGIN_GROUP_FILTER)) {
         e = NATRON_PIXMAP_FILTER_GROUPING;
-    } else if (grouping == PLUGIN_GROUP_IMAGE) {
+    } else if (grouping == QString::fromUtf8(PLUGIN_GROUP_IMAGE)) {
         e = NATRON_PIXMAP_IO_GROUPING;
-    } else if (grouping == PLUGIN_GROUP_TRANSFORM) {
+    } else if (grouping == QString::fromUtf8(PLUGIN_GROUP_TRANSFORM)) {
         e = NATRON_PIXMAP_TRANSFORM_GROUPING;
-    } else if (grouping == PLUGIN_GROUP_DEEP) {
+    } else if (grouping == QString::fromUtf8(PLUGIN_GROUP_DEEP)) {
         e = NATRON_PIXMAP_DEEP_GROUPING;
-    } else if (grouping == PLUGIN_GROUP_MULTIVIEW) {
+    } else if (grouping == QString::fromUtf8(PLUGIN_GROUP_MULTIVIEW)) {
         e = NATRON_PIXMAP_MULTIVIEW_GROUPING;
-    } else if (grouping == PLUGIN_GROUP_TIME) {
+    } else if (grouping == QString::fromUtf8(PLUGIN_GROUP_TIME)) {
         e = NATRON_PIXMAP_TIME_GROUPING;
-    } else if (grouping == PLUGIN_GROUP_PAINT) {
+    } else if (grouping == QString::fromUtf8(PLUGIN_GROUP_PAINT)) {
         e = NATRON_PIXMAP_PAINT_GROUPING;
-    } else if (grouping == PLUGIN_GROUP_OTHER) {
+    } else if (grouping == QString::fromUtf8(PLUGIN_GROUP_OTHER)) {
         e = NATRON_PIXMAP_MISC_GROUPING;
-    } else if (grouping == PLUGIN_GROUP_KEYER) {
+    } else if (grouping == QString::fromUtf8(PLUGIN_GROUP_KEYER)) {
         e = NATRON_PIXMAP_KEYER_GROUPING;
-    } else if (grouping == PLUGIN_GROUP_TOOLSETS) {
+    } else if (grouping == QString::fromUtf8(PLUGIN_GROUP_TOOLSETS)) {
         e = NATRON_PIXMAP_TOOLSETS_GROUPING;
-    } else if (grouping == PLUGIN_GROUP_3D) {
+    } else if (grouping == QString::fromUtf8(PLUGIN_GROUP_3D)) {
         e = NATRON_PIXMAP_3D_GROUPING;
-    } else if (grouping == PLUGIN_GROUP_CHANNEL) {
+    } else if (grouping == QString::fromUtf8(PLUGIN_GROUP_CHANNEL)) {
         e = NATRON_PIXMAP_CHANNEL_GROUPING;
-    } else if (grouping == PLUGIN_GROUP_MERGE) {
+    } else if (grouping == QString::fromUtf8(PLUGIN_GROUP_MERGE)) {
         e = NATRON_PIXMAP_MERGE_GROUPING;
     }
     appPTR->getIcon(e, size, pixmap);
@@ -161,56 +161,56 @@ Gui::loadStyleSheet()
         lr = 1;
         lg = 0.75;
         lb = 0.47;
-        selStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
-        lightSelStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(lr)).arg(Color::floatToInt<256>(lg)).arg(Color::floatToInt<256>(lb));
+        selStr = QString::fromUtf8("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+        lightSelStr = QString::fromUtf8("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(lr)).arg(Color::floatToInt<256>(lg)).arg(Color::floatToInt<256>(lb));
     }
     {
         double r, g, b;
         settings->getBaseColor(&r, &g, &b);
-        baseStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+        baseStr = QString::fromUtf8("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
     }
     {
         double r, g, b;
         settings->getRaisedColor(&r, &g, &b);
-        raisedStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+        raisedStr = QString::fromUtf8("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
     }
     {
         double r, g, b;
         settings->getSunkenColor(&r, &g, &b);
-        sunkStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+        sunkStr = QString::fromUtf8("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
     }
     {
         double r, g, b;
         settings->getTextColor(&r, &g, &b);
-        txtStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+        txtStr = QString::fromUtf8("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
     }
     {
         double r, g, b;
         settings->getInterpolatedColor(&r, &g, &b);
-        intStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+        intStr = QString::fromUtf8("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
     }
     {
         double r, g, b;
         settings->getKeyframeColor(&r, &g, &b);
-        kfStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+        kfStr = QString::fromUtf8("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
     }
     {
         double r, g, b;
         settings->getExprColor(&r, &g, &b);
-        eStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+        eStr = QString::fromUtf8("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
     }
     {
         double r, g, b;
         settings->getAltTextColor(&r, &g, &b);
-        altStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+        altStr = QString::fromUtf8("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
     }
 
     QFile qss;
     std::string userQss = settings->getUserStyleSheetFilePath();
     if (!userQss.empty()) {
-        qss.setFileName(userQss.c_str());
+        qss.setFileName(QString::fromUtf8(userQss.c_str()));
     } else {
-        qss.setFileName(":/Resources/Stylesheets/mainstyle.qss");
+        qss.setFileName(QString::fromUtf8(":/Resources/Stylesheets/mainstyle.qss"));
     }
 
     if ( qss.open(QIODevice::ReadOnly
@@ -225,7 +225,7 @@ Gui::loadStyleSheet()
                        .arg(txtStr) // %5: text colour
                        .arg(intStr) // %6: interpolated value color
                        .arg(kfStr) // %7: keyframe value color
-                       .arg("rgb(0,0,0)") // %8: disabled editable text
+                       .arg(QString::fromUtf8("rgb(0,0,0)")) // %8: disabled editable text
                        .arg(eStr) // %9: expression background color
                        .arg(altStr)  // %10 = altered text color
                        .arg(lightSelStr)); // %11 = mouse over selection color
@@ -251,7 +251,7 @@ Gui::maximize(TabWidget* what)
             bool hasProperties = false;
             for (int i = 0; i < (*it)->count(); ++i) {
                 QString tabName = (*it)->tabAt(i)->getWidget()->objectName();
-                if (tabName == kPropertiesBinName) {
+                if (tabName == QString::fromUtf8(kPropertiesBinName)) {
                     hasProperties = true;
                     break;
                 }
@@ -804,14 +804,14 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
         isLeaf = true;
         //if the plugin has no children and no parent, put it in the "others" group
         if ( !plugin->hasParent() ) {
-            ToolButton* othersGroup = findExistingToolButton(PLUGIN_GROUP_DEFAULT);
-            QStringList grouping(PLUGIN_GROUP_DEFAULT);
-            QStringList iconGrouping(PLUGIN_GROUP_DEFAULT_ICON_PATH);
+            ToolButton* othersGroup = findExistingToolButton(QString::fromUtf8(PLUGIN_GROUP_DEFAULT));
+            QStringList grouping(QString::fromUtf8(PLUGIN_GROUP_DEFAULT));
+            QStringList iconGrouping(QString::fromUtf8(PLUGIN_GROUP_DEFAULT_ICON_PATH));
             boost::shared_ptr<PluginGroupNode> othersToolButton =
                 appPTR->findPluginToolButtonOrCreate(grouping,
-                                                     PLUGIN_GROUP_DEFAULT,
+                                                     QString::fromUtf8(PLUGIN_GROUP_DEFAULT),
                                                      iconGrouping,
-                                                     PLUGIN_GROUP_DEFAULT_ICON_PATH,
+                                                     QString::fromUtf8(PLUGIN_GROUP_DEFAULT_ICON_PATH),
                                                      1,
                                                      0,
                                                      true);
@@ -846,7 +846,7 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
     }
     
 #ifndef NATRON_ENABLE_IO_META_NODES
-    if (!plugin->getParent() && pluginsToolButton->getLabel() == PLUGIN_GROUP_IMAGE) {
+    if (!plugin->getParent() && pluginsToolButton->getLabel() == QString::fromUtf8(PLUGIN_GROUP_IMAGE)) {
         ///create 2 special actions to create a reader and a writer so the user doesn't have to guess what
         ///plugin to choose for reading/writing images, let Natron deal with it. THe user can still change
         ///the behavior of Natron via the Preferences Readers/Writers tabs.
@@ -971,7 +971,7 @@ Gui::openProject()
         
         std::string patternCpy = selectedFile;
         std::string path = SequenceParsing::removePath(patternCpy);
-        _imp->_lastLoadProjectOpenedDir = path.c_str();
+        _imp->_lastLoadProjectOpenedDir = QString::fromUtf8(path.c_str());
         (void)openProjectInternal(selectedFile, true);
     }
 }
@@ -985,12 +985,12 @@ Gui::openProject(const std::string & filename)
 AppInstance*
 Gui::openProjectInternal(const std::string & absoluteFileName, bool attemptToLoadAutosave)
 {
-    QFileInfo file(absoluteFileName.c_str());
+    QFileInfo file(QString::fromUtf8(absoluteFileName.c_str()));
     if (!file.exists()) {
         return 0;
     }
     QString fileUnPathed = file.fileName();
-    QString path = file.path() + "/";
+    QString path = file.path() + QLatin1Char('/');
     int openedProject = appPTR->isProjectAlreadyOpened(absoluteFileName);
 
     if (openedProject != -1) {
@@ -1021,14 +1021,14 @@ Gui::openProjectInternal(const std::string & absoluteFileName, bool attemptToLoa
     }
 
     QSettings settings;
-    QStringList recentFiles = settings.value("recentFileList").toStringList();
-    recentFiles.removeAll( absoluteFileName.c_str() );
-    recentFiles.prepend( absoluteFileName.c_str() );
+    QStringList recentFiles = settings.value(QString::fromUtf8("recentFileList")).toStringList();
+    recentFiles.removeAll( QString::fromUtf8(absoluteFileName.c_str() ));
+    recentFiles.prepend( QString::fromUtf8(absoluteFileName.c_str() ));
     while (recentFiles.size() > NATRON_MAX_RECENT_FILES) {
         recentFiles.removeLast();
     }
 
-    settings.setValue("recentFileList", recentFiles);
+    settings.setValue(QString::fromUtf8("recentFileList"), recentFiles);
     appPTR->updateAllRecentFileMenus();
     return ret;
 }
@@ -1037,7 +1037,7 @@ static void
 updateRecentFiles(const QString & filename)
 {
     QSettings settings;
-    QStringList recentFiles = settings.value("recentFileList").toStringList();
+    QStringList recentFiles = settings.value(QString::fromUtf8("recentFileList")).toStringList();
 
     recentFiles.removeAll(filename);
     recentFiles.prepend(filename);
@@ -1045,7 +1045,7 @@ updateRecentFiles(const QString & filename)
         recentFiles.removeLast();
     }
 
-    settings.setValue("recentFileList", recentFiles);
+    settings.setValue(QString::fromUtf8("recentFileList"), recentFiles);
     appPTR->updateAllRecentFileMenus();
 }
 
@@ -1066,8 +1066,8 @@ Gui::saveProject()
         bool ret = project->saveProject(projectPath, projectFilename, 0);
 
         ///update the open recents
-        if (!projectPath.endsWith('/')) {
-            projectPath.append('/');
+        if (!projectPath.endsWith(QLatin1Char('/'))) {
+            projectPath.append(QLatin1Char('/'));
         }
         if (ret) {
             QString file = projectPath + projectFilename;
@@ -1093,15 +1093,15 @@ Gui::saveProjectAs()
         }
         std::string path = SequenceParsing::removePath(outFile);
         
-        if (!_imp->checkProjectLockAndWarn(path.c_str(),outFile.c_str())) {
+        if (!_imp->checkProjectLockAndWarn(QString::fromUtf8(path.c_str()),QString::fromUtf8(outFile.c_str()))) {
             return false;
         }
-        _imp->_lastSaveProjectOpenedDir = path.c_str();
+        _imp->_lastSaveProjectOpenedDir = QString::fromUtf8(path.c_str());
         
-        bool ret = _imp->_appInstance->getProject()->saveProject(path.c_str(), outFile.c_str(), 0);
+        bool ret = _imp->_appInstance->getProject()->saveProject(QString::fromUtf8(path.c_str()), QString::fromUtf8(outFile.c_str()), 0);
 
         if (ret) {
-            QString filePath = QString( path.c_str() ) + QString( outFile.c_str() );
+            QString filePath = QString::fromUtf8( path.c_str() ) + QString::fromUtf8( outFile.c_str() );
             updateRecentFiles(filePath);
         }
 
@@ -1121,7 +1121,7 @@ Gui::saveAndIncrVersion()
     bool mustAppendFileExtension = false;
 
     // extension is everything after the last '.'
-    int lastDotPos = name.lastIndexOf('.');
+    int lastDotPos = name.lastIndexOf(QLatin1Char('.'));
 
     if (lastDotPos == -1) {
         positionToInsertVersion = name.size();
@@ -1140,7 +1140,7 @@ Gui::saveAndIncrVersion()
         if ( !versionStr.isEmpty() ) {
             name.remove( i, versionStr.size() );
             --i; //move 1 char backward, if the char is a '_' remove it
-            if ( (i >= 0) && ( name.at(i) == QChar('_') ) ) {
+            if ( (i >= 0) && ( name.at(i) == QLatin1Char('_') ) ) {
                 name.remove(i, 1);
             }
             currentVersion = versionStr.toInt();
@@ -1158,13 +1158,13 @@ Gui::saveAndIncrVersion()
     int nb0s = 3 - newVersionStr.size();
     nb0s = std::max(0, nb0s);
 
-    QString toInsert("_");
+    QString toInsert(QLatin1Char('_'));
     for (int c = 0; c < nb0s; ++c) {
-        toInsert.append('0');
+        toInsert.append(QLatin1Char('0'));
     }
     toInsert.append(newVersionStr);
     if (mustAppendFileExtension) {
-        toInsert.append("." NATRON_PROJECT_FILE_EXT);
+        toInsert.append(QString::fromUtf8("." NATRON_PROJECT_FILE_EXT));
     }
 
     if ( positionToInsertVersion >= name.size() ) {
@@ -1175,7 +1175,7 @@ Gui::saveAndIncrVersion()
 
     _imp->_appInstance->getProject()->saveProject(path, name, 0);
 
-    QString filename = path + "/" + name;
+    QString filename = path + QLatin1Char('/') + name;
     updateRecentFiles(filename);
 } // Gui::saveAndIncrVersion
 
@@ -1188,7 +1188,7 @@ Gui::createNewViewer()
     if (!graph) {
         throw std::logic_error("");
     }
-    CreateNodeArgs args(PLUGINID_NATRON_VIEWER, eCreateNodeReasonUserCreate, graph->getGroup());
+    CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonUserCreate, graph->getGroup());
     ignore_result(_imp->_appInstance->createNode(args));
 }
 
@@ -1221,11 +1221,11 @@ Gui::createReader()
         ret = getApp()->createReader(pattern,eCreateNodeReasonUserCreate, group);
 #else
  
-        QString qpattern( pattern.c_str() );
+        QString qpattern = QString::fromUtf8( pattern.c_str() );
         
         std::string patternCpy = pattern;
         std::string path = SequenceParsing::removePath(patternCpy);
-        _imp->_lastLoadSequenceOpenedDir = path.c_str();
+        _imp->_lastLoadSequenceOpenedDir = QString::fromUtf8(path.c_str());
         
         std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
         std::map<std::string, std::string>::iterator found = readersForFormat.find(ext);
@@ -1234,7 +1234,7 @@ Gui::createReader()
         } else {
             
             
-            CreateNodeArgs args(found->second.c_str(), eCreateNodeReasonUserCreate, group);
+            CreateNodeArgs args(QString::fromUtf8(found->second.c_str()), eCreateNodeReasonUserCreate, group);
             args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern));
             ret = _imp->_appInstance->createNode(args);
             
@@ -1263,7 +1263,7 @@ Gui::createWriter()
         
         std::string patternCpy = file;
         std::string path = SequenceParsing::removePath(patternCpy);
-        _imp->_lastSaveSequenceOpenedDir = path.c_str();
+        _imp->_lastSaveSequenceOpenedDir = QString::fromUtf8(path.c_str());
         
         NodeGraph* graph = 0;
         if (_imp->_lastFocusedGraph) {

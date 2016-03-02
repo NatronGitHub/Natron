@@ -211,7 +211,7 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
     /*if (!dimLabel.empty()) {
         dimLabel.append(":");
     }*/
-    _rLabel = new Label(QString(dimLabel.c_str()).toLower(), boxContainers);
+    _rLabel = new Label(QString::fromUtf8(dimLabel.c_str()).toLower(), boxContainers);
     //_rLabel->setFont(font);
     if ( hasToolTip() ) {
         _rLabel->setToolTip( toolTip() );
@@ -241,7 +241,7 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
             dimLabel.append(":");
         }*/
         
-        _gLabel = new Label(QString(dimLabel.c_str()).toLower(), boxContainers);
+        _gLabel = new Label(QString::fromUtf8(dimLabel.c_str()).toLower(), boxContainers);
         //_gLabel->setFont(font);
         if ( hasToolTip() ) {
             _gLabel->setToolTip( toolTip() );
@@ -270,7 +270,7 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
             dimLabel.append(":");
         }*/
         
-        _bLabel = new Label(QString(dimLabel.c_str()).toLower(), boxContainers);
+        _bLabel = new Label(QString::fromUtf8(dimLabel.c_str()).toLower(), boxContainers);
         //_bLabel->setFont(font);
         if ( hasToolTip() ) {
             _bLabel->setToolTip( toolTip() );
@@ -301,7 +301,7 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
             dimLabel.append(":");
         }*/
         
-        _aLabel = new Label(QString(dimLabel.c_str()).toLower(), boxContainers);
+        _aLabel = new Label(QString::fromUtf8(dimLabel.c_str()).toLower(), boxContainers);
         //_aLabel->setFont(font);
         if ( hasToolTip() ) {
             _aLabel->setToolTip( toolTip() );
@@ -340,7 +340,7 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
                                                                 "To deselect the picker left click anywhere."
                                                                 "Note that by default %1 converts to linear the color picked\n"
                                                                 "because all the processing pipeline is linear, but you can turn this off in the\n"
-                                                                "preferences panel.").arg(NATRON_APPLICATION_NAME), Qt::WhiteSpaceNormal) );
+                                                                "preferences panel.").arg(QString::fromUtf8(NATRON_APPLICATION_NAME)), Qt::WhiteSpaceNormal) );
     }
 
     QSize medSize(TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
@@ -358,7 +358,7 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
 
 
     appPTR->getIcon(NATRON_PIXMAP_COLORWHEEL, NATRON_MEDIUM_BUTTON_ICON_SIZE, &buttonPix);
-    _colorDialogButton = new Button(QIcon(buttonPix), "", colorContainer);
+    _colorDialogButton = new Button(QIcon(buttonPix), QString(), colorContainer);
     _colorDialogButton->setFixedSize(medSize);
     _colorDialogButton->setIconSize(medIconSize);
     _colorDialogButton->setToolTip(GuiUtils::convertFromPlainText(tr("Open the color dialog."), Qt::WhiteSpaceNormal));

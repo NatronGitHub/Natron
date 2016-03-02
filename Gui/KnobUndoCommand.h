@@ -168,7 +168,7 @@ private:
         }
 
         setText( QObject::tr("Set value of %1")
-                 .arg( _knob->getKnob()->getLabel().c_str() ) );
+                 .arg( QString::fromUtf8(_knob->getKnob()->getLabel().c_str() )) );
     }
 
     virtual void redo() OVERRIDE FINAL
@@ -238,7 +238,7 @@ private:
         }
 
         setText( QObject::tr("Set value of %1")
-                 .arg( knob->getLabel().c_str() ) );
+                 .arg(QString::fromUtf8( knob->getLabel().c_str() ) ));
 
         _firstRedoCalled = true;
     } // redo

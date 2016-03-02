@@ -137,12 +137,12 @@ AnimationButton::mouseMoveEvent(QMouseEvent* e)
         knob->onCopyAnimationActionTriggered();
         QDrag* drag = new QDrag(this);
         QMimeData* mimeData = new QMimeData;
-        mimeData->setData("Animation", QByteArray(expr.str().c_str()));
+        mimeData->setData(QString::fromUtf8("Animation"), QByteArray(expr.str().c_str()));
         drag->setMimeData(mimeData);
 
         QFontMetrics fmetrics = fontMetrics();
         QString textFirstLine( tr("Linking value from:") );
-        QString textSecondLine( knob->getKnob()->getLabel().c_str() );
+        QString textSecondLine = QString::fromUtf8( knob->getKnob()->getLabel().c_str() );
         QString textThirdLine( tr("Drag it to another animation button.") );
         int textWidth = std::max( std::max( fmetrics.width(textFirstLine), fmetrics.width(textSecondLine) ),fmetrics.width(textThirdLine) );
         QImage dragImg(textWidth,(fmetrics.height() + 5) * 3,QImage::Format_ARGB32);
@@ -175,7 +175,7 @@ AnimationButton::dragEnterEvent(QDragEnterEvent* e)
         return;
     }
     QStringList formats = e->mimeData()->formats();
-    if ( formats.contains("Animation") ) {
+    if ( formats.contains(QString::fromUtf8("Animation")) ) {
         setCursor(Qt::DragCopyCursor);
         e->acceptProposedAction();
     }
@@ -191,8 +191,8 @@ AnimationButton::dropEvent(QDropEvent* e)
 {
     e->accept();
     QStringList formats = e->mimeData()->formats();
-    if ( formats.contains("Animation") ) {
-        QByteArray expr = e->mimeData()->data("Animation");
+    if ( formats.contains(QString::fromUtf8("Animation")) ) {
+        QByteArray expr = e->mimeData()->data(QString::fromUtf8("Animation"));
         std::string expression(expr.data());
         KnobPtr knob = _knob.lock()->getKnob();
         _knob.lock()->pushUndoCommand(new SetExpressionCommand(knob,false,-1,expression));
@@ -205,7 +205,7 @@ AnimationButton::dragMoveEvent(QDragMoveEvent* e)
 {
     QStringList formats = e->mimeData()->formats();
 
-    if ( formats.contains("Animation") ) {
+    if ( formats.contains(QString::fromUtf8("Animation")) ) {
         e->acceptProposedAction();
     }
 }

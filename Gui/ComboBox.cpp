@@ -132,7 +132,7 @@ ComboBox::sizeForWidth(int w) const
     int hextra = DROP_DOWN_ICON_SIZE * 2,vextra = 0;
     
     ///Indent of 1 character
-    int indent = fm.width('x');
+    int indent = fm.width(QLatin1Char('x'));
     
     if (indent > 0) {
         if ((align & Qt::AlignLeft) || (align & Qt::AlignRight))
@@ -232,7 +232,7 @@ ComboBox::layoutRect() const
     
     Qt::Alignment align = QStyle::visualAlignment(Qt::LeftToRight, QFlag(_align));
     
-    int indent = fontMetrics().width('x') / 2;
+    int indent = fontMetrics().width(QLatin1Char('x')) / 2;
     if (indent > 0) {
         
         if (align & Qt::AlignLeft)
@@ -462,7 +462,7 @@ ComboBox::createMenu()
     QAction* triggered = _rootNode->isMenu->exec( this->mapToGlobal( QPoint( 0,height() ) ) );
     if (triggered) {
         QVariant data = triggered->data();
-        if (data.toString() != "New") {
+        if (data.toString() != QString::fromUtf8("New")) {
             setCurrentIndex(data.toInt());
         } else {
             Q_EMIT itemNewSelected();
@@ -555,8 +555,8 @@ ComboBox::addItemNew()
         return;
     }
     QAction* action =  new QAction(this);
-    action->setText("New");
-    action->setData("New");
+    action->setText(QString::fromUtf8("New"));
+    action->setData(QString::fromUtf8("New"));
     QFont f = QFont(appFont,appFontSize);
     f.setItalic(true);
     action->setFont(f);
@@ -593,10 +593,10 @@ ComboBox::addItem(const QString & item,
 
         addAction(action);
     } else {
-        QStringList splits = item.split('/');
+        QStringList splits = item.split(QLatin1Char('/'));
         QStringList realSplits;
         for (int i = 0; i < splits.size(); ++i) {
-            if (splits[i].isEmpty() || (splits[i].size() == 1 && splits[i] == "/")) {
+            if (splits[i].isEmpty() || (splits[i].size() == 1 && splits[i] == QString::fromUtf8("/"))) {
                 continue;
             }
             realSplits.push_back(splits[i]);
@@ -762,7 +762,7 @@ static QString getNodeTextRecursive(ComboBoxMenuNode* node,ComboBoxMenuNode* roo
         ret.prepend(node->text);
         if (node->parent) {
             if (node->parent != rootNode) {
-                ret.prepend('/');
+                ret.prepend(QLatin1Char('/'));
             }
             node = node->parent;
         }
@@ -795,7 +795,7 @@ ComboBox::setCurrentIndex_internal(int index)
         return false;
     }
     //Forbid programmatic setting of the "New" choice, only user can select it
-    if ((node->isLeaf && node->isLeaf->data().toString() == "New")) {// "New" choice
+    if ((node->isLeaf && node->isLeaf->data().toString() == QString::fromUtf8("New"))) {// "New" choice
         return false;
     }
     

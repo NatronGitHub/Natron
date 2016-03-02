@@ -393,7 +393,7 @@ PrecompNodePrivate::reloadProject(bool setWriteNodeChoice)
 {
     std::string filename = projectFileNameKnob.lock()->getValue();
     
-    QFileInfo file(filename.c_str());
+    QFileInfo file(QString::fromUtf8(filename.c_str()));
     if (!file.exists()) {
         Dialogs::errorDialog(QObject::tr("Pre-Comp").toStdString(), QObject::tr("Pre-comp file not found.").toStdString());
         return;
@@ -402,7 +402,7 @@ PrecompNodePrivate::reloadProject(bool setWriteNodeChoice)
     
     subLabelKnob.lock()->setValue(fileUnPathed.toStdString());
     
-    QString path = file.path() + "/";
+    QString path = file.path() + QLatin1Char('/');
     
     precompInputs.clear();
     
@@ -544,7 +544,7 @@ PrecompNodePrivate::createReadNode()
     }
     
     std::string pattern = fileKnob->getValue();
-    QString qpattern(pattern.c_str());
+    QString qpattern = QString::fromUtf8(pattern.c_str());
     
     std::map<std::string, std::string> readersForFormat;
     appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
@@ -560,14 +560,14 @@ PrecompNodePrivate::createReadNode()
         return;
     }
     
-    QString readPluginID(found->second.c_str());
+    QString readPluginID = QString::fromUtf8(found->second.c_str());
     
     
     
-    QString fixedNamePrefix(_publicInterface->getScriptName_mt_safe().c_str());
-    fixedNamePrefix.append('_');
-    fixedNamePrefix.append("readNode");
-    fixedNamePrefix.append('_');
+    QString fixedNamePrefix = QString::fromUtf8(_publicInterface->getScriptName_mt_safe().c_str());
+    fixedNamePrefix.append(QLatin1Char('_'));
+    fixedNamePrefix.append(QString::fromUtf8("readNode"));
+    fixedNamePrefix.append(QLatin1Char('_'));
     
     CreateNodeArgs args(readPluginID, eCreateNodeReasonInternal, app->getProject());
     args.createGui = false;

@@ -138,7 +138,7 @@ EdgePrivate::initLabel()
     NodeGuiPtr dst = dest.lock();
     if ((inputNb != -1) && dst) {
         label = new NodeGraphSimpleTextItem(dst->getDagGui(), _publicInterface, false);
-        label->setText(QString(dst->getNode()->getInputLabel(inputNb).c_str()));
+        label->setText(QString::fromUtf8(dst->getNode()->getInputLabel(inputNb).c_str()));
         QColor txt;
         double r,g,b;
         appPTR->getCurrentSettings()->getTextColor(&r, &g, &b);
@@ -280,7 +280,7 @@ Edge::setSourceAndDestination(const NodeGuiPtr & src,
     if (!_imp->label) {
         _imp->initLabel();
     } else {
-        _imp->label->setText(QString(dst->getNode()->getInputLabel(_imp->inputNb).c_str()));
+        _imp->label->setText(QString::fromUtf8(dst->getNode()->getInputLabel(_imp->inputNb).c_str()));
         //_imp->label->setPlainText( QString( dst->getNode()->getInputLabel(_imp->inputNb).c_str() ) );
     }
     refreshState(false);

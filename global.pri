@@ -20,9 +20,12 @@ CONFIG += warn_on no_keywords
 DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_VEGAS OFX_SUPPORTS_PARAMETRIC OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_NATRON OFX_SUPPORTS_OPENGLRENDER
 DEFINES += OFX_SUPPORTS_MULTITHREAD
 DEFINES += OFX_SUPPORTS_DIALOG
-
 #Commented-out because many plug-in vendors do not implement it correctly
 #DEFINES += OFX_SUPPORTS_DIALOG_V1
+
+#Since in Natron and OpenFX all strings are supposed UTF-8 and that the constructor
+#for QString(const char*) assumes ASCII strings, we may run into troubles
+DEFINES += QT_NO_CAST_FROM_ASCII
 
 *g++* | *clang* {
 #See https://bugreports.qt.io/browse/QTBUG-35776 we cannot use
