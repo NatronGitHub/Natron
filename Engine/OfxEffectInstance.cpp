@@ -320,9 +320,10 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         
     _imp->context = context;
 
-    
-    if (disableRenderScaleSupport || context == eContextWriter) {
+    if (context == eContextWriter) {
         _imp->isOutput = true;
+    }
+    if (disableRenderScaleSupport || context == eContextWriter) {
         // Writers don't support render scale (full-resolution images are written to disk)
         setSupportsRenderScaleMaybe(eSupportsNo);
     }

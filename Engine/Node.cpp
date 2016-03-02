@@ -788,7 +788,7 @@ Node::load(const CreateNodeArgs& args)
     } else {
             //ofx plugin
 #ifndef NATRON_ENABLE_IO_META_NODES
-        _imp->effect = appPTR->createOFXEffect(thisShared, args.serialization.get(),args.paramValues,canOpenFileDialog,renderScaleSupportPreference == 1, &hasUsedFileDialog);
+        _imp->effect = appPTR->createOFXEffect(thisShared, args.serialization.get(),args.paramValues,renderScaleSupportPreference == 1,canOpenFileDialog, &hasUsedFileDialog);
 #else
         _imp->effect = appPTR->createOFXEffect(thisShared, args.serialization.get(),args.paramValues,renderScaleSupportPreference == 1);
 #endif
