@@ -293,7 +293,7 @@ QString ProcInfo::applicationFilePath(const char* argv0Param)
     ssize_t size = readlink(filename.c_str(), buf, sizeofbuf);
     if (size != 0 && size != sizeofbuf) {
         //detected symlink
-        return QString(QByteArray(buf));
+        return QString::fromUtf8(QByteArray(buf));
     } else {
         return applicationFilePath_fromArgv(argv0Param);
     }
