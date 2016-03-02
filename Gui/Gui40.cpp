@@ -657,7 +657,6 @@ Gui::onRenderStarted(const QString & sequenceName,
                      const boost::shared_ptr<ProcessHandler> & process)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    ensureProgressPanelVisible();
     _imp->_progressPanel->startTask(writer->getNode(), firstFrame, lastFrame, frameStep, canPause, true, sequenceName, process);
 }
 
@@ -666,7 +665,6 @@ Gui::onRenderRestarted(OutputEffectInstance* writer,
                        const boost::shared_ptr<ProcessHandler> & process)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    ensureProgressPanelVisible();
     _imp->_progressPanel->onTaskRestarted(writer->getNode(), process);
 }
 

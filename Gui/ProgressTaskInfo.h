@@ -52,6 +52,15 @@ class ProgressTaskInfo : public QObject, public boost::enable_shared_from_this<P
     
 public:
     
+    enum ProgressTaskStatusEnum
+    {
+        eProgressTaskStatusPaused,
+        eProgressTaskStatusRunning,
+        eProgressTaskStatusQueued,
+        eProgressTaskStatusFinished,
+        eProgressTaskStatusCanceled
+    };
+    
     ProgressTaskInfo(ProgressPanel* panel,
              const NodePtr& node,
              const int firstFrame,
@@ -104,6 +113,8 @@ public:
     void getTableItems(std::vector<TableItem*>* items) const;
     
     void createCellWidgets();
+    
+    ProgressTaskStatusEnum getStatus() const;
 
 public Q_SLOTS:
     

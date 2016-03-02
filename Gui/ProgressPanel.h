@@ -110,6 +110,7 @@ public Q_SLOTS:
     
     void onQueueRendersCheckboxChecked();
     
+    void onShowProgressPanelTimerTriggered();
     
 Q_SIGNALS:
     

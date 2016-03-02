@@ -55,14 +55,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-enum ProgressTaskStatusEnum
-{
-    eProgressTaskStatusPaused,
-    eProgressTaskStatusRunning,
-    eProgressTaskStatusQueued,
-    eProgressTaskStatusFinished,
-    eProgressTaskStatusCanceled
-};
+
 
 namespace {
     class MetaTypesRegistration
@@ -91,7 +84,7 @@ struct ProgressTaskInfoPrivate {
     TableItem* timeRemainingItem;
     TableItem* taskInfoItem;
     
-    ProgressTaskStatusEnum status;
+    ProgressTaskInfo::ProgressTaskStatusEnum status;
     
     QProgressBar* progressBar;
     double progressPercent;
@@ -140,7 +133,7 @@ struct ProgressTaskInfoPrivate {
     , controlsItem(0)
     , timeRemainingItem(0)
     , taskInfoItem(0)
-    , status(eProgressTaskStatusQueued)
+    , status(ProgressTaskInfo::eProgressTaskStatusQueued)
     , progressBar(0)
     , progressPercent(0)
     , controlsButtonsContainer(0)
@@ -203,6 +196,12 @@ ProgressTaskInfo::ProgressTaskInfo(ProgressPanel* panel,
 ProgressTaskInfo::~ProgressTaskInfo()
 {
     
+}
+
+ProgressTaskInfo::ProgressTaskStatusEnum
+ProgressTaskInfo::getStatus() const
+{
+    return _imp->status;
 }
 
 void
@@ -649,23 +648,23 @@ void
 ProgressTaskInfoPrivate::refreshButtons()
 {
     switch (status) {
-        case eProgressTaskStatusRunning:
+        case ProgressTaskInfo::eProgressTaskStatusRunning:
             pauseTasksButton->setEnabled(canBePaused);
             restartTasksButton->setEnabled(false);
             break;
-        case eProgressTaskStatusQueued:
+        case ProgressTaskInfo::eProgressTaskStatusQueued:
             pauseTasksButton->setEnabled(false);
             restartTasksButton->setEnabled(false);
             break;
-        case eProgressTaskStatusFinished:
+        case ProgressTaskInfo::eProgressTaskStatusFinished:
             pauseTasksButton->setEnabled(false);
             restartTasksButton->setEnabled(canBePaused);
             break;
-        case eProgressTaskStatusCanceled:
+        case ProgressTaskInfo::eProgressTaskStatusCanceled:
             pauseTasksButton->setEnabled(false);
             restartTasksButton->setEnabled(false);
             break;
-        case eProgressTaskStatusPaused:
+        case ProgressTaskInfo::eProgressTaskStatusPaused:
             pauseTasksButton->setEnabled(false);
             restartTasksButton->setEnabled(canBePaused);
             break;
