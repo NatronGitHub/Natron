@@ -8,46 +8,16 @@ Natron on FreeBSD.
 
 In order to have Natron compiling, first you need to install the required libraries.
 
-### Qt 4.8.6
-
 ```
-pkg install qt4
+pkg install qt4 boost-all pyside-py27 glew expat cairo pkgconf
 ```
 
-### Boost
-
-```
-pkg install boost-all
-```
-
-### OpenFX
+### Submodules
 
 Go under Natron and type
 
     git submodule update -i --recursive
 
-### Expat
-
-```
-pkg install expat
-```
-
-### GLEW
-
-```
-pkg install glew
-```
-
-### Cairo 1.12
-
-Download Cairo 1.12 and install.
-
-```
-./configure --prefix=/usr/local
-make && make install
-```
-
-We're done here for libraries.
 
 ###Add the config.pri file
 
@@ -67,13 +37,28 @@ INCLUDEPATH is the path to the include files
 
 LIBS is the path to the libs
 
-    ----- copy and paste the following in a terminal -----
-    cat > config.pri << EOF
-    boost: LIBS += -lboost_serialization
-    expat: LIBS += -lexpat
-    expat: PKGCONFIG -= expat
-    EOF
-    ----- end -----
+```pri
+boost: LIBS += -lboost_serialization
+PKGCONFIG += expat
+PKGCONFIG += fontconfig
+cairo {
+        PKGCONFIG += cairo
+        LIBS -=  $$system(pkg-config --variable=libdir cairo)/libcairo.a
+}
+pyside {
+        PKGCONFIG -= pyside
+        INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)
+        INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)/QtCore
+        INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)/QtGui
+        INCLUDEPATH += $$system(pkg-config --variable=includedir QtGui)
+        LIBS += -lpyside-python2.7
+}
+shiboken {
+        PKGCONFIG -= shiboken
+        INCLUDEPATH += $$system(pkg-config --variable=includedir shiboken)
+        LIBS += -lshiboken-python2.7
+}
+```
 
 ###Download OpenColorIO-Configs
 
@@ -87,12 +72,12 @@ The <srcPath> must be absolute and <buildPath> must not be a subdir of <srcPath>
 
     mkdir <buildPath>
     cd <buildfolder>
-    qmake -r <srcPath>/Project.pro
+    qmake -r CONFIG+=disable-breakpad <srcPath>/Project.pro
     make
 
 If you want to build in DEBUG mode change the qmake call to this line:
 
-    qmake -r CONFIG+=debug <srcPath>/Project.pro
+    qmake -r CONFIG+=debug CONFIG+=disable-breakpad <srcPath>/Project.pro
 
 Some debug options are available for developers of Natron and you can see them in the
 global.pri file. To enable an option just add CONFIG+=<option> in the qmake call.
