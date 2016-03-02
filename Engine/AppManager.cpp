@@ -132,7 +132,7 @@ setShutDownSignal(int signalId)
 #endif
 
 
-#if defined(__NATRON_LINUX__)
+#if defined(__NATRON_LINUX__) && !defined(__FreeBSD__)
 
 #define NATRON_UNIX_BACKTRACE_STACK_DEPTH 16
 
@@ -526,7 +526,7 @@ AppManager::loadInternal(const CLArgs& cl)
     }
 #endif
     
-#if defined(__NATRON_LINUX__)
+#if defined(__NATRON_LINUX__) && !defined(__FreeBSD__)
     if (mustSetSignalsHandlers) {
         setShutDownSignal(SIGINT);   // shut down on ctrl-c
         setShutDownSignal(SIGTERM);   // shut down on killall
