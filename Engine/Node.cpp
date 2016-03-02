@@ -757,9 +757,8 @@ Node::load(const CreateNodeArgs& args)
         initializeKnobs(renderScaleSupportPreference, args.serialization.get() != 0);
         
         refreshAcceptedBitDepths();
-        if (!args.serialization) {
-            _imp->effect->setDefaultMetadata();
-        }
+        
+        _imp->effect->setDefaultMetadata();
         
         if (args.serialization) {
             _imp->effect->onKnobsAboutToBeLoaded(args.serialization);
