@@ -942,7 +942,7 @@ void OnClientDumpRequest(void */*context*/,
                          const ClientInfo &/*client_info*/,
                          const std::string &file_path) {
     
-    dumpRequest_xPlatform(file_path.c_str());
+    dumpRequest_xPlatform(QString::fromUtf8(file_path.c_str()));
 }
 
 #elif defined(Q_OS_LINUX)
