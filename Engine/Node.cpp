@@ -2972,7 +2972,7 @@ Node::makeInfoForInput(int inputNumber) const
     {
         double first = 1., last = 1.;
         input->getFrameRange_public(getHashValue(), &first, &last);
-        ss << "<<b>Frame range:</b> " << first << " - " << last << "<br />";
+        ss << "<b>Frame range:</b> " << first << " - " << last << "<br />";
    }
     {
         RenderScale scale(1.);
