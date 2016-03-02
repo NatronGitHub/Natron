@@ -148,6 +148,12 @@ GuiApplicationManager::getIcon(PixmapEnum e,
             case NATRON_PIXMAP_PLAYER_PLAY_ONCE:
                 path = NATRON_IMAGES_PATH "playOnce.png";
                 break;
+            case NATRON_PIXMAP_PLAYER_TIMELINE_IN:
+                path = NATRON_IMAGES_PATH "timelineIn.png";
+                break;
+            case NATRON_PIXMAP_PLAYER_TIMELINE_OUT:
+                path = NATRON_IMAGES_PATH "timelineOut.png";
+                break;
             case NATRON_PIXMAP_MAXIMIZE_WIDGET:
                 path = NATRON_IMAGES_PATH "maximize.png";
                 break;
