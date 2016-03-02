@@ -187,6 +187,11 @@ $KILLSCRIPT $PID &
 KILLBOT=$!
 
 if [ "$SYNC" = "1" -a "$FAIL" != "1" ]; then
+    if [ "$BRANCH" = "workshop" ]; then
+        ONLINE_REPO_BRANCH=snapshots
+    else
+        ONLINE_REPO_BRANCH=releases
+    fi
     echo "Syncing packages ... "
     rsync -avz --progress --delete --verbose -e ssh "$REPO_DIR/packages/" "$REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/packages"
 
