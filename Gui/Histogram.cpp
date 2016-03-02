@@ -130,6 +130,8 @@ struct HistogramPrivate
     , hasImage(false)
 #endif
     , sizeH()
+    , showViewerPicker(false)
+    , viewerPickerColor()
     {
     }
     
@@ -147,6 +149,8 @@ struct HistogramPrivate
     void drawMissingImage();
     
     void updatePicker(double x);
+    
+    void drawViewerPicker();
     
 #ifdef NATRON_HISTOGRAM_USING_OPENGL
     
@@ -269,6 +273,8 @@ struct HistogramPrivate
 #endif // !NATRON_HISTOGRAM_USING_OPENGL
     
     QSize sizeH;
+    bool showViewerPicker;
+    std::vector<double> viewerPickerColor;
 };
 
 Histogram::Histogram(Gui* gui,
@@ -430,6 +436,19 @@ Histogram::~Histogram()
     glDeleteBuffers(1,&_imp->vboHistogramRendering);
 
 #endif
+}
+
+int
+Histogram::getViewerTextureInputDisplayed() const
+{
+    int textureIndex = 0;
+    if (_imp->viewerCurrentInputGroup) {
+        QAction* selectedInputAction = _imp->viewerCurrentInputGroup->checkedAction();
+        if (selectedInputAction) {
+            textureIndex = selectedInputAction->data().toInt();
+        }
+    }
+    return textureIndex;
 }
 
 boost::shared_ptr<Image> HistogramPrivate::getHistogramImage(RectI* imagePortion) const
@@ -1216,9 +1235,13 @@ Histogram::paintGL()
             
             _imp->drawWarnings();
             
+            if (_imp->showViewerPicker) {
+                _imp->drawViewerPicker();
+            }
         } else {
             _imp->drawMissingImage();
         }
+        
         
         glCheckError();
     } // GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
@@ -1701,6 +1724,75 @@ HistogramPrivate::drawMissingImage()
     glCheckError();
 }
 
+
+void
+HistogramPrivate::drawViewerPicker()
+{
+    // always running in the main thread
+    
+    glLineWidth(2.);
+    
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    assert( QGLContext::currentContext() == widget->context() );
+    
+    double wHeight = widget->height();
+    QPointF topLeft = zoomCtx.toZoomCoordinates(0, 0);
+    QPointF btmRight = zoomCtx.toZoomCoordinates(widget->width(), wHeight);
+    
+    //QFontMetrics m(_font, 0);
+    //double yPos = zoomCtx.toZoomCoordinates(0,wHeight - m.height() * 2.).y();
+    
+    QColor color;
+    double imgColor[3] = {0., 0., 0.};
+    for (std::size_t i = 0; i < (std::size_t)std::min((int)viewerPickerColor.size(), 3); ++i) {
+        imgColor[i] = viewerPickerColor[i];
+    }
+    
+    if (mode == Histogram::eDisplayModeY) {
+        glColor3f(0.398979,0.398979,0.398979);
+        double luminance = 0.299 * imgColor[0] + 0.587 * imgColor[1] + 0.114 * imgColor[2];
+        glBegin(GL_LINES);
+        glVertex2d(luminance, topLeft.y());
+        glVertex2d(luminance, btmRight.y());
+        glEnd();
+
+    } else if (mode == Histogram::eDisplayModeR) {
+        glColor3f(0.398979,0.398979,0.398979);
+        glBegin(GL_LINES);
+        glVertex2d(imgColor[0], topLeft.y());
+        glVertex2d(imgColor[0], btmRight.y());
+        glEnd();
+    } else if (mode == Histogram::eDisplayModeG) {
+        glColor3f(0.398979,0.398979,0.398979);
+        glBegin(GL_LINES);
+        glVertex2d(imgColor[1], topLeft.y());
+        glVertex2d(imgColor[1], btmRight.y());
+        glEnd();
+    } else if (mode == Histogram::eDisplayModeB) {
+        glColor3f(0.398979,0.398979,0.398979);
+        glBegin(GL_LINES);
+        glVertex2d(imgColor[2], topLeft.y());
+        glVertex2d(imgColor[2], btmRight.y());
+        glEnd();
+    } else if (mode == Histogram::eDisplayModeRGB) {
+        glColor3f(0.851643,0.196936,0.196936);
+        glBegin(GL_LINES);
+        glVertex2d(imgColor[0], topLeft.y());
+        glVertex2d(imgColor[0], btmRight.y());
+        
+        glColor3f(0,0.654707,0);
+        glVertex2d(imgColor[1], topLeft.y());
+        glVertex2d(imgColor[1], btmRight.y());
+        
+        glColor3f(0.345293,0.345293,1);
+        glVertex2d(imgColor[2], topLeft.y());
+        glVertex2d(imgColor[2], btmRight.y());
+        glEnd();
+    }
+
+    glLineWidth(1.);
+}
+
 void
 HistogramPrivate::drawPicker()
 {
@@ -1709,7 +1801,7 @@ HistogramPrivate::drawPicker()
     assert( QGLContext::currentContext() == widget->context() );
 
     glCheckError();
-    QFontMetrics m(_font);
+    QFontMetrics m(_font, 0);
     int strWidth = std::max( std::max( std::max( m.width(rValueStr),m.width(gValueStr) ),m.width(bValueStr) ),m.width(xCoordinateStr) );
     QPointF xPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10,m.height() + 10);
     QPointF rPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10,2 * m.height() + 15);
@@ -1957,6 +2049,25 @@ Histogram::renderText(double x,
     double scaley = (top-bottom) / h;
     _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font);
     glCheckError();
+}
+
+void
+Histogram::setViewerCursor(const std::vector<double>& pickerColor)
+{
+    _imp->showViewerPicker = true;
+    _imp->viewerPickerColor = pickerColor;
+    update();
+}
+
+
+void
+Histogram::hideViewerCursor()
+{
+    if (!_imp->showViewerPicker) {
+        return;
+    }
+    _imp->showViewerPicker = false;
+    update();
 }
 
 NATRON_NAMESPACE_EXIT;
