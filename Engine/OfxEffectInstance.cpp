@@ -400,6 +400,16 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             
             _imp->effect->addParamsToTheirParents();
             
+            int nPages = _imp->effect->getDescriptor().getProps().getDimension(kOfxPluginPropParamPageOrder);
+            std::list<std::string> pagesOrder;
+            for (int i = 0; i< nPages; ++i) {
+                const std::string& pageName = _imp->effect->getDescriptor().getProps().getStringProperty(kOfxPluginPropParamPageOrder, i);
+                pagesOrder.push_back(pageName);
+            }
+            if (!pagesOrder.empty()) {
+                getNode()->setPagesOrder(pagesOrder);
+            }
+            
             if (stat != kOfxStatOK) {
                 throw std::runtime_error("Error while populating the Ofx image effect");
             }
