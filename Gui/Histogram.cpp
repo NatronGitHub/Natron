@@ -1743,7 +1743,7 @@ HistogramPrivate::drawViewerPicker()
     //double yPos = zoomCtx.toZoomCoordinates(0,wHeight - m.height() * 2.).y();
     
     QColor color;
-    double imgColor[3] = {0., 0., 0.};
+    double imgColor[4] = {0., 0., 0., 0.};
     for (std::size_t i = 0; i < (std::size_t)std::min((int)viewerPickerColor.size(), 3); ++i) {
         imgColor[i] = viewerPickerColor[i];
     }
@@ -1774,6 +1774,12 @@ HistogramPrivate::drawViewerPicker()
         glVertex2d(imgColor[2], topLeft.y());
         glVertex2d(imgColor[2], btmRight.y());
         glEnd();
+    } else if (mode == Histogram::eDisplayModeA) {
+        glColor3f(0.398979,0.398979,0.398979);
+        glBegin(GL_LINES);
+        glVertex2d(imgColor[3], topLeft.y());
+        glVertex2d(imgColor[3], btmRight.y());
+        glEnd();
     } else if (mode == Histogram::eDisplayModeRGB) {
         glColor3f(0.851643,0.196936,0.196936);
         glBegin(GL_LINES);
@@ -1787,6 +1793,11 @@ HistogramPrivate::drawViewerPicker()
         glColor3f(0.345293,0.345293,1);
         glVertex2d(imgColor[2], topLeft.y());
         glVertex2d(imgColor[2], btmRight.y());
+        glEnd();
+        
+        glColor3f(0.398979,0.398979,0.398979);
+        glVertex2d(imgColor[3], topLeft.y());
+        glVertex2d(imgColor[3], btmRight.y());
         glEnd();
     }
 
