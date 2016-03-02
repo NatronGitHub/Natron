@@ -858,7 +858,7 @@ Knob<std::string>::valueToVariant(const std::string & v,
 {
     Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(this);
     if (isString) {
-        vari->setValue<QString>( v.c_str() );
+        vari->setValue<QString>(QString::fromUtf8(v.c_str()));
     }
 }
 

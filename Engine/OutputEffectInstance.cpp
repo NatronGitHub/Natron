@@ -219,10 +219,10 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
                             if (mainView < (int)viewNames.size()) {
                                 mainViewName = viewNames[mainView];
                             }
-                            QString message = QString(getNode()->getLabel_mt_safe().c_str()) + ' ' +
-                            QObject::tr("does not support multi-view, only the view ") + mainViewName.c_str() + QObject::tr(" will be rendered");
+                            QString message = QString::fromUtf8(getNode()->getLabel_mt_safe().c_str()) + QLatin1Char(' ') +
+                            QObject::tr("does not support multi-view, only the view ") + QString::fromUtf8(mainViewName.c_str()) + QObject::tr(" will be rendered");
                             if (!renderController) {
-                                message.append(".\nYou can use the %v or %V indicator in the filename to render to separate files.\n");
+                                message.append(QString::fromUtf8(".\nYou can use the %v or %V indicator in the filename to render to separate files.\n"));
                                 message = message + QObject::tr("Would you like to continue?");
                                 StandardButtonEnum rep = Dialogs::questionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonOk | eStandardButtonCancel), eStandardButtonOk);
                                 if (rep != eStandardButtonOk) {
@@ -250,10 +250,10 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
             if (mainView < (int)viewNames.size()) {
                 mainViewName = viewNames[mainView];
             }
-            QString message = QString(getNode()->getLabel_mt_safe().c_str()) + ' ' +
-            QObject::tr("does not support multi-view, only the view") + mainViewName.c_str() + QObject::tr("will be rendered");
+            QString message = QString::fromUtf8(getNode()->getLabel_mt_safe().c_str()) + QLatin1Char(' ') +
+            QObject::tr("does not support multi-view, only the view") + QString::fromUtf8(mainViewName.c_str()) + QObject::tr("will be rendered");
             if (!renderController) {
-                message.append(".\nYou can use the %v or %V indicator in the filename to render to separate files.\n");
+                message.append(QString::fromUtf8(".\nYou can use the %v or %V indicator in the filename to render to separate files.\n"));
                 message = message + QObject::tr("Would you like to continue?");
                 StandardButtonEnum rep = Dialogs::questionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonOk | eStandardButtonCancel), eStandardButtonOk);
                 if (rep != eStandardButtonOk) {
@@ -317,7 +317,7 @@ OutputEffectInstance::createWriterPath()
             getApp()->getProject()->getEnvironmentVariables(env);
             Project::expandVariable(env, path);
             if (!path.empty()) {
-                QDir().mkpath( path.c_str() );
+                QDir().mkpath( QString::fromUtf8(path.c_str()) );
             }
         }
     }
@@ -478,9 +478,9 @@ OutputEffectInstance::reportStats(int time,
         if  (strKnob) {
         
 
-            QString qfileName( SequenceParsing::generateFileNameFromPattern(strKnob->getValue(0, ViewIdx(view)), getApp()->getProject()->getProjectViewNames(), time, view).c_str() );
+            QString qfileName = QString::fromUtf8( SequenceParsing::generateFileNameFromPattern(strKnob->getValue(0, ViewIdx(view)), getApp()->getProject()->getProjectViewNames(), time, view).c_str() );
             QtCompat::removeFileExtension(qfileName);
-            qfileName.append("-stats.txt");
+            qfileName.append(QString::fromUtf8("-stats.txt"));
             filename = qfileName.toStdString();
         }
     }

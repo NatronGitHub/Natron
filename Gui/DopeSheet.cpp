@@ -830,7 +830,7 @@ DopeSheet::onNodeNameEditDialogFinished()
         QDialog::DialogCode code =  (QDialog::DialogCode)dialog->result();
         if (code == QDialog::Accepted) {
             QString newName = dialog->getTypedName();
-            QString oldName = QString(dialog->getNode()->getNode()->getLabel().c_str());
+            QString oldName = QString::fromUtf8(dialog->getNode()->getNode()->getLabel().c_str());
             _imp->pushUndoCommand(new RenameNodeUndoRedoCommand(dialog->getNode(),oldName,newName));
             
         }
@@ -921,7 +921,7 @@ boost::shared_ptr<DSNode> DopeSheet::createDSNode(const NodeGuiPtr &nodeGui, Dop
     NodePtr node = nodeGui->getNode();
 
     QTreeWidgetItem *nameItem = new QTreeWidgetItem;
-    nameItem->setText(0, node->getLabel().c_str());
+    nameItem->setText(0, QString::fromUtf8(node->getLabel().c_str()));
     nameItem->setData(0, QT_ROLE_CONTEXT_TYPE, itemType);
     nameItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, true);
 
@@ -1446,7 +1446,7 @@ DSNode::DSNode(DopeSheet *model,
         }
 
         if (knob->getDimension() <= 1) {
-            QTreeWidgetItem * nameItem = createKnobNameItem(knob->getLabel().c_str(),
+            QTreeWidgetItem * nameItem = createKnobNameItem(QString::fromUtf8(knob->getLabel().c_str()),
                                                             eDopeSheetItemTypeKnobDim,
                                                             0,
                                                             _imp->nameItem);
@@ -1455,7 +1455,7 @@ DSNode::DSNode(DopeSheet *model,
             _imp->itemKnobMap.insert(TreeItemAndDSKnob(nameItem, dsKnob));
         }
         else {
-            QTreeWidgetItem *multiDimRootItem = createKnobNameItem(knob->getLabel().c_str(),
+            QTreeWidgetItem *multiDimRootItem = createKnobNameItem(QString::fromUtf8(knob->getLabel().c_str()),
                                                                    eDopeSheetItemTypeKnobRoot,
                                                                    -1,
                                                                    _imp->nameItem);
@@ -1464,7 +1464,7 @@ DSNode::DSNode(DopeSheet *model,
             _imp->itemKnobMap.insert(TreeItemAndDSKnob(multiDimRootItem, rootDSKnob));
 
             for (int i = 0; i < knob->getDimension(); ++i) {
-                QTreeWidgetItem *dimItem = createKnobNameItem(knob->getDimensionName(i).c_str(),
+                QTreeWidgetItem *dimItem = createKnobNameItem(QString::fromUtf8(knob->getDimensionName(i).c_str()),
                                                               eDopeSheetItemTypeKnobDim,
                                                               i,
                                                               multiDimRootItem);

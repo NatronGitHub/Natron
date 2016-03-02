@@ -83,7 +83,7 @@ QString Timer::printAsTime(const double timeInSeconds, const bool clampToSeconds
     }
     if (timeRemain >= hour) {
         if (timeInSeconds >= day) {
-            ret.append(' ');
+            ret.append(QLatin1Char(' '));
         }
         double hourRemaining = timeInSeconds / hour;
         double floorHour = std::floor(hourRemaining);
@@ -98,7 +98,7 @@ QString Timer::printAsTime(const double timeInSeconds, const bool clampToSeconds
     }
     if (timeRemain >= min) {
         if (timeInSeconds >= hour) {
-            ret.append(' ');
+            ret.append(QLatin1Char(' '));
         }
         double minRemaining = timeInSeconds / min;
         double floorMin = std::floor(minRemaining);
@@ -112,7 +112,7 @@ QString Timer::printAsTime(const double timeInSeconds, const bool clampToSeconds
         }
     }
     if (timeInSeconds >= min) {
-        ret.append(' ');
+        ret.append(QLatin1Char(' '));
     }
     if (clampToSecondsToInt) {
         ret.append((timeRemain > 1 ? tr("%1 seconds") : tr("%1 second")).arg(QString::number((int)timeRemain)));

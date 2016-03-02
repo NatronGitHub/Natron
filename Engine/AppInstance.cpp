@@ -214,7 +214,7 @@ AppInstance::setIsCreatingNodeTree(bool b)
 void
 AppInstance::checkForNewVersion() const
 {
-    FileDownloader* downloader = new FileDownloader( QUrl(NATRON_LAST_VERSION_URL), false );
+    FileDownloader* downloader = new FileDownloader( QUrl(QString::fromUtf8(NATRON_LAST_VERSION_URL)), false );
     QObject::connect( downloader, SIGNAL(downloaded()), this, SLOT(newVersionCheckDownloaded()) );
     QObject::connect( downloader, SIGNAL(error()), this, SLOT(newVersionCheckError()) );
 
@@ -230,38 +230,38 @@ AppInstance::checkForNewVersion() const
 static
 int compareDevStatus(const QString& a,const QString& b)
 {
-    if (a == NATRON_DEVELOPMENT_DEVEL || a == NATRON_DEVELOPMENT_SNAPSHOT) {
+    if (a == QString::fromUtf8(NATRON_DEVELOPMENT_DEVEL) || a == QString::fromUtf8(NATRON_DEVELOPMENT_SNAPSHOT)) {
         //Do not try updates when update available is a dev build
         return -1;
-    } else if (b == NATRON_DEVELOPMENT_DEVEL || b == NATRON_DEVELOPMENT_SNAPSHOT) {
+    } else if (b == QString::fromUtf8(NATRON_DEVELOPMENT_DEVEL) || b == QString::fromUtf8(NATRON_DEVELOPMENT_SNAPSHOT)) {
         //This is a dev build, do not try updates
         return -1;
-    } else if (a == NATRON_DEVELOPMENT_ALPHA) {
-        if (b == NATRON_DEVELOPMENT_ALPHA) {
+    } else if (a == QString::fromUtf8(NATRON_DEVELOPMENT_ALPHA)) {
+        if (b == QString::fromUtf8(NATRON_DEVELOPMENT_ALPHA)) {
             return 0;
         } else {
             return -1;
         }
-    } else if (a == NATRON_DEVELOPMENT_BETA) {
-        if (b == NATRON_DEVELOPMENT_ALPHA) {
+    } else if (a == QString::fromUtf8(NATRON_DEVELOPMENT_BETA)) {
+        if (b == QString::fromUtf8(NATRON_DEVELOPMENT_ALPHA)) {
             return 1;
-        } else if (b == NATRON_DEVELOPMENT_BETA) {
+        } else if (b == QString::fromUtf8(NATRON_DEVELOPMENT_BETA)) {
             return 0;
         } else {
             return -1;
         }
-    } else if (a == NATRON_DEVELOPMENT_RELEASE_CANDIDATE) {
-        if (b == NATRON_DEVELOPMENT_ALPHA) {
+    } else if (a == QString::fromUtf8(NATRON_DEVELOPMENT_RELEASE_CANDIDATE)) {
+        if (b == QString::fromUtf8(NATRON_DEVELOPMENT_ALPHA)) {
             return 1;
-        } else if (b == NATRON_DEVELOPMENT_BETA) {
+        } else if (b == QString::fromUtf8(NATRON_DEVELOPMENT_BETA)) {
             return 1;
-        } else if (b == NATRON_DEVELOPMENT_RELEASE_CANDIDATE) {
+        } else if (b == QString::fromUtf8(NATRON_DEVELOPMENT_RELEASE_CANDIDATE)) {
             return 0;
         } else {
             return -1;
         }
-    } else if (a == NATRON_DEVELOPMENT_RELEASE_STABLE) {
-        if (b == NATRON_DEVELOPMENT_RELEASE_STABLE) {
+    } else if (a == QString::fromUtf8(NATRON_DEVELOPMENT_RELEASE_STABLE)) {
+        if (b == QString::fromUtf8(NATRON_DEVELOPMENT_RELEASE_STABLE)) {
             return 0;
         } else {
             return 1;
@@ -279,17 +279,17 @@ AppInstance::newVersionCheckDownloaded()
     
     QString extractedFileVersionStr,extractedSoftwareVersionStr,extractedDevStatusStr,extractedBuildNumberStr;
     
-    QString fileVersionTag("File version: ");
-    QString softwareVersionTag("Software version: ");
-    QString devStatusTag("Development status: ");
-    QString buildNumberTag("Build number: ");
+    QString fileVersionTag(QString::fromUtf8("File version: "));
+    QString softwareVersionTag(QString::fromUtf8("Software version: "));
+    QString devStatusTag(QString::fromUtf8("Development status: "));
+    QString buildNumberTag(QString::fromUtf8("Build number: "));
     
-    QString data( downloader->downloadedData() );
+    QString data(QString::fromUtf8(downloader->downloadedData()));
     QTextStream ts(&data);
     
     while (!ts.atEnd()) {
         QString line = ts.readLine();
-        if (line.startsWith(QChar('#')) || line.startsWith(QChar('\n'))) {
+        if (line.startsWith(QChar::fromLatin1('#')) || line.startsWith(QChar::fromLatin1('\n'))) {
             continue;
         }
         
@@ -329,7 +329,7 @@ AppInstance::newVersionCheckDownloaded()
     
     
     
-    QStringList versionDigits = extractedSoftwareVersionStr.split( QChar('.') );
+    QStringList versionDigits = extractedSoftwareVersionStr.split( QChar::fromLatin1('.') );
 
     ///we only understand 3 digits formed version numbers
     if (versionDigits.size() != 3) {
@@ -343,7 +343,7 @@ AppInstance::newVersionCheckDownloaded()
     int minor = versionDigits[1].toInt();
     int revision = versionDigits[2].toInt();
     
-    int devStatCompare = compareDevStatus(extractedDevStatusStr, QString(NATRON_DEVELOPMENT_STATUS));
+    int devStatCompare = compareDevStatus(extractedDevStatusStr, QString::fromUtf8(NATRON_DEVELOPMENT_STATUS));
     
     int versionEncoded = NATRON_VERSION_ENCODE(major, minor, revision);
     if (versionEncoded > NATRON_VERSION_ENCODED ||
@@ -356,25 +356,25 @@ AppInstance::newVersionCheckDownloaded()
                 text =  QObject::tr("<p>Updates for %1 are now available for download. "
                                     "You are currently using %1 version %2 - %3 - build %4. "
                                     "The latest version of %1 is version %5 - %6 - build %7.</p> ")
-                .arg(NATRON_APPLICATION_NAME)
-                .arg(NATRON_VERSION_STRING)
-                .arg(NATRON_DEVELOPMENT_STATUS)
+                .arg(QString::fromUtf8(NATRON_APPLICATION_NAME))
+                .arg(QString::fromUtf8(NATRON_VERSION_STRING))
+                .arg(QString::fromUtf8(NATRON_DEVELOPMENT_STATUS))
                 .arg(NATRON_BUILD_NUMBER)
                 .arg(extractedSoftwareVersionStr)
                 .arg(extractedDevStatusStr)
                 .arg(extractedBuildNumberStr) +
-                QObject::tr("<p>You can download it from ") + QString("<a href='http://sourceforge.net/projects/natron/'>"
-                                                                     "<font color=\"orange\">Sourceforge</a>. </p>");
+                QObject::tr("<p>You can download it from ") + QString::fromUtf8("<a href='http://sourceforge.net/projects/natron/'>"
+                                                                                "<font color=\"orange\">Sourceforge</a>. </p>");
             } else {
                 text =  QObject::tr("<p>Updates for %1 are now available for download. "
                                     "You are currently using %1 version %2 - %3. "
                                     "The latest version of %1 is version %4 - %5.</p> ")
-                .arg(NATRON_APPLICATION_NAME)
-                .arg(NATRON_VERSION_STRING)
-                .arg(NATRON_DEVELOPMENT_STATUS)
+                .arg(QString::fromUtf8(NATRON_APPLICATION_NAME))
+                .arg(QString::fromUtf8(NATRON_VERSION_STRING))
+                .arg(QString::fromUtf8(NATRON_DEVELOPMENT_STATUS))
                 .arg(extractedSoftwareVersionStr)
                 .arg(extractedDevStatusStr) +
-                QObject::tr("<p>You can download it from ") + QString("<a href='www.natron.fr/download'>"
+                QObject::tr("<p>You can download it from ") + QString::fromUtf8("<a href='www.natron.fr/download'>"
                                                                     "<font color=\"orange\">www.natron.fr</a>. </p>");
 
             }
@@ -477,9 +477,9 @@ AppInstancePrivate::executeCommandLinePythonCommands(const CLArgs& args)
         bool ok  = Python::interpretPythonScript(*it, &err, &output);
         if (!ok) {
             QString m = QObject::tr("Failed to execute given command-line Python command: ");
-            m.append(it->c_str());
-            m.append(" Error: ");
-            m.append(err.c_str());
+            m.append(QString::fromUtf8(it->c_str()));
+            m.append(QString::fromUtf8(" Error: "));
+            m.append(QString::fromUtf8(err.c_str()));
             throw std::runtime_error(m.toStdString());
         } else if (!output.empty()) {
             std::cout << output << std::endl;
@@ -521,14 +521,14 @@ AppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
         std::list<AppInstance::RenderWork> writersWork;
         
         
-        if (info.suffix() == NATRON_PROJECT_FILE_EXT) {
+        if (info.suffix() == QString::fromUtf8(NATRON_PROJECT_FILE_EXT)) {
             
             ///Load the project
             if ( !_imp->_currentProject->loadProject(info.path(),info.fileName()) ) {
                 throw std::invalid_argument(tr("Project file loading failed.").toStdString());
             }
             
-        } else if (info.suffix() == "py") {
+        } else if (info.suffix() == QString::fromUtf8("py")) {
             
             ///Load the python script
             loadPythonScript(info);
@@ -598,9 +598,9 @@ AppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
         QFileInfo info(cl.getScriptFilename());
         if (info.exists()) {
             
-            if (info.suffix() == "py") {
+            if (info.suffix() == QString::fromUtf8("py")) {
                 loadPythonScript(info);
-            } else if (info.suffix() == NATRON_PROJECT_FILE_EXT) {
+            } else if (info.suffix() == QString::fromUtf8(NATRON_PROJECT_FILE_EXT)) {
                 if ( !_imp->_currentProject->loadProject(info.path(),info.fileName()) ) {
                     throw std::invalid_argument(tr("Project file loading failed.").toStdString());
                 }
@@ -657,7 +657,7 @@ AppInstance::loadPythonScript(const QFileInfo& file)
     }
     QTextStream ts(&f);
     QString content = ts.readAll();
-    bool hasCreateInstance = content.contains("def createInstance");
+    bool hasCreateInstance = content.contains(QString::fromUtf8("def createInstance"));
     /*
      The old way of doing it was
      
@@ -681,7 +681,7 @@ AppInstance::loadPythonScript(const QFileInfo& file)
         
         
         QString moduleName = file.fileName();
-        int lastDotPos = moduleName.lastIndexOf(QChar('.'));
+        int lastDotPos = moduleName.lastIndexOf(QChar::fromLatin1('.'));
         if (lastDotPos != -1) {
             moduleName = moduleName.left(lastDotPos);
         }
@@ -736,10 +736,10 @@ AppInstance::loadPythonScript(const QFileInfo& file)
         }
         
         if (!error.empty()) {
-            QString message("Failed to load ");
+            QString message(QString::fromUtf8("Failed to load "));
             message.append(file.absoluteFilePath());
-            message.append(": ");
-            message.append(error.c_str());
+            message.append(QString::fromUtf8(": "));
+            message.append(QString::fromUtf8(error.c_str()));
             appendToScriptEditor(message.toStdString());
         }
         
@@ -767,7 +767,7 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
         
         NodePtr containerNode;
         if (!istoolsetScript) {
-            CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP, reason, group);
+            CreateNodeArgs groupArgs(QString::fromUtf8(PLUGINID_NATRON_GROUP), reason, group);
             groupArgs.serialization = serialization;
             containerNode = createNode(groupArgs);
             if (!containerNode) {
@@ -854,7 +854,7 @@ AppInstance::setGroupLabelIDAndVersion(const NodePtr& node,
         node->setPluginIconFilePath(iconFilePath);
         node->setPluginDescription(description);
         node->setPluginIDAndVersionForGui(pluginLabel, pluginID, version);
-        node->setPluginPythonModule(QString(pythonModulePath + pythonModule + ".py").toStdString());
+        node->setPluginPythonModule(QString(pythonModulePath + pythonModule + QString::fromUtf8(".py")).toStdString());
     }
     
 }
@@ -885,7 +885,7 @@ AppInstance::createWriter(const std::string& filename,
     std::map<std::string,std::string> writersForFormat;
     appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
     
-    QString fileCpy(filename.c_str());
+    QString fileCpy = QString::fromUtf8(filename.c_str());
     std::string ext = QtCompat::removeFileExtension(fileCpy).toLower().toStdString();
     std::map<std::string,std::string>::iterator found = writersForFormat.find(ext);
     if ( found == writersForFormat.end() ) {
@@ -895,7 +895,7 @@ AppInstance::createWriter(const std::string& filename,
     }
     
     
-    CreateNodeArgs args(found->second.c_str(), reason, collection);
+    CreateNodeArgs args(QString::fromUtf8(found->second.c_str()), reason, collection);
 #endif
     args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filename));
     if (firstFrame != INT_MIN && lastFrame != INT_MAX) {
@@ -914,9 +914,9 @@ AppInstance::createWriter(const std::string& filename,
  **/
 static bool isEntitledForInspector(Plugin* plugin,OFX::Host::ImageEffect::Descriptor* ofxDesc)  {
     
-    if (plugin->getPluginID() == PLUGINID_NATRON_VIEWER ||
-        plugin->getPluginID() == PLUGINID_NATRON_ROTOPAINT ||
-        plugin->getPluginID() == PLUGINID_NATRON_ROTO) {
+    if (plugin->getPluginID() == QString::fromUtf8(PLUGINID_NATRON_VIEWER) ||
+        plugin->getPluginID() == QString::fromUtf8(PLUGINID_NATRON_ROTOPAINT) ||
+        plugin->getPluginID() == QString::fromUtf8(PLUGINID_NATRON_ROTO)) {
         return true;
     }
     
@@ -955,8 +955,8 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     
     //Roto has moved to a built-in plugin
     if ((args.reason == eCreateNodeReasonUserCreate || args.reason == eCreateNodeReasonProjectLoad) &&
-        ((!_imp->_projectCreatedWithLowerCaseIDs && args.pluginID == PLUGINID_OFX_ROTO) || (_imp->_projectCreatedWithLowerCaseIDs && args.pluginID == QString(PLUGINID_OFX_ROTO).toLower()))) {
-        findId = PLUGINID_NATRON_ROTO;
+        ((!_imp->_projectCreatedWithLowerCaseIDs && args.pluginID == QString::fromUtf8(PLUGINID_OFX_ROTO)) || (_imp->_projectCreatedWithLowerCaseIDs && args.pluginID == QString::fromUtf8(PLUGINID_OFX_ROTO).toLower()))) {
+        findId = QString::fromUtf8(PLUGINID_NATRON_ROTO);
     } else {
         findId = args.pluginID;
     }
@@ -1017,7 +1017,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
                 return node;
             }
         } else {
-            plugin = appPTR->getPluginBinary(PLUGINID_NATRON_GROUP,-1,-1, false);
+            plugin = appPTR->getPluginBinary(QString::fromUtf8(PLUGINID_NATRON_GROUP),-1,-1, false);
             assert(plugin);
         }
     }
@@ -1072,7 +1072,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
         ///If this is a stereo plug-in, check that the project has been set for multi-view
         if (args.reason == eCreateNodeReasonUserCreate) {
             const QStringList& grouping = plugin->getGrouping();
-            if (!grouping.isEmpty() && grouping[0] == PLUGIN_GROUP_MULTIVIEW) {
+            if (!grouping.isEmpty() && grouping[0] == QString::fromUtf8(PLUGIN_GROUP_MULTIVIEW)) {
                 int nbViews = getProject()->getProjectViewsCount();
                 if (nbViews < 2) {
                     StandardButtonEnum reply = Dialogs::questionDialog(tr("Multi-View").toStdString(),
@@ -1144,10 +1144,10 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
         if (args.reason == eCreateNodeReasonProjectLoad || args.reason == eCreateNodeReasonCopyPaste) {
             if (args.serialization && !args.serialization->getPythonModule().empty()) {
                 
-                QString pythonModulePath(args.serialization->getPythonModule().c_str());
+                QString pythonModulePath = QString::fromUtf8((args.serialization->getPythonModule().c_str()));
                 QString moduleName;
                 QString modulePath;
-                int foundLastSlash = pythonModulePath.lastIndexOf('/');
+                int foundLastSlash = pythonModulePath.lastIndexOf(QChar::fromLatin1('/'));
                 if (foundLastSlash != -1) {
                     modulePath = pythonModulePath.mid(0,foundLastSlash + 1);
                     moduleName = pythonModulePath.remove(0,foundLastSlash + 1);
@@ -1162,7 +1162,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
             NodePtr input,output;
             
             {
-                CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, eCreateNodeReasonInternal, isGrp);
+                CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_OUTPUT), eCreateNodeReasonInternal, isGrp);
                 output = createNode(args);
                 try {
                     output->setScriptName("Output");
@@ -1172,7 +1172,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
                 assert(output);
             }
             {
-                CreateNodeArgs args(PLUGINID_NATRON_INPUT, eCreateNodeReasonInternal, isGrp);
+                CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_INPUT), eCreateNodeReasonInternal, isGrp);
                 input = createNode(args);
                 assert(input);
             }
@@ -1380,7 +1380,7 @@ AppInstance::startWritersRendering(bool doBlockingRender, const std::list<Render
     bool renderInSeparateProcess = appPTR->getCurrentSettings()->isRenderInSeparatedProcessEnabled();
     QString savePath;
     if (renderInSeparateProcess) {
-        getProject()->saveProject_imp("","RENDER_SAVE.ntp",true, false,&savePath);
+        getProject()->saveProject_imp(QString(),QString::fromUtf8("RENDER_SAVE.ntp"),true, false,&savePath);
     }
     
     std::list<RenderQueueItem> itemsToQueue;
@@ -1459,7 +1459,7 @@ AppInstancePrivate::getSequenceNameFromWriter(const OutputEffectInstance* writer
         if (fileKnob) {
             Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(fileKnob.get());
             assert(isString);
-            *sequenceName = isString->getValue().c_str();
+            *sequenceName = QString::fromUtf8(isString->getValue().c_str());
         }
     }
 }
@@ -1766,7 +1766,7 @@ AppInstance::getAppIDString() const
     if (appPTR->isBackground()) {
         return "app";
     } else {
-        QString appID =  QString("app%1").arg(getAppID() + 1);
+        QString appID =  QString(QString::fromUtf8("app%1")).arg(getAppID() + 1);
         return appID.toStdString();
     }
 }
@@ -1792,7 +1792,7 @@ AppInstance::saveTemp(const std::string& filename)
     std::string outFile = filename;
     std::string path = SequenceParsing::removePath(outFile);
     boost::shared_ptr<Project> project= getProject();
-    return project->saveProject_imp(path.c_str(), outFile.c_str(), false, false,0);
+    return project->saveProject_imp(QString::fromUtf8(path.c_str()), QString::fromUtf8(outFile.c_str()), false, false,0);
 }
 
 bool
@@ -1813,19 +1813,19 @@ AppInstance::saveAs(const std::string& filename)
 {
     std::string outFile = filename;
     std::string path = SequenceParsing::removePath(outFile);
-    return getProject()->saveProject(path.c_str(), outFile.c_str(), 0);
+    return getProject()->saveProject(QString::fromUtf8(path.c_str()), QString::fromUtf8(outFile.c_str()), 0);
 }
 
 AppInstance*
 AppInstance::loadProject(const std::string& filename)
 {
     
-    QFileInfo file(filename.c_str());
+    QFileInfo file(QString::fromUtf8(filename.c_str()));
     if (!file.exists()) {
         return 0;
     }
     QString fileUnPathed = file.fileName();
-    QString path = file.path() + "/";
+    QString path = file.path() + QChar::fromLatin1('/');
     
     //We are in background mode, there can only be 1 instance active, wipe the current project
     boost::shared_ptr<Project> project = getProject();

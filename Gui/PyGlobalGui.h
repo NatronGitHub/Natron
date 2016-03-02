@@ -100,14 +100,14 @@ public:
     
     void addMenuCommand(const std::string& grouping,const std::string& pythonFunctionName)
     {
-        appPTR->addCommand(grouping.c_str(), pythonFunctionName, (Qt::Key)0, Qt::NoModifier);
+        appPTR->addCommand(QString::fromUtf8(grouping.c_str()), pythonFunctionName, (Qt::Key)0, Qt::NoModifier);
     }
     
     
     void addMenuCommand(const std::string& grouping,const std::string& pythonFunctionName,
                         Qt::Key key, const Qt::KeyboardModifiers& modifiers)
     {
-        appPTR->addCommand(grouping.c_str(), pythonFunctionName, key, modifiers);
+        appPTR->addCommand(QString::fromUtf8(grouping.c_str()), pythonFunctionName, key, modifiers);
     }
     
 };

@@ -125,7 +125,7 @@ CurveWidget::CurveWidget(Gui* gui,
         onTimeLineBoundariesChanged(left, right);
     }
     
-    if (parent->objectName() == "CurveEditorSplitter") {
+    if (parent->objectName() == QString::fromUtf8("CurveEditorSplitter")) {
         ///if this is the curve widget associated to the CurveEditor
         //        QDesktopWidget* desktop = QApplication::desktop();
         //        _imp->sizeH = desktop->screenGeometry().size();
@@ -641,7 +641,7 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
         std::pair<double,double> yRange = (*foundCurveNearby)->getCurveYRange();
         if (yCurve < yRange.first || yCurve > yRange.second) {
             QString err =  tr(" Out of curve y range ") +
-                    QString("[%1 - %2]").arg(yRange.first).arg(yRange.second) ;
+                    QString::fromUtf8("[%1 - %2]").arg(yRange.first).arg(yRange.second) ;
             Dialogs::warningDialog("", err.toStdString());
             e->accept();
             return;
@@ -690,7 +690,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
     if ( parentWidget() ) {
         QWidget* parent  = parentWidget()->parentWidget();
         if (parent) {
-            if (parent->objectName() == "CurveEditor") {
+            if (parent->objectName() == QString::fromUtf8("CurveEditor")) {
                 ce = dynamic_cast<CurveEditor*>(parent);
             }
         }
@@ -727,7 +727,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
             std::pair<double,double> yRange = (*foundCurveNearby)->getCurveYRange();
             if (yCurve < yRange.first || yCurve > yRange.second) {
                 QString err =  tr(" Out of curve y range ") +
-                        QString("[%1 - %2]").arg(yRange.first).arg(yRange.second) ;
+                        QString::fromUtf8("[%1 - %2]").arg(yRange.first).arg(yRange.second) ;
                 Dialogs::warningDialog("", err.toStdString());
                 e->accept();
                 return;
@@ -1453,7 +1453,7 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
     if ( parentWidget() ) {
         QWidget* parent  = parentWidget()->parentWidget();
         if (parent) {
-            if (parent->objectName() == "CurveEditor") {
+            if (parent->objectName() == QString::fromUtf8("CurveEditor")) {
                 ce = dynamic_cast<CurveEditor*>(parent);
             }
         }
@@ -1731,7 +1731,7 @@ CurveWidget::loopSelectedCurve()
     if ( parentWidget() ) {
         QWidget* parent  = parentWidget()->parentWidget();
         if (parent) {
-            if (parent->objectName() == "CurveEditor") {
+            if (parent->objectName() == QString::fromUtf8("CurveEditor")) {
                 ce = dynamic_cast<CurveEditor*>(parent);
             }
         }
@@ -1762,7 +1762,7 @@ CurveWidget::loopSelectedCurve()
         std::stringstream ss;
         ss << "curve(((frame - " << first << ") % (" << last << " - " << first << " + 1)) + " << first << ", "<< knobCurve->getDimension() << ")";
         std::string script = ss.str();
-        ce->setSelectedCurveExpression(script.c_str());
+        ce->setSelectedCurveExpression(QString::fromUtf8(script.c_str()));
     }
 
 }
@@ -1774,7 +1774,7 @@ CurveWidget::negateSelectedCurve()
     if ( parentWidget() ) {
         QWidget* parent  = parentWidget()->parentWidget();
         if (parent) {
-            if (parent->objectName() == "CurveEditor") {
+            if (parent->objectName() == QString::fromUtf8("CurveEditor")) {
                 ce = dynamic_cast<CurveEditor*>(parent);
             }
         }
@@ -1795,7 +1795,7 @@ CurveWidget::negateSelectedCurve()
     std::stringstream ss;
     ss << "-curve(frame, " << knobCurve->getDimension() << ")";
     std::string script = ss.str();
-    ce->setSelectedCurveExpression(script.c_str());
+    ce->setSelectedCurveExpression(QString::fromUtf8(script.c_str()));
 }
 
 void
@@ -1805,7 +1805,7 @@ CurveWidget::reverseSelectedCurve()
     if ( parentWidget() ) {
         QWidget* parent  = parentWidget()->parentWidget();
         if (parent) {
-            if (parent->objectName() == "CurveEditor") {
+            if (parent->objectName() == QString::fromUtf8("CurveEditor")) {
                 ce = dynamic_cast<CurveEditor*>(parent);
             }
         }
@@ -1826,7 +1826,7 @@ CurveWidget::reverseSelectedCurve()
     std::stringstream ss;
     ss << "curve(-frame, " << knobCurve->getDimension() << ")";
     std::string script = ss.str();
-    ce->setSelectedCurveExpression(script.c_str());
+    ce->setSelectedCurveExpression(QString::fromUtf8(script.c_str()));
 }
 
 void
@@ -2116,12 +2116,12 @@ CurveWidget::importCurveFromAscii()
             ///read the line to extract all values
             while ( i < line.size() ) {
                 QString value;
-                while ( i < line.size() && line.at(i) != QChar('_') ) {
+                while ( i < line.size() && line.at(i) != QLatin1Char('_') ) {
                     value.push_back( line.at(i) );
                     ++i;
                 }
                 if ( i < line.size() ) {
-                    if ( line.at(i) != QChar('_') ) {
+                    if ( line.at(i) != QLatin1Char('_') ) {
                         Dialogs::errorDialog( tr("Curve Import").toStdString(),tr("The file could not be read.").toStdString() );
 
                         return;

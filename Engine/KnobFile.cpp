@@ -142,7 +142,7 @@ KnobOutputFile::generateFileNameAtTime(SequenceTime time, ViewSpec view) const
     if (!view.isViewIdx()) {
         view = ViewIdx(0);
     }
-    return SequenceParsing::generateFileNameFromPattern(getValue(0, ViewIdx(0)), views, time, view).c_str();
+    return QString::fromUtf8(SequenceParsing::generateFileNameFromPattern(getValue(0, ViewIdx(0)), views, time, view).c_str());
 }
 
 /***********************************KnobPath*****************************************/

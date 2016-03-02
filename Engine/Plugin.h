@@ -87,7 +87,7 @@ public:
     
     const QString getLabelVersionMajorEncoded() const
     {
-        return _label + ' ' + QString::number(_major);
+        return _label + QString::fromUtf8(" ") + QString::number(_major);
     }
 
     void setLabel(const QString & label)

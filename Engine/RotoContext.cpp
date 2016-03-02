@@ -3986,14 +3986,14 @@ RotoContext::getOrCreateGlobalMergeNode(int *availableInputIndex)
     
     NodePtr  node = getNode();
     //We must create a new merge node
-    QString fixedNamePrefix(node->getScriptName_mt_safe().c_str());
-    fixedNamePrefix.append('_');
-    fixedNamePrefix.append("globalMerge");
-    fixedNamePrefix.append('_');
+    QString fixedNamePrefix = QString::fromUtf8(node->getScriptName_mt_safe().c_str());
+    fixedNamePrefix.append(QLatin1Char('_'));
+    fixedNamePrefix.append(QString::fromUtf8("globalMerge"));
+    fixedNamePrefix.append(QLatin1Char('_'));
     
     
     
-    CreateNodeArgs args(PLUGINID_OFX_MERGE, eCreateNodeReasonInternal,  boost::shared_ptr<NodeCollection>());
+    CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_MERGE), eCreateNodeReasonInternal,  boost::shared_ptr<NodeCollection>());
     args.fixedName = fixedNamePrefix;
     args.createGui = false;
     args.addToProject = false;

@@ -92,7 +92,7 @@ App::createNode(const std::string& pluginID,
     
     assert(collection);
     
-    CreateNodeArgs args(pluginID.c_str(), eCreateNodeReasonInternal, collection);
+    CreateNodeArgs args(QString::fromUtf8(pluginID.c_str()), eCreateNodeReasonInternal, collection);
     args.majorV = majorVersion;
 
     NodePtr node = _instance->createNode(args);

@@ -1002,7 +1002,7 @@ namespace {
     
 static QStringList explode(const QString& str)
 {
-    QRegExp rx("(\\ |\\-|\\.|\\/|\\t|\\n)"); //RegEx for ' ' '/' '.' '-' '\t' '\n'
+    QRegExp rx(QString::fromUtf8("(\\ |\\-|\\.|\\/|\\t|\\n)")); //RegEx for ' ' '/' '.' '-' '\t' '\n'
 
     QStringList ret;
     int startIndex = 0;
@@ -2747,11 +2747,11 @@ ViewerGL::setRegionOfDefinition(const RectD & rod,
 
     _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].clear();
     _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].append(left);
-    _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].append(",");
+    _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].append(QLatin1Char(','));
     _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].append(btm);
     _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].clear();
     _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].append(right);
-    _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].append(",");
+    _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].append(QLatin1Char(','));
     _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].append(top);
 }
 
@@ -2782,7 +2782,7 @@ ViewerGL::onProjectFormatChangedInternal(const Format & format,bool triggerRende
     }
     _imp->currentViewerInfo_resolutionOverlay.clear();
     _imp->currentViewerInfo_resolutionOverlay.append( QString::number(format.width() ) );
-    _imp->currentViewerInfo_resolutionOverlay.append("x");
+    _imp->currentViewerInfo_resolutionOverlay.append(QLatin1Char('x'));
     _imp->currentViewerInfo_resolutionOverlay.append( QString::number(format.height() ) );
     
     bool loadingProject = _imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject();

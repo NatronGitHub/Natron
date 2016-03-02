@@ -328,7 +328,7 @@ Histogram::Histogram(Gui* gui,
     _imp->rightClickMenu->addAction( _imp->modeMenu->menuAction() );
 
     _imp->fullImage = new QAction(_imp->rightClickMenu);
-    _imp->fullImage->setText("Full image");
+    _imp->fullImage->setText(tr("Full image"));
     _imp->fullImage->setCheckable(true);
     _imp->fullImage->setChecked(false);
     QObject::connect( _imp->fullImage, SIGNAL(triggered()), this, SLOT(computeHistogramAndRefresh()) );
@@ -340,32 +340,32 @@ Histogram::Histogram(Gui* gui,
 
     _imp->modeActions = new QActionGroup(_imp->modeMenu);
     QAction* rgbAction = new QAction(_imp->modeMenu);
-    rgbAction->setText( QString("RGB") );
+    rgbAction->setText( QString::fromUtf8("RGB") );
     rgbAction->setData(0);
     _imp->modeActions->addAction(rgbAction);
 
     QAction* aAction = new QAction(_imp->modeMenu);
-    aAction->setText( QString("A") );
+    aAction->setText( QString::fromUtf8("A") );
     aAction->setData(1);
     _imp->modeActions->addAction(aAction);
 
     QAction* yAction = new QAction(_imp->modeMenu);
-    yAction->setText( QString("Y") );
+    yAction->setText( QString::fromUtf8("Y") );
     yAction->setData(2);
     _imp->modeActions->addAction(yAction);
 
     QAction* rAction = new QAction(_imp->modeMenu);
-    rAction->setText( QString("R") );
+    rAction->setText( QString::fromUtf8("R") );
     rAction->setData(3);
     _imp->modeActions->addAction(rAction);
 
     QAction* gAction = new QAction(_imp->modeMenu);
-    gAction->setText( QString("G") );
+    gAction->setText( QString::fromUtf8("G") );
     gAction->setData(4);
     _imp->modeActions->addAction(gAction);
 
     QAction* bAction = new QAction(_imp->modeMenu);
-    bAction->setText( QString("B") );
+    bAction->setText( QString::fromUtf8("B") );
     bAction->setData(5);
     _imp->modeActions->addAction(bAction);
     QList<QAction*> actions = _imp->modeActions->actions();
@@ -564,7 +564,7 @@ Histogram::populateViewersChoices()
     _imp->histogramSelectionMenu->clear();
 
     QAction* noneAction = new QAction(_imp->histogramSelectionGroup);
-    noneAction->setText("-");
+    noneAction->setText(QString::fromUtf8("-"));
     noneAction->setData(0);
     noneAction->setCheckable(true);
     noneAction->setChecked(false);
@@ -585,7 +585,7 @@ Histogram::populateViewersChoices()
     for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
         if ( (*it)->getInternalNode()->getNode()->isActivated() ) {
             QAction* ac = new QAction(_imp->histogramSelectionGroup);
-            ac->setText( (*it)->getInternalNode()->getScriptName_mt_safe().c_str() );
+            ac->setText( QString::fromUtf8((*it)->getInternalNode()->getScriptName_mt_safe().c_str()) );
             ac->setCheckable(true);
             ac->setChecked(false);
             ac->setData(c);
@@ -629,11 +629,11 @@ Histogram::onViewerImageChanged(ViewerGL* viewer,
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     if (viewer && hasImageBackend) {
-        QString viewerName = viewer->getInternalNode()->getScriptName_mt_safe().c_str();
+        QString viewerName = QString::fromUtf8(viewer->getInternalNode()->getScriptName_mt_safe().c_str());
         ViewerTab* lastSelectedViewer = getGui()->getNodeGraph()->getLastSelectedViewer();
         QString currentViewerName;
         if (lastSelectedViewer) {
-            currentViewerName = lastSelectedViewer->getInternalNode()->getScriptName_mt_safe().c_str();
+            currentViewerName = QString::fromUtf8(lastSelectedViewer->getInternalNode()->getScriptName_mt_safe().c_str());
         }
 
         QAction* selectedHistAction = _imp->histogramSelectionGroup->checkedAction();
@@ -1332,7 +1332,7 @@ HistogramPrivate::updatePicker(double x)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    xCoordinateStr = QString("x=") + QString::number(x,'f',6);
+    xCoordinateStr = QString::fromUtf8("x=") + QString::number(x,'f',6);
     double binSize = (vmax - vmin) / binsCount;
     int index = (int)( (x - vmin) / binSize );
     rValueStr.clear();
@@ -1342,24 +1342,24 @@ HistogramPrivate::updatePicker(double x)
         float r = histogram1.empty() ? 0 :  histogram1[index];
         float g = histogram2.empty() ? 0 :  histogram2[index];
         float b = histogram3.empty() ? 0 :  histogram3[index];
-        rValueStr = QString("r=") + QString::number(r);
-        gValueStr = QString("g=") + QString::number(g);
-        bValueStr = QString("b=") + QString::number(b);
+        rValueStr = QString::fromUtf8("r=") + QString::number(r);
+        gValueStr = QString::fromUtf8("g=") + QString::number(g);
+        bValueStr = QString::fromUtf8("b=") + QString::number(b);
     } else if (mode == Histogram::eDisplayModeY) {
         float y = histogram1[index];
-        rValueStr = QString("y=") + QString::number(y);
+        rValueStr = QString::fromUtf8("y=") + QString::number(y);
     } else if (mode == Histogram::eDisplayModeA) {
         float a = histogram1[index];
-        rValueStr = QString("a=") + QString::number(a);
+        rValueStr = QString::fromUtf8("a=") + QString::number(a);
     } else if (mode == Histogram::eDisplayModeR) {
         float r = histogram1[index];
-        rValueStr = QString("r=") + QString::number(r);
+        rValueStr = QString::fromUtf8("r=") + QString::number(r);
     } else if (mode == Histogram::eDisplayModeG) {
         float g = histogram1[index];
-        gValueStr = QString("g=") + QString::number(g);
+        gValueStr = QString::fromUtf8("g=") + QString::number(g);
     } else if (mode == Histogram::eDisplayModeB) {
         float b = histogram1[index];
-        bValueStr = QString("b=") + QString::number(b);
+        bValueStr = QString::fromUtf8("b=") + QString::number(b);
     } else {
         assert(false);
     }
@@ -1605,7 +1605,7 @@ HistogramPrivate::drawScale()
             ticks_fill(half_tick, ticks_max, m1, m2, &ticks);
             const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
             const double largestTickSize = range * largestTickSizePixel / rangePixel;
-            const double minTickSizeTextPixel = (axis == 0) ? fontM.width( QString("00") ) : fontM.height(); // AXIS-SPECIFIC
+            const double minTickSizeTextPixel = (axis == 0) ? fontM.width( QLatin1String("00") ) : fontM.height(); // AXIS-SPECIFIC
             const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
             for (int i = m1; i <= m2; ++i) {
                 double value = i * smallTickSize + offset;

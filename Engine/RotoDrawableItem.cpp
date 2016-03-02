@@ -171,12 +171,12 @@ RotoDrawableItem::createNodes(bool connectNodes)
   
     
     AppInstance* app = node->getApp();
-    QString fixedNamePrefix(node->getScriptName_mt_safe().c_str());
-    fixedNamePrefix.append('_');
-    fixedNamePrefix.append(getScriptName().c_str());
-    fixedNamePrefix.append('_');
+    QString fixedNamePrefix = QString::fromUtf8(node->getScriptName_mt_safe().c_str());
+    fixedNamePrefix.append(QLatin1Char('_'));
+    fixedNamePrefix.append(QString::fromUtf8(getScriptName().c_str()));
+    fixedNamePrefix.append(QLatin1Char('_'));
     fixedNamePrefix.append(QString::number(context->getAge()));
-    fixedNamePrefix.append('_');
+    fixedNamePrefix.append(QLatin1Char('_'));
     
     QString pluginId;
     
@@ -193,17 +193,17 @@ RotoDrawableItem::createNodes(bool connectNodes)
   
     switch (type) {
         case eRotoStrokeTypeBlur:
-            pluginId = PLUGINID_OFX_BLURCIMG;
+            pluginId = QString::fromUtf8(PLUGINID_OFX_BLURCIMG);
             break;
         case eRotoStrokeTypeEraser:
-            pluginId = PLUGINID_OFX_CONSTANT;
+            pluginId = QString::fromUtf8(PLUGINID_OFX_CONSTANT);
             break;
         case eRotoStrokeTypeSolid:
-            pluginId = PLUGINID_OFX_ROTO;
+            pluginId = QString::fromUtf8(PLUGINID_OFX_ROTO);
             break;
         case eRotoStrokeTypeClone:
         case eRotoStrokeTypeReveal:
-            pluginId = PLUGINID_OFX_TRANSFORM;
+            pluginId = QString::fromUtf8(PLUGINID_OFX_TRANSFORM);
             break;
         case eRotoStrokeTypeBurn:
         case eRotoStrokeTypeDodge:
@@ -213,13 +213,13 @@ RotoDrawableItem::createNodes(bool connectNodes)
             //todo
             break;
         case eRotoStrokeTypeSmear:
-            pluginId = PLUGINID_NATRON_ROTOSMEAR;
+            pluginId = QString::fromUtf8(PLUGINID_NATRON_ROTOSMEAR);
             break;
     }
     
     QString baseFixedName = fixedNamePrefix;
     if (!pluginId.isEmpty()) {
-        fixedNamePrefix.append("Effect");
+        fixedNamePrefix.append(QString::fromUtf8("Effect"));
         
         CreateNodeArgs args(pluginId, eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
         args.fixedName = fixedNamePrefix;
@@ -234,8 +234,8 @@ RotoDrawableItem::createNodes(bool connectNodes)
         if (type == eRotoStrokeTypeClone || type == eRotoStrokeTypeReveal) {
             {
                 fixedNamePrefix = baseFixedName;
-                fixedNamePrefix.append("TimeOffset");
-                CreateNodeArgs args(PLUGINID_OFX_TIMEOFFSET, eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
+                fixedNamePrefix.append(QString::fromUtf8("TimeOffset"));
+                CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_TIMEOFFSET), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
                 args.fixedName = fixedNamePrefix;
                 args.createGui = false;
                 args.addToProject = false;
@@ -248,8 +248,8 @@ RotoDrawableItem::createNodes(bool connectNodes)
             }
             {
                 fixedNamePrefix = baseFixedName;
-                fixedNamePrefix.append("FrameHold");
-                CreateNodeArgs args(PLUGINID_OFX_FRAMEHOLD, eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
+                fixedNamePrefix.append(QString::fromUtf8("FrameHold"));
+                CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_FRAMEHOLD), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
                 args.fixedName = fixedNamePrefix;
                 args.createGui = false;
                 args.addToProject = false;
@@ -264,9 +264,9 @@ RotoDrawableItem::createNodes(bool connectNodes)
     }
     
     fixedNamePrefix = baseFixedName;
-    fixedNamePrefix.append("Merge");
+    fixedNamePrefix.append(QString::fromUtf8("Merge"));
     
-    CreateNodeArgs args(PLUGINID_OFX_MERGE, eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
+    CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_MERGE), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
     args.fixedName = fixedNamePrefix;
     args.createGui = false;
     args.addToProject = false;

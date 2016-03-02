@@ -157,18 +157,18 @@ EditScriptDialog::create(const QString& initialScript,bool makeUseRetButton)
     if (!modules.empty()) {
         labelHtml.append(tr("For convenience, the following module(s) have been imported:<br />"));
         for (int i = 0; i < modules.size(); ++i) {
-            QString toAppend = QString("<i><font color=orange>from %1 import *</font></i><br />").arg(modules[i]);
+            QString toAppend = QString::fromUtf8("<i><font color=orange>from %1 import *</font></i><br />").arg(modules[i]);
             labelHtml.append(toAppend);
         }
-        labelHtml.append("<br />");
+        labelHtml.append(QString::fromUtf8("<br />"));
     }
     if (!variables.empty()) {
         labelHtml.append(tr("Also the following variables have been declared:<br />"));
         for (std::list<std::pair<QString,QString> > ::iterator it = variables.begin(); it != variables.end(); ++it) {
-            QString toAppend = QString("<b>%1</b>: %2<br />").arg(it->first).arg(it->second);
+            QString toAppend = QString::fromUtf8("<b>%1</b>: %2<br />").arg(it->first).arg(it->second);
             labelHtml.append(toAppend);
         }
-        labelHtml.append("<p>" + tr("Note that parameters can be referenced by drag&dropping them from their animation button.") + "</p>");
+        labelHtml.append(QString::fromUtf8("<p>") + tr("Note that parameters can be referenced by drag&dropping them from their animation button.") + QString::fromUtf8("</p>"));
     }
     
     _imp->expressionLabel = new Label(labelHtml,this);
@@ -179,7 +179,7 @@ EditScriptDialog::create(const QString& initialScript,bool makeUseRetButton)
     _imp->expressionEdit->setAcceptDrops(true);
     _imp->expressionEdit->setMouseTracking(true);
     QFontMetrics fm = _imp->expressionEdit->fontMetrics();
-    _imp->expressionEdit->setTabStopWidth(4 * fm.width(' '));
+    _imp->expressionEdit->setTabStopWidth(4 * fm.width(QLatin1Char(' ')));
     _imp->mainLayout->addWidget(_imp->expressionEdit);
     _imp->expressionEdit->setPlainText(initialScript);
     

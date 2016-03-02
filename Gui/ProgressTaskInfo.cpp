@@ -429,7 +429,7 @@ ProgressTaskInfoPrivate::createItems()
             item->setTextColor(Qt::black);
             item->setBackgroundColor(color);
         }
-        item->setText(node->getLabel().c_str());
+        item->setText(QString::fromUtf8(node->getLabel().c_str()));
         nameItem = item;
     }
     {
@@ -453,7 +453,7 @@ ProgressTaskInfoPrivate::createItems()
         if (nodeUI) {
             item->setIcon(QIcon());
         }
-        item->setText(canBePaused ? "Yes":"No");
+        item->setText(canBePaused ? QObject::tr("Yes"):QObject::tr("No"));
         controlsItem = item;
     }
     {
@@ -578,7 +578,7 @@ ProgressTaskInfo::createCellWidgets()
     QIcon pauseIc;
     pauseIc.addPixmap(pauseOnPix, QIcon::Normal, QIcon::On);
     pauseIc.addPixmap(pauseOffPix, QIcon::Normal, QIcon::Off);
-    _imp->pauseTasksButton = new Button(pauseIc,"",_imp->controlsButtonsContainer);
+    _imp->pauseTasksButton = new Button(pauseIc,QString(),_imp->controlsButtonsContainer);
     _imp->pauseTasksButton->setFixedSize(medButtonSize);
     _imp->pauseTasksButton->setIconSize(medButtonIconSize);
     _imp->pauseTasksButton->setFocusPolicy(Qt::NoFocus);
@@ -588,7 +588,7 @@ ProgressTaskInfo::createCellWidgets()
     _imp->pauseTasksButton->setEnabled(_imp->canBePaused);
     layout->addWidget(_imp->pauseTasksButton);
     
-    _imp->restartTasksButton = new Button(QIcon(restartPix),"",_imp->controlsButtonsContainer);
+    _imp->restartTasksButton = new Button(QIcon(restartPix),QString(),_imp->controlsButtonsContainer);
     _imp->restartTasksButton->setFixedSize(medButtonSize);
     _imp->restartTasksButton->setIconSize(medButtonIconSize);
     _imp->restartTasksButton->setFocusPolicy(Qt::NoFocus);
@@ -599,7 +599,7 @@ ProgressTaskInfo::createCellWidgets()
     
     
     
-    _imp->cancelTasksButton = new Button(QIcon(clearTasksPix),"",_imp->controlsButtonsContainer);
+    _imp->cancelTasksButton = new Button(QIcon(clearTasksPix),QString(),_imp->controlsButtonsContainer);
     _imp->cancelTasksButton->setFixedSize(medButtonSize);
     _imp->cancelTasksButton->setIconSize(medButtonIconSize);
     _imp->cancelTasksButton->setFocusPolicy(Qt::NoFocus);

@@ -113,7 +113,7 @@ PasteUndoCommand::PasteUndoCommand(const KnobGuiPtr& knob,
     assert(knob);
     assert(_imp->targetDimension >= -1 && _imp->targetDimension < _imp->knob->getKnob()->getDimension());
     assert(_imp->fromDimension >= -1 && _imp->fromDimension < _imp->fromKnob->getDimension());
-    QString text = QObject::tr("Paste") + ' ';
+    QString text = QObject::tr("Paste") + QLatin1Char(' ');
     switch (type) {
         case eKnobClipBoardTypeCopyAnim:
             text += QObject::tr("Animation");
@@ -125,10 +125,10 @@ PasteUndoCommand::PasteUndoCommand(const KnobGuiPtr& knob,
             text += QObject::tr("Link");
             break;
     }
-    text += ' ';
+    text += QLatin1Char(' ');
     text += QObject::tr("to");
-    text += ' ';
-    text += knob->getKnob()->getLabel().c_str();
+    text += QLatin1Char(' ');
+    text += QString::fromUtf8(knob->getKnob()->getLabel().c_str());
     setText(text);
 }
 
@@ -259,7 +259,7 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobGuiPtr& kno
     EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
     QString holderName;
     if (effect) {
-        holderName = effect->getNode()->getLabel().c_str();
+        holderName = QString::fromUtf8(effect->getNode()->getLabel().c_str());
     }
 
     setText( QObject::tr("Multiple edits for %1").arg(holderName) );

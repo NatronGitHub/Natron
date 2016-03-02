@@ -155,7 +155,7 @@ CurveWidgetPrivate::createMenu()
     if ( _widget->parentWidget() ) {
         QWidget* parent  = _widget->parentWidget()->parentWidget();
         if (parent) {
-            if (parent->objectName() == "CurveEditor") {
+            if (parent->objectName() == QString::fromUtf8("CurveEditor")) {
                 ce = dynamic_cast<CurveEditor*>(parent);
             }
         }
@@ -488,7 +488,7 @@ CurveWidgetPrivate::drawScale()
             ticks_fill(half_tick, ticks_max, m1, m2, &ticks);
             const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
             const double largestTickSize = range * largestTickSizePixel / rangePixel;
-            const double minTickSizeTextPixel = (axis == 0) ? fontM.width( QString("00") ) : fontM.height(); // AXIS-SPECIFIC
+            const double minTickSizeTextPixel = (axis == 0) ? fontM.width( QLatin1String("00") ) : fontM.height(); // AXIS-SPECIFIC
             const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
             for (int i = m1; i <= m2; ++i) {
                 double value = i * smallTickSize + offset;
@@ -744,7 +744,7 @@ CurveWidgetPrivate::isNearbyKeyFrameText(const QPoint& pt) const
                 QPointF topLeftWidget = zoomCtx.toWidgetCoordinates( (*it2)->key.getTime(), (*it2)->key.getValue() );
                 topLeftWidget.ry() += yOffset;
                 
-                QString coordStr =  QString("x: %1, y: %2").arg((*it2)->key.getTime()).arg((*it2)->key.getValue());
+                QString coordStr =  QString::fromUtf8("x: %1, y: %2").arg((*it2)->key.getTime()).arg((*it2)->key.getValue());
                 
                 QPointF btmRightWidget(topLeftWidget.x() + fm.width(coordStr),topLeftWidget.y() + fm.height());
                 
@@ -1008,7 +1008,7 @@ CurveWidgetPrivate::selectCurve(const boost::shared_ptr<CurveGui>& curve)
     if ( _widget->parentWidget() ) {
         QWidget* parent  = _widget->parentWidget()->parentWidget();
         if (parent) {
-            if (parent->objectName() == "CurveEditor") {
+            if (parent->objectName() == QLatin1String("CurveEditor")) {
                 CurveEditor* ce = dynamic_cast<CurveEditor*>(parent);
                 if (ce) {
                     ce->setSelectedCurve(curve);

@@ -135,7 +135,7 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
     ////ReadQt and WriteQt are buggy and not maintained
     // these are built-in nodes
     QStringList grouping;
-    grouping.push_back(PLUGIN_GROUP_IMAGE);
+    grouping.push_back(QString::fromUtf8(PLUGIN_GROUP_IMAGE));
 
 # ifdef NATRON_ENABLE_QT_IO_NODES
    
@@ -359,7 +359,7 @@ GuiApplicationManager::setFileToOpen(const QString & str)
 bool
 GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
 {
-    QString fileCopy(filename.c_str());
+    QString fileCopy(QString::fromUtf8(filename.c_str()));
     QString ext = QtCompat::removeFileExtension(fileCopy);
     std::string readerFileType = appPTR->isImageFileSupportedByNatron(ext.toStdString());
     AppInstance* mainInstance = appPTR->getTopLevelInstance();
@@ -373,7 +373,7 @@ GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
         return false;
     }
     
-    CreateNodeArgs args(readerFileType.c_str(), eCreateNodeReasonUserCreate, mainInstance->getProject());
+    CreateNodeArgs args(QString::fromUtf8(readerFileType.c_str()), eCreateNodeReasonUserCreate, mainInstance->getProject());
     args.paramValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filename) );
     NodePtr readerNode = mainInstance->createNode(args);
     if (!readerNode && instanceCreated) {
@@ -393,7 +393,7 @@ GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
     
     ///If no viewer is found, create it
     if (!viewerFound) {
-        CreateNodeArgs args(PLUGINID_NATRON_VIEWER, eCreateNodeReasonInternal, mainInstance->getProject());
+        CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonInternal, mainInstance->getProject());
         viewerFound = mainInstance->createNode(args);
     }
     if (viewerFound) {
@@ -496,11 +496,14 @@ matchesKey(Qt::Key lhs,
 }
 
 bool
-GuiApplicationManager::matchesKeybind(const QString & group,
-                                      const QString & actionID,
+GuiApplicationManager::matchesKeybind(const std::string & stdgroup,
+                                      const std::string & stdactionID,
                                       const Qt::KeyboardModifiers & modifiers,
                                       int symbol) const
 {
+    QString actionID = QString::fromUtf8(stdactionID.c_str());
+    QString group = QString::fromUtf8(stdgroup.c_str());
+    
     AppShortcuts::const_iterator it = _imp->_actionShortcuts.find(group);
 
     if ( it == _imp->_actionShortcuts.end() ) {
@@ -537,11 +540,14 @@ GuiApplicationManager::matchesKeybind(const QString & group,
 }
 
 bool
-GuiApplicationManager::matchesMouseShortcut(const QString & group,
-                                            const QString & actionID,
+GuiApplicationManager::matchesMouseShortcut(const std::string & stdgroup,
+                                            const std::string & stdactionID,
                                             const Qt::KeyboardModifiers & modifiers,
                                             int button) const
 {
+    QString actionID = QString::fromUtf8(stdactionID.c_str());
+    QString group = QString::fromUtf8(stdgroup.c_str());
+
     AppShortcuts::const_iterator it = _imp->_actionShortcuts.find(group);
 
     if ( it == _imp->_actionShortcuts.end() ) {
@@ -593,7 +599,7 @@ GuiApplicationManager::matchesMouseShortcut(const QString & group,
 void
 GuiApplicationManager::saveShortcuts() const
 {
-    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
+    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
     
     for (AppShortcuts::const_iterator it = _imp->_actionShortcuts.begin(); it != _imp->_actionShortcuts.end(); ++it) {
         settings.beginGroup(it->first);
@@ -601,21 +607,21 @@ GuiApplicationManager::saveShortcuts() const
             const MouseAction* mAction = dynamic_cast<const MouseAction*>(it2->second);
             const KeyBoundAction* kAction = dynamic_cast<const KeyBoundAction*>(it2->second);
 
-            settings.setValue(it2->first+ "_nbShortcuts", QVariant((int)it2->second->modifiers.size()));
+            settings.setValue(it2->first+ QString::fromUtf8("_nbShortcuts"), QVariant((int)it2->second->modifiers.size()));
             
             int c = 0;
             for (std::list<Qt::KeyboardModifiers>::const_iterator it3 = it2->second->modifiers.begin(); it3 != it2->second->modifiers.end(); ++it3, ++c) {
-                settings.setValue(it2->first + "_Modifiers" + QString::number(c), (int)*it3);
+                settings.setValue(it2->first + QString::fromUtf8("_Modifiers") + QString::number(c), (int)*it3);
             }
             
             if (mAction) {
-                settings.setValue(it2->first + "_Button", (int)mAction->button);
+                settings.setValue(it2->first + QString::fromUtf8("_Button"), (int)mAction->button);
             } else if (kAction) {
                 assert(it2->second->modifiers.size() == kAction->currentShortcut.size());
                 
                 c = 0;
                 for (std::list<Qt::Key>::const_iterator it3 = kAction->currentShortcut.begin() ; it3 != kAction->currentShortcut.end(); ++it3, ++c) {
-                    settings.setValue(it2->first + "_Symbol" + QString::number(c), (int)*it3);
+                    settings.setValue(it2->first + QString::fromUtf8("_Symbol") + QString::number(c), (int)*it3);
                 }
             }
         }
@@ -629,18 +635,18 @@ GuiApplicationManager::loadShortcuts()
     
     bool settingsExistd = getCurrentSettings()->didSettingsExistOnStartup();
     
-    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
+    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
 
     int settingsVersion = -1;
-    if (settings.contains("NATRON_SHORTCUTS_DEFAULT_VERSION")) {
-        settingsVersion = settings.value("NATRON_SHORTCUTS_DEFAULT_VERSION").toInt();
+    if (settings.contains(QString::fromUtf8("NATRON_SHORTCUTS_DEFAULT_VERSION"))) {
+        settingsVersion = settings.value(QString::fromUtf8("NATRON_SHORTCUTS_DEFAULT_VERSION")).toInt();
     }
     
     if (settingsExistd && settingsVersion < NATRON_SHORTCUTS_DEFAULT_VERSION) {
         _imp->_shortcutsChangedVersion = true;
     }
     
-    settings.setValue("NATRON_SHORTCUTS_DEFAULT_VERSION", NATRON_SHORTCUTS_DEFAULT_VERSION);
+    settings.setValue(QString::fromUtf8("NATRON_SHORTCUTS_DEFAULT_VERSION"), NATRON_SHORTCUTS_DEFAULT_VERSION);
 
     
     for (AppShortcuts::iterator it = _imp->_actionShortcuts.begin(); it != _imp->_actionShortcuts.end(); ++it) {
@@ -651,8 +657,8 @@ GuiApplicationManager::loadShortcuts()
 
             int nbShortcuts = 1;
             bool nbShortcutsSet = false;
-            if (settings.contains(it2->first + "_nbShortcuts")) {
-                nbShortcuts = settings.value(it2->first + "_nbShortcuts").toInt();
+            if (settings.contains(it2->first + QString::fromUtf8("_nbShortcuts"))) {
+                nbShortcuts = settings.value(it2->first + QString::fromUtf8("_nbShortcuts")).toInt();
                 nbShortcutsSet = true;
             }
             
@@ -661,8 +667,8 @@ GuiApplicationManager::loadShortcuts()
             if (!nbShortcutsSet) {
                 
                 if (kAction) {
-                    if (settings.contains(it2->first + "_Symbol") ) {
-                        Qt::Key key = (Qt::Key)settings.value(it2->first + "_Symbol").toInt();
+                    if (settings.contains(it2->first + QString::fromUtf8("_Symbol")) ) {
+                        Qt::Key key = (Qt::Key)settings.value(it2->first + QString::fromUtf8("_Symbol")).toInt();
                         if (key != (Qt::Key)0) {
                             kAction->currentShortcut.clear();
                             kAction->currentShortcut.push_back(key);
@@ -670,19 +676,19 @@ GuiApplicationManager::loadShortcuts()
                         }
                     }
                 }
-                if ( hasNonNullKeybind && settings.contains(it2->first + "_Modifiers") ) {
+                if ( hasNonNullKeybind && settings.contains(it2->first + QString::fromUtf8("_Modifiers")) ) {
                     it2->second->modifiers.clear();
-                    it2->second->modifiers.push_back(Qt::KeyboardModifiers( settings.value(it2->first + "_Modifiers").toInt() ));
+                    it2->second->modifiers.push_back(Qt::KeyboardModifiers( settings.value(it2->first + QString::fromUtf8("_Modifiers")).toInt() ));
                 }
             } else {
                 
 
                 for (int i = 0; i < nbShortcuts; ++i) {
-                    QString idm = it2->first + "_Modifiers" + QString::number(i);
+                    QString idm = it2->first + QString::fromUtf8("_Modifiers") + QString::number(i);
                     
                     if (kAction) {
                         
-                        QString ids = it2->first + "_Symbol" + QString::number(i);
+                        QString ids = it2->first + QString::fromUtf8("_Symbol") + QString::number(i);
                         if (settings.contains(ids) ) {
                             Qt::Key key = (Qt::Key)settings.value(ids).toInt();
                             if (key != (Qt::Key)0) {
@@ -705,11 +711,11 @@ GuiApplicationManager::loadShortcuts()
                     }
                 }
             }
-            if ( mAction && settings.contains(it2->first + "_Button") ) {
-                mAction->button = (Qt::MouseButton)settings.value(it2->first + "_Button").toInt();
+            if ( mAction && settings.contains(it2->first + QString::fromUtf8("_Button")) ) {
+                mAction->button = (Qt::MouseButton)settings.value(it2->first + QString::fromUtf8("_Button")).toInt();
             }
             //If this is a node shortcut, notify the Plugin object that it has a shortcut.
-            if (hasNonNullKeybind && it->first.startsWith(kShortcutGroupNodes)) {
+            if (hasNonNullKeybind && it->first.startsWith(QString::fromUtf8(kShortcutGroupNodes))) {
                 const PluginsMap & allPlugins = getPluginsList();
                 PluginsMap::const_iterator found = allPlugins.find(it2->first.toStdString());
                 if (found != allPlugins.end()) {
@@ -1088,7 +1094,7 @@ GuiApplicationManager::notifyShortcutChanged(KeyBoundAction* action)
 {
     action->updateActionsShortcut();
     for (AppShortcuts::iterator it = _imp->_actionShortcuts.begin(); it != _imp->_actionShortcuts.end(); ++it) {
-        if ( it->first.startsWith(kShortcutGroupNodes) ) {
+        if ( it->first.startsWith(QString::fromUtf8(kShortcutGroupNodes)) ) {
             for (GroupShortcuts::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
                 if (it2->second == action) {
                     const PluginsMap & allPlugins = getPluginsList();
@@ -1178,7 +1184,7 @@ void
 GuiApplicationManager::addCommand(const QString& grouping,const std::string& pythonFunction, Qt::Key key,const Qt::KeyboardModifiers& modifiers)
 {
     
-    QStringList split = grouping.split('/');
+    QStringList split = grouping.split(QLatin1Char('/'));
     if (grouping.isEmpty() || split.isEmpty()) {
         return;
     }
@@ -1190,7 +1196,7 @@ GuiApplicationManager::addCommand(const QString& grouping,const std::string& pyt
     _imp->pythonCommands.push_back(c);
     
     
-    registerKeybind(kShortcutGroupGlobal, split[split.size() -1], split[split.size() - 1], modifiers, key);
+    registerKeybind(kShortcutGroupGlobal, split[split.size() -1].toStdString(), split[split.size() - 1].toStdString(), modifiers, key);
 }
 
 

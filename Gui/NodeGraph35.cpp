@@ -519,7 +519,7 @@ NodeGraph::dropEvent(QDropEvent* e)
     std::map<std::string,std::string> readersForFormat;
     appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
     for (std::map<std::string,std::string>::const_iterator it = readersForFormat.begin(); it != readersForFormat.end(); ++it) {
-        supportedExtensions.push_back( it->first.c_str() );
+        supportedExtensions.push_back( QString::fromUtf8(it->first.c_str()) );
     }
     QPointF scenePos = mapToScene(e->pos());
     std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > files = SequenceFileDialog::fileSequencesFromFilesList(filesList,supportedExtensions);
@@ -542,7 +542,7 @@ NodeGraph::dropEvent(QDropEvent* e)
             
             std::string pattern = sequence->generateValidSequencePattern();
             
-            CreateNodeArgs args(found->second.c_str(), eCreateNodeReasonUserCreate, getGroup());
+            CreateNodeArgs args(QString::fromUtf8(found->second.c_str()), eCreateNodeReasonUserCreate, getGroup());
             args.xPosHint = scenePos.x();
             args.yPosHint = scenePos.y();
             args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern));

@@ -129,7 +129,7 @@ NodeGraph::copySelectedNodes()
     }
     QMimeData* mimedata = new QMimeData;
     QByteArray data(ss.str().c_str());
-    mimedata->setData("text/plain", data);
+    mimedata->setData(QLatin1String("text/plain"), data);
     QClipboard* clipboard = QApplication::clipboard();
     
     //ownership is transferred to the clipboard
@@ -162,10 +162,10 @@ NodeGraph::pasteNodeClipBoards(const QPointF& pos)
 {
     QClipboard* clipboard = QApplication::clipboard();
     const QMimeData* mimedata = clipboard->mimeData();
-    if (!mimedata->hasFormat("text/plain")) {
+    if (!mimedata->hasFormat(QLatin1String("text/plain"))) {
         return;
     }
-    QByteArray data = mimedata->data("text/plain");
+    QByteArray data = mimedata->data(QLatin1String("text/plain"));
     
     std::list<std::pair<std::string,NodeGuiPtr > > newNodes;
     
@@ -173,7 +173,7 @@ NodeGraph::pasteNodeClipBoards(const QPointF& pos)
     
     NodeClipBoard& cb = appPTR->getNodeClipBoard();
     
-    std::string s = QString(data).toStdString();
+    std::string s = QString::fromUtf8(data).toStdString();
     try {
         std::stringstream ss(s);
         boost::archive::xml_iarchive iArchive(ss);
@@ -277,7 +277,7 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
             return;
         }
         if ( (*it)->getNode()->isMultiInstance() ) {
-            QString err = QString("%1 cannot be cloned.").arg( (*it)->getNode()->getLabel().c_str() );
+            QString err = QString::fromUtf8("%1 cannot be cloned.").arg( QString::fromUtf8((*it)->getNode()->getLabel().c_str()) );
             Dialogs::errorDialog( tr("Clone").toStdString(),
                                 tr( err.toStdString().c_str() ).toStdString() );
             

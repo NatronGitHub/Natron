@@ -2281,8 +2281,8 @@ KnobHelper::replaceNodeNameInExpression(int dimension,
     bool hasRetVar = isExpressionUsingRetVariable(dimension);
     try {
         //Change in expressions the script-name
-        QString estr(hasExpr.c_str());
-        estr.replace(oldName.c_str(), newName.c_str());
+        QString estr = QString::fromUtf8(hasExpr.c_str());
+        estr.replace(QString::fromUtf8(oldName.c_str()), QString::fromUtf8(newName.c_str()));
         hasExpr = estr.toStdString();
         setExpression(dimension, hasExpr, hasRetVar);
     } catch (...) {
@@ -2546,7 +2546,7 @@ KnobHelper::setName(const std::string & name,bool throwExceptions)
                     throw std::runtime_error(ss.str());
                 } else {
                     std::string err = ss.str();
-                    appPTR->writeToErrorLog_mt_safe(err.c_str());
+                    appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(err.c_str()));
                     std::cerr << err << std::endl;
                     return;
                 }

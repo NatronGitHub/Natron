@@ -723,15 +723,16 @@ protected:
     
 public:
     
-    ActionWithShortcut(const QString & group,
-                       const QString & actionID,
-                       const QString & actionDescription,
+    ActionWithShortcut(const std::string & group,
+                       const std::string & actionID,
+                       const std::string & actionDescription,
                        QObject* parent,
                        bool setShortcutOnAction = true);
+
     
-    ActionWithShortcut(const QString & group,
-                       const QStringList & actionIDs,
-                       const QString & actionDescription,
+    ActionWithShortcut(const std::string & group,
+                       const std::list<std::string> & actionIDs,
+                       const std::string & actionDescription,
                        QObject* parent,
                        bool setShortcutOnAction = true);
 
@@ -766,9 +767,9 @@ public:
     /**
      * @brief Set a dynamic shortcut in the tooltip. Reference it with %1 where you want to place the shortcut.
      **/
-    TooltipActionShortcut(const QString & group,
-                          const QString & actionID,
-                          const QString & toolip,
+    TooltipActionShortcut(const std::string & group,
+                          const std::string & actionID,
+                          const std::string & toolip,
                           QWidget* parent);
     
     /**
@@ -776,9 +777,9 @@ public:
      * In that case the tooltip should reference shortcuts by doing so %1, %2 etc... where
      * %1 references the first actionID, %2 the second ,etc...
      **/
-    TooltipActionShortcut(const QString & group,
-                          const QStringList & actionIDs,
-                          const QString & toolip,
+    TooltipActionShortcut(const std::string & group,
+                          const std::list<std::string> & actionIDs,
+                          const std::string & toolip,
                           QWidget* parent);
     
     virtual ~TooltipActionShortcut() {

@@ -199,7 +199,7 @@ Gui::progressStart(const NodePtr& node,
                    const std::string &/*messageid*/,
                    bool canCancel)
 {
-    _imp->_progressPanel->startTask(node, INT_MIN, INT_MAX, 1, false, canCancel, message.c_str());
+    _imp->_progressPanel->startTask(node, INT_MIN, INT_MAX, 1, false, canCancel, QString::fromUtf8(message.c_str()));
 
 }
 
@@ -786,13 +786,13 @@ Gui::onCloseTabTriggered()
 void
 Gui::appendToScriptEditor(const std::string & str)
 {
-    _imp->_scriptEditor->appendToScriptEditor( str.c_str() );
+    _imp->_scriptEditor->appendToScriptEditor( QString::fromUtf8(str.c_str()) );
 }
 
 void
 Gui::printAutoDeclaredVariable(const std::string & str)
 {
-    _imp->_scriptEditor->printAutoDeclaredVariable( str.c_str() );
+    _imp->_scriptEditor->printAutoDeclaredVariable( QString::fromUtf8(str.c_str()) );
 }
 
 void
@@ -854,7 +854,7 @@ Gui::addMenuEntry(const QString & menuGrouping,
                   Qt::Key key,
                   const Qt::KeyboardModifiers & modifiers)
 {
-    QStringList grouping = menuGrouping.split('/');
+    QStringList grouping = menuGrouping.split(QLatin1Char('/'));
 
     if ( grouping.isEmpty() ) {
         getApp()->appendToScriptEditor( tr("Failed to add menu entry for ").toStdString() +

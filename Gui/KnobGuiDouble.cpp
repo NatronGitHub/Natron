@@ -213,7 +213,7 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
             /*if (!dimLabel.empty()) {
                 dimLabel.append(":");
             }*/
-            subDesc = new Label(QString(dimLabel.c_str()), boxContainer);
+            subDesc = new Label(QString::fromUtf8(dimLabel.c_str()), boxContainer);
             //subDesc->setFont( QFont(appFont,appFontSize) );
             boxContainerLayout->addWidget(subDesc);
         }

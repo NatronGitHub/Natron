@@ -431,7 +431,7 @@ public:
             }
         }
         
-        QString hashKeyStr(filename.c_str());
+        QString hashKeyStr = QString::fromUtf8(filename.c_str());
         
         //prepend the 2 digits of the containing directory
         {
@@ -446,7 +446,7 @@ public:
                 }
                 assert(foundSep != std::string::npos);
                 std::string enclosingDirName = path.substr(foundSep + 1, std::string::npos);
-                hashKeyStr.prepend(enclosingDirName.c_str());
+                hashKeyStr.prepend(QString::fromUtf8(enclosingDirName.c_str()));
             }
         }
         
@@ -656,7 +656,7 @@ public:
         std::string name(path);
 
         if ( path.empty() ) {
-            QDir subfolder( path.c_str() );
+            QDir subfolder(QString::fromUtf8(path.c_str()));
             if ( !subfolder.exists() ) {
                 std::cout << "(" << std::hex <<
                     this << ") " <<   "Something is wrong in cache... couldn't find : " << path << std::endl;

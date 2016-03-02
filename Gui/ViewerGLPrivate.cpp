@@ -492,7 +492,7 @@ getOpenGLVersionString()
     const char* str = (const char*)glGetString(GL_VERSION);
     QString ret;
     if (str) {
-        ret.append(str);
+        ret.append(QString::fromUtf8(str));
     }
 
     return ret;
@@ -505,7 +505,7 @@ getGlewVersionString()
     const char* str = reinterpret_cast<const char *>( glewGetString(GLEW_VERSION) );
     QString ret;
     if (str) {
-        ret.append(str);
+        ret.append(QString::fromUtf8(str));
     }
 
     return ret;

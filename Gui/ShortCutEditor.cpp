@@ -401,11 +401,11 @@ ShortCutEditorPrivate::buildGroupHierarchy(QString grouping)
 {
     ///Do not allow empty grouping, make them under the Global shortcut
     if ( grouping.isEmpty() ) {
-        grouping = kShortcutGroupGlobal;
+        grouping = QString::fromUtf8(kShortcutGroupGlobal);
     }
     
     ///Groups are separated by a '/'
-    QStringList groupingSplit = grouping.split( QChar('/') );
+    QStringList groupingSplit = grouping.split( QLatin1Char('/') );
     assert(groupingSplit.size() > 0);
     const QString & lastGroupName = groupingSplit.back();
     
@@ -535,7 +535,7 @@ ShortCutEditor::onSelectionChanged()
     }
 
     if ( items.empty() ) {
-        _imp->shortcutEditor->setText("");
+        _imp->shortcutEditor->setText(QString());
         _imp->shortcutEditor->setPlaceholderText( tr("Type to set shortcut") );
         _imp->shortcutEditor->setReadOnly(true);
 
@@ -607,7 +607,7 @@ ShortCutEditor::onValidateButtonClicked()
                     std::list<Qt::KeyboardModifiers>::const_iterator mit = keyAction->modifiers.begin();
                     for (std::list<Qt::Key>::const_iterator it3 = keyAction->currentShortcut.begin(); it3 != keyAction->currentShortcut.end(); ++it3,++mit) {
                         if (*mit == modifiers && *it3 == symbol) {
-                            QString err = QString("Cannot bind this shortcut because the following action is already using it: %1")
+                            QString err = QString::fromUtf8("Cannot bind this shortcut because the following action is already using it: %1")
                             .arg( it2->item->text(0) );
                             _imp->shortcutEditor->clear();
                             Dialogs::errorDialog( tr("Shortcuts Editor").toStdString(), tr( err.toStdString().c_str() ).toStdString() );
@@ -644,9 +644,9 @@ ShortCutEditor::onClearButtonClicked()
     }
 
     if ( items.empty() ) {
-        _imp->shortcutEditor->setText("");
+        _imp->shortcutEditor->setText(QString());
         _imp->shortcutEditor->setPlaceholderText( tr("Type to set shortcut") );
-        _imp->altShortcutEditor->setText("");
+        _imp->altShortcutEditor->setText(QString());
         _imp->altShortcutEditor->setPlaceholderText( tr("Type to set an alternative shortcut") );
         return;
     }
@@ -663,8 +663,8 @@ ShortCutEditor::onClearButtonClicked()
         ka->currentShortcut.clear();
     }
 
-    selection->setText(1, "");
-    _imp->shortcutEditor->setText("");
+    selection->setText(1, QString());
+    _imp->shortcutEditor->setText(QString());
     _imp->shortcutEditor->setFocus();
 }
 
@@ -678,7 +678,7 @@ ShortCutEditor::onResetButtonClicked()
     }
 
     if ( items.empty() ) {
-        _imp->shortcutEditor->setText("");
+        _imp->shortcutEditor->setText(QString());
         _imp->shortcutEditor->setPlaceholderText( tr("Type to set shortcut") );
 
         return;

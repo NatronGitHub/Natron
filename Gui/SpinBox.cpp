@@ -190,10 +190,10 @@ SpinBox::setValue_internal(double d,
     assert( !str.isEmpty() );
     
     ///Remove trailing 0s by hand...
-    int decimalPtPos = str.indexOf('.');
+    int decimalPtPos = str.indexOf(QLatin1Char('.'));
     if (decimalPtPos != -1) {
         int i = str.size() - 1;
-        while (i > decimalPtPos && str.at(i) == '0') {
+        while (i > decimalPtPos && str.at(i) == QLatin1Char('0')) {
             --i;
         }
         ///let 1 trailing 0
@@ -332,7 +332,7 @@ SpinBox::increment(int delta,
     
     // From here on, we treat the positin-based increment.
     
-    if ( (str.indexOf('e') != -1) || (str.indexOf('E') != -1) ) {
+    if ( (str.indexOf(QLatin1Char('e')) != -1) || (str.indexOf(QLatin1Char('E')) != -1) ) {
         // Sorry, we don't handle numbers with an exponent, although these are valid doubles
         return;
     }
@@ -360,7 +360,7 @@ SpinBox::increment(int delta,
     //    pos = len - 1;
     //}
     // The position of the decimal dot
-    int dot = str.indexOf('.');
+    int dot = str.indexOf(QLatin1Char('.'));
     if (dot == -1) {
         dot = str.size();
     }
@@ -402,7 +402,7 @@ SpinBox::increment(int delta,
     // Adjust pos so that it doesn't point to a dot or a sign
     assert( 0 <= pos && pos <= str.size() );
     while ( pos < str.size() &&
-           (pos == dot || str[pos] == '+' || str[pos] == '-') ) {
+           (pos == dot || str[pos] == QLatin1Char('+') || str[pos] == QLatin1Char('-')) ) {
         ++pos;
     }
     assert(len >= pos);
@@ -430,21 +430,21 @@ SpinBox::increment(int delta,
         assert(_imp->type == eSpinBoxTypeDouble);
         // Add trailing zero, maybe preceded by a dot
         if (pos == dot) {
-            str.append('.');
+            str.append(QLatin1Char('.'));
             ++pos; // increment pos, because we just added a '.', and next iteration will add a '0'
             ++len;
         } else {
             assert(pos > dot);
-            str.append('0');
+            str.append(QLatin1Char('0'));
             ++len;
         }
         assert( pos >= (str.size() - 1) );
     }
     // Leading zeroes:
-    bool hasSign = (str[0] == '-' || str[0] == '+');
-    while ( pos < 0 || ( pos == 0 && (str[0] == '-' || str[0] == '+') ) ) {
+    bool hasSign = (str[0] == QLatin1Char('-') || str[0] == QLatin1Char('+'));
+    while ( pos < 0 || ( pos == 0 && (str[0] == QLatin1Char('-') || str[0] == QLatin1Char('+')) ) ) {
         // Add leading zero
-        str.insert(hasSign ? 1 : 0, '0');
+        str.insert(hasSign ? 1 : 0, QLatin1Char('0'));
         ++pos;
         ++dot;
         ++len;
@@ -483,11 +483,11 @@ SpinBox::increment(int delta,
         switch (_imp->type) {
             case eSpinBoxTypeDouble:
                 if ( dot == str.size() ) {
-                    str += ".0";
+                    str += QString::fromUtf8(".0");
                     len += 2;
                     ++pos;
                 } else {
-                    str += "0";
+                    str += QLatin1Char('0');
                     ++len;
                 }
                 break;
@@ -546,19 +546,19 @@ SpinBox::increment(int delta,
 
     QString newStr;
     newStr.setNum(llval);
-    bool newStrHasSign = newStr[0] == '+' || newStr[0] == '-';
+    bool newStrHasSign = newStr[0] == QLatin1Char('+') || newStr[0] == QLatin1Char('-');
     // the position of the decimal dot
     int newDot = newStr.size() + llpowerOfTen;
     // add leading zeroes if newDot is not a valid position (beware of sign!)
     while ( newDot <= int(newStrHasSign) ) {
-        newStr.insert(int(newStrHasSign), '0');
+        newStr.insert(int(newStrHasSign), QLatin1Char('0'));
         ++newDot;
     }
     assert( 0 <= newDot && newDot <= newStr.size() );
     assert( newDot == newStr.size() || newStr[newDot].isDigit() );
     if ( newDot != newStr.size() ) {
         assert(_imp->type == eSpinBoxTypeDouble);
-        newStr.insert(newDot, '.');
+        newStr.insert(newDot, QLatin1Char('.'));
     }
     // Check that the backed string is close to the wanted value (relative error should be less than 1e-8)
     assert( (newStr.toDouble() - val) / std::max(1e-8,std::abs(val)) < 1e-8 );
@@ -580,18 +580,18 @@ SpinBox::increment(int delta,
         assert(_imp->type == eSpinBoxTypeDouble);
         // Add trailing zero, maybe preceded by a dot
         if (newPos == newDot) {
-            newStr.append('.');
+            newStr.append(QLatin1Char('.'));
         } else {
             assert(newPos > newDot);
-            newStr.append('0');
+            newStr.append(QLatin1Char('0'));
         }
         assert( newPos >= (newStr.size() - 1) );
     }
     // Leading zeroes:
-    bool newHasSign = (newStr[0] == '-' || newStr[0] == '+');
-    while ( newPos < 0 || ( newPos == 0 && (newStr[0] == '-' || newStr[0] == '+') ) ) {
+    bool newHasSign = (newStr[0] == QLatin1Char('-') || newStr[0] == QLatin1Char('+'));
+    while ( newPos < 0 || ( newPos == 0 && (newStr[0] == QLatin1Char('-') || newStr[0] == QLatin1Char('+')) ) ) {
         // add leading zero
-        newStr.insert(newHasSign ? 1 : 0, '0');
+        newStr.insert(newHasSign ? 1 : 0, QLatin1Char('0'));
         ++newPos;
         ++newDot;
     }
@@ -700,7 +700,7 @@ SpinBox::keyPressEvent(QKeyEvent* e)
             }
             increment(delta, shift);
         } else {
-            _imp->valueWhenEnteringFocus = value();
+            _imp->valueWhenEnteringFocus = text();
             _imp->hasChangedSinceLastValidation = true;
             QLineEdit::keyPressEvent(e);
             if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) {
@@ -1007,7 +1007,7 @@ KnobSpinBox::focusInEvent(QFocusEvent* e)
     if (expr.empty()) {
         return;
     } else {
-        QLineEdit::setText(expr.c_str());
+        QLineEdit::setText(QString::fromUtf8(expr.c_str()));
         setCursorPosition(expr.size() - 1);
     }
 }

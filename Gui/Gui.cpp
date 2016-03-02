@@ -62,9 +62,10 @@ NATRON_NAMESPACE_ENTER;
 // If unavailable, fall back to the built-in icon. Icon names conform to this specification:
 // http://standards.freedesktop.org/icon-naming-spec/icon-naming-spec-latest.html
 static QIcon
-get_icon(const QString &name)
+get_icon(const std::string &name)
 {
-    return QIcon::fromTheme( name, QIcon(QString(":icons/") + name) );
+    QString str = QString::fromUtf8(name.c_str());
+    return QIcon::fromTheme( str, QIcon(QString::fromUtf8(":icons/") + str) );
 }
 
 Gui::Gui(GuiAppInstance* app,
@@ -175,9 +176,8 @@ Gui::reloadProject()
     }
     QString filename = proj->getProjectFilename();
     QString projectPath = proj->getProjectPath();
-    if (!projectPath.endsWith("/")) {
-        projectPath.append('/');
-    }
+    Global::ensureLastPathSeparator(projectPath);
+    
     projectPath.append(filename);
     
     if (!abortProject(false, true)) {
@@ -675,31 +675,31 @@ Gui::createMenuActions()
 void
 Gui::openHelpWebsite()
 {
-    QDesktopServices::openUrl(QUrl(NATRON_WEBSITE_URL));
+    QDesktopServices::openUrl(QUrl(QString::fromUtf8(NATRON_WEBSITE_URL)));
 }
 
 void
 Gui::openHelpForum()
 {
-    QDesktopServices::openUrl(QUrl(NATRON_FORUM_URL));
+    QDesktopServices::openUrl(QUrl(QString::fromUtf8(NATRON_FORUM_URL)));
 }
 
 void
 Gui::openHelpIssues()
 {
-    QDesktopServices::openUrl(QUrl(NATRON_ISSUE_TRACKER_URL));
+    QDesktopServices::openUrl(QUrl(QString::fromUtf8(NATRON_ISSUE_TRACKER_URL)));
 }
 
 void
 Gui::openHelpWiki()
 {
-    QDesktopServices::openUrl(QUrl(NATRON_WIKI_URL));
+    QDesktopServices::openUrl(QUrl(QString::fromUtf8(NATRON_WIKI_URL)));
 }
 
 void
 Gui::openHelpPython()
 {
-    QDesktopServices::openUrl(QUrl(NATRON_PYTHON_URL));
+    QDesktopServices::openUrl(QUrl(QString::fromUtf8(NATRON_PYTHON_URL)));
 }
 
 NATRON_NAMESPACE_EXIT;

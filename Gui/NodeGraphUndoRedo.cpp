@@ -446,10 +446,10 @@ ConnectCommand::undo()
     
     if (newSrc) {
         setText( QObject::tr("Connect %1 to %2")
-                .arg(dst->getNode()->getLabel().c_str() ).arg( newSrc->getNode()->getLabel().c_str() ) );
+                .arg(QString::fromUtf8(dst->getNode()->getLabel().c_str() )).arg(QString::fromUtf8( newSrc->getNode()->getLabel().c_str() ) ));
     } else {
         setText( QObject::tr("Disconnect %1")
-                .arg(dst->getNode()->getLabel().c_str() ) );
+                .arg(QString::fromUtf8(dst->getNode()->getLabel().c_str() ) ));
     }
     
     
@@ -475,10 +475,10 @@ ConnectCommand::redo()
     
     if (newSrc) {
         setText( QObject::tr("Connect %1 to %2")
-                .arg(dst->getNode()->getLabel().c_str() ).arg( newSrc->getNode()->getLabel().c_str() ) );
+                .arg(QString::fromUtf8(dst->getNode()->getLabel().c_str() )).arg(QString::fromUtf8( newSrc->getNode()->getLabel().c_str() ) ));
     } else {
         setText( QObject::tr("Disconnect %1")
-                .arg(dst->getNode()->getLabel().c_str() ) );
+                .arg(QString::fromUtf8(dst->getNode()->getLabel().c_str() ) ));
     }
     
     
@@ -681,14 +681,14 @@ void
 ResizeBackdropCommand::undo()
 {
     _bd->resize(_oldW, _oldH);
-    setText( QObject::tr("Resize %1").arg( _bd->getNode()->getLabel().c_str() ) );
+    setText( QObject::tr("Resize %1").arg( QString::fromUtf8(_bd->getNode()->getLabel().c_str() )) );
 }
 
 void
 ResizeBackdropCommand::redo()
 {
     _bd->resize(_w, _h);
-    setText( QObject::tr("Resize %1").arg( _bd->getNode()->getLabel().c_str() ) );
+    setText( QObject::tr("Resize %1").arg( QString::fromUtf8(_bd->getNode()->getLabel().c_str() ) ));
 }
 
 bool
@@ -1563,7 +1563,7 @@ GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,const Node
         groupPosition.ry() /= sz;
     }
     
-    CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP, eCreateNodeReasonInternal, _graph->getGroup());
+    CreateNodeArgs groupArgs(QString::fromUtf8(PLUGINID_NATRON_GROUP), eCreateNodeReasonInternal, _graph->getGroup());
 
     NodePtr containerNode = _graph->getGui()->getApp()->createNode(groupArgs);
     boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(containerNode->getEffectInstance()->shared_from_this());
@@ -1615,7 +1615,7 @@ GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,const Node
                 if (originalInput) {
                     
                     //Create an input node corresponding to this input
-                    CreateNodeArgs args(PLUGINID_NATRON_INPUT, eCreateNodeReasonInternal, isGrp);
+                    CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_INPUT), eCreateNodeReasonInternal, isGrp);
         
                     NodePtr input = _graph->getGui()->getApp()->createNode(args);
                     assert(input);
@@ -1661,7 +1661,7 @@ GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,const Node
             }
             assert(foundOriginalNode);
             
-            CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, eCreateNodeReasonInternal, isGrp);
+            CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_OUTPUT), eCreateNodeReasonInternal, isGrp);
 
             NodePtr output = graph->getGui()->getApp()->createNode(args);
             try {

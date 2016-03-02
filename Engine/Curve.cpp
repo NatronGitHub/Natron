@@ -1136,7 +1136,7 @@ Curve::setKeyFrameValueAndTime(double time,
         QMutexLocker l(&_imp->_lock);
         KeyFrameSet::iterator it = atIndex(index);
         if ( it == _imp->keyFrames.end() ) {
-            QString err = QString("No such keyframe at index %1").arg(index);
+            QString err = QString(QString::fromUtf8("No such keyframe at index %1")).arg(index);
             throw std::invalid_argument( err.toStdString() );
         }
 

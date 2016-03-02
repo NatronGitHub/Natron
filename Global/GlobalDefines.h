@@ -55,6 +55,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include <boost/cstdint.hpp>
 #endif
 #include <QtCore/QForeachContainer>
+#include <QtCore/QString>
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMetaType>
 CLANG_DIAG_ON(deprecated)
@@ -196,11 +197,13 @@ utf8_to_utf16(const std::string & s)
     }
     return dest;
 #endif
+
     
 } // utf8_to_utf16
 
 #ifdef __NATRON_WIN32__
 
+    
 
 //Returns the last Win32 error, in string format. Returns an empty string if there is no error.
 inline 
@@ -224,6 +227,16 @@ std::string GetLastErrorAsString()
 } // GetLastErrorAsString
 
 #endif // __NATRON_WIN32__
+
+inline void
+ensureLastPathSeparator(QString& path)
+{
+    static const QChar separator(QLatin1Char('/'));
+    if (!path.endsWith(separator)) {
+        path += separator;
+    }
+}
+    
 
 
 } // namespace Global

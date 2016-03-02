@@ -130,7 +130,7 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
     }
     treeColumnLayout->addWidget(_tree);
 
-    _resetButton = new Button("Reset",treeColumn);
+    _resetButton = new Button(QString::fromUtf8("Reset"),treeColumn);
     _resetButton->setToolTip( GuiUtils::convertFromPlainText(tr("Reset the selected curves in the tree to their default shape."), Qt::WhiteSpaceNormal) );
     QObject::connect( _resetButton, SIGNAL(clicked()), this, SLOT(resetSelectedCurves()) );
     treeColumnLayout->addWidget(_resetButton);
@@ -148,7 +148,7 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
 
     std::vector<boost::shared_ptr<CurveGui> > visibleCurves;
     for (int i = 0; i < knob->getDimension(); ++i) {
-        QString curveName = knob->getDimensionName(i).c_str();
+        QString curveName = QString::fromUtf8(knob->getDimensionName(i).c_str());
         boost::shared_ptr<KnobCurveGui> curve(new KnobCurveGui(_curveWidget,knob->getParametricCurve(i),thisShared,i,curveName,QColor(255,255,255),1.));
         _curveWidget->addCurveAndSetColor(curve);
         QColor color;

@@ -185,7 +185,7 @@ KnobGuiFile::open_file()
     if ( path.empty() ) {
         pathWhereToOpen = _lastOpened;
     } else {
-        pathWhereToOpen = path.c_str();
+        pathWhereToOpen = QString::fromUtf8( path.c_str());
     }
 
     SequenceFileDialog dialog( _lineEdit->parentWidget(), filters, knob->isInputImageFile(),
@@ -196,7 +196,7 @@ KnobGuiFile::open_file()
         
         std::string originalSelectedFile = selectedFile;
         path = SequenceParsing::removePath(selectedFile);
-        updateLastOpened( path.c_str() );
+        updateLastOpened( QString::fromUtf8(path.c_str()) );
         
         pushUndoCommand( new KnobUndoCommand<std::string>(shared_from_this(),oldPattern,originalSelectedFile) );
     }
@@ -207,7 +207,7 @@ KnobGuiFile::updateLastOpened(const QString &str)
 {
     std::string unpathed = str.toStdString();
 
-    _lastOpened = SequenceParsing::removePath(unpathed).c_str();
+    _lastOpened = QString::fromUtf8(SequenceParsing::removePath(unpathed).c_str());
     getGui()->updateLastSequenceOpenedPath(_lastOpened);
 }
 
@@ -215,7 +215,7 @@ void
 KnobGuiFile::updateGUI(int /*dimension*/)
 {
     boost::shared_ptr<KnobFile> knob = _knob.lock();
-    _lineEdit->setText(knob->getValue().c_str());
+    _lineEdit->setText(QString::fromUtf8(knob->getValue().c_str()));
     
     bool useNotifications = appPTR->getCurrentSettings()->notifyOnFileChange();
     if (useNotifications && knob->getHolder() && knob->getEvaluateOnChange() ) {
@@ -225,7 +225,7 @@ KnobGuiFile::updateGUI(int /*dimension*/)
         if (knob->getHolder()->getApp()) {
             knob->getHolder()->getApp()->getProject()->canonicalizePath(newValue);
         }
-        QString file(newValue.c_str());
+        QString file(QString::fromUtf8(newValue.c_str()));
         
         //The sequence probably changed, clear modification dates
         _lastModificationDates.clear();
@@ -238,7 +238,7 @@ KnobGuiFile::updateGUI(int /*dimension*/)
             _lastModificationDates[newValue] = dateTime;
             
             QString tt = toolTip();
-            tt.append("\n\nLast modified: ");
+            tt.append(QString::fromUtf8("\n\nLast modified: "));
             tt.append(dateTime.toString(Qt::SystemLocaleShortDate));
             _lineEdit->setToolTip(tt);
 
@@ -273,7 +273,7 @@ KnobGuiFile::checkFileModificationAndWarnInternal(bool doCheck, SequenceTime tim
         knob->getHolder()->getApp()->getProject()->canonicalizePath(filepath);
     }
     
-    QString qfilePath(filepath.c_str());
+    QString qfilePath = QString::fromUtf8(filepath.c_str());
     if (!QFile::exists(qfilePath)) {
         return false;
     }
@@ -551,7 +551,7 @@ KnobGuiOutputFile::open_file(bool openSequence)
         std::string oldPattern = _lineEdit->text().toStdString();
         
         std::string newPattern = dialog.filesToSave();
-        updateLastOpened( SequenceParsing::removePath(oldPattern).c_str() );
+        updateLastOpened( QString::fromUtf8(SequenceParsing::removePath(oldPattern).c_str()));
 
         pushUndoCommand( new KnobUndoCommand<std::string>(shared_from_this(),oldPattern,newPattern) );
     }
@@ -562,14 +562,14 @@ KnobGuiOutputFile::updateLastOpened(const QString &str)
 {
     std::string withoutPath = str.toStdString();
 
-    _lastOpened = SequenceParsing::removePath(withoutPath).c_str();
+    _lastOpened = QString::fromUtf8(SequenceParsing::removePath(withoutPath).c_str());
     getGui()->updateLastSequenceSavedPath(_lastOpened);
 }
 
 void
 KnobGuiOutputFile::updateGUI(int /*dimension*/)
 {
-    _lineEdit->setText( _knob.lock()->getValue().c_str() );
+    _lineEdit->setText( QString::fromUtf8(_knob.lock()->getValue().c_str()) );
 }
 
 void
@@ -811,8 +811,8 @@ PathKnobTableItemDelegate::paint(QPainter * painter,
     QString str = item->data(Qt::DisplayRole).toString();
     if (!_isStringList && index.column() == 0) {
         ///Env vars are used between brackets
-        str.prepend('[');
-        str.append(']');
+        str.prepend(QLatin1Char('['));
+        str.append(QLatin1Char(']'));
     }
     painter->drawText(geom,Qt::TextSingleLine,str,&r);
 }
@@ -932,10 +932,10 @@ KnobGuiPath::onAddButtonClicked()
             existingEntries.push_back(it->second.varName->text());
         }
         
-        QString newItemName = "Placeholder";
+        QString newItemName = QString::fromUtf8("Placeholder");
         int i = 1;
         while (existingEntries.contains(newItemName)) {
-            newItemName = "Placeholder" + QString::number(i);
+            newItemName = QString::fromUtf8("Placeholder") + QString::number(i);
             ++i;
         }
         
@@ -953,16 +953,16 @@ KnobGuiPath::onAddButtonClicked()
             if (!dirPath.empty() && dirPath[dirPath.size() - 1] == '/') {
                 dirPath.erase(dirPath.size() - 1, 1);
             }
-            updateLastOpened(dirPath.c_str());
+            updateLastOpened(QString::fromUtf8(dirPath.c_str()));
             
             
             std::string oldValue = knob->getValue();
             
             int rowCount = (int)_items.size();
             
-            QString varName = QString(tr("Path") + "%1").arg(rowCount);
+            QString varName = QString(tr("Path") + QString::fromUtf8("%1")).arg(rowCount);
 
-            createItem(rowCount, dirPath.c_str(), varName);
+            createItem(rowCount, QString::fromUtf8(dirPath.c_str()), varName);
 
             std::string newPath = rebuildPath();
             
@@ -992,9 +992,9 @@ KnobGuiPath::onEditButtonClicked()
             if (!dirPath.empty() && dirPath[dirPath.size() - 1] == '/') {
                 dirPath.erase(dirPath.size() - 1, 1);
             }
-            updateLastOpened(dirPath.c_str());
+            updateLastOpened(QString::fromUtf8(dirPath.c_str()));
             
-            found->second.value->setText(dirPath.c_str());
+            found->second.value->setText(QString::fromUtf8(dirPath.c_str()));
             std::string newPath = rebuildPath();
 
             pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),oldValue,newPath ) );
@@ -1013,7 +1013,7 @@ KnobGuiPath::onOpenFileButtonClicked()
     
     if ( dialog.exec() ) {
         std::string dirPath = dialog.selectedDirectory();
-        updateLastOpened(dirPath.c_str());
+        updateLastOpened(QString::fromUtf8(dirPath.c_str()));
         
         std::string oldValue = _knob.lock()->getValue();
         
@@ -1068,7 +1068,7 @@ KnobGuiPath::onTextEdited()
     if (!dirPath.empty() && dirPath[dirPath.size() - 1] == '/') {
         dirPath.erase(dirPath.size() - 1, 1);
     }
-    updateLastOpened(dirPath.c_str());
+    updateLastOpened(QString::fromUtf8(dirPath.c_str()));
     
     
     
@@ -1090,7 +1090,7 @@ KnobGuiPath::updateLastOpened(const QString &str)
 {
     std::string withoutPath = str.toStdString();
 
-    _lastOpened = SequenceParsing::removePath(withoutPath).c_str();
+    _lastOpened = QString::fromUtf8(SequenceParsing::removePath(withoutPath).c_str());
 }
 
 void
@@ -1110,10 +1110,10 @@ KnobGuiPath::updateGUI(int /*dimension*/)
         int i = 0;
 
         for (std::vector<std::pair<std::string,std::string> >::const_iterator it = variables.begin(); it != variables.end(); ++it, ++i) {
-            createItem(i, it->second.c_str(), it->first.c_str());
+            createItem(i, QString::fromUtf8(it->second.c_str()), QString::fromUtf8(it->first.c_str()));
         }
     } else {
-        _lineEdit->setText(value.c_str());
+        _lineEdit->setText(QString::fromUtf8(value.c_str()));
     }
 }
 
@@ -1127,7 +1127,7 @@ KnobGuiPath::createItem(int row,const QString& value,const QString& varName)
     boost::shared_ptr<KnobPath> knob = _knob.lock();
     
     ///Project env var is disabled and uneditable and set automatically by the project
-    if (varName != NATRON_PROJECT_ENV_VAR_NAME && varName != NATRON_OCIO_ENV_VAR_NAME) {
+    if (varName != QString::fromUtf8(NATRON_PROJECT_ENV_VAR_NAME) && varName != QString::fromUtf8(NATRON_OCIO_ENV_VAR_NAME)) {
         flags = Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable;
         if (knob->getIsStringList()) {
             flags |= Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled | Qt::ItemIsUserCheckable;

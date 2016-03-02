@@ -68,10 +68,10 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
                     DockablePanel::eHeaderModeFullyFeatured,
                     false,
                     NodeUi->getUndoStack(),
-                    NodeUi->getNode()->getLabel().c_str(),
-                    NodeUi->getNode()->getPluginDescription().c_str(),
+                    QString::fromUtf8(NodeUi->getNode()->getLabel().c_str()),
+                    QString::fromUtf8(NodeUi->getNode()->getPluginDescription().c_str()),
                     false,
-                    "Settings",
+                    QString::fromUtf8("Settings"),
                     parent)
       , _nodeGUI(NodeUi)
       , _selected(false)
@@ -90,7 +90,7 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
 
     QPixmap pixSettings;
     appPTR->getIcon(NATRON_PIXMAP_SETTINGS, TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), &pixSettings);
-    _settingsButton = new Button( QIcon(pixSettings),"",getHeaderWidget() );
+    _settingsButton = new Button( QIcon(pixSettings),QString(),getHeaderWidget() );
     _settingsButton->setFixedSize(mediumBSize);
     _settingsButton->setIconSize(mediumIconSize);
     _settingsButton->setToolTip(GuiUtils::convertFromPlainText(tr("Settings and presets."), Qt::WhiteSpaceNormal));
@@ -225,9 +225,9 @@ NodeSettingsPanel::onImportPresetsActionTriggered()
     }
     NodeGuiPtr node = getNode();
     if (nodeSerialization.front()->getPluginID() != node->getNode()->getPluginID()) {
-        QString err = QString(tr("You cannot load ") + filename.c_str()  + tr(" which are presets for the plug-in ") +
-                              nodeSerialization.front()->getPluginID().c_str() + tr(" on the plug-in ") +
-                              node->getNode()->getPluginID().c_str());
+        QString err = QString(tr("You cannot load ") + QString::fromUtf8(filename.c_str())  + tr(" which are presets for the plug-in ") +
+                              QString::fromUtf8(nodeSerialization.front()->getPluginID().c_str()) + tr(" on the plug-in ") +
+                              QString::fromUtf8(node->getNode()->getPluginID().c_str()));
         Dialogs::errorDialog(tr("Presets").toStdString(),err.toStdString());
         return;
     }

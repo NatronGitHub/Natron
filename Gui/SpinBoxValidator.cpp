@@ -126,9 +126,9 @@ NumericKnobValidator::validateInput(const QString& userText, double* valueToDisp
     }
     if (!expr.empty()) {
         bool ok = false;
-        *valueToDisplay = QString(ret.c_str()).toDouble(&ok);
+        *valueToDisplay = QString::fromUtf8(ret.c_str()).toDouble(&ok);
         if (!ok) {
-            *valueToDisplay = QString(ret.c_str()).toInt(&ok);
+            *valueToDisplay = QString::fromUtf8(ret.c_str()).toInt(&ok);
         }
         assert(ok);
     } else {

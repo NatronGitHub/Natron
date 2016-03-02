@@ -77,13 +77,13 @@ ClickableLabel::changeEvent(QEvent* e)
     if (e->type() == QEvent::EnabledChange) {
         if ( !isEnabled() ) {
             QString paintTxt = text();
-            paintTxt.prepend("<font color=\"#000000\">");
-            paintTxt.append("</font>");
+            paintTxt.prepend(QString::fromUtf8("<font color=\"#000000\">"));
+            paintTxt.append(QString::fromUtf8("</font>"));
             setText(paintTxt);
         } else {
             QString str = text();
-            str = str.remove("<font color=\"#000000\">");
-            str = str.remove("</font>");
+            str = str.remove(QString::fromUtf8("<font color=\"#000000\">"));
+            str = str.remove(QString::fromUtf8("</font>"));
             setText(str);
         }
     }
@@ -94,12 +94,12 @@ ClickableLabel::setText_overload(const QString & str)
 {
     QString paintTxt = str;
     if ( !isEnabled() ) {
-        paintTxt.prepend("<font color=\"#000000\">");
-        paintTxt.append("</font>");
+        paintTxt.prepend(QString::fromUtf8("<font color=\"#000000\">"));
+        paintTxt.append(QString::fromUtf8("</font>"));
     }
     if (_bold) {
-        paintTxt.prepend("<b>");
-        paintTxt.append("</b>");
+        paintTxt.prepend(QString::fromUtf8("<b>"));
+        paintTxt.append(QString::fromUtf8("</b>"));
     }
     setText(paintTxt);
 }

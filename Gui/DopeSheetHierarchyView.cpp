@@ -480,7 +480,7 @@ void HierarchyViewPrivate::drawPluginIconArea(QPainter *p, boost::shared_ptr<DSN
     if (!iconFilePath.empty()) {
         QPixmap pix;
 
-        if (pix.load(iconFilePath.c_str())) {
+        if (pix.load(QString::fromUtf8(iconFilePath.c_str()))) {
             if (std::max(pix.width(), pix.height()) != NATRON_MEDIUM_BUTTON_ICON_SIZE) {
                 pix = pix.scaled(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE,
                                  Qt::KeepAspectRatio, Qt::SmoothTransformation);
@@ -650,7 +650,7 @@ HierarchyView::HierarchyView(DopeSheet *dopeSheetModel, Gui *gui, QWidget *paren
     setItemDelegate(new HierarchyViewItemDelegate(this));
     setAttribute(Qt::WA_MacShowFocusRect,0);
 
-    setStyleSheet("HierarchyView { border: 0px; }");
+    setStyleSheet(QString::fromUtf8("HierarchyView { border: 0px; }"));
 
     connect(this, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)),
             this, SLOT(onItemDoubleClicked(QTreeWidgetItem*,int)));
