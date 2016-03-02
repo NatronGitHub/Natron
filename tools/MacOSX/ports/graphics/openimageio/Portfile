@@ -91,7 +91,7 @@ patchfiles \
     oiio-1.5.23-checkmaxmem.patch \
     oiio-1.5.23-invalidatespec.patch \
     oiio-1.6.10-simd.patch \
-    oiio-1.6.10-vectorofconst.patch
+    oiio-1.6.10-vectorofconst.patch \
     oiio-sha1.patch \
     oiio-nothreads.patch
 
