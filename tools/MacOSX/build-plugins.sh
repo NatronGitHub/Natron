@@ -63,6 +63,7 @@ fi
 #Always bump git commit, it is only used to version-stamp binaries
 IO_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 sed -i "" -e "s/IOPLUG_DEVEL_GIT=.*/IOPLUG_DEVEL_GIT=${IO_GIT_VERSION}/" $CWD/commits-hash.sh || exit 1
+echo $IO_GIT_VERSION > $CWD/build/io-git-version.txt
 
 make CXX="$CXX" BITS=$BITS CONFIG=$CONFIG OCIO_HOME=/opt/local OIIO_HOME=/opt/local SEEXPR_HOME=/opt/local -j${MKJOBS} || exit 1
 
@@ -82,6 +83,7 @@ fi
 #Always bump git commit, it is only used to version-stamp binaries
 MISC_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 sed -i "" -e "s/MISCPLUG_DEVEL_GIT=.*/MISCPLUG_DEVEL_GIT=${MISC_GIT_VERSION}/" $CWD/commits-hash.sh || exit 1
+echo $MISC_GIT_VERSION > $CWD/build/misc-git-version.txt
 
 make CXX="$CXX" BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} HAVE_CIMG=0 || exit 1
 cp -r Misc/$OS-$BITS-$CONFIG/Misc.ofx.bundle "$PLUGINDIR/OFX/Natron" || exit 1
@@ -119,6 +121,7 @@ sed -e s/-lgomp// -i.orig Makefile.master
 #Always bump git commit, it is only used to version-stamp binaries
 ARENA_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 sed -i "" -e "s/ARENAPLUG_DEVEL_GIT=.*/ARENAPLUG_DEVEL_GIT=${ARENA_GIT_VERSION}/" $CWD/commits-hash.sh || exit 1
+echo $ARENA_GIT_VERSION > $CWD/build/arena-git-version.txt
 
 make CXX="$CXX" USE_PANGO=1 USE_SVG=1 STATIC=1 BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} || exit 1
 cp -r Bundle/$OS-$BITS-$CONFIG/Arena.ofx.bundle "$PLUGINDIR/OFX/Natron" || exit 1
