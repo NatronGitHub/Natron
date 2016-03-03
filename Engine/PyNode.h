@@ -360,6 +360,14 @@ public:
     
     std::map<ImageLayer,Effect*> getAvailableLayers() const;
     
+    double getFrameRate() const;
+    
+    double getPixelAspectRatio() const;
+    
+    NATRON_NAMESPACE::ImageBitDepthEnum getBitDepth() const;
+    
+    NATRON_NAMESPACE::ImagePremultiplicationEnum getPremult() const;
+    
     void setPagesOrder(const std::list<std::string>& pages);
 };
 
