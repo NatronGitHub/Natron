@@ -39,6 +39,18 @@ Note that if you don't pass the *--writer* argument, it will try to start render
 
 After the writer node script name you can pass an optional output filename and pass an optional frame range in the format  firstFrame-lastFrame (e.g: 10-40). 
 
+
+.. warning::
+	
+	You may only specify absolute file paths with the *-i* option, things like::
+		
+		NatronRenderer -i MyReader ~/pictures.png -w MyWriter rendered###.exr 
+		
+	would not work. This would work on the other hand::
+	
+		NatronRenderer -i MyReader /Users/me/Images/pictures.png -w MyWriter /Users/me/Images/rendered###.exr 
+	 
+
 Note that several *-w* options can be set to specify multiple Write nodes to render.
 
 .. warning::
@@ -47,7 +59,18 @@ Note that several *-w* options can be set to specify multiple Write nodes to ren
 	
 **[ --reader ]* or **[-i]** <reader node script name> <filename> :
 Specify the input file/sequence/video to load for the given Reader node.
- If the specified reader node cannot be found, the process will abort.
+If the specified reader node cannot be found, the process will abort.
+
+.. warning::
+	
+	You may only specify absolute file paths with the *-i* option, things like::
+		
+		NatronRenderer -i MyReader ~/pictures.png -w MyWriter rendered###.exr 
+		
+	would not work. This would work on the other hand::
+	
+		NatronRenderer -i MyReader /Users/me/Images/pictures.png -w MyWriter /Users/me/Images/rendered###.exr 
+	 
 
 
 **[--onload]** or **[-l]** *<python script file path>* specifies a Python script to be executed
