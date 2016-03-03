@@ -173,9 +173,7 @@ Project::loadProject(const QString & path,
 
     try {
         QString realPath = path;
-        if (!realPath.endsWith(QLatin1Char('/'))) {
-            realPath.push_back(QLatin1Char('/'));
-        }
+        Global::ensureLastPathSeparator(realPath);
         QString realName = name;
         
         bool isAutoSave = isUntitledAutosave;

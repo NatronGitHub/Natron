@@ -31,6 +31,7 @@
 
 #include <QDebug>
 #include <QFile>
+#include <QFileInfo>
 
 #include "Global/GitVersion.h"
 #include "Global/QtCompat.h"
@@ -781,6 +782,14 @@ CLArgsPrivate::parse()
                 defaultOnProjectLoadedScript = *it;
 #ifdef __NATRON_UNIX__
                 defaultOnProjectLoadedScript = AppManager::qt_tildeExpansion(defaultOnProjectLoadedScript);
+                QFileInfo fi(defaultOnProjectLoadedScript);
+                if (!fi.exists()) {
+                    std::cout << QObject::tr("WARNING: --onload %1 ignored because the file does not exist.").arg(defaultOnProjectLoadedScript).toStdString() << std::endl;
+                    defaultOnProjectLoadedScript.clear();
+                } else {
+                    defaultOnProjectLoadedScript = fi.canonicalFilePath();
+                }
+                
 #endif
                 args.erase(it);
                 if (!defaultOnProjectLoadedScript.endsWith(QString::fromUtf8(".py"))) {
@@ -788,9 +797,7 @@ CLArgsPrivate::parse()
                     error = 1;
                     return;
                 }
-                if (!QFile::exists(defaultOnProjectLoadedScript)) {
-                    std::cout << QObject::tr("WARNING: --onload %1 ignored because the file does not exist.").arg(defaultOnProjectLoadedScript).toStdString() << std::endl;
-                }
+      
             } else {
                 std::cout << QObject::tr("--onload or -l specified, you must enter a script filename afterwards.").toStdString() << std::endl;
                 error = 1;
@@ -815,6 +822,10 @@ CLArgsPrivate::parse()
             filename = *it;
 #if defined(Q_OS_UNIX)
             filename = AppManager::qt_tildeExpansion(filename);
+            QFileInfo fi(filename);
+            if (fi.exists()) {
+                filename = fi.canonicalFilePath();
+            }
 #endif
             args.erase(it);
         }

@@ -36,6 +36,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QDebug>
 #include <QtCore/QSettings>
+#include <QFileInfo>
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QFileOpenEvent>
@@ -270,6 +271,10 @@ Application::event(QEvent* e)
 #ifdef Q_OS_UNIX
             if ( !file.isEmpty() ) {
                 file = AppManager::qt_tildeExpansion(file);
+                QFileInfo fi(file);
+                if (fi.exists()) {
+                    file = fi.canonicalFilePath();
+                }
             }
 #endif
             _app->setFileToOpen(file);
