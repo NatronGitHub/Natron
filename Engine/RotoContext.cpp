@@ -131,7 +131,8 @@ RotoContext::getRotoPaintBottomMergeNode() const
         return NodePtr();
     }
     
-    if (isRotoPaintTreeConcatenatableInternal(items)) {
+    int bop;
+    if (isRotoPaintTreeConcatenatableInternal(items,&bop)) {
         QMutexLocker k(&_imp->rotoContextMutex);
         if (!_imp->globalMergeNodes.empty()) {
             return _imp->globalMergeNodes.front();
@@ -882,7 +883,7 @@ const
 }
 
 bool
-RotoContext::isRotoPaintTreeConcatenatableInternal(const std::list<boost::shared_ptr<RotoDrawableItem> >& items)
+RotoContext::isRotoPaintTreeConcatenatableInternal(const std::list<boost::shared_ptr<RotoDrawableItem> >& items, int* blendingMode)
 {
     bool operatorSet = false;
     int comp_i;
@@ -907,6 +908,7 @@ RotoContext::isRotoPaintTreeConcatenatableInternal(const std::list<boost::shared
         }
         
     }
+    *blendingMode = comp_i;
     return true;
 }
 
@@ -914,7 +916,8 @@ bool
 RotoContext::isRotoPaintTreeConcatenatable() const
 {
     std::list<boost::shared_ptr<RotoDrawableItem> > items = getCurvesByRenderOrder();
-    return isRotoPaintTreeConcatenatableInternal(items);
+    int bop;
+    return isRotoPaintTreeConcatenatableInternal(items,&bop);
 }
 
 bool
@@ -4019,7 +4022,10 @@ RotoContext::refreshRotoPaintTree()
         return;
     }
     
-    bool canConcatenate = isRotoPaintTreeConcatenatable();
+    std::list<boost::shared_ptr<RotoDrawableItem> > items = getCurvesByRenderOrder();
+
+    int blendingOperator;
+    bool canConcatenate = isRotoPaintTreeConcatenatableInternal(items, &blendingOperator);
     
     NodePtr globalMerge;
     int globalMergeIndex = -1;
@@ -4048,11 +4054,19 @@ RotoContext::refreshRotoPaintTree()
         }
     }
     
-    std::list<boost::shared_ptr<RotoDrawableItem> > items = getCurvesByRenderOrder();
     for (std::list<boost::shared_ptr<RotoDrawableItem> >::const_iterator it = items.begin(); it!=items.end(); ++it) {
         (*it)->refreshNodesConnections();
         
         if (globalMerge) {
+            
+            {
+                KnobPtr mergeOperatorKnob = globalMerge->getKnobByName(kMergeOFXParamOperation);
+                KnobChoice* mergeOp = dynamic_cast<KnobChoice*>(mergeOperatorKnob.get());
+                if (mergeOp) {
+                    mergeOp->setValue(blendingOperator);
+                }
+            }
+            
             NodePtr effectNode = (*it)->getEffectNode();
             assert(effectNode);
             //qDebug() << "Connecting" << (*it)->getScriptName().c_str() << "to input" << globalMergeIndex <<

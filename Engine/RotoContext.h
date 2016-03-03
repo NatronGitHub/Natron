@@ -205,7 +205,7 @@ public:
      **/
     bool isRotoPaintTreeConcatenatable() const;
     
-    static bool isRotoPaintTreeConcatenatableInternal(const std::list<boost::shared_ptr<RotoDrawableItem> >& items);
+    static bool isRotoPaintTreeConcatenatableInternal(const std::list<boost::shared_ptr<RotoDrawableItem> >& items, int* blendingMode);
     
     void getGlobalMotionBlurSettings(const double time,
                                      double* startTime,
