@@ -287,7 +287,7 @@ KnobGui::setInterpolationForDimensions(QAction* action,
         }
     }
     if (knob->getHolder()) {
-        knob->getHolder()->evaluate_public(knob.get(), knob->getEvaluateOnChange(), false, eValueChangedReasonNatronGuiEdited);
+        knob->getHolder()->evaluate_public(knob.get(), knob->getEvaluateOnChange(), false);
     }
     Q_EMIT keyInterpolationChanged();
 
@@ -521,7 +521,9 @@ KnobGui::toolTip() const
     }
     
     if (!exprTt.isEmpty()) {
+        tt += QLatin1String("<br>");
         tt.append(exprTt);
+        tt += QLatin1String("</br>");
     }
 
     if ( !realTt.isEmpty() ) {

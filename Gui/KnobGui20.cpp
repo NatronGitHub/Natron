@@ -617,15 +617,17 @@ KnobGui::onKeyFrameMoved(ViewSpec /*view*/,
 
 void
 KnobGui::onAnimationLevelChanged(ViewSpec /*idx*/,
-                                 int dimension,
-                                 int level)
+                                 int dimension)
 {
     if (!_imp->customInteract) {
-        //std::string expr = getKnob()->getExpression(dim);
-        //reflectExpressionState(dim,!expr.empty());
-        //if (expr.empty()) {
-            reflectAnimationLevel(dimension, (AnimationLevelEnum)level);
-        //}
+        KnobPtr knob = getKnob();
+        int dim = knob->getDimension();
+        for (int i = 0; i < dim; ++i) {
+            if (i == dimension || dimension == -1) {
+                reflectAnimationLevel(i, knob->getAnimationLevel(i));
+            }
+        }
+        
         
     }
 }

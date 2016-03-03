@@ -80,7 +80,7 @@ KnobGui::initialize()
         QObject::connect( handler,SIGNAL(animationRemoved(ViewSpec,int)),this,SLOT(onInternalAnimationRemoved()) );
         QObject::connect( handler,SIGNAL(setValueWithUndoStack(Variant,ViewSpec,int)),this,SLOT(onSetValueUsingUndoStack(Variant,ViewSpec,int)) );
         QObject::connect( handler,SIGNAL(dirty(bool)),this,SLOT(onSetDirty(bool)) );
-        QObject::connect( handler,SIGNAL(animationLevelChanged(ViewSpec,int,int)),this,SLOT(onAnimationLevelChanged(ViewSpec,int,int)) );
+        QObject::connect( handler,SIGNAL(animationLevelChanged(ViewSpec,int)),this,SLOT(onAnimationLevelChanged(ViewSpec,int)) );
         QObject::connect( handler,SIGNAL(appendParamEditChange(int,Variant,ViewSpec,int,double,bool,bool)),this,
                          SLOT(onAppendParamEditChanged(int,Variant,ViewSpec,int,double,bool,bool)) );
         QObject::connect( handler,SIGNAL(frozenChanged(bool)),this,SLOT(onFrozenChanged(bool)) );
@@ -217,7 +217,7 @@ KnobGui::createGUI(QGridLayout* containerLayout,
         std::string exp = knob->getExpression(i);
         reflectExpressionState(i,!exp.empty());
         if (exp.empty()) {
-            onAnimationLevelChanged(ViewSpec::all(), i, knob->getAnimationLevel(i) );
+            onAnimationLevelChanged(ViewSpec::all(), i);
         }
     }
 }

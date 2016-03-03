@@ -356,7 +356,7 @@ public Q_SLOTS:
 
     void onSetDirty(bool d);
 
-    void onAnimationLevelChanged(ViewSpec view, int dim,int level);
+    void onAnimationLevelChanged(ViewSpec view, int dim);
 
     void onAppendParamEditChanged(int reason,const Variant & v, ViewSpec view,int dim,double time,bool createNewCommand,bool setKeyFrame);
 

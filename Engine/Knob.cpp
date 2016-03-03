@@ -1517,7 +1517,7 @@ KnobHelper::evaluateValueChangeInternal(int dimension,
         app = _imp->holder->getApp();
     }
     boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
-    bool guiFrozen = app && hasGui && hasGui->isGuiFrozenForPlayback();
+    bool refreshWidget = !app || hasAnimation() || time == app->getTimeLine()->currentFrame();
     
     /// For eValueChangedReasonTimeChanged we never call the instanceChangedAction and evaluate otherwise it would just throttle
     /// the application responsiveness
@@ -1525,10 +1525,10 @@ KnobHelper::evaluateValueChangeInternal(int dimension,
         if (!app || !app->getProject()->isLoadingProject()) {
             
             if (_imp->holder->isEvaluationBlocked()) {
-                _imp->holder->appendValueChange(shared_from_this(), time, view, originalReason);
+                _imp->holder->appendValueChange(shared_from_this(), dimension, refreshWidget, time, view, originalReason, reason);
             } else {
                 _imp->holder->beginChanges();
-                _imp->holder->appendValueChange(shared_from_this(), time, view, originalReason);
+                _imp->holder->appendValueChange(shared_from_this(), dimension, refreshWidget, time, view, originalReason, reason);
                 _imp->holder->endChanges();
             }
             
@@ -1537,23 +1537,6 @@ KnobHelper::evaluateValueChangeInternal(int dimension,
     
     onInternalValueChanged(dimension, time, view);
     
-    if (!guiFrozen  && _signalSlotHandler) {
-        computeHasModifications();
-        bool refreshWidget = !app || hasAnimation() || time == app->getTimeLine()->currentFrame();
-        if (refreshWidget) {
-            _signalSlotHandler->s_valueChanged(view, dimension,(int)reason);
-        }
-        //if (reason != eValueChangedReasonSlaveRefresh) {
-            refreshListenersAfterValueChange(view, originalReason, dimension);
-        //}
-        if (dimension == -1) {
-            for (int i = 0; i < _imp->dimension; ++i) {
-                checkAnimationLevel(view, i);
-            }
-        } else {
-            checkAnimationLevel(view, dimension);
-        }
-    }
 }
 
 void
@@ -2191,17 +2174,17 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
         Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(this);
         Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(this);
         if (isDouble) {
-            double r = isDouble->pyObjectToType(ret);
+            double r = isDouble->pyObjectToType<double>(ret);
             *resultAsString = QString::number(r).toStdString();
         } else if (isInt) {
-            int r = isInt->pyObjectToType(ret);
+            int r = isInt->pyObjectToType<int>(ret);
             *resultAsString = QString::number(r).toStdString();
         } else if (isBool) {
-            bool r = isBool->pyObjectToType(ret);
+            bool r = isBool->pyObjectToType<bool>(ret);
             *resultAsString = r ? "True" : "False";
         } else {
             assert(isString);
-            *resultAsString = isString->pyObjectToType(ret);
+            *resultAsString = isString->pyObjectToType<std::string>(ret);
         }
 
         
@@ -2944,48 +2927,48 @@ void
 KnobHelper::checkAnimationLevel(ViewSpec view,
                                 int dimension)
 {
-    AnimationLevelEnum level = eAnimationLevelNone;
-
-    if ( canAnimate() && isAnimated(dimension, view) && getHolder() && getHolder()->getApp() ) {
-
-        boost::shared_ptr<Curve> c = getCurve(view, dimension);
-        double time = getHolder()->getApp()->getTimeLine()->currentFrame();
-        if (c->getKeyFramesCount() > 0) {
-            KeyFrame kf;
-            int nKeys = c->getNKeyFramesInRange(time, time +1);
-            if (nKeys > 0) {
-                level = eAnimationLevelOnKeyframe;
-            } else {
-                level = eAnimationLevelInterpolatedValue;
-            }
-        } else {
-            level = eAnimationLevelNone;
-        }
-    }
-    setAnimationLevel(view, dimension,level);
-}
-
-void
-KnobHelper::setAnimationLevel(ViewSpec view,
-                              int dimension,
-                              AnimationLevelEnum level)
-{
     bool changed = false;
-    {
-        QMutexLocker l(&_imp->animationLevelMutex);
-        assert( dimension < (int)_imp->animationLevel.size() );
-        if (_imp->animationLevel[dimension] != level) {
-            changed = true;
-            _imp->animationLevel[dimension] = level;
+    
+    for (int i = 0 ;i < _imp->dimension; ++i) {
+        
+        if (i == dimension || dimension == -1) {
+            AnimationLevelEnum level = eAnimationLevelNone;
+            
+            if ( canAnimate() && isAnimated(i, view) && getHolder() && getHolder()->getApp() ) {
+                
+                boost::shared_ptr<Curve> c = getCurve(view, i);
+                double time = getHolder()->getApp()->getTimeLine()->currentFrame();
+                if (c->getKeyFramesCount() > 0) {
+                    KeyFrame kf;
+                    int nKeys = c->getNKeyFramesInRange(time, time +1);
+                    if (nKeys > 0) {
+                        level = eAnimationLevelOnKeyframe;
+                    } else {
+                        level = eAnimationLevelInterpolatedValue;
+                    }
+                } else {
+                    level = eAnimationLevelNone;
+                }
+            }
+            {
+                QMutexLocker l(&_imp->animationLevelMutex);
+                assert( dimension < (int)_imp->animationLevel.size() );
+                if (_imp->animationLevel[i] != level) {
+                    changed = true;
+                    _imp->animationLevel[i] = level;
+                }
+            }
         }
     }
+    
     boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
     if ( changed && _signalSlotHandler && hasGui && !hasGui->isGuiFrozenForPlayback() ) {
         if (getExpression(dimension).empty()) {
-            _signalSlotHandler->s_animationLevelChanged(view, dimension,(int)level );
+            _signalSlotHandler->s_animationLevelChanged(view, dimension );
         }
     }
 }
+
 
 AnimationLevelEnum
 KnobHelper::getAnimationLevel(int dimension) const
@@ -3193,7 +3176,7 @@ KnobHelper::refreshListenersAfterValueChange(ViewSpec view,
         std::set<int> dimensionsToEvaluate;
         bool mustClone = false;
         for (std::size_t i = 0; i < it->second.size(); ++i) {
-            if (it->second[i].isListening && (it->second[i].targetDim == dimension || it->second[i].targetDim == -1)) {
+            if (it->second[i].isListening && (it->second[i].targetDim == dimension || it->second[i].targetDim == -1 || dimension == -1)) {
                 dimensionsToEvaluate.insert(i);
                 if (!it->second[i].isExpr) {
                     mustClone = true;
@@ -3837,7 +3820,7 @@ struct KnobHolder::KnobHolderPrivate
     
     //Set in the begin/endChanges block
     bool canCurrentlySetValue;
-    ChangesList knobChanged;
+    KnobChanges knobChanged;
     
     bool changeSignificant;
 
@@ -3882,8 +3865,8 @@ KnobHolder::KnobHolder(AppInstance* appInstance)
 , _imp( new KnobHolderPrivate(appInstance) )
 {
     QObject::connect(this, SIGNAL(doEndChangesOnMainThread()), this, SLOT(onDoEndChangesOnMainThreadTriggered()));
-    QObject::connect(this, SIGNAL(doEvaluateOnMainThread(KnobI*,bool,bool,int)), this,
-                     SLOT(onDoEvaluateOnMainThread(KnobI*,bool,bool,int)));
+    QObject::connect(this, SIGNAL(doEvaluateOnMainThread(KnobI*,bool,bool)), this,
+                     SLOT(onDoEvaluateOnMainThread(KnobI*,bool,bool)));
     QObject::connect(this, SIGNAL(doValueChangeOnMainThread(KnobI*,int,double,ViewSpec,bool)), this,
                      SLOT(onDoValueChangeOnMainThread(KnobI*,int,double,ViewSpec,bool)));
 }
@@ -4478,10 +4461,10 @@ KnobHolder::createParametricKnob(const std::string& name, const std::string& lab
 }
 
 void
-KnobHolder::onDoEvaluateOnMainThread(KnobI* knob,bool significant,bool refreshMetadata,int reason)
+KnobHolder::onDoEvaluateOnMainThread(KnobI* knob,bool significant,bool refreshMetadata)
 {
     assert(QThread::currentThread() == qApp->thread());
-    evaluate_public(knob, significant, refreshMetadata,(ValueChangedReasonEnum)reason);
+    evaluate_public(knob, significant, refreshMetadata);
 }
 
 void
@@ -4491,15 +4474,8 @@ KnobHolder::onDoEndChangesOnMainThreadTriggered()
     endChanges();
 }
 
-ChangesList
-KnobHolder::getKnobChanges() const
-{
-    QMutexLocker l(&_imp->evaluationBlockedMutex);
-    return _imp->knobChanged;
-}
-
 void
-KnobHolder::endChanges(bool discardEverything)
+KnobHolder::endChanges(bool discardRendering)
 {
     bool isMT = QThread::currentThread() == qApp->thread();
     if (!isMT && !canHandleEvaluateOnChangeInOtherThread()) {
@@ -4507,17 +4483,17 @@ KnobHolder::endChanges(bool discardEverything)
         return;
     }
     
-    bool evaluate = false;
-    ChangesList knobChanged;
+    bool evaluationIsBlocked = false;
+    KnobChanges knobChanged;
     bool significant = false;
     {
         QMutexLocker l(&_imp->evaluationBlockedMutex);
         
        // std::cout <<"DECR: " << _imp->evaluationBlocked << std::endl;
         
-        evaluate = _imp->evaluationBlocked == 1;
+        evaluationIsBlocked = _imp->evaluationBlocked > 1;
         knobChanged = _imp->knobChanged;
-        if (evaluate) {
+        if (!evaluationIsBlocked) {
             _imp->knobChanged.clear();
             significant = _imp->changeSignificant;
             _imp->changeSignificant = false;
@@ -4532,23 +4508,88 @@ KnobHolder::endChanges(bool discardEverything)
         }
     }
     
+    if (knobChanged.empty()) {
+        return;
+    }
+    
+    KnobChanges::iterator first = knobChanged.begin();
+    const KnobPtr& knob = first->knob;
+    
+    KnobPage* isPage = dynamic_cast<KnobPage*>(knob.get());
+    KnobGroup* isGrp = dynamic_cast<KnobGroup*>(knob.get());
+    if (isGrp || isPage) {
+        return;
+    }
+
+    bool isLoadingProject = false;
+    if (getApp()) {
+        isLoadingProject = getApp()->getProject()->isLoadingProject();
+    }
+    
+    bool ignoreHashChangeAndRender = isLoadingProject || isGrp || isPage;
+
+    
+    // If the node is currently modifying its input, do not ask for a render
+    // because at then end of the inputChanged handler, it will ask for a refresh
+    // and a rebuild of the inputs tree.
+    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
+    if (isEffect) {
+        NodePtr node = isEffect->getNode();
+        if (node->duringInputChangedAction()) {
+            ignoreHashChangeAndRender = true;
+        }
+    }
     
     
-    if (!knobChanged.empty() && !discardEverything && evaluate && significant) {
-        ChangesList::iterator first = knobChanged.begin();
-        bool refreshMetadata = false;
-        for (ChangesList::iterator it = knobChanged.begin(); it!=knobChanged.end(); ++it) {
-            if (it->knob->getIsMetadataSlave()) {
-                refreshMetadata = true;
-                break;
+    // Increment hash
+    if (significant && !ignoreHashChangeAndRender) {
+        onSignificantEvaluateAboutToBeCalled(knob.get());
+    }
+    
+    bool guiFrozen = getApp() && knob->getKnobGuiPointer() && knob->getKnobGuiPointer()->isGuiFrozenForPlayback();
+    
+    // Call instanceChanged on each knob
+    bool refreshMetadata = false;
+    for (KnobChanges::iterator it = knobChanged.begin(); it!=knobChanged.end(); ++it) {
+        if (it->knob && !it->knob->isValueChangesBlocked()) {
+            if (!it->originatedFromMainThread && !canHandleEvaluateOnChangeInOtherThread()) {
+                Q_EMIT doValueChangeOnMainThread(it->knob.get(), it->originalReason, it->time, it->view, it->originatedFromMainThread);
+            } else {
+                onKnobValueChanged_public(it->knob.get(), it->originalReason, it->time, it->view, it->originatedFromMainThread);
             }
         }
-        ValueChangedReasonEnum reason = first->reason;
-        const KnobPtr& knob = first->knob;
+        
+        if (it->knob->getIsMetadataSlave()) {
+            refreshMetadata = true;
+        }
+        
+        it->knob->computeHasModifications();
+        
+        int dimension = -1;
+        if (it->dimensionChanged.size() == 1) {
+            dimension = *it->dimensionChanged.begin();
+        }
+        if (!guiFrozen) {
+            
+            boost::shared_ptr<KnobSignalSlotHandler> handler = it->knob->getSignalSlotHandler();
+            if (handler) {
+                handler->s_valueChanged(it->view, dimension, it->reason);
+            }
+            
+        }
+        it->knob->checkAnimationLevel(it->view, dimension);
+        
+        it->knob->refreshListenersAfterValueChange(it->view, it->originalReason, dimension);
+    }
+    
+    
+    
+    // Call getClipPreferences & render
+    if (!discardRendering && !ignoreHashChangeAndRender && !evaluationIsBlocked) {
         if (!isMT) {
-            Q_EMIT doEvaluateOnMainThread(knob.get(), significant, refreshMetadata, reason);
+            Q_EMIT doEvaluateOnMainThread(knob.get(), significant, refreshMetadata);
         } else {
-            evaluate_public(knob.get(), significant, refreshMetadata, reason);
+            evaluate_public(knob.get(), significant, refreshMetadata);
         }
     }
 }
@@ -4566,8 +4607,11 @@ KnobHolder::onDoValueChangeOnMainThread(KnobI* knob,
 
 void
 KnobHolder::appendValueChange(const KnobPtr& knob,
+                              int dimension,
+                              bool refreshGui,
                               double time,
                               ViewSpec view,
+                              ValueChangedReasonEnum originalReason,
                               ValueChangedReasonEnum reason)
 {
     if (isInitializingKnobs()) {
@@ -4576,24 +4620,42 @@ KnobHolder::appendValueChange(const KnobPtr& knob,
     {
         QMutexLocker l(&_imp->evaluationBlockedMutex);
 
-        KnobChange k;
-        k.reason = reason;
-        k.originatedFromMainThread = QThread::currentThread() == qApp->thread();
-        k.knob = knob;
-        
-        if (knob && !knob->isValueChangesBlocked()) {
-            if (!k.originatedFromMainThread && !canHandleEvaluateOnChangeInOtherThread()) {
-                Q_EMIT doValueChangeOnMainThread(knob.get(), reason, time, view, k.originatedFromMainThread);
-            } else {
-                onKnobValueChanged_public(knob.get(), reason, time, view, k.originatedFromMainThread);
+        KnobChange* foundChange = 0;
+        for (KnobChanges::iterator it = _imp->knobChanged.begin(); it!=_imp->knobChanged.end(); ++it) {
+            if (it->knob == knob) {
+                foundChange = &*it;
+                break;
             }
         }
-        
-        if (reason == eValueChangedReasonTimeChanged) {
-            return;
+        if (!foundChange) {
+            KnobChange p;
+            _imp->knobChanged.push_back(p);
+            foundChange = &_imp->knobChanged.back();
         }
+        assert(foundChange);
+        
+        foundChange->reason = reason;
+        foundChange->originalReason = originalReason;
+        foundChange->originatedFromMainThread = QThread::currentThread() == qApp->thread();
+        foundChange->refreshGui |= refreshGui;
+        foundChange->time = time;
+        foundChange->view = view;
+        foundChange->knob = knob;
+        if (dimension == -1) {
+            for (int i = 0; i < knob->getDimension(); ++i) {
+                foundChange->dimensionChanged.insert(i);
+            }
+        } else {
+            foundChange->dimensionChanged.insert(dimension);
+        }
+        
+        //We do not call instanceChanged now since the hash did not change!
+        //Make sure to call it after
+        
+        /*if (reason == eValueChangedReasonTimeChanged) {
+            return;
+        }*/
 
-        _imp->knobChanged.push_back(k);
         if (knob) {
             _imp->changeSignificant |= knob->getEvaluateOnChange();
         }
@@ -4894,13 +4956,12 @@ KnobHolder::onKnobValueChanged_public(KnobI* k,
 void
 KnobHolder::evaluate_public(KnobI* knob,
                             bool isSignificant,
-                            bool refreshMetadatas,
-                            ValueChangedReasonEnum reason)
+                            bool refreshMetadatas)
 {
     ///cannot run in another thread.
     assert( QThread::currentThread() == qApp->thread() );
     
-    evaluate(knob, isSignificant,refreshMetadatas,reason);
+    evaluate(knob, isSignificant,refreshMetadatas);
     
     if ( isSignificant && getApp() ) {
         ///Don't trigger autosaves for buttons

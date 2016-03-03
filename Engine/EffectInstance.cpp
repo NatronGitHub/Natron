@@ -2641,35 +2641,35 @@ EffectInstance::openImageFileKnob()
 }
 
 void
-EffectInstance::evaluate(KnobI* knob,
-                         bool isSignificant,
-                         bool refreshMetadatas,
-                         ValueChangedReasonEnum /*reason*/)
+EffectInstance::onSignificantEvaluateAboutToBeCalled(KnobI* knob)
 {
-    KnobPage* isPage = dynamic_cast<KnobPage*>(knob);
-    KnobGroup* isGrp = dynamic_cast<KnobGroup*>(knob);
-    if (isGrp || isPage) {
+    KnobButton* button = dynamic_cast<KnobButton*>(knob);
+    if (button) {
         return;
     }
+    //We changed, abort any ongoing current render to refresh them with a newer version
+    abortAnyEvaluation();
     
-    ////If the node is currently modifying its input, to ask for a render
-    ////because at then end of the inputChanged handler, it will ask for a refresh
-    ////and a rebuild of the inputs tree.
     NodePtr node = getNode();
 
-    if ( node->duringInputChangedAction() ) {
-        return;
-    }
+    node->refreshIdentityState();
 
-    if ( getApp()->getProject()->isLoadingProject() ) {
-        return;
-    }
+    //Increments the knobs age following a change
+    node->incrementKnobsAge();
     
-    
+}
+
+void
+EffectInstance::evaluate(KnobI* knob,
+                         bool isSignificant,
+                         bool refreshMetadatas)
+{
+
+  
+    NodePtr node = getNode();
    
     KnobButton* button = dynamic_cast<KnobButton*>(knob);
 
-    /*if this is a writer (openfx or built-in writer)*/
     if (isWriter()) {
         /*if this is a button and it is a render button,we're safe to assume the plug-ins wants to start rendering.*/
         if (button) {
@@ -2690,16 +2690,6 @@ EffectInstance::evaluate(KnobI* knob,
         }
     }
 
-    ///increments the knobs age following a change
-    if (!button && isSignificant) {
-        //We changed, abort any ongoing current render to refresh them with a newer version
-        abortAnyEvaluation();
-        node->incrementKnobsAge();
-        node->refreshIdentityState();
-        
-        //Clear any persitent message, the user might have unlocked the situation 
-        //node->clearPersistentMessage(false);
-    }
 
     if (refreshMetadatas && node->isNodeCreated()) {
         refreshMetaDatas_public(true);
