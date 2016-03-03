@@ -234,6 +234,8 @@ struct RotoGui::RotoGuiPrivate
     Button* pressureHardnessButton;
     QLabel* buildUpLabel;
     Button* buildUpButton;
+    QLabel* effectLabel;
+    SpinBox* effectSpinBox;
     QLabel* timeOffsetLabel;
     SpinBox* timeOffsetSpinbox;
     ComboBox* timeOffsetMode;
@@ -306,6 +308,8 @@ struct RotoGui::RotoGuiPrivate
     , pressureHardnessButton(0)
     , buildUpLabel(0)
     , buildUpButton(0)
+    , effectLabel(0)
+    , effectSpinBox(0)
     , timeOffsetLabel(0)
     , timeOffsetSpinbox(0)
     , timeOffsetMode(0)
@@ -877,6 +881,23 @@ RotoGui::RotoGui(NodeGui* node,
     
     _imp->brushButtonsBarLayout->addSpacing(5);
     
+    QString effecttt = GuiUtils::convertFromPlainText(tr("The strength of the next paint brush effect."), Qt::WhiteSpaceNormal);
+    _imp->effectLabel = new Label(tr("Effect:"),_imp->brushButtonsBar);
+    _imp->effectLabel->setToolTip(effecttt);
+    _imp->effectLabel->setVisible(false);
+    _imp->brushButtonsBarLayout->addWidget(_imp->effectLabel);
+
+    _imp->effectSpinBox = new SpinBox(_imp->brushButtonsBar,SpinBox::eSpinBoxTypeDouble);
+    QObject::connect(_imp->effectSpinBox, SIGNAL(valueChanged(double)), this, SLOT(onBreakMultiStrokeTriggered()));
+    _imp->effectSpinBox->setMinimum(0);
+    _imp->effectSpinBox->setMaximum(100);
+    _imp->effectSpinBox->setValue(15);
+    _imp->effectSpinBox->setVisible(false);
+    _imp->effectSpinBox->setToolTip(effecttt);
+    _imp->brushButtonsBarLayout->addWidget(_imp->effectSpinBox);
+    
+    _imp->brushButtonsBarLayout->addSpacing(5);
+    
     QString timeOfftt = GuiUtils::convertFromPlainText(tr("When the Clone tool is used, this determines depending on the time offset "
                                                         "mode the source frame to clone. When in absolute mode, this is the frame "
                                                         "number of the source, when in relative mode, this is an offset relative "
@@ -1242,6 +1263,21 @@ RotoGui::onToolActionTriggeredInternal(QAction* action,
             break;
     }
     
+    if ((RotoToolEnum)data.x() != eRotoToolBlur) {
+        if (_imp->effectLabel) {
+            _imp->effectLabel->setVisible(false);
+        }
+        if (_imp->effectSpinBox) {
+            _imp->effectSpinBox->setVisible(false);
+        }
+    } else {
+        if (_imp->effectLabel) {
+            _imp->effectLabel->setVisible(true);
+        }
+        if (_imp->effectSpinBox) {
+            _imp->effectSpinBox->setVisible(true);
+        }
+    }
     if (actionRole == eRotoRoleCloneBrush) {
         _imp->timeOffsetLabel->setVisible(true);
         _imp->timeOffsetMode->setVisible(true);
@@ -3462,6 +3498,7 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
     boost::shared_ptr<KnobChoice> sourceTypeKnob = rotoData->strokeBeingPaint->getBrushSourceTypeKnob();
     boost::shared_ptr<KnobInt> timeOffsetKnob = rotoData->strokeBeingPaint->getTimeOffsetKnob();
     boost::shared_ptr<KnobDouble> translateKnob = rotoData->strokeBeingPaint->getBrushCloneTranslateKnob();
+    boost::shared_ptr<KnobDouble> effectKnob = rotoData->strokeBeingPaint->getBrushEffectKnob();
     
     const QColor& color = colorPickerLabel->getCurrentColor();
     MergingFunctionEnum compOp = (MergingFunctionEnum)compositingOperatorButton->activeIndex();
@@ -3475,7 +3512,7 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
     double timeOffset = timeOffsetSpinbox->value();
     double timeOffsetMode_i = timeOffsetMode->activeIndex();
     int sourceType_i = sourceTypeCombobox->activeIndex();
-    
+    double effectValue = effectSpinBox->value();
 
     double r = Color::from_func_srgb(color.redF());
     double g = Color::from_func_srgb(color.greenF());
@@ -3490,6 +3527,7 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
     pressureSizeKnob->setValue(pressSize);
     pressureHardnessKnob->setValue(pressHarness);
     buildUpKnob->setValue(buildUp);
+    effectKnob->setValue(effectValue);
     if (!prepareForLater) {
         boost::shared_ptr<KnobInt> lifeTimeFrameKnob = rotoData->strokeBeingPaint->getLifeTimeFrameKnob();
         lifeTimeFrameKnob->setValue(context->getTimelineCurrentTime());
