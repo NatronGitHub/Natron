@@ -978,7 +978,7 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
                 }
             }
             for (std::map<KnobHolder*,bool>::iterator it = toEvaluate.begin(); it != toEvaluate.end(); ++it) {
-                it->first->evaluate_public(NULL, it->second, false, eValueChangedReasonUserEdited);
+                it->first->evaluate_public(NULL, it->second, false);
             }
             for (std::list<boost::shared_ptr<RotoContext> >::iterator it = rotoToEvaluate.begin(); it != rotoToEvaluate.end(); ++it) {
                 (*it)->evaluateChange();
@@ -998,7 +998,7 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
                 } else {
                     KnobPtr toEvaluate = isKnobCurve->getInternalKnob();
                     assert(toEvaluate);
-                    toEvaluate->getHolder()->evaluate_public(toEvaluate.get(), true,false, eValueChangedReasonUserEdited);
+                    toEvaluate->getHolder()->evaluate_public(toEvaluate.get(), true,false);
                 }
             } else if (isBezierCurve) {
                 isBezierCurve->getRotoContext()->evaluateChange();

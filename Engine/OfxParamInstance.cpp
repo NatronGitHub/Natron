@@ -294,12 +294,12 @@ OfxParamToKnob::connectDynamicProperties()
 }
 
 void
-OfxParamToKnob::onKnobAnimationLevelChanged(ViewSpec /*view*/, int /*dimension*/, int lvl)
+OfxParamToKnob::onKnobAnimationLevelChanged(ViewSpec /*view*/, int /*dimension*/)
 {
     OFX::Host::Param::Instance* param = getOfxParam();
     assert(param);
     
-    AnimationLevelEnum l = (AnimationLevelEnum)lvl;
+    AnimationLevelEnum l = getKnob()->getAnimationLevel(0);
     
     ///This assert might crash Natron when reading a project made with a version
     ///of Natron prior to 0.96 when file params still had keyframes.

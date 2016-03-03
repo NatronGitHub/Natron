@@ -560,7 +560,7 @@ RestoreDefaultsCommand::undo()
     }
     app->addMultipleKeyframeIndicatorsAdded(times,true);
 
-    first->getHolder()->evaluate_public(NULL, true, true, eValueChangedReasonUserEdited);
+    first->getHolder()->evaluate_public(NULL, true, true);
     if ( first->getHolder()->getApp() ) {
         first->getHolder()->getApp()->redrawAllViewers();
     }
@@ -650,7 +650,7 @@ RestoreDefaultsCommand::redo()
     
     
     if (first->getHolder()) {
-        first->getHolder()->evaluate_public(NULL, true, true, eValueChangedReasonUserEdited);
+        first->getHolder()->evaluate_public(NULL, true, true);
         if (first->getHolder()->getApp() ) {
             first->getHolder()->getApp()->redrawAllViewers();
         }

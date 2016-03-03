@@ -597,9 +597,10 @@ KnobChoice::typeName() const
 #pragma message WARN("When enabling multi-view knobs, make this multi-view too")
 #endif
 void
-KnobChoice::onInternalValueChanged(int dimension, double time, ViewSpec /*view*/)
+KnobChoice::onInternalValueChanged(int /*dimension*/, double time, ViewSpec /*view*/)
 {
-    int index = getValueAtTime(time, dimension);
+    
+    int index = getValueAtTime(time, 0);
     QMutexLocker k(&_entriesMutex);
     if (index >= 0 &&  index < (int)_entries.size()) {
         _lastValidEntry = _entries[index];

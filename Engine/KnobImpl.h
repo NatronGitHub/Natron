@@ -321,14 +321,14 @@ Knob<bool>::clampToMinMax(const bool& value,int /*dimension*/) const
 
 template <>
 int
-Knob<int>::pyObjectToType(PyObject* o) const
+KnobHelper::pyObjectToType(PyObject* o) const
 {
     return (int)PyInt_AsLong(o);
 }
 
 template <>
 bool
-Knob<bool>::pyObjectToType(PyObject* o) const
+KnobHelper::pyObjectToType(PyObject* o) const
 {
     if (PyObject_IsTrue(o) == 1) {
         return true;
@@ -339,14 +339,14 @@ Knob<bool>::pyObjectToType(PyObject* o) const
 
 template <>
 double
-Knob<double>::pyObjectToType(PyObject* o) const
+KnobHelper::pyObjectToType(PyObject* o) const
 {
     return (double)PyFloat_AsDouble(o);
 }
 
 template <>
 std::string
-Knob<std::string>::pyObjectToType(PyObject* o) const
+KnobHelper::pyObjectToType(PyObject* o) const
 {
 #ifndef IS_PYTHON_2
     if (PyUnicode_Check(o)) {
@@ -404,7 +404,7 @@ Knob<T>::evaluateExpression(double time,
         return T();
     }
     
-    T val =  pyObjectToType(ret);
+    T val =  pyObjectToType<T>(ret);
     Py_DECREF(ret); //< new ref
     return val;
 }
@@ -1931,9 +1931,10 @@ Knob<T>::onTimeChanged(bool isPlayback, double time)
         if (getKnobGuiPointer() && _signalSlotHandler && (isAnimated(i, ViewIdx(0)) || !getExpression(i).empty())) {
             shouldRefresh = true;
         }
-        checkAnimationLevel(ViewIdx(0),i);
     }
+
     if (shouldRefresh) {
+        checkAnimationLevel(ViewIdx(0),-1);
         _signalSlotHandler->s_valueChanged(ViewSpec::all(), -1, eValueChangedReasonTimeChanged);
     }
     if (evaluateValueChangeOnTimeChange() && !isPlayback) {
@@ -1942,10 +1943,10 @@ Knob<T>::onTimeChanged(bool isPlayback, double time)
         if (holder) {
             //Some knobs like KnobFile do not animate but the plug-in may need to know the time has changed
             if (holder->isEvaluationBlocked()) {
-                holder->appendValueChange(shared_from_this(), time, ViewIdx(0), eValueChangedReasonTimeChanged);
+                holder->appendValueChange(shared_from_this(), -1, false, time, ViewIdx(0), eValueChangedReasonTimeChanged, eValueChangedReasonTimeChanged);
             } else {
                 holder->beginChanges();
-                holder->appendValueChange(shared_from_this(), time, ViewIdx(0), eValueChangedReasonTimeChanged);
+                holder->appendValueChange(shared_from_this(), -1, false, time, ViewIdx(0), eValueChangedReasonTimeChanged, eValueChangedReasonTimeChanged);
                 holder->endChanges();
             }
         }

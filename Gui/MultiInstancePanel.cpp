@@ -1614,7 +1614,7 @@ MultiInstancePanel::resetInstances(const std::list<Node*> & instances)
             ++next;
         }
     } // for(it)
-    instances.front()->getEffectInstance()->evaluate_public(NULL, true, true, eValueChangedReasonUserEdited);
+    instances.front()->getEffectInstance()->evaluate_public(NULL, true, true);
 
     ///To update interacts, kinda hack but can't figure out where else put this
     getMainInstance()->getApp()->redrawAllViewers();
