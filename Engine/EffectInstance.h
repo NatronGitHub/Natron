@@ -1545,6 +1545,13 @@ public:
      **/
     virtual void onEffectCreated(bool /*mayCreateFileDialog*/) {}
 
+    /**
+     * @brief Must be implemented to evaluate a value change
+     * made to a knob(e.g: force a new render).
+     * @param knob[in] The knob whose value changed.
+    **/
+    virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE FINAL;
+
 private:
 
     void getComponentsAvailableRecursive(bool useLayerChoice,
@@ -1943,12 +1950,7 @@ private:
                             boost::shared_ptr<Image>* fullScaleImage,
                             boost::shared_ptr<Image>* downscaleImage);
 
-    /**
-     * @brief Must be implemented to evaluate a value change
-     * made to a knob(e.g: force a new render).
-     * @param knob[in] The knob whose value changed.
-     **/
-    virtual void evaluate(KnobI* knob, bool isSignificant, bool refreshMetadatas) OVERRIDE FINAL;
+
     virtual void onSignificantEvaluateAboutToBeCalled(KnobI* knob) OVERRIDE FINAL;
 
     virtual void onAllKnobsSlaved(bool isSlave, KnobHolder* master) OVERRIDE FINAL;

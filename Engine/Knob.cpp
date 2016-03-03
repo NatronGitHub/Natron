@@ -317,7 +317,7 @@ struct KnobHelperPrivate
     std::vector<bool> hasModifications;
     
     mutable QMutex valueChangedBlockedMutex;
-    bool valueChangedBlocked;
+    int valueChangedBlocked;
     
     bool isClipPreferenceSlave;
     
@@ -377,7 +377,7 @@ struct KnobHelperPrivate
     , hasModificationsMutex()
     , hasModifications()
     , valueChangedBlockedMutex()
-    , valueChangedBlocked(false)
+    , valueChangedBlocked(0)
     , isClipPreferenceSlave(false)
     {
         mustCloneGuiCurves.resize(dimension);
@@ -1488,21 +1488,21 @@ void
 KnobHelper::blockValueChanges()
 {
     QMutexLocker k(&_imp->valueChangedBlockedMutex);
-    _imp->valueChangedBlocked = true;
+    ++_imp->valueChangedBlocked;
 }
 
 void
 KnobHelper::unblockValueChanges()
 {
     QMutexLocker k(&_imp->valueChangedBlockedMutex);
-    _imp->valueChangedBlocked = false;
+    --_imp->valueChangedBlocked;
 }
 
 bool
 KnobHelper::isValueChangesBlocked() const
 {
     QMutexLocker k(&_imp->valueChangedBlockedMutex);
-    return _imp->valueChangedBlocked;
+    return _imp->valueChangedBlocked > 0;
 }
 
 void
@@ -2625,6 +2625,11 @@ KnobHelper::setDirty(bool d)
 void
 KnobHelper::setEvaluateOnChange(bool b)
 {
+    KnobPage* isPage = dynamic_cast<KnobPage*>(this);
+    KnobGroup* isGrp = dynamic_cast<KnobGroup*>(this);
+    if (isPage || isGrp) {
+        b = false;
+    }
     {
         QMutexLocker k(&_imp->evaluateOnChangeMutex);
         _imp->evaluateOnChange = b;
@@ -3827,9 +3832,8 @@ struct KnobHolder::KnobHolderPrivate
     //Set in the begin/endChanges block
     bool canCurrentlySetValue;
     KnobChanges knobChanged;
+    int nbSignificantChangesDuringEvaluationBlock;
     
-    bool changeSignificant;
-
     QMutex knobsFrozenMutex;
     bool knobsFrozen;
     
@@ -3854,7 +3858,7 @@ struct KnobHolder::KnobHolderPrivate
     , evaluationBlocked(0)
     , canCurrentlySetValue(true)
     , knobChanged()
-    , changeSignificant(false)
+    , nbSignificantChangesDuringEvaluationBlock(0)
     , knobsFrozenMutex()
     , knobsFrozen(false)
     , hasAnimationMutex()
@@ -3871,8 +3875,8 @@ KnobHolder::KnobHolder(AppInstance* appInstance)
 , _imp( new KnobHolderPrivate(appInstance) )
 {
     QObject::connect(this, SIGNAL(doEndChangesOnMainThread()), this, SLOT(onDoEndChangesOnMainThreadTriggered()));
-    QObject::connect(this, SIGNAL(doEvaluateOnMainThread(KnobI*,bool,bool)), this,
-                     SLOT(onDoEvaluateOnMainThread(KnobI*,bool,bool)));
+    QObject::connect(this, SIGNAL(doEvaluateOnMainThread(bool,bool)), this,
+                     SLOT(onDoEvaluateOnMainThread(bool,bool)));
     QObject::connect(this, SIGNAL(doValueChangeOnMainThread(KnobI*,int,double,ViewSpec,bool)), this,
                      SLOT(onDoValueChangeOnMainThread(KnobI*,int,double,ViewSpec,bool)));
 }
@@ -4467,10 +4471,10 @@ KnobHolder::createParametricKnob(const std::string& name, const std::string& lab
 }
 
 void
-KnobHolder::onDoEvaluateOnMainThread(KnobI* knob,bool significant,bool refreshMetadata)
+KnobHolder::onDoEvaluateOnMainThread(bool significant,bool refreshMetadata)
 {
     assert(QThread::currentThread() == qApp->thread());
-    evaluate_public(knob, significant, refreshMetadata);
+    evaluate(significant, refreshMetadata);
 }
 
 void
@@ -4489,42 +4493,40 @@ KnobHolder::endChanges(bool discardRendering)
         return;
     }
     
-    bool evaluationIsBlocked = false;
-    KnobChanges knobChanged;
+    bool hasChangeForEvaluation = false;
     bool significant = false;
+    KnobChanges knobChanged;
     {
         QMutexLocker l(&_imp->evaluationBlockedMutex);
         
-       // std::cout <<"DECR: " << _imp->evaluationBlocked << std::endl;
-        
-        evaluationIsBlocked = _imp->evaluationBlocked > 1;
         knobChanged = _imp->knobChanged;
-        if (!evaluationIsBlocked) {
-            _imp->knobChanged.clear();
-            significant = _imp->changeSignificant;
-            _imp->changeSignificant = false;
+        for (KnobChanges::iterator it = knobChanged.begin(); it!=knobChanged.end(); ++it) {
+            if (it->knob->getEvaluateOnChange()) {
+                significant = true;
+            }
         }
-    }
-
-    {
-        QMutexLocker l(&_imp->evaluationBlockedMutex);
+        if (significant) {
+            ++_imp->nbSignificantChangesDuringEvaluationBlock;
+        }
+        if (_imp->evaluationBlocked <= 1) {
+            if (_imp->nbSignificantChangesDuringEvaluationBlock) {
+                hasChangeForEvaluation = true;
+            }
+            _imp->nbSignificantChangesDuringEvaluationBlock = 0;
+        }
+        
+        _imp->knobChanged.clear();
         
         if (_imp->evaluationBlocked > 0) {
             --_imp->evaluationBlocked;
         }
     }
     
-    if (knobChanged.empty()) {
-        return;
-    }
     
-    KnobChanges::iterator first = knobChanged.begin();
-    const KnobPtr& knob = first->knob;
     
-    KnobPage* isPage = dynamic_cast<KnobPage*>(knob.get());
-    KnobGroup* isGrp = dynamic_cast<KnobGroup*>(knob.get());
-    if (isGrp || isPage) {
-        return;
+    KnobPtr firstKnobChanged;
+    if (!knobChanged.empty()) {
+        firstKnobChanged = knobChanged.begin()->knob;
     }
 
     bool isLoadingProject = false;
@@ -4532,7 +4534,7 @@ KnobHolder::endChanges(bool discardRendering)
         isLoadingProject = getApp()->getProject()->isLoadingProject();
     }
     
-    bool ignoreHashChangeAndRender = isLoadingProject || isGrp || isPage;
+    bool ignoreHashChangeAndRender = isLoadingProject;
 
     
     // If the node is currently modifying its input, do not ask for a render
@@ -4547,12 +4549,12 @@ KnobHolder::endChanges(bool discardRendering)
     }
     
     
-    // Increment hash
-    if (significant && !ignoreHashChangeAndRender) {
-        onSignificantEvaluateAboutToBeCalled(knob.get());
+    // Increment hash only if significant
+    if (significant && !ignoreHashChangeAndRender && firstKnobChanged) {
+        onSignificantEvaluateAboutToBeCalled(firstKnobChanged.get());
     }
     
-    bool guiFrozen = getApp() && knob->getKnobGuiPointer() && knob->getKnobGuiPointer()->isGuiFrozenForPlayback();
+    bool guiFrozen = firstKnobChanged ? getApp() && firstKnobChanged->getKnobGuiPointer() && firstKnobChanged->getKnobGuiPointer()->isGuiFrozenForPlayback() : false;
     
     // Call instanceChanged on each knob
     bool refreshMetadata = false;
@@ -4591,11 +4593,11 @@ KnobHolder::endChanges(bool discardRendering)
     
     
     // Call getClipPreferences & render
-    if (!discardRendering && !ignoreHashChangeAndRender && !evaluationIsBlocked) {
+    if (!discardRendering && !ignoreHashChangeAndRender && hasChangeForEvaluation) {
         if (!isMT) {
-            Q_EMIT doEvaluateOnMainThread(knob.get(), significant, refreshMetadata);
+            Q_EMIT doEvaluateOnMainThread(significant, refreshMetadata);
         } else {
-            evaluate_public(knob.get(), significant, refreshMetadata);
+            evaluate(significant, refreshMetadata);
         }
     }
 }
@@ -4662,9 +4664,6 @@ KnobHolder::appendValueChange(const KnobPtr& knob,
             return;
         }*/
 
-        if (knob) {
-            _imp->changeSignificant |= knob->getEvaluateOnChange();
-        }
     }
 }
 
@@ -4959,25 +4958,6 @@ KnobHolder::onKnobValueChanged_public(KnobI* k,
     onKnobValueChanged(k, reason, time, view, originatedFromMainThread);
 }
 
-void
-KnobHolder::evaluate_public(KnobI* knob,
-                            bool isSignificant,
-                            bool refreshMetadatas)
-{
-    ///cannot run in another thread.
-    assert( QThread::currentThread() == qApp->thread() );
-    
-    evaluate(knob, isSignificant,refreshMetadatas);
-    
-    if ( isSignificant && getApp() ) {
-        ///Don't trigger autosaves for buttons
-        KnobButton* isButton = dynamic_cast<KnobButton*>(knob);
-        if (!isButton) {
-            getApp()->triggerAutoSave();
-        }
-    }
-    
-}
 
 void
 KnobHolder::checkIfRenderNeeded()

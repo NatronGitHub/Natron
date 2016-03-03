@@ -2235,13 +2235,6 @@ public:
 
 
     /**
-     * @brief Must be implemented to evaluate a value change
-     * made to a knob(e.g: force a new render).
-     * @param knob[in] The knob whose value changed.
-     **/
-    void evaluate_public(KnobI* knob,bool isSignificant,bool refreshMetadatas);
-
-    /**
      * @brief To be called after each function that modifies actionsRecursionLevel that is not
      * onKnobChanged or begin/endKnobValueChange.
      * If actionsRecursionLevel drops to 1 and there was some evaluate requested, it
@@ -2292,6 +2285,13 @@ public:
     
     int getPageIndex(const KnobPage* page) const;
     
+    /**
+     * @brief Must be implemented to evaluate a value change
+     * made to a knob(e.g: force a new render).
+     * @param knob[in] The knob whose value changed.
+     **/
+    virtual void evaluate(bool /*isSignificant*/, bool /*refreshMetadatas*/) {}
+    
 protected:
 
 
@@ -2329,12 +2329,7 @@ protected:
     {
     }
 
-    /**
-     * @brief Must be implemented to evaluate a value change
-     * made to a knob(e.g: force a new render).
-     * @param knob[in] The knob whose value changed.
-     **/
-    virtual void evaluate(KnobI* /*knob*/,bool /*isSignificant*/, bool /*refreshMetadatas*/) {}
+
     virtual void onSignificantEvaluateAboutToBeCalled(KnobI* /*knob*/) {}
     
     /**
@@ -2363,7 +2358,7 @@ public Q_SLOTS:
     
     void onDoEndChangesOnMainThreadTriggered();
 
-    void onDoEvaluateOnMainThread(KnobI* knob,bool significant,bool refreshMetadata);
+    void onDoEvaluateOnMainThread(bool significant,bool refreshMetadata);
     
     void onDoValueChangeOnMainThread(KnobI* knob, int reason, double time, ViewSpec view, bool originatedFromMT);
     
@@ -2371,7 +2366,7 @@ Q_SIGNALS:
     
     void doEndChangesOnMainThread();
     
-    void doEvaluateOnMainThread(KnobI* knob,bool significant,bool refreshMetadata);
+    void doEvaluateOnMainThread(bool significant,bool refreshMetadata);
     
     void doValueChangeOnMainThread(KnobI* knob, int reason, double time, ViewSpec view, bool originatedFromMT);
     

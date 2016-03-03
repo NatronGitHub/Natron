@@ -287,7 +287,7 @@ KnobGui::setInterpolationForDimensions(QAction* action,
         }
     }
     if (knob->getHolder()) {
-        knob->getHolder()->evaluate_public(knob.get(), knob->getEvaluateOnChange(), false);
+        knob->getHolder()->evaluate(knob->getEvaluateOnChange(), false);
     }
     Q_EMIT keyInterpolationChanged();
 

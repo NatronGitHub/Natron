@@ -2645,35 +2645,9 @@ EffectInstance::onSignificantEvaluateAboutToBeCalled(KnobI* knob)
 {
     KnobButton* button = dynamic_cast<KnobButton*>(knob);
     if (button) {
-        return;
-    }
-    //We changed, abort any ongoing current render to refresh them with a newer version
-    abortAnyEvaluation();
-    
-    NodePtr node = getNode();
-
-    node->refreshIdentityState();
-
-    //Increments the knobs age following a change
-    node->incrementKnobsAge();
-    
-}
-
-void
-EffectInstance::evaluate(KnobI* knob,
-                         bool isSignificant,
-                         bool refreshMetadatas)
-{
-
-  
-    NodePtr node = getNode();
-   
-    KnobButton* button = dynamic_cast<KnobButton*>(knob);
-
-    if (isWriter()) {
-        /*if this is a button and it is a render button,we're safe to assume the plug-ins wants to start rendering.*/
-        if (button) {
-            if ( button->isRenderButton() ) {
+        if (isWriter()) {
+            /*if this is a button and it is a render button,we're safe to assume the plug-ins wants to start rendering.*/
+            if (button->isRenderButton()) {
                 
                 AppInstance::RenderWork w;
                 w.writer = dynamic_cast<OutputEffectInstance*>(this);
@@ -2684,11 +2658,39 @@ EffectInstance::evaluate(KnobI* knob,
                 std::list<AppInstance::RenderWork> works;
                 works.push_back(w);
                 getApp()->startWritersRendering(false, works);
-
+                
                 return;
             }
         }
+        
+
+        return;
     }
+    //We changed, abort any ongoing current render to refresh them with a newer version
+    abortAnyEvaluation();
+    
+    NodePtr node = getNode();
+    
+    if (knob->getEvaluateOnChange()) {
+        getApp()->triggerAutoSave();
+    }
+    
+    
+
+    node->refreshIdentityState();
+
+    //Increments the knobs age following a change
+    node->incrementKnobsAge();
+    
+}
+
+void
+EffectInstance::evaluate(bool isSignificant,
+                         bool refreshMetadatas)
+{
+
+  
+    NodePtr node = getNode();
 
 
     if (refreshMetadatas && node->isNodeCreated()) {
