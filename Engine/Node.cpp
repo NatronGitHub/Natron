@@ -1652,7 +1652,6 @@ Node::restoreSublabel()
                             labeltext.append(QLatin1Char('(') + sublabel + QLatin1Char(')'));
                             labeltext.append(QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_END));
                         } else {
-                            --fontEndTagFound;
                             QString toAppend(QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START));
                             toAppend += QLatin1Char('(');
                             toAppend += sublabel;
