@@ -40,6 +40,7 @@
 #include <QtCore/QFileInfo>
 
 #include <QAction>
+#include <QApplication>
 
 #include "Engine/CLArgs.h"
 #include "Engine/KnobSerialization.h" // createDefaultValueForParam
@@ -146,64 +147,105 @@ Gui::reloadStylesheet()
     }
 }
 
+static
+QString
+qcolor_to_qstring(const QColor& col)
+{
+    return QString::fromUtf8("rgb(%1,%2,%3)").arg(col.red()).arg(col.green()).arg(col.blue());
+}
+
+static inline
+QColor
+to_qcolor(double r, double g, double b)
+{
+    return QColor(Color::floatToInt<256>(r), Color::floatToInt<256>(g), Color::floatToInt<256>(b));
+}
+
 void
 Gui::loadStyleSheet()
 {
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
 
-    QString selStr, sunkStr, baseStr, raisedStr, txtStr, intStr, kfStr, eStr, altStr, lightSelStr;
+    QColor selCol, sunkCol, baseCol, raisedCol, txtCol, intCol, kfCol, disCol, eCol, altCol, lightSelCol;
 
     //settings->
     {
         double r, g, b;
         settings->getSelectionColor(&r, &g, &b);
-        double lr,lg,lb;
-        lr = 1;
-        lg = 0.75;
-        lb = 0.47;
-        selStr = QString::fromUtf8("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
-        lightSelStr = QString::fromUtf8("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(lr)).arg(Color::floatToInt<256>(lg)).arg(Color::floatToInt<256>(lb));
+        selCol = to_qcolor(r, g, b);
+    }
+    {
+        double r, g, b;
+        r = 1;
+        g = 0.75;
+        b = 0.47;
+        lightSelCol = to_qcolor(r, g, b);
     }
     {
         double r, g, b;
         settings->getBaseColor(&r, &g, &b);
-        baseStr = QString::fromUtf8("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+        baseCol = to_qcolor(r, g, b);
     }
     {
         double r, g, b;
         settings->getRaisedColor(&r, &g, &b);
-        raisedStr = QString::fromUtf8("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+        raisedCol = to_qcolor(r, g, b);
     }
     {
         double r, g, b;
         settings->getSunkenColor(&r, &g, &b);
-        sunkStr = QString::fromUtf8("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+        sunkCol = to_qcolor(r, g, b);
     }
     {
         double r, g, b;
         settings->getTextColor(&r, &g, &b);
-        txtStr = QString::fromUtf8("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+        txtCol = to_qcolor(r, g, b);
     }
     {
         double r, g, b;
         settings->getInterpolatedColor(&r, &g, &b);
-        intStr = QString::fromUtf8("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+        intCol = to_qcolor(r, g, b);
     }
     {
         double r, g, b;
         settings->getKeyframeColor(&r, &g, &b);
-        kfStr = QString::fromUtf8("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+        kfCol = to_qcolor(r, g, b);
+    }
+    {
+        double r, g, b;
+        r = g = b = 0.;
+        disCol = to_qcolor(r, g, b);
     }
     {
         double r, g, b;
         settings->getExprColor(&r, &g, &b);
-        eStr = QString::fromUtf8("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+        eCol = to_qcolor(r, g, b);
     }
     {
         double r, g, b;
         settings->getAltTextColor(&r, &g, &b);
-        altStr = QString::fromUtf8("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+        altCol = to_qcolor(r, g, b);
     }
+
+    // First, set the global palette colors
+    // Note: the following colors may be wrong, please test and fix these on Linux with an empty mainstyle.css
+    QPalette p = qApp->palette();
+    p.setBrush( QPalette::Window, sunkCol );
+    p.setBrush( QPalette::WindowText, txtCol );
+    p.setBrush( QPalette::Base, baseCol );
+    //p.setBrush( QPalette::ToolTipBase, baseCol );
+    //p.setBrush( QPalette::ToolTipText, txtCol );
+    p.setBrush( QPalette::Text, txtCol );
+    p.setBrush( QPalette::Button, baseCol );
+    p.setBrush( QPalette::ButtonText, txtCol );
+    p.setBrush( QPalette::Light, raisedCol );
+    p.setBrush( QPalette::Dark, sunkCol );
+    p.setBrush( QPalette::Mid, baseCol );
+    //p.setBrush( QPalette::Shadow, sunkCol );
+    p.setBrush( QPalette::BrightText, txtCol );
+    p.setBrush( QPalette::Link, selCol ); // can only be set via palette
+    p.setBrush( QPalette::LinkVisited, selCol ); // can only be set via palette
+    qApp->setPalette( p );
 
     QFile qss;
     std::string userQss = settings->getUserStyleSheetFilePath();
@@ -218,17 +260,17 @@ Gui::loadStyleSheet()
         QTextStream in(&qss);
         QString content( in.readAll() );
         setStyleSheet( content
-                       .arg(selStr) // %1: selection-color
-                       .arg(baseStr) // %2: medium background
-                       .arg(raisedStr) // %3: soft background
-                       .arg(sunkStr) // %4: strong background
-                       .arg(txtStr) // %5: text colour
-                       .arg(intStr) // %6: interpolated value color
-                       .arg(kfStr) // %7: keyframe value color
-                       .arg(QString::fromUtf8("rgb(0,0,0)")) // %8: disabled editable text
-                       .arg(eStr) // %9: expression background color
-                       .arg(altStr)  // %10 = altered text color
-                       .arg(lightSelStr)); // %11 = mouse over selection color
+                       .arg(qcolor_to_qstring(selCol)) // %1: selection-color
+                       .arg(qcolor_to_qstring(baseCol)) // %2: medium background
+                       .arg(qcolor_to_qstring(raisedCol)) // %3: soft background
+                       .arg(qcolor_to_qstring(sunkCol)) // %4: strong background
+                       .arg(qcolor_to_qstring(txtCol)) // %5: text colour
+                       .arg(qcolor_to_qstring(intCol)) // %6: interpolated value color
+                       .arg(qcolor_to_qstring(kfCol)) // %7: keyframe value color
+                       .arg(qcolor_to_qstring(disCol)) // %8: disabled editable text
+                       .arg(qcolor_to_qstring(eCol)) // %9: expression background color
+                       .arg(qcolor_to_qstring(altCol))  // %10 = altered text color
+                       .arg(qcolor_to_qstring(lightSelCol))); // %11 = mouse over selection color
     } else {
         Dialogs::errorDialog(tr("Stylesheet").toStdString(), tr("Failure to load stylesheet file ").toStdString() + qss.fileName().toStdString());
     }
