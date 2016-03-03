@@ -27,9 +27,6 @@ source `pwd`/common.sh || exit 1
 
 cd $CWD/build || exit 1
 
-mkdir -p "$CWD/build/Natron/App/Natron.app/Contents/Plugins/OFX/Natron"
-
-
 #If "workshop" is passed, use master branch for all plug-ins otherwise use the git tags in common.sh
 if [ "$BRANCH" = "workshop" ]; then
     IO_BRANCH=master
