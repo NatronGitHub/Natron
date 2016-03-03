@@ -363,8 +363,8 @@ AppInstance::newVersionCheckDownloaded()
                 .arg(extractedSoftwareVersionStr)
                 .arg(extractedDevStatusStr)
                 .arg(extractedBuildNumberStr) +
-                QObject::tr("<p>You can download it from ") + QString::fromUtf8("<a href='http://sourceforge.net/projects/natron/'>"
-                                                                                "<font color=\"orange\">Sourceforge</a>. </p>");
+                QObject::tr("<p>You can download it from ") + QString::fromUtf8("<a href=\"http://sourceforge.net/projects/natron/\">"
+                                                                                "Sourceforge</a>. </p>");
             } else {
                 text =  QObject::tr("<p>Updates for %1 are now available for download. "
                                     "You are currently using %1 version %2 - %3. "
@@ -374,8 +374,8 @@ AppInstance::newVersionCheckDownloaded()
                 .arg(QString::fromUtf8(NATRON_DEVELOPMENT_STATUS))
                 .arg(extractedSoftwareVersionStr)
                 .arg(extractedDevStatusStr) +
-                QObject::tr("<p>You can download it from ") + QString::fromUtf8("<a href='www.natron.fr/download'>"
-                                                                    "<font color=\"orange\">www.natron.fr</a>. </p>");
+                QObject::tr("<p>You can download it from ") + QString::fromUtf8("<a href=\"www.natron.fr/download\">"
+                                                                    "www.natron.fr</a>. </p>");
 
             }
         
