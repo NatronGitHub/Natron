@@ -4580,12 +4580,24 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
         }
     }
     
+    double inputPar = 1.;
+    bool inputParSet = false;
+    
     ImagePremultiplicationEnum premult;
     bool premultSet = false;
     for (int i = 0; i < nInputs; ++i) {
         const EffectInstPtr& input = inputs[i];
         if (input) {
             frameRate = std::max(frameRate, input->getFrameRate());
+        }
+        
+        
+        
+        if (input) {
+            if (!inputParSet) {
+                inputPar = input->getAspectRatio(-1);
+                inputParSet = true;
+            }
         }
         
         ImageComponents rawComp = getUnmappedComponentsForInput(this, i, inputs, firstNonOptionalConnectedInputComps);
@@ -4621,7 +4633,8 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
         }
         
     } // for each input
-
+    
+   
     if (!hasSetCompsAndDepth) {
         mostComponents = ImageComponents::getRGBAComponents();
         deepestBitDepth = eImageBitDepthFloat;
@@ -4636,6 +4649,15 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
     // now find the best depth that the plugin supports
     deepestBitDepth = node->getClosestSupportedBitDepth(deepestBitDepth);
     
+    bool multipleClipsPAR = supportsMultipleClipsPAR();
+    double projectPAR;
+    {
+        Format f;
+        getRenderFormat(&f);
+        projectPAR =  f.getPixelAspectRatio();
+    }
+    
+    
     // now add the input gubbins to the per inputs metadatas
     for (int i = -1; i < (int)inputs.size(); ++i) {
         
@@ -4645,7 +4667,16 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
         } else {
             effect = this;
         }
-    
+        
+        double par;
+        if (!multipleClipsPAR && inputParSet) {
+            par = inputPar;
+        } else if (multipleClipsPAR && effect) {
+            par = effect == this ? projectPAR : effect->getAspectRatio(-1);
+        } else {
+            par = projectPAR;
+        }
+        metadata.setPixelAspectRatio(i, par);
         
         if (i == -1 || isInputOptional(i)) {
             // "Optional input clips can always have their component types remapped"
