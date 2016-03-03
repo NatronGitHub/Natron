@@ -189,11 +189,15 @@ namespace { // protect local classes in anonymous namespace
         boost::shared_ptr<KnobDouble> center;
     };
     
+ 
+    
     struct FormatKnob {
         boost::weak_ptr<KnobInt> size;
         boost::weak_ptr<KnobDouble> par;
         boost::weak_ptr<KnobChoice> formatChoice;
+    
     };
+    
 }
 
 
@@ -3774,6 +3778,8 @@ Node::getFrameStepKnobValue() const
 bool
 Node::handleFormatKnob(KnobI* knob)
 {
+    assert(QThread::currentThread() == qApp->thread());
+    
     boost::shared_ptr<KnobChoice> choice = _imp->pluginFormatKnobs.formatChoice.lock();
     if (!choice) {
         return false;
@@ -3793,8 +3799,13 @@ Node::handleFormatKnob(KnobI* knob)
     assert(size && par);
     
     _imp->effect->beginChanges();
+    size->blockValueChanges();
     size->setValues(f.width(), f.height(), ViewSpec::all(), Natron::eValueChangedReasonNatronInternalEdited);
+    size->unblockValueChanges();
+    par->blockValueChanges();
     par->setValue(f.getPixelAspectRatio());
+    par->unblockValueChanges();
+    
     _imp->effect->endChanges();
     return true;
 }
