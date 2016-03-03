@@ -106,25 +106,30 @@ NumericKnobValidator::validateInput(const QString& userText, double* valueToDisp
     
     *valueToDisplay = 0;
     std::string ret;
-    std::string expr = userText.toStdString();
+    QString simplifiedUserText = userText.simplified();
+    
+    bool isPersistentExpression = simplifiedUserText.startsWith(QLatin1Char('='));
+    if (isPersistentExpression) {
+        simplifiedUserText.remove(0, 1);
+    }
+    std::string expr = simplifiedUserText.toStdString();
     KnobGuiPtr knob = _imp->knobUi.lock();
 
-    if (!expr.empty()) {
+    if (!expr.empty() && knob) {
         try {
-            if (knob) {
-                knob->getKnob()->validateExpression(expr, 0, false, &ret);
-            }
+            knob->getKnob()->validateExpression(expr, 0, false, &ret);
         } catch (...) {
             return false;
         }
-    }
-    if (knob) {
-        knob->pushUndoCommand(new SetExpressionCommand(knob->getKnob(),
-                                                       false,
-                                                       dimension,
-                                                       expr));
-    }
-    if (!expr.empty()) {
+        if (isPersistentExpression) {
+            //Only set the expression if it starts with '='
+            knob->pushUndoCommand(new SetExpressionCommand(knob->getKnob(),
+                                                           false,
+                                                           dimension,
+                                                           expr));
+        }
+        
+        
         bool ok = false;
         *valueToDisplay = QString::fromUtf8(ret.c_str()).toDouble(&ok);
         if (!ok) {
@@ -134,6 +139,7 @@ NumericKnobValidator::validateInput(const QString& userText, double* valueToDisp
     } else {
         *valueToDisplay = _imp->spinbox->getLastValidValueBeforeValidation();
     }
+
     return true;
 }
 
