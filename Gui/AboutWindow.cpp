@@ -126,7 +126,7 @@ AboutWindow::AboutWindow(Gui* gui,
         aboutText.append(licenseStr);
     }
     {
-        QString endAbout = (QString::fromUtf8("<p>See the <a href=\"%2\" style=\"color:orange\">%1 website</a>"
+        QString endAbout = (QString::fromUtf8("<p>See the <a href=\"%2\" style=\"color:orange\">%1 website</a> "
                                               "for more information on this software.</p>")
                             .arg(QString::fromUtf8(NATRON_APPLICATION_NAME)) // %1
                             .arg(QString::fromUtf8(NATRON_WEBSITE_URL))); // %2
