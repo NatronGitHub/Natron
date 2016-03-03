@@ -83,59 +83,80 @@ AboutWindow::AboutWindow(Gui* gui,
     _aboutText = new QTextBrowser(_tabWidget);
     _aboutText->setOpenExternalLinks(true);
     QString aboutText;
-    QString customBuild(NATRON_CUSTOM_BUILD_USER_NAME);
-    if (!customBuild.isEmpty()) {
-        aboutText = QString("<p>%1 custom build for %2 %3.</p>")
-        .arg(NATRON_APPLICATION_NAME)
-        .arg(customBuild)
-#ifdef DEBUG
-        .arg("(debug)");
-#else
-#ifdef NDEBUG
-        // release with asserts disabled (should be the *real* release)
-        .arg("");
-#else
-        // release with asserts enabled
-        .arg("(opt)");
-#endif
-#endif
-    } else {
-        aboutText = QString("<p>%1 version %2 %3%4.</p>")
-        .arg(NATRON_APPLICATION_NAME)
-        .arg(NATRON_VERSION_STRING)
-        .arg(NATRON_DEVELOPMENT_STATUS)
-#ifdef DEBUG
-        .arg(" (debug)");
-#else
-#ifdef NDEBUG
-        // release with asserts disabled (should be the *real* release)
-        .arg("");
-#else
-        // release with asserts enabled
-        .arg(" (opt)");
-#endif
-#endif
-    }
-    QString licenseStr;
     {
+        QString customBuild(NATRON_CUSTOM_BUILD_USER_NAME);
+        if (!customBuild.isEmpty()) {
+            aboutText = QString("<p>%1 custom build for %2 %3.</p>")
+            .arg(NATRON_APPLICATION_NAME)
+            .arg(customBuild)
+#ifdef DEBUG
+            .arg("(debug)");
+#else
+#ifdef NDEBUG
+            // release with asserts disabled (should be the *real* release)
+            .arg("");
+#else
+            // release with asserts enabled
+            .arg("(opt)");
+#endif
+#endif
+        } else {
+            aboutText = QString("<p>%1 version %2 %3%4.</p>")
+            .arg(NATRON_APPLICATION_NAME)
+            .arg(NATRON_VERSION_STRING)
+            .arg(NATRON_DEVELOPMENT_STATUS)
+#ifdef DEBUG
+            .arg(" (debug)");
+#else
+#ifdef NDEBUG
+            // release with asserts disabled (should be the *real* release)
+            .arg("");
+#else
+            // release with asserts enabled
+            .arg(" (opt)");
+#endif
+#endif
+        }
+    }
+    {
+        QString licenseStr;
         QFile license(":LICENSE_SHORT.txt");
         license.open(QIODevice::ReadOnly | QIODevice::Text);
         licenseStr = GuiUtils::convertFromPlainText(QTextCodec::codecForName("UTF-8")->toUnicode(license.readAll()), Qt::WhiteSpaceNormal);
+        aboutText.append(licenseStr);
     }
-    aboutText.append(licenseStr);
-
-    QString endAbout = (QString("<p>See <a href=\"%2\"><font color=\"orange\">%1 's website </font></a>"
-                                "for more information on this software.</p>")
-                        .arg(NATRON_APPLICATION_NAME) // %1
-                        .arg(NATRON_WEBSITE_URL)); // %2
-    aboutText.append(endAbout);
-    QString gitStr = (QString("<p>This version was generated from the source "
-                              "code branch %1 at commit %2.</p>")
-                      .arg(GIT_BRANCH) // %1
-                      .arg(GIT_COMMIT)); // %2
-;
-    aboutText.append(gitStr);
-
+    {
+        QString endAbout = (QString("<p>See the <a href=\"%2\" style=\"color:orange\">%1 website</a>"
+                                    "for more information on this software.</p>")
+                            .arg(NATRON_APPLICATION_NAME) // %1
+                            .arg(NATRON_WEBSITE_URL)); // %2
+        aboutText.append(endAbout);
+    }
+    {
+        QString gitStr = (QString("<p>This software was compiled from the source "
+                                  "code branch %1 at version %2.</p>")
+                          .arg("<a href=\"https://github.com/MrKepzie/Natron/tree/"GIT_BRANCH"\" style=\"color:orange\">"GIT_BRANCH"</a>") // %1
+                          .arg("<a href=\"https://github.com/MrKepzie/Natron/tree/"GIT_COMMIT"\" style=\"color:orange\">"GIT_COMMIT"</a>")); // %2
+        aboutText.append(gitStr);
+    }
+    if (!std::string(IO_GIT_COMMIT).empty()) {
+        QString gitStr = (QString("<p>The bundled <a href=\"https://github.com/MrKepzie/openfx-io\" style=\"color:orange\">openfx-io</a> "
+                                  "plugins were compiled from version %2.</p>")
+                          .arg("<a href=\"https://github.com/MrKepzie/openfx-io/tree/"IO_GIT_COMMIT"\" style=\"color:orange\">"IO_GIT_COMMIT"</a>")); // %1
+        aboutText.append(gitStr);
+    }
+    if (!std::string(MISC_GIT_COMMIT).empty()) {
+        QString gitStr = (QString("<p>The bundled <a href=\"https://github.com/devernay/openfx-misc\" style=\"color:orange\">openfx-misc</a> "
+                                  "plugins were compiled from version %2.</p>")
+                          .arg("<a href=\"https://github.com/devernay/openfx-misc/tree/"MISC_GIT_COMMIT"\" style=\"color:orange\">"MISC_GIT_COMMIT"</a>")); // %1
+        aboutText.append(gitStr);
+    }
+    if (!std::string(ARENA_GIT_COMMIT).empty()) {
+        QString gitStr = (QString("<p>The bundled <a href=\"https://github.com/olear/openfx-arena\" style=\"color:orange\">openfx-arena</a> "
+                                  "plugins were compiled from version %2.</p>")
+                          .arg("<a href=\"https://github.com/olear/openfx-arena/tree/"ARENA_GIT_COMMIT"\" style=\"color:orange\">"ARENA_GIT_COMMIT"</a>")); // %1
+        aboutText.append(gitStr);
+    }
     const QString status(NATRON_DEVELOPMENT_STATUS);
     if (status == NATRON_DEVELOPMENT_DEVEL) {
         QString toAppend = QString("<p>Note: This is a development version, which probably contains bugs. "
