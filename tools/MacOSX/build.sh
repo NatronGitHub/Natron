@@ -139,35 +139,35 @@ fi
 
 PLUGINDIR="$CWD/build/Natron/App/Natron.app/Contents/Plugins"
 NATRONLOG="$LOGDIR/Natron-$TAG.log"
-PLUGINSLOG="$LOGDIR/Natron-$TAG-plugins.log"
 
-echo "Building plug-ins..."
+echo "Building Natron..."
 echo
-PLUGINDIR=$PLUGINDIR MKJOBS=$MKJOBS CONFIG=$CONFIG BRANCH=$BRANCH DISABLE_BREAKPAD="$DISABLE_BREAKPAD" ./build-plugins.sh >& "$PLUGINSLOG" || FAIL=1
+env MKJOBS="$MKJOBS" CONFIG="$CONFIG" BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER  BRANCH="$BRANCH" PLUGINDIR="$PLUGINDIR" DISABLE_BREAKPAD="$DISABLE_BREAKPAD" ./build-natron.sh >& "$NATRONLOG" || FAIL=1
 
 if [ "$FAIL" != "1" ]; then
     echo OK
 else
     echo ERROR
-    echo "BUILD__ERROR" >> "$PLUGINSLOG"
+    echo "BUILD__ERROR" >> "$NATRONLOG"
     sleep 2
-    cat "$PLUGINSLOG"
+    cat "$NATRONLOG"
 fi
 
+PLUGINSLOG="$LOGDIR/Natron-$TAG-plugins.log"
 if [ "$FAIL" != "1" ]; then
-    echo "Building Natron..."
+    echo "Building plug-ins..."
     echo
-    env MKJOBS="$MKJOBS" CONFIG="$CONFIG" BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER  BRANCH="$BRANCH" PLUGINDIR="$PLUGINDIR" DISABLE_BREAKPAD="$DISABLE_BREAKPAD" ./build-natron.sh >& "$NATRONLOG" || FAIL=1
-
+    PLUGINDIR=$PLUGINDIR MKJOBS=$MKJOBS CONFIG=$CONFIG BRANCH=$BRANCH DISABLE_BREAKPAD="$DISABLE_BREAKPAD" ./build-plugins.sh >& "$PLUGINSLOG" || FAIL=1
     if [ "$FAIL" != "1" ]; then
         echo OK
     else
         echo ERROR
-        echo "BUILD__ERROR" >> "$NATRONLOG"
+        echo "BUILD__ERROR" >> "$PLUGINSLOG"
         sleep 2
-        cat "$NATRONLOG"
+        cat "$PLUGINSLOG"
     fi
 fi
+
 
 if [ "$BUILD_CONFIG" = "ALPHA" ]; then
 	if [ -z "$BUILD_NUMBER" ]; then
