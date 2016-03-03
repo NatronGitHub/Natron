@@ -2934,7 +2934,11 @@ KnobHelper::checkAnimationLevel(ViewSpec view,
         if (i == dimension || dimension == -1) {
             AnimationLevelEnum level = eAnimationLevelNone;
             
-            if ( canAnimate() && isAnimated(i, view) && getHolder() && getHolder()->getApp() ) {
+            
+            if (canAnimate() &&
+                isAnimated(i, view) &&
+                getExpression(i).empty() &&
+                getHolder() && getHolder()->getApp() ) {
                 
                 boost::shared_ptr<Curve> c = getCurve(view, i);
                 double time = getHolder()->getApp()->getTimeLine()->currentFrame();
@@ -2949,6 +2953,8 @@ KnobHelper::checkAnimationLevel(ViewSpec view,
                 } else {
                     level = eAnimationLevelNone;
                 }
+            } else {
+                level = eAnimationLevelNone;
             }
             {
                 QMutexLocker l(&_imp->animationLevelMutex);
@@ -2963,9 +2969,7 @@ KnobHelper::checkAnimationLevel(ViewSpec view,
     
     boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
     if ( changed && _signalSlotHandler && hasGui && !hasGui->isGuiFrozenForPlayback() ) {
-        if (getExpression(dimension).empty()) {
-            _signalSlotHandler->s_animationLevelChanged(view, dimension );
-        }
+        _signalSlotHandler->s_animationLevelChanged(view, dimension );
     }
 }
 
@@ -2977,6 +2981,8 @@ KnobHelper::getAnimationLevel(int dimension) const
     std::pair<int,KnobPtr > master = getMaster(dimension);
     
     if (master.second) {
+        //Make sure it is refreshed
+        master.second->checkAnimationLevel(ViewSpec(0), master.first);
         return master.second->getAnimationLevel(master.first);
     }
     
@@ -4575,9 +4581,9 @@ KnobHolder::endChanges(bool discardRendering)
             if (handler) {
                 handler->s_valueChanged(it->view, dimension, it->reason);
             }
-            
+            it->knob->checkAnimationLevel(it->view, dimension);
+
         }
-        it->knob->checkAnimationLevel(it->view, dimension);
         
         it->knob->refreshListenersAfterValueChange(it->view, it->originalReason, dimension);
     }

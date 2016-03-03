@@ -1931,9 +1931,10 @@ Knob<T>::onTimeChanged(bool isPlayback, double time)
         if (getKnobGuiPointer() && _signalSlotHandler && (isAnimated(i, ViewIdx(0)) || !getExpression(i).empty())) {
             shouldRefresh = true;
         }
-        checkAnimationLevel(ViewIdx(0),i);
     }
+
     if (shouldRefresh) {
+        checkAnimationLevel(ViewIdx(0),-1);
         _signalSlotHandler->s_valueChanged(ViewSpec::all(), -1, eValueChangedReasonTimeChanged);
     }
     if (evaluateValueChangeOnTimeChange() && !isPlayback) {
