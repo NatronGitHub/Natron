@@ -289,7 +289,9 @@ AppManager::load(int &argc,
     //otherwise it might crash with thread local storage
 
 #if QT_VERSION < 0x050000
+    // be forward compatible: source code is UTF-8, and Qt5 assumes UTF-8 by default
     QTextCodec::setCodecForCStrings(QTextCodec::codecForName("UTF-8"));
+    QTextCodec::setCodecForTr(QTextCodec::codecForName("UTF-8"));
 #endif
 
     assert(argv);
