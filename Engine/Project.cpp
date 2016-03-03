@@ -1975,7 +1975,7 @@ Project::canonicalizePath(std::string& str)
         ///Canonicalize
         QFileInfo info(QString::fromUtf8(str.c_str()));
         QString canonical =  info.canonicalFilePath();
-        if ( canonical.isEmpty() && !str.empty() ) {
+        if (canonical.isEmpty()) {
             return;
         } else {
             str = canonical.toStdString();
