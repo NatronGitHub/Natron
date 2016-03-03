@@ -488,7 +488,7 @@ fi
 echo "Running unit tests ..."
 export FONTCONFIG_PATH=$UNIT_TMP/Resources/etc/fonts/fonts.conf
 mkdir -p ~/.cache/INRIA/Natron/{ViewerCache,DiskCache}
-COMPARE=`pwd`/compare.exe sh runTests.sh $UNIT_TMP/bin/NatronRenderer-bin.exe >& "$UNIT_LOG"
+FFMPEG="/mingw64/ffmpeg-GPL/bin/ffmpeg.exe" COMPARE=`pwd`/compare.exe sh runTests.sh $UNIT_TMP/bin/NatronRenderer-bin.exe >& "$UNIT_LOG"
 
 fi
 
