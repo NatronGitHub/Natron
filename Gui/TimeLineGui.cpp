@@ -590,7 +590,7 @@ TimeLineGui::paintGL()
         glEnd();
         glCheckErrorIgnoreOSXBug();
 
-        if ( rightBound != cur ) {
+        if ( rightBound != cur  && rightBound != leftBound) {
             QString rightBoundStr( QString::number( rightBound ) );
             double rightBoundTextXposWidget = toWidgetCoordinates( ( rightBoundBtm.x() + rightBoundBtmLeft.x() ) / 2.,0 ).x() - fontM.width(rightBoundStr) / 2.;
             double rightBoundTextPos = toTimeLine(rightBoundTextXposWidget);

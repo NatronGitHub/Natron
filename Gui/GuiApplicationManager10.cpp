@@ -896,6 +896,9 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, kShortcutDescActionPlayerNextKF, Qt::ShiftModifier | Qt::ControlModifier, Qt::Key_Right);
     registerKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst, kShortcutDescActionPlayerFirst, Qt::ControlModifier, Qt::Key_Left);
     registerKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerLast, kShortcutDescActionPlayerLast, Qt::ControlModifier, Qt::Key_Right);
+    
+    registerKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPlaybackIn, kShortcutDescActionPlayerPlaybackIn, Qt::AltModifier, Qt::Key_I);
+    registerKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPlaybackOut, kShortcutDescActionPlayerPlaybackOut, Qt::AltModifier, Qt::Key_O);
 
     ///Roto
     registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoDelete, kShortcutDescActionRotoDelete, Qt::NoModifier, Qt::Key_Backspace);

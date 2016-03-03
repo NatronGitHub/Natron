@@ -353,6 +353,11 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionPlayerLast "last"
 #define kShortcutDescActionPlayerLast "Go to Last Frame"
 
+#define kShortcutIDActionPlayerPlaybackIn "pbIn"
+#define kShortcutDescActionPlayerPlaybackIn "Set Playback In Point"
+
+#define kShortcutIDActionPlayerPlaybackOut "pbOut"
+#define kShortcutDescActionPlayerPlaybackOut "Set Playback Out Point"
 
 ///////////ROTO SHORTCUTS
 #define kShortcutIDActionRotoDelete "delete"

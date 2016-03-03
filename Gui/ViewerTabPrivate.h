@@ -134,13 +134,14 @@ struct ViewerTabPrivate
     SpinBox* incrementSpinBox;
     Button* nextIncrement_Button;
     Button* playbackMode_Button;
+    Button* playBackInputButton;
+    SpinBox* playBackInputSpinbox;
+    Button* playBackOutputButton;
+    SpinBox* playBackOutputSpinbox;
     
     mutable QMutex playbackModeMutex;
     PlaybackModeEnum playbackMode;
     
-    LineEdit* frameRangeEdit;
-
-    ClickableLabel* canEditFrameRangeLabel;
     Button* tripleSyncButton;
     
     QCheckBox* canEditFpsBox;

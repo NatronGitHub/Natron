@@ -158,57 +158,92 @@ ViewerTab::setImageFormat(int textureIndex,const ImageComponents& components,Ima
     _imp->infoWidget[textureIndex]->setImageFormat(components,depth);
 }
 
+
 void
-ViewerTab::onFrameRangeEditingFinished()
+ViewerTab::onPlaybackInButtonClicked()
 {
-    QString text = _imp->frameRangeEdit->text();
-    ///try to parse the frame range, if failed set it back to what the timeline currently is
-    int i = 0;
-    QString firstStr;
+    SequenceTime curIn,curOut;
+    _imp->timeLineGui->getBounds(&curIn, &curOut);
+    curIn = (SequenceTime)_imp->timeLineGui->getTimeline()->currentFrame();
+    curIn = std::min(curIn, curOut);
+    setTimelineBounds(curIn, curOut);
+    _imp->timeLineGui->recenterOnBounds();
+    onTimelineBoundariesChanged(curIn, curOut);
+}
 
-    while ( i < text.size() && text.at(i).isDigit() ) {
-        firstStr.push_back( text.at(i) );
-        ++i;
-    }
+void
+ViewerTab::onPlaybackOutButtonClicked()
+{
+    SequenceTime curIn,curOut;
+    _imp->timeLineGui->getBounds(&curIn, &curOut);
+    curOut = (SequenceTime)_imp->timeLineGui->getTimeline()->currentFrame();
+    curOut = std::max(curIn, curOut);
+    setTimelineBounds(curIn, curOut);
+    _imp->timeLineGui->recenterOnBounds();
+    onTimelineBoundariesChanged(curIn, curOut);
 
-    ///advance the marker to the second digit if any
-    while ( i < text.size() && !text.at(i).isDigit() ) {
-        ++i;
-    }
-    
-    int curLeft,curRight;
-    getTimelineBounds(&curLeft, &curRight);
+}
 
-    bool ok;
-    int first = firstStr.toInt(&ok);
-    if (!ok) {
-        QString text = QString::fromUtf8("%1 - %2").arg( curLeft ).arg( curRight );
-        _imp->frameRangeEdit->setText(text);
-        _imp->frameRangeEdit->adjustSize();
+void
+ViewerTab::onPlaybackInSpinboxValueChanged(double value)
+{
+    SequenceTime curIn,curOut;
+    _imp->timeLineGui->getBounds(&curIn, &curOut);
+    curIn = (SequenceTime)value;
+    curIn = std::min(curIn, curOut);
+    setTimelineBounds(curIn, curOut);
+    _imp->timeLineGui->recenterOnBounds();
+    onTimelineBoundariesChanged(curIn, curOut);
 
-        return;
-    }
+}
 
-    if ( i == text.size() ) {
-        ///there's no second marker, set the timeline's boundaries to be the same frame
-        setTimelineBounds(first, first);
-    } else {
-        QString secondStr;
-        while ( i < text.size() && text.at(i).isDigit() ) {
-            secondStr.push_back( text.at(i) );
-            ++i;
-        }
-        int second = secondStr.toInt(&ok);
-        if (!ok) {
-            ///there's no second marker, set the timeline's boundaries to be the same frame
-            setTimelineBounds(first, first);
-        } else {
-            setTimelineBounds(first, second);
-        }
-    }
-    _imp->frameRangeEdit->adjustSize();
+void
+ViewerTab::onPlaybackOutSpinboxValueChanged(double value)
+{
+    SequenceTime curIn,curOut;
+    _imp->timeLineGui->getBounds(&curIn, &curOut);
+    curOut = (SequenceTime)value;
+    curOut = std::max(curIn, curOut);
+    setTimelineBounds(curIn, curOut);
+    _imp->timeLineGui->recenterOnBounds();
+    onTimelineBoundariesChanged(curIn, curOut);
+}
+
+
+
+void
+ViewerTab::setFrameRange(int left,int right)
+{
+    setTimelineBounds(left, right);
+    onTimelineBoundariesChanged(left, right);
     _imp->timeLineGui->recenterOnBounds();
 }
+
+
+
+void
+ViewerTab::onTimelineBoundariesChanged(SequenceTime first,
+                                       SequenceTime second)
+{
+    _imp->playBackInputSpinbox->setValue(first);
+    _imp->playBackOutputSpinbox->setValue(second);
+
+    
+    if (getGui() ) {
+        const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
+        for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+            ViewerInstance* viewer = (*it)->getInternalNode();
+            if (viewer) {
+                RenderEngine* engine = viewer->getRenderEngine();
+                if (engine && engine->hasThreadsWorking()) {
+                    engine->abortRendering(true,false);
+                    engine->renderCurrentFrame(false, true);
+                }
+            }
+        }
+    }
+}
+
 
 
 void
@@ -241,31 +276,6 @@ ViewerTab::setFPSLocked(bool fpsLocked)
     _imp->canEditFpsBox->setChecked(!fpsLocked);
     onCanSetFPSClicked(!fpsLocked);
 }
-
-void
-ViewerTab::onTimelineBoundariesChanged(SequenceTime first,
-                                       SequenceTime second)
-{
-    QString text = QString::fromUtf8("%1 - %2").arg(first).arg(second);
-
-    _imp->frameRangeEdit->setText(text);
-    _imp->frameRangeEdit->adjustSize();
-    
-    if (getGui() ) {
-        const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
-        for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-            ViewerInstance* viewer = (*it)->getInternalNode();
-            if (viewer) {
-                RenderEngine* engine = viewer->getRenderEngine();
-                if (engine && engine->hasThreadsWorking()) {
-                    engine->abortRendering(true,false);
-                    engine->renderCurrentFrame(false, true);
-                }
-            }
-        }
-    }
-}
-
 
 bool
 ViewerTab::isFPSLocked() const
@@ -761,14 +771,6 @@ ViewerTab::setFrameRangeEdited(bool edited)
     _imp->timeLineGui->setFrameRangeEdited(edited);
 }
 
-
-void
-ViewerTab::setFrameRange(int left,int right)
-{
-    setTimelineBounds(left, right);
-    onTimelineBoundariesChanged(left, right);
-    _imp->timeLineGui->recenterOnBounds();
-}
 
 void
 ViewerTab::onInternalNodeLabelChanged(const QString& name)

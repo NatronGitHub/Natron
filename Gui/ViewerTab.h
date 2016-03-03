@@ -278,6 +278,11 @@ public:
 
 public Q_SLOTS:
 
+    void onPlaybackInButtonClicked();
+    void onPlaybackOutButtonClicked();
+    void onPlaybackInSpinboxValueChanged(double value);
+    void onPlaybackOutSpinboxValueChanged(double value);
+    
     void onZoomComboboxCurrentIndexChanged(int index);
     
     void toggleStartForward();
@@ -343,8 +348,6 @@ public Q_SLOTS:
     void onInputNameChanged(int inputNb,const QString & name);
 
     void onInputChanged(int inputNb);
-
-    void onFrameRangeEditingFinished();
     
     void onCanSetFPSClicked(bool toggled);
     void onCanSetFPSLabelClicked(bool toggled);
