@@ -171,7 +171,7 @@ AddFormatDialog::AddFormatDialog(Project *project,
     
 
     for (std::list<ViewerInstance*>::iterator it = _viewers.begin(); it != _viewers.end(); ++it) {
-        _copyFromViewerCombo->addItem( (*it)->getNode()->getLabel().c_str() );
+        _copyFromViewerCombo->addItem( QString::fromUtf8((*it)->getNode()->getLabel().c_str()) );
     }
     _fromViewerLineLayout->addWidget(_copyFromViewerCombo);
 
@@ -188,7 +188,7 @@ AddFormatDialog::AddFormatDialog(Project *project,
     _parametersLineLayout = new QHBoxLayout(_parametersLine);
     _mainLayout->addWidget(_parametersLine);
 
-    _widthLabel = new Label("w:",_parametersLine);
+    _widthLabel = new Label(QString::fromUtf8("w:"),_parametersLine);
     _parametersLineLayout->addWidget(_widthLabel);
     _widthSpinBox = new SpinBox(this,SpinBox::eSpinBoxTypeInt);
     _widthSpinBox->setMaximum(99999);
@@ -197,7 +197,7 @@ AddFormatDialog::AddFormatDialog(Project *project,
     _parametersLineLayout->addWidget(_widthSpinBox);
 
 
-    _heightLabel = new Label("h:",_parametersLine);
+    _heightLabel = new Label(QString::fromUtf8("h:"),_parametersLine);
     _parametersLineLayout->addWidget(_heightLabel);
     _heightSpinBox = new SpinBox(this,SpinBox::eSpinBoxTypeInt);
     _heightSpinBox->setMaximum(99999);
@@ -470,7 +470,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
         
         KnobPtr labelSerialization = it->getLabelSerialization();
         
-        CreateNodeArgs args(PLUGINID_NATRON_BACKDROP, eCreateNodeReasonInternal, _project.lock());
+        CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_BACKDROP), eCreateNodeReasonInternal, _project.lock());
 
         NodePtr node = getGui()->getApp()->createNode(args);
         boost::shared_ptr<NodeGuiI> gui_i = node->getNodeGui();
@@ -483,7 +483,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
             KnobString* iStr = dynamic_cast<KnobString*>(labelSerialization.get());
             assert(iStr);
             if (iStr) {
-                bd->onLabelChanged(iStr->getValue().c_str());
+                bd->onLabelChanged(QString::fromUtf8(iStr->getValue().c_str()));
             }
             float r,g,b;
             it->getColor(r, g, b);
@@ -574,7 +574,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
     const std::list<std::string> & histograms = obj.getHistograms();
     for (std::list<std::string>::const_iterator it = histograms.begin(); it != histograms.end(); ++it) {
         Histogram* h = _gui->addNewHistogram();
-        h->setObjectName( (*it).c_str() );
+        h->setObjectName( QString::fromUtf8((*it).c_str() ));
         //move it by default to the viewer pane, before restoring the layout anyway which
         ///will relocate it correctly
         _gui->appendTabToDefaultViewerPane(h,h);
@@ -584,7 +584,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
         _gui->getNodeGraph()->clearSelection();
     }
     
-    _gui->getScriptEditor()->setInputScript(obj.getInputScript().c_str());
+    _gui->getScriptEditor()->setInputScript(QString::fromUtf8(obj.getInputScript().c_str()));
     _gui->centerAllNodeGraphsWithTimer();
 } // load
 

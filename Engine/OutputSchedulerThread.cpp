@@ -549,7 +549,7 @@ OutputSchedulerThread::OutputSchedulerThread(RenderEngine* engine,const boost::s
     QObject::connect(&_imp->threadSpawnsTimer, SIGNAL(timeout()), this, SLOT(onThreadSpawnsTimerTriggered()));
 #endif
     
-    setObjectName("Scheduler thread");
+    setObjectName(QString::fromUtf8("Scheduler thread"));
 }
 
 OutputSchedulerThread::~OutputSchedulerThread()
@@ -1634,7 +1634,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             ts << "\nTime elapsed for frame: " << timeSpentStr;
             ts << "\nTime remaining: " << timeRemainingStr;
         }
-        appPTR->writeToOutputPipe(longMessage,kFrameRenderedStringShort + frameStr + kProgressChangedStringShort + QString::number(percentage));
+        appPTR->writeToOutputPipe(longMessage,QString::fromUtf8(kFrameRenderedStringShort) + frameStr + QString::fromUtf8(kProgressChangedStringShort) + QString::number(percentage));
     }
     
     if (viewIndex == viewsToRender[viewsToRender.size() - 1] || viewIndex == -1) {
@@ -1678,7 +1678,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             ss << outputNodeName << ", " << appStr << ")";
             std::string script = ss.str();
             try {
-                runCallbackWithVariables(script.c_str());
+                runCallbackWithVariables(QString::fromUtf8(script.c_str()));
             } catch (const std::exception& e) {
                 notifyRenderFailure(e.what());
                 return;
@@ -2144,10 +2144,10 @@ OutputSchedulerThread::runCallbackWithVariables(const QString& callback)
         std::string appID = effect->getApp()->getAppIDString();
         std::string nodeName = effect->getNode()->getFullyQualifiedName();
         std::string nodeFullName = appID + "." + nodeName;
-        script.append(nodeFullName.c_str());
-        script.append(",");
-        script.append(appID.c_str());
-        script.append(")\n");
+        script.append(QString::fromUtf8(nodeFullName.c_str()));
+        script.append(QLatin1Char(','));
+        script.append(QString::fromUtf8(appID.c_str()));
+        script.append(QString::fromUtf8(")\n"));
         
         std::string err,output;
         if (!Python::interpretPythonScript(callback.toStdString(), &err, &output)) {
@@ -2216,7 +2216,7 @@ RenderThreadTask::RenderThreadTask(const boost::shared_ptr<OutputEffectInstance>
 : QThread()
 , _imp(new RenderThreadTaskPrivate(output,scheduler))
 {
-    setObjectName("Parallel render thread");
+    setObjectName(QString::fromUtf8("Parallel render thread"));
 }
 #else
 RenderThreadTask::RenderThreadTask(const boost::shared_ptr<OutputEffectInstance>& output,
@@ -2421,7 +2421,7 @@ private:
             ss << cb << "(" << time << ", " << outputNodeName << ", " << appStr << ")";
             std::string script = ss.str();
             try {
-                _imp->scheduler->runCallbackWithVariables(script.c_str());
+                _imp->scheduler->runCallbackWithVariables(QString::fromUtf8(script.c_str()));
             } catch (const std::exception &e) {
                 _imp->scheduler->notifyRenderFailure(e.what());
                 return;
@@ -2735,7 +2735,7 @@ DefaultScheduler::aboutToStartRender()
     if (!isBackGround) {
         effect->setKnobsFrozen(true);
     } else {
-        appPTR->writeToOutputPipe(kRenderingStartedLong, kRenderingStartedShort);
+        appPTR->writeToOutputPipe(QString::fromUtf8(kRenderingStartedLong), QString::fromUtf8(kRenderingStartedShort));
     }
     
     std::string cb = effect->getNode()->getBeforeRenderCallback();
@@ -2774,7 +2774,7 @@ DefaultScheduler::aboutToStartRender()
         ss << cb << "(" << outputNodeName << ", " << appStr << ")";
         std::string script = ss.str();
         try {
-            runCallbackWithVariables(script.c_str());
+            runCallbackWithVariables(QString::fromUtf8(script.c_str()));
         } catch (const std::exception &e) {
             notifyRenderFailure(e.what());
         }
@@ -2836,7 +2836,7 @@ DefaultScheduler::onRenderStopped(bool aborted)
         ss << outputNodeName << ", " << appStr << ")";
         std::string script = ss.str();
         try {
-            runCallbackWithVariables(script.c_str());
+            runCallbackWithVariables(QString::fromUtf8(script.c_str()));
         } catch (...) {
             //Ignore expcetions in callback since the render is finished anyway
         }
@@ -3662,7 +3662,7 @@ ViewerCurrentFrameRequestScheduler::ViewerCurrentFrameRequestScheduler(ViewerIns
 : QThread()
 , _imp(new ViewerCurrentFrameRequestSchedulerPrivate(viewer))
 {
-    setObjectName("ViewerCurrentFrameRequestScheduler");
+    setObjectName(QString::fromUtf8("ViewerCurrentFrameRequestScheduler"));
     QObject::connect(this, SIGNAL(s_processProducedFrameOnMainThread(RenderStatsPtr,BufferableObjectList)), this, SLOT(doProcessProducedFrameOnMainThread(RenderStatsPtr,BufferableObjectList)));
 }
 
@@ -4088,7 +4088,7 @@ ViewerCurrentFrameRequestRendererBackup::ViewerCurrentFrameRequestRendererBackup
 : QThread()
 , _imp(new ViewerCurrentFrameRequestRendererBackupPrivate())
 {
-    setObjectName("ViewerCurrentFrameRequestRendererBackup");
+    setObjectName(QString::fromUtf8("ViewerCurrentFrameRequestRendererBackup"));
 }
 
 ViewerCurrentFrameRequestRendererBackup::~ViewerCurrentFrameRequestRendererBackup()

@@ -1002,7 +1002,7 @@ namespace {
     
 static QStringList explode(const QString& str)
 {
-    QRegExp rx("(\\ |\\-|\\.|\\/|\\t|\\n)"); //RegEx for ' ' '/' '.' '-' '\t' '\n'
+    QRegExp rx(QString::fromUtf8("(\\ |\\-|\\.|\\/|\\t|\\n)")); //RegEx for ' ' '/' '.' '-' '\t' '\n'
 
     QStringList ret;
     int startIndex = 0;
@@ -2362,14 +2362,23 @@ ViewerGL::updateColorPicker(int textureIndex,
     if (_imp->pickerState != ePickerStateInactive || !_imp->viewerTab || !_imp->viewerTab->getGui() || _imp->viewerTab->getGui()->isGUIFrozen()) {
         return;
     }
+    
+    const std::list<Histogram*>& histograms = _imp->viewerTab->getGui()->getHistograms();
 
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    if ( !displayingImage() && _imp->infoViewer[textureIndex]->colorAndMouseVisible() ) {
-        _imp->infoViewer[textureIndex]->hideColorAndMouseInfo();
-
+    if (!displayingImage()) {
+        for (std::list<Histogram*>::const_iterator it = histograms.begin(); it != histograms.end(); ++it) {
+            if ((*it)->getViewerTextureInputDisplayed() == textureIndex) {
+                (*it)->hideViewerCursor();
+            }
+        }
+        if (_imp->infoViewer[textureIndex]->colorAndMouseVisible()) {
+            _imp->infoViewer[textureIndex]->hideColorAndMouseInfo();
+        }
         return;
     }
+   
 
     QPoint pos;
     bool xInitialized = false;
@@ -2442,6 +2451,17 @@ ViewerGL::updateColorPicker(int textureIndex,
             _imp->infoViewer[textureIndex]->showColorAndMouseInfo();
         }
         _imp->infoViewer[textureIndex]->setColor(r,g,b,a);
+        
+        std::vector<double> colorVec(4);
+        colorVec[0] = r;
+        colorVec[1] = g;
+        colorVec[2] = b;
+        colorVec[3] = a;
+        for (std::list<Histogram*>::const_iterator it = histograms.begin(); it != histograms.end(); ++it) {
+            if ((*it)->getViewerTextureInputDisplayed() == textureIndex) {
+                (*it)->setViewerCursor(colorVec);
+            }
+        }
     }
 } // updateColorPicker
 
@@ -2747,11 +2767,11 @@ ViewerGL::setRegionOfDefinition(const RectD & rod,
 
     _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].clear();
     _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].append(left);
-    _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].append(",");
+    _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].append(QLatin1Char(','));
     _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex].append(btm);
     _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].clear();
     _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].append(right);
-    _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].append(",");
+    _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].append(QLatin1Char(','));
     _imp->currentViewerInfo_topRightBBOXoverlay[textureIndex].append(top);
 }
 
@@ -2782,7 +2802,7 @@ ViewerGL::onProjectFormatChangedInternal(const Format & format,bool triggerRende
     }
     _imp->currentViewerInfo_resolutionOverlay.clear();
     _imp->currentViewerInfo_resolutionOverlay.append( QString::number(format.width() ) );
-    _imp->currentViewerInfo_resolutionOverlay.append("x");
+    _imp->currentViewerInfo_resolutionOverlay.append(QLatin1Char('x'));
     _imp->currentViewerInfo_resolutionOverlay.append( QString::number(format.height() ) );
     
     bool loadingProject = _imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject();
@@ -3497,6 +3517,8 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
         return;
     }
     
+    const std::list<Histogram*>& histograms = _imp->viewerTab->getGui()->getHistograms();
+    
     if ( _imp->activeTextures[texIndex] &&
          ( imgPos.x() >= rod.left() ) &&
          ( imgPos.x() < rod.right() ) &&
@@ -3512,6 +3534,11 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
                ( imgPos.y() >= dispW.top() ) ) ) {
             if ( _imp->infoViewer[texIndex]->colorAndMouseVisible() ) {
                 _imp->infoViewer[texIndex]->hideColorAndMouseInfo();
+            }
+            for (std::list<Histogram*>::const_iterator it = histograms.begin(); it != histograms.end(); ++it) {
+                if ((*it)->getViewerTextureInputDisplayed() == texIndex) {
+                    (*it)->hideViewerCursor();
+                }
             }
         } else {
             if (_imp->pickerState == ePickerStateInactive) {
@@ -3536,6 +3563,12 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
         if ( _imp->infoViewer[texIndex]->colorAndMouseVisible() ) {
             _imp->infoViewer[texIndex]->hideColorAndMouseInfo();
         }
+        for (std::list<Histogram*>::const_iterator it = histograms.begin(); it != histograms.end(); ++it) {
+            if ((*it)->getViewerTextureInputDisplayed() == texIndex) {
+                (*it)->hideViewerCursor();
+            }
+        }
+        
     }
 }
 

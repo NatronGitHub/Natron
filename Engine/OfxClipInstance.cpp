@@ -1064,9 +1064,9 @@ OfxClipInstance::natronsComponentsToOfxComponents(const ImageComponents& comp)
         return kOfxImageComponentRGB;
     } else if (comp == ImageComponents::getRGBAComponents()) {
         return kOfxImageComponentRGBA;
-    } else if (QString(comp.getComponentsGlobalName().c_str()).compare("UV", Qt::CaseInsensitive) == 0) {
+    } else if (QString::fromUtf8(comp.getComponentsGlobalName().c_str()).compare(QString::fromUtf8("UV"), Qt::CaseInsensitive) == 0) {
         return kFnOfxImageComponentMotionVectors;
-    } else if (QString(comp.getComponentsGlobalName().c_str()).compare("XY", Qt::CaseInsensitive) == 0) {
+    } else if (QString::fromUtf8(comp.getComponentsGlobalName().c_str()).compare(QString::fromUtf8("XY"), Qt::CaseInsensitive) == 0) {
         return kFnOfxImageComponentStereoDisparity;
     } else {
         return natronCustomCompToOfxComp(comp);

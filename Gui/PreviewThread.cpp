@@ -74,7 +74,7 @@ PreviewThread::PreviewThread()
 : QThread()
 , _imp(new PreviewThreadPrivate())
 {
-    setObjectName("PreviewThread");
+    setObjectName(QString::fromUtf8("PreviewThread"));
 }
 
 PreviewThread::~PreviewThread()

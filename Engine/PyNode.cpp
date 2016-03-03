@@ -56,10 +56,10 @@ int
 ImageLayer::getHash(const ImageLayer& layer)
 {
     Hash64 h;
-    Hash64_appendQString(&h, layer._comps.getLayerName().c_str());
+    Hash64_appendQString(&h, QString::fromUtf8(layer._comps.getLayerName().c_str()));
     const std::vector<std::string>& comps = layer._comps.getComponentsNames();
     for (std::size_t i = 0; i < comps.size(); ++i) {
-        Hash64_appendQString(&h, comps[i].c_str());
+        Hash64_appendQString(&h, QString::fromUtf8(comps[i].c_str()));
     }
     return (int)h.value();
 }
@@ -696,7 +696,7 @@ Effect::createChild()
         return 0;
     }
     
-    CreateNodeArgs args(getInternalNode()->getPluginID().c_str(), eCreateNodeReasonInternal, getInternalNode()->getGroup());
+    CreateNodeArgs args(QString::fromUtf8(getInternalNode()->getPluginID().c_str()), eCreateNodeReasonInternal, getInternalNode()->getGroup());
     args.multiInstanceParentName = getInternalNode()->getScriptName();
     NodePtr child = getInternalNode()->getApp()->createNode(args);
     if (child) {

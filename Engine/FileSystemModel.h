@@ -54,7 +54,7 @@ public:
                    FileSystemItem* parent = 0);
     
     ~FileSystemItem();
-    
+
     boost::shared_ptr<FileSystemItem> childAt(int position) const;
     
     int childCount() const;
@@ -199,6 +199,13 @@ public:
         EndSections //do not use
     };
     
+		
+#ifdef __NATRON_WIN32__
+	static QString mapPathWithDriveLetterToPathWithNetworkShareName(const QString& path);
+	static void initDriveLettersToNetworkShareNamesMapping();
+#endif
+	
+	
     FileSystemModel(SortableViewI* view);
     
     ///////////////////////////////////////Overriden from QAbstractItemModel///////////////////////////////////////
@@ -250,7 +257,7 @@ public:
      * You may only use these methods once the directoryLoaded signal is sent, indicating that the worker thread
      * has gathered all info.
      **/
-    void setRootPath(const QString& path);
+    bool setRootPath(const QString& path);
     
     QVariant myComputer(int role = Qt::DisplayRole) const WARN_UNUSED_RETURN;
     

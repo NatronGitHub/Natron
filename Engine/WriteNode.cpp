@@ -368,7 +368,7 @@ WriteNodePrivate::destroyWriteNode()
 void
 WriteNodePrivate::createDefaultWriteNode()
 {
-    CreateNodeArgs args(WRITE_NODE_DEFAULT_WRITER, eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
+    CreateNodeArgs args(QString::fromUtf8(WRITE_NODE_DEFAULT_WRITER), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
     args.createGui = false;
     args.addToProject = false;
     args.ioContainer = _publicInterface->getNode();
@@ -418,7 +418,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors, const std::string& filename,
     SetCreatingWriterRAIIFlag creatingNode__(this);
     
     std::string filePattern = filename;
-    QString qpattern(filePattern.c_str());
+    QString qpattern = QString::fromUtf8(filePattern.c_str());
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
     
     boost::shared_ptr<KnobString> pluginIDKnob = pluginIDStringKnob.lock();
@@ -453,7 +453,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors, const std::string& filename,
     if (writerPluginID.empty() && !serialization) {
         //Couldn't find any reader
         if (!ext.empty()) {
-            QString message = QObject::tr("No plugin capable of encoding") + ' ' + ext.c_str() + ' ' + QObject::tr("was found") + '.';
+            QString message = QObject::tr("No plugin capable of encoding") + QLatin1Char(' ') +QString::fromUtf8(ext.c_str()) + QLatin1Char(' ') + QObject::tr("was found") + QLatin1Char('.');
             //Dialogs::errorDialog(QObject::tr("Read").toStdString(), message.toStdString(), false);
             if (throwErrors) {
                 throw std::runtime_error(message.toStdString());
@@ -462,7 +462,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors, const std::string& filename,
         defaultFallback = true;
         
     } else {
-        CreateNodeArgs args(writerPluginID.c_str(), serialization ? eCreateNodeReasonProjectLoad : eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
+        CreateNodeArgs args(QString::fromUtf8(writerPluginID.c_str()), serialization ? eCreateNodeReasonProjectLoad : eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
         args.createGui = false;
         args.addToProject = false;
         args.serialization = serialization;
@@ -520,7 +520,7 @@ WriteNodePrivate::refreshPluginSelectorKnob()
     entries.push_back(kPluginSelectorParamEntryDefault);
     help.push_back("Use the default plug-in chosen from the Preferences to write this file format");
     
-    QString qpattern(filePattern.c_str());
+    QString qpattern = QString::fromUtf8(filePattern.c_str());
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
     std::vector<std::string> writersForFormat;
     appPTR->getCurrentSettings()->getWritersForFormat(ext,&writersForFormat);
@@ -528,7 +528,7 @@ WriteNodePrivate::refreshPluginSelectorKnob()
     std::string pluginID = appPTR->getCurrentSettings()->getWriterPluginIDForFileType(ext);
     
     for (std::size_t i = 0; i < writersForFormat.size(); ++i) {
-        Plugin* plugin = appPTR->getPluginBinary(writersForFormat[i].c_str(), -1, -1, false);
+        Plugin* plugin = appPTR->getPluginBinary(QString::fromUtf8(writersForFormat[i].c_str()), -1, -1, false);
         entries.push_back(plugin->getPluginID().toStdString());
         std::stringstream ss;
         ss << "Use " << plugin->getPluginLabel().toStdString() << " version ";

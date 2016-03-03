@@ -329,11 +329,11 @@ GuiPrivate::createPropertiesBinGui()
     ///Remove wheel autofocus
     _propertiesScrollArea->setFocusPolicy(Qt::StrongFocus);
     QObject::connect( _propertiesScrollArea->verticalScrollBar(), SIGNAL(valueChanged(int)), _gui, SLOT(onPropertiesScrolled()) );
-    _propertiesScrollArea->setObjectName("Properties");
+    _propertiesScrollArea->setObjectName(QString::fromUtf8("Properties"));
     assert(_nodeGraphArea);
 
     _propertiesContainer = new QWidget(_propertiesScrollArea);
-    _propertiesContainer->setObjectName("_propertiesContainer");
+    _propertiesContainer->setObjectName(QString::fromUtf8("_propertiesContainer"));
     _layoutPropertiesBin = new QVBoxLayout(_propertiesContainer);
     _layoutPropertiesBin->setSpacing(0);
     _layoutPropertiesBin->setContentsMargins(0, 0, 0, 0);
@@ -349,7 +349,7 @@ GuiPrivate::createPropertiesBinGui()
 
     int smallSizeIcon = TO_DPIX(NATRON_SMALL_BUTTON_ICON_SIZE);
     appPTR->getIcon(NATRON_PIXMAP_CLOSE_PANEL, smallSizeIcon, &closePanelPix);
-    _clearAllPanelsButton = new Button(QIcon(closePanelPix), "", propertiesAreaButtonsContainer);
+    _clearAllPanelsButton = new Button(QIcon(closePanelPix), QString(), propertiesAreaButtonsContainer);
 
     const QSize smallButtonSize(TO_DPIX(NATRON_SMALL_BUTTON_SIZE),TO_DPIY(NATRON_SMALL_BUTTON_SIZE));
     const QSize smallButtonIconSize(TO_DPIX(NATRON_SMALL_BUTTON_ICON_SIZE),TO_DPIY(NATRON_SMALL_BUTTON_ICON_SIZE));
@@ -366,7 +366,7 @@ GuiPrivate::createPropertiesBinGui()
     QIcon mIc;
     mIc.addPixmap(minimizePix, QIcon::Normal, QIcon::On);
     mIc.addPixmap(maximizePix, QIcon::Normal, QIcon::Off);
-    _minimizeAllPanelsButtons = new Button(mIc, "", propertiesAreaButtonsContainer);
+    _minimizeAllPanelsButtons = new Button(mIc,QString(), propertiesAreaButtonsContainer);
     _minimizeAllPanelsButtons->setCheckable(true);
     _minimizeAllPanelsButtons->setChecked(false);
     _minimizeAllPanelsButtons->setFixedSize(smallButtonSize);
@@ -627,16 +627,16 @@ GuiPrivate::checkProjectLockAndWarn(const QString& projectPath,const QString& pr
 void
 GuiPrivate::restoreGuiGeometry()
 {
-    QSettings settings(NATRON_ORGANIZATION_NAME, NATRON_APPLICATION_NAME);
+    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME));
 
-    settings.beginGroup("MainWindow");
+    settings.beginGroup(QString::fromUtf8("MainWindow"));
 
-    if ( settings.contains("pos") ) {
-        QPoint pos = settings.value("pos").toPoint();
+    if ( settings.contains(QString::fromUtf8("pos")) ) {
+        QPoint pos = settings.value(QString::fromUtf8("pos")).toPoint();
         _gui->move(pos);
     }
-    if ( settings.contains("size") ) {
-        QSize size = settings.value("size").toSize();
+    if ( settings.contains(QString::fromUtf8("size")) ) {
+        QSize size = settings.value(QString::fromUtf8("size")).toSize();
         _gui->resize(size);
     } else {
         ///No window size serialized, give some appriopriate default value according to the screen size
@@ -644,54 +644,54 @@ GuiPrivate::restoreGuiGeometry()
         QRect screen = desktop->screenGeometry();
         _gui->resize( (int)( 0.93 * screen.width() ), (int)( 0.93 * screen.height() ) ); // leave some space
     }
-    if ( settings.contains("fullScreen") ) {
-        bool fs = settings.value("fullScreen").toBool();
+    if ( settings.contains(QString::fromUtf8("fullScreen")) ) {
+        bool fs = settings.value(QString::fromUtf8("fullScreen")).toBool();
         if (fs) {
             _gui->toggleFullScreen();
         }
     }
 
-    if ( settings.contains("ToolbarHidden") ) {
-        leftToolBarDisplayedOnHoverOnly = settings.value("ToolbarHidden").toBool();
+    if ( settings.contains(QString::fromUtf8("ToolbarHidden")) ) {
+        leftToolBarDisplayedOnHoverOnly = settings.value(QString::fromUtf8("ToolbarHidden")).toBool();
     }
 
     settings.endGroup();
 
-    if ( settings.contains("LastOpenProjectDialogPath") ) {
-        _lastLoadProjectOpenedDir = settings.value("LastOpenProjectDialogPath").toString();
+    if ( settings.contains(QString::fromUtf8("LastOpenProjectDialogPath")) ) {
+        _lastLoadProjectOpenedDir = settings.value(QString::fromUtf8("LastOpenProjectDialogPath")).toString();
         QDir d(_lastLoadProjectOpenedDir);
         if ( !d.exists() ) {
             _lastLoadProjectOpenedDir.clear();
         }
     }
-    if ( settings.contains("LastSaveProjectDialogPath") ) {
-        _lastSaveProjectOpenedDir = settings.value("LastSaveProjectDialogPath").toString();
+    if ( settings.contains(QString::fromUtf8("LastSaveProjectDialogPath")) ) {
+        _lastSaveProjectOpenedDir = settings.value(QString::fromUtf8("LastSaveProjectDialogPath")).toString();
         QDir d(_lastSaveProjectOpenedDir);
         if ( !d.exists() ) {
             _lastSaveProjectOpenedDir.clear();
         }
     }
-    if ( settings.contains("LastLoadSequenceDialogPath") ) {
-        _lastLoadSequenceOpenedDir = settings.value("LastLoadSequenceDialogPath").toString();
+    if ( settings.contains(QString::fromUtf8("LastLoadSequenceDialogPath")) ) {
+        _lastLoadSequenceOpenedDir = settings.value(QString::fromUtf8("LastLoadSequenceDialogPath")).toString();
         QDir d(_lastLoadSequenceOpenedDir);
         if ( !d.exists() ) {
             _lastLoadSequenceOpenedDir.clear();
         }
     }
-    if ( settings.contains("LastSaveSequenceDialogPath") ) {
-        _lastSaveSequenceOpenedDir = settings.value("LastSaveSequenceDialogPath").toString();
+    if ( settings.contains(QString::fromUtf8("LastSaveSequenceDialogPath")) ) {
+        _lastSaveSequenceOpenedDir = settings.value(QString::fromUtf8("LastSaveSequenceDialogPath")).toString();
         QDir d(_lastSaveSequenceOpenedDir);
         if ( !d.exists() ) {
             _lastSaveSequenceOpenedDir.clear();
         }
     }
-    if ( settings.contains("LastPluginDir") ) {
-        _lastPluginDir = settings.value("LastPluginDir").toString();
+    if ( settings.contains(QString::fromUtf8("LastPluginDir")) ) {
+        _lastPluginDir = settings.value(QString::fromUtf8("LastPluginDir")).toString();
     }
     
 #ifdef __NATRON_WIN32__
-    if (settings.contains("ApplicationConsoleVisible")) {
-        bool visible = settings.value("ApplicationConsoleVisible").toBool();
+    if (settings.contains(QString::fromUtf8("ApplicationConsoleVisible"))) {
+        bool visible = settings.value(QString::fromUtf8("ApplicationConsoleVisible")).toBool();
         _gui->setApplicationConsoleActionVisible(visible);
     } else {
         _gui->setApplicationConsoleActionVisible(false);
@@ -702,22 +702,22 @@ GuiPrivate::restoreGuiGeometry()
 void
 GuiPrivate::saveGuiGeometry()
 {
-    QSettings settings(NATRON_ORGANIZATION_NAME, NATRON_APPLICATION_NAME);
+    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME));
 
-    settings.beginGroup("MainWindow");
-    settings.setValue( "pos", _gui->pos() );
-    settings.setValue( "size", _gui->size() );
-    settings.setValue( "fullScreen", _gui->isFullScreen() );
-    settings.setValue( "ToolbarHidden", leftToolBarDisplayedOnHoverOnly);
+    settings.beginGroup(QString::fromUtf8("MainWindow"));
+    settings.setValue( QString::fromUtf8("pos"), _gui->pos() );
+    settings.setValue( QString::fromUtf8("size"), _gui->size() );
+    settings.setValue( QString::fromUtf8("fullScreen"), _gui->isFullScreen() );
+    settings.setValue( QString::fromUtf8("ToolbarHidden"), leftToolBarDisplayedOnHoverOnly);
     settings.endGroup();
 
-    settings.setValue("LastOpenProjectDialogPath", _lastLoadProjectOpenedDir);
-    settings.setValue("LastSaveProjectDialogPath", _lastSaveProjectOpenedDir);
-    settings.setValue("LastLoadSequenceDialogPath", _lastLoadSequenceOpenedDir);
-    settings.setValue("LastSaveSequenceDialogPath", _lastSaveSequenceOpenedDir);
-    settings.setValue("LastPluginDir", _lastPluginDir);
+    settings.setValue(QString::fromUtf8("LastOpenProjectDialogPath"), _lastLoadProjectOpenedDir);
+    settings.setValue(QString::fromUtf8("LastSaveProjectDialogPath"), _lastSaveProjectOpenedDir);
+    settings.setValue(QString::fromUtf8("LastLoadSequenceDialogPath"), _lastLoadSequenceOpenedDir);
+    settings.setValue(QString::fromUtf8("LastSaveSequenceDialogPath"), _lastSaveSequenceOpenedDir);
+    settings.setValue(QString::fromUtf8("LastPluginDir"), _lastPluginDir);
 #ifdef __NATRON_WIN32__
-    settings.setValue("ApplicationConsoleVisible",applicationConsoleVisible);
+    settings.setValue(QString::fromUtf8("ApplicationConsoleVisible"),applicationConsoleVisible);
 #endif
 }
 
@@ -758,7 +758,7 @@ GuiPrivate::findActionRecursive(int i,
 
         return findActionRecursive(i + 1, menu, grouping);
     } else {
-        ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupGlobal, grouping[i], grouping[i], widget);
+        ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupGlobal, grouping[i].toStdString(), grouping[i].toStdString(), widget);
         QObject::connect( action, SIGNAL(triggered()), _gui, SLOT(onUserCommandTriggered()) );
         QMenu* isMenu = dynamic_cast<QMenu*>(widget);
         if (isMenu) {

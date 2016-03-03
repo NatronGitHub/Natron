@@ -107,7 +107,7 @@ ViewerTab::updateViewsMenu(const std::vector<std::string>& viewNames)
 
     _imp->viewsComboBox->clear();
     for (std::size_t i = 0;  i < viewNames.size(); ++i) {
-        _imp->viewsComboBox->addItem(viewNames[i].c_str());
+        _imp->viewsComboBox->addItem(QString::fromUtf8(viewNames[i].c_str()));
     }
     
     
@@ -211,9 +211,9 @@ ViewerTab::updateZoomComboBox(int value)
 {
     assert(value > 0);
     QString str = QString::number(value);
-    str.append( QChar('%') );
-    str.prepend("  ");
-    str.append("  ");
+    str.append( QLatin1Char('%') );
+    str.prepend(QString::fromUtf8("  "));
+    str.append(QString::fromUtf8("  "));
     _imp->zoomCombobox->setCurrentText_no_emit(str);
 }
 

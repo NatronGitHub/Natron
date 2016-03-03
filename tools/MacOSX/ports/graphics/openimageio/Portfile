@@ -6,6 +6,7 @@ PortGroup        github 1.0
 PortGroup        cmake 1.0
 PortGroup        conflicts_build 1.0
 PortGroup        qt4 1.0
+PortGroup       compiler_blacklist_versions 1.0
 # gcc-4.8 cannot compile universal
 # The internal yaml-cpp is not compiled with multiple archs in universal mode
 #PortGroup        muniversal 1.0
@@ -13,7 +14,7 @@ PortGroup        qt4 1.0
 epoch        	 1
 
 fetch.type              git
-github.setup     OpenImageIO oiio 1.6.10 tags/Release-
+github.setup     OpenImageIO oiio 1.6.11 tags/Release-
 #github.version      ${version}-dist
 #github.tarball_from downloads
 
@@ -50,8 +51,9 @@ depends_skip_archcheck txt2man
 # gcc-4.2 doesn't work
 # llvm-gcc-4.2 works
 # macports-clang < 3.3 untested
+# clang < 163 doesn't work
 #compiler.fallback-append macports-gcc-4.8 macports-gcc-4.9 macports-clang-3.3 macports-clang-3.4 macports-clang-3.5
-compiler.blacklist apple-gcc-4.0 apple-gcc-4.2 gcc-3.3 gcc-4.0 gcc-4.2 macports-gcc-4.0 macports-gcc-4.2
+compiler.blacklist apple-gcc-4.0 apple-gcc-4.2 gcc-3.3 gcc-4.0 gcc-4.2 macports-gcc-4.0 macports-gcc-4.2 {clang < 163}
 
 # The PowerPC build requires GCC >= 4.8, which doesn't recognize the -arch flag, and requires libatomic
 # Unfortunately, the resulting binaries don't work (at least on PPC), so we build without threads
@@ -87,12 +89,8 @@ if {${configure.build_arch} eq "ppc" || ${configure.build_arch} eq "ppc64"} {
 
 patch.pre_args	-p1
 patchfiles \
-    oiio-pnm16.patch \
     oiio-1.5.23-checkmaxmem.patch \
     oiio-1.5.23-invalidatespec.patch \
-    oiio-1.6.10-simd.patch \
-    oiio-1.6.10-vectorofconst.patch
-    oiio-sha1.patch \
     oiio-nothreads.patch
 
 cmake.out_of_source yes

@@ -119,7 +119,7 @@ using std::make_pair;
 static QString
 replaceLineBreaksWithHtmlParagraph(QString txt)
 {
-    txt.replace("\n", "<br>");
+    txt.replace(QString::fromUtf8("\n"), QString::fromUtf8("<br>"));
 
     return txt;
 }
@@ -268,12 +268,13 @@ NodeGui::initialize(NodeGraph* dag,
         }
     }
     
+    //Refresh the merge operator icon 
     if (internalNode->getPluginID() == PLUGINID_OFX_MERGE) {
         KnobPtr knob = internalNode->getKnobByName(kNatronOfxParamStringSublabelName);
         assert(knob);
         KnobString* strKnob = dynamic_cast<KnobString*>(knob.get());
         if (strKnob) {
-            onNodeExtraLabelChanged(strKnob->getValue().c_str());
+            onNodeExtraLabelChanged(QString::fromUtf8(strKnob->getValue().c_str()));
         }
     }
 
@@ -373,11 +374,11 @@ NodeGui::restoreStateAfterCreation()
         onDisabledKnobToggled(true);
     }
     if ( !internalNode->isMultiInstance() ) {
-        _nodeLabel = internalNode->getNodeExtraLabel().c_str();
+        _nodeLabel = QString::fromUtf8(internalNode->getNodeExtraLabel().c_str());
         _nodeLabel = replaceLineBreaksWithHtmlParagraph(_nodeLabel);
     }
     ///Refresh the name in the line edit
-    onInternalNameChanged( internalNode->getLabel().c_str() );
+    onInternalNameChanged( QString::fromUtf8(internalNode->getLabel().c_str()) );
     internalNode->refreshIdentityState();
     onPersistentMessageChanged();
 }
@@ -561,13 +562,13 @@ NodeGui::createGui()
         }
     }
 
-    if (node->getPlugin()->getPluginID() == QString(PLUGINID_OFX_MERGE)) {
+    if (node->getPlugin()->getPluginID() == QString::fromUtf8(PLUGINID_OFX_MERGE)) {
         _mergeIcon = new NodeGraphPixmapItem(getDagGui(),this);
         _mergeIcon->setZValue(depth + 1);
     }
 
     _nameItem = new NodeGraphTextItem(getDagGui(),this,false);
-    _nameItem->setPlainText(node->getLabel().c_str());
+    _nameItem->setPlainText(QString::fromUtf8(node->getLabel().c_str()));
     _nameItem->setDefaultTextColor( QColor(0,0,0,255) );
     //_nameItem->setFont( QFont(appFont,appFontSize) );
     _nameItem->setZValue(depth+ 1);
@@ -595,7 +596,7 @@ NodeGui::createGui()
 
     double ellipseDiam = TO_DPIX(NATRON_ELLIPSE_WARN_DIAMETER);
 
-    _streamIssuesWarning.reset(new NodeGuiIndicator(getDagGui(), depth + 2, "C",QPointF(bbox.x() + bbox.width() / 2, bbox.y()),
+    _streamIssuesWarning.reset(new NodeGuiIndicator(getDagGui(), depth + 2, QString::fromUtf8("C"),QPointF(bbox.x() + bbox.width() / 2, bbox.y()),
                                                 ellipseDiam,ellipseDiam,
                                             bitDepthGrad,QColor(0,0,0,255),this));
     _streamIssuesWarning->setActive(false);
@@ -605,12 +606,12 @@ NodeGui::createGui()
     exprGrad.push_back( qMakePair( 0., QColor(Qt::white) ) );
     exprGrad.push_back( qMakePair( 0.3, QColor(Qt::green) ) );
     exprGrad.push_back( qMakePair( 1., QColor(69,96,63) ) );
-    _expressionIndicator.reset(new NodeGuiIndicator(getDagGui(), depth + 2,"E",bbox.topRight(),ellipseDiam,ellipseDiam, exprGrad,QColor(255,255,255),this));
+    _expressionIndicator.reset(new NodeGuiIndicator(getDagGui(), depth + 2,QString::fromUtf8("E"),bbox.topRight(),ellipseDiam,ellipseDiam, exprGrad,QColor(255,255,255),this));
     _expressionIndicator->setToolTip(GuiUtils::convertFromPlainText(tr("This node has one or several expression(s) involving values of parameters of other "
                                          "nodes in the project. Hover the mouse on the green connections to see what are the effective links."), Qt::WhiteSpaceNormal));
     _expressionIndicator->setActive(false);
     
-    _availableViewsIndicator.reset(new NodeGuiIndicator(getDagGui(), depth + 2, "V", bbox.topLeft(),ellipseDiam,ellipseDiam,exprGrad, QColor(255,255,255), this));
+    _availableViewsIndicator.reset(new NodeGuiIndicator(getDagGui(), depth + 2, QString::fromUtf8("V"), bbox.topLeft(),ellipseDiam,ellipseDiam,exprGrad, QColor(255,255,255), this));
     _availableViewsIndicator->setActive(false);
     
     onAvailableViewsChanged();
@@ -623,7 +624,7 @@ NodeGui::createGui()
         ptGrad.push_back(qMakePair(0., QColor(0,0,255)));
         ptGrad.push_back(qMakePair(0.5, QColor(0,50,200)));
         ptGrad.push_back(qMakePair(1., QColor(0,100,150)));
-        _passThroughIndicator.reset(new NodeGuiIndicator(getDagGui(), depth + 2, "P", bbox.topRight(),ellipseDiam,ellipseDiam,ptGrad, QColor(255,255,255), this));
+        _passThroughIndicator.reset(new NodeGuiIndicator(getDagGui(), depth + 2, QString::fromUtf8("P"), bbox.topRight(),ellipseDiam,ellipseDiam,ptGrad, QColor(255,255,255), this));
         _passThroughIndicator->setActive(false);
     }
 
@@ -740,7 +741,7 @@ void
 NodeGui::refreshSize()
 {
     QRectF bbox = boundingRect();
-    resize(bbox.width(),bbox.height());
+    resize(bbox.width(),bbox.height(), false, !_nodeLabel.isEmpty());
 }
 
 int
@@ -862,7 +863,7 @@ NodeGui::resize(int width,
     if (!canResize()) {
         return;
     }
-
+ 
     const QPointF topLeft = mapFromParent(pos());
     
     const bool hasPluginIcon = _pluginIcon != NULL;
@@ -2333,22 +2334,22 @@ NodeGui::onAllKnobsSlaved(bool b)
 
 static QString makeLinkString(Node* masterNode,KnobI* master,Node* slaveNode,KnobI* slave)
 {
-    QString tt("<p>");
-    tt.append(masterNode->getLabel().c_str());
-    tt.append(".");
-    tt.append(master->getName().c_str());
+    QString tt = QString::fromUtf8("<p>");
+    tt.append(QString::fromUtf8(masterNode->getLabel().c_str()));
+    tt.append(QLatin1Char('.'));
+    tt.append(QString::fromUtf8(master->getName().c_str()));
 
 
-    tt.append(" (master) ");
+    tt.append(QString::fromUtf8(" (master) "));
 
-    tt.append("------->");
+    tt.append(QString::fromUtf8("------->"));
 
-    tt.append(slaveNode->getLabel().c_str());
-    tt.append(".");
-    tt.append(slave->getName().c_str());
+    tt.append(QString::fromUtf8(slaveNode->getLabel().c_str()));
+    tt.append(QString::fromUtf8("."));
+    tt.append(QString::fromUtf8(slave->getName().c_str()));
 
 
-    tt.append(" (slave)</p>");
+    tt.append(QString::fromUtf8(" (slave)</p>"));
     return tt;
 }
 
@@ -2625,7 +2626,7 @@ NodeGui::onStreamWarningsChanged()
         if (it->second.isEmpty()) {
             continue;
         }
-        QString tt = "<p><b>" + tr("Stream issue:") + "</b></p>";
+        QString tt = QString::fromUtf8("<p><b>") + tr("Stream issue:") + QString::fromUtf8("</b></p>");
         tt += GuiUtils::convertFromPlainText(it->second.trimmed(), Qt::WhiteSpaceNormal);
         tooltip += tt;
     }
@@ -2814,69 +2815,94 @@ NodeGui::setNameItemHtml(const QString & name,
         return;
     }
     QString textLabel;
-    textLabel.append("<div align=\"center\">");
-    bool hasFontData = true;
+    textLabel.append(QString::fromUtf8("<div align=\"center\">"));
     
-
+    
+    
     if ( !label.isEmpty() ) {
         QString labelCopy = label;
 
         ///remove any custom data tag natron might have added
-        QString startCustomTag(NATRON_CUSTOM_HTML_TAG_START);
+        QString startCustomTag = QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START);
         int startCustomData = labelCopy.indexOf(startCustomTag);
         if (startCustomData != -1) {
             labelCopy.remove( startCustomData, startCustomTag.size() );
 
-            QString endCustomTag(NATRON_CUSTOM_HTML_TAG_END);
+            QString endCustomTag = QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_END);
             int endCustomData = labelCopy.indexOf(endCustomTag,startCustomData);
             assert(endCustomData != -1);
             labelCopy.remove( endCustomData, endCustomTag.size() );
-            labelCopy.insert(endCustomData, "<br>");
+            labelCopy.insert(endCustomData, QString::fromUtf8("<br>"));
         }
 
         ///add the node name into the html encoded label
-        int startFontTag = labelCopy.indexOf("<font size=");
-        hasFontData = startFontTag != -1;
-        if (hasFontData) {
-            QString toFind("\">");
+        int startFontTag = labelCopy.indexOf(QString::fromUtf8("<font size="));
+        if (startFontTag != -1) {
+            QString toFind = QString::fromUtf8("\">");
             int endFontTag = labelCopy.indexOf(toFind,startFontTag);
-            int i = endFontTag += toFind.size();
-            labelCopy.insert(i == -1 ? 0 : i, name + _channelsExtraLabel + "<br>");
+            if (endFontTag != -1) {
+                endFontTag += toFind.size();
+            }
+            
+            QString toInsert = name + _channelsExtraLabel + QString::fromUtf8("<br>");
+            labelCopy.insert(endFontTag == -1 ? 0 : endFontTag, toInsert);
         } else {
-            labelCopy.prepend(name + _channelsExtraLabel + "<br>");
+            labelCopy.prepend(name + _channelsExtraLabel + QString::fromUtf8("<br>"));
+            ///Default to something not too bad
+            /*QString fontTag = (QString("<font size=\"%1\" color=\"%2\" face=\"%3\">")
+                               .arg(6)
+                               .arg( QColor(Qt::black).name() )
+                               .arg(QApplication::font().family()));
+            labelCopy.prepend(fontTag);
+            labelCopy.append("</font>");*/
+
         }
         textLabel.append(labelCopy);
 
     } else {
         ///Default to something not too bad
-        QString fontTag = (QString("<font size=\"%1\" color=\"%2\" face=\"%3\">")
+        /*QString fontTag = (QString("<font size=\"%1\" color=\"%2\" face=\"%3\">")
                            .arg(6)
                            .arg( QColor(Qt::black).name() )
                            .arg(QApplication::font().family()));
-        textLabel.append(fontTag);
+        textLabel.append(fontTag);*/
         textLabel.append(name);
         textLabel.append(_channelsExtraLabel);
-        textLabel.append("</font>");
+        //textLabel.append("</font>");
     }
-    textLabel.append("</div>");
+    textLabel.append(QString::fromUtf8("</div>"));
+    
+    int startFontTag = textLabel.indexOf(QString::fromUtf8("<font size="));
+    int endFontTag = -1;
+    if (startFontTag != -1) {
+        startFontTag = textLabel.indexOf(QString::fromUtf8("\">"),startFontTag);
+    }
+    
     QString oldText = _nameItem->toHtml();
     if (textLabel == oldText) {
         return;
     }
-    _nameItem->setHtml(textLabel);
-    _nameItem->adjustSize();
-
-
+    
     QFont f;
-    QColor color;
-    if (hasFontData) {
+    QColor color = Qt::black;
+    if (startFontTag != -1) {
         KnobGuiString::parseFont(textLabel, &f, &color);
+        //Remove font from the HTML
+        textLabel.remove(startFontTag, endFontTag - startFontTag);
+    } else {
+        f = QApplication::font();
     }
     bool antialias = appPTR->getCurrentSettings()->isNodeGraphAntiAliasingEnabled();
     if (!antialias) {
         f.setStyleStrategy(QFont::NoAntialias);
     }
+    _nameItem->setDefaultTextColor(color);
+    
     _nameItem->setFont(f);
+
+    _nameItem->setHtml(textLabel);
+    _nameItem->adjustSize();
+
 
     QRectF bbox = boundingRect();
     resize(bbox.width(),bbox.height(),false,!label.isEmpty());
@@ -2901,16 +2927,16 @@ NodeGui::onOutputLayerChanged()
     if (!isCurLayerColorComp &&
         selectedLayer != "None" &&
         selectedLayer != "All") {
-        extraLayerStr.append("<br>");
-        extraLayerStr.push_back('(');
-        extraLayerStr.append(selectedLayer.c_str());
-        extraLayerStr.push_back(')');
+        extraLayerStr.append(QString::fromUtf8("<br>"));
+        extraLayerStr.push_back(QLatin1Char('('));
+        extraLayerStr.append(QString::fromUtf8(selectedLayer.c_str()));
+        extraLayerStr.push_back(QLatin1Char(')'));
     }
     if (extraLayerStr == _channelsExtraLabel) {
         return;
     }
     _channelsExtraLabel = extraLayerStr;
-    setNameItemHtml(getNode()->getLabel().c_str(),_nodeLabel);
+    setNameItemHtml(QString::fromUtf8(getNode()->getLabel().c_str()),_nodeLabel);
 }
 
 void
@@ -2928,18 +2954,18 @@ NodeGui::onNodeExtraLabelChanged(const QString & label)
         _nodeLabel = KnobGuiString::removeNatronHtmlTag(_nodeLabel);
     }
     _nodeLabel = replaceLineBreaksWithHtmlParagraph(_nodeLabel); ///< maybe we should do this in the knob itself when the user writes ?
-    setNameItemHtml(node->getLabel().c_str(),_nodeLabel);
+    setNameItemHtml(QString::fromUtf8(node->getLabel().c_str()),_nodeLabel);
     
     //For the merge node, set its operator icon
-    if (getNode()->getPlugin()->getPluginID() == QString(PLUGINID_OFX_MERGE)) {
+    if (getNode()->getPlugin()->getPluginID() == QString::fromUtf8(PLUGINID_OFX_MERGE)) {
         assert(_mergeIcon);
         QString op = KnobGuiString::getNatronHtmlTagContent(label);
         if  (!op.isEmpty()) {
             //Remove surrounding parenthesis
-            if (op[0] == QChar('(')) {
+            if (op[0] == QLatin1Char('(')) {
                 op.remove(0, 1);
             }
-            if (op[op.size() - 1] == QChar(')')) {
+            if (op[op.size() - 1] == QLatin1Char(')')) {
                 op.remove(op.size() - 1,1);
             }
         }
@@ -3455,7 +3481,7 @@ NodeGui::setPluginIconFilePath(const std::string& filePath)
 {
     boost::shared_ptr<Settings> currentSettings = appPTR->getCurrentSettings();
 
-    QPixmap p(filePath.c_str());
+    QPixmap p(QString::fromUtf8(filePath.c_str()));
     if (p.isNull() || !currentSettings->isPluginIconActivatedOnNodeGraph()) {
         return;
     }
@@ -3536,16 +3562,16 @@ NodeGui::onAvailableViewsChanged()
     const std::vector<std::string>& projectViews = getDagGui()->getGui()->getApp()->getProject()->getProjectViewNames();
     QStringList qProjectViews;
     for (std::size_t i = 0; i < projectViews.size(); ++i) {
-        qProjectViews.push_back(projectViews[i].c_str());
+        qProjectViews.push_back(QString::fromUtf8(projectViews[i].c_str()));
     }
     
     QString toolTip;
     toolTip.append(tr("The following views are available in this node:"));
-    toolTip.append(" ");
+    toolTip.append(QString::fromUtf8(" "));
     for (std::size_t i = 0; i < views.size(); ++i) {
         
         ///Try to find a match in the project views to have the same case sensitivity
-        QString qView(views[i].c_str());
+        QString qView = QString::fromUtf8(views[i].c_str());
         for (QStringList::Iterator it = qProjectViews.begin(); it!=qProjectViews.end(); ++it) {
             if (it->size() == qView.size() && it->startsWith(qView,Qt::CaseInsensitive)) {
                 qView = *it;
@@ -3554,7 +3580,7 @@ NodeGui::onAvailableViewsChanged()
         }
         toolTip.append(qView);
         if (i < views.size() -1) {
-            toolTip.push_back(',');
+            toolTip.push_back(QLatin1Char(','));
         }
     }
     _availableViewsIndicator->setToolTip(toolTip);
@@ -3588,8 +3614,8 @@ NodeGui::onIdentityStateChanged(int inputNb)
     if (ptInput) {
     
         QString tooltip = tr("This node is a pass-through and produces the same results as");
-        tooltip += ' ';
-        tooltip += QString(ptInput->getLabel().c_str());
+        tooltip += QLatin1Char(' ');
+        tooltip += QString::fromUtf8(ptInput->getLabel().c_str());
         _passThroughIndicator->setToolTip(tooltip);
         for (std::size_t i = 0; i < _inputEdges.size(); ++i) {
             if ((int)i != inputNb) {

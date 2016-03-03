@@ -2389,17 +2389,17 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
         bool unPremultRequired = unPremultIfNeeded && it->second.tmpImage->getComponentsCount() == 4 && it->second.renderMappedImage->getComponentsCount() == 3;
 
         if ( frameArgs->doNansHandling && it->second.tmpImage->checkForNaNs(actionArgs.roi) ) {
-            QString warning( _publicInterface->getNode()->getScriptName_mt_safe().c_str() );
-            warning.append(": ");
+            QString warning = QString::fromUtf8( _publicInterface->getNode()->getScriptName_mt_safe().c_str() );
+            warning.append(QString::fromUtf8(": "));
             warning.append( tr("rendered rectangle (") );
             warning.append( QString::number(actionArgs.roi.x1) );
-            warning.append(',');
+            warning.append(QChar::fromLatin1(','));
             warning.append( QString::number(actionArgs.roi.y1) );
-            warning.append(")-(");
+            warning.append(QString::fromUtf8(")-("));
             warning.append( QString::number(actionArgs.roi.x2) );
-            warning.append(',');
+            warning.append(QChar::fromLatin1(','));
             warning.append( QString::number(actionArgs.roi.y2) );
-            warning.append(") ");
+            warning.append(QString::fromUtf8(") "));
             warning.append( tr("contains NaN values. They have been converted to 1.") );
             _publicInterface->setPersistentMessage( eMessageTypeWarning, warning.toStdString() );
         }
@@ -4993,12 +4993,12 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
         //If the bit-depth conversion will be lossy, warn the user
         if (Image::isBitDepthConversionLossy(inputOutputDepth, md.getBitDepth(i))) {
             
-            bitDepthWarning.append(inputs[i]->getNode()->getLabel_mt_safe().c_str());
-            bitDepthWarning.append(" (" + QString(Image::getDepthString(inputOutputDepth).c_str()) + ")");
-            bitDepthWarning.append(" ----> ");
-            bitDepthWarning.append(node->getLabel_mt_safe().c_str());
-            bitDepthWarning.append(" (" + QString(Image::getDepthString(md.getBitDepth(i)).c_str()) + ")");
-            bitDepthWarning.append('\n');
+            bitDepthWarning.append(QString::fromUtf8(inputs[i]->getNode()->getLabel_mt_safe().c_str()));
+            bitDepthWarning.append(QString::fromUtf8(" (") + QString::fromUtf8(Image::getDepthString(inputOutputDepth).c_str()) + QChar::fromLatin1(')'));
+            bitDepthWarning.append(QString::fromUtf8(" ----> "));
+            bitDepthWarning.append(QString::fromUtf8(node->getLabel_mt_safe().c_str()));
+            bitDepthWarning.append(QString::fromUtf8(" (") + QString::fromUtf8(Image::getDepthString(md.getBitDepth(i)).c_str()) + QChar::fromLatin1(')'));
+            bitDepthWarning.append(QChar::fromLatin1('\n'));
             setBitDepthWarning = true;
         }
         

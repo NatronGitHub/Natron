@@ -148,7 +148,7 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel, QWidget* parent)
     }
     QStringList nodeNames;
     for (NodesList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
-        QString name( (*it)->getLabel().c_str() );
+        QString name = QString::fromUtf8( (*it)->getLabel().c_str() );
         nodeNames.push_back(name);
     }
     nodeNames.sort();
@@ -187,7 +187,7 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel, QWidget* parent)
             boost::shared_ptr<KnobPage> isPage = boost::dynamic_pointer_cast<KnobPage>(knobs[i]);
             if (isPage) {
                 _imp->pages.push_back(isPage);
-                _imp->destPageCombo->addItem(isPage->getName().c_str());
+                _imp->destPageCombo->addItem(QString::fromUtf8(isPage->getName().c_str()));
             } else {
                 boost::shared_ptr<KnobGroup> isGrp = boost::dynamic_pointer_cast<KnobGroup>(knobs[i]);
                 if (isGrp) {
@@ -256,7 +256,7 @@ PickKnobDialog::onNodeComboEditingFinished()
             KnobPage* isPage = dynamic_cast<KnobPage*>( knobs[j].get() );
             KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knobs[j].get() );
             if (!isPage && !isGroup) {
-                QString name( knobs[j]->getName().c_str() );
+                QString name = QString::fromUtf8( knobs[j]->getName().c_str() );
                 
                 bool canInsertKnob = true;
                 for (int k = 0; k < knobs[j]->getDimension(); ++k) {
@@ -281,7 +281,7 @@ PickKnobDialog::onPageComboIndexChanged(int index)
         _imp->groupCombo->hide();
     }
     _imp->groupCombo->clear();
-    _imp->groupCombo->addItem("-");
+    _imp->groupCombo->addItem(QString::fromUtf8("-"));
     
     std::string selectedPage = _imp->destPageCombo->itemText(index).toStdString();
     boost::shared_ptr<KnobPage> parentPage ;
@@ -303,7 +303,7 @@ PickKnobDialog::onPageComboIndexChanged(int index)
         
         ///add only grps whose parent page is the selected page
         if (page == parentPage) {
-            _imp->groupCombo->addItem((*it)->getName().c_str());
+            _imp->groupCombo->addItem(QString::fromUtf8((*it)->getName().c_str()));
         }
         
     }

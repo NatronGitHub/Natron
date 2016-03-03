@@ -60,17 +60,17 @@ Splitter::serializeNatron() const
 
     QList<int> list = sizes();
     if (list.size() == 2) {
-        return QString("%1 %2").arg(list[0]).arg(list[1]);
+        return QString::fromUtf8("%1 %2").arg(list[0]).arg(list[1]);
     }
 
-    return "";
+    return QString();
 }
 
 void
 Splitter::restoreNatron(const QString & serialization)
 {
     QMutexLocker l(&_lock);
-    QStringList list = serialization.split( QChar(' ') );
+    QStringList list = serialization.split( QLatin1Char(' ') );
 
     assert(list.size() == 2);
     QList<int> s;

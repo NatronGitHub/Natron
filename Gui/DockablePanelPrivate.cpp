@@ -177,48 +177,129 @@ DockablePanelPrivate::DockablePanelPrivate(DockablePanel* publicI,
 }
 
 void
-DockablePanelPrivate::initializeKnobVector(const std::vector< boost::shared_ptr< KnobI> > & knobs,
+DockablePanelPrivate::initializeKnobVector(const KnobsVec& knobs,
                                            QWidget* lastRowWidget)
 {
+    std::list<boost::shared_ptr<KnobPage> > pages;
+
+    KnobsVec regularKnobs;
+    
+    //Extract pages first
     for (U32 i = 0; i < knobs.size(); ++i) {
 
-        bool makeNewLine = true;
-        KnobGroup *isGroup = dynamic_cast<KnobGroup*>(knobs[i].get());
         KnobPage *isPage = dynamic_cast<KnobPage*>(knobs[i].get());
+        if (isPage) {
+            pages.push_back(boost::dynamic_pointer_cast<KnobPage>(knobs[i]));
+            continue;
+        } else {
+            regularKnobs.push_back(knobs[i]);
+        }
+    }
+    for (std::list<boost::shared_ptr<KnobPage> >::iterator it = pages.begin(); it!=pages.end(); ++it) {
+        
+        //create page
+        (void)findKnobGuiOrCreate(*it,true,0,KnobsVec());
+        
+        KnobsVec children = (*it)->getChildren();
+        
+        KnobsVec::iterator prev = children.end();
+        for (KnobsVec::iterator it2 = children.begin(); it2!=children.end(); ++it2) {
+            bool makeNewLine = true;
+            KnobGroup *isGroup = dynamic_cast<KnobGroup*>(it2->get());
+            
+            ////The knob  will have a vector of all other knobs on the same line.
+            KnobsVec knobsOnSameLine;
+            
+            
+            //If the knob is dynamic (i:e created after the initial creation of knobs)
+            //it can be added as part of a group defined earlier hence we have to insert it at the proper index.
+            KnobPtr parentKnob = (*it2)->getParentKnob();
+            KnobGroup* isParentGroup = dynamic_cast<KnobGroup*>(parentKnob.get());
+            
+            
+            if (!isGroup) {
+                if (prev != children.end() && !(*prev)->isNewLineActivated() ) {
+                    makeNewLine = false;
+                }
+                if (isParentGroup) {
+                    KnobsVec  groupsiblings = isParentGroup->getChildren();
+                    findKnobsOnSameLine(groupsiblings, *it2, knobsOnSameLine);
+                    
+                } else {
+                    findKnobsOnSameLine(children, *it2, knobsOnSameLine);
+                }
+                
+            }
+            
+            KnobGuiPtr newGui = findKnobGuiOrCreate(*it2,makeNewLine,lastRowWidget,knobsOnSameLine);
+           
+            ///childrens cannot be on the same row than their parent
+            if (!isGroup && newGui) {
+                lastRowWidget = newGui->getFieldContainer();
+            }
+            
+            
+            std::vector<KnobPtr>::iterator foundRegular = std::find(regularKnobs.begin(), regularKnobs.end(), *it2);
+            if (foundRegular != regularKnobs.end()) {
+                regularKnobs.erase(foundRegular);
+            }
+            
+            
+            if (prev == children.end()) {
+                prev = children.begin();
+            } else {
+                ++prev;
+            }
+        }
+      
+    }
+    
+    //For knobs left,  create them
+    KnobsVec::iterator prev = regularKnobs.end();
+    for (KnobsVec::iterator it = regularKnobs.begin(); it != regularKnobs.end(); ++it) {
+        bool makeNewLine = true;
+        KnobGroup *isGroup = dynamic_cast<KnobGroup*>(it->get());
         
         ////The knob  will have a vector of all other knobs on the same line.
-        std::vector< boost::shared_ptr< KnobI > > knobsOnSameLine;
+        KnobsVec knobsOnSameLine;
         
         
         //If the knob is dynamic (i:e created after the initial creation of knobs)
         //it can be added as part of a group defined earlier hence we have to insert it at the proper index.
-        KnobPtr parentKnob = knobs[i]->getParentKnob();
+        KnobPtr parentKnob = (*it)->getParentKnob();
         KnobGroup* isParentGroup = dynamic_cast<KnobGroup*>(parentKnob.get());
-
         
-        if (!isPage && !isGroup) {
-            if ( (i > 0) && !knobs[i - 1]->isNewLineActivated() ) {
+        
+        if (!isGroup) {
+            if (prev != regularKnobs.end() && !(*prev)->isNewLineActivated() ) {
                 makeNewLine = false;
             }
             
             KnobPage* isParentPage = dynamic_cast<KnobPage*>(parentKnob.get());
             if (isParentPage) {
                 KnobsVec  children = isParentPage->getChildren();
-                findKnobsOnSameLine(children, knobs[i], knobsOnSameLine);
+                findKnobsOnSameLine(children, (*it), knobsOnSameLine);
             } else if (isParentGroup) {
                 KnobsVec  children = isParentGroup->getChildren();
-                findKnobsOnSameLine(children, knobs[i], knobsOnSameLine);
+                findKnobsOnSameLine(children, (*it), knobsOnSameLine);
             } else {
-                findKnobsOnSameLine(knobs, knobs[i], knobsOnSameLine);
+                findKnobsOnSameLine(regularKnobs, (*it), knobsOnSameLine);
             }
-            
         }
         
-        KnobGuiPtr newGui = findKnobGuiOrCreate(knobs[i],makeNewLine,lastRowWidget,knobsOnSameLine);
+        KnobGuiPtr newGui = findKnobGuiOrCreate(*it,makeNewLine,lastRowWidget,knobsOnSameLine);
+        
         ///childrens cannot be on the same row than their parent
         if (!isGroup && newGui) {
             lastRowWidget = newGui->getFieldContainer();
         }
+        
+        if (prev == regularKnobs.end()) {
+            prev = regularKnobs.begin();
+        } else {
+            ++prev;
+        }
+
     }
     
     _publicInterface->refreshTabWidgetMaxHeight();
@@ -363,8 +444,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
         initializeKnobVector(children, lastRowWidget);
         return KnobGuiPtr();
     }
-    
-    
+  
     KnobGuiPtr ret = createKnobGui(knob);
     if (!ret) {
         return KnobGuiPtr();
@@ -403,7 +483,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
                 existed = false;
                 page->second.groupAsTab = new TabGroup(_publicInterface);
             }
-            page->second.groupAsTab->addTab(isGroup, isGroup->getLabel().c_str());
+            page->second.groupAsTab->addTab(isGroup, QString::fromUtf8(isGroup->getLabel().c_str()));
             
             ///retrieve the form layout
             QGridLayout* layout;
@@ -421,7 +501,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
             assert(parentGui);
             TabGroup* groupAsTab = parentGui->getOrCreateTabWidget();
             
-            groupAsTab->addTab(isGroup, isGroup->getLabel().c_str());
+            groupAsTab->addTab(isGroup, QString::fromUtf8(isGroup->getLabel().c_str()));
             
             if (parentIsGroup && parentIsGroup->isTab()) {
                 ///insert the tab in the layout of the parent
@@ -444,7 +524,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
                     parentTabGroup = parentParentGroupGui->getOrCreateTabWidget();
                 }
                 
-                QGridLayout* layout = parentTabGroup->addTab(parentIsGroup, parentIsGroup->getLabel().c_str());
+                QGridLayout* layout = parentTabGroup->addTab(parentIsGroup, QString::fromUtf8(parentIsGroup->getLabel().c_str()));
                 assert(layout);
                 layout->addWidget(groupAsTab, 0, 0, 1, 2);
                 
@@ -546,7 +626,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
                 labelLayout->setSpacing(TO_DPIY(2));
             }
             
-            label = new KnobClickableLabel("", ret, page->second.tab);
+            label = new KnobClickableLabel(QString(), ret, page->second.tab);
             bool pixmapSet = false;
             if (!labelIconFilePath.empty()) {
                 QPixmap pix;
@@ -561,7 +641,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
                 } else if (labelIconFilePath == "dialog-information") {
                     pix = getStandardIcon(QMessageBox::Information, pixSize, label);
                 } else {
-                    pix.load(labelIconFilePath.c_str());
+                    pix.load(QString::fromUtf8(labelIconFilePath.c_str()));
                     if (pix.width() != pixSize) {
                         pix = pix.scaled(pixSize,pixSize,Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
                     }
@@ -572,7 +652,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
                 }
             }
             if (!pixmapSet) {
-                QString labelStr(descriptionLabel.c_str());
+                QString labelStr(QString::fromUtf8(descriptionLabel.c_str()));
                 /*labelStr += ":";*/
                 if (ret->isLabelBold()) {
                     label->setBold(true);
@@ -629,13 +709,13 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
                 if (parentParentGroupGui) {
                     TabGroup* groupAsTab = parentParentGroupGui->getOrCreateTabWidget();
                     assert(groupAsTab);
-                    layout = groupAsTab->addTab(closestParentGroupTab, closestParentGroupTab->getLabel().c_str());
+                    layout = groupAsTab->addTab(closestParentGroupTab, QString::fromUtf8(closestParentGroupTab->getLabel().c_str()));
                 }
             } else if (parentParentIsPage) {
                 PageMap::iterator page = getOrCreatePage(parentParentIsPage);
                 assert(page != _pages.end());
                 assert(page->second.groupAsTab);
-                layout = page->second.groupAsTab->addTab(closestParentGroupTab, closestParentGroupTab->getLabel().c_str());
+                layout = page->second.groupAsTab->addTab(closestParentGroupTab, QString::fromUtf8(closestParentGroupTab->getLabel().c_str()));
             }
             assert(layout);
             
@@ -695,7 +775,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
                 if (!w) {
                     continue;
                 }
-                if (w->objectName() == "emptyWidget") {
+                if (w->objectName() == QString::fromUtf8("emptyWidget")) {
                     foundSpacer = w;
                     break;
                 }
@@ -704,7 +784,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
                 layout->removeWidget(foundSpacer);
             } else {
                 foundSpacer = new QWidget(layout->parentWidget());
-                foundSpacer->setObjectName("emptyWidget");
+                foundSpacer->setObjectName(QString::fromUtf8("emptyWidget"));
                 foundSpacer->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
                 
             }
@@ -771,7 +851,7 @@ DockablePanelPrivate::refreshPagesOrder(const QString& curTabName, bool restoreP
     }
     for (std::list<KnobPage*>::iterator it = pages.begin(); it!=pages.end(); ++it) {
         
-        PageMap::iterator foundPage = _pages.find((*it)->getLabel().c_str());
+        PageMap::iterator foundPage = _pages.find(QString::fromUtf8((*it)->getLabel().c_str()));
         if (foundPage != _pages.end()) {
             if ((*it)->getChildren().size() > 0) {
                 foundPage->second.tab->show();
@@ -815,7 +895,7 @@ DockablePanelPrivate::getOrCreatePage(const boost::shared_ptr<KnobPage>& page)
     if (!page) {
         name = _defaultPageName;
     } else {
-        name = page->getLabel().c_str();
+        name = QString::fromUtf8(page->getLabel().c_str());
     }
     
     PageMap::iterator found = _pages.find(name);
@@ -824,7 +904,7 @@ DockablePanelPrivate::getOrCreatePage(const boost::shared_ptr<KnobPage>& page)
         return found;
     }
     
-    
+
     QWidget* newTab;
     QWidget* layoutContainer;
     if (_useScrollAreasForTabs) {
@@ -852,7 +932,7 @@ DockablePanelPrivate::getOrCreatePage(const boost::shared_ptr<KnobPage>& page)
         layoutContainer = newTab;
     }
     QGridLayout *tabLayout = new QGridLayout(layoutContainer);
-    tabLayout->setObjectName("formLayout");
+    tabLayout->setObjectName(QString::fromUtf8("formLayout"));
     layoutContainer->setLayout(tabLayout);
     //tabLayout->setContentsMargins(1, 1, 1, 1);
     tabLayout->setColumnStretch(1, 1);
@@ -875,7 +955,7 @@ DockablePanelPrivate::getOrCreatePage(const boost::shared_ptr<KnobPage>& page)
         if (handler) {
             QObject::connect(handler.get(), SIGNAL(labelChanged()), _publicInterface, SLOT(onPageLabelChangedInternally()));
         }
-        p.tab->setToolTip(page->getHintToolTip().c_str());
+        p.tab->setToolTip(QString::fromUtf8(page->getHintToolTip().c_str()));
     }
     return _pages.insert( make_pair(name,p) ).first;
 }

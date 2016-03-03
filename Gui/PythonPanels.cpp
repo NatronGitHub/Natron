@@ -205,7 +205,7 @@ PyModalDialog::PyModalDialog(Gui* gui)
                                     boost::shared_ptr<QUndoStack>(),
                                     QString(),QString(),
                                     false,
-                                    "Default",
+                                    QString::fromUtf8("Default"),
                                     _imp->centerContainer);
     _imp->panel->turnOffPages();
     _imp->panel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
@@ -333,7 +333,7 @@ PyPanel::PyPanel(const std::string& scriptName,const std::string& label,bool use
                                         boost::shared_ptr<QUndoStack>(),
                                         QString(),QString(),
                                         false,
-                                        "Default",
+                                        QString::fromUtf8("Default"),
                                         _imp->centerContainer);
         _imp->panel->turnOffPages();
         _imp->centerLayout->insertWidget(0,_imp->panel);
@@ -358,7 +358,7 @@ void
 PyPanel::setPanelLabel(const std::string& label)
 {
     setLabel(label);
-    QString name(label.c_str());
+    QString name = QString::fromUtf8(label.c_str());
     TabWidget* parent = dynamic_cast<TabWidget*>(parentWidget());
     if (parent) {
         parent->setTabLabel(this, name);

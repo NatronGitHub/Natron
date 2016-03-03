@@ -217,7 +217,7 @@ OfxImageEffectInstance::vmessage(const char* msgtype,
     std::string type(msgtype);
 
     if (type == kOfxMessageLog) {
-        appPTR->writeToErrorLog_mt_safe( message.c_str() );
+        appPTR->writeToErrorLog_mt_safe( QString::fromUtf8(message.c_str() ));
     } else if ( (type == kOfxMessageFatal) || (type == kOfxMessageError) ) {
         _ofxEffectInstance.lock()->message(eMessageTypeError, message);
     } else if (type == kOfxMessageWarning) {
@@ -573,7 +573,6 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
         knob->setAsInstanceSpecific();
     }
     
-   
     ptk->connectDynamicProperties();
     
     OfxPluginEntryPoint* interact =
@@ -588,6 +587,13 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     return instance;
 } // newParam
 
+struct PageOrdered {
+    boost::shared_ptr<KnobPage> page;
+    std::list<OfxParamToKnob*> paramsOrdered;
+};
+
+typedef std::list<boost::shared_ptr<PageOrdered> > PagesOrdered;
+
 void
 OfxImageEffectInstance::addParamsToTheirParents()
 {
@@ -597,7 +603,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
     boost::shared_ptr<OfxEffectInstance> effect = getOfxEffectInstance();
     
     //Extract pages and their children and add knobs to groups
-    std::list< std::pair<OfxPageInstance*, std::set<OfxParamToKnob*> > > pages;
+    PagesOrdered finalPages;
     
     for (std::list<OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it != params.end(); ++it) {
         OfxParamToKnob* isKnownKnob = dynamic_cast<OfxParamToKnob*>(*it);
@@ -612,16 +618,20 @@ OfxImageEffectInstance::addParamsToTheirParents()
         OfxPageInstance* isPage = dynamic_cast<OfxPageInstance*>(*it);
         if (isPage) {
             const std::map<int,OFX::Host::Param::Instance*>& children = isPage->getChildren();
-            std::set<OfxParamToKnob*> childrenList;
+            
+            boost::shared_ptr<PageOrdered> pageData(new PageOrdered());
+            pageData->page = boost::dynamic_pointer_cast<KnobPage>(associatedKnob);
+            assert(pageData->page);
+            std::map<OfxParamToKnob*,int> childrenList;
             for (std::map<int,OFX::Host::Param::Instance*>::const_iterator it2 = children.begin(); it2!=children.end(); ++it2) {
                 OfxParamToKnob* isParamToKnob = dynamic_cast<OfxParamToKnob*>(it2->second);
                 assert(isParamToKnob);
                 if (!isParamToKnob) {
                     continue;
                 }
-                childrenList.insert(isParamToKnob);
+                pageData->paramsOrdered.push_back(isParamToKnob);
             }
-            pages.push_back(std::make_pair(isPage, childrenList));
+            finalPages.push_back(pageData);
         } else {
             OFX::Host::Param::Instance* hasParent = (*it)->getParentInstance();
             if (hasParent) {
@@ -645,13 +655,22 @@ OfxImageEffectInstance::addParamsToTheirParents()
     }
     
     //Extract the "Main" page, i.e: the first page declared, if no page were created, create one
-    KnobPtr mainPage;
-    if (!pages.empty()) {
-        mainPage = pages.begin()->first->getKnob();
+    PagesOrdered::iterator mainPage = finalPages.end();
+    if (!finalPages.empty()) {
+        mainPage = finalPages.begin();
     } else {
-        mainPage = AppManager::createKnob<KnobPage>(effect.get(), "Settings");
+        boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>(effect.get(), "Settings");
+        boost::shared_ptr<PageOrdered> pageData(new PageOrdered());
+        pageData->page = page;
+        finalPages.push_back(pageData);
+        mainPage = finalPages.begin();
     }
-    assert(mainPage);
+    assert(mainPage != finalPages.end());
+    
+    // In this pass we check that all parameters belong to a page.
+    // For parameters that do not belong to a page, we add them "on the fly" to the page
+    
+    std::list<OfxParamToKnob*>::iterator lastParamInsertedInMainPage = (*mainPage)->paramsOrdered.end();
     
     for (std::list<OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it != params.end(); ++it) {
         OfxParamToKnob* isKnownKnob = dynamic_cast<OfxParamToKnob*>(*it);
@@ -671,45 +690,62 @@ OfxImageEffectInstance::addParamsToTheirParents()
             continue;
         }
         
-        if (!knob->getParentKnob()) {
-            
-            OfxPageInstance* foundPage = 0;
-            for (std::list< std::pair<OfxPageInstance*, std::set<OfxParamToKnob*> > >::iterator it2 = pages.begin(); it2!=pages.end(); ++it2) {
-                for (std::set<OfxParamToKnob*>::iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
-                    if (isKnownKnob == *it3) {
-                        foundPage = it2->first;
-                        break;
+        
+        bool foundPage = false;
+        for (PagesOrdered::iterator it2 = finalPages.begin(); it2!=finalPages.end(); ++it2) {
+            for (std::list<OfxParamToKnob*>::iterator it3 = (*it2)->paramsOrdered.begin(); it3 != (*it2)->paramsOrdered.end(); ++it3) {
+                if (isKnownKnob == *it3) {
+                    foundPage = true;
+                    if (it2 == mainPage) {
+                        lastParamInsertedInMainPage = it3;
                     }
-                }
-                if (foundPage) {
                     break;
                 }
             }
-            
-            KnobPtr pageKnobI;
-            if (!foundPage) {
-                //The parameter does not belong to a page, put it in the main page
-                pageKnobI = mainPage;
-            } else {
-                pageKnobI = foundPage->getKnob();
+            if (foundPage) {
+                break;
             }
-            KnobPage* page = dynamic_cast<KnobPage*>(pageKnobI.get());
-            if (!page) {
+        }
+        
+        if (!foundPage) {
+            //The parameter does not belong to a page, put it in the main page
+            ++lastParamInsertedInMainPage;
+            lastParamInsertedInMainPage = (*mainPage)->paramsOrdered.insert(lastParamInsertedInMainPage,isKnownKnob);
+        }
+       
+
+    } // for (std::list<OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it != params.end(); ++it) 
+    
+    
+    // For all pages, append their knobs in order
+    for (PagesOrdered::iterator it = finalPages.begin(); it!=finalPages.end(); ++it) {
+
+        boost::shared_ptr<KnobPage> pageKnob = (*it)->page;
+       
+        for (std::list<OfxParamToKnob*>::iterator it2 = (*it)->paramsOrdered.begin(); it2 != (*it)->paramsOrdered.end(); ++it2) {
+            
+            OfxParamToKnob* isKnownKnob = dynamic_cast<OfxParamToKnob*>(*it2);
+            assert(isKnownKnob);
+            if (!isKnownKnob) {
                 continue;
             }
-            page->addKnob(knob);
-
-            if (knob->isSeparatorActivated()) {
-                boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>( effect.get(),"");
-                assert(sep);
-                sep->setName(knob->getName() + "_separator");
-                page->addKnob(sep);
-            }
-        } // if (!knob->getParentKnob()) {
-
-        
-    } // for (std::list<OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it != params.end(); ++it) 
-
+            
+            KnobPtr child = isKnownKnob->getKnob();
+            assert(child);
+            if (!child->getParentKnob()) {
+   
+                pageKnob->addKnob(child);
+                
+                if (child->isSeparatorActivated()) {
+                    boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>( effect.get(),"");
+                    assert(sep);
+                    sep->setName(child->getName() + "_separator");
+                    pageKnob->addKnob(sep);
+                }
+            
+            } // if (!knob->getParentKnob()) {
+        }
+    }
 }
 
 /** @brief Used to group any parameter changes for undo/redo purposes

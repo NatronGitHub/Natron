@@ -201,12 +201,12 @@ NodeGraph::onNodeCreationDialogFinished()
         QDialog::DialogCode ret = (QDialog::DialogCode)dialog->result();
         int major;
         QString res = dialog->getNodeName(&major);
-        _imp->_lastNodeCreatedName = res;
+        
         dialog->deleteLater();
 
         switch (ret) {
         case QDialog::Accepted: {
-            
+            _imp->_lastNodeCreatedName = res;
             const PluginsMap & allPlugins = appPTR->getPluginsList();
             PluginsMap::const_iterator found = allPlugins.find(res.toStdString());
             if (found != allPlugins.end()) {
@@ -411,13 +411,13 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                 Plugin* plugin = *it->second.rbegin();
                 
                 if ( plugin->getHasShortcut() ) {
-                    QString group(kShortcutGroupNodes);
+                    QString group = QString::fromUtf8(kShortcutGroupNodes);
                     QStringList groupingSplit = plugin->getGrouping();
                     for (int j = 0; j < groupingSplit.size(); ++j) {
-                        group.push_back('/');
+                        group.push_back(QLatin1Char('/'));
                         group.push_back(groupingSplit[j]);
                     }
-                    if ( isKeybind(group.toStdString().c_str(), plugin->getPluginID(), modifiers, key) ) {
+                    if ( isKeybind(group.toStdString(), plugin->getPluginID().toStdString(), modifiers, key) ) {
                         QPointF hint = mapToScene( mapFromGlobal( QCursor::pos() ) );
                         
                         CreateNodeArgs args(plugin->getPluginID(), eCreateNodeReasonUserCreate, getGroup());

@@ -63,10 +63,10 @@ static bool handleConnectionError(const NodeGuiPtr& outputNode, const NodeGuiPtr
     if (linkRetCode != Node::eCanConnectInput_ok && linkRetCode != Node::eCanConnectInput_inputAlreadyConnected) {
         if (linkRetCode == Node::eCanConnectInput_differentPars) {
             
-            QString error = QString("%1" + QObject::tr(" and ") + "%2"  + QObject::tr(" don't have the same pixel aspect ratio (")
-                                    + "%3 / %4 " +  QObject::tr(") and ") + "%1 " + QObject::tr(" doesn't support inputs with different pixel aspect ratio. This might yield unwanted results."))
-            .arg(outputNode->getNode()->getLabel().c_str())
-            .arg(inputNode->getNode()->getLabel().c_str())
+            QString error = QString(QString::fromUtf8("%1") + QObject::tr(" and ") + QString::fromUtf8("%2")  + QObject::tr(" don't have the same pixel aspect ratio (")
+                                    + QString::fromUtf8("%3 / %4 ") +  QObject::tr(") and ") + QString::fromUtf8("%1 ") + QObject::tr(" doesn't support inputs with different pixel aspect ratio. This might yield unwanted results."))
+            .arg(QString::fromUtf8(outputNode->getNode()->getLabel().c_str()))
+            .arg(QString::fromUtf8(inputNode->getNode()->getLabel().c_str()))
             .arg(outputNode->getNode()->getEffectInstance()->getAspectRatio(-1))
             .arg(inputNode->getNode()->getEffectInstance()->getAspectRatio(-1));
             Dialogs::warningDialog(QObject::tr("Different pixel aspect").toStdString(),
@@ -74,28 +74,28 @@ static bool handleConnectionError(const NodeGuiPtr& outputNode, const NodeGuiPtr
             return true;
         } else if (linkRetCode == Node::eCanConnectInput_differentFPS) {
             
-            QString error = QString("%1" + QObject::tr(" and ") + "%2"  + QObject::tr(" don't have the same frame rate (") + "%3 / %4). " + QObject::tr("This might yield unwanted results. Either change the FPS from the Read node parameters or change the settings of the project."))
-            .arg(outputNode->getNode()->getLabel().c_str())
-            .arg(inputNode->getNode()->getLabel().c_str())
+            QString error = QString(QString::fromUtf8("%1") + QObject::tr(" and ") + QString::fromUtf8("%2")  + QObject::tr(" don't have the same frame rate (") + QString::fromUtf8("%3 / %4). ") + QObject::tr("This might yield unwanted results. Either change the FPS from the Read node parameters or change the settings of the project."))
+            .arg(QString::fromUtf8(outputNode->getNode()->getLabel().c_str()))
+            .arg(QString::fromUtf8(inputNode->getNode()->getLabel().c_str()))
             .arg(outputNode->getNode()->getEffectInstance()->getFrameRate())
             .arg(inputNode->getNode()->getEffectInstance()->getFrameRate());
             Dialogs::warningDialog(QObject::tr("Different frame rate").toStdString(),
                                 error.toStdString());
             return true;
         } else if (linkRetCode == Node::eCanConnectInput_groupHasNoOutput) {
-            QString error = QString(QObject::tr("You cannot connect ") + "%1 " + QObject::tr(" to ") + " %2 " + QObject::tr("because it is a group which does "
+            QString error = QString(QObject::tr("You cannot connect ") + QString::fromUtf8("%1 ") + QObject::tr(" to ") + QString::fromUtf8(" %2 ") + QObject::tr("because it is a group which does "
                                                                                                  "not have an Output node."))
-            .arg(outputNode->getNode()->getLabel().c_str())
-            .arg(inputNode->getNode()->getLabel().c_str());
+            .arg(QString::fromUtf8(outputNode->getNode()->getLabel().c_str()))
+            .arg(QString::fromUtf8(inputNode->getNode()->getLabel().c_str()));
             Dialogs::errorDialog(QObject::tr("Different frame rate").toStdString(),
                                 error.toStdString());
             
         } else if (linkRetCode == Node::eCanConnectInput_multiResNotSupported) {
-            QString error = QString(QObject::tr("You cannot connect ") + "%1" + QObject::tr(" to ") + "%2 " + QObject::tr("because multi-resolution is not supported on ") + "%1 "
+            QString error = QString(QObject::tr("You cannot connect ") + QString::fromUtf8("%1") + QObject::tr(" to ") + QString::fromUtf8("%2 ") + QObject::tr("because multi-resolution is not supported on ") + QString::fromUtf8("%1 ")
                                     + QObject::tr("which means that it cannot receive images with a lower left corner different than (0,0) and cannot have "
                                          "multiple inputs/outputs with different image sizes.\n"
-                                                  "To overcome this, use a Resize or Crop node upstream to change the image size.")).arg(outputNode->getNode()->getLabel().c_str())
-            .arg(inputNode->getNode()->getLabel().c_str());
+                                                  "To overcome this, use a Resize or Crop node upstream to change the image size.")).arg(QString::fromUtf8(outputNode->getNode()->getLabel().c_str()))
+            .arg(QString::fromUtf8(inputNode->getNode()->getLabel().c_str()));
             Dialogs::errorDialog(QObject::tr("Multi-resolution not supported").toStdString(),
                                 error.toStdString());;
         }
@@ -273,7 +273,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                                                 selectedNodeCenter.y() + selectedNodeBbox.height() / 2.) + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
                     
                     
-                    CreateNodeArgs args(PLUGINID_OFX_MERGE, eCreateNodeReasonInternal, getGroup());
+                    CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_MERGE), eCreateNodeReasonInternal, getGroup());
                     args.xPosHint = newNodePos.x();
                     args.yPosHint = newNodePos.y();
 

@@ -876,6 +876,12 @@ public:
      * If a custom data tag is found, it will replace any custom data.
      **/
     void replaceCustomDataInlabel(const QString & data);
+    
+private:
+    
+    void restoreSublabel();
+    
+public:
 
     /**
      * @brief Returns whether this node or one of its inputs (recursively) is marked as

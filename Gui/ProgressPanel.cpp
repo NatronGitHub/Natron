@@ -63,6 +63,8 @@
 #define COL_TIME_REMAINING 4
 #define COL_LAST 6
 
+#define NATRON_DISPLAY_PROGRESS_PANEL_AFTER_MS 3000
+
 NATRON_NAMESPACE_ENTER;
 
 typedef std::map<NodeWPtr, ProgressTaskInfoPtr> TasksMap;
@@ -85,6 +87,7 @@ struct ProgressPanelPrivate
     mutable QMutex tasksMutex;
     TasksMap tasks;
     TasksOrdered tasksOrdered;
+    ProgressTaskInfoPtr lastTaskAdded;
     
     ProgressPanelPrivate()
     : mainLayout(0)
@@ -97,6 +100,7 @@ struct ProgressPanelPrivate
     , tasksMutex()
     , tasks()
     , tasksOrdered()
+    , lastTaskAdded()
     {
         
     }
@@ -179,11 +183,37 @@ ProgressPanel::ProgressPanel(Gui* gui)
     QItemSelectionModel* selModel = _imp->view->selectionModel();
     QObject::connect(selModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)), this, SLOT(onSelectionChanged(QItemSelection,QItemSelection)));
     
+
+    
 }
 
 ProgressPanel::~ProgressPanel()
 {
     
+}
+
+void
+ProgressPanel::onShowProgressPanelTimerTriggered()
+{
+    if (!_imp->lastTaskAdded) {
+        return;
+    }
+    
+    ProgressTaskInfo::ProgressTaskStatusEnum status = _imp->lastTaskAdded->getStatus();
+    if (status == ProgressTaskInfo::eProgressTaskStatusCanceled ||
+        status == ProgressTaskInfo::eProgressTaskStatusFinished) {
+        _imp->lastTaskAdded.reset();
+        return;
+    }
+    for (TasksOrdered::iterator it = _imp->tasksOrdered.begin(); it!=_imp->tasksOrdered.end(); ++it) {
+        if ((*it) == _imp->lastTaskAdded) {
+            
+            _imp->lastTaskAdded.reset();
+            getGui()->ensureProgressPanelVisible();
+            return;
+        }
+    }
+
 }
 
 void
@@ -427,10 +457,11 @@ ProgressPanel::addTaskToTable(const ProgressTaskInfoPtr& task)
     }
     task->setCellWidgets(rc, _imp->view);
 
+    _imp->lastTaskAdded = task;
     _imp->tasksOrdered.push_back(task);
-    
-    getGui()->ensureProgressPanelVisible();
-    
+
+    QTimer::singleShot(NATRON_DISPLAY_PROGRESS_PANEL_AFTER_MS, this, SLOT(onShowProgressPanelTimerTriggered()));
+
 }
 
 void

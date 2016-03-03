@@ -281,7 +281,7 @@ KnobGuiChoice::onEntriesPopulated()
         if ( !help.empty() && !help[i].empty() ) {
             helpStr = help[i];
         }
-        _comboBox->addItem( entries[i].c_str(), QIcon(), QKeySequence(), QString( helpStr.c_str() ) );
+        _comboBox->addItem( QString::fromUtf8(entries[i].c_str()), QIcon(), QKeySequence(), QString::fromUtf8( helpStr.c_str() ) );
     }
     // the "New" menu is only added to known parameters (e.g. the choice of output channels)
     if (knob->getHostCanAddOptions() &&

@@ -468,10 +468,10 @@ fi
 
 
 # UnitTests
-if [ "$BIT" = "64" ] && [ "$UNIT_TEST" != "0" ]; then
+if [ "$BIT" = "64" ]; then
 
 UNIT_TMP=$INSTALLER/UnitTests
-UNIT_LOG=$REPO_DIR/logs/unit_tests.$PKGOS$BIT.$TAG.log
+UNIT_LOG=$REPO_DIR/logs/unit_tests.Windows$BIT.$TAG.log
 
 if [ ! -d "$UNIT_TMP" ]; then
   mkdir -p "$UNIT_TMP" || exit 1
@@ -488,7 +488,7 @@ fi
 echo "Running unit tests ..."
 export FONTCONFIG_PATH=$UNIT_TMP/Resources/etc/fonts/fonts.conf
 mkdir -p ~/.cache/INRIA/Natron/{ViewerCache,DiskCache}
-COMPARE=`pwd`/compare.exe sh runTests.sh $UNIT_TMP/bin/NatronRenderer >& "$UNIT_LOG"
+COMPARE=`pwd`/compare.exe sh runTests.sh $UNIT_TMP/bin/NatronRenderer-bin.exe >& "$UNIT_LOG"
 
 fi
 

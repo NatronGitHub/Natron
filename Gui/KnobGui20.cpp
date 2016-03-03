@@ -763,7 +763,7 @@ KnobGui::onLabelChanged()
             descriptionLabel = knob->getLabel();
         }
         
-        _imp->descriptionLabel->setText_overload(QString(descriptionLabel.c_str()));
+        _imp->descriptionLabel->setText_overload(QString::fromUtf8(descriptionLabel.c_str()));
         onLabelChangedInternal();
     }
 }

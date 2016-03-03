@@ -680,7 +680,7 @@ KnobChoice::appendChoice(const std::string& entry, const std::string& help)
     if (_signalSlotHandler) {
         _signalSlotHandler->s_helpChanged();
     }
-    Q_EMIT entryAppended(QString(entry.c_str()), QString(help.c_str()));
+    Q_EMIT entryAppended(QString::fromUtf8(entry.c_str()), QString::fromUtf8(help.c_str()));
 }
 
 std::vector<std::string>

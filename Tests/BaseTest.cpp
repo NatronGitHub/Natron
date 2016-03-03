@@ -57,13 +57,13 @@ BaseTest::registerTestPlugins()
 {
     _allTestPluginIDs.clear();
 
-    _dotGeneratorPluginID = PLUGINID_OFX_DOTEXAMPLE;
+    _dotGeneratorPluginID = QString::fromUtf8(PLUGINID_OFX_DOTEXAMPLE);
     _allTestPluginIDs.push_back(_dotGeneratorPluginID);
 
-    _readOIIOPluginID = PLUGINID_OFX_READOIIO;
+    _readOIIOPluginID = QString::fromUtf8(PLUGINID_OFX_READOIIO);
     _allTestPluginIDs.push_back(_readOIIOPluginID);
 
-    _writeOIIOPluginID = PLUGINID_OFX_WRITEOIIO;
+    _writeOIIOPluginID = QString::fromUtf8(PLUGINID_OFX_WRITEOIIO);
     _allTestPluginIDs.push_back(_writeOIIOPluginID);
 
     for (unsigned int i = 0; i < _allTestPluginIDs.size(); ++i) {
@@ -238,7 +238,7 @@ TEST_F(BaseTest,GenerateDot)
     knob->setValue(1, ViewSpec::all(), 1);
     
     const QString& binPath = appPTR->getApplicationBinaryPath();
-    QString filePath = binPath + "/test_dot_generator.jpg";
+    QString filePath = binPath + QString::fromUtf8("/test_dot_generator.jpg");
     writer->setOutputFilesForWriter(filePath.toStdString());
 
     ///attempt to connect the 2 nodes together

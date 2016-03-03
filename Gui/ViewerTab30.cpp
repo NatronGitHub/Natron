@@ -133,7 +133,7 @@ ViewerTab::setClipToProject(bool b)
 void
 ViewerTab::setColorSpace(const std::string & colorSpaceName)
 {
-    int index = _imp->viewerColorSpace->itemIndex( colorSpaceName.c_str() );
+    int index = _imp->viewerColorSpace->itemIndex( QString::fromUtf8(colorSpaceName.c_str()) );
 
     if (index != -1) {
         _imp->viewerColorSpace->setCurrentIndex(index);
@@ -263,7 +263,7 @@ ViewerTab::getChannelsString() const
 void
 ViewerTab::setChannels(const std::string & channelsStr)
 {
-    int index = _imp->viewerChannels->itemIndex( channelsStr.c_str() );
+    int index = _imp->viewerChannels->itemIndex( QString::fromUtf8(channelsStr.c_str()) );
 
     if (index != -1) {
         _imp->viewerChannels->setCurrentIndex_no_emit(index);
