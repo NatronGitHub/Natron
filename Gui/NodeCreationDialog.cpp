@@ -48,6 +48,12 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/LineEdit.h"
 #include "Gui/GuiApplicationManager.h"
 
+/*
+ If defined, the list will contain matches ordered by increasing match length of the regexp
+ otherwise they will be ordered with their score
+ */
+//#define NODE_TAB_DIALOG_USE_MATCHED_LENGTH
+
 NATRON_NAMESPACE_ENTER;
 
 
@@ -147,11 +153,27 @@ CompleterLineEdit::filterText(const QString & txt)
         }
         pattern.push_back(QLatin1Char('*'));
         QRegExp expr(pattern,Qt::CaseInsensitive,QRegExp::WildcardUnix);
+        
+#ifdef NODE_TAB_DIALOG_USE_MATCHED_LENGTH
+        std::map<int, QStringList> matchOrdered;
         for (PluginsNamesMap::iterator it = _imp->names.begin(); it != _imp->names.end(); ++it) {
-            if ( it->second.first.contains(expr) ) {
-                sl.push_front(it->second.second);
+            if (expr.exactMatch(it->second.first)) {
+                QStringList& matchedForLength =  matchOrdered[expr.matchedLength()];
+                matchedForLength.push_front(it->second.second);
             }
+
         }
+        for (std::map<int, QStringList>::iterator it = matchOrdered.begin(); it!=matchOrdered.end(); ++it) {
+            sl.append(it->second);
+        }
+#else
+        
+        for (PluginsNamesMap::iterator it = _imp->names.begin(); it != _imp->names.end(); ++it) {
+             if (it->second.first.contains(expr)) {
+                 sl.push_front(it->second.second);
+             }
+        }
+#endif
     }
     _imp->model->setStringList(sl);
     _imp->listView->setModel(_imp->model);
@@ -250,9 +272,7 @@ CompleterLineEdit::keyPressEvent(QKeyEvent* e)
                 setText( _imp->model->index( indexes[0].row() ).data().toString() );
                 doDialogEnd = true;
             } else if (indexes.isEmpty()) {
-                if (!text().isEmpty()) {
-                    doDialogEnd = true;
-                } else if (_imp->model->rowCount() > 1) {
+               if (_imp->model->rowCount() > 1) {
                     doDialogEnd = true;
                     setText( _imp->model->index(0).data().toString() );
                 }
@@ -279,7 +299,7 @@ void
 CompleterLineEdit::showCompleter()
 {
     _imp->listView->setFixedWidth(width());
-    filterText(QString());
+    filterText(text());
 }
 
 struct NodeCreationDialogPrivate
@@ -357,7 +377,7 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
             pluginsMap.insert(std::make_pair(weight,idNamePair));
             
             if (it->first == stdInitialFilter) {
-                initialFilterName = idNamePair.second;
+                initialFilterName = idNamePair.first;
             }
             ++i;
         } else {

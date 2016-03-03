@@ -201,12 +201,12 @@ NodeGraph::onNodeCreationDialogFinished()
         QDialog::DialogCode ret = (QDialog::DialogCode)dialog->result();
         int major;
         QString res = dialog->getNodeName(&major);
-        _imp->_lastNodeCreatedName = res;
+        
         dialog->deleteLater();
 
         switch (ret) {
         case QDialog::Accepted: {
-            
+            _imp->_lastNodeCreatedName = res;
             const PluginsMap & allPlugins = appPTR->getPluginsList();
             PluginsMap::const_iterator found = allPlugins.find(res.toStdString());
             if (found != allPlugins.end()) {
