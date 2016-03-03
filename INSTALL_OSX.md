@@ -44,6 +44,10 @@ It is also recommended to add the  following line to `/opt/local/etc/macports/va
 
     -x11 +no_x11 +bash_completion +no_gnome +quartz
 
+If compiling on Mac OS X 10.6 with Xcode 4, you should also revert to the default compilers list of Xcode 3.2.6 (MacPort's `/opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` sets it to a different value for an unknown reason, resulting in llvm-gcc-4.2 being used to compile everything in MacPorts). Add the following line to `/opt/local/etc/macports/macports.conf`:
+
+    default_compilers gcc-4.2 clang llvm-gcc-4.2 macports-clang-3.4 macports-clang-3.3 macports-llvm-gcc-4.2 apple-gcc-4.2 gcc-4.0
+
 And finally install the required packages:
 
 	sudo port install qt4-mac boost glew cairo expat
