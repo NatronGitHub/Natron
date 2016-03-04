@@ -85,7 +85,7 @@ NodeGraph::NodeGraph(Gui* gui,
     group->setNodeGraphPointer(this);
     
     setAcceptDrops(true);
-
+    setAttribute(Qt::WA_MacShowFocusRect,0);
 
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>(group.get());
     if (isGrp) {

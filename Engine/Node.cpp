@@ -3777,7 +3777,6 @@ Node::getFrameStepKnobValue() const
 bool
 Node::handleFormatKnob(KnobI* knob)
 {
-    assert(QThread::currentThread() == qApp->thread());
     
     boost::shared_ptr<KnobChoice> choice = _imp->pluginFormatKnobs.formatChoice.lock();
     if (!choice) {
