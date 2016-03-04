@@ -228,6 +228,8 @@ win32-msvc* {
         Debug:RCC_DIR = win32/debug/.rcc
         Debug:UI_DIR = win32/debug/.ui
     }
+    #System library is required on windows to map network share names from drive letters
+    LIBS += mpr.lib
 }
 
 
