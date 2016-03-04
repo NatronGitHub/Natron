@@ -1450,36 +1450,36 @@ MultiInstancePanel::onInstanceKnobValueChanged(ViewSpec /*view*/,
                 if ( knobs[i]->isInstanceSpecific() ) {
                     if (knobs[i] == knob) {
                         for (int k = 0; k < knob->getDimension(); ++k) {
-                            if (k == dim || dim == 1) {
+                            if (k == dim || dim == -1) {
+                                
+                                TableItem* item = _imp->model->item(rowIndex, colIndex);
+                                if (item) {
+                                    QVariant data;
+                                    KnobInt* isInt = dynamic_cast<KnobInt*>( knobs[i].get() );
+                                    KnobBool* isBool = dynamic_cast<KnobBool*>( knobs[i].get() );
+                                    KnobDouble* isDouble = dynamic_cast<KnobDouble*>( knobs[i].get() );
+                                    KnobColor* isColor = dynamic_cast<KnobColor*>( knobs[i].get() );
+                                    KnobString* isString = dynamic_cast<KnobString*>( knobs[i].get() );
+                                    if (isInt) {
+                                        data.setValue<int>( isInt->getValue(k) );
+                                    } else if (isBool) {
+                                        data.setValue<bool>( isBool->getValue(k) );
+                                    } else if (isDouble) {
+                                        data.setValue<double>( isDouble->getValue(k) );
+                                    } else if (isColor) {
+                                        data.setValue<double>( isColor->getValue(k) );
+                                    } else if (isString) {
+                                        data.setValue<QString>( QString::fromUtf8(isString->getValue(k).c_str() ));
+                                    }
+                                    _imp->executingKnobValueChanged = true;
+                                    item->setData(Qt::DisplayRole,data);
+                                    _imp->executingKnobValueChanged = false;
+                                }
                                 if (dim != -1) {
                                     colIndex += dim;
                                 } else {
                                     ++colIndex;
                                 }
-                                TableItem* item = _imp->model->item(rowIndex, colIndex);
-                                if (!item) {
-                                    continue;
-                                }
-                                QVariant data;
-                                KnobInt* isInt = dynamic_cast<KnobInt*>( knobs[i].get() );
-                                KnobBool* isBool = dynamic_cast<KnobBool*>( knobs[i].get() );
-                                KnobDouble* isDouble = dynamic_cast<KnobDouble*>( knobs[i].get() );
-                                KnobColor* isColor = dynamic_cast<KnobColor*>( knobs[i].get() );
-                                KnobString* isString = dynamic_cast<KnobString*>( knobs[i].get() );
-                                if (isInt) {
-                                    data.setValue<int>( isInt->getValue(k) );
-                                } else if (isBool) {
-                                    data.setValue<bool>( isBool->getValue(k) );
-                                } else if (isDouble) {
-                                    data.setValue<double>( isDouble->getValue(k) );
-                                } else if (isColor) {
-                                    data.setValue<double>( isColor->getValue(k) );
-                                } else if (isString) {
-                                    data.setValue<QString>( QString::fromUtf8(isString->getValue(k).c_str() ));
-                                }
-                                _imp->executingKnobValueChanged = true;
-                                item->setData(Qt::DisplayRole,data);
-                                _imp->executingKnobValueChanged = false;
                             }
                         }
                         return;

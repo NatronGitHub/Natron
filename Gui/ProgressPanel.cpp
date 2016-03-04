@@ -420,6 +420,7 @@ ProgressPanel::startTask(const NodePtr& node,
     
     if (canPause) {
         task->createItems();
+        QTimer::singleShot(NATRON_DISPLAY_PROGRESS_PANEL_AFTER_MS, this, SLOT(onShowProgressPanelTimerTriggered()));
     }
     
     if (process) {
@@ -460,7 +461,6 @@ ProgressPanel::addTaskToTable(const ProgressTaskInfoPtr& task)
     _imp->lastTaskAdded = task;
     _imp->tasksOrdered.push_back(task);
 
-    QTimer::singleShot(NATRON_DISPLAY_PROGRESS_PANEL_AFTER_MS, this, SLOT(onShowProgressPanelTimerTriggered()));
 
 }
 
@@ -513,13 +513,7 @@ ProgressPanel::doProgressEndOnMainThread(const NodePtr& node)
     if (!task) {
         return;
     }
-    
-    {
-        std::list<ProgressTaskInfoPtr> toRemove;
-        toRemove.push_back(task);
-        removeTasksFromTable(toRemove);
-    }
-    
+    task->cancelTask(false, 0);
     task.reset();
     
     

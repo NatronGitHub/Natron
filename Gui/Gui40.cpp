@@ -916,7 +916,14 @@ Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,
         for (std::list<DockablePanel*>::const_iterator it = _imp->openedPanels.begin(); it!=_imp->openedPanels.end(); ++it) {
             NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(*it);
             if (nodePanel) {
-                nodePanel->getNode()->getNode()->getEffectInstance()->refreshAfterTimeChange(isPlayback, time);
+                NodePtr node = nodePanel->getNode()->getNode();
+                node->getEffectInstance()->refreshAfterTimeChange(isPlayback, time);
+                
+                NodesList children;
+                node->getChildrenMultiInstance(&children);
+                for (NodesList::iterator it2 = children.begin(); it2!=children.end(); ++it2) {
+                    (*it2)->getEffectInstance()->refreshAfterTimeChange(isPlayback, time);
+                }
             }
         }
     }

@@ -383,9 +383,9 @@ ProgressTaskInfo::onRefreshLabelTimeout()
         if (!_imp->canBePaused && wasCanceled()) {
             return;
         }
-        if ( _imp->timer->getTimeSinceCreation() * 1000 > NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS) {
+        /*if ((_imp->timer->getTimeSinceCreation() * 1000) > NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS) {
             _imp->createItems();
-        }
+        }*/
         return;
     }
     QString timeStr;
@@ -492,10 +492,14 @@ ProgressTaskInfo::updateProgressBar(double totalProgress,double subTaskProgress)
     if (!_imp->nameItem && !wasCanceled()) {
         
         ///Show the item if the total estimated time is gt NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS
-        double totalTime = subTaskProgress == 0 ? 0 : timeElapsedSecs * 1. / subTaskProgress;
-        //also,  don't show if it was not shown yet but there are less than NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS remaining
-        if (std::min(_imp->timeRemaining, totalTime) * 1000 > NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS) {
+        //double totalTime = subTaskProgress == 0 ? 0 : timeElapsedSecs * 1. / subTaskProgress;
+        
+        // If we estimate that the task will be longer than NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS and it has been
+        // NATRON_PROGRESS_DIALOG_ETA_REFRESH_MS elapsed, show it
+        if (_imp->timeRemaining * 1000 > NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS &&
+            timeElapsedSecs * 1000 > NATRON_PROGRESS_DIALOG_ETA_REFRESH_MS) {
             _imp->createItems();
+            _imp->panel->onShowProgressPanelTimerTriggered();
         }
     }
     
