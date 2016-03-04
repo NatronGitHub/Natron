@@ -107,7 +107,7 @@ static QString generateChildAbsoluteName(FileSystemItem* parent,const QString& n
 struct FileSystemItemPrivate
 {
     
-    FileSystemItem* parent;
+    boost::weak_ptr<FileSystemItem> parent;
     std::vector< boost::shared_ptr<FileSystemItem> > children; ///vector for random access
     QMutex childrenMutex;
 
@@ -124,7 +124,7 @@ struct FileSystemItemPrivate
     QString absoluteFilePath;
     
     FileSystemItemPrivate(bool isDir,const QString& filename,const QString& userFriendlySequenceName,const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
-                          const QDateTime& dateModified,quint64 size,FileSystemItem* parent)
+                          const QDateTime& dateModified,quint64 size,const boost::shared_ptr<FileSystemItem> &parent)
     : parent(parent)
     , children()
     , childrenMutex()
@@ -152,7 +152,7 @@ struct FileSystemItemPrivate
                 // for drives, there is no filename
                 absoluteFilePath = filename;
             } else {
-                absoluteFilePath = generateChildAbsoluteName(parent,filename);
+                absoluteFilePath = generateChildAbsoluteName(parent.get(),filename);
             }
             
         }
@@ -166,7 +166,7 @@ FileSystemItem::FileSystemItem(bool isDir,
                                const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
                                const QDateTime& dateModified,
                                quint64 size,
-                               FileSystemItem* parent)
+                               const boost::shared_ptr<FileSystemItem>& parent)
 : _imp(new FileSystemItemPrivate(isDir,filename,userFriendlySequenceName, sequence,dateModified,size,parent))
 {
     
@@ -193,9 +193,10 @@ FileSystemItem::childCount() const
 int
 FileSystemItem::indexInParent() const
 {
-    if (_imp->parent) {
-        for (U32 i = 0; i < _imp->parent->_imp->children.size(); ++i) {
-            if (_imp->parent->_imp->children[i].get() == this) {
+    boost::shared_ptr<FileSystemItem> parent = _imp->parent.lock();
+    if (parent) {
+        for (U32 i = 0; i < parent->_imp->children.size(); ++i) {
+            if (parent->_imp->children[i].get() == this) {
                 return i;
             }
         }
@@ -209,10 +210,10 @@ FileSystemItem::isDir() const
     return _imp->isDir;
 }
 
-FileSystemItem*
+boost::shared_ptr<FileSystemItem>
 FileSystemItem::parent() const
 {
-    return _imp->parent;
+    return _imp->parent.lock();
 }
 
 
@@ -313,7 +314,7 @@ FileSystemItem::addChild(const boost::shared_ptr<SequenceParsing::SequenceFromFi
                                                                 sequence,
                                                                 info.lastModified(),
                                                                 size,
-                                                                this) );
+                                                                shared_from_this()) );
     _imp->children.push_back(child);
     
 }
@@ -446,7 +447,7 @@ FileSystemModel::FileSystemModel(SortableViewI* view)
                                                                    boost::shared_ptr<SequenceParsing::SequenceFromFiles>(),
                                                                    drives[i].lastModified(),
                                                                    drives[i].size(),
-                                                                   _imp->rootItem.get()));
+                                                                   _imp->rootItem));
         _imp->rootItem->addChild(child);
     }
     
@@ -669,6 +670,7 @@ FileSystemModel::index(int row, int column, const QModelIndex &parent) const
     return QModelIndex();
 }
 
+
 QModelIndex
 FileSystemModel::parent(const QModelIndex &index) const
 {
@@ -682,14 +684,14 @@ FileSystemModel::parent(const QModelIndex &index) const
         return QModelIndex();
     }
     
-    FileSystemItem *parentItem = childItem->parent();
+    boost::shared_ptr<FileSystemItem> parentItem = childItem->parent();
     
     // if there is no parent or parent is invisible, there is no index
-    if (!parentItem || parentItem == _imp->rootItem.get()) {
+    if (!parentItem || parentItem == _imp->rootItem) {
         return QModelIndex();
     }
     
-    return createIndex(parentItem->indexInParent(), (int)Name, parentItem);
+    return createIndex(parentItem->indexInParent(), (int)Name, parentItem.get());
 }
 
 QStringList
@@ -925,7 +927,7 @@ FileSystemModel::isSequenceModeEnabled() const
     return _imp->sequenceModeEnabled;
 }
 
-static boost::shared_ptr<FileSystemItem> mkPathInternal(FileSystemItem* item,const QStringList& path,int index)
+static boost::shared_ptr<FileSystemItem> mkPathInternal(const boost::shared_ptr<FileSystemItem>& item,const QStringList& path,int index)
 {
     assert(index < path.size() && index >= 0);
     
@@ -940,7 +942,7 @@ static boost::shared_ptr<FileSystemItem> mkPathInternal(FileSystemItem* item,con
 
     if (!child) {
         
-        QFileInfo info(generateChildAbsoluteName(item, path[index]));
+        QFileInfo info(generateChildAbsoluteName(item.get(), path[index]));
         ///The child doesn't exist already, create it without populating it
         child.reset(new FileSystemItem(true, //isDir
                                        path[index], //name
@@ -954,7 +956,7 @@ static boost::shared_ptr<FileSystemItem> mkPathInternal(FileSystemItem* item,con
     if (index == path.size() - 1) {
         return child;
     } else {
-        return mkPathInternal(child.get(), path, index + 1);
+        return mkPathInternal(child, path, index + 1);
     }
 }
 
@@ -967,7 +969,7 @@ FileSystemModelPrivate::mkPath(const QString& path)
     }
     
 	QStringList splitPath = getSplitPath(path);
-    return mkPathInternal(rootItem.get(), splitPath,0);
+    return mkPathInternal(rootItem, splitPath,0);
 }
 
 QModelIndex

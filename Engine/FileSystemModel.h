@@ -28,6 +28,8 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/weak_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #endif
 #include <QThread>
 #include <QtCore/QAbstractItemModel>
@@ -39,7 +41,7 @@
 NATRON_NAMESPACE_ENTER;
 
 struct FileSystemItemPrivate;
-class FileSystemItem
+class FileSystemItem : public boost::enable_shared_from_this<FileSystemItem>
 {
     
 public:
@@ -51,7 +53,7 @@ public:
                    const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
                    const QDateTime& dateModified,
                    quint64 size,
-                   FileSystemItem* parent = 0);
+                   const boost::shared_ptr<FileSystemItem>& parent = boost::shared_ptr<FileSystemItem>());
     
     ~FileSystemItem();
 
@@ -61,7 +63,7 @@ public:
     
     int indexInParent() const;
     
-    FileSystemItem* parent() const;
+    boost::shared_ptr<FileSystemItem> parent() const;
     
     /**
      * @brief If the item is a file this function will return its absolute file-path.

@@ -173,6 +173,7 @@ AppInstance::~AppInstance()
 {
 
     appPTR->removeInstance(_imp->_appID);
+    _imp->_currentProject->clearNodes(false);
 }
 
 void
