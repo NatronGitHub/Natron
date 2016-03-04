@@ -1877,7 +1877,7 @@ void
 RotoContext::evaluateChange()
 {
     _imp->incrementRotoAge();
-    getNode()->getEffectInstance()->evaluate(true,false);
+    getNode()->getEffectInstance()->incrHashAndEvaluate(true,false);
 }
 
 void

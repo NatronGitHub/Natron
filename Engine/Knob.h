@@ -2284,6 +2284,13 @@ public:
     }
     
     int getPageIndex(const KnobPage* page) const;
+
+    
+    //Calls onSignificantEvaluateAboutToBeCalled + evaluate
+    void incrHashAndEvaluate(bool isSignificant, bool refreshMetadatas);
+    
+protected:
+
     
     /**
      * @brief Must be implemented to evaluate a value change
@@ -2291,9 +2298,6 @@ public:
      * @param knob[in] The knob whose value changed.
      **/
     virtual void evaluate(bool /*isSignificant*/, bool /*refreshMetadatas*/) {}
-    
-protected:
-
 
     /**
      * @brief The virtual portion of notifyProjectBeginValuesChanged(). This is called by the project

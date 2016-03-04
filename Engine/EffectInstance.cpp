@@ -2671,7 +2671,7 @@ EffectInstance::onSignificantEvaluateAboutToBeCalled(KnobI* knob)
     
     NodePtr node = getNode();
     
-    if (knob->getEvaluateOnChange()) {
+    if (!knob || knob->getEvaluateOnChange()) {
         getApp()->triggerAutoSave();
     }
     

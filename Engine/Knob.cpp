@@ -1537,6 +1537,16 @@ KnobHelper::evaluateValueChangeInternal(int dimension,
     
     onInternalValueChanged(dimension, time, view);
     
+    if (!_imp->holder && _signalSlotHandler) {
+        computeHasModifications();
+        if (refreshWidget) {
+            _signalSlotHandler->s_valueChanged(view, dimension,(int)reason);
+        }
+        refreshListenersAfterValueChange(view, originalReason, dimension);
+        checkAnimationLevel(view, dimension);
+        
+    }
+    
 }
 
 void
@@ -4475,6 +4485,13 @@ KnobHolder::onDoEvaluateOnMainThread(bool significant,bool refreshMetadata)
 {
     assert(QThread::currentThread() == qApp->thread());
     evaluate(significant, refreshMetadata);
+}
+
+void
+KnobHolder::incrHashAndEvaluate(bool isSignificant, bool refreshMetadatas)
+{
+    onSignificantEvaluateAboutToBeCalled(0);
+    evaluate(isSignificant, refreshMetadatas);
 }
 
 void

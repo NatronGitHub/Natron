@@ -560,7 +560,7 @@ RestoreDefaultsCommand::undo()
     }
     app->addMultipleKeyframeIndicatorsAdded(times,true);
 
-    first->getHolder()->evaluate(true, true);
+    first->getHolder()->incrHashAndEvaluate(true, true);
     if ( first->getHolder()->getApp() ) {
         first->getHolder()->getApp()->redrawAllViewers();
     }
@@ -650,7 +650,7 @@ RestoreDefaultsCommand::redo()
     
     
     if (first->getHolder()) {
-        first->getHolder()->evaluate(true, true);
+        first->getHolder()->incrHashAndEvaluate(true, true);
         if (first->getHolder()->getApp() ) {
             first->getHolder()->getApp()->redrawAllViewers();
         }

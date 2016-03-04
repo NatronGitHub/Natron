@@ -1189,7 +1189,7 @@ LoadNodePresetsCommand::undo()
         panel->removeInstances(newChildren);
         panel->addInstances(oldChildren);
     }
-    internalNode->getEffectInstance()->evaluate(true, true);
+    internalNode->getEffectInstance()->incrHashAndEvaluate(true, true);
     internalNode->getApp()->triggerAutoSave();
     setText(QObject::tr("Load presets"));
 }
@@ -1251,7 +1251,7 @@ LoadNodePresetsCommand::redo()
     }
     std::map<std::string,std::string> oldNewScriptNames;
     internalNode->restoreKnobsLinks(*_newSerializations.front(), allNodes,oldNewScriptNames);
-    internalNode->getEffectInstance()->evaluate(true, true);
+    internalNode->getEffectInstance()->incrHashAndEvaluate(true, true);
     internalNode->getApp()->triggerAutoSave();
     _firstRedoCalled = true;
 
