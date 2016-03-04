@@ -105,7 +105,7 @@ Install libraries:
 
     brew tap homebrew/python
     brew tap homebrew/science
-    brew install --build-from-source qt
+    brew install --build-from-source qt --with-mysql
     brew install expat cairo glew
     brew install pyside
 
