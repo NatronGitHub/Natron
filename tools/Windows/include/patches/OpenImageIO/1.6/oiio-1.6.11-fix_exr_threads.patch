@@ -1,0 +1,23 @@
+diff --git a/src/openexr.imageio/exrinput.cpp b/src/openexr.imageio/exrinput.cpp
+index de5dfc3..03f9e05 100644
+--- a/src/openexr.imageio/exrinput.cpp
++++ b/src/openexr.imageio/exrinput.cpp
+@@ -84,6 +84,7 @@
+ #include "OpenImageIO/fmath.h"
+ #include "OpenImageIO/filesystem.h"
+ #include "OpenImageIO/imagebufalgo_util.h"
++#include "OpenImageIO/sysutil.h"
+ 
+ #include <boost/scoped_array.hpp>
+ 
+@@ -318,7 +319,9 @@ void set_exr_threads ()
+ 
+     int oiio_threads = 1;
+     OIIO::getattribute ("exr_threads", oiio_threads);
+-
++    if (oiio_threads == 0) {
++        oiio_threads = Sysutil::hardware_concurrency();
++    }
+     spin_lock lock (exr_threads_mutex);
+     if (exr_threads != oiio_threads) {
+         exr_threads = oiio_threads;

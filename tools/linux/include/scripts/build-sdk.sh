@@ -892,6 +892,7 @@ if [ ! -f $INSTALL_PATH/lib/libOpenImageIO.so ]; then
     cd oiio-Release-* || exit 1
     patch -p1 -i $INC_PATH/patches/OpenImageIO/oiio-1.5.23-checkmaxmem.patch || exit 1
     patch -p1 -i $INC_PATH/patches/OpenImageIO/oiio-1.5.23-invalidatespec.patch || exit 1
+    patch -p1 -i $INC_PATH/patches/OpenImageIO/oiio-1.6.11-fix_exr_threads.patch || exit 1
 
     mkdir build || exit 1
     cd build || exit 1
