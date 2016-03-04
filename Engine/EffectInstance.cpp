@@ -2676,11 +2676,13 @@ EffectInstance::onSignificantEvaluateAboutToBeCalled(KnobI* knob)
     }
     
     
-
-    node->refreshIdentityState();
-
-    //Increments the knobs age following a change
-    node->incrementKnobsAge();
+    bool isMT = QThread::currentThread() == qApp->thread();
+    if (isMT) {
+        node->refreshIdentityState();
+        
+        //Increments the knobs age following a change
+        node->incrementKnobsAge();
+    }
     
 }
 

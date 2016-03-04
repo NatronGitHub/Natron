@@ -4548,7 +4548,7 @@ KnobHolder::endChanges(bool discardRendering)
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect) {
         NodePtr node = isEffect->getNode();
-        if (node->duringInputChangedAction()) {
+        if (isMT && node->duringInputChangedAction()) {
             ignoreHashChangeAndRender = true;
         }
     }
