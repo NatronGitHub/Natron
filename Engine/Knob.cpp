@@ -4510,7 +4510,6 @@ KnobHolder::endChanges(bool discardRendering)
         return;
     }
     
-    bool hasChangeForEvaluation = false;
     bool significant = false;
     KnobChanges knobChanged;
     {
@@ -4527,7 +4526,7 @@ KnobHolder::endChanges(bool discardRendering)
         }
         if (_imp->evaluationBlocked <= 1) {
             if (_imp->nbSignificantChangesDuringEvaluationBlock) {
-                hasChangeForEvaluation = true;
+                significant = true;
             }
             _imp->nbSignificantChangesDuringEvaluationBlock = 0;
         }
@@ -4615,7 +4614,7 @@ KnobHolder::endChanges(bool discardRendering)
     
     
     // Call getClipPreferences & render
-    if (!discardRendering && !ignoreHashChangeAndRender && hasChangeForEvaluation) {
+    if (!discardRendering && !ignoreHashChangeAndRender) {
         if (!isMT) {
             Q_EMIT doEvaluateOnMainThread(significant, refreshMetadata);
         } else {
