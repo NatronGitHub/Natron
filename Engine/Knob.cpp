@@ -4525,8 +4525,10 @@ KnobHolder::endChanges(bool discardRendering)
     
     
     KnobPtr firstKnobChanged;
+    ValueChangedReasonEnum firstKnobReason = eValueChangedReasonNatronGuiEdited;
     if (!knobChanged.empty()) {
         firstKnobChanged = knobChanged.begin()->knob;
+        firstKnobReason = knobChanged.begin()->reason;
     }
 
     bool isLoadingProject = false;
@@ -4536,6 +4538,9 @@ KnobHolder::endChanges(bool discardRendering)
     
     bool ignoreHashChangeAndRender = isLoadingProject;
 
+    if (firstKnobReason == eValueChangedReasonTimeChanged) {
+        ignoreHashChangeAndRender = true;
+    }
     
     // If the node is currently modifying its input, do not ask for a render
     // because at then end of the inputChanged handler, it will ask for a refresh
