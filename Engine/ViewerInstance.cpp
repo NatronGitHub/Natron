@@ -2953,7 +2953,9 @@ ViewerInstance::redrawViewer()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert(_imp->uiContext);
+    if (!_imp->uiContext) {
+        return;
+    }
     _imp->uiContext->redraw();
 }
 
