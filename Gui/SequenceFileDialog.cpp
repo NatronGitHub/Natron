@@ -589,6 +589,8 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
 
 SequenceFileDialog::~SequenceFileDialog()
 {
+    _model->resetCompletly(false);
+    
     QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
 
     settings.setValue( QLatin1String("FileDialog"), saveState() );

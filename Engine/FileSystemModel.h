@@ -40,6 +40,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
+class FileSystemModel;
 struct FileSystemItemPrivate;
 class FileSystemItem : public boost::enable_shared_from_this<FileSystemItem>
 {
@@ -47,7 +48,8 @@ class FileSystemItem : public boost::enable_shared_from_this<FileSystemItem>
 public:
 
     
-    FileSystemItem(bool isDir,
+    FileSystemItem(FileSystemModel* model,
+                   bool isDir,
                    const QString& filename,
                    const QString& userFriendlySequenceName,
                    const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
@@ -56,6 +58,8 @@ public:
                    const boost::shared_ptr<FileSystemItem>& parent = boost::shared_ptr<FileSystemItem>());
     
     ~FileSystemItem();
+    
+    void resetModelPointer();
 
     boost::shared_ptr<FileSystemItem> childAt(int position) const;
     
@@ -306,6 +310,9 @@ public:
     
     void onSortIndicatorChanged(int logicalIndex,Qt::SortOrder order);
     
+    void resetCompletly(bool rebuild);
+
+    
 public Q_SLOTS:
     
     void onDirectoryLoadedByGatherer(const QString& directory);
@@ -322,9 +329,15 @@ Q_SIGNALS:
     
 private:
     
+    
+    boost::shared_ptr<FileSystemItem> getSharedItemPtr(FileSystemItem* item) const;
+    
+    boost::shared_ptr<FileSystemItem> getItem(const QModelIndex &index) const;
+
+    
     void cleanAndRefreshItem(const boost::shared_ptr<FileSystemItem>& item);
     
-    void resetCompletly();
+    friend class FileSystemItem;
     
     boost::scoped_ptr<FileSystemModelPrivate> _imp;
 };
