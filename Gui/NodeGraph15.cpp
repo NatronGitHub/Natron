@@ -261,28 +261,36 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                     QPointF mergeHintCenter = mergeHintNodeBbox.center();
                     
                     ///Place the selected node on the right of the hint node
-                    selectedNode->setPosition(mergeHintCenter.x() + mergeHintNodeBbox.width() / 2. + NATRON_NODE_DUPLICATE_X_OFFSET,
-                                              mergeHintCenter.y() - selectedNodeBbox.height() / 2.);
+                    QPointF selectedNodePos(mergeHintCenter.x() + mergeHintNodeBbox.width() / 2. + TO_DPIX(NATRON_NODE_DUPLICATE_X_OFFSET),
+                                            mergeHintCenter.y() - selectedNodeBbox.height() / 2.);
+                    
+                    selectedNodePos = selectedNode->mapToParent(selectedNode->mapFromScene(selectedNodePos));
+                    selectedNode->setPosition(selectedNodePos.x(), selectedNodePos.y());
                     
                     selectedNodeBbox = selectedNode->mapToScene(selectedNode->boundingRect()).boundingRect();
                     
                     QPointF selectedNodeCenter = selectedNodeBbox.center();
-                    ///Place the new merge node exactly in the middle of the 2, with an Y offset
-                    QPointF newNodePos((mergeHintCenter.x() + selectedNodeCenter.x()) / 2. - 40,
-                                       std::max((mergeHintCenter.y() + mergeHintNodeBbox.height() / 2.),
-                                                selectedNodeCenter.y() + selectedNodeBbox.height() / 2.) + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
                     
-                    
-                    CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_MERGE), eCreateNodeReasonInternal, getGroup());
-                    args.xPosHint = newNodePos.x();
-                    args.yPosHint = newNodePos.y();
-
-                
-                    
+                    CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_MERGE), eCreateNodeReasonUserCreate, getGroup());
                     NodePtr mergeNode = getGui()->getApp()->createNode(args);
                     
                     if (mergeNode) {
+                        boost::shared_ptr<NodeGuiI> nodeUI = mergeNode->getNodeGui();
+                        assert(nodeUI);
+                        NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>(nodeUI);
+                        assert(nodeGui);
                         
+                        double nodeW,nodeH;
+                        nodeGui->getSize(&nodeW, &nodeH);
+                        ///Place the new merge node exactly in the middle of the 2, with an Y offset
+                        QPointF newNodePos((mergeHintCenter.x() + selectedNodeCenter.x()) / 2. - nodeW / 2.,
+                                           std::max((mergeHintCenter.y() + mergeHintNodeBbox.height() / 2.),
+                                                    selectedNodeCenter.y() + selectedNodeBbox.height() / 2.) + TO_DPIY(NodeGui::DEFAULT_OFFSET_BETWEEN_NODES));
+                        
+
+                        
+                        newNodePos = nodeGui->mapToParent(nodeGui->mapFromScene(newNodePos));
+                        nodeGui->setPosition(newNodePos.x(), newNodePos.y());
                         int aIndex = mergeNode->getInputNumberFromLabel("A");
                         int bIndex = mergeNode->getInputNumberFromLabel("B");
                         assert(aIndex != -1 && bIndex != -1);
