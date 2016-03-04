@@ -65,7 +65,7 @@ KnobGui::onMultipleKeySet(const std::list<double>& keys, ViewSpec /*view*/,int /
     
     if ((ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited) {
         KnobPtr knob = getKnob();
-        if ( !knob->getIsSecret() && knob->isDeclaredByPlugin()) {
+        if ( !knob->getIsSecret() && (knob->isDeclaredByPlugin()  || knob->isUserKnob())) {
             std::list<SequenceTime> intKeys;
             for (std::list<double>::const_iterator it = keys.begin() ; it != keys.end(); ++it) {
                 intKeys.push_back(*it);
@@ -88,7 +88,7 @@ KnobGui::onInternalKeySet(double time,
     if ((ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited) {
         if (added) {
             KnobPtr knob = getKnob();
-            if ( !knob->getIsSecret() && knob->isDeclaredByPlugin()) {
+            if ( !knob->getIsSecret() && (knob->isDeclaredByPlugin() || knob->isUserKnob())) {
                 knob->getHolder()->getApp()->addKeyframeIndicator(time);
             }
         }
@@ -105,7 +105,7 @@ KnobGui::onInternalKeyRemoved(double time,
                               int /*reason*/)
 {
     KnobPtr knob = getKnob();
-    if ( !knob->getIsSecret() && knob->isDeclaredByPlugin()) {
+    if ( !knob->getIsSecret() && (knob->isDeclaredByPlugin() || knob->isUserKnob())) {
         knob->getHolder()->getApp()->removeKeyFrameIndicator(time);
     }
     Q_EMIT keyFrameRemoved();
@@ -528,7 +528,7 @@ void
 KnobGui::removeAllKeyframeMarkersOnTimeline(int dimension)
 {
     KnobPtr knob = getKnob();
-    if ( knob->getHolder() && knob->getHolder()->getApp() && !knob->getIsSecret() && knob->isDeclaredByPlugin()) {
+    if ( knob->getHolder() && knob->getHolder()->getApp() && !knob->getIsSecret() && (knob->isDeclaredByPlugin() || knob->isUserKnob())) {
         AppInstance* app = knob->getHolder()->getApp();
         assert(app);
         std::list<SequenceTime> times;
@@ -591,7 +591,7 @@ void
 KnobGui::setKeyframeMarkerOnTimeline(double time)
 {
     KnobPtr knob = getKnob();
-    if (knob->isDeclaredByPlugin()) {
+    if (knob->isDeclaredByPlugin() || knob->isUserKnob()) {
         knob->getHolder()->getApp()->addKeyframeIndicator(time);
     }
 }
@@ -607,7 +607,7 @@ KnobGui::onKeyFrameMoved(ViewSpec /*view*/,
     if ( !knob->isAnimationEnabled() || !knob->canAnimate() ) {
         return;
     }
-    if (knob->isDeclaredByPlugin()) {
+    if (knob->isDeclaredByPlugin() || knob->isUserKnob()) {
         AppInstance* app = knob->getHolder()->getApp();
         assert(app);
         app->removeKeyFrameIndicator(oldTime);
