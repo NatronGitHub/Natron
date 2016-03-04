@@ -172,7 +172,7 @@ variant field3d description {Use Field3D.} {
 
 variant freetype description {Use FreeType.} {
     configure.args-delete -DUSE_FREETYPE:BOOL=FALSE
-    configure.args-append -DUSE_FREETYPE:BOOL=TRUE -DFREETYPE_INCLUDE_PATH=${prefix}/include/freetype2
+    configure.args-append -DUSE_FREETYPE:BOOL=TRUE -DFREETYPE_INCLUDE_DIRS=${prefix}/include/freetype2
     depends_lib-append port:freetype
 }
 
