@@ -272,7 +272,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                     
                     QPointF selectedNodeCenter = selectedNodeBbox.center();
                     
-                    CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_MERGE), eCreateNodeReasonUserCreate, getGroup());
+                    CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_MERGE), eCreateNodeReasonInternal, getGroup());
                     NodePtr mergeNode = getGui()->getApp()->createNode(args);
                     
                     if (mergeNode) {
