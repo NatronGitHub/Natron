@@ -63,7 +63,7 @@ public:
     
     int indexInParent() const;
     
-    boost::shared_ptr<FileSystemItem> parent() const;
+    boost::shared_ptr<FileSystemItem> getParentItem() const;
     
     /**
      * @brief If the item is a file this function will return its absolute file-path.

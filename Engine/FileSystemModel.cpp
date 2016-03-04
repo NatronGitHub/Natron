@@ -148,7 +148,7 @@ struct FileSystemItemPrivate
             
             // absoluteFilePath method of QFileInfo class cause the file system
             // query hence causes slower performance
-            if ( !parent->parent() ) {
+            if ( !parent->getParentItem() ) {
                 // for drives, there is no filename
                 absoluteFilePath = filename;
             } else {
@@ -211,7 +211,7 @@ FileSystemItem::isDir() const
 }
 
 boost::shared_ptr<FileSystemItem>
-FileSystemItem::parent() const
+FileSystemItem::getParentItem() const
 {
     return _imp->parent.lock();
 }
@@ -684,13 +684,13 @@ FileSystemModel::parent(const QModelIndex &index) const
         return QModelIndex();
     }
     
-    boost::shared_ptr<FileSystemItem> parentItem = childItem->parent();
+    boost::shared_ptr<FileSystemItem> parentItem = childItem->getParentItem();
     
     // if there is no parent or parent is invisible, there is no index
     if (!parentItem || parentItem == _imp->rootItem) {
         return QModelIndex();
     }
-    
+    assert(parentItem);
     return createIndex(parentItem->indexInParent(), (int)Name, parentItem.get());
 }
 
@@ -746,6 +746,9 @@ QModelIndex
 FileSystemModel::index(FileSystemItem* item,int column) const
 {
     assert(item);
+    if (!item) {
+        return QModelIndex();
+    }
     return createIndex(item->indexInParent(), column, item);
 }
 
@@ -1114,14 +1117,15 @@ FileSystemModel::onWatchedDirectoryChanged(const QString& directory)
         } else {
             ///This is a sub-directory
             ///Clear the parent of the corresponding item
-            if (item->parent()) {
+            boost::shared_ptr<FileSystemItem> parent = item->getParentItem();
+            if (parent) {
                 
                 QModelIndex idx = index(item.get());
 				assert(idx.isValid());
-				int count = item->parent()->childCount();
+				int count = parent->childCount();
 				if (count > 0) {
 					beginRemoveRows(idx.parent(), 0, count - 1);
-					item->parent()->clearChildren();
+					parent->clearChildren();
 					endRemoveRows();
 				}
             }
