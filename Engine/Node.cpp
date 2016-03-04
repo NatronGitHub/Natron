@@ -3680,10 +3680,10 @@ Node::initializeKnobs(int renderScaleSupportPref,bool loadingSerialization)
     if (effectIsGroup) {
         _imp->effect->initializeKnobsPublic();
     }
-    
+    _imp->effect->endChanges();
+
     _imp->knobsInitialized = true;
 
-    _imp->effect->endChanges();
     Q_EMIT knobsInitialized();
 } // initializeKnobs
 
