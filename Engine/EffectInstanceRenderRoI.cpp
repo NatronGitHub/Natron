@@ -771,7 +771,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 }
             }
             assert(components);
-            
+            if (!components) {
+                continue;
+            }
             //For writers, we always want to call the render action when doing a sequential render, but we still want to use the cache for nodes upstream
             bool doCacheLookup = !isWriter() || !frameArgs->isSequentialRender;
             if (doCacheLookup) {

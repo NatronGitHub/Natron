@@ -77,7 +77,7 @@ public:
 
     bool getDirty() const
     {
-        return dirty;
+        return _dirty;
     }
 
     ///Updates the text as setText does but also keeps the current color info
@@ -92,14 +92,14 @@ public:
 
     bool isReadOnly() const
     {
-        return readOnly;
+        return _readOnly;
     }
 
     void setReadOnly(bool readOnly);
 
     bool isSunken() const
     {
-        return sunkenStyle;
+        return _sunkenStyle;
     }
 
     void setSunken(bool s);
@@ -122,10 +122,10 @@ private:
 private:
     bool _toggled;
     bool _bold;
-    bool dirty;
-    bool readOnly;
-    int animation;
-    bool sunkenStyle;
+    bool _dirty;
+    bool _readOnly;
+    int _animation;
+    bool _sunkenStyle;
 };
 
 

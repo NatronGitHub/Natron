@@ -2046,10 +2046,10 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 }
                 const TextExtraData* data = dynamic_cast<const TextExtraData*>(isRegular->getExtraData());
                 assert(data);
-                if (data->label) {
-                    k->setAsLabel();
-                } else {
-                    if (data->multiLine) {
+                if (data) {
+                    if (data->label) {
+                        k->setAsLabel();
+                    } else if (data->multiLine) {
                         k->setAsMultiLine();
                         if (data->richText) {
                             k->setUsesRichText(true);

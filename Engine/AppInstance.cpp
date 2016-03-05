@@ -1449,18 +1449,22 @@ AppInstance::startWritersRendering(bool doBlockingRender, const std::list<Render
 
 
 void
-AppInstancePrivate::getSequenceNameFromWriter(const OutputEffectInstance* writer,QString* sequenceName)
+AppInstancePrivate::getSequenceNameFromWriter(const OutputEffectInstance* writer,
+                                              QString* sequenceName)
 {
     ///get the output file knob to get the name of the sequence
     const DiskCacheNode* isDiskCache = dynamic_cast<const DiskCacheNode*>(writer);
     if (isDiskCache) {
         *sequenceName = QObject::tr("Caching");
     } else {
+        *sequenceName = QString();
         KnobPtr fileKnob = writer->getKnobByName(kOfxImageEffectFileParamName);
         if (fileKnob) {
             Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(fileKnob.get());
             assert(isString);
-            *sequenceName = QString::fromUtf8(isString->getValue().c_str());
+            if (isString) {
+                *sequenceName = QString::fromUtf8(isString->getValue().c_str());
+            }
         }
     }
 }

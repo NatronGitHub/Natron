@@ -886,7 +886,7 @@ bool
 RotoContext::isRotoPaintTreeConcatenatableInternal(const std::list<boost::shared_ptr<RotoDrawableItem> >& items, int* blendingMode)
 {
     bool operatorSet = false;
-    int comp_i;
+    int comp_i = -1;
     for (std::list<boost::shared_ptr<RotoDrawableItem> >::const_iterator it = items.begin(); it != items.end(); ++it) {
         int op = (*it)->getCompositingOperator();
         if (!operatorSet) {
@@ -908,8 +908,11 @@ RotoContext::isRotoPaintTreeConcatenatableInternal(const std::list<boost::shared
         }
         
     }
-    *blendingMode = comp_i;
-    return true;
+    if (operatorSet) {
+        *blendingMode = comp_i;
+        return true;
+    }
+    return false;
 }
 
 bool
@@ -2709,8 +2712,7 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
  
     if (isStroke) {
         isStroke->evaluateStroke(mipmapLevel, time, &strokes, &bbox);
-    } else {
-        assert(isBezier);
+    } else if (isBezier) {
         bool bboxSet = false;
         for (double t = startTime; t <= endTime; t += mbFrameStep) {
             RectD subBbox = isBezier->getBoundingBox(t);

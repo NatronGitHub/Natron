@@ -670,6 +670,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
     // In this pass we check that all parameters belong to a page.
     // For parameters that do not belong to a page, we add them "on the fly" to the page
     
+    std::list<OfxParamToKnob*>::iterator it3;
     std::list<OfxParamToKnob*>::iterator lastParamInsertedInMainPage = (*mainPage)->paramsOrdered.end();
     
     for (std::list<OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it != params.end(); ++it) {
@@ -693,7 +694,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
         
         bool foundPage = false;
         for (PagesOrdered::iterator it2 = finalPages.begin(); it2!=finalPages.end(); ++it2) {
-            for (std::list<OfxParamToKnob*>::iterator it3 = (*it2)->paramsOrdered.begin(); it3 != (*it2)->paramsOrdered.end(); ++it3) {
+            for (it3 = (*it2)->paramsOrdered.begin(); it3 != (*it2)->paramsOrdered.end(); ++it3) {
                 if (isKnownKnob == *it3) {
                     foundPage = true;
                     if (it2 == mainPage) {

@@ -267,6 +267,9 @@ TEST_F(BaseTest,SetValues)
     KnobPtr knob = generator->getKnobByName("radius");
     KnobDouble* radius = dynamic_cast<KnobDouble*>(knob.get());
     EXPECT_TRUE(radius != 0);
+    if (!radius) {
+        return;
+    }
     radius->setValue(100);
     EXPECT_TRUE(radius->getValue() == 100);
     

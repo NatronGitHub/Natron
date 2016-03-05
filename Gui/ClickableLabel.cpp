@@ -39,24 +39,25 @@ NATRON_NAMESPACE_ENTER;
 
 ClickableLabel::ClickableLabel(const QString &text,
                                QWidget *parent)
-    : Label(text, parent),
-    _toggled(false),
-    _bold(false),
-    dirty(false),
-    readOnly(false),
-    animation(0),
-    sunkenStyle(false)
+    : Label(text, parent)
+    , _toggled(false)
+    , _bold(false)
+    , _dirty(false)
+    , _readOnly(false)
+    , _animation(0)
+    , _sunkenStyle(false)
 {
 }
 
 ClickableLabel::ClickableLabel(const QPixmap &icon,
                QWidget *parent)
-: Label(parent),
-_toggled(false),
-dirty(false),
-readOnly(false),
-animation(0),
-sunkenStyle(false)
+: Label(parent)
+, _toggled(false)
+, _bold(false)
+, _dirty(false)
+, _readOnly(false)
+, _animation(0)
+, _sunkenStyle(false)
 {
     setPixmap(icon);
 }
@@ -119,8 +120,8 @@ ClickableLabel::canAlter() const
 void
 ClickableLabel::setReadOnly(bool readOnly)
 {
-    if (this->readOnly != readOnly) {
-        this->readOnly = readOnly;
+    if (_readOnly != readOnly) {
+        _readOnly = readOnly;
         refreshStyle();
     }
 }
@@ -128,8 +129,8 @@ ClickableLabel::setReadOnly(bool readOnly)
 void
 ClickableLabel::setAnimation(int i)
 {
-    if (this->animation != i) {
-        animation = i;
+    if (_animation != i) {
+        _animation = i;
         refreshStyle();
     }
 }
@@ -137,8 +138,8 @@ ClickableLabel::setAnimation(int i)
 void
 ClickableLabel::setDirty(bool b)
 {
-    if (this->dirty != b) {
-        dirty = b;
+    if (_dirty != b) {
+        _dirty = b;
         refreshStyle();
     }
 }
@@ -146,8 +147,8 @@ ClickableLabel::setDirty(bool b)
 void
 ClickableLabel::setSunken(bool s)
 {
-    if (this->sunkenStyle != s) {
-        sunkenStyle = s;
+    if (_sunkenStyle != s) {
+        _sunkenStyle = s;
         refreshStyle();
     }
 }

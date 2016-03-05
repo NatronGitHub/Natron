@@ -2557,14 +2557,16 @@ OfxEffectInstance::getComponentsNeededAndProduced(double time,
                 
                 OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
                 assert(clip);
-                int index = clip->getInputNb();
-                
-                std::vector<ImageComponents> compNeeded;
-                for (std::list<std::string>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-                    ImageComponents ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(*it2);
-                    compNeeded.push_back(ofxComp);
+                if (clip) {
+                    int index = clip->getInputNb();
+
+                    std::vector<ImageComponents> compNeeded;
+                    for (std::list<std::string>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+                        ImageComponents ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(*it2);
+                        compNeeded.push_back(ofxComp);
+                    }
+                    comps->insert(std::make_pair(index, compNeeded));
                 }
-                comps->insert(std::make_pair(index, compNeeded));
             }
         }
         

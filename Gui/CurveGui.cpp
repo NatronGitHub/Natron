@@ -445,16 +445,15 @@ CurveGui::drawCurve(int curveIndex,
         glEnable(GL_POINT_SMOOTH);
         
         const SelectedKeys & selectedKeyFrames = _curveWidget->getSelectedKeyFrames();
+        SelectedKeys::const_iterator selectedKeyFramesIt;
         SelectedKeys::const_iterator foundCurveSelected = selectedKeyFrames.end();
-        {
-            for (SelectedKeys::const_iterator it = selectedKeyFrames.begin(); it!=selectedKeyFrames.end(); ++it) {
-                if (it->first.get() == this) {
-                    foundCurveSelected = it;
-                    break;
-                }
+        for (selectedKeyFramesIt = selectedKeyFrames.begin(); selectedKeyFramesIt != selectedKeyFrames.end(); ++selectedKeyFramesIt) {
+            if (selectedKeyFramesIt->first.get() == this) {
+                foundCurveSelected = selectedKeyFramesIt;
+                break;
             }
         }
-        
+
         bool isCurveSelected = foundCurveSelected != selectedKeyFrames.end();
         
         for (KeyFrameSet::const_iterator k = keyframes.begin(); k != keyframes.end(); ++k) {
