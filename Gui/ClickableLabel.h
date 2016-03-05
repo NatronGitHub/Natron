@@ -85,7 +85,7 @@ public:
 
     int getAnimation() const
     {
-        return animation;
+        return _animation;
     }
 
     void setAnimation(int i);
