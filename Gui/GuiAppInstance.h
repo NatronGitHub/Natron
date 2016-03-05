@@ -179,6 +179,8 @@ public:
 
     virtual void renderAllViewers(bool canAbort) OVERRIDE FINAL;
     
+    virtual void refreshAllPreviews() OVERRIDE FINAL;
+    
     virtual void abortAllViewers() OVERRIDE FINAL;
     
     virtual void queueRedrawForAllViewers() OVERRIDE FINAL;

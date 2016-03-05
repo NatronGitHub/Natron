@@ -1034,6 +1034,12 @@ GuiAppInstance::renderAllViewers(bool canAbort)
 }
 
 void
+GuiAppInstance::refreshAllPreviews()
+{
+    getProject()->refreshPreviews();
+}
+
+void
 GuiAppInstance::abortAllViewers()
 {
     _imp->_gui->abortAllViewers();

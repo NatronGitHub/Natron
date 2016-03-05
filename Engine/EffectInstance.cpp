@@ -2721,8 +2721,9 @@ EffectInstance::evaluate(bool isSignificant,
             (*it)->redrawViewer();
         }
     }
-
-    node->refreshPreviewsRecursivelyDownstream(time);
+    if (isSignificant) {
+        node->refreshPreviewsRecursivelyDownstream(time);
+    }
 } // evaluate
 
 bool

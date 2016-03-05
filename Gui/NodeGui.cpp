@@ -1229,7 +1229,7 @@ void
 NodeGui::updatePreviewImage(double time)
 {
     NodePtr node = getNode();
-    if ( isVisible() && node->isPreviewEnabled()  && node->getApp()->getProject()->isAutoPreviewEnabled() ) {
+    if ( isVisible() && node->isPreviewEnabled() && node->isActivated() && node->getApp()->getProject()->isAutoPreviewEnabled() ) {
 
         if (node->getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) != std::string::npos ||
             node->getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME) != std::string::npos) {
@@ -1248,7 +1248,7 @@ void
 NodeGui::forceComputePreview(double time)
 {
     NodePtr node = getNode();
-    if (!node) {
+    if (!node || !node->isActivated()) {
         return;
     }
     if ( isVisible() && node->isPreviewEnabled() && !node->getApp()->getProject()->isLoadingProject()) {

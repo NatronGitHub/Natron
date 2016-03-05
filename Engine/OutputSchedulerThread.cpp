@@ -3076,7 +3076,7 @@ ViewerDisplayScheduler::onRenderStopped(bool /*/aborted*/)
 {
     ///Refresh all previews in the tree
     boost::shared_ptr<ViewerInstance> viewer = _viewer.lock();
-    viewer->getNode()->refreshPreviewsRecursivelyUpstream(viewer->getTimeline()->currentFrame());
+    viewer->getApp()->refreshAllPreviews();
     
     if (!viewer->getApp() || viewer->getApp()->isGuiFrozen()) {
         getEngine()->s_refreshAllKnobs();

@@ -376,6 +376,8 @@ public:
     
     virtual void abortAllViewers() {}
     
+    virtual void refreshAllPreviews() {}
+    
     virtual void declareCurrentAppVariable_Python();
 
     void execOnProjectCreatedCallback();
