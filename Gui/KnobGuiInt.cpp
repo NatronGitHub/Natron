@@ -547,11 +547,11 @@ KnobGuiInt::onSpinBoxValueChanged()
     }
     
     int spinBoxDim = -1;
-    
     int newValue = 0;
-    int oldValue = 0;
+
     
     if (!_dimensionSwitchButton || _dimensionSwitchButton->isChecked() ) {
+        int oldValue = 0;
         // each spinbox has a different value
         for (U32 i = 0; i < _spinBoxes.size(); ++i) {
             if (_spinBoxes[i].first == box) {
@@ -560,23 +560,28 @@ KnobGuiInt::onSpinBoxValueChanged()
                 spinBoxDim = i;
             }
         }
+        pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(),oldValue, newValue, spinBoxDim ,false) );
     } else {
         // use the value of the first dimension only, and set all spinboxes
         newValue = _spinBoxes[0].first->value();
-        oldValue = _knob.lock()->getValue(0);
+        std::list<int> oldValues  = _knob.lock()->getValueForEachDimension_mt_safe();
         spinBoxDim = 0;
         for (U32 i = 1; i < _spinBoxes.size(); ++i) {
             if (_spinBoxes[i].first != box) {
                 _spinBoxes[i].first->setValue(newValue);
             }
         }
-        
+        std::list<int> newValues;
+        for (std::size_t i = 0; i < _spinBoxes.size(); ++i) {
+            newValues.push_back(newValue);
+        }
+        pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(),oldValues, newValues ,false) );
     }
     
     if (_slider) {
         _slider->seekScalePosition(newValue);
     }
-    pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(),oldValue, newValue, spinBoxDim ,false) );
+    
 }
 
 void
