@@ -126,10 +126,10 @@ RotoPaint::isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* d
 bool
 RotoNode::isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const
 {
-    *defaultR = true;
-    *defaultG = true;
-    *defaultB = true;
-    *defaultA = false;
+    *defaultR = false;
+    *defaultG = false;
+    *defaultB = false;
+    *defaultA = true;
     return false;
 }
 
