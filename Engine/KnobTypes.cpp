@@ -1075,7 +1075,7 @@ KnobString::hasContentWithoutHtmlTags() const
     if (foundNatronCustomDataTag != std::string::npos) {
         ///remove the current custom data
         int foundNatronEndTag = str.find(customTagEnd,foundNatronCustomDataTag);
-        assert(foundNatronEndTag != std::string::npos);
+        assert(foundNatronEndTag != (int)std::string::npos);
         
         foundNatronEndTag += customTagEnd.size();
         str.erase(foundNatronCustomDataTag, foundNatronEndTag - foundNatronCustomDataTag);
