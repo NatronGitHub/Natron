@@ -138,7 +138,7 @@
 #define kRotoBrushSizeParamHint "This is the diameter of the brush in pixels. Shift + drag on the viewer to modify this value"
 
 #define kRotoBrushSpacingParam "brushSpacing"
-#define kRotoBrushSpacingParamLabel "brushSpacing"
+#define kRotoBrushSpacingParamLabel "Brush Spacing"
 #define kRotoBrushSpacingParamHint "Spacing between stamps of the paint brush"
 
 #define kRotoBrushHardnessParam "brushHardness"
