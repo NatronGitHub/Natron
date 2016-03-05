@@ -3183,17 +3183,19 @@ NodeGui::setName(const QString & newName)
     
     std::string stdName = newName.toStdString();
     stdName = Python::makeNameScriptFriendly(stdName);
+    
+  
     std::string oldScriptName = getNode()->getScriptName();
     try {
         getNode()->setScriptName(stdName);
     } catch (const std::exception& e) {
-        Dialogs::errorDialog(tr("Rename").toStdString(), tr("Could not set node script-name to ").toStdString() + stdName + ": " + e.what());
-        return;
+        //Dialogs::errorDialog(tr("Rename").toStdString(), tr("Could not set node script-name to ").toStdString() + stdName + ": " + e.what());
+        //return;
     }
     
     
     _settingNameFromGui = true;
-    getNode()->setLabel(stdName);
+    getNode()->setLabel(newName.toStdString());
     _settingNameFromGui = false;
     
     onInternalNameChanged(newName);

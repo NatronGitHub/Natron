@@ -2737,6 +2737,24 @@ Node::setNameInternal(const std::string& name, bool throwErrors, bool declareToP
     std::string fullOldName = getFullyQualifiedName();
     std::string newName = name;
     
+    bool onlySpaces = true;
+    for (std::size_t i = 0; i < name.size(); ++i) {
+        if (name[i] != '_') {
+            onlySpaces = false;
+            break;
+        }
+    }
+    if (onlySpaces) {
+        std::string err = tr("The name must at least contain a character").toStdString();
+        if (throwErrors) {
+            throw std::runtime_error(err);
+        } else {
+            appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(err.c_str()));
+            std::cerr << err << std::endl;
+            return;
+        }
+    }
+    
     boost::shared_ptr<NodeCollection> collection = getGroup();
     if (collection) {
         if (throwErrors) {
