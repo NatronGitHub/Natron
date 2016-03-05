@@ -549,9 +549,8 @@ RotoPaint::render(const RenderActionArgs& args)
             if (premultiply && plane->second->getComponents() == ImageComponents::getRGBAComponents()) {
                 plane->second->premultImage(args.roi);
             }
-            if (bgImg) {
-                plane->second->copyUnProcessedChannels(args.roi, outputPremult, bgImg->getPremultiplication(), copyChannels, bgImg, false);
-            }
+            plane->second->copyUnProcessedChannels(args.roi, outputPremult, bgImg ? bgImg->getPremultiplication() : eImagePremultiplicationOpaque, copyChannels, bgImg, false);
+            
             
         }
     } // RenderingFlagSetter flagIsRendering(bottomMerge.get());

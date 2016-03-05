@@ -9944,11 +9944,11 @@ Node::refreshChannelSelectors()
                 std::string option;
                 if (!nodeName.empty()) {
                     option += nodeName;
-                    option += ' ';
+                    option += '.';
                 }
                 if (!layerName.empty()) {
                     option += layerName;
-                    option += ' ';
+                    option += '.';
                 }
                 option += channels[i];
                 choices.push_back(option);
