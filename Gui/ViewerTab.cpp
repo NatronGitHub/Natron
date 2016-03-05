@@ -877,8 +877,16 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
                             "<p>" + tr("Press ").toStdString() + " %2 " + tr("to activate and drag a new region.").toStdString() + "</p>", _imp->enableViewerRoI);
 
 
+    
+    
+    _imp->playerLayout->addWidget(_imp->playBackInputButton);
+    _imp->playerLayout->addWidget(_imp->playBackInputSpinbox);
+    _imp->playerLayout->addWidget(_imp->firstFrame_Button);
+    
     _imp->playerLayout->addStretch();
+    
     _imp->playerLayout->addWidget(_imp->canEditFpsBox);
+    _imp->playerLayout->addSpacing(TO_DPIX(5));
     _imp->playerLayout->addWidget(_imp->canEditFpsLabel);
     _imp->playerLayout->addWidget(_imp->fpsBox);
     _imp->playerLayout->addWidget(_imp->turboButton);
@@ -889,17 +897,10 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     
     _imp->playerLayout->addStretch();
     
-    _imp->playerLayout->addWidget(_imp->playBackInputButton);
-    _imp->playerLayout->addWidget(_imp->playBackInputSpinbox);
-    _imp->playerLayout->addWidget(_imp->firstFrame_Button);
-    _imp->playerLayout->addSpacing(TO_DPIX(10));
+    
     _imp->playerLayout->addWidget(_imp->play_Backward_Button);
     _imp->playerLayout->addWidget(_imp->currentFrameBox);
     _imp->playerLayout->addWidget(_imp->play_Forward_Button);
-    _imp->playerLayout->addSpacing(TO_DPIX(10));
-    _imp->playerLayout->addWidget(_imp->lastFrame_Button);
-    _imp->playerLayout->addWidget(_imp->playBackOutputSpinbox);
-    _imp->playerLayout->addWidget(_imp->playBackOutputButton);
     
     _imp->playerLayout->addStretch();
     
@@ -915,6 +916,10 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     
     
     _imp->playerLayout->addStretch();
+
+    _imp->playerLayout->addWidget(_imp->lastFrame_Button);
+    _imp->playerLayout->addWidget(_imp->playBackOutputSpinbox);
+    _imp->playerLayout->addWidget(_imp->playBackOutputButton);
 
     
 
