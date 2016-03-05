@@ -2311,8 +2311,9 @@ Node::setMustQuitProcessing(bool mustQuit)
             (*it)->setMustQuitProcessing(mustQuit);
         }
     }
-    //Attempt to wake-up a sleeping thread
+    //Attempt to wake-up  sleeping threads of the thread pool
     QMutexLocker k(&_imp->nodeIsDequeuingMutex);
+    _imp->nodeIsDequeuing = false;
     _imp->nodeIsDequeuingCond.wakeAll();
 }
 
@@ -2323,7 +2324,9 @@ Node::quitAnyProcessing()
         QMutexLocker k(&_imp->nodeIsDequeuingMutex);
         if (_imp->nodeIsDequeuing) {
             _imp->nodeIsDequeuing = false;
-            _imp->nodeIsDequeuingCond.wakeOne();
+            
+            //Attempt to wake-up  sleeping threads of the thread pool
+            _imp->nodeIsDequeuingCond.wakeAll();
         }
     }
     
@@ -6146,9 +6149,10 @@ Node::notifyRenderBeingAborted()
     QMutexLocker k(&_imp->nodeIsDequeuingMutex);
     if (_imp->nodeIsDequeuing) {
         _imp->nodeIsDequeuing = false;
-        _imp->nodeIsDequeuingCond.wakeOne();
+        //Attempt to wake-up  sleeping threads of the thread pool
+        _imp->nodeIsDequeuingCond.wakeAll();
     }
-//    }
+    
     
 }
 
@@ -8436,7 +8440,9 @@ Node::dequeueActions()
         //Another slots in this thread might have aborted the dequeuing
         if (_imp->nodeIsDequeuing) {
             _imp->nodeIsDequeuing = false;
-            _imp->nodeIsDequeuingCond.wakeOne();
+            
+            //There might be multiple threads waiting
+            _imp->nodeIsDequeuingCond.wakeAll();
         }
     }
 }
