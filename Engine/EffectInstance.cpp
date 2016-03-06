@@ -2670,6 +2670,9 @@ EffectInstance::onSignificantEvaluateAboutToBeCalled(KnobI* knob)
     abortAnyEvaluation();
     
     NodePtr node = getNode();
+    if (!node->isNodeCreated()) {
+        return;
+    }
     
     if (!knob || knob->getEvaluateOnChange()) {
         getApp()->triggerAutoSave();
