@@ -240,6 +240,7 @@ struct Node::Implementation
     , pyPlugID()
     , pyPlugLabel()
     , pyPlugDesc()
+    , pyPlugGrouping()
     , pyPlugVersion(0)
     , computingPreview(false)
     , computingPreviewMutex()
@@ -432,6 +433,7 @@ struct Node::Implementation
     std::string pyPlugID; //< if this is a pyplug, this is the ID of the Plug-in. This is because the plugin handle will be the one of the Group
     std::string pyPlugLabel;
     std::string pyPlugDesc;
+    std::list<std::string> pyPlugGrouping;
     int pyPlugVersion;
     
     bool computingPreview;
@@ -6084,6 +6086,18 @@ Node::getPluginDescription() const
     return _imp->effect->getPluginDescription();
 }
 
+void
+Node::getPluginGrouping(std::list<std::string>* grouping) const
+{
+    {
+        QMutexLocker k(&_imp->pluginPythonModuleMutex);
+        if (!_imp->pyPlugGrouping.empty()) {
+            *grouping =  _imp->pyPlugGrouping;
+        }
+    }
+    _imp->effect->getPluginGrouping(grouping);
+}
+
 int
 Node::getMaxInputCount() const
 {
@@ -7242,7 +7256,7 @@ Node::setPluginDescription(const std::string& description)
 
 
 void
-Node::setPluginIDAndVersionForGui(const std::string& pluginLabel,const std::string& pluginID,unsigned int version)
+Node::setPluginIDAndVersionForGui(const std::list<std::string>& grouping, const std::string& pluginLabel,const std::string& pluginID,unsigned int version)
 {
     
     assert(QThread::currentThread() == qApp->thread());
@@ -7256,9 +7270,10 @@ Node::setPluginIDAndVersionForGui(const std::string& pluginLabel,const std::stri
         _imp->pyPlugVersion = version;
         _imp->pyPlugID = pluginID;
         _imp->pyPlugLabel = pluginLabel;
+        _imp->pyPlugGrouping = grouping;
     }
     
-    nodeGui->setPluginIDAndVersion(pluginLabel,pluginID, version);
+    nodeGui->setPluginIDAndVersion(grouping, pluginLabel,pluginID, version);
     
 }
 
@@ -7277,6 +7292,7 @@ Node::setPyPlugEdited(bool edited)
     _imp->pyPlugID.clear();
     _imp->pyPlugLabel.clear();
     _imp->pyPlugDesc.clear();
+    _imp->pyPlugGrouping.clear();
 }
 
 void

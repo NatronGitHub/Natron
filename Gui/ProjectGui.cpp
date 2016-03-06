@@ -311,7 +311,7 @@ void loadNodeGuiSerialization(Gui* gui,
     
     if ( serialization.colorWasFound() ) {
         std::list<std::string> grouping;
-        iseffect->getPluginGrouping(&grouping);
+        nGui->getNode()->getPluginGrouping(&grouping);
         std::string majGroup = grouping.empty() ? "" : grouping.front();
         
         BackdropGui* isBd = dynamic_cast<BackdropGui*>(nGui.get());

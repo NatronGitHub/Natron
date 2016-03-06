@@ -623,6 +623,8 @@ public:
      * @brief Forwarded to the live effect instance
      **/
     std::string getPluginLabel() const;
+    
+    void getPluginGrouping(std::list<std::string>* grouping) const;
 
     /**
      * @brief Forwarded to the live effect instance
@@ -1101,7 +1103,7 @@ public:
     
     void setPluginDescription(const std::string& description);
     
-    void setPluginIDAndVersionForGui(const std::string& pluginLabel,const std::string& pluginID,unsigned int version);
+    void setPluginIDAndVersionForGui(const std::list<std::string>& grouping, const std::string& pluginLabel,const std::string& pluginID,unsigned int version);
     
     void setPluginPythonModule(const std::string& pythonModule);
     

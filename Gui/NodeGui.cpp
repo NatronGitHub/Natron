@@ -291,14 +291,46 @@ NodeGui::initialize(NodeGraph* dag,
     
     _clonedColor.setRgb(200,70,100);
 
-    //QColor defaultColor = getCurrentColor();
+    
+
+    ///Make the output edge
+    EffectInstPtr iseffect = internalNode->getEffectInstance();
+    Backdrop* isBd = dynamic_cast<Backdrop*>(iseffect.get());
+    if ( !isBd && !internalNode->isOutputNode() ) {
+        _outputEdge = new Edge( thisAsShared,parentItem() );
+    }
+
+    restoreStateAfterCreation();
+
+    ///Link the position of the node to the position of the parent multi-instance
+    const std::string parentMultiInstanceName = internalNode->getParentMultiInstanceName();
+    if ( !parentMultiInstanceName.empty() ) {
+        NodePtr parentNode = internalNode->getGroup()->getNodeByName(parentMultiInstanceName);
+        boost::shared_ptr<NodeGuiI> parentNodeGui_I = parentNode->getNodeGui();
+        assert(parentNode && parentNodeGui_I);
+        NodeGui* parentNodeGui = dynamic_cast<NodeGui*>(parentNodeGui_I.get());
+        assert(parentNodeGui);
+        QObject::connect( parentNodeGui, SIGNAL(positionChanged(int,int)),this,SLOT(onParentMultiInstancePositionChanged(int,int)) );
+        QPointF p = parentNodeGui->pos();
+        refreshPosition(p.x(), p.y(),true);
+    }
+
+    getNode()->initializeHostOverlays();
+    
+
+} // initialize
+
+void
+NodeGui::setColorFromGrouping()
+{
+    NodePtr internalNode = getNode();
     EffectInstPtr iseffect = internalNode->getEffectInstance();
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
     float r,g,b;
     Backdrop* isBd = dynamic_cast<Backdrop*>(iseffect.get());
     
     std::list<std::string> grouping;
-    iseffect->getPluginGrouping(&grouping);
+    internalNode->getPluginGrouping(&grouping);
     std::string majGroup = grouping.empty() ? "" : grouping.front();
     
     if ( iseffect->isReader() ) {
@@ -337,31 +369,7 @@ NodeGui::initialize(NodeGraph* dag,
                   Image::clamp<qreal>(g, 0., 1.),
                   Image::clamp<qreal>(b, 0., 1.));
     setCurrentColor(color);
-
-    ///Make the output edge
-    if ( !isBd && !internalNode->isOutputNode() ) {
-        _outputEdge = new Edge( thisAsShared,parentItem() );
-    }
-
-    restoreStateAfterCreation();
-
-    ///Link the position of the node to the position of the parent multi-instance
-    const std::string parentMultiInstanceName = internalNode->getParentMultiInstanceName();
-    if ( !parentMultiInstanceName.empty() ) {
-        NodePtr parentNode = internalNode->getGroup()->getNodeByName(parentMultiInstanceName);
-        boost::shared_ptr<NodeGuiI> parentNodeGui_I = parentNode->getNodeGui();
-        assert(parentNode && parentNodeGui_I);
-        NodeGui* parentNodeGui = dynamic_cast<NodeGui*>(parentNodeGui_I.get());
-        assert(parentNodeGui);
-        QObject::connect( parentNodeGui, SIGNAL(positionChanged(int,int)),this,SLOT(onParentMultiInstancePositionChanged(int,int)) );
-        QPointF p = parentNodeGui->pos();
-        refreshPosition(p.x(), p.y(),true);
-    }
-
-    getNode()->initializeHostOverlays();
-    
-
-} // initialize
+}
 
 void
 NodeGui::restoreStateAfterCreation()
@@ -369,6 +377,7 @@ NodeGui::restoreStateAfterCreation()
     NodePtr internalNode = getNode();
     ///Refresh the disabled knob
     
+    setColorFromGrouping();
     boost::shared_ptr<KnobBool> disabledknob = internalNode->getDisabledKnob();
     if (disabledknob && disabledknob->getValue()) {
         onDisabledKnobToggled(true);
@@ -3528,8 +3537,9 @@ NodeGui::setPluginIconFilePath(const std::string& filePath)
 }
 
 void
-NodeGui::setPluginIDAndVersion(const std::string& pluginLabel,const std::string& pluginID,unsigned int version)
+NodeGui::setPluginIDAndVersion(const std::list<std::string>& /*grouping*/, const std::string& pluginLabel,const std::string& pluginID,unsigned int version)
 {
+    setColorFromGrouping();
     if (getSettingPanel()) {
         getSettingPanel()->setPluginIDAndVersion(pluginLabel,pluginID, version);
     }

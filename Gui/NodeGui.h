@@ -396,7 +396,7 @@ public:
     
     virtual void setPluginDescription(const std::string& description) OVERRIDE FINAL;
     
-    virtual void setPluginIDAndVersion(const std::string& pluginLabel,const std::string& pluginID,unsigned int version) OVERRIDE FINAL;
+    virtual void setPluginIDAndVersion(const std::list<std::string>& grouping, const std::string& pluginLabel,const std::string& pluginID,unsigned int version) OVERRIDE FINAL;
     
     virtual void onIdentityStateChanged(int inputNb) OVERRIDE FINAL;
 
@@ -422,6 +422,8 @@ protected:
 
     
 public Q_SLOTS:
+    
+    void setColorFromGrouping();
     
     void onHideInputsKnobValueChanged(bool hidden);
     

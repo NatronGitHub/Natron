@@ -854,7 +854,16 @@ AppInstance::setGroupLabelIDAndVersion(const NodePtr& node,
     if (Python::getGroupInfos(pythonModulePath.toStdString(),pythonModule.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &description, &istoolset, &version)) {
         node->setPluginIconFilePath(iconFilePath);
         node->setPluginDescription(description);
-        node->setPluginIDAndVersionForGui(pluginLabel, pluginID, version);
+        
+        QString groupingStr = QString::fromUtf8(pluginGrouping.c_str());
+        QStringList groupingSplits = groupingStr.split(QLatin1Char('/'));
+        
+        std::list<std::string> stdGrouping;
+        for (QStringList::iterator it = groupingSplits.begin(); it!=groupingSplits.end(); ++it) {
+            stdGrouping.push_back(it->toStdString());
+        }
+        
+        node->setPluginIDAndVersionForGui(stdGrouping, pluginLabel, pluginID, version);
         node->setPluginPythonModule(QString(pythonModulePath + pythonModule + QString::fromUtf8(".py")).toStdString());
     }
     
