@@ -1024,7 +1024,7 @@ FileSystemModelPrivate::mkPathInternal(const boost::shared_ptr<FileSystemItem>& 
     boost::shared_ptr<FileSystemItem> child;
     for (int i = 0; i < item->childCount(); ++i) {
         boost::shared_ptr<FileSystemItem> c = item->childAt(i);
-        if ( c->fileName() == path[index] ) {
+        if (c &&  c->fileName() == path[index] ) {
             child = c;
             break;
         }
