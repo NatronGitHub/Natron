@@ -265,7 +265,11 @@ boost::shared_ptr<FileSystemItem>
 FileSystemItem::childAt(int position) const
 {
     QMutexLocker l(&_imp->childrenMutex);
-    return _imp->children[position];
+    if (position >= 0 && position < (int)_imp->children.size()) {
+        return _imp->children[position];
+    } else {
+        return boost::shared_ptr<FileSystemItem>();
+    }
 }
 
 int
