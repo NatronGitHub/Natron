@@ -616,7 +616,9 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
         }
         const std::string& labelIconFilePath = knob->getIconLabel();
         QWidget *labelContainer = 0;
-        if (ret->isLabelVisible() && (isLabelKnob || !descriptionLabel.empty() || !labelIconFilePath.empty())) {
+
+        const bool hasLabel = ret->isLabelVisible() && (isLabelKnob || !descriptionLabel.empty() || !labelIconFilePath.empty());
+        if (hasLabel) {
             
             QHBoxLayout *labelLayout = 0;
             if (makeNewLine) {
@@ -748,13 +750,13 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
             
             const bool labelOnSameColumn = ret->isLabelOnSameColumn();
             
-            if (!label || !ret->isLabelVisible() || label->text().isEmpty() || labelOnSameColumn) {
+            
+            if (!hasLabel) {
+                layout->addWidget(fieldContainer,rowIndex,0, 1, 2);
+            } else {
                 if (labelOnSameColumn && label) {
                     fieldLayout->insertWidget(0, labelContainer);
                 }
-                layout->addWidget(fieldContainer,rowIndex,0, 1, 2);
-            } else {
-                
                 layout->addWidget(fieldContainer,rowIndex,1, 1, 1);
                 layout->addWidget(labelContainer, rowIndex, 0, 1, 1, Qt::AlignRight);
                 
@@ -765,7 +767,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
             ///See http://stackoverflow.com/questions/14033902/qt-qgridlayout-automatically-centers-moves-items-to-the-middle for
             ///a bug of QGridLayout: basically all items are centered, but we would like to add stretch in the bottom of the layout.
             ///To do this we add an empty widget with an expanding vertical size policy.
-            QWidget* foundSpacer = 0;
+            /*QWidget* foundSpacer = 0;
             for (int i = 0; i < layout->rowCount(); ++i) {
                 QLayoutItem* item = layout->itemAtPosition(i, 0);
                 if (!item) {
@@ -790,7 +792,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
             }
             
             ///And add our stretch
-            layout->addWidget(foundSpacer,layout->rowCount(), 0, 1, 2);
+            layout->addWidget(foundSpacer,layout->rowCount(), 0, 1, 2);*/
             // }
             
         } // makeNewLine

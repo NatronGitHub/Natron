@@ -556,6 +556,7 @@ static QString getVersionString()
     return versionStr;
 }
 
+#ifdef Q_OS_LINUX
 static QString getLinuxVersionString()
 {
     QFile os_release(QString::fromUtf8("/etc/os-release"));
@@ -597,6 +598,7 @@ static QString getLinuxVersionString()
     }
     return linux_release;
 }
+#endif
 
 void
 CallbacksManager::uploadFileToRepository(const QString& filepath, const QString& comments)

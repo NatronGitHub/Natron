@@ -154,7 +154,7 @@
 #define kRotoBrushVisiblePortionParamHint "Defines the range of the stroke that should be visible: 0 is the start of the stroke and 1 the end."
 
 #define kRotoBrushPressureLabelParam "pressureAlters"
-#define kRotoBrushPressureLabelParamLabel "Pressure alters:"
+#define kRotoBrushPressureLabelParamLabel "Pressure alters"
 #define kRotoBrushPressureLabelParamHint ""
 
 #define kRotoBrushPressureOpacityParam "pressureOpacity"
@@ -770,7 +770,7 @@ struct RotoDrawableItemPrivate
     , brushSpacing(new KnobDouble(NULL, kRotoBrushSpacingParamLabel, 1, false))
     , brushHardness(new KnobDouble(NULL, kRotoBrushHardnessParamLabel, 1, false))
     , effectStrength(new KnobDouble(NULL, kRotoBrushEffectParamLabel, 1, false))
-    , pressureOpacity(new KnobBool(NULL, kRotoBrushPressureLabelParamLabel, 1, false))
+    , pressureOpacity(new KnobBool(NULL, kRotoBrushPressureOpacityParamLabel, 1, false))
     , pressureSize(new KnobBool(NULL, kRotoBrushPressureSizeParamLabel, 1, false))
     , pressureHardness(new KnobBool(NULL, kRotoBrushPressureHardnessParamLabel, 1, false))
     , buildUp(new KnobBool(NULL, kRotoBrushBuildupParamLabel, 1, false))
@@ -1275,7 +1275,7 @@ struct RotoContextPrivate
     boost::weak_ptr<KnobDouble> brushSpacingKnob;
     boost::weak_ptr<KnobDouble> brushHardnessKnob;
     boost::weak_ptr<KnobDouble> brushEffectKnob;
-    boost::weak_ptr<KnobString> pressureLabelKnob;
+    boost::weak_ptr<KnobSeparator> pressureLabelKnob;
     boost::weak_ptr<KnobBool> pressureOpacityKnob;
     boost::weak_ptr<KnobBool> pressureSizeKnob;
     boost::weak_ptr<KnobBool> pressureHardnessKnob;
@@ -1754,12 +1754,9 @@ struct RotoContextPrivate
             strokeKnobs.push_back(effectStrength);
             brushEffectKnob = effectStrength;
             
-            boost::shared_ptr<KnobString> pressureLabel = AppManager::createKnob<KnobString>(effect.get(), kRotoBrushPressureLabelParamLabel);
+            boost::shared_ptr<KnobSeparator> pressureLabel = AppManager::createKnob<KnobSeparator>(effect.get(), kRotoBrushPressureLabelParamLabel);
             pressureLabel->setName(kRotoBrushPressureLabelParam);
             pressureLabel->setHintToolTip(kRotoBrushPressureLabelParamHint);
-            pressureLabel->setAsLabel();
-            pressureLabel->setAnimationEnabled(false);
-            pressureLabel->setDefaultAllDimensionsEnabled(false);
             strokePage->addKnob(pressureLabel);
             knobs.push_back(pressureLabel);
             strokeKnobs.push_back(pressureLabel);
