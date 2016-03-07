@@ -34,8 +34,15 @@ cd "$CWD/build" || exit 1
 
 if [ "$BRANCH" = "workshop" ]; then
     NATRON_BRANCH=$BRANCH
+    IO_BRANCH=master
+    MISC_BRANCH=master
+    ARENA_BRANCH=master
+
 else
     NATRON_BRANCH=$NATRON_GIT_TAG
+    IO_BRANCH=$IOPLUG_GIT_TAG
+    MISC_BRANCH=$MISCPLUG_GIT_TAG
+    ARENA_BRANCH=$ARENAPLUG_GIT_TAG
 fi
 
 git clone $GIT_NATRON
@@ -66,8 +73,26 @@ echo "Building Natron $NATRON_REL_V from $NATRON_BRANCH on $OS using $MKJOBS thr
 echo
 sleep 2
 
+# Get plugins git hash
+git clone $GIT_IO
+cd openfx-io || exit 1
+git checkout "$IO_BRANCH" || exit 1
+IO_GIT_VERSION=`git log|head -1|awk '{print $2}'`
+cd ..
+git clone $GIT_MISC
+cd openfx-MISC || exit 1
+git checkout "$MISC_BRANCH" || exit 1
+MISC_GIT_VERSION=`git log|head -1|awk '{print $2}'`
+cd ..
+git clone $GIT_ARENA
+cd openfx-arena || exit 1
+git checkout "$ARENA_BRANCH" || exit 1
+ARENA_GIT_VERSION=`git log|head -1|awk '{print $2}'`
+cd ..
+rm -rf openfx-io openfx-misc openfx-arena
+
 #Update GitVersion to have the correct hash
-cat $CWD/GitVersion.h | sed "s#__BRANCH__#${NATRON_BRANCH}#;s#__COMMIT__#${REL_GIT_VERSION}#" > Global/GitVersion.h || exit 1
+cat $CWD/GitVersion.h | sed "s#__BRANCH__#${NATRON_BRANCH}#;s#__COMMIT__#${REL_GIT_VERSION}#;s#__IO_COMMIT__#${IO_GIT_VERSION}#;s#__MISC_COMMIT__#${MISC_GIT_VERSION}#;s#__ARENA_COMMIT__#${ARENA_GIT_VERSION}#" > Global/GitVersion.h || exit 1
 
 #Generate config.pri
 cat > config.pri <<EOF
