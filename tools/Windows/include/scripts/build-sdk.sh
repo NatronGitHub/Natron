@@ -125,7 +125,7 @@ fi
 
 # Install openexr
 if [ "$REBUILD_EXR" = "1" ]; then
-  rm -rf $INSTALL_PATH/lib/pkgconfig/OpenEXR.pc $INSTALL_PATH/{bin,lib}/libIlmImf*
+  rm -rf $INSTALL_PATH/lib/pkgconfig/{IlmBase.pc,OpenEXR.pc} $INSTALL_PATH/{bin,lib}/libIlmImf*
 fi
 if [ ! -f $INSTALL_PATH/lib/pkgconfig/IlmBase.pc ]; then
     cd $MINGW_PACKAGES_PATH/${MINGW_PREFIX}ilmbase || exit 1
