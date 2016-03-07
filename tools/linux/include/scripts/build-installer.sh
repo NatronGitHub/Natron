@@ -524,8 +524,8 @@ if [ "$RPM_BUILD" = "1" ]; then
   echo "update-mime-database /usr/share/mime" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
   echo "update-desktop-database /usr/share/applications" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
   chmod +x $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
-  sed -i '26,65d' $INSTALLER/packages/fr.inria.natron/data/Natron || exit 1
-  sed -i '26,65d' $INSTALLER/packages/fr.inria.natron/data/NatronRenderer || exit 1
+  sed -i '29,68d' $INSTALLER/packages/fr.inria.natron/data/Natron || exit 1
+  sed -i '29,68d' $INSTALLER/packages/fr.inria.natron/data/NatronRenderer || exit 1
   cat $INC_PATH/natron/Natron.spec | sed "s/REPLACE_VERSION/`echo $NATRON_VERSION|sed 's/-/./g'`/" > $TMP_PATH/Natron.spec || exit 1
   rpmbuild -bb $TMP_PATH/Natron.spec || exit 1
   mv ~/rpmbuild/RPMS/*/Natron*.rpm $REPO_DIR/installers/ || exit 1
