@@ -520,7 +520,7 @@ if [ "$RPM_BUILD" = "1" ]; then
   echo "#!/bin/bash" > $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
   echo "echo \"Checking GCC compatibility for Natron ...\"" >>$INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
   echo "DIR=/opt/Natron2" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
-  cat $INSTALLER/packages/fr.inria.natron/data/Natron | sed '26,65!d' >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
+  cat $INSTALLER/packages/fr.inria.natron/data/Natron | sed '29,68!d' >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
   echo "update-mime-database /usr/share/mime" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
   echo "update-desktop-database /usr/share/applications" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
   chmod +x $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
