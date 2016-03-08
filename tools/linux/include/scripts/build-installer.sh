@@ -539,7 +539,7 @@ if [ "$DEB_BUILD" = "1" ]; then
   rm -rf $INSTALLER/natron
   mkdir -p $INSTALLER/natron || exit 1
   cd $INSTALLER/natron || exit 1
-  mkdir -p opt/Natron2 DEBIAN usr/share/doc/natron usr/share/{applications,mime,pixmaps} usr/bin || exit 1
+  mkdir -p opt/Natron2 DEBIAN usr/share/doc/natron usr/share/{applications,pixmaps} usr/share/mime/packages usr/bin || exit 1
 
   echo "#!/bin/bash" > $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
   echo "echo \"Checking GCC compatibility for Natron ...\"" >>$INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
@@ -560,7 +560,7 @@ if [ "$DEB_BUILD" = "1" ]; then
   else
     DEB_ARCH=i386
   fi  
-  DEB_VERSION=$(echo $NATRON_VERSION|sed 's/-/./g'`)
+  DEB_VERSION=$(echo $NATRON_VERSION|sed 's/-/./g')
   DEB_REV=1
   DEB_DATE=$(date +"%a, %d %b %Y %T %z")
   DEB_SIZE=$(du -ks opt|cut -f 1)
@@ -569,7 +569,7 @@ if [ "$DEB_BUILD" = "1" ]; then
   cat $INC_PATH/debian/copyright > usr/share/doc/natron/copyright || exit 1
   cat $INC_PATH/debian/control | sed "s/__VERSION__/${DEB_VERSION}/;s/__ARCH__/${DEB_ARCH}/;s/__SIZE__/${DEB_SIZE}/" > DEBIAN/control || exit 1
   cat $INC_PATH/debian/changelog.Debian |sed "s/__VERSION__/${DEB_VERSION}/;s/__DATE__/${DEB_DATE}/" > changelog.Debian || exit 1
-  gz changelog.Debian || exit 1
+  gzip changelog.Debian || exit 1
   mv changelog.Debian.gz usr/share/doc/natron/ || exit 1
   
   cat $INC_PATH/natron/Natron2.desktop > usr/share/applications/Natron2.desktop || exit 1
@@ -592,7 +592,7 @@ fi
 rm $REPO_DIR/installers/$ONLINE_INSTALL $REPO_DIR/installers/$BUNDLED_INSTALL
 
 # Unit tests
-if [ "$BIT" = "64" ] && [ "UNIT_TEST" != "0" ]; then
+if [ "$BIT" = "64" ] && [ "$UNIT_TEST" != "0" ]; then
   UNIT_LOG="$REPO_DIR/logs/unit_tests.Linux$BIT.$TAG.log"
   if [ ! -d "$CWD/Natron-Tests" ]; then
     cd $CWD || exit 1
