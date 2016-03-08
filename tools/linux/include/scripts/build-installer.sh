@@ -531,10 +531,68 @@ if [ "$RPM_BUILD" = "1" ]; then
   mv ~/rpmbuild/RPMS/*/Natron*.rpm $REPO_DIR/installers/ || exit 1
 fi
 
+if [ "$DEB_BUILD" = "1" ]; then
+  if [ ! -f "/usr/bin/dpkg-deb" ]; then
+    yum install -y dpkg-dev || exit 1
+  fi
+
+  rm -rf $INSTALLER/natron
+  mkdir -p $INSTALLER/natron || exit 1
+  cd $INSTALLER/natron || exit 1
+  mkdir -p opt/Natron2 DEBIAN usr/share/doc/natron usr/share/{applications,mime,pixmaps} usr/bin || exit 1
+
+  echo "#!/bin/bash" > $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
+  echo "echo \"Checking GCC compatibility for Natron ...\"" >>$INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
+  echo "DIR=/opt/Natron2" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
+  cat $INSTALLER/packages/fr.inria.natron/data/Natron | sed '29,68!d' >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
+  echo "update-mime-database /usr/share/mime" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
+  echo "update-desktop-database /usr/share/applications" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
+  chmod +x $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
+  sed -i '29,68d' $INSTALLER/packages/fr.inria.natron/data/Natron || exit 1
+  sed -i '29,68d' $INSTALLER/packages/fr.inria.natron/data/NatronRenderer || exit 1
+
+  cp -a $INSTALLER/packages/fr.inria.*/data/* opt/Natron2/ || exit 1
+  cp $INC_PATH/debian/post* DEBIAN/ || exit 1
+  chmod +x DEBIAN/post*
+
+  if [ "$BIT" = "64" ]; then
+    DEB_ARCH=amd64
+  else
+    DEB_ARCH=i386
+  fi  
+  DEB_VERSION=$(echo $NATRON_VERSION|sed 's/-/./g'`)
+  DEB_REV=1
+  DEB_DATE=$(date +"%a, %d %b %Y %T %z")
+  DEB_SIZE=$(du -ks opt|cut -f 1)
+  DEB_PKG=natron_${DEB_VERSION}-${DEB_REV}_${DEB_ARCH}.deb
+ 
+  cat $INC_PATH/debian/copyright > usr/share/doc/natron/copyright || exit 1
+  cat $INC_PATH/debian/control | sed "s/__VERSION__/${DEB_VERSION}/;s/__ARCH__/${DEB_ARCH}/;s/__SIZE__/${DEB_SIZE}/" > DEBIAN/control || exit 1
+  cat $INC_PATH/debian/changelog.Debian |sed "s/__VERSION__/${DEB_VERSION}/;s/__DATE__/${DEB_DATE}/" > changelog.Debian || exit 1
+  gz changelog.Debian || exit 1
+  mv changelog.Debian.gz usr/share/doc/natron/ || exit 1
+  
+  cat $INC_PATH/natron/Natron2.desktop > usr/share/applications/Natron2.desktop || exit 1
+  cat $INC_PATH/natron/x-natron.xml > usr/share/mime/packages/x-natron.xml || exit 1
+  cp $INSTALL_PATH/share/pixmaps/*.png usr/share/pixmaps/ || exit 1
+ 
+  cd usr/bin; ln -sf ../../opt/Natron2/Natron .
+  cd usr/bin; ln -sf ../../opt/Natron2/NatronRenderer .
+
+  chown root:root -R $INSTALLER/natron
+
+  #cd $INSTALLER/natron || exit 1
+  #dpkg-deb --build natron || exit 1
+  #mv natron.deb $DEB_PKG || exit 1
+  #mv $DEB_PKG $REPO_DIR/installers/ || exit 1
+  # TODO repo files
+
+fi
+
 rm $REPO_DIR/installers/$ONLINE_INSTALL $REPO_DIR/installers/$BUNDLED_INSTALL
 
 # Unit tests
-if [ "$BIT" = "64" ]; then
+if [ "$BIT" = "64" ] && [ "UNIT_TEST" != "0" ]; then
   UNIT_LOG="$REPO_DIR/logs/unit_tests.Linux$BIT.$TAG.log"
   if [ ! -d "$CWD/Natron-Tests" ]; then
     cd $CWD || exit 1
