@@ -1,5 +1,5 @@
 diff --git a/src/openexr.imageio/exrinput.cpp b/src/openexr.imageio/exrinput.cpp
-index de5dfc3..03f9e05 100644
+index de5dfc3..fa2bdd8 100644
 --- a/src/openexr.imageio/exrinput.cpp
 +++ b/src/openexr.imageio/exrinput.cpp
 @@ -84,6 +84,7 @@
@@ -10,13 +10,17 @@ index de5dfc3..03f9e05 100644
  
  #include <boost/scoped_array.hpp>
  
-@@ -318,7 +319,9 @@ void set_exr_threads ()
+@@ -318,7 +319,13 @@ void set_exr_threads ()
  
      int oiio_threads = 1;
      OIIO::getattribute ("exr_threads", oiio_threads);
 -
++    // 0 means all threads in OIIO, but single-threaded in OpenEXR
++    // -1 means single-threaded in OIIO
 +    if (oiio_threads == 0) {
 +        oiio_threads = Sysutil::hardware_concurrency();
++    } else if (oiio_threads == -1) {
++        oiio_threads = 0;
 +    }
      spin_lock lock (exr_threads_mutex);
      if (exr_threads != oiio_threads) {
