@@ -2744,7 +2744,8 @@ AppManager::onCrashReporterNoLongerResponding()
 {
 #ifdef NATRON_USE_BREAKPAD
     //Crash reporter seems to no longer exist, quit
-    exitApp(false);
+#pragma message WARN("Commented out for testing")
+    //exitApp(false);
 #endif
 }
 
