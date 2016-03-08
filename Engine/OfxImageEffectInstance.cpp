@@ -710,7 +710,9 @@ OfxImageEffectInstance::addParamsToTheirParents()
         
         if (!foundPage) {
             //The parameter does not belong to a page, put it in the main page
-            ++lastParamInsertedInMainPage;
+            if (lastParamInsertedInMainPage != (*mainPage)->paramsOrdered.end()) {
+                ++lastParamInsertedInMainPage;
+            }
             lastParamInsertedInMainPage = (*mainPage)->paramsOrdered.insert(lastParamInsertedInMainPage,isKnownKnob);
         }
        
