@@ -1,0 +1,12 @@
+diff -rupN openexr-2.1.0/configure.ac openexr-2.1.0-new/configure.ac
+--- openexr-2.1.0/configure.ac	2013-11-12 00:09:52.000000000 +0100
++++ openexr-2.1.0-new/configure.ac	2014-01-14 10:34:12.196172042 +0100
+@@ -27,7 +27,7 @@ AC_PROG_CXX
+ AC_PROG_INSTALL
+ AC_PROG_CC
+ AC_PROG_LN_S
+-AC_PROG_LIBTOOL
++LT_INIT
+ AC_PROG_MAKE_SET
+ 
+ dnl

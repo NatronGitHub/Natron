@@ -1,0 +1,70 @@
+--- ilmbase-2.1.0/Half/CMakeLists.txt.orig	2014-05-28 14:54:27.438200000 +0400
++++ ilmbase-2.1.0/Half/CMakeLists.txt	2014-05-28 14:55:30.509000000 +0400
+@@ -45,8 +45,9 @@
+ 
+ INSTALL ( TARGETS
+   Half
+-  DESTINATION
+-  lib
++  RUNTIME DESTINATION bin
++  LIBRARY DESTINATION lib
++  ARCHIVE DESTINATION lib
+ )
+ 
+ INSTALL ( FILES 
+--- ilmbase-2.1.0/Iex/CMakeLists.txt.orig	2013-11-12 00:46:45.000000000 +0400
++++ ilmbase-2.1.0/Iex/CMakeLists.txt	2014-05-28 14:56:07.166600000 +0400
+@@ -12,8 +12,9 @@
+ 
+ INSTALL ( TARGETS
+   Iex
+-  DESTINATION
+-  lib
++  RUNTIME DESTINATION bin
++  LIBRARY DESTINATION lib
++  ARCHIVE DESTINATION lib
+ )
+ 
+ INSTALL ( FILES 
+--- ilmbase-2.1.0/IexMath/CMakeLists.txt.orig	2013-11-12 01:10:04.000000000 +0400
++++ ilmbase-2.1.0/IexMath/CMakeLists.txt	2014-05-28 14:56:46.461200000 +0400
+@@ -11,8 +11,9 @@
+ 
+ INSTALL ( TARGETS
+   IexMath
+-  DESTINATION
+-  lib
++  RUNTIME DESTINATION bin
++  LIBRARY DESTINATION lib
++  ARCHIVE DESTINATION lib
+ )
+ 
+ INSTALL ( FILES 
+--- ilmbase-2.1.0/IlmThread/CMakeLists.txt.orig	2013-11-12 01:10:49.000000000 +0400
++++ ilmbase-2.1.0/IlmThread/CMakeLists.txt	2014-05-28 14:57:25.297600000 +0400
+@@ -30,8 +30,9 @@
+ 
+ INSTALL ( TARGETS
+   IlmThread
+-  DESTINATION
+-  lib
++  RUNTIME DESTINATION bin
++  LIBRARY DESTINATION lib
++  ARCHIVE DESTINATION lib
+ )
+ 
+ INSTALL ( FILES 
+--- ilmbase-2.1.0/Imath/CMakeLists.txt.orig	2013-11-12 03:09:51.000000000 +0400
++++ ilmbase-2.1.0/Imath/CMakeLists.txt	2014-05-28 14:58:07.328600000 +0400
+@@ -18,8 +18,9 @@
+ 
+ INSTALL ( TARGETS
+   Imath
+-  DESTINATION
+-  lib
++  RUNTIME DESTINATION bin
++  LIBRARY DESTINATION lib
++  ARCHIVE DESTINATION lib
+ )
+ 
+ INSTALL ( FILES 

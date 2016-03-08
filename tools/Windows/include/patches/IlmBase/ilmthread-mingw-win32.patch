@@ -1,0 +1,12 @@
+--- ilmbase-2.1.0/IlmThread/Makefile.in.orig	2013-11-12 04:23:33.000000000 +0400
++++ ilmbase-2.1.0/IlmThread/Makefile.in	2013-12-23 16:30:59.677400000 +0400
+@@ -78,7 +78,8 @@
+ am_libIlmThread_la_OBJECTS = IlmThreadPool.lo IlmThread.lo \
+ 	IlmThreadSemaphore.lo IlmThreadMutex.lo IlmThreadPosix.lo \
+ 	IlmThreadSemaphorePosix.lo IlmThreadSemaphorePosixCompat.lo \
+-	IlmThreadMutexPosix.lo
++	IlmThreadMutexPosix.lo IlmThreadWin32.lo IlmThreadSemaphoreWin32.lo \
++	IlmThreadMutexWin32.lo
+ libIlmThread_la_OBJECTS = $(am_libIlmThread_la_OBJECTS)
+ libIlmThread_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
+ 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \

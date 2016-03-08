@@ -125,17 +125,64 @@ fi
 
 # Install openexr
 if [ "$REBUILD_EXR" = "1" ]; then
-  rm -rf $INSTALL_PATH/lib/pkgconfig/{IlmBase.pc,OpenEXR.pc} $INSTALL_PATH/{bin,lib}/libIlmImf*
+  rm -rf $INSTALL_PATH/lib/pkgconfig/OpenEXR.pc #$INSTALL_PATH/{bin,lib}/libIlmImf*
 fi
+if [ "$REBUILD_ILM" = "1" ]; then
+  rm -rf $INSTALL_PATH/lib/pkgconfig/IlmBase.pc
+fi
+
 if [ ! -f $INSTALL_PATH/lib/pkgconfig/IlmBase.pc ]; then
-    cd $MINGW_PACKAGES_PATH/${MINGW_PREFIX}ilmbase || exit 1
-    makepkg-mingw -sLfC --skipchecksums|| exit 1
-    pacman --force --noconfirm -U ${PKG_PREFIX}ilmbase-2.2.0-2-any.pkg.tar.xz || exit 1
+    cd $TMP_BUILD_DIR || exit 1
+    if [ ! -f $SRC_PATH/$ILM_TAR ]; then
+        wget $THIRD_PARTY_SRC_URL/$ILM_TAR -O $SRC_PATH/$ILM_TAR || exit 1
+    fi
+    tar xvf $SRC_PATH/$ILM_TAR || exit 1
+    cd ilmbase-* || exit 1
+
+    patch -p1 -i $INC_PATH/patches/IlmBase/ilmthread-mingw-pthreads.patch || exit 1
+    patch -p1 -i $INC_PATH/patches/IlmBase/ilmbase-2.1.0_obsolete-macros.patch || exit 1
+    patch -p1 -i $INC_PATH/patches/IlmBase/cmake-soversion.patch || exit 1
+    patch -p1 -i $INC_PATH/patches/IlmBase/cmake-install-binaries.patch || exit 1
+    patch -p2 -i $INC_PATH/patches/IlmBase/pull93.patch || exit 1
+    patch -p2 -i $INC_PATH/patches/IlmBase/51046a110296a5c95b5c52ce6d9798f6fc9884d3.patch || exit 1
+
+    mkdir build 
+    cd build || exit 1
+    
+    cmake -G"MSYS Makefiles" -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=ON -DNAMESPACE_VERSIONING=ON  .. || exit 1
+
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
 fi
 if [ ! -f $INSTALL_PATH/lib/pkgconfig/OpenEXR.pc ]; then
-    cd $MINGW_PACKAGES_PATH/${MINGW_PREFIX}openexr || exit 1
-    makepkg-mingw -sLfC --skipchecksums || exit 1
-    pacman --force --noconfirm -U ${PKG_PREFIX}openexr-2.2.0-2-any.pkg.tar.xz || exit 1
+    cd $TMP_BUILD_DIR || exit 1
+    if [ ! -f $SRC_PATH/$EXR_TAR ]; then
+        wget $THIRD_PARTY_SRC_URL/$EXR_TAR -O $SRC_PATH/$EXR_TAR || exit 1
+    fi
+    tar xvf $SRC_PATH/$EXR_TAR || exit 1
+    cd openexr-* || exit 1
+
+    sed -i 's/#define ZLIB_WINAPI/\/\/#define ZLIB_WINAPI/g' IlmImf/ImfZipCompressor.cpp
+    sed -i 's/#define ZLIB_WINAPI/\/\/#define ZLIB_WINAPI/g' IlmImf/ImfPxr24Compressor.cpp
+
+    patch -p1 -i $INC_PATH/patches/OpenEXR/mingw-w64-fix.patch
+    patch -p1 -i $INC_PATH/patches/OpenEXR/openexr-2.1.0-headers.patch
+    patch -p1 -i $INC_PATH/patches/OpenEXR/openexr-2.1.0_aligned-malloc.patch
+    patch -p1 -i $INC_PATH/patches/OpenEXR/openexr-2.1.0_cast.patch
+    patch -p1 -i $INC_PATH/patches/OpenEXR/openexr_obsolete-macros.patch
+    patch -p1 -i $INC_PATH/patches/OpenEXR/cmake-soversion.patch
+    patch -p2 -i $INC_PATH/patches/OpenEXR/pull93.patch
+    patch -p2 -i $INC_PATH/patches/OpenEXR/change-suffixes-for-64bit-literals.patch
+    patch -p1 -i $INC_PATH/patches/OpenEXR/win-dwalookups.patch
+    patch -p2 -i $INC_PATH/patches/OpenEXR/openexr-2.2.0-mingw-utf8.patch
+
+    mkdir build
+    cd build || exit 1
+
+    cmake -DCMAKE_CXX_FLAGS="-I${INSTALL_PATH}/include/OpenEXR" -DCMAKE_EXE_LINKER_FLAGS="-L${INSTALL_PATH}/bin" -G"MSYS Makefiles" -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=ON -DNAMESPACE_VERSIONING=ON -DUSE_ZLIB_WINAPI=OFF .. || exit 1
+
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
 fi
 
 # Install oiio

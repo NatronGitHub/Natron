@@ -1,0 +1,22 @@
+diff -up openexr-2.1.0/IlmImf/Makefile.am.headers openexr-2.1.0/IlmImf/Makefile.am
+--- openexr-2.1.0/IlmImf/Makefile.am.headers	2013-11-11 17:09:51.000000000 -0600
++++ openexr-2.1.0/IlmImf/Makefile.am	2013-11-27 11:33:11.934497336 -0600
+@@ -103,6 +103,7 @@ libIlmImfinclude_HEADERS = ImfForward.h
+ 			   ImfCRgbaFile.h ImfChannelList.h \
+ 			   ImfChannelListAttribute.h \
+ 			   ImfCompressionAttribute.h \
++			   ImfDeepImageStateAttribute.h \
+ 			   ImfDoubleAttribute.h ImfFloatAttribute.h \
+ 			   ImfFrameBuffer.h ImfHeader.h ImfIO.h \
+ 			   ImfInputFile.h ImfIntAttribute.h \
+diff -up openexr-2.1.0/IlmImf/Makefile.in.headers openexr-2.1.0/IlmImf/Makefile.in
+--- openexr-2.1.0/IlmImf/Makefile.in.headers	2013-11-12 18:33:11.000000000 -0600
++++ openexr-2.1.0/IlmImf/Makefile.in	2013-11-27 11:33:16.341451113 -0600
+@@ -373,6 +373,7 @@ libIlmImfinclude_HEADERS = ImfForward.h
+ 			   ImfCRgbaFile.h ImfChannelList.h \
+ 			   ImfChannelListAttribute.h \
+ 			   ImfCompressionAttribute.h \
++			   ImfDeepImageStateAttribute.h \
+ 			   ImfDoubleAttribute.h ImfFloatAttribute.h \
+ 			   ImfFrameBuffer.h ImfHeader.h ImfIO.h \
+ 			   ImfInputFile.h ImfIntAttribute.h \
