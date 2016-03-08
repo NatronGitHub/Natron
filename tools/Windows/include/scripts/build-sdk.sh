@@ -124,6 +124,8 @@ fi
 
 
 # Install openexr
+EXR_THREAD="win32"
+
 if [ "$REBUILD_EXR" = "1" ]; then
   rm -rf $INSTALL_PATH/lib/pkgconfig/OpenEXR.pc #$INSTALL_PATH/{bin,lib}/libIlmImf*
 fi
@@ -139,12 +141,20 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/IlmBase.pc ]; then
     tar xvf $SRC_PATH/$ILM_TAR || exit 1
     cd ilmbase-* || exit 1
 
-    patch -p1 -i $INC_PATH/patches/IlmBase/ilmthread-mingw-pthreads.patch || exit 1
-    patch -p1 -i $INC_PATH/patches/IlmBase/ilmbase-2.1.0_obsolete-macros.patch || exit 1
-    patch -p1 -i $INC_PATH/patches/IlmBase/cmake-soversion.patch || exit 1
-    patch -p1 -i $INC_PATH/patches/IlmBase/cmake-install-binaries.patch || exit 1
-    patch -p2 -i $INC_PATH/patches/IlmBase/pull93.patch || exit 1
-    patch -p2 -i $INC_PATH/patches/IlmBase/51046a110296a5c95b5c52ce6d9798f6fc9884d3.patch || exit 1
+    ILM_BASE_PATCHES=$(find $INC_PATH/patches/IlmBase -type f)
+    for p in $ILM_BASE_PATCHES; do
+      if [ "$p" = *-mingw-* ]; then
+        continue
+      fi
+      if [[ "$p" = *-mingw-use_pthreads* ]] && [ "$EXR_THREAD" != "pthread" ]; then
+        continue
+      fi
+      if [[ "$p" = *-mingw-use_windows_threads* ]] && [ "$EXR_THREAD" != "win32" ]; then
+        continue
+      fi
+      echo "Patch: $p"
+      patch -p1 -i $p || exit 1
+    done
 
     mkdir build 
     cd build || exit 1
@@ -165,16 +175,17 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/OpenEXR.pc ]; then
     sed -i 's/#define ZLIB_WINAPI/\/\/#define ZLIB_WINAPI/g' IlmImf/ImfZipCompressor.cpp
     sed -i 's/#define ZLIB_WINAPI/\/\/#define ZLIB_WINAPI/g' IlmImf/ImfPxr24Compressor.cpp
 
-    patch -p1 -i $INC_PATH/patches/OpenEXR/mingw-w64-fix.patch
-    patch -p1 -i $INC_PATH/patches/OpenEXR/openexr-2.1.0-headers.patch
-    patch -p1 -i $INC_PATH/patches/OpenEXR/openexr-2.1.0_aligned-malloc.patch
-    patch -p1 -i $INC_PATH/patches/OpenEXR/openexr-2.1.0_cast.patch
-    patch -p1 -i $INC_PATH/patches/OpenEXR/openexr_obsolete-macros.patch
-    patch -p1 -i $INC_PATH/patches/OpenEXR/cmake-soversion.patch
-    patch -p2 -i $INC_PATH/patches/OpenEXR/pull93.patch
-    patch -p2 -i $INC_PATH/patches/OpenEXR/change-suffixes-for-64bit-literals.patch
-    patch -p1 -i $INC_PATH/patches/OpenEXR/win-dwalookups.patch
-    patch -p2 -i $INC_PATH/patches/OpenEXR/openexr-2.2.0-mingw-utf8.patch
+    OPENEXR_BASE_PATCHES=$(find $INC_PATH/patches/OpenEXR -type f)
+    for p in $OPENEXR_BASE_PATCHES; do
+      if [ "$p" = *-mingw-* ]; then
+        continue
+      fi
+      if [[ "$p" = *-mingw-use_pthreads* ]] && [ "$EXR_THREAD" != "pthread" ]; then
+        continue
+      fi
+      echo "Patch: $p"
+      patch -p1 -i $p || exit 1
+    done
 
     mkdir build
     cd build || exit 1
