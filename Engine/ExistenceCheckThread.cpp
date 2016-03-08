@@ -126,37 +126,39 @@ ExistenceCheckerThread::run()
             }
         }
 
+        qint64 writeOK;
         {
             QString tosend(_imp->checkMessage);
             tosend.push_back(QChar::fromLatin1('\n'));
-            _imp->socket->write(tosend.toStdString().c_str());
+            writeOK = _imp->socket->write(tosend.toStdString().c_str());
         }
-        _imp->socket->flush();
-        
-        bool receivedAcknowledgement = false;
-        while (_imp->socket->waitForReadyRead(NATRON_BREAKPAD_WAIT_FOR_CRASH_REPORTER_ACK_MS)) {
-
-            //we received something, if it's not the ackknowledgement packet, recheck
-            QString str = QString::fromUtf8(_imp->socket->readLine());
-            while (str.endsWith(QChar::fromLatin1('\n'))) {
-                str.chop(1);
+        if (writeOK >= 0) {
+            _imp->socket->flush();
+            
+            bool receivedAcknowledgement = false;
+            while (_imp->socket->waitForReadyRead(NATRON_BREAKPAD_WAIT_FOR_CRASH_REPORTER_ACK_MS)) {
+                
+                //we received something, if it's not the ackknowledgement packet, recheck
+                QString str = QString::fromUtf8(_imp->socket->readLine());
+                while (str.endsWith(QChar::fromLatin1('\n'))) {
+                    str.chop(1);
+                }
+                if (str == _imp->acknowledgementMessage) {
+                    receivedAcknowledgement = true;
+                    break;
+                }
             }
-            if (str == _imp->acknowledgementMessage) {
-                receivedAcknowledgement = true;
-                break;
+            
+            if (!receivedAcknowledgement) {
+                std::cerr << "Crash reporter process does not seem to be responding anymore...exiting" << std::endl;
+                /*
+                 We did not receive te acknowledgement, hence quit
+                 */
+                appPTR->abortAnyProcessing();
+                Q_EMIT otherProcessUnreachable();
+                return;
             }
         }
-        
-        if (!receivedAcknowledgement) {
-            std::cerr << "Crash reporter process does not seem to be responding anymore...exiting" << std::endl;
-            /*
-             We did not receive te acknowledgement, hence quit
-             */
-            appPTR->abortAnyProcessing();
-            Q_EMIT otherProcessUnreachable();
-            return;
-        }
-        
         //Sleep until we need to check again
         msleep(NATRON_BREAKPAD_CHECK_FOR_CRASH_REPORTER_EXISTENCE_MS);
         
