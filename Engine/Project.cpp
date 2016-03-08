@@ -152,12 +152,16 @@ public:
     LoadProjectSplashScreen_RAII(AppInstance* app,const QString& filename)
     : app(app)
     {
-        app->createLoadProjectSplashScreen(filename);
+        if (app) {
+            app->createLoadProjectSplashScreen(filename);
+        }
     }
     
     ~LoadProjectSplashScreen_RAII()
     {
-        app->closeLoadPRojectSplashScreen();
+        if (app) {
+            app->closeLoadPRojectSplashScreen();
+        }
     }
 };
 
