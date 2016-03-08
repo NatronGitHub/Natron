@@ -124,28 +124,29 @@ fi
 
 
 # Install openexr
-EXR_THREAD="win32"
+EXR_THREAD="pthread"
+EXR_TAG=tags/v2.2.0
+EXR_GIT=https://github.com/openexr/openexr
 
 if [ "$REBUILD_EXR" = "1" ]; then
-  rm -rf $INSTALL_PATH/lib/pkgconfig/OpenEXR.pc #$INSTALL_PATH/{bin,lib}/libIlmImf*
+  rm -rf $INSTALL_PATH/lib/pkgconfig/OpenEXR.pc
 fi
-if [ "$REBUILD_ILM" = "1" ]; then
-  rm -rf $INSTALL_PATH/lib/pkgconfig/IlmBase.pc
-fi
-
-if [ ! -f $INSTALL_PATH/lib/pkgconfig/IlmBase.pc ]; then
+if [ ! -f $INSTALL_PATH/lib/pkgconfig/OpenEXR.pc ]; then
     cd $TMP_BUILD_DIR || exit 1
-    if [ ! -f $SRC_PATH/$ILM_TAR ]; then
-        wget $THIRD_PARTY_SRC_URL/$ILM_TAR -O $SRC_PATH/$ILM_TAR || exit 1
-    fi
-    tar xvf $SRC_PATH/$ILM_TAR || exit 1
-    cd ilmbase-* || exit 1
+    git clone $EXR_GIT openexr-git || exit 1
+    cd openexr-git || exit 1
+    git checkout $EXR_TAG || exit 1
 
-    ILM_BASE_PATCHES=$(find $INC_PATH/patches/IlmBase -type f)
-    for p in $ILM_BASE_PATCHES; do
-      if [ "$p" = *-mingw-* ]; then
+    OPENEXR_BASE_PATCHES=$(find $INC_PATH/patches/OpenEXR -type f)
+    for p in $OPENEXR_BASE_PATCHES; do
+      if [[ "$p" = *-mingw-use_pthreads* ]] && [ "$EXR_THREAD" != "pthread" ]; then
         continue
       fi
+      echo "Patch: $p"
+      patch -p1 -i $p || exit 1
+    done
+    ILM_BASE_PATCHES=$(find $INC_PATH/patches/IlmBase -type f)
+    for p in $ILM_BASE_PATCHES; do
       if [[ "$p" = *-mingw-use_pthreads* ]] && [ "$EXR_THREAD" != "pthread" ]; then
         continue
       fi
@@ -156,41 +157,20 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/IlmBase.pc ]; then
       patch -p1 -i $p || exit 1
     done
 
-    mkdir build 
-    cd build || exit 1
-    
-    cmake -G"MSYS Makefiles" -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=ON -DNAMESPACE_VERSIONING=ON  .. || exit 1
 
+    mkdir build_ilmbase
+    cd build_ilmbase || exit 1
+    cmake -G"MSYS Makefiles" -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=ON -DNAMESPACE_VERSIONING=ON  -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_CONFIG_NAME=Release ../IlmBase || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
-fi
-if [ ! -f $INSTALL_PATH/lib/pkgconfig/OpenEXR.pc ]; then
-    cd $TMP_BUILD_DIR || exit 1
-    if [ ! -f $SRC_PATH/$EXR_TAR ]; then
-        wget $THIRD_PARTY_SRC_URL/$EXR_TAR -O $SRC_PATH/$EXR_TAR || exit 1
-    fi
-    tar xvf $SRC_PATH/$EXR_TAR || exit 1
-    cd openexr-* || exit 1
+    
+    cd .. || exit 1
 
-    sed -i 's/#define ZLIB_WINAPI/\/\/#define ZLIB_WINAPI/g' IlmImf/ImfZipCompressor.cpp
-    sed -i 's/#define ZLIB_WINAPI/\/\/#define ZLIB_WINAPI/g' IlmImf/ImfPxr24Compressor.cpp
 
-    OPENEXR_BASE_PATCHES=$(find $INC_PATH/patches/OpenEXR -type f)
-    for p in $OPENEXR_BASE_PATCHES; do
-      if [ "$p" = *-mingw-* ]; then
-        continue
-      fi
-      if [[ "$p" = *-mingw-use_pthreads* ]] && [ "$EXR_THREAD" != "pthread" ]; then
-        continue
-      fi
-      echo "Patch: $p"
-      patch -p1 -i $p || exit 1
-    done
+    mkdir build_openexr
+    cd build_openexr || exit 1
 
-    mkdir build
-    cd build || exit 1
-
-    cmake -DCMAKE_CXX_FLAGS="-I${INSTALL_PATH}/include/OpenEXR" -DCMAKE_EXE_LINKER_FLAGS="-L${INSTALL_PATH}/bin" -G"MSYS Makefiles" -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=ON -DNAMESPACE_VERSIONING=ON -DUSE_ZLIB_WINAPI=OFF .. || exit 1
+    cmake -DCMAKE_CXX_FLAGS="-I${INSTALL_PATH}/include/OpenEXR" -DCMAKE_EXE_LINKER_FLAGS="-L${INSTALL_PATH}/bin" -G"MSYS Makefiles" -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=ON -DNAMESPACE_VERSIONING=ON -DUSE_ZLIB_WINAPI=OFF ../OpenEXR || exit 1
 
     make -j${MKJOBS} || exit 1
     make install || exit 1
