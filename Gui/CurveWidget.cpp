@@ -84,13 +84,18 @@ CurveWidget::isSelectedKey(const boost::shared_ptr<CurveGui>& curve, double time
 }
 
 
-
-
 void
 CurveWidget::pushUndoCommand(QUndoCommand* cmd)
 {
     _imp->_undoStack->setActive();
     _imp->_undoStack->push(cmd);
+}
+
+
+QUndoStack*
+CurveWidget::getUndoStack() const
+{
+    return _imp->_undoStack.get();
 }
 
 

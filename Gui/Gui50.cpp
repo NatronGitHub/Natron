@@ -359,19 +359,6 @@ Gui::resizeEvent(QResizeEvent* e)
     setMtSafeWindowSize( width(), height() );
 }
 
-static RightClickableWidget* isParentSettingsPanelRecursive(QWidget* w)
-{
-    if (!w) {
-        return 0;
-    }
-    RightClickableWidget* panel = qobject_cast<RightClickableWidget*>(w);
-    if (panel) {
-        return panel;
-    } else {
-        return isParentSettingsPanelRecursive(w->parentWidget());
-    }
-}
-
 void
 Gui::setLastKeyPressVisitedClickFocus(bool visited)
 {
@@ -399,7 +386,7 @@ Gui::keyPressEvent(QKeyEvent* e)
 
     if (key == Qt::Key_Escape) {
         
-        RightClickableWidget* panel = isParentSettingsPanelRecursive(w);
+        RightClickableWidget* panel = RightClickableWidget::isParentSettingsPanelRecursive(w);
         if (panel) {
             panel->getPanel()->closePanel();
         }

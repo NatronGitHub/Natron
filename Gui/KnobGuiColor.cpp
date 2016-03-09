@@ -661,17 +661,22 @@ KnobGuiColor::updateGUI(int dimension)
         assert(dimension == -1 || (0 <= dimension && dimension < knobDim));
         double values[4];
         double refValue = 0.;
+        std::string expressions[4];
+        std::string refExpresion;
         for (int i = 0; i < knobDim; ++i) {
             values[i] = knob->getValue(i);
+            expressions[i] = knob->getExpression(i);
         }
         if (dimension == -1) {
             refValue = values[0];
+            refExpresion = expressions[0];
         } else {
             refValue = values[dimension];
+            refExpresion = expressions[dimension];
         }
         bool allValuesNotEqual = false;
         for (int i = 0; i < knobDim; ++i) {
-            if (values[i] != refValue) {
+            if (values[i] != refValue || expressions[i] != refExpresion) {
                 allValuesNotEqual = true;
             }
         }

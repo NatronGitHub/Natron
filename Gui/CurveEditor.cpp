@@ -1694,7 +1694,14 @@ CurveEditor::setSelectedCurveExpression(const QString& expression)
             return;
         }
     }
-    _imp->curveWidget->pushUndoCommand(new SetExpressionCommand(knob,false,dim,expr));
+    pushUndoCommand(new SetExpressionCommand(knob,false,dim,expr));
+}
+
+QUndoStack*
+CurveEditor::getUndoStack() const
+{
+
+    return _imp->curveWidget ? _imp->curveWidget->getUndoStack() : 0;
 }
 
 void

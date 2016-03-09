@@ -166,9 +166,6 @@ NodeGraph::focusInEvent(QFocusEvent* e)
     if (getGui()) {
         getGui()->setLastSelectedGraph(this);
     }
-    if (_imp->_undoStack) {
-        _imp->_undoStack->setActive();
-    }
 }
 
 void

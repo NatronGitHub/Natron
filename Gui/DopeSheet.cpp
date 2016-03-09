@@ -260,10 +260,11 @@ void DopeSheetPrivate::getInputsConnected_recursive(Node *node, std::vector<boos
     }
 }
 
-void DopeSheetPrivate::pushUndoCommand(QUndoCommand *cmd)
+    
+QUndoStack*
+DopeSheet::getUndoStack() const
 {
-    undoStack->setActive();
-    undoStack->push(cmd);
+    return _imp->undoStack.get();
 }
 
 DopeSheet::DopeSheet(Gui *gui, DopeSheetEditor* editor, const boost::shared_ptr<TimeLine> &timeline) :
@@ -897,11 +898,6 @@ DopeSheet::transformSelectedKeys(const Transform::Matrix3x3& transform)
     _imp->selectionModel->getCurrentSelection(&selectedKeyframes, &selectedNodes);
     
     _imp->pushUndoCommand(new DSTransformKeysCommand(selectedKeyframes, transform, _imp->editor));
-}
-
-void DopeSheet::setUndoStackActive()
-{
-    _imp->undoStack->setActive();
 }
 
 void DopeSheet::emit_modelChanged()

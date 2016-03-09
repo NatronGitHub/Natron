@@ -73,6 +73,8 @@ public:
     
     DockablePanel* getPanel() const { return panel; }
     
+    static RightClickableWidget* isParentSettingsPanelRecursive(QWidget* w);
+    
 Q_SIGNALS:
     
     void rightClicked(const QPoint& p);

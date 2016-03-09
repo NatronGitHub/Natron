@@ -506,6 +506,8 @@ KnobGuiDouble::updateGUI(int dimension)
     assert(dimension == -1 || (dimension >= 0 && dimension < knobDim));
     double values[3];
     double refValue = 0.;
+    std::string expressions[3];
+    std::string refExpresion;
     SequenceTime time = 0;
     if (knob->getHolder() && knob->getHolder()->getApp()) {
         time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
@@ -516,16 +518,19 @@ KnobGuiDouble::updateGUI(int dimension)
             knob->denormalize(i, time, &v);
         }
         values[i] = v;
+        expressions[i] = knob->getExpression(i);
     }
 
     if (dimension == -1) {
         refValue = values[0];
+        refExpresion = expressions[0];
     } else {
         refValue = values[dimension];
+        refExpresion = expressions[dimension];
     }
     bool allValuesNotEqual = false;
     for (int i = 0; i < knobDim ; ++i) {
-        if (values[i] != refValue) {
+        if (values[i] != refValue || expressions[i] != refExpresion) {
             allValuesNotEqual = true;
         }
     }

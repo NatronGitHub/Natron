@@ -88,6 +88,22 @@ RightClickableWidget::enterEvent(QEvent* e)
     QWidget::enterEvent(e);
 }
 
+
+RightClickableWidget*
+RightClickableWidget::isParentSettingsPanelRecursive(QWidget* w)
+{
+    if (!w) {
+        return 0;
+    }
+    RightClickableWidget* panel = qobject_cast<RightClickableWidget*>(w);
+    if (panel) {
+        return panel;
+    } else {
+        return isParentSettingsPanelRecursive(w->parentWidget());
+    }
+}
+
+
 NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;

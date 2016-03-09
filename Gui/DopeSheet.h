@@ -385,15 +385,14 @@ public:
     
     void transformSelectedKeys(const Transform::Matrix3x3& transform);
 
-    // Undo/redo
-    void setUndoStackActive();
-
     void emit_modelChanged();
 
     // Other
     SequenceTime getCurrentFrame() const;
     
     void renameSelectedNode();
+    
+    QUndoStack* getUndoStack() const ;
 
 Q_SIGNALS:
     void modelChanged();

@@ -402,21 +402,27 @@ KnobGuiInt::updateGUI(int dimension)
         return;
     }
     int values[3];
+    std::string expressions[3];
+    std::string refExpresion;
+
     assert(1 <= knobDim && knobDim <= 3);
     assert(dimension == -1 || (0 <= dimension && dimension < knobDim));
     for (int i = 0; i < knobDim; ++i) {
         values[i] = knob->getValue(i);
+        expressions[i] = knob->getExpression(i);
     }
     int refValue;
     if (dimension == -1) {
         refValue = values[0];
+        refExpresion = expressions[0];
     } else {
         values[dimension] = knob->getValue(dimension);
         refValue = values[dimension];
+        refExpresion = expressions[dimension];
     }
     bool allValuesNotEqual = false;
     for (int i = 0; i < knobDim; ++i) {
-        if (values[i] != refValue) {
+        if (values[i] != refValue || expressions[i] != refExpresion) {
             allValuesNotEqual = true;
         }
     }

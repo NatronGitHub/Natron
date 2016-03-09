@@ -3546,8 +3546,6 @@ DopeSheetView::wheelEvent(QWheelEvent *e)
 void DopeSheetView::focusInEvent(QFocusEvent *e)
 {
     QGLWidget::focusInEvent(e);
-
-    _imp->model->setUndoStackActive();
 }
 
 NATRON_NAMESPACE_EXIT;

@@ -439,6 +439,12 @@ NodeGraph::createNodeGUI(const NodePtr & node,
     return node_ui;
 }
 
+QUndoStack*
+NodeGraph::getUndoStack() const
+{
+    return _imp->_undoStack;
+}
+
 NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;
