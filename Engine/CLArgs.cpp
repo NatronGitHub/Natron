@@ -784,6 +784,7 @@ CLArgsPrivate::parse()
                 defaultOnProjectLoadedScript = *it;
 #ifdef __NATRON_UNIX__
                 defaultOnProjectLoadedScript = AppManager::qt_tildeExpansion(defaultOnProjectLoadedScript);
+#endif
                 QFileInfo fi(defaultOnProjectLoadedScript);
                 if (!fi.exists()) {
                     std::cout << QObject::tr("WARNING: --onload %1 ignored because the file does not exist.").arg(defaultOnProjectLoadedScript).toStdString() << std::endl;
@@ -792,7 +793,6 @@ CLArgsPrivate::parse()
                     defaultOnProjectLoadedScript = fi.canonicalFilePath();
                 }
                 
-#endif
                 args.erase(it);
                 if (!defaultOnProjectLoadedScript.endsWith(QString::fromUtf8(".py"))) {
                     std::cout << QObject::tr("The optional on project load script must be a Python script (.py).").toStdString() << std::endl;
@@ -822,13 +822,13 @@ CLArgsPrivate::parse()
         }
         if (it != args.end()) {
             filename = *it;
-#if defined(Q_OS_UNIX)
+#ifdef __NATRON_UNIX__
             filename = AppManager::qt_tildeExpansion(filename);
+#endif
             QFileInfo fi(filename);
             if (fi.exists()) {
                 filename = fi.canonicalFilePath();
             }
-#endif
             args.erase(it);
         }
     }
@@ -916,7 +916,7 @@ CLArgsPrivate::parse()
             //Check for an optional filename
             if (!nextNext->startsWith(QChar::fromLatin1('-')) && !nextNext->startsWith(QString::fromUtf8("--"))) {
                 w.filename = *nextNext;
-#if defined(Q_OS_UNIX)
+#ifdef __NATRON_UNIX__
                 w.filename = AppManager::qt_tildeExpansion(w.filename);
 #endif
             }
@@ -981,7 +981,7 @@ CLArgsPrivate::parse()
         //Check for  filename
         if (!nextNext->startsWith(QChar::fromLatin1('-')) && !nextNext->startsWith(QString::fromUtf8("--"))) {
             r.filename = *nextNext;
-#if defined(Q_OS_UNIX)
+#ifdef __NATRON_UNIX__
             r.filename = AppManager::qt_tildeExpansion(r.filename);
 #endif
         } else {
