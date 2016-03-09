@@ -561,10 +561,9 @@ if [ "$DEB_BUILD" = "1" ]; then
     DEB_ARCH=i386
   fi  
   DEB_VERSION=$(echo $NATRON_VERSION|sed 's/-/./g')
-  DEB_REV=1
   DEB_DATE=$(date +"%a, %d %b %Y %T %z")
   DEB_SIZE=$(du -ks opt|cut -f 1)
-  DEB_PKG=natron_${DEB_VERSION}-${DEB_REV}_${DEB_ARCH}.deb
+  DEB_PKG=natron_${DEB_VERSION}_${DEB_ARCH}.deb
  
   cat $INC_PATH/debian/copyright > usr/share/doc/natron/copyright || exit 1
   cat $INC_PATH/debian/control | sed "s/__VERSION__/${DEB_VERSION}/;s/__ARCH__/${DEB_ARCH}/;s/__SIZE__/${DEB_SIZE}/" > DEBIAN/control || exit 1
@@ -576,16 +575,15 @@ if [ "$DEB_BUILD" = "1" ]; then
   cat $INC_PATH/natron/x-natron.xml > usr/share/mime/packages/x-natron.xml || exit 1
   cp $INSTALL_PATH/share/pixmaps/*.png usr/share/pixmaps/ || exit 1
  
-  cd usr/bin; ln -sf ../../opt/Natron2/Natron .
-  cd usr/bin; ln -sf ../../opt/Natron2/NatronRenderer .
+  (cd usr/bin; ln -sf ../../opt/Natron2/Natron .)
+  (cd usr/bin; ln -sf ../../opt/Natron2/NatronRenderer .)
 
   chown root:root -R $INSTALLER/natron
 
-  #cd $INSTALLER/natron || exit 1
-  #dpkg-deb --build natron || exit 1
-  #mv natron.deb $DEB_PKG || exit 1
-  #mv $DEB_PKG $REPO_DIR/installers/ || exit 1
-  # TODO repo files
+  cd $INSTALLER || exit 1
+  dpkg-deb -Zxz -z9 --build natron || exit 1
+  mv natron.deb $DEB_PKG || exit 1
+  mv $DEB_PKG $REPO_DIR/installers/ || exit 1
 
 fi
 

@@ -37,4 +37,4 @@ Release build:
 
 To do a release build just edit the git tags accordingly in common.sh  then type:
 	#Do a GPL build using 4 threads
-	TAR_BUILD=1 RPM_BUILD=1 BUILD_CONFIG=STABLE BUILD_NUMBER=1 NATRON_LICENSE=GPL OFFLINE_INSTALLER=1 SYNC=1 NOCLEAN=1 CV=0 sh build.sh tag 4
+	TAR_BUILD=1 DEB_BUILD=1 RPM_BUILD=1 BUILD_CONFIG=STABLE BUILD_NUMBER=1 NATRON_LICENSE=GPL OFFLINE_INSTALLER=1 SYNC=0 NOCLEAN=1 CV=0 sh build.sh tag 4
