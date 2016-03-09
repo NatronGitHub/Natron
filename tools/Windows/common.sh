@@ -116,7 +116,6 @@ JPG_TAR=jpegsrc.v9a.tar.gz
 OJPG_TAR=openjpeg-1.5.2.tar.gz
 PNG_TAR=libpng-1.2.53.tar.gz
 TIF_TAR=tiff-4.0.4.tar.gz
-ILM_TAR=ilmbase-2.2.0.tar.gz
 EXR_TAR=openexr-2.2.0.tar.gz
 GLEW_TAR=glew-1.12.0.tgz
 BOOST_TAR=boost_1_55_0.tar.gz
