@@ -594,6 +594,11 @@ KnobHelper::populate()
 
     KnobColor* isColor = dynamic_cast<KnobColor*>(this);
     KnobSeparator* isSep = dynamic_cast<KnobSeparator*>(this);
+    KnobPage* isPage = dynamic_cast<KnobPage*>(this);
+    KnobGroup* isGrp = dynamic_cast<KnobGroup*>(this);
+    if (isPage || isGrp) {
+        _imp->evaluateOnChange = false;
+    }
     if (isSep) {
         _imp->IsPersistant = false;
     }
@@ -4552,7 +4557,7 @@ KnobHolder::endChanges(bool discardRendering)
         isLoadingProject = getApp()->getProject()->isLoadingProject();
     }
     
-    bool ignoreHashChangeAndRender = isLoadingProject;
+    bool ignoreHashChangeAndRender = knobChanged.empty() || isLoadingProject;
 
     if (firstKnobReason == eValueChangedReasonTimeChanged) {
         ignoreHashChangeAndRender = true;
