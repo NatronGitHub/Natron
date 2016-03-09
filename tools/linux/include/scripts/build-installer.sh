@@ -521,8 +521,20 @@ if [ "$RPM_BUILD" = "1" ]; then
   echo "echo \"Checking GCC compatibility for Natron ...\"" >>$INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
   echo "DIR=/opt/Natron2" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
   cat $INSTALLER/packages/fr.inria.natron/data/Natron | sed '29,68!d' >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
-  echo "update-mime-database /usr/share/mime" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
-  echo "update-desktop-database /usr/share/applications" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
+  #echo "update-mime-database /usr/share/mime" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
+  #echo "update-desktop-database /usr/share/applications" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
+
+cat <<'EOF' >> "$INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh"
+if [ -f /usr/bin/update-mime-database ]; then
+  update-mime-database /usr/share/mime
+fi
+if [ -f /usr/bin/update-desktop-database ]; then
+  update-desktop-database /usr/share/applications
+elif [ -f /usr/bin/xdg-desktop-menu ]; then
+  xdg-desktop-menu forceupdate
+fi
+EOF
+
   chmod +x $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
   sed -i '29,68d' $INSTALLER/packages/fr.inria.natron/data/Natron || exit 1
   sed -i '29,68d' $INSTALLER/packages/fr.inria.natron/data/NatronRenderer || exit 1
@@ -545,8 +557,18 @@ if [ "$DEB_BUILD" = "1" ]; then
   echo "echo \"Checking GCC compatibility for Natron ...\"" >>$INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
   echo "DIR=/opt/Natron2" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
   cat $INSTALLER/packages/fr.inria.natron/data/Natron | sed '29,68!d' >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
-  echo "update-mime-database /usr/share/mime" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
-  echo "update-desktop-database /usr/share/applications" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
+
+cat <<'EOF' >> "$INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh"
+if [ -f /usr/bin/update-mime-database ]; then
+  update-mime-database /usr/share/mime
+fi
+if [ -f /usr/bin/update-desktop-database ]; then
+  update-desktop-database /usr/share/applications
+elif [ -f /usr/bin/xdg-desktop-menu ]; then
+  xdg-desktop-menu forceupdate
+fi
+EOF
+
   chmod +x $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
   sed -i '29,68d' $INSTALLER/packages/fr.inria.natron/data/Natron || exit 1
   sed -i '29,68d' $INSTALLER/packages/fr.inria.natron/data/NatronRenderer || exit 1
