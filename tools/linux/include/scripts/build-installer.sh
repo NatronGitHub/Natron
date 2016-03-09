@@ -21,7 +21,8 @@
 # Build packages and installer for Linux
 # OFFLINE=1: Make offline installer
 # TAR_BUILD=1: Tar the build
-# RPM_BUILD:1: Make RPM
+# RPM_BUILD=1: Make RPM
+# DEB_BUILD=1: Make DEB
 # DISABLE_BREAKPAD=1: Disable automatic crash report
 # NO_INSTALLER=1: Do not build installer
 # BUILD_CONFIG=(SNAPSHOT,ALPHA,BETA,RC,STABLE,CUSTOM)
@@ -539,7 +540,8 @@ EOF
   sed -i '29,68d' $INSTALLER/packages/fr.inria.natron/data/Natron || exit 1
   sed -i '29,68d' $INSTALLER/packages/fr.inria.natron/data/NatronRenderer || exit 1
   cat $INC_PATH/natron/Natron.spec | sed "s/REPLACE_VERSION/`echo $NATRON_VERSION|sed 's/-/./g'`/" > $TMP_PATH/Natron.spec || exit 1
-  rpmbuild -bb $TMP_PATH/Natron.spec || exit 1
+  #echo "" | setsid rpmbuild -bb --define="%_gpg_name build@natron.fr" --sign $INC_PATH/natron/Natron-repo.spec || exit 1
+  echo "" | setsid rpmbuild -bb --define="%_gpg_name build@natron.fr" --sign $TMP_PATH/Natron.spec || exit 1
   mv ~/rpmbuild/RPMS/*/Natron*.rpm $REPO_DIR/installers/ || exit 1
 fi
 
