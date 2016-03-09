@@ -230,7 +230,7 @@ CurveEditor::CurveEditor(Gui* gui,
     _imp->resultLabel = new Label(_imp->expressionContainer);
     _imp->resultLabel->setAltered(true);
     _imp->resultLabel->setText(QString::fromUtf8("= "));
-    _imp->knobLineEdit->setReadOnly(true);
+    _imp->knobLineEdit->setReadOnly_NoFocusRect(true);
     
     _imp->expressionLayout->addWidget(_imp->knobLabel);
     _imp->expressionLayout->addWidget(_imp->knobLineEdit);
@@ -1635,7 +1635,7 @@ CurveEditor::setSelectedCurve(const boost::shared_ptr<CurveGui>& curve)
                     _imp->knobLineEdit->clear();
                     _imp->resultLabel->setText(QString::fromUtf8("= "));
                 }
-                _imp->knobLineEdit->setReadOnly(false);
+                _imp->knobLineEdit->setReadOnly_NoFocusRect(false);
                 _imp->resultLabel->setAltered(false);
                 return;
             }
@@ -1644,7 +1644,7 @@ CurveEditor::setSelectedCurve(const boost::shared_ptr<CurveGui>& curve)
     _imp->knobLabel->setText(tr("No curve selected"));
     _imp->knobLabel->setAltered(true);
     _imp->knobLineEdit->clear();
-    _imp->knobLineEdit->setReadOnly(true);
+    _imp->knobLineEdit->setReadOnly_NoFocusRect(true);
     _imp->resultLabel->setText(QString::fromUtf8("= "));
     _imp->resultLabel->setAltered(true);
 }

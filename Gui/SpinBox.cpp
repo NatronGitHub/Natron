@@ -841,19 +841,23 @@ SpinBox::setIncrement(double d)
 void
 SpinBox::setAnimation(int i)
 {
-    animation = i;
-    style()->unpolish(this);
-    style()->polish(this);
-    update();
+    if (animation != i) {
+        animation = i;
+        style()->unpolish(this);
+        style()->polish(this);
+        update();
+    }
 }
 
 void
 SpinBox::setDirty(bool d)
 {
-    dirty = d;
-    style()->unpolish(this);
-    style()->polish(this);
-    update();
+    if (dirty != d) {
+        dirty = d;
+        style()->unpolish(this);
+        style()->polish(this);
+        update();
+    }
 }
 
 QMenu*

@@ -537,17 +537,17 @@ ShortCutEditor::onSelectionChanged()
     if ( items.empty() ) {
         _imp->shortcutEditor->setText(QString());
         _imp->shortcutEditor->setPlaceholderText( tr("Type to set shortcut") );
-        _imp->shortcutEditor->setReadOnly(true);
+        _imp->shortcutEditor->setReadOnly_NoFocusRect(true);
 
         return;
     }
     QTreeWidgetItem* selection = items.front();
     if ( !selection->isDisabled() ) {
-        _imp->shortcutEditor->setReadOnly(false);
+        _imp->shortcutEditor->setReadOnly_NoFocusRect(false);
         _imp->clearButton->setEnabled(true);
         _imp->resetButton->setEnabled(true);
     } else {
-        _imp->shortcutEditor->setReadOnly(true);
+        _imp->shortcutEditor->setReadOnly_NoFocusRect(true);
         _imp->clearButton->setEnabled(false);
         _imp->resetButton->setEnabled(false);
     }

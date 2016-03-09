@@ -110,9 +110,11 @@ NodeSettingsPanel::~NodeSettingsPanel()
 void
 NodeSettingsPanel::setSelected(bool s)
 {
-    _selected = s;
-    style()->unpolish(this);
-    style()->polish(this);
+    if (s != _selected) {
+        _selected = s;
+        style()->unpolish(this);
+        style()->polish(this);
+    }
 }
 
 void

@@ -341,7 +341,7 @@ RotoPanel::RotoPanel(const NodeGuiPtr&  n,
 
     _imp->currentKeyframe = new SpinBox(_imp->splineContainer,SpinBox::eSpinBoxTypeDouble);
     _imp->currentKeyframe->setEnabled(false);
-    _imp->currentKeyframe->setReadOnly(true);
+    _imp->currentKeyframe->setReadOnly_NoFocusRect(true);
     _imp->currentKeyframe->setToolTip(GuiUtils::convertFromPlainText(tr("The current keyframe for the selected shape(s)."), Qt::WhiteSpaceNormal));
     _imp->splineLayout->addWidget(_imp->currentKeyframe);
 
@@ -351,7 +351,7 @@ RotoPanel::RotoPanel(const NodeGuiPtr&  n,
 
     _imp->totalKeyframes = new SpinBox(_imp->splineContainer,SpinBox::eSpinBoxTypeInt);
     _imp->totalKeyframes->setEnabled(false);
-    _imp->totalKeyframes->setReadOnly(true);
+    _imp->totalKeyframes->setReadOnly_NoFocusRect(true);
     _imp->totalKeyframes->setToolTip(GuiUtils::convertFromPlainText(tr("The keyframe count for all the selected shapes."), Qt::WhiteSpaceNormal));
     _imp->splineLayout->addWidget(_imp->totalKeyframes);
 
@@ -412,7 +412,7 @@ RotoPanel::RotoPanel(const NodeGuiPtr&  n,
     _imp->tree->setDragDropMode(QAbstractItemView::InternalMove);
     _imp->tree->setDragEnabled(true);
     _imp->tree->setExpandsOnDoubleClick(false);
-    _imp->tree->setAttribute(Qt::WA_MacShowFocusRect,1);
+    _imp->tree->setAttribute(Qt::WA_MacShowFocusRect,0);
     QString treeToolTip = GuiUtils::convertFromPlainText(tr("This tree contains the hierarchy of shapes, strokes and layers along with some "
                                                       "most commonly used attributes for each of them. "
                                                       "Each attribute can be found in the parameters above in the panel.\n"

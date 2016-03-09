@@ -1527,8 +1527,10 @@ NodeGui::refreshEdgesVisility(bool hovered)
 void
 NodeGui::refreshEdgesVisibilityInternal(bool hovered)
 {
-    for (U32 i = 0; i < _inputEdges.size() ; ++i) {
-        _inputEdges[i]->refreshState(hovered);
+    std::vector<bool> edgesVisibility(_inputEdges.size());
+    
+    for (std::size_t i = 0; i < _inputEdges.size() ; ++i) {
+        edgesVisibility[i] = _inputEdges[i]->computeVisibility(hovered);
     }
     
     NodePtr node = getNode();
@@ -1543,7 +1545,7 @@ NodeGui::refreshEdgesVisibilityInternal(bool hovered)
          * If optional inputs are displayed, only show one input on th left side of the node
          */
         for (int i = maxInitiallyOnTopVisibleInputs; i < (int)_inputEdges.size(); ++i) {
-            if (!_inputEdges[i]->isVisible() || _inputEdges[i]->isMask()) {
+            if (!edgesVisibility[i] || _inputEdges[i]->isMask()) {
                 continue;
             }
             if (!inputAsideDisplayed) {
@@ -1552,13 +1554,22 @@ NodeGui::refreshEdgesVisibilityInternal(bool hovered)
                 }
             } else {
                 if (!_inputEdges[i]->getSource()) {
-                    _inputEdges[i]->setVisible(false);
+                    edgesVisibility[i] = false;
                 }
             }
         }
     }
     
-    update();
+    bool hasChanged = false;
+    for (std::size_t i = 0; i < _inputEdges.size() ; ++i) {
+        if (_inputEdges[i]->isVisible() != edgesVisibility[i]) {
+            _inputEdges[i]->setVisible(edgesVisibility[i]);
+            hasChanged = true;
+        }
+    }
+    if (hasChanged) {
+        update();
+    }
 }
 
 

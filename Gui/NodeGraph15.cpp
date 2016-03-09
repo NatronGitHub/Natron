@@ -310,6 +310,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
     }
     _imp->_nodesWithinBDAtPenDown.clear();
 
+    _imp->cursorSet = false;
     unsetCursor();
     update();
 } // mouseReleaseEvent

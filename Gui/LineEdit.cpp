@@ -118,28 +118,34 @@ LineEdit::dragLeaveEvent(QDragLeaveEvent* e)
 void
 LineEdit::setAnimation(int v)
 {
-    animation = v;
-    style()->unpolish(this);
-    style()->polish(this);
-    update();
+    if (v != animation) {
+        animation = v;
+        style()->unpolish(this);
+        style()->polish(this);
+        update();
+    }
 }
 
 void
 LineEdit::setDirty(bool b)
 {
-    dirty = b;
-    style()->unpolish(this);
-    style()->polish(this);
-    update();
+    if (dirty != b) {
+        dirty = b;
+        style()->unpolish(this);
+        style()->polish(this);
+        update();
+    }
 }
 
 void
 LineEdit::setAltered(bool b)
 {
-    altered = b;
-    style()->unpolish(this);
-    style()->polish(this);
-    update();
+    if (altered != b) {
+        altered = b;
+        style()->unpolish(this);
+        style()->polish(this);
+        update();
+    }
 }
 
 void

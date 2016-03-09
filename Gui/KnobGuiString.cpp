@@ -103,29 +103,35 @@ AnimatingTextEdit::~AnimatingTextEdit()
 void
 AnimatingTextEdit::setAnimation(int v)
 {
-    animation = v;
-    style()->unpolish(this);
-    style()->polish(this);
-    update();
+    if (v != animation) {
+        animation = v;
+        style()->unpolish(this);
+        style()->polish(this);
+        update();
+    }
 }
 
 void
 AnimatingTextEdit::setReadOnlyNatron(bool ro)
 {
     setReadOnly(ro);
-    readOnlyNatron = ro;
-    style()->unpolish(this);
-    style()->polish(this);
-    update();
+    if (readOnlyNatron != ro) {
+        readOnlyNatron = ro;
+        style()->unpolish(this);
+        style()->polish(this);
+        update();
+    }
 }
 
 void
 AnimatingTextEdit::setDirty(bool b)
 {
-    dirty = b;
-    style()->unpolish(this);
-    style()->polish(this);
-    update();
+    if (dirty != b) {
+        dirty = b;
+        style()->unpolish(this);
+        style()->polish(this);
+        update();
+    }
 }
 
 
@@ -477,7 +483,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
         QObject::connect( _lineEdit, SIGNAL(editingFinished()), this, SLOT(onLineChanged()) );
 
         if ( knob->isCustomKnob() ) {
-            _lineEdit->setReadOnly(true);
+            _lineEdit->setReadOnly_NoFocusRect(true);
         }
 
         ///set the copy/link actions in the right click menu
@@ -1217,7 +1223,7 @@ KnobGuiString::setReadOnly(bool readOnly,
         }
     } else if (_lineEdit) {
         if ( !_knob.lock()->isCustomKnob() ) {
-            _lineEdit->setReadOnly(readOnly);
+            _lineEdit->setReadOnly_NoFocusRect(readOnly);
         }
     }
 }
@@ -1252,7 +1258,7 @@ KnobGuiString::reflectExpressionState(int /*dimension*/,
         }
     } else if (_lineEdit) {
         _lineEdit->setAnimation(3);
-        _lineEdit->setReadOnly(hasExpr || !isEnabled);
+        _lineEdit->setReadOnly_NoFocusRect(hasExpr || !isEnabled);
     }
 }
 

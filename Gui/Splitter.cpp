@@ -142,4 +142,10 @@ Splitter::getChildren_mt_safe(std::list<QWidget*> & children) const
     }
 }
 
+bool
+Splitter::event(QEvent* e)
+{
+    return QSplitter::event(e);
+}
+
 NATRON_NAMESPACE_EXIT;

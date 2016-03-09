@@ -117,6 +117,8 @@ public:
      * @param hovered True if the mouse is hovering the dst node (the node holding this edge)
      **/
     void refreshState(bool hovered);
+    
+    bool computeVisibility(bool hovered) const;
 
     
 private:

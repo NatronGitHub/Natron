@@ -472,10 +472,12 @@ RotoToolButton::getIsSelected() const
 void
 RotoToolButton::setIsSelected(bool s)
 {
-    isSelected = s;
-    style()->unpolish(this);
-    style()->polish(this);
-    update();
+    if (s != isSelected) {
+        isSelected = s;
+        style()->unpolish(this);
+        style()->polish(this);
+        update();
+    }
 }
 
 void

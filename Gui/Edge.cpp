@@ -287,6 +287,47 @@ Edge::setSourceAndDestination(const NodeGuiPtr & src,
     initLine();
 }
 
+bool
+Edge::computeVisibility(bool hovered) const
+{
+    NodeGuiPtr dst = _imp->dest.lock();
+    EffectInstPtr effect = dst ? dst->getNode()->getEffectInstance() : EffectInstPtr();
+    if (!effect) {
+        return false;
+    }
+    
+    ///Determine whether the edge should be visible or not
+    bool hideInputsKnobValue = dst ? dst->getNode()->getHideInputsKnobValue() : false;
+    if ((_imp->isRotoMask || hideInputsKnobValue) && !_imp->isOutputEdge) {
+        return false;
+    } else {
+        
+        if (_imp->isOutputEdge) {
+            return true;
+        } else {
+            
+            NodeGuiPtr src = _imp->source.lock();
+            
+            //The viewer does not hide its optional edges
+            bool isViewer = effect ? dynamic_cast<ViewerInstance*>(effect.get()) != 0 : false;
+            bool isReader = effect ? effect->isReader() : false;
+            bool autoHide = areOptionalInputsAutoHidden();
+            bool isSelected = dst->getIsSelected();
+            
+            /*
+             * Hide the inputs if it is NOT hovered and NOT selected and auto-hide is enabled and if the node is either
+             * a Reader OR the input is optional and it doesn't have an input node
+             */
+            if ( !hovered && !isSelected && autoHide  && !isViewer &&
+                ((_imp->optional && !src) || isReader)) {
+                return false;
+            } else {
+                return true;
+            }
+        }
+    }
+}
+
 void
 Edge::refreshState(bool hovered)
 {
@@ -303,36 +344,9 @@ Edge::refreshState(bool hovered)
         if (_imp->isMask) {
             _imp->paintWithDash = true;
         }
-
-        ///Determine whether the edge should be visible or not
-        bool hideInputsKnobValue = dst ? dst->getNode()->getHideInputsKnobValue() : false;
-        if ((_imp->isRotoMask || hideInputsKnobValue) && !_imp->isOutputEdge) {
-            hide();
-        } else {
-            
-            if (_imp->isOutputEdge) {
-                show();
-            } else {
-                
-                NodeGuiPtr src = _imp->source.lock();
-                
-                //The viewer does not hide its optional edges
-                bool isViewer = effect ? dynamic_cast<ViewerInstance*>(effect.get()) != 0 : false;
-                bool isReader = effect ? effect->isReader() : false;
-                bool autoHide = areOptionalInputsAutoHidden();
-                bool isSelected = dst->getIsSelected();
-                
-                /*
-                 * Hide the inputs if it is NOT hovered and NOT selected and auto-hide is enabled and if the node is either
-                 * a Reader OR the input is optional and it doesn't have an input node
-                 */
-                if ( !hovered && !isSelected && autoHide  && !isViewer &&
-                    ((_imp->optional && !src) || isReader)) {
-                    hide();
-                } else {
-                    show();
-                }
-            }
+        bool visible = computeVisibility(hovered);
+        if (isVisible() != visible) {
+            setVisible(visible);
         }
     }
 }

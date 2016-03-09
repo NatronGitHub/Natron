@@ -1360,19 +1360,23 @@ TabBar::TabBar(TabWidget* tabWidget,
 void
 TabBar::setMouseOverFocus(bool focus)
 {
-    mouseOverFocus = focus;
-    style()->unpolish(this);
-    style()->polish(this);
-    update();
+    if (mouseOverFocus != focus) {
+        mouseOverFocus = focus;
+        style()->unpolish(this);
+        style()->polish(this);
+        update();
+    }
 }
         
 void
 TabBar::setClickFocus(bool focus)
 {
-    clickFocus = focus;
-    style()->unpolish(this);
-    style()->polish(this);
-    update();
+    if (clickFocus != focus) {
+        clickFocus = focus;
+        style()->unpolish(this);
+        style()->polish(this);
+        update();
+    }
 }
 
 void
