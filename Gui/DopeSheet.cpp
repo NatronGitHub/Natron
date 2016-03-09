@@ -178,6 +178,14 @@ DopeSheetPrivate::~DopeSheetPrivate()
     delete selectionModel;
 }
 
+void
+DopeSheetPrivate::pushUndoCommand(QUndoCommand *cmd)
+{
+    if (editor) {
+        editor->pushUndoCommand(cmd);
+    }
+}
+
 Node* DopeSheetPrivate::getNearestTimeFromOutputs_recursive(Node *node,std::list<Node*>& markedNodes) const
 {
     const NodesWList &outputs = node->getGuiOutputs();
