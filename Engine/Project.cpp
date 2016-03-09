@@ -253,7 +253,7 @@ Project::loadProjectInternal(const QString & path,
     FlagSetter loadingProjectRAII(true,&_imp->isLoadingProject,&_imp->isLoadingProjectMutex);
     
     QString filePath = path + name;
-    qDebug() << "Loading project" << filePath;
+    std::cout << QObject::tr("Loading project").toStdString() << ": " << filePath.toStdString() << std::endl;
     if ( !QFile::exists(filePath) ) {
         throw std::invalid_argument( QString(filePath + QString::fromUtf8(" : no such file.")).toStdString() );
     }
