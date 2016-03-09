@@ -2744,8 +2744,18 @@ AppManager::onCrashReporterNoLongerResponding()
 {
 #ifdef NATRON_USE_BREAKPAD
     //Crash reporter seems to no longer exist, quit
-#pragma message WARN("Commented out for testing")
-    //exitApp(false);
+    if (!isBackground()) {
+        StandardButtonEnum rep = Dialogs::questionDialog(tr("Crash Reporter Not Responding").toStdString(),
+                                                         std::string(NATRON_APPLICATION_NAME) + ' ' +
+                                tr("has detected that the crash reporter process is no longer responding. "
+                                    "This most likely indicates that it was killed or that the "
+                                    "communication between the 2 processes is failing.").toStdString() +
+                                "\n\n" + tr("Would you like to quit the application?").toStdString(), false);
+        if (rep != eStandardButtonYes) {
+            return;
+        }
+    }
+    exitApp(false);
 #endif
 }
 
