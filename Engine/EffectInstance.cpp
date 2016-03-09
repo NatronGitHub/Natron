@@ -3296,48 +3296,29 @@ EffectInstance::onInputChanged(int /*inputNo*/)
 
 }
 
+
+
 StatusEnum
-EffectInstance::getRegionOfDefinition_publicInternal(U64 hash,
-                                                     double time,
-                                                     const RenderScale & scale,
-                                                     const RectI & renderWindow,
-                                                     bool useRenderWindow,
-                                                     ViewIdx view,
-                                                     RectD* rod,
-                                                     bool* isProjectFormat)
+EffectInstance::getRegionOfDefinition_public(U64 hash,
+                                             double time,
+                                             const RenderScale & scale,
+                                             ViewIdx view,
+                                             RectD* rod,
+                                             bool* isProjectFormat)
 {
     if ( !isEffectCreated() ) {
         return eStatusFailed;
     }
-
+    
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
-
-    if (useRenderWindow) {
-        double inputTimeIdentity;
-        int inputNbIdentity;
-        ViewIdx inputView;
-        bool isIdentity = isIdentity_public(true, hash, time, scale, renderWindow, view, &inputTimeIdentity, &inputView, &inputNbIdentity);
-        if (isIdentity) {
-            if (inputNbIdentity >= 0) {
-                EffectInstPtr input = getInput(inputNbIdentity);
-                if (input) {
-                    return input->getRegionOfDefinition_public(input->getRenderHash(), inputTimeIdentity, scale, inputView, rod, isProjectFormat);
-                }
-            } else if (inputNbIdentity == -2) {
-                return getRegionOfDefinition_public(hash, inputTimeIdentity, scale, inputView, rod, isProjectFormat);
-            } else {
-                return eStatusFailed;
-            }
-        }
-    }
-
+    
     bool foundInCache = _imp->actionsCache.getRoDResult(hash, time, view, mipMapLevel, rod);
     if (foundInCache) {
         *isProjectFormat = false;
         if ( rod->isNull() ) {
             return eStatusFailed;
         }
-
+        
         return eStatusOK;
     } else {
         ///If this is running on a render thread, attempt to find the RoD in the thread local storage.
@@ -3351,66 +3332,44 @@ EffectInstance::getRegionOfDefinition_publicInternal(U64 hash,
                 return eStatusOK;
             }
         }
-
+        
         StatusEnum ret;
         RenderScale scaleOne(1.);
         {
             RECURSIVE_ACTION();
-
-
+            
+            
             ret = getRegionOfDefinition(hash, time, supportsRenderScaleMaybe() == eSupportsNo ? scaleOne : scale, view, rod);
-
+            
             if ( (ret != eStatusOK) && (ret != eStatusReplyDefault) ) {
                 // rod is not valid
                 //if (!isDuringStrokeCreation) {
                 _imp->actionsCache.invalidateAll(hash);
                 _imp->actionsCache.setRoDResult( hash, time, view, mipMapLevel, RectD() );
-
+                
                 // }
                 return ret;
             }
-
+            
             if ( rod->isNull() ) {
                 // RoD is empty, which means output is black and transparent
                 _imp->actionsCache.setRoDResult( hash, time, view, mipMapLevel, RectD() );
-
+                
                 return ret;
             }
-
+            
             assert( (ret == eStatusOK || ret == eStatusReplyDefault) && (rod->x1 <= rod->x2 && rod->y1 <= rod->y2) );
         }
         *isProjectFormat = ifInfiniteApplyHeuristic(hash, time, scale, view, rod);
         assert(rod->x1 <= rod->x2 && rod->y1 <= rod->y2);
-
+        
         //if (!isDuringStrokeCreation) {
         _imp->actionsCache.setRoDResult(hash, time, view,  mipMapLevel, *rod);
-
+        
         //}
         return ret;
     }
-} // EffectInstance::getRegionOfDefinition_publicInternal
 
-StatusEnum
-EffectInstance::getRegionOfDefinitionWithIdentityCheck_public(U64 hash,
-                                                              double time,
-                                                              const RenderScale & scale,
-                                                              const RectI & renderWindow,
-                                                              ViewIdx view,
-                                                              RectD* rod,
-                                                              bool* isProjectFormat)
-{
-    return getRegionOfDefinition_publicInternal(hash, time, scale, renderWindow, true, view, rod, isProjectFormat);
-}
-
-StatusEnum
-EffectInstance::getRegionOfDefinition_public(U64 hash,
-                                             double time,
-                                             const RenderScale & scale,
-                                             ViewIdx view,
-                                             RectD* rod,
-                                             bool* isProjectFormat)
-{
-    return getRegionOfDefinition_publicInternal(hash, time, scale, RectI(), false, view, rod, isProjectFormat);
 }
 
 void

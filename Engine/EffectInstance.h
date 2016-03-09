@@ -1002,24 +1002,7 @@ public:
                                                     ViewIdx view,
                                                     RectD* rod,
                                                     bool* isProjectFormat) WARN_UNUSED_RETURN;
-    StatusEnum getRegionOfDefinitionWithIdentityCheck_public(U64 hash,
-                                                                     double time,
-                                                                     const RenderScale & scale,
-                                                                     const RectI & renderWindow,
-                                                                     ViewIdx view,
-                                                                     RectD* rod,
-                                                                     bool* isProjectFormat) WARN_UNUSED_RETURN;
 
-private:
-
-    StatusEnum getRegionOfDefinition_publicInternal(U64 hash,
-                                                            double time,
-                                                            const RenderScale & scale,
-                                                            const RectI & renderWindow,
-                                                            bool useRenderWindow,
-                                                            ViewIdx view,
-                                                            RectD* rod,
-                                                            bool* isProjectFormat) WARN_UNUSED_RETURN;
 
 public:
 
