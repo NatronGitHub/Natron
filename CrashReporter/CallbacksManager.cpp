@@ -1121,6 +1121,9 @@ void
 CallbacksManager::onComPipeConnectionPending()
 {
     _comPipeConnection = _comServer->nextPendingConnection();
+    if (_comPipeConnection->canReadLine()) {
+        onComPipeDataWrittenTo();
+    }
     QObject::connect(_comPipeConnection, SIGNAL(readyRead()), this, SLOT(onComPipeDataWrittenTo()));
 }
 

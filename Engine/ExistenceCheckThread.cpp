@@ -116,7 +116,6 @@ ExistenceCheckerThread::run()
     }
 
     for (;;) {
-        
         {
             QMutexLocker k(&_imp->mustQuitMutex);
             if (_imp->mustQuit) {
@@ -126,6 +125,11 @@ ExistenceCheckerThread::run()
             }
         }
 
+        
+        //Sleep until we need to check again
+        msleep(NATRON_BREAKPAD_CHECK_FOR_CRASH_REPORTER_EXISTENCE_MS);
+        
+        
         qint64 writeOK;
         {
             QString tosend(_imp->checkMessage);
@@ -159,8 +163,7 @@ ExistenceCheckerThread::run()
                 return;
             }
         }
-        //Sleep until we need to check again
-        msleep(NATRON_BREAKPAD_CHECK_FOR_CRASH_REPORTER_EXISTENCE_MS);
+        
         
     } // for(;;)
 }
