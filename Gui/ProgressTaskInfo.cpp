@@ -83,6 +83,7 @@ struct ProgressTaskInfoPrivate {
     TableItem* controlsItem;
     TableItem* timeRemainingItem;
     TableItem* taskInfoItem;
+    TableItem* frameRangeItem;
     
     ProgressTaskInfo::ProgressTaskStatusEnum status;
     
@@ -133,6 +134,7 @@ struct ProgressTaskInfoPrivate {
     , controlsItem(0)
     , timeRemainingItem(0)
     , taskInfoItem(0)
+    , frameRangeItem(0)
     , status(ProgressTaskInfo::eProgressTaskStatusQueued)
     , progressBar(0)
     , progressPercent(0)
@@ -353,6 +355,7 @@ ProgressTaskInfo::clearItems()
     _imp->timeRemainingItem = 0;
     _imp->taskInfoItem = 0;
     _imp->statusItem = 0;
+    _imp->frameRangeItem = 0;
 }
 
 
@@ -462,7 +465,17 @@ ProgressTaskInfoPrivate::createItems()
         item->setText(QObject::tr("N/A"));
         timeRemainingItem = item;
     }
-    
+    {
+        TableItem* item = new TableItem;
+        item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+        assert(item);
+        QString frames;
+        frames.append(QString::number(firstFrame));
+        frames.append(QObject::tr("-"));
+        frames.append(QString::number(lastFrame));
+        item->setText(frames);
+        frameRangeItem = item;
+    }
     {
         TableItem* item = new TableItem;
         item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
@@ -535,6 +548,7 @@ ProgressTaskInfo::getTableItems(std::vector<TableItem*>* items) const
     items->push_back(_imp->statusItem);
     items->push_back(_imp->controlsItem);
     items->push_back(_imp->timeRemainingItem);
+    items->push_back(_imp->frameRangeItem);
     items->push_back(_imp->taskInfoItem);
 }
 

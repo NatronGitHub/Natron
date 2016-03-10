@@ -61,7 +61,7 @@
 
 
 #define COL_TIME_REMAINING 4
-#define COL_LAST 6
+#define COL_LAST 7
 
 #define NATRON_DISPLAY_PROGRESS_PANEL_AFTER_MS 3000
 
@@ -172,6 +172,7 @@ ProgressPanel::ProgressPanel(Gui* gui)
     << tr("Status")
     << tr("Controls")
     << tr("Time remaining")
+    << tr("Frame Range")
     << tr("Task");
     
     _imp->view->setColumnCount(dimensionNames.size());
