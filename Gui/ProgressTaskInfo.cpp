@@ -43,6 +43,7 @@
 #include "Gui/ProgressPanel.h"
 #include "Gui/TableModelView.h"
 #include "Gui/GuiDefines.h"
+#include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Button.h"
 #include "Gui/Utils.h"
