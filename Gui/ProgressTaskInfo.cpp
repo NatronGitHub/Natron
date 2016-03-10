@@ -249,7 +249,7 @@ ProgressTaskInfo::cancelTask(bool calledFromRenderEngine, int retCode)
     NodePtr node = getNode();
     OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>(node->getEffectInstance().get());
     node->getApp()->removeRenderFromQueue(effect);
-    if ((_imp->panel->isRemoveTasksAfterFinishChecked() && retCode == 0) || !_imp->canBePaused) {
+    if ((_imp->panel->isRemoveTasksAfterFinishChecked() && retCode == 0) || (!_imp->canBePaused && !calledFromRenderEngine)) {
         _imp->panel->removeTaskFromTable(shared_from_this());
     }
     if (!calledFromRenderEngine) {
@@ -260,10 +260,7 @@ ProgressTaskInfo::cancelTask(bool calledFromRenderEngine, int retCode)
 void
 ProgressTaskInfo::restartTask()
 {
-    if (!_imp->canBePaused) {
-        return;
-    }
-    
+   
     {
         QMutexLocker k(&_imp->canceledMutex);
         _imp->canceled = false;
@@ -653,9 +650,7 @@ ProgressTaskInfo::onCancelTriggered()
 void
 ProgressTaskInfo::onRestartTriggered()
 {
-    if (!_imp->canBePaused) {
-        return;
-    }
+  
     if (wasCanceled()) {
         restartTask();
     }
@@ -676,7 +671,7 @@ ProgressTaskInfoPrivate::refreshButtons()
             break;
         case ProgressTaskInfo::eProgressTaskStatusFinished:
             pauseTasksButton->setEnabled(false);
-            restartTasksButton->setEnabled(canBePaused);
+            restartTasksButton->setEnabled(getNode()->getEffectInstance()->isOutput());
             break;
         case ProgressTaskInfo::eProgressTaskStatusCanceled:
             pauseTasksButton->setEnabled(false);
