@@ -212,6 +212,12 @@ ProgressTaskInfo::cancelTask(bool calledFromRenderEngine, int retCode)
     if (_imp->refreshLabelTimer) {
         _imp->refreshLabelTimer->stop();
     }
+    
+    if (calledFromRenderEngine && retCode == 0) {
+        _imp->panel->getGui()->ensureProgressPanelVisible();
+        _imp->panel->onLastTaskAddedFinished(this);
+    }
+    
     {
         QMutexLocker k(&_imp->canceledMutex);
         if (_imp->canceled) {

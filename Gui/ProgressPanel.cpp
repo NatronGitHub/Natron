@@ -419,7 +419,7 @@ ProgressPanel::startTask(const NodePtr& node,
                             message, process));
     
     
-    if (canPause) {
+    if (canPause || node->getEffectInstance()->isOutput()) {
         task->createItems();
         QTimer::singleShot(NATRON_DISPLAY_PROGRESS_PANEL_AFTER_MS, this, SLOT(onShowProgressPanelTimerTriggered()));
     }
@@ -441,6 +441,14 @@ ProgressPanel::startTask(const NodePtr& node,
     }
     _imp->tasks[node] = task;
 
+}
+
+void
+ProgressPanel::onLastTaskAddedFinished(const ProgressTaskInfo* task)
+{
+    if (task == _imp->lastTaskAdded.get()) {
+        _imp->lastTaskAdded.reset();
+    }
 }
 
 void

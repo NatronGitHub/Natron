@@ -97,6 +97,7 @@ public:
     
     void getSelectedTask(std::list<ProgressTaskInfoPtr>& selection) const;
 
+    void onLastTaskAddedFinished(const ProgressTaskInfo* task);
     
 public Q_SLOTS:
     
