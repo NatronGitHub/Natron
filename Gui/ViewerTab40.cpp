@@ -34,6 +34,8 @@
 #include <QCheckBox>
 #include <QToolBar>
 
+#include "Engine/AppInstance.h"
+#include "Engine/Project.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h" // NodePtr
 #include "Engine/OutputSchedulerThread.h" // RenderEngine
@@ -41,6 +43,7 @@
 #include "Engine/TimeLine.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
+
 
 #include "Gui/Button.h"
 #include "Gui/ChannelsComboBox.h"
@@ -158,6 +161,40 @@ ViewerTab::setImageFormat(int textureIndex,const ImageComponents& components,Ima
     _imp->infoWidget[textureIndex]->setImageFormat(components,depth);
 }
 
+void
+ViewerTab::setViewerPaused(bool paused, bool allInputs)
+{
+    _imp->pauseButton->setChecked(paused);
+    _imp->pauseButton->setDown(paused);
+    _imp->viewerNode->setViewerPaused(paused, allInputs);
+    abortRendering();
+    if (!_imp->viewerNode->getApp()->getProject()->isLoadingProject()) {
+        if (!paused) {
+            // Refresh the viewer
+            _imp->viewerNode->renderCurrentFrame(true);
+        } 
+    }
+}
+
+bool
+ViewerTab::isViewerPaused(int texIndex) const
+{
+    return _imp->viewerNode->isViewerPaused(texIndex);
+}
+
+void
+ViewerTab::toggleViewerPauseMode(bool allInputs)
+{
+    bool isPaused = _imp->pauseButton->isDown();
+    setViewerPaused(!isPaused, allInputs);
+}
+
+void
+ViewerTab::onPauseViewerButtonClicked(bool clicked)
+{
+    bool allInputs = qApp->keyboardModifiers().testFlag(Qt::ShiftModifier);
+    setViewerPaused(clicked, allInputs);
+}
 
 void
 ViewerTab::onPlaybackInButtonClicked()

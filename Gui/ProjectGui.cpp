@@ -399,6 +399,12 @@ void loadNodeGuiSerialization(Gui* gui,
             tab->setInfobarVisible(found->second.infobarVisible);
             tab->setTimelineVisible(found->second.timelineVisible);
             tab->setCheckerboardEnabled(found->second.checkerboardEnabled);
+            
+            if (found->second.isPauseEnabled[0] && found->second.isPauseEnabled[1]) {
+                tab->setViewerPaused(true, true);
+            } else if (found->second.isPauseEnabled[0] && !found->second.isPauseEnabled[1]) {
+                tab->setViewerPaused(true, false);
+            }
             if (found->second.aChoice >= 0) {
                 tab->setInputA(found->second.aChoice);
             }

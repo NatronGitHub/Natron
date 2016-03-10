@@ -49,9 +49,11 @@ struct ViewerArgs
     boost::shared_ptr<UpdateViewerParams> params;
     boost::shared_ptr<RenderingFlagSetter> isRenderingFlag;
     bool draftModeEnabled;
+    unsigned int mipMapLevelWithDraft,mipmapLevelWithoutDraft;
     bool autoContrast;
     DisplayChannelsEnum channels;
     bool userRoIEnabled;
+    bool mustComputeRoDAndLookupCache;
 };
 
 class ViewerInstance
@@ -100,12 +102,10 @@ public:
     
     ViewerRenderRetCode getRenderViewerArgsAndCheckCache_public(SequenceTime time,
                                                         bool isSequential,
-                                                        bool canAbort,
                                                         ViewIdx view,
                                                         int textureIndex,
                                                         U64 viewerHash,
                                                         const NodePtr& rotoPaintNode,
-                                                        bool useTLS,
                                                         const boost::shared_ptr<RenderStats>& stats,
                                                         ViewerArgs* outArgs);
 
@@ -116,15 +116,56 @@ private:
      **/
     ViewerRenderRetCode getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                         bool isSequential,
-                                                        bool canAbort,
                                                         ViewIdx view,
                                                         int textureIndex,
                                                         U64 viewerHash,
                                                         const NodePtr& rotoPaintNode,
-                                                        bool useTLS,
                                                         U64 renderAge,
                                                         const boost::shared_ptr<RenderStats>& stats,
                                                         ViewerArgs* outArgs);
+    
+    
+    
+    /**
+     * @brief Setup the ViewerArgs struct with the info requested by the user from the Viewer UI
+     **/
+    void setupMinimalUpdateViewerParams(const SequenceTime time,
+                                        const ViewIdx view,
+                                        const int textureIndex,
+                                        const U64 renderAge,
+                                        const bool isSequential,
+                                        ViewerArgs* outArgs);
+    
+    
+    /**
+     * @brief Get the RoI from the Viewer and lookup the cache for a texture at the given mipMapLevel.
+     * setupMinimalUpdateViewerParams(...) MUST have been called before.
+     * When returning this function, the UpdateViewerParams will have been filled entirely
+     * and if the texture was found in the cache, the shared pointer outArgs->params->cachedFrame will be valid.
+     * This function may fail or ask to just redraw or ask to clear the viewer to black depending on it's return 
+     * code.
+     **/
+    ViewerRenderRetCode getViewerRoIAndTexture(const RectD& rod,
+                                               const U64 viewerHash,
+                                               const bool useCache,
+                                               const bool isDraftMode,
+                                               const unsigned int mipmapLevel,
+                                               const boost::shared_ptr<RenderStats>& stats,
+                                               ViewerArgs* outArgs);
+
+
+    /**
+     * @brief Calls getViewerRoIAndTexture(). If called on the main-thread, the parameter
+     * useOnlyRoDCache should be set to true. If it did not lookup the cache it will not
+     * set the member mustComputeRoDAndLookupCache of the ViewerArgs struct. In that case
+     * this function should be called again later on by the render thread with the parameter
+     * useOnlyRoDCache to false.
+     **/
+    ViewerRenderRetCode getRoDAndLookupCache(const bool useOnlyRoDCache,
+                                             const U64 viewerHash,
+                                             const NodePtr& rotoPaintNode,
+                                             const boost::shared_ptr<RenderStats>& stats,
+                                             ViewerArgs* outArgs);
 
 public:
     
@@ -264,6 +305,10 @@ public:
     void setActivateInputChangeRequestedFromViewer(bool fromViewer);
     
     bool isInputChangeRequestedFromViewer() const;
+    
+    void setViewerPaused(bool paused, bool allInputs);
+    
+    bool isViewerPaused(int texIndex) const;
     
 public Q_SLOTS:
     

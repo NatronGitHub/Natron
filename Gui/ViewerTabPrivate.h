@@ -85,6 +85,7 @@ struct ViewerTabPrivate
     Button* clipToProjectFormatButton;
     Button* enableViewerRoI;
     Button* refreshButton;
+    Button* pauseButton;
     QIcon iconRefreshOff, iconRefreshOn;
     int ongoingRenderCount;
     

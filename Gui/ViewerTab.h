@@ -275,8 +275,16 @@ public:
     void updateViewsMenu(const std::vector<std::string>& viewNames);
     
     void getActiveInputs(int* a, int* b) const;
+    
+    void setViewerPaused(bool paused, bool allInputs);
 
+    void toggleViewerPauseMode(bool allInputs);
+    
+    bool isViewerPaused(int texIndex) const;
+    
 public Q_SLOTS:
+    
+    void onPauseViewerButtonClicked(bool clicked);
 
     void onPlaybackInButtonClicked();
     void onPlaybackOutButtonClicked();

@@ -49,6 +49,7 @@ public:
     , mustFreeRamBuffer(false)
     , textureIndex(0)
     , time(0)
+    , view(0)
     , textureRect()
     , srcPremult(eImagePremultiplicationOpaque)
     , bytesCount(0)
@@ -69,6 +70,7 @@ public:
     , isSequential(false)
     , roi()
     , updateOnlyRoi(false)
+    , isViewerPaused(false)
     {
     }
     
@@ -87,6 +89,7 @@ public:
     bool mustFreeRamBuffer; //< set to true when !cachedFrame
     int textureIndex;
     int time;
+    ViewIdx view;
     TextureRect textureRect;
     ImagePremultiplicationEnum srcPremult;
     size_t bytesCount;
@@ -109,6 +112,7 @@ public:
     bool isSequential;
     RectI roi;
     bool updateOnlyRoi;
+    bool isViewerPaused;
 };
 
 

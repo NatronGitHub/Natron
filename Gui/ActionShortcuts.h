@@ -237,6 +237,11 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionNewROI "newRoi"
 #define kShortcutDescActionNewROI "New user RoI"
 
+#define kShortcutIDActionPauseViewer "pauseUpdates"
+#define kShortcutDescActionPauseViewer "Pause Updates"
+
+#define kShortcutIDActionPauseViewerInputA "pauseUpdatesA"
+#define kShortcutDescActionPauseViewerInputA "Pause Updates on input A only"
 
 #define kShortcutIDActionProxyEnabled "proxyEnabled"
 #define kShortcutDescActionProxyEnabled "Enable Proxy Rendering"

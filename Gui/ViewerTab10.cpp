@@ -306,16 +306,17 @@ ViewerTab::onEngineStopped()
         return;
     }
     
-    if (_imp->play_Forward_Button && _imp->play_Forward_Button->isDown()) {
-        _imp->play_Forward_Button->setDown(false);
-        _imp->play_Forward_Button->setChecked(false);
+    if (!_imp->viewerNode->getRenderEngine()->isPlaybackAutoRestartEnabled()) {
+        if (_imp->play_Forward_Button && _imp->play_Forward_Button->isDown()) {
+            _imp->play_Forward_Button->setDown(false);
+            _imp->play_Forward_Button->setChecked(false);
+        }
+        
+        if (_imp->play_Backward_Button && _imp->play_Backward_Button->isDown()) {
+            _imp->play_Backward_Button->setDown(false);
+            _imp->play_Backward_Button->setChecked(false);
+        }
     }
-    
-    if (_imp->play_Backward_Button && _imp->play_Backward_Button->isDown()) {
-        _imp->play_Backward_Button->setDown(false);
-        _imp->play_Backward_Button->setChecked(false);
-    }
-    
     _imp->currentFrameBox->setValue(_imp->viewerNode->getTimeline()->currentFrame());
     
     if (getGui() && getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
@@ -344,6 +345,28 @@ ViewerTab::startBackward(bool b)
         _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(getGui()->getApp()->isRenderStatsActionChecked(), viewsToRender, OutputSchedulerThread::eRenderDirectionBackward);
 
     }
+}
+
+void
+ViewerTab::refresh(bool enableRenderStats)
+{
+    //Check if readers files have changed on disk
+    getGui()->getApp()->checkAllReadersModificationDate(false);
+    abortRendering();
+    _imp->viewerNode->forceFullComputationOnNextFrame();
+    if (!enableRenderStats) {
+        _imp->viewerNode->renderCurrentFrame(true);
+    } else {
+        getGui()->getOrCreateRenderStatsDialog()->show();
+        _imp->viewerNode->renderCurrentFrameWithRenderStats(false);
+    }
+}
+
+void
+ViewerTab::refresh()
+{
+    Qt::KeyboardModifiers m = qApp->keyboardModifiers();
+    refresh(m.testFlag(Qt::ShiftModifier) && m.testFlag(Qt::ControlModifier));
 }
 
 void
@@ -430,28 +453,6 @@ ViewerTab::centerViewer()
     } else {
         _imp->viewer->update();
     }
-}
-
-void
-ViewerTab::refresh(bool enableRenderStats)
-{
-    //Check if readers files have changed on disk
-    getGui()->getApp()->checkAllReadersModificationDate(false);
-    
-    _imp->viewerNode->forceFullComputationOnNextFrame();
-    if (!enableRenderStats) {
-        _imp->viewerNode->renderCurrentFrame(true);
-    } else {
-        getGui()->getOrCreateRenderStatsDialog()->show();
-        _imp->viewerNode->renderCurrentFrameWithRenderStats(false);
-    }
-}
-
-void
-ViewerTab::refresh()
-{
-    Qt::KeyboardModifiers m = qApp->keyboardModifiers();
-    refresh(m.testFlag(Qt::ShiftModifier) && m.testFlag(Qt::ControlModifier));
 }
 
 ViewerTab::~ViewerTab()
@@ -639,6 +640,10 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
             _imp->viewerChannels->setCurrentIndex_no_emit(6);
             setDisplayChannels(6, false);
         }
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionPauseViewer, modifiers, key) ) {
+        toggleViewerPauseMode(true);
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionPauseViewerInputA, modifiers, key) ) {
+        toggleViewerPauseMode(false);
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
         previousFrame();
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerBackward, modifiers, key) ) {

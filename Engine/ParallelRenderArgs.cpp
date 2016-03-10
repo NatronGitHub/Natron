@@ -365,7 +365,7 @@ StatusEnum EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         
         boost::shared_ptr<NodeFrameRequest> tmp(new NodeFrameRequest);
         tmp->mappedScale.x = tmp->mappedScale.y = Image::getScaleFromMipMapLevel(mappedLevel);
-        tmp->nodeHash = node->getHashValue();
+        tmp->nodeHash = effect->getRenderHash();
         
         std::pair<FrameRequestMap::iterator,bool> ret = requests.insert(std::make_pair(node, tmp));
         assert(ret.second);
@@ -715,7 +715,6 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
                                                    bool canAbort,
                                                    U64 renderAge,
                                                    const NodePtr& treeRoot,
-                                                   const FrameRequestMap* request,
                                                    int textureIndex,
                                                    const TimeLine* timeline,
                                                    const NodePtr& activeRotoPaintNode,
@@ -746,42 +745,16 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
         }
         
         {
-            U64 nodeHash = 0;
-            bool hashSet = false;
-            boost::shared_ptr<NodeFrameRequest> nodeRequest;
-            if (request) {
-                FrameRequestMap::const_iterator foundRequest = request->find(*it);
-                if (foundRequest != request->end()) {
-                    nodeRequest = foundRequest->second;
-                    nodeHash = nodeRequest->nodeHash;
-                    hashSet = true;
-                }
-            }
-            if (!hashSet) {
-                nodeHash = (*it)->getHashValue();
-            }
-            
+            U64 nodeHash = (*it)->getHashValue();
             liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash,
-                                                   renderAge,treeRoot, nodeRequest,textureIndex, timeline, isAnalysis,duringPaintStrokeCreation, rotoPaintNodes, safety, doNanHandling, draftMode, viewerProgressReportEnabled, stats);
+                                                   renderAge,treeRoot, boost::shared_ptr<NodeFrameRequest>(),textureIndex, timeline, isAnalysis,duringPaintStrokeCreation, rotoPaintNodes, safety, doNanHandling, draftMode, viewerProgressReportEnabled, stats);
         }
         for (NodesList::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
             
-            boost::shared_ptr<NodeFrameRequest> childRequest;
-            U64 nodeHash = 0;
-            bool hashSet = false;
-            if (request) {
-                FrameRequestMap::const_iterator foundRequest = request->find(*it2);
-                if (foundRequest != request->end()) {
-                    childRequest = foundRequest->second;
-                    nodeHash = childRequest->nodeHash;
-                    hashSet = true;
-                }
-            }
-            if (!hashSet) {
-                nodeHash = (*it2)->getHashValue();
-            }
+            U64 nodeHash = (*it2)->getHashValue();
+      
             
-            (*it2)->getEffectInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, renderAge, treeRoot, childRequest, textureIndex, timeline, isAnalysis, activeRotoPaintNode && (*it2)->isDuringPaintStrokeCreation(), NodesList(), (*it2)->getCurrentRenderThreadSafety(), doNanHandling, draftMode, viewerProgressReportEnabled,stats);
+            (*it2)->getEffectInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, renderAge, treeRoot, boost::shared_ptr<NodeFrameRequest>(), textureIndex, timeline, isAnalysis, activeRotoPaintNode && (*it2)->isDuringPaintStrokeCreation(), NodesList(), (*it2)->getCurrentRenderThreadSafety(), doNanHandling, draftMode, viewerProgressReportEnabled,stats);
         }
         
         if ((*it)->isMultiInstance()) {
@@ -792,26 +765,13 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
             (*it)->getChildrenMultiInstance(&children);
             for (NodesList::iterator it2 = children.begin(); it2!=children.end(); ++it2) {
                 
-                boost::shared_ptr<NodeFrameRequest> childRequest;
-                U64 nodeHash = 0;
-                bool hashSet = false;
-                if (request) {
-                    FrameRequestMap::const_iterator foundRequest = request->find(*it2);
-                    if (foundRequest != request->end()) {
-                        childRequest = foundRequest->second;
-                        nodeHash = childRequest->nodeHash;
-                        hashSet = true;
-                    }
-                }
-                if (!hashSet) {
-                    nodeHash = (*it2)->getHashValue();
-                }
-                
+                U64 nodeHash = (*it2)->getHashValue();
+
                 assert(*it2);
                 EffectInstPtr childLiveInstance = (*it2)->getEffectInstance();
                 assert(childLiveInstance);
                 RenderSafetyEnum childSafety = (*it2)->getCurrentRenderThreadSafety();
-                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, renderAge,treeRoot, childRequest, textureIndex, timeline, isAnalysis, false, NodesList(), childSafety, doNanHandling, draftMode, viewerProgressReportEnabled,stats);
+                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, renderAge,treeRoot, boost::shared_ptr<NodeFrameRequest>(), textureIndex, timeline, isAnalysis, false, NodesList(), childSafety, doNanHandling, draftMode, viewerProgressReportEnabled,stats);
                 
             }
         }
@@ -824,6 +784,46 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
         
     }
     
+}
+
+void
+ParallelRenderArgsSetter::updateNodesRequest(const FrameRequestMap& request)
+{
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        {
+            FrameRequestMap::const_iterator foundRequest = request.find(*it);
+            if (foundRequest != request.end()) {
+                (*it)->getEffectInstance()->setNodeRequestThreadLocal(foundRequest->second);
+            }
+        }
+        
+        NodesList rotoPaintNodes;
+        boost::shared_ptr<RotoContext> roto = (*it)->getRotoContext();
+        if (roto) {
+            roto->getRotoPaintTreeNodes(&rotoPaintNodes);
+        }
+        
+        for (NodesList::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
+            FrameRequestMap::const_iterator foundRequest = request.find(*it2);
+            if (foundRequest != request.end()) {
+                (*it2)->getEffectInstance()->setNodeRequestThreadLocal(foundRequest->second);
+            }
+        }
+        
+        if ((*it)->isMultiInstance()) {
+            
+            ///If the node has children, set the thread-local storage on them too, even if they do not render, it can be useful for expressions
+            ///on parameters.
+            NodesList children;
+            (*it)->getChildrenMultiInstance(&children);
+            for (NodesList::iterator it2 = children.begin(); it2!=children.end(); ++it2) {
+                FrameRequestMap::const_iterator foundRequest = request.find(*it2);
+                if (foundRequest != request.end()) {
+                    (*it2)->getEffectInstance()->setNodeRequestThreadLocal(foundRequest->second);
+                }
+            }
+        }
+    }
 }
 
 ParallelRenderArgsSetter::ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr,boost::shared_ptr<ParallelRenderArgs> > >& args)

@@ -186,6 +186,21 @@ EffectInstance::isDuringActionThatCanSetValue() const
 #endif //DEBUG
 
 void
+EffectInstance::setNodeRequestThreadLocal(const boost::shared_ptr<NodeFrameRequest> & nodeRequest)
+{
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    if (!tls) {
+        assert(false);
+        return;
+    }
+    std::list<boost::shared_ptr<ParallelRenderArgs> >& argsList = tls->frameArgs;
+    if (argsList.empty()) {
+        return;
+    }
+    argsList.back()->request = nodeRequest;
+}
+
+void
 EffectInstance::setParallelRenderArgsTLS(double time,
                                          ViewIdx view,
                                          bool isRenderUserInteraction,
@@ -3296,7 +3311,28 @@ EffectInstance::onInputChanged(int /*inputNo*/)
 
 }
 
-
+StatusEnum
+EffectInstance::getRegionOfDefinitionFromCache(U64 hash,
+                                               double time,
+                                               const RenderScale & scale,
+                                               ViewIdx view,
+                                               RectD* rod,
+                                               bool* isProjectFormat)
+{
+    unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
+    
+    bool foundInCache = _imp->actionsCache.getRoDResult(hash, time, view, mipMapLevel, rod);
+    if (foundInCache) {
+        if (isProjectFormat) {
+            *isProjectFormat = false;
+        }
+        if (rod->isNull()) {
+            return eStatusFailed;
+        }
+        return eStatusOK;
+    }
+    return eStatusFailed;
+}
 
 StatusEnum
 EffectInstance::getRegionOfDefinition_public(U64 hash,
@@ -3314,7 +3350,9 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
     
     bool foundInCache = _imp->actionsCache.getRoDResult(hash, time, view, mipMapLevel, rod);
     if (foundInCache) {
-        *isProjectFormat = false;
+        if (isProjectFormat) {
+            *isProjectFormat = false;
+        }
         if ( rod->isNull() ) {
             return eStatusFailed;
         }
@@ -3360,7 +3398,10 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
             
             assert( (ret == eStatusOK || ret == eStatusReplyDefault) && (rod->x1 <= rod->x2 && rod->y1 <= rod->y2) );
         }
-        *isProjectFormat = ifInfiniteApplyHeuristic(hash, time, scale, view, rod);
+        bool isProject = ifInfiniteApplyHeuristic(hash, time, scale, view, rod);
+        if (isProjectFormat) {
+            *isProjectFormat = isProject;
+        }
         assert(rod->x1 <= rod->x2 && rod->y1 <= rod->y2);
         
         //if (!isDuringStrokeCreation) {
@@ -4010,7 +4051,6 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
                                                       false, // canAbort
                                                       0, // renderAge
                                                       node, // treeRoot
-                                                      0, // request
                                                       0, //texture index
                                                       getApp()->getTimeLine().get(),
                                                       NodePtr(), // activeRotoPaintNode

@@ -319,7 +319,28 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
                                                          "for debugging the composition.").toStdString() + "</p>", _imp->refreshButton);
     }
     _imp->firstRowLayout->addWidget(_imp->refreshButton);
-
+    
+    _imp->pauseButton = new Button(_imp->firstSettingsRow);
+    _imp->pauseButton->setFocusPolicy(Qt::NoFocus);
+    _imp->pauseButton->setFixedSize(buttonSize);
+    _imp->pauseButton->setIconSize(buttonIconSize);
+    _imp->pauseButton->setCheckable(true);
+    _imp->pauseButton->setChecked(false);
+    _imp->pauseButton->setDown(false);
+    {
+        QKeySequence seq(Qt::CTRL + Qt::SHIFT);
+        std::list<std::string> actions;
+        actions.push_back(kShortcutIDActionPauseViewerInputA);
+        actions.push_back(kShortcutIDActionPauseViewer);
+        setTooltipWithShortcut2(kShortcutGroupViewer, actions,
+                               "<p><b>" + tr("Pause Updates:").toStdString() + "</b></p><p>" +
+                               tr("When activated the viewer will not update after any change that would modify the image "
+                                  "displayed in the viewport.").toStdString() + "</p>" +
+                               "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>" +
+                                tr("Use %2 to pause both input A and B").toStdString() + "</b></p>",_imp->pauseButton);
+    }
+     _imp->firstRowLayout->addWidget(_imp->pauseButton);
+    
     
     addSpacer(_imp->firstRowLayout);
 
@@ -790,7 +811,9 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QPixmap pixViewerRsChecked;
     QPixmap pixInpoint;
     QPixmap pixOutPoint;
-
+    QPixmap pixPauseEnabled;
+    QPixmap pixPauseDisabled;
+    
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_FIRST_FRAME,&pixFirst);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_PREVIOUS_KEY,&pixPrevKF);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_REWIND_DISABLED,&pixRewindDisabled);
@@ -814,6 +837,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_RENDER_SCALE_CHECKED,&pixViewerRsChecked);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_TIMELINE_IN,&pixInpoint);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_TIMELINE_OUT,&pixOutPoint);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PAUSE_DISABLED,&pixPauseDisabled);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PAUSE_ENABLED,&pixPauseEnabled);
 
     _imp->firstFrame_Button->setIcon( QIcon(pixFirst) );
     _imp->previousKeyFrame_Button->setIcon( QIcon(pixPrevKF) );
@@ -855,6 +880,11 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     icViewerRs.addPixmap(pixViewerRs,QIcon::Normal,QIcon::Off);
     icViewerRs.addPixmap(pixViewerRsChecked,QIcon::Normal,QIcon::On);
     _imp->activateRenderScale->setIcon(icViewerRs);
+    
+    QIcon icPauseViewer;
+    icPauseViewer.addPixmap(pixPauseDisabled,QIcon::Normal,QIcon::Off);
+    icPauseViewer.addPixmap(pixPauseEnabled,QIcon::Normal,QIcon::On);
+    _imp->pauseButton->setIcon(icPauseViewer);
     
     setTooltipWithShortcut(kShortcutGroupViewer, kShortcutIDActionFitViewer,"<p>" +
                            tr("Scales the image so it doesn't exceed the size of the viewer and centers it.").toStdString() +"</p>" +
@@ -985,6 +1015,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QObject::connect( _imp->playBackOutputSpinbox,SIGNAL(valueChanged(double)),this,SLOT(onPlaybackOutSpinboxValueChanged(double)) );
     
     QObject::connect( _imp->refreshButton, SIGNAL(clicked()), this, SLOT(refresh()) );
+    QObject::connect( _imp->pauseButton, SIGNAL(clicked(bool)), this, SLOT(onPauseViewerButtonClicked(bool)) );
     QObject::connect( _imp->centerViewerButton, SIGNAL(clicked()), this, SLOT(centerViewer()) );
     QObject::connect( _imp->viewerNode,SIGNAL(viewerDisconnected()),this,SLOT(disconnectViewer()) );
     QObject::connect( _imp->fpsBox, SIGNAL(valueChanged(double)), this, SLOT(onSpinboxFpsChanged(double)) );

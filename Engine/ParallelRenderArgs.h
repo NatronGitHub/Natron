@@ -281,7 +281,6 @@ public:
                              bool canAbort,
                              U64 renderAge,
                              const NodePtr& treeRoot,
-                             const FrameRequestMap* request,
                              int textureIndex,
                              const TimeLine* timeline,
                              const NodePtr& activeRotoPaintNode,
@@ -291,6 +290,8 @@ public:
                              const boost::shared_ptr<RenderStats>& stats);
     
     ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> > >& args);
+    
+    void updateNodesRequest(const FrameRequestMap& request);
     
     virtual ~ParallelRenderArgsSetter();
 };

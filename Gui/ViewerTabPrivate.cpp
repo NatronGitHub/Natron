@@ -69,6 +69,7 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,ViewerInstance* no
 , clipToProjectFormatButton(NULL)
 , enableViewerRoI(NULL)
 , refreshButton(NULL)
+, pauseButton(NULL)
 , iconRefreshOff()
 , iconRefreshOn()
 , ongoingRenderCount(0)

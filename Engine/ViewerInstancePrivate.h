@@ -120,6 +120,8 @@ public:
     , uiContext(NULL)
     , forceRenderMutex()
     , forceRender(false)
+    , isViewerPausedMutex()
+    , isViewerPaused()
     , updateViewerPboIndex(0)
     , viewerParamsMutex()
     , viewerParamsGain(1.)
@@ -149,6 +151,7 @@ public:
             activeInputs[i] = -1;
             renderAge[i] = 1;
             displayAge[i] = 0;
+            isViewerPaused[i] = false;
             viewerParamsChannels[i] = eDisplayChannelsRGB;
         }
         
@@ -380,6 +383,8 @@ public:
     mutable QMutex forceRenderMutex;
     bool forceRender; /*!< true when we want to by-pass the cache*/
 
+    mutable QMutex isViewerPausedMutex;
+    bool isViewerPaused[2]; /*!< When true we should no longer refresh the viewer */
 
     // updateViewer: stuff for handling the execution of updateViewer() in the main thread, @see UpdateViewerParams
     //is always called on the main thread, but the thread running renderViewer MUST

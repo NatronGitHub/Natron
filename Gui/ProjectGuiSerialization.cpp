@@ -111,6 +111,8 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
                 viewerData.checkerboardEnabled = tab->isCheckerboardEnabled();
                 viewerData.fps = tab->getDesiredFps();
                 viewerData.fpsLocked = tab->isFPSLocked();
+                viewerData.isPauseEnabled[0] = tab->isViewerPaused(0);
+                viewerData.isPauseEnabled[1] = tab->isViewerPaused(1);
                 tab->getTimelineBounds(&viewerData.leftBound, &viewerData.rightBound);
                 tab->getActiveInputs(&viewerData.aChoice, &viewerData.bChoice);
                 viewerData.version = VIEWER_DATA_SERIALIZATION_VERSION;

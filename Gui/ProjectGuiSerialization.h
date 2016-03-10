@@ -64,7 +64,8 @@ GCC_DIAG_ON(unused-parameter)
 #define VIEWER_DATA_REMOVES_FRAME_RANGE_LOCK 9
 #define VIEWER_DATA_INTRODUCES_GAMMA 10
 #define VIEWER_DATA_INTRODUCES_ACTIVE_INPUTS 11
-#define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_INTRODUCES_ACTIVE_INPUTS
+#define VIEWER_DATA_INTRODUCES_PAUSE_VIEWER 12
+#define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_INTRODUCES_PAUSE_VIEWER
 
 #define PROJECT_GUI_INTRODUCES_BACKDROPS 2
 #define PROJECT_GUI_REMOVES_ALL_NODE_PREVIEW_TOGGLED 3
@@ -120,6 +121,8 @@ struct ViewerData
     bool timelineVisible;
 
     bool checkerboardEnabled;
+    
+    bool isPauseEnabled[2];
     
     double fps;
     bool fpsLocked;
@@ -191,6 +194,13 @@ struct ViewerData
             playerVisible = true;
             timelineVisible = true;
             infobarVisible = true;
+        }
+        
+        if (version >= VIEWER_DATA_INTRODUCES_PAUSE_VIEWER) {
+            ar & ::boost::serialization::make_nvp("isInputAPaused",isPauseEnabled[0]);
+            ar & ::boost::serialization::make_nvp("isInputBPaused",isPauseEnabled[1]);
+        } else {
+            isPauseEnabled[0] = isPauseEnabled[1] = false;
         }
         
         if (version >= VIEWER_DATA_INTRODUCES_CHECKERBOARD) {

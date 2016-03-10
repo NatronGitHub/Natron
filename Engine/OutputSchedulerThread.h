@@ -669,6 +669,11 @@ public:
     void renderCurrentFrame(bool enableRenderStats,bool canAbort);
 
     /**
+     * @brief Whether the playback can be automatically restarted by a single render request
+     **/
+    bool isPlaybackAutoRestartEnabled() const;
+    
+    /**
      * @brief Returns the playback mode of the internal scheduler
      **/
     PlaybackModeEnum getPlaybackMode() const;

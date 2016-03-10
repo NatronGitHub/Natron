@@ -2492,12 +2492,6 @@ private:
                 RectI renderWindow;
                 rod.toPixelEnclosing(scale, par, &renderWindow);
                 
-                FrameRequestMap request;
-                stat = EffectInstance::computeRequestPass(time, viewsToRender[view], mipMapLevel, rod, outputNode, request);
-                if (stat == eStatusFailed) {
-                    _imp->scheduler->notifyRenderFailure("Error caught while rendering");
-                    return;
-                }
                 
                 ParallelRenderArgsSetter frameRenderArgs(time,
                                                          viewsToRender[view],
@@ -2506,7 +2500,6 @@ private:
                                                          true, // canAbort ?
                                                          0, //renderAge
                                                          outputNode, // viewer requester
-                                                         &request,
                                                          0, //texture index
                                                          output->getApp()->getTimeLine().get(),
                                                          NodePtr(),
@@ -2514,6 +2507,17 @@ private:
                                                          false,
                                                          false,
                                                          stats);
+                
+                {
+                    FrameRequestMap request;
+                    stat = EffectInstance::computeRequestPass(time, viewsToRender[view], mipMapLevel, rod, outputNode, request);
+                    if (stat == eStatusFailed) {
+                        _imp->scheduler->notifyRenderFailure("Error caught while rendering");
+                        return;
+                    }
+                    frameRenderArgs.updateNodesRequest(request);
+                }
+                
                 
                 RenderingFlagSetter flagIsRendering(activeInputToRender->getNode().get());
                 
@@ -2608,8 +2612,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
     
     
     for (BufferedFrames::const_iterator it = frames.begin(); it != frames.end(); ++it) {
-        ignore_result(effect->getRegionOfDefinition_public(hash,it->time, scale, it->view, &rod, &isProjectFormat));
-        rod.toPixelEnclosing(0, par, &roi);
+        
         
         ParallelRenderArgsSetter frameRenderArgs(it->time,
                                                  it->view,
@@ -2618,7 +2621,6 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                  true, //canAbort
                                                  0, //renderAge
                                                  effect->getNode(), //tree root
-                                                 0,
                                                  0, //texture index
                                                  effect->getApp()->getTimeLine().get(),
                                                  NodePtr(),
@@ -2626,6 +2628,10 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                  false,
                                                  false,
                                                  it->stats);
+        
+        ignore_result(effect->getRegionOfDefinition_public(hash,it->time, scale, it->view, &rod, &isProjectFormat));
+        rod.toPixelEnclosing(0, par, &roi);
+
         
         RenderingFlagSetter flagIsRendering(effect->getNode().get());
         
@@ -2986,7 +2992,7 @@ private:
         
         for (int i = 0; i < 2; ++i) {
             args[i].reset(new ViewerArgs);
-            status[i] = viewer->getRenderViewerArgsAndCheckCache_public(time, true, true, view, i, viewerHash, NodePtr(), true, stats, args[i].get());
+            status[i] = viewer->getRenderViewerArgsAndCheckCache_public(time, true, view, i, viewerHash, NodePtr(), stats, args[i].get());
             clearTexture[i] = status[i] == ViewerInstance::eViewerRenderRetCodeFail || status[i] == ViewerInstance::eViewerRenderRetCodeBlack;
             if (clearTexture[i]) {
                 //Just clear the viewer, nothing to do
@@ -3003,20 +3009,20 @@ private:
             viewer->disconnectTexture(1);
         }
 
+        BufferableObjectList toAppend;
         if (status[0] == ViewerInstance::eViewerRenderRetCodeFail && status[1] == ViewerInstance::eViewerRenderRetCodeFail) {
             
             return;
-        } else if (status[0] == ViewerInstance::eViewerRenderRetCodeRedraw || status[1] == ViewerInstance::eViewerRenderRetCodeRedraw) {
+        } else if ((status[0] == ViewerInstance::eViewerRenderRetCodeRedraw && !args[0]->params->isViewerPaused) &&
+                   (status[1] == ViewerInstance::eViewerRenderRetCodeRedraw && !args[1]->params->isViewerPaused)) {
             return;
         } else {
-            BufferableObjectList toAppend;
             for (int i = 0; i < 2; ++i) {
-                if (args[i] && args[i]->params && args[i]->params->ramBuffer) {
+                if (args[i] && args[i]->params && (args[i]->params->ramBuffer || args[i]->params->isViewerPaused)) {
                     toAppend.push_back(args[i]->params);
                     args[i].reset();
                 }
             }
-            _imp->scheduler->appendToBuffer(time, view, stats, toAppend);
         }
         
         
@@ -3026,25 +3032,22 @@ private:
             } catch (...) {
                 stat = ViewerInstance::eViewerRenderRetCodeFail;
             }
-        } else {
-            return;
-        }
-        
+        } 
         if (stat == ViewerInstance::eViewerRenderRetCodeFail) {
             ///Don't report any error message otherwise we will flood the viewer with irrelevant messages such as
             ///"Render failed", instead we let the plug-in that failed post an error message which will be more helpful.
             _imp->scheduler->notifyRenderFailure(std::string());
         } else {
-            BufferableObjectList toAppend;
             for (int i = 0; i < 2; ++i) {
                 if (args[i] && args[i]->params && args[i]->params->ramBuffer) {
                     toAppend.push_back(args[i]->params);
                 }
             }
      
-            _imp->scheduler->appendToBuffer(time, view, stats, toAppend);
             
         }
+        _imp->scheduler->appendToBuffer(time, view, stats, toAppend);
+
 
     }
 };
@@ -3265,7 +3268,11 @@ RenderEngine::renderCurrentFrame(bool enableRenderStats,bool canAbort)
     Q_EMIT currentFrameRenderRequestPosted();
 }
 
-
+bool
+RenderEngine::isPlaybackAutoRestartEnabled() const
+{
+    return _imp->scheduler ? _imp->scheduler->isPlaybackAutoRestartEnabled() : false;
+}
 
 void
 RenderEngine::quitEngine()
@@ -3950,15 +3957,15 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
         
         for (int i = 0; i < 2; ++i) {
             args[i].reset(new ViewerArgs);
-            status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache_public(frame, false, canAbort, view, i, viewerHash,rotoPaintNode, true, stats, args[i].get());
+            status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache_public(frame, false, view, i, viewerHash,rotoPaintNode, stats, args[i].get());
             
             clearTexture[i] = status[i] == ViewerInstance::eViewerRenderRetCodeFail || status[i] == ViewerInstance::eViewerRenderRetCodeBlack;
-            if (clearTexture[i]) {
+            if (clearTexture[i] || args[i]->params->isViewerPaused) {
                 //Just clear the viewer, nothing to do
                 args[i]->params.reset();
             }
             
-            if (status[i] == ViewerInstance::eViewerRenderRetCodeRedraw) {
+            if (status[i] == ViewerInstance::eViewerRenderRetCodeRedraw && args[i]->params) {
                 //We must redraw (re-render) don't hold a pointer to the cached frame
                 args[i]->params->cachedFrame.reset();
             }

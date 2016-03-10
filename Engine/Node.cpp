@@ -5854,12 +5854,6 @@ Node::makePreviewImage(SequenceTime time,
     RenderingFlagSetter flagIsRendering(this);
 
     
-    FrameRequestMap request;
-    stat = EffectInstance::computeRequestPass(time, ViewIdx(0), mipMapLevel, rod, thisNode, request);
-    if (stat == eStatusFailed) {
-        return false;
-    }
-    
     {
         ParallelRenderArgsSetter frameRenderArgs(time,
                                                  ViewIdx(0), //< preview only renders view 0 (left)
@@ -5868,7 +5862,6 @@ Node::makePreviewImage(SequenceTime time,
                                                  true, //can abort
                                                  0, //render Age
                                                  thisNode, // viewer requester
-                                                 &request,
                                                  0, //texture index
                                                  getApp()->getTimeLine().get(), // timeline
                                                  NodePtr(), //rotoPaint node
@@ -5876,6 +5869,14 @@ Node::makePreviewImage(SequenceTime time,
                                                  true, // isDraft
                                                  false, // enableProgress
                                                  boost::shared_ptr<RenderStats>());
+        
+        FrameRequestMap request;
+        stat = EffectInstance::computeRequestPass(time, ViewIdx(0), mipMapLevel, rod, thisNode, request);
+        if (stat == eStatusFailed) {
+            return false;
+        }
+        
+        frameRenderArgs.updateNodesRequest(request);
         
         std::list<ImageComponents> requestedComps;
         ImageBitDepthEnum depth = effect->getBitDepth(-1);
@@ -6897,7 +6898,6 @@ Node::onInputChanged(int inputNb)
                                                  false,
                                                  0,
                                                  shared_from_this(),
-                                                 0,
                                                  0, //texture index
                                                  getApp()->getTimeLine().get(),
                                                  NodePtr(),

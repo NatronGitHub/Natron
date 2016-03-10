@@ -583,6 +583,8 @@ public:
 
     void setDuringPaintStrokeCreationThreadLocal(bool duringPaintStroke);
 
+    void setNodeRequestThreadLocal(const boost::shared_ptr<NodeFrameRequest> & nodeRequest);
+
     void setParallelRenderArgsTLS(const boost::shared_ptr<ParallelRenderArgs> & args);
 
     /**
@@ -997,11 +999,18 @@ protected:
 public:
 
     StatusEnum getRegionOfDefinition_public(U64 hash,
-                                                    double time,
-                                                    const RenderScale & scale,
-                                                    ViewIdx view,
-                                                    RectD* rod,
-                                                    bool* isProjectFormat) WARN_UNUSED_RETURN;
+                                            double time,
+                                            const RenderScale & scale,
+                                            ViewIdx view,
+                                            RectD* rod,
+                                            bool* isProjectFormat) WARN_UNUSED_RETURN;
+
+    StatusEnum getRegionOfDefinitionFromCache(U64 hash,
+                                              double time,
+                                              const RenderScale & scale,
+                                              ViewIdx view,
+                                              RectD* rod,
+                                              bool* isProjectFormat) WARN_UNUSED_RETURN;
 
 
 public:
