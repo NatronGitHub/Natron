@@ -1222,7 +1222,6 @@ OutputSchedulerThread::stopRender()
 
         
     }
-    
     {
         QMutexLocker l(&_imp->startRequestsMutex);
         while (_imp->startRequests <= 0) {
@@ -1795,54 +1794,62 @@ OutputSchedulerThread::abortRendering(bool autoRestart,bool blocking)
     {
         ///Before posting an abort request, we must make sure the scheduler thread is not currently processing an abort request
         ///in stopRender(), we ensure the former by taking the abortBeingProcessedMutex lock
-        QMutexLocker l(&_imp->abortedRequestedMutex);
-        _imp->abortBeingProcessed = false;
-        _imp->canAutoRestartPlayback = autoRestart;
-        _imp->isAbortRequestBlocking = blocking;
-        
-        ///We make sure the render-thread doesn't wait for the main-thread to process a frame
-        ///This function (abortRendering) was probably called from a user event that was posted earlier in the
-        ///event-loop, we just flag that the next event that will process the frame should NOT process it by
-        ///reseting the processRunning flag
         {
-            QMutexLocker l2(&_imp->processMutex);
+            QMutexLocker abortBeingProcessedLocker(&_imp->abortBeingProcessedMutex);
             
+            if (!isWorking()) {
+                //The scheduler thread might have stopped before we got the abortBeingProcessedMutex mutex
+                return;
+            }
+            
+            _imp->abortBeingProcessed = false;
+            _imp->canAutoRestartPlayback = autoRestart;
+            _imp->isAbortRequestBlocking = blocking;
+            
+            ///We make sure the render-thread doesn't wait for the main-thread to process a frame
+            ///This function (abortRendering) was probably called from a user event that was posted earlier in the
+            ///event-loop, we just flag that the next event that will process the frame should NOT process it by
+            ///reseting the processRunning flag
             {
-                QMutexLocker abortBeingProcessedLocker(&_imp->abortBeingProcessedMutex);
+                QMutexLocker l2(&_imp->processMutex);
                 
-                ///We are already aborting but we don't want a blocking abort, it is useless to ask for a second abort
-                if (!blocking && _imp->abortRequested > 0) {
-                    return;
-                }
-
                 {
-                    QMutexLocker k(&_imp->abortFlagMutex);
-                    _imp->abortFlag = true;
+                    QMutexLocker l(&_imp->abortedRequestedMutex);
+                    
+                    ///We are already aborting but we don't want a blocking abort, it is useless to ask for a second abort
+                    if (!blocking && _imp->abortRequested > 0) {
+                        return;
+                    }
+                    
+                    {
+                        QMutexLocker k(&_imp->abortFlagMutex);
+                        _imp->abortFlag = true;
+                    }
+                    effect->getApp()->getProject()->notifyRenderBeingAborted();
+                    
+                    ++_imp->abortRequested;
                 }
-                effect->getApp()->getProject()->notifyRenderBeingAborted();
                 
-                ++_imp->abortRequested;
-            }
-            
-            ///Clear the work queue
-           /* {
-                QMutexLocker framesLocker (&_imp->framesToRenderMutex);
-                _imp->framesToRender.clear();
-            }
-            
-            {
-                QMutexLocker k(&_imp->bufMutex);
-                _imp->buf.clear();
-            }*/
-            
-            if (isMainThread) {
+                ///Clear the work queue
+                /* {
+                 QMutexLocker framesLocker (&_imp->framesToRenderMutex);
+                 _imp->framesToRender.clear();
+                 }
+                 
+                 {
+                 QMutexLocker k(&_imp->bufMutex);
+                 _imp->buf.clear();
+                 }*/
                 
-                _imp->processRunning = false;
-                _imp->processCondition.wakeOne();
-            }
-
-            
-        } // QMutexLocker l2(&_imp->processMutex);
+                if (isMainThread) {
+                    
+                    _imp->processRunning = false;
+                    _imp->processCondition.wakeOne();
+                }
+                
+                
+            } // QMutexLocker l2(&_imp->processMutex);
+        } // QMutexLocker abortBeingProcessedLocker(&_imp->abortBeingProcessedMutex);
         ///If the scheduler is asleep waiting for the buffer to be filling up, we post a fake request
         ///that will not be processed anyway because the first thing it does is checking for abort
         {
@@ -1850,6 +1857,7 @@ OutputSchedulerThread::abortRendering(bool autoRestart,bool blocking)
             _imp->bufCondition.wakeOne();
         }
         
+        QMutexLocker l(&_imp->abortedRequestedMutex);
         while (blocking && _imp->abortRequested > 0 && QThread::currentThread() != this && isWorking()) {
             _imp->abortedRequestedCondition.wait(&_imp->abortedRequestedMutex);
         }
