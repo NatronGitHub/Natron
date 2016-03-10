@@ -1653,9 +1653,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(const boost::shared_ptr<OfxEffectInstan
     }
     // disable slider if the type is an absolute position
     if (doubleType == kOfxParamDoubleTypeXYAbsolute ||
-        doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute ||
-        doubleType == kOfxParamDoubleTypeXY ||
-        doubleType == kOfxParamDoubleTypeNormalisedXY) {
+        doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute) {
         dblKnob->disableSlider();
     }
 
