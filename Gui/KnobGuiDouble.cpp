@@ -337,6 +337,10 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
 
         QObject::connect( _dimensionSwitchButton, SIGNAL(clicked(bool)), this, SLOT(onDimensionSwitchClicked()) );
 
+    } else {
+        if (_slider) {
+            _slider->hide();
+        }
     }
 
 } // createWidget
@@ -362,6 +366,10 @@ void
 KnobGuiDouble::onDimensionSwitchClicked()
 {
     if (!_dimensionSwitchButton) {
+        if (_slider) {
+            _slider->hide();
+        }
+        
         return;
     }
     if (_dimensionSwitchButton->isChecked() ) {
@@ -741,7 +749,7 @@ KnobGuiDouble::_show()
             }
         }
     }
-    if (_slider && (!_dimensionSwitchButton || (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked()))) {
+    if (_slider && ((!_dimensionSwitchButton && _spinBoxes.size() == 1) || (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked()))) {
         double sliderMax = _slider->maximum();
         double sliderMin = _slider->minimum();
         if ( (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < INT_MAX) && (sliderMin > INT_MIN) ) {

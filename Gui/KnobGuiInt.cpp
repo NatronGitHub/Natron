@@ -245,6 +245,10 @@ KnobGuiInt::createWidget(QHBoxLayout* layout)
         
         QObject::connect( _dimensionSwitchButton, SIGNAL(clicked(bool)), this, SLOT(onDimensionSwitchClicked()) );
         
+    } else {
+        if (_slider) {
+            _slider->hide();
+        }
     }
 
     
@@ -416,7 +420,6 @@ KnobGuiInt::updateGUI(int dimension)
         refValue = values[0];
         refExpresion = expressions[0];
     } else {
-        values[dimension] = knob->getValue(dimension);
         refValue = values[dimension];
         refExpresion = expressions[dimension];
     }
@@ -621,7 +624,7 @@ KnobGuiInt::_show()
             }
         }
     }
-    if (_slider && (!_dimensionSwitchButton || (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked()))) {
+    if (_slider && ((!_dimensionSwitchButton && _spinBoxes.size() == 1) || (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked()))) {
         double sliderMax = _slider->maximum();
         double sliderMin = _slider->minimum();
         
