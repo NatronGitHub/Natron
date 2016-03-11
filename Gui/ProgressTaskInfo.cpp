@@ -473,11 +473,15 @@ ProgressTaskInfoPrivate::createItems()
         TableItem* item = new TableItem;
         item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         assert(item);
-        QString frames;
-        frames.append(QString::number(firstFrame));
-        frames.append(QObject::tr("-"));
-        frames.append(QString::number(lastFrame));
-        item->setText(frames);
+        if (getNode()->getEffectInstance()->isOutput()) {
+            QString frames;
+            frames.append(QString::number(firstFrame));
+            frames.append(QObject::tr("-"));
+            frames.append(QString::number(lastFrame));
+            item->setText(frames);
+        } else {
+            item->setText(QObject::tr("N/A"));
+        }
         frameRangeItem = item;
     }
     {
