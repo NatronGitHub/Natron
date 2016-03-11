@@ -258,6 +258,8 @@ public:
     const std::string & getScriptName() const WARN_UNUSED_RETURN;
     virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    virtual void onScriptNameChanged(const std::string& /*fullyQualifiedName*/) {}
+
     /**
      * @brief Forwarded to the node's render format
      **/

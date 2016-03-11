@@ -2754,6 +2754,31 @@ OfxEffectInstance::getClipInputNumber(const OfxClipInstance* clip) const
     return 0;
 }
 
+void
+OfxEffectInstance::onScriptNameChanged(const std::string& fullyQualifiedName)
+{
+    if (!_imp->effect) {
+        return;
+    }
+    std::size_t foundLastDot = fullyQualifiedName.find_last_of('.');
+    
+    std::string scriptname, groupprefix, appID;
+    if (foundLastDot == std::string::npos) {
+        // No prefix
+        scriptname = fullyQualifiedName;
+    } else {
+        if ((foundLastDot + 1) < fullyQualifiedName.size()) {
+            scriptname = fullyQualifiedName.substr(foundLastDot + 1);
+        }
+        groupprefix = fullyQualifiedName.substr(0,foundLastDot);
+    }
+    appID = getApp()->getAppIDString();
+    
+    _imp->effect->getProps().setStringProperty(kNatronOfxImageEffectPropProjectId, appID);
+    _imp->effect->getProps().setStringProperty(kNatronOfxImageEffectPropGroupId, groupprefix);
+    _imp->effect->getProps().setStringProperty(kNatronOfxImageEffectPropInstanceId, scriptname);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;
