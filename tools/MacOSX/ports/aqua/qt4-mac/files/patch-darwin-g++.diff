@@ -1,0 +1,20 @@
+--- configure_orig	2010-10-13 21:13:01.000000000 -0400
++++ configure	2010-10-13 21:15:36.000000000 -0400
+@@ -4558,7 +4558,7 @@
+                 EXTRA_LFLAGS="\$(QMAKE_LFLAGS_RPATH)\"$rpath\" $EXTRA_LFLAGS"
+             done
+         fi
+-        if [ "$PLATFORM_MAC" = "yes" ]; then
++        if [ "$PLATFORM_MAC" = "yes" -o "$PLATFORM" = "darwin-g++" ]; then
+             echo "export MACOSX_DEPLOYMENT_TARGET = @MACOSX_DEPLOYMENT_TARGET@" >> "$mkfile"
+             echo "CARBON_LFLAGS =-framework ApplicationServices" >>"$mkfile"
+             echo "CARBON_CFLAGS =-fconstant-cfstrings" >>"$mkfile"
+@@ -6739,7 +6730,7 @@
+ [ '!' -z "$L_FLAGS" ] && QMakeVar add QMAKE_LIBDIR_FLAGS "$L_FLAGS"
+ [ '!' -z "$l_FLAGS" ] && QMakeVar add LIBS "$l_FLAGS"
+ 
+-if [ "$PLATFORM_MAC" = "yes" ]; then
++if [ "$PLATFORM_MAC" = "yes" -o "$PLATFORM" = "darwin-g++" ]; then
+     if [ "$CFG_RPATH" = "yes" ]; then
+        QMAKE_CONFIG="$QMAKE_CONFIG absolute_library_soname"
+     fi

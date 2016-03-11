@@ -1,41 +1,54 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_CURVE_H_
-#define NATRON_ENGINE_CURVE_H_
+#ifndef NATRON_ENGINE_CURVE_H
+#define NATRON_ENGINE_CURVE_H
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
+#include "Global/Macros.h"
 
 #include <vector>
 #include <map>
 #include <set>
 
 #include "Global/Macros.h"
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
-CLANG_DIAG_OFF(unused-parameter)
-// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/archive/xml_iarchive.hpp>
-CLANG_DIAG_ON(unused-parameter)
-#include <boost/archive/xml_oarchive.hpp>
 #endif
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
+#include "Engine/EngineFwd.h"
 
 #define NATRON_CURVE_X_SPACING_EPSILON 1e-6
+
+NATRON_NAMESPACE_ENTER;
+
 /**
  * @brief A KeyFrame is a lightweight pair <time,value>. These are the values that are used
  * to interpolate a Curve. The _leftDerivative and _rightDerivative can be
  * used by the interpolation method of the curve.
  **/
-class Curve;
 
 class KeyFrame
 {
@@ -47,7 +60,7 @@ public:
              double initialValue,
              double leftDerivative = 0.,
              double rightDerivative = 0.,
-             Natron::KeyframeTypeEnum interpolation = Natron::eKeyframeTypeSmooth);
+             KeyframeTypeEnum interpolation = eKeyframeTypeSmooth);
 
     KeyFrame(const KeyFrame & other);
 
@@ -85,9 +98,9 @@ public:
 
     void setTime(double time);
 
-    void setInterpolation(Natron::KeyframeTypeEnum interp);
+    void setInterpolation(KeyframeTypeEnum interp);
 
-    Natron::KeyframeTypeEnum getInterpolation() const;
+    KeyframeTypeEnum getInterpolation() const;
 
 private:
 
@@ -95,19 +108,12 @@ private:
     double _value;
     double _leftDerivative;
     double _rightDerivative;
-    Natron::KeyframeTypeEnum _interpolation;
+    KeyframeTypeEnum _interpolation;
 
-    friend class boost::serialization::access;
+    friend class ::boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar,
-                   const unsigned int /*version*/)
-    {
-        ar & boost::serialization::make_nvp("Time",_time);
-        ar & boost::serialization::make_nvp("Value",_value);
-        ar & boost::serialization::make_nvp("InterpolationMethod",_interpolation);
-        ar & boost::serialization::make_nvp("LeftDerivative",_leftDerivative);
-        ar & boost::serialization::make_nvp("RightDerivative",_rightDerivative);
-    }
+                   const unsigned int version);
 };
 
 struct KeyFrame_compare_time
@@ -122,14 +128,10 @@ struct KeyFrame_compare_time
 typedef std::set<KeyFrame, KeyFrame_compare_time> KeyFrameSet;
 
 
-class KnobI;
 struct CurvePrivate;
-class RectD;
 
 class Curve
 {
-    friend class boost::serialization::access;
-
     enum CurveChangedReasonEnum
     {
         eCurveChangedReasonDerivativesChanged = 0,
@@ -159,6 +161,8 @@ public:
      * @brief Copies all the keyframes held by other, but does not change the pointer to the owner.
      **/
     void clone(const Curve & other);
+    
+    bool cloneAndCheckIfChanged(const Curve& other);
 
     /**
      * @brief Same as the other version clone except that keyframes will be offset by the given offset
@@ -210,6 +214,11 @@ public:
     bool getNextKeyframeTime(double time,KeyFrame* k) const WARN_UNUSED_RETURN;
 
     bool getKeyFrameWithTime(double time, KeyFrame* k) const WARN_UNUSED_RETURN;
+    
+    /*
+     * @brief Returns the number of keyframes in the range [first,last[
+     */
+    int getNKeyFramesInRange(double first, double last) const WARN_UNUSED_RETURN;
 
     bool getKeyFrameWithIndex(int index, KeyFrame* k) const WARN_UNUSED_RETURN;
 
@@ -234,6 +243,11 @@ public:
      * Also the index of the new keyframe is returned in newIndex.
      **/
     KeyFrame setKeyFrameValueAndTime(double time,double value,int index,int* newIndex = NULL);
+    
+    /**
+     * @brief Same as setKeyFrameValueAndTime but with a delta
+     **/
+    bool moveKeyFrameValueAndTime(const double time, const double dt, const double dv, KeyFrame* newKey = NULL);
 
     /**
      * @brief Set the left derivative  of the keyframe positioned at index index and returns the new  keyframe.
@@ -257,9 +271,9 @@ public:
      * @brief  Set the interpolation method of the keyframe positioned at index index and returns the new  keyframe.
      * Also the index of the new keyframe is returned in newIndex.
      **/
-    KeyFrame setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index,int* newIndex = NULL);
+    KeyFrame setKeyFrameInterpolation(KeyframeTypeEnum interp,int index,int* newIndex = NULL);
 
-    void setCurveInterpolation(Natron::KeyframeTypeEnum interp);
+    void setCurveInterpolation(KeyframeTypeEnum interp);
 
     std::pair<double,double> getCurveYRange() const WARN_UNUSED_RETURN;
 
@@ -271,6 +285,7 @@ public:
     static KeyFrameSet::const_iterator findWithTime(const KeyFrameSet& keys,double time);
     
 private:
+    friend class ::boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
 
@@ -304,11 +319,17 @@ private:
 
     bool mustClamp() const;
 
-    KeyFrameSet::iterator setKeyframeInterpolation_internal(KeyFrameSet::iterator it,Natron::KeyframeTypeEnum type);
+    KeyFrameSet::iterator setKeyframeInterpolation_internal(KeyFrameSet::iterator it,KeyframeTypeEnum type);
+    
+    /**
+     * @brief Called when the curve has changed to invalidate any cache relying on the curve values.
+     **/
+    void onCurveChanged();
 
 private:
     boost::scoped_ptr<CurvePrivate> _imp;
 };
 
+NATRON_NAMESPACE_EXIT;
 
-#endif // NATRON_ENGINE_CURVE_H_
+#endif // NATRON_ENGINE_CURVE_H

@@ -1,16 +1,41 @@
-//  Natron
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ *
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include "TableModelView.h"
 
 #include <set>
+#include <algorithm> // min, max
+#include <vector>
+#include <stdexcept>
+
+#include <QApplication>
 #include <QHeaderView>
 #include <QMouseEvent>
 #include <QScrollBar>
 #include "Gui/GuiMacros.h"
+
+NATRON_NAMESPACE_ENTER;
 
 //////////////TableItem
 
@@ -134,16 +159,36 @@ TableItem::operator=(const TableItem &other)
 ///////////////TableModel
 struct TableModelPrivate
 {
-    QVector<TableItem*> tableItems;
-    QVector<TableItem*> horizontalHeaderItems;
+    std::vector<TableItem*> tableItems;
+    std::vector<TableItem*> horizontalHeaderItems;
     int rowCount;
-
+    
     TableModelPrivate(int rows,
                       int columns)
-        : tableItems(rows * columns,0)
-          , horizontalHeaderItems(columns,0)
-          , rowCount(rows)
+    : tableItems(rows * columns,(TableItem*)0)
+    , horizontalHeaderItems(columns,(TableItem*)0)
+    , rowCount(rows)
     {
+    }
+    
+    int indexOfItem(const TableItem* item) const
+    {
+        for (std::size_t i = 0; i < tableItems.size(); ++i) {
+            if (tableItems[i] == item) {
+                return (int)i;
+            }
+        }
+        return -1;
+    }
+    
+    int indexOfHeaderItem(const TableItem* item) const
+    {
+        for (std::size_t i = 0; i < horizontalHeaderItems.size(); ++i) {
+            if (horizontalHeaderItems[i] == item) {
+                return (int)i;
+            }
+        }
+        return -1;
     }
 };
 
@@ -153,17 +198,17 @@ TableModel::TableModel(int rows,
     : QAbstractTableModel(view)
       , _imp( new TableModelPrivate(rows,columns) )
 {
-    QObject::connect( this, SIGNAL( dataChanged(QModelIndex,QModelIndex) ), this, SLOT( onDataChanged(QModelIndex) ) );
+    QObject::connect( this, SIGNAL(dataChanged(QModelIndex,QModelIndex)), this, SLOT(onDataChanged(QModelIndex)) );
 }
 
 TableModel::~TableModel()
 {
-    for (int i = 0; i < _imp->tableItems.size(); ++i) {
+    for (int i = 0; i < (int)_imp->tableItems.size(); ++i) {
         delete _imp->tableItems[i];
     }
     
     
-    for (int i = 0; i < _imp->horizontalHeaderItems.size(); ++i) {
+    for (int i = 0; i < (int)_imp->horizontalHeaderItems.size(); ++i) {
         delete _imp->horizontalHeaderItems[i];
     }
 
@@ -173,7 +218,7 @@ void
 TableModel::onDataChanged(const QModelIndex & index)
 {
     if ( TableItem * i = item(index) ) {
-        emit s_itemChanged(i);
+        Q_EMIT s_itemChanged(i);
     }
 }
 
@@ -191,7 +236,15 @@ TableModel::insertRows(int row,
     if (_imp->rowCount == 0) {
         _imp->tableItems.resize(cc * count);
     } else {
-        _imp->tableItems.insert(tableIndex(row, 0), cc * count,0);
+        std::vector<TableItem*>::iterator pos = _imp->tableItems.begin();
+        int idx = tableIndex(row, 0);
+        if (idx < (int)_imp->tableItems.size()) {
+            std::advance(pos, idx);
+            _imp->tableItems.insert(pos, cc * count,(TableItem*)0);
+        } else {
+            _imp->tableItems.insert(_imp->tableItems.end(), cc * count,(TableItem*)0);
+        }
+        
     }
     endInsertRows();
 
@@ -203,17 +256,34 @@ TableModel::insertColumns(int column,
                           int count,
                           const QModelIndex &)
 {
-    if ( (count < 1) || (column < 0) || ( column > _imp->horizontalHeaderItems.size() ) ) {
+    if ( (count < 1) || (column < 0) || ( column > (int)_imp->horizontalHeaderItems.size() ) ) {
         return false;
     }
     beginInsertColumns(QModelIndex(), column, column +  count - 1);
-    int cc = _imp->horizontalHeaderItems.count();
-    _imp->horizontalHeaderItems.insert(column, count, 0);
+    int cc = _imp->horizontalHeaderItems.size();
+    
+    
+    {
+        std::vector<TableItem*>::iterator pos = _imp->horizontalHeaderItems.begin();
+        if (column < (int)_imp->horizontalHeaderItems.size()) {
+            std::advance(pos, column);
+            _imp->horizontalHeaderItems.insert(pos, count,(TableItem*)0);
+        } else {
+            _imp->horizontalHeaderItems.insert(_imp->horizontalHeaderItems.end(), count,(TableItem*)0);
+        }
+    }
     if (cc == 0) {
         _imp->tableItems.resize(_imp->rowCount * count);
     } else {
         for (int row = 0; row < _imp->rowCount; ++row) {
-            _imp->tableItems.insert(tableIndex(row, column), count, 0);
+            std::vector<TableItem*>::iterator pos = _imp->tableItems.begin();
+            int idx = tableIndex(row, column);
+            if (idx < (int)_imp->tableItems.size()) {
+                std::advance(pos, idx);
+                _imp->tableItems.insert(pos, count,(TableItem*)0);
+            } else {
+                _imp->tableItems.insert(_imp->tableItems.end(), count,(TableItem*)0);
+            }
         }
     }
     endInsertColumns();
@@ -242,7 +312,20 @@ TableModel::removeRows(int row,
         delete oldItem;
     }
     _imp->rowCount -= count;
-    _imp->tableItems.remove(std::max(i, 0), n);
+    
+    std::vector<TableItem*>::iterator pos = _imp->tableItems.begin();
+    int idx = std::max(i, 0);
+    if (idx < (int)_imp->tableItems.size()) {
+        std::advance(pos, idx);
+        std::vector<TableItem*>::iterator last = pos;
+        if ((idx + n) < (int)_imp->tableItems.size()) {
+            std::advance(last, n);
+        } else {
+            last = _imp->tableItems.end();
+        }
+        _imp->tableItems.erase(pos ,last);
+    }
+    
     endRemoveRows();
 
     return true;
@@ -253,7 +336,7 @@ TableModel::removeColumns(int column,
                           int count,
                           const QModelIndex &)
 {
-    if ( (count < 1) || (column < 0) || ( column + count >  _imp->horizontalHeaderItems.count() ) ) {
+    if ( (count < 1) || (column < 0) || ( column + count >  (int)_imp->horizontalHeaderItems.size() ) ) {
         return false;
     }
 
@@ -268,7 +351,19 @@ TableModel::removeColumns(int column,
             }
             delete oldItem;
         }
-        _imp->tableItems.remove(i, count);
+        
+        
+        std::vector<TableItem*>::iterator pos = _imp->tableItems.begin();
+        if (i < (int)_imp->tableItems.size()) {
+            std::advance(pos, i);
+            std::vector<TableItem*>::iterator last = pos;
+            if ((i + count) < (int)_imp->tableItems.size()) {
+                std::advance(last, count);
+            } else {
+                last = _imp->tableItems.end();
+            }
+            _imp->tableItems.erase(pos ,last);
+        }
     }
     for (int h = column; h < column + count; ++h) {
         oldItem = _imp->horizontalHeaderItems.at(h);
@@ -277,10 +372,62 @@ TableModel::removeColumns(int column,
         }
         delete oldItem;
     }
-    _imp->horizontalHeaderItems.remove(column, count);
+    
+    std::vector<TableItem*>::iterator pos = _imp->horizontalHeaderItems.begin();
+    if (column < (int)_imp->horizontalHeaderItems.size()) {
+        std::advance(pos, column);
+        std::vector<TableItem*>::iterator last = pos;
+        if ((column + count) < (int)_imp->horizontalHeaderItems.size()) {
+            std::advance(last, count);
+        } else {
+            last = _imp->horizontalHeaderItems.end();
+        }
+        _imp->horizontalHeaderItems.erase(pos ,last);
+    }
+    
     endRemoveColumns();
 
     return true;
+}
+
+void
+TableModel::setTable(const std::vector<TableItem*>& items)
+{
+    beginRemoveRows(QModelIndex(), 0, _imp->rowCount - 1);
+    for (std::size_t i = 0; i < _imp->tableItems.size(); ++i) {
+        if ( _imp->tableItems.at(i) ) {
+            _imp->tableItems[i]->view = 0;
+            delete _imp->tableItems.at(i);
+            _imp->tableItems[i] = 0;
+        }
+    }
+    endRemoveRows();
+    
+    _imp->rowCount = items.size() / _imp->horizontalHeaderItems.size();
+
+    _imp->tableItems = items;
+    
+    TableView *view = qobject_cast<TableView*>( QObject::parent() );
+
+    
+    beginInsertRows(QModelIndex(), 0, _imp->rowCount -1);
+
+    
+    for (int i = 0; i < (int)_imp->tableItems.size(); ++i) {
+        _imp->tableItems[i]->id = i;
+        _imp->tableItems[i]->view = view;
+    }
+    
+    endInsertRows();
+    
+    if (!items.empty()) {
+        QModelIndex tl = QAbstractTableModel::index(0, 0);
+        int cols = columnCount();
+        int lastTableIndex = items.size() - 1;
+        int lastIndexRow = cols == 0 ? lastTableIndex : (lastTableIndex - (cols - 1)) / cols;
+        QModelIndex br = QAbstractTableModel::index(lastIndexRow, cols -1);
+        Q_EMIT dataChanged(tl, br);
+    }
 }
 
 void
@@ -290,7 +437,7 @@ TableModel::setItem(int row,
 {
     int i = tableIndex(row, column);
 
-    if ( (i < 0) || ( i >= _imp->tableItems.count() ) ) {
+    if ( (i < 0) || ( i >= (int)_imp->tableItems.size() ) ) {
         return;
     }
     TableItem *oldItem = _imp->tableItems.at(i);
@@ -311,7 +458,7 @@ TableModel::setItem(int row,
     _imp->tableItems[i] = item;
 
     QModelIndex idx = QAbstractTableModel::index(row, column);
-    emit dataChanged(idx, idx);
+    Q_EMIT dataChanged(idx, idx);
 }
 
 TableItem *
@@ -319,14 +466,14 @@ TableModel::takeItem(int row,
                      int column)
 {
     long i = tableIndex(row, column);
-    TableItem *itm = _imp->tableItems.value(i);
+    TableItem *itm = _imp->tableItems[i];
 
     if (itm) {
         itm->view = 0;
         itm->id = -1;
         _imp->tableItems[i] = 0;
         QModelIndex ind = index(itm);
-        emit dataChanged(ind, ind);
+        Q_EMIT dataChanged(ind, ind);
     }
 
     return itm;
@@ -340,10 +487,10 @@ TableModel::index(const TableItem *item) const
     }
     int i = -1;
     const int id = item->id;
-    if ( (id >= 0) && ( id < _imp->tableItems.count() ) && (_imp->tableItems.at(id) == item) ) {
+    if ( (id >= 0) && ( id < (int)_imp->tableItems.size() ) && (_imp->tableItems.at(id) == item) ) {
         i = id;
     } else { // we need to search for the item
-        i = _imp->tableItems.indexOf( const_cast<TableItem*>(item) );
+        i = _imp->indexOfItem(item);
         if (i == -1) { // not found
             return QModelIndex();
         }
@@ -373,26 +520,27 @@ TableModel::item(const QModelIndex &index) const
         return 0;
     }
 
-    return _imp->tableItems.at( tableIndex( index.row(), index.column() ) );
+    int idx = tableIndex(index.row(), index.column());
+    return idx < (int)_imp->tableItems.size() ? _imp->tableItems[idx] : 0;
 }
 
 void
 TableModel::removeItem(TableItem *item)
 {
-    int i = _imp->tableItems.indexOf(item);
+    int i = _imp->indexOfItem(item);
 
     if (i != -1) {
         _imp->tableItems[i] = 0;
         QModelIndex idx = index(item);
-        emit dataChanged(idx, idx);
+        Q_EMIT dataChanged(idx, idx);
 
         return;
     }
 
-    i = _imp->horizontalHeaderItems.indexOf(item);
+    i = _imp->indexOfHeaderItem(item);
     if (i != -1) {
         _imp->horizontalHeaderItems[i] = 0;
-        emit headerDataChanged(Qt::Horizontal, i, i);
+        Q_EMIT headerDataChanged(Qt::Horizontal, i, i);
 
         return;
     }
@@ -402,7 +550,7 @@ void
 TableModel::setHorizontalHeaderItem(int section,
                                     TableItem *item)
 {
-    if ( (section < 0) || ( section >= _imp->horizontalHeaderItems.count() ) ) {
+    if ( (section < 0) || ( section >= (int)_imp->horizontalHeaderItems.size() ) ) {
         return;
     }
 
@@ -423,13 +571,13 @@ TableModel::setHorizontalHeaderItem(int section,
         item->itemFlags = Qt::ItemFlags(int(item->itemFlags) | ItemIsHeaderItem);
     }
     _imp->horizontalHeaderItems[section] = item;
-    emit headerDataChanged(Qt::Horizontal, section, section);
+    Q_EMIT headerDataChanged(Qt::Horizontal, section, section);
 }
 
 TableItem *
 TableModel::takeHorizontalHeaderItem(int section)
 {
-    if ( (section < 0) || ( section >= _imp->horizontalHeaderItems.count() ) ) {
+    if ( (section < 0) || ( section >= (int)_imp->horizontalHeaderItems.size() ) ) {
         return 0;
     }
     TableItem *itm = _imp->horizontalHeaderItems.at(section);
@@ -445,7 +593,8 @@ TableModel::takeHorizontalHeaderItem(int section)
 TableItem *
 TableModel::horizontalHeaderItem(int section)
 {
-    return _imp->horizontalHeaderItems.value(section);
+    assert(section >= 0 && section < (int)_imp->horizontalHeaderItems.size());
+    return _imp->horizontalHeaderItems[section];
 }
 
 void
@@ -464,7 +613,7 @@ TableModel::setRowCount(int rows)
 void
 TableModel::setColumnCount(int columns)
 {
-    int cc = _imp->horizontalHeaderItems.count();
+    int cc = (int)_imp->horizontalHeaderItems.size();
 
     if ( (columns < 0) || (cc == columns) ) {
         return;
@@ -485,7 +634,7 @@ TableModel::rowCount(const QModelIndex &parent) const
 int
 TableModel::columnCount(const QModelIndex &parent) const
 {
-    return parent.isValid() ? 0 : _imp->horizontalHeaderItems.count();
+    return parent.isValid() ? 0 : (int)_imp->horizontalHeaderItems.size();
 }
 
 QVariant
@@ -604,7 +753,7 @@ TableModel::headerData(int section,
     }
 
     TableItem *itm = 0;
-    if ( (orientation == Qt::Horizontal) && ( section < _imp->horizontalHeaderItems.count() ) ) {
+    if ( (orientation == Qt::Horizontal) && ( section < (int)_imp->horizontalHeaderItems.size() ) ) {
         itm = _imp->horizontalHeaderItems.at(section);
     } else {
         return QVariant(); // section is out of bounds
@@ -626,7 +775,7 @@ TableModel::setHeaderData(int section,
                           int role)
 {
     if ( (section < 0) ||
-         ( ( orientation == Qt::Horizontal) && ( _imp->horizontalHeaderItems.size() <= section) ) ) {
+         ((orientation == Qt::Horizontal) && ((int)_imp->horizontalHeaderItems.size() <= section))) {
         return false;
     }
 
@@ -648,16 +797,17 @@ long
 TableModel::tableIndex(int row,
                        int column) const
 {
-    return ( row * _imp->horizontalHeaderItems.count() ) + column;
+    // y * width + x
+    return ( row * (int)_imp->horizontalHeaderItems.size() ) + column;
 }
 
 void
 TableModel::clear()
 {
     beginResetModel();
-    for (int i = 0; i < _imp->tableItems.count(); ++i) {
+    for (std::size_t i = 0; i < _imp->tableItems.size(); ++i) {
         if ( _imp->tableItems.at(i) ) {
-            _imp->tableItems.at(i)->view = 0;
+            _imp->tableItems[i]->view = 0;
             delete _imp->tableItems.at(i);
             _imp->tableItems[i] = 0;
         }
@@ -670,7 +820,7 @@ TableModel::isValid(const QModelIndex &index) const
 {
     return index.isValid()
            && index.row() < _imp->rowCount
-           && index.column() < _imp->horizontalHeaderItems.count();
+           && index.column() < (int)_imp->horizontalHeaderItems.size();
 }
 
 void
@@ -681,14 +831,14 @@ TableModel::itemChanged(TableItem *item)
     }
 
     if (item->flags() & ItemIsHeaderItem) {
-        int column = _imp->horizontalHeaderItems.indexOf(item);
+        int column = _imp->indexOfHeaderItem(item);
         if (column >= 0) {
-            emit headerDataChanged(Qt::Horizontal, column, column);
+            Q_EMIT headerDataChanged(Qt::Horizontal, column, column);
         }
     } else {
         QModelIndex idx = index(item);
         if ( idx.isValid() ) {
-            emit dataChanged(idx, idx);
+            Q_EMIT dataChanged(idx, idx);
         }
     }
 }
@@ -711,14 +861,17 @@ TableModel::flags(const QModelIndex &index) const
            | Qt::ItemIsDropEnabled;
 }
 
+
 ////////////////TableViewPrivae
 
 struct TableViewPrivate
 {
     TableModel* model;
-
+    std::list<TableItem*> draggedItems;
+    
     TableViewPrivate()
         : model(0)
+        , draggedItems()
     {
     }
 };
@@ -732,12 +885,12 @@ TableView::TableView(QWidget* parent)
     setSelectionBehavior(QAbstractItemView::SelectRows);
     setRootIsDecorated(false);
     setItemsExpandable(false);
-    setSortingEnabled(true);
 
     ///The table model here doesn't support sorting
     setSortingEnabled(false);
 
     header()->setStretchLastSection(false);
+    header()->setFont(QApplication::font()); // necessary, or the header font will have the default size, not the application font size
     setTextElideMode(Qt::ElideMiddle);
     setEditTriggers(QAbstractItemView::EditKeyPressed | QAbstractItemView::SelectedClicked | QAbstractItemView::DoubleClicked);
     setContextMenuPolicy(Qt::CustomContextMenu);
@@ -977,13 +1130,24 @@ TableView::mousePressEvent(QMouseEvent* e)
 }
 
 void
+TableView::mouseDoubleClickEvent(QMouseEvent* e)
+{
+    TableItem* item = itemAt( e->pos() );
+    if (item) {
+        Q_EMIT itemDoubleClicked(item);
+    }
+    QTreeView::mouseDoubleClickEvent(e);
+    
+}
+
+void
 TableView::mouseReleaseEvent(QMouseEvent* e)
 {
     QModelIndex index = indexAt( e->pos() );
     TableItem* item = itemAt( e->pos() );
 
-    if ( triggerButtonisRight(e) && index.isValid() ) {
-        emit itemRightClicked(item);
+    if ( triggerButtonIsRight(e) && index.isValid() ) {
+        Q_EMIT itemRightClicked(item);
     } else {
         QTreeView::mouseReleaseEvent(e);
     }
@@ -993,7 +1157,7 @@ void
 TableView::keyPressEvent(QKeyEvent* e)
 {
     if ( (e->key() == Qt::Key_Delete) || (e->key() == Qt::Key_Backspace) ) {
-        emit deleteKeyPressed();
+        Q_EMIT deleteKeyPressed();
         e->accept();
     }
 
@@ -1017,3 +1181,115 @@ TableView::setItemSelected(const TableItem *item,
     selectionModel()->select(index, select ? QItemSelectionModel::Select : QItemSelectionModel::Deselect);
 }
 
+void
+TableView::rebuildDraggedItemsFromSelection()
+{
+    _imp->draggedItems.clear();
+    QModelIndexList indexes = selectionModel()->selectedIndexes();
+    for (QModelIndexList::Iterator it = indexes.begin(); it!=indexes.end(); ++it) {
+        TableItem* i = item(it->row(), it->column());
+        if (i) {
+            _imp->draggedItems.push_back(i);
+        }
+    }
+}
+
+void
+TableView::startDrag(Qt::DropActions supportedActions)
+{
+    rebuildDraggedItemsFromSelection();
+    QTreeView::startDrag(supportedActions);
+}
+
+void
+TableView::dragLeaveEvent(QDragLeaveEvent *e)
+{
+    _imp->draggedItems.clear();
+    QTreeView::dragLeaveEvent(e);
+}
+
+void
+TableView::dragEnterEvent(QDragEnterEvent *e)
+{
+    rebuildDraggedItemsFromSelection();
+    QTreeView::dragEnterEvent(e);
+}
+
+void
+TableView::dropEvent(QDropEvent* e)
+{
+    
+  //  QTreeView::dropEvent(e);
+    
+    DropIndicatorPosition position = dropIndicatorPosition();
+    switch (position) {
+        case QAbstractItemView::OnItem:
+        case QAbstractItemView::OnViewport:
+        default:
+            return;
+        
+        case QAbstractItemView::AboveItem:
+        case QAbstractItemView::BelowItem:
+            break;
+    }
+    TableItem* into = itemAt(e->pos());
+
+    if (!into || _imp->draggedItems.empty()) {
+        return ;
+    }
+    Q_EMIT aboutToDrop();
+    int targetRow = into->row();
+    
+    //We only support full rows
+    assert(selectionBehavior() == QAbstractItemView::SelectRows);
+    
+    ///Remove the items
+    std::map<int,std::map<int,TableItem*> > rowMoved;
+    for (std::list<TableItem*>::iterator it = _imp->draggedItems.begin(); it!= _imp->draggedItems.end(); ++it) {
+        rowMoved[(*it)->row()][(*it)->column()] = *it;
+        TableItem* taken = _imp->model->takeItem((*it)->row(),(*it)->column());
+        assert(taken == *it);
+    }
+    /// remove the rows in reverse order so that indexes are still valid
+    for (std::map<int,std::map<int,TableItem*> >::reverse_iterator it = rowMoved.rbegin(); it != rowMoved.rend(); ++it) {
+        _imp->model->removeRows(it->first);
+        if (it->first <= targetRow) {
+            --targetRow;
+        }
+    }
+    _imp->draggedItems.clear();
+    ///insert back at the correct position
+    
+    int nRows = _imp->model->rowCount();
+    switch (position) {
+        case QAbstractItemView::AboveItem: {
+            _imp->model->insertRows(targetRow, rowMoved.size());
+            break;
+        }
+        case QAbstractItemView::BelowItem: {
+            ++targetRow;
+            if (targetRow > nRows) {
+                targetRow = nRows;
+            }
+            _imp->model->insertRows(targetRow, rowMoved.size());
+            break;
+        }
+        default:
+            assert(false);
+            return;
+    };
+    
+    int rowIndex = targetRow;
+    for (std::map<int,std::map<int,TableItem*> >::iterator it = rowMoved.begin(); it!=rowMoved.end(); ++it,++rowIndex) {
+        for (std::map<int,TableItem*>::iterator it2 = it->second.begin();it2!=it->second.end();++it2) {
+            _imp->model->setItem(rowIndex, it2->first, it2->second);
+        }
+    }
+    
+    Q_EMIT itemDropped();
+}
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_TableModelView.cpp"

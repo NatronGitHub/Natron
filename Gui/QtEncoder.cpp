@@ -1,16 +1,30 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include "QtEncoder.h"
+
+#ifdef NATRON_ENABLE_QT_IO_NODES
 
 #include <string>
 #include <vector>
@@ -33,11 +47,11 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/TimeLine.h"
 #include "Engine/Node.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
-QtWriter::QtWriter(boost::shared_ptr<Natron::Node> node)
-    : Natron::OutputEffectInstance(node)
-      , _lut( Natron::Color::LutManager::sRGBLut() )
+QtWriter::QtWriter(NodePtr node)
+    : OutputEffectInstance(node)
+      , _lut( Color::LutManager::sRGBLut() )
 {
 }
 
@@ -64,7 +78,7 @@ QtWriter::getPluginGrouping(std::list<std::string>* grouping) const
 }
 
 std::string
-QtWriter::getDescription() const
+QtWriter::getPluginDescription() const
 {
     return QObject::tr("The QtWriter node can render on disk the output of a node graph using the QImage (Qt) library.").toStdString();
 }
@@ -79,7 +93,7 @@ QtWriter::supportedFileFormats_static(std::vector<std::string>* formats)
     // Qt 4 supports: BMP, JPG, JPEG, PNG, PBM, PGM, PPM, TIFF, XBM, XPM
     // Qt 5 doesn't support TIFF
     for (int i = 0; i < supported.count(); ++i) {
-        formats->push_back( std::string( supported.at(i).toLower().data() ) );
+        formats->push_back( supported.at(i).toLower().data() );
     }
 }
 
@@ -94,8 +108,8 @@ QtWriter::supportedFileFormats() const
 }
 
 void
-QtWriter::getFrameRange(SequenceTime *first,
-                        SequenceTime *last)
+QtWriter::getFrameRange(double *first,
+                        double *last)
 {
     int index = _frameRangeChoosal->getValue();
 
@@ -118,18 +132,18 @@ QtWriter::getFrameRange(SequenceTime *first,
 void
 QtWriter::initializeKnobs()
 {
-    Natron::warningDialog( getName(), QObject::tr("This plugin exists only to help the developpers team to test %1"
+    Dialogs::warningDialog( getScriptName_mt_safe(), QObject::tr("This plugin exists only to help the developpers team to test %1"
                                                   ". You cannot use it to render a project.").arg(NATRON_APPLICATION_NAME).toStdString() );
 
 
-    _premultKnob = getNode()->createKnob<Bool_Knob>( QObject::tr("Premultiply by alpha").toStdString() );
+    _premultKnob = getNode()->createKnob<KnobBool>( QObject::tr("Premultiply by alpha").toStdString() );
     _premultKnob->setAnimationEnabled(false);
     _premultKnob->setDefaultValue(false,0);
 
-    _fileKnob = getNode()->createKnob<OutputFile_Knob>("File");
+    _fileKnob = getNode()->createKnob<KnobOutputFile>("File");
     _fileKnob->setAsOutputImageFile();
 
-    _frameRangeChoosal = getNode()->createKnob<Choice_Knob>( QObject::tr("Frame range").toStdString() );
+    _frameRangeChoosal = getNode()->createKnob<KnobChoice>( QObject::tr("Frame range").toStdString() );
     _frameRangeChoosal->setAnimationEnabled(false);
     std::vector<std::string> frameRangeChoosalEntries;
     frameRangeChoosalEntries.push_back( QObject::tr("Union of input ranges").toStdString() );
@@ -138,23 +152,23 @@ QtWriter::initializeKnobs()
     _frameRangeChoosal->populateChoices(frameRangeChoosalEntries);
     _frameRangeChoosal->setDefaultValue(1,0);
 
-    _firstFrameKnob = getNode()->createKnob<Int_Knob>( QObject::tr("First frame").toStdString() );
+    _firstFrameKnob = getNode()->createKnob<KnobInt>( QObject::tr("First frame").toStdString() );
     _firstFrameKnob->setAnimationEnabled(false);
-    _firstFrameKnob->setSecret(true);
+    _firstFrameKnob->setSecretByDefault(true);
 
-    _lastFrameKnob = getNode()->createKnob<Int_Knob>( QObject::tr("Last frame").toStdString() );
+    _lastFrameKnob = getNode()->createKnob<KnobInt>( QObject::tr("Last frame").toStdString() );
     _lastFrameKnob->setAnimationEnabled(false);
-    _lastFrameKnob->setSecret(true);
+    _lastFrameKnob->setSecretByDefault(true);
 
-    _renderKnob = getNode()->createKnob<Button_Knob>( QObject::tr("Render").toStdString() );
+    _renderKnob = getNode()->createKnob<KnobButton>( QObject::tr("Render").toStdString() );
     _renderKnob->setAsRenderButton();
 }
 
 void
 QtWriter::knobChanged(KnobI* k,
-                      Natron::ValueChangedReasonEnum /*reason*/,
-                      int /*view*/,
-                      SequenceTime /*time*/,
+                      ValueChangedReasonEnum /*reason*/,
+                      ViewSpec /*view*/,
+                      double /*time*/,
                       bool/* originatedFromMainThread*/)
 {
     if ( k == _frameRangeChoosal.get() ) {
@@ -163,7 +177,7 @@ QtWriter::knobChanged(KnobI* k,
             _firstFrameKnob->setSecret(true);
             _lastFrameKnob->setSecret(true);
         } else {
-            int first,last;
+            double first,last;
             getApp()->getFrameRange(&first, &last);
             _firstFrameKnob->setValue(first,0);
             _firstFrameKnob->setDisplayMinimum(first);
@@ -175,7 +189,6 @@ QtWriter::knobChanged(KnobI* k,
             _lastFrameKnob->setDisplayMaximum(last);
             _lastFrameKnob->setSecret(false);
 
-            createKnobDynamically();
         }
     }
 }
@@ -232,24 +245,20 @@ filenameFromPattern(const std::string & pattern,
     return ret;
 }
 
-Natron::StatusEnum
-QtWriter::render(SequenceTime time,
-                 const RenderScale& /*originalScale*/,
-                 const RenderScale & mappedScale,
-                 const RectI & roi,
-                 int view,
-                 bool /*isSequentialRender*/,
-                 bool /*isRenderResponseToUserInteraction*/,
-                 boost::shared_ptr<Natron::Image> output)
+StatusEnum
+QtWriter::render(const RenderActionArgs& args)
 {
-    boost::shared_ptr<Natron::Image> src = getImage(0, time, mappedScale, view, NULL, output->getComponents(), output->getBitDepth(),1, false,NULL);
+    assert(args.outputPlanes.size() == 1);
+    const std::pair<ImageComponents,ImagePtr>& output = args.outputPlanes.front();
+    
+    boost::shared_ptr<Image> src = getImage(0, args.time, args.mappedScale, args.view, 0, 0, true,NULL);
 
     if ( hasOutputConnected() ) {
-        output->pasteFrom( *src, src->getBounds() );
+        output.second->pasteFrom( *src, src->getBounds() );
     }
 
     ////initializes to black
-    unsigned char* buf = (unsigned char*)calloc(roi.area() * 4,1);
+    unsigned char* buf = (unsigned char*)calloc(args.roi.area() * 4,1);
     QImage::Format type;
     bool premult = _premultKnob->getValue();
     if (premult) {
@@ -257,13 +266,15 @@ QtWriter::render(SequenceTime time,
     } else {
         type = QImage::Format_ARGB32;
     }
+    
+    Image::WriteAccess acc = output.second->getWriteRights();
 
-    _lut->to_byte_packed(buf, (const float*)src->pixelAt(0, 0), roi, src->getBounds(), roi,
-                         Natron::Color::ePixelPackingRGBA, Natron::Color::ePixelPackingBGRA, true, premult);
+    _lut->to_byte_packed(buf, (const float*)acc.pixelAt(0, 0), args.roi, src->getBounds(), args.roi,
+                         Color::ePixelPackingRGBA, Color::ePixelPackingBGRA, true, premult);
 
-    QImage img(buf,roi.width(),roi.height(),type);
+    QImage img(buf,args.roi.width(),args.roi.height(),type);
     std::string filename = _fileKnob->getValue();
-    filename = filenameFromPattern( filename,std::floor(time + 0.5) );
+    filename = filenameFromPattern( filename,std::floor(args.time + 0.5) );
 
     img.save( filename.c_str() );
     free(buf);
@@ -273,15 +284,19 @@ QtWriter::render(SequenceTime time,
 
 void
 QtWriter::addAcceptedComponents(int /*inputNb*/,
-                                std::list<Natron::ImageComponentsEnum>* comps)
+                                std::list<ImageComponents>* comps)
 {
     ///QtWriter only supports RGBA for now.
-    comps->push_back(Natron::eImageComponentRGBA);
+    comps->push_back(ImageComponents::getRGBAComponents());
 }
 
 void
-QtWriter::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
+QtWriter::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 {
     depths->push_back(eImageBitDepthFloat);
 }
+
+NATRON_NAMESPACE_EXIT;
+
+#endif //NATRON_ENABLE_QT_IO_NODES
 

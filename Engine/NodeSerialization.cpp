@@ -1,39 +1,58 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include "NodeSerialization.h"
+
+#include <cassert>
+#include <stdexcept>
 
 #include "Engine/AppInstance.h"
 #include "Engine/Knob.h"
 #include "Engine/Node.h"
 #include "Engine/OfxEffectInstance.h"
-#include "Engine/RotoSerialization.h"
+#include "Engine/RotoLayer.h"
+#include "Engine/NodeGroupSerialization.h"
 #include "Engine/RotoContext.h"
 
-NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,bool serializeInputs,bool copyKnobs)
+NATRON_NAMESPACE_ENTER;
+
+NodeSerialization::NodeSerialization(const NodePtr & n,bool serializeInputs)
     : _isNull(true)
     , _nbKnobs(0)
     , _knobsValues()
     , _knobsAge(0)
-    , _pluginLabel()
+    , _nodeLabel()
+    , _nodeScriptName()
     , _pluginID()
     , _pluginMajorVersion(-1)
     , _pluginMinorVersion(-1)
     , _hasRotoContext(false)
     , _node()
-    , _app(NULL)
+    , _pythonModuleVersion(0)
 {
     if (n) {
         _node = n;
-        _app = _node->getApp();
 
         ///All this code is MT-safe
 
@@ -41,32 +60,61 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
         _inputs.clear();
 
         if ( n->isOpenFXNode() ) {
-            dynamic_cast<OfxEffectInstance*>( n->getLiveInstance() )->syncPrivateData_other_thread();
+            OfxEffectInstance* effect = dynamic_cast<OfxEffectInstance*>( n->getEffectInstance().get() );
+            assert(effect);
+            if (effect) {
+                effect->syncPrivateData_other_thread();
+            }
         }
 
-        const std::vector< boost::shared_ptr<KnobI> > & knobs = n->getKnobs();
+        std::vector< KnobPtr >  knobs = n->getEffectInstance()->getKnobs_mt_safe();
 
+        std::list<KnobPtr > userPages;
         for (U32 i  = 0; i < knobs.size(); ++i) {
-            Group_Knob* isGroup = dynamic_cast<Group_Knob*>( knobs[i].get() );
-            Page_Knob* isPage = dynamic_cast<Page_Knob*>( knobs[i].get() );
-            Button_Knob* isButton = dynamic_cast<Button_Knob*>( knobs[i].get() );
-            Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>( knobs[i].get() );
-            if (knobs[i]->getIsPersistant() && !isGroup && !isPage && !isButton) {
+            KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knobs[i].get() );
+            KnobPage* isPage = dynamic_cast<KnobPage*>( knobs[i].get() );
+            
+            if (isPage) {
+                _pagesIndexes.push_back(knobs[i]->getName());
+                if (knobs[i]->isUserKnob()) {
+                    userPages.push_back(knobs[i]);
+                }
+            }
+            
+            if (!knobs[i]->isUserKnob() &&
+                knobs[i]->getIsPersistant() &&
+                !isGroup && !isPage
+                && knobs[i]->hasModificationsForSerialization()) {
                 
                 ///For choice do a deepclone because we need entries
-                bool doCopyKnobs = isChoice ? true : copyKnobs;
+                //bool doCopyKnobs = isChoice ? true : copyKnobs;
                 
-                boost::shared_ptr<KnobSerialization> newKnobSer( new KnobSerialization(knobs[i],doCopyKnobs) );
+                boost::shared_ptr<KnobSerialization> newKnobSer( new KnobSerialization(knobs[i]) );
                 _knobsValues.push_back(newKnobSer);
             }
         }
+        
         _nbKnobs = (int)_knobsValues.size();
+        
+        for (std::list<KnobPtr >::const_iterator it = userPages.begin(); it != userPages.end(); ++it) {
+            boost::shared_ptr<GroupKnobSerialization> s(new GroupKnobSerialization(*it));
+            _userPages.push_back(s);
+        }
 
         _knobsAge = n->getKnobsAge();
 
-        _pluginLabel = n->getName_mt_safe();
+        _nodeLabel = n->getLabel_mt_safe();
+        
+        _nodeScriptName = n->getScriptName_mt_safe();
+        
+        _cacheID = n->getCacheID();
 
         _pluginID = n->getPluginID();
+        
+        if(!n->hasPyPlugBeenEdited()) {
+            _pythonModule = n->getPluginPythonModule();
+            _pythonModuleVersion = n->getMajorVersion();
+        }
 
         _pluginMajorVersion = n->getMajorVersion();
 
@@ -76,9 +124,9 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
             n->getInputNames(_inputs);
         }
 
-        boost::shared_ptr<Natron::Node> masterNode = n->getMasterNode();
+        NodePtr masterNode = n->getMasterNode();
         if (masterNode) {
-            _masterNodeName = masterNode->getName_mt_safe();
+            _masterNodeName = masterNode->getFullyQualifiedName();
         }
 
         boost::shared_ptr<RotoContext> roto = n->getRotoContext();
@@ -89,9 +137,40 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
             _hasRotoContext = false;
         }
 
-        _multiInstanceParentName = n->getParentMultiInstanceName();
+        
+        NodeGroup* isGrp = n->isEffectGroup();
+        if (isGrp) {
+            NodesList nodes;
+            isGrp->getActiveNodes(&nodes);
+            
+            _children.clear();
+            
+            for (NodesList::iterator it = nodes.begin(); it != nodes.end() ; ++it) {
+                boost::shared_ptr<NodeSerialization> state(new NodeSerialization(*it));
+                _children.push_back(state);
+            }
 
+        }
+
+         _multiInstanceParentName = n->getParentMultiInstanceName();
+        
+        NodesList childrenMultiInstance;
+        _node->getChildrenMultiInstance(&childrenMultiInstance);
+        if (!childrenMultiInstance.empty()) {
+            assert(!isGrp);
+            for (NodesList::iterator it = childrenMultiInstance.begin(); it != childrenMultiInstance.end() ; ++it) {
+                assert((*it)->getParentMultiInstance());
+                if ((*it)->isActivated()) {
+                    boost::shared_ptr<NodeSerialization> state(new NodeSerialization(*it));
+                    _children.push_back(state);
+                }
+            }
+        }
+        
+        n->getUserCreatedComponents(&_userComponents);
+        
         _isNull = false;
     }
 }
 
+NATRON_NAMESPACE_EXIT;

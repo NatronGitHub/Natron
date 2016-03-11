@@ -1,93 +1,74 @@
-//  Natron
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
-#include <csignal>
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
+
 #include <cstdio>  // perror
 #include <cstdlib> // exit
 #include <fstream>
 #include <sstream>
+#include <iostream>
 
-#if defined(Q_OS_UNIX)
-#include <sys/signal.h>
-#endif
+#include "Global/Macros.h"
 
-#include <QApplication>
+#include <QCoreApplication>
+
+#include "Engine/CLArgs.h"
 
 #include "Gui/GuiApplicationManager.h"
 
-static void setShutDownSignal(int signalId);
-static void handleShutDownSignal(int signalId);
+NATRON_NAMESPACE_USING
 
 int
 main(int argc,
      char *argv[])
 {
-    bool isBackground;
-    QString projectName,mainProcessServerName;
-    QStringList writers;
-    std::list<std::pair<int,int> > frameRanges;
-    AppManager::parseCmdLineArgs(argc,argv,&isBackground,projectName,writers,frameRanges,mainProcessServerName);
+    CLArgs::printBackGroundWelcomeMessage();
 
-    setShutDownSignal(SIGINT);   // shut down on ctrl-c
-    setShutDownSignal(SIGTERM);   // shut down on killall
-#if defined(Q_OS_UNIX)
-    if ( !projectName.isEmpty() ) {
-        projectName = AppManager::qt_tildeExpansion(projectName);
+    CLArgs args(argc,argv,false);
+    if (args.getError() > 0) {
+        return 1;
     }
-#endif
-    if (isBackground) {
-        if ( projectName.isEmpty() ) {
-            ///Autobackground without a project file name is not correct
-            AppManager::printUsage(argv[0]);
 
-            return 1;
-        }
+    if (args.isBackgroundMode()) {
+        
         AppManager manager;
 
-        if ( !manager.load(argc,argv,projectName,writers,frameRanges,mainProcessServerName) ) {
-            AppManager::printUsage(argv[0]);
+        // coverity[tainted_data]
+        if (!manager.load(argc,argv,args) ) {
             return 1;
         } else {
             return 0;
         }
     } else {
+        
         GuiApplicationManager manager;
-        bool loaded = manager.load(argc,argv,projectName, QStringList(), std::list<std::pair<int, int> >(), QString());
-        if (!loaded) {
-            return 1;
-        }
-
-        return manager.exec();
+        
+        // coverity[tainted_data]
+        return manager.load(argc,argv,args);
+        
+        //exec() is called within the GuiApplicationManager
     }
 } // main
 
-void
-setShutDownSignal(int signalId)
-{
-#if defined(Q_OS_UNIX)
-    struct sigaction sa;
-    sa.sa_flags = 0;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_handler = handleShutDownSignal;
-    if (sigaction(signalId, &sa, NULL) == -1) {
-        std::perror("setting up termination signal");
-        std::exit(1);
-    }
-#else
-    std::signal(signalId, handleShutDownSignal);
-#endif
-}
-
-void
-handleShutDownSignal( int /*signalId*/ )
-{
-    QCoreApplication::exit(0);
-}
 

@@ -1,98 +1,55 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_GUI_SETTINGSPANEL_H_
-#define NATRON_GUI_SETTINGSPANEL_H_
+#ifndef Gui_DockablePanel_h
+#define Gui_DockablePanel_h
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
+#include "Global/Macros.h"
 
 #include <map>
 
-#include "Global/Macros.h"
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#include <boost/weak_ptr.hpp>
+#include <boost/shared_ptr.hpp>
+#endif
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QFrame>
+#include <QTabWidget>
+#include <QDialog>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#ifndef Q_MOC_RUN
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
-#include <QTabWidget>
+
 #include "Global/GlobalDefines.h"
 
-class KnobI;
-class KnobGui;
-class KnobHolder;
-class NodeGui;
-class Gui;
-class QVBoxLayout;
-class Button;
-class QUndoStack;
-class NodeBackDrop;
-class QUndoCommand;
-class RotoPanel;
-class MultiInstancePanel;
+#include "Engine/DockablePanelI.h"
 
-/**
- * @class This is to overcome an issue in QTabWidget : switching tab does not resize the QTabWidget.
- * This class resizes the QTabWidget to the current tab size.
- **/
-class DockablePanelTabWidget
-    : public QTabWidget
-{
-    Gui* _gui;
-public:
+#include "Gui/GuiFwd.h"
 
-    DockablePanelTabWidget(Gui* gui,QWidget* parent = 0);
-
-    virtual QSize sizeHint() const OVERRIDE FINAL;
-    virtual QSize minimumSizeHint() const OVERRIDE FINAL;
-    
-private:
-    
-    virtual void keyPressEvent(QKeyEvent* event) OVERRIDE FINAL;
-};
-
-class DockablePanel;
-class RightClickableWidget : public QWidget
-{
-    Q_OBJECT
-    
-    DockablePanel* panel;
-    
-public:
-    
-    
-    RightClickableWidget(DockablePanel* panel,QWidget* parent)
-    : QWidget(parent)
-    , panel(panel)
-    {
-        setObjectName("SettingsPanel");
-    }
-    
-    virtual ~RightClickableWidget() {}
-    
-    DockablePanel* getPanel() const { return panel; }
-    
-signals:
-    
-    void rightClicked(const QPoint& p);
-    void escapePressed();
-    
-private:
-    
-    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
-    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
-    
-};
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief An abstract class that defines a dockable properties panel that can be found in the Property bin pane.
@@ -100,8 +57,11 @@ private:
 struct DockablePanelPrivate;
 class DockablePanel
     : public QFrame
+    , public DockablePanelI
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -112,33 +72,25 @@ public:
         eHeaderModeNoHeader
     };
 
-    explicit DockablePanel(Gui* gui
-                           ,
-                           KnobHolder* holder
-                           ,
-                           QVBoxLayout* container
-                           ,
-                           HeaderModeEnum headerMode
-                           ,
-                           bool useScrollAreasForTabs
-                           ,
-                           const QString & initialName = QString()
-                           ,
-                           const QString & helpToolTip = QString()
-                           ,
-                           bool createDefaultPage = false
-                           ,
-                           const QString & defaultPageName = QString("Default")
-                           ,
+    explicit DockablePanel(Gui* gui,
+                           KnobHolder* holder,
+                           QVBoxLayout* container,
+                           HeaderModeEnum headerMode,
+                           bool useScrollAreasForTabs,
+                           const boost::shared_ptr<QUndoStack>& stack,
+                           const QString & initialName = QString(),
+                           const QString & helpToolTip = QString(),
+                           bool createDefaultPage = false,
+                           const QString & defaultPageName = QString::fromUtf8("Default"),
                            QWidget *parent = 0);
 
     virtual ~DockablePanel() OVERRIDE;
 
     bool isMinimized() const;
 
-    const std::map<boost::shared_ptr<KnobI>,KnobGui*> & getKnobs() const;
+    const std::list<std::pair<boost::weak_ptr<KnobI>,KnobGuiPtr> > & getKnobs() const;
     QVBoxLayout* getContainer() const;
-    QUndoStack* getUndoStack() const;
+    boost::shared_ptr<QUndoStack> getUndoStack() const;
 
     bool isClosed() const;
     bool isFloating() const;
@@ -153,6 +105,7 @@ public:
 
     void pushUndoCommand(QUndoCommand* cmd);
 
+    void refreshUndoRedoButtonsEnabledNess();
 
     const QUndoCommand* getLastUndoCommand() const;
     Gui* getGui() const;
@@ -162,13 +115,23 @@ public:
     void appendHeaderWidget(QWidget* widget);
 
     QWidget* getHeaderWidget() const;
-    KnobGui* getKnobGui(const boost::shared_ptr<KnobI> & knob) const;
+    KnobGuiPtr getKnobGui(const KnobPtr & knob) const;
 
     ///MT-safe
-    QColor getCurrentColor() const;
+    virtual QColor getCurrentColor() const {
+        return Qt::black;
+    }
 
     ///MT-safe
     void setCurrentColor(const QColor & c);
+    
+    void setOverlayColor(const QColor& c);
+    
+    QColor getOverlayColor() const;
+    
+    bool hasOverlayColor() const;
+    
+    void resetHostOverlayColor();
 
     virtual boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const
     {
@@ -179,7 +142,46 @@ public:
 
     void onGuiClosing();
 
-public slots:
+    virtual void recreateUserKnobs(bool restorePageIndex) OVERRIDE FINAL;
+    virtual void refreshGuiForKnobsChanges(bool restorePageIndex) OVERRIDE FINAL;
+    
+private:
+    
+    void recreateKnobs(const QString& curTabName,bool restorePageIndex);
+    
+public:
+    
+    void setUserPageActiveIndex();
+    
+    void setPageActiveIndex(const boost::shared_ptr<KnobPage>& page);
+    
+    boost::shared_ptr<KnobPage> getOrCreateUserPageKnob() const;
+    boost::shared_ptr<KnobPage> getUserPageKnob() const;
+    
+    void getUserPages(std::list<KnobPage*>& userPages) const;
+    
+    virtual void deleteKnobGui(const KnobPtr& knob) OVERRIDE FINAL;
+    
+    int getPagesCount() const;
+        
+    /**
+     * @brief When called, all knobs will go into the same page which will appear as a plain Widget and not as a tab
+     **/
+    void turnOffPages();
+    
+    void setPluginIcon(const QPixmap& pix) ;
+    
+    void setPluginDescription(const std::string& description) ;
+
+    void setPluginIDAndVersion(const std::string& pluginLabel,const std::string& pluginID,unsigned int version);
+    
+    void refreshTabWidgetMaxHeight();
+    
+public Q_SLOTS:
+    
+    void onPageLabelChangedInternally();
+    
+    void onPageIndexChanged(int index);
 
     /*Internal slot, not meant to be called externally.*/
     void closePanel();
@@ -197,9 +199,6 @@ public slots:
     void initializeKnobs();
 
     /*Internal slot, not meant to be called externally.*/
-    void onKnobDeletion();
-
-    /*Internal slot, not meant to be called externally.*/
     void onUndoClicked();
 
     /*Internal slot, not meant to be called externally.*/
@@ -212,8 +211,12 @@ public slots:
     void floatPanel();
 
     void onColorButtonClicked();
+    
+    void onOverlayButtonClicked();
 
     void onColorDialogColorChanged(const QColor & color);
+    
+    void onOverlayColorDialogColorChanged(const QColor& color);
 
     void setClosed(bool closed);
 
@@ -226,7 +229,17 @@ public slots:
 
     void onHideUnmodifiedButtonClicked(bool checked);
     
-signals:
+    void onManageUserParametersActionTriggered();
+    
+    void onNodeScriptChanged(const QString& label);
+    
+    void onEnterInGroupClicked();
+    
+    void onSubGraphEditionChanged(bool editable);
+    
+    void onDeleteCurCmdLater();
+    
+Q_SIGNALS:
 
     /*emitted when the panel is clicked*/
     void selected();
@@ -250,6 +263,7 @@ signals:
 
     void colorChanged(QColor);
     
+    void deleteCurCmdLater();
 
 protected:
     
@@ -269,110 +283,22 @@ protected:
 
 private:
 
+    void setClosedInternal(bool c);
 
-    void initializeKnobsInternal( const std::vector< boost::shared_ptr<KnobI> > & knobs);
+    void initializeKnobsInternal();
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL
     {
-        emit selected();
+        Q_EMIT selected();
         QFrame::mousePressEvent(e);
     }
 
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
+
+    QString helpString() const;
+
     boost::scoped_ptr<DockablePanelPrivate> _imp;
 };
 
+NATRON_NAMESPACE_EXIT;
 
-class NodeSettingsPanel
-    : public DockablePanel
-{
-    Q_OBJECT Q_PROPERTY( bool _selected READ isSelected WRITE setSelected)
-
-    /*Pointer to the node GUI*/
-    boost::shared_ptr<NodeGui> _nodeGUI;
-    bool _selected;
-    Button* _settingsButton;
-    boost::shared_ptr<MultiInstancePanel> _multiPanel;
-
-public:
-
-    explicit NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel> & multiPanel,
-                               Gui* gui,
-                               boost::shared_ptr<NodeGui> NodeUi,
-                               QVBoxLayout* container,
-                               QWidget *parent = 0);
-
-    virtual ~NodeSettingsPanel();
-
-    void setSelected(bool s);
-
-    bool isSelected() const
-    {
-        return _selected;
-    }
-
-    boost::shared_ptr<NodeGui> getNode() const
-    {
-        return _nodeGUI;
-    }
-
-    virtual boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const
-    {
-        return _multiPanel;
-    }
-
-private:
-
-    
-    virtual RotoPanel* initializeRotoPanel();
-    virtual void initializeExtraGui(QVBoxLayout* layout) OVERRIDE FINAL;
-    virtual void centerOnItem() OVERRIDE FINAL;
-
-public slots:
-    
-    void onSettingsButtonClicked();
-    
-    void onImportPresetsActionTriggered();
-    
-    void onExportPresetsActionTriggered();
-};
-
-class NodeBackDropSettingsPanel : public DockablePanel
-{
-    
-public:
-    
-    NodeBackDropSettingsPanel(NodeBackDrop* backdrop,
-                              Gui* gui,
-                              QVBoxLayout* container,
-                              const QString& name,
-                              QWidget* parent);
-    
-    virtual ~NodeBackDropSettingsPanel();
-    
-private:
-    
-    virtual void centerOnItem() OVERRIDE FINAL;
-    
-    NodeBackDrop* _backdrop;
-};
-
-class VerticalColorBar : public QWidget
-{
-    Q_OBJECT
-    
-    QColor _color;
-    
-public:
-    
-    VerticalColorBar(QWidget* parent);
-    
-public slots:
-    
-    void setColor(const QColor& color);
-    
-private:
-    
-    virtual QSize sizeHint() const OVERRIDE FINAL;
-    virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
-};
-#endif // NATRON_GUI_SETTINGSPANEL_H_
+#endif // Gui_DockablePanel_h

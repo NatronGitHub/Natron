@@ -1,0 +1,11 @@
+--- src/corelib/corelib.pro.orig	2012-09-17 15:22:14.000000000 -0400
++++ src/corelib/corelib.pro	2012-09-17 15:22:22.000000000 -0400
+@@ -25,7 +25,7 @@
+         LIBS_PRIVATE += -framework CoreServices -framework Security
+     }
+ } else:mac|darwin {
+-        LIBS_PRIVATE += -framework CoreFoundation -framework Security
++        LIBS_PRIVATE += -framework CoreFoundation -framework Security -framework Foundation
+ }
+ mac:lib_bundle:DEFINES += QT_NO_DEBUG_PLUGIN_CHECK
+ win32:DEFINES-=QT_NO_CAST_TO_ASCII

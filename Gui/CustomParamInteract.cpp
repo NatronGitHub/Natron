@@ -1,17 +1,38 @@
-//  Natron
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ *
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include "CustomParamInteract.h"
+
+#include <stdexcept>
+
 #include <QThread>
 #include <QCoreApplication>
 #include <QMouseEvent>
 #include <QByteArray>
 
 #include "Gui/KnobGui.h"
-#include "Gui/FromQtEnums.h"
+#include "Gui/QtEnumConvert.h"
 
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/Knob.h"
@@ -19,18 +40,18 @@
 #include "Engine/TimeLine.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 struct CustomParamInteractPrivate
 {
-    KnobGui* knob;
+    KnobGuiWPtr knob;
     OFX::Host::Param::Instance* ofxParam;
     boost::shared_ptr<OfxParamOverlayInteract> entryPoint;
     QSize preferredSize;
     double par;
     GLuint savedTexture;
     
-    CustomParamInteractPrivate(KnobGui* knob,
+    CustomParamInteractPrivate(const KnobGuiPtr& knob,
                                void* ofxParamHandle,
                                const boost::shared_ptr<OfxParamOverlayInteract> & entryPoint)
         : knob(knob)
@@ -52,7 +73,7 @@ struct CustomParamInteractPrivate
     }
 };
 
-CustomParamInteract::CustomParamInteract(KnobGui* knob,
+CustomParamInteract::CustomParamInteract(const KnobGuiPtr& knob,
                                          void* ofxParamHandle,
                                          const boost::shared_ptr<OfxParamOverlayInteract> & entryPoint,
                                          QWidget* parent)
@@ -94,8 +115,8 @@ CustomParamInteract::paintGL()
         /*A parameter's interact draw function will have full responsibility for drawing the interact, including clearing the background and swapping buffers.*/
         OfxPointD scale;
         scale.x = scale.y = 1.;
-        int time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
-        _imp->entryPoint->drawAction(time, scale);
+        double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+        _imp->entryPoint->drawAction(time, scale, /*view=*/0);
         glCheckError();
     } // GLProtectAttrib a(GL_TRANSFORM_BIT);
 }
@@ -136,7 +157,7 @@ CustomParamInteract::swapOpenGLBuffers()
 void
 CustomParamInteract::redraw()
 {
-    updateGL();
+    update();
 }
 
 void
@@ -172,11 +193,15 @@ CustomParamInteract::saveOpenGLContext()
 
     glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&_imp->savedTexture);
     //glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&_imp->activeTexture);
+    glCheckAttribStack();
     glPushAttrib(GL_ALL_ATTRIB_BITS);
+    glCheckClientAttribStack();
     glPushClientAttrib(GL_ALL_ATTRIB_BITS);
     glMatrixMode(GL_PROJECTION);
+    glCheckProjectionStack();
     glPushMatrix();
     glMatrixMode(GL_MODELVIEW);
+    glCheckModelviewStack();
     glPushMatrix();
 
     // set defaults to work around OFX plugin bugs
@@ -208,16 +233,16 @@ CustomParamInteract::mousePressEvent(QMouseEvent* e)
     OfxPointD scale;
 
     scale.x = scale.y = 1.;
-    int time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     OfxPointD pos;
     OfxPointI viewportPos;
     pos.x = e->x();
     pos.y = e->y();
     viewportPos.y = e->x();
     viewportPos.y = e->y();
-    OfxStatus stat = _imp->entryPoint->penDownAction(time, scale, pos, viewportPos, 1.);
+    OfxStatus stat = _imp->entryPoint->penDownAction(time, scale, /*view=*/0, pos, viewportPos, /*pressure=*/1.);
     if (stat == kOfxStatOK) {
-        updateGL();
+        update();
     }
 }
 
@@ -227,16 +252,16 @@ CustomParamInteract::mouseMoveEvent(QMouseEvent* e)
     OfxPointD scale;
 
     scale.x = scale.y = 1.;
-    int time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     OfxPointD pos;
     OfxPointI viewportPos;
     pos.x = e->x();
     pos.y = e->y();
     viewportPos.y = e->x();
     viewportPos.y = e->y();
-    OfxStatus stat = _imp->entryPoint->penMotionAction(time, scale, pos, viewportPos, 1.);
+    OfxStatus stat = _imp->entryPoint->penMotionAction(time, scale, /*view=*/0, pos, viewportPos, /*pressure=*/1.);
     if (stat == kOfxStatOK) {
-        updateGL();
+        update();
     }
 }
 
@@ -246,16 +271,16 @@ CustomParamInteract::mouseReleaseEvent(QMouseEvent* e)
     OfxPointD scale;
 
     scale.x = scale.y = 1.;
-    int time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     OfxPointD pos;
     OfxPointI viewportPos;
     pos.x = e->x();
     pos.y = e->y();
     viewportPos.y = e->x();
     viewportPos.y = e->y();
-    OfxStatus stat = _imp->entryPoint->penUpAction(time, scale, pos, viewportPos, 1.);
+    OfxStatus stat = _imp->entryPoint->penUpAction(time, scale, /*view=*/0, pos, viewportPos, /*pressure=*/1.);
     if (stat == kOfxStatOK) {
-        updateGL();
+        update();
     }
 }
 
@@ -265,10 +290,10 @@ CustomParamInteract::focusInEvent(QFocusEvent* /*e*/)
     OfxPointD scale;
 
     scale.x = scale.y = 1.;
-    int time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
-    OfxStatus stat = _imp->entryPoint->gainFocusAction(time, scale);
+    double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    OfxStatus stat = _imp->entryPoint->gainFocusAction(time, scale, /*view=*/0);
     if (stat == kOfxStatOK) {
-        updateGL();
+        update();
     }
 }
 
@@ -278,10 +303,10 @@ CustomParamInteract::focusOutEvent(QFocusEvent* /*e*/)
     OfxPointD scale;
 
     scale.x = scale.y = 1.;
-    int time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
-    OfxStatus stat = _imp->entryPoint->loseFocusAction(time, scale);
+    double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    OfxStatus stat = _imp->entryPoint->loseFocusAction(time, scale, /*view=*/0);
     if (stat == kOfxStatOK) {
-        updateGL();
+        update();
     }
 }
 
@@ -291,16 +316,16 @@ CustomParamInteract::keyPressEvent(QKeyEvent* e)
     OfxPointD scale;
 
     scale.x = scale.y = 1.;
-    int time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     QByteArray keyStr;
     OfxStatus stat;
     if ( e->isAutoRepeat() ) {
-        stat = _imp->entryPoint->keyRepeatAction( time, scale,(int)QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), keyStr.data() );
+        stat = _imp->entryPoint->keyRepeatAction( time, scale, /*view=*/0,(int)QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), keyStr.data() );
     } else {
-        stat = _imp->entryPoint->keyDownAction( time, scale, (int)QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), keyStr.data() );
+        stat = _imp->entryPoint->keyDownAction( time, scale, /*view=*/0, (int)QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), keyStr.data() );
     }
     if (stat == kOfxStatOK) {
-        updateGL();
+        update();
     }
 }
 
@@ -310,11 +335,12 @@ CustomParamInteract::keyReleaseEvent(QKeyEvent* e)
     OfxPointD scale;
 
     scale.x = scale.y = 1.;
-    int time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     QByteArray keyStr;
-    OfxStatus stat = _imp->entryPoint->keyUpAction( time, scale, (int)QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), keyStr.data() );
+    OfxStatus stat = _imp->entryPoint->keyUpAction( time, scale, /*view=*/0, (int)QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), keyStr.data() );
     if (stat == kOfxStatOK) {
-        updateGL();
+        update();
     }
 }
 
+NATRON_NAMESPACE_EXIT;

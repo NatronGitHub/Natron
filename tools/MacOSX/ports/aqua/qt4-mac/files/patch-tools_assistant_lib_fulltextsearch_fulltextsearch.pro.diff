@@ -1,0 +1,14 @@
+--- tools/assistant/lib/fulltextsearch/fulltextsearch.pro.orig	2012-04-23 14:49:04.000000000 -0400
++++ tools/assistant/lib/fulltextsearch/fulltextsearch.pro	2012-04-23 12:29:24.000000000 -0400
+@@ -6,9 +6,9 @@
+ mac:!static:contains(QT_CONFIG, qt_framework) { 
+    CONFIG(debug, debug|release) { 
+       !build_pass:CONFIG += build_all 
+-   } 
++   }
+ }
+-QT_CONFIG -= qt_framework 
++# QT_CONFIG -= qt_framework 
+ QT -= gui
+ TEMPLATE = lib
+ TARGET = QtCLucene

@@ -1,50 +1,54 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_GUI_VIEWERGL_H_
-#define NATRON_GUI_VIEWERGL_H_
+#ifndef NATRON_GUI_VIEWERGL_H
+#define NATRON_GUI_VIEWERGL_H
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
+#include "Global/Macros.h"
 
 #include <vector>
 #include <utility>
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #endif
-#include "Global/Macros.h"
+
+#include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include <QtOpenGL/QGLWidget>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Engine/Rect.h"
 #include "Engine/OpenGLViewerI.h"
-#include "Global/Macros.h"
+#include "Engine/ViewIdx.h"
+#include "Engine/EngineFwd.h"
 
-class QKeyEvent;
-class QEvent;
-class QMenu;
-class QGLShaderProgram;
+#include "Gui/GuiFwd.h"
 
-namespace Natron {
-class ChannelSet;
-class Image;
-}
-class InfoViewerWidget;
-class AppInstance;
-class ViewerInstance;
-class ViewerTab;
-class ImageInfo;
-struct TextureRect;
-class Format;
+
+NATRON_NAMESPACE_ENTER;
 
 /**
  *@class ViewerGL
@@ -54,7 +58,9 @@ class Format;
 class ViewerGL
     : public QGLWidget, public OpenGLViewerI
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -100,7 +106,7 @@ public:
     virtual bool isClippingImageToProjectWindow() const OVERRIDE FINAL;
 
 
-    OpenGLViewerI::BitDepthEnum getBitDepth() const OVERRIDE FINAL;
+    virtual ImageBitDepthEnum getBitDepth() const OVERRIDE FINAL;
 
     /**
      *@brief Hack to allow the resizeEvent to be publicly used elsewhere.
@@ -121,7 +127,7 @@ public:
     /**
      *@returns Returns the current zoom factor that is applied to the display.
      **/
-    double getZoomFactor() const;
+    double getZoomFactor() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /**
      * @brief Returns the rectangle of the image displayed by the viewer
@@ -141,6 +147,8 @@ public:
      **/
     virtual void fitImageToFormat() OVERRIDE FINAL;
 
+    void fitImageToFormat(bool useProjectFormat);
+    
     /**
      *@brief Turns on the overlays on the viewer.
      **/
@@ -162,13 +170,16 @@ public:
      * 4) glTexSubImage2D or glTexImage2D depending whether we resize the texture or not.
      **/
     virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
-                                            const boost::shared_ptr<Natron::Image>& image,
+                                            const std::list<boost::shared_ptr<Image> >& tiles,
+                                            ImageBitDepthEnum depth,
                                             int time,
                                             const RectD& rod,
                                             size_t bytesCount, const TextureRect & region,
-                                            double gain, double offset, int lut, int pboIndex,
-                                            unsigned int mipMapLevel,Natron::ImagePremultiplicationEnum premult,
-                                            int textureIndex) OVERRIDE FINAL;
+                                            double gain, double gamma, double offset, int lut, int pboIndex,
+                                            unsigned int mipMapLevel,ImagePremultiplicationEnum premult,
+                                            int textureIndex,
+                                            const RectI& roi,
+                                            bool updateOnlyRoi) OVERRIDE FINAL;
     
     virtual void clearLastRenderedImage() OVERRIDE FINAL;
     
@@ -188,9 +199,10 @@ public:
     void updatePersistentMessage();
     void updatePersistentMessageToWidth(int w);
     
+
     virtual void getViewerFrameRange(int* first,int* last) const OVERRIDE FINAL;
     
-public slots:
+public Q_SLOTS:
 
 
     /**
@@ -202,27 +214,20 @@ public slots:
     /**
      *@brief Convenience function. See ViewerGL::zoomSlot(int)
      **/
-    void zoomSlot(double v)
-    {
-        zoomSlot( (int)v );
-    }
+    void zoomSlot(double v);
 
-    /**
-     *@brief Convenience function. See ViewerGL::zoomSlot(int)
-     * It parses the Qstring and removes the '%' character
-     **/
-    void zoomSlot(QString);
 
     void setRegionOfDefinition(const RectD & rod, double par, int textureIndex);
 
     virtual void updateColorPicker(int textureIndex,int x = INT_MAX,int y = INT_MAX) OVERRIDE FINAL;
-
 
     void clearColorBuffer(double r = 0.,double g = 0.,double b = 0.,double a = 1.);
 
     void toggleOverlays();
     
     void toggleWipe();
+    
+    void centerWipe();
 
     void onProjectFormatChanged(const Format & format);
     
@@ -245,9 +250,8 @@ public:
     
 
     virtual void makeOpenGLcontextCurrent() OVERRIDE FINAL;
-    virtual void onViewerNodeNameChanged(const QString & name) OVERRIDE FINAL;
     virtual void removeGUI() OVERRIDE FINAL;
-    virtual int getCurrentView() const OVERRIDE FINAL;
+    virtual ViewIdx getCurrentView() const OVERRIDE FINAL;
     
     virtual boost::shared_ptr<TimeLine> getTimeline() const OVERRIDE FINAL;
 
@@ -259,8 +263,15 @@ public:
     void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const;
 
     void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio);
+    
+    /**
+     * @brief Returns whether the given rectangle is visible in the viewport, in zoom (OpenGL) coordinates.
+     **/
+    bool isVisibleInViewport(const RectD& rectangle) const;
 
     void setUserRoIEnabled(bool b);
+    
+    void setBuildNewUserRoI(bool b);
 
     virtual bool isUserRegionOfInterestEnabled() const OVERRIDE FINAL;
     virtual RectD getUserRegionOfInterest() const OVERRIDE FINAL;
@@ -273,9 +284,14 @@ public:
     virtual void swapOpenGLBuffers() OVERRIDE FINAL;
 
     /**
-     * @brief Repaint
+     * @brief update()
      **/
     virtual void redraw() OVERRIDE FINAL;
+    
+    /**
+     * @brief updateGL();
+     **/
+    virtual void redrawNow() OVERRIDE FINAL;
 
     /**
      * @brief Returns the width and height of the viewport in window coordinates.
@@ -299,6 +315,8 @@ public:
      * @brief can only be called on the main-thread
      **/
     void setGain(double d);
+    
+    void setGamma(double g);
 
     void setLut(int lut);
 
@@ -308,7 +326,8 @@ public:
 
     bool getZoomOrPannedSinceLastFit() const;
 
-    virtual Natron::ViewerCompositingOperatorEnum getCompositingOperator() const OVERRIDE FINAL;
+    virtual ViewerCompositingOperatorEnum getCompositingOperator() const OVERRIDE FINAL;
+    virtual void setCompositingOperator(ViewerCompositingOperatorEnum op) OVERRIDE FINAL;
 
     ///Not MT-Safe
     void getSelectionRectangle(double &left,double &right,double &bottom,double &top) const;
@@ -327,9 +346,9 @@ public:
      * @brief Called by the Histogram when it wants to refresh. It returns a pointer to the last
      * rendered image by the viewer. It doesn't re-render the image if it is not present.
      **/
-    boost::shared_ptr<Natron::Image> getLastRenderedImage(int textureIndex) const;
+    void getLastRenderedImage(int textureIndex, std::list<boost::shared_ptr<Image> >* ret) const;
     
-    boost::shared_ptr<Natron::Image> getLastRenderedImageByMipMapLevel(int textureIndex,unsigned int mipMapLevel) const;
+    void getLastRenderedImageByMipMapLevel(int textureIndex,unsigned int mipMapLevel, std::list<boost::shared_ptr<Image> >* ret) const;
 
     /**
      * @brief Get the color of the currently displayed image at position x,y.
@@ -354,7 +373,9 @@ public:
     
     virtual int getCurrentlyDisplayedTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-signals:
+    QPointF toZoomCoordinates(const QPointF& position) const;
+    
+Q_SIGNALS:
 
     /**
      *@brief Signal emitted when the current zoom factor changed.
@@ -383,18 +404,16 @@ private:
      *@brief The paint function. That's where all the drawing is done.
      **/
     virtual void paintGL() OVERRIDE FINAL;
-    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;    
     virtual void mouseDoubleClickEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
-    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
-    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
-
+    virtual void tabletEvent(QTabletEvent* e) OVERRIDE FINAL;
+    
     /**
      *@brief initiliazes OpenGL context related stuff. This is called once after widget creation.
      **/
@@ -406,6 +425,8 @@ private:
     virtual void resizeGL(int width,int height) OVERRIDE FINAL;
 
 private:
+    
+    bool penMotionInternal(int x, int y, double pressure, double timestamp, QInputEvent* event);
 
     /**
      * @brief Returns the OpenGL handle of the PBO at the given index.
@@ -424,11 +445,6 @@ private:
     void checkFrameBufferCompleteness(const char where[],bool silent = true);
 
     /**
-     *@brief Checks extensions and init glew on windows. Called by  initializeGL()
-     **/
-    void initAndCheckGlExtensions ();
-
-    /**
      *@brief Initialises shaders. If they were initialized ,returns instantly.
      **/
     void initShaderGLSL(); // init shaders
@@ -442,12 +458,6 @@ private:
     };
 
     /**
-     *@brief Fill the rendering VAO with vertices and texture coordinates
-     * that depends upon the currently displayed texture.
-     **/
-    void drawRenderingVAO(unsigned int mipMapLevel,int textureIndex,DrawPolygonModeEnum polygonMode);
-
-    /**
      *@brief Makes the viewer display black only.
      **/
     void clearViewer();
@@ -456,11 +466,6 @@ private:
      *@brief Returns !=0 if the extension given by its name is supported by this OpenGL version.
      **/
     int isExtensionSupported(const char* extension);
-
-    QString getOpenGLVersionString() const;
-
-    QString getGlewVersionString() const;
-
 
     /**
      *@brief Called inside paintGL(). It will draw all the overlays. 
@@ -509,8 +514,11 @@ private:
                          const QPointF & zoomPos,
                          double zoomScreenPixelWidth,
                          double zoomScreenPixelHeight);
-
+    
     void updateInfoWidgetColorPicker(const QPointF & imgPos,
+                                     const QPoint & widgetPos);
+
+    void updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
                                      const QPoint & widgetPos,
                                      int width,
                                      int height,
@@ -518,14 +526,22 @@ private:
                                      const RectD & dispW, // in canonical coordinates
                                      int texIndex);
     void updateRectangleColorPicker();
+    void updateRectangleColorPickerInternal();
+    
+    
     /**
      * @brief X and Y are in widget coords!
      **/
     bool pickColor(double x,double y);
+    bool pickColorInternal(double x, double y);
+    
+
+    static double currentTimeForEvent(QInputEvent* e);
 
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // GLVIEWER_H

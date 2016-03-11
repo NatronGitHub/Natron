@@ -1,40 +1,29 @@
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ *
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
-///////////////////////////////////////////////////////////////////////////
-//
-// Copyright (c) 2006, Industrial Light & Magic, a division of Lucas
-// Digital Ltd. LLC
-//
-// All rights reserved.
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-// *       Redistributions of source code must retain the above copyright
-// notice, this list of conditions and the following disclaimer.
-// *       Redistributions in binary form must reproduce the above
-// copyright notice, this list of conditions and the following disclaimer
-// in the documentation and/or other materials provided with the
-// distribution.
-// *       Neither the name of Industrial Light & Magic nor the names of
-// its contributors may be used to endorse or promote products derived
-// from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//
-///////////////////////////////////////////////////////////////////////////
+#ifndef NATRON_ENGINE_TIMER_H
+#define NATRON_ENGINE_TIMER_H
 
-#ifndef NATRON_ENGINE_TIMER_H_
-#define NATRON_ENGINE_TIMER_H_
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 //----------------------------------------------------------------------------
 //
@@ -42,14 +31,23 @@
 //
 //----------------------------------------------------------------------------
 
-#include <QObject>
-#ifdef _WIN32
-    #include <windows.h>
+#include "Global/Macros.h"
+
+#if defined(__NATRON_WIN32__) && !defined(__NATRON_MINGW__)
+#include <windows.h>
 #else
-    #include <sys/time.h>
+#include <sys/time.h>
 #endif
 
-#ifdef _WIN32
+
+#include <QtCore/QString>
+#include <QtCore/QObject>
+
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
+
+#if defined(__NATRON_WIN32__) && !defined(__NATRON_MINGW__)
 int gettimeofday (struct timeval *tv, void *tz);
 #endif
 
@@ -59,7 +57,6 @@ enum PlayStateEnum
     ePlayStatePause,
 };
 
-class QMutex;
 class Timer : public QObject
 {
     
@@ -97,6 +94,7 @@ public:
     void  setDesiredFrameRate (double fps);
     double getDesiredFrameRate() const;
 
+    double getActualFrameRate() const;
 
     //-------------------
     // Current play state
@@ -104,7 +102,9 @@ public:
 
     PlayStateEnum playState;
     
-signals:
+    static QString printAsTime(double timeInSeconds, bool clampToSecondsToInt);
+    
+Q_SIGNALS:
     
     void fpsChanged(double actualfps,double desiredfps);
 
@@ -119,7 +119,7 @@ private:
     int _framesSinceLastFpsFrame;       // actual frame rate, averaged
     double _actualFrameRate;         // over several frames
     
-    QMutex* _mutex; //< protects _spf which is the only member that can 
+    QMutex* _mutex; //< protects _spf and _actualFrameRate
 };
 
 
@@ -132,10 +132,13 @@ public:
     TimeLapse();
     
     /**
-     * @brief Returns the time elapsed in seconds since reportAndReset was last called. If reportAndReset has never been called
+     * @brief Returns the time elapsed in seconds since getTimeElapsedReset was last called. If getTimeElapsedReset has never been called
      * this will return the time since the object was instantiated.
      **/
     double getTimeElapsedReset();
+    
+    
+    void reset();
     
     /**
      * @brief Returns the time elapsed since this object was created.
@@ -151,11 +154,15 @@ public:
 class TimeLapseReporter
 {
     timeval prev;
+    std::string message;
+    
 public:
     
-    TimeLapseReporter();
+    TimeLapseReporter(const std::string& message);
     
     ~TimeLapseReporter();
 };
 
-#endif // ifndef NATRON_ENGINE_TIMER_H_
+NATRON_NAMESPACE_EXIT;
+
+#endif // ifndef NATRON_ENGINE_TIMER_H

@@ -1,31 +1,73 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
 #include "Log.h"
+
 #ifdef NATRON_LOG
 
-
-#include <cassert>
 #include <cstdio>
 #include <cstdarg>
+#include <memory>
 #include <cstdlib>
 #include <string>
+#include <cassert>
+#include <stdexcept>
 
-#include <QFile>
-#include <QTextStream>
-#include <QMutex>
+#include <QtCore/QFile>
+#include <QtCore/QTextStream>
+#include <QtCore/QMutex>
 
 #include "Global/GlobalDefines.h"
 
+NATRON_NAMESPACE_ENTER;
 
-namespace Natron {
+// see second answer of http://stackoverflow.com/questions/2342162/stdstring-formatting-like-sprintf
+static
+std::string
+string_format(const std::string fmt, ...)
+{
+    int size = ((int)fmt.size()) * 2 + 50;   // Use a rubric appropriate for your code
+    std::string str;
+    va_list ap;
+    while (1) {     // Maximum two passes on a POSIX system...
+        str.resize(size);
+        va_start(ap, fmt);
+        int n = vsnprintf((char *)str.data(), size, fmt.c_str(), ap);
+        va_end(ap);
+        if (n > -1 && n < size) {  // Everything worked
+            str.resize(n);
+            return str;
+        }
+        if (n > -1)  // Needed size returned
+            size = n + 1;   // For null char
+        else
+            size *= 2;      // Guess at a larger size (OS specific)
+    }
+    return str;
+}
+
+
 class LogPrivate
 {
 public:
@@ -45,9 +87,7 @@ public:
 
     ~LogPrivate()
     {
-        if (_stream) {
-            delete _stream;
-        }
+        delete _stream;
         if (_file) {
             _file->close();
             delete _file;
@@ -135,7 +175,7 @@ public:
 };
 
 Log::Log()
-    : Singleton<Natron::Log>(),_imp( new LogPrivate() )
+    : Singleton<Log>(),_imp( new LogPrivate() )
 {
 }
 
@@ -170,10 +210,8 @@ Log::print(const char *format,
     va_list args;
 
     va_start(args, format);
-    char buf[10000];
-    sprintf(buf, format, args);
+    std::string str = string_format(format, args);
     va_end(args);
-    std::string str(buf);
     Log::print(str);
 }
 
@@ -183,5 +221,7 @@ Log::endFunction(const std::string & callerName,
 {
     Log::instance()->_imp->endFunction(callerName,function);
 }
-} //namespace Natron
+
+NATRON_NAMESPACE_EXIT;
+
 #endif // ifdef NATRON_LOG

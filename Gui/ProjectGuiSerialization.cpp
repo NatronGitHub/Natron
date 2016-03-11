@@ -1,14 +1,30 @@
-//  Natron
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include "ProjectGuiSerialization.h"
+
+#include <stdexcept>
 
 #include "Global/Macros.h"
 
@@ -20,34 +36,54 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Engine/Project.h"
 #include "Engine/Node.h"
+#include "Engine/PyParameter.h"
+#include "Engine/Project.h"
 #include "Engine/ViewerInstance.h"
-#include "Gui/NodeGui.h"
-#include "Gui/Gui.h"
-#include "Gui/TabWidget.h"
-#include "Gui/ViewerTab.h"
-#include "Gui/ViewerGL.h"
-#include "Gui/ProjectGui.h"
-#include "Gui/GuiApplicationManager.h"
-#include "Gui/GuiAppInstance.h"
-#include "Gui/NodeGraph.h"
-#include "Gui/Histogram.h"
-#include "Gui/Splitter.h"
+
 #include "Gui/DockablePanel.h"
+#include "Gui/FloatingWidget.h"
+#include "Gui/Gui.h"
+#include "Gui/GuiAppInstance.h"
+#include "Gui/GuiApplicationManager.h"
+#include "Gui/Histogram.h"
+#include "Gui/NodeGraph.h"
+#include "Gui/NodeGui.h"
+#include "Gui/ProjectGui.h"
+#include "Gui/PythonPanels.h"
+#include "Gui/ScriptEditor.h"
+#include "Gui/Splitter.h"
+#include "Gui/TabWidget.h"
+#include "Gui/ViewerGL.h"
+#include "Gui/ViewerTab.h"
+
+NATRON_NAMESPACE_ENTER;
 
 void
 ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
 {
-    std::list<boost::shared_ptr<NodeGui> > activeNodes = projectGui->getVisibleNodes();
-
+    NodesList activeNodes;
+    projectGui->getInternalProject()->getActiveNodesExpandGroups(&activeNodes);
+    
     _serializedNodes.clear();
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-        if ((*it)->isVisible()) {
-            NodeGuiSerialization state;
-            (*it)->serialize(&state);
-            _serializedNodes.push_back(state);
-            ViewerInstance* viewer = dynamic_cast<ViewerInstance*>( (*it)->getNode()->getLiveInstance() );
+    for (NodesList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+        boost::shared_ptr<NodeGuiI> nodegui_i = (*it)->getNodeGui();
+        if (!nodegui_i) {
+            continue;
+        }
+        NodeGuiPtr nodegui = boost::dynamic_pointer_cast<NodeGui>(nodegui_i);
+        
+        if (nodegui->isVisible()) {
+            
+            boost::shared_ptr<NodeCollection> isInCollection = (*it)->getGroup();
+            NodeGroup* isCollectionAGroup = dynamic_cast<NodeGroup*>(isInCollection.get());
+            if (!isCollectionAGroup) {
+                ///Nodes within a group will be serialized recursively in the node group serialization
+                NodeGuiSerialization state;
+                nodegui->serialize(&state);
+                _serializedNodes.push_back(state);
+            }
+            ViewerInstance* viewer = (*it)->isEffectViewer();
             if (viewer) {
                 ViewerTab* tab = projectGui->getGui()->getViewerTabForInstance(viewer);
                 assert(tab);
@@ -59,6 +95,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
                 viewerData.isClippedToProject = tab->isClippedToProject();
                 viewerData.autoContrastEnabled = tab->isAutoContrastEnabled();
                 viewerData.gain = tab->getGain();
+                viewerData.gamma = tab->getGamma();
                 viewerData.colorSpace = tab->getColorSpace();
                 viewerData.channels = tab->getChannelsString();
                 viewerData.renderScaleActivated = tab->getRenderScaleActivated();
@@ -74,9 +111,12 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
                 viewerData.checkerboardEnabled = tab->isCheckerboardEnabled();
                 viewerData.fps = tab->getDesiredFps();
                 viewerData.fpsLocked = tab->isFPSLocked();
+                viewerData.isPauseEnabled[0] = tab->isViewerPaused(0);
+                viewerData.isPauseEnabled[1] = tab->isViewerPaused(1);
                 tab->getTimelineBounds(&viewerData.leftBound, &viewerData.rightBound);
+                tab->getActiveInputs(&viewerData.aChoice, &viewerData.bChoice);
                 viewerData.version = VIEWER_DATA_SERIALIZATION_VERSION;
-                _viewersData.insert( std::make_pair(viewer->getNode()->getName_mt_safe(),viewerData) );
+                _viewersData.insert( std::make_pair(viewer->getNode()->getScriptName_mt_safe(),viewerData) );
             }
         }
     }
@@ -90,34 +130,39 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
         _histograms.push_back( (*it)->objectName().toStdString() );
     }
 
-    std::list<NodeBackDrop*> backdrops = projectGui->getGui()->getNodeGraph()->getActiveBackDrops();
-    for (std::list<NodeBackDrop*>::iterator it = backdrops.begin(); it != backdrops.end(); ++it) {
-        NodeBackDropSerialization s;
-        s.initialize(*it);
-        _backdrops.push_back(s);
-    }
-
     ///save opened panels by order
-    QVBoxLayout* propLayout = projectGui->getGui()->getPropertiesLayout();
-    for (int i = 0; i < propLayout->count(); ++i) {
-        DockablePanel* isPanel = dynamic_cast<DockablePanel*>( propLayout->itemAt(i)->widget() );
-        if ( isPanel && isPanel->isVisible() ) {
-            KnobHolder* holder = isPanel->getHolder();
+    
+    std::list<DockablePanel*> panels = projectGui->getGui()->getVisiblePanels_mt_safe();
+    for (std::list<DockablePanel*>::iterator it = panels.begin(); it!=panels.end(); ++it) {
+        if ((*it)->isVisible() ) {
+            KnobHolder* holder = (*it)->getHolder();
             assert(holder);
-            NamedKnobHolder* namedHolder = dynamic_cast<NamedKnobHolder*>(holder);
-            if (namedHolder) {
-                _openedPanelsOrdered.push_back( namedHolder->getName_mt_safe() );
-            } else if ( holder->isProject() ) {
+            
+            EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
+            Project* isProject = dynamic_cast<Project*>(holder);
+
+            if (isProject) {
                 _openedPanelsOrdered.push_back(kNatronProjectSettingsPanelSerializationName);
-            }
+            } else if (isEffect) {
+                _openedPanelsOrdered.push_back(isEffect->getNode()->getFullyQualifiedName());
+            } 
         }
+    }
+    
+    _scriptEditorInput = projectGui->getGui()->getScriptEditor()->getAutoSavedScript().toStdString();
+    
+    std::map<PyPanel*,std::string> pythonPanels = projectGui->getGui()->getPythonPanels();
+    for ( std::map<PyPanel*,std::string>::iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
+        boost::shared_ptr<PythonPanelSerialization> s(new PythonPanelSerialization);
+        s->initialize(it->first, it->second);
+        _pythonPanels.push_back(s);
     }
 } // initialize
 
 void
 PaneLayout::initialize(TabWidget* tab)
 {
-    QStringList children = tab->getTabNames();
+    QStringList children = tab->getTabScriptNames();
 
     for (int i = 0; i < children.size(); ++i) {
         tabs.push_back( children[i].toStdString() );
@@ -131,14 +176,14 @@ void
 SplitterSerialization::initialize(Splitter* splitter)
 {
     sizes = splitter->serializeNatron().toStdString();
-    Natron::OrientationEnum nO;
+    OrientationEnum nO = eOrientationHorizontal;
     Qt::Orientation qO = splitter->orientation();
     switch (qO) {
     case Qt::Horizontal:
-        nO = Natron::eOrientationHorizontal;
+        nO = eOrientationHorizontal;
         break;
     case Qt::Vertical:
-        nO = Natron::eOrientationVertical;
+        nO = eOrientationVertical;
         break;
     default:
         assert(false);
@@ -175,43 +220,46 @@ ApplicationWindowSerialization::initialize(bool mainWindow,
     if (mainWindow) {
         Gui* gui = dynamic_cast<Gui*>(widget);
         assert(gui);
-        QWidget* centralWidget = gui->getCentralWidget();
-        Splitter* isSplitter = dynamic_cast<Splitter*>(centralWidget);
-        TabWidget* isTabWidget = dynamic_cast<TabWidget*>(centralWidget);
+        if (gui) {
+            QWidget* centralWidget = gui->getCentralWidget();
+            Splitter* isSplitter = dynamic_cast<Splitter*>(centralWidget);
+            TabWidget* isTabWidget = dynamic_cast<TabWidget*>(centralWidget);
 
-        assert(isSplitter || isTabWidget);
+            assert(isSplitter || isTabWidget);
 
-        if (isSplitter) {
-            child_asSplitter = new SplitterSerialization;
-            child_asSplitter->initialize(isSplitter);
-        } else {
-            child_asPane = new PaneLayout;
-            child_asPane->initialize(isTabWidget);
+            if (isSplitter) {
+                child_asSplitter = new SplitterSerialization;
+                child_asSplitter->initialize(isSplitter);
+            } else if (isTabWidget) {
+                child_asPane = new PaneLayout;
+                child_asPane->initialize(isTabWidget);
+            }
         }
     } else {
         FloatingWidget* isFloating = dynamic_cast<FloatingWidget*>(widget);
         assert(isFloating);
+        if (isFloating) {
+            QWidget* embedded = isFloating->getEmbeddedWidget();
+            Splitter* isSplitter = dynamic_cast<Splitter*>(embedded);
+            TabWidget* isTabWidget = dynamic_cast<TabWidget*>(embedded);
+            DockablePanel* isPanel = dynamic_cast<DockablePanel*>(embedded);
+            assert(isSplitter || isTabWidget || isPanel);
 
-        QWidget* embedded = isFloating->getEmbeddedWidget();
-        Splitter* isSplitter = dynamic_cast<Splitter*>(embedded);
-        TabWidget* isTabWidget = dynamic_cast<TabWidget*>(embedded);
-        DockablePanel* isPanel = dynamic_cast<DockablePanel*>(embedded);
-        assert(isSplitter || isTabWidget || isPanel);
-
-        if (isSplitter) {
-            child_asSplitter = new SplitterSerialization;
-            child_asSplitter->initialize(isSplitter);
-        } else if (isTabWidget) {
-            child_asPane = new PaneLayout;
-            child_asPane->initialize(isTabWidget);
-        } else {
-            ///A named knob holder is a knob holder which has a unique name.
-            NamedKnobHolder* isNamedHolder = dynamic_cast<NamedKnobHolder*>( isPanel->getHolder() );
-            if (isNamedHolder) {
-                child_asDockablePanel = isNamedHolder->getName_mt_safe();
-            } else {
-                ///This must be the project settings panel
-                child_asDockablePanel = kNatronProjectSettingsPanelSerializationName;
+            if (isSplitter) {
+                child_asSplitter = new SplitterSerialization;
+                child_asSplitter->initialize(isSplitter);
+            } else if (isTabWidget) {
+                child_asPane = new PaneLayout;
+                child_asPane->initialize(isTabWidget);
+            } else if (isPanel) {
+                ///A named knob holder is a knob holder which has a unique name.
+                NamedKnobHolder* isNamedHolder = dynamic_cast<NamedKnobHolder*>( isPanel->getHolder() );
+                if (isNamedHolder) {
+                    child_asDockablePanel = isNamedHolder->getScriptName_mt_safe();
+                } else {
+                    ///This must be the project settings panel
+                    child_asDockablePanel = kNatronProjectSettingsPanelSerializationName;
+                }
             }
         }
     }
@@ -233,3 +281,29 @@ GuiLayoutSerialization::initialize(Gui* gui)
     }
 }
 
+
+void
+PythonPanelSerialization::initialize(PyPanel* tab,const std::string& func)
+{
+    name = tab->getLabel();
+    pythonFunction = func;
+    std::list<Param*> parameters = tab->getParams();
+    for (std::list<Param*>::iterator it = parameters.begin(); it != parameters.end(); ++it) {
+        
+        KnobPtr knob = (*it)->getInternalKnob();
+        KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knob.get() );
+        KnobPage* isPage = dynamic_cast<KnobPage*>( knob.get() );
+        KnobButton* isButton = dynamic_cast<KnobButton*>( knob.get() );
+        //KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
+        
+        if (!isGroup && !isPage && !isButton) {
+            boost::shared_ptr<KnobSerialization> k(new KnobSerialization(knob));
+            knobs.push_back(k);
+        }
+        delete *it;
+    }
+    
+    userData = tab->save_serialization_thread();
+}
+
+NATRON_NAMESPACE_EXIT;

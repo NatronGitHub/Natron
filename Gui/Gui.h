@@ -1,24 +1,37 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_GUI_GUI_H_
-#define NATRON_GUI_GUI_H_
+#ifndef Gui_Gui_h
+#define Gui_Gui_h
 
-#ifndef Q_MOC_RUN
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
+#include "Global/Macros.h"
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
-
-#include "Global/Macros.h"
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -27,64 +40,43 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
+
+#include "Engine/ScriptObject.h"
+#include "Engine/ViewIdx.h"
+#include "Engine/EngineFwd.h"
+
 #include "Gui/SerializableWindow.h"
+#ifdef __NATRON_WIN32__
+#include "Gui/FileTypeMainWindow_win.h"
+#endif
+#include "Gui/RegisteredTabs.h"
+#include "Gui/GuiFwd.h"
+
 
 #define kMainSplitterObjectName "ToolbarSplitter"
 
-//boost
-namespace boost {
-namespace archive {
-class xml_iarchive;
-class xml_oarchive;
-}
-}
-
-//QtGui
-class Splitter;
-class QUndoStack;
-class QScrollArea;
-class NodeBackDrop;
-class QToolButton;
-class QVBoxLayout;
-class QMutex;
-
-//Natron gui
-class GuiLayoutSerialization;
-class GuiAppInstance;
-class NodeGui;
-class TabWidget;
-class ToolButton;
-class ViewerTab;
-class DockablePanel;
-class NodeGraph;
-class CurveEditor;
-class Histogram;
-class NodeBackDropSerialization;
-class RotoGui;
-class FloatingWidget;
-class BoundAction;
-
-//Natron engine
-class ViewerInstance;
-class PluginGroupNode;
-class Color_Knob;
-class ProcessHandler;
-class KnobHolder;
-namespace Natron {
-class Node;
-class Image;
-class EffectInstance;
-class OutputEffectInstance;
-}
-
+NATRON_NAMESPACE_ENTER;
 
 struct GuiPrivate;
+
 class Gui
-    : public QMainWindow, public SerializableWindow, public boost::noncopyable
+#ifndef __NATRON_WIN32__
+    : public QMainWindow
+#else
+    : public DocumentWindow
+#endif
+    , public SerializableWindow
+    , public boost::noncopyable
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 
 public:
+    
+    friend class PanelWidget;
+    
     explicit Gui(GuiAppInstance* app,
                  QWidget* parent = 0);
 
@@ -95,24 +87,32 @@ public:
      **/
     void createGui();
 
-    boost::shared_ptr<NodeGui> createNodeGUI(boost::shared_ptr<Natron::Node> node,
-                                             bool requestedByLoad,
-                                             double xPosHint,
-                                             double yPosHint,
-                                             bool pushUndoRedoCommand,
-                                             bool autoConnect);
+    NodeGuiPtr createNodeGUI(NodePtr node,
+                                             const CreateNodeArgs& args);
 
-    void addNodeGuiToCurveEditor(boost::shared_ptr<NodeGui> node);
+    void addNodeGuiToCurveEditor(const NodeGuiPtr &node);
+    
+    void removeNodeGuiFromCurveEditor(const NodeGuiPtr& node);
 
-    const std::list<boost::shared_ptr<NodeGui> > & getSelectedNodes() const;
+    void addNodeGuiToDopeSheetEditor(const NodeGuiPtr &node);
+    void removeNodeGuiFromDopeSheetEditor(const NodeGuiPtr& node);
 
-    void setLastSelectedViewer(ViewerTab* tab);
+    const NodesGuiList & getSelectedNodes() const;
 
-    ViewerTab* getLastSelectedViewer() const;
+    void createViewerGui(NodePtr viewer);
 
-    bool eventFilter(QObject *target, QEvent* e);
+    void createGroupGui(const NodePtr& group, CreateNodeReason reason);
 
-    void createViewerGui(boost::shared_ptr<Natron::Node> viewer);
+    void addGroupGui(NodeGraph* tab,TabWidget* where);
+
+    void removeGroupGui(NodeGraph* tab,bool deleteData);
+
+
+    void setLastSelectedGraph(NodeGraph* graph);
+
+    NodeGraph* getLastSelectedGraph() const;
+
+    boost::shared_ptr<NodeCollection> getLastSelectedNodeCollection() const;
 
     /**
      * @brief Calling this will force the next viewer to be created in the given pane.
@@ -138,6 +138,7 @@ public:
        to destroy the tab/node or just hide them.*/
     void removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData);
 
+
     Histogram* addNewHistogram();
 
     void removeHistogram(Histogram* h);
@@ -153,6 +154,9 @@ public:
 
     ToolButton* findExistingToolButton(const QString & name) const;
     ToolButton* findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode>& plugin);
+    
+    void sortAllPluginsToolButtons();
+    
     const std::vector<ToolButton*> & getToolButtons() const;
 
     void registerNewUndoStack(QUndoStack* stack);
@@ -163,54 +167,54 @@ public:
      * @brief An error dialog with title and text customizable
      **/
     void errorDialog(const std::string & title,const std::string & text,bool useHtml);
-    
+
     void errorDialog(const std::string & title,
                      const std::string & text,
                      bool* stopAsking,
                      bool useHtml);
-    
-    
+
+
 
     void warningDialog(const std::string & title,const std::string & text,bool useHtml);
-    
+
     void warningDialog(const std::string & title,
                        const std::string & text,
                        bool* stopAsking,
                        bool useHtml);
 
     void informationDialog(const std::string & title,const std::string & text,bool useHtml);
-    
+
     void informationDialog(const std::string & title,
                            const std::string & message,
                            bool* stopAsking,
                            bool useHtml);
 
-    Natron::StandardButtonEnum questionDialog(const std::string & title,
+    StandardButtonEnum questionDialog(const std::string & title,
                                               const std::string & message,
                                               bool useHtml,
-                                              Natron::StandardButtons buttons = Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
-                                              Natron::StandardButtonEnum defaultButton = Natron::eStandardButtonNoButton);
-    
-    Natron::StandardButtonEnum questionDialog(const std::string & title,
+                                              StandardButtons buttons = StandardButtons(eStandardButtonYes | eStandardButtonNo),
+                                              StandardButtonEnum defaultButton = eStandardButtonNoButton);
+
+    StandardButtonEnum questionDialog(const std::string & title,
                                               const std::string & message,
                                               bool useHtml,
-                                              Natron::StandardButtons buttons,
-                                              Natron::StandardButtonEnum defaultButton,
+                                              StandardButtons buttons,
+                                              StandardButtonEnum defaultButton,
                                               bool* stopAsking);
-    
-    
-    
-    
+
+
+
+
     /**
      * @brief Selects the given node on the node graph, wiping any previous selection.
      **/
-    void selectNode(boost::shared_ptr<NodeGui> node);
+    void selectNode(NodeGuiPtr node);
 
     GuiAppInstance* getApp() const;
 
     void updateViewsActions(int viewsCount);
 
-    static QKeySequence keySequenceForView(int v);
+    static QKeySequence keySequenceForView(ViewIdx v);
 
     /*set the curve editor as the active widget of its pane*/
     void setCurveEditorOnTop();
@@ -238,8 +242,8 @@ public:
     void registerPane(TabWidget* pane);
     void unregisterPane(TabWidget* pane);
 
-    void registerTab(QWidget* tab);
-    void unregisterTab(QWidget* tab);
+    void registerTab(PanelWidget* tab,ScriptObject* obj);
+    void unregisterTab(PanelWidget* tab);
 
     void registerFloatingWindow(FloatingWidget* window);
     void unregisterFloatingWindow(FloatingWidget* window);
@@ -248,19 +252,25 @@ public:
     void registerSplitter(Splitter* s);
     void unregisterSplitter(Splitter* s);
 
+    void registerPyPanel(PyPanel* panel,const std::string& pythonFunction);
+    void unregisterPyPanel(PyPanel* panel);
+
+    std::map<PyPanel*,std::string> getPythonPanels() const;
+
+
     /**
      * @brief MT-Safe
      **/
     std::list<FloatingWidget*> getFloatingWindows() const;
-    
+
 
 
     /*Returns a valid tab if a tab with a matching name has been
        found. Otherwise returns NULL.*/
-    QWidget* findExistingTab(const std::string & name) const;
+    PanelWidget* findExistingTab(const std::string & name) const;
+    void findExistingTab(const std::string & name, PanelWidget** w,ScriptObject** o) const;
 
-
-    void appendTabToDefaultViewerPane(QWidget* tab);
+    void appendTabToDefaultViewerPane(PanelWidget* tab,ScriptObject* obj);
 
     /**
      * @brief Get the central of the application, it is either 1 TabWidget or a Splitter.
@@ -279,9 +289,9 @@ public:
     std::string openImageSequenceDialog();
     std::string saveImageSequenceDialog();
     
-    void setUserScrubbingTimeline(bool b);
+    void setDraftRenderEnabled(bool b);
 
-    bool isUserScrubbingTimeline() const;
+    bool isDraftRenderEnabled() const;
 
     /*Refresh all previews if the project's preview mode is auto*/
     void refreshAllPreviews();
@@ -289,9 +299,9 @@ public:
     /*force a refresh on all previews no matter what*/
     void forceRefreshAllPreviews();
 
-    void startDragPanel(QWidget* panel);
+    void startDragPanel(PanelWidget* panel);
 
-    QWidget* stopDragPanel();
+    PanelWidget* stopDragPanel(QSize* initialSize);
 
     bool isDraggingPanel() const;
 
@@ -303,48 +313,64 @@ public:
 
     void saveProjectGui(boost::archive::xml_oarchive & archive);
 
-    void setColorPickersColor(const QColor & c);
+    void setColorPickersColor(double r,double g, double b,double a);
 
-    void registerNewColorPicker(boost::shared_ptr<Color_Knob> knob);
+    void registerNewColorPicker(boost::shared_ptr<KnobColor> knob);
 
-    void removeColorPicker(boost::shared_ptr<Color_Knob> knob);
+    void removeColorPicker(boost::shared_ptr<KnobColor> knob);
+    
+    void clearColorPickers();
 
     bool hasPickers() const;
 
     void initProjectGuiKnobs();
 
-    void updateViewersViewsMenu(int viewsCount);
+    void updateViewersViewsMenu(const std::vector<std::string>& viewNames);
 
-    void setViewersCurrentView(int view);
+    void setViewersCurrentView(ViewIdx view);
 
     const std::list<ViewerTab*> & getViewersList() const;
     std::list<ViewerTab*> getViewersList_mt_safe() const;
+    
+    void setMasterSyncViewer(ViewerTab* master);
+    ViewerTab* getMasterSyncViewer() const;
 
     void activateViewerTab(ViewerInstance* viewer);
 
     void deactivateViewerTab(ViewerInstance* viewer);
 
     ViewerTab* getViewerTabForInstance(ViewerInstance* node) const;
-    const std::list<boost::shared_ptr<NodeGui> > & getVisibleNodes() const;
-    std::list<boost::shared_ptr<NodeGui> > getVisibleNodes_mt_safe() const;
+    const NodesGuiList & getVisibleNodes() const;
+    NodesGuiList getVisibleNodes_mt_safe() const;
 
     void deselectAllNodes() const;
-
-    void onProcessHandlerStarted(const QString & sequenceName,int firstFrame,int lastFrame,
-                                 const boost::shared_ptr<ProcessHandler> & process);
-
-    void onWriterRenderStarted(const QString & sequenceName,int firstFrame,int lastFrame,
-                               Natron::OutputEffectInstance* writer);
-
+    
+    void onRenderStarted(const QString & sequenceName,
+                         int firstFrame,int lastFrame,int frameStep,
+                         bool canPause,
+                         OutputEffectInstance* writer,
+                         const boost::shared_ptr<ProcessHandler> & process);
+    
+    void onRenderRestarted(OutputEffectInstance* writer,
+                         const boost::shared_ptr<ProcessHandler> & process);
+    
     NodeGraph* getNodeGraph() const;
     CurveEditor* getCurveEditor() const;
+    DopeSheetEditor *getDopeSheetEditor() const;
+    ScriptEditor* getScriptEditor() const;
+    ProgressPanel* getProgressPanel() const;
+    
     QVBoxLayout* getPropertiesLayout() const;
-    QWidget* getPropertiesBin() const;
-    const std::map<std::string,QWidget*> & getRegisteredTabs() const;
+    PropertiesBinWrapper* getPropertiesBin() const;
+    const RegisteredTabs & getRegisteredTabs() const;
 
     void updateLastSequenceOpenedPath(const QString & path);
 
     void updateLastSequenceSavedPath(const QString & path);
+
+    void updateLastSavedProjectPath(const QString& project);
+
+    void updateLastOpenedProjectPath(const QString& project);
 
     void setUndoRedoStackLimit(int limit);
 
@@ -361,7 +387,7 @@ public:
     QString getQtVersion() const;
 
     QString getCairoVersion() const;
-    
+
     /**
      * @brief Make a new rotoscoping/painting interface for the given node.
      * This will create new widgets and enrich the interface of the viewer tab.
@@ -388,20 +414,24 @@ public:
 
     void removeTrackerInterface(NodeGui* n,bool pluginsly);
 
-    void startProgress(KnobHolder* effect,const std::string & message, bool canCancel = true);
+    void progressStart(const NodePtr& node, const std::string &message, const std::string &messageid, bool canCancel = true);
 
-    void endProgress(KnobHolder* effect);
+    void progressEnd(const NodePtr& node);
 
-    bool progressUpdate(KnobHolder* effect,double t);
+    bool progressUpdate(const NodePtr& node,double t);
+    
+    void ensureProgressPanelVisible();
 
     /*Useful function that saves on disk the image in png format.
        The name of the image will be the hash key of the image.*/
-    static void debugImage( const Natron::Image* image,const QString & filename = QString() );
+    static void debugImage( const Image* image, const RectI& roi, const QString & filename = QString() );
 
     void addVisibleDockablePanel(DockablePanel* panel);
     void removeVisibleDockablePanel(DockablePanel* panel);
 
-    NodeBackDrop* createBackDrop(bool requestedByLoad,const NodeBackDropSerialization & serialization);
+    const std::list<DockablePanel*>& getVisiblePanels() const;
+    std::list<DockablePanel*> getVisiblePanels_mt_safe() const;
+
     std::list<ToolButton*> getToolButtonsOrdered() const;
 
     void setToolButtonMenuOpened(QToolButton* button);
@@ -412,82 +442,179 @@ public:
     void disconnectViewersFromViewerCache();
 
     ///Close the application instance, asking questions to the user
-    bool closeInstance();
+    bool closeInstance(bool warnUserIfSaveNeeded);
 
     void checkNumberOfNonFloatingPanes();
 
-    void openProject(const std::string& filename);
-    
+    AppInstance* openProject(const std::string& filename) WARN_UNUSED_RETURN;
+
     bool isGUIFrozen() const;
-    
+
     /**
      * @brief If returns true then you must add shorcuts to the shortcut editor using the addShortcut function
      **/
     bool hasShortcutEditorAlreadyBeenBuilt() const;
-    
+
     void addShortcut(BoundAction* action);
-    
+
     const QString& getLastLoadProjectDirectory() const;
-    
+
     const QString& getLastSaveProjectDirectory() const;
-    
-    
+
+    const QString& getLastPluginDirectory() const;
+
+    void updateLastPluginDirectory(const QString& str);
+
+
     /**
      * @brief Returns in nodes all the nodes that can draw an overlay in their order of appearance in the properties bin.
      **/
-    void getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> >& nodes) const;
-    
-    bool isLeftToolBarDisplayedOnMouseHoverOnly() const;
-    
-    void setLeftToolBarDisplayedOnMouseHoverOnly(bool b);
-    
-    void refreshLeftToolBarVisibility(const QPoint& globalPos);
-    
-    void setLeftToolBarVisible(bool visible);
-    
-    void redrawAllViewers();
-    
-    void renderAllViewers();
-    
-    void toggleAutoHideGraphInputs();
-    
-signals:
+    void getNodesEntitledForOverlays(NodesList& nodes) const;
 
-    void doDialog(int type,const QString & title,const QString & content,bool useHtml,Natron::StandardButtons buttons,int defaultB);
+    bool isLeftToolBarDisplayedOnMouseHoverOnly() const;
+
+    void setLeftToolBarDisplayedOnMouseHoverOnly(bool b);
+
+    void refreshLeftToolBarVisibility(const QPoint& globalPos);
+
+    void setLeftToolBarVisible(bool visible);
+
+    void redrawAllViewers();
+
+    void renderAllViewers(bool canAbort);
     
-    void doDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,bool useHtml,Natron::StandardButtons buttons,int defaultB);
+    void abortAllViewers();
+
+    void toggleAutoHideGraphInputs();
+
+    void centerAllNodeGraphsWithTimer();
+
+    void setLastEnteredTabWidget(TabWidget* tab);
+
+    TabWidget* getLastEnteredTabWidget() const;
+
+    void appendToScriptEditor(const std::string& str);
+
+    void printAutoDeclaredVariable(const std::string& str);
+
+    void exportGroupAsPythonScript(NodeCollection* collection);
+
+    void addMenuEntry(const QString& menuGrouping,const std::string& pythonFunction, Qt::Key key,const Qt::KeyboardModifiers& modifiers);
+
+    void setTripleSyncEnabled(bool enabled);
+    bool isTripleSyncEnabled() const;
+    
+    void setDopeSheetTreeWidth(int width);
+    void setCurveEditorTreeWidth(int width);
+    
+
+    void centerOpenedViewersOn(SequenceTime left, SequenceTime right);
+
+    bool isAboutToClose() const;
+    
+    void setRenderStatsEnabled(bool enabled);
+    bool areRenderStatsEnabled() const;
+    
+    RenderStatsDialog* getRenderStatsDialog() const;
+    RenderStatsDialog* getOrCreateRenderStatsDialog();
+    
+#ifdef __NATRON_WIN32__
+    /**
+     * @param filePath file that was selected in the explorer
+     */
+    virtual void ddeOpenFile(const QString& filePath) OVERRIDE FINAL;
+#endif
+    
+    /**
+     * @brief Returns true on OS X if on a High DPI (Retina) Display.
+     **/
+#ifndef Q_OS_MAC
+    bool isHighDPI() const { return false; }
+#else
+    bool isHighDPI() const { return QtMac::isHighDPIInternal(this); }
+#endif
+    
+    AppInstance* createNewProject();
+    
+    /**
+     * @brief Close project right away, without any user interaction.
+     * @param quitApp If true, the application will exit, otherwise the main window will stay active.
+     **/
+    bool abortProject(bool quitApp, bool warnUserIfSaveNeeded);
+    
+    void setGuiAboutToClose(bool about);
+    
+    void notifyGuiClosing();
+    
+    /*
+     * @brief To be called by "main widgets" such as NodeGraph, Viewer etc... to determine if focus stealing is possible to have
+     * mouse position dependent shortcuts without the user actually clicking.
+     */
+    static bool isFocusStealingPossible();
+    
+    PanelWidget* getCurrentPanelFocus() const;
+    
+    void setLastKeyPressVisitedClickFocus(bool visited);
+    void setLastKeyUpVisitedClickFocus(bool visited);
+    
+    void setApplicationConsoleActionVisible(bool visible);
+
+protected:
+    // Reimplemented Protected Functions
+
+    //bool event(QEvent* event) OVERRIDE;
+    
+    bool eventFilter(QObject *target, QEvent* e) OVERRIDE;
+
+Q_SIGNALS:
+
+
+    void doDialog(int type,const QString & title,const QString & content,bool useHtml,StandardButtons buttons,int defaultB);
+
+    void doDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,bool useHtml,StandardButtons buttons,int defaultB);
 
     ///emitted when a viewer changes its name or is deleted/added
     void viewersChanged();
 
-public slots:
+    void s_doProgressStartOnMainThread(KnobHolder* effect, const QString &message, const QString &messageid, bool canCancel);
+    
+    void s_doProgressEndOnMainThread(KnobHolder* effect);
+    
+    void s_doProgressUpdateOnMainThread(KnobHolder* effect,double t);
+
+    
+public Q_SLOTS:
+    
+        
+    ///Called whenever the time changes on the timeline
+    void renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,int reason);
+    
+    void onTimelineTimeAboutToChange();
 
     void reloadStylesheet();
-    
+
     ///Close the project instance, asking questions to the user and leaving the main window intact
     void closeProject();
+    
+    //Same as close + open same project to discard unsaved changes
+    void reloadProject();
     void toggleFullScreen();
-    void closeEvent(QCloseEvent* e);
+    void closeEvent(QCloseEvent* e) OVERRIDE;
     void newProject();
     void openProject();
     bool saveProject();
     bool saveProjectAs();
+    void exportProjectAsGroup();
     void saveAndIncrVersion();
-    
+
     void autoSave();
 
     void createNewViewer();
 
-    void connectInput1();
-    void connectInput2();
-    void connectInput3();
-    void connectInput4();
-    void connectInput5();
-    void connectInput6();
-    void connectInput7();
-    void connectInput8();
-    void connectInput9();
-    void connectInput10();
+    void connectInput();
+    
+    void connectInput(int inputNb);
+
 
     void showView0();
     void showView1();
@@ -500,9 +627,9 @@ public slots:
     void showView8();
     void showView9();
 
-    void onDoDialog(int type,const QString & title,const QString & content,bool useHtml,Natron::StandardButtons buttons,int defaultB);
+    void onDoDialog(int type,const QString & title,const QString & content,bool useHtml,StandardButtons buttons,int defaultB);
 
-    void onDoDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,bool useHtml,Natron::StandardButtons buttons,int defaultB);
+    void onDoDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,bool useHtml,StandardButtons buttons,int defaultB);
     /*Returns a code from the save dialog:
      * -1  = unrecognized code
      * 0 = Save
@@ -514,7 +641,7 @@ public slots:
     void setVisibleProjectSettingsPanel();
 
     void putSettingsPanelFirst(DockablePanel* panel);
-    
+
     void buildTabFocusOrderPropertiesBin();
 
     void addToolButttonsToToolBar();
@@ -527,29 +654,31 @@ public slots:
 
     void showShortcutEditor();
 
-    void showOfxLog();
-    
+    void showErrorLog();
+
     void openRecentFile();
 
-    void onProjectNameChanged(const QString & name);
+    void onProjectNameChanged(const QString & filePath, bool modified);
 
     void onNodeNameChanged(const QString & name);
 
     void onViewerImageChanged(int texIndex,bool hasImageBackend);
 
-    boost::shared_ptr<Natron::Node> createReader();
-    boost::shared_ptr<Natron::Node> createWriter();
-
+    NodePtr createReader();
+    NodePtr createWriter();
+    
     void renderAllWriters();
 
     void renderSelectedNode();
+    
+    void onEnableRenderStatsActionTriggered();
 
     void onRotoSelectedToolChanged(int tool);
 
     void onMaxVisibleDockablePanelChanged(int maxPanels);
 
     void clearAllVisiblePanels();
-    
+
     void minimizeMaximizeAllPanels(bool clicked);
 
     void onMaxPanelsSpinBoxValueChanged(double val);
@@ -561,18 +690,34 @@ public slots:
     void restoreDefaultLayout();
 
     void onFreezeUIButtonClicked(bool clicked);
-
-	void onPropertiesScrolled();
     
+    void refreshAllTimeEvaluationParams();
+
+    void onPropertiesScrolled();
+
+    void onNextTabTriggered();
+
+    void onPrevTabTriggered();
+    
+    void onCloseTabTriggered();
+
+    void onUserCommandTriggered();
+        
+    void onFocusChanged(QWidget* old, QWidget*);
+    
+    void onShowApplicationConsoleActionTriggered();
+
+    void openHelpWebsite();
+    void openHelpForum();
+    void openHelpIssues();
+    void openHelpPython();
+    void openHelpWiki();
+
 private:
 
-    /**
-     * @brief Close project right away, without any user interaction.
-     * @param quitApp If true, the application will exit, otherwise the main window will stay active.
-     **/
-    void abortProject(bool quitApp);
-
-    void openProjectInternal(const std::string & absoluteFileName);
+    void setCurrentPanelFocus(PanelWidget* widget);
+    
+    AppInstance* openProjectInternal(const std::string & absoluteFileName, bool attemptToLoadAutosave) WARN_UNUSED_RETURN;
 
     void setupUi();
 
@@ -583,50 +728,14 @@ private:
     void createMenuActions();
 
     virtual void moveEvent(QMoveEvent* e) OVERRIDE FINAL;
+    //virtual bool event(QEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
     
     boost::scoped_ptr<GuiPrivate> _imp;
 };
 
+NATRON_NAMESPACE_EXIT;
 
-/*This class represents a floating pane that embeds a widget*/
-class FloatingWidget
-    : public QWidget, public SerializableWindow
-{
-    Q_OBJECT
-
-public:
-
-    explicit FloatingWidget(Gui* gui,
-                            QWidget* parent = 0);
-
-    virtual ~FloatingWidget();
-
-    /*Set the embedded widget. Only 1 widget can be embedded
-       by FloatingWidget. Once set, this function does nothing
-       for subsequent calls..*/
-    void setWidget(QWidget* w);
-
-    void removeEmbeddedWidget();
-
-    QWidget* getEmbeddedWidget() const
-    {
-        return _embeddedWidget;
-    }
-
-signals:
-
-    void closed();
-
-private:
-
-    virtual void moveEvent(QMoveEvent* e) OVERRIDE FINAL;
-    virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
-    virtual void closeEvent(QCloseEvent* e) OVERRIDE;
-    QWidget* _embeddedWidget;
-    QVBoxLayout* _layout;
-    Gui* _gui;
-};
-
-#endif // NATRON_GUI_GUI_H_
+#endif // Gui_Gui_h

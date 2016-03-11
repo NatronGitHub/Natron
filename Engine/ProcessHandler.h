@@ -1,15 +1,29 @@
-//  Natron
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
 #ifndef PROCESSHANDLER_H
 #define PROCESSHANDLER_H
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
@@ -17,20 +31,15 @@ CLANG_DIAG_OFF(deprecated)
 #include <QThread>
 #include <QStringList>
 #include <QString>
+#include <QtCore/QMutex>
+#include <QtCore/QWaitCondition>
 CLANG_DIAG_ON(deprecated)
+
 #include "Global/GlobalDefines.h"
 
-//natron
-class AppInstance;
-namespace Natron {
-class OutputEffectInstance;
-}
+#include "Engine/EngineFwd.h"
 
-//qt
-class QLocalServer;
-class QLocalSocket;
-class QMutex;
-class QWaitCondition;
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief This class represents a background render process. It starts a render and reports progress via a
@@ -74,9 +83,8 @@ class ProcessHandler
 {
     Q_OBJECT
 
-    AppInstance* _app; //< pointer to the app executing this process
     QProcess* _process; //< the process executing the render
-    Natron::OutputEffectInstance* _writer; //< pointer to the writer that will render in the bg process
+    OutputEffectInstance* _writer; //< pointer to the writer that will render in the bg process
     QLocalServer* _ipcServer; //< the server for IPC with the background process
     QLocalSocket* _bgProcessOutputSocket; //< the socket where data is output by the process
 
@@ -94,15 +102,19 @@ public:
      * @brief Starts a new process which will load the project specified by "projectPath".
      * The process will render using the effect specified by writer.
      **/
-    ProcessHandler(AppInstance* app,
-                   const QString & projectPath,
-                   Natron::OutputEffectInstance* writer);
+    ProcessHandler(const QString & projectPath,
+                   OutputEffectInstance* writer);
 
     virtual ~ProcessHandler();
 
     const QString & getProcessLog() const;
 
-public slots:
+    OutputEffectInstance* getWriter() const
+    {
+        return _writer;
+    }
+    
+public Q_SLOTS:
 
     /**
      * @brief Called whenever the background process requests a new connection to this server,
@@ -153,13 +165,11 @@ public slots:
      **/
     void startProcess();
 
-signals:
+Q_SIGNALS:
 
     void deleted();
 
-    void frameRendered(int);
-
-    void frameProgress(int);
+    void frameRendered(int frame, double progress);
 
     void processCanceled();
 
@@ -201,7 +211,7 @@ public:
      **/
     void writeToOutputChannel(const QString & message);
 
-public slots:
+public Q_SLOTS:
 
     /**
      * @brief Called when the main process wants to create the input channel.
@@ -241,9 +251,11 @@ private:
     QLocalServer* _backgroundIPCServer; //< for a background app used to manage input IPC  with the gui app
     QLocalSocket* _backgroundInputPipe; //<if the process is bg but managed by a gui process then the pipe is used
                                         //to read input messages
+    QMutex _mustQuitMutex;
+    QWaitCondition _mustQuitCond;
     bool _mustQuit;
-    QWaitCondition* _mustQuitCond;
-    QMutex* _mustQuitMutex;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // PROCESSHANDLER_H

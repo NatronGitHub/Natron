@@ -1,48 +1,44 @@
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ *
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
-///////////////////////////////////////////////////////////////////////////
-//
-// Copyright (c) 2006, Industrial Light & Magic, a division of Lucas
-// Digital Ltd. LLC
-//
-// All rights reserved.
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-// *       Redistributions of source code must retain the above copyright
-// notice, this list of conditions and the following disclaimer.
-// *       Redistributions in binary form must reproduce the above
-// copyright notice, this list of conditions and the following disclaimer
-// in the documentation and/or other materials provided with the
-// distribution.
-// *       Neither the name of Industrial Light & Magic nor the names of
-// its contributors may be used to endorse or promote products derived
-// from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//
-///////////////////////////////////////////////////////////////////////////
-
-
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include "Timer.h"
+
 #include <iostream>
 #include <time.h>
+#include <cmath>
+#include <cassert>
+#include <stdexcept>
+
 #include <QMutexLocker>
+
+#include "Global/GlobalDefines.h"
+
 #define NATRON_FPS_REFRESH_RATE_SECONDS 1.5
 
+NATRON_NAMESPACE_ENTER;
 
-#ifdef _WIN32
+#if defined(__NATRON_WIN32__) && !defined(__NATRON_MINGW__)
 int
 gettimeofday (struct timeval *tv,
               void *tz)
@@ -65,13 +61,74 @@ gettimeofday (struct timeval *tv,
 #endif
 
 
+// prints time value as seconds, minutes hours or days
+QString Timer::printAsTime(const double timeInSeconds, const bool clampToSecondsToInt)
+{
+    const int min = 60;
+    const int hour = 60 * min;
+    const int day = 24 * hour;
+    QString ret;
+    double timeRemain = timeInSeconds;
+    if (timeRemain >= day) {
+        double daysRemaining = timeInSeconds / day;
+        double floorDays = std::floor(daysRemaining);
+        daysRemaining -= floorDays;
+        if (daysRemaining > 0) {
+            ret.append((floorDays > 1 ? tr("%1 days") : tr("%1 day")).arg(QString::number(floorDays)));
+            timeRemain -= floorDays * day;
+        }
+        if (timeInSeconds >= 3 * day) {
+            return ret;
+        }
+    }
+    if (timeRemain >= hour) {
+        if (timeInSeconds >= day) {
+            ret.append(QLatin1Char(' '));
+        }
+        double hourRemaining = timeInSeconds / hour;
+        double floorHour = std::floor(hourRemaining);
+        hourRemaining -= floorHour;
+        if (hourRemaining > 0) {
+            ret.append(((floorHour > 1) ? tr("%1 hours") : tr("%1 hour")).arg(QString::number(floorHour)));
+            timeRemain -= floorHour * hour;
+        }
+        if (timeInSeconds >= 3 * hour) {
+            return ret;
+        }
+    }
+    if (timeRemain >= min) {
+        if (timeInSeconds >= hour) {
+            ret.append(QLatin1Char(' '));
+        }
+        double minRemaining = timeInSeconds / min;
+        double floorMin = std::floor(minRemaining);
+        minRemaining -= floorMin;
+        if (minRemaining > 0) {
+            ret.append(((floorMin > 1) ? tr("%1 minutes") : tr("%1 minute")).arg(QString::number(floorMin)));
+            timeRemain -= floorMin * min;
+        }
+        if (timeInSeconds >= 3 * min) {
+            return ret;
+        }
+    }
+    if (timeInSeconds >= min) {
+        ret.append(QLatin1Char(' '));
+    }
+    if (clampToSecondsToInt) {
+        ret.append((timeRemain > 1 ? tr("%1 seconds") : tr("%1 second")).arg(QString::number((int)timeRemain)));
+    } else {
+        ret.append((timeRemain > 1 ? tr("%1 seconds") : tr("%1 second")).arg(QString::number(timeRemain, 'f', 2)));
+    }
+    return ret;
+}
+
 Timer::Timer ()
-    : playState (ePlayStateRunning),
-      _spf (1 / 24.0),
-      _timingError (0),
-      _framesSinceLastFpsFrame (0),
-      _actualFrameRate (0),
-      _mutex(new QMutex)
+: playState (ePlayStateRunning),
+_spf (1 / 24.0),
+_timingError (0),
+_framesSinceLastFpsFrame (0),
+_actualFrameRate (0),
+_mutex(new QMutex)
 {
     gettimeofday (&_lastFrameTime, 0);
     _lastFpsFrameTime = _lastFrameTime;
@@ -115,6 +172,9 @@ Timer::waitUntilNextFrameIsDue ()
 
     double timeSinceLastFrame =  now.tv_sec  - _lastFrameTime.tv_sec +
                                (now.tv_usec - _lastFrameTime.tv_usec) * 1e-6f;
+    if (timeSinceLastFrame < 0) {
+        timeSinceLastFrame = 0;
+    }
     double timeToSleep = spf - timeSinceLastFrame - _timingError;
 
     #ifdef _WIN32
@@ -168,10 +228,18 @@ Timer::waitUntilNextFrameIsDue ()
     
     if (t > NATRON_FPS_REFRESH_RATE_SECONDS) {
         double actualFrameRate = _framesSinceLastFpsFrame / t;
-        if (actualFrameRate != _actualFrameRate) {
-            _actualFrameRate = actualFrameRate;
-            emit fpsChanged(_actualFrameRate,getDesiredFrameRate());
+        double curActualFrameRate;
+        {
+            QMutexLocker l(_mutex);
+            if (actualFrameRate != _actualFrameRate) {
+                _actualFrameRate = actualFrameRate;
+            }
+            curActualFrameRate = _actualFrameRate;
         }
+        
+        
+        Q_EMIT fpsChanged(curActualFrameRate,getDesiredFrameRate());
+        
         _framesSinceLastFpsFrame = 0;
     }
     
@@ -182,6 +250,13 @@ Timer::waitUntilNextFrameIsDue ()
 
     _framesSinceLastFpsFrame += 1;
 } // waitUntilNextFrameIsDue
+
+double
+Timer::getActualFrameRate() const
+{
+    QMutexLocker l(_mutex);
+    return _actualFrameRate;
+}
 
 void
 Timer::setDesiredFrameRate (double fps)
@@ -223,6 +298,12 @@ TimeLapse::getTimeElapsedReset()
     return dt;
 }
 
+void
+TimeLapse::reset()
+{
+    gettimeofday(&prev, 0);
+}
+
 double
 TimeLapse::getTimeSinceCreation() const
 {
@@ -236,7 +317,8 @@ TimeLapse::getTimeSinceCreation() const
 
 }
 
-TimeLapseReporter::TimeLapseReporter()
+TimeLapseReporter::TimeLapseReporter(const std::string& message)
+: message(message)
 {
     gettimeofday(&prev, 0);
 }
@@ -248,5 +330,10 @@ TimeLapseReporter::~TimeLapseReporter()
     
     double dt =  now.tv_sec  - prev.tv_sec +
     (now.tv_usec - prev.tv_usec) * 1e-6f;
-    std::cout << dt << std::endl;
+    std::cout << message << ' ' << dt << std::endl;
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_Timer.cpp"

@@ -1,20 +1,39 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
+#include "Global/Macros.h"
+
+#include <stdexcept>
+
+NATRON_NAMESPACE_ENTER;
 
 const char* fragRGB =
     "uniform sampler2D Tex;\n"
     "uniform float gain;\n"
     "uniform float offset;\n"
     "uniform int lut;\n"
+    "uniform float gamma;\n"
     "\n"
     "float linear_to_srgb(float c) {\n"
     "    return (c<=0.0031308) ? (12.92*c) : (((1.0+0.055)*pow(c,1.0/2.4))-0.055);\n"
@@ -27,16 +46,19 @@ const char* fragRGB =
     "    color_tmp.rgb = (color_tmp.rgb * gain) + offset;\n"
     "    if(lut == 0){ // srgb\n"
 // << TO SRGB
-    "       color_tmp.r = linear_to_srgb(color_tmp.r);"
-    "       color_tmp.g = linear_to_srgb(color_tmp.g);"
-    "       color_tmp.b = linear_to_srgb(color_tmp.b);"
+    "       color_tmp.r = linear_to_srgb(color_tmp.r);\n"
+    "       color_tmp.g = linear_to_srgb(color_tmp.g);\n"
+    "       color_tmp.b = linear_to_srgb(color_tmp.b);\n"
 // << END TO SRGB
     "   }\n"
     "   else if( lut == 2){ // Rec 709\n" // << TO REC 709
-    "       color_tmp.r = linear_to_rec709(color_tmp.r);"
-    "       color_tmp.g = linear_to_rec709(color_tmp.g);"
-    "       color_tmp.b = linear_to_rec709(color_tmp.b);"
+    "       color_tmp.r = linear_to_rec709(color_tmp.r);\n"
+    "       color_tmp.g = linear_to_rec709(color_tmp.g);\n"
+    "       color_tmp.b = linear_to_rec709(color_tmp.b);\n"
     "   }\n" // << END TO REC 709
+    "   color_tmp.r = gamma == 0. ? 0. : pow(color_tmp.r,gamma);\n" // gamma is in fact 1. / gamma at this point
+    "   color_tmp.g = gamma == 0. ? 0. : pow(color_tmp.g,gamma);\n"
+    "   color_tmp.b = gamma == 0. ? 0. : pow(color_tmp.b,gamma);\n"
     "	gl_FragColor = color_tmp;\n"
     "}\n"
 ;
@@ -187,3 +209,5 @@ const char *histogramMaximum_frag =
     "    gl_FragColor = vec4(max(max(a.r,b.r),max(c.r,d.r)),0.0,0.0,1.0);\n"
     "}\n"
 ;
+
+NATRON_NAMESPACE_EXIT;

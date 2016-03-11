@@ -1,30 +1,46 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
-#ifndef NATRON_ENGINE_CURVEPRIVATE_H_
-#define NATRON_ENGINE_CURVEPRIVATE_H_
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
-#ifndef Q_MOC_RUN
+#ifndef NATRON_ENGINE_CURVEPRIVATE_H
+#define NATRON_ENGINE_CURVEPRIVATE_H
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
+#include "Global/Macros.h"
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
-#include <QReadWriteLock>
+#include <QMutex>
 
-#include "Engine/Rect.h"
 #include "Engine/Variant.h"
 #include "Engine/Knob.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
+#include "Engine/EngineFwd.h"
 
-class Curve;
-class KeyFrame;
-class KnobI;
+//#define NATRON_CURVE_USE_CACHE
+
+NATRON_NAMESPACE_ENTER;
 
 struct CurvePrivate
 {
@@ -39,33 +55,41 @@ struct CurvePrivate
     };
 
     KeyFrameSet keyFrames;
+    
+#ifdef NATRON_CURVE_USE_CACHE
+    std::map<double,double> resultCache; //< a cache for interpolations
+#endif
+    
     KnobI* owner;
     int dimensionInOwner;
-    bool isParametric;
     CurveTypeEnum type;
     double xMin, xMax;
     double yMin, yMax;
+    mutable QMutex _lock; //< the plug-ins can call getValueAt at any moment and we must make sure the user is not playing around
+    bool isParametric;
     bool hasYRange;
-    mutable QReadWriteLock _lock; //< the plug-ins can call getValueAt at any moment and we must make sure the user is not playing around
 
 
     CurvePrivate()
-        : keyFrames()
-          , owner(NULL)
-          , dimensionInOwner(-1)
-          , isParametric(false)
-          , type(eCurveTypeDouble)
-          , xMin(INT_MIN)
-          , xMax(INT_MAX)
-          , yMin(INT_MIN)
-          , yMax(INT_MAX)
-          , hasYRange(false)
-          , _lock(QReadWriteLock::Recursive)
+    : keyFrames()
+#ifdef NATRON_CURVE_USE_CACHE
+    , resultCache()
+#endif
+    , owner(NULL)
+    , dimensionInOwner(-1)
+    , type(eCurveTypeDouble)
+    , xMin(INT_MIN)
+    , xMax(INT_MAX)
+    , yMin(INT_MIN)
+    , yMax(INT_MAX)
+    , _lock(QMutex::Recursive)
+    , isParametric(false)
+    , hasYRange(false)
     {
     }
 
     CurvePrivate(const CurvePrivate & other)
-        : _lock(QReadWriteLock::Recursive)
+        : _lock(QMutex::Recursive)
     {
         *this = other;
     }
@@ -83,7 +107,9 @@ struct CurvePrivate
         yMax = other.yMax;
         hasYRange = other.hasYRange;
     }
+    
 };
 
+NATRON_NAMESPACE_EXIT;
 
-#endif // NATRON_ENGINE_CURVEPRIVATE_H_
+#endif // NATRON_ENGINE_CURVEPRIVATE_H

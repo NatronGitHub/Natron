@@ -1,37 +1,49 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_GUI_EDGE_H_
-#define NATRON_GUI_EDGE_H_
+#ifndef NATRON_GUI_EDGE_H
+#define NATRON_GUI_EDGE_H
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <boost/weak_ptr.hpp>
+#endif
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QGraphicsLineItem>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#ifndef Q_MOC_RUN
-#include <boost/shared_ptr.hpp>
-#endif
-class QGraphicsPolygonItem;
-class QGraphicsLineItem;
-class QRectF;
-class QPointF;
-class QPainterPath;
-class QGraphicsScene;
-class QGraphicsTextItem;
-class QGraphicsSceneMouseEvent;
-class NodeGui;
-class Node;
 
+#include "Gui/GuiFwd.h"
+
+NATRON_NAMESPACE_ENTER;
+
+struct EdgePrivate;
 class Edge
     : public QGraphicsLineItem
 {
@@ -40,49 +52,31 @@ public:
     ///Used to make an input edge
     Edge(int inputNb,
          double angle,
-         const boost::shared_ptr<NodeGui> & dest,
+         const NodeGuiPtr & dest,
          QGraphicsItem *parent = 0);
 
     ///Used to make an output edge
-    Edge(const boost::shared_ptr<NodeGui> & src,
+    Edge(const NodeGuiPtr & src,
          QGraphicsItem *parent = 0);
 
     virtual ~Edge() OVERRIDE;
 
-    QPainterPath shape() const;
+    QPainterPath shape() const OVERRIDE WARN_UNUSED_RETURN;
 
-    bool contains(const QPointF &point) const;
+    bool contains(const QPointF &point) const OVERRIDE WARN_UNUSED_RETURN;
 
-    void setSource(const boost::shared_ptr<NodeGui> & src);
+    void setSource(const NodeGuiPtr & src);
     
-    void setVisibleDetails(bool visible);
+    void setSourceAndDestination(const NodeGuiPtr & src,const NodeGuiPtr & dst);
 
-    void setSourceAndDestination(const boost::shared_ptr<NodeGui> & src,const boost::shared_ptr<NodeGui> & dst);
+    int getInputNumber() const;
 
-    int getInputNumber() const
-    {
-        return _inputNb;
-    }
+    void setInputNumber(int i);
 
-    void setInputNumber(int i)
-    {
-        _inputNb = i;
-    }
+    NodeGuiPtr getDest() const;
+    NodeGuiPtr getSource() const;
 
-    boost::shared_ptr<NodeGui> getDest() const
-    {
-        return _dest;
-    }
-
-    boost::shared_ptr<NodeGui> getSource() const
-    {
-        return _source;
-    }
-
-    bool hasSource() const
-    {
-        return _source != NULL;
-    }
+    bool hasSource() const;
 
     void dragSource(const QPointF & src);
 
@@ -90,34 +84,19 @@ public:
 
     void initLine();
 
-    void setAngle(double a)
-    {
-        _angle = a;
-    }
+    void setAngle(double a);
 
-    void turnOnRenderingColor()
-    {
-        _useRenderingColor = true;
-        update();
-    }
+    void turnOnRenderingColor();
 
-    void turnOffRenderingColor()
-    {
-        _useRenderingColor = false;
-        update();
-    }
+    void turnOffRenderingColor();
 
     void setUseHighlight(bool highlight);
 
-    bool isOutputEdge() const
-    {
-        return _isOutputEdge;
-    }
+    bool isOutputEdge() const;
 
-    void setDefaultColor(const QColor & color)
-    {
-        _defaultColor = color;
-    }
+    void setDefaultColor(const QColor & color);
+    
+    bool isBendPointVisible() const;
     
     bool areOptionalInputsAutoHidden() const;
     
@@ -126,38 +105,28 @@ public:
     void setDashed(bool dashed);
 
     void setBendPointVisible(bool visible);
-
-    bool isBendPointVisible() const
-    {
-        return _paintBendPoint;
-    }
+    
+    bool isRotoEdge() const;
+    
+    bool isMask() const;
 
     bool isNearbyBendPoint(const QPointF & scenePoint);
+    
+    /**
+     * @brief Refresh the Edge properties such as dashed state, optional state, visibility etc...
+     * @param hovered True if the mouse is hovering the dst node (the node holding this edge)
+     **/
+    void refreshState(bool hovered);
+    
+    bool computeVisibility(bool hovered) const;
 
-    bool isRotoEdge() const {
-        return _isRotoMask;
-    }
+    
 private:
 
     virtual void paint(QPainter *painter, const QStyleOptionGraphicsItem *options,QWidget *parent = 0) OVERRIDE FINAL;
-    bool _isOutputEdge;
-    int _inputNb;
-    double _angle;
-    QGraphicsTextItem* _label;
-    QPolygonF _arrowHead;
-    boost::shared_ptr<NodeGui> _dest;
-    boost::shared_ptr<NodeGui> _source;
-    QColor _defaultColor;
-    QColor _renderingColor;
-    bool _useRenderingColor;
-    bool _useHighlight;
-    bool _paintWithDash;
-    bool _optional;
-    bool _paintBendPoint;
-    bool _bendPointHiddenAutomatically;
-    bool _enoughSpaceToShowLabel;
-    bool _isRotoMask;
-    QPointF _middlePoint; //updated only when dest && source are valid
+    
+        
+    boost::scoped_ptr<EdgePrivate> _imp;
 };
 
 /**
@@ -166,7 +135,9 @@ private:
 class LinkArrow
     : public QObject, public QGraphicsLineItem
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -182,7 +153,7 @@ public:
 
     void setWidth(int lineWidth);
 
-public slots:
+public Q_SLOTS:
 
     /**
      * @brief Called when one of the 2 nodes is moved
@@ -200,4 +171,6 @@ private:
     int _lineWidth;
 };
 
-#endif // NATRON_GUI_EDGE_H_
+NATRON_NAMESPACE_EXIT;
+
+#endif // NATRON_GUI_EDGE_H

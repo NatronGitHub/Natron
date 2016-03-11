@@ -1,23 +1,45 @@
-//  Natron
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ *
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include "HistogramCPU.h"
 
 #include <algorithm>
+#include <cassert>
+#include <stdexcept>
+
 #include <QMutex>
 #include <QWaitCondition>
 
 #include "Engine/Image.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct HistogramRequest
 {
     int binsCount;
     int mode;
-    boost::shared_ptr<Natron::Image> image;
+    boost::shared_ptr<Image> image;
     RectI rect;
     double vmin;
     double vmax;
@@ -36,7 +58,7 @@ struct HistogramRequest
 
     HistogramRequest(int binsCount,
                      int mode,
-                     const boost::shared_ptr<Natron::Image> & image,
+                     const boost::shared_ptr<Image> & image,
                      const RectI & rect,
                      double vmin,
                      double vmax,
@@ -114,7 +136,7 @@ HistogramCPU::~HistogramCPU()
 
 void
 HistogramCPU::computeHistogram(int mode,      //< corresponds to the enum Histogram::DisplayModeEnum
-                               const boost::shared_ptr<Natron::Image> & image,
+                               const boost::shared_ptr<Image> & image,
                                const RectI & rect,
                                int binsCount,
                                double vmin,
@@ -140,11 +162,12 @@ HistogramCPU::quitAnyComputation()
 {
     if ( isRunning() ) {
         QMutexLocker l(&_imp->mustQuitMutex);
+        assert(!_imp->mustQuit);
         _imp->mustQuit = true;
 
         ///post a fake request to wakeup the thread
         l.unlock();
-        computeHistogram(0, boost::shared_ptr<Natron::Image>(), RectI(), 0,0,0,0);
+        computeHistogram(0, boost::shared_ptr<Image>(), RectI(), 0,0,0,0);
         l.relock();
         while (_imp->mustQuit) {
             _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
@@ -198,7 +221,7 @@ HistogramCPU::getMostRecentlyProducedHistogram(std::vector<float>* histogram1,
 ///"function has not external linkage"
 struct pix_red
 {
-    static float val(float *pix)
+    static float val(const float *pix)
     {
         return pix[0];
     }
@@ -206,7 +229,7 @@ struct pix_red
 
 struct pix_green
 {
-    static float val(float *pix)
+    static float val(const float *pix)
     {
         return pix[1];
     }
@@ -214,7 +237,7 @@ struct pix_green
 
 struct pix_blue
 {
-    static float val(float *pix)
+    static float val(const float *pix)
     {
         return pix[2];
     }
@@ -222,7 +245,7 @@ struct pix_blue
 
 struct pix_alpha
 {
-    static float val(float *pix)
+    static float val(const float *pix)
     {
         return pix[3];
     }
@@ -230,14 +253,14 @@ struct pix_alpha
 
 struct pix_lum
 {
-    static float val(float *pix)
+    static float val(const float *pix)
     {
         return 0.299 * pix[0] + 0.587 * pix[1] + 0.114 * pix[2];
     }
 };
 
 
-template <float pix_func(float*)>
+template <float pix_func(const float*)>
 void
 computeHisto(const HistogramRequest & request,
              int upscale,
@@ -249,11 +272,13 @@ computeHisto(const HistogramRequest & request,
     double binSize = (request.vmax - request.vmin) / histo->size();
 
     ///Images come from the viewer which is in float.
-    assert(request.image->getBitDepth() == Natron::eImageBitDepthFloat);
+    assert(request.image->getBitDepth() == eImageBitDepthFloat);
 
+    Image::ReadAccess acc = request.image->getReadRights();
+    
     for (int y = request.rect.bottom(); y < request.rect.top(); ++y) {
         for (int x = request.rect.left(); x < request.rect.right(); ++x) {
-            float *pix = (float*)request.image->pixelAt(x, y);
+            const float *pix = (const float*)acc.pixelAt(x, y);
             float v = pix_func(pix);
             if ( (request.vmin <= v) && (v < request.vmax) ) {
                 int index = (int)( (v - request.vmin) / binSize );
@@ -422,6 +447,9 @@ computeHistogramStatic(const HistogramRequest & request,
         break;
     }
     assert(histo);
+    if (!histo) {
+        return;
+    }
 
     /// keep the mode parameter in sync with Histogram::DisplayModeEnum
 
@@ -541,7 +569,11 @@ HistogramCPU::run()
             QMutexLocker l(&_imp->producedMutex);
             _imp->produced.push_back(ret);
         }
-        emit histogramProduced();
+        Q_EMIT histogramProduced();
     }
 } // run
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_HistogramCPU.cpp"

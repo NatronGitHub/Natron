@@ -1,18 +1,38 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_GUI_NODEGRAPH_H_
-#define NATRON_GUI_NODEGRAPH_H_
+#ifndef Gui_NodeGraph_h
+#define Gui_NodeGraph_h
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/noncopyable.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
+#endif
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QGraphicsView>
@@ -20,56 +40,48 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#ifndef Q_MOC_RUN
-#include <boost/noncopyable.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
-
 #include "Global/GlobalDefines.h"
 
-class QVBoxLayout;
-class QScrollArea;
-class QEvent;
-class QKeyEvent;
-class Gui;
-class NodeGui;
-class QDropEvent;
-class QUndoCommand;
-class QDragEnterEvent;
-class NodeSerialization;
-class NodeGuiSerialization;
-class NodeBackDropSerialization;
-class NodeBackDrop;
-struct NodeGraphPrivate;
-namespace Natron {
-class Node;
-}
+#include "Engine/NodeGraphI.h"
+#include "Engine/EngineFwd.h"
 
-class NodeGraph
-    : public QGraphicsView, public boost::noncopyable
+#include "Gui/PanelWidget.h"
+#include "Gui/GuiFwd.h"
+
+NATRON_NAMESPACE_ENTER;
+
+class NodeGraphPrivate;
+
+class NodeGraph : public QGraphicsView, public NodeGraphI, public PanelWidget, public boost::noncopyable
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
     explicit NodeGraph(Gui* gui,
+                       const boost::shared_ptr<NodeCollection>& group,
                        QGraphicsScene* scene = 0,
                        QWidget *parent = 0);
 
-    virtual ~NodeGraph() OVERRIDE;
-
-    const std::list< boost::shared_ptr<NodeGui> > & getSelectedNodes() const;
-    boost::shared_ptr<NodeGui> createNodeGUI(QVBoxLayout *dockContainer,const boost::shared_ptr<Natron::Node> & node,bool requestedByLoad,
-                                             double xPosHint,double yPosHint,bool pushUndoRedoCommand,bool autoConnect);
-
-    void selectNode(const boost::shared_ptr<NodeGui> & n,bool addToSelection);
+    virtual ~NodeGraph();
     
-    void setSelection(const std::list<boost::shared_ptr<NodeGui> >& nodes);
+    static void makeFullyQualifiedLabel(Node* node,std::string* ret);
+    
+    boost::shared_ptr<NodeCollection> getGroup() const;
+
+    const std::list< NodeGuiPtr > & getSelectedNodes() const;
+    NodeGuiPtr createNodeGUI(const NodePtr & node,
+                                             const CreateNodeArgs& args);
+
+    void selectNode(const NodeGuiPtr & n,bool addToSelection);
+    
+    void deselectNode(const NodeGuiPtr& n);
+    
+    void setSelection(const NodesGuiList& nodes);
     
     void clearSelection();
-
-    void selectBackDrop(NodeBackDrop* bd,bool addToSelection);
 
     ///The visible portion of the graph, in scene coordinates.
     QRectF visibleSceneRect() const;
@@ -86,55 +98,31 @@ public:
      **/
     void updateNavigator();
 
-    const std::list<boost::shared_ptr<NodeGui> > & getAllActiveNodes() const;
-    std::list<boost::shared_ptr<NodeGui> > getAllActiveNodes_mt_safe() const;
+    const NodesGuiList & getAllActiveNodes() const;
+    NodesGuiList getAllActiveNodes_mt_safe() const;
 
     void moveToTrash(NodeGui* node);
 
     void restoreFromTrash(NodeGui* node);
 
     QGraphicsItem* getRootItem() const;
-    Gui* getGui() const;
 
-    void discardGuiPointer();
+    virtual void notifyGuiClosing() OVERRIDE FINAL;
     void discardScenePointer();
 
-    void refreshAllEdges();
 
     /**
      * @brief Removes the given node from the nodegraph, using the undo/redo stack.
      **/
-    void removeNode(const boost::shared_ptr<NodeGui> & node);
+    void removeNode(const NodeGuiPtr & node);
 
     void centerOnItem(QGraphicsItem* item);
 
-    boost::shared_ptr<NodeGui> getNodeGuiSharedPtr(const NodeGui* n) const;
-
     void setUndoRedoStackLimit(int limit);
 
-    void deleteNodepluginsly(boost::shared_ptr<NodeGui> n);
+    void deleteNodePermanantly(const NodeGuiPtr& n);
 
-    NodeBackDrop* createBackDrop(QVBoxLayout *dockContainer,bool requestedByLoad,const NodeBackDropSerialization & serialization);
-
-    ///Returns true if it already exists
-    bool checkIfBackDropNameExists(const QString & n,const NodeBackDrop* bd) const;
-
-    bool checkIfNodeNameExists(const std::string & n,const NodeGui* node) const;
-
-    std::list<NodeBackDrop*> getBackDrops() const;
-    std::list<NodeBackDrop*> getActiveBackDrops() const;
-
-    /**
-     * @brief This function just inserts the given backdrop in the list
-     **/
-    void insertNewBackDrop(NodeBackDrop* bd);
-
-    /**
-     * @brief This function just removes the given backdrop from the list, it does not delete it or anything.
-     **/
-    void removeBackDrop(NodeBackDrop* bd);
-
-    std::list<boost::shared_ptr<NodeGui> > getNodesWithinBackDrop(const NodeBackDrop* bd) const;
+    NodesGuiList getNodesWithinBackdrop(const NodeGuiPtr& node) const;
 
     void selectAllNodes(bool onlyInVisiblePortion);
 
@@ -145,13 +133,44 @@ public:
 
     bool areKnobLinksVisible() const;
     
-    void refreshNodesKnobsAtTime(SequenceTime time);
-    
-    void pushUndoCommand(QUndoCommand* command);
+    void refreshNodesKnobsAtTime(bool onlyTimeEvaluationKnobs,SequenceTime time);
     
     bool areOptionalInputsAutoHidden() const;
+    
+    void copyNodesAndCreateInGroup(const NodesGuiList& nodes,
+                                   const boost::shared_ptr<NodeCollection>& group,
+                                   std::list<std::pair<std::string,NodeGuiPtr > >& createdNodes);
 
-   public slots:
+    virtual void onNodesCleared() OVERRIDE FINAL;
+    
+    void setLastSelectedViewer(ViewerTab* tab);
+    
+    ViewerTab* getLastSelectedViewer() const;
+    
+    /**
+     * @brief Given the node, it tries to move it to the ideal position
+     * according to the position of the selected node and its inputs/outputs.
+     * This is used when creating a node to position it correctly.
+     * It will move the inputs / outputs slightly to fit this node into the nodegraph
+     * so they do not overlap.
+     **/
+    void moveNodesForIdealPosition(const NodeGuiPtr &n,
+                                   const NodeGuiPtr& selected,
+                                   bool autoConnect);
+    
+    void copyNodes(const NodesGuiList& nodes,NodeClipBoard& clipboard);
+    
+    void pasteCliboard(const NodeClipBoard& clipboard,std::list<std::pair<std::string,NodeGuiPtr > >* newNodes);
+    
+    void duplicateSelectedNodes(const QPointF& pos);
+    void pasteNodeClipBoards(const QPointF& pos);
+    void cloneSelectedNodes(const QPointF& pos);
+    
+    QPointF getRootPos() const;
+    
+    bool isDoingNavigatorRender() const;
+    
+public Q_SLOTS:
 
     void deleteSelection();
 
@@ -173,11 +192,13 @@ public:
 
     void toggleKnobLinksVisible();
 
-    void onProjectNodesCleared();
-
     void switchInputs1and2ForSelectedNodes();
     
     void extractSelectedNode();
+    
+    void createGroupFromSelection();
+    
+    void expandSelectedGroups();
 
     ///All these actions also work for backdrops
     /////////////////////////////////////////////
@@ -197,11 +218,8 @@ public:
     
     void toggleAutoHideInputs(bool setSettings = true);
     
-    ///Called whenever the time changes on the timeline
-    void onTimeChanged(SequenceTime time,int reason);
-    
-    void onGuiFrozenChanged(bool frozen);
-
+    void toggleHideInputs();
+        
     void onNodeCreationDialogFinished();
 
     void popFindDialog(const QPoint& pos = QPoint(0,0));
@@ -216,21 +234,23 @@ public:
     
     void toggleAutoTurbo();
     
+    void onGroupNameChanged(const QString& name);
+    void onGroupScriptNameChanged(const QString& name);
+    
+    
+    void onAutoScrollTimerTriggered();
+    
 private:
-
-
-    /**
-     * @brief Given the node, it tries to move it to the ideal position
-     * according to the position of the selected node and its inputs/outputs.
-     * This is used when creating a node to position it correctly.
-     * It will move the inputs / outputs slightly to fit this node into the nodegraph
-     * so they do not overlap.
-     **/
-    void moveNodesForIdealPosition(boost::shared_ptr<NodeGui> n,bool autoConnect);
+    
+    void checkForHints(bool shiftdown, bool controlDown, const NodeGuiPtr& selectedNode,const QRectF& visibleSceneR);
+    
+    void moveSelectedNodesBy(bool shiftdown, bool controlDown, const QPointF& lastMousePosScene, const QPointF& newPos, const QRectF& visibleSceneR, bool userEdit);
+    
+    void scrollViewIfNeeded(const QPointF& scenePos);
+    
+    void checkAndStartAutoScrollTimer(const QPointF& scenePos);
     
     bool isNearbyNavigator(const QPoint& widgetPos,QPointF& scenePos) const;
-
-    void setVisibleNodeDetails(bool visible);
     
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
@@ -250,8 +270,11 @@ private:
     virtual void dragLeaveEvent(QDragLeaveEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
+    virtual QUndoStack* getUndoStack() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 private:
+    
+    void moveRootInternal(double dx, double dy);
     
     void wheelEventInternal(bool ctrlDown,double delta);
 
@@ -262,15 +285,17 @@ private:
 struct FindNodeDialogPrivate;
 class FindNodeDialog : public QDialog
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-    
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
     
     FindNodeDialog(NodeGraph* graph,QWidget* parent);
     
     virtual ~FindNodeDialog();
     
-public slots:
+public Q_SLOTS:
     
     void onOkClicked();
     void onCancelClicked();
@@ -293,13 +318,19 @@ private:
 struct EditNodeNameDialogPrivate;
 class EditNodeNameDialog: public QDialog
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
     
 public:
     
-    EditNodeNameDialog(NodeGraph* graph,const boost::shared_ptr<NodeGui>& node,NodeBackDrop* bd,QWidget* parent);
+    EditNodeNameDialog(const NodeGuiPtr& node,QWidget* parent);
     
     virtual ~EditNodeNameDialog();
+    
+    QString getTypedName() const;
+    
+    NodeGuiPtr getNode() const;
     
 private:
     
@@ -309,4 +340,6 @@ private:
     boost::scoped_ptr<EditNodeNameDialogPrivate> _imp;
 };
 
-#endif // NATRON_GUI_NODEGRAPH_H_
+NATRON_NAMESPACE_EXIT;
+
+#endif // Gui_NodeGraph_h

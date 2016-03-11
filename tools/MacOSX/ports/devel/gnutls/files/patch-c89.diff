@@ -1,0 +1,209 @@
+Fix "error: comma at end of enumerator list" when compiling with C89
+--- lib/includes/gnutls/abstract.h.orig	2014-04-04 18:38:14.000000000 -0500
++++ lib/includes/gnutls/abstract.h	2014-07-14 00:42:27.000000000 -0500
+@@ -51,7 +51,7 @@
+ typedef enum gnutls_pubkey_flags {
+ 	GNUTLS_PUBKEY_VERIFY_FLAG_TLS1_RSA = 1,
+ 	GNUTLS_PUBKEY_DISABLE_CALLBACKS = 1 << 2,
+-	GNUTLS_PUBKEY_GET_OPENPGP_FINGERPRINT = 1 << 3,
++	GNUTLS_PUBKEY_GET_OPENPGP_FINGERPRINT = 1 << 3
+ } gnutls_pubkey_flags_t;
+ 
+ typedef int (*gnutls_privkey_sign_func) (gnutls_privkey_t key,
+@@ -271,7 +271,7 @@
+ 	GNUTLS_PRIVKEY_IMPORT_AUTO_RELEASE = 1,
+ 	GNUTLS_PRIVKEY_IMPORT_COPY = 1 << 1,
+ 	GNUTLS_PRIVKEY_DISABLE_CALLBACKS = 1 << 2,
+-	GNUTLS_PRIVKEY_SIGN_FLAG_TLS1_RSA = 1 << 4,
++	GNUTLS_PRIVKEY_SIGN_FLAG_TLS1_RSA = 1 << 4
+ } gnutls_privkey_flags_t;
+ 
+ int gnutls_privkey_import_pkcs11(gnutls_privkey_t pkey,
+--- lib/includes/gnutls/gnutls.h.in.orig	2014-06-16 11:59:00.000000000 -0500
++++ lib/includes/gnutls/gnutls.h.in	2014-07-14 00:42:55.000000000 -0500
+@@ -169,7 +169,7 @@
+ 	GNUTLS_KX_ECDHE_RSA = 12,
+ 	GNUTLS_KX_ECDHE_ECDSA = 13,
+ 	GNUTLS_KX_ECDHE_PSK = 14,
+-	GNUTLS_KX_RSA_PSK = 15,
++	GNUTLS_KX_RSA_PSK = 15
+ } gnutls_kx_algorithm_t;
+ 
+ /**
+@@ -183,7 +183,7 @@
+ typedef enum {
+ 	GNUTLS_PARAMS_RSA_EXPORT = 1,
+ 	GNUTLS_PARAMS_DH = 2,
+-	GNUTLS_PARAMS_ECDH = 3,
++	GNUTLS_PARAMS_ECDH = 3
+ } gnutls_params_type_t;
+ 
+ /**
+@@ -241,7 +241,7 @@
+ 	   gnutls_digest_algorithm_t. */
+ 	GNUTLS_MAC_AEAD = 200,	/* indicates that MAC is on the cipher */
+ 	GNUTLS_MAC_UMAC_96 = 201,
+-	GNUTLS_MAC_UMAC_128 = 202,
++	GNUTLS_MAC_UMAC_128 = 202
+ } gnutls_mac_algorithm_t;
+ 
+ /**
+@@ -292,7 +292,7 @@
+ 	GNUTLS_COMP_UNKNOWN = 0,
+ 	GNUTLS_COMP_NULL = 1,
+ 	GNUTLS_COMP_DEFLATE = 2,
+-	GNUTLS_COMP_ZLIB = GNUTLS_COMP_DEFLATE,
++	GNUTLS_COMP_ZLIB = GNUTLS_COMP_DEFLATE
+ } gnutls_compression_method_t;
+ 
+   /*
+@@ -391,7 +391,7 @@
+ 	GNUTLS_A_CERTIFICATE_UNOBTAINABLE = 111,
+ 	GNUTLS_A_UNRECOGNIZED_NAME = 112,
+ 	GNUTLS_A_UNKNOWN_PSK_IDENTITY = 115,
+-	GNUTLS_A_NO_APPLICATION_PROTOCOL = 120,
++	GNUTLS_A_NO_APPLICATION_PROTOCOL = 120
+ } gnutls_alert_description_t;
+ 
+ /**
+@@ -431,7 +431,7 @@
+ 	GNUTLS_HANDSHAKE_CERTIFICATE_STATUS = 22,
+ 	GNUTLS_HANDSHAKE_SUPPLEMENTAL = 23,
+ 	GNUTLS_HANDSHAKE_CHANGE_CIPHER_SPEC = 254,
+-	GNUTLS_HANDSHAKE_CLIENT_HELLO_V2 = 1024,
++	GNUTLS_HANDSHAKE_CLIENT_HELLO_V2 = 1024
+ } gnutls_handshake_description_t;
+ 
+ #define GNUTLS_HANDSHAKE_ANY ((unsigned int)-1)
+@@ -482,7 +482,7 @@
+ 	GNUTLS_CERT_UNEXPECTED_OWNER = 1 << 14,
+ 	GNUTLS_CERT_REVOCATION_DATA_ISSUED_IN_FUTURE = 1 << 15,
+ 	GNUTLS_CERT_SIGNER_CONSTRAINTS_FAILURE = 1 << 16,
+-	GNUTLS_CERT_MISMATCH = 1 << 17,
++	GNUTLS_CERT_MISMATCH = 1 << 17
+ } gnutls_certificate_status_t;
+ 
+ /**
+@@ -596,7 +596,7 @@
+ 	GNUTLS_CRT_PRINT_ONELINE = 1,
+ 	GNUTLS_CRT_PRINT_UNSIGNED_FULL = 2,
+ 	GNUTLS_CRT_PRINT_COMPACT = 3,
+-	GNUTLS_CRT_PRINT_FULL_NUMBERS = 4,
++	GNUTLS_CRT_PRINT_FULL_NUMBERS = 4
+ } gnutls_certificate_print_formats_t;
+ 
+ #define GNUTLS_PK_ECC GNUTLS_PK_EC
+@@ -615,7 +615,7 @@
+ 	GNUTLS_PK_RSA = 1,
+ 	GNUTLS_PK_DSA = 2,
+ 	GNUTLS_PK_DH = 3,
+-	GNUTLS_PK_EC = 4,
++	GNUTLS_PK_EC = 4
+ } gnutls_pk_algorithm_t;
+ 
+ const char *gnutls_pk_algorithm_get_name(gnutls_pk_algorithm_t algorithm);
+@@ -665,7 +665,7 @@
+ 	GNUTLS_SIGN_ECDSA_SHA384 = 15,
+ 	GNUTLS_SIGN_ECDSA_SHA512 = 16,
+ 	GNUTLS_SIGN_DSA_SHA384 = 17,
+-	GNUTLS_SIGN_DSA_SHA512 = 18,
++	GNUTLS_SIGN_DSA_SHA512 = 18
+ } gnutls_sign_algorithm_t;
+ 
+ /**
+@@ -685,7 +685,7 @@
+ 	GNUTLS_ECC_CURVE_SECP256R1,
+ 	GNUTLS_ECC_CURVE_SECP384R1,
+ 	GNUTLS_ECC_CURVE_SECP521R1,
+-	GNUTLS_ECC_CURVE_SECP192R1,
++	GNUTLS_ECC_CURVE_SECP192R1
+ } gnutls_ecc_curve_t;
+ 
+ /* macros to allow specifying a specific curve in gnutls_privkey_generate()
+@@ -719,7 +719,7 @@
+ 	GNUTLS_SEC_PARAM_LEGACY = 2,
+ 	GNUTLS_SEC_PARAM_MEDIUM = 3,
+ 	GNUTLS_SEC_PARAM_HIGH = 4,
+-	GNUTLS_SEC_PARAM_ULTRA = 5,
++	GNUTLS_SEC_PARAM_ULTRA = 5
+ } gnutls_sec_param_t;
+ 
+ /* old name */
+@@ -1595,7 +1595,7 @@
+    * Enumeration of different random art types.
+    */
+ typedef enum gnutls_random_art {
+-	GNUTLS_RANDOM_ART_OPENSSH = 1,
++	GNUTLS_RANDOM_ART_OPENSSH = 1
+ } gnutls_random_art_t;
+ 
+ int gnutls_random_art(gnutls_random_art_t type,
+@@ -1934,7 +1934,7 @@
+ typedef enum {
+ 	GNUTLS_DT_UNKNOWN = 0,
+ 	GNUTLS_DT_DNS_HOSTNAME = 1,
+-	GNUTLS_DT_KEY_PURPOSE_OID = 2,
++	GNUTLS_DT_KEY_PURPOSE_OID = 2
+ } gnutls_vdata_types_t;
+ 
+ typedef struct {
+@@ -2082,7 +2082,7 @@
+ 	GNUTLS_PIN_FINAL_TRY = (1 << 2),
+ 	GNUTLS_PIN_COUNT_LOW = (1 << 3),
+ 	GNUTLS_PIN_CONTEXT_SPECIFIC = (1 << 4),
+-	GNUTLS_PIN_WRONG = (1 << 5),
++	GNUTLS_PIN_WRONG = (1 << 5)
+ } gnutls_pin_flag_t;
+ 
+ #define GNUTLS_PKCS11_PIN_USER GNUTLS_PIN_USER
+--- lib/includes/gnutls/ocsp.h.orig	2014-01-01 11:13:30.000000000 -0600
++++ lib/includes/gnutls/ocsp.h	2014-07-14 00:43:06.000000000 -0500
+@@ -46,7 +46,7 @@
+  */
+ typedef enum gnutls_ocsp_print_formats_t {
+ 	GNUTLS_OCSP_PRINT_FULL = 0,
+-	GNUTLS_OCSP_PRINT_COMPACT = 1,
++	GNUTLS_OCSP_PRINT_COMPACT = 1
+ } gnutls_ocsp_print_formats_t;
+ 
+ /**
+--- lib/includes/gnutls/pkcs11.h.orig	2014-06-16 11:59:00.000000000 -0500
++++ lib/includes/gnutls/pkcs11.h	2014-07-14 00:43:24.000000000 -0500
+@@ -217,7 +217,7 @@
+ 	GNUTLS_PKCS11_OBJ_ATTR_PUBKEY,	/* public keys */
+ 	GNUTLS_PKCS11_OBJ_ATTR_PRIVKEY,	/* private keys */
+ 	GNUTLS_PKCS11_OBJ_ATTR_ALL,	/* everything! */
+-	GNUTLS_PKCS11_OBJ_ATTR_CRT_TRUSTED_CA,	/* CAs */
++	GNUTLS_PKCS11_OBJ_ATTR_CRT_TRUSTED_CA	/* CAs */
+ } gnutls_pkcs11_obj_attr_t;
+ 
+ /**
+@@ -234,7 +234,7 @@
+ 	GNUTLS_PKCS11_TOKEN_LABEL,
+ 	GNUTLS_PKCS11_TOKEN_SERIAL,
+ 	GNUTLS_PKCS11_TOKEN_MANUFACTURER,
+-	GNUTLS_PKCS11_TOKEN_MODEL,
++	GNUTLS_PKCS11_TOKEN_MODEL
+ } gnutls_pkcs11_token_info_t;
+ 
+ /**
+--- lib/includes/gnutls/x509.h.orig	2014-06-05 11:05:32.000000000 -0500
++++ lib/includes/gnutls/x509.h	2014-07-14 00:43:40.000000000 -0500
+@@ -821,7 +821,7 @@
+ 	GNUTLS_VERIFY_DISABLE_CRL_CHECKS = 1 << 9,
+ 	GNUTLS_VERIFY_ALLOW_UNSORTED_CHAIN = 1 << 10,
+ 	GNUTLS_VERIFY_DO_NOT_ALLOW_UNSORTED_CHAIN = 1 << 11,
+-	GNUTLS_VERIFY_DO_NOT_ALLOW_WILDCARDS = 1 << 12,
++	GNUTLS_VERIFY_DO_NOT_ALLOW_WILDCARDS = 1 << 12
+ } gnutls_certificate_verify_flags;
+ 
+ /**
+@@ -854,7 +854,7 @@
+ 	GNUTLS_PROFILE_ULTRA = 7,
+ 	
+ 	GNUTLS_PROFILE_SUITEB128=32,
+-	GNUTLS_PROFILE_SUITEB192=33,
++	GNUTLS_PROFILE_SUITEB192=33
+ 	/*GNUTLS_PROFILE_MAX=255*/
+ } gnutls_certificate_verification_profiles_t;
+ 

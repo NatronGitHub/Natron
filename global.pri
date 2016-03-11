@@ -1,25 +1,56 @@
-#This Source Code Form is subject to the terms of the Mozilla Public
-#License, v. 2.0. If a copy of the MPL was not distributed with this
-#file, You can obtain one at http://mozilla.org/MPL/2.0/.
+# ***** BEGIN LICENSE BLOCK *****
+# This file is part of Natron <http://www.natron.fr/>,
+# Copyright (C) 2016 INRIA and Alexandre Gauthier
+#
+# Natron is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# Natron is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+# ***** END LICENSE BLOCK *****
 
-CONFIG += warn_on
-DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_VEGAS OFX_SUPPORTS_PARAMETRIC OFX_EXTENSIONS_TUTTLE
+CONFIG += warn_on no_keywords
+DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_VEGAS OFX_SUPPORTS_PARAMETRIC OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_NATRON OFX_SUPPORTS_OPENGLRENDER
 DEFINES += OFX_SUPPORTS_MULTITHREAD
+DEFINES += OFX_SUPPORTS_DIALOG
+#Commented-out because many plug-in vendors do not implement it correctly
+#DEFINES += OFX_SUPPORTS_DIALOG_V1
 
-trace_ofx_actions{
-    DEFINES += OFX_DEBUG_ACTIONS
+#Since in Natron and OpenFX all strings are supposed UTF-8 and that the constructor
+#for QString(const char*) assumes ASCII strings, we may run into troubles
+DEFINES += QT_NO_CAST_FROM_ASCII
+
+*g++* | *clang* {
+#See https://bugreports.qt.io/browse/QTBUG-35776 we cannot use
+# QMAKE_CFLAGS_RELEASE_WITH_DEBUGINFO
+# QMAKE_CXXFLAGS_RELEASE_WITH_DEBUGINFO
+# QMAKE_OBJECTIVE_CFLAGS_RELEASE_WITH_DEBUGINFO
+# QMAKE_LFLAGS_RELEASE_WITH_DEBUGINFO
+
+    CONFIG(relwithdebinfo) {
+        CONFIG += release
+        DEFINES *= NDEBUG
+        QMAKE_CXXFLAGS += -O2 -g
+        QMAKE_CXXFLAGS -= -O3
+        #Remove the -s flag passed in release mode by qmake so binaries don't get stripped
+        QMAKE_LFLAGS_RELEASE =
+    }
 }
 
-trace_ofx_params{
-    DEFINES += OFX_DEBUG_PARAMETERS
-}
-
-trace_ofx_properties{
-    DEFINES += OFX_DEBUG_PROPERTIES
-}
-
-log{
-    DEFINES += NATRON_LOG
+win32-msvc* {
+    CONFIG(relwithdebinfo) {
+        CONFIG += release
+        DEFINES *= NDEBUG
+        QMAKE_CXXFLAGS_RELEASE += -Zi
+        QMAKE_LFLAGS_RELEASE += /DEBUG /OPT:REF
+    }
 }
 
 CONFIG(debug, debug|release){
@@ -28,9 +59,58 @@ CONFIG(debug, debug|release){
     DEFINES *= NDEBUG
 }
 
+#Always enable breakpad, to disable just launch Natron-bin and not Natron
+#Commenting this will prevent Natron from even using breakpad
+
+!disable-breakpad {
+    DEFINES += NATRON_USE_BREAKPAD
+}
 
 CONFIG(noassertions) {
-   DEFINES *= NDEBUG QT_NO_DEBUG
+#See http://doc.qt.io/qt-4.8/debug.html
+   DEFINES *= NDEBUG QT_NO_DEBUG QT_NO_DEBUG_OUTPUT QT_NO_WARNING_OUTPUT
+}
+
+CONFIG(snapshot) {
+   message("Compiling an official snapshot (should only be done on the Natron build farm).")
+   DEFINES += NATRON_CONFIG_SNAPSHOT
+   CONFIG_SET=1
+}
+CONFIG(alpha) {
+	message("Compiling Natron in alpha version (should only be done on the Natron build farm).")
+	DEFINES += NATRON_CONFIG_ALPHA
+	CONFIG_SET=1
+}
+CONFIG(beta) {
+	message("Compiling Natron in beta version (should only be done on the Natron build farm).")
+	DEFINES += NATRON_CONFIG_BETA
+	CONFIG_SET=1
+}
+CONFIG(RC) {
+	message("Compiling Natron in release candidate version (should only be done on the Natron build farm).")
+	DEFINES += NATRON_CONFIG_RC
+	CONFIG_SET=1
+}
+CONFIG(stable) {
+	message("Compiling Natron in stable version (should only be done on the Natron build farm).")
+	DEFINES += NATRON_CONFIG_STABLE
+	CONFIG_SET=1
+}
+CONFIG(custombuild) {
+	message("Compiling Natron with a custom version for $$BUILD_USER_NAME")
+	#BUILD_USER_NAME should be defined reflecting the user name that should appear in Natron.
+        DEFINES += NATRON_CUSTOM_BUILD_USER_TOKEN=\"$$BUILD_USER_NAME\"
+	CONFIG_SET=1
+}
+
+isEmpty(CONFIG_SET) {
+        message("You did not select a config option for the build. Defaulting to Devel. You can choose among  (snapshot | alpha | beta | RC | stable | custombuild). For custombuild you need to define the environment variable BUILD_USER_NAME. Also you can give a revision number to the version of Natron with the environment variable BUILD_NUMBER (e.g: RC1, RC2 etc...)")
+}
+
+isEmpty(BUILD_NUMBER) {
+	DEFINES += NATRON_BUILD_NUMBER=0
+} else {
+	DEFINES += NATRON_BUILD_NUMBER=$$BUILD_NUMBER
 }
 
 # https://qt.gitorious.org/qt-creator/qt-creator/commit/b48ba2c25da4d785160df4fd0d69420b99b85152
@@ -38,7 +118,8 @@ unix:LIBS += $$QMAKE_LIBS_DYNLOAD
 
 *g++* {
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
-  QMAKE_CXXFLAGS_WARN_ON += -Wextra
+  QMAKE_CFLAGS_WARN_ON += -Wextra -Wmissing-prototypes -Wmissing-declarations -Wno-multichar
+  QMAKE_CXXFLAGS_WARN_ON += -Wextra -Wno-multichar
   GCCVer = $$system($$QMAKE_CXX --version)
   contains(GCCVer,[0-3]\\.[0-9]+.*) {
   } else {
@@ -94,9 +175,12 @@ macx {
   LIBS += -framework CoreServices
 }
 
-!macx|!universal {
-  # precompiled headers don't work with multiple archs
-  CONFIG += precompile_header
+# CONFIG+=nopch disables precompiled headers
+!nopch {
+  !macx|!universal {
+    # precompiled headers don't work with multiple archs
+    CONFIG += precompile_header
+  }
 }
 
 !macx {
@@ -107,40 +191,65 @@ macx {
 win32 {
   #ofx needs WINDOWS def
   #microsoft compiler needs _MBCS to compile with the multi-byte character set.
-  DEFINES += WINDOWS _MBCS COMPILED_FROM_DSP XML_STATIC  NOMINMAX
+  #DEFINES += _MBCS
+  DEFINES += WINDOWS COMPILED_FROM_DSP XML_STATIC  NOMINMAX
   DEFINES -= _UNICODE UNICODE
-  RC_FILE += ../Natron.rc
+  
+  #System library is required on windows to map network share names from drive letters
+  LIBS += -lmpr
+
 }
 
 win32-msvc* {
+    CONFIG(64bit){
+        message("Compiling for architecture x86 64 bits")
+        Release:DESTDIR = x64/release
+        Release:OBJECTS_DIR = x64/release/.obj
+        Release:MOC_DIR = x64/release/.moc
+        Release:RCC_DIR = x64/release/.rcc
+        Release:UI_DIR = x64/release/.ui
 
-CONFIG(64bit){
-	message("Compiling for architecture x86 64 bits")
-	Release:DESTDIR = x64/release
-	Release:OBJECTS_DIR = x64/release/.obj
-	Release:MOC_DIR = x64/release/.moc
-	Release:RCC_DIR = x64/release/.rcc
-	Release:UI_DIR = x64/release/.ui
-	
-	Debug:DESTDIR = x64/debug
-	Debug:OBJECTS_DIR = x64/debug/.obj
-	Debug:MOC_DIR = x64/debug/.moc
-	Debug:RCC_DIR = x64/debug/.rcc
-	Debug:UI_DIR = x64/debug/.ui
-} else {
-	message("Compiling for architecture x86 32 bits")
-	Release:DESTDIR = win32/release
-	Release:OBJECTS_DIR = win32/release/.obj
-	Release:MOC_DIR = win32/release/.moc
-	Release:RCC_DIR = win32/release/.rcc
-	Release:UI_DIR = win32/release/.ui
-	
-	Debug:DESTDIR = win32/debug
-	Debug:OBJECTS_DIR = win32/debug/.obj
-	Debug:MOC_DIR = win32/debug/.moc
-	Debug:RCC_DIR = win32/debug/.rcc
-	Debug:UI_DIR = win32/debug/.ui
+        Debug:DESTDIR = x64/debug
+        Debug:OBJECTS_DIR = x64/debug/.obj
+        Debug:MOC_DIR = x64/debug/.moc
+        Debug:RCC_DIR = x64/debug/.rcc
+        Debug:UI_DIR = x64/debug/.ui
+    } else {
+        message("Compiling for architecture x86 32 bits")
+        Release:DESTDIR = win32/release
+        Release:OBJECTS_DIR = win32/release/.obj
+        Release:MOC_DIR = win32/release/.moc
+        Release:RCC_DIR = win32/release/.rcc
+        Release:UI_DIR = win32/release/.ui
+
+        Debug:DESTDIR = win32/debug
+        Debug:OBJECTS_DIR = win32/debug/.obj
+        Debug:MOC_DIR = win32/debug/.moc
+        Debug:RCC_DIR = win32/debug/.rcc
+        Debug:UI_DIR = win32/debug/.ui
+    }
+    #System library is required on windows to map network share names from drive letters
+    LIBS += mpr.lib
 }
+
+
+win32-g++ {
+	# On MingW everything is defined with pkgconfig except boost
+	QT_CONFIG -= no-pkg-config
+    CONFIG += link_pkgconfig
+	glew:      PKGCONFIG += glew
+    expat:     PKGCONFIG += expat
+	cairo:     PKGCONFIG += cairo
+	shiboken:  PKGCONFIG += shiboken-py2
+    pyside:    PKGCONFIG += pyside-py2
+	INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside-py2)/QtCore
+	INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside-py2)/QtGui
+	python:    PKGCONFIG += python-2.7
+	boost:     LIBS += -lboost_serialization-mt
+	boost:     LIBS += -lboost_serialization-mt
+	
+	#See http://stackoverflow.com/questions/16596876/object-file-has-too-many-sections
+	Debug:	QMAKE_CXXFLAGS += -Wa,-mbig-obj 
 }
 
 unix {
@@ -149,12 +258,59 @@ unix {
      CONFIG += link_pkgconfig
      glew:      PKGCONFIG += glew
      expat:     PKGCONFIG += expat
-     cairo:     PKGCONFIG += cairo
-     !macx {
-         LIBS +=  -lGLU
-     }
-     linux {
+     linux-* {
+         # link with static cairo on linux, to avoid linking to X11 libraries in NatronRenderer
+         cairo {
+             PKGCONFIG += pixman-1 freetype2 fontconfig
+             LIBS +=  $$system(pkg-config --variable=libdir cairo)/libcairo.a
+         }
          LIBS += -ldl
+         QMAKE_LFLAGS += '-Wl,-rpath,\'\$$ORIGIN/../lib\',-z,origin'
+     } else {
+         cairo:     PKGCONFIG += cairo
+     }
+
+     # User may specify an alternate python2-config from the command-line,
+     # as in "qmake PYTHON_CONFIG=python2.7-config"
+     isEmpty(PYTHON_CONFIG) {
+         PYTHON_CONFIG = python2-config
+     }
+     python {
+          #PKGCONFIG += python
+          LIBS += $$system($$PYTHON_CONFIG --ldflags)
+          PYTHON_CFLAGS = $$system($$PYTHON_CONFIG --includes)
+          PYTHON_INCLUDEPATH = $$find(PYTHON_CFLAGS, ^-I.*)
+          PYTHON_INCLUDEPATH ~= s/^-I(.*)/\\1/g
+          INCLUDEPATH *= $$PYTHON_INCLUDEPATH
+     }
+
+     # There may be different pyside.pc/shiboken.pc for different versions of python.
+     # pkg-config will probably give a bad answer, unless python2 is the system default.
+     # See for example tools/travis/install_dependencies.sh for a solution that works on Linux,
+     # using a custom config.pri
+     shiboken: PKGCONFIG += shiboken
+     pyside:   PKGCONFIG += pyside
+     # The following hack also works with Homebrew if pyside is installed with option --with-python3
+     macx {
+       QMAKE_LFLAGS += '-Wl,-rpath,\'@loader_path/../Frameworks\''
+       shiboken {
+         PKGCONFIG -= shiboken
+         PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig
+         INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir shiboken)
+         # the sed stuff is to work around an Xcode generator bug
+         LIBS += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --libs shiboken | sed -e s/-undefined\\ dynamic_lookup//)
+       }
+       pyside {
+         PKGCONFIG -= pyside
+         PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig
+         INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)
+         INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
+         # QtGui include are needed because it looks for Qt::convertFromPlainText which is defined in
+         # qtextdocument.h in the QtGui module.
+         INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
+         INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$${QMAKE_LIBDIR_QT}/pkgconfig pkg-config --variable=includedir QtGui)
+         LIBS += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --libs pyside)
+       }
      }
 } #unix
 
@@ -166,8 +322,9 @@ unix {
 }
 
 *clang* {
-  QMAKE_CXXFLAGS += -ftemplate-depth-1024 -Wno-c++11-extensions
-  QMAKE_CXXFLAGS_WARN_ON += -Wextra
+  QMAKE_CXXFLAGS += -ftemplate-depth-1024
+  QMAKE_CFLAGS_WARN_ON += -Wextra
+  QMAKE_CXXFLAGS_WARN_ON += -Wextra -Wno-c++11-extensions
   c++11 {
     QMAKE_CXXFLAGS += -std=c++11
   }
@@ -184,12 +341,12 @@ addresssanitizer {
   message("  qmake -spec unsupported/macx-clang CONFIG+=addresssanitizer ...")
   message("see http://clang.llvm.org/docs/AddressSanitizer.html")
   CONFIG += debug
-  QMAKE_CXXFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1
+  QMAKE_CFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1
   QMAKE_CFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1
   QMAKE_LFLAGS += -fsanitize=address -g
 
 #  QMAKE_LFLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
-#  QMAKE_CXXFLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
+#  QMAKE_CLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
 #  QMAKE_CFLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
 }
 
@@ -198,13 +355,15 @@ threadsanitizer {
   message("Compiling with ThreadSanitizer (for clang).")
   message("see http://clang.llvm.org/docs/ThreadSanitizer.html")
   CONFIG += debug
-  QMAKE_CXXFLAGS += -fsanitize=thread -O1
+  QMAKE_CFLAGS += -fsanitize=thread -O1
   QMAKE_CFLAGS += -fsanitize=thread -O1
   QMAKE_LFLAGS += -fsanitize=thread -g
 }
 
 coverage {
-  QMAKE_CXXFLAGS += -fprofile-arcs -ftest-coverage -O0
+  QMAKE_CFLAGS += -fprofile-arcs -ftest-coverage -O0
   QMAKE_LFLAGS += -fprofile-arcs -ftest-coverage
   QMAKE_CLEAN += $(OBJECTS_DIR)/*.gcda $(OBJECTS_DIR)/*.gcno
 }
+
+

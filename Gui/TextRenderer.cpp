@@ -1,10 +1,30 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ *
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
-#include "Gui/TextRenderer.h"
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
+#include "TextRenderer.h"
+
+#include <stdexcept>
 
 #include <boost/shared_ptr.hpp>
 
@@ -28,7 +48,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 #define TEXTURE_SIZE 256
 
@@ -50,7 +70,7 @@ struct TextRendererPrivate
 
     ~TextRendererPrivate();
 
-    void newTransparantTexture();
+    void newTransparentTexture();
 
     CharBitmap * createCharacter(QChar c);
 
@@ -113,7 +133,7 @@ TextRendererPrivate::clearBitmapCache()
 }
 
 void
-TextRendererPrivate::newTransparantTexture()
+TextRendererPrivate::newTransparentTexture()
 {
     GLuint savedTexture;
     glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
@@ -149,7 +169,7 @@ TextRendererPrivate::createCharacter(QChar c)
 #endif
 
     if ( _usedTextures.empty() ) {
-        newTransparantTexture();
+        newTransparentTexture();
     }
 
     GLuint texture = _usedTextures.back();
@@ -207,7 +227,7 @@ TextRendererPrivate::createCharacter(QChar c)
         _yOffset += height;
     }
     if (_yOffset + height >= TEXTURE_SIZE) {
-        newTransparantTexture();
+        newTransparentTexture();
         _yOffset = 1;
     }
 
@@ -242,6 +262,8 @@ TextRenderer::~TextRenderer()
 void
 TextRenderer::renderText(float x,
                          float y,
+                         float scalex,
+                         float scaley,
                          const QString &text,
                          const QColor &color,
                          const QFont &font) const
@@ -285,14 +307,14 @@ TextRenderer::renderText(float x,
             glTexCoord2f(c->xTexCoords[0], c->yTexCoords[0]);
             glVertex2f(0, 0);
             glTexCoord2f(c->xTexCoords[1], c->yTexCoords[0]);
-            glVertex2f(c->w, 0);
+            glVertex2f(c->w * scalex, 0);
             glTexCoord2f(c->xTexCoords[1], c->yTexCoords[1]);
-            glVertex2f(c->w, c->h);
+            glVertex2f(c->w * scalex, c->h * scaley);
             glTexCoord2f(c->xTexCoords[0], c->yTexCoords[1]);
-            glVertex2f(0, c->h);
+            glVertex2f(0, c->h * scaley);
             glEnd();
             glCheckErrorIgnoreOSXBug();
-            glTranslatef(c->w, 0, 0);
+            glTranslatef(c->w * scalex, 0, 0);
             glCheckError();
         }
     } // GLProtectAttrib a(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_TRANSFORM_BIT);
@@ -300,4 +322,6 @@ TextRenderer::renderText(float x,
 
     glCheckError();
 } // renderText
+
+NATRON_NAMESPACE_EXIT;
 

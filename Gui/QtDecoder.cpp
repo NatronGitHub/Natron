@@ -1,15 +1,30 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include "QtDecoder.h"
+
+#ifdef NATRON_ENABLE_QT_IO_NODES
 
 #include <stdexcept>
 
@@ -30,11 +45,11 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Project.h"
 #include "Engine/Node.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 using std::cout; using std::endl;
 
-QtReader::QtReader(boost::shared_ptr<Natron::Node> node)
-    : Natron::EffectInstance(node)
+QtReader::QtReader(NodePtr node)
+    : EffectInstance(node)
       , _lut( Color::LutManager::sRGBLut() )
       , _img(0)
       , _fileKnob()
@@ -52,9 +67,7 @@ QtReader::QtReader(boost::shared_ptr<Natron::Node> node)
 
 QtReader::~QtReader()
 {
-    if (_img) {
-        delete _img;
-    }
+    delete _img;
 }
 
 std::string
@@ -76,7 +89,7 @@ QtReader::getPluginGrouping(std::list<std::string>* grouping) const
 }
 
 std::string
-QtReader::getDescription() const
+QtReader::getPluginDescription() const
 {
     return QObject::tr("A QImage (Qt) based image reader.").toStdString();
 }
@@ -84,19 +97,19 @@ QtReader::getDescription() const
 void
 QtReader::initializeKnobs()
 {
-    Natron::warningDialog( getName(), QObject::tr("This plugin exists only to help the developers team to test %1"
+    Dialogs::warningDialog( getScriptName_mt_safe(), QObject::tr("This plugin exists only to help the developers team to test %1"
                                                   ". You cannot use it when rendering a project.").arg(NATRON_APPLICATION_NAME).toStdString() );
 
 
-    _fileKnob = getNode()->createKnob<File_Knob>( QObject::tr("File").toStdString() );
+    _fileKnob = getNode()->createKnob<KnobFile>( QObject::tr("File").toStdString() );
     _fileKnob->setAsInputImage();
 
-    _firstFrame =  getNode()->createKnob<Int_Knob>( QObject::tr("First frame").toStdString() );
+    _firstFrame =  getNode()->createKnob<KnobInt>( QObject::tr("First frame").toStdString() );
     _firstFrame->setAnimationEnabled(false);
     _firstFrame->setDefaultValue(0,0);
 
 
-    _before = getNode()->createKnob<Choice_Knob>( QObject::tr("Before").toStdString() );
+    _before = getNode()->createKnob<KnobChoice>( QObject::tr("Before").toStdString() );
     std::vector<std::string> beforeOptions;
     beforeOptions.push_back( QObject::tr("hold").toStdString() );
     beforeOptions.push_back( QObject::tr("loop").toStdString() );
@@ -107,12 +120,12 @@ QtReader::initializeKnobs()
     _before->setAnimationEnabled(false);
     _before->setDefaultValue(0,0);
 
-    _lastFrame =  getNode()->createKnob<Int_Knob>( QObject::tr("Last frame").toStdString() );
+    _lastFrame =  getNode()->createKnob<KnobInt>( QObject::tr("Last frame").toStdString() );
     _lastFrame->setAnimationEnabled(false);
     _lastFrame->setDefaultValue(0,0);
 
 
-    _after = getNode()->createKnob<Choice_Knob>( QObject::tr("After").toStdString() );
+    _after = getNode()->createKnob<KnobChoice>( QObject::tr("After").toStdString() );
     std::vector<std::string> afterOptions;
     afterOptions.push_back( QObject::tr("hold").toStdString() );
     afterOptions.push_back( QObject::tr("loop").toStdString() );
@@ -123,7 +136,7 @@ QtReader::initializeKnobs()
     _after->setAnimationEnabled(false);
     _after->setDefaultValue(0,0);
 
-    _missingFrameChoice = getNode()->createKnob<Choice_Knob>( QObject::tr("On missing frame").toStdString() );
+    _missingFrameChoice = getNode()->createKnob<KnobChoice>( QObject::tr("On missing frame").toStdString() );
     std::vector<std::string> missingFrameOptions;
     missingFrameOptions.push_back( QObject::tr("Load nearest").toStdString() );
     missingFrameOptions.push_back( QObject::tr("Error").toStdString() );
@@ -132,7 +145,7 @@ QtReader::initializeKnobs()
     _missingFrameChoice->setDefaultValue(0,0);
     _missingFrameChoice->setAnimationEnabled(false);
 
-    _frameMode = getNode()->createKnob<Choice_Knob>( QObject::tr("Frame mode").toStdString() );
+    _frameMode = getNode()->createKnob<KnobChoice>( QObject::tr("Frame mode").toStdString() );
     _frameMode->setAnimationEnabled(false);
     std::vector<std::string> frameModeOptions;
     frameModeOptions.push_back( QObject::tr("Starting frame").toStdString() );
@@ -140,21 +153,21 @@ QtReader::initializeKnobs()
     _frameMode->populateChoices(frameModeOptions);
     _frameMode->setDefaultValue(0,0);
 
-    _startingFrame = getNode()->createKnob<Int_Knob>( QObject::tr("Starting frame").toStdString() );
+    _startingFrame = getNode()->createKnob<KnobInt>( QObject::tr("Starting frame").toStdString() );
     _startingFrame->setAnimationEnabled(false);
     _startingFrame->setDefaultValue(0,0);
 
-    _timeOffset = getNode()->createKnob<Int_Knob>( QObject::tr("Time offset").toStdString() );
+    _timeOffset = getNode()->createKnob<KnobInt>( QObject::tr("Time offset").toStdString() );
     _timeOffset->setAnimationEnabled(false);
     _timeOffset->setDefaultValue(0,0);
-    _timeOffset->setSecret(true);
+    _timeOffset->setSecretByDefault(true);
 } // initializeKnobs
 
 void
 QtReader::knobChanged(KnobI* k,
-                      Natron::ValueChangedReasonEnum /*reason*/,
-                      int /*view*/,
-                      SequenceTime /*time*/,
+                      ValueChangedReasonEnum /*reason*/,
+                      ViewSpec /*view*/,
+                      double /*time*/,
                       bool /*originatedFromMainThread*/)
 {
     if ( k == _fileKnob.get() ) {
@@ -255,11 +268,14 @@ QtReader::timeDomainFromSequenceTimeDomain(SequenceTime & first,
 }
 
 void
-QtReader::getFrameRange(SequenceTime *first,
-                        SequenceTime *last)
+QtReader::getFrameRange(double *first,
+                        double *last)
 {
-    getSequenceTimeDomain(*first, *last);
-    timeDomainFromSequenceTimeDomain(*first, *last, false);
+    int f,l;
+    getSequenceTimeDomain(f, l);
+    timeDomainFromSequenceTimeDomain(f, l, false);
+    *first = f;
+    *last = l;
 }
 
 void
@@ -324,7 +340,7 @@ QtReader::getSequenceTime(SequenceTime t)
             throw std::invalid_argument("Out of frame range.");
             break;
         case 4:     //error
-            setPersistentMessage( Natron::eMessageTypeError,  QObject::tr("Missing frame").toStdString() );
+            setPersistentMessage( eMessageTypeError,  QObject::tr("Missing frame").toStdString() );
             throw std::invalid_argument("Out of frame range.");
             break;
         default:
@@ -361,7 +377,7 @@ QtReader::getSequenceTime(SequenceTime t)
             throw std::invalid_argument("Out of frame range.");
             break;
         case 4:     //error
-            setPersistentMessage( Natron::eMessageTypeError, QObject::tr("Missing frame").toStdString() );
+            setPersistentMessage( eMessageTypeError, QObject::tr("Missing frame").toStdString() );
             throw std::invalid_argument("Out of frame range.");
             break;
         default:
@@ -379,7 +395,7 @@ QtReader::getFilenameAtSequenceTime(SequenceTime time,
 {
     int missingChoice = _missingFrameChoice->getValue();
 
-    filename = _fileKnob->getFileName(time);
+    filename = _fileKnob->getFileName(time, 0);
 
     switch (missingChoice) {
     case 0:     // Load nearest
@@ -387,7 +403,7 @@ QtReader::getFilenameAtSequenceTime(SequenceTime time,
         if ( filename.empty() ) {
             filename = _fileKnob->getFileName(time);
             if ( filename.empty() ) {
-                setPersistentMessage( Natron::eMessageTypeError, QObject::tr("Nearest frame search went out of range").toStdString() );
+                setPersistentMessage( eMessageTypeError, QObject::tr("Nearest frame search went out of range").toStdString() );
             }
         }
         break;
@@ -395,7 +411,7 @@ QtReader::getFilenameAtSequenceTime(SequenceTime time,
                 /// For images sequences, if the offset is not 0, that means no frame were found at the  originally given
                 /// time, we can safely say this is  a missing frame.
         if ( filename.empty() ) {
-            setPersistentMessage( Natron::eMessageTypeError, QObject::tr("Missing frame").toStdString() );
+            setPersistentMessage( eMessageTypeError, QObject::tr("Missing frame").toStdString() );
         }
     case 2:     // Black image
                 /// For images sequences, if the offset is not 0, that means no frame were found at the  originally given
@@ -405,8 +421,8 @@ QtReader::getFilenameAtSequenceTime(SequenceTime time,
     }
 }
 
-Natron::StatusEnum
-QtReader::getRegionOfDefinition(U64 /*hash*/,SequenceTime time,
+StatusEnum
+QtReader::getRegionOfDefinition(U64 /*hash*/,double time,
                                 const RenderScale & /*scale*/,
                                 int /*view*/,
                                 RectD* rod )
@@ -430,12 +446,10 @@ QtReader::getRegionOfDefinition(U64 /*hash*/,SequenceTime time,
 
     if (filename != _filename) {
         _filename = filename;
-        if (_img) {
-            delete _img;
-        }
+        delete _img;
         _img = new QImage( _filename.c_str() );
         if (_img->format() == QImage::Format_Invalid) {
-            setPersistentMessage(Natron::eMessageTypeError, QObject::tr("Failed to load the image ").toStdString() + filename);
+            setPersistentMessage(eMessageTypeError, QObject::tr("Failed to load the image ").toStdString() + filename);
 
             return eStatusFailed;
         }
@@ -449,16 +463,13 @@ QtReader::getRegionOfDefinition(U64 /*hash*/,SequenceTime time,
     return eStatusOK;
 }
 
-Natron::StatusEnum
-QtReader::render(SequenceTime /*time*/,
-                 const RenderScale& /*originalScale*/,
-                 const RenderScale & /*mappedScale*/,
-                 const RectI & roi,
-                 int /*view*/,
-                 bool /*isSequentialRender*/,
-                 bool /*isRenderResponseToUserInteraction*/,
-                 boost::shared_ptr<Natron::Image> output)
+StatusEnum
+QtReader::render(const RenderActionArgs& args)
 {
+    assert(args.outputPlanes.size() == 1);
+    
+    const std::pair<ImageComponents,ImagePtr>& output = args.outputPlanes.front();
+    
     int missingFrameChoice = _missingFrameChoice->getValue();
 
     if (!_img) {
@@ -469,18 +480,20 @@ QtReader::render(SequenceTime /*time*/,
         return eStatusFailed; // error
     }
 
+    Image::WriteAccess acc = output.second->getWriteRights();
+    
     assert(_img);
     switch ( _img->format() ) {
     case QImage::Format_RGB32:     // The image is stored using a 32-bit RGB format (0xffRRGGBB).
     case QImage::Format_ARGB32:     // The image is stored using a 32-bit ARGB format (0xAARRGGBB).
         //might have to invert y coordinates here
-        _lut->from_byte_packed( (float*)output->pixelAt(0, 0), _img->bits(), roi, output->getBounds(), output->getBounds(),
-                                Natron::Color::ePixelPackingBGRA,Natron::Color::ePixelPackingRGBA,true,false );
+        _lut->from_byte_packed( (float*)acc.pixelAt(0, 0), _img->bits(), args.roi, output.second->getBounds(), output.second->getBounds(),
+                                Color::ePixelPackingBGRA,Color::ePixelPackingRGBA,true,false );
         break;
     case QImage::Format_ARGB32_Premultiplied:     // The image is stored using a premultiplied 32-bit ARGB format (0xAARRGGBB).
         //might have to invert y coordinates here
-        _lut->from_byte_packed( (float*)output->pixelAt(0, 0), _img->bits(), roi, output->getBounds(), output->getBounds(),
-                                Natron::Color::ePixelPackingBGRA,Natron::Color::ePixelPackingRGBA,true,true );
+        _lut->from_byte_packed( (float*)acc.pixelAt(0, 0), _img->bits(), args.roi, output.second->getBounds(), output.second->getBounds(),
+                                Color::ePixelPackingBGRA,Color::ePixelPackingRGBA,true,true );
         break;
     case QImage::Format_Mono:     // The image is stored using 1-bit per pixel. Bytes are packed with the most significant bit (MSB) first.
     case QImage::Format_MonoLSB:     // The image is stored using 1-bit per pixel. Bytes are packed with the less significant bit (LSB) first.
@@ -492,8 +505,8 @@ QtReader::render(SequenceTime /*time*/,
     case QImage::Format_RGB444:     // The image is stored using a 16-bit RGB format (4-4-4). The unused bits are always zero.
     {
         QImage img = _img->convertToFormat(QImage::Format_ARGB32);
-        _lut->from_byte_packed( (float*)output->pixelAt(0, 0), img.bits(), roi, output->getBounds(), output->getBounds(),
-                                Natron::Color::ePixelPackingBGRA, Natron::Color::ePixelPackingRGBA, true, false );
+        _lut->from_byte_packed( (float*)acc.pixelAt(0, 0), img.bits(), args.roi, output.second->getBounds(), output.second->getBounds(),
+                                Color::ePixelPackingBGRA, Color::ePixelPackingRGBA, true, false );
         break;
     }
     case QImage::Format_ARGB8565_Premultiplied:     // The image is stored using a premultiplied 24-bit ARGB format (8-5-6-5).
@@ -502,14 +515,14 @@ QtReader::render(SequenceTime /*time*/,
     case QImage::Format_ARGB4444_Premultiplied:     // The image is stored using a premultiplied 16-bit ARGB format (4-4-4-4).
     {
         QImage img = _img->convertToFormat(QImage::Format_ARGB32_Premultiplied);
-        _lut->from_byte_packed( (float*)output->pixelAt(0, 0), img.bits(), roi, output->getBounds(), output->getBounds(),
-                                Natron::Color::ePixelPackingBGRA, Natron::Color::ePixelPackingRGBA, true, true );
+        _lut->from_byte_packed( (float*)acc.pixelAt(0, 0), img.bits(), args.roi, output.second->getBounds(), output.second->getBounds(),
+                                Color::ePixelPackingBGRA, Color::ePixelPackingRGBA, true, true );
         break;
     }
     case QImage::Format_Invalid:
     default:
-        output->fill(roi,0.f,1.f);
-        setPersistentMessage( Natron::eMessageTypeError, QObject::tr("Invalid image format.").toStdString() );
+        output.second->fill(args.roi,0.f,1.f);
+        setPersistentMessage( eMessageTypeError, QObject::tr("Invalid image format.").toStdString() );
 
         return eStatusFailed;
     }
@@ -519,15 +532,18 @@ QtReader::render(SequenceTime /*time*/,
 
 void
 QtReader::addAcceptedComponents(int /*inputNb*/,
-                                std::list<Natron::ImageComponentsEnum>* comps)
+                                std::list<ImageComponents>* comps)
 {
     ///QtReader only supports RGBA for now.
-    comps->push_back(Natron::eImageComponentRGBA);
+    comps->push_back(ImageComponents::getRGBAComponents());
 }
 
 void
-QtReader::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
+QtReader::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 {
     depths->push_back(eImageBitDepthFloat);
 }
 
+NATRON_NAMESPACE_EXIT;
+
+#endif // NATRON_ENABLE_QT_IO_NODES

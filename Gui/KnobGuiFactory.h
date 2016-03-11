@@ -1,28 +1,42 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_GUI_KNOBGUIFACTORY_H_
-#define NATRON_GUI_KNOBGUIFACTORY_H_
+#ifndef NATRON_GUI_KNOBGUIFACTORY_H
+#define NATRON_GUI_KNOBGUIFACTORY_H
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
+#include "Global/Macros.h"
 
 #include <string>
 #include <map>
-#ifndef Q_MOC_RUN
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
-class KnobI;
-class DockablePanel;
 
-namespace Natron {
-class LibraryBinary;
-}
+#include "Gui/GuiFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 /******************************KNOB_FACTORY**************************************/
 //Maybe the factory should move to a separate file since it is used to create KnobGui aswell
@@ -31,7 +45,7 @@ class KnobHolder;
 
 class KnobGuiFactory
 {
-    std::map<std::string, Natron::LibraryBinary *> _loadedKnobs;
+    std::map<std::string, LibraryBinary *> _loadedKnobs;
 
 public:
     KnobGuiFactory();
@@ -39,18 +53,17 @@ public:
     ~KnobGuiFactory();
 
 
-    KnobGui * createGuiForKnob(boost::shared_ptr<KnobI> knob, DockablePanel *container) const;
+    KnobGui * createGuiForKnob(KnobPtr knob, DockablePanel *container) const;
 
 private:
-    const std::map<std::string, Natron::LibraryBinary *> &getLoadedKnobs() const
+    const std::map<std::string, LibraryBinary *> &getLoadedKnobs() const
     {
         return _loadedKnobs;
     }
 
-    void loadKnobPlugins();
-
     void loadBultinKnobs();
 };
 
+NATRON_NAMESPACE_EXIT;
 
-#endif // NATRON_GUI_KNOBGUIFACTORY_H_
+#endif // NATRON_GUI_KNOBGUIFACTORY_H

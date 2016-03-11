@@ -1,42 +1,49 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_WRITERS_WRITEQT_H_
-#define NATRON_WRITERS_WRITEQT_H_
+#ifndef NATRON_WRITERS_WRITEQT_H
+#define NATRON_WRITERS_WRITEQT_H
 
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
-#include "Engine/EffectInstance.h"
+#include "Global/Macros.h"
 
-namespace Natron {
-namespace Color {
-class Lut;
-}
-}
+#ifdef NATRON_ENABLE_QT_IO_NODES
 
-class OutputFile_Knob;
-class Choice_Knob;
-class Button_Knob;
-class Int_Knob;
-class Bool_Knob;
+#include "Engine/OutputEffectInstance.h"
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 class QtWriter
-    : public Natron::OutputEffectInstance
+    : public OutputEffectInstance
 {
 public:
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    static EffectInstance* BuildEffect(NodePtr n)
     {
         return new QtWriter(n);
     }
 
-    QtWriter(boost::shared_ptr<Natron::Node> node);
+    QtWriter(NodePtr node);
 
     virtual ~QtWriter();
 
@@ -65,44 +72,44 @@ public:
     virtual std::string getPluginID() const OVERRIDE;
     virtual std::string getPluginLabel() const OVERRIDE;
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
-    virtual std::string getDescription() const OVERRIDE;
-    virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
+    virtual std::string getPluginDescription() const OVERRIDE;
+    virtual void getFrameRange(double *first,double *last) OVERRIDE;
     virtual int getMaxInputCount() const OVERRIDE
     {
         return 1;
     }
 
-    void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, SequenceTime time,
+    void knobChanged(KnobI* k,
+                     ValueChangedReasonEnum reason,
+                     ViewSpec view,
+                     double time,
                      bool originatedFromMainThread) OVERRIDE FINAL;
-    virtual Natron::StatusEnum render(SequenceTime time,
-                                  const RenderScale& originalScale,
-                                  const RenderScale & mappedScale,
-                                  const RectI & roi,
-                                  int view,
-                                  bool isSequentialRender,
-                                  bool isRenderResponseToUserInteraction,
-                                  boost::shared_ptr<Natron::Image> output) OVERRIDE;
-    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponentsEnum>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
+    virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE;
+    virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
 protected:
 
 
     virtual void initializeKnobs() OVERRIDE;
-    virtual Natron::EffectInstance::RenderSafetyEnum renderThreadSafety() const OVERRIDE
+    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE
     {
-        return Natron::EffectInstance::eRenderSafetyInstanceSafe;
+        return eRenderSafetyInstanceSafe;
     }
 
 private:
 
-    const Natron::Color::Lut* _lut;
-    boost::shared_ptr<Bool_Knob> _premultKnob;
-    boost::shared_ptr<OutputFile_Knob> _fileKnob;
-    boost::shared_ptr<Choice_Knob> _frameRangeChoosal;
-    boost::shared_ptr<Int_Knob> _firstFrameKnob;
-    boost::shared_ptr<Int_Knob> _lastFrameKnob;
-    boost::shared_ptr<Button_Knob> _renderKnob;
+    const Color::Lut* _lut;
+    boost::shared_ptr<KnobBool> _premultKnob;
+    boost::shared_ptr<KnobOutputFile> _fileKnob;
+    boost::shared_ptr<KnobChoice> _frameRangeChoosal;
+    boost::shared_ptr<KnobInt> _firstFrameKnob;
+    boost::shared_ptr<KnobInt> _lastFrameKnob;
+    boost::shared_ptr<KnobButton> _renderKnob;
 };
+
+NATRON_NAMESPACE_EXIT;
+
+#endif // NATRON_ENABLE_QT_IO_NODES
 
 #endif /* defined(NATRON_WRITERS_WRITEQT_H_) */

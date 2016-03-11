@@ -1,19 +1,27 @@
-//  Natron
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
 #ifndef KEYSYMBOLS_H
 #define KEYSYMBOLS_H
 
 #include <ofxKeySyms.h>
 #include <QFlags>
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 enum Key
 {
     Key_Unknown =  kOfxKey_Unknown,
@@ -399,19 +407,20 @@ enum Key
     Key_ydiaeresis = kOfxKey_ydiaeresis
 };
 
-enum KeyboardModifier
+enum KeyboardModifierEnum
 {
-    NoModifier = 0x00000000,
-    ShiftModifier = 0x02000000,
-    ControlModifier = 0x04000000,
-    AltModifier = 0x08000000,
-    MetaModifier = 0x10000000,
-    KeypadModifier = 0x20000000,
-    GroupSwitchModifier = 0x40000000,
-    KeyboardModifierMask = 0xfe000000
+    eKeyboardModifierNone = 0x00000000,
+    eKeyboardModifierShift = 0x02000000,
+    eKeyboardModifierControl = 0x04000000,
+    eKeyboardModifierAlt = 0x08000000,
+    eKeyboardModifierMeta = 0x10000000,
+    eKeyboardModifierKeypad = 0x20000000,
+    eKeyboardModifierGroupSwitch = 0x40000000,
+    eKeyboardModifierMask = 0xfe000000
 };
 
-typedef QFlags<Natron::KeyboardModifier> KeyboardModifiers;
-} //namespace NAtron
+typedef QFlags<KeyboardModifierEnum> KeyboardModifiers;
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // KEYSYMBOLS_H

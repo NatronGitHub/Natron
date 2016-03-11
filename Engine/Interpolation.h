@@ -1,20 +1,38 @@
-
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_INTERPOLATION_H_
-#define NATRON_ENGINE_INTERPOLATION_H_
+#ifndef NATRON_ENGINE_INTERPOLATION_H
+#define NATRON_ENGINE_INTERPOLATION_H
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include "Global/Enums.h"
-namespace Natron {
+#include "Engine/EngineFwd.h"
+
+
+NATRON_NAMESPACE_ENTER;
+
+namespace Interpolation {
+
 /**
  * @brief Interpolates using the control points P0(t0,v0) , P3(t3,v3)
  * and the derivatives P1(t1,v1) (being the derivative at P0 with respect to
@@ -65,8 +83,8 @@ double integrate_clamp(double tcur, const double vcur, //start control point
                        double tnext, const double vnext, //end control point
                        double time1, double time2,
                        double vmin, double vmax,
-                       Natron::KeyframeTypeEnum interp,
-                       Natron::KeyframeTypeEnum interpNext) WARN_UNUSED_RETURN;
+                       KeyframeTypeEnum interp,
+                       KeyframeTypeEnum interpNext) WARN_UNUSED_RETURN;
 
 /**
  * @brief This function will set the left and right derivative of 'cur', depending on the interpolation method 'interp' and the
@@ -147,9 +165,9 @@ double integrate_clamp(double tcur, const double vcur, //start control point
    map(C,%):
 
  */
-void autoComputeDerivatives(Natron::KeyframeTypeEnum interpPrev,
-                            Natron::KeyframeTypeEnum interp,
-                            Natron::KeyframeTypeEnum interpNext,
+void autoComputeDerivatives(KeyframeTypeEnum interpPrev,
+                            KeyframeTypeEnum interp,
+                            KeyframeTypeEnum interpNext,
                             double tprev, const double vprev, // vprev = Q0
                             double tcur, const double vcur, // vcur = Q3 = P0
                             double tnext, const double vnext, // vnext = P3
@@ -178,7 +196,10 @@ int solveCubic(double c0, double c1, double c2, double c3, double s[3], int o[3]
 /// @returns the number of solutions.
 /// solutions an and their order are put in s and o
 int solveQuartic(double c0, double c1, double c2, double c3, double c4, double s[4], int o[4]);
-}
+
+} // namespace Interpolation
+
+NATRON_NAMESPACE_EXIT;
 
 
-#endif // NATRON_ENGINE_INTERPOLATION_H_
+#endif // NATRON_ENGINE_INTERPOLATION_H

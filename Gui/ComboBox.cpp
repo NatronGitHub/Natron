@@ -1,42 +1,80 @@
-//  Natron
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include "Gui/ComboBox.h"
 
 #include <cassert>
-#include <algorithm>
+#include <algorithm> // min, max
+#include <stdexcept>
+
 #include <QLayout>
 #include <QStyle>
 #include <QFont>
 #include <QStyleOption>
 #include <QFontMetrics>
+#include <QDebug>
 #include <QPainter>
-#include <QTextDocument> // for Qt::convertFromPlainText
-CLANG_DIAG_OFF(unused-private-field)
+GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
 #include <QMouseEvent>
-CLANG_DIAG_ON(unused-private-field)
+GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_ON(deprecated-register)
 
 #include "Engine/Settings.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Image.h"
+#include "Engine/Lut.h"
 
-#include "Gui/GuiApplicationManager.h"
-#include "Gui/MenuWithToolTips.h"
 #include "Gui/ClickableLabel.h"
+#include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/KnobWidgetDnD.h"
+#include "Gui/Menu.h"
+#include "Gui/Utils.h"
 
-#define DROP_DOWN_ICON_SIZE 6
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
+
+
+/*
+ Copied from QAction.cpp: internal: guesses a descriptive text from a text suited for a menu entry
+ */
+static QString strippedText(QString s)
+{
+    s.remove( QString::fromLatin1("...") );
+    int i = 0;
+    while (i < s.size()) {
+        ++i;
+        if (s.at(i-1) != QLatin1Char('&'))
+            continue;
+        if (i < s.size() && s.at(i) == QLatin1Char('&'))
+            ++i;
+        s.remove(i-1,1);
+    }
+    return s.trimmed();
+}
 
 ComboBox::ComboBox(QWidget* parent)
     : QFrame(parent)
@@ -45,27 +83,31 @@ ComboBox::ComboBox(QWidget* parent)
     , _animation(0)
     , _clicked(false)
     , _dirty(false)
+    , _altered(false)
+    , _cascading(false)
+    , _cascadingIndex(0)
     , _currentIndex(0)
     , _currentText()
     , _separators()
-    , _actions()
-    , _menu(0)
+    , _rootNode(new ComboBoxMenuNode())
     , _sh()
     , _msh()
     , _sizePolicy()
     , _validHints(false)
     , _align(Qt::AlignLeft | Qt::AlignVCenter | Qt::TextExpandTabs)
+    , _currentDelta(0)
+    , ignoreWheelEvent(false)
 {
 
     setFrameShape(QFrame::Box);
 
     setCurrentIndex(0);
 
-    _menu = new MenuWithToolTips(this);
+    _rootNode->isMenu = new MenuWithToolTips(this);
 
     setSizePolicy(QSizePolicy(QSizePolicy::Preferred,QSizePolicy::Fixed,QSizePolicy::Label));
     setFocusPolicy(Qt::StrongFocus);
-    setFixedHeight(NATRON_MEDIUM_BUTTON_SIZE);
+    setFixedHeight(TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
 }
 
 QSize
@@ -82,14 +124,15 @@ ComboBox::sizeForWidth(int w) const
     }
     QRect br;
     
-    QFontMetrics fm = fontMetrics();
+    //Using this constructor of QFontMetrics will respect the DPI of the screen, see http://doc.qt.io/qt-4.8/qfontmetrics.html#QFontMetrics-2
+    QFontMetrics fm(font(),0);
     
     Qt::Alignment align = QStyle::visualAlignment(Qt::LeftToRight, QFlag(_align));
     
     int hextra = DROP_DOWN_ICON_SIZE * 2,vextra = 0;
     
     ///Indent of 1 character
-    int indent = fm.width('x');
+    int indent = fm.width(QLatin1Char('x'));
     
     if (indent > 0) {
         if ((align & Qt::AlignLeft) || (align & Qt::AlignRight))
@@ -161,6 +204,7 @@ ComboBox::updateLabel()
     _validHints = false;
     updateGeometry(); //< force a call to minmumSizeHint
     update();
+    Q_EMIT minimumSizeChanged(_msh);
 }
 
 void
@@ -188,7 +232,7 @@ ComboBox::layoutRect() const
     
     Qt::Alignment align = QStyle::visualAlignment(Qt::LeftToRight, QFlag(_align));
     
-    int indent = fontMetrics().width('x') / 2;
+    int indent = fontMetrics().width(QLatin1Char('x')) / 2;
     if (indent > 0) {
         
         if (align & Qt::AlignLeft)
@@ -231,7 +275,6 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
                 default: {
                     
                     appPTR->getCurrentSettings()->getRaisedColor(&r, &g, &b);
-                    
                 }   break;
                 case 1: {
                     appPTR->getCurrentSettings()->getInterpolatedColor(&r, &g, &b);
@@ -240,8 +283,14 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
                 {
                     appPTR->getCurrentSettings()->getKeyframeColor(&r, &g, &b);
                 }   break;
+                case 3:
+                {
+                    appPTR->getCurrentSettings()->getExprColor(&r, &g, &b);
+                }   break;
             }
-            fillColor.setRgb(Natron::clamp(r) * 256,Natron::clamp(g) * 256,Natron::clamp(b) * 256);
+            fillColor.setRgb(Color::floatToInt<256>(r),
+                             Color::floatToInt<256>(g),
+                             Color::floatToInt<256>(b));
 
         }
         
@@ -254,7 +303,9 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
             double r,g,b;
             appPTR->getCurrentSettings()->getSelectionColor(&r, &g, &b);
             QColor c;
-            c.setRgb(Natron::clamp(r) * 256,Natron::clamp(g) * 256,Natron::clamp(b) * 256);
+            c.setRgb(Color::floatToInt<256>(r),
+                     Color::floatToInt<256>(g),
+                     Color::floatToInt<256>(b));
             fw = 2;
         }
         p.setPen(pen);
@@ -275,12 +326,18 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
     QColor textColor;
     if (_readOnly) {
         textColor.setRgb(100,100,100);
+    } else if (_altered) {
+        double aR,aG,aB;
+        appPTR->getCurrentSettings()->getAltTextColor(&aR, &aG, &aB);
+        textColor.setRgbF(aR, aG, aB);
     } else if (!_enabled) {
         textColor = Qt::black;
     } else {
         double r,g,b;
         appPTR->getCurrentSettings()->getTextColor(&r, &g, &b);
-        textColor.setRgb(Natron::clamp(r) * 256,Natron::clamp(g) * 256,Natron::clamp(b) * 256);
+        textColor.setRgb(Color::floatToInt<256>(r),
+                         Color::floatToInt<256>(g),
+                         Color::floatToInt<256>(b));
     }
     {
         Qt::Alignment align = QStyle::visualAlignment(Qt::LeftToRight, QFlag(_align));
@@ -312,32 +369,46 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
 void
 ComboBox::mousePressEvent(QMouseEvent* e)
 {
-    if ( buttonDownIsLeft(e) && !_readOnly && _enabled ) {
+    if ( buttonDownIsLeft(e) && !_readOnly ) {
         _clicked = true;
         createMenu();
-        repaint();
+        update();
         QFrame::mousePressEvent(e);
     }
+    _currentDelta = 0;
 }
 
 void
 ComboBox::mouseReleaseEvent(QMouseEvent* e)
 {
     _clicked = false;
-    repaint();
+    update();
     QFrame::mouseReleaseEvent(e);
+    _currentDelta = 0;
 }
 
 void
 ComboBox::wheelEvent(QWheelEvent *e)
 {
+    if (ignoreWheelEvent) {
+        return QFrame::wheelEvent(e);
+    }
     if (!hasFocus()) {
         return;
     }
-    if (e->delta()>0) {
-        setCurrentIndex((activeIndex() - 1 < 0) ? count() - 1 : activeIndex() - 1);
-    } else {
-        setCurrentIndex((activeIndex() + 1) % count());
+    // a standard wheel click is 120
+    _currentDelta += e->delta();
+
+    if (_currentDelta <= -120 || 120 <= _currentDelta) {
+        int c = count();
+        int i = activeIndex();
+        int delta = _currentDelta / 120;
+        _currentDelta -= delta * 120;
+        i = (i - delta) % c;
+        if (i < 0) {
+            i += c;
+        }
+        setCurrentIndex(i);
     }
 }
 
@@ -355,38 +426,58 @@ ComboBox::keyPressEvent(QKeyEvent* e)
             QFrame::keyPressEvent(e);
         }
     }
+    _currentDelta = 0;
+}
+
+static void setEnabledRecursive(bool enabled, ComboBoxMenuNode* node)
+{
+    if (node->isLeaf) {
+        node->isLeaf->setEnabled(enabled);
+    } else {
+        assert(node->isMenu);
+        for (std::size_t i = 0; i < node->children.size(); ++i) {
+            setEnabledRecursive(enabled,node->children[i].get());
+        }
+    }
 }
 
 void
 ComboBox::createMenu()
 {
-    _menu->clear();
-    for (U32 i = 0; i < _actions.size(); ++i) {
-        for (U32 j = 0; j < _separators.size(); ++j) {
-            if (_separators[j] == (int)i) {
-                _menu->addSeparator();
-                break;
+    if (!_cascading) {
+        _rootNode->isMenu->clear();
+        for (U32 i = 0; i < _rootNode->children.size(); ++i) {
+            _rootNode->children[i]->isLeaf->setEnabled( _enabled && !_readOnly );
+            _rootNode->isMenu->addAction(_rootNode->children[i]->isLeaf);
+            for (U32 j = 0; j < _separators.size(); ++j) {
+                if (_separators[j] == (int)i) {
+                    _rootNode->isMenu->addSeparator();
+                    break;
+                }
             }
         }
-        _actions[i]->setEnabled( _enabled && !_readOnly );
-        _menu->addAction(_actions[i]);
+    } else {
+        setEnabledRecursive(_enabled && !_readOnly,_rootNode.get());
     }
-    QAction* triggered = _menu->exec( this->mapToGlobal( QPoint( 0,height() ) ) );
-    for (U32 i = 0; i < _actions.size(); ++i) {
-        if (triggered == _actions[i]) {
-            setCurrentIndex(i);
-            break;
+    QAction* triggered = _rootNode->isMenu->exec( this->mapToGlobal( QPoint( 0,height() ) ) );
+    if (triggered) {
+        QVariant data = triggered->data();
+        if (data.toString() != QString::fromUtf8("New")) {
+            setCurrentIndex(data.toInt());
+        } else {
+            Q_EMIT itemNewSelected();
         }
+        
     }
     _clicked = false;
     setFocus();
-    repaint();
+    update();
 }
 
 int
 ComboBox::count() const
 {
-    return (int)_actions.size();
+    return _cascading ? _cascadingIndex :(int)_rootNode->children.size();
 }
 
 void
@@ -396,11 +487,17 @@ ComboBox::insertItem(int index,
                      QKeySequence key,
                      const QString & toolTip)
 {
+    if (_cascading) {
+        qDebug() << "Combobox::insertItem is unsupported when in cascading mode.";
+        return;
+    }
+    
     assert(index >= 0);
     QAction* action =  new QAction(this);
     action->setText(item);
+    action->setData(QVariant(index));
     if ( !toolTip.isEmpty() ) {
-        action->setToolTip( Qt::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
+        action->setToolTip( GuiUtils::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
     }
     if ( !icon.isNull() ) {
         action->setIcon(icon);
@@ -410,9 +507,14 @@ ComboBox::insertItem(int index,
     }
 
     growMaximumWidthFromText(item);
-    _actions.insert(_actions.begin() + index, action);
+    boost::shared_ptr<ComboBoxMenuNode> node(new ComboBoxMenuNode());
+    node->text = item;
+    node->isLeaf = action;
+    node->parent = _rootNode.get();
+    _rootNode->isMenu->addAction(node->isLeaf);
+    _rootNode->children.insert(_rootNode->children.begin() + index, node);
     /*if this is the first action we add, make it current*/
-    if (_actions.size() == 1) {
+    if (_rootNode->children.size() == 1) {
         setCurrentText_no_emit( itemText(0) );
     }
 }
@@ -420,17 +522,54 @@ ComboBox::insertItem(int index,
 void
 ComboBox::addAction(QAction* action)
 {
-    QString text = action->text();
+    action->setData(QVariant((int)_rootNode->children.size()));
+    addActionPrivate(action);
+}
 
+void
+ComboBox::addActionPrivate(QAction* action)
+{
+    QString text = action->text();
+    
     growMaximumWidthFromText(text);
     action->setParent(this);
-    _actions.push_back(action);
+    boost::shared_ptr<ComboBoxMenuNode> node(new ComboBoxMenuNode());
+    node->text = text;
+    node->isLeaf = action;
+    node->parent = _rootNode.get();
+    _rootNode->isMenu->addAction(node->isLeaf);
+    _rootNode->children.push_back(node);
     
     /*if this is the first action we add, make it current*/
-    if (_actions.size() == 1) {
+    if (_rootNode->children.size() == 1) {
         setCurrentText_no_emit( itemText(0) );
     }
+
 }
+
+void
+ComboBox::addItemNew()
+{
+    if (_cascading) {
+        qDebug() << "ComboBox::addItemNew unsupported when in cascading mode";
+        return;
+    }
+    QAction* action =  new QAction(this);
+    action->setText(QString::fromUtf8("New"));
+    action->setData(QString::fromUtf8("New"));
+    QFont f = QFont(appFont,appFontSize);
+    f.setItalic(true);
+    action->setFont(f);
+    addActionPrivate(action);
+
+}
+
+struct LexicalOrder {
+    bool operator() (const boost::shared_ptr<ComboBoxMenuNode>& lhs,const boost::shared_ptr<ComboBoxMenuNode>& rhs) {
+        return lhs->text < rhs->text;
+    }
+};
+
 
 void
 ComboBox::addItem(const QString & item,
@@ -438,19 +577,82 @@ ComboBox::addItem(const QString & item,
                   QKeySequence key,
                   const QString & toolTip)
 {
-    QAction* action =  new QAction(this);
+    if (!_cascading) {
+        QAction* action =  new QAction(this);
+        
+        action->setText(item);
+        if ( !icon.isNull() ) {
+            action->setIcon(icon);
+        }
+        if ( !key.isEmpty() ) {
+            action->setShortcut(key);
+        }
+        if ( !toolTip.isEmpty() ) {
+            action->setToolTip( GuiUtils::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
+        }
 
-    action->setText(item);
-    if ( !icon.isNull() ) {
-        action->setIcon(icon);
+        addAction(action);
+    } else {
+        QStringList splits = item.split(QLatin1Char('/'));
+        QStringList realSplits;
+        for (int i = 0; i < splits.size(); ++i) {
+            if (splits[i].isEmpty() || (splits[i].size() == 1 && splits[i] == QString::fromUtf8("/"))) {
+                continue;
+            }
+            realSplits.push_back(splits[i]);
+        }
+        if (realSplits.isEmpty()) {
+            qDebug() << "ComboBox::addItem: Invalid item name for cascading mode:" << item;
+            return;
+        }
+        ComboBoxMenuNode* menuToFind = _rootNode.get();
+        
+        for (int i = 0; i < realSplits.size(); ++i) {
+            ComboBoxMenuNode* found = 0;
+            for (std::vector<boost::shared_ptr<ComboBoxMenuNode> >::iterator it = menuToFind->children.begin();
+                 it!=menuToFind->children.end(); ++it) {
+                if ((*it)->text == realSplits[i]) {
+                    found = it->get();
+                    break;
+                }
+            }
+            if (found) {
+                menuToFind = found;
+            } else {
+                boost::shared_ptr<ComboBoxMenuNode> node(new ComboBoxMenuNode());
+                node->text = realSplits[i];
+                node->parent = menuToFind;
+                menuToFind->children.push_back(node);
+                std::sort(menuToFind->children.begin(),menuToFind->children.end(),LexicalOrder());
+                if (i == (realSplits.size() - 1)) {
+                    QAction* action =  new QAction(this);
+                    
+                    action->setText(realSplits[i]);
+                    action->setData(QVariant(_cascadingIndex));
+                    ++_cascadingIndex;
+                    
+                    if ( !icon.isNull() ) {
+                        action->setIcon(icon);
+                    }
+                    if ( !key.isEmpty() ) {
+                        action->setShortcut(key);
+                    }
+                    if ( !toolTip.isEmpty() ) {
+                        action->setToolTip( GuiUtils::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
+                    }
+
+                    node->isLeaf = action;
+                    menuToFind->isMenu->addAction(node->isLeaf);
+                } else {
+                    node->isMenu = new MenuWithToolTips(this);
+                    node->isMenu->setTitle(realSplits[i]);
+                    menuToFind->isMenu->addAction(node->isMenu->menuAction());
+                    menuToFind = node.get();
+                }
+            }
+        }
+
     }
-    if ( !key.isEmpty() ) {
-        action->setShortcut(key);
-    }
-    if ( !toolTip.isEmpty() ) {
-        action->setToolTip( Qt::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
-    }
-    addAction(action);
 }
 
 void
@@ -465,41 +667,54 @@ ComboBox::setCurrentText(const QString & text)
     int index = setCurrentText_internal(text);
 
     if (index != -1) {
-        emit currentIndexChanged(index);
-        emit currentIndexChanged( getCurrentIndexText() );
+        Q_EMIT currentIndexChanged(index);
+        Q_EMIT currentIndexChanged( getCurrentIndexText() );
     }
 }
 
 int
 ComboBox::setCurrentText_internal(const QString & text)
 {
+    if (_cascading) {
+        qDebug() << "ComboBox::setCurrentText_internal unsupported when in cascading mode";
+        return -1;
+    }
     QString str(text);
 
     growMaximumWidthFromText(str);
     
-    _currentText = text;
+    _currentText = strippedText(text);
     QFontMetrics m = fontMetrics();
 
     // if no action matches this text, set the index to a dirty value
     int index = -1;
-    for (U32 i = 0; i < _actions.size(); ++i) {
-        if (_actions[i]->text() == text) {
+    for (U32 i = 0; i < _rootNode->children.size(); ++i) {
+        if (_rootNode->children[i]->text == text) {
             index = i;
             break;
         }
     }
+    
+    if (_sizePolicy.horizontalPolicy() != QSizePolicy::Fixed) {
+        int w = m.width(str) + 2 * DROP_DOWN_ICON_SIZE;
+        setMinimumWidth(w);
+    }
+    
+    int ret = -1;
     if ( (_currentIndex != index) && (index != -1) ) {
         _currentIndex = index;
-
-        return index;
+        ret = index;
     }
     updateLabel();
-    return -1;
+    return ret;
 }
 
 void
 ComboBox::setMaximumWidthFromText(const QString & str)
 {
+    if (_sizePolicy.horizontalPolicy() == QSizePolicy::Fixed) {
+        return;
+    }
     int w = fontMetrics().width(str);
     setMaximumWidth(w + DROP_DOWN_ICON_SIZE * 2);
 }
@@ -507,6 +722,9 @@ ComboBox::setMaximumWidthFromText(const QString & str)
 void
 ComboBox::growMaximumWidthFromText(const QString & str)
 {
+    if (_sizePolicy.horizontalPolicy() == QSizePolicy::Fixed) {
+        return;
+    }
     int w = fontMetrics().width(str) + 2 * DROP_DOWN_ICON_SIZE;
 
     if ( w > maximumWidth() ) {
@@ -520,36 +738,85 @@ ComboBox::activeIndex() const
     return _currentIndex;
 }
 
+static ComboBoxMenuNode* getCurrentIndexNode(int index,ComboBoxMenuNode* node) {
+    if (node->isLeaf) {
+        if (node->isLeaf->data().toInt() == index) {
+            return node;
+        } else {
+            return 0;
+        }
+    } else {
+        for (std::size_t i = 0; i < node->children.size(); ++i) {
+            ComboBoxMenuNode* tmp = getCurrentIndexNode(index, node->children[i].get());
+            if (tmp) {
+                return tmp;
+            }
+        }
+    }
+    return 0;
+}
+
+static QString getNodeTextRecursive(ComboBoxMenuNode* node,ComboBoxMenuNode* rootNode) {
+    QString ret;
+    while (node != rootNode) {
+        ret.prepend(node->text);
+        if (node->parent) {
+            if (node->parent != rootNode) {
+                ret.prepend(QLatin1Char('/'));
+            }
+            node = node->parent;
+        }
+    }
+    return ret;
+}
+
 QString
 ComboBox::getCurrentIndexText() const
 {
-    assert( _currentIndex < (int)_actions.size() );
-
-    return _actions[_currentIndex]->text();
+    ComboBoxMenuNode* node = getCurrentIndexNode(_currentIndex, _rootNode.get());
+    if (!node) {
+        return QString();
+    }
+    return getNodeTextRecursive(node,_rootNode.get());
 }
+
+
 
 bool
 ComboBox::setCurrentIndex_internal(int index)
 {
     QString str;
     QString text;
-
-    if ( (0 <= index) && ( index < (int)_actions.size() ) ) {
-        text = _actions[index]->text();
+    ComboBoxMenuNode* node = getCurrentIndexNode(index, _rootNode.get());
+    if (node) {
+        text = getNodeTextRecursive(node,_rootNode.get());
     }
-    str = text;
-
-    QFontMetrics m = fontMetrics();
-    setMinimumWidth( m.width(str) + 2 * DROP_DOWN_ICON_SIZE);
-
+    if (!node) {
+        return false;
+    }
+    //Forbid programmatic setting of the "New" choice, only user can select it
+    if ((node->isLeaf && node->isLeaf->data().toString() == QString::fromUtf8("New"))) {// "New" choice
+        return false;
+    }
+    
+    str = strippedText(text);
+    
+    if (_sizePolicy.horizontalPolicy() != QSizePolicy::Fixed) {
+        QFontMetrics m = fontMetrics();
+        int w = m.width(str) + 2 * DROP_DOWN_ICON_SIZE;
+        setMinimumWidth(w);
+    }
+    
+    bool ret;
     if ((index != -1 && index != _currentIndex) || _currentText != str) {
         _currentIndex = index;
         _currentText = str;
-        updateLabel();
-        return true;
+        ret =  true;
     } else {
-        return false;
+        ret = false;
     }
+    updateLabel();
+    return ret;
 }
 
 void
@@ -559,9 +826,9 @@ ComboBox::setCurrentIndex(int index)
         return;
     }
     if ( setCurrentIndex_internal(index) ) {
-        ///emit the signal only if the entry changed
-        emit currentIndexChanged(_currentIndex);
-        emit currentIndexChanged( getCurrentIndexText() );
+        ///Q_EMIT the signal only if the entry changed
+        Q_EMIT currentIndexChanged(_currentIndex);
+        Q_EMIT currentIndexChanged( getCurrentIndexText() );
     }
 }
 
@@ -574,12 +841,20 @@ ComboBox::setCurrentIndex_no_emit(int index)
 void
 ComboBox::addSeparator()
 {
-    _separators.push_back(_actions.size() - 1);
+    if (_cascading) {
+        qDebug() << "ComboBox separators is unsupported when cascading is enabled";
+        return;
+    }
+    _separators.push_back(_rootNode->children.size() - 1);
 }
 
 void
 ComboBox::insertSeparator(int index)
 {
+    if (_cascading) {
+        qDebug() << "ComboBox separators is unsupported when cascading is enabled";
+        return;
+    }
     assert(index >= 0);
     _separators.push_back(index);
 }
@@ -587,20 +862,23 @@ ComboBox::insertSeparator(int index)
 QString
 ComboBox::itemText(int index) const
 {
-    if ( (0 <= index) && ( index < (int)_actions.size() ) ) {
-        assert(_actions[index]);
-
-        return _actions[index]->text();
-    } else {
-        return "";
+    ComboBoxMenuNode* node = getCurrentIndexNode(index, _rootNode.get()) ;
+    if (node) {
+        return getNodeTextRecursive(node,_rootNode.get());
     }
+    return QString();
 }
+
 
 int
 ComboBox::itemIndex(const QString & str) const
 {
-    for (U32 i = 0; i < _actions.size(); ++i) {
-        if (_actions[i]->text() == str) {
+    if (_cascading) {
+        qDebug() << "ComboBox::itemIndex unsupported in cascading mode";
+        return -1;
+    }
+    for (U32 i = 0; i < _rootNode->children.size(); ++i) {
+        if (_rootNode->children[i]->text == str) {
             return i;
         }
     }
@@ -611,11 +889,27 @@ ComboBox::itemIndex(const QString & str) const
 void
 ComboBox::removeItem(const QString & item)
 {
-    for (U32 i = 0; i < _actions.size(); ++i) {
-        assert(_actions[i]);
-        if (_actions[i]->text() == item) {
+    
+    if (_cascading) {
+        qDebug() << "ComboBox::removeItem unsupported in cascading mode";
+        return;
+    }
+    
+
+    for (U32 i = 0; i < _rootNode->children.size(); ++i) {
+        assert(_rootNode->children[i]);
+        if (_rootNode->children[i]->isLeaf->text() == item) {
+            
+            
             QString currentText = getCurrentIndexText();
-            _actions.erase(_actions.begin() + i);
+            _rootNode->children.erase(_rootNode->children.begin() + i);
+            
+            ///Decrease index for all other children
+            for (std::size_t j = 0; j < _rootNode->children.size(); ++j) {
+                assert(_rootNode->children[j]->isLeaf);
+                _rootNode->children[j]->isLeaf->setData(QVariant((int)j));
+            }
+            
             if (currentText == item) {
                 setCurrentIndex(i - 1);
             }
@@ -625,16 +919,17 @@ ComboBox::removeItem(const QString & item)
                     --_separators[j];
                 }
             }
+            break;
         }
     }
-
 }
 
 void
 ComboBox::clear()
 {
-    _actions.clear();
-    _menu->clear();
+    _rootNode->children.clear();
+    _rootNode->isMenu->clear();
+    _cascadingIndex = 0;
     _separators.clear();
     _currentIndex = 0;
     updateLabel();
@@ -644,9 +939,20 @@ void
 ComboBox::setItemText(int index,
                       const QString & item)
 {
-    assert( 0 <= index && index < (int)_actions.size() );
-    assert(_actions[index]);
-    _actions[index]->setText(item);
+    if (_cascading) {
+        qDebug() << "ComboBox::setItemText unsupported when in cascading mode";
+        return;
+    }
+
+    ComboBoxMenuNode* node = getCurrentIndexNode(index, _rootNode.get()) ;
+    if (node) {
+        node->text = item;
+        if (node->isLeaf) {
+            node->isLeaf->setText(item);
+        } else if (node->isMenu) {
+            node->isMenu->setTitle(item);
+        }
+    }
     growMaximumWidthFromText(item);
     if (index == _currentIndex) {
         setCurrentText_internal(item);
@@ -658,41 +964,53 @@ void
 ComboBox::setItemShortcut(int index,
                           const QKeySequence & sequence)
 {
-    assert( 0 <= index && index < (int)_actions.size() );
-    assert(_actions[index]);
-    _actions[index]->setShortcut(sequence);
+    ComboBoxMenuNode* node = getCurrentIndexNode(index, _rootNode.get()) ;
+    if (node && node->isLeaf) {
+        node->isLeaf->setShortcut(sequence);
+    }
 }
 
 void
 ComboBox::setItemIcon(int index,
                       const QIcon & icon)
 {
-    assert( 0 <= index && index < (int)_actions.size() );
-    assert(_actions[index]);
-    _actions[index]->setIcon(icon);
+    ComboBoxMenuNode* node = getCurrentIndexNode(index, _rootNode.get()) ;
+    if (node && node->isLeaf) {
+        node->isLeaf->setIcon(icon);
+    }
 }
 
 void
 ComboBox::disableItem(int index)
 {
-    assert( 0 <= index && index < (int)_actions.size() );
-    assert(_actions[index]);
-    _actions[index]->setEnabled(false);
+    ComboBoxMenuNode* node = getCurrentIndexNode(index, _rootNode.get()) ;
+    if (node) {
+        if (node->isLeaf) {
+            node->isLeaf->setEnabled(false);
+        } else if (node->isMenu) {
+            node->isMenu->setEnabled(false);
+        }
+    }
 }
 
 void
 ComboBox::enableItem(int index)
 {
-    assert( 0 <= index && index < (int)_actions.size() );
-    assert(_actions[index]);
-    _actions[index]->setEnabled(true);
+    ComboBoxMenuNode* node = getCurrentIndexNode(index, _rootNode.get()) ;
+    if (node) {
+        if (node->isLeaf) {
+            node->isLeaf->setEnabled(true);
+        } else if (node->isMenu) {
+            node->isMenu->setEnabled(true);
+        }
+    }
 }
 
 void
 ComboBox::setReadOnly(bool readOnly)
 {
     _readOnly = readOnly;
-    repaint();
+    update();
 }
 
 bool
@@ -705,7 +1023,7 @@ void
 ComboBox::setEnabled_natron(bool enabled)
 {
     _enabled = enabled;
-    repaint();
+    update();
 }
 
 int
@@ -718,13 +1036,30 @@ void
 ComboBox::setAnimation(int i)
 {
     _animation = i;
-    repaint();
+    update();
 }
 
 void
 ComboBox::setDirty(bool b)
 {
     _dirty = b;
-    repaint();
+    update();
 }
 
+void
+ComboBox::setAltered(bool b)
+{
+    _altered = b;
+    update();
+}
+
+bool
+ComboBox::getAltered() const
+{
+    return _altered;
+}
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_ComboBox.cpp"

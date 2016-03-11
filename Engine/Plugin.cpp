@@ -1,36 +1,271 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include "Plugin.h"
 
+#include <cassert>
+#include <stdexcept>
+
 #include <QMutex>
 
+#include "Engine/AppManager.h"
 #include "Engine/LibraryBinary.h"
+#include "Engine/Settings.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 Plugin::~Plugin()
 {
-    if (_lock) {
-        delete _lock;
+    delete _lock;
+    delete _binary;
+}
+
+
+void
+Plugin::setPluginID(const QString & id)
+{
+    _id = id;
+}
+
+
+const QString &
+Plugin::getPluginID() const
+{
+    return _id;
+}
+
+bool
+Plugin::isReader() const {
+    return _isReader;
+}
+
+bool
+Plugin::isWriter() const {
+    return _isWriter;
+}
+
+void
+Plugin::setPluginLabel(const QString & label)
+{
+    _label = label;
+}
+
+const QString &
+Plugin::getPluginLabel() const
+{
+    return _label;
+}
+
+const QString
+Plugin::getLabelVersionMajorMinorEncoded() const
+{
+    return getLabelWithoutSuffix() + QLatin1Char(' ') + QString::number(_majorVersion) + QLatin1Char('.') + QString::number(_minorVersion);
+}
+
+QString
+Plugin::makeLabelWithoutSuffix(const QString& label)
+{
+    if (label.startsWith(QString::fromUtf8("Read")) || label.startsWith(QString::fromUtf8("Write"))) {
+        return label;
+    } else if (label.endsWith(QString::fromUtf8("OFX"))) {
+        return label.mid(0,label.size() - 3);
+    } else if (label.endsWith(QString::fromUtf8("CImg"))) {
+        return label.mid(0,label.size() - 4);
+    } else if (label.endsWith(QString::fromUtf8("OIIO"))) {
+        return label.mid(0,label.size() - 4);
     }
-    if (_binary) {
-        delete _binary;
+    return label;
+}
+
+const QString&
+Plugin::getLabelWithoutSuffix() const
+{
+    return _labelWithoutSuffix;
+}
+
+void
+Plugin::setLabelWithoutSuffix(const QString& label)
+{
+    _labelWithoutSuffix = label;
+}
+
+const QString
+Plugin::getLabelVersionMajorEncoded() const
+{
+    return getLabelWithoutSuffix() + QLatin1Char(' ') + QString::number(_majorVersion);
+}
+
+QString
+Plugin::generateUserFriendlyPluginID() const
+{
+    QString grouping = _grouping.size() > 0 ? _grouping[0] : QString();
+    return getLabelWithoutSuffix() + QString::fromUtf8("  [") + grouping + QLatin1Char(']');
+}
+
+QString
+Plugin::generateUserFriendlyPluginIDMajorEncoded() const
+{
+    QString grouping = _grouping.size() > 0 ? _grouping[0] : QString();
+    return getLabelVersionMajorEncoded() + QString::fromUtf8("  [") + grouping + QLatin1Char(']');
+}
+
+void
+Plugin::setToolsetScript(bool isToolset)
+{
+    _toolSetScript = isToolset;
+}
+
+bool
+Plugin::getToolsetScript() const
+{
+    return _toolSetScript;
+}
+
+const QString&
+Plugin::getIconFilePath() const
+{
+    return _iconFilePath;
+}
+
+void
+Plugin::setIconFilePath(const QString& filePath)
+{
+    _iconFilePath = filePath;
+}
+
+const QStringList&
+Plugin::getGroupIconFilePath() const
+{
+    return _groupIconFilePath;
+}
+
+const QStringList&
+Plugin::getGrouping() const
+{
+    return _grouping;
+}
+
+QMutex*
+Plugin::getPluginLock() const
+{
+    return _lock;
+}
+
+LibraryBinary*
+Plugin::getLibraryBinary() const
+{
+    return _binary;
+}
+
+int
+Plugin::getMajorVersion() const
+{
+    return _majorVersion;
+}
+
+int
+Plugin::getMinorVersion() const
+{
+    return _minorVersion;
+}
+
+void
+Plugin::setHasShortcut(bool has) const
+{
+    _hasShortcutSet = has;
+}
+
+bool
+Plugin::getHasShortcut() const
+{
+    return _hasShortcutSet;
+}
+
+void
+Plugin::setPythonModule(const QString& module)
+{
+    _pythonModule = module;
+}
+
+const QString&
+Plugin::getPythonModule() const {
+    return _pythonModule; // < does not end with .py
+}
+
+void
+Plugin::getPythonModuleNameAndPath(QString* moduleName, QString* modulePath) const
+{
+    int foundLastSlash = _pythonModule.lastIndexOf(QLatin1Char('/'));
+    if (foundLastSlash != -1) {
+        *modulePath = _pythonModule.mid(0,foundLastSlash + 1);
+        *moduleName = _pythonModule.mid(foundLastSlash + 1);
+    } else {
+        *moduleName = _pythonModule;
     }
+}
+
+void
+Plugin::setOfxPlugin(OFX::Host::ImageEffect::ImageEffectPlugin* p)
+{
+    _ofxPlugin = p;
+}
+
+OFX::Host::ImageEffect::ImageEffectPlugin*
+Plugin::getOfxPlugin() const
+{
+    return _ofxPlugin;
+}
+
+OFX::Host::ImageEffect::Descriptor*
+Plugin::getOfxDesc(ContextEnum* ctx) const
+{
+    *ctx = _ofxContext;
+    return _ofxDescriptor;
+}
+
+bool
+Plugin::getIsUserCreatable() const
+{
+    if (!_activatedSet) {
+        _activated = !appPTR->getCurrentSettings()->isPluginDeactivated(this);
+        _activatedSet = true;
+    }
+    return !_isInternalOnly && _activated;
+}
+
+void
+Plugin::setOfxDesc(OFX::Host::ImageEffect::Descriptor* desc,ContextEnum ctx)
+{
+    assert(ctx != eContextNone);
+    _ofxDescriptor = desc;
+    _ofxContext = ctx;
 }
 
 void
 PluginGroupNode::tryAddChild(const boost::shared_ptr<PluginGroupNode>& plugin)
 {
-    for (std::list<boost::shared_ptr<PluginGroupNode> >::iterator it = _children.begin() ;it!=_children.end();++it) {
+    for (std::list<boost::shared_ptr<PluginGroupNode> >::iterator it = _children.begin(); it != _children.end(); ++it) {
         if (*it == plugin) {
             return;
         }
@@ -48,3 +283,5 @@ PluginGroupNode::tryRemoveChild(PluginGroupNode* plugin)
         }
     }
 }
+
+NATRON_NAMESPACE_EXIT;

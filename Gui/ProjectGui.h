@@ -1,62 +1,63 @@
-//  Natron
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
+
 #ifndef PROJECTGUI_H
 #define PROJECTGUI_H
 
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
 #include "Global/Macros.h"
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
+#endif
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QObject>
 #include <QDialog>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#ifndef Q_MOC_RUN
-#include <boost/shared_ptr.hpp>
-#endif
+
 #include "Engine/Format.h"
 
-class Button;
-class QWidget;
-class QHBoxLayout;
-class QVBoxLayout;
-class QLabel;
-class ComboBox;
-class SpinBox;
-class LineEdit;
-class Color_Knob;
-class DockablePanel;
-class ProjectGuiSerialization;
-class Gui;
-class NodeGui;
-class NodeGuiSerialization;
-namespace boost {
-namespace archive {
-class xml_archive;
-}
-}
+#include "Gui/GuiFwd.h"
 
-namespace Natron {
-class Project;
-}
+NATRON_NAMESPACE_ENTER;
 
 class ProjectGui
     : public QObject
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
     ProjectGui(Gui* gui);
     virtual ~ProjectGui() OVERRIDE;
 
-    void create(boost::shared_ptr<Natron::Project> projectInternal,QVBoxLayout* container,QWidget* parent = NULL);
+    void create(boost::shared_ptr<Project> projectInternal,QVBoxLayout* container,QWidget* parent = NULL);
 
 
     bool isVisible() const;
@@ -66,36 +67,42 @@ public:
         return _panel;
     }
 
-    boost::shared_ptr<Natron::Project> getInternalProject() const
+    boost::shared_ptr<Project> getInternalProject() const
     {
-        return _project;
+        return _project.lock();
     }
 
-    void save(boost::archive::xml_oarchive & archive) const;
+    template<class Archive>
+    void save(Archive & ar/*,
+              const unsigned int version*/) const;
 
-    void load(boost::archive::xml_iarchive & archive);
+    template<class Archive>
+    void load(Archive & ar/*,
+              const unsigned int version*/);
 
-    void registerNewColorPicker(boost::shared_ptr<Color_Knob> knob);
+    void registerNewColorPicker(boost::shared_ptr<KnobColor> knob);
 
-    void removeColorPicker(boost::shared_ptr<Color_Knob> knob);
+    void removeColorPicker(boost::shared_ptr<KnobColor> knob);
+    
+    void clearColorPickers();
 
     bool hasPickers() const
     {
         return !_colorPickersEnabled.empty();
     }
 
-    void setPickersColor(const QColor & color);
+    void setPickersColor(double r,double g, double b,double a);
 
     /**
      * @brief Retur
      **/
-    std::list<boost::shared_ptr<NodeGui> > getVisibleNodes() const;
+    NodesGuiList getVisibleNodes() const;
     Gui* getGui() const
     {
         return _gui;
     }
 
-public slots:
+public Q_SLOTS:
 
     void createNewFormat();
 
@@ -104,13 +111,14 @@ public slots:
     void initializeKnobsGui();
 
 private:
+    
 
 
     Gui* _gui;
-    boost::shared_ptr<Natron::Project> _project;
+    boost::weak_ptr<Project> _project;
     DockablePanel* _panel;
     bool _created;
-    std::vector<boost::shared_ptr<Color_Knob> > _colorPickersEnabled;
+    std::vector<boost::shared_ptr<KnobColor> > _colorPickersEnabled;
 };
 
 
@@ -121,7 +129,7 @@ class AddFormatDialog
 
 public:
 
-    AddFormatDialog(Natron::Project* project,
+    AddFormatDialog(Project* project,
                     Gui* gui);
 
     virtual ~AddFormatDialog()
@@ -130,14 +138,16 @@ public:
 
     Format getFormat() const;
 
-public slots:
+public Q_SLOTS:
 
     void onCopyFromViewer();
 
 private:
 
     Gui* _gui;
-    Natron::Project* _project;
+    
+    std::list<ViewerInstance*> _viewers;
+    
     QVBoxLayout* _mainLayout;
     QWidget* _fromViewerLine;
     QHBoxLayout* _fromViewerLineLayout;
@@ -145,21 +155,23 @@ private:
     ComboBox* _copyFromViewerCombo;
     QWidget* _parametersLine;
     QHBoxLayout* _parametersLineLayout;
-    QLabel* _widthLabel;
+    Label* _widthLabel;
     SpinBox* _widthSpinBox;
-    QLabel* _heightLabel;
+    Label* _heightLabel;
     SpinBox* _heightSpinBox;
-    QLabel* _pixelAspectLabel;
+    Label* _pixelAspectLabel;
     SpinBox* _pixelAspectSpinBox;
     QWidget* _formatNameLine;
     QHBoxLayout* _formatNameLayout;
-    QLabel* _nameLabel;
+    Label* _nameLabel;
     LineEdit* _nameLineEdit;
     QWidget* _buttonsLine;
     QHBoxLayout* _buttonsLineLayout;
     Button* _cancelButton;
     Button* _okButton;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 
 #endif // PROJECTGUI_H

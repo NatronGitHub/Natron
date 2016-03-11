@@ -1,12 +1,15 @@
-Natron [![Build Status](https://api.travis-ci.org/MrKepzie/Natron.png?branch=workshop)](https://travis-ci.org/MrKepzie/Natron)  [![Coverage Status](https://coveralls.io/repos/MrKepzie/Natron/badge.png?branch=workshop)](https://coveralls.io/r/MrKepzie/Natron?branch=workshop) [![Coverity Scan Build Status](https://scan.coverity.com/projects/2940/badge.svg)](https://scan.coverity.com/projects/2940 "Coverity Badge")
+Natron [![Build Status](https://api.travis-ci.org/MrKepzie/Natron.png?branch=workshop)](https://travis-ci.org/MrKepzie/Natron)  [![Coverage Status](https://coveralls.io/repos/MrKepzie/Natron/badge.png?branch=workshop)](https://coveralls.io/r/MrKepzie/Natron?branch=workshop) [![Coverity Scan Build Status](https://scan.coverity.com/projects/2940/badge.svg)](https://scan.coverity.com/projects/2940 "Coverity Badge") [![Documentation Status](https://readthedocs.org/projects/natron/badge/?version=workshop)](https://readthedocs.org/projects/natron/?badge=workshop)
+
 ======
 
 
-Natron is a free open-source (MPLv2 license) video compositing software, similar in functionality to Adobe After Effects or Nuke by The Foundry.
+Natron is a free open-source (GPLv2 license) video compositing
+software, similar in functionality to Adobe After Effects, Nuke by The
+Foundry, or Blackmagic Fusion.
 
-It is portable and cross-platform (Linux, OS X, Microsoft Windows).
+It is portable and cross-platform (GNU/Linux, OS X, Microsoft Windows).
 
-The project home page is http://natron.inria.fr
+The project home page is http://natron.fr
 
 The project source code repository is https://github.com/MrKepzie/Natron
 
@@ -14,9 +17,9 @@ Features
 --------
 
 - 32 bits floating point linear colour processing pipeline.
-- Colorspace management handled by the famous open-source OpenColorIO library.
-- Dozens of file formats supported: EXR, DPX,TIFF, JPG, PNG…thanks to OpenImageIO.
-- Support for many free and open-source OpenFX plugins: 
+- Colorspace management handled by the OpenColorIO library.
+- Dozens of file formats supported: EXR, DPX,TIFF, JPG, PNG…thanks to OpenImageIO and FFmpeg.
+- Support for many free and open-source OpenFX plugins:
  * [TuttleOFX](https://sites.google.com/site/tuttleofx/)
  * [OpenFX-IO](https://github.com/MrKepzie/openfx-io) to read anything else
    than standard 8-bits images
@@ -26,18 +29,18 @@ Features
  * [OpenFX samples](https://github.com/devernay/openfx) (in the Support and Examples directories)
 
 - Support for commercial OpenFX plugins:
+ * [All OFX products from RevisionFX](http://www.revisionfx.com)
  * [Furnace by The Foundry](http://www.thefoundry.co.uk/products/furnace/)
  * [KeyLight by The Foundry](http://www.thefoundry.co.uk/products/plugins/keylight/)
  * [GenArts Sapphire](http://www.genarts.com/software/sapphire/overview)
  * [Other GenArts products](http://www.genarts.com/software/other-vfx-products)
- * And probably many more. Please tell us if you successfully tested other commercial plugins.
+ * And many more. Please tell us if you successfully tested other commercial plugins.
 
-- OpenFX: Currently almost all features of OpenFX v1.3 are supported
-  (see Documentation/ofxActionsSupported.rtf and
-  Documentation/ofxPropSupported.rtf in the source distribution)
+- OpenFX: Currently almost all features of OpenFX v1.4 are supported
 
 - Intuitive user interface: Natron aims not to break habits by providing an intuitive and familiar user
-interface.  It is possible to separate on any number of screens the graphical user interface.
+interface.  It is possible to customize and separate on any number of screens the graphical user interface.
+You can re-use your layouts and share your layout files (.nl)
 
 - Performances:  Never wait for anything to be rendered, in Natron anything you do produces
 real-time feedback thanks to its optimised multi-threaded rendering pipeline and its support for proxy rendering (i.e:
@@ -64,22 +67,32 @@ for large image sizes.
 3 GB of RAM and a graphic card that supports OpenGL 2.0 or OpenGL 1.5 with some extensions.
 
 - Animate your visual effects: Natron offers a simple and efficient way to deal with keyframes
-with a very accurate and intuitive curve editor.
+with a very accurate and intuitive Curve Editor as well as a Dope Sheet to quickly edit your motion graphics.
 
 - Command line tool for execution of project files. The command line version is executable
- from ssh on a computer without any display. Hence it is possible to use a render farm
-  to render Natron's projects. 
-  
-- Rotoscoping & Tracking support
-  
+ on a computer without any display. Hence it is possible to use a render farm
+  to render Natron's projects.
+
+- Rotoscoping, rotopainting and tracking support
+
 - Multi-view workflow: Natron saves time by keeping all the views in the same stream. You can separate
-the views at any time with the SplitViews node. Note that currently Natron does not allow to split the 
-nodes settings for each view, this will be implemented in the future.
+the views at any time with the OneView node.
+
+- Python 2 scripting integration:
+    * Parameters expressions
+    * User-defined parameters
+    * Nodes groups as Python scripts
+    * Script editor to control the application overall
+    * User-defined python callbacks to respond to particular checkpoints of the internals of the software (change of a parameter, before rendering a frame, etc…)
+    * Integration of Pyside to the GUI so that the interface is extensible with new menus and windows
+
+- Multi-plane: Natron is able to deal with multi-layered EXR files thanks to OpenImageIO. It is deeply integrated into the workflow and the user can choose
+to work with any layer (or plane) on any node. New custom layers can also be created.
 
 Requirements
 ------------
 
-A machine running one of the supported operating systems (Linux, OS X,
+A machine running one of the supported operating systems (GNU/Linux, OS X,
 Microsoft Windows), and a 32-bits x86 or 64-bits x86-64 processor.
 
 If your OpenGL version is not supported or does not implement the
@@ -93,29 +106,59 @@ The system must support one of these OpenGL configurations:
   `GL_ARB_pixel_buffer_object`
 
 
+Installing
+----------
+
+### Binary distribution ###
+
+Standalone binary distributions of Natron are available for [GNU/Linux](http://downloads.natron.fr/Linux/),
+[Windows](http://downloads.natron.fr/Windows/) and [OS X](http://downloads.natron.fr/Mac/). These distributions contain Natron and three basic sets of OpenFX plugins:
+* [openfx-io](https://github.com/MrKepzie/openfx-io/),
+* [openfx-misc](https://github.com/devernay/openfx-misc),
+* [openfx-arena](https://github.com/olear/openfx-arena).
+
+For each architecture / operating system, you can either download a stable release, a release candidate (if available), or one of the latest snapshots. Note that snapshots contain the latest features and bug fixes, but may be unstable.
+
+### Building and installing from source ###
+
+There are instructions for building Natron and the basic plugins from source is this directory on various architectures / operating systems:
+* [GNU/Linux](INSTALL_LINUX.md)
+* [OS X](INSTALL_OSX.md)
+* [FreeBSD](INSTALL_FREEBSD.md)
+* [Windows](INSTALL_WINDOWS.md)
+
+This documentation may be slightly outdated, so do not hesitate to submit updated build instructions, especially for the various GNU/Linux distributions.
+
+### Automatic build scripts ###
+
+There are automatic build scripts for [GNU/Linux](tools/linux), [OS X](tools/MacOSX), and [Windows](tools/Windows), which are used to build the binary distributions and the snapshots.
+
+These scripts are run on virtual machines running a specific version of each operating system, and setting these up is more complicated than for the basic builds described above.
+
+There is some documentation, which is probably outdated, for [GNU/Linux](tools/linux/README.md), [OS X](tools/MacOSX/README.md), and [Windows](tools/WindowsREADME.md).
+
+
 Planned features
 ----------------
 
-### Features planned for Natron 1.1
-
-- Python 3 scripting integration. This feature is already half-way of being implemented
-    * Parameters expressions
-    * User-defined parameters
-    * Nodes groups (Same as Gizmos in Nuke) but that will be written as Python scripts 
-    * Script editor to control the application overall
-    * User-defined python callbacks to respond to particular checkpoints of the internals of the software (change of a parameter, before rendering a frame, etc…)
-    * Integration of Pyside to the GUI so that the interface will be extensible with new menus and windows
+### Features planned for the next major version
 
 - Optical Flow nodes: VectorGenerator, MotionBlur, RollingShutter, Retiming
 
-- Natural matting: process of extracting a foreground without necessarily a green/blue-screen as background
+- Integration of Blender's production proven tracker in Natron to replace the existing tracker
+
+- Node-graph enhancement and optimization
+
+- Multi-layered EXR decoding enhancement (currently the OpenImageIO backend is slow)
+
 
 ### Features planned for future versions
 
-- Dope sheet: Well this is time we implement this, it can be very tedious to organise image sequences 
-without this very useful tool.
+- 3D workspace: support for Cameras, 3D Cards, Camera mapping, 3D tracker
 
 - GMIC http://gmic.eu integration as an OpenFX plug-in
+
+- Natural matting: process of extracting a foreground without necessarily a green/blue-screen as background
 
 - Deep data: Support for deep data (multiple samples per pixel)
 
@@ -130,12 +173,12 @@ The main development branch is called
 The master branch contains the last known stable version.
 
 Additionally each stable release supported has a branch on its own.
-For example the stable release of the v1.0. and all its bug fixes should go into that 
+For example the stable release of the v1.0. and all its bug fixes should go into that
 branch.
 At some point,  version which are no longer supported will get removed from github's branches
 and only a release tag will be available to get the source code at that point.
 
-You can check out the easy tasks left to do [here](https://natron.inria.fr/easy-task-list/).
+You can check out the easy tasks left to do [here](https://natron.fr/easy-task-list/).
 
 Feel free to report bugs, discuss tasks, or pick up work there. If you want to make
 changes, please fork, edit, and [send us a pull

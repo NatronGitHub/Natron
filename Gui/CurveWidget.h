@@ -1,259 +1,60 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
 #ifndef CURVE_WIDGET_H
 #define CURVE_WIDGET_H
 
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
+#include "Global/Macros.h"
+
 #include <set>
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
+#endif
+
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
-#include "Global/Macros.h"
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtOpenGL/QGLWidget>
 #include <QMetaType>
 #include <QDialog>
+#include <QByteArray>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#ifndef Q_MOC_RUN
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
+
 #include "Global/GlobalDefines.h"
-#include "Gui/CurveEditorUndoRedo.h"
+
 #include "Engine/OverlaySupport.h"
 #include "Engine/Curve.h"
 
-class CurveSelection;
-class QFont;
-class Variant;
-class TimeLine;
-class KnobGui;
-class CurveWidget;
-class Button;
-class LineEdit;
-class SpinBox;
-class Gui;
-class Bezier;
-class RotoContext;
-class QVBoxLayout;
-class QHBoxLayout;
-class QLabel;
-class CurveGui
-    : public QObject
-{
-    Q_OBJECT
+#include "Gui/CurveEditorUndoRedo.h"
+#include "Gui/GuiFwd.h"
 
-public:
+NATRON_NAMESPACE_ENTER;
 
-  
-    CurveGui(const CurveWidget *curveWidget,
-             boost::shared_ptr<Curve>  curve,
-             const QString & name,
-             const QColor & color,
-             int thickness = 1);
-
-    virtual ~CurveGui() OVERRIDE;
-
-    const QString & getName() const
-    {
-        return _name;
-    }
-
-    void setName(const QString & name)
-    {
-        _name = name;
-    }
-
-    const QColor & getColor() const
-    {
-        return _color;
-    }
-
-    void setColor(const QColor & color)
-    {
-        _color = color;
-    }
-
-    int getThickness() const
-    {
-        return _thickness;
-    }
-
-    void setThickness(int t)
-    {
-        _thickness = t;
-    }
-
-    bool isVisible() const
-    {
-        return _visible;
-    }
-
-    void setVisibleAndRefresh(bool visible);
-
-    /**
-     * @brief same as setVisibleAndRefresh() but doesn't emit any signal for a repaint
-     **/
-    void setVisible(bool visible);
-
-    bool isSelected() const
-    {
-        return _selected;
-    }
-
-    void setSelected(bool s)
-    {
-        _selected = s;
-    }
-
-
-    /**
-     * @brief Evaluates the curve and returns the y position corresponding to the given x.
-     * The coordinates are those of the curve, not of the widget.
-     **/
-    virtual double evaluate(double x) const;
-    
-    boost::shared_ptr<Curve>  getInternalCurve() const
-    {
-        return _internalCurve;
-    }
-
-    void drawCurve(int curveIndex,int curvesCount);
-
-    virtual std::pair<double,double> getCurveYRange() const;
-
-    virtual bool areKeyFramesTimeClampedToIntegers() const;
-    virtual bool areKeyFramesValuesClampedToBooleans() const;
-    virtual bool areKeyFramesValuesClampedToIntegers() const;
-    virtual bool isYComponentMovable() const;
-    virtual KeyFrameSet getKeyFrames() const;
-    virtual int getKeyFrameIndex(double time) const = 0;
-    virtual void setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index) = 0;
-    
-signals:
-
-    void curveChanged();
-    
-    
-
-private:
-
-    std::pair<KeyFrame,bool> nextPointForSegment(double x1,double* x2,const KeyFrameSet & keyframes);
-    
-protected:
-    
-    boost::shared_ptr<Curve> _internalCurve; ///ptr to the internal curve
-    
-private:
-    
-    QString _name; /// the name of the curve
-    QColor _color; /// the color that must be used to draw the curve
-    int _thickness; /// its thickness
-    bool _visible; /// should we draw this curve ?
-    bool _selected; /// is this curve selected
-    const CurveWidget* _curveWidget;
-   
-};
-
-class KnobCurveGui : public CurveGui
-{
-    
-public:
-    
-    
-    KnobCurveGui(const CurveWidget *curveWidget,
-             boost::shared_ptr<Curve>  curve,
-             KnobGui* knob,
-             int dimension,
-             const QString & name,
-             const QColor & color,
-             int thickness = 1);
-    
-    
-    KnobCurveGui(const CurveWidget *curveWidget,
-                 boost::shared_ptr<Curve>  curve,
-                 const boost::shared_ptr<KnobI>& knob,
-                 const boost::shared_ptr<RotoContext>& roto,
-                 int dimension,
-                 const QString & name,
-                 const QColor & color,
-                 int thickness = 1);
-    
-    virtual ~KnobCurveGui();
-    
-    KnobGui* getKnobGui() const
-    {
-        return _knob;
-    }
-    
-    boost::shared_ptr<RotoContext> getRotoContext() const { return _roto; }
-    
-    boost::shared_ptr<KnobI> getInternalKnob() const;
-    
-    int getDimension() const
-    {
-        return _dimension;
-    }
-    
-    virtual int getKeyFrameIndex(double time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index) OVERRIDE FINAL;
-
-    
-private:
-    
-    boost::shared_ptr<RotoContext> _roto;
-    boost::shared_ptr<KnobI> _internalKnob;
-    KnobGui* _knob; //< ptr to the knob holding this curve
-    int _dimension; //< which dimension is this curve representing
-};
-
-class BezierCPCurveGui : public CurveGui
-{
-public:
-    
-    BezierCPCurveGui(const CurveWidget *curveWidget,
-                 const boost::shared_ptr<Bezier>& bezier,
-                 const boost::shared_ptr<RotoContext>& roto,
-                 const QString & name,
-                 const QColor & color,
-                 int thickness = 1);
-    
-    virtual ~BezierCPCurveGui();
-    
-    boost::shared_ptr<RotoContext> getRotoContext() const { return _rotoContext; }
-    
-    boost::shared_ptr<Bezier> getBezier() const ;
-    
-    virtual double evaluate(double x) const;
-    virtual std::pair<double,double> getCurveYRange() const;
-
-    virtual bool areKeyFramesTimeClampedToIntegers() const { return true; }
-    virtual bool areKeyFramesValuesClampedToBooleans() const { return false; }
-    virtual bool areKeyFramesValuesClampedToIntegers() const { return true; }
-    virtual bool isYComponentMovable() const { return false; }
-    virtual KeyFrameSet getKeyFrames() const;
-    
-    virtual int getKeyFrameIndex(double time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index) OVERRIDE FINAL;
-
-private:
-    
-    
-    boost::shared_ptr<Bezier> _bezier;
-    boost::shared_ptr<RotoContext> _rotoContext;
-};
-
-
-class QMenu;
 class CurveWidgetPrivate;
 
 class CurveWidget
@@ -262,7 +63,9 @@ class CurveWidget
     friend class CurveGui;
     friend class CurveWidgetPrivate;
 
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -277,21 +80,24 @@ public:
 
     const QFont & getTextFont() const;
 
+    void centerOn(double xmin, double xmax);
     void centerOn(double xmin,double xmax,double ymin,double ymax);
 
-    void addCurveAndSetColor(CurveGui* curve);
+    void addCurveAndSetColor(const boost::shared_ptr<CurveGui>& curve);
 
     void removeCurve(CurveGui* curve);
 
-    void centerOn(const std::vector<CurveGui*> & curves);
+    void centerOn(const std::vector<boost::shared_ptr<CurveGui> > & curves);
 
-    void showCurvesAndHideOthers(const std::vector<CurveGui*> & curves);
+    void showCurvesAndHideOthers(const std::vector<boost::shared_ptr<CurveGui> > & curves);
 
-    void getVisibleCurves(std::vector<CurveGui*>* curves) const;
+    void getVisibleCurves(std::vector<boost::shared_ptr<CurveGui> >* curves) const;
 
     void setSelectedKeys(const SelectedKeys & keys);
+    
+    bool isSelectedKey(const boost::shared_ptr<CurveGui>& curve, double time) const;
 
-    void refreshSelectedKeys();
+    void refreshSelectedKeysAndUpdate();
 
     double getZoomFactor() const;
 
@@ -329,9 +135,14 @@ public:
     virtual void saveOpenGLContext() OVERRIDE FINAL;
     virtual void restoreOpenGLContext() OVERRIDE FINAL;
     
+    void updateSelectionAfterCurveChange(CurveGui* curve);
+    
+    void refreshCurveDisplayTangents(CurveGui* curve);
+    
+    QUndoStack* getUndoStack() const;
     void pushUndoCommand(QUndoCommand* cmd);
 
-public slots:
+public Q_SLOTS:
 
     void refreshDisplayedTangents();
 
@@ -341,7 +152,7 @@ public slots:
 
     void deleteSelectedKeyFrames();
 
-    void copySelectedKeyFrames();
+    void copySelectedKeyFramesToClipBoard();
 
     void pasteKeyFramesFromClipBoardToSelectedCurve();
 
@@ -362,14 +173,18 @@ public slots:
     void breakDerivativesForSelectedKeyFrames();
 
     void frameSelectedCurve();
+    
+    void loopSelectedCurve();
+    
+    void negateSelectedCurve();
+    
+    void reverseSelectedCurve();
 
     void refreshSelectedKeysBbox();
 
     void onTimeLineFrameChanged(SequenceTime time, int reason);
 
     void onTimeLineBoundariesChanged(int,int);
-
-    void onCurveChanged();
 
     void onUpdateOnPenUpActionTriggered();
 
@@ -384,11 +199,12 @@ private:
     virtual void mouseDoubleClickEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
 
+    
     void renderText(double x,double y,const QString & text,const QColor & color,const QFont & font) const;
 
     /**
@@ -409,132 +225,13 @@ private:
 
 private:
 
-    bool isTabVisible() const;
 
     boost::scoped_ptr<CurveWidgetPrivate> _imp;
 };
 
-Q_DECLARE_METATYPE(CurveWidget*)
 
+NATRON_NAMESPACE_EXIT;
 
-class ImportExportCurveDialog
-    : public QDialog
-{
-    Q_OBJECT
-
-public:
-
-    ImportExportCurveDialog(bool isExportDialog,
-                            const std::vector<CurveGui*> & curves,
-                            Gui* gui,
-                            QWidget* parent = 0);
-
-    virtual ~ImportExportCurveDialog()
-    {
-    }
-
-    QString getFilePath();
-
-    double getXStart() const;
-
-    double getXIncrement() const;
-
-    double getXEnd() const;
-
-    void getCurveColumns(std::map<int,CurveGui*>* columns) const;
-
-public slots:
-
-    void open_file();
-
-private:
-    Gui* _gui;
-    bool _isExportDialog;
-    QVBoxLayout* _mainLayout;
-
-    //////File
-    QWidget* _fileContainer;
-    QHBoxLayout* _fileLayout;
-    QLabel* _fileLabel;
-    LineEdit* _fileLineEdit;
-    Button* _fileBrowseButton;
-
-    //////x start value
-    QWidget* _startContainer;
-    QHBoxLayout* _startLayout;
-    QLabel* _startLabel;
-    SpinBox* _startSpinBox;
-
-    //////x increment
-    QWidget* _incrContainer;
-    QHBoxLayout* _incrLayout;
-    QLabel* _incrLabel;
-    SpinBox* _incrSpinBox;
-
-    //////x end value
-    QWidget* _endContainer;
-    QHBoxLayout* _endLayout;
-    QLabel* _endLabel;
-    SpinBox* _endSpinBox;
-
-
-    /////Columns
-    struct CurveColumn
-    {
-        CurveGui* _curve;
-        QWidget* _curveContainer;
-        QHBoxLayout* _curveLayout;
-        QLabel* _curveLabel;
-        SpinBox* _curveSpinBox;
-    };
-
-    std::vector< CurveColumn > _curveColumns;
-
-    ////buttons
-    QWidget* _buttonsContainer;
-    QHBoxLayout* _buttonsLayout;
-    Button* _okButton;
-    Button* _cancelButton;
-};
-
-
-struct EditKeyFrameDialogPrivate;
-class EditKeyFrameDialog : public QDialog
-{
-    
-    Q_OBJECT
-    
-public:
-    
-    enum EditModeEnum {
-        eEditModeKeyframePosition,
-        eEditModeLeftDerivative,
-        eEditModeRightDerivative
-    };
-    
-    EditKeyFrameDialog(EditModeEnum mode,CurveWidget* curveWidget, const KeyPtr& key,QWidget* parent);
-    
-    virtual ~EditKeyFrameDialog();
-    
-signals:
-    
-    void valueChanged(int dimension,double value);
-    
-    
-public slots:
-    
-    void onXSpinBoxValueChanged(double d);
-    void onYSpinBoxValueChanged(double d);
-    
-private:
-    
-    void moveKeyTo(double newX,double newY);
-    void moveDerivativeTo(double d);
-    
-    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-    virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
-    
-    boost::scoped_ptr<EditKeyFrameDialogPrivate> _imp;
-};
+Q_DECLARE_METATYPE(NATRON_NAMESPACE::CurveWidget*)
 
 #endif // CURVE_WIDGET_H

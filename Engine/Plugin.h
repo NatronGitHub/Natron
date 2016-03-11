@@ -1,16 +1,29 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
 #ifndef PLUGIN_H
 #define PLUGIN_H
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include <vector>
 #include <set>
@@ -23,10 +36,10 @@
 #include <boost/weak_ptr.hpp>
 #endif
 
-class QMutex;
-namespace Natron {
-class LibraryBinary;
-}
+#include "Global/Enums.h"
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 class PluginGroupNode
 {
@@ -37,12 +50,15 @@ class PluginGroupNode
     std::list<boost::shared_ptr<PluginGroupNode> > _children;
     boost::weak_ptr<PluginGroupNode> _parent;
     bool _notHighestMajorVersion;
+    bool _isUserCreatable;
+    
 public:
     PluginGroupNode(const QString & pluginID,
                     const QString & pluginLabel,
                     const QString & iconPath,
                     int major,
-                    int minor)
+                    int minor,
+                    bool isUserCreatable)
     : _id(pluginID)
     , _label(pluginLabel)
     , _iconPath(iconPath)
@@ -51,9 +67,14 @@ public:
     , _children()
     , _parent()
     , _notHighestMajorVersion(false)
+    , _isUserCreatable(isUserCreatable)
     {
     }
 
+    bool getIsUserCreatable() const {
+        return _isUserCreatable;
+    }
+    
     const QString & getID() const
     {
         return _id;
@@ -66,7 +87,7 @@ public:
     
     const QString getLabelVersionMajorEncoded() const
     {
-        return _label + ' ' + QString::number(_major);
+        return _label + QString::fromUtf8(" ") + QString::number(_major);
     }
 
     void setLabel(const QString & label)
@@ -128,170 +149,176 @@ public:
     }
 };
 
-namespace Natron {
 class Plugin
 {
-    Natron::LibraryBinary* _binary;
+    LibraryBinary* _binary;
     QString _id;
     QString _label;
     QString _iconFilePath;
-    QString _groupIconFilePath;
+    QStringList _groupIconFilePath;
     QStringList _grouping;
-    QString _ofxPluginID;
+    QString _labelWithoutSuffix;
+    QString _pythonModule;
+    OFX::Host::ImageEffect::ImageEffectPlugin* _ofxPlugin;
+    OFX::Host::ImageEffect::Descriptor* _ofxDescriptor;
     QMutex* _lock;
     int _majorVersion;
     int _minorVersion;
+    ContextEnum _ofxContext;
     mutable bool _hasShortcutSet; //< to speed up the keypress event of Nodegraph, this is used to find out quickly whether it has a shortcut or not.
     bool _isReader,_isWriter;
+
+    //Deprecated are by default Disabled in the Preferences.
+    bool _isDeprecated;
+    
+    //Is not visible by the user, just for internal use
+    bool _isInternalOnly;
+    
+    //When the plug-in is a PyPlug, if this is set to true, the script will not be embedded into a group
+    bool _toolSetScript;
+    
+    mutable  bool _activatedSet;
+    mutable  bool _activated;
+    
 public:
 
     Plugin()
-        : _binary(NULL)
-          , _id()
-          , _label()
-          , _iconFilePath()
-          , _groupIconFilePath()
-          , _grouping()
-          , _ofxPluginID()
-          , _lock()
-          , _majorVersion(0)
-          , _minorVersion(0)
-          , _hasShortcutSet(false)
-          , _isReader(false)
-          , _isWriter(false)
+    : _binary(NULL)
+    , _id()
+    , _label()
+    , _iconFilePath()
+    , _groupIconFilePath()
+    , _grouping()
+    , _labelWithoutSuffix()
+    , _pythonModule()
+    , _ofxPlugin(0)
+    , _ofxDescriptor(0)
+    , _lock()
+    , _majorVersion(0)
+    , _minorVersion(0)
+    , _ofxContext(eContextNone)
+    , _hasShortcutSet(false)
+    , _isReader(false)
+    , _isWriter(false)
+    , _isDeprecated(false)
+    , _isInternalOnly(false)
+    , _toolSetScript(false)
+    , _activatedSet(false)
+    , _activated(true)
     {
     }
 
-    Plugin(Natron::LibraryBinary* binary,
+    Plugin(LibraryBinary* binary,
            const QString & id,
            const QString & label,
            const QString & iconFilePath,
-           const QString & groupIconFilePath,
+           const QStringList & groupIconFilePath,
            const QStringList & grouping,
-           const QString & ofxPluginID,
            QMutex* lock,
            int majorVersion,
            int minorVersion,
            bool isReader,
-           bool isWriter)
-        : _binary(binary)
-          , _id(id)
-          , _label(label)
-          , _iconFilePath(iconFilePath)
-          , _groupIconFilePath(groupIconFilePath)
-          , _grouping(grouping)
-          , _ofxPluginID(ofxPluginID)
-          , _lock(lock)
-          , _majorVersion(majorVersion)
-          , _minorVersion(minorVersion)
-          , _hasShortcutSet(false)
-          , _isReader(isReader)
-          , _isWriter(isWriter)
+           bool isWriter,
+           bool isDeprecated)
+    : _binary(binary)
+    , _id(id)
+    , _label(label)
+    , _iconFilePath(iconFilePath)
+    , _groupIconFilePath(groupIconFilePath)
+    , _grouping(grouping)
+    , _labelWithoutSuffix()
+    , _pythonModule()
+    , _ofxPlugin(0)
+    , _ofxDescriptor(0)
+    , _lock(lock)
+    , _majorVersion(majorVersion)
+    , _minorVersion(minorVersion)
+    , _ofxContext(eContextNone)
+    , _hasShortcutSet(false)
+    , _isReader(isReader)
+    , _isWriter(isWriter)
+    , _isDeprecated(isDeprecated)
+    , _isInternalOnly(false)
+    , _toolSetScript(false)
+    , _activatedSet(false)
+    , _activated(true)
     {
     }
-
+    
     ~Plugin();
-
-    void setPluginID(const QString & id)
-    {
-        _id = id;
-    }
-
-    const QString & getPluginID() const
-    {
-        return _id;
-    }
     
-    bool isReader() const {
-        return _isReader;
-    }
+    bool getIsForInternalUseOnly() const { return _isInternalOnly; }
     
-    bool isWriter() const {
-        return _isWriter;
-    }
+    void setForInternalUseOnly(bool b) { _isInternalOnly = b; }
 
-    void setPluginLabel(const QString & label)
-    {
-        _label = label;
-    }
-
-    const QString & getPluginLabel() const
-    {
-        return _label;
-    }
+    bool getIsDeprecated() const { return _isDeprecated; }
     
-    const QString getLabelVersionMajorMinorEncoded() const
-    {
-        return _label + ' ' + QString::number(_majorVersion) + '.' + QString::number(_minorVersion);
-    }
+    bool getIsUserCreatable() const;
     
-    const QString getLabelVersionMajorEncoded() const
-    {
-        return _label + ' ' + QString::number(_majorVersion);
-    }
+    void setPluginID(const QString & id);
     
-    QString generateUserFriendlyPluginID() const
-    {
-        QString grouping = _grouping.size() > 0 ? _grouping[0] : QString();
-        return _label + "  [" + grouping + "]";
-    }
+
+    const QString & getPluginID() const;
     
-    QString generateUserFriendlyPluginIDMajorEncoded() const
-    {
-        QString grouping = _grouping.size() > 0 ? _grouping[0] : QString();
-        return getLabelVersionMajorEncoded() + "  [" + grouping + "]";
-    }
-
+    bool isReader() const ;
     
-    const QString & getPluginOFXID() const
-    {
-        return _ofxPluginID;
-    }
+    bool isWriter() const ;
 
-    const QString & getIconFilePath() const
-    {
-        return _iconFilePath;
-    }
+    void setPluginLabel(const QString & label);
 
-    const QString & getGroupIconFilePath() const
-    {
-        return _groupIconFilePath;
-    }
+    const QString & getPluginLabel() const;
+    
+    const QString getLabelVersionMajorMinorEncoded() const;
+    
+    static QString makeLabelWithoutSuffix(const QString& label);
+    
+    const QString& getLabelWithoutSuffix() const;
+    void setLabelWithoutSuffix(const QString& label);
+    
+    const QString getLabelVersionMajorEncoded() const;
+    
+    QString generateUserFriendlyPluginID() const;
+    
+    QString generateUserFriendlyPluginIDMajorEncoded() const;
 
-    const QStringList & getGrouping() const
-    {
-        return _grouping;
-    }
+    const QString & getIconFilePath() const;
+    
+    void setIconFilePath(const QString& filePath);
 
-    QMutex* getPluginLock() const
-    {
-        return _lock;
-    }
+    const QStringList & getGroupIconFilePath() const;
 
-    Natron::LibraryBinary* getLibraryBinary() const
-    {
-        return _binary;
-    }
+    const QStringList & getGrouping() const;
+    
+    void setToolsetScript(bool isToolset);
+    
+    bool getToolsetScript() const;
+    
+    QMutex* getPluginLock() const;
 
-    int getMajorVersion() const
-    {
-        return _majorVersion;
-    }
+    LibraryBinary* getLibraryBinary() const;
 
-    int getMinorVersion() const
-    {
-        return _minorVersion;
-    }
+    int getMajorVersion() const;
 
-    void setHasShortcut(bool has) const
-    {
-        _hasShortcutSet = has;
-    }
+    int getMinorVersion() const;
 
-    bool getHasShortcut() const
-    {
-        return _hasShortcutSet;
-    }
+    void setHasShortcut(bool has) const;
+
+    bool getHasShortcut() const;
+    
+    void setPythonModule(const QString& module);
+    
+    const QString& getPythonModule() const ;
+    
+    void getPythonModuleNameAndPath(QString* moduleName, QString* modulePath) const;
+    
+    void setOfxPlugin(OFX::Host::ImageEffect::ImageEffectPlugin* p);
+    
+    OFX::Host::ImageEffect::ImageEffectPlugin* getOfxPlugin() const;
+    
+    OFX::Host::ImageEffect::Descriptor* getOfxDesc(ContextEnum* ctx) const;
+    
+    void setOfxDesc(OFX::Host::ImageEffect::Descriptor* desc,ContextEnum ctx);
+    
 };
     
 struct Plugin_compare_major
@@ -305,6 +332,7 @@ struct Plugin_compare_major
     
 typedef std::set<Plugin*,Plugin_compare_major> PluginMajorsOrdered;
 typedef std::map<std::string,PluginMajorsOrdered> PluginsMap;
-}
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // PLUGIN_H

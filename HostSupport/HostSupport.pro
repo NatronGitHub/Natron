@@ -1,17 +1,50 @@
-#This Source Code Form is subject to the terms of the Mozilla Public
-#License, v. 2.0. If a copy of the MPL was not distributed with this
-#file, You can obtain one at http://mozilla.org/MPL/2.0/.
-
+# ***** BEGIN LICENSE BLOCK *****
+# This file is part of Natron <http://www.natron.fr/>,
+# Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+#
+# Natron is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# Natron is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+# ***** END LICENSE BLOCK *****
 
 TARGET = HostSupport
 TEMPLATE = lib
 CONFIG += staticlib
-CONFIG += expat
 CONFIG -= qt
 
 include(../global.pri)
 include(../config.pri)
 
+!noexpat: CONFIG += expat
+ 
+contains(CONFIG,trace_ofx_actions) {
+    DEFINES += OFX_DEBUG_ACTIONS
+}
+
+contains(CONFIG,trace_ofx_params) {
+    DEFINES += OFX_DEBUG_PARAMETERS
+}
+
+contains(CONFIG,trace_ofx_properties) {
+    DEFINES += OFX_DEBUG_PROPERTIES
+}
+
+precompile_header {
+  #message("Using precompiled header")
+  # Use Precompiled headers (PCH)
+  # we specify PRECOMPILED_DIR, or qmake places precompiled headers in Natron/c++.pch, thus blocking the creation of the Unix executable
+  PRECOMPILED_DIR = pch
+  PRECOMPILED_HEADER = pch.h
+}
 
 #OpenFX C api includes and OpenFX c++ layer includes that are located in the submodule under /libs/OpenFX
 INCLUDEPATH += $$PWD/../libs/OpenFX/include
@@ -26,6 +59,33 @@ win32-msvc* {
 	} else {
 		QMAKE_LFLAGS += /MACHINE:X86
 	}
+}
+
+win32 {
+	DEFINES *= WIN32
+	CONFIG(64bit){
+		DEFINES *= WIN64
+	}
+}
+
+noexpat {
+    SOURCES += \
+    ../libs/OpenFX/HostSupport/expat-2.1.0/lib/xmlparse.c \
+    ../libs/OpenFX/HostSupport/expat-2.1.0/lib/xmltok.c \
+    ../libs/OpenFX/HostSupport/expat-2.1.0/lib/xmltok_impl.c \
+    
+    HEADERS += \
+        ../libs/OpenFX/HostSupport/expat-2.1.0/lib/expat.h \
+        ../libs/OpenFX/HostSupport/expat-2.1.0/lib/expat_external.h \
+        ../libs/OpenFX/HostSupport/expat-2.1.0/lib/ascii.h \
+        ../libs/OpenFX/HostSupport/expat-2.1.0/lib/xmltok.h \
+        ../libs/OpenFX/HostSupport/expat-2.1.0/lib/xmltok_impl.h \
+        ../libs/OpenFX/HostSupport/expat-2.1.0/lib/asciitab.h \
+        ../libs/OpenFX/HostSupport/expat-2.1.0/expat_config.h \
+
+    DEFINES += HAVE_EXPAT_CONFIG_H
+
+    INCLUDEPATH += $$PWD/../libs/OpenFX/HostSupport/expat-2.1.0/lib
 }
 
 SOURCES += \

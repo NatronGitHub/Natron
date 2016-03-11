@@ -1,27 +1,47 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include "StringAnimationManager.h"
 
 #include <set>
 #include <cmath>
+#include <cassert>
+#include <stdexcept>
+
+
 #include <QMutex>
 
 #include "Engine/Knob.h"
 
+NATRON_NAMESPACE_ENTER;
+
+namespace {
+
 struct StringKeyFrame
 {
     std::string value;
-    int time;
+    double time;
 };
 
 struct StringKeyFrame_compare_time
@@ -35,6 +55,7 @@ struct StringKeyFrame_compare_time
 
 typedef std::set<StringKeyFrame,StringKeyFrame_compare_time> Keyframes;
 
+}
 
 struct StringAnimationManagerPrivate
 {
@@ -163,7 +184,7 @@ StringAnimationManager::customInterpolation(double time,
 } // customInterpolation
 
 void
-StringAnimationManager::insertKeyFrame(int time,
+StringAnimationManager::insertKeyFrame(double time,
                                        const std::string & v,
                                        double* index)
 {
@@ -182,7 +203,7 @@ StringAnimationManager::insertKeyFrame(int time,
 }
 
 void
-StringAnimationManager::removeKeyFrame(int time)
+StringAnimationManager::removeKeyFrame(double time)
 {
     QMutexLocker l(&_imp->keyframesMutex);
 
@@ -243,6 +264,30 @@ StringAnimationManager::clone(const StringAnimationManager & other)
     _imp->keyframes = other._imp->keyframes;
 }
 
+bool
+StringAnimationManager::cloneAndCheckIfChanged(const StringAnimationManager & other)
+{
+    QMutexLocker l(&_imp->keyframesMutex);
+    QMutexLocker l2(&other._imp->keyframesMutex);
+    bool hasChanged = false;
+    if (_imp->keyframes.size() != other._imp->keyframes.size()) {
+        hasChanged = true;
+    }
+    if (!hasChanged) {
+        Keyframes::const_iterator oit = other._imp->keyframes.begin();
+        for (Keyframes::const_iterator it = _imp->keyframes.begin(); it != _imp->keyframes.end(); ++it,++oit) {
+            if (it->time != oit->time || it->value != oit->value) {
+                hasChanged = true;
+                break;
+            }
+        }
+    }
+    if (hasChanged) {
+        _imp->keyframes = other._imp->keyframes;
+    }
+    return hasChanged;
+}
+
 void
 StringAnimationManager::clone(const StringAnimationManager & other,
                               SequenceTime offset,
@@ -278,6 +323,7 @@ StringAnimationManager::load(const std::map<int,std::string> & keyframes)
         k.value = it->second;
         std::pair<Keyframes::iterator,bool> ret = _imp->keyframes.insert(k);
         assert(ret.second);
+        Q_UNUSED(ret);
     }
 }
 
@@ -289,6 +335,8 @@ StringAnimationManager::save(std::map<int,std::string>* keyframes) const
     for (Keyframes::const_iterator it = _imp->keyframes.begin(); it != _imp->keyframes.end(); ++it) {
         std::pair<std::map<int,std::string>::iterator, bool> success = keyframes->insert( std::make_pair(it->time, it->value) );
         assert(success.second);
+        Q_UNUSED(success);
     }
 }
 
+NATRON_NAMESPACE_EXIT;

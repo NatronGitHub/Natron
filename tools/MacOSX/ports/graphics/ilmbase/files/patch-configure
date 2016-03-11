@@ -1,0 +1,11 @@
+--- configure.orig	2010-07-22 20:13:13.000000000 -0500
++++ configure	2011-01-19 00:29:34.000000000 -0600
+@@ -20374,7 +20374,7 @@
+ 
+ case "$host" in
+ *darwin*)
+-    CXXFLAGS="$CXXFLAGS -Wno-long-double"
++    CXXFLAGS="$CXXFLAGS"
+ 
+         # Check whether --enable-osx-arch or --disable-osx-arch was given.
+ if test "${enable_osx_arch+set}" = set; then

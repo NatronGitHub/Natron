@@ -1,50 +1,59 @@
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ *
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
+
 #ifndef TRANSFORM_H
 #define TRANSFORM_H
-/*
-   Copyright (C) 2014 INRIA
 
-   Redistribution and use in source and binary forms, with or without modification,
-   are permitted provided that the following conditions are met:
-
-   Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer.
-
-   Redistributions in binary form must reproduce the above copyright notice, this
-   list of conditions and the following disclaimer in the documentation and/or
-   other materials provided with the distribution.
-
-   Neither the name of the {organization} nor the names of its
-   contributors may be used to endorse or promote products derived from
-   this software without specific prior written permission.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-   ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-   WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
-   ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-   (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-   LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-   ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-   INRIA
-   Domaine de Voluceau
-   Rocquencourt - B.P. 105
-   78153 Le Chesnay Cedex - France
-
-
-   This file was taken from https://github.com/devernay/openfx-misc
-   Maybe we should make this a git submodule instead.
- */
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include <cmath>
 
-class RectD;
+#include "Global/Macros.h"
 
+#include "Engine/EngineFwd.h"
+
+
+#ifndef M_PI
+#define M_PI        3.14159265358979323846264338327950288   /* pi             */
+#endif
+
+NATRON_NAMESPACE_ENTER;
 namespace Transform {
-inline double toDegrees(double rad);
-inline double toRadians(double deg);
+
+inline double toDegrees(double rad)
+{
+    rad = rad * 180.0 / M_PI;
+    
+    return rad;
+}
+    
+inline double toRadians(double deg)
+{
+        
+    deg = deg * M_PI / 180.0;
+    
+    return deg;
+}
+    
 struct Point3D
 {
     double x,y,z;
@@ -117,19 +126,19 @@ struct Matrix3x3
  Matrix3x3 matInverse(const Matrix3x3& M);
  Matrix3x3 matInverse(const Matrix3x3& M,double det);
 
-// Matrix3x3 matRotation(double rads);
+ Matrix3x3 matRotation(double rads);
 // Matrix3x3 matRotationAroundPoint(double rads, double pointX, double pointY);
 
 // Matrix3x3 matTranslation(double translateX, double translateY);
 
-// Matrix3x3 matScale(double scaleX, double scaleY);
+ Matrix3x3 matScale(double scaleX, double scaleY);
 // Matrix3x3 matScale(double scale);
 // Matrix3x3 matScaleAroundPoint(double scaleX, double scaleY, double pointX, double pointY);
 
-// Matrix3x3 matSkewXY(double skewX, double skewY, bool skewOrderYX);
+ Matrix3x3 matSkewXY(double skewX, double skewY, bool skewOrderYX);
 
 // matrix transform from destination to source, in canonical coordinates
-// Matrix3x3 matInverseTransformCanonical(double translateX, double translateY, double scaleX, double scaleY, double skewX, double skewY, bool skewOrderYX, double rads, double centerX, double centerY);
+ Matrix3x3 matInverseTransformCanonical(double translateX, double translateY, double scaleX, double scaleY, double skewX, double skewY, bool skewOrderYX, double rads, double centerX, double centerY);
 
 // matrix transform from source to destination in canonical coordinates
 Matrix3x3 matTransformCanonical(double translateX, double translateY, double scaleX, double scaleY, double skewX, double skewY, bool skewOrderYX, double rads, double centerX, double centerY);
@@ -175,6 +184,8 @@ Matrix3x3 matCanonicalToPixel(double pixelaspectratio, //!< 1.067 for PAL, where
 Matrix3x3 matMul(const Matrix3x3 & m1, const Matrix3x3 & m2);
 
 Point3D matApply(const Matrix3x3 & m,const Point3D & p);
+    
+void matApply(const Matrix3x3 & m,double* x, double *y, double *z);
 
 struct Matrix4x4
 {
@@ -198,6 +209,8 @@ Point4D matApply(const Matrix4x4 & m,const Point4D & p);
 void transformRegionFromRoD(const RectD &srcRect, const Matrix3x3 &transform, RectD &dstRect);
     
 // Matrix4x4 matrix4x4FromMatrix3x3(const Matrix3x3& m);
-}
+
+} // namespace Transform
+NATRON_NAMESPACE_EXIT;
 
 #endif // TRANSFORM_H

@@ -1,40 +1,58 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
-#ifndef FRAMEPARAMSSERIALIZATION_H
-#define FRAMEPARAMSSERIALIZATION_H
+#ifndef Engine_FrameParamsSerialization_h
+#define Engine_FrameParamsSerialization_h
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
 
-#ifndef Q_MOC_RUN
-GCC_DIAG_OFF_48(unused-local-typedefs) //-Wunused-local-typedefs
-CLANG_DIAG_OFF(unused-parameter)
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+GCC_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/binary_iarchive.hpp>
-CLANG_DIAG_ON(unused-parameter)
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/base_object.hpp>
-GCC_DIAG_ON_48(unused-local-typedefs)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+GCC_DIAG_ON(unused-parameter)
 #endif
 #include "Engine/FrameParams.h"
+#include "Engine/EngineFwd.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
+
+// Note: these classes are used for cache serialization and do not have to maintain backward compatibility
 
 template<class Archive>
 void
 FrameParams::serialize(Archive & ar,
                        const unsigned int /*version*/)
 {
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Natron::NonKeyParams);
-    ar & boost::serialization::make_nvp("Rod",_rod);
+    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(NonKeyParams);
+    ar & ::boost::serialization::make_nvp("Rod",_rod);
 }
 
-#endif // FRAMEPARAMSSERIALIZATION_H
+NATRON_NAMESPACE_EXIT;
+
+#endif // Engine_FrameParamsSerialization_h

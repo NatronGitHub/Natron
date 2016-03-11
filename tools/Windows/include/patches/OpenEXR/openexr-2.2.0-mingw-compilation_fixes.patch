@@ -1,0 +1,265 @@
+diff --git a/OpenEXR/IlmImf/ImfCRgbaFile.h b/OpenEXR/IlmImf/ImfCRgbaFile.h
+index 5ac2bf8..059ab41 100644
+--- a/OpenEXR/IlmImf/ImfCRgbaFile.h
++++ b/OpenEXR/IlmImf/ImfCRgbaFile.h
+@@ -441,6 +441,7 @@ int	       	ImfTiledOutputLevelRoundingMode
+ struct ImfInputFile;
+ typedef struct ImfInputFile ImfInputFile;
+ 
++IMF_EXPORT 
+ ImfInputFile *		ImfOpenInputFile (const char name[]);
+ 
+ IMF_EXPORT 
+diff --git a/OpenEXR/IlmImf/ImfChannelList.h b/OpenEXR/IlmImf/ImfChannelList.h
+index fc31a15..4c18c33 100644
+--- a/OpenEXR/IlmImf/ImfChannelList.h
++++ b/OpenEXR/IlmImf/ImfChannelList.h
+@@ -270,7 +270,7 @@ class IMF_EXPORT ChannelList
+ // Iterators
+ //----------
+ 
+-class ChannelList::Iterator
++class IMF_EXPORT ChannelList::Iterator
+ {
+   public:
+ 
+@@ -291,7 +291,7 @@ class ChannelList::Iterator
+ };
+ 
+ 
+-class ChannelList::ConstIterator
++class IMF_EXPORT ChannelList::ConstIterator
+ {
+   public:
+ 
+diff --git a/OpenEXR/IlmImf/ImfCompositeDeepScanLine.h b/OpenEXR/IlmImf/ImfCompositeDeepScanLine.h
+index 2dc23e5..00e6225 100644
+--- a/OpenEXR/IlmImf/ImfCompositeDeepScanLine.h
++++ b/OpenEXR/IlmImf/ImfCompositeDeepScanLine.h
+@@ -62,7 +62,7 @@
+ #include "ImfForward.h"
+ #include "ImfNamespace.h"
+ #include "ImfExport.h"
+-#include <ImathBox.h>
++#include "ImathBox.h"
+ 
+ OPENEXR_IMF_INTERNAL_NAMESPACE_HEADER_ENTER
+ 
+diff --git a/OpenEXR/IlmImf/ImfExport.h b/OpenEXR/IlmImf/ImfExport.h
+index 6563fd5..d5d4a02 100644
+--- a/OpenEXR/IlmImf/ImfExport.h
++++ b/OpenEXR/IlmImf/ImfExport.h
+@@ -1,3 +1,6 @@
++#ifndef IMFEXPORT_H
++#define IMFEXPORT_H
++
+ ///////////////////////////////////////////////////////////////////////////
+ //
+ // Copyright (c) 2012, Industrial Light & Magic, a division of Lucas
+@@ -32,15 +35,28 @@
+ //
+ ///////////////////////////////////////////////////////////////////////////
+ 
+-#if defined(OPENEXR_DLL)
+-    #if defined(ILMIMF_EXPORTS)
+-	    #define IMF_EXPORT __declspec(dllexport)
+-        #define IMF_EXPORT_CONST extern __declspec(dllexport)
+-    #else
+-	    #define IMF_EXPORT __declspec(dllimport)
+-	    #define IMF_EXPORT_CONST extern __declspec(dllimport)
++#if defined(_WIN32)
++#  if defined(OPENEXR_DLL)
++#    define IMF_EXPORT_DEFINITION __declspec(dllexport) 
++#    define IMF_IMPORT_DEFINITION __declspec(dllimport)
++#  else
++#    define IMF_EXPORT_DEFINITION 
++#    define IMF_IMPORT_DEFINITION
++#  endif
++#else   // linux/macos
++#  if defined(PLATFORM_VISIBILITY_AVAILABLE)
++#    define IMF_EXPORT_DEFINITION __attribute__((visibility("default")))
++#    define IMF_IMPORT_DEFINITION
++#  else
++#    define IMF_EXPORT_DEFINITION 
++#    define IMF_IMPORT_DEFINITION
++#  endif
+     #endif
+-#else
+-    #define IMF_EXPORT
+-    #define IMF_EXPORT_CONST extern const
++
++#if defined(ILMIMF_EXPORTS)                          // create library
++#  define IMF_EXPORT IMF_EXPORT_DEFINITION
++#else                                              // use library
++#  define IMF_EXPORT IMF_IMPORT_DEFINITION
+ #endif
++
++#endif // IMFEXPORT_H
+diff --git a/OpenEXR/IlmImf/ImfFastHuf.cpp b/OpenEXR/IlmImf/ImfFastHuf.cpp
+index 86c84dc..10bc318 100644
+--- a/OpenEXR/IlmImf/ImfFastHuf.cpp
++++ b/OpenEXR/IlmImf/ImfFastHuf.cpp
+@@ -107,7 +107,7 @@ FastHufDecoder::FastHufDecoder
+     for (int i = 0; i <= MAX_CODE_LEN; ++i)
+     {
+         codeCount[i] = 0;
+-        base[i]      = 0xffffffffffffffffL;
++        base[i]      = 0xffffffffffffffffULL;
+         offset[i]    = 0;
+     }
+ 
+@@ -352,7 +352,7 @@ FastHufDecoder::buildTables (Int64 *base, Int64 *offset)
+ 
+     for (int i = 0; i <= MAX_CODE_LEN; ++i)
+     {
+-        if (base[i] != 0xffffffffffffffffL)
++        if (base[i] != 0xffffffffffffffffULL)
+         {
+             _ljBase[i] = base[i] << (64 - i);
+         }
+@@ -362,7 +362,7 @@ FastHufDecoder::buildTables (Int64 *base, Int64 *offset)
+             // Unused code length - insert dummy values
+             //
+ 
+-            _ljBase[i] = 0xffffffffffffffffL;
++            _ljBase[i] = 0xffffffffffffffffULL;
+         }
+     }
+ 
+@@ -417,7 +417,7 @@ FastHufDecoder::buildTables (Int64 *base, Int64 *offset)
+ 
+     int minIdx = TABLE_LOOKUP_BITS;
+ 
+-    while (minIdx > 0 && _ljBase[minIdx] == 0xffffffffffffffffL)
++    while (minIdx > 0 && _ljBase[minIdx] == 0xffffffffffffffffULL)
+         minIdx--;
+ 
+     if (minIdx < 0)
+@@ -427,7 +427,7 @@ FastHufDecoder::buildTables (Int64 *base, Int64 *offset)
+         // Set the min value such that the table is never tested.
+         //
+ 
+-        _tableMin = 0xffffffffffffffffL;
++        _tableMin = 0xffffffffffffffffULL;
+     }
+     else
+     {
+diff --git a/OpenEXR/IlmImf/ImfHeader.h b/OpenEXR/IlmImf/ImfHeader.h
+index 756a62e..dd71e0e 100644
+--- a/OpenEXR/IlmImf/ImfHeader.h
++++ b/OpenEXR/IlmImf/ImfHeader.h
+@@ -493,7 +493,7 @@ class Header::ConstIterator
+ //
+ //------------------------------------------------------------------------
+ 
+-void staticInitialize ();
++IMF_EXPORT void staticInitialize ();
+ 
+ 
+ //-----------------
+diff --git a/OpenEXR/IlmImf/ImfOptimizedPixelReading.h b/OpenEXR/IlmImf/ImfOptimizedPixelReading.h
+index 1c83497..71142cd 100644
+--- a/OpenEXR/IlmImf/ImfOptimizedPixelReading.h
++++ b/OpenEXR/IlmImf/ImfOptimizedPixelReading.h
+@@ -70,7 +70,7 @@ EXR_FORCEINLINE
+ bool
+ isPointerSSEAligned (const void* EXR_RESTRICT pPointer)
+ {
+-    unsigned long trailingBits = ((unsigned long)pPointer) & 15;
++    intptr_t trailingBits = ((intptr_t)pPointer) & 15;
+     return trailingBits == 0;
+ }
+ 
+diff --git a/OpenEXR/IlmImf/ImfSimd.h b/OpenEXR/IlmImf/ImfSimd.h
+index 09b1042..5595232 100644
+--- a/OpenEXR/IlmImf/ImfSimd.h
++++ b/OpenEXR/IlmImf/ImfSimd.h
+@@ -44,8 +44,10 @@
+ 
+ 
+ // GCC and Visual Studio SSE2 compiler flags
+-#if defined __SSE2__ || (_MSC_VER >= 1300 && !_M_CEE_PURE)
++#ifndef __MINGW64_VERSION_MAJOR
++  #if defined __SSE2__ || (_MSC_VER >= 1300 && !_M_CEE_PURE)
+     #define IMF_HAVE_SSE2 1
++  #endif
+ #endif
+ 
+ extern "C"
+diff --git a/OpenEXR/IlmImf/ImfStandardAttributes.cpp b/OpenEXR/IlmImf/ImfStandardAttributes.cpp
+index df952c2..63e0a26 100644
+--- a/OpenEXR/IlmImf/ImfStandardAttributes.cpp
++++ b/OpenEXR/IlmImf/ImfStandardAttributes.cpp
+@@ -39,7 +39,7 @@
+ //
+ //-----------------------------------------------------------------------------
+ 
+-#include <ImfStandardAttributes.h>
++#include "ImfStandardAttributes.h"
+ 
+ 
+ #define IMF_STRING(name) #name
+diff --git a/OpenEXR/IlmImf/ImfSystemSpecific.h b/OpenEXR/IlmImf/ImfSystemSpecific.h
+index c0261a7..7e0a532 100644
+--- a/OpenEXR/IlmImf/ImfSystemSpecific.h
++++ b/OpenEXR/IlmImf/ImfSystemSpecific.h
+@@ -35,8 +35,8 @@
+ #ifndef INCLUDED_IMF_COMPILER_SPECIFIC_H
+ #define INCLUDED_IMF_COMPILER_SPECIFIC_H
+ 
+-#include <ImfNamespace.h>
+-#include <ImfSimd.h>
++#include "ImfNamespace.h"
++#include "ImfSimd.h"
+ #include <stdlib.h>
+ #include "ImfExport.h"
+ 
+@@ -54,7 +54,23 @@ static bool GLOBAL_SYSTEM_LITTLE_ENDIAN =
+ 
+ #ifdef IMF_HAVE_SSE2
+ 
+-#ifdef __GNUC__
++#ifdef __MINGW64_VERSION_MAJOR
++
++#define EXR_FORCEINLINE inline
++#define EXR_RESTRICT __restrict
++
++static void* EXRAllocAligned(size_t size, size_t alignment)
++{
++  __mingw_aligned_malloc(alignment, size);
++}
++
++
++static void EXRFreeAligned(void* ptr)
++{
++  __mingw_aligned_free(ptr);
++}
++
++#elif defined __GNUC__
+ // Causes issues on certain gcc versions
+ //#define EXR_FORCEINLINE inline __attribute__((always_inline))
+ #define EXR_FORCEINLINE inline
+@@ -62,8 +78,7 @@ static bool GLOBAL_SYSTEM_LITTLE_ENDIAN =
+ 
+ static void* EXRAllocAligned(size_t size, size_t alignment)
+ {
+-    void* ptr = 0;
+-    posix_memalign(&ptr, alignment, size);
++    void* ptr = _aligned_malloc(alignment, size);
+     return ptr;
+ }
+ 
+diff --git a/OpenEXR/IlmImf/dwaLookups.cpp b/OpenEXR/IlmImf/dwaLookups.cpp
+index 19ec831..ebbdf5f 100644
+--- a/OpenEXR/IlmImf/dwaLookups.cpp
++++ b/OpenEXR/IlmImf/dwaLookups.cpp
+@@ -42,6 +42,9 @@
+ #include <math.h>
+ #include <vector>
+ 
++#ifdef _WIN32
++#include <windows.h>
++#endif
+ #include <OpenEXRConfig.h>
+ 
+ #ifdef OPENEXR_IMF_HAVE_SYSCONF_NPROCESSORS_ONLN

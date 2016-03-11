@@ -5,7 +5,7 @@
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSHighResolutionCapable</key>
-	<string>False</string>
+	<string>True</string>
 	<key>CFBundleIconFile</key>
 	<string>@ICON@</string>
 	<key>CFBundlePackageType</key>
@@ -14,6 +14,8 @@
 	<string>@SHORT_VERSION@</string>
 	<key>CFBundleSignature</key>
 	<string>@TYPEINFO@</string>
+	<key>CFBundleName</key>
+	<string>@EXECUTABLE@</string>
 	<key>CFBundleExecutable</key>
 	<string>@EXECUTABLE@</string>
 	<key>CFBundleIdentifier</key>
@@ -49,6 +51,22 @@
 			</array>
 			<key>CFBundleTypeName</key>
 			<string>Natron Node Presets</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleTypeIconFile</key>
+			<string>natronProjectIcon_osx.icns</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>nl</string>
+			</array>
+			<key>CFBundleTypeMIMETypes</key>
+			<array>
+				<string>application/vnd.natron.layout</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>Natron Layout</string>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleTypeIconFile</key>

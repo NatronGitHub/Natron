@@ -1,18 +1,32 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_GUI_INFOVIEWERWIDGET_H_
-#define NATRON_GUI_INFOVIEWERWIDGET_H_
+#ifndef NATRON_GUI_INFOVIEWERWIDGET_H
+#define NATRON_GUI_INFOVIEWERWIDGET_H
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QWidget>
@@ -22,19 +36,21 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Format.h"
+#include "Engine/ImageComponents.h"
 
-class ViewerGL;
-class QLabel;
-class QHBoxLayout;
+#include "Gui/GuiFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 class InfoViewerWidget
     : public QWidget
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    explicit InfoViewerWidget(ViewerGL* v,
-                              const QString & description,
+    explicit InfoViewerWidget(const QString & description,
                               QWidget* parent = 0);
     virtual ~InfoViewerWidget() OVERRIDE;
 
@@ -45,7 +61,7 @@ public:
 
     void setDataWindow(const RectI & r); // in canonical coordinates
 
-    void setImageFormat(Natron::ImageComponentsEnum comp,Natron::ImageBitDepthEnum depth);
+    void setImageFormat(const ImageComponents& comp,ImageBitDepthEnum depth);
 
     void setColor(float r,float g,float b,float a);
 
@@ -53,11 +69,12 @@ public:
 
     static void removeTrailingZeroes(QString& str);
     
+public Q_SLOTS:
+
+    
     void setColorValid(bool valid);
     
     void setColorApproximated(bool approx);
-    
-public slots:
 
     void hideColorAndMouseInfo();
     void showColorAndMouseInfo();
@@ -73,21 +90,22 @@ private:
     
 
     QHBoxLayout* layout;
-    QLabel* descriptionLabel;
-    QLabel* imageFormat;
-    QLabel* resolution;
+    Label* descriptionLabel;
+    Label* imageFormat;
+    Label* resolution;
     Format format;
-    QLabel* coordDispWindow;
-    QLabel* coordMouse;
-    QLabel* rgbaValues;
-    QLabel* color;
-    QLabel* hvl_lastOption;
-    QLabel* _fpsLabel;
-    ViewerGL* viewer;
-    Natron::ImageComponentsEnum _comp;
+    Label* coordDispWindow;
+    Label* coordMouse;
+    Label* rgbaValues;
+    Label* color;
+    Label* hvl_lastOption;
+    Label* _fpsLabel;
+    ImageComponents _comp;
     bool _colorValid;
     bool _colorApprox;
     double currentColor[4];
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif /* defined(NATRON_GUI_INFOVIEWERWIDGET_H_) */

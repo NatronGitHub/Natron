@@ -1,16 +1,29 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_KNOBTYPES_H_
-#define NATRON_ENGINE_KNOBTYPES_H_
+#ifndef NATRON_ENGINE_KNOBTYPES_H
+#define NATRON_ENGINE_KNOBTYPES_H
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include <vector>
 #include <string>
@@ -23,37 +36,43 @@ CLANG_DIAG_ON(deprecated)
 #include <QVector>
 #include <QMutex>
 
-#include "Engine/Knob.h"
-
 #include "Global/GlobalDefines.h"
+#include "Engine/Knob.h"
+#include "Engine/ViewIdx.h"
+#include "Engine/EngineFwd.h"
 
-class Curve;
-class ChoiceExtraData;
-class OverlaySupport;
-class StringAnimationManager;
-class BezierCP;
-namespace Natron {
-class Node;
-}
-/******************************INT_KNOB**************************************/
+#define kFontSizeTag "<font size=\""
+#define kFontColorTag "color=\""
+#define kFontFaceTag "face=\""
+#define kFontEndTag "</font>"
+#define kBoldStartTag "<b>"
+#define kBoldEndTag "</b>"
+#define kItalicStartTag "<i>"
+#define kItalicEndTag "</i>"
 
-class Int_Knob
+NATRON_NAMESPACE_ENTER;
+
+/******************************KnobInt**************************************/
+
+class KnobInt
     : public QObject, public Knob<int>
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
     static KnobHelper * BuildKnob(KnobHolder* holder,
-                                  const std::string &description,
+                                  const std::string &label,
                                   int dimension,
                                   bool declaredByPlugin = true)
     {
-        return new Int_Knob(holder, description, dimension,declaredByPlugin);
+        return new KnobInt(holder, label, dimension, declaredByPlugin);
     }
 
-    Int_Knob(KnobHolder* holder,
-             const std::string &description,
+    KnobInt(KnobHolder* holder,
+             const std::string &label,
              int dimension,
              bool declaredByPlugin);
 
@@ -72,7 +91,7 @@ public:
     const std::vector<int> &getIncrements() const;
 
 
-signals:
+Q_SIGNALS:
 
 
     void incrementChanged(int incr, int index = 0);
@@ -90,23 +109,23 @@ private:
     static const std::string _typeNameStr;
 };
 
-/******************************BOOL_KNOB**************************************/
+/******************************KnobBool**************************************/
 
-class Bool_Knob
+class KnobBool
     :  public Knob<bool>
 {
 public:
 
     static KnobHelper * BuildKnob(KnobHolder* holder,
-                                  const std::string &description,
+                                  const std::string &label,
                                   int dimension,
                                   bool declaredByPlugin = true)
     {
-        return new Bool_Knob(holder, description, dimension,declaredByPlugin);
+        return new KnobBool(holder, label, dimension, declaredByPlugin);
     }
 
-    Bool_Knob(KnobHolder* holder,
-              const std::string &description,
+    KnobBool(KnobHolder* holder,
+              const std::string &label,
               int dimension,
               bool declaredByPlugin);
 
@@ -129,36 +148,38 @@ private:
     static const std::string _typeNameStr;
 };
 
-/******************************DOUBLE_KNOB**************************************/
+/******************************KnobDouble**************************************/
 
-class Double_Knob
+class KnobDouble
     :  public QObject,public Knob<double>
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    enum NormalizedStateEnum
+    enum ValueIsNormalizedEnum
     {
-        eNormalizedStateNone = 0, ///< indicating that the dimension holds a  non-normalized value.
-        eNormalizedStateX, ///< indicating that the dimension holds a value normalized against the X dimension of the project format
-        eNormalizedStateY ///< indicating that the dimension holds a value normalized against the Y dimension of the project format
+        eValueIsNormalizedNone = 0, ///< indicating that the dimension holds a  non-normalized value.
+        eValueIsNormalizedX, ///< indicating that the dimension holds a value normalized against the X dimension of the project format
+        eValueIsNormalizedY ///< indicating that the dimension holds a value normalized against the Y dimension of the project format
     };
 
     static KnobHelper * BuildKnob(KnobHolder* holder,
-                                  const std::string &description,
+                                  const std::string &label,
                                   int dimension,
                                   bool declaredByPlugin = true)
     {
-        return new Double_Knob(holder, description, dimension,declaredByPlugin);
+        return new KnobDouble(holder, label, dimension, declaredByPlugin);
     }
 
-    Double_Knob(KnobHolder* holder,
-                const std::string &description,
+    KnobDouble(KnobHolder* holder,
+                const std::string &label,
                 int dimension,
                 bool declaredByPlugin );
 
-    virtual ~Double_Knob();
+    virtual ~KnobDouble();
 
     void disableSlider();
 
@@ -177,32 +198,25 @@ public:
 
     static const std::string & typeNameStatic();
 
-    NormalizedStateEnum getNormalizedState(int dimension) const
-    {
-        assert(dimension < 2 && dimension >= 0);
-        if (dimension == 0) {
-            return _normalizationXY.first;
-        } else {
-            return _normalizationXY.second;
-        }
+    ValueIsNormalizedEnum getValueIsNormalized(int dimension) const {
+        return _valueIsNormalized[dimension];
     }
 
-    void setNormalizedState(int dimension,
-                            NormalizedStateEnum state)
-    {
-        assert(dimension < 2 && dimension >= 0);
-        if (dimension == 0) {
-            _normalizationXY.first = state;
-        } else {
-            _normalizationXY.second = state;
-        }
+    void setValueIsNormalized(int dimension,
+                              ValueIsNormalizedEnum state) {
+        _valueIsNormalized[dimension] = state;
     }
     
-    void setSpatial(bool spatial);
-    bool getIsSpatial() const;
+    void setSpatial(bool spatial) {
+        _spatial = spatial;
+    }
+    
+    bool getIsSpatial() const {
+        return _spatial;
+    }
 
     /**
-     * @brief Normalize the default values, set the _defaultStoredNormalized to true and
+     * @brief Normalize the default values, set the _defaultValuesAreNormalized to true and
      * calls setDefaultValue with the good parameters.
      * Later when restoring the default values, this flag will be used to know whether we need
      * to denormalize the default stored values to the set the "live" values.
@@ -228,33 +242,26 @@ public:
      * see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamPropDefaultCoordinateSystem
      * and http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#APIChanges_1_2_SpatialParameters
      **/
-    void setDefaultValuesNormalized(int dims,double defaults[]);
-
-    /**
-     * @brief Same as setDefaultValuesNormalized but for 1 dimensional doubles
-     **/
-    void setDefaultValuesNormalized(double def)
-    {
-        double d[1];
-
-        d[0] = def;
-        setDefaultValuesNormalized(1,d);
+    void setDefaultValuesAreNormalized(bool normalized) {
+        _defaultValuesAreNormalized = normalized;
     }
 
     /**
      * @brief Returns whether the default values are stored normalized or not.
      **/
-    bool areDefaultValuesNormalized() const;
+    bool getDefaultValuesAreNormalized() const {
+        return _defaultValuesAreNormalized;
+    }
 
     /**
      * @brief Denormalize the given value according to the RoD of the attached effect's input's RoD.
-     * WARNING: Can only be called once setNormalizedState has been called!
+     * WARNING: Can only be called once setValueIsNormalized has been called!
      **/
     void denormalize(int dimension,double time,double* value) const;
 
     /**
      * @brief Normalize the given value according to the RoD of the attached effect's input's RoD.
-     * WARNING: Can only be called once setNormalizedState has been called!
+     * WARNING: Can only be called once setValueIsNormalized has been called!
      **/
     void normalize(int dimension,double time,double* value) const;
 
@@ -281,14 +288,20 @@ public:
 
     void serializeTracks(std::list<SerializedTrack>* tracks);
 
-    void restoreTracks(const std::list <SerializedTrack> & tracks,const std::vector<boost::shared_ptr<Natron::Node> > & activeNodes);
+    void restoreTracks(const std::list <SerializedTrack> & tracks,const NodesList & activeNodes);
 
-public slots:
+    void setHasHostOverlayHandle(bool handle);
+    
+    bool getHasHostOverlayHandle() const;
+    
+    virtual bool useHostOverlayHandle() const OVERRIDE { return getHasHostOverlayHandle(); }
+    
+public Q_SLOTS:
 
     void onNodeDeactivated();
     void onNodeActivated();
 
-signals:
+Q_SIGNALS:
 
     void incrementChanged(double incr, int index = 0);
 
@@ -310,33 +323,41 @@ private:
 
     /// to support ofx deprecated normalizd params:
     /// the first and second dimensions of the double param( hence a pair ) have a normalized state.
-    /// BY default they have eNormalizedStateNone
-    std::pair<NormalizedStateEnum, NormalizedStateEnum> _normalizationXY;
+    /// BY default they have eValueIsNormalizedNone
+    /// if the double type is one of
+    /// - kOfxParamDoubleTypeNormalisedX - normalised size wrt to the project's X dimension (1D only),
+    /// - kOfxParamDoubleTypeNormalisedXAbsolute - normalised absolute position on the X axis (1D only)
+    /// - kOfxParamDoubleTypeNormalisedY - normalised size wrt to the project's Y dimension(1D only),
+    /// - kOfxParamDoubleTypeNormalisedYAbsolute - normalised absolute position on the Y axis (1D only)
+    /// - kOfxParamDoubleTypeNormalisedXY - normalised to the project's X and Y size (2D only),
+    /// - kOfxParamDoubleTypeNormalisedXYAbsolute - normalised to the projects X and Y size, and is an absolute position on the image plane,
+    std::vector<ValueIsNormalizedEnum> _valueIsNormalized;
 
     ///For double params respecting the kOfxParamCoordinatesNormalised
     ///This tells us that only the default value is stored normalized.
     ///This SHOULD NOT bet set for old deprecated < OpenFX 1.2 normalized parameters.
-    bool _defaultStoredNormalized;
+    bool _defaultValuesAreNormalized;
+    bool _hasHostOverlayHandle;
     static const std::string _typeNameStr;
 };
 
-/******************************BUTTON_KNOB**************************************/
+/******************************KnobButton**************************************/
 
-class Button_Knob
+class KnobButton
     : public Knob<bool>
 {
 public:
 
     static KnobHelper * BuildKnob(KnobHolder* holder,
-                                  const std::string &description,
+                                  const std::string &label,
                                   int dimension,
                                   bool declaredByPlugin = true)
     {
-        return new Button_Knob(holder, description, dimension,declaredByPlugin);
+        return new KnobButton(holder, label, dimension, declaredByPlugin);
     }
 
-    Button_Knob(KnobHolder* holder,
-                const std::string &description,
+    KnobButton(KnobHolder* holder,
+                const std::string &label,
                 int dimension,
                 bool declaredByPlugin);
     static const std::string & typeNameStatic();
@@ -351,15 +372,8 @@ public:
         return _renderButton;
     }
 
-    void setIconFilePath(const std::string & filePath)
-    {
-        _iconFilePath = filePath;
-    }
-
-    const std::string & getIconFilePath() const
-    {
-        return _iconFilePath;
-    }
+    
+    void trigger();
 
 private:
 
@@ -370,39 +384,47 @@ private:
 private:
     static const std::string _typeNameStr;
     bool _renderButton;
-    std::string _iconFilePath;
 };
 
-/******************************CHOICE_KNOB**************************************/
+/******************************KnobChoice**************************************/
 
-class Choice_Knob
+class KnobChoice
     : public QObject,public Knob<int>
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
     static KnobHelper * BuildKnob(KnobHolder* holder,
-                                  const std::string &description,
+                                  const std::string &label,
                                   int dimension,
                                   bool declaredByPlugin = true)
     {
-        return new Choice_Knob(holder, description, dimension,declaredByPlugin);
+        return new KnobChoice(holder, label, dimension, declaredByPlugin);
     }
 
-    Choice_Knob(KnobHolder* holder,
-                const std::string &description,
+    KnobChoice(KnobHolder* holder,
+                const std::string &label,
                 int dimension,
                 bool declaredByPlugin);
 
-    virtual ~Choice_Knob();
+    virtual ~KnobChoice();
 
     /*Must be called right away after the constructor.*/
     void populateChoices( const std::vector<std::string> &entries, const std::vector<std::string> &entriesHelp = std::vector<std::string>() );
     
+    void resetChoices();
+    
+    void appendChoice(const std::string& entry, const std::string& help = std::string());
+    
     std::vector<std::string> getEntries_mt_safe() const;
+    const std::string& getEntry(int v) const;
     std::vector<std::string> getEntriesHelp_mt_safe() const;
     std::string getActiveEntryText_mt_safe() const;
+    
+    int getNumEntries() const;
 
     /// Can this type be animated?
     /// ChoiceParam animation may not be quite perfect yet,
@@ -415,43 +437,84 @@ public:
     static const std::string & typeNameStatic();
     std::string getHintToolTipFull() const;
     
-    void choiceRestoration(Choice_Knob* knob,const ChoiceExtraData* data);
+    void choiceRestoration(KnobChoice* knob,const ChoiceExtraData* data);
+    
+    /**
+     * @brief When set the menu will have a "New" entry which the user can select to create a new entry on its own.
+     **/
+    void setHostCanAddOptions(bool add);
+    
+    bool getHostCanAddOptions() const;
 
-signals:
+    void setCascading(bool cascading)
+    {
+        _isCascading = cascading;
+    }
+    
+    bool isCascading() const
+    {
+        return _isCascading;
+    }
+
+    /// set the KnobChoice value from the label
+    ValueChangedReturnCodeEnum setValueFromLabel(const std::string & value,
+                                                 int dimension,
+                                                 bool turnOffAutoKeying = false);
+    
+    /// set the KnobChoice default value from the label
+    void setDefaultValueFromLabel(const std::string & value,int dimension = 0);
+
+public Q_SLOTS:
+    
+    void onOriginalKnobPopulated();
+    void onOriginalKnobEntriesReset();
+    void onOriginalKnobEntryAppend(const QString& text,const QString& help);
+    
+Q_SIGNALS:
 
     void populated();
+    void entriesReset();
+    void entryAppended(QString,QString);
 
 private:
 
 
+    void findAndSetOldChoice(const std::vector<std::string>& newEntries);
+    
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
-    virtual void deepCloneExtraData(KnobI* other) OVERRIDE FINAL;
+    virtual void handleSignalSlotsForAliasLink(const KnobPtr& alias,bool connect) OVERRIDE FINAL;
+    virtual void onInternalValueChanged(int dimension, double time, ViewSpec view) OVERRIDE FINAL;
+    
 private:
     
     mutable QMutex _entriesMutex;
     std::vector<std::string> _entries;
     std::vector<std::string> _entriesHelp;
+    
+    std::string _lastValidEntry; // protected by _entriesMutex
+    bool _addNewChoice;
     static const std::string _typeNameStr;
+    bool _isCascading;
 };
 
-/******************************SEPARATOR_KNOB**************************************/
+/******************************KnobSeparator**************************************/
 
-class Separator_Knob
+class KnobSeparator
     : public Knob<bool>
 {
 public:
 
     static KnobHelper * BuildKnob(KnobHolder* holder,
-                                  const std::string &description,
+                                  const std::string &label,
                                   int dimension,
                                   bool declaredByPlugin = true)
     {
-        return new Separator_Knob(holder, description, dimension,declaredByPlugin);
+        return new KnobSeparator(holder, label, dimension, declaredByPlugin);
     }
 
-    Separator_Knob(KnobHolder* holder,
-                   const std::string &description,
+    KnobSeparator(KnobHolder* holder,
+                   const std::string &label,
                    int dimension,
                    bool declaredByPlugin);
     static const std::string & typeNameStatic();
@@ -474,23 +537,25 @@ private:
  * In dimension 3 the knob will have 3 channel R,G,B
  * In dimension 4 the knob will have R,G,B and A channels.
  **/
-class Color_Knob
+class KnobColor
     :  public QObject, public Knob<double>
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
     static KnobHelper * BuildKnob(KnobHolder* holder,
-                                  const std::string &description,
+                                  const std::string &label,
                                   int dimension,
                                   bool declaredByPlugin = true)
     {
-        return new Color_Knob(holder, description, dimension,declaredByPlugin);
+        return new KnobColor(holder, label, dimension, declaredByPlugin);
     }
 
-    Color_Knob(KnobHolder* holder,
-               const std::string &description,
+    KnobColor(KnobHolder* holder,
+               const std::string &label,
                int dimension,
                bool declaredByPlugin);
     
@@ -500,24 +565,14 @@ public:
 
     void activateAllDimensions()
     {
-        emit mustActivateAllDimensions();
+        Q_EMIT mustActivateAllDimensions();
     }
 
     void setPickingEnabled(bool enabled)
     {
-        emit pickingEnabled(enabled);
+        Q_EMIT pickingEnabled(enabled);
     }
 
-    /**
-     * @brief Convenience function for RGB color params
-     **/
-    void setValues(double r,double g,double b);
-
-
-    /**
-     * @brief Convenience function for RGBA color params
-     **/
-    void setValues(double r,double g,double b,double a);
     
     /**
      * @brief When simplified, the GUI of the knob should not have any spinbox and sliders but just a label to click and openup a color dialog
@@ -526,11 +581,11 @@ public:
     bool isSimplified() const;
     
 
-public slots:
+public Q_SLOTS:
 
     void onDimensionSwitchToggled(bool b);
 
-signals:
+Q_SIGNALS:
 
     void pickingEnabled(bool);
 
@@ -552,29 +607,29 @@ private:
     static const std::string _typeNameStr;
 };
 
-/******************************STRING_KNOB**************************************/
+/******************************KnobString**************************************/
 
 
-class String_Knob
-    : public AnimatingString_KnobHelper
+class KnobString
+    : public AnimatingKnobStringHelper
 {
 public:
 
 
     static KnobHelper * BuildKnob(KnobHolder* holder,
-                                  const std::string &description,
+                                  const std::string &label,
                                   int dimension,
                                   bool declaredByPlugin = true)
     {
-        return new String_Knob(holder, description, dimension,declaredByPlugin);
+        return new KnobString(holder, label, dimension, declaredByPlugin);
     }
 
-    String_Knob(KnobHolder* holder,
-                const std::string &description,
+    KnobString(KnobHolder* holder,
+                const std::string &label,
                 int dimension,
                 bool declaredByPlugin);
 
-    virtual ~String_Knob();
+    virtual ~KnobString();
 
     /// Can this type be animated?
     /// String animation consists in setting constant strings at
@@ -606,13 +661,18 @@ public:
     {
         return _richText;
     }
-
-    void setAsLabel()
+    
+    void setAsCustomHTMLText(bool custom) {
+        _customHtmlText = custom;
+    }
+    
+    bool isCustomHTMLText() const
     {
-        setAnimationEnabled(false); //< labels cannot animate
-        _isLabel = true;
+        return _customHtmlText;
     }
 
+    void setAsLabel();
+    
     bool isLabel() const
     {
         return _isLabel;
@@ -627,6 +687,12 @@ public:
     {
         return _isCustom;
     }
+    
+    /**
+     * @brief Relevant for multi-lines with rich text enables. It tells if
+     * the string has content without the html tags
+     **/
+    bool hasContentWithoutHtmlTags() const;
 
 private:
 
@@ -637,37 +703,46 @@ private:
     static const std::string _typeNameStr;
     bool _multiLine;
     bool _richText;
+    bool _customHtmlText;
     bool _isLabel;
     bool _isCustom;
 };
 
-/******************************GROUP_KNOB**************************************/
-class Group_Knob
+/******************************KnobGroup**************************************/
+class KnobGroup
     :  public QObject, public Knob<bool>
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-    std::vector< boost::shared_ptr<KnobI> > _children;
+    std::vector< boost::weak_ptr<KnobI> > _children;
     bool _isTab;
 
 public:
 
     static KnobHelper * BuildKnob(KnobHolder* holder,
-                                  const std::string &description,
+                                  const std::string &label,
                                   int dimension,
                                   bool declaredByPlugin = true)
     {
-        return new Group_Knob(holder, description, dimension,declaredByPlugin);
+        return new KnobGroup(holder, label, dimension, declaredByPlugin);
     }
 
-    Group_Knob(KnobHolder* holder,
-               const std::string &description,
+    KnobGroup(KnobHolder* holder,
+               const std::string &label,
                int dimension,
                bool declaredByPlugin);
 
-    void addKnob(boost::shared_ptr<KnobI> k);
+    void addKnob(const KnobPtr& k);
+    void removeKnob(KnobI* k);
+    
+    bool moveOneStepUp(KnobI* k);
+    bool moveOneStepDown(KnobI* k);
+    
+    void insertKnob(int index, const KnobPtr& k);
 
-    const std::vector< boost::shared_ptr<KnobI> > &getChildren() const;
+    std::vector< KnobPtr > getChildren() const;
 
     void setAsTab();
 
@@ -687,32 +762,39 @@ private:
 
 /******************************PAGE_KNOB**************************************/
 
-class Page_Knob
+class KnobPage
     :  public QObject,public Knob<bool>
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
     static KnobHelper * BuildKnob(KnobHolder* holder,
-                                  const std::string &description,
+                                  const std::string &label,
                                   int dimension,
                                   bool declaredByPlugin = true)
     {
-        return new Page_Knob(holder, description, dimension,declaredByPlugin);
+        return new KnobPage(holder, label, dimension, declaredByPlugin);
     }
 
-    Page_Knob(KnobHolder* holder,
-              const std::string &description,
+    KnobPage(KnobHolder* holder,
+              const std::string &label,
               int dimension,
               bool declaredByPlugin);
 
-    void addKnob(const boost::shared_ptr<KnobI>& k);
+    void addKnob(const KnobPtr& k);
     
-    const std::vector< boost::shared_ptr<KnobI> > & getChildren() const
-    {
-        return _children;
-    }
+
+    bool moveOneStepUp(KnobI* k);
+    bool moveOneStepDown(KnobI* k);
+    
+    void removeKnob(KnobI* k);
+    
+    void insertKnob(int index, const KnobPtr& k);
+
+    std::vector< KnobPtr >  getChildren() const;
 
     static const std::string & typeNameStatic();
 
@@ -722,34 +804,36 @@ private:
 
 private:
 
-    std::vector< boost::shared_ptr<KnobI> > _children;
+    std::vector< boost::weak_ptr<KnobI> > _children;
     static const std::string _typeNameStr;
 };
 
 
-/******************************Parametric_Knob**************************************/
+/******************************KnobParametric**************************************/
 
-class Parametric_Knob
+class KnobParametric
     :  public QObject, public Knob<double>
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     mutable QMutex _curvesMutex;
-    std::vector< boost::shared_ptr<Curve> > _curves;
+    std::vector< boost::shared_ptr<Curve> > _curves, _defaultCurves;
     std::vector<RGBAColourF> _curvesColor;
 
 public:
 
     static KnobHelper * BuildKnob(KnobHolder* holder,
-                                  const std::string &description,
+                                  const std::string &label,
                                   int dimension,
                                   bool declaredByPlugin = true)
     {
-        return new Parametric_Knob(holder, description, dimension,declaredByPlugin);
+        return new KnobParametric(holder, label, dimension, declaredByPlugin);
     }
 
-    Parametric_Knob(KnobHolder* holder,
-                    const std::string &description,
+    KnobParametric(KnobHolder* holder,
+                    const std::string &label,
                     int dimension,
                     bool declaredByPlugin );
 
@@ -758,46 +842,60 @@ public:
     void getCurveColor(int dimension,double* r,double* g,double* b);
 
     void setParametricRange(double min,double max);
+    
+    void setDefaultCurvesFromCurves();
 
     std::pair<double,double> getParametricRange() const WARN_UNUSED_RETURN;
     boost::shared_ptr<Curve> getParametricCurve(int dimension) const;
-    Natron::StatusEnum addControlPoint(int dimension,double key,double value) WARN_UNUSED_RETURN;
-    Natron::StatusEnum getValue(int dimension,double parametricPosition,double *returnValue) WARN_UNUSED_RETURN;
-    Natron::StatusEnum getNControlPoints(int dimension,int *returnValue) WARN_UNUSED_RETURN;
-    Natron::StatusEnum getNthControlPoint(int dimension,
+    boost::shared_ptr<Curve> getDefaultParametricCurve(int dimension) const;
+    StatusEnum addControlPoint(int dimension, double key, double value, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
+    StatusEnum getValue(int dimension,double parametricPosition,double *returnValue) const WARN_UNUSED_RETURN;
+    StatusEnum getNControlPoints(int dimension,int *returnValue) const WARN_UNUSED_RETURN;
+    StatusEnum getNthControlPoint(int dimension,
                                       int nthCtl,
                                       double *key,
-                                      double *value) WARN_UNUSED_RETURN;
-    Natron::StatusEnum setNthControlPoint(int dimension,
+                                      double *value) const WARN_UNUSED_RETURN;
+    StatusEnum getNthControlPoint(int dimension,
+                                          int nthCtl,
+                                          double *key,
+                                          double *value,
+                                          double *leftDerivative,
+                                          double *rightDerivative) const WARN_UNUSED_RETURN;
+    StatusEnum setNthControlPoint(int dimension,
                                       int nthCtl,
                                       double key,
                                       double value) WARN_UNUSED_RETURN;
-    Natron::StatusEnum deleteControlPoint(int dimension, int nthCtl) WARN_UNUSED_RETURN;
-    Natron::StatusEnum deleteAllControlPoints(int dimension) WARN_UNUSED_RETURN;
+    
+    StatusEnum setNthControlPoint(int dimension,
+                                          int nthCtl,
+                                          double key,
+                                          double value,
+                                          double leftDerivative,
+                                          double rightDerivative) WARN_UNUSED_RETURN;
+
+    
+    StatusEnum deleteControlPoint(int dimension, int nthCtl) WARN_UNUSED_RETURN;
+    StatusEnum deleteAllControlPoints(int dimension) WARN_UNUSED_RETURN;
     static const std::string & typeNameStatic() WARN_UNUSED_RETURN;
 
     void saveParametricCurves(std::list< Curve >* curves) const;
 
     void loadParametricCurves(const std::list< Curve > & curves);
 
-public slots:
+public Q_SLOTS:
 
     virtual void drawCustomBackground()
     {
-        emit customBackgroundRequested();
+        Q_EMIT customBackgroundRequested();
     }
 
     virtual void initializeOverlayInteract(OverlaySupport* widget)
     {
-        emit mustInitializeOverlayInteract(widget);
+        Q_EMIT mustInitializeOverlayInteract(widget);
     }
 
-    virtual void resetToDefault(const QVector<int> & dimensions)
-    {
-        emit mustResetToDefault(dimensions);
-    }
-
-signals:
+    
+Q_SIGNALS:
 
     //emitted by drawCustomBackground()
     //if you can't overload drawCustomBackground()
@@ -808,17 +906,19 @@ signals:
     ///emitted when the state of a curve changed at the indicated dimension
     void curveChanged(int);
 
-    void mustResetToDefault(QVector<int>);
-
+    void curveColorChanged(int);
 private:
 
     virtual void resetExtraToDefaultValue(int dimension) OVERRIDE FINAL;
-
+    virtual bool hasModificationsVirtual(int dimension) const OVERRIDE FINAL;
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
     virtual void cloneExtraData(KnobI* other,int dimension = -1) OVERRIDE FINAL;
-    virtual void cloneExtraData(KnobI* other, SequenceTime offset, const RangeD* range,int dimension = -1) OVERRIDE FINAL;
+    virtual bool cloneExtraDataAndCheckIfChanged(KnobI* other,int dimension = -1) OVERRIDE FINAL;
+    virtual void cloneExtraData(KnobI* other, double offset, const RangeD* range,int dimension = -1) OVERRIDE FINAL;
     static const std::string _typeNameStr;
 };
 
-#endif // NATRON_ENGINE_KNOBTYPES_H_
+NATRON_NAMESPACE_EXIT;
+
+#endif // NATRON_ENGINE_KNOBTYPES_H

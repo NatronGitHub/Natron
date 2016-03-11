@@ -1,0 +1,26 @@
+--- mkspecs/common/g++-base.conf.orig	2013-01-22 16:04:48.000000000 -0500
++++ mkspecs/common/g++-base.conf	2013-01-23 20:54:44.000000000 -0500
+@@ -8,14 +8,14 @@
+ # you can use the manual test in tests/manual/mkspecs.
+ #
+ 
+-QMAKE_CC = gcc
++QMAKE_CC = @CC@
+ 
+ QMAKE_LINK_C       = $$QMAKE_CC
+ QMAKE_LINK_C_SHLIB = $$QMAKE_CC
+ 
+ QMAKE_CFLAGS_RELEASE_WITH_DEBUGINFO += -O2 -g
+ 
+-QMAKE_CXX = g++
++QMAKE_CXX = @CXX@
+ 
+ QMAKE_LINK       = $$QMAKE_CXX
+ QMAKE_LINK_SHLIB = $$QMAKE_CXX
+@@ -28,3 +28,6 @@
+ QMAKE_CFLAGS_USE_PRECOMPILE   = -include ${QMAKE_PCH_OUTPUT_BASE}
+ QMAKE_CXXFLAGS_PRECOMPILE     = -x c++-header -c ${QMAKE_PCH_INPUT} -o ${QMAKE_PCH_OUTPUT}
+ QMAKE_CXXFLAGS_USE_PRECOMPILE = $$QMAKE_CFLAGS_USE_PRECOMPILE
++
++QMAKE_CXXFLAGS_CXX11 = -std=c++11
++QMAKE_LFLAGS_CXX11   =

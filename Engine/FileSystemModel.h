@@ -1,55 +1,73 @@
-//  Natron
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. 
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
- */
-
-
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ *
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
 #ifndef FILESYSTEMMODEL_H
 #define FILESYSTEMMODEL_H
-#ifndef Q_MOC_RUN
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/weak_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #endif
 #include <QThread>
 #include <QtCore/QAbstractItemModel>
 #include <QtCore/QDir>
 
 #include "Global/GlobalDefines.h"
+#include "Engine/EngineFwd.h"
 
-namespace SequenceParsing
-{
-class SequenceFromFiles;
-}
+NATRON_NAMESPACE_ENTER;
 
-class QFileInfo;
-
+class FileSystemModel;
 struct FileSystemItemPrivate;
-class FileSystemItem
+class FileSystemItem : public boost::enable_shared_from_this<FileSystemItem>
 {
     
 public:
 
     
-    FileSystemItem(bool isDir,
+    FileSystemItem(FileSystemModel* model,
+                   bool isDir,
                    const QString& filename,
+                   const QString& userFriendlySequenceName,
                    const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
                    const QDateTime& dateModified,
                    quint64 size,
-                   FileSystemItem* parent = 0);
+                   const boost::shared_ptr<FileSystemItem>& parent = boost::shared_ptr<FileSystemItem>());
     
     ~FileSystemItem();
     
+    void resetModelPointer();
+
     boost::shared_ptr<FileSystemItem> childAt(int position) const;
     
     int childCount() const;
     
     int indexInParent() const;
     
-    FileSystemItem* parent() const;
+    boost::shared_ptr<FileSystemItem> getParentItem() const;
     
     /**
      * @brief If the item is a file this function will return its absolute file-path.
@@ -67,6 +85,8 @@ public:
      * If this is a directory this function returns an empty string.
      **/
     const QString& fileName() const;
+    
+    const QString& getUserFriendlyFilename() const;
     
     const QString& fileExtension() const;
     
@@ -105,8 +125,10 @@ class FileSystemModel;
 struct FileGathererThreadPrivate;
 class FileGathererThread : public QThread
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-    
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
     
     FileGathererThread(FileSystemModel* model);
@@ -120,7 +142,7 @@ public:
     void fetchDirectory(const boost::shared_ptr<FileSystemItem>& item);
     
     bool isWorking() const;
-signals:
+Q_SIGNALS:
     
     void directoryLoaded(QString);
     
@@ -164,8 +186,9 @@ public:
 struct FileSystemModelPrivate;
 class FileSystemModel : public QAbstractItemModel
 {
-    
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
     
 public:
     
@@ -182,6 +205,13 @@ public:
         EndSections //do not use
     };
     
+		
+#ifdef __NATRON_WIN32__
+	static QString mapPathWithDriveLetterToPathWithNetworkShareName(const QString& path);
+	static void initDriveLettersToNetworkShareNamesMapping();
+#endif
+	
+	
     FileSystemModel(SortableViewI* view);
     
     ///////////////////////////////////////Overriden from QAbstractItemModel///////////////////////////////////////
@@ -189,6 +219,8 @@ public:
     virtual ~FileSystemModel();
 
 	static bool isDriveName(const QString& name);
+    
+    static bool startsWithDriveName(const QString& name);
     
     virtual QVariant headerData(int section, Qt::Orientation orientation,int role) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
@@ -231,7 +263,7 @@ public:
      * You may only use these methods once the directoryLoaded signal is sent, indicating that the worker thread
      * has gathered all info.
      **/
-    void setRootPath(const QString& path);
+    bool setRootPath(const QString& path);
     
     QVariant myComputer(int role = Qt::DisplayRole) const WARN_UNUSED_RETURN;
     
@@ -278,7 +310,10 @@ public:
     
     void onSortIndicatorChanged(int logicalIndex,Qt::SortOrder order);
     
-public slots:
+    void resetCompletly(bool rebuild);
+
+    
+public Q_SLOTS:
     
     void onDirectoryLoadedByGatherer(const QString& directory);
     
@@ -286,7 +321,7 @@ public slots:
     
     void onWatchedFileChanged(const QString& file);
     
-signals:
+Q_SIGNALS:
     
     void rootPathChanged(QString);
     
@@ -294,11 +329,19 @@ signals:
     
 private:
     
+    
+    boost::shared_ptr<FileSystemItem> getSharedItemPtr(FileSystemItem* item) const;
+    
+    boost::shared_ptr<FileSystemItem> getItem(const QModelIndex &index) const;
+
+    
     void cleanAndRefreshItem(const boost::shared_ptr<FileSystemItem>& item);
     
-    void resetCompletly();
+    friend class FileSystemItem;
     
     boost::scoped_ptr<FileSystemModelPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // FILESYSTEMMODEL_H

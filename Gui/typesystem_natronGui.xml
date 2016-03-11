@@ -1,0 +1,197 @@
+<?xml version="1.0"?>
+<!-- ***** BEGIN LICENSE BLOCK *****
+  - This file is part of Natron <http://www.natron.fr/>,
+  - Copyright (C) 2016 INRIA and Alexandre Gauthier
+  -
+  - Natron is free software: you can redistribute it and/or modify
+  - it under the terms of the GNU General Public License as published by
+  - the Free Software Foundation; either version 2 of the License, or
+  - (at your option) any later version.
+  -
+  - Natron is distributed in the hope that it will be useful,
+  - but WITHOUT ANY WARRANTY; without even the implied warranty of
+  - MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  - GNU General Public License for more details.
+  -
+  - You should have received a copy of the GNU General Public License
+  - along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+   - ***** END LICENSE BLOCK ***** -->
+<typesystem package="NatronGui">
+
+    <!--Load QtGui typesystem-->
+    <load-typesystem name="typesystem_gui.xml" generate="no" />
+    <!--Load Engine typesystem-->
+    <load-typesystem name="typesystem_engine.xml" generate="no" />
+
+
+
+    <object-type name="GuiApp">
+        <modify-function signature="getTabWidget(std::string)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getSelectedNodes(Group*)const">
+            <inject-code class="target" position="beginning">
+                std::list&lt;Effect*&gt; effects = %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
+                PyObject* ret = PyList_New((int) effects.size());
+                int idx = 0;
+                for (std::list&lt;Effect*&gt;::iterator it = effects.begin(); it!=effects.end(); ++it,++idx) {
+                PyObject* item = %CONVERTTOPYTHON[Effect*](*it);
+                // Ownership transferences.
+                Shiboken::Object::getOwnership(item);
+                PyList_SET_ITEM(ret, idx, item);
+                }
+                return ret;
+            </inject-code>
+        </modify-function>
+        <modify-function signature="getViewer(std::string)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="renderBlocking(std::list&lt;Effect*&gt;,std::list&lt;int&gt;,std::list&lt;int&gt;,std::list&lt;int&gt;)">
+            <modify-argument index="1">
+                <replace-type modified-type="PyList"/>
+            </modify-argument>
+            <modify-argument index="2">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="3">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="4">
+                <remove-argument/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                if (!PyList_Check(%PYARG_1)) {
+                PyErr_SetString(PyExc_TypeError, "tasks must be a list of tuple objects.");
+                return 0;
+                }
+                std::list&lt;Effect*&gt; effects;
+                
+                std::list&lt;int&gt; firstFrames;
+                
+                std::list&lt;int&gt; lastFrames;
+                
+                std::list&lt;int&gt; frameSteps;
+                
+                int size = (int)PyList_GET_SIZE(%PYARG_1);
+                for (int i = 0; i &lt; size; ++i) {
+                PyObject* tuple = PyList_GET_ITEM(%PYARG_1,i);
+                if (!tuple) {
+                PyErr_SetString(PyExc_TypeError, "tasks must be a list of tuple objects.");
+                return 0;
+                }
+                
+                int tupleSize = PyTuple_GET_SIZE(tuple);
+                if (tupleSize != 4 &amp;&amp; tupleSize != 3) {
+                PyErr_SetString(PyExc_TypeError, "the tuple must have 3 or 4 items.");
+                return 0;
+                }
+                Effect* writeNode = %CONVERTTOCPP[Effect*](PyTuple_GET_ITEM(tuple, 0));
+                int firstFrame = %CONVERTTOCPP[int](PyTuple_GET_ITEM(tuple, 1));
+                int lastFrame = %CONVERTTOCPP[int](PyTuple_GET_ITEM(tuple, 2));
+                int frameStep;
+                if (tupleSize == 4) {
+                frameStep = %CONVERTTOCPP[int](PyTuple_GET_ITEM(tuple, 3));
+                } else {
+                frameStep = INT_MIN;
+                }
+                effects.push_back(writeNode);
+                firstFrames.push_back(firstFrame);
+                lastFrames.push_back(lastFrame);
+                frameSteps.push_back(frameStep);
+                }
+                
+                %CPPSELF.%FUNCTION_NAME(effects,firstFrames,lastFrames, frameSteps);
+            </inject-code>
+        </modify-function>
+    </object-type>
+    
+    <object-type name="PyViewer">
+        <modify-function signature="getFrameRange(int*,int*)const">
+            <modify-argument index="return">
+                <replace-type modified-type="PyObject"/>
+            </modify-argument>
+            <modify-argument index="1">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="2">
+                <remove-argument/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                int x,y;
+                %CPPSELF.%FUNCTION_NAME(&amp;x,&amp;y);
+                %PYARG_0 = PyTuple_New(2);
+                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[int](x));
+                PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[int](y));
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+    </object-type>
+
+    <object-type name="PyGuiApplication">
+        <modify-function signature="getGuiInstance(int)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+
+    </object-type>
+
+	<object-type name="PyModalDialog">
+        <modify-function signature="getParam(std::string)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+	</object-type>
+    
+    <object-type name="PyPanel">
+        <modify-function signature="getParam(std::string)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getParams()const">
+            <inject-code class="target" position="beginning">
+                std::list&lt;Param*&gt; params = %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
+                PyObject* ret = PyList_New((int) params.size());
+                int idx = 0;
+                for (std::list&lt;Param*&gt;::iterator it = params.begin(); it!=params.end(); ++it,++idx) {
+                PyObject* item = %CONVERTTOPYTHON[Param*](*it);
+                // Ownership transferences.
+                Shiboken::Object::getOwnership(item);
+                PyList_SET_ITEM(ret, idx, item);
+                }
+                return ret;
+            </inject-code>
+        </modify-function>
+        <modify-function signature="save_serialization_thread()const" remove="all"/>
+    </object-type>
+    
+    <object-type name="PyTabWidget">
+        <modify-function signature="splitHorizontally()">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="splitVertically()">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="appendTab(PyPanel*)">
+            <inject-code class="target" position="beginning">
+                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1);
+                %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="insertTab(int,PyPanel*)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2);
+            </inject-code>
+        </modify-function>
+    </object-type>
+</typesystem>

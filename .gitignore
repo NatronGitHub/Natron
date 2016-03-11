@@ -2,15 +2,28 @@
 *.com
 *.DS_Store
 *_moc.cpp
+*_resource.rc
 moc*.cpp
 *moc
+*MINGW-packages*
 build
+build32
+build64
+*build_*
+sed*
 *latex*
 DerivedData
 Natron.xcodeproj
+Natron-bin.xcodeproj
+NatronRenderer-bin.xcodeproj
 NatronRenderer.xcodeproj
+NatronCrashReporter.xcodeproj
+BreakpadClient.xcodeproj
+CrashReporter/NatronCrashReporter
+NatronRendererCrashReporter.xcodeproj
 Tests.xcodeproj
 HostSupport.xcodeproj
+LibMV.xcodeproj
 Gui.xcodeproj
 Engine.xcodeproj
 Project.xcodeproj
@@ -201,6 +214,21 @@ Tests/Plugins
 pch
 *.filters
 
+# Python
+*.pyc
+
 Renderer/NatronRenderer
 
-*.pyc
+*tmp*
+*commits-hash.sh*
+
+CrashReporterCLI/NatronRendererCrashReporter
+*repo.sh*
+*local.sh*
+OpenColorIO-Configs
+PortIndex
+PortIndex.quick
+*.7z*
+*.exe*
+tools/Windows/src/*
+tools/linux/src/*

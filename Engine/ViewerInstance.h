@@ -1,59 +1,74 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_VIEWERNODE_H_
-#define NATRON_ENGINE_VIEWERNODE_H_
+#ifndef NATRON_ENGINE_VIEWERNODE_H
+#define NATRON_ENGINE_VIEWERNODE_H
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include <string>
 
 #include "Global/Macros.h"
-#include "Engine/Rect.h"
-#include "Engine/EffectInstance.h"
 
-class ParallelRenderArgsSetter;
-namespace Natron {
-class Image;
-class FrameEntry;
-namespace Color {
-class Lut;
-}
-}
-class UpdateViewerParams;
-class TimeLine;
-class OpenGLViewerI;
-struct TextureRect;
+#include "Engine/OutputEffectInstance.h"
+#include "Engine/ViewIdx.h"
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
+
+class UpdateViewerParams; // ViewerInstancePrivate
+
+typedef std::map<NodePtr,NodeRenderStats > RenderStatsMap;
+
+struct ViewerArgs
+{
+    EffectInstPtr activeInputToRender;
+    bool forceRender;
+    int activeInputIndex;
+    U64 activeInputHash;
+    boost::shared_ptr<FrameKey> key;
+    boost::shared_ptr<UpdateViewerParams> params;
+    boost::shared_ptr<RenderingFlagSetter> isRenderingFlag;
+    bool draftModeEnabled;
+    unsigned int mipMapLevelWithDraft,mipmapLevelWithoutDraft;
+    bool autoContrast;
+    DisplayChannelsEnum channels;
+    bool userRoIEnabled;
+    bool mustComputeRoDAndLookupCache;
+};
 
 class ViewerInstance
-: public Natron::OutputEffectInstance
+: public OutputEffectInstance
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+    
+    friend class ViewerCurrentFrameRequestScheduler;
     
 public:
-    
-    
-    
-    enum DisplayChannelsEnum
-    {
-        eDisplayChannelsRGB = 0,
-        eDisplayChannelsR,
-        eDisplayChannelsG,
-        eDisplayChannelsB,
-        eDisplayChannelsA,
-        eDisplayChannelsY
-    };
+    static EffectInstance* BuildEffect(NodePtr n) WARN_UNUSED_RETURN;
 
-public:
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n) WARN_UNUSED_RETURN;
-
-    ViewerInstance(boost::shared_ptr<Natron::Node> node);
+    ViewerInstance(NodePtr node);
 
     virtual ~ViewerInstance();
     
@@ -68,26 +83,92 @@ public:
      **/
     void invalidateUiContext();
 
-    struct ViewerArgs
+    enum ViewerRenderRetCode
     {
-        Natron::EffectInstance* activeInputToRender;
-        bool forceRender;
-        int activeInputIndex;
-        U64 activeInputHash;
-        boost::shared_ptr<Natron::FrameKey> key;
-        boost::shared_ptr<UpdateViewerParams> params;
-        boost::shared_ptr<ParallelRenderArgsSetter> frameArgs;
+        //The render failed and should clear to black the viewer and stop any ongoing playback
+        eViewerRenderRetCodeFail = 0,
+        
+        //The render did nothing requiring updating the current texture
+        //but just requires a redraw (something like aborted generally)
+        eViewerRenderRetCodeRedraw,
+        
+        //The viewer needs to be cleared out to black but should not interrupt playback
+        eViewerRenderRetCodeBlack,
+        
+        //The viewer did update or requires and update to the texture displayed
+        eViewerRenderRetCodeRender,
     };
     
+    
+    ViewerRenderRetCode getRenderViewerArgsAndCheckCache_public(SequenceTime time,
+                                                        bool isSequential,
+                                                        ViewIdx view,
+                                                        int textureIndex,
+                                                        U64 viewerHash,
+                                                        const NodePtr& rotoPaintNode,
+                                                        const boost::shared_ptr<RenderStats>& stats,
+                                                        ViewerArgs* outArgs);
+
+    
+private:
     /**
      * @brief Look-up the cache and try to find a matching texture for the portion to render.
      **/
-    Natron::StatusEnum getRenderViewerArgsAndCheckCache(SequenceTime time,
+    ViewerRenderRetCode getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                         bool isSequential,
-                                                        bool canAbort,
-                                                        int view, int textureIndex, U64 viewerHash,
+                                                        ViewIdx view,
+                                                        int textureIndex,
+                                                        U64 viewerHash,
+                                                        const NodePtr& rotoPaintNode,
+                                                        U64 renderAge,
+                                                        const boost::shared_ptr<RenderStats>& stats,
                                                         ViewerArgs* outArgs);
+    
+    
+    
+    /**
+     * @brief Setup the ViewerArgs struct with the info requested by the user from the Viewer UI
+     **/
+    void setupMinimalUpdateViewerParams(const SequenceTime time,
+                                        const ViewIdx view,
+                                        const int textureIndex,
+                                        const U64 renderAge,
+                                        const bool isSequential,
+                                        ViewerArgs* outArgs);
+    
+    
+    /**
+     * @brief Get the RoI from the Viewer and lookup the cache for a texture at the given mipMapLevel.
+     * setupMinimalUpdateViewerParams(...) MUST have been called before.
+     * When returning this function, the UpdateViewerParams will have been filled entirely
+     * and if the texture was found in the cache, the shared pointer outArgs->params->cachedFrame will be valid.
+     * This function may fail or ask to just redraw or ask to clear the viewer to black depending on it's return 
+     * code.
+     **/
+    ViewerRenderRetCode getViewerRoIAndTexture(const RectD& rod,
+                                               const U64 viewerHash,
+                                               const bool useCache,
+                                               const bool isDraftMode,
+                                               const unsigned int mipmapLevel,
+                                               const boost::shared_ptr<RenderStats>& stats,
+                                               ViewerArgs* outArgs);
 
+
+    /**
+     * @brief Calls getViewerRoIAndTexture(). If called on the main-thread, the parameter
+     * useOnlyRoDCache should be set to true. If it did not lookup the cache it will not
+     * set the member mustComputeRoDAndLookupCache of the ViewerArgs struct. In that case
+     * this function should be called again later on by the render thread with the parameter
+     * useOnlyRoDCache to false.
+     **/
+    ViewerRenderRetCode getRoDAndLookupCache(const bool useOnlyRoDCache,
+                                             const U64 viewerHash,
+                                             const NodePtr& rotoPaintNode,
+                                             const boost::shared_ptr<RenderStats>& stats,
+                                             ViewerArgs* outArgs);
+
+public:
+    
     
     /**
      * @brief This function renders the image at time 'time' on the viewer.
@@ -99,13 +180,31 @@ public:
      * Otherwise it just calls renderRoi(...) on the active input
      * and then render to the PBO.
      **/
-    Natron::StatusEnum renderViewer(int view,bool singleThreaded,bool isSequentialRender,
-                                U64 viewerHash,
-                                bool canAbort,
-                                boost::shared_ptr<ViewerInstance::ViewerArgs> args[2]) WARN_UNUSED_RETURN;
+    ViewerRenderRetCode renderViewer(ViewIdx view,
+                                     bool singleThreaded,
+                                     bool isSequentialRender,
+                                     U64 viewerHash,
+                                     bool canAbort,
+                                     const NodePtr& rotoPaintNode,
+                                     bool useTLS,
+                                     boost::shared_ptr<ViewerArgs> args[2],
+                                     const boost::shared_ptr<RequestedFrame>& request,
+                                     const boost::shared_ptr<RenderStats>& stats) WARN_UNUSED_RETURN;
+    
+    ViewerRenderRetCode getViewerArgsAndRenderViewer(SequenceTime time,
+                                                     bool canAbort,
+                                                     ViewIdx view,
+                                                     U64 viewerHash,
+                                                     const NodePtr& rotoPaintNode,
+                                                     const boost::shared_ptr<RotoStrokeItem>& strokeItem,
+                                                     const boost::shared_ptr<RenderStats>& stats,
+                                                     boost::shared_ptr<ViewerArgs>* argsA,
+                                                     boost::shared_ptr<ViewerArgs>* argsB);
 
 
     void updateViewer(boost::shared_ptr<UpdateViewerParams> & frame);
+    
+    virtual bool getMakeSettingsPanel() const OVERRIDE FINAL { return false; }
     
     /**
      *@brief Bypasses the cache so the next frame will be rendered fully
@@ -115,6 +214,8 @@ public:
     virtual void clearLastRenderedImage() OVERRIDE FINAL;
 
     void disconnectViewer();
+    
+    void disconnectTexture(int index);
 
     int getLutType() const WARN_UNUSED_RETURN;
 
@@ -124,7 +225,7 @@ public:
 
     int getMipMapLevelFromZoomFactor() const WARN_UNUSED_RETURN;
 
-    DisplayChannelsEnum getChannels() const WARN_UNUSED_RETURN;
+    DisplayChannelsEnum getChannels(int texIndex) const WARN_UNUSED_RETURN;
 
     /**
      * @brief This is a short-cut, this is primarily used when the user switch the
@@ -137,10 +238,15 @@ public:
     {
         return true;
     }
+    
+    bool isRenderAbortable(int textureIndex, U64 renderAge,bool* isLatestRender) const;
 
 
-    void setDisplayChannels(DisplayChannelsEnum channels);
-
+    void setDisplayChannels(DisplayChannelsEnum channels, bool bothInputs);
+    
+    void setActiveLayer(const ImageComponents& layer, bool doRender);
+    
+    void setAlphaChannel(const ImageComponents& layer, const std::string& channelName, bool doRender);
 
     bool isAutoContrastEnabled() const WARN_UNUSED_RETURN;
 
@@ -149,16 +255,20 @@ public:
     /**
      * @brief Returns the current view, MT-safe
      **/
-    int getViewerCurrentView() const;
+    ViewIdx getViewerCurrentView() const;
 
     void onGainChanged(double exp);
+    
+    void onGammaChanged(double value);
+    
+    double getGamma() const WARN_UNUSED_RETURN;
 
-    void onColorSpaceChanged(Natron::ViewerColorSpaceEnum colorspace);
+    void onColorSpaceChanged(ViewerColorSpaceEnum colorspace);
 
     virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
     
-    virtual void restoreClipPreferences() OVERRIDE FINAL;
-
+    void refreshActiveInputs(int inputNbChanged);
+    
     void setInputA(int inputNb);
 
     void setInputB(int inputNb);
@@ -167,46 +277,63 @@ public:
     
     int getLastRenderedTime() const;
     
-    virtual SequenceTime getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
+    virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
     
-    virtual int getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
+    virtual ViewIdx getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
 
     boost::shared_ptr<TimeLine> getTimeline() const;
     
     void getTimelineBounds(int* first,int* last) const;
     
-    static const Natron::Color::Lut* lutFromColorspace(Natron::ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
+    static const Color::Lut* lutFromColorspace(ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
     
-    virtual void checkOFXClipPreferences(double time,
-                                         const RenderScale & scale,
-                                         const std::string & reason,
-                                         bool forceGetClipPrefAction) OVERRIDE FINAL;
+    virtual void onMetaDatasRefreshed(const NodeMetadata& metadata) OVERRIDE FINAL;
     
-    void callRedrawOnMainThread() { emit s_callRedrawOnMainThread(); }
-
-    void s_viewerRenderingStarted() { emit viewerRenderingStarted(); }
+    virtual void onChannelsSelectorRefreshed() OVERRIDE FINAL;
     
-    void s_viewerRenderingEnded() { emit viewerRenderingEnded(); }
+    void callRedrawOnMainThread() { Q_EMIT s_callRedrawOnMainThread(); }
     
     struct ViewerInstancePrivate;
-
-public slots:
+    
+    float interpolateGammaLut(float value);
+    
+    void markAllOnGoingRendersAsAborted();
+    
+    virtual void reportStats(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats) OVERRIDE FINAL;
+    
+    ///Only callable on MT
+    void setActivateInputChangeRequestedFromViewer(bool fromViewer);
+    
+    bool isInputChangeRequestedFromViewer() const;
+    
+    void setViewerPaused(bool paused, bool allInputs);
+    
+    bool isViewerPaused(int texIndex) const;
+    
+public Q_SLOTS:
+    
+    void s_viewerRenderingStarted() { Q_EMIT viewerRenderingStarted(); }
+    
+    void s_viewerRenderingEnded() { Q_EMIT viewerRenderingEnded(); }
 
 
     void onMipMapLevelChanged(int level);
 
-    void onNodeNameChanged(const QString &);
 
     /**
      * @brief Redraws the OpenGL viewer. Can only be called on the main-thread.
      **/
     void redrawViewer();
+    
+    void redrawViewerNow();
 
   
     void executeDisconnectTextureRequestOnMainThread(int index);
 
 
-signals:
+Q_SIGNALS:
+    
+    void renderStatsAvailable(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats);
     
     void s_callRedrawOnMainThread();
 
@@ -217,6 +344,8 @@ signals:
     void activeInputsChanged();
     
     void clipPreferencesChanged();
+    
+    void availableComponentsChanged();
 
     void disconnectTextureRequest(int index);
     
@@ -256,41 +385,49 @@ private:
     }
 
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
-    virtual std::string getDescription() const OVERRIDE FINAL
+    virtual std::string getPluginDescription() const OVERRIDE FINAL
     {
         return "The Viewer node can display the output of a node graph.";
     }
 
-    virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE FINAL;
+    virtual void getFrameRange(double *first,double *last) OVERRIDE FINAL;
     virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL
     {
         return QString::number(inputNb + 1).toStdString();
     }
 
-    virtual Natron::EffectInstance::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL
+    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL
     {
-        return Natron::EffectInstance::eRenderSafetyFullySafe;
+        return eRenderSafetyFullySafe;
     }
 
-    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponentsEnum>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     /*******************************************/
     
     
-    Natron::StatusEnum renderViewer_internal(int view,
-                                             bool singleThreaded,
-                                             bool isSequentialRender,
-                                             U64 viewerHash,
-                                             bool canAbort,
-                                             const ViewerArgs& inArgs) WARN_UNUSED_RETURN;
-
+    ViewerRenderRetCode renderViewer_internal(ViewIdx view,
+                                              bool singleThreaded,
+                                              bool isSequentialRender,
+                                              U64 viewerHash,
+                                              bool canAbort,
+                                              NodePtr rotoPaintNode,
+                                              bool useTLS,
+                                              const boost::shared_ptr<RequestedFrame>& request,
+                                              const boost::shared_ptr<RenderStats>& stats,
+                                              ViewerArgs& inArgs) WARN_UNUSED_RETURN;
+    
+    
     virtual RenderEngine* createRenderEngine() OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     
+    void setCurrentlyUpdatingOpenGLViewer(bool updating);
+    bool isCurrentlyUpdatingOpenGLViewer() const;
 private:
     
     boost::scoped_ptr<ViewerInstancePrivate> _imp;
 };
 
-//} // namespace Natron
-#endif // NATRON_ENGINE_VIEWERNODE_H_
+NATRON_NAMESPACE_EXIT;
+
+#endif // NATRON_ENGINE_VIEWERNODE_H

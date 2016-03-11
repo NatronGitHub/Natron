@@ -1,16 +1,29 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_KNOBFILE_H_
-#define NATRON_ENGINE_KNOBFILE_H_
+#ifndef NATRON_ENGINE_KNOBFILE_H
+#define NATRON_ENGINE_KNOBFILE_H
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include <vector>
 #include <map>
@@ -23,18 +36,21 @@ CLANG_DIAG_ON(deprecated)
 #include <QtCore/QString>
 
 #include "Engine/KnobTypes.h"
+#include "Engine/ViewIdx.h"
 
 #include "Global/Macros.h"
+#include "Engine/EngineFwd.h"
 
-namespace SequenceParsing {
-class SequenceFromFiles;
-}
-/******************************FILE_KNOB**************************************/
+NATRON_NAMESPACE_ENTER;
 
-class File_Knob
-    : public QObject, public AnimatingString_KnobHelper
+/******************************KnobFile**************************************/
+
+class KnobFile
+    : public QObject, public AnimatingKnobStringHelper
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -43,15 +59,15 @@ public:
                                   int dimension,
                                   bool declaredByPlugin = true)
     {
-        return new File_Knob(holder, description, dimension,declaredByPlugin);
+        return new KnobFile(holder, description, dimension,declaredByPlugin);
     }
 
-    File_Knob(KnobHolder* holder,
+    KnobFile(KnobHolder* holder,
               const std::string &description,
               int dimension,
               bool declaredByPlugin);
 
-    virtual ~File_Knob();
+    virtual ~KnobFile();
 
     static const std::string & typeNameStatic();
 
@@ -65,51 +81,44 @@ public:
         return _isInputImage;
     }
 
-    /**
-     * @brief firstFrame
-     * @return Returns the index of the first frame in the sequence held by this Reader.
-     */
-    int firstFrame() const;
-
-    /**
-     * @brief lastFrame
-     * @return Returns the index of the last frame in the sequence held by this Reader.
-     */
-    int lastFrame() const;
 
     void open_file()
     {
-        emit openFile();
+        Q_EMIT openFile();
     }
 
     /**
      * @brief getRandomFrameName
      * @param f The index of the frame.
      */
-    std::string getFileName(int time) const;
+    std::string getFileName(int time, ViewSpec view) const;
 
-signals:
+Q_SIGNALS:
 
     void openFile();
 
 private:
 
-
+    /**
+     * @brief a KnobFile is never animated but it's value may change, indicate this to the plug-in
+     **/
+    virtual bool evaluateValueChangeOnTimeChange() const OVERRIDE FINAL { return true; }
+    
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
-
-    int frameCount() const;
 
     static const std::string _typeNameStr;
     int _isInputImage;
 };
 
-/******************************OUTPUT_FILE_KNOB**************************************/
+/******************************KnobOutputFile**************************************/
 
-class OutputFile_Knob
+class KnobOutputFile
     :  public QObject, public Knob<std::string>
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -118,10 +127,10 @@ public:
                                   int dimension,
                                   bool declaredByPlugin = true)
     {
-        return new OutputFile_Knob(holder, description, dimension,declaredByPlugin);
+        return new KnobOutputFile(holder, description, dimension,declaredByPlugin);
     }
 
-    OutputFile_Knob(KnobHolder* holder,
+    KnobOutputFile(KnobHolder* holder,
                     const std::string &description,
                     int dimension,
                     bool declaredByPlugin);
@@ -139,7 +148,7 @@ public:
 
     void open_file()
     {
-        emit openFile(_sequenceDialog && _isOutputImage);
+        Q_EMIT openFile(_sequenceDialog && _isOutputImage);
     }
 
     void turnOffSequences()
@@ -152,13 +161,15 @@ public:
         return _sequenceDialog;
     }
 
-    QString generateFileNameAtTime(SequenceTime time) const;
+    QString generateFileNameAtTime(SequenceTime time, ViewSpec view) const;
 
-signals:
+Q_SIGNALS:
 
     void openFile(bool);
 
 private:
+    
+    virtual bool evaluateValueChangeOnTimeChange() const OVERRIDE FINAL { return false; }
 
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
@@ -170,17 +181,17 @@ private:
 };
 
 
-/******************************PATH_KNOB**************************************/
+/******************************KnobPath**************************************/
 
 
 /**
  * @brief A Path knob could also be called Environment_variable_Knob. 
  * The string is encoded the following way:
- * [VariableName1]:[Value1];[VariableName2]:[Value2] etc...
+ * <Name>Lala</Name><Value>MyValue</Value>
  * Split all the ';' characters to get all different variables
  * then for each variable split the ':' to get the name and the value of the variable.
  **/
-class Path_Knob
+class KnobPath
     : public Knob<std::string>
 {
 
@@ -191,22 +202,40 @@ public:
                                   int dimension,
                                   bool declaredByPlugin = true)
     {
-        return new Path_Knob(holder, description, dimension,declaredByPlugin);
+        return new KnobPath(holder, description, dimension,declaredByPlugin);
     }
 
-    Path_Knob(KnobHolder* holder,
+    KnobPath(KnobHolder* holder,
               const std::string &description,
               int dimension,
               bool declaredByPlugin);
     static const std::string & typeNameStatic();
 
-
     void setMultiPath(bool b);
 
     bool isMultiPath() const;
 
+    void getPaths(std::list<std::string>* paths) const;
+    
+    ///Doesn't work if isMultiPath() == false
+    void getVariables(std::list<std::pair<std::string,std::string> >* paths) const;
+    
+    static std::string encodeToMultiPathFormat(const std::list<std::pair<std::string,std::string> >& paths);
+    
+    void setPaths(const std::list<std::pair<std::string,std::string> >& paths);
+    
+    void prependPath(const std::string& path) ;
+    void appendPath(const std::string& path) ;
 
+    /*
+     @brief same as setMultiPath except that there will be only variable names, no values
+     */
+    void setAsStringList(bool b);
+    bool getIsStringList() const;
+    
 private:
+    
+    static std::string generateUniquePathID(const std::list<std::pair<std::string,std::string> >& paths);
 
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
@@ -214,6 +243,9 @@ private:
 private:
     static const std::string _typeNameStr;
     bool _isMultiPath;
+    bool _isStringList;
 };
 
-#endif // NATRON_ENGINE_KNOBFILE_H_
+NATRON_NAMESPACE_EXIT;
+
+#endif // NATRON_ENGINE_KNOBFILE_H

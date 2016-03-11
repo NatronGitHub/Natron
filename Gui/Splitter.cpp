@@ -1,17 +1,34 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include "Splitter.h"
+
 #include <cassert>
+#include <stdexcept>
+
+NATRON_NAMESPACE_ENTER;
+
 Splitter::Splitter(QWidget* parent)
     : QSplitter(parent)
       , _lock()
@@ -32,7 +49,7 @@ Splitter::addWidget_mt_safe(QWidget * widget)
 {
     QMutexLocker l(&_lock);
 
-    widget->setParent(this);
+    //widget->setParent(this);
     addWidget(widget);
 }
 
@@ -43,17 +60,17 @@ Splitter::serializeNatron() const
 
     QList<int> list = sizes();
     if (list.size() == 2) {
-        return QString("%1 %2").arg(list[0]).arg(list[1]);
+        return QString::fromUtf8("%1 %2").arg(list[0]).arg(list[1]);
     }
 
-    return "";
+    return QString();
 }
 
 void
 Splitter::restoreNatron(const QString & serialization)
 {
     QMutexLocker l(&_lock);
-    QStringList list = serialization.split( QChar(' ') );
+    QStringList list = serialization.split( QLatin1Char(' ') );
 
     assert(list.size() == 2);
     QList<int> s;
@@ -104,7 +121,7 @@ Splitter::insertChild_mt_safe(int i,
     QMutexLocker l(&_lock);
 
     insertWidget(i, w);
-    w->setParent(this);
+    //w->setParent(this);
 }
 
 void
@@ -125,3 +142,10 @@ Splitter::getChildren_mt_safe(std::list<QWidget*> & children) const
     }
 }
 
+bool
+Splitter::event(QEvent* e)
+{
+    return QSplitter::event(e);
+}
+
+NATRON_NAMESPACE_EXIT;

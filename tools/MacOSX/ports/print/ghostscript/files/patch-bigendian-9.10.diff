@@ -1,0 +1,38 @@
+--- configure.ac.orig	2013-09-23 14:47:55.000000000 +0200
++++ configure.ac	2013-09-23 14:48:39.000000000 +0200
+@@ -257,8 +257,6 @@
+ 
+ BIGENDIAN=
+ 
+-AC_MSG_CHECKING([for big endian])
+-
+ AC_ARG_ENABLE([big-endian], AC_HELP_STRING([--enable-big-endian],
+     [Force big endian]), [BIGENDIAN=1])
+ 
+@@ -268,20 +266,17 @@
+ fi
+ 
+ if test x$BIGENDIAN = x ; then
+-  AC_RUN_IFELSE(
+-    [AC_LANG_PROGRAM([#include <stdio.h>], [
+-     static const int one = 1;
+-     return (*(char*)&one == 0 ? 0 : 1);
+-    ])],
+-    [BIGENDIAN=1;AC_MSG_RESULT(big)],
+-    [BIGENDIAN=0;AC_MSG_RESULT(little)])
+-else
++  AC_C_BIGENDIAN(
++    [BIGENDIAN=1],
++    [BIGENDIAN=0])
++fi
++
++AC_MSG_CHECKING([for big endian])
+   if test x$BIGENDIAN = x1 ; then
+     AC_MSG_RESULT(big)
+   else
+     AC_MSG_RESULT(little)
+   fi
+-fi
+ 
+ dnl --------------------------------------------------
+ dnl check for sse2 intrinsics

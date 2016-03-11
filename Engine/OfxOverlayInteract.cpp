@@ -1,14 +1,31 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
 #include "OfxOverlayInteract.h"
+
+#include <cassert>
+#include <stdexcept>
 
 #include "Global/Macros.h"
 #include "Engine/OfxImageEffectInstance.h"
@@ -16,30 +33,23 @@
 #include "Engine/Format.h"
 #include "Engine/OverlaySupport.h"
 #include "Engine/Knob.h"
+#include "Engine/Node.h"
 #include "Engine/AppInstance.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
-namespace {
-    // an RAII class to save OpenGL context
-    class OGLContextSaver {
-    public:
-        OGLContextSaver(OverlaySupport* viewport)
-        : _viewport(viewport)
-        {
-            assert(_viewport);
-            _viewport->saveOpenGLContext();
-        }
-
-        ~OGLContextSaver() {
-            _viewport->restoreOpenGLContext();
-        }
-
-    private:
-        OverlaySupport* const _viewport;
-    };
+NatronOverlayInteractSupport::OGLContextSaver::OGLContextSaver(OverlaySupport* viewport)
+: _viewport(viewport)
+{
+    assert(_viewport);
+    _viewport->saveOpenGLContext();
 }
+
+NatronOverlayInteractSupport::OGLContextSaver::~OGLContextSaver() {
+    _viewport->restoreOpenGLContext();
+}
+
 
 OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v,
                                        int bitDepthPerComponent,
@@ -47,8 +57,10 @@ OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v,
     : OFX::Host::ImageEffect::OverlayInteract(v,bitDepthPerComponent,hasAlpha)
       , NatronOverlayInteractSupport()
 {
+
 }
 
+// overridden from OFX::Host::Interact::Instance
 ////////////////////////////////////////////////////////////////////////////////////////////
 // protect all OpenGL attribs from anything wrong that could be done in interact functions
 // Should this be done in the GUI?
@@ -60,103 +72,131 @@ OfxOverlayInteract::createInstanceAction()
     return OFX::Host::ImageEffect::OverlayInteract::createInstanceAction();
 }
 
+// overridden from OFX::Host::Interact::Instance
 OfxStatus
 OfxOverlayInteract::drawAction(OfxTime time,
-                               const OfxPointD &renderScale)
+                               const OfxPointD &renderScale,
+                               int view)
 {
-    OGLContextSaver s(_viewport);
-    OfxStatus stat = OFX::Host::ImageEffect::OverlayInteract::drawAction(time, renderScale);
+    NatronOverlayInteractSupport::OGLContextSaver s(_viewport);
+    OfxStatus stat = OFX::Host::ImageEffect::OverlayInteract::drawAction(time, renderScale, view);
     return stat;
 }
 
+// overridden from OFX::Host::Interact::Instance
 OfxStatus
 OfxOverlayInteract::penMotionAction(OfxTime time,
                                     const OfxPointD &renderScale,
+                                    int view,
                                     const OfxPointD &penPos,
                                     const OfxPointI &penPosViewport,
                                     double  pressure)
 {
     //OGLContextSaver s(_viewport);
-    return OFX::Host::ImageEffect::OverlayInteract::penMotionAction(time, renderScale, penPos, penPosViewport, pressure);
+    return OFX::Host::ImageEffect::OverlayInteract::penMotionAction(time, renderScale, view, penPos, penPosViewport, pressure);
 
 }
 
+// overridden from OFX::Host::Interact::Instance
 OfxStatus
 OfxOverlayInteract::penUpAction(OfxTime time,
                                 const OfxPointD &renderScale,
+                                int view,
                                 const OfxPointD &penPos,
                                 const OfxPointI &penPosViewport,
                                 double pressure)
 {
-    return OFX::Host::ImageEffect::OverlayInteract::penUpAction(time, renderScale, penPos, penPosViewport, pressure);
+    return OFX::Host::ImageEffect::OverlayInteract::penUpAction(time, renderScale, view, penPos, penPosViewport, pressure);
 
 }
 
+// overridden from OFX::Host::Interact::Instance
 OfxStatus
 OfxOverlayInteract::penDownAction(OfxTime time,
                                   const OfxPointD &renderScale,
+                                  int view,
                                   const OfxPointD &penPos,
                                   const OfxPointI &penPosViewport,
                                   double pressure)
 {
-    return OFX::Host::ImageEffect::OverlayInteract::penDownAction(time, renderScale, penPos, penPosViewport, pressure);
+    return OFX::Host::ImageEffect::OverlayInteract::penDownAction(time, renderScale, view, penPos, penPosViewport, pressure);
 
 }
 
+// overridden from OFX::Host::Interact::Instance
 OfxStatus
 OfxOverlayInteract::keyDownAction(OfxTime time,
                                   const OfxPointD &renderScale,
+                                  int view,
                                   int     key,
                                   char*   keyString)
 {
-    return OFX::Host::ImageEffect::OverlayInteract::keyDownAction(time, renderScale, key, keyString);
+    return OFX::Host::ImageEffect::OverlayInteract::keyDownAction(time, renderScale, view, key, keyString);
 
 }
 
+// overridden from OFX::Host::Interact::Instance
 OfxStatus
 OfxOverlayInteract::keyUpAction(OfxTime time,
                                 const OfxPointD &renderScale,
+                                int view,
                                 int     key,
                                 char*   keyString)
 {
-    return OFX::Host::ImageEffect::OverlayInteract::keyUpAction(time, renderScale, key, keyString);
+    return OFX::Host::ImageEffect::OverlayInteract::keyUpAction(time, renderScale, view, key, keyString);
 
 }
 
+// overridden from OFX::Host::Interact::Instance
 OfxStatus
 OfxOverlayInteract::keyRepeatAction(OfxTime time,
                                     const OfxPointD &renderScale,
+                                    int view,
                                     int     key,
                                     char*   keyString)
 {
-    return OFX::Host::ImageEffect::OverlayInteract::keyRepeatAction(time, renderScale, key, keyString);
+    return OFX::Host::ImageEffect::OverlayInteract::keyRepeatAction(time, renderScale, view, key, keyString);
 }
 
+// overridden from OFX::Host::Interact::Instance
 OfxStatus
 OfxOverlayInteract::gainFocusAction(OfxTime time,
-                                    const OfxPointD &renderScale)
+                                    const OfxPointD &renderScale,
+                                    int view)
 {
-    return OFX::Host::ImageEffect::OverlayInteract::gainFocusAction(time, renderScale);
+    return OFX::Host::ImageEffect::OverlayInteract::gainFocusAction(time, renderScale, view);
 
 }
 
+// overridden from OFX::Host::Interact::Instance
 OfxStatus
 OfxOverlayInteract::loseFocusAction(OfxTime  time,
-                                    const OfxPointD &renderScale)
+                                    const OfxPointD &renderScale,
+                                    int view)
 {
-    return OFX::Host::ImageEffect::OverlayInteract::loseFocusAction(time, renderScale);
+    return OFX::Host::ImageEffect::OverlayInteract::loseFocusAction(time, renderScale, view);
 }
 
+// overridden from OFX::Host::Interact::Instance
+bool
+OfxOverlayInteract::getSuggestedColour(double &r,
+                                               double &g,
+                                               double &b) const
+{
+    OfxImageEffectInstance* effect = dynamic_cast<OfxImageEffectInstance*>(&_instance);
+    assert(effect && effect->getOfxEffectInstance());
+    return effect ? effect->getOfxEffectInstance()->getNode()->getOverlayColor(&r, &g, &b) : false;
+}
 
+// overridden from OFX::Host::Interact::Instance
 OfxStatus
 OfxOverlayInteract::redraw()
 {
     OfxImageEffectInstance* effect = dynamic_cast<OfxImageEffectInstance*>(&_instance);
     assert(effect);
-    if (effect) {
+    if (effect && effect->getOfxEffectInstance()->getNode()->shouldDrawOverlay()) {
         AppInstance* app =  effect->getOfxEffectInstance()->getApp();
         assert(app);
-#pragma message WARN("TODO (python): only redraw in viewers where the interact is visible (requires changes in GUI)")
         if (effect->getOfxEffectInstance()->isDoingInteractAction()) {
             app->queueRedrawForAllViewers();
         } else {
@@ -167,7 +207,7 @@ OfxOverlayInteract::redraw()
 }
 
 
-Natron::OfxParamOverlayInteract::OfxParamOverlayInteract(KnobI* knob,
+OfxParamOverlayInteract::OfxParamOverlayInteract(KnobI* knob,
                                                          OFX::Host::Interact::Descriptor &desc,
                                                          void *effectInstance)
     : OFX::Host::Interact::Instance(desc,effectInstance)
@@ -238,18 +278,15 @@ NatronOverlayInteractSupport::n_getBackgroundColour(double &r,
 }
 
 bool
-NatronOverlayInteractSupport::n_getSuggestedColour(double &r,
-                                                   double &g,
-                                                   double &b) const
+NatronOverlayInteractSupport::n_getSuggestedColour(double &/*r*/,
+                                                   double &/*g*/,
+                                                   double &/*b*/) const
 {
     return false;
-    // TODO
-    //r = g = b = ...;
-    //return true;
 }
 
 void
-Natron::OfxParamOverlayInteract::getMinimumSize(double & minW,
+OfxParamOverlayInteract::getMinimumSize(double & minW,
                                                 double & minH) const
 {
     minW = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractMinimumSize,0);
@@ -257,7 +294,7 @@ Natron::OfxParamOverlayInteract::getMinimumSize(double & minW,
 }
 
 void
-Natron::OfxParamOverlayInteract::getPreferredSize(int & pW,
+OfxParamOverlayInteract::getPreferredSize(int & pW,
                                                   int & pH) const
 {
     pW = _descriptor.getProperties().getIntProperty(kOfxParamPropInteractPreferedSize,0);
@@ -265,7 +302,7 @@ Natron::OfxParamOverlayInteract::getPreferredSize(int & pW,
 }
 
 void
-Natron::OfxParamOverlayInteract::getSize(int &w,
+OfxParamOverlayInteract::getSize(int &w,
                                          int &h) const
 {
     w = _descriptor.getProperties().getIntProperty(kOfxParamPropInteractSize,0);
@@ -273,7 +310,7 @@ Natron::OfxParamOverlayInteract::getSize(int &w,
 }
 
 void
-Natron::OfxParamOverlayInteract::setSize(int w,
+OfxParamOverlayInteract::setSize(int w,
                                          int h)
 {
     _descriptor.getProperties().setIntProperty(kOfxParamPropInteractSize,w,0);
@@ -281,13 +318,14 @@ Natron::OfxParamOverlayInteract::setSize(int w,
 }
 
 void
-Natron::OfxParamOverlayInteract::getPixelAspectRatio(double & par) const
+OfxParamOverlayInteract::getPixelAspectRatio(double & par) const
 {
     par = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractSizeAspect);
 }
 
+
 OfxStatus
-Natron::OfxParamOverlayInteract::redraw()
+OfxParamOverlayInteract::redraw()
 {
     if (_viewport) {
         _viewport->redraw();
@@ -296,3 +334,4 @@ Natron::OfxParamOverlayInteract::redraw()
     return kOfxStatOK;
 }
 
+NATRON_NAMESPACE_EXIT;

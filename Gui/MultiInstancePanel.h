@@ -1,33 +1,51 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
 #ifndef MULTIINSTANCEPANEL_H
 #define MULTIINSTANCEPANEL_H
 
-#ifndef Q_MOC_RUN
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
+#include "Global/Macros.h"
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
+
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QThread>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
+
 #include "Engine/Knob.h"
-#include <QThread>
-namespace Natron {
-class Node;
-}
-class NodeGui;
-class QVBoxLayout;
-class QHBoxLayout;
-class QItemSelection;
-class TableItem;
-class Button_Knob;
-class Gui;
+#include "Engine/ViewIdx.h"
+#include "Engine/EngineFwd.h"
+
+#include "Gui/GuiFwd.h"
+
+NATRON_NAMESPACE_ENTER;
+
 /**
  * @brief This class represents a multi-instance settings panel.
  **/
@@ -35,11 +53,13 @@ struct MultiInstancePanelPrivate;
 class MultiInstancePanel
     :  public NamedKnobHolder
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    MultiInstancePanel(const boost::shared_ptr<NodeGui> & node);
+    MultiInstancePanel(const NodeGuiPtr & node);
 
     virtual ~MultiInstancePanel();
 
@@ -47,42 +67,48 @@ public:
 
     bool isGuiCreated() const;
 
-    void addRow(const boost::shared_ptr<Natron::Node> & node);
+    void addRow(const NodePtr & node);
 
     void removeRow(int index);
 
-    int getNodeIndex(const boost::shared_ptr<Natron::Node> & node) const;
+    int getNodeIndex(const NodePtr & node) const;
 
-    const std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > > & getInstances() const;
-    virtual std::string getName_mt_safe() const OVERRIDE FINAL;
-    boost::shared_ptr<Natron::Node> getMainInstance() const;
+    const std::list< std::pair<NodeWPtr,bool > > & getInstances() const;
+    virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL;
+    NodePtr getMainInstance() const;
+    
+    NodeGuiPtr getMainInstanceGui() const;
 
-    void getSelectedInstances(std::list<Natron::Node*>* instances) const;
+    void getSelectedInstances(std::list<Node*>* instances) const;
 
     void resetAllInstances();
 
-    boost::shared_ptr<KnobI> getKnobForItem(TableItem* item,int* dimension) const;
+    KnobPtr getKnobForItem(TableItem* item,int* dimension) const;
     Gui* getGui() const;
-    virtual void setIconForButton(Button_Knob* /*knob*/)
+    virtual void setIconForButton(KnobButton* /*knob*/)
     {
     }
 
-    boost::shared_ptr<Natron::Node> createNewInstance(bool useUndoRedoStack);
+    NodePtr createNewInstance(bool useUndoRedoStack);
 
-    void selectNode(const boost::shared_ptr<Natron::Node> & node,bool addToSelection);
+    void selectNode(const NodePtr & node,bool addToSelection);
 
-    void selectNodes(const std::list<Natron::Node*> & nodes,bool addToSelection);
+    void selectNodes(const std::list<Node*> & nodes,bool addToSelection);
 
-    void removeNodeFromSelection(const boost::shared_ptr<Natron::Node> & node);
+    void removeNodeFromSelection(const NodePtr & node);
 
     void clearSelection();
 
     bool isSettingsPanelVisible() const;
         
-    void removeInstances(const std::list<boost::shared_ptr<Natron::Node> >& instances);
-    void addInstances(const std::list<boost::shared_ptr<Natron::Node> >& instances);
+    void removeInstances(const NodesList& instances);
+    void addInstances(const NodesList& instances);
 
-public slots:
+    void onChildCreated(const NodePtr& node);
+    
+    void setRedrawOnSelectionChanged(bool redraw);
+    
+public Q_SLOTS:
 
     void onAddButtonClicked();
 
@@ -98,7 +124,7 @@ public slots:
 
     void onDeleteKeyPressed();
 
-    void onInstanceKnobValueChanged(int dim,int reason);
+    void onInstanceKnobValueChanged(ViewSpec view,int dim,int reason);
 
     void resetSelectedInstances();
 
@@ -116,26 +142,28 @@ protected:
     {
     }
 
-    boost::shared_ptr<Natron::Node> addInstanceInternal(bool useUndoRedoStack);
+    NodePtr addInstanceInternal(bool useUndoRedoStack);
     virtual void initializeExtraKnobs()
     {
     }
 
-    virtual void showMenuForInstance(Natron::Node* /*instance*/)
+    virtual void showMenuForInstance(Node* /*instance*/)
     {
     }
 
 private:
 
-    virtual void onButtonTriggered(Button_Knob* button);
+    virtual void onButtonTriggered(KnobButton* button);
 
-    void resetInstances(const std::list<Natron::Node*> & instances);
+    void resetInstances(const std::list<Node*> & instances);
 
     void removeInstancesInternal();
 
-    virtual void evaluate(KnobI* knob,bool isSignificant,Natron::ValueChangedReasonEnum reason) OVERRIDE;
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,SequenceTime time,
+    virtual void onKnobValueChanged(KnobI* k,
+                                    ValueChangedReasonEnum reason,
+                                    double time,
+                                    ViewSpec view,
                                     bool originatedFromMainThread) OVERRIDE;
     boost::scoped_ptr<MultiInstancePanelPrivate> _imp;
 };
@@ -144,11 +172,13 @@ struct TrackerPanelPrivate;
 class TrackerPanel
     : public MultiInstancePanel
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    TrackerPanel(const boost::shared_ptr<NodeGui> & node);
+    TrackerPanel(const NodeGuiPtr & node);
 
     virtual ~TrackerPanel();
 
@@ -168,7 +198,10 @@ public:
     void setUpdateViewerOnTracking(bool update);
 
     bool isUpdateViewerOnTrackingEnabled() const;
-public slots:
+    
+    bool isTracking() const;
+    
+public Q_SLOTS:
 
     void onAverageTracksButtonClicked();
     void onExportButtonClicked();
@@ -179,7 +212,7 @@ public slots:
     
     void onTrackingProgressUpdate(double progress);
     
-signals:
+Q_SIGNALS:
     
     void trackingEnded();
     
@@ -188,9 +221,9 @@ private:
     virtual void initializeExtraKnobs() OVERRIDE FINAL;
     virtual void appendExtraGui(QVBoxLayout* layout) OVERRIDE FINAL;
     virtual void appendButtons(QHBoxLayout* buttonLayout) OVERRIDE FINAL;
-    virtual void setIconForButton(Button_Knob* knob) OVERRIDE FINAL;
-    virtual void onButtonTriggered(Button_Knob* button) OVERRIDE FINAL;
-    virtual void showMenuForInstance(Natron::Node* item) OVERRIDE FINAL;
+    virtual void setIconForButton(KnobButton* knob) OVERRIDE FINAL;
+    virtual void onButtonTriggered(KnobButton* button) OVERRIDE FINAL;
+    virtual void showMenuForInstance(Node* item) OVERRIDE FINAL;
 
     boost::scoped_ptr<TrackerPanelPrivate> _imp;
 };
@@ -198,7 +231,9 @@ private:
 struct TrackSchedulerPrivate;
 class TrackScheduler : public QThread
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
     
 public:
     
@@ -212,7 +247,7 @@ public:
      * @param start the first frame to track, if forward is true then start < end
      * @param end the next frame after the last frame to track (a la STL iterators), if forward is true then end > start
      **/
-    void track(int start,int end,bool forward,const std::list<Button_Knob*> & selectedInstances);
+    void track(int start,int end,bool forward,const std::list<KnobButton*> & selectedInstances);
     
     void abortTracking();
     
@@ -220,7 +255,7 @@ public:
     
     bool isWorking() const;
     
-signals:
+Q_SIGNALS:
     
     void trackingStarted();
     
@@ -236,5 +271,6 @@ private:
     
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // MULTIINSTANCEPANEL_H

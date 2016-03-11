@@ -1,18 +1,33 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_FRAMEENTRY_H_
-#define NATRON_ENGINE_FRAMEENTRY_H_
+#ifndef NATRON_ENGINE_FRAMEENTRY_H
+#define NATRON_ENGINE_FRAMEENTRY_H
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
+#include <list>
 #include <string>
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
 #include <QtCore/QObject>
@@ -23,27 +38,23 @@
 #include "Engine/FrameKey.h"
 #include "Engine/FrameParams.h"
 #include "Engine/CacheEntry.h"
+#include "Engine/EngineFwd.h"
 
 
-class Hash64;
-
-namespace Natron {
-
-
-
+NATRON_NAMESPACE_ENTER;
 
 class FrameEntry
-    : public CacheEntryHelper<U8,Natron::FrameKey,Natron::FrameParams>
+    : public CacheEntryHelper<U8,FrameKey,FrameParams>
 {
 public:
     FrameEntry(const FrameKey & key,
                const boost::shared_ptr<FrameParams> &  params,
-               const Natron::CacheAPI* cache,
-               Natron::StorageModeEnum storage,
+               const CacheAPI* cache,
+               StorageModeEnum storage,
                const std::string & path)
         : CacheEntryHelper<U8,FrameKey,FrameParams>(key,params,cache,storage,path)
-        , _aborted(false)
         , _abortedMutex()
+        , _aborted(false)
     {
     }
 
@@ -51,20 +62,12 @@ public:
     {
     }
 
-    static FrameKey makeKey(SequenceTime time,
-                            U64 treeVersion,
-                            double gain,
-                            int lut,
-                            int bitDepth,
-                            int channels,
-                            int view,
-                            const TextureRect & textureRect,
-                            const RenderScale & scale,
-                            const std::string & inputName) WARN_UNUSED_RETURN;
+    
     static boost::shared_ptr<FrameParams> makeParams(const RectI & rod,
                                                      int bitDepth,
                                                      int texW,
-                                                     int texH) WARN_UNUSED_RETURN;
+                                                     int texH,
+                                                     const boost::shared_ptr<Image>& image) WARN_UNUSED_RETURN;
     const U8* data() const WARN_UNUSED_RETURN
     {
         return _data.readable();
@@ -75,6 +78,10 @@ public:
         return _data.writable();
     }
 
+    const U8* pixelAt(int x, int y ) const WARN_UNUSED_RETURN;
+
+    void copy(const FrameEntry& other);
+
     void setAborted(bool aborted) {
         QMutexLocker k(&_abortedMutex);
         _aborted = aborted;
@@ -84,15 +91,28 @@ public:
         QMutexLocker k(&_abortedMutex);
         return _aborted;
     }
+
+    void getOriginalTiles(std::list<boost::shared_ptr<Image> >* ret) const
+    {
+        QReadLocker k(&_entryLock);
+        _params->getOriginalTiles(ret);
+    }
+
+    void addOriginalTile(const boost::shared_ptr<Image>& image)
+    {
+        QWriteLocker k(&_entryLock);
+        _params->addOriginalTile(image);
+    }
+
 private:
 
     ///The thread rendering the frame entry might have been aborted and the entry removed from the cache
     ///but another thread might successfully have found it in the cache. This flag is to notify it the frame
     ///is invalid.
-    bool _aborted;
     mutable QMutex _abortedMutex;
+    bool _aborted;
 };
-}
 
+NATRON_NAMESPACE_EXIT;
 
-#endif // NATRON_ENGINE_FRAMEENTRY_H_
+#endif // NATRON_ENGINE_FRAMEENTRY_H

@@ -1,27 +1,49 @@
-//  Natron
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ *
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
 #ifndef HISTOGRAMCPU_H
 #define HISTOGRAMCPU_H
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
 #include <vector>
 #include <QThread>
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
 #include "Global/Macros.h"
-namespace Natron {
-class Image;
-}
-class RectI;
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
+
 struct HistogramCPUPrivate;
+
 class HistogramCPU
     : public QThread
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -30,7 +52,7 @@ public:
     virtual ~HistogramCPU();
 
     void computeHistogram(int mode, //< corresponds to the enum Histogram::DisplayModeEnum
-                          const boost::shared_ptr<Natron::Image> & image,
+                          const boost::shared_ptr<Image> & image,
                           const RectI & rect,
                           int binsCount,
                           double vmin,
@@ -57,7 +79,7 @@ public:
 
     void quitAnyComputation();
 
-signals:
+Q_SIGNALS:
 
     void histogramProduced();
 
@@ -66,5 +88,7 @@ private:
     virtual void run() OVERRIDE FINAL;
     boost::scoped_ptr<HistogramCPUPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // HISTOGRAMCPU_H

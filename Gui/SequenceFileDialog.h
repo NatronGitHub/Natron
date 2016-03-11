@@ -1,16 +1,31 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_GUI_SEQUENCEFILEDIALOG_H_
-#define NATRON_GUI_SEQUENCEFILEDIALOG_H_
+#ifndef NATRON_GUI_SEQUENCEFILEDIALOG_H
+#define NATRON_GUI_SEQUENCEFILEDIALOG_H
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
+#include "Global/Macros.h"
 
 #include <vector>
 #include <string>
@@ -18,11 +33,12 @@
 #include <utility>
 #include <set>
 #include <list>
-#ifndef Q_MOC_RUN
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
-#include "Global/Macros.h"
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QStyledItemDelegate>
@@ -41,36 +57,14 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Global/Macros.h"
 #include "Global/QtCompat.h"
+
 #include "Engine/FileSystemModel.h"
+#include "Gui/LineEdit.h"
 
-#define NATRON_FILE_DIALOG_PREVIEW_READER_NAME "Natron_File_Dialog_Preview_Provider_Reader"
-#define NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME "Natron_File_Dialog_Preview_Provider_Viewer"
+#include "Gui/GuiFwd.h"
 
-class LineEdit;
-class Button;
-class QCheckBox;
-class ComboBox;
-class QWidget;
-class QLabel;
-class QFileInfo;
-class QHBoxLayout;
-class QVBoxLayout;
-class QSplitter;
-class QAction;
-class SequenceFileDialog;
-class QFileSystemModel;
-class SequenceItemDelegate;
-class Gui;
-class NodeGui;
-namespace SequenceParsing {
-class SequenceFromFiles;
-}
-struct FileDialogPreviewProvider;
-
-
-
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief The UrlModel class is the model used by the favorite view in the file dialog. It serves as a connexion between
@@ -79,7 +73,9 @@ struct FileDialogPreviewProvider;
 class UrlModel
     : public QStandardItemModel
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     enum Roles
@@ -88,15 +84,15 @@ public:
         EnabledRole = Qt::UserRole + 2
     };
 
-    explicit UrlModel(QObject *parent = 0);
+    explicit UrlModel(const std::map<std::string,std::string>& envVars, QObject *parent = 0);
 
-    QStringList mimeTypes() const;
-    virtual QMimeData * mimeData(const QModelIndexList &indexes) const;
+    QStringList mimeTypes() const OVERRIDE;
+    virtual QMimeData * mimeData(const QModelIndexList &indexes) const OVERRIDE;
     bool canDrop(QDragEnterEvent* e);
     virtual bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent) OVERRIDE FINAL;
     virtual Qt::ItemFlags flags(const QModelIndex &index) const OVERRIDE FINAL;
 
-    bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole);
+    bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) OVERRIDE;
 
 
     void setUrls(const std::vector<QUrl> &urls);
@@ -116,7 +112,7 @@ public:
     
     void removeRowIndex(const QModelIndex& index);
 
-public slots:
+public Q_SLOTS:
     void dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
     void layoutChanged();
 
@@ -124,24 +120,26 @@ private:
     void changed(const QString &path);
     void addIndexToWatch(const QString &path, const QModelIndex &index);
     
-    
+    QString mapUrlToDisplayName(const QString& originalName);
+
     QFileSystemModel *fileSystemModel;
     std::vector<std::pair<QModelIndex, QString> > watching;
     std::vector<QUrl> invalidUrls;
+	std::map<std::string,std::string> envVars;
 };
 
 class FavoriteItemDelegate
     : public QStyledItemDelegate
 {
     
-    QFileSystemModel *_model;
-    std::map<std::string,std::string> envVars;
 
 public:
-    FavoriteItemDelegate(Gui* gui,QFileSystemModel *model);
+    FavoriteItemDelegate();
 
 private:
     virtual void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const;
+
+	
 };
 
 /**
@@ -150,9 +148,11 @@ private:
 class FavoriteView
     : public QListView
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-signals:
+Q_SIGNALS:
     void urlRequested(const QUrl &url);
 
 public:
@@ -187,7 +187,7 @@ public:
     void rename(const QModelIndex & index,const QString & name);
 
     
-public slots:
+public Q_SLOTS:
     void clicked(const QModelIndex &index);
     void showMenu(const QPoint &position);
     void removeEntry();
@@ -233,20 +233,23 @@ public:
     virtual void dragLeaveEvent(QDragLeaveEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
 };
 
 
 class FileDialogComboBox
     : public QComboBox
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-    
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
     
     
     FileDialogComboBox(SequenceFileDialog *p,QWidget *parent = 0);
     
-    void showPopup();
+    void showPopup() OVERRIDE;
     void setHistory(const QStringList &paths);
     QStringList history() const
     {
@@ -255,7 +258,7 @@ public:
 
     
     
-public slots:
+public Q_SLOTS:
     
     void onCurrentIndexChanged(int index);
 private:
@@ -269,13 +272,34 @@ private:
     bool doResize;
 };
 
+//Same as LineEdit but we do not process keyPresses for Key_Up and Key_Down
+class FileDialogLineEdit : public LineEdit
+{
+public:
+    
+    FileDialogLineEdit(QWidget* parent)
+    : LineEdit(parent)
+    {
+        
+    }
+    
+    virtual ~FileDialogLineEdit()
+    {
+        
+    }
+    
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+};
+
 /**
  * @brief The SequenceFileDialog class is the main dialog, containing the GUI and with whom the end user can interact.
  */
 class SequenceFileDialog
 : public QDialog, public SortableViewI
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     enum FileDialogModeEnum
@@ -303,8 +327,6 @@ public:
     ///set the view to show this model index which is a directory
     void setRootIndex(const QModelIndex & index);
 
-    ///Returns the same as SequenceParsing::removePath excepts that str is left untouched.
-    static QString getFilePath(const QString & str);
 
     ///Returns the selected pattern sequence or file name.
     ///Works only in eFileDialogModeOpen mode.
@@ -409,19 +431,19 @@ public:
      **/
     virtual void onSortIndicatorChanged(int logicalIndex,Qt::SortOrder order) OVERRIDE FINAL;
     
-public slots:
+public Q_SLOTS:
 
     ///same as setDirectory but with a QModelIndex
     void enterDirectory(const QModelIndex & index);
 
     ///enters a directory and display its content in the file view.
-    void setDirectory(const QString &currentDirectory);
+    bool setDirectory(const QString &currentDirectory);
 
     ///same as setDirectory but with an url
     void seekUrl(const QUrl & url);
 
     ///same as setDirectory but for the look-in combobox
-    void goToDirectory(const QString &);
+    void onLookingComboboxChanged(const QString &);
 
     ///slot called when the selected directory changed, it updates the view with the (not yet fetched) directory.
     void updateView(const QString & currentDirectory);
@@ -466,7 +488,6 @@ public slots:
 
     ///apply a filter
     ///and refreshes the current directory.
-    void defaultFiltersSlot();
     void dotStarFilterSlot();
     void starSlashFilterSlot();
     void emptyFilterSlot();
@@ -517,13 +538,13 @@ private:
 
     QByteArray saveState() const;
 
-    bool restoreState(const QByteArray & state);
+    bool restoreState(const QByteArray & state, bool restoreDirectory,bool* directoryRestored);
 
     void createViewerPreviewNode();
     
     void teardownPreview();
     
-    boost::shared_ptr<NodeGui> findOrCreatePreviewReader(const std::string& filetype);
+    NodePtr findOrCreatePreviewReader(const std::string& filetype);
     
     void refreshPreviewAfterSelectionChange();
     
@@ -547,7 +568,7 @@ private:
     boost::scoped_ptr<QFileSystemModel> _lookinViewModel;
     QVBoxLayout* _mainLayout;
     QString _requestedDir;
-    QLabel* _lookInLabel;
+    Label* _lookInLabel;
     FileDialogComboBox* _lookInCombobox;
     Button* _previousButton;
     Button* _nextButton;
@@ -557,12 +578,12 @@ private:
     Button* _cancelButton;
     Button* _addFavoriteButton;
     Button* _removeFavoriteButton;
-    LineEdit* _selectionLineEdit;
-    QLabel* _relativeLabel;
+    FileDialogLineEdit* _selectionLineEdit;
+    Label* _relativeLabel;
     ComboBox* _relativeChoice;
     ComboBox* _sequenceButton;
-    QLabel* _filterLabel;
-    LineEdit* _filterLineEdit;
+    Label* _filterLabel;
+    FileDialogLineEdit* _filterLineEdit;
     Button* _filterDropDown;
     ComboBox* _fileExtensionCombo;
     QHBoxLayout* _buttonsLayout;
@@ -626,7 +647,7 @@ class AddFavoriteDialog
     Q_OBJECT
 
     QVBoxLayout* _mainLayout;
-    QLabel* _descriptionLabel;
+    Label* _descriptionLabel;
     QWidget* _secondLine;
     QHBoxLayout* _secondLineLayout;
     LineEdit* _pathLineEdit;
@@ -651,9 +672,11 @@ public:
     {
     }
 
-public slots:
+public Q_SLOTS:
 
     void openDir();
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif /* defined(NATRON_GUI_SEQUENCEFILEDIALOG_H_) */

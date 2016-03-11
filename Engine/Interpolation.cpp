@@ -1,10 +1,26 @@
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ *
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-//  Created by Frédéric Devernay on 06/03/2014.
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include "Interpolation.h"
 
@@ -12,11 +28,21 @@
 #include <cmath>
 #include <stdexcept>
 #include <vector>
-#include <algorithm>
-#include <boost/math/special_functions/fpclassify.hpp>
-#include <boost/math/special_functions/cbrt.hpp>
+#include <algorithm> // min, max
 
-using namespace Natron;
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+GCC_DIAG_OFF(unused-parameter)
+#include <boost/math/special_functions/fpclassify.hpp>
+// boost/optional/optional.hpp:1254:53: warning: unused parameter 'out' [-Wunused-parameter]
+#include <boost/math/special_functions/cbrt.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+GCC_DIAG_ON(unused-parameter)
+
+#ifndef M_PI
+#define M_PI        3.14159265358979323846264338327950288   /* pi             */
+#endif
+
+NATRON_NAMESPACE_ENTER;
 
 using boost::math::cbrt;
 using std::sqrt;
@@ -102,7 +128,7 @@ isZero(double x)
 /// @returns the number of solutions.
 /// solutions an and their order are put in s and o
 int
-Natron::solveLinear(double c0,
+Interpolation::solveLinear(double c0,
                     double c1,
                     double s[1],
                     int o[1])
@@ -127,7 +153,7 @@ Natron::solveLinear(double c0,
 /// @returns the number of solutions.
 /// solutions an and their order are put in s and o
 int
-Natron::solveQuadric(double c0,
+Interpolation::solveQuadric(double c0,
                      double c1,
                      double c2,
                      double s[2],
@@ -135,7 +161,7 @@ Natron::solveQuadric(double c0,
 {
     if ( c2 == 0. || isZero(c2) ) {
         // it's at most a linear equation
-        return solveLinear(c0, c1, s, o);
+        return Interpolation::solveLinear(c0, c1, s, o);
     }
 
 
@@ -169,7 +195,7 @@ Natron::solveQuadric(double c0,
 /// @returns the number of solutions.
 /// solutions an and their order are put in s and o
 int
-Natron::solveCubic(double c0,
+Interpolation::solveCubic(double c0,
                    double c1,
                    double c2,
                    double c3,
@@ -178,7 +204,7 @@ Natron::solveCubic(double c0,
 {
     if ( c3 == 0. || isZero(c3) ) {
         // it's at most a second-degree polynomial
-        return solveQuadric(c0, c1, c2, s, o);
+        return Interpolation::solveQuadric(c0, c1, c2, s, o);
     }
 
     // normalize the equation:x ^ 3 + Ax ^ 2 + Bx  + C = 0
@@ -242,11 +268,64 @@ Natron::solveCubic(double c0,
     return num;
 } // solveCubic
 
+/// compute one root from the cubic c0 + c1*x + c2*x2 + c3*x3 = 0, with c3 != 0.
+/// @returns one solution.
+static double
+getOneCubicRoot(double c0,
+                double c1,
+                double c2,
+                double c3)
+{
+    assert (c3 != 0.);
+
+    // normalize the equation:x ^ 3 + Ax ^ 2 + Bx  + C = 0
+    double A = c2 / c3;
+    double B = c1 / c3;
+    double C = c0 / c3;
+
+    // substitute x = y - A / 3 to eliminate the quadric term: x^3 + px + q = 0
+    double sq_A = A * A;
+    double p = 1.0 / 3.0 * (-1.0 / 3.0 * sq_A + B);
+    double q = 1.0 / 2.0 * (2.0 / 27.0 * A * sq_A - 1.0 / 3.0 * A * B + C);
+
+    double s;
+
+    // use Cardano's formula
+    double cb_p = p * p * p;
+    double D = q * q + cb_p;
+    if ( D == 0. || isZero(D) ) {
+        if ( q == 0. || isZero(q) ) {
+            // one triple solution
+            s = 0.;
+        } else {
+            // one single and one double solution
+            double u = cbrt(-q);
+            s = 2.0 * u;
+        }
+    } else if (D < 0.0) {
+        // casus irreductibilis: three real solutions
+        double phi = 1.0 / 3.0 * acos( -q / sqrt(-cb_p) );
+        double t = 2.0 * sqrt(-p);
+        s = t * cos(phi);
+    } else { // D > 0.0
+        // one real solution
+        double sqrt_D = sqrt(D);
+        double u = cbrt( sqrt_D + fabs(q) );
+        if (q > 0.0) {
+            s = -u + p / u;
+        } else {
+            s = u - p / u;
+        }
+    }
+    // resubstitute
+    return s - 1.0 / 3.0 * A;
+}
+
 /// solve quartic c0 + c1*x + c2*x2 + c3*x3 +c4*x4 = 0.
 /// @returns the number of solutions.
 /// solutions an and their order are put in s and o
 int
-Natron::solveQuartic(double c0,
+Interpolation::solveQuartic(double c0,
                      double c1,
                      double c2,
                      double c3,
@@ -256,7 +335,7 @@ Natron::solveQuartic(double c0,
 {
     if ( c4 == 0. || isZero(c4) ) {
         // it's at most a third-degree polynomial
-        return solveCubic(c0, c1, c2, c3, s, o);
+        return Interpolation::solveCubic(c0, c1, c2, c3, s, o);
     }
 
     // normalize the equation:x ^ 4 + Ax ^ 3 + Bx ^ 2 + Cx + D = 0
@@ -266,7 +345,7 @@ Natron::solveQuartic(double c0,
     double C = c1 / c4;
     double D = c0 / c4;
 
-    // subsitute x = y - A / 4 to eliminate the cubic term: x^4 + px^2 + qx + r = 0
+    // substitute x = y - A / 4 to eliminate the cubic term: x^4 + px^2 + qx + r = 0
     double sq_A = A * A;
     double p = -3.0 / 8.0 * sq_A + B;
     double q = 1.0 / 8.0 * sq_A * A - 1.0 / 2.0 * A * B + C;
@@ -275,7 +354,7 @@ Natron::solveQuartic(double c0,
 
     if ( r == 0. || isZero(r) ) {
         // no absolute term:y(y ^ 3 + py + q) = 0
-        num = solveCubic(q, p, 0., 1., s, o);
+        num = Interpolation::solveCubic(q, p, 0., 1., s, o);
         // if q = 0, this should be within the previously computed solutions,
         // but we just add another solution with order 1
         s[num] = 0.,
@@ -283,11 +362,8 @@ Natron::solveQuartic(double c0,
         ++num;
     } else {
         // solve the resolvent cubic...
-        num = solveCubic(1.0 / 2.0 * r * p - 1.0 / 8.0 * q * q, -r, -1.0 / 2.0 * p, -1, s, o);
-        assert(num == 1);
-
-        // ...and take the one real solution...
-        double z = s[0];
+        // ...and take one real solution... (there may be more)
+        double z = getOneCubicRoot(1.0 / 2.0 * r * p - 1.0 / 8.0 * q * q, -r, -1.0 / 2.0 * p, -1);
 
         // ...to build two quadratic equations
         double u = z * z - r;
@@ -309,8 +385,8 @@ Natron::solveQuartic(double c0,
             return 0;
         }
 
-        num = solveQuadric(z - u, q < 0 ? -v : v, 1.0, s, o);
-        num += solveQuadric(z + u, q < 0 ? v : -v, 1.0, s + num, o + num);
+        num = Interpolation::solveQuadric(z - u, q < 0 ? -v : v, 1.0, s, o);
+        num += Interpolation::solveQuadric(z + u, q < 0 ? v : -v, 1.0, s + num, o + num);
     }
 
     // resubstitute
@@ -332,15 +408,15 @@ Natron::solveQuartic(double c0,
  * which will compute the derivatives for you.
  **/
 double
-Natron::interpolate(double tcur,
+Interpolation::interpolate(double tcur,
                     const double vcur,                     //start control point
                     const double vcurDerivRight,        //being the derivative dv/dt at tcur
                     const double vnextDerivLeft,        //being the derivative dv/dt at tnext
                     double tnext,
                     const double vnext,                      //end control point
                     double currentTime,
-                    Natron::KeyframeTypeEnum interp,
-                    Natron::KeyframeTypeEnum interpNext)
+                    KeyframeTypeEnum interp,
+                    KeyframeTypeEnum interpNext)
 {
     double P0 = vcur;
     double P3 = vnext;
@@ -381,15 +457,15 @@ Natron::interpolate(double tcur,
 
 /// derive at currentTime. The derivative is with respect to currentTime
 double
-Natron::derive(double tcur,
+Interpolation::derive(double tcur,
                const double vcur,                     //start control point
                const double vcurDerivRight,             //being the derivative dv/dt at tcur
                const double vnextDerivLeft,             //being the derivative dv/dt at tnext
                double tnext,
                const double vnext,                           //end control point
                double currentTime,
-               Natron::KeyframeTypeEnum interp,
-               Natron::KeyframeTypeEnum interpNext)
+               KeyframeTypeEnum interp,
+               KeyframeTypeEnum interpNext)
 {
     double P0 = vcur;
     double P3 = vnext;
@@ -430,7 +506,7 @@ Natron::derive(double tcur,
 
 /// interpolate and derive at currentTime. The derivative is with respect to currentTime
 double
-Natron::derive_clamp(double tcur,
+Interpolation::derive_clamp(double tcur,
                      const double vcur,                     //start control point
                      const double vcurDerivRight,        //being the derivative dv/dt at tcur
                      const double vnextDerivLeft,        //being the derivative dv/dt at tnext
@@ -483,7 +559,7 @@ Natron::derive_clamp(double tcur,
 
 // integrate from time1 to time2
 double
-Natron::integrate(double tcur,
+Interpolation::integrate(double tcur,
                   const double vcur,                     //start control point
                   const double vcurDerivRight,        //being the derivative dv/dt at tcur
                   const double vnextDerivLeft,        //being the derivative dv/dt at tnext
@@ -491,8 +567,8 @@ Natron::integrate(double tcur,
                   const double vnext,                      //end control point
                   double time1,
                   double time2,
-                  Natron::KeyframeTypeEnum interp,
-                  Natron::KeyframeTypeEnum interpNext)
+                  KeyframeTypeEnum interp,
+                  KeyframeTypeEnum interpNext)
 {
     double P0 = vcur;
     double P3 = vnext;
@@ -620,7 +696,7 @@ statusUpdate(FuncTypeEnum status,
 
 // integrate from time1 to time2 with clamping of the function values in [vmin,vmax]
 double
-Natron::integrate_clamp(double tcur,
+Interpolation::integrate_clamp(double tcur,
                         const double vcur,                     //start control point
                         const double vcurDerivRight,        //being the derivative dv/dt at tcur
                         const double vnextDerivLeft,        //being the derivative dv/dt at tnext
@@ -630,8 +706,8 @@ Natron::integrate_clamp(double tcur,
                         double time2,
                         double vmin,
                         double vmax,
-                        Natron::KeyframeTypeEnum interp,
-                        Natron::KeyframeTypeEnum interpNext)
+                        KeyframeTypeEnum interp,
+                        KeyframeTypeEnum interpNext)
 {
     double P0 = vcur;
     double P3 = vnext;
@@ -664,11 +740,11 @@ Natron::integrate_clamp(double tcur,
     // solve cubic = vmax
     double tmax[3];
     int omax[3];
-    int nmax = solveCubic(c0 - vmax, c1, c2, c3, tmax, omax);
+    int nmax = Interpolation::solveCubic(c0 - vmax, c1, c2, c3, tmax, omax);
     // solve cubic = vmin
     double tmin[3];
     int omin[3];
-    int nmin = solveCubic(c0 - vmin, c1, c2, c3, tmin, omin);
+    int nmin = Interpolation::solveCubic(c0 - vmin, c1, c2, c3, tmin, omin);
 
     // now, find out on which intervals the function is constant/clamped, and on which intervals it is a cubic.
     // ignore the solutions with an order of 2 (which means the tangent is horizontal and the polynomial doesn't change sign)
@@ -838,9 +914,9 @@ Natron::integrate_clamp(double tcur,
 
  */
 void
-Natron::autoComputeDerivatives(Natron::KeyframeTypeEnum interpPrev,
-                               Natron::KeyframeTypeEnum interp,
-                               Natron::KeyframeTypeEnum interpNext,
+Interpolation::autoComputeDerivatives(KeyframeTypeEnum interpPrev,
+                               KeyframeTypeEnum interp,
+                               KeyframeTypeEnum interpNext,
                                double tprev,
                                const double vprev,                    // vprev = Q0
                                double tcur,
@@ -878,8 +954,8 @@ Natron::autoComputeDerivatives(Natron::KeyframeTypeEnum interpPrev,
     // If there is no next/previous keyframe, should there be a continuous derivative?
     bool keyframe_none_same_derivative = false;
 
-    // if there is no next/previous keyframe, use LINEAR interpolation, and set keyframe_none_same_derivative
-    if ( (interpPrev == eKeyframeTypeNone) || (interpNext == eKeyframeTypeNone) ) {
+    // if there is no next/previous keyframe, use LINEAR interpolation (except for horizontal, see bug #1050), and set keyframe_none_same_derivative
+    if ( interp != eKeyframeTypeHorizontal && ((interpPrev == eKeyframeTypeNone) || (interpNext == eKeyframeTypeNone)) ) {
         // Do this before modifying interp (next line)
         keyframe_none_same_derivative = (interp == eKeyframeTypeCatmullRom || interp == eKeyframeTypeCubic);
         interp = eKeyframeTypeLinear;
@@ -1000,4 +1076,6 @@ Natron::autoComputeDerivatives(Natron::KeyframeTypeEnum interpPrev,
     *vcurDerivLeft = Q3pl / (tcur - tprev); // denormalize for t \in [tprev,tcur]
     assert( !boost::math::isnan(*vcurDerivRight) && !boost::math::isnan(*vcurDerivLeft) );
 } // autoComputeDerivatives
+
+NATRON_NAMESPACE_EXIT;
 

@@ -1,38 +1,54 @@
-//  Natron
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
 #ifndef NODEGRAPHUNDOREDO_H
 #define NODEGRAPHUNDOREDO_H
 
-#include "Global/GlobalDefines.h"
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
+#include <list>
 #include <vector>
 #include <QPointF>
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #endif
 #include <QUndoCommand>
+
+#include "Global/GlobalDefines.h"
+
+#include "Engine/EngineFwd.h"
+
+#include "Gui/GuiFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 /**
  * This file gathers undo/redo command associated to the node graph. Each of them triggers an autosave when redone/undone
  * except the move command.
  **/
 
-class Edge;
-class NodeGui;
-class NodeGraph;
-class NodeBackDrop;
-class NodeSerialization;
-namespace Natron {
-class Node;
-}
 
 
 class MoveMultipleNodesCommand
@@ -40,38 +56,21 @@ class MoveMultipleNodesCommand
 {
 public:
 
-    struct NodeToMove
-    {
-        boost::shared_ptr<NodeGui> node;
-        bool isWithinBD;
-    };
-
-    MoveMultipleNodesCommand(const std::list<NodeToMove> & nodes,
-                             const std::list<NodeBackDrop*> & bds,
+    MoveMultipleNodesCommand(const NodesGuiList & nodes,
                              double dx,
                              double dy,
-                             bool doMerge,
-                             const QPointF & mouseScenePos,
                              QUndoCommand *parent = 0);
     virtual void undo();
     virtual void redo();
-    virtual int id() const
-    {
-        return kNodeGraphMoveNodeCommandCompressionID;
-    }
 
-    virtual bool mergeWith(const QUndoCommand *command);
 
 private:
 
-    void move(bool skipMagnet,double dx,double dy);
+    void move(double dx,double dy);
 
     bool _firstRedoCalled;
-    std::list<NodeToMove> _nodes;
-    std::list<NodeBackDrop*> _bds;
-    QPointF _mouseScenePos;
+    NodesGuiList _nodes;
     double _dx,_dy;
-    bool _doMerge;
 };
 
 
@@ -87,17 +86,13 @@ class AddMultipleNodesCommand
 public:
 
     AddMultipleNodesCommand(NodeGraph* graph,
-                            const std::list<boost::shared_ptr<NodeGui> > & nodes,
-                            const std::list<NodeBackDrop*> & bds,
+                            const NodesGuiList & nodes,
                             QUndoCommand *parent = 0);
 
     AddMultipleNodesCommand(NodeGraph* graph,
-                            const boost::shared_ptr<NodeGui> & node,
+                            const NodeGuiPtr & node,
                             QUndoCommand* parent = 0);
 
-    AddMultipleNodesCommand(NodeGraph* graph,
-                            NodeBackDrop* bd,
-                            QUndoCommand* parent = 0);
 
     virtual ~AddMultipleNodesCommand();
 
@@ -106,8 +101,7 @@ public:
 
 private:
 
-    std::list<boost::shared_ptr<NodeGui> > _nodes;
-    std::list<NodeBackDrop*> _bds;
+    std::list<boost::weak_ptr<NodeGui> > _nodes;
     NodeGraph* _graph;
     bool _firstRedoCalled;
     bool _isUndone;
@@ -120,8 +114,7 @@ class RemoveMultipleNodesCommand
 public:
 
     RemoveMultipleNodesCommand(NodeGraph* graph,
-                               const std::list<boost::shared_ptr<NodeGui> > & nodes,
-                               const std::list<NodeBackDrop*> & bds,
+                               const NodesGuiList & nodes,
                                QUndoCommand *parent = 0);
 
     virtual ~RemoveMultipleNodesCommand();
@@ -135,12 +128,11 @@ private:
         ///This contains the output nodes whose input should be reconnected to this node afterwards.
         ///This list contains only nodes that are not part of the selection: we restore only the
         ///inputs of the outputs nodes of the graph that were not removed
-        std::list<Natron::Node* > outputsToRestore;
-        boost::shared_ptr<NodeGui> node;
+        NodesWList outputsToRestore;
+        boost::weak_ptr<NodeGui> node;
     };
 
     std::list<NodeToRemove> _nodes;
-    std::list<NodeBackDrop*> _bds;
     NodeGraph* _graph;
     bool _isRedone;
 };
@@ -151,49 +143,71 @@ class ConnectCommand
 public:
     ConnectCommand(NodeGraph* graph,
                    Edge* edge,
-                   const boost::shared_ptr<NodeGui> &oldSrc,
-                   const boost::shared_ptr<NodeGui> & newSrc,
+                   const NodeGuiPtr &oldSrc,
+                   const NodeGuiPtr & newSrc,
                    QUndoCommand *parent = 0);
 
     virtual void undo();
     virtual void redo();
 
-private:
+protected:
     
-    void doConnect(const boost::shared_ptr<Natron::Node> &oldSrc,
-                   const boost::shared_ptr<Natron::Node> & newSrc);
+    static void doConnect(const NodeGuiPtr &oldSrc,
+                          const NodeGuiPtr & newSrc,
+                          const NodeGuiPtr& dst,
+                          int inputNb);
     
-    Edge* _edge;
-    boost::shared_ptr<NodeGui> _oldSrc,_newSrc;
-    boost::shared_ptr<NodeGui> _dst;
+    boost::weak_ptr<NodeGui> _oldSrc,_newSrc;
+    boost::weak_ptr<NodeGui> _dst;
     NodeGraph* _graph;
     int _inputNb;
 };
 
+/*
+ * @brief Inserts an existing node in a stream
+ */
+class InsertNodeCommand : public ConnectCommand
+{
+public:
+    
+    InsertNodeCommand(NodeGraph* graph,
+                   Edge* edge,
+                   const NodeGuiPtr & newSrc,
+                   QUndoCommand *parent = 0);
+    
+    virtual void undo();
+    virtual void redo();
+    
+private:
+    
+    Edge* _inputEdge;
+    
+};
 
-class ResizeBackDropCommand
+
+class ResizeBackdropCommand
     : public QUndoCommand
 {
 public:
 
-    ResizeBackDropCommand(NodeBackDrop* bd,
+    ResizeBackdropCommand(const NodeGuiPtr& bd,
                           int w,
                           int h,
                           QUndoCommand *parent = 0);
-    virtual ~ResizeBackDropCommand();
+    virtual ~ResizeBackdropCommand();
 
     virtual void undo();
     virtual void redo();
     virtual int id() const
     {
-        return kNodeGraphResizeNodeBackDropCommandCompressionID;
+        return kNodeGraphResizeNodeBackdropCommandCompressionID;
     }
 
     virtual bool mergeWith(const QUndoCommand *command);
 
 private:
 
-    NodeBackDrop* _bd;
+    NodeGuiPtr _bd;
     int _w,_h;
     int _oldW,_oldH;
 };
@@ -205,8 +219,7 @@ class DecloneMultipleNodesCommand
 public:
 
     DecloneMultipleNodesCommand(NodeGraph* graph,
-                                const std::list<boost::shared_ptr<NodeGui> > & nodes,
-                                const std::list<NodeBackDrop*> & bds,
+                                const NodesGuiList & nodes,
                                 QUndoCommand *parent = 0);
 
 
@@ -219,18 +232,13 @@ private:
 
     struct NodeToDeclone
     {
-        boost::shared_ptr<NodeGui> node;
-        boost::shared_ptr<Natron::Node> master;
+        boost::weak_ptr<NodeGui> node;
+        NodeWPtr master;
     };
 
-    struct BDToDeclone
-    {
-        NodeBackDrop* bd;
-        NodeBackDrop* master;
-    };
+  
 
     std::list<NodeToDeclone> _nodes;
-    std::list<BDToDeclone> _bds;
     NodeGraph* _graph;
 };
 
@@ -242,11 +250,11 @@ public:
 
     struct NodeToRearrange
     {
-        boost::shared_ptr<NodeGui> node;
+        NodeGuiPtr node;
         QPointF oldPos,newPos;
     };
 
-    RearrangeNodesCommand(const std::list<boost::shared_ptr<NodeGui> > & nodes,
+    RearrangeNodesCommand(const NodesGuiList & nodes,
                           QUndoCommand *parent = 0);
     virtual void undo();
     virtual void redo();
@@ -261,14 +269,14 @@ class DisableNodesCommand
 {
 public:
 
-    DisableNodesCommand(const std::list<boost::shared_ptr<NodeGui> > & nodes,
+    DisableNodesCommand(const NodesGuiList & nodes,
                         QUndoCommand *parent = 0);
     virtual void undo();
     virtual void redo();
 
 private:
 
-    std::list<boost::shared_ptr<NodeGui> >_nodes;
+    std::list<boost::weak_ptr<NodeGui> >_nodes;
 };
 
 class EnableNodesCommand
@@ -276,14 +284,14 @@ class EnableNodesCommand
 {
 public:
 
-    EnableNodesCommand(const std::list<boost::shared_ptr<NodeGui> > & nodes,
+    EnableNodesCommand(const NodesGuiList & nodes,
                        QUndoCommand *parent = 0);
     virtual void undo();
     virtual void redo();
 
 private:
 
-    std::list<boost::shared_ptr<NodeGui> >_nodes;
+    std::list<boost::weak_ptr<NodeGui> >_nodes;
 };
 
 
@@ -293,7 +301,7 @@ class LoadNodePresetsCommand
     
 public:
     
-    LoadNodePresetsCommand(const boost::shared_ptr<NodeGui> & node,
+    LoadNodePresetsCommand(const NodeGuiPtr & node,
                            const std::list<boost::shared_ptr<NodeSerialization> >& serialization,
                        QUndoCommand *parent = 0);
     
@@ -303,10 +311,13 @@ public:
 
 private:
     
+    void getListAsShared(const std::list< NodeWPtr >& original,
+                         std::list< NodePtr >& shared) const;
+    
     bool _firstRedoCalled;
     bool _isUndone;
-    boost::shared_ptr<NodeGui> _node;
-    std::list< boost::shared_ptr<Natron::Node> > _oldChildren,_newChildren; //< children if multi-instance
+    boost::weak_ptr<NodeGui> _node;
+    std::list< NodeWPtr > _oldChildren,_newChildren; //< children if multi-instance
     std::list<boost::shared_ptr<NodeSerialization> > _newSerializations,_oldSerialization;
 };
 
@@ -315,8 +326,8 @@ class RenameNodeUndoRedoCommand
 {
 public:
     
-    RenameNodeUndoRedoCommand(const boost::shared_ptr<NodeGui> & node,
-                              NodeBackDrop* bd,
+    RenameNodeUndoRedoCommand(const NodeGuiPtr & node,
+                              const QString& oldName,
                               const QString& newName);
     
     virtual ~RenameNodeUndoRedoCommand();
@@ -325,46 +336,106 @@ public:
     
 private:
     
-    boost::shared_ptr<NodeGui> _node;
-    NodeBackDrop* _bd;
+    boost::weak_ptr<NodeGui> _node;
     QString _oldName,_newName;
 };
+
+struct ExtractedOutput
+{
+    boost::weak_ptr<NodeGui> node;
+    std::list<std::pair<int,NodeWPtr > > outputs;
+};
+
+struct ExtractedInput
+{
+    boost::weak_ptr<NodeGui> node;
+    std::vector<NodeWPtr > inputs;
+};
+
+struct ExtractedTree
+{
+    ExtractedOutput output;
+    std::list<ExtractedInput> inputs;
+    std::list<boost::weak_ptr<NodeGui> > inbetweenNodes;
+};
+
 
 class ExtractNodeUndoRedoCommand
 : public QUndoCommand
 {
 public:
     
-    ExtractNodeUndoRedoCommand(NodeGraph* graph,const std::list<boost::shared_ptr<NodeGui> > & nodes);
+    ExtractNodeUndoRedoCommand(NodeGraph* graph,const NodesGuiList & nodes);
     
     virtual ~ExtractNodeUndoRedoCommand();
     virtual void undo();
     virtual void redo();
     
     
-    struct ExtractedOutput
-    {
-        boost::shared_ptr<NodeGui> node;
-        std::list<std::pair<int,Natron::Node*> > outputs;
-    };
+    private:
     
-    struct ExtractedInput
-    {
-        boost::shared_ptr<NodeGui> node;
-        std::vector<boost::shared_ptr<Natron::Node> > inputs;
-    };
-    
-    struct ExtractedTree
-    {
-        ExtractedOutput output;
-        std::list<ExtractedInput> inputs;
-        std::list<boost::shared_ptr<NodeGui> > inbetweenNodes;
-    };
-private:
   
     NodeGraph* _graph;
     std::list<ExtractedTree> _trees;
 };
 
+class GroupFromSelectionCommand
+: public QUndoCommand
+{
+    
+public:
+    
+    GroupFromSelectionCommand(NodeGraph* graph,const NodesGuiList & nodes);
+    
+    virtual ~GroupFromSelectionCommand();
+    
+    virtual void undo();
+    virtual void redo();
+    
+private:
+    
+    NodeGraph* _graph;
+    std::list<boost::weak_ptr<NodeGui> > _originalNodes;
+    boost::weak_ptr<NodeGui> _group;
+    bool _firstRedoCalled;
+    bool _isRedone;
+};
+
+class InlineGroupCommand
+: public QUndoCommand
+{
+    
+public:
+    
+    InlineGroupCommand(NodeGraph* graph,const NodesGuiList & nodes);
+    
+    virtual ~InlineGroupCommand();
+    
+    virtual void undo();
+    virtual void redo();
+    
+private:
+    
+    struct NodeToConnect {
+        boost::weak_ptr<NodeGui> input;
+        std::map<boost::weak_ptr<NodeGui>,int> outputs;
+    };
+    
+    
+    struct InlinedGroup
+    {
+        boost::weak_ptr<NodeGui> group;
+        std::list<boost::weak_ptr<NodeGui> > inlinedNodes;
+        std::map<int,NodeToConnect> connections;
+    };
+    
+    NodeGraph* _graph;
+    
+    std::list<InlinedGroup> _groupNodes;
+    bool _firstRedoCalled;
+};
+
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NODEGRAPHUNDOREDO_H

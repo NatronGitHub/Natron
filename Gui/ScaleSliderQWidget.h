@@ -1,23 +1,36 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
 #ifndef SCALESLIDERQWIDGET_H
 #define SCALESLIDERQWIDGET_H
 
-
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
-#ifndef Q_MOC_RUN
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #endif
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QWidget>
@@ -26,14 +39,18 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
-using Natron::ScaleTypeEnum;
+#include "Gui/GuiFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 struct ScaleSliderQWidgetPrivate;
-class QFont;
+
 class ScaleSliderQWidget
     : public QWidget
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     
@@ -46,8 +63,10 @@ public:
     ScaleSliderQWidget(double bottom, // the minimum value
                        double top, // the maximum value
                        double initialPos, // the initial value
+                       bool allowDraftModeSetting,
                        DataTypeEnum dataType,
-                       Natron::ScaleTypeEnum type = Natron::eScaleTypeLinear, // the type of scale
+                       Gui* gui,
+                       ScaleTypeEnum type = eScaleTypeLinear, // the type of scale
                        QWidget* parent = 0);
     
 
@@ -56,7 +75,7 @@ public:
     void setMinimumAndMaximum(double min,double max);
 
 
-    Natron::ScaleTypeEnum type() const;
+    ScaleTypeEnum type() const;
 
     double minimum() const;
 
@@ -68,16 +87,25 @@ public:
     
     void setReadOnly(bool ro);
 
+    // the size of a pixel increment (used to round the value)
+    double increment();
     
-signals:
-    void editingFinished();
+    void setAltered(bool b);
+    bool getAltered() const;
+    
+    void setUseLineColor(bool use, const QColor& color);
+    
+Q_SIGNALS:
+    void editingFinished(bool hasMovedOnce);
     void positionChanged(double);
 
-public slots:
+public Q_SLOTS:
 
     void seekScalePosition(double v);
 
 private:
+    
+    void zoomRange();
 
     void seekInternal(double v);
 
@@ -93,9 +121,15 @@ private:
     virtual QSize minimumSizeHint() const OVERRIDE FINAL;
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
-
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
+    virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
+    
     boost::scoped_ptr<ScaleSliderQWidgetPrivate> _imp;
     
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // SCALESLIDERQWIDGET_H

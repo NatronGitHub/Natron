@@ -1,21 +1,37 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
 #ifndef ROTOGUI_H
 #define ROTOGUI_H
-#ifndef Q_MOC_RUN
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
+#include "Global/Macros.h"
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
-#include "Global/Macros.h"
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QObject>
@@ -25,29 +41,19 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
-class QMouseEvent;
-class QToolBar;
-class QWidget;
-class QIcon;
-class QString;
-class QToolButton;
-class QKeyEvent;
-class QPointF;
-class ViewerTab;
-class QAction;
-class RotoItem;
-class QUndoCommand;
-class NodeGui;
-class Bezier;
-class BezierCP;
-class GuiAppInstance;
-struct RotoGuiSharedData;
-class RotoContext;
+#include "Engine/EngineFwd.h"
+
+#include "Gui/GuiFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 class RotoToolButton
     : public QToolButton
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
     Q_PROPERTY(bool isSelected READ getIsSelected WRITE setIsSelected)
     
 public:
@@ -62,12 +68,17 @@ public:
     bool getIsSelected() const;
     void setIsSelected(bool s);
     
+public Q_SLOTS:
+    
+    void handleLongPress();
+    
 private:
 
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
     
     bool isSelected;
+    bool wasMouseReleased;
 };
 
 class RotoGui
@@ -87,7 +98,11 @@ public:
     {
         eRotoRoleSelection = 0,
         eRotoRolePointsEdition,
-        eRotoRoleBezierEdition
+        eRotoRoleBezierEdition,
+        eRotoRolePaintBrush,
+        eRotoRoleCloneBrush,
+        eRotoRoleEffectBrush,
+        eRotoRoleMergeBrush
     };
 
     enum RotoToolEnum
@@ -108,6 +123,21 @@ public:
         eRotoToolDrawBSpline,
         eRotoToolDrawEllipse,
         eRotoToolDrawRectangle,
+        
+        eRotoToolSolidBrush,
+        eRotoToolOpenBezier,
+        eRotoToolEraserBrush,
+        
+        eRotoToolClone,
+        eRotoToolReveal,
+        
+        eRotoToolBlur,
+        eRotoToolSharpen,
+        eRotoToolSmear,
+        
+        eRotoToolDodge,
+        eRotoToolBurn
+        
     };
 
     RotoGui(NodeGui* node,
@@ -143,23 +173,23 @@ public:
      **/
     RotoGui::RotoRoleEnum getCurrentRole() const;
 
-    void drawOverlays(double scaleX, double scaleY) const;
+    void drawOverlays(double time, const RenderScale & renderScale) const;
 
-    bool penDown(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool penDown(double time, const RenderScale & renderScale, PenType pen, bool isTabletEvent, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
 
-    bool penDoubleClicked(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool penDoubleClicked(double time, const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
 
-    bool penMotion(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool penMotion(double time, const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QInputEvent* e);
 
-    bool penUp(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool penUp(double time, const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
 
-    bool keyDown(double scaleX, double scaleY, QKeyEvent* e);
+    bool keyDown(double time, const RenderScale & renderScale, QKeyEvent* e);
 
-    bool keyUp(double scaleX, double scaleY, QKeyEvent* e);
+    bool keyUp(double time, const RenderScale & renderScale, QKeyEvent* e);
 
-    bool keyRepeat(double scaleX, double scaleY, QKeyEvent* e);
+    bool keyRepeat(double time, const RenderScale & renderScale, QKeyEvent* e);
     
-    void focusOut();
+    void focusOut(double time);
 
     bool isStickySelectionEnabled() const;
 
@@ -167,12 +197,12 @@ public:
      * @brief Set the selection to be the given beziers and the given control points.
      * This can only be called on the main-thread.
      **/
-    void setSelection(const std::list<boost::shared_ptr<Bezier> > & selectedBeziers,
+    void setSelection(const std::list<boost::shared_ptr<RotoDrawableItem> > & selectedBeziers,
                       const std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > & selectedCps);
     void setSelection(const boost::shared_ptr<Bezier> & curve,
                       const std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > & point);
 
-    void getSelection(std::list<boost::shared_ptr<Bezier> >* selectedBeziers,
+    void getSelection(std::list<boost::shared_ptr<RotoDrawableItem> >* selectedBeziers,
                       std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > >* selectedCps);
 
     void refreshSelectionBBox();
@@ -205,14 +235,15 @@ public:
      * @brief Calls RotoContext::removeItem but also clears some pointers if they point to
      * this curve. For undo/redo purpose.
      **/
-    void removeCurve(const boost::shared_ptr<Bezier>& curve);
+    void removeCurve(const boost::shared_ptr<RotoDrawableItem>& curve);
 
     bool isFeatherVisible() const;
 
     void linkPointTo(const std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > & cp);
 
+    void notifyGuiClosing();
     
-signals:
+Q_SIGNALS:
 
     /**
      * @brief Emitted when the selected role changes
@@ -221,7 +252,7 @@ signals:
 
     void selectedToolChanged(int);
 
-public slots:
+public Q_SLOTS:
 
     void updateSelectionFromSelectionRectangle(bool onRelease);
 
@@ -251,19 +282,34 @@ public slots:
 
     void onRefreshAsked();
 
-    void onCurveLockedChanged();
+    void onCurveLockedChanged(int);
 
     void onSelectionChanged(int reason);
 
     void onDisplayFeatherButtonClicked(bool toggled);
+    
+    void onTimelineTimeChanged();
 
+    void onBreakMultiStrokeTriggered();
 
     void smoothSelectedCurve();
     void cuspSelectedCurve();
     void removeFeatherForSelectedCurve();
     void lockSelectedCurves();
     
+    void onColorWheelButtonClicked();
+    void onDialogCurrentColorChanged(const QColor& color);
+    
+    void onPressureOpacityClicked(bool isDown);
+    void onPressureSizeClicked(bool isDown);
+    void onPressureHardnessClicked(bool isDown);
+    void onBuildupClicked(bool isDown);
+    
+    void onResetCloneTransformClicked();
+    
+    
 private:
+    
 
     void showMenuForCurve(const boost::shared_ptr<Bezier> & curve);
 
@@ -289,5 +335,7 @@ private:
     struct RotoGuiPrivate;
     boost::scoped_ptr<RotoGuiPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // ROTOGUI_H

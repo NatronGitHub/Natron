@@ -1,0 +1,13 @@
+--- Portfile.orig	2015-11-23 11:28:32.000000000 +0100
++++ Portfile	2015-12-14 10:29:24.000000000 +0100
+@@ -80,6 +80,10 @@
+                     --with-ar=${prefix}/bin/ar \
+                     --with-bugurl=https://trac.macports.org/newticket
+ 
++if {${configure.sdkroot} ne ""} { 
++    configure.args-append     --with-sysroot=${configure.sdkroot} 
++} 
++
+ configure.env-append \
+                     AR_FOR_TARGET=${prefix}/bin/ar \
+                     AS_FOR_TARGET=${prefix}/bin/as \

@@ -1,0 +1,22 @@
+--- configure.orig	2012-05-23 16:47:07.000000000 +0200
++++ configure	2012-05-23 16:47:52.000000000 +0200
+@@ -9748,7 +9748,7 @@
+   CPPFLAGS="$CL_CFLAGS $CPPFLAGS"
+   ax_save_LIBS=$LIBS
+   LIBS=""
+-  ax_check_libs="-lOpenCL -lCL -lclparser"
++  ax_check_libs="-lOpenCL -lCL"
+   for ax_lib in $ax_check_libs; do
+     if test X$ax_compiler_ms = Xyes; then :
+   ax_try_lib=`echo $ax_lib | $SED -e 's/^-l//' -e 's/$/.lib/'`
+--- m4/ax_opencl.m4.orig	2015-07-06 04:45:22.000000000 -0700
++++ m4/ax_opencl.m4	2015-07-06 04:46:05.000000000 -0700
+@@ -105,7 +105,7 @@
+   CPPFLAGS="$CL_CFLAGS $CPPFLAGS"
+   ax_save_LIBS=$LIBS
+   LIBS=""
+-  ax_check_libs="-lOpenCL -lCL -lclparser"
++  ax_check_libs="-lOpenCL -lCL"
+   for ax_lib in $ax_check_libs; do
+     AS_IF([test X$ax_compiler_ms = Xyes],
+           [ax_try_lib=`echo $ax_lib | $SED -e 's/^-l//' -e 's/$/.lib/'`],

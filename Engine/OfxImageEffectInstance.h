@@ -1,18 +1,33 @@
-//  Natron
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-//
-//  Created by Frédéric Devernay on 03/09/13.
-//
-//
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ *
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_OFXIMAGEEFFECTINSTANCE_H_
-#define NATRON_ENGINE_OFXIMAGEEFFECTINSTANCE_H_
+#ifndef NATRON_ENGINE_OFXIMAGEEFFECTINSTANCE_H
+#define NATRON_ENGINE_OFXIMAGEEFFECTINSTANCE_H
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include <string>
 #include <cstdarg>
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
 #include "Global/Macros.h"
@@ -23,22 +38,10 @@ CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Global/GlobalDefines.h"
+#include "Engine/EngineFwd.h"
 
-class OfxClipInstance;
-class OfxEffectInstance;
-class RectD;
 
-namespace OFX {
-    namespace Host {
-        namespace Property
-        {
-            class Set;
-        }
-    }
-}
-
-namespace Natron {
-class Image;
+NATRON_NAMESPACE_ENTER;
 
 class OfxImageEffectInstance
     : public OFX::Host::ImageEffect::Instance
@@ -51,7 +54,7 @@ public:
 
     virtual ~OfxImageEffectInstance();
 
-    void setOfxEffectInstance(OfxEffectInstance* node)
+    void setOfxEffectInstance(const boost::shared_ptr<OfxEffectInstance>& node)
     {
         _ofxEffectInstance = node;
     }
@@ -125,56 +128,35 @@ public:
     /// This is called whenever a param is changed by the plugin so that
     /// the recursive instanceChangedAction will be fed the correct frame
     virtual double getFrameRecursive() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual void paramChangedByPlugin(OFX::Host::Param::Instance *param) OVERRIDE FINAL;
 
     /// This is called whenever a param is changed by the plugin so that
     /// the recursive instanceChangedAction will be fed the correct
     /// renderScale
     virtual void getRenderScaleRecursive(double &x, double &y) const OVERRIDE FINAL;
     
-    /// Run the clip preferences action from the effect.
-    ///
-    /// This will look into the input clips and output clip
-    /// and set the following properties that the effect should
-    /// fetch the image at.
-    ///     - pixel depth
-    ///     - components
-    ///     - pixel aspect ratio
-    /// It will also set on the effect itselff
-    ///     - whether it is continuously samplable
-    ///     - the premult state of the output
-    ///     - whether the effect is frame varying
-    ///     - the fielding of the output clip
-    ///
-    /// This will be run automatically by the effect in the following situations...
-    ///     - an input clip is changed
-    ///     - a clip preferences slave param is changed
-    ///
-    /// The host still needs to call this explicitly just after the effect is wired
-    /// up.
-    struct ClipPrefs {
-        std::string components;
-        std::string bitdepth;
-        double par;
-    };
     
-    struct EffectPrefs {
-        double frameRate;
-        std::string fielding;
-        std::string premult;
-        bool continuous;
-        bool frameVarying;
-    };
+    virtual OfxStatus getViewCount(int *nViews) const OVERRIDE FINAL;
+
+    virtual OfxStatus getViewName(int viewIndex, const char** name) const OVERRIDE FINAL;
+ 
+    void setupClipPreferencesArgsFromMetadata(NodeMetadata& metadata,
+                                              OFX::Host::Property::Set &outArgs,
+                                              std::map<OfxClipInstance*,int>& clipsMapping);
     
     /**
      * We add some output parameters to the function so that we can delay the actual setting of the clip preferences
      **/
-    bool getClipPreferences_safe(std::map<OfxClipInstance*, ClipPrefs>& clipPrefs,EffectPrefs& effectPrefs);
+    StatusEnum getClipPreferences_safe(NodeMetadata& defaultPrefs);
+    
+    virtual OfxStatus createInstanceAction() OVERRIDE FINAL;
 
     /**
      * @brief To be called once no action is currently being run after getClipPreferences_safe was called.
      * Caller maintains a lock around this call to prevent race conditions.
      **/
-    void updatePreferences_safe(double frameRate,const std::string& fielding,const std::string& premult,
+    bool updatePreferences_safe(double frameRate,const std::string& fielding,const std::string& premult,
                                 bool continuous,bool frameVarying);
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
@@ -207,7 +189,7 @@ public:
     // overridden for Progress::ProgressI
 
     /// Start doing progress.
-    virtual void progressStart(const std::string &message) OVERRIDE FINAL;
+    virtual void progressStart(const std::string &message, const std::string &messageid) OVERRIDE FINAL;
 
     /// finish yer progress
     virtual void progressEnd() OVERRIDE FINAL;
@@ -237,9 +219,9 @@ public:
     //
     // END of OFX::Host::ImageEffect::Instance methods
     //
-    OfxEffectInstance* getOfxEffectInstance() const WARN_UNUSED_RETURN
+    boost::shared_ptr<OfxEffectInstance> getOfxEffectInstance() const WARN_UNUSED_RETURN
     {
-        return _ofxEffectInstance;
+        return _ofxEffectInstance.lock();
     }
 
     /// to be called right away after populate() is called. It adds to their group all the params.
@@ -248,40 +230,41 @@ public:
 
     bool areAllNonOptionalClipsConnected() const;
 
+#ifdef kOfxImageEffectPropInAnalysis // removed in OFX 1.4
     ///True if the effect is currently performing an analysis
     bool isInAnalysis() const;
-    
-    ////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////
-    //////////////////////////////////////// THREAD-LOCAL-STORAGE
-    /*       These functions below set and unset data on the clip thread-local storage.
-     See EffectInstance::Implementation::ScopedRenderArgs for an explanation on what is thread storage,
-     why we use it and why some are on the clips on some aren't.
-     */
-    void setClipsView(int view);
-    void discardClipsView();
-    void setClipsMipMapLevel(unsigned int mipMapLevel);
-    void discardClipsMipMapLevel();
-    ////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////
+#endif
 
-    bool getCanApplyTransform(OfxClipInstance** clip) const;
+  
+    bool getInputsHoldingTransform(std::list<int>* inputs) const;
     
     const std::map<std::string,OFX::Host::ImageEffect::ClipInstance*>& getClips() const;
     
 private:
-    OfxEffectInstance* _ofxEffectInstance; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //
+    boost::weak_ptr<OfxEffectInstance> _ofxEffectInstance; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //
                                               Not easy since every Knob need a valid pointer to a node when
-                                              KnobFactory::createKnob() is called. That's why we need to pass a pointer
+                                              AppManager::createKnob() is called. That's why we need to pass a pointer
                                               to an OfxParamInstance. Without this pointer we would be unable
                                               to track the knobs that have been created for 1 Node since OfxParamInstance
                                               is totally dissociated from Node.*/
-
-    /*Use this to re-create parenting between effect's params.
-       The key is the name of a param and the Instance a pointer to the associated effect.
-       This has nothing to do with the base class _params member! */
-    std::map<OFX::Host::Param::Instance*,std::string> _parentingMap;
 };
-} // namespace Natron
 
-#endif // ifndef NATRON_ENGINE_OFXIMAGEEFFECTINSTANCE_H_
+class OfxImageEffectDescriptor : public OFX::Host::ImageEffect::Descriptor
+{
+public:
+    
+    OfxImageEffectDescriptor(OFX::Host::Plugin *plug);
+    
+    OfxImageEffectDescriptor(const std::string &bundlePath, OFX::Host::Plugin *plug);
+    
+    OfxImageEffectDescriptor(const OFX::Host::ImageEffect::Descriptor &rootContext,
+                             OFX::Host::Plugin *plugin);
+    
+    virtual OFX::Host::Param::Descriptor *paramDefine(const char *paramType,
+                                    const char *name) OVERRIDE FINAL;
+    
+};
+
+NATRON_NAMESPACE_EXIT;
+
+#endif // ifndef NATRON_ENGINE_OFXIMAGEEFFECTINSTANCE_H

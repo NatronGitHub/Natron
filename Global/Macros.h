@@ -1,7 +1,20 @@
-//  Natron
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ *
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 //
 //  Created by Frédéric Devernay on 03/09/13.
 //
@@ -15,53 +28,149 @@
 #define __NATRON_UNIX__
 #elif  defined(_WIN32)
 #define __NATRON_WIN32__
+#ifdef __MINGW32__
+#define __NATRON_MINGW__
+#endif
 #elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__) || defined(__FreeBSD__)
 #define __NATRON_UNIX__
 #define __NATRON_LINUX__
 #endif
 
+#ifdef SBK_RUN
+// run shiboken without the Natron namespace, and add NATRON_NAMESPACE_USING to each cpp afterwards
+#define NATRON_NAMESPACE
+#define NATRON_NAMESPACE_ENTER
+#define NATRON_NAMESPACE_EXIT
+#else
+#define NATRON_NAMESPACE Natron
+// Macros to use in each file to enter and exit the right name spaces.
+#define NATRON_NAMESPACE_ENTER namespace NATRON_NAMESPACE {
+#define NATRON_NAMESPACE_EXIT }
+#define NATRON_NAMESPACE_USING using namespace NATRON_NAMESPACE;
+// Establish the name space.
+namespace NATRON_NAMESPACE { }
+#endif
+
+#define NATRON_APPLICATION_DESCRIPTION "Open-source, cross-platform, nodal compositing software."
+#define NATRON_COPYRIGHT "Copyright (C) 2016 the Natron developers."
 #define NATRON_ORGANIZATION_NAME "INRIA"
 #define NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "fr"
 #define NATRON_ORGANIZATION_DOMAIN_SUB "inria"
 #define NATRON_ORGANIZATION_DOMAIN NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_ORGANIZATION_DOMAIN_TOPLEVEL
 #define NATRON_APPLICATION_NAME "Natron"
+#define NATRON_WEBSITE_URL "http://www.natron.fr"
+#define NATRON_FORUM_URL "https://forum.natron.fr"
+#define NATRON_PYTHON_URL "https://natron.readthedocs.org/en/workshop/"
+#define NATRON_WIKI_URL "https://github.com/MrKepzie/Natron/wiki"
+#define NATRON_ISSUE_TRACKER_URL "https://github.com/MrKepzie/Natron/issues"
+// The MIME types for Natron documents are:
+// *.ntp: application/vnd.natron.project
+// *.nps: application/vnd.natron.nodepresets
+// *.nl: application/vnd.natron.layout
+// these MIME types are also used in:
+// - NatronInfo.plist (for OSX)
+// - tools/linux/include/qs/natron.qs
 #define NATRON_PROJECT_FILE_EXT "ntp"
+#define NATRON_PROJECT_FILE_MIME_TYPE "application/vnd.natron.project"
 #define NATRON_PROJECT_UNTITLED "Untitled." NATRON_PROJECT_FILE_EXT
 #define NATRON_CACHE_FILE_EXT "ntc"
 #define NATRON_LAYOUT_FILE_EXT "nl"
+#define NATRON_LAYOUT_FILE_MIME_TYPE "application/vnd.natron.layout"
 #define NATRON_PRESETS_FILE_EXT "nps"
+#define NATRON_PRESETS_FILE_MIME_TYPE "application/vnd.natron.nodepresets"
 #define NATRON_PROJECT_ENV_VAR_NAME "Project"
 #define NATRON_OCIO_ENV_VAR_NAME "OCIO"
-#define NATRON_DEFAULT_OCIO_CONFIG_NAME "blender"
+
+//Define here the name of the Engine module that was chosen in the typesystem_engine.xml
+#define NATRON_ENGINE_PYTHON_MODULE_NAME "NatronEngine"
+#define NATRON_GUI_PYTHON_MODULE_NAME "NatronGui"
+//Uncomment to run Natron without Python functionnalities (for debug purposes)
+//#define NATRON_RUN_WITHOUT_PYTHON
+
 #define NATRON_ENV_VAR_NAME_START_TAG "<Name>"
 #define NATRON_ENV_VAR_NAME_END_TAG "</Name>"
 #define NATRON_ENV_VAR_VALUE_START_TAG "<Value>"
 #define NATRON_ENV_VAR_VALUE_END_TAG "</Value>"
+
 #define NATRON_PROJECT_ENV_VAR_MAX_RECURSION 100
 #define NATRON_MAX_CACHE_FILES_OPENED 20000
 #define NATRON_CUSTOM_HTML_TAG_START "<" NATRON_APPLICATION_NAME ">"
 #define NATRON_CUSTOM_HTML_TAG_END "</" NATRON_APPLICATION_NAME ">"
 
+
+#define NATRON_FILE_DIALOG_PREVIEW_READER_NAME "Natron_File_Dialog_Preview_Provider_Reader"
+#define NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME "Natron_File_Dialog_Preview_Provider_Viewer"
+
 //////////////////////////////////////////Natron version/////////////////////////////////////////////
-#define NATRON_VERSION_MAJOR 1
-#define NATRON_VERSION_MINOR 2
+#define NATRON_VERSION_MAJOR 2
+#define NATRON_VERSION_MINOR 0
 #define NATRON_VERSION_REVISION 0
 
-///For example RC 1, RC 2 etc...
-#define NATRON_BUILD_NUMBER 0
 
-#define NATRON_LAST_VERSION_URL "https://raw.githubusercontent.com/MrKepzie/Natron/master/LATEST_VERSION.txt"
+#define NATRON_LAST_VERSION_URL "https://raw.githubusercontent.com/MrKepzie/Natron/workshop/LATEST_VERSION.txt"
 #define NATRON_LAST_VERSION_FILE_VERSION 1
 
+// homemade builds should always show "Devel"
+#define NATRON_DEVELOPMENT_DEVEL "Devel"
+// the following are reserved for actual releases (binary and tarballs)
 #define NATRON_DEVELOPMENT_ALPHA "Alpha"
 #define NATRON_DEVELOPMENT_BETA "Beta"
 #define NATRON_DEVELOPMENT_RELEASE_CANDIDATE "RC"
 #define NATRON_DEVELOPMENT_RELEASE_STABLE "Release"
+// The snapshot build scripts should add '-DNATRON_CONFIG_SNAPSHOT' to the compile
+// options.
+#define NATRON_DEVELOPMENT_SNAPSHOT "Snapshot"
 
+
+#ifdef NATRON_CONFIG_SNAPSHOT
+#define NATRON_DEVELOPMENT_STATUS NATRON_DEVELOPMENT_SNAPSHOT
+#elif defined(NATRON_CONFIG_ALPHA)
+#define NATRON_DEVELOPMENT_STATUS NATRON_DEVELOPMENT_ALPHA
+#elif defined(NATRON_CONFIG_BETA)
+#define NATRON_DEVELOPMENT_STATUS NATRON_CONFIG_BETA
+#elif defined(NATRON_CONFIG_RC)
+#define NATRON_DEVELOPMENT_STATUS NATRON_DEVELOPMENT_RELEASE_CANDIDATE
+#elif defined(NATRON_CONFIG_STABLE)
 #define NATRON_DEVELOPMENT_STATUS NATRON_DEVELOPMENT_RELEASE_STABLE
+#else
+//Fallback on "Devel" builds (most likely built from command line without passing to qmake the appropriate defines)
+#define NATRON_DEVELOPMENT_STATUS NATRON_DEVELOPMENT_DEVEL
+#endif
+
+///For example RC 1, RC 2 etc... This is to be defined from withing the qmake call, passing BUILD_NUMBER=X to the command line
+//#define NATRON_BUILD_NUMBER 0
+
+
+#if defined(__NATRON_LINUX__) || defined(__NATRON_OSX__)
+/*
+ On Linux crash reporter MUST use fork() to spawn the Natron process because it needs to duplicate file descriptors for the pipe.
+ On Windows, fork() doesn't exist so we use QProcess.
+ OS X can use both because it doesn't require a file descriptor to be passed to Natron for the breakpad pipe.
+ */
+#define NATRON_CRASH_REPORTER_USE_FORK 1
+#endif
+
+
+#define NATRON_BREAKPAD_PROCESS_EXEC "breakpad_process_exec"
+#define NATRON_BREAKPAD_PROCESS_PID "breakpad_process_pid"
+#define NATRON_BREAKPAD_CLIENT_FD_ARG "breakpad_client_fd"
+#define NATRON_BREAKPAD_PIPE_ARG "breakpad_pipe_path"
+#define NATRON_BREAKPAD_COM_PIPE_ARG "breakpad_com_pipe_path"
+
+#define NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK "-e"
+#define NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK_ACK "-eack"
 
 ///If set the version of Natron will no longer be displayed in the splashscreen but the name of the user
+///Set this from qmake
+
+#define STRINGIZE_CPP_NAME_(token) #token
+#define STRINGIZE_CPP_NAME(token) STRINGIZE_CPP_NAME_(token)
+
+#ifdef NATRON_CUSTOM_BUILD_USER_TOKEN
+#define NATRON_CUSTOM_BUILD_USER_NAME STRINGIZE_CPP_NAME(NATRON_CUSTOM_BUILD_USER_TOKEN)
+#else
 #define NATRON_CUSTOM_BUILD_USER_NAME ""
+#endif
 
 #define NATRON_VERSION_ENCODE(major,minor,revision) ( \
 ( (major) * 10000 ) \
@@ -85,7 +194,7 @@ NATRON_VERSION_MINOR, \
 NATRON_VERSION_REVISION)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define NATRON_ROOT "/"
+#define NATRON_PATH_ENV_VAR "NATRON_PLUGIN_PATH"
 #define NATRON_IMAGES_PATH ":/Resources/Images/"
 #define NATRON_APPLICATION_ICON_PATH NATRON_IMAGES_PATH "natronIcon256_linux.png"
 
@@ -95,12 +204,6 @@ NATRON_VERSION_REVISION)
 #define NATRON_ICON_SET_BLACK_AND_WHITE "2"
 #define NATRON_ICON_SET_FADED_COLOURS "3"
 #define NATRON_ICON_SET_NUMBER NATRON_ICON_SET_FADED_COLOURS
-
-#define NATRON_PLUGINS_PATH  NATRON_ROOT "Plugins/"
-#define NATRON_KNOBS_PLUGINS_PATH NATRON_PLUGINS_PATH "Knobs/"
-#define NATRON_NODES_PLUGINS_PATH NATRON_PLUGINS_PATH "Nodes/"
-
-#define NATRON_BACKDROP_NODE_NAME "BackDrop"
 
 #define PLUGIN_GROUP_IMAGE "Image"
 #define PLUGIN_GROUP_IMAGE_READERS "Readers"
@@ -121,29 +224,17 @@ NATRON_VERSION_REVISION)
 #define PLUGIN_GROUP_DEFAULT "Misc"
 #define PLUGIN_GROUP_OFX "OFX"
 
-#define NATRON_SMALL_BUTTON_SIZE 15
-#define NATRON_MEDIUM_BUTTON_SIZE 22
-#define NATRON_LARGE_BUTTON_SIZE 30
-
-#define NATRON_PREVIEW_WIDTH 64
-#define NATRON_PREVIEW_HEIGHT 48
-#define NATRON_WHEEL_ZOOM_PER_DELTA 1.00152 // 120 wheel deltas (one click on a standard wheel mouse) is x1.2
-//#define NATRON_FONT "Helvetica"
-//#define NATRON_FONT_ALT "Times"
-#define NATRON_FONT "Muli"//"Droid Sans"
-#define NATRON_FONT_ALT "Droid Sans"
-#define NATRON_FONT_SIZE_6 6
-#define NATRON_FONT_SIZE_8 8
-#define NATRON_FONT_SIZE_10 10
-#define NATRON_FONT_SIZE_11 11
-#define NATRON_FONT_SIZE_12 12
-#define NATRON_FONT_SIZE_13 13
-#define NATRON_MAX_RECENT_FILES 5
-
 //Use this to use trimap instead of bitmap to avoid several threads computing the same area of an image at the same time.
 //When enabled the value of 2 is a code for a pixel being rendered but not yet available.
 //In this context, the reader of the bitmap should then wait for the pixel to be available.
 #define NATRON_ENABLE_TRIMAP 1
+
+//Use this to have all readers inside the same Read meta-node and all the writers
+//into the same Write meta-node
+//#define NATRON_ENABLE_IO_META_NODES 1
+
+//Uncomment to get access to ReadQt and WriteQt nodes. Note that they are no longer maintained and probably buggy.
+//#define NATRON_ENABLE_QT_IO_NODES
 
 // compiler_warning.h
 #define STRINGISE_IMPL(x) # x
@@ -420,6 +511,13 @@ inline T ignore_result(T x)
 #endif
 #endif
 
+/* https://code.google.com/p/address-sanitizer/wiki/AddressSanitizer#Turning_off_instrumentation */
+#if defined(__clang__) || defined (__GNUC__)
+# define ATTRIBUTE_NO_SANITIZE_ADDRESS __attribute__((no_sanitize_address))
+#else
+# define ATTRIBUTE_NO_SANITIZE_ADDRESS
+#endif
+
 /* ABI */
 #if defined(__ARM_EABI__) || defined(__EABI__)
 #define NATRON_COMPILER_SUPPORTS_EABI 1
@@ -463,20 +561,62 @@ inline T ignore_result(T x)
 #  define CLANG_DIAG_PRAGMA(x)
 #endif
 
-#if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 408
-//  -Wunused-private-field appeared with GCC 4.8
-# define GCC_DIAG_OFF_48(x) GCC_DIAG_OFF(x)
-# define GCC_DIAG_ON_48(x) GCC_DIAG_ON(x)
-#else
-# define GCC_DIAG_OFF_48(x)
-# define GCC_DIAG_ON_48(x)
-#endif
 
 /* Usage:
-   CLANG_DIAG_OFF(unused-variable)
-   CLANG_DIAG_OFF(unused-parameter)
-   CLANG_DIAG_OFF(uninitialized)
+ CLANG_DIAG_OFF(unused-variable)
+ CLANG_DIAG_OFF(unused-parameter)
+ CLANG_DIAG_OFF(uninitialized)
  */
+
+
+#ifndef __has_warning         // Optional of course.
+#define __has_warning(x) 0  // Compatibility with non-clang compilers.
+#endif
+
+#if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 408
+//  -Wunused-local-typedefs appeared with GCC 4.8
+# define GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF GCC_DIAG_OFF(unused-local-typedefs)
+# define GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON GCC_DIAG_ON(unused-local-typedefs)
+#else
+#if __has_warning("-Wunused-local-typedef") // both unused-local-typedefs and unused-local-typedef should be available
+# define GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF CLANG_DIAG_OFF(unused-local-typedef)
+# define GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON CLANG_DIAG_ON(unused-local-typedef)
+#elif __has_warning("-Wunused-local-typedefs")
+# define GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF CLANG_DIAG_OFF(unused-local-typedefs)
+# define GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON CLANG_DIAG_ON(unused-local-typedefs)
+#else
+# define GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+# define GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
+#endif
+
+//#if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 408
+////  -Wunused-private-field appeared with GCC 4.8
+//# define GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF GCC_DIAG_OFF(unused-private-field)
+//# define GCC_DIAG_UNUSED_PRIVATE_FIELD_ON GCC_DIAG_ON(unused-private-field)
+//#else
+#if __has_warning("-Wunused-private-field")
+# define GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF CLANG_DIAG_OFF(unused-private-field)
+# define GCC_DIAG_UNUSED_PRIVATE_FIELD_ON CLANG_DIAG_ON(unused-private-field)
+#else
+# define GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
+# define GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
+#endif
+//#endif
+
+#if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 510
+//  -Wsuggest-override appeared with GCC 5.1
+# define GCC_DIAG_SUGGEST_OVERRIDE_OFF GCC_DIAG_OFF(suggest-override)
+# define GCC_DIAG_SUGGEST_OVERRIDE_ON GCC_DIAG_ON(suggest-override)
+#else
+#if __has_warning("-Winconsistent-missing-override")
+# define GCC_DIAG_SUGGEST_OVERRIDE_OFF CLANG_DIAG_OFF(inconsistent-missing-override)
+# define GCC_DIAG_SUGGEST_OVERRIDE_ON CLANG_DIAG_ON(inconsistent-missing-override)
+#else
+# define GCC_DIAG_SUGGEST_OVERRIDE_OFF
+# define GCC_DIAG_SUGGEST_OVERRIDE_ON
+#endif
+#endif
 
 #if COMPILER_SUPPORTS(CXX_OVERRIDE_CONTROL)
 // we want to use override & final, and get no warnings even if not compiling in c++11 mode

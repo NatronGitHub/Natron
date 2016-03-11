@@ -1,24 +1,52 @@
-//  Natron
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ *
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include "MessageBox.h"
 
+#include <stdexcept>
+
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QDialogButtonBox>
-#include <QLabel>
 #include <QStyle>
 #include <QPushButton>
 #include <QCheckBox>
 #include <QTextEdit>
 #include <QApplication>
 #include <QDesktopWidget>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
-#include "Gui/FromQtEnums.h"
+#include "Gui/QtEnumConvert.h"
 #include "Gui/GuiApplicationManager.h"
-namespace Natron {
+#include "Gui/Label.h"
+
+NATRON_NAMESPACE_ENTER;
+
 struct MessageBoxPrivate
 {
     MessageBox::MessageBoxTypeEnum type;
@@ -26,10 +54,10 @@ struct MessageBoxPrivate
     QHBoxLayout* mainLayout;
     QVBoxLayout* vLayout;
     
-    QLabel* infoLabel;
+    Label* infoLabel;
     
     QWidget* vContainer;
-    QLabel* questionLabel;
+    Label* questionLabel;
     QTextEdit* infoEdit; //< used if the text is too long so the user can scroll
     QCheckBox* checkbox;
     
@@ -61,8 +89,8 @@ struct MessageBoxPrivate
 MessageBox::MessageBox(const QString & title,
                        const QString & message,
                        MessageBoxTypeEnum type,
-                       const Natron::StandardButtons& buttons,
-                       Natron::StandardButtonEnum defaultButton,
+                       const StandardButtons& buttons,
+                       StandardButtonEnum defaultButton,
                        QWidget* parent)
 : QDialog(parent,Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint)
 , _imp(new MessageBoxPrivate(type))
@@ -73,15 +101,15 @@ MessageBox::MessageBox(const QString & title,
 void
 MessageBox::init(const QString & title,
                  const QString & message,
-                 const Natron::StandardButtons& buttons,
-                 Natron::StandardButtonEnum defaultButton)
+                 const StandardButtons& buttons,
+                 StandardButtonEnum defaultButton)
 {
     _imp->mainLayout = new QHBoxLayout(this);
     
-    _imp->infoLabel = new QLabel(this);
+    _imp->infoLabel = new Label(this);
     _imp->infoLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     
-    QStyle::StandardPixmap pixType;
+    QStyle::StandardPixmap pixType = QStyle::SP_MessageBoxCritical;
     switch (_imp->type) {
         case eMessageBoxTypeError:
             pixType = QStyle::SP_MessageBoxCritical;
@@ -105,21 +133,21 @@ MessageBox::init(const QString & title,
     _imp->vLayout = new QVBoxLayout(_imp->vContainer);
     
     if (message.size() < 1000) {
-        _imp->questionLabel = new QLabel(message,_imp->vContainer);
+        _imp->questionLabel = new Label(message,_imp->vContainer);
         _imp->questionLabel->setTextInteractionFlags(Qt::TextInteractionFlags(style()->styleHint(QStyle::SH_MessageBox_TextInteractionFlags, 0, this)));
         _imp->questionLabel->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
         _imp->questionLabel->setOpenExternalLinks(true);
         _imp->questionLabel->setContentsMargins(16, 0, 0, 0);
-        QFont f(appFont,appFontSize);
-        _imp->questionLabel->setFont(f);
+        //QFont f(appFont,appFontSize);
+        //_imp->questionLabel->setFont(f);
         _imp->vLayout->addWidget(_imp->questionLabel);
     } else {
         _imp->infoEdit = new QTextEdit(message,_imp->vContainer);
         _imp->infoEdit->setReadOnly(true);
         _imp->infoEdit->setContentsMargins(16, 0, 0, 0);
         _imp->infoEdit->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
-        QFont f(appFont,appFontSize);
-        _imp->infoEdit->setFont(f);
+        //QFont f(appFont,appFontSize);
+        //_imp->infoEdit->setFont(f);
         _imp->vLayout->addWidget(_imp->infoEdit);
     }
     
@@ -220,12 +248,12 @@ void MessageBox::updateSize()
 //    QCoreApplication::removePostedEvents(this, QEvent::LayoutRequest);
 }
 
-Natron::StandardButtonEnum
+StandardButtonEnum
 MessageBox::getReply() const
 {
     return _imp->clickedButton ?
     QtEnumConvert::fromQtStandardButton((QMessageBox::StandardButton)_imp->buttons->standardButton(_imp->clickedButton)) :
-    Natron::eStandardButtonEscape;
+    eStandardButtonEscape;
 }
 
 void
@@ -266,4 +294,7 @@ MessageBox::event(QEvent* e)
     return result;
 }
 
-}
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_MessageBox.cpp"

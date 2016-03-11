@@ -1,16 +1,28 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include "Engine/MemoryFile.h"
-
 
 #ifdef __NATRON_WIN32__
 # include <windows.h>
@@ -25,12 +37,17 @@
 #include <cerrno>
 #include <cstdio>
 #endif
+#include <sstream>
 #include <iostream>
+#include <cassert>
 #include <stdexcept>
 
 #include "Global/Macros.h"
+#include "Global/GlobalDefines.h"
 
 #define MIN_FILE_SIZE 4096
+
+NATRON_NAMESPACE_ENTER;
 
 struct MemoryFilePrivate
 {
@@ -138,9 +155,9 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
     *********************************************************/
     file_handle = ::open(path.c_str(), posix_open_mode, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (file_handle == -1) {
-        std::string str("MemoryFile EXC : Failed to open ");
-        str.append(path);
-        throw std::runtime_error(str);
+        std::stringstream ss;
+        ss << "MemoryFile EXC : Failed to open \"" << path << "\": " << std::strerror(errno) << " (" << errno << ")";
+        throw std::runtime_error(ss.str());
     }
 
     /*********************************************************
@@ -151,9 +168,9 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
     *********************************************************/
     struct stat sbuf;
     if (::fstat(file_handle, &sbuf) == -1) {
-        std::string str("MemoryFile EXC : Failed to get file info: ");
-        str.append(path);
-        throw std::runtime_error(str);
+        std::stringstream ss;
+        ss << "MemoryFile EXC : Failed to get file info \"" << path << "\": " << std::strerror(errno) << " (" << errno << ")";
+        throw std::runtime_error(ss.str());
     }
 
     /*********************************************************
@@ -167,9 +184,9 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
                                        0, sbuf.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, file_handle, 0) );
         if (data == MAP_FAILED) {
             data = 0;
-            std::string str("MemoryFile EXC : Failed to create mapping: ");
-            str.append(path);
-            throw std::runtime_error(str);
+            std::stringstream ss;
+            ss << "MemoryFile EXC : Failed to create mapping for \"" << path << "\": " << std::strerror(errno) << " (" << errno << ")";
+            throw std::runtime_error(ss.str());
         } else {
             size = sbuf.st_size;
         }
@@ -214,11 +231,16 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
        - R/W
     ********************************************************
     *********************************************************/
-    file_handle = ::CreateFile(path.c_str(), GENERIC_READ | GENERIC_WRITE,
+    std::wstring wpath = Global::utf8_to_utf16(path);
+    file_handle = ::CreateFileW(wpath.c_str(), GENERIC_READ | GENERIC_WRITE,
                                0, 0, windows_open_mode, FILE_ATTRIBUTE_NORMAL, 0);
+
+    
     if (file_handle == INVALID_HANDLE_VALUE) {
+		std::string winError = Global::GetLastErrorAsString();
         std::string str("MemoryFile EXC : Failed to open file ");
         str.append(path);
+		str.append(winError);
         throw std::runtime_error(str);
     }
 
@@ -273,23 +295,23 @@ MemoryFile::resize(size_t new_size)
 #if defined(__NATRON_UNIX__)
     if (_imp->data) {
         if (::munmap(_imp->data, _imp->size) < 0) {
-            std::string str("MemoryFile EXC : Failed to unmap the mapped file: ");
-            str.append( std::strerror(errno) );
-            throw std::runtime_error(str);
+            std::stringstream ss;
+            ss << "MemoryFile EXC : Failed to unmap \"" << _imp->path << "\": " << std::strerror(errno) << " (" << errno << ")";
+            throw std::runtime_error(ss.str());
         }
     }
     if (::ftruncate(_imp->file_handle, new_size) < 0) {
-        std::string str("MemoryFile EXC : Failed to resize the mapped file: ");
-        str.append( std::strerror(errno) );
-        throw std::runtime_error(str);
+        std::stringstream ss;
+        ss << "MemoryFile EXC : Failed to truncate the file \"" << _imp->path << "\": " << std::strerror(errno) << " (" << errno << ")";
+        throw std::runtime_error(ss.str());
     }
     _imp->data = static_cast<char*>( ::mmap(
                                          0, new_size, PROT_READ | PROT_WRITE, MAP_SHARED, _imp->file_handle, 0) );
     if (_imp->data == MAP_FAILED) {
         _imp->data = 0;
-        std::string str("MemoryFile EXC : Failed to create mapping: ");
-        str.append(_imp->path);
-        throw std::runtime_error(str);
+        std::stringstream ss;
+        ss << "MemoryFile EXC : Failed to create mapping of \"" << _imp->path << "\": " << std::strerror(errno) << " (" << errno << ")";
+        throw std::runtime_error(ss.str());
     }
 
 #elif defined(__NATRON_WIN32__)
@@ -312,9 +334,9 @@ MemoryFilePrivate::closeMapping()
 {
 #if defined(__NATRON_UNIX__)
     if (::munmap(data,size) != 0) {
-        std::string str("MemoryFile EXC : Failed to unmap the mapped file: ");
-        str.append( std::strerror(errno) );
-        throw std::runtime_error(str);
+        std::stringstream ss;
+        ss << "MemoryFile EXC : Failed to unmap \"" << path << "\": " << std::strerror(errno) << " (" << errno << ")";
+        throw std::runtime_error(ss.str());
     }
     ::close(file_handle);
 #elif defined(__NATRON_WIN32__)
@@ -357,11 +379,12 @@ MemoryFile::remove()
         if (_imp->data) {
             _imp->closeMapping();
         }
-        if (::remove( _imp->path.c_str() ) != 0) {
-            std::cerr << "Attempt to remove an unexisting file." << std::endl;
-        }
+        int ok = ::remove(_imp->path.c_str());
+        (void)ok;
         _imp->path.clear();
         _imp->data = 0;
     }
 }
+
+NATRON_NAMESPACE_EXIT;
 

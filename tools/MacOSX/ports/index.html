@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+<title>Bino: free stereoscopic 3D video player (Mac OS X binaries)</title>
+<link rel="stylesheet" type="text/css" href="../../fd.css" />
+</head>
+<body>
+<h1><a href="http://bino3d.org/">Bino</a>: free stereoscopic 3D video player (Mac OS X binaries)</h1>
+<h2>Precompiled binaries</h2>
+<ul>
+<li><a href="Bino-1.3.2.20120413-OSX-Lion-GPL.zip">Bino 1.3.2.20120413 compiled for Mac OS X Lion (10.7)</a></li>
+<li><a href="Bino-1.3.2.20120413-OSX-LeopardPPC-GPL.zip">Bino 1.3.2.20120413 compiled for Mac OS X Leopard (10.5) PowerPC</a> (don't use this on Intel macs)</li>
+<li><a href="Bino-1.3.2.20120406-OSX-Lion-GPL.zip">Bino 1.3.2.20120406 compiled for Mac OS X Lion (10.7)</a></li>
+<li><a href="Bino-1.3.2.20120406-OSX-LeopardPPC-GPL.zip">Bino 1.3.2.20120406 compiled for Mac OS X Leopard (10.5) PowerPC</a> (don't use this on Intel macs)</li>
+<li><a href="Bino-1.3.1-OSX-Lion-GPL.zip">Bino 1.3.1 compiled for Mac OS X Lion (10.7)</a></li>
+<li><a href="Bino-1.3.1-OSX-SL32-GPL.zip">Bino 1.3.1 compiled for Mac OS X Snow Leopard (10.6)</a></li>
+<li><a href="Bino-1.3.0-OSX-Lion-GPL.zip">Bino 1.3.0 compiled for Mac OS X Lion (10.7)</a></li>
+<li><a href="Bino-1.3.0-OSX-SL32-GPL.zip">Bino 1.3.0 compiled for Mac OS X Snow Leopard (10.6)</a></li>
+<li><a href="Bino-1.2.1-OSX-Lion-GPL.zip">Bino 1.2.1 compiled for Mac OS X Lion (10.7)</a></li>
+<li><a href="Bino-1.2.1-OSX-SL32-GPL.zip">Bino 1.2.1 compiled for Mac OS X Snow Leopard (10.6)</a></li>
+<li><a href="Bino-1.2.0.20111009-OSX-Lion-GPL.zip">Bino 1.2.0.20111009 compiled for Mac OS X Lion (10.7)</a></li>
+<li><a href="Bino-1.2.0.20111009-OSX-SL32-GPL.zip">Bino 1.2.0.20111009 compiled for Mac OS X Snow Leopard (10.6)</a></li>
+<li><a href="Bino-1.2.0-OSX-Lion-GPL.zip">Bino 1.2.0 compiled for Mac OS X Lion (10.7)</a></li>
+<li><a href="Bino-1.2.0-OSX-SL32-GPL.zip">Bino 1.2.0 compiled for Mac OS X Snow Leopard (10.6)</a></li>
+<li><a href="Bino-1.1.2-OSX-SL64.zip">Bino 1.1.2 compiled for Mac OS X Snow Leopard (10.6) 64-bits</a></li>
+<li><a href="Bino-1.1.2-OSX-SL32.zip">Bino 1.1.2 compiled for Mac OS X Snow Leopard (10.6) 32-bits</a></li>
+<li><a href="Bino-1.1.0.20110428-OSX-SL32.zip">Bino 1.1.0.20110428 compiled for Mac OS X Snow Leopard (10.6) 32-bits</a></li>
+<li><a href="Bino-1.0.0-OSX-SL32.zip">Bino 1.0.0 compiled for Mac OS X Snow Leopard (10.6) 32-bits</a></li>
+<li><a href="Bino-0.6.20101210-OSX-SL32-GPL.zip">Bino 0.6.20101210 compiled for Mac OS X Snow Leopard (10.6) 32-bits</a>  - this is the last version that doesn't require OpenGL 2.0 - try this one if you have a MacBook (pre-10/2007), Mac Mini or iMac (pre 03/2009) with an Intel GMA950 graphics chipset</li>
+<li><a href="Bino-0.6.20101210-OSX-LeopardPPC-GPL.zip">Bino 0.6.20101210 compiled for Mac OS X Leopard (10.5) PowerPC</a></li>
+<li><a href="http://bino3d.org/">Main Bino web site</a> with <a href="http://bino3d.org/download.html">full source code</a></li>
+</ul>
+<h2>Building using <a href="http://www.macports.org/">MacPorts</a></h2>
+<p>Here are instructions that can be used to build Bino with <a href="http://www.macports.org/">MacPorts</a>. To compile Bino this way, must have administration rights on your Mac, and you have to know how to use <a href="http://www.macports.org/">MacPorts</a> and the Terminal application.</p>
+<h3>Setting up MacPorts</h3>
+<ul>
+  <li>Download and install Xcode tools (latest versions are 3.1.4 for Leopard, 3.2.6 for Snow Leopard, and 4.3.2 for Lion). 3.1.4 and 3.2.6 are available from the <a href="http://developer.apple.com">Mac Dev Center at developer.apple.com</a>, whereas version 4 is available from the App Store. Don't forget to also install the UNIX command-line utilities (this is an install option in Xcode 3, and must be installed from the "Downloads" pane of the Xcode Preferences in Xcode 4.3 and later)</li>
+  <li>Download and install the <a href="http://www.macports.org/install.php">MacPorts installer</a> that corresponds to your Mac OS X version.</li>
+  <li>Download the <a href="bino-1.3.1-portfiles-20120314.tar.gz">Bino Portfiles</a> (<a href="bino-1.2.1-portfiles-20111029.tar.gz">older version</a> is available for Bino 1.2.1, <a href="bino-1.3.2.20120413-portfiles-1.3.2.20120413.tar.gz">beta version</a> is available for Bino 1.3.2.20120413)</li>
+  <li>Uncompress the portfiles in a directory of your choice. In the following, we suppose you uncompressed it in /Users/USER_NAME/Development/dports-dev, but it can be anywhere</li>
+  <li>Give read/execute permissions to the local repository: "<code>chmod 755 /Users/USER_NAME/Development/dports-dev</code>"</li>
+  <li>Check that the user "nobody" can read this directory by typing the following command in a Terminal: "<code>sudo -u nobody ls /Users/USER_NAME/Development/dports-dev</code>". If it fails, then try again after having given execution permissions on your home directory using the following command: "<code>chmod o+x /Users/USER_NAME</code>". If this still fails, then something is really wrong.</li>
+  <li>Edit the sources.conf file for MacPorts, for example using the nano editor: "<code>sudo nano /opt/local/etc/macports/sources.conf</code>", insert at the beginning of the file the configuration for a local repository (read the comments in the file), by inserting the line "<code>file:///Users/USER_NAME/Development/dports-dev</code>" (without quotes, and yes there are 3 slashes). Save and exit (if your're using nano, this means typing ctrl-X, Y and return).</li>
+  <li>Update MacPorts: "<code>sudo port selfupdate</code>"</li>
+  <li>Recreate the index in the local repository: "<code>cd /Users/USER_NAME/Development/dports-dev; portindex</code>" (no need to be root for this)</li>
+  <li>(Optional) Get the precompiled Qt from <a href="http://get.qt.nokia.com/qt/source/">get.qt.nokia.com/qt/source</a> (it's more compact than the MacPorts build and does not depend on other packages. The latest version is <a href="http://get.qt.nokia.com/qt/source/qt-mac-opensource-4.6.4.dmg">4.6.4</a> for PowerPC processors, and <a href="http://get.qt.nokia.com/qt/source/qt-mac-opensource-4.7.4.dmg">4.7.4</a> for Intel 32 bits processors. <a href="http://get.qt.nokia.com/qt/source/qt-mac-opensource-4.8.1.dmg">4.8.1</a> is only available on 64 bits Intel processors (i.e. Core 2 and later).</li>
+  </ul>
+<h3>Compiling and installing</h3>
+  <p><code>sudo port install bino +app +openalsoft +qt4nokia +no_x11 +dc1394 +quartz</code></p>
+  <p>The +no_x11 and +quartz flags are to installing cairo and pango libs, which FFmpeg and Bino depend on, with Quartz support but without X11; the +dc1394 enables firewire camera support in FFmpeg (and Bino). Add +universal if you want a universal binary, i.e. PPC/i386 on Leopard, or i386/x86_64 on Snow Leopard and Lion, but this will most likely fail. The FFmpeg Portfile has a +no_dirac variant, which is especially useful for building it on platforms which have difficulties building the schoedinger package (Leopard PPC is one of these). Just install ffmpeg with the +no_dirac variant before installing bino (or add the +no_dirac flag to the command-ine above if FFmpeg is not yet installed) : <code>sudo port install ffmpeg +no_dirac +dc1394 +no_x11</code></p>
+<!-- <p><code>sudo port install x264 +asm ffmpeg libass openal-soft</code></p> -->
+<!-- <p><code>sudo port install bino +app +openalsoft +qt4nokia</code></p> -->
+<p>The resulting application is installed in /Applications/MacPorts, and it can be redistributed (it doesn't contain links to locally installed libraries or frameworks, and it is redistributable under the GPL v3 license).</p>
+<p>The Bino Portfile has the following variants:</p>
+<ul>
+  <li><code>+app</code> build a standalone application rather than a command-line tool</li>
+  <li><code>+openalsoft</code> compile against the OpenAL-soft port to MacOSX, which enables multi-channel audio extensions</li>
+  <li><code>+qt4nokia</code> compile against Nokia's Qt4 distribution (which has to be installed) rather than MacPorts's qt4-mac package</li>
+  <li><code>+debug</code> enable debugging code</li>
+</ul>
+
+<h3>Compiling from Bino source distribution</h3>
+<p>To compile Bino from source against the Qt4 distribution by Nokia and dependencies installed in MacPorts, configure the source using the following command:</p>
+<p><code>$ git clone git://git.savannah.nongnu.org/bino.git</code></p>
+<p><code>$ cd bino</code></p>
+<p><code>$ autoreconf -i</code></p>
+<p><code>$ ./configure --prefix=/opt/local LDFLAGS=-L/opt/local/lib CPPFLAGS=-I/opt/local/include libqtopengl_LIBS="-framework QtCore -framework QtGui -framework QtOpenGL -framework OpenGL" libqtopengl_CFLAGS="-I/Library/Frameworks/QtCore.framework/Headers -I/Library/Frameworks/QtGui.framework/Headers -I/Library/Frameworks/QtOpenGL.framework/Headers" libgl_LIBS="-framework OpenGL" libgl_CFLAGS="-I/Library/Frameworks/OpenGL.framework/Headers"</code></p>
+<p>You can add <code>--enable-debug</code> to add debugging and checking code. On Mac OS X Leopard (10.5), you should also add <code>CC=gcc-4.2 CXX=g++-4.2</code> because the default compiler (GCC 4.0) doesn't support atomic builtins.</p>
+<p><code>$ make</code></p>
+<p>The command above compiled and links the bino binary, which can be found in <code>src/bino</code>, and if you want to make a standalone and redistributable application, you can use the following command:</p>
+<p><code>$ make package-macosx</code></p>
+<p>The resulting Bino.app is in the currect directory:</p>
+<p><code>$ open Bino.app</code></p>
+<p>The command-line version is hidden inside:</p>
+<p><code>$ ./Bino.app/Contents/MacOS/Bino --help</code></p>
+<p>If you want to compile with Apple OpenAL, you should add to the configure flags: <code>libopenal_LIBS="-framework OpenAL" libopenal_CFLAGS="-F/System/Library/Frameworks"</code></p>
+
+<h2>Building with Equalizer</h2>
+<p>I still haven't managed to build Bino on the Mac with Equalizer support. Please tell me if you managed to do so.</p>
+<p><code>sudo port install x264 +asm ffmpeg libass openal-soft</code></p>
+<p><code>sudo port install bino +app +openalsoft +qt4nokia</code></p>
+
+<h2>License</h2>
+<p>
+Bino is <a href="http://www.gnu.org/philosophy/free-sw.html">free software</a>, licensed under
+the terms of the <a href="http://www.gnu.org/licenses/gpl.html">GNU GPL</a> version 3 or later.
+</p>
+
+<hr />
+<address><a href="/email.html">Frederic Devernay</a></address>
+<p> <a href="http://validator.w3.org/check/referer"> <img class="borderless"
+src="/images/vxhtml11.png" alt="Valid XHTML 1.1!" height="31"
+width="88" /></a>
+<a href="http://jigsaw.w3.org/css-validator/check/referer">
+<img class="borderless"  height="31"
+width="88"
+       src="/images/vcss.png" 
+       alt="Valid CSS!" />
+</a>
+<a href="http://www.w3.org/WAI/WCAG1AA-Conformance"
+      title="Explanation of Level Double-A Conformance">
+  <img class="borderless" height="32" width="88" 
+          src="/images/wcag1AA.png"
+          alt="Level Double-A conformance icon, 
+          W3C-WAI Web Content Accessibility Guidelines 1.0" /></a>
+      </p>
+</body>
+</html>

@@ -1,71 +1,82 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_OFXCLIPINSTANCE_H_
-#define NATRON_ENGINE_OFXCLIPINSTANCE_H_
+#ifndef NATRON_ENGINE_OFXCLIPINSTANCE_H
+#define NATRON_ENGINE_OFXCLIPINSTANCE_H
 
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include <cassert>
+#include <list>
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
 CLANG_DIAG_ON(deprecated)
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 #endif
 //ofx
+// ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
+CLANG_DIAG_OFF(unknown-pragmas)
+CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
 #include <ofxhImageEffect.h>
+CLANG_DIAG_ON(tautological-undefined-compare)
+CLANG_DIAG_ON(unknown-pragmas)
 #include <ofxPixels.h>
 
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Image.h"
-#include "Engine/ThreadStorage.h"
+#include "Engine/ImageComponents.h"
+#include "Engine/ViewIdx.h"
+#include "Engine/EngineFwd.h"
 
-class OfxImage;
-class OfxEffectInstance;
-namespace Transform
-{
-struct Matrix3x3;
-}
-namespace Natron {
-class EffectInstance;
-class OfxImageEffectInstance;
-class Image;
-class Node;
-}
+NATRON_NAMESPACE_ENTER;
 
+struct OfxClipInstancePrivate;
 class OfxClipInstance
     : public OFX::Host::ImageEffect::ClipInstance
 {
 public:
-    OfxClipInstance(OfxEffectInstance* node
-                    ,
-                    Natron::OfxImageEffectInstance* effect
-                    ,
-                    int index
-                    ,
+    OfxClipInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+                    OfxImageEffectInstance* effect,
+                    int index,
                     OFX::Host::ImageEffect::ClipDescriptor* desc);
 
-    virtual ~OfxClipInstance()
-    {
-    }
-
+    virtual ~OfxClipInstance();
+    
+    bool getIsOptional() const;
+    bool getIsMask() const;
+    
     /// Get the Raw Unmapped Pixel Depth from the host
     ///
     /// \returns
     ///    - kOfxBitDepthNone (implying a clip is unconnected image)
     ///    - kOfxBitDepthByte
     ///    - kOfxBitDepthShort
+    ///    - kOfxBitDepthHalf
     ///    - kOfxBitDepthFloat
     const std::string &getUnmappedBitDepth() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
@@ -128,7 +139,17 @@ public:
     //  0 if the images can only be sampled at discreet times (eg: the clip is a sequence of frames),
     //  1 if the images can only be sampled continuously (eg: the clip is infact an animating roto spline and can be rendered anywhen).
     virtual bool getContinuousSamples() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
+    
+    /// Returns the components present on the effect. Much like getComponents() it can also
+    /// return components from other planes.
+    /// Returns a vector since the function getStringPropertyN does not exist. Only getStringProperty
+    /// with an index exists.
+    virtual const std::vector<std::string>& getComponentsPresent() const OFX_EXCEPTION_SPEC OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    
+    virtual int getDimension(const std::string &name) const OFX_EXCEPTION_SPEC OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    
     /// override this to fill in the image at the given time.
     /// The bounds of the image on the image plane should be
     /// 'appropriate', typically the value returned in getRegionsOfInterest
@@ -149,10 +170,26 @@ public:
     /// If bounds is not null, fetch the indicated section of the canonical image plane.
     /// If view is -1, guess it (e.g. from the last renderargs)
     virtual OFX::Host::ImageEffect::Image* getStereoscopicImage(OfxTime time, int view, const OfxRectD *optionalBounds) OVERRIDE FINAL WARN_UNUSED_RETURN;
+#     ifdef OFX_SUPPORTS_OPENGLRENDER
+    /// override this to fill in the OpenGL texture at the given time.
+    /// The bounds of the image on the image plane should be
+    /// 'appropriate', typically the value returned in getRegionsOfInterest
+    /// on the effect instance. Outside a render call, the optionalBounds should
+    /// be 'appropriate' for the.
+    /// If bounds is not null, fetch the indicated section of the canonical image plane.
+    virtual OFX::Host::ImageEffect::Texture* loadTexture(OfxTime time, const char *format, const OfxRectD *optionalBounds) OVERRIDE FINAL;
+#     endif
+
+    virtual OFX::Host::ImageEffect::Image* getImagePlane(OfxTime time, int view, const std::string& plane,const OfxRectD *optionalBounds) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    /// override this to return the rod on the clip for the given view
+    virtual OfxRectD getRegionOfDefinition(OfxTime time, int view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /// given the colour component, find the nearest set of supported colour components
     /// override this for extra wierd custom component depths
     virtual const std::string &findSupportedComp(const std::string &s) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual const std::string &getComponents() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /// override this to set the view to be returned by getImage()
     /// This is called by Instance::renderAction() for each clip, before calling
@@ -161,128 +198,149 @@ public:
     /// except if thread-local storage is used
     //// EDIT: We don't use this function anymore, instead we handle thread storage ourselves in OfxEffectInstance
     //// via the ClipsThreadStorageSetter, this way we can be sure actions are not called recursively and do other checks.
-    virtual void setView(int /*view*/)
+    virtual void setView(int /*view*/) OVERRIDE
     {
     }
 
-    void setRenderedView(int view);
-
-    ///Set the view stored in the thread-local storage to be invalid
-    void discardView();
-
-    void setMipMapLevel(unsigned int mipMapLevel);
-    
-    void discardMipMapLevel();
-    
+    void setClipTLS(ViewIdx view,
+                    unsigned int mipmapLevel,
+                    const ImageComponents& components);
+    void invalidateClipTLS();
 
     //returns the index of this clip if it is an input clip, otherwise -1.
     int getInputNb() const WARN_UNUSED_RETURN;
 
-    Natron::EffectInstance* getAssociatedNode() const WARN_UNUSED_RETURN;
-    static std::string natronsComponentsToOfxComponents(Natron::ImageComponentsEnum comp);
-    static Natron::ImageComponentsEnum ofxComponentsToNatronComponents(const std::string & comp);
-    static Natron::ImageBitDepthEnum ofxDepthToNatronDepth(const std::string & depth);
-    static std::string natronsDepthToOfxDepth(Natron::ImageBitDepthEnum depth);
-
-    void setTransformAndReRouteInput(const Transform::Matrix3x3& m,Natron::EffectInstance* rerouteInput,int newInputNb);
-    void clearTransform();
+    EffectInstPtr getAssociatedNode() const WARN_UNUSED_RETURN;
     
-private:
+    ImageComponents ofxPlaneToNatronPlane(const std::string& plane);
+    static std::string natronsPlaneToOfxPlane(const ImageComponents& plane);
+    static std::string natronsComponentsToOfxComponents(const ImageComponents& comp);
+    static ImageComponents ofxComponentsToNatronComponents(const std::string & comp);
+    static ImageBitDepthEnum ofxDepthToNatronDepth(const std::string & depth);
+    static const std::string& natronsDepthToOfxDepth(ImageBitDepthEnum depth);
+    static ImagePremultiplicationEnum ofxPremultToNatronPremult(const std::string& premult);
+    static const std::string& natronsPremultToOfxPremult(ImagePremultiplicationEnum premult);
+    static ImageFieldingOrderEnum ofxFieldingToNatronFielding(const std::string& fielding);
+    static const std::string& natronsFieldingToOfxFielding(ImageFieldingOrderEnum fielding);
 
-    OFX::Host::ImageEffect::Image* getImageInternal(OfxTime time,const OfxPointD & renderScale, int view, const OfxRectD *optionalBounds,
-                                                    bool usingReroute,
-                                                    int rerouteInputNb,
-                                                    Natron::EffectInstance* node,
-                                                    const boost::shared_ptr<Transform::Matrix3x3>& transform);
-    OfxEffectInstance* _nodeInstance;
-    Natron::OfxImageEffectInstance* const _effect;
-    double _aspectRatio;
-    /**
-     * @brief These are datas that are local to an action call but that we need in order to perform the API call like
-     * clipGetRegionOfDefinition or clipGetFrameRange, etc...
-     * The mipmapLevel and time are NOT stored here since they can be recovered by other means, that is:
-     * - the thread-storage of the render args of the associated nodes when the thread is rendering (in a render call)
-     * - The current time of the timeline otherwise and 0 for mipMapLevel.
-     **/
-    struct ActionLocalData {
 
-        bool isViewValid;
-        int view;
-    
-        bool isMipmapLevelValid;
-        unsigned int mipMapLevel;
+    struct RenderActionData
+    {
+    //We keep track of the images being rendered (on the output clip) so that we return the same pointer
+        //if this is the same image
+        std::list<OfxImage*> imagesBeingRendered;
         
-        bool isTransformDataValid;
-        boost::shared_ptr<Transform::Matrix3x3> matrix; //< if the clip is associated to a node that can transform
-        Natron::EffectInstance* rerouteNode; //< if the associated node is a concatenated transform, this is the effect from which to fetch images from
-        int rerouteInputNb;
-
-        ActionLocalData()
-            : isViewValid(false)
-            , view(0)
-            , isMipmapLevelValid(false)
-            , mipMapLevel(false)
-            , isTransformDataValid(false)
-            , matrix()
-            , rerouteNode(0)
-            , rerouteInputNb(-1)
+        //Used to determine the plane to render in a call to getOutputImageInternal()
+        ImageComponents clipComponents;
+        
+        RenderActionData()
+        : imagesBeingRendered()
+        , clipComponents()
         {
+            
+        }
+    
+    };
+
+    //These are per-clip thread-local data
+    struct ClipTLSData
+    {
+        //////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////
+        ///////These data are valid only throughout a recursive action
+        
+        //View may be involved in a recursive action
+        std::list<ViewIdx> view;
+        //mipmaplevel may be involved in a recursive action
+        std::list<unsigned int> mipMapLevel;
+        
+        //////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////
+        /// Valid only throughought a render action
+        std::list< boost::shared_ptr<RenderActionData> > renderData;
+        //////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////
+        
+        
+        //////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////
+        //The following data are always valid and do not necessitate a valid flag
+        std::vector<std::string> componentsPresent;
+        std::string unmappedComponents;
+        
+        ClipTLSData()
+        : view()
+        , mipMapLevel()
+        , componentsPresent()
+        , unmappedComponents()
+        {
+        }
+        
+        ClipTLSData(const ClipTLSData& other)
+        : view(other.view)
+        , mipMapLevel(other.mipMapLevel)
+        , renderData()
+        , componentsPresent(other.componentsPresent)
+        , unmappedComponents(other.unmappedComponents)
+        {
+            for (std::list< boost::shared_ptr<RenderActionData> >::const_iterator it = other.renderData.begin();
+                 it!= other.renderData.end(); ++it) {
+                boost::shared_ptr<RenderActionData> d(new RenderActionData(**it));
+                renderData.push_back(d);
+            }
         }
     };
 
-    Natron::ThreadStorage<ActionLocalData> _lastActionData; //< foreach  thread, the args
+    typedef boost::shared_ptr<ClipTLSData> ClipDataTLSPtr;
+
+private:
+
+
+    EffectInstPtr getEffectHolder() const;
+
+
+    void getRegionOfDefinitionInternal(OfxTime time, ViewIdx view, unsigned int mipmapLevel,EffectInstance* associatedNode,
+                                       OfxRectD* rod) const;
+    
+    OFX::Host::ImageEffect::Image* getInputImageInternal(const OfxTime time, const  ViewSpec view, const OfxRectD *optionalBounds,
+                                                    const std::string* ofxPlane);
+
+    OFX::Host::ImageEffect::Image* getOutputImageInternal(const std::string* ofxPlane);
+
+    OFX::Host::ImageEffect::Image* getImagePlaneInternal(OfxTime time, ViewSpec view, const OfxRectD *optionalBounds, const std::string* ofxPlane);
+
+
+
+    boost::scoped_ptr<OfxClipInstancePrivate> _imp;
     
 };
 
+
+struct OfxImagePrivate;
 class OfxImage
     : public OFX::Host::ImageEffect::Image
 {
 public:
 
-    /** @brief Enumerates the pixel depths supported */
-    enum BitDepthEnum
-    {
-        eBitDepthNone = 0,                /**< @brief bit depth that indicates no data is present */
-        eBitDepthUByte,
-        eBitDepthUShort,
-        eBitDepthFloat,
-        eBitDepthDouble
-    };
 
-    /** @brief Enumerates the component types supported */
-    enum PixelComponentEnum
-    {
-        ePixelComponentNone = 0,
-        ePixelComponentRGBA,
-        ePixelComponentRGB,
-        ePixelComponentAlpha
-    };
-
-
-    explicit OfxImage(boost::shared_ptr<Natron::Image> internalImage,
+    explicit OfxImage(const boost::shared_ptr<OfxClipInstance::RenderActionData>& renderData,
+                      const boost::shared_ptr<NATRON_NAMESPACE::Image>& internalImage,
+                      bool isSrcImage,
                       const RectI& renderWindow,
                       const boost::shared_ptr<Transform::Matrix3x3>& mat,
-                      OfxClipInstance &clip);
+                      const std::string& components,
+                      int nComps);
 
-    virtual ~OfxImage()
-    {
-    }
+    virtual ~OfxImage();
 
-    BitDepthEnum bitDepth() const
-    {
-        return _bitDepth;
-    }
-
-    OfxRGBAColourF* pixelF(int x, int y) const;
-    boost::shared_ptr<Natron::Image> getInternalImageF() const
-    {
-        return _floatImage;
-    }
+    boost::shared_ptr<NATRON_NAMESPACE::Image> getInternalImage() const;
 
 private:
+    
+    boost::scoped_ptr<OfxImagePrivate> _imp;
 
-    BitDepthEnum _bitDepth;
-    boost::shared_ptr<Natron::Image> _floatImage;
 };
 
-#endif // NATRON_ENGINE_OFXCLIPINSTANCE_H_
+NATRON_NAMESPACE_EXIT;
+
+#endif // NATRON_ENGINE_OFXCLIPINSTANCE_H

@@ -1,15 +1,29 @@
-//  Natron
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
 #ifndef PROJECTPRIVATE_H
 #define PROJECTPRIVATE_H
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include <map>
 #include <list>
@@ -29,40 +43,18 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobFactory.h"
+#include "Engine/TLSHolder.h"
+#include "Engine/EngineFwd.h"
+#include "Engine/Project.h"
 
-class QTimer;
-class TimeLine;
-class NodeSerialization;
-class ProjectSerialization;
-class File_Knob;
-namespace Natron {
-class Node;
-class OutputEffectInstance;
-class Project;
 
-inline QString
-generateStringFromFormat(const Format & f)
-{
-    QString formatStr;
-
-    formatStr.append(f.getName().c_str());
-    formatStr.append("  ");
-    formatStr.append(QString::number(f.width()));
-    formatStr.append(" x ");
-    formatStr.append(QString::number(f.height()));
-    formatStr.append("  ");
-    formatStr.append(QString::number(f.getPixelAspectRatio()));
-
-    return formatStr;
-}
+NATRON_NAMESPACE_ENTER;
 
 struct ProjectPrivate
 {
-    Natron::Project* _publicInterface;
+    Project* _publicInterface;
     mutable QMutex projectLock; //< protects the whole project
-    QString projectName; //< name of the project, e.g: "Untitled.EXT"
-    QString projectPath; //< path of the project, e.g: /Users/Lala/Projects/
-    QString lastAutoSaveFilePath; //< path + name of the last auto-save file
+    QString lastAutoSaveFilePath; //< absolute file path of the last auto-save file
     bool hasProjectBeenSavedByUser; //< has this project ever been saved by the user?
     QDateTime ageSinceLastSave; //< the last time the user saved
     QDateTime lastAutoSave; //< the last time since autosave
@@ -74,29 +66,35 @@ struct ProjectPrivate
     
 
     ///Project parameters (settings)
-    boost::shared_ptr<Path_Knob> envVars;
-    boost::shared_ptr<Choice_Knob> formatKnob; //< built from builtinFormats & additionalFormats
-    boost::shared_ptr<Button_Knob> addFormatKnob;
-    boost::shared_ptr<Int_Knob> viewsCount;
-    boost::shared_ptr<Int_Knob> mainView;
-    boost::shared_ptr<Bool_Knob> previewMode; //< auto or manual
-    boost::shared_ptr<Choice_Knob> colorSpace8u;
-    boost::shared_ptr<Choice_Knob> colorSpace16u;
-    boost::shared_ptr<Choice_Knob> colorSpace32f;
-    boost::shared_ptr<Double_Knob> frameRate;
-    boost::shared_ptr<Int_Knob> frameRange;
-    boost::shared_ptr<Bool_Knob> lockFrameRange;
+    boost::shared_ptr<KnobPath> envVars;
+    boost::shared_ptr<KnobString> projectName; //< name of the project, e.g: "Untitled.ntp"
+    boost::shared_ptr<KnobString> projectPath;  //< path of the project, e.g: /Users/Lala/Projects/
+    boost::shared_ptr<KnobChoice> formatKnob; //< built from builtinFormats & additionalFormats
+    boost::shared_ptr<KnobButton> addFormatKnob;
+    boost::shared_ptr<KnobPath> viewsList;
+    boost::shared_ptr<KnobButton> setupForStereoButton;
+    boost::shared_ptr<KnobBool> previewMode; //< auto or manual
+    boost::shared_ptr<KnobChoice> colorSpace8u;
+    boost::shared_ptr<KnobChoice> colorSpace16u;
+    boost::shared_ptr<KnobChoice> colorSpace32f;
+    boost::shared_ptr<KnobDouble> frameRate;
+    boost::shared_ptr<KnobInt> frameRange;
+    boost::shared_ptr<KnobBool> lockFrameRange;
     
-    boost::shared_ptr<String_Knob> natronVersion;
-    boost::shared_ptr<String_Knob> originalAuthorName,lastAuthorName;
-    boost::shared_ptr<String_Knob> projectCreationDate;
-    boost::shared_ptr<String_Knob> saveDate;
+    boost::shared_ptr<KnobString> natronVersion;
+    boost::shared_ptr<KnobString> originalAuthorName,lastAuthorName;
+    boost::shared_ptr<KnobString> projectCreationDate;
+    boost::shared_ptr<KnobString> saveDate;
+    
+    boost::shared_ptr<KnobString> onProjectLoadCB;
+    boost::shared_ptr<KnobString> onProjectSaveCB;
+    boost::shared_ptr<KnobString> onProjectCloseCB;
+    boost::shared_ptr<KnobString> onNodeCreated;
+    boost::shared_ptr<KnobString> onNodeDeleted;
     
     boost::shared_ptr<TimeLine> timeline; // global timeline
-    mutable QMutex nodesLock; //< protects nodeCounters & currentNodes
     bool autoSetProjectFormat;
-    std::vector< boost::shared_ptr<Natron::Node> > currentNodes;
-    Natron::Project* project;
+
     mutable QMutex isLoadingProjectMutex;
     bool isLoadingProject; //< true when the project is loading
     bool isLoadingProjectInternal; //< true when loading the internal project (not gui)
@@ -104,11 +102,15 @@ struct ProjectPrivate
     bool isSavingProject; //< true when the project is saving
     boost::shared_ptr<QTimer> autoSaveTimer;
     std::list<boost::shared_ptr<QFutureWatcher<void> > > autoSaveFutures;
-
     
-    ProjectPrivate(Natron::Project* project);
+    mutable QMutex projectClosingMutex;
+    bool projectClosing;
+    
+    boost::shared_ptr<TLSHolder<Project::ProjectTLSData> > tlsData;
+    
+    ProjectPrivate(Project* project);
 
-    bool restoreFromSerialization(const ProjectSerialization & obj,const QString& name,const QString& path,bool isAutoSave,const QString& realFilePath);
+    bool restoreFromSerialization(const ProjectSerialization & obj,const QString& name,const QString& path, bool* mustSave);
 
     bool findFormat(int index,Format* format) const;
     
@@ -116,7 +118,64 @@ struct ProjectPrivate
      * @brief Auto fills the project directory parameter given the project file path
      **/
     void autoSetProjectDirectory(const QString& path);
+    
+    std::string runOnProjectSaveCallback(const std::string& filename,bool autoSave);
+    
+    void runOnProjectCloseCallback();
+    
+    void runOnProjectLoadCallback();
+    
+    void setProjectFilename(const std::string& filename);
+    std::string getProjectFilename() const;
+    
+    void setProjectPath(const std::string& path);
+    std::string getProjectPath() const;
+
+    static QString
+    generateStringFromFormat(const Format & f)
+    {
+        QString formatStr;
+
+        formatStr.append(QString::fromUtf8(f.getName().c_str()));
+        formatStr.append(QLatin1Char(' '));
+        formatStr.append(QString::number(f.width()));
+        formatStr.append(QLatin1Char('x'));
+        formatStr.append(QString::number(f.height()));
+        double par = f.getPixelAspectRatio();
+        if (par != 1.) {
+            formatStr.append(QLatin1Char(' '));
+            formatStr.append(QString::number(f.getPixelAspectRatio()));
+        }
+        return formatStr;
+    }
+
+
+    static bool
+    generateFormatFromString(const QString& spec, Format* f)
+    {
+        QStringList splits = spec.split(QLatin1Char(' '));
+        if (splits.size() != 3) {
+            return false;
+        }
+
+        QStringList sizes = splits[1].split(QLatin1Char('x'));
+        if (sizes.size() != 2) {
+            return false;
+        }
+
+        f->setName(splits[0].toStdString());
+        f->x1 = 0;
+        f->y1 = 0;
+        f->x2 = sizes[0].toInt();
+        f->y2 = sizes[1].toInt();
+        
+        f->setPixelAspectRatio(splits[2].toDouble());
+        return true;
+    }
+    
+
 };
-}
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // PROJECTPRIVATE_H

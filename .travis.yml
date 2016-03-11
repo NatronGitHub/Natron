@@ -22,51 +22,61 @@ compiler:
   - clang
 
 python:
-  - "3.4"
-
-matrix:
-  exclude:
-    - os: osx
-      compiler: gcc
-  allow_failures:
-    - os: osx # we exceed the time limit
-  fast_finish: true
-
-cache:
-  apt: true
-  directories:
-  - /usr/local/Cellar
-
-# Travis CI has 1.5 cores per VM, take advantage of it
-before_install:
-   - date -u
-   - uname -a
-   - export J='-j3'
-
-install:
-  - . tools/travis/coverity_env.sh
-  - if [[ ${COVERITY_BUILD_DISABLED} == 1 ]];
-    then
-        exit 0;
-    fi
-  - tools/travis/install_dependencies.sh > install_dependencies.log 2>&1
-
-script:
-  - if [[ ${COVERITY_SCAN_BRANCH} == 1 ]];
-    then
-      echo "Don't build on coverty_scan branch.";
-      exit 0;
-    fi
-  - tools/travis/build.sh
-
-after_success:
-  - if [ "$CC" = "gcc" -a "$TRAVIS_OS_NAME" == "linux"  ]; then ln -s Tests/google-mock Tests/google-test .; cd Tests; gcov -lp *.gcno > /dev/null; cd ..; coveralls -n --exclude /usr/include --exclude 'Tests/google-test' --exclude 'Tests/google-mock' --exclude 'google-test' --exclude 'google-mock' --exclude 'libs/OpenFX' --exclude-pattern '.*/moc_.*\.cpp' --exclude-pattern='.*/Tests/.*\.cpp' --exclude-pattern='.*/Tests/.*\.h'; fi
-#  - if [ "$CC" = "gcc" -a "$TRAVIS_OS_NAME" == "linux" ]; then ln -s Tests/google-mock Tests/google-test .; coveralls --exclude /usr/include --exclude 'Tests/google-test' --exclude 'Tests/google-mock' --exclude 'google-test' --exclude 'google-mock' --exclude 'libs/OpenFX' --exclude-pattern '.*/moc_.*\.cpp' --exclude-pattern='.*/Tests/.*\.cpp' --exclude-pattern='.*/Tests/.*\.h' --gcov-options '\-lp'; fi
-
-after_failure:
-  - cat install_dependencies.log || true
+  - "2.7"
 
 addons:
+  apt:
+    sources:
+    # Natron requires boost >= 1.49 to compile in C++11 mode
+    # see http://stackoverflow.com/questions/11302758/error-while-copy-constructing-boostshared-ptr-using-c11
+    # we use the ppa:boost-latest/ppa for that purpose
+    - boost-latest
+    # kubuntu-ppa/backports contains OpenCV
+    - kubuntu-backports
+    # the PPA xorg-edgers contains cairo 1.12 (required for rotoscoping)
+    - ppa:xorg-edgers/ppa
+    # ubuntu-toolchain-r/test contains recent versions of gcc
+    - ubuntu-toolchain-r-test
+    # get a recent ffmpeg (>=2.5) for precise from ppa:archivematica/externals(2.5.1) or ppa:pavlyshko/precise(2.6.1)
+    - ppa:archivematica/externals
+    - kalakris-cmake
+    - pythonxy-devel
+    packages:
+    - gcc-4.9
+    - g++-4.9
+    - libqt4-dev
+    - libglew-dev
+    - libboost-serialization-dev
+    - libexpat1-dev
+    - gdb
+    - libcairo2-dev
+    - python-dev
+    - python-pyside
+    - libpyside-dev
+    - libshiboken-dev
+    # packages for building openfx-io:
+    - libavcodec-dev
+    - libavformat-dev
+    - libswscale-dev
+    - libavutil-dev
+    - libswresample-dev
+    - libtinyxml-dev
+    - liblcms2-dev
+    - libyaml-cpp-dev
+    - libboost-dev
+    - libopenexr-dev
+    - libilmbase-dev
+    - libopenjpeg-dev
+    - libtiff4-dev
+    - libjpeg-dev
+    - libpng-dev
+    - libboost-filesystem-dev
+    - libboost-regex-dev
+    - libboost-thread-dev
+    - libboost-system-dev
+    - libwebp-dev
+    - libfreetype6-dev
+    - libssl-dev
   coverity_scan:
     # customized build script URL
     # TRAVIS_REPO_SLUG: owner_name/repo_name of repository currently being built
@@ -84,3 +94,52 @@ addons:
     build_command: "tools/travis/build.sh"
     # Pattern to match selecting branches that will run analysis
     branch_pattern: coverity_scan
+
+matrix:
+  exclude:
+    - os: osx
+      compiler: gcc
+# Uncomment the following if OSX build times out (happens when building with python3)
+#  allow_failures:
+#    - os: osx # we exceed the time limit
+#  fast_finish: true
+
+cache:
+  apt: true
+  directories:
+  - /usr/local/Cellar
+
+# Travis CI has 1.5 cores per VM, take advantage of it
+before_install:
+   - date -u
+   - uname -a
+   - export J='-j2'
+
+install:
+  - . tools/travis/coverity_env.sh
+  - if [[ ${COVERITY_BUILD_DISABLED} == 1 ]];
+    then
+        exit 0;
+    fi
+  - tools/travis/install_dependencies.sh
+  - curl -k -L https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.0.tar.gz | tar zxf -
+  - mv OpenColorIO-Configs-Natron-v2.0 OpenColorIO-Configs
+
+# OSX build will timeout if we redirect its output
+#> install_dependencies.log 2>&1
+
+script:
+  - if [[ ${COVERITY_SCAN_BRANCH} == 1 ]];
+    then
+      echo "Don't build on coverity_scan branch.";
+      exit 0;
+    fi
+  - tools/travis/build.sh
+
+after_success:
+  - if [ "$CC" = "gcc" -a "$TRAVIS_OS_NAME" == "linux"  ]; then ln -s Tests/google-mock Tests/google-test .; cd Tests; gcov -lp *.gcno > /dev/null; cd ..; coveralls -n --exclude /usr/include --exclude 'Tests/google-test' --exclude 'Tests/google-mock' --exclude 'google-test' --exclude 'google-mock' --exclude 'libs/OpenFX' --exclude-pattern '.*/moc_.*\.cpp' --exclude-pattern='.*/Tests/.*\.cpp' --exclude-pattern='.*/Tests/.*\.h'; fi
+#  - if [ "$CC" = "gcc" -a "$TRAVIS_OS_NAME" == "linux" ]; then ln -s Tests/google-mock Tests/google-test .; coveralls --exclude /usr/include --exclude 'Tests/google-test' --exclude 'Tests/google-mock' --exclude 'google-test' --exclude 'google-mock' --exclude 'libs/OpenFX' --exclude-pattern '.*/moc_.*\.cpp' --exclude-pattern='.*/Tests/.*\.cpp' --exclude-pattern='.*/Tests/.*\.h' --gcov-options '\-lp'; fi
+
+after_failure:
+  - cat install_dependencies.log || true
+

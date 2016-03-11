@@ -1,10 +1,30 @@
-//  Natron
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ *
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include "NodeCreationDialog.h"
+
+#include <stdexcept>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -15,15 +35,26 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QTimer>
 #include <QApplication>
 #include <QListView>
+#include <QSettings>
 #include <QDesktopWidget>
+#include <QRegExp>
 #include <QApplication>
 #include <QStringListModel>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/AppManager.h"
 #include "Engine/Plugin.h"
 #include "Gui/LineEdit.h"
 #include "Gui/GuiApplicationManager.h"
+
+/*
+ If defined, the list will contain matches ordered by increasing match length of the regexp
+ otherwise they will be ordered with their score
+ */
+//#define NODE_TAB_DIALOG_USE_MATCHED_LENGTH
+
+NATRON_NAMESPACE_ENTER;
 
 
 struct CompleterLineEditPrivate
@@ -31,8 +62,20 @@ struct CompleterLineEditPrivate
     QDialog* dialog;
     QListView* listView;
     QStringListModel* model;
-    QStringList words,ids;
+    CompleterLineEdit::PluginsNamesMap names;
     bool quickExitEnabled;
+    
+    CompleterLineEditPrivate(const CompleterLineEdit::PluginsNamesMap& plugins,
+                             bool quickExit,
+                             QDialog* parent)
+    : dialog(parent)
+    , listView(NULL)
+    , model(NULL)
+    , names(plugins)
+    , quickExitEnabled(quickExit)
+    {
+
+    }
 
     CompleterLineEditPrivate(const QStringList & displayWords,
                              const QStringList & internalIds,
@@ -41,13 +84,30 @@ struct CompleterLineEditPrivate
         : dialog(parent)
           , listView(NULL)
           , model(NULL)
-          , words(displayWords)
-          , ids(internalIds)
           , quickExitEnabled(quickExit)
     {
         assert( displayWords.size() == internalIds.size() );
+        
+        for (int i = 0; i < displayWords.size(); ++i) {
+            names.insert(std::make_pair(0, std::make_pair(internalIds[i], displayWords[i])));
+        }
     }
 };
+
+CompleterLineEdit::CompleterLineEdit(const PluginsNamesMap& plugins,
+                  bool quickExit,
+                  QDialog* parent)
+: LineEdit(parent)
+, _imp( new CompleterLineEditPrivate(plugins,quickExit,parent) )
+{
+    _imp->listView = new QListView(parent);
+    _imp->model = new QStringListModel(this);
+    _imp->listView->setWindowFlags(Qt::ToolTip);
+    _imp->listView->setModel(_imp->model);
+    
+    connect( this, SIGNAL(textChanged(QString)), this, SLOT(filterText(QString)) );
+    connect( _imp->listView, SIGNAL(clicked(QModelIndex)), this, SLOT(setTextFromIndex(QModelIndex)) );
+}
 
 CompleterLineEdit::CompleterLineEdit(const QStringList & displayWords,
                                      const QStringList & internalIds,
@@ -61,8 +121,8 @@ CompleterLineEdit::CompleterLineEdit(const QStringList & displayWords,
     _imp->listView->setWindowFlags(Qt::ToolTip);
     _imp->listView->setModel(_imp->model);
 
-    connect( this, SIGNAL( textChanged(QString) ), this, SLOT( filterText(QString) ) );
-    connect( _imp->listView, SIGNAL( clicked(QModelIndex) ), this, SLOT( setTextFromIndex(QModelIndex) ) );
+    connect( this, SIGNAL(textChanged(QString)), this, SLOT(filterText(QString)) );
+    connect( _imp->listView, SIGNAL(clicked(QModelIndex)), this, SLOT(setTextFromIndex(QModelIndex)) );
 }
 
 CompleterLineEdit::~CompleterLineEdit()
@@ -81,13 +141,39 @@ CompleterLineEdit::filterText(const QString & txt)
     QStringList sl;
 
     if ( txt.isEmpty() ) {
-        sl = _imp->words;
-    } else {
-        for (int i = 0; i < _imp->ids.size(); ++i) {
-            if ( _imp->ids[i].contains(txt,Qt::CaseInsensitive) ) {
-                sl << _imp->words[i];
-            }
+        for (PluginsNamesMap::iterator it = _imp->names.begin(); it != _imp->names.end(); ++it) {
+            sl.push_front(it->second.second);
         }
+    } else {
+        
+        QString pattern;
+        for (int i = 0; i < txt.size(); ++i) {
+            pattern.push_back(QLatin1Char('*'));
+            pattern.push_back(txt[i]);
+        }
+        pattern.push_back(QLatin1Char('*'));
+        QRegExp expr(pattern,Qt::CaseInsensitive,QRegExp::WildcardUnix);
+        
+#ifdef NODE_TAB_DIALOG_USE_MATCHED_LENGTH
+        std::map<int, QStringList> matchOrdered;
+        for (PluginsNamesMap::iterator it = _imp->names.begin(); it != _imp->names.end(); ++it) {
+            if (expr.exactMatch(it->second.first)) {
+                QStringList& matchedForLength =  matchOrdered[expr.matchedLength()];
+                matchedForLength.push_front(it->second.second);
+            }
+
+        }
+        for (std::map<int, QStringList>::iterator it = matchOrdered.begin(); it!=matchOrdered.end(); ++it) {
+            sl.append(it->second);
+        }
+#else
+        
+        for (PluginsNamesMap::iterator it = _imp->names.begin(); it != _imp->names.end(); ++it) {
+             if (it->second.first.contains(expr)) {
+                 sl.push_front(it->second.second);
+             }
+        }
+#endif
     }
     _imp->model->setStringList(sl);
     _imp->listView->setModel(_imp->model);
@@ -117,7 +203,7 @@ CompleterLineEdit::setTextFromIndex(const QModelIndex & index)
     QString text = index.data().toString();
 
     setText(text);
-    emit itemCompletionChosen();
+    Q_EMIT itemCompletionChosen();
     _imp->listView->hide();
     if (_imp->quickExitEnabled) {
         _imp->dialog->accept();
@@ -173,7 +259,7 @@ CompleterLineEdit::keyPressEvent(QKeyEvent* e)
         _imp->listView->hide();
         if (_imp->model->rowCount() == 1) {
             setText( _imp->model->index(0).data().toString() );
-            emit itemCompletionChosen();
+            Q_EMIT itemCompletionChosen();
             if (_imp->quickExitEnabled) {
                 _imp->dialog->accept();
             }
@@ -181,9 +267,19 @@ CompleterLineEdit::keyPressEvent(QKeyEvent* e)
         } else {
             const QItemSelection selection = _imp->listView->selectionModel()->selection();
             QModelIndexList indexes = selection.indexes();
+            bool doDialogEnd = false;
             if (indexes.size() == 1) {
                 setText( _imp->model->index( indexes[0].row() ).data().toString() );
-                emit itemCompletionChosen();
+                doDialogEnd = true;
+            } else if (indexes.isEmpty()) {
+               if (_imp->model->rowCount() > 1) {
+                    doDialogEnd = true;
+                    setText( _imp->model->index(0).data().toString() );
+                }
+                
+            }
+            if (doDialogEnd) {
+                Q_EMIT itemCompletionChosen();
                 if (_imp->quickExitEnabled) {
                     _imp->dialog->accept();
                 }
@@ -191,6 +287,7 @@ CompleterLineEdit::keyPressEvent(QKeyEvent* e)
             } else {
                 QLineEdit::keyPressEvent(e);
             }
+            
         }
 
     } else {
@@ -202,14 +299,14 @@ void
 CompleterLineEdit::showCompleter()
 {
     _imp->listView->setFixedWidth(width());
-    filterText("");
+    filterText(text());
 }
 
 struct NodeCreationDialogPrivate
 {
     QVBoxLayout* layout;
     CompleterLineEdit* textEdit;
-    Natron::PluginsMap items;
+    PluginsMap items;
 
     NodeCreationDialogPrivate()
         : layout(NULL)
@@ -219,58 +316,95 @@ struct NodeCreationDialogPrivate
     }
 };
 
+static int getPluginWeight(const QString& pluginID, int majVersion)
+{
+    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
+    QString propName(pluginID + QString::number(majVersion) + QString::fromUtf8("_tab_weight"));
+    int curValue = settings.value(propName,QVariant(0)).toInt();
+    return curValue;
+}
+
+static void incrementPluginWeight(const QString& pluginID,int majVersion) {
+    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
+    QString propName(pluginID + QString::number(majVersion) + QString::fromUtf8("_tab_weight"));
+    int curValue = settings.value(propName,QVariant(0)).toInt();
+    ++curValue;
+    settings.setValue(propName, QVariant(curValue));
+}
+
 NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* parent)
     : QDialog(parent)
       , _imp( new NodeCreationDialogPrivate() )
 {
-    setWindowTitle( tr("Node creation tool") );
+    setWindowTitle( tr("Node Creation Tool") );
     setWindowFlags(Qt::Window | Qt::CustomizeWindowHint);
-    setObjectName("nodeCreationDialog");
+    setObjectName(QString::fromUtf8("nodeCreationDialog"));
     setAttribute(Qt::WA_DeleteOnClose,false);
     _imp->layout = new QVBoxLayout(this);
     _imp->layout->setContentsMargins(0, 0, 0, 0);
 
 
-    QStringList ids;
-    QStringList names;
+    CompleterLineEdit::PluginsNamesMap pluginsMap;
+    
     QString initialFilterName;
     std::string stdInitialFilter = initialFilter.toStdString();
     int i = 0;
-    for (Natron::PluginsMap::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
+    for (PluginsMap::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
+        
+        if (it->second.empty()) {
+            continue;
+        }
+        
+        
+        
         
         if (it->second.size() == 1) {
-            QString name = (*it->second.begin())->generateUserFriendlyPluginID();
-            names.push_back(name);
             
-            int indexOfBracket = name.lastIndexOf("  [");
-            if (indexOfBracket != -1) {
-                name = name.left(indexOfBracket);
+            std::pair<QString,QString> idNamePair;
+            Plugin* p = (*it->second.begin());
+            if (!p->getIsUserCreatable()) {
+                continue;
             }
-            ids.push_back(name);
+            
+            idNamePair.second = p->generateUserFriendlyPluginID();
+            
+            int indexOfBracket = idNamePair.second.lastIndexOf(QString::fromUtf8("  ["));
+            if (indexOfBracket != -1) {
+                idNamePair.first = idNamePair.second.left(indexOfBracket);
+            }
+            
+            int weight = getPluginWeight(p->getPluginID(),p->getMajorVersion());
+            pluginsMap.insert(std::make_pair(weight,idNamePair));
+            
             if (it->first == stdInitialFilter) {
-                initialFilterName = names[i];
+                initialFilterName = idNamePair.first;
             }
             ++i;
         } else {
             QString bestMajorName;
-            for (Natron::PluginMajorsOrdered::reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
-                QString name;
+            for (PluginMajorsOrdered::reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
+                
+                if (!(*it2)->getIsUserCreatable()) {
+                    continue;
+                }
+                std::pair<QString,QString> idNamePair;
                 if (it2 == it->second.rbegin()) {
-                    name = (*it2)->generateUserFriendlyPluginID();
-                    bestMajorName = name;
+                    idNamePair.second = (*it2)->generateUserFriendlyPluginID();
+                    bestMajorName = idNamePair.second;
                 } else {
-                    name = (*it2)->generateUserFriendlyPluginIDMajorEncoded();
+                    idNamePair.second = (*it2)->generateUserFriendlyPluginIDMajorEncoded();
                 }
-                names.push_back(name);
+        
                 
-                
-                int indexOfBracket = name.lastIndexOf("  [");
+                int indexOfBracket = idNamePair.second.lastIndexOf(QString::fromUtf8("  ["));
                 if (indexOfBracket != -1) {
-                    name = name.left(indexOfBracket);
+                    idNamePair.first = idNamePair.second.left(indexOfBracket);
                 }
-                ids.push_back(name);
                 
                 ++i;
+                
+                int weight = getPluginWeight((*it2)->getPluginID(),(*it2)->getMajorVersion());
+                pluginsMap.insert(std::make_pair(weight, idNamePair));
 
             }
             if (it->first == stdInitialFilter) {
@@ -278,12 +412,9 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
             }
         }
         
-            }
+    }
     
-    
-    ids.sort();
-    names.sort();
-    _imp->textEdit = new CompleterLineEdit(names,ids,true,this);
+    _imp->textEdit = new CompleterLineEdit(pluginsMap,true,this);
     if (!initialFilterName.isEmpty()) {
         _imp->textEdit->setText(initialFilterName);
     }
@@ -297,35 +428,44 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
     _imp->layout->addWidget(_imp->textEdit);
     _imp->textEdit->setFocus();
     _imp->textEdit->selectAll();
-    QTimer::singleShot( 20, _imp->textEdit, SLOT( showCompleter() ) );
+    QTimer::singleShot( 20, _imp->textEdit, SLOT(showCompleter()) );
 }
 
 NodeCreationDialog::~NodeCreationDialog()
 {
 }
 
+
 QString
 NodeCreationDialog::getNodeName(int *major) const
 {
     QString name = _imp->textEdit->text();
     
-    for (Natron::PluginsMap::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
+    
+    for (PluginsMap::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
         if (it->second.size() == 1) {
             if ((*it->second.begin())->generateUserFriendlyPluginID() == name) {
-                *major = (*(it->second.begin()))->getMajorVersion();
-                return (*it->second.begin())->getPluginID();
+                Plugin* p = (*it->second.begin());
+                *major = p->getMajorVersion();
+                const QString& ret = p->getPluginID();
+                incrementPluginWeight(ret,*major);
+                return ret;
             }
         } else {
-            for (Natron::PluginMajorsOrdered::reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
+            for (PluginMajorsOrdered::reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
                 if (it2 == it->second.rbegin()) {
                     if ((*it2)->generateUserFriendlyPluginID() == name) {
                         *major = (*it2)->getMajorVersion();
-                        return (*it2)->getPluginID();
+                        const QString& ret = (*it2)->getPluginID();
+                        incrementPluginWeight(ret,*major);
+                        return ret;
                     }
                 } else {
                     if ((*it2)->generateUserFriendlyPluginIDMajorEncoded() == name) {
                         *major = (*it2)->getMajorVersion();
-                        return (*it2)->getPluginID();
+                        const QString& ret = (*it2)->getPluginID();
+                        incrementPluginWeight(ret,*major);
+                        return ret;
                     }
                 }
             }
@@ -359,3 +499,7 @@ NodeCreationDialog::changeEvent(QEvent* e)
     QDialog::changeEvent(e);
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_NodeCreationDialog.cpp"

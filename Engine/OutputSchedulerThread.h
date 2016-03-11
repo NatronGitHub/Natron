@@ -1,95 +1,97 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
-#ifndef OUTPUTSCHEDULERTHREAD_H
-#define OUTPUTSCHEDULERTHREAD_H
-#ifndef Q_MOC_RUN
+#ifndef Engine_OutputSchedulerThread_h
+#define Engine_OutputSchedulerThread_h
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
+#include <vector>
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
 #include <QThread>
 
 #include "Global/GlobalDefines.h"
+#include "Engine/BufferableObject.h"
+#include "Engine/ViewIdx.h"
+#include "Engine/EngineFwd.h"
+
+//#define NATRON_PLAYBACK_USES_THREAD_POOL
 
 
-///Natron
-class ViewerInstance;
-namespace Natron {
-    class Node;
-    class EffectInstance;
-    class OutputEffectInstance;
-}
+NATRON_NAMESPACE_ENTER;
 
-class RenderEngine;
-
-/**
- * @brief Stub class used by internal implementation of OutputSchedulerThread to pass objects through signal/slots
- **/
-class BufferableObject
-{
-    
-    int uniqueID; //< used to differentiate frames which may belong to the same time/view (e.g when wipe is enabled)
-public:
-    
-    int getUniqueID() const
-    {
-        return uniqueID;
-    }
-    
-    BufferableObject() : uniqueID(0) {}
-    
-    virtual ~BufferableObject() {}
-    
-    void setUniqueID(int aid)
-    {
-        uniqueID = aid;
-    }
-    
-    virtual std::size_t sizeInRAM() const = 0;
-};
-
-typedef std::list<boost::shared_ptr<BufferableObject> > BufferableObjectList;
-
+typedef boost::shared_ptr<RenderStats> RenderStatsPtr;
 
 struct BufferedFrame
 {
-    int view;
+    ViewIdx view;
     double time;
-    
+    RenderStatsPtr stats;
     boost::shared_ptr<BufferableObject> frame;
     
     BufferedFrame()
-    : view(0) , time(0), frame()
+    : view(0)
+    , time(0)
+    , stats()
+    , frame()
     {
         
     }
 };
-
 typedef std::list<BufferedFrame> BufferedFrames;
 
 class OutputSchedulerThread;
 
 struct RenderThreadTaskPrivate;
+
+#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
 class RenderThreadTask :  public QThread
+#else
+class RenderThreadTask :  public QRunnable
+#endif
 {
     
     
 public:
-    
-    RenderThreadTask(Natron::OutputEffectInstance* output,OutputSchedulerThread* scheduler);
+
+#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
+    RenderThreadTask(const boost::shared_ptr<OutputEffectInstance>& output,OutputSchedulerThread* scheduler);
+#else
+    RenderThreadTask(const boost::shared_ptr<OutputEffectInstance>& output,
+                     OutputSchedulerThread* scheduler,
+                     const int time,
+                     const bool useRenderStats,
+                     const std::vector<ViewIdx>& viewsToRender);
+#endif
     
     virtual ~RenderThreadTask();
     
     virtual void run() OVERRIDE FINAL;
     
+#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     /**
      * @brief Call this to quit the thread whenever it will return to the pickFrameToRender function
      **/
@@ -100,13 +102,14 @@ public:
     bool hasQuit() const;
     
     void notifyIsRunning(bool running);
+#endif
     
 protected:
     
     /**
      * @brief Must render the frame
      **/
-    virtual void renderFrame(int time) = 0;
+    virtual void renderFrame(int time, const std::vector<ViewIdx>& viewsToRender, bool enableRenderStats) = 0;
         
     boost::scoped_ptr<RenderThreadTaskPrivate> _imp;
 };
@@ -119,8 +122,10 @@ protected:
 struct OutputSchedulerThreadPrivate;
 class OutputSchedulerThread : public QThread
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-    
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
     
     friend class RenderThreadTask;
@@ -136,7 +141,9 @@ public:
         eProcessFrameByMainThread //< the processFrame function will be called by the application's main-thread.
     };
     
-    OutputSchedulerThread(RenderEngine* engine,Natron::OutputEffectInstance* effect,ProcessFrameModeEnum mode);
+    OutputSchedulerThread(RenderEngine* engine,
+                          const boost::shared_ptr<OutputEffectInstance>& effect,
+                          ProcessFrameModeEnum mode);
     
     virtual ~OutputSchedulerThread();
     
@@ -147,12 +154,22 @@ public:
      * This wakes up the scheduler thread waiting on the bufCondition. If you need to append several frames 
      * use the other version of this function.
      **/
-    void appendToBuffer(double time,int view,const boost::shared_ptr<BufferableObject>& frame);
-    void appendToBuffer(double time,int view,const BufferableObjectList& frames);
+    void appendToBuffer(double time,
+                        ViewIdx view,
+                        const RenderStatsPtr& stats,
+                        const boost::shared_ptr<BufferableObject>& frame);
+    void appendToBuffer(double time,
+                        ViewIdx view,
+                        const RenderStatsPtr& stats,
+                        const BufferableObjectList& frames);
     
 private:
     
-    void appendToBuffer_internal(double time,int view,const boost::shared_ptr<BufferableObject>& frame,bool wakeThread);
+    void appendToBuffer_internal(double time,
+                                 ViewIdx view,
+                                 const RenderStatsPtr& stats,
+                                 const boost::shared_ptr<BufferableObject>& frame,
+                                 bool wakeThread);
     
 public:
     
@@ -170,14 +187,27 @@ public:
     /**
      * @brief Call this to render from firstFrame to lastFrame included.
      **/
-    void renderFrameRange(int firstFrame,int lastFrame,RenderDirectionEnum forward);
+    void renderFrameRange(bool isBlocking,
+                          bool enableRenderStats,
+                          int firstFrame,
+                          int lastFrame,
+                          int frameStep,
+                          const std::vector<ViewIdx>& viewsToRender,
+                          RenderDirectionEnum forward);
 
     /**
      * @brief Same as renderFrameRange except that the frame range will be computed automatically and it will
      * start from the current frame.
      * This is not appropriate to call this function from a writer.
      **/
-    void renderFromCurrentFrame(RenderDirectionEnum forward);
+    void renderFromCurrentFrame(bool enableRenderStats,
+                                const std::vector<ViewIdx>& viewsToRender,
+                                RenderDirectionEnum forward);
+    
+    /**
+     * @brief Whether the playback can be automatically restarted by a single render request
+     **/
+    bool isPlaybackAutoRestartEnabled() const;
 
     
     /**
@@ -186,7 +216,11 @@ public:
      * but is directly rendering (e.g: a Writer rendering image sequences doesn't need to be ordered)
      * then the scheduler takes this as a hint to know how many frames have been rendered.
      **/
-    void notifyFrameRendered(int frame,int viewIndex,int viewsCount,Natron::SchedulingPolicyEnum policy);
+    void notifyFrameRendered(int frame,
+                             ViewIdx viewIndex,
+                             const std::vector<ViewIdx>& viewsToRender,
+                             const RenderStatsPtr& stats,
+                             SchedulingPolicyEnum policy);
 
     /**
      * @brief To be called by concurrent worker threads in case of failure, all renders will be aborted
@@ -202,7 +236,7 @@ public:
     
     void doAbortRenderingOnMainThread (bool blocking)
     {
-        emit s_abortRenderingOnMainThread(blocking);
+        Q_EMIT s_abortRenderingOnMainThread(false,blocking);
     }
     
     
@@ -211,6 +245,12 @@ public:
      * This can only be called on the scheduler thread (this)
      **/
     RenderDirectionEnum getDirectionRequestedToRender() const;
+    
+    /**
+     * @brief Returns the views as set in the livingRunArgs, @see startRender()
+     * This can only be called on the scheduler thread (this)
+     **/
+    std::vector<ViewIdx> getViewsRequestedToRender() const;
     
     /**
      * @brief Returns the current number of render threads
@@ -222,11 +262,12 @@ public:
      **/
     int getNActiveRenderThreads() const;
     
+#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     /**
      * @brief Called by render-threads to pick some work to do or to get asleep if theres nothing to do
      **/
-    int pickFrameToRender(RenderThreadTask* thread);
-    
+    int pickFrameToRender(RenderThreadTask* thread, bool* enableRenderStats, std::vector<ViewIdx>* viewsToRender);
+#endif
 
     /**
      * @brief Called by the render-threads when mustQuit() is true on the thread
@@ -244,16 +285,16 @@ public:
      **/
     double getDesiredFPS() const;
     
+    void runCallbackWithVariables(const QString& callback);
+    
     /**
-     * @brief Returns the frame range of the output node, as given by the getFrameRange action
+     * @brief Returns true if a render is being aborted
      **/
-    void getPluginFrameRange(int& first,int &last) const;
+    bool isBeingAborted() const;
+
+public Q_SLOTS:
     
-    
-    
-public slots:
-    
-    void doProcessFrameMainThread(const BufferedFrames& frames,bool mustSeekTimeline,int time);
+    void doProcessFrameMainThread(const BufferedFrames& frames);
     
     /**
      @brief Aborts all computations. This turns on the flag abortRequested and will inform the engine that it needs to stop.
@@ -269,13 +310,19 @@ public slots:
      * explicitly waits for all threads in the thread-pool to be done.
      * If you want to abortRendering() from one of those threads, call doAbortRenderingOnMainThreadInstead
      **/
-    void abortRendering(bool blocking);
-signals:
+    void abortRendering(bool autoRestart, bool blocking);
     
-    void s_doProcessOnMainThread(const BufferedFrames& frames,bool mustSeekTimeline,int time);
+private Q_SLOTS:
     
-    void s_abortRenderingOnMainThread(bool blocking);
+    void onThreadSpawnsTimerTriggered();
     
+Q_SIGNALS:
+    
+    void s_doProcessOnMainThread(const BufferedFrames& frames);
+    
+    void s_abortRenderingOnMainThread(bool userRequested,bool blocking);
+    
+    void s_executeCallbackOnMainThread(QString);
     
 protected:
     
@@ -329,10 +376,12 @@ protected:
      * @brief Must create a runnable task that will render 1 frame in a separate thread.
      * The internal thread pool will take care of the thread
      * The task will pick frames to render until there are no more to be rendered.
-     * @param playbackOrRender Used as a hint to know that we're rendering for playback or render on disk
-     * and not just for one frame
      **/
+#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     virtual RenderThreadTask* createRunnable() = 0;
+#else
+    virtual RenderThreadTask* createRunnable(int frame, bool useRenderStarts, const std::vector<ViewIdx>& viewsToRender) = 0;
+#endif
     
     /**
      * @brief Called upon failure of a thread to render an image
@@ -342,7 +391,7 @@ protected:
     /**
      * @brief Must return the scheduling policy that the output device will have
      **/
-    virtual Natron::SchedulingPolicyEnum getSchedulingPolicy() const = 0;
+    virtual SchedulingPolicyEnum getSchedulingPolicy() const = 0;
     
     /**
      * @brief Returns the last successful render time.
@@ -358,14 +407,17 @@ protected:
     /**
      * @brief Callback when stopRender() is called
      **/
-    virtual void onRenderStopped() {}
+    virtual void onRenderStopped(bool /*aborted*/) {}
     
     RenderEngine* getEngine() const;
     
+    
+
 private:
     
     virtual void run() OVERRIDE FINAL;
     
+#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     /**
      * @brief Called by the scheduler threads to wake-up render threads and make them do some work
      * It calls pushFramesToRenderInternal. It starts pushing frames from lastFramePushedIndex
@@ -386,7 +438,11 @@ private:
      * @brief Starts/stops more threads according to CPU activity and user preferences 
      * @param optimalNThreads[out] Will be set to the new number of threads
      **/
-    void adjustNumberOfThreads(int* newNThreads);
+    void adjustNumberOfThreads(int* newNThreads, int *lastNThreads);
+#else
+    void startTasksFromLastStartedFrame();
+    void startTasks(int startingFrame);
+#endif
     
     /**
      * @brief Make nThreadsToStop quit running. If 0 then all threads will be destroyed.
@@ -403,17 +459,16 @@ private:
     
 };
 
-namespace Natron {
-class OutputEffectInstance;
-}
+
 class DefaultScheduler : public OutputSchedulerThread
 {
 public:
     
-    DefaultScheduler(RenderEngine* engine,Natron::OutputEffectInstance* effect);
+    DefaultScheduler(RenderEngine* engine,const boost::shared_ptr<OutputEffectInstance>& effect);
     
     virtual ~DefaultScheduler();
     
+
 private:
     
     virtual void processFrame(const BufferedFrames& frames) OVERRIDE FINAL;
@@ -426,17 +481,23 @@ private:
     
     virtual int timelineGetTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
+#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     virtual RenderThreadTask* createRunnable() OVERRIDE FINAL WARN_UNUSED_RETURN;
+#else
+    virtual RenderThreadTask* createRunnable(int frame, bool useRenderStarts, const std::vector<ViewIdx>& viewsToRender) OVERRIDE FINAL WARN_UNUSED_RETURN;
+#endif
     
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
     
-    virtual Natron::SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL;
+    virtual SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL;
     
     virtual void aboutToStartRender() OVERRIDE FINAL;
     
-    virtual void onRenderStopped() OVERRIDE FINAL;
+    virtual void onRenderStopped(bool aborted) OVERRIDE FINAL;
     
-    Natron::OutputEffectInstance* _effect;
+
+    
+    boost::weak_ptr<OutputEffectInstance> _effect;
 };
 
 
@@ -446,7 +507,7 @@ class ViewerDisplayScheduler : public OutputSchedulerThread
     
 public:
     
-    ViewerDisplayScheduler(RenderEngine* engine,ViewerInstance* viewer);
+    ViewerDisplayScheduler(RenderEngine* engine, const boost::shared_ptr<ViewerInstance>& viewer);
     
     virtual ~ViewerDisplayScheduler();
     
@@ -465,17 +526,21 @@ private:
     
     virtual void getFrameRangeToRender(int& first,int& last) const OVERRIDE FINAL;
     
+#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     virtual RenderThreadTask* createRunnable() OVERRIDE FINAL WARN_UNUSED_RETURN;
+#else
+    virtual RenderThreadTask* createRunnable(int frame, bool useRenderStarts, const std::vector<ViewIdx>& viewsToRender) OVERRIDE FINAL WARN_UNUSED_RETURN;
+#endif
     
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
     
-    virtual Natron::SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL { return Natron::eSchedulingPolicyOrdered; }
+    virtual SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL { return eSchedulingPolicyOrdered; }
     
     virtual int getLastRenderedTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual void onRenderStopped() OVERRIDE FINAL;
+    virtual void onRenderStopped(bool aborted) OVERRIDE FINAL;
     
-    ViewerInstance* _viewer;
+    boost::weak_ptr<ViewerInstance> _viewer;
 };
 
 /**
@@ -486,34 +551,37 @@ private:
  * Instead of re-using the OutputSchedulerClass and adding extra handling for special cases we separated it in a different class, specialized for this kind
  * of "current frame re-rendering" which needs much less code to run than all the code in OutputSchedulerThread
  **/
+
 struct ViewerCurrentFrameRequestSchedulerPrivate;
 class ViewerCurrentFrameRequestScheduler : public QThread
 {
-
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-    
-    
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
     
     ViewerCurrentFrameRequestScheduler(ViewerInstance* viewer);
     
     virtual ~ViewerCurrentFrameRequestScheduler();
     
-    void renderCurrentFrame(bool canAbort);
+    void renderCurrentFrame(bool enableRenderStats,bool canAbort);
     
     void quitThread();
     
-    void abortRendering();
+    void abortRendering(bool blocking);
     
     bool hasThreadsWorking() const;
     
-public slots:
+    void notifyFrameProduced(const BufferableObjectList& frames,const RenderStatsPtr& stats, const boost::shared_ptr<RequestedFrame>& request);
     
-    void doProcessProducedFrameOnMainThread(const BufferableObjectList& frames);
+public Q_SLOTS:
     
-signals:
+    void doProcessProducedFrameOnMainThread(const RenderStatsPtr& stats,const BufferableObjectList& frames);
     
-    void s_processProducedFrameOnMainThread(const BufferableObjectList& frames);
+Q_SIGNALS:
+    
+    void s_processProducedFrameOnMainThread(const RenderStatsPtr& stats,const BufferableObjectList& frames);
     
 private:
     
@@ -521,6 +589,33 @@ private:
     
     boost::scoped_ptr<ViewerCurrentFrameRequestSchedulerPrivate> _imp;
     
+};
+
+struct ViewerArgs;
+struct CurrentFrameFunctorArgs;
+
+/**
+ * @brief Single thread used by the ViewerCurrentFrameRequestScheduler when the global thread pool has reached its maximum
+ * activity to keep the renders responsive even if the thread pool is choking. 
+ **/
+struct ViewerCurrentFrameRequestRendererBackupPrivate;
+class ViewerCurrentFrameRequestRendererBackup : public QThread
+{
+public:
+    
+    ViewerCurrentFrameRequestRendererBackup();
+    
+    virtual ~ViewerCurrentFrameRequestRendererBackup();
+    
+    void renderCurrentFrame(const boost::shared_ptr<CurrentFrameFunctorArgs>& args);
+    
+    void quitThread();
+    
+private:
+    
+    virtual void run() OVERRIDE FINAL;
+    
+    boost::scoped_ptr<ViewerCurrentFrameRequestRendererBackupPrivate> _imp;
 };
 
 
@@ -539,34 +634,49 @@ class RenderEngine : public QObject
     
 public:
     
-    RenderEngine(Natron::OutputEffectInstance* output);
+    RenderEngine(const boost::shared_ptr<OutputEffectInstance>& output);
     
     virtual ~RenderEngine();
    
+    boost::shared_ptr<OutputEffectInstance> getOutput() const;
     
     /**
      * @brief Call this to render from firstFrame to lastFrame included.
      **/
-    void renderFrameRange(int firstFrame,int lastFrame,OutputSchedulerThread::RenderDirectionEnum forward);
+    void renderFrameRange(bool isBlocking,
+                          bool enableRenderStats,
+                          int firstFrame,
+                          int lastFrame,
+                          int frameStep,
+                          const std::vector<ViewIdx>& viewsToRender,
+                          OutputSchedulerThread::RenderDirectionEnum forward);
     
     /**
      * @brief Same as renderFrameRange except that the frame range will be computed automatically and it will
      * start from the current frame.
      * This is not appropriate to call this function from a writer.
      **/
-    void renderFromCurrentFrame(OutputSchedulerThread::RenderDirectionEnum forward);
+    void renderFromCurrentFrame(bool enableRenderStats,
+                                const std::vector<ViewIdx>& viewsToRender,
+                                OutputSchedulerThread::RenderDirectionEnum forward);
+    
     
     /**
      * @brief Basically it just renders with the current frame on the timeline.
      * @param abortPrevious If true then it will stop any ongoing render and render the current frame
      * in a separate thread
      **/
-    void renderCurrentFrame(bool canAbort);
+    void renderCurrentFrame(bool enableRenderStats,bool canAbort);
 
+    /**
+     * @brief Whether the playback can be automatically restarted by a single render request
+     **/
+    bool isPlaybackAutoRestartEnabled() const;
+    
     /**
      * @brief Returns the playback mode of the internal scheduler
      **/
-    Natron::PlaybackModeEnum getPlaybackMode() const;
+    PlaybackModeEnum getPlaybackMode() const;
     
     /**
      * @brief Returns the desired user FPS that the internal scheduler should stick to
@@ -588,12 +698,23 @@ public:
      **/
     bool hasThreadsWorking() const;
     
-public slots:
+    /**
+     * @brief Returns true if a sequential render is being aborted
+     **/
+    bool isSequentialRenderBeingAborted() const;
+    
+    /**
+     * @brief Returns true if playback is active
+     **/
+    bool isDoingSequentialRender() const;
+    
+    
+public Q_SLOTS:
 
     
     /**
      * @brief Set the playback mode
-     * @param mode Corresponds to the Natron::PlaybackModeEnum enum
+     * @param mode Corresponds to the PlaybackModeEnum enum
      **/
     void setPlaybackMode(int mode);
     
@@ -605,13 +726,15 @@ public slots:
     
     
     /**
-     * @brief Aborts the internal scheduler
+     * @brief Aborts the internal scheduler and returns true if it was working.
      **/
-    void abortRendering(bool blocking);
-    void abortRendering_Blocking() { abortRendering(true); }
+    bool abortRendering(bool enableAutoRestartPlayback, bool blocking);
+    void abortRendering_Blocking() { abortRendering(true,true); }
 
     
-signals:
+    void onCurrentFrameRenderRequestPosted();
+    
+Q_SIGNALS:
     
     /**
      * @brief Emitted when the fps has changed
@@ -623,19 +746,25 @@ signals:
      * @brief Emitted after a frame is rendered.
      * This will not be emitted after calling renderCurrentFrame
      **/
-    void frameRendered(int time);
+    void frameRendered(int time,double progress);
     
+
     /**
      * @brief Emitted when the stopRender() function is called
      * @param retCode Will be set to 1 if the render was finished because it was aborted, 0 otherwise.
      * This will not be emitted after calling renderCurrentFrame
      **/
     void renderFinished(int retCode);
+    
+    
+    void renderStarted(bool forward);
 
     /**
     * @brief Emitted when gui is frozen and rendering is finished to update all knobs
      **/
     void refreshAllKnobs();
+    
+    void currentFrameRenderRequestPosted();
 
 protected:
     
@@ -643,17 +772,27 @@ protected:
     /**
      * @brief Must create the main-scheduler that will be used for scheduling playback/writing on disk.
      **/
-    virtual OutputSchedulerThread* createScheduler(Natron::OutputEffectInstance* effect) ;
+    virtual OutputSchedulerThread* createScheduler(const boost::shared_ptr<OutputEffectInstance>& effect) ;
     
 private:
     
+    void renderCurrentFrameInternal(bool enableRenderStats,bool canAbort);
+
+    
     /**
-     * The following functions are called by the OutputThreadScheduler to emit the corresponding signals
+     * The following functions are called by the OutputThreadScheduler to Q_EMIT the corresponding signals
      **/
-    void s_fpsChanged(double actual,double desired) { emit fpsChanged(actual, desired); }
-    void s_frameRendered(int time) { emit frameRendered(time); }
-    void s_renderFinished(int retCode) { emit renderFinished(retCode); }
-    void s_refreshAllKnobs() { emit refreshAllKnobs(); }
+    void s_fpsChanged(double actual,double desired) { Q_EMIT fpsChanged(actual, desired); }
+    void s_frameRendered(int time, double progress) { Q_EMIT frameRendered(time,progress); }
+   
+    void s_renderStarted(bool forward) { Q_EMIT renderStarted(forward); }
+    void s_renderFinished(int retCode) { Q_EMIT renderFinished(retCode); }
+    void s_refreshAllKnobs() { Q_EMIT refreshAllKnobs(); }
+    
+    friend class ViewerInstance;
+    void notifyFrameProduced(const BufferableObjectList& frames, const RenderStatsPtr& stats ,const boost::shared_ptr<RequestedFrame>& request);
+
+    
     boost::scoped_ptr<RenderEnginePrivate> _imp;
 };
 
@@ -662,7 +801,7 @@ class ViewerRenderEngine : public RenderEngine
     
 public:
     
-    ViewerRenderEngine(Natron::OutputEffectInstance* output)
+    ViewerRenderEngine(const boost::shared_ptr<OutputEffectInstance>& output)
     : RenderEngine(output)
     {}
     
@@ -670,7 +809,9 @@ public:
     
 private:
     
-    virtual OutputSchedulerThread* createScheduler(Natron::OutputEffectInstance* effect) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual OutputSchedulerThread* createScheduler(const boost::shared_ptr<OutputEffectInstance>& effect) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
 
-#endif // OUTPUTSCHEDULERTHREAD_H
+NATRON_NAMESPACE_EXIT;
+
+#endif // Engine_OutputSchedulerThread_h

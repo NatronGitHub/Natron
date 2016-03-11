@@ -1,0 +1,97 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; truncate-lines: t; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:et:sw=4:ts=4:sts=4
+# $Id$
+
+PortSystem 1.0
+name		insight3d
+version		0.3.2
+#revision	1
+categories	graphics
+maintainers	frederic.devernay@m4x.org
+description	insight3d lets you create 3D models from photographs
+
+long_description	insight3d lets you create 3D models from photographs. You give it a series of photos of a real scene (e.g., of a building), it automatically matches them and then calculates positions in space from which each photo has been taken (plus camera’s optical parameters) along with a 3D pointcloud of the scene. You can then use insight3d’s modeling tools to create textured polygonal model.
+
+homepage	http://insight3d.sourceforge.net/
+checksums           md5     31c7d629e5c6f37982cb3e8676cc7e38 \
+                    sha1    35f6037a8150f9b4a225baff8e319a6a2ea2c6ff \
+                    rmd160  6ff7b75e7eba894143ab33918238f1f5aca4234b
+master_sites	sourceforge:insight3d
+distname insight3d_linux
+worksrcdir ${distname}/${name}
+#use_xz		yes
+#depends_extract port:xz
+
+#depends_build \
+#    port:texinfo
+depends_lib \
+	port:opencv \
+    port:libsdl \
+    port:libxml2 \
+    port:gtk2 \
+    port:gsl
+
+#patchfiles	\
+
+#patch.cmd "git apply -v"
+#patch.pre_args	-p1
+#use_autoreconf	yes
+
+use_configure       no
+
+pre-build       { system "cd ${worksrcpath}; find . -name '*.o' -o -name '*.a' -o -name '*.obj' -o -name '*.dll' -o -name '*.lib' -exec rm {} \;"}
+
+#configure.env LDFLAGS=-Wl,-headerpad_max_install_names
+#configure.args-append \
+#        libopenal_LIBS="-framework OpenAL" libopenal_CFLAGS="-F/System/Library/Frameworks" \
+#        libgl_LIBS="-framework OpenGL" libgl_CFLAGS="-I/Library/Frameworks/OpenGL.framework/Headers"
+
+## gcc-4.0 doesn implement atomic operations from src/base/thread.h, so force gcc-4.2 on Leopard
+#if {${configure.compiler} == "gcc-4.0"} {
+#    configure.compiler gcc-4.2
+#}
+
+#variant app description {Install as a standalone application rather than a command-line utility} {
+#    destroot {
+#        system "cd ${worksrcpath} && make package-macosx"
+#        xinstall -d ${destroot}${applications_dir}
+#        copy ${worksrcpath}/Bino.app ${destroot}${applications_dir}
+#    }
+#}
+
+#variant qt4nokia description {Use the official Qt4 distribution from http://qt.nokia.com/download} {
+#    depends_lib-delete      port:qt4-mac
+# 	pre-configure {
+# 		if {![file exists "/Library/Frameworks/QtOpenGL.framework/Headers/QtOpenGL"]} {
+# 			return -code error "\n********************\n${name} requires Qt for Mac, please download and install it from http://qt.nokia.com/download\n********************"
+# 		}
+# 	}
+#     configure.args-append \
+#         libqtopengl_LIBS="-framework QtCore -framework QtGui -framework QtOpenGL -framework OpenGL" \
+#         libqtopengl_CFLAGS="-I/Library/Frameworks/QtCore.framework/Headers -I/Library/Frameworks/QtGui.framework/Headers -I/Library/Frameworks/QtOpenGL.framework/Headers"
+# }
+
+# variant openalsoft description {Use the OpenAL-soft from https://github.com/garinh/openal-soft with multi-channel support} {
+#     configure.args-delete \
+#         libopenal_LIBS="-framework OpenAL" libopenal_CFLAGS="-F/System/Library/Frameworks"
+#     depends_lib-append      port:openal-soft
+# }
+
+# variant openalmacports description {Use the OpenAL from MacPorts (which is 1.3, whereas MacOSX 10.6 brings 1.4)} {
+#     configure.args-delete \
+#         libopenal_LIBS="-framework OpenAL" libopenal_CFLAGS="-F/System/Library/Frameworks"
+#     configure.args-append \
+#         libopenal_LIBS="-F${prefix}/Library/Frameworks -framework OpenAL" \
+#         libopenal_CFLAGS="-F${prefix}/Library/Frameworks"
+#     depends_lib-append      port:openal
+# }
+
+# variant ffmpeg_devel description {Use the ffmpeg-devel port instead of ffmpeg} {
+#     depends_lib-delete      port:ffmpeg
+#     depends_lib-append      port:ffmpeg-devel
+# }
+
+# variant debug description {Enable debugging} {
+#     configure.args-append --enable-debug
+# }
+
+livecheck.type  none

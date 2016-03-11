@@ -1,17 +1,37 @@
-//  Natron
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
 #ifndef KEYHELPER_H
 #define KEYHELPER_H
 
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
+#include <string>
+
 #include "Engine/Hash64.h"
+#include "Engine/CacheEntryHolder.h"
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 /** @brief Helper class that represents a Key in the cache. A key is a set
  * of 1 or more parameters that represent a "unique" element in the cache.
@@ -41,10 +61,19 @@ public:
      * @brief Constructs an empty key. This constructor is used by boost::serialization.
      **/
     KeyHelper()
-        : _hashComputed(false), _hash()
+        : _holderID(), _hash(), _hashComputed(false)
     {
     }
 
+    KeyHelper(const CacheEntryHolder* holder)
+    : _holderID(), _hash(), _hashComputed(false)
+    {
+        if (holder) {
+            _holderID = holder->getCacheID();
+        }
+    }
+
+    
     /**
      * @brief Constructs a key from an already existing hash key.
      **/
@@ -55,7 +84,9 @@ public:
      * constructor above but takes in parameter another key.
      **/
     KeyHelper(const KeyHelper & other)
-        : _hashComputed(true), _hash( other.getHash() )
+        : _holderID( other.getCacheHolderID() )
+        , _hash( other.getHash() )
+        , _hashComputed(true)
     {
     }
 
@@ -77,9 +108,14 @@ public:
     {
         _hashComputed = false;
     }
+    
+    const std::string& getCacheHolderID() const
+    {
+        return _holderID;
+    }
+
 
 protected:
-
     /*for now HashType can only be 64 bits...the implementation should
        fill the Hash64 using the append function with the values contained in the
        derived class.*/
@@ -95,9 +131,14 @@ private:
         _hash = hash.value();
     }
 
-    mutable bool _hashComputed;
+protected:
+    std::string _holderID;
+
+private:
     mutable hash_type _hash;
+    mutable bool _hashComputed;
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // KEYHELPER_H

@@ -1,50 +1,57 @@
-//  Natron
-//
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
- */
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_GUI_VIEWERTAB_H_
-#define NATRON_GUI_VIEWERTAB_H_
+#ifndef NATRON_GUI_VIEWERTAB_H
+#define NATRON_GUI_VIEWERTAB_H
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
-CLANG_DIAG_OFF(deprecated)
-CLANG_DIAG_OFF(uninitialized)
-#include <QWidget>
-CLANG_DIAG_ON(deprecated)
-CLANG_DIAG_ON(uninitialized)
-#ifndef Q_MOC_RUN
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
-#include "Global/GlobalDefines.h"
-#include "Gui/FromQtEnums.h"
 
-namespace Natron
-{
-    class Node;
-}
-class ViewerGL;
-class ViewerInstance;
-class Gui;
-class RectD;
-class Format;
-class QMouseEvent;
-class RotoGui;
-class NodeGui;
-class TimeLine;
-class TrackerGui;
-struct RotoGuiSharedData;
+#include "Global/GlobalDefines.h"
+#include "Global/KeySymbols.h" // Key
+
+#include "Engine/RenderStats.h"
+#include "Engine/ViewIdx.h"
+#include "Engine/EngineFwd.h"
+
+#include "Gui/PanelWidget.h"
+#include "Gui/GuiFwd.h"
+
+NATRON_NAMESPACE_ENTER;
+
+typedef std::map<NodePtr,NodeRenderStats > RenderStatsMap;
+
 struct ViewerTabPrivate;
-class ViewerTab
-    : public QWidget
+class ViewerTab : public QWidget, public PanelWidget
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     explicit ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
@@ -61,50 +68,49 @@ public:
     ViewerInstance* getInternalNode() const;
     void discardInternalNodePointer();
     
-    Gui* getGui() const;
     ViewerGL* getViewer() const;
 
-    void setCurrentView(int view);
+    void setCurrentView(ViewIdx view);
 
-    int getCurrentView() const;
+    ViewIdx getCurrentView() const;
 
     void seek(SequenceTime time);
 
-    void notifyAppClosing();
+    virtual void notifyGuiClosing() OVERRIDE FINAL;
 
     /**
      *@brief Tells all the nodes in the grpah to draw their overlays
      **/
     /*All the overlay methods are forwarding calls to the default node instance*/
-    void drawOverlays(double scaleX,double scaleY) const;
+    void drawOverlays(double time, const RenderScale & renderScale) const;
 
-    bool notifyOverlaysPenDown(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool notifyOverlaysPenDown(const RenderScale & renderScale, PenType pen, bool isTabletEvent,const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
 
-    bool notifyOverlaysPenDoubleClick(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool notifyOverlaysPenDoubleClick(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
 
-    bool notifyOverlaysPenMotion(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool notifyOverlaysPenMotion(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QInputEvent* e);
 
-    bool notifyOverlaysPenUp(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool notifyOverlaysPenUp(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
 
-    bool notifyOverlaysKeyDown(double scaleX,double scaleY,QKeyEvent* e);
+    bool notifyOverlaysKeyDown(const RenderScale & renderScale, QKeyEvent* e);
 
-    bool notifyOverlaysKeyUp(double scaleX,double scaleY,QKeyEvent* e);
+    bool notifyOverlaysKeyUp(const RenderScale & renderScale, QKeyEvent* e);
 
-    bool notifyOverlaysKeyRepeat(double scaleX,double scaleY,QKeyEvent* e);
+    bool notifyOverlaysKeyRepeat(const RenderScale & renderScale, QKeyEvent* e);
 
-    bool notifyOverlaysFocusGained(double scaleX,double scaleY);
+    bool notifyOverlaysFocusGained(const RenderScale & renderScale);
 
-    bool notifyOverlaysFocusLost(double scaleX,double scaleY);
+    bool notifyOverlaysFocusLost(const RenderScale & renderScale);
     
 private:
     
-    bool notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>& node, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool notifyOverlaysPenDown_internal(const NodePtr& node, const RenderScale & renderScale, PenType pen, bool isTabletEvent, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
     
-    bool notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
-    bool notifyOverlaysKeyDown_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX,double scaleY,QKeyEvent* e,Natron::Key k,
-                                        Natron::KeyboardModifiers km);
-    bool notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX,double scaleY,QKeyEvent* e,Natron::Key k,
-                                          Natron::KeyboardModifiers km);
+    bool notifyOverlaysPenMotion_internal(const NodePtr& node, const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QInputEvent* e);
+    bool notifyOverlaysKeyDown_internal(const NodePtr& node, const RenderScale & renderScale, QKeyEvent* e, Key k,
+                                        KeyboardModifiers km);
+    bool notifyOverlaysKeyRepeat_internal(const NodePtr& node, const RenderScale & renderScale, QKeyEvent* e, Key k,
+                                          KeyboardModifiers km);
 public:
     
 
@@ -127,10 +133,24 @@ public:
     void setGain(double d);
 
     double getGain() const;
+    
+    void setGamma(double gamma);
+    
+    double getGamma() const;
+    
+    static std::string getChannelsString(DisplayChannelsEnum c);
 
     std::string getChannelsString() const;
+    
+    DisplayChannelsEnum getChannels() const;
 
     void setChannels(const std::string & channelsStr);
+    
+private:
+    
+    void setDisplayChannels(int index, bool setBothInputs);
+    
+public:
 
     bool isAutoContrastEnabled() const;
 
@@ -177,9 +197,9 @@ public:
     void getTrackerContext(std::map<NodeGui*,TrackerGui*>* trackerNodes, std::pair<NodeGui*,TrackerGui*>* currentTracker) const;
 
 
-    Natron::ViewerCompositingOperatorEnum getCompositingOperator() const;
+    ViewerCompositingOperatorEnum getCompositingOperator() const;
 
-    void setCompositingOperator(Natron::ViewerCompositingOperatorEnum op);
+    void setCompositingOperator(ViewerCompositingOperatorEnum op);
     
     bool isFPSLocked() const;
 
@@ -210,18 +230,72 @@ public:
     void setDesiredFps(double fps);
 
     ///Called by ViewerGL when the image changes to refresh the info bar
-    void setImageFormat(int textureIndex,Natron::ImageComponentsEnum components,Natron::ImageBitDepthEnum depth);
+    void setImageFormat(int textureIndex,const ImageComponents& components,ImageBitDepthEnum depth);
     
 	void redrawGLWidgets();
 
     void getTimelineBounds(int* left,int* right) const;
     
     void setTimelineBounds(int left,int right);
+
+    void centerOn(SequenceTime left, SequenceTime right);
+    
+    ///Calls setTimelineBounds + set the frame range line edit
+    void setFrameRange(int left,int right);
     
     void setFrameRangeEdited(bool edited);
     
-public slots:
+    void setPlaybackMode(PlaybackModeEnum mode);
+    
+    PlaybackModeEnum getPlaybackMode() const;
+    
 
+    void refreshLayerAndAlphaChannelComboBox();
+
+    void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio);
+
+    bool isViewersSynchroEnabled() const;
+    
+    void synchronizeOtherViewersProjection();
+    
+    void centerOn_tripleSync(SequenceTime left, SequenceTime right);
+    
+    void zoomIn();
+    void zoomOut();
+    
+    void refresh(bool enableRenderStats);
+    
+    void connectToInput(int inputNb);
+    
+    bool isPickerEnabled() const;
+    void setPickerEnabled(bool enabled);
+    
+    void onMousePressCalledInViewer();
+    
+    void updateViewsMenu(const std::vector<std::string>& viewNames);
+    
+    void getActiveInputs(int* a, int* b) const;
+    
+    void setViewerPaused(bool paused, bool allInputs);
+
+    void toggleViewerPauseMode(bool allInputs);
+    
+    bool isViewerPaused(int texIndex) const;
+    
+public Q_SLOTS:
+    
+    void onPauseViewerButtonClicked(bool clicked);
+
+    void onPlaybackInButtonClicked();
+    void onPlaybackOutButtonClicked();
+    void onPlaybackInSpinboxValueChanged(double value);
+    void onPlaybackOutSpinboxValueChanged(double value);
+    
+    void onZoomComboboxCurrentIndexChanged(int index);
+    
+    void toggleStartForward();
+    void toggleStartBackward();
+    
     void startPause(bool);
     void abortRendering();
     void startBackward(bool);
@@ -247,11 +321,11 @@ public slots:
 
     void refresh();
 
-    void updateViewsMenu(int count);
-
-    void showView(int view);
+    void onViewsComboboxChanged(int  index);
 
     void onEnableViewerRoIButtonToggle(bool);
+    
+    void onCreateNewRoIPressed();
 
     void onAutoContrastChanged(bool b);
 
@@ -263,8 +337,6 @@ public slots:
 
     void onTrackerNodeGuiSettingsPanelClosed(bool closed);
 
-    void onGainSliderChanged(double v);
-
     void onColorSpaceComboBoxChanged(int v);
 
     void onCompositingOperatorIndexChanged(int index);
@@ -272,14 +344,18 @@ public slots:
     void onFirstInputNameChanged(const QString & text);
 
     void onSecondInputNameChanged(const QString & text);
+    
+    void switchInputAAndB();
+    
+    void setInputA(int index);
+    
+    void setInputB(int index);
 
     void onActiveInputsChanged();
 
     void onInputNameChanged(int inputNb,const QString & name);
 
     void onInputChanged(int inputNb);
-
-    void onFrameRangeEditingFinished();
     
     void onCanSetFPSClicked(bool toggled);
     void onCanSetFPSLabelClicked(bool toggled);
@@ -304,14 +380,15 @@ public slots:
 
     void showAllToolbars();    
     void hideAllToolbars();
-    
-    void onVideoEngineStopped();
-    
+        
     void onCheckerboardButtonClicked();
+    
+    void onPickerButtonClicked(bool);
     
     void onSpinboxFpsChanged(double fps);
     
     void onEngineStopped();
+    void onEngineStarted(bool forward);
     
     void onViewerRenderingStarted();
     
@@ -320,9 +397,51 @@ public slots:
     void setTurboButtonDown(bool down);
     
     void onClipPreferencesChanged();
+    
+    void onAvailableComponentsChanged();
+    
+    void onInternalNodeLabelChanged(const QString& name);
+    void onInternalNodeScriptNameChanged(const QString& name);
+    
+    void onAlphaChannelComboChanged(int index);
+    void onLayerComboChanged(int index);
+    
+    void onGammaToggled(bool clicked);
+    
+    void onGammaSliderValueChanged(double value);
+    
+    void onGammaSpinBoxValueChanged(double value);
+    
+    void onGainToggled(bool clicked);
+    
+    void onGainSliderChanged(double v);
+
+    void onGainSpinBoxValueChanged(double value);
+    
+    void onGammaSliderEditingFinished(bool hasMovedOnce);
+    void onGainSliderEditingFinished(bool hasMovedOnce);
+    
+    void onSyncViewersButtonPressed(bool clicked);
+    
+    void onRenderStatsAvailable(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats);
+    
+    void nextLayer();
+    void previousLayer();
+    
+    void previousView();
+    void nextView();
+    
+    void toggleTripleSync(bool toggled);
+    
 private:
     
-    void onCompositingOperatorChangedInternal(Natron::ViewerCompositingOperatorEnum oldOp,Natron::ViewerCompositingOperatorEnum newOp);
+    void refreshFPSBoxFromClipPreferences();
+    
+    void onSpinboxFpsChangedInternal(double fps);
+    
+    void onPickerButtonClickedInternal(ViewerTab* caller,bool);
+    
+    void onCompositingOperatorChangedInternal(ViewerCompositingOperatorEnum oldOp,ViewerCompositingOperatorEnum newOp);
 
     
     void manageTimelineSlot(bool disconnectPrevious,const boost::shared_ptr<TimeLine>& timeline);
@@ -331,9 +450,14 @@ private:
 
     virtual bool eventFilter(QObject *target, QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual QSize minimumSizeHint() const OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL;
     boost::scoped_ptr<ViewerTabPrivate> _imp;
 };
 
-#endif // NATRON_GUI_VIEWERTAB_H_
+NATRON_NAMESPACE_EXIT;
+
+#endif // NATRON_GUI_VIEWERTAB_H
