@@ -546,10 +546,11 @@ RotoPaint::render(const RenderActionArgs& args)
             } else {
                 plane->second->pasteFrom(*(rotoImagesIt->second), args.roi, false);
             }
+            plane->second->copyUnProcessedChannels(args.roi, outputPremult, bgImg ? bgImg->getPremultiplication() : eImagePremultiplicationOpaque, copyChannels, bgImg, false);
             if (premultiply && plane->second->getComponents() == ImageComponents::getRGBAComponents()) {
                 plane->second->premultImage(args.roi);
             }
-            plane->second->copyUnProcessedChannels(args.roi, outputPremult, bgImg ? bgImg->getPremultiplication() : eImagePremultiplicationOpaque, copyChannels, bgImg, false);
+   
             
             
         }
