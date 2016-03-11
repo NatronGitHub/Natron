@@ -214,7 +214,7 @@ ProgressTaskInfo::cancelTask(bool calledFromRenderEngine, int retCode)
         _imp->refreshLabelTimer->stop();
     }
     
-    if (calledFromRenderEngine && retCode == 0) {
+    if (calledFromRenderEngine) {
         _imp->panel->getGui()->ensureProgressPanelVisible();
         _imp->panel->onLastTaskAddedFinished(this);
     }
