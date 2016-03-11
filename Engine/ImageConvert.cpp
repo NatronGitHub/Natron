@@ -389,7 +389,7 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                         }
                         
                         for (int k = 0; k < 3 && k < dstNComps; ++k) {
-                            SRCPIX sourcePixel = k < srcNComps ? srcPixels[k] : 0.;
+                            SRCPIX sourcePixel = srcPixels[k];
                             DSTPIX pix;
                             if (!useColorspaces || (!srcLut && !dstLut)) {
                                 if (dstMaxValue == 255) {
