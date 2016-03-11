@@ -693,7 +693,8 @@ OfxImageEffectInstance::addParamsToTheirParents()
         
         
         bool foundPage = false;
-        for (PagesOrdered::iterator it2 = finalPages.begin(); it2!=finalPages.end(); ++it2) {
+        PagesOrdered::iterator it2;
+        for (it2 = finalPages.begin(); it2!=finalPages.end(); ++it2) {
             for (it3 = (*it2)->paramsOrdered.begin(); it3 != (*it2)->paramsOrdered.end(); ++it3) {
                 if (isKnownKnob == *it3) {
                     foundPage = true;
@@ -710,7 +711,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
         
         if (!foundPage) {
             //The parameter does not belong to a page, put it in the main page
-            if (lastParamInsertedInMainPage != (*mainPage)->paramsOrdered.end()) {
+            if (lastParamInsertedInMainPage != (*it2)->paramsOrdered.end()) {
                 ++lastParamInsertedInMainPage;
             }
             lastParamInsertedInMainPage = (*mainPage)->paramsOrdered.insert(lastParamInsertedInMainPage,isKnownKnob);
