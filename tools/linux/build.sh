@@ -94,13 +94,6 @@ if [ -z "$BUILD_CONFIG" ]; then
 	exit 1
 fi
 
-if [ "$NOCLEAN" != "1" ]; then
-    rm -rf $INSTALL_PATH
-fi
-if [ "$REBUILD_SDK" = "1" ]; then
-    rm -f "$SRC_PATH"/Natron*SDK.tar.xz
-fi
-
 if [ -z "$IO" ]; then
     IO=1
 fi
