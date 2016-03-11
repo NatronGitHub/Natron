@@ -26,7 +26,7 @@
 # CUSTOM_BUILD_USER_NAME="Toto" : to be set if BUILD_CONFIG=CUSTOM
 # BUILD_NUMBER=X: To be set to indicate the revision number of the build. For example RC1,RC2, RC3 etc...
 # DISABLE_BREAKPAD=1: Disable automatic crash report
-#Usage MKJOBS=4 BUILD_CONFIG=SNAPSHOT build-natron.sh workshop
+#Usage MKJOBS=4 BUILD_CONFIG=SNAPSHOT build-natron.sh master
 
 source `pwd`/common.sh || exit 1
 
@@ -102,7 +102,7 @@ git checkout $NATRON_BRANCH || exit 1
 git pull origin $NATRON_BRANCH
 git submodule update -i --recursive || exit 1
 
-if [ "$NATRON_BRANCH" = "workshop" ]; then
+if [ "$NATRON_BRANCH" = "master" ]; then
     # the snapshots are always built with the latest version of submodules
     git submodule foreach git pull origin master
 fi

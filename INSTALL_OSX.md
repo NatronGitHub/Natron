@@ -8,10 +8,10 @@ This file is supposed to guide you step by step to have working (compiling) vers
 	git clone https://github.com/MrKepzie/Natron.git
 	cd Natron
 
-If you want to compile the bleeding edge version, use the workshop
+If you want to compile the bleeding edge version, use the master
 branch:
 
-	git checkout workshop
+	git checkout master
 	
 Update the submodules:
 
@@ -310,7 +310,7 @@ Shiboken has a few glitches which needs fixing with some sed commands, run tools
  
 ## OpenFX plugins
 
-Instructions to build the [openfx-io](https://github.com/MrKepzie/openfx-io) and [openfx-misc](https://github.com/devernay/openfx-misc) sets of plugins can also be found in the [tools/packageOSX.sh](https://github.com/MrKepzie/Natron/blob/workshop/tools/packageOSX.sh) script if you are using MacPorts, or in the .travis.yml file in their respective github repositories if you are using homebrew ([openfx-misc/.travis.yml](https://github.com/devernay/openfx-misc/blob/master/.travis.yml), [openfx-io/.travis.yml](https://github.com/MrKepzie/openfx-io/blob/master/.travis.yml).
+Instructions to build the [openfx-io](https://github.com/MrKepzie/openfx-io) and [openfx-misc](https://github.com/devernay/openfx-misc) sets of plugins can also be found in the [tools/packageOSX.sh](https://github.com/MrKepzie/Natron/blob/master/tools/packageOSX.sh) script if you are using MacPorts, or in the .travis.yml file in their respective github repositories if you are using homebrew ([openfx-misc/.travis.yml](https://github.com/devernay/openfx-misc/blob/master/.travis.yml), [openfx-io/.travis.yml](https://github.com/MrKepzie/openfx-io/blob/master/.travis.yml).
 
 
 You can install [TuttleOFX](http://www.tuttleofx.org/) using homebrew:

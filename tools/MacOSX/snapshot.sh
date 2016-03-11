@@ -28,12 +28,12 @@ if [ ! -d $TMP ];then
     mkdir -p $TMP || exit 1
 fi
 
-#clone repos to get git version to check against NATRON_WORKSHOP
+#clone repos to get git version to check against NATRON_MASTER
 if [ ! -d $TMP/Natron ];then
     cd $TMP || exit 1
     git clone $GIT_NATRON || exit 1
     cd Natron || exit 1
-    git checkout workshop || exit 1
+    git checkout master || exit 1
 fi
 
 if [ ! -d $TMP/openfx-io ];then
@@ -73,7 +73,7 @@ while true; do
     source $CWD/commits-hash.sh || exit 1
 
     #Sync all scripts except snapshot.sh in case modifs were made
-    git pull origin workshop
+    git pull origin master
 
     FAIL=0
 
@@ -83,7 +83,7 @@ while true; do
 
     cd $TMP/Natron
     git fetch || FAIL=1
-    git merge origin/workshop || FAIL=1
+    git merge origin/master || FAIL=1
     GITV_NATRON=`git log|head -1|awk '{print $2}'`
     ORIG_NATRON=$NATRON_DEVEL_GIT
     echo "Natron $GITV_NATRON vs. $ORIG_NATRON"
@@ -141,7 +141,7 @@ while true; do
     cd $CWD || FAIL=1
     if [ "$FAIL" != 1 ]; then
         if [ "$BUILD_NATRON" = "1" -o "$BUILD_IO" = "1" -o "$BUILD_MISC" = "1" -o "$BUILD_ARENA" = "1" ]; then
-            env CONFIG=relwithdebinfo BRANCH=workshop BUILD_CONFIG=SNAPSHOT MKJOBS=$MKJOBS UPLOAD=1 NO_CLEAN=$NO_CLEAN ./build.sh || FAIL=1
+            env CONFIG=relwithdebinfo BRANCH=master BUILD_CONFIG=SNAPSHOT MKJOBS=$MKJOBS UPLOAD=1 NO_CLEAN=$NO_CLEAN ./build.sh || FAIL=1
             echo $FAIL
         fi
     fi

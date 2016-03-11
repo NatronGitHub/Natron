@@ -12,7 +12,7 @@
 # OFFLINE=1 : Make the offline installer too
 # NO_INSTALLER: Do not make any installer, only zip if NO_ZIP!=1
 # Usage:
-# NO_ZIP=1 NATRON_LICENSE=GPL OFFLINE=1 BUILD_CONFIG=BETA BUILD_NUMBER=1 sh build-installer 64 workshop
+# NO_ZIP=1 NATRON_LICENSE=GPL OFFLINE=1 BUILD_CONFIG=BETA BUILD_NUMBER=1 sh build-installer 64 master
 
 source `pwd`/common.sh || exit 1
 source `pwd`/commits-hash.sh || exit 1
