@@ -375,6 +375,9 @@ Settings::initializeKnobsGeneral()
     assert(_knownHostNames.size() == (int)eKnownHostNameFusion);
     _knownHostNames.push_back("com.eyeonline.Fusion");
     visibleHostEntries.push_back("Fusion");
+    assert(_knownHostNames.size() == (int)eKnownHostNameCatalyst);
+    _knownHostNames.push_back("com.sony.Catalyst.Edit");
+    visibleHostEntries.push_back("Sony Catalyst Edit");
     assert(_knownHostNames.size() == (int)eKnownHostNameVegas);
     _knownHostNames.push_back("com.sonycreativesoftware.vegas");
     visibleHostEntries.push_back("Sony Vegas");
@@ -423,6 +426,9 @@ Settings::initializeKnobsGeneral()
     assert(_knownHostNames.size() == (int)eKnownHostNameTitlerPro);
     _knownHostNames.push_back("com.newblue.titlerpro");
     visibleHostEntries.push_back("NewBlueFX Titler Pro");
+    assert(_knownHostNames.size() == (int)eKnownHostNameNewBlueOFXBridge);
+    _knownHostNames.push_back("com.newblue.ofxbridge");
+    visibleHostEntries.push_back("NewBlueFX OFX Bridge");
     assert(_knownHostNames.size() == (int)eKnownHostNameRamen);
     _knownHostNames.push_back("Ramen");
     visibleHostEntries.push_back("Ramen");

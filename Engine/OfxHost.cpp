@@ -324,7 +324,7 @@ Settings::KnownHostNameEnum getHostNameProxy(const std::string& pluginID, int pl
     assert(!pluginID.empty());
 
     static const std::string neatvideo("com.absoft.neatvideo");
-    static const std::string hitfilm("com.FXHOME.HitFilm.");
+    static const std::string hitfilm("com.FXHOME.HitFilm");
     static const std::string redgiant("com.redgiantsoftware.Universe_");
     static const std::string digitalfilmtools("com.digitalfilmtools.");
     //static const std::string digitalanarchy("com.digitalanarchy.");
@@ -339,6 +339,12 @@ Settings::KnownHostNameEnum getHostNameProxy(const std::string& pluginID, int pl
         // Vegas and TitlerPro support more plugins than Resolve
         // tested with HitFilm 3.1.0113
         // maj=1 or 2 (depends on plugin), min=0
+        // HitFilm Ignite also supports NewBlue OFX Bridge, Sony Catalyst Edit, The Foundry Nuke
+        // tested with HitFilm Ignite 1.0.0118
+        // Clone Stamp from HitFilm Ignite is officially only compatible with Nuke
+        if (pluginID == (hitfilm + ".CloneStamp")) {
+            return Settings::eKnownHostNameNuke;
+        }
         return Settings::eKnownHostNameVegas;
     } else if (!pluginID.compare(0, redgiant.size(), redgiant)) {
         // Red Giant Universe plugins 1.5 work with Vegas and Resolve
