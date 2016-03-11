@@ -1025,13 +1025,13 @@ OfxClipInstance::ofxPlaneToNatronPlane(const std::string& plane)
     
     if (plane == kFnOfxImagePlaneColour) {
         return ofxComponentsToNatronComponents(getComponents());
-    } else if (plane == kFnOfxImagePlaneBackwardMotionVector) {
+    } else if (plane == kFnOfxImagePlaneBackwardMotionVector || plane == kNatronBackwardMotionVectorsPlaneName) {
         return ImageComponents::getBackwardMotionComponents();
-    } else if (plane == kFnOfxImagePlaneForwardMotionVector) {
+    } else if (plane == kFnOfxImagePlaneForwardMotionVector || plane == kNatronForwardMotionVectorsPlaneName) {
         return ImageComponents::getForwardMotionComponents();
-    } else if (plane == kFnOfxImagePlaneStereoDisparityLeft) {
+    } else if (plane == kFnOfxImagePlaneStereoDisparityLeft || plane == kNatronDisparityLeftPlaneName) {
         return ImageComponents::getDisparityLeftComponents();
-    } else if (plane == kFnOfxImagePlaneStereoDisparityRight) {
+    } else if (plane == kFnOfxImagePlaneStereoDisparityRight || plane == kNatronDisparityRightPlaneName) {
         return ImageComponents::getDisparityRightComponents();
     } else {
         try {
