@@ -666,12 +666,14 @@ OfxImageEffectInstance::addParamsToTheirParents()
         mainPage = finalPages.begin();
     }
     assert(mainPage != finalPages.end());
-    
+    if (mainPage == finalPages.end()) {
+        throw std::logic_error("");
+    }
     // In this pass we check that all parameters belong to a page.
     // For parameters that do not belong to a page, we add them "on the fly" to the page
-    
-    std::list<OfxParamToKnob*>::iterator it3;
-    std::list<OfxParamToKnob*>::iterator lastParamInsertedInMainPage = (*mainPage)->paramsOrdered.end();
+
+    std::list<OfxParamToKnob*> &mainPageParamsOrdered = (*mainPage)->paramsOrdered;
+    std::list<OfxParamToKnob*>::iterator lastParamInsertedInMainPage = mainPageParamsOrdered.end();
     
     for (std::list<OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it != params.end(); ++it) {
         OfxParamToKnob* isKnownKnob = dynamic_cast<OfxParamToKnob*>(*it);
@@ -693,28 +695,36 @@ OfxImageEffectInstance::addParamsToTheirParents()
         
         
         bool foundPage = false;
-        PagesOrdered::iterator it2;
-        for (it2 = finalPages.begin(); it2!=finalPages.end(); ++it2) {
-            for (it3 = (*it2)->paramsOrdered.begin(); it3 != (*it2)->paramsOrdered.end(); ++it3) {
-                if (isKnownKnob == *it3) {
-                    foundPage = true;
-                    if (it2 == mainPage) {
-                        lastParamInsertedInMainPage = it3;
+        for (std::list<OfxParamToKnob*>::iterator itParam = mainPageParamsOrdered.begin(); itParam != mainPageParamsOrdered.end(); ++itParam) {
+            if (isKnownKnob == *itParam) {
+                foundPage = true;
+                lastParamInsertedInMainPage = itParam;
+                break;
+            }
+        }
+        if (!foundPage) {
+            // param not found in main page, try in other pages
+            PagesOrdered::iterator itPage = mainPage;
+            ++itPage;
+            for (; itPage != finalPages.end(); ++itPage) {
+                for (std::list<OfxParamToKnob*>::iterator itParam = (*itPage)->paramsOrdered.begin(); itParam != (*itPage)->paramsOrdered.end(); ++itParam) {
+                    if (isKnownKnob == *itParam) {
+                        foundPage = true;
+                        break;
                     }
+                }
+                if (foundPage) {
                     break;
                 }
-            }
-            if (foundPage) {
-                break;
             }
         }
         
         if (!foundPage) {
             //The parameter does not belong to a page, put it in the main page
-            if (lastParamInsertedInMainPage != (*it2)->paramsOrdered.end()) {
+            if (lastParamInsertedInMainPage != mainPageParamsOrdered.end()) {
                 ++lastParamInsertedInMainPage;
             }
-            lastParamInsertedInMainPage = (*mainPage)->paramsOrdered.insert(lastParamInsertedInMainPage,isKnownKnob);
+            lastParamInsertedInMainPage = mainPageParamsOrdered.insert(lastParamInsertedInMainPage,isKnownKnob);
         }
        
 
@@ -722,13 +732,13 @@ OfxImageEffectInstance::addParamsToTheirParents()
     
     
     // For all pages, append their knobs in order
-    for (PagesOrdered::iterator it = finalPages.begin(); it!=finalPages.end(); ++it) {
+    for (PagesOrdered::iterator itPage = finalPages.begin(); itPage !=finalPages.end(); ++itPage) {
 
-        boost::shared_ptr<KnobPage> pageKnob = (*it)->page;
+        boost::shared_ptr<KnobPage> pageKnob = (*itPage)->page;
        
-        for (std::list<OfxParamToKnob*>::iterator it2 = (*it)->paramsOrdered.begin(); it2 != (*it)->paramsOrdered.end(); ++it2) {
+        for (std::list<OfxParamToKnob*>::iterator itParam = (*itPage)->paramsOrdered.begin(); itParam != (*itPage)->paramsOrdered.end(); ++itParam) {
             
-            OfxParamToKnob* isKnownKnob = dynamic_cast<OfxParamToKnob*>(*it2);
+            OfxParamToKnob* isKnownKnob = dynamic_cast<OfxParamToKnob*>(*itParam);
             assert(isKnownKnob);
             if (!isKnownKnob) {
                 continue;
