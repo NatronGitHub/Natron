@@ -454,7 +454,7 @@ CurveGui::drawCurve(int curveIndex,
             }
         }
 
-        bool isCurveSelected = foundCurveSelected != selectedKeyFrames.end();
+        //bool isCurveSelected = foundCurveSelected != selectedKeyFrames.end();
         
         for (KeyFrameSet::const_iterator k = keyframes.begin(); k != keyframes.end(); ++k) {
             const KeyFrame & key = (*k);
@@ -467,7 +467,7 @@ CurveGui::drawCurve(int curveIndex,
 
             //if the key is selected change its color to white
             KeyPtr isSelected;
-            if (isCurveSelected) {
+            if (foundCurveSelected != selectedKeyFrames.end()) {
                 for (std::list<KeyPtr>::const_iterator it2 = foundCurveSelected->second.begin();
                      it2 != foundCurveSelected->second.end(); ++it2) {
                     if ( ( (*it2)->key.getTime() == key.getTime() ) && ( (*it2)->curve.get() == this ) ) {

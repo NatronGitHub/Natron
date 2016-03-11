@@ -2108,7 +2108,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 }
                 const PathExtraData* data = dynamic_cast<const PathExtraData*>(isRegular->getExtraData());
                 assert(data);
-                if (data->multiPath) {
+                if (data && data->multiPath) {
                     k->setMultiPath(true);
                 }
                 knob = k;
