@@ -278,12 +278,11 @@ Image::copyUnProcessedChannelsForPremult(const bool premult,
                     }
                 }
 #              endif // NATRON_COPY_CHANNELS_UNPREMULT
-                if (dstNComps == 1 || dstNComps == 4) {
-                    dst_pixels[dstNComps - 1] = srcA;
-#                 ifdef DEBUG
-                    assert(dst_pixels[dstNComps - 1] == dst_pixels[dstNComps - 1]); // check for NaN
-#                 endif
-                }
+                // coverity[dead_error_line]
+                dst_pixels[dstNComps - 1] = srcA;
+#              ifdef DEBUG
+                assert(dst_pixels[dstNComps - 1] == dst_pixels[dstNComps - 1]); // check for NaN
+#              endif
             }
         }
     }
