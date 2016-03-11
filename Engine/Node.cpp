@@ -9823,24 +9823,10 @@ Node::refreshChannelSelectors()
                     _imp->effect->isPassThroughForNonRenderedPlanes() == EffectInstance::ePassThroughRenderAllRequestedPlanes) {
                     layerKnob->setValue(0);
                     it->second.layerName.lock()->setValue(choices[0]);
-                } else {
-                    
-                    int defaultIndex;
-                    if (gotColor != -1) {
-                        defaultIndex = gotColor;
-                    } else {
-                        defaultIndex = -1;
-                        for (std::map<std::string, int>::iterator itl = defaultLayers.begin(); itl != defaultLayers.end(); ++itl) {
-                            if (itl->second != -1) {
-                                defaultIndex = itl->second;
-                                break;
-                            }
-                        }
-                    }
-                    
-                    assert(defaultIndex != -1 && defaultIndex >= 0 && defaultIndex < (int)choices.size());
-                    layerKnob->setValue(defaultIndex);
-                    it->second.layerName.lock()->setValue(choices[defaultIndex]);
+                } else {         
+                    assert(gotColor != -1 && gotColor >= 0 && gotColor < (int)choices.size());
+                    layerKnob->setValue(gotColor);
+                    it->second.layerName.lock()->setValue(choices[gotColor]);
                 }
             } // !foundLayer
         }
