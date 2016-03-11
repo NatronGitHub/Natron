@@ -38,7 +38,17 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Global/GlobalDefines.h"
 #include "Engine/Knob.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
+
+#define kFontSizeTag "<font size=\""
+#define kFontColorTag "color=\""
+#define kFontFaceTag "face=\""
+#define kFontEndTag "</font>"
+#define kBoldStartTag "<b>"
+#define kBoldEndTag "</b>"
+#define kItalicStartTag "<i>"
+#define kItalicEndTag "</i>"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -362,15 +372,6 @@ public:
         return _renderButton;
     }
 
-    void setIconFilePath(const std::string & filePath)
-    {
-        _iconFilePath = filePath;
-    }
-
-    const std::string & getIconFilePath() const
-    {
-        return _iconFilePath;
-    }
     
     void trigger();
 
@@ -383,7 +384,6 @@ private:
 private:
     static const std::string _typeNameStr;
     bool _renderButton;
-    std::string _iconFilePath;
 };
 
 /******************************KnobChoice**************************************/
@@ -479,16 +479,20 @@ Q_SIGNALS:
 private:
 
 
+    void findAndSetOldChoice(const std::vector<std::string>& newEntries);
+    
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
     virtual void handleSignalSlotsForAliasLink(const KnobPtr& alias,bool connect) OVERRIDE FINAL;
-    
+    virtual void onInternalValueChanged(int dimension, double time, ViewSpec view) OVERRIDE FINAL;
     
 private:
     
     mutable QMutex _entriesMutex;
     std::vector<std::string> _entries;
     std::vector<std::string> _entriesHelp;
+    
+    std::string _lastValidEntry; // protected by _entriesMutex
     bool _addNewChoice;
     static const std::string _typeNameStr;
     bool _isCascading;
@@ -844,8 +848,7 @@ public:
     std::pair<double,double> getParametricRange() const WARN_UNUSED_RETURN;
     boost::shared_ptr<Curve> getParametricCurve(int dimension) const;
     boost::shared_ptr<Curve> getDefaultParametricCurve(int dimension) const;
-    StatusEnum addControlPoint(int dimension,double key,double value) WARN_UNUSED_RETURN;
-    StatusEnum addHorizontalControlPoint(int dimension,double key,double value) WARN_UNUSED_RETURN;
+    StatusEnum addControlPoint(int dimension, double key, double value, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
     StatusEnum getValue(int dimension,double parametricPosition,double *returnValue) const WARN_UNUSED_RETURN;
     StatusEnum getNControlPoints(int dimension,int *returnValue) const WARN_UNUSED_RETURN;
     StatusEnum getNthControlPoint(int dimension,

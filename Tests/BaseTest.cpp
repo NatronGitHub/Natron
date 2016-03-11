@@ -26,6 +26,7 @@
 #include "BaseTest.h"
 
 #include <QFile>
+
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/AppManager.h"
@@ -35,6 +36,7 @@
 #include "Engine/Plugin.h"
 #include "Engine/Curve.h"
 #include "Engine/CLArgs.h"
+#include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_USING
 
@@ -55,13 +57,13 @@ BaseTest::registerTestPlugins()
 {
     _allTestPluginIDs.clear();
 
-    _dotGeneratorPluginID = PLUGINID_OFX_DOTEXAMPLE;
+    _dotGeneratorPluginID = QString::fromUtf8(PLUGINID_OFX_DOTEXAMPLE);
     _allTestPluginIDs.push_back(_dotGeneratorPluginID);
 
-    _readOIIOPluginID = PLUGINID_OFX_READOIIO;
+    _readOIIOPluginID = QString::fromUtf8(PLUGINID_OFX_READOIIO);
     _allTestPluginIDs.push_back(_readOIIOPluginID);
 
-    _writeOIIOPluginID = PLUGINID_OFX_WRITEOIIO;
+    _writeOIIOPluginID = QString::fromUtf8(PLUGINID_OFX_WRITEOIIO);
     _allTestPluginIDs.push_back(_writeOIIOPluginID);
 
     for (unsigned int i = 0; i < _allTestPluginIDs.size(); ++i) {
@@ -232,11 +234,11 @@ TEST_F(BaseTest,GenerateDot)
     ASSERT_TRUE(frameRange);
     KnobInt* knob = dynamic_cast<KnobInt*>(frameRange.get());
     ASSERT_TRUE(knob);
-    knob->setValue(1, 0);
-    knob->setValue(1, 1);
+    knob->setValue(1, ViewSpec::all(), 0);
+    knob->setValue(1, ViewSpec::all(), 1);
     
     const QString& binPath = appPTR->getApplicationBinaryPath();
-    QString filePath = binPath + "/test_dot_generator.jpg";
+    QString filePath = binPath + QString::fromUtf8("/test_dot_generator.jpg");
     writer->setOutputFilesForWriter(filePath.toStdString());
 
     ///attempt to connect the 2 nodes together
@@ -250,8 +252,9 @@ TEST_F(BaseTest,GenerateDot)
     w.firstFrame = INT_MIN;
     w.lastFrame = INT_MAX;
     w.frameStep = INT_MIN;
+    w.useRenderStats = false;
     works.push_back(w);
-    _app->startWritersRendering(false, false, works);
+    _app->startWritersRendering(false, works);
     
     EXPECT_TRUE(QFile::exists(filePath));
     QFile::remove(filePath);
@@ -263,15 +266,18 @@ TEST_F(BaseTest,SetValues)
     assert(generator);
     KnobPtr knob = generator->getKnobByName("radius");
     KnobDouble* radius = dynamic_cast<KnobDouble*>(knob.get());
-    assert(radius);
-    radius->setValue(100, 0);
+    EXPECT_TRUE(radius != 0);
+    if (!radius) {
+        return;
+    }
+    radius->setValue(100);
     EXPECT_TRUE(radius->getValue() == 100);
     
     //Check that linear interpolation is working as intended
     KeyFrame kf;
-    radius->setInterpolationAtTime(eCurveChangeReasonInternal,0, 0, eKeyframeTypeLinear, &kf);
-    radius->setValueAtTime(0, 0, 0);
-    radius->setValueAtTime(100, 100, 0);
+    radius->setInterpolationAtTime(eCurveChangeReasonInternal, ViewSpec::all(),  0, 0, eKeyframeTypeLinear, &kf);
+    radius->setValueAtTime(0, 0, ViewSpec::all(), 0);
+    radius->setValueAtTime(100, 100, ViewSpec::all(), 0);
     for (int i = 0; i <= 100; ++i) {
         double v = radius->getValueAtTime(i) ;
         EXPECT_TRUE(std::abs(v - i) < 1e-6);

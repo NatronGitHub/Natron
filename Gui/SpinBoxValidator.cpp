@@ -40,7 +40,7 @@ struct NumericKnobValidatorPrivate
 {
     
     const SpinBox* spinbox;
-    KnobGui* knobUi;
+    KnobGuiWPtr knobUi;
     
     ///Only these knobs have spinboxes
     KnobGuiDouble* isDoubleGui;
@@ -51,12 +51,12 @@ struct NumericKnobValidatorPrivate
     boost::weak_ptr<Knob<double> > isDouble;
     boost::weak_ptr<Knob<int> > isInt;
     
-    NumericKnobValidatorPrivate(const SpinBox* spinbox,KnobGui* knob)
+    NumericKnobValidatorPrivate(const SpinBox* spinbox,const KnobGuiPtr& knob)
     : spinbox(spinbox)
     , knobUi(knob)
-    , isDoubleGui(dynamic_cast<KnobGuiDouble*>(knob))
-    , isColorGui(dynamic_cast<KnobGuiColor*>(knob))
-    , isIntGui(dynamic_cast<KnobGuiInt*>(knob))
+    , isDoubleGui(dynamic_cast<KnobGuiDouble*>(knob.get()))
+    , isColorGui(dynamic_cast<KnobGuiColor*>(knob.get()))
+    , isIntGui(dynamic_cast<KnobGuiInt*>(knob.get()))
     {
         KnobPtr internalKnob = knob->getKnob();
         isDouble = boost::dynamic_pointer_cast<Knob<double> >(internalKnob);
@@ -65,7 +65,7 @@ struct NumericKnobValidatorPrivate
     }
 };
 
-NumericKnobValidator::NumericKnobValidator(const SpinBox* spinbox,KnobGui* knob)
+NumericKnobValidator::NumericKnobValidator(const SpinBox* spinbox,const KnobGuiPtr& knob)
 : _imp(new NumericKnobValidatorPrivate(spinbox,knob))
 {
     
@@ -106,29 +106,40 @@ NumericKnobValidator::validateInput(const QString& userText, double* valueToDisp
     
     *valueToDisplay = 0;
     std::string ret;
-    std::string expr = userText.toStdString();
-    if (!expr.empty()) {
+    QString simplifiedUserText = userText.simplified();
+    
+    bool isPersistentExpression = simplifiedUserText.startsWith(QLatin1Char('='));
+    if (isPersistentExpression) {
+        simplifiedUserText.remove(0, 1);
+    }
+    std::string expr = simplifiedUserText.toStdString();
+    KnobGuiPtr knob = _imp->knobUi.lock();
+
+    if (!expr.empty() && knob) {
         try {
-            _imp->knobUi->getKnob()->validateExpression(expr, 0, false, &ret);
+            knob->getKnob()->validateExpression(expr, 0, false, &ret);
         } catch (...) {
             return false;
         }
-    }
-    
-    _imp->knobUi->pushUndoCommand(new SetExpressionCommand(_imp->knobUi->getKnob(),
+        if (isPersistentExpression) {
+            //Only set the expression if it starts with '='
+            knob->pushUndoCommand(new SetExpressionCommand(knob->getKnob(),
                                                            false,
                                                            dimension,
                                                            expr));
-    if (!expr.empty()) {
+        }
+        
+        
         bool ok = false;
-        *valueToDisplay = QString(ret.c_str()).toDouble(&ok);
+        *valueToDisplay = QString::fromUtf8(ret.c_str()).toDouble(&ok);
         if (!ok) {
-            *valueToDisplay = QString(ret.c_str()).toInt(&ok);
+            *valueToDisplay = QString::fromUtf8(ret.c_str()).toInt(&ok);
         }
         assert(ok);
     } else {
         *valueToDisplay = _imp->spinbox->getLastValidValueBeforeValidation();
     }
+
     return true;
 }
 

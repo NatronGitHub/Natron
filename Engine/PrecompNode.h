@@ -97,13 +97,6 @@ public:
         return false;
     }
 
-    virtual ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE WARN_UNUSED_RETURN;
-    virtual void getPreferredDepthAndComponents(int inputNb,
-                                            std::list<ImageComponents>* comp,
-                                            ImageBitDepthEnum* depth) const OVERRIDE FINAL;
-    virtual double getPreferredAspectRatio() const OVERRIDE FINAL;
-
-    virtual double getPreferredFrameRate() const OVERRIDE FINAL;
 
     NodePtr getOutputNode() const;
 
@@ -111,6 +104,8 @@ public:
 
     AppInstance* getPrecompApp() const;
 
+    virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
+    
 public Q_SLOTS:
 
     void onPreRenderFinished();
@@ -123,10 +118,11 @@ private:
 
     virtual void onKnobsLoaded() OVERRIDE FINAL;
 
-    virtual void knobChanged(KnobI* k,ValueChangedReasonEnum reason,
-                         int /*view*/,
-                         double /*time*/,
-                         bool /*originatedFromMainThread*/) OVERRIDE FINAL;
+    virtual void knobChanged(KnobI* k,
+                             ValueChangedReasonEnum reason,
+                             ViewSpec view,
+                             double time,
+                             bool originatedFromMainThread) OVERRIDE FINAL;
 
     boost::scoped_ptr<PrecompNodePrivate> _imp;
 };

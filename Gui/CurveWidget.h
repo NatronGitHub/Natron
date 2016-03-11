@@ -97,7 +97,7 @@ public:
     
     bool isSelectedKey(const boost::shared_ptr<CurveGui>& curve, double time) const;
 
-    void refreshSelectedKeys();
+    void refreshSelectedKeysAndUpdate();
 
     double getZoomFactor() const;
 
@@ -135,6 +135,11 @@ public:
     virtual void saveOpenGLContext() OVERRIDE FINAL;
     virtual void restoreOpenGLContext() OVERRIDE FINAL;
     
+    void updateSelectionAfterCurveChange(CurveGui* curve);
+    
+    void refreshCurveDisplayTangents(CurveGui* curve);
+    
+    QUndoStack* getUndoStack() const;
     void pushUndoCommand(QUndoCommand* cmd);
 
 public Q_SLOTS:
@@ -147,7 +152,7 @@ public Q_SLOTS:
 
     void deleteSelectedKeyFrames();
 
-    void copySelectedKeyFrames();
+    void copySelectedKeyFramesToClipBoard();
 
     void pasteKeyFramesFromClipBoardToSelectedCurve();
 
@@ -181,8 +186,6 @@ public Q_SLOTS:
 
     void onTimeLineBoundariesChanged(int,int);
 
-    void onCurveChanged();
-
     void onUpdateOnPenUpActionTriggered();
 
     void onEditKeyFrameDialogFinished();
@@ -201,6 +204,7 @@ private:
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
 
+    
     void renderText(double x,double y,const QString & text,const QColor & color,const QFont & font) const;
 
     /**

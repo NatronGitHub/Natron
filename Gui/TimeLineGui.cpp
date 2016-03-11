@@ -206,16 +206,16 @@ TimeLineGui::setTimeline(const boost::shared_ptr<TimeLine>& timeline)
 {
     if (_imp->timeline) {
         //connect the internal timeline to the gui
-        QObject::disconnect( _imp->timeline.get(), SIGNAL( frameChanged(SequenceTime,int) ), this, SLOT( onFrameChanged(SequenceTime,int) ) );
+        QObject::disconnect( _imp->timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onFrameChanged(SequenceTime,int)) );
 
         //connect the gui to the internal timeline
-        QObject::disconnect( _imp->gui->getApp(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ) );
+        QObject::disconnect( _imp->gui->getApp(), SIGNAL(keyframeIndicatorsChanged()), this, SLOT(onKeyframesIndicatorsChanged()) );
     }
 
     //connect the internal timeline to the gui
-    QObject::connect( timeline.get(), SIGNAL( frameChanged(SequenceTime,int) ), this, SLOT( onFrameChanged(SequenceTime,int) ) );
+    QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onFrameChanged(SequenceTime,int)), Qt::UniqueConnection );
     
-    QObject::connect( _imp->gui->getApp(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ) );
+    QObject::connect( _imp->gui->getApp(), SIGNAL(keyframeIndicatorsChanged()), this, SLOT(onKeyframesIndicatorsChanged()),Qt::UniqueConnection );
 
     _imp->timeline = timeline;
 
@@ -403,11 +403,7 @@ TimeLineGui::paintGL()
         double tickTop = toTimeLineCoordinates(0,height() - 1 - fontM.height()  - TO_DPIY(TICK_HEIGHT)).y();
         const double smallestTickSizePixel = 5.; // tick size (in pixels) for alpha = 0.
         const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
-        std::vector<double> acceptedDistances;
-        acceptedDistances.push_back(1.);
-        acceptedDistances.push_back(5.);
-        acceptedDistances.push_back(10.);
-        acceptedDistances.push_back(50.);
+
         const double rangePixel =  width();
         const double range_min = btmLeft.x();
         const double range_max =  topRight.x();
@@ -427,7 +423,7 @@ TimeLineGui::paintGL()
         ticks_fill(half_tick, ticks_max, m1, m2, &ticks);
         const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
         const double largestTickSize = range * largestTickSizePixel / rangePixel;
-        const double minTickSizeTextPixel = fontM.width( QString("00") ); // AXIS-SPECIFIC
+        const double minTickSizeTextPixel = fontM.width( QLatin1String("00") ); // AXIS-SPECIFIC
         const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
         for (int i = m1; i <= m2; ++i) {
             double value = i * smallTickSize + offset;
@@ -594,7 +590,7 @@ TimeLineGui::paintGL()
         glEnd();
         glCheckErrorIgnoreOSXBug();
 
-        if ( rightBound != cur ) {
+        if ( rightBound != cur  && rightBound != leftBound) {
             QString rightBoundStr( QString::number( rightBound ) );
             double rightBoundTextXposWidget = toWidgetCoordinates( ( rightBoundBtm.x() + rightBoundBtmLeft.x() ) / 2.,0 ).x() - fontM.width(rightBoundStr) / 2.;
             double rightBoundTextPos = toTimeLine(rightBoundTextXposWidget);
@@ -1064,12 +1060,12 @@ TimeLineGui::connectSlotsToViewerCache()
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     CacheSignalEmitter* emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
-    QObject::connect( emitter, SIGNAL( addedEntry(SequenceTime) ), this, SLOT( onCachedFrameAdded(SequenceTime) ) );
-    QObject::connect( emitter, SIGNAL( removedEntry(SequenceTime,int) ), this, SLOT( onCachedFrameRemoved(SequenceTime,int) ) );
-    QObject::connect( emitter, SIGNAL( entryStorageChanged(SequenceTime,int,int) ), this,
-                      SLOT( onCachedFrameStorageChanged(SequenceTime,int,int) ) );
-    QObject::connect( emitter, SIGNAL( clearedDiskPortion() ), this, SLOT( onDiskCacheCleared() ) );
-    QObject::connect( emitter, SIGNAL( clearedInMemoryPortion() ), this, SLOT( onMemoryCacheCleared() ) );
+    QObject::connect( emitter, SIGNAL(addedEntry(SequenceTime)), this, SLOT(onCachedFrameAdded(SequenceTime)) );
+    QObject::connect( emitter, SIGNAL(removedEntry(SequenceTime,int)), this, SLOT(onCachedFrameRemoved(SequenceTime,int)) );
+    QObject::connect( emitter, SIGNAL(entryStorageChanged(SequenceTime,int,int)), this,
+                      SLOT(onCachedFrameStorageChanged(SequenceTime,int,int)) );
+    QObject::connect( emitter, SIGNAL(clearedDiskPortion()), this, SLOT(onDiskCacheCleared()) );
+    QObject::connect( emitter, SIGNAL(clearedInMemoryPortion()), this, SLOT(onMemoryCacheCleared()) );
 }
 
 void
@@ -1079,12 +1075,12 @@ TimeLineGui::disconnectSlotsFromViewerCache()
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     CacheSignalEmitter* emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
-    QObject::disconnect( emitter, SIGNAL( addedEntry(SequenceTime) ), this, SLOT( onCachedFrameAdded(SequenceTime) ) );
-    QObject::disconnect( emitter, SIGNAL( removedEntry(SequenceTime,int) ), this, SLOT( onCachedFrameRemoved(SequenceTime,int) ) );
-    QObject::disconnect( emitter, SIGNAL( entryStorageChanged(SequenceTime,int,int) ), this,
-                         SLOT( onCachedFrameStorageChanged(SequenceTime,int,int) ) );
-    QObject::disconnect( emitter, SIGNAL( clearedDiskPortion() ), this, SLOT( onDiskCacheCleared() ) );
-    QObject::disconnect( emitter, SIGNAL( clearedInMemoryPortion() ), this, SLOT( onMemoryCacheCleared() ) );
+    QObject::disconnect( emitter, SIGNAL(addedEntry(SequenceTime)), this, SLOT(onCachedFrameAdded(SequenceTime)) );
+    QObject::disconnect( emitter, SIGNAL(removedEntry(SequenceTime,int)), this, SLOT(onCachedFrameRemoved(SequenceTime,int)) );
+    QObject::disconnect( emitter, SIGNAL(entryStorageChanged(SequenceTime,int,int)), this,
+                         SLOT(onCachedFrameStorageChanged(SequenceTime,int,int)) );
+    QObject::disconnect( emitter, SIGNAL(clearedDiskPortion()), this, SLOT(onDiskCacheCleared()) );
+    QObject::disconnect( emitter, SIGNAL(clearedInMemoryPortion()), this, SLOT(onMemoryCacheCleared()) );
 }
 
 bool

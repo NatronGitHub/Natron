@@ -39,6 +39,7 @@
 #include "Engine/Bezier.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Transform.h" // Point3D
+#include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -68,6 +69,7 @@ BezierCP::~BezierCP()
 bool
 BezierCP::getPositionAtTime(bool useGuiCurves,
                             double time,
+                            ViewIdx view,
                             double* x,
                             double* y,
                             bool skipMasterOrRelative) const
@@ -107,10 +109,10 @@ BezierCP::getPositionAtTime(bool useGuiCurves,
             masterTrack = _imp->masterTrack ? _imp->masterTrack.get() : NULL;
         }
         if (masterTrack) {
-            double masterX = masterTrack->getValueAtTime(time,0);
-            double masterY = masterTrack->getValueAtTime(time,1);
-            double masterOffsetTimeX = masterTrack->getValueAtTime(offsetTime,0);
-            double masterOffsetTimeY = masterTrack->getValueAtTime(offsetTime,1);
+            double masterX = masterTrack->getValueAtTime(time, 0, ViewIdx(view));
+            double masterY = masterTrack->getValueAtTime(time, 1, ViewIdx(view));
+            double masterOffsetTimeX = masterTrack->getValueAtTime(offsetTime, 0, ViewIdx(view));
+            double masterOffsetTimeY = masterTrack->getValueAtTime(offsetTime, 1, ViewIdx(view));
             *x += (masterX - masterOffsetTimeX);
             *y += (masterY - masterOffsetTimeY);
         }
@@ -193,6 +195,7 @@ BezierCP::setRightBezierStaticPosition(bool useGuiCurves,
 bool
 BezierCP::getLeftBezierPointAtTime(bool useGuiCurves,
                                    double time,
+                                   ViewIdx view,
                                    double* x,
                                    double* y,
                                    bool skipMasterOrRelative) const
@@ -238,10 +241,10 @@ BezierCP::getLeftBezierPointAtTime(bool useGuiCurves,
             offsetTime = _imp->offsetTime;
         }
         if (masterTrack) {
-            double masterX = masterTrack->getValueAtTime(time,0);
-            double masterY = masterTrack->getValueAtTime(time,1);
-            double masterOffsetTimeX = masterTrack->getValueAtTime(offsetTime,0);
-            double masterOffsetTimeY = masterTrack->getValueAtTime(offsetTime,1);
+            double masterX = masterTrack->getValueAtTime(time, 0, ViewIdx(view));
+            double masterY = masterTrack->getValueAtTime(time, 1, ViewIdx(view));
+            double masterOffsetTimeX = masterTrack->getValueAtTime(offsetTime, 0, ViewIdx(view));
+            double masterOffsetTimeY = masterTrack->getValueAtTime(offsetTime, 1, ViewIdx(view));
             *x += (masterX - masterOffsetTimeX);
             *y += (masterY - masterOffsetTimeY);
         }
@@ -253,6 +256,7 @@ BezierCP::getLeftBezierPointAtTime(bool useGuiCurves,
 bool
 BezierCP::getRightBezierPointAtTime(bool useGuiCurves,
                                     double time,
+                                    ViewIdx view,
                                     double *x,
                                     double *y,
                                     bool skipMasterOrRelative) const
@@ -298,10 +302,10 @@ BezierCP::getRightBezierPointAtTime(bool useGuiCurves,
             offsetTime = _imp->offsetTime;
         }
         if (masterTrack) {
-            double masterX = masterTrack->getValueAtTime(time,0);
-            double masterY = masterTrack->getValueAtTime(time,1);
-            double masterOffsetTimeX = masterTrack->getValueAtTime(offsetTime,0);
-            double masterOffsetTimeY = masterTrack->getValueAtTime(offsetTime,1);
+            double masterX = masterTrack->getValueAtTime(time, 0, ViewIdx(view));
+            double masterY = masterTrack->getValueAtTime(time, 1, ViewIdx(view));
+            double masterOffsetTimeX = masterTrack->getValueAtTime(offsetTime,0, ViewIdx(view));
+            double masterOffsetTimeY = masterTrack->getValueAtTime(offsetTime, 1, ViewIdx(view));
             *x += (masterX - masterOffsetTimeX);
             *y += (masterY - masterOffsetTimeY);
         }
@@ -567,6 +571,7 @@ BezierCP::getBezier() const
 int
 BezierCP::isNearbyTangent(bool useGuiCurves,
                           double time,
+                          ViewIdx view,
                           double x,
                           double y,
                           double acceptance) const
@@ -578,9 +583,9 @@ BezierCP::isNearbyTangent(bool useGuiCurves,
     Transform::Matrix3x3 transform;
     getBezier()->getTransformAtTime(time, &transform);
     
-    getPositionAtTime(useGuiCurves,time, &p.x, &p.y);
-    getLeftBezierPointAtTime(useGuiCurves,time, &left.x, &left.y);
-    getRightBezierPointAtTime(useGuiCurves,time, &right.x, &right.y);
+    getPositionAtTime(useGuiCurves, time, view, &p.x, &p.y);
+    getLeftBezierPointAtTime(useGuiCurves, time, view, &left.x, &left.y);
+    getRightBezierPointAtTime(useGuiCurves, time, view, &right.x, &right.y);
     
     p = Transform::matApply(transform, p);
     left = Transform::matApply(transform, left);
@@ -692,8 +697,8 @@ smoothTangent(bool useGuiCurves,
         Q_UNUSED(cpCount);
 
         double leftDx,leftDy,rightDx,rightDy;
-        Bezier::leftDerivativeAtPoint(useGuiCurves,time, *p, **prev, transform, &leftDx, &leftDy);
-        Bezier::rightDerivativeAtPoint(useGuiCurves,time, *p, **next, transform, &rightDx, &rightDy);
+        Bezier::leftDerivativeAtPoint(useGuiCurves, time, *p, **prev, transform, &leftDx, &leftDy);
+        Bezier::rightDerivativeAtPoint(useGuiCurves, time, *p, **next, transform, &rightDx, &rightDy);
         double norm = sqrt( (rightDx - leftDx) * (rightDx - leftDx) + (rightDy - leftDy) * (rightDy - leftDy) );
         Point delta;
         ///normalize derivatives by their norm
@@ -741,6 +746,7 @@ smoothTangent(bool useGuiCurves,
 bool
 BezierCP::cuspPoint(bool useGuiCurves,
                     double time,
+                    ViewIdx view,
                     bool autoKeying,
                     bool rippleEdit,
                     const std::pair<double,double>& pixelScale)
@@ -756,9 +762,9 @@ BezierCP::cuspPoint(bool useGuiCurves,
     }
 
     double x,y,leftX,leftY,rightX,rightY;
-    getPositionAtTime(useGuiCurves,time, &x, &y,true);
-    getLeftBezierPointAtTime(useGuiCurves,time, &leftX, &leftY,true);
-    bool isOnKeyframe = getRightBezierPointAtTime(useGuiCurves,time, &rightX, &rightY,true);
+    getPositionAtTime(useGuiCurves, time, view, &x, &y,true);
+    getLeftBezierPointAtTime(useGuiCurves, time, view, &leftX, &leftY,true);
+    bool isOnKeyframe = getRightBezierPointAtTime(useGuiCurves, time, view, &rightX, &rightY,true);
     double newLeftX = leftX,newLeftY = leftY,newRightX = rightX,newRightY = rightY;
     cuspTangent(x, y, &newLeftX, &newLeftY, pixelScale);
     cuspTangent(x, y, &newRightX, &newRightY, pixelScale);
@@ -766,8 +772,8 @@ BezierCP::cuspPoint(bool useGuiCurves,
     bool keyframeSet = false;
 
     if (autoKeying || isOnKeyframe) {
-        setLeftBezierPointAtTime(useGuiCurves,time, newLeftX, newLeftY);
-        setRightBezierPointAtTime(useGuiCurves,time, newRightX, newRightY);
+        setLeftBezierPointAtTime(useGuiCurves, time, newLeftX, newLeftY);
+        setRightBezierPointAtTime(useGuiCurves, time, newRightX, newRightY);
         if (!isOnKeyframe) {
             keyframeSet = true;
         }
@@ -788,6 +794,7 @@ BezierCP::cuspPoint(bool useGuiCurves,
 bool
 BezierCP::smoothPoint(bool useGuiCurves,
                       double time,
+                      ViewIdx view,
                       bool autoKeying,
                       bool rippleEdit,
                       const std::pair<double,double>& pixelScale)
@@ -807,17 +814,17 @@ BezierCP::smoothPoint(bool useGuiCurves,
     Transform::Point3D pos,left,right;
     pos.z = left.z = right.z = 1.;
     
-    getPositionAtTime(useGuiCurves,time, &pos.x, &pos.y,true);
+    getPositionAtTime(useGuiCurves, time, view, &pos.x, &pos.y,true);
     
-    getLeftBezierPointAtTime(useGuiCurves, time, &left.x, &left.y,true);
-    bool isOnKeyframe = getRightBezierPointAtTime(useGuiCurves, time, &right.x, &right.y,true);
+    getLeftBezierPointAtTime(useGuiCurves, time, view, &left.x, &left.y,true);
+    bool isOnKeyframe = getRightBezierPointAtTime(useGuiCurves, time, view, &right.x, &right.y,true);
 
     pos = Transform::matApply(transform, pos);
     left = Transform::matApply(transform, left);
     right = Transform::matApply(transform, right);
     
-    smoothTangent(useGuiCurves,time,true,this , transform, pos.x, pos.y, &left.x, &left.y, pixelScale);
-    smoothTangent(useGuiCurves,time,false,this, transform, pos.x, pos.y, &right.x, &right.y, pixelScale);
+    smoothTangent(useGuiCurves, time,true,this , transform, pos.x, pos.y, &left.x, &left.y, pixelScale);
+    smoothTangent(useGuiCurves, time,false,this, transform, pos.x, pos.y, &right.x, &right.y, pixelScale);
 
     bool keyframeSet = false;
 
@@ -923,18 +930,19 @@ BezierCP::clone(const BezierCP & other)
 bool
 BezierCP::equalsAtTime(bool useGuiCurves,
                        double time,
+                       ViewIdx view,
                        const BezierCP & other) const
 {
     double x,y,leftX,leftY,rightX,rightY;
 
-    getPositionAtTime(useGuiCurves, time, &x, &y,true);
-    getLeftBezierPointAtTime(useGuiCurves, time, &leftX, &leftY,true);
-    getRightBezierPointAtTime(useGuiCurves, time, &rightX, &rightY,true);
+    getPositionAtTime(useGuiCurves, time, view, &x, &y,true);
+    getLeftBezierPointAtTime(useGuiCurves, time, view, &leftX, &leftY,true);
+    getRightBezierPointAtTime(useGuiCurves, time, view, &rightX, &rightY,true);
 
     double ox,oy,oLeftX,oLeftY,oRightX,oRightY;
-    other.getPositionAtTime(useGuiCurves, time, &ox, &oy,true);
-    other.getLeftBezierPointAtTime(useGuiCurves, time, &oLeftX, &oLeftY,true);
-    other.getRightBezierPointAtTime(useGuiCurves, time, &oRightX, &oRightY,true);
+    other.getPositionAtTime(useGuiCurves, time, view, &ox, &oy,true);
+    other.getLeftBezierPointAtTime(useGuiCurves, time, view, &oLeftX, &oLeftY,true);
+    other.getRightBezierPointAtTime(useGuiCurves, time, view, &oRightX, &oRightY,true);
 
     if ( (x == ox) && (y == oy) && (leftX == oLeftX) && (leftY == oLeftY) && (rightX == oRightX) && (rightY == oRightY) ) {
         return true;

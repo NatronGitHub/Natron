@@ -28,10 +28,15 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <cairo/cairo.h>
+
+
 #include "Engine/Node.h"
 #include "Engine/Image.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/RotoStrokeItem.h"
+#include "Engine/RotoContext.h"
+#include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -78,33 +83,14 @@ RotoSmear::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
     depths->push_back(eImageBitDepthFloat);
 }
 
-void
-RotoSmear::getPreferredDepthAndComponents(int /*inputNb*/,std::list<ImageComponents>* comp,ImageBitDepthEnum* depth) const
-{
-    EffectInstPtr input = getInput(0);
-    if (input) {
-        return input->getPreferredDepthAndComponents(-1, comp, depth);
-    } else {
-        comp->push_back(ImageComponents::getRGBAComponents());
-        *depth = eImageBitDepthFloat;
-    }
-}
 
-
-ImagePremultiplicationEnum
-RotoSmear::getOutputPremultiplication() const
-{
-    EffectInstPtr input = getInput(0);
-    if (input) {
-        return input->getOutputPremultiplication();
-    } else {
-        return eImagePremultiplicationPremultiplied;
-    }
-    
-}
 
 StatusEnum
-RotoSmear::getRegionOfDefinition(U64 hash,double time, const RenderScale & scale, int view, RectD* rod)
+RotoSmear::getRegionOfDefinition(U64 hash,
+                                 double time,
+                                 const RenderScale & scale,
+                                 ViewIdx view,
+                                 RectD* rod)
 {
     StatusEnum st = EffectInstance::getRegionOfDefinition(hash, time, scale, view, rod);
     if (st != eStatusOK) {
@@ -126,32 +112,24 @@ RotoSmear::getRegionOfDefinition(U64 hash,double time, const RenderScale & scale
     return eStatusOK;
 }
 
-double
-RotoSmear::getPreferredAspectRatio() const
-{
-    EffectInstPtr input = getInput(0);
-    if (input) {
-        return input->getPreferredAspectRatio();
-    } else {
-        return 1.;
-    }
-    
-}
+
 
 bool
 RotoSmear::isIdentity(double time,
-                const RenderScale & scale,
-                const RectI & roi,
-                int /*view*/,
-                double* inputTime,
-                int* inputNb)
+                      const RenderScale & scale,
+                      const RectI & roi,
+                      ViewIdx view,
+                      double* inputTime,
+                      ViewIdx* inputView,
+                      int* inputNb)
 {
+    *inputView = view;
     RectD maskRod;
     NodePtr node = getNode();
     node->getPaintStrokeRoD(time, &maskRod);
     
     RectI maskPixelRod;
-    maskRod.toPixelEnclosing(scale, getPreferredAspectRatio(), &maskPixelRod);
+    maskRod.toPixelEnclosing(scale, getAspectRatio(-1), &maskPixelRod);
     if (!maskPixelRod.intersects(roi)) {
         *inputTime = time;
         *inputNb = 0;
@@ -160,70 +138,73 @@ RotoSmear::isIdentity(double time,
     return false;
 }
 
-static ImagePtr renderSmearMaskDot( boost::shared_ptr<RotoStrokeItem>& stroke, const Point& p, double pressure, double brushSize, const ImageComponents& comps, ImageBitDepthEnum depth, unsigned int mipmapLevel)
-{
-    RectD dotRod(p.x - brushSize / 2., p.y - brushSize / 2., p.x + brushSize / 2., p.y + brushSize / 2.);
-    
-    std::list<std::pair<Point,double> > points;
-    points.push_back(std::make_pair(p, pressure));
-    ImagePtr ret;
-    stroke->renderSingleStroke(stroke, dotRod, points, mipmapLevel, 1., comps, depth, 0, &ret);
-    return ret;
-}
 
-
-static void renderSmearDot(boost::shared_ptr<RotoStrokeItem>& stroke,
+static void renderSmearDot(const unsigned char* maskData,
+                           const int maskStride,
+                           const int maskWidth,
+                           const int maskHeight,
                            const Point& prev,
                            const Point& next,
-                           double /*prevPress*/,
-                           double nextPress,
-                           double brushSize,
-                           ImageBitDepthEnum depth,
-                           unsigned int mipmapLevel,
+                           const double brushSizePixels,
                            int nComps,
                            const ImagePtr& outputImage)
 {
-    ImagePtr dotMask = renderSmearMaskDot( stroke, next, nextPress, brushSize, ImageComponents::getAlphaComponents(), depth, mipmapLevel);
-    assert(dotMask);
     
-    RectI nextDotBounds = dotMask->getBounds();
-    
-    
-    RectD prevDotRoD(prev.x - brushSize / 2., prev.y - brushSize / 2., prev.x + brushSize / 2., prev.y + brushSize / 2.);
+    /// First copy the portion of the image around the previous dot into tmpBuf
+    RectD prevDotRoD(prev.x - brushSizePixels / 2., prev.y - brushSizePixels / 2., prev.x + brushSizePixels / 2., prev.y + brushSizePixels / 2.);
     RectI prevDotBounds;
-    prevDotRoD.toPixelEnclosing(mipmapLevel, outputImage->getPixelAspectRatio(), &prevDotBounds);
-    
-    
-    
-    ImagePtr tmpBuf(new Image(outputImage->getComponents(),prevDotRoD, prevDotBounds, mipmapLevel, outputImage->getPixelAspectRatio(), depth, false));
+    prevDotRoD.toPixelEnclosing(0, outputImage->getPixelAspectRatio(), &prevDotBounds);
+    ImagePtr tmpBuf(new Image(outputImage->getComponents(),
+                              prevDotRoD,
+                              prevDotBounds,
+                              0,
+                              outputImage->getPixelAspectRatio(),
+                              outputImage->getBitDepth(),
+                              outputImage->getPremultiplication(),
+                              outputImage->getFieldingOrder(),
+                              false));
     tmpBuf->pasteFrom(*outputImage, prevDotBounds, false);
     
     Image::ReadAccess tmpAcc(tmpBuf.get());
     Image::WriteAccess wacc(outputImage.get());
-    Image::ReadAccess mracc = dotMask->getReadRights();
+    
+    RectI nextDotBounds;
+    nextDotBounds.x1 = next.x - maskWidth / 2;
+    nextDotBounds.x2 = next.x + maskWidth / 2;
+    nextDotBounds.y1 = next.y - maskHeight / 2;
+    nextDotBounds.y2 = next.y + maskHeight / 2;
 
+    const unsigned char* mask_pixels = maskData;
     
     int yPrev = prevDotBounds.y1;
-    for (int y = nextDotBounds.y1; y < nextDotBounds.y2; ++y,++yPrev) {
+    for (int y = nextDotBounds.y1; y < nextDotBounds.y2;
+         ++y,
+         ++yPrev,
+         mask_pixels += maskStride) {
         
         float* dstPixels = (float*)wacc.pixelAt(nextDotBounds.x1, y);
-        const float* maskPixels = (const float*)mracc.pixelAt(nextDotBounds.x1, y);
-        assert(dstPixels && maskPixels);
+        assert(dstPixels);
+        if (!dstPixels) {
+            continue;
+        }
         
         int xPrev = prevDotBounds.x1;
         for (int x = nextDotBounds.x1; x < nextDotBounds.x2;
              ++x, ++xPrev,
-             dstPixels += nComps,
-             ++maskPixels) {
+             dstPixels += nComps) {
             
             const float* srcPixels = (const float*)tmpAcc.pixelAt(xPrev, yPrev);
 
             if (srcPixels) {
-                for (int k = 0; k < nComps; ++k) {
-                    dstPixels[k] = srcPixels[k] * *maskPixels + dstPixels[k] * (1. - *maskPixels);
-                }
                 
-              
+                float mask_scale = Image::convertPixelDepth<unsigned char, float>(mask_pixels[x - nextDotBounds.x1]);
+                float one_minus_mask_scale = 1. - mask_scale;
+                
+                for (int k = 0; k < nComps; ++k) {
+                    dstPixels[k] = srcPixels[k] * mask_scale + dstPixels[k] * one_minus_mask_scale;
+                }
+            } else {
+                
             }
             
         }
@@ -247,7 +228,7 @@ RotoSmear::render(const RenderActionArgs& args)
     
     std::list<std::list<std::pair<Point,double> > > strokes;
     int strokeIndex;
-    node->getLastPaintStrokePoints(args.time, &strokes, &strokeIndex);
+    node->getLastPaintStrokePoints(args.time, mipmapLevel, &strokes, &strokeIndex);
 
     
     bool isFirstStrokeTick = false;
@@ -276,17 +257,23 @@ RotoSmear::render(const RenderActionArgs& args)
     EffectInstance::ComponentsNeededMap::iterator foundBg = neededComps.find(0);
    
     
-    double par = getPreferredAspectRatio();
     RectI bgImgRoI;
     
     
+    double brushHardness = stroke->getBrushHardnessKnob()->getValueAtTime(args.time);
     double brushSize = stroke->getBrushSizeKnob()->getValueAtTime(args.time);
     double brushSpacing = stroke->getBrushSpacingKnob()->getValueAtTime(args.time);
+    double opacity = stroke->getOpacity(args.time);
     if (brushSpacing > 0) {
         brushSpacing = std::max(0.05, brushSpacing);
     }
     
     brushSpacing = std::max(brushSpacing, 0.05);
+    
+    double brushSizePixel = brushSize;
+    if (mipmapLevel != 0) {
+        brushSizePixel = std::max(1.,brushSizePixel / (1 << mipmapLevel));
+    }
         
     //This is the distance between each dot we render
     double maxDistPerSegment = brushSize * brushSpacing;
@@ -303,6 +290,17 @@ RotoSmear::render(const RenderActionArgs& args)
     std::pair<Point,double> prev,cur,renderPoint;
     
     bool bgInitialized = false;
+    
+    CairoImageWrapper imgWrapper;
+    if (!RotoContext::allocateAndRenderSingleDotStroke(brushSizePixel, brushHardness, opacity, imgWrapper)) {
+        return eStatusFailed;
+    }
+    
+    
+    int maskWidth = cairo_image_surface_get_width(imgWrapper.cairoImg);
+    int maskHeight = cairo_image_surface_get_height(imgWrapper.cairoImg);
+    int maskStride = cairo_image_surface_get_stride(imgWrapper.cairoImg);
+    unsigned char* maskData = cairo_image_surface_get_data(imgWrapper.cairoImg);
 
     for (std::list<std::list<std::pair<Point,double> > >::const_iterator itStroke = strokes.begin(); itStroke!=strokes.end(); ++itStroke) {
         int firstPoint = (int)std::floor((itStroke->size() * writeOnStart));
@@ -326,13 +324,15 @@ RotoSmear::render(const RenderActionArgs& args)
         if (strokeIndex == 0) {
             ///For the first multi-stroke, init background
             if (foundBg != neededComps.end()) {
-                bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, foundBg->second.front(), eImageBitDepthFloat, par, false, true, &bgImgRoI);
+                bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, 0, false, false, &bgImgRoI);
             }
         }
         
         
         for (std::list<std::pair<ImageComponents,boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane) {
+            
+            assert(plane->second->getMipMapLevel() == mipmapLevel);
             
             distToNext = 0.;
             int nComps = plane->first.getNumComponents();
@@ -367,7 +367,7 @@ RotoSmear::render(const RenderActionArgs& args)
                 //This is the very first dot we render
                 prev = *it;
                 ++it;
-                renderSmearDot(stroke,prev.first,it->first,prev.second,it->second,brushSize,plane->second->getBitDepth(),mipmapLevel, nComps, plane->second);
+                renderSmearDot(maskData, maskStride, maskWidth, maskHeight, prev.first, it->first, brushSizePixel, nComps, plane->second);
                 didPaint = true;
                 renderPoint = *it;
                 prev = renderPoint;
@@ -431,7 +431,7 @@ RotoSmear::render(const RenderActionArgs& args)
                 
                 prevPoint.x = prev.first.x + vx * v.x;
                 prevPoint.y = prev.first.y + vy * v.y;
-                renderSmearDot(stroke,prevPoint,renderPoint.first,renderPoint.second,renderPoint.second,brushSize,plane->second->getBitDepth(),mipmapLevel, nComps,plane->second);
+                renderSmearDot(maskData, maskStride, maskWidth, maskHeight, prevPoint, renderPoint.first, brushSizePixel, nComps, plane->second);
                 didPaint = true;
                 prev = renderPoint;
                 cur = renderPoint;

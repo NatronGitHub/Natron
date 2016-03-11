@@ -44,12 +44,14 @@ GCC_DIAG_ON(sign-compare)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
+#include <SequenceParsing.h>
+
 #include "Engine/Variant.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/CurveSerialization.h"
 #include "Engine/StringAnimationManager.h"
-#include <SequenceParsing.h>
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 
@@ -212,7 +214,7 @@ struct ValueSerialization
         ar & ::boost::serialization::make_nvp("HasAnimation",hasAnimation);
 
         if (hasAnimation) {
-            ar & ::boost::serialization::make_nvp("Curve",*( _knob->getCurve(_dimension,true) ));
+            ar & ::boost::serialization::make_nvp("Curve",*( _knob->getCurve(ViewIdx(0),_dimension,true) ));
         }
 
         if (isInt && !isChoice) {
@@ -283,10 +285,10 @@ struct ValueSerialization
             ///Don't try to load keyframes
             convertOldFileKeyframesToPattern = isFile && isFile->getName() == kOfxImageEffectFileParamName;
             if (!convertOldFileKeyframesToPattern) {
-                boost::shared_ptr<Curve> curve = _knob->getCurve(_dimension);
+                boost::shared_ptr<Curve> curve = _knob->getCurve(ViewIdx(0),_dimension);
                 assert(curve);
                 if (curve) {
-                    _knob->getCurve(_dimension)->clone(c);
+                    _knob->getCurve(ViewIdx(0),_dimension)->clone(c);
                 }
             }
         }
@@ -294,15 +296,15 @@ struct ValueSerialization
         if (isInt && !isChoice) {
             int v;
             ar & ::boost::serialization::make_nvp("Value",v);
-            isInt->setValue(v,_dimension);
+            isInt->setValue(v, ViewSpec::all(), _dimension);
         } else if (isBool && !isGrp && !isPage && !isSep && !btn) {
             bool v;
             ar & ::boost::serialization::make_nvp("Value",v);
-            isBool->setValue(v,_dimension);
+            isBool->setValue(v, ViewSpec::all(), _dimension);
         } else if (isDouble && !isParametric) {
             double v;
             ar & ::boost::serialization::make_nvp("Value",v);
-            isDouble->setValue(v,_dimension);
+            isDouble->setValue(v, ViewSpec::all(), _dimension);
         } else if (isChoice) {
             int v;
             ar & ::boost::serialization::make_nvp("Value", v);
@@ -316,12 +318,12 @@ struct ValueSerialization
                 }
                 
             }
-            isChoice->setValue(v, _dimension);
+            isChoice->setValue(v, ViewIdx(0), _dimension);
 
         } else if (isString && !isFile) {
             std::string v;
             ar & ::boost::serialization::make_nvp("Value",v);
-            isString->setValue(v,_dimension);
+            isString->setValue(v, ViewIdx(0), _dimension);
         } else if (isFile) {
             std::string v;
             ar & ::boost::serialization::make_nvp("Value",v);
@@ -334,7 +336,7 @@ struct ValueSerialization
                                                               content.getNumPrependingZeroes() + 1,
                                                               &v);
             }
-            isFile->setValue(v,_dimension);
+            isFile->setValue(v, ViewIdx(0),_dimension);
         }
 
         ///We cannot restore the master yet. It has to be done in another pass.
@@ -614,8 +616,11 @@ class KnobSerialization : public KnobSerializationBase
                 //ChoiceExtraData* cData = new ChoiceExtraData;
                 assert(_extraData);
                 ChoiceExtraData* cData = dynamic_cast<ChoiceExtraData*>(_extraData);
-                ar & ::boost::serialization::make_nvp("ChoiceLabel",cData->_choiceString);
-                //_extraData = cData;
+                assert(cData);
+                if (cData) {
+                    ar & ::boost::serialization::make_nvp("ChoiceLabel", cData->_choiceString);
+                    //_extraData = cData;
+                }
             }
             
             
@@ -915,7 +920,7 @@ boost::shared_ptr<KnobSerialization> createDefaultValueForParam(const std::strin
     boost::shared_ptr< Knob<T> > knob(new Knob<T>(NULL, paramName, 1, false));
     knob->populate();
     knob->setName(paramName);
-    knob->setValue(value,0);
+    knob->setValue(value);
     boost::shared_ptr<KnobSerialization> ret(new KnobSerialization(knob));
     return ret;
 }
@@ -958,7 +963,7 @@ public:
         
         if (isGrp) {
             children = isGrp->getChildren();
-        } else {
+        } else if (isPage) {
             children = isPage->getChildren();
         }
         for (U32 i = 0; i < children.size(); ++i) {

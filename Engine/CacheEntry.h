@@ -34,6 +34,10 @@
 #include <vector>
 #include <fstream>
 
+#ifdef __NATRON_WIN32__
+#include <windows.h>
+#endif
+
 #include <QtCore/QFile>
 #include <QtCore/QMutex>
 #include <QtCore/QReadWriteLock>
@@ -50,6 +54,7 @@
 #include "Engine/NonKeyParams.h"
 #include <SequenceParsing.h> // for removePath
 #include "Engine/EngineFwd.h"
+#include "Global/GlobalDefines.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -426,7 +431,7 @@ public:
             }
         }
         
-        QString hashKeyStr(filename.c_str());
+        QString hashKeyStr = QString::fromUtf8(filename.c_str());
         
         //prepend the 2 digits of the containing directory
         {
@@ -441,7 +446,7 @@ public:
                 }
                 assert(foundSep != std::string::npos);
                 std::string enclosingDirName = path.substr(foundSep + 1, std::string::npos);
-                hashKeyStr.prepend(enclosingDirName.c_str());
+                hashKeyStr.prepend(QString::fromUtf8(enclosingDirName.c_str()));
             }
         }
         
@@ -651,7 +656,7 @@ public:
         std::string name(path);
 
         if ( path.empty() ) {
-            QDir subfolder( path.c_str() );
+            QDir subfolder(QString::fromUtf8(path.c_str()));
             if ( !subfolder.exists() ) {
                 std::cout << "(" << std::hex <<
                     this << ") " <<   "Something is wrong in cache... couldn't find : " << path << std::endl;
@@ -825,10 +830,20 @@ private:
 
     static bool fileExists(const std::string& filename)
     {
-        std::ifstream f(filename.c_str());
-        bool ret = f.good();
-        f.close();
-        return ret;
+#ifdef _WIN32
+        WIN32_FIND_DATAW FindFileData;
+        std::wstring wpath = Global::utf8_to_utf16 (filename);
+        HANDLE handle = FindFirstFileW(wpath.c_str(), &FindFileData) ;
+        if (handle != INVALID_HANDLE_VALUE) {
+            FindClose(handle);
+            return true;
+        }
+        return false;
+#else
+        // on Unix platforms passing in UTF-8 works
+        std::ifstream fs(filename.c_str());
+        return fs.is_open() && fs.good();
+#endif
     }
 
     /** @brief This function is called in allocateMeory(...) and before the object is exposed

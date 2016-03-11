@@ -58,7 +58,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    LinkToKnobDialog(KnobGui* from,
+    LinkToKnobDialog(const KnobGuiPtr& from,
                      QWidget* parent);
 
     virtual ~LinkToKnobDialog();

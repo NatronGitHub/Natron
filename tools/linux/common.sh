@@ -50,7 +50,7 @@ GIT_OCIO_CONFIG_TAR=https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natr
 COLOR_PROFILES_VERSION=2.0.1
 
 # bump timestamp on SDK changes, important!
-CORELIBS_VERSION=20160121
+CORELIBS_VERSION=20160226
 
 # SDK
 #
@@ -116,6 +116,7 @@ GIT_BREAKPAD=https://github.com/MrKepzie/google-breakpad
 GIT_NATRON=https://github.com/MrKepzie/Natron.git
 GIT_IO=https://github.com/MrKepzie/openfx-io.git
 GIT_MISC=https://github.com/devernay/openfx-misc.git
+GIT_UNIT=https://github.com/MrKepzie/Natron-Tests.git
 
 QT4_TAR=qt-everywhere-opensource-src-4.8.7.tar.gz
 QT5_TAR=qt-everywhere-opensource-src-5.6.0-beta.tar.gz
@@ -125,18 +126,18 @@ YASM_TAR=yasm-1.3.0.tar.gz
 CMAKE_TAR=cmake-3.1.2.tar.gz
 PY2_TAR=Python-2.7.11.tar.xz
 PY3_TAR=Python-3.5.1.tar.xz
-JPG_TAR=jpegsrc.v9a.tar.gz
+TJPG_TAR=libjpeg-turbo-1.4.2.tar.gz
 OJPG_TAR=openjpeg-1.5.2.tar.gz
 PNG_TAR=libpng-1.6.21.tar.xz
 TIF_TAR=tiff-4.0.6.tar.gz
 ILM_TAR=ilmbase-2.2.0.tar.gz
-EXR_TAR=openexr-2.2.0.tar.gz
+EXR_TAR=openexr-2.2.0.tar.gz.orig
 GLEW_TAR=glew-1.12.0.tgz
 BOOST_TAR=boost_1_55_0.tar.bz2
 CAIRO_TAR=cairo-1.14.6.tar.xz
-FFMPEG_TAR=ffmpeg-2.8.5.tar.xz
+FFMPEG_TAR=ffmpeg-2.8.6.tar.xz
 OCIO_TAR=OpenColorIO-1.0.9.tar.gz
-OIIO_TAR=oiio-Release-1.5.23.tar.gz
+OIIO_TAR=oiio-Release-1.6.11.tar.gz
 PYSIDE_TAR=pyside-qt4.8+1.2.2.tar.bz2
 PYSIDE2_TAR=pyside2-2.0.0.dev0.tar.gz
 SHIBOK_TAR=shiboken-1.2.2.tar.bz2
@@ -147,8 +148,8 @@ SEE_TAR=SeExpr-rel-1.0.1.tar.gz
 LIBRAW_TAR=LibRaw-0.16.0.tar.gz
 PIX_TAR=pixman-0.32.8.tar.gz
 LCMS_TAR=lcms2-2.7.tar.gz
-MAGICK_TAR=ImageMagick-6.9.2-10.tar.xz
-SSL_TAR=openssl-1.0.0t.tar.gz
+MAGICK_TAR=ImageMagick-6.9.3-5.tar.xz
+SSL_TAR=openssl-1.0.2f.tar.gz
 JASP_TAR=jasper-1.900.1.zip
 NATRON_API_DOC=https://media.readthedocs.org/pdf/natron/workshop/natron.pdf
 LAME_TAR=lame-3.99.5.tar.gz
@@ -179,6 +180,9 @@ GDK_TAR=gdk-pixbuf-2.32.1.tar.xz
 ELF_TAR=patchelf-0.8.tar.bz2
 ZIP_TAR=libzip-1.0.1.tar.xz
 GIF_TAR=giflib-5.1.2.tar.bz2
+CPPU_TAR=cppunit-1.13.2.tar.gz
+CDR_TAR=libcdr-0.1.2.tar.xz
+REVENGE_TAR=librevenge-0.0.4.tar.xz
 
 TC_GCC=4.8.5
 TC_MPC=1.0.1

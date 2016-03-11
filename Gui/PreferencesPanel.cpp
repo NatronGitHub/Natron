@@ -62,7 +62,7 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,
     _mainLayout->setContentsMargins(0,0,0,0);
     _mainLayout->setSpacing(0);
 
-    _panel = new DockablePanel(_gui,_settings.get(), _mainLayout, DockablePanel::eHeaderModeNoHeader,true, boost::shared_ptr<QUndoStack>(),"", "", false,"", this);
+    _panel = new DockablePanel(_gui,_settings.get(), _mainLayout, DockablePanel::eHeaderModeNoHeader,true, boost::shared_ptr<QUndoStack>(),QString(), QString(), false,QString(), this);
     _panel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     _mainLayout->addWidget(_panel);
 
@@ -80,9 +80,9 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,
    // _mainLayout->addStretch();
     _mainLayout->addWidget(_buttonBox);
 
-    QObject::connect( _restoreDefaultsB, SIGNAL( clicked() ), this, SLOT( restoreDefaults() ) );
-    QObject::connect( _buttonBox, SIGNAL( rejected() ), this, SLOT( cancelChanges() ) );
-    QObject::connect( _buttonBox, SIGNAL( accepted() ), this, SLOT( saveChangesAndClose() ) );
+    QObject::connect( _restoreDefaultsB, SIGNAL(clicked()), this, SLOT(restoreDefaults()) );
+    QObject::connect( _buttonBox, SIGNAL(rejected()), this, SLOT(cancelChanges()) );
+    QObject::connect( _buttonBox, SIGNAL(accepted()), this, SLOT(saveChangesAndClose()) );
     QObject::connect(_settings.get(), SIGNAL(settingChanged(KnobI*)), this,SLOT(onSettingChanged(KnobI*)));
 
     _panel->initializeKnobs();

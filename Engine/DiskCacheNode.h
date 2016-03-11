@@ -28,6 +28,7 @@
 #include "Global/Macros.h"
 
 #include "Engine/OutputEffectInstance.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -44,6 +45,8 @@ public:
     }
     
     DiskCacheNode(NodePtr node);
+    
+    virtual ~DiskCacheNode();
     
     virtual int getMajorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -121,27 +124,28 @@ public:
 
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return false;
+        return true;
     }
 
     virtual void initializeKnobs() OVERRIDE FINAL;
 
     virtual void getFrameRange(double *first,double *last) OVERRIDE FINAL;
-
-    virtual void getPreferredDepthAndComponents(int inputNb,std::list<ImageComponents>* comp,ImageBitDepthEnum* depth) const OVERRIDE FINAL;
-
-    virtual ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL;
-
-    virtual double getPreferredAspectRatio() const OVERRIDE FINAL;
+    
+    virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
+    
+    virtual bool isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
 
 private:
 
-    virtual void knobChanged(KnobI* k, ValueChangedReasonEnum reason, int view, double time,
+    virtual void knobChanged(KnobI* k,
+                             ValueChangedReasonEnum reason,
+                             ViewSpec view,
+                             double time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
 
     virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
 
-    virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, int view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     boost::scoped_ptr<DiskCacheNodePrivate> _imp;
 };

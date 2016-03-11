@@ -46,19 +46,20 @@
 
 #include <cairo/cairo.h>
 
+#include "Global/GlobalDefines.h"
 
+#include "Engine/AppManager.h"
 #include "Engine/BezierCP.h"
 #include "Engine/Curve.h"
-#include "Engine/KnobTypes.h"
-#include "Engine/Node.h"
-#include "Engine/Image.h"
 #include "Engine/EffectInstance.h"
-#include "Engine/AppManager.h"
-#include "Engine/RotoContext.h"
-#include "Global/GlobalDefines.h"
-#include "Engine/Transform.h"
+#include "Engine/Image.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/MergingEnum.h"
+#include "Engine/Node.h"
+#include "Engine/RotoContext.h"
 #include "Engine/RotoPaint.h"
+#include "Engine/Transform.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 #define ROTO_DEFAULT_OPACITY 1.
@@ -137,7 +138,7 @@
 #define kRotoBrushSizeParamHint "This is the diameter of the brush in pixels. Shift + drag on the viewer to modify this value"
 
 #define kRotoBrushSpacingParam "brushSpacing"
-#define kRotoBrushSpacingParamLabel "brushSpacing"
+#define kRotoBrushSpacingParamLabel "Brush Spacing"
 #define kRotoBrushSpacingParamHint "Spacing between stamps of the paint brush"
 
 #define kRotoBrushHardnessParam "brushHardness"
@@ -153,7 +154,7 @@
 #define kRotoBrushVisiblePortionParamHint "Defines the range of the stroke that should be visible: 0 is the start of the stroke and 1 the end."
 
 #define kRotoBrushPressureLabelParam "pressureAlters"
-#define kRotoBrushPressureLabelParamLabel "Pressure alters:"
+#define kRotoBrushPressureLabelParamLabel "Pressure alters"
 #define kRotoBrushPressureLabelParamHint ""
 
 #define kRotoBrushPressureOpacityParam "pressureOpacity"
@@ -448,6 +449,7 @@ struct BezierPrivate
                                                      double y,
                                                      double acceptance,
                                                      double time,
+                                                     ViewIdx view,
                                                      const Transform::Matrix3x3& transform,
                                                      int* index) const
     {
@@ -457,7 +459,7 @@ struct BezierPrivate
         for (BezierCPs::const_iterator it = points.begin(); it != points.end(); ++it, ++i) {
             Transform::Point3D p;
             p.z = 1;
-            (*it)->getPositionAtTime(true, time, &p.x, &p.y);
+            (*it)->getPositionAtTime(true, time, view, &p.x, &p.y);
             p = Transform::matApply(transform, p);
             if ( ( p.x >= (x - acceptance) ) && ( p.x <= (x + acceptance) ) && ( p.y >= (y - acceptance) ) && ( p.y <= (y + acceptance) ) ) {
                 *index = i;
@@ -473,6 +475,7 @@ struct BezierPrivate
                                                      double y,
                                                      double acceptance,
                                                      double time,
+                                                     ViewIdx view,
                                                      const Transform::Matrix3x3& transform,
                                                      int* index) const
     {
@@ -482,7 +485,7 @@ struct BezierPrivate
         for (BezierCPs::const_iterator it = featherPoints.begin(); it != featherPoints.end(); ++it, ++i) {
             Transform::Point3D p;
             p.z = 1;
-            (*it)->getPositionAtTime(true, time, &p.x, &p.y);
+            (*it)->getPositionAtTime(true, time, view, &p.x, &p.y);
             p = Transform::matApply(transform, p);
             if ( ( p.x >= (x - acceptance) ) && ( p.x <= (x + acceptance) ) && ( p.y >= (y - acceptance) ) && ( p.y <= (y + acceptance) ) ) {
                 *index = i;
@@ -767,7 +770,7 @@ struct RotoDrawableItemPrivate
     , brushSpacing(new KnobDouble(NULL, kRotoBrushSpacingParamLabel, 1, false))
     , brushHardness(new KnobDouble(NULL, kRotoBrushHardnessParamLabel, 1, false))
     , effectStrength(new KnobDouble(NULL, kRotoBrushEffectParamLabel, 1, false))
-    , pressureOpacity(new KnobBool(NULL, kRotoBrushPressureLabelParamLabel, 1, false))
+    , pressureOpacity(new KnobBool(NULL, kRotoBrushPressureOpacityParamLabel, 1, false))
     , pressureSize(new KnobBool(NULL, kRotoBrushPressureSizeParamLabel, 1, false))
     , pressureHardness(new KnobBool(NULL, kRotoBrushPressureHardnessParamLabel, 1, false))
     , buildUp(new KnobBool(NULL, kRotoBrushBuildupParamLabel, 1, false))
@@ -1272,7 +1275,7 @@ struct RotoContextPrivate
     boost::weak_ptr<KnobDouble> brushSpacingKnob;
     boost::weak_ptr<KnobDouble> brushHardnessKnob;
     boost::weak_ptr<KnobDouble> brushEffectKnob;
-    boost::weak_ptr<KnobString> pressureLabelKnob;
+    boost::weak_ptr<KnobSeparator> pressureLabelKnob;
     boost::weak_ptr<KnobBool> pressureOpacityKnob;
     boost::weak_ptr<KnobBool> pressureSizeKnob;
     boost::weak_ptr<KnobBool> pressureHardnessKnob;
@@ -1751,12 +1754,9 @@ struct RotoContextPrivate
             strokeKnobs.push_back(effectStrength);
             brushEffectKnob = effectStrength;
             
-            boost::shared_ptr<KnobString> pressureLabel = AppManager::createKnob<KnobString>(effect.get(), kRotoBrushPressureLabelParamLabel);
+            boost::shared_ptr<KnobSeparator> pressureLabel = AppManager::createKnob<KnobSeparator>(effect.get(), kRotoBrushPressureLabelParamLabel);
             pressureLabel->setName(kRotoBrushPressureLabelParam);
             pressureLabel->setHintToolTip(kRotoBrushPressureLabelParamHint);
-            pressureLabel->setAsLabel();
-            pressureLabel->setAnimationEnabled(false);
-            pressureLabel->setDefaultAllDimensionsEnabled(false);
             strokePage->addKnob(pressureLabel);
             knobs.push_back(pressureLabel);
             strokeKnobs.push_back(pressureLabel);
@@ -2128,8 +2128,8 @@ struct RotoContextPrivate
     }
     
     
-    void renderDot(cairo_t* cr,
-                   std::vector<cairo_pattern_t*>& dotPatterns,
+    static void renderDot(cairo_t* cr,
+                   std::vector<cairo_pattern_t*>* dotPatterns,
                    const Point &center,
                    double internalDotRadius,
                    double externalDotRadius,
@@ -2139,7 +2139,7 @@ struct RotoContextPrivate
                    double opacity);
 
     
-    double renderStroke(cairo_t* cr,
+    static double renderStroke(cairo_t* cr,
                         std::vector<cairo_pattern_t*>& dotPatterns,
                         const std::list<std::list<std::pair<Point,double> > >& strokes,
                         double distToNext,

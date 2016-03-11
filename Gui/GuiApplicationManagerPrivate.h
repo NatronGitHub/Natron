@@ -58,16 +58,9 @@ NATRON_NAMESPACE_ENTER;
 
 struct KnobsClipBoard
 {
-    std::list<Variant> values; //< values
-    std::list< boost::shared_ptr<Curve> > curves; //< animation
-    std::list< boost::shared_ptr<Curve> > parametricCurves; //< for parametric knobs
-    std::map<int,std::string> stringAnimation; //< for animating string knobs
-    bool isEmpty; //< is the clipboard empty
-    bool copyAnimation; //< should we copy all the animation or not
-    
-    std::string appID;
-    std::string nodeFullyQualifiedName;
-    std::string paramName;
+    KnobClipBoardType type;
+    int dimension;
+    KnobPtr serialization;
 };
 
 
@@ -78,7 +71,7 @@ struct GuiApplicationManagerPrivate
     std::list<boost::shared_ptr<PluginGroupNode> > _topLevelToolButtons;
     boost::scoped_ptr<KnobsClipBoard> _knobsClipBoard;
     boost::scoped_ptr<KnobGuiFactory> _knobGuiFactory;
-    QCursor* _colorPickerCursor;
+    QCursor _colorPickerCursor, _linkToCursor, _linkMultCursor;
     SplashScreen* _splashScreen;
 
     ///We store here the file open request that was made on startup but that
@@ -110,24 +103,28 @@ struct GuiApplicationManagerPrivate
 
     void createColorPickerCursor();
     
+    void createLinkToCursor();
+    
+    void createLinkMultCursor();
+    
     void removePluginToolButtonInternal(const boost::shared_ptr<PluginGroupNode>& n,const QStringList& grouping);
     void removePluginToolButton(const QStringList& grouping);
 
-    void addStandardKeybind(const QString & grouping,const QString & id,
-                            const QString & description,QKeySequence::StandardKey key,
+    void addStandardKeybind(const std::string & grouping,const std::string & id,
+                            const std::string & description,QKeySequence::StandardKey key,
                             const Qt::KeyboardModifiers & fallbackmodifiers,Qt::Key fallbacksymbol);
 
-    void addKeybind(const QString & grouping,const QString & id,
-                    const QString & description,
+    void addKeybind(const std::string & grouping,const std::string & id,
+                    const std::string & description,
                     const Qt::KeyboardModifiers & modifiers,Qt::Key symbol);
     
-    void addKeybind(const QString & grouping,const QString & id,
-                    const QString & description,
+    void addKeybind(const std::string & grouping,const std::string & id,
+                    const std::string & description,
                     const Qt::KeyboardModifiers & modifiers,Qt::Key symbol,
                     const Qt::KeyboardModifiers & modifiersMask);
     
-    void addKeybind(const QString & grouping,const QString & id,
-                    const QString & description,
+    void addKeybind(const std::string & grouping,const std::string & id,
+                    const std::string & description,
                     const Qt::KeyboardModifiers & modifiers1,Qt::Key symbol1,
                     const Qt::KeyboardModifiers & modifiers2,Qt::Key symbol2);
     
@@ -139,8 +136,8 @@ struct GuiApplicationManagerPrivate
     
     void removeKeybind(const QString& grouping,const QString& id);
 
-    void addMouseShortcut(const QString & grouping,const QString & id,
-                          const QString & description,
+    void addMouseShortcut(const std::string & grouping,const std::string & id,
+                          const std::string & description,
                           const Qt::KeyboardModifiers & modifiers,Qt::MouseButton button);
     
     boost::shared_ptr<PluginGroupNode>  findPluginToolButtonInternal(const std::list<boost::shared_ptr<PluginGroupNode> >& children,

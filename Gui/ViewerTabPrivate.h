@@ -38,6 +38,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/Enums.h"
 
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 #include "Gui/ComboBox.h"
@@ -77,12 +78,14 @@ struct ViewerTabPrivate
     ComboBox* layerChoice;
     ComboBox* alphaChannelChoice;
     ChannelsComboBox* viewerChannels;
+    bool viewerChannelsAutoswitchedToAlpha;
     ComboBox* zoomCombobox;
     Button* syncViewerButton;
     Button* centerViewerButton;
     Button* clipToProjectFormatButton;
     Button* enableViewerRoI;
     Button* refreshButton;
+    Button* pauseButton;
     QIcon iconRefreshOff, iconRefreshOn;
     int ongoingRenderCount;
     
@@ -110,7 +113,7 @@ struct ViewerTabPrivate
     Button* checkerboardButton;
     Button* pickerButton;
     ComboBox* viewsComboBox;
-    int currentViewIndex;
+    ViewIdx currentViewIndex;
     QMutex currentViewMutex;
     /*Info*/
     InfoViewerWidget* infoWidget[2];
@@ -124,7 +127,6 @@ struct ViewerTabPrivate
     Button* previousKeyFrame_Button;
     Button* play_Backward_Button;
     Button* previousFrame_Button;
-    Button* stop_Button;
     Button* nextFrame_Button;
     Button* play_Forward_Button;
     Button* nextKeyFrame_Button;
@@ -133,13 +135,14 @@ struct ViewerTabPrivate
     SpinBox* incrementSpinBox;
     Button* nextIncrement_Button;
     Button* playbackMode_Button;
+    Button* playBackInputButton;
+    SpinBox* playBackInputSpinbox;
+    Button* playBackOutputButton;
+    SpinBox* playBackOutputSpinbox;
     
     mutable QMutex playbackModeMutex;
     PlaybackModeEnum playbackMode;
     
-    LineEdit* frameRangeEdit;
-
-    ClickableLabel* canEditFrameRangeLabel;
     Button* tripleSyncButton;
     
     QCheckBox* canEditFpsBox;
@@ -187,13 +190,13 @@ struct ViewerTabPrivate
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     // return the tronsform to apply to the overlay as a 3x3 homography in canonical coordinates
     bool getOverlayTransform(double time,
-                             int view,
+                             ViewIdx view,
                              const NodePtr& target,
                              EffectInstance* currentNode,
                              Transform::Matrix3x3* transform) const;
 
     bool getTimeTransform(double time,
-                          int view,
+                          ViewIdx view,
                           const NodePtr& target,
                           EffectInstance* currentNode,
                           double *newTime) const;

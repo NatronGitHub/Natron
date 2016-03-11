@@ -28,6 +28,7 @@
 #include <stdexcept>
 
 #include "Engine/Transform.h" // Matrix3x3
+#include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -61,13 +62,14 @@ bool
 NoOpBase::isIdentity(double time,
                      const RenderScale & /*scale*/,
                      const RectI & /*roi*/,
-                     int /*view*/,
+                     ViewIdx view,
                      double* inputTime,
+                     ViewIdx* inputView,
                      int* inputNb)
 {
     *inputTime = time;
     *inputNb = 0;
-
+    *inputView = view;
     return true;
 }
 
@@ -82,7 +84,7 @@ NoOpBase::isHostChannelSelectorSupported(bool* /*defaultR*/,bool* /*defaultG*/, 
 StatusEnum
 NoOpBase::getTransform(double /*time*/,
                        const RenderScale & /*renderScale*/,
-                       int /*view*/,
+                       ViewIdx /*view*/,
                        EffectInstPtr* inputToTransform,
                        Transform::Matrix3x3* transform)
 {

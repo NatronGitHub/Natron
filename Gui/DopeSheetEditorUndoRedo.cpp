@@ -31,7 +31,9 @@
 #include "Engine/Knob.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
-#include <Engine/ViewerInstance.h>
+#include "Engine/ReadNode.h"
+#include "Engine/ViewIdx.h"
+#include "Engine/ViewerInstance.h"
 
 #include "Global/GlobalDefines.h"
 
@@ -61,7 +63,7 @@ void moveReader(const NodePtr &reader, double dt)
 {
     Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(reader->getKnobByName(kReaderParamNameStartingTime).get());
     assert(startingTimeKnob);
-    KnobHelper::ValueChangedReturnCodeEnum s = startingTimeKnob->setValue(startingTimeKnob->getValue() + dt, 0, eValueChangedReasonNatronGuiEdited, 0);
+    KnobHelper::ValueChangedReturnCodeEnum s = startingTimeKnob->setValue(startingTimeKnob->getValue() + dt, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
     Q_UNUSED(s);
 }
     
@@ -69,7 +71,7 @@ void moveTimeOffset(const NodePtr& node, double dt)
 {
     Knob<int>* timeOffsetKnob = dynamic_cast<Knob<int>*>(node->getKnobByName(kTimeOffsetParamNameTimeOffset).get());
     assert(timeOffsetKnob);
-    KnobHelper::ValueChangedReturnCodeEnum s = timeOffsetKnob->setValue(timeOffsetKnob->getValue() + dt, 0, eValueChangedReasonNatronGuiEdited, 0);
+    KnobHelper::ValueChangedReturnCodeEnum s = timeOffsetKnob->setValue(timeOffsetKnob->getValue() + dt, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
     Q_UNUSED(s);
 }
 
@@ -77,7 +79,7 @@ void moveFrameRange(const NodePtr& node, double dt)
 {
     Knob<int>* frameRangeKnob = dynamic_cast<Knob<int>*>(node->getKnobByName(kFrameRangeParamNameFrameRange).get());
     assert(frameRangeKnob);
-    frameRangeKnob->setValues(frameRangeKnob->getValue(0) + dt, frameRangeKnob->getValue(1)  + dt, eValueChangedReasonNatronGuiEdited);
+    frameRangeKnob->setValues(frameRangeKnob->getValue() + dt, frameRangeKnob->getValue(1)  + dt, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
 }
     
 void moveGroupNode(DopeSheetEditor* model, const NodePtr& node, double dt)
@@ -95,9 +97,11 @@ void moveGroupNode(DopeSheetEditor* model, const NodePtr& node, double dt)
         NodeGroup* isChildGroup = (*it)->isEffectGroup();
         
         // Move readers
-        if (pluginID == PLUGINID_OFX_READOIIO ||
-            pluginID == PLUGINID_OFX_READFFMPEG ||
-            pluginID == PLUGINID_OFX_READPFM) {
+#ifndef NATRON_ENABLE_IO_META_NODES
+        if (ReadNode::isBundledReader(pluginID)) {
+#else
+        if (pluginID == PLUGINID_NATRON_READ) {
+#endif
             moveReader(*it, dt);
         } else if (pluginID == PLUGINID_OFX_TIMEOFFSET) {
             moveTimeOffset(*it, dt);
@@ -117,17 +121,17 @@ void moveGroupNode(DopeSheetEditor* model, const NodePtr& node, double dt)
             }
         
             for (int dim = 0; dim < knob->getDimension(); ++dim) {
-                if (!knob->isAnimated(dim)) {
+                if (!knob->isAnimated(dim, ViewIdx(0))) {
                     continue;
                 }
-                KeyFrameSet keyframes = knob->getCurve(dim)->getKeyFrames_mt_safe();
+                KeyFrameSet keyframes = knob->getCurve(ViewIdx(0), dim)->getKeyFrames_mt_safe();
                 
                 for (KeyFrameSet::iterator kfIt = keyframes.begin(); kfIt != keyframes.end(); ++kfIt) {
                     KeyFrame kf = (*kfIt);
                     
                     KeyFrame fake;
                     
-                    knob->moveValueAtTime(eCurveChangeReasonDopeSheet,kf.getTime(), dim, dt, 0, &fake);
+                    knob->moveValueAtTime(eCurveChangeReasonDopeSheet,kf.getTime(), ViewSpec::all(), dim, dt, 0, &fake);
                 }
             }
         }
@@ -227,7 +231,7 @@ void DSMoveKeysAndNodesCommand::moveSelection(double dt)
 
         KnobPtr knob = knobContext->getKnobGui()->getKnob();
 
-        knob->moveValueAtTime(eCurveChangeReasonDopeSheet,selectedKey->key.getTime(),
+        knob->moveValueAtTime(eCurveChangeReasonDopeSheet,selectedKey->key.getTime(), ViewIdx(0),
                               knobContext->getDimension(),
                               dt, 0, &selectedKey->key);
     }
@@ -350,7 +354,7 @@ DSTransformKeysCommand::undo()
     }
     
     for (TransformKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
-        it->first->getInternalKnob()->cloneCurve(it->first->getDimension(),*it->second.oldCurve);
+        it->first->getInternalKnob()->cloneCurve(ViewSpec::all(), it->first->getDimension(), *it->second.oldCurve);
     }
     for (std::list<KnobHolder*>::iterator it= differentKnobs.begin(); it!=differentKnobs.end(); ++it) {
         (*it)->endChanges();
@@ -387,7 +391,7 @@ DSTransformKeysCommand::redo()
     
     if (!_firstRedoCalled) {
         for (TransformKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
-            it->second.oldCurve.reset(new Curve(*it->first->getInternalKnob()->getCurve(it->first->getDimension())));
+            it->second.oldCurve.reset(new Curve(*it->first->getInternalKnob()->getCurve(ViewIdx(0),it->first->getDimension())));
             
         }
         for (TransformKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
@@ -397,12 +401,12 @@ DSTransformKeysCommand::redo()
         }
 
         for (TransformKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
-            it->second.newCurve.reset(new Curve(*it->first->getInternalKnob()->getCurve(it->first->getDimension())));
+            it->second.newCurve.reset(new Curve(*it->first->getInternalKnob()->getCurve(ViewIdx(0),it->first->getDimension())));
         }
         _firstRedoCalled = true;
     } else {
         for (TransformKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
-            it->first->getInternalKnob()->cloneCurve(it->first->getDimension(),*it->second.newCurve);
+            it->first->getInternalKnob()->cloneCurve(ViewIdx(0),it->first->getDimension(),*it->second.newCurve);
         }
 
     }
@@ -427,7 +431,7 @@ DSTransformKeysCommand::transformKey(const DSKeyPtr& key)
     }
     
     KnobPtr knob = knobContext->getKnobGui()->getKnob();
-    knob->transformValueAtTime(eCurveChangeReasonDopeSheet,key->key.getTime(), knobContext->getDimension(), _transform, &key->key);
+    knob->transformValueAtTime(eCurveChangeReasonDopeSheet,key->key.getTime(), ViewSpec::all(), knobContext->getDimension(), _transform, &key->key);
 }
 
 int
@@ -515,7 +519,7 @@ void DSLeftTrimReaderCommand::trimLeft(double firstFrame)
         return;
     }
     effectInstance->beginChanges();
-    KnobHelper::ValueChangedReturnCodeEnum r = firstFrameKnob->setValue(firstFrame, 0, eValueChangedReasonNatronGuiEdited, 0);
+    KnobHelper::ValueChangedReturnCodeEnum r = firstFrameKnob->setValue(firstFrame, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
     effectInstance->endChanges();
 
     Q_UNUSED(r);
@@ -595,7 +599,7 @@ void DSRightTrimReaderCommand::trimRight(double lastFrame)
         return;
     }
     effectInstance->beginChanges();
-    KnobHelper::ValueChangedReturnCodeEnum r = lastFrameKnob->setValue(lastFrame, 0, eValueChangedReasonNatronGuiEdited, 0);
+    KnobHelper::ValueChangedReturnCodeEnum r = lastFrameKnob->setValue(lastFrame, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
     effectInstance->endChanges();
 
     Q_UNUSED(r);
@@ -710,11 +714,11 @@ void DSSlipReaderCommand::slipReader(double dt)
      for nothing.
      */
     DopeSheetView* view = _model->getDopesheetView();
-    QObject::disconnect(lastFrameKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(int, int)),
-            view, SLOT(onRangeNodeChanged(int, int)));
+    QObject::disconnect(lastFrameKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)),
+            view, SLOT(onRangeNodeChanged(ViewSpec,int,int)));
     
-    QObject::disconnect(startingTimeKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(int, int)),
-            view, SLOT(onRangeNodeChanged(int, int)));
+    QObject::disconnect(startingTimeKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)),
+            view, SLOT(onRangeNodeChanged(ViewSpec,int,int)));
 
     
     KnobHolder *holder = lastFrameKnob->getHolder();
@@ -727,21 +731,21 @@ void DSSlipReaderCommand::slipReader(double dt)
     {
         KnobHelper::ValueChangedReturnCodeEnum r;
 
-        r = firstFrameKnob->setValue(firstFrameKnob->getValue() - dt, 0, eValueChangedReasonNatronGuiEdited, 0);
+        r = firstFrameKnob->setValue(firstFrameKnob->getValue() - dt, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
         Q_UNUSED(r);
-        r = lastFrameKnob->setValue(lastFrameKnob->getValue() - dt, 0, eValueChangedReasonNatronGuiEdited, 0);
+        r = lastFrameKnob->setValue(lastFrameKnob->getValue() - dt, ViewSpec::all(),  0, eValueChangedReasonNatronGuiEdited, 0);
         Q_UNUSED(r);
-        r = timeOffsetKnob->setValue(timeOffsetKnob->getValue() + dt, 0, eValueChangedReasonNatronGuiEdited, 0);
+        r = timeOffsetKnob->setValue(timeOffsetKnob->getValue() + dt, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
         Q_UNUSED(r);
     }
     effectInstance->endChanges();
     
     
-    QObject::connect(lastFrameKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(int, int)),
-                        view, SLOT(onRangeNodeChanged(int, int)));
+    QObject::connect(lastFrameKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)),
+                        view, SLOT(onRangeNodeChanged(ViewSpec,int,int)));
     
-    QObject::connect(startingTimeKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(int, int)),
-                        view, SLOT(onRangeNodeChanged(int, int)));
+    QObject::connect(startingTimeKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)),
+                        view, SLOT(onRangeNodeChanged(ViewSpec,int,int)));
 
     view->update();
 }
@@ -780,13 +784,13 @@ void DSRemoveKeysCommand::addOrRemoveKeyframe(bool add)
             continue;
         }
 
-        KnobGui *knobGui = knobContext->getKnobGui();
-
+        KnobGuiPtr knobGui = knobContext->getKnobGui();
+        assert(knobGui);
         if (add) {
-            knobGui->setKeyframe(selected.key.getTime(), selected.key, knobContext->getDimension());
+            knobGui->setKeyframe(selected.key.getTime(), selected.key, knobContext->getDimension(), ViewIdx(0));
         }
         else {
-            knobGui->removeKeyFrame(selected.key.getTime(), knobContext->getDimension());
+            knobGui->removeKeyFrame(selected.key.getTime(), knobContext->getDimension(), ViewIdx(0));
             knobContext->getTreeItem()->setSelected(false);
         }
     }
@@ -829,7 +833,9 @@ void DSSetSelectedKeysInterpolationCommand::setInterpolation(bool undo)
             continue;
         }
 
-        knobContext->getKnobGui()->getKnob()->setInterpolationAtTime(eCurveChangeReasonDopeSheet,knobContext->getDimension(),
+        knobContext->getKnobGui()->getKnob()->setInterpolationAtTime(eCurveChangeReasonDopeSheet,
+                                                                     ViewSpec::all(),
+                                                                     knobContext->getDimension(),
                                                                      it->_key->key.getTime(),
                                                                      interp,
                                                                      &it->_key->key);
@@ -915,18 +921,18 @@ void DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
                         AnimatingKnobStringHelper* isStringAnimatedKnob = dynamic_cast<AnimatingKnobStringHelper*>(this);
                         assert(isStringAnimatedKnob);
                         if (isStringAnimatedKnob) {
-                            isStringAnimatedKnob->stringToKeyFrameValue(keyTime,v,&keyFrameValue);
+                            isStringAnimatedKnob->stringToKeyFrameValue(keyTime, ViewIdx(0),v,&keyFrameValue);
                         }
                         k.setValue(keyFrameValue);
                     }
-                    knob->setKeyFrame(k, j, eValueChangedReasonNatronGuiEdited);
+                    knob->setKeyFrame(k, ViewSpec::all(), j, eValueChangedReasonNatronGuiEdited);
                 }
             }
         }
         else {
             for (int j = 0; j < knob->getDimension(); ++j) {
                 if (dim == -1 || j == dim) {
-                    knob->deleteValueAtTime(eCurveChangeReasonDopeSheet,setTime, j);
+                    knob->deleteValueAtTime(eCurveChangeReasonDopeSheet,setTime, ViewSpec::all(), j);
                 }
             }
         }

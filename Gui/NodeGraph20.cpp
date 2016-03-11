@@ -124,10 +124,10 @@ NodeGraph::checkForHints(bool shiftdown, bool controlDown, const NodeGuiPtr& sel
                         int nMaxInput = internalNode->getMaxInputCount();
                         bool selectedHasInput = selectedNodeInternalNode->hasInputConnected();
                         int selectedMaxInput = selectedNodeInternalNode->getMaxInputCount();
-                        double nPAR = internalNode->getEffectInstance()->getPreferredAspectRatio();
-                        double selectedPAR = selectedNodeInternalNode->getEffectInstance()->getPreferredAspectRatio();
-                        double nFPS = internalNode->getEffectInstance()->getPreferredFrameRate();
-                        double selectedFPS = selectedNodeInternalNode->getEffectInstance()->getPreferredFrameRate();
+                        double nPAR = internalNode->getEffectInstance()->getAspectRatio(-1);
+                        double selectedPAR = selectedNodeInternalNode->getEffectInstance()->getAspectRatio(-1);
+                        double nFPS = internalNode->getEffectInstance()->getFrameRate();
+                        double selectedFPS = selectedNodeInternalNode->getEffectInstance()->getFrameRate();
                         
                         bool isValid = true;
                         
@@ -375,6 +375,7 @@ NodeGraph::moveSelectedNodesBy(bool shiftdown, bool controlDown, const QPointF& 
     checkAndStartAutoScrollTimer(newPos);
     
     //Set the hand cursor
+    _imp->cursorSet = true;
     setCursor(Qt::ClosedHandCursor);
     
     //The lines below are trying to 
@@ -463,10 +464,14 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             }
         }
         if (selected) {
+            _imp->cursorSet = true;
             setCursor( QCursor(Qt::OpenHandCursor) );
         } else if (selectedEdge) {
         } else if (!selectedEdge && !selected) {
-            unsetCursor();
+            if (_imp->cursorSet) {
+                _imp->cursorSet = false;
+                unsetCursor();
+            }
         }
     }
 
@@ -495,6 +500,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     case eEventStateMovingArea: {
         mustUpdateNavigator = true;
         moveRootInternal(dx, dy);
+        _imp->cursorSet = true;
         setCursor( QCursor(Qt::SizeAllCursor) );
         mustUpdate = true;
         break;

@@ -43,8 +43,9 @@ Functions
 *    def :meth:`setPersistant<NatronEngine.Param.setPersistant>` (persistant)
 *    def :meth:`setVisible<NatronEngine.Param.setVisible>` (visible)
 *    def :meth:`setVisibleByDefault<NatronEngine.Param.setVisibleByDefault>` (visible)
-*    def :meth:`setAsAlias<NatronEngine.StringParamBase.setAsAlias>` (otherParam)
-
+*    def :meth:`setAsAlias<NatronEngine.Param.setAsAlias>` (otherParam)
+*    def :meth:`slaveTo<NatronEngine.Param.slaveTo>` (otherParam, thisDimension, otherDimension)
+*    def :meth:`unslave<NatronEngine.Param.unslave>` (dimension)
 
 .. _details:
 
@@ -509,7 +510,7 @@ See :func:`getIsVisible()<NatronEngine.Param.getIsVisible>`
 Set whether this parameter should be visible or not to the user in its default state.
 
 
-.. method:: NatronEngine.StringParamBase.setAsAlias(otherParam)
+.. method:: NatronEngine.Param.setAsAlias(otherParam)
 
 	:param otherParam: :class:`Param<NatronEngine.Param>`
 	:rtype: :class:`bool<PySide.QtCore.bool>`
@@ -524,4 +525,30 @@ This is used generally to make user parameters on groups with the "Pick" option 
 "Manage User Parameters" dialog.
 
 
+.. method:: NatronEngine.Param.slaveTo(otherParam, thisDimension, otherDimension)
 
+	:param otherParam: :class:`Param<NatronEngine.Param>`
+	:param thisDimension: :class:`int<PySide.QtCore.int>`
+	:param otherDimension: :class:`int<PySide.QtCore.int>`
+	:rtype: :class:`bool<PySide.QtCore.bool>	
+	
+Set this parameter as a slave of *otherParam*. 
+They need to be both of the same *type* but may vary in dimension, as long as 
+*thisDimension* is valid according to the number of dimensions of this parameter and 
+*otherDimension* is valid according to the number of dimensions of *otherParam*.
+
+This parameter *thisDimension* will be controlled entirely by the *otherDimension* of
+*otherParam* until a call to :func:`unslave(thisDimension)<NatronEngine.Param.unslave>` is made
+
+.. method:: NatronEngine.Param.unslave(dimension)
+
+	:param dimension: :class:`int<PySide.QtCore.int>`
+
+
+If the given *dimension* of this parameter was previously slaved, then this function will
+remove the link between parameters, and the user will be free again to use this parameter
+as any other.
+
+.. note::
+
+	 The animation and values that were present before the link will remain.

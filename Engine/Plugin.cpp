@@ -80,19 +80,19 @@ Plugin::getPluginLabel() const
 const QString
 Plugin::getLabelVersionMajorMinorEncoded() const
 {
-    return getLabelWithoutSuffix() + ' ' + QString::number(_majorVersion) + '.' + QString::number(_minorVersion);
+    return getLabelWithoutSuffix() + QLatin1Char(' ') + QString::number(_majorVersion) + QLatin1Char('.') + QString::number(_minorVersion);
 }
 
 QString
 Plugin::makeLabelWithoutSuffix(const QString& label)
 {
-    if (label.startsWith("Read") || label.startsWith("Write")) {
+    if (label.startsWith(QString::fromUtf8("Read")) || label.startsWith(QString::fromUtf8("Write"))) {
         return label;
-    } else if (label.endsWith("OFX")) {
+    } else if (label.endsWith(QString::fromUtf8("OFX"))) {
         return label.mid(0,label.size() - 3);
-    } else if (label.endsWith("CImg")) {
+    } else if (label.endsWith(QString::fromUtf8("CImg"))) {
         return label.mid(0,label.size() - 4);
-    } else if (label.endsWith("OIIO")) {
+    } else if (label.endsWith(QString::fromUtf8("OIIO"))) {
         return label.mid(0,label.size() - 4);
     }
     return label;
@@ -113,23 +113,34 @@ Plugin::setLabelWithoutSuffix(const QString& label)
 const QString
 Plugin::getLabelVersionMajorEncoded() const
 {
-    return getLabelWithoutSuffix() + ' ' + QString::number(_majorVersion);
+    return getLabelWithoutSuffix() + QLatin1Char(' ') + QString::number(_majorVersion);
 }
 
 QString
 Plugin::generateUserFriendlyPluginID() const
 {
     QString grouping = _grouping.size() > 0 ? _grouping[0] : QString();
-    return getLabelWithoutSuffix() + "  [" + grouping + "]";
+    return getLabelWithoutSuffix() + QString::fromUtf8("  [") + grouping + QLatin1Char(']');
 }
 
 QString
 Plugin::generateUserFriendlyPluginIDMajorEncoded() const
 {
     QString grouping = _grouping.size() > 0 ? _grouping[0] : QString();
-    return getLabelVersionMajorEncoded() + "  [" + grouping + "]";
+    return getLabelVersionMajorEncoded() + QString::fromUtf8("  [") + grouping + QLatin1Char(']');
 }
 
+void
+Plugin::setToolsetScript(bool isToolset)
+{
+    _toolSetScript = isToolset;
+}
+
+bool
+Plugin::getToolsetScript() const
+{
+    return _toolSetScript;
+}
 
 const QString&
 Plugin::getIconFilePath() const
@@ -205,7 +216,7 @@ Plugin::getPythonModule() const {
 void
 Plugin::getPythonModuleNameAndPath(QString* moduleName, QString* modulePath) const
 {
-    int foundLastSlash = _pythonModule.lastIndexOf('/');
+    int foundLastSlash = _pythonModule.lastIndexOf(QLatin1Char('/'));
     if (foundLastSlash != -1) {
         *modulePath = _pythonModule.mid(0,foundLastSlash + 1);
         *moduleName = _pythonModule.mid(foundLastSlash + 1);

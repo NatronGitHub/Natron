@@ -105,78 +105,6 @@ struct RenderViewerArgs
     int alphaChannelIndex;
 };
 
-/// parameters send from the scheduler thread to updateViewer() (which runs in the main thread)
-class UpdateViewerParams : public BufferableObject
-{
-    
-public:
-    
-    UpdateViewerParams()
-    : ramBuffer(NULL)
-    , mustFreeRamBuffer(false)
-    , textureIndex(0)
-    , time(0)
-    , textureRect()
-    , srcPremult(eImagePremultiplicationOpaque)
-    , bytesCount(0)
-    , depth()
-    , gain(1.)
-    , gamma(1.)
-    , offset(0.)
-    , mipMapLevel(0)
-    , premult(eImagePremultiplicationOpaque)
-    , lut(eViewerColorSpaceSRGB)
-    , layer()
-    , alphaLayer()
-    , alphaChannelName()
-    , cachedFrame()
-    , tiles()
-    , rod()
-    , renderAge(0)
-    , isSequential(false)
-    , roi()
-    , updateOnlyRoi(false)
-    {
-    }
-    
-    virtual ~UpdateViewerParams() {
-        if (mustFreeRamBuffer) {
-            free(ramBuffer);
-        }
-    }
-    
-    virtual std::size_t sizeInRAM() const OVERRIDE FINAL
-    {
-        return bytesCount;
-    }
-
-    unsigned char* ramBuffer;
-    bool mustFreeRamBuffer; //< set to true when !cachedFrame
-    int textureIndex;
-    int time;
-    TextureRect textureRect;
-    ImagePremultiplicationEnum srcPremult;
-    size_t bytesCount;
-    ImageBitDepthEnum depth;
-    double gain;
-    double gamma;
-    double offset;
-    unsigned int mipMapLevel;
-    ImagePremultiplicationEnum premult;
-    ViewerColorSpaceEnum lut;
-    ImageComponents layer;
-    ImageComponents alphaLayer;
-    std::string alphaChannelName;
-    
-    // put a shared_ptr here, so that the cache entry is never released before the end of updateViewer()
-    boost::shared_ptr<FrameEntry> cachedFrame;
-    std::list<boost::shared_ptr<Image> > tiles;
-    RectD rod;
-    U64 renderAge;
-    bool isSequential;
-    RectI roi;
-    bool updateOnlyRoi;
-};
 
 struct ViewerInstance::ViewerInstancePrivate
 : public QObject, public LockManagerI<FrameEntry>
@@ -192,6 +120,8 @@ public:
     , uiContext(NULL)
     , forceRenderMutex()
     , forceRender(false)
+    , isViewerPausedMutex()
+    , isViewerPaused()
     , updateViewerPboIndex(0)
     , viewerParamsMutex()
     , viewerParamsGain(1.)
@@ -221,6 +151,7 @@ public:
             activeInputs[i] = -1;
             renderAge[i] = 1;
             displayAge[i] = 0;
+            isViewerPaused[i] = false;
             viewerParamsChannels[i] = eDisplayChannelsRGB;
         }
         
@@ -300,13 +231,20 @@ public:
      * @brief We keep track of ongoing renders internally. This function is called only by non 
      * abortable renders to determine if we should abort anyway because the render is no longer interesting.
      **/
-    bool isRenderAbortable(int texIndex,U64 age) const
+    bool isRenderAbortable(int texIndex,U64 age, bool* isLatestRender) const
     {
         QMutexLocker k(&renderAgeMutex);
       
-        
+        *isLatestRender = true;
         for (OnGoingRenders::const_iterator it = currentRenderAges[texIndex].begin(); it!=currentRenderAges[texIndex].end();++it) {
             if (it->age == age) {
+                OnGoingRenders::const_iterator next = it;
+                ++next;
+                if (next == currentRenderAges[texIndex].end()) {
+                    *isLatestRender = true;
+                } else {
+                    *isLatestRender = false;
+                }
                 return it->aborted;
             }
         }
@@ -445,6 +383,8 @@ public:
     mutable QMutex forceRenderMutex;
     bool forceRender; /*!< true when we want to by-pass the cache*/
 
+    mutable QMutex isViewerPausedMutex;
+    bool isViewerPaused[2]; /*!< When true we should no longer refresh the viewer */
 
     // updateViewer: stuff for handling the execution of updateViewer() in the main thread, @see UpdateViewerParams
     //is always called on the main thread, but the thread running renderViewer MUST

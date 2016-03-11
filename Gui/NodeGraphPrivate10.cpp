@@ -151,7 +151,7 @@ NodeGraphPrivate::pasteNode(const boost::shared_ptr<NodeSerialization> & interna
                             std::map<std::string,std::string>* oldNewScriptNameMapping)
 {
     
-    CreateNodeArgs args(internalSerialization->getPluginID().c_str(), eCreateNodeReasonCopyPaste, grp);
+    CreateNodeArgs args(QString::fromUtf8(internalSerialization->getPluginID().c_str()), eCreateNodeReasonCopyPaste, grp);
     args.multiInstanceParentName = parentName;
     args.majorV = internalSerialization->getPluginMajorVersion();
     args.minorV = internalSerialization->getPluginMinorVersion();

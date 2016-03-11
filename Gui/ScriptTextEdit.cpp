@@ -39,9 +39,12 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Node.h"
 #include "Engine/Image.h"
 #include "Engine/Settings.h"
+#include "Engine/EffectInstance.h"
 
+#include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/KnobWidgetDnD.h" // KNOB_DND_MIME_DATA_KEY
 
 NATRON_NAMESPACE_ENTER;
 
@@ -84,27 +87,27 @@ struct PySyntaxHighlighterPrivate
     , triSingleQuote()
     , triDoubleQuote()
     {
-        keywords = QStringList() << "and" << "assert" << "break" << "class" << "continue" << "def" <<
-        "del" << "elif" << "else" << "except" << "exec" << "finally" <<
-        "for" << "from" << "global" << "if" << "import" << "in" <<
-        "is" << "lambda" << "not" << "or" << "pass" << "print" <<
-        "raise" << "return" << "try" << "while" << "yield" <<
-        "None" << "True" << "False";
+        keywords = QStringList() << QString::fromUtf8("and") << QString::fromUtf8("assert") << QString::fromUtf8("break") << QString::fromUtf8("class") << QString::fromUtf8("continue") << QString::fromUtf8("def") <<
+        QString::fromUtf8("del") << QString::fromUtf8("elif") << QString::fromUtf8("else") << QString::fromUtf8("except") << QString::fromUtf8("exec") << QString::fromUtf8("finally") <<
+        QString::fromUtf8("for") << QString::fromUtf8("from") << QString::fromUtf8("global") << QString::fromUtf8("if") << QString::fromUtf8("import") << QString::fromUtf8("in") <<
+        QString::fromUtf8("is") << QString::fromUtf8("lambda") << QString::fromUtf8("not") << QString::fromUtf8("or") << QString::fromUtf8("pass") << QString::fromUtf8("print") <<
+        QString::fromUtf8("raise") << QString::fromUtf8("return") << QString::fromUtf8("try") << QString::fromUtf8("while") << QString::fromUtf8("yield") <<
+        QString::fromUtf8("None") << QString::fromUtf8("True") << QString::fromUtf8("False");
         
-        operators = QStringList() << "=" <<
+        operators = QStringList() << QString::fromUtf8("=") <<
         // Comparison
-        "==" << "!=" << "<" << "<=" << ">" << ">=" <<
+        QString::fromUtf8("==") << QString::fromUtf8("!=") << QString::fromUtf8("<") << QString::fromUtf8("<=") << QString::fromUtf8(">") << QString::fromUtf8(">=") <<
         // Arithmetic
-        "\\+" << "-" << "\\*" << "/" << "//" << "%" << "\\*\\*" <<
+        QString::fromUtf8("\\+") << QString::fromUtf8("-") << QString::fromUtf8("\\*") << QString::fromUtf8("/") << QString::fromUtf8("//") << QString::fromUtf8("%") << QString::fromUtf8("\\*\\*") <<
         // In-place
-        "\\+=" << "-=" << "\\*=" << "/=" << "%=" <<
+        QString::fromUtf8("\\+=") << QString::fromUtf8("-=") << QString::fromUtf8("\\*=") << QString::fromUtf8("/=") << QString::fromUtf8("%=") <<
         // Bitwise
-        "\\^" << "\\|" << "&" << "~" << ">>" << "<<";
+        QString::fromUtf8("\\^") << QString::fromUtf8("\\|") << QString::fromUtf8("&") << QString::fromUtf8("~") << QString::fromUtf8(">>") << QString::fromUtf8("<<");
         
-        braces = QStringList() << "\\{" << "\\}" << "\\(" << "\\)" << "\\[" << "\\]";
+        braces = QStringList() << QString::fromUtf8("\\{") << QString::fromUtf8("\\}") << QString::fromUtf8("\\(") << QString::fromUtf8("\\)") << QString::fromUtf8("\\[") << QString::fromUtf8("\\]");
         
-        triSingleQuote.setPattern("'''");
-        triDoubleQuote.setPattern("\"\"\"");
+        triSingleQuote.setPattern(QString::fromUtf8("'''"));
+        triDoubleQuote.setPattern(QString::fromUtf8("\"\"\""));
         
         reload();
         
@@ -138,9 +141,9 @@ PySyntaxHighlighter::highlightBlock(const QString &text)
     setCurrentBlockState(0);
     
     // Do multi-line strings
-    bool isInMultiline = matchMultiline(text, _imp->triSingleQuote, 1, _imp->basicStyles.value("string2"));
+    bool isInMultiline = matchMultiline(text, _imp->triSingleQuote, 1, _imp->basicStyles.value(QString::fromUtf8(("string2"))));
     if (!isInMultiline) {
-        (void)matchMultiline(text, _imp->triDoubleQuote, 2, _imp->basicStyles.value("string2"));
+        (void)matchMultiline(text, _imp->triDoubleQuote, 2, _imp->basicStyles.value(QString::fromUtf8("string2")));
     }
 }
 
@@ -149,38 +152,38 @@ PySyntaxHighlighterPrivate::initializeRules()
 {
     rules.clear();
     for (QStringList::Iterator it = keywords.begin(); it!=keywords.end(); ++it) {
-        rules.append(PyHighLightRule(QString("\\b%1\\b").arg(*it), 0, basicStyles.value("keyword")));
+        rules.append(PyHighLightRule(QString::fromUtf8("\\b%1\\b").arg(*it), 0, basicStyles.value(QString::fromUtf8(("keyword")))));
     }
     for (QStringList::Iterator it = operators.begin(); it!=operators.end(); ++it) {
-        rules.append(PyHighLightRule(QString("%1").arg(*it), 0, basicStyles.value("operator")));
+        rules.append(PyHighLightRule(QString::fromUtf8("%1").arg(*it), 0, basicStyles.value(QString::fromUtf8(("operator")))));
     }
 
     for (QStringList::Iterator it = braces.begin(); it!=braces.end(); ++it) {
-        rules.append(PyHighLightRule(QString("%1").arg(*it), 0, basicStyles.value("brace")));
+        rules.append(PyHighLightRule(QString::fromUtf8("%1").arg(*it), 0, basicStyles.value(QString::fromUtf8(("brace")))));
     }
     
     // 'self'
-    rules.append(PyHighLightRule("\\bself\\b", 0, basicStyles.value("self")));
+    rules.append(PyHighLightRule(QString::fromUtf8("\\bself\\b"), 0, basicStyles.value(QString::fromUtf8(("self")))));
     
     // Double-quoted string, possibly containing escape sequences
-    rules.append(PyHighLightRule("\"[^\"\\\\]*(\\\\.[^\"\\\\]*)*\"", 0, basicStyles.value("string")));
+    rules.append(PyHighLightRule(QString::fromUtf8("\"[^\"\\\\]*(\\\\.[^\"\\\\]*)*\""), 0, basicStyles.value(QString::fromUtf8("string"))));
     
     // Single-quoted string, possibly containing escape sequences
-    rules.append(PyHighLightRule("'[^'\\\\]*(\\\\.[^'\\\\]*)*'", 0, basicStyles.value("string")));
+    rules.append(PyHighLightRule(QString::fromUtf8("'[^'\\\\]*(\\\\.[^'\\\\]*)*'"), 0, basicStyles.value(QString::fromUtf8("string"))));
     
     // 'def' followed by an identifier
-    rules.append(PyHighLightRule("\\bdef\\b\\s*(\\w+)", 1, basicStyles.value("defclass")));
+    rules.append(PyHighLightRule(QString::fromUtf8("\\bdef\\b\\s*(\\w+)"), 1, basicStyles.value(QString::fromUtf8("defclass"))));
     
     //  'class' followed by an identifier
-    rules.append(PyHighLightRule("\\bclass\\b\\s*(\\w+)", 1, basicStyles.value("defclass")));
+    rules.append(PyHighLightRule(QString::fromUtf8("\\bclass\\b\\s*(\\w+)"), 1, basicStyles.value(QString::fromUtf8("defclass"))));
     
     // From '#' until a newline
-    rules.append(PyHighLightRule("#[^\\n]*", 0, basicStyles.value("comment")));
+    rules.append(PyHighLightRule(QString::fromUtf8("#[^\\n]*"), 0, basicStyles.value(QString::fromUtf8("comment"))));
     
     // Numeric literals
-    rules.append(PyHighLightRule("\\b[+-]?[0-9]+[lL]?\\b", 0, basicStyles.value("numbers")));
-    rules.append(PyHighLightRule("\\b[+-]?0[xX][0-9A-Fa-f]+[lL]?\\b", 0, basicStyles.value("numbers")));
-    rules.append(PyHighLightRule("\\b[+-]?[0-9]+(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?\\b", 0, basicStyles.value("numbers")));
+    rules.append(PyHighLightRule(QString::fromUtf8("\\b[+-]?[0-9]+[lL]?\\b"), 0, basicStyles.value(QString::fromUtf8("numbers"))));
+    rules.append(PyHighLightRule(QString::fromUtf8("\\b[+-]?0[xX][0-9A-Fa-f]+[lL]?\\b"), 0, basicStyles.value(QString::fromUtf8("numbers"))));
+    rules.append(PyHighLightRule(QString::fromUtf8("\\b[+-]?[0-9]+(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?\\b"), 0, basicStyles.value(QString::fromUtf8("numbers"))));
 }
 
 bool
@@ -237,10 +240,10 @@ PySyntaxHighlighterPrivate::getTextCharFormat(double r, double g, double b, cons
     QColor color;
     color.setRgbF(Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.));
     charFormat.setForeground(color);
-    if (style.contains("bold", Qt::CaseInsensitive)) {
+    if (style.contains(QString::fromUtf8("bold"), Qt::CaseInsensitive)) {
         charFormat.setFontWeight(QFont::Bold);
     }
-    if (style.contains("italic", Qt::CaseInsensitive)) {
+    if (style.contains(QString::fromUtf8("italic"), Qt::CaseInsensitive)) {
         charFormat.setFontItalic(true);
     }
     return charFormat;
@@ -272,37 +275,38 @@ PySyntaxHighlighterPrivate::reload()
     double r,g,b;
     boost::shared_ptr<Settings> s = appPTR->getCurrentSettings();
     s->getSEKeywordColor(&r, &g, &b);
-    basicStyles.insert("keyword", getTextCharFormat(r,g,b,"bold"));
+    basicStyles.insert(QString::fromUtf8("keyword"), getTextCharFormat(r,g,b,QString::fromUtf8("bold")));
     
     s->getSEOperatorColor(&r, &g, &b);
-    basicStyles.insert("operator", getTextCharFormat(r,g,b));
+    basicStyles.insert(QString::fromUtf8("operator"), getTextCharFormat(r,g,b));
     
     s->getSEBraceColor(&r, &g, &b);
-    basicStyles.insert("brace", getTextCharFormat(r,g,b));
+    basicStyles.insert(QString::fromUtf8("brace"), getTextCharFormat(r,g,b));
     
     s->getSEDefClassColor(&r, &g, &b);
-    basicStyles.insert("defclass", getTextCharFormat(r,g,b, "bold"));
+    basicStyles.insert(QString::fromUtf8("defclass"), getTextCharFormat(r,g,b, QString::fromUtf8("bold")));
     
     s->getSEStringsColor(&r, &g, &b);
-    basicStyles.insert("string", getTextCharFormat(r,g,b));
-    basicStyles.insert("string2", getTextCharFormat(r,g,b));
+    basicStyles.insert(QString::fromUtf8("string"), getTextCharFormat(r,g,b));
+    basicStyles.insert(QString::fromUtf8("string2"), getTextCharFormat(r,g,b));
     
     s->getSECommentsColor(&r, &g, &b);
-    basicStyles.insert("comment", getTextCharFormat(r,g,b, "italic"));
+    basicStyles.insert(QString::fromUtf8("comment"), getTextCharFormat(r,g,b, QString::fromUtf8("italic")));
     
     s->getSESelfColor(&r, &g, &b);
-    basicStyles.insert("self", getTextCharFormat(r,g,b,"bold,italic"));
+    basicStyles.insert(QString::fromUtf8("self"), getTextCharFormat(r,g,b,QString::fromUtf8("bold,italic")));
     
     s->getSENumbersColor(&r, &g, &b);
-    basicStyles.insert("numbers", getTextCharFormat(r,g,b));
+    basicStyles.insert(QString::fromUtf8("numbers"), getTextCharFormat(r,g,b));
     
     initializeRules();
 
 }
 
-InputScriptTextEdit::InputScriptTextEdit(QWidget* parent)
+InputScriptTextEdit::InputScriptTextEdit(Gui* gui, QWidget* parent)
 : QPlainTextEdit(parent)
 , _lineNumber(new LineNumberWidget(this))
+, _gui(gui)
 {
     QObject::connect(this, SIGNAL(blockCountChanged(int)), this, SLOT(updateLineNumberAreaWidth(int)));
     QObject::connect(this, SIGNAL(updateRequest(QRect,int)), this, SLOT(updateLineNumberArea(QRect,int)));
@@ -439,7 +443,7 @@ InputScriptTextEdit::dragEnterEvent(QDragEnterEvent* e)
 {
     
     QStringList formats = e->mimeData()->formats();
-    if ( formats.contains("Animation") ) {
+    if ( formats.contains(QLatin1String(KNOB_DND_MIME_DATA_KEY)) ) {
         setCursor(Qt::DragCopyCursor);
         e->acceptProposedAction();
     }
@@ -453,7 +457,7 @@ InputScriptTextEdit::dragMoveEvent(QDragMoveEvent* e)
     }
     QStringList formats = e->mimeData()->formats();
     
-    if ( formats.contains("Animation") ) {
+    if ( formats.contains(QLatin1String(KNOB_DND_MIME_DATA_KEY)) ) {
         e->acceptProposedAction();
     }
 }
@@ -466,29 +470,36 @@ InputScriptTextEdit::dropEvent(QDropEvent* e)
         return;
     }
     QStringList formats = e->mimeData()->formats();
-    if ( formats.contains("Animation") ) {
-        std::list<Variant> values;
-        std::list<boost::shared_ptr<Curve> > curves;
-        std::list<boost::shared_ptr<Curve> > parametricCurves;
-        std::map<int,std::string> stringAnimation;
-        bool copyAnimation;
+    if ( formats.contains(QLatin1String(KNOB_DND_MIME_DATA_KEY)) ) {
+        int cbDim;
+        KnobPtr fromKnob;
+        QDrag* drag;
+        _gui->getApp()->getKnobDnDData(&drag, &fromKnob, &cbDim);
         
-        std::string appID;
-        std::string nodeFullyQualifiedName;
-        std::string paramName;
-        
-        appPTR->getKnobClipBoard(&copyAnimation,&values,&curves,&stringAnimation,&parametricCurves,&appID,&nodeFullyQualifiedName,&paramName);
-        
-        QString toAppend;
-        toAppend.append(nodeFullyQualifiedName.c_str());
-        toAppend.append('.');
-        toAppend.append(paramName.c_str());
-        toAppend.append(".get()");
-        if (values.size() > 1) {
-            toAppend.append("[dimension]");
+        if (fromKnob) {
+            EffectInstance* isEffect = dynamic_cast<EffectInstance*>(fromKnob->getHolder());
+            if (isEffect) {
+                
+                
+                
+                QString toAppend;
+                toAppend.append(QString::fromUtf8(isEffect->getNode()->getFullyQualifiedName().c_str()));
+                toAppend.append(QLatin1Char('.'));
+                toAppend.append(QString::fromUtf8(fromKnob->getName().c_str()));
+                toAppend.append(QString::fromUtf8(".get()"));
+                if (fromKnob->getDimension() > 1) {
+                    toAppend.append(QLatin1Char('['));
+                    if (cbDim == -1 || (cbDim == 0 && !fromKnob->getAllDimensionVisible())) {
+                        toAppend.append(QString::fromUtf8("dimension"));
+                    } else {
+                        toAppend.append(QString::number(cbDim));
+                    }
+                    toAppend.append(QLatin1Char(']'));
+                }
+                appendPlainText(toAppend);
+                e->acceptProposedAction();
+            }
         }
-        appendPlainText(toAppend);
-        e->acceptProposedAction();
     }
     
 }

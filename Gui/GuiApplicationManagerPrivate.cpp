@@ -48,7 +48,8 @@ GuiApplicationManagerPrivate::GuiApplicationManagerPrivate(GuiApplicationManager
 , _topLevelToolButtons()
 , _knobsClipBoard(new KnobsClipBoard)
 , _knobGuiFactory( new KnobGuiFactory() )
-, _colorPickerCursor(NULL)
+, _colorPickerCursor()
+, _linkToCursor()
 , _splashScreen(NULL)
 , _openFileRequest()
 , _actionShortcuts()
@@ -189,7 +190,7 @@ void
 GuiApplicationManagerPrivate::createColorPickerCursor()
 {
     QImage originalImage;
-    originalImage.load(NATRON_IMAGES_PATH "color_picker.png");
+    originalImage.load(QString::fromUtf8(NATRON_IMAGES_PATH "color_picker.png"));
     originalImage = originalImage.scaled(16, 16);
     QImage dstImage(32,32,QImage::Format_ARGB32);
     dstImage.fill(QColor(0,0,0,0));
@@ -202,7 +203,24 @@ GuiApplicationManagerPrivate::createColorPickerCursor()
         }
     }
     QPixmap pix = QPixmap::fromImage(dstImage);
-    _colorPickerCursor = new QCursor(pix);
+    _colorPickerCursor = QCursor(pix);
+}
+
+void
+GuiApplicationManagerPrivate::createLinkToCursor()
+{
+    QPixmap p;
+    appPTR->getIcon(NATRON_PIXMAP_LINK_CURSOR, &p);
+    _linkToCursor = QCursor(p);
+    
+}
+
+void
+GuiApplicationManagerPrivate::createLinkMultCursor()
+{
+    QPixmap p;
+    appPTR->getIcon(NATRON_PIXMAP_LINK_MULT_CURSOR, &p);
+    _linkMultCursor = QCursor(p);
 }
 
 void
@@ -253,8 +271,8 @@ GuiApplicationManagerPrivate::addKeybindInternal(const QString & grouping,const 
 }
 
 void
-GuiApplicationManagerPrivate::addKeybind(const QString & grouping,const QString & id,
-                const QString & description,
+GuiApplicationManagerPrivate::addKeybind(const std::string & grouping,const std::string & id,
+                const std::string & description,
                 const Qt::KeyboardModifiers & modifiers1,Qt::Key symbol1,
                 const Qt::KeyboardModifiers & modifiers2,Qt::Key symbol2)
 {
@@ -264,12 +282,12 @@ GuiApplicationManagerPrivate::addKeybind(const QString & grouping,const QString 
     std::list<Qt::Key> symbols;
     symbols.push_back(symbol1);
     symbols.push_back(symbol2);
-    addKeybindInternal(grouping, id, description, m, symbols, Qt::NoModifier);
+    addKeybindInternal(QString::fromUtf8(grouping.c_str()), QString::fromUtf8(id.c_str()), QString::fromUtf8(description.c_str()), m, symbols, Qt::NoModifier);
 }
 
 void
-GuiApplicationManagerPrivate::addKeybind(const QString & grouping,const QString & id,
-                const QString & description,
+GuiApplicationManagerPrivate::addKeybind(const std::string & grouping,const std::string & id,
+                                         const std::string & description,
                 const Qt::KeyboardModifiers & modifiers,Qt::Key symbol,
                 const Qt::KeyboardModifiers & modifiersMask)
 {
@@ -277,13 +295,13 @@ GuiApplicationManagerPrivate::addKeybind(const QString & grouping,const QString 
     m.push_back(modifiers);
     std::list<Qt::Key> symbols;
     symbols.push_back(symbol);
-    addKeybindInternal(grouping, id, description, m, symbols, modifiersMask);
+    addKeybindInternal(QString::fromUtf8(grouping.c_str()), QString::fromUtf8(id.c_str()), QString::fromUtf8(description.c_str()), m, symbols, modifiersMask);
 }
 
 void
-GuiApplicationManagerPrivate::addKeybind(const QString & grouping,
-                                         const QString & id,
-                                         const QString & description,
+GuiApplicationManagerPrivate::addKeybind(const std::string & grouping,
+                                         const std::string & id,
+                                         const std::string & description,
                                          const Qt::KeyboardModifiers & modifiers,
                                          Qt::Key symbol)
 {
@@ -291,7 +309,7 @@ GuiApplicationManagerPrivate::addKeybind(const QString & grouping,
     m.push_back(modifiers);
     std::list<Qt::Key> symbols;
     symbols.push_back(symbol);
-    addKeybindInternal(grouping, id, description, m, symbols, Qt::NoModifier);
+    addKeybindInternal(QString::fromUtf8(grouping.c_str()), QString::fromUtf8(id.c_str()), QString::fromUtf8(description.c_str()), m, symbols, Qt::NoModifier);
     
 }
 
@@ -313,28 +331,31 @@ GuiApplicationManagerPrivate::removeKeybind(const QString& grouping,const QStrin
 
 
 void
-GuiApplicationManagerPrivate::addMouseShortcut(const QString & grouping,
-                                               const QString & id,
-                                               const QString & description,
+GuiApplicationManagerPrivate::addMouseShortcut(const std::string & grouping,
+                                               const std::string & id,
+                                               const std::string & description,
                                                const Qt::KeyboardModifiers & modifiers,
                                                Qt::MouseButton button)
 {
     
-    AppShortcuts::iterator foundGroup = _actionShortcuts.find(grouping);
+    QString groupingStr = QString::fromUtf8(grouping.c_str());
+    QString idStr = QString::fromUtf8(id.c_str());
+    
+    AppShortcuts::iterator foundGroup = _actionShortcuts.find(groupingStr);
     if ( foundGroup != _actionShortcuts.end() ) {
-        GroupShortcuts::iterator foundAction = foundGroup->second.find(id);
+        GroupShortcuts::iterator foundAction = foundGroup->second.find(idStr);
         if ( foundAction != foundGroup->second.end() ) {
             return;
         }
     }
     MouseAction* mA = new MouseAction;
 
-    mA->grouping = grouping;
-    mA->description = description;
+    mA->grouping = groupingStr;
+    mA->description = QString::fromUtf8(description.c_str());
     mA->defaultModifiers.push_back(modifiers);
-    mA->actionID = id;
+    mA->actionID = idStr;
     if ( modifiers & (Qt::AltModifier | Qt::MetaModifier) ) {
-        qDebug() << "Warning: mouse shortcut " << grouping << '/' << description << '(' << id << ')' << " uses the Alt or Meta modifier, which is reserved for three-button mouse emulation. Fix this ASAP.";
+        qDebug() << "Warning: mouse shortcut " << groupingStr << '/' << description.c_str() << '(' << idStr << ')' << " uses the Alt or Meta modifier, which is reserved for three-button mouse emulation. Fix this ASAP.";
     }
     mA->modifiers.push_back(modifiers);
     mA->button = button;
@@ -343,11 +364,11 @@ GuiApplicationManagerPrivate::addMouseShortcut(const QString & grouping,
     mA->editable = false;
 
     if ( foundGroup != _actionShortcuts.end() ) {
-        foundGroup->second.insert( std::make_pair(id, mA) );
+        foundGroup->second.insert( std::make_pair(idStr, mA) );
     } else {
         GroupShortcuts group;
-        group.insert( std::make_pair(id, mA) );
-        _actionShortcuts.insert( std::make_pair(grouping, group) );
+        group.insert( std::make_pair(idStr, mA) );
+        _actionShortcuts.insert( std::make_pair(groupingStr, group) );
     }
     
     GuiAppInstance* app = dynamic_cast<GuiAppInstance*>(_publicInterface->getTopLevelInstance());
@@ -358,16 +379,20 @@ GuiApplicationManagerPrivate::addMouseShortcut(const QString & grouping,
 
 
 void
-GuiApplicationManagerPrivate::addStandardKeybind(const QString & grouping,
-                                                 const QString & id,
-                                                 const QString & description,
+GuiApplicationManagerPrivate::addStandardKeybind(const std::string & grouping,
+                                                 const std::string & id,
+                                                 const std::string & description,
                                                  QKeySequence::StandardKey key,
                                                  const Qt::KeyboardModifiers & fallbackmodifiers,
                                                  Qt::Key fallbacksymbol)
 {
-    AppShortcuts::iterator foundGroup = _actionShortcuts.find(grouping);
+    
+    QString groupingStr = QString::fromUtf8(grouping.c_str());
+    QString idStr = QString::fromUtf8(id.c_str());
+
+    AppShortcuts::iterator foundGroup = _actionShortcuts.find(groupingStr);
     if ( foundGroup != _actionShortcuts.end() ) {
-        GroupShortcuts::iterator foundAction = foundGroup->second.find(id);
+        GroupShortcuts::iterator foundAction = foundGroup->second.find(idStr);
         if ( foundAction != foundGroup->second.end() ) {
             return;
         }
@@ -384,18 +409,18 @@ GuiApplicationManagerPrivate::addStandardKeybind(const QString & grouping,
     }
     
     KeyBoundAction* kA = new KeyBoundAction;
-    kA->grouping = grouping;
-    kA->description = description;
+    kA->grouping = groupingStr;
+    kA->description = QString::fromUtf8(description.c_str());
     kA->defaultModifiers.push_back(modifiers);
     kA->modifiers.push_back(modifiers);
     kA->defaultShortcut.push_back(symbol);
     kA->currentShortcut.push_back(symbol);
     if ( foundGroup != _actionShortcuts.end() ) {
-        foundGroup->second.insert( std::make_pair(id, kA) );
+        foundGroup->second.insert( std::make_pair(idStr, kA) );
     } else {
         GroupShortcuts group;
-        group.insert( std::make_pair(id, kA) );
-        _actionShortcuts.insert( std::make_pair(grouping, group) );
+        group.insert( std::make_pair(idStr, kA) );
+        _actionShortcuts.insert( std::make_pair(groupingStr, group) );
     }
     
     GuiAppInstance* app = dynamic_cast<GuiAppInstance*>(_publicInterface->getTopLevelInstance());

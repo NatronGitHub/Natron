@@ -33,19 +33,6 @@ set -x
 source `pwd`/common.sh || exit 1
 
 PID=$$
-if [ -f $TMP_DIR/natron-build-snapshot.pid ]; then
-  OLDPID=`cat $TMP_DIR/natron-build-snapshot.pid`
-  PIDS=`ps aux|awk '{print $2}'`
-  for i in $PIDS;do
-    if [ "$i" = "$OLDPID" ]; then
-      echo "already running ..."
-      exit 1
-    fi
-  done
-fi
-echo $PID > $TMP_DIR/natron-build-snapshot.pid || exit 1
-
-
 CWD=`pwd`
 TMP=$CWD/.autobuild
 
@@ -116,10 +103,47 @@ git pull origin workshop
 FAIL=0
 echo "Running ..."
 
+
+
+# make git sync
+GITSCRIPT="/tmp/snapshot-git.sh"
+cat << 'EOF' > $GITSCRIPT
+#!/bin/sh
+if [ "$1" != "" ]; then
+  echo "Running git sync ..."
+  PID=$$
+  echo $PID > /tmp/snapshot-git.pid || exit 1
+  git fetch --all || exit 1
+  git merge origin/${1} || exit 1
+fi
+EOF
+chmod +x $GITSCRIPT
+
+# make kill bot
+KILLSCRIPT="/tmp/killbot$$.sh"
+cat << 'EOF' > "$KILLSCRIPT"
+#!/bin/sh
+sleep 30m
+PARENT=`cat /tmp/snapshot-git.pid`
+if [ "$PARENT" = "" ]; then
+  exit 1
+fi
+PIDS=`ps aux|awk '{print $2}'|grep $PARENT`
+if [ "$PIDS" = "$PARENT" ]; then
+  kill -15 $PARENT
+fi
+EOF
+chmod +x $KILLSCRIPT
+
+
 BUILD_NATRON=0
 cd $TMP/Natron 
-git fetch --all || FAIL=1
-git merge origin/workshop || FAIL=1
+
+$KILLSCRIPT &
+KILLBOT=$!
+$GITSCRIPT workshop 
+kill -9 $KILLBOT
+
 GITV_NATRON=`git log|head -1|awk '{print $2}'`
 ORIG_NATRON=$NATRON_DEVEL_GIT
 echo "Natron $GITV_NATRON vs. $ORIG_NATRON"
@@ -130,8 +154,12 @@ fi
 BUILD_IO=0
 if [ "$FAIL" != "1" ]; then
   cd $TMP/openfx-io
-  git fetch --all || FAIL=1
-  git merge origin/master || FAIL=1
+
+  $KILLSCRIPT &
+  KILLBOT=$!
+  $GITSCRIPT master 
+  kill -9 $KILLBOT
+
   GITV_IO=`git log|head -1|awk '{print $2}'`
   ORIG_IO=$IOPLUG_DEVEL_GIT
   echo "IO $GITV_IO vs. $ORIG_IO"
@@ -143,8 +171,12 @@ fi
 BUILD_MISC=0
 if [ "$FAIL" != "1" ]; then
   cd $TMP/openfx-misc
-  git fetch --all || FAIL=1
-  git merge origin/master || FAIL=1
+
+  $KILLSCRIPT &
+  KILLBOT=$!
+  $GITSCRIPT master 
+  kill -9 $KILLBOT
+
   GITV_MISC=`git log|head -1|awk '{print $2}'`
   ORIG_MISC=$MISCPLUG_DEVEL_GIT
   echo "Misc $GITV_MISC vs. $ORIG_MISC"
@@ -156,8 +188,12 @@ fi
 BUILD_ARENA=0
 if [ "$FAIL" != "1" ]; then
   cd $TMP/openfx-arena
-  git fetch --all || FAIL=1
-  git merge origin/master || FAIL=1
+
+  $KILLSCRIPT &
+  KILLBOT=$!
+  $GITSCRIPT master 
+  kill -9 $KILLBOT
+
   GITV_ARENA=`git log|head -1|awk '{print $2}'`
   ORIG_ARENA=$ARENAPLUG_DEVEL_GIT
   echo "Arena $GITV_ARENA vs. $ORIG_ARENA"
@@ -179,6 +215,8 @@ BUILD_CV=0
 #    BUILD_CV=1
 #  fi
 #fi
+
+rm -f $GITSCRIPT $KILLSCRIPT
 
 cd $CWD || exit 1
 if [ "$FAIL" != "1" ]; then

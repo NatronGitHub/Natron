@@ -36,6 +36,7 @@
 #include "Global/KeySymbols.h" // Key
 
 #include "Engine/RenderStats.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 #include "Gui/PanelWidget.h"
@@ -69,9 +70,9 @@ public:
     
     ViewerGL* getViewer() const;
 
-    void setCurrentView(int view);
+    void setCurrentView(ViewIdx view);
 
-    int getCurrentView() const;
+    ViewIdx getCurrentView() const;
 
     void seek(SequenceTime time);
 
@@ -274,9 +275,22 @@ public:
     void updateViewsMenu(const std::vector<std::string>& viewNames);
     
     void getActiveInputs(int* a, int* b) const;
+    
+    void setViewerPaused(bool paused, bool allInputs);
 
+    void toggleViewerPauseMode(bool allInputs);
+    
+    bool isViewerPaused(int texIndex) const;
+    
 public Q_SLOTS:
+    
+    void onPauseViewerButtonClicked(bool clicked);
 
+    void onPlaybackInButtonClicked();
+    void onPlaybackOutButtonClicked();
+    void onPlaybackInSpinboxValueChanged(double value);
+    void onPlaybackOutSpinboxValueChanged(double value);
+    
     void onZoomComboboxCurrentIndexChanged(int index);
     
     void toggleStartForward();
@@ -307,7 +321,7 @@ public Q_SLOTS:
 
     void refresh();
 
-    void showView(int view);
+    void onViewsComboboxChanged(int  index);
 
     void onEnableViewerRoIButtonToggle(bool);
     
@@ -342,8 +356,6 @@ public Q_SLOTS:
     void onInputNameChanged(int inputNb,const QString & name);
 
     void onInputChanged(int inputNb);
-
-    void onFrameRangeEditingFinished();
     
     void onCanSetFPSClicked(bool toggled);
     void onCanSetFPSLabelClicked(bool toggled);
@@ -411,10 +423,13 @@ public Q_SLOTS:
     
     void onSyncViewersButtonPressed(bool clicked);
     
-    void onRenderStatsAvailable(int time, int view, double wallTime, const RenderStatsMap& stats);
+    void onRenderStatsAvailable(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats);
     
     void nextLayer();
     void previousLayer();
+    
+    void previousView();
+    void nextView();
     
     void toggleTripleSync(bool toggled);
     

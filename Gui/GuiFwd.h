@@ -88,6 +88,7 @@ class QUndoCommand;
 class QUndoGroup;
 class QUndoStack;
 class QVBoxLayout;
+class QWheelEvent;
 class QWidget;
 
 
@@ -127,10 +128,12 @@ class Histogram;
 class HostOverlay;
 class InfoViewerWidget;
 class KeyBoundAction;
+class KnobClickableLabel;
 class KnobCurveGui;
 class KnobGui;
 class KnobGuiFactory;
 class KnobHolder;
+class KnobWidgetDnD;
 class LineEdit;
 class LinkArrow;
 class MenuWithToolTips;
@@ -150,6 +153,8 @@ class PanelWidget;
 class PreferencesPanel;
 class ProjectGui;
 class ProjectGuiSerialization;
+class ProgressPanel;
+class ProgressTaskInfo;
 class PropertiesBinWrapper;
 class PyModalDialog;
 class PyPanel;
@@ -193,7 +198,9 @@ bool isHighDPIInternal(const QWidget* w);
 
 typedef boost::shared_ptr<NodeGui> NodeGuiPtr;
 typedef std::list<NodeGuiPtr> NodesGuiList;
-
+typedef boost::shared_ptr<ProgressTaskInfo> ProgressTaskInfoPtr;
+typedef boost::shared_ptr<KnobGui> KnobGuiPtr;
+typedef boost::weak_ptr<KnobGui> KnobGuiWPtr;
 NATRON_NAMESPACE_EXIT;
 
 

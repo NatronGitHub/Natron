@@ -21,6 +21,7 @@ Functions
 *    def :meth:`createNode<NatronEngine.App.createNode>` (pluginID[, majorVersion=-1[, group=None]])
 *    def :meth:`getAppID<NatronEngine.App.getAppID>` ()
 *    def :meth:`getProjectParam<NatronEngine.App.getProjectParam>` (name)
+*    def :meth:`getViewNames<NatronEngine.App.getViewNames>`()
 *    def :meth:`render<NatronEngine.App.render>` (effect,firstFrame,lastFrame[,frameStep])
 *    def :meth:`render<NatronEngine.App.render>` (tasks)
 *    def :meth:`saveTempProject<NatronEngine.App.saveTempProject>` (filename)
@@ -172,7 +173,12 @@ Returns a project :doc:`Param` given its *name* (script-name). See :ref:`this se
 an explanation of *script-name* vs. *label*. 
 
 
+.. method:: NatronEngine.App.getViewNames()
 
+	:rtype: :class:`Sequence`
+
+Returns a sequence with the name of all the views in the project as setup by the user
+in the "Views" tab of the Project Settings.
 
 .. method:: NatronEngine.App.render(effect,firstFrame,lastFrame[,frameStep])
 

@@ -81,6 +81,7 @@ NodeGraphPrivate::NodeGraphPrivate(NodeGraph* p,
 , _hintOutputEdge(NULL)
 , _backdropResized()
 , _selection()
+, cursorSet(false)
 , _nodesWithinBDAtPenDown()
 , _selectionRect()
 , _bendPointsVisible(false)

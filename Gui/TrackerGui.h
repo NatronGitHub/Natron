@@ -38,6 +38,8 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/ViewIdx.h"
+
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -62,21 +64,21 @@ public:
     QWidget* getButtonsBar() const;
 
 
-    void drawOverlays(double time, const RenderScale & renderScale, int view) const;
+    void drawOverlays(double time, const RenderScale & renderScale, ViewIdx view) const;
 
-    bool penDown(double time, const RenderScale & renderScale, int view, const QPointF & viewportPos, const QPointF & pos, double pressure, QMouseEvent* e);
+    bool penDown(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, QMouseEvent* e);
 
-    bool penDoubleClicked(double time, const RenderScale & renderScale, int view, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool penDoubleClicked(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
 
-    bool penMotion(double time, const RenderScale & renderScale, int view, const QPointF & viewportPos, const QPointF & pos, double pressure, QInputEvent* e);
+    bool penMotion(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, QInputEvent* e);
 
-    bool penUp(double time, const RenderScale & renderScale, int view, const QPointF & viewportPos, const QPointF & pos, double pressure, QMouseEvent* e);
+    bool penUp(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, QMouseEvent* e);
 
-    bool keyDown(double time, const RenderScale & renderScale, int view, QKeyEvent* e);
+    bool keyDown(double time, const RenderScale & renderScale, ViewIdx view, QKeyEvent* e);
 
-    bool keyUp(double time, const RenderScale & renderScale, int view, QKeyEvent* e);
+    bool keyUp(double time, const RenderScale & renderScale, ViewIdx view, QKeyEvent* e);
 
-    bool loseFocus(double time, const RenderScale & renderScale, int view);
+    bool loseFocus(double time, const RenderScale & renderScale, ViewIdx view);
 
 public Q_SLOTS:
 

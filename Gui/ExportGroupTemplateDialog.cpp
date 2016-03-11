@@ -168,7 +168,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
                                                "gathered by version. If 2 plug-ins have the same ID and version, the first loaded in the"
                                                " search-paths will take precedence over the other."), Qt::WhiteSpaceNormal);
     _imp->idEdit = new LineEdit(this);
-    _imp->idEdit->setPlaceholderText("org.organization.pyplugs.XXX");
+    _imp->idEdit->setPlaceholderText(QString::fromUtf8("org.organization.pyplugs.XXX"));
     _imp->idEdit->setToolTip(idTt);
 
 
@@ -176,7 +176,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
     QString labelTt = GuiUtils::convertFromPlainText(tr("Set the label of the group as the user will see it in the user interface."), Qt::WhiteSpaceNormal);
     _imp->labelLabel->setToolTip(labelTt);
     _imp->labelEdit = new LineEdit(this);
-    _imp->labelEdit->setPlaceholderText("MyPlugin");
+    _imp->labelEdit->setPlaceholderText(QString::fromUtf8("MyPlugin"));
     QObject::connect(_imp->labelEdit,SIGNAL(editingFinished()), this , SLOT(onLabelEditingFinished()));
     _imp->labelEdit->setToolTip(labelTt);
 
@@ -187,7 +187,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
     _imp->groupingLabel->setToolTip(groupingTt);
 
     _imp->groupingEdit = new LineEdit(this);
-    _imp->groupingEdit->setPlaceholderText("Color/Transform");
+    _imp->groupingEdit->setPlaceholderText(QString::fromUtf8("Color/Transform"));
     _imp->groupingEdit->setToolTip(groupingTt);
 
 
@@ -196,7 +196,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
                                                  "The path is relative to the Python script."), Qt::WhiteSpaceNormal);
     _imp->iconPathLabel->setToolTip(iconTt);
     _imp->iconPath = new LineEdit(this);
-    _imp->iconPath->setPlaceholderText("Label.png");
+    _imp->iconPath->setPlaceholderText(QString::fromUtf8("Label.png"));
     _imp->iconPath->setToolTip(iconTt);
 
     _imp->descriptionLabel = new Label(tr("Description"),this);
@@ -217,10 +217,10 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
 
     QPixmap openPix;
     appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &openPix);
-    _imp->openButton = new Button(QIcon(openPix),"",this);
+    _imp->openButton = new Button(QIcon(openPix),QString(),this);
     _imp->openButton->setFocusPolicy(Qt::NoFocus);
     _imp->openButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    QObject::connect( _imp->openButton, SIGNAL( clicked() ), this, SLOT( onButtonClicked() ) );
+    QObject::connect( _imp->openButton, SIGNAL(clicked()), this, SLOT(onButtonClicked()) );
 
     _imp->buttons = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel),
                                          Qt::Horizontal,this);
@@ -262,7 +262,7 @@ ExportGroupTemplateDialog::onButtonClicked()
     SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::eFileDialogModeDir, path.toStdString(), _imp->gui, false);
     if (dialog.exec()) {
         std::string selection = dialog.selectedFiles();
-        _imp->fileEdit->setText(selection.c_str());
+        _imp->fileEdit->setText(QString::fromUtf8(selection.c_str()));
         QDir d = dialog.currentDirectory();
         _imp->gui->updateLastPluginDirectory(d.absolutePath());
     }
@@ -281,7 +281,7 @@ ExportGroupTemplateDialog::onOkClicked()
 {
     QString dirPath = _imp->fileEdit->text();
 
-    if (!dirPath.isEmpty() && dirPath[dirPath.size() - 1] == QChar('/')) {
+    if (!dirPath.isEmpty() && dirPath[dirPath.size() - 1] == QLatin1Char('/')) {
         dirPath.remove(dirPath.size() - 1, 1);
     }
     QDir d(dirPath);
@@ -295,7 +295,7 @@ ExportGroupTemplateDialog::onOkClicked()
         Dialogs::errorDialog(tr("Error").toStdString(), tr("You must specify a label to name the script").toStdString());
         return;
     } else {
-        pluginLabel = Python::makeNameScriptFriendly(pluginLabel.toStdString()).c_str();
+        pluginLabel = QString::fromUtf8(Python::makeNameScriptFriendly(pluginLabel.toStdString()).c_str());
     }
 
     QString pluginID = _imp->idEdit->text();
@@ -308,10 +308,10 @@ ExportGroupTemplateDialog::onOkClicked()
     QString grouping = _imp->groupingEdit->text();
     QString description = _imp->descriptionEdit->getText();
 
-    QString filePath = d.absolutePath() + "/" + pluginLabel + ".py";
+    QString filePath = d.absolutePath() + QLatin1Char('/') + pluginLabel + QString::fromUtf8(".py");
 
     QStringList filters;
-    filters.push_back(QString(pluginLabel + ".py"));
+    filters.push_back(QString(pluginLabel + QString::fromUtf8(".py")));
     if (!d.entryList(filters,QDir::Files | QDir::NoDotAndDotDot).isEmpty()) {
         StandardButtonEnum rep = Dialogs::questionDialog(tr("Existing plug-in").toStdString(),
                                                                 tr("A group plug-in with the same name already exists "
@@ -325,7 +325,7 @@ ExportGroupTemplateDialog::onOkClicked()
     bool foundInPath = false;
     QStringList groupSearchPath = appPTR->getAllNonOFXPluginsPaths();
     for (QStringList::iterator it = groupSearchPath.begin(); it != groupSearchPath.end(); ++it) {
-        if (!it->isEmpty() && it->at(it->size() - 1) == QChar('/')) {
+        if (!it->isEmpty() && it->at(it->size() - 1) == QLatin1Char('/')) {
             it->remove(it->size() - 1, 1);
         }
         if (*it == dirPath) {

@@ -57,6 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/TimeLine.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/Button.h"
 #include "Gui/ClickableLabel.h"
@@ -315,15 +316,15 @@ RotoPanel::RotoPanel(const NodeGuiPtr&  n,
     : QWidget(parent)
       , _imp( new RotoPanelPrivate(this,n) )
 {
-    QObject::connect( _imp->context.get(), SIGNAL( selectionChanged(int) ), this, SLOT( onSelectionChanged(int) ) );
-    QObject::connect( _imp->context.get(),SIGNAL( itemInserted(int,int) ),this,SLOT( onItemInserted(int,int) ) );
-    QObject::connect( _imp->context.get(),SIGNAL( itemRemoved(const boost::shared_ptr<RotoItem>&,int) ),this,SLOT( onItemRemoved(const boost::shared_ptr<RotoItem>&,int) ) );
-    QObject::connect( n->getNode()->getApp()->getTimeLine().get(), SIGNAL( frameChanged(SequenceTime,int) ), this,
-                      SLOT( onTimeChanged(SequenceTime, int) ) );
-    QObject::connect( n.get(), SIGNAL( settingsPanelClosed(bool) ), this, SLOT( onSettingsPanelClosed(bool) ) );
+    QObject::connect( _imp->context.get(), SIGNAL(selectionChanged(int)), this, SLOT(onSelectionChanged(int)) );
+    QObject::connect( _imp->context.get(),SIGNAL(itemInserted(int,int)),this,SLOT(onItemInserted(int,int)) );
+    QObject::connect( _imp->context.get(),SIGNAL(itemRemoved(boost::shared_ptr<RotoItem>,int)),this,SLOT(onItemRemoved(boost::shared_ptr<RotoItem>,int)) );
+    QObject::connect( n->getNode()->getApp()->getTimeLine().get(), SIGNAL(frameChanged(SequenceTime,int)), this,
+                      SLOT(onTimeChanged(SequenceTime,int)) );
+    QObject::connect( n.get(), SIGNAL(settingsPanelClosed(bool)), this, SLOT(onSettingsPanelClosed(bool)) );
 
-    QObject::connect( _imp->context.get(),SIGNAL( itemScriptNameChanged(boost::shared_ptr<RotoItem>)),this,SLOT( onItemScriptNameChanged(boost::shared_ptr<RotoItem>) ) );
-    QObject::connect( _imp->context.get(),SIGNAL( itemLabelChanged(boost::shared_ptr<RotoItem>)),this,SLOT( onItemLabelChanged(boost::shared_ptr<RotoItem>) ) );
+    QObject::connect( _imp->context.get(),SIGNAL(itemScriptNameChanged(boost::shared_ptr<RotoItem>)),this,SLOT(onItemScriptNameChanged(boost::shared_ptr<RotoItem>)) );
+    QObject::connect( _imp->context.get(),SIGNAL(itemLabelChanged(boost::shared_ptr<RotoItem>)),this,SLOT(onItemLabelChanged(boost::shared_ptr<RotoItem>)) );
     QObject::connect( _imp->context.get(), SIGNAL(itemLockedChanged(int)), this, SLOT(onItemLockChanged(int)));
     
     _imp->mainLayout = new QVBoxLayout(this);
@@ -340,17 +341,17 @@ RotoPanel::RotoPanel(const NodeGuiPtr&  n,
 
     _imp->currentKeyframe = new SpinBox(_imp->splineContainer,SpinBox::eSpinBoxTypeDouble);
     _imp->currentKeyframe->setEnabled(false);
-    _imp->currentKeyframe->setReadOnly(true);
+    _imp->currentKeyframe->setReadOnly_NoFocusRect(true);
     _imp->currentKeyframe->setToolTip(GuiUtils::convertFromPlainText(tr("The current keyframe for the selected shape(s)."), Qt::WhiteSpaceNormal));
     _imp->splineLayout->addWidget(_imp->currentKeyframe);
 
-    _imp->ofLabel = new ClickableLabel("of",_imp->splineContainer);
+    _imp->ofLabel = new ClickableLabel(QString::fromUtf8("of"),_imp->splineContainer);
     _imp->ofLabel->setEnabled(false);
     _imp->splineLayout->addWidget(_imp->ofLabel);
 
     _imp->totalKeyframes = new SpinBox(_imp->splineContainer,SpinBox::eSpinBoxTypeInt);
     _imp->totalKeyframes->setEnabled(false);
-    _imp->totalKeyframes->setReadOnly(true);
+    _imp->totalKeyframes->setReadOnly_NoFocusRect(true);
     _imp->totalKeyframes->setToolTip(GuiUtils::convertFromPlainText(tr("The keyframe count for all the selected shapes."), Qt::WhiteSpaceNormal));
     _imp->splineLayout->addWidget(_imp->totalKeyframes);
 
@@ -361,44 +362,44 @@ RotoPanel::RotoPanel(const NodeGuiPtr&  n,
     appPTR->getIcon(NATRON_PIXMAP_REMOVE_KEYFRAME, NATRON_MEDIUM_BUTTON_ICON_SIZE, &removePix);
     appPTR->getIcon(NATRON_PIXMAP_CLEAR_ALL_ANIMATION, NATRON_MEDIUM_BUTTON_ICON_SIZE, &clearAnimPix);
 
-    _imp->prevKeyframe = new Button(QIcon(prevPix),"",_imp->splineContainer);
+    _imp->prevKeyframe = new Button(QIcon(prevPix),QString(),_imp->splineContainer);
     _imp->prevKeyframe->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->prevKeyframe->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->prevKeyframe->setToolTip(GuiUtils::convertFromPlainText(tr("Go to the previous keyframe."), Qt::WhiteSpaceNormal));
     _imp->prevKeyframe->setEnabled(false);
-    QObject::connect( _imp->prevKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onGoToPrevKeyframeButtonClicked() ) );
+    QObject::connect( _imp->prevKeyframe, SIGNAL(clicked(bool)), this, SLOT(onGoToPrevKeyframeButtonClicked()) );
     _imp->splineLayout->addWidget(_imp->prevKeyframe);
 
-    _imp->nextKeyframe = new Button(QIcon(nextPix),"",_imp->splineContainer);
+    _imp->nextKeyframe = new Button(QIcon(nextPix),QString(),_imp->splineContainer);
     _imp->nextKeyframe->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->nextKeyframe->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->nextKeyframe->setToolTip(GuiUtils::convertFromPlainText(tr("Go to the next keyframe."), Qt::WhiteSpaceNormal));
     _imp->nextKeyframe->setEnabled(false);
-    QObject::connect( _imp->nextKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onGoToNextKeyframeButtonClicked() ) );
+    QObject::connect( _imp->nextKeyframe, SIGNAL(clicked(bool)), this, SLOT(onGoToNextKeyframeButtonClicked()) );
     _imp->splineLayout->addWidget(_imp->nextKeyframe);
 
-    _imp->addKeyframe = new Button(QIcon(addPix),"",_imp->splineContainer);
+    _imp->addKeyframe = new Button(QIcon(addPix),QString(),_imp->splineContainer);
     _imp->addKeyframe->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
     _imp->addKeyframe->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->addKeyframe->setToolTip(GuiUtils::convertFromPlainText(tr("Add keyframe at the current timeline's time."), Qt::WhiteSpaceNormal));
     _imp->addKeyframe->setEnabled(false);
-    QObject::connect( _imp->addKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onAddKeyframeButtonClicked() ) );
+    QObject::connect( _imp->addKeyframe, SIGNAL(clicked(bool)), this, SLOT(onAddKeyframeButtonClicked()) );
     _imp->splineLayout->addWidget(_imp->addKeyframe);
 
-    _imp->removeKeyframe = new Button(QIcon(removePix),"",_imp->splineContainer);
+    _imp->removeKeyframe = new Button(QIcon(removePix),QString(),_imp->splineContainer);
     _imp->removeKeyframe->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
     _imp->removeKeyframe->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->removeKeyframe->setToolTip(GuiUtils::convertFromPlainText(tr("Remove keyframe at the current timeline's time."), Qt::WhiteSpaceNormal));
     _imp->removeKeyframe->setEnabled(false);
-    QObject::connect( _imp->removeKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onRemoveKeyframeButtonClicked() ) );
+    QObject::connect( _imp->removeKeyframe, SIGNAL(clicked(bool)), this, SLOT(onRemoveKeyframeButtonClicked()) );
     _imp->splineLayout->addWidget(_imp->removeKeyframe);
     
-    _imp->clearAnimation = new Button(QIcon(clearAnimPix),"",_imp->splineContainer);
+    _imp->clearAnimation = new Button(QIcon(clearAnimPix),QString(),_imp->splineContainer);
     _imp->clearAnimation->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
     _imp->clearAnimation->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->clearAnimation->setToolTip(GuiUtils::convertFromPlainText(tr("Remove all animation for the selected shape(s)."), Qt::WhiteSpaceNormal));
     _imp->clearAnimation->setEnabled(false);
-    QObject::connect( _imp->clearAnimation, SIGNAL( clicked(bool) ), this, SLOT( onRemoveAnimationButtonClicked() ) );
+    QObject::connect( _imp->clearAnimation, SIGNAL(clicked(bool)), this, SLOT(onRemoveAnimationButtonClicked()) );
     _imp->splineLayout->addWidget(_imp->clearAnimation);
 
     
@@ -411,7 +412,7 @@ RotoPanel::RotoPanel(const NodeGuiPtr&  n,
     _imp->tree->setDragDropMode(QAbstractItemView::InternalMove);
     _imp->tree->setDragEnabled(true);
     _imp->tree->setExpandsOnDoubleClick(false);
-    _imp->tree->setAttribute(Qt::WA_MacShowFocusRect,1);
+    _imp->tree->setAttribute(Qt::WA_MacShowFocusRect,0);
     QString treeToolTip = GuiUtils::convertFromPlainText(tr("This tree contains the hierarchy of shapes, strokes and layers along with some "
                                                       "most commonly used attributes for each of them. "
                                                       "Each attribute can be found in the parameters above in the panel.\n"
@@ -424,12 +425,12 @@ RotoPanel::RotoPanel(const NodeGuiPtr&  n,
 
     _imp->mainLayout->addWidget(_imp->tree);
 
-    QObject::connect( _imp->tree, SIGNAL( itemClicked(QTreeWidgetItem*,int) ), this, SLOT( onItemClicked(QTreeWidgetItem*, int) ) );
-    QObject::connect( _imp->tree, SIGNAL( itemDoubleClicked(QTreeWidgetItem*,int) ), this, SLOT( onItemDoubleClicked(QTreeWidgetItem*, int) ) );
-    QObject::connect( _imp->tree, SIGNAL( itemChanged(QTreeWidgetItem*,int) ), this, SLOT( onItemChanged(QTreeWidgetItem*, int) ) );
-    QObject::connect( _imp->tree, SIGNAL( currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*) ), this,
-                      SLOT( onCurrentItemChanged(QTreeWidgetItem*, QTreeWidgetItem*) ) );
-    QObject::connect( _imp->tree, SIGNAL( itemSelectionChanged() ), this, SLOT( onItemSelectionChanged() ) );
+    QObject::connect( _imp->tree, SIGNAL(itemClicked(QTreeWidgetItem*,int)), this, SLOT(onItemClicked(QTreeWidgetItem*,int)) );
+    QObject::connect( _imp->tree, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)), this, SLOT(onItemDoubleClicked(QTreeWidgetItem*,int)) );
+    QObject::connect( _imp->tree, SIGNAL(itemChanged(QTreeWidgetItem*,int)), this, SLOT(onItemChanged(QTreeWidgetItem*,int)) );
+    QObject::connect( _imp->tree, SIGNAL(currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)), this,
+                      SLOT(onCurrentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)) );
+    QObject::connect( _imp->tree, SIGNAL(itemSelectionChanged()), this, SLOT(onItemSelectionChanged()) );
 
 
     _imp->tree->setColumnCount(MAX_COLS);
@@ -500,15 +501,15 @@ RotoPanel::RotoPanel(const NodeGuiPtr&  n,
     _imp->buttonLayout->setContentsMargins(0, 0, 0, 0);
     _imp->buttonLayout->setSpacing(0);
 
-    _imp->addLayerButton = new Button("+",_imp->buttonContainer);
+    _imp->addLayerButton = new Button(QString::fromUtf8("+"),_imp->buttonContainer);
     _imp->addLayerButton->setToolTip(GuiUtils::convertFromPlainText(tr("Add a new layer."), Qt::WhiteSpaceNormal));
     _imp->buttonLayout->addWidget(_imp->addLayerButton);
-    QObject::connect( _imp->addLayerButton, SIGNAL( clicked(bool) ), this, SLOT( onAddLayerButtonClicked() ) );
+    QObject::connect( _imp->addLayerButton, SIGNAL(clicked(bool)), this, SLOT(onAddLayerButtonClicked()) );
 
-    _imp->removeItemButton = new Button("-",_imp->buttonContainer);
+    _imp->removeItemButton = new Button(QString::fromUtf8("-"),_imp->buttonContainer);
     _imp->removeItemButton->setToolTip(GuiUtils::convertFromPlainText(tr("Remove selected items."), Qt::WhiteSpaceNormal));
     _imp->buttonLayout->addWidget(_imp->removeItemButton);
-    QObject::connect( _imp->removeItemButton, SIGNAL( clicked(bool) ), this, SLOT( onRemoveItemButtonClicked() ) );
+    QObject::connect( _imp->removeItemButton, SIGNAL(clicked(bool)), this, SLOT(onRemoveItemButtonClicked()) );
 
     _imp->buttonLayout->addStretch();
 
@@ -586,11 +587,11 @@ RotoPanel::onSelectionChangedInternal()
     for (SelectedItems::const_iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
         boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
         if (isBezier) {
-            QObject::disconnect( isBezier.get(), SIGNAL( keyframeSet(double) ), this, SLOT( onSelectedBezierKeyframeSet(double) ) );
-            QObject::disconnect( isBezier.get(), SIGNAL( keyframeRemoved(double) ), this, SLOT( onSelectedBezierKeyframeRemoved(double) ) );
-            QObject::disconnect( isBezier.get(), SIGNAL( animationRemoved() ), this, SLOT( onSelectedBezierAnimationRemoved() ) );
-            QObject::disconnect( isBezier.get(), SIGNAL( aboutToClone() ), this, SLOT( onSelectedBezierAboutToClone() ) );
-            QObject::disconnect( isBezier.get(), SIGNAL( cloned() ), this, SLOT( onSelectedBezierCloned() ) );
+            QObject::disconnect( isBezier.get(), SIGNAL(keyframeSet(double)), this, SLOT(onSelectedBezierKeyframeSet(double)) );
+            QObject::disconnect( isBezier.get(), SIGNAL(keyframeRemoved(double)), this, SLOT(onSelectedBezierKeyframeRemoved(double)) );
+            QObject::disconnect( isBezier.get(), SIGNAL(animationRemoved()), this, SLOT(onSelectedBezierAnimationRemoved()) );
+            QObject::disconnect( isBezier.get(), SIGNAL(aboutToClone()), this, SLOT(onSelectedBezierAboutToClone()) );
+            QObject::disconnect( isBezier.get(), SIGNAL(cloned()), this, SLOT(onSelectedBezierCloned()) );
         }
         ItemKeys::iterator found = _imp->keyframes.find(*it);
         if (found != _imp->keyframes.end()) {
@@ -624,11 +625,11 @@ RotoPanel::onSelectionChangedInternal()
         boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
         const RotoLayer* isLayer = dynamic_cast<const RotoLayer*>( it->get() );
         if (isBezier) {
-            QObject::connect( isBezier.get(), SIGNAL( keyframeSet(double) ), this, SLOT( onSelectedBezierKeyframeSet(double) ) );
-            QObject::connect( isBezier.get(), SIGNAL( keyframeRemoved(double) ), this, SLOT( onSelectedBezierKeyframeRemoved(double) ) );
-            QObject::connect( isBezier.get(), SIGNAL( animationRemoved() ), this, SLOT( onSelectedBezierAnimationRemoved() ) );
-            QObject::connect( isBezier.get(), SIGNAL( aboutToClone() ), this, SLOT( onSelectedBezierAboutToClone() ) );
-            QObject::connect( isBezier.get(), SIGNAL( cloned() ), this, SLOT( onSelectedBezierCloned() ) );
+            QObject::connect( isBezier.get(), SIGNAL(keyframeSet(double)), this, SLOT(onSelectedBezierKeyframeSet(double)) );
+            QObject::connect( isBezier.get(), SIGNAL(keyframeRemoved(double)), this, SLOT(onSelectedBezierKeyframeRemoved(double)) );
+            QObject::connect( isBezier.get(), SIGNAL(animationRemoved()), this, SLOT(onSelectedBezierAnimationRemoved()) );
+            QObject::connect( isBezier.get(), SIGNAL(aboutToClone()), this, SLOT(onSelectedBezierAboutToClone()) );
+            QObject::connect( isBezier.get(), SIGNAL(cloned()), this, SLOT(onSelectedBezierCloned()) );
             ++selectedBeziersCount;
         } else if ( isLayer && !isLayer->getItems().empty() ) {
             ++selectedBeziersCount;
@@ -827,7 +828,9 @@ RotoPanel::updateItemGui(QTreeWidgetItem* item)
         assert(w);
         ComboBox* cb = dynamic_cast<ComboBox*>(w);
         assert(cb);
-        cb->setCurrentIndex_no_emit( drawable->getCompositingOperator() );
+        if (cb) {
+            cb->setCurrentIndex_no_emit( drawable->getCompositingOperator() );
+        }
     }
 }
 
@@ -933,11 +936,11 @@ RotoPanelPrivate::insertItemRecursively(double time,
     }
     items.push_back( TreeItem(treeItem,item) );
 
-    treeItem->setText( COL_LABEL, item->getLabel().c_str() );
-    treeItem->setToolTip( COL_LABEL, GuiUtils::convertFromPlainText(kRotoLabelHint, Qt::WhiteSpaceNormal) );
+    treeItem->setText( COL_LABEL, QString::fromUtf8(item->getLabel().c_str() ));
+    treeItem->setToolTip( COL_LABEL, GuiUtils::convertFromPlainText(QString::fromUtf8(kRotoLabelHint), Qt::WhiteSpaceNormal) );
 
-    treeItem->setText(COL_SCRIPT_NAME, item->getScriptName().c_str());
-    treeItem->setToolTip( COL_SCRIPT_NAME, GuiUtils::convertFromPlainText(kRotoScriptNameHint, Qt::WhiteSpaceNormal) );
+    treeItem->setText(COL_SCRIPT_NAME, QString::fromUtf8(item->getScriptName().c_str()));
+    treeItem->setToolTip( COL_SCRIPT_NAME, GuiUtils::convertFromPlainText(QString::fromUtf8(kRotoScriptNameHint), Qt::WhiteSpaceNormal) );
     
     treeItem->setIcon(COL_ACTIVATED, item->isGloballyActivated() ? iconVisible : iconUnvisible);
     treeItem->setToolTip( COL_ACTIVATED, GuiUtils::convertFromPlainText(publicInterface->tr("Controls whether the overlay should be visible on the viewer for "
@@ -1003,16 +1006,16 @@ RotoPanelPrivate::insertItemRecursively(double time,
 
         publicInterface->makeCustomWidgetsForItem(drawable,treeItem);
 #ifdef NATRON_ROTO_INVERTIBLE
-        QObject::connect( drawable,SIGNAL( invertedStateChanged() ), publicInterface, SLOT( onRotoItemInvertedStateChanged() ) );
+        QObject::connect( drawable,SIGNAL(invertedStateChanged()), publicInterface, SLOT(onRotoItemInvertedStateChanged()) );
 #endif
         QObject::connect( drawable.get(),
-                         SIGNAL( shapeColorChanged() ),
+                         SIGNAL(shapeColorChanged()),
                          publicInterface,
-                         SLOT( onRotoItemShapeColorChanged() ) );
+                         SLOT(onRotoItemShapeColorChanged()) );
         QObject::connect( drawable.get(),
-                         SIGNAL( compositingOperatorChanged(int,int) ),
+                         SIGNAL(compositingOperatorChanged(ViewSpec,int,int)),
                          publicInterface,
-                         SLOT( onRotoItemCompOperatorChanged(int,int) ) );
+                         SLOT(onRotoItemCompOperatorChanged(ViewSpec,int,int)) );
         
         boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(item);
         if (isBezier) {
@@ -1057,16 +1060,16 @@ RotoPanel::makeCustomWidgetsForItem(const boost::shared_ptr<RotoDrawableItem>& i
     }
     
     ComboBox* cb = new ComboBox;
-    QObject::connect( cb,SIGNAL( currentIndexChanged(int) ),this,SLOT( onCurrentItemCompOperatorChanged(int) ) );
+    QObject::connect( cb,SIGNAL(currentIndexChanged(int)),this,SLOT(onCurrentItemCompOperatorChanged(int)) );
     std::vector<std::string> compositingOperators,tooltips;
     Merge::getOperatorStrings(&compositingOperators, &tooltips);
     for (U32 i = 0; i < compositingOperators.size(); ++i) {
-        cb->addItem( compositingOperators[i].c_str(),QIcon(),QKeySequence(),tooltips[i].c_str() );
+        cb->addItem( QString::fromUtf8(compositingOperators[i].c_str()),QIcon(),QKeySequence(),QString::fromUtf8(tooltips[i].c_str() ));
     }
     // set the tooltip
     const std::string & tt = item->getCompositingOperatorToolTip();
 
-    cb->setToolTip( GuiUtils::convertFromPlainText(QString(tt.c_str()).trimmed(), Qt::WhiteSpaceNormal) );
+    cb->setToolTip( GuiUtils::convertFromPlainText(QString::fromUtf8(tt.c_str()).trimmed(), Qt::WhiteSpaceNormal) );
     cb->setCurrentIndex_no_emit( item->getCompositingOperator() );
     QObject::connect(cb, SIGNAL(minimumSizeChanged(QSize)), this, SLOT(onOperatorColMinimumSizeChanged(QSize)));
     _imp->tree->setItemWidget(treeItem, COL_OPERATOR, cb);
@@ -1087,7 +1090,7 @@ RotoPanelPrivate::removeItemRecursively(const boost::shared_ptr<RotoItem>& item)
 #ifdef NATRON_ROTO_INVERTIBLE
     RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(item);
     if (drawable) {
-        QObject::disconnect( drawable,SIGNAL( invertedStateChanged() ), publicInterface, SLOT( onRotoItemInvertedStateChanged() ) );
+        QObject::disconnect( drawable,SIGNAL(invertedStateChanged()), publicInterface, SLOT(onRotoItemInvertedStateChanged()) );
     }
 #endif
 
@@ -1104,7 +1107,7 @@ RotoPanel::onItemInserted(int index,int reason)
     boost::shared_ptr<RotoItem> lastInsertedItem = _imp->context->getLastInsertedItem();
     double time = _imp->context->getTimelineCurrentTime();
 
-    _imp->insertItemInternal(reason,time, lastInsertedItem,index);
+    _imp->insertItemInternal(reason, time, lastInsertedItem,index);
 }
 
 void
@@ -1189,7 +1192,7 @@ RotoPanel::onCurrentItemCompOperatorChanged(int index)
             if (drawable) {
                 boost::shared_ptr<KnobChoice> op = drawable->getOperatorKnob();
                 KeyFrame k;
-                op->setValue(index, 0, eValueChangedReasonUserEdited,&k);
+                op->setValue(index, ViewIdx(0), 0, eValueChangedReasonUserEdited,&k);
             }
             _imp->context->clearSelection(RotoItem::eSelectionReasonOther);
             _imp->context->select(it->rotoItem, RotoItem::eSelectionReasonOther);
@@ -1239,7 +1242,7 @@ RotoPanel::onRotoItemShapeColorChanged()
 }
 
 void
-RotoPanel::onRotoItemCompOperatorChanged(int /*dim*/,
+RotoPanel::onRotoItemCompOperatorChanged(ViewSpec /*view*/, int /*dim*/,
                                          int reason)
 {
     if ( (ValueChangedReasonEnum)reason == eValueChangedReasonSlaveRefresh ) {
@@ -1343,9 +1346,7 @@ RotoPanel::onItemColorDialogEdited(const QColor & color)
         if (drawable) {
             if (_imp->dialogEdition == eColorDialogEditingShapeColor) {
                 boost::shared_ptr<KnobColor> colorKnob = drawable->getColorKnob();
-                colorKnob->setValue(color.redF(), 0);
-                colorKnob->setValue(color.greenF(), 1);
-                colorKnob->setValue(color.blueF(), 2);
+                colorKnob->setValues(color.redF(), color.greenF(), color.blueF(), ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
                 QIcon icon;
                 double colorArray[3];
                 colorArray[0] = color.redF();
@@ -1353,10 +1354,8 @@ RotoPanel::onItemColorDialogEdited(const QColor & color)
                 colorArray[2] = color.blueF();
                 makeSolidIcon(colorArray, icon);
                 found->treeItem->setIcon(COL_COLOR, icon);
-
-                _imp->context->getColorKnob()->setValue(colorArray[0], 0);
-                _imp->context->getColorKnob()->setValue(colorArray[1], 1);
-                _imp->context->getColorKnob()->setValue(colorArray[2], 2);
+                boost::shared_ptr<KnobColor> contextKnob = _imp->context->getColorKnob();
+                contextKnob->setValues(colorArray[0], colorArray[1], colorArray[2], ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
                 mustEvaluate = true;
             } else if (_imp->dialogEdition == eColorDialogEditingOverlayColor) {
                 double colorArray[4];
@@ -1434,7 +1433,7 @@ RotoPanel::onItemLabelChanged(const boost::shared_ptr<RotoItem>& item)
     }
     TreeItems::iterator it = _imp->findItem(item);
     if (it != _imp->items.end()) {
-        it->treeItem->setText(COL_LABEL, item->getLabel().c_str());
+        it->treeItem->setText(COL_LABEL, QString::fromUtf8(item->getLabel().c_str()));
     }
 }
 
@@ -1446,7 +1445,7 @@ RotoPanel::onItemScriptNameChanged(const boost::shared_ptr<RotoItem>& item)
     }
     TreeItems::iterator it = _imp->findItem(item);
     if (it != _imp->items.end()) {
-        it->treeItem->setText(COL_SCRIPT_NAME, item->getScriptName().c_str());
+        it->treeItem->setText(COL_SCRIPT_NAME, QString::fromUtf8(item->getScriptName().c_str()));
     }
 }
 
@@ -1461,7 +1460,7 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
         switch (column) {
             case COL_LABEL: {
                 _imp->editedItem = item;
-                QObject::connect( qApp, SIGNAL( focusChanged(QWidget*,QWidget*) ), this, SLOT( onFocusChanged(QWidget*,QWidget*) ) );
+                QObject::connect( qApp, SIGNAL(focusChanged(QWidget*,QWidget*)), this, SLOT(onFocusChanged(QWidget*,QWidget*)) );
                 _imp->editedItemName = it->rotoItem->getLabel();
                 _imp->tree->openPersistentEditor(item);
             }   break;
@@ -1476,7 +1475,7 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
                     color.setRgbF(oc[0], oc[1], oc[2]);
                     color.setAlphaF(oc[3]);
                     dialog.setCurrentColor(color);
-                    QObject::connect( &dialog,SIGNAL( currentColorChanged(QColor) ),this,SLOT( onItemColorDialogEdited(QColor) ) );
+                    QObject::connect( &dialog,SIGNAL(currentColorChanged(QColor)),this,SLOT(onItemColorDialogEdited(QColor)) );
                     if ( dialog.exec() ) {
                         color = dialog.selectedColor();
                         oc[0] = color.redF();
@@ -1515,7 +1514,7 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
                     QColor color;
                     color.setRgbF(shapeColor[0], shapeColor[1], shapeColor[2]);
                     dialog.setCurrentColor(color);
-                    QObject::connect( &dialog,SIGNAL( currentColorChanged(QColor) ),this,SLOT( onItemColorDialogEdited(QColor) ) );
+                    QObject::connect( &dialog,SIGNAL(currentColorChanged(QColor)),this,SLOT(onItemColorDialogEdited(QColor)) );
                     if ( dialog.exec() ) {
                         color = dialog.selectedColor();
                         shapeColor[0] = color.redF();
@@ -1532,9 +1531,7 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
                         drawable = dynamic_cast<RotoDrawableItem*>( found->rotoItem.get() );
                         if (drawable) {
                             boost::shared_ptr<KnobColor> colorKnob = drawable->getColorKnob();
-                            colorKnob->setValue(shapeColor[0], 0);
-                            colorKnob->setValue(shapeColor[1], 1);
-                            colorKnob->setValue(shapeColor[2], 2);
+                            colorKnob->setValues(shapeColor[0], shapeColor[1], shapeColor[2], ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
                             mustEvaluate = true;
                             found->treeItem->setIcon(COL_COLOR, icon);
                         }
@@ -1542,9 +1539,8 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
                 }
                 
                 if ( colorChosen && !selected.empty() ) {
-                    _imp->context->getColorKnob()->setValue(shapeColor[0], 0);
-                    _imp->context->getColorKnob()->setValue(shapeColor[1], 1);
-                    _imp->context->getColorKnob()->setValue(shapeColor[2], 2);
+                    boost::shared_ptr<KnobColor> colorKnob = _imp->context->getColorKnob();
+                    colorKnob->setValues(shapeColor[0], shapeColor[1], shapeColor[2], ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
                     mustEvaluate = true;
                 }
                 if (mustEvaluate) {
@@ -1616,14 +1612,14 @@ RotoPanel::onItemSelectionChanged()
         boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
         if (isBezier) {
             QObject::disconnect( isBezier.get(),
-                                SIGNAL( keyframeSet(double) ),
+                                SIGNAL(keyframeSet(double)),
                                 this,
-                                SLOT( onSelectedBezierKeyframeSet(double) ) );
+                                SLOT(onSelectedBezierKeyframeSet(double)) );
             QObject::disconnect( isBezier.get(),
-                                SIGNAL( keyframeRemoved(double) ),
+                                SIGNAL(keyframeRemoved(double)),
                                 this,
-                                SLOT( onSelectedBezierKeyframeRemoved(double) ) );
-            QObject::disconnect( isBezier.get(), SIGNAL( animationRemoved() ), this, SLOT( onSelectedBezierAnimationRemoved() ) );
+                                SLOT(onSelectedBezierKeyframeRemoved(double)) );
+            QObject::disconnect( isBezier.get(), SIGNAL(animationRemoved()), this, SLOT(onSelectedBezierAnimationRemoved()) );
         }
         ItemKeys::iterator found = _imp->keyframes.find(*it);
         if (found != _imp->keyframes.end()) {
@@ -1795,8 +1791,8 @@ TreeWidget::dragAndDropHandler(const QMimeData* mime,
                                const QPoint & pos,
                                std::list<DroppedTreeItemPtr> & dropped)
 {
-    if ( mime->hasFormat("application/x-qabstractitemmodeldatalist") ) {
-        QByteArray encoded = mime->data("application/x-qabstractitemmodeldatalist");
+    if ( mime->hasFormat(QString::fromUtf8("application/x-qabstractitemmodeldatalist")) ) {
+        QByteArray encoded = mime->data(QString::fromUtf8("application/x-qabstractitemmodeldatalist"));
         QDataStream stream(&encoded,QIODevice::ReadOnly);
         DropIndicatorPosition position = dropIndicatorPosition();
 
@@ -2036,23 +2032,23 @@ RotoPanel::showItemMenu(QTreeWidgetItem* item,
     //menu.setFont( QFont(appFont,appFontSize) );
     menu.setShortcutEnabled(false);
     QAction* addLayerAct = menu.addAction( tr("Add layer") );
-    QObject::connect( addLayerAct, SIGNAL( triggered() ), this, SLOT( onAddLayerActionTriggered() ) );
+    QObject::connect( addLayerAct, SIGNAL(triggered()), this, SLOT(onAddLayerActionTriggered()) );
     QAction* deleteAct = menu.addAction( tr("Delete") );
     deleteAct->setShortcut( QKeySequence(Qt::Key_Backspace) );
-    QObject::connect( deleteAct, SIGNAL( triggered() ), this, SLOT( onDeleteItemActionTriggered() ) );
+    QObject::connect( deleteAct, SIGNAL(triggered()), this, SLOT(onDeleteItemActionTriggered()) );
     QAction* cutAct = menu.addAction( tr("Cut") );
     cutAct->setShortcut( QKeySequence(Qt::Key_X + Qt::CTRL) );
-    QObject::connect( cutAct, SIGNAL( triggered() ), this, SLOT( onCutItemActionTriggered() ) );
+    QObject::connect( cutAct, SIGNAL(triggered()), this, SLOT(onCutItemActionTriggered()) );
     QAction* copyAct = menu.addAction( tr("Copy") );
     copyAct->setShortcut( QKeySequence(Qt::Key_C + Qt::CTRL) );
-    QObject::connect( copyAct, SIGNAL( triggered() ), this, SLOT( onCopyItemActionTriggered() ) );
+    QObject::connect( copyAct, SIGNAL(triggered()), this, SLOT(onCopyItemActionTriggered()) );
     QAction* pasteAct = menu.addAction( tr("Paste") );
     pasteAct->setShortcut( QKeySequence(Qt::Key_V + Qt::CTRL) );
-    QObject::connect( pasteAct, SIGNAL( triggered() ), this, SLOT( onPasteItemActionTriggered() ) );
+    QObject::connect( pasteAct, SIGNAL(triggered()), this, SLOT(onPasteItemActionTriggered()) );
     pasteAct->setEnabled( !_imp->clipBoard.empty() );
     QAction* duplicateAct = menu.addAction( tr("Duplicate") );
     duplicateAct->setShortcut( QKeySequence(Qt::Key_C + Qt::ALT) );
-    QObject::connect( duplicateAct, SIGNAL( triggered() ), this, SLOT( onDuplicateItemActionTriggered() ) );
+    QObject::connect( duplicateAct, SIGNAL(triggered()), this, SLOT(onDuplicateItemActionTriggered()) );
 
     ///The base layer cannot be duplicated
     duplicateAct->setEnabled(it->rotoItem->getParentLayer() != NULL);

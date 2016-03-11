@@ -80,7 +80,6 @@ namespace NATRON_NAMESPACE { }
 #define NATRON_PRESETS_FILE_MIME_TYPE "application/vnd.natron.nodepresets"
 #define NATRON_PROJECT_ENV_VAR_NAME "Project"
 #define NATRON_OCIO_ENV_VAR_NAME "OCIO"
-#define NATRON_DEFAULT_OCIO_CONFIG_NAME "blender"
 
 //Define here the name of the Engine module that was chosen in the typesystem_engine.xml
 #define NATRON_ENGINE_PYTHON_MODULE_NAME "NatronEngine"
@@ -118,7 +117,7 @@ namespace NATRON_NAMESPACE { }
 #define NATRON_DEVELOPMENT_BETA "Beta"
 #define NATRON_DEVELOPMENT_RELEASE_CANDIDATE "RC"
 #define NATRON_DEVELOPMENT_RELEASE_STABLE "Release"
-// The snapshot build scripts should add '-DNATRON_SNAPSHOT' to the compile
+// The snapshot build scripts should add '-DNATRON_CONFIG_SNAPSHOT' to the compile
 // options.
 #define NATRON_DEVELOPMENT_SNAPSHOT "Snapshot"
 
@@ -229,6 +228,10 @@ NATRON_VERSION_REVISION)
 //When enabled the value of 2 is a code for a pixel being rendered but not yet available.
 //In this context, the reader of the bitmap should then wait for the pixel to be available.
 #define NATRON_ENABLE_TRIMAP 1
+
+//Use this to have all readers inside the same Read meta-node and all the writers
+//into the same Write meta-node
+//#define NATRON_ENABLE_IO_META_NODES 1
 
 //Uncomment to get access to ReadQt and WriteQt nodes. Note that they are no longer maintained and probably buggy.
 //#define NATRON_ENABLE_QT_IO_NODES

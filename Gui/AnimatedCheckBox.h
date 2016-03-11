@@ -98,11 +98,15 @@ Q_SIGNALS:
     void toggled(bool);
     
     void clicked(bool);
+    
+protected:
+    
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
+
 
 private:
 
-    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
 };
 

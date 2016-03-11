@@ -26,6 +26,7 @@
 
 source `pwd`/common.sh || exit 1
 
+PID=$$
 
 if [ "$OS" = "Msys" ]; then
     PKGOS=Windows
@@ -66,6 +67,23 @@ else
     #Default to 4 threads
     JOBS=$DEFAULT_MKJOBS
 fi
+
+# make kill bot
+TMP_BUILD_DIR=$TMP_PATH$BIT
+KILLSCRIPT="$TMP_BUILD_DIR/killbot$$.sh"
+cat << 'EOF' > "$KILLSCRIPT"
+#!/bin/sh
+PARENT=$1
+sleep 30m
+if [ "$PARENT" = "" ]; then
+exit 1
+fi
+PIDS=`ps aux|awk '{print $2}'|grep $PARENT`
+if [ "$PIDS" = "$PARENT" ]; then
+kill -15 $PARENT
+fi
+EOF
+chmod +x $KILLSCRIPT
 
 if [ "$NOCLEAN" != "1" ]; then
     rm -rf $INSTALL_PATH
@@ -115,7 +133,20 @@ fi
 
 
 if [ "$NOBUILD" != "1" ]; then
-    if [ "$ONLY_PLUGINS" != "1" ]; then
+    if [ "$ONLY_NATRON" != "1" ]; then
+        echo -n "Building Plugins ... "
+        env NATRON_LICENSE=$NATRON_LICENSE MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CV=0 BUILD_IO=$IO BUILD_MISC=$MISC BUILD_ARENA=$ARENA sh $INC_PATH/scripts/build-plugins.sh $BIT $BRANCH >& $LOGS/plugins.$PKGOS$BIT.$TAG.log || FAIL=1
+        if [ "$FAIL" != "1" ]; then
+            echo OK
+        else
+            echo ERROR
+            echo "BUILD__ERROR" >> $LOGS/plugins.$PKGOS$BIT.$TAG.log
+            sleep 2
+            cat $LOGS/plugins.$PKGOS$BIT.$TAG.log
+            rm -f $KILLSCRIPT
+        fi  
+    fi
+    if [ "$FAIL" != "1" -a "$ONLY_PLUGINS" != "1" ]; then
         echo -n "Building Natron ... "
         env NATRON_LICENSE=$NATRON_LICENSE MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER DISABLE_BREAKPAD=$DISABLE_BREAKPAD sh $INC_PATH/scripts/build-natron.sh $BIT $BRANCH >& $LOGS/natron.$PKGOS$BIT.$TAG.log || FAIL=1
         if [ "$FAIL" != "1" ]; then
@@ -125,19 +156,8 @@ if [ "$NOBUILD" != "1" ]; then
             echo "BUILD__ERROR" >> $LOGS/natron.$PKGOS$BIT.$TAG.log
             sleep 2
             cat $LOGS/natron.$PKGOS$BIT.$TAG.log
+            rm -f $KILLSCRIPT
         fi
-    fi
-    if [ "$FAIL" != "1" -a "$ONLY_NATRON" != "1" ]; then
-        echo -n "Building Plugins ... "
-        env NATRON_LICENSE=$NATRON_LICENSE MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CV=$CV BUILD_IO=$IO BUILD_MISC=$MISC BUILD_ARENA=$ARENA sh $INC_PATH/scripts/build-plugins.sh $BIT $BRANCH >& $LOGS/plugins.$PKGOS$BIT.$TAG.log || FAIL=1
-        if [ "$FAIL" != "1" ]; then
-            echo OK
-        else
-            echo ERROR
-            echo "BUILD__ERROR" >> $LOGS/plugins.$PKGOS$BIT.$TAG.log
-            sleep 2
-            cat $LOGS/plugins.$PKGOS$BIT.$TAG.log
-        fi  
     fi
 fi
 
@@ -151,8 +171,12 @@ if [ "$NOPKG" != "1" -a "$FAIL" != "1" ]; then
         echo "BUILD__ERROR" >> $LOGS/installer.$PKGOS$BIT.$TAG.log
         sleep 2
         cat $LOGS/installer.$PKGOS$BIT.$TAG.log
+        rm -f $KILLSCRIPT
     fi 
 fi
+
+$KILLSCRIPT $PID &
+KILLBOT=$!
 
 if [ "$SYNC" = "1" ]; then
     if [ "$BRANCH" = "workshop" ]; then
@@ -174,7 +198,8 @@ if [ "$SYNC" = "1" ]; then
     rsync -avz --progress --delete --verbose -e ssh $LOGS/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/logs
 fi
 
-
+kill -9 $KILLBOT
+rm -f $KILLSCRIPT
 
 
 if [ "$FAIL" = "1" ]; then

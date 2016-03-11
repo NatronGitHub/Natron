@@ -39,6 +39,7 @@ GCC_DIAG_OFF(sign-compare)
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/vector.hpp>
+#include <boost/serialization/version.hpp>
 GCC_DIAG_ON(sign-compare)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
@@ -46,6 +47,7 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Engine/EngineFwd.h"
 
+// Note: these classes are used for cache serialization and do not have to maintain backward compatibility
 
 namespace boost {
 namespace serialization {
@@ -84,9 +86,15 @@ ImageParams::serialize(Archive & ar,
     ar & ::boost::serialization::make_nvp("RoD",_rod);
     ar & ::boost::serialization::make_nvp("Bounds",_bounds);
     ar & ::boost::serialization::make_nvp("IsProjectFormat",_isRoDProjectFormat);
-    ar & ::boost::serialization::make_nvp("FramesNeeded",_framesNeeded);
+    // backward compatibility is not necessary
+    //if (version < IMAGE_SERIALIZATION_REMOVE_FRAMESNEEDED) {
+    //    std::map<int, std::map<int,std::vector<RangeD> > > f;
+    //    ar & ::boost::serialization::make_nvp("FramesNeeded",f);
+    //}
     ar & ::boost::serialization::make_nvp("Components",_components);
     ar & ::boost::serialization::make_nvp("MMLevel",_mipMapLevel);
+    ar & ::boost::serialization::make_nvp("Premult",_premult);
+    ar & ::boost::serialization::make_nvp("Fielding",_fielding);
 }
 
 NATRON_NAMESPACE_EXIT;

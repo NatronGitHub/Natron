@@ -222,20 +222,20 @@ KnobSerialization::restoreExpressions(const KnobPtr & knob,
     try {
         for (int i = 0; i < dims; ++i) {
             if (!_expressions[i].first.empty()) {
-                QString expr(_expressions[i].first.c_str());
+                QString expr(QString::fromUtf8(_expressions[i].first.c_str()));
                 
                 //Replace all occurrences of script-names that we know have changed
                 for (std::map<std::string,std::string>::const_iterator it = oldNewScriptNamesMapping.begin();
                      it != oldNewScriptNamesMapping.end(); ++it) {
-                    expr.replace(it->first.c_str(), it->second.c_str());
+                    expr.replace(QString::fromUtf8(it->first.c_str()), QString::fromUtf8(it->second.c_str()));
                 }
                 knob->restoreExpression(i, expr.toStdString(), _expressions[i].second);
             }
             
         }
     } catch (const std::exception& e) {
-        QString err = QString("Failed to restore expression on %1: %2").arg(knob->getName().c_str()).arg(e.what());
-        appPTR->writeToOfxLog_mt_safe(err);
+        QString err = QString::fromUtf8("Failed to restore expression on %1: %2").arg(QString::fromUtf8(knob->getName().c_str())).arg(QString::fromUtf8(e.what()));
+        appPTR->writeToErrorLog_mt_safe(err);
     }
     
 }
@@ -246,7 +246,9 @@ KnobSerialization::setChoiceExtraString(const std::string& label)
     assert(_extraData);
     ChoiceExtraData* cData = dynamic_cast<ChoiceExtraData*>(_extraData);
     assert(cData);
-    cData->_choiceString = label;
+    if (cData) {
+        cData->_choiceString = label;
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

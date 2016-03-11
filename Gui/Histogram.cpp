@@ -130,6 +130,8 @@ struct HistogramPrivate
     , hasImage(false)
 #endif
     , sizeH()
+    , showViewerPicker(false)
+    , viewerPickerColor()
     {
     }
     
@@ -147,6 +149,8 @@ struct HistogramPrivate
     void drawMissingImage();
     
     void updatePicker(double x);
+    
+    void drawViewerPicker();
     
 #ifdef NATRON_HISTOGRAM_USING_OPENGL
     
@@ -269,6 +273,8 @@ struct HistogramPrivate
 #endif // !NATRON_HISTOGRAM_USING_OPENGL
     
     QSize sizeH;
+    bool showViewerPicker;
+    std::vector<double> viewerPickerColor;
 };
 
 Histogram::Histogram(Gui* gui,
@@ -283,7 +289,7 @@ Histogram::Histogram(Gui* gui,
     setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Expanding);
     setMouseTracking(true);
 #ifndef NATRON_HISTOGRAM_USING_OPENGL
-    QObject::connect( &_imp->histogramThread, SIGNAL( histogramProduced() ), this, SLOT( onCPUHistogramComputed() ) );
+    QObject::connect( &_imp->histogramThread, SIGNAL(histogramProduced()), this, SLOT(onCPUHistogramComputed()) );
 #endif
 
 //    QDesktopWidget* desktop = QApplication::desktop();
@@ -310,7 +316,7 @@ Histogram::Histogram(Gui* gui,
     inputAAction->setData(0);
     inputAAction->setCheckable(true);
     inputAAction->setChecked(true);
-    QObject::connect( inputAAction, SIGNAL( triggered() ), this, SLOT( computeHistogramAndRefresh() ) );
+    QObject::connect( inputAAction, SIGNAL(triggered()), this, SLOT(computeHistogramAndRefresh()) );
     _imp->viewerCurrentInputGroup->addAction(inputAAction);
     _imp->viewerCurrentInputMenu->addAction(inputAAction);
 
@@ -319,7 +325,7 @@ Histogram::Histogram(Gui* gui,
     inputBAction->setData(1);
     inputBAction->setCheckable(true);
     inputBAction->setChecked(false);
-    QObject::connect( inputBAction, SIGNAL( triggered() ), this, SLOT( computeHistogramAndRefresh() ) );
+    QObject::connect( inputBAction, SIGNAL(triggered()), this, SLOT(computeHistogramAndRefresh()) );
     _imp->viewerCurrentInputGroup->addAction(inputBAction);
     _imp->viewerCurrentInputMenu->addAction(inputBAction);
 
@@ -328,10 +334,10 @@ Histogram::Histogram(Gui* gui,
     _imp->rightClickMenu->addAction( _imp->modeMenu->menuAction() );
 
     _imp->fullImage = new QAction(_imp->rightClickMenu);
-    _imp->fullImage->setText("Full image");
+    _imp->fullImage->setText(tr("Full image"));
     _imp->fullImage->setCheckable(true);
     _imp->fullImage->setChecked(false);
-    QObject::connect( _imp->fullImage, SIGNAL( triggered() ), this, SLOT( computeHistogramAndRefresh() ) );
+    QObject::connect( _imp->fullImage, SIGNAL(triggered()), this, SLOT(computeHistogramAndRefresh()) );
     _imp->rightClickMenu->addAction(_imp->fullImage);
 
     _imp->filterMenu = new Menu(tr("Smoothing"),_imp->rightClickMenu);
@@ -340,32 +346,32 @@ Histogram::Histogram(Gui* gui,
 
     _imp->modeActions = new QActionGroup(_imp->modeMenu);
     QAction* rgbAction = new QAction(_imp->modeMenu);
-    rgbAction->setText( QString("RGB") );
+    rgbAction->setText( QString::fromUtf8("RGB") );
     rgbAction->setData(0);
     _imp->modeActions->addAction(rgbAction);
 
     QAction* aAction = new QAction(_imp->modeMenu);
-    aAction->setText( QString("A") );
+    aAction->setText( QString::fromUtf8("A") );
     aAction->setData(1);
     _imp->modeActions->addAction(aAction);
 
     QAction* yAction = new QAction(_imp->modeMenu);
-    yAction->setText( QString("Y") );
+    yAction->setText( QString::fromUtf8("Y") );
     yAction->setData(2);
     _imp->modeActions->addAction(yAction);
 
     QAction* rAction = new QAction(_imp->modeMenu);
-    rAction->setText( QString("R") );
+    rAction->setText( QString::fromUtf8("R") );
     rAction->setData(3);
     _imp->modeActions->addAction(rAction);
 
     QAction* gAction = new QAction(_imp->modeMenu);
-    gAction->setText( QString("G") );
+    gAction->setText( QString::fromUtf8("G") );
     gAction->setData(4);
     _imp->modeActions->addAction(gAction);
 
     QAction* bAction = new QAction(_imp->modeMenu);
-    bAction->setText( QString("B") );
+    bAction->setText( QString::fromUtf8("B") );
     bAction->setData(5);
     _imp->modeActions->addAction(bAction);
     QList<QAction*> actions = _imp->modeActions->actions();
@@ -373,7 +379,7 @@ Histogram::Histogram(Gui* gui,
         _imp->modeMenu->addAction( actions.at(i) );
     }
 
-    QObject::connect( _imp->modeActions,SIGNAL( triggered(QAction*) ),this,SLOT( onDisplayModeChanged(QAction*) ) );
+    QObject::connect( _imp->modeActions,SIGNAL(triggered(QAction*)),this,SLOT(onDisplayModeChanged(QAction*)) );
 
 
     _imp->filterActions = new QActionGroup(_imp->filterMenu);
@@ -403,8 +409,8 @@ Histogram::Histogram(Gui* gui,
         _imp->filterMenu->addAction( actions.at(i) );
     }
 
-    QObject::connect( _imp->filterActions, SIGNAL( triggered(QAction*) ), this, SLOT( onFilterChanged(QAction*) ) );
-    QObject::connect( getGui(), SIGNAL( viewersChanged() ), this, SLOT( populateViewersChoices() ) );
+    QObject::connect( _imp->filterActions, SIGNAL(triggered(QAction*)), this, SLOT(onFilterChanged(QAction*)) );
+    QObject::connect( getGui(), SIGNAL(viewersChanged()), this, SLOT(populateViewersChoices()) );
     populateViewersChoices();
 }
 
@@ -430,6 +436,19 @@ Histogram::~Histogram()
     glDeleteBuffers(1,&_imp->vboHistogramRendering);
 
 #endif
+}
+
+int
+Histogram::getViewerTextureInputDisplayed() const
+{
+    int textureIndex = 0;
+    if (_imp->viewerCurrentInputGroup) {
+        QAction* selectedInputAction = _imp->viewerCurrentInputGroup->checkedAction();
+        if (selectedInputAction) {
+            textureIndex = selectedInputAction->data().toInt();
+        }
+    }
+    return textureIndex;
 }
 
 boost::shared_ptr<Image> HistogramPrivate::getHistogramImage(RectI* imagePortion) const
@@ -487,6 +506,8 @@ boost::shared_ptr<Image> HistogramPrivate::getHistogramImage(RectI* imagePortion
         double par = 1.;
         ImageBitDepthEnum depth = eImageBitDepthFloat;
         ImageComponents comps;
+        ImagePremultiplicationEnum premult = eImagePremultiplicationPremultiplied;
+        ImageFieldingOrderEnum fielding = eImageFieldingOrderNone;
         for (std::list<boost::shared_ptr<Image> >::const_iterator it = tiles.begin(); it!=tiles.end(); ++it) {
             if (bounds.isNull()) {
                 bounds = (*it)->getBounds();
@@ -494,19 +515,31 @@ boost::shared_ptr<Image> HistogramPrivate::getHistogramImage(RectI* imagePortion
                 par = (*it)->getPixelAspectRatio();
                 depth = (*it)->getBitDepth();
                 comps = (*it)->getComponents();
+                fielding = (*it)->getFieldingOrder();
+                premult = (*it)->getPremultiplication();
             } else {
                 bounds.merge((*it)->getBounds());
                 assert(mipMapLevel == (*it)->getMipMapLevel());
                 assert(depth == (*it)->getBitDepth());
                 assert(comps == (*it)->getComponents());
                 assert(par == (*it)->getPixelAspectRatio());
+                assert(fielding == (*it)->getFieldingOrder());
+                assert(premult == (*it)->getPremultiplication());
             }
         }
         if (bounds.isNull()) {
             return ret;
         }
         
-        ret.reset(new Image(comps,firstTile->getRoD(),bounds,mipMapLevel,par,depth,false));
+        ret.reset(new Image(comps,
+                            firstTile->getRoD(),
+                            bounds,
+                            mipMapLevel,
+                            par,
+                            depth,
+                            premult,
+                            fielding,
+                            false));
         for (std::list<boost::shared_ptr<Image> >::const_iterator it = tiles.begin(); it!=tiles.end(); ++it) {
             ret->pasteFrom(**it, (*it)->getBounds(), false);
         }
@@ -550,7 +583,7 @@ Histogram::populateViewersChoices()
     _imp->histogramSelectionMenu->clear();
 
     QAction* noneAction = new QAction(_imp->histogramSelectionGroup);
-    noneAction->setText("-");
+    noneAction->setText(QString::fromUtf8("-"));
     noneAction->setData(0);
     noneAction->setCheckable(true);
     noneAction->setChecked(false);
@@ -571,7 +604,7 @@ Histogram::populateViewersChoices()
     for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
         if ( (*it)->getInternalNode()->getNode()->isActivated() ) {
             QAction* ac = new QAction(_imp->histogramSelectionGroup);
-            ac->setText( (*it)->getInternalNode()->getScriptName_mt_safe().c_str() );
+            ac->setText( QString::fromUtf8((*it)->getInternalNode()->getScriptName_mt_safe().c_str()) );
             ac->setCheckable(true);
             ac->setChecked(false);
             ac->setData(c);
@@ -594,7 +627,7 @@ Histogram::populateViewersChoices()
     }
     _imp->histogramSelectionGroup->blockSignals(false);
 
-    QObject::connect( _imp->histogramSelectionGroup,SIGNAL( triggered(QAction*) ),this,SLOT( onCurrentViewerChanged(QAction*) ) );
+    QObject::connect( _imp->histogramSelectionGroup,SIGNAL(triggered(QAction*)),this,SLOT(onCurrentViewerChanged(QAction*)) );
 } // populateViewersChoices
 
 void
@@ -615,11 +648,11 @@ Histogram::onViewerImageChanged(ViewerGL* viewer,
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     if (viewer && hasImageBackend) {
-        QString viewerName = viewer->getInternalNode()->getScriptName_mt_safe().c_str();
+        QString viewerName = QString::fromUtf8(viewer->getInternalNode()->getScriptName_mt_safe().c_str());
         ViewerTab* lastSelectedViewer = getGui()->getNodeGraph()->getLastSelectedViewer();
         QString currentViewerName;
         if (lastSelectedViewer) {
-            currentViewerName = lastSelectedViewer->getInternalNode()->getScriptName_mt_safe().c_str();
+            currentViewerName = QString::fromUtf8(lastSelectedViewer->getInternalNode()->getScriptName_mt_safe().c_str());
         }
 
         QAction* selectedHistAction = _imp->histogramSelectionGroup->checkedAction();
@@ -1013,7 +1046,9 @@ HistogramPrivate::computeHistogram(Histogram::DisplayModeEnum channel)
 
     GLenum attachment = colorAttachmentFromDisplayMode(channel);
 
+#ifdef DEBUG
 #pragma message WARN("TODO: ave currently bound VA, Buffer, and bound texture")
+#endif
     /*binding the VAO holding managing the VBO*/
     glBindVertexArray(vaoID);
     /*binding the VBO sending vertices to the vertex shader*/
@@ -1200,9 +1235,13 @@ Histogram::paintGL()
             
             _imp->drawWarnings();
             
+            if (_imp->showViewerPicker) {
+                _imp->drawViewerPicker();
+            }
         } else {
             _imp->drawMissingImage();
         }
+        
         
         glCheckError();
     } // GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
@@ -1316,7 +1355,7 @@ HistogramPrivate::updatePicker(double x)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    xCoordinateStr = QString("x=") + QString::number(x,'f',6);
+    xCoordinateStr = QString::fromUtf8("x=") + QString::number(x,'f',6);
     double binSize = (vmax - vmin) / binsCount;
     int index = (int)( (x - vmin) / binSize );
     rValueStr.clear();
@@ -1326,24 +1365,24 @@ HistogramPrivate::updatePicker(double x)
         float r = histogram1.empty() ? 0 :  histogram1[index];
         float g = histogram2.empty() ? 0 :  histogram2[index];
         float b = histogram3.empty() ? 0 :  histogram3[index];
-        rValueStr = QString("r=") + QString::number(r);
-        gValueStr = QString("g=") + QString::number(g);
-        bValueStr = QString("b=") + QString::number(b);
+        rValueStr = QString::fromUtf8("r=") + QString::number(r);
+        gValueStr = QString::fromUtf8("g=") + QString::number(g);
+        bValueStr = QString::fromUtf8("b=") + QString::number(b);
     } else if (mode == Histogram::eDisplayModeY) {
         float y = histogram1[index];
-        rValueStr = QString("y=") + QString::number(y);
+        rValueStr = QString::fromUtf8("y=") + QString::number(y);
     } else if (mode == Histogram::eDisplayModeA) {
         float a = histogram1[index];
-        rValueStr = QString("a=") + QString::number(a);
+        rValueStr = QString::fromUtf8("a=") + QString::number(a);
     } else if (mode == Histogram::eDisplayModeR) {
         float r = histogram1[index];
-        rValueStr = QString("r=") + QString::number(r);
+        rValueStr = QString::fromUtf8("r=") + QString::number(r);
     } else if (mode == Histogram::eDisplayModeG) {
         float g = histogram1[index];
-        gValueStr = QString("g=") + QString::number(g);
+        gValueStr = QString::fromUtf8("g=") + QString::number(g);
     } else if (mode == Histogram::eDisplayModeB) {
         float b = histogram1[index];
-        bValueStr = QString("b=") + QString::number(b);
+        bValueStr = QString::fromUtf8("b=") + QString::number(b);
     } else {
         assert(false);
     }
@@ -1565,11 +1604,7 @@ HistogramPrivate::drawScale()
     QFontMetrics fontM(_font);
     const double smallestTickSizePixel = 5.; // tick size (in pixels) for alpha = 0.
     const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
-    std::vector<double> acceptedDistances;
-    acceptedDistances.push_back(1.);
-    acceptedDistances.push_back(5.);
-    acceptedDistances.push_back(10.);
-    acceptedDistances.push_back(50.);
+
 
     {
         GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
@@ -1593,7 +1628,7 @@ HistogramPrivate::drawScale()
             ticks_fill(half_tick, ticks_max, m1, m2, &ticks);
             const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
             const double largestTickSize = range * largestTickSizePixel / rangePixel;
-            const double minTickSizeTextPixel = (axis == 0) ? fontM.width( QString("00") ) : fontM.height(); // AXIS-SPECIFIC
+            const double minTickSizeTextPixel = (axis == 0) ? fontM.width( QLatin1String("00") ) : fontM.height(); // AXIS-SPECIFIC
             const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
             for (int i = m1; i <= m2; ++i) {
                 double value = i * smallTickSize + offset;
@@ -1689,6 +1724,86 @@ HistogramPrivate::drawMissingImage()
     glCheckError();
 }
 
+
+void
+HistogramPrivate::drawViewerPicker()
+{
+    // always running in the main thread
+    
+    glLineWidth(2.);
+    
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    assert( QGLContext::currentContext() == widget->context() );
+    
+    double wHeight = widget->height();
+    QPointF topLeft = zoomCtx.toZoomCoordinates(0, 0);
+    QPointF btmRight = zoomCtx.toZoomCoordinates(widget->width(), wHeight);
+    
+    //QFontMetrics m(_font, 0);
+    //double yPos = zoomCtx.toZoomCoordinates(0,wHeight - m.height() * 2.).y();
+    
+    QColor color;
+    double imgColor[4] = {0., 0., 0., 0.};
+    for (std::size_t i = 0; i < (std::size_t)std::min((int)viewerPickerColor.size(), 3); ++i) {
+        imgColor[i] = viewerPickerColor[i];
+    }
+    
+    if (mode == Histogram::eDisplayModeY) {
+        glColor3f(0.398979,0.398979,0.398979);
+        double luminance = 0.299 * imgColor[0] + 0.587 * imgColor[1] + 0.114 * imgColor[2];
+        glBegin(GL_LINES);
+        glVertex2d(luminance, topLeft.y());
+        glVertex2d(luminance, btmRight.y());
+        glEnd();
+
+    } else if (mode == Histogram::eDisplayModeR) {
+        glColor3f(0.398979,0.398979,0.398979);
+        glBegin(GL_LINES);
+        glVertex2d(imgColor[0], topLeft.y());
+        glVertex2d(imgColor[0], btmRight.y());
+        glEnd();
+    } else if (mode == Histogram::eDisplayModeG) {
+        glColor3f(0.398979,0.398979,0.398979);
+        glBegin(GL_LINES);
+        glVertex2d(imgColor[1], topLeft.y());
+        glVertex2d(imgColor[1], btmRight.y());
+        glEnd();
+    } else if (mode == Histogram::eDisplayModeB) {
+        glColor3f(0.398979,0.398979,0.398979);
+        glBegin(GL_LINES);
+        glVertex2d(imgColor[2], topLeft.y());
+        glVertex2d(imgColor[2], btmRight.y());
+        glEnd();
+    } else if (mode == Histogram::eDisplayModeA) {
+        glColor3f(0.398979,0.398979,0.398979);
+        glBegin(GL_LINES);
+        glVertex2d(imgColor[3], topLeft.y());
+        glVertex2d(imgColor[3], btmRight.y());
+        glEnd();
+    } else if (mode == Histogram::eDisplayModeRGB) {
+        glColor3f(0.851643,0.196936,0.196936);
+        glBegin(GL_LINES);
+        glVertex2d(imgColor[0], topLeft.y());
+        glVertex2d(imgColor[0], btmRight.y());
+        
+        glColor3f(0,0.654707,0);
+        glVertex2d(imgColor[1], topLeft.y());
+        glVertex2d(imgColor[1], btmRight.y());
+        
+        glColor3f(0.345293,0.345293,1);
+        glVertex2d(imgColor[2], topLeft.y());
+        glVertex2d(imgColor[2], btmRight.y());
+        glEnd();
+        
+        glColor3f(0.398979,0.398979,0.398979);
+        glVertex2d(imgColor[3], topLeft.y());
+        glVertex2d(imgColor[3], btmRight.y());
+        glEnd();
+    }
+
+    glLineWidth(1.);
+}
+
 void
 HistogramPrivate::drawPicker()
 {
@@ -1697,7 +1812,7 @@ HistogramPrivate::drawPicker()
     assert( QGLContext::currentContext() == widget->context() );
 
     glCheckError();
-    QFontMetrics m(_font);
+    QFontMetrics m(_font, 0);
     int strWidth = std::max( std::max( std::max( m.width(rValueStr),m.width(gValueStr) ),m.width(bValueStr) ),m.width(xCoordinateStr) );
     QPointF xPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10,m.height() + 10);
     QPointF rPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10,2 * m.height() + 15);
@@ -1945,6 +2060,25 @@ Histogram::renderText(double x,
     double scaley = (top-bottom) / h;
     _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font);
     glCheckError();
+}
+
+void
+Histogram::setViewerCursor(const std::vector<double>& pickerColor)
+{
+    _imp->showViewerPicker = true;
+    _imp->viewerPickerColor = pickerColor;
+    update();
+}
+
+
+void
+Histogram::hideViewerCursor()
+{
+    if (!_imp->showViewerPicker) {
+        return;
+    }
+    _imp->showViewerPicker = false;
+    update();
 }
 
 NATRON_NAMESPACE_EXIT;

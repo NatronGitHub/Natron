@@ -29,28 +29,29 @@
 #include <vector>
 
 #include "Global/Macros.h"
+#include <nuke/fnOfxExtensions.h>
 #include "Engine/EngineFwd.h"
 
 #define kNatronColorPlaneName "Color"
-#define kNatronBackwardMotionVectorsPlaneName "Backward"
-#define kNatronForwardMotionVectorsPlaneName "Forward"
-#define kNatronDisparityLeftPlaneName "DisparityLeft"
-#define kNatronDisparityRightPlaneName "DisparityRight"
+#define kNatronBackwardMotionVectorsPlaneName "Backward.Motion"
+#define kNatronForwardMotionVectorsPlaneName "Forward.Motion"
+#define kNatronDisparityLeftPlaneName "DisparityLeft.Disparity"
+#define kNatronDisparityRightPlaneName "DisparityRight.Disparity"
 
 #define kNatronRGBAComponentsName "RGBA"
 #define kNatronRGBComponentsName "RGB"
 #define kNatronAlphaComponentsName "Alpha"
 
-#define kNatronDisparityComponentsName "Disparity"
-#define kNatronMotionComponentsName "Motion"
+#define kNatronDisparityComponentsName "XY"
+#define kNatronMotionComponentsName "UV"
 
 #define kNatronAlphaPlaneUserName kNatronColorPlaneName "." kNatronAlphaComponentsName
 #define kNatronRGBAPlaneUserName kNatronColorPlaneName "." kNatronRGBAComponentsName
 #define kNatronRGBPlaneUserName kNatronColorPlaneName "." kNatronRGBComponentsName
-#define kNatronDisparityLeftPlaneUserName kNatronDisparityLeftPlaneName "." kNatronDisparityComponentsName
-#define kNatronDisparityRightPlaneUserName kNatronDisparityRightPlaneName "." kNatronDisparityComponentsName
-#define kNatronBackwardMotionVectorsPlaneUserName kNatronBackwardMotionVectorsPlaneName "." kNatronMotionComponentsName
-#define kNatronForwardMotionVectorsPlaneUserName kNatronForwardMotionVectorsPlaneName "." kNatronMotionComponentsName
+#define kNatronDisparityLeftPlaneUserName kNatronDisparityLeftPlaneName
+#define kNatronDisparityRightPlaneUserName kNatronDisparityRightPlaneName
+#define kNatronBackwardMotionVectorsPlaneUserName kNatronBackwardMotionVectorsPlaneName
+#define kNatronForwardMotionVectorsPlaneUserName kNatronForwardMotionVectorsPlaneName
 
 NATRON_NAMESPACE_ENTER;
 
@@ -66,6 +67,8 @@ public:
     static std::string mapUserFriendlyPlaneNameToNatronInternalPlaneName(const std::string& userfriendlyPlaneName);
     static std::string mapNatronInternalPlaneNameToUserFriendlyPlaneName(const std::string& planeName);
     
+    static const ImageComponents& getDefaultComponent(const std::string& planeName);
+    
     ImageComponents();
     
     ImageComponents(const std::string& layerName,
@@ -73,6 +76,12 @@ public:
                     const std::vector<std::string>& componentsName);
     
     ImageComponents(const std::string& layerName,
+                    const std::string& globalCompName,
+                    const char** componentsName,
+                    int count);
+    
+    ImageComponents(const std::string& layerName,
+                    const std::string& pairedLayer,
                     const std::string& globalCompName,
                     const char** componentsName,
                     int count);
@@ -92,6 +101,12 @@ public:
     ///E.g color
     const std::string& getLayerName() const;
     
+    //True if stereo disparity or motion vectors as per Nuke ofx multi-plane extension
+    bool isPairedComponents() const;
+    
+    //if isPairedComponents() returns true, return the other layer that is paired to this layer.
+    const std::string& getPairedLayerName() const;
+    
     ///E.g ["r","g","b","a"]
     const std::vector<std::string>& getComponentsNames() const;
     
@@ -107,6 +122,16 @@ public:
     //For std::map
     bool operator<(const ImageComponents& other) const;
     
+    operator bool() const
+    {
+        return getNumComponents() > 0;
+    }
+    
+    bool operator!() const
+    {
+        return getNumComponents() == 0;
+    }
+    
     /*
      * These are default presets image components
      */
@@ -120,6 +145,10 @@ public:
     static const ImageComponents& getDisparityRightComponents();
     static const ImageComponents& getXYComponents();
     
+    //These are to be compatible with Nuke multi-plane extension and the Furnace plug-ins
+    static const ImageComponents& getPairedMotionVectors();
+    static const ImageComponents& getPairedStereoDisparity();
+    
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
     
@@ -127,7 +156,7 @@ private:
     
     
     
-    std::string _layerName;
+    std::string _layerName,_pairedLayer;
     std::vector<std::string> _componentNames;
     std::string _globalComponentsName;
 };

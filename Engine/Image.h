@@ -41,8 +41,9 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/ImageComponents.h"
 #include "Engine/ImageParams.h"
 #include "Engine/CacheEntry.h"
-#include "Engine/RectD.h"
 #include "Engine/OutputSchedulerThread.h"
+#include "Engine/RectD.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 
@@ -186,6 +187,8 @@ public:
           unsigned int mipMapLevel,
           double par,
           ImageBitDepthEnum bitdepth,
+          ImagePremultiplicationEnum premult,
+          ImageFieldingOrderEnum fielding,
           bool useBitmap = false);
 
     //Same as above but parameters are in the ImageParams object
@@ -203,7 +206,7 @@ public:
                             U64 nodeHashKey,
                             bool frameVaryingOrAnimated,
                             double time,
-                            int view,
+                            ViewIdx view,
                             bool draftMode,
                             bool fullScaleWithDownscaleInputs);
     static boost::shared_ptr<ImageParams> makeParams(int cost,
@@ -213,7 +216,8 @@ public:
                                                      bool isRoDProjectFormat,
                                                      const ImageComponents& components,
                                                      ImageBitDepthEnum bitdepth,
-                                                     const std::map<int, std::map<int,std::vector<RangeD> > > & framesNeeded);
+                                                     ImagePremultiplicationEnum premult,
+                                                     ImageFieldingOrderEnum fielding);
 
     static boost::shared_ptr<ImageParams> makeParams(int cost,
                                                      const RectD & rod,    // the image rod in canonical coordinates
@@ -223,9 +227,8 @@ public:
                                                      bool isRoDProjectFormat,
                                                      const ImageComponents& components,
                                                      ImageBitDepthEnum bitdepth,
-                                                     const std::map<int, std::map<int,std::vector<RangeD> > >& framesNeeded);
-
-
+                                                     ImagePremultiplicationEnum premult,
+                                                     ImageFieldingOrderEnum fielding);
 
     // boost::shared_ptr<ImageParams> getParams() const WARN_UNUSED_RETURN;
 
@@ -331,6 +334,10 @@ public:
     {
         return this->_bitDepth;
     }
+    
+    ImageFieldingOrderEnum getFieldingOrder() const;
+    
+    ImagePremultiplicationEnum getPremultiplication() const;
 
     double getPixelAspectRatio() const;
 
@@ -815,7 +822,8 @@ public:
                                  ImagePremultiplicationEnum outputPremult,
                                  ImagePremultiplicationEnum originalImagePremult,
                                  std::bitset<4> processChannels,
-                                 const boost::shared_ptr<Image>& originalImage);
+                                 const boost::shared_ptr<Image>& originalImage,
+                                 bool ignorePremult);
 
     void applyMaskMix(const RectI& roi,
                       const Image* maskImg,
@@ -885,46 +893,50 @@ private:
                                       bool maskInvert,
                                       float mix);
 
-    template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA, bool premult, bool originalPremult>
+    template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA, bool premult, bool originalPremult, bool ignorePremult>
     void copyUnProcessedChannelsForPremult(std::bitset<4> processChannels,
                                            const RectI& roi,
                                            const boost::shared_ptr<Image>& originalImage);
 
-    template <typename PIX, int maxValue, int srcNComps, int dstNComps>
+    template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool ignorePremult>
     void copyUnProcessedChannelsForPremult(bool premult, bool originalPremult,
                                            std::bitset<4> processChannels,
                                            const RectI& roi,
                                            const boost::shared_ptr<Image>& originalImage);
 
     template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA>
-    void copyUnProcessedChannelsForChannels(std::bitset<4> processChannels,
-                                            bool premult,
+    void copyUnProcessedChannelsForChannels(const std::bitset<4> processChannels,
+                                            const bool premult,
                                             const RectI& roi,
                                             const boost::shared_ptr<Image>& originalImage,
-                                            bool originalPremult);
+                                            const bool originalPremult,
+                                            const bool ignorePremult);
 
     template <typename PIX, int maxValue, int srcNComps, int dstNComps>
-    void copyUnProcessedChannelsForChannels(std::bitset<4> processChannels,
-                                            bool premult,
+    void copyUnProcessedChannelsForChannels(const std::bitset<4> processChannels,
+                                            const bool premult,
                                             const RectI& roi,
                                             const boost::shared_ptr<Image>& originalImage,
-                                            bool originalPremult);
+                                            const bool originalPremult,
+                                            const bool ignorePremult);
 
 
 
     template <typename PIX, int maxValue,int srcNComps, int dstNComps>
     void copyUnProcessedChannelsForComponents(bool premult,
                                               const RectI& roi,
-                                              std::bitset<4> processChannels,
+                                              const std::bitset<4> processChannels,
                                               const boost::shared_ptr<Image>& originalImage,
-                                              bool originalPremult);
+                                              const bool originalPremult,
+                                              const bool ignorePremult);
 
     template <typename PIX, int maxValue>
     void copyUnProcessedChannelsForDepth(bool premult,
                                          const RectI& roi,
                                          std::bitset<4> processChannels,
                                          const boost::shared_ptr<Image>& originalImage,
-                                         bool originalPremult);
+                                         bool originalPremult,
+                                         bool ignorePremult);
 
 
 
@@ -975,11 +987,15 @@ private:
 
 private:
     ImageBitDepthEnum _bitDepth;
+    int _depthBytesSize;
     Bitmap _bitmap;
     RectD _rod;     // rod in canonical coordinates (not the same as the OFX::Image RoD, which is in pixel coordinates)
     RectI _bounds;
     double _par;
+    ImageFieldingOrderEnum _fielding;
+    ImagePremultiplicationEnum _premult;
     bool _useBitmap;
+    int _nbComponents;
 };
 
 //template <> inline unsigned char clamp(unsigned char v) { return v; }
@@ -1001,9 +1017,6 @@ Image::clamp(double x, double minval, double maxval)
 template<> inline unsigned char Image::clampIfInt(float v) { return (unsigned char)clamp<float>(v, 0, 255); }
 template<> inline unsigned short Image::clampIfInt(float v) { return (unsigned short)clamp<float>(v, 0, 65535); }
 template<> inline float Image::clampIfInt(float v) { return v; }
-
-typedef boost::shared_ptr<NATRON_NAMESPACE::Image> ImagePtr;
-typedef std::list<ImagePtr> ImageList;
 
 NATRON_NAMESPACE_EXIT;
 

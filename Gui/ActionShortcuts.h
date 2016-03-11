@@ -91,8 +91,8 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionProjectSettings "projectSettings"
 #define kShortcutDescActionProjectSettings "Show Project Settings..."
 
-#define kShortcutIDActionShowOFXLog "showOFXLog"
-#define kShortcutDescActionShowOFXLog "Show Project Errors Log..."
+#define kShortcutIDActionShowErrorLog "showErrorLog"
+#define kShortcutDescActionShowErrorLog "Show Project Errors Log..."
 
 #define kShortcutIDActionShowShortcutEditor "showShortcutEditor"
 #define kShortcutDescActionShowShortcutEditor "Show Shortcuts Editor..."
@@ -237,6 +237,11 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionNewROI "newRoi"
 #define kShortcutDescActionNewROI "New user RoI"
 
+#define kShortcutIDActionPauseViewer "pauseUpdates"
+#define kShortcutDescActionPauseViewer "Pause Updates"
+
+#define kShortcutIDActionPauseViewerInputA "pauseUpdatesA"
+#define kShortcutDescActionPauseViewerInputA "Pause Updates on input A only"
 
 #define kShortcutIDActionProxyEnabled "proxyEnabled"
 #define kShortcutDescActionProxyEnabled "Enable Proxy Rendering"
@@ -313,12 +318,11 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDSwitchInputAAndB "switchAB"
 #define kShortcutDescSwitchInputAAndB "Switch Input A and B"
 
-#define kShortcutIDShowLeftView "leftView"
-#define kShortcutDescShowLeftView "Left"
+#define kShortcutIDPrevView "prevView"
+#define kShortcutDescPrevView "Previous View"
 
-#define kShortcutIDShowRightView "rightView"
-#define kShortcutDescShowRightView "Right"
-
+#define kShortcutIDNextView "nextView"
+#define kShortcutDescNextView "Next View"
 ///////////PLAYER SHORTCUTS
 
 #define kShortcutIDActionPlayerPrevious "prev"
@@ -354,6 +358,11 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionPlayerLast "last"
 #define kShortcutDescActionPlayerLast "Go to Last Frame"
 
+#define kShortcutIDActionPlayerPlaybackIn "pbIn"
+#define kShortcutDescActionPlayerPlaybackIn "Set Playback In Point"
+
+#define kShortcutIDActionPlayerPlaybackOut "pbOut"
+#define kShortcutDescActionPlayerPlaybackOut "Set Playback Out Point"
 
 ///////////ROTO SHORTCUTS
 #define kShortcutIDActionRotoDelete "delete"
@@ -439,11 +448,15 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutDescActionTrackingStop "Stop Tracking"
 
 ///////////NODEGRAPH SHORTCUTS
+#ifndef NATRON_ENABLE_IO_META_NODES
+
 #define kShortcutIDActionGraphCreateReader "createReader"
 #define kShortcutDescActionGraphCreateReader "Create Reader"
 
 #define kShortcutIDActionGraphCreateWriter "createWriter"
 #define kShortcutDescActionGraphCreateWriter "Create Writer"
+
+#endif // #ifdef NATRON_ENABLE_IO_META_NODES
 
 #define kShortcutIDActionGraphRearrangeNodes "rearrange"
 #define kShortcutDescActionGraphRearrangeNodes "Rearrange Nodes"
@@ -720,15 +733,16 @@ protected:
     
 public:
     
-    ActionWithShortcut(const QString & group,
-                       const QString & actionID,
-                       const QString & actionDescription,
+    ActionWithShortcut(const std::string & group,
+                       const std::string & actionID,
+                       const std::string & actionDescription,
                        QObject* parent,
                        bool setShortcutOnAction = true);
+
     
-    ActionWithShortcut(const QString & group,
-                       const QStringList & actionIDs,
-                       const QString & actionDescription,
+    ActionWithShortcut(const std::string & group,
+                       const std::list<std::string> & actionIDs,
+                       const std::string & actionDescription,
                        QObject* parent,
                        bool setShortcutOnAction = true);
 
@@ -763,9 +777,9 @@ public:
     /**
      * @brief Set a dynamic shortcut in the tooltip. Reference it with %1 where you want to place the shortcut.
      **/
-    TooltipActionShortcut(const QString & group,
-                          const QString & actionID,
-                          const QString & toolip,
+    TooltipActionShortcut(const std::string & group,
+                          const std::string & actionID,
+                          const std::string & toolip,
                           QWidget* parent);
     
     /**
@@ -773,9 +787,9 @@ public:
      * In that case the tooltip should reference shortcuts by doing so %1, %2 etc... where
      * %1 references the first actionID, %2 the second ,etc...
      **/
-    TooltipActionShortcut(const QString & group,
-                          const QStringList & actionIDs,
-                          const QString & toolip,
+    TooltipActionShortcut(const std::string & group,
+                          const std::list<std::string> & actionIDs,
+                          const std::string & toolip,
                           QWidget* parent);
     
     virtual ~TooltipActionShortcut() {

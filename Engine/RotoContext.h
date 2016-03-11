@@ -48,6 +48,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 
 #include "Engine/FitCurve.h"
 #include "Engine/RotoItem.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 
@@ -55,11 +56,31 @@ CLANG_DIAG_ON(deprecated-declarations)
 
 NATRON_NAMESPACE_ENTER;
 
-/**
- * @class A base class for all items made by the roto context
- **/
-
-
+//Small RAII class that properly destroys the cairo image upon destruction
+class CairoImageWrapper
+{
+    
+public:
+    
+    CairoImageWrapper()
+    : cairoImg(0)
+    , ctx(0)
+    {
+        
+    }
+    
+    CairoImageWrapper(cairo_surface_t* img, cairo_t* context)
+    : cairoImg(img)
+    , ctx(context)
+    {
+        
+    }
+    
+    ~CairoImageWrapper();
+    
+    cairo_surface_t* cairoImg;
+    cairo_t* ctx;
+};
 
 /**
  * @class This class is a member of all effects instantiated in the context "paint". It describes internally
@@ -175,7 +196,7 @@ public:
      * or the project format.
      **/
     void getMaskRegionOfDefinition(double time,
-                                   int view,
+                                   ViewIdx view,
                                    RectD* rod) const; //!< rod in canonical coordinates
     
     /**
@@ -184,28 +205,27 @@ public:
      **/
     bool isRotoPaintTreeConcatenatable() const;
     
-    static bool isRotoPaintTreeConcatenatableInternal(const std::list<boost::shared_ptr<RotoDrawableItem> >& items);
+    static bool isRotoPaintTreeConcatenatableInternal(const std::list<boost::shared_ptr<RotoDrawableItem> >& items, int* blendingMode);
     
     void getGlobalMotionBlurSettings(const double time,
-                               double* startTime,
-                               double* endTime,
-                               double* timeStep) const;
+                                     double* startTime,
+                                     double* endTime,
+                                     double* timeStep) const;
 
 
 private:
     
     
-    void getItemsRegionOfDefinition(const std::list<boost::shared_ptr<RotoItem> >& items, double time, int view, RectD* rod) const;
+    void getItemsRegionOfDefinition(const std::list<boost::shared_ptr<RotoItem> >& items, double time, ViewIdx view, RectD* rod) const;
     
 public:
     
     
    
     boost::shared_ptr<Image> renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& stroke,
-                                                          const RectI& roi,
                                                           const ImageComponents& components,
                                                           const double time,
-                                                          const int view,
+                                                          const ViewIdx view,
                                                           const ImageBitDepthEnum depth,
                                                           const unsigned int mipmapLevel);
     
@@ -419,9 +439,11 @@ public:
     
     void knobChanged(KnobI* k,
                      ValueChangedReasonEnum reason,
-                     int view,
+                     ViewSpec view,
                      double time,
                      bool originatedFromMainThread);
+    
+    static bool allocateAndRenderSingleDotStroke(int brushSizePixel, double brushHardness, double alpha, CairoImageWrapper& wrapper);
     
 Q_SIGNALS:
 
@@ -459,7 +481,7 @@ public Q_SLOTS:
     
     void onSelectedKnobCurveChanged();
     
-    void onLifeTimeKnobValueChanged(int, int);
+    void onLifeTimeKnobValueChanged(ViewSpec, int, int);
 
 private:
     

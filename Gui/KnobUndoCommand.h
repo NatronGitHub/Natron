@@ -44,6 +44,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Curve.h"
 #include "Engine/Knob.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/KnobGui.h"
 #include "Gui/Gui.h"
@@ -62,7 +63,7 @@ class KnobUndoCommand
 {
 public:
 
-    KnobUndoCommand(KnobGui *knob,
+    KnobUndoCommand(const KnobGuiPtr& knob,
                     const T &oldValue,
                     const T &newValue,
                     int dimension = 0,
@@ -86,7 +87,7 @@ public:
 
     ///We moved from std::vector to std::list instead because std::vector<bool> expands to a bit field(std::_Bit_reference)
     ///and produces an unresolved symbol error.
-    KnobUndoCommand(KnobGui *knob,
+    KnobUndoCommand(const KnobGuiPtr& knob,
                     const std::list<T> &oldValue,
                     const std::list<T> &newValue,
                     bool refreshGui = true,
@@ -141,12 +142,12 @@ private:
             
             if (knob->getHolder()->getApp() ) {
                 if (_valueChangedReturnCode[i] == 1) { //the value change also added a keyframe
-                    _knob->removeKeyFrame(_newKeys[i].getTime(),dimension);
+                    _knob->removeKeyFrame(_newKeys[i].getTime(),dimension, ViewIdx(0));
                     modifiedKeyFrame = true;
                 } else if (_valueChangedReturnCode[i] == 2) {
                     //the value change moved a keyframe
-                    _knob->removeKeyFrame(_newKeys[i].getTime(),dimension);
-                    _knob->setKeyframe(_oldKeys[i].getTime(), dimension);
+                    _knob->removeKeyFrame(_newKeys[i].getTime(),dimension, ViewIdx(0));
+                    _knob->setKeyframe(_oldKeys[i].getTime(), dimension, ViewIdx(0));
                     modifiedKeyFrame = true;
                 }
             }
@@ -159,15 +160,15 @@ private:
         }
         
         ///This will refresh all dimensions
-        _knob->onInternalValueChanged(-1, eValueChangedReasonNatronGuiEdited);
+        _knob->onInternalValueChanged(ViewSpec::all(), -1, eValueChangedReasonNatronGuiEdited);
         
         knob->endChanges();
         if (modifiedKeyFrame) {
-            _knob->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeys();
+            _knob->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeysAndUpdate();
         }
 
         setText( QObject::tr("Set value of %1")
-                 .arg( _knob->getKnob()->getLabel().c_str() ) );
+                 .arg( QString::fromUtf8(_knob->getKnob()->getLabel().c_str() )) );
     }
 
     virtual void redo() OVERRIDE FINAL
@@ -196,7 +197,7 @@ private:
                 knob->blockValueChanges();
             }
             
-            boost::shared_ptr<Curve> c = knob->getCurve(dimension);
+            boost::shared_ptr<Curve> c = knob->getCurve(ViewIdx(0),dimension);
             //find out if there's already an existing keyframe before calling setValue
             if (c) {
                 bool found = c->getKeyFrameWithTime(time, &_oldKeys[i]);
@@ -207,7 +208,7 @@ private:
                 knob->unblockValueChanges();
             }
             
-            _valueChangedReturnCode[i] = _knob->setValue(dimension,*it,&_newKeys[i],false,eValueChangedReasonUserEdited);
+            _valueChangedReturnCode[i] = _knob->setValue(dimension, *it, &_newKeys[i], false, eValueChangedReasonUserEdited);
             if (_valueChangedReturnCode[i] != KnobHelper::eValueChangedReturnCodeNoKeyframeAdded) {
                 modifiedKeyFrames = true;
             }
@@ -226,18 +227,18 @@ private:
         
         ///This will refresh all dimensions
         if (_firstRedoCalled || _refreshGuiFirstTime) {
-            _knob->onInternalValueChanged(-1, eValueChangedReasonNatronGuiEdited);
+            _knob->onInternalValueChanged(ViewSpec::all(), -1, eValueChangedReasonNatronGuiEdited);
         }
 
         
         knob->endChanges();
 
         if (modifiedKeyFrames) {
-            _knob->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeys();
+            _knob->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeysAndUpdate();
         }
 
         setText( QObject::tr("Set value of %1")
-                 .arg( knob->getLabel().c_str() ) );
+                 .arg(QString::fromUtf8( knob->getLabel().c_str() ) ));
 
         _firstRedoCalled = true;
     } // redo
@@ -255,7 +256,7 @@ private:
             return false;
         }
 
-        KnobGui *knob = knobCommand->_knob;
+        KnobGuiPtr knob = knobCommand->_knob;
         if ( (_knob != knob) || !_merge || !knobCommand->_merge || (_dimension != knobCommand->_dimension) ) {
             return false;
         }
@@ -271,7 +272,7 @@ private:
     int _dimension;
     std::list<T> _oldValue;
     std::list<T> _newValue;
-    KnobGui *_knob;
+    KnobGuiPtr _knob;
     std::vector<int> _valueChangedReturnCode;
     std::vector<KeyFrame> _newKeys;
     std::vector<KeyFrame>  _oldKeys;
@@ -298,7 +299,7 @@ class MultipleKnobEditsUndoCommand
     };
 
     ///For each knob, the second member points to a clone of the knob before the first redo() call was made
-    typedef std::map < KnobGui*, std::list<ValueToSet> >  ParamsMap;
+    typedef std::map < KnobGuiPtr, std::list<ValueToSet> >  ParamsMap;
     ParamsMap knobs;
     bool createNew;
     bool firstRedoCalled;
@@ -310,7 +311,7 @@ public:
      * @param createNew If true this command will not merge with a previous same command
      * @param setKeyFrame if true, the command will use setValueAtTime instead of setValue in the redo() command.
      **/
-    MultipleKnobEditsUndoCommand(KnobGui* knob,
+    MultipleKnobEditsUndoCommand(const KnobGuiPtr& knob,
                                  ValueChangedReasonEnum reason,
                                  bool createNew,
                                  bool setKeyFrame,
@@ -327,31 +328,26 @@ public:
     static KnobPtr createCopyForKnob(const KnobPtr & originalKnob);
 };
 
+struct PasteUndoCommandPrivate;
 class PasteUndoCommand
     : public QUndoCommand
 {
-    KnobGui* _knob;
-    std::list<Variant> newValues,oldValues;
-    std::list<boost::shared_ptr<Curve> > newCurves,oldCurves;
-    std::list<boost::shared_ptr<Curve> > newParametricCurves,oldParametricCurves;
-    std::map<int,std::string> newStringAnimation,oldStringAnimation;
-    bool _copyAnimation;
-
+    
+    boost::scoped_ptr<PasteUndoCommandPrivate> _imp;
 public:
 
-    PasteUndoCommand(KnobGui* knob,
-                     bool copyAnimation,
-                     const std::list<Variant> & values,
-                     const std::list<boost::shared_ptr<Curve> > & curves,
-                     const std::list<boost::shared_ptr<Curve> > & parametricCurves,
-                     const std::map<int,std::string> & stringAnimation);
+    PasteUndoCommand(const KnobGuiPtr& knob,
+                     KnobClipBoardType type,
+                     int fromDimension,
+                     int targetDimension,
+                     const KnobPtr& fromKnob);
 
-    virtual ~PasteUndoCommand()
-    {
-    }
+    virtual ~PasteUndoCommand();
 
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
+    
+    void copyFrom(const KnobPtr& fromKnob, bool isRedo);
 };
 
 
@@ -362,6 +358,7 @@ public:
 
     RestoreDefaultsCommand(bool isNodeReset,
                            const std::list<KnobPtr > & knobs,
+                           int targetDim,
                            QUndoCommand *parent = 0);
     virtual void undo();
     virtual void redo();
@@ -369,6 +366,7 @@ public:
 private:
 
     bool _isNodeReset;
+    int _targetDim;
     std::list<KnobPtr > _knobs,_clones;
 };
 

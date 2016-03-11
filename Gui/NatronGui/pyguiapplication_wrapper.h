@@ -3,7 +3,7 @@
 
 #include <shiboken.h>
 
-#include <GlobalGuiWrapper.h>
+#include <PyGlobalGui.h>
 
 NATRON_NAMESPACE_ENTER;
 class PyGuiApplicationWrapper : public PyGuiApplication

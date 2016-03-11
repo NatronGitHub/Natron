@@ -26,221 +26,212 @@
 
 #include <stdexcept>
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+GCC_DIAG_OFF(unused-parameter)
+// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
+#include <boost/archive/xml_iarchive.hpp>
+#include <boost/archive/xml_oarchive.hpp>
+#include <boost/serialization/map.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+GCC_DIAG_ON(unused-parameter)
+#endif
+
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Node.h"
 #include "Engine/TimeLine.h"
 #include "Engine/AppInstance.h"
+#include "Engine/KnobSerialization.h"
+#include "Engine/ViewIdx.h"
+
 #include "Gui/GuiApplicationManager.h"
+
 
 NATRON_NAMESPACE_ENTER;
 
-PasteUndoCommand::PasteUndoCommand(KnobGui* knob,
-                                   bool copyAnimation,
-                                   const std::list<Variant> & values,
-                                   const std::list<boost::shared_ptr<Curve> > & curves,
-                                   const std::list<boost::shared_ptr<Curve> > & parametricCurves,
-                                   const std::map<int,std::string> & stringAnimation)
-    : QUndoCommand(0)
-      , _knob(knob)
-      , newValues(values)
-      , oldValues()
-      , newCurves(curves)
-      , oldCurves()
-      , newParametricCurves(parametricCurves)
-      , oldParametricCurves()
-      , newStringAnimation(stringAnimation)
-      , oldStringAnimation()
-      , _copyAnimation(copyAnimation)
+struct PasteUndoCommandPrivate
 {
-    assert( !appPTR->isClipBoardEmpty() );
-    assert( ( !copyAnimation && newCurves.empty() ) || copyAnimation );
+    
+    KnobGuiPtr knob;
+    KnobClipBoardType type;
+    int fromDimension;
+    int targetDimension;
+    boost::shared_ptr<KnobSerialization> originalSerialization;
+    KnobPtr fromKnob;
+    
+    PasteUndoCommandPrivate()
+    : knob()
+    , type(eKnobClipBoardTypeCopyLink)
+    , fromDimension(-1)
+    , targetDimension(-1)
+    , originalSerialization(new KnobSerialization)
+    {
+        
+    }
+};
 
-    KnobPtr internalKnob = knob->getKnob();
-    Knob<int>* isInt = dynamic_cast<Knob<int>*>( internalKnob.get() );
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( internalKnob.get() );
-    Knob<double>* isDouble = dynamic_cast<Knob<double>*>( internalKnob.get() );
-    Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( internalKnob.get() );
-    AnimatingKnobStringHelper* isAnimatingString = dynamic_cast<AnimatingKnobStringHelper*>( internalKnob.get() );
-    boost::shared_ptr<KnobParametric> isParametric = boost::dynamic_pointer_cast<KnobParametric>(internalKnob);
-
-
-    for (int i = 0; i < internalKnob->getDimension(); ++i) {
-        if (isInt) {
-            oldValues.push_back( Variant( isInt->getValue(i) ) );
-        } else if (isBool) {
-            oldValues.push_back( Variant( isBool->getValue(i) ) );
-        } else if (isDouble) {
-            oldValues.push_back( Variant( isDouble->getValue(i) ) );
-        } else if (isString) {
-            oldValues.push_back( Variant( isString->getValue(i).c_str() ) );
+PasteUndoCommand::PasteUndoCommand(const KnobGuiPtr& knob,
+                                   KnobClipBoardType type,
+                                   int fromDimension,
+                                   int targetDimension,
+                                   const KnobPtr& fromKnob)
+    : QUndoCommand(0)
+    , _imp(new PasteUndoCommandPrivate())
+{
+    _imp->knob = knob;
+    _imp->type = type;
+    _imp->fromDimension = fromDimension;
+    _imp->targetDimension = targetDimension;
+    _imp->fromKnob = fromKnob;
+    
+    {
+        std::ostringstream ss;
+        {
+            try {
+                boost::archive::xml_oarchive oArchive(ss);
+                _imp->originalSerialization->initialize(knob->getKnob());
+                oArchive << boost::serialization::make_nvp("KnobClipboard",*_imp->originalSerialization);
+            } catch (...) {
+                assert(false);
+            }
         }
-        boost::shared_ptr<Curve> c(new Curve);
-        c->clone( *internalKnob->getCurve(i) );
-        oldCurves.push_back(c);
-    }
-
-    if (isAnimatingString) {
-        isAnimatingString->saveAnimation(&oldStringAnimation);
-    }
-
-    if (isParametric) {
-        std::list< Curve > tmpCurves;
-        isParametric->saveParametricCurves(&tmpCurves);
-        for (std::list< Curve >::iterator it = tmpCurves.begin(); it != tmpCurves.end(); ++it) {
-            boost::shared_ptr<Curve> c(new Curve);
-            c->clone(*it);
-            oldParametricCurves.push_back(c);
+        _imp->originalSerialization.reset(new KnobSerialization);
+        std::string str = ss.str();
+        {
+            try {
+                std::stringstream ss(str);
+                boost::archive::xml_iarchive iArchive(ss);
+                iArchive >> boost::serialization::make_nvp("KnobClipboard",*_imp->originalSerialization);
+            } catch (...) {
+                assert(false);
+            }
         }
     }
+    assert(_imp->originalSerialization->getKnob());
+    
+    assert(knob);
+    assert(_imp->targetDimension >= -1 && _imp->targetDimension < _imp->knob->getKnob()->getDimension());
+    assert(_imp->fromDimension >= -1 && _imp->fromDimension < _imp->fromKnob->getDimension());
+    QString text = QObject::tr("Paste") + QLatin1Char(' ');
+    switch (type) {
+        case eKnobClipBoardTypeCopyAnim:
+            text += QObject::tr("Animation");
+            break;
+        case eKnobClipBoardTypeCopyValue:
+            text += QObject::tr("Value");
+            break;
+        case eKnobClipBoardTypeCopyLink:
+            text += QObject::tr("Link");
+            break;
+    }
+    text += QLatin1Char(' ');
+    text += QObject::tr("to");
+    text += QLatin1Char(' ');
+    text += QString::fromUtf8(knob->getKnob()->getLabel().c_str());
+    setText(text);
+}
+
+PasteUndoCommand::~PasteUndoCommand()
+{
+    
 }
 
 void
 PasteUndoCommand::undo()
 {
-    KnobPtr internalKnob = _knob->getKnob();
-    int targetDimension = internalKnob->getDimension();
-
-    Knob<int>* isInt = dynamic_cast<Knob<int>*>( internalKnob.get() );
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( internalKnob.get() );
-    Knob<double>* isDouble = dynamic_cast<Knob<double>*>( internalKnob.get() );
-    Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( internalKnob.get() );
-    AnimatingKnobStringHelper* isAnimatingString = dynamic_cast<AnimatingKnobStringHelper*>( internalKnob.get() );
-    boost::shared_ptr<KnobParametric> isParametric = boost::dynamic_pointer_cast<KnobParametric>(internalKnob);
-    if (_copyAnimation) {
-        bool hasKeyframes = false;
-        _knob->removeAllKeyframeMarkersOnTimeline(-1);
-        std::list<boost::shared_ptr<Curve> >::iterator it = oldCurves.begin();
-        for (int i = 0; i < targetDimension; ++it, ++i) {
-            internalKnob->getCurve(i)->clone( *(*it) );
-            if (internalKnob->getKeyFramesCount(i) > 0) {
-                hasKeyframes = true;
-            }
-        }
-        ///parameters are meaningless here, we just want to update the curve editor.
-        _knob->onInternalKeySet(0, 0,eValueChangedReasonNatronGuiEdited,false);
-        _knob->setAllKeyframeMarkersOnTimeline(-1);
-
-        if (hasKeyframes) {
-            _knob->updateCurveEditorKeyframes();
-        }
-    }
-
-    std::list<Variant>::iterator it = oldValues.begin();
-    internalKnob->beginChanges();
-
-    for (int i = 0; i < targetDimension; ++it, ++i) {
-   
-        if (isInt) {
-            isInt->setValue(it->toInt(), i,true);
-        } else if (isBool) {
-            isBool->setValue(it->toBool(), i,true);
-        } else if (isDouble) {
-            isDouble->setValue(it->toDouble(), i,true);
-        } else if (isString) {
-            isString->setValue(it->toString().toStdString(), i,true);
-        }
-    }
-    internalKnob->endChanges();
-
-    if (isAnimatingString) {
-        isAnimatingString->loadAnimation(oldStringAnimation);
-    }
-
-    if (isParametric) {
-        std::list<Curve> tmpCurves;
-        for (std::list<boost::shared_ptr<Curve> >::iterator it = oldParametricCurves.begin(); it != oldParametricCurves.end(); ++it) {
-            Curve c;
-            c.clone( *(*it) );
-            tmpCurves.push_back(c);
-        }
-        isParametric->loadParametricCurves(tmpCurves);
-    }
-
-
-    if (!_copyAnimation) {
-        setText( QObject::tr("Paste value of %1")
-                 .arg( _knob->getKnob()->getLabel().c_str() ) );
-    } else {
-        setText( QObject::tr("Paste animation of %1")
-                 .arg( _knob->getKnob()->getLabel().c_str() ) );
-    }
+   copyFrom(_imp->originalSerialization->getKnob(), false);
 } // undo
+
 
 void
 PasteUndoCommand::redo()
 {
+    copyFrom(_imp->fromKnob, true);
     
-    KnobPtr internalKnob = _knob->getKnob();
+} // undo
+void
+PasteUndoCommand::copyFrom(const KnobPtr& serializedKnob, bool isRedo)
+{
     
-    Knob<int>* isInt = dynamic_cast<Knob<int>*>( internalKnob.get() );
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( internalKnob.get() );
-    Knob<double>* isDouble = dynamic_cast<Knob<double>*>( internalKnob.get() );
-    Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( internalKnob.get() );
-    AnimatingKnobStringHelper* isAnimatingString = dynamic_cast<AnimatingKnobStringHelper*>( internalKnob.get() );
-    boost::shared_ptr<KnobParametric> isParametric = boost::dynamic_pointer_cast<KnobParametric>(internalKnob);
-    bool hasKeyframeData = false;
-    if ( !newCurves.empty() ) {
-        _knob->removeAllKeyframeMarkersOnTimeline(-1);
-        
-        std::list<boost::shared_ptr<Curve> >::iterator it = newCurves.begin();
-        for (U32 i = 0; i  < newCurves.size(); ++it, ++i) {
-            boost::shared_ptr<Curve> c = internalKnob->getCurve(i);
-            if (c) {
-                c->clone( *(*it) );
+    KnobPtr internalKnob = _imp->knob->getKnob();
+    switch (_imp->type) {
+        case eKnobClipBoardTypeCopyAnim: {
+            internalKnob->beginChanges();
+            for (int i = 0; i < internalKnob->getDimension(); ++i) {
+                if (_imp->targetDimension == -1 || i == _imp->targetDimension) {
+                    boost::shared_ptr<Curve> fromCurve;
+                    if (i == _imp->targetDimension && _imp->fromDimension != -1) {
+                        fromCurve = serializedKnob->getCurve(ViewIdx(0),_imp->fromDimension);
+                    } else {
+                        fromCurve = serializedKnob->getCurve(ViewIdx(0),i);
+                    }
+                    if (!fromCurve) {
+                        continue;
+                    }
+                    internalKnob->cloneCurve(ViewIdx(0),i, *fromCurve);
+                }
             }
-            if ( (*it)->getKeyFramesCount() > 0 ) {
-                hasKeyframeData = true;
+            internalKnob->endChanges();
+        }  break;
+        case eKnobClipBoardTypeCopyValue: {
+            
+            Knob<int>* isInt = dynamic_cast<Knob<int>*>( internalKnob.get() );
+            Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( internalKnob.get() );
+            Knob<double>* isDouble = dynamic_cast<Knob<double>*>( internalKnob.get() );
+            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( internalKnob.get() );
+            
+            Knob<int>* isFromInt = dynamic_cast<Knob<int>*>( serializedKnob.get() );
+            Knob<bool>* isFromBool = dynamic_cast<Knob<bool>*>( serializedKnob.get() );
+            Knob<double>* isFromDouble = dynamic_cast<Knob<double>*>( serializedKnob.get() );
+            Knob<std::string>* isFromString = dynamic_cast<Knob<std::string>*>( serializedKnob.get() );
+            
+            internalKnob->beginChanges();
+            for (int i = 0; i < internalKnob->getDimension(); ++i) {
+                if (_imp->targetDimension == -1 || i == _imp->targetDimension) {
+                    if (isInt && isFromInt) {
+                        int f = (i == _imp->targetDimension && _imp->fromDimension != -1) ? isFromInt->getValue(_imp->fromDimension) : isFromInt->getValue(i);
+                        isInt->setValue(f, ViewIdx(0),i, eValueChangedReasonNatronInternalEdited, 0);
+                    } else if (isBool && isFromBool) {
+                        bool f = (i == _imp->targetDimension && _imp->fromDimension != -1) ? isFromBool->getValue(_imp->fromDimension) : isFromBool->getValue(i);
+                        isBool->setValue(f, ViewIdx(0),i, eValueChangedReasonNatronInternalEdited, 0);
+                    } else if (isDouble && isFromDouble) {
+                        double f = (i == _imp->targetDimension && _imp->fromDimension != -1) ? isFromDouble->getValue(_imp->fromDimension) : isFromDouble->getValue(i);
+                        isDouble->setValue(f, ViewIdx(0), i, eValueChangedReasonNatronInternalEdited, 0);
+                    } else if (isString && isFromString) {
+                        std::string f = (i == _imp->targetDimension && _imp->fromDimension != -1) ? isFromString->getValue(_imp->fromDimension) : isFromString->getValue(i);
+                        isString->setValue(f, ViewIdx(0),i, eValueChangedReasonNatronInternalEdited, 0);
+                    }
+                    
+                }
             }
-        }
-        _knob->setAllKeyframeMarkersOnTimeline(-1);
-    }
+            internalKnob->endChanges();
+        }   break;
+        case eKnobClipBoardTypeCopyLink: {
+            
+            //bool useExpression = !KnobI::areTypesCompatibleForSlave(internalKnob.get(), serializedKnob.get());
+            
+            internalKnob->beginChanges();
+            for (int i = 0; i < internalKnob->getDimension(); ++i) {
+                if (_imp->targetDimension == -1 || i == _imp->targetDimension) {
+                    if (isRedo) {
+                        if (_imp->fromDimension != -1) {
+                            internalKnob->slaveTo(i, serializedKnob, _imp->fromDimension);
+                        } else {
+                            internalKnob->slaveTo(i, serializedKnob, i);
+                        }
+                    } else {
+                        internalKnob->unSlave(i, false);
+                    }
+                }
+            }
+            internalKnob->endChanges();
 
-    std::list<Variant>::iterator it = newValues.begin();
-    internalKnob->beginChanges();
-    for (U32 i = 0; i < newValues.size(); ++it, ++i) {
-        
-        if (isInt) {
-            isInt->setValue(it->toInt(), i, true);
-        } else if (isBool) {
-            isBool->setValue(it->toBool(), i, true);
-        } else if (isDouble) {
-            isDouble->setValue(it->toDouble(), i, true);
-        } else if (isString) {
-            isString->setValue(it->toString().toStdString(), i, true);
-        }
-        
-    }
-    internalKnob->endChanges();
-
-    if ( _copyAnimation && hasKeyframeData && !newCurves.empty() ) {
-        _knob->updateCurveEditorKeyframes();
-    }
-
-    if (isAnimatingString) {
-        isAnimatingString->loadAnimation(newStringAnimation);
-    }
-
-    if (isParametric) {
-        std::list<Curve> tmpCurves;
-        for (std::list<boost::shared_ptr<Curve> >::iterator it = newParametricCurves.begin(); it != newParametricCurves.end(); ++it) {
-            Curve c;
-            c.clone( *(*it) );
-            tmpCurves.push_back(c);
-        }
-        isParametric->loadParametricCurves(tmpCurves);
-    }
-
-    if (!_copyAnimation) {
-        setText( QObject::tr("Paste value of %1")
-                 .arg( _knob->getKnob()->getLabel().c_str() ) );
-    } else {
-        setText( QObject::tr("Paste animation of %1")
-                 .arg( _knob->getKnob()->getLabel().c_str() ) );
+        }   break;
     }
 } // redo
 
-MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(KnobGui* knob,
+MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobGuiPtr& knob,
                                                            ValueChangedReasonEnum reason,
                                                            bool createNew,
                                                            bool setKeyFrame,
@@ -268,7 +259,7 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(KnobGui* knob,
     EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
     QString holderName;
     if (effect) {
-        holderName = effect->getNode()->getLabel().c_str();
+        holderName = QString::fromUtf8(effect->getNode()->getLabel().c_str());
     }
 
     setText( QObject::tr("Multiple edits for %1").arg(holderName) );
@@ -345,20 +336,19 @@ MultipleKnobEditsUndoCommand::undo()
             KnobHelper::ValueChangedReturnCodeEnum retCode = (KnobHelper::ValueChangedReturnCodeEnum)it2->setValueRetCode;
             
             if (retCode == KnobHelper::eValueChangedReturnCodeKeyframeAdded) {
-                it->first->removeKeyFrame(it2->time, it2->dimension);
+                it->first->removeKeyFrame(it2->time, it2->dimension, ViewIdx(0));
             } else {
                 if (it2->setKeyFrame) {
                     
                     bool refreshGui =  it2->time == knob->getHolder()->getApp()->getTimeLine()->currentFrame();
                     if (isInt) {
-                        it->first->setValueAtTime<int>(it2->dimension, it2->oldValue.toInt(), it2->time, &k,refreshGui,_reason);
+                        it->first->setValueAtTime<int>(it2->dimension, it2->oldValue.toInt(), it2->time, ViewIdx(0), &k,refreshGui,_reason);
                     } else if (isBool) {
-                        it->first->setValueAtTime<bool>(it2->dimension, it2->oldValue.toBool(), it2->time, &k,refreshGui,_reason);
+                        it->first->setValueAtTime<bool>(it2->dimension, it2->oldValue.toBool(), it2->time, ViewIdx(0), &k,refreshGui,_reason);
                     } else if (isDouble) {
-                        it->first->setValueAtTime<double>(it2->dimension,it2->oldValue.toDouble(), it2->time, &k,refreshGui,_reason);
+                        it->first->setValueAtTime<double>(it2->dimension,it2->oldValue.toDouble(), it2->time, ViewIdx(0), &k,refreshGui,_reason);
                     } else if (isString) {
-                        it->first->setValueAtTime<std::string>(it2->dimension, it2->oldValue.toString().toStdString(), it2->time,
-                                                               &k,refreshGui,_reason);
+                        it->first->setValueAtTime<std::string>(it2->dimension, it2->oldValue.toString().toStdString(), it2->time, ViewIdx(0), &k,refreshGui,_reason);
                     } else {
                         assert(false);
                     }
@@ -429,14 +419,14 @@ MultipleKnobEditsUndoCommand::redo()
                 bool keyAdded = false;
                 bool refreshGui =  it2->time == knob->getHolder()->getApp()->getTimeLine()->currentFrame();
                 if (isInt) {
-                    keyAdded = it->first->setValueAtTime<int>(it2->dimension, it2->newValue.toInt(), it2->time, &k,refreshGui,_reason);
+                    keyAdded = it->first->setValueAtTime<int>(it2->dimension, it2->newValue.toInt(), it2->time, ViewIdx(0), &k,refreshGui,_reason);
                 } else if (isBool) {
-                    keyAdded = it->first->setValueAtTime<bool>(it2->dimension, it2->newValue.toBool(), it2->time, &k,refreshGui,_reason);
+                    keyAdded = it->first->setValueAtTime<bool>(it2->dimension, it2->newValue.toBool(), it2->time, ViewIdx(0), &k,refreshGui,_reason);
                 } else if (isDouble) {
-                    keyAdded = it->first->setValueAtTime<double>(it2->dimension,it2->newValue.toDouble(), it2->time, &k,refreshGui,_reason);
+                    keyAdded = it->first->setValueAtTime<double>(it2->dimension,it2->newValue.toDouble(), it2->time, ViewIdx(0), &k,refreshGui,_reason);
                 } else if (isString) {
                     keyAdded = it->first->setValueAtTime<std::string>(it2->dimension, it2->newValue.toString().toStdString(), it2->time,
-                                                           &k,refreshGui,_reason);
+                                                           ViewIdx(0), &k,refreshGui,_reason);
                 } else {
                     assert(false);
                 }
@@ -528,9 +518,11 @@ MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
 
 RestoreDefaultsCommand::RestoreDefaultsCommand(bool isNodeReset,
                                                const std::list<KnobPtr > & knobs,
+                                               int targetDim,
                                                QUndoCommand *parent)
     : QUndoCommand(parent)
     , _isNodeReset(isNodeReset)
+    , _targetDim(targetDim)
     , _knobs(knobs)
 {
     for (std::list<KnobPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
@@ -554,11 +546,13 @@ RestoreDefaultsCommand::undo()
         if ( (*it)->getHolder()->getApp() ) {
             int dim = (*it)->getDimension();
             for (int i = 0; i < dim; ++i) {
-                boost::shared_ptr<Curve> c = (*it)->getCurve(i);
-                if (c) {
-                    KeyFrameSet kfs = c->getKeyFrames_mt_safe();
-                    for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
-                        times.push_back( std::floor(it->getTime()+0.5) );
+                if (i == _targetDim || _targetDim == -1) {
+                    boost::shared_ptr<Curve> c = (*it)->getCurve(ViewIdx(0),i);
+                    if (c) {
+                        KeyFrameSet kfs = c->getKeyFrames_mt_safe();
+                        for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
+                            times.push_back( std::floor(it->getTime()+0.5) );
+                        }
                     }
                 }
             }
@@ -566,8 +560,7 @@ RestoreDefaultsCommand::undo()
     }
     app->addMultipleKeyframeIndicatorsAdded(times,true);
 
-    _knobs.front()->getHolder()->evaluate_public(NULL, true, eValueChangedReasonUserEdited);
-    first->getHolder()->evaluate_public(NULL, true, eValueChangedReasonUserEdited);
+    first->getHolder()->incrHashAndEvaluate(true, true);
     if ( first->getHolder()->getApp() ) {
         first->getHolder()->getApp()->redrawAllViewers();
     }
@@ -598,16 +591,19 @@ RestoreDefaultsCommand::redo()
         if ( (*it)->getHolder() && (*it)->getHolder()->getApp() ) {
             int dim = (*it)->getDimension();
             for (int i = 0; i < dim; ++i) {
-                boost::shared_ptr<Curve> c = (*it)->getCurve(i);
-                if (c) {
-                    KeyFrameSet kfs = c->getKeyFrames_mt_safe();
-                    for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
-                        times.push_back( std::floor(it->getTime()+0.5) );
+                if (i == _targetDim || _targetDim == -1) {
+                    boost::shared_ptr<Curve> c = (*it)->getCurve(ViewIdx(0),i);
+                    if (c) {
+                        KeyFrameSet kfs = c->getKeyFrames_mt_safe();
+                        for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
+                            times.push_back( std::floor(it->getTime()+0.5) );
+                            
+                        }
                     }
                 }
             }
         }
-
+        
         if ((*it)->getHolder()) {
             (*it)->getHolder()->beginChanges();
         }
@@ -635,7 +631,7 @@ RestoreDefaultsCommand::redo()
     }
     for (std::list<KnobPtr >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
         if ((*it)->getHolder()) {
-            (*it)->getHolder()->onKnobValueChanged_public(it->get(), eValueChangedReasonRestoreDefault, time, true);
+            (*it)->getHolder()->onKnobValueChanged_public(it->get(), eValueChangedReasonRestoreDefault, time, ViewIdx(0),true);
         }
     }
     
@@ -654,7 +650,7 @@ RestoreDefaultsCommand::redo()
     
     
     if (first->getHolder()) {
-        first->getHolder()->evaluate_public(NULL, true, eValueChangedReasonUserEdited);
+        first->getHolder()->incrHashAndEvaluate(true, true);
         if (first->getHolder()->getApp() ) {
             first->getHolder()->getApp()->redrawAllViewers();
         }
@@ -694,7 +690,7 @@ SetExpressionCommand::undo()
         }
     }
     
-    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, _knob->getCurrentTime(), eValueChangedReasonNatronGuiEdited);
+    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, _knob->getCurrentTime(), ViewIdx(0), eValueChangedReasonNatronGuiEdited);
     setText( QObject::tr("Set expression") );
 }
 
@@ -717,7 +713,7 @@ SetExpressionCommand::redo()
             Dialogs::errorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
         }
     }
-    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, _knob->getCurrentTime(), eValueChangedReasonNatronGuiEdited);
+    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, _knob->getCurrentTime(), ViewIdx(0), eValueChangedReasonNatronGuiEdited);
     setText( QObject::tr("Set expression") );
 }
 

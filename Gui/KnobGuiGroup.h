@@ -74,9 +74,9 @@ public:
 
     virtual void removeSpecificGui() OVERRIDE FINAL;
     
-    void addKnob(KnobGui *child);
+    void addKnob(const KnobGuiPtr& child);
     
-    const std::list<KnobGui*>& getChildren() const { return _children; }
+    const std::list<KnobGuiWPtr>& getChildren() const { return _children; }
 
     bool isChecked() const;
 
@@ -111,8 +111,8 @@ private:
 private:
     bool _checked;
     GroupBoxLabel *_button;
-    std::list<KnobGui*> _children;
-    std::vector< std::pair<KnobGui*,std::vector<int> > > _childrenToEnable; //< when re-enabling a group, what are the children that we should set
+    std::list<KnobGuiWPtr> _children;
+    std::vector< std::pair<KnobGuiWPtr,std::vector<int> > > _childrenToEnable; //< when re-enabling a group, what are the children that we should set
     TabGroup* _tabGroup;
     //enabled too
     boost::weak_ptr<KnobGroup> _knob;

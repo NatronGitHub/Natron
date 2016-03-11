@@ -85,7 +85,7 @@ NodeGraph::NodeGraph(Gui* gui,
     group->setNodeGraphPointer(this);
     
     setAcceptDrops(true);
-
+    setAttribute(Qt::WA_MacShowFocusRect,0);
 
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>(group.get());
     if (isGrp) {
@@ -100,8 +100,8 @@ NodeGraph::NodeGraph(Gui* gui,
         std::string label;
         makeFullyQualifiedLabel(isGrp->getNode().get(),&label);
         setLabel(label);
-        QObject::connect(isGrp->getNode().get(), SIGNAL(labelChanged(QString)), this, SLOT( onGroupNameChanged(QString)));
-        QObject::connect(isGrp->getNode().get(), SIGNAL(scriptNameChanged(QString)), this, SLOT( onGroupScriptNameChanged(QString)));
+        QObject::connect(isGrp->getNode().get(), SIGNAL(labelChanged(QString)), this, SLOT(onGroupNameChanged(QString)));
+        QObject::connect(isGrp->getNode().get(), SIGNAL(scriptNameChanged(QString)), this, SLOT(onGroupScriptNameChanged(QString)));
     } else {
         setScriptName(kNodeGraphObjectName);
         setLabel(QObject::tr("Node Graph").toStdString());
@@ -135,7 +135,7 @@ NodeGraph::NodeGraph(Gui* gui,
     _imp->_cacheSizeText->setBrush( QColor(200,200,200) );
     _imp->_cacheSizeText->setVisible(false);
 
-    QObject::connect( &_imp->_refreshCacheTextTimer,SIGNAL( timeout() ),this,SLOT( updateCacheSizeText() ) );
+    QObject::connect( &_imp->_refreshCacheTextTimer,SIGNAL(timeout()),this,SLOT(updateCacheSizeText()) );
     _imp->_refreshCacheTextTimer.start(NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS);
 
     _imp->_undoStack = new QUndoStack(this);
@@ -182,6 +182,7 @@ NodeGraph::NodeGraph(Gui* gui,
 
 NodeGraph::~NodeGraph()
 {
+    
     for (NodesGuiList::iterator it = _imp->_nodes.begin();
          it != _imp->_nodes.end();
          ++it) {
@@ -209,7 +210,7 @@ NodeGraph::~NodeGraph()
         delete _imp->_hintOutputEdge;
     }
 
-    QObject::disconnect( &_imp->_refreshCacheTextTimer,SIGNAL( timeout() ),this,SLOT( updateCacheSizeText() ) );
+    QObject::disconnect( &_imp->_refreshCacheTextTimer,SIGNAL(timeout()),this,SLOT(updateCacheSizeText()) );
     _imp->_nodeCreationShortcutEnabled = false;
 
 }
@@ -436,6 +437,12 @@ NodeGraph::createNodeGUI(const NodePtr & node,
     _imp->_evtState = eEventStateNone;
 
     return node_ui;
+}
+
+QUndoStack*
+NodeGraph::getUndoStack() const
+{
+    return _imp->_undoStack;
 }
 
 NATRON_NAMESPACE_EXIT;

@@ -162,6 +162,7 @@ HistogramCPU::quitAnyComputation()
 {
     if ( isRunning() ) {
         QMutexLocker l(&_imp->mustQuitMutex);
+        assert(!_imp->mustQuit);
         _imp->mustQuit = true;
 
         ///post a fake request to wakeup the thread

@@ -6,6 +6,7 @@ GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_OFF(missing-field-initializers)
 GCC_DIAG_OFF(missing-declarations)
 GCC_DIAG_OFF(uninitialized)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <shiboken.h> // produces many warnings
 #include <pysidesignal.h>
 #include <pysideproperty.h>
@@ -19,10 +20,10 @@ GCC_DIAG_OFF(uninitialized)
 
 // Extra includes
 NATRON_NAMESPACE_USING
-#include <NodeWrapper.h>
-#include <ParameterWrapper.h>
+#include <PyNode.h>
+#include <PyParameter.h>
+#include <PyRoto.h>
 #include <RectD.h>
-#include <RotoWrapper.h>
 #include <list>
 #include <map>
 #include <vector>
@@ -476,6 +477,32 @@ static PyObject* Sbk_EffectFunc_getAvailableLayers(PyObject* self)
     return pyResult;
 }
 
+static PyObject* Sbk_EffectFunc_getBitDepth(PyObject* self)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getBitDepth()const
+            NATRON_NAMESPACE::ImageBitDepthEnum cppResult = NATRON_NAMESPACE::ImageBitDepthEnum(const_cast<const ::Effect*>(cppSelf)->getBitDepth());
+            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_IMAGEBITDEPTHENUM_IDX]), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_EffectFunc_getColor(PyObject* self)
 {
     ::Effect* cppSelf = 0;
@@ -529,6 +556,32 @@ static PyObject* Sbk_EffectFunc_getCurrentTime(PyObject* self)
             // getCurrentTime()const
             int cppResult = const_cast<const ::Effect*>(cppSelf)->getCurrentTime();
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_EffectFunc_getFrameRate(PyObject* self)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getFrameRate()const
+            double cppResult = const_cast<const ::Effect*>(cppSelf)->getFrameRate();
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
     }
 
@@ -772,6 +825,32 @@ static PyObject* Sbk_EffectFunc_getParams(PyObject* self)
     return pyResult;
 }
 
+static PyObject* Sbk_EffectFunc_getPixelAspectRatio(PyObject* self)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getPixelAspectRatio()const
+            double cppResult = const_cast<const ::Effect*>(cppSelf)->getPixelAspectRatio();
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_EffectFunc_getPluginID(PyObject* self)
 {
     ::Effect* cppSelf = 0;
@@ -824,6 +903,32 @@ static PyObject* Sbk_EffectFunc_getPosition(PyObject* self)
             // End of code injection
 
 
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_EffectFunc_getPremult(PyObject* self)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getPremult()const
+            NATRON_NAMESPACE::ImagePremultiplicationEnum cppResult = NATRON_NAMESPACE::ImagePremultiplicationEnum(const_cast<const ::Effect*>(cppSelf)->getPremult());
+            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_IMAGEPREMULTIPLICATIONENUM_IDX]), &cppResult);
         }
     }
 
@@ -1399,16 +1504,20 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {"disconnectInput", (PyCFunction)Sbk_EffectFunc_disconnectInput, METH_O},
     {"endChanges", (PyCFunction)Sbk_EffectFunc_endChanges, METH_NOARGS},
     {"getAvailableLayers", (PyCFunction)Sbk_EffectFunc_getAvailableLayers, METH_NOARGS},
+    {"getBitDepth", (PyCFunction)Sbk_EffectFunc_getBitDepth, METH_NOARGS},
     {"getColor", (PyCFunction)Sbk_EffectFunc_getColor, METH_NOARGS},
     {"getCurrentTime", (PyCFunction)Sbk_EffectFunc_getCurrentTime, METH_NOARGS},
+    {"getFrameRate", (PyCFunction)Sbk_EffectFunc_getFrameRate, METH_NOARGS},
     {"getInput", (PyCFunction)Sbk_EffectFunc_getInput, METH_O},
     {"getInputLabel", (PyCFunction)Sbk_EffectFunc_getInputLabel, METH_O},
     {"getLabel", (PyCFunction)Sbk_EffectFunc_getLabel, METH_NOARGS},
     {"getMaxInputCount", (PyCFunction)Sbk_EffectFunc_getMaxInputCount, METH_NOARGS},
     {"getParam", (PyCFunction)Sbk_EffectFunc_getParam, METH_O},
     {"getParams", (PyCFunction)Sbk_EffectFunc_getParams, METH_NOARGS},
+    {"getPixelAspectRatio", (PyCFunction)Sbk_EffectFunc_getPixelAspectRatio, METH_NOARGS},
     {"getPluginID", (PyCFunction)Sbk_EffectFunc_getPluginID, METH_NOARGS},
     {"getPosition", (PyCFunction)Sbk_EffectFunc_getPosition, METH_NOARGS},
+    {"getPremult", (PyCFunction)Sbk_EffectFunc_getPremult, METH_NOARGS},
     {"getRegionOfDefinition", (PyCFunction)Sbk_EffectFunc_getRegionOfDefinition, METH_VARARGS},
     {"getRotoContext", (PyCFunction)Sbk_EffectFunc_getRotoContext, METH_NOARGS},
     {"getScriptName", (PyCFunction)Sbk_EffectFunc_getScriptName, METH_NOARGS},

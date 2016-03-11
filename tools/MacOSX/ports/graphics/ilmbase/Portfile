@@ -4,6 +4,7 @@ PortSystem 1.0
                 
 name            ilmbase
 version         2.2.0
+revision	2
 categories      graphics
 license         BSD
 maintainers     blair
@@ -17,6 +18,8 @@ master_sites    http://savannah.nongnu.org/download/openexr
 
 checksums           sha1    70d864bc704f276942cb10479f2cb98646ce6ad4 \
                     rmd160  b1adb0c96eff6b3554ddaf8f8bafe2cba8c114e3
+
+patchfiles	ilmbase-threadpool.diff
 
 depends_build   port:gsed
 

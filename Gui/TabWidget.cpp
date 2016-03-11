@@ -70,6 +70,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/PropertiesBinWrapper.h"
 #include "Gui/PythonPanels.h"
 #include "Gui/RegisteredTabs.h"
+#include "Gui/ProgressPanel.h"
 #include "Gui/ScriptEditor.h"
 #include "Gui/Splitter.h"
 #include "Gui/Utils.h"
@@ -98,10 +99,10 @@ public:
         setWindowFlags(Qt::FramelessWindowHint | Qt::Window | Qt::WindowStaysOnTopHint);
         setAttribute(Qt::WA_TranslucentBackground);
         setAttribute(Qt::WA_ShowWithoutActivating);
-        setStyleSheet("background:transparent;");
+        setStyleSheet(QString::fromUtf8("background:transparent;"));
         setEnabled(false);
         setFocusPolicy(Qt::NoFocus);
-        setObjectName("__tab_widget_transparant_window__");
+        setObjectName(QString::fromUtf8("__tab_widget_transparant_window__"));
     }
     
     virtual ~TransparentDropRect() {}
@@ -265,7 +266,7 @@ TabWidget::TabWidget(Gui* gui,
     const QSize smallButtonSize(TO_DPIX(NATRON_SMALL_BUTTON_SIZE),TO_DPIY(NATRON_SMALL_BUTTON_SIZE));
     const QSize smallButtonIconSize(TO_DPIX(NATRON_SMALL_BUTTON_ICON_SIZE),TO_DPIY(NATRON_SMALL_BUTTON_ICON_SIZE));
 
-    _imp->leftCornerButton = new Button(QIcon(pixL),"", _imp->header);
+    _imp->leftCornerButton = new Button(QIcon(pixL),QString(), _imp->header);
     _imp->leftCornerButton->setFixedSize(smallButtonSize);
     _imp->leftCornerButton->setIconSize(smallButtonIconSize);
     _imp->leftCornerButton->setToolTip( GuiUtils::convertFromPlainText(tr(LEFT_HAND_CORNER_BUTTON_TT), Qt::WhiteSpaceNormal) );
@@ -276,31 +277,31 @@ TabWidget::TabWidget(Gui* gui,
     _imp->tabBar = new TabBar(this,_imp->header);
     _imp->tabBar->setShape(QTabBar::RoundedNorth);
     _imp->tabBar->setDrawBase(false);
-    QObject::connect( _imp->tabBar, SIGNAL( currentChanged(int) ), this, SLOT( makeCurrentTab(int) ) );
+    QObject::connect( _imp->tabBar, SIGNAL(currentChanged(int)), this, SLOT(makeCurrentTab(int)) );
     QObject::connect( _imp->tabBar, SIGNAL(mouseLeftTabBar()), this, SLOT(onTabBarMouseLeft()));
     _imp->headerLayout->addWidget(_imp->tabBar);
     _imp->headerLayout->addStretch();
-    _imp->floatButton = new Button(QIcon(pixM),"",_imp->header);
+    _imp->floatButton = new Button(QIcon(pixM),QString(),_imp->header);
     _imp->floatButton->setFixedSize(smallButtonSize);
     _imp->floatButton->setIconSize(smallButtonIconSize);
     _imp->floatButton->setToolTip( GuiUtils::convertFromPlainText(tr("Float pane"), Qt::WhiteSpaceNormal) );
     _imp->floatButton->setEnabled(true);
     _imp->floatButton->setFocusPolicy(Qt::NoFocus);
-    QObject::connect( _imp->floatButton, SIGNAL( clicked() ), this, SLOT( floatCurrentWidget() ) );
+    QObject::connect( _imp->floatButton, SIGNAL(clicked()), this, SLOT(floatCurrentWidget()) );
     _imp->headerLayout->addWidget(_imp->floatButton);
 
-    _imp->closeButton = new Button(QIcon(pixC),"",_imp->header);
+    _imp->closeButton = new Button(QIcon(pixC),QString(),_imp->header);
     _imp->closeButton->setFixedSize(smallButtonSize);
     _imp->closeButton->setIconSize(smallButtonIconSize);
     _imp->closeButton->setToolTip( GuiUtils::convertFromPlainText(tr("Close pane"), Qt::WhiteSpaceNormal) );
     _imp->closeButton->setFocusPolicy(Qt::NoFocus);
-    QObject::connect( _imp->closeButton, SIGNAL( clicked() ), this, SLOT( closePane() ) );
+    QObject::connect( _imp->closeButton, SIGNAL(clicked()), this, SLOT(closePane()) );
     _imp->headerLayout->addWidget(_imp->closeButton);
 
 
     /*adding menu to the left corner button*/
     _imp->leftCornerButton->setContextMenuPolicy(Qt::CustomContextMenu);
-    QObject::connect( _imp->leftCornerButton, SIGNAL( clicked() ), this, SLOT( createMenu() ) );
+    QObject::connect( _imp->leftCornerButton, SIGNAL(clicked()), this, SLOT(createMenu()) );
 
 
     _imp->mainLayout->addWidget(_imp->header);
@@ -377,14 +378,14 @@ TabWidget::createMenu()
     appPTR->getIcon(NATRON_PIXMAP_CLOSE_WIDGET,NATRON_MEDIUM_BUTTON_ICON_SIZE,&pixC);
     appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_LAYOUT_BUTTON_ANCHOR,NATRON_MEDIUM_BUTTON_ICON_SIZE,&pixA);
     QAction* splitVerticallyAction = new QAction(QIcon(pixV),tr("Split vertical"),&menu);
-    QObject::connect( splitVerticallyAction, SIGNAL( triggered() ), this, SLOT( onSplitVertically() ) );
+    QObject::connect( splitVerticallyAction, SIGNAL(triggered()), this, SLOT(onSplitVertically()) );
     menu.addAction(splitVerticallyAction);
     QAction* splitHorizontallyAction = new QAction(QIcon(pixH),tr("Split horizontal"),&menu);
-    QObject::connect( splitHorizontallyAction, SIGNAL( triggered() ), this, SLOT( onSplitHorizontally() ) );
+    QObject::connect( splitHorizontallyAction, SIGNAL(triggered()), this, SLOT(onSplitHorizontally()) );
     menu.addAction(splitHorizontallyAction);
     menu.addSeparator();
     QAction* floatAction = new QAction(QIcon(pixM),tr("Float pane"),&menu);
-    QObject::connect( floatAction, SIGNAL( triggered() ), this, SLOT( floatCurrentWidget() ) );
+    QObject::connect( floatAction, SIGNAL(triggered()), this, SLOT(floatCurrentWidget()) );
     menu.addAction(floatAction);
 
 
@@ -394,7 +395,7 @@ TabWidget::createMenu()
 
     QAction* closeAction = new QAction(QIcon(pixC),tr("Close pane"), &menu);
     closeAction->setEnabled( _imp->closeButton->isEnabled() );
-    QObject::connect( closeAction, SIGNAL( triggered() ), this, SLOT( closePane() ) );
+    QObject::connect( closeAction, SIGNAL(triggered()), this, SLOT(closePane()) );
     menu.addAction(closeAction);
     
     QAction* hideToolbar;
@@ -415,13 +416,14 @@ TabWidget::createMenu()
     QObject::connect(hideTabbar, SIGNAL(triggered()), this, SLOT(onShowHideTabBarActionTriggered()));
     menu.addAction(hideTabbar);
     menu.addSeparator();
-    menu.addAction( tr("New viewer"), this, SLOT( addNewViewer() ) );
-    menu.addAction( tr("New histogram"), this, SLOT( newHistogramHere() ) );
-    menu.addAction( tr("Node graph here"), this, SLOT( moveNodeGraphHere() ) );
-    menu.addAction( tr("Curve Editor here"), this, SLOT( moveCurveEditorHere() ) );
-    menu.addAction( tr("Dope Sheet Editor here"), this, SLOT( moveDopeSheetEditorHere() ) );
-    menu.addAction( tr("Properties bin here"), this, SLOT( movePropertiesBinHere() ) );
-    menu.addAction( tr("Script editor here"), this, SLOT( moveScriptEditorHere() ) );
+    menu.addAction( tr("New viewer"), this, SLOT(addNewViewer()) );
+    menu.addAction( tr("New histogram"), this, SLOT(newHistogramHere()) );
+    menu.addAction( tr("Node graph here"), this, SLOT(moveNodeGraphHere()) );
+    menu.addAction( tr("Curve Editor here"), this, SLOT(moveCurveEditorHere()) );
+    menu.addAction( tr("Dope Sheet Editor here"), this, SLOT(moveDopeSheetEditorHere()) );
+    menu.addAction( tr("Properties bin here"), this, SLOT(movePropertiesBinHere()) );
+    menu.addAction( tr("Script editor here"), this, SLOT(moveScriptEditorHere()) );
+    menu.addAction( tr("Progress Panel here"), this, SLOT(moveProgressPanelHere()) );
     
     
     std::map<PyPanel*,std::string> userPanels = _imp->gui->getPythonPanels();
@@ -432,9 +434,9 @@ TabWidget::createMenu()
         
         
         for (std::map<PyPanel*,std::string>::iterator it = userPanels.begin(); it != userPanels.end(); ++it) {
-            QAction* pAction = new QAction(QString(it->first->getPanelLabel().c_str()) + tr(" here"),userPanelsMenu);
+            QAction* pAction = new QAction(QString::fromUtf8(it->first->getPanelLabel().c_str()) + tr(" here"),userPanelsMenu);
             QObject::connect(pAction, SIGNAL(triggered()), this, SLOT(onUserPanelActionTriggered()));
-            pAction->setData(it->first->getScriptName().c_str());
+            pAction->setData(QString::fromUtf8(it->first->getScriptName().c_str()));
             userPanelsMenu->addAction(pAction);
         }
     }
@@ -446,7 +448,7 @@ TabWidget::createMenu()
     bool isVA = isAnchor();
     isAnchorAction->setChecked(isVA);
     isAnchorAction->setEnabled(!isVA);
-    QObject::connect( isAnchorAction, SIGNAL( triggered() ), this, SLOT( onSetAsAnchorActionTriggered() ) );
+    QObject::connect( isAnchorAction, SIGNAL(triggered()), this, SLOT(onSetAsAnchorActionTriggered()) );
     menu.addAction(isAnchorAction);
 
     menu.exec( _imp->leftCornerButton->mapToGlobal( QPoint(0,0) ) );
@@ -711,7 +713,8 @@ TabWidget::addNewViewer()
     if (!graph) {
         throw std::logic_error("");
     }
-    _imp->gui->getApp()->createNode(CreateNodeArgs(PLUGINID_NATRON_VIEWER, eCreateNodeReasonUserCreate, graph->getGroup()));
+    CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonUserCreate, graph->getGroup());
+    _imp->gui->getApp()->createNode(args);
     
 }
 
@@ -757,7 +760,7 @@ TabWidget::getTabLabel(int index) const
     if (index < 0 || index >= _imp->tabBar->count() ) {
         return QString();
     }
-    return _imp->tabs[index].second->getLabel().c_str();
+    return QString::fromUtf8(_imp->tabs[index].second->getLabel().c_str());
 }
 
 QString
@@ -766,7 +769,7 @@ TabWidget::getTabLabel(PanelWidget* tab) const
     QMutexLocker k(&_imp->tabWidgetStateMutex);
     for (U32 i = 0; i < _imp->tabs.size(); ++i) {
         if (_imp->tabs[i].first == tab) {
-            return _imp->tabs[i].second->getLabel().c_str();
+            return QString::fromUtf8(_imp->tabs[i].second->getLabel().c_str());
         }
     }
     return QString();
@@ -844,6 +847,12 @@ void
 TabWidget::moveScriptEditorHere()
 {
     moveTab(_imp->gui->getScriptEditor(), _imp->gui->getScriptEditor(), this);
+}
+        
+void
+TabWidget::moveProgressPanelHere()
+{
+    moveTab(_imp->gui->getProgressPanel(), _imp->gui->getProgressPanel(), this);
 }
 
 TabWidget*
@@ -969,7 +978,7 @@ TabWidget::appendTab(const QIcon & icon,
         _imp->tabs.push_back(std::make_pair(widget,object));
         //widget->setParent(this);
         _imp->modifyingTabBar = true;
-        _imp->tabBar->addTab(icon,label.c_str());
+        _imp->tabBar->addTab(icon,QString::fromUtf8(label.c_str()));
         _imp->tabBar->updateGeometry(); //< necessary
         _imp->modifyingTabBar = false;
         if (_imp->tabs.size() == 1) {
@@ -999,7 +1008,7 @@ TabWidget::insertTab(int index,
                       ScriptObject* object)
 {
 
-    QString title = object->getLabel().c_str();
+    QString title = QString::fromUtf8(object->getLabel().c_str());
 
     QMutexLocker l(&_imp->tabWidgetStateMutex);
 
@@ -1311,7 +1320,7 @@ void
 TabWidget::dropEvent(QDropEvent* e)
 {
     e->accept();
-    QString name( e->mimeData()->data("Tab") );
+    QString name( QString::fromUtf8(e->mimeData()->data(QString::fromUtf8("Tab"))) );
     PanelWidget* w;
     ScriptObject* obj;
     _imp->gui->findExistingTab(name.toStdString(), &w, &obj);
@@ -1345,25 +1354,29 @@ TabBar::TabBar(TabWidget* tabWidget,
 {
     setTabsClosable(true);
     setMouseTracking(true);
-    QObject::connect( this, SIGNAL( tabCloseRequested(int) ), tabWidget, SLOT( closeTab(int) ) );
+    QObject::connect( this, SIGNAL(tabCloseRequested(int)), tabWidget, SLOT(closeTab(int)) );
 }
         
 void
 TabBar::setMouseOverFocus(bool focus)
 {
-    mouseOverFocus = focus;
-    style()->unpolish(this);
-    style()->polish(this);
-    update();
+    if (mouseOverFocus != focus) {
+        mouseOverFocus = focus;
+        style()->unpolish(this);
+        style()->polish(this);
+        update();
+    }
 }
         
 void
 TabBar::setClickFocus(bool focus)
 {
-    clickFocus = focus;
-    style()->unpolish(this);
-    style()->polish(this);
-    update();
+    if (clickFocus != focus) {
+        clickFocus = focus;
+        style()->unpolish(this);
+        style()->polish(this);
+        update();
+    }
 }
 
 void
@@ -1898,7 +1911,7 @@ TabWidget::getTabScriptNames() const
     QStringList ret;
 
     for (U32 i = 0; i < _imp->tabs.size(); ++i) {
-        ret << _imp->tabs[i].second->getScriptName().c_str();
+        ret << QString::fromUtf8(_imp->tabs[i].second->getScriptName().c_str());
     }
 
     return ret;
@@ -1970,7 +1983,7 @@ TabWidget::setObjectName_mt_safe(const QString & str)
         setObjectName(str);
     }
     QString tt = GuiUtils::convertFromPlainText(tr(LEFT_HAND_CORNER_BUTTON_TT), Qt::WhiteSpaceNormal) ;
-    QString toPre = QString("Script name: <font size = 4><b>%1</font></b><br/>").arg(str);
+    QString toPre = QString::fromUtf8("Script name: <font size = 4><b>%1</font></b><br/>").arg(str);
     tt.prepend(toPre);
     _imp->leftCornerButton->setToolTip(tt);
     
@@ -1986,9 +1999,8 @@ TabWidget::setObjectName_mt_safe(const QString & str)
     std::string script = ss.str();
     std::string err;
     bool ok = Python::interpretPythonScript(script, &err, 0);
-    assert(ok);
     if (!ok) {
-        throw std::runtime_error("TabWidget::setObjectName_mt_safe(): interpretPythonScript("+script+") failed!");
+        appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(err.c_str()));
     }
 }
 

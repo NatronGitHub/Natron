@@ -30,15 +30,17 @@ addons:
     # Natron requires boost >= 1.49 to compile in C++11 mode
     # see http://stackoverflow.com/questions/11302758/error-while-copy-constructing-boostshared-ptr-using-c11
     # we use the ppa:boost-latest/ppa for that purpose
-    - ppa:boost-latest/ppa
+    - boost-latest
     # kubuntu-ppa/backports contains OpenCV
-    - ppa:kubuntu-ppa/backports
+    - kubuntu-backports
     # the PPA xorg-edgers contains cairo 1.12 (required for rotoscoping)
     - ppa:xorg-edgers/ppa
     # ubuntu-toolchain-r/test contains recent versions of gcc
-    - ppa:ubuntu-toolchain-r/test
+    - ubuntu-toolchain-r-test
     # get a recent ffmpeg (>=2.5) for precise from ppa:archivematica/externals(2.5.1) or ppa:pavlyshko/precise(2.6.1)
     - ppa:archivematica/externals
+    - kalakris-cmake
+    - pythonxy-devel
     packages:
     - gcc-4.9
     - g++-4.9
@@ -52,6 +54,29 @@ addons:
     - python-pyside
     - libpyside-dev
     - libshiboken-dev
+    # packages for building openfx-io:
+    - libavcodec-dev
+    - libavformat-dev
+    - libswscale-dev
+    - libavutil-dev
+    - libswresample-dev
+    - libtinyxml-dev
+    - liblcms2-dev
+    - libyaml-cpp-dev
+    - libboost-dev
+    - libopenexr-dev
+    - libilmbase-dev
+    - libopenjpeg-dev
+    - libtiff4-dev
+    - libjpeg-dev
+    - libpng-dev
+    - libboost-filesystem-dev
+    - libboost-regex-dev
+    - libboost-thread-dev
+    - libboost-system-dev
+    - libwebp-dev
+    - libfreetype6-dev
+    - libssl-dev
   coverity_scan:
     # customized build script URL
     # TRAVIS_REPO_SLUG: owner_name/repo_name of repository currently being built

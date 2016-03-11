@@ -27,6 +27,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include "Engine/ViewIdx.h"
+
 NATRON_NAMESPACE_ENTER;
 
 ImageKey::ImageKey()
@@ -47,7 +49,7 @@ ImageKey::ImageKey(const CacheEntryHolder* holder,
                    bool frameVaryingOrAnimated,
                    double time,
                    //unsigned int mipMapLevel, //< Store different mipmapLevels under the same key
-                   int view,
+                   ViewIdx view,
                    double pixelAspect,
                    bool draftMode,
                    bool fullScaleWithDownscaleInputs)

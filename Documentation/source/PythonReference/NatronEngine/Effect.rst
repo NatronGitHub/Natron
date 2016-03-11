@@ -24,8 +24,10 @@ Functions
 *    def :meth:`destroy<NatronEngine.Effect.destroy>` ([autoReconnect=true])
 *    def :meth:`disconnectInput<NatronEngine.Effect.disconnectInput>` (inputNumber)
 *    def :meth:`getAvailableLayers<NatronEngine.Effect.getAvailableLayers>` ()
+*    def :meth:`getBitDepth<NatronEngine.Effect.getBitDepth>` ()
 *    def :meth:`getColor<NatronEngine.Effect.getColor>` ()
 *    def :meth:`getCurrentTime<NatronEngine.Effect.getCurrentTime>` ()
+*    def :meth:`getFrameRate<NatronEngine.Effect.getFrameRate>` ()
 *    def :meth:`getInput<NatronEngine.Effect.getInput>` (inputNumber)
 *    def :meth:`getLabel<NatronEngine.Effect.getLabel>` ()
 *    def :meth:`getInputLabel<NatronEngine.Effect.getInputLabel>` (inputNumber)
@@ -34,6 +36,8 @@ Functions
 *    def :meth:`getParams<NatronEngine.Effect.getParams>` ()
 *    def :meth:`getPluginID<NatronEngine.Effect.getPluginID>` ()
 *    def :meth:`getPosition<NatronEngine.Effect.getPosition>` ()
+*    def :meth:`getPremult<NatronEngine.Effect.getPremult>` ()
+*    def :meth:`getPixelAspectRatio<NatronEngine.Effect.getPixelAspectRatio>` ()
 *	 def :meth:`getRegionOfDefinition<NatronEngine.Effect.getRegionOfDefinition>` (time,view)
 *    def :meth:`getRotoContext<NatronEngine.Effect.getRotoContext>` ()
 *    def :meth:`getScriptName<NatronEngine.Effect.getScriptName>` ()
@@ -227,6 +231,12 @@ Removes any input Effect connected to the given *inputNumber* of this node.
 	calling this function on the Blur will return a dict containing for key "RenderLayer.combined"
 	the Read node, whereas the dict will have for the key "RGBA" the Blur node.
 
+.. method:: NatronEngine.Effect.getBitDepth()
+
+	:rtype: :class:`ImageBitDepthEnum<NatronEngine.Natron.ImageBitDepthEnum>`
+	
+	Returns the bit-depth of the image in output of this node.
+
 .. method:: NatronEngine.Effect.getColor()
 
 	:rtype: :class:`tuple`
@@ -247,7 +257,11 @@ Returns the current time of timeline if this node is currently rendering, otherw
 it returns the current time at which the node is currently rendering for the caller
 thread.
 
+.. method:: NatronEngine.Effect.getFrameRate()
 
+	:rtype: :class:`float<PySide.QtCore.float>`
+	
+	Returns the frame-rate of the sequence in output of this node.
 
 .. method:: NatronEngine.Effect.getInput(inputNumber)
 
@@ -332,6 +346,20 @@ dimensional [X,Y] tuple.
 Note that in background mode, if used, this function will always return [0,0] and
 should NOT be used.
 
+
+.. method:: NatronEngine.Effect.getPremult()
+
+	:rtype: :class:`ImagePremultiplicationEnum<NatronEngine.Natron.ImagePremultiplicationEnum>`
+	
+	Returns the alpha premultiplication state of the image in output of this node.
+	
+.. method:: NatronEngine.Effect.getPixelAspectRatio()
+
+	:rtype: :class:`float<PySide.QtCore.float>`
+	
+	Returns the pixel aspect ratio of the image in output of this node.
+	
+	
 
 .. method:: NatronEngine.Effect.getRegionOfDefinition(time,view)
 

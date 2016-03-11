@@ -43,21 +43,21 @@ SplashScreen::SplashScreen(const QString & filePath)
       , _text()
       , _versionString()
 {
-    QString customBuildString(NATRON_CUSTOM_BUILD_USER_NAME);
+    QString customBuildString = QString::fromUtf8(NATRON_CUSTOM_BUILD_USER_NAME);
     
     if (customBuildString.isEmpty()) {
         QString buildNo;
-        if (QString(NATRON_DEVELOPMENT_STATUS) == NATRON_DEVELOPMENT_RELEASE_CANDIDATE) {
+        if (QString::fromUtf8(NATRON_DEVELOPMENT_STATUS) == QString::fromUtf8(NATRON_DEVELOPMENT_RELEASE_CANDIDATE)) {
             buildNo = QString::number(NATRON_BUILD_NUMBER);
         }
-        _versionString = QString("v" NATRON_VERSION_STRING " - " NATRON_DEVELOPMENT_STATUS + buildNo
-                                 + QObject::tr(" - built on ") + __DATE__ );
+        _versionString = QString(QString::fromUtf8("v" NATRON_VERSION_STRING " - " NATRON_DEVELOPMENT_STATUS) + buildNo
+                                 + QObject::tr(" - built on ") + QString::fromUtf8(__DATE__) );
     } else {
-        _versionString = QString (NATRON_APPLICATION_NAME +
+        _versionString = QString (QString::fromUtf8(NATRON_APPLICATION_NAME) +
                                   QObject::tr(" for ") +
                                   customBuildString +
                                   QObject::tr(" - built on ") +
-                                  __DATE__ );
+                                  QString::fromUtf8(__DATE__) );
     }
     
     setAttribute( Qt::WA_TransparentForMouseEvents );
@@ -107,7 +107,7 @@ LoadProjectSplashScreen::LoadProjectSplashScreen(const QString & filePath)
     setAttribute( Qt::WA_TransparentForMouseEvents );
     setAttribute(Qt::WA_TranslucentBackground, true);
     
-    _pixmap.load(":Resources/Images/loadProjectSplashscreen.png");
+    _pixmap.load(QString::fromUtf8(":Resources/Images/loadProjectSplashscreen.png"));
     
     resize( _pixmap.width(), _pixmap.height() );
     show();

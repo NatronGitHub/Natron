@@ -43,7 +43,9 @@ CLANG_DIAG_OFF(deprecated-declarations)
 CLANG_DIAG_ON(deprecated-declarations)
 
 #include "Global/GlobalDefines.h"
+
 #include "Engine/RotoDrawableItem.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -401,6 +403,7 @@ public:
                                 bool finished,
                                 bool isOpenBezier,
                                 double time,
+                                ViewIdx view,
                                 unsigned int mipMapLevel,
                                 const Transform::Matrix3x3& transform,
                                 RectD* bbox);

@@ -57,6 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/Button.h"
 #include "Gui/ClickableLabel.h"
@@ -125,15 +126,11 @@ KnobGuiGroup::removeTabWidget()
 
 void KnobGuiGroup::removeSpecificGui()
 {
-    delete _button;
-//    for (std::list<KnobGui*>::iterator it = _children.begin() ; it != _children.end(); ++it) {
-//        (*it)->removeSpecificGui();
-//        delete *it;
-//    }
+    _button->deleteLater();
 }
 
 void
-KnobGuiGroup::addKnob(KnobGui *child)
+KnobGuiGroup::addKnob(const KnobGuiPtr& child)
 {
     _children.push_back(child);
 }
@@ -151,9 +148,10 @@ KnobGuiGroup::createWidget(QHBoxLayout* layout)
     if ( hasToolTip() ) {
         _button->setToolTip( toolTip() );
     }
+    _checked = _knob.lock()->getValue();
     _button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _button->setChecked(_checked);
-    QObject::connect( _button, SIGNAL( checked(bool) ), this, SLOT( setChecked(bool) ) );
+    QObject::connect( _button, SIGNAL(checked(bool)), this, SLOT(setChecked(bool)) );
     layout->addWidget(_button);
 }
 
@@ -168,7 +166,7 @@ KnobGuiGroup::setCheckedInternal(bool checked, bool userRequested)
     if (userRequested) {
         boost::shared_ptr<KnobGroup> knob = _knob.lock();
         if (knob) {
-            knob->evaluateValueChange(0, knob->getCurrentTime(), eValueChangedReasonUserEdited);
+            knob->evaluateValueChange(0, knob->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
         }
     }
     
@@ -177,12 +175,16 @@ KnobGuiGroup::setCheckedInternal(bool checked, bool userRequested)
     int realIndexInLayout = getActualIndexInLayout();
     int startChildIndex = realIndexInLayout + 1;
     //getGui()->getPropertiesBin()->setUpdatesEnabled(false);
-    for (std::list<KnobGui*>::iterator it = _children.begin(); it != _children.end(); ++it) {
+    for (std::list<KnobGuiWPtr>::iterator it = _children.begin(); it != _children.end(); ++it) {
+        KnobGuiPtr knob = it->lock();
+        if (!knob) {
+            continue;
+        }
         if (!checked) {
-            (*it)->hide();
-        } else if ( !(*it)->getKnob()->getIsSecret() ) {
-            (*it)->show(startChildIndex);
-            if ( (*it)->getKnob()->isNewLineActivated() ) {
+            knob->hide();
+        } else if ( !knob->getKnob()->getIsSecret() ) {
+            knob->show(startChildIndex);
+            if ( knob->getKnob()->isNewLineActivated() ) {
                 ++startChildIndex;
             }
         }
@@ -225,8 +227,12 @@ KnobGuiGroup::_hide()
     if (_button) {
         _button->hide();
     }
-    for (std::list<KnobGui*>::iterator it = _children.begin(); it != _children.end(); ++it) {
-        (*it)->hide();
+    for (std::list<KnobGuiWPtr>::iterator it = _children.begin(); it != _children.end(); ++it) {
+        KnobGuiPtr k = it->lock();
+        if (!k) {
+            continue;
+        }
+        k->hide();
     }
 }
 
@@ -241,8 +247,12 @@ KnobGuiGroup::_show()
     }
 
     if (_checked) {
-        for (std::list<KnobGui*>::iterator it = _children.begin(); it != _children.end(); ++it) {
-            (*it)->show();
+        for (std::list<KnobGuiWPtr>::iterator it = _children.begin(); it != _children.end(); ++it) {
+            KnobGuiPtr k = it->lock();
+            if (!k) {
+                continue;
+            }
+            k->show();
         }
     }
 }
@@ -259,16 +269,24 @@ KnobGuiGroup::setEnabled()
     if (enabled) {
         for (U32 i = 0; i < _childrenToEnable.size(); ++i) {
             for (U32 j = 0; j < _childrenToEnable[i].second.size(); ++j) {
-                _childrenToEnable[i].first->getKnob()->setEnabled(_childrenToEnable[i].second[j], true);
+                KnobGuiPtr k = _childrenToEnable[i].first.lock();
+                if (!k) {
+                    continue;
+                }
+                k->getKnob()->setEnabled(_childrenToEnable[i].second[j], true);
             }
         }
     } else {
         _childrenToEnable.clear();
-        for (std::list<KnobGui*>::iterator it = _children.begin(); it != _children.end(); ++it) {
+        for (std::list<KnobGuiWPtr>::iterator it = _children.begin(); it != _children.end(); ++it) {
+            KnobGuiPtr k = it->lock();
+            if (!k) {
+                continue;
+            }
             std::vector<int> dimensions;
-            for (int j = 0; j < (*it)->getKnob()->getDimension(); ++j) {
-                if ( (*it)->getKnob()->isEnabled(j) ) {
-                    (*it)->getKnob()->setEnabled(j, false);
+            for (int j = 0; j < k->getKnob()->getDimension(); ++j) {
+                if ( k->getKnob()->isEnabled(j) ) {
+                    k->getKnob()->setEnabled(j, false);
                     dimensions.push_back(j);
                 }
             }

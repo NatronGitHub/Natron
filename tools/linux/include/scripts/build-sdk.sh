@@ -506,15 +506,31 @@ if [ ! -f "$INSTALL_PATH/lib/libboost_atomic.so" ]; then
     env CFLAGS="$BF" CXXFLAGS="$BF" ./b2 -s NO_BZIP2=1 --prefix=$INSTALL_PATH cflags="-fPIC" --disable-icu -j${MKJOBS} install || exit 1 # link=static
 fi
 
-# Install jpeg
-if [ ! -f $INSTALL_PATH/lib/libjpeg.so ]; then
-    cd $TMP_PATH || exit 1
-    if [ ! -f $SRC_PATH/$JPG_TAR ]; then
-        wget $THIRD_PARTY_SRC_URL/$JPG_TAR -O $SRC_PATH/$JPG_TAR || exit 1
+# install cppunit
+if [ ! -f "$INSTALL_PATH/bin/cppunit-config" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$CPPU_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$CPPU_TAR" -O "$SRC_PATH/$CPPU_TAR" || exit 1
     fi
-    tar xvf $SRC_PATH/$JPG_TAR || exit 1
-    cd jpeg-* || exit 1
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
+    tar xvf "$SRC_PATH/$CPPU_TAR" || exit 1
+    cd cppunit* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+    if [ "$DDIR" != "" ]; then
+      make DESTDIR="${DDIR}" install || exit 1
+    fi
+fi
+
+# Install turbo-jpeg
+if [ ! -f $INSTALL_PATH/lib/libturbojpeg.so.0.1.0 ]; then
+    cd $TMP_PATH || exit 1
+    if [ ! -f $SRC_PATH/$TJPG_TAR ]; then
+        wget $THIRD_PARTY_SRC_URL/$TJPG_TAR -O $SRC_PATH/$TJPG_TAR || exit 1
+    fi
+    tar xvf $SRC_PATH/$TJPG_TAR || exit 1
+    cd libjpeg-turbo-* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --with-jpeg8 --enable-shared --disable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     if [ "$DDIR" != "" ]; then
@@ -537,7 +553,6 @@ if [ ! -f $INSTALL_PATH/lib/libgif.so ]; then
       make DESTDIR="${DDIR}" install || exit 1
     fi
 fi
-
 
 # Install tiff
 if [ "$REBUILD_TIFF" = "1" ]; then
@@ -594,6 +609,38 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/lcms2.pc ]; then
     fi
 fi
 
+# install librevenge
+if [ ! -f "$INSTALL_PATH/lib/pkgconfig/librevenge-0.0.pc" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$REVENGE_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$REVENGE_TAR" -O "$SRC_PATH/$REVENGE_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$REVENGE_TAR" || exit 1
+    cd librevenge* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --disable-werror --prefix="$INSTALL_PATH" --disable-docs --enable-shared || exit 1
+    make -j1 || exit 1
+    make install || exit 1
+    if [ "$DDIR" != "" ]; then
+      make DESTDIR="${DDIR}" install || exit 1
+    fi
+fi
+
+# install libcdr
+if [ ! -f "$INSTALL_PATH/lib/pkgconfig/libcdr-0.1.pc" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$CDR_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$CDR_TAR" -O "$SRC_PATH/$CDR_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$CDR_TAR" || exit 1
+    cd libcdr* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --disable-werror --prefix="$INSTALL_PATH" --disable-docs --enable-shared || exit 1
+    make -j1 || exit 1
+    make install || exit 1
+    if [ "$DDIR" != "" ]; then
+      make DESTDIR="${DDIR}" install || exit 1
+    fi
+fi
+
 # Install openjpeg
 if [ ! -f $INSTALL_PATH/lib/pkgconfig/libopenjpeg.pc ]; then
     cd $TMP_PATH || exit 1
@@ -640,6 +687,8 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/OpenEXR.pc ]; then
     fi
     tar xvf $SRC_PATH/$ILM_TAR || exit 1
     cd ilmbase-* || exit 1
+    patch -p2 < $INC_PATH/patches/OpenEXR/51046a110296a5c95b5c52ce6d9798f6fc9884d3.patch || exit 1
+
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --disable-shared --enable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
@@ -790,7 +839,6 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/Magick++.pc ]; then
     tar xvf $SRC_PATH/$MAGICK_TAR || exit 1
     cd ImageMagick-* || exit 1
     patch -p0 < $INC_PATH/patches/ImageMagick/pango-align-hack.diff || exit 1
-    patch -p0 < $INC_PATH/patches/ImageMagick/xcf-layername.diff || exit 1
     env CFLAGS="$BF -DMAGICKCORE_EXCLUDE_DEPRECATED=1" CXXFLAGS="$BF -DMAGICKCORE_EXCLUDE_DEPRECATED=1" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --with-magick-plus-plus=yes --with-quantum-depth=32 --without-dps --without-djvu --without-fftw --without-fpx --without-gslib --without-gvc --without-jbig --without-jpeg --with-lcms --without-openjp2 --without-lqr --without-lzma --without-openexr --with-pango --with-png --with-rsvg --without-tiff --without-webp --with-xml --without-zlib --without-bzlib --disable-static --enable-shared --enable-hdri --with-freetype --with-fontconfig --without-x --without-modules || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
@@ -844,7 +892,10 @@ if [ ! -f $INSTALL_PATH/lib/libOpenImageIO.so ]; then
     fi
     tar xvf $SRC_PATH/$OIIO_TAR || exit 1
     cd oiio-Release-* || exit 1
-    patch -p1 -i $INC_PATH/patches/OpenImageIO/oiio-exrthreads.patch || exit 1
+    patch -p1 -i $INC_PATH/patches/OpenImageIO/oiio-1.5.23-checkmaxmem.patch || exit 1
+    patch -p1 -i $INC_PATH/patches/OpenImageIO/oiio-1.5.23-invalidatespec.patch || exit 1
+    patch -p1 -i $INC_PATH/patches/OpenImageIO/oiio-1.6.11-fix_exr_threads.patch || exit 1
+
     mkdir build || exit 1
     cd build || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" CXXFLAGS="-fPIC" cmake -DUSE_OPENCV:BOOL=FALSE -DUSE_OPENSSL:BOOL=FALSE -DOPENEXR_HOME=$INSTALL_PATH -DILMBASE_HOME=$INSTALL_PATH -DTHIRD_PARTY_TOOLS_HOME=$INSTALL_PATH -DUSE_QT:BOOL=FALSE -DUSE_TBB:BOOL=FALSE -DUSE_PYTHON:BOOL=FALSE -DUSE_FIELD3D:BOOL=FALSE -DOIIO_BUILD_TESTS=0 -DOIIO_BUILD_TOOLS=1 -DUSE_LIB_RAW=1 -DLIBRAW_PATH=$INSTALL_PATH -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBOOST_ROOT=$INSTALL_PATH -DSTOP_ON_WARNING:BOOL=FALSE -DUSE_GIF:BOOL=TRUE -DUSE_FREETYPE:BOOL=TRUE -DFREETYPE_INCLUDE_PATH=$INSTALL_PATH/include -DUSE_FFMPEG:BOOL=FALSE -DLINKSTATIC=0 -DBUILDSTATIC=0 -DOPENJPEG_HOME=$INSTALL_PATH -DOPENJPEG_INCLUDE_DIR=$INSTALL_PATH/include/openjpeg-1.5 -DOPENJPEG_LIBRARIES=$INSTALL_PATH/lib -DUSE_OPENJPEG:BOOL=TRUE .. || exit 1 

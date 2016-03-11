@@ -30,6 +30,10 @@
 #include <vector> // KnobGuiInt
 #include <list>
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#endif
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QObject>
@@ -45,9 +49,9 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ImageComponents.h"
 #include "Engine/EngineFwd.h"
 
+#include "Gui/AnimatedCheckBox.h"
 #include "Gui/CurveSelection.h"
 #include "Gui/KnobGui.h"
-#include "Gui/AnimatedCheckBox.h"
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
 
@@ -57,14 +61,10 @@ NATRON_NAMESPACE_ENTER;
 
 class Bool_CheckBox: public AnimatedCheckBox
 {
-    bool useCustomColor;
-    QColor customColor;
-    
 public:
+    Bool_CheckBox(const KnobGuiPtr& knob, int dimension, QWidget* parent = 0);
     
-    Bool_CheckBox(QWidget* parent = 0) : AnimatedCheckBox(parent), useCustomColor(false), customColor() {}
-    
-    virtual ~Bool_CheckBox() {}
+    virtual ~Bool_CheckBox();
     
     void setCustomColor(const QColor& color, bool useCustom)
     {
@@ -74,7 +74,25 @@ public:
     
     virtual void getBackgroundColor(double *r,double *g,double *b) const OVERRIDE FINAL;
     
+private:
     
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE FINAL;
+    virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
+    virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
+    virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
+    virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
+
+private:
+    bool useCustomColor;
+    QColor customColor;
+    boost::scoped_ptr<KnobWidgetDnD> _dnd;
 };
 
 class KnobGuiBool

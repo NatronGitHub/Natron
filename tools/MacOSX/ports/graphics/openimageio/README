@@ -1,0 +1,14 @@
+# building OIIO 1.6.10 os OSX 10.6 with macports:
+NATRON=../Natron
+tar zxvf oiio-Release-1.6.10.tar.gz
+cd oiio-Release-1.6.10
+patch -p1 < ${NATRON}/tools/MacOSX/ports/graphics/openimageio/files/oiio-pnm16.patch
+patch -p1 < ${NATRON}/tools/MacOSX/ports/graphics/openimageio/files/oiio-1.5.23-checkmaxmem.patch
+patch -p1 < ${NATRON}/tools/MacOSX/ports/graphics/openimageio/files/oiio-1.5.23-invalidatespec.patch
+patch -p1 < ${NATRON}/tools/MacOSX/ports/graphics/openimageio/files/oiio-1.6.10-simd.patch
+
+prefix=/opt/local
+
+mkdir build
+cd build
+env PATH=${prefix}/libexec/qt4/bin:$PATH CPPFLAGS=-I${prefix}/include LDFLAGS=-L${prefix}/lib cmake .. -DOIIO_BUILD_TESTS:BOOL=FALSE -DBOOST_ROOT=${prefix} -DUSE_QT:BOOL=TRUE -DUSE_TBB:BOOL=FALSE -DUSE_PYTHON:BOOL=FALSE -DUSE_PYTHON3:BOOL=FALSE -DUSE_FIELD3D:BOOL=FALSE -DUSE_FFMPEG:BOOL=FALSE -DUSE_OPENJPEG:BOOL=TRUE -DUSE_OCIO:BOOL=TRUE -DUSE_OPENCV:BOOL=FALSE -DUSE_OPENSSL:BOOL=FALSE -DUSE_FREETYPE:BOOL=TRUE -DUSE_GIF:BOOL=TRUE -DUSE_PTEX:BOOL=FALSE -DUSE_LIBRAW:BOOL=TRUE -DUSE_NUKE:BOOL=FALSE -DSTOP_ON_WARNING:BOOL=FALSE  -DOPENJPEG_INCLUDE_DIR=${prefix}/include/openjpeg-1.5 -DFREETYPE_INCLUDE_PATH=${prefix}/include/freetype2

@@ -97,7 +97,7 @@ NATRON_NAMESPACE_ENTER;
 
 struct LinkToKnobDialogPrivate
 {
-    KnobGui* fromKnob;
+    KnobGuiPtr fromKnob;
     QVBoxLayout* mainLayout;
     QHBoxLayout* firstLineLayout;
     QWidget* firstLine;
@@ -108,7 +108,7 @@ struct LinkToKnobDialogPrivate
     NodesList allNodes;
     std::map<QString,boost::shared_ptr<KnobI > > allKnobs;
 
-    LinkToKnobDialogPrivate(KnobGui* from)
+    LinkToKnobDialogPrivate(const KnobGuiPtr& from)
         : fromKnob(from)
         , mainLayout(0)
         , firstLineLayout(0)
@@ -123,7 +123,7 @@ struct LinkToKnobDialogPrivate
     }
 };
 
-LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,
+LinkToKnobDialog::LinkToKnobDialog(const KnobGuiPtr& from,
                                    QWidget* parent)
     : QDialog(parent)
       , _imp( new LinkToKnobDialogPrivate(from) )
@@ -137,8 +137,8 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,
 
     _imp->buttons = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel),
                                          Qt::Horizontal,this);
-    QObject::connect( _imp->buttons, SIGNAL( accepted() ), this, SLOT( accept() ) );
-    QObject::connect( _imp->buttons, SIGNAL( rejected() ), this, SLOT( reject() ) );
+    QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(accept()) );
+    QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(reject()) );
     _imp->mainLayout->addWidget(_imp->buttons);
 
     _imp->selectNodeLabel = new Label(tr("Parent:"),_imp->firstLine);
@@ -158,7 +158,7 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,
     }
     QStringList nodeNames;
     for (NodesList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
-        QString name( (*it)->getLabel().c_str() );
+        QString name = QString::fromUtf8( (*it)->getLabel().c_str() );
         nodeNames.push_back(name);
         //_imp->nodeSelectionCombo->addItem(name);
     }
@@ -169,12 +169,12 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,
 
 
     _imp->nodeSelectionCombo->setFocus(Qt::PopupFocusReason);
-    QTimer::singleShot( 25, _imp->nodeSelectionCombo, SLOT( showCompleter() ) );
+    QTimer::singleShot( 25, _imp->nodeSelectionCombo, SLOT(showCompleter()) );
 
     _imp->knobSelectionCombo = new ComboBox(_imp->firstLine);
     _imp->firstLineLayout->addWidget(_imp->knobSelectionCombo);
 
-    QObject::connect( _imp->nodeSelectionCombo,SIGNAL( itemCompletionChosen() ),this,SLOT( onNodeComboEditingFinished() ) );
+    QObject::connect( _imp->nodeSelectionCombo,SIGNAL(itemCompletionChosen()),this,SLOT(onNodeComboEditingFinished()) );
 
     _imp->firstLineLayout->addStretch();
 }
@@ -209,7 +209,7 @@ LinkToKnobDialog::onNodeComboEditingFinished()
             KnobPage* isPage = dynamic_cast<KnobPage*>( knobs[j].get() );
             KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knobs[j].get() );
             if (from->isTypeCompatible(knobs[j]) && !isButton && !isPage && !isGroup) {
-                QString name( knobs[j]->getName().c_str() );
+                QString name = QString::fromUtf8( knobs[j]->getName().c_str() );
 
                 bool canInsertKnob = true;
                 for (int k = 0; k < knobs[j]->getDimension(); ++k) {

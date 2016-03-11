@@ -3,7 +3,7 @@
 
 #include <shiboken.h>
 
-#include <NodeGroupWrapper.h>
+#include <PyNodeGroup.h>
 
 NATRON_NAMESPACE_ENTER;
 class GroupWrapper : public Group

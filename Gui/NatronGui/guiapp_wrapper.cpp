@@ -6,6 +6,7 @@ GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_OFF(missing-field-initializers)
 GCC_DIAG_OFF(missing-declarations)
 GCC_DIAG_OFF(uninitialized)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <shiboken.h> // produces many warnings
 #include <pysidesignal.h>
 #include <pysideproperty.h>
@@ -18,11 +19,11 @@ GCC_DIAG_OFF(uninitialized)
 
 // Extra includes
 NATRON_NAMESPACE_USING
-#include <AppInstanceWrapper.h>
-#include <GuiAppWrapper.h>
-#include <NodeGroupWrapper.h>
-#include <NodeWrapper.h>
-#include <ParameterWrapper.h>
+#include <PyAppInstance.h>
+#include <PyGuiApp.h>
+#include <PyNode.h>
+#include <PyNodeGroup.h>
+#include <PyParameter.h>
 #include <PythonPanels.h>
 #include <list>
 #include <vector>

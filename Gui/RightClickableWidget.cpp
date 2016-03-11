@@ -80,13 +80,29 @@ RightClickableWidget::enterEvent(QEvent* e)
     dynamic_cast<Histogram*>(currentFocus) ||
     dynamic_cast<NodeGraph*>(currentFocus) ||
     dynamic_cast<QToolButton*>(currentFocus) ||
-    currentFocus->objectName() == "Properties";
+    currentFocus->objectName() == QString::fromUtf8("Properties");
     
     if (canSetFocus) {
         setFocus();
     }
     QWidget::enterEvent(e);
 }
+
+
+RightClickableWidget*
+RightClickableWidget::isParentSettingsPanelRecursive(QWidget* w)
+{
+    if (!w) {
+        return 0;
+    }
+    RightClickableWidget* panel = qobject_cast<RightClickableWidget*>(w);
+    if (panel) {
+        return panel;
+    } else {
+        return isParentSettingsPanelRecursive(w->parentWidget());
+    }
+}
+
 
 NATRON_NAMESPACE_EXIT;
 

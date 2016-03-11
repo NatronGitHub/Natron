@@ -99,7 +99,7 @@ public:
      * if they are not NULL.
      **/
     Curves::const_iterator isNearbyCurve(const QPoint &pt,double* x = NULL,double *y = NULL) const;
-    std::pair<boost::shared_ptr<CurveGui>,KeyFrame> isNearbyKeyFrame(const QPoint & pt) const;
+    bool isNearbyKeyFrame(const QPoint & pt, boost::shared_ptr<CurveGui>* curve, KeyFrame* key, bool* hasPrev, KeyFrame* prev, bool* hasNext, KeyFrame* next) const;
     std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr> isNearbyTangent(const QPoint & pt) const;
     std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr> isNearbySelectedTangentText(const QPoint & pt) const;
 
@@ -146,7 +146,7 @@ public:
 private:
 
 
-    void keyFramesWithinRect(const QRectF & rect,std::vector< std::pair<boost::shared_ptr<CurveGui>,KeyFrame > >* keys) const;
+    void keyFramesWithinRect(const QRectF & rect,SelectedKeys* keys) const;
 
 public:
 

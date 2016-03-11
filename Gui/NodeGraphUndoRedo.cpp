@@ -446,10 +446,10 @@ ConnectCommand::undo()
     
     if (newSrc) {
         setText( QObject::tr("Connect %1 to %2")
-                .arg(dst->getNode()->getLabel().c_str() ).arg( newSrc->getNode()->getLabel().c_str() ) );
+                .arg(QString::fromUtf8(dst->getNode()->getLabel().c_str() )).arg(QString::fromUtf8( newSrc->getNode()->getLabel().c_str() ) ));
     } else {
         setText( QObject::tr("Disconnect %1")
-                .arg(dst->getNode()->getLabel().c_str() ) );
+                .arg(QString::fromUtf8(dst->getNode()->getLabel().c_str() ) ));
     }
     
     
@@ -475,10 +475,10 @@ ConnectCommand::redo()
     
     if (newSrc) {
         setText( QObject::tr("Connect %1 to %2")
-                .arg(dst->getNode()->getLabel().c_str() ).arg( newSrc->getNode()->getLabel().c_str() ) );
+                .arg(QString::fromUtf8(dst->getNode()->getLabel().c_str() )).arg(QString::fromUtf8( newSrc->getNode()->getLabel().c_str() ) ));
     } else {
         setText( QObject::tr("Disconnect %1")
-                .arg(dst->getNode()->getLabel().c_str() ) );
+                .arg(QString::fromUtf8(dst->getNode()->getLabel().c_str() ) ));
     }
     
     
@@ -681,14 +681,14 @@ void
 ResizeBackdropCommand::undo()
 {
     _bd->resize(_oldW, _oldH);
-    setText( QObject::tr("Resize %1").arg( _bd->getNode()->getLabel().c_str() ) );
+    setText( QObject::tr("Resize %1").arg( QString::fromUtf8(_bd->getNode()->getLabel().c_str() )) );
 }
 
 void
 ResizeBackdropCommand::redo()
 {
     _bd->resize(_w, _h);
-    setText( QObject::tr("Resize %1").arg( _bd->getNode()->getLabel().c_str() ) );
+    setText( QObject::tr("Resize %1").arg( QString::fromUtf8(_bd->getNode()->getLabel().c_str() ) ));
 }
 
 bool
@@ -1189,7 +1189,7 @@ LoadNodePresetsCommand::undo()
         panel->removeInstances(newChildren);
         panel->addInstances(oldChildren);
     }
-    internalNode->getEffectInstance()->evaluate_public(NULL, true, eValueChangedReasonUserEdited);
+    internalNode->getEffectInstance()->incrHashAndEvaluate(true, true);
     internalNode->getApp()->triggerAutoSave();
     setText(QObject::tr("Load presets"));
 }
@@ -1251,7 +1251,7 @@ LoadNodePresetsCommand::redo()
     }
     std::map<std::string,std::string> oldNewScriptNames;
     internalNode->restoreKnobsLinks(*_newSerializations.front(), allNodes,oldNewScriptNames);
-    internalNode->getEffectInstance()->evaluate_public(NULL, true, eValueChangedReasonUserEdited);
+    internalNode->getEffectInstance()->incrHashAndEvaluate(true, true);
     internalNode->getApp()->triggerAutoSave();
     _firstRedoCalled = true;
 
@@ -1556,13 +1556,14 @@ GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,const Node
         QPointF nodePos = (*it)->getPos_mt_safe();
         groupPosition += nodePos;
     }
-    
-    if (!nodes.empty()) {
-        groupPosition.rx() /= nodes.size();
-        groupPosition.ry() /= nodes.size();
+
+    unsigned sz = nodes.size();
+    if (sz) {
+        groupPosition.rx() /= sz;
+        groupPosition.ry() /= sz;
     }
     
-    CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP, eCreateNodeReasonInternal, _graph->getGroup());
+    CreateNodeArgs groupArgs(QString::fromUtf8(PLUGINID_NATRON_GROUP), eCreateNodeReasonInternal, _graph->getGroup());
 
     NodePtr containerNode = _graph->getGui()->getApp()->createNode(groupArgs);
     boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(containerNode->getEffectInstance()->shared_from_this());
@@ -1614,7 +1615,7 @@ GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,const Node
                 if (originalInput) {
                     
                     //Create an input node corresponding to this input
-                    CreateNodeArgs args(PLUGINID_NATRON_INPUT, eCreateNodeReasonInternal, isGrp);
+                    CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_INPUT), eCreateNodeReasonInternal, isGrp);
         
                     NodePtr input = _graph->getGui()->getApp()->createNode(args);
                     assert(input);
@@ -1660,7 +1661,7 @@ GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,const Node
             }
             assert(foundOriginalNode);
             
-            CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, eCreateNodeReasonInternal, isGrp);
+            CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_OUTPUT), eCreateNodeReasonInternal, isGrp);
 
             NodePtr output = graph->getGui()->getApp()->createNode(args);
             try {
@@ -1785,20 +1786,24 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,const std::list<NodeGuiP
             }
         }
         
+        {
+            NodeGraphI *graph_i = group->getNodeGraph();
+            assert(graph_i);
+            {
+                NodeGraph* thisGroupGraph = dynamic_cast<NodeGraph*>(graph_i);
+                assert(thisGroupGraph);
+                if (thisGroupGraph) {
+                    thisGroupGraph->copyNodes(nodesToCopy, cb);
+                }
+            }
+        }
+        std::list<std::pair<std::string,NodeGuiPtr > > newNodes;
+        _graph->pasteCliboard(cb,&newNodes);
+        
         boost::shared_ptr<NodeGuiI> groupGui_i = group->getNode()->getNodeGui();
         assert(groupGui_i);
         NodeGuiPtr groupGui = boost::dynamic_pointer_cast<NodeGui>(groupGui_i);
         assert(groupGui);
-        
-        NodeGraphI *graph_i = group->getNodeGraph();
-        assert(graph_i);
-        NodeGraph* thisGroupGraph = dynamic_cast<NodeGraph*>(graph_i);
-        assert(thisGroupGraph);
-        thisGroupGraph->copyNodes(nodesToCopy, cb);
-        
-        std::list<std::pair<std::string,NodeGuiPtr > > newNodes;
-        _graph->pasteCliboard(cb,&newNodes);
-        
         expandedGroup.group = groupGui;
         
         //This is the BBox of the new inlined nodes

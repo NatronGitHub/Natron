@@ -7,6 +7,7 @@
 	<StartMenuDir>Natron</StartMenuDir>
 	<ProductUrl>http://www.natron.fr</ProductUrl>
 	<RemoveTargetDir>true</RemoveTargetDir>
+	<RunProgram></RunProgram>
 	<AllowSpaceInPath>true</AllowSpaceInPath>
 	<UninstallerName>NatronSetup</UninstallerName>
 	<InstallerWindowIcon>icon.png</InstallerWindowIcon>

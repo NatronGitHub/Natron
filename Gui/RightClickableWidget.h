@@ -66,12 +66,14 @@ public:
     : QWidget(parent)
     , panel(panel)
     {
-        setObjectName("SettingsPanel");
+        setObjectName(QString::fromUtf8("SettingsPanel"));
     }
     
     virtual ~RightClickableWidget() {}
     
     DockablePanel* getPanel() const { return panel; }
+    
+    static RightClickableWidget* isParentSettingsPanelRecursive(QWidget* w);
     
 Q_SIGNALS:
     

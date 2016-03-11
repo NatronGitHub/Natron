@@ -39,6 +39,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/RenderStats.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 #include "Gui/GuiFwd.h"
@@ -59,7 +60,7 @@ public:
     
     virtual ~RenderStatsDialog();
     
-    void addStats(int time, int view, double wallTime, const std::map<NodePtr,NodeRenderStats >& stats);
+    void addStats(int time, ViewIdx view, double wallTime, const std::map<NodePtr,NodeRenderStats >& stats);
     
 public Q_SLOTS:
     

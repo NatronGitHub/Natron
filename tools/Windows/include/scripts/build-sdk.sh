@@ -87,7 +87,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/Magick++.pc ]; then
     cd ImageMagick-* || exit 1
     patch -p1 < $INC_PATH/patches/ImageMagick/mingw.patch || exit 1
     patch -p0 < $INC_PATH/patches/ImageMagick/pango-align-hack.diff || exit 1
-    patch -p0 < $INC_PATH/patches/ImageMagick/xcf-layername.diff || exit 1
+    patch -p0 < $INC_PATH/patches/ImageMagick/mingw-utf8.diff || exit 1
     env CFLAGS="-DMAGICKCORE_EXCLUDE_DEPRECATED=1" CXXFLAGS="-I${INSTALL_PATH}/include -DMAGICKCORE_EXCLUDE_DEPRECATED=1" LDFLAGS="-lz -lws2_32" ./configure --prefix=$INSTALL_PATH --with-magick-plus-plus=yes --with-quantum-depth=32 --without-dps --without-djvu --without-fftw --without-fpx --without-gslib --without-gvc --without-jbig --without-jpeg --with-lcms --without-openjp2 --without-lqr --without-lzma --without-openexr --with-pango --with-png --with-rsvg --without-tiff --without-webp --with-xml --without-zlib --without-bzlib --enable-static --disable-shared --enable-hdri --with-freetype --with-fontconfig --without-x --without-modules || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
@@ -122,6 +122,60 @@ if [ ! -f $INSTALL_PATH/lib/libOpenColorIO.a ]; then
     cp ../LICENSE ../README $INSTALL_PATH/docs/ocio/ || exit 1
 fi
 
+
+# Install openexr
+EXR_THREAD="pthread"
+
+if [ "$REBUILD_EXR" = "1" ]; then
+  rm -rf $INSTALL_PATH/lib/pkgconfig/{IlmBase.pc,OpenEXR.pc}
+fi
+if [ ! -f $INSTALL_PATH/lib/pkgconfig/OpenEXR.pc ]; then
+    cd $TMP_BUILD_DIR || exit 1
+    if [ ! -f $SRC_PATH/$EXR_TAR ]; then
+        wget $THIRD_PARTY_SRC_URL/$EXR_TAR -O $SRC_PATH/$EXR_TAR || exit 1
+    fi
+    tar xvf $SRC_PATH/$EXR_TAR || exit 1
+    cd openexr-* || exit 1
+
+    OPENEXR_BASE_PATCHES=$(find $INC_PATH/patches/OpenEXR -type f)
+    for p in $OPENEXR_BASE_PATCHES; do
+      if [[ "$p" = *-mingw-use_pthreads* ]] && [ "$EXR_THREAD" != "pthread" ]; then
+        continue
+      fi
+      echo "Patch: $p"
+      patch -p1 -i $p || exit 1
+    done
+    ILM_BASE_PATCHES=$(find $INC_PATH/patches/IlmBase -type f)
+    for p in $ILM_BASE_PATCHES; do
+      if [[ "$p" = *-mingw-use_pthreads* ]] && [ "$EXR_THREAD" != "pthread" ]; then
+        continue
+      fi
+      if [[ "$p" = *-mingw-use_windows_threads* ]] && [ "$EXR_THREAD" != "win32" ]; then
+        continue
+      fi
+      echo "Patch: $p"
+      patch -p1 -i $p || exit 1
+    done
+
+
+    mkdir build_ilmbase
+    cd build_ilmbase || exit 1
+    cmake -G"MSYS Makefiles" -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=ON -DNAMESPACE_VERSIONING=ON  -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_CONFIG_NAME=Release ../IlmBase || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+    
+    cd .. || exit 1
+
+
+    mkdir build_openexr
+    cd build_openexr || exit 1
+
+    cmake -DCMAKE_CXX_FLAGS="-I${INSTALL_PATH}/include/OpenEXR" -DCMAKE_EXE_LINKER_FLAGS="-L${INSTALL_PATH}/bin" -G"MSYS Makefiles" -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=ON -DNAMESPACE_VERSIONING=ON -DUSE_ZLIB_WINAPI=OFF ../OpenEXR || exit 1
+
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+fi
+
 # Install oiio
 if [ "$REBUILD_OIIO" = "1" ]; then
     rm -rf $INSTALL_PATH/lib/libOpenImage* $INSTALL_PATH/include/OpenImage* $INSTALL_PATH/bin/libOpenImage*
@@ -134,14 +188,16 @@ if [ ! -f $INSTALL_PATH/bin/libOpenImageIO.dll ]; then
     tar xvf $SRC_PATH/$OIIO_TAR || exit 1
     cd oiio-Release-* || exit 1
     OIIO_PATCHES=$CWD/include/patches/OpenImageIO
-    patch -p1 -i ${OIIO_PATCHES}/fix-mingw-w64.patch  || exit 1
-    # 1.6.x # patch -p1 -i ${OIIO_PATCHES}/fix-mingw-w64-16.patch  || exit 1
-    # 1.6.x # patch -p0 -i ${OIIO_PATCHES}/fix-mingw-w64-16.diff || exit 1
-    patch -p1 -i ${OIIO_PATCHES}/workaround-ansidecl-h-PTR-define-conflict.patch || exit 1
-    patch -p1 -i ${OIIO_PATCHES}/0001-MinGW-w64-include-winbase-h-early-for-TCHAR-types.patch  || exit 1
-    patch -p1 -i ${OIIO_PATCHES}/oiio-exrthreads.patch || exit 1
-    #patch -p1 -i ${OIIO_PATCHES}/0002-Also-link-to-opencv_videoio-library.patch  || exit 1
-	rm -rf build
+    if [[ "$OIIO_TAR" = *-1.5.* ]]; then
+        patches=$(find "${OIIO_PATCHES}/1.5" -type f)
+    elif [[ "$OIIO_TAR" = *-1.6.* ]]; then
+        patches=$(find "${OIIO_PATCHES}/1.6" -type f)
+    fi
+    for p in $patches; do
+		echo "Applying $p"
+        patch -p1 -i $p || exit 1
+    done
+    rm -rf build
     mkdir build || exit 1
     cd build || exit 1
     cmake -G"MSYS Makefiles" -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DCMAKE_SHARED_LINKER_FLAGS=" -Wl,--export-all-symbols -Wl,--enable-auto-import " -DUSE_OPENSSL:BOOL=FALSE -DOPENEXR_HOME=$INSTALL_PATH -DILMBASE_HOME=$INSTALL_PATH -DTHIRD_PARTY_TOOLS_HOME=$INSTALL_PATH -DUSE_QT:BOOL=FALSE -DUSE_TBB:BOOL=FALSE -DUSE_PYTHON:BOOL=FALSE -DUSE_FIELD3D:BOOL=FALSE -DUSE_OPENJPEG:BOOL=TRUE  -DOIIO_BUILD_TESTS=0 -DOIIO_BUILD_TOOLS=0 -DLIBRAW_PATH=$INSTALL_PATH -DBOOST_ROOT=$INSTALL_PATH -DSTOP_ON_WARNING:BOOL=FALSE -DUSE_GIF:BOOL=TRUE -DUSE_FREETYPE:BOOL=TRUE -DFREETYPE_INCLUDE_PATH=$INSTALL_PATH/include/freetype2 -DOPENJPEG_INCLUDE_DIR=${INSTALL_PATH}/include/openjpeg-1.5  -DOPENJPEG_OPENJPEG_LIBRARIES=${INSTALL_PATH}/lib/libopenjpeg.dll.a -DUSE_FFMPEG:BOOL=FALSE -DUSE_OPENCV:BOOL=FALSE .. || exit 1

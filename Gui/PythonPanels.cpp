@@ -36,13 +36,14 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Engine/NodeWrapper.h"
+#include "Engine/PyNode.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/Gui.h"
 #include "Gui/TabWidget.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/DockablePanel.h"
-#include "Gui/GuiAppWrapper.h"
+#include "Gui/PyGuiApp.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -89,9 +90,10 @@ DialogParamHolder::setParamChangedCallback(const std::string& callback)
 
 void
 DialogParamHolder::onKnobValueChanged(KnobI* k,
-                        ValueChangedReasonEnum reason,
-                        double /*time*/,
-                        bool /*originatedFromMainThread*/)
+                                      ValueChangedReasonEnum reason,
+                                      double /*time*/,
+                                      ViewSpec /*view*/,
+                                      bool /*originatedFromMainThread*/)
 {
     std::string callback;
     {
@@ -101,7 +103,7 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
     if (!callback.empty()) {
         bool userEdited = reason == eValueChangedReasonNatronGuiEdited ||
         reason == eValueChangedReasonUserEdited;
-
+        
         
         std::vector<std::string> args;
         std::string error;
@@ -203,7 +205,7 @@ PyModalDialog::PyModalDialog(Gui* gui)
                                     boost::shared_ptr<QUndoStack>(),
                                     QString(),QString(),
                                     false,
-                                    "Default",
+                                    QString::fromUtf8("Default"),
                                     _imp->centerContainer);
     _imp->panel->turnOffPages();
     _imp->panel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
@@ -331,7 +333,7 @@ PyPanel::PyPanel(const std::string& scriptName,const std::string& label,bool use
                                         boost::shared_ptr<QUndoStack>(),
                                         QString(),QString(),
                                         false,
-                                        "Default",
+                                        QString::fromUtf8("Default"),
                                         _imp->centerContainer);
         _imp->panel->turnOffPages();
         _imp->centerLayout->insertWidget(0,_imp->panel);
@@ -356,7 +358,7 @@ void
 PyPanel::setPanelLabel(const std::string& label)
 {
     setLabel(label);
-    QString name(label.c_str());
+    QString name = QString::fromUtf8(label.c_str());
     TabWidget* parent = dynamic_cast<TabWidget*>(parentWidget());
     if (parent) {
         parent->setTabLabel(this, name);

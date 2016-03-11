@@ -40,12 +40,12 @@
 #include <Enums.h>
 
 //Engine
-#include "GlobalFunctionsWrapper.h"
-#include "NodeGroupWrapper.h"
-#include "AppInstanceWrapper.h"
-#include "RotoWrapper.h"
-#include "NodeWrapper.h"
-#include "ParameterWrapper.h"
+#include "PyGlobalFunctions.h"
+#include "PyNodeGroup.h"
+#include "PyAppInstance.h"
+#include "PyRoto.h"
+#include "PyNode.h"
+#include "PyParameter.h"
 #include "RectI.h"
 #include "RectD.h"
 

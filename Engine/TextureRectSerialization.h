@@ -41,21 +41,23 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/EngineFwd.h"
 
 
+// Note: these classes are used for cache serialization and do not have to maintain backward compatibility
 #define TEXTURE_RECT_SERIALIZATION_INTRODUCES_PAR 2
 #define TEXTURE_RECT_VERSION TEXTURE_RECT_SERIALIZATION_INTRODUCES_PAR
+
 namespace boost {
 namespace serialization {
 template<class Archive>
 void
 serialize(Archive & ar,
           NATRON_NAMESPACE::TextureRect &t,
-          const unsigned int version)
+          const unsigned int /*version*/)
 {
 
     ar & t.x1 & t.x2 & t.y1 & t.y2 & t.w & t.h & t.closestPo2;
-    if (version >= TEXTURE_RECT_SERIALIZATION_INTRODUCES_PAR) {
-        ar & t.par;
-    }
+    //if (version >= TEXTURE_RECT_SERIALIZATION_INTRODUCES_PAR) {
+    ar & t.par;
+    //}
 }
 }
 }

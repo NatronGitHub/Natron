@@ -107,7 +107,7 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     QPixmap pix;
     appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
     _fileBrowseButton->setIcon( QIcon(pix) );
-    QObject::connect( _fileBrowseButton, SIGNAL( clicked() ), this, SLOT( open_file() ) );
+    QObject::connect( _fileBrowseButton, SIGNAL(clicked()), this, SLOT(open_file()) );
     _fileLayout->addWidget(_fileBrowseButton);
     _mainLayout->addWidget(_fileContainer);
 
@@ -183,14 +183,14 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     _buttonsContainer = new QWidget(this);
     _buttonsLayout = new QHBoxLayout(_buttonsContainer);
     _okButton = new Button(tr("Ok"),_buttonsContainer);
-    QObject::connect( _okButton, SIGNAL( clicked() ), this, SLOT( accept() ) );
+    QObject::connect( _okButton, SIGNAL(clicked()), this, SLOT(accept()) );
     _buttonsLayout->addWidget(_okButton);
     _cancelButton = new Button(tr("Cancel"),_buttonsContainer);
-    QObject::connect( _cancelButton, SIGNAL( clicked() ), this, SLOT( reject() ) );
+    QObject::connect( _cancelButton, SIGNAL(clicked()), this, SLOT(reject()) );
     _buttonsLayout->addWidget(_cancelButton);
     _mainLayout->addWidget(_buttonsContainer);
     
-    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
+    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
     
     QByteArray state;
     if (isExportDialog) {
@@ -205,7 +205,7 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
 
 ImportExportCurveDialog::~ImportExportCurveDialog()
 {
-    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
+    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
     if (_isExportDialog) {
         settings.setValue( QLatin1String("CurveWidgetExportDialog"), saveState() );
     } else {
@@ -265,14 +265,14 @@ ImportExportCurveDialog::open_file()
         SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::eFileDialogModeSave,"",_gui,false);
         if ( dialog.exec() ) {
             std::string file = dialog.filesToSave();
-            _fileLineEdit->setText( file.c_str() );
+            _fileLineEdit->setText( QString::fromUtf8(file.c_str()) );
         }
     } else {
         SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::eFileDialogModeOpen,"",_gui,false);
         if ( dialog.exec() ) {
             std::string files = dialog.selectedFiles();
             if ( !files.empty() ) {
-                _fileLineEdit->setText( files.c_str() );
+                _fileLineEdit->setText( QString::fromUtf8(files.c_str()) );
             }
         }
     }
@@ -389,7 +389,7 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,CurveWidget* curveWidge
     QString xLabel;
     switch (mode) {
     case eEditModeKeyframePosition:
-        xLabel = QString("x: ");
+        xLabel = QString::fromUtf8("x: ");
         break;
     case eEditModeLeftDerivative:
         xLabel = QString(tr("Left slope: "));
@@ -419,7 +419,7 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,CurveWidget* curveWidge
     if (mode == eEditModeKeyframePosition) {
         
 
-        _imp->yLabel = new Label("y: ",_imp->boxContainer);
+        _imp->yLabel = new Label(QString::fromUtf8("y: "),_imp->boxContainer);
         _imp->yLabel->setFont(QApplication::font()); // necessary, or the labels will get the default font size
         _imp->boxLayout->addWidget(_imp->yLabel);
         
@@ -456,9 +456,13 @@ EditKeyFrameDialog::~EditKeyFrameDialog()
 void
 EditKeyFrameDialog::moveKeyTo(double newX,double newY)
 {
-    SelectedKeys keys;
-    keys.push_back(_imp->key);
     
+    std::map<boost::shared_ptr<CurveGui>,std::vector<MoveKeysCommand::KeyToMove> > keysToMove;
+    std::vector<MoveKeysCommand::KeyToMove> &keys = keysToMove[_imp->key->curve];
+    keys.resize(1);
+    keys[0].key = _imp->key;
+    keys[0].prevIsSelected = false;
+    keys[0].nextIsSelected = false;
     double curY = _imp->key->key.getValue();
     double curX = _imp->key->key.getTime();
     
@@ -484,7 +488,7 @@ EditKeyFrameDialog::moveKeyTo(double newX,double newY)
         }
     }
     
-    _imp->curveWidget->pushUndoCommand(new MoveKeysCommand(_imp->curveWidget,keys,newX - curX, newY - curY,true));
+    _imp->curveWidget->pushUndoCommand(new MoveKeysCommand(_imp->curveWidget,keysToMove,newX - curX, newY - curY,true));
 
 }
 

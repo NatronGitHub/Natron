@@ -41,11 +41,11 @@ class EditExpressionDialog : public EditScriptDialog
 {
     
     int _dimension;
-    KnobGui* _knob;
+    KnobGuiPtr _knob;
     
 public:
     
-    EditExpressionDialog(int dimension, KnobGui* knob, QWidget* parent);
+    EditExpressionDialog(Gui* gui, int dimension, const KnobGuiPtr& knob, QWidget* parent);
     
     virtual ~EditExpressionDialog()
     {

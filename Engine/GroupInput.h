@@ -83,11 +83,10 @@ public:
     
     virtual void knobChanged(KnobI* k,
                              ValueChangedReasonEnum /*reason*/,
-                             int /*view*/,
+                             ViewSpec /*view*/,
                              double /*time*/,
                              bool /*originatedFromMainThread*/) OVERRIDE FINAL;
     
-    virtual ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     
 };

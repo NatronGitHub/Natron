@@ -27,6 +27,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include "Engine/ViewIdx.h"
+
 NATRON_NAMESPACE_ENTER;
 
 FrameKey::FrameKey()
@@ -57,7 +59,7 @@ FrameKey::FrameKey(const CacheEntryHolder* holder,
                    int lut,
                    int bitDepth,
                    int channels,
-                   int view,
+                   ViewIdx view,
                    const TextureRect & textureRect,
                    const RenderScale & scale,
                    const std::string & inputName,
@@ -106,16 +108,16 @@ FrameKey::fillHash(Hash64* hash) const
     hash->append(_textureRect.closestPo2);
     hash->append(_scale.x);
     hash->append(_scale.y);
-    Hash64_appendQString(hash,_layer.getLayerName().c_str());
+    Hash64_appendQString(hash,QString::fromUtf8(_layer.getLayerName().c_str()));
     const std::vector<std::string>& channels = _layer.getComponentsNames();
     for (std::size_t i = 0; i < channels.size(); ++i) {
-        Hash64_appendQString(hash,channels[i].c_str());
+        Hash64_appendQString(hash,QString::fromUtf8(channels[i].c_str()));
     }
     if (!_alphaChannelFullName.empty()) {
-        Hash64_appendQString(hash,_alphaChannelFullName.c_str());
+        Hash64_appendQString(hash,QString::fromUtf8(_alphaChannelFullName.c_str()));
     }
     
-    Hash64_appendQString(hash, _inputName.c_str());
+    Hash64_appendQString(hash, QString::fromUtf8(_inputName.c_str()));
     hash->append(_draftMode);
 }
 

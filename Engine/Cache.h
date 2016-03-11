@@ -96,7 +96,7 @@ public:
         , mustQuitCond()
         , mustQuit(false)
     {
-        setObjectName("CacheDeleter");
+        setObjectName(QString::fromUtf8("CacheDeleter"));
     }
 
     virtual ~DeleterThread()
@@ -127,6 +127,7 @@ public:
             return;
         }
         QMutexLocker k(&mustQuitMutex);
+        assert(!mustQuit);
         mustQuit = true;
 
         {
@@ -164,8 +165,9 @@ private:
                     if ( quit && _entriesQueue.empty() ) {
                         _entriesQueueMutex.unlock();
                         QMutexLocker k(&mustQuitMutex);
+                        assert(mustQuit);
                         mustQuit = false;
-                        mustQuitCond.wakeAll();
+                        mustQuitCond.wakeOne();
 
                         return;
                     }
@@ -221,7 +223,7 @@ public:
         , mustQuitCond()
         , mustQuit(false)
     {
-        setObjectName("CacheCleaner");
+        setObjectName(QString::fromUtf8("CacheCleaner"));
     }
 
     virtual ~CacheCleanerThread()
@@ -254,6 +256,7 @@ public:
             return;
         }
         QMutexLocker k(&mustQuitMutex);
+        assert(!mustQuit);
         mustQuit = true;
 
         {
@@ -292,8 +295,9 @@ private:
                     if ( quit && _requestsQueues.empty() ) {
                         _requestQueueMutex.unlock();
                         QMutexLocker k(&mustQuitMutex);
+                        assert(mustQuit);
                         mustQuit = false;
-                        mustQuitCond.wakeAll();
+                        mustQuitCond.wakeOne();
 
                         return;
                     }
@@ -597,10 +601,16 @@ private:
                     break;
                 }
 
+                //Refresh now memory cache size && maximum in memory size as they might have been changed
+                //in tryEvictEntry
+                {
+                    QMutexLocker k(&_sizeLock);
+                    memoryCacheSize = _memoryCacheSize;
+                    maximumInMemorySize = std::max( (std::size_t)1, _maximumInMemorySize );
+                }
+
+                
                 for (typename std::list<EntryTypePtr>::iterator it = deleted.begin(); it != deleted.end(); ++it) {
-                    if ( !(*it)->isStoredOnDisk() ) {
-                        memoryCacheSize -= (*it)->size();
-                    }
                     entriesToBeDeleted.push_back(*it);
                 }
 
@@ -1116,11 +1126,8 @@ public:
     QString getCachePath() const
     {
         QString cacheFolderName( appPTR->getDiskCacheLocation() );
-
-        if ( !cacheFolderName.endsWith('\\') && !cacheFolderName.endsWith('/') ) {
-            cacheFolderName.append('/');
-        }
-        cacheFolderName.append( cacheName().c_str() );
+        Global::ensureLastPathSeparator(cacheFolderName);
+        cacheFolderName.append( QString::fromUtf8(cacheName().c_str()));
 
         return cacheFolderName;
     }
@@ -1128,9 +1135,8 @@ public:
     std::string getRestoreFilePath() const
     {
         QString newCachePath( getCachePath() );
-
-        newCachePath.append( QDir::separator() );
-        newCachePath.append("restoreFile." NATRON_CACHE_FILE_EXT);
+        Global::ensureLastPathSeparator(newCachePath);
+        newCachePath.append(QString::fromUtf8("restoreFile." NATRON_CACHE_FILE_EXT));
 
         return newCachePath.toStdString();
     }
@@ -1197,7 +1203,6 @@ public:
                 for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
                     if ( (*it)->getKey() == entry->getKey() ) {
                         toRemove.push_back(*it);
-                        //(*it)->scheduleForDestruction();
                         ret.erase(it);
                         break;
                     }
@@ -1211,7 +1216,6 @@ public:
                     std::list<EntryTypePtr> & ret = getValueFromIterator(existingEntry);
                     for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
                         if ( (*it)->getKey() == entry->getKey() ) {
-                            //(*it)->scheduleForDestruction();
                             toRemove.push_back(*it);
                             ret.erase(it);
                             break;
@@ -1241,7 +1245,6 @@ public:
             if ( existingEntry != _memoryCache.end() ) {
                 std::list<EntryTypePtr> & ret = getValueFromIterator(existingEntry);
                 for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
-                    //(*it)->scheduleForDestruction();
                     toRemove.push_back(*it);
                 }
                 _memoryCache.erase(existingEntry);
@@ -1250,7 +1253,6 @@ public:
                 if ( existingEntry != _diskCache.end() ) {
                     std::list<EntryTypePtr> & ret = getValueFromIterator(existingEntry);
                     for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
-                        //(*it)->scheduleForDestruction();
                         toRemove.push_back(*it);
                     }
                     _diskCache.erase(existingEntry);
@@ -1349,7 +1351,6 @@ private:
                     if ( (front->getKey().getCacheHolderID() == holderID) &&
                          ( ( front->getKey().getTreeVersion() != nodeHash) || removeAll ) ) {
                         for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
-                            //(*it)->scheduleForDestruction();
                             toDelete.push_back(*it);
                         }
                     } else {
@@ -1367,7 +1368,6 @@ private:
                     if ( (front->getKey().getCacheHolderID() == holderID) &&
                          ( ( front->getKey().getTreeVersion() != nodeHash) || removeAll ) ) {
                         for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
-                            //(*it)->scheduleForDestruction();
                             toDelete.push_back(*it);
                         }
                     } else {
@@ -1536,7 +1536,9 @@ private:
         }
         /*if it is stored on disk, remove it from memory*/
 
-        if ( evicted.second->isStoredOnDisk() ) {
+        if (!evicted.second->isStoredOnDisk()) {
+            entriesToBeDeleted.push_back(evicted.second);
+        } else {
             assert( evicted.second.unique() );
 
             ///This is EXPENSIVE! it calls msync
@@ -1554,26 +1556,29 @@ private:
 
             /*before that we need to clear the disk cache if it exceeds the maximum size allowed*/
             while ( ( diskCacheSize  + evicted.second->size() ) >= (maximumCacheSize - maximumInMemorySize) ) {
-                {
-                    std::pair<hash_type, EntryTypePtr> evictedFromDisk = _diskCache.evict();
-                    //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
-                    //we'll let the user of these entries purge the extra entries left in the cache later on
-                    if (!evictedFromDisk.second) {
-                        break;
-                    }
 
-                    ///Erase the file from the disk if we reach the limit.
-                    //evictedFromDisk.second->scheduleForDestruction();
-
-
-                    entriesToBeDeleted.push_back(evictedFromDisk.second);
+                std::pair<hash_type, EntryTypePtr> evictedFromDisk = _diskCache.evict();
+                //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
+                //we'll let the user of these entries purge the extra entries left in the cache later on
+                if (!evictedFromDisk.second) {
+                    break;
                 }
+
+                ///Erase the file from the disk if we reach the limit.
+                evictedFromDisk.second->removeAnyBackingFile();
+
+                entriesToBeDeleted.push_back(evictedFromDisk.second);
+
                 {
                     QMutexLocker k(&_sizeLock);
-                    diskCacheSize = _diskCacheSize;
                     maximumInMemorySize = _maximumInMemorySize;
                     maximumCacheSize = _maximumCacheSize;
                 }
+
+                //The entry is not yet deleted for real since it's done in a separate thread when this function
+                ///size() will return 0 at this point, we have to recompute it
+                std::size_t fsize = evictedFromDisk.second->getParams()->getElementsCount() * sizeof(data_t);
+                diskCacheSize -= fsize;
             }
 
             CacheIterator existingDiskCacheEntry = _diskCache(evicted.first);
@@ -1583,9 +1588,7 @@ private:
             } else {   /*append to the existing list*/
                 getValueFromIterator(existingDiskCacheEntry).push_back(evicted.second);
             }
-        } else {
-            entriesToBeDeleted.push_back(evicted.second);
-        }
+        } // if (!evicted.second->isStoredOnDisk()) 
 
         return true;
     } // tryEvictEntry

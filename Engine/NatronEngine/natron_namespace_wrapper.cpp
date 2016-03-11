@@ -6,6 +6,7 @@ GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_OFF(missing-field-initializers)
 GCC_DIAG_OFF(missing-declarations)
 GCC_DIAG_OFF(uninitialized)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <shiboken.h> // produces many warnings
 #include <pysidesignal.h>
 #include <pysideproperty.h>
@@ -1017,7 +1018,16 @@ void init_NATRON_NAMESPACE(PyObject* module)
         &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_PLAYER_PLAY_DISABLED", (long) NATRON_NAMESPACE::NATRON_PIXMAP_PLAYER_PLAY_DISABLED))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
-        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_PLAYER_STOP", (long) NATRON_NAMESPACE::NATRON_PIXMAP_PLAYER_STOP))
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_PLAYER_STOP_DISABLED", (long) NATRON_NAMESPACE::NATRON_PIXMAP_PLAYER_STOP_DISABLED))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_PLAYER_STOP_ENABLED", (long) NATRON_NAMESPACE::NATRON_PIXMAP_PLAYER_STOP_ENABLED))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_PLAYER_PAUSE_DISABLED", (long) NATRON_NAMESPACE::NATRON_PIXMAP_PLAYER_PAUSE_DISABLED))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_PLAYER_PAUSE_ENABLED", (long) NATRON_NAMESPACE::NATRON_PIXMAP_PLAYER_PAUSE_ENABLED))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
         &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_PLAYER_LOOP_MODE", (long) NATRON_NAMESPACE::NATRON_PIXMAP_PLAYER_LOOP_MODE))
@@ -1027,6 +1037,12 @@ void init_NATRON_NAMESPACE(PyObject* module)
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
         &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_PLAYER_PLAY_ONCE", (long) NATRON_NAMESPACE::NATRON_PIXMAP_PLAYER_PLAY_ONCE))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_PLAYER_TIMELINE_IN", (long) NATRON_NAMESPACE::NATRON_PIXMAP_PLAYER_TIMELINE_IN))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_PLAYER_TIMELINE_OUT", (long) NATRON_NAMESPACE::NATRON_PIXMAP_PLAYER_TIMELINE_OUT))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
         &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_MAXIMIZE_WIDGET", (long) NATRON_NAMESPACE::NATRON_PIXMAP_MAXIMIZE_WIDGET))

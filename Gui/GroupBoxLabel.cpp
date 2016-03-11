@@ -91,7 +91,7 @@ GroupBoxLabel::GroupBoxLabel(QWidget *parent)
 , _checked(false)
 
 {
-    QObject::connect( this, SIGNAL( checked(bool) ), this, SLOT( setChecked(bool) ) );
+    QObject::connect( this, SIGNAL(checked(bool)), this, SLOT(setChecked(bool)) );
 }
 
 void

@@ -39,6 +39,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/Button.h"
@@ -111,8 +112,8 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
 {
     assert(parent);
 
-    QObject::connect( parent->getViewer(),SIGNAL( selectionRectangleChanged(bool) ),this,SLOT( updateSelectionFromSelectionRectangle(bool) ) );
-    QObject::connect( parent->getViewer(), SIGNAL( selectionCleared() ), this, SLOT( onSelectionCleared() ) );
+    QObject::connect( parent->getViewer(),SIGNAL(selectionRectangleChanged(bool)),this,SLOT(updateSelectionFromSelectionRectangle(bool)) );
+    QObject::connect( parent->getViewer(), SIGNAL(selectionCleared()), this, SLOT(onSelectionCleared()) );
 
     QObject::connect( panel.get(), SIGNAL(trackingEnded()), this, SLOT(onTrackingEnded()));
     _imp->buttonsBar = new QWidget(parent);
@@ -122,7 +123,7 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
     QPixmap pixAdd;
     appPTR->getIcon(NATRON_PIXMAP_ADD_TRACK,&pixAdd);
     
-    _imp->addTrackButton = new Button(QIcon(pixAdd),"",_imp->buttonsBar);
+    _imp->addTrackButton = new Button(QIcon(pixAdd),QString(),_imp->buttonsBar);
     _imp->addTrackButton->setCheckable(true);
     _imp->addTrackButton->setChecked(false);
     _imp->addTrackButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
@@ -133,105 +134,97 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
                                                                  "same as pressing this button."),
                                                               Qt::WhiteSpaceNormal) );
     _imp->buttonsLayout->addWidget(_imp->addTrackButton);
-    QObject::connect( _imp->addTrackButton, SIGNAL( clicked(bool) ), this, SLOT( onAddTrackClicked(bool) ) );
+    QObject::connect( _imp->addTrackButton, SIGNAL(clicked(bool)), this, SLOT(onAddTrackClicked(bool)) );
     QPixmap pixPrev,pixNext,pixClearAll,pixClearBw,pixClearFw,pixUpdateViewerEnabled,pixUpdateViewerDisabled,pixStop;
-    QPixmap bwEnabled,bwDisabled,fwEnabled,fwDisabled;
+    QPixmap bwDisabled,fwDisabled;
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_REWIND_DISABLED, &bwDisabled);
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_REWIND_ENABLED, &bwEnabled);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_PREVIOUS, &pixPrev);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_NEXT, &pixNext);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_DISABLED, &fwDisabled);
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_ENABLED, &fwEnabled);
     appPTR->getIcon(NATRON_PIXMAP_CLEAR_ALL_ANIMATION, &pixClearAll);
     appPTR->getIcon(NATRON_PIXMAP_CLEAR_BACKWARD_ANIMATION, &pixClearBw);
     appPTR->getIcon(NATRON_PIXMAP_CLEAR_FORWARD_ANIMATION, &pixClearFw);
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH_ACTIVE, &pixUpdateViewerEnabled);
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH, &pixUpdateViewerDisabled);
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_STOP, &pixStop);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_STOP_ENABLED, &pixStop);
 
-    QIcon bwIcon;
-    bwIcon.addPixmap(bwEnabled,QIcon::Normal,QIcon::On);
-    bwIcon.addPixmap(bwDisabled,QIcon::Normal,QIcon::Off);
-    _imp->trackBwButton = new Button(bwIcon,"",_imp->buttonsBar);
-    _imp->trackBwButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->trackBwButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
-    _imp->trackBwButton->setToolTip("<p>" + tr("Track selected tracks backward until left bound of the timeline.") +
-                                    "</p><p><b>" + tr("Keyboard shortcut:") + " Z</b></p>");
-    _imp->trackBwButton->setCheckable(true);
-    _imp->trackBwButton->setChecked(false);
-    QObject::connect( _imp->trackBwButton,SIGNAL( clicked(bool) ),this,SLOT( onTrackBwClicked() ) );
-    _imp->buttonsLayout->addWidget(_imp->trackBwButton);
-
-    _imp->trackPrevButton = new Button(QIcon(pixPrev),"",_imp->buttonsBar);
+    _imp->trackPrevButton = new Button(QIcon(pixPrev),QString(),_imp->buttonsBar);
     _imp->trackPrevButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->trackPrevButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
-    _imp->trackPrevButton->setToolTip("<p>" + tr("Track selected tracks on the previous frame.") +
-                                      "</p><p><b>" + tr("Keyboard shortcut:") + " X</b></p>");
-    QObject::connect( _imp->trackPrevButton,SIGNAL( clicked(bool) ),this,SLOT( onTrackPrevClicked() ) );
+    _imp->trackPrevButton->setToolTip(QString::fromUtf8("<p>") + tr("Track selected tracks on the previous frame.") +
+                                      QString::fromUtf8("</p><p><b>") + tr("Keyboard shortcut:") + QString::fromUtf8(" X</b></p>"));
+    QObject::connect( _imp->trackPrevButton,SIGNAL(clicked(bool)),this,SLOT(onTrackPrevClicked()) );
     _imp->buttonsLayout->addWidget(_imp->trackPrevButton);
-
-    _imp->stopTrackingButton = new Button(QIcon(pixStop),"",_imp->buttonsBar);
-    _imp->stopTrackingButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->stopTrackingButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
-    _imp->stopTrackingButton->setToolTip("<p>" + tr("Stop the ongoing tracking if any")  +
-                                         "</p><p><b>" + tr("Keyboard shortcut:") + " Escape</b></p>");
-    QObject::connect( _imp->stopTrackingButton,SIGNAL( clicked(bool) ),this,SLOT( onStopButtonClicked() ) );
-    _imp->buttonsLayout->addWidget(_imp->stopTrackingButton);
-
-    _imp->trackNextButton = new Button(QIcon(pixNext),"",_imp->buttonsBar);
-    _imp->trackNextButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->trackNextButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
-    _imp->trackNextButton->setToolTip("<p>" + tr("Track selected tracks on the next frame.") +
-                                      "</p><p><b>" + tr("Keyboard shortcut:") + " C</b></p>");
-    QObject::connect( _imp->trackNextButton,SIGNAL( clicked(bool) ),this,SLOT( onTrackNextClicked() ) );
-    _imp->buttonsLayout->addWidget(_imp->trackNextButton);
+    
+    QIcon bwIcon;
+    bwIcon.addPixmap(pixStop,QIcon::Normal,QIcon::On);
+    bwIcon.addPixmap(bwDisabled,QIcon::Normal,QIcon::Off);
+    _imp->trackBwButton = new Button(bwIcon,QString(),_imp->buttonsBar);
+    _imp->trackBwButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->trackBwButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->trackBwButton->setToolTip(QString::fromUtf8("<p>") + tr("Track selected tracks backward until left bound of the timeline.") +
+                                    QString::fromUtf8("</p><p><b>") + tr("Keyboard shortcut:") + QString::fromUtf8(" Z</b></p>"));
+    _imp->trackBwButton->setCheckable(true);
+    _imp->trackBwButton->setChecked(false);
+    QObject::connect( _imp->trackBwButton,SIGNAL(clicked(bool)),this,SLOT(onTrackBwClicked()) );
+    _imp->buttonsLayout->addWidget(_imp->trackBwButton);
 
     QIcon fwIcon;
-    fwIcon.addPixmap(fwEnabled,QIcon::Normal,QIcon::On);
+    fwIcon.addPixmap(pixStop,QIcon::Normal,QIcon::On);
     fwIcon.addPixmap(fwDisabled,QIcon::Normal,QIcon::Off);
-    _imp->trackFwButton = new Button(fwIcon,"",_imp->buttonsBar);
+    _imp->trackFwButton = new Button(fwIcon,QString(),_imp->buttonsBar);
     _imp->trackFwButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->trackFwButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
-    _imp->trackFwButton->setToolTip("<p>" + tr("Track selected tracks forward until right bound of the timeline.") +
-                                    "</p><p><b>" + tr("Keyboard shortcut:") + " V</b></p>");
+    _imp->trackFwButton->setToolTip(QString::fromUtf8("<p>") + tr("Track selected tracks forward until right bound of the timeline.") +
+                                    QString::fromUtf8("</p><p><b>") + tr("Keyboard shortcut:") + QString::fromUtf8(" V</b></p>"));
     _imp->trackFwButton->setCheckable(true);
     _imp->trackFwButton->setChecked(false);
-    QObject::connect( _imp->trackFwButton,SIGNAL( clicked(bool) ),this,SLOT( onTrackFwClicked() ) );
+    QObject::connect( _imp->trackFwButton,SIGNAL(clicked(bool)),this,SLOT(onTrackFwClicked()) );
     _imp->buttonsLayout->addWidget(_imp->trackFwButton);
 
 
-    _imp->clearAllAnimationButton = new Button(QIcon(pixClearAll),"",_imp->buttonsBar);
+    _imp->trackNextButton = new Button(QIcon(pixNext),QString(),_imp->buttonsBar);
+    _imp->trackNextButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->trackNextButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->trackNextButton->setToolTip(QString::fromUtf8("<p>") + tr("Track selected tracks on the next frame.") +
+                                      QString::fromUtf8("</p><p><b>") + tr("Keyboard shortcut:") + QString::fromUtf8(" C</b></p>"));
+    QObject::connect( _imp->trackNextButton,SIGNAL(clicked(bool)),this,SLOT(onTrackNextClicked()) );
+    _imp->buttonsLayout->addWidget(_imp->trackNextButton);
+
+    
+
+    _imp->clearAllAnimationButton = new Button(QIcon(pixClearAll),QString(),_imp->buttonsBar);
     _imp->clearAllAnimationButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->clearAllAnimationButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->clearAllAnimationButton->setToolTip(GuiUtils::convertFromPlainText(tr("Clear all animation for selected tracks."), Qt::WhiteSpaceNormal));
-    QObject::connect( _imp->clearAllAnimationButton,SIGNAL( clicked(bool) ),this,SLOT( onClearAllAnimationClicked() ) );
+    QObject::connect( _imp->clearAllAnimationButton,SIGNAL(clicked(bool)),this,SLOT(onClearAllAnimationClicked()) );
     _imp->buttonsLayout->addWidget(_imp->clearAllAnimationButton);
 
-    _imp->clearBwAnimationButton = new Button(QIcon(pixClearBw),"",_imp->buttonsBar);
+    _imp->clearBwAnimationButton = new Button(QIcon(pixClearBw),QString(),_imp->buttonsBar);
     _imp->clearBwAnimationButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->clearBwAnimationButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->clearBwAnimationButton->setToolTip(GuiUtils::convertFromPlainText(tr("Clear animation backward from the current frame."), Qt::WhiteSpaceNormal));
-    QObject::connect( _imp->clearBwAnimationButton,SIGNAL( clicked(bool) ),this,SLOT( onClearBwAnimationClicked() ) );
+    QObject::connect( _imp->clearBwAnimationButton,SIGNAL(clicked(bool)),this,SLOT(onClearBwAnimationClicked()) );
     _imp->buttonsLayout->addWidget(_imp->clearBwAnimationButton);
 
-    _imp->clearFwAnimationButton = new Button(QIcon(pixClearFw),"",_imp->buttonsBar);
+    _imp->clearFwAnimationButton = new Button(QIcon(pixClearFw),QString(),_imp->buttonsBar);
     _imp->clearFwAnimationButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->clearFwAnimationButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->clearFwAnimationButton->setToolTip(GuiUtils::convertFromPlainText(tr("Clear animation forward from the current frame."), Qt::WhiteSpaceNormal));
-    QObject::connect( _imp->clearFwAnimationButton,SIGNAL( clicked(bool) ),this,SLOT( onClearFwAnimationClicked() ) );
+    QObject::connect( _imp->clearFwAnimationButton,SIGNAL(clicked(bool)),this,SLOT(onClearFwAnimationClicked()) );
     _imp->buttonsLayout->addWidget(_imp->clearFwAnimationButton);
 
     QIcon updateViewerIC;
     updateViewerIC.addPixmap(pixUpdateViewerEnabled,QIcon::Normal,QIcon::On);
     updateViewerIC.addPixmap(pixUpdateViewerDisabled,QIcon::Normal,QIcon::Off);
-    _imp->updateViewerButton = new Button(updateViewerIC,"",_imp->buttonsBar);
+    _imp->updateViewerButton = new Button(updateViewerIC,QString(),_imp->buttonsBar);
     _imp->updateViewerButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->updateViewerButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->updateViewerButton->setCheckable(true);
     _imp->updateViewerButton->setChecked(true);
     _imp->updateViewerButton->setDown(true);
     _imp->updateViewerButton->setToolTip(GuiUtils::convertFromPlainText(tr("Update viewer during tracking for each frame instead of just the tracks."), Qt::WhiteSpaceNormal));
-    QObject::connect( _imp->updateViewerButton,SIGNAL( clicked(bool) ),this,SLOT( onUpdateViewerClicked(bool) ) );
+    QObject::connect( _imp->updateViewerButton,SIGNAL(clicked(bool)),this,SLOT(onUpdateViewerClicked(bool)) );
     _imp->buttonsLayout->addWidget(_imp->updateViewerButton);
 
 
@@ -260,7 +253,7 @@ TrackerGui::onAddTrackClicked(bool clicked)
 void
 TrackerGui::drawOverlays(double time,
                          const RenderScale & renderScale,
-                         int view) const
+                         ViewIdx view) const
 {
     double pixelScaleX, pixelScaleY;
 
@@ -290,38 +283,39 @@ TrackerGui::drawOverlays(double time,
                 assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
                 KnobDouble* dblKnob = dynamic_cast<KnobDouble*>( newInstanceKnob.get() );
                 assert(dblKnob);
+                if (dblKnob) {
+                    //GLProtectMatrix p(GL_PROJECTION); // useless (we do two glTranslate in opposite directions)
+                    for (int l = 0; l < 2; ++l) {
+                        // shadow (uses GL_PROJECTION)
+                        glMatrixMode(GL_PROJECTION);
+                        int direction = (l == 0) ? 1 : -1;
+                        // translate (1,-1) pixels
+                        glTranslated(direction * pixelScaleX / 256, -direction * pixelScaleY / 256, 0);
+                        glMatrixMode(GL_MODELVIEW);
 
-                //GLProtectMatrix p(GL_PROJECTION); // useless (we do two glTranslate in opposite directions)
-                for (int l = 0; l < 2; ++l) {
-                    // shadow (uses GL_PROJECTION)
-                    glMatrixMode(GL_PROJECTION);
-                    int direction = (l == 0) ? 1 : -1;
-                    // translate (1,-1) pixels
-                    glTranslated(direction * pixelScaleX / 256, -direction * pixelScaleY / 256, 0);
-                    glMatrixMode(GL_MODELVIEW);
+                        if (l == 0) {
+                            glColor4d(0., 0., 0., 1.);
+                        } else {
+                            glColor4f(1., 1., 1., 1.);
+                        }
 
-                    if (l == 0) {
-                        glColor4d(0., 0., 0., 1.);
-                    } else {
-                        glColor4f(1., 1., 1., 1.);
+                        double x = dblKnob->getValue(0);
+                        double y = dblKnob->getValue(1);
+                        glPointSize(POINT_SIZE);
+                        glBegin(GL_POINTS);
+                        glVertex2d(x,y);
+                        glEnd();
+
+                        glBegin(GL_LINES);
+                        glVertex2d(x - CROSS_SIZE * pixelScaleX, y);
+                        glVertex2d(x + CROSS_SIZE * pixelScaleX, y);
+
+                        glVertex2d(x, y - CROSS_SIZE * pixelScaleY);
+                        glVertex2d(x, y + CROSS_SIZE * pixelScaleY);
+                        glEnd();
                     }
-
-                    double x = dblKnob->getValue(0);
-                    double y = dblKnob->getValue(1);
-                    glPointSize(POINT_SIZE);
-                    glBegin(GL_POINTS);
-                    glVertex2d(x,y);
-                    glEnd();
-
-                    glBegin(GL_LINES);
-                    glVertex2d(x - CROSS_SIZE * pixelScaleX, y);
-                    glVertex2d(x + CROSS_SIZE * pixelScaleX, y);
-
-                    glVertex2d(x, y - CROSS_SIZE * pixelScaleY);
-                    glVertex2d(x, y + CROSS_SIZE * pixelScaleY);
-                    glEnd();
+                    glPointSize(1.);
                 }
-                glPointSize(1.);
             }
         }
 
@@ -369,7 +363,7 @@ TrackerGui::drawOverlays(double time,
 bool
 TrackerGui::penDown(double time,
                     const RenderScale & renderScale,
-                    int view,
+                    ViewIdx view,
                     const QPointF & viewportPos,
                     const QPointF & pos,
                     double pressure,
@@ -399,17 +393,19 @@ TrackerGui::penDown(double time,
         assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
         KnobDouble* dblKnob = dynamic_cast<KnobDouble*>( newInstanceKnob.get() );
         assert(dblKnob);
-        double x,y;
-        x = dblKnob->getValueAtTime(time, 0);
-        y = dblKnob->getValueAtTime(time, 1);
+        if (dblKnob) {
+            double x,y;
+            x = dblKnob->getValueAtTime(time, 0);
+            y = dblKnob->getValueAtTime(time, 1);
 
-        if ( ( pos.x() >= (x - selectionTol) ) && ( pos.x() <= (x + selectionTol) ) &&
-             ( pos.y() >= (y - selectionTol) ) && ( pos.y() <= (y + selectionTol) ) ) {
-            if (!it->second) {
-                _imp->panel->selectNode( instance, modCASIsShift(e) );
+            if ( ( pos.x() >= (x - selectionTol) ) && ( pos.x() <= (x + selectionTol) ) &&
+                ( pos.y() >= (y - selectionTol) ) && ( pos.y() <= (y + selectionTol) ) ) {
+                if (!it->second) {
+                    _imp->panel->selectNode( instance, modCASIsShift(e) );
 
+                }
+                didSomething = true;
             }
-            didSomething = true;
         }
     }
 
@@ -419,13 +415,15 @@ TrackerGui::penDown(double time,
         assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
         KnobDouble* dblKnob = dynamic_cast<KnobDouble*>( newInstanceKnob.get() );
         assert(dblKnob);
-        dblKnob->beginChanges();
-        dblKnob->blockValueChanges();
-        dblKnob->setValueAtTime(time, pos.x(), 0);
-        dblKnob->setValueAtTime(time, pos.y(), 1);
-        dblKnob->unblockValueChanges();
-        dblKnob->endChanges();
-        didSomething = true;
+        if (dblKnob) {
+            dblKnob->beginChanges();
+            dblKnob->blockValueChanges();
+            dblKnob->setValueAtTime(time, pos.x(), ViewSpec::all(), 0);
+            dblKnob->setValueAtTime(time, pos.y(), ViewSpec::all(), 1);
+            dblKnob->unblockValueChanges();
+            dblKnob->endChanges();
+            didSomething = true;
+        }
     }
 
     if ( !didSomething && !modCASIsShift(e) ) {
@@ -440,7 +438,7 @@ TrackerGui::penDown(double time,
 bool
 TrackerGui::penDoubleClicked(double /*time*/,
                              const RenderScale & /*renderScale*/,
-                             int /*view*/,
+                             ViewIdx /*view*/,
                              const QPointF & /*viewportPos*/,
                              const QPointF & /*pos*/,
                              QMouseEvent* /*e*/)
@@ -453,7 +451,7 @@ TrackerGui::penDoubleClicked(double /*time*/,
 bool
 TrackerGui::penMotion(double time,
                       const RenderScale & renderScale,
-                      int view,
+                      ViewIdx view,
                       const QPointF & viewportPos,
                       const QPointF & pos,
                       double pressure,
@@ -487,7 +485,7 @@ TrackerGui::penMotion(double time,
 bool
 TrackerGui::penUp(double time,
                   const RenderScale & renderScale,
-                  int view,
+                  ViewIdx view,
                   const QPointF & viewportPos,
                   const QPointF & pos,
                   double pressure,
@@ -516,7 +514,7 @@ TrackerGui::penUp(double time,
 bool
 TrackerGui::keyDown(double time,
                     const RenderScale & renderScale,
-                    int view,
+                    ViewIdx view,
                     QKeyEvent* e)
 {
     bool didSomething = false;
@@ -561,26 +559,34 @@ TrackerGui::keyDown(double time,
         _imp->panel->getSelectedInstances(&selectedInstances);
         didSomething = !selectedInstances.empty();
     } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingBackward, modifiers, key) ) {
-        _imp->trackBwButton->setDown(true);
-        _imp->trackBwButton->setChecked(true);
-        didSomething = _imp->panel->trackBackward();
-        if (!didSomething) {
-            _imp->panel->stopTracking();
-            _imp->trackBwButton->setDown(false);
-            _imp->trackBwButton->setChecked(false);
+        if (!_imp->panel->isTracking()) {
+            _imp->trackBwButton->setDown(true);
+            _imp->trackBwButton->setChecked(true);
+            didSomething = _imp->panel->trackBackward();
+            if (!didSomething) {
+                _imp->panel->stopTracking();
+                _imp->trackBwButton->setDown(false);
+                _imp->trackBwButton->setChecked(false);
+            }
         }
     } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingPrevious, modifiers, key) ) {
-        didSomething = _imp->panel->trackPrevious();
+        if (!_imp->panel->isTracking()) {
+            didSomething = _imp->panel->trackPrevious();
+        }
     } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingNext, modifiers, key) ) {
-        didSomething = _imp->panel->trackNext();
+        if (!_imp->panel->isTracking()) {
+            didSomething = _imp->panel->trackNext();
+        }
     } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingForward, modifiers, key) ) {
-        _imp->trackFwButton->setDown(true);
-        _imp->trackFwButton->setChecked(true);
-        didSomething = _imp->panel->trackForward();
-        if (!didSomething) {
-            _imp->panel->stopTracking();
-            _imp->trackFwButton->setDown(false);
-            _imp->trackFwButton->setChecked(false);
+        if (!_imp->panel->isTracking()) {
+            _imp->trackFwButton->setDown(true);
+            _imp->trackFwButton->setChecked(true);
+            didSomething = _imp->panel->trackForward();
+            if (!didSomething) {
+                _imp->panel->stopTracking();
+                _imp->trackFwButton->setDown(false);
+                _imp->trackFwButton->setChecked(false);
+            }
         }
     } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingStop, modifiers, key) ) {
         _imp->panel->stopTracking();
@@ -592,7 +598,7 @@ TrackerGui::keyDown(double time,
 bool
 TrackerGui::keyUp(double time,
                   const RenderScale & renderScale,
-                  int view,
+                  ViewIdx view,
                   QKeyEvent* e)
 {
     bool didSomething = false;
@@ -633,7 +639,7 @@ TrackerGui::keyUp(double time,
 bool
 TrackerGui::loseFocus(double time,
                       const RenderScale & renderScale,
-                      int view)
+                      ViewIdx view)
 {
     bool didSomething = false;
 
@@ -672,13 +678,15 @@ TrackerGui::updateSelectionFromSelectionRectangle(bool onRelease)
         assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
         KnobDouble* dblKnob = dynamic_cast<KnobDouble*>( newInstanceKnob.get() );
         assert(dblKnob);
-        double x,y;
-        x = dblKnob->getValue(0);
-        y = dblKnob->getValue(1);
-        if ( (x >= l) && (x <= r) && (y >= b) && (y <= t) ) {
-            ///assert that the node is really not part of the selection
-            assert( std::find( currentSelection.begin(),currentSelection.end(),instance.get() ) == currentSelection.end() );
-            currentSelection.push_back( instance.get() );
+        if (dblKnob) {
+            double x,y;
+            x = dblKnob->getValue(0);
+            y = dblKnob->getValue(1);
+            if ( (x >= l) && (x <= r) && (y >= b) && (y <= t) ) {
+                ///assert that the node is really not part of the selection
+                assert( std::find( currentSelection.begin(),currentSelection.end(),instance.get() ) == currentSelection.end() );
+                currentSelection.push_back( instance.get() );
+            }
         }
     }
     _imp->panel->selectNodes( currentSelection, (_imp->controlDown > 0) );
@@ -693,6 +701,10 @@ TrackerGui::onSelectionCleared()
 void
 TrackerGui::onTrackBwClicked()
 {
+    if (_imp->panel->isTracking()) {
+        _imp->panel->stopTracking();
+        return;
+    }
     _imp->trackBwButton->setDown(true);
     if (!_imp->panel->trackBackward()) {
         _imp->panel->stopTracking();
@@ -724,6 +736,10 @@ TrackerGui::onTrackNextClicked()
 void
 TrackerGui::onTrackFwClicked()
 {
+    if (_imp->panel->isTracking()) {
+        _imp->panel->stopTracking();
+        return;
+    }
     _imp->trackFwButton->setDown(true);
     if (!_imp->panel->trackForward()) {
         _imp->panel->stopTracking();

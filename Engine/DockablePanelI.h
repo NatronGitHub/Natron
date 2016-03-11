@@ -43,7 +43,8 @@ public:
     /**
      * @brief Must scan for new knobs and rebuild the panel accordingly
      **/
-    virtual void scanForNewKnobs(bool restorePageIndex = true) = 0;
+    virtual void recreateUserKnobs(bool restorePageIndex) = 0;
+    virtual void refreshGuiForKnobsChanges(bool restorePageIndex) = 0;
     virtual void deleteKnobGui(const KnobPtr& knob) = 0;
 
 };

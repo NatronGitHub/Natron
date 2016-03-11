@@ -42,6 +42,8 @@ GCC_DIAG_ON(unused-parameter)
 
 NATRON_NAMESPACE_ENTER;
 
+// Note: these classes are used for cache serialization and do not have to maintain backward compatibility
+
 template<class Archive>
 void
 FrameParams::serialize(Archive & ar,

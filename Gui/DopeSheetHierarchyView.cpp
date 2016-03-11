@@ -35,6 +35,7 @@
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/Settings.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/DockablePanel.h"
 #include "Gui/DopeSheet.h"
@@ -382,13 +383,13 @@ void HierarchyViewPrivate::checkKnobVisibleState(DSKnob *dsKnob)
 {
     int dim = dsKnob->getDimension();
 
-    KnobGui *knobGui = dsKnob->getKnobGui();
-
+    KnobGuiPtr knobGui = dsKnob->getKnobGui();
+    assert(knobGui);
     bool showContext = false;
 
     if (dsKnob->isMultiDimRoot()) {
         for (int i = 0; i < knobGui->getKnob()->getDimension(); ++i) {
-            bool curveIsAnimated = knobGui->getCurve(i)->isAnimated();
+            bool curveIsAnimated = knobGui->getCurve(ViewIdx(0), i)->isAnimated();
 
             QTreeWidgetItem *dimItem = dsKnob->findDimTreeItem(i);
             dimItem->setHidden(!curveIsAnimated);
@@ -400,7 +401,7 @@ void HierarchyViewPrivate::checkKnobVisibleState(DSKnob *dsKnob)
         }
     }
     else {
-        showContext = knobGui->getCurve(dim)->isAnimated();
+        showContext = knobGui->getCurve(ViewIdx(0), dim)->isAnimated();
     }
 
     QTreeWidgetItem *treeItem = dsKnob->getTreeItem();
@@ -479,7 +480,7 @@ void HierarchyViewPrivate::drawPluginIconArea(QPainter *p, boost::shared_ptr<DSN
     if (!iconFilePath.empty()) {
         QPixmap pix;
 
-        if (pix.load(iconFilePath.c_str())) {
+        if (pix.load(QString::fromUtf8(iconFilePath.c_str()))) {
             if (std::max(pix.width(), pix.height()) != NATRON_MEDIUM_BUTTON_ICON_SIZE) {
                 pix = pix.scaled(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE,
                                  Qt::KeepAspectRatio, Qt::SmoothTransformation);
@@ -649,12 +650,12 @@ HierarchyView::HierarchyView(DopeSheet *dopeSheetModel, Gui *gui, QWidget *paren
     setItemDelegate(new HierarchyViewItemDelegate(this));
     setAttribute(Qt::WA_MacShowFocusRect,0);
 
-    setStyleSheet("HierarchyView { border: 0px; }");
+    setStyleSheet(QString::fromUtf8("HierarchyView { border: 0px; }"));
 
     connect(this, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)),
             this, SLOT(onItemDoubleClicked(QTreeWidgetItem*,int)));
 
-    connect(selectionModel(), SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
+    connect(selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
             this, SLOT(onSelectionChanged()));
 }
 
@@ -958,7 +959,7 @@ void HierarchyView::onKeyframeSelectionChanged(bool recurse)
     }
     
     // Retrieve the knob contexts with selected keyframes
-    DSKnobPtrList toCheck;
+    std::set<boost::shared_ptr<DSKnob> > toCheck;
     DSKeyPtrList selectedKeys;
     std::vector<boost::shared_ptr<DSNode> > selectedNodes;
     
@@ -967,11 +968,11 @@ void HierarchyView::onKeyframeSelectionChanged(bool recurse)
     for (DSKeyPtrList::const_iterator it = selectedKeys.begin();
          it != selectedKeys.end();
          ++it) {
-        toCheck.push_back((*it)->getContext());
+        toCheck.insert((*it)->getContext());
     }
     
     
-    disconnect(selectionModel(), SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
+    disconnect(selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
                this, SLOT(onSelectionChanged()));
 
     // Compose tree selection from the selected keyframes
@@ -981,15 +982,16 @@ void HierarchyView::onKeyframeSelectionChanged(bool recurse)
     else {
         std::set<QModelIndex> toSelect;
 
-        for (DSKnobPtrList::const_iterator toCheckIt = toCheck.begin();
+        for (std::set<boost::shared_ptr<DSKnob> >::const_iterator toCheckIt = toCheck.begin();
              toCheckIt != toCheck.end();
              ++toCheckIt) {
             boost::shared_ptr<DSKnob> dsKnob = (*toCheckIt);
 
-            KnobGui *knobGui = dsKnob->getKnobGui();
+            KnobGuiPtr knobGui = dsKnob->getKnobGui();
+            assert(knobGui);
             int dim = dsKnob->getDimension();
 
-            KeyFrameSet keyframes = knobGui->getCurve(dim)->getKeyFrames_mt_safe();
+            KeyFrameSet keyframes = knobGui->getCurve(ViewIdx(0), dim)->getKeyFrames_mt_safe();
 
             bool selectItem = true;
 
@@ -1030,7 +1032,7 @@ void HierarchyView::onKeyframeSelectionChanged(bool recurse)
         mySelecModel->selectWithRecursion(selection, flags, recurse);
     }
 
-    connect(selectionModel(), SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
+    connect(selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
             this, SLOT(onSelectionChanged()));
 }
 
