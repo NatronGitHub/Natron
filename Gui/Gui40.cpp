@@ -755,7 +755,11 @@ Gui::onNodeNameChanged(const QString & /*name*/)
 void
 Gui::renderAllWriters()
 {
+    try {
     _imp->_appInstance->startWritersRenderingFromNames(areRenderStatsEnabled(), false, std::list<std::string>(), std::list<std::pair<int,std::pair<int,int> > >() );
+    } catch (const std::exception& e) {
+        Dialogs::warningDialog(tr("Render").toStdString(), e.what());
+    }
 }
 
 void
