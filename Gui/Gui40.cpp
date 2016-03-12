@@ -770,7 +770,7 @@ Gui::renderSelectedNode()
         return;
     }
     
-    const NodesGuiList & selectedNodes = graph->getSelectedNodes();
+    NodesGuiList  selectedNodes = graph->getSelectedNodes();
 
     if ( selectedNodes.empty() ) {
         Dialogs::warningDialog( tr("Render").toStdString(), tr("You must select a node to render first!").toStdString() );
