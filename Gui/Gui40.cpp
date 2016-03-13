@@ -755,7 +755,11 @@ Gui::onNodeNameChanged(const QString & /*name*/)
 void
 Gui::renderAllWriters()
 {
+    try {
     _imp->_appInstance->startWritersRenderingFromNames(areRenderStatsEnabled(), false, std::list<std::string>(), std::list<std::pair<int,std::pair<int,int> > >() );
+    } catch (const std::exception& e) {
+        Dialogs::warningDialog(tr("Render").toStdString(), e.what());
+    }
 }
 
 void
@@ -766,7 +770,7 @@ Gui::renderSelectedNode()
         return;
     }
     
-    const NodesGuiList & selectedNodes = graph->getSelectedNodes();
+    NodesGuiList  selectedNodes = graph->getSelectedNodes();
 
     if ( selectedNodes.empty() ) {
         Dialogs::warningDialog( tr("Render").toStdString(), tr("You must select a node to render first!").toStdString() );
