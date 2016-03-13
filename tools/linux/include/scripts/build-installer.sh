@@ -513,17 +513,23 @@ if [ "$NO_INSTALLER" != "1" ]; then
     tar cvvzf $ONLINE_INSTALL.tgz $ONLINE_INSTALL || exit 1
 fi
 
-if [ "$RPM_BUILD" = "1" ]; then
-  if [ ! -f "/usr/bin/rpmbuild" ]; then
-    yum install -y rpmdevtools
-  fi
-  rm -rf ~/rpmbuild/*
+# collect debug versions for gdb
+DEBUG_DIR=$INSTALLER/Natron-$NATRON_VERSION-Linux$BIT-Debug
+rm -rf $DEBUG_DIR
+mkdir $DEBUG_DIR || exit 1
+cp -a $INSTALL_PATH/bin/Natron* $DEBUG_DIR/ || exit 1
+cp -a $INSTALL_PATH/Plugins/*.ofx.bundle/Contents/Linux*/*.ofx $DEBUG_DIR/ || exit 1
+( cd $INSTALLER; tar cvvJf Natron-$NATRON_VERSION-Linux$BIT-Debug.tar.xz Natron-$NATRON_VERSION-Linux$BIT-Debug )
+# Should be copied to another dir, but for now just use the installer dir
+mv ${DEBUG_DIR}.tar.xz $REPO_DIR/installers/ || exit 1
+
+# Build native packages for linux
+
+if [ "$RPM_BUILD" = "1" ] || [ "$DEB_BUILD" = "1" ]; then
   echo "#!/bin/bash" > $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
-  echo "echo \"Checking GCC compatibility for Natron ...\"" >>$INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
+  echo "echo \"Checking GCC compatibility for Natron ...\"" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
   echo "DIR=/opt/Natron2" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
   cat $INSTALLER/packages/fr.inria.natron/data/Natron | sed '29,68!d' >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
-  #echo "update-mime-database /usr/share/mime" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
-  #echo "update-desktop-database /usr/share/applications" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
 
 cat <<'EOF' >> "$INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh"
 if [ -f /usr/bin/update-mime-database ]; then
@@ -539,8 +545,15 @@ EOF
   chmod +x $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
   sed -i '29,68d' $INSTALLER/packages/fr.inria.natron/data/Natron || exit 1
   sed -i '29,68d' $INSTALLER/packages/fr.inria.natron/data/NatronRenderer || exit 1
+fi
+
+if [ "$RPM_BUILD" = "1" ]; then
+  if [ ! -f "/usr/bin/rpmbuild" ]; then
+    yum install -y rpmdevtools
+  fi
+  rm -rf ~/rpmbuild/*
   cat $INC_PATH/natron/Natron.spec | sed "s/REPLACE_VERSION/`echo $NATRON_VERSION|sed 's/-/./g'`/" > $TMP_PATH/Natron.spec || exit 1
-  #echo "" | setsid rpmbuild -bb --define="%_gpg_name build@natron.fr" --sign $INC_PATH/natron/Natron-repo.spec || exit 1
+  #Only need to build once, so uncomment as default #echo "" | setsid rpmbuild -bb --define="%_gpg_name build@natron.fr" --sign $INC_PATH/natron/Natron-repo.spec || exit 1
   echo "" | setsid rpmbuild -bb --define="%_gpg_name build@natron.fr" --sign $TMP_PATH/Natron.spec || exit 1
   mv ~/rpmbuild/RPMS/*/Natron*.rpm $REPO_DIR/installers/ || exit 1
 fi
@@ -554,26 +567,6 @@ if [ "$DEB_BUILD" = "1" ]; then
   mkdir -p $INSTALLER/natron || exit 1
   cd $INSTALLER/natron || exit 1
   mkdir -p opt/Natron2 DEBIAN usr/share/doc/natron usr/share/{applications,pixmaps} usr/share/mime/packages usr/bin || exit 1
-
-  echo "#!/bin/bash" > $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
-  echo "echo \"Checking GCC compatibility for Natron ...\"" >>$INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
-  echo "DIR=/opt/Natron2" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
-  cat $INSTALLER/packages/fr.inria.natron/data/Natron | sed '29,68!d' >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
-
-cat <<'EOF' >> "$INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh"
-if [ -f /usr/bin/update-mime-database ]; then
-  update-mime-database /usr/share/mime
-fi
-if [ -f /usr/bin/update-desktop-database ]; then
-  update-desktop-database /usr/share/applications
-elif [ -f /usr/bin/xdg-desktop-menu ]; then
-  xdg-desktop-menu forceupdate
-fi
-EOF
-
-  chmod +x $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
-  sed -i '29,68d' $INSTALLER/packages/fr.inria.natron/data/Natron || exit 1
-  sed -i '29,68d' $INSTALLER/packages/fr.inria.natron/data/NatronRenderer || exit 1
 
   cp -a $INSTALLER/packages/fr.inria.*/data/* opt/Natron2/ || exit 1
   cp $INC_PATH/debian/post* DEBIAN/ || exit 1
@@ -608,7 +601,6 @@ EOF
   dpkg-deb -Zxz -z9 --build natron || exit 1
   mv natron.deb $DEB_PKG || exit 1
   mv $DEB_PKG $REPO_DIR/installers/ || exit 1
-
 fi
 
 rm $REPO_DIR/installers/$ONLINE_INSTALL $REPO_DIR/installers/$BUNDLED_INSTALL
