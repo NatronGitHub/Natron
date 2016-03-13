@@ -23,7 +23,7 @@
 # MKJOBS: Number of threads
 # CONFIG=(debug,release,relwithdebinfo): the build type
 # DISABLE_BREAKPAD=1: When set, automatic crash reporting (google-breakpad support) will be disabled
-#Usage MKJOBS=4 BUILD_CONFIG=SNAPSHOT CONFIG=relwithdebinfo BRANCH=workshop PLUGINDIR="..."  ./build-natron.sh
+#Usage MKJOBS=4 BUILD_CONFIG=SNAPSHOT CONFIG=relwithdebinfo BRANCH=master PLUGINDIR="..."  ./build-natron.sh
 
 source `pwd`/common.sh || exit 1
 MACPORTS="/opt/local"
@@ -32,7 +32,7 @@ QTDIR="${MACPORTS}/libexec/qt4"
 cd "$CWD/build" || exit 1
 
 
-if [ "$BRANCH" = "workshop" ]; then
+if [ "$BRANCH" = "master" ]; then
     NATRON_BRANCH=$BRANCH
     IO_BRANCH=master
     MISC_BRANCH=master
@@ -51,7 +51,7 @@ git checkout $NATRON_BRANCH || exit 1
 git pull origin $NATRON_BRANCH
 git submodule update -i --recursive || exit 1
 
-if [ "$BRANCH" = "workshop" ]; then
+if [ "$BRANCH" = "master" ]; then
     # the snapshots are always built with the latest version of submodules
     git submodule foreach git pull origin master
 fi

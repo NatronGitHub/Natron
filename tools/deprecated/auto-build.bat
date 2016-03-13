@@ -22,7 +22,7 @@ set TMP=%CWD%\autobuild
 set GIT_NATRON=https://github.com/MrKepzie/Natron.git
 set GIT_IO=https://github.com/MrKepzie/openfx-io.git
 set GIT_MISC=https://github.com/devernay/openfx-misc.git
-set NATRON_BRANCH=workshop
+set NATRON_BRANCH=master
 set OPENFX_BRANCH=master
 setlocal enabledelayedexpansion 
 
@@ -59,7 +59,7 @@ git pull origin %NATRON_BRANCH%
 git submodule update -i --recursive
 git log|head -1|awk "{print $2}" > curVersion.txt
 set /p GITV_NATRON=<curVersion.txt
-set /p ORIG_NATRON=<%CWD%\NATRON_WORKSHOP
+set /p ORIG_NATRON=<%CWD%\NATRON_MASTER
 echo Natron git %GITV_NATRON% vs. last version %ORIG_NATRON%
 ECHO.%ORIG_NATRON% | FIND /I "%GITV_NATRON%">Nul && (
 	echo "Natron up to date"
@@ -67,7 +67,7 @@ ECHO.%ORIG_NATRON% | FIND /I "%GITV_NATRON%">Nul && (
 	echo "Natron update needed"
 	set BUILD_NATRON=1
 	set BUILD_ALL=1
-	echo %GITV_NATRON% > %CWD%\NATRON_WORKSHOP
+	echo %GITV_NATRON% > %CWD%\NATRON_MASTER
 )
 
 set BUILD_IO=0
@@ -76,7 +76,7 @@ git pull origin %OPENFX_BRANCH%
 git submodule update -i --recursive
 git log|head -1|awk "{print $2}" > curVersion.txt
 set /p GITV_IO=<curVersion.txt
-set /p ORIG_IO=<%CWD%\IO_WORKSHOP
+set /p ORIG_IO=<%CWD%\IO_MASTER
 echo openfx-io git %GITV_IO% vs. last version %ORIG_IO%
 ECHO.%ORIG_IO% | FIND /I "%GITV_IO%">Nul && (
 	echo "openfx-io up to date"
@@ -84,7 +84,7 @@ ECHO.%ORIG_IO% | FIND /I "%GITV_IO%">Nul && (
 	echo "openfx-io update needed"
 	set BUILD_IO=1
 	set BUILD_ALL=1
-	echo %GITV_IO% > %CWD%\IO_WORKSHOP
+	echo %GITV_IO% > %CWD%\IO_MASTER
 )
 
 set BUILD_MISC=0
@@ -93,7 +93,7 @@ git pull origin %OPENFX_BRANCH%
 git submodule update -i --recursive
 git log|head -1|awk "{print $2}" > curVersion.txt
 set /p GITV_MISC=<curVersion.txt
-set /p ORIG_MISC=<%CWD%\MISC_WORKSHOP
+set /p ORIG_MISC=<%CWD%\MISC_MASTER
 echo openfx-misc git %GITV_MISC% vs. last version %ORIG_MISC%
 ECHO.%ORIG_MISC% | FIND /I "%GITV_MISC%">Nul && (
 	echo "openfx-misc up to date"
@@ -101,7 +101,7 @@ ECHO.%ORIG_MISC% | FIND /I "%GITV_MISC%">Nul && (
 	echo "openfx-misc update needed"
 	set BUILD_MISC=1
 	set BUILD_ALL=1
-	echo %GITV_MISC% > %CWD%\MISC_WORKSHOP
+	echo %GITV_MISC% > %CWD%\MISC_MASTER
 )
 
 if "%BUILD_ALL%"=="1" (

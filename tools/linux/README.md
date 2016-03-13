@@ -8,7 +8,7 @@ Installation
 
  * Download http://mirror.nsc.liu.se/centos-store/6.4/isos/x86_64/CentOS-6.4-x86_64-minimal.iso (or http://mirror.nsc.liu.se/centos-store/6.4/isos/i386/CentOS-6.4-i386-minimal.iso)
  * Install ISO (remember to setup network)
- * Download https://github.com/MrKepzie/Natron/tools/linux/blob/workshop/include/scripts/setup-centos6.sh from another computer
+ * Download https://github.com/MrKepzie/Natron/tools/linux/blob/master/include/scripts/setup-centos6.sh from another computer
  * Boot build server
  * Copy 'setup-centos6.sh' to server using SSH
  * login to build server as root

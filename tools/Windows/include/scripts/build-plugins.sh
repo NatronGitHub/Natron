@@ -39,13 +39,13 @@ fi
 EOF
 chmod +x $KILLSCRIPT
 
-#If "workshop" is passed, use master branch for all plug-ins otherwise use the git tags in common.sh
+#If "master" is passed, use master branch for all plug-ins otherwise use the git tags in common.sh
 IO_BRANCH=master
 MISC_BRANCH=master
 ARENA_BRANCH=master
 CV_BRANCH=master
 
-if [ "$2" != "workshop" ]; then
+if [ "$2" != "master" ]; then
   IO_BRANCH=$IOPLUG_GIT_TAG
   MISC_BRANCH=$MISCPLUG_GIT_TAG
   ARENA_V=$ARENAPLUG_GIT_TAG

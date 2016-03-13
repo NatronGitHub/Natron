@@ -42,7 +42,7 @@ are escaped as per the XML specification:
 	* *'* becomes &apos;
 	
 Some more characters are escaped, you can see the full function in the source code of Natron
-`here <https://github.com/MrKepzie/Natron/blob/workshop/Engine/ProjectPrivate.cpp>`_
+`here <https://github.com/MrKepzie/Natron/blob/master/Engine/ProjectPrivate.cpp>`_
 
 
 

@@ -84,7 +84,7 @@ cd Natron || exit 1
 git checkout $NATRON_BRANCH || exit 1
 git pull origin $NATRON_BRANCH
 git submodule update -i --recursive || exit 1
-if [ "$NATRON_BRANCH" = "workshop" ]; then
+if [ "$NATRON_BRANCH" = "master" ]; then
     # the snapshots are always built with the latest version of submodules
     git submodule foreach git pull origin master
 fi

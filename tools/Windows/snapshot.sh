@@ -59,7 +59,7 @@ if [ ! -d $TMP/Natron ]; then
     cd $TMP || exit 1
     git clone $GIT_NATRON || exit 1
     cd Natron || exit 1
-    git checkout workshop || exit 1
+    git checkout master || exit 1
 fi
 if [ ! -d $TMP/openfx-io ]; then
     cd $TMP || exit 1
@@ -86,7 +86,7 @@ do
     source $CWD/commits-hash.sh
 
     #Sync all scripts except snapshot.sh
-    git pull origin workshop
+    git pull origin master
 
     FAIL=0
     echo "Running ..."
@@ -128,7 +128,7 @@ EOF
 
     $KILLSCRIPT &
     KILLBOT=$!
-    $GITSCRIPT $TMP_BUILD_DIR workshop
+    $GITSCRIPT $TMP_BUILD_DIR master
     kill -9 $KILLBOT
 
     GITV_NATRON=`git log|head -1|awk '{print $2}'`
@@ -209,7 +209,7 @@ EOF
     cd $CWD || exit 1
     if [ "$FAIL" != "1" ]; then
         if [ "$BUILD_NATRON" = "1" -o "$BUILD_IO" = "1" -o "$BUILD_MISC" = "1" -o "$BUILD_ARENA" = "1" -o "$BUILD_CV" = "0" ]; then
-            NATRON_LICENSE=GPL OFFLINE_INSTALLER=1 SYNC=1 NOCLEAN=1 BUILD_CONFIG=SNAPSHOT sh build.sh $BIT workshop $JOBS
+            NATRON_LICENSE=GPL OFFLINE_INSTALLER=1 SYNC=1 NOCLEAN=1 BUILD_CONFIG=SNAPSHOT sh build.sh $BIT master $JOBS
         fi
     fi
 

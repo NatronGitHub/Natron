@@ -141,7 +141,7 @@ FFMPEG_MXE_BIN_32_GPL_TAR=ffmpeg-2.8.3-windows-i686-shared-GPLv2.tar.xz
 FFMPEG_MXE_BIN_64_LGPL_TAR=ffmpeg-2.8.3-windows-x86_64-shared-LGPL.tar.xz
 FFMPEG_MXE_BIN_32_LGPL_TAR=ffmpeg-2.8.3-windows-i686-shared-LGPL.tar.xz
 
-NATRON_API_DOC=https://media.readthedocs.org/pdf/natron/workshop/natron.pdf # TODO generate own
+NATRON_API_DOC=https://media.readthedocs.org/pdf/natron/master/natron.pdf # TODO generate own
 
 # Threads
 #
