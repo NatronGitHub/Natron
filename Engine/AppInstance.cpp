@@ -322,9 +322,11 @@ AppInstance::newVersionCheckDownloaded()
         }
     }
     
+    downloader->deleteLater();
+
+    
     if (extractedFileVersionStr.isEmpty() || extractedFileVersionStr.toInt() < NATRON_LAST_VERSION_FILE_VERSION) {
         //The file cannot be decoded here
-        downloader->deleteLater();
         return;
     }
     
@@ -334,9 +336,10 @@ AppInstance::newVersionCheckDownloaded()
 
     ///we only understand 3 digits formed version numbers
     if (versionDigits.size() != 3) {
-        downloader->deleteLater();
         return;
     }
+    
+
     
     int buildNumber = extractedBuildNumberStr.toInt();
 
@@ -344,7 +347,8 @@ AppInstance::newVersionCheckDownloaded()
     int minor = versionDigits[1].toInt();
     int revision = versionDigits[2].toInt();
     
-    int devStatCompare = compareDevStatus(extractedDevStatusStr, QString::fromUtf8(NATRON_DEVELOPMENT_STATUS));
+    const QString currentDevStatus = QString::fromUtf8(NATRON_DEVELOPMENT_STATUS);
+    int devStatCompare = compareDevStatus(extractedDevStatusStr, currentDevStatus);
     
     int versionEncoded = NATRON_VERSION_ENCODE(major, minor, revision);
     if (versionEncoded > NATRON_VERSION_ENCODED ||
@@ -352,20 +356,27 @@ AppInstance::newVersionCheckDownloaded()
          (devStatCompare > 0 || (devStatCompare == 0 && buildNumber > NATRON_BUILD_NUMBER)))) {
             
             QString text;
-            if (devStatCompare == 0 && buildNumber > NATRON_BUILD_NUMBER && versionEncoded == NATRON_VERSION_ENCODED) {
-                ///show build number in version
-                text =  QObject::tr("<p>Updates for %1 are now available for download. "
-                                    "You are currently using %1 version %2 - %3 - build %4. "
-                                    "The latest version of %1 is version %5 - %6 - build %7.</p> ")
-                .arg(QString::fromUtf8(NATRON_APPLICATION_NAME))
-                .arg(QString::fromUtf8(NATRON_VERSION_STRING))
-                .arg(QString::fromUtf8(NATRON_DEVELOPMENT_STATUS))
-                .arg(NATRON_BUILD_NUMBER)
-                .arg(extractedSoftwareVersionStr)
-                .arg(extractedDevStatusStr)
-                .arg(extractedBuildNumberStr) +
-                QObject::tr("<p>You can download it from ") + QString::fromUtf8("<a href=\"http://sourceforge.net/projects/natron/\">"
-                                                                                "Sourceforge</a>. </p>");
+            if (devStatCompare == 0) {
+                
+                if (buildNumber > NATRON_BUILD_NUMBER && versionEncoded == NATRON_VERSION_ENCODED &&
+                    currentDevStatus == QString::fromUtf8(NATRON_DEVELOPMENT_RELEASE_CANDIDATE)) {
+                    ///show build number in version
+                    text =  QObject::tr("<p>Updates for %1 are now available for download. "
+                                        "You are currently using %1 version %2 - %3 - build %4. "
+                                        "The latest version of %1 is version %5 - %6 - build %7.</p> ")
+                    .arg(QString::fromUtf8(NATRON_APPLICATION_NAME))
+                    .arg(QString::fromUtf8(NATRON_VERSION_STRING))
+                    .arg(QString::fromUtf8(NATRON_DEVELOPMENT_STATUS))
+                    .arg(NATRON_BUILD_NUMBER)
+                    .arg(extractedSoftwareVersionStr)
+                    .arg(extractedDevStatusStr)
+                    .arg(extractedBuildNumberStr) +
+                    QObject::tr("<p>You can download it from ") + QString::fromUtf8("<a href=\"http://sourceforge.net/projects/natron/\">"
+                                                                                    "Sourceforge</a>. </p>");
+                } else {
+                    //Only notify build number increments for Release candidates
+                    return;
+                }
             } else {
                 text =  QObject::tr("<p>Updates for %1 are now available for download. "
                                     "You are currently using %1 version %2 - %3. "
@@ -382,7 +393,6 @@ AppInstance::newVersionCheckDownloaded()
         
             Dialogs::informationDialog( "New version", text.toStdString(), true );
     }
-    downloader->deleteLater();
 }
 
 void
