@@ -42,7 +42,7 @@
 # TARSRC=1 : tar sources
 # NATRON_LICENSE=(GPL,COMMERCIAL)
 
-# USAGE example: BUILD_CONFIG=STABLE BUILD_NUMBER=1 NATRON_LICENSE=GPL BUILD_CONFIG=SNAPSHOT build2.sh workshop<branch> 8<noThreads>
+# USAGE example: BUILD_CONFIG=STABLE BUILD_NUMBER=1 NATRON_LICENSE=GPL BUILD_CONFIG=SNAPSHOT build2.sh master<branch> 8<noThreads>
 
 source `pwd`/common.sh || exit 1
 
@@ -70,7 +70,7 @@ else
     exit 1
 fi
 
-if [ "$1" = "workshop" ]; then
+if [ "$1" = "master" ]; then
     BRANCH=$1
     REPO_SUFFIX=snapshot
 else
@@ -180,7 +180,7 @@ $KILLSCRIPT $PID &
 KILLBOT=$!
 
 if [ "$SYNC" = "1" -a "$FAIL" != "1" ]; then
-    if [ "$BRANCH" = "workshop" ]; then
+    if [ "$BRANCH" = "master" ]; then
         ONLINE_REPO_BRANCH=snapshots
     else
         ONLINE_REPO_BRANCH=releases

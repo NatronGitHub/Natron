@@ -1,4 +1,4 @@
-Natron [![Build Status](https://api.travis-ci.org/MrKepzie/Natron.png?branch=workshop)](https://travis-ci.org/MrKepzie/Natron)  [![Coverage Status](https://coveralls.io/repos/MrKepzie/Natron/badge.png?branch=workshop)](https://coveralls.io/r/MrKepzie/Natron?branch=workshop) [![Coverity Scan Build Status](https://scan.coverity.com/projects/2940/badge.svg)](https://scan.coverity.com/projects/2940 "Coverity Badge") [![Documentation Status](https://readthedocs.org/projects/natron/badge/?version=workshop)](https://readthedocs.org/projects/natron/?badge=workshop)
+Natron [![Build Status](https://api.travis-ci.org/MrKepzie/Natron.png?branch=master)](https://travis-ci.org/MrKepzie/Natron)  [![Coverage Status](https://coveralls.io/repos/MrKepzie/Natron/badge.png?branch=master)](https://coveralls.io/r/MrKepzie/Natron?branch=master) [![Coverity Scan Build Status](https://scan.coverity.com/projects/2940/badge.svg)](https://scan.coverity.com/projects/2940 "Coverity Badge") [![Documentation Status](https://readthedocs.org/projects/natron/badge/?version=master)](https://readthedocs.org/projects/natron/?badge=master)
 
 ======
 
@@ -169,8 +169,8 @@ We coordinate development through the [GitHub issue
 tracker](https://github.com/MrKepzie/Natron/issues).
 
 The main development branch is called
-["workshop"](https://github.com/MrKepzie/Natron/tree/workshop).
-The master branch contains the last known stable version.
+["master"](https://github.com/MrKepzie/Natron/tree/master).
+The stable version is on branch RB-2.0.
 
 Additionally each stable release supported has a branch on its own.
 For example the stable release of the v1.0. and all its bug fixes should go into that
@@ -182,8 +182,8 @@ You can check out the easy tasks left to do [here](https://natron.fr/easy-task-l
 
 Feel free to report bugs, discuss tasks, or pick up work there. If you want to make
 changes, please fork, edit, and [send us a pull
-request](https://github.com/MrKepzie/Natron/pull/new/workshop),
-preferably on the ["workshop"](https://github.com/MrKepzie/Natron/tree/workshop)
+request](https://github.com/MrKepzie/Natron/pull/new/master),
+preferably on the ["master"](https://github.com/MrKepzie/Natron/tree/master)
 branch.
 
 There's a `.git-hooks` directory in the root. This contains a `pre-commit`

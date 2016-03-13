@@ -153,7 +153,7 @@ cd Natron/tools/MacOSX
 env BUILD_CONFIG=STABLE BUILD_NUMBER=1 CONFIG=relwithdebinfo BRANCH=tag  MKJOBS=4 UPLOAD=1 ./build.sh
 ```
 
-The server will now auto build from the workshop branch on changes.
+The server will now auto build from the master branch on changes.
 
 ## Google-breakpad
 

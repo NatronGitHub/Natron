@@ -54,7 +54,7 @@ All code must be formally reviewed before being merged into the official reposit
 3. Push your changes to your fork (each unrelated pull request to a separate
 "topic branch", please).
 
-4. Make a "pull request" on GitHub for your patch, use the workshop branch.
+4. Make a "pull request" on GitHub for your patch, use the "master" branch.
 
 5. If your patch will induce a major compatibility break, or has a design
 component that deserves extended discussion or debate among the wider Natron
@@ -66,7 +66,7 @@ or discuss in email/forum. Reviewers may ask for changes, explain problems they
 found, congratulate the author on a clever solution, etc. Please don't take it hard if your
 first try is not accepted. It happens to all of us.
 
-7. After approval, one of the senior developers (with commit approval to the official main repository) will merge your fixes into the workshop branch.
+7. After approval, one of the senior developers (with commit approval to the official main repository) will merge your fixes into the "master" branch.
 
 
 Coding Style

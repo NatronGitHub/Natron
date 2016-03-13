@@ -1,7 +1,7 @@
 Please ask questions ("how do I...?") on the [forum](http://forum.natron.fr), not by filing issues.
 
 Make concrete suggestions for fixing the code ("here is a patch") by filing
-a [pull request](https://github.com/MrKepzie/Natron/pull/new/workshop), not an issue.
+a [pull request](https://github.com/MrKepzie/Natron/pull/new/master), not an issue.
 
 
 ### Problem
@@ -21,7 +21,7 @@ Describe the problem or suggestion here.
  * If your problem is a crash in a custom build, please create a [gist](https://gist.github.com)
  that contains a _full_ backtrace.
  
- * If you are reporting a problem about a release branch, have you tried the current head of `workshop`
+ * If you are reporting a problem about a release branch, have you tried the current head of `master`
  to see if the problem has been fixed?
 
 ### Steps to Reproduce

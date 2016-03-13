@@ -53,7 +53,7 @@ else
     INSTALL_PATH=$INSTALL64_PATH
 fi
 
-if [ "$2" = "workshop" ]; then
+if [ "$2" = "master" ]; then
     BRANCH=$2
     REPO_SUFFIX=snapshot
 	NO_ZIP=1
@@ -172,7 +172,7 @@ $KILLSCRIPT $PID &
 KILLBOT=$!
 
 if [ "$SYNC" = "1" ]; then
-    if [ "$BRANCH" = "workshop" ]; then
+    if [ "$BRANCH" = "master" ]; then
         ONLINE_REPO_BRANCH=snapshots
     else
         ONLINE_REPO_BRANCH=releases
