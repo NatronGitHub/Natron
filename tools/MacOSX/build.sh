@@ -19,7 +19,7 @@
 
 # Options:
 # CONFIG=(debug,release,relwithdebinfo): the build type
-# BRANCH=(workhop,tag): If workshop, builds dev branch, otherwise uses tags from common.sh
+# BRANCH=(workhop,tag): If master, builds dev branch, otherwise uses tags from common.sh
 # MKJOBS=N: number of threads
 # NO_CLEAN=1: Do not remove build dir before building, useful for debugging and avoiding the cloning etc...
 # BUILD_CONFIG=(SNAPSHOT,ALPHA,BETA,RC,STABLE,CUSTOM)
@@ -27,7 +27,7 @@
 # BUILD_NUMBER=X: To be set to indicate the revision number of the build. For example RC1,RC2, RC3 etc...
 # DISABLE_BREAKPAD=1: When set, automatic crash reporting (google-breakpad support) will be disabled
 
-#Usage: BUILD_CONFIG=STABLE BUILD_NUMBER=1 CONFIG=release BRANCH=workshop MKJOBS=4 UPLOAD=1 ./build.sh
+#Usage: BUILD_CONFIG=STABLE BUILD_NUMBER=1 CONFIG=release BRANCH=master MKJOBS=4 UPLOAD=1 ./build.sh
 
 source `pwd`/common.sh || exit 1
 (cd ports; portindex)
@@ -188,7 +188,7 @@ elif [ "$BUILD_CONFIG" = "RC" ]; then
 	fi
 	NATRON_VERSION=$NATRON_VERSION_NUMBER-RC$BUILD_NUMBER
 elif [ "$BUILD_CONFIG" = "STABLE" ]; then
-	NATRON_VERSION=$NATRON_VERSION_NUMBER-stable
+	NATRON_VERSION=$NATRON_VERSION_NUMBER
 elif [ "$BUILD_CONFIG" = "CUSTOM" ]; then
 	if [ -z "$CUSTOM_BUILD_USER_NAME" ]; then
 		echo "You must supply a CUSTOM_BUILD_USER_NAME when BUILD_CONFIG=CUSTOM"

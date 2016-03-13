@@ -322,7 +322,7 @@ export PYTHON_PATH=$INSTALL_PATH/lib/python2.7
 export PYTHON_INCLUDE=$INSTALL_PATH/include/python2.7
 
 cd Natron
-wget https://raw.githubusercontent.com/MrKepzie/Natron/workshop/tools/linux/include/natron/config.pri
+wget https://raw.githubusercontent.com/MrKepzie/Natron/master/tools/linux/include/natron/config.pri
 mkdir build && cd build
 $INSTALL_PATH/bin/qmake -r CONFIG+=release ../Project.pro
 make || exit 1

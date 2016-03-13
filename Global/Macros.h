@@ -60,7 +60,7 @@ namespace NATRON_NAMESPACE { }
 #define NATRON_APPLICATION_NAME "Natron"
 #define NATRON_WEBSITE_URL "http://www.natron.fr"
 #define NATRON_FORUM_URL "https://forum.natron.fr"
-#define NATRON_PYTHON_URL "https://natron.readthedocs.org/en/workshop/"
+#define NATRON_PYTHON_URL "https://natron.readthedocs.org/en/master/"
 #define NATRON_WIKI_URL "https://github.com/MrKepzie/Natron/wiki"
 #define NATRON_ISSUE_TRACKER_URL "https://github.com/MrKepzie/Natron/issues"
 // The MIME types for Natron documents are:
@@ -107,7 +107,7 @@ namespace NATRON_NAMESPACE { }
 #define NATRON_VERSION_REVISION 0
 
 
-#define NATRON_LAST_VERSION_URL "https://raw.githubusercontent.com/MrKepzie/Natron/workshop/LATEST_VERSION.txt"
+#define NATRON_LAST_VERSION_URL "https://raw.githubusercontent.com/MrKepzie/Natron/master/LATEST_VERSION.txt"
 #define NATRON_LAST_VERSION_FILE_VERSION 1
 
 // homemade builds should always show "Devel"

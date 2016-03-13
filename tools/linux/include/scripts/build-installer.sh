@@ -30,7 +30,7 @@
 # BUILD_NUMBER=X: To be set to indicate the revision number of the build. For example RC1,RC2, RC3 etc...
 # NATRON_LICENSE=(GPL,COMMERCIAL)
 # Usage: 
-# OFFLINE=1 BUILD_CONFIG=SNAPSHOT sh build-installer.sh workshop 
+# OFFLINE=1 BUILD_CONFIG=SNAPSHOT sh build-installer.sh master 
 source $(pwd)/common.sh || exit 1
 source $(pwd)/commits-hash.sh || exit 1
 
@@ -66,7 +66,7 @@ elif [ "$BUILD_CONFIG" = "RC" ]; then
 	fi
 	NATRON_VERSION=$NATRON_VERSION_NUMBER-RC$BUILD_NUMBER
 elif [ "$BUILD_CONFIG" = "STABLE" ]; then
-	NATRON_VERSION=$NATRON_VERSION_NUMBER-stable
+	NATRON_VERSION=$NATRON_VERSION_NUMBER
 elif [ "$BUILD_CONFIG" = "CUSTOM" ]; then
 	if [ -z "$CUSTOM_BUILD_USER_NAME" ]; then
 		echo "You must supply a CUSTOM_BUILD_USER_NAME when BUILD_CONFIG=CUSTOM"
