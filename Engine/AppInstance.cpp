@@ -371,8 +371,8 @@ AppInstance::newVersionCheckDownloaded()
                     .arg(extractedSoftwareVersionStr)
                     .arg(extractedDevStatusStr)
                     .arg(extractedBuildNumberStr) +
-                    QObject::tr("<p>You can download it from ") + QString::fromUtf8("<a href=\"http://sourceforge.net/projects/natron/\">"
-                                                                                    "Sourceforge</a>. </p>");
+                    QObject::tr("<p>You can download it from ") + QString::fromUtf8("<a href=\"www.natron.fr/download\">"
+                                                                                    "www.natron.fr</a>. </p>");
                 } else {
                     //Only notify build number increments for Release candidates
                     return;
