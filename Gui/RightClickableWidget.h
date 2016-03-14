@@ -54,6 +54,7 @@ NATRON_NAMESPACE_ENTER;
 class RightClickableWidget : public QWidget
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    // coverity[self_assign]
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 

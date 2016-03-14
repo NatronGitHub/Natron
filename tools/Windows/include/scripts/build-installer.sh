@@ -92,7 +92,7 @@ mkdir -p $ARCHIVE_DATA_DIR/Resources
 mkdir -p $ARCHIVE_DATA_DIR/lib
 mkdir -p $ARCHIVE_DATA_DIR/bin
 mkdir -p $ARCHIVE_DATA_DIR/Plugins/OFX/Natron
-mkdir -p $ARCHIVE_DATA_DIR/Plugins/OFX/PyPlugs
+mkdir -p $ARCHIVE_DATA_DIR/Plugins/PyPlugs
 
 
 DATE=`date +%Y-%m-%d`
