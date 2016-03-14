@@ -883,7 +883,7 @@ AppInstance::setGroupLabelIDAndVersion(const NodePtr& node,
 NodePtr
 AppInstance::createReader(const std::string& filename, CreateNodeReason reason, const boost::shared_ptr<NodeCollection>& group)
 {
-    CreateNodeArgs args(PLUGINID_NATRON_READ,
+    CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_READ),
                         reason,
                         group);
     args.paramValues.push_back(createDefaultValueForParam(kOfxImageEffectFileParamName, filename));
@@ -900,7 +900,7 @@ AppInstance::createWriter(const std::string& filename,
 {
     
 #ifdef NATRON_ENABLE_IO_META_NODES
-    CreateNodeArgs args(PLUGINID_NATRON_WRITE, reason, collection);
+    CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_WRITE), reason, collection);
 #else
     std::map<std::string,std::string> writersForFormat;
     appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
@@ -985,10 +985,10 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     //If it is a reader or writer, create a ReadNode or WriteNode
     if (!args.ioContainer && ReadNode::isBundledReader(args.pluginID.toStdString())) {
         args.paramValues.push_back(createDefaultValueForParam(kNatronReadNodeParamDecodingPluginID, args.pluginID.toStdString()));
-        findId = PLUGINID_NATRON_READ;
+        findId = QString::fromUtf8(PLUGINID_NATRON_READ);
     } else if (!args.ioContainer && WriteNode::isBundledWriter(args.pluginID.toStdString())) {
         args.paramValues.push_back(createDefaultValueForParam(kNatronWriteNodeParamEncodingPluginID, args.pluginID.toStdString()));
-        findId = PLUGINID_NATRON_WRITE;
+        findId = QString::fromUtf8(PLUGINID_NATRON_WRITE);
     }
 #endif
     
