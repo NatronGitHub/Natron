@@ -514,14 +514,16 @@ if [ "$NO_INSTALLER" != "1" ]; then
 fi
 
 # collect debug versions for gdb
-DEBUG_DIR=$INSTALLER/Natron-$NATRON_VERSION-Linux$BIT-Debug
-rm -rf $DEBUG_DIR
-mkdir $DEBUG_DIR || exit 1
-cp -a $INSTALL_PATH/bin/Natron* $DEBUG_DIR/ || exit 1
-cp -a $INSTALL_PATH/Plugins/*.ofx.bundle/Contents/Linux*/*.ofx $DEBUG_DIR/ || exit 1
-( cd $INSTALLER; tar cvvJf Natron-$NATRON_VERSION-Linux$BIT-Debug.tar.xz Natron-$NATRON_VERSION-Linux$BIT-Debug )
-# Should be copied to another dir, but for now just use the installer dir
-mv ${DEBUG_DIR}.tar.xz $REPO_DIR/installers/ || exit 1
+if [ "$BUILD_CONFIG" = "STABLE" ]; then
+  DEBUG_DIR=$INSTALLER/Natron-$NATRON_VERSION-Linux$BIT-Debug
+  rm -rf $DEBUG_DIR
+  mkdir $DEBUG_DIR || exit 1
+  cp -a $INSTALL_PATH/bin/Natron* $DEBUG_DIR/ || exit 1
+  cp -a $INSTALL_PATH/Plugins/*.ofx.bundle/Contents/Linux*/*.ofx $DEBUG_DIR/ || exit 1
+  ( cd $INSTALLER; tar cvvJf Natron-$NATRON_VERSION-Linux$BIT-Debug.tar.xz Natron-$NATRON_VERSION-Linux$BIT-Debug )
+  # Should be copied to another dir, but for now just use the installer dir
+  mv ${DEBUG_DIR}.tar.xz $REPO_DIR/installers/ || exit 1
+fi
 
 # Build native packages for linux
 
