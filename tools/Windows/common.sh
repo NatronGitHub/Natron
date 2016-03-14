@@ -4,8 +4,9 @@
 # Versions
 #
 
-
-CWD=`pwd`
+if [ -z "$CWD" ]; then
+  CWD=`pwd`
+fi
 
 #The local.sh file must exist, please see the README.
 if [ -f $CWD/local.sh ]; then
