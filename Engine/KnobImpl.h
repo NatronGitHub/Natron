@@ -873,14 +873,17 @@ struct Knob<T>::QueuedSetValuePrivate
     KeyFrame key;
     bool useKey;
     ValueChangedReasonEnum reason;
+    bool valueChangesBlocked;
     
-    QueuedSetValuePrivate(ViewSpec view, int dimension,const T& value,const KeyFrame& key_,bool useKey,ValueChangedReasonEnum reason_)
+    QueuedSetValuePrivate(ViewSpec view, int dimension,const T& value,const KeyFrame& key_,bool useKey,ValueChangedReasonEnum reason_,
+                          bool blockValueChanges)
     : dimension(dimension)
     , view(view)
     , value(value)
     , key(key_)
     , useKey(useKey)
     , reason(reason_)
+    , valueChangesBlocked(blockValueChanges)
     {
         
     }
@@ -894,8 +897,9 @@ Knob<T>::QueuedSetValue::QueuedSetValue(ViewSpec view,
                                         const T& value,
                                         const KeyFrame& key,
                                         bool useKey,
-                                        ValueChangedReasonEnum reason_)
-: _imp(new QueuedSetValuePrivate(view, dimension, value, key, useKey, reason_))
+                                        ValueChangedReasonEnum reason_,
+                                        bool valueChangesBlocked)
+: _imp(new QueuedSetValuePrivate(view, dimension, value, key, useKey, reason_, valueChangesBlocked))
 {
     
 }
@@ -1033,8 +1037,10 @@ Knob<T>::setValue(const T & v,
             returnValue =  eValueChangedReturnCodeNoKeyframeAdded;
         }
     
-        boost::shared_ptr<QueuedSetValue> qv(new QueuedSetValue(view, dimension,v,k,returnValue != eValueChangedReturnCodeNoKeyframeAdded,reason));
-        
+        boost::shared_ptr<QueuedSetValue> qv(new QueuedSetValue(view, dimension,v,k,returnValue != eValueChangedReturnCodeNoKeyframeAdded,reason, isValueChangesBlocked()));
+#ifdef DEBUG
+        debugHook();
+#endif
         {
             QMutexLocker kql(&_setValuesQueueMutex);
             _setValuesQueue.push_back(qv);
@@ -1362,8 +1368,10 @@ Knob<T>::setValueAtTime(double time,
             holder->abortAnyEvaluation();
         }
         
-        boost::shared_ptr<QueuedSetValueAtTime> qv(new QueuedSetValueAtTime(time, view,dimension,v,*newKey,reason));
-        
+        boost::shared_ptr<QueuedSetValueAtTime> qv(new QueuedSetValueAtTime(time, view,dimension,v,*newKey,reason, isValueChangesBlocked()));
+#ifdef DEBUG
+        debugHook();
+#endif
         {
             QMutexLocker kql(&_setValuesQueueMutex);
             _setValuesQueue.push_back(qv);
@@ -2695,7 +2703,8 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
            
             QueuedSetValueAtTime* isAtTime = dynamic_cast<QueuedSetValueAtTime*>(it->get());
            
-            
+            bool blockValueChanges = (*it)->_imp->valueChangesBlocked;
+
             if (!isAtTime) {
                 
                 if ((*it)->_imp->useKey) {
@@ -2711,7 +2720,9 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
                     if (_values[(*it)->_imp->dimension] != (*it)->_imp->value) {
                         _values[(*it)->_imp->dimension] = (*it)->_imp->value;
                         _guiValues[(*it)->_imp->dimension] = (*it)->_imp->value;
-                        dimensionChanged.insert(std::make_pair((*it)->_imp->dimension,(*it)->_imp->reason));
+                        if (!blockValueChanges) {
+                            dimensionChanged.insert(std::make_pair((*it)->_imp->dimension,(*it)->_imp->reason));
+                        }
                     }
                 }
             } else {
@@ -2722,7 +2733,9 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
                     if (!hasKey || existingKey.getTime() != (*it)->_imp->key.getTime() || existingKey.getValue() != (*it)->_imp->key.getValue() ||
                         existingKey.getLeftDerivative() != (*it)->_imp->key.getLeftDerivative() ||
                         existingKey.getRightDerivative() != (*it)->_imp->key.getRightDerivative()) {
-                        dimensionChanged.insert(std::make_pair((*it)->_imp->dimension,(*it)->_imp->reason));
+                        if (!blockValueChanges) {
+                            dimensionChanged.insert(std::make_pair((*it)->_imp->dimension,(*it)->_imp->reason));
+                        }
                             curve->addKeyFrame((*it)->_imp->key);
                         }
                 }
@@ -2731,6 +2744,7 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
                     getHolder()->setHasAnimation(true);
                 }
             }
+    
         }
         _setValuesQueue.clear();
     }

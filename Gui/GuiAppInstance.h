@@ -48,13 +48,21 @@ public:
     ViewerTab* viewerUI;
     NodePtr viewerNodeInternal;
     NodeGuiPtr viewerNode;
+#ifndef NATRON_ENABLE_IO_META_NODES
     std::map<std::string, NodePtr > readerNodes;
+#else
+    NodePtr readerNode;
+#endif
     
     FileDialogPreviewProvider()
     : viewerUI(0)
     , viewerNodeInternal()
     , viewerNode()
+#ifndef NATRON_ENABLE_IO_META_NODES
     , readerNodes()
+#else
+    , readerNode()
+#endif
     {}
 };
 

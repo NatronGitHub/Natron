@@ -372,6 +372,7 @@ WriteNodePrivate::createDefaultWriteNode()
     args.createGui = false;
     args.addToProject = false;
     args.ioContainer = _publicInterface->getNode();
+    args.fixedName = QString::fromUtf8("defaultWriteNodeWriter");
     //args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filePattern));
     embeddedPlugin = _publicInterface->getApp()->createNode(args);
     
@@ -465,6 +466,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors, const std::string& filename,
         CreateNodeArgs args(QString::fromUtf8(writerPluginID.c_str()), serialization ? eCreateNodeReasonProjectLoad : eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
         args.createGui = false;
         args.addToProject = false;
+        args.fixedName = QString::fromUtf8("internalEncoderNode");
         args.serialization = serialization;
         args.ioContainer = _publicInterface->getNode();
         
@@ -523,24 +525,30 @@ WriteNodePrivate::refreshPluginSelectorKnob()
     QString qpattern = QString::fromUtf8(filePattern.c_str());
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
     std::vector<std::string> writersForFormat;
-    appPTR->getCurrentSettings()->getWritersForFormat(ext,&writersForFormat);
     
-    std::string pluginID = appPTR->getCurrentSettings()->getWriterPluginIDForFileType(ext);
-    
-    for (std::size_t i = 0; i < writersForFormat.size(); ++i) {
-        Plugin* plugin = appPTR->getPluginBinary(QString::fromUtf8(writersForFormat[i].c_str()), -1, -1, false);
-        entries.push_back(plugin->getPluginID().toStdString());
-        std::stringstream ss;
-        ss << "Use " << plugin->getPluginLabel().toStdString() << " version ";
-        ss << plugin->getMajorVersion() << "." << plugin->getMinorVersion();
-        ss << " to write this file format";
-        help.push_back(ss.str());
+    std::string pluginID;
+    if (!ext.empty()) {
+        appPTR->getCurrentSettings()->getWritersForFormat(ext,&writersForFormat);
+        
+        pluginID = appPTR->getCurrentSettings()->getWriterPluginIDForFileType(ext);
+        
+        for (std::size_t i = 0; i < writersForFormat.size(); ++i) {
+            Plugin* plugin = appPTR->getPluginBinary(QString::fromUtf8(writersForFormat[i].c_str()), -1, -1, false);
+            entries.push_back(plugin->getPluginID().toStdString());
+            std::stringstream ss;
+            ss << "Use " << plugin->getPluginLabel().toStdString() << " version ";
+            ss << plugin->getMajorVersion() << "." << plugin->getMinorVersion();
+            ss << " to write this file format";
+            help.push_back(ss.str());
+        }
     }
     
     boost::shared_ptr<KnobChoice> pluginChoice = pluginSelectorKnob.lock();
     
     pluginChoice->populateChoices(entries,help);
+    pluginChoice->blockValueChanges();
     pluginChoice->resetToDefaultValue(0);
+    pluginChoice->unblockValueChanges();
     if (entries.size() <= 2) {
         pluginChoice->setSecret(true);
     
