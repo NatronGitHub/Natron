@@ -88,6 +88,11 @@ rm -rf $REPO_DIR/packages $REPO_DIR/installers $ARCHIVE_DATA_DIR
 mkdir -p $REPO_DIR/packages || exit 1
 mkdir -p $REPO_DIR/installers || exit 1
 mkdir -p $ARCHIVE_DATA_DIR || exit 1
+mkdir -p $ARCHIVE_DATA_DIR/Resources
+mkdir -p $ARCHIVE_DATA_DIR/lib
+mkdir -p $ARCHIVE_DATA_DIR/bin
+mkdir -p $ARCHIVE_DATA_DIR/Plugins/OFX/Natron
+mkdir -p $ARCHIVE_DATA_DIR/Plugins/PyPlugs
 
 
 DATE=`date +%Y-%m-%d`
@@ -174,6 +179,10 @@ cat $INSTALL_PATH/docs/natron/LICENSE.txt > $NATRON_PATH/meta/natron-license.txt
 
 cp $INSTALL_PATH/PyPlugs/* $NATRON_PATH/data/Plugins/PyPlugs/ || exit 1
 
+if [ "$NO_ZIP" != "1" ]; then
+    cp -r $INSTALL_PATH/PyPlugs/* $ARCHIVE_DATA_DIR/Plugins/PyPlugs/ || exit 1
+fi
+
 if [ "$DISABLE_BREAKPAD" != "1" ]; then
     cp $INSTALL_PATH/bin/Natron.exe $NATRON_PATH/data/bin/Natron-bin.exe || exit 1
     cp $INSTALL_PATH/bin/NatronRenderer.exe $NATRON_PATH/data/bin/NatronRenderer-bin.exe || exit 1
@@ -199,7 +208,6 @@ fi
 strip -s $NATRON_PATH/data/bin/*
 
 if [ "$NO_ZIP" != "1" ]; then
-	mkdir -p $ARCHIVE_DATA_DIR/bin
 	cp -r $NATRON_PATH/data/bin/* $ARCHIVE_DATA_DIR/bin || exit 1
 fi
 
@@ -212,7 +220,6 @@ cat $QS/ocio.qs > $OCIO_PATH/meta/installscript.qs || exit 1
 cp -a $INSTALL_PATH/share/OpenColorIO-Configs $OCIO_PATH/data/Resources/ || exit 1
 
 if [ "$NO_ZIP" != "1" ]; then
-	mkdir -p $ARCHIVE_DATA_DIR/Resources
 	cp -r $OCIO_PATH/data/Resources/* $ARCHIVE_DATA_DIR/Resources || exit 1
 fi
 
@@ -280,10 +287,6 @@ strip -s $CLIBS_PATH/data/lib/python*/*
 strip -s $CLIBS_PATH/data/lib/python*/*/*
 
 if [ "$NO_ZIP" != "1" ]; then
-	mkdir -p $ARCHIVE_DATA_DIR/Resources
-	mkdir -p $ARCHIVE_DATA_DIR/lib
-	mkdir -p $ARCHIVE_DATA_DIR/bin
-	mkdir -p $ARCHIVE_DATA_DIR/Plugins
 	cp -r $CLIBS_PATH/data/Resources/* $ARCHIVE_DATA_DIR/Resources || exit 1
 	cp -r $CLIBS_PATH/data/lib/* $ARCHIVE_DATA_DIR/lib || exit 1
 	cp -r $CLIBS_PATH/data/bin/* $ARCHIVE_DATA_DIR/bin || exit 1
@@ -359,8 +362,7 @@ if [ "$BUNDLE_MISC" = "1" ]; then
     mt -manifest manifest -outputresource:"CImg.ofx;2"
 	
 	if [ "$NO_ZIP" != "1" ]; then
-		mkdir -p $ARCHIVE_DATA_DIR/Plugins
-		cp -r $OFX_MISC_PATH/data/Plugins/OFX/Natron/* $ARCHIVE_DATA_DIR/Plugins || exit 1
+		cp -r $OFX_MISC_PATH/data/Plugins/OFX/Natron/* $ARCHIVE_DATA_DIR/Plugins/OFX/Natron/ || exit 1
 	fi
 fi
 
@@ -380,8 +382,7 @@ if [ "$BUNDLE_IO" = "1" ]; then
     mt -manifest manifest -outputresource:"IO.ofx;2"
 	
 	if [ "$NO_ZIP" != "1" ]; then
-		mkdir -p $ARCHIVE_DATA_DIR/Plugins
-		cp -r $OFX_IO_PATH/data/Plugins/OFX/Natron/* $ARCHIVE_DATA_DIR/Plugins || exit 1
+		cp -r $OFX_IO_PATH/data/Plugins/OFX/Natron/* $ARCHIVE_DATA_DIR/Plugins/OFX/Natron/ || exit 1
 	fi
 fi
 
@@ -401,8 +402,7 @@ if [ "$BUNDLE_ARENA" = "1" ]; then
     mt -manifest manifest -outputresource:"Arena.ofx;2"
 	
 	if [ "$NO_ZIP" != "1" ]; then
-		mkdir -p $ARCHIVE_DATA_DIR/Plugins
-		cp -r $OFX_ARENA_PATH/data/Plugins/OFX/Natron/* $ARCHIVE_DATA_DIR/Plugins || exit 1
+		cp -r $OFX_ARENA_PATH/data/Plugins/OFX/Natron/* $ARCHIVE_DATA_DIR/Plugins/OFX/Natron/ || exit 1
 	fi
 fi
 
@@ -435,7 +435,6 @@ if [ "$BUNDLE_CV" = "1" ]; then
     mt -manifest manifest -outputresource:"segment.ofx;2"
 	
 	if [ "$NO_ZIP" != "1" ]; then
-		mkdir -p $ARCHIVE_DATA_DIR/Plugins/OFX/Natron || exit 1
 		cp -r $OFX_CV_PATH/data/Plugins/OFX/Natron/* $ARCHIVE_DATA_DIR/Plugins/OFX/Natron/ || exit 1
 	fi
 fi

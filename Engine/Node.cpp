@@ -2073,7 +2073,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 }
                 const FileExtraData* data = dynamic_cast<const FileExtraData*>(isRegular->getExtraData());
                 assert(data);
-                if (data->useSequences) {
+                if (data && data->useSequences) {
                     k->setAsInputImage();
                 }
                 knob = k;
@@ -2091,7 +2091,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 }
                 const FileExtraData* data = dynamic_cast<const FileExtraData*>(isRegular->getExtraData());
                 assert(data);
-                if (data->useSequences) {
+                if (data && data->useSequences) {
                     k->setAsOutputImageFile();
                 }
                 knob = k;
