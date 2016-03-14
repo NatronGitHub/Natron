@@ -400,7 +400,8 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     
     _view =  new SequenceDialogView(this);
     
-    _model.reset(new FileSystemModel(this));
+    _model.reset(new FileSystemModel());
+    _model->initialize(this);
     
     _view->setSortingEnabled( isCaseSensitiveFileSystem( rootPath() ) );
 #ifdef FILE_DIALOG_DISABLE_ICONS

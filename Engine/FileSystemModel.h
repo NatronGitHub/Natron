@@ -48,7 +48,7 @@ class FileSystemItem : public boost::enable_shared_from_this<FileSystemItem>
 public:
 
     
-    FileSystemItem(FileSystemModel* model,
+    FileSystemItem(const boost::shared_ptr<FileSystemModel>& model,
                    bool isDir,
                    const QString& filename,
                    const QString& userFriendlySequenceName,
@@ -131,7 +131,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     
-    FileGathererThread(FileSystemModel* model);
+    FileGathererThread(const boost::shared_ptr<FileSystemModel>& model);
     
     virtual ~FileGathererThread();
     
@@ -184,7 +184,7 @@ public:
 };
 
 struct FileSystemModelPrivate;
-class FileSystemModel : public QAbstractItemModel
+class FileSystemModel : public QAbstractItemModel, public boost::enable_shared_from_this<FileSystemModel>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -212,7 +212,9 @@ public:
 #endif
 	
 	
-    FileSystemModel(SortableViewI* view);
+    FileSystemModel();
+    
+    void initialize(SortableViewI* view);
     
     ///////////////////////////////////////Overriden from QAbstractItemModel///////////////////////////////////////
     
@@ -329,6 +331,12 @@ Q_SIGNALS:
     
 private:
     
+    void initGatherer();
+    
+    
+    boost::shared_ptr<FileSystemItem> mkPath(const QString& path);
+    
+    boost::shared_ptr<FileSystemItem> mkPathInternal(const boost::shared_ptr<FileSystemItem>& item,const QStringList& path,int index);
     
     boost::shared_ptr<FileSystemItem> getSharedItemPtr(FileSystemItem* item) const;
     
