@@ -592,21 +592,34 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(double time,
     QMutexLocker k(&itemMutex);
     assert(!_imp->strokes.empty());
     assert(lastMultiStrokeIndex >= 0 && lastMultiStrokeIndex < (int)_imp->strokes.size());
-    
+    if (lastMultiStrokeIndex < 0 || lastMultiStrokeIndex >= (int)_imp->strokes.size()) {
+        return false;
+    }
     RotoStrokeItemPrivate::StrokeCurves* stroke = 0;
-    
+    assert(_imp->strokes[lastMultiStrokeIndex].xCurve &&
+           _imp->strokes[lastMultiStrokeIndex].yCurve &&
+           _imp->strokes[lastMultiStrokeIndex].pressureCurve);
+    if (!_imp->strokes[lastMultiStrokeIndex].xCurve ||
+        !_imp->strokes[lastMultiStrokeIndex].yCurve ||
+        !_imp->strokes[lastMultiStrokeIndex].pressureCurve) {
+        return false;
+    }
     if (lastAge == _imp->strokes[lastMultiStrokeIndex].xCurve->getKeyFramesCount() - 1) {
         //We rendered completly that stroke so far, pick the next one if there is
         if (lastMultiStrokeIndex == (int)_imp->strokes.size() - 1) {
             //nothing to do
             return false;
         } else {
+            assert(lastMultiStrokeIndex + 1 < (int)_imp->strokes.size());
             stroke = &_imp->strokes[lastMultiStrokeIndex + 1];
             *strokeIndex = lastMultiStrokeIndex + 1;
         }
     } else {
         stroke = &_imp->strokes[lastMultiStrokeIndex];
         *strokeIndex = lastMultiStrokeIndex;
+    }
+    if (!stroke) {
+        return false;
     }
     assert(stroke && stroke->xCurve->getKeyFramesCount() == stroke->yCurve->getKeyFramesCount() && stroke->xCurve->getKeyFramesCount() == stroke->pressureCurve->getKeyFramesCount());
     

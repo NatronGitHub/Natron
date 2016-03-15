@@ -400,7 +400,8 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     
     _view =  new SequenceDialogView(this);
     
-    _model.reset(new FileSystemModel(this));
+    _model.reset(new FileSystemModel());
+    _model->initialize(this);
     
     _view->setSortingEnabled( isCaseSensitiveFileSystem( rootPath() ) );
 #ifdef FILE_DIALOG_DISABLE_ICONS
@@ -2976,6 +2977,8 @@ SequenceFileDialog::createViewerPreviewNode()
 NodePtr
 SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
 {
+    
+#ifndef NATRON_ENABLE_IO_META_NODES
     std::map<std::string,std::string> readersForFormat;
     appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
     if ( !filetype.empty() ) {
@@ -3000,6 +3003,21 @@ SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
         }
     }
     return  NodePtr();
+#else
+    if (_preview->readerNode) {
+        return _preview->readerNode;
+    }
+    (void)filetype;
+    CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_READ), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
+    args.fixedName = QString::fromUtf8(NATRON_FILE_DIALOG_PREVIEW_READER_NAME);
+    args.createGui = false;
+    args.addToProject = false;
+    NodePtr reader = _gui->getApp()->createNode(args);
+    if (reader) {
+        _preview->readerNode = reader;
+    }
+    return _preview->readerNode;
+#endif
 }
 
 void
@@ -3023,12 +3041,10 @@ SequenceFileDialog::refreshPreviewAfterSelectionChange()
 
     NodePtr reader = findOrCreatePreviewReader(ext);
     if (reader) {
-        const KnobsVec & knobs = reader->getKnobs();
-        for (U32 i = 0; i < knobs.size(); ++i) {
-            KnobFile* fileKnob = dynamic_cast<KnobFile*>(knobs[i].get());
-            if ( fileKnob && fileKnob->isInputImageFile() ) {
-                fileKnob->setValue(pattern);
-            }
+        KnobPtr foundFileKnob = reader->getKnobByName(kOfxImageEffectFileParamName);
+        KnobFile* fileKnob = dynamic_cast<KnobFile*>(foundFileKnob.get());
+        if (fileKnob) {
+            fileKnob->setValue(pattern);
         }
         _preview->viewerNode->getNode()->connectInput(reader, 0);
         

@@ -560,7 +560,7 @@ private:
     QStringList _filters;
     SequenceDialogView* _view;
     boost::scoped_ptr<SequenceItemDelegate> _itemDelegate;
-    boost::scoped_ptr<FileSystemModel> _model;
+    boost::shared_ptr<FileSystemModel> _model;
     
     ///The favorite view and the dialog view don't share the same model as they don't have
     ///the same icon provider

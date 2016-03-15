@@ -372,6 +372,7 @@ ReadNodePrivate::createDefaultReadNode()
     args.createGui = false;
     args.addToProject = false;
     args.ioContainer = _publicInterface->getNode();
+    args.fixedName = QString::fromUtf8("defaultReadNodeReader");
     //args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filePattern));
     embeddedPlugin = _publicInterface->getApp()->createNode(args);
     
@@ -468,6 +469,7 @@ ReadNodePrivate::createReadNode(bool throwErrors, const std::string& filename, c
         args.createGui = false;
         args.addToProject = false;
         args.serialization = serialization;
+        args.fixedName = QString::fromUtf8("internalDecoderNode");
         args.ioContainer = _publicInterface->getNode();
         
         //Set a pre-value for the inputfile knob only if it did not exist
@@ -525,22 +527,27 @@ ReadNodePrivate::refreshPluginSelectorKnob()
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
     std::vector<std::string> readersForFormat;
 
-    appPTR->getCurrentSettings()->getReadersForFormat(ext,&readersForFormat);
-    std::string pluginID = appPTR->getCurrentSettings()->getReaderPluginIDForFileType(ext);
-    for (std::size_t i = 0; i < readersForFormat.size(); ++i) {
-        Plugin* plugin = appPTR->getPluginBinary(QString::fromUtf8(readersForFormat[i].c_str()), -1, -1, false);
-        entries.push_back(plugin->getPluginID().toStdString());
-        std::stringstream ss;
-        ss << "Use " << plugin->getPluginLabel().toStdString() << " version ";
-        ss << plugin->getMajorVersion() << "." << plugin->getMinorVersion();
-        ss << " to read this file format";
-        help.push_back(ss.str());
+    std::string pluginID;
+    if (!ext.empty()) {
+        appPTR->getCurrentSettings()->getReadersForFormat(ext,&readersForFormat);
+        pluginID = appPTR->getCurrentSettings()->getReaderPluginIDForFileType(ext);
+        for (std::size_t i = 0; i < readersForFormat.size(); ++i) {
+            Plugin* plugin = appPTR->getPluginBinary(QString::fromUtf8(readersForFormat[i].c_str()), -1, -1, false);
+            entries.push_back(plugin->getPluginID().toStdString());
+            std::stringstream ss;
+            ss << "Use " << plugin->getPluginLabel().toStdString() << " version ";
+            ss << plugin->getMajorVersion() << "." << plugin->getMinorVersion();
+            ss << " to read this file format";
+            help.push_back(ss.str());
+        }
     }
     
     boost::shared_ptr<KnobChoice> pluginChoice = pluginSelectorKnob.lock();
-   
+    
     pluginChoice->populateChoices(entries,help);
+    pluginChoice->blockValueChanges();
     pluginChoice->resetToDefaultValue(0);
+    pluginChoice->unblockValueChanges();
     if (entries.size() <= 2) {
         pluginChoice->setSecret(true);
    

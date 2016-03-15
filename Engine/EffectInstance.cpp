@@ -69,6 +69,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/RenderStats.h"
 #include "Engine/RotoContext.h"
 #include "Engine/RotoDrawableItem.h"
+#include "Engine/ReadNode.h"
 #include "Engine/Settings.h"
 #include "Engine/Timer.h"
 #include "Engine/Transform.h"
@@ -4028,6 +4029,12 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
     }
 
     if ( reason != eValueChangedReasonTimeChanged && isReader() && (k->getName() == kOfxImageEffectFileParamName) ) {
+#ifdef NATRON_ENABLE_IO_META_NODES
+        /*ReadNode* isReadNode = dynamic_cast<ReadNode*>(this);
+        if (isReadNode && !isReadNode->getEmbeddedReader()) {
+            return;
+        }*/
+#endif
         node->computeFrameRangeForReader(k);
     }
 

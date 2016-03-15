@@ -62,7 +62,9 @@ PYV=2 # Python 2 or 3
 # Common values
 #
 
-CWD=`pwd`
+if [ -z "$CWD" ]; then
+  CWD=`pwd`
+fi
 TMP_DIR=/tmp
 TMP_PATH=$CWD/tmp
 SRC_PATH=$CWD/src

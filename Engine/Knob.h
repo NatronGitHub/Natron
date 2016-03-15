@@ -310,6 +310,7 @@ struct KnobChange
     double time;
     ViewSpec view;
     std::set<int> dimensionChanged;
+    bool valueChangeBlocked;
 };
 
 typedef std::list<KnobChange> KnobChanges;
@@ -1212,6 +1213,11 @@ protected:
     
     void randomSeed(double time, unsigned int seed) const;
     
+#ifdef DEBUG
+    //Helper to set breakpoints in templated code
+    void debugHook();
+#endif
+    
 private:
 
     
@@ -1864,7 +1870,7 @@ private:
         boost::scoped_ptr<QueuedSetValuePrivate> _imp;
   
         
-        QueuedSetValue(ViewSpec view, int dimension,const T& value,const KeyFrame& key,bool useKey,ValueChangedReasonEnum reason);
+        QueuedSetValue(ViewSpec view, int dimension,const T& value,const KeyFrame& key,bool useKey,ValueChangedReasonEnum reason, bool valueChangesBlocked);
         
         virtual bool isSetValueAtTime() const { return false; }
         
@@ -1875,8 +1881,8 @@ private:
     {
         double time;
         
-        QueuedSetValueAtTime(double time, ViewSpec view,int dimension,const T& value,const KeyFrame& key,ValueChangedReasonEnum reason)
-        : QueuedSetValue(view, dimension,value,key,true,reason)
+        QueuedSetValueAtTime(double time, ViewSpec view,int dimension,const T& value,const KeyFrame& key,ValueChangedReasonEnum reason,  bool valueChangesBlocked)
+        : QueuedSetValue(view, dimension,value,key,true,reason, valueChangesBlocked)
         , time(time)
         {
             

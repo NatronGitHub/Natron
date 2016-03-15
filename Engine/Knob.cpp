@@ -541,6 +541,14 @@ KnobHelper::getAllDimensionVisible() const
     return true;
 }
 
+#ifdef DEBUG
+void
+KnobHelper::debugHook()
+{
+    assert(true);
+}
+#endif
+
 bool
 KnobHelper::isDeclaredByPlugin() const
 {
@@ -1529,13 +1537,9 @@ KnobHelper::evaluateValueChangeInternal(int dimension,
     if ((originalReason != eValueChangedReasonTimeChanged || evaluateValueChangeOnTimeChange()) && _imp->holder) {
         if (!app || !app->getProject()->isLoadingProject()) {
             
-            if (_imp->holder->isEvaluationBlocked()) {
-                _imp->holder->appendValueChange(shared_from_this(), dimension, refreshWidget, time, view, originalReason, reason);
-            } else {
-                _imp->holder->beginChanges();
-                _imp->holder->appendValueChange(shared_from_this(), dimension, refreshWidget, time, view, originalReason, reason);
-                _imp->holder->endChanges();
-            }
+            _imp->holder->beginChanges();
+            _imp->holder->appendValueChange(shared_from_this(), dimension, refreshWidget, time, view, originalReason, reason);
+            _imp->holder->endChanges();
             
         }
     }
@@ -3848,6 +3852,8 @@ struct KnobHolder::KnobHolderPrivate
     bool canCurrentlySetValue;
     KnobChanges knobChanged;
     int nbSignificantChangesDuringEvaluationBlock;
+    int nbChangesDuringEvaluationBlock;
+    int nbChangesRequiringMetadataRefresh;
     
     QMutex knobsFrozenMutex;
     bool knobsFrozen;
@@ -3874,6 +3880,8 @@ struct KnobHolder::KnobHolderPrivate
     , canCurrentlySetValue(true)
     , knobChanged()
     , nbSignificantChangesDuringEvaluationBlock(0)
+    , nbChangesDuringEvaluationBlock(0)
+    , nbChangesRequiringMetadataRefresh(0)
     , knobsFrozenMutex()
     , knobsFrozen(false)
     , hasAnimationMutex()
@@ -4516,7 +4524,10 @@ KnobHolder::endChanges(bool discardRendering)
     }
     
     bool significant = false;
+    bool hasHadChangeDuringBeingEndBracket = false;
+    bool mustRefreshMetadatas = false;
     KnobChanges knobChanged;
+    int evaluationBlocked = 0;
     {
         QMutexLocker l(&_imp->evaluationBlockedMutex);
         
@@ -4525,22 +4536,36 @@ KnobHolder::endChanges(bool discardRendering)
             if (it->knob->getEvaluateOnChange()) {
                 significant = true;
             }
+            
+            if (!it->valueChangeBlocked && it->knob->getIsMetadataSlave()) {
+                ++_imp->nbChangesRequiringMetadataRefresh;
+            }
+            
         }
         if (significant) {
             ++_imp->nbSignificantChangesDuringEvaluationBlock;
         }
-        if (_imp->evaluationBlocked <= 1) {
-            if (_imp->nbSignificantChangesDuringEvaluationBlock) {
-                significant = true;
-            }
-            _imp->nbSignificantChangesDuringEvaluationBlock = 0;
+        ++_imp->nbChangesDuringEvaluationBlock;
+
+        if (_imp->nbSignificantChangesDuringEvaluationBlock) {
+            significant = true;
+        }
+        if (_imp->nbChangesDuringEvaluationBlock) {
+            hasHadChangeDuringBeingEndBracket = true;
+        }
+        if (_imp->nbChangesRequiringMetadataRefresh) {
+            mustRefreshMetadatas = true;
         }
         
+        if (_imp->evaluationBlocked <= 1) {
+           
+            _imp->nbSignificantChangesDuringEvaluationBlock = 0;
+            _imp->nbChangesDuringEvaluationBlock = 0;
+            _imp->nbChangesRequiringMetadataRefresh = 0;
+        }
+        evaluationBlocked = _imp->evaluationBlocked;
         _imp->knobChanged.clear();
         
-        if (_imp->evaluationBlocked > 0) {
-            --_imp->evaluationBlocked;
-        }
     }
     
     
@@ -4557,7 +4582,7 @@ KnobHolder::endChanges(bool discardRendering)
         isLoadingProject = getApp()->getProject()->isLoadingProject();
     }
     
-    bool ignoreHashChangeAndRender = knobChanged.empty() || isLoadingProject;
+    bool ignoreHashChangeAndRender = !hasHadChangeDuringBeingEndBracket || isLoadingProject;
 
     if (firstKnobReason == eValueChangedReasonTimeChanged) {
         ignoreHashChangeAndRender = true;
@@ -4583,20 +4608,15 @@ KnobHolder::endChanges(bool discardRendering)
     bool guiFrozen = firstKnobChanged ? getApp() && firstKnobChanged->getKnobGuiPointer() && firstKnobChanged->getKnobGuiPointer()->isGuiFrozenForPlayback() : false;
     
     // Call instanceChanged on each knob
-    bool refreshMetadata = false;
     for (KnobChanges::iterator it = knobChanged.begin(); it!=knobChanged.end(); ++it) {
-        if (it->knob && !it->knob->isValueChangesBlocked()) {
+        if (it->knob && !it->valueChangeBlocked) {
             if (!it->originatedFromMainThread && !canHandleEvaluateOnChangeInOtherThread()) {
                 Q_EMIT doValueChangeOnMainThread(it->knob.get(), it->originalReason, it->time, it->view, it->originatedFromMainThread);
             } else {
                 onKnobValueChanged_public(it->knob.get(), it->originalReason, it->time, it->view, it->originatedFromMainThread);
             }
         }
-        
-        if (it->knob->getIsMetadataSlave()) {
-            refreshMetadata = true;
-        }
-        
+       
         it->knob->computeHasModifications();
         
         int dimension = -1;
@@ -4619,11 +4639,17 @@ KnobHolder::endChanges(bool discardRendering)
     
     
     // Call getClipPreferences & render
-    if (!discardRendering && !ignoreHashChangeAndRender) {
+    if (!discardRendering && !ignoreHashChangeAndRender && evaluationBlocked == 1) {
         if (!isMT) {
-            Q_EMIT doEvaluateOnMainThread(significant, refreshMetadata);
+            Q_EMIT doEvaluateOnMainThread(significant, mustRefreshMetadatas);
         } else {
-            evaluate(significant, refreshMetadata);
+            evaluate(significant, mustRefreshMetadatas);
+        }
+    }
+    {
+        QMutexLocker l(&_imp->evaluationBlockedMutex);
+        if (_imp->evaluationBlocked > 0) {
+            --_imp->evaluationBlocked;
         }
     }
 }
@@ -4675,6 +4701,7 @@ KnobHolder::appendValueChange(const KnobPtr& knob,
         foundChange->time = time;
         foundChange->view = view;
         foundChange->knob = knob;
+        foundChange->valueChangeBlocked = knob->isValueChangesBlocked();
         if (dimension == -1) {
             for (int i = 0; i < knob->getDimension(); ++i) {
                 foundChange->dimensionChanged.insert(i);
