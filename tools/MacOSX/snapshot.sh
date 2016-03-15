@@ -141,7 +141,14 @@ while true; do
     cd $CWD || FAIL=1
     if [ "$FAIL" != 1 ]; then
         if [ "$BUILD_NATRON" = "1" -o "$BUILD_IO" = "1" -o "$BUILD_MISC" = "1" -o "$BUILD_ARENA" = "1" ]; then
-            env CONFIG=relwithdebinfo BRANCH=master BUILD_CONFIG=SNAPSHOT MKJOBS=$MKJOBS UPLOAD=1 NO_CLEAN=$NO_CLEAN ./build.sh || FAIL=1
+            GIT_COMMENT=`( cd $TMP/Natron ; git show $NATRON_DEVEL_GIT)`
+            GIT_SYNC=`echo $GIT_COMMENT|grep "#snap"`
+            if [ "$GIT_SYNC" != "" ]; then
+              DO_SYNC=1
+            else
+              DO_SYNC=0
+            fi
+            env CONFIG=relwithdebinfo BRANCH=master BUILD_CONFIG=SNAPSHOT MKJOBS=$MKJOBS UPLOAD=$DO_SYNC NO_CLEAN=$NO_CLEAN ./build.sh || FAIL=1
             echo $FAIL
         fi
     fi
