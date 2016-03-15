@@ -503,8 +503,7 @@ EditNodeNameDialog::EditNodeNameDialog(const NodeGuiPtr& node,QWidget* parent)
     mainLayout->setContentsMargins(0, 0, 0, 0);
     setWindowFlags(Qt::Window | Qt::CustomizeWindowHint);
     _imp->field = new LineEdit(this);
-    //QObject::connect(_imp->field,SIGNAL(editingFinished()), this, SLOT(accept()));
-    _imp->field->setPlaceholderText(tr("Edit node name"));
+    _imp->field->setText(QString::fromUtf8(node->getNode()->getLabel().c_str()));
     mainLayout->addWidget(_imp->field);
 }
 
