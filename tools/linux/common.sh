@@ -55,6 +55,7 @@ CORELIBS_VERSION=20160226
 # SDK
 #
 
+SWRAST=0
 SDK_VERSION=CY2015
 SDK_PATH=/opt
 PYV=2 # Python 2 or 3
@@ -185,6 +186,9 @@ GIF_TAR=giflib-5.1.2.tar.bz2
 CPPU_TAR=cppunit-1.13.2.tar.gz
 CDR_TAR=libcdr-0.1.2.tar.xz
 REVENGE_TAR=librevenge-0.0.4.tar.xz
+LLVM_TAR=llvm-3.8.0.src.tar.xz
+MESA_TAR=mesa-11.1.2.tar.gz
+GLU_TAR=glu-9.0.0.tar.bz2
 
 TC_GCC=4.8.5
 TC_MPC=1.0.1

@@ -362,6 +362,78 @@ PYTHON_PATH="$INSTALL_PATH/lib/python2.7"
 PYTHON_INCLUDE="$INSTALL_PATH/include/python2.7"
 export PKG_CONFIG_PATH LD_LIBRARY_PATH PATH QTDIR BOOST_ROOT OPENJPEG_HOME THIRD_PARTY_TOOLS_HOME PYTHON_HOME PYTHON_PATH PYTHON_INCLUDE
 
+# Install swrast
+if [ "$SWRAST" = "1" ]; then
+  # llvm
+  if [ ! -f "$INSTALL_PATH/llvm/bin/llvm-config" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$LLVM_TAR" ]; then
+      wget "$THIRD_PARTY_SRC_URL/$LLVM_TAR" -O "$SRC_PATH/$LLVM_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$LLVM_TAR" || exit 1
+    cd llvm-* || exit 1
+    mkdir build
+    cd build || exit 1
+    cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH/llvm -DBUILD_SHARED_LIBS=OFF -DLLVM_ENABLE_RTTI=1 || exit 1
+    make install || exit 1
+  fi
+  # osmesa
+  if [ ! -f "$INSTALL_PATH/osmesa/lib/pkgconfig/osmesa.pc" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$MESA_TAR" ]; then
+      wget "$THIRD_PARTY_SRC_URL/$MESA_TAR" -O "$SRC_PATH/$MESA_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$MESA_TAR" || exit 1
+    cd mesa-* || exit 1
+    (cd include/GL; sed -e 's@gl.h glext.h@gl.h glext.h ../GLES/gl.h@' -e 's@\^GLAPI@^GL_\\?API@' -i.orig gl_mangle.h)
+    (cd include/GL; sh ./gl_mangle.h > gl_mangle.h.new && mv gl_mangle.h.new gl_mangle.h)
+    autoreconf -fi
+    MESA_CONF="
+    --enable-static
+    --disable-shared
+    --enable-mangling
+    --enable-texture-float
+    --disable-gles1
+    --disable-gles2
+    --disable-dri
+    --disable-dri3
+    --disable-glx
+    --disable-egl
+    --disable-gbm
+    --disable-xvmc
+    --disable-vdpau
+    --disable-omx
+    --disable-va
+    --disable-osmesa
+    --disable-shared-glapi
+    --with-dri-drivers=
+    --with-osmesa-bits=32 
+    --with-egl-platforms=
+    --prefix=${INSTALL_PATH}/osmesa
+    --enable-gallium-osmesa
+    --enable-gallium-llvm=yes
+    --with-llvm-prefix=${INSTALL_PATH}/llvm
+    --disable-llvm-shared-libs
+    --with-gallium-drivers=swrast
+    "
+    CFLAGS="$BF" CXXFLAGS="$BF" ./configure $MESA_CONF || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+  fi
+  # glu
+  if [ ! -f "$INSTALL_PATH/osmesa/lib/pkgconfig/glu.pc" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$GLU_TAR" ]; then
+      wget "$THIRD_PARTY_SRC_URL/$GLU_TAR" -O "$SRC_PATH/$GLU_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$GLU_TAR" || exit 1
+    cd glu-* || exit 1
+    env CFLAGS="$BF" CPPFLAGS="$BF -DUSE_MGL_NAMESPACE" PKG_CONFIG_PATH=$INSTALL_PATH/osmesa/lib/pkgconfig ./configure --enable-static --disable-shared --enable-osmesa --prefix=$INSTALL_PATH/osmesa || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+  fi
+fi
+
 # Install expat
 if [ ! -f "$INSTALL_PATH/lib/pkgconfig/expat.pc" ]; then
     cd "$TMP_PATH" || exit 1
