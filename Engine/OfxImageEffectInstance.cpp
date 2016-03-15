@@ -644,10 +644,31 @@ OfxImageEffectInstance::addParamsToTheirParents()
                     
                     ///Add a separator in the group if needed
                     if (associatedKnob->isSeparatorActivated()) {
-                        boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>( effect.get(),"");
-                        assert(sep);
-                        sep->setName((*it)->getName() + "_separator");
+                        std::string separatorName = (*it)->getName() + "_separator";
+                        
+                        KnobHolder* knobHolder = associatedKnob->getHolder();
+                        
+                        boost::shared_ptr<KnobSeparator> sep = knobHolder->getKnobByNameAndType<KnobSeparator>(separatorName);
+                        if (sep) {
+                            sep->resetParent();
+                        } else {
+                            sep = AppManager::createKnob<KnobSeparator>( knobHolder,"");
+                            assert(sep);
+                            sep->setName(separatorName);
+#ifdef NATRON_ENABLE_IO_META_NODES
+                            /**
+                             * For readers/writers embedded in a ReadNode or WriteNode, the holder will be the ReadNode and WriteNode
+                             * but to ensure that all functions such as getKnobByName actually work, we add them to the knob vector so that
+                             * interacting with the Reader or the container is actually the same.
+                             **/
+                            if (knobHolder != getOfxEffectInstance().get()) {
+                                getOfxEffectInstance()->addKnob(sep);
+                            }
+#endif
+                        }
                         parentIsGroup->addKnob(sep);
+                        
+
                     }
                 }
             }
@@ -751,10 +772,29 @@ OfxImageEffectInstance::addParamsToTheirParents()
                 pageKnob->addKnob(child);
                 
                 if (child->isSeparatorActivated()) {
-                    boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>( effect.get(),"");
-                    assert(sep);
-                    sep->setName(child->getName() + "_separator");
+                    
+                    std::string separatorName = child->getName() + "_separator";
+                    KnobHolder* knobHolder = child->getHolder();
+                    boost::shared_ptr<KnobSeparator> sep = knobHolder->getKnobByNameAndType<KnobSeparator>(separatorName);
+                    if (sep) {
+                        sep->resetParent();
+                    } else {
+                        sep = AppManager::createKnob<KnobSeparator>( knobHolder,"");
+                        assert(sep);
+                        sep->setName(separatorName);
+#ifdef NATRON_ENABLE_IO_META_NODES
+                        /**
+                         * For readers/writers embedded in a ReadNode or WriteNode, the holder will be the ReadNode and WriteNode
+                         * but to ensure that all functions such as getKnobByName actually work, we add them to the knob vector so that
+                         * interacting with the Reader or the container is actually the same.
+                         **/
+                        if (knobHolder != getOfxEffectInstance().get()) {
+                            getOfxEffectInstance()->addKnob(sep);
+                        }
+#endif
+                    }
                     pageKnob->addKnob(sep);
+
                 }
             
             } // if (!knob->getParentKnob()) {

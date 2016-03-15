@@ -513,13 +513,13 @@ ManageUserParamsDialog::onDeleteClicked()
                     if (rep != eStandardButtonYes) {
                         return;
                     }
-                    it->knob->getHolder()->removeDynamicKnob(it->knob.get());
+                    it->knob->getHolder()->deleteKnob(it->knob.get(), true);
                     delete it->item;
                     _imp->items.erase(it);
                     
                     boost::shared_ptr<KnobPage> userPage = _imp->panel->getUserPageKnob();
                     if (userPage && userPage->getChildren().empty()) {
-                        userPage->getHolder()->removeDynamicKnob(userPage.get());
+                        userPage->getHolder()->deleteKnob(userPage.get(), true);
                     }
                     _imp->saveAndRebuildPages();
                     break;

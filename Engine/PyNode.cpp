@@ -670,7 +670,7 @@ UserParamHolder::removeParam(Param* param)
         return false;
     }
     
-    _holder->removeDynamicKnob(param->getInternalKnob().get());
+    _holder->deleteKnob(param->getInternalKnob().get(), true);
     
     return true;
 }

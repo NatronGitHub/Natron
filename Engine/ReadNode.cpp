@@ -339,20 +339,8 @@ ReadNodePrivate::destroyReadNode()
             genericKnobsSerialization.push_back(s);
         }
         if (!isGeneric) {
-            KnobPtr parentKnob = (*it)->getParentKnob();
-            if (parentKnob) {
-                (*it)->setParentKnob(KnobPtr());
-                KnobPage* parentPage = dynamic_cast<KnobPage*>(parentKnob.get());
-                KnobGroup* parentGrp = dynamic_cast<KnobGroup*>(parentKnob.get());
-                if (parentPage) {
-                    parentPage->removeKnob(it->get());
-                } else if (parentGrp) {
-                    parentGrp->removeKnob(it->get());
-                }
-            }
-            _publicInterface->removeKnobFromList(it->get());
+            _publicInterface->deleteKnob(it->get(), false);
         }
-        
         
     }
     
@@ -491,6 +479,8 @@ ReadNodePrivate::createReadNode(bool throwErrors, const std::string& filename, c
         createDefaultReadNode();
     }
     
+    //We need to explcitly refresh the Python knobs since we attached the embedded node knobs into this node.
+    _publicInterface->getNode()->declarePythonFields();
     
     //Clone the old values of the generic knobs
     cloneGenericKnobs();
