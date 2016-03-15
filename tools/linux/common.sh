@@ -55,6 +55,7 @@ CORELIBS_VERSION=20160226
 # SDK
 #
 
+QT5_VERSION=5.6.0
 SWRAST=0
 SDK_VERSION=CY2015
 SDK_PATH=/opt
@@ -122,7 +123,6 @@ GIT_MISC=https://github.com/devernay/openfx-misc.git
 GIT_UNIT=https://github.com/MrKepzie/Natron-Tests.git
 
 QT4_TAR=qt-everywhere-opensource-src-4.8.7.tar.gz
-QT5_TAR=qt-everywhere-opensource-src-5.6.0-beta.tar.gz
 CV_TAR=opencv-2.4.11.zip
 EIGEN_TAR=eigen-eigen-bdd17ee3b1b3.tar.gz
 YASM_TAR=yasm-1.3.0.tar.gz
@@ -189,6 +189,14 @@ REVENGE_TAR=librevenge-0.0.4.tar.xz
 LLVM_TAR=llvm-3.8.0.src.tar.xz
 MESA_TAR=mesa-11.1.2.tar.gz
 GLU_TAR=glu-9.0.0.tar.bz2
+PYSIDE2_GIT=https://github.com/PySide/pyside2
+PYSIDE2_COMMIT=7006f35459fb41db6f5087217c1cdc0354a38568
+SHIBOK2_GIT=https://github.com/PySide/shiboken2
+SHIBOK2_COMMIT=32d5805b8489db75d20462e76328b7791735073a
+QTBASE_TAR=qtbase-opensource-src-$QT5_VERSION-rc.tar.xz
+QTXMLP_TAR=qtxmlpatterns-opensource-src-$QT5_VERSION-rc.tar.xz
+QTDEC_TAR=qtdeclarative-opensource-src-$QT5_VERSION-rc.tar.xz
+#QTSVG_TAR=qtsvg-opensource-src-$QT5_VERSION-rc.tar.xz
 
 TC_GCC=4.8.5
 TC_MPC=1.0.1
