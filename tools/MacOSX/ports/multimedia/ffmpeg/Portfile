@@ -103,6 +103,11 @@ if {[lsearch [get_canonical_archs] i386] != -1} {
     compiler.blacklist-append {clang < 422.1.7}
 }
 
+# gcc > 4.2 is required, https://trac.ffmpeg.org/ticket/1464
+# WARNING: gcc 4.2 is outdated and may miscompile FFmpeg. Please use a newer compiler.
+compiler.blacklist-append \
+                    *gcc-4.0 *gcc-4.2
+
 # The old ffmpeg port was GPL-2+ as base and had a no_gpl variant, so this keeps us consistent
 # Also, -gpl2 causes other ports to fail to build due to the missing libpostproc (#35473)
 default_variants-append +gpl2
@@ -290,9 +295,6 @@ variant natron conflicts x11 description {Minimal FFmpeg for Natron, without blu
                     --enable-libfribidi \
                     --cc=${configure.cc} \
                     --cxx=${configure.cxx}
-
-    #configure.compiler macports-clang-3.4
-    configure.compiler macports-gcc-4.8
 
     configure.args-append \
                     --disable-libass \
