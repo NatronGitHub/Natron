@@ -896,7 +896,7 @@ Node::load(const CreateNodeArgs& args)
     
     bool isLoadingPyPlug = getApp()->isCreatingPythonGroup();
 
-    _imp->effect->onEffectCreated(canOpenFileDialog);
+    _imp->effect->onEffectCreated(canOpenFileDialog, args.paramValues);
     
 #ifdef NATRON_ENABLE_IO_META_NODES
     if (args.ioContainer) {

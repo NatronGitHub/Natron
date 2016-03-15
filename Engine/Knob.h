@@ -2043,7 +2043,7 @@ public:
     KnobPtr getOtherKnobByName(const std::string & name,const KnobI* caller) const WARN_UNUSED_RETURN;
     
     template <typename TYPE>
-    boost::shared_ptr<TYPE> getKnobByNameAndType(const std::string & name) const WARN_UNUSED_RETURN
+    boost::shared_ptr<TYPE> getKnobByNameAndType(const std::string & name) const 
     {
         const KnobsVec& knobs = getKnobs();
         for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {

@@ -4029,12 +4029,6 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
     }
 
     if ( reason != eValueChangedReasonTimeChanged && isReader() && (k->getName() == kOfxImageEffectFileParamName) ) {
-#ifdef NATRON_ENABLE_IO_META_NODES
-        /*ReadNode* isReadNode = dynamic_cast<ReadNode*>(this);
-        if (isReadNode && !isReadNode->getEmbeddedReader()) {
-            return;
-        }*/
-#endif
         node->computeFrameRangeForReader(k);
     }
 

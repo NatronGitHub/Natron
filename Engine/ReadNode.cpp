@@ -190,7 +190,10 @@ struct ReadNodePrivate
     
     void placeReadNodeKnobsInPage();
     
-    void createReadNode(bool throwErrors, const std::string& filename, const boost::shared_ptr<NodeSerialization>& serialization);
+    void createReadNode(bool throwErrors,
+                        const std::string& filename,
+                        const boost::shared_ptr<NodeSerialization>& serialization,
+                        const std::list<boost::shared_ptr<KnobSerialization> >& defaultParamValues );
     
     void destroyReadNode();
     
@@ -398,7 +401,10 @@ ReadNodePrivate::checkDecoderCreated(double time, ViewIdx view)
 
 
 void
-ReadNodePrivate::createReadNode(bool throwErrors, const std::string& filename, const boost::shared_ptr<NodeSerialization>& serialization)
+ReadNodePrivate::createReadNode(bool throwErrors,
+                                const std::string& filename,
+                                const boost::shared_ptr<NodeSerialization>& serialization,
+                                const std::list<boost::shared_ptr<KnobSerialization> >& defaultParamValues)
 {
     if (creatingReadNode) {
         return;
@@ -407,6 +413,18 @@ ReadNodePrivate::createReadNode(bool throwErrors, const std::string& filename, c
     SetCreatingReaderRAIIFlag creatingNode__(this);
     
     std::string filePattern = filename;
+    if (filename.empty()) {
+        for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = defaultParamValues.begin(); it!=defaultParamValues.end(); ++it) {
+            if ((*it)->getKnob()->getName() == kOfxImageEffectFileParamName) {
+                Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>((*it)->getKnob().get());
+                assert(isString);
+                if (isString) {
+                    filePattern = isString->getValue();
+                }
+                break;
+            }
+        }
+    }
     QString qpattern = QString::fromUtf8(filePattern.c_str());
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
     std::string readerPluginID;
@@ -776,7 +794,8 @@ ReadNode::initializeKnobs()
 }
 
 void
-ReadNode::onEffectCreated(bool mayCreateFileDialog)
+ReadNode::onEffectCreated(bool mayCreateFileDialog,
+                          const std::list<boost::shared_ptr<KnobSerialization> >& defaultParamValues)
 {
     //If we already loaded the Reader, do not do anything
     if (_imp->embeddedPlugin) {
@@ -792,8 +811,10 @@ ReadNode::onEffectCreated(bool mayCreateFileDialog)
         
         //The user selected a file, if it fails to read do not create the node
         throwErrors = true;
+    } else {
+
     }
-    _imp->createReadNode(throwErrors, pattern, boost::shared_ptr<NodeSerialization>());
+    _imp->createReadNode(throwErrors, pattern, boost::shared_ptr<NodeSerialization>(), defaultParamValues);
     _imp->refreshPluginSelectorKnob();
 }
 
@@ -807,7 +828,7 @@ ReadNode::onKnobsAboutToBeLoaded(const boost::shared_ptr<NodeSerialization>& ser
     node->loadKnob(_imp->pluginIDStringKnob.lock(), serialization->getKnobsValues());
     
     //Create the Reader with the serialization
-    _imp->createReadNode(false, std::string(), serialization);
+    _imp->createReadNode(false, std::string(), serialization, std::list<boost::shared_ptr<KnobSerialization> >());
 }
 
 void
@@ -830,7 +851,7 @@ ReadNode::knobChanged(KnobI* k,
         assert(fileKnob);
         std::string filename = fileKnob->getValue();
         try {
-            _imp->createReadNode(false, filename, boost::shared_ptr<NodeSerialization>());
+            _imp->createReadNode(false, filename, boost::shared_ptr<NodeSerialization>(), std::list<boost::shared_ptr<KnobSerialization> >());
         } catch (const std::exception& e) {
             setPersistentMessage(eMessageTypeError, e.what());
         }
@@ -849,7 +870,7 @@ ReadNode::knobChanged(KnobI* k,
         std::string filename = fileKnob->getValue();
 
         try {
-            _imp->createReadNode(false, filename, boost::shared_ptr<NodeSerialization>());
+            _imp->createReadNode(false, filename, boost::shared_ptr<NodeSerialization>(), std::list<boost::shared_ptr<KnobSerialization> >());
         } catch (const std::exception& e) {
             setPersistentMessage(eMessageTypeError, e.what());
         }
