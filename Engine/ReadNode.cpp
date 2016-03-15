@@ -372,6 +372,10 @@ ReadNodePrivate::createDefaultReadNode()
         QString error = QObject::tr("The IO.ofx.bundle OpenFX plug-in is required to use this node, make sure it is installed.");
         throw std::runtime_error(error.toStdString());
     }
+    
+    
+    //We need to explcitly refresh the Python knobs since we attached the embedded node knobs into this node.
+    _publicInterface->getNode()->declarePythonFields();
 
     //Destroy it to keep the default parameters
     destroyReadNode();
@@ -488,6 +492,10 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         }
         placeReadNodeKnobsInPage();
         separatorKnob.lock()->setSecret(false);
+        
+        
+        //We need to explcitly refresh the Python knobs since we attached the embedded node knobs into this node.
+        _publicInterface->getNode()->declarePythonFields();
     }
     if (!embeddedPlugin) {
         defaultFallback = true;
@@ -496,9 +504,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
     if (defaultFallback) {
         createDefaultReadNode();
     }
-    
-    //We need to explcitly refresh the Python knobs since we attached the embedded node knobs into this node.
-    _publicInterface->getNode()->declarePythonFields();
+ 
     
     //Clone the old values of the generic knobs
     cloneGenericKnobs();

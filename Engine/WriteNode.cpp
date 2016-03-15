@@ -372,6 +372,10 @@ WriteNodePrivate::createDefaultWriteNode()
         throw std::runtime_error(error.toStdString());
     }
     
+    
+    //We need to explcitly refresh the Python knobs since we attached the embedded node knobs into this node.
+    _publicInterface->getNode()->declarePythonFields();
+    
     //Destroy it to keep the default parameters
     destroyWriteNode();
     placeWriteNodeKnobsInPage();
@@ -484,6 +488,10 @@ WriteNodePrivate::createWriteNode(bool throwErrors, const std::string& filename,
         placeWriteNodeKnobsInPage();
         separatorKnob.lock()->setSecret(false);
         
+        
+        //We need to explcitly refresh the Python knobs since we attached the embedded node knobs into this node.
+        _publicInterface->getNode()->declarePythonFields();
+
     }
     if (!embeddedPlugin) {
         defaultFallback = true;
@@ -492,9 +500,6 @@ WriteNodePrivate::createWriteNode(bool throwErrors, const std::string& filename,
     if (defaultFallback) {
         createDefaultWriteNode();
     }
-    
-    //We need to explcitly refresh the Python knobs since we attached the embedded node knobs into this node.
-    _publicInterface->getNode()->declarePythonFields();
     
     //Clone the old values of the generic knobs
     cloneGenericKnobs();
