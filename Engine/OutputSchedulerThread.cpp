@@ -1031,6 +1031,7 @@ OutputSchedulerThread::startRender()
     ///They will be in the range determined by firstFrame-lastFrame
     int startingFrame;
     int firstFrame,lastFrame;
+    int frameStep;
     bool forward;
     {
         ///Copy the last requested run args
@@ -1039,6 +1040,7 @@ OutputSchedulerThread::startRender()
         _imp->livingRunArgs = _imp->requestedRunArgs;
         firstFrame = _imp->livingRunArgs.firstFrame;
         lastFrame = _imp->livingRunArgs.lastFrame;
+        frameStep = _imp->livingRunArgs.frameStep;
         startingFrame = timelineGetTime();
         forward = _imp->livingRunArgs.timelineDirection == OutputSchedulerThread::eRenderDirectionForward;
     }
@@ -1072,6 +1074,25 @@ OutputSchedulerThread::startRender()
     QMutexLocker l(&_imp->renderThreadsMutex);
     
     
+    ///If the output effect is sequential (only WriteFFMPEG for now)
+    boost::shared_ptr<OutputEffectInstance> effect = _imp->outputEffect.lock();
+    SequentialPreferenceEnum pref = effect->getSequentialPreference();
+    if (pref == eSequentialPreferenceOnlySequential || pref == eSequentialPreferencePreferSequential) {
+        
+        RenderScale scaleOne(1.);
+        if (effect->beginSequenceRender_public(firstFrame, lastFrame,
+                                               frameStep,
+                                               false,
+                                               scaleOne, true,
+                                               true,
+                                               false,
+                                               ViewIdx(0)) == eStatusFailed) {
+            l.unlock();
+            abortRendering(false,false);
+            return;
+        }
+    }
+    
     SchedulingPolicyEnum policy = getSchedulingPolicy();
     if (policy == eSchedulingPolicyFFA) {
         
@@ -1080,25 +1101,7 @@ OutputSchedulerThread::startRender()
         pushAllFrameRange();
 #endif
     } else {
-        
-        ///If the output effect is sequential (only WriteFFMPEG for now)
-        boost::shared_ptr<OutputEffectInstance> effect = _imp->outputEffect.lock();
-        SequentialPreferenceEnum pref = effect->getSequentialPreference();
-        if (pref == eSequentialPreferenceOnlySequential || pref == eSequentialPreferencePreferSequential) {
-            
-            RenderScale scaleOne(1.);
-            if (effect->beginSequenceRender_public(firstFrame, lastFrame,
-                                                               1,
-                                                               false,
-                                                               scaleOne, true,
-                                                               true,
-                                                               false,
-                                                               ViewIdx(0)) == eStatusFailed) {
-                l.unlock();
-                abortRendering(false,false);
-                return;
-            }
-        }
+     
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
         ///Push as many frames as there are threads
         pushFramesToRender(startingFrame,nThreads);
@@ -2381,16 +2384,10 @@ private:
             return;
         }
         
-        SequentialPreferenceEnum sequentiallity = output->getSequentialPreference();
         
-        /// If the writer dosn't need to render the frames in any sequential order (such as image sequences for instance), then
-        /// we just render the frames directly in this thread, no need to use the scheduler thread for maximum efficiency.
-        
-        bool renderDirectly = sequentiallity == eSequentialPreferenceNotSequential;
-
         ///Even if enableRenderStats is false, we at least profile the time spent rendering the frame when rendering with a Write node.
         ///Though we don't enable render stats for sequential renders (e.g: WriteFFMPEG) since this is 1 file.
-        RenderStatsPtr stats(new RenderStats(renderDirectly && enableRenderStats));
+        RenderStatsPtr stats(new RenderStats(enableRenderStats));
         
         NodePtr outputNode = output->getNode();
         
@@ -2449,9 +2446,10 @@ private:
             // it comes from Natron itself. All exceptions from plugins are already caught
             // by the HostSupport library.
             EffectInstPtr activeInputToRender;
-            if (renderDirectly) {
+            //if (renderDirectly) {
                 activeInputToRender = output;
-            } else {
+            /*}
+            else {
                 activeInputToRender = output->getInput(0);
                 if (activeInputToRender) {
                     activeInputToRender = activeInputToRender->getNearestNonDisabled();
@@ -2460,7 +2458,7 @@ private:
                     return;
                 }
                 
-            }
+            }*/
             
             assert(activeInputToRender);
             U64 activeInputToRenderHash = activeInputToRender->getHash();
@@ -2554,13 +2552,13 @@ private:
                 }
                 
                 ///If we need sequential rendering, pass the image to the output scheduler that will ensure the sequential ordering
-                if (!renderDirectly) {
+                /*if (!renderDirectly) {
                     for (std::map<ImageComponents,ImagePtr>::iterator it = planes.begin(); it != planes.end(); ++it) {
                         _imp->scheduler->appendToBuffer(time, viewsToRender[view], stats, boost::dynamic_pointer_cast<BufferableObject>(it->second));
                     }
-                } else {
+                } else {*/
                     _imp->scheduler->notifyFrameRendered(time, viewsToRender[view], viewsToRender, stats, eSchedulingPolicyFFA);
-                }
+                //}
                 
             }
             
@@ -2718,12 +2716,12 @@ DefaultScheduler::handleRenderFailure(const std::string& errorMessage)
 SchedulingPolicyEnum
 DefaultScheduler::getSchedulingPolicy() const
 {
-    SequentialPreferenceEnum sequentiallity = _effect.lock()->getSequentialPreference();
-    if (sequentiallity == eSequentialPreferenceNotSequential) {
+    /*SequentialPreferenceEnum sequentiallity = _effect.lock()->getSequentialPreference();
+    if (sequentiallity == eSequentialPreferenceNotSequential) {*/
         return eSchedulingPolicyFFA;
-    } else {
+    /*} else {
         return eSchedulingPolicyOrdered;
-    }
+    }*/
 }
 
 
