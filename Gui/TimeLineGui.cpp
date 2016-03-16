@@ -135,6 +135,7 @@ struct TimelineGuiPrivate
 
     mutable QMutex frameRangeEditedMutex;
     bool isFrameRangeEdited;
+    bool seekingTimeline;
     
     TimelineGuiPrivate(TimeLineGui *qq,
                        ViewerInstance* viewer,
@@ -160,6 +161,7 @@ struct TimelineGuiPrivate
         , rightBoundary(0)
         , frameRangeEditedMutex()
         , isFrameRangeEdited(false)
+        , seekingTimeline(false)
     {
     }
 
@@ -674,7 +676,7 @@ TimeLineGui::onFrameChanged(SequenceTime,
                             int reason)
 {
     TimelineChangeReasonEnum r = (TimelineChangeReasonEnum)reason;
-    if (r == eTimelineChangeReasonUserSeek) {
+    if (r == eTimelineChangeReasonUserSeek && _imp->seekingTimeline) {
         return;
     }
     update();
@@ -685,7 +687,9 @@ TimeLineGui::seek(SequenceTime time)
 {
     if ( time != _imp->timeline->currentFrame() ) {
         _imp->gui->getApp()->setLastViewerUsingTimeline(_imp->viewer->getNode());
+        _imp->seekingTimeline = true;
         _imp->timeline->onFrameChanged(time);
+        _imp->seekingTimeline = false;
         update();
     }
 }
@@ -751,7 +755,9 @@ TimeLineGui::mouseMoveEvent(QMouseEvent* e)
         if ( tseq != _imp->timeline->currentFrame() ) {
             _imp->gui->setDraftRenderEnabled(true);
             _imp->gui->getApp()->setLastViewerUsingTimeline(_imp->viewer->getNode());
+            _imp->seekingTimeline = true;
             _imp->timeline->onFrameChanged(tseq);
+            _imp->seekingTimeline = false;
         }
         distortViewPort = true;
         _imp->alphaCursor = false;
