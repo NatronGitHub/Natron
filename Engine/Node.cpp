@@ -1048,6 +1048,8 @@ Node::refreshDynamicProperties()
     bool tilesSupported = _imp->effect->supportsTiles();
     bool multiResSupported = _imp->effect->supportsMultiResolution();
     bool canTransform = _imp->effect->getCanTransform();
+    RenderSafetyEnum safety = _imp->effect->renderThreadSafety();
+    setRenderThreadSafety(safety);
     setCurrentSupportTiles(multiResSupported && tilesSupported);
     setCurrentSequentialRenderSupport(_imp->effect->getSequentialPreference());
     setCurrentCanTransform(canTransform);
