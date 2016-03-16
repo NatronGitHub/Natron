@@ -559,6 +559,9 @@ public:
     
     void setApplicationConsoleActionVisible(bool visible);
 
+    bool saveProjectAs(const std::string& filename);
+
+    
 protected:
     // Reimplemented Protected Functions
 

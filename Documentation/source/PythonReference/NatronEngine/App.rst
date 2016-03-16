@@ -320,10 +320,10 @@ inform the user of various informations, warnings or errors.
 	:param filename: :class:`str<NatronEngine.std::string>`
 	:rtype: :class:`bool<PySide.QtCore.bool`
 	
-	Saves the current project under the current project name. Otherwise if the project has
-	never been saved so far, this function asks the user where to save the project in GUI
-	mode and in background mode saves the project to the file indicated by the *filename*
-	parameter. In GUI mode, *filename* is disregarded.
+	Saves the current project under the current project name. If the project has
+	never been saved so far, this function e saves the project to the file indicated by the *filename*
+	parameter. In GUI mode, if *filename* is empty, it asks the user where to save the project in GUI
+	mode.
 	
 	This function returns *True* if it saved successfully, *False* otherwise.
 
@@ -332,8 +332,9 @@ inform the user of various informations, warnings or errors.
 	:param filename: :class:`str<NatronEngine.std::string>`
 	:rtype: :class:`bool<PySide.QtCore.bool`
 	
-	In GUI mode, prompts the user to save the project at some location. In background mode,
-	the project is saved to *filename*.
+	Save the project under the given *filename*.
+	In GUI mode, if *filename* is empty, it promps the user where to save the project.
+	
 	
 	This function returns *True* if it saved successfully, *False* otherwise.
 	

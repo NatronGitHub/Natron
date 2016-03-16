@@ -1179,15 +1179,20 @@ GuiAppInstance::isRenderStatsActionChecked() const
 
 
 bool
-GuiAppInstance::save(const std::string& /*filename*/)
+GuiAppInstance::save(const std::string& filename)
 {
-    return _imp->_gui->saveProject();
+    boost::shared_ptr<Project> project = getProject();
+    if (project->hasProjectBeenSavedByUser()) {
+        _imp->_gui->saveProject();
+    } else {
+        return _imp->_gui->saveProjectAs(filename);
+    }
 }
 
 bool
-GuiAppInstance::saveAs(const std::string& /*filename*/)
+GuiAppInstance::saveAs(const std::string& filename)
 {
-    return _imp->_gui->saveProjectAs();
+    return _imp->_gui->saveProjectAs(filename);
 }
 
 AppInstance*
