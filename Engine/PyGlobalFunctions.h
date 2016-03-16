@@ -173,6 +173,16 @@ public:
         return new App(app);
     }
     
+    inline App*
+    getActiveInstance() const
+    {
+        AppInstance* app = appPTR->getTopLevelInstance();
+        if (!app) {
+            return 0;
+        }
+        return new App(app);
+    }
+    
     
     inline AppSettings* getSettings() const
     {

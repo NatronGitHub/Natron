@@ -20,6 +20,7 @@ Functions
 *    def :meth:`getSettings<NatronEngine.PyCoreApplication.getSettings>` ()
 *    def :meth:`getBuildNumber<NatronEngine.PyCoreApplication.getBuildNumber>` ()
 *    def :meth:`getInstance<NatronEngine.PyCoreApplication.getInstance>` (idx)
+*    def :meth:`getActiveInstance<NatronEngine.PyCoreApplication.getActiveInstance>` ()
 *    def :meth:`getNatronDevelopmentStatus<NatronEngine.PyCoreApplication.getNatronDevelopmentStatus>` ()
 *    def :meth:`getNatronPath<NatronEngine.PyCoreApplication.getNatronPath>` ()
 *    def :meth:`getNatronVersionEncoded<NatronEngine.PyCoreApplication.getNatronVersionEncoded>` ()
@@ -172,6 +173,11 @@ Returns the :doc:`App` instance at the given *idx*. Note that *idx* is 0-based, 
 0 would return what's pointed to by *app1*. 
 
 
+.. method:: NatronEngine.PyCoreApplication.getActiveInstance()
+
+    :rtype: :class:`App<NatronEngine.App>`
+
+Returns the :doc:`App` instance corresponding to the last project the user interacted with.
 
 
 .. method:: NatronEngine.PyCoreApplication.getNatronDevelopmentStatus()
