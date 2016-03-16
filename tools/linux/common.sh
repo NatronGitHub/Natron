@@ -174,7 +174,13 @@ FCONFIG_TAR=fontconfig-2.10.2.tar.gz
 FTYPE_TAR=freetype-2.4.11.tar.gz
 FFI_TAR=libffi-3.2.1.tar.gz
 GLIB_TAR=glib-2.42.2.tar.xz
-BUZZ_TAR=harfbuzz-0.9.40.tar.bz2
+
+if [ "$SDK_VERSION" = "CY2016" ]; then
+  BUZZ_TAR=harfbuzz-1.2.3.tar.bz2
+else
+  BUZZ_TAR=harfbuzz-0.9.40.tar.bz2
+fi
+
 PANGO_TAR=pango-1.37.0.tar.xz
 BZIP_TAR=bzip2-1.0.6.tar.gz
 CROCO_TAR=libcroco-0.6.8.tar.xz

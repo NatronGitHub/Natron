@@ -1270,7 +1270,11 @@ if [ "$SDK_VERSION" = "CY2016" ]; then
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure -prefix $INSTALL_PATH $QT_CONF || exit 1
     LD_LIBRARY_PATH="$LD_LIBRARY_PATH":`pwd`/lib make -j${MKJOBS} || exit  1
     make install || exit 1
-    # TODO symlink private headers
+    QTBASE_PRIV="QtCore QtDBus QtGui QtNetwork QtOpenGL QtPlatformSupport QtPrintSupport QtSql QtTest QtWidgets QtXml"
+    for i in $QTBASE_PRIV; do
+      cd $INSTALL_PATH/include/$i || exit 1
+      ln -sf $QT5_VERSION/$i/private . || exit 1
+    done
   fi
   if [ ! -f $INSTALL_PATH/lib/libQt5XmlPatterns.so.$QT5_VERSION ]; then
     if [ ! -f $SRC_PATH/$QTXMLP_TAR ]; then
@@ -1281,7 +1285,8 @@ if [ "$SDK_VERSION" = "CY2016" ]; then
     $INSTALL_PATH/bin/qmake || exit 1
     make -j${MKJOBS} || exit  1
     make install || exit 1
-    # TODO symlink private headers
+    cd $INSTALL_PATH/include/QtXmlPatterns || exit 1
+    ln -sf $QT5_VERSION/QtXmlPatterns/private . || exit 1
   fi
   if [ ! -f $INSTALL_PATH/lib/libQt5Qml.so.$QT5_VERSION ]; then
     if [ ! -f $SRC_PATH/$QTDEC_TAR ]; then
@@ -1293,6 +1298,11 @@ if [ "$SDK_VERSION" = "CY2016" ]; then
     make -j${MKJOBS} || exit  1
     make install || exit 1
     # TODO symlink private headers
+    QTDEC_PRIV="QtConcurrent QtQml QtQmlDevTools QtQuick QtQuickParticles QtQuickTest QtQuickWidgets"
+    for i in $QTDEC_PRIV; do
+      cd $INSTALL_PATH/include/$i || exit 1
+      ln -sf $QT5_VERSION/$i/private . || exit 1
+    done
   fi
   # TODO add more qt modules, like svg etc
 else
@@ -1356,7 +1366,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/shiboken${PYSIDE_V}.pc ]; then
     fi
 
     mkdir -p build && cd build || exit 1
-    cmake ../ -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH  \
+    env CXXFLAGS="-I${INSTALL_PATH}/include/libxml2" cmake ../ -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH  \
           -DCMAKE_BUILD_TYPE=Release   \
           -DBUILD_TESTS=OFF            \
           -DPYTHON_EXECUTABLE=$PY_EXE \
