@@ -95,7 +95,7 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5C718AA403700EF3180 /* Tests.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = DC7FDCA340DAC7F023377B78;
+			remoteGlobalIDString = F12D8C51B57F7F1E47A72359;
 			remoteInfo = Tests;
 		};
 		1E306DFE1C4949BA00BAC6E3 /* PBXContainerItemProxy */ = {
@@ -116,28 +116,28 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 1E306DED1C49497200BAC6E3 /* NatronRenderer.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 32D9C4266EC8DC770A644D29;
+			remoteGlobalIDString = 13BADAA649B67C9FC35E6FE9;
 			remoteInfo = NatronRenderer;
 		};
 		1E306E041C4949D700BAC6E3 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1E189EBF1C49475E00F1FD20 /* Natron.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 782793A212D0A946A2611559;
+			remoteGlobalIDString = C8FF770CD7E56008C592D099;
 			remoteInfo = Natron;
 		};
 		1E5F8F5718AA913D0045A477 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5C118AA403700EF3180 /* Engine.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = F82FF8B1AB092B635B8D3C44;
+			remoteGlobalIDString = 7BB33893F3B80C45B63FE717;
 			remoteInfo = Engine;
 		};
 		1E5F8F5918AA913D0045A477 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5C418AA403700EF3180 /* Gui.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 9B38B1D5C33AF4E4B0F859F7;
+			remoteGlobalIDString = E083742C179E125FCDE255B9;
 			remoteInfo = Gui;
 		};
 		1E5F8F5B18AA91430045A477 /* PBXContainerItemProxy */ = {
@@ -158,7 +158,7 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 1E8132F71BA31D6D006845CF /* BreakpadClient.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 79F5A65F5B69CA741078AAA0;
+			remoteGlobalIDString = 65774DC7A62568D1EB649B0B;
 			remoteInfo = BreakpadClient;
 		};
 		1EADE5CE18AA403700EF3180 /* PBXContainerItemProxy */ = {
@@ -207,7 +207,7 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = D7A1963F18B2242500F412DA /* HostSupport.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 0E116598542859DA9320C015;
+			remoteGlobalIDString = 74504E5181365BE248F0EF8B;
 			remoteInfo = HostSupport;
 		};
 /* End PBXContainerItemProxy section */
@@ -562,6 +562,7 @@
 		1EADE5DE18AA404400EF3180 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -569,6 +570,7 @@
 		1EADE5DF18AA404400EF3180 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
