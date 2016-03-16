@@ -1419,7 +1419,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             // eRenderSafetyFullySafe means that there is only one render per FRAME : the lock is by image and handled in Node.cpp
             ///locks belongs to an instance)
 
-            boost::shared_ptr<QMutexLocker> locker;
+            boost::scoped_ptr<QMutexLocker> locker;
             RenderSafetyEnum safety = frameArgs->currentThreadSafety;
             if (safety == eRenderSafetyInstanceSafe) {
                 locker.reset( new QMutexLocker( &getNode()->getRenderInstancesSharedMutex() ) );
