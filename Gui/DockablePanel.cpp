@@ -1523,7 +1523,8 @@ DockablePanel::setKeyOnAllParameters()
                 std::list<boost::shared_ptr<CurveGui> > curves = getGui()->getCurveEditor()->findCurve(it->second,i);
                 for (std::list<boost::shared_ptr<CurveGui> >::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
                     
-                    std::vector<KeyFrame> kVec;
+                    AddKeysCommand::KeyToAdd k;
+                    
                     KeyFrame kf;
                     kf.setTime(time);
                     Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
@@ -1544,8 +1545,16 @@ DockablePanel::setKeyOnAllParameters()
                         kf.setValue(dv);
                     }
                     
-                    kVec.push_back(kf);
-                    keys.insert(std::make_pair(*it2,kVec));
+                    k.keyframes.push_back(kf);
+                    k.curveUI = *it2;
+                    KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it2->get());
+                    if (isKnobCurve) {
+                        k.knobUI = isKnobCurve->getKnobGui();
+                        k.dimension = isKnobCurve->getDimension();
+                    } else {
+                        k.dimension = 0;
+                    }
+                    keys.push_back(k);
                 }
                 
                 

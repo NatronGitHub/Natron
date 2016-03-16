@@ -594,7 +594,7 @@ KnobPtr
 NodeCurveEditorElement::getInternalKnob() const
 {
     KnobGuiPtr k = _knob.lock();
-    return k ? k->getKnob() : getInternalKnob();
+    return k ? k->getKnob() : _internalKnob.lock();
 }
 
 void

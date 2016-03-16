@@ -64,7 +64,19 @@ AddKeysCommand::AddKeysCommand(CurveWidget *editor,
       , _keys()
       , _curveWidget(editor)
 {
-    _keys.insert(std::make_pair(curve, keys));
+    KeyToAdd k;
+    k.curveUI = curve;
+    KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(curve.get());
+    KnobGuiPtr guiKnob;
+    if (isKnobCurve) {
+        guiKnob = isKnobCurve->getKnobGui();
+        k.dimension = isKnobCurve->getDimension();
+    } else {
+        k.dimension = 0;
+    }
+    k.knobUI = guiKnob;
+    k.keyframes = keys;
+    _keys.push_back(k);
 }
 
 void
@@ -73,17 +85,17 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand, bool add)
     
     
     
-    for (std::map<boost::shared_ptr<CurveGui> ,std::vector<KeyFrame> >::iterator it = _keys.begin(); it!=_keys.end(); ++it) {
+    for (KeysToAddList::iterator it = _keys.begin(); it!=_keys.end(); ++it) {
         
-        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->first.get());
-        BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(it->first.get());
-        KnobGuiPtr guiKnob;
-        if (isKnobCurve) {
-            guiKnob = isKnobCurve->getKnobGui();
-        }
+        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->curveUI.get());
+        BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(it->curveUI.get());
+        KnobGuiPtr guiKnob = it->knobUI.lock();
+       
         KnobPtr knob;
         
-        if (isKnobCurve) {
+        if (guiKnob) {
+            knob = guiKnob->getKnob();
+        } else if (isKnobCurve) {
             knob = isKnobCurve->getInternalKnob();
         }
         boost::shared_ptr<KnobParametric> isParametric;
@@ -113,22 +125,22 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand, bool add)
         
         if (guiKnob && !isParametric) {
             if (add && isKnobCurve) {
-                guiKnob->setKeyframes(it->second, isKnobCurve->getDimension(), ViewIdx(0) );
+                guiKnob->setKeyframes(it->keyframes, isKnobCurve->getDimension(), ViewIdx(0) );
             } else {
-                guiKnob->removeKeyframes(it->second, isKnobCurve->getDimension(), ViewIdx(0) );
+                guiKnob->removeKeyframes(it->keyframes, isKnobCurve->getDimension(), ViewIdx(0) );
                 
             }
         } else {
             
-            for (std::size_t i = 0; i < it->second.size(); ++i) {
-                if (isKnobCurve) {
-                    isKnobCurve->getInternalKnob()->beginChanges();
+            for (std::size_t i = 0; i < it->keyframes.size(); ++i) {
+                if (knob) {
+                    knob->beginChanges();
                     
                     if (add) {
-                        int time = it->second[i].getTime();
+                        int time = it->keyframes[i].getTime();
                         if (isParametric) {
                             
-                            StatusEnum st = isParametric->addControlPoint( isKnobCurve->getDimension(), it->second[i].getTime(),it->second[i].getValue() );
+                            StatusEnum st = isParametric->addControlPoint( it->dimension, it->keyframes[i].getTime(),it->keyframes[i].getValue() );
                             assert(st == eStatusOK);
                             Q_UNUSED(st);
                         } else {
@@ -148,28 +160,28 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand, bool add)
                         }
                     } else {
                         
-                        boost::shared_ptr<KnobParametric> knob = boost::dynamic_pointer_cast<KnobParametric>( isKnobCurve->getInternalKnob() );
+                        boost::shared_ptr<KnobParametric> parametricKnob = boost::dynamic_pointer_cast<KnobParametric>( isKnobCurve->getInternalKnob() );
                         
-                        if (knob) {
-                            StatusEnum st = knob->deleteControlPoint( isKnobCurve->getDimension(),
-                                                                             it->first->getInternalCurve()->keyFrameIndex( it->second[i].getTime() ) );
+                        if (parametricKnob) {
+                            StatusEnum st = parametricKnob->deleteControlPoint( it->dimension,
+                                                                             it->curveUI->getInternalCurve()->keyFrameIndex( it->keyframes[i].getTime() ) );
                             assert(st == eStatusOK);
                             Q_UNUSED(st);
                         } else {
-                            isKnobCurve->getInternalKnob()->deleteValueAtTime(eCurveChangeReasonCurveEditor, it->second[i].getTime(), ViewIdx(0),  isKnobCurve->getDimension() );
+                            isKnobCurve->getInternalKnob()->deleteValueAtTime(eCurveChangeReasonCurveEditor, it->keyframes[i].getTime(), ViewIdx(0),  isKnobCurve->getDimension() );
                         }
                     }
                 } else if (isBezierCurve) {
                     if (add) {
-                        isBezierCurve->getBezier()->setKeyframe(it->second[i].getTime());
+                        isBezierCurve->getBezier()->setKeyframe(it->keyframes[i].getTime());
                     } else {
-                        isBezierCurve->getBezier()->removeKeyframe(it->second[i].getTime());
+                        isBezierCurve->getBezier()->removeKeyframe(it->keyframes[i].getTime());
                     }
                 } // if (isKnobCurve) {
             } // for (std::size_t i = 0; i < it->second.size(); ++i) {
         } // if (guiKnob) {
-        if (isKnobCurve) {
-            isKnobCurve->getInternalKnob()->endChanges();
+        if (knob) {
+            knob->endChanges();
         }
     }
     
