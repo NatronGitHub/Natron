@@ -1187,6 +1187,11 @@
     <rejection class="*" field-name="_imp"/>
     
     <object-type name="PyCoreApplication">
+        <modify-function signature="getActiveInstance()const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
         <modify-function signature="getInstance(int)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>

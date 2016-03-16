@@ -887,18 +887,13 @@ serializeRotoKnob(const KnobPtr & knob,
                   KnobSerialization* serialization)
 {
     std::pair<int, KnobPtr > master = knob->getMaster(0);
-    bool wasSlaved = false;
 
     if (master.second) {
-        wasSlaved = true;
-        knob->unSlave(0,false);
+        serialization->initialize(master.second);
+    } else {
+        serialization->initialize(knob);
     }
 
-    serialization->initialize(knob);
-
-    if (wasSlaved) {
-        knob->slaveTo(0, master.second, master.first);
-    }
 }
 
 void

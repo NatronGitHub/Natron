@@ -6,12 +6,32 @@ Objects hierarchy Overview
 When running Natron, several important objects are created automatically and interact at 
 different levels of the application.
 
-The main object in Natron is the :doc:`PythonReference/NatronEngine/PyCoreApplication` class
-which represents the unique instance of the process. It is available directly via the variable::
-	
-	natron
-	
-Basically it handles all *application-wide* informations about plug-ins, environment,
+Natron is separated in 2 internal modules:
+
+:ref:`NatronEngine<NatronEngine>` and :ref:`NatronGui<NatronGui>`.
+
+The latest is only available in **GUI** mode. You may access *globally* to the Natron 
+process with either **NatronEngine.natron** or **NatronGui.natron**
+
+NatronEngine.natron is of type :ref:`PyCoreApplication<NatronEngine.PyCoreApplication>` and
+NatronGui.natron is of type :ref:`PyGuiApplication<NatronGui.PyGuiApplication>`.
+This is a singleton and there is only a **single** instance of that variable living throughout the
+execution of the Natron process.
+
+When using with **NatronGui.natron** you get access to GUI functionalities in addition
+to the internal functionalities exposed by :ref:`PyCoreApplication<NatronEngine.PyCoreApplication>`
+
+Basically if using Natron in command-line you may only use **NatronEngine.natron**.
+
+
+.. note::
+
+	You may want to use **natron** directly to avoid prefixing everything with *NatronEngine.*
+	or *NatronGui.* by using a from NatronEngine import * statement. Be careful though as
+	it then makes it more confusing for people reading the code as to which version of the **natron**
+	variable you are using.
+
+It handles all *application-wide* informations about plug-ins, environment,
  :doc:`application settings<PythonReference/NatronEngine/AppSettings>`...
 but also can hold one or multiple :doc:`application instance<PythonReference/NatronEngine/App>` 
 which are made available to the global variables via the following variables::

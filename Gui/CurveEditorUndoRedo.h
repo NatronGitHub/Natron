@@ -113,8 +113,16 @@ class AddKeysCommand
     : public QUndoCommand
 {
 public:
+    
+    struct KeyToAdd
+    {
+        boost::shared_ptr<CurveGui> curveUI;
+        KnobGuiWPtr knobUI;
+        int dimension;
+        std::vector<KeyFrame> keyframes;
+    };
 
-    typedef std::map< boost::shared_ptr<CurveGui>, std::vector<KeyFrame> > KeysToAddList;
+    typedef std::list< KeyToAdd > KeysToAddList;
 
     AddKeysCommand(CurveWidget *editor,
                    const KeysToAddList & keys,
