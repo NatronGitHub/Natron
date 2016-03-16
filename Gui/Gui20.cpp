@@ -1123,6 +1123,30 @@ Gui::saveProject()
 }
 
 bool
+Gui::saveProjectAs(const std::string& filename)
+{
+    std::string fileCopy = filename;
+    if (fileCopy.find("." NATRON_PROJECT_FILE_EXT) == std::string::npos) {
+        fileCopy.append("." NATRON_PROJECT_FILE_EXT);
+    }
+    std::string path = SequenceParsing::removePath(fileCopy);
+    
+    if (!_imp->checkProjectLockAndWarn(QString::fromUtf8(path.c_str()),QString::fromUtf8(fileCopy.c_str()))) {
+        return false;
+    }
+    _imp->_lastSaveProjectOpenedDir = QString::fromUtf8(path.c_str());
+    
+    bool ret = _imp->_appInstance->getProject()->saveProject(QString::fromUtf8(path.c_str()), QString::fromUtf8(fileCopy.c_str()), 0);
+    
+    if (ret) {
+        QString filePath = QString::fromUtf8( path.c_str() ) + QString::fromUtf8( fileCopy.c_str() );
+        updateRecentFiles(filePath);
+    }
+    
+    return ret;
+}
+
+bool
 Gui::saveProjectAs()
 {
     std::vector<std::string> filter;
@@ -1130,24 +1154,7 @@ Gui::saveProjectAs()
     filter.push_back(NATRON_PROJECT_FILE_EXT);
     std::string outFile = popSaveFileDialog( false, filter, _imp->_lastSaveProjectOpenedDir.toStdString(), false );
     if (outFile.size() > 0) {
-        if (outFile.find("." NATRON_PROJECT_FILE_EXT) == std::string::npos) {
-            outFile.append("." NATRON_PROJECT_FILE_EXT);
-        }
-        std::string path = SequenceParsing::removePath(outFile);
-        
-        if (!_imp->checkProjectLockAndWarn(QString::fromUtf8(path.c_str()),QString::fromUtf8(outFile.c_str()))) {
-            return false;
-        }
-        _imp->_lastSaveProjectOpenedDir = QString::fromUtf8(path.c_str());
-        
-        bool ret = _imp->_appInstance->getProject()->saveProject(QString::fromUtf8(path.c_str()), QString::fromUtf8(outFile.c_str()), 0);
-
-        if (ret) {
-            QString filePath = QString::fromUtf8( path.c_str() ) + QString::fromUtf8( outFile.c_str() );
-            updateRecentFiles(filePath);
-        }
-
-        return ret;
+        return saveProjectAs(outFile);
     }
 
     return false;

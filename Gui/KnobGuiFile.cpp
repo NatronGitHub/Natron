@@ -85,8 +85,10 @@ KnobGuiFile::~KnobGuiFile()
 
 void KnobGuiFile::removeSpecificGui()
 {
-    delete _lineEdit;
-    delete _openFileButton;
+    _lineEdit->deleteLater();
+    _lineEdit = 0;
+    _openFileButton->deleteLater();
+    _openFileButton = 0;
 }
 
 void
@@ -486,8 +488,10 @@ KnobGuiOutputFile::~KnobGuiOutputFile()
 
 void KnobGuiOutputFile::removeSpecificGui()
 {
-    delete _lineEdit;
-    delete _openFileButton;
+    _lineEdit->deleteLater();
+    _lineEdit = 0;
+    _openFileButton->deleteLater();
+    _openFileButton = 0;
 }
 
 
@@ -740,7 +744,8 @@ KnobGuiPath::~KnobGuiPath()
 
 void KnobGuiPath::removeSpecificGui()
 {
-    delete _mainContainer;
+    _mainContainer->deleteLater();
+    _mainContainer = 0;
 }
 
 ////////////// TableView delegate
