@@ -222,7 +222,7 @@ cd $CWD || exit 1
 if [ "$FAIL" != "1" ]; then
   if [ "$BUILD_NATRON" = "1" -o "$BUILD_IO" = "1" -o "$BUILD_MISC" = "1" -o "$BUILD_ARENA" = "1" -o "$BUILD_CV" = "1" ]; then
     GIT_COMMENT=`( cd $TMP/Natron ; git show $NATRON_DEVEL_GIT)`
-    GIT_SYNC=`echo $GIT_COMMENT|grep "#snap"`
+    GIT_SYNC=`echo $GIT_COMMENT|grep "#snapshot"`
     if [ "$GIT_SYNC" != "" ]; then
       DO_SYNC=1
     else
