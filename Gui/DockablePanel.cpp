@@ -675,8 +675,7 @@ DockablePanel::onRestoreDefaultsButtonClicked()
             KnobPage* isPage = dynamic_cast<KnobPage*>( it->get() );
             KnobGroup* isGroup = dynamic_cast<KnobGroup*>( it->get() );
             KnobSeparator* isSeparator = dynamic_cast<KnobSeparator*>( it->get() );
-            if ( !isBtn && !isPage && !isGroup && !isSeparator && ( (*it)->getName() != kUserLabelKnobName ) &&
-                ( (*it)->getName() != kNatronOfxParamStringSublabelName ) ) {
+            if ( !isBtn && !isPage && !isGroup && !isSeparator && ( (*it)->getName() != kUserLabelKnobName )) {
                 knobsList.push_back(*it);
             }
         }
