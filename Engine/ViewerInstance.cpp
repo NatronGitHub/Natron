@@ -238,7 +238,7 @@ ViewerInstance::forceFullComputationOnNextFrame()
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     QMutexLocker forceRenderLocker(&_imp->forceRenderMutex);
-    _imp->forceRender = true;
+    _imp->forceRender[0] = _imp->forceRender[1] = true;
 }
 
 void
@@ -891,8 +891,8 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
     // Check if the render was issued from the "Refresh" button, in which case we compute images from nodes at least once
     {
         QMutexLocker forceRenderLocker(&_imp->forceRenderMutex);
-        outArgs->forceRender = _imp->forceRender;
-        _imp->forceRender = false;
+        outArgs->forceRender = _imp->forceRender[textureIndex];
+        _imp->forceRender[textureIndex] = false;
     }
     
     // Did the user enabled the user roi from the viewer UI?
