@@ -240,7 +240,7 @@ fi
 
 # Install qt
 if [ ! -f "$INSTALL_PATH/bin/qmake.exe" ]; then
-  cd $MINGW_PACKAGES/${MINGW_PREFIX}qt4 || exit 1
+  cd $MINGW_PACKAGES_PATH/${MINGW_PREFIX}qt4 || exit 1
   makepkg-mingw -sLfC
   pacman --force --noconfirm -U ${PKG_PREFIX}qt4-4.8.7-3.any.pkg.tar.xz || exit 1
 fi
