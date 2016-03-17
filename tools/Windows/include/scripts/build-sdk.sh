@@ -236,6 +236,16 @@ fi
 #  pacman --force -U ${PKG_PREFIX}ffmpeg-*-any.pkg.tar.xz
 #fi
 
+
+
+
+# Install qt
+if [ ! -f "$INSTALL_PATH/bin/qmake.exe" ]; then
+  cd $MINGW_PACKAGES_PATH/${MINGW_PREFIX}qt4 || exit 1
+  makepkg-mingw --skipchecksums -sLfC
+  pacman --force --noconfirm -U ${PKG_PREFIX}qt4-4.8.7-3.any.pkg.tar.xz || exit 1
+fi
+
 # Install shiboken
 if [ ! -f $INSTALL_PATH/lib/pkgconfig/shiboken-py2.pc ]; then
     cd $MINGW_PACKAGES_PATH/${MINGW_PREFIX}shiboken-qt4 || exit 1
