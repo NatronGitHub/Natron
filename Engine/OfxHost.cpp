@@ -1263,11 +1263,14 @@ OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
             
             if (hwConcurrency <= 0) {
                 nThreadsPerEffect = 1;
-            } else if (hwConcurrency <= NATRON_MULTI_THREAD_SUITE_MAX_NUM_CPU) {
+            } else {
+                nThreadsPerEffect = hwConcurrency;
+            }
+            /*else if (hwConcurrency <= NATRON_MULTI_THREAD_SUITE_MAX_NUM_CPU) {
                 nThreadsPerEffect = hwConcurrency;
             } else {
                 nThreadsPerEffect = NATRON_MULTI_THREAD_SUITE_MAX_NUM_CPU;
-            }
+            }*/
         }
         ///+1 because the current thread is going to wait during the multiThread call so we're better off
         ///not counting it.
