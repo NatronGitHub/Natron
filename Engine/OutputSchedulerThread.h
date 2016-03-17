@@ -37,6 +37,7 @@
 #include "Engine/BufferableObject.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/ThreadPool.h"
 
 //#define NATRON_PLAYBACK_USES_THREAD_POOL
 
@@ -120,7 +121,11 @@ protected:
  * @brief The scheduler that will control the render threads and order the output if needed
  **/
 struct OutputSchedulerThreadPrivate;
-class OutputSchedulerThread : public QThread
+class OutputSchedulerThread
+: public QThread
+#ifdef QT_USE_NATRON_CUSTOM_THREADPOOL_EXT
+, public AbortableThread
+#endif
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -553,7 +558,11 @@ private:
  **/
 
 struct ViewerCurrentFrameRequestSchedulerPrivate;
-class ViewerCurrentFrameRequestScheduler : public QThread
+class ViewerCurrentFrameRequestScheduler
+: public QThread
+#ifdef QT_USE_NATRON_CUSTOM_THREADPOOL_EXT
+, public AbortableThread
+#endif
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -599,7 +608,11 @@ struct CurrentFrameFunctorArgs;
  * activity to keep the renders responsive even if the thread pool is choking. 
  **/
 struct ViewerCurrentFrameRequestRendererBackupPrivate;
-class ViewerCurrentFrameRequestRendererBackup : public QThread
+class ViewerCurrentFrameRequestRendererBackup
+: public QThread
+#ifdef QT_USE_NATRON_CUSTOM_THREADPOOL_EXT
+, public AbortableThread
+#endif
 {
 public:
     

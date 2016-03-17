@@ -379,8 +379,7 @@ public:
                                    ViewIdx view,
                                    bool isRenderUserInteraction,
                                    bool isSequential,
-                                   bool canAbort,
-                                   U64 renderAge,
+                                   const AbortableRenderInfoPtr& abortInfo,
                                    const NodePtr& treeRoot,
                                    int textureIndex,
                                    const TimeLine* timeline,
@@ -390,7 +389,7 @@ public:
                                    bool draftMode,
                                    bool viewerProgressReportEnabled,
                                    const boost::shared_ptr<RenderStats>& stats)
-    : ParallelRenderArgsSetter(time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,treeRoot,textureIndex, timeline,rotoPaintNode, isAnalysis, draftMode, viewerProgressReportEnabled,stats)
+    : ParallelRenderArgsSetter(time,view,isRenderUserInteraction,isSequential,abortInfo,treeRoot,textureIndex, timeline,rotoPaintNode, isAnalysis, draftMode, viewerProgressReportEnabled,stats)
     , rotoNode(rotoPaintNode)
     , viewerNode(treeRoot)
     , viewerInputNode()
@@ -405,7 +404,7 @@ public:
             U64 nodeHash = viewerInput->getHashValue();
 
             
-            viewerInput->getEffectInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash,  renderAge, treeRoot, boost::shared_ptr<NodeFrameRequest>(), textureIndex, timeline, isAnalysis, false, NodesList(), viewerInput->getCurrentRenderThreadSafety(), doNanHandling, draftMode, viewerProgressReportEnabled,stats);
+            viewerInput->getEffectInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash,  abortInfo, treeRoot, boost::shared_ptr<NodeFrameRequest>(), textureIndex, timeline, isAnalysis, false, NodesList(), viewerInput->getCurrentRenderThreadSafety(), doNanHandling, draftMode, viewerProgressReportEnabled,stats);
         }
     }
     
@@ -455,7 +454,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
             break;
         }
         
-        U64 renderAge = _imp->getRenderAgeAndIncrement(i);
+        AbortableRenderInfoPtr abortInfo = _imp->createNewRenderRequest(i, canAbort);
 
         
         /*FrameRequestMap request;
@@ -477,8 +476,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                            view,
                                            true,
                                            false,
-                                           canAbort,
-                                           renderAge,
+                                           abortInfo,
                                            thisNode,
                                            i,
                                            getTimeline().get(),
@@ -552,7 +550,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
        
         
         if (args[i]) {
-            status[i] = getRenderViewerArgsAndCheckCache(time, false, view, i, viewerHash, rotoPaintNode, renderAge,stats,  args[i].get());
+            status[i] = getRenderViewerArgsAndCheckCache(time, false, view, i, viewerHash, rotoPaintNode, abortInfo,stats,  args[i].get());
         }
         
     
@@ -576,7 +574,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
             assert(args[i]->params->textureIndex == i);
             
             
-            if (!_imp->addOngoingRender(args[i]->params->textureIndex, args[i]->params->renderAge)) {
+            if (!_imp->addOngoingRender(args[i]->params->textureIndex, abortInfo)) {
                 /*
                  This may fail if another thread already pushed a more recent render in the render ages queue
                  */
@@ -599,9 +597,9 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
             
             if (args[i] && args[i]->params) {
                 if (status[i] == eViewerRenderRetCodeFail || status[i] == eViewerRenderRetCodeBlack) {
-                    _imp->checkAndUpdateDisplayAge(args[i]->params->textureIndex,args[i]->params->renderAge);
+                    _imp->checkAndUpdateDisplayAge(args[i]->params->textureIndex,abortInfo->age);
                 }
-                _imp->removeOngoingRender(args[i]->params->textureIndex, args[i]->params->renderAge);
+                _imp->removeOngoingRender(args[i]->params->textureIndex, abortInfo->age);
             }
             
             
@@ -662,7 +660,7 @@ ViewerInstance::renderViewer(ViewIdx view,
             ///We enable render stats just for the A input (i == 0) otherwise we would get crappy results
             
             if (!isSequentialRender) {
-                if (!_imp->addOngoingRender(args[i]->params->textureIndex, args[i]->params->renderAge)) {
+                if (!_imp->addOngoingRender(args[i]->params->textureIndex, args[i]->params->abortInfo)) {
                     /*
                      This may fail if another thread already pushed a more recent render in the render ages queue
                      */
@@ -690,9 +688,9 @@ ViewerInstance::renderViewer(ViewIdx view,
             
             if (!isSequentialRender && args[i] && args[i]->params) {
                 if (ret[i] == eViewerRenderRetCodeFail || ret[i] == eViewerRenderRetCodeBlack) {
-                    _imp->checkAndUpdateDisplayAge(args[i]->params->textureIndex,args[i]->params->renderAge);
+                    _imp->checkAndUpdateDisplayAge(args[i]->params->textureIndex,args[i]->params->abortInfo->age);
                 }
-                _imp->removeOngoingRender(args[i]->params->textureIndex, args[i]->params->renderAge);
+                _imp->removeOngoingRender(args[i]->params->textureIndex, args[i]->params->abortInfo->age);
             }
             
             if (ret[i] == eViewerRenderRetCodeBlack) {
@@ -809,22 +807,23 @@ static bool copyAndSwap(const TextureRect& srcRect,
 
 ViewerInstance::ViewerRenderRetCode
 ViewerInstance::getRenderViewerArgsAndCheckCache_public(SequenceTime time,
-                                                           bool isSequential,
-                                                           ViewIdx view,
-                                                           int textureIndex,
-                                                           U64 viewerHash,
-                                                           const NodePtr& rotoPaintNode,
-                                                           const boost::shared_ptr<RenderStats>& stats,
-                                                           ViewerArgs* outArgs)
+                                                        bool isSequential,
+                                                        ViewIdx view,
+                                                        int textureIndex,
+                                                        U64 viewerHash,
+                                                        bool canAbort,
+                                                        const NodePtr& rotoPaintNode,
+                                                        const boost::shared_ptr<RenderStats>& stats,
+                                                        ViewerArgs* outArgs)
 {
-    U64 renderAge = _imp->getRenderAgeAndIncrement(textureIndex);
+    AbortableRenderInfoPtr abortInfo = _imp->createNewRenderRequest(textureIndex, canAbort);
     
    
     
-    ViewerRenderRetCode stat = getRenderViewerArgsAndCheckCache(time, isSequential, view, textureIndex, viewerHash, rotoPaintNode, renderAge, stats, outArgs);
+    ViewerRenderRetCode stat = getRenderViewerArgsAndCheckCache(time, isSequential, view, textureIndex, viewerHash, rotoPaintNode, abortInfo, stats, outArgs);
     
     if (stat == eViewerRenderRetCodeFail || stat == eViewerRenderRetCodeBlack) {
-        _imp->checkAndUpdateDisplayAge(textureIndex,renderAge);
+        _imp->checkAndUpdateDisplayAge(textureIndex,abortInfo->age);
     }
     
     return stat;
@@ -834,7 +833,7 @@ void
 ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
                                                const ViewIdx view,
                                                const int textureIndex,
-                                               const U64 renderAge,
+                                               const AbortableRenderInfoPtr& abortInfo,
                                                const bool isSequential,
                                                ViewerArgs* outArgs)
 {
@@ -907,7 +906,7 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
     outArgs->params->isSequential = isSequential;
     
     // Used to identify this render when calling EffectInstance::Implementation::aborted
-    outArgs->params->renderAge = renderAge;
+    outArgs->params->abortInfo = abortInfo;
     
     // Used to differentiate the 2 different textures when wipe is enabled
     outArgs->params->setUniqueID(textureIndex);
@@ -1156,7 +1155,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                  int textureIndex,
                                                  U64 viewerHash,
                                                  const NodePtr& rotoPaintNode,
-                                                 U64 renderAge,
+                                                 const AbortableRenderInfoPtr& abortInfo,
                                                  const boost::shared_ptr<RenderStats>& stats,
                                                  ViewerArgs* outArgs)
 {
@@ -1194,7 +1193,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     }
     
     // Fetch the render parameters from the Viewer UI
-    setupMinimalUpdateViewerParams(time, view, textureIndex, renderAge, isSequential, outArgs);
+    setupMinimalUpdateViewerParams(time, view, textureIndex, abortInfo, isSequential, outArgs);
 
     // Try to look-up the cache but do so only if we have a RoD valid in the cache because
     // we are on the main-thread here, it would be expensive to compute the RoD now.
@@ -1228,8 +1227,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                                            inArgs.params->view,
                                                            !isSequentialRender,
                                                            isSequentialRender,
-                                                           canAbort,
-                                                           inArgs.params->renderAge,
+                                                           inArgs.params->abortInfo,
                                                            getNode(),
                                                            inArgs.params->textureIndex,
                                                            getTimeline().get(),
@@ -1607,7 +1605,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         
         ///We check that the render age is still OK and that no other renders were triggered, in which case we should not need to
         ///refresh the viewer.
-        if (!_imp->checkAgeNoUpdate(inArgs.params->textureIndex,inArgs.params->renderAge)) {
+        if (!_imp->checkAgeNoUpdate(inArgs.params->textureIndex,inArgs.params->abortInfo->age)) {
             return eViewerRenderRetCodeRedraw;
         }
         
@@ -2707,7 +2705,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
     assert(params->ramBuffer);
     
     bool doUpdate = true;
-    if (!params->updateOnlyRoi && !params->isSequential && !checkAndUpdateDisplayAge(params->textureIndex,params->renderAge)) {
+    if (!params->updateOnlyRoi && !params->isSequential && !checkAndUpdateDisplayAge(params->textureIndex,params->abortInfo->age)) {
         doUpdate = false;
     }
     if (doUpdate) {
@@ -3253,9 +3251,9 @@ ViewerInstance::getCurrentView() const
 }
 
 bool
-ViewerInstance::isRenderAbortable(int textureIndex, U64 renderAge,bool* isLatestRender) const
+ViewerInstance::isLatestRender(int textureIndex, U64 renderAge) const
 {
-    return _imp->isRenderAbortable(textureIndex, renderAge, isLatestRender);
+    return _imp->isLatestRender(textureIndex, renderAge);
 }
 
 void

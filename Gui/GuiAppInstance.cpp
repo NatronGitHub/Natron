@@ -1183,7 +1183,7 @@ GuiAppInstance::save(const std::string& filename)
 {
     boost::shared_ptr<Project> project = getProject();
     if (project->hasProjectBeenSavedByUser()) {
-        _imp->_gui->saveProject();
+        return _imp->_gui->saveProject();
     } else {
         return _imp->_gui->saveProjectAs(filename);
     }

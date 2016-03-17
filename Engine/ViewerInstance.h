@@ -105,6 +105,7 @@ public:
                                                         ViewIdx view,
                                                         int textureIndex,
                                                         U64 viewerHash,
+                                                        bool canAbort,
                                                         const NodePtr& rotoPaintNode,
                                                         const boost::shared_ptr<RenderStats>& stats,
                                                         ViewerArgs* outArgs);
@@ -120,7 +121,7 @@ private:
                                                         int textureIndex,
                                                         U64 viewerHash,
                                                         const NodePtr& rotoPaintNode,
-                                                        U64 renderAge,
+                                                        const AbortableRenderInfoPtr& abortInfo,
                                                         const boost::shared_ptr<RenderStats>& stats,
                                                         ViewerArgs* outArgs);
     
@@ -132,7 +133,7 @@ private:
     void setupMinimalUpdateViewerParams(const SequenceTime time,
                                         const ViewIdx view,
                                         const int textureIndex,
-                                        const U64 renderAge,
+                                        const AbortableRenderInfoPtr& abortInfo,
                                         const bool isSequential,
                                         ViewerArgs* outArgs);
     
@@ -239,7 +240,7 @@ public:
         return true;
     }
     
-    bool isRenderAbortable(int textureIndex, U64 renderAge,bool* isLatestRender) const;
+    bool isLatestRender(int textureIndex, U64 renderAge) const;
 
 
     void setDisplayChannels(DisplayChannelsEnum channels, bool bothInputs);

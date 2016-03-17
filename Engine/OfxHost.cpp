@@ -100,6 +100,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/Settings.h"
 #include "Engine/StandardPaths.h"
 #include "Engine/TLSHolder.h"
+#include "Engine/ThreadPool.h"
 
 //An effect may not use more than this amount of threads
 #define NATRON_MULTI_THREAD_SUITE_MAX_NUM_CPU 4
@@ -1056,6 +1057,9 @@ threadFunctionWrapper(OfxThreadFunctionV1 func,
     
 class OfxThread
     : public QThread
+#ifdef QT_USE_NATRON_CUSTOM_THREADPOOL_EXT
+    , public AbortableThread
+#endif
 {
 public:
     OfxThread(OfxThreadFunctionV1 func,
