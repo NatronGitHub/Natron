@@ -5435,24 +5435,26 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
     }
     
     
+    bool beingDestroyed;
+    {
+        QMutexLocker k(&_imp->isBeingDestroyedMutex);
+        beingDestroyed = _imp->isBeingDestroyed;
+    }
     ///kill any thread it could have started
     ///Commented-out: If we were to undo the deactivate we don't want all threads to be
     ///exited, just exit them when the effect is really deleted instead
     //quitAnyProcessing();
-    _imp->effect->abortAnyEvaluation();
-    _imp->abortPreview();
+    if (!beingDestroyed) {
+        _imp->effect->abortAnyEvaluation();
+        _imp->abortPreview();
+    }
     
     ///Free all memory used by the plug-in.
     
     ///COMMENTED-OUT: Don't do this, the node may still be rendering here.
     ///_imp->effect->clearPluginMemoryChunks();
     clearLastRenderedImage();
-    
-    bool beingDestroyed;
-    {
-        QMutexLocker k(&_imp->isBeingDestroyedMutex);
-        beingDestroyed = _imp->isBeingDestroyed;
-    }
+   
     if (parentCol && !beingDestroyed) {
         parentCol->notifyNodeDeactivated(shared_from_this());
     }
