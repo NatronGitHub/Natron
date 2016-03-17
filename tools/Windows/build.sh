@@ -171,14 +171,17 @@ fi
 $KILLSCRIPT $PID &
 KILLBOT=$!
 
+
+if [ "$BRANCH" = "master" ]; then
+  ONLINE_REPO_BRANCH=snapshots
+else
+  ONLINE_REPO_BRANCH=releases
+fi
+BIT_SUFFIX=bit
+BIT_TAG=$BIT$BIT_SUFFIX
+
+
 if [ "$SYNC" = "1" ]; then
-    if [ "$BRANCH" = "master" ]; then
-        ONLINE_REPO_BRANCH=snapshots
-    else
-        ONLINE_REPO_BRANCH=releases
-    fi
-    BIT_SUFFIX=bit
-    BIT_TAG=$BIT$BIT_SUFFIX
     if [ "$FAIL" != "1" ]; then
         echo "Syncing packages ... "
         rsync -avz --progress --delete --verbose -e ssh  $REPO_DIR/packages/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/packages

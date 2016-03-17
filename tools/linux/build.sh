@@ -179,12 +179,13 @@ BIT_TAG="$BIT$BIT_SUFFIX"
 $KILLSCRIPT $PID &
 KILLBOT=$!
 
+if [ "$BRANCH" = "master" ]; then
+  ONLINE_REPO_BRANCH=snapshots
+else
+  ONLINE_REPO_BRANCH=releases
+fi
+
 if [ "$SYNC" = "1" -a "$FAIL" != "1" ]; then
-    if [ "$BRANCH" = "master" ]; then
-        ONLINE_REPO_BRANCH=snapshots
-    else
-        ONLINE_REPO_BRANCH=releases
-    fi
     echo "Syncing packages ... "
     rsync -avz --progress --delete --verbose -e ssh "$REPO_DIR/packages/" "$REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/packages"
 
@@ -195,12 +196,8 @@ if [ "$SYNC" = "1" -a "$FAIL" != "1" ]; then
   rsync -avz --progress --verbose -e ssh "$INSTALL_PATH/symbols/" "${REPO_DEST}/symbols/"
 fi
 
-if [ "$NO_LOG_SYNC" != "1" ]; then
-
 #Always upload logs, even upon failure
 rsync -avz --progress --delete --verbose -e ssh "$LOGS/" "$REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/logs"
-
-fi
 
 kill -9 $KILLBOT
 
