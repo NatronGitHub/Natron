@@ -1319,6 +1319,7 @@ else
     fi
     tar xvf $SRC_PATH/$QT4_TAR || exit 1
     cd qt*4.8* || exit 1
+    patch -p0 < $INC_PATH/patches/Qt/patch-qt-custom-threadpool.diff || exit 1
     QT_SRC=`pwd`/src
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure -prefix $INSTALL_PATH $QT_CONF -shared || exit 1
 
