@@ -84,8 +84,6 @@ namespace NATRON_NAMESPACE { }
 //Define here the name of the Engine module that was chosen in the typesystem_engine.xml
 #define NATRON_ENGINE_PYTHON_MODULE_NAME "NatronEngine"
 #define NATRON_GUI_PYTHON_MODULE_NAME "NatronGui"
-//Uncomment to run Natron without Python functionnalities (for debug purposes)
-//#define NATRON_RUN_WITHOUT_PYTHON
 
 #define NATRON_ENV_VAR_NAME_START_TAG "<Name>"
 #define NATRON_ENV_VAR_NAME_END_TAG "</Name>"
