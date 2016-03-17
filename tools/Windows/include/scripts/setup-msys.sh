@@ -29,7 +29,7 @@ pacman $PKG_INSTALL_OPS ${PKG_PREFIX}gdbm
 pacman $PKG_INSTALL_OPS ${PKG_PREFIX}db
 pacman $PKG_INSTALL_OPS ${PKG_PREFIX}python2
 pacman $PKG_INSTALL_OPS ${PKG_PREFIX}boost
-pacman $PKG_INSTALL_OPS ${PKG_PREFIX}qt4
+#pacman $PKG_INSTALL_OPS ${PKG_PREFIX}qt4
 pacman $PKG_INSTALL_OPS ${PKG_PREFIX}libjpeg-turbo
 pacman $PKG_INSTALL_OPS ${PKG_PREFIX}libpng
 pacman $PKG_INSTALL_OPS ${PKG_PREFIX}libtiff
