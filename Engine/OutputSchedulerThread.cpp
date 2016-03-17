@@ -222,7 +222,7 @@ struct OutputSchedulerThreadPrivate
 
     
     boost::scoped_ptr<Timer> timer; // Timer regulating the engine execution. It is controlled by the GUI and MT-safe.
-    
+    boost::scoped_ptr<TimeLapse> renderTimer; // Timer used to report stats when rendering
     
     ///The idea here is that the render() function will set the requestedRunArgs, and once the scheduler has finished
     ///the previous render it will copy them to the livingRunArgs to fullfil the new render request
@@ -274,6 +274,9 @@ struct OutputSchedulerThreadPrivate
     double lastRecordedFPS;
     
 #endif
+    
+    QMutex bufferedOutputMutex;
+    int lastBufferedOutputSize;
 
     
     OutputSchedulerThreadPrivate(RenderEngine* engine,const boost::shared_ptr<OutputEffectInstance>& effect,OutputSchedulerThread::ProcessFrameModeEnum mode)
@@ -303,6 +306,7 @@ struct OutputSchedulerThreadPrivate
     , processMutex()
     , mode(mode)
     , timer(new Timer)
+    , renderTimer()
     , requestedRunArgs()
     , livingRunArgs()
     , nFramesRendered(0)
@@ -327,6 +331,8 @@ struct OutputSchedulerThreadPrivate
     , lastRecordedFPSMutex()
     , lastRecordedFPS(0.)
 #endif
+    , bufferedOutputMutex()
+    , lastBufferedOutputSize(0)
     {
 
     }
@@ -1023,9 +1029,12 @@ OutputSchedulerThread::startRender()
     
 
     
-    if ( isFPSRegulationNeeded() ) {
+    if (isFPSRegulationNeeded()) {
         _imp->timer->playState = ePlayStateRunning;
     }
+    
+    // Start measuring
+    _imp->renderTimer.reset(new TimeLapse);
     
     ///We will push frame to renders starting at startingFrame.
     ///They will be in the range determined by firstFrame-lastFrame
@@ -1125,6 +1134,8 @@ void
 OutputSchedulerThread::stopRender()
 {
     _imp->timer->playState = ePlayStatePause;
+    
+    _imp->renderTimer.reset();
     
 #ifdef NATRON_SCHEDULER_SPAWN_THREADS_WITH_TIMER
     QMutexLocker k(&_imp->lastRecordedFPSMutex);
@@ -1538,39 +1549,42 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
 {
     assert(viewsToRender.size() > 0);
     
-    double percentage = 0.;
-    double timeSpent;
+    bool isLastView = viewIndex == viewsToRender[viewsToRender.size() - 1] || viewIndex == -1;
     
+    // Report render stats if desired
     boost::shared_ptr<OutputEffectInstance> effect = _imp->outputEffect.lock();
-    
     if (stats) {
-        std::map<NodePtr,NodeRenderStats > statResults = stats->getStats(&timeSpent);
+        double timeSpentForFrame;
+        std::map<NodePtr,NodeRenderStats > statResults = stats->getStats(&timeSpentForFrame);
         if (!statResults.empty()) {
-            effect->reportStats(frame, viewIndex, timeSpent, statResults);
+            effect->reportStats(frame, viewIndex, timeSpentForFrame, statResults);
         }
     }
-    //U64 nbFramesLeftToRender;
+    
+    
     bool isBackground = appPTR->isBackground();
-    int nbCurParallelRenders = 1;
 
+    // If FFA all parallel renders call render on the Writer in their own thread,
+    // otherwise the OutputSchedulerThread thread calls the render of the Writer.
+    U64 nbTotalFrames;
+    U64 nbFramesRendered;
+    bool renderingIsFinished = false;
     if (policy == eSchedulingPolicyFFA) {
         
         QMutexLocker l(&_imp->runArgsMutex);
-        if (viewIndex == viewsToRender[viewsToRender.size() - 1] || viewIndex == -1) {
+        if (isLastView) {
             ++_imp->nFramesRendered;
         }
-        U64 totalFrames = std::ceil((double)(_imp->livingRunArgs.lastFrame - _imp->livingRunArgs.firstFrame + 1) / _imp->livingRunArgs.frameStep);
-        assert(totalFrames > 0);
-        if (totalFrames != 0) {
-            percentage = (double)_imp->nFramesRendered / totalFrames;
-        }
-        //nbFramesLeftToRender = totalFrames - _imp->nFramesRendered;
-        if ( _imp->nFramesRendered == totalFrames) {
+        nbTotalFrames = std::ceil((double)(_imp->livingRunArgs.lastFrame - _imp->livingRunArgs.firstFrame + 1) / _imp->livingRunArgs.frameStep);
+        nbFramesRendered = _imp->nFramesRendered;
+        
+
+        if ( _imp->nFramesRendered == nbTotalFrames) {
 
             _imp->renderFinished = true;
             l.unlock();
 
-            ///Notify the scheduler rendering is finished by append a fake frame to the buffer
+            // Notify the scheduler rendering is finished by append a fake frame to the buffer
             {
                 QMutexLocker bufLocker (&_imp->bufMutex);
                 ignore_result(_imp->appendBufferedFrame(0, viewIndex, RenderStatsPtr(), boost::shared_ptr<BufferableObject>()));
@@ -1583,8 +1597,8 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
             ///////////
-            /////If we were analysing the CPU activity, now set the appropriate number of threads to render.
-            int newNThreads;
+            /////Now set the appropriate number of threads to render.
+            int newNThreads,nbCurParallelRenders;
             adjustNumberOfThreads(&newNThreads, &nbCurParallelRenders);
 #else
             startTasksFromLastStartedFrame();
@@ -1592,58 +1606,68 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             
 #endif
         }
+        renderingIsFinished = _imp->renderFinished;
+        
     } else {
         {
             QMutexLocker l(&_imp->runArgsMutex);
-            U64 totalFrames = std::floor((double)(_imp->livingRunArgs.lastFrame - _imp->livingRunArgs.firstFrame + 1) / _imp->livingRunArgs.frameStep);
-            assert(totalFrames > 0);
+            nbTotalFrames = std::floor((double)(_imp->livingRunArgs.lastFrame - _imp->livingRunArgs.firstFrame + 1) / _imp->livingRunArgs.frameStep);
             if (_imp->livingRunArgs.timelineDirection == eRenderDirectionForward) {
-                if (totalFrames != 0) {
-                    percentage = (double)(frame - _imp->livingRunArgs.firstFrame) / _imp->livingRunArgs.frameStep / totalFrames;
-                }
-               // nbFramesLeftToRender = (double)(_imp->livingRunArgs.lastFrame - frame) / _imp->livingRunArgs.frameStep;
+                nbFramesRendered = (frame - _imp->livingRunArgs.firstFrame) / _imp->livingRunArgs.frameStep;
             } else {
-                if (totalFrames != 0) {
-                    percentage = (double)(_imp->livingRunArgs.lastFrame - frame)  / totalFrames;
-                }
-               // nbFramesLeftToRender = (double)(frame - _imp->livingRunArgs.firstFrame) / _imp->livingRunArgs.frameStep;
+                nbFramesRendered = (_imp->livingRunArgs.lastFrame - frame) / _imp->livingRunArgs.frameStep;
             }
         }
-        nbCurParallelRenders = getNRenderThreads();
     } // if (policy == eSchedulingPolicyFFA) {
     
-    double avgTimeSpent = 0.;
-    double timeRemaining = 0.;
-    double totalTimeSpent = 0.;
-    if (stats) {
-        effect->updateRenderTimeInfos(timeSpent, &avgTimeSpent, &totalTimeSpent);
-        if (percentage != 0) {
-            timeRemaining = nbCurParallelRenders ? (totalTimeSpent * (1 - percentage) / percentage) / (double)nbCurParallelRenders : 0.;
-        } else {
-            //Unknown yet
-            timeRemaining = -1;
-        }
+    double percentage = 0.;
+    assert(nbTotalFrames > 0);
+    if (nbTotalFrames != 0) {
+        percentage = (double)_imp->nFramesRendered / nbTotalFrames;
     }
     
+    double timeSpentSinceStartSec = _imp->renderTimer->getTimeSinceCreation();
+    double estimatedFps = (double)nbFramesRendered / timeSpentSinceStartSec;
+    double timeRemaining = timeSpentSinceStartSec * (1. - percentage);
+    
+    // If running in background, notify to the pipe that we rendered a frame
     if (isBackground) {
         QString longMessage;
         QTextStream ts(&longMessage);
         QString frameStr = QString::number(frame);
-        ts << kFrameRenderedStringLong << frameStr << " (" << QString::number(percentage * 100,'f',1) << "%)";
-        if (stats) {
-            QString timeSpentStr = Timer::printAsTime(timeSpent, false);
-            QString timeRemainingStr = Timer::printAsTime(timeRemaining, true);
-            ts << "\nTime elapsed for frame: " << timeSpentStr;
-            ts << "\nTime remaining: " << timeRemainingStr;
+        QString fpsStr = QString::number(estimatedFps, 'f', 1);
+        QString percentageStr = QString::number(percentage * 100,'f',1);
+        QString timeRemainingStr = Timer::printAsTime(timeRemaining, true);
+        
+        ts << effect->getScriptName_mt_safe().c_str() << " ==> Frame: ";
+        ts << frameStr << ", Progress: " << percentageStr << "%, " << fpsStr << " Fps, Time Remaining: " << timeRemainingStr;
+        
+        QString shortMessage = QString::fromUtf8(kFrameRenderedStringShort) + frameStr + QString::fromUtf8(kProgressChangedStringShort) + QString::number(percentage);
+        {
+            QMutexLocker l(&_imp->bufferedOutputMutex);
+            std::string toPrint = longMessage.toStdString();
+            if (_imp->lastBufferedOutputSize != 0 && _imp->lastBufferedOutputSize > longMessage.size()) {
+                int nSpacesToAppend = _imp->lastBufferedOutputSize - longMessage.size();
+                toPrint.append(nSpacesToAppend, ' ');
+            }
+            std::cout << '\r' << toPrint;
+            std::cout.flush();
+            if (renderingIsFinished) {
+                std::cout << std::endl;
+            }
+            _imp->lastBufferedOutputSize = longMessage.size();
         }
-        appPTR->writeToOutputPipe(longMessage,QString::fromUtf8(kFrameRenderedStringShort) + frameStr + QString::fromUtf8(kProgressChangedStringShort) + QString::number(percentage));
+    
+        appPTR->writeToOutputPipe(longMessage, shortMessage, false);
     }
     
-    if (viewIndex == viewsToRender[viewsToRender.size() - 1] || viewIndex == -1) {
+    // Notify we rendered a frame
+    if (isLastView) {
         _imp->engine->s_frameRendered(frame, percentage);
     }
     
-    if (effect->isWriter()) {
+    // Call Python after frame ranedered callback
+    if (isLastView && effect->isWriter()) {
         std::string cb = effect->getNode()->getAfterFrameRenderCallback();
         if (!cb.empty()) {  
             std::vector<std::string> args;
@@ -2747,7 +2771,7 @@ DefaultScheduler::aboutToStartRender()
     if (!isBackGround) {
         effect->setKnobsFrozen(true);
     } else {
-        appPTR->writeToOutputPipe(QString::fromUtf8(kRenderingStartedLong), QString::fromUtf8(kRenderingStartedShort));
+        appPTR->writeToOutputPipe(QString::fromUtf8(kRenderingStartedLong), QString::fromUtf8(kRenderingStartedShort), true);
     }
     
     std::string cb = effect->getNode()->getBeforeRenderCallback();
@@ -2803,7 +2827,10 @@ DefaultScheduler::onRenderStopped(bool aborted)
     if (!isBackGround) {
         effect->setKnobsFrozen(false);
     }
-     effect->notifyRenderFinished();
+    
+    appPTR->writeToOutputPipe(QString::fromUtf8(kRenderingFinishedStringLong),QString::fromUtf8(kRenderingFinishedStringShort), true);
+    
+    effect->notifyRenderFinished();
     
     std::string cb = effect->getNode()->getAfterRenderCallback();
     if (!cb.empty()) {

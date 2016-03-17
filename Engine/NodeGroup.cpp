@@ -307,19 +307,6 @@ NodeCollection::quitAnyProcessingForAllNodes()
     setMustQuitProcessingRecursive(false, this);
 }
 
-void
-NodeCollection::resetTotalTimeSpentRenderingForAllNodes()
-{
-    QMutexLocker k(&_imp->nodesMutex);
-    for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        EffectInstPtr effect = (*it)->getEffectInstance();
-        effect->resetTotalTimeSpentRendering();
-        NodeGroup* isGroup = dynamic_cast<NodeGroup*>(effect.get());
-        if (isGroup) {
-            isGroup->resetTotalTimeSpentRenderingForAllNodes();
-        }
-    }
-}
 
 bool
 NodeCollection::isCacheIDAlreadyTaken(const std::string& name) const

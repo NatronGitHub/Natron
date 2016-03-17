@@ -228,11 +228,6 @@ public:
     void quitAnyProcessingForAllNodes();
     
     /**
-     * @brief Reset the total time spent rendering accumulated on all nodes.
-     **/
-    void resetTotalTimeSpentRenderingForAllNodes();
-    
-    /**
      * @brief Checks if a node in the project already has this cacheID
      **/
     bool isCacheIDAlreadyTaken(const std::string& name) const;

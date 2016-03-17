@@ -1395,7 +1395,6 @@ AppInstance::startWritersRendering(bool doBlockingRender, const std::list<Render
         return;
     }
     
-    getProject()->resetTotalTimeSpentRenderingForAllNodes();
     
     bool renderInSeparateProcess = appPTR->getCurrentSettings()->isRenderInSeparatedProcessEnabled();
     QString savePath;

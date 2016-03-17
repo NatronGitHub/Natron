@@ -85,7 +85,6 @@ OutputEffectInstance::OutputEffectInstance(NodePtr node)
     , _outputEffectDataLock()
     , _renderSequenceRequests()
     , _engine(0)
-    , _timeSpentPerFrameRendered()
     , _writerCurrentFrame(0)
     , _writerFirstFrame(0)
     , _writerLastFrame(0)
@@ -437,32 +436,6 @@ OutputEffectInstance::createRenderEngine()
     return new RenderEngine(thisShared);
 }
 
-void
-OutputEffectInstance::updateRenderTimeInfos(double lastTimeSpent,
-                                            double *averageTimePerFrame,
-                                            double *totalTimeSpent)
-{
-    assert(totalTimeSpent && averageTimePerFrame);
-
-    *totalTimeSpent = 0;
-
-    QMutexLocker k(&_outputEffectDataLock);
-    _timeSpentPerFrameRendered.push_back(lastTimeSpent);
-
-    for (std::list<double>::iterator it = _timeSpentPerFrameRendered.begin(); it != _timeSpentPerFrameRendered.end(); ++it) {
-        *totalTimeSpent += *it;
-    }
-    size_t c = _timeSpentPerFrameRendered.size();
-    *averageTimePerFrame = (c == 0 ? 0 : *totalTimeSpent / c);
-}
-
-void
-OutputEffectInstance::resetTimeSpentRenderingInfos()
-{
-    QMutexLocker k(&_outputEffectDataLock);
-
-    _timeSpentPerFrameRendered.clear();
-}
 
 void
 OutputEffectInstance::reportStats(int time,
