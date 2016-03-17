@@ -16,7 +16,7 @@ name                qt4-mac
 #conflicts           qt3 qt3-mac qt4-mac-devel
 conflicts           qt3 qt3-mac
 version             4.8.7
-revision            104
+revision            105
 set branch          [join [lrange [split ${version} .] 0 1] .]
 
 categories          aqua
@@ -273,6 +273,9 @@ patchfiles-append   \
 
 # fix default thread stack size
 patchfiles-append patch-qthread-stacksize.diff
+
+# Add possibility to set a custom global thread pool
+patchfiles-append patch-qt-custom-threadpool.diff
 
 # error out if trying to build on a new OSX version (> 10.11).
 
