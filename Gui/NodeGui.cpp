@@ -2327,7 +2327,7 @@ NodeGui::onAllKnobsSlaved(bool b)
         assert(!_slaveMasterLink);
 
         if (masterNode->getGroup() == node->getGroup()) {
-            _slaveMasterLink = new LinkArrow( masterNodeGui.get(),this,parentItem() );
+            _slaveMasterLink = new LinkArrow( masterNodeGui,shared_from_this(),parentItem() );
             _slaveMasterLink->setColor( QColor(200,100,100) );
             _slaveMasterLink->setArrowHeadColor( QColor(243,137,20) );
             _slaveMasterLink->setWidth(3);
@@ -2401,6 +2401,8 @@ NodeGui::onKnobsLinksChanged()
     _knobsLinks = newLinks;
 
     ///2nd pass: create the new links
+    
+    NodeGuiPtr thisShared = shared_from_this();
 
     for (InternalLinks::iterator it = links.begin(); it != links.end(); ++it) {
 
@@ -2436,7 +2438,7 @@ NodeGui::onKnobsLinksChanged()
                 boost::shared_ptr<NodeGuiI> master_i = masterNode->getNodeGui();
                 NodeGuiPtr master = boost::dynamic_pointer_cast<NodeGui>(master_i);
                 assert(master);
-                LinkArrow* arrow = new LinkArrow( master.get(),this,parentItem() );
+                LinkArrow* arrow = new LinkArrow( master,thisShared,parentItem() );
                 arrow->setWidth(2);
                 arrow->setColor( QColor(143,201,103) );
                 arrow->setArrowHeadColor( QColor(200,255,200) );

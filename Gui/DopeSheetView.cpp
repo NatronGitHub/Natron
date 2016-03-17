@@ -1881,6 +1881,9 @@ void DopeSheetViewPrivate::computeRetimeRange(DSNode *retimer)
     ++rangeComputationRecursion;
     
     NodePtr node = retimer->getInternalNode();
+    if (!node) {
+        return;
+    }
     NodePtr input = node->getInput(0);
     if (input) {
         
@@ -1891,6 +1894,9 @@ void DopeSheetViewPrivate::computeRetimeRange(DSNode *retimer)
         FramesNeededMap framesFirst = node->getEffectInstance()->getFramesNeeded_public(nodeHash, inputFirst, ViewIdx(0), 0);
         FramesNeededMap framesLast = node->getEffectInstance()->getFramesNeeded_public(nodeHash, inputLast, ViewIdx(0), 0);
         assert(!framesFirst.empty() && !framesLast.empty());
+        if (framesFirst.empty() || framesLast.empty()) {
+            return;
+        }
         
         FrameRange range;
 #ifdef DEBUG
@@ -1899,19 +1905,37 @@ void DopeSheetViewPrivate::computeRetimeRange(DSNode *retimer)
         {
             const FrameRangesMap& rangeFirst = framesFirst[0];
             assert(!rangeFirst.empty());
+            if (rangeFirst.empty()) {
+                return;
+            }
             FrameRangesMap::const_iterator it = rangeFirst.find(ViewIdx(0));
             assert(it != rangeFirst.end());
+            if (it == rangeFirst.end()) {
+                return;
+            }
             const std::vector<OfxRangeD>& frames = it->second;
             assert(!frames.empty());
+            if (frames.empty()) {
+                return;
+            }
             range.first = (frames.front().min);
         }
         {
             FrameRangesMap& rangeLast = framesLast[0];
             assert(!rangeLast.empty());
+            if (rangeLast.empty()) {
+                return;
+            }
             FrameRangesMap::const_iterator it = rangeLast.find(ViewIdx(0));
             assert(it != rangeLast.end());
+            if (it == rangeLast.end()) {
+                return;
+            }
             const std::vector<OfxRangeD>& frames = it->second;
             assert(!frames.empty());
+            if (frames.empty()) {
+                return;
+            }
             range.second = (frames.front().min);
         }
 
@@ -1924,7 +1948,9 @@ void DopeSheetViewPrivate::computeRetimeRange(DSNode *retimer)
     --rangeComputationRecursion;
     std::list<DSNode*>::iterator found = std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), retimer);
     assert(found != nodeRangesBeingComputed.end());
-    nodeRangesBeingComputed.erase(found);
+    if (found != nodeRangesBeingComputed.end() ) {
+        nodeRangesBeingComputed.erase(found);
+    }
 }
 
 void DopeSheetViewPrivate::computeTimeOffsetRange(DSNode *timeOffset)

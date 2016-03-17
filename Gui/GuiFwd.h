@@ -196,6 +196,7 @@ namespace QtMac {
 bool isHighDPIInternal(const QWidget* w);
 }
 
+typedef boost::weak_ptr<NodeGui> NodeGuiWPtr;
 typedef boost::shared_ptr<NodeGui> NodeGuiPtr;
 typedef std::list<NodeGuiPtr> NodesGuiList;
 typedef boost::shared_ptr<ProgressTaskInfo> ProgressTaskInfoPtr;

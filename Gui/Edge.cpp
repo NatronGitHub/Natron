@@ -782,8 +782,8 @@ Edge::paint(QPainter *painter,
     }
 }
 
-LinkArrow::LinkArrow(const NodeGui* master,
-                     const NodeGui* slave,
+LinkArrow::LinkArrow(const NodeGuiPtr& master,
+                     const NodeGuiPtr& slave,
                      QGraphicsItem* parent)
     : QObject(), QGraphicsLineItem(parent)
       , _master(master)
@@ -794,8 +794,8 @@ LinkArrow::LinkArrow(const NodeGui* master,
       , _lineWidth(1)
 {
     assert(master && slave);
-    QObject::connect( master,SIGNAL(positionChanged(int,int)),this,SLOT(refreshPosition()) );
-    QObject::connect( slave,SIGNAL(positionChanged(int,int)),this,SLOT(refreshPosition()) );
+    QObject::connect( master.get(),SIGNAL(positionChanged(int,int)),this,SLOT(refreshPosition()) );
+    QObject::connect( slave.get(),SIGNAL(positionChanged(int,int)),this,SLOT(refreshPosition()) );
 
     refreshPosition();
     setZValue(master->zValue() - 5);
@@ -826,10 +826,19 @@ LinkArrow::setWidth(int lineWidth)
 void
 LinkArrow::refreshPosition()
 {
-    QRectF bboxSlave = mapFromItem( _slave,_slave->boundingRect() ).boundingRect();
+    NodeGuiPtr slave = _slave.lock();
+    NodeGuiPtr master = _master.lock();
+    
+    QRectF bboxSlave;
+    if (slave) {
+        bboxSlave = mapFromItem( slave.get(),slave->boundingRect() ).boundingRect();
+    }
 
     ///like the box master in kfc! was bound to name it so I'm hungry atm
-    QRectF boxMaster = mapFromItem( _master,_master->boundingRect() ).boundingRect();
+    QRectF boxMaster;
+    if (master) {
+        boxMaster = mapFromItem( master.get(),master->boundingRect() ).boundingRect();
+    }
     QPointF dst = boxMaster.center();
     QPointF src = bboxSlave.center();
 
