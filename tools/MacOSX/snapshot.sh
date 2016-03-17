@@ -141,8 +141,22 @@ while true; do
     cd $CWD || FAIL=1
     if [ "$FAIL" != 1 ]; then
         if [ "$BUILD_NATRON" = "1" -o "$BUILD_IO" = "1" -o "$BUILD_MISC" = "1" -o "$BUILD_ARENA" = "1" ]; then
-            GIT_COMMENT=`( cd $TMP/Natron ; git show $NATRON_DEVEL_GIT)`
+
+            GIT_COMMENT=`( cd $TMP/Natron ; git --no-pager log ${NATRON_DEVEL_GIT}..HEAD)`
             GIT_SYNC=`echo $GIT_COMMENT|grep "#snapshot"`
+            if [ "$GIT_SYNC" = "" ]; then
+              GIT_COMMENT=`( cd $TMP/openfx-io ; git --no-pager log ${IOPLUG_DEVEL_GIT}..HEAD)`
+              GIT_SYNC=`echo $GIT_COMMENT|grep "#snapshot"`
+            fi
+            if [ "$GIT_SYNC" = "" ]; then
+              GIT_COMMENT=`( cd $TMP/openfx-misc ; git --no-pager log ${MISCPLUG_DEVEL_GIT}..HEAD)`
+              GIT_SYNC=`echo $GIT_COMMENT|grep "#snapshot"`
+            fi
+            if [ "$GIT_SYNC" = "" ]; then
+              GIT_COMMENT=`( cd $TMP/openfx-arena ; git --no-pager log ${ARENAPLUG_DEVEL_GIT}..HEAD)`
+              GIT_SYNC=`echo $GIT_COMMENT|grep "#snapshot"`
+            fi
+
             if [ "$GIT_SYNC" != "" ]; then
               DO_SYNC=1
             else
