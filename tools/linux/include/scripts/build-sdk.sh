@@ -1196,8 +1196,9 @@ if [ ! -f $INSTALL_PATH/bin/qmake ]; then
     if [ ! -f $SRC_PATH/$QT_TAR ]; then
         wget $THIRD_PARTY_SRC_URL/$QT_TAR -O $SRC_PATH/$QT_TAR || exit 1
     fi
-    tar xvf $SRC_PATH/$QT_TAR || exit 1
-    cd qt* || exit 1
+    tar xvf $SRC_PATH/$QT4_TAR || exit 1
+    cd qt*4.8* || exit 1
+    patch -p0 < $INC_PATH/patches/Qt/patch-qt-custom-threadpool.diff || exit 1
     QT_SRC=`pwd`/src
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure -prefix $INSTALL_PATH $QT_CONF -shared || exit 1
 
