@@ -105,11 +105,6 @@ EffectInstance::~EffectInstance()
     clearPluginMemoryChunks();
 }
 
-void
-EffectInstance::resetTotalTimeSpentRendering()
-{
-    resetTimeSpentRenderingInfos();
-}
 
 void
 EffectInstance::lock(const boost::shared_ptr<Image> & entry)

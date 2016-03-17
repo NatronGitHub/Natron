@@ -297,7 +297,7 @@ public:
      * @brief If the current process is a background process, then it will right the output pipe the
      * short message. Otherwise the longMessage is printed to stdout
      **/
-    bool writeToOutputPipe(const QString & longMessage,const QString & shortMessage);
+    bool writeToOutputPipe(const QString & longMessage,const QString & shortMessage, bool printIfNoChannel);
 
     /**
      * @brief Abort any processing on all AppInstance. It is called in some very rare cases

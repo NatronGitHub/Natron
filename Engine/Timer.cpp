@@ -229,16 +229,18 @@ Timer::waitUntilNextFrameIsDue ()
     if (t > NATRON_FPS_REFRESH_RATE_SECONDS) {
         double actualFrameRate = _framesSinceLastFpsFrame / t;
         double curActualFrameRate;
+        double desiredFrameRate;
         {
             QMutexLocker l(_mutex);
             if (actualFrameRate != _actualFrameRate) {
                 _actualFrameRate = actualFrameRate;
             }
+            desiredFrameRate = 1.f / _spf;
             curActualFrameRate = _actualFrameRate;
         }
         
         
-        Q_EMIT fpsChanged(curActualFrameRate,getDesiredFrameRate());
+        Q_EMIT fpsChanged(curActualFrameRate,desiredFrameRate);
         
         _framesSinceLastFpsFrame = 0;
     }

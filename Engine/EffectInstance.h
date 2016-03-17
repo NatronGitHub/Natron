@@ -1322,7 +1322,6 @@ public:
      **/
     void onNodeHashChanged(U64 hash);
 
-    void resetTotalTimeSpentRendering();
 
     virtual void initializeData()
     {
@@ -1334,10 +1333,6 @@ public:
 
 protected:
 
-
-    virtual void resetTimeSpentRenderingInfos()
-    {
-    }
 
 #ifdef DEBUG
 

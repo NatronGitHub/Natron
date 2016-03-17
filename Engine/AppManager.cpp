@@ -894,13 +894,15 @@ AppManager::abortAnyProcessing()
 
 bool
 AppManager::writeToOutputPipe(const QString & longMessage,
-                              const QString & shortMessage)
+                              const QString & shortMessage,
+                              bool printIfNoChannel)
 {
     if (!_imp->_backgroundIPC) {
-        
-        QMutexLocker k(&_imp->errorLogMutex);
-        ///Don't use qdebug here which is disabled if QT_NO_DEBUG_OUTPUT is defined.
-        std::cout << longMessage.toStdString() << std::endl;
+        if (printIfNoChannel) {
+            QMutexLocker k(&_imp->errorLogMutex);
+            ///Don't use qdebug here which is disabled if QT_NO_DEBUG_OUTPUT is defined.
+            std::cout << longMessage.toStdString() << std::endl;
+        }
         return false;
     }
     _imp->_backgroundIPC->writeToOutputChannel(shortMessage);
