@@ -32,8 +32,7 @@ DEFINES += QT_NO_CAST_FROM_ASCII
 DEFINES+= QT_USE_NATRON_CUSTOM_THREADPOOL_EXT
 
 //Uncomment to run Natron without Python functionnalities (for debug purposes)
-#CONFIG += run_without_python
-run_without_python: DEFINES += NATRON_RUN_WITHOUT_PYTHON
+#DEFINES += NATRON_RUN_WITHOUT_PYTHON
 
 *g++* | *clang* {
 #See https://bugreports.qt.io/browse/QTBUG-35776 we cannot use
