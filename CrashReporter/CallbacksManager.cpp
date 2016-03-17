@@ -1075,21 +1075,19 @@ CallbacksManager::initCrashGenerationServer()
         tmpFileName += QLatin1Char('/');
         tmpFileName += QString::fromUtf8(NATRON_APPLICATION_NAME);
         tmpFileName += QString::fromUtf8("_CRASH_PIPE_");
+#else
+        tmpFileName += QString::fromUtf8("//./pipe/");
 #endif
         {
-            QString tmpTemplate;
-#ifndef Q_OS_WIN32
-            tmpTemplate.append(tmpFileName);
-#endif
-            QTemporaryFile tmpf(tmpTemplate);
+            QTemporaryFile tmpf(tmpFileName);
             tmpf.open(); // this will append a random unique string  to the passed template (tmpFileName)
             tmpFileName = tmpf.fileName();
             tmpf.remove();
         }
         
-#ifndef Q_OS_WIN32
+//#ifndef Q_OS_WIN32
         _pipePath = tmpFileName;
-#else
+/*#else
         int foundLastSlash = tmpFileName.lastIndexOf(QLatin1Char('/'));
         if (foundLastSlash !=1) {
             _pipePath = QString::fromUtf8("//./pipe/");
@@ -1102,7 +1100,7 @@ CallbacksManager::initCrashGenerationServer()
                 _pipePath.append(tmpFileName);
             }
         }
-#endif
+#endif*/
         
     }
     

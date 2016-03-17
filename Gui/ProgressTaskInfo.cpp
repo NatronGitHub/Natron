@@ -680,10 +680,17 @@ ProgressTaskInfoPrivate::refreshButtons()
             pauseTasksButton->setEnabled(false);
             restartTasksButton->setEnabled(false);
             break;
-        case ProgressTaskInfo::eProgressTaskStatusFinished:
+        case ProgressTaskInfo::eProgressTaskStatusFinished: {
             pauseTasksButton->setEnabled(false);
-            restartTasksButton->setEnabled(getNode()->getEffectInstance()->isOutput());
-            break;
+            NodePtr node = getNode();
+            EffectInstPtr effect;
+            if (node) {
+                effect = node->getEffectInstance();
+            }
+            if (effect) {
+                restartTasksButton->setEnabled(effect->isOutput());
+            }
+        }   break;
         case ProgressTaskInfo::eProgressTaskStatusCanceled:
             pauseTasksButton->setEnabled(false);
             restartTasksButton->setEnabled(false);

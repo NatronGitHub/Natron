@@ -456,6 +456,9 @@ RemovePointUndoCommand::RemovePointUndoCommand(RotoGui* roto,
         }
         assert(curve);
         assert(cp);
+        if (!curve) {
+            continue;
+        }
         int indexToRemove = curve->getControlPointIndex(cp);
         if ( foundCurve == _curves.end() ) {
             CurveDesc curveDesc;

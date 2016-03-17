@@ -353,7 +353,7 @@ GuiAppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
     QFileInfo info(cl.getScriptFilename());
 
     if (cl.getScriptFilename().isEmpty() || !info.exists()) {
-
+        
         getProject()->createViewer();
         execOnProjectCreatedCallback();
         
