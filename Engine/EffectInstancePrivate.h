@@ -359,7 +359,9 @@ struct EffectInstance::Implementation
                                           const ImagePremultiplicationEnum originalImagePremultiplication,
                                           ImagePlanesToRender & planes);
     
-    bool aborted(const EffectDataTLSPtr& tls) const WARN_UNUSED_RETURN;
+    bool aborted(bool isRenderResponseToUserInteraction,
+                 const AbortableRenderInfoPtr& abortInfo,
+                 const EffectInstPtr& treeRoot) const WARN_UNUSED_RETURN;
     
     void checkMetadata(NodeMetadata &metadata);
 };

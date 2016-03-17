@@ -915,7 +915,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
         ///We check what is left to render.
 #if NATRON_ENABLE_TRIMAP
-        if (!frameArgs->canAbort && frameArgs->isRenderResponseToUserInteraction) {
+        if (frameArgs->isCurrentFrameRenderNotAbortable()) {
 #ifndef DEBUG
             isPlaneCached->getRestToRender_trimap(roi, rectsLeftToRender, &planesToRender->isBeingRenderedElsewhere);
 #else
@@ -1395,11 +1395,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     bool renderAborted;
 
     if (!hasSomethingToRender && !planesToRender->isBeingRenderedElsewhere) {
-        renderAborted = _imp->aborted(tls);
+        renderAborted = aborted();
     } else {
 #if NATRON_ENABLE_TRIMAP
         ///Only use trimap system if the render cannot be aborted.
-        if (!frameArgs->canAbort && frameArgs->isRenderResponseToUserInteraction) {
+        if (frameArgs->isCurrentFrameRenderNotAbortable()) {
             for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
                 _imp->markImageAsBeingRendered(renderFullScaleThenDownscale ? it->second.fullscaleImage : it->second.downscaleImage);
             }
@@ -1468,10 +1468,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                               processChannels);
         } // if (hasSomethingToRender) {
 
-        renderAborted = _imp->aborted(tls);
+        renderAborted = aborted();
 #if NATRON_ENABLE_TRIMAP
 
-        if (!frameArgs->canAbort && frameArgs->isRenderResponseToUserInteraction) {
+        if (frameArgs->isCurrentFrameRenderNotAbortable()) {
             ///Only use trimap system if the render cannot be aborted.
             ///If we were aborted after all (because the node got deleted) then return a NULL image and empty the cache
             ///of this image

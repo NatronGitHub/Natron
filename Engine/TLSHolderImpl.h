@@ -114,11 +114,11 @@ TLSHolder<T>::getTLSData() const
         QReadLocker k(&perThreadDataMutex);
         typename ThreadDataMap::iterator found = perThreadData.find(curThread);
         if (found != perThreadData.end()) {
-            return found->second.value;
+            ret = found->second.value;
         }
     }
     
-    return boost::shared_ptr<T>();
+    return ret;
 }
 
 template <typename T>

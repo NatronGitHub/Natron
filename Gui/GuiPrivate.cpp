@@ -266,7 +266,6 @@ GuiPrivate::GuiPrivate(GuiAppInstance* app,
 , currentPanelFocusEventRecursion(0)
 , keyPressEventHasVisitedFocusWidget(false)
 , keyUpEventHasVisitedFocusWidget(false)
-, wasLaskUserSeekDuringPlayback(false)
 , applicationConsoleVisible(true)
 {
 }

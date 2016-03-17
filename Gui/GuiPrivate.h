@@ -252,9 +252,7 @@ struct GuiPrivate
     int currentPanelFocusEventRecursion;
     bool keyPressEventHasVisitedFocusWidget;
     bool keyUpEventHasVisitedFocusWidget;
-    
-    bool wasLaskUserSeekDuringPlayback;
-    
+        
     bool applicationConsoleVisible;
     
     GuiPrivate(GuiAppInstance* app,

@@ -5439,7 +5439,8 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
     ///Commented-out: If we were to undo the deactivate we don't want all threads to be
     ///exited, just exit them when the effect is really deleted instead
     //quitAnyProcessing();
-    abortAnyProcessing();
+    _imp->effect->abortAnyEvaluation();
+    _imp->abortPreview();
     
     ///Free all memory used by the plug-in.
     
@@ -5857,12 +5858,12 @@ Node::makePreviewImage(SequenceTime time,
 
     
     {
+        AbortableRenderInfoPtr abortInfo(new AbortableRenderInfo(true, 0));
         ParallelRenderArgsSetter frameRenderArgs(time,
                                                  ViewIdx(0), //< preview only renders view 0 (left)
                                                  true, //<isRenderUserInteraction
                                                  false, //isSequential
-                                                 true, //can abort
-                                                 0, //render Age
+                                                 abortInfo, // abort info
                                                  thisNode, // viewer requester
                                                  0, //texture index
                                                  getApp()->getTimeLine().get(), // timeline
@@ -6893,12 +6894,13 @@ Node::onInputChanged(int inputNb)
          * The plug-in might call getImage, set a valid thread storage on the tree.
          **/
         double time = getApp()->getTimeLine()->currentFrame();
+        
+        AbortableRenderInfoPtr abortInfo(new AbortableRenderInfo(false, 0));
         ParallelRenderArgsSetter frameRenderArgs(time,
                                                  ViewIdx(0),
                                                  true,
                                                  false,
-                                                 false,
-                                                 0,
+                                                 abortInfo,
                                                  shared_from_this(),
                                                  0, //texture index
                                                  getApp()->getTimeLine().get(),

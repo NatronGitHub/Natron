@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef PREVIEWTHREAD_H
-#define PREVIEWTHREAD_H
+#ifndef Natron_Engine_ThreadPool_h
+#define Natron_Engine_ThreadPool_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -25,49 +25,61 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <QThreadPool>
+
 #include "Global/Macros.h"
-
-#include <QThread>
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#endif
-
-#include "Engine/ThreadPool.h"
-
-#include "Gui/GuiFwd.h"
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
-struct PreviewThreadPrivate;
-class PreviewThread
-: public QThread
 #ifdef QT_USE_NATRON_CUSTOM_THREADPOOL_EXT
-, public AbortableThread
-#endif
+
+struct AbortableRenderInfo;
+
+/**
+ * @brief This class provides a fast way to determine whether a render thread
+ * is aborted or not.
+ **/
+struct AbortableThreadPrivate;
+class AbortableThread
 {
-    
-    
 public:
-    PreviewThread();
     
-    virtual ~PreviewThread();
+    AbortableThread();
     
-    void appendToQueue(const NodeGuiPtr& node, double time);
+    virtual ~AbortableThread();
     
-    void quitThread();
+    void setAbortInfo(bool isRenderResponseToUserInteraction,
+                      const AbortableRenderInfoPtr& abortInfo,
+                      const EffectInstPtr& treeRoot);
     
-    bool isWorking() const;
+    void clearAbortInfo();
+    
+    bool getAbortInfo(bool* isRenderResponseToUserInteraction,
+                      AbortableRenderInfoPtr* abortInfo,
+                      EffectInstPtr* treeRoot) const;
     
 private:
     
-    virtual void run() OVERRIDE FINAL;
+    boost::scoped_ptr<AbortableThreadPrivate> _imp;
     
-    boost::scoped_ptr<PreviewThreadPrivate> _imp;
 };
+
+class ThreadPool : public QThreadPool
+{
+public:
+    
+    ThreadPool();
+    
+    virtual ~ThreadPool();
+    
+private:
+    
+    virtual QThreadPoolThread* createThreadPoolThread() const OVERRIDE FINAL;
+};
+
+#endif // QT_USE_NATRON_CUSTOM_THREADPOOL_EXT
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // PREVIEWTHREAD_H
+#endif // Natron_Engine_ThreadPool_h

@@ -167,6 +167,7 @@ SOURCES += \
     StandardPaths.cpp \
     StringAnimationManager.cpp \
     TextureRect.cpp \
+    ThreadPool.cpp \
     TimeLine.cpp \
     Timer.cpp \
     TLSHolder.cpp \
@@ -215,7 +216,7 @@ SOURCES += \
     NatronEngine/userparamholder_wrapper.cpp \
     NatronEngine/rectd_wrapper.cpp \
     NatronEngine/recti_wrapper.cpp \
-    NatronEngine/separatorparam_wrapper.cpp \
+    NatronEngine/separatorparam_wrapper.cpp
 
 HEADERS += \
     AppInstance.h \
@@ -351,6 +352,7 @@ HEADERS += \
     TextureRect.h \
     TextureRectSerialization.h \
     ThreadStorage.h \
+    ThreadPool.h \
     TimeLine.h \
     TimeLineKeyFrames.h \
     Timer.h \

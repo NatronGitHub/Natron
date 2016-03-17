@@ -88,6 +88,7 @@
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoSmear.h"
 #include "Engine/StandardPaths.h"
+#include "Engine/ThreadPool.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h" // RenderStatsMap
 #include "Engine/WriteNode.h"
@@ -263,6 +264,10 @@ AppManager::load(int &argc,
     }
     initializeQApp(argc, argv);
     
+#ifdef QT_USE_NATRON_CUSTOM_THREADPOOL_EXT
+    // Set the global thread pool
+    qApp->setGlobalThreadPool(new ThreadPool);
+#endif
 
     // set fontconfig path on all platforms
     if (qgetenv("FONTCONFIG_PATH").isNull()) {

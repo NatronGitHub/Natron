@@ -2525,13 +2525,12 @@ private:
                 RectI renderWindow;
                 rod.toPixelEnclosing(scale, par, &renderWindow);
                 
-                
+                AbortableRenderInfoPtr abortInfo(new AbortableRenderInfo(true, 0));
                 ParallelRenderArgsSetter frameRenderArgs(time,
                                                          viewsToRender[view],
                                                          false,  // is this render due to user interaction ?
                                                          true,
-                                                         true, // canAbort ?
-                                                         0, //renderAge
+                                                         abortInfo, //abortInfo
                                                          outputNode, // viewer requester
                                                          0, //texture index
                                                          output->getApp()->getTimeLine().get(),
@@ -2647,12 +2646,12 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
     for (BufferedFrames::const_iterator it = frames.begin(); it != frames.end(); ++it) {
         
         
+        AbortableRenderInfoPtr abortInfo(new AbortableRenderInfo(true, 0));
         ParallelRenderArgsSetter frameRenderArgs(it->time,
                                                  it->view,
                                                  false,  // is this render due to user interaction ?
                                                  true, // is this sequential ?
-                                                 true, //canAbort
-                                                 0, //renderAge
+                                                 abortInfo, //abortInfo
                                                  effect->getNode(), //tree root
                                                  0, //texture index
                                                  effect->getApp()->getTimeLine().get(),
@@ -3032,7 +3031,7 @@ private:
         
         for (int i = 0; i < 2; ++i) {
             args[i].reset(new ViewerArgs);
-            status[i] = viewer->getRenderViewerArgsAndCheckCache_public(time, true, view, i, viewerHash, NodePtr(), stats, args[i].get());
+            status[i] = viewer->getRenderViewerArgsAndCheckCache_public(time, true, view, i, viewerHash, true, NodePtr(), stats, args[i].get());
             clearTexture[i] = status[i] == ViewerInstance::eViewerRenderRetCodeFail || status[i] == ViewerInstance::eViewerRenderRetCodeBlack;
             if (clearTexture[i]) {
                 //Just clear the viewer, nothing to do
@@ -3997,7 +3996,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
         
         for (int i = 0; i < 2; ++i) {
             args[i].reset(new ViewerArgs);
-            status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache_public(frame, false, view, i, viewerHash,rotoPaintNode, stats, args[i].get());
+            status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache_public(frame, false, view, i, viewerHash, canAbort,rotoPaintNode, stats, args[i].get());
             
             clearTexture[i] = status[i] == ViewerInstance::eViewerRenderRetCodeFail || status[i] == ViewerInstance::eViewerRenderRetCodeBlack;
             if (clearTexture[i] || args[i]->params->isViewerPaused) {

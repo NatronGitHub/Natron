@@ -201,9 +201,8 @@ EffectInstance::setParallelRenderArgsTLS(double time,
                                          ViewIdx view,
                                          bool isRenderUserInteraction,
                                          bool isSequential,
-                                         bool canAbort,
                                          U64 nodeHash,
-                                         U64 renderAge,
+                                         const AbortableRenderInfoPtr& abortInfo,
                                          const NodePtr & treeRoot,
                                          const boost::shared_ptr<NodeFrameRequest> & nodeRequest,
                                          int textureIndex,
@@ -233,8 +232,7 @@ EffectInstance::setParallelRenderArgsTLS(double time,
     } else {
         args->nodeHash = nodeHash;
     }
-    args->canAbort = canAbort;
-    args->renderAge = renderAge;
+    args->abortInfo = abortInfo;
     args->treeRoot = treeRoot;
     args->textureIndex = textureIndex;
     args->isAnalysis = isAnalysis;
@@ -333,81 +331,98 @@ EffectInstance::getRenderHash() const
 }
 
 bool
-EffectInstance::Implementation::aborted(const EffectDataTLSPtr& tls) const
+EffectInstance::Implementation::aborted(bool isRenderResponseToUserInteraction,
+                                        const AbortableRenderInfoPtr& abortInfo,
+                                        const EffectInstPtr& treeRoot) const
 {
-    if (tls->frameArgs.empty()) {
-        return false;
-    }
-    const boost::shared_ptr<ParallelRenderArgs> & args = tls->frameArgs.back();
     
-    if (args->isRenderResponseToUserInteraction) {
-        //Don't allow the plug-in to abort while in analysis.
-        //Need to work on this for the tracker in order to be abortable.
-        if (args->isAnalysis) {
-            return false;
-        }
-        ViewerInstance* isViewer  = 0;
-        if (args->treeRoot) {
-            isViewer = args->treeRoot->isEffectViewer();
-            //If the viewer is already doing a sequential render, abort
-            if ( isViewer && isViewer->isDoingSequentialRender() ) {
-                return true;
-            }
-        }
+    if (!isRenderResponseToUserInteraction) {
         
-        if (args->canAbort) {
-            
-            if (isViewer) {
-                ///The renders have been aborted on the viewer itself, check it with the render age
-                bool isLatestRender;
-                if (isViewer->isRenderAbortable(args->textureIndex, args->renderAge, &isLatestRender)) {
-                    return true;
-                }
-                
-                ///If the render was not aborted but it is no longer the latest render and the plug-in safety does not allow
-                ///concurrent thread abort it
-                if (!isLatestRender && (args->currentThreadSafety == eRenderSafetyInstanceSafe || args->currentThreadSafety == eRenderSafetyUnsafe)) {
-                    return true;
-                }
-                
-            }
-           
-            if (args->draftMode && args->timeline && args->time != args->timeline->currentFrame()) {
-                return true;
-            }
-            
-            ///Rendering issued by RenderEngine::renderCurrentFrame, if time or hash changed, abort
-            bool ret = !_publicInterface->getNode()->isActivated();
-            
-            return ret;
-        } else {
-            bool deactivated = !_publicInterface->getNode()->isActivated();
-            
-            return deactivated;
-        }
-    } else {
-        ///Rendering is playback or render on disk, we rely on the flag set on the node that requested the render
-        if (args->treeRoot) {
-            OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>(args->treeRoot->getEffectInstance().get());
+        // Rendering is playback or render on disk, we rely on the flag set on the node that requested the render in OutputSchedulerThread
+        if (treeRoot) {
+            OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>(treeRoot.get());
             assert(effect);
-            
             return effect ? effect->isSequentialRenderBeingAborted() : false;
         } else {
             return false;
         }
+        
+    } else {
+        
+        // This is a render issued to refresh the image on the Viewer
+        
+        if (!abortInfo || !abortInfo->canAbort) {
+            return false;
+        }
+        
+        
+        if ((int)abortInfo->aborted > 0) {
+            return true;
+        }
+        
+        ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(treeRoot.get());
+        if (isViewer) {
+            
+            // If the viewer is already doing a sequential render, abort
+            if (isViewer->isDoingSequentialRender()) {
+                return true;
+            }
+            
+            // If the render was not aborted but it is no longer the latest render and the plug-in safety does not allow
+            // concurrent thread abort it
+            /*if (args->currentThreadSafety == eRenderSafetyInstanceSafe || args->currentThreadSafety == eRenderSafetyUnsafe) {
+                bool isLatestRender = isViewer->isLatestRender(args->textureIndex, args->abortInfo->age);
+                if (!isLatestRender) {
+                    return true;
+                }
+            }*/
+        }
+        return false;
+        
     }
-    
-    
 }
 
 bool
 EffectInstance::aborted() const
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-    if (!tls) {
-        return false;
+    QThread* thisThread = QThread::currentThread();
+    
+#ifdef QT_USE_NATRON_CUSTOM_THREADPOOL_EXT
+    AbortableThread* isAbortableThread = dynamic_cast<AbortableThread*>(thisThread);
+#endif
+    
+    bool isRenderUserInteraction;
+    AbortableRenderInfoPtr abortInfo;
+    EffectInstPtr treeRoot;
+    
+    // If the thread is an abortable thread, the first call to abort is slow (using TLS) then others are
+    // fast and just dereferences pointers
+#ifdef QT_USE_NATRON_CUSTOM_THREADPOOL_EXT
+    if (!isAbortableThread || !isAbortableThread->getAbortInfo(&isRenderUserInteraction, &abortInfo, &treeRoot))
+#endif
+    {
+        EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+        if (!tls) {
+            return false;
+        }
+        if (tls->frameArgs.empty()) {
+            return false;
+        }
+        const boost::shared_ptr<ParallelRenderArgs> & args = tls->frameArgs.back();
+        isRenderUserInteraction = args->isRenderResponseToUserInteraction;
+        abortInfo = args->abortInfo;
+        treeRoot = args->treeRoot->getEffectInstance();
+        
+#ifdef QT_USE_NATRON_CUSTOM_THREADPOOL_EXT
+        if (isAbortableThread) {
+            isAbortableThread->setAbortInfo(isRenderUserInteraction, abortInfo, treeRoot);
+        }
+#endif
     }
-    return _imp->aborted(tls);
+    
+    return _imp->aborted(isRenderUserInteraction,
+                         abortInfo,
+                         treeRoot);
     
 } // EffectInstance::aborted
 
@@ -1917,7 +1932,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
             RectI initialRenderRect = renderMappedRectToRender;
 
 #if NATRON_ENABLE_TRIMAP
-            if (!frameArgs->canAbort && frameArgs->isRenderResponseToUserInteraction) {
+            if (frameArgs->isCurrentFrameRenderNotAbortable()) {
                 bitmapMarkedForRendering = true;
                 renderMappedRectToRender = firstPlaneToRender.renderMappedImage->getMinimalRectAndMarkForRendering_trimap(renderMappedRectToRender, &isBeingRenderedElseWhere);
             } else {
@@ -1944,7 +1959,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
             //The downscaled image is cached, read bitmap from it
 #if NATRON_ENABLE_TRIMAP
             RectI rectToRenderMinimal;
-            if (!frameArgs->canAbort && frameArgs->isRenderResponseToUserInteraction) {
+            if (frameArgs->isCurrentFrameRenderNotAbortable()) {
                 bitmapMarkedForRendering = true;
                 rectToRenderMinimal = firstPlaneToRender.downscaleImage->getMinimalRectAndMarkForRendering_trimap(renderMappedRectToRender, &isBeingRenderedElseWhere);
             } else {
@@ -2320,7 +2335,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
 
 
 #if NATRON_ENABLE_TRIMAP
-    if (!bitmapMarkedForRendering && !frameArgs->canAbort && frameArgs->isRenderResponseToUserInteraction) {
+    if (!bitmapMarkedForRendering && frameArgs->isCurrentFrameRenderNotAbortable()) {
         for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = tls->currentRenderArgs.outputPlanes.begin(); it != tls->currentRenderArgs.outputPlanes.end(); ++it) {
             it->second.renderMappedImage->markForRendering(renderMappedRectToRender);
         }
@@ -2359,7 +2374,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
 
         StatusEnum st = _publicInterface->render_public(actionArgs);
 
-        renderAborted = aborted(tls);
+        renderAborted = _publicInterface->aborted();
 
         /*
          * Since new planes can have been allocated on the fly by allocateImagePlaneAndSetInThreadLocalStorage(), refresh
@@ -2372,7 +2387,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
 
         if ( (st != eStatusOK) || renderAborted ) {
 #if NATRON_ENABLE_TRIMAP
-            if (!frameArgs->canAbort && frameArgs->isRenderResponseToUserInteraction) {
+            if (frameArgs->isCurrentFrameRenderNotAbortable()) {
                 /*
                    At this point, another thread might have already gotten this image from the cache and could end-up
                    using it while it has still pixels marked to PIXEL_UNAVAILABLE, hence clear the bitmap
@@ -4046,12 +4061,12 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         ////tries to call getImage it can render with good parameters.
         boost::shared_ptr<ParallelRenderArgsSetter> setter;
         if (reason != eValueChangedReasonTimeChanged) {
+            AbortableRenderInfoPtr abortInfo(new AbortableRenderInfo(false, 0));
             setter.reset(new ParallelRenderArgsSetter(time,
                                                       viewIdx, //view
                                                       true, // isRenderUserInteraction
                                                       false, // isSequential
-                                                      false, // canAbort
-                                                      0, // renderAge
+                                                      abortInfo, // abortInfo
                                                       node, // treeRoot
                                                       0, //texture index
                                                       getApp()->getTimeLine().get(),

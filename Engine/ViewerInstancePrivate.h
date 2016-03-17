@@ -52,14 +52,17 @@
 
 NATRON_NAMESPACE_ENTER;
 
-struct OnGoingRenderInfo
+
+struct AbortableRenderInfo_CompareAge
 {
-    bool aborted;
-    U64 age;
+    bool operator() (const AbortableRenderInfoPtr & lhs,
+                     const AbortableRenderInfoPtr & rhs) const
+    {
+        return lhs->age < rhs->age;
+    }
 };
 
-
-typedef std::list<OnGoingRenderInfo> OnGoingRenders;
+typedef std::set<AbortableRenderInfoPtr, AbortableRenderInfo_CompareAge> OnGoingRenders;
 
 
 struct RenderViewerArgs
@@ -214,7 +217,7 @@ public:
      * @brief Returns the current render age of the viewer (a simple counter incrementing at each request).
      * The age is then incremented so the next call to getRenderAge will return the current value plus one.
      **/
-    U64 getRenderAgeAndIncrement(int texIndex)
+    AbortableRenderInfoPtr createNewRenderRequest(int texIndex, bool canAbort)
     {
         QMutexLocker k(&renderAgeMutex);
         
@@ -224,7 +227,9 @@ public:
         } else {
             ++renderAge[texIndex];
         }
-        return ret;
+        
+        AbortableRenderInfoPtr info(new AbortableRenderInfo(canAbort, ret));
+        return info;
         
     }
     
@@ -232,25 +237,10 @@ public:
      * @brief We keep track of ongoing renders internally. This function is called only by non 
      * abortable renders to determine if we should abort anyway because the render is no longer interesting.
      **/
-    bool isRenderAbortable(int texIndex,U64 age, bool* isLatestRender) const
+    bool isLatestRender(int texIndex,U64 age) const
     {
         QMutexLocker k(&renderAgeMutex);
-      
-        *isLatestRender = true;
-        for (OnGoingRenders::const_iterator it = currentRenderAges[texIndex].begin(); it!=currentRenderAges[texIndex].end();++it) {
-            if (it->age == age) {
-                OnGoingRenders::const_iterator next = it;
-                ++next;
-                if (next == currentRenderAges[texIndex].end()) {
-                    *isLatestRender = true;
-                } else {
-                    *isLatestRender = false;
-                }
-                return it->aborted;
-            }
-        }
-         //hmm something is wrong the render doesn't exist
-        return true;
+        return !currentRenderAges[texIndex].empty() && (*currentRenderAges[texIndex].rbegin())->age == age;
     }
     
     
@@ -268,7 +258,7 @@ public:
             ++it;
             
             for (;it != currentRenderAges[i].end(); ++it) {
-                it->aborted = true;
+                (*it)->aborted = true;
             }
         }
     }
@@ -307,23 +297,19 @@ public:
         return true;
     }
     
-    bool addOngoingRender(int texIndex, U64 age) {
+    bool addOngoingRender(int texIndex, const AbortableRenderInfoPtr& abortInfo) {
         QMutexLocker k(&renderAgeMutex);
-        if (!currentRenderAges[texIndex].empty() && currentRenderAges[texIndex].back().age >= age) {
+        if (!currentRenderAges[texIndex].empty() && (*currentRenderAges[texIndex].rbegin())->age >= abortInfo->age) {
             return false;
         }
-       
-        OnGoingRenderInfo info;
-        info.aborted = false;
-        info.age = age;
-        currentRenderAges[texIndex].push_back(info);
+        currentRenderAges[texIndex].insert(abortInfo);
         return true;
     }
     
     bool removeOngoingRender(int texIndex, U64 age) {
         QMutexLocker k(&renderAgeMutex);
         for (OnGoingRenders::iterator it = currentRenderAges[texIndex].begin(); it!=currentRenderAges[texIndex].end();++it) {
-            if (it->age == age) {
+            if ((*it)->age == age) {
                 currentRenderAges[texIndex].erase(it);
                 return true;
             }

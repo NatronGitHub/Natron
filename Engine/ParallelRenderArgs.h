@@ -29,6 +29,8 @@
 #include <map>
 #include <list>
 
+#include <QAtomicInt>
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -38,6 +40,7 @@
 #include "Engine/RectD.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
+
 
 
 //This controls how many frames a plug-in can pre-fetch (per view and per input)
@@ -59,6 +62,23 @@ struct InputMatrix
 };
 
 typedef std::map<int,InputMatrix> InputMatrixMap;
+
+struct AbortableRenderInfo
+{
+    bool canAbort;
+    QAtomicInt aborted;
+    U64 age;
+    
+    AbortableRenderInfo(bool canAbort, U64 age)
+    : canAbort(canAbort)
+    , aborted()
+    , age(age)
+    {
+        aborted.fetchAndStoreAcquire(0);
+    }
+};
+
+typedef boost::shared_ptr<AbortableRenderInfo> AbortableRenderInfoPtr;
 
 struct NodeFrameRequest;
 
@@ -94,9 +114,8 @@ struct ParallelRenderArgs
     ///to a frame being rendered by the tree.
     ViewIdx view;
 
-
     ///A number identifying the current frame render to determine if we can really abort for abortable renders
-    U64 renderAge;
+    AbortableRenderInfoPtr abortInfo;
     
     ///A pointer to the node that requested the current render.
     NodePtr treeRoot;
@@ -120,9 +139,6 @@ struct ParallelRenderArgs
 
     /// Is this render sequential ? True for Viewer playback or a sequential writer such as WriteFFMPEG
     bool isSequentialRender:1;
-
-    /// True if this frame can be aborted (false for preview and tracking)
-    bool canAbort:1;
 
     ///Was the render started in the instanceChangedAction (knobChanged)
     bool isAnalysis:1;
@@ -149,7 +165,7 @@ struct ParallelRenderArgs
     , nodeHash(0)
     , request()
     , view(0)
-    , renderAge(0)
+    , abortInfo()
     , treeRoot()
     , rotoPaintNodes()
     , stats()
@@ -157,7 +173,6 @@ struct ParallelRenderArgs
     , currentThreadSafety(eRenderSafetyInstanceSafe)
     , isRenderResponseToUserInteraction(false)
     , isSequentialRender(false)
-    , canAbort(false)
     , isAnalysis(false)
     , isDuringPaintStrokeCreation(false)
     , doNansHandling(true)
@@ -166,6 +181,10 @@ struct ParallelRenderArgs
     , viewerProgressReportEnabled(false)
     {
         
+    }
+    
+    bool isCurrentFrameRenderNotAbortable() const {
+        return isRenderResponseToUserInteraction && (!abortInfo || !abortInfo->canAbort);
     }
 };
 
@@ -278,8 +297,7 @@ public:
                              ViewIdx view,
                              bool isRenderUserInteraction,
                              bool isSequential,
-                             bool canAbort,
-                             U64 renderAge,
+                             const AbortableRenderInfoPtr& abortInfo,
                              const NodePtr& treeRoot,
                              int textureIndex,
                              const TimeLine* timeline,

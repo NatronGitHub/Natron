@@ -66,7 +66,7 @@ public:
     , cachedFrame()
     , tiles()
     , rod()
-    , renderAge(0)
+    , abortInfo()
     , isSequential(false)
     , roi()
     , updateOnlyRoi(false)
@@ -108,7 +108,7 @@ public:
     boost::shared_ptr<FrameEntry> cachedFrame;
     std::list<boost::shared_ptr<Image> > tiles;
     RectD rod;
-    U64 renderAge;
+    AbortableRenderInfoPtr abortInfo;
     bool isSequential;
     RectI roi;
     bool updateOnlyRoi;
