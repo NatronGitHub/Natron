@@ -1255,6 +1255,9 @@ if [ ! -d $INSTALL_PATH/ffmpeg-gpl ] || [ ! -d $INSTALL_PATH/ffmpeg-lgpl ]; then
 fi
 
 # Install qt
+if [ "$REBUILD_QT" = "1" ]; then
+  rm -rf $INSTALL_PATH/bin/qmake* $INSTALL_PATH/lib/libQt* $INSTALL_PATH/include/Qt* $INSTALL_PATH/{plugins,phrasebooks,q3porting.xml,tests,imports,mkspecs,translations}
+fi
 if [ "$SDK_VERSION" = "CY2016" ]; then
   # Qt5
   if [ ! -f $INSTALL_PATH/bin/qmake ]; then
