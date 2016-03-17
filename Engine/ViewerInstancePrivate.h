@@ -119,7 +119,7 @@ public:
     : instance(parent)
     , uiContext(NULL)
     , forceRenderMutex()
-    , forceRender(false)
+    , forceRender()
     , isViewerPausedMutex()
     , isViewerPaused()
     , updateViewerPboIndex(0)
@@ -148,6 +148,7 @@ public:
     {
 
         for (int i = 0; i < 2; ++i) {
+            forceRender[i] = false;
             activeInputs[i] = -1;
             renderAge[i] = 1;
             displayAge[i] = 0;
@@ -381,7 +382,7 @@ public:
     const ViewerInstance* const instance;
     OpenGLViewerI* uiContext; // written in the main thread before render thread creation, accessed from render thread
     mutable QMutex forceRenderMutex;
-    bool forceRender; /*!< true when we want to by-pass the cache*/
+    bool forceRender[2]; /*!< true when we want to by-pass the cache*/
 
     mutable QMutex isViewerPausedMutex;
     bool isViewerPaused[2]; /*!< When true we should no longer refresh the viewer */
