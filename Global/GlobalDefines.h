@@ -99,19 +99,14 @@ typedef OfxRangeD RangeD;
 
 
 ///these are used between process to communicate via the pipes
-#define kRenderingStartedLong "Rendering started"
 #define kRenderingStartedShort "-b"
 
-#define kFrameRenderedStringLong "Frame rendered: "
 #define kFrameRenderedStringShort "-r"
 
-#define kProgressChangedStringLong "Progress changed: "
 #define kProgressChangedStringShort "-p"
 
-#define kRenderingFinishedStringLong "Rendering finished"
 #define kRenderingFinishedStringShort "-e"
 
-#define kAbortRenderingStringLong "Abort rendering"
 #define kAbortRenderingStringShort "-a"
 
 #define kBgProcessServerCreatedShort "--bg_server_created"

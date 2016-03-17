@@ -1639,8 +1639,8 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
         QString percentageStr = QString::number(percentage * 100,'f',1);
         QString timeRemainingStr = Timer::printAsTime(timeRemaining, true);
         
-        ts << effect->getScriptName_mt_safe().c_str() << " ==> Frame: ";
-        ts << frameStr << ", Progress: " << percentageStr << "%, " << fpsStr << " Fps, Time Remaining: " << timeRemainingStr;
+        ts << effect->getScriptName_mt_safe().c_str() << tr(" ==> Frame: ");
+        ts << frameStr << tr(", Progress: ") << percentageStr << "%, " << fpsStr << tr(" Fps, Time Remaining: ") << timeRemainingStr;
         
         QString shortMessage = QString::fromUtf8(kFrameRenderedStringShort) + frameStr + QString::fromUtf8(kProgressChangedStringShort) + QString::number(percentage);
         {
@@ -1650,11 +1650,14 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
                 int nSpacesToAppend = _imp->lastBufferedOutputSize - longMessage.size();
                 toPrint.append(nSpacesToAppend, ' ');
             }
-            std::cout << '\r' << toPrint;
-            std::cout.flush();
+            //std::cout << '\r';
+            std::cout << toPrint;
+            std::cout << std::endl;
+            
+            /*std::cout.flush();
             if (renderingIsFinished) {
                 std::cout << std::endl;
-            }
+            }*/
             _imp->lastBufferedOutputSize = longMessage.size();
         }
     
@@ -2771,7 +2774,8 @@ DefaultScheduler::aboutToStartRender()
     if (!isBackGround) {
         effect->setKnobsFrozen(true);
     } else {
-        appPTR->writeToOutputPipe(QString::fromUtf8(kRenderingStartedLong), QString::fromUtf8(kRenderingStartedShort), true);
+        QString longText = QString::fromUtf8(effect->getScriptName_mt_safe().c_str()) + tr(" ==> Rendering started");
+        appPTR->writeToOutputPipe(longText, QString::fromUtf8(kRenderingStartedShort), true);
     }
     
     std::string cb = effect->getNode()->getBeforeRenderCallback();
@@ -2828,7 +2832,10 @@ DefaultScheduler::onRenderStopped(bool aborted)
         effect->setKnobsFrozen(false);
     }
     
-    appPTR->writeToOutputPipe(QString::fromUtf8(kRenderingFinishedStringLong),QString::fromUtf8(kRenderingFinishedStringShort), true);
+    {
+        QString longText = QString::fromUtf8(effect->getScriptName_mt_safe().c_str()) + tr(" ==> Rendering finished");
+        appPTR->writeToOutputPipe(longText,QString::fromUtf8(kRenderingFinishedStringShort), true);
+    }
     
     effect->notifyRenderFinished();
     
