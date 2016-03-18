@@ -2539,9 +2539,15 @@ RotoGui::penDown(double time,
                         _imp->handleBezierSelection(nearbyBezier, e);
                         
                     }
-                    if (buttonDownIsLeft(e)) {
-                        _imp->state = eEventStateDraggingSelectedControlPoints;
-                        _imp->rotoData->bezierBeingDragged = nearbyBezier;
+                    if (e->button() == Qt::LeftButton) {
+                        
+                        if (modCASIsControlAlt(e)) {
+                            pushUndoCommand( new AddPointUndoCommand(this,nearbyBezier,nearbyBezierCPIndex,nearbyBezierT) );
+                            _imp->evaluateOnPenUp = true;
+                        } else {
+                            _imp->state = eEventStateDraggingSelectedControlPoints;
+                            _imp->rotoData->bezierBeingDragged = nearbyBezier;
+                        }
                     } else if ( buttonDownIsRight(e) ) {
                         showMenuForCurve(nearbyBezier);
                         
@@ -2583,6 +2589,11 @@ RotoGui::penDown(double time,
                 }
                 if ( buttonDownIsRight(e) ) {
                     showMenuForCurve(nearbyBezier);
+                } else {
+                    if (modCASIsControlAlt(e)) {
+                        pushUndoCommand( new AddPointUndoCommand(this,nearbyBezier,nearbyBezierCPIndex,nearbyBezierT) );
+                        _imp->evaluateOnPenUp = true;
+                    }
                 }
                 didSomething = true;
             } else {
