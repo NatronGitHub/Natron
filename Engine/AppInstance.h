@@ -185,11 +185,7 @@ public:
     /** @brief Create a new node  in the node graph.
      **/
     NodePtr createNode(CreateNodeArgs & args);
-    
-#ifdef NATRON_ENABLE_IO_META_NODES
     NodePtr createReader(const std::string& filename, CreateNodeReason reason, const boost::shared_ptr<NodeCollection>& group);
-    
-#endif
     
     
     NodePtr createWriter(const std::string& filename,
