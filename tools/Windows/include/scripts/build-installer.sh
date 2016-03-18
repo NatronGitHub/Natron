@@ -12,7 +12,7 @@
 # OFFLINE=1 : Make the offline installer too
 # NO_INSTALLER: Do not make any installer, only zip if NO_ZIP!=1
 # Usage:
-# NO_ZIP=1 NATRON_LICENSE=GPL OFFLINE=1 BUILD_CONFIG=BETA BUILD_NUMBER=1 sh build-installer 64 workshop
+# NO_ZIP=1 NATRON_LICENSE=GPL OFFLINE=1 BUILD_CONFIG=BETA BUILD_NUMBER=1 sh build-installer 64 master
 
 source `pwd`/common.sh || exit 1
 source `pwd`/commits-hash.sh || exit 1
@@ -61,7 +61,7 @@ elif [ "$BUILD_CONFIG" = "RC" ]; then
 	fi
 	NATRON_VERSION=$NATRON_VERSION_NUMBER-RC$BUILD_NUMBER
 elif [ "$BUILD_CONFIG" = "STABLE" ]; then
-	NATRON_VERSION=$NATRON_VERSION_NUMBER-stable
+	NATRON_VERSION=$NATRON_VERSION_NUMBER
 elif [ "$BUILD_CONFIG" = "CUSTOM" ]; then
 	if [ -z "$CUSTOM_BUILD_USER_NAME" ]; then
 		echo "You must supply a CUSTOM_BUILD_USER_NAME when BUILD_CONFIG=CUSTOM"
@@ -88,6 +88,11 @@ rm -rf $REPO_DIR/packages $REPO_DIR/installers $ARCHIVE_DATA_DIR
 mkdir -p $REPO_DIR/packages || exit 1
 mkdir -p $REPO_DIR/installers || exit 1
 mkdir -p $ARCHIVE_DATA_DIR || exit 1
+mkdir -p $ARCHIVE_DATA_DIR/Resources
+mkdir -p $ARCHIVE_DATA_DIR/lib
+mkdir -p $ARCHIVE_DATA_DIR/bin
+mkdir -p $ARCHIVE_DATA_DIR/Plugins/OFX/Natron
+mkdir -p $ARCHIVE_DATA_DIR/Plugins/PyPlugs
 
 
 DATE=`date +%Y-%m-%d`
@@ -119,7 +124,7 @@ cp "$INC_PATH/config/"*.png "$INSTALLER/config/" || exit 1
 
 # OFX IO
 if [ "$BUNDLE_IO" = "1" ]; then         
-    IO_DLL="LIBICUDT56.DLL LIBICUUC56.DLL LIBLCMS2-2.DLL LIBJASPER-1.DLL LIBLZMA-5.DLL LIBOPENJPEG-5.DLL LIBHALF-2_2.DLL LIBILMIMF-2_2.DLL LIBIEX-2_2.DLL LIBILMTHREAD-2_2.DLL LIBIMATH-2_2.DLL LIBOPENIMAGEIO.DLL LIBRAW_R-10.DLL LIBWEBP-6.DLL LIBBOOST_THREAD-MT.DLL LIBBOOST_SYSTEM-MT.DLL LIBBOOST_REGEX-MT.DLL LIBBOOST_FILESYSTEM-MT.DLL"
+    IO_DLL="LIBICUDT56.DLL LIBICUUC56.DLL LIBLCMS2-2.DLL LIBJASPER-1.DLL LIBOPENJPEG-5.DLL LIBHALF-2_2.DLL LIBILMIMF-2_2.DLL LIBIEX-2_2.DLL LIBILMTHREAD-2_2.DLL LIBIMATH-2_2.DLL LIBOPENIMAGEIO.DLL LIBRAW_R-15.DLL LIBWEBP-6.DLL LIBBOOST_THREAD-MT.DLL LIBBOOST_SYSTEM-MT.DLL LIBBOOST_REGEX-MT.DLL LIBBOOST_FILESYSTEM-MT.DLL"
     OFX_IO_VERSION="$TAG"
     OFX_IO_PATH="$INSTALLER/packages/$IOPLUG_PKG"
     mkdir -p "$OFX_IO_PATH/data" "$OFX_IO_PATH/meta" "$OFX_IO_PATH/data/Plugins/OFX/Natron" || exit 1
@@ -145,7 +150,6 @@ fi
 
 # OFX MISC
 if [ "$BUNDLE_MISC" = "1" ]; then 
-    CIMG_DLL="LIBGOMP-1.DLL"
     OFX_MISC_VERSION=$TAG
     OFX_MISC_PATH=$INSTALLER/packages/$MISCPLUG_PKG
     mkdir -p $OFX_MISC_PATH/data $OFX_MISC_PATH/meta $OFX_MISC_PATH/data/Plugins/OFX/Natron || exit 1
@@ -156,9 +160,6 @@ if [ "$BUNDLE_MISC" = "1" ]; then
     #cat $INSTALL_PATH/docs/openfx-misc/LICENSE >> $OFX_MISC_PATH/meta/ofx-misc-license.txt || exit 1
     cp -a $INSTALL_PATH/Plugins/{CImg,Misc}.ofx.bundle $OFX_MISC_PATH/data/Plugins/OFX/Natron/ || exit 1
     
-    for depend in $CIMG_DLL; do
-        cp $INSTALL_PATH/bin/$depend  $OFX_MISC_PATH/data/Plugins/OFX/Natron/CImg.ofx.bundle/Contents/Win$BIT/ || exit 1
-    done
 
     if [ "$DISABLE_BREAKPAD" != "1" ]; then
         $INSTALL_PATH/bin/dump_syms.exe $OFX_MISC_PATH/data/Plugins/OFX/Natron/*/*/*/CImg.ofx > $INSTALL_PATH/symbols/CImg.ofx-${TAG}${BPAD_TAG}-${PKGOS}.sym || exit 1
@@ -176,6 +177,12 @@ cat $QS/natron.qs > $NATRON_PATH/meta/installscript.qs || exit 1
 cp -a $INSTALL_PATH/docs/natron/* $NATRON_PATH/data/docs/ || exit 1
 cat $INSTALL_PATH/docs/natron/LICENSE.txt > $NATRON_PATH/meta/natron-license.txt || exit 1
 
+cp $INSTALL_PATH/PyPlugs/* $NATRON_PATH/data/Plugins/PyPlugs/ || exit 1
+
+if [ "$NO_ZIP" != "1" ]; then
+    cp -r $INSTALL_PATH/PyPlugs/* $ARCHIVE_DATA_DIR/Plugins/PyPlugs/ || exit 1
+fi
+
 if [ "$DISABLE_BREAKPAD" != "1" ]; then
     cp $INSTALL_PATH/bin/Natron.exe $NATRON_PATH/data/bin/Natron-bin.exe || exit 1
     cp $INSTALL_PATH/bin/NatronRenderer.exe $NATRON_PATH/data/bin/NatronRenderer-bin.exe || exit 1
@@ -185,6 +192,8 @@ else
     cp $INSTALL_PATH/bin/Natron.exe $NATRON_PATH/data/bin/Natron.exe || exit 1
     cp $INSTALL_PATH/bin/NatronRenderer.exe $NATRON_PATH/data/bin/NatronRenderer.exe || exit 1
 fi
+
+cp $FFMPEG_BIN_PATH/bin/{ffmpeg.exe,ffprobe.exe} $NATRON_PATH/data/bin/ || exit 1
 
 wget --no-check-certificate $NATRON_API_DOC || exit 1
 mv natron.pdf $NATRON_PATH/data/docs/Natron_Python_API_Reference.pdf || exit 1
@@ -201,7 +210,6 @@ fi
 strip -s $NATRON_PATH/data/bin/*
 
 if [ "$NO_ZIP" != "1" ]; then
-	mkdir -p $ARCHIVE_DATA_DIR/bin
 	cp -r $NATRON_PATH/data/bin/* $ARCHIVE_DATA_DIR/bin || exit 1
 fi
 
@@ -214,7 +222,6 @@ cat $QS/ocio.qs > $OCIO_PATH/meta/installscript.qs || exit 1
 cp -a $INSTALL_PATH/share/OpenColorIO-Configs $OCIO_PATH/data/Resources/ || exit 1
 
 if [ "$NO_ZIP" != "1" ]; then
-	mkdir -p $ARCHIVE_DATA_DIR/Resources
 	cp -r $OCIO_PATH/data/Resources/* $ARCHIVE_DATA_DIR/Resources || exit 1
 fi
 
@@ -228,7 +235,7 @@ cat $QS/corelibs.qs > $CLIBS_PATH/meta/installscript.qs || exit 1
 cp -a $INSTALL_PATH/etc/fonts/* $CLIBS_PATH/data/Resources/etc/fonts || exit 1
 cp -a $INSTALL_PATH/share/qt4/plugins/* $CLIBS_PATH/data/bin/ || exit 1
 rm -f $CLIBS_PATH/data/bin/*/*d4.dll
-NATRON_DLL="LIBEAY32.DLL SSLEAY32.DLL LIBGIF-7.DLL LIBSQLITE3-0.DLL LIBJPEG-8.DLL LIBMNG-2.DLL LIBTIFF-5.DLL LIBFFI-6.DLL LIBICONV-2.DLL LIBINTL-8.DLL GLEW32.DLL LIBGLIB-2.0-0.DLL LIBWINPTHREAD-1.DLL LIBSTDC++-6.DLL LIBBOOST_SERIALIZATION-MT.DLL LIBCAIRO-2.DLL LIBFREETYPE-6.DLL LIBBZ2-1.DLL LIBHARFBUZZ-0.DLL LIBPIXMAN-1-0.DLL LIBPNG16-16.DLL ZLIB1.DLL LIBEXPAT-1.DLL LIBFONTCONFIG-1.DLL LIBPYSIDE-PYTHON2.7.DLL LIBPYTHON2.7.DLL QTCORE4.DLL QTGUI4.DLL QTNETWORK4.DLL QTOPENGL4.DLL LIBSHIBOKEN-PYTHON2.7.DLL"
+NATRON_DLL="LIBLZMA-5.DLL LIBGOMP-1.DLL LIBEAY32.DLL SSLEAY32.DLL LIBGIF-7.DLL LIBSQLITE3-0.DLL LIBJPEG-8.DLL LIBMNG-2.DLL LIBTIFF-5.DLL LIBFFI-6.DLL LIBICONV-2.DLL LIBINTL-8.DLL GLEW32.DLL LIBGLIB-2.0-0.DLL LIBWINPTHREAD-1.DLL LIBSTDC++-6.DLL LIBBOOST_SERIALIZATION-MT.DLL LIBCAIRO-2.DLL LIBFREETYPE-6.DLL LIBBZ2-1.DLL LIBHARFBUZZ-0.DLL LIBPIXMAN-1-0.DLL LIBPNG16-16.DLL ZLIB1.DLL LIBEXPAT-1.DLL LIBFONTCONFIG-1.DLL LIBPYSIDE-PYTHON2.7.DLL LIBPYTHON2.7.DLL QTCORE4.DLL QTGUI4.DLL QTNETWORK4.DLL QTOPENGL4.DLL LIBSHIBOKEN-PYTHON2.7.DLL"
 if [ "$BIT" = "32" ]; then
     GCC_DLL="LIBGCC_S_DW2-1.DLL"
 else
@@ -282,10 +289,6 @@ strip -s $CLIBS_PATH/data/lib/python*/*
 strip -s $CLIBS_PATH/data/lib/python*/*/*
 
 if [ "$NO_ZIP" != "1" ]; then
-	mkdir -p $ARCHIVE_DATA_DIR/Resources
-	mkdir -p $ARCHIVE_DATA_DIR/lib
-	mkdir -p $ARCHIVE_DATA_DIR/bin
-	mkdir -p $ARCHIVE_DATA_DIR/Plugins
 	cp -r $CLIBS_PATH/data/Resources/* $ARCHIVE_DATA_DIR/Resources || exit 1
 	cp -r $CLIBS_PATH/data/lib/* $ARCHIVE_DATA_DIR/lib || exit 1
 	cp -r $CLIBS_PATH/data/bin/* $ARCHIVE_DATA_DIR/bin || exit 1
@@ -294,7 +297,7 @@ fi
 
 # OFX ARENA
 if [ "$BUNDLE_ARENA" = "1" ]; then 
-    ARENA_DLL="LIBZIP-4.DLL LIBCROCO-0.6-3.DLL LIBGOMP-1.DLL LIBGMODULE-2.0-0.DLL LIBGDK_PIXBUF-2.0-0.DLL LIBGOBJECT-2.0-0.DLL LIBGIO-2.0-0.DLL LIBLCMS2-2.DLL LIBPANGO-1.0-0.DLL LIBPANGOCAIRO-1.0-0.DLL LIBPANGOWIN32-1.0-0.DLL LIBPANGOFT2-1.0-0.DLL LIBRSVG-2-2.DLL LIBXML2-2.DLL"
+    ARENA_DLL="LIBZIP-4.DLL LIBCROCO-0.6-3.DLL LIBGMODULE-2.0-0.DLL LIBGDK_PIXBUF-2.0-0.DLL LIBGOBJECT-2.0-0.DLL LIBGIO-2.0-0.DLL LIBLCMS2-2.DLL LIBPANGO-1.0-0.DLL LIBPANGOCAIRO-1.0-0.DLL LIBPANGOWIN32-1.0-0.DLL LIBPANGOFT2-1.0-0.DLL LIBRSVG-2-2.DLL LIBXML2-2.DLL"
     OFX_ARENA_VERSION=$TAG
     OFX_ARENA_PATH=$INSTALLER/packages/$ARENAPLUG_PKG
     mkdir -p $OFX_ARENA_PATH/meta $OFX_ARENA_PATH/data/Plugins/OFX/Natron || exit 1
@@ -324,7 +327,7 @@ fi
 # OFX CV
 if [ "$BUNDLE_CV" = "1" ]; then 
     CV_DLL="LIBOPENCV_CORE2411.DLL LIBOPENCV_IMGPROC2411.DLL LIBOPENCV_PHOTO2411.DLL"
-    SEGMENT_DLL="LIBLZMA-5.DLL LIBOPENCV_FLANN2411.DLL LIBJASPER-1.DLL LIBOPENCV_CALIB3D2411.DLL LIBOPENCV_FEATURES2D2411.DLL LIBOPENCV_HIGHGUI2411.DLL LIBOPENCV_ML2411.DLL LIBOPENCV_VIDEO2411.DLL LIBOPENCV_LEGACY2411.DLL"
+    SEGMENT_DLL="LIBOPENCV_FLANN2411.DLL LIBJASPER-1.DLL LIBOPENCV_CALIB3D2411.DLL LIBOPENCV_FEATURES2D2411.DLL LIBOPENCV_HIGHGUI2411.DLL LIBOPENCV_ML2411.DLL LIBOPENCV_VIDEO2411.DLL LIBOPENCV_LEGACY2411.DLL"
     OFX_CV_VERSION=$TAG
     OFX_CV_PATH=$INSTALLER/packages/$CVPLUG_PKG
     mkdir -p $OFX_CV_PATH/{data,meta} $OFX_CV_PATH/data/Plugins/OFX/Natron $OFX_CV_PATH/data/docs/openfx-opencv || exit 1
@@ -361,8 +364,7 @@ if [ "$BUNDLE_MISC" = "1" ]; then
     mt -manifest manifest -outputresource:"CImg.ofx;2"
 	
 	if [ "$NO_ZIP" != "1" ]; then
-		mkdir -p $ARCHIVE_DATA_DIR/Plugins
-		cp -r $OFX_MISC_PATH/data/Plugins/OFX/Natron/* $ARCHIVE_DATA_DIR/Plugins || exit 1
+		cp -r $OFX_MISC_PATH/data/Plugins/OFX/Natron/* $ARCHIVE_DATA_DIR/Plugins/OFX/Natron/ || exit 1
 	fi
 fi
 
@@ -382,8 +384,7 @@ if [ "$BUNDLE_IO" = "1" ]; then
     mt -manifest manifest -outputresource:"IO.ofx;2"
 	
 	if [ "$NO_ZIP" != "1" ]; then
-		mkdir -p $ARCHIVE_DATA_DIR/Plugins
-		cp -r $OFX_IO_PATH/data/Plugins/OFX/Natron/* $ARCHIVE_DATA_DIR/Plugins || exit 1
+		cp -r $OFX_IO_PATH/data/Plugins/OFX/Natron/* $ARCHIVE_DATA_DIR/Plugins/OFX/Natron/ || exit 1
 	fi
 fi
 
@@ -403,8 +404,7 @@ if [ "$BUNDLE_ARENA" = "1" ]; then
     mt -manifest manifest -outputresource:"Arena.ofx;2"
 	
 	if [ "$NO_ZIP" != "1" ]; then
-		mkdir -p $ARCHIVE_DATA_DIR/Plugins
-		cp -r $OFX_ARENA_PATH/data/Plugins/OFX/Natron/* $ARCHIVE_DATA_DIR/Plugins || exit 1
+		cp -r $OFX_ARENA_PATH/data/Plugins/OFX/Natron/* $ARCHIVE_DATA_DIR/Plugins/OFX/Natron/ || exit 1
 	fi
 fi
 
@@ -437,8 +437,7 @@ if [ "$BUNDLE_CV" = "1" ]; then
     mt -manifest manifest -outputresource:"segment.ofx;2"
 	
 	if [ "$NO_ZIP" != "1" ]; then
-		mkdir -p $ARCHIVE_DATA_DIR/Plugins
-		cp -r $OFX_CV_PATH/data/Plugins/OFX/Natron/* $ARCHIVE_DATA_DIR/Plugins || exit 1
+		cp -r $OFX_CV_PATH/data/Plugins/OFX/Natron/* $ARCHIVE_DATA_DIR/Plugins/OFX/Natron/ || exit 1
 	fi
 fi
 
@@ -466,6 +465,32 @@ if [ "$NO_ZIP" != "1" ]; then
 	mkdir -p $REPO_DIR/
     mv $ARCHIVE_DATA_DIR $ARCHIVE_DIR/${ZIP_ARCHIVE_BASE} || exit 1
     (cd $ARCHIVE_DIR; zip -r ${ZIP_ARCHIVE_BASE}.zip ${ZIP_ARCHIVE_BASE} || exit 1; rm -rf ${ZIP_ARCHIVE_BASE};)
+fi
+
+
+# UnitTests
+if [ "$BIT" = "64" ] && [ "$UNIT_TEST" != "0" ]; then
+
+UNIT_TMP=$INSTALLER/UnitTests
+UNIT_LOG=$REPO_DIR/logs/unit_tests.Windows$BIT.$TAG.log
+
+if [ ! -d "$UNIT_TMP" ]; then
+  mkdir -p "$UNIT_TMP" || exit 1
+fi
+cp -a $INSTALLER/packages/*/data/* $UNIT_TMP/ || exit 1
+cd $CWD || exit 1
+if [ -d "$CWD/Natron-Tests" ]; then 
+  cd Natron-Tests || exit 1
+  git pull
+else
+  git clone $GIT_UNIT || exit 1
+  cd Natron-Tests || exit 1
+fi
+echo "Running unit tests ..."
+export FONTCONFIG_PATH=$UNIT_TMP/Resources/etc/fonts/fonts.conf
+mkdir -p ~/.cache/INRIA/Natron/{ViewerCache,DiskCache}
+FFMPEG="/mingw64/ffmpeg-GPL/bin/ffmpeg.exe" COMPARE=`pwd`/compare.exe sh runTests.sh $UNIT_TMP/bin/NatronRenderer-bin.exe >& "$UNIT_LOG"
+
 fi
 
 echo "All Done!!!"

@@ -42,22 +42,26 @@
 # TARSRC=1 : tar sources
 # NATRON_LICENSE=(GPL,COMMERCIAL)
 
-# USAGE example: BUILD_CONFIG=STABLE BUILD_NUMBER=1 NATRON_LICENSE=GPL BUILD_CONFIG=SNAPSHOT build2.sh workshop<branch> 8<noThreads>
+# USAGE example: BUILD_CONFIG=STABLE BUILD_NUMBER=1 NATRON_LICENSE=GPL BUILD_CONFIG=SNAPSHOT build2.sh master<branch> 8<noThreads>
 
 source `pwd`/common.sh || exit 1
 
 PID=$$
-if [ -f $TMP_DIR/natron-build.pid ]; then
-    OLDPID=`cat $TMP_DIR/natron-build.pid`
-    PIDS=`ps aux|awk '{print $2}'`
-    for i in $PIDS;do
-        if [ "$i" = "$OLDPID" ]; then
-            echo "already running ..."
-            exit 1
-        fi
-    done
+# make kill bot
+KILLSCRIPT="/tmp/killbot$$.sh"
+cat << 'EOF' > "$KILLSCRIPT"
+#!/bin/sh
+PARENT=$1
+sleep 30m
+if [ "$PARENT" = "" ]; then
+  exit 1
 fi
-echo $PID > $TMP_DIR/natron-build.pid || exit 1
+PIDS=`ps aux|awk '{print $2}'|grep $PARENT`
+if [ "$PIDS" = "$PARENT" ]; then
+  kill -15 $PARENT
+fi
+EOF
+chmod +x $KILLSCRIPT
 
 if [ "$OS" = "GNU/Linux" ]; then
     PKGOS=Linux
@@ -66,7 +70,7 @@ else
     exit 1
 fi
 
-if [ "$1" = "workshop" ]; then
+if [ "$1" = "master" ]; then
     BRANCH=$1
     REPO_SUFFIX=snapshot
 else
@@ -88,13 +92,6 @@ fi
 if [ -z "$BUILD_CONFIG" ]; then
 	echo "You must select a BUILD_CONFIG".
 	exit 1
-fi
-
-if [ "$NOCLEAN" != "1" ]; then
-    rm -rf $INSTALL_PATH
-fi
-if [ "$REBUILD_SDK" = "1" ]; then
-    rm -f "$SRC_PATH"/Natron*SDK.tar.xz
 fi
 
 if [ -z "$IO" ]; then
@@ -137,7 +134,19 @@ fi
 
 
 if [ "$NOBUILD" != "1" ]; then
-    if [ "$ONLY_PLUGINS" != "1" ]; then
+    if [ "$ONLY_NATRON" != "1" ]; then
+        log="$LOGS/plugins.$PKGOS$BIT.$TAG.log"
+        echo -n "Building Plugins (log in $log)..."
+        env MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER BUILD_CV=$CV BUILD_IO=$IO BUILD_MISC=$MISC BUILD_ARENA=$ARENA sh "$INC_PATH/scripts/build-plugins.sh" $BRANCH >& "$log" || FAIL=1
+        if [ "$FAIL" != "1" ]; then
+            echo OK
+        else
+            echo ERROR
+            echo "BUILD__ERROR" >> $log
+            cat "$log"
+        fi
+    fi
+    if [ "$FAIL" != "1" -a "$ONLY_PLUGINS" != "1" ]; then
         log="$LOGS/natron.$PKGOS$BIT.$TAG.log"
         echo -n "Building Natron (log in $log)..."
         env MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER DISABLE_BREAKPAD=$DISABLE_BREAKPAD sh "$INC_PATH/scripts/build-natron.sh" $BRANCH >& "$log" || FAIL=1
@@ -148,18 +157,6 @@ if [ "$NOBUILD" != "1" ]; then
             echo "BUILD__ERROR" >> $log
             cat "$log"
         fi
-    fi
-    if [ "$FAIL" != "1" -a "$ONLY_NATRON" != "1" ]; then
-        log="$LOGS/plugins.$PKGOS$BIT.$TAG.log"
-        echo -n "Building Plugins (log in $log)..."
-        env MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER BUILD_CV=$CV BUILD_IO=$IO BUILD_MISC=$MISC BUILD_ARENA=$ARENA sh "$INC_PATH/scripts/build-plugins.sh" $BRANCH >& "$log" || FAIL=1
-        if [ "$FAIL" != "1" ]; then
-            echo OK
-        else
-            echo ERROR
-            echo "BUILD__ERROR" >> $log
-            cat "$log"
-        fi  
     fi
 fi
 
@@ -176,31 +173,39 @@ if [ "$NOPKG" != "1" -a "$FAIL" != "1" ]; then
     fi 
 fi
 
-if [ "$BRANCH" = "workshop" ]; then
-    ONLINE_REPO_BRANCH=snapshots
-else
-    ONLINE_REPO_BRANCH=releases
-fi
-
 BIT_SUFFIX=bit
 BIT_TAG="$BIT$BIT_SUFFIX"
+
+$KILLSCRIPT $PID &
+KILLBOT=$!
+
+if [ "$BRANCH" = "master" ]; then
+  ONLINE_REPO_BRANCH=snapshots
+else
+  ONLINE_REPO_BRANCH=releases
+fi
 
 if [ "$SYNC" = "1" -a "$FAIL" != "1" ]; then
     echo "Syncing packages ... "
     rsync -avz --progress --delete --verbose -e ssh "$REPO_DIR/packages/" "$REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/packages"
 
-    rsync -avz --progress  --verbose -e ssh "$REPO_DIR/installers/" "$REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/files"
-fi
+    rsync -avz --progress  --verbose -e ssh "$REPO_DIR/installers/" "$REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/files" 
 
-# Symbols
-echo "sync symbols ..."
-rsync -avz --progress --verbose -e ssh "$INSTALL_PATH/symbols/" "${REPO_DEST}/symbols/"
+  # Symbols
+  echo "sync symbols ..."
+  rsync -avz --progress --verbose -e ssh "$INSTALL_PATH/symbols/" "${REPO_DEST}/symbols/"
+fi
 
 #Always upload logs, even upon failure
 rsync -avz --progress --delete --verbose -e ssh "$LOGS/" "$REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/logs"
+
+kill -9 $KILLBOT
 
 if [ "$FAIL" = "1" ]; then
     exit 1
 else
     exit 0
 fi
+
+rm -f $KILLSCRIPT
+

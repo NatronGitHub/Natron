@@ -50,6 +50,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Engine/Image.h"
 #include "Engine/ImageComponents.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -201,7 +202,7 @@ public:
     {
     }
 
-    void setClipTLS(int view,
+    void setClipTLS(ViewIdx view,
                     unsigned int mipmapLevel,
                     const ImageComponents& components);
     void invalidateClipTLS();
@@ -214,11 +215,13 @@ public:
     ImageComponents ofxPlaneToNatronPlane(const std::string& plane);
     static std::string natronsPlaneToOfxPlane(const ImageComponents& plane);
     static std::string natronsComponentsToOfxComponents(const ImageComponents& comp);
-    static std::list<ImageComponents> ofxComponentsToNatronComponents(const std::string & comp);
+    static ImageComponents ofxComponentsToNatronComponents(const std::string & comp);
     static ImageBitDepthEnum ofxDepthToNatronDepth(const std::string & depth);
-    static std::string natronsDepthToOfxDepth(ImageBitDepthEnum depth);
-
-
+    static const std::string& natronsDepthToOfxDepth(ImageBitDepthEnum depth);
+    static ImagePremultiplicationEnum ofxPremultToNatronPremult(const std::string& premult);
+    static const std::string& natronsPremultToOfxPremult(ImagePremultiplicationEnum premult);
+    static ImageFieldingOrderEnum ofxFieldingToNatronFielding(const std::string& fielding);
+    static const std::string& natronsFieldingToOfxFielding(ImageFieldingOrderEnum fielding);
 
 
     struct RenderActionData
@@ -247,7 +250,7 @@ public:
         ///////These data are valid only throughout a recursive action
         
         //View may be involved in a recursive action
-        std::list<int> view;
+        std::list<ViewIdx> view;
         //mipmaplevel may be involved in a recursive action
         std::list<unsigned int> mipMapLevel;
         
@@ -293,16 +296,18 @@ public:
 private:
 
 
-    
-    void getRegionOfDefinitionInternal(OfxTime time,int view, unsigned int mipmapLevel,EffectInstance* associatedNode,
+    EffectInstPtr getEffectHolder() const;
+
+
+    void getRegionOfDefinitionInternal(OfxTime time, ViewIdx view, unsigned int mipmapLevel,EffectInstance* associatedNode,
                                        OfxRectD* rod) const;
     
-    OFX::Host::ImageEffect::Image* getInputImageInternal(OfxTime time, int view, const OfxRectD *optionalBounds,
+    OFX::Host::ImageEffect::Image* getInputImageInternal(const OfxTime time, const  ViewSpec view, const OfxRectD *optionalBounds,
                                                     const std::string* ofxPlane);
 
     OFX::Host::ImageEffect::Image* getOutputImageInternal(const std::string* ofxPlane);
 
-    OFX::Host::ImageEffect::Image* getImagePlaneInternal(OfxTime time, int view, const OfxRectD *optionalBounds, const std::string* ofxPlane);
+    OFX::Host::ImageEffect::Image* getImagePlaneInternal(OfxTime time, ViewSpec view, const OfxRectD *optionalBounds, const std::string* ofxPlane);
 
 
 
@@ -324,8 +329,7 @@ public:
                       const RectI& renderWindow,
                       const boost::shared_ptr<Transform::Matrix3x3>& mat,
                       const std::string& components,
-                      int nComps,
-                      OfxClipInstance &clip);
+                      int nComps);
 
     virtual ~OfxImage();
 

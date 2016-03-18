@@ -740,7 +740,6 @@ interParams(const KeyFrameSet &keyFrames,
             double *vnextDerivLeft,
             KeyframeTypeEnum *interpNext)
 {
-//#pragma message WARN("Unused parameter 't'") //the parameter is good enough for asserts
     Q_UNUSED(t);
     assert( itup == keyFrames.end() || t < itup->getTime() );
     if ( itup == keyFrames.begin() ) {
@@ -792,12 +791,14 @@ Curve::getValueAt(double t,bool doClamp) const
         throw std::runtime_error("Curve has no control points!");
     }
     
-    std::map<double,double>::const_iterator foundCached = _imp->resultCache.find(t);
     double v;
+#ifdef NATRON_CURVE_USE_CACHE
+    std::map<double,double>::const_iterator foundCached = _imp->resultCache.find(t);
     if (foundCached != _imp->resultCache.end()) {
         v = foundCached->second;
-    } else {
-        
+    } else
+#endif
+    {
         // even when there is only one keyframe, there may be tangents!
         //if (_imp->keyFrames.size() == 1) {
         //    //if there's only 1 keyframe, don't bother interpolating
@@ -829,7 +830,9 @@ Curve::getValueAt(double t,bool doClamp) const
                                 t,
                                 interp,
                                 interpNext);
+#ifdef NATRON_CURVE_USE_CACHE
         _imp->resultCache[t] = v;
+#endif
     }
 
     if ( doClamp && mustClamp() ) {
@@ -1133,7 +1136,7 @@ Curve::setKeyFrameValueAndTime(double time,
         QMutexLocker l(&_imp->_lock);
         KeyFrameSet::iterator it = atIndex(index);
         if ( it == _imp->keyFrames.end() ) {
-            QString err = QString("No such keyframe at index %1").arg(index);
+            QString err = QString(QString::fromUtf8("No such keyframe at index %1")).arg(index);
             throw std::invalid_argument( err.toStdString() );
         }
 
@@ -1141,7 +1144,7 @@ Curve::setKeyFrameValueAndTime(double time,
         bool setValue = ( value != it->getValue() );
 
         if (setTime || setValue) {
-            it = setKeyFrameValueAndTimeNoUpdate(value,time, it);
+            it = setKeyFrameValueAndTimeNoUpdate(value, time, it);
             it = evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, it);
         }
         if (newIndex) {
@@ -1150,6 +1153,34 @@ Curve::setKeyFrameValueAndTime(double time,
         ret = *it;
     }
     return ret;
+}
+
+bool
+Curve::moveKeyFrameValueAndTime(const double time, const double dt, const double dv, KeyFrame* newKey)
+{
+    QMutexLocker l(&_imp->_lock);
+    KeyFrameSet::iterator it = find(time);
+    if (it == _imp->keyFrames.end()) {
+        return false;
+    }
+    if (dt == 0 && dv == 0) {
+        return true;
+    }
+    
+    double newX = it->getTime() + dt;
+    double newY = it->getValue() + dv;
+    if (_imp->type == CurvePrivate::eCurveTypeInt) {
+        newY = std::floor(newY + 0.5);
+    } else if (_imp->type == CurvePrivate::eCurveTypeBool) {
+        newY = newY < 0.5 ? 0 : 1;
+    }
+    
+    it = setKeyFrameValueAndTimeNoUpdate(newY, newX, it);
+    it = evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, it);
+    if (newKey) {
+        *newKey = *it;
+    }
+    return true;
 }
 
 KeyFrame
@@ -1552,7 +1583,9 @@ Curve::onCurveChanged()
     if (_imp->owner) {
         _imp->owner->clearExpressionsResults(_imp->dimensionInOwner);
     }
+#ifdef NATRON_CURVE_USE_CACHE
     _imp->resultCache.clear();
+#endif
 }
 
 NATRON_NAMESPACE_EXIT;

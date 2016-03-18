@@ -48,7 +48,9 @@ GCC_DIAG_ON(unused-parameter)
 #include <QtNetwork/QLocalSocket>
 
 #include "Global/QtCompat.h" // for removeRecursively
+#include "Global/GlobalDefines.h"
 
+#include "Engine/FStreamsSupport.h"
 #include "Engine/CacheSerialization.h"
 #include "Engine/ExistenceCheckThread.h"
 #include "Engine/Format.h"
@@ -91,8 +93,8 @@ AppManagerPrivate::AppManagerPrivate()
 ,_loaded(false)
 ,_binaryPath()
 ,_nodesGlobalMemoryUse(0)
-,_ofxLogMutex()
-,_ofxLog()
+,errorLogMutex()
+,errorLog()
 ,maxCacheFiles(0)
 ,currentCacheFilesCount(0)
 ,currentCacheFilesCountMutex()
@@ -141,8 +143,8 @@ AppManagerPrivate::initBreakpad(const QString& breakpadPipePath, const QString& 
      We check periodically that the crash reporter process is still alive. If the user killed it somehow, then we want
      the Natron process to terminate
      */
-    breakpadAliveThread.reset(new ExistenceCheckerThread(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK,
-                                                         NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK_ACK,
+    breakpadAliveThread.reset(new ExistenceCheckerThread(QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK),
+                                                         QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK_ACK),
                                                          breakpadComPipePath));
     QObject::connect(breakpadAliveThread.get(), SIGNAL(otherProcessUnreachable()), appPTR, SLOT(onCrashReporterNoLongerResponding()));
     breakpadAliveThread->start();
@@ -270,26 +272,15 @@ AppManagerPrivate::declareSettingsToPython()
 template <typename T>
 void saveCache(Cache<T>* cache)
 {
-    std::ofstream ofile;
-    ofile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-    std::string cacheRestoreFilePath = cache->getRestoreFilePath();
-    try {
-        ofile.open(cacheRestoreFilePath.c_str(),std::ofstream::out);
-    } catch (const std::ios_base::failure & e) {
-        qDebug() << "Exception occured when opening file" <<  cacheRestoreFilePath.c_str() << ':' << e.what();
-        // The following is C++11 only:
-        //<< "Error code: " << e.code().value()
-        //<< " (" << e.code().message().c_str() << ")\n"
-        //<< "Error category: " << e.code().category().name();
-        
-        return;
-    }
     
-    if ( !ofile.good() ) {
-        qDebug() << "Failed to save cache to" << cacheRestoreFilePath.c_str();
-        
+    std::string cacheRestoreFilePath = cache->getRestoreFilePath();
+    FStreamsSupport::ofstream ofile;
+    FStreamsSupport::open(&ofile, cacheRestoreFilePath);
+    if (!ofile) {
+        std::cerr << "Failed to save cache to " << cacheRestoreFilePath.c_str() << std::endl;
         return;
     }
+
     
     typename Cache<T>::CacheTOC toc;
     cache->save(&toc);
@@ -302,8 +293,6 @@ void saveCache(Cache<T>* cache)
         qDebug() << "Failed to serialize the cache table of contents:" << e.what();
     }
     
-    ofile.close();
-
 }
 
 void
@@ -314,27 +303,16 @@ AppManagerPrivate::saveCaches()
 } // saveCaches
 
 template <typename T>
-void restoreCache(AppManagerPrivate* p,Cache<T>* cache)
+void restoreCache(AppManagerPrivate* p, Cache<T>* cache)
 {
     if ( p->checkForCacheDiskStructure( cache->getCachePath() ) ) {
-        std::ifstream ifile;
         std::string settingsFilePath = cache->getRestoreFilePath();
-        try {
-            ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-            ifile.open(settingsFilePath.c_str(),std::ifstream::in);
-        } catch (const std::ifstream::failure & e) {
-            qDebug() << "Failed to open the cache restoration file:" << e.what();
-            
+        FStreamsSupport::ifstream ifile;
+        FStreamsSupport::open(&ifile, settingsFilePath);
+        if (!ifile) {
+            std::cerr << "Failure to open cache restore file at: " << settingsFilePath << std::endl;
             return;
         }
-        
-        if ( !ifile.good() ) {
-            qDebug() << "Failed to cache file for restoration:" <<  settingsFilePath.c_str();
-            ifile.close();
-            
-            return;
-        }
-        
         typename Cache<T>::CacheTOC tableOfContents;
         unsigned int cacheVersion = 0x1; //< default to 1 before NATRON_CACHE_VERSION was introduced
         try {
@@ -350,14 +328,11 @@ void restoreCache(AppManagerPrivate* p,Cache<T>* cache)
             }
         } catch (const std::exception & e) {
             qDebug() << "Exception when reading disk cache TOC:" << e.what();
-            ifile.close();
-            
             return;
         }
         
-        ifile.close();
         
-        QFile restoreFile( settingsFilePath.c_str() );
+        QFile restoreFile(QString::fromUtf8(settingsFilePath.c_str()));
         restoreFile.remove();
         
         cache->restore(tableOfContents);
@@ -377,7 +352,12 @@ AppManagerPrivate::restoreCaches()
 bool
 AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath)
 {
-    QString settingsFilePath(cachePath + QDir::separator() + "restoreFile." NATRON_CACHE_FILE_EXT);
+	QString settingsFilePath = cachePath;
+    if (!settingsFilePath.endsWith(QChar::fromLatin1('/'))) {
+        settingsFilePath += QChar::fromLatin1('/');
+	}
+	settingsFilePath += QString::fromUtf8("restoreFile.");
+	settingsFilePath += QString::fromUtf8(NATRON_CACHE_FILE_EXT);
 
     if ( !QFile::exists(settingsFilePath) ) {
         cleanUpCacheDiskStructure(cachePath);
@@ -396,7 +376,7 @@ AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath)
         QString subFolder(cachePath);
         subFolder.append( QDir::separator() );
         subFolder.append(files[i]);
-        if ( ( subFolder.right(1) == QString(".") ) || ( subFolder.right(2) == QString("..") ) ) {
+        if ( ( subFolder.right(1) == QString::fromUtf8(".") ) || ( subFolder.right(2) == QString::fromUtf8("..") ) ) {
             continue;
         }
         QDir d(subFolder);
@@ -404,7 +384,7 @@ AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath)
             ++subFolderCount;
             QStringList items = d.entryList();
             for (int j = 0; j < items.size(); ++j) {
-                if ( ( items[j] != QString(".") ) && ( items[j] != QString("..") ) ) {
+                if ( ( items[j] != QString::fromUtf8(".") ) && ( items[j] != QString::fromUtf8("..") ) ) {
                     ++count;
                 }
             }
@@ -434,7 +414,7 @@ AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath)
         cacheFolder.removeRecursively();
     }
 #endif
-    cacheFolder.mkpath(".");
+    cacheFolder.mkpath(QChar::fromLatin1('.'));
 
     QStringList etr = cacheFolder.entryList(QDir::NoDotAndDotDot);
     // if not 256 subdirs, we re-create the cache
@@ -449,7 +429,7 @@ AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath)
             oss << std::hex <<  i;
             oss << std::hex << j;
             std::string str = oss.str();
-            cacheFolder.mkdir( str.c_str() );
+            cacheFolder.mkdir(QString::fromUtf8(str.c_str()));
         }
     }
 }

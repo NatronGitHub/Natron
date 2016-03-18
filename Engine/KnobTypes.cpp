@@ -52,6 +52,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/RotoContext.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
+#include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -445,7 +446,7 @@ getInputRoD(EffectInstance* effect,
     RenderScale scale;
     scale.y = scale.x = 1.;
     bool isProjectFormat;
-    Status stat = effect->getRegionOfDefinition_public(effect->getHash(),time, scale, /*view*/0, &rod, &isProjectFormat);
+    Status stat = effect->getRegionOfDefinition_public(effect->getHash(), time, scale, /*view*/0, &rod, &isProjectFormat);
     if ( (stat == StatFailed) || ( (rod.x1 == 0) && (rod.y1 == 0) && (rod.x2 == 1) && (rod.y2 == 1) ) ) {
         Format f;
         effect->getRenderFormat(&f);
@@ -472,7 +473,7 @@ KnobDouble::denormalize(int dimension,
         return;
     }
     RectD rod;
-    getInputRoD(effect,time,rod);
+    getInputRoD(effect, time,rod);
     ValueIsNormalizedEnum e = getValueIsNormalized(dimension);
     // the second expression (with e == eValueIsNormalizedNone) is used when denormalizing default values
     if (e == eValueIsNormalizedX || (e == eValueIsNormalizedNone && dimension == 0)) {
@@ -495,7 +496,7 @@ KnobDouble::normalize(int dimension,
         return;
     }
     RectD rod;
-    getInputRoD(effect,time,rod);
+    getInputRoD(effect, time,rod);
     ValueIsNormalizedEnum e = getValueIsNormalized(dimension);
     // the second expression (with e == eValueIsNormalizedNone) is used when normalizing default values
     if (e == eValueIsNormalizedX || (e == eValueIsNormalizedNone && dimension == 0)) {
@@ -539,7 +540,7 @@ KnobButton::typeName() const
 void
 KnobButton::trigger()
 {
-    evaluateValueChange(0, getCurrentTime(),  eValueChangedReasonUserEdited);
+    evaluateValueChange(0, getCurrentTime(), ViewIdx(0),  eValueChangedReasonUserEdited);
 }
 
 /******************************KnobChoice**************************************/
@@ -592,16 +593,48 @@ KnobChoice::typeName() const
     return typeNameStatic();
 }
 
+#ifdef DEBUG
+#pragma message WARN("When enabling multi-view knobs, make this multi-view too")
+#endif
+void
+KnobChoice::onInternalValueChanged(int /*dimension*/, double time, ViewSpec /*view*/)
+{
+    
+    int index = getValueAtTime(time, 0);
+    QMutexLocker k(&_entriesMutex);
+    if (index >= 0 &&  index < (int)_entries.size()) {
+        _lastValidEntry = _entries[index];
+    }
+}
+
+void
+KnobChoice::findAndSetOldChoice(const std::vector<std::string>& newEntries)
+{
+    std::string curEntry;
+    {
+        QMutexLocker k(&_entriesMutex);
+        curEntry = _lastValidEntry;
+    }
+    if (!curEntry.empty()) {
+        for (std::size_t i = 0; i < newEntries.size(); ++i) {
+            if (newEntries[i] == curEntry) {
+                blockValueChanges();
+                setValue((int)i);
+                unblockValueChanges();
+                break;
+            }
+        }
+    }
+}
+
 /*Must be called right away after the constructor.*/
 void
 KnobChoice::populateChoices(const std::vector<std::string> &entries,
                              const std::vector<std::string> &entriesHelp)
 {
     assert( entriesHelp.empty() || entriesHelp.size() == entries.size() );
-    //std::vector<std::string> curEntries;
     {
         QMutexLocker l(&_entriesMutex);
-      //  curEntries = _entries;
         _entriesHelp = entriesHelp;
         _entries = entries;
     }
@@ -610,21 +643,8 @@ KnobChoice::populateChoices(const std::vector<std::string> &entries,
      Try to restore the last choice. 
      This has been commented-out because it will loose the user choice in case of alias knobs
      */
-    /*int cur_i = getValue();
-    std::string curEntry;
-    if (cur_i >= 0 && cur_i < (int)curEntries.size()) {
-        curEntry = curEntries[cur_i];
-    }
-    if (!curEntry.empty()) {
-        for (std::size_t i = 0; i < entries.size(); ++i) {
-            if (entries[i] == curEntry && cur_i != (int)i) {
-                blockValueChanges();
-                setValue((int)i, 0);
-                unblockValueChanges();
-                break;
-            }
-        }
-    }*/
+    //findAndSetOldChoice(entries);
+    
     if (_signalSlotHandler) {
         _signalSlotHandler->s_helpChanged();
     }
@@ -648,15 +668,20 @@ KnobChoice::resetChoices()
 void
 KnobChoice::appendChoice(const std::string& entry, const std::string& help)
 {
+    std::vector<std::string> curEntries,newEntries;
     {
         QMutexLocker l(&_entriesMutex);
         _entriesHelp.push_back(help);
         _entries.push_back(entry);
+        newEntries = _entries;
     }
+    
+    //findAndSetOldChoice(newEntries);
+    
     if (_signalSlotHandler) {
         _signalSlotHandler->s_helpChanged();
     }
-    Q_EMIT entryAppended(QString(entry.c_str()), QString(help.c_str()));
+    Q_EMIT entryAppended(QString::fromUtf8(entry.c_str()), QString::fromUtf8(help.c_str()));
 }
 
 std::vector<std::string>
@@ -804,7 +829,7 @@ KnobChoice::setValueFromLabel(const std::string & value,
 {
     for (std::size_t i = 0; i < _entries.size(); ++i) {
         if (caseInsensitiveCompare(_entries[i], value)) {
-            return setValue(i, dimension, turnOffAutoKeying);
+            return setValue(i, ViewIdx(0), dimension, turnOffAutoKeying);
         }
     }
     return KnobHelper::eValueChangedReturnCodeNothingChanged;
@@ -841,12 +866,12 @@ KnobChoice::choiceRestoration(KnobChoice* knob,const ChoiceExtraData* data)
     int serializedIndex = knob->getValue();
     if ( ( serializedIndex < (int)_entries.size() ) && (_entries[serializedIndex] == data->_choiceString) ) {
         // we're lucky, entry hasn't changed
-        setValue(serializedIndex, 0);
+        setValue(serializedIndex);
     } else {
         // try to find the same label at some other index
         for (std::size_t i = 0; i < _entries.size(); ++i) {
             if (caseInsensitiveCompare(_entries[i], data->_choiceString)) {
-                setValue(i, 0);
+                setValue(i);
                 return;
             }
         }
@@ -1042,6 +1067,20 @@ KnobString::hasContentWithoutHtmlTags() const
         return false;
     }
     
+    //First remove content in the NATRON_CUSTOM_HTML tags
+    const std::string customTagStart(NATRON_CUSTOM_HTML_TAG_START);
+    const std::string customTagEnd(NATRON_CUSTOM_HTML_TAG_END);
+    
+    std::size_t foundNatronCustomDataTag = str.find(customTagStart,0);
+    if (foundNatronCustomDataTag != std::string::npos) {
+        ///remove the current custom data
+        int foundNatronEndTag = str.find(customTagEnd,foundNatronCustomDataTag);
+        assert(foundNatronEndTag != (int)std::string::npos);
+        
+        foundNatronEndTag += customTagEnd.size();
+        str.erase(foundNatronCustomDataTag, foundNatronEndTag - foundNatronCustomDataTag);
+    }
+    
     std::size_t foundOpen = str.find("<");
     if (foundOpen == std::string::npos) {
         return true;
@@ -1124,19 +1163,7 @@ KnobGroup::addKnob(const KnobPtr& k)
         }
     }
     
-    
-    KnobPtr parent= k->getParentKnob();
-    if (parent) {
-        KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>(parent.get());
-        KnobPage* isParentPage = dynamic_cast<KnobPage*>(parent.get());
-        if (isParentGrp) {
-            isParentGrp->removeKnob(k.get());
-        } else if (isParentPage) {
-            isParentPage->removeKnob(k.get());
-        }
-        k->setParentKnob(KnobPtr());
-    }
-    
+    k->resetParent();
     
     _children.push_back(k);
     k->setParentKnob(shared_from_this());
@@ -1197,17 +1224,7 @@ KnobGroup::insertKnob(int index, const KnobPtr& k)
         }
     }
     
-    KnobPtr parent= k->getParentKnob();
-    if (parent) {
-        KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>(parent.get());
-        KnobPage* isParentPage = dynamic_cast<KnobPage*>(parent.get());
-        if (isParentGrp) {
-            isParentGrp->removeKnob(k.get());
-        } else if (isParentPage) {
-            isParentPage->removeKnob(k.get());
-        }
-        k->setParentKnob(KnobPtr());
-    }
+    k->resetParent();
 
     if (index >= (int)_children.size()) {
         _children.push_back(k);
@@ -1286,17 +1303,8 @@ KnobPage::addKnob(const KnobPtr &k)
     }
     
     
-    KnobPtr parent= k->getParentKnob();
-    if (parent) {
-        KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>(parent.get());
-        KnobPage* isParentPage = dynamic_cast<KnobPage*>(parent.get());
-        if (isParentGrp) {
-            isParentGrp->removeKnob(k.get());
-        } else if (isParentPage) {
-            isParentPage->removeKnob(k.get());
-        }
-        k->setParentKnob(KnobPtr());
-    }
+    k->resetParent();
+    
     _children.push_back(k);
     k->setParentKnob(shared_from_this());
     
@@ -1311,18 +1319,7 @@ KnobPage::insertKnob(int index, const KnobPtr& k)
         }
     }
     
-    KnobPtr parent= k->getParentKnob();
-    if (parent) {
-        KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>(parent.get());
-        KnobPage* isParentPage = dynamic_cast<KnobPage*>(parent.get());
-        if (isParentGrp) {
-            isParentGrp->removeKnob(k.get());
-        } else if (isParentPage) {
-            isParentPage->removeKnob(k.get());
-        }
-        k->setParentKnob(KnobPtr());
-    }
-    
+    k->resetParent();
     
     if (index >= (int)_children.size()) {
         _children.push_back(k);
@@ -1508,8 +1505,9 @@ boost::shared_ptr<Curve> KnobParametric::getParametricCurve(int dimension) const
 
 StatusEnum
 KnobParametric::addControlPoint(int dimension,
-                                 double key,
-                                 double value)
+                                double key,
+                                double value,
+                                KeyframeTypeEnum interpolation)
 {
     ///Mt-safe as Curve is MT-safe
     if (dimension >= (int)_curves.size() ||
@@ -1521,34 +1519,11 @@ KnobParametric::addControlPoint(int dimension,
     }
     
     KeyFrame k(key,value);
-    k.setInterpolation(eKeyframeTypeCubic);
+    k.setInterpolation(interpolation);
     _curves[dimension]->addKeyFrame(k);
     Q_EMIT curveChanged(dimension);
     
     return eStatusOK;
-}
-
-StatusEnum
-KnobParametric::addHorizontalControlPoint(int dimension,double key,double value)
-{
-    ///Mt-safe as Curve is MT-safe
-    if (dimension >= (int)_curves.size() ||
-        key != key || // check for NaN
-        boost::math::isinf(key) ||
-        value != value || // check for NaN
-        boost::math::isinf(value)) {
-        return eStatusFailed;
-    }
-    
-    KeyFrame k(key,value);
-    k.setInterpolation(eKeyframeTypeBroken);
-    k.setLeftDerivative(0);
-    k.setRightDerivative(0);
-    _curves[dimension]->addKeyFrame(k);
-    Q_EMIT curveChanged(dimension);
-    
-    return eStatusOK;
- 
 }
 
 StatusEnum

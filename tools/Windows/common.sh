@@ -4,8 +4,9 @@
 # Versions
 #
 
-
-CWD=`pwd`
+if [ -z "$CWD" ]; then
+  CWD=`pwd`
+fi
 
 #The local.sh file must exist, please see the README.
 if [ -f $CWD/local.sh ]; then
@@ -18,11 +19,11 @@ fi
 
 #THE FOLLOWING CAN BE MODIFIED TO CONFIGURE RELEASE BUILDS
 #----------------------------------------------------------
-NATRON_GIT_TAG=tags/2.0.0-RC6
-IOPLUG_GIT_TAG=tags/Natron-2.0.0-RC6
-MISCPLUG_GIT_TAG=tags/Natron-2.0.0-RC6
-ARENAPLUG_GIT_TAG=tags/Natron-2.0.0-RC6
-CVPLUG_GIT_TAG=tags/Natron-2.0.0-RC6
+NATRON_GIT_TAG=tags/2.0.1
+IOPLUG_GIT_TAG=tags/Natron-2.0.1
+MISCPLUG_GIT_TAG=tags/Natron-2.0.1
+ARENAPLUG_GIT_TAG=tags/Natron-2.0.1
+CVPLUG_GIT_TAG=tags/Natron-2.0.1
 #----------------------------------------------------------
 
 
@@ -56,7 +57,7 @@ INSTALL32_PATH=/mingw32
 INSTALL64_PATH=/mingw64
 
 # bump timestamp on SDK changes, important!
-CORELIBS_VERSION=20160121
+CORELIBS_VERSION=20160318
 
 # Common values
 #
@@ -102,6 +103,8 @@ GIT_NATRON=https://github.com/MrKepzie/Natron.git
 GIT_IO=https://github.com/MrKepzie/openfx-io.git
 GIT_MISC=https://github.com/devernay/openfx-misc.git
 
+GIT_UNIT=https://github.com/MrKepzie/Natron-Tests
+
 QT4_TAR=qt-everywhere-opensource-src-4.8.7.tar.gz
 #QT5_TAR=qt-everywhere-opensource-src-5.4.1.tar.gz
 CV_TAR=opencv-2.4.11.zip
@@ -114,13 +117,12 @@ JPG_TAR=jpegsrc.v9a.tar.gz
 OJPG_TAR=openjpeg-1.5.2.tar.gz
 PNG_TAR=libpng-1.2.53.tar.gz
 TIF_TAR=tiff-4.0.4.tar.gz
-ILM_TAR=ilmbase-2.2.0.tar.gz
 EXR_TAR=openexr-2.2.0.tar.gz
 GLEW_TAR=glew-1.12.0.tgz
 BOOST_TAR=boost_1_55_0.tar.gz
 CAIRO_TAR=cairo-1.14.2.tar.xz
 OCIO_TAR=OpenColorIO-1.0.9.tar.gz
-OIIO_TAR=oiio-Release-1.5.23.tar.gz 
+OIIO_TAR=oiio-Release-1.6.11.tar.gz 
 PYSIDE_TAR=pyside-qt4.8+1.2.2.tar.bz2
 SHIBOK_TAR=shiboken-1.2.2.tar.bz2
 LIBXML_TAR=libxml2-2.9.2.tar.gz
@@ -129,18 +131,22 @@ SEE_TAR=SeExpr-rel-1.0.1.tar.gz
 LIBRAW_TAR=LibRaw-0.16.0.tar.gz
 PIX_TAR=pixman-0.32.6.tar.gz
 LCMS_TAR=lcms2-2.6.tar.gz
-MAGICK_TAR=ImageMagick-6.9.2-10.tar.xz
+MAGICK_TAR=ImageMagick-6.9.3-5.tar.xz
 GIF_TAR=giflib-5.1.1.tar.gz
 #SSL_TAR=openssl-1.0.0r.tar.gz 
 JASP_TAR=jasper-1.900.1.zip
 INSTALLER_BIN_TAR=natron-windows-installer.zip
+
+LLVM_TAR=llvm-3.7.1.src.tar.xz # 3.4 don't have RTTI, higher (3.8) not supported
+MESA_TAR=mesa-11.2.0-rc3.tar.xz # lower had build issues
+GLU_TAR=glu-9.0.0.tar.bz2
 
 FFMPEG_MXE_BIN_64_GPL_TAR=ffmpeg-2.8.3-windows-x86_64-shared-GPLv2.tar.xz
 FFMPEG_MXE_BIN_32_GPL_TAR=ffmpeg-2.8.3-windows-i686-shared-GPLv2.tar.xz
 FFMPEG_MXE_BIN_64_LGPL_TAR=ffmpeg-2.8.3-windows-x86_64-shared-LGPL.tar.xz
 FFMPEG_MXE_BIN_32_LGPL_TAR=ffmpeg-2.8.3-windows-i686-shared-LGPL.tar.xz
 
-NATRON_API_DOC=https://media.readthedocs.org/pdf/natron/workshop/natron.pdf # TODO generate own
+NATRON_API_DOC=https://media.readthedocs.org/pdf/natron/master/natron.pdf # TODO generate own
 
 # Threads
 #

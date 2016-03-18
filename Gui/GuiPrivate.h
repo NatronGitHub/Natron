@@ -60,7 +60,7 @@ struct GuiPrivate
 
     ///Dialogs handling members
     QWaitCondition _uiUsingMainThreadCond; //< used with _uiUsingMainThread
-    bool _uiUsingMainThread; //< true when the Gui is showing a dialog in the main thread
+    int _uiUsingMainThread; //< true when the Gui is showing a dialog in the main thread
     mutable QMutex _uiUsingMainThreadMutex; //< protects _uiUsingMainThread
     StandardButtonEnum _lastQuestionDialogAnswer; //< stores the last question answer
     bool _lastStopAskingAnswer;
@@ -96,7 +96,7 @@ struct GuiPrivate
     ActionWithShortcut *actionPreferences;
     ActionWithShortcut *actionExit;
     ActionWithShortcut *actionProject_settings;
-    ActionWithShortcut *actionShowOfxLog;
+    ActionWithShortcut *actionShowErrorLog;
     ActionWithShortcut *actionShortcutEditor;
     ActionWithShortcut *actionNewViewer;
     ActionWithShortcut *actionFullScreen;
@@ -166,6 +166,8 @@ struct GuiPrivate
 
     ///The curve editor.
     CurveEditor *_curveEditor;
+    
+    ProgressPanel* _progressPanel;
 
     // The dope sheet
     DopeSheetEditor *_dopeSheetEditor;
@@ -225,8 +227,6 @@ struct GuiPrivate
 
     ///The "About" window.
     AboutWindow* _aboutWindow;
-    mutable QMutex _progressBarsMutex;
-    std::map<KnobHolder*, GeneralProgressDialog*> _progressBars;
 
     ///list of the currently opened property panels
     mutable QMutex openedPanelsMutex;
@@ -252,9 +252,7 @@ struct GuiPrivate
     int currentPanelFocusEventRecursion;
     bool keyPressEventHasVisitedFocusWidget;
     bool keyUpEventHasVisitedFocusWidget;
-    
-    bool wasLaskUserSeekDuringPlayback;
-    
+        
     bool applicationConsoleVisible;
     
     GuiPrivate(GuiAppInstance* app,
@@ -281,6 +279,8 @@ struct GuiPrivate
     void createDopeSheetGui();
 
     void createScriptEditorGui();
+    
+    void createProgressPanelGui();
 
     ///If there's only 1 non-floating pane in the main window, return it, otherwise returns NULL
     TabWidget* getOnly1NonFloatingPane(int & count) const;

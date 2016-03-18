@@ -112,7 +112,6 @@ SOURCES += \
     GuiApplicationManager10.cpp \
     GuiApplicationManagerPrivate.cpp \
     GuiAppInstance.cpp \
-    GuiAppWrapper.cpp \
     GuiPrivate.cpp \
     Histogram.cpp \
     HostOverlay.cpp \
@@ -135,6 +134,7 @@ SOURCES += \
     KnobGuiGroup.cpp \
     KnobGuiParametric.cpp \
     KnobUndoCommand.cpp \
+    KnobWidgetDnD.cpp \
     Label.cpp \
     LineEdit.cpp \
     LinkToKnobDialog.cpp \
@@ -170,7 +170,10 @@ SOURCES += \
     PreviewThread.cpp \
     ProjectGui.cpp \
     ProjectGuiSerialization.cpp \
+    ProgressPanel.cpp \
+    ProgressTaskInfo.cpp \
     PropertiesBinWrapper.cpp \
+    PyGuiApp.cpp \
     PythonPanels.cpp \
     QtDecoder.cpp \
     QtEncoder.cpp \
@@ -262,12 +265,10 @@ HEADERS += \
     GuiApplicationManager.h \
     GuiApplicationManagerPrivate.h \
     GuiAppInstance.h \
-    GuiAppWrapper.h \
     GuiDefines.h \
     GuiFwd.h \
     GuiMacros.h \
     GuiPrivate.h \
-    GlobalGuiWrapper.h \
     Histogram.h \
     HostOverlay.h \
     InfoViewerWidget.h \
@@ -285,6 +286,7 @@ HEADERS += \
     KnobGuiGroup.h \
     KnobGuiParametric.h \
     KnobUndoCommand.h \
+    KnobWidgetDnD.h \
     Label.h \
     LineEdit.h \
     LinkToKnobDialog.h \
@@ -311,6 +313,10 @@ HEADERS += \
     ProjectGui.h \
     ProjectGuiSerialization.h \
     PropertiesBinWrapper.h \
+    ProgressPanel.h \
+    ProgressTaskInfo.h \
+    PyGlobalGui.h \
+    PyGuiApp.h \
     Pyside_Gui_Python.h \
     PythonPanels.h \
     QtDecoder.h \

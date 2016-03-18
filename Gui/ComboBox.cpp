@@ -46,11 +46,12 @@ CLANG_DIAG_ON(deprecated-register)
 #include "Engine/Image.h"
 #include "Engine/Lut.h"
 
-#include "Gui/GuiApplicationManager.h"
-#include "Gui/Menu.h"
 #include "Gui/ClickableLabel.h"
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/KnobWidgetDnD.h"
+#include "Gui/Menu.h"
 #include "Gui/Utils.h"
 
 
@@ -94,6 +95,8 @@ ComboBox::ComboBox(QWidget* parent)
     , _sizePolicy()
     , _validHints(false)
     , _align(Qt::AlignLeft | Qt::AlignVCenter | Qt::TextExpandTabs)
+    , _currentDelta(0)
+    , ignoreWheelEvent(false)
 {
 
     setFrameShape(QFrame::Box);
@@ -129,7 +132,7 @@ ComboBox::sizeForWidth(int w) const
     int hextra = DROP_DOWN_ICON_SIZE * 2,vextra = 0;
     
     ///Indent of 1 character
-    int indent = fm.width('x');
+    int indent = fm.width(QLatin1Char('x'));
     
     if (indent > 0) {
         if ((align & Qt::AlignLeft) || (align & Qt::AlignRight))
@@ -229,7 +232,7 @@ ComboBox::layoutRect() const
     
     Qt::Alignment align = QStyle::visualAlignment(Qt::LeftToRight, QFlag(_align));
     
-    int indent = fontMetrics().width('x') / 2;
+    int indent = fontMetrics().width(QLatin1Char('x')) / 2;
     if (indent > 0) {
         
         if (align & Qt::AlignLeft)
@@ -372,6 +375,7 @@ ComboBox::mousePressEvent(QMouseEvent* e)
         update();
         QFrame::mousePressEvent(e);
     }
+    _currentDelta = 0;
 }
 
 void
@@ -380,21 +384,31 @@ ComboBox::mouseReleaseEvent(QMouseEvent* e)
     _clicked = false;
     update();
     QFrame::mouseReleaseEvent(e);
+    _currentDelta = 0;
 }
 
 void
 ComboBox::wheelEvent(QWheelEvent *e)
 {
+    if (ignoreWheelEvent) {
+        return QFrame::wheelEvent(e);
+    }
     if (!hasFocus()) {
         return;
     }
-    if (e->delta()>0) {
-        setCurrentIndex((activeIndex() - 1 < 0) ? count() - 1 : activeIndex() - 1);
-    } else {
+    // a standard wheel click is 120
+    _currentDelta += e->delta();
+
+    if (_currentDelta <= -120 || 120 <= _currentDelta) {
         int c = count();
-        if (c != 0) {
-            setCurrentIndex((activeIndex() + 1) % c);
+        int i = activeIndex();
+        int delta = _currentDelta / 120;
+        _currentDelta -= delta * 120;
+        i = (i - delta) % c;
+        if (i < 0) {
+            i += c;
         }
+        setCurrentIndex(i);
     }
 }
 
@@ -412,6 +426,7 @@ ComboBox::keyPressEvent(QKeyEvent* e)
             QFrame::keyPressEvent(e);
         }
     }
+    _currentDelta = 0;
 }
 
 static void setEnabledRecursive(bool enabled, ComboBoxMenuNode* node)
@@ -447,7 +462,7 @@ ComboBox::createMenu()
     QAction* triggered = _rootNode->isMenu->exec( this->mapToGlobal( QPoint( 0,height() ) ) );
     if (triggered) {
         QVariant data = triggered->data();
-        if (data.toString() != "New") {
+        if (data.toString() != QString::fromUtf8("New")) {
             setCurrentIndex(data.toInt());
         } else {
             Q_EMIT itemNewSelected();
@@ -540,8 +555,8 @@ ComboBox::addItemNew()
         return;
     }
     QAction* action =  new QAction(this);
-    action->setText("New");
-    action->setData("New");
+    action->setText(QString::fromUtf8("New"));
+    action->setData(QString::fromUtf8("New"));
     QFont f = QFont(appFont,appFontSize);
     f.setItalic(true);
     action->setFont(f);
@@ -578,10 +593,10 @@ ComboBox::addItem(const QString & item,
 
         addAction(action);
     } else {
-        QStringList splits = item.split('/');
+        QStringList splits = item.split(QLatin1Char('/'));
         QStringList realSplits;
         for (int i = 0; i < splits.size(); ++i) {
-            if (splits[i].isEmpty() || (splits[i].size() == 1 && splits[i] == "/")) {
+            if (splits[i].isEmpty() || (splits[i].size() == 1 && splits[i] == QString::fromUtf8("/"))) {
                 continue;
             }
             realSplits.push_back(splits[i]);
@@ -747,7 +762,7 @@ static QString getNodeTextRecursive(ComboBoxMenuNode* node,ComboBoxMenuNode* roo
         ret.prepend(node->text);
         if (node->parent) {
             if (node->parent != rootNode) {
-                ret.prepend('/');
+                ret.prepend(QLatin1Char('/'));
             }
             node = node->parent;
         }
@@ -780,7 +795,7 @@ ComboBox::setCurrentIndex_internal(int index)
         return false;
     }
     //Forbid programmatic setting of the "New" choice, only user can select it
-    if ((node->isLeaf && node->isLeaf->data().toString() == "New")) {// "New" choice
+    if ((node->isLeaf && node->isLeaf->data().toString() == QString::fromUtf8("New"))) {// "New" choice
         return false;
     }
     

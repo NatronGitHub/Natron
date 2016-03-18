@@ -168,10 +168,10 @@ DotGui::applyBrush(const QBrush & brush)
 }
 
 NodeSettingsPanel*
-DotGui::createPanel(QVBoxLayout* container,
-                    const NodeGuiPtr & thisAsShared)
+DotGui::createPanel(QVBoxLayout* /*container*/,
+                    const NodeGuiPtr & /*thisAsShared*/)
 {
-    NodeSettingsPanel* panel = new NodeSettingsPanel( boost::shared_ptr<MultiInstancePanel>(),
+   /* NodeSettingsPanel* panel = new NodeSettingsPanel( boost::shared_ptr<MultiInstancePanel>(),
                                                       getDagGui()->getGui(),
                                                       thisAsShared,
                                                       container,container->parentWidget() );
@@ -179,7 +179,8 @@ DotGui::createPanel(QVBoxLayout* container,
     ///Always close the panel by default for Dots
     panel->setClosed(true);
 
-    return panel;
+    return panel;*/
+    return 0;
 }
 
 QRectF

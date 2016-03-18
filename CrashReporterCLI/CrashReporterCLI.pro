@@ -27,6 +27,9 @@ QT       -= gui
 #  example on OSX:
 #  $ cd build/Debug
 #  $ ln -s ../../Renderer/build/Debug/NatronRenderer NatronRenderer-bin
+win32 {
+        RC_FILE += ../Natron.rc
+}
 
 CONFIG += console
 CONFIG -= app_bundle

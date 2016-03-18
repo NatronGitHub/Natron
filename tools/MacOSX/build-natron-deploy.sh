@@ -236,7 +236,8 @@ if otool -L "$binary" |fgrep "${MACPORTS}"; then
     exit 1
 fi
 
-
+cp "${MACPORTS}/bin/ffmpeg $package/Contents/MacOS/"
+cp "${MACPORTS}/bin/ffrobe $package/Contents/MacOS/"
 
 #Do the same for crash reporter
 if [ -f "CrashReporter/NatronCrashReporter.app/Contents/MacOS/NatronCrashReporter" ]; then

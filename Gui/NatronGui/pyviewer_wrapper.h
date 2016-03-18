@@ -3,7 +3,7 @@
 
 #include <shiboken.h>
 
-#include <GuiAppWrapper.h>
+#include <PyGuiApp.h>
 
 #endif // SBK_PYVIEWER_H
 

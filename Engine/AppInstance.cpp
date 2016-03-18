@@ -51,14 +51,18 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/FileDownloader.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/DiskCacheNode.h"
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/OfxHost.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
+#include "Engine/ProcessHandler.h"
+#include "Engine/ReadNode.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/WriteNode.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -89,10 +93,19 @@ FlagSetter::~FlagSetter()
     }
 }
 
+struct RenderQueueItem
+{
+    AppInstance::RenderWork work;
+    QString sequenceName;
+    QString savePath;
+    boost::shared_ptr<ProcessHandler> process;
+};
+
 
 
 struct AppInstancePrivate
 {
+    AppInstance* _publicInterface;
     boost::shared_ptr<Project> _currentProject; //< ptr to the project
     int _appID; //< the unique ID of this instance (or window)
     bool _projectCreatedWithLowerCaseIDs;
@@ -108,15 +121,21 @@ struct AppInstancePrivate
     //When a node tree is created
     int _creatingTree;
     
+    mutable QMutex renderQueueMutex;
+    std::list<RenderQueueItem> renderQueue, activeRenders;
+    
     AppInstancePrivate(int appID,
                        AppInstance* app)
-    : _currentProject( new Project(app) )
+    : _publicInterface(app)
+    , _currentProject( new Project(app) )
     , _appID(appID)
     , _projectCreatedWithLowerCaseIDs(false)
     , creatingGroupMutex()
     , _creatingGroup(false)
     , _creatingNode(false)
     , _creatingTree(0)
+    , renderQueueMutex()
+    , renderQueue()
     {
     }
     
@@ -124,6 +143,16 @@ struct AppInstancePrivate
     
     
     void executeCommandLinePythonCommands(const CLArgs& args);
+    
+    bool validateRenderOptions(const AppInstance::RenderWork& w,
+                               int* firstFrame,
+                               int* lastFrame,
+                               int* frameStep);
+    
+    void getSequenceNameFromWriter(const OutputEffectInstance* writer, QString* sequenceName);
+    
+    void startRenderingFullSequence(bool blocking, const RenderQueueItem& writerWork);
+
     
 };
 
@@ -144,6 +173,7 @@ AppInstance::~AppInstance()
 {
 
     appPTR->removeInstance(_imp->_appID);
+    _imp->_currentProject->clearNodes(false);
 }
 
 void
@@ -185,14 +215,14 @@ AppInstance::setIsCreatingNodeTree(bool b)
 void
 AppInstance::checkForNewVersion() const
 {
-    FileDownloader* downloader = new FileDownloader( QUrl(NATRON_LAST_VERSION_URL), false );
-    QObject::connect( downloader, SIGNAL( downloaded() ), this, SLOT( newVersionCheckDownloaded() ) );
-    QObject::connect( downloader, SIGNAL( error() ), this, SLOT( newVersionCheckError() ) );
+    FileDownloader* downloader = new FileDownloader( QUrl(QString::fromUtf8(NATRON_LAST_VERSION_URL)), false );
+    QObject::connect( downloader, SIGNAL(downloaded()), this, SLOT(newVersionCheckDownloaded()) );
+    QObject::connect( downloader, SIGNAL(error()), this, SLOT(newVersionCheckError()) );
 
     ///make the call blocking
     QEventLoop loop;
 
-    connect( downloader->getReply(), SIGNAL( finished() ), &loop, SLOT( quit() ) );
+    connect( downloader->getReply(), SIGNAL(finished()), &loop, SLOT(quit()) );
     loop.exec();
 }
 
@@ -201,38 +231,38 @@ AppInstance::checkForNewVersion() const
 static
 int compareDevStatus(const QString& a,const QString& b)
 {
-    if (a == NATRON_DEVELOPMENT_DEVEL || a == NATRON_DEVELOPMENT_SNAPSHOT) {
+    if (a == QString::fromUtf8(NATRON_DEVELOPMENT_DEVEL) || a == QString::fromUtf8(NATRON_DEVELOPMENT_SNAPSHOT)) {
         //Do not try updates when update available is a dev build
         return -1;
-    } else if (b == NATRON_DEVELOPMENT_DEVEL || b == NATRON_DEVELOPMENT_SNAPSHOT) {
+    } else if (b == QString::fromUtf8(NATRON_DEVELOPMENT_DEVEL) || b == QString::fromUtf8(NATRON_DEVELOPMENT_SNAPSHOT)) {
         //This is a dev build, do not try updates
         return -1;
-    } else if (a == NATRON_DEVELOPMENT_ALPHA) {
-        if (b == NATRON_DEVELOPMENT_ALPHA) {
+    } else if (a == QString::fromUtf8(NATRON_DEVELOPMENT_ALPHA)) {
+        if (b == QString::fromUtf8(NATRON_DEVELOPMENT_ALPHA)) {
             return 0;
         } else {
             return -1;
         }
-    } else if (a == NATRON_DEVELOPMENT_BETA) {
-        if (b == NATRON_DEVELOPMENT_ALPHA) {
+    } else if (a == QString::fromUtf8(NATRON_DEVELOPMENT_BETA)) {
+        if (b == QString::fromUtf8(NATRON_DEVELOPMENT_ALPHA)) {
             return 1;
-        } else if (b == NATRON_DEVELOPMENT_BETA) {
+        } else if (b == QString::fromUtf8(NATRON_DEVELOPMENT_BETA)) {
             return 0;
         } else {
             return -1;
         }
-    } else if (a == NATRON_DEVELOPMENT_RELEASE_CANDIDATE) {
-        if (b == NATRON_DEVELOPMENT_ALPHA) {
+    } else if (a == QString::fromUtf8(NATRON_DEVELOPMENT_RELEASE_CANDIDATE)) {
+        if (b == QString::fromUtf8(NATRON_DEVELOPMENT_ALPHA)) {
             return 1;
-        } else if (b == NATRON_DEVELOPMENT_BETA) {
+        } else if (b == QString::fromUtf8(NATRON_DEVELOPMENT_BETA)) {
             return 1;
-        } else if (b == NATRON_DEVELOPMENT_RELEASE_CANDIDATE) {
+        } else if (b == QString::fromUtf8(NATRON_DEVELOPMENT_RELEASE_CANDIDATE)) {
             return 0;
         } else {
             return -1;
         }
-    } else if (a == NATRON_DEVELOPMENT_RELEASE_STABLE) {
-        if (b == NATRON_DEVELOPMENT_RELEASE_STABLE) {
+    } else if (a == QString::fromUtf8(NATRON_DEVELOPMENT_RELEASE_STABLE)) {
+        if (b == QString::fromUtf8(NATRON_DEVELOPMENT_RELEASE_STABLE)) {
             return 0;
         } else {
             return 1;
@@ -250,17 +280,17 @@ AppInstance::newVersionCheckDownloaded()
     
     QString extractedFileVersionStr,extractedSoftwareVersionStr,extractedDevStatusStr,extractedBuildNumberStr;
     
-    QString fileVersionTag("File version: ");
-    QString softwareVersionTag("Software version: ");
-    QString devStatusTag("Development status: ");
-    QString buildNumberTag("Build number: ");
+    QString fileVersionTag(QString::fromUtf8("File version: "));
+    QString softwareVersionTag(QString::fromUtf8("Software version: "));
+    QString devStatusTag(QString::fromUtf8("Development status: "));
+    QString buildNumberTag(QString::fromUtf8("Build number: "));
     
-    QString data( downloader->downloadedData() );
+    QString data(QString::fromUtf8(downloader->downloadedData()));
     QTextStream ts(&data);
     
     while (!ts.atEnd()) {
         QString line = ts.readLine();
-        if (line.startsWith(QChar('#')) || line.startsWith(QChar('\n'))) {
+        if (line.startsWith(QChar::fromLatin1('#')) || line.startsWith(QChar::fromLatin1('\n'))) {
             continue;
         }
         
@@ -292,21 +322,24 @@ AppInstance::newVersionCheckDownloaded()
         }
     }
     
+    downloader->deleteLater();
+
+    
     if (extractedFileVersionStr.isEmpty() || extractedFileVersionStr.toInt() < NATRON_LAST_VERSION_FILE_VERSION) {
         //The file cannot be decoded here
-        downloader->deleteLater();
         return;
     }
     
     
     
-    QStringList versionDigits = extractedSoftwareVersionStr.split( QChar('.') );
+    QStringList versionDigits = extractedSoftwareVersionStr.split( QChar::fromLatin1('.') );
 
     ///we only understand 3 digits formed version numbers
     if (versionDigits.size() != 3) {
-        downloader->deleteLater();
         return;
     }
+    
+
     
     int buildNumber = extractedBuildNumberStr.toInt();
 
@@ -314,7 +347,8 @@ AppInstance::newVersionCheckDownloaded()
     int minor = versionDigits[1].toInt();
     int revision = versionDigits[2].toInt();
     
-    int devStatCompare = compareDevStatus(extractedDevStatusStr, QString(NATRON_DEVELOPMENT_STATUS));
+    const QString currentDevStatus = QString::fromUtf8(NATRON_DEVELOPMENT_STATUS);
+    int devStatCompare = compareDevStatus(extractedDevStatusStr, currentDevStatus);
     
     int versionEncoded = NATRON_VERSION_ENCODE(major, minor, revision);
     if (versionEncoded > NATRON_VERSION_ENCODED ||
@@ -322,37 +356,43 @@ AppInstance::newVersionCheckDownloaded()
          (devStatCompare > 0 || (devStatCompare == 0 && buildNumber > NATRON_BUILD_NUMBER)))) {
             
             QString text;
-            if (devStatCompare == 0 && buildNumber > NATRON_BUILD_NUMBER && versionEncoded == NATRON_VERSION_ENCODED) {
-                ///show build number in version
-                text =  QObject::tr("<p>Updates for %1 are now available for download. "
-                                    "You are currently using %1 version %2 - %3 - build %4. "
-                                    "The latest version of %1 is version %5 - %6 - build %7.</p> ")
-                .arg(NATRON_APPLICATION_NAME)
-                .arg(NATRON_VERSION_STRING)
-                .arg(NATRON_DEVELOPMENT_STATUS)
-                .arg(NATRON_BUILD_NUMBER)
-                .arg(extractedSoftwareVersionStr)
-                .arg(extractedDevStatusStr)
-                .arg(extractedBuildNumberStr) +
-                QObject::tr("<p>You can download it from ") + QString("<a href='http://sourceforge.net/projects/natron/'>"
-                                                                     "<font color=\"orange\">Sourceforge</a>. </p>");
+            if (devStatCompare == 0) {
+                
+                if (buildNumber > NATRON_BUILD_NUMBER && versionEncoded == NATRON_VERSION_ENCODED &&
+                    currentDevStatus == QString::fromUtf8(NATRON_DEVELOPMENT_RELEASE_CANDIDATE)) {
+                    ///show build number in version
+                    text =  QObject::tr("<p>Updates for %1 are now available for download. "
+                                        "You are currently using %1 version %2 - %3 - build %4. "
+                                        "The latest version of %1 is version %5 - %6 - build %7.</p> ")
+                    .arg(QString::fromUtf8(NATRON_APPLICATION_NAME))
+                    .arg(QString::fromUtf8(NATRON_VERSION_STRING))
+                    .arg(QString::fromUtf8(NATRON_DEVELOPMENT_STATUS))
+                    .arg(NATRON_BUILD_NUMBER)
+                    .arg(extractedSoftwareVersionStr)
+                    .arg(extractedDevStatusStr)
+                    .arg(extractedBuildNumberStr) +
+                    QObject::tr("<p>You can download it from ") + QString::fromUtf8("<a href=\"www.natron.fr/download\">"
+                                                                                    "www.natron.fr</a>. </p>");
+                } else {
+                    //Only notify build number increments for Release candidates
+                    return;
+                }
             } else {
                 text =  QObject::tr("<p>Updates for %1 are now available for download. "
                                     "You are currently using %1 version %2 - %3. "
                                     "The latest version of %1 is version %4 - %5.</p> ")
-                .arg(NATRON_APPLICATION_NAME)
-                .arg(NATRON_VERSION_STRING)
-                .arg(NATRON_DEVELOPMENT_STATUS)
+                .arg(QString::fromUtf8(NATRON_APPLICATION_NAME))
+                .arg(QString::fromUtf8(NATRON_VERSION_STRING))
+                .arg(QString::fromUtf8(NATRON_DEVELOPMENT_STATUS))
                 .arg(extractedSoftwareVersionStr)
                 .arg(extractedDevStatusStr) +
-                QObject::tr("<p>You can download it from ") + QString("<a href='www.natron.fr/download'>"
-                                                                    "<font color=\"orange\">www.natron.fr</a>. </p>");
+                QObject::tr("<p>You can download it from ") + QString::fromUtf8("<a href=\"www.natron.fr/download\">"
+                                                                    "www.natron.fr</a>. </p>");
 
             }
         
             Dialogs::informationDialog( "New version", text.toStdString(), true );
     }
-    downloader->deleteLater();
 }
 
 void
@@ -393,7 +433,7 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderW
                 if (fileKnob) {
                     KnobOutputFile* outFile = dynamic_cast<KnobOutputFile*>(fileKnob.get());
                     if (outFile) {
-                        outFile->setValue(it->filename.toStdString(), 0);
+                        outFile->setValue(it->filename.toStdString());
                     }
                 }
             }
@@ -416,8 +456,6 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderW
             if (outputInput) {
                 writerNode->connectInput(outputInput, 0);
             }
-#pragma message WARN("what is the following line for?")
-            writerNode->getScriptName().c_str();
         }
         
         assert(writerNode);
@@ -426,55 +464,18 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderW
         if (cl.hasFrameRange()) {
             const std::list<std::pair<int,std::pair<int,int> > >& frameRanges = cl.getFrameRanges();
             for (std::list<std::pair<int,std::pair<int,int> > >::const_iterator it2 = frameRanges.begin(); it2 != frameRanges.end(); ++it2) {
-                AppInstance::RenderWork r;
-                r.firstFrame = it2->second.first;
-                r.lastFrame = it2->second.second;
-                r.frameStep = it2->first;
-                r.writer = effect;
+                AppInstance::RenderWork r(effect,it2->second.first,it2->second.second,it2->first, cl.areRenderStatsEnabled());
                 requests.push_back(r);
             }
         } else {
-            AppInstance::RenderWork r;
-            r.firstFrame = INT_MIN;
-            r.lastFrame = INT_MAX;
-            r.frameStep = INT_MIN;
-            r.writer = effect;
+            AppInstance::RenderWork r(effect,INT_MIN,INT_MAX,INT_MIN, cl.areRenderStatsEnabled());
             requests.push_back(r);
         }
     
     }
 }
 
-NodePtr
-AppInstance::createWriter(const std::string& filename,
-                          CreateNodeReason reason,
-                          const boost::shared_ptr<NodeCollection>& collection,
-                          int firstFrame, int lastFrame)
-{
-    std::map<std::string,std::string> writersForFormat;
-    appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
-    
-    QString fileCpy(filename.c_str());
-    std::string ext = QtCompat::removeFileExtension(fileCpy).toLower().toStdString();
-    std::map<std::string,std::string>::iterator found = writersForFormat.find(ext);
-    if ( found == writersForFormat.end() ) {
-        Dialogs::errorDialog( tr("Writer").toStdString(),
-                            tr("No plugin capable of encoding ").toStdString() + ext + tr(" was found.").toStdString(),false );
-        return NodePtr();
-    }
-    
-    
-    CreateNodeArgs args(found->second.c_str(), reason, collection);
-    args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filename));
-    if (firstFrame != INT_MIN && lastFrame != INT_MAX) {
-        args.paramValues.push_back(createDefaultValueForParam<int>("frameRange", 2));
-        args.paramValues.push_back(createDefaultValueForParam<int>("firstFrame", firstFrame));
-        args.paramValues.push_back(createDefaultValueForParam<int>("lastFrame", lastFrame));
-    }
-  
-    return createNode(args);
-    
-}
+
 
 void
 AppInstancePrivate::executeCommandLinePythonCommands(const CLArgs& args)
@@ -487,9 +488,9 @@ AppInstancePrivate::executeCommandLinePythonCommands(const CLArgs& args)
         bool ok  = Python::interpretPythonScript(*it, &err, &output);
         if (!ok) {
             QString m = QObject::tr("Failed to execute given command-line Python command: ");
-            m.append(it->c_str());
-            m.append(" Error: ");
-            m.append(err.c_str());
+            m.append(QString::fromUtf8(it->c_str()));
+            m.append(QString::fromUtf8(" Error: "));
+            m.append(QString::fromUtf8(err.c_str()));
             throw std::runtime_error(m.toStdString());
         } else if (!output.empty()) {
             std::cout << output << std::endl;
@@ -531,14 +532,14 @@ AppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
         std::list<AppInstance::RenderWork> writersWork;
         
         
-        if (info.suffix() == NATRON_PROJECT_FILE_EXT) {
+        if (info.suffix() == QString::fromUtf8(NATRON_PROJECT_FILE_EXT)) {
             
             ///Load the project
             if ( !_imp->_currentProject->loadProject(info.path(),info.fileName()) ) {
                 throw std::invalid_argument(tr("Project file loading failed.").toStdString());
             }
             
-        } else if (info.suffix() == "py") {
+        } else if (info.suffix() == QString::fromUtf8("py")) {
             
             ///Load the python script
             loadPythonScript(info);
@@ -587,7 +588,7 @@ AppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
             if (fileKnob) {
                 KnobFile* outFile = dynamic_cast<KnobFile*>(fileKnob.get());
                 if (outFile) {
-                    outFile->setValue(it->filename.toStdString(), 0);
+                    outFile->setValue(it->filename.toStdString());
                 }
             }
 
@@ -595,10 +596,10 @@ AppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
        
         ///launch renders
         if (!writersWork.empty()) {
-            startWritersRendering(cl.areRenderStatsEnabled(), false, writersWork);
+            startWritersRendering(false, writersWork);
         } else {
             std::list<std::string> writers;
-            startWritersRendering(cl.areRenderStatsEnabled(), false, writers, cl.getFrameRanges());
+            startWritersRenderingFromNames(cl.areRenderStatsEnabled(), false, writers, cl.getFrameRanges());
         }
        
         
@@ -608,9 +609,9 @@ AppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
         QFileInfo info(cl.getScriptFilename());
         if (info.exists()) {
             
-            if (info.suffix() == "py") {
+            if (info.suffix() == QString::fromUtf8("py")) {
                 loadPythonScript(info);
-            } else if (info.suffix() == NATRON_PROJECT_FILE_EXT) {
+            } else if (info.suffix() == QString::fromUtf8(NATRON_PROJECT_FILE_EXT)) {
                 if ( !_imp->_currentProject->loadProject(info.path(),info.fileName()) ) {
                     throw std::invalid_argument(tr("Project file loading failed.").toStdString());
                 }
@@ -667,7 +668,7 @@ AppInstance::loadPythonScript(const QFileInfo& file)
     }
     QTextStream ts(&f);
     QString content = ts.readAll();
-    bool hasCreateInstance = content.contains("def createInstance");
+    bool hasCreateInstance = content.contains(QString::fromUtf8("def createInstance"));
     /*
      The old way of doing it was
      
@@ -691,7 +692,7 @@ AppInstance::loadPythonScript(const QFileInfo& file)
         
         
         QString moduleName = file.fileName();
-        int lastDotPos = moduleName.lastIndexOf(QChar('.'));
+        int lastDotPos = moduleName.lastIndexOf(QChar::fromLatin1('.'));
         if (lastDotPos != -1) {
             moduleName = moduleName.left(lastDotPos);
         }
@@ -746,10 +747,10 @@ AppInstance::loadPythonScript(const QFileInfo& file)
         }
         
         if (!error.empty()) {
-            QString message("Failed to load ");
+            QString message(QString::fromUtf8("Failed to load "));
             message.append(file.absoluteFilePath());
-            message.append(": ");
-            message.append(error.c_str());
+            message.append(QString::fromUtf8(": "));
+            message.append(QString::fromUtf8(error.c_str()));
             appendToScriptEditor(message.toStdString());
         }
         
@@ -766,6 +767,8 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
 
 {
    
+    /*If the plug-in is a toolset, execute the toolset script and don't actually create a node*/
+    bool istoolsetScript = plugin->getToolsetScript();
     
     NodePtr node;
     
@@ -774,27 +777,34 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
         CreatingNodeTreeFlag_RAII createNodeTree(this);
         
         NodePtr containerNode;
-        CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP, reason, group);
-        groupArgs.serialization = serialization;
-        containerNode = createNode(groupArgs);
-        if (!containerNode) {
-            return containerNode;
-        }
-        
-        if (reason == eCreateNodeReasonUserCreate || reason == eCreateNodeReasonInternal) {
-            std::string containerName;
-            try {
-                group->initNodeName(plugin->getLabelWithoutSuffix().toStdString(),&containerName);
-                containerNode->setScriptName(containerName);
-                containerNode->setLabel(containerName);
-            } catch (...) {
-                
+        if (!istoolsetScript) {
+            CreateNodeArgs groupArgs(QString::fromUtf8(PLUGINID_NATRON_GROUP), reason, group);
+            groupArgs.serialization = serialization;
+            containerNode = createNode(groupArgs);
+            if (!containerNode) {
+                return containerNode;
             }
+            
+            if (reason == eCreateNodeReasonUserCreate || reason == eCreateNodeReasonInternal) {
+                std::string containerName;
+                try {
+                    group->initNodeName(plugin->getLabelWithoutSuffix().toStdString(),&containerName);
+                    containerNode->setScriptName(containerName);
+                    containerNode->setLabel(containerName);
+                } catch (...) {
+                    
+                }
+            }
+            
+        }
+      
+        
+        
+        std::string containerFullySpecifiedName;
+        if (containerNode) {
+            containerFullySpecifiedName = containerNode->getFullyQualifiedName();
         }
         
-        
-        
-        std::string containerFullySpecifiedName = containerNode->getFullyQualifiedName();
         
         QString moduleName;
         QString modulePath;
@@ -805,19 +815,28 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
         std::stringstream ss;
         ss << moduleName.toStdString();
         ss << ".createInstance(app" << appID;
-        ss << ", app" << appID << "." << containerFullySpecifiedName;
+        if (istoolsetScript) {
+            ss << ",\"\"";
+        } else {
+            ss << ", app" << appID << "." << containerFullySpecifiedName;
+        }
         ss << ")\n";
         std::string err;
         std::string output;
         if (!Python::interpretPythonScript(ss.str(), &err, &output)) {
             Dialogs::errorDialog(tr("Group plugin creation error").toStdString(), err);
-            containerNode->destroyNode(false);
+            if (containerNode) {
+                containerNode->destroyNode(false);
+            }
             return node;
         } else {
             if (!output.empty()) {
                 appendToScriptEditor(output);
             }
             node = containerNode;
+        }
+        if (istoolsetScript) {
+            return NodePtr();
         }
         
         if (!moduleName.isEmpty()) {
@@ -841,32 +860,103 @@ AppInstance::setGroupLabelIDAndVersion(const NodePtr& node,
 {
     std::string pluginID,pluginLabel,iconFilePath,pluginGrouping,description;
     unsigned int version;
-    if (Python::getGroupInfos(pythonModulePath.toStdString(),pythonModule.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &description, &version)) {
+    bool istoolset;
+    if (Python::getGroupInfos(pythonModulePath.toStdString(),pythonModule.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &description, &istoolset, &version)) {
         node->setPluginIconFilePath(iconFilePath);
         node->setPluginDescription(description);
-        node->setPluginIDAndVersionForGui(pluginLabel, pluginID, version);
-        node->setPluginPythonModule(QString(pythonModulePath + pythonModule + ".py").toStdString());
+        
+        QString groupingStr = QString::fromUtf8(pluginGrouping.c_str());
+        QStringList groupingSplits = groupingStr.split(QLatin1Char('/'));
+        
+        std::list<std::string> stdGrouping;
+        for (QStringList::iterator it = groupingSplits.begin(); it!=groupingSplits.end(); ++it) {
+            stdGrouping.push_back(it->toStdString());
+        }
+        
+        node->setPluginIDAndVersionForGui(stdGrouping, pluginLabel, pluginID, version);
+        node->setPluginPythonModule(QString(pythonModulePath + pythonModule + QString::fromUtf8(".py")).toStdString());
     }
     
 }
 
+NodePtr
+AppInstance::createReader(const std::string& filename, CreateNodeReason reason, const boost::shared_ptr<NodeCollection>& group)
+{
+#ifdef NATRON_ENABLE_IO_META_NODES
 
+    CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_READ),
+                        reason,
+                        group);
+#else
+    
+    std::map<std::string,std::string> readersForFormat;
+    appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&readersForFormat);
+    QString fileCpy = QString::fromUtf8(filename.c_str());
+    std::string ext = QtCompat::removeFileExtension(fileCpy).toLower().toStdString();
+    std::map<std::string,std::string>::iterator found = readersForFormat.find(ext);
+    if ( found == readersForFormat.end() ) {
+        Dialogs::errorDialog( tr("Reader").toStdString(),
+                             tr("No plugin capable of decoding ").toStdString() + ext + tr(" was found.").toStdString(),false );
+        return NodePtr();
+    }
+    CreateNodeArgs args(QString::fromUtf8(found->second.c_str()), reason, group);
+#endif
+    args.paramValues.push_back(createDefaultValueForParam(kOfxImageEffectFileParamName, filename));
+    return createNode(args);
+}
+
+
+
+NodePtr
+AppInstance::createWriter(const std::string& filename,
+                          CreateNodeReason reason,
+                          const boost::shared_ptr<NodeCollection>& collection,
+                          int firstFrame, int lastFrame)
+{
+    
+#ifdef NATRON_ENABLE_IO_META_NODES
+    CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_WRITE), reason, collection);
+#else
+    std::map<std::string,std::string> writersForFormat;
+    appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
+    
+    QString fileCpy = QString::fromUtf8(filename.c_str());
+    std::string ext = QtCompat::removeFileExtension(fileCpy).toLower().toStdString();
+    std::map<std::string,std::string>::iterator found = writersForFormat.find(ext);
+    if ( found == writersForFormat.end() ) {
+        Dialogs::errorDialog( tr("Writer").toStdString(),
+                             tr("No plugin capable of encoding ").toStdString() + ext + tr(" was found.").toStdString(),false );
+        return NodePtr();
+    }
+    
+    
+    CreateNodeArgs args(QString::fromUtf8(found->second.c_str()), reason, collection);
+#endif
+    args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filename));
+    if (firstFrame != INT_MIN && lastFrame != INT_MAX) {
+        args.paramValues.push_back(createDefaultValueForParam<int>("frameRange", 2));
+        args.paramValues.push_back(createDefaultValueForParam<int>("firstFrame", firstFrame));
+        args.paramValues.push_back(createDefaultValueForParam<int>("lastFrame", lastFrame));
+    }
+    
+    return createNode(args);
+    
+}
 
 /**
  * @brief An inspector node is like a viewer node with hidden inputs that unfolds one after another.
  * This functions returns the number of inputs to use for inspectors or 0 for a regular node.
  **/
-static int isEntitledForInspector(Plugin* plugin,OFX::Host::ImageEffect::Descriptor* ofxDesc)  {
+static bool isEntitledForInspector(Plugin* plugin,OFX::Host::ImageEffect::Descriptor* ofxDesc)  {
     
-    if (plugin->getPluginID() == PLUGINID_NATRON_VIEWER) {
-        return 10;
-    } else if (plugin->getPluginID() == PLUGINID_NATRON_ROTOPAINT ||
-               plugin->getPluginID() == PLUGINID_NATRON_ROTO) {
-        return 11;
+    if (plugin->getPluginID() == QString::fromUtf8(PLUGINID_NATRON_VIEWER) ||
+        plugin->getPluginID() == QString::fromUtf8(PLUGINID_NATRON_ROTOPAINT) ||
+        plugin->getPluginID() == QString::fromUtf8(PLUGINID_NATRON_ROTO)) {
+        return true;
     }
     
     if (!ofxDesc) {
-        return 0;
+        return false;
     }
     
     const std::vector<OFX::Host::ImageEffect::ClipDescriptor*>& clips = ofxDesc->getClipsByOrder();
@@ -876,7 +966,7 @@ static int isEntitledForInspector(Plugin* plugin,OFX::Host::ImageEffect::Descrip
         if (!(*it)->isOutput()) {
             if (!(*it)->isOptional()) {
                 if (!firstInput) {                    // allow one non-optional input
-                    return 0;
+                    return false;
                 }
             } else {
                 ++nInputs;
@@ -885,13 +975,13 @@ static int isEntitledForInspector(Plugin* plugin,OFX::Host::ImageEffect::Descrip
         }
     }
     if (nInputs > 4) {
-        return nInputs;
+        return true;
     }
-    return 0;
+    return false;
 }
 
 NodePtr
-AppInstance::createNodeInternal(const CreateNodeArgs& args)
+AppInstance::createNodeInternal(CreateNodeArgs& args)
 {
     
     NodePtr node;
@@ -900,11 +990,22 @@ AppInstance::createNodeInternal(const CreateNodeArgs& args)
     
     //Roto has moved to a built-in plugin
     if ((args.reason == eCreateNodeReasonUserCreate || args.reason == eCreateNodeReasonProjectLoad) &&
-        ((!_imp->_projectCreatedWithLowerCaseIDs && args.pluginID == PLUGINID_OFX_ROTO) || (_imp->_projectCreatedWithLowerCaseIDs && args.pluginID == QString(PLUGINID_OFX_ROTO).toLower()))) {
-        findId = PLUGINID_NATRON_ROTO;
+        ((!_imp->_projectCreatedWithLowerCaseIDs && args.pluginID == QString::fromUtf8(PLUGINID_OFX_ROTO)) || (_imp->_projectCreatedWithLowerCaseIDs && args.pluginID == QString::fromUtf8(PLUGINID_OFX_ROTO).toLower()))) {
+        findId = QString::fromUtf8(PLUGINID_NATRON_ROTO);
     } else {
         findId = args.pluginID;
     }
+    
+#ifdef NATRON_ENABLE_IO_META_NODES
+    //If it is a reader or writer, create a ReadNode or WriteNode
+    if (!args.ioContainer && ReadNode::isBundledReader(args.pluginID.toStdString())) {
+        args.paramValues.push_back(createDefaultValueForParam(kNatronReadNodeParamDecodingPluginID, args.pluginID.toStdString()));
+        findId = QString::fromUtf8(PLUGINID_NATRON_READ);
+    } else if (!args.ioContainer && WriteNode::isBundledWriter(args.pluginID.toStdString())) {
+        args.paramValues.push_back(createDefaultValueForParam(kNatronWriteNodeParamEncodingPluginID, args.pluginID.toStdString()));
+        findId = QString::fromUtf8(PLUGINID_NATRON_WRITE);
+    }
+#endif
     
     try {
         plugin = appPTR->getPluginBinary(findId,args.majorV,args.minorV,_imp->_projectCreatedWithLowerCaseIDs && args.reason == eCreateNodeReasonProjectLoad);
@@ -951,7 +1052,7 @@ AppInstance::createNodeInternal(const CreateNodeArgs& args)
                 return node;
             }
         } else {
-            plugin = appPTR->getPluginBinary(PLUGINID_NATRON_GROUP,-1,-1, false);
+            plugin = appPTR->getPluginBinary(QString::fromUtf8(PLUGINID_NATRON_GROUP),-1,-1, false);
             assert(plugin);
         }
     }
@@ -979,12 +1080,12 @@ AppInstance::createNodeInternal(const CreateNodeArgs& args)
         }
     }
     
-    int nInputsForInspector = isEntitledForInspector(plugin,ofxDesc);
+    bool useInspector = isEntitledForInspector(plugin,ofxDesc);
     
-    if (!nInputsForInspector) {
-        node.reset( new Node(this, args.addToProject ? args.group : boost::shared_ptr<NodeCollection>(), plugin) );
+    if (!useInspector) {
+        node.reset(new Node(this, args.addToProject ? args.group : boost::shared_ptr<NodeCollection>(), plugin));
     } else {
-        node.reset( new InspectorNode(this, args.addToProject ? args.group : boost::shared_ptr<NodeCollection>(), plugin,nInputsForInspector) );
+        node.reset(new InspectorNode(this, args.addToProject ? args.group : boost::shared_ptr<NodeCollection>(), plugin));
     }
     
     {
@@ -1006,7 +1107,7 @@ AppInstance::createNodeInternal(const CreateNodeArgs& args)
         ///If this is a stereo plug-in, check that the project has been set for multi-view
         if (args.reason == eCreateNodeReasonUserCreate) {
             const QStringList& grouping = plugin->getGrouping();
-            if (!grouping.isEmpty() && grouping[0] == PLUGIN_GROUP_MULTIVIEW) {
+            if (!grouping.isEmpty() && grouping[0] == QString::fromUtf8(PLUGIN_GROUP_MULTIVIEW)) {
                 int nbViews = getProject()->getProjectViewsCount();
                 if (nbViews < 2) {
                     StandardButtonEnum reply = Dialogs::questionDialog(tr("Multi-View").toStdString(),
@@ -1078,10 +1179,10 @@ AppInstance::createNodeInternal(const CreateNodeArgs& args)
         if (args.reason == eCreateNodeReasonProjectLoad || args.reason == eCreateNodeReasonCopyPaste) {
             if (args.serialization && !args.serialization->getPythonModule().empty()) {
                 
-                QString pythonModulePath(args.serialization->getPythonModule().c_str());
+                QString pythonModulePath = QString::fromUtf8((args.serialization->getPythonModule().c_str()));
                 QString moduleName;
                 QString modulePath;
-                int foundLastSlash = pythonModulePath.lastIndexOf('/');
+                int foundLastSlash = pythonModulePath.lastIndexOf(QChar::fromLatin1('/'));
                 if (foundLastSlash != -1) {
                     modulePath = pythonModulePath.mid(0,foundLastSlash + 1);
                     moduleName = pythonModulePath.remove(0,foundLastSlash + 1);
@@ -1096,7 +1197,7 @@ AppInstance::createNodeInternal(const CreateNodeArgs& args)
             NodePtr input,output;
             
             {
-                CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, eCreateNodeReasonInternal, isGrp);
+                CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_OUTPUT), eCreateNodeReasonInternal, isGrp);
                 output = createNode(args);
                 try {
                     output->setScriptName("Output");
@@ -1106,7 +1207,7 @@ AppInstance::createNodeInternal(const CreateNodeArgs& args)
                 assert(output);
             }
             {
-                CreateNodeArgs args(PLUGINID_NATRON_INPUT, eCreateNodeReasonInternal, isGrp);
+                CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_INPUT), eCreateNodeReasonInternal, isGrp);
                 input = createNode(args);
                 assert(input);
             }
@@ -1129,7 +1230,7 @@ AppInstance::createNodeInternal(const CreateNodeArgs& args)
 } // createNodeInternal
 
 NodePtr
-AppInstance::createNode(const CreateNodeArgs & args)
+AppInstance::createNode(CreateNodeArgs & args)
 {
     return createNodeInternal(args);
 }
@@ -1229,7 +1330,7 @@ AppInstance::triggerAutoSave()
 
 
 void
-AppInstance::startWritersRendering(bool enableRenderStats,bool doBlockingRender,
+AppInstance::startWritersRenderingFromNames(bool enableRenderStats,bool doBlockingRender,
                                    const std::list<std::string>& writers,
                                    const std::list<std::pair<int,std::pair<int,int> > >& frameRanges)
 {
@@ -1262,20 +1363,12 @@ AppInstance::startWritersRendering(bool enableRenderStats,bool doBlockingRender,
                 assert(effect);
                 
                 for (std::list<std::pair<int,std::pair<int,int> > >::const_iterator it2 = frameRanges.begin(); it2!=frameRanges.end();++it2) {
-                    RenderWork w;
-                    w.writer = effect;
-                    w.firstFrame = it2->second.first;
-                    w.lastFrame = it2->second.second;
-                    w.frameStep = it2->first;
+                    RenderWork w(effect,it2->second.first,it2->second.second, it2->first, enableRenderStats);
                     renderers.push_back(w);
                 }
                 
                 if (frameRanges.empty()) {
-                    RenderWork r;
-                    r.firstFrame = INT_MIN;
-                    r.lastFrame = INT_MAX;
-                    r.frameStep = INT_MIN;
-                    r.writer = effect;
+                    RenderWork r(effect,INT_MIN,INT_MAX, INT_MIN, enableRenderStats);
                     renderers.push_back(r);
                 }
             }
@@ -1290,20 +1383,12 @@ AppInstance::startWritersRendering(bool enableRenderStats,bool doBlockingRender,
             if (*it2) {
                 
                 for (std::list<std::pair<int,std::pair<int,int> > >::const_iterator it3 = frameRanges.begin(); it3!=frameRanges.end();++it3) {
-                    RenderWork w;
-                    w.writer = *it2;
-                    w.firstFrame = it3->second.first;
-                    w.lastFrame = it3->second.second;
-                    w.frameStep = it3->first;
+                    RenderWork w(*it2,it3->second.first,it3->second.second, it3->first, enableRenderStats);
                     renderers.push_back(w);
                 }
                 
                 if (frameRanges.empty()) {
-                    RenderWork r;
-                    r.firstFrame = INT_MIN;
-                    r.lastFrame = INT_MAX;
-                    r.frameStep = INT_MIN;
-                    r.writer = *it2;
+                    RenderWork r(*it2,INT_MIN,INT_MAX, INT_MIN, enableRenderStats);
                     renderers.push_back(r);
                 }
             }
@@ -1315,69 +1400,230 @@ AppInstance::startWritersRendering(bool enableRenderStats,bool doBlockingRender,
         throw std::invalid_argument("Project file is missing a writer node. This project cannot render anything.");
     }
     
-    startWritersRendering(enableRenderStats, doBlockingRender, renderers);
+    startWritersRendering(doBlockingRender, renderers);
 }
 
 void
-AppInstance::startWritersRendering(bool enableRenderStats,bool doBlockingRender, const std::list<RenderWork>& writers)
+AppInstance::startWritersRendering(bool doBlockingRender, const std::list<RenderWork>& writers)
 {
-    
-    
     if (writers.empty()) {
         return;
     }
     
-    getProject()->resetTotalTimeSpentRenderingForAllNodes();
-
+    
+    bool renderInSeparateProcess = appPTR->getCurrentSettings()->isRenderInSeparatedProcessEnabled();
+    QString savePath;
+    if (renderInSeparateProcess) {
+        getProject()->saveProject_imp(QString(),QString::fromUtf8("RENDER_SAVE.ntp"),true, false,&savePath);
+    }
+    
+    std::list<RenderQueueItem> itemsToQueue;
+    for (std::list<RenderWork>::const_iterator it = writers.begin(); it!=writers.end(); ++it) {
+        RenderQueueItem item ;
+        item.work = *it;
+        if (!_imp->validateRenderOptions(item.work, &item.work.firstFrame, &item.work.lastFrame, &item.work.frameStep)) {
+            continue;;
+        }
+        _imp->getSequenceNameFromWriter(it->writer, &item.sequenceName);
+        item.savePath = savePath;
+        
+        if (renderInSeparateProcess) {
+            item.process.reset(new ProcessHandler(savePath,item.work.writer));
+            QObject::connect( item.process.get(), SIGNAL(processFinished(int)), this, SLOT(onBackgroundRenderProcessFinished()) );
+        } else {
+            QObject::connect(item.work.writer->getRenderEngine(), SIGNAL(renderFinished(int)), this, SLOT(onQueuedRenderFinished(int)), Qt::UniqueConnection);
+        }
+        
+        bool canPause = !item.work.writer->isVideoWriter();
+        
+        if (!it->isRestart) {
+            notifyRenderStarted(item.sequenceName,item.work.firstFrame,item.work.lastFrame, item.work.frameStep, canPause, item.work.writer, item.process);
+        } else {
+            notifyRenderRestarted(item.work.writer,item.process);
+        }
+        itemsToQueue.push_back(item);
+    }
+    if (itemsToQueue.empty()) {
+        return;
+    }
     
     if (appPTR->isBackground() || doBlockingRender) {
-        
         //blocking call, we don't want this function to return pre-maturely, in which case it would kill the app
-        QtConcurrent::blockingMap( writers,boost::bind(&AppInstance::startRenderingBlockingFullSequence,this,enableRenderStats, _1,false,QString()) );
+        QtConcurrent::blockingMap( itemsToQueue,boost::bind(&AppInstancePrivate::startRenderingFullSequence,_imp.get(),true, _1) );
     } else {
         
-        //Take a snapshot of the graph at this time, this will be the version loaded by the process
-        bool renderInSeparateProcess = appPTR->getCurrentSettings()->isRenderInSeparatedProcessEnabled();
-        QString savePath;
-        getProject()->saveProject_imp("","RENDER_SAVE.ntp",true, false,&savePath);
-
-        for (std::list<RenderWork>::const_iterator it = writers.begin(); it != writers.end(); ++it) {
-            ///Use the frame range defined by the writer GUI because we're in an interactive session
-            startRenderingFullSequence(enableRenderStats,*it,renderInSeparateProcess,savePath);
+        bool isQueuingEnabled = appPTR->getCurrentSettings()->isRenderQueuingEnabled();
+        if (isQueuingEnabled) {
+            QMutexLocker k(&_imp->renderQueueMutex);
+            if (!_imp->activeRenders.empty()) {
+                _imp->renderQueue.insert(_imp->renderQueue.end(), itemsToQueue.begin(), itemsToQueue.end());
+                return;
+            } else {
+                std::list<RenderQueueItem>::const_iterator it = itemsToQueue.begin();
+                const RenderQueueItem& firstWork = *it;
+                ++it;
+                for (; it != itemsToQueue.end(); ++it) {
+                    _imp->renderQueue.push_back(*it);
+                }
+                k.unlock();
+                _imp->startRenderingFullSequence(false, firstWork);
+            }
+            
+        } else {
+            
+            
+            for (std::list<RenderQueueItem>::const_iterator it = itemsToQueue.begin(); it!=itemsToQueue.end(); ++it) {
+                _imp->startRenderingFullSequence(false, *it);
+            }
+            
         }
     }
 }
 
+
 void
-AppInstance::startRenderingBlockingFullSequence(bool enableRenderStats,const RenderWork& writerWork,bool /*renderInSeparateProcess*/,const QString& /*savePath*/)
+AppInstancePrivate::getSequenceNameFromWriter(const OutputEffectInstance* writer,
+                                              QString* sequenceName)
 {
-    BlockingBackgroundRender backgroundRender(writerWork.writer);
-    double first,last;
-    if (writerWork.firstFrame == INT_MIN || writerWork.lastFrame == INT_MAX) {
-        writerWork.writer->getFrameRange_public(writerWork.writer->getHash(), &first, &last);
-        if (first == INT_MIN || last == INT_MAX) {
-            getFrameRange(&first, &last);
-        }
+    ///get the output file knob to get the name of the sequence
+    const DiskCacheNode* isDiskCache = dynamic_cast<const DiskCacheNode*>(writer);
+    if (isDiskCache) {
+        *sequenceName = QObject::tr("Caching");
     } else {
-        first = writerWork.firstFrame;
-        last = writerWork.lastFrame;
+        *sequenceName = QString();
+        KnobPtr fileKnob = writer->getKnobByName(kOfxImageEffectFileParamName);
+        if (fileKnob) {
+            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(fileKnob.get());
+            assert(isString);
+            if (isString) {
+                *sequenceName = QString::fromUtf8(isString->getValue().c_str());
+            }
+        }
+    }
+}
+
+bool
+AppInstancePrivate::validateRenderOptions(const AppInstance::RenderWork& w,
+                                          int* firstFrame,
+                                          int* lastFrame,
+                                          int* frameStep)
+{
+    ///validate the frame range to render
+    if (w.firstFrame == INT_MIN || w.lastFrame == INT_MAX) {
+        
+        double firstFrameD,lastFrameD;
+        w.writer->getFrameRange_public(w.writer->getHash(),&firstFrameD, &lastFrameD, true);
+        if (firstFrameD == INT_MIN || lastFrameD == INT_MAX) {
+            _publicInterface->getFrameRange(&firstFrameD, &lastFrameD);
+        }
+        
+        if (firstFrameD > lastFrameD) {
+            Dialogs::errorDialog(w.writer->getNode()->getLabel_mt_safe(),
+                                 QObject::tr("First frame in the sequence is greater than the last frame").toStdString(), false );
+            
+            return false;
+        }
+        *firstFrame = (int)firstFrameD;
+        *lastFrame = (int)lastFrameD;
+    } else {
+        *firstFrame = w.firstFrame;
+        *lastFrame = w.lastFrame;
     }
     
-    int frameStep;
-    if (writerWork.frameStep == INT_MAX || writerWork.frameStep == INT_MIN) {
+    if (w.frameStep == INT_MAX || w.frameStep == INT_MIN) {
         ///Get the frame step from the frame step parameter of the Writer
-        frameStep = writerWork.writer->getNode()->getFrameStepKnobValue();
+        *frameStep = w.writer->getNode()->getFrameStepKnobValue();
     } else {
-        frameStep = std::max(1, writerWork.frameStep);
+        *frameStep = std::max(1, w.frameStep);
     }
-    
-    backgroundRender.blockingRender(enableRenderStats,first,last,frameStep); //< doesn't return before rendering is finished
+    return true;
+
 }
 
 void
-AppInstance::startRenderingFullSequence(bool enableRenderStats,const RenderWork& writerWork,bool renderInSeparateProcess,const QString& savePath)
+AppInstancePrivate::startRenderingFullSequence(bool blocking, const RenderQueueItem& w)
 {
-    startRenderingBlockingFullSequence(enableRenderStats, writerWork, renderInSeparateProcess, savePath);
+    if (blocking) {
+        BlockingBackgroundRender backgroundRender(w.work.writer);
+        backgroundRender.blockingRender(w.work.useRenderStats,w.work.firstFrame,w.work.lastFrame,w.work.frameStep); //< doesn't return before rendering is finished
+        return;
+    }
+    
+    
+    {
+        QMutexLocker k(&renderQueueMutex);
+        activeRenders.push_back(w);
+    }
+    
+    
+    if (w.process) {
+        w.process->startProcess();
+    } else {
+        w.work.writer->renderFullSequence(false, w.work.useRenderStats,NULL,w.work.firstFrame,w.work.lastFrame, w.work.frameStep);
+    }
+
+    
+}
+
+void
+AppInstance::onQueuedRenderFinished(int /*retCode*/)
+{
+    RenderEngine* engine = qobject_cast<RenderEngine*>(sender());
+    if (!engine) {
+        return;
+    }
+    boost::shared_ptr<OutputEffectInstance> effect = engine->getOutput();
+    if (!effect) {
+        return;
+    }
+    startNextQueuedRender(effect.get());
+}
+
+void
+AppInstance::removeRenderFromQueue(OutputEffectInstance* writer)
+{
+    QMutexLocker k(&_imp->renderQueueMutex);
+    for (std::list<RenderQueueItem>::iterator it = _imp->renderQueue.begin(); it!=_imp->renderQueue.end(); ++it) {
+        if (it->work.writer == writer) {
+            _imp->renderQueue.erase(it);
+            break;
+        }
+    }
+}
+
+void
+AppInstance::startNextQueuedRender(OutputEffectInstance* finishedWriter)
+{
+    RenderQueueItem nextWork;
+    {
+        QMutexLocker k(&_imp->renderQueueMutex);
+        for (std::list<RenderQueueItem>::iterator it = _imp->activeRenders.begin(); it!=_imp->activeRenders.end(); ++it) {
+            if (it->work.writer == finishedWriter) {
+                _imp->activeRenders.erase(it);
+                break;
+            }
+        }
+        if (!_imp->renderQueue.empty()) {
+            nextWork = _imp->renderQueue.front();
+            _imp->renderQueue.pop_front();
+        } else {
+            return;
+        }
+    }
+    _imp->startRenderingFullSequence(false,nextWork);
+}
+
+void
+AppInstance::onBackgroundRenderProcessFinished()
+{
+    ProcessHandler* proc = qobject_cast<ProcessHandler*>( sender() );
+    OutputEffectInstance* effect = 0;
+    if (proc) {
+        effect = proc->getWriter();
+    }
+    if (effect) {
+        startNextQueuedRender(effect);
+    }
 }
 
 void
@@ -1558,7 +1804,7 @@ AppInstance::getAppIDString() const
     if (appPTR->isBackground()) {
         return "app";
     } else {
-        QString appID =  QString("app%1").arg(getAppID() + 1);
+        QString appID =  QString(QString::fromUtf8("app%1")).arg(getAppID() + 1);
         return appID.toStdString();
     }
 }
@@ -1584,7 +1830,7 @@ AppInstance::saveTemp(const std::string& filename)
     std::string outFile = filename;
     std::string path = SequenceParsing::removePath(outFile);
     boost::shared_ptr<Project> project= getProject();
-    return project->saveProject_imp(path.c_str(), outFile.c_str(), false, false,0);
+    return project->saveProject_imp(QString::fromUtf8(path.c_str()), QString::fromUtf8(outFile.c_str()), false, false,0);
 }
 
 bool
@@ -1605,19 +1851,19 @@ AppInstance::saveAs(const std::string& filename)
 {
     std::string outFile = filename;
     std::string path = SequenceParsing::removePath(outFile);
-    return getProject()->saveProject(path.c_str(), outFile.c_str(), 0);
+    return getProject()->saveProject(QString::fromUtf8(path.c_str()), QString::fromUtf8(outFile.c_str()), 0);
 }
 
 AppInstance*
 AppInstance::loadProject(const std::string& filename)
 {
     
-    QFileInfo file(filename.c_str());
+    QFileInfo file(QString::fromUtf8(filename.c_str()));
     if (!file.exists()) {
         return 0;
     }
     QString fileUnPathed = file.fileName();
-    QString path = file.path() + "/";
+    QString path = file.path() + QChar::fromLatin1('/');
     
     //We are in background mode, there can only be 1 instance active, wipe the current project
     boost::shared_ptr<Project> project = getProject();

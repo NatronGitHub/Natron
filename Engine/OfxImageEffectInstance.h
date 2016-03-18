@@ -140,45 +140,17 @@ public:
     virtual OfxStatus getViewCount(int *nViews) const OVERRIDE FINAL;
 
     virtual OfxStatus getViewName(int viewIndex, const char** name) const OVERRIDE FINAL;
-    
-    /// Run the clip preferences action from the effect.
-    ///
-    /// This will look into the input clips and output clip
-    /// and set the following properties that the effect should
-    /// fetch the image at.
-    ///     - pixel depth
-    ///     - components
-    ///     - pixel aspect ratio
-    /// It will also set on the effect itselff
-    ///     - whether it is continuously samplable
-    ///     - the premult state of the output
-    ///     - whether the effect is frame varying
-    ///     - the fielding of the output clip
-    ///
-    /// This will be run automatically by the effect in the following situations...
-    ///     - an input clip is changed
-    ///     - a clip preferences slave param is changed
-    ///
-    /// The host still needs to call this explicitly just after the effect is wired
-    /// up.
-    struct ClipPrefs {
-        std::string components;
-        std::string bitdepth;
-        double par;
-    };
-    
-    struct EffectPrefs {
-        double frameRate;
-        std::string fielding;
-        std::string premult;
-        bool continuous;
-        bool frameVarying;
-    };
+ 
+    void setupClipPreferencesArgsFromMetadata(NodeMetadata& metadata,
+                                              OFX::Host::Property::Set &outArgs,
+                                              std::map<OfxClipInstance*,int>& clipsMapping);
     
     /**
      * We add some output parameters to the function so that we can delay the actual setting of the clip preferences
      **/
-    bool getClipPreferences_safe(std::map<OfxClipInstance*, ClipPrefs>& clipPrefs,EffectPrefs& effectPrefs);
+    StatusEnum getClipPreferences_safe(NodeMetadata& defaultPrefs);
+    
+    virtual OfxStatus createInstanceAction() OVERRIDE FINAL;
 
     /**
      * @brief To be called once no action is currently being run after getClipPreferences_safe was called.

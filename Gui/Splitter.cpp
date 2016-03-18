@@ -60,17 +60,17 @@ Splitter::serializeNatron() const
 
     QList<int> list = sizes();
     if (list.size() == 2) {
-        return QString("%1 %2").arg(list[0]).arg(list[1]);
+        return QString::fromUtf8("%1 %2").arg(list[0]).arg(list[1]);
     }
 
-    return "";
+    return QString();
 }
 
 void
 Splitter::restoreNatron(const QString & serialization)
 {
     QMutexLocker l(&_lock);
-    QStringList list = serialization.split( QChar(' ') );
+    QStringList list = serialization.split( QLatin1Char(' ') );
 
     assert(list.size() == 2);
     QList<int> s;
@@ -140,6 +140,12 @@ Splitter::getChildren_mt_safe(std::list<QWidget*> & children) const
     for (int i = 0; i < count(); ++i) {
         children.push_back( widget(i) );
     }
+}
+
+bool
+Splitter::event(QEvent* e)
+{
+    return QSplitter::event(e);
 }
 
 NATRON_NAMESPACE_EXIT;

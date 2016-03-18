@@ -66,7 +66,6 @@ GuiApplicationManager::GuiApplicationManager()
 
 GuiApplicationManager::~GuiApplicationManager()
 {
-    delete _imp->_colorPickerCursor;
     for (AppShortcuts::iterator it = _imp->_actionShortcuts.begin(); it != _imp->_actionShortcuts.end(); ++it) {
         for (GroupShortcuts::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             delete it2->second;
@@ -80,10 +79,10 @@ GuiApplicationManager::getIcon(PixmapEnum e,
                                QPixmap* pix) const
 {
     int iconSet = appPTR->getCurrentSettings()->getIconsBlackAndWhite() ? 2 : 3;
-    QString iconSetStr = QString::number(iconSet);
-    
+
+    std::string iconSetStr = QString::number(iconSet).toStdString();
     if ( !QPixmapCache::find(QString::number(e),pix) ) {
-        QString path;
+        std::string path;
         switch (e) {
             case NATRON_PIXMAP_PLAYER_PREVIOUS:
                 path = NATRON_IMAGES_PATH "back1.png";
@@ -127,9 +126,19 @@ GuiApplicationManager::getIcon(PixmapEnum e,
             case NATRON_PIXMAP_PLAYER_PLAY_DISABLED:
                 path = NATRON_IMAGES_PATH "play.png";
                 break;
-            case NATRON_PIXMAP_PLAYER_STOP:
-                path = NATRON_IMAGES_PATH "stop.png";
+            case NATRON_PIXMAP_PLAYER_STOP_ENABLED:
+                path = NATRON_IMAGES_PATH "stopEnabled.png";
                 break;
+            case NATRON_PIXMAP_PLAYER_STOP_DISABLED:
+                path = NATRON_IMAGES_PATH "stopDisabled.png";
+                break;
+            case NATRON_PIXMAP_PLAYER_PAUSE_ENABLED:
+                path = NATRON_IMAGES_PATH "pauseEnabled.png";
+                break;
+            case NATRON_PIXMAP_PLAYER_PAUSE_DISABLED:
+                path = NATRON_IMAGES_PATH "pauseDisabled.png";
+                break;
+
             case NATRON_PIXMAP_PLAYER_LOOP_MODE:
                 path = NATRON_IMAGES_PATH "loopmode.png";
                 break;
@@ -138,6 +147,12 @@ GuiApplicationManager::getIcon(PixmapEnum e,
                 break;
             case NATRON_PIXMAP_PLAYER_PLAY_ONCE:
                 path = NATRON_IMAGES_PATH "playOnce.png";
+                break;
+            case NATRON_PIXMAP_PLAYER_TIMELINE_IN:
+                path = NATRON_IMAGES_PATH "timelineIn.png";
+                break;
+            case NATRON_PIXMAP_PLAYER_TIMELINE_OUT:
+                path = NATRON_IMAGES_PATH "timelineOut.png";
                 break;
             case NATRON_PIXMAP_MAXIMIZE_WIDGET:
                 path = NATRON_IMAGES_PATH "maximize.png";
@@ -729,7 +744,7 @@ GuiApplicationManager::getIcon(PixmapEnum e,
                 break;
                 // DON'T add a default: case here
         } // switch
-        if (path.isEmpty()) {
+        if (path.empty()) {
             assert(!"Missing image.");
         }
         // put a breakpoint in png_chunk_report to catch the error "libpng warning: iCCP: known incorrect sRGB profile"
@@ -740,8 +755,9 @@ GuiApplicationManager::getIcon(PixmapEnum e,
         //*pix = QPixmap::fromImage(img);
         
         // new version:
-        pix->load(path);
-        
+
+        pix->load(QString::fromUtf8(path.c_str()));
+
         QPixmapCache::insert(QString::number(e), *pix);
     }
 } // getIcon
@@ -752,7 +768,7 @@ GuiApplicationManager::getIcon(PixmapEnum e,
                                int size,
                                QPixmap* pix) const
 {
-    if ( !QPixmapCache::find(QString::number(e) + '@' + QString::number(size), pix) ) {
+    if ( !QPixmapCache::find(QString::number(e) + QLatin1Char('@') + QString::number(size), pix) ) {
         getIcon(e, pix);
         if (std::max(pix->width(), pix->height()) != size) {
             *pix = pix->scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
@@ -770,37 +786,49 @@ GuiApplicationManager::getTopLevelPluginsToolButtons() const
 const QCursor &
 GuiApplicationManager::getColorPickerCursor() const
 {
-    return *(_imp->_colorPickerCursor);
+    return _imp->_colorPickerCursor;
+}
+
+const QCursor &
+GuiApplicationManager::getLinkToCursor() const
+{
+    return _imp->_linkToCursor;
+}
+
+const QCursor &
+GuiApplicationManager::getLinkToMultCursor() const
+{
+    return _imp->_linkMultCursor;
 }
 
 bool
 GuiApplicationManager::initGui(const CLArgs& args)
 {
-    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
+    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
 
     //load custom fonts
-    QString fontResource = QString(":/Resources/Fonts/%1.ttf");
+    QString fontResource = QString::fromUtf8(":/Resources/Fonts/%1.ttf");
     QStringList fontFilenames;
-    fontFilenames << fontResource.arg("DroidSans");
-    fontFilenames << fontResource.arg("DroidSans-Bold");
+    fontFilenames << fontResource.arg(QString::fromUtf8("DroidSans"));
+    fontFilenames << fontResource.arg(QString::fromUtf8("DroidSans-Bold"));
     Q_FOREACH (QString fontFilename, fontFilenames) {
         int fontID = QFontDatabase::addApplicationFont(fontFilename);
         qDebug() << "fontID=" << fontID << "families=" << QFontDatabase::applicationFontFamilies(fontID);
     }
-    QString fontFamily(NATRON_FONT);
+    QString fontFamily = QString::fromUtf8(NATRON_FONT);
     int fontSize = NATRON_FONT_SIZE_11;
     
     
     ///Do not load old font stored in the setting "systemFont" on Natron < 2 because it might contain a crappy font.
-    if (settings.contains(kQSettingsSoftwareMajorVersionSettingName) && settings.value(kQSettingsSoftwareMajorVersionSettingName).toInt() >= 2) {
-        if (settings.contains("systemFont")) {
-            fontFamily = settings.value("systemFont").toString();
+    if (settings.contains(QString::fromUtf8(kQSettingsSoftwareMajorVersionSettingName)) && settings.value(QString::fromUtf8(kQSettingsSoftwareMajorVersionSettingName)).toInt() >= 2) {
+        if (settings.contains(QString::fromUtf8("systemFont"))) {
+            fontFamily = settings.value(QString::fromUtf8("systemFont")).toString();
         }
     }
     
     
-    if (settings.contains("fontSize")) {
-        fontSize = settings.value("fontSize").toInt();
+    if (settings.contains(QString::fromUtf8("fontSize"))) {
+        fontSize = settings.value(QString::fromUtf8("fontSize")).toInt();
     }
     //fontFamily = "Courier"; fontSize = 24; // for debugging purposes
     qDebug() << "Setting application font to " << fontFamily << fontSize;
@@ -822,9 +850,9 @@ GuiApplicationManager::initGui(const CLArgs& args)
         QApplication::setFont(font);
 #ifdef Q_OS_MAC
         // https://bugreports.qt.io/browse/QTBUG-32789
-        QFont::insertSubstitution(".Lucida Grande UI", fontFamily/*"Lucida Grande"*/);
+        QFont::insertSubstitution(QString::fromUtf8(".Lucida Grande UI"), fontFamily/*"Lucida Grande"*/);
         // https://bugreports.qt.io/browse/QTBUG-40833
-        QFont::insertSubstitution(".Helvetica Neue DeskInterface", fontFamily/*"Helvetica Neue"*/);
+        QFont::insertSubstitution(QString::fromUtf8(".Helvetica Neue DeskInterface"), fontFamily/*"Helvetica Neue"*/);
         // there are lots of remaining bugs on Yosemite in 4.8.6, to be fixed in 4.8.7&
 #endif
     }
@@ -832,7 +860,7 @@ GuiApplicationManager::initGui(const CLArgs& args)
     _imp->_fontSize = fontSize;
 
     /*Display a splashscreen while we wait for the engine to load*/
-    QString filename(NATRON_IMAGES_PATH "splashscreen.png");
+    QString filename = QString::fromUtf8(NATRON_IMAGES_PATH "splashscreen.png");
 
     _imp->_splashScreen = new SplashScreen(filename);
     _imp->_splashScreen->setAttribute(Qt::WA_DeleteOnClose, 0);
@@ -852,7 +880,8 @@ GuiApplicationManager::initGui(const CLArgs& args)
     getCurrentSettings()->populateSystemFonts(settings,systemFonts);
     
     _imp->createColorPickerCursor();
-    _imp->_knobsClipBoard->isEmpty = true;
+    _imp->createLinkToCursor();
+    _imp->createLinkMultCursor();
     
     ///Copy the args that will be used when fontconfig cache is updated
     _imp->startupArgs = args;
@@ -889,7 +918,7 @@ GuiApplicationManager::onFontconfigTimerTriggered()
     
     QString message = tr("Updating fontconfig cache");
     for (int i = 0; i < _imp->fontconfigMessageDots; ++i) {
-        message.append('.');
+        message.append(QLatin1Char('.'));
     }
     setLoadingStatus(message);
 }
@@ -897,7 +926,7 @@ GuiApplicationManager::onFontconfigTimerTriggered()
 void
 GuiApplicationManager::onPluginLoaded(Plugin* plugin)
 {
-    QString shortcutGrouping(kShortcutGroupNodes);
+    QString shortcutGrouping = QString::fromUtf8(kShortcutGroupNodes);
     const QStringList & groups = plugin->getGrouping();
     const QString & pluginID = plugin->getPluginID();
     const QString  pluginLabel = plugin->getLabelWithoutSuffix();
@@ -915,7 +944,7 @@ GuiApplicationManager::onPluginLoaded(Plugin* plugin)
                                                                             plugin->getIsUserCreatable());
     for (int i = 0; i < groups.size(); ++i) {
 
-        shortcutGrouping.push_back('/');
+        shortcutGrouping.push_back(QLatin1Char('/'));
         shortcutGrouping.push_back(groups[i]);
     }
     
@@ -924,30 +953,38 @@ GuiApplicationManager::onPluginLoaded(Plugin* plugin)
     bool hasShortcut = true;
 
     /*These are the plug-ins which have a default shortcut. Other plug-ins can have a user-assigned shortcut.*/
-    if (pluginID == PLUGINID_OFX_TRANSFORM) {
+    if (pluginID == QString::fromUtf8(PLUGINID_OFX_TRANSFORM)) {
         symbol = Qt::Key_T;
-    } else if (pluginID == PLUGINID_NATRON_ROTO) {
+    } else if (pluginID == QString::fromUtf8(PLUGINID_NATRON_ROTO)) {
         symbol = Qt::Key_O;
-    } else if (pluginID == PLUGINID_NATRON_ROTOPAINT) {
+    } else if (pluginID == QString::fromUtf8(PLUGINID_NATRON_ROTOPAINT)) {
         symbol = Qt::Key_P;
-    } else if (pluginID == PLUGINID_OFX_MERGE) {
+    } else if (pluginID == QString::fromUtf8(PLUGINID_OFX_MERGE)) {
         symbol = Qt::Key_M;
-    } else if (pluginID == PLUGINID_OFX_GRADE) {
+    } else if (pluginID == QString::fromUtf8(PLUGINID_OFX_GRADE)) {
         symbol = Qt::Key_G;
-    } else if (pluginID == PLUGINID_OFX_COLORCORRECT) {
+    } else if (pluginID == QString::fromUtf8(PLUGINID_OFX_COLORCORRECT)) {
         symbol = Qt::Key_C;
-    } else if (pluginID == PLUGINID_OFX_BLURCIMG) {
+    } else if (pluginID == QString::fromUtf8(PLUGINID_OFX_BLURCIMG)) {
         symbol = Qt::Key_B;
-    } else if (pluginID == PLUGINID_NATRON_DOT) {
+    } else if (pluginID == QString::fromUtf8(PLUGINID_NATRON_DOT)) {
         symbol = Qt::Key_Period;
         modifiers |= Qt::ShiftModifier;
-    } else {
+    }
+#ifdef NATRON_ENABLE_IO_META_NODES
+    else if (pluginID == QString::fromUtf8(PLUGINID_NATRON_READ)) {
+        symbol = Qt::Key_R;
+    } else if (pluginID == QString::fromUtf8(PLUGINID_NATRON_WRITE)) {
+        symbol = Qt::Key_W;
+    }
+#endif
+    else {
         hasShortcut = false;
     }
     plugin->setHasShortcut(hasShortcut);
     
     if (plugin->getIsUserCreatable()) {
-        _imp->addKeybind(shortcutGrouping, pluginID, pluginLabel, modifiers, symbol);
+        _imp->addKeybind(shortcutGrouping.toStdString(), pluginID.toStdString(), pluginLabel.toStdString(), modifiers, symbol);
     }
     
 }
@@ -956,7 +993,7 @@ void
 GuiApplicationManager::ignorePlugin(Plugin* plugin)
 {
     _imp->removePluginToolButton(plugin->getGrouping());
-    _imp->removeKeybind(kShortcutGroupNodes, plugin->getPluginID());
+    _imp->removeKeybind(QString::fromUtf8(kShortcutGroupNodes), plugin->getPluginID());
 }
 
 
@@ -990,51 +1027,22 @@ GuiApplicationManager::hideSplashScreen()
     }
 }
 
-bool
-GuiApplicationManager::isClipBoardEmpty() const
-{
-    return _imp->_knobsClipBoard->isEmpty;
-}
 
 void
-GuiApplicationManager::setKnobClipBoard(bool copyAnimation,
-                                        const std::list<Variant> & values,
-                                        const std::list<boost::shared_ptr<Curve> > & animation,
-                                        const std::map<int,std::string> & stringAnimation,
-                                        const std::list<boost::shared_ptr<Curve> > & parametricCurves,
-                                        const std::string& appID,
-                                        const std::string& nodeFullyQualifiedName,
-                                        const std::string& paramName)
+GuiApplicationManager::setKnobClipBoard(KnobClipBoardType type, const KnobPtr& serialization, int dimension)
 {
-    _imp->_knobsClipBoard->copyAnimation = copyAnimation;
-    _imp->_knobsClipBoard->isEmpty = false;
-    _imp->_knobsClipBoard->values = values;
-    _imp->_knobsClipBoard->curves = animation;
-    _imp->_knobsClipBoard->stringAnimation = stringAnimation;
-    _imp->_knobsClipBoard->parametricCurves = parametricCurves;
-    _imp->_knobsClipBoard->appID = appID;
-    _imp->_knobsClipBoard->nodeFullyQualifiedName = nodeFullyQualifiedName;
-    _imp->_knobsClipBoard->paramName = paramName;
+    _imp->_knobsClipBoard->serialization = serialization;
+    _imp->_knobsClipBoard->type = type;
+    _imp->_knobsClipBoard->dimension = dimension;
 }
 
+
 void
-GuiApplicationManager::getKnobClipBoard(bool* copyAnimation,
-                                        std::list<Variant>* values,
-                                        std::list<boost::shared_ptr<Curve> >* animation,
-                                        std::map<int,std::string>* stringAnimation,
-                                        std::list<boost::shared_ptr<Curve> >* parametricCurves,
-                                        std::string* appID,
-                                        std::string* nodeFullyQualifiedName,
-                                        std::string* paramName) const
+GuiApplicationManager::getKnobClipBoard(KnobClipBoardType *type, KnobPtr *serialization, int* dimension) const
 {
-    *copyAnimation = _imp->_knobsClipBoard->copyAnimation;
-    *values = _imp->_knobsClipBoard->values;
-    *animation = _imp->_knobsClipBoard->curves;
-    *stringAnimation = _imp->_knobsClipBoard->stringAnimation;
-    *parametricCurves = _imp->_knobsClipBoard->parametricCurves;
-    *appID = _imp->_knobsClipBoard->appID;
-    *nodeFullyQualifiedName = _imp->_knobsClipBoard->nodeFullyQualifiedName;
-    *paramName = _imp->_knobsClipBoard->paramName;
+    *serialization = _imp->_knobsClipBoard->serialization;
+    *type = _imp->_knobsClipBoard->type;
+    *dimension = _imp->_knobsClipBoard->dimension;
 }
 
 void

@@ -80,7 +80,7 @@ class InputScriptTextEdit : public QPlainTextEdit
     
 public:
     
-    InputScriptTextEdit(QWidget* parent);
+    InputScriptTextEdit(Gui* gui, QWidget* parent);
     
     virtual ~InputScriptTextEdit();
 
@@ -115,6 +115,7 @@ private:
     
     LineNumberWidget* _lineNumber;
     PySyntaxHighlighter* _highlighter;
+    Gui* _gui;
 };
 
 class LineNumberWidget : public QWidget

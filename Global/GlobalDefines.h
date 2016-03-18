@@ -29,9 +29,12 @@
 #if defined(_WIN32)
 #include <string>
 #include <windows.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #else
 #include <cstdlib>
 #endif
+#include <fstream>
 
 #include "Global/Macros.h"
 
@@ -52,10 +55,13 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include <boost/cstdint.hpp>
 #endif
 #include <QtCore/QForeachContainer>
+#include <QtCore/QString>
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMetaType>
 CLANG_DIAG_ON(deprecated)
 #include "Global/Enums.h"
+
+
 
 // boost and C++11 also have a foreach. this breaks it. DON'T UNCOMMENT THIS.
 //#undef foreach
@@ -90,20 +96,17 @@ typedef OfxPointD Point;
 typedef OfxRGBAColourF RGBAColourF;
 typedef OfxRangeD RangeD;
 
+
+
 ///these are used between process to communicate via the pipes
-#define kRenderingStartedLong "Rendering started"
 #define kRenderingStartedShort "-b"
 
-#define kFrameRenderedStringLong "Frame rendered: "
 #define kFrameRenderedStringShort "-r"
 
-#define kProgressChangedStringLong "Progress changed: "
 #define kProgressChangedStringShort "-p"
 
-#define kRenderingFinishedStringLong "Rendering finished"
 #define kRenderingFinishedStringShort "-e"
 
-#define kAbortRenderingStringLong "Abort rendering"
 #define kAbortRenderingStringShort "-a"
 
 #define kBgProcessServerCreatedShort "--bg_server_created"
@@ -156,19 +159,19 @@ namespace Global {
 
 /*Converts a std::string to wide string*/
 inline std::wstring
-s2ws(const std::string & s)
+utf8_to_utf16(const std::string & s)
 {
 
 
 #ifdef __NATRON_WIN32__
-    int len;
-    int slength = (int)s.length() + 1;
-    len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
-    wchar_t* buf = new wchar_t[len];
-    MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
-    std::wstring r(buf);
-    delete[] buf;
-    return r;
+    std::wstring native;
+    
+    
+    native.resize(MultiByteToWideChar (CP_UTF8, 0, s.c_str(), -1, NULL, 0) -1);
+    MultiByteToWideChar (CP_UTF8, 0, s.c_str(), s.size(), &native[0], (int)native.size());
+    
+    return native;
+    
 #else
     std::wstring dest;
 
@@ -190,10 +193,12 @@ s2ws(const std::string & s)
     return dest;
 #endif
 
-} // s2ws
+    
+} // utf8_to_utf16
 
 #ifdef __NATRON_WIN32__
 
+    
 
 //Returns the last Win32 error, in string format. Returns an empty string if there is no error.
 inline 
@@ -216,8 +221,18 @@ std::string GetLastErrorAsString()
     return message;
 } // GetLastErrorAsString
 
+#endif // __NATRON_WIN32__
 
-#endif
+inline void
+ensureLastPathSeparator(QString& path)
+{
+    static const QChar separator(QLatin1Char('/'));
+    if (!path.endsWith(separator)) {
+        path += separator;
+    }
+}
+    
+
 
 } // namespace Global
 

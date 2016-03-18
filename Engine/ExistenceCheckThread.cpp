@@ -16,12 +16,19 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifdef NATRON_USE_BREAKPAD
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include "ExistenceCheckThread.h"
 
+#ifdef NATRON_USE_BREAKPAD
+
 #include <cassert>
 #include <stdexcept>
+#include <iostream>
 
 #include <QLocalSocket>
 #include <QMutex>
@@ -70,7 +77,7 @@ ExistenceCheckerThread::ExistenceCheckerThread(const QString& checkMessage,
 : QThread()
 , _imp(new ExistenceCheckerThreadPrivate(checkMessage, acknowledgementMessage,comServerPipePath))
 {
-    setObjectName("CrashReporterAliveThread");
+    setObjectName(QString::fromUtf8("CrashReporterAliveThread"));
 }
 
 ExistenceCheckerThread::~ExistenceCheckerThread()
@@ -87,6 +94,7 @@ ExistenceCheckerThread::quitThread()
     }
     {
         QMutexLocker k(&_imp->mustQuitMutex);
+        assert(!_imp->mustQuit);
         _imp->mustQuit = true;
         while (_imp->mustQuit) {
             _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
@@ -103,54 +111,59 @@ ExistenceCheckerThread::run()
     _imp->socket->connectToServer(_imp->comServerPipePath, QLocalSocket::ReadWrite);
 
     if (!_imp->socket->waitForConnected()) {
-        qDebug() << "Failed to connect local socket to " << _imp->comServerPipePath;
+        std::cerr << "Failed to connect local socket to " << _imp->comServerPipePath.toStdString() << std::endl;
         return;
     }
 
     for (;;) {
-        
         {
             QMutexLocker k(&_imp->mustQuitMutex);
             if (_imp->mustQuit) {
                 _imp->mustQuit = false;
-                _imp->mustQuitCond.wakeAll();
+                _imp->mustQuitCond.wakeOne();
                 return;
             }
         }
 
-        {
-            QString tosend(_imp->checkMessage);
-            tosend.push_back('\n');
-            _imp->socket->write(tosend.toStdString().c_str());
-        }
-        _imp->socket->flush();
-        
-        bool receivedAcknowledgement = false;
-        while (_imp->socket->waitForReadyRead(NATRON_BREAKPAD_WAIT_FOR_CRASH_REPORTER_ACK_MS)) {
-
-            //we received something, if it's not the ackknowledgement packet, recheck
-            QString str = _imp->socket->readLine();
-            while (str.endsWith('\n')) {
-                str.chop(1);
-            }
-            if (str == _imp->acknowledgementMessage) {
-                receivedAcknowledgement = true;
-                break;
-            }
-        }
-        
-        if (!receivedAcknowledgement) {
-            qDebug() << "Crash reporter process does not seem to be responding anymore...exiting";
-            /*
-             We did not receive te acknowledgement, hence quit
-             */
-            appPTR->abortAnyProcessing();
-            Q_EMIT otherProcessUnreachable();
-            return;
-        }
         
         //Sleep until we need to check again
         msleep(NATRON_BREAKPAD_CHECK_FOR_CRASH_REPORTER_EXISTENCE_MS);
+        
+        
+        qint64 writeOK;
+        {
+            QString tosend(_imp->checkMessage);
+            tosend.push_back(QChar::fromLatin1('\n'));
+            writeOK = _imp->socket->write(tosend.toStdString().c_str());
+        }
+        if (writeOK >= 0) {
+            _imp->socket->flush();
+            
+            bool receivedAcknowledgement = false;
+            while (_imp->socket->waitForReadyRead(NATRON_BREAKPAD_WAIT_FOR_CRASH_REPORTER_ACK_MS)) {
+                
+                //we received something, if it's not the ackknowledgement packet, recheck
+                QString str = QString::fromUtf8(_imp->socket->readLine());
+                while (str.endsWith(QChar::fromLatin1('\n'))) {
+                    str.chop(1);
+                }
+                if (str == _imp->acknowledgementMessage) {
+                    receivedAcknowledgement = true;
+                    break;
+                }
+            }
+            
+            if (!receivedAcknowledgement) {
+                std::cerr << "Crash reporter process does not seem to be responding anymore...exiting" << std::endl;
+                /*
+                 We did not receive te acknowledgement, hence quit
+                 */
+                appPTR->abortAnyProcessing();
+                Q_EMIT otherProcessUnreachable();
+                return;
+            }
+        }
+        
         
     } // for(;;)
 }

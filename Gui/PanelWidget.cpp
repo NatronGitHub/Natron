@@ -27,6 +27,7 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <QUndoStack>
 #include <QApplication>
 #include <QKeyEvent>
 
@@ -91,8 +92,27 @@ PanelWidget::enterEventBase()
     }
     if (_gui && _gui->isFocusStealingPossible()) {
         _thisWidget->setFocus();
+        
+        //Make this stack the active one
+        QUndoStack* stack = getUndoStack();
+        if (stack) {
+            stack->setActive();
+        }
     }
 
+}
+
+void
+PanelWidget::pushUndoCommand(QUndoCommand* command)
+{
+    QUndoStack* stack = getUndoStack();
+    if (stack) {
+        stack->setActive();
+        stack->push(command);
+    } else {
+        //You are trying to push a command to a widget that do not own a stack!
+        assert(false);
+    }
 }
 
 bool

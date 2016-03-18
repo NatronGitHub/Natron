@@ -5,6 +5,7 @@ $$PWD/OpenColorIO-Configs/README \
 $$PWD/OpenColorIO-Configs/aces_0.1.1 \
 $$PWD/OpenColorIO-Configs/aces_0.7.1 \
 $$PWD/OpenColorIO-Configs/blender \
+$$PWD/OpenColorIO-Configs/blender-cycles \
 $$PWD/OpenColorIO-Configs/nuke-default \
 $$PWD/OpenColorIO-Configs/spi-anim \
 $$PWD/OpenColorIO-Configs/spi-vfx

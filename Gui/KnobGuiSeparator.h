@@ -70,10 +70,10 @@ public:
     
     virtual void removeSpecificGui() OVERRIDE FINAL;
 
-    virtual bool isLabelVisible() const OVERRIDE
-    {
-        return false;
-    }
+    virtual bool isLabelOnSameColumn() const OVERRIDE FINAL;
+    
+    virtual bool isLabelBold() const OVERRIDE FINAL;
+
     
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
 

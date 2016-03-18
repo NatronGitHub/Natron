@@ -3,7 +3,7 @@
 
 #include <shiboken.h>
 
-#include <GuiAppWrapper.h>
+#include <PyGuiApp.h>
 
 NATRON_NAMESPACE_ENTER;
 class GuiAppWrapper : public GuiApp

@@ -74,7 +74,7 @@ PreviewThread::PreviewThread()
 : QThread()
 , _imp(new PreviewThreadPrivate())
 {
-    setObjectName("PreviewThread");
+    setObjectName(QString::fromUtf8("PreviewThread"));
 }
 
 PreviewThread::~PreviewThread()
@@ -108,6 +108,7 @@ PreviewThread::quitThread()
         return;
     }
     QMutexLocker k(&_imp->mustQuitMutex);
+    assert(!_imp->mustQuit);
     _imp->mustQuit = true;
     
     {
@@ -145,7 +146,7 @@ PreviewThread::run()
             QMutexLocker k(&_imp->mustQuitMutex);
             if (_imp->mustQuit) {
                 _imp->mustQuit = false;
-                _imp->mustQuitCond.wakeAll();
+                _imp->mustQuitCond.wakeOne();
                 return;
             }
         }
@@ -184,10 +185,8 @@ PreviewThread::run()
 #endif
             NodePtr internalNode = front.node->getNode();
             if (internalNode) {
-                bool success = internalNode->makePreviewImage(front.time, &w, &h, &_imp->data.front());
-                if (success) {
-                    front.node->copyPreviewImageBuffer(_imp->data, w, h);
-                }
+                (void)internalNode->makePreviewImage(front.time, &w, &h, &_imp->data.front());
+                front.node->copyPreviewImageBuffer(_imp->data, w, h);
             }
             
             ///Unmark this thread as running

@@ -135,8 +135,6 @@ public:
     
     void refreshNodesKnobsAtTime(bool onlyTimeEvaluationKnobs,SequenceTime time);
     
-    void pushUndoCommand(QUndoCommand* command);
-    
     bool areOptionalInputsAutoHidden() const;
     
     void copyNodesAndCreateInGroup(const NodesGuiList& nodes,
@@ -272,6 +270,7 @@ private:
     virtual void dragLeaveEvent(QDragLeaveEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
+    virtual QUndoStack* getUndoStack() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 private:
     

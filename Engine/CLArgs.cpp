@@ -31,6 +31,7 @@
 
 #include <QDebug>
 #include <QFile>
+#include <QFileInfo>
 
 #include "Global/GitVersion.h"
 #include "Global/QtCompat.h"
@@ -130,8 +131,8 @@ CLArgs::CLArgs(int& argc,char* argv[],bool forceBackground)
         _imp->isBackground = true;
     }
     for (int i = 0; i < argc; ++i) {
-        QString str = argv[i];
-        if (str.size() >= 2 && str[0] == '"' && str[str.size() - 1] == '"') {
+        QString str = QString::fromUtf8(argv[i]);
+        if (str.size() >= 2 && str[0] == QChar::fromLatin1('"') && str[str.size() - 1] == QChar::fromLatin1('"')) {
             str.remove(0, 1);
             str.remove(str.size() - 1, 1);
         }
@@ -153,7 +154,7 @@ CLArgs::CLArgs(const QStringList &arguments, bool forceBackground)
     }
     for (int i = 0; i < arguments.size(); ++i) {
         QString str = arguments[i];
-        if (str.size() >= 2 && str[0] == '"' && str[str.size() - 1] == '"') {
+        if (str.size() >= 2 && str[0] == QChar::fromLatin1('"') && str[str.size() - 1] == QChar::fromLatin1('"')) {
             str.remove(0, 1);
             str.remove(str.size() - 1, 1);
         }
@@ -206,7 +207,7 @@ CLArgs::printBackGroundWelcomeMessage()
 {
     QString msg = QObject::tr("%1 Version %2\n"
                              "Copyright (C) 2016 the %1 developers\n"
-                              ">>>Use the --help or -h option to print usage.<<<").arg(NATRON_APPLICATION_NAME).arg(NATRON_VERSION_STRING);
+                              ">>>Use the --help or -h option to print usage.<<<").arg(QString::fromUtf8(NATRON_APPLICATION_NAME)).arg(QString::fromUtf8(NATRON_VERSION_STRING));
     std::cout << msg.toStdString() << std::endl;
 }
 
@@ -266,9 +267,11 @@ CLArgs::printUsage(const std::string& programName)
                               "    to render.\n"
                               "    Note that if specified, the frame range is the same for all Write nodes\n"
                               "    to render.\n"
+                              "    You may only specify absolute file paths to the writer optional filename.\n"
                               "  -i [ --reader ] <reader node script name> <filename> :\n"
                               "     Specify the input file/sequence/video to load for the given Reader node.\n"
                               "     If the specified reader node cannot be found, the process will abort."
+                              "     You may only specify absolute file paths to the reader filename.\n"
                               "  -l [ --onload ] <python script file path> :\n"
                               "    Specify a Python script to be executed after a project is created or\n"
                               "    loaded.\n"
@@ -343,7 +346,7 @@ CLArgs::printUsage(const std::string& programName)
                               "  %1 -t\n"
                               "  %1Renderer -t\n"
                               "  %1Renderer -t /Users/Me/MyNatronScripts/MyScript.py\n")
-    .arg(/*%1=*/NATRON_APPLICATION_NAME).arg(/*%2=*/NATRON_PROJECT_FILE_EXT).arg(/*%3=*/programName.c_str());
+    .arg(/*%1=*/QString::fromUtf8(NATRON_APPLICATION_NAME)).arg(/*%2=*/QString::fromUtf8(NATRON_PROJECT_FILE_EXT)).arg(/*%3=*/QString::fromUtf8(programName.c_str()));
     std::cout << msg.toStdString() << std::endl;
 }
 
@@ -411,7 +414,7 @@ CLArgs::getImageFilename() const
         // first argument is the program name, skip it
         ++it;
         for (; it!=_imp->args.end(); ++it) {
-            if (!it->startsWith("-")) {
+            if (!it->startsWith(QChar::fromLatin1('-'))) {
                 QString fileCopy = *it;
                 QString ext = QtCompat::removeFileExtension(fileCopy);
                 if (!ext.isEmpty()) {
@@ -485,7 +488,7 @@ CLArgs::getBreakpadComPipeFilePath() const
 QStringList::iterator
 CLArgsPrivate::findFileNameWithExtension(const QString& extension)
 {
-    bool isPython = extension == "py";
+    bool isPython = extension == QString::fromUtf8("py");
     for (QStringList::iterator it = args.begin(); it != args.end() ; ++it) {
         if (isPython) {
             //Check that we do not take the python script specified for the --onload argument as the file to execute
@@ -494,11 +497,11 @@ CLArgsPrivate::findFileNameWithExtension(const QString& extension)
             }
             QStringList::iterator prev = it;
             --prev;
-            if (*prev == "--onload" || *prev == "-l") {
+            if (*prev == QString::fromUtf8("--onload") || *prev == QString::fromUtf8("-l")) {
                 continue;
             }
         }
-        if (it->endsWith("." + extension)) {
+        if (it->endsWith(QChar::fromLatin1('.') + extension)) {
             return it;
         }
     }
@@ -508,8 +511,8 @@ CLArgsPrivate::findFileNameWithExtension(const QString& extension)
 QStringList::iterator
 CLArgsPrivate::hasToken(const QString& longName,const QString& shortName)
 {
-    QString longToken = "--" + longName;
-    QString shortToken =  !shortName.isEmpty() ? "-" + shortName : QString();
+    QString longToken = QString::fromUtf8("--") + longName;
+    QString shortToken =  !shortName.isEmpty() ? QChar::fromLatin1('-') + shortName : QString();
     for (QStringList::iterator it = args.begin(); it != args.end() ; ++it) {
         if (*it == longToken || (!shortToken.isEmpty() && *it == shortToken)) {
             return it;
@@ -522,8 +525,8 @@ CLArgsPrivate::hasToken(const QString& longName,const QString& shortName)
 QStringList::iterator
 CLArgsPrivate::hasOutputToken(QString& indexStr)
 {
-    QString outputLong("--output");
-    QString outputShort("-o");
+    QString outputLong(QString::fromUtf8("--output"));
+    QString outputShort(QString::fromUtf8("-o"));
     
     for (QStringList::iterator it = args.begin(); it != args.end(); ++it) {
         int indexOf = it->indexOf(outputLong);
@@ -539,7 +542,7 @@ CLArgsPrivate::hasOutputToken(QString& indexStr)
                     return args.end();
                 }
             } else {
-                indexStr = "1";
+                indexStr = QChar::fromLatin1('1');
             }
             return it;
         } else {
@@ -560,7 +563,7 @@ CLArgsPrivate::hasOutputToken(QString& indexStr)
                         return args.end();
                     }
                 } else {
-                    indexStr = "1";
+                    indexStr = QChar::fromLatin1('1');
                 }
                 return it;
             }
@@ -579,7 +582,7 @@ static bool tryParseFrameRange(const QString& arg,std::pair<int,int>& range, int
         frameStep = INT_MIN;
         return true;
     }
-    QStringList strRange = arg.split('-');
+    QStringList strRange = arg.split(QChar::fromLatin1('-'));
     if (strRange.size() != 2) {
         return false;
     }
@@ -592,7 +595,7 @@ static bool tryParseFrameRange(const QString& arg,std::pair<int,int>& range, int
         return false;
     }
     
-    int foundColon = strRange[1].indexOf(':');
+    int foundColon = strRange[1].indexOf(QChar::fromLatin1(':'));
     if (foundColon != -1) {
         ///A frame-step has been specified
         QString lastFrameStr = strRange[1].mid(0,foundColon);
@@ -620,11 +623,11 @@ static bool tryParseFrameRange(const QString& arg,std::pair<int,int>& range, int
 
 static bool tryParseMultipleFrameRanges(const QString& args,std::list<std::pair<int,std::pair<int,int> > >& frameRanges)
 {
-    QStringList splits = args.split(',');
+    QStringList splits = args.split(QChar::fromLatin1(','));
     bool added = false;
     for (int i = 0; i < splits.size(); ++i) {
         std::pair<int,int> frameRange;
-        int frameStep;
+        int frameStep = 0;
         if (tryParseFrameRange(splits[i], frameRange, frameStep)) {
             added = true;
             frameRanges.push_back(std::make_pair(frameStep, frameRange));
@@ -637,9 +640,9 @@ void
 CLArgsPrivate::parse()
 {
     {
-        QStringList::iterator it = hasToken("version", "v");
+        QStringList::iterator it = hasToken(QString::fromUtf8("version"), QString::fromUtf8("v"));
         if (it != args.end()) {
-            QString msg = QObject::tr("%1 version %2 at commit %3 on branch %4 built on %4").arg(NATRON_APPLICATION_NAME).arg(NATRON_VERSION_STRING).arg(GIT_COMMIT).arg(GIT_BRANCH).arg(__DATE__);
+            QString msg = QObject::tr("%1 version %2 at commit %3 on branch %4 built on %4").arg(QString::fromUtf8(NATRON_APPLICATION_NAME)).arg(QString::fromUtf8(NATRON_VERSION_STRING)).arg(QString::fromUtf8(GIT_COMMIT)).arg(QString::fromUtf8(GIT_BRANCH)).arg(QString::fromUtf8(__DATE__));
             std::cout << msg.toStdString() << std::endl;
             error = 1;
             return;
@@ -647,7 +650,7 @@ CLArgsPrivate::parse()
     }
     
     {
-        QStringList::iterator it = hasToken("help", "h");
+        QStringList::iterator it = hasToken(QString::fromUtf8("help"), QString::fromUtf8("h"));
         if (it != args.end()) {
             CLArgs::printUsage(args[0].toStdString());
             error = 1;
@@ -656,7 +659,7 @@ CLArgsPrivate::parse()
     }
     
     {
-        QStringList::iterator it = hasToken("background", "b");
+        QStringList::iterator it = hasToken(QString::fromUtf8("background"), QString::fromUtf8("b"));
         if (it != args.end()) {
             isBackground = true;
             args.erase(it);
@@ -664,7 +667,7 @@ CLArgsPrivate::parse()
     }
     
     {
-        QStringList::iterator it = hasToken("interpreter", "t");
+        QStringList::iterator it = hasToken(QString::fromUtf8("interpreter"), QString::fromUtf8("t"));
         if (it != args.end()) {
             isInterpreterMode = true;
             isBackground = true;
@@ -675,7 +678,7 @@ CLArgsPrivate::parse()
     }
     
     {
-        QStringList::iterator it = hasToken("render-stats", "s");
+        QStringList::iterator it = hasToken(QString::fromUtf8("render-stats"), QString::fromUtf8("s"));
         if (it != args.end()) {
             enableRenderStats = true;
             args.erase(it);
@@ -683,7 +686,7 @@ CLArgsPrivate::parse()
     }
     
     {
-        QStringList::iterator it = hasToken(NATRON_BREAKPAD_PROCESS_PID, "");
+        QStringList::iterator it = hasToken(QString::fromUtf8(NATRON_BREAKPAD_PROCESS_PID), QString());
         if (it != args.end()) {
             ++it;
             if (it != args.end()) {
@@ -698,7 +701,7 @@ CLArgsPrivate::parse()
     }
     
     {
-        QStringList::iterator it = hasToken(NATRON_BREAKPAD_PROCESS_EXEC, "");
+        QStringList::iterator it = hasToken(QString::fromUtf8(NATRON_BREAKPAD_PROCESS_EXEC), QString());
         if (it != args.end()) {
             ++it;
             if (it != args.end()) {
@@ -713,7 +716,7 @@ CLArgsPrivate::parse()
     }
     
     {
-        QStringList::iterator it = hasToken(NATRON_BREAKPAD_CLIENT_FD_ARG, "");
+        QStringList::iterator it = hasToken(QString::fromUtf8(NATRON_BREAKPAD_CLIENT_FD_ARG), QString());
         if (it != args.end()) {
             ++it;
             if (it != args.end()) {
@@ -728,7 +731,7 @@ CLArgsPrivate::parse()
     }
     
     {
-        QStringList::iterator it = hasToken(NATRON_BREAKPAD_PIPE_ARG, "");
+        QStringList::iterator it = hasToken(QString::fromUtf8(NATRON_BREAKPAD_PIPE_ARG), QString());
         if (it != args.end()) {
             ++it;
             if (it != args.end()) {
@@ -743,7 +746,7 @@ CLArgsPrivate::parse()
     }
     
     {
-        QStringList::iterator it = hasToken(NATRON_BREAKPAD_COM_PIPE_ARG, "");
+        QStringList::iterator it = hasToken(QString::fromUtf8(NATRON_BREAKPAD_COM_PIPE_ARG), QString());
         if (it != args.end()) {
             ++it;
             if (it != args.end()) {
@@ -759,7 +762,7 @@ CLArgsPrivate::parse()
 
     
     {
-        QStringList::iterator it = hasToken("IPCpipe", "");
+        QStringList::iterator it = hasToken(QString::fromUtf8("IPCpipe"), QString());
         if (it != args.end()) {
             ++it;
             if (it != args.end()) {
@@ -774,7 +777,7 @@ CLArgsPrivate::parse()
     }
     
     {
-        QStringList::iterator it = hasToken("onload", "l");
+        QStringList::iterator it = hasToken(QString::fromUtf8("onload"), QString::fromUtf8("l"));
         if (it != args.end()) {
             ++it;
             if (it != args.end()) {
@@ -782,15 +785,21 @@ CLArgsPrivate::parse()
 #ifdef __NATRON_UNIX__
                 defaultOnProjectLoadedScript = AppManager::qt_tildeExpansion(defaultOnProjectLoadedScript);
 #endif
+                QFileInfo fi(defaultOnProjectLoadedScript);
+                if (!fi.exists()) {
+                    std::cout << QObject::tr("WARNING: --onload %1 ignored because the file does not exist.").arg(defaultOnProjectLoadedScript).toStdString() << std::endl;
+                    defaultOnProjectLoadedScript.clear();
+                } else {
+                    defaultOnProjectLoadedScript = fi.canonicalFilePath();
+                }
+                
                 args.erase(it);
-                if (!defaultOnProjectLoadedScript.endsWith(".py")) {
+                if (!defaultOnProjectLoadedScript.endsWith(QString::fromUtf8(".py"))) {
                     std::cout << QObject::tr("The optional on project load script must be a Python script (.py).").toStdString() << std::endl;
                     error = 1;
                     return;
                 }
-                if (!QFile::exists(defaultOnProjectLoadedScript)) {
-                    std::cout << QObject::tr("WARNING: --onload %1 ignored because the file does not exist.").arg(defaultOnProjectLoadedScript).toStdString() << std::endl;
-                }
+      
             } else {
                 std::cout << QObject::tr("--onload or -l specified, you must enter a script filename afterwards.").toStdString() << std::endl;
                 error = 1;
@@ -800,11 +809,11 @@ CLArgsPrivate::parse()
     }
     
     {
-        QStringList::iterator it = findFileNameWithExtension(NATRON_PROJECT_FILE_EXT);
+        QStringList::iterator it = findFileNameWithExtension(QString::fromUtf8(NATRON_PROJECT_FILE_EXT));
         if (it == args.end()) {
-            it = findFileNameWithExtension("py");
+            it = findFileNameWithExtension(QString::fromUtf8("py"));
             if (it == args.end() && !isInterpreterMode && isBackground) {
-                std::cout << QObject::tr("You must specify the filename of a script or %1 project. (.%2)").arg(NATRON_APPLICATION_NAME).arg(NATRON_PROJECT_FILE_EXT).toStdString() << std::endl;
+                std::cout << QObject::tr("You must specify the filename of a script or %1 project. (.%2)").arg(QString::fromUtf8(NATRON_APPLICATION_NAME)).arg(QString::fromUtf8(NATRON_PROJECT_FILE_EXT)).toStdString() << std::endl;
                 error = 1;
                 return;
             }
@@ -813,9 +822,13 @@ CLArgsPrivate::parse()
         }
         if (it != args.end()) {
             filename = *it;
-#if defined(Q_OS_UNIX)
+#ifdef __NATRON_UNIX__
             filename = AppManager::qt_tildeExpansion(filename);
 #endif
+            QFileInfo fi(filename);
+            if (fi.exists()) {
+                filename = fi.canonicalFilePath();
+            }
             args.erase(it);
         }
     }
@@ -831,7 +844,7 @@ CLArgsPrivate::parse()
     
     //Parse python commands
     for (;;) {
-        QStringList::iterator it = hasToken("cmd", "c");
+        QStringList::iterator it = hasToken(QString::fromUtf8("cmd"), QString::fromUtf8("c"));
         if (it == args.end()) {
             break;
         }
@@ -861,7 +874,7 @@ CLArgsPrivate::parse()
     
     //Parse writers
     for (;;) {
-        QStringList::iterator it = hasToken("writer", "w");
+        QStringList::iterator it = hasToken(QString::fromUtf8("writer"), QString::fromUtf8("w"));
         if (it == args.end()) {
             break;
         }
@@ -901,9 +914,9 @@ CLArgsPrivate::parse()
         }
         if (nextNext != args.end()) {
             //Check for an optional filename
-            if (!nextNext->startsWith("-") && !nextNext->startsWith("--")) {
+            if (!nextNext->startsWith(QChar::fromLatin1('-')) && !nextNext->startsWith(QString::fromUtf8("--"))) {
                 w.filename = *nextNext;
-#if defined(Q_OS_UNIX)
+#ifdef __NATRON_UNIX__
                 w.filename = AppManager::qt_tildeExpansion(w.filename);
 #endif
             }
@@ -920,7 +933,7 @@ CLArgsPrivate::parse()
     
     //Parse readers
     for (;;) {
-        QStringList::iterator it = hasToken("reader", "i");
+        QStringList::iterator it = hasToken(QString::fromUtf8("reader"), QString::fromUtf8("i"));
         if (it == args.end()) {
             break;
         }
@@ -966,9 +979,9 @@ CLArgsPrivate::parse()
         
         
         //Check for  filename
-        if (!nextNext->startsWith("-") && !nextNext->startsWith("--")) {
+        if (!nextNext->startsWith(QChar::fromLatin1('-')) && !nextNext->startsWith(QString::fromUtf8("--"))) {
             r.filename = *nextNext;
-#if defined(Q_OS_UNIX)
+#ifdef __NATRON_UNIX__
             r.filename = AppManager::qt_tildeExpansion(r.filename);
 #endif
         } else {
@@ -1005,7 +1018,7 @@ CLArgsPrivate::parse()
         }
 
         CLArgs::WriterArg w;
-        w.name = QString("Output%1").arg(indexStr);
+        w.name = QString(QString::fromUtf8("Output%1")).arg(indexStr);
         w.mustCreate = true;
         atLeastOneOutput = true;
         
@@ -1021,7 +1034,7 @@ CLArgsPrivate::parse()
         }
         
         //Check for an optional filename
-        if (!next->startsWith("-") && !next->startsWith("--")) {
+        if (!next->startsWith(QChar::fromLatin1('-')) && !next->startsWith(QString::fromUtf8("--"))) {
             w.filename = *next;
         }
         

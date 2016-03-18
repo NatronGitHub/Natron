@@ -203,7 +203,7 @@ qSystemDirectory()
 	std::string str (fullPath.constData(), retLen);
 #endif
     // in some rare cases retLen might be 0
-    return QString(str.c_str());
+    return QString::fromUtf8(str.c_str());
 }
 
 static HINSTANCE
@@ -235,7 +235,7 @@ load(const wchar_t *libraryName,
         fullPathAttempt.append(fileName);
         
 #ifdef UNICODE
-        std::wstring ws = Global::s2ws(fullPathAttempt.toStdString());
+        std::wstring ws = Global::utf8_to_utf16(fullPathAttempt.toStdString());
         HINSTANCE inst = ::LoadLibrary( ws.c_str() );
 #else
         HINSTANCE inst = ::LoadLibrary( fullPathAttempt.toStdString().c_str() );
@@ -256,9 +256,9 @@ resolveGetSpecialFolderPath()
 
     if (!gsfp) {
 #ifndef Q_OS_WINCE
-        QString lib("shell32");
+        QString lib = QString::fromUtf8("shell32");
 #else
-        QString lib("coredll");
+        QString lib = QString::fromUtf8("coredll");
 #endif // Q_OS_WINCE
         HINSTANCE libHandle = load( (const wchar_t*)lib.utf16() );
         if (libHandle) {

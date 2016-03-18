@@ -28,6 +28,7 @@
 #include "Global/Macros.h"
 
 #include "Engine/EffectInstance.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -119,22 +120,19 @@ public:
         return true;
     }
     
-    virtual void getPreferredDepthAndComponents(int inputNb,std::list<ImageComponents>* comp,ImageBitDepthEnum* depth) const OVERRIDE FINAL;
     
-    virtual ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL;
-    
-    virtual double getPreferredAspectRatio() const OVERRIDE FINAL;
 
 private:
 
     virtual StatusEnum
-    getRegionOfDefinition(U64 hash,double time, const RenderScale & scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
+    getRegionOfDefinition(U64 hash,double time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 
     virtual bool isIdentity(double time,
                         const RenderScale & scale,
                         const RectI & roi,
-                        int view,
+                        ViewIdx view,
                         double* inputTime,
+                            ViewIdx* inputView,
                         int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;

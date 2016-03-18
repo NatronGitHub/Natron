@@ -132,7 +132,7 @@ public:
      * This function also returns the TLS for the given holder for convenience.
      **/
     template <typename T>
-    boost::shared_ptr<T> copyTLSFromSpawnerThread(const boost::shared_ptr<const TLSHolderBase>& holder,
+    boost::shared_ptr<T> copyTLSFromSpawnerThread(const TLSHolderBase* holder,
                                                   const QThread* curThread);
 
     
@@ -145,7 +145,7 @@ public:
 private:
     
     template <typename T>
-    boost::shared_ptr<T> copyTLSFromSpawnerThreadInternal(const boost::shared_ptr<const TLSHolderBase>& holder,
+    boost::shared_ptr<T> copyTLSFromSpawnerThreadInternal(const TLSHolderBase* holder,
                                                   const QThread* curThread,
                                                           ThreadSpawnMap::iterator foundSpawned);
 

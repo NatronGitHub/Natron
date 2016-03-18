@@ -32,57 +32,61 @@
 
 NATRON_NAMESPACE_ENTER;
 
-ActionWithShortcut::ActionWithShortcut(const QString & group,
-                                       const QString & actionID,
-                                       const QString & actionDescription,
-                                       QObject* parent,
-                                       bool setShortcutOnAction)
+ActionWithShortcut::ActionWithShortcut(const std::string & group,
+                   const std::string & actionID,
+                   const std::string & actionDescription,
+                   QObject* parent,
+                   bool setShortcutOnAction)
 : QAction(parent)
-, _group(group)
+, _group(QString::fromUtf8(group.c_str()))
 , _shortcuts()
 {
-    std::list<QKeySequence> seq = getKeybind(group, actionID);
+    QString actionIDStr = QString::fromUtf8(actionID.c_str());
+    std::list<QKeySequence> seq = getKeybind(_group, actionIDStr);
     if (seq.empty()) {
         seq.push_back(QKeySequence());
     }
-    _shortcuts.push_back(std::make_pair(actionID, seq.front()));
-    assert ( !group.isEmpty() && !actionID.isEmpty() );
+    _shortcuts.push_back(std::make_pair(actionIDStr, seq.front()));
+    assert ( !_group.isEmpty() && !actionIDStr.isEmpty() );
     if (setShortcutOnAction) {
         setShortcut(seq.front());
     }
-    appPTR->addShortcutAction(group, actionID, this);
+    appPTR->addShortcutAction(_group, actionIDStr, this);
     setShortcutContext(Qt::WindowShortcut);
-    setText( QObject::tr( actionDescription.toStdString().c_str() ) );
+    setText( QObject::tr( actionDescription.c_str() ) );
 }
 
-ActionWithShortcut::ActionWithShortcut(const QString & group,
-                                       const QStringList & actionIDs,
-                                       const QString & actionDescription,
+
+ActionWithShortcut::ActionWithShortcut(const std::string & group,
+                                       const std::list<std::string> & actionIDs,
+                                       const std::string & actionDescription,
                                        QObject* parent,
                                        bool setShortcutOnAction)
 : QAction(parent)
-, _group(group)
+, _group(QString::fromUtf8(group.c_str()))
 , _shortcuts()
 {
     QKeySequence seq0;
-    for (int i = 0; i < actionIDs.size(); ++i) {
-        std::list<QKeySequence> seq = getKeybind(group, actionIDs[i]);
+    for (std::list<std::string>::const_iterator it = actionIDs.begin(); it!=actionIDs.end();++it) {
+        
+        QString actionIDStr = QString::fromUtf8(it->c_str());
+        std::list<QKeySequence> seq = getKeybind(_group, actionIDStr);
         if (seq.empty()) {
             seq.push_back(QKeySequence());
         }
-        _shortcuts.push_back(std::make_pair(actionIDs[i], seq.front()));
-        if (i == 0) {
+        _shortcuts.push_back(std::make_pair(actionIDStr, seq.front()));
+        if (it == actionIDs.begin()) {
             seq0 = seq.front();
         }
-        appPTR->addShortcutAction(group, actionIDs[i], this);
+        appPTR->addShortcutAction(_group, actionIDStr, this);
     }
-    assert ( !group.isEmpty() && !actionIDs.isEmpty() );
+    assert ( !_group.isEmpty() && !actionIDs.empty() );
     if (setShortcutOnAction) {
         setShortcut(seq0);
     }
     
     setShortcutContext(Qt::WindowShortcut);
-    setText( QObject::tr( actionDescription.toStdString().c_str() ) );
+    setText( QObject::tr( actionDescription.c_str() ) );
 }
 
 ActionWithShortcut::~ActionWithShortcut()
@@ -104,13 +108,13 @@ ActionWithShortcut::setShortcutWrapper(const QString& actionID, const QKeySequen
     setShortcut(shortcut);
 }
 
-TooltipActionShortcut::TooltipActionShortcut(const QString & group,
-                      const QString & actionID,
-                      const QString & toolip,
+TooltipActionShortcut::TooltipActionShortcut(const std::string & group,
+                      const std::string & actionID,
+                      const std::string & toolip,
                       QWidget* parent)
-: ActionWithShortcut(group,actionID,"",parent, false)
+: ActionWithShortcut(group,actionID,std::string(),parent, false)
 , _widget(parent)
-, _originalTooltip(toolip)
+, _originalTooltip(QString::fromUtf8(toolip.c_str()))
 , _tooltipSetInternally(false)
 {
     assert(parent);
@@ -118,13 +122,13 @@ TooltipActionShortcut::TooltipActionShortcut(const QString & group,
     _widget->installEventFilter(this);
 }
 
-TooltipActionShortcut::TooltipActionShortcut(const QString & group,
-                                             const QStringList & actionIDs,
-                                             const QString & toolip,
+TooltipActionShortcut::TooltipActionShortcut(const std::string & group,
+                                             const std::list<std::string> & actionIDs,
+                                             const std::string & toolip,
                                              QWidget* parent)
-: ActionWithShortcut(group,actionIDs,"",parent, false)
+: ActionWithShortcut(group,actionIDs,std::string(),parent, false)
 , _widget(parent)
-, _originalTooltip(toolip)
+, _originalTooltip(QString::fromUtf8(toolip.c_str()))
 , _tooltipSetInternally(false)
 {
     assert(parent);

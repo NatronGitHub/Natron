@@ -30,6 +30,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/ViewIdx.h"
 
 
 NATRON_NAMESPACE_ENTER;
@@ -107,9 +108,9 @@ ActionsCache::invalidateAll(U64 newHash)
 bool
 ActionsCache::getIdentityResult(U64 hash,
                                 double time,
-                                int view,
-                                unsigned int mipMapLevel,
+                                ViewIdx view,
                                 int* inputNbIdentity,
+                                ViewIdx *inputView,
                                 double* identityTime)
 {
     QMutexLocker l(&_cacheMutex);
@@ -119,13 +120,13 @@ ActionsCache::getIdentityResult(U64 hash,
             ActionKey key;
             key.time = time;
             key.view = view;
-            key.mipMapLevel = mipMapLevel;
+            key.mipMapLevel = 0;
 
             IdentityCacheMap::const_iterator found = it->_identityCache.find(key);
             if ( found != it->_identityCache.end() ) {
                 *inputNbIdentity = found->second.inputIdentityNb;
                 *identityTime = found->second.inputIdentityTime;
-
+                *inputView = found->second.inputView;
                 return true;
             }
 
@@ -140,9 +141,9 @@ ActionsCache::getIdentityResult(U64 hash,
 void
 ActionsCache::setIdentityResult(U64 hash,
                                 double time,
-                                int view,
-                                unsigned int mipMapLevel,
+                                ViewIdx view,
                                 int inputNbIdentity,
+                                ViewIdx inputView,
                                 double identityTime)
 {
     QMutexLocker l(&_cacheMutex);
@@ -151,18 +152,19 @@ ActionsCache::setIdentityResult(U64 hash,
 
     key.time = time;
     key.view = view;
-    key.mipMapLevel = mipMapLevel;
+    key.mipMapLevel = 0;
 
     IdentityResults & v = cache._identityCache[key];
     v.inputIdentityNb = inputNbIdentity;
     v.inputIdentityTime = identityTime;
+    v.inputView = inputView;
 }
 
 
 bool
 ActionsCache::getRoDResult(U64 hash,
                            double time,
-                           int view,
+                           ViewIdx view,
                            unsigned int mipMapLevel,
                            RectD* rod)
 {
@@ -193,7 +195,7 @@ ActionsCache::getRoDResult(U64 hash,
 void
 ActionsCache::setRoDResult(U64 hash,
                            double time,
-                           int view,
+                           ViewIdx view,
                            unsigned int mipMapLevel,
                            const RectD & rod)
 {
@@ -212,7 +214,7 @@ ActionsCache::setRoDResult(U64 hash,
 bool
 ActionsCache::getFramesNeededResult(U64 hash,
                                     double time,
-                                    int view,
+                                    ViewIdx view,
                                     unsigned int mipMapLevel,
                                     FramesNeededMap* framesNeeded)
 {
@@ -243,7 +245,7 @@ ActionsCache::getFramesNeededResult(U64 hash,
 void
 ActionsCache::setFramesNeededResult(U64 hash,
                                     double time,
-                                    int view,
+                                    ViewIdx view,
                                     unsigned int mipMapLevel,
                                     const FramesNeededMap & framesNeeded)
 {
@@ -351,8 +353,9 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
     , componentsAvailableDirty(true)
     , outputComponentsAvailable()
     , overlaySlaves()
-    , defaultClipPreferencesDataMutex()
-    , clipPrefsData()
+    , metadatasMutex()
+    , metadatas()
+    , runningClipPreferences(false)
 {
 }
 
@@ -554,7 +557,7 @@ EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectD
                                                                    const RectD & rod,
                                                                    const RectI & renderWindow,
                                                                    double time,
-                                                                   int view,
+                                                                   ViewIdx view,
                                                                    bool isIdentity,
                                                                    double identityTime,
                                                                    const EffectInstPtr& identityInput,

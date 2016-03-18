@@ -57,6 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/Button.h"
 #include "Gui/ClickableLabel.h"
@@ -113,7 +114,7 @@ void
 KnobGuiParametric::createWidget(QHBoxLayout* layout)
 {
     boost::shared_ptr<KnobParametric> knob = _knob.lock();
-    QObject::connect( knob.get(), SIGNAL( curveChanged(int) ), this, SLOT( onCurveChanged(int) ) );
+    QObject::connect( knob.get(), SIGNAL(curveChanged(int)), this, SLOT(onCurveChanged(int)) );
 
     //layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     treeColumn = new QWidget( layout->parentWidget() );
@@ -129,9 +130,9 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
     }
     treeColumnLayout->addWidget(_tree);
 
-    _resetButton = new Button("Reset",treeColumn);
+    _resetButton = new Button(QString::fromUtf8("Reset"),treeColumn);
     _resetButton->setToolTip( GuiUtils::convertFromPlainText(tr("Reset the selected curves in the tree to their default shape."), Qt::WhiteSpaceNormal) );
-    QObject::connect( _resetButton, SIGNAL( clicked() ), this, SLOT( resetSelectedCurves() ) );
+    QObject::connect( _resetButton, SIGNAL(clicked()), this, SLOT(resetSelectedCurves()) );
     treeColumnLayout->addWidget(_resetButton);
 
     layout->addWidget(treeColumn);
@@ -143,11 +144,12 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
     }
     layout->addWidget(_curveWidget);
 
+    KnobGuiPtr thisShared = shared_from_this();
 
     std::vector<boost::shared_ptr<CurveGui> > visibleCurves;
     for (int i = 0; i < knob->getDimension(); ++i) {
-        QString curveName = knob->getDimensionName(i).c_str();
-        boost::shared_ptr<KnobCurveGui> curve(new KnobCurveGui(_curveWidget,knob->getParametricCurve(i),this,i,curveName,QColor(255,255,255),1.));
+        QString curveName = QString::fromUtf8(knob->getDimensionName(i).c_str());
+        boost::shared_ptr<KnobCurveGui> curve(new KnobCurveGui(_curveWidget,knob->getParametricCurve(i),thisShared,i,curveName,QColor(255,255,255),1.));
         _curveWidget->addCurveAndSetColor(curve);
         QColor color;
         double r,g,b;
@@ -169,7 +171,7 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
     }
 
     _curveWidget->centerOn(visibleCurves);
-    QObject::connect( _tree, SIGNAL( itemSelectionChanged() ),this,SLOT( onItemsSelectionChanged() ) );
+    QObject::connect( _tree, SIGNAL(itemSelectionChanged()),this,SLOT(onItemsSelectionChanged()) );
 } // createWidget
 
 void
@@ -284,7 +286,7 @@ KnobGuiParametric::resetSelectedCurves()
             }
         }
     }
-    k->evaluateValueChange(0, k->getCurrentTime(), eValueChangedReasonUserEdited);
+    k->evaluateValueChange(0, k->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
 }
 
 KnobPtr KnobGuiParametric::getKnob() const

@@ -41,6 +41,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Engine/EngineFwd.h"
 
+// Note: these classes are used for cache serialization and do not have to maintain backward compatibility
 #define IMAGE_KEY_SERIALIZATION_INTRODUCES_CACHE_HOLDER_ID 2
 #define IMAGE_KEY_SERIALIZATION_VERSION IMAGE_KEY_SERIALIZATION_INTRODUCES_CACHE_HOLDER_ID
 

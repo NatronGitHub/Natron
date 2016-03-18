@@ -32,9 +32,9 @@
 #include "Engine/OfxHost.h"
 #include "Engine/OfxParamInstance.h"
 #include "Engine/Project.h"
+#include "Engine/ThreadPool.h"
 
 #include <QWaitCondition>
-#include <QThreadPool>
 #include <QThread>
 #include <QDebug>
 
@@ -99,6 +99,13 @@ AppTLS::cleanupTLSForThread()
     
     QThread* curThread = QThread::currentThread();
 
+#ifdef QT_CUSTOM_THREADPOOL
+    AbortableThread* isAbortableThread = dynamic_cast<AbortableThread*>(curThread);
+    if (isAbortableThread) {
+        isAbortableThread->clearAbortInfo();
+    }
+#endif
+    
     //Cleanup any cached data on the TLSHolder
     {
         QWriteLocker k(&_objectMutex);

@@ -184,8 +184,6 @@ public:
     
 private:
     
-    void evaluate(KnobI* /*knob*/,bool /*isSignificant*/,ValueChangedReasonEnum /*reason*/) OVERRIDE FINAL {}
-    
     virtual void initializeKnobs() OVERRIDE FINAL {}
     
     boost::scoped_ptr<TrackMarkerPrivate> _imp;

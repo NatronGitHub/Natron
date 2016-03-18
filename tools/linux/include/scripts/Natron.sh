@@ -17,6 +17,9 @@ DIR=`cd -P "$SOURCEDIR" && pwd`
 # Force numeric
 export LC_NUMERIC=C
 
+# glibc write to stderr
+export LIBC_FATAL_STDERR_=1
+
 # Set fontconfig path
 # Not needed (done in app), but added to avoid warn before splashscreen
 if [ -d "$DIR/Resources/etc/fonts" ]; then

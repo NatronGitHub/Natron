@@ -21,14 +21,14 @@
 # CONFIG=(debug,release,relwithdebinfo): the build type
 # DISABLE_BREAKPAD=1: When set, automatic crash reporting (google-breakpad support) will be disabled
 # PLUGINDIR: The path to the plug-ins in the final bundle, e.g: "$CWD/build/Natron/App/Natron.app/Contents/Plugins"
-#Usage PLUGINDIR="..." MKJOBS=4 CONFIG=relwithdebinfo BRANCH=workshop ./build-plugins.sh
+#Usage PLUGINDIR="..." MKJOBS=4 CONFIG=relwithdebinfo BRANCH=master ./build-plugins.sh
 
 source `pwd`/common.sh || exit 1
 
 cd $CWD/build || exit 1
 
-#If "workshop" is passed, use master branch for all plug-ins otherwise use the git tags in common.sh
-if [ "$BRANCH" = "workshop" ]; then
+#If "master" is passed, use master branch for all plug-ins otherwise use the git tags in common.sh
+if [ "$BRANCH" = "master" ]; then
     IO_BRANCH=master
     MISC_BRANCH=master
     ARENA_BRANCH=master

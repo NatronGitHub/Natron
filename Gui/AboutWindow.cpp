@@ -57,12 +57,12 @@ AboutWindow::AboutWindow(Gui* gui,
     : QDialog(parent)
       , _gui(gui)
 {
-    setWindowTitle(QObject::tr("About ") + NATRON_APPLICATION_NAME);
+    setWindowTitle(QObject::tr("About ") + QString::fromUtf8(NATRON_APPLICATION_NAME));
     _mainLayout = new QVBoxLayout(this);
     setLayout(_mainLayout);
 
     _iconLabel = new Label(this);
-    _iconLabel->setPixmap( QPixmap(NATRON_APPLICATION_ICON_PATH).scaled(128, 128) );
+    _iconLabel->setPixmap( QPixmap(QString::fromUtf8(NATRON_APPLICATION_ICON_PATH)).scaled(128, 128) );
     _mainLayout->addWidget(_iconLabel);
 
     _tabWidget = new QTabWidget(this);
@@ -73,7 +73,7 @@ AboutWindow::AboutWindow(Gui* gui,
     _buttonLayout->addStretch();
 
     _closeButton = new Button(QObject::tr("Close"),_buttonContainer);
-    QObject::connect( _closeButton, SIGNAL( clicked() ), this, SLOT( accept() ) );
+    QObject::connect( _closeButton, SIGNAL(clicked()), this, SLOT(accept()) );
     _buttonLayout->addWidget(_closeButton);
 
     _mainLayout->addWidget(_buttonContainer);
@@ -83,98 +83,134 @@ AboutWindow::AboutWindow(Gui* gui,
     _aboutText = new QTextBrowser(_tabWidget);
     _aboutText->setOpenExternalLinks(true);
     QString aboutText;
-    QString customBuild(NATRON_CUSTOM_BUILD_USER_NAME);
-    if (!customBuild.isEmpty()) {
-        aboutText = QString("<p>%1 custom build for %2 %3.</p>")
-        .arg(NATRON_APPLICATION_NAME)
-        .arg(customBuild)
-#ifdef DEBUG
-        .arg("(debug)");
-#else
-#ifdef NDEBUG
-        // release with asserts disabled (should be the *real* release)
-        .arg("");
-#else
-        // release with asserts enabled
-        .arg("(opt)");
-#endif
-#endif
-    } else {
-        aboutText = QString("<p>%1 version %2 %3%4.</p>")
-        .arg(NATRON_APPLICATION_NAME)
-        .arg(NATRON_VERSION_STRING)
-        .arg(NATRON_DEVELOPMENT_STATUS)
-#ifdef DEBUG
-        .arg(" (debug)");
-#else
-#ifdef NDEBUG
-        // release with asserts disabled (should be the *real* release)
-        .arg("");
-#else
-        // release with asserts enabled
-        .arg(" (opt)");
-#endif
-#endif
-    }
-    QString licenseStr;
     {
-        QFile license(":LICENSE_SHORT.txt");
+      QString customBuild(QString::fromUtf8(NATRON_CUSTOM_BUILD_USER_NAME));
+        if (!customBuild.isEmpty()) {
+            aboutText = QString::fromUtf8("<p>%1 custom build for %2 %3.</p>")
+            .arg(QString::fromUtf8(NATRON_APPLICATION_NAME))
+            .arg(customBuild)
+#ifdef DEBUG
+            .arg(QString::fromUtf8("(debug)"));
+#else
+#ifdef NDEBUG
+            // release with asserts disabled (should be the *real* release)
+            .arg(QString());
+#else
+            // release with asserts enabled
+            .arg(QString::fromUtf8("(opt)"));
+#endif
+#endif
+        } else {
+            aboutText = QString::fromUtf8("<p>%1 version %2 %3%4.</p>")
+            .arg(QString::fromUtf8(NATRON_APPLICATION_NAME))
+            .arg(QString::fromUtf8(NATRON_VERSION_STRING))
+            .arg(QString::fromUtf8(NATRON_DEVELOPMENT_STATUS))
+#ifdef DEBUG
+            .arg(QString::fromUtf8(" (debug)"));
+#else
+#ifdef NDEBUG
+            // release with asserts disabled (should be the *real* release)
+            .arg(QString());
+#else
+            // release with asserts enabled
+            .arg(QString::fromUtf8(" (opt)"));
+#endif
+#endif
+        }
+    }
+    {
+        QString licenseStr;
+        QFile license(QString::fromUtf8(":LICENSE_SHORT.txt"));
         license.open(QIODevice::ReadOnly | QIODevice::Text);
         licenseStr = GuiUtils::convertFromPlainText(QTextCodec::codecForName("UTF-8")->toUnicode(license.readAll()), Qt::WhiteSpaceNormal);
+        aboutText.append(licenseStr);
     }
-    aboutText.append(licenseStr);
-
-    QString endAbout = (QString("<p>See <a href=\"%2\"><font color=\"orange\">%1 's website </font></a>"
-                                "for more information on this software.</p>")
-                        .arg(NATRON_APPLICATION_NAME) // %1
-                        .arg(NATRON_WEBSITE_URL)); // %2
-    aboutText.append(endAbout);
-    QString gitStr = (QString("<p>This version was generated from the source "
-                              "code branch %1 at commit %2.</p>")
-                      .arg(GIT_BRANCH) // %1
-                      .arg(GIT_COMMIT)); // %2
-;
-    aboutText.append(gitStr);
-
-    const QString status(NATRON_DEVELOPMENT_STATUS);
-    if (status == NATRON_DEVELOPMENT_DEVEL) {
-        QString toAppend = QString("<p>Note: This is a development version, which probably contains bugs. "
-                                   "If you feel like reporting a bug, please do so "
-                                   "on the <a href=\"%1\"><font color=\"orange\"> issue tracker.</font></a></p>")
-        .arg(NATRON_ISSUE_TRACKER_URL); // %1
-        ;
-    } else if (status == NATRON_DEVELOPMENT_SNAPSHOT) {
-        QString toAppend = QString("<p>Note: This is an official snapshot version, compiled on the Natron build "
-                                   "farm, and it may still contain bugs. If you feel like reporting a bug, please do so "
-                                   "on the <a href=\"%1\"><font color=\"orange\"> issue tracker.</font></a></p>")
-        .arg(NATRON_ISSUE_TRACKER_URL); // %1
-        ;
-    } else if (status == NATRON_DEVELOPMENT_ALPHA) {
-        QString toAppend = QString("<p>Note: This software is currently in alpha version, meaning there are missing features,"
-                                   " bugs and untested stuffs. If you feel like reporting a bug, please do so "
-                                   "on the <a href=\"%1\"><font color=\"orange\"> issue tracker.</font></a></p>")
-        .arg(NATRON_ISSUE_TRACKER_URL); // %1
-        ;
-    } else if (status == NATRON_DEVELOPMENT_BETA) {
-        QString toAppend = QString("<p>Note: This software is currently under beta testing, meaning there are "
-                                   " bugs and untested stuffs. If you feel like reporting a bug, please do so "
-                                   "on the <a href=\"%1\"><font color=\"orange\"> issue tracker.</font></a></p>")
-                           .arg(NATRON_ISSUE_TRACKER_URL); // %1
-        ;
-
-    } else if (status == NATRON_DEVELOPMENT_RELEASE_CANDIDATE) {
-        QString toAppend = QString("The version of this sofware is a release candidate, which means it has the potential of becoming "
-                                   "the future stable release but might still have some bugs.");
+    {
+        QString endAbout = (QString::fromUtf8("<p>See the <a href=\"%2\">%1 website</a> "
+                                              "for more information on this software.</p>")
+                            .arg(QString::fromUtf8(NATRON_APPLICATION_NAME)) // %1
+                            .arg(QString::fromUtf8(NATRON_WEBSITE_URL))); // %2
+        aboutText.append(endAbout);
+    }
+    {
+        QString gitStr = (QString::fromUtf8("<p>This software was compiled on %3 from the source "
+                                            "code branch %1 at version %2.</p>")
+                          .arg(QString::fromUtf8("<a href=\"https://github.com/MrKepzie/Natron/tree/"GIT_BRANCH"\">"GIT_BRANCH"</a>")) // %1
+                          .arg(QString::fromUtf8("<a href=\"https://github.com/MrKepzie/Natron/tree/"GIT_COMMIT"\">"GIT_COMMIT"</a>")) // %2
+                          .arg(QString::fromUtf8(__DATE__)));
+        aboutText.append(gitStr);
+    }
+    if (!std::string(IO_GIT_COMMIT).empty()) {
+        QString argStr = QString::fromUtf8("<a href=\"https://github.com/MrKepzie/openfx-io/tree/"IO_GIT_COMMIT"\">");
+        QString commitStr = QString::fromUtf8(IO_GIT_COMMIT);
+        commitStr = commitStr.mid(0, 7);
+        argStr += commitStr;
+        argStr += QString::fromUtf8("</a>");
+        QString gitStr = QString::fromUtf8("<p>The bundled <a href=\"https://github.com/MrKepzie/openfx-io\">openfx-io</a> "
+                                            "plugins were compiled from version %2.</p>")
+                          .arg(argStr); // %1
+        aboutText.append(gitStr);
+    }
+    if (!std::string(MISC_GIT_COMMIT).empty()) {
+        QString argStr = QString::fromUtf8("<a href=\"https://github.com/devernay/openfx-misc/tree/"MISC_GIT_COMMIT"\">");
+        QString commitStr = QString::fromUtf8(MISC_GIT_COMMIT);
+        commitStr = commitStr.mid(0, 7);
+        argStr += commitStr;
+        argStr += QString::fromUtf8("</a>");
+        QString gitStr = QString::fromUtf8("<p>The bundled <a href=\"https://github.com/devernay/openfx-misc\">openfx-misc</a> "
+                                            "plugins were compiled from version %2.</p>")
+                          .arg(argStr); // %1
+        aboutText.append(gitStr);
+    }
+    if (!std::string(ARENA_GIT_COMMIT).empty()) {
+        QString argStr = QString::fromUtf8("<a href=\"https://github.com/olear/openfx-arena/tree/"ARENA_GIT_COMMIT"\">");
+        QString commitStr = QString::fromUtf8(ARENA_GIT_COMMIT);
+        commitStr = commitStr.mid(0, 7);
+        argStr += commitStr;
+        argStr += QString::fromUtf8("</a>");
+        QString gitStr = QString::fromUtf8("<p>The bundled <a href=\"https://github.com/olear/openfx-arena\">openfx-arena</a> "
+                                            "plugins were compiled from version %2.</p>")
+                          .arg(argStr); // %1
+        aboutText.append(gitStr);
+    }
+    const QString status(QString::fromUtf8(NATRON_DEVELOPMENT_STATUS));
+    if (status == QString::fromUtf8(NATRON_DEVELOPMENT_DEVEL)) {
+        QString toAppend = QString::fromUtf8("<p>Note: This is a development version, which probably contains bugs. "
+                                             "If you feel like reporting a bug, please do so "
+                                             "on the <a href=\"%1\">issue tracker</a>.</p>")
+        .arg(QString::fromUtf8(NATRON_ISSUE_TRACKER_URL)); // %1
+        aboutText.append(toAppend);
+    } else if (status == QString::fromUtf8(NATRON_DEVELOPMENT_SNAPSHOT)) {
+        QString toAppend = QString::fromUtf8("<p>Note: This is an official snapshot version, compiled on the Natron build "
+                                             "farm, and it may still contain bugs. If you feel like reporting a bug, please do so "
+                                             "on the <a href=\"%1\">issue tracker</a>.</p>")
+        .arg(QString::fromUtf8(NATRON_ISSUE_TRACKER_URL)); // %1
+        aboutText.append(toAppend);
+    } else if (status == QString::fromUtf8(NATRON_DEVELOPMENT_ALPHA)) {
+        QString toAppend = QString::fromUtf8("<p>Note: This software is currently in alpha version, meaning there are missing features,"
+                                             " bugs and untested stuffs. If you feel like reporting a bug, please do so "
+                                             "on the <a href=\"%1\">issue tracker</a>.</p>")
+        .arg(QString::fromUtf8(NATRON_ISSUE_TRACKER_URL)); // %1
+        aboutText.append(toAppend);
+    } else if (status == QString::fromUtf8(NATRON_DEVELOPMENT_BETA)) {
+        QString toAppend = QString::fromUtf8("<p>Note: This software is currently under beta testing, meaning there are "
+                                             " bugs and untested stuffs. If you feel like reporting a bug, please do so "
+                                             "on the <a href=\"%1\">issue tracker</a>.</p>")
+        .arg(QString::fromUtf8(NATRON_ISSUE_TRACKER_URL)); // %1
+        aboutText.append(toAppend);
+    } else if (status == QString::fromUtf8(NATRON_DEVELOPMENT_RELEASE_CANDIDATE)) {
+        QString toAppend = QString::fromUtf8("The version of this sofware is a release candidate, which means it has the potential of becoming "
+                                             "the future stable release but might still have some bugs.");
         aboutText.append(toAppend);
     }
-    
+
     _aboutText->setText(aboutText);
     _tabWidget->addTab( _aboutText, QObject::tr("About") );
-    
+
     _changelogText =  new QTextBrowser(_tabWidget);
     _changelogText->setOpenExternalLinks(true);
     {
-        QFile changelogFile(":CHANGELOG.md");
+        QFile changelogFile(QString::fromUtf8(":CHANGELOG.md"));
         changelogFile.open(QIODevice::ReadOnly | QIODevice::Text);
         _changelogText->setText(QTextCodec::codecForName("UTF-8")->toUnicode( changelogFile.readAll() ) );
     }
@@ -183,13 +219,13 @@ AboutWindow::AboutWindow(Gui* gui,
     _libsText = new QTextBrowser(_tabWidget);
     _libsText->setOpenExternalLinks(true);
     updateLibrariesVersions();
-    
+
     _tabWidget->addTab( _libsText, QObject::tr("Libraries") );
 
     _teamText = new QTextBrowser(_tabWidget);
     _teamText->setOpenExternalLinks(false);
     {
-        QFile team_file(":CONTRIBUTORS.txt");
+        QFile team_file(QString::fromUtf8(":CONTRIBUTORS.txt"));
         team_file.open(QIODevice::ReadOnly | QIODevice::Text);
         _teamText->setText( QTextCodec::codecForName("UTF-8")->toUnicode( team_file.readAll() ) );
     }
@@ -198,7 +234,7 @@ AboutWindow::AboutWindow(Gui* gui,
     _licenseText = new QTextBrowser(_tabWidget);
     _licenseText->setOpenExternalLinks(false);
     {
-        QFile license(":LICENSE.txt");
+        QFile license(QString::fromUtf8(":LICENSE.txt"));
         license.open(QIODevice::ReadOnly | QIODevice::Text);
         _licenseText->setText( QTextCodec::codecForName("UTF-8")->toUnicode( license.readAll() ) );
     }
@@ -235,17 +271,17 @@ AboutWindow::AboutWindow(Gui* gui,
     splitter->setStretchFactor(1, 4);
     thidPartyLayout->addWidget(splitter);
 
-    QString thirdPartyLicenseDir(THIRD_PARTY_LICENSE_DIR_PATH);
+    QString thirdPartyLicenseDir = QString::fromUtf8(THIRD_PARTY_LICENSE_DIR_PATH);
     QDir thirdPartyDir(thirdPartyLicenseDir);
 
     QStringList rowsTmp;
     {
         QStringList rows = thirdPartyDir.entryList(QDir::NoDotAndDotDot | QDir::Files);
         for (int i = 0; i < rows.size(); ++i) {
-            if (!rows[i].startsWith("LICENSE-")) {
+            if (!rows[i].startsWith(QString::fromUtf8("LICENSE-"))) {
                 continue;
             }
-            if (rows[i] == "LICENSE-README.md") {
+            if (rows[i] == QString::fromUtf8("LICENSE-README.md")) {
                 rowsTmp.prepend(rows[i]);
             } else {
                 rowsTmp.push_back(rows[i]);
@@ -257,24 +293,24 @@ AboutWindow::AboutWindow(Gui* gui,
     
     TableItem* readmeIndex = 0;
     for (int i = 0; i < rowsTmp.size(); ++i) {
-        if (!rowsTmp[i].startsWith("LICENSE-")) {
+        if (!rowsTmp[i].startsWith(QString::fromUtf8("LICENSE-"))) {
             continue;
         }
         TableItem* item = new TableItem;
-        item->setText(rowsTmp[i].remove("LICENSE-").remove(".txt").remove(".md"));
+        item->setText(rowsTmp[i].remove(QString::fromUtf8("LICENSE-")).remove(QString::fromUtf8(".txt")).remove(QString::fromUtf8(".md")));
         item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         _view->setItem(i, 0, item);
-        if (rowsTmp[i] == "README") {
+        if (rowsTmp[i] == QString::fromUtf8("README")) {
             readmeIndex = item;
         }
     }
 
-    QObject::connect( selectionModel, SIGNAL( selectionChanged(QItemSelection,QItemSelection) ),this,
-                     SLOT( onSelectionChanged(QItemSelection,QItemSelection) ) );
+    QObject::connect( selectionModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),this,
+                     SLOT(onSelectionChanged(QItemSelection,QItemSelection)) );
     if (readmeIndex) {
         readmeIndex->setSelected(true);
     }
-    _tabWidget->addTab(thirdPartyContainer, "Third-Party components");
+    _tabWidget->addTab(thirdPartyContainer, QString::fromUtf8("Third-Party components"));
 }
 
 void
@@ -291,11 +327,11 @@ AboutWindow::onSelectionChanged(const QItemSelection & newSelection,
         if (!item) {
             return;
         }
-        QString fileName(THIRD_PARTY_LICENSE_DIR_PATH);
-        fileName += '/';
-        fileName += "LICENSE-";
+        QString fileName = QString::fromUtf8(THIRD_PARTY_LICENSE_DIR_PATH);
+        fileName += QChar::fromLatin1('/');
+        fileName += QString::fromUtf8("LICENSE-");
         fileName += item->text();
-        fileName += (item->text() == "README") ? ".md" : ".txt";
+        fileName += (item->text() == QString::fromUtf8("README")) ? QString::fromUtf8(".md") : QString::fromUtf8(".txt");
         QFile file(fileName);
         if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
             QString content = QTextCodec::codecForName("UTF-8")->toUnicode(file.readAll());
@@ -307,13 +343,13 @@ AboutWindow::onSelectionChanged(const QItemSelection & newSelection,
 void
 AboutWindow::updateLibrariesVersions()
 {
-    QString libsText = QString("<p> Python %1 </p>"
+    QString libsText = QString::fromUtf8("<p> Python %1 </p>"
                                "<p> Qt %2 </p>"
                                "<p> Boost %3 </p>"
                                "<p> Glew %4 </p>"
                                "<p> OpenGL %5 </p>"
                                "<p> Cairo %6 </p>")
-    .arg(PY_VERSION)
+    .arg(QString::fromUtf8(PY_VERSION))
     .arg( _gui->getQtVersion() )
     .arg( _gui->getBoostVersion() )
     .arg( _gui->getGlewVersion() )

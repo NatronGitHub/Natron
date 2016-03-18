@@ -35,13 +35,18 @@
 #include <boost/weak_ptr.hpp>
 #endif
 
+#include "Engine/ThreadPool.h"
 
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
 struct PreviewThreadPrivate;
-class PreviewThread : public QThread
+class PreviewThread
+: public QThread
+#ifdef QT_CUSTOM_THREADPOOL
+, public AbortableThread
+#endif
 {
     
     

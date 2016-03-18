@@ -3,7 +3,7 @@
 
 #include <shiboken.h>
 
-#include <AppInstanceWrapper.h>
+#include <PyAppInstance.h>
 
 #endif // SBK_APPSETTINGS_H
 

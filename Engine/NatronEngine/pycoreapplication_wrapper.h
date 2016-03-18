@@ -3,7 +3,7 @@
 
 #include <shiboken.h>
 
-#include <GlobalFunctionsWrapper.h>
+#include <PyGlobalFunctions.h>
 
 NATRON_NAMESPACE_ENTER;
 class PyCoreApplicationWrapper : public PyCoreApplication

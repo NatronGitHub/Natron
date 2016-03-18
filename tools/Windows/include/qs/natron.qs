@@ -52,7 +52,7 @@ Component.prototype.isDefault = function()
 
 Component.prototype.beginInstallation = function()
 {
-    installer.setValue("RunProgram", "@TargetDir@\\bin\\Natron.exe");
+    installer.setValue("RunProgram", "");
 }
 
 Component.prototype.createOperations = function()

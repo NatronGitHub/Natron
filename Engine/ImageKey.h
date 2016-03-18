@@ -26,6 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Engine/KeyHelper.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -38,7 +39,7 @@ public:
     U64 _nodeHashKey;
     double _time;
     double _pixelAspect;
-    int _view;
+    int/*ViewIdx*/ _view; // store it locally as an int for easier serialization
     bool _draftMode;
     bool _frameVaryingOrAnimated;
 
@@ -52,7 +53,7 @@ public:
              U64 nodeHashKey,
              bool frameVaryingOrAnimated,
              double time,
-             int view,
+             ViewIdx view,
              double pixelAspect,
              bool draftMode,
              bool fullScaleWithDownscaleInputs);

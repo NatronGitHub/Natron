@@ -413,7 +413,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     appPTR->getIcon(Natron::NATRON_PIXMAP_REMOVE_USER_KEY,NATRON_MEDIUM_BUTTON_ICON_SIZE, &removePix);
     appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_ALL_ANIMATION,NATRON_MEDIUM_BUTTON_ICON_SIZE, &clearAnimPix);
     
-    _imp->prevKeyframe = new Button(QIcon(prevPix),"",trackContainer);
+    _imp->prevKeyframe = new Button(QIcon(prevPix),QString(),trackContainer);
     _imp->prevKeyframe->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
     _imp->prevKeyframe->setIconSize(QSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE));
     _imp->prevKeyframe->setToolTip(GuiUtils::convertFromPlainText(tr("Go to the previous keyframe."), Qt::WhiteSpaceNormal));
@@ -421,7 +421,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     QObject::connect( _imp->prevKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onGoToPrevKeyframeButtonClicked() ) );
     trackLayout->addWidget(_imp->prevKeyframe);
     
-    _imp->nextKeyframe = new Button(QIcon(nextPix),"",trackContainer);
+    _imp->nextKeyframe = new Button(QIcon(nextPix),QString(),trackContainer);
     _imp->nextKeyframe->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
     _imp->nextKeyframe->setIconSize(QSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE));
     _imp->nextKeyframe->setToolTip(GuiUtils::convertFromPlainText(tr("Go to the next keyframe."), Qt::WhiteSpaceNormal));
@@ -429,7 +429,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     QObject::connect( _imp->nextKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onGoToNextKeyframeButtonClicked() ) );
     trackLayout->addWidget(_imp->nextKeyframe);
     
-    _imp->addKeyframe = new Button(QIcon(addPix),"",trackContainer);
+    _imp->addKeyframe = new Button(QIcon(addPix),QString(),trackContainer);
     _imp->addKeyframe->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
     _imp->addKeyframe->setIconSize(QSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE));
     _imp->addKeyframe->setToolTip(GuiUtils::convertFromPlainText(tr("Add keyframe at the current timeline's time."), Qt::WhiteSpaceNormal));
@@ -437,7 +437,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     QObject::connect( _imp->addKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onAddKeyframeButtonClicked() ) );
     trackLayout->addWidget(_imp->addKeyframe);
     
-    _imp->removeKeyframe = new Button(QIcon(removePix),"",trackContainer);
+    _imp->removeKeyframe = new Button(QIcon(removePix),QString(),trackContainer);
     _imp->removeKeyframe->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
     _imp->removeKeyframe->setIconSize(QSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE));
     _imp->removeKeyframe->setToolTip(GuiUtils::convertFromPlainText(tr("Remove keyframe at the current timeline's time."), Qt::WhiteSpaceNormal));
@@ -445,7 +445,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     QObject::connect( _imp->removeKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onRemoveKeyframeButtonClicked() ) );
     trackLayout->addWidget(_imp->removeKeyframe);
     
-    _imp->clearAnimation = new Button(QIcon(clearAnimPix),"",trackContainer);
+    _imp->clearAnimation = new Button(QIcon(clearAnimPix),QString(),trackContainer);
     _imp->clearAnimation->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
     _imp->clearAnimation->setIconSize(QSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE));
     _imp->clearAnimation->setToolTip(GuiUtils::convertFromPlainText(tr("Remove all animation for the selected track(s)."), Qt::WhiteSpaceNormal));
@@ -501,13 +501,13 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     _imp->exportLayout->setContentsMargins(0, 0, 0, 0);
     
     _imp->exportChoice = new ComboBox(_imp->exportContainer);
-    _imp->exportChoice->setToolTip( "<p><b>" + tr("CornerPin (Use current frame):") + "</p></b>"
-                                   "<p>" + tr("Warp the image according to the relative transform using the current frame as reference.") + "</p>"
-                                   "<p><b>" + tr("CornerPin (Use transform ref frame):") + "</p></b>"
-                                   "<p>" + tr("Warp the image according to the relative transform using the "
-                                              "reference frame specified in the transform tab.") + "</p>"
-                                   "<p><b>" + tr("CornerPin (Stabilize):") + "</p></b>"
-                                   "<p>" + tr("Transform the image so that the tracked points do not move.") + "</p>"
+    _imp->exportChoice->setToolTip( QString::fromUtf8("<p><b>") + tr("CornerPin (Use current frame):") + QString::fromUtf8("</p></b>") +
+                                   QString::fromUtf8("<p>") + tr("Warp the image according to the relative transform using the current frame as reference.") + QString::fromUtf8("</p>") +
+                                   QString::fromUtf8("<p><b>") + tr("CornerPin (Use transform ref frame):") + QString::fromUtf8("</p></b>") +
+                                   QString::fromUtf8("<p>") + tr("Warp the image according to the relative transform using the "
+                                              "reference frame specified in the transform tab.") + QString::fromUtf8("</p>") +
+                                   QString::fromUtf8("<p><b>") + tr("CornerPin (Stabilize):") + QString::fromUtf8("</p></b>") +
+                                   QString::fromUtf8("<p>") + tr("Transform the image so that the tracked points do not move.") + QString::fromUtf8("</p>")
                                    //                                      "<p><b>" + tr("Transform (Stabilize):</p></b>"
                                    //                                      "<p>" + tr("Transform the image so that the tracked points do not move.") + "</p>"
                                    //                                      "<p><b>" + tr("Transform (Match-move):</p></b>"
@@ -555,12 +555,12 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     //    helps.push_back(tr("Same as the linked version except that it copies values instead of "
     //                       "referencing them via a link to the track").toStdString());
     for (U32 i = 0; i < choices.size(); ++i) {
-        _imp->exportChoice->addItem( choices[i].c_str(),QIcon(),QKeySequence(),helps[i].c_str() );
+        _imp->exportChoice->addItem( QString::fromUtf8(choices[i].c_str()),QIcon(),QKeySequence(),QString::fromUtf8(helps[i].c_str()));
     }
     _imp->exportLayout->addWidget(_imp->exportChoice);
     
     _imp->exportButton = new Button(tr("Export"),_imp->exportContainer);
-    QObject::connect( _imp->exportButton,SIGNAL( clicked(bool) ),this,SLOT( onExportButtonClicked() ) );
+    QObject::connect(_imp->exportButton,SIGNAL(clicked(bool)),this,SLOT(onExportButtonClicked()));
     _imp->exportLayout->addWidget(_imp->exportButton);
     _imp->exportLayout->addStretch();
     _imp->mainLayout->addWidget(_imp->exportContainer);
@@ -568,13 +568,13 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     _imp->buttonsContainer = new QWidget(this);
     _imp->buttonsLayout = new QHBoxLayout(_imp->buttonsContainer);
     _imp->buttonsLayout->setContentsMargins(0, 0, 0, 0);
-    _imp->addButton = new Button(QIcon(),"+",_imp->buttonsContainer);
+    _imp->addButton = new Button(QIcon(),QString::fromUtf8("+"),_imp->buttonsContainer);
     _imp->addButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
     _imp->addButton->setToolTip(GuiUtils::convertFromPlainText(tr("Add new track"), Qt::WhiteSpaceNormal));
     _imp->buttonsLayout->addWidget(_imp->addButton);
     QObject::connect( _imp->addButton, SIGNAL( clicked(bool) ), this, SLOT( onAddButtonClicked() ) );
     
-    _imp->removeButton = new Button(QIcon(),"-",_imp->buttonsContainer);
+    _imp->removeButton = new Button(QIcon(),QString::fromUtf8("-"),_imp->buttonsContainer);
     _imp->removeButton->setToolTip(GuiUtils::convertFromPlainText(tr("Remove selected tracks"), Qt::WhiteSpaceNormal));
     _imp->removeButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
     _imp->buttonsLayout->addWidget(_imp->removeButton);
@@ -582,14 +582,14 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     QPixmap selectAll;
     appPTR->getIcon(NATRON_PIXMAP_SELECT_ALL, &selectAll);
     
-    _imp->selectAllButton = new Button(QIcon(selectAll),"",_imp->buttonsContainer);
+    _imp->selectAllButton = new Button(QIcon(selectAll),QString(),_imp->buttonsContainer);
     _imp->selectAllButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
     _imp->selectAllButton->setIconSize(QSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE));
     _imp->selectAllButton->setToolTip(GuiUtils::convertFromPlainText(tr("Select all tracks"), Qt::WhiteSpaceNormal));
     _imp->buttonsLayout->addWidget(_imp->selectAllButton);
     QObject::connect( _imp->selectAllButton, SIGNAL( clicked(bool) ), this, SLOT( onSelectAllButtonClicked() ) );
     
-    _imp->resetTracksButton = new Button("Reset",_imp->buttonsContainer);
+    _imp->resetTracksButton = new Button(tr("Reset"),_imp->buttonsContainer);
     QObject::connect( _imp->resetTracksButton, SIGNAL( clicked(bool) ), this, SLOT( onResetButtonClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->resetTracksButton);
     _imp->resetTracksButton->setToolTip(GuiUtils::convertFromPlainText(tr("Reset selected items."), Qt::WhiteSpaceNormal));
@@ -634,7 +634,7 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker, int row, Track
         TableItem* newItem = new TableItem;
         view->setItem(row, COL_LABEL, newItem);
         newItem->setToolTip(QObject::tr("The label of the item as seen in the viewer"));
-        newItem->setText(marker.getLabel().c_str());
+        newItem->setText(QString::fromUtf8(marker.getLabel().c_str()));
         view->resizeColumnToContents(COL_LABEL);
         d.item = newItem;
         d.dimension = -1;
@@ -648,7 +648,7 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker, int row, Track
         view->setItem(row, COL_SCRIPT_NAME, newItem);
         newItem->setToolTip(QObject::tr("The script-name of the item as exposed to Python scripts"));
         newItem->setFlags(newItem->flags() & ~Qt::ItemIsEditable);
-        newItem->setText(marker.getScriptName().c_str());
+        newItem->setText(QString::fromUtf8(marker.getScriptName().c_str()));
         view->resizeColumnToContents(COL_SCRIPT_NAME);
         d.item = newItem;
         d.dimension = -1;
@@ -666,12 +666,12 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker, int row, Track
         QObject::connect( cb,SIGNAL( currentIndexChanged(int) ),_publicInterface,SLOT( onItemMotionModelChanged(int) ) );
         assert(choices.size() == helps.size());
         for (std::size_t i = 0; i < choices.size(); ++i) {
-            cb->addItem(choices[i].c_str(), QIcon(),QKeySequence(), helps[i].c_str());
+            cb->addItem(QString::fromUtf8(choices[i].c_str()), QIcon(),QKeySequence(), QString::fromUtf8(helps[i].c_str()));
         }
         TableItem* newItem = new TableItem;
         view->setItem(row, COL_MOTION_MODEL, newItem);
         newItem->setToolTip(QObject::tr("The motion model to use for tracking"));
-        newItem->setText(marker.getScriptName().c_str());
+        newItem->setText(QString::fromUtf8(marker.getScriptName().c_str()));
         view->setCellWidget(row, COL_MOTION_MODEL, cb);
         view->resizeColumnToContents(COL_MOTION_MODEL);
         d.item = newItem;
@@ -1040,14 +1040,14 @@ TrackerPanel::onAverageButtonClicked()
         boost::shared_ptr<KnobDouble> markCenter = (*it)->getCenterKnob();
 
         double mini,maxi;
-        bool hasKey = markCenter->getFirstKeyFrameTime(0, &mini);
+        bool hasKey = markCenter->getFirstKeyFrameTime(ViewSpec(0), 0, &mini);
         if (!hasKey) {
             continue;
         }
         if (mini < keyframesRange.min) {
             keyframesRange.min = mini;
         }
-        hasKey = markCenter->getLastKeyFrameTime(0, &maxi);
+        hasKey = markCenter->getLastKeyFrameTime(ViewSpec(0), 0, &maxi);
         
         ///both dimensions must have keyframes
         assert(hasKey);
@@ -1113,31 +1113,31 @@ TrackerPanel::onAverageButtonClicked()
 #endif
         
         if (!hasKeyFrame) {
-            centerKnob->setValue(avgCenter.x, 0);
-            centerKnob->setValue(avgCenter.y, 1);
+            centerKnob->setValue(avgCenter.x, ViewSpec(0), 0);
+            centerKnob->setValue(avgCenter.y, ViewSpec(0), 1);
 #ifdef AVERAGE_ALSO_PATTERN_QUAD
-            topLeftKnob->setValue(avgTopLeft.x, 0);
-            topLeftKnob->setValue(avgTopLeft.y, 1);
-            topRightKnob->setValue(avgTopRight.x, 0);
-            topRightKnob->setValue(avgTopRight.y, 1);
-            btmRightKnob->setValue(avgBtmRight.x, 0);
-            btmRightKnob->setValue(avgBtmRight.y, 1);
-            btmLeftKnob->setValue(avgBtmLeft.x, 0);
-            btmLeftKnob->setValue(avgBtmLeft.y, 1);
+            topLeftKnob->setValue(avgTopLeft.x, ViewSpec(0), 0);
+            topLeftKnob->setValue(avgTopLeft.y, ViewSpec(0), 1);
+            topRightKnob->setValue(avgTopRight.x, ViewSpec(0), 0);
+            topRightKnob->setValue(avgTopRight.y, ViewSpec(0), 1);
+            btmRightKnob->setValue(avgBtmRight.x, ViewSpec(0), 0);
+            btmRightKnob->setValue(avgBtmRight.y, ViewSpec(0), 1);
+            btmLeftKnob->setValue(avgBtmLeft.x, ViewSpec(0), 0);
+            btmLeftKnob->setValue(avgBtmLeft.y, ViewSpec(0), 1);
 #endif
             break;
         } else {
-            centerKnob->setValueAtTime(t, avgCenter.x, 0);
-            centerKnob->setValueAtTime(t, avgCenter.y, 1);
+            centerKnob->setValueAtTime(t, avgCenter.x, ViewSpec(0), 0);
+            centerKnob->setValueAtTime(t, avgCenter.y, ViewSpec(0), 1);
 #ifdef AVERAGE_ALSO_PATTERN_QUAD
-            topLeftKnob->setValueAtTime(t, avgTopLeft.x, 0);
-            topLeftKnob->setValueAtTime(t, avgTopLeft.y, 1);
-            topRightKnob->setValueAtTime(t, avgTopRight.x, 0);
-            topRightKnob->setValueAtTime(t, avgTopRight.y, 1);
-            btmRightKnob->setValueAtTime(t, avgBtmRight.x, 0);
-            btmRightKnob->setValueAtTime(t, avgBtmRight.y, 1);
-            btmLeftKnob->setValueAtTime(t, avgBtmLeft.x, 0);
-            btmLeftKnob->setValueAtTime(t, avgBtmLeft.y, 1);
+            topLeftKnob->setValueAtTime(t, avgTopLeft.x, ViewSpec(0), 0);
+            topLeftKnob->setValueAtTime(t, avgTopLeft.y, ViewSpec(0), 1);
+            topRightKnob->setValueAtTime(t, avgTopRight.x, ViewSpec(0), 0);
+            topRightKnob->setValueAtTime(t, avgTopRight.y, ViewSpec(0), 1);
+            btmRightKnob->setValueAtTime(t, avgBtmRight.x, ViewSpec(0), 0);
+            btmRightKnob->setValueAtTime(t, avgBtmRight.y, ViewSpec(0), 1);
+            btmLeftKnob->setValueAtTime(t, avgBtmLeft.x, ViewSpec(0), 0);
+            btmLeftKnob->setValueAtTime(t, avgBtmLeft.y, ViewSpec(0), 1);
 #endif
         }
     }
@@ -1150,7 +1150,7 @@ getCornerPinPoint(Natron::Node* node,
                   int index)
 {
     assert(0 <= index && index < 4);
-    QString name = isFrom ? QString("from%1").arg(index + 1) : QString("to%1").arg(index + 1);
+    QString name = isFrom ? QString::fromUtf8("from%1").arg(index + 1) : QString::fromUtf8("to%1").arg(index + 1);
     boost::shared_ptr<KnobI> knob = node->getKnobByName( name.toStdString() );
     assert(knob);
     boost::shared_ptr<KnobDouble>  ret = boost::dynamic_pointer_cast<KnobDouble>(knob);
@@ -1180,7 +1180,8 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<boost::shared_
     NodeGuiPtr node = _publicInterface->getNode();
     
     GuiAppInstance* app = node->getDagGui()->getGui()->getApp();
-    NodePtr cornerPin = app->createNode( CreateNodeArgs(PLUGINID_OFX_CORNERPIN, eCreateNodeReasonInternal, node->getNode()->getGroup()));
+    CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_CORNERPIN), eCreateNodeReasonInternal, node->getNode()->getGroup());
+    NodePtr cornerPin = app->createNode(args);
     if (!cornerPin) {
         return;
     }
@@ -1203,7 +1204,7 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<boost::shared_
         fromPoints[i] = getCornerPinPoint(cornerPin.get(), true, i);
         assert(fromPoints[i] && centers[i]);
         for (int j = 0; j < fromPoints[i]->getDimension(); ++j) {
-            fromPoints[i]->setValue(centers[i]->getValueAtTime(timeForFromPoints,j), j);
+            fromPoints[i]->setValue(centers[i]->getValueAtTime(timeForFromPoints,j), ViewSpec(0), j);
         }
         
         toPoints[i] = getCornerPinPoint(cornerPin.get(), false, i);
@@ -1224,12 +1225,12 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<boost::shared_
     
     ///Disable all non used points
     for (unsigned int i = selection.size(); i < 4; ++i) {
-        QString enableName = QString("enable%1").arg(i + 1);
+        QString enableName = QString::fromUtf8("enable%1").arg(i + 1);
         boost::shared_ptr<KnobI> knob = cornerPin->getKnobByName( enableName.toStdString() );
         assert(knob);
         KnobBool* enableKnob = dynamic_cast<KnobBool*>( knob.get() );
         assert(enableKnob);
-        enableKnob->setValue(false, 0);
+        enableKnob->setValue(false, ViewSpec(0), 0);
     }
     
     if (invert) {
@@ -1237,7 +1238,7 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<boost::shared_
         assert(invertKnob);
         KnobBool* isBool = dynamic_cast<KnobBool*>(invertKnob.get());
         assert(isBool);
-        isBool->setValue(true, 0);
+        isBool->setValue(true, ViewSpec(0), 0);
     }
 
 }
@@ -1558,9 +1559,9 @@ TrackerPanel::onItemDataChanged(TableItem* item)
                         double value = item->data(Qt::DisplayRole).toDouble();
                         if (knob->isAnimationEnabled() && knob->isAnimated(dim)) {
                             KeyFrame kf;
-                            knob->setValueAtTime(time, value, dim, Natron::eValueChangedReasonNatronGuiEdited, &kf);
+                            knob->setValueAtTime(time, value, ViewSpec(0), dim, Natron::eValueChangedReasonNatronGuiEdited, &kf);
                         } else {
-                            knob->setValue(value, dim, Natron::eValueChangedReasonNatronGuiEdited, 0);
+                            knob->setValue(value, ViewSpec(0), dim, Natron::eValueChangedReasonNatronGuiEdited, 0);
                         }
                         
                     }   break;
@@ -1597,7 +1598,7 @@ TrackerPanel::onItemMotionModelChanged(int index)
         QWidget* cellW = _imp->view->cellWidget(i, COL_MOTION_MODEL);
         if (widget == cellW) {
             boost::shared_ptr<TrackMarker> marker = _imp->items[i].marker.lock();
-            marker->getMotionModelKnob()->setValue(index, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+            marker->getMotionModelKnob()->setValue(index, ViewSpec(0), 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
             break;
         }
     }

@@ -196,7 +196,7 @@ static QString currentPath()
 #if defined(__GLIBC__) && !defined(PATH_MAX)
         char *currentName = ::get_current_dir_name();
         if (currentName) {
-            QString ret(currentName);
+            QString ret = QString::fromUtf8(currentName);
             ::free(currentName);
             return ret;
 
@@ -204,7 +204,7 @@ static QString currentPath()
 #else
         char currentName[PATH_MAX+1];
         if (::getcwd(currentName, PATH_MAX)) {
-            QString ret(currentName);
+            QString ret = QString::fromUtf8(currentName);
             return ret;
         }
 #endif
@@ -216,7 +216,7 @@ static QString currentPath()
 static QString applicationFilePath_fromArgv(const char* argv0Param)
 {
 #if defined( Q_OS_UNIX )
-    QString argv0(argv0Param);
+    QString argv0 = QString::fromUtf8(argv0Param);
     QString absPath;
 
     if (!argv0.isEmpty() && argv0.at(0) == QLatin1Char('/')) {
@@ -293,7 +293,7 @@ QString ProcInfo::applicationFilePath(const char* argv0Param)
     ssize_t size = readlink(filename.c_str(), buf, sizeofbuf);
     if (size != 0 && size != sizeofbuf) {
         //detected symlink
-        return QString(QByteArray(buf));
+        return QString::fromUtf8(QByteArray(buf));
     } else {
         return applicationFilePath_fromArgv(argv0Param);
     }
@@ -303,7 +303,7 @@ QString ProcInfo::applicationFilePath(const char* argv0Param)
 QString ProcInfo::applicationDirPath(const char* argv0Param)
 {
     QString filePath = ProcInfo::applicationFilePath(argv0Param);
-    int foundSlash = filePath.lastIndexOf('/');
+    int foundSlash = filePath.lastIndexOf(QLatin1Char('/'));
     if (foundSlash == -1) {
         return QString();
     }

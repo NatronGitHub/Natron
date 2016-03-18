@@ -78,6 +78,8 @@ public:
     void getChildren_mt_safe(std::list<QWidget*> & children) const;
 
 private:
+    
+    virtual bool event(QEvent* e) OVERRIDE FINAL;
 
     mutable QMutex _lock;
 };

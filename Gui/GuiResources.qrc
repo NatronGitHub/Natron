@@ -249,12 +249,15 @@
         <file>Resources/Images/splitVertically.png</file>
         <file>Resources/Images/stickySelectionDisabled.png</file>
         <file>Resources/Images/stickySelectionEnabled.png</file>
-        <file>Resources/Images/stop.png</file>
+        <file>Resources/Images/stopEnabled.png</file>
+        <file>Resources/Images/stopDisabled.png</file>
         <file>Resources/Images/treeview_end.png</file>
         <file>Resources/Images/treeview_more.png</file>
         <file>Resources/Images/treeview_vline.png</file>
         <file>Resources/Images/turbo_off.png</file>
         <file>Resources/Images/turbo_on.png</file>
+        <file>Resources/Images/timelineIn.png</file>
+        <file>Resources/Images/timelineOut.png</file>
         <file>Resources/Images/undo.png</file>
         <file>Resources/Images/undo_grayscale.png</file>
         <file>Resources/Images/unhide_unmodified.png</file>
@@ -290,6 +293,8 @@
         <file>Resources/Images/interp_curve_r_selected.png</file>
         <file>Resources/Images/interp_curve_z.png</file>
         <file>Resources/Images/interp_curve_z_selected.png</file>
+        <file>Resources/Images/oneViewNode.png</file>
+        <file>Resources/Images/joinViewsNode.png</file>
         <file>Resources/Images/rotoToolPencil.png</file>
         <file>Resources/Images/addUserKey.png</file>
         <file>Resources/Images/hideTrackError.png</file>
@@ -336,15 +341,8 @@
         <file>Resources/Images/merge_stencil.png</file>
         <file>Resources/Images/merge_under.png</file>
         <file>Resources/Images/merge_xor.png</file>
-        <file>Resources/PyPlugs/AngleBlur.py</file>
-        <file>Resources/PyPlugs/Fill.py</file>
-        <file>Resources/PyPlugs/Fill.png</file>
-        <file>Resources/PyPlugs/DropShadow.py</file>
-        <file>Resources/PyPlugs/DropShadow.png</file>
-        <file>Resources/PyPlugs/LightWrap.py</file>
-        <file>Resources/PyPlugs/LightWrap.png</file>
-        <file>Resources/PyPlugs/ZRemap.py</file>
-        <file>Resources/PyPlugs/ZRemap.png</file>
-        <file>Resources/PyPlugs/ZMask.py</file>
+        <file>Resources/Images/pauseEnabled.png</file>
+        <file>Resources/Images/pauseDisabled.png</file>
+        <file>Resources/Images/trackerNodeIcon.png</file>
     </qresource>
 </RCC>

@@ -34,6 +34,7 @@
 #endif
 
 #include "Engine/OutputEffectInstance.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 
@@ -227,11 +228,6 @@ public:
     void quitAnyProcessingForAllNodes();
     
     /**
-     * @brief Reset the total time spent rendering accumulated on all nodes.
-     **/
-    void resetTotalTimeSpentRenderingForAllNodes();
-    
-    /**
      * @brief Checks if a node in the project already has this cacheID
      **/
     bool isCacheIDAlreadyTaken(const std::string& name) const;
@@ -359,7 +355,7 @@ public:
     
     virtual double getCurrentTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual int getCurrentView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ViewIdx getCurrentView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
@@ -369,6 +365,10 @@ public:
     virtual void notifyInputOptionalStateChanged(const NodePtr& node) OVERRIDE FINAL;
     virtual void notifyInputMaskStateChanged(const NodePtr& node) OVERRIDE FINAL;
     virtual void notifyNodeNameChanged(const NodePtr& node) OVERRIDE FINAL;
+    
+    virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
+    
+    virtual bool isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
     
     NodePtr getOutputNode(bool useGuiConnexions) const;
         
@@ -400,7 +400,7 @@ private:
     virtual void initializeKnobs() OVERRIDE FINAL;
     
     virtual void knobChanged(KnobI* k,ValueChangedReasonEnum reason,
-                             int /*view*/,
+                             ViewSpec /*view*/,
                              double /*time*/,
                              bool /*originatedFromMainThread*/) OVERRIDE FINAL;
     

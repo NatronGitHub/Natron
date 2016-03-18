@@ -1,10 +1,10 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 143158 2015-12-05 14:02:11Z ryandesign@macports.org $
+# $Id: Portfile 146258 2016-03-02 23:05:42Z devans@macports.org $
 
 PortSystem                      1.0
 
 name                            curl
-version                         7.46.0
+version                         7.47.1
 categories                      net www
 platforms                       darwin freebsd
 maintainers                     ryandesign
@@ -28,13 +28,13 @@ set curl_distfile               ${distfiles}
 distfiles                       ${curl_distfile}:curl
 
 checksums                       ${curl_distfile} \
-                                rmd160  59a70f558853483a2b63ddb59e9d02b7d95bb2e8 \
-                                sha256  b7d726cdd8ed4b6db0fa1b474a3c59ebbbe4dcd4c61ac5e7ade0e0270d3195ad
+                                rmd160  cfcdd8632aab2a8ef40435ae1ed7f499741cb1f3 \
+                                sha256  ddc643ab9382e24bbe4747d43df189a0a6ce38fcb33df041b9cb0b3cd47ae98f
 
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
 
-    revision                    0
+    revision                    1
 
     depends_build               port:pkgconfig
 

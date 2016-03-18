@@ -243,6 +243,11 @@ public:
      * Also the index of the new keyframe is returned in newIndex.
      **/
     KeyFrame setKeyFrameValueAndTime(double time,double value,int index,int* newIndex = NULL);
+    
+    /**
+     * @brief Same as setKeyFrameValueAndTime but with a delta
+     **/
+    bool moveKeyFrameValueAndTime(const double time, const double dt, const double dv, KeyFrame* newKey = NULL);
 
     /**
      * @brief Set the left derivative  of the keyframe positioned at index index and returns the new  keyframe.

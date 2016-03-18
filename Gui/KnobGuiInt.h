@@ -79,7 +79,7 @@ public:
 
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
 
-    bool getAllDimensionsVisible() const;
+    virtual bool getAllDimensionsVisible() const OVERRIDE FINAL;
     
     int getDimensionForSpinBox(const SpinBox* spinbox) const;
     

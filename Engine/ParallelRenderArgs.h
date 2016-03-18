@@ -29,6 +29,8 @@
 #include <map>
 #include <list>
 
+#include <QAtomicInt>
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -36,7 +38,9 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/RectD.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
+
 
 
 //This controls how many frames a plug-in can pre-fetch (per view and per input)
@@ -47,7 +51,8 @@
 NATRON_NAMESPACE_ENTER;
 
 typedef std::map<EffectInstPtr ,RectD> RoIMap; // RoIs are in canonical coordinates
-typedef std::map<int, std::map<int, std::vector<OfxRangeD> > > FramesNeededMap;
+typedef std::map<ViewIdx, std::vector<RangeD> > FrameRangesMap;
+typedef std::map<int, FrameRangesMap> FramesNeededMap;
 
 struct InputMatrix
 {
@@ -57,6 +62,22 @@ struct InputMatrix
 };
 
 typedef std::map<int,InputMatrix> InputMatrixMap;
+
+struct AbortableRenderInfo
+{
+    bool canAbort;
+    QAtomicInt aborted;
+    U64 age;
+    
+    AbortableRenderInfo(bool canAbort, U64 age)
+    : canAbort(canAbort)
+    , aborted()
+    , age(age)
+    {
+        aborted.fetchAndStoreAcquire(0);
+    }
+};
+
 
 struct NodeFrameRequest;
 
@@ -90,11 +111,10 @@ struct ParallelRenderArgs
     ///This may be different than the view held in RenderArgs
     ///which are local to a renderRoI call whilst this is local
     ///to a frame being rendered by the tree.
-    int view;
-
+    ViewIdx view;
 
     ///A number identifying the current frame render to determine if we can really abort for abortable renders
-    U64 renderAge;
+    AbortableRenderInfoPtr abortInfo;
     
     ///A pointer to the node that requested the current render.
     NodePtr treeRoot;
@@ -118,9 +138,6 @@ struct ParallelRenderArgs
 
     /// Is this render sequential ? True for Viewer playback or a sequential writer such as WriteFFMPEG
     bool isSequentialRender:1;
-
-    /// True if this frame can be aborted (false for preview and tracking)
-    bool canAbort:1;
 
     ///Was the render started in the instanceChangedAction (knobChanged)
     bool isAnalysis:1;
@@ -147,7 +164,7 @@ struct ParallelRenderArgs
     , nodeHash(0)
     , request()
     , view(0)
-    , renderAge(0)
+    , abortInfo()
     , treeRoot()
     , rotoPaintNodes()
     , stats()
@@ -155,7 +172,6 @@ struct ParallelRenderArgs
     , currentThreadSafety(eRenderSafetyInstanceSafe)
     , isRenderResponseToUserInteraction(false)
     , isSequentialRender(false)
-    , canAbort(false)
     , isAnalysis(false)
     , isDuringPaintStrokeCreation(false)
     , doNansHandling(true)
@@ -165,6 +181,10 @@ struct ParallelRenderArgs
     {
         
     }
+    
+    bool isCurrentFrameRenderNotAbortable() const {
+        return isRenderResponseToUserInteraction && (!abortInfo || !abortInfo->canAbort);
+    }
 };
 
 
@@ -172,7 +192,7 @@ struct ParallelRenderArgs
 
 struct FrameViewPair {
     double time;
-    int view;
+    ViewIdx view;
 };
 
 struct FrameViewRequestGlobalData
@@ -191,6 +211,7 @@ struct FrameViewRequestGlobalData
     //Identity data, set on first request
     bool isIdentity;
     int identityInputNb;
+    ViewIdx identityView;
     double inputIdentityTime;
 };
 
@@ -248,9 +269,9 @@ struct NodeFrameRequest
     U64 nodeHash;
     RenderScale mappedScale;
     
-    bool getFrameViewCanonicalRoI(double time, int view, RectD* roi) const;
+    bool getFrameViewCanonicalRoI(double time, ViewIdx view, RectD* roi) const;
     
-    const FrameViewRequest* getFrameViewRequest(double time, int view) const;
+    const FrameViewRequest* getFrameViewRequest(double time, ViewIdx view) const;
 
 };
 
@@ -272,13 +293,11 @@ public:
      * relying on other nodes that do not belong in the tree through expressions.
      **/
     ParallelRenderArgsSetter(double time,
-                             int view,
+                             ViewIdx view,
                              bool isRenderUserInteraction,
                              bool isSequential,
-                             bool canAbort,
-                             U64 renderAge,
+                             const AbortableRenderInfoPtr& abortInfo,
                              const NodePtr& treeRoot,
-                             const FrameRequestMap* request,
                              int textureIndex,
                              const TimeLine* timeline,
                              const NodePtr& activeRotoPaintNode,
@@ -288,6 +307,8 @@ public:
                              const boost::shared_ptr<RenderStats>& stats);
     
     ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> > >& args);
+    
+    void updateNodesRequest(const FrameRequestMap& request);
     
     virtual ~ParallelRenderArgsSetter();
 };

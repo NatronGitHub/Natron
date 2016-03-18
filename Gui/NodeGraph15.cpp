@@ -46,6 +46,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/NodeGui.h"
 
 #include "Global/QtCompat.h"
@@ -63,39 +64,39 @@ static bool handleConnectionError(const NodeGuiPtr& outputNode, const NodeGuiPtr
     if (linkRetCode != Node::eCanConnectInput_ok && linkRetCode != Node::eCanConnectInput_inputAlreadyConnected) {
         if (linkRetCode == Node::eCanConnectInput_differentPars) {
             
-            QString error = QString("%1" + QObject::tr(" and ") + "%2"  + QObject::tr(" don't have the same pixel aspect ratio (")
-                                    + "%3 / %4 " +  QObject::tr(") and ") + "%1 " + QObject::tr(" doesn't support inputs with different pixel aspect ratio. This might yield unwanted results."))
-            .arg(outputNode->getNode()->getLabel().c_str())
-            .arg(inputNode->getNode()->getLabel().c_str())
-            .arg(outputNode->getNode()->getEffectInstance()->getPreferredAspectRatio())
-            .arg(inputNode->getNode()->getEffectInstance()->getPreferredAspectRatio());
+            QString error = QString(QString::fromUtf8("%1") + QObject::tr(" and ") + QString::fromUtf8("%2")  + QObject::tr(" don't have the same pixel aspect ratio (")
+                                    + QString::fromUtf8("%3 / %4 ") +  QObject::tr(") and ") + QString::fromUtf8("%1 ") + QObject::tr(" doesn't support inputs with different pixel aspect ratio. This might yield unwanted results."))
+            .arg(QString::fromUtf8(outputNode->getNode()->getLabel().c_str()))
+            .arg(QString::fromUtf8(inputNode->getNode()->getLabel().c_str()))
+            .arg(outputNode->getNode()->getEffectInstance()->getAspectRatio(-1))
+            .arg(inputNode->getNode()->getEffectInstance()->getAspectRatio(-1));
             Dialogs::warningDialog(QObject::tr("Different pixel aspect").toStdString(),
                                 error.toStdString());
             return true;
         } else if (linkRetCode == Node::eCanConnectInput_differentFPS) {
             
-            QString error = QString("%1" + QObject::tr(" and ") + "%2"  + QObject::tr(" don't have the same frame rate (") + "%3 / %4). " + QObject::tr("This might yield unwanted results. Either change the FPS from the Read node parameters or change the settings of the project."))
-            .arg(outputNode->getNode()->getLabel().c_str())
-            .arg(inputNode->getNode()->getLabel().c_str())
-            .arg(outputNode->getNode()->getEffectInstance()->getPreferredFrameRate())
-            .arg(inputNode->getNode()->getEffectInstance()->getPreferredFrameRate());
+            QString error = QString(QString::fromUtf8("%1") + QObject::tr(" and ") + QString::fromUtf8("%2")  + QObject::tr(" don't have the same frame rate (") + QString::fromUtf8("%3 / %4). ") + QObject::tr("This might yield unwanted results. Either change the FPS from the Read node parameters or change the settings of the project."))
+            .arg(QString::fromUtf8(outputNode->getNode()->getLabel().c_str()))
+            .arg(QString::fromUtf8(inputNode->getNode()->getLabel().c_str()))
+            .arg(outputNode->getNode()->getEffectInstance()->getFrameRate())
+            .arg(inputNode->getNode()->getEffectInstance()->getFrameRate());
             Dialogs::warningDialog(QObject::tr("Different frame rate").toStdString(),
                                 error.toStdString());
             return true;
         } else if (linkRetCode == Node::eCanConnectInput_groupHasNoOutput) {
-            QString error = QString(QObject::tr("You cannot connect ") + "%1 " + QObject::tr(" to ") + " %2 " + QObject::tr("because it is a group which does "
+            QString error = QString(QObject::tr("You cannot connect ") + QString::fromUtf8("%1 ") + QObject::tr(" to ") + QString::fromUtf8(" %2 ") + QObject::tr("because it is a group which does "
                                                                                                  "not have an Output node."))
-            .arg(outputNode->getNode()->getLabel().c_str())
-            .arg(inputNode->getNode()->getLabel().c_str());
+            .arg(QString::fromUtf8(outputNode->getNode()->getLabel().c_str()))
+            .arg(QString::fromUtf8(inputNode->getNode()->getLabel().c_str()));
             Dialogs::errorDialog(QObject::tr("Different frame rate").toStdString(),
                                 error.toStdString());
             
         } else if (linkRetCode == Node::eCanConnectInput_multiResNotSupported) {
-            QString error = QString(QObject::tr("You cannot connect ") + "%1" + QObject::tr(" to ") + "%2 " + QObject::tr("because multi-resolution is not supported on ") + "%1 "
+            QString error = QString(QObject::tr("You cannot connect ") + QString::fromUtf8("%1") + QObject::tr(" to ") + QString::fromUtf8("%2 ") + QObject::tr("because multi-resolution is not supported on ") + QString::fromUtf8("%1 ")
                                     + QObject::tr("which means that it cannot receive images with a lower left corner different than (0,0) and cannot have "
                                          "multiple inputs/outputs with different image sizes.\n"
-                                                  "To overcome this, use a Resize or Crop node upstream to change the image size.")).arg(outputNode->getNode()->getLabel().c_str())
-            .arg(inputNode->getNode()->getLabel().c_str());
+                                                  "To overcome this, use a Resize or Crop node upstream to change the image size.")).arg(QString::fromUtf8(outputNode->getNode()->getLabel().c_str()))
+            .arg(QString::fromUtf8(inputNode->getNode()->getLabel().c_str()));
             Dialogs::errorDialog(QObject::tr("Multi-resolution not supported").toStdString(),
                                 error.toStdString());;
         }
@@ -261,28 +262,36 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                     QPointF mergeHintCenter = mergeHintNodeBbox.center();
                     
                     ///Place the selected node on the right of the hint node
-                    selectedNode->setPosition(mergeHintCenter.x() + mergeHintNodeBbox.width() / 2. + NATRON_NODE_DUPLICATE_X_OFFSET,
-                                              mergeHintCenter.y() - selectedNodeBbox.height() / 2.);
+                    QPointF selectedNodePos(mergeHintCenter.x() + mergeHintNodeBbox.width() / 2. + TO_DPIX(NATRON_NODE_DUPLICATE_X_OFFSET),
+                                            mergeHintCenter.y() - selectedNodeBbox.height() / 2.);
+                    
+                    selectedNodePos = selectedNode->mapToParent(selectedNode->mapFromScene(selectedNodePos));
+                    selectedNode->setPosition(selectedNodePos.x(), selectedNodePos.y());
                     
                     selectedNodeBbox = selectedNode->mapToScene(selectedNode->boundingRect()).boundingRect();
                     
                     QPointF selectedNodeCenter = selectedNodeBbox.center();
-                    ///Place the new merge node exactly in the middle of the 2, with an Y offset
-                    QPointF newNodePos((mergeHintCenter.x() + selectedNodeCenter.x()) / 2. - 40,
-                                       std::max((mergeHintCenter.y() + mergeHintNodeBbox.height() / 2.),
-                                                selectedNodeCenter.y() + selectedNodeBbox.height() / 2.) + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
                     
-                    
-                    CreateNodeArgs args(PLUGINID_OFX_MERGE, eCreateNodeReasonInternal, getGroup());
-                    args.xPosHint = newNodePos.x();
-                    args.yPosHint = newNodePos.y();
-
-                
-                    
+                    CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_MERGE), eCreateNodeReasonInternal, getGroup());
                     NodePtr mergeNode = getGui()->getApp()->createNode(args);
                     
                     if (mergeNode) {
+                        boost::shared_ptr<NodeGuiI> nodeUI = mergeNode->getNodeGui();
+                        assert(nodeUI);
+                        NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>(nodeUI);
+                        assert(nodeGui);
                         
+                        double nodeW,nodeH;
+                        nodeGui->getSize(&nodeW, &nodeH);
+                        ///Place the new merge node exactly in the middle of the 2, with an Y offset
+                        QPointF newNodePos((mergeHintCenter.x() + selectedNodeCenter.x()) / 2. - nodeW / 2.,
+                                           std::max((mergeHintCenter.y() + mergeHintNodeBbox.height() / 2.),
+                                                    selectedNodeCenter.y() + selectedNodeBbox.height() / 2.) + TO_DPIY(NodeGui::DEFAULT_OFFSET_BETWEEN_NODES));
+                        
+
+                        
+                        newNodePos = nodeGui->mapToParent(nodeGui->mapFromScene(newNodePos));
+                        nodeGui->setPosition(newNodePos.x(), newNodePos.y());
                         int aIndex = mergeNode->getInputNumberFromLabel("A");
                         int bIndex = mergeNode->getInputNumberFromLabel("B");
                         assert(aIndex != -1 && bIndex != -1);
@@ -301,6 +310,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
     }
     _imp->_nodesWithinBDAtPenDown.clear();
 
+    _imp->cursorSet = false;
     unsetCursor();
     update();
 } // mouseReleaseEvent

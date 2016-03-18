@@ -96,16 +96,16 @@ void
 KnobGuiButton::createWidget(QHBoxLayout* layout)
 {
     boost::shared_ptr<KnobButton> knob = _knob.lock();
-    QString label( knob->getLabel().c_str() );
-    const std::string & iconFilePath = knob->getIconFilePath();
+    QString label = QString::fromUtf8( knob->getLabel().c_str() );
+    const std::string & iconFilePath = knob->getIconLabel();
     
-    QString filePath(iconFilePath.c_str());
+    QString filePath = QString::fromUtf8(iconFilePath.c_str());
     if (!iconFilePath.empty() && !QFile::exists(filePath)) {
         ///Search all natron paths for a file
         
         QStringList paths = appPTR->getAllNonOFXPluginsPaths();
         for (int i = 0; i < paths.size(); ++i) {
-            QString tmp = paths[i] + QChar('/') + filePath;
+            QString tmp = paths[i] + QLatin1Char('/') + filePath;
             if (QFile::exists(tmp)) {
                 filePath = tmp;
                 break;
@@ -116,7 +116,7 @@ KnobGuiButton::createWidget(QHBoxLayout* layout)
     QPixmap pix;
 
     if (pix.load(filePath)) {
-        _button = new Button( QIcon(pix),"",layout->parentWidget() );
+        _button = new Button( QIcon(pix),QString(),layout->parentWidget() );
         _button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         _button->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     } else {

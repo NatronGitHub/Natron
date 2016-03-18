@@ -38,6 +38,8 @@
 
 #include "Engine/Image.h"
 #include "Engine/TLSHolder.h"
+#include "Engine/NodeMetadata.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -45,7 +47,7 @@ NATRON_NAMESPACE_ENTER;
 struct ActionKey
 {
     double time;
-    int view;
+    ViewIdx view;
     unsigned int mipMapLevel;
 };
 
@@ -53,6 +55,7 @@ struct IdentityResults
 {
     int inputIdentityNb;
     double inputIdentityTime;
+    ViewIdx inputView;
 };
 
 struct CompareActionsCacheKeys
@@ -102,17 +105,17 @@ public:
 
     void invalidateAll(U64 newHash);
 
-    bool getIdentityResult(U64 hash, double time, int view, unsigned int mipMapLevel, int* inputNbIdentity, double* identityTime);
+    bool getIdentityResult(U64 hash, double time, ViewIdx view, int* inputNbIdentity, ViewIdx *inputView, double* identityTime);
 
-    void setIdentityResult(U64 hash, double time, int view, unsigned int mipMapLevel, int inputNbIdentity, double identityTime);
+    void setIdentityResult(U64 hash, double time, ViewIdx view, int inputNbIdentity, ViewIdx inputView, double identityTime);
 
-    bool getRoDResult(U64 hash, double time, int view, unsigned int mipMapLevel, RectD* rod);
+    bool getRoDResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, RectD* rod);
 
-    void setRoDResult(U64 hash, double time, int view, unsigned int mipMapLevel, const RectD & rod);
+    void setRoDResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, const RectD & rod);
 
-    bool getFramesNeededResult(U64 hash, double time, int view, unsigned int mipMapLevel, FramesNeededMap* framesNeeded);
+    bool getFramesNeededResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, FramesNeededMap* framesNeeded);
 
-    void setFramesNeededResult(U64 hash, double time, int view, unsigned int mipMapLevel, const FramesNeededMap & framesNeeded);
+    void setFramesNeededResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, const FramesNeededMap & framesNeeded);
 
     bool getTimeDomainResult(U64 hash, double *first, double* last);
 
@@ -139,27 +142,8 @@ private:
     ActionsCacheInstance & getOrCreateActionCache(U64 newHash);
 };
 
-    
-struct EffectInstance::DefaultClipPreferencesData
-{
-    //These datas are stored for plug-ins that do not implement clip preference functions, i.e:
-    // getPreferredDepthAndComponents, getPreferredPAR, getPreferredFrameRate, getPreferredOutputPremult, etc...
-    ImagePremultiplicationEnum outputPremult;
-    double pixelAspectRatio;
-    double frameRate;
-    std::list<ImageComponents> comps;
-    ImageBitDepthEnum bitdepth;
-    
-    DefaultClipPreferencesData()
-    : outputPremult(eImagePremultiplicationPremultiplied)
-    , pixelAspectRatio(1.)
-    , frameRate(24.)
-    , comps()
-    , bitdepth(eImageBitDepthFloat)
-    {
-        
-    }
-};
+
+
 
 struct EffectInstance::Implementation
 {
@@ -210,11 +194,11 @@ struct EffectInstance::Implementation
     EffectInstance::ComponentsAvailableMap outputComponentsAvailable;
     
     std::list< boost::weak_ptr<KnobI> > overlaySlaves;
+
+    mutable QMutex metadatasMutex;
+    NodeMetadata metadatas;
     
-    mutable QMutex defaultClipPreferencesDataMutex;
-    EffectInstance::DefaultClipPreferencesData clipPrefsData;
-    
-    
+    bool runningClipPreferences; //only used on main thread
 
 
     void runChangedParamCallback(KnobI* k, bool userEdited, const std::string & callback);
@@ -271,7 +255,7 @@ struct EffectInstance::Implementation
                          const RectD & rod,
                          const RectI & renderWindow,
                          double time,
-                         int view,
+                         ViewIdx view,
                          bool isIdentity,
                          double identityTime,
                          const EffectInstPtr& identityInput,
@@ -306,11 +290,11 @@ struct EffectInstance::Implementation
         unsigned int renderMappedMipMapLevel;
         RectD rod;
         double time;
-        int view;
+        ViewIdx view;
         double par;
         ImageBitDepthEnum outputClipPrefDepth;
         boost::shared_ptr<ComponentsNeededMap>  compsNeeded;
-        std::list<ImageComponents> outputClipPrefsComps;
+        ImageComponents outputClipPrefsComps;
         bool byPassCache;
         std::bitset<4> processChannels;
         boost::shared_ptr<ImagePlanesToRender> planes;
@@ -329,11 +313,11 @@ struct EffectInstance::Implementation
                                                   const unsigned int renderMappedMipMapLevel,
                                                   const RectD & rod,
                                                   const double time,
-                                                  const int view,
+                                                  const ViewIdx view,
                                                   const double par,
                                                   const bool byPassCache,
                                                   const ImageBitDepthEnum outputClipPrefDepth,
-                                                  const std::list<ImageComponents> & outputClipPrefsComps,
+                                                  const ImageComponents & outputClipPrefsComps,
                                                   const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
                                                   const std::bitset<4>& processChannels,
                                                   const boost::shared_ptr<ImagePlanesToRender> & planes);
@@ -370,14 +354,18 @@ struct EffectInstance::Implementation
                                           const bool byPassCache,
                                           const bool bitmapMarkedForRendering,
                                           const ImageBitDepthEnum outputClipPrefDepth,
-                                          const std::list<ImageComponents> & outputClipPrefsComps,
+                                          const ImageComponents & outputClipPrefsComps,
                                           const std::bitset<4>& processChannels,
                                           const boost::shared_ptr<Image> & originalInputImage,
                                           const boost::shared_ptr<Image> & maskImage,
                                           const ImagePremultiplicationEnum originalImagePremultiplication,
                                           ImagePlanesToRender & planes);
     
-    bool aborted(const EffectDataTLSPtr& tls) const WARN_UNUSED_RETURN;
+    bool aborted(bool isRenderResponseToUserInteraction,
+                 const AbortableRenderInfoPtr& abortInfo,
+                 const EffectInstPtr& treeRoot) const WARN_UNUSED_RETURN;
+    
+    void checkMetadata(NodeMetadata &metadata);
 };
 
 

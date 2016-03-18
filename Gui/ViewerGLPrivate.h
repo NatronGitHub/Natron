@@ -137,6 +137,7 @@ struct ViewerGL::Implementation
     bool overlay; /*!< True if the user enabled overlay dispay*/
 
     // supportsGLSL is accessed from several threads, but is set only once at startup
+    bool supportsOpenGL;
     bool supportsGLSL; /*!< True if the user has a GLSL version supporting everything requested.*/
     bool updatingTexture;
     QColor clearColor;
@@ -270,7 +271,7 @@ private:
     /**
      *@brief Checks extensions and init glew on windows. Called by  initializeGL()
      **/
-    void initAndCheckGlExtensions ();
+    bool initAndCheckGlExtensions ();
 };
 
 NATRON_NAMESPACE_EXIT;

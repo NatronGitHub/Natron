@@ -43,6 +43,7 @@
 #include "Engine/DiskCacheNode.h"
 #include "Engine/KnobFile.h"
 #include "Engine/RotoStrokeItem.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Global/QtCompat.h"
@@ -52,7 +53,9 @@
 #include "Gui/BackdropGui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
+#include "Gui/KnobGuiFile.h"
 #include "Gui/MultiInstancePanel.h"
+#include "Gui/ProgressPanel.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/SplashScreen.h"
 #include "Gui/ViewerGL.h"
@@ -102,12 +105,16 @@ struct RotoPaintData
     
 };
 
+struct KnobDnDData {
+    boost::weak_ptr<KnobI> source;
+    int sourceDimension;
+    QDrag* drag;
+};
+
 struct GuiAppInstancePrivate
 {
     Gui* _gui; //< ptr to the Gui interface
 
-    std::list< boost::shared_ptr<ProcessHandler> > _activeBgProcesses;
-    QMutex _activeBgProcessesMutex;
     bool _isClosing;
 
     //////////////
@@ -138,10 +145,10 @@ struct GuiAppInstancePrivate
     
     
     
+    KnobDnDData knobDnd;
+    
     GuiAppInstancePrivate()
     : _gui(NULL)
-    , _activeBgProcesses()
-    , _activeBgProcessesMutex()
     , _isClosing(false)
     , _showingDialog(false)
     , _showingDialogMutex()
@@ -155,6 +162,7 @@ struct GuiAppInstancePrivate
     , rotoData()
     , timelineKeyframes()
     , timelineUserKeys()
+    , knobDnd()
     {
         rotoData.turboAlreadyActiveBeforePainting = false;
     }
@@ -189,12 +197,19 @@ GuiAppInstance::deletePreviewProvider()
             _imp->_previewProvider->viewerNodeInternal.reset();
         }
 
-        for (std::map<std::string,std::pair< NodePtr, NodeGuiPtr > >::iterator it =
+#ifndef NATRON_ENABLE_IO_META_NODES
+        for (std::map<std::string,NodePtr>::iterator it =
              _imp->_previewProvider->readerNodes.begin();
              it != _imp->_previewProvider->readerNodes.end(); ++it) {
-            it->second.first->destroyNode(false);
+            it->second->destroyNode(false);
         }
         _imp->_previewProvider->readerNodes.clear();
+#else
+        if (_imp->_previewProvider->readerNode) {
+            _imp->_previewProvider->readerNode->destroyNode(false);
+            _imp->_previewProvider->readerNode.reset();
+        }
+#endif
 
         _imp->_previewProvider.reset();
     }
@@ -247,7 +262,11 @@ GuiAppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
         appPTR->setLoadingStatus( QObject::tr("Creating user interface...") );
     }
     
-    declareCurrentAppVariable_Python();
+    try {
+        declareCurrentAppVariable_Python();
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
+    }
     
     _imp->_gui = new Gui(this);
     _imp->_gui->createGui();
@@ -272,8 +291,8 @@ GuiAppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
     QObject::connect(getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(projectFormatChanged(Format)));
 
     {
-        QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
-        if ( !settings.contains("checkForUpdates") ) {
+        QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
+        if ( !settings.contains(QString::fromUtf8("checkForUpdates")) ) {
             StandardButtonEnum reply = Dialogs::questionDialog(tr("Updates").toStdString(),
                                                                       tr("Do you want " NATRON_APPLICATION_NAME " to check for updates "
                                                                       "on launch of the application ?").toStdString(), false);
@@ -298,7 +317,7 @@ GuiAppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
 
     /// Create auto-save dir if it does not exists
     QDir dir = Project::autoSavesDir();
-    dir.mkpath(".");
+    dir.mkpath(QString::fromUtf8("."));
 
 
     if (getAppID() == 0) {
@@ -337,7 +356,7 @@ GuiAppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
     QFileInfo info(cl.getScriptFilename());
 
     if (cl.getScriptFilename().isEmpty() || !info.exists()) {
-
+        
         getProject()->createViewer();
         execOnProjectCreatedCallback();
         
@@ -349,7 +368,7 @@ GuiAppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
     } else {
 
 
-        if (info.suffix() == "py") {
+        if (info.suffix() == QString::fromUtf8("py")) {
 
             appPTR->setLoadingStatus(tr("Loading script: ") + cl.getScriptFilename());
 
@@ -357,16 +376,16 @@ GuiAppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
             loadPythonScript(info);
             execOnProjectCreatedCallback();
 
-        } else if (info.suffix() == NATRON_PROJECT_FILE_EXT) {
+        } else if (info.suffix() == QString::fromUtf8(NATRON_PROJECT_FILE_EXT)) {
 
             ///Otherwise just load the project specified.
             QString name = info.fileName();
             QString path = info.path();
-            path += QDir::separator();
+            Global::ensureLastPathSeparator(path);
             appPTR->setLoadingStatus(tr("Loading project: ") + path + name);
             getProject()->loadProject(path,name);
             ///remove any file open event that might have occured
-            appPTR->setFileToOpen("");
+            appPTR->setFileToOpen(QString());
         } else {
             Dialogs::errorDialog(tr("Invalid file").toStdString(),
                                 tr(NATRON_APPLICATION_NAME " only accepts python scripts or .ntp project files").toStdString());
@@ -400,11 +419,11 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
     QStringList foundAutosaves;
     for (int i = 0; i < entries.size(); ++i) {
         const QString & entry = entries.at(i);
-        QString searchStr('.');
-        searchStr.append(NATRON_PROJECT_FILE_EXT);
-        searchStr.append(".autosave");
+        QString searchStr(QLatin1Char('.'));
+        searchStr.append(QString::fromUtf8(NATRON_PROJECT_FILE_EXT));
+        searchStr.append(QString::fromUtf8(".autosave"));
         int suffixPos = entry.indexOf(searchStr);
-        if (suffixPos == -1 || entry.contains("RENDER_SAVE")) {
+        if (suffixPos == -1 || entry.contains(QString::fromUtf8("RENDER_SAVE"))) {
             continue;
         }
         
@@ -432,13 +451,13 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
         const QString& autoSaveFileName = foundAutosaves[i];
         if (i == 0) {
             //Load the first one into the current instance of Natron, then open-up new instances
-            if (!getProject()->loadProject(savesDir.path() + '/', autoSaveFileName, true)) {
+            if (!getProject()->loadProject(savesDir.path() + QLatin1Char('/'), autoSaveFileName, true)) {
                 return false;
             }
         } else {
             CLArgs cl;
             AppInstance* newApp = appPTR->newAppInstance(cl, false);
-            if (!newApp->getProject()->loadProject(savesDir.path() + '/', autoSaveFileName, true)) {
+            if (!newApp->getProject()->loadProject(savesDir.path() + QLatin1Char('/'), autoSaveFileName, true)) {
                 return false;
             }
         }
@@ -602,6 +621,9 @@ GuiAppInstance::errorDialog(const std::string & title,
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
     }
+    if (!_imp->_gui) {
+        return;
+    }
     _imp->_gui->errorDialog(title, message, useHtml);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
@@ -618,6 +640,9 @@ GuiAppInstance::errorDialog(const std::string & title,const std::string & messag
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
+    }
+    if (!_imp->_gui) {
+        return;
     }
     _imp->_gui->errorDialog(title, message, stopAsking, useHtml);
     {
@@ -637,6 +662,9 @@ GuiAppInstance::warningDialog(const std::string & title,
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
+    }
+    if (!_imp->_gui) {
+        return;
     }
     _imp->_gui->warningDialog(title, message, useHtml);
     {
@@ -658,6 +686,9 @@ GuiAppInstance::warningDialog(const std::string & title,
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
     }
+    if (!_imp->_gui) {
+        return;
+    }
     _imp->_gui->warningDialog(title, message, stopAsking, useHtml);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
@@ -676,6 +707,9 @@ GuiAppInstance::informationDialog(const std::string & title,
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
+    }
+    if (!_imp->_gui) {
+        return;
     }
     _imp->_gui->informationDialog(title, message, useHtml);
     {
@@ -697,6 +731,9 @@ GuiAppInstance::informationDialog(const std::string & title,
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
     }
+    if (!_imp->_gui) {
+        return;
+    }
     _imp->_gui->informationDialog(title, message, stopAsking, useHtml);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
@@ -717,6 +754,9 @@ GuiAppInstance::questionDialog(const std::string & title,
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
+    }
+    if (!_imp->_gui) {
+        return eStandardButtonIgnore;
     }
     StandardButtonEnum ret =  _imp->_gui->questionDialog(title, message,useHtml, buttons,defaultButton);
     {
@@ -741,6 +781,9 @@ GuiAppInstance::questionDialog(const std::string & title,
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
+    }
+    if (!_imp->_gui) {
+        return eStandardButtonIgnore;
     }
     StandardButtonEnum ret =  _imp->_gui->questionDialog(title, message,useHtml, buttons,defaultButton,stopAsking);
     {
@@ -778,115 +821,28 @@ GuiAppInstance::setupViewersForViews(const std::vector<std::string>& viewNames)
 }
 
 void
-GuiAppInstance::setViewersCurrentView(int view)
+GuiAppInstance::setViewersCurrentView(ViewIdx view)
 {
     _imp->_gui->setViewersCurrentView(view);
 }
 
 void
-GuiAppInstance::startRenderingFullSequence(bool enableRenderStats,const AppInstance::RenderWork& w,bool renderInSeparateProcess,const QString& savePath)
+GuiAppInstance::notifyRenderStarted(const QString & sequenceName,
+                                    int firstFrame,
+                                    int lastFrame,
+                                    int frameStep,
+                                    bool canPause,
+                                    OutputEffectInstance* writer,
+                                    const boost::shared_ptr<ProcessHandler> & process)
 {
-
-
-
-    ///validate the frame range to render
-    double firstFrame,lastFrame;
-    if (w.firstFrame == INT_MIN || w.lastFrame == INT_MAX) {
-        w.writer->getFrameRange_public(w.writer->getHash(),&firstFrame, &lastFrame, true);
-        //if firstframe and lastframe are infinite clamp them to the timeline bounds
-        double projectFirst,projectLast;
-        getFrameRange(&projectFirst, &projectLast);
-        if (firstFrame == INT_MIN) {
-            firstFrame = projectFirst;
-        }
-        if (lastFrame == INT_MAX) {
-            lastFrame = projectLast;
-        }
-        if (firstFrame > lastFrame) {
-            Dialogs::errorDialog( w.writer->getNode()->getLabel_mt_safe(),
-                                tr("First frame in the sequence is greater than the last frame").toStdString(), false );
-
-            return;
-        }
-    } else {
-        firstFrame = w.firstFrame;
-        lastFrame = w.lastFrame;
-    }
-
-    int frameStep;
-    if (w.frameStep == INT_MAX || w.frameStep == INT_MIN) {
-        ///Get the frame step from the frame step parameter of the Writer
-        frameStep = w.writer->getNode()->getFrameStepKnobValue();
-    } else {
-        frameStep = std::max(1, w.frameStep);
-    }
-    
-    ///get the output file knob to get the name of the sequence
-    QString outputFileSequence;
-
-    DiskCacheNode* isDiskCache = dynamic_cast<DiskCacheNode*>(w.writer);
-    if (isDiskCache) {
-        outputFileSequence = isDiskCache->getNode()->getLabel_mt_safe().c_str();
-    } else {
-        KnobPtr fileKnob = w.writer->getKnobByName(kOfxImageEffectFileParamName);
-        if (fileKnob) {
-            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(fileKnob.get());
-            assert(isString);
-            outputFileSequence = isString->getValue().c_str();
-        }
-    }
-
-
-    if ( renderInSeparateProcess ) {
-        try {
-            boost::shared_ptr<ProcessHandler> process( new ProcessHandler(savePath,w.writer) );
-            QObject::connect( process.get(), SIGNAL( processFinished(int) ), this, SLOT( onProcessFinished() ) );
-            notifyRenderProcessHandlerStarted(outputFileSequence,firstFrame,lastFrame, frameStep, process);
-            process->startProcess();
-
-            {
-                QMutexLocker l(&_imp->_activeBgProcessesMutex);
-                _imp->_activeBgProcesses.push_back(process);
-            }
-        } catch (const std::exception & e) {
-            Dialogs::errorDialog( w.writer->getNode()->getLabel(),
-                                tr("Error while starting rendering").toStdString() + ": " + e.what(), false );
-        } catch (...) {
-            Dialogs::errorDialog( w.writer->getNode()->getLabel(),
-                                tr("Error while starting rendering").toStdString(),false  );
-        }
-    } else {
-        _imp->_gui->onWriterRenderStarted(outputFileSequence, firstFrame, lastFrame, frameStep, w.writer);
-        w.writer->renderFullSequence(false, enableRenderStats,NULL,firstFrame,lastFrame, frameStep);
-    }
-} // startRenderingFullSequence
-
-void
-GuiAppInstance::onProcessFinished()
-{
-    ProcessHandler* proc = qobject_cast<ProcessHandler*>( sender() );
-
-    if (proc) {
-        QMutexLocker l(&_imp->_activeBgProcessesMutex);
-        for (std::list< boost::shared_ptr<ProcessHandler> >::iterator it = _imp->_activeBgProcesses.begin(); it != _imp->_activeBgProcesses.end(); ++it) {
-            if ( (*it).get() == proc ) {
-                _imp->_activeBgProcesses.erase(it);
-
-                return;
-            }
-        }
-    }
+    _imp->_gui->onRenderStarted(sequenceName, firstFrame, lastFrame, frameStep, canPause, writer, process);
 }
 
-
 void
-GuiAppInstance::notifyRenderProcessHandlerStarted(const QString & sequenceName,
-                                                  int firstFrame,
-                                                  int lastFrame,
-                                                  int frameStep,
-                                                  const boost::shared_ptr<ProcessHandler> & process)
+GuiAppInstance::notifyRenderRestarted( OutputEffectInstance* writer,
+                           const boost::shared_ptr<ProcessHandler> & process)
 {
-    _imp->_gui->onProcessHandlerStarted(sequenceName,firstFrame,lastFrame, frameStep, process);
+    _imp->_gui->onRenderRestarted(writer, process);
 }
 
 void
@@ -896,26 +852,26 @@ GuiAppInstance::setUndoRedoStackLimit(int limit)
 }
 
 void
-GuiAppInstance::progressStart(KnobHolder* effect,
+GuiAppInstance::progressStart(const NodePtr& node,
                               const std::string &message,
                               const std::string &messageid,
                               bool canCancel)
 {
-    _imp->_gui->progressStart(effect, message, messageid, canCancel);
+    _imp->_gui->progressStart(node, message, messageid, canCancel);
 }
 
 void
-GuiAppInstance::progressEnd(KnobHolder* effect)
+GuiAppInstance::progressEnd(const NodePtr& node)
 {
-    _imp->_gui->progressEnd(effect);
+    _imp->_gui->progressEnd(node);
 
 }
 
 bool
-GuiAppInstance::progressUpdate(KnobHolder* effect,
+GuiAppInstance::progressUpdate(const NodePtr& node,
                                double t)
 {
-    bool ret =  _imp->_gui->progressUpdate(effect, t);
+    bool ret =  _imp->_gui->progressUpdate(node, t);
     return ret;
 }
 
@@ -925,6 +881,11 @@ GuiAppInstance::onMaxPanelsOpenedChanged(int maxPanels)
     _imp->_gui->onMaxVisibleDockablePanelChanged(maxPanels);
 }
 
+void
+GuiAppInstance::onRenderQueuingChanged(bool queueingEnabled)
+{
+    _imp->_gui->getProgressPanel()->onRenderQueuingSettingChanged(queueingEnabled);
+}
 
 void
 GuiAppInstance::connectViewersToViewerCache()
@@ -1042,7 +1003,6 @@ GuiAppInstance::declareCurrentAppVariable_Python()
     std::string err;
     _imp->declareAppAndParamsString = script;
     bool ok = Python::interpretPythonScript(script, &err, 0);
-    assert(ok);
     if (!ok) {
         throw std::runtime_error("GuiAppInstance::declareCurrentAppVariable_Python() failed!");
     }
@@ -1081,6 +1041,12 @@ void
 GuiAppInstance::renderAllViewers(bool canAbort)
 {
     _imp->_gui->renderAllViewers(canAbort);
+}
+
+void
+GuiAppInstance::refreshAllPreviews()
+{
+    getProject()->refreshPreviews();
 }
 
 void
@@ -1216,15 +1182,20 @@ GuiAppInstance::isRenderStatsActionChecked() const
 
 
 bool
-GuiAppInstance::save(const std::string& /*filename*/)
+GuiAppInstance::save(const std::string& filename)
 {
-    return _imp->_gui->saveProject();
+    boost::shared_ptr<Project> project = getProject();
+    if (project->hasProjectBeenSavedByUser()) {
+        return _imp->_gui->saveProject();
+    } else {
+        return _imp->_gui->saveProjectAs(filename);
+    }
 }
 
 bool
-GuiAppInstance::saveAs(const std::string& /*filename*/)
+GuiAppInstance::saveAs(const std::string& filename)
 {
-    return _imp->_gui->saveProjectAs();
+    return _imp->_gui->saveProjectAs(filename);
 }
 
 AppInstance*
@@ -1257,9 +1228,10 @@ GuiAppInstance::newProject()
 void
 GuiAppInstance::handleFileOpenEvent(const std::string &filename)
 {
-    QString fileCopy(filename.c_str());
+    QString fileCopy(QString::fromUtf8(filename.c_str()));
+    fileCopy.replace(QLatin1Char('\\'), QLatin1Char('/'));
     QString ext = QtCompat::removeFileExtension(fileCopy);
-    if (ext == NATRON_PROJECT_FILE_EXT) {
+    if (ext == QString::fromUtf8(NATRON_PROJECT_FILE_EXT)) {
         AppInstance* app = getGui()->openProject(filename);
         if (!app) {
             Dialogs::errorDialog(tr("Project").toStdString(), tr("Failed to open project").toStdString() + ' ' + filename);
@@ -1602,6 +1574,49 @@ GuiAppInstance::goToNextKeyframe()
     if ( upperBound != _imp->timelineKeyframes.end() ) {
         timeline->seekFrame(*upperBound, true, NULL, eTimelineChangeReasonPlaybackSeek);
     }
+}
+
+void
+GuiAppInstance::setKnobDnDData(QDrag* drag, const KnobPtr& knob, int dimension)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->knobDnd.source = knob;
+    _imp->knobDnd.sourceDimension = dimension;
+    _imp->knobDnd.drag = drag;
+}
+
+void
+GuiAppInstance::getKnobDnDData(QDrag** drag, KnobPtr* knob, int* dimension) const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    *knob = _imp->knobDnd.source.lock();
+    *dimension = _imp->knobDnd.sourceDimension;
+    *drag = _imp->knobDnd.drag;
+}
+
+bool
+GuiAppInstance::checkAllReadersModificationDate(bool errorAndWarn)
+{
+    NodesList allNodes;
+    SequenceTime time = getProject()->getCurrentTime();
+    getProject()->getNodes_recursive(allNodes, true);
+    bool changed =  false;
+    for (NodesList::iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
+        if ((*it)->getEffectInstance()->isReader()) {
+            KnobPtr fileKnobI = (*it)->getKnobByName(kOfxImageEffectFileParamName);
+            if (!fileKnobI) {
+                continue;
+            }
+            boost::shared_ptr<KnobGuiI> knobUi_i = fileKnobI->getKnobGuiPointer();
+            KnobGuiFile* isFileKnob = dynamic_cast<KnobGuiFile*>(knobUi_i.get());
+            
+            if (!isFileKnob) {
+                continue;
+            }
+            changed |= isFileKnob->checkFileModificationAndWarn(time, errorAndWarn);
+        }
+    }
+    return changed;
 }
 
 NATRON_NAMESPACE_EXIT;

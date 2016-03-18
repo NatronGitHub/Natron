@@ -1,0 +1,113 @@
+This patch makes it possible to build classic osmesa/swrast on windows
+again. Although there is a gallium version of osmesa now, the swrast version
+still has more features lacking in llvmpipe, e.g. anisotropic filtering.
+
+This reverts commit 69db422218b0264b5b8eef45bd003a2544e9cbd6 and
+c07df0f2014636b601cdbaff63214296599b1ad5 and adds "compiler" to
+the LIBS in SConscript.
+
+Cc: "11.2" <mesa-stable@lists.freedesktop.org>
+
+---
+ src/mesa/drivers/SConscript         |  2 ++
+ src/mesa/drivers/osmesa/Makefile.am |  2 ++
+ src/mesa/drivers/osmesa/SConscript  | 40 +++++++++++++++++++++++++++++++++++++
+ src/mesa/drivers/osmesa/osmesa.def  | 15 ++++++++++++++
+ 4 files changed, 59 insertions(+)
+ create mode 100644 src/mesa/drivers/osmesa/SConscript
+ create mode 100644 src/mesa/drivers/osmesa/osmesa.def
+
+diff --git a/src/mesa/drivers/SConscript b/src/mesa/drivers/SConscript
+index 5d654f5..476425b 100644
+--- a/src/mesa/drivers/SConscript
++++ b/src/mesa/drivers/SConscript
+@@ -1,5 +1,7 @@
+ Import('*')
+ 
++SConscript('osmesa/SConscript')
++
+ if env['x11']:
+     SConscript('x11/SConscript')
+ 
+diff --git a/src/mesa/drivers/osmesa/Makefile.am b/src/mesa/drivers/osmesa/Makefile.am
+index 46332e1..5525687 100644
+--- a/src/mesa/drivers/osmesa/Makefile.am
++++ b/src/mesa/drivers/osmesa/Makefile.am
+@@ -21,6 +21,8 @@
+ # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ # IN THE SOFTWARE.
+ 
++EXTRA_DIST = osmesa.def SConscript
++
+ AM_CPPFLAGS = \
+ 	-I$(top_srcdir)/include \
+ 	-I$(top_srcdir)/src \
+diff --git a/src/mesa/drivers/osmesa/SConscript b/src/mesa/drivers/osmesa/SConscript
+new file mode 100644
+index 0000000..5933f07
+--- /dev/null
++++ b/src/mesa/drivers/osmesa/SConscript
+@@ -0,0 +1,40 @@
++Import('*')
++
++env = env.Clone()
++
++env.Prepend(CPPPATH = [
++    '#src',
++    '#src/mapi',
++    '#src/mesa',
++    Dir('../../../mapi'), # src/mapi build path for python-generated GL API files/headers
++])
++
++env.Prepend(LIBS = [
++    mesautil,
++    glapi,
++    compiler,
++    mesa,
++    glsl,
++])
++
++sources = [
++    'osmesa.c',
++]
++
++if env['platform'] == 'windows':
++    env.AppendUnique(CPPDEFINES = [
++        '_GDI32_', # prevent wgl* being declared __declspec(dllimport)
++        'BUILD_GL32', # declare gl* as __declspec(dllexport) in Mesa headers 
++    ])
++    if not env['gles']:
++        # prevent _glapi_* from being declared __declspec(dllimport)
++        env.Append(CPPDEFINES = ['_GLAPI_NO_EXPORTS'])
++
++    sources += ['osmesa.def']
++    
++osmesa = env.SharedLibrary(
++    target ='osmesa',
++    source = sources,
++)
++
++env.Alias('osmesa', osmesa)
+diff --git a/src/mesa/drivers/osmesa/osmesa.def b/src/mesa/drivers/osmesa/osmesa.def
+new file mode 100644
+index 0000000..06afab7
+--- /dev/null
++++ b/src/mesa/drivers/osmesa/osmesa.def
+@@ -0,0 +1,15 @@
++;DESCRIPTION 'Mesa OSMesa lib for Win32'
++VERSION 4.1
++
++EXPORTS
++	OSMesaColorClamp
++	OSMesaCreateContext
++	OSMesaCreateContextExt
++	OSMesaDestroyContext
++	OSMesaMakeCurrent
++	OSMesaGetCurrentContext
++	OSMesaPixelStore
++	OSMesaGetIntegerv
++	OSMesaGetDepthBuffer
++	OSMesaGetColorBuffer
++	OSMesaGetProcAddress
+-- 
+2.7.2.windows.1

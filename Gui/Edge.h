@@ -117,6 +117,8 @@ public:
      * @param hovered True if the mouse is hovering the dst node (the node holding this edge)
      **/
     void refreshState(bool hovered);
+    
+    bool computeVisibility(bool hovered) const;
 
     
 private:
@@ -139,8 +141,8 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    LinkArrow(const NodeGui* master,
-              const NodeGui* slave,
+    LinkArrow(const NodeGuiPtr& master,
+              const NodeGuiPtr& slave,
               QGraphicsItem* parent);
 
     virtual ~LinkArrow();
@@ -161,8 +163,7 @@ public Q_SLOTS:
 private:
 
     virtual void paint(QPainter *painter, const QStyleOptionGraphicsItem *options,QWidget *parent = 0) OVERRIDE FINAL;
-    const NodeGui* _master;
-    const NodeGui* _slave;
+    NodeGuiWPtr _master,_slave;
     QPolygonF _arrowHead;
     QColor _renderColor;
     QColor _headColor;

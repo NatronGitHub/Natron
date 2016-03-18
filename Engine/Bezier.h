@@ -43,7 +43,9 @@ CLANG_DIAG_OFF(deprecated-declarations)
 CLANG_DIAG_ON(deprecated-declarations)
 
 #include "Global/GlobalDefines.h"
+
 #include "Engine/RotoDrawableItem.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -233,7 +235,15 @@ public:
     
 private:
     
-    void moveBezierPointInternal(BezierCP* cpParam,int index,double time, double lx, double ly, double rx, double ry, bool isLeft, bool moveBoth);
+    void moveBezierPointInternal(BezierCP* cpParam,
+                                 BezierCP* fpParam,
+                                 int index,
+                                 double time,
+                                 double lx,double ly,double rx,double ry,
+                                 double flx, double fly, double frx, double fry,
+                                 bool isLeft,
+                                 bool moveBoth,
+                                 bool onlyFeather);
     
 public:
 
@@ -277,7 +287,12 @@ public:
     /**
      * @brief Set the left and right bezier point of the control point.
      **/
-    void movePointLeftAndRightIndex(BezierCP & p,double time,double lx,double ly,double rx,double ry);
+    void movePointLeftAndRightIndex(BezierCP & cp,
+                                    BezierCP & fp,
+                                    double time,
+                                    double lx,double ly,double rx,double ry,
+                                    double flx, double fly, double frx, double fry,
+                                    bool onlyFeather);
 
 
     /**
@@ -401,6 +416,7 @@ public:
                                 bool finished,
                                 bool isOpenBezier,
                                 double time,
+                                ViewIdx view,
                                 unsigned int mipMapLevel,
                                 const Transform::Matrix3x3& transform,
                                 RectD* bbox);

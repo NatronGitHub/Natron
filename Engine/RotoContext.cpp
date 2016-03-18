@@ -31,6 +31,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <boost/scoped_ptr.hpp>
+
 #include <QLineF>
 #include <QtDebug>
 
@@ -63,6 +65,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/ViewIdx.h"
 
 #define kMergeOFXParamOperation "operation"
 #define kBlurCImgParamSize "size"
@@ -101,7 +104,7 @@ NATRON_NAMESPACE_ENTER;
 RotoContext::RotoContext(const NodePtr& node)
     : _imp( new RotoContextPrivate(node) )
 {
-    QObject::connect(_imp->lifeTime.lock()->getSignalSlotHandler().get(), SIGNAL(valueChanged(int,int)), this, SLOT(onLifeTimeKnobValueChanged(int,int)));
+    QObject::connect(_imp->lifeTime.lock()->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onLifeTimeKnobValueChanged(ViewSpec,int,int)));
 }
 
 bool
@@ -128,7 +131,8 @@ RotoContext::getRotoPaintBottomMergeNode() const
         return NodePtr();
     }
     
-    if (isRotoPaintTreeConcatenatableInternal(items)) {
+    int bop;
+    if (isRotoPaintTreeConcatenatableInternal(items,&bop)) {
         QMutexLocker k(&_imp->rotoContextMutex);
         if (!_imp->globalMergeNodes.empty()) {
             return _imp->globalMergeNodes.front();
@@ -523,10 +527,10 @@ RotoContext::makeEllipse(double x,double y,double diameter,bool fromCenter, doub
     boost::shared_ptr<BezierCP> left = curve->getControlPointAtIndex(3);
 
     double topX,topY,rightX,rightY,btmX,btmY,leftX,leftY;
-    top->getPositionAtTime(false,time, &topX, &topY);
-    right->getPositionAtTime(false,time, &rightX, &rightY);
-    bottom->getPositionAtTime(false,time, &btmX, &btmY);
-    left->getPositionAtTime(false,time, &leftX, &leftY);
+    top->getPositionAtTime(false, time, ViewIdx(0), &topX, &topY);
+    right->getPositionAtTime(false, time, ViewIdx(0), &rightX, &rightY);
+    bottom->getPositionAtTime(false, time, ViewIdx(0), &btmX, &btmY);
+    left->getPositionAtTime(false, time, ViewIdx(0), &leftX, &leftY);
     
     curve->setLeftBezierPoint(0, time,  (leftX + topX) / 2., topY);
     curve->setRightBezierPoint(0, time, (rightX + topX) / 2., topY);
@@ -547,7 +551,7 @@ RotoContext::makeEllipse(double x,double y,double diameter,bool fromCenter, doub
 boost::shared_ptr<Bezier>
 RotoContext::makeSquare(double x,double y,double initialSize,double time)
 {
-    boost::shared_ptr<Bezier> curve = makeBezier(x,y,kRotoRectangleBaseName,time, false);
+    boost::shared_ptr<Bezier> curve = makeBezier(x,y,kRotoRectangleBaseName, time, false);
     curve->addControlPoint(x + initialSize,y, time);
     curve->addControlPoint(x + initialSize,y - initialSize, time);
     curve->addControlPoint(x,y - initialSize, time);
@@ -703,7 +707,7 @@ RotoContext::isNearbyBezier(double x,
 }
 
 void
-RotoContext::onLifeTimeKnobValueChanged(int /*dim*/, int reason)
+RotoContext::onLifeTimeKnobValueChanged(ViewSpec view,int /*dim*/, int reason)
 {
     if ((ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited) {
         return;
@@ -713,7 +717,7 @@ RotoContext::onLifeTimeKnobValueChanged(int /*dim*/, int reason)
     boost::shared_ptr<KnobInt> frame = _imp->lifeTimeFrame.lock();
     frame->setSecret(lifetime_i == 3);
     if (lifetime_i != 3) {
-        frame->setValue(getTimelineCurrentTime(), 0);
+        frame->setValue(getTimelineCurrentTime(), view);
     }
 }
 
@@ -787,7 +791,7 @@ RotoContext::getGlobalMotionBlurSettings(const double time,
 }
 
 void
-RotoContext::getItemsRegionOfDefinition(const std::list<boost::shared_ptr<RotoItem> >& items, double time, int /*view*/, RectD* rod) const
+RotoContext::getItemsRegionOfDefinition(const std::list<boost::shared_ptr<RotoItem> >& items, double time, ViewIdx /*view*/, RectD* rod) const
 {
     
     double startTime = time, mbFrameStep = 1., endTime = time;
@@ -860,7 +864,7 @@ RotoContext::getItemsRegionOfDefinition(const std::list<boost::shared_ptr<RotoIt
 
 void
 RotoContext::getMaskRegionOfDefinition(double time,
-                                       int view,
+                                       ViewIdx view,
                                        RectD* rod) // rod is in canonical coordinates
 const
 {
@@ -879,10 +883,10 @@ const
 }
 
 bool
-RotoContext::isRotoPaintTreeConcatenatableInternal(const std::list<boost::shared_ptr<RotoDrawableItem> >& items)
+RotoContext::isRotoPaintTreeConcatenatableInternal(const std::list<boost::shared_ptr<RotoDrawableItem> >& items, int* blendingMode)
 {
     bool operatorSet = false;
-    int comp_i;
+    int comp_i = -1;
     for (std::list<boost::shared_ptr<RotoDrawableItem> >::const_iterator it = items.begin(); it != items.end(); ++it) {
         int op = (*it)->getCompositingOperator();
         if (!operatorSet) {
@@ -904,14 +908,19 @@ RotoContext::isRotoPaintTreeConcatenatableInternal(const std::list<boost::shared
         }
         
     }
-    return true;
+    if (operatorSet) {
+        *blendingMode = comp_i;
+        return true;
+    }
+    return false;
 }
 
 bool
 RotoContext::isRotoPaintTreeConcatenatable() const
 {
     std::list<boost::shared_ptr<RotoDrawableItem> > items = getCurvesByRenderOrder();
-    return isRotoPaintTreeConcatenatableInternal(items);
+    int bop;
+    return isRotoPaintTreeConcatenatableInternal(items,&bop);
 }
 
 bool
@@ -1175,18 +1184,18 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
                         (*it)->slaveTo(i, thisKnob, i);
                     }
                     
-                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,int,int,bool)),
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,ViewSpec,int,int,bool)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
-                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(double,int,int)),
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(double,ViewSpec,int,int)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
-                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(int,double,double)),
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(ViewSpec,int,double,double)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
-                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(animationRemoved(int)),
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(animationRemoved(ViewSpec,int)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
-                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(derivativeMoved(double,int)),
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(derivativeMoved(double,ViewSpec,int)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
 
-                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameInterpolationChanged(double,int)),
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameInterpolationChanged(double,ViewSpec,int)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
 
                     break;
@@ -1342,18 +1351,18 @@ RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
                         (*it)->unSlave(i,isBezier ? !bezierDirty : !strokeDirty);
                     }
                     
-                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,int,int,bool)),
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,ViewSpec,int,int,bool)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
-                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(double,int,int)),
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(double,ViewSpec,int,int)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
-                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(int,double,double)),
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(ViewSpec,int,double,double)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
-                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(animationRemoved(int)),
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(animationRemoved(ViewSpec,int)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
-                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(derivativeMoved(double,int)),
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(derivativeMoved(double,ViewSpec,int)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
                     
-                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameInterpolationChanged(double,int)),
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameInterpolationChanged(double,ViewSpec,int)),
                                         this, SLOT(onSelectedKnobCurveChanged()));
                     break;
                 }
@@ -1393,21 +1402,21 @@ RotoContext::resetTransformsCenter(bool doClone, bool doTransform)
 {
     double time = getNode()->getApp()->getTimeLine()->currentFrame();
     RectD bbox;
-    getItemsRegionOfDefinition(getSelectedItems(),time, 0, &bbox);
+    getItemsRegionOfDefinition(getSelectedItems(), time, ViewIdx(0), &bbox);
     if (doTransform) {
         boost::shared_ptr<KnobDouble> centerKnob = _imp->centerKnob.lock();
         centerKnob->beginChanges();
-        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(0);
-        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(1);
-        centerKnob->setValues((bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2., eValueChangedReasonNatronInternalEdited);
+        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(ViewSpec::all(), 0);
+        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(ViewSpec::all(), 1);
+        centerKnob->setValues((bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2., ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
         centerKnob->endChanges();
     }
     if (doClone) {
         boost::shared_ptr<KnobDouble> centerKnob = _imp->cloneCenterKnob.lock();
         centerKnob->beginChanges();
-        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(0);
-        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(1);
-        centerKnob->setValues((bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2., eValueChangedReasonNatronInternalEdited);
+        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(ViewSpec::all(), 0);
+        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(ViewSpec::all(), 1);
+        centerKnob->setValues((bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2., ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
         centerKnob->endChanges();
     }
 }
@@ -1484,10 +1493,10 @@ RotoContext::resetCloneTransform()
 
 void
 RotoContext::knobChanged(KnobI* k,
-                 ValueChangedReasonEnum /*reason*/,
-                 int /*view*/,
-                 double /*time*/,
-                 bool /*originatedFromMainThread*/)
+                         ValueChangedReasonEnum /*reason*/,
+                         ViewSpec /*view*/,
+                         double /*time*/,
+                         bool /*originatedFromMainThread*/)
 {
     if (k == _imp->resetCenterKnob.lock().get()) {
         resetTransformCenter();
@@ -1564,7 +1573,7 @@ RotoContext::setKeyframeOnSelectedCurves()
         if (isBezier) {
             isBezier->setKeyframe(time);
         } else if (isLayer) {
-            addOrRemoveKeyRecursively(isLayer,time, true, false);
+            addOrRemoveKeyRecursively(isLayer, time, true, false);
         }
     }
 }
@@ -1582,7 +1591,7 @@ RotoContext::removeAnimationOnSelectedCurves()
         if (isBezier) {
             isBezier->removeAnimation();
         } else if (isLayer) {
-            addOrRemoveKeyRecursively(isLayer,time, false, true);
+            addOrRemoveKeyRecursively(isLayer, time, false, true);
         }
     }
     if (!_imp->selectedItems.empty()) {
@@ -1603,7 +1612,7 @@ RotoContext::removeKeyframeOnSelectedCurves()
         if (isBezier) {
             isBezier->removeKeyframe(time);
         } else if (isLayer) {
-            addOrRemoveKeyRecursively(isLayer,time, false, false);
+            addOrRemoveKeyRecursively(isLayer, time, false, false);
         }
     }
 }
@@ -1662,7 +1671,7 @@ RotoContext::goToPreviousKeyframe()
             } else {
                 assert(layer);
                 if (layer) {
-                    findOutNearestKeyframeRecursively(layer, true,time,&minimum);
+                    findOutNearestKeyframeRecursively(layer, true, time,&minimum);
                 }
             }
         }
@@ -1762,7 +1771,7 @@ RotoContext::getSelectedCurves() const
             } else {
                 assert(isLayer);
                 if (isLayer) {
-                    appendToSelectedCurvesRecursively(&drawables, isLayer,time,false, true);
+                    appendToSelectedCurvesRecursively(&drawables, isLayer, time,false, true);
                 }
             }
         }
@@ -1871,7 +1880,7 @@ void
 RotoContext::evaluateChange()
 {
     _imp->incrementRotoAge();
-    getNode()->getEffectInstance()->evaluate_public(NULL, true,eValueChangedReasonUserEdited);
+    getNode()->getEffectInstance()->incrHashAndEvaluate(true,false);
 }
 
 void
@@ -2051,14 +2060,12 @@ RotoContext::setIsDoingNeatRender(bool doing)
 {
     
     QMutexLocker k(&_imp->doingNeatRenderMutex);
-    bool wasDoingNeatRender = _imp->doingNeatRender;
     if (doing && _imp->mustDoNeatRender) {
+        assert(!_imp->doingNeatRender);
         _imp->doingNeatRender = true;
         _imp->mustDoNeatRender = false;
-    } else {
+    } else if (_imp->doingNeatRender) {
         _imp->doingNeatRender = false;
-    }
-    if (!doing && wasDoingNeatRender) {
         _imp->doingNeatRenderCond.wakeAll();
     }
 }
@@ -2079,6 +2086,18 @@ RotoContext::evaluateNeatStrokeRender()
             _imp->doingNeatRenderCond.wait(&_imp->doingNeatRenderMutex);
         }
     }
+}
+
+CairoImageWrapper::~CairoImageWrapper()
+{
+    if (ctx) {
+        cairo_destroy(ctx);
+    }
+    ////Free the buffer used by Cairo
+    if (cairoImg) {
+        cairo_surface_destroy(cairoImg);
+    }
+
 }
 
 static void
@@ -2112,35 +2131,38 @@ convertCairoImageToNatronImageForDstComponents_noColor(cairo_surface_t* cairoImg
     double g = useOpacity ? shapeColor[1] * opacity : shapeColor[1];
     double b = useOpacity ? shapeColor[2] * opacity : shapeColor[2];
     
-    for (int y = 0; y < pixelRod.height(); ++y, srcPix += stride) {
+    int width = pixelRod.width();
+    int srcNElements = width * srcNComps;
+    
+    for (int y = 0; y < pixelRod.height(); ++y,
+         srcPix += (stride - srcNElements)) {
+        
         PIX* dstPix = (PIX*)acc.pixelAt(pixelRod.x1, pixelRod.y1 + y);
         assert(dstPix);
         
-        for (int x = 0; x < pixelRod.width(); ++x) {
-            float cairoPixel = (float)srcPix[x * srcNComps] / 255.f;
+        for (int x = 0; x < width; ++x,
+             dstPix += dstNComps,
+             srcPix += srcNComps) {
+            
+            float cairoPixel = ((float)*srcPix / 255.f) * maxValue;
             switch (dstNComps) {
                 case 4:
-                    dstPix[x * dstNComps + 0] = PIX(cairoPixel * r * maxValue);
-                    assert(!boost::math::isnan(dstPix[x * dstNComps + 0]));
-                    dstPix[x * dstNComps + 1] = PIX(cairoPixel * g * maxValue);
-                    assert(!boost::math::isnan(dstPix[x * dstNComps + 1]));
-                    dstPix[x * dstNComps + 2] = PIX(cairoPixel * b * maxValue);
-                    assert(!boost::math::isnan(dstPix[x * dstNComps + 2]));
-                    dstPix[x * dstNComps + 3] = useOpacity ? PIX(cairoPixel * opacity * maxValue) : PIX(cairoPixel * maxValue);
-                    assert(!boost::math::isnan(dstPix[x * dstNComps + 3]));
+                    dstPix[0] = PIX(cairoPixel * r);
+                    dstPix[1] = PIX(cairoPixel * g);
+                    dstPix[2] = PIX(cairoPixel * b);
+                    dstPix[3] = useOpacity ? PIX(cairoPixel * opacity) : PIX(cairoPixel);
                     break;
                 case 1:
-                    dstPix[x] = useOpacity ? PIX(cairoPixel * opacity * maxValue) : PIX(cairoPixel * maxValue);
-                    assert(!boost::math::isnan(dstPix[x]));
+                    dstPix[0] = useOpacity ? PIX(cairoPixel * opacity) : PIX(cairoPixel);
                     break;
                 case 3:
-                    dstPix[x * dstNComps + 0] = PIX(cairoPixel * r * maxValue);
-                    dstPix[x * dstNComps + 1] = PIX(cairoPixel * g * maxValue);
-                    dstPix[x * dstNComps + 2] = PIX(cairoPixel * b * maxValue);
+                    dstPix[0] = PIX(cairoPixel * r);
+                    dstPix[1] = PIX(cairoPixel * g);
+                    dstPix[2] = PIX(cairoPixel * b);
                     break;
                 case 2:
-                    dstPix[x * dstNComps + 0] = PIX(cairoPixel * r * maxValue);
-                    dstPix[x * dstNComps + 1] = PIX(cairoPixel * g * maxValue);
+                    dstPix[0] = PIX(cairoPixel * r);
+                    dstPix[1] = PIX(cairoPixel * g);
                     break;
 
                 default:
@@ -2148,7 +2170,7 @@ convertCairoImageToNatronImageForDstComponents_noColor(cairo_surface_t* cairoImg
             }
 #         ifdef DEBUG
             for (int c = 0; c < dstNComps; ++c) {
-                assert(dstPix[x * dstNComps + c] == dstPix[x * dstNComps + c]); // check for NaN
+                assert(dstPix[c] == dstPix[c]); // check for NaN
             }
 #         endif
         }
@@ -2449,15 +2471,23 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
     RectI pixelPointsBbox;
     pointsBbox.toPixelEnclosing(mipmapLevel, par, &pixelPointsBbox);
     
+    
+    NodePtr node = getNode();
+    ImageFieldingOrderEnum fielding = node->getEffectInstance()->getFieldingOrder();
+    ImagePremultiplicationEnum premult = node->getEffectInstance()->getPremult();
+    
     bool copyFromImage = false;
     bool mipMapLevelChanged = false;
     if (!source) {
         source.reset(new Image(components,
-                                    pointsBbox,
-                                    pixelPointsBbox,
-                                    mipmapLevel,
-                                    par,
-                                    depth, false));
+                               pointsBbox,
+                               pixelPointsBbox,
+                               mipmapLevel,
+                               par,
+                               depth,
+                               premult,
+                               fielding,
+                               false));
         *image = source;
     } else {
         
@@ -2476,11 +2506,14 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
             
             //upscale the original image
             source.reset(new Image(components,
-                                        mergeRoD,
-                                        mergeBounds,
-                                        mipmapLevel,
-                                        par,
-                                        depth, false));
+                                   mergeRoD,
+                                   mergeBounds,
+                                   mipmapLevel,
+                                   par,
+                                   depth,
+                                   premult,
+                                   fielding,
+                                   false));
             source->fillZero(pixelPointsBbox);
             (*image)->upscaleMipMap(oldBounds, (*image)->getMipMapLevel(), source->getMipMapLevel(), source.get());
             *image = source;
@@ -2497,11 +2530,14 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
             
             //downscale the original image
             source.reset(new Image(components,
-                                        mergeRoD,
-                                        mergeBounds,
-                                        mipmapLevel,
-                                        par,
-                                        depth, false));
+                                   mergeRoD,
+                                   mergeBounds,
+                                   mipmapLevel,
+                                   par,
+                                   depth,
+                                   premult,
+                                   fielding,
+                                   false));
             source->fillZero(pixelPointsBbox);
             (*image)->downscaleMipMap(pointsBbox, oldBounds, (*image)->getMipMapLevel(), source->getMipMapLevel(), false, source.get());
             *image = source;
@@ -2534,7 +2570,7 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
     
     
     ////Allocate the cairo temporary buffer
-    cairo_surface_t* cairoImg;
+    CairoImageWrapper imgWrapper;
 
     std::vector<unsigned char> buf;
     if (copyFromImage) {
@@ -2543,20 +2579,20 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
         buf.resize(memSize);
         memset(&buf.front(), 0, sizeof(unsigned char) * memSize);
         convertNatronImageToCairoImage<float, 1>(&buf.front(), srcNComps, stride, source.get(), pixelPointsBbox, pixelPointsBbox, shapeColor);
-        cairoImg = cairo_image_surface_create_for_data(&buf.front(), cairoImgFormat, pixelPointsBbox.width(), pixelPointsBbox.height(),
+        imgWrapper.cairoImg = cairo_image_surface_create_for_data(&buf.front(), cairoImgFormat, pixelPointsBbox.width(), pixelPointsBbox.height(),
                                                        stride);
        
     } else {
-        cairoImg = cairo_image_surface_create(cairoImgFormat, pixelPointsBbox.width(), pixelPointsBbox.height() );
-        cairo_surface_set_device_offset(cairoImg, -pixelPointsBbox.x1, -pixelPointsBbox.y1);
+        imgWrapper.cairoImg = cairo_image_surface_create(cairoImgFormat, pixelPointsBbox.width(), pixelPointsBbox.height() );
+        cairo_surface_set_device_offset(imgWrapper.cairoImg, -pixelPointsBbox.x1, -pixelPointsBbox.y1);
     }
-    if (cairo_surface_status(cairoImg) != CAIRO_STATUS_SUCCESS) {
+    if (cairo_surface_status(imgWrapper.cairoImg) != CAIRO_STATUS_SUCCESS) {
         return 0;
     }
-    cairo_surface_set_device_offset(cairoImg, -pixelPointsBbox.x1, -pixelPointsBbox.y1);
-    cairo_t* cr = cairo_create(cairoImg);
+    cairo_surface_set_device_offset(imgWrapper.cairoImg, -pixelPointsBbox.x1, -pixelPointsBbox.y1);
+    imgWrapper.ctx = cairo_create(imgWrapper.cairoImg);
     //cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD); // creates holes on self-overlapping shapes
-    cairo_set_fill_rule(cr, CAIRO_FILL_RULE_WINDING);
+    cairo_set_fill_rule(imgWrapper.ctx, CAIRO_FILL_RULE_WINDING);
     
     // these Roto shapes must be rendered WITHOUT antialias, or the junction between the inner
     // polygon and the feather zone will have artifacts. This is partly due to the fact that cairo
@@ -2564,7 +2600,7 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
     // Use a default feather distance of 1 pixel instead!
     // UPDATE: unfortunately, this produces less artifacts, but there are still some remaining (use opacity=0.5 to test)
     // maybe the inner polygon should be made of mesh patterns too?
-    cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
+    cairo_set_antialias(imgWrapper.ctx, CAIRO_ANTIALIAS_NONE);
     
     std::list<std::list<std::pair<Point,double> > > strokes;
     std::list<std::pair<Point,double> > toScalePoints;
@@ -2600,35 +2636,29 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
     
     
     double opacity = stroke->getOpacity(time);
-    distToNext = _imp->renderStroke(cr, dotPatterns, strokes, distToNext, stroke, doBuildUp, opacity, time, mipmapLevel);
+    distToNext = _imp->renderStroke(imgWrapper.ctx, dotPatterns, strokes, distToNext, stroke, doBuildUp, opacity, time, mipmapLevel);
     
     stroke->updatePatternCache(dotPatterns);
     
-    assert(cairo_surface_status(cairoImg) == CAIRO_STATUS_SUCCESS);
+    assert(cairo_surface_status(imgWrapper.cairoImg) == CAIRO_STATUS_SUCCESS);
     
     ///A call to cairo_surface_flush() is required before accessing the pixel data
     ///to ensure that all pending drawing operations are finished.
-    cairo_surface_flush(cairoImg);
+    cairo_surface_flush(imgWrapper.cairoImg);
     
     
     
-    convertCairoImageToNatronImage_noColor<float, 1>(cairoImg, srcNComps, source.get(), pixelPointsBbox, shapeColor, 1., false);
+    convertCairoImageToNatronImage_noColor<float, 1>(imgWrapper.cairoImg, srcNComps, source.get(), pixelPointsBbox, shapeColor, 1., false);
 
-    
-    cairo_destroy(cr);
-    ////Free the buffer used by Cairo
-    cairo_surface_destroy(cairoImg);
-    
     return distToNext;
 }
 
 
 boost::shared_ptr<Image>
 RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& stroke,
-                                  const RectI& /*roi*/,
                                   const ImageComponents& components,
                                   const double time,
-                                  const int view,
+                                  const ViewIdx view,
                                   const ImageBitDepthEnum depth,
                                   const unsigned int mipmapLevel)
 {
@@ -2650,11 +2680,12 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
         assert(mergeNodeHash != rotoHash);
     }
     
-    ImageKey key = Image::makeKey(stroke.get(),rotoHash, true ,time, view, false, false);
-    
+    boost::scoped_ptr<ImageKey> key;
+    key.reset(new ImageKey(stroke.get(), rotoHash, /*frameVaryingOrAnimated=*/true, time, view, /*pixelAspect=*/1., /*draftMode=*/false, /*fullScaleWithDownscaleInputs=*/false));
+
     {
         QMutexLocker k(&_imp->cacheAccessMutex);
-        node->getEffectInstance()->getImageFromCacheAndConvertIfNeeded(true, false, key, mipmapLevel, NULL, NULL, depth, components, depth, components,EffectInstance::InputImagesMap(), boost::shared_ptr<RenderStats>(), &image);
+        node->getEffectInstance()->getImageFromCacheAndConvertIfNeeded(true, false, *key, mipmapLevel, NULL, NULL, depth, components, depth, components,EffectInstance::InputImagesMap(), boost::shared_ptr<RenderStats>(), &image);
     }
     if (image) {
         return image;
@@ -2681,8 +2712,7 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
  
     if (isStroke) {
         isStroke->evaluateStroke(mipmapLevel, time, &strokes, &bbox);
-    } else {
-        assert(isBezier);
+    } else if (isBezier) {
         bool bboxSet = false;
         for (double t = startTime; t <= endTime; t += mbFrameStep) {
             RectD subBbox = isBezier->getBoundingBox(t);
@@ -2710,23 +2740,24 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
 
     
     boost::shared_ptr<ImageParams> params = Image::makeParams( 0,
-                                                                              bbox,
-                                                                              pixelRod,
-                                                                              1., // par
-                                                                              mipmapLevel,
-                                                                              false,
-                                                                              components,
-                                                                              depth,
-                                                                              std::map<int,std::map<int, std::vector<RangeD> > >() );
+                                                              bbox,
+                                                              pixelRod,
+                                                              1., // par
+                                                              mipmapLevel,
+                                                              false,
+                                                              components,
+                                                              depth,
+                                                              node->getEffectInstance()->getPremult(),
+                                                              node->getEffectInstance()->getFieldingOrder());
     /*
-     At this point we take the cacheAccessMutex so that no other thread can retrieve this image from the cache while it has not been 
+     At this point we take the cacheAccessMutex so that no other thread can retrieve this image from the cache while it has not been
      finished rendering. You might wonder why we do this differently here than in EffectInstance::renderRoI, this is because we do not use
      the trimap and notification system here in the rotocontext, which would be to much just for this small object, rather we just lock
      it once, which is fine.
      */
     QMutexLocker k(&_imp->cacheAccessMutex);
     
-    AppManager::getImageFromCacheOrCreate(key, params, &image);
+    AppManager::getImageFromCacheOrCreate(*key, params, &image);
     if (!image) {
         std::stringstream ss;
         ss << "Failed to allocate an image of ";
@@ -2761,8 +2792,9 @@ RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& strok
                                 const std::list<std::list<std::pair<Point,double> > >& strokes,
                                 const boost::shared_ptr<Image> &image)
 {
- 
-    
+    Q_UNUSED(startTime);
+    Q_UNUSED(endTime);
+    Q_UNUSED(timeStep);
     NodePtr node = getNode();
     
     RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(stroke.get());
@@ -2793,14 +2825,16 @@ RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& strok
     
 
     ////Allocate the cairo temporary buffer
-    cairo_surface_t* cairoImg = cairo_image_surface_create(cairoImgFormat, roi.width(), roi.height() );
-    cairo_surface_set_device_offset(cairoImg, -roi.x1, -roi.y1);
-    if (cairo_surface_status(cairoImg) != CAIRO_STATUS_SUCCESS) {
+    CairoImageWrapper imgWrapper;
+    
+    imgWrapper.cairoImg = cairo_image_surface_create(cairoImgFormat, roi.width(), roi.height() );
+    cairo_surface_set_device_offset(imgWrapper.cairoImg, -roi.x1, -roi.y1);
+    if (cairo_surface_status(imgWrapper.cairoImg) != CAIRO_STATUS_SUCCESS) {
         return image;
     }
-    cairo_t* cr = cairo_create(cairoImg);
+    imgWrapper.ctx = cairo_create(imgWrapper.cairoImg);
     //cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD); // creates holes on self-overlapping shapes
-    cairo_set_fill_rule(cr, CAIRO_FILL_RULE_WINDING);
+    cairo_set_fill_rule(imgWrapper.ctx, CAIRO_FILL_RULE_WINDING);
     
     // these Roto shapes must be rendered WITHOUT antialias, or the junction between the inner
     // polygon and the feather zone will have artifacts. This is partly due to the fact that cairo
@@ -2808,7 +2842,7 @@ RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& strok
     // Use a default feather distance of 1 pixel instead!
     // UPDATE: unfortunately, this produces less artifacts, but there are still some remaining (use opacity=0.5 to test)
     // maybe the inner polygon should be made of mesh patterns too?
-    cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
+    cairo_set_antialias(imgWrapper.ctx, CAIRO_ANTIALIAS_NONE);
 
     
     double shapeColor[3];
@@ -2822,7 +2856,7 @@ RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& strok
         for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
             dotPatterns[i] = (cairo_pattern_t*)0;
         }
-        _imp->renderStroke(cr, dotPatterns, strokes, 0, stroke, doBuildUp, opacity, time, mipmapLevel);
+        _imp->renderStroke(imgWrapper.ctx, dotPatterns, strokes, 0, stroke, doBuildUp, opacity, time, mipmapLevel);
         
         for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
             if (dotPatterns[i]) {
@@ -2833,20 +2867,20 @@ RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& strok
         
         
     } else {
-        _imp->renderBezier(cr, isBezier, opacity, time, mipmapLevel);
+        _imp->renderBezier(imgWrapper.ctx, isBezier, opacity, time, mipmapLevel);
     }
     
     bool useOpacityToConvert = (isBezier != 0);
     
     switch (depth) {
         case eImageBitDepthFloat:
-            convertCairoImageToNatronImage_noColor<float, 1>(cairoImg, srcNComps, image.get(), roi, shapeColor, opacity, useOpacityToConvert);
+            convertCairoImageToNatronImage_noColor<float, 1>(imgWrapper.cairoImg, srcNComps, image.get(), roi, shapeColor, opacity, useOpacityToConvert);
             break;
         case eImageBitDepthByte:
-            convertCairoImageToNatronImage_noColor<unsigned char, 255>(cairoImg, srcNComps,  image.get(), roi,shapeColor, opacity, useOpacityToConvert);
+            convertCairoImageToNatronImage_noColor<unsigned char, 255>(imgWrapper.cairoImg, srcNComps,  image.get(), roi,shapeColor, opacity, useOpacityToConvert);
             break;
         case eImageBitDepthShort:
-            convertCairoImageToNatronImage_noColor<unsigned short, 65535>(cairoImg, srcNComps, image.get(), roi,shapeColor, opacity, useOpacityToConvert);
+            convertCairoImageToNatronImage_noColor<unsigned short, 65535>(imgWrapper.cairoImg, srcNComps, image.get(), roi,shapeColor, opacity, useOpacityToConvert);
             break;
         case eImageBitDepthHalf:
         case eImageBitDepthNone:
@@ -2855,18 +2889,11 @@ RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& strok
     }
 
     
-    assert(cairo_surface_status(cairoImg) == CAIRO_STATUS_SUCCESS);
+    assert(cairo_surface_status(imgWrapper.cairoImg) == CAIRO_STATUS_SUCCESS);
     
     ///A call to cairo_surface_flush() is required before accessing the pixel data
     ///to ensure that all pending drawing operations are finished.
-    cairo_surface_flush(cairoImg);
-    
-    
-    
-    cairo_destroy(cr);
-    ////Free the buffer used by Cairo
-    cairo_surface_destroy(cairoImg);
-
+    cairo_surface_flush(imgWrapper.cairoImg);
     
     return image;
 }
@@ -2891,7 +2918,7 @@ double hardnessGaussLookup(double f)
 
 void
 RotoContextPrivate::renderDot(cairo_t* cr,
-                              std::vector<cairo_pattern_t*>& dotPatterns,
+                              std::vector<cairo_pattern_t*>* dotPatterns,
                               const Point &center,
                               double internalDotRadius,
                               double externalDotRadius,
@@ -2906,8 +2933,8 @@ RotoContextPrivate::renderDot(cairo_t* cr,
         // sometimes, Qt gives a pressure level > 1... so we clamp it
         int pressureInt = int(std::max(0., std::min(pressure, 1.)) * (ROTO_PRESSURE_LEVELS-1) + 0.5);
         assert(pressureInt >= 0 && pressureInt < ROTO_PRESSURE_LEVELS);
-        if (dotPatterns[pressureInt]) {
-            pattern = dotPatterns[pressureInt];
+        if (dotPatterns && (*dotPatterns)[pressureInt]) {
+            pattern = (*dotPatterns)[pressureInt];
         } else {
             pattern = cairo_pattern_create_radial(0, 0, internalDotRadius, 0, 0, externalDotRadius);
             for (std::size_t i = 0; i < opacityStops.size(); ++i) {
@@ -3055,7 +3082,7 @@ RotoContextPrivate::renderStroke(cairo_t* cr,
             double internalDotRadius, externalDotRadius, spacing;
             std::vector<std::pair<double,double> > opacityStops;
             getRenderDotParams(alpha, brushSizePixel, brushHardness, brushSpacing, it->second, pressureAffectsOpacity, pressureAffectsSize, pressureAffectsHardness, &internalDotRadius, &externalDotRadius, &spacing, &opacityStops);
-            renderDot(cr, dotPatterns, it->first, internalDotRadius, externalDotRadius, it->second, doBuildup, opacityStops, alpha);
+            renderDot(cr, &dotPatterns, it->first, internalDotRadius, externalDotRadius, it->second, doBuildup, opacityStops, alpha);
             continue;
         }
         
@@ -3082,7 +3109,7 @@ RotoContextPrivate::renderStroke(cairo_t* cr,
                 double internalDotRadius, externalDotRadius, spacing;
                 std::vector<std::pair<double,double> > opacityStops;
                 getRenderDotParams(alpha, brushSizePixel, brushHardness, brushSpacing, pressure, pressureAffectsOpacity, pressureAffectsSize, pressureAffectsHardness, &internalDotRadius, &externalDotRadius, &spacing, &opacityStops);
-                renderDot(cr, dotPatterns, center, internalDotRadius, externalDotRadius, pressure, doBuildup, opacityStops, alpha);
+                renderDot(cr, &dotPatterns, center, internalDotRadius, externalDotRadius, pressure, doBuildup, opacityStops, alpha);
                 
                 distToNext += spacing;
             }
@@ -3098,7 +3125,42 @@ RotoContextPrivate::renderStroke(cairo_t* cr,
     return distToNext;
 }
 
-
+bool
+RotoContext::allocateAndRenderSingleDotStroke(int brushSizePixel, double brushHardness, double alpha, CairoImageWrapper& wrapper)
+{
+    wrapper.cairoImg = cairo_image_surface_create(CAIRO_FORMAT_A8, brushSizePixel + 1, brushSizePixel + 1);
+    cairo_surface_set_device_offset(wrapper.cairoImg, 0, 0);
+    if (cairo_surface_status(wrapper.cairoImg) != CAIRO_STATUS_SUCCESS) {
+        return false;
+    }
+    wrapper.ctx = cairo_create(wrapper.cairoImg);
+    //cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD); // creates holes on self-overlapping shapes
+    cairo_set_fill_rule(wrapper.ctx, CAIRO_FILL_RULE_WINDING);
+    
+    // these Roto shapes must be rendered WITHOUT antialias, or the junction between the inner
+    // polygon and the feather zone will have artifacts. This is partly due to the fact that cairo
+    // meshes are not antialiased.
+    // Use a default feather distance of 1 pixel instead!
+    // UPDATE: unfortunately, this produces less artifacts, but there are still some remaining (use opacity=0.5 to test)
+    // maybe the inner polygon should be made of mesh patterns too?
+    cairo_set_antialias(wrapper.ctx, CAIRO_ANTIALIAS_NONE);
+    
+    cairo_set_operator(wrapper.ctx, CAIRO_OPERATOR_OVER);
+    
+    double internalDotRadius, externalDotRadius, spacing;
+    std::vector<std::pair<double,double> > opacityStops;
+    
+    Natron::Point p;
+    p.x = brushSizePixel / 2.;
+    p.y = brushSizePixel / 2.;
+    
+    const double pressure = 1.;
+    const double brushspacing = 0.;
+    
+    getRenderDotParams(alpha, brushSizePixel, brushHardness, brushspacing, pressure, false, false, false, &internalDotRadius, &externalDotRadius, &spacing, &opacityStops);
+    RotoContextPrivate::renderDot(wrapper.ctx, 0, p, internalDotRadius, externalDotRadius, pressure, true, opacityStops, alpha);
+    return true;
+}
 
 void
 RotoContextPrivate::renderBezier(cairo_t* cr,const Bezier* bezier,double opacity, double time, unsigned int mipmapLevel)
@@ -3212,7 +3274,7 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,double time, unsigned int
     bezier->evaluateFeatherPointsAtTime_DeCasteljau(false, time, mipmapLevel, 50, true, &featherPolygon, &featherPolyBBox);
     bezier->evaluateAtTime_DeCasteljau(false, time, mipmapLevel, 50, &bezierPolygon, NULL);
     
-    bool clockWise = bezier->isFeatherPolygonClockwiseOriented(false,time);
+    bool clockWise = bezier->isFeatherPolygonClockwiseOriented(false, time);
     
     assert( !featherPolygon.empty() && !bezierPolygon.empty());
 
@@ -3236,8 +3298,8 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,double time, unsigned int
     Point p1 = *featherPolygon.begin();
     double norm = sqrt( (next->x - prev->x) * (next->x - prev->x) + (next->y - prev->y) * (next->y - prev->y) );
     assert(norm != 0);
-    double dx = -( (next->y - prev->y) / norm );
-    double dy = ( (next->x - prev->x) / norm );
+    double dx = (norm != 0) ? -( (next->y - prev->y) / norm ) : 0;
+    double dy = (norm != 0) ? ( (next->x - prev->x) / norm ) : 1;
 
     if (!clockWise) {
         p1.x -= dx * absFeatherDist;
@@ -3559,7 +3621,7 @@ RotoContextPrivate::renderInternalShape(double time,
 
     
     Transform::Point3D initCp;
-    (*point)->getPositionAtTime(false,time, &initCp.x,&initCp.y);
+    (*point)->getPositionAtTime(false, time, ViewIdx(0), &initCp.x,&initCp.y);
     initCp.z = 1.;
     initCp = Transform::matApply(transform, initCp);
     
@@ -3573,11 +3635,11 @@ RotoContextPrivate::renderInternalShape(double time,
         }
         
         Transform::Point3D right,nextLeft,next;
-        (*point)->getRightBezierPointAtTime(false,time, &right.x, &right.y);
+        (*point)->getRightBezierPointAtTime(false, time, ViewIdx(0), &right.x, &right.y);
         right.z = 1;
-        (*nextPoint)->getLeftBezierPointAtTime(false,time, &nextLeft.x, &nextLeft.y);
+        (*nextPoint)->getLeftBezierPointAtTime(false, time, ViewIdx(0), &nextLeft.x, &nextLeft.y);
         nextLeft.z = 1;
-        (*nextPoint)->getPositionAtTime(false,time, &next.x, &next.y);
+        (*nextPoint)->getPositionAtTime(false, time, ViewIdx(0), &next.x, &next.y);
         next.z = 1;
 
         right = Transform::matApply(transform, right);
@@ -3689,7 +3751,7 @@ RotoContextPrivate::bezulate(double time, const BezierCPs& cps,std::list<BezierC
             bbox.setupInfinity();
             for (BezierCPs::iterator it = simpleClosedCurve.begin(); it != simpleClosedCurve.end(); ++it) {
                 Point p;
-                (*it)->getPositionAtTime(false,time, &p.x, &p.y);
+                (*it)->getPositionAtTime(false, time, ViewIdx(0), &p.x, &p.y);
                 polygon.push_back(p);
                 if (p.x < bbox.x1) {
                     bbox.x1 = p.x;
@@ -3717,8 +3779,8 @@ RotoContextPrivate::bezulate(double time, const BezierCPs& cps,std::list<BezierC
                 
                 //mid-point of the line segment between points i and i + n
                 Point nextPoint,curPoint;
-                (*it)->getPositionAtTime(false,time, &curPoint.x, &curPoint.y);
-                (*next)->getPositionAtTime(false,time, &nextPoint.x, &nextPoint.y);
+                (*it)->getPositionAtTime(false, time, ViewIdx(0), &curPoint.x, &curPoint.y);
+                (*next)->getPositionAtTime(false, time, ViewIdx(0), &nextPoint.x, &nextPoint.y);
                 
                 /*
                  * Compute the number of intersections between the current line segment [it,next] and all other line segments
@@ -3819,10 +3881,10 @@ RotoContextPrivate::bezulate(double time, const BezierCPs& cps,std::list<BezierC
                     next = simpleClosedCurve.begin();
                 }
                 Point p0,p1,p2,p3,p0p1, p1p2, p2p3, p0p1_p1p2, p1p2_p2p3,dest;
-                (*it)->getPositionAtTime(false,time, &p0.x, &p0.y);
-                (*it)->getRightBezierPointAtTime(false,time, &p1.x, &p1.y);
-                (*next)->getLeftBezierPointAtTime(false,time, &p2.x, &p2.y);
-                (*next)->getPositionAtTime(false,time, &p3.x, &p3.y);
+                (*it)->getPositionAtTime(false, time, ViewIdx(0), &p0.x, &p0.y);
+                (*it)->getRightBezierPointAtTime(false, time, ViewIdx(0), &p1.x, &p1.y);
+                (*next)->getLeftBezierPointAtTime(false, time, ViewIdx(0), &p2.x, &p2.y);
+                (*next)->getPositionAtTime(false, time, ViewIdx(0), &p3.x, &p3.y);
                 Bezier::bezierFullPoint(p0, p1, p2, p3, 0.5, &p0p1, &p1p2, &p2p3, &p0p1_p1p2, &p1p2_p2p3, &dest);
                 boost::shared_ptr<BezierCP> controlPoint(new BezierCP);
                 controlPoint->setStaticPosition(false,dest.x, dest.y);
@@ -3929,14 +3991,14 @@ RotoContext::getOrCreateGlobalMergeNode(int *availableInputIndex)
     
     NodePtr  node = getNode();
     //We must create a new merge node
-    QString fixedNamePrefix(node->getScriptName_mt_safe().c_str());
-    fixedNamePrefix.append('_');
-    fixedNamePrefix.append("globalMerge");
-    fixedNamePrefix.append('_');
+    QString fixedNamePrefix = QString::fromUtf8(node->getScriptName_mt_safe().c_str());
+    fixedNamePrefix.append(QLatin1Char('_'));
+    fixedNamePrefix.append(QString::fromUtf8("globalMerge"));
+    fixedNamePrefix.append(QLatin1Char('_'));
     
     
     
-    CreateNodeArgs args(PLUGINID_OFX_MERGE, eCreateNodeReasonInternal,  boost::shared_ptr<NodeCollection>());
+    CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_MERGE), eCreateNodeReasonInternal,  boost::shared_ptr<NodeCollection>());
     args.fixedName = fixedNamePrefix;
     args.createGui = false;
     args.addToProject = false;
@@ -3962,7 +4024,10 @@ RotoContext::refreshRotoPaintTree()
         return;
     }
     
-    bool canConcatenate = isRotoPaintTreeConcatenatable();
+    std::list<boost::shared_ptr<RotoDrawableItem> > items = getCurvesByRenderOrder();
+
+    int blendingOperator;
+    bool canConcatenate = isRotoPaintTreeConcatenatableInternal(items, &blendingOperator);
     
     NodePtr globalMerge;
     int globalMergeIndex = -1;
@@ -3991,11 +4056,19 @@ RotoContext::refreshRotoPaintTree()
         }
     }
     
-    std::list<boost::shared_ptr<RotoDrawableItem> > items = getCurvesByRenderOrder();
     for (std::list<boost::shared_ptr<RotoDrawableItem> >::const_iterator it = items.begin(); it!=items.end(); ++it) {
         (*it)->refreshNodesConnections();
         
         if (globalMerge) {
+            
+            {
+                KnobPtr mergeOperatorKnob = globalMerge->getKnobByName(kMergeOFXParamOperation);
+                KnobChoice* mergeOp = dynamic_cast<KnobChoice*>(mergeOperatorKnob.get());
+                if (mergeOp) {
+                    mergeOp->setValue(blendingOperator);
+                }
+            }
+            
             NodePtr effectNode = (*it)->getEffectNode();
             assert(effectNode);
             //qDebug() << "Connecting" << (*it)->getScriptName().c_str() << "to input" << globalMergeIndex <<

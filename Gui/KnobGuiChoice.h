@@ -30,6 +30,10 @@
 #include <vector> // KnobGuiInt
 #include <list>
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#endif
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QObject>
@@ -49,9 +53,37 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/KnobGui.h"
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Label.h"
+#include "Gui/ComboBox.h"
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
+
+class KnobComboBox : public ComboBox
+{
+public:
+    KnobComboBox(const KnobGuiPtr& knob,int dimension, QWidget* parent = 0);
+    
+    virtual ~KnobComboBox();
+    
+private:
+    
+    virtual void wheelEvent(QWheelEvent *e) OVERRIDE FINAL;
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE FINAL;
+    virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
+    virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
+    virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
+    virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
+
+private:
+    boost::scoped_ptr<KnobWidgetDnD> _dnd;
+};
 
 class KnobGuiChoice
     : public KnobGui
@@ -102,7 +134,7 @@ private:
     virtual void updateToolTip() OVERRIDE FINAL;
     virtual void reflectModificationsState() OVERRIDE FINAL;
     
-    ComboBox *_comboBox;
+    KnobComboBox *_comboBox;
     boost::weak_ptr<KnobChoice> _knob;
 };
 

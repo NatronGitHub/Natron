@@ -6,6 +6,7 @@ PortGroup        github 1.0
 PortGroup        cmake 1.0
 PortGroup        conflicts_build 1.0
 PortGroup        qt4 1.0
+PortGroup       compiler_blacklist_versions 1.0
 # gcc-4.8 cannot compile universal
 # The internal yaml-cpp is not compiled with multiple archs in universal mode
 #PortGroup        muniversal 1.0
@@ -13,13 +14,13 @@ PortGroup        qt4 1.0
 epoch        	 1
 
 fetch.type              git
-github.setup     OpenImageIO oiio 1.5.23 tags/Release-
+github.setup     OpenImageIO oiio 1.6.11 tags/Release-
 #github.version      ${version}-dist
 #github.tarball_from downloads
 
 name             openimageio
 #version          1.4.5.91
-#revision         2
+#revision         1
 categories       graphics
 platforms           darwin
 license          BSD
@@ -35,7 +36,7 @@ homepage         http://sites.google.com/site/openimageio/
 #checksums           rmd160  94c6e2274be01e82cfe8bc4bf11677593d33f299 \
 #                    sha256  4cf3b373e56694ce9e3896a356b68a2ed92978e76be653a5b5e45b17937faae8
 
-depends_lib      port:boost port:jpeg port:tiff port:libpng port:openexr port:glew port:ilmbase port:libraw port:giflib
+depends_lib      port:boost port:jpeg port:tiff port:libpng port:openexr port:glew port:ilmbase port:libraw port:giflib port:webp
 
 # can't compile openimageio when another version is installed, because the include path is wrong
 conflicts_build  ${name}
@@ -50,18 +51,27 @@ depends_skip_archcheck txt2man
 # gcc-4.2 doesn't work
 # llvm-gcc-4.2 works
 # macports-clang < 3.3 untested
+# clang < 300 doesn't work
 #compiler.fallback-append macports-gcc-4.8 macports-gcc-4.9 macports-clang-3.3 macports-clang-3.4 macports-clang-3.5
-compiler.blacklist apple-gcc-4.0 apple-gcc-4.2 gcc-3.3 gcc-4.0 gcc-4.2 macports-gcc-4.0 macports-gcc-4.2
+compiler.blacklist apple-gcc-4.0 apple-gcc-4.2 gcc-3.3 gcc-4.0 gcc-4.2 macports-gcc-4.0 macports-gcc-4.2 {clang < 300}
 
 # The PowerPC build requires GCC >= 4.8, which doesn't recognize the -arch flag, and requires libatomic
-if {${configure.build_arch} eq "ppc"} {
-    compiler.blacklist-append macports-gcc-4.3 macports-gcc-4.4 macports-gcc-4.5 macports-gcc-4.6 macports-gcc-4.7 macports-clang-3.3 macports-clang-3.4 macports-clang-3.5 
-    # the following removes the flag "-arch ppc" put by cmake-1.0 portgroup in the pre-configure phase
-    pre-configure {
-        configure.args-delete -DCMAKE_OSX_ARCHITECTURES="${configure.build_arch}"
-    }
-    # -latomic is necessary on ppc for __atomic_fetch_add_8 and __atomic_exchange_8
-    configure.args-append -DCMAKE_SHARED_LINKER_FLAGS=-latomic -DCMAKE_EXE_LINKER_FLAGS=-latomic
+# Unfortunately, the resulting binaries don't work (at least on PPC), so we build without threads
+if {${configure.build_arch} eq "ppc" || ${configure.build_arch} eq "ppc64"} {
+     compiler.blacklist-append macports-clang-3.3 macports-clang-3.4 macports-clang-3.5
+#    compiler.blacklist-append macports-gcc-4.3 macports-gcc-4.4 macports-gcc-4.5 macports-gcc-4.6 macports-gcc-4.7
+#    # the following removes the flag "-arch ppc" put by cmake-1.0 portgroup in the pre-configure phase
+#    pre-configure {
+#        configure.args-delete -DCMAKE_OSX_ARCHITECTURES="${configure.build_arch}"
+#    }
+#    ## -latomic is necessary on ppc for __atomic_fetch_add_8 and __atomic_exchange_8
+#    configure.args-append -DCMAKE_SHARED_LINKER_FLAGS=-latomic -DCMAKE_EXE_LINKER_FLAGS=-latomic
+    # env PATH=/opt/local/libexec/qt4/bin:$PATH cmake .. -DNOTHREADS=ON -DCMAKE_BUILD_TYPE=Debug -DSTOP_ON_WARNING=OFF
+    configure.args-append -DNOTHREADS=ON -DSTOP_ON_WARNING=OFF
+    ## uncomment the following to compile with buggy thread support
+    # env PATH=/opt/local/libexec/qt4/bin:$PATH cmake .. -DCMAKE_C_COMPILER=gcc-mp-4.9 -DCMAKE_CXX_COMPILER=g++-mp-4.9 -DCMAKE_SHARED_LINKER_FLAGS=-latomic -DCMAKE_EXE_LINKER_FLAGS=-latomic -DCMAKE_BUILD_TYPE=Debug -DSTOP_ON_WARNING=OFF
+    ## -latomic is necessary on ppc for __atomic_fetch_add_8 and __atomic_exchange_8
+    #configure.args-append -DCMAKE_SHARED_LINKER_FLAGS=-latomic -DCMAKE_EXE_LINKER_FLAGS=-latomic
 }
 
 #post-extract {
@@ -79,7 +89,10 @@ if {${configure.build_arch} eq "ppc"} {
 
 patch.pre_args	-p1
 patchfiles \
-    oiio-1.5.22-exrthreads.patch
+    oiio-1.5.23-checkmaxmem.patch \
+    oiio-1.5.23-invalidatespec.patch \
+    oiio-nothreads.patch \
+    oiio-1.6.11-fix_exr_threads.patch 
 
 cmake.out_of_source yes
 
@@ -100,6 +113,7 @@ configure.args-append \
     -DUSE_GIF:BOOL=TRUE \
     -DUSE_PTEX:BOOL=FALSE \
     -DUSE_LIBRAW:BOOL=TRUE \
+    -DUSE_NUKE:BOOL=FALSE \
     -DSTOP_ON_WARNING:BOOL=FALSE
 
 default_variants    +opencolorio +openjpeg +qt4 +freetype
@@ -158,7 +172,7 @@ variant field3d description {Use Field3D.} {
 
 variant freetype description {Use FreeType.} {
     configure.args-delete -DUSE_FREETYPE:BOOL=FALSE
-    configure.args-append -DUSE_FREETYPE:BOOL=TRUE -DFREETYPE_INCLUDE_PATH=${prefix}/include/freetype2
+    configure.args-append -DUSE_FREETYPE:BOOL=TRUE -DFREETYPE_INCLUDE_DIRS=${prefix}/include/freetype2
     depends_lib-append port:freetype
 }
 

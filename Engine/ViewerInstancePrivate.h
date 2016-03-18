@@ -52,14 +52,17 @@
 
 NATRON_NAMESPACE_ENTER;
 
-struct OnGoingRenderInfo
+
+struct AbortableRenderInfo_CompareAge
 {
-    bool aborted;
-    U64 age;
+    bool operator() (const AbortableRenderInfoPtr & lhs,
+                     const AbortableRenderInfoPtr & rhs) const
+    {
+        return lhs->age < rhs->age;
+    }
 };
 
-
-typedef std::list<OnGoingRenderInfo> OnGoingRenders;
+typedef std::set<AbortableRenderInfoPtr, AbortableRenderInfo_CompareAge> OnGoingRenders;
 
 
 struct RenderViewerArgs
@@ -105,84 +108,7 @@ struct RenderViewerArgs
     int alphaChannelIndex;
 };
 
-/// parameters send from the scheduler thread to updateViewer() (which runs in the main thread)
-class UpdateViewerParams : public BufferableObject
-{
-    
-public:
-    
-    UpdateViewerParams()
-    : ramBuffer(NULL)
-    , mustFreeRamBuffer(false)
-    , textureIndex(0)
-    , time(0)
-    , textureRect()
-    , srcPremult(eImagePremultiplicationOpaque)
-    , bytesCount(0)
-    , depth()
-    , gain(1.)
-    , gamma(1.)
-    , offset(0.)
-    , mipMapLevel(0)
-    , premult(eImagePremultiplicationOpaque)
-    , lut(eViewerColorSpaceSRGB)
-    , layer()
-    , alphaLayer()
-    , alphaChannelName()
-    , cachedFrame()
-    , tiles()
-    , rod()
-    , renderAge(0)
-    , isSequential(false)
-    , roi()
-    , updateOnlyRoi(false)
-    , recenterViewport(false)
-    , viewportCenter()
-    {
-    }
-    
-    virtual ~UpdateViewerParams() {
-        if (mustFreeRamBuffer) {
-            free(ramBuffer);
-        }
-    }
-    
-    virtual std::size_t sizeInRAM() const OVERRIDE FINAL
-    {
-        return bytesCount;
-    }
 
-    unsigned char* ramBuffer;
-    bool mustFreeRamBuffer; //< set to true when !cachedFrame
-    int textureIndex;
-    int time;
-    TextureRect textureRect;
-    ImagePremultiplicationEnum srcPremult;
-    size_t bytesCount;
-    ImageBitDepthEnum depth;
-    double gain;
-    double gamma;
-    double offset;
-    unsigned int mipMapLevel;
-    ImagePremultiplicationEnum premult;
-    ViewerColorSpaceEnum lut;
-    ImageComponents layer;
-    ImageComponents alphaLayer;
-    std::string alphaChannelName;
-    
-    // put a shared_ptr here, so that the cache entry is never released before the end of updateViewer()
-    boost::shared_ptr<FrameEntry> cachedFrame;
-    std::list<boost::shared_ptr<Image> > tiles;
-    RectD rod;
-    U64 renderAge;
-    bool isSequential;
-    RectI roi;
-    bool updateOnlyRoi;
-    
-    bool recenterViewport;
-    Natron::Point viewportCenter;
-
-};
 
 struct ViewerInstance::ViewerInstancePrivate
 : public QObject, public LockManagerI<FrameEntry>
@@ -197,7 +123,9 @@ public:
     : instance(parent)
     , uiContext(NULL)
     , forceRenderMutex()
-    , forceRender(false)
+    , forceRender()
+    , isViewerPausedMutex()
+    , isViewerPaused()
     , updateViewerPboIndex(0)
     , viewerParamsMutex()
     , viewerParamsGain(1.)
@@ -228,9 +156,11 @@ public:
     {
 
         for (int i = 0; i < 2; ++i) {
+            forceRender[i] = false;
             activeInputs[i] = -1;
             renderAge[i] = 1;
             displayAge[i] = 0;
+            isViewerPaused[i] = false;
             viewerParamsChannels[i] = eDisplayChannelsRGB;
         }
         
@@ -292,7 +222,7 @@ public:
      * @brief Returns the current render age of the viewer (a simple counter incrementing at each request).
      * The age is then incremented so the next call to getRenderAge will return the current value plus one.
      **/
-    U64 getRenderAgeAndIncrement(int texIndex)
+    AbortableRenderInfoPtr createNewRenderRequest(int texIndex, bool canAbort)
     {
         QMutexLocker k(&renderAgeMutex);
         
@@ -302,7 +232,9 @@ public:
         } else {
             ++renderAge[texIndex];
         }
-        return ret;
+        
+        AbortableRenderInfoPtr info(new AbortableRenderInfo(canAbort, ret));
+        return info;
         
     }
     
@@ -310,18 +242,10 @@ public:
      * @brief We keep track of ongoing renders internally. This function is called only by non 
      * abortable renders to determine if we should abort anyway because the render is no longer interesting.
      **/
-    bool isRenderAbortable(int texIndex,U64 age) const
+    bool isLatestRender(int texIndex,U64 age) const
     {
         QMutexLocker k(&renderAgeMutex);
-      
-        
-        for (OnGoingRenders::const_iterator it = currentRenderAges[texIndex].begin(); it!=currentRenderAges[texIndex].end();++it) {
-            if (it->age == age) {
-                return it->aborted;
-            }
-        }
-         //hmm something is wrong the render doesn't exist
-        return true;
+        return !currentRenderAges[texIndex].empty() && (*currentRenderAges[texIndex].rbegin())->age == age;
     }
     
     
@@ -339,7 +263,7 @@ public:
             ++it;
             
             for (;it != currentRenderAges[i].end(); ++it) {
-                it->aborted = true;
+                (*it)->aborted = 1;
             }
         }
     }
@@ -378,23 +302,19 @@ public:
         return true;
     }
     
-    bool addOngoingRender(int texIndex, U64 age) {
+    bool addOngoingRender(int texIndex, const AbortableRenderInfoPtr& abortInfo) {
         QMutexLocker k(&renderAgeMutex);
-        if (!currentRenderAges[texIndex].empty() && currentRenderAges[texIndex].back().age >= age) {
+        if (!currentRenderAges[texIndex].empty() && (*currentRenderAges[texIndex].rbegin())->age >= abortInfo->age) {
             return false;
         }
-       
-        OnGoingRenderInfo info;
-        info.aborted = false;
-        info.age = age;
-        currentRenderAges[texIndex].push_back(info);
+        currentRenderAges[texIndex].insert(abortInfo);
         return true;
     }
     
     bool removeOngoingRender(int texIndex, U64 age) {
         QMutexLocker k(&renderAgeMutex);
         for (OnGoingRenders::iterator it = currentRenderAges[texIndex].begin(); it!=currentRenderAges[texIndex].end();++it) {
-            if (it->age == age) {
+            if ((*it)->age == age) {
                 currentRenderAges[texIndex].erase(it);
                 return true;
             }
@@ -453,8 +373,10 @@ public:
     const ViewerInstance* const instance;
     OpenGLViewerI* uiContext; // written in the main thread before render thread creation, accessed from render thread
     mutable QMutex forceRenderMutex;
-    bool forceRender; /*!< true when we want to by-pass the cache*/
+    bool forceRender[2]; /*!< true when we want to by-pass the cache*/
 
+    mutable QMutex isViewerPausedMutex;
+    bool isViewerPaused[2]; /*!< When true we should no longer refresh the viewer */
 
     // updateViewer: stuff for handling the execution of updateViewer() in the main thread, @see UpdateViewerParams
     //is always called on the main thread, but the thread running renderViewer MUST

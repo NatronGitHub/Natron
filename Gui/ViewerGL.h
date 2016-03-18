@@ -42,6 +42,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/OpenGLViewerI.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 #include "Gui/GuiFwd.h"
@@ -252,7 +253,7 @@ public:
 
     virtual void makeOpenGLcontextCurrent() OVERRIDE FINAL;
     virtual void removeGUI() OVERRIDE FINAL;
-    virtual int getCurrentView() const OVERRIDE FINAL;
+    virtual ViewIdx getCurrentView() const OVERRIDE FINAL;
     
     virtual boost::shared_ptr<TimeLine> getTimeline() const OVERRIDE FINAL;
 

@@ -389,13 +389,12 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                         }
                         
                         for (int k = 0; k < 3 && k < dstNComps; ++k) {
-                            SRCPIX sourcePixel = k < srcNComps ? srcPixels[k] : 0.;
+                            SRCPIX sourcePixel = srcPixels[k];
                             DSTPIX pix;
                             if (!useColorspaces || (!srcLut && !dstLut)) {
                                 if (dstMaxValue == 255) {
                                     float pixFloat = convertPixelDepth<SRCPIX, float>(sourcePixel);
-                                    error[k] = (error[k] & 0xff) + ( dstLut ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat) :
-                                                                    Color::floatToInt<0xff01>(pixFloat) );
+                                    error[k] = (error[k] & 0xff) + Color::floatToInt<0xff01>(pixFloat);
                                     pix = error[k] >> 8;
                                     
                                 } else {

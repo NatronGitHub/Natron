@@ -36,6 +36,7 @@ CLANG_DIAG_ON(deprecated)
 #include <QtCore/QString>
 
 #include "Engine/KnobTypes.h"
+#include "Engine/ViewIdx.h"
 
 #include "Global/Macros.h"
 #include "Engine/EngineFwd.h"
@@ -80,17 +81,6 @@ public:
         return _isInputImage;
     }
 
-    /**
-     * @brief firstFrame
-     * @return Returns the index of the first frame in the sequence held by this Reader.
-     */
-    int firstFrame() const;
-
-    /**
-     * @brief lastFrame
-     * @return Returns the index of the last frame in the sequence held by this Reader.
-     */
-    int lastFrame() const;
 
     void open_file()
     {
@@ -101,7 +91,7 @@ public:
      * @brief getRandomFrameName
      * @param f The index of the frame.
      */
-    std::string getFileName(int time) const;
+    std::string getFileName(int time, ViewSpec view) const;
 
 Q_SIGNALS:
 
@@ -116,8 +106,6 @@ private:
     
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
-
-    int frameCount() const;
 
     static const std::string _typeNameStr;
     int _isInputImage;
@@ -173,7 +161,7 @@ public:
         return _sequenceDialog;
     }
 
-    QString generateFileNameAtTime(SequenceTime time) const;
+    QString generateFileNameAtTime(SequenceTime time, ViewSpec view) const;
 
 Q_SIGNALS:
 

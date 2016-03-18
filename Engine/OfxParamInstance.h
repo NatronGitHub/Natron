@@ -50,6 +50,10 @@ CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
 #include "ofxCore.h"
 #include "ofxhParametricParam.h"
+
+#include "Engine/KnobTypes.h"
+#include "Engine/ViewIdx.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -75,6 +79,11 @@ public:
 
 #define SET_DYNAMIC_PROPERTY_EDITED() PropertyModified_RAII dynamic_prop_edited_raii(this)
 
+#define DYNAMIC_PROPERTY_CHECK() if (isDynamicPropertyBeingModified()) { \
+                                    return; \
+                                 } \
+                                 SET_DYNAMIC_PROPERTY_EDITED();
+
 class OfxParamToKnob : public QObject
 {
     
@@ -85,14 +94,15 @@ class OfxParamToKnob : public QObject
     OFX::Host::Interact::Descriptor interactDesc;
     mutable QMutex dynamicPropModifiedMutex;
     bool _dynamicPropModified;
-    
+    boost::weak_ptr<EffectInstance> _effect;
     
 public:
    
 
-    OfxParamToKnob()
+    OfxParamToKnob(const EffectInstPtr& effect)
     : dynamicPropModifiedMutex()
     , _dynamicPropModified(false)
+    , _effect(effect)
     {
     }
 
@@ -104,7 +114,7 @@ public:
         return interactDesc;
     }
     
-    
+    EffectInstPtr getKnobHolder() const;
     
     void connectDynamicProperties();
     
@@ -114,7 +124,47 @@ public:
         //only for string-param for now
         std::string str;
     };
+    
+    
+    static std::string
+    getParamLabel(OFX::Host::Param::Instance* param)
+    {
+        std::string label = param->getLabel();
+        
+        if ( label.empty() ) {
+            label = param->getShortLabel();
+        }
+        if ( label.empty() ) {
+            label = param->getLongLabel();
+        }
+        if ( label.empty() ) {
+            label = param->getName();
+        }
+        
+        return label;
+    }
+    
+    
+    template <typename TYPE>
+    boost::shared_ptr<TYPE>
+    checkIfKnobExistsWithNameOrCreate(const std::string& scriptName, OFX::Host::Param::Instance* param, int dimension)
+    {
+        EffectInstPtr holder = getKnobHolder();
+        assert(holder);
+#ifdef NATRON_ENABLE_IO_META_NODES
+        boost::shared_ptr<TYPE> isType = holder->getKnobByNameAndType<TYPE>(scriptName);
+        if (isType) {
+            //Remove from the parent if it exists, because it will be added again afterwards
+            isType->resetParent();
+            return isType;
+        }
+#endif
+        boost::shared_ptr<TYPE> ret = AppManager::createKnob<TYPE>(holder.get(), getParamLabel(param), dimension);
+        return ret;
+    }
 
+    
+    
 public Q_SLOTS:
     
     /*
@@ -124,9 +174,9 @@ public Q_SLOTS:
     void onSecretChanged();
     void onEnabledChanged();
     void onLabelChanged();
-    void onDisplayMinMaxChanged(double min,double max, int index);
-    void onMinMaxChanged(double min,double max, int index);
-    
+    void onDisplayMinMaxChanged(double min, double max, int index);
+    void onMinMaxChanged(double min, double max, int index);
+    void onKnobAnimationLevelChanged(ViewSpec view, int dimension);
     
 protected:
     
@@ -151,7 +201,7 @@ protected:
 
 
 class OfxPushButtonInstance
-    : public OFX::Host::Param::PushbuttonInstance, public OfxParamToKnob
+    : public OfxParamToKnob, public OFX::Host::Param::PushbuttonInstance
 {
 public:
     OfxPushButtonInstance(const boost::shared_ptr<OfxEffectInstance>& node,
@@ -178,9 +228,6 @@ private:
 class OfxIntegerInstance
     :  public OfxParamToKnob, public OFX::Host::Param::IntegerInstance
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -214,9 +261,6 @@ public:
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
-public Q_SLOTS:
-
-    void onKnobAnimationLevelChanged(int dim,int lvl);
 
 private:
     
@@ -228,9 +272,6 @@ private:
 class OfxDoubleInstance
 :   public OfxParamToKnob, public OFX::Host::Param::DoubleInstance
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     OfxDoubleInstance(const boost::shared_ptr<OfxEffectInstance>& node,
@@ -268,9 +309,6 @@ public:
 
     bool isAnimated() const;
 
-public Q_SLOTS:
-
-    void onKnobAnimationLevelChanged(int,int lvl);
 
 private:
     
@@ -280,9 +318,6 @@ private:
 class OfxBooleanInstance
 :   public OfxParamToKnob, public OFX::Host::Param::BooleanInstance
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     OfxBooleanInstance(const boost::shared_ptr<OfxEffectInstance>& node,
@@ -314,9 +349,6 @@ public:
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
-public Q_SLOTS:
-
-    void onKnobAnimationLevelChanged(int,int lvl);
 
 private:
     
@@ -328,9 +360,6 @@ private:
 class OfxChoiceInstance
     : public OfxParamToKnob, public OFX::Host::Param::ChoiceInstance
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     OfxChoiceInstance(const boost::shared_ptr<OfxEffectInstance>& node,
@@ -364,10 +393,6 @@ public:
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
-public Q_SLOTS:
-
-    void onKnobAnimationLevelChanged(int,int lvl);
-
 private:
     
     virtual bool hasDoubleMinMaxProps() const OVERRIDE FINAL { return false; }
@@ -378,9 +403,6 @@ private:
 class OfxRGBAInstance
     :  public OfxParamToKnob, public OFX::Host::Param::RGBAInstance
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     OfxRGBAInstance(const boost::shared_ptr<OfxEffectInstance>& node,
@@ -416,10 +438,6 @@ public:
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
 
-public Q_SLOTS:
-
-    void onKnobAnimationLevelChanged(int,int lvl);
-
 private:
     boost::weak_ptr<KnobColor> _knob;
 };
@@ -428,9 +446,6 @@ private:
 class OfxRGBInstance
     :  public OfxParamToKnob,  public OFX::Host::Param::RGBInstance
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     OfxRGBInstance(const boost::shared_ptr<OfxEffectInstance>& node,
@@ -466,10 +481,6 @@ public:
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
 
-public Q_SLOTS:
-
-    void onKnobAnimationLevelChanged(int,int lvl);
-
 private:
     boost::weak_ptr<KnobColor> _knob;
 };
@@ -477,9 +488,6 @@ private:
 class OfxDouble2DInstance
     :  public OfxParamToKnob, public OFX::Host::Param::Double2DInstance
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     OfxDouble2DInstance(const boost::shared_ptr<OfxEffectInstance>& node,
@@ -517,10 +525,6 @@ public:
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
 
-public Q_SLOTS:
-
-    void onKnobAnimationLevelChanged(int,int lvl);
-
 private:
     boost::weak_ptr<KnobDouble> _knob;
 };
@@ -529,9 +533,6 @@ private:
 class OfxInteger2DInstance
     :  public OfxParamToKnob, public OFX::Host::Param::Integer2DInstance
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     OfxInteger2DInstance(const boost::shared_ptr<OfxEffectInstance>& node,
@@ -565,10 +566,6 @@ public:
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
-public Q_SLOTS:
-
-    void onKnobAnimationLevelChanged(int,int lvl);
-
 private:
     
     virtual bool hasDoubleMinMaxProps() const OVERRIDE FINAL { return false; }
@@ -579,9 +576,6 @@ private:
 class OfxDouble3DInstance
     :  public OfxParamToKnob, public OFX::Host::Param::Double3DInstance
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     OfxDouble3DInstance(const boost::shared_ptr<OfxEffectInstance>& node,
@@ -620,10 +614,6 @@ public:
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
 
-public Q_SLOTS:
-
-    void onKnobAnimationLevelChanged(int,int lvl);
-
 private:
     boost::weak_ptr<KnobDouble> _knob;
 };
@@ -631,9 +621,6 @@ private:
 class OfxInteger3DInstance
     :  public OfxParamToKnob, public OFX::Host::Param::Integer3DInstance
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     OfxInteger3DInstance(const boost::shared_ptr<OfxEffectInstance>& node,
@@ -667,10 +654,6 @@ public:
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
-public Q_SLOTS:
-
-    void onKnobAnimationLevelChanged(int,int lvl);
-
 private:
     
     virtual bool hasDoubleMinMaxProps() const OVERRIDE FINAL { return false; }
@@ -679,7 +662,7 @@ private:
 };
 
 class OfxGroupInstance
-    : public OFX::Host::Param::GroupInstance, public OfxParamToKnob
+    : public OfxParamToKnob, public OFX::Host::Param::GroupInstance
 {
 public:
 
@@ -708,7 +691,7 @@ private:
 };
 
 class OfxPageInstance
-    : public OFX::Host::Param::PageInstance, public OfxParamToKnob
+    : public OfxParamToKnob, public OFX::Host::Param::PageInstance
 {
 public:
 
@@ -734,9 +717,6 @@ struct OfxStringInstancePrivate;
 class OfxStringInstance
     : public OfxParamToKnob, public OFX::Host::Param::StringInstance
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     OfxStringInstance(const boost::shared_ptr<OfxEffectInstance>& node,
@@ -781,11 +761,6 @@ public:
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
     
-
-public Q_SLOTS:
-
-    void onKnobAnimationLevelChanged(int,int lvl);
-
 private:
     
     /**
@@ -805,9 +780,6 @@ struct OfxCustomInstancePrivate;
 class OfxCustomInstance
     : public OfxParamToKnob, public OFX::Host::Param::CustomInstance
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     OfxCustomInstance(const boost::shared_ptr<OfxEffectInstance>& node,
@@ -856,10 +828,6 @@ public:
     typedef OfxStatus (*customParamInterpolationV1Entry_t)(const void*            handleRaw,
                                                            OfxPropertySetHandle inArgsRaw,
                                                            OfxPropertySetHandle outArgsRaw);
-    
-public Q_SLOTS:
-
-    void onKnobAnimationLevelChanged(int,int lvl);
 
 private:
 

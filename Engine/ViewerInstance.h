@@ -30,6 +30,7 @@
 #include "Global/Macros.h"
 
 #include "Engine/OutputEffectInstance.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -48,9 +49,11 @@ struct ViewerArgs
     boost::shared_ptr<UpdateViewerParams> params;
     boost::shared_ptr<RenderingFlagSetter> isRenderingFlag;
     bool draftModeEnabled;
+    unsigned int mipMapLevelWithDraft,mipmapLevelWithoutDraft;
     bool autoContrast;
     DisplayChannelsEnum channels;
     bool userRoIEnabled;
+    bool mustComputeRoDAndLookupCache;
 };
 
 class ViewerInstance
@@ -99,12 +102,11 @@ public:
     
     ViewerRenderRetCode getRenderViewerArgsAndCheckCache_public(SequenceTime time,
                                                         bool isSequential,
-                                                        bool canAbort,
-                                                        int view,
+                                                        ViewIdx view,
                                                         int textureIndex,
                                                         U64 viewerHash,
+                                                        bool canAbort,
                                                         const NodePtr& rotoPaintNode,
-                                                        bool useTLS,
                                                         const boost::shared_ptr<RenderStats>& stats,
                                                         ViewerArgs* outArgs);
 
@@ -115,15 +117,56 @@ private:
      **/
     ViewerRenderRetCode getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                         bool isSequential,
-                                                        bool canAbort,
-                                                        int view,
+                                                        ViewIdx view,
                                                         int textureIndex,
                                                         U64 viewerHash,
                                                         const NodePtr& rotoPaintNode,
-                                                        bool useTLS,
-                                                        U64 renderAge,
+                                                        const AbortableRenderInfoPtr& abortInfo,
                                                         const boost::shared_ptr<RenderStats>& stats,
                                                         ViewerArgs* outArgs);
+    
+    
+    
+    /**
+     * @brief Setup the ViewerArgs struct with the info requested by the user from the Viewer UI
+     **/
+    void setupMinimalUpdateViewerParams(const SequenceTime time,
+                                        const ViewIdx view,
+                                        const int textureIndex,
+                                        const AbortableRenderInfoPtr& abortInfo,
+                                        const bool isSequential,
+                                        ViewerArgs* outArgs);
+    
+    
+    /**
+     * @brief Get the RoI from the Viewer and lookup the cache for a texture at the given mipMapLevel.
+     * setupMinimalUpdateViewerParams(...) MUST have been called before.
+     * When returning this function, the UpdateViewerParams will have been filled entirely
+     * and if the texture was found in the cache, the shared pointer outArgs->params->cachedFrame will be valid.
+     * This function may fail or ask to just redraw or ask to clear the viewer to black depending on it's return 
+     * code.
+     **/
+    ViewerRenderRetCode getViewerRoIAndTexture(const RectD& rod,
+                                               const U64 viewerHash,
+                                               const bool useCache,
+                                               const bool isDraftMode,
+                                               const unsigned int mipmapLevel,
+                                               const boost::shared_ptr<RenderStats>& stats,
+                                               ViewerArgs* outArgs);
+
+
+    /**
+     * @brief Calls getViewerRoIAndTexture(). If called on the main-thread, the parameter
+     * useOnlyRoDCache should be set to true. If it did not lookup the cache it will not
+     * set the member mustComputeRoDAndLookupCache of the ViewerArgs struct. In that case
+     * this function should be called again later on by the render thread with the parameter
+     * useOnlyRoDCache to false.
+     **/
+    ViewerRenderRetCode getRoDAndLookupCache(const bool useOnlyRoDCache,
+                                             const U64 viewerHash,
+                                             const NodePtr& rotoPaintNode,
+                                             const boost::shared_ptr<RenderStats>& stats,
+                                             ViewerArgs* outArgs);
 
 public:
     
@@ -138,27 +181,31 @@ public:
      * Otherwise it just calls renderRoi(...) on the active input
      * and then render to the PBO.
      **/
-    ViewerRenderRetCode renderViewer(int view,bool singleThreaded,bool isSequentialRender,
-                                    U64 viewerHash,
-                                    bool canAbort,
-                                    const NodePtr& rotoPaintNode,
-                                    bool useTLS,
-                                    boost::shared_ptr<ViewerArgs> args[2],
-                                    const boost::shared_ptr<RequestedFrame>& request,
-                                    const boost::shared_ptr<RenderStats>& stats) WARN_UNUSED_RETURN;
+    ViewerRenderRetCode renderViewer(ViewIdx view,
+                                     bool singleThreaded,
+                                     bool isSequentialRender,
+                                     U64 viewerHash,
+                                     bool canAbort,
+                                     const NodePtr& rotoPaintNode,
+                                     bool useTLS,
+                                     boost::shared_ptr<ViewerArgs> args[2],
+                                     const boost::shared_ptr<RequestedFrame>& request,
+                                     const boost::shared_ptr<RenderStats>& stats) WARN_UNUSED_RETURN;
     
     ViewerRenderRetCode getViewerArgsAndRenderViewer(SequenceTime time,
-                                                    bool canAbort,
-                                                    int view,
-                                                    U64 viewerHash,
-                                                    const NodePtr& rotoPaintNode,
-                                                    const boost::shared_ptr<RotoStrokeItem>& strokeItem,
-                                                    const boost::shared_ptr<RenderStats>& stats,
-                                                    boost::shared_ptr<ViewerArgs>* argsA,
-                                                    boost::shared_ptr<ViewerArgs>* argsB);
+                                                     bool canAbort,
+                                                     ViewIdx view,
+                                                     U64 viewerHash,
+                                                     const NodePtr& rotoPaintNode,
+                                                     const boost::shared_ptr<RotoStrokeItem>& strokeItem,
+                                                     const boost::shared_ptr<RenderStats>& stats,
+                                                     boost::shared_ptr<ViewerArgs>* argsA,
+                                                     boost::shared_ptr<ViewerArgs>* argsB);
 
 
     void updateViewer(boost::shared_ptr<UpdateViewerParams> & frame);
+    
+    virtual bool getMakeSettingsPanel() const OVERRIDE FINAL { return false; }
     
     /**
      *@brief Bypasses the cache so the next frame will be rendered fully
@@ -193,7 +240,7 @@ public:
         return true;
     }
     
-    bool isRenderAbortable(int textureIndex, U64 renderAge) const;
+    bool isLatestRender(int textureIndex, U64 renderAge) const;
 
 
     void setDisplayChannels(DisplayChannelsEnum channels, bool bothInputs);
@@ -209,7 +256,7 @@ public:
     /**
      * @brief Returns the current view, MT-safe
      **/
-    int getViewerCurrentView() const;
+    ViewIdx getViewerCurrentView() const;
 
     void onGainChanged(double exp);
     
@@ -233,7 +280,7 @@ public:
     
     virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
     
-    virtual int getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
+    virtual ViewIdx getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
 
     boost::shared_ptr<TimeLine> getTimeline() const;
     
@@ -241,10 +288,7 @@ public:
     
     static const Color::Lut* lutFromColorspace(ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
     
-    virtual bool refreshClipPreferences(double time,
-                                         const RenderScale & scale,
-                                        ValueChangedReasonEnum reason,
-                                         bool forceGetClipPrefAction) OVERRIDE FINAL;
+    virtual void onMetaDatasRefreshed(const NodeMetadata& metadata) OVERRIDE FINAL;
     
     virtual void onChannelsSelectorRefreshed() OVERRIDE FINAL;
     
@@ -269,13 +313,17 @@ public:
     void setDoingPartialUpdates(bool doing);
     bool isDoingPartialUpdates() const;
     
-    
-    virtual void reportStats(int time, int view, double wallTime, const RenderStatsMap& stats) OVERRIDE FINAL;
+
+    virtual void reportStats(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats) OVERRIDE FINAL;
     
     ///Only callable on MT
     void setActivateInputChangeRequestedFromViewer(bool fromViewer);
     
     bool isInputChangeRequestedFromViewer() const;
+    
+    void setViewerPaused(bool paused, bool allInputs);
+    
+    bool isViewerPaused(int texIndex) const;
     
 public Q_SLOTS:
     
@@ -300,7 +348,7 @@ public Q_SLOTS:
 
 Q_SIGNALS:
     
-    void renderStatsAvailable(int time, int view, double wallTime, const RenderStatsMap& stats);
+    void renderStatsAvailable(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats);
     
     void s_callRedrawOnMainThread();
 
@@ -373,16 +421,16 @@ private:
     /*******************************************/
     
     
-    ViewerRenderRetCode renderViewer_internal(int view,
-                                             bool singleThreaded,
-                                             bool isSequentialRender,
-                                             U64 viewerHash,
-                                             bool canAbort,
-                                             NodePtr rotoPaintNode,
-                                             bool useTLS,
-                                             const boost::shared_ptr<RequestedFrame>& request,
-                                             const boost::shared_ptr<RenderStats>& stats,
-                                             ViewerArgs& inArgs) WARN_UNUSED_RETURN;
+    ViewerRenderRetCode renderViewer_internal(ViewIdx view,
+                                              bool singleThreaded,
+                                              bool isSequentialRender,
+                                              U64 viewerHash,
+                                              bool canAbort,
+                                              NodePtr rotoPaintNode,
+                                              bool useTLS,
+                                              const boost::shared_ptr<RequestedFrame>& request,
+                                              const boost::shared_ptr<RenderStats>& stats,
+                                              ViewerArgs& inArgs) WARN_UNUSED_RETURN;
     
     
     virtual RenderEngine* createRenderEngine() OVERRIDE FINAL WARN_UNUSED_RETURN;

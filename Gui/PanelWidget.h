@@ -77,8 +77,11 @@ public:
      */
     void handleUnCaughtKeyUpEvent(QKeyEvent* e);
     
+    virtual void pushUndoCommand(QUndoCommand* command);
     
 protected:
+    
+    virtual QUndoStack* getUndoStack() const { return 0; }
     
     virtual void notifyGuiClosing() {}
     

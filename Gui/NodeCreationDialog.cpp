@@ -48,6 +48,12 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/LineEdit.h"
 #include "Gui/GuiApplicationManager.h"
 
+/*
+ If defined, the list will contain matches ordered by increasing match length of the regexp
+ otherwise they will be ordered with their score
+ */
+//#define NODE_TAB_DIALOG_USE_MATCHED_LENGTH
+
 NATRON_NAMESPACE_ENTER;
 
 
@@ -99,8 +105,8 @@ CompleterLineEdit::CompleterLineEdit(const PluginsNamesMap& plugins,
     _imp->listView->setWindowFlags(Qt::ToolTip);
     _imp->listView->setModel(_imp->model);
     
-    connect( this, SIGNAL( textChanged(QString) ), this, SLOT( filterText(QString) ) );
-    connect( _imp->listView, SIGNAL( clicked(QModelIndex) ), this, SLOT( setTextFromIndex(QModelIndex) ) );
+    connect( this, SIGNAL(textChanged(QString)), this, SLOT(filterText(QString)) );
+    connect( _imp->listView, SIGNAL(clicked(QModelIndex)), this, SLOT(setTextFromIndex(QModelIndex)) );
 }
 
 CompleterLineEdit::CompleterLineEdit(const QStringList & displayWords,
@@ -115,8 +121,8 @@ CompleterLineEdit::CompleterLineEdit(const QStringList & displayWords,
     _imp->listView->setWindowFlags(Qt::ToolTip);
     _imp->listView->setModel(_imp->model);
 
-    connect( this, SIGNAL( textChanged(QString) ), this, SLOT( filterText(QString) ) );
-    connect( _imp->listView, SIGNAL( clicked(QModelIndex) ), this, SLOT( setTextFromIndex(QModelIndex) ) );
+    connect( this, SIGNAL(textChanged(QString)), this, SLOT(filterText(QString)) );
+    connect( _imp->listView, SIGNAL(clicked(QModelIndex)), this, SLOT(setTextFromIndex(QModelIndex)) );
 }
 
 CompleterLineEdit::~CompleterLineEdit()
@@ -142,16 +148,32 @@ CompleterLineEdit::filterText(const QString & txt)
         
         QString pattern;
         for (int i = 0; i < txt.size(); ++i) {
-            pattern.push_back('*');
+            pattern.push_back(QLatin1Char('*'));
             pattern.push_back(txt[i]);
         }
-        pattern.push_back('*');
+        pattern.push_back(QLatin1Char('*'));
         QRegExp expr(pattern,Qt::CaseInsensitive,QRegExp::WildcardUnix);
+        
+#ifdef NODE_TAB_DIALOG_USE_MATCHED_LENGTH
+        std::map<int, QStringList> matchOrdered;
         for (PluginsNamesMap::iterator it = _imp->names.begin(); it != _imp->names.end(); ++it) {
-            if ( it->second.first.contains(expr) ) {
-                sl.push_front(it->second.second);
+            if (expr.exactMatch(it->second.first)) {
+                QStringList& matchedForLength =  matchOrdered[expr.matchedLength()];
+                matchedForLength.push_front(it->second.second);
             }
+
         }
+        for (std::map<int, QStringList>::iterator it = matchOrdered.begin(); it!=matchOrdered.end(); ++it) {
+            sl.append(it->second);
+        }
+#else
+        
+        for (PluginsNamesMap::iterator it = _imp->names.begin(); it != _imp->names.end(); ++it) {
+             if (it->second.first.contains(expr)) {
+                 sl.push_front(it->second.second);
+             }
+        }
+#endif
     }
     _imp->model->setStringList(sl);
     _imp->listView->setModel(_imp->model);
@@ -245,8 +267,18 @@ CompleterLineEdit::keyPressEvent(QKeyEvent* e)
         } else {
             const QItemSelection selection = _imp->listView->selectionModel()->selection();
             QModelIndexList indexes = selection.indexes();
+            bool doDialogEnd = false;
             if (indexes.size() == 1) {
                 setText( _imp->model->index( indexes[0].row() ).data().toString() );
+                doDialogEnd = true;
+            } else if (indexes.isEmpty()) {
+               if (_imp->model->rowCount() > 1) {
+                    doDialogEnd = true;
+                    setText( _imp->model->index(0).data().toString() );
+                }
+                
+            }
+            if (doDialogEnd) {
                 Q_EMIT itemCompletionChosen();
                 if (_imp->quickExitEnabled) {
                     _imp->dialog->accept();
@@ -255,6 +287,7 @@ CompleterLineEdit::keyPressEvent(QKeyEvent* e)
             } else {
                 QLineEdit::keyPressEvent(e);
             }
+            
         }
 
     } else {
@@ -266,7 +299,7 @@ void
 CompleterLineEdit::showCompleter()
 {
     _imp->listView->setFixedWidth(width());
-    filterText("");
+    filterText(text());
 }
 
 struct NodeCreationDialogPrivate
@@ -285,15 +318,15 @@ struct NodeCreationDialogPrivate
 
 static int getPluginWeight(const QString& pluginID, int majVersion)
 {
-    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
-    QString propName(pluginID + QString::number(majVersion) + "_tab_weight");
+    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
+    QString propName(pluginID + QString::number(majVersion) + QString::fromUtf8("_tab_weight"));
     int curValue = settings.value(propName,QVariant(0)).toInt();
     return curValue;
 }
 
 static void incrementPluginWeight(const QString& pluginID,int majVersion) {
-    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
-    QString propName(pluginID + QString::number(majVersion) + "_tab_weight");
+    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
+    QString propName(pluginID + QString::number(majVersion) + QString::fromUtf8("_tab_weight"));
     int curValue = settings.value(propName,QVariant(0)).toInt();
     ++curValue;
     settings.setValue(propName, QVariant(curValue));
@@ -305,7 +338,7 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
 {
     setWindowTitle( tr("Node Creation Tool") );
     setWindowFlags(Qt::Window | Qt::CustomizeWindowHint);
-    setObjectName("nodeCreationDialog");
+    setObjectName(QString::fromUtf8("nodeCreationDialog"));
     setAttribute(Qt::WA_DeleteOnClose,false);
     _imp->layout = new QVBoxLayout(this);
     _imp->layout->setContentsMargins(0, 0, 0, 0);
@@ -322,20 +355,20 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
             continue;
         }
         
-        Plugin* p = (*it->second.begin());
-        if (!p->getIsUserCreatable()) {
-            continue;
-        }
+        
+        
         
         if (it->second.size() == 1) {
             
             std::pair<QString,QString> idNamePair;
-            
-            
+            Plugin* p = (*it->second.begin());
+            if (!p->getIsUserCreatable()) {
+                continue;
+            }
             
             idNamePair.second = p->generateUserFriendlyPluginID();
             
-            int indexOfBracket = idNamePair.second.lastIndexOf("  [");
+            int indexOfBracket = idNamePair.second.lastIndexOf(QString::fromUtf8("  ["));
             if (indexOfBracket != -1) {
                 idNamePair.first = idNamePair.second.left(indexOfBracket);
             }
@@ -344,13 +377,16 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
             pluginsMap.insert(std::make_pair(weight,idNamePair));
             
             if (it->first == stdInitialFilter) {
-                initialFilterName = idNamePair.second;
+                initialFilterName = idNamePair.first;
             }
             ++i;
         } else {
             QString bestMajorName;
             for (PluginMajorsOrdered::reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
                 
+                if (!(*it2)->getIsUserCreatable()) {
+                    continue;
+                }
                 std::pair<QString,QString> idNamePair;
                 if (it2 == it->second.rbegin()) {
                     idNamePair.second = (*it2)->generateUserFriendlyPluginID();
@@ -360,7 +396,7 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
                 }
         
                 
-                int indexOfBracket = idNamePair.second.lastIndexOf("  [");
+                int indexOfBracket = idNamePair.second.lastIndexOf(QString::fromUtf8("  ["));
                 if (indexOfBracket != -1) {
                     idNamePair.first = idNamePair.second.left(indexOfBracket);
                 }
@@ -392,7 +428,7 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
     _imp->layout->addWidget(_imp->textEdit);
     _imp->textEdit->setFocus();
     _imp->textEdit->selectAll();
-    QTimer::singleShot( 20, _imp->textEdit, SLOT( showCompleter() ) );
+    QTimer::singleShot( 20, _imp->textEdit, SLOT(showCompleter()) );
 }
 
 NodeCreationDialog::~NodeCreationDialog()

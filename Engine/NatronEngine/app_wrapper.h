@@ -3,7 +3,7 @@
 
 #include <shiboken.h>
 
-#include <AppInstanceWrapper.h>
+#include <PyAppInstance.h>
 
 NATRON_NAMESPACE_ENTER;
 class AppWrapper : public App

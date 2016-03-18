@@ -68,6 +68,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/KnobUndoCommand.h"
+#include "Gui/KnobWidgetDnD.h"
 #include "Gui/Label.h"
 #include "Gui/NewLayerDialog.h"
 #include "Gui/ProjectGui.h"
@@ -84,6 +85,18 @@ using std::make_pair;
 
 //==========================KnobBool_GUI======================================
 
+Bool_CheckBox::Bool_CheckBox(const KnobGuiPtr& knob, int dimension, QWidget* parent)
+: AnimatedCheckBox(parent)
+, useCustomColor(false)
+, customColor()
+, _dnd(new KnobWidgetDnD(knob, dimension, this))
+{
+}
+
+Bool_CheckBox::~Bool_CheckBox()
+{
+}
+
 void
 Bool_CheckBox::getBackgroundColor(double *r,double *g,double *b) const
 {
@@ -97,6 +110,94 @@ Bool_CheckBox::getBackgroundColor(double *r,double *g,double *b) const
     }
 }
 
+void
+Bool_CheckBox::enterEvent(QEvent* e)
+{
+    _dnd->mouseEnter(e);
+    AnimatedCheckBox::enterEvent(e);
+}
+
+void
+Bool_CheckBox::leaveEvent(QEvent* e)
+{
+    _dnd->mouseLeave(e);
+    AnimatedCheckBox::leaveEvent(e);
+}
+
+void
+Bool_CheckBox::keyPressEvent(QKeyEvent* e)
+{
+    _dnd->keyPress(e);
+    AnimatedCheckBox::keyPressEvent(e);
+}
+
+void
+Bool_CheckBox::keyReleaseEvent(QKeyEvent* e)
+{
+    _dnd->keyRelease(e);
+    AnimatedCheckBox::keyReleaseEvent(e);
+}
+
+void
+Bool_CheckBox::mousePressEvent(QMouseEvent* e)
+{
+    if (!_dnd->mousePress(e)) {
+        AnimatedCheckBox::mousePressEvent(e);
+    }
+}
+
+void
+Bool_CheckBox::mouseMoveEvent(QMouseEvent* e)
+{
+    if (!_dnd->mouseMove(e)) {
+        AnimatedCheckBox::mouseMoveEvent(e);
+    }
+}
+
+void
+Bool_CheckBox::mouseReleaseEvent(QMouseEvent* e)
+{
+    _dnd->mouseRelease(e);
+    AnimatedCheckBox::mouseReleaseEvent(e);
+    
+}
+
+void
+Bool_CheckBox::dragEnterEvent(QDragEnterEvent* e)
+{
+    if (!_dnd->dragEnter(e)) {
+        AnimatedCheckBox::dragEnterEvent(e);
+    }
+}
+
+void
+Bool_CheckBox::dragMoveEvent(QDragMoveEvent* e)
+{
+    if (!_dnd->dragMove(e)) {
+        AnimatedCheckBox::dragMoveEvent(e);
+    }
+}
+void
+Bool_CheckBox::dropEvent(QDropEvent* e)
+{
+    if (!_dnd->drop(e)) {
+        AnimatedCheckBox::dropEvent(e);
+    }
+}
+
+void
+Bool_CheckBox::focusInEvent(QFocusEvent* e)
+{
+    _dnd->focusIn();
+    AnimatedCheckBox::focusInEvent(e);
+}
+
+void
+Bool_CheckBox::focusOutEvent(QFocusEvent* e)
+{
+    _dnd->focusOut();
+    AnimatedCheckBox::focusOutEvent(e);
+}
 
 KnobGuiBool::KnobGuiBool(KnobPtr knob,
                            DockablePanel *container)
@@ -109,11 +210,11 @@ KnobGuiBool::KnobGuiBool(KnobPtr knob,
 void
 KnobGuiBool::createWidget(QHBoxLayout* layout)
 {
-    _checkBox = new Bool_CheckBox( layout->parentWidget() );
+    _checkBox = new Bool_CheckBox(shared_from_this(), 0,layout->parentWidget() );
     onLabelChangedInternal();
     //_checkBox->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    QObject::connect( _checkBox, SIGNAL( clicked(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
-    QObject::connect( this, SIGNAL( labelClicked(bool) ), this, SLOT( onLabelClicked(bool) ) );
+    QObject::connect( _checkBox, SIGNAL(clicked(bool)), this, SLOT(onCheckBoxStateChanged(bool)) );
+    QObject::connect( this, SIGNAL(labelClicked(bool)), this, SLOT(onLabelClicked(bool)) );
 
     ///set the copy/link actions in the right click menu
     enableRightClickMenu(_checkBox,0);
@@ -196,13 +297,13 @@ KnobGuiBool::onLabelClicked(bool b)
         return;
     }
     _checkBox->setChecked(b);
-    pushUndoCommand( new KnobUndoCommand<bool>(this,_knob.lock()->getValue(0),b, 0, false) );
+    pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(),_knob.lock()->getValue(0),b, 0, false) );
 }
 
 void
 KnobGuiBool::onCheckBoxStateChanged(bool b)
 {
-    pushUndoCommand( new KnobUndoCommand<bool>(this,_knob.lock()->getValue(0),b, 0, false) );
+    pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(),_knob.lock()->getValue(0),b, 0, false) );
 }
 
 void

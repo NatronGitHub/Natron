@@ -298,10 +298,10 @@ NewLayerDialog::getComponents() const
 void
 NewLayerDialog::onRGBAButtonClicked()
 {
-    _imp->rEdit->setText("R");
-    _imp->gEdit->setText("G");
-    _imp->bEdit->setText("B");
-    _imp->aEdit->setText("A");
+    _imp->rEdit->setText(QString::fromUtf8("R"));
+    _imp->gEdit->setText(QString::fromUtf8("G"));
+    _imp->bEdit->setText(QString::fromUtf8("B"));
+    _imp->aEdit->setText(QString::fromUtf8("A"));
     
     _imp->rLabel->setVisible(true);
     _imp->rEdit->setVisible(true);

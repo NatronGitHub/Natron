@@ -21,7 +21,8 @@ Natron on GNU/Linux.
 4. [Distribution specific](#distribution-specific)
     - [Arch Linux](#arch-linux)
     - [Debian-based](#debian-based)
-    - [CentOS](#centos6-64-bit)
+    - [CentOS7/Fedora](#centos7)
+    - [CentOS6](#centos6-64-bit)
 
 
 # Libraries
@@ -246,6 +247,45 @@ expat: LIBS += -lexpat
 expat: PKGCONFIG -= expat
 cairo: PKGCONFIG -= cairo
 ```
+## CentOS7
+
+Instructions for CentOS and Fedora.
+
+On CentOS you need the EPEL repository:
+
+```
+yum install epel-release
+```
+
+Install required packages:
+
+```
+yum install fontconfig-devel gcc-c++ expat-devel python-pyside-devel shiboken-devel qt-devel boost-devel pixman-devel glew-devel cairo-devel
+```
+
+config.pri:
+```pri
+boost: LIBS += -lboost_serialization
+PKGCONFIG += expat
+PKGCONFIG += fontconfig
+cairo {
+        PKGCONFIG += cairo
+        LIBS -=  $$system(pkg-config --variable=libdir cairo)/libcairo.a
+}
+pyside {
+        PKGCONFIG -= pyside
+        INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)
+        INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)/QtCore
+        INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)/QtGui
+        INCLUDEPATH += $$system(pkg-config --variable=includedir QtGui)
+        LIBS += -lpyside-python2.7
+}
+shiboken {
+        PKGCONFIG -= shiboken
+        INCLUDEPATH += $$system(pkg-config --variable=includedir shiboken)
+        LIBS += -lshiboken-python2.7
+}
+```
 
 ## CentOS6+ (64-bit)
 
@@ -282,7 +322,7 @@ export PYTHON_PATH=$INSTALL_PATH/lib/python2.7
 export PYTHON_INCLUDE=$INSTALL_PATH/include/python2.7
 
 cd Natron
-wget https://raw.githubusercontent.com/MrKepzie/Natron/workshop/tools/linux/include/natron/config.pri
+wget https://raw.githubusercontent.com/MrKepzie/Natron/master/tools/linux/include/natron/config.pri
 mkdir build && cd build
 $INSTALL_PATH/bin/qmake -r CONFIG+=release ../Project.pro
 make || exit 1

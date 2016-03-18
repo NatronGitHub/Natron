@@ -54,6 +54,7 @@ NATRON_NAMESPACE_ENTER;
 class RightClickableWidget : public QWidget
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    // coverity[self_assign]
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
@@ -66,12 +67,14 @@ public:
     : QWidget(parent)
     , panel(panel)
     {
-        setObjectName("SettingsPanel");
+        setObjectName(QString::fromUtf8("SettingsPanel"));
     }
     
     virtual ~RightClickableWidget() {}
     
     DockablePanel* getPanel() const { return panel; }
+    
+    static RightClickableWidget* isParentSettingsPanelRecursive(QWidget* w);
     
 Q_SIGNALS:
     

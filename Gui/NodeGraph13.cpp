@@ -88,13 +88,6 @@ NodeGraph::isNearbyNavigator(const QPoint& widgetPos,QPointF& scenePos) const
     
 }
 
-void
-NodeGraph::pushUndoCommand(QUndoCommand* command)
-{
-    _imp->_undoStack->setActive();
-    _imp->_undoStack->push(command);
-}
-
 bool
 NodeGraph::areOptionalInputsAutoHidden() const
 {

@@ -27,9 +27,11 @@
 #include <cassert>
 #include <stdexcept>
 
+#include "Engine/NodeMetadata.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h" // kNatronGroupInputIsOptionalParamName, kNatronGroupInputIsMaskParamName
+#include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -65,7 +67,7 @@ GroupInput::initializeKnobs()
 void
 GroupInput::knobChanged(KnobI* k,
                  ValueChangedReasonEnum /*reason*/,
-                 int /*view*/,
+                 ViewSpec /*view*/,
                  double /*time*/,
                  bool /*originatedFromMainThread*/)
 {
@@ -75,9 +77,9 @@ GroupInput::knobChanged(KnobI* k,
     } else if (k == mask.lock().get()) {
         bool isMask = mask.lock()->getValue();
         if (isMask) {
-            optional.lock()->setValue(true, 0);
+            optional.lock()->setValue(true);
         } else {
-            optional.lock()->setValue(false, 0);
+            optional.lock()->setValue(false);
         }
         boost::shared_ptr<NodeCollection> group = getNode()->getGroup();
         group->notifyInputMaskStateChanged(getNode());
@@ -85,33 +87,5 @@ GroupInput::knobChanged(KnobI* k,
     }
 }
 
-ImagePremultiplicationEnum
-GroupInput::getOutputPremultiplication() const
-{
-    NodePtr thisNode = getNode();
-    boost::shared_ptr<NodeCollection> group = thisNode->getGroup();
-    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(group.get());
-    assert(isGroup);
-    if (!isGroup) {
-        return eImagePremultiplicationPremultiplied;
-    }
-    int inputNb = -1;
-    std::vector<NodePtr> groupInputs;
-    isGroup->getInputs(&groupInputs, false);
-    for (std::size_t i = 0; i < groupInputs.size(); ++i) {
-        if (groupInputs[i] == thisNode) {
-            inputNb = i;
-            break;
-        }
-    }
-    assert(inputNb != -1);
-    if (inputNb != -1) {
-        EffectInstPtr input = isGroup->getInput(inputNb);
-        if (input) {
-            return input->getOutputPremultiplication();
-        }
-    }
-    return eImagePremultiplicationPremultiplied;
-}
 
 NATRON_NAMESPACE_EXIT;

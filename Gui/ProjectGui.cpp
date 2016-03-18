@@ -42,9 +42,10 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
-#include "Engine/ParameterWrapper.h" // Param
+#include "Engine/PyParameter.h" // Param
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/BackdropGui.h"
@@ -107,8 +108,8 @@ ProjectGui::create(boost::shared_ptr<Project> projectInternal,
 {
     _project = projectInternal;
 
-    QObject::connect( projectInternal.get(),SIGNAL( mustCreateFormat() ),this,SLOT( createNewFormat() ) );
-    QObject::connect( projectInternal.get(),SIGNAL( knobsInitialized() ),this,SLOT( initializeKnobsGui() ) );
+    QObject::connect( projectInternal.get(),SIGNAL(mustCreateFormat()),this,SLOT(createNewFormat()) );
+    QObject::connect( projectInternal.get(),SIGNAL(knobsInitialized()),this,SLOT(initializeKnobsGui()) );
 
     _panel = new DockablePanel(_gui,
                                projectInternal.get(),
@@ -170,7 +171,7 @@ AddFormatDialog::AddFormatDialog(Project *project,
     
 
     for (std::list<ViewerInstance*>::iterator it = _viewers.begin(); it != _viewers.end(); ++it) {
-        _copyFromViewerCombo->addItem( (*it)->getNode()->getLabel().c_str() );
+        _copyFromViewerCombo->addItem( QString::fromUtf8((*it)->getNode()->getLabel().c_str()) );
     }
     _fromViewerLineLayout->addWidget(_copyFromViewerCombo);
 
@@ -179,7 +180,7 @@ AddFormatDialog::AddFormatDialog(Project *project,
                                            tr("Fill the new format with the currently"
                                               " displayed region of definition of the viewer"
                                               " indicated on the left."), Qt::WhiteSpaceNormal) );
-    QObject::connect( _copyFromViewerButton,SIGNAL( clicked() ),this,SLOT( onCopyFromViewer() ) );
+    QObject::connect( _copyFromViewerButton,SIGNAL(clicked()),this,SLOT(onCopyFromViewer()) );
     _mainLayout->addWidget(_fromViewerLine);
 
     _fromViewerLineLayout->addWidget(_copyFromViewerButton);
@@ -187,7 +188,7 @@ AddFormatDialog::AddFormatDialog(Project *project,
     _parametersLineLayout = new QHBoxLayout(_parametersLine);
     _mainLayout->addWidget(_parametersLine);
 
-    _widthLabel = new Label("w:",_parametersLine);
+    _widthLabel = new Label(QString::fromUtf8("w:"),_parametersLine);
     _parametersLineLayout->addWidget(_widthLabel);
     _widthSpinBox = new SpinBox(this,SpinBox::eSpinBoxTypeInt);
     _widthSpinBox->setMaximum(99999);
@@ -196,7 +197,7 @@ AddFormatDialog::AddFormatDialog(Project *project,
     _parametersLineLayout->addWidget(_widthSpinBox);
 
 
-    _heightLabel = new Label("h:",_parametersLine);
+    _heightLabel = new Label(QString::fromUtf8("h:"),_parametersLine);
     _parametersLineLayout->addWidget(_heightLabel);
     _heightSpinBox = new SpinBox(this,SpinBox::eSpinBoxTypeInt);
     _heightSpinBox->setMaximum(99999);
@@ -231,11 +232,11 @@ AddFormatDialog::AddFormatDialog(Project *project,
 
 
     _cancelButton = new Button(tr("Cancel"),_buttonsLine);
-    QObject::connect( _cancelButton, SIGNAL( clicked() ), this, SLOT( reject() ) );
+    QObject::connect( _cancelButton, SIGNAL(clicked()), this, SLOT(reject()) );
     _buttonsLineLayout->addWidget(_cancelButton);
 
     _okButton = new Button(tr("Ok"),_buttonsLine);
-    QObject::connect( _okButton, SIGNAL( clicked() ), this, SLOT( accept() ) );
+    QObject::connect( _okButton, SIGNAL(clicked()), this, SLOT(accept()) );
     _buttonsLineLayout->addWidget(_okButton);
 }
 
@@ -267,7 +268,9 @@ AddFormatDialog::getFormat() const
     return Format(0,0,w,h,name.toStdString(),pa);
 }
 
+#ifdef DEBUG
 #pragma message WARN("no version in ProjectGui serialization: this is dangerous")
+#endif
 template<>
 void
 ProjectGui::save<boost::archive::xml_oarchive>(boost::archive::xml_oarchive & archive/*,
@@ -308,7 +311,7 @@ void loadNodeGuiSerialization(Gui* gui,
     
     if ( serialization.colorWasFound() ) {
         std::list<std::string> grouping;
-        iseffect->getPluginGrouping(&grouping);
+        nGui->getNode()->getPluginGrouping(&grouping);
         std::string majGroup = grouping.empty() ? "" : grouping.front();
         
         BackdropGui* isBd = dynamic_cast<BackdropGui*>(nGui.get());
@@ -396,6 +399,12 @@ void loadNodeGuiSerialization(Gui* gui,
             tab->setInfobarVisible(found->second.infobarVisible);
             tab->setTimelineVisible(found->second.timelineVisible);
             tab->setCheckerboardEnabled(found->second.checkerboardEnabled);
+            
+            if (found->second.isPauseEnabled[0] && found->second.isPauseEnabled[1]) {
+                tab->setViewerPaused(true, true);
+            } else if (found->second.isPauseEnabled[0] && !found->second.isPauseEnabled[1]) {
+                tab->setViewerPaused(true, false);
+            }
             if (found->second.aChoice >= 0) {
                 tab->setInputA(found->second.aChoice);
             }
@@ -467,26 +476,28 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
         
         KnobPtr labelSerialization = it->getLabelSerialization();
         
-        CreateNodeArgs args(PLUGINID_NATRON_BACKDROP, eCreateNodeReasonInternal, _project.lock());
+        CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_BACKDROP), eCreateNodeReasonInternal, _project.lock());
 
         NodePtr node = getGui()->getApp()->createNode(args);
         boost::shared_ptr<NodeGuiI> gui_i = node->getNodeGui();
         assert(gui_i);
         BackdropGui* bd = dynamic_cast<BackdropGui*>(gui_i.get());
         assert(bd);
-        bd->setVisibleSettingsPanel(false);
-        bd->resize(w,h);
-        KnobString* iStr = dynamic_cast<KnobString*>(labelSerialization.get());
-        assert(iStr);
-        if (iStr) {
-            bd->onLabelChanged(iStr->getValue().c_str());
+        if (bd) {
+            bd->setVisibleSettingsPanel(false);
+            bd->resize(w,h);
+            KnobString* iStr = dynamic_cast<KnobString*>(labelSerialization.get());
+            assert(iStr);
+            if (iStr) {
+                bd->onLabelChanged(QString::fromUtf8(iStr->getValue().c_str()));
+            }
+            float r,g,b;
+            it->getColor(r, g, b);
+            QColor c;
+            c.setRgbF(r,g,b);
+            bd->setCurrentColor(c);
+            node->setLabel(it->getFullySpecifiedName());
         }
-        float r,g,b;
-        it->getColor(r, g, b);
-        QColor c;
-        c.setRgbF(r,g,b);
-        bd->setCurrentColor(c);
-        node->setLabel(it->getFullySpecifiedName());
     }
 
      _gui->getApp()->updateProjectLoadStatus(QObject::tr("Restoring settings panels"));
@@ -569,7 +580,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
     const std::list<std::string> & histograms = obj.getHistograms();
     for (std::list<std::string>::const_iterator it = histograms.begin(); it != histograms.end(); ++it) {
         Histogram* h = _gui->addNewHistogram();
-        h->setObjectName( (*it).c_str() );
+        h->setObjectName( QString::fromUtf8((*it).c_str() ));
         //move it by default to the viewer pane, before restoring the layout anyway which
         ///will relocate it correctly
         _gui->appendTabToDefaultViewerPane(h,h);
@@ -579,7 +590,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
         _gui->getNodeGraph()->clearSelection();
     }
     
-    _gui->getScriptEditor()->setInputScript(obj.getInputScript().c_str());
+    _gui->getScriptEditor()->setInputScript(QString::fromUtf8(obj.getInputScript().c_str()));
     _gui->centerAllNodeGraphsWithTimer();
 } // load
 
@@ -628,9 +639,9 @@ ProjectGui::setPickersColor(double r,double g, double b,double a)
             _colorPickersEnabled[i]->activateAllDimensions();
         }
         if (_colorPickersEnabled[i]->getDimension() == 3) {
-            _colorPickersEnabled[i]->setValues(r, g, b, eValueChangedReasonNatronGuiEdited);
+            _colorPickersEnabled[i]->setValues(r, g, b, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
         } else {
-            _colorPickersEnabled[i]->setValues(r, g, b, a, eValueChangedReasonNatronGuiEdited);
+            _colorPickersEnabled[i]->setValues(r, g, b, a, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
         }
     }
 }

@@ -48,6 +48,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Global/KeySymbols.h"
 #include "Engine/ImageComponents.h"
 #include "Engine/CacheEntryHolder.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 
@@ -70,11 +71,6 @@ CLANG_DIAG_ON(deprecated)
 #define kReadOIIOAvailableViewsKnobName "availableViews"
 #define kWriteOIIOParamViewsSelector "viewsSelector"
 
-#define kWriteParamFrameStep "frameIncr"
-#define kWriteParamFrameStepLabel "Frame Increment"
-#define kWriteParamFrameStepHint "The number of frames the timeline should step before rendering the new frame. " \
-"If 1, all frames will be rendered, if 2 only 1 frame out of 2, " \
-"etc. This number cannot be less than 1."
 
 
 
@@ -124,10 +120,8 @@ public:
     void loadKnobs(const NodeSerialization & serialization,bool updateKnobGui = false);
 
 
-private:
     void loadKnob(const KnobPtr & knob,const std::list< boost::shared_ptr<KnobSerialization> > & serialization,
                   bool updateKnobGui = false);
-public:
     
     ///Set values for Knobs given their serialization
     void setValuesFromSerialization(const std::list<boost::shared_ptr<KnobSerialization> >& paramValues);
@@ -164,6 +158,8 @@ public:
     std::list<std::string> getPagesOrder() const;
     
     bool isNodeCreated() const;
+    
+    void refreshAcceptedBitDepths();
     
     /*@brief Quit all processing done by all render instances of this node
        This is called when the effect is about to be deleted pluginsly
@@ -295,7 +291,7 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    virtual int getMaxInputCount() const;
+    int getMaxInputCount() const;
 
     /**
      * @brief Returns true if the given input supports the given components. If inputNb equals -1
@@ -325,6 +321,8 @@ public:
      * A = 3
      **/
     int getMaskChannel(int inputNb,ImageComponents* comps, NodePtr* maskInput) const;
+    
+    int isMaskChannelKnob(const KnobI* knob) const;
 
     /**
      * @brief Returns whether masking is enabled or not
@@ -414,6 +412,8 @@ public:
     virtual int getPreferredInputForConnection()  const;
     virtual int getPreferredInput() const;
     
+    NodePtr getPreferredInputNode() const;
+    
     void setRenderThreadSafety(RenderSafetyEnum safety);
     RenderSafetyEnum getCurrentRenderThreadSafety() const;
     void revertToPluginThreadSafety();
@@ -446,9 +446,11 @@ public:
     
     bool isLastPaintStrokeBitmapCleared() const;
     void clearLastPaintStrokeRoD();
-    void getLastPaintStrokePoints(double time,std::list<std::list<std::pair<Point,double> > >* strokes, int* strokeIndex) const;
+    void getLastPaintStrokePoints(double time,
+                                  unsigned int mipmapLevel,
+                                  std::list<std::list<std::pair<Point,double> > >* strokes,
+                                  int* strokeIndex) const;
     boost::shared_ptr<Image> getOrRenderLastStrokeImage(unsigned int mipMapLevel,
-                                                                const RectI& roi,
                                                                 double par,
                                                                 const ImageComponents& components,
                                                                 ImageBitDepthEnum depth) const;
@@ -515,9 +517,9 @@ public:
      * connected for this inputNumber. It should be removed
      * beforehand.
      */
-    virtual bool connectInput(const NodePtr& input,int inputNumber);
+    virtual bool connectInput(const NodePtr& input, int inputNumber);
 
-    bool connectInputBase(const NodePtr& input,int inputNumber)
+    bool connectInputBase(const NodePtr& input, int inputNumber)
     {
         return Node::connectInput(input, inputNumber);
     }
@@ -556,16 +558,16 @@ public:
     
     bool isUserSelected() const;
     
-    bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, int view) const;
+    bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view) const;
 
     /**
      * @brief If the session is a GUI session, then this function sets the position of the node on the nodegraph.
      **/
-    void setPosition(double x,double y);
-    void getPosition(double *x,double *y) const;
+    void setPosition(double x, double y);
+    void getPosition(double *x, double *y) const;
     
-    void setSize(double w,double h);
-    void getSize(double* w,double* h) const;
+    void setSize(double w, double h);
+    void getSize(double* w, double* h) const;
     
     /**
      * @brief Get the colour of the node as it appears on the nodegraph.
@@ -600,12 +602,12 @@ private:
     /**
      * @brief Adds an output to this node.
      **/
-    void connectOutput(bool useGuiValues,const NodePtr& output);
+    void connectOutput(bool useGuiValues, const NodePtr& output);
 
     /** @brief Removes the node output of the
      * node outputs. Returns the outputNumber if it could remove it,
        otherwise returns -1.*/
-    int disconnectOutput(bool useGuiValues,const Node* output);
+    int disconnectOutput(bool useGuiValues, const Node* output);
     
 public:
     
@@ -625,6 +627,8 @@ public:
      * @brief Forwarded to the live effect instance
      **/
     std::string getPluginLabel() const;
+    
+    void getPluginGrouping(std::list<std::string>* grouping) const;
 
     /**
      * @brief Forwarded to the live effect instance
@@ -648,11 +652,11 @@ public:
        @param reconnect If set to true Natron will attempt to re-connect disconnected output to an input of this node
        @param hideGui When true, the node gui will be notified so it gets hidden
      */
-    void deactivate(const std::list< NodePtr > & outputsToDisconnect = std::list< NodePtr >()
-                    , bool disconnectAll = true
-                    , bool reconnect = true
-                    , bool hideGui = true
-                    , bool triggerRender = true);
+    void deactivate(const std::list< NodePtr > & outputsToDisconnect = std::list< NodePtr >(),
+                    bool disconnectAll = true,
+                    bool reconnect = true,
+                    bool hideGui = true,
+                    bool triggerRender = true);
     
 
     /* @brief Make this node active. It will appear
@@ -717,7 +721,7 @@ public:
      * The width and height might be modified by the function, so their value can
      * be queried at the end of the function
      **/
-    bool makePreviewImage(SequenceTime time,int *width,int *height,unsigned int* buf);
+    bool makePreviewImage(SequenceTime time, int *width, int *height, unsigned int* buf);
 
     /**
      * @brief Returns true if the node is currently rendering a preview image.
@@ -816,6 +820,11 @@ public:
     void onKnobSlaved(KnobI* slave,KnobI* master,int dimension,bool isSlave);
 
     NodePtr getMasterNode() const;
+    
+#ifdef NATRON_ENABLE_IO_META_NODES
+    //When creating a Reader or Writer node, this is a pointer to the "bundle" node that the user actually see.
+    NodePtr getIOContainer() const;
+#endif
 
     /**
      * @brief Attemps to lock an image for render. If it successfully obtained the lock,
@@ -832,7 +841,7 @@ public:
      * @brief DO NOT EVER USE THIS FUNCTION. This is provided for compatibility with plug-ins that
      * do not respect the OpenFX specification.
      **/
-    boost::shared_ptr<Image> getImageBeingRendered(double time,unsigned int mipMapLevel,int view);
+    boost::shared_ptr<Image> getImageBeingRendered(double time, unsigned int mipMapLevel, ViewIdx view);
     
     void beginInputEdition();
     
@@ -848,11 +857,6 @@ public:
     
     boost::shared_ptr<KnobBool> getDisabledKnob() const;
 
-    void toggleBitDepthWarning(bool on,
-                               const QString & tooltip)
-    {
-        Q_EMIT bitDepthWarningToggled(on, tooltip);
-    }
 
     std::string getNodeExtraLabel() const;
 
@@ -878,6 +882,12 @@ public:
      * If a custom data tag is found, it will replace any custom data.
      **/
     void replaceCustomDataInlabel(const QString & data);
+    
+private:
+    
+    void restoreSublabel();
+    
+public:
 
     /**
      * @brief Returns whether this node or one of its inputs (recursively) is marked as
@@ -927,7 +937,46 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    void initializeKnobs(int renderScaleSupportPref);
+    void initializeKnobs(int renderScaleSupportPref, bool loadingSerialization);
+    
+    void checkForPremultWarningAndCheckboxes();
+    
+private:
+    
+    void initializeDefaultKnobs(int renderScaleSupportPref,bool loadingSerialization);
+    
+    void findPluginFormatKnobs(const KnobsVec & knobs,bool loadingSerialization);
+    
+    void createNodePage(const boost::shared_ptr<KnobPage>& settingsPage, int renderScaleSupportPref);
+    
+    void createInfoPage();
+    
+    void createPythonPage();
+    
+    void createHostMixKnob(const boost::shared_ptr<KnobPage>& mainPage);
+    
+#ifndef NATRON_ENABLE_IO_META_NODES
+    void createWriterFrameStepKnob(const boost::shared_ptr<KnobPage>& mainPage);
+#endif
+    
+    void createMaskSelectors(const std::vector<std::pair<bool,bool> >& hasMaskChannelSelector,
+                             const std::vector<std::string>& inputLabels,
+                             const boost::shared_ptr<KnobPage>& mainPage,
+                             bool addNewLineOnLastMask);
+    
+    boost::shared_ptr<KnobPage> getOrCreateMainPage();
+    
+    void createLabelKnob(const boost::shared_ptr<KnobPage>& settingsPage, const std::string& label);
+    
+    void findOrCreateChannelEnabled(const boost::shared_ptr<KnobPage>& mainPage);
+    
+    void createChannelSelectors(const std::vector<std::pair<bool,bool> >& hasMaskChannelSelector,
+                                const std::vector<std::string>& inputLabels,
+                                const boost::shared_ptr<KnobPage>& mainPage);
+    
+public:
+    
+    
 
     void onSetSupportRenderScaleMaybeSet(int support);
     
@@ -938,6 +987,8 @@ public:
      * node have. Some keyframes might appear several times.
      **/
     void getAllKnobsKeyframes(std::list<SequenceTime>* keyframes);
+    
+    bool hasAnimatedKnob() const;
     
     
     void setNodeIsRendering();
@@ -1008,6 +1059,8 @@ public:
     
     bool getOverlayColor(double* r,double* g,double* b) const;
     
+    bool canHandleRenderScaleForOverlays() const;
+    
     bool shouldDrawOverlay() const;
     
     
@@ -1054,7 +1107,7 @@ public:
     
     void setPluginDescription(const std::string& description);
     
-    void setPluginIDAndVersionForGui(const std::string& pluginLabel,const std::string& pluginID,unsigned int version);
+    void setPluginIDAndVersionForGui(const std::list<std::string>& grouping, const std::string& pluginLabel,const std::string& pluginID,unsigned int version);
     
     void setPluginPythonModule(const std::string& pythonModule);
     
@@ -1080,7 +1133,7 @@ public:
     
     void removeParameterFromPython(const std::string& parameterName);
 
-    double getHostMixingValue(double time) const;
+    double getHostMixingValue(double time, ViewIdx view) const;
     
     void removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey);
     void removeAllImagesFromCache(bool blocking);
@@ -1105,15 +1158,35 @@ public:
     
     int getFrameStepKnobValue() const;
     
-    void refreshFormatParamChoice(const std::vector<std::string>& entries, int defValue);
+    void refreshFormatParamChoice(const std::vector<std::string>& entries, int defValue,bool canChangeValues);
     
     bool handleFormatKnob(KnobI* knob);
     
     QString makeHTMLDocumentation() const;
     
     void refreshPreviewsAfterProjectLoad();
+
+    enum StreamWarningEnum {
+        
+        //A bitdepth conversion occurs and converts to a lower bitdepth the stream,
+        //inducing a quality loss
+        eStreamWarningBitdepth,
+        
+        //The node has inputs with different aspect ratios but does not handle it
+        eStreamWarningPixelAspectRatio,
+        
+        //The node has inputs with different frame rates which may produce unwanted results
+        eStreamWarningFrameRate,
+    };
+    
+    void setStreamWarning(StreamWarningEnum warning, const QString& message);
+    void setStreamWarnings(const std::map<StreamWarningEnum,QString>& warnings);
+    void clearStreamWarning(StreamWarningEnum warning);
+    void getStreamWarnings(std::map<StreamWarningEnum,QString>* warnings) const;
     
 private:
+    
+    bool setStreamWarningInternal(StreamWarningEnum warning, const QString& message);
     
     void computeHashRecursive(std::list<Node*>& marked);
     
@@ -1269,7 +1342,7 @@ Q_SIGNALS:
 
     void disabledKnobToggled(bool disabled);
 
-    void bitDepthWarningToggled(bool,QString);
+    void streamWarningsChanged();
     void nodeExtraLabelChanged(QString);
 
     
@@ -1325,22 +1398,14 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
     
-    int _maxInputs;
 
 public:
 
     InspectorNode(AppInstance* app,
                   const boost::shared_ptr<NodeCollection>& group,
-                  Plugin* plugin,
-                  int maxInputs);
+                  Plugin* plugin);
 
     virtual ~InspectorNode();
-
-    virtual int getMaxInputCount() const OVERRIDE
-    {
-        return _maxInputs;
-    }
-
 
 
     /**

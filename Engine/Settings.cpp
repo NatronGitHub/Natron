@@ -51,6 +51,7 @@
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
 #include "Engine/StandardPaths.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/GuiDefines.h"
@@ -60,6 +61,9 @@
 #ifdef WINDOWS
 #include <ofxhPluginCache.h>
 #endif
+
+#define NATRON_DEFAULT_OCIO_CONFIG_NAME "blender"
+
 
 #define NATRON_CUSTOM_OCIO_CONFIG_NAME "Custom config"
 
@@ -83,23 +87,21 @@ static QStringList
 getDefaultOcioConfigPaths()
 {
     QString binaryPath = appPTR->getApplicationBinaryPath();
+    Global::ensureLastPathSeparator(binaryPath);
 
-    if ( !binaryPath.isEmpty() ) {
-        binaryPath += QDir::separator();
-    }
 #ifdef __NATRON_LINUX__
     QStringList ret;
-    ret.push_back( QString("/usr/share/OpenColorIO-Configs") );
-    ret.push_back( QString(binaryPath + "../share/OpenColorIO-Configs") );
-    ret.push_back( QString(binaryPath + "../Resources/OpenColorIO-Configs") );
+    ret.push_back( QString::fromUtf8("/usr/share/OpenColorIO-Configs") );
+    ret.push_back( QString(binaryPath + QString::fromUtf8("../share/OpenColorIO-Configs")) );
+    ret.push_back( QString(binaryPath + QString::fromUtf8("../Resources/OpenColorIO-Configs") ));
 
     return ret;
 #elif defined(__NATRON_WIN32__)
 
-    return QStringList( QString(binaryPath + "../Resources/OpenColorIO-Configs") );
+    return QStringList( QString(binaryPath + QString::fromUtf8("../Resources/OpenColorIO-Configs")) );
 #elif defined(__NATRON_OSX__)
 
-    return QStringList( QString(binaryPath + "../Resources/OpenColorIO-Configs") );
+    return QStringList( QString(binaryPath + QString::fromUtf8("../Resources/OpenColorIO-Configs")) );
 #endif
 }
 
@@ -205,7 +207,7 @@ Settings::initializeKnobsGeneral()
     _numberOfThreads->setName("noRenderThreads");
     _numberOfThreads->setAnimationEnabled(false);
 
-    QString numberOfThreadsToolTip = QString("Controls how many threads " NATRON_APPLICATION_NAME " should use to render. \n"
+    QString numberOfThreadsToolTip = QString::fromUtf8("Controls how many threads " NATRON_APPLICATION_NAME " should use to render. \n"
                                                                                                   "-1: Disable multithreading totally (useful for debugging) \n"
                                                                                                   "0: Guess the thread count from the number of cores. The ideal threads count for this hardware is %1.").arg( QThread::idealThreadCount() );
     _numberOfThreads->setHintToolTip( numberOfThreadsToolTip.toStdString() );
@@ -262,6 +264,13 @@ Settings::initializeKnobsGeneral()
                                                                                  "a separate process so that if the main application crashes, the render goes on.");
     _generalTab->addKnob(_renderInSeparateProcess);
 
+    _queueRenders = AppManager::createKnob<KnobBool>(this, "Append new renders to queue");
+    _queueRenders->setHintToolTip("When checked, renders will be queued in the Progress Panel and will start only when all "
+                                  "other prior tasks are done.");
+    _queueRenders->setAnimationEnabled(false);
+    _queueRenders->setName("queueRenders");
+    _generalTab->addKnob(_queueRenders);
+    
     _autoPreviewEnabledForNewProjects = AppManager::createKnob<KnobBool>(this, "Auto-preview enabled by default for new projects");
     _autoPreviewEnabledForNewProjects->setName("enableAutoPreviewNewProjects");
     _autoPreviewEnabledForNewProjects->setAnimationEnabled(false);
@@ -366,6 +375,9 @@ Settings::initializeKnobsGeneral()
     assert(_knownHostNames.size() == (int)eKnownHostNameFusion);
     _knownHostNames.push_back("com.eyeonline.Fusion");
     visibleHostEntries.push_back("Fusion");
+    assert(_knownHostNames.size() == (int)eKnownHostNameCatalyst);
+    _knownHostNames.push_back("com.sony.Catalyst.Edit");
+    visibleHostEntries.push_back("Sony Catalyst Edit");
     assert(_knownHostNames.size() == (int)eKnownHostNameVegas);
     _knownHostNames.push_back("com.sonycreativesoftware.vegas");
     visibleHostEntries.push_back("Sony Vegas");
@@ -414,6 +426,9 @@ Settings::initializeKnobsGeneral()
     assert(_knownHostNames.size() == (int)eKnownHostNameTitlerPro);
     _knownHostNames.push_back("com.newblue.titlerpro");
     visibleHostEntries.push_back("NewBlueFX Titler Pro");
+    assert(_knownHostNames.size() == (int)eKnownHostNameNewBlueOFXBridge);
+    _knownHostNames.push_back("com.newblue.ofxbridge");
+    visibleHostEntries.push_back("NewBlueFX OFX Bridge");
     assert(_knownHostNames.size() == (int)eKnownHostNameRamen);
     _knownHostNames.push_back("Ramen");
     visibleHostEntries.push_back("Ramen");
@@ -734,7 +749,7 @@ Settings::initializeKnobsAppearance()
         if ( ocioConfigsDir.exists() ) {
             QStringList entries = ocioConfigsDir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
             for (int j = 0; j < entries.size(); ++j) {
-                if ( entries[j].contains(NATRON_DEFAULT_OCIO_CONFIG_NAME) ) {
+                if ( entries[j] == QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ) {
                     defaultIndex = j;
                 }
                 configs.push_back( entries[j].toStdString() );
@@ -1233,13 +1248,10 @@ Settings::initializeKnobsPlugins()
     std::string searchPath("/Library/OFX/Plugins");
 #elif defined(WINDOWS)
     
-#ifdef UNICODE
-    std::wstring basePath = std::wstring(OFX::Host::PluginCache::getStdOFXPluginPath(""));
-	basePath.append(std::wstring(__T(" and C:\\Program Files\\Common Files\\OFX\\Plugins")));
+    std::wstring basePath = std::wstring(OFX::Host::PluginCache::getStdOFXPluginPath());
+	basePath.append(std::wstring(L" and C:\\Program Files\\Common Files\\OFX\\Plugins"));
     std::string searchPath = OFX::wideStringToString(basePath);
-#else
-    std::string searchPath(OFX::Host::PluginCache::getStdOFXPluginPath("")  + std::string(" and C:\\Program Files\\Common Files\\OFX\\Plugins"));
-#endif
+
 #endif
     
     _extraPluginPaths->setHintToolTip( std::string("Extra search paths where " NATRON_APPLICATION_NAME
@@ -1360,10 +1372,10 @@ Settings::setCachingLabels()
     U64 systemTotalRam = getSystemTotalRAM();
     U64 maxRAM = (U64)( ( (double)maxTotalRam / 100. ) * systemTotalRam );
 
-    _maxRAMLabel->setValue(printAsRAM(maxRAM).toStdString(), 0);
-    _maxPlaybackLabel->setValue(printAsRAM( (U64)( maxRAM * ( (double)maxPlaybackPercent / 100. ) ) ).toStdString(), 0);
+    _maxRAMLabel->setValue(printAsRAM(maxRAM).toStdString());
+    _maxPlaybackLabel->setValue(printAsRAM( (U64)( maxRAM * ( (double)maxPlaybackPercent / 100. ) ) ).toStdString());
 
-    _unreachableRAMLabel->setValue(printAsRAM( (double)systemTotalRam * ( (double)_unreachableRAMPercent->getValue() / 100. ) ).toStdString(), 0);
+    _unreachableRAMLabel->setValue(printAsRAM( (double)systemTotalRam * ( (double)_unreachableRAMPercent->getValue() / 100. ) ).toStdString());
 }
 
 void
@@ -1396,6 +1408,7 @@ Settings::setDefaultValues()
     _useThreadPool->setDefaultValue(true);
     _nThreadsPerEffect->setDefaultValue(0);
     _renderInSeparateProcess->setDefaultValue(false,0);
+    _queueRenders->setDefaultValue(false);
     _autoPreviewEnabledForNewProjects->setDefaultValue(true,0);
     _firstReadSetProjectFormat->setDefaultValue(true);
     _fixPathsOnProjectPathChanged->setDefaultValue(true);
@@ -1664,7 +1677,7 @@ Settings::warnChangedKnobs(const std::vector<KnobI*>& knobs)
                                       QObject::tr("The OpenColorIO config change requires a restart of "
                                                   NATRON_APPLICATION_NAME " to be effective.").toStdString(),&stopAsking);
                 if (stopAsking) {
-                    _warnOcioConfigKnobChanged->setValue(false,0);
+                    _warnOcioConfigKnobChanged->setValue(false);
                     saveSetting(_warnOcioConfigKnobChanged.get());
                 }
 
@@ -1683,7 +1696,7 @@ Settings::warnChangedKnobs(const std::vector<KnobI*>& knobs)
                         if ( !(*it)->supportsGLSL() && (_texturesMode->getValue() != 0) ) {
                             Dialogs::errorDialog( QObject::tr("Viewer").toStdString(), QObject::tr("You need OpenGL GLSL in order to use 32 bit fp textures.\n"
                                                                                                   "Reverting to 8bits textures.").toStdString() );
-                            _texturesMode->setValue(0,0);
+                            _texturesMode->setValue(0);
                             saveSetting(_texturesMode.get());
                             return;
                         }
@@ -1714,8 +1727,8 @@ Settings::saveSettings(const std::vector<KnobI*>& knobs,bool doWarnings)
     
     std::vector<KnobI*> changedKnobs;
     
-    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
-    settings.setValue(kQSettingsSoftwareMajorVersionSettingName, NATRON_VERSION_MAJOR);
+    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
+    settings.setValue(QString::fromUtf8(kQSettingsSoftwareMajorVersionSettingName), NATRON_VERSION_MAJOR);
     for (U32 i = 0; i < knobs.size(); ++i) {
         Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knobs[i]);
         Knob<int>* isInt = dynamic_cast<Knob<int>*>(knobs[i]);
@@ -1727,14 +1740,14 @@ Settings::saveSettings(const std::vector<KnobI*>& knobs,bool doWarnings)
         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
             QString dimensionName;
             if (knobs[i]->getDimension() > 1) {
-                dimensionName =  QString(name.c_str()) + '.' + knobs[i]->getDimensionName(j).c_str();
+                dimensionName =  QString::fromUtf8(name.c_str()) + QLatin1Char('.') +QString::fromUtf8( knobs[i]->getDimensionName(j).c_str());
             } else {
-                dimensionName = name.c_str();
+                dimensionName = QString::fromUtf8(name.c_str());
             }
             try {
                 if (isString) {
                     QString old = settings.value(dimensionName).toString();
-                    QString newValue(isString->getValue(j).c_str());
+                    QString newValue = QString::fromUtf8(isString->getValue(j).c_str());
                     if (old != newValue) {
                         changedKnobs.push_back(knobs[i]);
                     }
@@ -1747,7 +1760,7 @@ Settings::saveSettings(const std::vector<KnobI*>& knobs,bool doWarnings)
                         const std::vector<std::string> entries = isChoice->getEntries_mt_safe();
                         if (newIndex < (int)entries.size() ) {
                             QString oldValue = settings.value(dimensionName).toString();
-                            QString newValue(entries[newIndex].c_str());
+                            QString newValue = QString::fromUtf8(entries[newIndex].c_str());
                             if (oldValue != newValue) {
                                 changedKnobs.push_back(knobs[i]);
                             }
@@ -1798,7 +1811,7 @@ Settings::saveSettings(const std::vector<KnobI*>& knobs,bool doWarnings)
 void
 Settings::restoreKnobsFromSettings(const std::vector<KnobI*>& knobs)
 {
-    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
+    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
     
     for (U32 i = 0; i < knobs.size(); ++i) {
         Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knobs[i]);
@@ -1812,13 +1825,13 @@ Settings::restoreKnobsFromSettings(const std::vector<KnobI*>& knobs)
         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
             
             std::string dimensionName = knobs[i]->getDimension() > 1 ? name + '.' + knobs[i]->getDimensionName(j) : name;
-            QString qDimName(dimensionName.c_str());
+            QString qDimName = QString::fromUtf8(dimensionName.c_str());
             
             if (settings.contains(qDimName)) {
                 
                 if (isString) {
                     
-                    isString->setValue(settings.value(qDimName).toString().toStdString(), j);
+                    isString->setValue(settings.value(qDimName).toString().toStdString(), ViewSpec::all(), j);
                     
                 } else if (isInt) {
                     
@@ -1838,21 +1851,21 @@ Settings::restoreKnobsFromSettings(const std::vector<KnobI*>& knobs)
                         }
                         
                         if (found >= 0) {
-                            isChoice->setValue(found, j);
+                            isChoice->setValue(found, ViewSpec::all(), j);
                         }
                         
                     } else {
-                        isInt->setValue(settings.value(qDimName).toInt(), j);
+                        isInt->setValue(settings.value(qDimName).toInt(), ViewSpec::all(), j);
                     }
                     
                     
                 } else if (isDouble) {
                     
-                    isDouble->setValue(settings.value(qDimName).toDouble(), j);
+                    isDouble->setValue(settings.value(qDimName).toDouble(), ViewSpec::all(), j);
                     
                 } else if (isBool) {
                     
-                    isBool->setValue(settings.value(qDimName).toBool(), j);
+                    isBool->setValue(settings.value(qDimName).toBool(), ViewSpec::all(), j);
                     
                 } else {
                     assert(false);
@@ -1892,14 +1905,14 @@ Settings::restoreSettings()
         _settingsExisted = _natronSettingsExist->getValue();
 
         if (!_settingsExisted) {
-            _natronSettingsExist->setValue(true, 0);
+            _natronSettingsExist->setValue(true);
             saveSetting(_natronSettingsExist.get());
         }
         
         int appearanceVersion = _defaultAppearanceVersion->getValue();
         if (_settingsExisted && appearanceVersion < NATRON_DEFAULT_APPEARANCE_VERSION) {
             _defaultAppearanceOutdated = true;
-            _defaultAppearanceVersion->setValue(NATRON_DEFAULT_APPEARANCE_VERSION, 0);
+            _defaultAppearanceVersion->setValue(NATRON_DEFAULT_APPEARANCE_VERSION);
             saveSetting(_defaultAppearanceVersion.get());
         }
 
@@ -1931,17 +1944,17 @@ Settings::tryLoadOpenColorIOConfig()
         if ( file.empty() ) {
             return false;
         }
-        if ( !QFile::exists( file.c_str() ) ) {
+        if ( !QFile::exists( QString::fromUtf8(file.c_str())) ) {
             Dialogs::errorDialog( "OpenColorIO", file + QObject::tr(": No such file.").toStdString() );
 
             return false;
         }
-        configFile = file.c_str();
+        configFile = QString::fromUtf8(file.c_str());
     } else {
         try {
             ///try to load from the combobox
-            QString activeEntryText( _ocioConfigKnob->getActiveEntryText_mt_safe().c_str() );
-            QString configFileName = QString(activeEntryText + ".ocio");
+            QString activeEntryText  = QString::fromUtf8( _ocioConfigKnob->getActiveEntryText_mt_safe().c_str() );
+            QString configFileName = QString(activeEntryText + QString::fromUtf8(".ocio"));
             QStringList defaultConfigsPaths = getDefaultOcioConfigPaths();
             for (int i = 0; i < defaultConfigsPaths.size(); ++i) {
                 QDir defaultConfigsDir(defaultConfigsPaths[i]);
@@ -1955,16 +1968,16 @@ Settings::tryLoadOpenColorIOConfig()
                 if ( !defaultConfigsDir.exists(configFileName) ) {
                     QDir subDir(defaultConfigsPaths[i] + QDir::separator() + activeEntryText);
                     if ( !subDir.exists() ) {
-                        Dialogs::errorDialog( "OpenColorIO",subDir.absoluteFilePath("config.ocio").toStdString() + QObject::tr(": No such file or directory.").toStdString() );
+                        Dialogs::errorDialog( "OpenColorIO",subDir.absoluteFilePath(QString::fromUtf8("config.ocio")).toStdString() + QObject::tr(": No such file or directory.").toStdString() );
 
                         return false;
                     }
-                    if ( !subDir.exists("config.ocio") ) {
-                        Dialogs::errorDialog( "OpenColorIO",subDir.absoluteFilePath("config.ocio").toStdString() + QObject::tr(": No such file or directory.").toStdString() );
+                    if ( !subDir.exists(QString::fromUtf8("config.ocio")) ) {
+                        Dialogs::errorDialog( "OpenColorIO",subDir.absoluteFilePath(QString::fromUtf8("config.ocio")).toStdString() + QObject::tr(": No such file or directory.").toStdString() );
 
                         return false;
                     }
-                    configFile = subDir.absoluteFilePath("config.ocio");
+                    configFile = subDir.absoluteFilePath(QString::fromUtf8("config.ocio"));
                 } else {
                     configFile = defaultConfigsDir.absoluteFilePath(configFileName);
                 }
@@ -2006,6 +2019,7 @@ void
 Settings::onKnobValueChanged(KnobI* k,
                              ValueChangedReasonEnum reason,
                              double /*time*/,
+                             ViewSpec /*view*/,
                              bool /*originatedFromMainThread*/)
 {
     
@@ -2030,7 +2044,7 @@ Settings::onKnobValueChanged(KnobI* k,
         }
         setCachingLabels();
     } else if ( k == _diskCachePath.get() ) {
-        appPTR->setDiskCacheLocation(_diskCachePath->getValue().c_str());
+        appPTR->setDiskCacheLocation(QString::fromUtf8(_diskCachePath->getValue().c_str()));
     } else if ( k == _wipeDiskCache.get() ) {
         appPTR->wipeAndCreateDiskCacheStructure();
     } else if ( k == _numberOfThreads.get() ) {
@@ -2067,7 +2081,7 @@ Settings::onKnobValueChanged(KnobI* k,
                                       QObject::tr("The OpenColorIO config change requires a restart of "
                                                   NATRON_APPLICATION_NAME " to be effective.").toStdString(),&stopAsking);
                 if (stopAsking) {
-                    _warnOcioConfigKnobChanged->setValue(false,0);
+                    _warnOcioConfigKnobChanged->setValue(false);
                 }
             }
 
@@ -2076,6 +2090,8 @@ Settings::onKnobValueChanged(KnobI* k,
         appPTR->setUndoRedoStackLimit( _maxUndoRedoNodeGraph->getValue() );
     } else if ( k == _maxPanelsOpened.get() ) {
         appPTR->onMaxPanelsOpenedChanged( _maxPanelsOpened->getValue() );
+    } else if ( k == _queueRenders.get() ) {
+        appPTR->onQueueRendersChanged(_queueRenders->getValue());
     } else if ( k == _checkerboardTileSize.get() || k == _checkerboardColor1.get() || k == _checkerboardColor2.get() ) {
         appPTR->onCheckerboardSettingsChanged();
     }  else if (k == _hideOptionalInputsAutomatically.get() && !_restoringSettings && reason == eValueChangedReasonUserEdited) {
@@ -2208,7 +2224,7 @@ Settings::getNumberOfThreads() const
 void
 Settings::setNumberOfThreads(int threadsNb)
 {
-    _numberOfThreads->setValue(threadsNb,0);
+    _numberOfThreads->setValue(threadsNb);
 }
 
 bool
@@ -2381,12 +2397,12 @@ static bool filterDefaultActivatedPlugin(const QString& /*ofxPluginID*/)
  **/
 static int filterDefaultRenderScaleSupportPlugin(const QString& ofxPluginID)
 {
-    if (ofxPluginID == "tuttle.colorbars" ||
-            ofxPluginID == "tuttle.checkerboard" ||
-            ofxPluginID == "tuttle.colorcube" ||
-            ofxPluginID == "tuttle.colorwheel" ||
-            ofxPluginID == "tuttle.ramp" ||
-            ofxPluginID == "tuttle.constant") {
+    if (ofxPluginID == QString::fromUtf8("tuttle.colorbars") ||
+            ofxPluginID == QString::fromUtf8("tuttle.checkerboard") ||
+            ofxPluginID == QString::fromUtf8("tuttle.colorcube") ||
+            ofxPluginID == QString::fromUtf8("tuttle.colorwheel") ||
+            ofxPluginID == QString::fromUtf8("tuttle.ramp") ||
+            ofxPluginID == QString::fromUtf8("tuttle.constant")) {
         return 1;
     }
     return 0;
@@ -2463,8 +2479,16 @@ Settings::populatePluginsTab()
             }
             
             ///Create checkbox to activate/deactivate the plug-in
-            std::string pluginName = plugin->getPluginID().toStdString();
             
+            std::string pluginName = plugin->getPluginID().toStdString();
+            {
+                std::stringstream ss;
+                ss << pluginName;
+                ss << " Version ";
+                ss << plugin->getMajorVersion() << '.' << plugin->getMinorVersion();
+                pluginName = ss.str();
+            }
+                
             boost::shared_ptr<KnobString> pluginLabel = AppManager::createKnob<KnobString>(this, pluginName);
             pluginLabel->setAsLabel();
             pluginLabel->setName(it->first);
@@ -2558,14 +2582,48 @@ Settings::populateSystemFonts(const QSettings& settings,const std::vector<std::s
         }
     }
     ///Now restore properly the system font choice
-    QString name(_systemFontChoice->getName().c_str());
+    QString name = QString::fromUtf8(_systemFontChoice->getName().c_str());
     if (settings.contains(name)) {
         std::string value = settings.value(name).toString().toStdString();
         for (U32 i = 0; i < fonts.size(); ++i) {
             if (fonts[i] == value) {
-                _systemFontChoice->setValue(i, 0);
+                _systemFontChoice->setValue(i);
                 break;
             }
+        }
+    }
+}
+
+void
+Settings::getReadersForFormat(const std::string& format, std::vector<std::string>* decoders)
+{
+    for (U32 i = 0; i < _readersMapping.size(); ++i) {
+        std::string name = _readersMapping[i]->getName();
+        std::size_t prefix = name.find("Reader_");
+        if (prefix != std::string::npos) {
+            name.erase(prefix,7);
+        }
+        if (name == format) {
+            const std::vector<std::string> entries = _readersMapping[i]->getEntries_mt_safe();
+            *decoders = entries;
+            break;
+        }
+    }
+}
+
+void
+Settings::getWritersForFormat(const std::string& format, std::vector<std::string>* encoders)
+{
+    for (U32 i = 0; i < _writersMapping.size(); ++i) {
+        std::string name = _writersMapping[i]->getName();
+        std::size_t prefix = name.find("Writer_");
+        if (prefix != std::string::npos) {
+            name.erase(prefix,7);
+        }
+        if (name == format) {
+            const std::vector<std::string> entries = _writersMapping[i]->getEntries_mt_safe();
+            *encoders = entries;
+            break;
         }
     }
 }
@@ -2618,7 +2676,7 @@ Settings::getOpenFXPluginsSearchPaths(std::list<std::string>* paths) const
 void
 Settings::restoreDefault()
 {
-    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
+    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
 
     if ( !QFile::remove( settings.fileName() ) ) {
         qDebug() << "Failed to remove settings ( " << settings.fileName() << " ).";
@@ -2675,7 +2733,7 @@ Settings::isCheckForUpdatesEnabled() const
 void
 Settings::setCheckUpdatesEnabled(bool enabled)
 {
-    _checkForUpdates->setValue(enabled, 0);
+    _checkForUpdates->setValue(enabled);
     saveSetting(_checkForUpdates.get());
 }
 
@@ -2694,14 +2752,14 @@ Settings::getMaxPanelsOpened() const
 void
 Settings::setMaxPanelsOpened(int maxPanels)
 {
-    _maxPanelsOpened->setValue(maxPanels, 0);
+    _maxPanelsOpened->setValue(maxPanels);
     saveSetting(_maxPanelsOpened.get());
 }
 
 void
 Settings::setConnectionHintsEnabled(bool enabled)
 {
-    _useNodeGraphHints->setValue(enabled, 0);
+    _useNodeGraphHints->setValue(enabled);
 }
 
 bool
@@ -2902,7 +2960,7 @@ Settings::getRenderOnEditingFinishedOnly() const
 void
 Settings::setRenderOnEditingFinishedOnly(bool render)
 {
-    _renderOnEditingFinished->setValue(render, 0);
+    _renderOnEditingFinished->setValue(render);
 }
 
 bool
@@ -2978,7 +3036,7 @@ void
 Settings::setNumberOfParallelRenders(int nb)
 {
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-    _numberOfParallelRenders->setValue(nb, 0);
+    _numberOfParallelRenders->setValue(nb);
 #endif
 }
 
@@ -3003,7 +3061,7 @@ Settings::useGlobalThreadPool() const
 void
 Settings::setUseGlobalThreadPool(bool use)
 {
-    _useThreadPool->setValue(use,0);
+    _useThreadPool->setValue(use);
 }
 
 bool
@@ -3046,7 +3104,7 @@ Settings::doOCIOStartupCheckIfNeeded()
                                                                         eStandardButtonYes,
                                                                         &stopAsking);
         if (stopAsking != !docheck) {
-            _ocioStartupCheck->setValue(!stopAsking,0);
+            _ocioStartupCheck->setValue(!stopAsking);
             saveSetting(_ocioStartupCheck.get());
         }
         
@@ -3060,7 +3118,7 @@ Settings::doOCIOStartupCheckIfNeeded()
                 }
             }
             if (defaultIndex != -1) {
-                _ocioConfigKnob->setValue(defaultIndex,0);
+                _ocioConfigKnob->setValue(defaultIndex);
                 saveSetting(_ocioConfigKnob.get());
             } else {
                 Dialogs::warningDialog("OCIO config", QObject::tr("The " NATRON_DEFAULT_OCIO_CONFIG_NAME " config could not be found. "
@@ -3101,13 +3159,13 @@ Settings::isAutoTurboEnabled() const
 void
 Settings::setAutoTurboModeEnabled(bool e)
 {
-    _autoTurbo->setValue(e, 0);
+    _autoTurbo->setValue(e);
 }
 
 void
 Settings::setOptionalInputsAutoHidden(bool hidden)
 {
-    _hideOptionalInputsAutomatically->setValue(hidden, 0);
+    _hideOptionalInputsAutomatically->setValue(hidden);
 }
 
 bool
@@ -3126,8 +3184,8 @@ void
 Settings::appendPythonGroupsPath(const std::string& path)
 {
     _templatesPluginPaths->appendPath(path);
-    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
-    settings.setValue(_templatesPluginPaths->getName().c_str(), QVariant(_templatesPluginPaths->getValue(0).c_str()));
+    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
+    settings.setValue(QString::fromUtf8(_templatesPluginPaths->getName().c_str()), QVariant(QString::fromUtf8(_templatesPluginPaths->getValue(0).c_str())));
 }
 
 std::string
@@ -3181,7 +3239,7 @@ Settings::isAutoDeclaredVariablePrintActivated() const
 void
 Settings::setAutoDeclaredVariablePrintEnabled(bool enabled)
 {
-    _echoVariableDeclarationToPython->setValue(enabled, 0);
+    _echoVariableDeclarationToPython->setValue(enabled);
     saveSetting(_echoVariableDeclarationToPython.get());
 }
 
@@ -3488,13 +3546,13 @@ Settings::isNaNHandlingEnabled() const
 void
 Settings::setOnProjectCreatedCB(const std::string& func)
 {
-    _onProjectCreated->setValue(func, 0);
+    _onProjectCreated->setValue(func);
 }
 
 void
 Settings::setOnProjectLoadedCB(const std::string& func)
 {
-    _defaultOnProjectLoaded->setValue(func, 0);
+    _defaultOnProjectLoaded->setValue(func);
 }
 
 bool
@@ -3537,6 +3595,19 @@ bool
 Settings::isAutoWipeEnabled() const
 {
     return _autoWipe->getValue();
+}
+
+void
+Settings::setRenderQueuingEnabled(bool enabled)
+{
+    _queueRenders->setValue(enabled);
+    saveSetting(_queueRenders.get());
+}
+
+bool
+Settings::isRenderQueuingEnabled() const
+{
+    return _queueRenders->getValue();
 }
 
 NATRON_NAMESPACE_EXIT;

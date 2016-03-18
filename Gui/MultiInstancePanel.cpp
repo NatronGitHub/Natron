@@ -60,6 +60,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/TrackerContext.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Button.h"
@@ -494,38 +495,40 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->getInstanceSpecificKnobs(_imp->getMainInstance().get(), &instanceSpecificKnobs);
     
     _imp->view = new TableView( layout->parentWidget() );
-    QObject::connect( _imp->view,SIGNAL( deleteKeyPressed() ),this,SLOT( onDeleteKeyPressed() ) );
-    QObject::connect( _imp->view,SIGNAL( itemRightClicked(TableItem*) ),this,SLOT( onItemRightClicked(TableItem*) ) );
+    QObject::connect( _imp->view,SIGNAL(deleteKeyPressed()),this,SLOT(onDeleteKeyPressed()) );
+    QObject::connect( _imp->view,SIGNAL(itemRightClicked(TableItem*)),this,SLOT(onItemRightClicked(TableItem*)) );
     TableItemDelegate* delegate = new TableItemDelegate(_imp->view,this);
     _imp->view->setItemDelegate(delegate);
     
     _imp->model = new TableModel(0,0,_imp->view);
-    QObject::connect( _imp->model,SIGNAL( s_itemChanged(TableItem*) ),this,SLOT( onItemDataChanged(TableItem*) ) );
+    QObject::connect( _imp->model,SIGNAL(s_itemChanged(TableItem*)),this,SLOT(onItemDataChanged(TableItem*)) );
     _imp->view->setTableModel(_imp->model);
     
     QItemSelectionModel *selectionModel = _imp->view->selectionModel();
-    QObject::connect( selectionModel, SIGNAL( selectionChanged(QItemSelection,QItemSelection) ),this,
-                     SLOT( onSelectionChanged(QItemSelection,QItemSelection) ) );
+
+    QObject::connect( selectionModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),this,
+                      SLOT(onSelectionChanged(QItemSelection,QItemSelection)) );
     QStringList dimensionNames;
     for (std::list<KnobPtr >::iterator it = instanceSpecificKnobs.begin(); it != instanceSpecificKnobs.end(); ++it) {
-        QString knobDesc( (*it)->getLabel().c_str() );
+        QString knobDesc( QString::fromUtf8((*it)->getLabel().c_str()) );
         int dims = (*it)->getDimension();
         for (int i = 0; i < dims; ++i) {
             QString dimName(knobDesc);
             if (dims > 1) {
-                dimName += ' ';
-                dimName += (*it)->getDimensionName(i).c_str();
+                dimName += QLatin1Char(' ');
+                dimName += QString::fromUtf8((*it)->getDimensionName(i).c_str());
             }
             dimensionNames.push_back(dimName);
         }
     }
-    dimensionNames.prepend("Script-name");
-    dimensionNames.prepend("Enabled");
-    
+
+    dimensionNames.prepend(QString::fromUtf8("Script-name"));
+    dimensionNames.prepend(QString::fromUtf8("Enabled"));
+
     _imp->view->setColumnCount( dimensionNames.size() );
     _imp->view->setHorizontalHeaderLabels(dimensionNames);
-    
-    _imp->view->setAttribute(Qt::WA_MacShowFocusRect,1);
+
+    _imp->view->setAttribute(Qt::WA_MacShowFocusRect,0);
     _imp->view->setUniformRowHeights(true);
     
 #if QT_VERSION < 0x050000
@@ -541,31 +544,34 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->buttonsContainer = new QWidget( layout->parentWidget() );
     _imp->buttonsLayout = new QHBoxLayout(_imp->buttonsContainer);
     _imp->buttonsLayout->setContentsMargins(0, 0, 0, 0);
-    _imp->addButton = new Button(QIcon(),"+",_imp->buttonsContainer);
+    _imp->addButton = new Button(QIcon(),QString::fromUtf8("+"),_imp->buttonsContainer);
     _imp->addButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
     _imp->addButton->setIconSize(QSize(NATRON_SMALL_BUTTON_ICON_SIZE, NATRON_SMALL_BUTTON_ICON_SIZE));
     _imp->addButton->setToolTip(GuiUtils::convertFromPlainText(tr("Add new."), Qt::WhiteSpaceNormal));
     _imp->buttonsLayout->addWidget(_imp->addButton);
-    QObject::connect( _imp->addButton, SIGNAL( clicked(bool) ), this, SLOT( onAddButtonClicked() ) );
-    
-    _imp->removeButton = new Button(QIcon(),"-",_imp->buttonsContainer);
+
+    QObject::connect( _imp->addButton, SIGNAL(clicked(bool)), this, SLOT(onAddButtonClicked()) );
+
+    _imp->removeButton = new Button(QIcon(),QString::fromUtf8("-"),_imp->buttonsContainer);
     _imp->removeButton->setToolTip(GuiUtils::convertFromPlainText(tr("Remove selection."), Qt::WhiteSpaceNormal));
     _imp->removeButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
     _imp->removeButton->setIconSize(QSize(NATRON_SMALL_BUTTON_ICON_SIZE, NATRON_SMALL_BUTTON_ICON_SIZE));
     _imp->buttonsLayout->addWidget(_imp->removeButton);
-    QObject::connect( _imp->removeButton, SIGNAL( clicked(bool) ), this, SLOT( onRemoveButtonClicked() ) );
-    
+
+    QObject::connect( _imp->removeButton, SIGNAL(clicked(bool)), this, SLOT(onRemoveButtonClicked()) );
+
     QPixmap selectAll;
     appPTR->getIcon(NATRON_PIXMAP_SELECT_ALL, NATRON_SMALL_BUTTON_ICON_SIZE, &selectAll);
-    _imp->selectAll = new Button(QIcon(selectAll),"",_imp->buttonsContainer);
+    _imp->selectAll = new Button(QIcon(selectAll),QString(),_imp->buttonsContainer);
     _imp->selectAll->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
     _imp->selectAll->setIconSize(QSize(NATRON_SMALL_BUTTON_ICON_SIZE, NATRON_SMALL_BUTTON_ICON_SIZE));
     _imp->selectAll->setToolTip(GuiUtils::convertFromPlainText(tr("Select all."), Qt::WhiteSpaceNormal));
     _imp->buttonsLayout->addWidget(_imp->selectAll);
-    QObject::connect( _imp->selectAll, SIGNAL( clicked(bool) ), this, SLOT( onSelectAllButtonClicked() ) );
-    
-    _imp->resetTracksButton = new Button("Reset",_imp->buttonsContainer);
-    QObject::connect( _imp->resetTracksButton, SIGNAL( clicked(bool) ), this, SLOT( resetSelectedInstances() ) );
+
+    QObject::connect( _imp->selectAll, SIGNAL(clicked(bool)), this, SLOT(onSelectAllButtonClicked()) );
+
+    _imp->resetTracksButton = new Button(QString::fromUtf8("Reset"),_imp->buttonsContainer);
+    QObject::connect( _imp->resetTracksButton, SIGNAL(clicked(bool)), this, SLOT(resetSelectedInstances()) );
     _imp->buttonsLayout->addWidget(_imp->resetTracksButton);
     _imp->resetTracksButton->setToolTip(GuiUtils::convertFromPlainText(tr("Reset selected items."), Qt::WhiteSpaceNormal));
     
@@ -609,7 +615,7 @@ public:
         _panel->removeRow(index);
         _node->deactivate();
         _panel->getMainInstance()->getApp()->redrawAllViewers();
-        setText( QObject::tr("Add %1").arg( _node->getLabel().c_str() ) );
+        setText( QObject::tr("Add %1").arg( QString::fromUtf8(_node->getLabel().c_str() )) );
     }
     
     virtual void redo() OVERRIDE FINAL
@@ -620,7 +626,7 @@ public:
             _panel->getMainInstance()->getApp()->redrawAllViewers();
         }
         _firstRedoCalled = true;
-        setText( QObject::tr("Add %1").arg( _node->getLabel().c_str() ) );
+        setText( QObject::tr("Add %1").arg( QString::fromUtf8(_node->getLabel().c_str() ) ));
     }
 };
 
@@ -638,7 +644,7 @@ MultiInstancePanel::onAddButtonClicked()
 NodePtr MultiInstancePanel::addInstanceInternal(bool useUndoRedoStack)
 {
     NodePtr mainInstance = _imp->getMainInstance();
-    CreateNodeArgs args(mainInstance->getPluginID().c_str(), eCreateNodeReasonInternal, mainInstance->getGroup());
+    CreateNodeArgs args(QString::fromUtf8(mainInstance->getPluginID().c_str()), eCreateNodeReasonInternal, mainInstance->getGroup());
     args.multiInstanceParentName = mainInstance->getScriptName();
     NodePtr newInstance = _imp->getMainInstance()->getApp()->createNode(args);
     
@@ -689,7 +695,7 @@ MultiInstancePanelPrivate::addTableRow(const NodePtr & node)
             boost::shared_ptr<KnobSignalSlotHandler> slotsHandler =
             instanceKnobs[i]->getSignalSlotHandler();
             if (slotsHandler) {
-                QObject::connect( slotsHandler.get(), SIGNAL( valueChanged(int,int) ), publicInterface,SLOT( onInstanceKnobValueChanged(int,int) ) );
+                QObject::connect( slotsHandler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), publicInterface,SLOT(onInstanceKnobValueChanged(ViewSpec,int,int)) );
             }
             
             if ( instanceKnobs[i]->isInstanceSpecific() ) {
@@ -713,7 +719,7 @@ MultiInstancePanelPrivate::addTableRow(const NodePtr & node)
     {
         QCheckBox* checkbox = new QCheckBox();
         checkbox->setChecked( !node->isNodeDisabled() );
-        QObject::connect( checkbox,SIGNAL( toggled(bool) ),publicInterface,SLOT( onCheckBoxChecked(bool) ) );
+        QObject::connect( checkbox,SIGNAL(toggled(bool)),publicInterface,SLOT(onCheckBoxChecked(bool)) );
         view->setCellWidget(newRowIndex, COL_ENABLED, checkbox);
         TableItem* newItem = new TableItem;
         newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable | Qt::ItemIsUserCheckable);
@@ -727,7 +733,7 @@ MultiInstancePanelPrivate::addTableRow(const NodePtr & node)
         TableItem* newItem = new TableItem;
         view->setItem(newRowIndex, COL_SCRIPT_NAME, newItem);
         newItem->setToolTip(QObject::tr("The script-name of the item as exposed to Python scripts"));
-        newItem->setText(node->getScriptName().c_str());
+        newItem->setText(QString::fromUtf8(node->getScriptName().c_str()));
         newItem->setFlags(newItem->flags() & ~Qt::ItemIsEditable);
         view->resizeColumnToContents(COL_ENABLED);
     }
@@ -746,9 +752,9 @@ MultiInstancePanelPrivate::addTableRow(const NodePtr & node)
             continue;
         }
         
-        QString help = QString("<b>Script-name: %1 </b><br/>").arg((*it)->getName().c_str());
-        help.append((*it)->getHintToolTip().c_str());
-        
+
+        QString help = QString::fromUtf8("<b>Script-name: %1 </b><br/>").arg(QString::fromUtf8((*it)->getName().c_str()));
+        help.append(QString::fromUtf8((*it)->getHintToolTip().c_str()));
         
         for (int i = 0; i < (*it)->getDimension(); ++i) {
             TableItem* newItem = new TableItem;
@@ -765,7 +771,7 @@ MultiInstancePanelPrivate::addTableRow(const NodePtr & node)
             } else if (isDouble) {
                 newItem->setData( Qt::DisplayRole, isDouble->getValue(i) );
             } else if (isString) {
-                newItem->setData( Qt::DisplayRole, isString->getValue(i).c_str() );
+                newItem->setData( Qt::DisplayRole, QString::fromUtf8(isString->getValue(i).c_str() ));
             }
             newItem->setFlags(flags);
             newItem->setToolTip(help);
@@ -1337,27 +1343,27 @@ MultiInstancePanel::onItemDataChanged(TableItem* item)
                     
                     if (knobs[i]->isAnimationEnabled() && knobs[i]->isAnimated(j)) {
                         if (isInt) {
-                            isInt->setValueAtTime(time, data.toInt(), j);
+                            isInt->setValueAtTime(time,    data.toInt(),    ViewSpec::all(), j);
                         } else if (isBool) {
-                            isBool->setValueAtTime(time, data.toBool(), j);
+                            isBool->setValueAtTime(time,   data.toBool(),   ViewSpec::all(), j);
                         } else if (isDouble) {
-                            isDouble->setValueAtTime(time, data.toDouble(), j);
+                            isDouble->setValueAtTime(time, data.toDouble(), ViewSpec::all(), j);
                         } else if (isColor) {
-                            isColor->setValueAtTime(time, data.toDouble(), j);
+                            isColor->setValueAtTime(time,  data.toDouble(), ViewSpec::all(), j);
                         } else if (isString) {
-                            isString->setValueAtTime(time, data.toString().toStdString(), j);
+                            isString->setValueAtTime(time, data.toString().toStdString(), ViewSpec::all(), j);
                         }
                     } else {
                         if (isInt) {
-                            isInt->setValue(data.toInt(), j, true);
+                            isInt->setValue(data.toInt(),       ViewSpec::all(), j, true);
                         } else if (isBool) {
-                            isBool->setValue(data.toBool(), j, true);
+                            isBool->setValue(data.toBool(),     ViewSpec::all(), j, true);
                         } else if (isDouble) {
-                            isDouble->setValue(data.toDouble(), j, true);
+                            isDouble->setValue(data.toDouble(), ViewSpec::all(), j, true);
                         } else if (isColor) {
-                            isColor->setValue(data.toDouble(), j, true);
+                            isColor->setValue(data.toDouble(),  ViewSpec::all(), j, true);
                         } else if (isString) {
-                            isString->setValue(data.toString().toStdString(), j, true);
+                            isString->setValue(data.toString().toStdString(), ViewSpec::all(), j, true);
                         }
                     }
                     return;
@@ -1406,7 +1412,7 @@ MultiInstancePanel::onCheckBoxChecked(bool checked)
             assert(enabledKnob);
             KnobBool* bKnob = dynamic_cast<KnobBool*>( enabledKnob.get() );
             assert(bKnob);
-            bKnob->setValue(!checked, 0);
+            bKnob->setValue(!checked);
             QItemSelection sel;
             QItemSelectionRange r(_imp->model->index(i, 0),_imp->model->index(i ,cc - 1 ));
             sel.append(r);
@@ -1423,7 +1429,8 @@ MultiInstancePanel::onCheckBoxChecked(bool checked)
 }
 
 void
-MultiInstancePanel::onInstanceKnobValueChanged(int dim,
+MultiInstancePanel::onInstanceKnobValueChanged(ViewSpec /*view*/,
+                                               int dim,
                                                int reason)
 {
     if ( (ValueChangedReasonEnum)reason == eValueChangedReasonSlaveRefresh ) {
@@ -1450,36 +1457,36 @@ MultiInstancePanel::onInstanceKnobValueChanged(int dim,
                 if ( knobs[i]->isInstanceSpecific() ) {
                     if (knobs[i] == knob) {
                         for (int k = 0; k < knob->getDimension(); ++k) {
-                            if (k == dim || dim == 1) {
+                            if (k == dim || dim == -1) {
+                                
+                                TableItem* item = _imp->model->item(rowIndex, colIndex);
+                                if (item) {
+                                    QVariant data;
+                                    KnobInt* isInt = dynamic_cast<KnobInt*>( knobs[i].get() );
+                                    KnobBool* isBool = dynamic_cast<KnobBool*>( knobs[i].get() );
+                                    KnobDouble* isDouble = dynamic_cast<KnobDouble*>( knobs[i].get() );
+                                    KnobColor* isColor = dynamic_cast<KnobColor*>( knobs[i].get() );
+                                    KnobString* isString = dynamic_cast<KnobString*>( knobs[i].get() );
+                                    if (isInt) {
+                                        data.setValue<int>( isInt->getValue(k) );
+                                    } else if (isBool) {
+                                        data.setValue<bool>( isBool->getValue(k) );
+                                    } else if (isDouble) {
+                                        data.setValue<double>( isDouble->getValue(k) );
+                                    } else if (isColor) {
+                                        data.setValue<double>( isColor->getValue(k) );
+                                    } else if (isString) {
+                                        data.setValue<QString>( QString::fromUtf8(isString->getValue(k).c_str() ));
+                                    }
+                                    _imp->executingKnobValueChanged = true;
+                                    item->setData(Qt::DisplayRole,data);
+                                    _imp->executingKnobValueChanged = false;
+                                }
                                 if (dim != -1) {
                                     colIndex += dim;
                                 } else {
                                     ++colIndex;
                                 }
-                                TableItem* item = _imp->model->item(rowIndex, colIndex);
-                                if (!item) {
-                                    continue;
-                                }
-                                QVariant data;
-                                KnobInt* isInt = dynamic_cast<KnobInt*>( knobs[i].get() );
-                                KnobBool* isBool = dynamic_cast<KnobBool*>( knobs[i].get() );
-                                KnobDouble* isDouble = dynamic_cast<KnobDouble*>( knobs[i].get() );
-                                KnobColor* isColor = dynamic_cast<KnobColor*>( knobs[i].get() );
-                                KnobString* isString = dynamic_cast<KnobString*>( knobs[i].get() );
-                                if (isInt) {
-                                    data.setValue<int>( isInt->getValue(k) );
-                                } else if (isBool) {
-                                    data.setValue<bool>( isBool->getValue(k) );
-                                } else if (isDouble) {
-                                    data.setValue<double>( isDouble->getValue(k) );
-                                } else if (isColor) {
-                                    data.setValue<double>( isColor->getValue(k) );
-                                } else if (isString) {
-                                    data.setValue<QString>( isString->getValue(k).c_str() );
-                                }
-                                _imp->executingKnobValueChanged = true;
-                                item->setData(Qt::DisplayRole,data);
-                                _imp->executingKnobValueChanged = false;
                             }
                         }
                         return;
@@ -1614,18 +1621,13 @@ MultiInstancePanel::resetInstances(const std::list<Node*> & instances)
             ++next;
         }
     } // for(it)
-    instances.front()->getEffectInstance()->evaluate_public(NULL, true, eValueChangedReasonUserEdited);
-    
+
+    instances.front()->getEffectInstance()->incrHashAndEvaluate(true, true);
+
     ///To update interacts, kinda hack but can't figure out where else put this
     getMainInstance()->getApp()->redrawAllViewers();
 }
 
-void
-MultiInstancePanel::evaluate(KnobI* /*knob*/,
-                             bool /*isSignificant*/,
-                             ValueChangedReasonEnum /*reason*/)
-{
-}
 
 void
 MultiInstancePanel::onButtonTriggered(KnobButton* button)
@@ -1639,7 +1641,7 @@ MultiInstancePanel::onButtonTriggered(KnobButton* button)
     for (std::list<Node*>::iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
         KnobPtr k = (*it)->getKnobByName( button->getName() );
         assert( k && dynamic_cast<KnobButton*>( k.get() ) );
-        (*it)->getEffectInstance()->onKnobValueChanged_public(k.get(),eValueChangedReasonUserEdited,time, true);
+        (*it)->getEffectInstance()->onKnobValueChanged_public(k.get(),eValueChangedReasonUserEdited, time, ViewIdx(0), true);
     }
 }
 
@@ -1647,6 +1649,7 @@ void
 MultiInstancePanel::onKnobValueChanged(KnobI* k,
                                        ValueChangedReasonEnum reason,
                                        double time,
+                                       ViewSpec view,
                                        bool /*originatedFromMainThread*/)
 {
     if ( !k->isDeclaredByPlugin() ) {
@@ -1654,7 +1657,7 @@ MultiInstancePanel::onKnobValueChanged(KnobI* k,
             KnobBool* boolKnob = dynamic_cast<KnobBool*>(k);
             assert(boolKnob);
             if (boolKnob) {
-                _imp->mainInstance.lock()->onDisabledKnobToggled( boolKnob->getValue() );
+                _imp->mainInstance.lock()->onDisabledKnobToggled( boolKnob->getValue(0, view) );
             }
         }
     } else {
@@ -1684,7 +1687,7 @@ MultiInstancePanel::onKnobValueChanged(KnobI* k,
                             isString->clone(k);
                         }
                         
-                        sameKnob->getHolder()->onKnobValueChanged_public(sameKnob.get(), eValueChangedReasonPluginEdited,time, true);
+                        sameKnob->getHolder()->onKnobValueChanged_public(sameKnob.get(), eValueChangedReasonPluginEdited, time, view, true);
                     }
                 }
             }
@@ -1772,20 +1775,21 @@ TrackerPanelV1::appendExtraGui(QVBoxLayout* layout)
     _imp->exportLayout->setContentsMargins(0, 0, 0, 0);
     
     _imp->exportChoice = new ComboBox(_imp->exportContainer);
-    _imp->exportChoice->setToolTip( "<p><b>" + tr("CornerPin (Use current frame):") + "</p></b>"
-                                   "<p>" + tr("Warp the image according to the relative transform using the current frame as reference.") + "</p>"
-                                   "<p><b>" + tr("CornerPin (Use transform ref frame):") + "</p></b>"
-                                   "<p>" + tr("Warp the image according to the relative transform using the "
-                                              "reference frame specified in the transform tab.") + "</p>"
-                                   "<p><b>" + tr("CornerPin (Stabilize):") + "</p></b>"
-                                   "<p>" + tr("Transform the image so that the tracked points do not move.") + "</p>"
-                                   //                                      "<p><b>" + tr("Transform (Stabilize):</p></b>"
-                                   //                                      "<p>" + tr("Transform the image so that the tracked points do not move.") + "</p>"
-                                   //                                      "<p><b>" + tr("Transform (Match-move):</p></b>"
-                                   //                                      "<p>" + tr("Transform another image so that it moves to match the tracked points.") + "</p>"
-                                   //                                      "<p>" + tr("The linked versions keep a link between the new node and the track, the others just copy"
-                                   //                                      " the values.") + "</p>"
-                                   );
+
+    _imp->exportChoice->setToolTip(QString::fromUtf8("<p><b>") + tr("CornerPinOFX (Use current frame):") + QString::fromUtf8("</p></b>")
+                                        + QString::fromUtf8("<p>") + tr("Warp the image according to the relative transform using the current frame as reference.") + QString::fromUtf8("</p>") +
+                                       QString::fromUtf8("<p><b>") + tr("CornerPinOFX (Use transform ref frame):") + QString::fromUtf8("</p></b>") +
+                                       QString::fromUtf8("<p>") + tr("Warp the image according to the relative transform using the "
+                                       "reference frame specified in the transform tab.") + QString::fromUtf8("</p>") +
+                                       QString::fromUtf8("<p><b>") + tr("CornerPinOFX (Stabilize):") + QString::fromUtf8("</p></b>") +
+                                       QString::fromUtf8("<p>") + tr("Transform the image so that the tracked points do not move.") + QString::fromUtf8("</p>")
+//                                      "<p><b>" + tr("Transform (Stabilize):</p></b>"
+//                                      "<p>" + tr("Transform the image so that the tracked points do not move.") + "</p>"
+//                                      "<p><b>" + tr("Transform (Match-move):</p></b>"
+//                                      "<p>" + tr("Transform another image so that it moves to match the tracked points.") + "</p>"
+//                                      "<p>" + tr("The linked versions keep a link between the new node and the track, the others just copy"
+//                                      " the values.") + "</p>"
+                                       );
     std::vector<std::string> choices;
     std::vector<std::string> helps;
     
@@ -1826,12 +1830,12 @@ TrackerPanelV1::appendExtraGui(QVBoxLayout* layout)
     //    helps.push_back(tr("Same as the linked version except that it copies values instead of "
     //                       "referencing them via a link to the track").toStdString());
     for (U32 i = 0; i < choices.size(); ++i) {
-        _imp->exportChoice->addItem( choices[i].c_str(),QIcon(),QKeySequence(),helps[i].c_str() );
+        _imp->exportChoice->addItem( QString::fromUtf8(choices[i].c_str()),QIcon(),QKeySequence(),QString::fromUtf8(helps[i].c_str()));
     }
     _imp->exportLayout->addWidget(_imp->exportChoice);
     
     _imp->exportButton = new Button(tr("Export"),_imp->exportContainer);
-    QObject::connect( _imp->exportButton,SIGNAL( clicked(bool) ),this,SLOT( onExportButtonClicked() ) );
+    QObject::connect( _imp->exportButton,SIGNAL(clicked(bool)),this,SLOT(onExportButtonClicked()) );
     _imp->exportLayout->addWidget(_imp->exportButton);
     _imp->exportLayout->addStretch();
     layout->addWidget(_imp->exportContainer);
@@ -1845,7 +1849,7 @@ TrackerPanelV1::appendButtons(QHBoxLayout* buttonLayout)
     }
     _imp->averageTracksButton = new Button( tr("Average tracks"),buttonLayout->parentWidget() );
     _imp->averageTracksButton->setToolTip(GuiUtils::convertFromPlainText(tr("Make a new track which is the average of the selected tracks."), Qt::WhiteSpaceNormal));
-    QObject::connect( _imp->averageTracksButton, SIGNAL( clicked(bool) ), this, SLOT( onAverageTracksButtonClicked() ) );
+    QObject::connect( _imp->averageTracksButton, SIGNAL(clicked(bool)), this, SLOT(onAverageTracksButtonClicked()) );
     buttonLayout->addWidget(_imp->averageTracksButton);
 }
 
@@ -1869,13 +1873,13 @@ TrackerPanelV1::setIconForButton(KnobButton* knob)
     const std::string name = knob->getName();
     
     if (name == kNatronParamTrackingPrevious) {
-        knob->setIconFilePath(NATRON_IMAGES_PATH "back1.png");
+        knob->setIconLabel(NATRON_IMAGES_PATH "back1.png");
     } else if (name == kNatronParamTrackingNext) {
-        knob->setIconFilePath(NATRON_IMAGES_PATH "forward1.png");
+        knob->setIconLabel(NATRON_IMAGES_PATH "forward1.png");
     } else if (name == kNatronParamTrackingBackward) {
-        knob->setIconFilePath(NATRON_IMAGES_PATH "rewind.png");
+        knob->setIconLabel(NATRON_IMAGES_PATH "rewind.png");
     } else if (name == kNatronParamTrackingForward) {
-        knob->setIconFilePath(NATRON_IMAGES_PATH "play.png");
+        knob->setIconLabel(NATRON_IMAGES_PATH "play.png");
     }
 }
 
@@ -1897,11 +1901,11 @@ TrackerPanelV1::onAverageTracksButtonClicked()
     const std::list< std::pair<boost::weak_ptr<Node>,bool > > & allInstances = getInstances();
     for (std::list< std::pair<boost::weak_ptr<Node>,bool > >::const_iterator it = allInstances.begin();
          it != allInstances.end(); ++it) {
-        if ( QString( it->first.lock()->getScriptName().c_str() ).contains("average",Qt::CaseInsensitive) ) {
+        if ( QString::fromUtf8( it->first.lock()->getScriptName().c_str() ).contains(QString::fromUtf8("average"),Qt::CaseInsensitive) ) {
             ++avgIndex;
         }
     }
-    QString newName = QString("Average%1").arg(avgIndex + 1);
+    QString newName = QString::fromUtf8("Average%1").arg(avgIndex + 1);
     try {
         newInstance->setScriptName(newName.toStdString());
     } catch (...) {
@@ -1919,15 +1923,16 @@ TrackerPanelV1::onAverageTracksButtonClicked()
         boost::shared_ptr<KnobDouble> dblKnob = getCenterKnobForTracker(*it);
         centers.push_back(dblKnob);
         double mini,maxi;
-        bool hasKey = dblKnob->getFirstKeyFrameTime(0, &mini);
+        bool hasKey = dblKnob->getFirstKeyFrameTime(ViewIdx(0), 0, &mini);
         if (!hasKey) {
             continue;
         }
         if (mini < keyframesRange.min) {
             keyframesRange.min = mini;
         }
-        hasKey = dblKnob->getLastKeyFrameTime(0, &maxi);
-        
+
+        hasKey = dblKnob->getLastKeyFrameTime(ViewIdx(0), 0, &maxi);
+
         ///both dimensions must have keyframes
         assert(hasKey);
         if (maxi > keyframesRange.max) {
@@ -1956,8 +1961,8 @@ TrackerPanelV1::onAverageTracksButtonClicked()
             }
             average.first /= centersNb;
             average.second /= centersNb;
-            newInstanceCenter->setValueAtTime(t, average.first, 0);
-            newInstanceCenter->setValueAtTime(t, average.second, 1);
+            newInstanceCenter->setValueAtTime(t, average.first,  ViewSpec::all(), 0);
+            newInstanceCenter->setValueAtTime(t, average.second, ViewSpec::all(), 1);
         }
     }
     newInstanceCenter->endChanges();
@@ -1992,14 +1997,13 @@ TrackerPanelV1::onButtonTriggered(KnobButton* button)
 }
 
 
-
 void
 TrackerPanelV1::onTrackingStarted()
 {
     ///freeze the tracker node
     setKnobsFrozen(true);
     if (getGui()) {
-        getGui()->progressStart(getMainInstance()->getEffectInstance().get(), tr("Tracking...").toStdString(), "");
+        getGui()->progressStart(getMainInstance(), tr("Tracking...").toStdString(), "");
     }
     
 }
@@ -2010,10 +2014,9 @@ TrackerPanelV1::onTrackingFinished()
     setKnobsFrozen(false);
     Q_EMIT trackingEnded();
     if (getGui()) {
-        getGui()->progressEnd(getMainInstance()->getEffectInstance().get());
+        getGui()->progressEnd(getMainInstance());
     }
 }
-
 
 bool
 TrackerPanelPrivateV1::getTrackInstancesForButton(std::vector<KnobButton*>* trackButtons,const std::string& buttonName)
@@ -2028,18 +2031,19 @@ TrackerPanelPrivateV1::getTrackInstancesForButton(std::vector<KnobButton*>* trac
     
     KnobButton* prevBtn = dynamic_cast<KnobButton*>( publicInterface->getKnobByName(buttonName).get() );
     assert(prevBtn);
-    
-    for (std::list<Node*>::const_iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
-        if ( !(*it)->getEffectInstance() ) {
-            return false;
+    if (prevBtn) {
+        for (std::list<Node*>::const_iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
+            if ( !(*it)->getEffectInstance() ) {
+                return false;
+            }
+            if ( (*it)->isNodeDisabled() ) {
+                continue;
+            }
+            KnobPtr k = (*it)->getKnobByName( prevBtn->getName() );
+            KnobButton* bKnob = dynamic_cast<KnobButton*>( k.get() );
+            assert(bKnob);
+            trackButtons->push_back(bKnob);
         }
-        if ( (*it)->isNodeDisabled() ) {
-            continue;
-        }
-        KnobPtr k = (*it)->getKnobByName( prevBtn->getName() );
-        KnobButton* bKnob = dynamic_cast<KnobButton*>( k.get() );
-        assert(bKnob);
-        trackButtons->push_back(bKnob);
     }
     return true;
 }
@@ -2092,6 +2096,12 @@ void
 TrackerPanelV1::stopTracking()
 {
     _imp->scheduler.abortTracking();
+}
+
+bool
+TrackerPanelV1::isTracking() const
+{
+    return _imp->scheduler.isWorking();
 }
 
 bool
@@ -2156,7 +2166,7 @@ TrackerPanelV1::clearAllAnimationForSelection()
         const std::vector<KnobPtr > & knobs = (*it)->getKnobs();
         for (U32 i = 0; i < knobs.size(); ++i) {
             for (int dim = 0; dim < knobs[i]->getDimension(); ++dim) {
-                knobs[i]->removeAnimation(dim);
+                knobs[i]->removeAnimation(ViewSpec::all(), dim);
             }
         }
     }
@@ -2173,7 +2183,7 @@ TrackerPanelV1::clearBackwardAnimationForSelection()
         const std::vector<KnobPtr > & knobs = (*it)->getKnobs();
         for (U32 i = 0; i < knobs.size(); ++i) {
             for (int dim = 0; dim < knobs[i]->getDimension(); ++dim) {
-                knobs[i]->deleteAnimationBeforeTime(time,dim,eValueChangedReasonPluginEdited);
+                knobs[i]->deleteAnimationBeforeTime(time, ViewSpec::all(), dim, eValueChangedReasonPluginEdited);
             }
         }
     }
@@ -2190,7 +2200,7 @@ TrackerPanelV1::clearForwardAnimationForSelection()
         const std::vector<KnobPtr > & knobs = (*it)->getKnobs();
         for (U32 i = 0; i < knobs.size(); ++i) {
             for (int dim = 0; dim < knobs[i]->getDimension(); ++dim) {
-                knobs[i]->deleteAnimationAfterTime(time,dim,eValueChangedReasonPluginEdited);
+                knobs[i]->deleteAnimationAfterTime(time, ViewSpec::all(), dim, eValueChangedReasonPluginEdited);
             }
         }
     }
@@ -2261,20 +2271,21 @@ TrackerPanelPrivateV1::createTransformFromSelection(const std::list<Node*> & /*s
 }
 
 namespace  {
-    
-    boost::shared_ptr<KnobDouble>
-    getCornerPinPoint(Node* node,
-                      bool isFrom,
-                      int index)
-    {
-        assert(0 <= index && index < 4);
-        QString name = isFrom ? QString("from%1").arg(index + 1) : QString("to%1").arg(index + 1);
-        KnobPtr knob = node->getKnobByName( name.toStdString() );
-        assert(knob);
-        boost::shared_ptr<KnobDouble>  ret = boost::dynamic_pointer_cast<KnobDouble>(knob);
-        assert(ret);
-        return ret;
-    }
+
+
+boost::shared_ptr<KnobDouble>
+getCornerPinPoint(Node* node,
+                  bool isFrom,
+                  int index)
+{
+    assert(0 <= index && index < 4);
+    QString name = isFrom ? QString::fromUtf8("from%1").arg(index + 1) : QString::fromUtf8("to%1").arg(index + 1);
+    KnobPtr knob = node->getKnobByName( name.toStdString() );
+    assert(knob);
+    boost::shared_ptr<KnobDouble>  ret = boost::dynamic_pointer_cast<KnobDouble>(knob);
+    assert(ret);
+    return ret;
+}
 }
 
 void
@@ -2297,7 +2308,11 @@ TrackerPanelPrivateV1::createCornerPinFromSelection(const std::list<Node*> & sel
         assert(centers[i]);
     }
     GuiAppInstance* app = publicInterface->getGui()->getApp();
-    NodePtr cornerPin = app->createNode( CreateNodeArgs(PLUGINID_OFX_CORNERPIN, eCreateNodeReasonInternal, publicInterface->getMainInstance()->getGroup()));
+
+    
+    CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_CORNERPIN), eCreateNodeReasonInternal, publicInterface->getMainInstance()->getGroup());
+    NodePtr cornerPin = app->createNode(args);
+                                                        
     if (!cornerPin) {
         return;
     }
@@ -2311,9 +2326,11 @@ TrackerPanelPrivateV1::createCornerPinFromSelection(const std::list<Node*> & sel
     assert(mainInstanceGui);
     
     QPointF mainInstancePos = mainInstanceGui->scenePos();
-    mainInstancePos = cornerPinGui->mapToParent( cornerPinGui->mapFromScene(mainInstancePos) );
-    cornerPinGui->refreshPosition( mainInstancePos.x() + mainInstanceGui->getSize().width() * 2, mainInstancePos.y() );
-    
+
+    if (cornerPinGui) {
+        mainInstancePos = cornerPinGui->mapToParent( cornerPinGui->mapFromScene(mainInstancePos) );
+        cornerPinGui->refreshPosition( mainInstancePos.x() + mainInstanceGui->getSize().width() * 2, mainInstancePos.y() );
+    }
     boost::shared_ptr<KnobDouble> toPoints[4];
     boost::shared_ptr<KnobDouble>  fromPoints[4];
     
@@ -2323,7 +2340,7 @@ TrackerPanelPrivateV1::createCornerPinFromSelection(const std::list<Node*> & sel
         fromPoints[i] = getCornerPinPoint(cornerPin.get(), true, i);
         assert(fromPoints[i] && centers[i]);
         for (int j = 0; j < fromPoints[i]->getDimension(); ++j) {
-            fromPoints[i]->setValue(centers[i]->getValueAtTime(timeForFromPoints,j), j);
+            fromPoints[i]->setValue(centers[i]->getValueAtTime(timeForFromPoints,j), ViewSpec::all(), j);
         }
         
         toPoints[i] = getCornerPinPoint(cornerPin.get(), false, i);
@@ -2333,23 +2350,24 @@ TrackerPanelPrivateV1::createCornerPinFromSelection(const std::list<Node*> & sel
         } else {
             EffectInstance* effect = dynamic_cast<EffectInstance*>(centers[i]->getHolder());
             assert(effect);
-            
-            std::stringstream ss;
-            ss << "thisGroup." << effect->getNode()->getFullyQualifiedName() << "." << centers[i]->getName() << ".get()[dimension]";
-            std::string expr = ss.str();
-            dynamic_cast<KnobI*>(toPoints[i].get())->setExpression(0, expr, false);
-            dynamic_cast<KnobI*>(toPoints[i].get())->setExpression(1, expr, false);
+            if (effect) {
+                std::stringstream ss;
+                ss << "thisGroup." << effect->getNode()->getFullyQualifiedName() << "." << centers[i]->getName() << ".get()[dimension]";
+                std::string expr = ss.str();
+                dynamic_cast<KnobI*>(toPoints[i].get())->setExpression(0, expr, false);
+                dynamic_cast<KnobI*>(toPoints[i].get())->setExpression(1, expr, false);
+            }
         }
     }
     
     ///Disable all non used points
     for (unsigned int i = selection.size(); i < 4; ++i) {
-        QString enableName = QString("enable%1").arg(i + 1);
+        QString enableName = QString::fromUtf8("enable%1").arg(i + 1);
         KnobPtr knob = cornerPin->getKnobByName( enableName.toStdString() );
         assert(knob);
         KnobBool* enableKnob = dynamic_cast<KnobBool*>( knob.get() );
         assert(enableKnob);
-        enableKnob->setValue(false, 0);
+        enableKnob->setValue(false);
     }
     
     if (invert) {
@@ -2357,7 +2375,7 @@ TrackerPanelPrivateV1::createCornerPinFromSelection(const std::list<Node*> & sel
         assert(invertKnob);
         KnobBool* isBool = dynamic_cast<KnobBool*>(invertKnob.get());
         assert(isBool);
-        isBool->setValue(true, 0);
+        isBool->setValue(true);
     }
     
 } // createCornerPinFromSelection
@@ -2383,6 +2401,7 @@ TrackerPanelV1::showMenuForInstance(Node* instance)
         centerKnob->copyAnimationToClipboard();
     }
 }
+
 
 
 NATRON_NAMESPACE_EXIT;

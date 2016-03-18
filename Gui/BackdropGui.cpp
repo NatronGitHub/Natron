@@ -89,7 +89,7 @@ BackdropGuiPrivate::getLabelValue() const
     assert(k);
     KnobString* isStr = dynamic_cast<KnobString*>(k.get());
     assert(isStr);
-    return isStr->getValue();
+    return isStr ? isStr->getValue() : "";
 }
 
 void
@@ -155,7 +155,7 @@ void
 BackdropGui::refreshTextLabelFromKnob()
 {
     int nameHeight = getFrameNameHeight();
-    _imp->refreshLabelText( nameHeight, QString( _imp->getLabelValue().c_str() ) );
+    _imp->refreshLabelText( nameHeight, QString::fromUtf8( _imp->getLabelValue().c_str() ) );
 }
 
 void
@@ -163,9 +163,9 @@ BackdropGuiPrivate::refreshLabelText(int nameHeight,const QString &text)
 {
     QString textLabel = text;
 
-    textLabel.replace("\n", "<br>");
-    textLabel.prepend("<div align=\"left\">");
-    textLabel.append("</div>");
+    textLabel.replace(QString::fromUtf8("\n"), QString::fromUtf8("<br>"));
+    textLabel.prepend(QString::fromUtf8("<div align=\"left\">"));
+    textLabel.append(QString::fromUtf8("</div>"));
     QFont f;
     QColor color;
     if (!text.isEmpty()) {

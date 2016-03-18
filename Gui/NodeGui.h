@@ -78,7 +78,7 @@ public:
 
     bool isActive() const;
 
-    void refreshPosition(const QPointF & topLeft);
+    void refreshPosition(const QPointF & center);
 
 private:
 
@@ -251,7 +251,7 @@ public:
 
     void markInputNull(Edge* e);
 
-    const std::map<boost::weak_ptr<KnobI>,KnobGui*> & getKnobs() const;
+    const std::list<std::pair<boost::weak_ptr<KnobI>,KnobGuiPtr> > & getKnobs() const;
     static const int DEFAULT_OFFSET_BETWEEN_NODES = 30;
 
 
@@ -399,7 +399,7 @@ public:
     
     virtual void setPluginDescription(const std::string& description) OVERRIDE FINAL;
     
-    virtual void setPluginIDAndVersion(const std::string& pluginLabel,const std::string& pluginID,unsigned int version) OVERRIDE FINAL;
+    virtual void setPluginIDAndVersion(const std::list<std::string>& grouping, const std::string& pluginLabel,const std::string& pluginID,unsigned int version) OVERRIDE FINAL;
     
     virtual void onIdentityStateChanged(int inputNb) OVERRIDE FINAL;
 
@@ -425,6 +425,8 @@ protected:
 
     
 public Q_SLOTS:
+    
+    void setColorFromGrouping();
     
     void onHideInputsKnobValueChanged(bool hidden);
     
@@ -507,7 +509,7 @@ public Q_SLOTS:
 
     void refreshOutputEdgeVisibility();
 
-    void toggleBitDepthIndicator(bool on,const QString & tooltip);
+    void onStreamWarningsChanged();
 
     void onNodeExtraLabelChanged(const QString & label);
 
@@ -606,7 +608,7 @@ private:
     QGraphicsRectItem* _stateIndicator;    
     
     bool _mergeHintActive;
-    boost::shared_ptr<NodeGuiIndicator> _bitDepthWarning;
+    boost::shared_ptr<NodeGuiIndicator> _streamIssuesWarning;
     QGraphicsLineItem* _disabledTopLeftBtmRight;
     QGraphicsLineItem* _disabledBtmLeftTopRight;
     /*the graphical input arrows*/

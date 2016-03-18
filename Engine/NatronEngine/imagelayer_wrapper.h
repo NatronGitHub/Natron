@@ -3,7 +3,7 @@
 
 #include <shiboken.h>
 
-#include <NodeWrapper.h>
+#include <PyNode.h>
 
 #endif // SBK_IMAGELAYER_H
 

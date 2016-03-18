@@ -437,7 +437,7 @@ TrackMarker::getUserKeyframes(std::set<int>* keyframes) const
 void
 TrackMarker::getCenterKeyframes(std::set<double>* keyframes) const
 {
-    boost::shared_ptr<Curve> curve = _imp->center->getCurve(0);
+    boost::shared_ptr<Curve> curve = _imp->center->getCurve(ViewSpec(0), 0);
     assert(curve);
     KeyFrameSet keys = curve->getKeyFrames_mt_safe();
     for (KeyFrameSet::iterator it = keys.begin(); it != keys.end(); ++it) {
@@ -508,7 +508,7 @@ TrackMarker::resetCenter()
         scale.x = scale.y = 1;
         RectD rod;
         bool isProjectFormat;
-        Natron::StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getHashValue(), time, scale, 0, &rod, &isProjectFormat);
+        Natron::StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getHashValue(), time, scale, ViewIdx(0), &rod, &isProjectFormat);
         Natron::Point center;
         center.x = 0;
         center.y = 0;
@@ -516,8 +516,8 @@ TrackMarker::resetCenter()
             center.x = (rod.x1 + rod.x2) / 2.;
             center.y = (rod.y1 + rod.y2) / 2.;
         }
-        _imp->center->setValue(center.x, 0);
-        _imp->center->setValue(center.y, 1);
+        _imp->center->setValue(center.x, ViewSpec::current(), 0);
+        _imp->center->setValue(center.y, ViewSpec::current(), 1);
     }
 }
 
@@ -547,10 +547,10 @@ TrackMarker::resetTrack()
             }
         } else {
             for (int i = 0; i < (*it)->getDimension(); ++i) {
-                (*it)->removeAnimation(i);
+                (*it)->removeAnimation(ViewSpec::current(), i);
             }
-            _imp->center->setValue(curCenter.x, 0);
-            _imp->center->setValue(curCenter.y, 1);
+            _imp->center->setValue(curCenter.x, ViewSpec::current(), 0);
+            _imp->center->setValue(curCenter.y, ViewSpec::current(), 1);
         }
     }
     effect->endChanges();
@@ -719,7 +719,7 @@ TrackMarker::getMarkerImageRoI(int time) const
     if (!input) {
         return RectI();
     }
-    roiCanonical.toPixelEnclosing(mipmapLevel, input ? input->getEffectInstance()->getPreferredAspectRatio() : 1., &roi);
+    roiCanonical.toPixelEnclosing(mipmapLevel, input ? input->getEffectInstance()->getAspectRatio(-1) : 1., &roi);
     
     return roi;
 }
@@ -739,14 +739,13 @@ TrackMarker::getMarkerImage(int time, const RectI& roi) const
         return std::make_pair(ImagePtr(),roi);
     }
     
+    AbortableRenderInfoPtr abortInfo(new AbortableRenderInfo(false, 0));
     ParallelRenderArgsSetter frameRenderArgs(time,
-                                             0, //<  view 0 (left)
+                                             ViewIdx(0), //<  view 0 (left)
                                              true, //<isRenderUserInteraction
                                              false, //isSequential
-                                             false, //can abort
-                                             0, //render Age
+                                             abortInfo, //abort info
                                              getContext()->getNode(), // viewer requester
-                                             0,
                                              0, //texture index
                                              node->getApp()->getTimeLine().get(),
                                              NodePtr(),
@@ -760,7 +759,7 @@ TrackMarker::getMarkerImage(int time, const RectI& roi) const
     EffectInstance::RenderRoIArgs args(time,
                                        scale,
                                        mipmapLevel, //mipmaplevel
-                                       0,
+                                       ViewIdx(0),
                                        false,
                                        roi,
                                        RectD(),
@@ -768,12 +767,12 @@ TrackMarker::getMarkerImage(int time, const RectI& roi) const
                                        Natron::eImageBitDepthFloat,
                                        false,
                                        node->getEffectInstance().get());
-    ImageList planes;
+    std::map<ImageComponents,ImagePtr> planes;
     EffectInstance::RenderRoIRetCode stat = input->getEffectInstance()->renderRoI(args, &planes);
     if (stat != EffectInstance::eRenderRoIRetCodeOk || planes.empty()) {
         return std::make_pair(ImagePtr(),roi);
     }
-    return std::make_pair(planes.front(),roi);
+    return std::make_pair(planes.begin()->second,roi);
 }
 
 

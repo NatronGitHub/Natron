@@ -36,6 +36,7 @@
 
 #include "Engine/Node.h"
 #include "Engine/Timer.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/Button.h"
 #include "Gui/Gui.h"
@@ -186,7 +187,7 @@ public:
                 item->setTextColor(Qt::black);
                 item->setBackgroundColor(c);
             }
-            item->setText(node->getLabel().c_str());
+            item->setText(QString::fromUtf8(node->getLabel().c_str()));
             if (!exists) {
                 view->setItem(row, COL_NAME, item);
             }
@@ -208,7 +209,7 @@ public:
                 item->setTextColor(Qt::black);
                 item->setBackgroundColor(c);
             }
-            item->setText(node->getPluginID().c_str());
+            item->setText(QString::fromUtf8(node->getPluginID().c_str()));
             if (!exists) {
                 view->setItem(row, COL_PLUGIN_ID, item);
             }
@@ -253,9 +254,9 @@ public:
             assert(item);
             QString str;
             if (stats.isTilesSupportEnabled()) {
-                str = "Yes";
+                str = QString::fromUtf8("Yes");
             } else {
-                str = "No";
+                str = QString::fromUtf8("No");
             }
             item->setText(str);
             if (nodeUi) {
@@ -281,9 +282,9 @@ public:
             assert(item);
             QString str;
             if (stats.isRenderScaleSupportEnabled()) {
-                str = "Yes";
+                str = QString::fromUtf8("Yes");
             } else {
-                str = "No";
+                str = QString::fromUtf8("No");
             }
             item->setText(str);
             if (nodeUi) {
@@ -310,7 +311,7 @@ public:
             const std::set<unsigned int>& mm = stats.getMipMapLevelsRendered();
             for (std::set<unsigned int>::const_iterator it = mm.begin(); it!=mm.end(); ++it) {
                 str.append(QString::number(*it));
-                str.append(' ');
+                str.append(QLatin1Char(' '));
             }
             item->setText(str);
             if (nodeUi) {
@@ -336,16 +337,16 @@ public:
             
             std::bitset<4> processChannels = stats.getChannelsRendered();
             if (processChannels[0]) {
-                str.append("R ");
+                str.append(QString::fromUtf8("R "));
             }
             if (processChannels[1]) {
-                str.append("G ");
+                str.append(QString::fromUtf8("G "));
             }
             if (processChannels[2]) {
-                str.append("B ");
+                str.append(QString::fromUtf8("B "));
             }
             if (processChannels[3]) {
-                str.append("A");
+                str.append(QString::fromUtf8("A"));
             }
             item->setText(str);
             if (nodeUi) {
@@ -371,13 +372,13 @@ public:
             ImagePremultiplicationEnum premult = stats.getOutputPremult();
             switch (premult) {
                 case eImagePremultiplicationOpaque:
-                    str = "Opaque";
+                    str = QString::fromUtf8("Opaque");
                     break;
                 case eImagePremultiplicationPremultiplied:
-                    str = "Premultiplied";
+                    str = QString::fromUtf8("Premultiplied");
                     break;
                 case eImagePremultiplicationUnPremultiplied:
-                    str = "Unpremultiplied";
+                    str = QString::fromUtf8("Unpremultiplied");
                     break;
             }
             item->setText(str);
@@ -402,7 +403,7 @@ public:
             }
             assert(item);
             const RectD& rod = stats.getRoD();
-            str = QString("(%1, %2, %3, %4)").arg(rod.x1).arg(rod.y1).arg(rod.x2).arg(rod.y2);
+            str = QString::fromUtf8("(%1, %2, %3, %4)").arg(rod.x1).arg(rod.y1).arg(rod.x2).arg(rod.y2);
             item->setText(str);
             if (nodeUi) {
                 item->setTextColor(Qt::black);
@@ -427,9 +428,9 @@ public:
             QString str;
             NodePtr identity = stats.getInputImageIdentity();
             if (identity) {
-                str = identity->getLabel().c_str();
+                str = QString::fromUtf8(identity->getLabel().c_str());
             } else {
-                str = "-";
+                str = QLatin1Char('-');
             }
             item->setText(str);
             if (nodeUi) {
@@ -461,7 +462,7 @@ public:
             for (std::list<std::pair<RectI,NodePtr > >::iterator it = tiles.begin(); it!=tiles.end(); ++it) {
                 
                 const RectI& tile = it->first;
-                QString tileEnc = QString("(%1, %2, %3, %4)").arg(tile.x1).arg(tile.y1).arg(tile.x2).arg(tile.y2);
+                QString tileEnc = QString::fromUtf8("(%1, %2, %3, %4)").arg(tile.x1).arg(tile.y1).arg(tile.x2).arg(tile.y2);
                 tilesInfo.append(tileEnc);
             }
             nbIdentityTiles += (int)tiles.size();
@@ -469,7 +470,7 @@ public:
             item->setData((int)eItemsRoleIdentityTilesNb, nbIdentityTiles);
             item->setData((int)eItemsRoleIdentityTilesInfo, tilesInfo);
             
-            QString str = QString::number(nbIdentityTiles) + QString(" tiles...");
+            QString str = QString::number(nbIdentityTiles) + QString::fromUtf8(" tiles...");
             if (nodeUi) {
                 item->setTextColor(Qt::black);
                 item->setBackgroundColor(c);
@@ -500,7 +501,7 @@ public:
             for (std::list<RectI>::const_iterator it = tiles.begin(); it!=tiles.end(); ++it) {
                 
                 const RectI& tile = *it;
-                QString tileEnc = QString("(%1, %2, %3, %4)").arg(tile.x1).arg(tile.y1).arg(tile.x2).arg(tile.y2);
+                QString tileEnc = QString::fromUtf8("(%1, %2, %3, %4)").arg(tile.x1).arg(tile.y1).arg(tile.x2).arg(tile.y2);
                 tilesInfo.append(tileEnc);
             }
             nbTiles += (int)tiles.size();
@@ -508,7 +509,7 @@ public:
             item->setData((int)eItemsRoleRenderedTilesNb, nbTiles);
             item->setData((int)eItemsRoleRenderedTilesInfo, tilesInfo);
             
-            QString str = QString::number(nbTiles) + QString(" tiles...");
+            QString str = QString::number(nbTiles) + QString::fromUtf8(" tiles...");
             if (nodeUi) {
                 item->setTextColor(Qt::black);
                 item->setBackgroundColor(c);
@@ -534,9 +535,9 @@ public:
             const std::set<std::string>& planes = stats.getPlanesRendered();
             for (std::set<std::string>::const_iterator it = planes.begin(); it!=planes.end(); ++it) {
                 if (!planesInfo.isEmpty()) {
-                    planesInfo.append(' ');
+                    planesInfo.append(QLatin1Char(' '));
                 }
-                planesInfo.append(it->c_str());
+                planesInfo.append(QString::fromUtf8(it->c_str()));
             }
             
             if (nodeUi) {
@@ -593,18 +594,20 @@ public:
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
             assert(item);
-            int nbCacheMiss,nbCacheHits,nbCacheHitButDown;
-            stats.getCacheAccessInfos(&nbCacheMiss, &nbCacheHits, &nbCacheHitButDown);
-            nb += nbCacheHitButDown;
-            
-            QString str = QString::number(nb);
-            if (nodeUi) {
-                item->setTextColor(Qt::black);
-                item->setBackgroundColor(c);
-            }
-            item->setText(str);
-            if (!exists) {
-                view->setItem(row, COL_NB_CACHE_HIT_DOWNSCALED, item);
+            if (item) {
+                int nbCacheMiss,nbCacheHits,nbCacheHitButDown;
+                stats.getCacheAccessInfos(&nbCacheMiss, &nbCacheHits, &nbCacheHitButDown);
+                nb += nbCacheHitButDown;
+
+                QString str = QString::number(nb);
+                if (nodeUi) {
+                    item->setTextColor(Qt::black);
+                    item->setBackgroundColor(c);
+                }
+                item->setText(str);
+                if (!exists) {
+                    view->setItem(row, COL_NB_CACHE_HIT_DOWNSCALED, item);
+                }
             }
         }
         {
@@ -623,18 +626,20 @@ public:
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
             assert(item);
-            int nbCacheMiss,nbCacheHits,nbCacheHitButDown;
-            stats.getCacheAccessInfos(&nbCacheMiss, &nbCacheHits, &nbCacheHitButDown);
-            nb += nbCacheMiss;
-            
-            QString str = QString::number(nb);
-            if (nodeUi) {
-                item->setTextColor(Qt::black);
-                item->setBackgroundColor(c);
-            }
-            item->setText(str);
-            if (!exists) {
-                view->setItem(row, COL_NB_CACHE_MISS, item);
+            if (item) {
+                int nbCacheMiss,nbCacheHits,nbCacheHitButDown;
+                stats.getCacheAccessInfos(&nbCacheMiss, &nbCacheHits, &nbCacheHitButDown);
+                nb += nbCacheMiss;
+
+                QString str = QString::number(nb);
+                if (nodeUi) {
+                    item->setTextColor(Qt::black);
+                    item->setBackgroundColor(c);
+                }
+                item->setText(str);
+                if (!exists) {
+                    view->setItem(row, COL_NB_CACHE_MISS, item);
+                }
             }
         }
         if (!exists) {
@@ -812,7 +817,7 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
                                                          ),Qt::WhiteSpaceNormal);
     _imp->totalTimeSpentDescLabel = new Label(tr("Time spent to render:"),_imp->globalInfosContainer);
     _imp->totalTimeSpentDescLabel->setToolTip(wallTimett);
-    _imp->totalTimeSpentValueLabel = new Label("0.0 sec", _imp->globalInfosContainer);
+    _imp->totalTimeSpentValueLabel = new Label(QString::fromUtf8("0.0 sec"), _imp->globalInfosContainer);
     _imp->totalTimeSpentValueLabel->setToolTip(wallTimett);
     
     _imp->globalInfosLayout->addWidget(_imp->totalTimeSpentDescLabel);
@@ -978,14 +983,14 @@ void
 RenderStatsDialog::resetStats()
 {
     _imp->model->clearRows();
-    _imp->totalTimeSpentValueLabel->setText("0.0 sec");
+    _imp->totalTimeSpentValueLabel->setText(QString::fromUtf8("0.0 sec"));
     _imp->totalSpentTime = 0;
 }
 
 
 
 void
-RenderStatsDialog::addStats(int /*time*/, int /*view*/, double wallTime, const std::map<NodePtr,NodeRenderStats >& stats)
+RenderStatsDialog::addStats(int /*time*/, ViewIdx /*view*/, double wallTime, const std::map<NodePtr,NodeRenderStats >& stats)
 {
     
     if (!_imp->accumulateCheckbox->isChecked()) {
@@ -1041,8 +1046,8 @@ RenderStatsDialogPrivate::updateVisibleRowsInternal(const QString& nameFilter, c
                 continue;
             }
             
-            if ((nameFilter.isEmpty() || nameExpr.exactMatch(node->getLabel().c_str())) &&
-                (pluginIDFilter.isEmpty() || idExpr.exactMatch(node->getPluginID().c_str()))) {
+            if ((nameFilter.isEmpty() || nameExpr.exactMatch(QString::fromUtf8(node->getLabel().c_str()))) &&
+                (pluginIDFilter.isEmpty() || idExpr.exactMatch(QString::fromUtf8(node->getPluginID().c_str())))) {
                 
                 if (view->isRowHidden(i, rootIdx)) {
                     view->setRowHidden(i, rootIdx, false);
@@ -1063,8 +1068,8 @@ RenderStatsDialogPrivate::updateVisibleRowsInternal(const QString& nameFilter, c
                 continue;
             }
             
-            if ((nameFilter.isEmpty() || QString(node->getLabel().c_str()).contains(nameFilter)) &&
-                (pluginIDFilter.isEmpty() || QString(node->getPluginID().c_str()).contains(pluginIDFilter))) {
+            if ((nameFilter.isEmpty() || QString::fromUtf8(node->getLabel().c_str()).contains(nameFilter)) &&
+                (pluginIDFilter.isEmpty() || QString::fromUtf8(node->getPluginID().c_str()).contains(pluginIDFilter))) {
                 
                 if (view->isRowHidden(i, rootIdx)) {
                     view->setRowHidden(i, rootIdx, false);

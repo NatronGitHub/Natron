@@ -152,9 +152,12 @@ public:
     EffectInstPtr createOFXEffect(NodePtr node,
                                             const NodeSerialization* serialization,
                                             const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                                            bool allowFileDialogs,
-                                            bool disableRenderScaleSupport,
-                                                              bool *hasUsedFileDialog) const;
+                                            bool disableRenderScaleSupport
+#ifndef NATRON_ENABLE_IO_META_NODES
+                                            ,bool allowFileDialogs,
+                                            bool *hasUsedFileDialog
+#endif
+                                  ) const;
 
     void registerAppInstance(AppInstance* app);
 
@@ -294,7 +297,7 @@ public:
      * @brief If the current process is a background process, then it will right the output pipe the
      * short message. Otherwise the longMessage is printed to stdout
      **/
-    bool writeToOutputPipe(const QString & longMessage,const QString & shortMessage);
+    bool writeToOutputPipe(const QString & longMessage,const QString & shortMessage, bool printIfNoChannel);
 
     /**
      * @brief Abort any processing on all AppInstance. It is called in some very rare cases
@@ -335,13 +338,13 @@ public:
     {
     }
 
-    QString getOfxLog_mt_safe() const;
+    QString getErrorLog_mt_safe() const;
 
-    void writeToOfxLog_mt_safe(const QString & str);
+    void writeToErrorLog_mt_safe(const QString & str);
     
     void clearOfxLog_mt_safe();
     
-    virtual void showOfxLog() {}
+    virtual void showErrorLog() {}
 
     virtual void debugImage(const Image* /*image*/,
                             const RectI& /*roi*/,
@@ -430,7 +433,7 @@ public:
      **/
     std::list<std::string> getPluginIDs(const std::string& filter);
 
-    virtual QString getAppFont() const { return ""; }
+    virtual QString getAppFont() const { return QString(); }
     virtual int getAppFontSize() const { return 11; }
     
     void setProjectCreatedDuringRC2Or3(bool b);
@@ -504,6 +507,7 @@ public:
     void appendToNatronPath(const std::string& path);
     
     virtual void addCommand(const QString& /*grouping*/,const std::string& /*pythonFunction*/, Qt::Key /*key*/,const Qt::KeyboardModifiers& /*modifiers*/) {}
+        
     
     void setOnProjectLoadedCallback(const std::string& pythonFunc);
     void setOnProjectCreatedCallback(const std::string& pythonFunc);
@@ -545,6 +549,8 @@ public Q_SLOTS:
     qint64 getTotalNodesMemoryRegistered() const;
 
     void onMaxPanelsOpenedChanged(int maxPanels);
+    
+    void onQueueRendersChanged(bool queuingEnabled);
     
     void onCrashReporterNoLongerResponding();
     
@@ -691,6 +697,7 @@ bool getGroupInfos(const std::string& modulePath,
                    std::string* iconFilePath,
                    std::string* grouping,
                    std::string* description,
+                   bool* isToolset,
                    unsigned int* version);
     
 // Does not work for functions with var args

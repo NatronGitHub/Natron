@@ -36,6 +36,7 @@
 #include "Global/Macros.h"
 
 #include "Engine/EffectInstance.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 
@@ -51,7 +52,7 @@ class OutputEffectInstance
     struct RenderSequenceArgs
     {
         BlockingBackgroundRender* renderController;
-        std::vector<int> viewsToRender;
+        std::vector<ViewIdx> viewsToRender;
         int firstFrame;
         int lastFrame;
         int frameStep;
@@ -63,7 +64,6 @@ class OutputEffectInstance
     mutable QMutex _outputEffectDataLock;
     std::list<RenderSequenceArgs> _renderSequenceRequests;
     RenderEngine* _engine;
-    std::list<double> _timeSpentPerFrameRendered;
     SequenceTime _writerCurrentFrame; /*!< for writers only: indicates the current frame
                                        It avoids snchronizing all viewers in the app to the render*/
     SequenceTime _writerFirstFrame;
@@ -133,9 +133,7 @@ public:
 
     virtual void initializeData() OVERRIDE FINAL;
 
-    void updateRenderTimeInfos(double lastTimeSpent, double *averageTimePerFrame, double *totalTimeSpent);
-
-    virtual void reportStats(int time, int view, double wallTime, const std::map<NodePtr, NodeRenderStats > & stats);
+    virtual void reportStats(int time, ViewIdx view, double wallTime, const std::map<NodePtr, NodeRenderStats > & stats);
 
 protected:
     
@@ -147,7 +145,6 @@ protected:
      * @brief Creates the engine that will control the output rendering
      **/
     virtual RenderEngine* createRenderEngine();
-    virtual void resetTimeSpentRenderingInfos() OVERRIDE FINAL;
 };
 
 NATRON_NAMESPACE_EXIT;

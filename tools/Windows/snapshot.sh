@@ -17,8 +17,11 @@ else
     BIT=64
 fi
 
+PID=$$
 CWD=`pwd`
-TMP=$CWD/.autobuild
+TMP=$HOME/autobuild
+
+TMP_BUILD_DIR=$TMP_PATH$BIT
 
 if [ ! -f $CWD/commits-hash.sh ]; then
     touch $CWD/commits-hash.sh
@@ -56,7 +59,7 @@ if [ ! -d $TMP/Natron ]; then
     cd $TMP || exit 1
     git clone $GIT_NATRON || exit 1
     cd Natron || exit 1
-    git checkout workshop || exit 1
+    git checkout master || exit 1
 fi
 if [ ! -d $TMP/openfx-io ]; then
     cd $TMP || exit 1
@@ -83,15 +86,51 @@ do
     source $CWD/commits-hash.sh
 
     #Sync all scripts except snapshot.sh
-    git pull origin workshop
+    git pull origin master
 
     FAIL=0
     echo "Running ..."
 
+    # make git sync
+    GITSCRIPT="$TMP_BUILD_DIR/snapshot-git.sh"
+    cat << 'EOF' > $GITSCRIPT
+#!/bin/sh
+    TMP_BUILD_DIR=$1
+    if [ "$2" != "" ]; then
+        echo "Running git sync ..."
+        PID=$$
+        echo $PID > $TMP_BUILD_DIR/snapshot-git.pid || exit 1
+        git fetch --all || exit 1
+        git merge origin/${1} || exit 1
+    fi
+EOF
+    chmod +x $GITSCRIPT
+
+    # make kill bot
+    KILLSCRIPT="$TMP_BUILD_DIR/killbot$$.sh"
+    cat << 'EOF' > "$KILLSCRIPT"
+#!/bin/sh
+    sleep 30m
+    PARENT=`cat $TMP_BUILD_DIR/snapshot-git.pid`
+    if [ "$PARENT" = "" ]; then
+        exit 1
+    fi
+    PIDS=`ps aux|awk '{print $2}'|grep $PARENT`
+    if [ "$PIDS" = "$PARENT" ]; then
+        kill -15 $PARENT
+    fi
+EOF
+    chmod +x $KILLSCRIPT
+
+
     BUILD_NATRON=0
     cd $TMP/Natron 
-    git fetch --all || FAIL=1
-    git merge origin/workshop || FAIL=1
+
+    $KILLSCRIPT &
+    KILLBOT=$!
+    $GITSCRIPT $TMP_BUILD_DIR master
+    kill -9 $KILLBOT
+
     GITV_NATRON=`git log|head -1|awk '{print $2}'`
     ORIG_NATRON=$NATRON_DEVEL_GIT
     echo "Natron $GITV_NATRON vs. $ORIG_NATRON"
@@ -102,8 +141,12 @@ do
     BUILD_IO=0
     if [ "$FAIL" != "1" ]; then
         cd $TMP/openfx-io
-        git fetch --all || FAIL=1
-        git merge origin/master || FAIL=1
+
+        $KILLSCRIPT &
+        KILLBOT=$!
+        $GITSCRIPT $TMP_BUILD_DIR master
+        kill -9 $KILLBOT
+
         GITV_IO=`git log|head -1|awk '{print $2}'`
         ORIG_IO=$IOPLUG_DEVEL_GIT
         echo "IO $GITV_IO vs. $ORIG_IO"
@@ -115,8 +158,12 @@ do
     BUILD_MISC=0
     if [ "$FAIL" != "1" ]; then
         cd $TMP/openfx-misc
-        git fetch --all || FAIL=1
-        git merge origin/master || FAIL=1
+
+        $KILLSCRIPT &
+        KILLBOT=$!
+        $GITSCRIPT $TMP_BUILD_DIR master
+        kill -9 $KILLBOT
+
         GITV_MISC=`git log|head -1|awk '{print $2}'`
         ORIG_MISC=$MISCPLUG_DEVEL_GIT
         echo "Misc $GITV_MISC vs. $ORIG_MISC"
@@ -128,8 +175,12 @@ do
     BUILD_ARENA=0
     if [ "$FAIL" != "1" ]; then
         cd $TMP/openfx-arena
-        git fetch --all || FAIL=1
-        git merge origin/master || FAIL=1
+
+        $KLLSCRIPT &
+        KILLBOT=$!
+        $GITSCRIPT $TMP_BUILD_DIR master
+        kill -9 $KILLBOT
+
         GITV_ARENA=`git log|head -1|awk '{print $2}'`
         ORIG_ARENA=$ARENAPLUG_DEVEL_GIT
         echo "Arena $GITV_ARENA vs. $ORIG_ARENA"
@@ -139,23 +190,48 @@ do
         fi
     fi
     BUILD_CV=0
-    if [ "$FAIL" != "1" ]; then
-        cd $TMP/openfx-opencv
-        git fetch --all || FAIL=1
-        git merge origin/master || FAIL=1
-        GITV_CV=`git log|head -1|awk '{print $2}'`
-        ORIG_CV=$CVPLUG_DEVEL_GIT
-        echo "CV $GITV_CV vs. $ORIG_CV"
-        if [ "$GITV_CV" != "$ORIG_CV" -a "$FAIL" != "1" ]; then
-            echo "CV update needed"
-            BUILD_CV=1
-        fi
-    fi
+    #if [ "$FAIL" != "1" ]; then
+    #    cd $TMP/openfx-opencv
+    #    git fetch --all || FAIL=1
+    #    git merge origin/master || FAIL=1
+    #    GITV_CV=`git log|head -1|awk '{print $2}'`
+    #    ORIG_CV=$CVPLUG_DEVEL_GIT
+    #    echo "CV $GITV_CV vs. $ORIG_CV"
+    #    if [ "$GITV_CV" != "$ORIG_CV" -a "$FAIL" != "1" ]; then
+    #        echo "CV update needed"
+    #        BUILD_CV=1
+    #    fi
+    #fi
+
+
+    rm -f $GITSCRIPT $KILLSCRIPT
 
     cd $CWD || exit 1
     if [ "$FAIL" != "1" ]; then
         if [ "$BUILD_NATRON" = "1" -o "$BUILD_IO" = "1" -o "$BUILD_MISC" = "1" -o "$BUILD_ARENA" = "1" -o "$BUILD_CV" = "0" ]; then
-            NATRON_LICENSE=GPL OFFLINE_INSTALLER=1 SYNC=1 NOCLEAN=1 BUILD_CONFIG=SNAPSHOT sh build.sh $BIT workshop $JOBS
+
+          GIT_COMMENT=`( cd $TMP/Natron ; git --no-pager log ${NATRON_DEVEL_GIT}..HEAD)`
+          GIT_SYNC=`echo $GIT_COMMENT|grep "#snapshot"`
+          if [ "$GIT_SYNC" = "" ]; then
+            GIT_COMMENT=`( cd $TMP/openfx-io ; git --no-pager log ${IOPLUG_DEVEL_GIT}..HEAD)`
+            GIT_SYNC=`echo $GIT_COMMENT|grep "#snapshot"`
+          fi
+          if [ "$GIT_SYNC" = "" ]; then
+            GIT_COMMENT=`( cd $TMP/openfx-misc ; git --no-pager log ${MISCPLUG_DEVEL_GIT}..HEAD)`
+            GIT_SYNC=`echo $GIT_COMMENT|grep "#snapshot"`
+          fi
+          if [ "$GIT_SYNC" = "" ]; then
+            GIT_COMMENT=`( cd $TMP/openfx-arena ; git --no-pager log ${ARENAPLUG_DEVEL_GIT}..HEAD)`
+            GIT_SYNC=`echo $GIT_COMMENT|grep "#snapshot"`
+          fi
+          
+          if [ "$GIT_SYNC" != "" ]; then
+            DO_SYNC=1
+          else
+            DO_SYNC=0
+          fi
+
+          NATRON_LICENSE=GPL OFFLINE_INSTALLER=1 SYNC=$DO_SYNC NOCLEAN=1 BUILD_CONFIG=SNAPSHOT sh build.sh $BIT master $JOBS
         fi
     fi
 
@@ -166,4 +242,3 @@ do
         sleep 60
     fi
 done
-

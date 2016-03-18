@@ -37,6 +37,7 @@
 
 #include "Engine/NodeSerialization.h"
 #include "Engine/RotoLayer.h"
+#include "Engine/FStreamsSupport.h"
 
 #include "Gui/CurveEditor.h"
 #include "Gui/DockablePanel.h"
@@ -74,7 +75,7 @@ Gui::createDefaultLayout1()
         _imp->_panes.push_back(mainPane);
     }
 
-    mainPane->setObjectName_mt_safe("pane1");
+    mainPane->setObjectName_mt_safe(QString::fromUtf8("pane1"));
     mainPane->setAsAnchor(true);
 
     _imp->_leftRightSplitter->addWidget(mainPane);
@@ -120,7 +121,7 @@ restoreTabWidget(TabWidget* pane,
                  const PaneLayout & serialization)
 {
     ///Find out if the name is already used
-    QString availableName = pane->getGui()->getAvailablePaneName( serialization.name.c_str() );
+    QString availableName = pane->getGui()->getAvailablePaneName( QString::fromUtf8(serialization.name.c_str() ));
 
     pane->setObjectName_mt_safe(availableName);
     pane->setAsAnchor(serialization.isAnchor);
@@ -176,7 +177,7 @@ restoreSplitterRecursive(Gui* gui,
         }
     }
 
-    splitter->restoreNatron( serialization.sizes.c_str() );
+    splitter->restoreNatron( QString::fromUtf8(serialization.sizes.c_str() ));
 }
 
 void
@@ -295,27 +296,19 @@ Gui::exportLayout()
     SequenceFileDialog dialog( this, filters, false, SequenceFileDialog::eFileDialogModeSave, _imp->_lastSaveProjectOpenedDir.toStdString(), this, false );
     if ( dialog.exec() ) {
         std::string filename = dialog.filesToSave();
-        QString filenameCpy( filename.c_str() );
+        QString filenameCpy( QString::fromUtf8(filename.c_str() ));
         QString ext = QtCompat::removeFileExtension(filenameCpy);
-        if (ext != NATRON_LAYOUT_FILE_EXT) {
+        if (ext != QString::fromUtf8(NATRON_LAYOUT_FILE_EXT)) {
             filename.append("." NATRON_LAYOUT_FILE_EXT);
         }
 
-        std::ofstream ofile;
-        try {
-            ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-            ofile.open(filename.c_str(), std::ofstream::out);
-        } catch (const std::ofstream::failure & e) {
+
+        
+        FStreamsSupport::ofstream ofile;
+        FStreamsSupport::open(&ofile, filename);
+        if (!ofile) {
             Dialogs::errorDialog( tr("Error").toStdString()
-                                 , tr("Exception occured when opening file").toStdString(), false );
-
-            return;
-        }
-
-        if ( !ofile.good() ) {
-            Dialogs::errorDialog( tr("Error").toStdString()
-                                 , tr("Failure to open the file").toStdString(), false );
-
+                                 , tr("Failed to open file ").toStdString() + filename, false );
             return;
         }
 
@@ -326,13 +319,10 @@ Gui::exportLayout()
             oArchive << boost::serialization::make_nvp("Layout", s);
         }catch (...) {
             Dialogs::errorDialog( tr("Error").toStdString()
-                                 , tr("Failure when saving the layout").toStdString(), false );
-            ofile.close();
-
+                                 , tr("Failed to save the layout").toStdString(), false );
             return;
         }
 
-        ofile.close();
     }
 }
 

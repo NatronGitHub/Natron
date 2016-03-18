@@ -28,6 +28,7 @@
 #include "Global/Macros.h"
 
 #include "Engine/EffectInstance.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -113,11 +114,7 @@ public:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
 
-    virtual void getPreferredDepthAndComponents(int inputNb,std::list<ImageComponents>* comp,ImageBitDepthEnum* depth) const OVERRIDE FINAL;
-
-    virtual ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL;
-
-    virtual double getPreferredAspectRatio() const OVERRIDE FINAL;
+    virtual StatusEnum getPreferredMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
 
@@ -125,7 +122,7 @@ public:
 
     virtual bool isHostMaskingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
     virtual bool isHostMixingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN  { return true; }
-
+    virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
 
     virtual bool isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
     
@@ -133,27 +130,28 @@ private:
     
     virtual void knobChanged(KnobI* k,
                              ValueChangedReasonEnum reason,
-                             int view,
+                             ViewSpec view,
                              double time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
 
     virtual StatusEnum
-    getRegionOfDefinition(U64 hash,double time, const RenderScale & scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
+    getRegionOfDefinition(U64 hash,double time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
     
     virtual void getRegionsOfInterest(double time,
                                       const RenderScale & scale,
                                       const RectD & outputRoD, //!< the RoD of the effect, in canonical coordinates
                                       const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
-                                      int view,
+                                      ViewIdx view,
                                       RoIMap* ret) OVERRIDE FINAL;
     
-    virtual FramesNeededMap getFramesNeeded(double time, int view) OVERRIDE FINAL;
+    virtual FramesNeededMap getFramesNeeded(double time, ViewIdx view) OVERRIDE FINAL;
 
     virtual bool isIdentity(double time,
                         const RenderScale & scale,
                         const RectI & roi,
-                        int view,
+                        ViewIdx view,
                         double* inputTime,
+                        ViewIdx* inputView,
                         int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
         
 

@@ -67,6 +67,9 @@ public:
     virtual void removeSpecificGui() OVERRIDE FINAL;
 
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    
+    
+    bool checkFileModificationAndWarn(SequenceTime time, bool errorAndAbortRender);
 
 public Q_SLOTS:
 
@@ -80,7 +83,6 @@ public Q_SLOTS:
 
     void onTimelineFrameChanged(SequenceTime time,int reason);
     
-    void watchedFileChanged();
     
     void onMakeAbsoluteTriggered();
     
@@ -88,6 +90,9 @@ public Q_SLOTS:
     
     void onSimplifyTriggered();
 private:
+    
+    bool checkFileModificationAndWarnInternal(bool doCheck, SequenceTime time, bool errorAndAbortRender);
+
     
     virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
     virtual bool shouldAddStretch() const OVERRIDE FINAL { return false; }
@@ -109,9 +114,10 @@ private:
     Button *_openFileButton;
     Button* _reloadButton;
     QString _lastOpened;
-    QDateTime _lastModified;
-    QFileSystemWatcher* _watcher;
-    std::string _fileBeingWatched;
+    
+    //Keep track for each files in the sequence (or video) the modification date
+    //of the files
+    std::map<std::string,QDateTime> _lastModificationDates;
     boost::weak_ptr<KnobFile> _knob;
 };
 

@@ -55,9 +55,10 @@
 #include "Engine/RotoLayer.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
-#define NATRON_PYPLUG_EXPORTER_VERSION 5
+#define NATRON_PYPLUG_EXPORTER_VERSION 7
 
 NATRON_NAMESPACE_ENTER;
 
@@ -306,19 +307,6 @@ NodeCollection::quitAnyProcessingForAllNodes()
     setMustQuitProcessingRecursive(false, this);
 }
 
-void
-NodeCollection::resetTotalTimeSpentRenderingForAllNodes()
-{
-    QMutexLocker k(&_imp->nodesMutex);
-    for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        EffectInstPtr effect = (*it)->getEffectInstance();
-        effect->resetTotalTimeSpentRendering();
-        NodeGroup* isGroup = dynamic_cast<NodeGroup*>(effect.get());
-        if (isGroup) {
-            isGroup->resetTotalTimeSpentRenderingForAllNodes();
-        }
-    }
-}
 
 bool
 NodeCollection::isCacheIDAlreadyTaken(const std::string& name) const
@@ -855,7 +843,7 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,const st
                 
                 if (!filepath.empty()) {
                     if (project->fixFilePath(projectPathName, newProjectPath, filepath)) {
-                        isString->setValue(filepath, 0);
+                        isString->setValue(filepath);
                     }
                 }
             }
@@ -896,7 +884,7 @@ NodeCollection::fixPathName(const std::string& oldName,const std::string& newNam
                     filepath.substr(1,oldName.size()) == oldName) {
                     
                     filepath.replace(1, oldName.size(), newName);
-                    isString->setValue(filepath, 0);
+                    isString->setValue(filepath);
                 }
             }
             
@@ -1155,8 +1143,8 @@ NodeGroup::getInputLabel(int inputNb) const
             return std::string();
         }
     }
-    QString inputName(input->getLabel_mt_safe().c_str());
-    if (inputName.startsWith("input",Qt::CaseInsensitive)) {
+    QString inputName = QString::fromUtf8(input->getLabel_mt_safe().c_str());
+    if (inputName.startsWith(QString::fromUtf8("input"),Qt::CaseInsensitive)) {
         inputName.remove(0, 5);
     }
     return inputName.toStdString();
@@ -1172,7 +1160,7 @@ NodeGroup::getCurrentTime() const
     return EffectInstance::getCurrentTime();
 }
 
-int
+ViewIdx
 NodeGroup::getCurrentView() const
 {
     NodePtr node = getOutputNodeInput(false);
@@ -1203,11 +1191,23 @@ NodeGroup::isInputOptional(int inputNb) const
     }
     GroupInput* input = dynamic_cast<GroupInput*>(n->getEffectInstance().get());
     assert(input);
+    if (!input) {
+        return false;
+    }
     KnobPtr knob = input->getKnobByName(kNatronGroupInputIsOptionalParamName);
     assert(knob);
+    if (!knob) {
+        return false;
+    }
     KnobBool* isBool = dynamic_cast<KnobBool*>(knob.get());
     assert(isBool);
-    return isBool->getValue();
+    return isBool ? isBool->getValue() : false;
+}
+
+bool
+NodeGroup::isHostChannelSelectorSupported(bool* /*defaultR*/,bool* /*defaultG*/, bool* /*defaultB*/, bool* /*defaultA*/) const
+{
+    return false;
 }
 
 bool
@@ -1231,11 +1231,17 @@ NodeGroup::isInputMask(int inputNb) const
     }
     GroupInput* input = dynamic_cast<GroupInput*>(n->getEffectInstance().get());
     assert(input);
+    if (!input) {
+        return false;
+    }
     KnobPtr knob = input->getKnobByName(kNatronGroupInputIsMaskParamName);
     assert(knob);
+    if (!knob) {
+        return false;
+    }
     KnobBool* isBool = dynamic_cast<KnobBool*>(knob.get());
     assert(isBool);
-    return isBool->getValue();
+    return isBool ? isBool->getValue() : false;
 }
 
 void
@@ -1249,7 +1255,9 @@ NodeGroup::initializeKnobs()
     _imp->exportAsTemplate->setName("exportAsPyPlug");
     _imp->exportAsTemplate->setHintToolTip("Export this group as a Python group script (PyPlug) that can be shared and/or later "
                                            "on re-used as a plug-in.");
-    isPage->addKnob(_imp->exportAsTemplate);
+    if (isPage) {
+        isPage->addKnob(_imp->exportAsTemplate);
+    }
 }
 
 void
@@ -1431,7 +1439,11 @@ NodeGroup::getInputsOutputs(NodesList* nodes, bool useGuiConnexions) const
     if (!useGuiConnexions) {
         for (U32 i = 0; i < _imp->inputs.size(); ++i) {
             NodesWList outputs;
-            _imp->inputs[i].lock()->getOutputs_mt_safe(outputs);
+            NodePtr input = _imp->inputs[i].lock();
+            if (!input) {
+                continue;
+            }
+            input->getOutputs_mt_safe(outputs);
             for (NodesWList::iterator it = outputs.begin(); it!=outputs.end(); ++it) {
                 NodePtr node = it->lock();
                 if (node) {
@@ -1442,7 +1454,11 @@ NodeGroup::getInputsOutputs(NodesList* nodes, bool useGuiConnexions) const
     } else {
         for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
             NodesWList outputs;
-            _imp->guiInputs[i].lock()->getOutputs_mt_safe(outputs);
+            NodePtr input = _imp->guiInputs[i].lock();
+            if (!input) {
+                continue;
+            }
+            input->getOutputs_mt_safe(outputs);
             for (NodesWList::iterator it = outputs.begin(); it!=outputs.end(); ++it) {
                 NodePtr node = it->lock();
                 if (node) {
@@ -1459,20 +1475,29 @@ NodeGroup::getInputs(std::vector<NodePtr >* inputs,bool useGuiConnexions) const
     QMutexLocker k(&_imp->nodesLock);
     if (!useGuiConnexions) {
         for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-            inputs->push_back(_imp->inputs[i].lock());
+            NodePtr input = _imp->inputs[i].lock();
+            if (!input) {
+                continue;
+            }
+            inputs->push_back(input);
         }
     } else {
         for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
-            inputs->push_back(_imp->guiInputs[i].lock());
+            NodePtr input = _imp->guiInputs[i].lock();
+            if (!input) {
+                continue;
+            }
+            inputs->push_back(input);
         }
     }
 }
 
 void
-NodeGroup::knobChanged(KnobI* k,ValueChangedReasonEnum /*reason*/,
-                 int /*view*/,
-                 double /*time*/,
-                 bool /*originatedFromMainThread*/)
+NodeGroup::knobChanged(KnobI* k,
+                       ValueChangedReasonEnum /*reason*/,
+                       ViewSpec /*view*/,
+                       double /*time*/,
+                       bool /*originatedFromMainThread*/)
 {
     if (k == _imp->exportAsTemplate.get()) {
         boost::shared_ptr<NodeGuiI> gui_i = getNode()->getNodeGui();
@@ -1503,25 +1528,25 @@ static QString escapeString(const QString& str)
     QString ret;
     for (int i = 0; i < str.size(); ++i) {
         
-        if (i == 0 || str[i -1] != QChar('\\')) {
-            if (str[i] == '\\') {
-                ret.append('\\');
-                ret.append('\\');
-            } else if (str[i] == '"') {
-                ret.append('\\');
-                ret.append('\"');
-            } else if (str[i] == '\'') {
-                ret.append('\\');
-                ret.append('\'');
-            } else if (str[i] == '\n') {
-                ret.append('\\');
-                ret.append('n');
-            } else if (str[i] == '\t') {
-                ret.append('\\');
-                ret.append('t');
-            } else if (str[i] == '\r') {
-                ret.append('\\');
-                ret.append('r');
+        if (i == 0 || str[i -1] != QLatin1Char('\\')) {
+            if (str[i] == QLatin1Char('\\')) {
+                ret.append(QLatin1Char('\\'));
+                ret.append(QLatin1Char('\\'));
+            } else if (str[i] == QLatin1Char('"')) {
+                ret.append(QLatin1Char('\\'));
+                ret.append(QLatin1Char('\"'));
+            } else if (str[i] == QLatin1Char('\'')) {
+                ret.append(QLatin1Char('\\'));
+                ret.append(QLatin1Char('\''));
+            } else if (str[i] == QLatin1Char('\n')) {
+                ret.append(QLatin1Char('\\'));
+                ret.append(QLatin1Char('n'));
+            } else if (str[i] == QLatin1Char('\t')) {
+                ret.append(QLatin1Char('\\'));
+                ret.append(QLatin1Char('t'));
+            } else if (str[i] == QLatin1Char('\r')) {
+                ret.append(QLatin1Char('\\'));
+                ret.append(QLatin1Char('r'));
             } else {
                 ret.append(str[i]);
             }
@@ -1530,15 +1555,15 @@ static QString escapeString(const QString& str)
         }
         
     }
-    ret.prepend('"');
-    ret.append('"');
+    ret.prepend(QLatin1Char('"'));
+    ret.append(QLatin1Char('"'));
     
     return ret;
 }
 
 static QString escapeString(const std::string& str)
 {
-    QString s(str.c_str());
+    QString s = QString::fromUtf8(str.c_str());
     return escapeString(s);
 }
 
@@ -1584,6 +1609,18 @@ static bool exportKnobValues(int indentLevel,
         return false;
     }
     
+    EffectInstance* holderIsEffect = dynamic_cast<EffectInstance*>(knob->getHolder());
+    
+    if (isChoice && holderIsEffect) {
+        //Do not serialize mask channel selector if the mask is not enabled
+        int maskInputNb = holderIsEffect->getNode()->isMaskChannelKnob(isChoice);
+        if (maskInputNb != -1) {
+            if (!holderIsEffect->getNode()->isMaskEnabled(maskInputNb)) {
+                return false;
+            }
+        }
+    }
+    
     int innerIdent = mustDefineParam ? 2 : 1;
     
     for (int i = 0; i < knob->getDimension(); ++i) {
@@ -1593,28 +1630,28 @@ static bool exportKnobValues(int indentLevel,
             if (!hasExportedValue) {
                 hasExportedValue = true;
                 if (mustDefineParam) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param = " + paramFullName);
-                    WRITE_INDENT(indentLevel); WRITE_STRING("if param is not None:");
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramFullName);
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("if param is not None:"));
                 }
             }
             boost::shared_ptr<Curve> curve = isParametric->getParametricCurve(i);
             double r,g,b;
             isParametric->getCurveColor(i, &r, &g, &b);
-            WRITE_INDENT(innerIdent); WRITE_STRING("param.setCurveColor(" + NUM_INT(i) + ", " +
-                                          NUM_COLOR(r) + ", " + NUM_COLOR(g) + ", " + NUM_COLOR(b) + ")");
+            WRITE_INDENT(innerIdent); WRITE_STRING(QString::fromUtf8("param.setCurveColor(") + NUM_INT(i) + QString::fromUtf8(", ") +
+                                          NUM_COLOR(r) + QString::fromUtf8(", ") + NUM_COLOR(g) + QString::fromUtf8(", ") + NUM_COLOR(b) + QString::fromUtf8(")"));
             if (curve) {
                 KeyFrameSet keys = curve->getKeyFrames_mt_safe();
                 int c = 0;
                 for (KeyFrameSet::iterator it3 = keys.begin(); it3 != keys.end(); ++it3, ++c) {
-                    WRITE_INDENT(innerIdent); WRITE_STRING("param.setNthControlPoint(" + NUM_INT(i) + ", " +
-                                                  NUM_INT(c) + ", " + NUM_TIME(it3->getTime()) + ", " +
-                                                  NUM_VALUE(it3->getValue()) + ", " + NUM_VALUE(it3->getLeftDerivative())
-                                                  + ", " + NUM_VALUE(it3->getRightDerivative()) + ")");
+                    WRITE_INDENT(innerIdent); WRITE_STRING(QString::fromUtf8("param.setNthControlPoint(") + NUM_INT(i) + QString::fromUtf8(", ") +
+                                                  NUM_INT(c) + QString::fromUtf8(", ") + NUM_TIME(it3->getTime()) + QString::fromUtf8(", ") +
+                                                  NUM_VALUE(it3->getValue()) + QString::fromUtf8(", ") + NUM_VALUE(it3->getLeftDerivative())
+                                                  + QString::fromUtf8(", ") + NUM_VALUE(it3->getRightDerivative()) + QString::fromUtf8(")"));
                 }
                 
             }
         } else { // !isParametric
-            boost::shared_ptr<Curve> curve = knob->getCurve(i, true);
+            boost::shared_ptr<Curve> curve = knob->getCurve(ViewIdx(0), i, true);
             if (curve) {
                 KeyFrameSet keys = curve->getKeyFrames_mt_safe();
                 
@@ -1622,29 +1659,29 @@ static bool exportKnobValues(int indentLevel,
                     if (!hasExportedValue) {
                         hasExportedValue = true;
                         if (mustDefineParam) {
-                            WRITE_INDENT(indentLevel); WRITE_STRING("param = " + paramFullName);
-                            WRITE_INDENT(indentLevel); WRITE_STRING("if param is not None:");
+                            WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramFullName);
+                            WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("if param is not None:"));
                         }
                     }
                 }
                 
                 for (KeyFrameSet::iterator it3 = keys.begin(); it3 != keys.end(); ++it3) {
                     if (isAnimatedStr) {
-                        std::string value = isAnimatedStr->getValueAtTime(it3->getTime(),i, true);
-                        WRITE_INDENT(innerIdent); WRITE_STRING("param.setValueAtTime(" + ESC(value) + ", "
-                                                      + NUM_TIME(it3->getTime())+ ")");
+                        std::string value = isAnimatedStr->getValueAtTime(it3->getTime(),i, ViewIdx(0), true);
+                        WRITE_INDENT(innerIdent); WRITE_STRING(QString::fromUtf8("param.setValueAtTime(") + ESC(value) + QString::fromUtf8(", ")
+                                                               + NUM_TIME(it3->getTime())+ QChar::fromLatin1(')'));
                         
                     } else if (isBool) {
                         int v = std::min(1., std::max(0., std::floor(it3->getValue() + 0.5)));
-                        QString vStr = v ? "True" : "False";
-                        WRITE_INDENT(innerIdent); WRITE_STRING("param.setValueAtTime(" + vStr + ", "
-                                                      + NUM_TIME(it3->getTime())  + ")");
+                        QString vStr = v ? QString::fromUtf8("True") : QString::fromUtf8("False");
+                        WRITE_INDENT(innerIdent); WRITE_STRING(QString::fromUtf8("param.setValueAtTime(") + vStr + QString::fromUtf8(", ")
+                                                      + NUM_TIME(it3->getTime())  + QLatin1Char(')'));
                     } else if (isChoice) {
-                        WRITE_INDENT(innerIdent); WRITE_STRING("param.setValueAtTime(" + NUM_INT((int)it3->getValue()) + ", "
-                                                      + NUM_TIME(it3->getTime()) + ")");
+                        WRITE_INDENT(innerIdent); WRITE_STRING(QString::fromUtf8("param.setValueAtTime(") + NUM_INT((int)it3->getValue()) + QString::fromUtf8(", ")
+                                                      + NUM_TIME(it3->getTime()) + QLatin1Char(')'));
                     } else {
-                        WRITE_INDENT(innerIdent); WRITE_STRING("param.setValueAtTime(" + NUM_VALUE(it3->getValue()) + ", "
-                                                      + NUM_TIME(it3->getTime()) + ", " + NUM_INT(i) + ")");
+                        WRITE_INDENT(innerIdent); WRITE_STRING(QString::fromUtf8("param.setValueAtTime(") + NUM_VALUE(it3->getValue()) + QString::fromUtf8(", ")
+                                                      + NUM_TIME(it3->getTime()) + QString::fromUtf8(", ") + NUM_INT(i) + QLatin1Char(')'));
 
                     }
                 }
@@ -1654,45 +1691,30 @@ static bool exportKnobValues(int indentLevel,
                 if (!hasExportedValue) {
                     hasExportedValue = true;
                     if (mustDefineParam) {
-                        WRITE_INDENT(indentLevel); WRITE_STRING("param = " + paramFullName);
-                        WRITE_INDENT(indentLevel); WRITE_STRING("if param is not None:");
+                        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramFullName);
+                        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("if param is not None:"));
                     }
                 }
                 
                 if (isGrp) {
-                    int v = std::min(1., std::max(0.,std::floor(isGrp->getValue(i, true) + 0.5)));
-                    QString vStr = v ? "True" : "False";
-                    WRITE_INDENT(innerIdent); WRITE_STRING("param.setOpened(" + vStr + ")");
+                    int v = std::min(1., std::max(0.,std::floor(isGrp->getValue(i, ViewIdx(0), true) + 0.5)));
+                    QString vStr = v ? QString::fromUtf8("True") : QString::fromUtf8("False");
+                    WRITE_INDENT(innerIdent); WRITE_STRING(QString::fromUtf8("param.setOpened(") + vStr + QString::fromUtf8(")"));
                 } else if (isStr) {
-                    std::string v = isStr->getValue(i, true);
-                    WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + ESC(v)  + ")");
+                    std::string v = isStr->getValue(i, ViewIdx(0), true);
+                    WRITE_INDENT(innerIdent); WRITE_STRING(QString::fromUtf8("param.setValue(") + ESC(v)  + QString::fromUtf8(")"));
                 } else if (isDouble) {
-                    double v = isDouble->getValue(i, true);
-                    WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + NUM_VALUE(v) + ", " + NUM_INT(i) + ")");
+                    double v = isDouble->getValue(i, ViewIdx(0), true);
+                    WRITE_INDENT(innerIdent); WRITE_STRING(QString::fromUtf8("param.setValue(") + NUM_VALUE(v) + QString::fromUtf8(", ") + NUM_INT(i) + QString::fromUtf8(")"));
                 } else if (isChoice) {
-                    WRITE_INDENT(innerIdent); WRITE_STATIC_LINE("options = param.getOptions()");
-                    WRITE_INDENT(innerIdent); WRITE_STATIC_LINE("foundOption = False");
-                    WRITE_INDENT(innerIdent); WRITE_STATIC_LINE("for i in range(len(options)):");
-                    WRITE_INDENT(innerIdent + 1); WRITE_STRING("if options[i] == " + ESC(isChoice->getActiveEntryText_mt_safe()) + ":");
-                    WRITE_INDENT(innerIdent + 2); WRITE_STATIC_LINE("param.setValue(i)");
-                    WRITE_INDENT(innerIdent + 2); WRITE_STATIC_LINE("foundOption = True");
-                    WRITE_INDENT(innerIdent + 2); WRITE_STATIC_LINE("break");
-                    WRITE_INDENT(innerIdent); WRITE_STATIC_LINE("if not foundOption:");
-                    std::stringstream error;
-                    error << "Could not set option for parameter " << isChoice->getName() ;
-                    KnobHolder* holder = isChoice->getHolder();
-                    EffectInstance* instance = dynamic_cast<EffectInstance*>(holder);
-                    if (instance) {
-                        error << " of node " << instance->getNode()->getFullyQualifiedName();
-                    }
-                    WRITE_INDENT(innerIdent + 1); WRITE_STRING("app.writeToScriptEditor(" + ESC(error.str()) + ")");
+                    WRITE_INDENT(innerIdent); WRITE_STRING(QString::fromUtf8("param.set(") + ESC(isChoice->getActiveEntryText_mt_safe()) + QString::fromUtf8(")"));
                 } else if (isInt) {
-                    int v = isInt->getValue(i, true);
-                    WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + NUM_INT(v) + ", " + NUM_INT(i) + ")");
+                    int v = isInt->getValue(i, ViewIdx(0), true);
+                    WRITE_INDENT(innerIdent); WRITE_STRING(QString::fromUtf8("param.setValue(") + NUM_INT(v) + QString::fromUtf8(", ") + NUM_INT(i) + QString::fromUtf8(")"));
                 } else if (isBool) {
-                    int v = std::min(1., std::max(0.,std::floor(isBool->getValue(i, true) + 0.5)));
-                    QString vStr = v ? "True" : "False";
-                    WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + vStr + ")");
+                    int v = std::min(1., std::max(0.,std::floor(isBool->getValue(i, ViewIdx(0), true) + 0.5)));
+                    QString vStr = v ? QString::fromUtf8("True") : QString::fromUtf8("False");
+                    WRITE_INDENT(innerIdent); WRITE_STRING(QString::fromUtf8("param.setValue(") + vStr + QString::fromUtf8(")"));
                 }
             } // if ((!curve || curve->getKeyFramesCount() == 0) && knob->hasModifications(i)) {
             
@@ -1705,12 +1727,12 @@ static bool exportKnobValues(int indentLevel,
         if (!hasExportedValue) {
             hasExportedValue = true;
             if (mustDefineParam) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param = " + paramFullName);
-                WRITE_INDENT(indentLevel); WRITE_STRING("if param is not None:");
+                WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramFullName);
+                WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("if param is not None:"));
             }
         }
         
-        WRITE_INDENT(innerIdent); WRITE_STRING("param.setVisibleByDefault(False)");
+        WRITE_INDENT(innerIdent); WRITE_STRING(QString::fromUtf8("param.setVisibleByDefault(False)"));
 
     }
     
@@ -1720,18 +1742,18 @@ static bool exportKnobValues(int indentLevel,
             if (!hasExportedValue) {
                 hasExportedValue = true;
                 if (mustDefineParam) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param = " + paramFullName);
-                    WRITE_INDENT(indentLevel); WRITE_STRING("if param is not None:");
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramFullName);
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("if param is not None:"));
                 }
             }
             
-            QString str("param.setVisible(");
+            QString str = QString::fromUtf8("param.setVisible(");
             if (isSecret) {
-                str += "False";
+                str += QString::fromUtf8("False");
             } else {
-                str += "True";
+                str += QString::fromUtf8("True");
             }
-            str += ")";
+            str += QString::fromUtf8(")");
             WRITE_INDENT(innerIdent); WRITE_STRING(str);
         }
         
@@ -1740,12 +1762,12 @@ static bool exportKnobValues(int indentLevel,
             if (!hasExportedValue) {
                 hasExportedValue = true;
                 if (mustDefineParam) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param = " + paramFullName);
-                    WRITE_INDENT(indentLevel); WRITE_STRING("if param is not None:");
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramFullName);
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("if param is not None:"));
                 }
             }
             
-            WRITE_INDENT(innerIdent); WRITE_STRING("param.setEnabledByDefault(False)");
+            WRITE_INDENT(innerIdent); WRITE_STRING(QString::fromUtf8("param.setEnabledByDefault(False)"));
         }
         
         for (int i = 0; i < knob->getDimension(); ++i) {
@@ -1755,20 +1777,20 @@ static bool exportKnobValues(int indentLevel,
                 if (!hasExportedValue) {
                     hasExportedValue = true;
                     if (mustDefineParam) {
-                        WRITE_INDENT(indentLevel); WRITE_STRING("param = " + paramFullName);
-                        WRITE_INDENT(indentLevel); WRITE_STRING("if param is not None:");
+                        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramFullName);
+                        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("if param is not None:"));
                     }
                 }
                 
-                QString str("param.setEnabled(");
+                QString str = QString::fromUtf8("param.setEnabled(");
                 if (isEnabled) {
-                    str += "True";
+                    str += QString::fromUtf8("True");
                 } else {
-                    str += "False";
+                    str += QString::fromUtf8("False");
                 }
-                str += ", ";
+                str += QString::fromUtf8(", ");
                 str += NUM_INT(i);
-                str += ")";
+                str += QLatin1Char(')');
                 WRITE_INDENT(innerIdent); WRITE_STRING(str);
             }
         }
@@ -1814,21 +1836,21 @@ static void exportUserKnob(int indentLevel,const KnobPtr& knob,const QString& fu
         QString createToken;
         switch (isInt->getDimension()) {
             case 1:
-                createToken = ".createIntParam(";
+                createToken = QString::fromUtf8(".createIntParam(");
                 break;
             case 2:
-                createToken = ".createInt2DParam(";
+                createToken = QString::fromUtf8(".createInt2DParam(");
                 break;
             case 3:
-                createToken = ".createInt3DParam(";
+                createToken = QString::fromUtf8(".createInt3DParam(");
                 break;
             default:
                 assert(false);
-                createToken = ".createIntParam(";
+                createToken = QString::fromUtf8(".createIntParam(");
                 break;
         }
-        WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + createToken + ESC(isInt->getName()) +
-                                      ", " + ESC(isInt->getLabel()) + ")");
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + fullyQualifiedNodeName + createToken + ESC(isInt->getName()) +
+                                      QString::fromUtf8(", ") + ESC(isInt->getLabel()) + QString::fromUtf8(")"));
         
         
         std::vector<int> defaultValues = isInt->getDefaultValues_mt_safe();
@@ -1841,42 +1863,42 @@ static void exportUserKnob(int indentLevel,const KnobPtr& knob,const QString& fu
             int dMin = isInt->getDisplayMinimum(i);
             int dMax = isInt->getDisplayMaximum(i);
             if (min != INT_MIN) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setMinimum(" + NUM_INT(min) + ", " +
-                                              NUM_INT(i) + ")");
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setMinimum(") + NUM_INT(min) + QString::fromUtf8(", ") +
+                                              NUM_INT(i) + QString::fromUtf8(")"));
             }
             if (max != INT_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setMaximum(" + NUM_INT(max) + ", " +
-                                              NUM_INT(i) + ")");
+                WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setMaximum(") + NUM_INT(max) + QString::fromUtf8(", ") +
+                                              NUM_INT(i) + QString::fromUtf8(")"));
             }
             if (dMin != INT_MIN) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMinimum(" + NUM_INT(dMin) + ", " +
-                                              NUM_INT(i) + ")");
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setDisplayMinimum(") + NUM_INT(dMin) + QString::fromUtf8(", ") +
+                                              NUM_INT(i) + QString::fromUtf8(")"));
             }
             if (dMax != INT_MAX) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMaximum(" + NUM_INT(dMax) + ", " +
-                                              NUM_INT(i) + ")");
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setDisplayMaximum(") + NUM_INT(dMax) + QString::fromUtf8(", ") +
+                                              NUM_INT(i) + QString::fromUtf8(")"));
             }
-            WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM_INT(defaultValues[i]) + ", " + NUM_INT(i) + ")");
+            WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setDefaultValue(") + NUM_INT(defaultValues[i]) + QString::fromUtf8(", ") + NUM_INT(i) + QString::fromUtf8(")"));
         }
     } else if (isDouble) {
         QString createToken;
         switch (isDouble->getDimension()) {
             case 1:
-                createToken = ".createDoubleParam(";
+                createToken = QString::fromUtf8(".createDoubleParam(");
                 break;
             case 2:
-                createToken = ".createDouble2DParam(";
+                createToken = QString::fromUtf8(".createDouble2DParam(");
                 break;
             case 3:
-                createToken = ".createDouble3DParam(";
+                createToken = QString::fromUtf8(".createDouble3DParam(");
                 break;
             default:
                 assert(false);
-                createToken = ".createDoubleParam(";
+                createToken = QString::fromUtf8(".createDoubleParam(");
                 break;
         }
-        WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + createToken + ESC(isDouble->getName()) +
-                                      ", " + ESC(isDouble->getLabel()) + ")");
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + fullyQualifiedNodeName + createToken + ESC(isDouble->getName()) +
+                                      QString::fromUtf8(", ") + ESC(isDouble->getLabel()) + QString::fromUtf8(")"));
 
         std::vector<double> defaultValues = isDouble->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isDouble->getDimension());
@@ -1886,41 +1908,41 @@ static void exportUserKnob(int indentLevel,const KnobPtr& knob,const QString& fu
             double dMin = isDouble->getDisplayMinimum(i);
             double dMax = isDouble->getDisplayMaximum(i);
             if (min != -DBL_MAX) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setMinimum(" + NUM_VALUE(min) + ", " +
-                                              NUM_INT(i) + ")");
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setMinimum(") + NUM_VALUE(min) + QString::fromUtf8(", ") +
+                                              NUM_INT(i) + QString::fromUtf8(")"));
             }
             if (max != DBL_MAX) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setMaximum(" + NUM_VALUE(max) + ", " +
-                                              NUM_INT(i) + ")");
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setMaximum(") + NUM_VALUE(max) + QString::fromUtf8(", ") +
+                                              NUM_INT(i) + QString::fromUtf8(")"));
             }
             if (dMin != -DBL_MAX) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMinimum(" + NUM_VALUE(dMin) + ", " +
-                                              NUM_INT(i) + ")");
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setDisplayMinimum(") + NUM_VALUE(dMin) + QString::fromUtf8(", ") +
+                                              NUM_INT(i) +QString::fromUtf8(")"));
             }
             if (dMax != DBL_MAX) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMaximum(" + NUM_VALUE(dMax) + ", " +
-                                              NUM_INT(i) + ")");
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setDisplayMaximum(") + NUM_VALUE(dMax) + QString::fromUtf8(", ") +
+                                              NUM_INT(i) + QString::fromUtf8(")"));
             }
             if (defaultValues[i] != 0.) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM_VALUE(defaultValues[i]) + ", " + NUM_INT(i) + ")");
+                WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setDefaultValue(") + NUM_VALUE(defaultValues[i]) + QString::fromUtf8(", ") + NUM_INT(i) + QString::fromUtf8(")"));
             }
         }
 
     } else if (isBool) {
-        WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createBooleanParam(" + ESC(isBool->getName()) +
-                                      ", " + ESC(isBool->getLabel()) + ")");
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + fullyQualifiedNodeName + QString::fromUtf8(".createBooleanParam(") + ESC(isBool->getName()) +
+                                      QString::fromUtf8(", ") + ESC(isBool->getLabel()) + QString::fromUtf8(")"));
 
         std::vector<bool> defaultValues = isBool->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isBool->getDimension());
         
         if (defaultValues[0]) {
-            WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(True)");
+            WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setDefaultValue(True)"));
         }
 
     } else if (isChoice) {
-        WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createChoiceParam(" +
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + fullyQualifiedNodeName + QString::fromUtf8(".createChoiceParam(") +
                                       ESC(isChoice->getName()) +
-                                      ", " + ESC(isChoice->getLabel()) + ")");
+                                      QString::fromUtf8(", ") + ESC(isChoice->getLabel()) + QString::fromUtf8(")"));
         
         KnobChoice* aliasedIsChoice = dynamic_cast<KnobChoice*>(aliasedParam.get());
         
@@ -1935,8 +1957,8 @@ static void exportUserKnob(int indentLevel,const KnobPtr& knob,const QString& fu
                 }
                 WRITE_INDENT(indentLevel); ts << "entries = [ (" << ESC(entries[0]) << ", " << ESC(helps[0]) << "),\n";
                 for (U32 i = 1; i < entries.size(); ++i) {
-                    QString endToken = (i == entries.size() - 1) ? ")]" : "),";
-                    WRITE_INDENT(indentLevel); WRITE_STRING("(" + ESC(entries[i]) + ", " + ESC(helps[i]) + endToken);
+                    QString endToken = (i == entries.size() - 1) ? QString::fromUtf8(")]") : QString::fromUtf8("),");
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("(") + ESC(entries[i]) + QString::fromUtf8(", ") + ESC(helps[i]) + endToken);
                 }
                 WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("param.setOptions(entries)");
                 WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del entries");
@@ -1945,14 +1967,14 @@ static void exportUserKnob(int indentLevel,const KnobPtr& knob,const QString& fu
             assert((int)defaultValues.size() == isChoice->getDimension());
             if (defaultValues[0] != 0) {
                 std::string entryStr = isChoice->getEntry(defaultValues[0]);
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + ESC(entryStr) + ")");
+                WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setDefaultValue(") + ESC(entryStr) + QString::fromUtf8(")"));
                 
             }
         } else {
             std::vector<int> defaultValues = isChoice->getDefaultValues_mt_safe();
             assert((int)defaultValues.size() == isChoice->getDimension());
             if (defaultValues[0] != 0) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM_INT(defaultValues[0]) + ")");
+                WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setDefaultValue(") + NUM_INT(defaultValues[0]) + QString::fromUtf8(")"));
                 
             }
         }
@@ -1961,9 +1983,9 @@ static void exportUserKnob(int indentLevel,const KnobPtr& knob,const QString& fu
         
         
     } else if (isColor) {
-        QString hasAlphaStr = (isColor->getDimension() == 4) ? "True" : "False";
-        WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createColorParam(" + ESC(isColor->getName()) +
-                                      ", " + ESC(isColor->getLabel()) + ", " + hasAlphaStr +  ")");
+        QString hasAlphaStr = (isColor->getDimension() == 4) ? QString::fromUtf8("True") : QString::fromUtf8("False");
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + fullyQualifiedNodeName + QString::fromUtf8(".createColorParam(") + ESC(isColor->getName()) +
+                                      QString::fromUtf8(", ") + ESC(isColor->getLabel()) + QString::fromUtf8(", ") + hasAlphaStr +  QString::fromUtf8(")"));
         
         
         std::vector<double> defaultValues = isColor->getDefaultValues_mt_safe();
@@ -1975,141 +1997,141 @@ static void exportUserKnob(int indentLevel,const KnobPtr& knob,const QString& fu
             double dMin = isColor->getDisplayMinimum(i);
             double dMax = isColor->getDisplayMaximum(i);
             if (min != -DBL_MAX) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setMinimum(" + NUM_VALUE(min) + ", " +
-                                              NUM_INT(i) + ")");
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setMinimum(") + NUM_VALUE(min) + QString::fromUtf8(", ") +
+                                              NUM_INT(i) + QString::fromUtf8(")"));
             }
             if (max != DBL_MAX) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setMaximum(" + NUM_VALUE(max) + ", " +
-                                              NUM_INT(i) + ")");
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setMaximum(") + NUM_VALUE(max) + QString::fromUtf8(", ") +
+                                              NUM_INT(i) + QString::fromUtf8(")"));
             }
             if (dMin != -DBL_MAX) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMinimum(" + NUM_VALUE(dMin) + ", " +
-                                              NUM_INT(i) + ")");
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setDisplayMinimum(") + NUM_VALUE(dMin) + QString::fromUtf8(", ") +
+                                              NUM_INT(i) + QString::fromUtf8(")"));
             }
             if (dMax != DBL_MAX) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMaximum(" + NUM_VALUE(dMax) + ", " +
-                                              NUM_INT(i) + ")");
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setDisplayMaximum(") + NUM_VALUE(dMax) + QString::fromUtf8(", ") +
+                                              NUM_INT(i) + QString::fromUtf8(")"));
             }
             if (defaultValues[i] != 0.) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM_VALUE(defaultValues[i]) + ", " + NUM_INT(i) + ")");
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setDefaultValue(") + NUM_VALUE(defaultValues[i]) + QString::fromUtf8(", ") + NUM_INT(i) + QString::fromUtf8(")"));
             }
         }
 
     } else if (isButton) {
-        WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createButtonParam(" +
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + fullyQualifiedNodeName + QString::fromUtf8(".createButtonParam(") +
                                       ESC(isButton->getName()) +
-                                      ", " + ESC(isButton->getLabel()) + ")");
+                                      QString::fromUtf8(", ") + ESC(isButton->getLabel()) + QString::fromUtf8(")"));
 
     } else if (isSep) {
-        WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createSeparatorParam(" +
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + fullyQualifiedNodeName + QString::fromUtf8(".createSeparatorParam(") +
                                                 ESC(isSep->getName()) +
-                                                ", " + ESC(isSep->getLabel()) + ")");
+                                                QString::fromUtf8(", ") + ESC(isSep->getLabel()) + QString::fromUtf8(")"));
         
     } else if (isStr) {
-        WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createStringParam(" +
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + fullyQualifiedNodeName + QString::fromUtf8(".createStringParam(") +
                                       ESC(isStr->getName()) +
-                                      ", " + ESC(isStr->getLabel()) + ")");
+                                      QString::fromUtf8(", ") + ESC(isStr->getLabel()) + QString::fromUtf8(")"));
         QString typeStr;
         if (isStr->isLabel()) {
-            typeStr = "eStringTypeLabel";
+            typeStr = QString::fromUtf8("eStringTypeLabel");
         } else if (isStr->isMultiLine()) {
             if (isStr->usesRichText()) {
-                typeStr = "eStringTypeRichTextMultiLine";
+                typeStr = QString::fromUtf8("eStringTypeRichTextMultiLine");
             } else {
-                typeStr = "eStringTypeMultiLine";
+                typeStr = QString::fromUtf8("eStringTypeMultiLine");
             }
         } else if (isStr->isCustomKnob()) {
-            typeStr = "eStringTypeCustom";
+            typeStr = QString::fromUtf8("eStringTypeCustom");
         } else {
-            typeStr = "eStringTypeDefault";
+            typeStr = QString::fromUtf8("eStringTypeDefault");
         }
-        WRITE_INDENT(indentLevel); WRITE_STRING("param.setType(NatronEngine.StringParam.TypeEnum." + typeStr + ")");
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setType(NatronEngine.StringParam.TypeEnum.") + typeStr + QString::fromUtf8(")"));
         
         std::vector<std::string> defaultValues = isStr->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isStr->getDimension());
-        QString def(defaultValues[0].c_str());
+        QString def = QString::fromUtf8(defaultValues[0].c_str());
         if (!def.isEmpty()) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + ESC(def) + ")");
+                WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setDefaultValue(") + ESC(def) + QString::fromUtf8(")"));
             
         }
         
     } else if (isFile) {
-        WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createFileParam(" + ESC(isFile->getName()) +
-                                      ", " + ESC(isFile->getLabel()) + ")");
-        QString seqStr = isFile->isInputImageFile() ? "True" : "False";
-        WRITE_INDENT(indentLevel); WRITE_STRING("param.setSequenceEnabled("+ seqStr + ")");
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + fullyQualifiedNodeName + QString::fromUtf8(".createFileParam(") + ESC(isFile->getName()) +
+                                      QString::fromUtf8(", ") + ESC(isFile->getLabel()) + QString::fromUtf8(")"));
+        QString seqStr = isFile->isInputImageFile() ? QString::fromUtf8("True") : QString::fromUtf8("False");
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setSequenceEnabled(")+ seqStr + QString::fromUtf8(")"));
         
         std::vector<std::string> defaultValues = isFile->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isFile->getDimension());
-        QString def(defaultValues[0].c_str());
+        QString def = QString::fromUtf8(defaultValues[0].c_str());
         if (!def.isEmpty()) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + def + ")");
+                WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setDefaultValue()") + def + QString::fromUtf8(")"));
         }
         
     } else if (isOutFile) {
-        WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createOutputFileParam(" +
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + fullyQualifiedNodeName + QString::fromUtf8(".createOutputFileParam(") +
                                       ESC(isOutFile->getName()) +
-                                      ", " + ESC(isOutFile->getLabel()) + ")");
+                                      QString::fromUtf8(", ") + ESC(isOutFile->getLabel()) + QString::fromUtf8(")"));
         assert(isOutFile); 
-        QString seqStr = isOutFile->isOutputImageFile() ? "True" : "False";
-        WRITE_INDENT(indentLevel); WRITE_STRING("param.setSequenceEnabled("+ seqStr + ")");
+        QString seqStr = isOutFile->isOutputImageFile() ? QString::fromUtf8("True") : QString::fromUtf8("False");
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setSequenceEnabled(")+ seqStr + QString::fromUtf8(")"));
 
         std::vector<std::string> defaultValues = isOutFile->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isOutFile->getDimension());
-        QString def(defaultValues[0].c_str());
+        QString def = QString::fromUtf8(defaultValues[0].c_str());
         if (!def.isEmpty()) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + ESC(def) + ")");
+                WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setDefaultValue(") + ESC(def) + QString::fromUtf8(")"));
         }
 
     } else if (isPath) {
-        WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createPathParam(" +
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + fullyQualifiedNodeName + QString::fromUtf8(".createPathParam(") +
                                       ESC(isPath->getName()) +
-                                      ", " + ESC(isPath->getLabel()) + ")");
+                                      QString::fromUtf8(", ") + ESC(isPath->getLabel()) + QString::fromUtf8(")"));
         if (isPath->isMultiPath()) {
             WRITE_INDENT(indentLevel); WRITE_STRING("param.setAsMultiPathTable()");
         }
 
         std::vector<std::string> defaultValues = isPath->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isPath->getDimension());
-        QString def(defaultValues[0].c_str());
+        QString def = QString::fromUtf8(defaultValues[0].c_str());
         if (!def.isEmpty()) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + ESC(def) + ")");
+                WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setDefaultValue(") + ESC(def) + QString::fromUtf8(")"));
         }
 
     } else if (isGrp) {
-        WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createGroupParam(" +
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + fullyQualifiedNodeName + QString::fromUtf8(".createGroupParam(") +
                                       ESC(isGrp->getName()) +
-                                      ", " + ESC(isGrp->getLabel()) + ")");
+                                      QString::fromUtf8(", ") + ESC(isGrp->getLabel()) + QString::fromUtf8(")"));
         if (isGrp->isTab()) {
-            WRITE_INDENT(indentLevel); WRITE_STRING("param.setAsTab()");
+            WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setAsTab()"));
         }
 
     } else if (isParametric) {
-        WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createParametricParam(" +
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + fullyQualifiedNodeName + QString::fromUtf8(".createParametricParam(") +
                                       ESC(isParametric->getName()) +
-                                      ", " + ESC(isParametric->getLabel()) +  ", " +
-                                      NUM_INT(isParametric->getDimension()) + ")");
+                                      QString::fromUtf8(", ") + ESC(isParametric->getLabel()) +  QString::fromUtf8(", ") +
+                                      NUM_INT(isParametric->getDimension()) + QString::fromUtf8(")"));
     }
     
     WRITE_STATIC_LINE("");
 
     if (group) {
-        QString grpFullName = fullyQualifiedNodeName + "." + QString(group->getName().c_str());
+        QString grpFullName = fullyQualifiedNodeName + QString::fromUtf8(".") + QString::fromUtf8(group->getName().c_str());
         WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Add the param to the group, no need to add it to the page");
-        WRITE_INDENT(indentLevel); WRITE_STRING(grpFullName + ".addParam(param)");
+        WRITE_INDENT(indentLevel); WRITE_STRING(grpFullName + QString::fromUtf8(".addParam(param)"));
     } else {
         assert(page);
-        QString pageFullName = fullyQualifiedNodeName + "." + QString(page->getName().c_str());
+        QString pageFullName = fullyQualifiedNodeName + QString::fromUtf8(".") + QString::fromUtf8(page->getName().c_str());
         WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Add the param to the page");
-        WRITE_INDENT(indentLevel); WRITE_STRING(pageFullName + ".addParam(param)");
+        WRITE_INDENT(indentLevel); WRITE_STRING(pageFullName + QString::fromUtf8(".addParam(param)"));
     }
     
     WRITE_STATIC_LINE("");
     WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Set param properties");
 
-    QString help(knob->getHintToolTip().c_str());
+    QString help = QString::fromUtf8(knob->getHintToolTip().c_str());
     if (!aliasedParam || aliasedParam->getHintToolTip() != knob->getHintToolTip()) {
-        WRITE_INDENT(indentLevel); WRITE_STRING("param.setHelp(" + ESC(help) + ")");
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setHelp(") + ESC(help) + QString::fromUtf8(")"));
     }
     
     
@@ -2144,12 +2166,12 @@ static void exportUserKnob(int indentLevel,const KnobPtr& knob,const QString& fu
     }
     
     if (knob->canAnimate()) {
-        QString animStr = knob->isAnimationEnabled() ? "True" : "False";
-        WRITE_INDENT(indentLevel); WRITE_STRING("param.setAnimationEnabled(" + animStr + ")");
+        QString animStr = knob->isAnimationEnabled() ? QString::fromUtf8("True") : QString::fromUtf8("False");
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setAnimationEnabled(") + animStr + QString::fromUtf8(")"));
     }
 
-    exportKnobValues(indentLevel,knob,"", false, ts);
-    WRITE_INDENT(indentLevel); WRITE_STRING(fullyQualifiedNodeName + "." + QString(knob->getName().c_str()) + " = param");
+    exportKnobValues(indentLevel,knob,QString(), false, ts);
+    WRITE_INDENT(indentLevel); WRITE_STRING(fullyQualifiedNodeName + QString::fromUtf8(".") + QString::fromUtf8(knob->getName().c_str()) + QString::fromUtf8(" = param"));
     WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del param");
     
     WRITE_STATIC_LINE("");
@@ -2171,17 +2193,17 @@ static void exportBezierPointAtTime(int indentLevel,
                                     QTextStream& ts)
 {
     
-    QString token = isFeather ? "bezier.setFeatherPointAtIndex(" : "bezier.setPointAtIndex(";
+    QString token = isFeather ? QString::fromUtf8("bezier.setFeatherPointAtIndex(") : QString::fromUtf8("bezier.setPointAtIndex(");
     double x,y,lx,ly,rx,ry;
-    point->getPositionAtTime(false ,time, &x, &y);
-    point->getLeftBezierPointAtTime(false ,time, &lx, &ly);
-    point->getRightBezierPointAtTime(false ,time, &rx, &ry);
+    point->getPositionAtTime(false, time, ViewIdx(0), &x, &y);
+    point->getLeftBezierPointAtTime(false, time, ViewIdx(0), &lx, &ly);
+    point->getRightBezierPointAtTime(false, time, ViewIdx(0), &rx, &ry);
     
-    WRITE_INDENT(indentLevel); WRITE_STATIC_LINE(token + NUM_INT(idx) + ", " +
-                                       NUM_TIME(time) + ", " + NUM_VALUE(x) + ", " +
-                                       NUM_VALUE(y) + ", " + NUM_VALUE(lx) + ", " +
-                                       NUM_VALUE(ly) + ", " + NUM_VALUE(rx) + ", " +
-                                       NUM_VALUE(ry) + ")");
+    WRITE_INDENT(indentLevel); WRITE_STRING(token + NUM_INT(idx) + QString::fromUtf8(", ") +
+                                       NUM_TIME(time) + QString::fromUtf8(", ") + NUM_VALUE(x) + QString::fromUtf8(", ") +
+                                       NUM_VALUE(y) + QString::fromUtf8(", ") + NUM_VALUE(lx) + QString::fromUtf8(", ") +
+                                       NUM_VALUE(ly) + QString::fromUtf8(", ") + NUM_VALUE(rx) + QString::fromUtf8(", ") +
+                                       NUM_VALUE(ry) + QString::fromUtf8(")"));
    
 }
 
@@ -2190,7 +2212,7 @@ static void exportRotoLayer(int indentLevel,
                             const boost::shared_ptr<RotoLayer>& layer,
                             QTextStream& ts)
 {
-    QString parentLayerName = QString(layer->getScriptName().c_str()) + "_layer";
+    QString parentLayerName = QString::fromUtf8(layer->getScriptName().c_str()) + QString::fromUtf8("_layer");
     for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = items.begin(); it != items.end(); ++it) {
         
         boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
@@ -2206,36 +2228,36 @@ static void exportRotoLayer(int indentLevel,
                 continue;
             }
             
-            time = cps.front()->getKeyframeTime(false ,0);
+            time = cps.front()->getKeyframeTime(false,0);
             
-            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("bezier = roto.createBezier(0, 0, " + NUM_TIME(time) + ")");
-            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("bezier.setScriptName(" + ESC(isBezier->getScriptName()) + ")");
-            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("bezier.setLabel(" + ESC(isBezier->getLabel()) + ")");
-            QString lockedStr = isBezier->getLocked() ? "True" : "False";
-            WRITE_INDENT(indentLevel); WRITE_STRING("bezier.setLocked(" + lockedStr + ")");
-            QString visibleStr = isBezier->isGloballyActivated() ? "True" : "False";
-            WRITE_INDENT(indentLevel); WRITE_STRING("bezier.setVisible(" + visibleStr + ")");
+            WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("bezier = roto.createBezier(0, 0, ") + NUM_TIME(time) + QString::fromUtf8(")"));
+            WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("bezier.setScriptName(") + ESC(isBezier->getScriptName()) + QString::fromUtf8(")"));
+            WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("bezier.setLabel(") + ESC(isBezier->getLabel()) + QString::fromUtf8(")"));
+            QString lockedStr = isBezier->getLocked() ? QString::fromUtf8("True") : QString::fromUtf8("False");
+            WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("bezier.setLocked(") + lockedStr + QString::fromUtf8(")"));
+            QString visibleStr = isBezier->isGloballyActivated() ? QString::fromUtf8("True") : QString::fromUtf8("False");
+            WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("bezier.setVisible(") + visibleStr + QString::fromUtf8(")"));
             
             boost::shared_ptr<KnobBool> activatedKnob = isBezier->getActivatedKnob();
-            exportKnobValues(indentLevel,activatedKnob, "bezier.getActivatedParam()", true, ts);
+            exportKnobValues(indentLevel,activatedKnob, QString::fromUtf8("bezier.getActivatedParam()"), true, ts);
             
             boost::shared_ptr<KnobDouble> featherDist = isBezier->getFeatherKnob();
-            exportKnobValues(indentLevel,featherDist,"bezier.getFeatherDistanceParam()", true, ts);
+            exportKnobValues(indentLevel,featherDist,QString::fromUtf8("bezier.getFeatherDistanceParam()"), true, ts);
             
             boost::shared_ptr<KnobDouble> opacityKnob = isBezier->getOpacityKnob();
-            exportKnobValues(indentLevel,opacityKnob,"bezier.getOpacityParam()", true, ts);
+            exportKnobValues(indentLevel,opacityKnob,QString::fromUtf8("bezier.getOpacityParam()"), true, ts);
             
             boost::shared_ptr<KnobDouble> fallOffKnob = isBezier->getFeatherFallOffKnob();
-            exportKnobValues(indentLevel,fallOffKnob,"bezier.getFeatherFallOffParam()", true, ts);
+            exportKnobValues(indentLevel,fallOffKnob,QString::fromUtf8("bezier.getFeatherFallOffParam()"), true, ts);
             
             boost::shared_ptr<KnobColor> colorKnob = isBezier->getColorKnob();
-            exportKnobValues(indentLevel,colorKnob, "bezier.getColorParam()", true, ts);
+            exportKnobValues(indentLevel,colorKnob, QString::fromUtf8("bezier.getColorParam()"), true, ts);
             
             boost::shared_ptr<KnobChoice> compositing = isBezier->getOperatorKnob();
-            exportKnobValues(indentLevel,compositing, "bezier.getCompositingOperatorParam()", true, ts);
+            exportKnobValues(indentLevel,compositing, QString::fromUtf8("bezier.getCompositingOperatorParam()"), true, ts);
 
             
-            WRITE_INDENT(indentLevel); WRITE_STRING(parentLayerName + ".addItem(bezier)");
+            WRITE_INDENT(indentLevel); WRITE_STRING(parentLayerName + QString::fromUtf8(".addItem(bezier)"));
             WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("");
            
             assert(cps.size() == fps.size());
@@ -2245,7 +2267,7 @@ static void exportRotoLayer(int indentLevel,
             
             //the last python call already registered the first control point
             int nbPts = cps.size() - 1;
-            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("for i in range(0, " + NUM_INT(nbPts) +"):");
+            WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("for i in range(0, ") + NUM_INT(nbPts) +QString::fromUtf8("):"));
             WRITE_INDENT(2); WRITE_STATIC_LINE("bezier.addControlPoint(0,0)");
           
             ///Now that all points are created position them
@@ -2270,10 +2292,10 @@ static void exportRotoLayer(int indentLevel,
                     assert(effect->getNode() && effect->getNode()->isPointTrackerNode());
                     std::string trackerName = effect->getNode()->getScriptName_mt_safe();
                     int trackTime = (*it2)->getOffsetTime();
-                    WRITE_INDENT(indentLevel); WRITE_STRING("tracker = group.getNode(\"" + QString(trackerName.c_str()) + "\")");
-                    WRITE_INDENT(indentLevel); WRITE_STRING("center = tracker.getParam(\"" + QString(track->getName().c_str()) + "\")");
-                    WRITE_INDENT(indentLevel); WRITE_STRING("bezier.slavePointToTrack(" + NUM_INT(idx) + ", " +
-                                                  NUM_TIME(trackTime) + ",center)");
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("tracker = group.getNode(\"") + QString::fromUtf8(trackerName.c_str()) + QString::fromUtf8("\")"));
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("center = tracker.getParam(\"") + QString::fromUtf8(track->getName().c_str()) + QString::fromUtf8("\")"));
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("bezier.slavePointToTrack(") + NUM_INT(idx) + QString::fromUtf8(", ") +
+                                                  NUM_TIME(trackTime) + QString::fromUtf8(",center)"));
                     WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del center");
                     WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del tracker");
                 }
@@ -2288,21 +2310,21 @@ static void exportRotoLayer(int indentLevel,
             
         } else {
             
-            QString name =  QString(isLayer->getScriptName().c_str());
-            QString layerName = name + "_layer";
-            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE(name + " = roto.createLayer()");
-            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE(layerName +  ".setScriptName(" + ESC(name) + ")");
-            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE(layerName +  ".setLabel(" + ESC(isLayer->getLabel()) + ")");
-            QString lockedStr = isLayer->getLocked() ? "True" : "False";
-            WRITE_INDENT(indentLevel); WRITE_STRING(layerName + ".setLocked(" + lockedStr + ")");
-            QString visibleStr = isLayer->isGloballyActivated() ? "True" : "False";
-            WRITE_INDENT(indentLevel); WRITE_STRING(layerName + ".setVisible(" + visibleStr + ")");
+            QString name =  QString::fromUtf8(isLayer->getScriptName().c_str());
+            QString layerName = name + QString::fromUtf8("_layer");
+            WRITE_INDENT(indentLevel); WRITE_STRING(name + QString::fromUtf8(" = roto.createLayer()"));
+            WRITE_INDENT(indentLevel); WRITE_STRING(layerName +  QString::fromUtf8(".setScriptName(") + ESC(name) + QString::fromUtf8(")"));
+            WRITE_INDENT(indentLevel); WRITE_STRING(layerName + QString::fromUtf8(".setLabel(") + ESC(isLayer->getLabel()) + QString::fromUtf8(")"));
+            QString lockedStr = isLayer->getLocked() ? QString::fromUtf8("True") : QString::fromUtf8("False");
+            WRITE_INDENT(indentLevel); WRITE_STRING(layerName + QString::fromUtf8(".setLocked()") + lockedStr + QString::fromUtf8(")"));
+            QString visibleStr = isLayer->isGloballyActivated() ? QString::fromUtf8("True") : QString::fromUtf8("False");
+            WRITE_INDENT(indentLevel); WRITE_STRING(layerName + QString::fromUtf8(".setVisible(") + visibleStr + QString::fromUtf8(")"));
             
-            WRITE_INDENT(indentLevel); WRITE_STRING(parentLayerName + ".addItem(" + layerName);
+            WRITE_INDENT(indentLevel); WRITE_STRING(parentLayerName + QString::fromUtf8(".addItem(") + layerName);
             
             const std::list<boost::shared_ptr<RotoItem> >& items = isLayer->getItems();
             exportRotoLayer(indentLevel,items, isLayer, ts);
-            WRITE_INDENT(indentLevel); WRITE_STRING("del " + layerName);
+            WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("del ") + layerName);
         }
         WRITE_STATIC_LINE("");
     }
@@ -2315,13 +2337,13 @@ static void exportAllNodeKnobs(int indentLevel,const NodePtr& node,QTextStream& 
     std::list<KnobPage*> userPages;
     for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
         if ((*it2)->getIsPersistant() && !(*it2)->isUserKnob()) {
-            QString getParamStr("lastNode.getParam(\"");
+            QString getParamStr  = QString::fromUtf8("lastNode.getParam(\"");
             const std::string& paramName =  (*it2)->getName();
             if (paramName.empty()) {
                 continue;
             }
-            getParamStr += paramName.c_str();
-            getParamStr += "\")";
+            getParamStr += QString::fromUtf8(paramName.c_str());
+            getParamStr += QString::fromUtf8("\")");
             if (exportKnobValues(indentLevel,*it2,getParamStr, true, ts)) {
                 WRITE_STATIC_LINE("");
             }
@@ -2340,12 +2362,12 @@ static void exportAllNodeKnobs(int indentLevel,const NodePtr& node,QTextStream& 
         WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Create the user parameters");
     }
     for (std::list<KnobPage*>::iterator it2 = userPages.begin(); it2!= userPages.end(); ++it2) {
-        WRITE_INDENT(indentLevel); WRITE_STRING("lastNode." + QString((*it2)->getName().c_str()) +
-                                      " = lastNode.createPageParam(" + ESC((*it2)->getName()) + ", " +
-                                      ESC((*it2)->getLabel()) + ")");
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("lastNode.") + QString::fromUtf8((*it2)->getName().c_str()) +
+                                      QString::fromUtf8(" = lastNode.createPageParam(") + ESC((*it2)->getName()) + QString::fromUtf8(", ") +
+                                      ESC((*it2)->getLabel()) + QString::fromUtf8(")"));
         KnobsVec children =  (*it2)->getChildren();
         for (KnobsVec::const_iterator it3 = children.begin(); it3 != children.end(); ++it3) {
-            exportUserKnob(indentLevel,*it3, "lastNode", 0, *it2, ts);
+            exportUserKnob(indentLevel,*it3, QString::fromUtf8("lastNode"), 0, *it2, ts);
         }
     }
     
@@ -2353,19 +2375,19 @@ static void exportAllNodeKnobs(int indentLevel,const NodePtr& node,QTextStream& 
         WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Refresh the GUI with the newly created parameters");
         std::list<std::string> pagesOrdering = node->getPagesOrder();
         if (!pagesOrdering.empty()) {
-            QString line("lastNode.setPagesOrder([");
+            QString line = QString::fromUtf8("lastNode.setPagesOrder([");
             std::list<std::string>::iterator next = pagesOrdering.begin();
             ++next;
             for (std::list<std::string>::iterator it = pagesOrdering.begin(); it!=pagesOrdering.end(); ++it) {
-                line += '\'';
-                line += it->c_str();
-                line += '\'';
+                line += QLatin1Char('\'');
+                line += QString::fromUtf8(it->c_str());
+                line += QLatin1Char('\'');
                 if (next != pagesOrdering.end()) {
-                    line += ", ";
+                    line += QString::fromUtf8(", ");
                     ++next;
                 }
             }
-            line += "])";
+            line += QString::fromUtf8("])");
             WRITE_INDENT(indentLevel); WRITE_STRING(line);
         }
         WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("lastNode.refreshUserParamsGUI()");
@@ -2379,19 +2401,19 @@ static void exportAllNodeKnobs(int indentLevel,const NodePtr& node,QTextStream& 
             WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# For the roto node, create all layers and beziers");
             WRITE_INDENT(indentLevel); WRITE_STRING("roto = lastNode.getRotoContext()");
             boost::shared_ptr<RotoLayer> baseLayer = layers.front();
-            QString baseLayerName = QString(baseLayer->getScriptName().c_str());
-            QString baseLayerToken = baseLayerName +"_layer";
-            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE(baseLayerToken + " = roto.getBaseLayer()");
+            QString baseLayerName = QString::fromUtf8(baseLayer->getScriptName().c_str());
+            QString baseLayerToken = baseLayerName + QString::fromUtf8("_layer");
+            WRITE_INDENT(indentLevel); WRITE_STRING(baseLayerToken + QString::fromUtf8(" = roto.getBaseLayer()"));
             
-            WRITE_INDENT(indentLevel); WRITE_STRING(baseLayerToken + ".setScriptName(" + ESC(baseLayerName) + ")");
-            WRITE_INDENT(indentLevel); WRITE_STRING(baseLayerToken + ".setLabel(" + ESC(baseLayer->getLabel()) + ")");
-            QString lockedStr = baseLayer->getLocked() ? "True" : "False";
-            WRITE_INDENT(indentLevel); WRITE_STRING(baseLayerToken + ".setLocked(" + lockedStr + ")");
-            QString visibleStr = baseLayer->isGloballyActivated() ? "True" : "False";
-            WRITE_INDENT(indentLevel); WRITE_STRING(baseLayerToken + ".setVisible(" + visibleStr + ")");
+            WRITE_INDENT(indentLevel); WRITE_STRING(baseLayerToken + QString::fromUtf8(".setScriptName(") + ESC(baseLayerName) + QString::fromUtf8(")"));
+            WRITE_INDENT(indentLevel); WRITE_STRING(baseLayerToken + QString::fromUtf8(".setLabel(") + ESC(baseLayer->getLabel()) + QString::fromUtf8(")"));
+            QString lockedStr = baseLayer->getLocked() ? QString::fromUtf8("True") : QString::fromUtf8("False");
+            WRITE_INDENT(indentLevel); WRITE_STRING(baseLayerToken + QString::fromUtf8(".setLocked(") + lockedStr + QString::fromUtf8(")"));
+            QString visibleStr = baseLayer->isGloballyActivated() ? QString::fromUtf8("True") : QString::fromUtf8("False");
+            WRITE_INDENT(indentLevel); WRITE_STRING(baseLayerToken + QString::fromUtf8(".setVisible(") + visibleStr + QString::fromUtf8(")"));
             exportRotoLayer(indentLevel,baseLayer->getItems(),baseLayer,  ts);
-            WRITE_INDENT(indentLevel); WRITE_STRING("del " + baseLayerToken);
-            WRITE_INDENT(indentLevel); WRITE_STRING("del roto");
+            WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("del ") + baseLayerToken);
+            WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("del roto"));
         }
     }
 }
@@ -2406,14 +2428,14 @@ static bool exportKnobLinks(int indentLevel,
     bool hasExportedLink = false;
     const KnobsVec& knobs = node->getKnobs();
     for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-        QString paramName = nodeName + ".getParam(\"" + QString((*it2)->getName().c_str()) + "\")";
+        QString paramName = nodeName + QString::fromUtf8(".getParam(\"") + QString::fromUtf8((*it2)->getName().c_str()) + QString::fromUtf8("\")");
         bool hasDefined = false;
         
         //Check for alias link
         KnobPtr alias = (*it2)->getAliasMaster();
         if (alias) {
             if (!hasDefined) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param = " + paramName);
+                WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramName);
                 hasDefined = true;
             }
             hasExportedLink = true;
@@ -2427,25 +2449,52 @@ static bool exportKnobLinks(int indentLevel,
             if (aliasHolder == groupNode->getEffectInstance().get()) {
                 aliasName = groupName;
             } else {
-                aliasName = groupName + aliasHolder->getNode()->getScriptName_mt_safe().c_str();
+                aliasName = groupName + QString::fromUtf8(aliasHolder->getNode()->getScriptName_mt_safe().c_str());
             }
-            aliasName += '.';
-            aliasName += alias->getName().c_str();
+            aliasName += QChar::fromLatin1('.');
+            aliasName += QString::fromUtf8(alias->getName().c_str());
             
-            WRITE_INDENT(indentLevel); WRITE_STRING(aliasName + ".setAsAlias(" + paramName + ")");
+            WRITE_INDENT(indentLevel); WRITE_STRING(aliasName + QString::fromUtf8(".setAsAlias(") + paramName + QString::fromUtf8(")"));
         } else {
             
             for (int i = 0; i < (*it2)->getDimension(); ++i) {
                 std::string expr = (*it2)->getExpression(i);
-                QString hasRetVar = (*it2)->isExpressionUsingRetVariable(i) ? "True" : "False";
+                QString hasRetVar = (*it2)->isExpressionUsingRetVariable(i) ? QString::fromUtf8("True") : QString::fromUtf8("False");
                 if (!expr.empty()) {
                     if (!hasDefined) {
-                        WRITE_INDENT(indentLevel); WRITE_STRING("param = " + paramName);
+                        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramName);
                         hasDefined = true;
                     }
                     hasExportedLink = true;
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setExpression(" + ESC(expr) + ", " +
-                                                            hasRetVar + ", " + NUM_INT(i) + ")");
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setExpression(") + ESC(expr) + QString::fromUtf8(", ") +
+                                                            hasRetVar + QString::fromUtf8(", ") + NUM_INT(i) + QString::fromUtf8(")"));
+                }
+                
+                std::pair<int,KnobPtr > master = (*it2)->getMaster(i);
+                if (master.second) {
+                    if (!hasDefined) {
+                        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramName);
+                        hasDefined = true;
+                    }
+                    hasExportedLink = true;
+                    
+                    EffectInstance* masterHolder = dynamic_cast<EffectInstance*>(master.second->getHolder());
+                    assert(masterHolder);
+                    if (!masterHolder) {
+                        throw std::logic_error("exportKnobLinks");
+                    }
+                    QString masterName;
+                    if (masterHolder == groupNode->getEffectInstance().get()) {
+                        masterName = groupName;
+                    } else {
+                        masterName = groupName + QString::fromUtf8(masterHolder->getNode()->getScriptName_mt_safe().c_str());
+                    }
+                    masterName += QLatin1Char('.');
+                    masterName += QString::fromUtf8(master.second->getName().c_str());
+
+                    
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.slaveTo(") +  masterName + QString::fromUtf8(", ") +
+                                                            NUM_INT(i) + QString::fromUtf8(", ") + NUM_INT(master.first) + QString::fromUtf8(")"));
                 }
                 
             }
@@ -2494,49 +2543,49 @@ static void exportGroupInternal(int indentLevel,const NodeCollection* collection
             continue;
         }
     
-        QString nodeName((*it)->getPluginID().c_str());
+        QString nodeName = QString::fromUtf8((*it)->getPluginID().c_str());
         
-        WRITE_INDENT(indentLevel); WRITE_STRING("# Start of node " + ESC((*it)->getScriptName_mt_safe()));
-        WRITE_INDENT(indentLevel); WRITE_STRING("lastNode = app.createNode(" + ESC(nodeName) + ", " +
-                                      NUM_INT((*it)->getPlugin()->getMajorVersion()) + ", " + groupName +
-                                      ")");
-        WRITE_INDENT(indentLevel); WRITE_STRING("lastNode.setScriptName(" + ESC((*it)->getScriptName_mt_safe()) + ")");
-        WRITE_INDENT(indentLevel); WRITE_STRING("lastNode.setLabel(" + ESC((*it)->getLabel_mt_safe()) + ")");
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("# Start of node ") + ESC((*it)->getScriptName_mt_safe()));
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("lastNode = app.createNode(") + ESC(nodeName) + QString::fromUtf8(", ") +
+                                      NUM_INT((*it)->getPlugin()->getMajorVersion()) + QString::fromUtf8(", ") + groupName +
+                                      QString::fromUtf8(")"));
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("lastNode.setScriptName(") + ESC((*it)->getScriptName_mt_safe()) + QString::fromUtf8(")"));
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("lastNode.setLabel(") + ESC((*it)->getLabel_mt_safe()) + QString::fromUtf8(")"));
         double x,y;
         (*it)->getPosition(&x,&y);
         double w,h;
         (*it)->getSize(&w, &h);
         // a precision of 1 pixel is enough for the position on the nodegraph
-        WRITE_INDENT(indentLevel); WRITE_STRING("lastNode.setPosition(" + NUM_PIXEL(x) + ", " + NUM_PIXEL(y) + ")");
-        WRITE_INDENT(indentLevel); WRITE_STRING("lastNode.setSize(" + NUM_PIXEL(w) + ", " + NUM_PIXEL(h) + ")");
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("lastNode.setPosition(") + NUM_PIXEL(x) + QString::fromUtf8(", ") + NUM_PIXEL(y) + QString::fromUtf8(")"));
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("lastNode.setSize(") + NUM_PIXEL(w) + QString::fromUtf8(", ") + NUM_PIXEL(h) + QString::fromUtf8(")"));
         
         double r,g,b;
         (*it)->getColor(&r,&g,&b);
         // a precision of 3 digits is enough for the node coloe
-        WRITE_INDENT(indentLevel); WRITE_STRING("lastNode.setColor(" + NUM_COLOR(r) + ", " + NUM_COLOR(g) + ", " + NUM_COLOR(b) +  ")");
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("lastNode.setColor(") + NUM_COLOR(r) + QString::fromUtf8(", ") + NUM_COLOR(g) + QString::fromUtf8(", ") + NUM_COLOR(b) +  QString::fromUtf8(")"));
         
         std::list<ImageComponents> userComps;
         (*it)->getUserCreatedComponents(&userComps);
         for (std::list<ImageComponents>::iterator it2 = userComps.begin(); it2 != userComps.end(); ++it2) {
             
             const std::vector<std::string>& channels = it2->getComponentsNames();
-            QString compStr("[");
+            QString compStr = QString::fromUtf8("[");
             for (std::size_t i = 0; i < channels.size(); ++i) {
                 compStr.append(ESC(channels[i]));
                 if (i < (channels.size() - 1)) {
-                    compStr.push_back(',');
+                    compStr.push_back(QLatin1Char(','));
                 }
             }
-            compStr.push_back(']');
-            WRITE_INDENT(indentLevel); WRITE_STRING("lastNode.addUserPlane(" + ESC(it2->getLayerName()) + ", " + compStr +  ")");
+            compStr.push_back(QLatin1Char(']'));
+            WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("lastNode.addUserPlane(") + ESC(it2->getLayerName()) + QString::fromUtf8(", ") + compStr +  QString::fromUtf8(")"));
         }
         
-        QString nodeNameInScript = groupName + QString((*it)->getScriptName_mt_safe().c_str());
-        WRITE_INDENT(indentLevel); WRITE_STRING(nodeNameInScript + " = lastNode");
+        QString nodeNameInScript = groupName + QString::fromUtf8((*it)->getScriptName_mt_safe().c_str());
+        WRITE_INDENT(indentLevel); WRITE_STRING(nodeNameInScript + QString::fromUtf8(" = lastNode"));
         WRITE_STATIC_LINE("");
         exportAllNodeKnobs(indentLevel,*it,ts);
         WRITE_INDENT(indentLevel); WRITE_STRING("del lastNode");
-        WRITE_INDENT(indentLevel); WRITE_STRING("# End of node " + ESC((*it)->getScriptName_mt_safe()));
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("# End of node ") + ESC((*it)->getScriptName_mt_safe()));
         WRITE_STATIC_LINE("");
 
         std::list< NodePtr > children;
@@ -2545,11 +2594,11 @@ static void exportGroupInternal(int indentLevel,const NodeCollection* collection
             WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Create children if the node is a multi-instance such as a tracker");
             for (std::list< NodePtr > ::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
                 if ((*it2)->isActivated()) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("lastNode = " + nodeNameInScript + ".createChild()");
-                    WRITE_INDENT(indentLevel); WRITE_STRING("lastNode.setScriptName(\"" + QString((*it2)->getScriptName_mt_safe().c_str()) + "\")");
-                    WRITE_INDENT(indentLevel); WRITE_STRING("lastNode.setLabel(\"" + QString((*it2)->getLabel_mt_safe().c_str()) + "\")");
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("lastNode = ") + nodeNameInScript + QString::fromUtf8(".createChild()"));
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("lastNode.setScriptName(\"") + QString::fromUtf8((*it2)->getScriptName_mt_safe().c_str()) + QString::fromUtf8("\")"));
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("lastNode.setLabel(\"") + QString::fromUtf8((*it2)->getLabel_mt_safe().c_str()) + QString::fromUtf8("\")"));
                     exportAllNodeKnobs(indentLevel,*it2,ts);
-                    WRITE_INDENT(indentLevel); WRITE_STRING(nodeNameInScript + "." + QString((*it2)->getScriptName_mt_safe().c_str()) + " = lastNode");
+                    WRITE_INDENT(indentLevel); WRITE_STRING(nodeNameInScript + QString::fromUtf8(".") + QString::fromUtf8((*it2)->getScriptName_mt_safe().c_str()) + QString::fromUtf8(" = lastNode"));
                     WRITE_INDENT(indentLevel); WRITE_STRING("del lastNode");
                 }
             }
@@ -2558,8 +2607,8 @@ static void exportGroupInternal(int indentLevel,const NodeCollection* collection
 
         NodeGroup* isGrp = (*it)->isEffectGroup();
         if (isGrp) {
-            WRITE_INDENT(indentLevel); WRITE_STRING(groupName + "group = " + nodeNameInScript);
-            exportGroupInternal(indentLevel, isGrp, groupName + "group", ts);
+            WRITE_INDENT(indentLevel); WRITE_STRING(groupName + QString::fromUtf8("group = ") + nodeNameInScript);
+            exportGroupInternal(indentLevel, isGrp, groupName + QString::fromUtf8("group"), ts);
             WRITE_STATIC_LINE("");
         }
     }
@@ -2571,7 +2620,7 @@ static void exportGroupInternal(int indentLevel,const NodeCollection* collection
     }
     if (isGroup) {
         WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Create the parameters of the group node the same way we did for all internal nodes");
-        WRITE_INDENT(indentLevel); WRITE_STRING("lastNode = " + groupName);
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("lastNode = ") + groupName);
         exportAllNodeKnobs(indentLevel,isGroup->getNode(),ts);
         WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del lastNode");
         WRITE_STATIC_LINE("");
@@ -2581,16 +2630,16 @@ static void exportGroupInternal(int indentLevel,const NodeCollection* collection
     bool hasConnected = false;
     for (NodesList::iterator it = exportedNodes.begin(); it != exportedNodes.end(); ++it) {
         
-        QString nodeQualifiedName(groupName + (*it)->getScriptName_mt_safe().c_str());
+        QString nodeQualifiedName(groupName + QString::fromUtf8((*it)->getScriptName_mt_safe().c_str()));
         
         if (!(*it)->getParentMultiInstance()) {
             for (int i = 0; i < (*it)->getMaxInputCount(); ++i) {
                 NodePtr inputNode = (*it)->getRealInput(i);
                 if (inputNode) {
                     hasConnected = true;
-                    QString inputQualifiedName(groupName  + inputNode->getScriptName_mt_safe().c_str());
-                    WRITE_INDENT(indentLevel); WRITE_STRING(nodeQualifiedName + ".connectInput(" + NUM_INT(i) +
-                                                  ", " + inputQualifiedName + ")");
+                    QString inputQualifiedName(groupName  + QString::fromUtf8(inputNode->getScriptName_mt_safe().c_str()));
+                    WRITE_INDENT(indentLevel); WRITE_STRING(nodeQualifiedName + QString::fromUtf8(".connectInput(") + NUM_INT(i) +
+                                                  QString::fromUtf8(", ") + inputQualifiedName + QString::fromUtf8(")"));
                 }
             }
         }
@@ -2603,7 +2652,7 @@ static void exportGroupInternal(int indentLevel,const NodeCollection* collection
     bool hasExported = false;
     
     for (NodesList::iterator it = exportedNodes.begin(); it != exportedNodes.end(); ++it) {
-        QString nodeQualifiedName(groupName + (*it)->getScriptName_mt_safe().c_str());
+        QString nodeQualifiedName(groupName + QString::fromUtf8((*it)->getScriptName_mt_safe().c_str()));
         if (exportKnobLinks(indentLevel,groupNode, *it, groupName, nodeQualifiedName, ts)) {
             hasExported = true;
         }
@@ -2625,18 +2674,18 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
                                     QString& output)
 {
     QString extModule(pluginLabel);
-    extModule.append("Ext");
+    extModule.append(QString::fromUtf8("Ext"));
     
     QTextStream ts(&output);
     // coding must be set in first or second line, see https://www.python.org/dev/peps/pep-0263/
     WRITE_STATIC_LINE("# -*- coding: utf-8 -*-");
     WRITE_STATIC_LINE("# DO NOT EDIT THIS FILE");
-    QString descline = QString("# This file was automatically generated by " NATRON_APPLICATION_NAME " PyPlug exporter version %1.").arg(NATRON_PYPLUG_EXPORTER_VERSION);
+    QString descline = QString(QString::fromUtf8("# This file was automatically generated by " NATRON_APPLICATION_NAME " PyPlug exporter version %1.")).arg(NATRON_PYPLUG_EXPORTER_VERSION);
     WRITE_STRING(descline);
     WRITE_STATIC_LINE();
-    QString handWrittenStr = QString("# Hand-written code should be added in a separate file named %1.py").arg(extModule);
+    QString handWrittenStr = QString::fromUtf8("# Hand-written code should be added in a separate file named %1.py").arg(extModule);
     WRITE_STRING(handWrittenStr);
-    WRITE_STATIC_LINE("# See http://natron.readthedocs.org/en/workshop/groups.html#adding-hand-written-code-callbacks-etc");
+    WRITE_STATIC_LINE("# See http://natron.readthedocs.org/en/master/groups.html#adding-hand-written-code-callbacks-etc");
     WRITE_STATIC_LINE("# Note that Viewers are never exported");
     WRITE_STATIC_LINE();
     WRITE_STATIC_LINE("import " NATRON_ENGINE_PYTHON_MODULE_NAME);
@@ -2646,17 +2695,17 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
     WRITE_STATIC_LINE("try:");
     
     
-    WRITE_INDENT(1);WRITE_STRING("from " + extModule + " import *");
+    WRITE_INDENT(1);WRITE_STRING(QString::fromUtf8("from ") + extModule + QString::fromUtf8(" import *"));
     WRITE_STRING("except ImportError:");
     WRITE_INDENT(1);WRITE_STRING("pass");
     WRITE_STATIC_LINE("");
     
     WRITE_STATIC_LINE("def getPluginID():");
-    WRITE_INDENT(1);WRITE_STRING("return \"" + pluginID + "\"");
+    WRITE_INDENT(1);WRITE_STRING(QString::fromUtf8("return \"") + pluginID + QString::fromUtf8("\""));
     WRITE_STATIC_LINE("");
     
     WRITE_STATIC_LINE("def getLabel():");
-    WRITE_INDENT(1);WRITE_STRING("return " + ESC(pluginLabel));
+    WRITE_INDENT(1);WRITE_STRING(QString::fromUtf8("return ") + ESC(pluginLabel));
     WRITE_STATIC_LINE("");
     
     WRITE_STATIC_LINE("def getVersion():");
@@ -2665,31 +2714,31 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
   
     if (!pluginIconPath.isEmpty()) {
         WRITE_STATIC_LINE("def getIconPath():");
-        WRITE_INDENT(1);WRITE_STRING("return " + ESC(pluginIconPath));
+        WRITE_INDENT(1);WRITE_STRING(QString::fromUtf8("return ") + ESC(pluginIconPath));
         WRITE_STATIC_LINE("");
     }
     
     WRITE_STATIC_LINE("def getGrouping():");
-    WRITE_INDENT(1);WRITE_STRING("return \"" + pluginGrouping + "\"");
+    WRITE_INDENT(1);WRITE_STRING(QString::fromUtf8("return \"") + pluginGrouping + QString::fromUtf8("\""));
     WRITE_STATIC_LINE("");
     
     if (!pluginDescription.isEmpty()) {
         WRITE_STATIC_LINE("def getPluginDescription():");
-        WRITE_INDENT(1);WRITE_STRING("return " + ESC(pluginDescription));
+        WRITE_INDENT(1);WRITE_STRING(QString::fromUtf8("return ") + ESC(pluginDescription));
         WRITE_STATIC_LINE("");
     }
     
     
     WRITE_STATIC_LINE("def createInstance(app,group):");
-    exportGroupInternal(1, this, "group", ts);
+    exportGroupInternal(1, this, QString::fromUtf8("group"), ts);
     
     ///Import user hand-written code
     WRITE_INDENT(1);WRITE_STATIC_LINE("try:");
-    WRITE_INDENT(2);WRITE_STRING("extModule = sys.modules[" + ESC(extModule) + "]");
+    WRITE_INDENT(2);WRITE_STRING(QString::fromUtf8("extModule = sys.modules[") + ESC(extModule) + QString::fromUtf8("]"));
     WRITE_INDENT(1);WRITE_STATIC_LINE("except KeyError:");
     WRITE_INDENT(2);WRITE_STATIC_LINE("extModule = None");
     
-    QString testAttr("if extModule is not None and hasattr(extModule ,\"createInstanceExt\") and hasattr(extModule.createInstanceExt,\"__call__\"):");
+    QString testAttr = QString::fromUtf8("if extModule is not None and hasattr(extModule ,\"createInstanceExt\") and hasattr(extModule.createInstanceExt,\"__call__\"):");
     WRITE_INDENT(1);WRITE_STRING(testAttr);
     WRITE_INDENT(2);WRITE_STRING("extModule.createInstanceExt(app,group)");
 }

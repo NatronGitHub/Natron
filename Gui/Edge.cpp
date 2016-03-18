@@ -138,7 +138,7 @@ EdgePrivate::initLabel()
     NodeGuiPtr dst = dest.lock();
     if ((inputNb != -1) && dst) {
         label = new NodeGraphSimpleTextItem(dst->getDagGui(), _publicInterface, false);
-        label->setText(QString(dst->getNode()->getInputLabel(inputNb).c_str()));
+        label->setText(QString::fromUtf8(dst->getNode()->getInputLabel(inputNb).c_str()));
         QColor txt;
         double r,g,b;
         appPTR->getCurrentSettings()->getTextColor(&r, &g, &b);
@@ -280,11 +280,52 @@ Edge::setSourceAndDestination(const NodeGuiPtr & src,
     if (!_imp->label) {
         _imp->initLabel();
     } else {
-        _imp->label->setText(QString(dst->getNode()->getInputLabel(_imp->inputNb).c_str()));
+        _imp->label->setText(QString::fromUtf8(dst->getNode()->getInputLabel(_imp->inputNb).c_str()));
         //_imp->label->setPlainText( QString( dst->getNode()->getInputLabel(_imp->inputNb).c_str() ) );
     }
     refreshState(false);
     initLine();
+}
+
+bool
+Edge::computeVisibility(bool hovered) const
+{
+    NodeGuiPtr dst = _imp->dest.lock();
+    EffectInstPtr effect = dst ? dst->getNode()->getEffectInstance() : EffectInstPtr();
+    if (!effect) {
+        return false;
+    }
+    
+    ///Determine whether the edge should be visible or not
+    bool hideInputsKnobValue = dst ? dst->getNode()->getHideInputsKnobValue() : false;
+    if ((_imp->isRotoMask || hideInputsKnobValue) && !_imp->isOutputEdge) {
+        return false;
+    } else {
+        
+        if (_imp->isOutputEdge) {
+            return true;
+        } else {
+            
+            NodeGuiPtr src = _imp->source.lock();
+            
+            //The viewer does not hide its optional edges
+            bool isViewer = effect ? dynamic_cast<ViewerInstance*>(effect.get()) != 0 : false;
+            bool isReader = effect ? effect->isReader() : false;
+            bool autoHide = areOptionalInputsAutoHidden();
+            bool isSelected = dst->getIsSelected();
+            
+            /*
+             * Hide the inputs if it is NOT hovered and NOT selected and auto-hide is enabled and if the node is either
+             * a Reader OR the input is optional and it doesn't have an input node
+             */
+            if ( !hovered && !isSelected && autoHide  && !isViewer &&
+                ((_imp->optional && !src) || isReader)) {
+                return false;
+            } else {
+                return true;
+            }
+        }
+    }
 }
 
 void
@@ -303,36 +344,9 @@ Edge::refreshState(bool hovered)
         if (_imp->isMask) {
             _imp->paintWithDash = true;
         }
-
-        ///Determine whether the edge should be visible or not
-        bool hideInputsKnobValue = dst ? dst->getNode()->getHideInputsKnobValue() : false;
-        if ((_imp->isRotoMask || hideInputsKnobValue) && !_imp->isOutputEdge) {
-            hide();
-        } else {
-            
-            if (_imp->isOutputEdge) {
-                show();
-            } else {
-                
-                NodeGuiPtr src = _imp->source.lock();
-                
-                //The viewer does not hide its optional edges
-                bool isViewer = effect ? dynamic_cast<ViewerInstance*>(effect.get()) != 0 : false;
-                bool isReader = effect ? effect->isReader() : false;
-                bool autoHide = areOptionalInputsAutoHidden();
-                bool isSelected = dst->getIsSelected();
-                
-                /*
-                 * Hide the inputs if it is NOT hovered and NOT selected and auto-hide is enabled and if the node is either
-                 * a Reader OR the input is optional and it doesn't have an input node
-                 */
-                if ( !hovered && !isSelected && autoHide  && !isViewer &&
-                    ((_imp->optional && !src) || isReader)) {
-                    hide();
-                } else {
-                    show();
-                }
-            }
+        bool visible = computeVisibility(hovered);
+        if (isVisible() != visible) {
+            setVisible(visible);
         }
     }
 }
@@ -768,8 +782,8 @@ Edge::paint(QPainter *painter,
     }
 }
 
-LinkArrow::LinkArrow(const NodeGui* master,
-                     const NodeGui* slave,
+LinkArrow::LinkArrow(const NodeGuiPtr& master,
+                     const NodeGuiPtr& slave,
                      QGraphicsItem* parent)
     : QObject(), QGraphicsLineItem(parent)
       , _master(master)
@@ -780,8 +794,8 @@ LinkArrow::LinkArrow(const NodeGui* master,
       , _lineWidth(1)
 {
     assert(master && slave);
-    QObject::connect( master,SIGNAL( positionChanged(int,int) ),this,SLOT( refreshPosition() ) );
-    QObject::connect( slave,SIGNAL( positionChanged(int,int) ),this,SLOT( refreshPosition() ) );
+    QObject::connect( master.get(),SIGNAL(positionChanged(int,int)),this,SLOT(refreshPosition()) );
+    QObject::connect( slave.get(),SIGNAL(positionChanged(int,int)),this,SLOT(refreshPosition()) );
 
     refreshPosition();
     setZValue(master->zValue() - 5);
@@ -812,10 +826,19 @@ LinkArrow::setWidth(int lineWidth)
 void
 LinkArrow::refreshPosition()
 {
-    QRectF bboxSlave = mapFromItem( _slave,_slave->boundingRect() ).boundingRect();
+    NodeGuiPtr slave = _slave.lock();
+    NodeGuiPtr master = _master.lock();
+    
+    QRectF bboxSlave;
+    if (slave) {
+        bboxSlave = mapFromItem( slave.get(),slave->boundingRect() ).boundingRect();
+    }
 
     ///like the box master in kfc! was bound to name it so I'm hungry atm
-    QRectF boxMaster = mapFromItem( _master,_master->boundingRect() ).boundingRect();
+    QRectF boxMaster;
+    if (master) {
+        boxMaster = mapFromItem( master.get(),master->boundingRect() ).boundingRect();
+    }
     QPointF dst = boxMaster.center();
     QPointF src = bboxSlave.center();
 

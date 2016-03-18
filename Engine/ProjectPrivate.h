@@ -136,14 +136,14 @@ struct ProjectPrivate
     {
         QString formatStr;
 
-        formatStr.append(f.getName().c_str());
-        formatStr.append(' ');
+        formatStr.append(QString::fromUtf8(f.getName().c_str()));
+        formatStr.append(QLatin1Char(' '));
         formatStr.append(QString::number(f.width()));
-        formatStr.append('x');
+        formatStr.append(QLatin1Char('x'));
         formatStr.append(QString::number(f.height()));
         double par = f.getPixelAspectRatio();
         if (par != 1.) {
-            formatStr.append(' ');
+            formatStr.append(QLatin1Char(' '));
             formatStr.append(QString::number(f.getPixelAspectRatio()));
         }
         return formatStr;
@@ -153,12 +153,12 @@ struct ProjectPrivate
     static bool
     generateFormatFromString(const QString& spec, Format* f)
     {
-        QStringList splits = spec.split(' ');
+        QStringList splits = spec.split(QLatin1Char(' '));
         if (splits.size() != 3) {
             return false;
         }
 
-        QStringList sizes = splits[1].split('x');
+        QStringList sizes = splits[1].split(QLatin1Char('x'));
         if (sizes.size() != 2) {
             return false;
         }

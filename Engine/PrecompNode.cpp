@@ -44,6 +44,7 @@
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/ViewIdx.h"
 
 
 NATRON_NAMESPACE_ENTER;
@@ -195,52 +196,6 @@ PrecompNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
     depths->push_back(eImageBitDepthFloat);
 }
 
-ImagePremultiplicationEnum
-PrecompNode::getOutputPremultiplication() const
-{
-    NodePtr output = getOutputNode();
-    if (output) {
-        return output->getEffectInstance()->getOutputPremultiplication();
-    } else {
-        return eImagePremultiplicationPremultiplied;
-    }
-}
-
-void
-PrecompNode::getPreferredDepthAndComponents(int inputNb,
-                                            std::list<ImageComponents>* comp,
-                                            ImageBitDepthEnum* depth) const
-{
-    NodePtr output = getOutputNode();
-    if (output) {
-        output->getEffectInstance()->getPreferredDepthAndComponents(inputNb,comp,depth);
-    } else {
-        EffectInstance::getPreferredDepthAndComponents(inputNb, comp, depth);
-    }
-}
-
-double
-PrecompNode::getPreferredAspectRatio() const
-{
-    NodePtr output = getOutputNode();
-    if (output) {
-        return output->getEffectInstance()->getPreferredAspectRatio();
-    } else {
-        return EffectInstance::getPreferredAspectRatio();
-    }
-}
-
-double
-PrecompNode::getPreferredFrameRate() const
-{
-    NodePtr output = getOutputNode();
-    if (output) {
-        return output->getEffectInstance()->getPreferredFrameRate();
-    } else {
-        return EffectInstance::getPreferredFrameRate();
-    }
-}
-
 void
 PrecompNode::initializeKnobs()
 {
@@ -379,12 +334,13 @@ PrecompNode::onKnobsLoaded()
 }
 
 void
-PrecompNode::knobChanged(KnobI* k,ValueChangedReasonEnum /*reason*/,
-                 int /*view*/,
-                 double /*time*/,
-                 bool /*originatedFromMainThread*/)
+PrecompNode::knobChanged(KnobI* k,
+                         ValueChangedReasonEnum reason,
+                         ViewSpec /*view*/,
+                         double /*time*/,
+                         bool /*originatedFromMainThread*/)
 {
-    if (k == _imp->projectFileNameKnob.lock().get()/* || k == _imp->reloadProjectKnob.lock().get()*/) {
+    if (reason != eValueChangedReasonTimeChanged && k == _imp->projectFileNameKnob.lock().get()) {
         _imp->reloadProject(true);
     } else if (k == _imp->editProjectKnob.lock().get()) {
         std::string filename = _imp->projectFileNameKnob.lock()->getValue();
@@ -417,7 +373,7 @@ PrecompNodePrivate::setReadNodeErrorChoice()
         if (knob) {
             KnobChoice* choice = dynamic_cast<KnobChoice*>(knob.get());
             if (choice) {
-                choice->setValue(errorBehaviourKnbo.lock()->getValue(), 0);
+                choice->setValue(errorBehaviourKnbo.lock()->getValue());
             }
         }
     }
@@ -437,16 +393,16 @@ PrecompNodePrivate::reloadProject(bool setWriteNodeChoice)
 {
     std::string filename = projectFileNameKnob.lock()->getValue();
     
-    QFileInfo file(filename.c_str());
+    QFileInfo file(QString::fromUtf8(filename.c_str()));
     if (!file.exists()) {
         Dialogs::errorDialog(QObject::tr("Pre-Comp").toStdString(), QObject::tr("Pre-comp file not found.").toStdString());
         return;
     }
     QString fileUnPathed = file.fileName();
     
-    subLabelKnob.lock()->setValue(fileUnPathed.toStdString(), 0);
+    subLabelKnob.lock()->setValue(fileUnPathed.toStdString());
     
-    QString path = file.path() + "/";
+    QString path = file.path() + QLatin1Char('/');
     
     precompInputs.clear();
     
@@ -516,7 +472,7 @@ PrecompNodePrivate::populateWriteNodesChoice(bool setPartOfPrecomp, bool setWrit
     
     if (setWriteNodeChoice) {
         if (choices.size() > 1) {
-            param->setValue(1, 0);
+            param->setValue(1);
         }
     }
 }
@@ -588,7 +544,7 @@ PrecompNodePrivate::createReadNode()
     }
     
     std::string pattern = fileKnob->getValue();
-    QString qpattern(pattern.c_str());
+    QString qpattern = QString::fromUtf8(pattern.c_str());
     
     std::map<std::string, std::string> readersForFormat;
     appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
@@ -604,14 +560,14 @@ PrecompNodePrivate::createReadNode()
         return;
     }
     
-    QString readPluginID(found->second.c_str());
+    QString readPluginID = QString::fromUtf8(found->second.c_str());
     
     
     
-    QString fixedNamePrefix(_publicInterface->getScriptName_mt_safe().c_str());
-    fixedNamePrefix.append('_');
-    fixedNamePrefix.append("readNode");
-    fixedNamePrefix.append('_');
+    QString fixedNamePrefix = QString::fromUtf8(_publicInterface->getScriptName_mt_safe().c_str());
+    fixedNamePrefix.append(QLatin1Char('_'));
+    fixedNamePrefix.append(QString::fromUtf8("readNode"));
+    fixedNamePrefix.append(QLatin1Char('_'));
     
     CreateNodeArgs args(readPluginID, eCreateNodeReasonInternal, app->getProject());
     args.createGui = false;
@@ -678,10 +634,10 @@ PrecompNodePrivate::setFirstAndLastFrame()
     KnobInt* firstFrame = dynamic_cast<KnobInt*>(writefirstFrameKnob.get());
     KnobInt* lastFrame = dynamic_cast<KnobInt*>(writelastFrameKnob.get());
     if (firstFrame) {
-        firstFrameKnob.lock()->setValue(firstFrame->getValue(), 0);
+        firstFrameKnob.lock()->setValue(firstFrame->getValue());
     }
     if (lastFrame) {
-        lastFrameKnob.lock()->setValue(lastFrame->getValue(), 0);
+        lastFrameKnob.lock()->setValue(lastFrame->getValue());
     }
 }
 
@@ -700,7 +656,7 @@ PrecompNodePrivate::refreshReadNodeInput()
     readNode->purgeAllInstancesCaches();
     
     //Force the reader to reload the sequence/video
-    fileNameKnob->evaluateValueChange(0, _publicInterface->getApp()->getTimeLine()->currentFrame(), eValueChangedReasonUserEdited);
+    fileNameKnob->evaluateValueChange(0, _publicInterface->getApp()->getTimeLine()->currentFrame(), ViewIdx(0),eValueChangedReasonUserEdited);
     
 }
 
@@ -712,11 +668,12 @@ PrecompNodePrivate::launchPreRender()
         Dialogs::errorDialog(QObject::tr("Pre-Render").toStdString(), QObject::tr("Selected write node does not exist").toStdString());
         return;
     }
-    AppInstance::RenderWork w;
-    w.writer = dynamic_cast<OutputEffectInstance*>(output->getEffectInstance().get());
-    w.firstFrame = firstFrameKnob.lock()->getValue();
-    w.lastFrame = lastFrameKnob.lock()->getValue();
-    w.frameStep = 1;
+    AppInstance::RenderWork w(dynamic_cast<OutputEffectInstance*>(output->getEffectInstance().get()),
+                              firstFrameKnob.lock()->getValue(),
+                              lastFrameKnob.lock()->getValue(),
+                              1,
+                              false);
+
     if (w.writer) {
         RenderEngine* engine = w.writer->getRenderEngine();
         if (engine) {
@@ -724,7 +681,9 @@ PrecompNodePrivate::launchPreRender()
         }
     }
     
-    _publicInterface->getApp()->startRenderingFullSequence(false, w, false, QString());
+    std::list<AppInstance::RenderWork> works;
+    works.push_back(w);
+    _publicInterface->getApp()->startWritersRendering(false, works);
 }
 
 void
@@ -736,11 +695,12 @@ PrecompNode::onPreRenderFinished()
     }
     OutputEffectInstance* writer = dynamic_cast<OutputEffectInstance*>(output->getEffectInstance().get());
     assert(writer);
-    RenderEngine* engine = writer->getRenderEngine();
-    if (engine) {
-        QObject::disconnect(engine, SIGNAL(renderFinished(int)), this, SLOT(onPreRenderFinished()));
+    if (writer) {
+        RenderEngine* engine = writer->getRenderEngine();
+        if (engine) {
+            QObject::disconnect(engine, SIGNAL(renderFinished(int)), this, SLOT(onPreRenderFinished()));
+        }
     }
-    
     _imp->refreshReadNodeInput();
 }
 

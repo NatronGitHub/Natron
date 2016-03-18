@@ -68,7 +68,8 @@ class QTimer;
 class QWaitCondition;
 
 // cairo
-
+typedef struct _cairo cairo_t;
+typedef struct _cairo_surface cairo_surface_t;
 typedef struct _cairo_pattern cairo_pattern_t;
 
 
@@ -95,6 +96,7 @@ class SequenceFromFiles;
 // Natron Engine
 
 NATRON_NAMESPACE_ENTER;
+struct AbortableRenderInfo;
 class AbstractOfxEffectInstance;
 class AppInstance;
 class AppSettings;
@@ -113,6 +115,7 @@ class ChoiceExtraData;
 class ChoiceParam;
 class ColorParam;
 class Curve;
+class Dimension;
 class DockablePanelI;
 class Double2DParam;
 class Double3DParam;
@@ -162,6 +165,7 @@ class NodeCollection;
 class NodeGroup;
 class NodeGraphI;
 class NodeGuiI;
+class NodeMetadata;
 class NodeSerialization;
 class NodeSettingsPanel;
 class OfxClipInstance;
@@ -218,12 +222,16 @@ class TrackSerialization;
 class TrackerContextSerialization;
 class UserParamHolder;
 class ViewerInstance;
+class ViewIdx;
 namespace Color {
 class Lut;
 }
 namespace Transform {
 struct Matrix3x3;
 }
+
+typedef boost::shared_ptr<AbortableRenderInfo> AbortableRenderInfoPtr;
+
 
 typedef boost::shared_ptr<Node> NodePtr;
 typedef std::list<NodePtr> NodesList;
@@ -232,11 +240,15 @@ typedef boost::weak_ptr<Node> NodeWPtr;
 typedef std::list<NodeWPtr> NodesWList;
 
 typedef boost::shared_ptr<KnobI> KnobPtr;
+typedef boost::weak_ptr<KnobI> KnobWPtr;
 typedef std::vector<KnobPtr> KnobsVec;
 
 
 typedef boost::shared_ptr<EffectInstance> EffectInstPtr;
 typedef boost::weak_ptr<EffectInstance> EffectInstWPtr;
+
+typedef boost::shared_ptr<Image> ImagePtr;
+typedef std::list<ImagePtr> ImageList;
 
 NATRON_NAMESPACE_EXIT;
 

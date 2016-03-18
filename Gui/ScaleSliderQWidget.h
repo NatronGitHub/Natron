@@ -63,6 +63,7 @@ public:
     ScaleSliderQWidget(double bottom, // the minimum value
                        double top, // the maximum value
                        double initialPos, // the initial value
+                       bool allowDraftModeSetting,
                        DataTypeEnum dataType,
                        Gui* gui,
                        ScaleTypeEnum type = eScaleTypeLinear, // the type of scale

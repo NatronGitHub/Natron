@@ -30,6 +30,7 @@
 #include <cassert>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
 #include <boost/bind.hpp>
@@ -67,13 +68,15 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Timer.h"
+#include "Engine/UpdateViewerParams.h"
+#include "Engine/ViewIdx.h"
 
 
 #ifndef M_LN2
 #define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
 #endif
 
-#define NATRON_TIME_ELASPED_BEFORE_PROGRESS_REPORT 0.4
+#define NATRON_TIME_ELASPED_BEFORE_PROGRESS_REPORT 4. //!< do not display the progress report if estimated total time is less than this (in seconds)
 
 NATRON_NAMESPACE_ENTER;
 
@@ -179,9 +182,9 @@ ViewerInstance::ViewerInstance(NodePtr node)
 
     setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);
     
-    QObject::connect( this,SIGNAL( disconnectTextureRequest(int) ),this,SLOT( executeDisconnectTextureRequestOnMainThread(int) ) );
-    QObject::connect( _imp.get(),SIGNAL( mustRedrawViewer() ),this,SLOT( redrawViewer() ) );
-    QObject::connect( this,SIGNAL( s_callRedrawOnMainThread() ), this, SLOT( redrawViewer() ) );
+    QObject::connect( this,SIGNAL(disconnectTextureRequest(int)),this,SLOT(executeDisconnectTextureRequestOnMainThread(int)) );
+    QObject::connect( _imp.get(),SIGNAL(mustRedrawViewer()),this,SLOT(redrawViewer()) );
+    QObject::connect( this,SIGNAL(s_callRedrawOnMainThread()), this, SLOT(redrawViewer()) );
 }
 
 ViewerInstance::~ViewerInstance()
@@ -235,7 +238,7 @@ ViewerInstance::forceFullComputationOnNextFrame()
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     QMutexLocker forceRenderLocker(&_imp->forceRenderMutex);
-    _imp->forceRender = true;
+    _imp->forceRender[0] = _imp->forceRender[1] = true;
 }
 
 void
@@ -275,10 +278,7 @@ ViewerInstance::invalidateUiContext()
 int
 ViewerInstance::getMaxInputCount() const
 {
-    // runs in the render thread or in the main thread
-    
-    //MT-safe
-    return getNode()->getMaxInputCount();
+    return 10;
 }
 
 void
@@ -376,13 +376,11 @@ class ViewerParallelRenderArgsSetter : public ParallelRenderArgsSetter
 public:
     
     ViewerParallelRenderArgsSetter(double time,
-                                   int view,
+                                   ViewIdx view,
                                    bool isRenderUserInteraction,
                                    bool isSequential,
-                                   bool canAbort,
-                                   U64 renderAge,
+                                   const AbortableRenderInfoPtr& abortInfo,
                                    const NodePtr& treeRoot,
-                                   const FrameRequestMap* request,
                                    int textureIndex,
                                    const TimeLine* timeline,
                                    bool isAnalysis,
@@ -391,7 +389,7 @@ public:
                                    bool draftMode,
                                    bool viewerProgressReportEnabled,
                                    const boost::shared_ptr<RenderStats>& stats)
-    : ParallelRenderArgsSetter(time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,treeRoot, request,textureIndex,timeline,rotoPaintNode, isAnalysis, draftMode, viewerProgressReportEnabled,stats)
+    : ParallelRenderArgsSetter(time,view,isRenderUserInteraction,isSequential,abortInfo,treeRoot,textureIndex, timeline,rotoPaintNode, isAnalysis, draftMode, viewerProgressReportEnabled,stats)
     , rotoNode(rotoPaintNode)
     , viewerNode(treeRoot)
     , viewerInputNode()
@@ -403,23 +401,10 @@ public:
             viewerInputNode = viewerInput;
             bool doNanHandling = appPTR->getCurrentSettings()->isNaNHandlingEnabled();
             
-            U64 nodeHash = 0;
-            bool hashSet = false;
-            boost::shared_ptr<NodeFrameRequest> nodeRequest;
-            if (request) {
-                FrameRequestMap::const_iterator foundRequest = request->find(viewerInputNode);
-                if (foundRequest != request->end()) {
-                    nodeRequest = foundRequest->second;
-                    nodeHash = nodeRequest->nodeHash;
-                    hashSet = true;
-                }
-            }
+            U64 nodeHash = viewerInput->getHashValue();
+
             
-            if (!hashSet) {
-                nodeHash = viewerInput->getHashValue();
-            }
-            
-            viewerInput->getEffectInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash,  renderAge, treeRoot, nodeRequest, textureIndex, timeline, isAnalysis, false, NodesList(), viewerInput->getCurrentRenderThreadSafety(), doNanHandling, draftMode, viewerProgressReportEnabled,stats);
+            viewerInput->getEffectInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash,  abortInfo, treeRoot, boost::shared_ptr<NodeFrameRequest>(), textureIndex, timeline, isAnalysis, false, NodesList(), viewerInput->getCurrentRenderThreadSafety(), doNanHandling, draftMode, viewerProgressReportEnabled,stats);
         }
     }
     
@@ -439,7 +424,7 @@ public:
 ViewerInstance::ViewerRenderRetCode
 ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                              bool canAbort,
-                                             int view,
+                                             ViewIdx view,
                                              U64 viewerHash,
                                              const NodePtr& rotoPaintNode,
                                              const boost::shared_ptr<RotoStrokeItem>& activeStroke,
@@ -469,7 +454,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
             break;
         }
         
-        U64 renderAge = _imp->getRenderAgeAndIncrement(i);
+        AbortableRenderInfoPtr abortInfo = _imp->createNewRenderRequest(i, canAbort);
 
         
         /*FrameRequestMap request;
@@ -491,10 +476,8 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                            view,
                                            true,
                                            false,
-                                           canAbort,
-                                           renderAge,
+                                           abortInfo,
                                            thisNode,
-                                           0,
                                            i,
                                            getTimeline().get(),
                                            false,
@@ -567,7 +550,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
        
         
         if (args[i]) {
-            status[i] = getRenderViewerArgsAndCheckCache(time, false, canAbort, view, i, viewerHash, rotoPaintNode, false, renderAge,stats,  args[i].get());
+            status[i] = getRenderViewerArgsAndCheckCache(time, false, view, i, viewerHash, rotoPaintNode, abortInfo,stats,  args[i].get());
         }
         
     
@@ -591,7 +574,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
             assert(args[i]->params->textureIndex == i);
             
             
-            if (!_imp->addOngoingRender(args[i]->params->textureIndex, args[i]->params->renderAge)) {
+            if (!_imp->addOngoingRender(args[i]->params->textureIndex, abortInfo)) {
                 /*
                  This may fail if another thread already pushed a more recent render in the render ages queue
                  */
@@ -614,9 +597,9 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
             
             if (args[i] && args[i]->params) {
                 if (status[i] == eViewerRenderRetCodeFail || status[i] == eViewerRenderRetCodeBlack) {
-                    _imp->checkAndUpdateDisplayAge(args[i]->params->textureIndex,args[i]->params->renderAge);
+                    _imp->checkAndUpdateDisplayAge(args[i]->params->textureIndex,abortInfo->age);
                 }
-                _imp->removeOngoingRender(args[i]->params->textureIndex, args[i]->params->renderAge);
+                _imp->removeOngoingRender(args[i]->params->textureIndex, abortInfo->age);
             }
             
             
@@ -643,7 +626,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
 }
 
 ViewerInstance::ViewerRenderRetCode
-ViewerInstance::renderViewer(int view,
+ViewerInstance::renderViewer(ViewIdx view,
                              bool singleThreaded,
                              bool isSequentialRender,
                              U64 viewerHash,
@@ -677,7 +660,7 @@ ViewerInstance::renderViewer(int view,
             ///We enable render stats just for the A input (i == 0) otherwise we would get crappy results
             
             if (!isSequentialRender) {
-                if (!_imp->addOngoingRender(args[i]->params->textureIndex, args[i]->params->renderAge)) {
+                if (!_imp->addOngoingRender(args[i]->params->textureIndex, args[i]->params->abortInfo)) {
                     /*
                      This may fail if another thread already pushed a more recent render in the render ages queue
                      */
@@ -705,9 +688,9 @@ ViewerInstance::renderViewer(int view,
             
             if (!isSequentialRender && args[i] && args[i]->params) {
                 if (ret[i] == eViewerRenderRetCodeFail || ret[i] == eViewerRenderRetCodeBlack) {
-                    _imp->checkAndUpdateDisplayAge(args[i]->params->textureIndex,args[i]->params->renderAge);
+                    _imp->checkAndUpdateDisplayAge(args[i]->params->textureIndex,args[i]->params->abortInfo->age);
                 }
-                _imp->removeOngoingRender(args[i]->params->textureIndex, args[i]->params->renderAge);
+                _imp->removeOngoingRender(args[i]->params->textureIndex, args[i]->params->abortInfo->age);
             }
             
             if (ret[i] == eViewerRenderRetCodeBlack) {
@@ -824,101 +807,65 @@ static bool copyAndSwap(const TextureRect& srcRect,
 
 ViewerInstance::ViewerRenderRetCode
 ViewerInstance::getRenderViewerArgsAndCheckCache_public(SequenceTime time,
-                                                           bool isSequential,
-                                                           bool canAbort,
-                                                           int view,
-                                                           int textureIndex,
-                                                           U64 viewerHash,
-                                                           const NodePtr& rotoPaintNode,
-                                                           bool useTLS,
-                                                           const boost::shared_ptr<RenderStats>& stats,
-                                                           ViewerArgs* outArgs)
+                                                        bool isSequential,
+                                                        ViewIdx view,
+                                                        int textureIndex,
+                                                        U64 viewerHash,
+                                                        bool canAbort,
+                                                        const NodePtr& rotoPaintNode,
+                                                        const boost::shared_ptr<RenderStats>& stats,
+                                                        ViewerArgs* outArgs)
 {
-    U64 renderAge = _imp->getRenderAgeAndIncrement(textureIndex);
+    AbortableRenderInfoPtr abortInfo = _imp->createNewRenderRequest(textureIndex, canAbort);
     
    
     
-    ViewerRenderRetCode stat = getRenderViewerArgsAndCheckCache(time, isSequential, canAbort, view, textureIndex, viewerHash, rotoPaintNode, useTLS, renderAge, stats, outArgs);
+    ViewerRenderRetCode stat = getRenderViewerArgsAndCheckCache(time, isSequential, view, textureIndex, viewerHash, rotoPaintNode, abortInfo, stats, outArgs);
     
     if (stat == eViewerRenderRetCodeFail || stat == eViewerRenderRetCodeBlack) {
-        _imp->checkAndUpdateDisplayAge(textureIndex,renderAge);
+        _imp->checkAndUpdateDisplayAge(textureIndex,abortInfo->age);
     }
     
     return stat;
 }
 
-ViewerInstance::ViewerRenderRetCode
-ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
-                                                 bool isSequential,
-                                                 bool canAbort,
-                                                 int view,
-                                                 int textureIndex,
-                                                 U64 viewerHash,
-                                                 const NodePtr& rotoPaintNode,
-                                                 bool useTLS,
-                                                 U64 renderAge,
-                                                 const boost::shared_ptr<RenderStats>& stats,
-                                                 ViewerArgs* outArgs)
+void
+ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
+                                               const ViewIdx view,
+                                               const int textureIndex,
+                                               const AbortableRenderInfoPtr& abortInfo,
+                                               const bool isSequential,
+                                               ViewerArgs* outArgs)
 {
+    assert(_imp->uiContext);
     
-    
-    if (textureIndex == 0) {
-        QMutexLocker l(&_imp->activeInputsMutex);
-        outArgs->activeInputIndex =  _imp->activeInputs[0];
-    } else {
-        QMutexLocker l(&_imp->activeInputsMutex);
-        outArgs->activeInputIndex =  _imp->activeInputs[1];
-    }
-    
-    
-    EffectInstPtr upstreamInput = getInput(outArgs->activeInputIndex);
-    
-    if (upstreamInput) {
-        outArgs->activeInputToRender = upstreamInput->getNearestNonDisabled();
-    }
-    
-    if (!upstreamInput || !outArgs->activeInputToRender || !checkTreeCanRender(outArgs->activeInputToRender->getNode().get())) {
-        return eViewerRenderRetCodeFail;
-    }
-    
-    {
-        QMutexLocker forceRenderLocker(&_imp->forceRenderMutex);
-        outArgs->forceRender = _imp->forceRender;
-        _imp->forceRender = false;
-    }
-    
-    ///instead of calling getRegionOfDefinition on the active input, check the image cache
-    ///to see whether the result of getRegionOfDefinition is already present. A cache lookup
-    ///might be much cheaper than a call to getRegionOfDefinition.
-    ///
-    ///Note that we can't yet use the texture cache because we would need the TextureRect identifyin
-    ///the texture in order to retrieve from the cache, but to make the TextureRect we need the RoD!
-    RenderScale scale(1.);
-    int mipMapLevel;
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
-        scale.x = Image::getScaleFromMipMapLevel(_imp->viewerMipMapLevel);
-        scale.y = scale.x;
-        mipMapLevel = _imp->viewerMipMapLevel;
+        outArgs->mipmapLevelWithoutDraft = (unsigned int)_imp->viewerMipMapLevel;
     }
     
     assert(_imp->uiContext);
+    
+    // This is the current zoom factor (1. == 100%) currently set by the user in the viewport
     double zoomFactor = _imp->uiContext->getZoomFactor();
+    
+    // We render the image that is the nearest mipmap level higher in quality.
+    // For instance, if we were to render at 48% zoom factor, we would render at 50% which is mipmapLevel=1
+    // If on the other hand the zoom factor would be at 51%, then we would render at 100% which is mipmapLevel=0
     int zoomMipMapLevel;
     {
         double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow( 2,-std::ceil(std::log(zoomFactor) / M_LN2) );
         zoomMipMapLevel = std::log(closestPowerOf2) / M_LN2;
     }
     
-    mipMapLevel = std::max( (double)mipMapLevel, (double)zoomMipMapLevel );
+    // Adjust the mipmap level (without taking draft into account yet) as the max of the closest mipmap level of the viewer zoom
+    // and the requested user proxy mipmap level
+    outArgs->mipmapLevelWithoutDraft = (unsigned int)std::max((int)outArgs->mipmapLevelWithoutDraft, (int)zoomMipMapLevel);
+    outArgs->mipMapLevelWithDraft = outArgs->mipmapLevelWithoutDraft;
     
-    // realMipMapLevel is the mipmap level if the auto proxy is not applied
-   // unsigned int realMipMapLevel = mipMapLevel;
     outArgs->draftModeEnabled = getApp()->isDraftRenderEnabled();
     
-    //The original mipMapLevel without draft applied
-    unsigned originalMipMapLevel = mipMapLevel;
-    
+    // If draft mode is enabled, compute the mipmap level according to the auto-proxy setting in the preferences
     if (outArgs->draftModeEnabled && appPTR->getCurrentSettings()->isAutoProxyEnabled()) {
         unsigned int autoProxyLevel = appPTR->getCurrentSettings()->getAutoProxyMipMapLevel();
         if (zoomFactor > 1) {
@@ -930,135 +877,60 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                 autoProxyLevel = 0;
             }
         }
-        mipMapLevel = std::max(mipMapLevel, (int)autoProxyLevel);
+        outArgs->mipMapLevelWithDraft = (unsigned int)std::max((int)outArgs->mipmapLevelWithoutDraft, (int)autoProxyLevel);
     }
-    
-    // If it's eSupportsMaybe and mipMapLevel!=0, don't forget to update
-    // this after the first call to getRegionOfDefinition().
-    RenderScale scaleOne(1.);
-    EffectInstance::SupportsEnum supportsRS = outArgs->activeInputToRender->supportsRenderScaleMaybe();
-    scale.x = scale.y = Image::getScaleFromMipMapLevel(originalMipMapLevel);
-    
-    
-    
-    //The hash of the node to render
+
+
+    // The hash of the node to render, we store it and make sure we never call getHash() again for the render of this frame
     outArgs->activeInputHash = outArgs->activeInputToRender->getHash();
     
-    //The RoD returned by the plug-in
-    RectD rod;
+    // Initialize the flag
+    outArgs->mustComputeRoDAndLookupCache = true;
     
-    //The bounds of the image in pixel coords.
-    
-    //Is this image originated from a generator which is dependent of the size of the project ? If true we should then discard the image from the cache
-    //when the project's format changes.
-    bool isRodProjectFormat = false;
-    
-    
-    const double par = outArgs->activeInputToRender->getPreferredAspectRatio();
-    
-        
-    ///need to set TLS for getROD()
-    boost::shared_ptr<ParallelRenderArgsSetter> frameArgs;
-    if (useTLS) {
-        frameArgs.reset(new ParallelRenderArgsSetter(time,
-                                                     view,
-                                                     !isSequential,  // is this render due to user interaction ?
-                                                     isSequential, // is this sequential ?
-                                                     canAbort,
-                                                     renderAge,
-                                                     getNode(),
-                                                     0, // request
-                                                     textureIndex,
-                                                     getTimeline().get(),
-                                                     NodePtr(),
-                                                     false,
-                                                     outArgs->draftModeEnabled,
-                                                     false,
-                                                     stats));
+    // Check if the render was issued from the "Refresh" button, in which case we compute images from nodes at least once
+    {
+        QMutexLocker forceRenderLocker(&_imp->forceRenderMutex);
+        outArgs->forceRender = _imp->forceRender[textureIndex];
+        _imp->forceRender[textureIndex] = false;
     }
     
-    /**
-     * @brief Start flagging that we're rendering for as long as the viewer is active.
-     **/
-    outArgs->isRenderingFlag.reset(new RenderingFlagSetter(getNode().get()));
+    // Did the user enabled the user roi from the viewer UI?
+    outArgs->userRoIEnabled = _imp->uiContext->isUserRegionOfInterestEnabled();
     
+    outArgs->params.reset(new UpdateViewerParams);
     
-    ///Get the RoD here to be able to figure out what is the RoI of the Viewer.
-    StatusEnum stat = outArgs->activeInputToRender->getRegionOfDefinition_public(outArgs->activeInputHash,time,
-                                                                                 supportsRS ==  eSupportsNo ? scaleOne : scale,
-                                                                                 view, &rod, &isRodProjectFormat);
-    if (stat == eStatusFailed) {
-        return eViewerRenderRetCodeFail;
-    }
-    // update scale after the first call to getRegionOfDefinition
-    if ( (supportsRS == eSupportsMaybe) && (mipMapLevel != 0) ) {
-        supportsRS = (outArgs->activeInputToRender)->supportsRenderScaleMaybe();
-        if (supportsRS == eSupportsNo) {
-            scale.x = scale.y = 1.;
-        }
-    }
+    // The PAR of the input image
+    outArgs->params->textureRect.par = outArgs->activeInputToRender->getAspectRatio(-1);
     
-    isRodProjectFormat = ifInfiniteclipRectToProjectDefault(&rod);
+    // Is it playback ?
+    outArgs->params->isSequential = isSequential;
     
-    assert(_imp->uiContext);
+    // Used to identify this render when calling EffectInstance::Implementation::aborted
+    outArgs->params->abortInfo = abortInfo;
     
+    // Used to differentiate the 2 different textures when wipe is enabled
+    outArgs->params->setUniqueID(textureIndex);
+    
+    // Used to determine how the viewer should handle alpha
+    outArgs->params->srcPremult = outArgs->activeInputToRender->getPremult();
+    
+    // The user requested bitdepth of the textures
+    outArgs->params->depth = _imp->uiContext->getBitDepth();
+    
+    // The frame number
+    outArgs->params->time = time;
+    
+    // The view to render
+    outArgs->params->view = view;
+    
+    // A input = 0, B input = 1
+    outArgs->params->textureIndex = textureIndex;
+    
+    // These are the user settings from the viewer UI
     {
         QMutexLocker locker(&_imp->viewerParamsMutex);
         outArgs->autoContrast = _imp->viewerParamsAutoContrast;
         outArgs->channels = _imp->viewerParamsChannels[textureIndex];
-    }
-    outArgs->userRoIEnabled = _imp->uiContext->isUserRegionOfInterestEnabled();
-
-    /*computing the RoI*/
-    
-    ////Texrect is the coordinates of the 4 corners of the texture in the bounds with the current zoom
-    ////factor taken into account.
-    RectI roi;
-    if (outArgs->autoContrast || outArgs->userRoIEnabled) {
-        roi = _imp->uiContext->getExactImageRectangleDisplayed(rod, par, originalMipMapLevel);
-    } else {
-        roi = _imp->uiContext->getImageRectangleDisplayedRoundedToTileSize(rod, par, originalMipMapLevel);
-    }
-    
-    if (roi.isNull()) {
-        return eViewerRenderRetCodeBlack;
-    }
-    
-    
-    /////////////////////////////////////
-    // start UpdateViewerParams scope
-    //
-    outArgs->params.reset(new UpdateViewerParams);
-    outArgs->params->isSequential = isSequential;
-    outArgs->params->renderAge = renderAge;
-    outArgs->params->setUniqueID(textureIndex);
-    outArgs->params->srcPremult = outArgs->activeInputToRender->getOutputPremultiplication();
-    ///Texture rect contains the pixel coordinates in the image to be rendered
-    outArgs->params->textureRect.x1 = roi.x1;
-    outArgs->params->textureRect.x2 = roi.x2;
-    outArgs->params->textureRect.y1 = roi.y1;
-    outArgs->params->textureRect.y2 = roi.y2;
-    outArgs->params->textureRect.w = roi.width();
-    outArgs->params->textureRect.h = roi.height();
-    outArgs->params->textureRect.closestPo2 = 1 << originalMipMapLevel;
-    outArgs->params->textureRect.par = par;
-    
-    outArgs->params->bytesCount = outArgs->params->textureRect.w * outArgs->params->textureRect.h * 4;
-    assert(outArgs->params->bytesCount > 0);
-    
-    assert(_imp->uiContext);
-    outArgs->params->depth = _imp->uiContext->getBitDepth();
-    if (outArgs->params->depth == eImageBitDepthFloat) {
-        outArgs->params->bytesCount *= sizeof(float);
-    }
-    
-    outArgs->params->time = time;
-    outArgs->params->rod = rod;
-    outArgs->params->mipMapLevel = (unsigned int)originalMipMapLevel;
-    outArgs->params->textureIndex = textureIndex;
-
-    {
-        QMutexLocker locker(&_imp->viewerParamsMutex);
         outArgs->params->gain = _imp->viewerParamsGain;
         outArgs->params->gamma = _imp->viewerParamsGamma;
         outArgs->params->lut = _imp->viewerParamsLut;
@@ -1066,82 +938,92 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
         outArgs->params->alphaLayer = _imp->viewerParamsAlphaLayer;
         outArgs->params->alphaChannelName = _imp->viewerParamsAlphaChannelName;
     }
+    
+    // Fill the gamma LUT if it has never been filled yet
     {
         QWriteLocker k(&_imp->gammaLookupMutex);
         if (_imp->gammaLookup.empty()) {
             _imp->fillGammaLut(1. / outArgs->params->gamma);
         }
     }
+}
+
+ViewerInstance::ViewerRenderRetCode
+ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
+                                       const U64 viewerHash,
+                                       const bool useCache,
+                                       const bool isDraftMode,
+                                       const unsigned int mipmapLevel,
+                                       const boost::shared_ptr<RenderStats>& stats,
+                                       ViewerArgs* outArgs)
+{
+    // Roi is the coordinates of the 4 corners of the texture in the bounds with the current zoom
+    // factor taken into account.
+    RectI roi;
+    
+    // When auto-contrast is enabled or user RoI, we compute exactly the iamge portion displayed in the rectangle and
+    // do not round it to Viewer tiles.
+    if (outArgs->autoContrast || outArgs->userRoIEnabled) {
+        roi = _imp->uiContext->getExactImageRectangleDisplayed(rod, outArgs->params->textureRect.par, mipmapLevel);
+    } else {
+        roi = _imp->uiContext->getImageRectangleDisplayedRoundedToTileSize(rod, outArgs->params->textureRect.par, mipmapLevel);
+    }
+    
+    // If the RoI does not fall into the visible portion on the viewer, just clear the viewer to black
+    if (roi.isNull()) {
+        return eViewerRenderRetCodeBlack;
+    }
+
+    // Texture rect contains the pixel coordinates in the image to be rendered
+    outArgs->params->textureRect.x1 = roi.x1;
+    outArgs->params->textureRect.x2 = roi.x2;
+    outArgs->params->textureRect.y1 = roi.y1;
+    outArgs->params->textureRect.y2 = roi.y2;
+    outArgs->params->textureRect.w = roi.width();
+    outArgs->params->textureRect.h = roi.height();
+    outArgs->params->textureRect.closestPo2 = 1 << mipmapLevel;
+    outArgs->params->bytesCount = outArgs->params->textureRect.w * outArgs->params->textureRect.h * 4;
+    assert(outArgs->params->bytesCount > 0);
+    if (outArgs->params->depth == eImageBitDepthFloat) {
+        outArgs->params->bytesCount *= sizeof(float);
+    }
+    outArgs->params->rod = rod;
+    outArgs->params->mipMapLevel = mipmapLevel;
+    
     std::string inputToRenderName = outArgs->activeInputToRender->getNode()->getScriptName_mt_safe();
     
-    //When in draft mode first try to get a texture without draft and then try with draft
-    int lookups = outArgs->draftModeEnabled ? 2 : 1;
+    RenderScale scale;
+    scale.x = Image::getScaleFromMipMapLevel(mipmapLevel);
+    scale.y = scale.x;
+
+    outArgs->key.reset(new FrameKey(getNode().get(),
+                                    outArgs->params->time,
+                                    viewerHash,
+                                    outArgs->params->gain,
+                                    outArgs->params->gamma,
+                                    outArgs->params->lut,
+                                    (int)outArgs->params->depth,
+                                    outArgs->channels,
+                                    outArgs->params->view,
+                                    outArgs->params->textureRect,
+                                    scale,
+                                    inputToRenderName,
+                                    outArgs->params->layer,
+                                    outArgs->params->alphaLayer.getLayerName() + outArgs->params->alphaChannelName,
+                                    outArgs->params->depth == eImageBitDepthFloat && supportsGLSL(),
+                                    isDraftMode));
     
-    for (int lookup = 0; lookup < lookups; ++lookup) {
-        outArgs->key.reset(new FrameKey(getNode().get(),
-                                        time,
-                                        viewerHash,
-                                        outArgs->params->gain,
-                                        outArgs->params->gamma,
-                                        outArgs->params->lut,
-                                        (int)outArgs->params->depth,
-                                        outArgs->channels,
-                                        view,
-                                        outArgs->params->textureRect,
-                                        scale,
-                                        inputToRenderName,
-                                        outArgs->params->layer,
-                                        outArgs->params->alphaLayer.getLayerName() + outArgs->params->alphaChannelName,
-                                        outArgs->params->depth == eImageBitDepthFloat && supportsGLSL(),
-                                        lookup == 1));
+    
+    if (useCache) {
         
-        bool isCached = false;
+
+        bool isCached = AppManager::getTextureFromCache(*(outArgs->key), &outArgs->params->cachedFrame);
         
-        ///we never use the texture cache when the user RoI is enabled, otherwise we would have
-        ///zillions of textures in the cache, each a few pixels different.
-        assert(_imp->uiContext);
-        boost::shared_ptr<FrameParams> cachedFrameParams;
-        
-        if (!outArgs->userRoIEnabled &&
-                        !outArgs->autoContrast &&
-                        !rotoPaintNode.get() &&
-                        !isDoingPartialUpdates()) {
-        
-            isCached = AppManager::getTextureFromCache(*(outArgs->key), &outArgs->params->cachedFrame);
-            
-            if (!isCached && lookups == 2 && lookup == 0) {
-                //Lookup didn't work in non draft mode, try with draft mode now, update the texture rectangle
-                
-                roi = outArgs->autoContrast ? _imp->uiContext->getExactImageRectangleDisplayed(rod, par, mipMapLevel) :
-                _imp->uiContext->getImageRectangleDisplayedRoundedToTileSize(rod, par, mipMapLevel);
-                outArgs->params->textureRect.x1 = roi.x1;
-                outArgs->params->textureRect.x2 = roi.x2;
-                outArgs->params->textureRect.y1 = roi.y1;
-                outArgs->params->textureRect.y2 = roi.y2;
-                outArgs->params->textureRect.w = roi.width();
-                outArgs->params->textureRect.h = roi.height();
-                outArgs->params->textureRect.closestPo2 = 1 << mipMapLevel;
-                outArgs->params->mipMapLevel = mipMapLevel;
-                outArgs->params->bytesCount = outArgs->params->textureRect.w * outArgs->params->textureRect.h * 4;
-                scale.x = scale.y = Image::getScaleFromMipMapLevel(mipMapLevel);
-                if (outArgs->params->depth == eImageBitDepthFloat) {
-                    outArgs->params->bytesCount *= sizeof(float);
-                }
-                continue;
-            }
-            
-            ///if we want to force a refresh, we by-pass the cache
-            if (outArgs->forceRender && outArgs->params->cachedFrame) {
-                appPTR->removeFromViewerCache(outArgs->params->cachedFrame);
-                isCached = false;
-                outArgs->params->cachedFrame.reset();
-            }
-            
-            if (isCached) {
-                assert(outArgs->params->cachedFrame);
-                cachedFrameParams = outArgs->params->cachedFrame->getParams();
-            }
-            
+        // If we want to force a refresh, we remove from  the cache texture
+        if (outArgs->forceRender && outArgs->params->cachedFrame) {
+            appPTR->removeFromViewerCache(outArgs->params->cachedFrame);
+            isCached = false;
+            outArgs->params->cachedFrame.reset();
         }
         
         if (!isCached) {
@@ -1149,30 +1031,25 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                 stats->addCacheInfosForNode(getNode(), true, false);
             }
         } else {
-        
-            /// make sure we have the lock on the texture because it may be in the cache already
-            ///but not yet allocated.
+            
+            assert(outArgs->params->cachedFrame);
+            
+            //  Make sure we have the lock on the texture because it may be in the cache already
+            // but not yet allocated.
             FrameEntryLocker entryLocker(_imp.get());
             if (!entryLocker.tryLock(outArgs->params->cachedFrame)) {
-                ///Another thread is rendering it, just return it is not useful to keep this thread waiting.
+                // Another thread is rendering it, just return it is not useful to keep this thread waiting.
                 return eViewerRenderRetCodeRedraw;
             }
             
             if (outArgs->params->cachedFrame->getAborted()) {
-                ///The thread rendering the frame entry might have been aborted and the entry removed from the cache
-                ///but another thread might successfully have found it in the cache. This flag is to notify it the frame
-                ///is invalid.
+                // The thread rendering the frame entry might have been aborted and the entry removed from the cache
+                // but another thread might successfully have found it in the cache. This flag is to notify it the frame
+                // is invalid.
                 return eViewerRenderRetCodeRedraw;
             }
             
-            // how do you make sure cachedFrame->data() is not freed after this line?
-            ///It is not freed as long as the cachedFrame shared_ptr has a used_count greater than 1.
-            ///Since it is used during the whole function scope it is guaranteed not to be freed before
-            ///The viewer is actually done with it.
-            /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
-            ///
-            
-            
+            // The data will be valid as long as the cachedFrame shared pointer use_count is gt 1
             outArgs->params->ramBuffer = outArgs->params->cachedFrame->data();
             
             if (stats && stats->isInDepthProfilingEnabled()) {
@@ -1180,17 +1057,157 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
             }
             
         }
-        break;
-    } // for (int lookup = 0; lookup < lookups; ++lookup) {
+
+    }
     return eViewerRenderRetCodeRender;
+
 }
 
 
 ViewerInstance::ViewerRenderRetCode
-ViewerInstance::renderViewer_internal(int view,
+ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
+                                     const U64 viewerHash,
+                                     const NodePtr& rotoPaintNode,
+                                     const boost::shared_ptr<RenderStats>& stats,
+                                     ViewerArgs* outArgs)
+{
+    // We never use the texture cache when the user RoI is enabled or while painting or when auto-contrast is on, otherwise we would have
+    // zillions of textures in the cache, each a few pixels different.
+    const bool useTextureCache = !outArgs->userRoIEnabled && !outArgs->autoContrast && !rotoPaintNode.get() && !isDoingPartialUpdates();
+    
+    // If it's eSupportsMaybe and mipMapLevel!=0, don't forget to update
+    // this after the first call to getRegionOfDefinition().
+    const RenderScale scaleOne(1.);
+    
+    // This may be eSupportsMaybe
+    EffectInstance::SupportsEnum supportsRS = outArgs->activeInputToRender->supportsRenderScaleMaybe();
+    
+    
+    // When in draft mode first try to get a texture without draft and then try with draft
+    const int nLookups = outArgs->draftModeEnabled ? 2 : 1;
+    for (int lookup = 0; lookup < nLookups; ++lookup) {
+        
+        const unsigned mipMapLevel = lookup == 0 ? outArgs->mipmapLevelWithoutDraft : outArgs->mipMapLevelWithDraft;
+        
+        RenderScale scale;
+        scale.x = scale.y = Image::getScaleFromMipMapLevel(mipMapLevel);
+        
+        
+        RectD rod;
+        // Get the RoD here to be able to figure out what is the RoI of the Viewer.
+        // Note that we are in the main-thread (OpenGL) thread here to optimize the code path when all textures are cached
+        // so we cannot afford computing the actual RoD. If it's not cached then we will actually compute the RoD in the render thread.
+        StatusEnum stat;
+        
+        if (useOnlyRoDCache) {
+            stat = outArgs->activeInputToRender->getRegionOfDefinitionFromCache(outArgs->activeInputHash,
+                                                                                outArgs->params->time,
+                                                                                scale,
+                                                                                outArgs->params->view,
+                                                                                &rod,
+                                                                                0 /*isProjectFormat*/);
+            if (stat == eStatusFailed) {
+                // If was not cached, we cannot lookup the cache in the main-thread at this mipmapLevel
+                continue;
+            }
+        } else {
+            stat = outArgs->activeInputToRender->getRegionOfDefinition_public(outArgs->activeInputHash,
+                                                                              outArgs->params->time,
+                                                                              supportsRS ==  eSupportsNo ? scaleOne : scale,
+                                                                              outArgs->params->view,
+                                                                              &rod,
+                                                                              0 /*isProjectFormat*/);
+            if (stat == eStatusFailed) {
+                // It really failed, just exit
+                return eViewerRenderRetCodeFail;
+            }
+        }
+       
+        // update scale after the first call to getRegionOfDefinition
+        if (supportsRS == eSupportsMaybe && mipMapLevel != 0) {
+            supportsRS = (outArgs->activeInputToRender)->supportsRenderScaleMaybe();
+        }
+        
+        outArgs->mustComputeRoDAndLookupCache = false;
+        
+        (void)ifInfiniteclipRectToProjectDefault(&rod);
+        
+        // Ok we go the RoD, we can actually compute the RoI and look-up the cache
+        ViewerRenderRetCode retCode = getViewerRoIAndTexture(rod, viewerHash, useTextureCache, lookup == 1, mipMapLevel, stats, outArgs);
+        if (retCode != eViewerRenderRetCodeRender) {
+            return retCode;
+        }
+        
+        // We found something in the cache, stop now
+        if (outArgs->params->cachedFrame) {
+            break;
+        }
+        
+    } // for (int lookup = 0; lookup < nLookups; ++lookup)
+    
+    
+    return eViewerRenderRetCodeRender;
+}
+
+ViewerInstance::ViewerRenderRetCode
+ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
+                                                 bool isSequential,
+                                                 ViewIdx view,
+                                                 int textureIndex,
+                                                 U64 viewerHash,
+                                                 const NodePtr& rotoPaintNode,
+                                                 const AbortableRenderInfoPtr& abortInfo,
+                                                 const boost::shared_ptr<RenderStats>& stats,
+                                                 ViewerArgs* outArgs)
+{
+    // Just redraw if the viewer is paused
+    if (isViewerPaused(textureIndex)) {
+        outArgs->params.reset(new UpdateViewerParams);
+        outArgs->params->isViewerPaused = true;
+        outArgs->params->time = time;
+        outArgs->params->setUniqueID(textureIndex);
+        outArgs->params->textureIndex = textureIndex;
+        outArgs->params->view = view;
+        return eViewerRenderRetCodeRedraw;
+    }
+    
+    // Fetch the viewer indexes that we should render from the A or B input depending on the textureIndex parameter
+    if (textureIndex == 0) {
+        QMutexLocker l(&_imp->activeInputsMutex);
+        outArgs->activeInputIndex =  _imp->activeInputs[0];
+    } else {
+        QMutexLocker l(&_imp->activeInputsMutex);
+        outArgs->activeInputIndex =  _imp->activeInputs[1];
+    }
+    
+    
+    // The active input providing the image is the first upstream non disabled node
+    EffectInstPtr upstreamInput = getInput(outArgs->activeInputIndex);
+    outArgs->activeInputToRender.reset();
+    if (upstreamInput) {
+        outArgs->activeInputToRender = upstreamInput->getNearestNonDisabled();
+    }
+    
+    // Before rendering we check that all mandatory inputs in the graph are connected else we fail
+    if (!outArgs->activeInputToRender || !checkTreeCanRender(outArgs->activeInputToRender->getNode().get())) {
+        return eViewerRenderRetCodeFail;
+    }
+    
+    // Fetch the render parameters from the Viewer UI
+    setupMinimalUpdateViewerParams(time, view, textureIndex, abortInfo, isSequential, outArgs);
+
+    // Try to look-up the cache but do so only if we have a RoD valid in the cache because
+    // we are on the main-thread here, it would be expensive to compute the RoD now.
+    return getRoDAndLookupCache(true, viewerHash, rotoPaintNode, stats, outArgs);
+    
+}
+
+
+ViewerInstance::ViewerRenderRetCode
+ViewerInstance::renderViewer_internal(ViewIdx view,
                                       bool singleThreaded,
                                       bool isSequentialRender,
-                                      U64 /*viewerHash*/,
+                                      U64 viewerHash,
                                       bool canAbort,
                                       NodePtr rotoPaintNode,
                                       bool useTLS,
@@ -1198,6 +1215,53 @@ ViewerInstance::renderViewer_internal(int view,
                                       const boost::shared_ptr<RenderStats>& stats,
                                       ViewerArgs& inArgs)
 {
+    
+    // We are in the render thread, we may not have computed the RoD and lookup the cache yet
+    
+    boost::shared_ptr<ViewerParallelRenderArgsSetter> frameArgs;
+    
+    bool tilingProgressReportPrefEnabled = false;
+    if (useTLS) {
+        tilingProgressReportPrefEnabled = appPTR->getCurrentSettings()->isInViewerProgressReportEnabled();
+
+        frameArgs.reset(new ViewerParallelRenderArgsSetter(inArgs.params->time,
+                                                           inArgs.params->view,
+                                                           !isSequentialRender,
+                                                           isSequentialRender,
+                                                           inArgs.params->abortInfo,
+                                                           getNode(),
+                                                           inArgs.params->textureIndex,
+                                                           getTimeline().get(),
+                                                           false,
+                                                           rotoPaintNode,
+                                                           inArgs.activeInputToRender->getNode(),
+                                                           inArgs.draftModeEnabled,
+                                                           tilingProgressReportPrefEnabled,
+                                                           stats));
+    }
+    
+
+
+    if (inArgs.mustComputeRoDAndLookupCache) {
+        
+        // Since we will most likely need to compute the RoD now, we MUST setup the thread local
+        // storage otherwise functions like EffectInstance::aborted() would not work.
+        
+        ViewerRenderRetCode retcode = getRoDAndLookupCache(false, viewerHash, rotoPaintNode, stats, &inArgs);
+        if (retcode != eViewerRenderRetCodeRender) {
+            return retcode;
+        }
+        
+        
+        if (inArgs.params->cachedFrame) {
+            // Found a cached texture
+            return eViewerRenderRetCodeRender;
+        }
+    }
+    
+    // Flag that we are going to render
+    inArgs.isRenderingFlag.reset(new RenderingFlagSetter(getNode().get()));
+    
     //Do not call this if the texture is already cached.
     assert(!inArgs.params->ramBuffer);
     
@@ -1236,37 +1300,20 @@ ViewerInstance::renderViewer_internal(int view,
     FrameEntryLocker entryLocker(_imp.get());
     
 
-    ///Make sure the parallel render args are set on the thread and die when rendering is finished
-    boost::shared_ptr<ViewerParallelRenderArgsSetter> frameArgs;
-    bool tilingProgressReportPrefEnabled = false;
     if (useTLS) {
-        tilingProgressReportPrefEnabled = appPTR->getCurrentSettings()->isInViewerProgressReportEnabled();
         
         RectD canonicalRoi;
-        roi.toCanonical(inArgs.params->mipMapLevel, inArgs.activeInputToRender->getPreferredAspectRatio(), inArgs.params->rod, &canonicalRoi);
-        
-        FrameRequestMap request;
-        StatusEnum stat = EffectInstance::computeRequestPass(inArgs.params->time, view, inArgs.params->mipMapLevel, canonicalRoi, getNode(), request);
+        roi.toCanonical(inArgs.params->mipMapLevel, inArgs.params->textureRect.par, inArgs.params->rod, &canonicalRoi);
+                
+        FrameRequestMap requestPassData;
+        StatusEnum stat = EffectInstance::computeRequestPass(inArgs.params->time, view, inArgs.params->mipMapLevel, canonicalRoi, getNode(),requestPassData);
         if (stat == eStatusFailed) {
             return eViewerRenderRetCodeFail;
         }
         
-        frameArgs.reset(new ViewerParallelRenderArgsSetter(inArgs.params->time,
-                                                           view,
-                                                           !isSequentialRender,
-                                                           isSequentialRender,
-                                                           canAbort,
-                                                           inArgs.params->renderAge,
-                                                           getNode(),
-                                                           &request,
-                                                           inArgs.params->textureIndex,
-                                                           getTimeline().get(),
-                                                           false,
-                                                           rotoPaintNode,
-                                                           inArgs.activeInputToRender->getNode(),
-                                                           inArgs.draftModeEnabled,
-                                                           tilingProgressReportPrefEnabled,
-                                                           stats));
+        
+        frameArgs->updateNodesRequest(requestPassData);
+        
     }
 
     
@@ -1277,7 +1324,7 @@ ViewerInstance::renderViewer_internal(int view,
     RectI lastPaintBboxPixel;
     
     std::list<RectD> partialRectsToRender;
-    const double par = inArgs.activeInputToRender->getPreferredAspectRatio();
+    const double par = inArgs.activeInputToRender->getAspectRatio(-1);
     bool currentlyTracking = isDoingPartialUpdates();
     
     bool useTmpBuffer = inArgs.forceRender || inArgs.userRoIEnabled || inArgs.autoContrast || rotoPaintNode.get() != 0 || currentlyTracking;
@@ -1308,7 +1355,7 @@ ViewerInstance::renderViewer_internal(int view,
             
                 //Overwrite the RoI to only the last portion rendered
                 RectD lastPaintBbox = getApp()->getLastPaintStrokeBbox();
-                const double par = inArgs.activeInputToRender->getPreferredAspectRatio();
+                
                 lastPaintBbox.toPixelEnclosing(inArgs.params->mipMapLevel, par, &lastPaintBboxPixel);
 
                 //The last buffer must be valid
@@ -1397,10 +1444,8 @@ ViewerInstance::renderViewer_internal(int view,
         clearPersistentMessage(true);
     }
     
-    std::list<ImageComponents> components;
-    ImageBitDepthEnum imageDepth;
-    inArgs.activeInputToRender->getPreferredDepthAndComponents(-1, &components, &imageDepth);
-    assert(!components.empty());
+    ImageComponents components = inArgs.activeInputToRender->getComponents(-1);
+    ImageBitDepthEnum imageDepth = inArgs.activeInputToRender->getBitDepth(-1);
     
 
     std::list<ImageComponents> requestedComponents;
@@ -1496,7 +1541,7 @@ ViewerInstance::renderViewer_internal(int view,
     /*
      Use a timer to enable progress report if the amount spent rendering exceeds some time
      */
-    double totalRenderTime = 0.;
+    double totalRenderTime = 0.; // estimated total time in seconds
     TimeLapse timer;
     // List of the tiles that the progress did not report until now
     std::list<RectI> unreportedTiles;
@@ -1515,42 +1560,46 @@ ViewerInstance::renderViewer_internal(int view,
         // We catch it  and rethrow it just to notify the rendering is done.
         try {
             
-            ImageList planes;
-            EffectInstance::RenderRoIRetCode retCode =
-            inArgs.activeInputToRender->renderRoI(EffectInstance::RenderRoIArgs(inArgs.params->time,
-                                                                                inArgs.key->getScale(),
-                                                                                inArgs.params->mipMapLevel,
-                                                                                view,
-                                                                                inArgs.forceRender,
-                                                                                splitRoi[rectIndex],
-                                                                                inArgs.params->rod,
-                                                                                requestedComponents,
-                                                                                imageDepth, false, this),&planes);
+            std::map<ImageComponents,ImagePtr> planes;
+            EffectInstance::RenderRoIRetCode retCode;
+            {
+                boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs;
+                renderArgs.reset(new EffectInstance::RenderRoIArgs(inArgs.params->time,
+                                                                   inArgs.key->getScale(),
+                                                                   inArgs.params->mipMapLevel,
+                                                                   view,
+                                                                   inArgs.forceRender,
+                                                                   splitRoi[rectIndex],
+                                                                   inArgs.params->rod,
+                                                                   requestedComponents,
+                                                                   imageDepth, false, this));
+                retCode = inArgs.activeInputToRender->renderRoI(*renderArgs, &planes);
+            }
             //Either rendering failed or we have 2 planes (alpha mask and color image) or we have a single plane (color image)
             assert(planes.size() == 0 || planes.size() <= 2);
             if (!planes.empty() && retCode == EffectInstance::eRenderRoIRetCodeOk) {
                 if (planes.size() == 2) {
-                    ImageList::iterator firstPlane = planes.begin();
-                    if ((*firstPlane)->getComponents() == inArgs.params->layer) {
-                        colorImage = *firstPlane;
-                        ++firstPlane;
-                        alphaImage = *firstPlane;
-                    } else {
-                        assert((*firstPlane)->getComponents() == inArgs.params->alphaLayer);
-                        alphaImage = *firstPlane;
-                        ++firstPlane;
-                        colorImage = *firstPlane;
+                    
+                    std::map<ImageComponents,ImagePtr>::iterator foundColorLayer = planes.find(inArgs.params->layer);
+                    if (foundColorLayer != planes.end()) {
+                        colorImage = foundColorLayer->second;
                     }
+                    std::map<ImageComponents,ImagePtr>::iterator foundAlphaLayer = planes.find(inArgs.params->alphaLayer);
+                    if (foundAlphaLayer != planes.end()) {
+                        alphaImage = foundAlphaLayer->second;
+                    }
+                    
+                    
                 } else {
                     //only 1 plane, figure out if the alpha layer is the same as the color layer
                     if (inArgs.params->alphaLayer == inArgs.params->layer) {
                         if (inArgs.channels == eDisplayChannelsMatte) {
-                            alphaImage = colorImage = planes.front();
+                            alphaImage = colorImage = planes.begin()->second;
                         } else {
-                            colorImage = planes.front();
+                            colorImage = planes.begin()->second;
                         }
                     } else {
-                        colorImage = planes.front();
+                        colorImage = planes.begin()->second;
                     }
                 }
                 assert(colorImage);
@@ -1590,7 +1639,7 @@ ViewerInstance::renderViewer_internal(int view,
         
         ///We check that the render age is still OK and that no other renders were triggered, in which case we should not need to
         ///refresh the viewer.
-        if (!_imp->checkAgeNoUpdate(inArgs.params->textureIndex,inArgs.params->renderAge)) {
+        if (!_imp->checkAgeNoUpdate(inArgs.params->textureIndex,inArgs.params->abortInfo->age)) {
             return eViewerRenderRetCodeRedraw;
         }
         
@@ -1827,6 +1876,15 @@ ViewerInstance::isCurrentlyUpdatingOpenGLViewer() const
 void
 ViewerInstance::updateViewer(boost::shared_ptr<UpdateViewerParams> & frame)
 {
+    if (!frame) {
+        return;
+    }
+    if (frame->isViewerPaused) {
+        return;
+    }
+    if (isViewerPaused(frame->textureIndex)) {
+        return;
+    }
     _imp->updateViewer(boost::dynamic_pointer_cast<UpdateViewerParams>(frame));
 }
 
@@ -2704,7 +2762,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
     assert(params->ramBuffer);
     
     bool doUpdate = true;
-    if (!params->updateOnlyRoi && !params->isSequential && !checkAndUpdateDisplayAge(params->textureIndex,params->renderAge)) {
+    if (!params->updateOnlyRoi && !params->isSequential && !checkAndUpdateDisplayAge(params->textureIndex,params->abortInfo->age)) {
         doUpdate = false;
     }
     if (doUpdate) {
@@ -3013,7 +3071,9 @@ ViewerInstance::redrawViewer()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert(_imp->uiContext);
+    if (!_imp->uiContext) {
+        return;
+    }
     _imp->uiContext->redraw();
 }
 
@@ -3077,10 +3137,10 @@ ViewerInstance::addAcceptedComponents(int /*inputNb*/,
     comps->push_back(ImageComponents::getAlphaComponents());
 }
 
-int
+ViewIdx
 ViewerInstance::getViewerCurrentView() const
 {
-    return _imp->uiContext ? _imp->uiContext->getCurrentView() : 0;
+    return _imp->uiContext ? _imp->uiContext->getCurrentView() : ViewIdx(0);
 }
 
 void
@@ -3095,6 +3155,23 @@ ViewerInstance::isInputChangeRequestedFromViewer() const
 {
     assert(QThread::currentThread() == qApp->thread());
     return _imp->activateInputChangedFromViewer;
+}
+
+void
+ViewerInstance::setViewerPaused(bool paused,bool allInputs)
+{
+    QMutexLocker k(&_imp->isViewerPausedMutex);
+    _imp->isViewerPaused[0] = paused;
+    if (allInputs) {
+        _imp->isViewerPaused[1] = paused;
+    }
+}
+
+bool
+ViewerInstance::isViewerPaused(int texIndex) const
+{
+    QMutexLocker k(&_imp->isViewerPausedMutex);
+    return _imp->isViewerPaused[texIndex];
 }
 
 void
@@ -3135,14 +3212,11 @@ ViewerInstance::onInputChanged(int /*inputNb*/)
     Q_EMIT clipPreferencesChanged();
 }
 
-bool
-ViewerInstance::refreshClipPreferences(double /*time*/,
-                                       const RenderScale & /*scale*/,
-                                       ValueChangedReasonEnum /*reason*/,
-                                       bool /*forceGetClipPrefAction*/)
+
+void
+ViewerInstance::onMetaDatasRefreshed(const NodeMetadata& /*metadata*/)
 {
     Q_EMIT clipPreferencesChanged();
-    return false;
 }
 
 void
@@ -3229,16 +3303,16 @@ ViewerInstance::getCurrentTime() const
     return getFrameRenderArgsCurrentTime();
 }
 
-int
+ViewIdx
 ViewerInstance::getCurrentView() const
 {
     return getFrameRenderArgsCurrentView();
 }
 
 bool
-ViewerInstance::isRenderAbortable(int textureIndex, U64 renderAge) const
+ViewerInstance::isLatestRender(int textureIndex, U64 renderAge) const
 {
-    return _imp->isRenderAbortable(textureIndex, renderAge);
+    return _imp->isLatestRender(textureIndex, renderAge);
 }
 
 void
@@ -3291,7 +3365,7 @@ ViewerInstance::isDoingPartialUpdates() const
 }
 
 void
-ViewerInstance::reportStats(int time, int view, double wallTime, const RenderStatsMap& stats)
+ViewerInstance::reportStats(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats)
 {
     Q_EMIT renderStatsAvailable(time, view, wallTime, stats);
 }

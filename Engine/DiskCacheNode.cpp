@@ -32,6 +32,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/TimeLine.h"
+#include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -55,6 +56,11 @@ DiskCacheNode::DiskCacheNode(NodePtr node)
     setSupportsRenderScaleMaybe(eSupportsYes);
 }
 
+DiskCacheNode::~DiskCacheNode()
+{
+    
+}
+
 
 void
 DiskCacheNode::addAcceptedComponents(int /*inputNb*/,std::list<ImageComponents>* comps)
@@ -70,7 +76,7 @@ DiskCacheNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 }
 
 bool
-DiskCacheNode::shouldCacheOutput(bool /*isFrameVaryingOrAnimated*/,double /*time*/, int /*view*/) const
+DiskCacheNode::shouldCacheOutput(bool /*isFrameVaryingOrAnimated*/,double /*time*/, ViewIdx /*view*/) const
 {
     return true;
 }
@@ -125,11 +131,14 @@ DiskCacheNode::initializeKnobs()
 }
 
 void
-DiskCacheNode::knobChanged(KnobI* k, ValueChangedReasonEnum /*reason*/, int /*view*/, double /*time*/,
+DiskCacheNode::knobChanged(KnobI* k,
+                           ValueChangedReasonEnum /*reason*/,
+                           ViewSpec /*view*/,
+                           double /*time*/,
                            bool /*originatedFromMainThread*/)
 {
     if (_imp->frameRange.lock().get() == k) {
-        int idx = _imp->frameRange.lock()->getValue();
+        int idx = _imp->frameRange.lock()->getValue(0);
         switch (idx) {
             case 0:
             case 1:
@@ -149,9 +158,10 @@ DiskCacheNode::knobChanged(KnobI* k, ValueChangedReasonEnum /*reason*/, int /*vi
         w.firstFrame = INT_MIN;
         w.lastFrame = INT_MAX;
         w.frameStep = 1;
+        w.useRenderStats = false;
         std::list<AppInstance::RenderWork> works;
         works.push_back(w);
-        getApp()->startWritersRendering(getApp()->isRenderStatsActionChecked(), false, works);
+        getApp()->startWritersRendering(false, works);
     }
 }
 
@@ -178,42 +188,6 @@ DiskCacheNode::getFrameRange(double *first,double *last)
     }
 }
 
-void
-DiskCacheNode::getPreferredDepthAndComponents(int /*inputNb*/,std::list<ImageComponents>* comp,ImageBitDepthEnum* depth) const
-{
-    EffectInstPtr input = getInput(0);
-    if (input) {
-        return input->getPreferredDepthAndComponents(-1, comp, depth);
-    } else {
-        comp->push_back(ImageComponents::getRGBAComponents());
-        *depth = eImageBitDepthFloat;
-    }
-}
-
-
-ImagePremultiplicationEnum
-DiskCacheNode::getOutputPremultiplication() const
-{
-    EffectInstPtr input = getInput(0);
-    if (input) {
-        return input->getOutputPremultiplication();
-    } else {
-        return eImagePremultiplicationPremultiplied;
-    }
-
-}
-
-double
-DiskCacheNode::getPreferredAspectRatio() const
-{
-    EffectInstPtr input = getInput(0);
-    if (input) {
-        return input->getPreferredAspectRatio();
-    } else {
-        return 1.;
-    }
-
-}
 
 StatusEnum
 DiskCacheNode::render(const RenderActionArgs& args)
@@ -226,17 +200,14 @@ DiskCacheNode::render(const RenderActionArgs& args)
         return eStatusFailed;
     }
     
-    ImageBitDepthEnum bitdepth;
-    std::list<ImageComponents> components;
-    input->getPreferredDepthAndComponents(-1, &components, &bitdepth);
-    double par = input->getPreferredAspectRatio();
+
     
     const std::pair<ImageComponents,ImagePtr>& output = args.outputPlanes.front();
     
-    for (std::list<ImageComponents> ::const_iterator it =components.begin(); it != components.end(); ++it) {
+    for (std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > >::const_iterator it =args.outputPlanes.begin(); it != args.outputPlanes.end(); ++it) {
         RectI roiPixel;
         
-        ImagePtr srcImg = getImage(0, args.time, args.originalScale, args.view, NULL, *it, bitdepth, par, false, true, &roiPixel);
+        ImagePtr srcImg = getImage(0, args.time, args.originalScale, args.view, NULL, &it->first, false, true,&roiPixel);
         if (!srcImg) {
             return eStatusFailed;
         }
@@ -256,5 +227,12 @@ DiskCacheNode::render(const RenderActionArgs& args)
     
     return eStatusOK;
 }
+
+bool
+DiskCacheNode::isHostChannelSelectorSupported(bool* /*defaultR*/,bool* /*defaultG*/, bool* /*defaultB*/, bool* /*defaultA*/) const
+{
+    return false;
+}
+
 
 NATRON_NAMESPACE_EXIT;

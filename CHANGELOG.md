@@ -1,5 +1,30 @@
 # History
 
+## Version 2.0 - stable 
+
+- Python: PyPlugs can now be used to create toolsets, such as Split And Join in the views menu
+- New Glow PyPlug 
+- New bloom node
+- The HSVTool node now has an analysis button to set the src color
+- The file dialog performances have been greatly improved 
+- It is now possible to list all available drives in the file dialog on Windows
+- New progress panel to manage renders to cancel, queue, pause or restart them
+- EXR format reading/writing speed has been greatly improved
+- ReadFFMPEG/WriteFFMPEG performances have been improved
+- WriteFFMPEG has now a better interface to display possible format/codec combination
+- The viewer now has the ability to pause updates so that no render is triggered upon any change that would modify the displayed image
+- User interface for parameters has been improved and requires less mouse clicks
+- Undo/Redo shortcuts (CTRL-Z or CMD-Z on Mac) now follow the mouse over focus indicated on the interface tabs
+- The curve editor has received major speed enhancements when manipulating thousands of keyframes
+- The dope sheet zoom is now always appropriate, even for still images
+- Fixed issues on Linux/Windows where Natron interface would not display correctly on screens with high DPI
+- Fixed issues on Windows where file paths with non ASCII characters would not be read/written correctly
+- Fixed issues on Windows where reading from/writing to a network share would not work correctly
+- Value parameters can now have Python expressions written directly in their spinbox and can be used as calculators
+
+- A new demo project from Francois Grassard is available at [downloads.natron.fr](http://downloads.natron.fr/Examples/Natron2_BayMaxProject.zip).
+It contains a fully-featured project demonstrating the use of a complex node-graph including usage of PyPlugs.
+
 ## Version 2.0 - RC4
 
 - Write nodes now have a Frame Increment parameter which allows to skip frames while rendering.

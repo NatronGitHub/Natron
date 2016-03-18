@@ -21,7 +21,8 @@
 # Build packages and installer for Linux
 # OFFLINE=1: Make offline installer
 # TAR_BUILD=1: Tar the build
-# RPM_BUILD:1: Make RPM
+# RPM_BUILD=1: Make RPM
+# DEB_BUILD=1: Make DEB
 # DISABLE_BREAKPAD=1: Disable automatic crash report
 # NO_INSTALLER=1: Do not build installer
 # BUILD_CONFIG=(SNAPSHOT,ALPHA,BETA,RC,STABLE,CUSTOM)
@@ -29,7 +30,7 @@
 # BUILD_NUMBER=X: To be set to indicate the revision number of the build. For example RC1,RC2, RC3 etc...
 # NATRON_LICENSE=(GPL,COMMERCIAL)
 # Usage: 
-# OFFLINE=1 BUILD_CONFIG=SNAPSHOT sh build-installer.sh workshop 
+# OFFLINE=1 BUILD_CONFIG=SNAPSHOT sh build-installer.sh master 
 source $(pwd)/common.sh || exit 1
 source $(pwd)/commits-hash.sh || exit 1
 
@@ -65,7 +66,7 @@ elif [ "$BUILD_CONFIG" = "RC" ]; then
 	fi
 	NATRON_VERSION=$NATRON_VERSION_NUMBER-RC$BUILD_NUMBER
 elif [ "$BUILD_CONFIG" = "STABLE" ]; then
-	NATRON_VERSION=$NATRON_VERSION_NUMBER-stable
+	NATRON_VERSION=$NATRON_VERSION_NUMBER
 elif [ "$BUILD_CONFIG" = "CUSTOM" ]; then
 	if [ -z "$CUSTOM_BUILD_USER_NAME" ]; then
 		echo "You must supply a CUSTOM_BUILD_USER_NAME when BUILD_CONFIG=CUSTOM"
@@ -134,6 +135,10 @@ mkdir -p $OFX_IO_PATH/data $OFX_IO_PATH/meta $OFX_IO_PATH/data/Plugins/OFX/Natro
 cat $XML/openfx-io.xml | sed "s/_VERSION_/${OFX_IO_VERSION}/;s/_DATE_/${DATE}/" > $OFX_IO_PATH/meta/package.xml || exit 1
 cat $QS/openfx-io.qs > $OFX_IO_PATH/meta/installscript.qs || exit 1
 cp $INSTALL_PATH/ffmpeg-$FFLIC/bin/{ffmpeg,ffprobe} $OFX_IO_PATH/data/ || exit 1
+( cd $OFX_IO_PATH/data/bin;
+  ln -sf ../ffmpeg .
+  ln -sf ../ffprobe .
+)  
 #cat $CWD/include/scripts/ffmpeg.sh > $OFX_IO_PATH/data/ffmpeg || exit 1
 #cat $CWD/include/scripts/ffmpeg.sh | sed 's/ffmpeg/ffprobe/g' > $OFX_IO_PATH/data/ffprobe || exit 1
 #chmod +x $OFX_IO_PATH/data/{ffmpeg,ffprobe} || exit 1
@@ -167,7 +172,7 @@ rm -f $IO_LIBS/{liblcms*,libgcc*,libstdc*,libbz2*,libfont*,libfree*,libpng*,libj
   ln -sf ../../../../../lib/libfontconfig.so.1 .
   ln -sf ../../../../../lib/libfreetype.so.6 .
   ln -sf ../../../../../lib/libpng16.so.16 .
-  ln -sf ../../../../../lib/libjpeg.so.9 .
+  ln -sf ../../../../../lib/libjpeg.so.8 .
   ln -sf ../../../../../lib/libtiff.so.5 .
   ln -sf ../../../../../lib/libz.so.1 .
   ln -sf ../../../../../lib/libgcc_s.so.1 .
@@ -223,6 +228,7 @@ cp -a $INSTALL_PATH/docs/natron/* $NATRON_PATH/data/docs/ || exit 1
 cp $INSTALL_PATH/share/stylesheets/mainstyle.qss $NATRON_PATH/data/share/ || exit 1
 cat $INSTALL_PATH/docs/natron/LICENSE.txt > $NATRON_PATH/meta/natron-license.txt || exit 1
 cp $INC_PATH/natron/natron-mime.sh $NATRON_PATH/data/bin/ || exit 1
+cp $INSTALL_PATH/PyPlugs/* $NATRON_PATH/data/Plugins/PyPlugs/ || exit 1
 
 if [ "$DISABLE_BREAKPAD" != "1" ]; then
     cp $INSTALL_PATH/bin/Natron $NATRON_PATH/data/bin/Natron-bin || exit 1
@@ -511,25 +517,113 @@ if [ "$NO_INSTALLER" != "1" ]; then
     tar cvvzf $ONLINE_INSTALL.tgz $ONLINE_INSTALL || exit 1
 fi
 
+# collect debug versions for gdb
+if [ "$BUILD_CONFIG" = "STABLE" ]; then
+  DEBUG_DIR=$INSTALLER/Natron-$NATRON_VERSION-Linux$BIT-Debug
+  rm -rf $DEBUG_DIR
+  mkdir $DEBUG_DIR || exit 1
+  cp -a $INSTALL_PATH/bin/Natron* $DEBUG_DIR/ || exit 1
+  cp -a $INSTALL_PATH/Plugins/*.ofx.bundle/Contents/Linux*/*.ofx $DEBUG_DIR/ || exit 1
+  ( cd $INSTALLER; tar cvvJf Natron-$NATRON_VERSION-Linux$BIT-Debug.tar.xz Natron-$NATRON_VERSION-Linux$BIT-Debug )
+  # Should be copied to another dir, but for now just use the installer dir
+  mv ${DEBUG_DIR}.tar.xz $REPO_DIR/installers/ || exit 1
+fi
+
+# Build native packages for linux
+
+if [ "$RPM_BUILD" = "1" ] || [ "$DEB_BUILD" = "1" ]; then
+  echo "#!/bin/bash" > $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
+  echo "echo \"Checking GCC compatibility for Natron ...\"" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
+  echo "DIR=/opt/Natron2" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
+  cat $INSTALLER/packages/fr.inria.natron/data/Natron | sed '29,68!d' >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
+
+cat <<'EOF' >> "$INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh"
+if [ -f /usr/bin/update-mime-database ]; then
+  update-mime-database /usr/share/mime
+fi
+if [ -f /usr/bin/update-desktop-database ]; then
+  update-desktop-database /usr/share/applications
+elif [ -f /usr/bin/xdg-desktop-menu ]; then
+  xdg-desktop-menu forceupdate
+fi
+EOF
+
+  chmod +x $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
+  sed -i '29,68d' $INSTALLER/packages/fr.inria.natron/data/Natron || exit 1
+  sed -i '29,68d' $INSTALLER/packages/fr.inria.natron/data/NatronRenderer || exit 1
+fi
+
 if [ "$RPM_BUILD" = "1" ]; then
   if [ ! -f "/usr/bin/rpmbuild" ]; then
     yum install -y rpmdevtools
   fi
   rm -rf ~/rpmbuild/*
-  echo "#!/bin/bash" > $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
-  echo "echo \"Checking GCC compatibility for Natron ...\"" >>$INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
-  echo "DIR=/opt/Natron2" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
-  cat $INSTALLER/packages/fr.inria.natron/data/Natron | sed '26,65!d' >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
-  echo "update-mime-database /usr/share/mime" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
-  echo "update-desktop-database /usr/share/applications" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
-  chmod +x $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
-  sed -i '26,65d' $INSTALLER/packages/fr.inria.natron/data/Natron || exit 1
-  sed -i '26,65d' $INSTALLER/packages/fr.inria.natron/data/NatronRenderer || exit 1
   cat $INC_PATH/natron/Natron.spec | sed "s/REPLACE_VERSION/`echo $NATRON_VERSION|sed 's/-/./g'`/" > $TMP_PATH/Natron.spec || exit 1
-  rpmbuild -bb $TMP_PATH/Natron.spec || exit 1
+  #Only need to build once, so uncomment as default #echo "" | setsid rpmbuild -bb --define="%_gpg_name build@natron.fr" --sign $INC_PATH/natron/Natron-repo.spec || exit 1
+  echo "" | setsid rpmbuild -bb --define="%_gpg_name build@natron.fr" --sign $TMP_PATH/Natron.spec || exit 1
   mv ~/rpmbuild/RPMS/*/Natron*.rpm $REPO_DIR/installers/ || exit 1
 fi
 
+if [ "$DEB_BUILD" = "1" ]; then
+  if [ ! -f "/usr/bin/dpkg-deb" ]; then
+    yum install -y dpkg-dev || exit 1
+  fi
+
+  rm -rf $INSTALLER/natron
+  mkdir -p $INSTALLER/natron || exit 1
+  cd $INSTALLER/natron || exit 1
+  mkdir -p opt/Natron2 DEBIAN usr/share/doc/natron usr/share/{applications,pixmaps} usr/share/mime/packages usr/bin || exit 1
+
+  cp -a $INSTALLER/packages/fr.inria.*/data/* opt/Natron2/ || exit 1
+  cp $INC_PATH/debian/post* DEBIAN/ || exit 1
+  chmod +x DEBIAN/post*
+
+  if [ "$BIT" = "64" ]; then
+    DEB_ARCH=amd64
+  else
+    DEB_ARCH=i386
+  fi  
+  DEB_VERSION=$(echo $NATRON_VERSION|sed 's/-/./g')
+  DEB_DATE=$(date +"%a, %d %b %Y %T %z")
+  DEB_SIZE=$(du -ks opt|cut -f 1)
+  DEB_PKG=natron_${DEB_VERSION}_${DEB_ARCH}.deb
+ 
+  cat $INC_PATH/debian/copyright > usr/share/doc/natron/copyright || exit 1
+  cat $INC_PATH/debian/control | sed "s/__VERSION__/${DEB_VERSION}/;s/__ARCH__/${DEB_ARCH}/;s/__SIZE__/${DEB_SIZE}/" > DEBIAN/control || exit 1
+  cat $INC_PATH/debian/changelog.Debian |sed "s/__VERSION__/${DEB_VERSION}/;s/__DATE__/${DEB_DATE}/" > changelog.Debian || exit 1
+  gzip changelog.Debian || exit 1
+  mv changelog.Debian.gz usr/share/doc/natron/ || exit 1
+  
+  cat $INC_PATH/natron/Natron2.desktop > usr/share/applications/Natron2.desktop || exit 1
+  cat $INC_PATH/natron/x-natron.xml > usr/share/mime/packages/x-natron.xml || exit 1
+  cp $INSTALL_PATH/share/pixmaps/*.png usr/share/pixmaps/ || exit 1
+ 
+  (cd usr/bin; ln -sf ../../opt/Natron2/Natron .)
+  (cd usr/bin; ln -sf ../../opt/Natron2/NatronRenderer .)
+
+  chown root:root -R $INSTALLER/natron
+
+  cd $INSTALLER || exit 1
+  dpkg-deb -Zxz -z9 --build natron || exit 1
+  mv natron.deb $DEB_PKG || exit 1
+  mv $DEB_PKG $REPO_DIR/installers/ || exit 1
+fi
+
 rm $REPO_DIR/installers/$ONLINE_INSTALL $REPO_DIR/installers/$BUNDLED_INSTALL
+
+# Unit tests
+if [ "$BIT" = "64" ] && [ "$UNIT_TEST" != "0" ]; then
+  UNIT_LOG="$REPO_DIR/logs/unit_tests.Linux$BIT.$TAG.log"
+  if [ ! -d "$CWD/Natron-Tests" ]; then
+    cd $CWD || exit 1
+    git clone $GIT_UNIT || exit 1
+    cd Natron-Tests || exit 1
+  else
+    cd $CWD/Natron-Tests || exit 1
+    git pull
+  fi
+  echo "Running unit tests ..."
+  sh runOnServer.sh >& "$UNIT_LOG"
+fi
 
 echo "All Done!!!"

@@ -48,10 +48,11 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Global/Macros.h"
 
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/KnobGui.h"
+#include "Gui/KnobWidgetDnD.h"
 #include "Gui/SpinBoxValidator.h"
-#include "Gui/GuiApplicationManager.h"
 
 #define SPINBOX_MAX_WIDTH 50
 #define SPINBOX_MIN_WIDTH 35
@@ -108,14 +109,16 @@ SpinBox::SpinBox(QWidget* parent,
 : LineEdit(parent)
 , animation(0)
 , dirty(false)
+, ignoreWheelEvent(false)
 , _imp( new SpinBoxPrivate(type) )
 {
-    QObject::connect( this, SIGNAL( returnPressed() ), this, SLOT( interpretReturn() ) );
+    QObject::connect( this, SIGNAL(returnPressed()), this, SLOT(interpretReturn()) );
     setValue(0);
     setMaximumWidth(TO_DPIX(SPINBOX_MAX_WIDTH));
     setMinimumWidth(TO_DPIX(SPINBOX_MIN_WIDTH));
     setFocusPolicy(Qt::WheelFocus); // mouse wheel gives focus too - see also SpinBox::focusInEvent()
     decimals(_imp->decimals);
+    setContentsMargins(0,0,0,1);
 
     setType(type);
 }
@@ -178,7 +181,7 @@ SpinBox::setValue_internal(double d,
             str.setNum(d, 'f', _imp->decimals);
             double toDouble = str.toDouble();
             if (d != toDouble) {
-                str.setNum(d, 'g', 15);
+                str.setNum(d, 'g', 8);
             }
         }   break;
         case eSpinBoxTypeInt:
@@ -188,10 +191,10 @@ SpinBox::setValue_internal(double d,
     assert( !str.isEmpty() );
     
     ///Remove trailing 0s by hand...
-    int decimalPtPos = str.indexOf('.');
+    int decimalPtPos = str.indexOf(QLatin1Char('.'));
     if (decimalPtPos != -1) {
         int i = str.size() - 1;
-        while (i > decimalPtPos && str.at(i) == '0') {
+        while (i > decimalPtPos && str.at(i) == QLatin1Char('0')) {
             --i;
         }
         ///let 1 trailing 0
@@ -330,7 +333,7 @@ SpinBox::increment(int delta,
     
     // From here on, we treat the positin-based increment.
     
-    if ( (str.indexOf('e') != -1) || (str.indexOf('E') != -1) ) {
+    if ( (str.indexOf(QLatin1Char('e')) != -1) || (str.indexOf(QLatin1Char('E')) != -1) ) {
         // Sorry, we don't handle numbers with an exponent, although these are valid doubles
         return;
     }
@@ -358,7 +361,7 @@ SpinBox::increment(int delta,
     //    pos = len - 1;
     //}
     // The position of the decimal dot
-    int dot = str.indexOf('.');
+    int dot = str.indexOf(QLatin1Char('.'));
     if (dot == -1) {
         dot = str.size();
     }
@@ -400,7 +403,7 @@ SpinBox::increment(int delta,
     // Adjust pos so that it doesn't point to a dot or a sign
     assert( 0 <= pos && pos <= str.size() );
     while ( pos < str.size() &&
-           (pos == dot || str[pos] == '+' || str[pos] == '-') ) {
+           (pos == dot || str[pos] == QLatin1Char('+') || str[pos] == QLatin1Char('-')) ) {
         ++pos;
     }
     assert(len >= pos);
@@ -428,21 +431,21 @@ SpinBox::increment(int delta,
         assert(_imp->type == eSpinBoxTypeDouble);
         // Add trailing zero, maybe preceded by a dot
         if (pos == dot) {
-            str.append('.');
+            str.append(QLatin1Char('.'));
             ++pos; // increment pos, because we just added a '.', and next iteration will add a '0'
             ++len;
         } else {
             assert(pos > dot);
-            str.append('0');
+            str.append(QLatin1Char('0'));
             ++len;
         }
         assert( pos >= (str.size() - 1) );
     }
     // Leading zeroes:
-    bool hasSign = (str[0] == '-' || str[0] == '+');
-    while ( pos < 0 || ( pos == 0 && (str[0] == '-' || str[0] == '+') ) ) {
+    bool hasSign = (str[0] == QLatin1Char('-') || str[0] == QLatin1Char('+'));
+    while ( pos < 0 || ( pos == 0 && (str[0] == QLatin1Char('-') || str[0] == QLatin1Char('+')) ) ) {
         // Add leading zero
-        str.insert(hasSign ? 1 : 0, '0');
+        str.insert(hasSign ? 1 : 0, QLatin1Char('0'));
         ++pos;
         ++dot;
         ++len;
@@ -481,11 +484,11 @@ SpinBox::increment(int delta,
         switch (_imp->type) {
             case eSpinBoxTypeDouble:
                 if ( dot == str.size() ) {
-                    str += ".0";
+                    str += QString::fromUtf8(".0");
                     len += 2;
                     ++pos;
                 } else {
-                    str += "0";
+                    str += QLatin1Char('0');
                     ++len;
                 }
                 break;
@@ -544,19 +547,19 @@ SpinBox::increment(int delta,
 
     QString newStr;
     newStr.setNum(llval);
-    bool newStrHasSign = newStr[0] == '+' || newStr[0] == '-';
+    bool newStrHasSign = newStr[0] == QLatin1Char('+') || newStr[0] == QLatin1Char('-');
     // the position of the decimal dot
     int newDot = newStr.size() + llpowerOfTen;
     // add leading zeroes if newDot is not a valid position (beware of sign!)
     while ( newDot <= int(newStrHasSign) ) {
-        newStr.insert(int(newStrHasSign), '0');
+        newStr.insert(int(newStrHasSign), QLatin1Char('0'));
         ++newDot;
     }
     assert( 0 <= newDot && newDot <= newStr.size() );
     assert( newDot == newStr.size() || newStr[newDot].isDigit() );
     if ( newDot != newStr.size() ) {
         assert(_imp->type == eSpinBoxTypeDouble);
-        newStr.insert(newDot, '.');
+        newStr.insert(newDot, QLatin1Char('.'));
     }
     // Check that the backed string is close to the wanted value (relative error should be less than 1e-8)
     assert( (newStr.toDouble() - val) / std::max(1e-8,std::abs(val)) < 1e-8 );
@@ -578,18 +581,18 @@ SpinBox::increment(int delta,
         assert(_imp->type == eSpinBoxTypeDouble);
         // Add trailing zero, maybe preceded by a dot
         if (newPos == newDot) {
-            newStr.append('.');
+            newStr.append(QLatin1Char('.'));
         } else {
             assert(newPos > newDot);
-            newStr.append('0');
+            newStr.append(QLatin1Char('0'));
         }
         assert( newPos >= (newStr.size() - 1) );
     }
     // Leading zeroes:
-    bool newHasSign = (newStr[0] == '-' || newStr[0] == '+');
-    while ( newPos < 0 || ( newPos == 0 && (newStr[0] == '-' || newStr[0] == '+') ) ) {
+    bool newHasSign = (newStr[0] == QLatin1Char('-') || newStr[0] == QLatin1Char('+'));
+    while ( newPos < 0 || ( newPos == 0 && (newStr[0] == QLatin1Char('-') || newStr[0] == QLatin1Char('+')) ) ) {
         // add leading zero
-        newStr.insert(newHasSign ? 1 : 0, '0');
+        newStr.insert(newHasSign ? 1 : 0, QLatin1Char('0'));
         ++newPos;
         ++newDot;
     }
@@ -607,6 +610,9 @@ SpinBox::increment(int delta,
 void
 SpinBox::wheelEvent(QWheelEvent* e)
 {
+    if (ignoreWheelEvent) {
+        return LineEdit::wheelEvent(e);
+    }
     if ( (e->orientation() != Qt::Vertical) ||
         ( e->delta() == 0) ||
         !isEnabled() ||
@@ -638,25 +644,14 @@ SpinBox::focusInEvent(QFocusEvent* e)
             
             return;
         }
+    } else if (e->reason() == Qt::OtherFocusReason || e->reason() == Qt::TabFocusReason) {
+        //If the user tabbed into it or hovered it, select all text
+        selectAll();
     }
     _imp->valueWhenEnteringFocus = text();
     LineEdit::focusInEvent(e);
 }
 
-void
-KnobSpinBox::focusInEvent(QFocusEvent* e)
-{
-    SpinBox::focusInEvent(e);
-    
-    //Set the expression so the user can edit it easily
-    std::string expr = knob->getKnob()->getExpression(dimension);
-    if (expr.empty()) {
-        return;
-    } else {
-        QLineEdit::setText(expr.c_str());
-        setCursorPosition(expr.size() - 1);
-    }
-}
 
 
 
@@ -706,7 +701,7 @@ SpinBox::keyPressEvent(QKeyEvent* e)
             }
             increment(delta, shift);
         } else {
-            _imp->valueWhenEnteringFocus = value();
+            _imp->valueWhenEnteringFocus = text();
             _imp->hasChangedSinceLastValidation = true;
             QLineEdit::keyPressEvent(e);
             if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) {
@@ -847,19 +842,23 @@ SpinBox::setIncrement(double d)
 void
 SpinBox::setAnimation(int i)
 {
-    animation = i;
-    style()->unpolish(this);
-    style()->polish(this);
-    update();
+    if (animation != i) {
+        animation = i;
+        style()->unpolish(this);
+        style()->polish(this);
+        update();
+    }
 }
 
 void
 SpinBox::setDirty(bool d)
 {
-    dirty = d;
-    style()->unpolish(this);
-    style()->polish(this);
-    update();
+    if (dirty != d) {
+        dirty = d;
+        style()->unpolish(this);
+        style()->polish(this);
+        update();
+    }
 }
 
 QMenu*
@@ -889,6 +888,140 @@ SpinBox::setUseLineColor(bool use, const QColor& color)
     _imp->useLineColor = use;
     _imp->lineColor = color;
     update();
+}
+
+
+
+KnobSpinBox::KnobSpinBox(QWidget* parent,
+            SpinBoxTypeEnum type,
+            const KnobGuiPtr& knob,
+            int dimension)
+: SpinBox(parent,type)
+, knob(knob)
+, dimension(dimension)
+, _dnd(new KnobWidgetDnD(knob, dimension, this))
+{
+}
+
+KnobSpinBox::~KnobSpinBox()
+{
+}
+
+void
+KnobSpinBox::enterEvent(QEvent* e)
+{
+    _dnd->mouseEnter(e);
+    SpinBox::enterEvent(e);
+}
+
+void
+KnobSpinBox::leaveEvent(QEvent* e)
+{
+    _dnd->mouseLeave(e);
+    SpinBox::leaveEvent(e);
+}
+
+void
+KnobSpinBox::wheelEvent(QWheelEvent* e)
+{
+    bool mustIgnore = false;
+    if (!_dnd->mouseWheel(e)) {
+        mustIgnore = true;
+        ignoreWheelEvent = true;
+    }
+    SpinBox::wheelEvent(e);
+    if (mustIgnore) {
+        ignoreWheelEvent = false;
+    }
+}
+
+void
+KnobSpinBox::keyPressEvent(QKeyEvent* e)
+{
+    _dnd->keyPress(e);
+    SpinBox::keyPressEvent(e);
+}
+
+void
+KnobSpinBox::keyReleaseEvent(QKeyEvent* e)
+{
+    _dnd->keyRelease(e);
+    SpinBox::keyReleaseEvent(e);
+}
+
+void
+KnobSpinBox::mousePressEvent(QMouseEvent* e)
+{
+    if (!_dnd->mousePress(e)) {
+        SpinBox::mousePressEvent(e);
+    }
+}
+
+void
+KnobSpinBox::mouseMoveEvent(QMouseEvent* e)
+{
+    if (!_dnd->mouseMove(e)) {
+        SpinBox::mouseMoveEvent(e);
+    }
+}
+
+void
+KnobSpinBox::mouseReleaseEvent(QMouseEvent* e)
+{
+    _dnd->mouseRelease(e);
+    SpinBox::mouseReleaseEvent(e);
+
+}
+
+void
+KnobSpinBox::dragEnterEvent(QDragEnterEvent* e)
+{
+    if (!_dnd->dragEnter(e)) {
+        SpinBox::dragEnterEvent(e);
+    }
+}
+
+void
+KnobSpinBox::dragMoveEvent(QDragMoveEvent* e)
+{
+    if (!_dnd->dragMove(e)) {
+        SpinBox::dragMoveEvent(e);
+    }
+}
+void
+KnobSpinBox::dropEvent(QDropEvent* e)
+{
+    if (!_dnd->drop(e)) {
+        SpinBox::dropEvent(e);
+    }
+}
+
+void
+KnobSpinBox::focusInEvent(QFocusEvent* e)
+{
+    _dnd->focusIn();
+    SpinBox::focusInEvent(e);
+    
+    
+    //Set the expression so the user can edit it easily
+    KnobGuiPtr k = knob.lock();
+    if (!k) {
+        return;
+    }
+    std::string expr = k->getKnob()->getExpression(dimension);
+    if (expr.empty()) {
+        return;
+    } else {
+        QLineEdit::setText(QString::fromUtf8(expr.c_str()));
+        setCursorPosition(expr.size() - 1);
+    }
+}
+
+void
+KnobSpinBox::focusOutEvent(QFocusEvent* e)
+{
+    _dnd->focusOut();
+    SpinBox::focusOutEvent(e);
 }
 
 NATRON_NAMESPACE_EXIT;

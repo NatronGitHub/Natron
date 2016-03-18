@@ -85,7 +85,6 @@ win32-msvc* {
 
 SOURCES += \
     AppInstance.cpp \
-    AppInstanceWrapper.cpp \
     AppManager.cpp \
     AppManagerPrivate.cpp \
     Backdrop.cpp \
@@ -109,6 +108,7 @@ SOURCES += \
     FrameEntry.cpp \
     FrameKey.cpp \
     FrameParamsSerialization.cpp \
+    FStreamsSupport.cpp \
     GroupInput.cpp \
     GroupOutput.cpp \
     Hash64.cpp \
@@ -121,6 +121,7 @@ SOURCES += \
     ImageMaskMix.cpp \
     ImageParamsSerialization.cpp \
     Interpolation.cpp \
+    JoinViewsNode.cpp \
     Knob.cpp \
     KnobSerialization.cpp \
     KnobFactory.cpp \
@@ -132,8 +133,7 @@ SOURCES += \
     MemoryFile.cpp \
     Node.cpp \
     NodeGroup.cpp \
-    NodeGroupWrapper.cpp \
-    NodeWrapper.cpp \
+    NodeMetadata.cpp \
     NonKeyParams.cpp \
     NonKeyParamsSerialization.cpp \
     NodeSerialization.cpp \
@@ -146,9 +146,9 @@ SOURCES += \
     OfxMemory.cpp \
     OfxOverlayInteract.cpp \
     OfxParamInstance.cpp \
+    OneViewNode.cpp \
     OutputEffectInstance.cpp \
     OutputSchedulerThread.cpp \
-    ParameterWrapper.cpp \
     ParallelRenderArgs.cpp \
     Plugin.cpp \
     PluginMemory.cpp \
@@ -157,7 +157,13 @@ SOURCES += \
     Project.cpp \
     ProjectPrivate.cpp \
     ProjectSerialization.cpp \
+    PyAppInstance.cpp \
+    PyNodeGroup.cpp \
+    PyNode.cpp \
+    PyParameter.cpp \
+    PyRoto.cpp \
     PySideCompat.cpp \
+    ReadNode.cpp \
     RectD.cpp \
     RectI.cpp \
     RenderStats.cpp \
@@ -168,12 +174,12 @@ SOURCES += \
     RotoPaint.cpp \
     RotoSmear.cpp \
     RotoStrokeItem.cpp \
-    RotoWrapper.cpp \
     ScriptObject.cpp \
     Settings.cpp \
     StandardPaths.cpp \
     StringAnimationManager.cpp \
     TextureRect.cpp \
+    ThreadPool.cpp \
     TimeLine.cpp \
     Timer.cpp \
     TrackerContext.cpp \
@@ -182,6 +188,7 @@ SOURCES += \
     TLSHolder.cpp \
     Transform.cpp \
     ViewerInstance.cpp \
+    WriteNode.cpp \
     ../Global/ProcInfo.cpp \
     ../libs/SequenceParsing/SequenceParsing.cpp \
     NatronEngine/natronengine_module_wrapper.cpp \
@@ -228,7 +235,6 @@ SOURCES += \
 
 HEADERS += \
     AppInstance.h \
-    AppInstanceWrapper.h \
     AppManager.h \
     AppManagerPrivate.h \
     Backdrop.h \
@@ -238,6 +244,7 @@ HEADERS += \
     BezierCPPrivate.h \
     BezierCPSerialization.h \
     BlockingBackgroundRender.h \
+    BufferableObject.h \
     CLArgs.h \
     Cache.h \
     CacheEntry.h \
@@ -265,7 +272,8 @@ HEADERS += \
     FrameEntrySerialization.h \
     FrameParams.h \
     FrameParamsSerialization.h \
-    GlobalFunctionsWrapper.h \
+    FStreamsSupport.h \
+    fstream_mingw.h \
     GroupInput.h \
     GroupOutput.h \
     Hash64.h \
@@ -279,6 +287,7 @@ HEADERS += \
     ImageParams.h \
     ImageParamsSerialization.h \
     Interpolation.h \
+    JoinViewsNode.h \
     KeyHelper.h \
     Knob.h \
     KnobGuiI.h \
@@ -296,10 +305,9 @@ HEADERS += \
     Node.h \
     NodeGroup.h \
     NodeGroupSerialization.h \
-    NodeGroupWrapper.h \
     NodeGraphI.h \
-    NodeWrapper.h \
     NodeGuiI.h \
+    NodeMetadata.h \
     NonKeyParams.h \
     NonKeyParamsSerialization.h \
     NodeSerialization.h \
@@ -311,11 +319,11 @@ HEADERS += \
     OfxOverlayInteract.h \
     OfxMemory.h \
     OfxParamInstance.h \
+    OneViewNode.h \
     OpenGLViewerI.h \
     OutputEffectInstance.h \
     OutputSchedulerThread.h \
     OverlaySupport.h \
-    ParameterWrapper.h \
     ParallelRenderArgs.h \
     Plugin.h \
     PluginMemory.h \
@@ -324,7 +332,14 @@ HEADERS += \
     Project.h \
     ProjectPrivate.h \
     ProjectSerialization.h \
+    PyAppInstance.h \
+    PyGlobalFunctions.h \
+    PyNodeGroup.h \
+    PyNode.h \
+    PyParameter.h \
+    PyRoto.h \
     Pyside_Engine_Python.h \
+    ReadNode.h \
     RectD.h \
     RectDSerialization.h \
     RectI.h \
@@ -344,7 +359,6 @@ HEADERS += \
     RotoSmear.h \
     RotoStrokeItem.h \
     RotoStrokeItemSerialization.h \
-    RotoWrapper.h \
     ScriptObject.h \
     Settings.h \
     Singleton.h \
@@ -353,6 +367,7 @@ HEADERS += \
     TextureRect.h \
     TextureRectSerialization.h \
     ThreadStorage.h \
+    ThreadPool.h \
     TimeLine.h \
     TimeLineKeyFrames.h \
     Timer.h \
@@ -363,10 +378,13 @@ HEADERS += \
     TLSHolder.h \
     TLSHolderImpl.h \
     Transform.h \
+    UpdateViewerParams.h \
     Variant.h \
     VariantSerialization.h \
     ViewerInstance.h \
     ViewerInstancePrivate.h \
+    ViewIdx.h \
+    WriteNode.h \
     ../Global/Enums.h \
     ../Global/GitVersion.h \
     ../Global/GLIncludes.h \

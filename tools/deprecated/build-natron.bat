@@ -49,7 +49,7 @@ set GIT_NATRON=https://github.com/MrKepzie/Natron.git
 :: The branch to fetch from Natron
 set NATRON_BRANCH=%1%
 
-if "%NATRON_BRANCH%" == "workshop" (
+if "%NATRON_BRANCH%" == "master" (
 	set WITH_PYTHON=1
 ) else (
 	set WITH_PYTHON=0

@@ -61,7 +61,7 @@ class NumericKnobValidator : public SpinBoxValidator
     
 public:
     
-    NumericKnobValidator(const SpinBox* spinbox,KnobGui* knob);
+    NumericKnobValidator(const SpinBox* spinbox,const KnobGuiPtr& knob);
     
     virtual ~NumericKnobValidator();
     

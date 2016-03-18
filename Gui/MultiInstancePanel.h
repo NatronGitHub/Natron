@@ -39,6 +39,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Knob.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/TrackerContext.h"
 
@@ -124,7 +125,7 @@ public Q_SLOTS:
 
     void onDeleteKeyPressed();
 
-    void onInstanceKnobValueChanged(int dim,int reason);
+    void onInstanceKnobValueChanged(ViewSpec view,int dim,int reason);
 
     void resetSelectedInstances();
 
@@ -159,9 +160,11 @@ private:
 
     void removeInstancesInternal();
 
-    virtual void evaluate(KnobI* knob,bool isSignificant,ValueChangedReasonEnum reason) OVERRIDE;
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual void onKnobValueChanged(KnobI* k,ValueChangedReasonEnum reason,double time,
+    virtual void onKnobValueChanged(KnobI* k,
+                                    ValueChangedReasonEnum reason,
+                                    double time,
+                                    ViewSpec view,
                                     bool originatedFromMainThread) OVERRIDE;
     boost::scoped_ptr<MultiInstancePanelPrivate> _imp;
 };
@@ -186,13 +189,14 @@ public:
     bool trackPrevious(ViewerInstance* viewer);
     bool trackNext(ViewerInstance* viewer);
     void stopTracking();
+    bool isTracking() const;
     
     void clearAllAnimationForSelection();
     
     void clearBackwardAnimationForSelection();
     
     void clearForwardAnimationForSelection();
-    
+        
 public Q_SLOTS:
     
     void onAverageTracksButtonClicked();

@@ -39,6 +39,18 @@ Note that if you don't pass the *--writer* argument, it will try to start render
 
 After the writer node script name you can pass an optional output filename and pass an optional frame range in the format  firstFrame-lastFrame (e.g: 10-40). 
 
+
+.. warning::
+	
+	You may only specify absolute file paths with the *-i* option, things like::
+		
+		NatronRenderer -i MyReader ~/pictures.png -w MyWriter rendered###.exr 
+		
+	would not work. This would work on the other hand::
+	
+		NatronRenderer -i MyReader /Users/me/Images/pictures.png -w MyWriter /Users/me/Images/rendered###.exr 
+	 
+
 Note that several *-w* options can be set to specify multiple Write nodes to render.
 
 .. warning::
@@ -47,7 +59,18 @@ Note that several *-w* options can be set to specify multiple Write nodes to ren
 	
 **[ --reader ]* or **[-i]** <reader node script name> <filename> :
 Specify the input file/sequence/video to load for the given Reader node.
- If the specified reader node cannot be found, the process will abort.
+If the specified reader node cannot be found, the process will abort.
+
+.. warning::
+	
+	You may only specify absolute file paths with the *-i* option, things like::
+		
+		NatronRenderer -i MyReader ~/pictures.png -w MyWriter rendered###.exr 
+		
+	would not work. This would work on the other hand::
+	
+		NatronRenderer -i MyReader /Users/me/Images/pictures.png -w MyWriter /Users/me/Images/rendered###.exr 
+	 
 
 
 **[--onload]** or **[-l]** *<python script file path>* specifies a Python script to be executed
@@ -199,8 +222,8 @@ We would write a customized Python script that we pass to the command-line::
 	
 	#This is the content of myStartupScript.py
 
-	reader = app.createNode("fr.inria.openfx.ReadOIIO")
-	writer = app.createNode("fr.inria.openfx.WriteFFmpeg")
+	reader = app.createReader("/Users/Toto/Sequences/Sequence__####.exr")
+	writer = app.createWriter("/Users/Toto/Sequences/Sequence.mov")
 	
 	#The node will be accessible via app.MyWriter after this call
 	#We do this so that we can reference it from the command-line arguments
@@ -209,14 +232,6 @@ We would write a customized Python script that we pass to the command-line::
 	#The node will be accessible via app.MyReader after this call
 	reader.setScriptName("MyReader")
 	
-	#Set the input sequence value
-	fileparam =  reader.getParam("filename")
-	fileparam.setValue("/Users/Toto/Sequences/Sequence__####.exr");
-
-
-	#Set the output video
-	outfileparam =  writer.getParam("filename")
-	outfileparam.setValue("/Users/Toto/Sequences/Sequence.mov")
 
 	#Set the format type parameter of the Write node to Input Stream Format so that the video
 	#is written to the size of the input images and not to the size of the project
@@ -276,12 +291,14 @@ We could also set the same way the Reader and Writer file names::
 
 And modify the Python script to take into account the new *readFileName* and *writeFileName* parameters::
 
-	...
-	fileparam.setValue(readFileName)
-	...
-	outfileparam.setValue(writeFileName)
 	
-The -c option can be given multiple times to the command-line and each command passed will 
+	...
+	reader = app.createReader(readFileName)
+	writer = app.createNode(writeFileName)
+	...
+	
+	
+The **-c** option can be given multiple times to the command-line and each command passed will 
 be executed once, in the order they were given.
 
 With a Natron project file:

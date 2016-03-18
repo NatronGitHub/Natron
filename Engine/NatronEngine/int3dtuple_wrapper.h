@@ -3,7 +3,7 @@
 
 #include <shiboken.h>
 
-#include <ParameterWrapper.h>
+#include <PyParameter.h>
 
 #endif // SBK_INT3DTUPLE_H
 

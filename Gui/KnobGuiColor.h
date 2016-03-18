@@ -128,13 +128,14 @@ public:
 
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
 
-    bool getAllDimensionsVisible() const;
+    virtual bool getAllDimensionsVisible() const OVERRIDE FINAL;
 
     int getDimensionForSpinBox(const SpinBox* spinbox) const;
     
 public Q_SLOTS:
+    
+    void onSpinBoxValueChanged();
 
-    void onColorChanged();
     void onMinMaxChanged(double mini, double maxi, int index);
     void onDisplayMinMaxChanged(double mini, double maxi, int index);
 
@@ -160,6 +161,9 @@ Q_SIGNALS:
     void dimensionSwitchToggled(bool b);
 
 private:
+    
+    void onColorChangedInternal();
+
 
     void expandAllDimensions();
     void foldAllDimensions();

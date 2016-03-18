@@ -1,0 +1,130 @@
+diff --git a/IlmBase/CMakeLists.txt b/IlmBase/CMakeLists.txt
+index aa9b932..5fb007a 100644
+--- a/IlmBase/CMakeLists.txt
++++ b/IlmBase/CMakeLists.txt
+@@ -162,30 +162,41 @@ SET_TARGET_PROPERTIES ( Half
+   PROPERTIES
+   VERSION 12.0.0
+   SOVERSION 12
++  OUTPUT_NAME Half
++  RUNTIME_OUTPUT_NAME "Half${ILMBASE_LIBSUFFIX}"
++  ARCHIVE_OUTPUT_NAME Half
+   )
+ SET_TARGET_PROPERTIES ( Iex
+   PROPERTIES
+   VERSION 12.0.0
+   SOVERSION 12
+-  OUTPUT_NAME "Iex${ILMBASE_LIBSUFFIX}"
++  OUTPUT_NAME Iex
++  RUNTIME_OUTPUT_NAME "Iex${ILMBASE_LIBSUFFIX}"
++  ARCHIVE_OUTPUT_NAME Iex
+   )
+ SET_TARGET_PROPERTIES ( Imath
+   PROPERTIES
+   VERSION 12.0.0
+   SOVERSION 12
+-  OUTPUT_NAME "Imath${ILMBASE_LIBSUFFIX}"
++  OUTPUT_NAME Imath
++  RUNTIME_OUTPUT_NAME "Imath${ILMBASE_LIBSUFFIX}"
++  ARCHIVE_OUTPUT_NAME Imath
+   )
+ SET_TARGET_PROPERTIES ( IlmThread
+   PROPERTIES
+   VERSION 12.0.0
+   SOVERSION 12
+-  OUTPUT_NAME "IlmThread${ILMBASE_LIBSUFFIX}"
++  OUTPUT_NAME IlmThread
++  RUNTIME_OUTPUT_NAME "IlmThread${ILMBASE_LIBSUFFIX}"
++  ARCHIVE_OUTPUT_NAME IlmThread
+   )
+ SET_TARGET_PROPERTIES ( IexMath
+   PROPERTIES
+   VERSION 12.0.0
+   SOVERSION 12
+-  OUTPUT_NAME "IexMath${ILMBASE_LIBSUFFIX}"
++  OUTPUT_NAME IexMath
++  RUNTIME_OUTPUT_NAME "IexMath${ILMBASE_LIBSUFFIX}"
++  ARCHIVE_OUTPUT_NAME IexMath
+   )
+ 
+ IF ( NOT WIN32 )
+diff --git a/IlmBase/Half/CMakeLists.txt b/IlmBase/Half/CMakeLists.txt
+index 6f9714d..b18391b 100644
+--- a/IlmBase/Half/CMakeLists.txt
++++ b/IlmBase/Half/CMakeLists.txt
+@@ -45,8 +45,9 @@ ADD_DEPENDENCIES ( Half toFloat eLut )
+ 
+ INSTALL ( TARGETS
+   Half
+-  DESTINATION
+-  lib
++  RUNTIME DESTINATION bin
++  LIBRARY DESTINATION lib
++  ARCHIVE DESTINATION lib
+ )
+ 
+ INSTALL ( FILES 
+diff --git a/IlmBase/Iex/CMakeLists.txt b/IlmBase/Iex/CMakeLists.txt
+index 982337c..300e79b 100644
+--- a/IlmBase/Iex/CMakeLists.txt
++++ b/IlmBase/Iex/CMakeLists.txt
+@@ -12,8 +12,9 @@ ADD_LIBRARY ( Iex ${LIB_TYPE}
+ 
+ INSTALL ( TARGETS
+   Iex
+-  DESTINATION
+-  lib
++  RUNTIME DESTINATION bin
++  LIBRARY DESTINATION lib
++  ARCHIVE DESTINATION lib
+ )
+ 
+ INSTALL ( FILES 
+diff --git a/IlmBase/IexMath/CMakeLists.txt b/IlmBase/IexMath/CMakeLists.txt
+index 9a28c21..e3c26f8 100644
+--- a/IlmBase/IexMath/CMakeLists.txt
++++ b/IlmBase/IexMath/CMakeLists.txt
+@@ -11,8 +11,9 @@ TARGET_LINK_LIBRARIES(IexMath Iex)
+ 
+ INSTALL ( TARGETS
+   IexMath
+-  DESTINATION
+-  lib
++  RUNTIME DESTINATION bin
++  LIBRARY DESTINATION lib
++  ARCHIVE DESTINATION lib
+ )
+ 
+ INSTALL ( FILES 
+diff --git a/IlmBase/IlmThread/CMakeLists.txt b/IlmBase/IlmThread/CMakeLists.txt
+index e94be04..415c56f 100644
+--- a/IlmBase/IlmThread/CMakeLists.txt
++++ b/IlmBase/IlmThread/CMakeLists.txt
+@@ -30,8 +30,9 @@ TARGET_LINK_LIBRARIES(IlmThread Iex)
+ 
+ INSTALL ( TARGETS
+   IlmThread
+-  DESTINATION
+-  lib
++  RUNTIME DESTINATION bin
++  LIBRARY DESTINATION lib
++  ARCHIVE DESTINATION lib
+ )
+ 
+ INSTALL ( FILES 
+diff --git a/IlmBase/Imath/CMakeLists.txt b/IlmBase/Imath/CMakeLists.txt
+index feed29e..9228cb5 100644
+--- a/IlmBase/Imath/CMakeLists.txt
++++ b/IlmBase/Imath/CMakeLists.txt
+@@ -18,8 +18,9 @@ TARGET_LINK_LIBRARIES(Imath Iex)
+ 
+ INSTALL ( TARGETS
+   Imath
+-  DESTINATION
+-  lib
++  RUNTIME DESTINATION bin
++  LIBRARY DESTINATION lib
++  ARCHIVE DESTINATION lib
+ )
+ 
+ INSTALL ( FILES 

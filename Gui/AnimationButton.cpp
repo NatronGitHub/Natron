@@ -103,8 +103,9 @@ AnimationButton::mouseMoveEvent(QMouseEvent* e)
         if ( (e->pos() - _dragPos).manhattanLength() < QApplication::startDragDistance() ) {
             return;
         }
+        KnobGuiPtr knob = _knob.lock();
         
-        EffectInstance* effect = dynamic_cast<EffectInstance*>(_knob->getKnob()->getHolder());
+        EffectInstance* effect = dynamic_cast<EffectInstance*>(knob->getKnob()->getHolder());
         if (!effect) {
             return;
         }
@@ -118,8 +119,12 @@ AnimationButton::mouseMoveEvent(QMouseEvent* e)
         } else {
             expr << effect->getApp()->getAppIDString() << ".";
         }
-        expr << effect->getNode()->getScriptName_mt_safe() << "." << _knob->getKnob()->getName()
-        << ".getValue(dimension)";
+        expr << effect->getNode()->getScriptName_mt_safe() << "." << knob->getKnob()->getName();
+        expr << ".getValue(";
+        if (knob->getKnob()->getDimension() > 1) {
+            expr << "dimension";
+        }
+        expr << ")";
 
         Qt::KeyboardModifiers modifiers = qApp->keyboardModifiers();
         bool useMult = modifiers.testFlag(Qt::ControlModifier);
@@ -129,15 +134,15 @@ AnimationButton::mouseMoveEvent(QMouseEvent* e)
 
         // initiate Drag
 
-        _knob->onCopyAnimationActionTriggered();
+        knob->onCopyAnimationActionTriggered();
         QDrag* drag = new QDrag(this);
         QMimeData* mimeData = new QMimeData;
-        mimeData->setData("Animation", QByteArray(expr.str().c_str()));
+        mimeData->setData(QString::fromUtf8("Animation"), QByteArray(expr.str().c_str()));
         drag->setMimeData(mimeData);
 
         QFontMetrics fmetrics = fontMetrics();
         QString textFirstLine( tr("Linking value from:") );
-        QString textSecondLine( _knob->getKnob()->getLabel().c_str() );
+        QString textSecondLine = QString::fromUtf8( knob->getKnob()->getLabel().c_str() );
         QString textThirdLine( tr("Drag it to another animation button.") );
         int textWidth = std::max( std::max( fmetrics.width(textFirstLine), fmetrics.width(textSecondLine) ),fmetrics.width(textThirdLine) );
         QImage dragImg(textWidth,(fmetrics.height() + 5) * 3,QImage::Format_ARGB32);
@@ -170,7 +175,7 @@ AnimationButton::dragEnterEvent(QDragEnterEvent* e)
         return;
     }
     QStringList formats = e->mimeData()->formats();
-    if ( formats.contains("Animation") ) {
+    if ( formats.contains(QString::fromUtf8("Animation")) ) {
         setCursor(Qt::DragCopyCursor);
         e->acceptProposedAction();
     }
@@ -186,11 +191,11 @@ AnimationButton::dropEvent(QDropEvent* e)
 {
     e->accept();
     QStringList formats = e->mimeData()->formats();
-    if ( formats.contains("Animation") ) {
-        QByteArray expr = e->mimeData()->data("Animation");
+    if ( formats.contains(QString::fromUtf8("Animation")) ) {
+        QByteArray expr = e->mimeData()->data(QString::fromUtf8("Animation"));
         std::string expression(expr.data());
-        KnobPtr knob = _knob->getKnob();
-        _knob->pushUndoCommand(new SetExpressionCommand(knob,false,-1,expression));
+        KnobPtr knob = _knob.lock()->getKnob();
+        _knob.lock()->pushUndoCommand(new SetExpressionCommand(knob,false,-1,expression));
         e->acceptProposedAction();
     }
 }
@@ -200,7 +205,7 @@ AnimationButton::dragMoveEvent(QDragMoveEvent* e)
 {
     QStringList formats = e->mimeData()->formats();
 
-    if ( formats.contains("Animation") ) {
+    if ( formats.contains(QString::fromUtf8("Animation")) ) {
         e->acceptProposedAction();
     }
 }

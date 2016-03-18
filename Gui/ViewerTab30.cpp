@@ -133,7 +133,7 @@ ViewerTab::setClipToProject(bool b)
 void
 ViewerTab::setColorSpace(const std::string & colorSpaceName)
 {
-    int index = _imp->viewerColorSpace->itemIndex( colorSpaceName.c_str() );
+    int index = _imp->viewerColorSpace->itemIndex( QString::fromUtf8(colorSpaceName.c_str()) );
 
     if (index != -1) {
         _imp->viewerColorSpace->setCurrentIndex(index);
@@ -263,7 +263,7 @@ ViewerTab::getChannelsString() const
 void
 ViewerTab::setChannels(const std::string & channelsStr)
 {
-    int index = _imp->viewerChannels->itemIndex( channelsStr.c_str() );
+    int index = _imp->viewerChannels->itemIndex( QString::fromUtf8(channelsStr.c_str()) );
 
     if (index != -1) {
         _imp->viewerChannels->setCurrentIndex_no_emit(index);
@@ -372,7 +372,7 @@ ViewerTab::createTrackerInterface(NodeGui* n)
         
         return;
     }
-    QObject::connect( n,SIGNAL( settingsPanelClosed(bool) ),this,SLOT( onTrackerNodeGuiSettingsPanelClosed(bool) ) );
+    QObject::connect( n,SIGNAL(settingsPanelClosed(bool)),this,SLOT(onTrackerNodeGuiSettingsPanelClosed(bool)) );
     if ( n->isSettingsPanelVisible() ) {
         setTrackerInterface(n);
     } else {
@@ -487,7 +487,7 @@ void
 ViewerTab::createRotoInterface(NodeGui* n)
 {
     RotoGui* roto = new RotoGui( n,this,getRotoGuiSharedData(n) );
-    QObject::connect( roto,SIGNAL( selectedToolChanged(int) ),getGui(),SLOT( onRotoSelectedToolChanged(int) ) );
+    QObject::connect( roto,SIGNAL(selectedToolChanged(int)),getGui(),SLOT(onRotoSelectedToolChanged(int)) );
     std::pair<std::map<NodeGui*,RotoGui*>::iterator,bool> ret = _imp->rotoNodes.insert( std::make_pair(n,roto) );
 
     assert(ret.second);
@@ -497,7 +497,7 @@ ViewerTab::createRotoInterface(NodeGui* n)
 
         return;
     }
-    QObject::connect( n,SIGNAL( settingsPanelClosed(bool) ),this,SLOT( onRotoNodeGuiSettingsPanelClosed(bool) ) );
+    QObject::connect( n,SIGNAL(settingsPanelClosed(bool)),this,SLOT(onRotoNodeGuiSettingsPanelClosed(bool)) );
     if ( n->isSettingsPanelVisible() ) {
         setRotoInterface(n);
     } else {
@@ -557,7 +557,7 @@ ViewerTab::setRotoInterface(NodeGui* n)
                 }
             }
         }
-        QObject::connect( it->second,SIGNAL( roleChanged(int,int) ),this,SLOT( onRotoRoleChanged(int,int) ) );
+        QObject::connect( it->second,SIGNAL(roleChanged(int,int)),this,SLOT(onRotoRoleChanged(int,int)) );
         _imp->currentRoto.first = n;
         _imp->currentRoto.second = it->second;
         _imp->viewer->redraw();
@@ -573,7 +573,7 @@ ViewerTab::removeRotoInterface(NodeGui* n,
 
     if ( it != _imp->rotoNodes.end() ) {
         if (_imp->currentRoto.first == n) {
-            QObject::disconnect( _imp->currentRoto.second,SIGNAL( roleChanged(int,int) ),this,SLOT( onRotoRoleChanged(int,int) ) );
+            QObject::disconnect( _imp->currentRoto.second,SIGNAL(roleChanged(int,int)),this,SLOT(onRotoRoleChanged(int,int)) );
             ///Remove the widgets of the current roto node
             assert(_imp->viewerLayout->count() > 1);
             QLayoutItem* currentToolBarItem = _imp->viewerLayout->itemAt(0);
@@ -1093,11 +1093,11 @@ ViewerTab::refreshFPSBoxFromClipPreferences()
     _imp->viewerNode->getActiveInputs(activeInputs[0], activeInputs[1]);
     EffectInstPtr input0 = activeInputs[0] != - 1 ? _imp->viewerNode->getInput(activeInputs[0]) : EffectInstPtr();
     if (input0) {
-        _imp->fpsBox->setValue(input0->getPreferredFrameRate());
+        _imp->fpsBox->setValue(input0->getFrameRate());
     } else {
         EffectInstPtr input1 = activeInputs[1] != - 1 ? _imp->viewerNode->getInput(activeInputs[1]) : EffectInstPtr();
         if (input1) {
-            _imp->fpsBox->setValue(input1->getPreferredFrameRate());
+            _imp->fpsBox->setValue(input1->getFrameRate());
         } else {
             _imp->fpsBox->setValue(getGui()->getApp()->getProjectFrameRate());
         }

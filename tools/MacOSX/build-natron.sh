@@ -23,7 +23,7 @@
 # MKJOBS: Number of threads
 # CONFIG=(debug,release,relwithdebinfo): the build type
 # DISABLE_BREAKPAD=1: When set, automatic crash reporting (google-breakpad support) will be disabled
-#Usage MKJOBS=4 BUILD_CONFIG=SNAPSHOT CONFIG=relwithdebinfo BRANCH=workshop PLUGINDIR="..."  ./build-natron.sh
+#Usage MKJOBS=4 BUILD_CONFIG=SNAPSHOT CONFIG=relwithdebinfo BRANCH=master PLUGINDIR="..."  ./build-natron.sh
 
 source `pwd`/common.sh || exit 1
 MACPORTS="/opt/local"
@@ -31,28 +31,38 @@ QTDIR="${MACPORTS}/libexec/qt4"
 
 cd "$CWD/build" || exit 1
 
-if [ "$PLUGINDIR" = "$CWD/build/Natron/App/Natron.app/Contents/Plugins" ]; then
-    echo "Warning: PLUGINDIR is $PLUGINDIR (should *really* be .../OFX/Natron)"
-fi
 
-if [ "$BRANCH" = "workshop" ]; then
+if [ "$BRANCH" = "master" ]; then
     NATRON_BRANCH=$BRANCH
+    IO_BRANCH=master
+    MISC_BRANCH=master
+    ARENA_BRANCH=master
+
 else
     NATRON_BRANCH=$NATRON_GIT_TAG
+    IO_BRANCH=$IOPLUG_GIT_TAG
+    MISC_BRANCH=$MISCPLUG_GIT_TAG
+    ARENA_BRANCH=$ARENAPLUG_GIT_TAG
 fi
 
 git clone $GIT_NATRON
 cd Natron || exit 1
 git checkout $NATRON_BRANCH || exit 1
+git pull origin $NATRON_BRANCH
 git submodule update -i --recursive || exit 1
-if [ "$BRANCH" = "workshop" ]; then
+
+if [ "$BRANCH" = "master" ]; then
     # the snapshots are always built with the latest version of submodules
     git submodule foreach git pull origin master
 fi
 
+REL_GIT_VERSION=`git log|head -1|awk '{print $2}'`
+
 #Always bump NATRON_DEVEL_GIT, it is only used to version-stamp binaries
 NATRON_REL_V=`git log|head -1|awk '{print $2}'`
+
 sed -i "" -e "s/NATRON_DEVEL_GIT=.*/NATRON_DEVEL_GIT=${NATRON_REL_V}/" $CWD/commits-hash.sh || exit 1
+
 NATRON_MAJOR=`grep "define NATRON_VERSION_MAJOR" $TMP/Natron/Global/Macros.h | awk '{print $3}'`
 NATRON_MINOR=`grep "define NATRON_VERSION_MINOR" $TMP/Natron/Global/Macros.h | awk '{print $3}'`
 NATRON_REVISION=`grep "define NATRON_VERSION_REVISION" $TMP/Natron/Global/Macros.h | awk '{print $3}'`
@@ -63,9 +73,26 @@ echo "Building Natron $NATRON_REL_V from $NATRON_BRANCH on $OS using $MKJOBS thr
 echo
 sleep 2
 
+# Get plugins git hash
+git clone $GIT_IO
+cd openfx-io || exit 1
+git checkout "$IO_BRANCH" || exit 1
+IO_GIT_VERSION=`git log|head -1|awk '{print $2}'`
+cd ..
+git clone $GIT_MISC
+cd openfx-MISC || exit 1
+git checkout "$MISC_BRANCH" || exit 1
+MISC_GIT_VERSION=`git log|head -1|awk '{print $2}'`
+cd ..
+git clone $GIT_ARENA
+cd openfx-arena || exit 1
+git checkout "$ARENA_BRANCH" || exit 1
+ARENA_GIT_VERSION=`git log|head -1|awk '{print $2}'`
+cd ..
+rm -rf openfx-io openfx-misc openfx-arena
+
 #Update GitVersion to have the correct hash
-cp $CWD/GitVersion.h Global/GitVersion.h || exit 1
-sed -i "" -e "s#__BRANCH__#${NATRON_BRANCH}#;s#__COMMIT__#${REL_GIT_VERSION}#"  Global/GitVersion.h || exit 1
+cat $CWD/GitVersion.h | sed "s#__BRANCH__#${NATRON_BRANCH}#;s#__COMMIT__#${REL_GIT_VERSION}#;s#__IO_COMMIT__#${IO_GIT_VERSION}#;s#__MISC_COMMIT__#${MISC_GIT_VERSION}#;s#__ARENA_COMMIT__#${ARENA_GIT_VERSION}#" > Global/GitVersion.h || exit 1
 
 #Generate config.pri
 cat > config.pri <<EOF
@@ -132,6 +159,7 @@ env TAG=$TAG DISABLE_BREAKPAD="$DISABLE_BREAKPAD" DUMP_SYMS="$DUMP_SYMS" SYMBOLS
 package="$CWD/build/Natron/App/Natron.app"
 if [ "$PLUGINDIR" = "${package}/Contents/Plugins" ]; then
     mkdir -p "${package}/Contents/Plugins/PyPlugs"
+    cp "$CWD/build/Natron/Gui/Resources/PyPlugs"/* "${package}/Contents/Plugins/PyPlugs/" 
     mkdir -p "${package}/Contents/Plugins/OFX/Natron"
     echo "HACK: moving Qt plugins from ${package}/Contents/PlugIns to ${package}/Contents/Plugins (should not be necessary when the OFX Plugins dir is ${package}/Contents/OFX/Natron)"
     mv "${package}/Contents/PlugIns" "${package}/Contents/Plugins" || exit 1

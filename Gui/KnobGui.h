@@ -33,6 +33,7 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #endif
 
 CLANG_DIAG_OFF(deprecated)
@@ -43,9 +44,11 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
+#include "Global/Enums.h"
 #include "Engine/Knob.h"
 #include "Engine/Curve.h"
 #include "Engine/KnobGuiI.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 #include "Gui/GuiFwd.h"
@@ -61,7 +64,7 @@ NATRON_NAMESPACE_ENTER;
 struct KnobGuiPrivate;
 
 class KnobGui
-    : public QObject,public KnobGuiI
+: public QObject,public KnobGuiI, public boost::enable_shared_from_this<KnobGui>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -75,11 +78,13 @@ public:
 
     virtual ~KnobGui() OVERRIDE;
     
+    void initialize();
+    
     DockablePanel* getContainer();
     
     void removeGui();
     
-    void callDeleteLater();
+    void setGuiRemoved();
     
 protected:
     /**
@@ -110,7 +115,8 @@ public:
 
     void createGUI(QGridLayout* containerLayout,
                    QWidget* fieldContainer,
-                   ClickableLabel* label,
+                   QWidget* labelContainer,
+                   KnobClickableLabel* label,
                    QHBoxLayout* layout,
                    bool isOnNewLine,
                    const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine);
@@ -122,12 +128,12 @@ public:
     const QUndoCommand* getLastUndoCommand() const;
 
 
-    void setKeyframe(double time,int dimension);
-    void setKeyframe(double time,const KeyFrame& key,int dimension);
-    void removeKeyFrame(double time,int dimension);
+    void setKeyframe(double time, int dimension, ViewSpec view);
+    void setKeyframe(double time,const KeyFrame& key,int dimension, ViewSpec view);
+    void removeKeyFrame(double time,int dimension, ViewSpec view);
     
-    void setKeyframes(const std::vector<KeyFrame>& keys, int dimension);
-    void removeKeyframes(const std::vector<KeyFrame>& keys, int dimension);
+    void setKeyframes(const std::vector<KeyFrame>& keys, int dimension, ViewSpec view);
+    void removeKeyframes(const std::vector<KeyFrame>& keys, int dimension, ViewSpec view);
 
     QString getScriptNameHtml() const;
 
@@ -140,6 +146,10 @@ public:
     void enableRightClickMenu(QWidget* widget,int dimension);
 
     virtual bool isLabelVisible() const;
+    
+    virtual bool isLabelOnSameColumn() const;
+    
+    virtual bool isLabelBold() const;
 
     QWidget* getFieldContainer() const;
 
@@ -175,7 +185,7 @@ public:
         Knob<T>* knob = dynamic_cast<Knob<T>*>( getKnob().get() );
         assert(knob);
         if (knob) {
-            ret = knob->setValue(v,dimension,reason,newKey);
+            ret = knob->setValue(v, ViewSpec::current(), dimension,reason,newKey);
         }
         if (ret > 0 && ret != KnobHelper::eValueChangedReturnCodeNothingChanged && reason == eValueChangedReasonUserEdited) {
             assert(newKey);
@@ -197,6 +207,7 @@ public:
     bool setValueAtTime(int dimension,
                         const T & v,
                         double time,
+                        ViewSpec view,
                         KeyFrame* newKey,
                         bool refreshGui,
                         ValueChangedReasonEnum reason)
@@ -204,9 +215,9 @@ public:
         
         Knob<T>* knob = dynamic_cast<Knob<T>*>( getKnob().get() );
         assert(knob);
-        bool addedKey  = false;
+        KnobHelper::ValueChangedReturnCodeEnum addedKey = KnobHelper::eValueChangedReturnCodeNothingChanged;
         if (knob) {
-            addedKey = knob->setValueAtTime(time,v,dimension,reason,newKey);
+            addedKey = knob->setValueAtTime(time, v, view, dimension, reason, newKey);
         }
         if ((knob) && reason == eValueChangedReasonUserEdited) {
             assert(newKey);
@@ -215,7 +226,8 @@ public:
         if (refreshGui) {
             updateGUI(dimension);
         }
-        return addedKey;
+        return ((addedKey != KnobHelper::eValueChangedReturnCodeNoKeyframeAdded) &&
+                (addedKey != KnobHelper::eValueChangedReturnCodeNothingChanged));
     }
 
     virtual void swapOpenGLBuffers() OVERRIDE FINAL;
@@ -231,13 +243,13 @@ public:
     
     virtual bool isGuiFrozenForPlayback() const OVERRIDE FINAL;
 
-    virtual void copyAnimationToClipboard() const OVERRIDE FINAL;
+    virtual void copyAnimationToClipboard(int dimension = -1) const OVERRIDE FINAL;
 
-    void copyValuesToCliboard();
-
-    void pasteValuesFromClipboard();
+    virtual void copyValuesToClipboard(int dimension = -1) const OVERRIDE FINAL;
     
-    virtual boost::shared_ptr<Curve> getCurve(int dimension) const OVERRIDE FINAL;
+    virtual void copyLinkToClipboard(int dimension = -1) const OVERRIDE FINAL;
+    
+    virtual boost::shared_ptr<Curve> getCurve(ViewSpec view, int dimension) const OVERRIDE FINAL;
 
     /**
      * @brief Check if the knob is secret by also checking the parent group visibility
@@ -260,6 +272,8 @@ public:
     {
         return (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < DBL_MAX) && (sliderMin > -DBL_MAX);
     }
+    
+    virtual bool getAllDimensionsVisible() const OVERRIDE { return true; }
 
 public Q_SLOTS:
     
@@ -267,29 +281,27 @@ public Q_SLOTS:
     
     void onUnlinkActionTriggered();
 
-    void onRedrawGuiCurve(int reason, int dimension);
+    void onRedrawGuiCurve(int reason, ViewSpec view, int dimension);
     
     /**
      * @brief Called when the internal value held by the knob is changed. It calls updateGUI().
      **/
-    void onInternalValueChanged(int dimension,int reason);
+    void onInternalValueChanged(ViewSpec view, int dimension,int reason);
 
-    void onInternalKeySet(double time,int dimension,int reason,bool added);
+    void onInternalKeySet(double time, ViewSpec view,int dimension,int reason,bool added);
 
-    void onInternalKeyRemoved(double time,int dimension,int reason);
+    void onInternalKeyRemoved(double time, ViewSpec view, int dimension,int reason);
     
-    void onMultipleKeySet(const std::list<double>& keys,int dimension, int reason);
+    void onMultipleKeySet(const std::list<double>& keys, ViewSpec view, int dimension, int reason);
 
-    void onInternalAnimationAboutToBeRemoved(int dimension);
+    void onInternalAnimationAboutToBeRemoved(ViewSpec view, int dimension);
     
     void onInternalAnimationRemoved();
     
     ///Handler when a keyframe is moved in the curve editor/dope sheet
-    void onKeyFrameMoved(int dimension,double oldTime,double newTime);
+    void onKeyFrameMoved(ViewSpec view, int dimension,double oldTime,double newTime);
 
     void setSecret();
-
-    void showAnimationMenu();
 
     void onRightClickClicked(const QPoint & pos);
 
@@ -321,15 +333,14 @@ public Q_SLOTS:
     void onCubicInterpActionTriggered();
 
     void onHorizontalInterpActionTriggered();
-
-
+    
     void onCopyValuesActionTriggered();
 
-    void onPasteValuesActionTriggered();
-
     void onCopyAnimationActionTriggered();
-
-    void onPasteAnimationActionTriggered();
+    
+    void onCopyLinksActionTriggered();
+    
+    void onPasteActionTriggered();
 
     void onLinkToActionTriggered();
     void linkTo(int dimension);
@@ -341,13 +352,13 @@ public Q_SLOTS:
 
     void onKnobSlavedChanged(int dimension,bool b);
 
-    void onSetValueUsingUndoStack(const Variant & v,int dim);
+    void onSetValueUsingUndoStack(const Variant & v, ViewSpec view,int dim);
 
     void onSetDirty(bool d);
 
-    void onAnimationLevelChanged(int dim,int level);
+    void onAnimationLevelChanged(ViewSpec view, int dim);
 
-    void onAppendParamEditChanged(int reason,const Variant & v,int dim,double time,bool createNewCommand,bool setKeyFrame);
+    void onAppendParamEditChanged(int reason,const Variant & v, ViewSpec view,int dim,double time,bool createNewCommand,bool setKeyFrame);
 
     void onFrozenChanged(bool frozen);
 
@@ -417,9 +428,9 @@ private:
 
     void updateGuiInternal(int dimension);
 
-    void copyToClipBoard(bool copyAnimation) const;
+    void copyToClipBoard(KnobClipBoardType type, int dimension) const;
 
-    void pasteClipBoard();
+    void pasteClipBoard(int targetDimension);
 
     virtual void _hide() = 0;
     virtual void _show() = 0;
@@ -448,11 +459,10 @@ private:
     virtual void updateToolTip() {}
     
     void createAnimationMenu(QMenu* menu,int dimension);
+    
+    Menu* createInterpolationMenu(QMenu* menu, int dimension, bool isEnabled);
 
-    void createAnimationButton(QHBoxLayout* layout);
-
-
-    void setInterpolationForDimensions(const std::vector<int> & dimensions,KeyframeTypeEnum interp);
+    void setInterpolationForDimensions(QAction* action,KeyframeTypeEnum interp);
 
 private:
 

@@ -44,6 +44,7 @@
 #include <ofxhUtilities.h> // for StatStr
 #include <ofxhPluginCache.h>
 
+#include "Global/MemoryInfo.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxParamInstance.h"
@@ -56,10 +57,11 @@
 #include "Engine/AppManager.h"
 #include "Engine/Format.h"
 #include "Engine/Node.h"
-#include "Global/MemoryInfo.h"
+#include "Engine/NodeMetadata.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/Project.h"
+#include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -132,6 +134,27 @@ OfxImageEffectInstance::mainEntry(const char *action,
     return OFX::Host::ImageEffect::Instance::mainEntry(action, handle, inArgs, outArgs);
 }
 
+OfxStatus
+OfxImageEffectInstance::createInstanceAction()
+{
+    ///Overriden because the call to setDefaultClipPreferences is done in Natron
+    
+#       ifdef OFX_DEBUG_ACTIONS
+    std::cout << "OFX: "<<(void*)this<<"->"<<kOfxActionCreateInstance<<"()"<<std::endl;
+#       endif
+    // now tell the plug-in to create instance
+    OfxStatus st = mainEntry(kOfxActionCreateInstance,this->getHandle(),0,0);
+#       ifdef OFX_DEBUG_ACTIONS
+    std::cout << "OFX: "<<(void*)this<<"->"<<kOfxActionCreateInstance<<"()->"<<StatStr(st)<<std::endl;
+#       endif
+    
+    if (st == kOfxStatOK) {
+        _created = true;
+    }
+    
+    return st;
+}
+
 const std::string &
 OfxImageEffectInstance::getDefaultOutputFielding() const
 {
@@ -194,7 +217,7 @@ OfxImageEffectInstance::vmessage(const char* msgtype,
     std::string type(msgtype);
 
     if (type == kOfxMessageLog) {
-        appPTR->writeToOfxLog_mt_safe( message.c_str() );
+        appPTR->writeToErrorLog_mt_safe( QString::fromUtf8(message.c_str() ));
     } else if ( (type == kOfxMessageFatal) || (type == kOfxMessageError) ) {
         _ofxEffectInstance.lock()->message(eMessageTypeError, message);
     } else if (type == kOfxMessageWarning) {
@@ -294,8 +317,10 @@ double
 OfxImageEffectInstance::getEffectDuration() const
 {
     assert( getOfxEffectInstance() );
+#ifdef DEBUG
 #pragma message WARN("getEffectDuration unimplemented, should we store the previous result to getTimeDomain ?")
-
+#endif
+    
     return 1.0;
 }
 
@@ -347,6 +372,7 @@ OfxImageEffectInstance::getViewCount(int *nViews) const
     return kOfxStatOK;
 }
 
+// overridden from OFX::Host::ImageEffect::Instance
 OfxStatus
 OfxImageEffectInstance::getViewName(int viewIndex, const char** name) const
 {
@@ -379,138 +405,51 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     bool paramShouldBePersistant = true;
 
     bool secretByDefault = descriptor.getSecret();
-    
+    bool enabledByDefault = descriptor.getEnabled();
+        
     if (descriptor.getType() == kOfxParamTypeInteger) {
         OfxIntegerInstance *ret = new OfxIntegerInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
-        assert(knob);
-        boost::shared_ptr<KnobSignalSlotHandler> handler = knob->getSignalSlotHandler();
-        if (handler) {
-            QObject::connect( handler.get(),
-                             SIGNAL( animationLevelChanged(int,int) ),
-                             ret,
-                             SLOT( onKnobAnimationLevelChanged(int,int) ) );
-        }
         instance = ret;
     } else if (descriptor.getType() == kOfxParamTypeDouble) {
         OfxDoubleInstance  *ret = new OfxDoubleInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
-        assert(knob);
-        boost::shared_ptr<KnobSignalSlotHandler> handler = knob->getSignalSlotHandler();
-        if (handler) {
-            QObject::connect( handler.get(),
-                             SIGNAL( animationLevelChanged(int,int) ),
-                             ret,
-                             SLOT( onKnobAnimationLevelChanged(int,int) ) );
-        }
         instance = ret;
     } else if (descriptor.getType() == kOfxParamTypeBoolean) {
         OfxBooleanInstance *ret = new OfxBooleanInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
-        assert(knob);
-        boost::shared_ptr<KnobSignalSlotHandler> handler = knob->getSignalSlotHandler();
-        if (handler) {
-            QObject::connect( handler.get(),
-                             SIGNAL( animationLevelChanged(int,int) ),
-                             ret,
-                             SLOT( onKnobAnimationLevelChanged(int,int) ) );
-        }
         instance = ret;
     } else if (descriptor.getType() == kOfxParamTypeChoice) {
         OfxChoiceInstance *ret = new OfxChoiceInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
-        assert(knob);
-        boost::shared_ptr<KnobSignalSlotHandler> handler = knob->getSignalSlotHandler();
-        if (handler) {
-            QObject::connect( handler.get(),
-                             SIGNAL( animationLevelChanged(int,int) ),
-                             ret,
-                             SLOT( onKnobAnimationLevelChanged(int,int) ) );
-        }
         instance = ret;
     } else if (descriptor.getType() == kOfxParamTypeRGBA) {
         OfxRGBAInstance *ret = new OfxRGBAInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
-        assert(knob);
-        boost::shared_ptr<KnobSignalSlotHandler> handler = knob->getSignalSlotHandler();
-        if (handler) {
-            QObject::connect( handler.get(),
-                             SIGNAL( animationLevelChanged(int,int) ),
-                             ret,
-                             SLOT( onKnobAnimationLevelChanged(int,int) ) );
-        }
         instance = ret;
     } else if (descriptor.getType() == kOfxParamTypeRGB) {
         OfxRGBInstance *ret = new OfxRGBInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
-        assert(knob);
-        boost::shared_ptr<KnobSignalSlotHandler> handler = knob->getSignalSlotHandler();
-        if (handler) {
-            QObject::connect( handler.get(),
-                             SIGNAL( animationLevelChanged(int,int) ),
-                             ret,
-                             SLOT( onKnobAnimationLevelChanged(int,int) ) );
-        }
         instance = ret;
     } else if (descriptor.getType() == kOfxParamTypeDouble2D) {
         OfxDouble2DInstance *ret = new OfxDouble2DInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
-        assert(knob);
-        boost::shared_ptr<KnobSignalSlotHandler> handler = knob->getSignalSlotHandler();
-        if (handler) {
-            QObject::connect( handler.get(),
-                             SIGNAL( animationLevelChanged(int,int) ),
-                             ret,
-                             SLOT( onKnobAnimationLevelChanged(int,int) ) );
-        }
         instance = ret;
     } else if (descriptor.getType() == kOfxParamTypeInteger2D) {
         OfxInteger2DInstance *ret = new OfxInteger2DInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
-        assert(knob);
-        boost::shared_ptr<KnobSignalSlotHandler> handler = knob->getSignalSlotHandler();
-        if (handler) {
-            QObject::connect( handler.get(),
-                             SIGNAL( animationLevelChanged(int,int) ),
-                             ret,
-                             SLOT( onKnobAnimationLevelChanged(int,int) ) );
-        }
         instance = ret;
     } else if (descriptor.getType() == kOfxParamTypeDouble3D) {
         OfxDouble3DInstance *ret = new OfxDouble3DInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
-        assert(knob);
-        boost::shared_ptr<KnobSignalSlotHandler> handler = knob->getSignalSlotHandler();
-        if (handler) {
-            QObject::connect( handler.get(),
-                             SIGNAL( animationLevelChanged(int,int) ),
-                             ret,
-                             SLOT( onKnobAnimationLevelChanged(int,int) ) );
-        }
         instance = ret;
     } else if (descriptor.getType() == kOfxParamTypeInteger3D) {
         OfxInteger3DInstance *ret = new OfxInteger3DInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
-        assert(knob);
-        boost::shared_ptr<KnobSignalSlotHandler> handler = knob->getSignalSlotHandler();
-        if (handler) {
-            QObject::connect( handler.get(),
-                             SIGNAL( animationLevelChanged(int,int) ),
-                             ret,
-                             SLOT( onKnobAnimationLevelChanged(int,int) ) );
-        }
         instance = ret;
     } else if (descriptor.getType() == kOfxParamTypeString) {
         OfxStringInstance *ret = new OfxStringInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
-        assert(knob);
-        boost::shared_ptr<KnobSignalSlotHandler> handler = knob->getSignalSlotHandler();
-        if (handler) {
-            QObject::connect( handler.get(),
-                             SIGNAL( animationLevelChanged(int,int) ),
-                             ret,
-                             SLOT( onKnobAnimationLevelChanged(int,int) ) );
-        }
         instance = ret;
     } else if (descriptor.getType() == kOfxParamTypeCustom) {
         /*
@@ -529,13 +468,9 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
          */
         //throw std::runtime_error(std::string("Parameter ") + paramName + " has unsupported OFX type " + descriptor.getType());
         secretByDefault = true;
+        enabledByDefault = false;
         OfxCustomInstance *ret = new OfxCustomInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
-        assert(knob);
-        boost::shared_ptr<KnobSignalSlotHandler> handler = knob->getSignalSlotHandler();
-        if (handler) {
-            QObject::connect( handler.get(), SIGNAL( animationLevelChanged(int,int) ),ret,SLOT( onKnobAnimationLevelChanged(int,int) ) );
-        }
         instance = ret;
     } else if (descriptor.getType() == kOfxParamTypeGroup) {
         OfxGroupInstance *ret = new OfxGroupInstance(getOfxEffectInstance(), descriptor);
@@ -573,9 +508,26 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
         instance = ret;
     }
 
-
+    assert(knob);
     if (!instance) {
         throw std::runtime_error( std::string("Parameter ") + paramName + " has unknown OFX type " + descriptor.getType() );
+    }
+    
+#ifdef NATRON_ENABLE_IO_META_NODES
+    /**
+     * For readers/writers embedded in a ReadNode or WriteNode, the holder will be the ReadNode and WriteNode
+     * but to ensure that all functions such as getKnobByName actually work, we add them to the knob vector so that
+     * interacting with the Reader or the container is actually the same.
+     **/
+    if (knob->getHolder() != getOfxEffectInstance().get()) {
+        getOfxEffectInstance()->addKnob(knob);
+    }
+#endif
+    
+    OfxParamToKnob* ptk = dynamic_cast<OfxParamToKnob*>(instance);
+    assert(ptk);
+    if (!ptk) {
+        throw std::logic_error("");
     }
    
     knob->setName(paramName);
@@ -585,14 +537,28 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     if (!paramShouldBePersistant) {
         persistant = false;
     }
-    knob->setIsClipPreferencesSlave(isClipPreferencesSlaveParam(paramName));
+    
+    const std::string & iconFilePath = descriptor.getProperties().getStringProperty(kOfxPropIcon,1);
+    if (!iconFilePath.empty()) {
+        knob->setIconLabel(iconFilePath);
+    }
+    
+    knob->setIsMetadataSlave(isClipPreferencesSlaveParam(paramName));
     knob->setIsPersistant(persistant);
     knob->setAnimationEnabled( descriptor.getCanAnimate() );
     knob->setSecretByDefault(secretByDefault);
-    knob->setDefaultAllDimensionsEnabled( descriptor.getEnabled() );
+    knob->setDefaultAllDimensionsEnabled(enabledByDefault);
     knob->setHintToolTip( descriptor.getHint() );
     knob->setCanUndo( descriptor.getCanUndo() );
     knob->setSpacingBetweenItems( descriptor.getProperties().getIntProperty(kOfxParamPropLayoutPadWidth) );
+    
+    if (knob->isAnimationEnabled()) {
+        boost::shared_ptr<KnobSignalSlotHandler> handler = knob->getSignalSlotHandler();
+        if (handler) {
+            QObject::connect(handler.get(),SIGNAL(animationLevelChanged(ViewSpec,int)), ptk,
+                             SLOT(onKnobAnimationLevelChanged(ViewSpec,int)));
+        }
+    }
     
     int layoutHint = descriptor.getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if (layoutHint == kOfxParamPropLayoutHintNoNewLine) {
@@ -607,11 +573,6 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
         knob->setAsInstanceSpecific();
     }
     
-    OfxParamToKnob* ptk = dynamic_cast<OfxParamToKnob*>(instance);
-    assert(ptk);
-    if (!ptk) {
-        throw std::logic_error("");
-    }
     ptk->connectDynamicProperties();
     
     OfxPluginEntryPoint* interact =
@@ -626,6 +587,13 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     return instance;
 } // newParam
 
+struct PageOrdered {
+    boost::shared_ptr<KnobPage> page;
+    std::list<OfxParamToKnob*> paramsOrdered;
+};
+
+typedef std::list<boost::shared_ptr<PageOrdered> > PagesOrdered;
+
 void
 OfxImageEffectInstance::addParamsToTheirParents()
 {
@@ -634,10 +602,8 @@ OfxImageEffectInstance::addParamsToTheirParents()
     
     boost::shared_ptr<OfxEffectInstance> effect = getOfxEffectInstance();
     
-    //for each params find their parents if any and add to the parent this param's knob
-    
-
-    std::map<OfxPageInstance*, std::list<OfxParamToKnob*> > pages;
+    //Extract pages and their children and add knobs to groups
+    PagesOrdered finalPages;
     
     for (std::list<OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it != params.end(); ++it) {
         OfxParamToKnob* isKnownKnob = dynamic_cast<OfxParamToKnob*>(*it);
@@ -645,22 +611,27 @@ OfxImageEffectInstance::addParamsToTheirParents()
         if (!isKnownKnob) {
             continue;
         }
-        boost::shared_ptr<KnobI> associatedKnob = isKnownKnob->getKnob();
+        KnobPtr associatedKnob = isKnownKnob->getKnob();
         if (!associatedKnob) {
             continue;
         }
         OfxPageInstance* isPage = dynamic_cast<OfxPageInstance*>(*it);
         if (isPage) {
             const std::map<int,OFX::Host::Param::Instance*>& children = isPage->getChildren();
-            std::list<OfxParamToKnob*>& childrenList = pages[isPage];
+            
+            boost::shared_ptr<PageOrdered> pageData(new PageOrdered());
+            pageData->page = boost::dynamic_pointer_cast<KnobPage>(associatedKnob);
+            assert(pageData->page);
+            std::map<OfxParamToKnob*,int> childrenList;
             for (std::map<int,OFX::Host::Param::Instance*>::const_iterator it2 = children.begin(); it2!=children.end(); ++it2) {
                 OfxParamToKnob* isParamToKnob = dynamic_cast<OfxParamToKnob*>(it2->second);
                 assert(isParamToKnob);
                 if (!isParamToKnob) {
                     continue;
                 }
-                childrenList.push_back(isParamToKnob);
+                pageData->paramsOrdered.push_back(isParamToKnob);
             }
+            finalPages.push_back(pageData);
         } else {
             OFX::Host::Param::Instance* hasParent = (*it)->getParentInstance();
             if (hasParent) {
@@ -668,47 +639,165 @@ OfxImageEffectInstance::addParamsToTheirParents()
                 if (!parentIsGroup) {
                     std::cerr << getDescriptor().getPlugin()->getIdentifier() << ": Warning: attempting to set a parent which is not a group. (" << (*it)->getName() << ")" << std::endl;
                 } else {
+
+                    parentIsGroup->addKnob(associatedKnob);
                     
                     ///Add a separator in the group if needed
                     if (associatedKnob->isSeparatorActivated()) {
-                        boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>( effect.get(),"");
-                        assert(sep);
-                        sep->setName((*it)->getName() + "_separator");
+                        std::string separatorName = (*it)->getName() + "_separator";
+                        
+                        KnobHolder* knobHolder = associatedKnob->getHolder();
+                        
+                        boost::shared_ptr<KnobSeparator> sep = knobHolder->getKnobByNameAndType<KnobSeparator>(separatorName);
+                        if (sep) {
+                            sep->resetParent();
+                        } else {
+                            sep = AppManager::createKnob<KnobSeparator>( knobHolder,"");
+                            assert(sep);
+                            sep->setName(separatorName);
+#ifdef NATRON_ENABLE_IO_META_NODES
+                            /**
+                             * For readers/writers embedded in a ReadNode or WriteNode, the holder will be the ReadNode and WriteNode
+                             * but to ensure that all functions such as getKnobByName actually work, we add them to the knob vector so that
+                             * interacting with the Reader or the container is actually the same.
+                             **/
+                            if (knobHolder != getOfxEffectInstance().get()) {
+                                getOfxEffectInstance()->addKnob(sep);
+                            }
+#endif
+                        }
                         parentIsGroup->addKnob(sep);
+                        
+
                     }
-                    
-                    parentIsGroup->addKnob(associatedKnob);
                 }
             }
         }
     }
+    
+    //Extract the "Main" page, i.e: the first page declared, if no page were created, create one
+    PagesOrdered::iterator mainPage = finalPages.end();
+    if (!finalPages.empty()) {
+        mainPage = finalPages.begin();
+    } else {
+        boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>(effect.get(), "Settings");
+        boost::shared_ptr<PageOrdered> pageData(new PageOrdered());
+        pageData->page = page;
+        finalPages.push_back(pageData);
+        mainPage = finalPages.begin();
+    }
+    assert(mainPage != finalPages.end());
+    if (mainPage == finalPages.end()) {
+        throw std::logic_error("");
+    }
+    // In this pass we check that all parameters belong to a page.
+    // For parameters that do not belong to a page, we add them "on the fly" to the page
 
-    ///Add parameters to pages if they do not have a parent
-    for (std::map<OfxPageInstance*, std::list<OfxParamToKnob*> >::const_iterator it = pages.begin(); it != pages.end(); ++it) {
-        boost::shared_ptr<KnobI> pageKnobI = it->first->getKnob();
-        KnobPage* page = dynamic_cast<KnobPage*>(pageKnobI.get());
-        if (!page) {
+    std::list<OfxParamToKnob*> &mainPageParamsOrdered = (*mainPage)->paramsOrdered;
+    std::list<OfxParamToKnob*>::iterator lastParamInsertedInMainPage = mainPageParamsOrdered.end();
+    
+    for (std::list<OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it != params.end(); ++it) {
+        OfxParamToKnob* isKnownKnob = dynamic_cast<OfxParamToKnob*>(*it);
+        assert(isKnownKnob);
+        if (!isKnownKnob) {
             continue;
         }
-        for (std::list<OfxParamToKnob*>::const_iterator it2 = it->second.begin(); it2!=it->second.end(); ++it2) {
+        
+        KnobPtr knob = isKnownKnob->getKnob();
+        assert(knob);
+        if (!knob) {
+            continue;
+        }
+        
+        KnobPage* isPage = dynamic_cast<KnobPage*>(knob.get());
+        if (isPage) {
+            continue;
+        }
+        
+        
+        bool foundPage = false;
+        for (std::list<OfxParamToKnob*>::iterator itParam = mainPageParamsOrdered.begin(); itParam != mainPageParamsOrdered.end(); ++itParam) {
+            if (isKnownKnob == *itParam) {
+                foundPage = true;
+                lastParamInsertedInMainPage = itParam;
+                break;
+            }
+        }
+        if (!foundPage) {
+            // param not found in main page, try in other pages
+            PagesOrdered::iterator itPage = mainPage;
+            ++itPage;
+            for (; itPage != finalPages.end(); ++itPage) {
+                for (std::list<OfxParamToKnob*>::iterator itParam = (*itPage)->paramsOrdered.begin(); itParam != (*itPage)->paramsOrdered.end(); ++itParam) {
+                    if (isKnownKnob == *itParam) {
+                        foundPage = true;
+                        break;
+                    }
+                }
+                if (foundPage) {
+                    break;
+                }
+            }
+        }
+        
+        if (!foundPage) {
+            //The parameter does not belong to a page, put it in the main page
+            if (lastParamInsertedInMainPage != mainPageParamsOrdered.end()) {
+                ++lastParamInsertedInMainPage;
+            }
+            lastParamInsertedInMainPage = mainPageParamsOrdered.insert(lastParamInsertedInMainPage,isKnownKnob);
+        }
+       
 
-            boost::shared_ptr<KnobI> childKnob = (*it2)->getKnob();
-            assert(childKnob);
-            if (!childKnob) {
+    } // for (std::list<OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it != params.end(); ++it) 
+    
+    
+    // For all pages, append their knobs in order
+    for (PagesOrdered::iterator itPage = finalPages.begin(); itPage !=finalPages.end(); ++itPage) {
+
+        boost::shared_ptr<KnobPage> pageKnob = (*itPage)->page;
+       
+        for (std::list<OfxParamToKnob*>::iterator itParam = (*itPage)->paramsOrdered.begin(); itParam != (*itPage)->paramsOrdered.end(); ++itParam) {
+            
+            OfxParamToKnob* isKnownKnob = dynamic_cast<OfxParamToKnob*>(*itParam);
+            assert(isKnownKnob);
+            if (!isKnownKnob) {
                 continue;
             }
-            if (childKnob && !childKnob->getParentKnob()) {
+            
+            KnobPtr child = isKnownKnob->getKnob();
+            assert(child);
+            if (!child->getParentKnob()) {
+   
+                pageKnob->addKnob(child);
                 
-                if (childKnob->isSeparatorActivated()) {
-                    boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>( effect.get(),"");
-                    assert(sep);
-                    sep->setName(childKnob->getName() + "_separator");
-                    page->addKnob(sep);
-                }
-                page->addKnob(childKnob);
-     
-            }
+                if (child->isSeparatorActivated()) {
+                    
+                    std::string separatorName = child->getName() + "_separator";
+                    KnobHolder* knobHolder = child->getHolder();
+                    boost::shared_ptr<KnobSeparator> sep = knobHolder->getKnobByNameAndType<KnobSeparator>(separatorName);
+                    if (sep) {
+                        sep->resetParent();
+                    } else {
+                        sep = AppManager::createKnob<KnobSeparator>( knobHolder,"");
+                        assert(sep);
+                        sep->setName(separatorName);
+#ifdef NATRON_ENABLE_IO_META_NODES
+                        /**
+                         * For readers/writers embedded in a ReadNode or WriteNode, the holder will be the ReadNode and WriteNode
+                         * but to ensure that all functions such as getKnobByName actually work, we add them to the knob vector so that
+                         * interacting with the Reader or the container is actually the same.
+                         **/
+                        if (knobHolder != getOfxEffectInstance().get()) {
+                            getOfxEffectInstance()->addKnob(sep);
+                        }
+#endif
+                    }
+                    pageKnob->addKnob(sep);
 
+                }
+            
+            } // if (!knob->getParentKnob()) {
         }
     }
 }
@@ -768,7 +857,7 @@ void
 OfxImageEffectInstance::progressStart(const std::string & message, const std::string &messageid)
 {
     boost::shared_ptr<OfxEffectInstance> effect = getOfxEffectInstance();
-    effect->getApp()->progressStart(effect.get(), message, messageid);
+    effect->getApp()->progressStart(effect->getNode(), message, messageid);
 }
 
 /// finish yer progress
@@ -776,7 +865,7 @@ void
 OfxImageEffectInstance::progressEnd()
 {
     boost::shared_ptr<OfxEffectInstance> effect = getOfxEffectInstance();
-    effect->getApp()->progressEnd(effect.get());
+    effect->getApp()->progressEnd(effect->getNode());
 }
 
 /** @brief Indicate how much of the processing task has been completed and reports on any abort status.
@@ -790,7 +879,7 @@ bool
 OfxImageEffectInstance::progressUpdate(double t)
 {
     boost::shared_ptr<OfxEffectInstance> effect = getOfxEffectInstance();
-    return effect->getApp()->progressUpdate(effect.get(), t);
+    return effect->getApp()->progressUpdate(effect->getNode(), t);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -869,84 +958,87 @@ OfxImageEffectInstance::areAllNonOptionalClipsConnected() const
     return true;
 }
 
-bool
-OfxImageEffectInstance::getClipPreferences_safe(std::map<OfxClipInstance*, ClipPrefs>& clipPrefs,EffectPrefs& effectPrefs)
+void
+OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata(NodeMetadata& metadata,
+                                                             OFX::Host::Property::Set &outArgs,
+                                                             std::map<OfxClipInstance*,int>& clipsMapping)
+{
+    static const OFX::Host::Property::PropSpec clipPrefsStuffs []=
+    {
+        { kOfxImageEffectPropFrameRate,          OFX::Host::Property::eDouble,  1, false,  "1" },
+        { kOfxImageEffectPropPreMultiplication,  OFX::Host::Property::eString,  1, false,  "" },
+        { kOfxImageClipPropFieldOrder,           OFX::Host::Property::eString,  1, false,  "" },
+        { kOfxImageClipPropContinuousSamples,    OFX::Host::Property::eInt,     1, false,  "0" },
+        { kOfxImageEffectFrameVarying,           OFX::Host::Property::eInt,     1, false,  "0" },
+        OFX::Host::Property::propSpecEnd
+    };
+    
+    outArgs.addProperties(clipPrefsStuffs);
+    
+    /// set the default for those
+    
+    /// is there multiple bit depth support? Depends on host, plugin and context
+    bool multiBitDepth = canCurrentlyHandleMultipleClipDepths();
+    
+    //Set the output frame rate according to what input clips have. Several inputs with different frame rates should be
+    //forbidden by the host.
+    double outputFrameRate = metadata.getOutputFrameRate();
+    outArgs.setDoubleProperty(kOfxImageEffectPropFrameRate, outputFrameRate);
+    outArgs.setStringProperty(kOfxImageEffectPropPreMultiplication, OfxClipInstance::natronsPremultToOfxPremult(metadata.getOutputPremult()));
+    outArgs.setStringProperty(kOfxImageClipPropFieldOrder, OfxClipInstance::natronsFieldingToOfxFielding(metadata.getOutputFielding()));
+    outArgs.setIntProperty(kOfxImageClipPropContinuousSamples, metadata.getIsContinuous());
+    outArgs.setIntProperty(kOfxImageEffectFrameVarying, metadata.getIsFrameVarying());
+    
+    /// now add the clip gubbins to the out args
+    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it=_clips.begin();
+        it!=_clips.end();
+        ++it) {
+        
+        OfxClipInstance *clip = dynamic_cast<OfxClipInstance*>(it->second);
+        assert(clip);
+        if (!clip) {
+            continue;
+        }
+        
+        int inputNb = clip->getInputNb();
+
+        clipsMapping[clip] = inputNb;
+        
+        std::string componentParamName = "OfxImageClipPropComponents_"+it->first;
+        std::string depthParamName     = "OfxImageClipPropDepth_"+it->first;
+        std::string parParamName       = "OfxImageClipPropPAR_"+it->first;
+        
+        OFX::Host::Property::PropSpec specComp = {componentParamName.c_str(),  OFX::Host::Property::eString, 0, false,          ""}; // note the support for multi-planar clips
+        outArgs.createProperty(specComp);
+
+        ImageComponents clipComponents = metadata.getImageComponents(inputNb);
+        
+        std::string clipComponentStr = OfxClipInstance::natronsComponentsToOfxComponents(clipComponents);
+        outArgs.setStringProperty(componentParamName.c_str(), clipComponentStr.c_str()); // as it is variable dimension, there is no default value, so we have to set it explicitly
+        
+        
+        const std::string& bitDepthStr = OfxClipInstance::natronsDepthToOfxDepth(metadata.getBitDepth(inputNb));
+        OFX::Host::Property::PropSpec specDep = {depthParamName.c_str(),       OFX::Host::Property::eString, 1, !multiBitDepth, bitDepthStr.c_str()};
+        outArgs.createProperty(specDep);
+        
+        OFX::Host::Property::PropSpec specPAR = {parParamName.c_str(),         OFX::Host::Property::eDouble, 1, false,          "1"};
+        outArgs.createProperty(specPAR);
+        outArgs.setDoubleProperty(parParamName, metadata.getPixelAspectRatio(inputNb));
+    }
+    
+    
+}
+
+StatusEnum
+OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs)
 {
     /// create the out args with the stuff that does not depend on individual clips
     OFX::Host::Property::Set outArgs;
     
-    double inputPar = 1.;
-    bool inputParSet = false;
-    bool mustWarnPar = false;
-    bool outputFrameRateSet = false;
-    double outputFrameRate = _outputFrameRate;
-    bool mustWarnFPS = false;
-    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it2 = _clips.begin(); it2 != _clips.end(); ++it2) {
-        if (!it2->second->isOutput() && it2->second->getConnected()) {
-            if (!inputParSet) {
-                inputPar = it2->second->getAspectRatio();
-                inputParSet = true;
-            } else if (inputPar != it2->second->getAspectRatio()) {
-                // We have several inputs with different aspect ratio, which should be forbidden by the host.
-                mustWarnPar = true;
-            }
-            
-            if (!outputFrameRateSet) {
-                outputFrameRate = it2->second->getFrameRate();
-                outputFrameRateSet = true;
-            } else if (std::abs(outputFrameRate - it2->second->getFrameRate()) > 0.01) {
-                // We have several inputs with different frame rates
-                mustWarnFPS = true;
-            }
-
-        }
-    }
-
     boost::shared_ptr<OfxEffectInstance> effect = _ofxEffectInstance.lock();
     
-    try {
-        setupClipPreferencesArgs(outArgs);
-    } catch (OFX::Host::Property::Exception) {
-        outArgs.setDoubleProperty("OfxImageClipPropPAR_Output" , inputPar);
-        outArgs.setDoubleProperty(kOfxImageEffectPropFrameRate, getFrameRate());
-    }
-    if (mustWarnPar) {
-        qDebug()
-        << "WARNING: getClipPreferences() for "
-        << effect->getScriptName_mt_safe().c_str()
-        << ": This node has several input clips with different pixel aspect ratio but it does "
-        "not support multiple input clips PAR. Your script or the GUI should have handled this "
-        "earlier (before connecting the node @see Node::canConnectInput) .";
-        outArgs.setDoubleProperty("OfxImageClipPropPAR_Output" , inputPar);
-
-    }
-    
-    if (mustWarnFPS) {
-        qDebug()
-        << "WARNING: getClipPreferences() for "
-        << effect->getScriptName_mt_safe().c_str()
-        << ": This node has several input clips with different frame rates but it does "
-        "not support it. Your script or the GUI should have handled this "
-        "earlier (before connecting the node @see Node::canConnectInput) .";
-        outArgs.setDoubleProperty(kOfxImageEffectPropFrameRate, getFrameRate());
-        std::string name = effect->getScriptName_mt_safe();
-        effect->setPersistentMessage(eMessageTypeWarning, "Several input clips with different pixel aspect ratio or different frame rates but it cannot handle it.");
-    }
-
-    if (mustWarnPar && !mustWarnFPS) {
-        std::string name = effect->getNode()->getLabel_mt_safe();
-        effect->setPersistentMessage(eMessageTypeWarning, "Several input clips with different pixel aspect ratio but it cannot handle it.");
-    } else if (!mustWarnPar && mustWarnFPS) {
-        std::string name = effect->getNode()->getLabel_mt_safe();
-        effect->setPersistentMessage(eMessageTypeWarning, "Several input clips with different frame rates but it cannot handle it.");
-    } else if (mustWarnPar && mustWarnFPS) {
-        std::string name = effect->getNode()->getLabel_mt_safe();
-        effect->setPersistentMessage(eMessageTypeWarning, "Several input clips with different pixel aspect ratio and different frame rates but it cannot handle it.");
-    } else {
-        if (effect->getNode()->hasPersistentMessage()) {
-            effect->clearPersistentMessage(false);
-        }
-    }
+    std::map<OfxClipInstance*,int> clipInputs;
+    setupClipPreferencesArgsFromMetadata(defaultPrefs,outArgs,clipInputs);
     
 
 #       ifdef OFX_DEBUG_ACTIONS
@@ -960,55 +1052,73 @@ OfxImageEffectInstance::getClipPreferences_safe(std::map<OfxClipInstance*, ClipP
     std::cout << "OFX: "<<(void*)this<<"->"<<kOfxImageEffectActionGetClipPreferences<<"()->"<<OFX::StatStr(st);
 #       endif
     
-    if(st!=kOfxStatOK && st!=kOfxStatReplyDefault) {
-#       ifdef OFX_DEBUG_ACTIONS
-        std::cout << std::endl;
-#       endif
-        /// ouch
-        return false;
-    }
-    
 #       ifdef OFX_DEBUG_ACTIONS
     std::cout << ": ";
 #       endif
-    /// OK, go pump the components/depths back into the clips themselves
-    for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it=_clips.begin();
-        it!=_clips.end();
-        ++it) {
-        ClipPrefs prefs;
-        
-        std::string componentParamName = "OfxImageClipPropComponents_"+it->first;
-        std::string depthParamName = "OfxImageClipPropDepth_"+it->first;
-        std::string parParamName = "OfxImageClipPropPAR_"+it->first;
-        
+    
+    if (st == kOfxStatReplyDefault) {
 #       ifdef OFX_DEBUG_ACTIONS
-        std::cout << it->first<<"->"<<outArgs.getStringProperty(depthParamName)<<","<<outArgs.getStringProperty(componentParamName)<<","<<outArgs.getDoubleProperty(parParamName)<<" ";
+        std::cout << "default" << std::endl;
 #       endif
-        prefs.bitdepth = outArgs.getStringProperty(depthParamName);
-        prefs.components = outArgs.getStringProperty(componentParamName);
-        prefs.par = outArgs.getDoubleProperty(parParamName);
-        OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
-        assert(clip);
-        if (clip) {
-            clipPrefs.insert(std::make_pair(clip, prefs));
-        }
+        return eStatusReplyDefault;
     }
     
-    
-    effectPrefs.frameRate         = outArgs.getDoubleProperty(kOfxImageEffectPropFrameRate);
-    effectPrefs.fielding          = outArgs.getStringProperty(kOfxImageClipPropFieldOrder);
-    effectPrefs.premult           = outArgs.getStringProperty(kOfxImageEffectPropPreMultiplication);
-    effectPrefs.continuous        = outArgs.getIntProperty(kOfxImageClipPropContinuousSamples) != 0;
-    effectPrefs.frameVarying      = outArgs.getIntProperty(kOfxImageEffectFrameVarying) != 0;
-    
+    /// Only copy the meta-data if they actually changed
+    if (st != kOfxStatOK) {
 #       ifdef OFX_DEBUG_ACTIONS
-    std::cout << _outputFrameRate<<","<<_outputFielding<<","<<_outputPreMultiplication<<","<<_continuousSamples<<","<<_frameVarying<<std::endl;
+        std::cout << "error" << std::endl;
 #       endif
-    
-    
-    _clipPrefsDirty  = false;
-    
-    return true;
+        /// ouch
+        return eStatusFailed;
+    } else {
+        /// OK, go pump the components/depths back into the clips themselves
+        for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it=_clips.begin();
+            it!=_clips.end();
+            ++it) {
+            
+            OfxClipInstance *clip = dynamic_cast<OfxClipInstance*>(it->second);
+            assert(clip);
+            if (!clip) {
+                continue;
+            }
+            
+            std::string componentParamName = "OfxImageClipPropComponents_"+it->first;
+            std::string depthParamName = "OfxImageClipPropDepth_"+it->first;
+            std::string parParamName = "OfxImageClipPropPAR_"+it->first;
+            
+            std::map<OfxClipInstance*,int>::iterator foundClip = clipInputs.find(clip);
+            assert(foundClip != clipInputs.end());
+            if (foundClip == clipInputs.end()) {
+                continue;
+            }
+            int inputNb = foundClip->second;
+            
+#       ifdef OFX_DEBUG_ACTIONS
+            std::cout << it->first<<"->"<<outArgs.getStringProperty(depthParamName)<<","<<outArgs.getStringProperty(componentParamName)<<","<<outArgs.getDoubleProperty(parParamName)<<" ";
+#       endif
+            
+            defaultPrefs.setBitDepth(inputNb, OfxClipInstance::ofxDepthToNatronDepth(outArgs.getStringProperty(depthParamName)));
+            defaultPrefs.setImageComponents(inputNb, OfxClipInstance::ofxComponentsToNatronComponents(outArgs.getStringProperty(componentParamName)));
+            defaultPrefs.setPixelAspectRatio(inputNb, outArgs.getDoubleProperty(parParamName));
+            
+        }
+        
+        
+        defaultPrefs.setOutputFrameRate(outArgs.getDoubleProperty(kOfxImageEffectPropFrameRate));
+        defaultPrefs.setOutputFielding(OfxClipInstance::ofxFieldingToNatronFielding(outArgs.getStringProperty(kOfxImageClipPropFieldOrder)));
+        defaultPrefs.setOutputPremult(OfxClipInstance::ofxPremultToNatronPremult(outArgs.getStringProperty(kOfxImageEffectPropPreMultiplication)));
+        defaultPrefs.setIsContinuous(outArgs.getIntProperty(kOfxImageClipPropContinuousSamples) != 0);
+        defaultPrefs.setIsFrameVarying(outArgs.getIntProperty(kOfxImageEffectFrameVarying) != 0);
+        
+#       ifdef OFX_DEBUG_ACTIONS
+        std::cout << outArgs.getDoubleProperty(kOfxImageEffectPropFrameRate)<<","
+        <<outArgs.getStringProperty(kOfxImageClipPropFieldOrder)<<","
+        <<outArgs.getStringProperty(kOfxImageEffectPropPreMultiplication)<<","
+        <<outArgs.getIntProperty(kOfxImageClipPropContinuousSamples)<<","
+        <<outArgs.getIntProperty(kOfxImageEffectFrameVarying)<<std::endl;
+#       endif
+        return eStatusOK;
+    } //if (st == kOfxStatOK)
 
 }
 
@@ -1065,7 +1175,9 @@ OfxImageEffectInstance::getInputsHoldingTransform(std::list<int>* inputs) const
             
             OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
             assert(clip);
-            inputs->push_back(clip->getInputNb());
+            if (clip) {
+                inputs->push_back(clip->getInputNb());
+            }
         }
     }
     return !inputs->empty();

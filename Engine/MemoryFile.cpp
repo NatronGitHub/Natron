@@ -231,15 +231,10 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
        - R/W
     ********************************************************
     *********************************************************/
-#ifdef UNICODE
-    std::wstring wpath = Global::s2ws(path);
-    file_handle = ::CreateFile(wpath.c_str(), GENERIC_READ | GENERIC_WRITE,
+    std::wstring wpath = Global::utf8_to_utf16(path);
+    file_handle = ::CreateFileW(wpath.c_str(), GENERIC_READ | GENERIC_WRITE,
                                0, 0, windows_open_mode, FILE_ATTRIBUTE_NORMAL, 0);
 
-#else
-    file_handle = ::CreateFile(path.c_str(), GENERIC_READ | GENERIC_WRITE,
-                               0, 0, windows_open_mode, FILE_ATTRIBUTE_NORMAL, 0);
-#endif
     
     if (file_handle == INVALID_HANDLE_VALUE) {
 		std::string winError = Global::GetLastErrorAsString();
@@ -384,9 +379,8 @@ MemoryFile::remove()
         if (_imp->data) {
             _imp->closeMapping();
         }
-        if (::remove( _imp->path.c_str() ) != 0) {
-            std::cerr << "Attempt to remove an unexisting file." << std::endl;
-        }
+        int ok = ::remove(_imp->path.c_str());
+        (void)ok;
         _imp->path.clear();
         _imp->data = 0;
     }

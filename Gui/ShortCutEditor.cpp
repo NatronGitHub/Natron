@@ -316,7 +316,7 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     }
     
     _imp->tree->resizeColumnToContents(0);
-    QObject::connect( _imp->tree, SIGNAL( itemSelectionChanged() ), this, SLOT( onSelectionChanged() ) );
+    QObject::connect( _imp->tree, SIGNAL(itemSelectionChanged()), this, SLOT(onSelectionChanged()) );
 
     _imp->mainLayout->addWidget(_imp->tree);
 
@@ -354,14 +354,14 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     _imp->validateButton = new Button(tr("Validate"),_imp->shortcutGroup);
     _imp->validateButton->setToolTip(GuiUtils::convertFromPlainText(tr("Validates the shortcut on the field editor and set the selected shortcut."), Qt::WhiteSpaceNormal));
     _imp->shortcutGroupLayout->addWidget(_imp->validateButton);
-    QObject::connect( _imp->validateButton, SIGNAL( clicked(bool) ), this, SLOT( onValidateButtonClicked() ) );
+    QObject::connect( _imp->validateButton, SIGNAL(clicked(bool)), this, SLOT(onValidateButtonClicked()) );
 
     _imp->clearButton = new Button(tr("Clear"),_imp->shortcutGroup);
-    QObject::connect( _imp->clearButton, SIGNAL( clicked(bool) ), this, SLOT( onClearButtonClicked() ) );
+    QObject::connect( _imp->clearButton, SIGNAL(clicked(bool)), this, SLOT(onClearButtonClicked()) );
     _imp->shortcutGroupLayout->addWidget(_imp->clearButton);
 
     _imp->resetButton = new Button(tr("Reset"),_imp->shortcutGroup);
-    QObject::connect( _imp->resetButton, SIGNAL( clicked(bool) ), this, SLOT( onResetButtonClicked() ) );
+    QObject::connect( _imp->resetButton, SIGNAL(clicked(bool)), this, SLOT(onResetButtonClicked()) );
     _imp->shortcutGroupLayout->addWidget(_imp->resetButton);
 
     _imp->buttonsContainer = new QWidget(this);
@@ -370,21 +370,21 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     _imp->mainLayout->QLayout::addWidget(_imp->buttonsContainer);
 
     _imp->restoreDefaultsButton = new Button(tr("Restore defaults"),_imp->buttonsContainer);
-    QObject::connect( _imp->restoreDefaultsButton, SIGNAL( clicked(bool) ), this, SLOT( onRestoreDefaultsButtonClicked() ) );
+    QObject::connect( _imp->restoreDefaultsButton, SIGNAL(clicked(bool)), this, SLOT(onRestoreDefaultsButtonClicked()) );
     _imp->buttonsLayout->addWidget(_imp->restoreDefaultsButton);
 
     _imp->applyButton = new Button(tr("Apply"),_imp->buttonsContainer);
-    QObject::connect( _imp->applyButton, SIGNAL( clicked(bool) ), this, SLOT( onApplyButtonClicked() ) );
+    QObject::connect( _imp->applyButton, SIGNAL(clicked(bool)), this, SLOT(onApplyButtonClicked()) );
     _imp->buttonsLayout->addWidget(_imp->applyButton);
 
     _imp->buttonsLayout->addStretch();
 
     _imp->cancelButton = new Button(tr("Cancel"),_imp->buttonsContainer);
-    QObject::connect( _imp->cancelButton, SIGNAL( clicked(bool) ), this, SLOT( onCancelButtonClicked() ) );
+    QObject::connect( _imp->cancelButton, SIGNAL(clicked(bool)), this, SLOT(onCancelButtonClicked()) );
     _imp->buttonsLayout->addWidget(_imp->cancelButton);
 
     _imp->okButton = new Button(tr("Ok"),_imp->buttonsContainer);
-    QObject::connect( _imp->okButton, SIGNAL( clicked(bool) ), this, SLOT( onOkButtonClicked() ) );
+    QObject::connect( _imp->okButton, SIGNAL(clicked(bool)), this, SLOT(onOkButtonClicked()) );
     _imp->buttonsLayout->addWidget(_imp->okButton);
 
     _imp->buttonsLayout->addStretch();
@@ -401,11 +401,11 @@ ShortCutEditorPrivate::buildGroupHierarchy(QString grouping)
 {
     ///Do not allow empty grouping, make them under the Global shortcut
     if ( grouping.isEmpty() ) {
-        grouping = kShortcutGroupGlobal;
+        grouping = QString::fromUtf8(kShortcutGroupGlobal);
     }
     
     ///Groups are separated by a '/'
-    QStringList groupingSplit = grouping.split( QChar('/') );
+    QStringList groupingSplit = grouping.split( QLatin1Char('/') );
     assert(groupingSplit.size() > 0);
     const QString & lastGroupName = groupingSplit.back();
     
@@ -535,19 +535,19 @@ ShortCutEditor::onSelectionChanged()
     }
 
     if ( items.empty() ) {
-        _imp->shortcutEditor->setText("");
+        _imp->shortcutEditor->setText(QString());
         _imp->shortcutEditor->setPlaceholderText( tr("Type to set shortcut") );
-        _imp->shortcutEditor->setReadOnly(true);
+        _imp->shortcutEditor->setReadOnly_NoFocusRect(true);
 
         return;
     }
     QTreeWidgetItem* selection = items.front();
     if ( !selection->isDisabled() ) {
-        _imp->shortcutEditor->setReadOnly(false);
+        _imp->shortcutEditor->setReadOnly_NoFocusRect(false);
         _imp->clearButton->setEnabled(true);
         _imp->resetButton->setEnabled(true);
     } else {
-        _imp->shortcutEditor->setReadOnly(true);
+        _imp->shortcutEditor->setReadOnly_NoFocusRect(true);
         _imp->clearButton->setEnabled(false);
         _imp->resetButton->setEnabled(false);
     }
@@ -590,7 +590,9 @@ ShortCutEditor::onValidateButtonClicked()
     //only keybinds can be edited...
     KeyBoundAction* ka = dynamic_cast<KeyBoundAction*>(action);
     assert(ka);
-
+    if (!ka) {
+        return;
+    }
     Qt::KeyboardModifiers modifiers,altmodifiers;
     Qt::Key symbol,altsymbmol;
     extractKeySequence(seq, modifiers, symbol);
@@ -605,7 +607,7 @@ ShortCutEditor::onValidateButtonClicked()
                     std::list<Qt::KeyboardModifiers>::const_iterator mit = keyAction->modifiers.begin();
                     for (std::list<Qt::Key>::const_iterator it3 = keyAction->currentShortcut.begin(); it3 != keyAction->currentShortcut.end(); ++it3,++mit) {
                         if (*mit == modifiers && *it3 == symbol) {
-                            QString err = QString("Cannot bind this shortcut because the following action is already using it: %1")
+                            QString err = QString::fromUtf8("Cannot bind this shortcut because the following action is already using it: %1")
                             .arg( it2->item->text(0) );
                             _imp->shortcutEditor->clear();
                             Dialogs::errorDialog( tr("Shortcuts Editor").toStdString(), tr( err.toStdString().c_str() ).toStdString() );
@@ -613,8 +615,6 @@ ShortCutEditor::onValidateButtonClicked()
                             return;
                         }
                     }
-                    
-                    
                 }
             }
         }
@@ -644,9 +644,9 @@ ShortCutEditor::onClearButtonClicked()
     }
 
     if ( items.empty() ) {
-        _imp->shortcutEditor->setText("");
+        _imp->shortcutEditor->setText(QString());
         _imp->shortcutEditor->setPlaceholderText( tr("Type to set shortcut") );
-        _imp->altShortcutEditor->setText("");
+        _imp->altShortcutEditor->setText(QString());
         _imp->altShortcutEditor->setPlaceholderText( tr("Type to set an alternative shortcut") );
         return;
     }
@@ -659,13 +659,12 @@ ShortCutEditor::onClearButtonClicked()
     KeyBoundAction* ka = dynamic_cast<KeyBoundAction*>(action);
     if (ma) {
         ma->button = Qt::NoButton;
-    } else {
-        assert(ka);
+    } else if (ka) {
         ka->currentShortcut.clear();
     }
 
-    selection->setText(1, "");
-    _imp->shortcutEditor->setText("");
+    selection->setText(1, QString());
+    _imp->shortcutEditor->setText(QString());
     _imp->shortcutEditor->setFocus();
 }
 
@@ -679,7 +678,7 @@ ShortCutEditor::onResetButtonClicked()
     }
 
     if ( items.empty() ) {
-        _imp->shortcutEditor->setText("");
+        _imp->shortcutEditor->setText(QString());
         _imp->shortcutEditor->setPlaceholderText( tr("Type to set shortcut") );
 
         return;

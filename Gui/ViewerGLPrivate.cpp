@@ -93,6 +93,7 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_, ViewerTab* parent)
 , rodOverlayColor(100,100,100,255)
 , textFont( new QFont(appFont,appFontSize) )
 , overlay(true)
+, supportsOpenGL(true)
 , supportsGLSL(true)
 , updatingTexture(false)
 , clearColor(0,0,0,255)
@@ -448,7 +449,10 @@ ViewerGL::Implementation::initializeGL()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     _this->makeCurrent();
-    initAndCheckGlExtensions();
+    supportsOpenGL = initAndCheckGlExtensions();
+    if (!supportsOpenGL) {
+        return;
+    }
     this->displayTextures[0] = new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE);
     this->displayTextures[1] = new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE);
 
@@ -488,7 +492,7 @@ getOpenGLVersionString()
     const char* str = (const char*)glGetString(GL_VERSION);
     QString ret;
     if (str) {
-        ret.append(str);
+        ret.append(QString::fromUtf8(str));
     }
 
     return ret;
@@ -501,23 +505,26 @@ getGlewVersionString()
     const char* str = reinterpret_cast<const char *>( glewGetString(GLEW_VERSION) );
     QString ret;
     if (str) {
-        ret.append(str);
+        ret.append(QString::fromUtf8(str));
     }
 
     return ret;
 }
 
-void
+bool
 ViewerGL::Implementation::initAndCheckGlExtensions()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == _this->context() );
+    
+    const QGLContext* context = _this->context();
     GLenum err = glewInit();
     if (GLEW_OK != err) {
         /* Problem: glewInit failed, something is seriously wrong. */
         Dialogs::errorDialog( tr("OpenGL/GLEW error").toStdString(),
                             (const char*)glewGetErrorString(err) );
+        return false;
     }
     //fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
 
@@ -533,18 +540,20 @@ ViewerGL::Implementation::initAndCheckGlExtensions()
         Dialogs::errorDialog( tr("Missing OpenGL requirements").toStdString(),
                             tr("The viewer may not be fully functional. "
                                "This software needs at least OpenGL 1.5 with NPOT textures, GLSL, VBO, PBO, vertex arrays. ").toStdString() );
+        return false;
     }
 
     this->viewerTab->getGui()->setOpenGLVersion( getOpenGLVersionString() );
     this->viewerTab->getGui()->setGlewVersion( getGlewVersionString() );
 
-    if ( !QGLShaderProgram::hasOpenGLShaderPrograms( _this->context() ) ) {
+    if (!context || !QGLShaderProgram::hasOpenGLShaderPrograms(context)) {
         // no need to pull out a dialog, it was already presented after the GLEW check above
 
         //Dialogs::errorDialog("Viewer error","The viewer is unabgile to work without a proper version of GLSL.");
         //cout << "Warning : GLSL not present on this hardware, no material acceleration possible." << endl;
         this->supportsGLSL = false;
     }
+    return true;
 }
 
 

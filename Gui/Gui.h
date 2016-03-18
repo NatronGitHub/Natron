@@ -42,6 +42,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/GlobalDefines.h"
 
 #include "Engine/ScriptObject.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 #include "Gui/SerializableWindow.h"
@@ -213,7 +214,7 @@ public:
 
     void updateViewsActions(int viewsCount);
 
-    static QKeySequence keySequenceForView(int v);
+    static QKeySequence keySequenceForView(ViewIdx v);
 
     /*set the curve editor as the active widget of its pane*/
     void setCurveEditorOnTop();
@@ -326,7 +327,7 @@ public:
 
     void updateViewersViewsMenu(const std::vector<std::string>& viewNames);
 
-    void setViewersCurrentView(int view);
+    void setViewersCurrentView(ViewIdx view);
 
     const std::list<ViewerTab*> & getViewersList() const;
     std::list<ViewerTab*> getViewersList_mt_safe() const;
@@ -343,18 +344,22 @@ public:
     NodesGuiList getVisibleNodes_mt_safe() const;
 
     void deselectAllNodes() const;
-
-    void onProcessHandlerStarted(const QString & sequenceName,int firstFrame,int lastFrame, int frameStep,
-                                 const boost::shared_ptr<ProcessHandler> & process);
-
-    void onWriterRenderStarted(const QString & sequenceName,int firstFrame,int lastFrame,int frameStep,
-                               OutputEffectInstance* writer);
-
+    
+    void onRenderStarted(const QString & sequenceName,
+                         int firstFrame,int lastFrame,int frameStep,
+                         bool canPause,
+                         OutputEffectInstance* writer,
+                         const boost::shared_ptr<ProcessHandler> & process);
+    
+    void onRenderRestarted(OutputEffectInstance* writer,
+                         const boost::shared_ptr<ProcessHandler> & process);
+    
     NodeGraph* getNodeGraph() const;
     CurveEditor* getCurveEditor() const;
     DopeSheetEditor *getDopeSheetEditor() const;
     ScriptEditor* getScriptEditor() const;
-
+    ProgressPanel* getProgressPanel() const;
+    
     QVBoxLayout* getPropertiesLayout() const;
     PropertiesBinWrapper* getPropertiesBin() const;
     const RegisteredTabs & getRegisteredTabs() const;
@@ -414,11 +419,13 @@ public:
 
     void removeTrackerInterface(NodeGui* n,bool pluginsly);
 
-    void progressStart(KnobHolder* effect, const std::string &message, const std::string &messageid, bool canCancel = true);
+    void progressStart(const NodePtr& node, const std::string &message, const std::string &messageid, bool canCancel = true);
 
-    void progressEnd(KnobHolder* effect);
+    void progressEnd(const NodePtr& node);
 
-    bool progressUpdate(KnobHolder* effect,double t);
+    bool progressUpdate(const NodePtr& node,double t);
+    
+    void ensureProgressPanelVisible();
 
     /*Useful function that saves on disk the image in png format.
        The name of the image will be the hash key of the image.*/
@@ -557,6 +564,9 @@ public:
     
     void setApplicationConsoleActionVisible(bool visible);
 
+    bool saveProjectAs(const std::string& filename);
+
+    
 protected:
     // Reimplemented Protected Functions
 
@@ -583,14 +593,9 @@ Q_SIGNALS:
     
 public Q_SLOTS:
     
-    void onDoProgressStartOnMainThread(KnobHolder* effect, const QString &message, const QString &messageid, bool canCancel);
-    
-    void onDoProgressEndOnMainThread(KnobHolder* effect);
-    
-    void onDoProgressUpdateOnMainThread(KnobHolder* effect,double t);
-    
+        
     ///Called whenever the time changes on the timeline
-    void onTimeChanged(SequenceTime time,int reason);
+    void renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,int reason);
     
     void onTimelineTimeAboutToChange();
 
@@ -657,7 +662,7 @@ public Q_SLOTS:
 
     void showShortcutEditor();
 
-    void showOfxLog();
+    void showErrorLog();
 
     void openRecentFile();
 
@@ -669,7 +674,7 @@ public Q_SLOTS:
 
     NodePtr createReader();
     NodePtr createWriter();
-
+    
     void renderAllWriters();
 
     void renderSelectedNode();
@@ -705,9 +710,7 @@ public Q_SLOTS:
     void onCloseTabTriggered();
 
     void onUserCommandTriggered();
-    
-    void onRenderProgressDialogFinished();
-    
+        
     void onFocusChanged(QWidget* old, QWidget*);
     
     void onShowApplicationConsoleActionTriggered();

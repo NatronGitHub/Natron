@@ -59,6 +59,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Node.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
+#include "Engine/FStreamsSupport.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/PluginMemory.h"
@@ -70,6 +71,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Timer.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 //#define NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
@@ -83,7 +85,6 @@ OutputEffectInstance::OutputEffectInstance(NodePtr node)
     , _outputEffectDataLock()
     , _renderSequenceRequests()
     , _engine(0)
-    , _timeSpentPerFrameRendered()
     , _writerCurrentFrame(0)
     , _writerFirstFrame(0)
     , _writerLastFrame(0)
@@ -156,11 +157,11 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
     
     int viewsCount = getApp()->getProject()->getProjectViewsCount();
 
-    const int mainView = 0;
+    const ViewIdx mainView(0);
     
-    std::vector<int> viewsToRender(viewsCount);
+    std::vector<ViewIdx> viewsToRender(viewsCount);
     for (int i = 0; i < viewsCount; ++i) {
-        viewsToRender[i] = i;
+        viewsToRender[i] = ViewIdx(i);
     }
     
     ///The effect is sequential (e.g: WriteFFMPEG), and thus cannot render multiple views, we have to choose one
@@ -197,13 +198,16 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
                         if (viewsChoice) {
                             hasViewChoice = true;
                             int viewChoice_i = viewsChoice->getValue();
-                            if (viewChoice_i == 0) { // the "All" chocie
+                            if (viewChoice_i == 0) { // the "All" choice
                                 viewsToRender.clear();
-                                viewsToRender.push_back(-1);
+                                // note: if the plugin renders all views to a single file, then rendering view 0 will do the job.
+                                viewsToRender.push_back(ViewIdx(0));
+                                
                             } else {
                                 //The user has specified a view
                                 viewsToRender.clear();
-                                viewsToRender.push_back(viewChoice_i - 1);
+                                assert(viewChoice_i >= 1);
+                                viewsToRender.push_back(ViewIdx(viewChoice_i - 1));
                             }
                         }
                     }
@@ -214,10 +218,10 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
                             if (mainView < (int)viewNames.size()) {
                                 mainViewName = viewNames[mainView];
                             }
-                            QString message = QString(getNode()->getLabel_mt_safe().c_str()) + ' ' +
-                            QObject::tr("does not support multi-view, only the view ") + mainViewName.c_str() + QObject::tr(" will be rendered");
+                            QString message = QString::fromUtf8(getNode()->getLabel_mt_safe().c_str()) + QLatin1Char(' ') +
+                            QObject::tr("does not support multi-view, only the view ") + QString::fromUtf8(mainViewName.c_str()) + QObject::tr(" will be rendered");
                             if (!renderController) {
-                                message.append(".\nYou can use the %v or %V indicator in the filename to render to separate files.\n");
+                                message.append(QString::fromUtf8(".\nYou can use the %v or %V indicator in the filename to render to separate files.\n"));
                                 message = message + QObject::tr("Would you like to continue?");
                                 StandardButtonEnum rep = Dialogs::questionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonOk | eStandardButtonCancel), eStandardButtonOk);
                                 if (rep != eStandardButtonOk) {
@@ -245,10 +249,10 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
             if (mainView < (int)viewNames.size()) {
                 mainViewName = viewNames[mainView];
             }
-            QString message = QString(getNode()->getLabel_mt_safe().c_str()) + ' ' +
-            QObject::tr("does not support multi-view, only the view") + mainViewName.c_str() + QObject::tr("will be rendered");
+            QString message = QString::fromUtf8(getNode()->getLabel_mt_safe().c_str()) + QLatin1Char(' ') +
+            QObject::tr("does not support multi-view, only the view") + QString::fromUtf8(mainViewName.c_str()) + QObject::tr("will be rendered");
             if (!renderController) {
-                message.append(".\nYou can use the %v or %V indicator in the filename to render to separate files.\n");
+                message.append(QString::fromUtf8(".\nYou can use the %v or %V indicator in the filename to render to separate files.\n"));
                 message = message + QObject::tr("Would you like to continue?");
                 StandardButtonEnum rep = Dialogs::questionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonOk | eStandardButtonCancel), eStandardButtonOk);
                 if (rep != eStandardButtonOk) {
@@ -312,7 +316,7 @@ OutputEffectInstance::createWriterPath()
             getApp()->getProject()->getEnvironmentVariables(env);
             Project::expandVariable(env, path);
             if (!path.empty()) {
-                QDir().mkpath( path.c_str() );
+                QDir().mkpath( QString::fromUtf8(path.c_str()) );
             }
         }
     }
@@ -432,36 +436,10 @@ OutputEffectInstance::createRenderEngine()
     return new RenderEngine(thisShared);
 }
 
-void
-OutputEffectInstance::updateRenderTimeInfos(double lastTimeSpent,
-                                            double *averageTimePerFrame,
-                                            double *totalTimeSpent)
-{
-    assert(totalTimeSpent && averageTimePerFrame);
-
-    *totalTimeSpent = 0;
-
-    QMutexLocker k(&_outputEffectDataLock);
-    _timeSpentPerFrameRendered.push_back(lastTimeSpent);
-
-    for (std::list<double>::iterator it = _timeSpentPerFrameRendered.begin(); it != _timeSpentPerFrameRendered.end(); ++it) {
-        *totalTimeSpent += *it;
-    }
-    size_t c = _timeSpentPerFrameRendered.size();
-    *averageTimePerFrame = (c == 0 ? 0 : *totalTimeSpent / c);
-}
-
-void
-OutputEffectInstance::resetTimeSpentRenderingInfos()
-{
-    QMutexLocker k(&_outputEffectDataLock);
-
-    _timeSpentPerFrameRendered.clear();
-}
 
 void
 OutputEffectInstance::reportStats(int time,
-                                  int view,
+                                  ViewIdx view,
                                   double wallTime,
                                   const std::map<NodePtr, NodeRenderStats > & stats)
 {
@@ -471,9 +449,11 @@ OutputEffectInstance::reportStats(int time,
     if (fileKnob) {
         KnobOutputFile* strKnob = dynamic_cast<KnobOutputFile*>( fileKnob.get() );
         if  (strKnob) {
-            QString qfileName( SequenceParsing::generateFileNameFromPattern(strKnob->getValue(0), time, view).c_str() );
+        
+
+            QString qfileName = QString::fromUtf8( SequenceParsing::generateFileNameFromPattern(strKnob->getValue(0, ViewIdx(view)), getApp()->getProject()->getProjectViewNames(), time, view).c_str() );
             QtCompat::removeFileExtension(qfileName);
-            qfileName.append("-stats.txt");
+            qfileName.append(QString::fromUtf8("-stats.txt"));
             filename = qfileName.toStdString();
         }
     }
@@ -486,19 +466,11 @@ OutputEffectInstance::reportStats(int time,
         return;
     }
 
-    std::ofstream ofile;
-    ofile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-    try {
-        ofile.open(filename.c_str(), std::ofstream::out);
-    } catch (const std::ios_base::failure & e) {
-        std::cout << QObject::tr("Failure to write render statistics file: ").toStdString() << e.what() << std::endl;
 
-        return;
-    }
-
-    if ( !ofile.good() ) {
-        std::cout << QObject::tr("Failure to write render statistics file.").toStdString() << std::endl;
-
+    FStreamsSupport::ofstream ofile;
+    FStreamsSupport::open(&ofile,filename);
+    if (!ofile) {
+         std::cout << QObject::tr("Failure to write render statistics file.").toStdString() << std::endl;
         return;
     }
 

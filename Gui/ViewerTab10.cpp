@@ -40,6 +40,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/OutputSchedulerThread.h" // RenderEngine
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/ActionShortcuts.h"
@@ -106,23 +107,10 @@ ViewerTab::updateViewsMenu(const std::vector<std::string>& viewNames)
 
     _imp->viewsComboBox->clear();
     for (std::size_t i = 0;  i < viewNames.size(); ++i) {
-        if (viewNames[i] == "Left") {
-            ActionWithShortcut* leftAct = new ActionWithShortcut(kShortcutGroupViewer,
-                                                                 kShortcutIDShowLeftView,
-                                                                 kShortcutDescShowLeftView,
-                                                                 _imp->viewsComboBox);
-            _imp->viewsComboBox->addAction(leftAct);
-
-        } else if (viewNames[i] == "Right") {
-            ActionWithShortcut* rightAct = new ActionWithShortcut(kShortcutGroupViewer,
-                                                                  kShortcutIDShowRightView,
-                                                                  kShortcutDescShowRightView,
-                                                                  _imp->viewsComboBox);
-            _imp->viewsComboBox->addAction(rightAct);
-        } else {
-            _imp->viewsComboBox->addItem(viewNames[i].c_str());
-        }
+        _imp->viewsComboBox->addItem(QString::fromUtf8(viewNames[i].c_str()));
     }
+    
+    
     if (viewNames.size() == 1) {
         _imp->viewsComboBox->hide();
     } else {
@@ -137,12 +125,12 @@ ViewerTab::updateViewsMenu(const std::vector<std::string>& viewNames)
 }
 
 void
-ViewerTab::setCurrentView(int view)
+ViewerTab::setCurrentView(ViewIdx view)
 {
     _imp->viewsComboBox->setCurrentIndex(view);
 }
 
-int
+ViewIdx
 ViewerTab::getCurrentView() const
 {
     QMutexLocker l(&_imp->currentViewMutex);
@@ -223,9 +211,9 @@ ViewerTab::updateZoomComboBox(int value)
 {
     assert(value > 0);
     QString str = QString::number(value);
-    str.append( QChar('%') );
-    str.prepend("  ");
-    str.append("  ");
+    str.append( QLatin1Char('%') );
+    str.prepend(QString::fromUtf8("  "));
+    str.append(QString::fromUtf8("  "));
     _imp->zoomCombobox->setCurrentText_no_emit(str);
 }
 
@@ -246,10 +234,14 @@ ViewerTab::toggleStartBackward()
 void
 ViewerTab::startPause(bool b)
 {
+    
     abortRendering();
     if (b) {
+        if (getGui()->getApp()->checkAllReadersModificationDate(true)) {
+            return;
+        }
         getGui()->getApp()->setLastViewerUsingTimeline(_imp->viewerNode->getNode());
-        std::vector<int> viewsToRender;
+        std::vector<ViewIdx> viewsToRender;
         {
             QMutexLocker k(&_imp->currentViewMutex);
             viewsToRender.push_back(_imp->currentViewIndex);
@@ -314,15 +306,19 @@ ViewerTab::onEngineStopped()
         return;
     }
     
-    if (_imp->play_Forward_Button && _imp->play_Forward_Button->isDown()) {
-        _imp->play_Forward_Button->setDown(false);
-        _imp->play_Forward_Button->setChecked(false);
+    if (!_imp->viewerNode->getRenderEngine()->isPlaybackAutoRestartEnabled()) {
+        if (_imp->play_Forward_Button && _imp->play_Forward_Button->isDown()) {
+            _imp->play_Forward_Button->setDown(false);
+            _imp->play_Forward_Button->setChecked(false);
+        }
+        
+        if (_imp->play_Backward_Button && _imp->play_Backward_Button->isDown()) {
+            _imp->play_Backward_Button->setDown(false);
+            _imp->play_Backward_Button->setChecked(false);
+        }
     }
+    _imp->currentFrameBox->setValue(_imp->viewerNode->getTimeline()->currentFrame());
     
-    if (_imp->play_Backward_Button && _imp->play_Backward_Button->isDown()) {
-        _imp->play_Backward_Button->setDown(false);
-        _imp->play_Backward_Button->setChecked(false);
-    }
     if (getGui() && getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
         getGui()->onFreezeUIButtonClicked(false);
     } else {
@@ -337,8 +333,11 @@ ViewerTab::startBackward(bool b)
 {
     abortRendering();
     if (b) {
+        if (getGui()->getApp()->checkAllReadersModificationDate(true)) {
+            return;
+        }
         getGui()->getApp()->setLastViewerUsingTimeline(_imp->viewerNode->getNode());
-        std::vector<int> viewsToRender;
+        std::vector<ViewIdx> viewsToRender;
         {
             QMutexLocker k(&_imp->currentViewMutex);
             viewsToRender.push_back(_imp->currentViewIndex);
@@ -346,6 +345,28 @@ ViewerTab::startBackward(bool b)
         _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(getGui()->getApp()->isRenderStatsActionChecked(), viewsToRender, OutputSchedulerThread::eRenderDirectionBackward);
 
     }
+}
+
+void
+ViewerTab::refresh(bool enableRenderStats)
+{
+    //Check if readers files have changed on disk
+    getGui()->getApp()->checkAllReadersModificationDate(false);
+    abortRendering();
+    _imp->viewerNode->forceFullComputationOnNextFrame();
+    if (!enableRenderStats) {
+        _imp->viewerNode->renderCurrentFrame(true);
+    } else {
+        getGui()->getOrCreateRenderStatsDialog()->show();
+        _imp->viewerNode->renderCurrentFrameWithRenderStats(false);
+    }
+}
+
+void
+ViewerTab::refresh()
+{
+    Qt::KeyboardModifiers m = qApp->keyboardModifiers();
+    refresh(m.testFlag(Qt::ShiftModifier) && m.testFlag(Qt::ControlModifier));
 }
 
 void
@@ -402,12 +423,15 @@ ViewerTab::lastFrame()
 
 void
 ViewerTab::onTimeLineTimeChanged(SequenceTime time,
-                                 int /*reason*/)
+                                 int reason)
 {
     if (!getGui()) {
         return;
     }
-    _imp->currentFrameBox->setValue(time);
+    TimelineChangeReasonEnum r = (TimelineChangeReasonEnum)reason;
+    if (r != eTimelineChangeReasonPlaybackSeek) {
+        _imp->currentFrameBox->setValue(time);
+    }
     
     if (_imp->timeLineGui->getTimeline() != getGui()->getApp()->getTimeLine()) {
         _imp->viewerNode->renderCurrentFrame(true);
@@ -429,25 +453,6 @@ ViewerTab::centerViewer()
     } else {
         _imp->viewer->update();
     }
-}
-
-void
-ViewerTab::refresh(bool enableRenderStats)
-{
-    _imp->viewerNode->forceFullComputationOnNextFrame();
-    if (!enableRenderStats) {
-        _imp->viewerNode->renderCurrentFrame(true);
-    } else {
-        getGui()->getOrCreateRenderStatsDialog()->show();
-        _imp->viewerNode->renderCurrentFrameWithRenderStats(false);
-    }
-}
-
-void
-ViewerTab::refresh()
-{
-    Qt::KeyboardModifiers m = qApp->keyboardModifiers();
-    refresh(m.testFlag(Qt::ShiftModifier) && m.testFlag(Qt::ControlModifier));
 }
 
 ViewerTab::~ViewerTab()
@@ -535,7 +540,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)e->key();
     double scale = 1. / (1 << _imp->viewer->getCurrentRenderScale());
-
+    
     if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, modifiers, key) ) {
         int currentIndex = _imp->viewerChannels->activeIndex();
         if (currentIndex == 0) {
@@ -635,6 +640,10 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
             _imp->viewerChannels->setCurrentIndex_no_emit(6);
             setDisplayChannels(6, false);
         }
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionPauseViewer, modifiers, key) ) {
+        toggleViewerPauseMode(true);
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionPauseViewerInputA, modifiers, key) ) {
+        toggleViewerPauseMode(false);
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
         previousFrame();
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerBackward, modifiers, key) ) {
@@ -657,6 +666,10 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerLast, modifiers, key) ) {
         //last frame
         lastFrame();
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPlaybackIn, modifiers, key) ) {
+        onPlaybackInButtonClicked();
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPlaybackOut, modifiers, key) ) {
+        onPlaybackOutButtonClicked();
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, modifiers, key) ) {
         //prev key
         getGui()->getApp()->goToPreviousKeyframe();
@@ -755,10 +768,10 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         if (getViewer()->hasFocus()) {
             switchInputAAndB();
         }
-    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDShowLeftView, modifiers, key) ) {
-        showView(0);
-    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDShowRightView, modifiers, key) ) {
-        showView(1);
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDPrevView, modifiers, key)) {
+        previousView();
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDNextView, modifiers, key)) {
+        nextView();
     } else {
         accept = false;
     }
@@ -793,6 +806,7 @@ ViewerTab::keyReleaseEvent(QKeyEvent* e)
 void
 ViewerTab::setDisplayChannels(int i, bool setBothInputs)
 {
+    _imp->viewerChannelsAutoswitchedToAlpha = false;
     DisplayChannelsEnum channels;
     
     switch (i) {
@@ -872,12 +886,58 @@ ViewerTab::sizeHint() const
 }
 
 void
-ViewerTab::showView(int view)
+ViewerTab::onViewsComboboxChanged(int index)
 {
     {
         QMutexLocker l(&_imp->currentViewMutex);
-        
-        _imp->currentViewIndex = view;
+        _imp->currentViewIndex = ViewIdx(index);
+    }
+    abortRendering();
+    _imp->viewerNode->renderCurrentFrame(true);
+}
+
+void
+ViewerTab::previousView()
+{
+    ViewIdx idx;
+    {
+        QMutexLocker k(&_imp->currentViewMutex);
+        idx = _imp->currentViewIndex;
+    }
+    int nbViews = _imp->viewsComboBox->count();
+    if (idx.value() == 0) {
+        idx = ViewIdx(nbViews - 1);
+    } else {
+        idx = ViewIdx(idx.value() -1);
+    }
+    _imp->viewsComboBox->setCurrentIndex_no_emit(idx.value());
+    {
+        QMutexLocker k(&_imp->currentViewMutex);
+        _imp->currentViewIndex = idx;
+    }
+    abortRendering();
+    _imp->viewerNode->renderCurrentFrame(true);
+    
+}
+
+void
+ViewerTab::nextView()
+{
+    ViewIdx idx;
+    {
+        QMutexLocker k(&_imp->currentViewMutex);
+        idx = _imp->currentViewIndex;
+    }
+    int nbViews = _imp->viewsComboBox->count();
+    if (idx.value() == nbViews -1) {
+        idx = ViewIdx(0);
+    } else {
+        idx = ViewIdx(idx.value() + 1);
+    }
+    _imp->viewsComboBox->setCurrentIndex_no_emit(idx.value());
+    {
+        QMutexLocker k(&_imp->currentViewMutex);
+        _imp->currentViewIndex = idx;
     }
     abortRendering();
     _imp->viewerNode->renderCurrentFrame(true);

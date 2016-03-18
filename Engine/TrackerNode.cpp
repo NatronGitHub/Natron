@@ -110,13 +110,15 @@ bool
 TrackerNode::isIdentity(double time,
                         const RenderScale & /*scale*/,
                         const RectI & /*roi*/,
-                        int /*view*/,
+                        ViewIdx view,
                         double* inputTime,
+                        ViewIdx* inputView,
                         int* inputNb)
 {
     // Identity for now, until we can apply a transform
     *inputTime = time;
     *inputNb = 0;
+    *inputView = view;
     return true;
 }
 

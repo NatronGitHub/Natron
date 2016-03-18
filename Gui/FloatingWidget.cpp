@@ -52,7 +52,7 @@ FloatingWidget::FloatingWidget(Gui* gui,
     setAttribute(Qt::WA_DeleteOnClose, true);
     if (gui) {
         boost::shared_ptr<Project> project = gui->getApp()->getProject();
-        QObject::connect(project.get(),SIGNAL(projectNameChanged(QString, bool)), this, SLOT(onProjectNameChanged(QString, bool)));
+        QObject::connect(project.get(),SIGNAL(projectNameChanged(QString,bool)), this, SLOT(onProjectNameChanged(QString,bool)));
         onProjectNameChanged(project->getProjectPath(), false);
     }
     _layout = new QVBoxLayout(this);

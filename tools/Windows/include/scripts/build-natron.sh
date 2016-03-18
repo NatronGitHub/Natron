@@ -10,6 +10,9 @@
 
 source `pwd`/common.sh || exit 1
 
+PID=$$
+
+
 
 if [ "$1" = "32" ]; then
     BIT=32
@@ -19,8 +22,27 @@ else
     INSTALL_PATH=$INSTALL64_PATH
 fi
 
-TMP_BUILD_DIR=$TMP_PATH$BIT
+if [ "$1" = "" ]; then
+  echo "no bit"
+  exit 1
+fi
 
+TMP_BUILD_DIR=$TMP_PATH$BIT
+# make kill bot
+KILLSCRIPT="$TMP_BUILD_DIR/killbot$$.sh"
+cat << 'EOF' > "$KILLSCRIPT"
+#!/bin/sh
+PARENT=$1
+sleep 30m
+if [ "$PARENT" = "" ]; then
+exit 1
+fi
+PIDS=`ps aux|awk '{print $2}'|grep $PARENT`
+if [ "$PIDS" = "$PARENT" ]; then
+kill -15 $PARENT
+fi
+EOF
+chmod +x $KILLSCRIPT
 
 #Assume that $1 is the branch to build, otherwise if empty use the NATRON_GIT_TAG in common.sh
 NATRON_BRANCH=$2
@@ -53,15 +75,22 @@ export BOOST_ROOT PYTHON_HOME PYTHON_PATH PYTHON_INCLUDE
 # Install natron
 cd $TMP_BUILD_DIR || exit 1
 
+
+$KILLSCRIPT $PID &
+KILLBOT=$!
+
 git clone $GIT_NATRON || exit 1
 cd Natron || exit 1
 git checkout $NATRON_BRANCH || exit 1
 git pull origin $NATRON_BRANCH
 git submodule update -i --recursive || exit 1
-if [ "$NATRON_BRANCH" = "workshop" ]; then
+if [ "$NATRON_BRANCH" = "master" ]; then
     # the snapshots are always built with the latest version of submodules
     git submodule foreach git pull origin master
 fi
+
+
+kill -o $KILLBOT
 
 REL_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 
@@ -90,8 +119,24 @@ echo "Building Natron $NATRON_REL_V from $NATRON_BRANCH against SDK $SDK_VERSION
 echo
 sleep 2
 
+# Plugins git hash
+IO_VERSION_FILE=$INSTALL_PATH/Plugins/IO.ofx.bundle-version.txt
+MISC_VERSION_FILE=$INSTALL_PATH/Plugins/Misc.ofx.bundle-version.txt
+ARENA_VERSION_FILE=$INSTALL_PATH/Plugins/Arena.ofx.bundle-version.txt
+
+if [ -f "$IO_VERSION_FILE" ]; then
+  IO_GIT_HASH=`cat ${IO_VERSION_FILE}`
+fi
+if [ -f "$MISC_VERSION_FILE" ]; then
+  MISC_GIT_HASH=`cat ${MISC_VERSION_FILE}`
+fi
+if [ -f "$ARENA_VERSION_FILE" ]; then
+  ARENA_GIT_HASH=`cat ${ARENA_VERSION_FILE}`
+fi
+
+
 #Make sure GitVersion.h is in sync with NATRON_GIT_VERSION
-cat "$INC_PATH/natron/GitVersion.h" | sed -e "s#__BRANCH__#${NATRON_BRANCH}#;s#__COMMIT__#${REL_GIT_VERSION}#" > Global/GitVersion.h || exit 1
+cat "$INC_PATH/natron/GitVersion.h" | sed -e "s#__BRANCH__#${NATRON_BRANCH}#;s#__COMMIT__#${REL_GIT_VERSION}#;s#__IO_COMMIT__#${IO_GIT_HASH}#;s#__MISC_COMMIT__#${MISC_GIT_HASH}#;s#__ARENA_COMMIT__#${ARENA_GIT_HASH}#" > Global/GitVersion.h || exit 1
 
 if [ "$PYV" = "3" ]; then
     cat "$INC_PATH/natron/config_py3.pri" > config.pri || exit 1
@@ -167,6 +212,13 @@ cp ../Gui/Resources/Stylesheets/mainstyle.qss "$INSTALL_PATH/share/stylesheets/"
 mkdir -p $INSTALL_PATH/share/pixmaps || exit 1
 cp ../Gui/Resources/Images/natronIcon256_linux.png "$INSTALL_PATH/share/pixmaps/" || exit 1
 echo "$NATRON_REL_V" > "$INSTALL_PATH/docs/natron/VERSION" || exit 1
+
+rm -rf $INSTALL_PATH/PyPlugs
+mkdir -p $INSTALL_PATH/PyPlugs || exit 1
+cp ../Gui/Resources/PyPlugs/* $INSTALL_PATH/PyPlugs/ || exit 1
+
+
+rm -f $KILLSCRIPT
 
 echo "Done!"
 

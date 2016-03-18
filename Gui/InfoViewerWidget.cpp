@@ -59,35 +59,27 @@ InfoViewerWidget::InfoViewerWidget(const QString & description,
     QFontMetrics fm(font(),0);
     setFixedHeight(fm.height());
 
-    setStyleSheet( QString("background-color: black;\n"
+    setStyleSheet( QString::fromUtf8("background-color: black;\n"
                            "color : rgba(200,200,200,255);\n"
                            "QToolTip { background-color: black;}") );
     
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     
     
-    QString tt = QString(tr("Informations from left to right:<br/>"
-                            "<br/>"
-                            "<br><font color=orange>Input:</font> Specifies whether the information are for the input <b>A</b> or <b>B</b></br>"
-                            "<br/>"
-                            "<br><font color=orange>Image format:</font>  An identifier for the pixel components and bitdepth of the displayed image</br>"
-                            "<br/>"
-                            "<br><font color=orange>Format:</font>  The resolution of the project's format</br>"
-                            "<br/>"
-                            "<br><font color=orange>RoD:</font>  The region of definition of the displayed image</br>"
-                            "<br/>"
-                            "<br><font color=orange>Fps:</font>  (Only active during playback) The frame-rate of the play-back sustained by the viewer</br>"
-                            "<br/>"
-                            "<br><font color=orange>Coordinates:</font>  The coordinates of the current mouse location</br>"
-                            "<br/>"
-                            "<br><font color=orange>RGBA:</font>  The RGBA color of the displayed image. Note that if some <b>?</b> are set instead of colors "
+    QString tt = QString(tr("Information, from left to right:<br />"
+                            "<br />"
+                            "<font color=orange>Input:</font> Specifies whether the information are for the input <b>A</b> or <b>B</b><br />"
+                            "<font color=orange>Image format:</font>  An identifier for the pixel components and bitdepth of the displayed image<br />"
+                            "<font color=orange>Format:</font>  The resolution of the project's format<br />"
+                            "<font color=orange>RoD:</font>  The region of definition of the displayed image<br />"
+                            "<font color=orange>Fps:</font>  (Only active during playback) The frame-rate of the play-back sustained by the viewer<br />"
+                            "<font color=orange>Coordinates:</font>  The coordinates of the current mouse location<br />"
+                            "<font color=orange>RGBA:</font>  The RGBA color of the displayed image. Note that if some <b>?</b> are set instead of colors "
                             "that means the underlying image cannot be accessed internally, you should refresh the viewer to make it available. "
-                            "Also sometimes you may notice the tild '~' before the colors: it indicates whether the color indicated is the true "
-                            "color in the image (no tild) or this is an approximated mipmap that has been filtered with a box filter (tild), "
-                            "in which case this may not reflect exactly the underlying internal image. </br>"
-                            "<br/>"
-                            "<br><font color=orange>HSVL:</font>  For convenience the RGBA color is also displayed as HSV(L)</br>"
-                            "<br/>"
+                            "Also sometimes you may notice the tilde '~' before the colors: it indicates whether the color indicated is the true "
+                            "color in the image (no tilde) or this is an approximated mipmap that has been filtered with a box filter (tilde), "
+                            "in which case this may not reflect exactly the underlying internal image. <br />"
+                            "<font color=orange>HSVL:</font>  For convenience the RGBA color is also displayed as HSV(L)"
                             ""));
     setToolTip(tt);
 
@@ -99,27 +91,27 @@ InfoViewerWidget::InfoViewerWidget(const QString & description,
     {
         const QFont& font = descriptionLabel->font();
 
-        QString descriptionText = QString("<font color=\"#DBE0E0\" face=\"%1\" size=%2>")
+        QString descriptionText = QString::fromUtf8("<font color=\"#DBE0E0\" face=\"%1\" size=%2>")
         .arg(font.family())
         .arg(font.pixelSize());
         descriptionText.append(description);
-        descriptionText.append("</font>");
+        descriptionText.append(QString::fromUtf8("</font>"));
         descriptionLabel->setText(descriptionText);
         QFontMetrics fm = descriptionLabel->fontMetrics();
-        int width = fm.width("A:");
+        int width = fm.width(QString::fromUtf8("A:"));
         descriptionLabel->setMinimumWidth(width);
     }
     imageFormat = new Label(this);
     {
         QFontMetrics fm = imageFormat->fontMetrics();
-        int width = fm.width("backward.motion32f");
+        int width = fm.width(QString::fromUtf8("backward.motion32f"));
         imageFormat->setMinimumWidth(width);
     }
 
     resolution = new Label(this);
     {
         QFontMetrics fm = resolution->fontMetrics();
-        int width = fm.width("00000x00000");
+        int width = fm.width(QString::fromUtf8("00000x00000"));
         resolution->setMinimumWidth(width);
     }
 
@@ -127,7 +119,7 @@ InfoViewerWidget::InfoViewerWidget(const QString & description,
     coordDispWindow = new Label(this);
     {
         QFontMetrics fm = coordDispWindow->fontMetrics();
-        int width = fm.width("RoD: 000 000 0000 0000");
+        int width = fm.width(QString::fromUtf8("RoD: 000 000 0000 0000"));
         coordDispWindow->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         coordDispWindow->setMinimumWidth(width);
     }
@@ -135,7 +127,7 @@ InfoViewerWidget::InfoViewerWidget(const QString & description,
     _fpsLabel = new Label(this);
     {
         QFontMetrics fm = _fpsLabel->fontMetrics();
-        int width = fm.width("100 fps");
+        int width = fm.width(QString::fromUtf8("100 fps"));
         _fpsLabel->setMinimumWidth(width);
         _fpsLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         _fpsLabel->hide();
@@ -144,14 +136,14 @@ InfoViewerWidget::InfoViewerWidget(const QString & description,
     coordMouse = new Label(this);
     {
         QFontMetrics fm = coordMouse->fontMetrics();
-        int width = fm.width("x=00000 y=00000");
+        int width = fm.width(QString::fromUtf8("x=00000 y=00000"));
         coordMouse->setMinimumWidth(width);
     }
 
     rgbaValues = new Label(this);
     {
         QFontMetrics fm = rgbaValues->fontMetrics();
-        int width = fm.width("0.00000 0.00000 0.00000 ~ ");
+        int width = fm.width(QString::fromUtf8("0.00000 0.00000 0.00000 ~ "));
         rgbaValues->setMinimumWidth(width);
     }
 
@@ -161,7 +153,7 @@ InfoViewerWidget::InfoViewerWidget(const QString & description,
     hvl_lastOption = new Label(this);
     {
         QFontMetrics fm = hvl_lastOption->fontMetrics();
-        int width = fm.width("H:000 S:0.00 V:0.00 L:0.00000");
+        int width = fm.width(QString::fromUtf8("H:000 S:0.00 V:0.00 L:0.00000"));
         hvl_lastOption->setMinimumWidth(width);
     }
     
@@ -193,16 +185,16 @@ void
 InfoViewerWidget::setFps(double actualFps,
                          double desiredFps)
 {
-    QString colorStr("green");
+    QString colorStr = QString::fromUtf8("green");
     
     const QFont& font = _fpsLabel->font();
     
     if ( ( actualFps < (desiredFps -  desiredFps / 10.f) ) && ( actualFps > (desiredFps / 2.f) ) ) {
-        colorStr = QString("orange");
+        colorStr = QString::fromUtf8("orange");
     } else if ( actualFps < (desiredFps / 2.f) ) {
-        colorStr = QString("red");
+        colorStr = QString::fromUtf8("red");
     }
-    QString str = QString("<font color=\""+ colorStr + "\" face=\"%2\" size=%3>%1 fps</font>")
+    QString str = QString::fromUtf8("<font color=\"")+ colorStr + QString::fromUtf8("\" face=\"%2\" size=%3>%1 fps</font>")
     .arg( QString::number(actualFps,'f',1) )
     .arg(font.family())
     .arg(font.pixelSize());
@@ -273,10 +265,10 @@ InfoViewerWidget::setColor(float r,
     currentColor[2] = b;
     currentColor[3] = a;
     
-    QString rS = _colorValid ? QString::number(r,'f',5) : "?";
-    QString gS = _colorValid ? QString::number(g,'f',5) : "?";
-    QString bS = _colorValid ? QString::number(b,'f',5) : "?";
-    QString aS = _colorValid ? QString::number(a,'f',5) : "?";
+    QString rS = _colorValid ? QString::number(r,'f',5) : QString::fromUtf8("?");
+    QString gS = _colorValid ? QString::number(g,'f',5) : QString::fromUtf8("?");
+    QString bS = _colorValid ? QString::number(b,'f',5) : QString::fromUtf8("?");
+    QString aS = _colorValid ? QString::number(a,'f',5) : QString::fromUtf8("?");
     
     //values = QString("<font color='red'>%1</font> <font color='green'>%2</font> <font color='blue'>%3</font> <font color=\"#DBE0E0\">%4</font>")
     // the following three colors have an equal luminance (=0.4), which makes the text easier to read.
@@ -284,17 +276,17 @@ InfoViewerWidget::setColor(float r,
     if (_comp.getNumComponents() == 0 || _comp.getNumComponents() > 4) {
         values = QString();
     } else if (_comp.getNumComponents() == 1) {
-        values = QString("<font color=\"#DBE0E0\" face=\"%2\" size=%3>%1</font>")
+        values = QString::fromUtf8("<font color=\"#DBE0E0\" face=\"%2\" size=%3>%1</font>")
             .arg(aS).arg(font.family()).arg(font.pixelSize());
     } else if (_comp.getNumComponents() == 2) {
-        values = QString("<font color='#d93232' face=\"%3\" size=%4>%1  </font>"
+        values = QString::fromUtf8("<font color='#d93232' face=\"%3\" size=%4>%1  </font>"
                          "<font color='#00a700' face=\"%3\" size=%4>%2  </font>")
         .arg(rS)
         .arg(gS)
         .arg(font.family())
         .arg(font.pixelSize());
     } else if (_comp.getNumComponents() == 3) {
-        values = QString("<font color='#d93232' face=\"%4\" size=%5>%1  </font>"
+        values = QString::fromUtf8("<font color='#d93232' face=\"%4\" size=%5>%1  </font>"
                            "<font color='#00a700' face=\"%4\" size=%5>%2  </font>"
                            "<font color='#5858ff' face=\"%4\" size=%5>%3</font>")
                    .arg(rS)
@@ -303,7 +295,7 @@ InfoViewerWidget::setColor(float r,
                    .arg(font.family())
                    .arg(font.pixelSize());
     } else if (_comp.getNumComponents() == 4) {
-        values = QString("<font color='#d93232' face=\"%5\" size=%6>%1  </font>"
+        values = QString::fromUtf8("<font color='#d93232' face=\"%5\" size=%6>%1  </font>"
                            "<font color='#00a700' face=\"%5\" size=%6>%2  </font>"
                            "<font color='#5858ff' face=\"%5\" size=%6>%3  </font>"
                            "<font color=\"#DBE0E0\" face=\"%5\" size=%6>%4</font>")
@@ -316,7 +308,7 @@ InfoViewerWidget::setColor(float r,
     }
     
     if (_colorApprox) {
-        values.prepend("<b> ~ </b>");
+        values.prepend(QString::fromUtf8("<b> ~ </b>"));
     }
     rgbaValues->setText(values);
     rgbaValues->update();
@@ -339,13 +331,13 @@ InfoViewerWidget::setColor(float r,
     Color::rgb_to_hsv(srgb_r,srgb_g,srgb_b,&h,&s,&v);
     l = 0.2125 * r + 0.7154 * g + 0.0721 * b; // L according to Rec.709
     
-    QString lS = _colorValid ? QString::number(l,'f',5) : "?";
-    QString hS = _colorValid ? QString::number(h,'f',0) : "?";
-    QString sS = _colorValid ? QString::number(s,'f',2) : "?";
-    QString vS = _colorValid ? QString::number(v,'f',2) : "?";
+    QString lS = _colorValid ? QString::number(l,'f',5) : QString::fromUtf8("?");
+    QString hS = _colorValid ? QString::number(h,'f',0) : QString::fromUtf8("?");
+    QString sS = _colorValid ? QString::number(s,'f',2) : QString::fromUtf8("?");
+    QString vS = _colorValid ? QString::number(v,'f',2) : QString::fromUtf8("?");
     
     QString hsvlValues;
-    hsvlValues = QString("<font color=\"#DBE0E0\" face=\"%5\" size=%6>H:%1 S:%2 V:%3  L:%4</font>")
+    hsvlValues = QString::fromUtf8("<font color=\"#DBE0E0\" face=\"%5\" size=%6>H:%1 S:%2 V:%3  L:%4</font>")
                  .arg(hS)
                  .arg(sS)
                  .arg(vS)
@@ -374,7 +366,7 @@ InfoViewerWidget::setMousePos(QPoint p)
 {
     QString coord;
     const QFont& font = coordMouse->font();
-    coord = QString("<font color=\"#DBE0E0\" face=\"%3\" size=%4>x=%1 y=%2</font>")
+    coord = QString::fromUtf8("<font color=\"#DBE0E0\" face=\"%3\" size=%4>x=%1 y=%2</font>")
             .arg( p.x() )
             .arg( p.y() )
             .arg(font.family())
@@ -385,11 +377,11 @@ InfoViewerWidget::setMousePos(QPoint p)
 void
 InfoViewerWidget::removeTrailingZeroes(QString& str)
 {
-    int dot = str.lastIndexOf('.');
+    int dot = str.lastIndexOf(QLatin1Char('.'));
     if (dot != -1) {
         int i = str.size() - 1;
         while (i > dot) {
-            if (str[i] == QChar('0')) {
+            if (str[i] == QLatin1Char('0')) {
                 --i;
             } else {
                 break;
@@ -417,19 +409,19 @@ InfoViewerWidget::setResolution(const Format & f)
         removeTrailingZeroes(h);
         
         QString reso;
-        reso = QString("<font color=\"#DBE0E0\" face=\"%3\" size=%4>%1x%2</font>")
+        reso = QString::fromUtf8("<font color=\"#DBE0E0\" face=\"%3\" size=%4>%1x%2</font>")
         .arg(w)
         .arg(h)
         .arg(font.family())
         .arg(font.pixelSize());
         resolution->setText(reso);
     } else {
-        QString reso = QString("<font color=\"#DBE0E0\" face=\"%1\" size=%2>")
+        QString reso = QString::fromUtf8("<font color=\"#DBE0E0\" face=\"%1\" size=%2>")
         .arg(font.family())
         .arg(font.pixelSize());
-        reso.append( format.getName().c_str() );
+        reso.append( QString::fromUtf8(format.getName().c_str()));
       //  reso.append("\t");
-        reso.append("</font>");
+        reso.append(QString::fromUtf8("</font>"));
         resolution->setText(reso);
     }
 }
@@ -445,7 +437,7 @@ InfoViewerWidget::setDataWindow(const RectI & r)
     right.setNum(r.right());
     top.setNum(r.top());
     
-    bbox = QString("<font color=\"#DBE0E0\" face=\"%5\" size=%6>RoD: %1 %2 %3 %4</font>")
+    bbox = QString::fromUtf8("<font color=\"#DBE0E0\" face=\"%5\" size=%6>RoD: %1 %2 %3 %4</font>")
     .arg(left)
     .arg(btm)
     .arg(right)
@@ -462,12 +454,12 @@ InfoViewerWidget::setImageFormat(const ImageComponents& comp,
 {
 
     const QFont& font = imageFormat->font();
-    QString text = QString("<font color=\"#DBE0E0\" face=\"%1\" size=%2>")
+    QString text = QString::fromUtf8("<font color=\"#DBE0E0\" face=\"%1\" size=%2>")
     .arg(font.family())
     .arg(font.pixelSize());
-    QString format(Image::getFormatString(comp, depth).c_str());
+    QString format = QString::fromUtf8(Image::getFormatString(comp, depth).c_str());
     text.append(format);
-    text.append("</font>");
+    text.append(QString::fromUtf8("</font>"));
     imageFormat->setText(text);
     _comp = comp;
 }

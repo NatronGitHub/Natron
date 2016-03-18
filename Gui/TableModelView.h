@@ -291,7 +291,7 @@ public:
 
     QWidget * cellWidget(int row, int column) const;
     void setCellWidget(int row, int column, QWidget *widget);
-    inline void removeCellWidget(int row, int column);
+    void removeCellWidget(int row, int column);
     TableItem * itemAt(const QPoint &p) const;
     TableItem * itemAt(int x, int y) const;
     QRect visualItemRect(const TableItem *item) const;

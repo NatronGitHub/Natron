@@ -43,6 +43,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Curve.h"
+#include "Engine/Transform.h"
 
 #include "Gui/GuiFwd.h"
 
@@ -51,27 +52,44 @@ NATRON_NAMESPACE_ENTER;
 struct SelectedKey
 {
     boost::shared_ptr<CurveGui> curve;
-    KeyFrame key;
+    KeyFrame key,prevKey,nextKey;
+    bool hasPrevious;
+    bool hasNext;
     std::pair<double,double> leftTan, rightTan;
-
+    
     SelectedKey()
-        : curve(), key()
+    : hasPrevious(false)
+    , hasNext(false)
     {
     }
-
+    
     SelectedKey(const boost::shared_ptr<CurveGui>& c,
-                const KeyFrame & k)
-        : curve(c)
-          , key(k)
+                const KeyFrame & k,
+                const bool hasPrevious,
+                const KeyFrame & previous,
+                const bool hasNext,
+                const KeyFrame & next)
+    : curve(c)
+    , key(k)
+    , prevKey(previous)
+    , nextKey(next)
+    , hasPrevious(hasPrevious)
+    , hasNext(hasNext)
     {
-    }
 
+    }
+    
     SelectedKey(const SelectedKey & o)
-        : curve(o.curve)
-          , key(o.key)
-          , leftTan(o.leftTan)
-          , rightTan(o.rightTan)
+    : curve(o.curve)
+    , key(o.key)
+    , prevKey(o.prevKey)
+    , nextKey(o.nextKey)
+    , hasPrevious(o.hasPrevious)
+    , hasNext(o.hasNext)
+    , leftTan(o.leftTan)
+    , rightTan(o.rightTan)
     {
+       
     }
 };
 
@@ -84,9 +102,9 @@ struct SelectedKey_compare_time
     }
 };
 
-
 typedef boost::shared_ptr<SelectedKey> KeyPtr;
-typedef std::list< KeyPtr > SelectedKeys;
+
+typedef std::map<boost::shared_ptr<CurveGui>, std::list<KeyPtr> > SelectedKeys;
 
 
 //////////////////////////////ADD MULTIPLE KEYS COMMAND//////////////////////////////////////////////
@@ -95,8 +113,16 @@ class AddKeysCommand
     : public QUndoCommand
 {
 public:
+    
+    struct KeyToAdd
+    {
+        boost::shared_ptr<CurveGui> curveUI;
+        KnobGuiWPtr knobUI;
+        int dimension;
+        std::vector<KeyFrame> keyframes;
+    };
 
-    typedef std::map< boost::shared_ptr<CurveGui>, std::vector<KeyFrame> > KeysToAddList;
+    typedef std::list< KeyToAdd > KeysToAddList;
 
     AddKeysCommand(CurveWidget *editor,
                    const KeysToAddList & keys,
@@ -183,14 +209,19 @@ private:
 
 //////////////////////////////MOVE KEY COMMAND//////////////////////////////////////////////
 
-
 class MoveKeysCommand
     : public QUndoCommand
 {
 public:
+    
+    struct KeyToMove
+    {
+        KeyPtr key;
+        bool prevIsSelected,nextIsSelected;
+    };
 
     MoveKeysCommand(CurveWidget* widget,
-                    const SelectedKeys & keys,
+                    const std::map<boost::shared_ptr<CurveGui>,std::vector<MoveKeysCommand::KeyToMove> > & keys,
                     double dt,
                     double dv,
                     bool updateOnFirstRedo,
@@ -212,7 +243,7 @@ private:
     bool _updateOnFirstRedo;
     double _dt;
     double _dv;
-    SelectedKeys _keys;
+    std::map<boost::shared_ptr<CurveGui>,std::vector<MoveKeysCommand::KeyToMove> > _keys;
     CurveWidget* _widget;
 };
 
@@ -334,31 +365,17 @@ private:
     virtual int id() const OVERRIDE FINAL;
     virtual bool mergeWith(const QUndoCommand * command) OVERRIDE FINAL;
     
-    void transform(const KeyPtr& k);
+    
+    void transformKeys(const Transform::Matrix3x3& matrix);
     
 private:
     bool _firstRedoCalled;
     bool _updateOnFirstRedo;
-    SelectedKeys _keys,_altKeys;
+    SelectedKeys _keys;
     CurveWidget* _widget;
+   
     
-    struct CurveCopy
-    {
-        CurveGui* guiCurve;
-        boost::shared_ptr<Curve> original;
-        boost::shared_ptr<Curve> oldCpy,newCpy;
-    };
-    
-    struct BezierCopy
-    {
-        CurveGui* guiCurve;
-        boost::shared_ptr<Bezier> original;
-        boost::shared_ptr<Bezier> oldCpy,newCpy;
-    };
-    
-    std::list<CurveCopy> _curves;
-    std::list<BezierCopy> _beziers;
-    boost::shared_ptr<Transform::Matrix3x3> _matrix;
+    Transform::Matrix3x3 _matrix,_invMatrix;
 };
 
 NATRON_NAMESPACE_EXIT;

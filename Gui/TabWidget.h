@@ -294,6 +294,8 @@ public Q_SLOTS:
     void movePropertiesBinHere();
     
     void moveScriptEditorHere();
+    
+    void moveProgressPanelHere();
 
     void onSplitHorizontally()
     {

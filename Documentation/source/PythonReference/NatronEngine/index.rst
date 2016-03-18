@@ -1,4 +1,5 @@
 .. module:: NatronEngine
+.. _NatronEngine:
 
 NatronEngine
 ************

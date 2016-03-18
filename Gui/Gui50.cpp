@@ -77,6 +77,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
 #include "Gui/NodeSettingsPanel.h"
+#include "Gui/ProgressPanel.h"
 #include "Gui/RightClickableWidget.h"
 #include "Gui/RenderingProgressDialog.h"
 #include "Gui/RotoGui.h"
@@ -99,9 +100,9 @@ Gui::setUndoRedoStackLimit(int limit)
 }
 
 void
-Gui::showOfxLog()
+Gui::showErrorLog()
 {
-    QString log = appPTR->getOfxLog_mt_safe();
+    QString log = appPTR->getErrorLog_mt_safe();
     LogWindow lw(log, this);
 
     lw.setWindowTitle( tr("Error Log") );
@@ -204,137 +205,28 @@ Gui::onViewerRotoEvaluated(ViewerTab* viewer)
     }
 }
 
-void
-Gui::onDoProgressStartOnMainThread(KnobHolder* effect, const QString &message, const QString &/*messageid*/, bool canCancel)
-{
-    assert(QThread::currentThread() == qApp->thread());
-    
-    QString progressLabel;
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(effect);
-    if (isEffect) {
-        progressLabel.append(isEffect->getNode()->getLabel().c_str());
-        progressLabel.append(": ");
-    }
-    progressLabel.append(message);
-    GeneralProgressDialog* dialog = new GeneralProgressDialog(progressLabel, canCancel, this);
-    dialog->hide();
-    {
-        QMutexLocker k(&_imp->_progressBarsMutex);
-        std::map<KnobHolder*, GeneralProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
-        ///If a second dialog was asked for whilst another is still active, the first dialog will not be
-        ///able to be canceled.
-        if (found != _imp->_progressBars.end()) {
-            _imp->_progressBars.erase(found);
-        }
-        
-        _imp->_progressBars.insert( std::make_pair(effect, dialog) );
-    }
-    
-    //Do not show the dialog, it will be shown automatically on progress update
-    //dialog->show();
-    
-}
 
 void
-Gui::onDoProgressEndOnMainThread(KnobHolder* effect)
-{
-    assert(QThread::currentThread() == qApp->thread());
-
-    
-    GeneralProgressDialog* dialog = 0;
-    {
-        QMutexLocker k(&_imp->_progressBarsMutex);
-        std::map<KnobHolder*, GeneralProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
-        if (found == _imp->_progressBars.end()) {
-            return;
-        }
-        dialog = found->second;
-        _imp->_progressBars.erase(found);
-    }
-    
-    if (dialog) {
-        dialog->close();
-    }
-    
-}
-
-void
-Gui::onDoProgressUpdateOnMainThread(KnobHolder* effect,double t)
-{
-    assert(QThread::currentThread() == qApp->thread());
-
-    {
-        QMutexLocker k(&_imp->_progressBarsMutex);
-        std::map<KnobHolder*, GeneralProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
-        if (found == _imp->_progressBars.end()) {
-            return;
-        }
-        if (found->second) {
-            found->second->updateProgress(t);
-        }
-    }
-   
-}
-
-void
-Gui::progressStart(KnobHolder* effect,
+Gui::progressStart(const NodePtr& node,
                    const std::string &message,
-                   const std::string &messageid,
+                   const std::string &/*messageid*/,
                    bool canCancel)
 {
-    if (!effect) {
-        return;
-    }
-    if (QThread::currentThread() != qApp->thread()) {
-        Q_EMIT s_doProgressStartOnMainThread(effect, message.c_str(), messageid.c_str(), canCancel);
-    } else {
-        onDoProgressStartOnMainThread(effect, message.c_str(), messageid.c_str(), canCancel);
-    }
+    _imp->_progressPanel->startTask(node, INT_MIN, INT_MAX, 1, false, canCancel, QString::fromUtf8(message.c_str()));
 
 }
 
 void
-Gui::progressEnd(KnobHolder* effect)
+Gui::progressEnd(const NodePtr& node)
 {
-    if (!effect) {
-        return;
-    }
-    if (QThread::currentThread() != qApp->thread()) {
-        Q_EMIT s_doProgressEndOnMainThread(effect);
-    } else {
-        onDoProgressEndOnMainThread(effect);
-    }
+    _imp->_progressPanel->endTask(node);
 }
 
 bool
-Gui::progressUpdate(KnobHolder* effect,
+Gui::progressUpdate(const NodePtr& node,
                     double t)
 {
-    if (!effect) {
-        return true;
-    }
-    bool isMainThread = QThread::currentThread() == qApp->thread();
-    if (!isMainThread) {
-        Q_EMIT s_doProgressUpdateOnMainThread(effect, t);
-    } else {
-        onDoProgressUpdateOnMainThread(effect, t);
-    }
-    
-    {
-        QMutexLocker k(&_imp->_progressBarsMutex);
-        std::map<KnobHolder*, GeneralProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
-        if (found != _imp->_progressBars.end()) {
-            if (found->second->wasCanceled()) {
-                return false;
-            }
-        }
-    }
-    
-    if (isMainThread) {
-        QCoreApplication::processEvents();
-    }
-
-    return true;
+    return _imp->_progressPanel->updateTask(node, t);
 }
 
 
@@ -480,19 +372,6 @@ Gui::resizeEvent(QResizeEvent* e)
     setMtSafeWindowSize( width(), height() );
 }
 
-static RightClickableWidget* isParentSettingsPanelRecursive(QWidget* w)
-{
-    if (!w) {
-        return 0;
-    }
-    RightClickableWidget* panel = qobject_cast<RightClickableWidget*>(w);
-    if (panel) {
-        return panel;
-    } else {
-        return isParentSettingsPanelRecursive(w->parentWidget());
-    }
-}
-
 void
 Gui::setLastKeyPressVisitedClickFocus(bool visited)
 {
@@ -520,7 +399,7 @@ Gui::keyPressEvent(QKeyEvent* e)
 
     if (key == Qt::Key_Escape) {
         
-        RightClickableWidget* panel = isParentSettingsPanelRecursive(w);
+        RightClickableWidget* panel = RightClickableWidget::isParentSettingsPanelRecursive(w);
         if (panel) {
             panel->getPanel()->closePanel();
         }
@@ -841,10 +720,10 @@ Gui::toggleAutoHideGraphInputs()
 void
 Gui::centerAllNodeGraphsWithTimer()
 {
-    QTimer::singleShot( 25, _imp->_nodeGraphArea, SLOT( centerOnAllNodes() ) );
+    QTimer::singleShot( 25, _imp->_nodeGraphArea, SLOT(centerOnAllNodes()) );
 
     for (std::list<NodeGraph*>::iterator it = _imp->_groups.begin(); it != _imp->_groups.end(); ++it) {
-        QTimer::singleShot( 25, *it, SLOT( centerOnAllNodes() ) );
+        QTimer::singleShot( 25, *it, SLOT(centerOnAllNodes()) );
     }
 }
 
@@ -907,13 +786,13 @@ Gui::onCloseTabTriggered()
 void
 Gui::appendToScriptEditor(const std::string & str)
 {
-    _imp->_scriptEditor->appendToScriptEditor( str.c_str() );
+    _imp->_scriptEditor->appendToScriptEditor( QString::fromUtf8(str.c_str()) );
 }
 
 void
 Gui::printAutoDeclaredVariable(const std::string & str)
 {
-    _imp->_scriptEditor->printAutoDeclaredVariable( str.c_str() );
+    _imp->_scriptEditor->printAutoDeclaredVariable( QString::fromUtf8(str.c_str()) );
 }
 
 void
@@ -975,7 +854,7 @@ Gui::addMenuEntry(const QString & menuGrouping,
                   Qt::Key key,
                   const Qt::KeyboardModifiers & modifiers)
 {
-    QStringList grouping = menuGrouping.split('/');
+    QStringList grouping = menuGrouping.split(QLatin1Char('/'));
 
     if ( grouping.isEmpty() ) {
         getApp()->appendToScriptEditor( tr("Failed to add menu entry for ").toStdString() +
@@ -1050,12 +929,11 @@ Gui::isFocusStealingPossible()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     QWidget* currentFocus = qApp->focusWidget();
     
-    bool focusStealingNotPossible =
-    dynamic_cast<QLineEdit*>(currentFocus) ||
-    dynamic_cast<QTextEdit*>(currentFocus) ||
-    dynamic_cast<QCheckBox*>(currentFocus) ||
-    dynamic_cast<ComboBox*>(currentFocus) ||
-    dynamic_cast<QComboBox*>(currentFocus);
+    bool focusStealingNotPossible = (dynamic_cast<QLineEdit*>(currentFocus) ||
+                                     dynamic_cast<QTextEdit*>(currentFocus) ||
+                                     dynamic_cast<QCheckBox*>(currentFocus) ||
+                                     dynamic_cast<ComboBox*>(currentFocus) ||
+                                     dynamic_cast<QComboBox*>(currentFocus));
 
     return !focusStealingNotPossible;
 

@@ -114,24 +114,24 @@ CrashDialog::CrashDialog(const QString &filePath)
 , _saveReportButton(0)
 , _pressedButton(0)
 {
-    QFile qss(":/Resources/Stylesheets/mainstyle.qss");
+    QFile qss(QString::fromUtf8(":/Resources/Stylesheets/mainstyle.qss"));
 
         if ( qss.open(QIODevice::ReadOnly
                       | QIODevice::Text) ) {
             QTextStream in(&qss);
             QString content( in.readAll() );
             setStyleSheet( content
-                           .arg("rgb(243,149,0)") // %1: selection-color
-                           .arg("rgb(50,50,50)") // %2: medium background
-                           .arg("rgb(71,71,71)") // %3: soft background
-                           .arg("rgb(38,38,38)") // %4: strong background
-                           .arg("rgb(150,150,150)") // %5: text colour
-                           .arg("rgb(86,117,156)") // %6: interpolated value color
-                           .arg("rgb(21,97,248)") // %7: keyframe value color
-                           .arg("rgb(200,200,200)")  // %8: disabled editable text
-                           .arg("rgb(180,200,100)")  // %9: expression background color
-                           .arg("rgb(150,150,50)") // %10: altered text color
-                           .arg("rgb(255,195,120)"));  // %11: mouse over selection color
+                           .arg(QString::fromUtf8("rgb(243,149,0)")) // %1: selection-color
+                           .arg(QString::fromUtf8("rgb(50,50,50)")) // %2: medium background
+                           .arg(QString::fromUtf8("rgb(71,71,71)")) // %3: soft background
+                           .arg(QString::fromUtf8("rgb(38,38,38)")) // %4: strong background
+                           .arg(QString::fromUtf8("rgb(150,150,150)")) // %5: text colour
+                           .arg(QString::fromUtf8("rgb(86,117,156)")) // %6: interpolated value color
+                           .arg(QString::fromUtf8("rgb(21,97,248)")) // %7: keyframe value color
+                           .arg(QString::fromUtf8("rgb(200,200,200)"))  // %8: disabled editable text
+                           .arg(QString::fromUtf8("rgb(180,200,100)") ) // %9: expression background color
+                           .arg(QString::fromUtf8("rgb(150,150,50)")) // %10: altered text color
+                           .arg(QString::fromUtf8("rgb(255,195,120)")));  // %11: mouse over selection color
         }
     
     setWindowTitle(tr("Natron Issue Reporter"));
@@ -144,7 +144,7 @@ CrashDialog::CrashDialog(const QString &filePath)
     
     _gridLayout = new QGridLayout(_mainFrame);
     
-    QPixmap pix(":Resources/Images/natronIcon256_linux.png");
+    QPixmap pix(QString::fromUtf8(":Resources/Images/natronIcon256_linux.png"));
     if (std::max(pix.width(), pix.height()) != 64) {
         pix = pix.scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation);
     }
@@ -159,12 +159,12 @@ CrashDialog::CrashDialog(const QString &filePath)
     
     _gridLayout->addWidget(_infoLabel, 1, 0, 1 , 2);
     
-    _refLabel = new QLabel("Reference:",_mainFrame);
+    _refLabel = new QLabel(tr("Reference:"),_mainFrame);
     _gridLayout->addWidget(_refLabel, 2, 0 , 1, 1);
     
     QFileInfo info(filePath);
     QString name = info.fileName();
-    int lastDot = name.lastIndexOf('.');
+    int lastDot = name.lastIndexOf(QLatin1Char('.'));
     if (lastDot != -1) {
         name = name.left(lastDot);
     }
@@ -173,7 +173,7 @@ CrashDialog::CrashDialog(const QString &filePath)
     _refContent->setTextInteractionFlags(Qt::TextInteractionFlags(style()->styleHint(QStyle::SH_MessageBox_TextInteractionFlags, 0, this)));
     _gridLayout->addWidget(_refContent,2 , 1, 1, 1);
     
-    _descLabel = new QLabel("Description:",_mainFrame);
+    _descLabel = new QLabel(tr("Description:"),_mainFrame);
     _gridLayout->addWidget(_descLabel, 3, 0 , 1, 1);
     PlaceHolderTextEdit* edit = new PlaceHolderTextEdit(_mainFrame);
     edit->setPlaceHolderText(tr("Describe here useful info for the developers such as how to reproduce the crash and what you were doing "
@@ -266,19 +266,19 @@ CrashDialog::onSaveClicked()
     _pressedButton = _saveReportButton;
 
     QString fileName = _filePath;
-    fileName.replace('\\', '/');
-    int foundLastSep = fileName.lastIndexOf('/');
+    fileName.replace(QLatin1Char('\\'), QLatin1Char('/'));
+    int foundLastSep = fileName.lastIndexOf(QLatin1Char('/'));
     if (foundLastSep != -1) {
         fileName = fileName.mid(foundLastSep + 1);
     }
     
-    fileName = QDir::homePath() + '/' + fileName;
+    fileName = QDir::homePath() + QLatin1Char('/') + fileName;
     
     bool saveOk = false;
     QString saveFileName = QFileDialog::getSaveFileName(this,
                                             tr("Save report"),
                                             fileName,
-                                            QString("*.dmp"),
+                                            QString::fromUtf8("*.dmp"),
                                             0,
                                             0);
     if (!saveFileName.isEmpty()) {

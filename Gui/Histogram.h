@@ -76,6 +76,11 @@ public:
 
     void renderText(double x,double y,const QString & text,const QColor & color,const QFont & font) const;
 
+    void setViewerCursor(const std::vector<double>& pickerColor);
+    void hideViewerCursor();
+    
+    int getViewerTextureInputDisplayed() const;
+    
 public Q_SLOTS:
 
 #ifndef NATRON_HISTOGRAM_USING_OPENGL

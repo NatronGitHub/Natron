@@ -90,6 +90,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/KnobTypes.h"
 #include "Engine/LibraryBinary.h"
 #include "Engine/Node.h"
+#include "Engine/FStreamsSupport.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
@@ -99,6 +100,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/Settings.h"
 #include "Engine/StandardPaths.h"
 #include "Engine/TLSHolder.h"
+#include "Engine/ThreadPool.h"
 
 //An effect may not use more than this amount of threads
 #define NATRON_MULTI_THREAD_SUITE_MAX_NUM_CPU 4
@@ -323,7 +325,7 @@ Settings::KnownHostNameEnum getHostNameProxy(const std::string& pluginID, int pl
     assert(!pluginID.empty());
 
     static const std::string neatvideo("com.absoft.neatvideo");
-    static const std::string hitfilm("com.FXHOME.HitFilm.");
+    static const std::string hitfilm("com.FXHOME.HitFilm");
     static const std::string redgiant("com.redgiantsoftware.Universe_");
     static const std::string digitalfilmtools("com.digitalfilmtools.");
     //static const std::string digitalanarchy("com.digitalanarchy.");
@@ -338,6 +340,12 @@ Settings::KnownHostNameEnum getHostNameProxy(const std::string& pluginID, int pl
         // Vegas and TitlerPro support more plugins than Resolve
         // tested with HitFilm 3.1.0113
         // maj=1 or 2 (depends on plugin), min=0
+        // HitFilm Ignite also supports NewBlue OFX Bridge, Sony Catalyst Edit, The Foundry Nuke
+        // tested with HitFilm Ignite 1.0.0118
+        // Clone Stamp from HitFilm Ignite is officially only compatible with Nuke
+        if (pluginID == (hitfilm + ".CloneStamp")) {
+            return Settings::eKnownHostNameNuke;
+        }
         return Settings::eKnownHostNameVegas;
     } else if (!pluginID.compare(0, redgiant.size(), redgiant)) {
         // Red Giant Universe plugins 1.5 work with Vegas and Resolve
@@ -456,19 +464,19 @@ OfxHost::vmessage(const char* msgtype,
     std::string type(msgtype);
 
     if (type == kOfxMessageLog) {
-        appPTR->writeToOfxLog_mt_safe( message.c_str() );
+        appPTR->writeToErrorLog_mt_safe( QString::fromUtf8(message.c_str()));
     } else if ( (type == kOfxMessageFatal) || (type == kOfxMessageError) ) {
         ///It seems that the only errors or warning that passes here are exceptions thrown by plug-ins
         ///(mainly Sapphire) while aborting a render. Instead of spamming the user of meaningless dialogs,
         ///just write to the log instead.
         //Dialogs::errorDialog(NATRON_APPLICATION_NAME, message);
-        appPTR->writeToOfxLog_mt_safe( message.c_str() );
+        appPTR->writeToErrorLog_mt_safe( QString::fromUtf8(message.c_str()));
     } else if (type == kOfxMessageWarning) {
         ///It seems that the only errors or warning that passes here are exceptions thrown by plug-ins
         ///(mainly Sapphire) while aborting a render. Instead of spamming the user of meaningless dialogs,
         ///just write to the log instead.
         //        Dialogs::warningDialog(NATRON_APPLICATION_NAME, message);
-        appPTR->writeToOfxLog_mt_safe( message.c_str() );
+        appPTR->writeToErrorLog_mt_safe( QString::fromUtf8(message.c_str() ));
     } else if (type == kOfxMessageMessage) {
         Dialogs::informationDialog(NATRON_APPLICATION_NAME, message);
     } else if (type == kOfxMessageQuestion) {
@@ -594,11 +602,12 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
     try {
         pluginHandle = plugin->getPluginHandle();
     } catch (...) {
-        throw std::runtime_error(std::string("Error: Description failed while loading ") + plugin->getIdentifier());
+        throw std::runtime_error(QObject::tr("Error: Description (kOfxActionLoad and kOfxActionDescribe) failed while loading ").toStdString() + plugin->getIdentifier());
     }
     
     if (!pluginHandle) {
-        throw std::runtime_error(std::string("Error: Description failed while loading ") + plugin->getIdentifier());
+        throw std::runtime_error(QObject::tr("Error: Description (kOfxActionLoad and kOfxActionDescribe) failed while loading ").toStdString() + plugin->getIdentifier());
+
     }
     assert(pluginHandle->getOfxPlugin() && pluginHandle->getOfxPlugin()->mainEntry);
     
@@ -606,7 +615,7 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
     
     std::string context = getContext_internal(contexts);
     if (context.empty()) {
-        throw std::invalid_argument(QObject::tr("OpenFX plug-in has no valid context.").toStdString());
+        throw std::invalid_argument(QObject::tr("OpenFX plug-in does not have any valid context.").toStdString());
     }
     
     OFX::Host::PluginHandle* ph = plugin->getPluginHandle();
@@ -617,7 +626,7 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
     //This will call kOfxImageEffectActionDescribeInContext
     desc = plugin->getContext(context);
     if (!desc) {
-        throw std::runtime_error(std::string("Failed to get description for OFX plugin in context ") + context);
+        throw std::runtime_error(std::string("Plug-in parameters and inputs description (kOfxImageEffectActionDescribeInContext) failed in context ") + context);
     }
     
     //Create the mask clip if needed
@@ -645,11 +654,14 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
 
 boost::shared_ptr<AbstractOfxEffectInstance>
 OfxHost::createOfxEffect(NodePtr node,
-                                 const NodeSerialization* serialization,
-                                 const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                                 bool allowFileDialogs,
-                                 bool disableRenderScaleSupport,
-                                 bool *hasUsedFileDialog)
+                         const NodeSerialization* serialization,
+                         const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
+                         bool disableRenderScaleSupport
+#ifndef NATRON_ENABLE_IO_META_NODES
+                         ,bool allowFileDialogs,
+                         bool *hasUsedFileDialog
+#endif
+)
 {
     assert(node);
     const Plugin* natronPlugin = node->getPlugin();
@@ -665,7 +677,12 @@ OfxHost::createOfxEffect(NodePtr node,
         node->setEffect(hostSideEffect);
     }
 
-    hostSideEffect->createOfxImageEffectInstance(plugin, desc, ctx,serialization,paramValues,allowFileDialogs,disableRenderScaleSupport,hasUsedFileDialog);
+    hostSideEffect->createOfxImageEffectInstance(plugin, desc, ctx,serialization,paramValues,disableRenderScaleSupport
+#ifndef NATRON_ENABLE_IO_META_NODES
+                                                 ,allowFileDialogs,
+                                                 hasUsedFileDialog
+#endif
+                                                 );
 
     return hostSideEffect;
 }
@@ -673,26 +690,26 @@ OfxHost::createOfxEffect(NodePtr node,
 ///Return the xml cache file used before Natron 2 RC2
 static QString getOldCacheFilePath()
 {
-    QString cachePath = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache) + '/';
-    QString oldOfxCache = cachePath + "OFXCache.xml";
+    QString cachePath = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache) + QLatin1Char('/');
+    QString oldOfxCache = cachePath + QString::fromUtf8("OFXCache.xml");
     return oldOfxCache;
 }
 
 static QString getOFXCacheDirPath()
 {
-    QString cachePath = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache) + '/';
-    QString ofxCachePath = cachePath + "OFXLoadCache";
+    QString cachePath = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache) + QLatin1Char('/');
+    QString ofxCachePath = cachePath + QString::fromUtf8("OFXLoadCache");
     return ofxCachePath;
 }
 
 ///Return the xml cache file used after Natron 2 RC2
 static QString getCacheFilePath()
 {
-    QString ofxCachePath = getOFXCacheDirPath() + '/';
-    QString ofxCacheFilePath = ofxCachePath + "OFXCache_" +
-    QString(NATRON_VERSION_STRING) + QString("_") +
-    QString(NATRON_DEVELOPMENT_STATUS) + QString("_") +
-    QString::number(NATRON_BUILD_NUMBER) + QString(".xml");
+    QString ofxCachePath = getOFXCacheDirPath() + QLatin1Char('/');
+    QString ofxCacheFilePath = ofxCachePath + QString::fromUtf8("OFXCache_") +
+    QString::fromUtf8(NATRON_VERSION_STRING) + QString::fromUtf8("_") +
+    QString::fromUtf8(NATRON_DEVELOPMENT_STATUS) + QString::fromUtf8("_") +
+    QString::number(NATRON_BUILD_NUMBER) + QString::fromUtf8(".xml");
     return ofxCacheFilePath;
 }
 
@@ -722,7 +739,7 @@ OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std::string,
     // if Natron is /usr/bin/Natron, /usr/bin/../OFX/Natron points to Natron-specific plugins
     QDir dir( QCoreApplication::applicationDirPath() );
     dir.cdUp();
-    std::string natronBundledPluginsPath = QString(dir.absolutePath() +  "/Plugins/OFX/" + QString(NATRON_APPLICATION_NAME)).toStdString();
+    std::string natronBundledPluginsPath = QString(dir.absolutePath() +  QString::fromUtf8("/Plugins/OFX/") + QString::fromUtf8(NATRON_APPLICATION_NAME)).toStdString();
     try {
         if ( appPTR->getCurrentSettings()->loadBundledPlugins() ) {
             if ( appPTR->getCurrentSettings()->preferBundledPlugins() ) {
@@ -741,11 +758,18 @@ OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std::string,
     //on windows: C:\Users\<username>\App Data\Local\<organization>\<application>\Caches\OFXLoadCache
     QString ofxCacheFilePath = getCacheFilePath();
     
-    std::ifstream ifs(ofxCacheFilePath.toStdString().c_str());
-    if (ifs.is_open()) {
-        OFX::Host::PluginCache::getPluginCache()->readCache(ifs);
-        ifs.close();
+    {
+        FStreamsSupport::ifstream ifs;
+        FStreamsSupport::open(&ifs,ofxCacheFilePath.toStdString());
+        if (ifs) {
+            try {
+                OFX::Host::PluginCache::getPluginCache()->readCache(ifs);
+            } catch (const std::exception& e) {
+                appPTR->writeToErrorLog_mt_safe(QObject::tr("Failure to read OpenFX plug-ins cache: ") + QString::fromUtf8(e.what()));
+            }
+        }
     }
+    
     OFX::Host::PluginCache::getPluginCache()->scanPluginFiles();
     _imp->loadingPluginID.clear(); // finished loading plugins
 
@@ -782,7 +806,7 @@ OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std::string,
         }
 
         assert( p->getBinary() );
-        QString iconPath = QString( bundlePath.c_str() ) + "/Contents/Resources/";
+        QString iconPath = QString::fromUtf8( bundlePath.c_str() ) + QString::fromUtf8("/Contents/Resources/");
         QString iconFileName;
         std::string pngIcon;
         try {
@@ -797,16 +821,16 @@ OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std::string,
             pngIcon = openfxId + ".png";
         }
         iconFileName.append(iconPath);
-        iconFileName.append( pngIcon.c_str() );
+        iconFileName.append(QString::fromUtf8( pngIcon.c_str() ));
         QString groupIconFilename;
         if (groups.size() > 0) {
             groupIconFilename = iconPath;
             // the plugin grouping has no descriptor, just try the default filename.
             groupIconFilename.append(groups[0]);
-            groupIconFilename.append(".png");
+            groupIconFilename.append(QString::fromUtf8(".png"));
         } else {
             //Use default Misc group when the plug-in doesn't belong to a group
-            groups.push_back(PLUGIN_GROUP_DEFAULT);
+            groups.push_back(QString::fromUtf8(PLUGIN_GROUP_DEFAULT));
         }
         QStringList groupIcons;
         groupIcons << groupIconFilename;
@@ -815,9 +839,9 @@ OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std::string,
             for (int j = 0; j <= i; ++j) {
                 groupIconPath += groups[j];
                 if (j < i) {
-                    groupIconPath += '/';
+                    groupIconPath += QLatin1Char('/');
                 } else {
-                    groupIconPath.append(".png");
+                    groupIconPath.append(QString::fromUtf8(".png"));
                 }
             }
             groupIcons << groupIconPath;
@@ -827,17 +851,18 @@ OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std::string,
         std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
         std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
         
+        const bool isDeprecated = p->getDescriptor().isDeprecated();
         
         Plugin* natronPlugin = appPTR->registerPlugin( groups,
-                                                              openfxId.c_str(),
-                                                              pluginLabel.c_str(),
+                                                              QString::fromUtf8(openfxId.c_str()),
+                                                              QString::fromUtf8(pluginLabel.c_str()),
                                                               iconFileName,
                                                               groupIcons,
                                                               foundReader != contexts.end(),
                                                               foundWriter != contexts.end(),
                                                               new LibraryBinary(LibraryBinary::eLibraryTypeBuiltin),
                                                               p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe,
-                                                              p->getVersionMajor(), p->getVersionMinor(),p->getDescriptor().isDeprecated() );
+                                                              p->getVersionMajor(), p->getVersionMinor(),isDeprecated );
         bool isInternalOnly = openfxId == PLUGINID_OFX_ROTO;
         if (isInternalOnly) {
             natronPlugin->setForInternalUseOnly(true);
@@ -859,7 +884,7 @@ OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std::string,
         
 
 
-        if ( ( foundReader != contexts.end() ) && (formatsCount > 0) && readersMap ) {
+        if ( !isDeprecated && ( foundReader != contexts.end() ) && (formatsCount > 0) && readersMap ) {
             ///we're safe to assume that this plugin is a reader
             for (U32 k = 0; k < formats.size(); ++k) {
                 std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it;
@@ -873,7 +898,7 @@ OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std::string,
                     readersMap->insert( std::make_pair(formats[k], newVec) );
                 }
             }
-        } else if ( ( foundWriter != contexts.end() ) && (formatsCount > 0) && writersMap ) {
+        } else if ( !isDeprecated && ( foundWriter != contexts.end() ) && (formatsCount > 0) && writersMap ) {
             ///we're safe to assume that this plugin is a writer.
             for (U32 k = 0; k < formats.size(); ++k) {
                 std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it;
@@ -898,11 +923,13 @@ OfxHost::writeOFXCache()
     QString ofxCachePath = getOFXCacheDirPath();
     QDir().mkpath(ofxCachePath);
     QString ofxCacheFilePath = getCacheFilePath();
-    std::ofstream of( ofxCacheFilePath.toStdString().c_str() );
-    assert( of.is_open() );
-    assert( OFX::Host::PluginCache::getPluginCache() );
-    OFX::Host::PluginCache::getPluginCache()->writePluginCache(of);
-    of.close();
+    FStreamsSupport::ofstream ofile;
+    FStreamsSupport::open(&ofile, ofxCacheFilePath.toStdString());
+    if (!ofile) {
+        return;
+    }
+    assert(OFX::Host::PluginCache::getPluginCache());
+    OFX::Host::PluginCache::getPluginCache()->writePluginCache(ofile);
 }
 
 void
@@ -923,9 +950,9 @@ OfxHost::loadingStatus(bool loading, const std::string & pluginId, int versionMa
     _imp->loadingPluginVersionMajor = versionMajor;
     _imp->loadingPluginVersionMinor = versionMinor;
     if (loading && appPTR) {
-        appPTR->setLoadingStatus( "OpenFX: loading " + QString( pluginId.c_str() ) + " v" + QString::number(versionMajor) + '.' + QString::number(versionMinor) );
+        appPTR->setLoadingStatus( QString::fromUtf8("OpenFX: loading ") + QString::fromUtf8( pluginId.c_str() ) + QString::fromUtf8(" v") + QString::number(versionMajor) + QLatin1Char('.') + QString::number(versionMinor) );
 #     ifdef DEBUG
-        qDebug() << "OpenFX: loading " + QString( pluginId.c_str() ) + " v" + QString::number(versionMajor) + '.' + QString::number(versionMinor);
+        qDebug() << QString::fromUtf8("OpenFX: loading ") + QString::fromUtf8( pluginId.c_str() ) + QString::fromUtf8(" v") + QString::number(versionMajor) + QLatin1Char('.') + QString::number(versionMinor);
 #     endif
     }
 }
@@ -1030,6 +1057,9 @@ threadFunctionWrapper(OfxThreadFunctionV1 func,
     
 class OfxThread
     : public QThread
+#ifdef QT_CUSTOM_THREADPOOL
+    , public AbortableThread
+#endif
 {
 public:
     OfxThread(OfxThreadFunctionV1 func,
@@ -1045,7 +1075,7 @@ public:
     , _customArg(customArg)
     , _stat(stat)
     {
-        setObjectName("Multi-thread suite");
+        setObjectName(QString::fromUtf8("Multi-thread suite"));
     }
 
     void run() OVERRIDE
@@ -1237,11 +1267,14 @@ OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
             
             if (hwConcurrency <= 0) {
                 nThreadsPerEffect = 1;
-            } else if (hwConcurrency <= NATRON_MULTI_THREAD_SUITE_MAX_NUM_CPU) {
+            } else {
+                nThreadsPerEffect = hwConcurrency;
+            }
+            /*else if (hwConcurrency <= NATRON_MULTI_THREAD_SUITE_MAX_NUM_CPU) {
                 nThreadsPerEffect = hwConcurrency;
             } else {
                 nThreadsPerEffect = NATRON_MULTI_THREAD_SUITE_MAX_NUM_CPU;
-            }
+            }*/
         }
         ///+1 because the current thread is going to wait during the multiThread call so we're better off
         ///not counting it.

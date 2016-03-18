@@ -72,6 +72,7 @@ struct Page
 };
 
 typedef std::map<QString,Page> PageMap;
+typedef std::list<std::pair<boost::weak_ptr<KnobI>,KnobGuiPtr> > KnobsGuiMapping;
 
 struct DockablePanelPrivate
 {
@@ -113,16 +114,18 @@ struct DockablePanelPrivate
     Button* _redoButton;
     Button* _restoreDefaultsButton;
     bool _minimized; /*!< true if the panel is minimized*/
+    QUndoCommand* _cmdBeingPushed;
+    bool _clearedStackDuringPush;
     boost::shared_ptr<QUndoStack> _undoStack; /*!< undo/redo stack*/
     bool _floating; /*!< true if the panel is floating*/
     FloatingWidget* _floatingWidget;
 
     /*a map storing for each knob a pointer to their GUI.*/
-    std::map<boost::weak_ptr<KnobI>,KnobGui*> _knobs;
+    KnobsGuiMapping _knobs;
 
     ///THe visibility of the knobs before the hide/show unmodified button is clicked
     ///to show only the knobs that need to afterwards
-    std::map<KnobGui*,bool> _knobsVisibilityBeforeHideModif;
+    std::map<KnobGuiWPtr,bool> _knobsVisibilityBeforeHideModif;
     KnobHolder* _holder;
 
     /* map<tab name, pair<tab , row count> >*/
@@ -155,6 +158,10 @@ struct DockablePanelPrivate
     
     /*inserts a new page to the dockable panel.*/
     PageMap::iterator getOrCreatePage(const boost::shared_ptr<KnobPage>& page);
+    
+    KnobsGuiMapping::iterator findKnobGui(const KnobPtr& knob) ;
+    
+    void refreshPagesOrder(const QString& curTabName, bool restorePageIndex);
 
     boost::shared_ptr<KnobPage> ensureDefaultPageKnobCreated() ;
 
@@ -162,11 +169,11 @@ struct DockablePanelPrivate
     void initializeKnobVector(const std::vector< boost::shared_ptr< KnobI> > & knobs,
                               QWidget* lastRowWidget);
 
-    KnobGui* createKnobGui(const KnobPtr &knob);
+    KnobGuiPtr createKnobGui(const KnobPtr &knob);
 
     /*Search an existing knob GUI in the map, otherwise creates
      the gui for the knob.*/
-    KnobGui* findKnobGuiOrCreate( const KnobPtr &knob,
+    KnobGuiPtr findKnobGuiOrCreate( const KnobPtr &knob,
                                  bool makeNewLine,
                                  QWidget* lastRowWidget,
                                  const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine = std::vector< boost::shared_ptr< KnobI > >() );

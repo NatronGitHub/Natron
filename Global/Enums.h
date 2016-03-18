@@ -124,11 +124,15 @@ enum PixmapEnum
     NATRON_PIXMAP_PLAYER_REWIND_DISABLED,
     NATRON_PIXMAP_PLAYER_PLAY_ENABLED,
     NATRON_PIXMAP_PLAYER_PLAY_DISABLED,
-    NATRON_PIXMAP_PLAYER_STOP,
+    NATRON_PIXMAP_PLAYER_STOP_DISABLED,
+    NATRON_PIXMAP_PLAYER_STOP_ENABLED,
+    NATRON_PIXMAP_PLAYER_PAUSE_DISABLED,
+    NATRON_PIXMAP_PLAYER_PAUSE_ENABLED,
     NATRON_PIXMAP_PLAYER_LOOP_MODE,
     NATRON_PIXMAP_PLAYER_BOUNCE,
     NATRON_PIXMAP_PLAYER_PLAY_ONCE,
-
+    NATRON_PIXMAP_PLAYER_TIMELINE_IN,
+    NATRON_PIXMAP_PLAYER_TIMELINE_OUT,
 
     NATRON_PIXMAP_MAXIMIZE_WIDGET,
     NATRON_PIXMAP_MINIMIZE_WIDGET,
@@ -398,6 +402,14 @@ enum ImagePremultiplicationEnum
     eImagePremultiplicationPremultiplied,
     eImagePremultiplicationUnPremultiplied,
 };
+    
+enum ImageFieldingOrderEnum
+{
+    eImageFieldingOrderNone, // no fielding
+    eImageFieldingOrderLower, // rows 0, 2 ...
+    eImageFieldingOrderUpper, // rows 1, 3 ...
+    
+};
 
 enum ViewerCompositingOperatorEnum
 {
@@ -555,6 +567,13 @@ enum CreateNodeReason
     
     //The node was created by Natron internally
     eCreateNodeReasonInternal,
+};
+    
+enum KnobClipBoardType
+{
+    eKnobClipBoardTypeCopyValue,
+    eKnobClipBoardTypeCopyAnim,
+    eKnobClipBoardTypeCopyLink
 };
     
 //typedef QFlags<StandardButtonEnum> StandardButtons;

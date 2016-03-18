@@ -3,7 +3,7 @@
 
 #include <shiboken.h>
 
-#include <ParameterWrapper.h>
+#include <PyParameter.h>
 
 #endif // SBK_DOUBLE2DTUPLE_H
 

@@ -536,6 +536,7 @@ QTabWidget::tab-bar {
 QMenu {
     background-color: %2; /* sets background of the menu */
     border: 0px;
+    padding: 1px 0px 0px 1px; /* [top+bottom] [ignored] [ignored] [left+right] (QMenu box model is buggy) top must be > 1px or the first item is selected when clicking */
     margin: 0px;
     color : %5;
     menu-scrollable: 1;

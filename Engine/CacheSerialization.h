@@ -51,6 +51,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/FrameParamsSerialization.h"
 #include "Engine/EngineFwd.h"
 
+// Note: these classes are used for cache serialization and do not have to maintain backward compatibility
 #define SERIALIZED_ENTRY_INTRODUCES_SIZE 2
 #define SERIALIZED_ENTRY_VERSION SERIALIZED_ENTRY_INTRODUCES_SIZE
 
@@ -163,18 +164,7 @@ struct Cache<EntryType>::SerializedEntry
     }
 
     template<class Archive>
-    void save(Archive & ar,
-              const unsigned int /*version*/) const
-    {
-        ar & ::boost::serialization::make_nvp("Hash",hash);
-        ar & ::boost::serialization::make_nvp("Key",key);
-        ar & ::boost::serialization::make_nvp("Params",params);
-        ar & ::boost::serialization::make_nvp("Size",size);
-        ar & ::boost::serialization::make_nvp("Filename",filePath);
-    }
-
-    template<class Archive>
-    void load(Archive & ar,
+    void serialize(Archive & ar,
               const unsigned int /*version*/)
     {
         ar & ::boost::serialization::make_nvp("Hash",hash);
@@ -183,9 +173,6 @@ struct Cache<EntryType>::SerializedEntry
         ar & ::boost::serialization::make_nvp("Size",size);
         ar & ::boost::serialization::make_nvp("Filename",filePath);
     }
-
-    BOOST_SERIALIZATION_SPLIT_MEMBER()
-
 };
 
 NATRON_NAMESPACE_EXIT;

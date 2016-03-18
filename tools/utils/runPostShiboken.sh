@@ -41,6 +41,7 @@ GCC_DIAG_OFF(unused-parameter)\
 GCC_DIAG_OFF(missing-field-initializers)\
 GCC_DIAG_OFF(missing-declarations)\
 GCC_DIAG_OFF(uninitialized)\
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF\
 #include <shiboken.h> // produces many warnings@' -i .bak Engine/NatronEngine/*.cpp Gui/NatronGui/*.cpp
 
 sed -e 's@// Extra includes@// Extra includes\

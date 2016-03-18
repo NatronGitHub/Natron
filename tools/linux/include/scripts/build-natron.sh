@@ -26,22 +26,26 @@
 # CUSTOM_BUILD_USER_NAME="Toto" : to be set if BUILD_CONFIG=CUSTOM
 # BUILD_NUMBER=X: To be set to indicate the revision number of the build. For example RC1,RC2, RC3 etc...
 # DISABLE_BREAKPAD=1: Disable automatic crash report
-#Usage MKJOBS=4 BUILD_CONFIG=SNAPSHOT build-natron.sh workshop
+#Usage MKJOBS=4 BUILD_CONFIG=SNAPSHOT build-natron.sh master
 
 source `pwd`/common.sh || exit 1
 
 PID=$$
-if [ -f $TMP_DIR/natron-build-app.pid ]; then
-    OLDPID=`cat $TMP_DIR/natron-build-app.pid`
-    PIDS=`ps aux|awk '{print $2}'`
-    for i in $PIDS;do
-        if [ "$i" = "$OLDPID" ]; then
-            echo "already running ..."
-            exit 1
-        fi
-    done
+# make kill bot
+KILLSCRIPT="/tmp/killbot$$.sh"
+cat << 'EOF' > "$KILLSCRIPT"
+#!/bin/sh
+PARENT=$1
+sleep 30m
+if [ "$PARENT" = "" ]; then
+  exit 1
 fi
-echo $PID > $TMP_DIR/natron-build-app.pid || exit 1
+PIDS=`ps aux|awk '{print $2}'|grep $PARENT`
+if [ "$PIDS" = "$PARENT" ]; then
+  kill -15 $PARENT
+fi
+EOF
+chmod +x $KILLSCRIPT
 
 #Assume that $1 is the branch to build, otherwise if empty use the NATRON_GIT_TAG in common.sh
 NATRON_BRANCH=$1
@@ -89,15 +93,21 @@ fi
 # Install natron
 cd $TMP_PATH || exit 1
 
+$KILLSCRIPT $PID &
+KILLBOT=$! 
+
 git clone $GIT_NATRON || exit 1
 cd Natron || exit 1
 git checkout $NATRON_BRANCH || exit 1
 git pull origin $NATRON_BRANCH
 git submodule update -i --recursive || exit 1
-if [ "$NATRON_BRANCH" = "workshop" ]; then
+
+if [ "$NATRON_BRANCH" = "master" ]; then
     # the snapshots are always built with the latest version of submodules
     git submodule foreach git pull origin master
 fi
+
+kill -9 $KILLBOT
 
 REL_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 
@@ -105,7 +115,7 @@ REL_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 if [ "$MKSRC" = "1" ]; then
     cd .. || exit 1
     cp -a Natron Natron-$REL_GIT_VERSION || exit 1
-    (cd Naton-$REL_GIT_VERSION;find . -type d -name .git -exec rm -rf {} \;)
+    (cd Natron-$REL_GIT_VERSION;find . -type d -name .git -exec rm -rf {} \;)
     tar cvvJf $SRC_PATH/Natron-$REL_GIT_VERSION.tar.xz Natron-$REL_GIT_VERSION || exit 1
     rm -rf Natron-$REL_GIT_VERSION || exit 1
     cd Natron || exit 1 
@@ -126,7 +136,23 @@ echo "Building Natron $NATRON_REL_V from $NATRON_BRANCH against SDK $SDK_VERSION
 echo
 sleep 2
 
-cat $INC_PATH/natron/GitVersion.h | sed "s#__BRANCH__#${NATRON_BRANCH}#;s#__COMMIT__#${REL_GIT_VERSION}#" > Global/GitVersion.h || exit 1
+# Plugins git hash
+IO_VERSION_FILE=$INSTALL_PATH/Plugins/IO.ofx.bundle-version.txt
+MISC_VERSION_FILE=$INSTALL_PATH/Plugins/Misc.ofx.bundle-version.txt
+ARENA_VERSION_FILE=$INSTALL_PATH/Plugins/Arena.ofx.bundle-version.txt
+
+if [ -f "$IO_VERSION_FILE" ]; then
+  IO_GIT_HASH=`cat ${IO_VERSION_FILE}`
+fi
+if [ -f "$MISC_VERSION_FILE" ]; then
+  MISC_GIT_HASH=`cat ${MISC_VERSION_FILE}`
+fi
+if [ -f "$ARENA_VERSION_FILE" ]; then
+  ARENA_GIT_HASH=`cat ${ARENA_VERSION_FILE}`
+fi
+
+#Update GitVersion to have the correct hash
+cat $INC_PATH/natron/GitVersion.h | sed "s#__BRANCH__#${NATRON_BRANCH}#;s#__COMMIT__#${REL_GIT_VERSION}#;s#__IO_COMMIT__#${IO_GIT_HASH}#;s#__MISC_COMMIT__#${MISC_GIT_HASH}#;s#__ARENA_COMMIT__#${ARENA_GIT_HASH}#" > Global/GitVersion.h || exit 1
 
 if [ "$PYV" = "3" ]; then
     cat $INC_PATH/natron/config_py3.pri > config.pri || exit 1
@@ -207,6 +233,12 @@ mkdir -p $INSTALL_PATH/share/pixmaps || exit 1
 cp ../Gui/Resources/Images/natronIcon256_linux.png $INSTALL_PATH/share/pixmaps/ || exit 1
 cp ../Gui/Resources/Images/natronProjectIcon_linux.png $INSTALL_PATH/share/pixmaps/ || exit 1
 echo $NATRON_REL_V > $INSTALL_PATH/docs/natron/VERSION || exit 1
+
+rm -rf $INSTALL_PATH/PyPlugs
+mkdir -p $INSTALL_PATH/PyPlugs || exit 1
+cp ../Gui/Resources/PyPlugs/* $INSTALL_PATH/PyPlugs/ || exit 1
+
+rm -f $KILLSCRIPT
 
 echo "Done!"
 

@@ -95,8 +95,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 NATRON_NAMESPACE_ENTER;
 
-EditExpressionDialog::EditExpressionDialog(int dimension,KnobGui* knob,QWidget* parent)
-: EditScriptDialog(parent)
+EditExpressionDialog::EditExpressionDialog(Gui* gui, int dimension,const KnobGuiPtr& knob,QWidget* parent)
+: EditScriptDialog(gui, parent)
 , _dimension(dimension)
 , _knob(knob)
 {
@@ -116,10 +116,10 @@ EditExpressionDialog::setTitle()
     KnobPtr k = _knob->getKnob();
     
     QString title(tr("Set expression on "));
-    title.append(k->getName().c_str());
+    title.append(QString::fromUtf8(k->getName().c_str()));
     if (_dimension != -1 && k->getDimension() > 1) {
-        title.append(".");
-        title.append(k->getDimensionName(_dimension).c_str());
+        title.append(QLatin1Char('.'));
+        title.append(QString::fromUtf8(k->getDimensionName(_dimension).c_str()));
     }
     setWindowTitle(title);
 
@@ -140,21 +140,22 @@ EditExpressionDialog::compileExpression(const QString& expr)
         _knob->getKnob()->validateExpression(expr.toStdString(),_dimension == -1 ? 0 : _dimension,isUseRetButtonChecked()
                                                   ,&exprResult);
     } catch(const std::exception& e) {
-        QString err = QString(tr("ERROR") + ": %1").arg(e.what());
+        QString err = QString(tr("ERROR") + QLatin1String(": %1")).arg(QString::fromUtf8(e.what()));
         return err;
     }
-    return exprResult.c_str();
+    return QString::fromUtf8(exprResult.c_str());
 }
 
 
 QString
 EditExpressionDialog::getCustomHelp()
 {
-    return getHelpPart1() + "<br/>" +
-    getHelpThisNodeVariable() + "<br/>" +
-    getHelpThisGroupVariable() + "<br/>" +
-    getHelpThisParamVariable() + "<br/>" +
-    getHelpDimensionVariable() + "<br/>" +
+    QString sep = QString::fromUtf8("<br/>");
+    return getHelpPart1() + sep +
+    getHelpThisNodeVariable() + sep +
+    getHelpThisGroupVariable() + sep +
+    getHelpThisParamVariable() + sep +
+    getHelpDimensionVariable() + sep +
     getHelpPart2();
 }
 
@@ -162,17 +163,17 @@ EditExpressionDialog::getCustomHelp()
 void
 EditExpressionDialog::getImportedModules(QStringList& modules) const
 {
-    modules.push_back("math");
+    modules.push_back(QString::fromUtf8("math"));
 }
 
 void
 EditExpressionDialog::getDeclaredVariables(std::list<std::pair<QString,QString> >& variables) const
 {
-    variables.push_back(std::make_pair("thisNode", tr("the current node")));
-    variables.push_back(std::make_pair("thisGroup", tr("When thisNode belongs to a group, it references the parent group node, otherwise it will reference the current application instance")));
-    variables.push_back(std::make_pair("thisParam", tr("the current param being edited")));
-    variables.push_back(std::make_pair("dimension", tr("Defined only if the parameter is multi-dimensional, it references the dimension of the parameter being edited (0-based index)")));
-    variables.push_back(std::make_pair("frame", tr("the current time on the timeline or the time passed to the get function")));
+    variables.push_back(std::make_pair(QString::fromUtf8("thisNode"), tr("the current node")));
+    variables.push_back(std::make_pair(QString::fromUtf8("thisGroup"), tr("When thisNode belongs to a group, it references the parent group node, otherwise it will reference the current application instance")));
+    variables.push_back(std::make_pair(QString::fromUtf8("thisParam"), tr("the current param being edited")));
+    variables.push_back(std::make_pair(QString::fromUtf8("dimension"), tr("Defined only if the parameter is multi-dimensional, it references the dimension of the parameter being edited (0-based index)")));
+    variables.push_back(std::make_pair(QString::fromUtf8("frame"), tr("the current time on the timeline or the time passed to the get function")));
 }
 
 NATRON_NAMESPACE_EXIT;

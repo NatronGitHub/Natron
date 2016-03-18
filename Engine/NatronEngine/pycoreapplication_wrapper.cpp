@@ -6,6 +6,7 @@ GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_OFF(missing-field-initializers)
 GCC_DIAG_OFF(missing-declarations)
 GCC_DIAG_OFF(uninitialized)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <shiboken.h> // produces many warnings
 #include <pysidesignal.h>
 #include <pysideproperty.h>
@@ -18,7 +19,7 @@ GCC_DIAG_OFF(uninitialized)
 
 // Extra includes
 NATRON_NAMESPACE_USING
-#include <AppInstanceWrapper.h>
+#include <PyAppInstance.h>
 #include <list>
 
 
@@ -111,6 +112,35 @@ static PyObject* Sbk_PyCoreApplicationFunc_appendToNatronPath(PyObject* self, Py
         const char* overloads[] = {"std::string", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.PyCoreApplication.appendToNatronPath", overloads);
         return 0;
+}
+
+static PyObject* Sbk_PyCoreApplicationFunc_getActiveInstance(PyObject* self)
+{
+    ::PyCoreApplication* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::PyCoreApplication*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getActiveInstance()const
+            App * cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getActiveInstance();
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_APP_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
 }
 
 static PyObject* Sbk_PyCoreApplicationFunc_getBuildNumber(PyObject* self)
@@ -764,6 +794,7 @@ static PyObject* Sbk_PyCoreApplicationFunc_setOnProjectLoadedCallback(PyObject* 
 
 static PyMethodDef Sbk_PyCoreApplication_methods[] = {
     {"appendToNatronPath", (PyCFunction)Sbk_PyCoreApplicationFunc_appendToNatronPath, METH_O},
+    {"getActiveInstance", (PyCFunction)Sbk_PyCoreApplicationFunc_getActiveInstance, METH_NOARGS},
     {"getBuildNumber", (PyCFunction)Sbk_PyCoreApplicationFunc_getBuildNumber, METH_NOARGS},
     {"getInstance", (PyCFunction)Sbk_PyCoreApplicationFunc_getInstance, METH_O},
     {"getNatronDevelopmentStatus", (PyCFunction)Sbk_PyCoreApplicationFunc_getNatronDevelopmentStatus, METH_NOARGS},

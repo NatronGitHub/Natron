@@ -77,11 +77,13 @@ struct ScaleSliderQWidgetPrivate
     
     bool useLineColor;
     QColor lineColor;
+    bool allowDraftModeSetting;
     
     ScaleSliderQWidgetPrivate(QWidget* parent,
                               double min,
                               double max,
                               double initialPos,
+                              bool allowDraftModeSetting,
                               Gui* gui,
                               ScaleSliderQWidget::DataTypeEnum dataType,
                               ScaleTypeEnum type)
@@ -105,6 +107,7 @@ struct ScaleSliderQWidgetPrivate
     , altered(false)
     , useLineColor(false)
     , lineColor(Qt::black)
+    , allowDraftModeSetting(allowDraftModeSetting)
     {
         font.setPointSize((font.pointSize() * NATRON_FONT_SIZE_8) / NATRON_FONT_SIZE_12);
     }
@@ -113,12 +116,13 @@ struct ScaleSliderQWidgetPrivate
 ScaleSliderQWidget::ScaleSliderQWidget(double min,
                                        double max,
                                        double initialPos,
+                                       bool allowDraftModeSetting,
                                        DataTypeEnum dataType,
                                        Gui* gui,
                                        ScaleTypeEnum type,
                                        QWidget* parent)
     : QWidget(parent)
-    , _imp(new ScaleSliderQWidgetPrivate(parent,min,max,initialPos,gui,dataType,type))
+    , _imp(new ScaleSliderQWidgetPrivate(parent,min,max,initialPos,allowDraftModeSetting,gui,dataType,type))
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     QSize sizeh = sizeHint();
@@ -195,7 +199,7 @@ ScaleSliderQWidget::mouseMoveEvent(QMouseEvent* e)
         QPoint newClick =  e->pos();
         QPointF newClick_opengl = _imp->zoomCtx.toZoomCoordinates( newClick.x(),newClick.y() );
         double v = _imp->dataType == eDataTypeInt ? std::floor(newClick_opengl.x() + 0.5) : newClick_opengl.x();
-        if (_imp->gui) {
+        if (_imp->gui && _imp->allowDraftModeSetting) {
             _imp->gui->setDraftRenderEnabled(true);
         }
         seekInternal(v);
@@ -207,7 +211,7 @@ ScaleSliderQWidget::mouseReleaseEvent(QMouseEvent* e)
 {
     if (!_imp->readOnly) {
         bool hasMoved = true;
-        if (_imp->gui) {
+        if (_imp->gui && _imp->allowDraftModeSetting) {
             hasMoved = _imp->gui->isDraftRenderEnabled();
             _imp->gui->setDraftRenderEnabled(false);
         }
@@ -351,7 +355,7 @@ ScaleSliderQWidget::seekScalePosition(double v)
         return;
     }
     _imp->value = v;
-    if (_imp->initialized) {
+    if (_imp->initialized && isVisible()) {
         update();
     }
 }
@@ -463,13 +467,9 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
 
     double tickBottom = _imp->zoomCtx.toZoomCoordinates( 0,height() - 1 - fontM.height() ).y();
     double tickTop = _imp->zoomCtx.toZoomCoordinates(0,height() - 1 - fontM.height()  - TO_DPIY(TICK_HEIGHT)).y();
-    const double smallestTickSizePixel = 5.; // tick size (in pixels) for alpha = 0.
+    const double smallestTickSizePixel = 10.; // tick size (in pixels) for alpha = 0.
     const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
-    std::vector<double> acceptedDistances;
-    acceptedDistances.push_back(1.);
-    acceptedDistances.push_back(5.);
-    acceptedDistances.push_back(10.);
-    acceptedDistances.push_back(50.);
+
     const double rangePixel =  width();
     const double range_min = btmLeft.x();
     const double range_max =  topRight.x();
@@ -489,7 +489,7 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     ticks_fill(half_tick, ticks_max, m1, m2, &ticks);
     const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
     const double largestTickSize = range * largestTickSizePixel / rangePixel;
-    const double minTickSizeTextPixel = fontM.width( QString("00") ); // AXIS-SPECIFIC
+    const double minTickSizeTextPixel = fontM.width( QLatin1String("00") ); // AXIS-SPECIFIC
     const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
     for (int i = m1; i <= m2; ++i) {
         double value = i * smallTickSize + offset;

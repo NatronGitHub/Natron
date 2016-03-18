@@ -44,6 +44,29 @@ const char* ImageComponents::defaultComponents[][2] =
     {0, 0}
 };
 
+const ImageComponents&
+ImageComponents::getDefaultComponent(const std::string& planeName)
+{
+    if (planeName == kNatronRGBAComponentsName) {
+        return getRGBAComponents();
+    } else if (planeName == kNatronRGBComponentsName) {
+        return getRGBComponents();
+    } else if (planeName == kNatronRGBComponentsName) {
+        return getRGBComponents();
+    } else if (planeName == kNatronAlphaComponentsName) {
+        return getAlphaComponents();
+    } else if (planeName == kNatronDisparityLeftPlaneName) {
+        return getDisparityLeftComponents();
+    } else if (planeName == kNatronDisparityRightPlaneName) {
+        return getDisparityRightComponents();
+    } else if (planeName == kNatronBackwardMotionVectorsPlaneName) {
+        return getBackwardMotionComponents();
+    } else if (planeName == kNatronForwardMotionVectorsPlaneName) {
+        return getForwardMotionComponents();
+    }
+    return getNoneComponents();
+}
+
 std::string
 ImageComponents::mapUserFriendlyPlaneNameToNatronInternalPlaneName(const std::string& userfriendlyPlaneName)
 {
@@ -69,6 +92,8 @@ ImageComponents::mapNatronInternalPlaneNameToUserFriendlyPlaneName(const std::st
     }
     return planeName;
 }
+
+
 
 ImageComponents::ImageComponents()
 : _layerName("none")
@@ -106,6 +131,23 @@ ImageComponents::ImageComponents(const std::string& layerName,
         _componentNames[i] = componentsName[i];
     }
 }
+
+ImageComponents::ImageComponents(const std::string& layerName,
+                const std::string& pairedLayer,
+                const std::string& globalCompName,
+                const char** componentsName,
+                int count)
+: _layerName(layerName)
+, _pairedLayer(pairedLayer)
+, _componentNames()
+, _globalComponentsName(globalCompName)
+{
+    _componentNames.resize(count);
+    for (int i = 0; i < count; ++i) {
+        _componentNames[i] = componentsName[i];
+    }
+}
+
 
 ImageComponents::~ImageComponents()
 {
@@ -196,6 +238,19 @@ ImageComponents::getComponentsGlobalName() const
     return _globalComponentsName;
 }
 
+
+bool
+ImageComponents::isPairedComponents() const
+{
+    return !_pairedLayer.empty();
+}
+
+const std::string&
+ImageComponents::getPairedLayerName() const
+{
+    return _pairedLayer;
+}
+
 const ImageComponents&
 ImageComponents::getNoneComponents()
 {
@@ -227,28 +282,28 @@ ImageComponents::getAlphaComponents()
 const ImageComponents&
 ImageComponents::getBackwardMotionComponents()
 {
-    static const ImageComponents comp(kNatronBackwardMotionVectorsPlaneName,kNatronMotionComponentsName,motionComps,2);
+    static const ImageComponents comp(kNatronBackwardMotionVectorsPlaneUserName,kNatronMotionComponentsName,motionComps,2);
     return comp;
 }
 
 const ImageComponents&
 ImageComponents::getForwardMotionComponents()
 {
-    static const ImageComponents comp(kNatronForwardMotionVectorsPlaneName,kNatronMotionComponentsName,motionComps,2);
+    static const ImageComponents comp(kNatronForwardMotionVectorsPlaneUserName,kNatronMotionComponentsName,motionComps,2);
     return comp;
 }
 
 const ImageComponents&
 ImageComponents::getDisparityLeftComponents()
 {
-    static const ImageComponents comp(kNatronDisparityLeftPlaneName,kNatronDisparityComponentsName,disparityComps,2);
+    static const ImageComponents comp(kNatronDisparityLeftPlaneUserName,kNatronDisparityComponentsName,disparityComps,2);
     return comp;
 }
 
 const ImageComponents&
 ImageComponents::getDisparityRightComponents()
 {
-    static const ImageComponents comp(kNatronDisparityRightPlaneName,kNatronDisparityComponentsName,disparityComps,2);
+    static const ImageComponents comp(kNatronDisparityRightPlaneUserName,kNatronDisparityComponentsName,disparityComps,2);
     return comp;
 }
 
@@ -256,6 +311,21 @@ const ImageComponents&
 ImageComponents::getXYComponents()
 {
     static const ImageComponents comp("XY","xy",xyComps,2);
+    return comp;
+}
+
+const
+ImageComponents&
+ImageComponents::getPairedMotionVectors()
+{
+    static const ImageComponents comp(kFnOfxImagePlaneForwardMotionVector,kFnOfxImagePlaneBackwardMotionVector,kFnOfxImageComponentMotionVectors,motionComps,2);
+    return comp;
+}
+
+const ImageComponents&
+ImageComponents::getPairedStereoDisparity()
+{
+    static const ImageComponents comp(kFnOfxImagePlaneStereoDisparityLeft,kFnOfxImagePlaneStereoDisparityRight,kFnOfxImageComponentStereoDisparity,xyComps,2);
     return comp;
 }
 

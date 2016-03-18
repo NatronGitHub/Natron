@@ -39,6 +39,8 @@
 #include <QAction>
 
 #include "Engine/Settings.h"
+#include "Engine/FStreamsSupport.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/DockablePanel.h"
 #include "Gui/Menu.h"
@@ -59,14 +61,11 @@ Gui::importLayout()
     SequenceFileDialog dialog( this, filters, false, SequenceFileDialog::eFileDialogModeOpen, _imp->_lastLoadProjectOpenedDir.toStdString(), this, false );
     if ( dialog.exec() ) {
         std::string filename = dialog.selectedFiles();
-        std::ifstream ifile;
-        try {
-            ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-            ifile.open(filename.c_str(), std::ifstream::in);
-        } catch (const std::ifstream::failure & e) {
-            QString err = QString("Exception occured when opening file %1: %2").arg( filename.c_str() ).arg( e.what() );
-            Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
-
+        
+        FStreamsSupport::ifstream ifile;
+        FStreamsSupport::open(&ifile, filename);
+        if (!ifile) {
+            Dialogs::errorDialog( tr("Error").toStdString(), tr("Failed to open file: ").toStdString() + filename, false );
             return;
         }
 
@@ -76,20 +75,17 @@ Gui::importLayout()
             iArchive >> boost::serialization::make_nvp("Layout", s);
             restoreLayout(true, false, s);
         } catch (const boost::archive::archive_exception & e) {
-            ifile.close();
-            QString err = QString("Exception occured when opening file %1: %2").arg( filename.c_str() ).arg( e.what() );
+            QString err = QString::fromUtf8("Exception occured when opening file %1: %2").arg( QString::fromUtf8(filename.c_str() )).arg( QString::fromUtf8(e.what() ));
             Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
 
             return;
         } catch (const std::exception & e) {
-            ifile.close();
-            QString err = QString("Exception occured when opening file %1: %2").arg( filename.c_str() ).arg( e.what() );
+            QString err = QString::fromUtf8("Exception occured when opening file %1: %2").arg( QString::fromUtf8(filename.c_str()) ).arg( QString::fromUtf8(e.what() ));
             Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
 
             return;
         }
 
-        ifile.close();
     }
 }
 
@@ -114,13 +110,13 @@ Gui::createDefaultLayoutInternal(bool wipePrevious)
                 restoreLayout(false, false, s);
             } catch (const boost::archive::archive_exception & e) {
                 ifile.close();
-                QString err = QString("Exception occured when opening file %1: %2").arg( fileLayout.c_str() ).arg( e.what() );
+                QString err = QString::fromUtf8("Exception occured when opening file %1: %2").arg( QString::fromUtf8(fileLayout.c_str()) ).arg( QString::fromUtf8(e.what() ));
                 Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
 
                 return;
             } catch (const std::exception & e) {
                 ifile.close();
-                QString err = QString("Exception occured when opening file %1: %2").arg( fileLayout.c_str() ).arg( e.what() );
+                QString err = QString::fromUtf8("Exception occured when opening file %1: %2").arg( QString::fromUtf8(fileLayout.c_str() )).arg( QString::fromUtf8(e.what() ));
                 Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
 
                 return;
@@ -147,9 +143,9 @@ Gui::initProjectGuiKnobs()
 }
 
 QKeySequence
-Gui::keySequenceForView(int v)
+Gui::keySequenceForView(ViewIdx v)
 {
-    switch (v) {
+    switch (static_cast<int>(v)) {
     case 0:
 
         return QKeySequence(Qt::CTRL + Qt::ALT +  Qt::Key_1);
@@ -202,43 +198,43 @@ slotForView(int view)
     switch (view) {
     case 0:
 
-        return SLOT( showView0() );
+        return SLOT(showView0());
         break;
     case 1:
 
-        return SLOT( showView1() );
+        return SLOT(showView1());
         break;
     case 2:
 
-        return SLOT( showView2() );
+        return SLOT(showView2());
         break;
     case 3:
 
-        return SLOT( showView3() );
+        return SLOT(showView3());
         break;
     case 4:
 
-        return SLOT( showView4() );
+        return SLOT(showView4());
         break;
     case 5:
 
-        return SLOT( showView5() );
+        return SLOT(showView5());
         break;
     case 6:
 
-        return SLOT( showView6() );
+        return SLOT(showView6());
         break;
     case 7:
 
-        return SLOT( showView7() );
+        return SLOT(showView7());
         break;
     case 8:
 
-        return SLOT( showView7() );
+        return SLOT(showView7());
         break;
     case 9:
 
-        return SLOT( showView8() );
+        return SLOT(showView8());
         break;
     default:
 
@@ -258,13 +254,13 @@ Gui::updateViewsActions(int viewsCount)
         left->setShortcut( QKeySequence(Qt::CTRL + Qt::Key_1) );
         _imp->viewersViewMenu->addAction(left);
         left->setText( tr("Display Left View") );
-        QObject::connect( left, SIGNAL( triggered() ), this, SLOT( showView0() ) );
+        QObject::connect( left, SIGNAL(triggered()), this, SLOT(showView0()) );
         QAction* right = new QAction(this);
         right->setCheckable(false);
         right->setShortcut( QKeySequence(Qt::CTRL + Qt::Key_2) );
         _imp->viewersViewMenu->addAction(right);
         right->setText( tr("Display Right View") );
-        QObject::connect( right, SIGNAL( triggered() ), this, SLOT( showView1() ) );
+        QObject::connect( right, SIGNAL(triggered()), this, SLOT(showView1()) );
 
         _imp->viewersMenu->addAction( _imp->viewersViewMenu->menuAction() );
     } else if (viewsCount > 2) {
@@ -274,7 +270,7 @@ Gui::updateViewsActions(int viewsCount)
             }
             QAction* viewI = new QAction(this);
             viewI->setCheckable(false);
-            QKeySequence seq = keySequenceForView(i);
+            QKeySequence seq = keySequenceForView(ViewIdx(i));
             if ( !seq.isEmpty() ) {
                 viewI->setShortcut(seq);
             }
@@ -282,7 +278,7 @@ Gui::updateViewsActions(int viewsCount)
             const char* slot = slotForView(i);
             viewI->setText( QString( tr("Display View ") ) + QString::number(i + 1) );
             if (slot) {
-                QObject::connect(viewI, SIGNAL( triggered() ), this, slot);
+                QObject::connect(viewI, SIGNAL(triggered()), this, slot);
             }
         }
 

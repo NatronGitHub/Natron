@@ -32,6 +32,7 @@
 #endif
 #include "Engine/OverlaySupport.h"
 #include "Engine/RectI.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 
@@ -151,7 +152,7 @@ public:
     /**
      * @brief Must return the current view displayed if multi-view is enabled, 0 otherwise.
      **/
-    virtual int getCurrentView() const = 0;
+    virtual ViewIdx getCurrentView() const = 0;
     
     /**
      * @brief Must return the time currently displayed

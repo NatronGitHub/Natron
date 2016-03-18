@@ -42,6 +42,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/Gui.h"
@@ -97,7 +98,7 @@ ViewerTab::drawOverlays(double time,
         return;
     }
     
-    int view = getCurrentView();
+    ViewIdx view = getCurrentView();
     
     NodesList  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
@@ -178,7 +179,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
     QPointF transformViewportPos;
     QPointF transformPos;
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
-    int view = getCurrentView();
+    ViewIdx view = getCurrentView();
 
     
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
@@ -281,6 +282,17 @@ ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
         return false;
     }
     
+    if (getGui()->getApp()->isShowingDialog()) {
+        /*
+         We may enter a situation where a plug-in called EffectInstance::message to show a dialog
+         and would block the main thread until the user would click OK but Qt would request a paintGL() on the viewer
+         because of focus changes. This would end-up in the interact draw action being called whilst the message() function
+         did not yet return and may in some plug-ins cause deadlocks (happens in all Genarts Sapphire plug-ins).
+         */
+        return false;
+    }
+
+    
     _imp->hasPenDown = true;
     _imp->hasCaughtPenMotionWhileDragging = false;
     
@@ -336,7 +348,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
         QPointF transformPos;
         double time = getGui()->getApp()->getTimeLine()->currentFrame();
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
-        int view = getCurrentView();
+        ViewIdx view = getCurrentView();
         
         double transformedTime;
         bool ok = _imp->getTimeTransform(time, view, *it, getInternalNode(), &transformedTime);
@@ -409,7 +421,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
     QPointF transformViewportPos;
     QPointF transformPos;
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
-    int view = getCurrentView();
+    ViewIdx view = getCurrentView();
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     
@@ -517,6 +529,17 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
         return false;
     }
     
+    if (getGui()->getApp()->isShowingDialog()) {
+        /*
+         We may enter a situation where a plug-in called EffectInstance::message to show a dialog
+         and would block the main thread until the user would click OK but Qt would request a paintGL() on the viewer
+         because of focus changes. This would end-up in the interact draw action being called whilst the message() function
+         did not yet return and may in some plug-ins cause deadlocks (happens in all Genarts Sapphire plug-ins).
+         */
+        return false;
+    }
+
+    
     NodesList  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
     
@@ -543,7 +566,7 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
     }
 
    
-    if (getGui()->getApp()->getOverlayRedrawRequestsCount() > 0) {
+    if (!didSomething && getGui()->getApp()->getOverlayRedrawRequestsCount() > 0) {
         getGui()->getApp()->redrawAllViewers();
     }
     getGui()->getApp()->clearOverlayRedrawRequests();
@@ -566,6 +589,17 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
         return false;
     }
     
+    if (getGui()->getApp()->isShowingDialog()) {
+        /*
+         We may enter a situation where a plug-in called EffectInstance::message to show a dialog
+         and would block the main thread until the user would click OK but Qt would request a paintGL() on the viewer
+         because of focus changes. This would end-up in the interact draw action being called whilst the message() function
+         did not yet return and may in some plug-ins cause deadlocks (happens in all Genarts Sapphire plug-ins).
+         */
+        return false;
+    }
+
+    
     ///Reset draft
     bool mustTriggerRender = false;
     if (getGui()->isDraftRenderEnabled()) {
@@ -584,7 +618,7 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
     
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
 
-    int view = getCurrentView();
+    ViewIdx view = getCurrentView();
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         
@@ -689,10 +723,10 @@ ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
 {
     
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
-    int view = getCurrentView();
+    ViewIdx view = getCurrentView();
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     double transformedTime;
-    bool ok = _imp->getTimeTransform(time, 0, node, getInternalNode(), &transformedTime);
+    bool ok = _imp->getTimeTransform(time, ViewIdx(0), node, getInternalNode(), &transformedTime);
     if (ok) {
         /*
          * Do not allow interaction with retimed interacts otherwise the user may end up modifying keyframes at unexpected
@@ -825,7 +859,7 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
     _imp->lastOverlayNode.reset();
     
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
-    int view = getCurrentView();
+    ViewIdx view = getCurrentView();
     NodesList  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -834,7 +868,7 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
         
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
         double transformedTime;
-        bool ok = _imp->getTimeTransform(time, 0, *it, getInternalNode(), &transformedTime);
+        bool ok = _imp->getTimeTransform(time, ViewIdx(0), *it, getInternalNode(), &transformedTime);
         if (ok) {
             /*
              * Do not allow interaction with retimed interacts otherwise the user may end up modifying keyframes at unexpected
@@ -893,11 +927,11 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
                                             Key k,
                                             KeyboardModifiers km)
 {
-    int view = getCurrentView();
+    ViewIdx view = getCurrentView();
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     double transformedTime;
-    bool ok = _imp->getTimeTransform(time, 0, node, getInternalNode(), &transformedTime);
+    bool ok = _imp->getTimeTransform(time, ViewIdx(0), node, getInternalNode(), &transformedTime);
     if (ok) {
         /*
          * Do not allow interaction with retimed interacts otherwise the user may end up modifying keyframes at unexpected
@@ -993,8 +1027,19 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
         return false;
     }
     
+    if (getGui()->getApp()->isShowingDialog()) {
+        /*
+         We may enter a situation where a plug-in called EffectInstance::message to show a dialog
+         and would block the main thread until the user would click OK but Qt would request a paintGL() on the viewer
+         because of focus changes. This would end-up in the interact draw action being called whilst the message() function
+         did not yet return and may in some plug-ins cause deadlocks (happens in all Genarts Sapphire plug-ins).
+         */
+        return false;
+    }
+
+    
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
-    int view = getCurrentView();
+    ViewIdx view = getCurrentView();
     
     bool ret = false;
     NodesList  nodes;
@@ -1005,7 +1050,7 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
         
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
         double transformedTime;
-        bool ok = _imp->getTimeTransform(time, 0, *it, getInternalNode(), &transformedTime);
+        bool ok = _imp->getTimeTransform(time, ViewIdx(0), *it, getInternalNode(), &transformedTime);
         if (ok) {
             time = transformedTime;
         }
@@ -1034,8 +1079,19 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
         return false;
     }
     
+    if (getGui()->getApp()->isShowingDialog()) {
+        /*
+         We may enter a situation where a plug-in called EffectInstance::message to show a dialog
+         and would block the main thread until the user would click OK but Qt would request a paintGL() on the viewer
+         because of focus changes. This would end-up in the interact draw action being called whilst the message() function
+         did not yet return and may in some plug-ins cause deadlocks (happens in all Genarts Sapphire plug-ins).
+         */
+        return false;
+    }
+
+    
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
-    int view = getCurrentView();
+    ViewIdx view = getCurrentView();
     
     bool ret = false;
     NodesList  nodes;
@@ -1044,7 +1100,7 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
         
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
         double transformedTime;
-        bool ok = _imp->getTimeTransform(time, 0, *it, getInternalNode(), &transformedTime);
+        bool ok = _imp->getTimeTransform(time, ViewIdx(0), *it, getInternalNode(), &transformedTime);
         if (ok) {
             time = transformedTime;
         }

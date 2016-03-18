@@ -50,7 +50,7 @@ QUrl fromNSURL(const NSURL *url)
 static
 NSURL *toNSURL(const QUrl &url)
 {
-    return [NSURL URLWithString:toNSString(url.toEncoded())];
+    return [NSURL URLWithString:toNSString(QString::fromUtf8(url.toEncoded()))];
 }
 
 QUrl NATRON_NAMESPACE::QtCompat::toLocalFileUrlFixed(const QUrl& url)

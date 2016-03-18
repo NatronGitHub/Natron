@@ -24,6 +24,8 @@
 
 #include "RenderingProgressDialog.h"
 
+#if 0
+
 #include <cmath>
 #include <stdexcept>
 
@@ -58,7 +60,6 @@ CLANG_DIAG_ON(uninitialized)
 #define NATRON_PROGRESS_DIALOG_ETA_REFRESH_MS 1000
 
 NATRON_NAMESPACE_ENTER;
-
 struct RenderingProgressDialogPrivate
 {
     Gui* _gui;
@@ -258,13 +259,12 @@ RenderingProgressDialog::RenderingProgressDialog(Gui* gui,
                                                  int frameStep,
                                                  const boost::shared_ptr<ProcessHandler> & process,
                                                  QWidget* parent)
-    : QDialog(parent)
+    : QDialog(parent,Qt::WindowStaysOnTopHint)
       , _imp( new RenderingProgressDialogPrivate(gui,sequenceName,firstFrame,lastFrame,frameStep,process) )
 
 {
     setMinimumWidth(fontMetrics().width(_imp->_sequenceName) + 100);
     setWindowTitle(_imp->_sequenceName);
-    //setWindowFlags(Qt::WindowStaysOnTopHint);
     _imp->_mainLayout = new QVBoxLayout(this);
     setLayout(_imp->_mainLayout);
     _imp->_mainLayout->setContentsMargins(5, 5, 0, 0);
@@ -302,16 +302,15 @@ RenderingProgressDialog::RenderingProgressDialog(Gui* gui,
     _imp->_cancelButton->setMaximumWidth(50);
     _imp->_mainLayout->addWidget(_imp->_cancelButton);
 
-    QObject::connect( _imp->_cancelButton, SIGNAL( clicked() ), this, SLOT( onCancelButtonClicked() ) );
+    QObject::connect( _imp->_cancelButton, SIGNAL(clicked()), this, SLOT(onCancelButtonClicked()) );
 
 
     if (process) {
-        QObject::connect( this,SIGNAL( canceled() ),process.get(),SLOT( onProcessCanceled() ) );
-        QObject::connect( process.get(),SIGNAL( processCanceled() ),this,SLOT( onProcessCanceled() ) );
-        QObject::connect( process.get(),SIGNAL( frameRendered(int) ),this,SLOT( onFrameRendered(int) ) );
-        QObject::connect( process.get(),SIGNAL( frameRenderedWithTimer(int,double,double)),this,SLOT(onFrameRenderedWithTimer(int,double,double)));
-        QObject::connect( process.get(),SIGNAL( processFinished(int) ),this,SLOT( onProcessFinished(int) ) );
-        QObject::connect( process.get(),SIGNAL( deleted() ),this,SLOT( onProcessDeleted() ) );
+        QObject::connect( this,SIGNAL(canceled()),process.get(),SLOT(onProcessCanceled()) );
+        QObject::connect( process.get(),SIGNAL(processCanceled()),this,SLOT(onProcessCanceled()) );
+        QObject::connect( process.get(),SIGNAL(frameRendered(int,double)),this,SLOT(onFrameRendered(int,double)) );
+        QObject::connect( process.get(),SIGNAL(processFinished(int)),this,SLOT(onProcessFinished(int)) );
+        QObject::connect( process.get(),SIGNAL(deleted()),this,SLOT(onProcessDeleted()) );
     }
 }
 
@@ -323,13 +322,11 @@ void
 RenderingProgressDialog::onProcessDeleted()
 {
     assert(_imp->_process);
-    QObject::disconnect( this,SIGNAL( canceled() ),_imp->_process.get(),SLOT( onProcessCanceled() ) );
-    QObject::disconnect( _imp->_process.get(),SIGNAL( processCanceled() ),this,SLOT( onProcessCanceled() ) );
-    QObject::disconnect( _imp->_process.get(),SIGNAL( frameRendered(int) ),this,SLOT( onFrameRendered(int) ) );
-    QObject::disconnect( _imp->_process.get(),SIGNAL( frameRenderedWithTimer(int,double,double) ),this,
-                        SLOT( onFrameRenderedWithTimer(int,double,double) ) );
-    QObject::disconnect( _imp->_process.get(),SIGNAL( processFinished(int) ),this,SLOT( onProcessFinished(int) ) );
-    QObject::disconnect( _imp->_process.get(),SIGNAL( deleted() ),this,SLOT( onProcessDeleted() ) );
+    QObject::disconnect( this,SIGNAL(canceled()),_imp->_process.get(),SLOT(onProcessCanceled()) );
+    QObject::disconnect( _imp->_process.get(),SIGNAL(processCanceled()),this,SLOT(onProcessCanceled()) );
+    QObject::disconnect( _imp->_process.get(),SIGNAL(frameRendered(int)),this,SLOT(onFrameRendered(int,double)) );
+    QObject::disconnect( _imp->_process.get(),SIGNAL(processFinished(int)),this,SLOT(onProcessFinished(int)) );
+    QObject::disconnect( _imp->_process.get(),SIGNAL(deleted()),this,SLOT(onProcessDeleted()) );
 }
 
 
@@ -347,7 +344,6 @@ struct GeneralProgressDialogPrivate
     QHBoxLayout* progressLayout;
     QProgressBar* progressBar;
     Label* timeRemainingLabel;
-    Label* timerLabel;
     bool timerLabelSet;
     
     QWidget* buttonsContainer;
@@ -370,7 +366,6 @@ struct GeneralProgressDialogPrivate
     , progressLayout(0)
     , progressBar(0)
     , timeRemainingLabel(0)
-    , timerLabel(0)
     , timerLabelSet(false)
     , buttonsContainer(0)
     , buttonsLayout(0)
@@ -402,34 +397,34 @@ GeneralProgressDialog::GeneralProgressDialog(const QString& title, bool canCance
     _imp->progressLayout->setContentsMargins(0, 0, 0, 0);
     _imp->mainLayout->addWidget(_imp->progressContainer);
 
-    _imp->timeRemainingLabel = new Label(tr("Time to go: "),_imp->progressContainer);
+    _imp->timeRemainingLabel = new Label(tr("Time to go:") + ' ' + tr("Estimating..."),_imp->progressContainer);
     _imp->progressLayout->addWidget(_imp->timeRemainingLabel);
     
     
-    _imp->timerLabel = new Label(_imp->progressContainer);
-    _imp->progressLayout->addWidget(_imp->timerLabel);
+    _imp->buttonsContainer = new QWidget(this);
+    _imp->buttonsLayout = new QHBoxLayout(_imp->buttonsContainer);
+    _imp->mainLayout->addWidget(_imp->buttonsContainer);
+
     
-    _imp->progressBar = new QProgressBar(_imp->progressContainer);
+    _imp->progressBar = new QProgressBar(_imp->buttonsContainer);
     _imp->progressBar->setRange(0, 100);
     _imp->progressBar->setValue(0);
-    _imp->progressLayout->addWidget(_imp->progressBar);
+    _imp->buttonsLayout->addWidget(_imp->progressBar);
     
     if (canCancel) {
         
-        _imp->buttonsContainer = new QWidget(this);
-        _imp->buttonsLayout = new QHBoxLayout(_imp->buttonsContainer);
-        _imp->mainLayout->addWidget(_imp->buttonsContainer);
-        
-        _imp->buttonsLayout->addStretch();
         _imp->cancelButton = new Button(QIcon(), tr("Cancel"), this);
         QObject::connect(_imp->cancelButton, SIGNAL(clicked(bool)), this, SLOT(onCancelRequested()));
         _imp->buttonsLayout->addWidget(_imp->cancelButton);
-        _imp->buttonsLayout->addStretch();
     }
+    
+    _imp->mainLayout->addStretch();
     
     onRefreshLabelTimeout();
     _imp->refreshLabelTimer.start(NATRON_PROGRESS_DIALOG_ETA_REFRESH_MS);
     QObject::connect(&_imp->refreshLabelTimer, SIGNAL(timeout()), this, SLOT(onRefreshLabelTimeout()));
+    
+    setMinimumWidth(TO_DPIX(400));
 
 }
 
@@ -451,14 +446,14 @@ GeneralProgressDialog::wasCanceled() const
 void
 GeneralProgressDialog::onRefreshLabelTimeout()
 {
-    QString timeStr;
+    QString timeStr = tr("Time to go:") + ' ';
     if (_imp->timeRemaining == -1) {
-        timeStr = tr("Estimating...");
+        timeStr += tr("Estimating...");
     } else {
-        timeStr = Timer::printAsTime(_imp->timeRemaining, true);
+        timeStr += Timer::printAsTime(_imp->timeRemaining, true) + '.';
         _imp->timerLabelSet = true;
     }
-    _imp->timerLabel->setText(timeStr);
+    _imp->timeRemainingLabel->setText(timeStr);
 }
 
 void
@@ -474,7 +469,9 @@ GeneralProgressDialog::updateProgress(double p)
     if (!isVisible() && !wasCanceled()) {
         ///Show the dialog if the total estimated time is gt NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS
         double totalTime = p == 0 ? 0 : timeElapsedSecs * 1. / p;
-        if (_imp->timerLabelSet && totalTime * 1000 > NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS) {
+        //also,  don't show if it was not shown yet but there are less than NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS remaining
+        if (_imp->timerLabelSet && std::min(_imp->timeRemaining, totalTime) * 1000 > NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS) {
+            printf("timeRemaining=%g\n", _imp->timeRemaining);
             show();
         }
     }
@@ -514,7 +511,11 @@ GeneralProgressDialog::closeEvent(QCloseEvent* /*e*/)
     
 }
 
+
 NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;
 #include "moc_RenderingProgressDialog.cpp"
+
+#endif
+

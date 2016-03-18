@@ -146,7 +146,7 @@ that are more complicated than a simple boolean value.
 
 .. attribute:: NatronEngine.Natron.PixmapEnum
 
-	See `here <https://github.com/MrKepzie/Natron/blob/workshop/Global/Enums.h>`_	for
+	See `here <https://github.com/MrKepzie/Natron/blob/master/Global/Enums.h>`_	for
 	potential values of this enumeration. 
 	
 .. attribute:: NatronEngine.Natron.ViewerColorSpaceEnum

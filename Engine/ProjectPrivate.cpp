@@ -149,10 +149,13 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                         const TypeExtraData* extraData = (*it)->getExtraData();
                         const ChoiceExtraData* choiceData = dynamic_cast<const ChoiceExtraData*>(extraData);
                         assert(choiceData);
-                        
-                        KnobChoice* serializedKnob = dynamic_cast<KnobChoice*>((*it)->getKnob().get());
-                        assert(serializedKnob);
-                        isChoice->choiceRestoration(serializedKnob, choiceData);
+                        if (choiceData) {
+                            KnobChoice* serializedKnob = dynamic_cast<KnobChoice*>((*it)->getKnob().get());
+                            assert(serializedKnob);
+                            if (serializedKnob) {
+                                isChoice->choiceRestoration(serializedKnob, choiceData);
+                            }
+                        }
                     } else {
                         projectKnobs[i]->clone( (*it)->getKnob() );
                     }
@@ -203,8 +206,8 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     QDateTime time = QDateTime::currentDateTime();
     autoSetProjectFormat = false;
     hasProjectBeenSavedByUser = true;
-    projectName->setValue(name.toStdString(), 0);
-    projectPath->setValue(path.toStdString(), 0);
+    projectName->setValue(name.toStdString());
+    projectPath->setValue(path.toStdString());
     ageSinceLastSave = time;
     lastAutoSave = time;
     _publicInterface->getApp()->setProjectWasCreatedWithLowerCaseIDs(false);
@@ -289,7 +292,7 @@ ProjectPrivate::autoSetProjectDirectory(const QString& path)
         if (appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
             _publicInterface->fixRelativeFilePaths(NATRON_PROJECT_ENV_VAR_NAME, pathCpy,false);
         }
-        envVars->setValue(newEnv, 0);
+        envVars->setValue(newEnv);
     }
 }
     
@@ -477,7 +480,7 @@ ProjectPrivate::runOnProjectLoadCallback()
 void
 ProjectPrivate::setProjectFilename(const std::string& filename)
 {
-    projectName->setValue(filename, 0);
+    projectName->setValue(filename);
 }
     
 std::string
@@ -489,7 +492,7 @@ ProjectPrivate::getProjectFilename() const
 void
 ProjectPrivate::setProjectPath(const std::string& path)
 {
-    projectPath->setValue(path, 0);
+    projectPath->setValue(path);
 }
     
 std::string

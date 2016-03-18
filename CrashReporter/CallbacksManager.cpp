@@ -97,6 +97,7 @@ CallbacksManager* CallbacksManager::_instance = 0;
 #endif
 
 #include "Global/ProcInfo.h"
+#include "Global/GitVersion.h"
 
 #define EXIT_APP(code,exitIfDumpReceived) ( CallbacksManager::instance()->s_emitDoExitCallBackOnMainThread(code,exitIfDumpReceived) )
 
@@ -283,21 +284,21 @@ CallbacksManager::exec()
 static QString getNatronBinaryFilePathFromCrashReporterDirPath(const QString& crashReporterDirPath)
 {
     QString ret = crashReporterDirPath;
-    if (!ret.endsWith('/')) {
-        ret.append('/');
+    if (!ret.endsWith(QLatin1Char('/'))) {
+        ret.append(QLatin1Char('/'));
     }
     
 #ifndef REPORTER_CLI_ONLY
 #ifdef Q_OS_UNIX
-    ret.append("Natron-bin");
+    ret.append(QString::fromUtf8("Natron-bin"));
 #elif defined(Q_OS_WIN)
-    ret.append("Natron-bin.exe");
+    ret.append(QString::fromUtf8("Natron-bin.exe"));
 #endif
 #else //REPORTER_CLI_ONLY
 #ifdef Q_OS_UNIX
-    ret.append("NatronRenderer-bin");
+    ret.append(QString::fromUtf8("NatronRenderer-bin"));
 #elif defined(Q_OS_WIN)
-    ret.append("NatronRenderer-bin.exe");
+    ret.append(QString::fromUtf8("NatronRenderer-bin.exe"));
 #endif
 #endif // REPORTER_CLI_ONLY
     return ret;
@@ -318,19 +319,15 @@ CallbacksManager::hasInit() const {
 void
 CallbacksManager::onSpawnedProcessFinished(int exitCode, QProcess::ExitStatus status)
 {
-    
-    int retCode = 0;
     QString code;
     if (status == QProcess::CrashExit) {
-        code =  "crashed";
-        retCode = 1;
+        code =  QString::fromUtf8("crashed");
     } else if (status == QProcess::NormalExit) {
-        code =  "finished";
+        code =  QString::fromUtf8("finished");
     }
     qDebug() << "Spawned process" << code << "with exit code:" << exitCode;
     
     EXIT_APP(exitCode, false);
-  
 }
 
 void
@@ -379,9 +376,9 @@ CallbacksManager::init(int& argc, char** argv)
     /*
      Check the value of the "Enable crash reports" parameter of the preferences of Natron
      */
-    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
-    if (settings.contains("enableCrashReports")) {
-        bool userEnableCrashReports = settings.value("enableCrashReports").toBool();
+    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
+    if (settings.contains(QString::fromUtf8("enableCrashReports"))) {
+        bool userEnableCrashReports = settings.value(QString::fromUtf8("enableCrashReports")).toBool();
         if (!userEnableCrashReports) {
             enableBreakpad = false;
         }
@@ -425,20 +422,20 @@ CallbacksManager::init(int& argc, char** argv)
 
     QStringList processArgs;
     for (int i = 0; i < argc; ++i) {
-        processArgs.push_back(QString(argv[i]));
+        processArgs.push_back(QString::fromUtf8(argv[i]));
     }
     if (enableBreakpad) {
-        processArgs.push_back(QString("--" NATRON_BREAKPAD_PROCESS_EXEC));
+        processArgs.push_back(QString::fromUtf8("--" NATRON_BREAKPAD_PROCESS_EXEC));
         processArgs.push_back(crashReporterBinaryFilePath);
-        processArgs.push_back(QString("--" NATRON_BREAKPAD_PROCESS_PID));
+        processArgs.push_back(QString::fromUtf8("--" NATRON_BREAKPAD_PROCESS_PID));
         qint64 crashReporterPid = qApp->applicationPid();
         QString pidStr = QString::number(crashReporterPid);
         processArgs.push_back(pidStr);
-        processArgs.push_back(QString("--" NATRON_BREAKPAD_CLIENT_FD_ARG));
+        processArgs.push_back(QString::fromUtf8("--" NATRON_BREAKPAD_CLIENT_FD_ARG));
         processArgs.push_back(QString::number(-1));
-        processArgs.push_back(QString("--" NATRON_BREAKPAD_PIPE_ARG));
+        processArgs.push_back(QString::fromUtf8("--" NATRON_BREAKPAD_PIPE_ARG));
         processArgs.push_back(_pipePath);
-        processArgs.push_back(QString("--" NATRON_BREAKPAD_COM_PIPE_ARG));
+        processArgs.push_back(QString::fromUtf8("--" NATRON_BREAKPAD_COM_PIPE_ARG));
         processArgs.push_back(_comPipePath);
     }
     
@@ -524,8 +521,8 @@ CallbacksManager::init(int& argc, char** argv)
 static void addTextHttpPart(QHttpMultiPart* multiPart, const QString& name, const QString& value)
 {
     QHttpPart part;
-    part.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("text/plain"));
-    part.setHeader(QNetworkRequest::ContentDispositionHeader, QVariant("form-data; name=\"" + name + "\""));
+    part.setHeader(QNetworkRequest::ContentTypeHeader, QVariant(QString::fromUtf8("text/plain")));
+    part.setHeader(QNetworkRequest::ContentDispositionHeader, QVariant(QString::fromUtf8("form-data; name=\"") + name + QString::fromUtf8("\"")));
     part.setBody(value.toLatin1());
     multiPart->append(part);
 }
@@ -540,8 +537,8 @@ static void addFileHttpPart(QHttpMultiPart* multiPart, const QString& name, cons
     }
     
     QHttpPart part;
-    part.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("text/dmp"));
-    part.setHeader(QNetworkRequest::ContentDispositionHeader, QVariant("form-data; name=\"" + name + "\"; filename=\"" +  file->fileName() + "\""));
+    part.setHeader(QNetworkRequest::ContentTypeHeader, QVariant(QString::fromUtf8("text/dmp")));
+    part.setHeader(QNetworkRequest::ContentDispositionHeader, QVariant(QString::fromUtf8("form-data; name=\"") + name + QString::fromUtf8("\"; filename=\"") +  file->fileName() + QString::fromUtf8("\"")));
     part.setBodyDevice(file);
     
     multiPart->append(part);
@@ -549,24 +546,75 @@ static void addFileHttpPart(QHttpMultiPart* multiPart, const QString& name, cons
 
 static QString getVersionString()
 {
-    QString versionStr(NATRON_VERSION_STRING);
-    versionStr.append(" ");
-    versionStr.append(NATRON_DEVELOPMENT_STATUS);
-    if (QString(NATRON_DEVELOPMENT_STATUS) == QString(NATRON_DEVELOPMENT_RELEASE_CANDIDATE)) {
-        versionStr += ' ';
+    QString versionStr(QString::fromUtf8(NATRON_VERSION_STRING));
+    versionStr.append(QString::fromUtf8(" "));
+    versionStr.append(QString::fromUtf8(NATRON_DEVELOPMENT_STATUS));
+    if (QString::fromUtf8(NATRON_DEVELOPMENT_STATUS) == QString::fromUtf8(NATRON_DEVELOPMENT_RELEASE_CANDIDATE)) {
+        versionStr += QLatin1Char(' ');
         versionStr += QString::number(NATRON_BUILD_NUMBER);
     }
     return versionStr;
 }
+
+#ifdef Q_OS_LINUX
+static QString getLinuxVersionString()
+{
+    QFile os_release(QString::fromUtf8("/etc/os-release"));
+    QFile redhat_release(QString::fromUtf8("/etc/redhat-release"));
+    QFile debian_release(QString::fromUtf8("/etc/debian_version"));
+    QString linux_release;
+    if (os_release.exists()) {
+        if (os_release.open(QIODevice::ReadOnly|QIODevice::Text)) {
+            QString os_release_data = QString::fromUtf8(os_release.readAll());
+            if (!os_release_data.isEmpty()) {
+                QStringList os_release_split = os_release_data.split(QString::fromUtf8("\n"),QString::SkipEmptyParts);
+                for (int i = 0; i < os_release_split.size(); ++i) {
+                    if (os_release_split.at(i).startsWith(QString::fromUtf8("PRETTY_NAME="))) {
+                        linux_release = os_release_split.at(i);
+                        linux_release.replace(QString::fromUtf8("PRETTY_NAME="),QString::fromUtf8("")).replace(QString::fromUtf8("\""),QString::fromUtf8(""));
+                    }
+                }
+            }
+            os_release.close();
+        }
+    }
+    else if (redhat_release.exists()) {
+       if (redhat_release.open(QIODevice::ReadOnly|QIODevice::Text)) {
+           QString redhat_release_data = QString::fromUtf8(redhat_release.readAll());
+           if (!redhat_release_data.isEmpty()) {
+               linux_release = redhat_release_data;
+           }
+           redhat_release.close();
+       }
+    }
+    else if (debian_release.exists()) {
+       if (debian_release.open(QIODevice::ReadOnly|QIODevice::Text)) {
+           QString debian_release_data = QString::fromUtf8(debian_release.readAll());
+           if (!debian_release_data.isEmpty()) {
+               linux_release = QString::fromUtf8("Debian ") + debian_release_data;
+           }
+           debian_release.close();
+       }
+    }
+    return linux_release;
+}
+#endif
 
 void
 CallbacksManager::uploadFileToRepository(const QString& filepath, const QString& comments)
 {
     assert(!_uploadReply);
     
-    const QString productName(NATRON_APPLICATION_NAME);
+    const QString productName = QString::fromUtf8(NATRON_APPLICATION_NAME);
     QString versionStr = getVersionString();
-    
+    const QString gitHash = QString::fromUtf8(GIT_COMMIT);
+    const QString gitBranch = QString::fromUtf8(GIT_BRANCH);
+    const QString IOGitHash = QString::fromUtf8(IO_GIT_COMMIT);
+    const QString MiscGitHash = QString::fromUtf8(MISC_GIT_COMMIT);
+    const QString ArenaGitHash = QString::fromUtf8(ARENA_GIT_COMMIT);
+#ifdef Q_OS_LINUX
+    QString linuxVersion = getLinuxVersionString();
+#endif
 
 #ifndef REPORTER_CLI_ONLY
     assert(_dialog);
@@ -589,7 +637,7 @@ CallbacksManager::uploadFileToRepository(const QString& filepath, const QString&
     
     QString guidStr = finfo.fileName();
     {
-        int lastDotPos = guidStr.lastIndexOf('.');
+        int lastDotPos = guidStr.lastIndexOf(QLatin1Char('.'));
         if (lastDotPos != -1) {
             guidStr = guidStr.mid(0, lastDotPos);
         }
@@ -603,11 +651,22 @@ CallbacksManager::uploadFileToRepository(const QString& filepath, const QString&
     // http://doc.qt.io/qt-4.8/qhttpmultipart.html#ContentType-enum
     QHttpMultiPart *multiPart = new QHttpMultiPart(QHttpMultiPart::FormDataType);
     
-    addTextHttpPart(multiPart, "ProductName", productName);
-    addTextHttpPart(multiPart, "Version", versionStr);
-    addTextHttpPart(multiPart, "guid", guidStr);
-    addTextHttpPart(multiPart, "Comments", comments);
-    addFileHttpPart(multiPart, "upload_file_minidump", filepath);
+    addTextHttpPart(multiPart, QString::fromUtf8("ProductName"), productName);
+    addTextHttpPart(multiPart, QString::fromUtf8("Version"), versionStr);
+    addTextHttpPart(multiPart, QString::fromUtf8("GitHash"), gitHash);
+    addTextHttpPart(multiPart, QString::fromUtf8("IOGitHash"), IOGitHash);
+    addTextHttpPart(multiPart, QString::fromUtf8("MiscGitHash"), MiscGitHash);
+    addTextHttpPart(multiPart, QString::fromUtf8("ArenaGitHash"), ArenaGitHash);
+    addTextHttpPart(multiPart, QString::fromUtf8("GitBranch"), gitBranch);
+    addTextHttpPart(multiPart, QString::fromUtf8("Version"), versionStr);
+    addTextHttpPart(multiPart, QString::fromUtf8("guid"), guidStr);
+    addTextHttpPart(multiPart, QString::fromUtf8("Comments"), comments);
+    addFileHttpPart(multiPart, QString::fromUtf8("upload_file_minidump"), filepath);
+#ifdef Q_OS_LINUX
+    if (!linuxVersion.isEmpty()) {
+        addTextHttpPart(multiPart, QString::fromUtf8("LinuxVersion"), linuxVersion);
+    }
+#endif
     
     QUrl url = QUrl::fromEncoded(QByteArray(UPLOAD_URL));
     QNetworkRequest request(url);
@@ -671,8 +730,11 @@ NetworkErrorDialog::~NetworkErrorDialog()
 #endif
 
 void
-CallbacksManager::replyFinished(QNetworkReply* replyParam) {
+CallbacksManager::replyFinished(QNetworkReply* replyParam)
+{
+    Q_UNUSED(replyParam);
     assert(replyParam == _uploadReply);
+
     if (!_uploadReply) {
         return;
     }
@@ -684,10 +746,10 @@ CallbacksManager::replyFinished(QNetworkReply* replyParam) {
         while (reply.endsWith('\n')) {
             reply.chop(1);
         }
-        QString successStr("File uploaded successfully!\n Crash ID = " + QString(reply));
+        QString successStr(QString::fromUtf8("File uploaded successfully!\n Crash ID = ") + QString::fromUtf8(reply));
         
 #ifndef REPORTER_CLI_ONLY
-        QMessageBox info(QMessageBox::Information, "Dump Uploading", successStr, QMessageBox::NoButton, _dialog, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint| Qt::WindowStaysOnTopHint);
+        QMessageBox info(QMessageBox::Information, QString::fromUtf8("Dump Uploading"), successStr, QMessageBox::NoButton, _dialog, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint| Qt::WindowStaysOnTopHint);
         info.exec();
         
         if (_dialog) {
@@ -705,21 +767,21 @@ CallbacksManager::replyFinished(QNetworkReply* replyParam) {
         
         QString guidStr = finfo.fileName();
         {
-            int lastDotPos = guidStr.lastIndexOf('.');
+            int lastDotPos = guidStr.lastIndexOf(QLatin1Char('.'));
             if (lastDotPos != -1) {
                 guidStr = guidStr.mid(0, lastDotPos);
             }
         }
         
-        QString errStr("Network error: (" + QString::number(err) + ") " + _uploadReply->errorString() + "\nDump file is located at " +
-                       _dumpFilePath + "\nYou can submit it directly to the developers by filling out the form at\n\n" + QString(FALLBACK_FORM_URL) +
-                       "?product=" + NATRON_APPLICATION_NAME + "&version=" + getVersionString() +
-                       "&id=" + guidStr + "\n\nPlease add any comment describing the issue and the state of the application at the moment it crashed.");
+        QString errStr(QString::fromUtf8("Network error: (") + QString::number(err) + QString::fromUtf8(") ") + _uploadReply->errorString() + QString::fromUtf8("\nDump file is located at ") +
+                       _dumpFilePath + QString::fromUtf8("\nYou can submit it directly to the developers by filling out the form at\n\n") + QString::fromUtf8(FALLBACK_FORM_URL) +
+                       QString::fromUtf8("?product=") + QString::fromUtf8(NATRON_APPLICATION_NAME) + QString::fromUtf8("&version=") + getVersionString() +
+                       QString::fromUtf8("&id=") + guidStr + QString::fromUtf8("\n\nPlease add any comment describing the issue and the state of the application at the moment it crashed."));
         
         
 #ifndef REPORTER_CLI_ONLY
         NetworkErrorDialog info(errStr,_dialog);
-        info.setWindowTitle("Dump Uploading");
+        info.setWindowTitle(QString::fromUtf8("Dump Uploading"));
         info.exec();
         
         if (_dialog) {
@@ -761,7 +823,7 @@ void
 CallbacksManager::processCrashReport()
 {
 #ifdef REPORTER_CLI_ONLY
-    uploadFileToRepository(_dumpFilePath,"Crash auto-uploaded from NatronRenderer");
+    uploadFileToRepository(_dumpFilePath,QString::fromUtf8("Crash auto-uploaded from NatronRenderer"));
     
     ///@todo We must notify the user the log is available at filePath but we don't have access to the terminal with this process
 #else
@@ -837,19 +899,19 @@ CallbacksManager::onDoExitOnMainThread(int exitCode, bool exitEvenIfDumpedReceiv
 #ifdef Q_OS_WIN32
 /*Converts a std::string to wide string*/
 static inline std::wstring
-s2ws(const std::string & s)
+utf8_to_utf16(const std::string & s)
 {
     
     
 #ifdef Q_OS_WIN32
-    int len;
-    int slength = (int)s.length() + 1;
-    len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
-    wchar_t* buf = new wchar_t[len];
-    MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
-    std::wstring r(buf);
-    delete[] buf;
-    return r;
+    std::wstring native;
+    
+    
+    native.resize(MultiByteToWideChar (CP_UTF8, 0, s.c_str(), -1, NULL, 0) -1);
+    MultiByteToWideChar (CP_UTF8, 0, s.c_str(), s.size(), &native[0], (int)native.size());
+    
+    return native;
+
 #else
     std::wstring dest;
     
@@ -871,7 +933,7 @@ s2ws(const std::string & s)
     return dest;
 #endif
     
-} // s2ws
+} // utf8_to_utf16
 #endif
 
 
@@ -882,7 +944,7 @@ void OnClientDumpRequest(void */*context*/,
                          const ClientInfo &/*client_info*/,
                          const std::string &file_path) {
     
-    dumpRequest_xPlatform(file_path.c_str());
+    dumpRequest_xPlatform(QString::fromUtf8(file_path.c_str()));
 }
 
 #elif defined(Q_OS_LINUX)
@@ -890,7 +952,7 @@ void OnClientDumpRequest(void* /*context*/,
                          const ClientInfo* /*client_info*/,
                          const string* file_path) {
     
-    dumpRequest_xPlatform(file_path->c_str());
+    dumpRequest_xPlatform(QString::fromUtf8(file_path->c_str()));
 }
 
 #elif defined(Q_OS_WIN32)
@@ -930,11 +992,11 @@ CallbacksManager::createCrashGenerationServer()
                                           true, // auto-generate dumps
                                           &stdDumpPath); // path to dump to
 #elif defined(Q_OS_WIN32)
-    _pipePath.replace("/","\\");
+    _pipePath.replace(QLatin1Char('/'),QLatin1Char('\\'));
     std::string pipeName = _pipePath.toStdString();
-    std::wstring wpipeName = s2ws(pipeName);
+    std::wstring wpipeName = utf8_to_utf16(pipeName);
     std::string stdDumPath = _dumpDirPath.toStdString();
-    std::wstring stdWDumpPath = s2ws(stdDumPath);
+    std::wstring stdWDumpPath = utf8_to_utf16(stdDumPath);
     _crashServer = new CrashGenerationServer(wpipeName,
                                           0, // SECURITY ATTRS
                                           0, // on client connected cb
@@ -963,8 +1025,8 @@ void
 CallbacksManager::onNatronProcessStdOutWrittenTo()
 {
 #ifndef NATRON_CRASH_REPORTER_USE_FORK
-    QString str(_natronProcess->readAllStandardOutput().data());
-    while (str.endsWith('\n')) {
+    QString str = QString::fromUtf8(_natronProcess->readAllStandardOutput().data());
+    while (str.endsWith(QLatin1Char('\n'))) {
         str.chop(1);
     }
     std::cout << str.toStdString() << std::endl;
@@ -975,8 +1037,8 @@ void
 CallbacksManager::onNatronProcessStdErrWrittenTo()
 {
 #ifndef NATRON_CRASH_REPORTER_USE_FORK
-    QString str(_natronProcess->readAllStandardError().data());
-    while (str.endsWith('\n')) {
+    QString str = QString::fromUtf8(_natronProcess->readAllStandardError().data());
+    while (str.endsWith(QLatin1Char('\n'))) {
         str.chop(1);
     }
     std::cerr << str.toStdString() << std::endl;
@@ -1010,41 +1072,53 @@ CallbacksManager::initCrashGenerationServer()
         QString tmpFileName;
 #if defined(Q_OS_UNIX)
         tmpFileName	= _dumpDirPath;
-        tmpFileName += '/';
-        tmpFileName += NATRON_APPLICATION_NAME;
-        tmpFileName += "_CRASH_PIPE_";
+#else
+        tmpFileName += QString::fromUtf8("//./pipe");
 #endif
+        tmpFileName += QLatin1Char('/');
+        tmpFileName += QString::fromUtf8(NATRON_APPLICATION_NAME);
+        tmpFileName += QString::fromUtf8("_CRASH_PIPE_");
         {
-            QString tmpTemplate;
-#ifndef Q_OS_WIN32
-            tmpTemplate.append(tmpFileName);
-#endif
-            QTemporaryFile tmpf(tmpTemplate);
-            tmpf.open(); // this will append a random unique string  to the passed template (tmpFileName)
+#if defined(Q_OS_UNIX)
+            QTemporaryFile tmpf(tmpFileName);
             tmpFileName = tmpf.fileName();
             tmpf.remove();
+#else
+            QTemporaryFile tmpf;
+            tmpf.open();
+            QString tmpFilePath = tmpf.fileName();
+            QString baseName;
+            int lastSlash = tmpFilePath.lastIndexOf(QLatin1Char('/'));
+            if (lastSlash != -1 && lastSlash < tmpFilePath.size() - 1) {
+                baseName = tmpFilePath.mid(lastSlash + 1);
+            } else {
+                baseName = tmpFilePath;
+            }
+            tmpFileName += baseName;
+            tmpf.remove();
+#endif
         }
         
-#ifndef Q_OS_WIN32
+//#ifndef Q_OS_WIN32
         _pipePath = tmpFileName;
-#else
-        int foundLastSlash = tmpFileName.lastIndexOf('/');
+/*#else
+        int foundLastSlash = tmpFileName.lastIndexOf(QLatin1Char('/'));
         if (foundLastSlash !=1) {
-            _pipePath = "//./pipe/";
+            _pipePath = QString::fromUtf8("//./pipe/");
             if (foundLastSlash < tmpFileName.size() - 1) {
-                QString toAppend("CRASH_PIPE_");
+                QString toAppend(QString::fromUtf8("CRASH_PIPE_"));
                 toAppend.append(tmpFileName.mid(foundLastSlash + 1));
                 _pipePath.append(toAppend);
             } else {
-                _pipePath.append("CRASH_PIPE_");
+                _pipePath.append(QString::fromUtf8("CRASH_PIPE_"));
                 _pipePath.append(tmpFileName);
             }
         }
-#endif
+#endif*/
         
     }
     
-    _comPipePath = _pipePath + "IPC_COM";
+    _comPipePath = _pipePath + QString::fromUtf8("IPC_COM");
     
     _comServer = new QLocalServer;
     QObject::connect(_comServer, SIGNAL(newConnection()), this, SLOT(onComPipeConnectionPending()));
@@ -1059,17 +1133,20 @@ void
 CallbacksManager::onComPipeConnectionPending()
 {
     _comPipeConnection = _comServer->nextPendingConnection();
+    if (_comPipeConnection->canReadLine()) {
+        onComPipeDataWrittenTo();
+    }
     QObject::connect(_comPipeConnection, SIGNAL(readyRead()), this, SLOT(onComPipeDataWrittenTo()));
 }
 
 void
 CallbacksManager::onComPipeDataWrittenTo()
 {
-    QString str = _comPipeConnection->readLine();
-    while (str.endsWith('\n')) {
+    QString str = QString::fromUtf8(_comPipeConnection->readLine());
+    while (str.endsWith(QLatin1Char('\n'))) {
         str.chop(1);
     }
-    if (str == NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK) {
+    if (str == QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK)) {
         _comPipeConnection->write(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK_ACK "\n");
         _comPipeConnection->flush();
     }

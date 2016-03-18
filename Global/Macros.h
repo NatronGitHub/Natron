@@ -60,7 +60,7 @@ namespace NATRON_NAMESPACE { }
 #define NATRON_APPLICATION_NAME "Natron"
 #define NATRON_WEBSITE_URL "http://www.natron.fr"
 #define NATRON_FORUM_URL "https://forum.natron.fr"
-#define NATRON_PYTHON_URL "https://natron.readthedocs.org/en/workshop/"
+#define NATRON_PYTHON_URL "https://natron.readthedocs.org/en/master/"
 #define NATRON_WIKI_URL "https://github.com/MrKepzie/Natron/wiki"
 #define NATRON_ISSUE_TRACKER_URL "https://github.com/MrKepzie/Natron/issues"
 // The MIME types for Natron documents are:
@@ -80,13 +80,10 @@ namespace NATRON_NAMESPACE { }
 #define NATRON_PRESETS_FILE_MIME_TYPE "application/vnd.natron.nodepresets"
 #define NATRON_PROJECT_ENV_VAR_NAME "Project"
 #define NATRON_OCIO_ENV_VAR_NAME "OCIO"
-#define NATRON_DEFAULT_OCIO_CONFIG_NAME "blender"
 
 //Define here the name of the Engine module that was chosen in the typesystem_engine.xml
 #define NATRON_ENGINE_PYTHON_MODULE_NAME "NatronEngine"
 #define NATRON_GUI_PYTHON_MODULE_NAME "NatronGui"
-//Uncomment to run Natron without Python functionnalities (for debug purposes)
-//#define NATRON_RUN_WITHOUT_PYTHON
 
 #define NATRON_ENV_VAR_NAME_START_TAG "<Name>"
 #define NATRON_ENV_VAR_NAME_END_TAG "</Name>"
@@ -108,7 +105,7 @@ namespace NATRON_NAMESPACE { }
 #define NATRON_VERSION_REVISION 0
 
 
-#define NATRON_LAST_VERSION_URL "https://raw.githubusercontent.com/MrKepzie/Natron/workshop/LATEST_VERSION.txt"
+#define NATRON_LAST_VERSION_URL "https://raw.githubusercontent.com/MrKepzie/Natron/master/LATEST_VERSION.txt"
 #define NATRON_LAST_VERSION_FILE_VERSION 1
 
 // homemade builds should always show "Devel"
@@ -118,7 +115,7 @@ namespace NATRON_NAMESPACE { }
 #define NATRON_DEVELOPMENT_BETA "Beta"
 #define NATRON_DEVELOPMENT_RELEASE_CANDIDATE "RC"
 #define NATRON_DEVELOPMENT_RELEASE_STABLE "Release"
-// The snapshot build scripts should add '-DNATRON_SNAPSHOT' to the compile
+// The snapshot build scripts should add '-DNATRON_CONFIG_SNAPSHOT' to the compile
 // options.
 #define NATRON_DEVELOPMENT_SNAPSHOT "Snapshot"
 
@@ -229,6 +226,10 @@ NATRON_VERSION_REVISION)
 //When enabled the value of 2 is a code for a pixel being rendered but not yet available.
 //In this context, the reader of the bitmap should then wait for the pixel to be available.
 #define NATRON_ENABLE_TRIMAP 1
+
+//Use this to have all readers inside the same Read meta-node and all the writers
+//into the same Write meta-node
+//#define NATRON_ENABLE_IO_META_NODES 1
 
 //Uncomment to get access to ReadQt and WriteQt nodes. Note that they are no longer maintained and probably buggy.
 //#define NATRON_ENABLE_QT_IO_NODES

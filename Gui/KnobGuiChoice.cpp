@@ -68,6 +68,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/KnobUndoCommand.h"
+#include "Gui/KnobWidgetDnD.h"
 #include "Gui/Label.h"
 #include "Gui/NewLayerDialog.h"
 #include "Gui/ProjectGui.h"
@@ -84,7 +85,118 @@ using std::make_pair;
 
 
 //=============================CHOICE_KNOB_GUI===================================
+KnobComboBox::KnobComboBox(const KnobGuiPtr& knob,int dimension, QWidget* parent)
+: ComboBox(parent)
+, _dnd(new KnobWidgetDnD(knob, dimension, this))
+{
+}
 
+KnobComboBox::~KnobComboBox()
+{
+}
+
+void
+KnobComboBox::wheelEvent(QWheelEvent *e)
+{
+    bool mustIgnore = false;
+    if (!_dnd->mouseWheel(e)) {
+        mustIgnore = true;
+        ignoreWheelEvent = true;
+    }
+    ComboBox::wheelEvent(e);
+    if (mustIgnore) {
+        ignoreWheelEvent = false;
+    }
+}
+
+void
+KnobComboBox::enterEvent(QEvent* e)
+{
+    _dnd->mouseEnter(e);
+    ComboBox::enterEvent(e);
+}
+
+void
+KnobComboBox::leaveEvent(QEvent* e)
+{
+    _dnd->mouseLeave(e);
+    ComboBox::leaveEvent(e);
+}
+
+void
+KnobComboBox::keyPressEvent(QKeyEvent* e)
+{
+    _dnd->keyPress(e);
+    ComboBox::keyPressEvent(e);
+}
+
+void
+KnobComboBox::keyReleaseEvent(QKeyEvent* e)
+{
+    _dnd->keyRelease(e);
+    ComboBox::keyReleaseEvent(e);
+}
+
+void
+KnobComboBox::mousePressEvent(QMouseEvent* e)
+{
+    if (!_dnd->mousePress(e)) {
+        ComboBox::mousePressEvent(e);
+    }
+}
+
+void
+KnobComboBox::mouseMoveEvent(QMouseEvent* e)
+{
+    if (!_dnd->mouseMove(e)) {
+        ComboBox::mouseMoveEvent(e);
+    }
+}
+
+void
+KnobComboBox::mouseReleaseEvent(QMouseEvent* e)
+{
+    _dnd->mouseRelease(e);
+    ComboBox::mouseReleaseEvent(e);
+    
+}
+
+void
+KnobComboBox::dragEnterEvent(QDragEnterEvent* e)
+{
+    if (!_dnd->dragEnter(e)) {
+        ComboBox::dragEnterEvent(e);
+    }
+}
+
+void
+KnobComboBox::dragMoveEvent(QDragMoveEvent* e)
+{
+    if (!_dnd->dragMove(e)) {
+        ComboBox::dragMoveEvent(e);
+    }
+}
+void
+KnobComboBox::dropEvent(QDropEvent* e)
+{
+    if (!_dnd->drop(e)) {
+        ComboBox::dropEvent(e);
+    }
+}
+
+void
+KnobComboBox::focusInEvent(QFocusEvent* e)
+{
+    _dnd->focusIn();
+    ComboBox::focusInEvent(e);
+}
+
+void
+KnobComboBox::focusOutEvent(QFocusEvent* e)
+{
+    _dnd->focusOut();
+    ComboBox::focusOutEvent(e);
+}
 
 KnobGuiChoice::KnobGuiChoice(KnobPtr knob,
                                DockablePanel *container)
@@ -92,9 +204,9 @@ KnobGuiChoice::KnobGuiChoice(KnobPtr knob,
     , _comboBox(0)
 {
     boost::shared_ptr<KnobChoice> k = boost::dynamic_pointer_cast<KnobChoice>(knob);
-    QObject::connect( k.get(), SIGNAL( populated() ), this, SLOT( onEntriesPopulated() ) );
-    QObject::connect( k.get(), SIGNAL( entryAppended(QString,QString) ), this, SLOT( onEntryAppended(QString,QString) ) );
-    QObject::connect( k.get(), SIGNAL( entriesReset() ), this, SLOT( onEntriesReset() ) );
+    QObject::connect( k.get(), SIGNAL(populated()), this, SLOT(onEntriesPopulated()) );
+    QObject::connect( k.get(), SIGNAL(entryAppended(QString,QString)), this, SLOT(onEntryAppended(QString,QString)) );
+    QObject::connect( k.get(), SIGNAL(entriesReset()), this, SLOT(onEntriesReset()) );
     _knob = k;
 }
 
@@ -105,17 +217,18 @@ KnobGuiChoice::~KnobGuiChoice()
 
 void KnobGuiChoice::removeSpecificGui()
 {
-    delete _comboBox;
+    _comboBox->deleteLater();
+    _comboBox = 0;
 }
 
 void
 KnobGuiChoice::createWidget(QHBoxLayout* layout)
 {
-    _comboBox = new ComboBox( layout->parentWidget() );
+    _comboBox = new KnobComboBox(shared_from_this(), 0, layout->parentWidget() );
     _comboBox->setCascading(_knob.lock()->isCascading());
     onEntriesPopulated();
 
-    QObject::connect( _comboBox, SIGNAL( currentIndexChanged(int) ), this, SLOT( onCurrentIndexChanged(int) ) );
+    QObject::connect( _comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)) );
     QObject::connect( _comboBox, SIGNAL(itemNewSelected()), this, SLOT(onItemNewSelected()));
     ///set the copy/link actions in the right click menu
     enableRightClickMenu(_comboBox,0);
@@ -126,7 +239,7 @@ KnobGuiChoice::createWidget(QHBoxLayout* layout)
 void
 KnobGuiChoice::onCurrentIndexChanged(int i)
 {
-    pushUndoCommand( new KnobUndoCommand<int>(this,_knob.lock()->getValue(0),i, 0, false, 0) );
+    pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(),_knob.lock()->getValue(0),i, 0, false, 0) );
 }
 
 void
@@ -168,7 +281,7 @@ KnobGuiChoice::onEntriesPopulated()
         if ( !help.empty() && !help[i].empty() ) {
             helpStr = help[i];
         }
-        _comboBox->addItem( entries[i].c_str(), QIcon(), QKeySequence(), QString( helpStr.c_str() ) );
+        _comboBox->addItem( QString::fromUtf8(entries[i].c_str()), QIcon(), QKeySequence(), QString::fromUtf8( helpStr.c_str() ) );
     }
     // the "New" menu is only added to known parameters (e.g. the choice of output channels)
     if (knob->getHostCanAddOptions() &&
@@ -195,9 +308,11 @@ KnobGuiChoice::onItemNewSelected()
         assert(holder);
         EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
         assert(effect);
-        assert(effect->getNode());
-        if (!effect->getNode()->addUserComponents(comps)) {
-            Dialogs::errorDialog(tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString());
+        if (effect) {
+            assert(effect->getNode());
+            if (!effect->getNode()->addUserComponents(comps)) {
+                Dialogs::errorDialog(tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString());
+            }
         }
     }
 }

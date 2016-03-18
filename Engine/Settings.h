@@ -33,6 +33,7 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Knob.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 
@@ -56,6 +57,7 @@ public:
         eKnownHostNameNatron = 0,
         eKnownHostNameNuke,
         eKnownHostNameFusion,
+        eKnownHostNameCatalyst,
         eKnownHostNameVegas,
         eKnownHostNameToxik,
         eKnownHostNameScratch,
@@ -72,6 +74,7 @@ public:
         eKnownHostNameAvidDS,
         eKnownHostNameDX,
         eKnownHostNameTitlerPro,
+        eKnownHostNameNewBlueOFXBridge,
         eKnownHostNameRamen,
         eKnownHostNameTuttleOfx,
         eKnownHostNameNone,
@@ -83,13 +86,10 @@ public:
     {
     }
 
-    virtual void evaluate(KnobI* /*knob*/,
-                          bool /*isSignificant*/,
-                          ValueChangedReasonEnum /*reason*/) OVERRIDE FINAL
-    {
-    }
-
-    virtual void onKnobValueChanged(KnobI* k,ValueChangedReasonEnum reason,double time,
+    virtual void onKnobValueChanged(KnobI* k,
+                                    ValueChangedReasonEnum reason,
+                                    double time,
+                                    ViewSpec view,
                                     bool originatedFromMainThread) OVERRIDE FINAL;
 
     ImageBitDepthEnum getViewersBitDepth() const;
@@ -136,6 +136,10 @@ public:
     void getFileFormatsForReadingAndReader(std::map<std::string,std::string>* formats);
 
     void getFileFormatsForWritingAndWriter(std::map<std::string,std::string>* formats);
+    
+    void getReadersForFormat(const std::string& format, std::vector<std::string>* decoders);
+    
+    void getWritersForFormat(const std::string& format, std::vector<std::string>* encoders);
 
     ///save the settings to the application's settings
     void saveSettings(const std::vector<KnobI*>& settings,bool doWarnings);
@@ -160,6 +164,10 @@ public:
 
     bool isRenderInSeparatedProcessEnabled() const;
 
+    bool isRenderQueuingEnabled() const;
+    
+    void setRenderQueuingEnabled(bool enabled);
+    
     void restoreDefault();
 
     int getMaximumUndoRedoNodeGraph() const;
@@ -388,6 +396,7 @@ private:
     boost::shared_ptr<KnobBool> _useThreadPool;
     boost::shared_ptr<KnobInt> _nThreadsPerEffect;
     boost::shared_ptr<KnobBool> _renderInSeparateProcess;
+    boost::shared_ptr<KnobBool> _queueRenders;
     boost::shared_ptr<KnobBool> _autoPreviewEnabledForNewProjects;
     boost::shared_ptr<KnobBool> _firstReadSetProjectFormat;
     boost::shared_ptr<KnobBool> _fixPathsOnProjectPathChanged;
@@ -400,6 +409,7 @@ private:
     boost::shared_ptr<KnobBool> _activateTransformConcatenationSupport;
     boost::shared_ptr<KnobChoice> _hostName;
     boost::shared_ptr<KnobString> _customHostName;
+    
     
     
     boost::shared_ptr<KnobChoice> _ocioConfigKnob;

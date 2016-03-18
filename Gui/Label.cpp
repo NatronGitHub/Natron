@@ -67,6 +67,9 @@ Label::refreshStyle()
 void
 Label::setAltered(bool a)
 {
+    if (!canAlter()) {
+        return;
+    }
     if (this->altered != a) {
         altered = a;
         refreshStyle();

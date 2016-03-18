@@ -223,7 +223,7 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
                     
                     ///Create a dot to make things nicer
                     
-                    CreateNodeArgs args(PLUGINID_NATRON_DOT, eCreateNodeReasonInternal, createdNodeInternal->getGroup());
+                    CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_DOT), eCreateNodeReasonInternal, createdNodeInternal->getGroup());
 
                     NodePtr dotNode = getGui()->getApp()->createNode(args);
                     assert(dotNode);
@@ -337,7 +337,7 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
             int index = createdNodeInternal->getPreferredInputForConnection();
             if (index != -1) {
                 ///Create a dot to make things nicer
-                CreateNodeArgs args(PLUGINID_NATRON_DOT, eCreateNodeReasonInternal, createdNodeInternal->getGroup());
+                CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_DOT), eCreateNodeReasonInternal, createdNodeInternal->getGroup());
                 NodePtr dotNode = getGui()->getApp()->createNode(args);
                 assert(dotNode);
                 if (dotNode) {

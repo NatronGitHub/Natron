@@ -28,7 +28,9 @@
 
 #include <QApplication>
 
+#include "Gui/DockablePanel.h"
 #include "Gui/Gui.h"
+#include "Gui/RightClickableWidget.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -78,6 +80,19 @@ PropertiesBinWrapper::keyReleaseEvent(QKeyEvent* e)
 {
     handleUnCaughtKeyUpEvent(e);
     QWidget::keyReleaseEvent(e);
+}
+
+QUndoStack*
+PropertiesBinWrapper::getUndoStack() const
+{
+    QWidget* w = qApp->widgetAt( QCursor::pos() );
+    
+    RightClickableWidget* panel = RightClickableWidget::isParentSettingsPanelRecursive(w);
+    if (panel) {
+        boost::shared_ptr<QUndoStack> stack = panel->getPanel()->getUndoStack();
+        return stack.get();
+    }
+    return 0;
 }
 
 NATRON_NAMESPACE_EXIT;

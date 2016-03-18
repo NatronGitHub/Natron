@@ -27,6 +27,8 @@
 
 #include "Global/Macros.h"
 
+#if 0
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -41,6 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
+
 
 struct RenderingProgressDialogPrivate;
 
@@ -130,5 +133,7 @@ private:
 };
 
 NATRON_NAMESPACE_EXIT;
+
+#endif // if 0
 
 #endif // Gui_RenderingProgressDialog_h

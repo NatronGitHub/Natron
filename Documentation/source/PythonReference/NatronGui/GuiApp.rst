@@ -201,7 +201,8 @@ Unregisters a previously registered panel.
 	:rtype: :class:`sequence`
 
 Returns a sequence of :ref:`nodes<Effect>` currently selected in the given *group*.
-If no *group* is specified, this will return the selection in the main node graph::
+You can pass the *app* object to get the top-level
+NodeGraph. If passing None, the last user-selected NodeGraph will be used::
 
 	topLevelSelection = app.getSelectedNodes()
 	
@@ -254,13 +255,13 @@ Returns a user panel matching the given *scriptName* if there is any.
 
 	:param group: :class:`Group<NatronEngine.Group>`
 	
-	Select all nodes in the given *group*. If *group* is *None*, all nodes in the top-level
-	nodegraph will be selected.
+	Select all nodes in the given *group*. You can pass the *app* object to get the top-level
+	NodeGraph. If passing None, the last user-selected NodeGraph will be used.
 
 .. method:: NatronGui.GuiApp.clearSelection([group=None])
 
-	Wipe any current selection in the given *group*. If *group* is *None*, the selection
-	in the top-level nodegraph will be cleared.
+	Wipe any current selection in the given *group*. You can pass the *app* object to get the top-level
+	NodeGraph. If passing None, the last user-selected NodeGraph will be used.
 
 
 

@@ -72,6 +72,14 @@ public:
         return altered;
     }
 
+    void setReadOnly_NoFocusRect(bool readOnly)
+    {
+        setReadOnly(readOnly);
+        
+        //setReadonly set the flag but we don't want it
+        setAttribute(Qt::WA_MacShowFocusRect, 0);
+    }
+    
 Q_SIGNALS:
     
     void textDropped();
@@ -84,19 +92,21 @@ public Q_SLOTS:
 
 protected:
     
+    
     virtual void paintEvent(QPaintEvent* e) OVERRIDE;
 
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
     
+    virtual void dropEvent(QDropEvent* e) OVERRIDE ;
+    
+    virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE ;
+    
+    virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE ;
+    
+    virtual void dragLeaveEvent(QDragLeaveEvent* e) OVERRIDE ;
 private:
     
-    virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
-
-    virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE FINAL;
-
-    virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
-
-    virtual void dragLeaveEvent(QDragLeaveEvent* e) OVERRIDE FINAL;
+    
     
     
     int animation;

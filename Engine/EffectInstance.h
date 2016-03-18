@@ -46,6 +46,7 @@
 #include "Engine/RenderStats.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/ParallelRenderArgs.h"
+#include "Engine/ViewIdx.h"
 
 // Various useful plugin IDs, @see EffectInstance::getPluginID()
 #define PLUGINID_OFX_MERGE        "net.sf.openfx.MergePlugin"
@@ -58,19 +59,26 @@
 #define PLUGINID_OFX_TRANSFORM    "net.sf.openfx.TransformPlugin"
 #define PLUGINID_OFX_GRADE        "net.sf.openfx.GradePlugin"
 #define PLUGINID_OFX_COLORCORRECT "net.sf.openfx.ColorCorrectPlugin"
+#define PLUGINID_OFX_COLORLOOKUP  "net.sf.openfx.ColorLookupPlugin"
 #define PLUGINID_OFX_BLURCIMG     "net.sf.cimg.CImgBlur"
 #define PLUGINID_OFX_CORNERPIN    "net.sf.openfx.CornerPinPlugin"
-#define PLUGINID_OFX_CONSTANT    "net.sf.openfx.ConstantPlugin"
-#define PLUGINID_OFX_TIMEOFFSET "net.sf.openfx.timeOffset"
+#define PLUGINID_OFX_CONSTANT     "net.sf.openfx.ConstantPlugin"
+#define PLUGINID_OFX_TIMEOFFSET   "net.sf.openfx.timeOffset"
 #define PLUGINID_OFX_FRAMEHOLD    "net.sf.openfx.FrameHold"
-#define PLUGINID_OFX_RETIME "net.sf.openfx.Retime"
-#define PLUGINID_OFX_FRAMERANGE "net.sf.openfx.FrameRange"
+#define PLUGINID_OFX_RETIME       "net.sf.openfx.Retime"
+#define PLUGINID_OFX_FRAMERANGE   "net.sf.openfx.FrameRange"
 #define PLUGINID_OFX_RUNSCRIPT    "fr.inria.openfx.RunScript"
-#define PLUGINID_OFX_READFFMPEG     "fr.inria.openfx.ReadFFmpeg"
-#define PLUGINID_OFX_SHUFFLE     "net.sf.openfx.ShufflePlugin"
-#define PLUGINID_OFX_WRITEFFMPEG     "fr.inria.openfx.WriteFFmpeg"
-#define PLUGINID_OFX_READPFM     "fr.inria.openfx.ReadPFM"
+#define PLUGINID_OFX_READFFMPEG   "fr.inria.openfx.ReadFFmpeg"
+#define PLUGINID_OFX_SHUFFLE      "net.sf.openfx.ShufflePlugin"
+#define PLUGINID_OFX_TIMEDISSOLVE "net.sf.openfx.TimeDissolvePlugin"
+#define PLUGINID_OFX_WRITEFFMPEG  "fr.inria.openfx.WriteFFmpeg"
+#define PLUGINID_OFX_READPFM      "fr.inria.openfx.ReadPFM"
 #define PLUGINID_OFX_WRITEPFM     "fr.inria.openfx.WritePFM"
+#define PLUGINID_OFX_READMISC     "fr.inria.openfx.ReadMisc"
+#define PLUGINID_OFX_READPSD      "net.fxarena.openfx.ReadPSD"
+#define PLUGINID_OFX_READKRITA    "fr.inria.openfx.ReadKrita"
+#define PLUGINID_OFX_READSVG      "net.fxarena.openfx.ReadSVG"
+#define PLUGINID_OFX_READORA      "fr.inria.openfx.OpenRaster"
 
 #define PLUGINID_NATRON_VIEWER    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Viewer")
 #define PLUGINID_NATRON_DISKCACHE (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.DiskCache")
@@ -86,6 +94,11 @@
 #define PLUGINID_NATRON_ROTOSMEAR (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.RotoSmear")
 #define PLUGINID_NATRON_PRECOMP     (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Precomp")
 #define PLUGINID_NATRON_TRACKER   (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Tracker")
+#define PLUGINID_NATRON_JOINVIEWS     (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.JoinViews")
+#define PLUGINID_NATRON_READ    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Read")
+#define PLUGINID_NATRON_WRITE    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Write")
+#define PLUGINID_NATRON_ONEVIEW    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.OneView")
+
 
 
 NATRON_NAMESPACE_ENTER;
@@ -116,7 +129,7 @@ public:
         double time; //< the time at which to render
         RenderScale scale; //< the scale at which to render
         unsigned int mipMapLevel; //< the mipmap level (redundant with the scale, stored here to avoid refetching it everytimes)
-        int view; //< the view to render
+        ViewIdx view; //< the view to render
         RectI roi; //< the renderWindow (in pixel coordinates) , watch out OpenFX action getRegionsOfInterest expects canonical coords!
         RectD preComputedRoD; //<  pre-computed region of definition in canonical coordinates for this effect to speed-up the call to renderRoi
         std::list<ImageComponents> components; //< the requested image components (per plane)
@@ -148,7 +161,7 @@ public:
         RenderRoIArgs(double time_,
                       const RenderScale & scale_,
                       unsigned int mipMapLevel_,
-                      int view_,
+                      ViewIdx view_,
                       bool byPassCache_,
                       const RectI & roi_,
                       const RectD & preComputedRoD_,
@@ -245,6 +258,8 @@ public:
     const std::string & getScriptName() const WARN_UNUSED_RETURN;
     virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    virtual void onScriptNameChanged(const std::string& /*fullyQualifiedName*/) {}
+
     /**
      * @brief Forwarded to the node's render format
      **/
@@ -298,6 +313,13 @@ public:
      **/
     virtual bool isWriter() const WARN_UNUSED_RETURN
     {
+        return false;
+    }
+
+    /**
+     * @brief Basically returns true for WRITE_FFMPEG
+     **/
+    virtual bool isVideoWriter() const WARN_UNUSED_RETURN {
         return false;
     }
 
@@ -384,6 +406,11 @@ public:
     {
         return -1;
     }
+
+    virtual bool getMakeSettingsPanel() const { return true; }
+
+
+    virtual bool getCreateChannelSelectorKnob() const;
 
     /**
      * @brief Returns the index of the channel to use to produce the mask and the components.
@@ -487,7 +514,8 @@ public:
      * The return code indicates whether the render succeeded or failed. Note that this function may succeed
      * and return 0 plane if the RoI does not intersect the RoD of the effect.
      **/
-    RenderRoIRetCode renderRoI(const RenderRoIArgs & args, std::list<boost::shared_ptr<Image> >* outputPlanes) WARN_UNUSED_RETURN;
+    RenderRoIRetCode renderRoI(const RenderRoIArgs & args,
+                               std::map<ImageComponents,boost::shared_ptr<Image> >* outputPlanes) WARN_UNUSED_RETURN;
 
 
     void getImageFromCacheAndConvertIfNeeded(bool useCache,
@@ -544,12 +572,11 @@ public:
      * This is thread local storage. This is NOT local to a call to renderRoI
      **/
     void setParallelRenderArgsTLS(double time,
-                                  int view,
+                                  ViewIdx view,
                                   bool isRenderUserInteraction,
                                   bool isSequential,
-                                  bool canAbort,
                                   U64 nodeHash,
-                                  U64 renderAge,
+                                  const AbortableRenderInfoPtr& abortInfo,
                                   const NodePtr & treeRoot,
                                   const boost::shared_ptr<NodeFrameRequest> & nodeRequest,
                                   int textureIndex,
@@ -565,6 +592,8 @@ public:
 
     void setDuringPaintStrokeCreationThreadLocal(bool duringPaintStroke);
 
+    void setNodeRequestThreadLocal(const boost::shared_ptr<NodeFrameRequest> & nodeRequest);
+
     void setParallelRenderArgsTLS(const boost::shared_ptr<ParallelRenderArgs> & args);
 
     /**
@@ -577,7 +606,7 @@ public:
     //Implem in ParallelRenderArgs.cpp
     static StatusEnum getInputsRoIsFunctor(bool useTransforms,
                                            double time,
-                                           int view,
+                                           ViewIdx view,
                                            unsigned originalMipMapLevel,
                                            const NodePtr & node,
                                            const NodePtr& callerNode,
@@ -591,7 +620,7 @@ public:
      * Implem is in ParallelRenderArgs.cpp
      **/
     static StatusEnum computeRequestPass(double time,
-                                                 int view,
+                                                 ViewIdx view,
                                                  unsigned int mipMapLevel,
                                                  const RectD & renderWindow,
                                                  const NodePtr & treeRoot,
@@ -606,7 +635,7 @@ public:
                                                                        bool useTransforms, // roi functor specific
                                                                        unsigned int originalMipMapLevel, // roi functor specific
                                                                        double time,
-                                                                       int view,
+                                                                       ViewIdx view,
                                                                        const NodePtr & treeRoot,
                                                                        FrameRequestMap* requests,  // roi functor specific
                                                                        EffectInstance::InputImagesMap* inputImages, // render functor specific
@@ -619,7 +648,7 @@ public:
     /**
      * @breif Don't override this one, override onKnobValueChanged instead.
      **/
-    virtual void onKnobValueChanged_public(KnobI* k, ValueChangedReasonEnum reason, double time, bool originatedFromMainThread) OVERRIDE FINAL;
+    virtual void onKnobValueChanged_public(KnobI* k, ValueChangedReasonEnum reason, double time, ViewSpec view, bool originatedFromMainThread) OVERRIDE FINAL;
 
     /**
      * @brief Returns a pointer to the first non disabled upstream node.
@@ -644,58 +673,94 @@ public:
     /**
      * @brief This is purely for the OfxEffectInstance derived class, but passed here for the sake of abstraction
      **/
-    void refreshClipPreferences_public(double time,
-                                        const RenderScale & scale,
-                                        ValueChangedReasonEnum reason,
-                                        bool forceGetClipPrefAction,
-                                        bool recurse);
+    bool refreshMetaDatas_public(bool recurse);
 
     virtual void onChannelsSelectorRefreshed() {}
 
-
-    virtual bool refreshClipPreferences(double time,
-                                        const RenderScale & scale,
-                                        ValueChangedReasonEnum reason,
-                                        bool forceGetClipPrefAction);
+    void setDefaultMetadata();
 
 protected:
 
-    void refreshClipPreferences_recursive(double time,
-                                           const RenderScale & scale,
-                                          ValueChangedReasonEnum reason,
-                                           bool forceGetClipPrefAction,
-                                           std::list<Node*> & markedNodes);
+    bool refreshMetaDatas_internal();
 
+    virtual void onMetaDatasRefreshed(const NodeMetadata& /*metadata*/) {}
 
+    bool refreshMetaDatas_recursive(std::list<Node*> & markedNodes);
+
+friend class ClipPreferencesRunning_RAII;
+    void setClipPreferencesRunning(bool running);
 
 public:
 
 
-    ///////////////////////Clip preferences related////////////////////////
-    // These data are refreshed during a call to getClipPreferences to optimize the getters below
-    // which would involve cycling through the tree
-    struct DefaultClipPreferencesData;
+    ///////////////////////Metadatas related////////////////////////
 
     /**
-     * @brief Returns the output aspect ratio to render with
+    * @brief Returns the preferred metadata to render with
+    * This should only be called to compute the clip preferences, call the appropriate
+    * getters to get the actual values. 
+    * The default implementation gives reasonable values appropriate to the context of the node (the inputs)
+    * and the values reported by the supported components/bitdepth
+    *
+    * This should not be reimplemented except for OpenFX which already has its default specification
+    * for clip Preferences, see setDefaultClipPreferences()
+    * Returns eStatusOK on success, eStatusFailed on failure.
+    *
+    **/
+    StatusEnum getPreferredMetaDatas_public(NodeMetadata& metadata);
+
+protected:
+
+    virtual StatusEnum getPreferredMetaDatas(NodeMetadata& /*metadata*/) { return eStatusOK; }
+
+private:
+
+    StatusEnum getDefaultMetadata(NodeMetadata& metadata);
+
+public:
+
+    /**
+     * @brief Returns whether the effect is frame-varying (i.e: a Reader with different images in the sequence)
+    **/
+    bool isFrameVarying() const;
+
+    /**
+     * @brief Returns whether the current node and/or the tree upstream is frame varying or animated.
+     * It is frame varying/animated if at least one of the node is animated/varying
+    **/
+    bool isFrameVaryingOrAnimated_Recursive() const;
+
+    /**
+     * @brief Returns the preferred output frame rate to render with
+    **/
+    double getFrameRate() const;
+
+    /**
+     * @brief Returns the preferred premultiplication flag for the output image
      **/
-    virtual double getPreferredAspectRatio() const;
-    virtual double getPreferredFrameRate() const;
+    ImagePremultiplicationEnum getPremult() const;
 
     /**
-    * @brief Returns the preferred depth and components for the given input.
+     * @brief If true, the plug-in knows how to render frames at non integer times. If false
+     * this is the hint indicating that the plug-ins can only render integer frame times (such as a Reader)
+     **/
+    bool canRenderContinuously() const;
+
+    /**
+     * @brief Returns the field ordering of images produced by this plug-in
+     **/
+    ImageFieldingOrderEnum getFieldingOrder() const;
+
+    /**
+    * @brief Returns the pixel aspect ratio, depth and components for the given input.
     * If inputNb equals -1 then this function will check the output components.
     **/
-    virtual void getPreferredDepthAndComponents(int inputNb,
-                                            std::list<ImageComponents>* comp,
-                                            ImageBitDepthEnum* depth) const;
+    double getAspectRatio(int inputNb) const;
+    ImageComponents getComponents(int inputNb) const;
+    ImageBitDepthEnum getBitDepth(int inputNb) const;
 
 
-    /**
-    * @brief Override to get the preffered premultiplication flag for the output image
-    **/
-    virtual ImagePremultiplicationEnum getOutputPremultiplication() const;
-    ///////////////////////End Clip preferences related////////////////////////
+    ///////////////////////End Metadatas related////////////////////////
 
 
     virtual void lock(const boost::shared_ptr<Image> & entry) OVERRIDE FINAL;
@@ -704,7 +769,7 @@ public:
     virtual bool canSetValue() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void abortAnyEvaluation() OVERRIDE FINAL;
     virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
-    virtual int getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
+    virtual ViewIdx getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
     virtual bool getCanTransform() const
     {
         return false;
@@ -714,7 +779,7 @@ public:
 
     SequenceTime getFrameRenderArgsCurrentTime() const;
 
-    int getFrameRenderArgsCurrentView() const;
+    ViewIdx getFrameRenderArgsCurrentView() const;
 
     virtual bool getInputsHoldingTransform(std::list<int>* /*inputs*/) const
     {
@@ -731,19 +796,7 @@ public:
 
     bool getThreadLocalRotoPaintTreeNodes(NodesList* nodes) const;
 
-    /**
-     * @brief Returns whether the effect is frame-varying (i.e: a Reader with different images in the sequence)
-     **/
-    virtual bool isFrameVarying() const
-    {
-        return false;
-    }
 
-    /**
-     * @brief Returns whether the current node and/or the tree upstream is frame varying or animated.
-     * It is frame varying/animated if at least one of the node is animated/varying
-     **/
-    bool isFrameVaryingOrAnimated_Recursive() const;
     virtual bool isMultiPlanar() const
     {
         return false;
@@ -786,7 +839,7 @@ public:
         RectI roi;
         std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > > outputPlanes;
         EffectInstance::InputImagesMap inputImages;
-        int view;
+        ViewIdx view;
         bool isSequentialRender;
         bool isRenderResponseToUserInteraction;
         bool byPassCache;
@@ -810,7 +863,7 @@ protected:
 
     virtual StatusEnum getTransform(double /*time*/,
                                             const RenderScale & /*renderScale*/,
-                                            int /*view*/,
+                                            ViewIdx /*view*/,
                                             EffectInstPtr* /*inputToTransform*/,
                                             Transform::Matrix3x3* /*transform*/) WARN_UNUSED_RETURN
     {
@@ -823,7 +876,7 @@ public:
     StatusEnum render_public(const RenderActionArgs & args) WARN_UNUSED_RETURN;
     StatusEnum getTransform_public(double time,
                                            const RenderScale & renderScale,
-                                           int view,
+                                           ViewIdx view,
                                            EffectInstPtr* inputToTransform,
                                            Transform::Matrix3x3* transform) WARN_UNUSED_RETURN;
 
@@ -842,8 +895,9 @@ protected:
     virtual bool isIdentity(double /*time*/,
                             const RenderScale & /*scale*/,
                             const RectI & /*roi*/,
-                            int /*view*/,
+                            ViewIdx /*view*/,
                             double* /*inputTime*/,
+                            ViewIdx* /*inputView*/,
                             int* /*inputNb*/) WARN_UNUSED_RETURN
     {
         return false;
@@ -856,8 +910,9 @@ public:
                            double time,
                            const RenderScale & scale,
                            const RectI & renderWindow,
-                           int view,
+                           ViewIdx view,
                            double* inputTime,
+                           ViewIdx* inputView,
                            int* inputNb) WARN_UNUSED_RETURN;
 
     /**
@@ -885,17 +940,15 @@ public:
     boost::shared_ptr<Image> getImage(int inputNb,
                                       const double time,
                                       const RenderScale & scale,
-                                      const int view,
+                                      const ViewIdx view,
                                       const RectD *optionalBounds, //!< optional region in canonical coordinates
-                                      const ImageComponents & requestComps,
-                                      const ImageBitDepthEnum depth,
-                                      const double par,
+                                      const ImageComponents* layer, //< if set, fetch this specific layer, otherwise use what's in the clip pref
+                                      const bool mapToClipPrefs,
                                       const bool dontUpscale,
-                                      const bool mapImageToPreferredComps,
                                       RectI* roiPixel,
                                       boost::shared_ptr<Transform::Matrix3x3>* transform = 0) WARN_UNUSED_RETURN;
     virtual void aboutToRestoreDefaultValues() OVERRIDE FINAL;
-    virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, int view) const;
+    virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view) const;
 
     /**
      * @brief Can be derived to get the region that the plugin is capable of filling.
@@ -905,13 +958,13 @@ public:
      * In case of failure the plugin should return eStatusFailed.
      * @returns eStatusOK, eStatusReplyDefault, or eStatusFailed. rod is set except if return value is eStatusOK or eStatusReplyDefault.
     **/
-    virtual StatusEnum getRegionOfDefinition(U64 hash, double time, const RenderScale & scale, int view, RectD* rod) WARN_UNUSED_RETURN;
+    virtual StatusEnum getRegionOfDefinition(U64 hash, double time, const RenderScale & scale, ViewIdx view, RectD* rod) WARN_UNUSED_RETURN;
 
 protected:
 
 
 
-    virtual void calcDefaultRegionOfDefinition(U64 hash, double time, const RenderScale & scale, int view, RectD *rod);
+    virtual void calcDefaultRegionOfDefinition(U64 hash, double time, const RenderScale & scale, ViewIdx view, RectD *rod);
 
     /**
      * @brief If the instance rod is infinite, returns the union of all connected inputs. If there's no input this returns the
@@ -921,7 +974,7 @@ protected:
     bool ifInfiniteApplyHeuristic(U64 hash,
                                   double time,
                                   const RenderScale & scale,
-                                  int view,
+                                  ViewIdx view,
                                   RectD* rod); //!< input/output
 
     /**
@@ -935,14 +988,14 @@ protected:
                                       const RenderScale & scale,
                                       const RectD & outputRoD,   //!< the RoD of the effect, in canonical coordinates
                                       const RectD & renderWindow,   //!< the region to be rendered in the output image, in Canonical Coordinates
-                                      int view,
+                                      ViewIdx view,
                                       RoIMap* ret);
 
     /**
      * @brief Can be derived to indicate for each input node what is the frame range(s) (which can be discontinuous)
      * that this effects need in order to render the frame at the given time.
      **/
-    virtual FramesNeededMap getFramesNeeded(double time, int view) WARN_UNUSED_RETURN;
+    virtual FramesNeededMap getFramesNeeded(double time, ViewIdx view) WARN_UNUSED_RETURN;
 
 
     /**
@@ -955,29 +1008,19 @@ protected:
 public:
 
     StatusEnum getRegionOfDefinition_public(U64 hash,
-                                                    double time,
-                                                    const RenderScale & scale,
-                                                    int view,
-                                                    RectD* rod,
-                                                    bool* isProjectFormat) WARN_UNUSED_RETURN;
-    StatusEnum getRegionOfDefinitionWithIdentityCheck_public(U64 hash,
-                                                                     double time,
-                                                                     const RenderScale & scale,
-                                                                     const RectI & renderWindow,
-                                                                     int view,
-                                                                     RectD* rod,
-                                                                     bool* isProjectFormat) WARN_UNUSED_RETURN;
+                                            double time,
+                                            const RenderScale & scale,
+                                            ViewIdx view,
+                                            RectD* rod,
+                                            bool* isProjectFormat) WARN_UNUSED_RETURN;
 
-private:
+    StatusEnum getRegionOfDefinitionFromCache(U64 hash,
+                                              double time,
+                                              const RenderScale & scale,
+                                              ViewIdx view,
+                                              RectD* rod,
+                                              bool* isProjectFormat) WARN_UNUSED_RETURN;
 
-    StatusEnum getRegionOfDefinition_publicInternal(U64 hash,
-                                                            double time,
-                                                            const RenderScale & scale,
-                                                            const RectI & renderWindow,
-                                                            bool useRenderWindow,
-                                                            int view,
-                                                            RectD* rod,
-                                                            bool* isProjectFormat) WARN_UNUSED_RETURN;
 
 public:
 
@@ -986,10 +1029,10 @@ public:
                                      const RenderScale & scale,
                                      const RectD & outputRoD,
                                      const RectD & renderWindow,   //!< the region to be rendered in the output image, in Canonical Coordinates
-                                     int view,
+                                     ViewIdx view,
                                      RoIMap* ret);
 
-    FramesNeededMap getFramesNeeded_public(U64 hash, double time, int view, unsigned int mipMapLevel) WARN_UNUSED_RETURN;
+    FramesNeededMap getFramesNeeded_public(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel) WARN_UNUSED_RETURN;
 
     void getFrameRange_public(U64 hash, double *first, double *last, bool bypasscache = false);
 
@@ -1017,7 +1060,7 @@ public:
      **/
     virtual bool makePreviewByDefault() const WARN_UNUSED_RETURN
     {
-        return false;
+        return isReader();
     }
 
     /**
@@ -1137,6 +1180,12 @@ public:
         return false;
     }
 
+    virtual bool supportsMultipleClipsBitDepth() const
+    {
+        return false;
+    }
+
+
     virtual bool doesTemporalClipAccess() const
     {
         return false;
@@ -1176,10 +1225,6 @@ public:
     {
     }
 
-    virtual std::vector<std::string> supportedFileFormats() const
-    {
-        return std::vector<std::string>();
-    }
 
     /**
      * @brief Called everytimes an input connection is changed
@@ -1242,6 +1287,7 @@ public:
         EffectInstance::InputImagesMap imgs;
         double identityTime;
         bool isIdentity;
+        ViewIdx identityView;
     };
 
     struct ImagePlanesToRender
@@ -1283,7 +1329,6 @@ public:
      **/
     void onNodeHashChanged(U64 hash);
 
-    void resetTotalTimeSpentRendering();
 
     virtual void initializeData()
     {
@@ -1295,10 +1340,6 @@ public:
 
 protected:
 
-
-    virtual void resetTimeSpentRenderingInfos()
-    {
-    }
 
 #ifdef DEBUG
 
@@ -1360,7 +1401,7 @@ protected:
      **/
     virtual void knobChanged(KnobI* /*k*/,
                              ValueChangedReasonEnum /*reason*/,
-                             int /*view*/,
+                             ViewSpec /*view*/,
                              double /*time*/,
                              bool /*originatedFromMainThread*/)
     {
@@ -1374,7 +1415,7 @@ protected:
                                                    bool /*isSequentialRender*/,
                                                    bool /*isRenderResponseToUserInteraction*/,
                                                    bool /*draftMode*/,
-                                                   int /*view*/)
+                                                   ViewIdx /*view*/)
     {
         return eStatusOK;
     }
@@ -1387,7 +1428,7 @@ protected:
                                                  bool /*isSequentialRender*/,
                                                  bool /*isRenderResponseToUserInteraction*/,
                                                  bool /*draftMode*/,
-                                                 int /*view*/)
+                                                 ViewIdx /*view*/)
     {
         return eStatusOK;
     }
@@ -1395,37 +1436,42 @@ protected:
 public:
 
     ///Doesn't do anything, instead we overriden onKnobValueChanged_public
-    virtual void onKnobValueChanged(KnobI* k, ValueChangedReasonEnum reason, double time,
+    virtual void onKnobValueChanged(KnobI* k,
+                                    ValueChangedReasonEnum reason,
+                                    double time,
+                                    ViewSpec view,
                                     bool originatedFromMainThread) OVERRIDE FINAL;
     StatusEnum beginSequenceRender_public(double first, double last,
                                                   double step, bool interactive, const RenderScale & scale,
                                                   bool isSequentialRender, bool isRenderResponseToUserInteraction,
                                                   bool draftMode,
-                                                  int view);
+                                                  ViewIdx view);
     StatusEnum endSequenceRender_public(double first, double last,
                                                 double step, bool interactive, const RenderScale & scale,
                                                 bool isSequentialRender, bool isRenderResponseToUserInteraction,
                                                 bool draftMode,
-                                                int view);
+                                                ViewIdx view);
+
+    virtual bool canHandleRenderScaleForOverlays() const { return true; }
 
 
-    void drawOverlay_public(double time, const RenderScale & renderScale, int view);
+    void drawOverlay_public(double time, const RenderScale & renderScale, ViewIdx view);
 
-bool onOverlayPenDown_public(double time, const RenderScale & renderScale, int view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
+    bool onOverlayPenDown_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
 
-    bool onOverlayPenMotion_public(double time, const RenderScale & renderScale, int view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
+    bool onOverlayPenMotion_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
 
-    bool onOverlayPenUp_public(double time, const RenderScale & renderScale, int view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
+    bool onOverlayPenUp_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
 
-    bool onOverlayKeyDown_public(double time, const RenderScale & renderScale, int view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyDown_public(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
-    bool onOverlayKeyUp_public(double time, const RenderScale & renderScale, int view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyUp_public(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
-    bool onOverlayKeyRepeat_public(double time, const RenderScale & renderScale, int view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyRepeat_public(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
-    bool onOverlayFocusGained_public(double time, const RenderScale & renderScale, int view) WARN_UNUSED_RETURN;
+    bool onOverlayFocusGained_public(double time, const RenderScale & renderScale, ViewIdx view) WARN_UNUSED_RETURN;
 
-    bool onOverlayFocusLost_public(double time, const RenderScale & renderScale, int view) WARN_UNUSED_RETURN;
+    bool onOverlayFocusLost_public(double time, const RenderScale & renderScale, ViewIdx view) WARN_UNUSED_RETURN;
 
     virtual bool isDoingInteractAction() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
@@ -1496,15 +1542,30 @@ bool onOverlayPenDown_public(double time, const RenderScale & renderScale, int v
         return false;
     }
 
+    virtual void onKnobsAboutToBeLoaded(const boost::shared_ptr<NodeSerialization>& /*serialization*/) {}
+
     virtual void onKnobsLoaded() {}
+
+    /**
+     * @brief Called after all knobs have been loaded and the nod ehas been created
+     **/
+    virtual void onEffectCreated(bool /*mayCreateFileDialog*/, const std::list<boost::shared_ptr<KnobSerialization> >& /*defaultParamValues*/) {}
 
 
 private:
 
+
+    /**
+     * @brief Must be implemented to evaluate a value change
+     * made to a knob(e.g: force a new render).
+     * @param knob[in] The knob whose value changed.
+    **/
+    virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE FINAL;
+
     void getComponentsAvailableRecursive(bool useLayerChoice,
                                          bool useThisNodeComponentsNeeded,
                                          double time,
-                                         int view,
+                                         ViewIdx view,
                                          ComponentsAvailableMap* comps,
                                          std::list<EffectInstance*>* markedNodes);
 
@@ -1512,7 +1573,7 @@ public:
 
     void getComponentsNeededAndProduced_public(bool useLayerChoice,
                                                bool useThisNodeComponentsNeeded,
-                                               double time, int view,
+                                               double time, ViewIdx view,
                                               EffectInstance::ComponentsNeededMap* comps,
                                                bool* processAllRequested,
                                                SequenceTime* passThroughTime,
@@ -1527,7 +1588,7 @@ public:
      * @brief Check if Transform effects concatenation is possible on the current node and node upstream.
      **/
     void tryConcatenateTransforms(double time,
-                                  int view,
+                                  ViewIdx view,
                                   const RenderScale & scale,
                                   InputMatrixMap* inputTransforms);
 
@@ -1545,7 +1606,7 @@ public:
         RoIMap regionOfInterestResults; //< the input RoI's in CANONICAL coordinates
         RectI renderWindowPixel; //< the current renderWindow in PIXEL coordinates
         double time; //< the time to render
-        int view; //< the view to render
+        ViewIdx view; //< the view to render
         bool validArgs; //< are the args valid ?
         bool isIdentity;
         double identityTime;
@@ -1679,7 +1740,7 @@ protected:
      * The output is mapped against -1. For all components not produced and if this effect is passthrough, it should use the
      * passThroughInput to fetch the components needed.
      **/
-    virtual void getComponentsNeededAndProduced(double time, int view,
+    virtual void getComponentsNeededAndProduced(double time, ViewIdx view,
                                                EffectInstance::ComponentsNeededMap* comps,
                                                 SequenceTime* passThroughTime,
                                                 int* passThroughView,
@@ -1696,13 +1757,13 @@ protected:
 
     virtual void drawOverlay(double /*time*/,
                              const RenderScale & /*renderScale*/,
-                             int /*view*/)
+                             ViewIdx /*view*/)
     {
     }
 
     virtual bool onOverlayPenDown(double /*time*/,
                                   const RenderScale & /*renderScale*/,
-                                  int /*view*/,
+                                  ViewIdx /*view*/,
                                   const QPointF & /*viewportPos*/,
                                   const QPointF & /*pos*/,
                                   double /*pressure*/) WARN_UNUSED_RETURN
@@ -1712,7 +1773,7 @@ protected:
 
     virtual bool onOverlayPenMotion(double /*time*/,
                                     const RenderScale & /*renderScale*/,
-                                    int /*view*/,
+                                    ViewIdx /*view*/,
                                     const QPointF & /*viewportPos*/,
                                     const QPointF & /*pos*/,
                                     double /*pressure*/) WARN_UNUSED_RETURN
@@ -1722,7 +1783,7 @@ protected:
 
     virtual bool onOverlayPenUp(double /*time*/,
                                 const RenderScale & /*renderScale*/,
-                                int /*view*/,
+                                ViewIdx /*view*/,
                                 const QPointF & /*viewportPos*/,
                                 const QPointF & /*pos*/,
                                 double /*pressure*/) WARN_UNUSED_RETURN
@@ -1732,7 +1793,7 @@ protected:
 
     virtual bool onOverlayKeyDown(double /*time*/,
                                   const RenderScale & /*renderScale*/,
-                                  int /*view*/,
+                                  ViewIdx /*view*/,
                                   Key /*key*/,
                                   KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
     {
@@ -1741,7 +1802,7 @@ protected:
 
     virtual bool onOverlayKeyUp(double /*time*/,
                                 const RenderScale & /*renderScale*/,
-                                int /*view*/,
+                                ViewIdx /*view*/,
                                 Key /*key*/,
                                 KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
     {
@@ -1750,7 +1811,7 @@ protected:
 
     virtual bool onOverlayKeyRepeat(double /*time*/,
                                     const RenderScale & /*renderScale*/,
-                                    int /*view*/,
+                                    ViewIdx /*view*/,
                                     Key /*key*/,
                                     KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
     {
@@ -1759,14 +1820,14 @@ protected:
 
     virtual bool onOverlayFocusGained(double /*time*/,
                                       const RenderScale & /*renderScale*/,
-                                      int /*view*/) WARN_UNUSED_RETURN
+                                      ViewIdx /*view*/) WARN_UNUSED_RETURN
     {
         return false;
     }
 
     virtual bool onOverlayFocusLost(double /*time*/,
                                     const RenderScale & /*renderScale*/,
-                                    int /*view*/) WARN_UNUSED_RETURN
+                                    ViewIdx /*view*/) WARN_UNUSED_RETURN
     {
         return false;
     }
@@ -1777,6 +1838,10 @@ private:
 
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
+
+    friend class ReadNode;
+    friend class WriteNode;
+
     enum RenderRoIStatusEnum
     {
         eRenderRoIStatusImageAlreadyRendered = 0, // there was nothing left to render
@@ -1814,7 +1879,7 @@ private:
                                           const boost::shared_ptr<ParallelRenderArgs> & frameArgs,
                                           RenderSafetyEnum safety,
                                           unsigned int mipMapLevel,
-                                          int view,
+                                          ViewIdx view,
                                           const RectD & rod, //!< rod in canonical coordinates
                                           const double par,
                                           const boost::shared_ptr<ImagePlanesToRender> & planes,
@@ -1824,7 +1889,7 @@ private:
                                           bool renderFullScaleThenDownscale,
                                           bool byPassCache,
                                           ImageBitDepthEnum outputClipPrefDepth,
-                                          const std::list<ImageComponents> & outputClipPrefsComps,
+                                          const ImageComponents& outputClipPrefsComps,
                                           const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
                                           std::bitset<4> processChannels);
 
@@ -1833,7 +1898,7 @@ private:
     RenderRoIRetCode renderInputImagesForRoI(const FrameViewRequest* request,
                                              bool useTransforms,
                                              double time,
-                                             int view,
+                                             ViewIdx view,
                                              const RectD & rod,
                                              const RectD & canonicalRenderWindow,
                                              const boost::shared_ptr<InputMatrixMap> & transformMatrix,
@@ -1862,12 +1927,13 @@ private:
      **/
     // TODO: shouldn't this be documented a bit more? (parameters?)
     bool retrieveGetImageDataUponFailure(const double time,
-                                         const int view,
+                                         const ViewIdx view,
                                          const RenderScale & scale,
                                          const RectD* optionalBoundsParam,
                                          U64* nodeHash_p,
                                          bool* isIdentity_p,
                                          double* identityTime,
+                                         ViewIdx *inputView,
                                          EffectInstPtr* identityInput_p,
                                          bool* duringPaintStroke_p,
                                          RectD* rod_p,
@@ -1880,9 +1946,10 @@ private:
                             const RectI & downscaleImageBounds,
                             const RectI & fullScaleImageBounds,
                             bool isProjectFormat,
-                            const FramesNeededMap & framesNeeded,
                             const ImageComponents & components,
                             ImageBitDepthEnum depth,
+                            ImagePremultiplicationEnum premult,
+                            ImageFieldingOrderEnum fielding,
                             double par,
                             unsigned int mipmapLevel,
                             bool renderFullScaleThenDownscale,
@@ -1891,13 +1958,8 @@ private:
                             boost::shared_ptr<Image>* fullScaleImage,
                             boost::shared_ptr<Image>* downscaleImage);
 
-    /**
-     * @brief Must be implemented to evaluate a value change
-     * made to a knob(e.g: force a new render).
-     * @param knob[in] The knob whose value changed.
-     **/
-    void evaluate(KnobI* knob, bool isSignificant, ValueChangedReasonEnum reason) OVERRIDE;
 
+    virtual void onSignificantEvaluateAboutToBeCalled(KnobI* knob) OVERRIDE FINAL;
 
     virtual void onAllKnobsSlaved(bool isSlave, KnobHolder* master) OVERRIDE FINAL;
     virtual void onKnobSlaved(KnobI* slave, KnobI* master,
@@ -1920,6 +1982,24 @@ private:
 
 };
 
+class ClipPreferencesRunning_RAII
+{
+    EffectInstance* _effect;
+public:
+    
+    ClipPreferencesRunning_RAII(EffectInstance* effect)
+    : _effect(effect)
+    {
+        _effect->setClipPreferencesRunning(true);
+    }
+    
+    ~ClipPreferencesRunning_RAII()
+    {
+        _effect->setClipPreferencesRunning(false);
+    }
+    
+    
+};
 
 
 /**

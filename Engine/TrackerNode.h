@@ -125,8 +125,9 @@ private:
     virtual bool isIdentity(double time,
                             const RenderScale & scale,
                             const RectI & roi,
-                            int view,
+                            ViewIdx view,
                             double* inputTime,
+                            ViewIdx* inputView,
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
 

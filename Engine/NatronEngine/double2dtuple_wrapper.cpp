@@ -6,6 +6,7 @@ GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_OFF(missing-field-initializers)
 GCC_DIAG_OFF(missing-declarations)
 GCC_DIAG_OFF(uninitialized)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <shiboken.h> // produces many warnings
 #include <pysidesignal.h>
 #include <pysideproperty.h>

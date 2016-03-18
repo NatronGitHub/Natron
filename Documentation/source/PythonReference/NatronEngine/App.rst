@@ -19,8 +19,11 @@ Functions
 
 *	 def :meth:`addFormat<NatronEngine.App.addFormat>` (formatSpec)
 *    def :meth:`createNode<NatronEngine.App.createNode>` (pluginID[, majorVersion=-1[, group=None]])
+*    def :meth:`createReader<NatronEngine.App.createReader>` (filename[, group=None])
+*    def :meth:`createWriter<NatronEngine.App.createWriter>` (filename[, group=None])
 *    def :meth:`getAppID<NatronEngine.App.getAppID>` ()
 *    def :meth:`getProjectParam<NatronEngine.App.getProjectParam>` (name)
+*    def :meth:`getViewNames<NatronEngine.App.getViewNames>`()
 *    def :meth:`render<NatronEngine.App.render>` (effect,firstFrame,lastFrame[,frameStep])
 *    def :meth:`render<NatronEngine.App.render>` (tasks)
 *    def :meth:`saveTempProject<NatronEngine.App.saveTempProject>` (filename)
@@ -90,8 +93,19 @@ top level::
 	group = app.createNode("fr.inria.built-in.Group")
 	reader = app.createNode("fr.inria.openfx.ReadOIIO", -1, group)
 
-You find it hard to know what is the plug-in ID of a plug-in ? In Natron you can call the 
-following function to get a sequence with all plug-in IDs currently available::
+For convenience, small wrapper functions have been made to directly create a Reader or Writer
+given a filename::
+
+	reader = app.createReader("/Users/me/Pictures/mySequence###.exr")
+	writer = app.createWriter("/Users/me/Pictures/myVideo.mov")
+	
+In case 2 plug-ins can decode/encode the same format, e.g: ReadPSD and ReadOIIO can both
+read .psd files, internally Natron picks the "best" OpenFX plug-in to decode/encode the image sequence/video
+according to the settings in the Preferences of Natron. 
+If however you need a specific decoder/encoder to decode/encode the file format, you can use
+the :func:`getSettings()<NatronEngine.App.createNode>` function with the exact plug-in ID.
+
+In Natron you can call the  following function to get a sequence with all plug-in IDs currently available::
 
 	natron.getPluginIDs()
 	
@@ -150,6 +164,40 @@ In Natron you can call the  following function to get a sequence with all plug-i
 	natron.getPluginIDs()
 
 
+.. method:: NatronEngine.App.createReader(filename[, group=None]])
+
+
+    :param filename: :class:`str<NatronEngine.std::string>`
+    :param group: :class:`Group<NatronEngine.Group>`
+    :rtype: :class:`Effect<NatronEngine.Effect>`
+
+Creates a reader to decode the given *filename*.    
+The optional *group* parameter can be used to specify into which :doc:`group<Group>` the node
+should be created, *None* meaning the project's top level.
+
+In case 2 plug-ins can decode the same format, e.g: ReadPSD and ReadOIIO can both
+read .psd files, internally Natron picks the "best" OpenFX plug-in to decode the image sequence/video
+according to the settings in the Preferences of Natron. 
+If however you need a specific decoder to decode the file format, you can use
+the :func:`getSettings()<NatronEngine.App.createNode>` function with the exact plug-in ID. 
+
+
+.. method:: NatronEngine.App.createWriter(filename[, group=None]])
+
+
+    :param filename: :class:`str<NatronEngine.std::string>`
+    :param group: :class:`Group<NatronEngine.Group>`
+    :rtype: :class:`Effect<NatronEngine.Effect>`
+
+Creates a reader to decode the given *filename*.    
+The optional *group* parameter can be used to specify into which :doc:`group<Group>` the node
+should be created, *None* meaning the project's top level.
+
+In case 2 plug-ins can encode the same format, e.g: WritePFM and WriteOIIO can both
+write .pfm files, internally Natron picks the "best" OpenFX plug-in to encode the image sequence/video
+according to the settings in the Preferences of Natron. 
+If however you need a specific decoder to encode the file format, you can use
+the :func:`getSettings()<NatronEngine.App.createNode>` function with the exact plug-in ID. 
 
 .. method:: NatronEngine.App.getAppID()
 
@@ -172,7 +220,12 @@ Returns a project :doc:`Param` given its *name* (script-name). See :ref:`this se
 an explanation of *script-name* vs. *label*. 
 
 
+.. method:: NatronEngine.App.getViewNames()
 
+	:rtype: :class:`Sequence`
+
+Returns a sequence with the name of all the views in the project as setup by the user
+in the "Views" tab of the Project Settings.
 
 .. method:: NatronEngine.App.render(effect,firstFrame,lastFrame[,frameStep])
 
@@ -267,10 +320,10 @@ inform the user of various informations, warnings or errors.
 	:param filename: :class:`str<NatronEngine.std::string>`
 	:rtype: :class:`bool<PySide.QtCore.bool`
 	
-	Saves the current project under the current project name. Otherwise if the project has
-	never been saved so far, this function asks the user where to save the project in GUI
-	mode and in background mode saves the project to the file indicated by the *filename*
-	parameter. In GUI mode, *filename* is disregarded.
+	Saves the current project under the current project name. If the project has
+	never been saved so far, this function e saves the project to the file indicated by the *filename*
+	parameter. In GUI mode, if *filename* is empty, it asks the user where to save the project in GUI
+	mode.
 	
 	This function returns *True* if it saved successfully, *False* otherwise.
 
@@ -279,8 +332,9 @@ inform the user of various informations, warnings or errors.
 	:param filename: :class:`str<NatronEngine.std::string>`
 	:rtype: :class:`bool<PySide.QtCore.bool`
 	
-	In GUI mode, prompts the user to save the project at some location. In background mode,
-	the project is saved to *filename*.
+	Save the project under the given *filename*.
+	In GUI mode, if *filename* is empty, it promps the user where to save the project.
+	
 	
 	This function returns *True* if it saved successfully, *False* otherwise.
 	

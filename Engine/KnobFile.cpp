@@ -36,6 +36,10 @@
 #include "Engine/StringAnimationManager.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Project.h"
+#include "Engine/ViewIdx.h"
+#include "Engine/EngineFwd.h"
+#include "Engine/AppInstance.h"
+
 #include <SequenceParsing.h>
 #include "Global/QtCompat.h"
 
@@ -78,40 +82,22 @@ KnobFile::typeName() const
     return typeNameStatic();
 }
 
-int
-KnobFile::firstFrame() const
-{
-    double time;
-    bool foundKF = getFirstKeyFrameTime(0, &time);
-
-    return foundKF ? (int)time : INT_MIN;
-}
-
-int
-KnobFile::lastFrame() const
-{
-    double time;
-    bool foundKF = getLastKeyFrameTime(0, &time);
-
-    return foundKF ? (int)time : INT_MAX;
-}
-
-int
-KnobFile::frameCount() const
-{
-    return getKeyFramesCount(0);
-}
 
 std::string
-KnobFile::getFileName(int time) const
+KnobFile::getFileName(int time, ViewSpec view) const
 {
-    int view = getHolder() ? getHolder()->getCurrentView() : 0;
-    
     if (!_isInputImage) {
-        return getValue();
+        return getValue(0, view);
     } else {
         ///try to interpret the pattern and generate a filename if indexes are found
-        return SequenceParsing::generateFileNameFromPattern(getValue(), time, view);
+        std::vector<std::string> views;
+        if (getHolder() && getHolder()->getApp()) {
+            views = getHolder()->getApp()->getProject()->getProjectViewNames();
+        }
+        if (!view.isViewIdx()) {
+            view = ViewIdx(0);
+        }
+        return SequenceParsing::generateFileNameFromPattern(getValue(0, ViewIdx(0)), views, time, view);
     }
 }
 
@@ -147,10 +133,16 @@ KnobOutputFile::typeName() const
 }
 
 QString
-KnobOutputFile::generateFileNameAtTime(SequenceTime time) const
+KnobOutputFile::generateFileNameAtTime(SequenceTime time, ViewSpec view) const
 {
-    int view = getHolder() ? getHolder()->getCurrentView() : 0;
-    return SequenceParsing::generateFileNameFromPattern(getValue(0), time, view).c_str();
+    std::vector<std::string> views;
+    if (getHolder() && getHolder()->getApp()) {
+        views = getHolder()->getApp()->getProject()->getProjectViewNames();
+    }
+    if (!view.isViewIdx()) {
+        view = ViewIdx(0);
+    }
+    return QString::fromUtf8(SequenceParsing::generateFileNameFromPattern(getValue(0, ViewIdx(0)), views, time, view).c_str());
 }
 
 /***********************************KnobPath*****************************************/
@@ -298,7 +290,7 @@ KnobPath::setPaths(const std::list<std::pair<std::string,std::string> >& paths)
     if (!_isMultiPath) {
         return;
     }
-    setValue(encodeToMultiPathFormat(paths), 0);
+    setValue(encodeToMultiPathFormat(paths));
 }
 
 std::string
@@ -331,7 +323,7 @@ void
 KnobPath::prependPath(const std::string& path)
 {
     if (!_isMultiPath) {
-        setValue(path, 0);
+        setValue(path);
     } else {
         std::list<std::pair<std::string,std::string> > paths;
         getVariables(&paths);
@@ -345,7 +337,7 @@ void
 KnobPath::appendPath(const std::string& path)
 {
     if (!_isMultiPath) {
-        setValue(path, 0);
+        setValue(path);
     } else {
         std::list<std::pair<std::string,std::string> > paths;
         getVariables(&paths);

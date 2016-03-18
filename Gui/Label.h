@@ -58,12 +58,18 @@ public:
     
     void setAltered(bool a);
     
+    virtual bool canAlter() const
+    {
+        return true;
+    }
+    
 protected:
     
     void refreshStyle();
     
 private:
     
+    //When altered, the label is displayed in grey instead of white
     bool altered;
 };
 

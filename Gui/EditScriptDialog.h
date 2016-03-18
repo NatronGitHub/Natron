@@ -55,7 +55,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     
-    EditScriptDialog(QWidget* parent);
+    EditScriptDialog(Gui* gui, QWidget* parent);
     
     virtual ~EditScriptDialog();
     

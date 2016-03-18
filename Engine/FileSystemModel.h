@@ -28,6 +28,8 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/weak_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #endif
 #include <QThread>
 #include <QtCore/QAbstractItemModel>
@@ -38,30 +40,34 @@
 
 NATRON_NAMESPACE_ENTER;
 
+class FileSystemModel;
 struct FileSystemItemPrivate;
-class FileSystemItem
+class FileSystemItem : public boost::enable_shared_from_this<FileSystemItem>
 {
     
 public:
 
     
-    FileSystemItem(bool isDir,
+    FileSystemItem(const boost::shared_ptr<FileSystemModel>& model,
+                   bool isDir,
                    const QString& filename,
                    const QString& userFriendlySequenceName,
                    const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
                    const QDateTime& dateModified,
                    quint64 size,
-                   FileSystemItem* parent = 0);
+                   const boost::shared_ptr<FileSystemItem>& parent = boost::shared_ptr<FileSystemItem>());
     
     ~FileSystemItem();
     
+    void resetModelPointer();
+
     boost::shared_ptr<FileSystemItem> childAt(int position) const;
     
     int childCount() const;
     
     int indexInParent() const;
     
-    FileSystemItem* parent() const;
+    boost::shared_ptr<FileSystemItem> getParentItem() const;
     
     /**
      * @brief If the item is a file this function will return its absolute file-path.
@@ -125,7 +131,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     
-    FileGathererThread(FileSystemModel* model);
+    FileGathererThread(const boost::shared_ptr<FileSystemModel>& model);
     
     virtual ~FileGathererThread();
     
@@ -178,7 +184,7 @@ public:
 };
 
 struct FileSystemModelPrivate;
-class FileSystemModel : public QAbstractItemModel
+class FileSystemModel : public QAbstractItemModel, public boost::enable_shared_from_this<FileSystemModel>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -199,7 +205,16 @@ public:
         EndSections //do not use
     };
     
-    FileSystemModel(SortableViewI* view);
+		
+#ifdef __NATRON_WIN32__
+	static QString mapPathWithDriveLetterToPathWithNetworkShareName(const QString& path);
+	static void initDriveLettersToNetworkShareNamesMapping();
+#endif
+	
+	
+    FileSystemModel();
+    
+    void initialize(SortableViewI* view);
     
     ///////////////////////////////////////Overriden from QAbstractItemModel///////////////////////////////////////
     
@@ -250,7 +265,7 @@ public:
      * You may only use these methods once the directoryLoaded signal is sent, indicating that the worker thread
      * has gathered all info.
      **/
-    void setRootPath(const QString& path);
+    bool setRootPath(const QString& path);
     
     QVariant myComputer(int role = Qt::DisplayRole) const WARN_UNUSED_RETURN;
     
@@ -297,6 +312,9 @@ public:
     
     void onSortIndicatorChanged(int logicalIndex,Qt::SortOrder order);
     
+    void resetCompletly(bool rebuild);
+
+    
 public Q_SLOTS:
     
     void onDirectoryLoadedByGatherer(const QString& directory);
@@ -313,9 +331,21 @@ Q_SIGNALS:
     
 private:
     
+    void initGatherer();
+    
+    
+    boost::shared_ptr<FileSystemItem> mkPath(const QString& path);
+    
+    boost::shared_ptr<FileSystemItem> mkPathInternal(const boost::shared_ptr<FileSystemItem>& item,const QStringList& path,int index);
+    
+    boost::shared_ptr<FileSystemItem> getSharedItemPtr(FileSystemItem* item) const;
+    
+    boost::shared_ptr<FileSystemItem> getItem(const QModelIndex &index) const;
+
+    
     void cleanAndRefreshItem(const boost::shared_ptr<FileSystemItem>& item);
     
-    void resetCompletly();
+    friend class FileSystemItem;
     
     boost::scoped_ptr<FileSystemModelPrivate> _imp;
 };

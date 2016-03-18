@@ -42,6 +42,7 @@
 
 #include "Engine/EngineFwd.h"
 #include "Engine/RectI.h"
+#include "Engine/ThreadPool.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -369,7 +370,11 @@ private:
     boost::scoped_ptr<TrackerContextPrivate> _imp;
 };
 
-class TrackSchedulerBase : public QThread
+class TrackSchedulerBase
+: public QThread
+#ifdef QT_CUSTOM_THREADPOOL
+, public AbortableThread
+#endif
 {
     Q_OBJECT
     

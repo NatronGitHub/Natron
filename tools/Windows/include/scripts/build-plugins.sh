@@ -6,6 +6,9 @@
 source `pwd`/common.sh || exit 1
 
 
+PID=$$
+
+
 if [ "$1" = "32" ]; then
   INSTALL_PATH=$INSTALL32_PATH
   PKG_PREFIX=$PKG_PREFIX32
@@ -20,15 +23,29 @@ else
 fi
 
 TMP_BUILD_DIR=$TMP_PATH$BIT
+# make kill bot
+KILLSCRIPT="$TMP_BUILD_DIR/killbot$$.sh"
+cat << 'EOF' > "$KILLSCRIPT"
+#!/bin/sh
+PARENT=$1
+sleep 30m
+if [ "$PARENT" = "" ]; then
+exit 1
+fi
+PIDS=`ps aux|awk '{print $2}'|grep $PARENT`
+if [ "$PIDS" = "$PARENT" ]; then
+kill -15 $PARENT
+fi
+EOF
+chmod +x $KILLSCRIPT
 
-
-#If "workshop" is passed, use master branch for all plug-ins otherwise use the git tags in common.sh
+#If "master" is passed, use master branch for all plug-ins otherwise use the git tags in common.sh
 IO_BRANCH=master
 MISC_BRANCH=master
 ARENA_BRANCH=master
 CV_BRANCH=master
 
-if [ "$2" != "workshop" ]; then
+if [ "$2" != "master" ]; then
   IO_BRANCH=$IOPLUG_GIT_TAG
   MISC_BRANCH=$MISCPLUG_GIT_TAG
   ARENA_V=$ARENAPLUG_GIT_TAG
@@ -85,6 +102,9 @@ if [ "$BUILD_MISC" = "1" ]; then
 
 cd $TMP_BUILD_DIR || exit 1
 
+$KILLSCRIPT $PID &
+KILLBOT=$!
+
 git clone $GIT_MISC || exit 1
 cd openfx-misc || exit 1
 git checkout ${MISC_BRANCH} || exit 1
@@ -93,6 +113,8 @@ if [ "$MISC_BRANCH" = "master" ]; then
     # the snapshots are always built with the latest version of submodules
     git submodule foreach git pull origin master
 fi
+
+kill -9 $KILLBOT
 
 MISC_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 
@@ -115,6 +137,7 @@ make -C CImg CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp" CPPFLAGS="-I${INSTAL
 make CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" CONFIG=relwithdebinfo BITS=$BIT -j${MKJOBS} || exit 1
 
 cp -a */MINGW${BIT}_NT-6.1-${BIT}-*/*.ofx.bundle $INSTALL_PATH/Plugins/ || exit 1
+echo $MISC_V > $INSTALL_PATH/Plugins/Misc.ofx.bundle-version.txt || exit 1
 
 mkdir -p $INSTALL_PATH/docs/openfx-misc || exit 1
 cp LICENSE README* $INSTALL_PATH/docs/openfx-misc/ || exit 1
@@ -127,6 +150,9 @@ if [ "$BUILD_IO" = "1" ]; then
 
 cd $TMP_BUILD_DIR || exit 1
 
+$KILLSCRIPT $PID &
+KILLBOT=$!
+
 git clone $GIT_IO || exit 1
 cd openfx-io || exit 1
 git checkout ${IO_BRANCH} || exit 1
@@ -135,6 +161,8 @@ if [ "$IO_BRANCH" = "master" ]; then
     # the snapshots are always built with the latest version of submodules
     git submodule foreach git pull origin master
 fi
+
+kill -9 $KILLBOT
 
 IO_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 
@@ -156,6 +184,7 @@ sed -i "s/IOPLUG_DEVEL_GIT=.*/IOPLUG_DEVEL_GIT=${IO_V}/" $CWD/commits-hash.sh ||
 env CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" make CONFIG=relwithdebinfo BITS=$BIT -j${MKJOBS} || exit 1
 
 cp -a IO/MINGW${BIT}_NT-6.1-${BIT}-*/IO.ofx.bundle $INSTALL_PATH/Plugins/ || exit 1
+echo $IO_V > $INSTALL_PATH/Plugins/IO.ofx.bundle-version.txt || exit 1
 
 mkdir -p $INSTALL_PATH/docs/openfx-io || exit 1
 cp LICENSE README* $INSTALL_PATH/docs/openfx-io/ || exit 1
@@ -167,6 +196,9 @@ fi
 if [ "$BUILD_ARENA" = "1" ]; then
 
 cd $TMP_BUILD_DIR || exit 1
+
+$KILLSCRIPT $PID &
+KILLBOT=$!
 
 git clone $GIT_ARENA || exit 1
 cd openfx-arena || exit 1
@@ -180,6 +212,8 @@ if [ "$ARENA_BRANCH" = "master" ]; then
        echo "Warning: openfx-arena submodules not updated..."
     fi
 fi
+
+kill -9 $KILLBOT
 
 ARENA_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 
@@ -200,6 +234,7 @@ sed -i "s/ARENAPLUG_DEVEL_GIT=.*/ARENAPLUG_DEVEL_GIT=${ARENA_V}/" $CWD/commits-h
 
 env CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" make MINGW=1 USE_SVG=1 USE_PANGO=1 STATIC=1 CONFIG=relwithdebinfo BITS=$BIT -j${MKJOBS} || exit 1
 cp -a Bundle/MINGW${BIT}_NT-6.1-${BIT}-*/Arena.ofx.bundle $INSTALL_PATH/Plugins/ || exit 1
+echo $ARENA_V > $INSTALL_PATH/Plugins/Arena.ofx.bundle-version.txt || exit 1
 
 
 mkdir -p $INSTALL_PATH/docs/openfx-arena || exit 1
@@ -249,5 +284,7 @@ cp LIC* READ* $INSTALL_PATH/docs/openfx-opencv/
 echo $CV_V > $INSTALL_PATH/docs/openfx-opencv/VERSION || exit 1
 
 fi
+
+rm -f $KILLSCRIPT
 
 echo "Done!"

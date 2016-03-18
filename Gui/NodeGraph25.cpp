@@ -94,36 +94,38 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
                 if (isViewer) {
                     ViewerGL* viewer = dynamic_cast<ViewerGL*>(isViewer->getUiContext());
                     assert(viewer);
-                    ViewerTab* tab = viewer->getViewerTab();
-                    assert(tab);
-                    
-                    TabWidget* foundTab = 0;
-                    QWidget* parent = tab->parentWidget();
-                    while (parent) {
-                        foundTab = dynamic_cast<TabWidget*>(parent);
-                        if (foundTab) {
-                            break;
-                        }
-                        parent = parent->parentWidget();
-                    }
-                    if (foundTab) {
-                        foundTab->setCurrentWidget(tab);
-                    } else {
-                        
-                        //try to find a floating window
-                        FloatingWidget* floating = 0;
-                        parent = tab->parentWidget();
+                    if (viewer) {
+                        ViewerTab* tab = viewer->getViewerTab();
+                        assert(tab);
+
+                        TabWidget* foundTab = 0;
+                        QWidget* parent = tab->parentWidget();
                         while (parent) {
-                            floating = dynamic_cast<FloatingWidget*>(parent);
-                            if (floating) {
+                            foundTab = dynamic_cast<TabWidget*>(parent);
+                            if (foundTab) {
                                 break;
                             }
                             parent = parent->parentWidget();
                         }
-                        if (floating) {
-                            floating->activateWindow();
+                        if (foundTab) {
+                            foundTab->setCurrentWidget(tab);
+                        } else {
+
+                            //try to find a floating window
+                            FloatingWidget* floating = 0;
+                            parent = tab->parentWidget();
+                            while (parent) {
+                                floating = dynamic_cast<FloatingWidget*>(parent);
+                                if (floating) {
+                                    break;
+                                }
+                                parent = parent->parentWidget();
+                            }
+                            if (floating) {
+                                floating->activateWindow();
+                            }
                         }
-                    }
+                    } // if (viewer)
                 }
             }
         }
@@ -148,8 +150,9 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
                         
                         isParentTab = dynamic_cast<TabWidget*>(lastSelectedGraph->parentWidget());
                         assert(isParentTab);
-                        isParentTab->appendTab(graph,graph);
-                        
+                        if (isParentTab) {
+                            isParentTab->appendTab(graph,graph);
+                        }
                     }
                     QTimer::singleShot(25, graph, SLOT(centerOnAllNodes()));
                 }
@@ -175,8 +178,8 @@ NodeGraph::event(QEvent* e)
 
             ///This allows us to have a non-modal dialog: when the user clicks outside of the dialog,
             ///it closes it.
-            QObject::connect( nodeCreation,SIGNAL( accepted() ),this,SLOT( onNodeCreationDialogFinished() ) );
-            QObject::connect( nodeCreation,SIGNAL( rejected() ),this,SLOT( onNodeCreationDialogFinished() ) );
+            QObject::connect( nodeCreation,SIGNAL(accepted()),this,SLOT(onNodeCreationDialogFinished()) );
+            QObject::connect( nodeCreation,SIGNAL(rejected()),this,SLOT(onNodeCreationDialogFinished()) );
             nodeCreation->show();
 
             takeClickFocus();
@@ -198,12 +201,12 @@ NodeGraph::onNodeCreationDialogFinished()
         QDialog::DialogCode ret = (QDialog::DialogCode)dialog->result();
         int major;
         QString res = dialog->getNodeName(&major);
-        _imp->_lastNodeCreatedName = res;
+        
         dialog->deleteLater();
 
         switch (ret) {
         case QDialog::Accepted: {
-            
+            _imp->_lastNodeCreatedName = res;
             const PluginsMap & allPlugins = appPTR->getPluginsList();
             PluginsMap::const_iterator found = allPlugins.find(res.toStdString());
             if (found != allPlugins.end()) {
@@ -243,11 +246,14 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
 
     bool accept = true;
     
+#ifndef NATRON_ENABLE_IO_META_NODES
     if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateReader, modifiers, key) ) {
         getGui()->createReader();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateWriter, modifiers, key) ) {
         getGui()->createWriter();
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRemoveNodes, modifiers, key) ) {
+    } else
+#endif
+    if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRemoveNodes, modifiers, key) ) {
         deleteSelection();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphForcePreview, modifiers, key) ) {
         forceRefreshAllPreviews();
@@ -405,13 +411,13 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                 Plugin* plugin = *it->second.rbegin();
                 
                 if ( plugin->getHasShortcut() ) {
-                    QString group(kShortcutGroupNodes);
+                    QString group = QString::fromUtf8(kShortcutGroupNodes);
                     QStringList groupingSplit = plugin->getGrouping();
                     for (int j = 0; j < groupingSplit.size(); ++j) {
-                        group.push_back('/');
+                        group.push_back(QLatin1Char('/'));
                         group.push_back(groupingSplit[j]);
                     }
-                    if ( isKeybind(group.toStdString().c_str(), plugin->getPluginID(), modifiers, key) ) {
+                    if ( isKeybind(group.toStdString(), plugin->getPluginID().toStdString(), modifiers, key) ) {
                         QPointF hint = mapToScene( mapFromGlobal( QCursor::pos() ) );
                         
                         CreateNodeArgs args(plugin->getPluginID(), eCreateNodeReasonUserCreate, getGroup());

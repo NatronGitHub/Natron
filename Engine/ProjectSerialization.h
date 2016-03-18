@@ -177,7 +177,7 @@ public:
                     for (std::size_t i = foundV; i < foundFrom; ++i) {
                         vStr.push_back(natronVersion[i]);
                     }
-                    QStringList splits = QString(vStr.c_str()).split('.');
+                    QStringList splits = QString::fromUtf8(vStr.c_str()).split(QLatin1Char('.'));
                     if (splits.size() == 3) {
                         int major,minor,rev;
                         major = splits[0].toInt();

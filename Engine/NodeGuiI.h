@@ -24,6 +24,7 @@
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
+#include <list>
 
 #include "Global/KeySymbols.h"
 #include "Global/Enums.h"
@@ -141,7 +142,7 @@ public :
     
     virtual void setPluginDescription(const std::string& description) = 0;
 
-    virtual void setPluginIDAndVersion(const std::string& pluginLabel, const std::string& pluginID, unsigned int version) = 0;
+    virtual void setPluginIDAndVersion(const std::list<std::string>& grouping, const std::string& pluginLabel, const std::string& pluginID, unsigned int version) = 0;
     
     virtual bool isUserSelected() const = 0;
     

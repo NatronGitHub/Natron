@@ -63,6 +63,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
 #define kMergeOFXParamOperation "operation"
@@ -104,12 +105,12 @@ RotoDrawableItem::RotoDrawableItem(const boost::shared_ptr<RotoContext>& context
       , _imp( new RotoDrawableItemPrivate(isStroke) )
 {
 #ifdef NATRON_ROTO_INVERTIBLE
-    QObject::connect( _imp->inverted->getSignalSlotHandler().get(), SIGNAL( valueChanged(int,int) ), this, SIGNAL( invertedStateChanged() ) );
+    QObject::connect( _imp->inverted->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SIGNAL(invertedStateChanged()) );
 #endif
-    QObject::connect( this, SIGNAL( overlayColorChanged() ), context.get(), SIGNAL( refreshViewerOverlays() ) );
-    QObject::connect( _imp->color->getSignalSlotHandler().get(), SIGNAL( valueChanged(int,int) ), this, SIGNAL( shapeColorChanged() ) );
-    QObject::connect( _imp->compOperator->getSignalSlotHandler().get(), SIGNAL( valueChanged(int,int) ), this,
-                      SIGNAL( compositingOperatorChanged(int,int) ) );
+    QObject::connect( this, SIGNAL(overlayColorChanged()), context.get(), SIGNAL(refreshViewerOverlays()) );
+    QObject::connect( _imp->color->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SIGNAL(shapeColorChanged()) );
+    QObject::connect( _imp->compOperator->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this,
+                      SIGNAL(compositingOperatorChanged(ViewSpec,int,int)) );
     
     std::vector<std::string> operators;
     std::vector<std::string> tooltips;
@@ -162,7 +163,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     
     const std::list<KnobPtr >& knobs = getKnobs();
     for (std::list<KnobPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(valueChanged(int,int)), this, SLOT(onRotoKnobChanged(int,int)));
+        QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onRotoKnobChanged(ViewSpec,int,int)));
     }
     
     boost::shared_ptr<RotoContext> context = getContext();
@@ -170,12 +171,12 @@ RotoDrawableItem::createNodes(bool connectNodes)
   
     
     AppInstance* app = node->getApp();
-    QString fixedNamePrefix(node->getScriptName_mt_safe().c_str());
-    fixedNamePrefix.append('_');
-    fixedNamePrefix.append(getScriptName().c_str());
-    fixedNamePrefix.append('_');
+    QString fixedNamePrefix = QString::fromUtf8(node->getScriptName_mt_safe().c_str());
+    fixedNamePrefix.append(QLatin1Char('_'));
+    fixedNamePrefix.append(QString::fromUtf8(getScriptName().c_str()));
+    fixedNamePrefix.append(QLatin1Char('_'));
     fixedNamePrefix.append(QString::number(context->getAge()));
-    fixedNamePrefix.append('_');
+    fixedNamePrefix.append(QLatin1Char('_'));
     
     QString pluginId;
     
@@ -192,17 +193,17 @@ RotoDrawableItem::createNodes(bool connectNodes)
   
     switch (type) {
         case eRotoStrokeTypeBlur:
-            pluginId = PLUGINID_OFX_BLURCIMG;
+            pluginId = QString::fromUtf8(PLUGINID_OFX_BLURCIMG);
             break;
         case eRotoStrokeTypeEraser:
-            pluginId = PLUGINID_OFX_CONSTANT;
+            pluginId = QString::fromUtf8(PLUGINID_OFX_CONSTANT);
             break;
         case eRotoStrokeTypeSolid:
-            pluginId = PLUGINID_OFX_ROTO;
+            pluginId = QString::fromUtf8(PLUGINID_OFX_ROTO);
             break;
         case eRotoStrokeTypeClone:
         case eRotoStrokeTypeReveal:
-            pluginId = PLUGINID_OFX_TRANSFORM;
+            pluginId = QString::fromUtf8(PLUGINID_OFX_TRANSFORM);
             break;
         case eRotoStrokeTypeBurn:
         case eRotoStrokeTypeDodge:
@@ -212,13 +213,13 @@ RotoDrawableItem::createNodes(bool connectNodes)
             //todo
             break;
         case eRotoStrokeTypeSmear:
-            pluginId = PLUGINID_NATRON_ROTOSMEAR;
+            pluginId = QString::fromUtf8(PLUGINID_NATRON_ROTOSMEAR);
             break;
     }
     
     QString baseFixedName = fixedNamePrefix;
     if (!pluginId.isEmpty()) {
-        fixedNamePrefix.append("Effect");
+        fixedNamePrefix.append(QString::fromUtf8("Effect"));
         
         CreateNodeArgs args(pluginId, eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
         args.fixedName = fixedNamePrefix;
@@ -233,8 +234,8 @@ RotoDrawableItem::createNodes(bool connectNodes)
         if (type == eRotoStrokeTypeClone || type == eRotoStrokeTypeReveal) {
             {
                 fixedNamePrefix = baseFixedName;
-                fixedNamePrefix.append("TimeOffset");
-                CreateNodeArgs args(PLUGINID_OFX_TIMEOFFSET, eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
+                fixedNamePrefix.append(QString::fromUtf8("TimeOffset"));
+                CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_TIMEOFFSET), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
                 args.fixedName = fixedNamePrefix;
                 args.createGui = false;
                 args.addToProject = false;
@@ -247,8 +248,8 @@ RotoDrawableItem::createNodes(bool connectNodes)
             }
             {
                 fixedNamePrefix = baseFixedName;
-                fixedNamePrefix.append("FrameHold");
-                CreateNodeArgs args(PLUGINID_OFX_FRAMEHOLD, eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
+                fixedNamePrefix.append(QString::fromUtf8("FrameHold"));
+                CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_FRAMEHOLD), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
                 args.fixedName = fixedNamePrefix;
                 args.createGui = false;
                 args.addToProject = false;
@@ -263,9 +264,9 @@ RotoDrawableItem::createNodes(bool connectNodes)
     }
     
     fixedNamePrefix = baseFixedName;
-    fixedNamePrefix.append("Merge");
+    fixedNamePrefix.append(QString::fromUtf8("Merge"));
     
-    CreateNodeArgs args(PLUGINID_OFX_MERGE, eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
+    CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_MERGE), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
     args.fixedName = fixedNamePrefix;
     args.createGui = false;
     args.addToProject = false;
@@ -276,7 +277,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     }
     assert(_imp->mergeNode);
     
-    if (type != eRotoStrokeTypeSolid) {
+    if (type != eRotoStrokeTypeSolid && type != eRotoStrokeTypeSmear) {
         int maxInp = _imp->mergeNode->getMaxInputCount();
         for (int i = 0; i < maxInp; ++i) {
             if (_imp->mergeNode->getEffectInstance()->isInputMask(i)) {
@@ -284,6 +285,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
                 //Connect this rotopaint node as a mask
                 bool ok = _imp->mergeNode->connectInput(node, i);
                 assert(ok);
+                Q_UNUSED(ok);
                 break;
             }
         }
@@ -304,7 +306,9 @@ RotoDrawableItem::createNodes(bool connectNodes)
     } else {
         op = eMergeCopy;
     }
-    mergeOp->setValueFromLabel(Merge::getOperatorString(op), 0);
+    if (mergeOp) {
+        mergeOp->setValueFromLabel(Merge::getOperatorString(op), 0);
+    }
     compOp->setValueFromLabel(Merge::getOperatorString(op), 0);
 
     if (isStroke) {
@@ -313,14 +317,14 @@ RotoDrawableItem::createNodes(bool connectNodes)
             KnobPtr knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
             KnobDouble* isDbl = dynamic_cast<KnobDouble*>(knob.get());
             if (isDbl) {
-                isDbl->setValues(strength, strength, eValueChangedReasonNatronInternalEdited);
+                isDbl->setValues(strength, strength, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
             }
         } else if (type == eRotoStrokeTypeSharpen) {
             //todo
         } else if (type == eRotoStrokeTypeSmear) {
             boost::shared_ptr<KnobDouble> spacingKnob = isStroke->getBrushSpacingKnob();
             assert(spacingKnob);
-            spacingKnob->setValue(0.05, 0);
+            spacingKnob->setValue(0.05);
         }
         
         setNodesThreadSafetyForRotopainting();
@@ -479,7 +483,7 @@ RotoDrawableItem::findPreviousInHierarchy()
 }
 
 void
-RotoDrawableItem::onRotoKnobChanged(int /*dimension*/, int reason)
+RotoDrawableItem::onRotoKnobChanged(ViewSpec /*view*/,int /*dimension*/, int reason)
 {
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>(sender());
     if (!handler) {
@@ -530,7 +534,7 @@ RotoDrawableItem::rotoKnobChanged(const KnobPtr& knob, ValueChangedReasonEnum re
                 KnobPtr knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
                 KnobDouble* isDbl = dynamic_cast<KnobDouble*>(knob.get());
                 if (isDbl) {
-                    isDbl->setValues(strength, strength, eValueChangedReasonNatronInternalEdited);
+                    isDbl->setValues(strength, strength, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
                 }
             }   break;
             case eRotoStrokeTypeSharpen: {
@@ -554,7 +558,7 @@ RotoDrawableItem::rotoKnobChanged(const KnobPtr& knob, ValueChangedReasonEnum re
         KnobInt* offset = dynamic_cast<KnobInt*>(offsetKnob.get());
         if (offset) {
             double value = _imp->timeOffset->getValue();
-            offset->setValue(value,0);
+            offset->setValue(value);
         }
     } else if (knob == _imp->timeOffsetMode && _imp->timeOffsetNode) {
         refreshNodesConnections();
@@ -883,26 +887,23 @@ serializeRotoKnob(const KnobPtr & knob,
                   KnobSerialization* serialization)
 {
     std::pair<int, KnobPtr > master = knob->getMaster(0);
-    bool wasSlaved = false;
 
     if (master.second) {
-        wasSlaved = true;
-        knob->unSlave(0,false);
+        serialization->initialize(master.second);
+    } else {
+        serialization->initialize(knob);
     }
 
-    serialization->initialize(knob);
-
-    if (wasSlaved) {
-        knob->slaveTo(0, master.second, master.first);
-    }
 }
 
 void
 RotoDrawableItem::save(RotoItemSerialization *obj) const
 {
     RotoDrawableItemSerialization* s = dynamic_cast<RotoDrawableItemSerialization*>(obj);
-
     assert(s);
+    if (!s) {
+        throw std::logic_error("RotoDrawableItem::save()");
+    }
     for (std::list<KnobPtr >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
         boost::shared_ptr<KnobSerialization> k(new KnobSerialization());
         serializeRotoKnob(*it,k.get());
@@ -1053,7 +1054,7 @@ RotoDrawableItem::isActivated(double time) const
 void
 RotoDrawableItem::setActivated(bool a, double time)
 {
-    _imp->activated->setValueAtTime(time, a, 0);
+    _imp->activated->setValueAtTime(time, a, ViewSpec::all(), 0);
     getContext()->onItemKnobChanged();
 }
 
@@ -1067,7 +1068,7 @@ RotoDrawableItem::getOpacity(double time) const
 void
 RotoDrawableItem::setOpacity(double o,double time)
 {
-    _imp->opacity->setValueAtTime(time, o, 0);
+    _imp->opacity->setValueAtTime(time, o, ViewSpec::all(), 0);
     getContext()->onItemKnobChanged();
 }
 
@@ -1081,7 +1082,7 @@ RotoDrawableItem::getFeatherDistance(double time) const
 void
 RotoDrawableItem::setFeatherDistance(double d,double time)
 {
-    _imp->feather->setValueAtTime(time, d, 0);
+    _imp->feather->setValueAtTime(time, d, ViewSpec::all(), 0);
     getContext()->onItemKnobChanged();
 }
 
@@ -1089,13 +1090,13 @@ RotoDrawableItem::setFeatherDistance(double d,double time)
 int
 RotoDrawableItem::getNumKeyframesFeatherDistance() const
 {
-    return _imp->feather->getKeyFramesCount(0);
+    return _imp->feather->getKeyFramesCount(ViewSpec::current(), 0);
 }
 
 void
 RotoDrawableItem::setFeatherFallOff(double f,double time)
 {
-    _imp->featherFallOff->setValueAtTime(time, f, 0);
+    _imp->featherFallOff->setValueAtTime(time, f, ViewSpec::all(), 0);
     getContext()->onItemKnobChanged();
 }
 
@@ -1128,9 +1129,9 @@ RotoDrawableItem::getColor(double time,
 void
 RotoDrawableItem::setColor(double time,double r,double g,double b)
 {
-    _imp->color->setValueAtTime(time, r, 0);
-    _imp->color->setValueAtTime(time, g, 1);
-    _imp->color->setValueAtTime(time, b, 2);
+    _imp->color->setValueAtTime(time, r, ViewSpec::all(), 0);
+    _imp->color->setValueAtTime(time, g, ViewSpec::all(), 1);
+    _imp->color->setValueAtTime(time, b, ViewSpec::all(), 2);
     getContext()->onItemKnobChanged();
 }
 
@@ -1143,7 +1144,7 @@ RotoDrawableItem::getCompositingOperator() const
 void
 RotoDrawableItem::setCompositingOperator(int op)
 {
-    _imp->compOperator->setValue( op, 0);
+    _imp->compOperator->setValue( op);
 }
 
 std::string
@@ -1342,16 +1343,16 @@ RotoDrawableItem::getShutterTypeKnob() const
 void
 RotoDrawableItem::setKeyframeOnAllTransformParameters(double time)
 {
-    _imp->translate->setValueAtTime(time, _imp->translate->getValue(0), 0);
-    _imp->translate->setValueAtTime(time, _imp->translate->getValue(1), 1);
+    _imp->translate->setValueAtTime(time, _imp->translate->getValue(0), ViewSpec::all(), 0);
+    _imp->translate->setValueAtTime(time, _imp->translate->getValue(1), ViewSpec::all(), 1);
     
-    _imp->scale->setValueAtTime(time, _imp->scale->getValue(0), 0);
-    _imp->scale->setValueAtTime(time, _imp->scale->getValue(1), 1);
+    _imp->scale->setValueAtTime(time, _imp->scale->getValue(0), ViewSpec::all(), 0);
+    _imp->scale->setValueAtTime(time, _imp->scale->getValue(1), ViewSpec::all(), 1);
     
-    _imp->rotate->setValueAtTime(time, _imp->rotate->getValue(0), 0);
+    _imp->rotate->setValueAtTime(time, _imp->rotate->getValue(0), ViewSpec::all(), 0);
     
-    _imp->skewX->setValueAtTime(time, _imp->skewX->getValue(0), 0);
-    _imp->skewY->setValueAtTime(time, _imp->skewY->getValue(0), 0);
+    _imp->skewX->setValueAtTime(time, _imp->skewX->getValue(0), ViewSpec::all(), 0);
+    _imp->skewY->setValueAtTime(time, _imp->skewY->getValue(0), ViewSpec::all(), 0);
 }
 
 const std::list<KnobPtr >&
@@ -1399,33 +1400,33 @@ RotoDrawableItem::setTransform(double time, double tx, double ty, double sx, dou
     bool autoKeying = getContext()->isAutoKeyingEnabled();
     
     if (autoKeying) {
-        _imp->translate->setValueAtTime(time, tx, 0);
-        _imp->translate->setValueAtTime(time, ty, 1);
+        _imp->translate->setValueAtTime(time, tx, ViewSpec::all(), 0);
+        _imp->translate->setValueAtTime(time, ty, ViewSpec::all(), 1);
         
-        _imp->scale->setValueAtTime(time, sx, 0);
-        _imp->scale->setValueAtTime(time, sy, 1);
+        _imp->scale->setValueAtTime(time, sx, ViewSpec::all(), 0);
+        _imp->scale->setValueAtTime(time, sy, ViewSpec::all(), 1);
         
-        _imp->center->setValue(centerX, 0);
-        _imp->center->setValue(centerY, 1);
+        _imp->center->setValueAtTime(time, centerX, ViewSpec::all(), 0);
+        _imp->center->setValueAtTime(time, centerY, ViewSpec::all(), 1);
         
-        _imp->rotate->setValueAtTime(time, rot, 0);
+        _imp->rotate->setValueAtTime(time, rot, ViewSpec::all(), 0);
         
-        _imp->skewX->setValueAtTime(time, skewX, 0);
-        _imp->skewY->setValueAtTime(time, skewY, 0);
+        _imp->skewX->setValueAtTime(time, skewX, ViewSpec::all(), 0);
+        _imp->skewY->setValueAtTime(time, skewY, ViewSpec::all(), 0);
     } else {
-        _imp->translate->setValue(tx, 0);
-        _imp->translate->setValue(ty, 1);
+        _imp->translate->setValue(tx, ViewSpec::all(), 0);
+        _imp->translate->setValue(ty, ViewSpec::all(), 1);
         
-        _imp->scale->setValue(sx, 0);
-        _imp->scale->setValue(sy, 1);
+        _imp->scale->setValue(sx, ViewSpec::all(), 0);
+        _imp->scale->setValue(sy, ViewSpec::all(), 1);
         
-        _imp->center->setValue(centerX, 0);
-        _imp->center->setValue(centerY, 1);
+        _imp->center->setValue(centerX, ViewSpec::all(), 0);
+        _imp->center->setValue(centerY, ViewSpec::all(), 1);
         
-        _imp->rotate->setValue(rot, 0);
+        _imp->rotate->setValue(rot, ViewSpec::all(), 0);
         
-        _imp->skewX->setValue(skewX, 0);
-        _imp->skewY->setValue(skewY, 0);
+        _imp->skewX->setValue(skewX, ViewSpec::all(), 0);
+        _imp->skewY->setValue(skewY, ViewSpec::all(), 0);
 
     }
     

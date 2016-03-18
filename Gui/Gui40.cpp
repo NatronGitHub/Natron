@@ -49,6 +49,8 @@
 #include "Engine/Lut.h" // floatToInt, LutManager
 #include "Engine/Node.h"
 #include "Engine/Project.h"
+#include "Engine/ProcessHandler.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/AboutWindow.h"
@@ -62,6 +64,7 @@
 #include "Gui/RenderingProgressDialog.h"
 #include "Gui/RenderStatsDialog.h"
 #include "Gui/ShortCutEditor.h"
+#include "Gui/ProgressPanel.h"
 #include "Gui/Splitter.h"
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerGL.h"
@@ -129,7 +132,7 @@ Gui::openRecentFile()
 
     if (action) {
         QFileInfo f( action->data().toString() );
-        QString path = f.path() + '/';
+        QString path = f.path() + QLatin1Char('/');
         QString filename = path + f.fileName();
         int openedProject = appPTR->isProjectAlreadyOpened( filename.toStdString() );
         if (openedProject != -1) {
@@ -160,7 +163,7 @@ void
 Gui::updateRecentFileActions()
 {
     QSettings settings;
-    QStringList files = settings.value("recentFileList").toStringList();
+    QStringList files = settings.value(QString::fromUtf8("recentFileList")).toStringList();
     int numRecentFiles = std::min(files.size(), (int)NATRON_MAX_RECENT_FILES);
 
     for (int i = 0; i < numRecentFiles; ++i) {
@@ -178,7 +181,7 @@ QPixmap
 Gui::screenShot(QWidget* w)
 {
 #if QT_VERSION < 0x050000
-    if (w->objectName() == "CurveEditor") {
+    if (w->objectName() == QString::fromUtf8("CurveEditor")) {
         return QPixmap::grabWidget(w);
     }
 
@@ -196,7 +199,7 @@ Gui::onProjectNameChanged(const QString & filePath, bool modified)
     // http://doc.qt.io/qt-4.8/qwidget.html#windowModified-prop
     setWindowModified(modified);
     // http://doc.qt.io/qt-4.8/qwidget.html#windowFilePath-prop
-    setWindowFilePath(filePath.isEmpty() ? NATRON_PROJECT_UNTITLED : filePath);
+    setWindowFilePath(filePath.isEmpty() ? QString::fromUtf8(NATRON_PROJECT_UNTITLED) : filePath);
 }
 
 void
@@ -252,7 +255,7 @@ Gui::updateViewersViewsMenu(const std::vector<std::string>& viewNames)
 }
 
 void
-Gui::setViewersCurrentView(int view)
+Gui::setViewersCurrentView(ViewIdx view)
 {
     QMutexLocker l(&_imp->_viewerTabsMutex);
 
@@ -364,30 +367,6 @@ Gui::deselectAllNodes() const
     _imp->_nodeGraphArea->deselect();
 }
 
-void
-Gui::onProcessHandlerStarted(const QString & sequenceName,
-                             int firstFrame,
-                             int lastFrame,
-                             int frameStep,
-                             const boost::shared_ptr<ProcessHandler> & process)
-{
-    ///make the dialog which will show the progress
-    RenderingProgressDialog *dialog = new RenderingProgressDialog(this, sequenceName, firstFrame, lastFrame, frameStep, process, this);
-    QObject::connect(dialog,SIGNAL(accepted()),this,SLOT(onRenderProgressDialogFinished()));
-    QObject::connect(dialog,SIGNAL(rejected()),this,SLOT(onRenderProgressDialogFinished()));
-    dialog->show();
-}
-
-void
-Gui::onRenderProgressDialogFinished()
-{
-    RenderingProgressDialog* dialog = qobject_cast<RenderingProgressDialog*>(sender());
-    if (!dialog) {
-        return;
-    }
-    dialog->close();
-    dialog->deleteLater();
-}
 
 void
 Gui::setNextViewerAnchor(TabWidget* where)
@@ -437,7 +416,7 @@ Gui::getAvailablePaneName(const QString & baseName) const
     int baseNumber = _imp->_panes.size();
 
     if ( name.isEmpty() ) {
-        name.append("pane");
+        name.append(QString::fromUtf8("pane"));
         name.append( QString::number(baseNumber) );
     }
 
@@ -451,7 +430,7 @@ Gui::getAvailablePaneName(const QString & baseName) const
         }
         if (foundName) {
             ++baseNumber;
-            name = QString("pane%1").arg(baseNumber);
+            name = QString::fromUtf8("pane%1").arg(baseNumber);
         } else {
             break;
         }
@@ -501,6 +480,12 @@ ScriptEditor*
 Gui::getScriptEditor() const
 {
     return _imp->_scriptEditor;
+}
+
+ProgressPanel*
+Gui::getProgressPanel() const
+{
+    return _imp->_progressPanel;
 }
 
 PropertiesBinWrapper*
@@ -632,7 +617,7 @@ Gui::debugImage(const Image* image,
     
     U64 hashKey = image->getHashKey();
     QString hashKeyStr = QString::number(hashKey);
-    QString realFileName = filename.isEmpty() ? QString(hashKeyStr + ".png") : filename;
+    QString realFileName = filename.isEmpty() ? QString(hashKeyStr + QString::fromUtf8(".png")) : filename;
 #ifdef DEBUG
     qDebug() << "Writing image: " << realFileName;
     renderWindow.debug();
@@ -665,24 +650,48 @@ Gui::updateLastOpenedProjectPath(const QString & project)
 }
 
 void
-Gui::onWriterRenderStarted(const QString & sequenceName,
-                           int firstFrame,
-                           int lastFrame,
-                           int frameStep,
-                           OutputEffectInstance* writer)
+Gui::onRenderStarted(const QString & sequenceName,
+                     int firstFrame,int lastFrame,int frameStep,
+                     bool canPause,
+                     OutputEffectInstance* writer,
+                     const boost::shared_ptr<ProcessHandler> & process)
 {
     assert( QThread::currentThread() == qApp->thread() );
+    _imp->_progressPanel->startTask(writer->getNode(), firstFrame, lastFrame, frameStep, canPause, true, sequenceName, process);
+}
 
-    RenderingProgressDialog *dialog = new RenderingProgressDialog(this, sequenceName, firstFrame, lastFrame, frameStep,
-                                                                  boost::shared_ptr<ProcessHandler>(), this);
-    RenderEngine* engine = writer->getRenderEngine();
-    QObject::connect( dialog, SIGNAL( canceled() ), engine, SLOT( abortRendering_Blocking() ) );
-    QObject::connect( engine, SIGNAL( frameRendered(int) ), dialog, SLOT( onFrameRendered(int) ) );
-    QObject::connect( engine, SIGNAL( frameRenderedWithTimer(int,double,double) ), dialog, SLOT( onFrameRenderedWithTimer(int,double,double) ) );
-    QObject::connect( engine, SIGNAL( renderFinished(int) ), dialog, SLOT( onVideoEngineStopped(int) ) );
-    QObject::connect(dialog,SIGNAL(accepted()),this,SLOT(onRenderProgressDialogFinished()));
-    QObject::connect(dialog,SIGNAL(rejected()),this,SLOT(onRenderProgressDialogFinished()));
-    dialog->show();
+void
+Gui::onRenderRestarted(OutputEffectInstance* writer,
+                       const boost::shared_ptr<ProcessHandler> & process)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    _imp->_progressPanel->onTaskRestarted(writer->getNode(), process);
+}
+
+void
+Gui::ensureProgressPanelVisible()
+{
+    
+    TabWidget* pane = _imp->_progressPanel->getParentPane();
+    if (pane != 0) {
+        pane->setCurrentWidget(_imp->_progressPanel);
+    } else {
+        pane = _imp->_nodeGraphArea->getParentPane();
+        if (!pane) {
+            std::list<TabWidget*> tabs;
+            {
+                QMutexLocker k(&_imp->_panesMutex);
+                tabs = _imp->_panes;
+            }
+            if (tabs.empty()) {
+                return;
+            }
+            pane = tabs.front();
+        }
+        assert(pane);
+        pane->moveProgressPanelHere();
+    }
+
 }
 
 void
@@ -714,19 +723,19 @@ Gui::getOpenGLVersion() const
 QString
 Gui::getBoostVersion() const
 {
-    return QString(BOOST_LIB_VERSION);
+    return QString::fromUtf8(BOOST_LIB_VERSION);
 }
 
 QString
 Gui::getQtVersion() const
 {
-    return QString(QT_VERSION_STR) + " / " + qVersion();
+    return QString::fromUtf8(QT_VERSION_STR) + QString::fromUtf8(" / ") + QString::fromUtf8(qVersion());
 }
 
 QString
 Gui::getCairoVersion() const
 {
-    return QString(CAIRO_VERSION_STRING) + " / " + QString( cairo_version_string() );
+    return QString::fromUtf8(CAIRO_VERSION_STRING) + QString::fromUtf8(" / ") + QString::fromUtf8( cairo_version_string() );
 }
 
 void
@@ -746,7 +755,11 @@ Gui::onNodeNameChanged(const QString & /*name*/)
 void
 Gui::renderAllWriters()
 {
-    _imp->_appInstance->startWritersRendering(areRenderStatsEnabled(), false, std::list<std::string>(), std::list<std::pair<int,std::pair<int,int> > >() );
+    try {
+    _imp->_appInstance->startWritersRenderingFromNames(areRenderStatsEnabled(), false, std::list<std::string>(), std::list<std::pair<int,std::pair<int,int> > >() );
+    } catch (const std::exception& e) {
+        Dialogs::warningDialog(tr("Render").toStdString(), e.what());
+    }
 }
 
 void
@@ -757,49 +770,63 @@ Gui::renderSelectedNode()
         return;
     }
     
-    const NodesGuiList & selectedNodes = graph->getSelectedNodes();
+    NodesGuiList  selectedNodes = graph->getSelectedNodes();
 
     if ( selectedNodes.empty() ) {
         Dialogs::warningDialog( tr("Render").toStdString(), tr("You must select a node to render first!").toStdString() );
-    } else {
-        std::list<AppInstance::RenderWork> workList;
-
-        for (NodesGuiList::const_iterator it = selectedNodes.begin();
-             it != selectedNodes.end(); ++it) {
-            EffectInstPtr effect = (*it)->getNode()->getEffectInstance();
-            if (!effect) {
-                continue;
+        return;
+    }
+    std::list<AppInstance::RenderWork> workList;
+    
+    bool useStats = getApp()->isRenderStatsActionChecked();
+    for (NodesGuiList::const_iterator it = selectedNodes.begin();
+         it != selectedNodes.end(); ++it) {
+        
+        NodePtr internalNode = (*it)->getNode();
+        if (!internalNode) {
+            continue;
+        }
+        EffectInstPtr effect = internalNode->getEffectInstance();
+        if (!effect) {
+            continue;
+        }
+        if (effect->isWriter()) {
+            if (!effect->areKnobsFrozen()) {
+                //if ((*it)->getNode()->is)
+                ///if the node is a writer, just use it to render!
+                AppInstance::RenderWork w;
+                w.writer = dynamic_cast<OutputEffectInstance*>(effect.get());
+                assert(w.writer);
+                w.firstFrame = INT_MIN;
+                w.lastFrame = INT_MAX;
+                w.frameStep = INT_MIN;
+                w.useRenderStats = useStats;
+                workList.push_back(w);
             }
-            if (effect->isWriter()) {
-                if (!effect->areKnobsFrozen()) {
-                    //if ((*it)->getNode()->is)
-                    ///if the node is a writer, just use it to render!
+        } else {
+            if (selectedNodes.size() == 1) {
+                ///create a node and connect it to the node and use it to render
+#ifndef NATRON_ENABLE_IO_META_NODES
+                NodePtr writer = createWriter();
+#else
+                NodeGraph* graph = selectedNodes.front()->getDagGui();
+                NodePtr writer = getApp()->createWriter("", eCreateNodeReasonInternal, graph->getGroup());
+#endif
+                if (writer) {
                     AppInstance::RenderWork w;
-                    w.writer = dynamic_cast<OutputEffectInstance*>(effect.get());
+                    w.writer = dynamic_cast<OutputEffectInstance*>( writer->getEffectInstance().get() );
                     assert(w.writer);
                     w.firstFrame = INT_MIN;
                     w.lastFrame = INT_MAX;
                     w.frameStep = INT_MIN;
+                    w.useRenderStats = useStats;
                     workList.push_back(w);
-                }
-            } else {
-                if (selectedNodes.size() == 1) {
-                    ///create a node and connect it to the node and use it to render
-                    NodePtr writer = createWriter();
-                    if (writer) {
-                        AppInstance::RenderWork w;
-                        w.writer = dynamic_cast<OutputEffectInstance*>( writer->getEffectInstance().get() );
-                        assert(w.writer);
-                        w.firstFrame = INT_MIN;
-                        w.lastFrame = INT_MAX;
-                        w.frameStep = INT_MIN;
-                        workList.push_back(w);
-                    }
                 }
             }
         }
-        _imp->_appInstance->startWritersRendering(areRenderStatsEnabled(), false, workList);
     }
+    _imp->_appInstance->startWritersRendering(false, workList);
+    
 }
 
 void
@@ -859,19 +886,30 @@ void
 Gui::onTimelineTimeAboutToChange()
 {
     assert(QThread::currentThread() == qApp->thread());
-    _imp->wasLaskUserSeekDuringPlayback = false;
     const std::list<ViewerTab*>& viewers = getViewersList();
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
         RenderEngine* engine = (*it)->getInternalNode()->getRenderEngine();
-        _imp->wasLaskUserSeekDuringPlayback |= engine->abortRendering(true,false);
+        engine->abortRendering(true,false);
     }
 }
 
 void
-Gui::onTimeChanged(SequenceTime time,
+Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,
                          int reason)
 {
+    TimeLine* timeline = qobject_cast<TimeLine*>(sender());
+    if (timeline != getApp()->getTimeLine().get()) {
+        return;
+    }
+    
     assert(QThread::currentThread() == qApp->thread());
+    if (reason == eTimelineChangeReasonUserSeek ||
+        reason == eTimelineChangeReasonDopeSheetEditorSeek ||
+        reason == eTimelineChangeReasonCurveEditorSeek) {
+        if (getApp()->checkAllReadersModificationDate(true)) {
+            return;
+        }
+    }
     
     boost::shared_ptr<Project> project = getApp()->getProject();
     bool isPlayback = reason == eTimelineChangeReasonPlaybackSeek;
@@ -881,7 +919,14 @@ Gui::onTimeChanged(SequenceTime time,
         for (std::list<DockablePanel*>::const_iterator it = _imp->openedPanels.begin(); it!=_imp->openedPanels.end(); ++it) {
             NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(*it);
             if (nodePanel) {
-                nodePanel->getNode()->getNode()->getEffectInstance()->refreshAfterTimeChange(isPlayback, time);
+                NodePtr node = nodePanel->getNode()->getNode();
+                node->getEffectInstance()->refreshAfterTimeChange(isPlayback, time);
+                
+                NodesList children;
+                node->getChildrenMultiInstance(&children);
+                for (NodesList::iterator it2 = children.begin(); it2!=children.end(); ++it2) {
+                    (*it2)->getEffectInstance()->refreshAfterTimeChange(isPlayback, time);
+                }
             }
         }
     }

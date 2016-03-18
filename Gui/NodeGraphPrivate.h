@@ -196,6 +196,9 @@ public:
     
     NodesGuiList _selection;
     
+    //To avoid calling unsetCursor too much
+    bool cursorSet;
+    
     std::map<NodeGuiPtr,NodesGuiList> _nodesWithinBDAtPenDown;
     
     QRectF _selectionRect;

@@ -29,6 +29,7 @@
 #include <boost/shared_ptr.hpp>
 #endif
 #include "Engine/OverlaySupport.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -47,12 +48,17 @@ public:
     virtual void getViewportSize(double &width, double &height) const = 0;
     virtual void getPixelScale(double & xScale, double & yScale) const  = 0;
     virtual void getBackgroundColour(double &r, double &g, double &b) const = 0;
-    virtual void copyAnimationToClipboard() const = 0;
+    virtual void copyAnimationToClipboard(int/* dimension = -1*/) const {}
+    virtual void copyValuesToClipboard(int /*dimension = -1*/) const {}
+    virtual void copyLinkToClipboard(int /*dimension = -1*/) const {}
     virtual bool isGuiFrozenForPlayback() const = 0;
     virtual void saveOpenGLContext() = 0;
     virtual void restoreOpenGLContext() = 0;
     virtual unsigned int getCurrentRenderScale() const { return 0; }
-    virtual boost::shared_ptr<Curve> getCurve(int dimension) const = 0;
+    virtual boost::shared_ptr<Curve> getCurve(ViewSpec view, int dimension) const = 0;
+    
+    virtual bool getAllDimensionsVisible() const = 0;
+    
 protected:
 
     ///Should set to the underlying knob the gui ptr

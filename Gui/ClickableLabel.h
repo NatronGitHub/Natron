@@ -25,6 +25,10 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#endif
+
 #include "Global/Macros.h"
 
 CLANG_DIAG_OFF(deprecated)
@@ -34,9 +38,8 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/Macros.h"
-#include "Gui/GuiFwd.h"
-
 #include "Gui/Label.h"
+#include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
  
@@ -54,6 +57,10 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
+    ClickableLabel(const QPixmap &icon,
+                   QWidget *parent);
+
+    
     ClickableLabel(const QString &text,
                    QWidget *parent);
 
@@ -70,7 +77,7 @@ public:
 
     bool getDirty() const
     {
-        return dirty;
+        return _dirty;
     }
 
     ///Updates the text as setText does but also keeps the current color info
@@ -78,38 +85,77 @@ public:
 
     int getAnimation() const
     {
-        return animation;
+        return _animation;
     }
 
     void setAnimation(int i);
 
     bool isReadOnly() const
     {
-        return readOnly;
+        return _readOnly;
     }
 
     void setReadOnly(bool readOnly);
 
     bool isSunken() const
     {
-        return sunkenStyle;
+        return _sunkenStyle;
     }
 
     void setSunken(bool s);
+    
+    void setBold(bool b);
+    
+    virtual bool canAlter() const OVERRIDE FINAL;
 
 Q_SIGNALS:
     void clicked(bool);
 
+protected:
+    
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE;
+    
 private:
-    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
+    
     virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
 
 private:
     bool _toggled;
-    bool dirty;
-    bool readOnly;
-    int animation;
-    bool sunkenStyle;
+    bool _bold;
+    bool _dirty;
+    bool _readOnly;
+    int _animation;
+    bool _sunkenStyle;
+};
+
+
+class KnobClickableLabel : public ClickableLabel
+{
+  
+public:
+    
+    KnobClickableLabel(const QPixmap& icon, const KnobGuiPtr& knob, QWidget* parent = 0);
+    
+    KnobClickableLabel(const QString& text, const KnobGuiPtr& knob, QWidget* parent = 0);
+    
+    virtual ~KnobClickableLabel();
+    
+private:
+    
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE FINAL;
+    virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
+    virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
+    virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
+    virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
+
+    boost::scoped_ptr<KnobWidgetDnD> _dnd;
 };
 
 NATRON_NAMESPACE_EXIT;

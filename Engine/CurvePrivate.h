@@ -38,6 +38,8 @@
 #include "Engine/KnobFile.h"
 #include "Engine/EngineFwd.h"
 
+//#define NATRON_CURVE_USE_CACHE
+
 NATRON_NAMESPACE_ENTER;
 
 struct CurvePrivate
@@ -53,7 +55,11 @@ struct CurvePrivate
     };
 
     KeyFrameSet keyFrames;
+    
+#ifdef NATRON_CURVE_USE_CACHE
     std::map<double,double> resultCache; //< a cache for interpolations
+#endif
+    
     KnobI* owner;
     int dimensionInOwner;
     CurveTypeEnum type;
@@ -66,7 +72,9 @@ struct CurvePrivate
 
     CurvePrivate()
     : keyFrames()
+#ifdef NATRON_CURVE_USE_CACHE
     , resultCache()
+#endif
     , owner(NULL)
     , dimensionInOwner(-1)
     , type(eCurveTypeDouble)

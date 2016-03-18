@@ -436,21 +436,21 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
 
     {
         EffectInstance* effect = dynamic_cast<EffectInstance*>(panel->getHolder());
-        QString title = "Add Parameter";
+        QString title = QString::fromUtf8("Add Parameter");
         if (!knob) {
             // Add...
             if (effect) {
-                title += " to ";
-                title += effect->getScriptName().c_str();
+                title += QString::fromUtf8(" to ");
+                title += QString::fromUtf8(effect->getScriptName().c_str());
             }
         } else {
             // Edit...
-            title = "Edit Parameter ";
+            title = QString::fromUtf8("Edit Parameter ");
             if (effect) {
-                title += effect->getScriptName().c_str();
-                title += '.';
+                title += QString::fromUtf8(effect->getScriptName().c_str());
+                title += QChar::fromLatin1('.');
             }
-            title += knob->getName().c_str();
+            title += QString::fromUtf8(knob->getName().c_str());
         }
         setWindowTitle(title);
     }
@@ -499,7 +499,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         _imp->nameLineEdit->setToolTip(GuiUtils::convertFromPlainText(tr("The name of the parameter as it will be used in Python scripts"), Qt::WhiteSpaceNormal));
         
         if (knob) {
-            _imp->nameLineEdit->setText(knob->getName().c_str());
+            _imp->nameLineEdit->setText(QString::fromUtf8(knob->getName().c_str()));
         }
         firstRowLayout->addWidget(_imp->nameLineEdit);
         firstRowLayout->addStretch();
@@ -516,7 +516,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         _imp->labelLineEdit = new LineEdit(secondRowContainer);
         _imp->labelLineEdit->setToolTip(GuiUtils::convertFromPlainText(tr("The label of the parameter as displayed on the graphical user interface"), Qt::WhiteSpaceNormal));
         if (knob) {
-            _imp->labelLineEdit->setText(knob->getLabel().c_str());
+            _imp->labelLineEdit->setText(QString::fromUtf8(knob->getLabel().c_str()));
         }
         secondRowLayout->addWidget(_imp->labelLineEdit);
         _imp->hideLabel = new Label(tr("Hide:"),secondRowContainer);
@@ -618,7 +618,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         _imp->tooltipArea->setToolTip(GuiUtils::convertFromPlainText(tr("The help tooltip that will appear when hovering the parameter with the mouse."), Qt::WhiteSpaceNormal));
         _imp->mainLayout->addRow(_imp->tooltipLabel,_imp->tooltipArea);
         if (knob) {
-            _imp->tooltipArea->setPlainText(knob->getHintToolTip().c_str());
+            _imp->tooltipArea->setPlainText(QString::fromUtf8(knob->getHintToolTip().c_str()));
         }
     }
     {
@@ -638,13 +638,13 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
             std::vector<std::string> entriesHelp = isChoice->getEntriesHelp_mt_safe();
             QString data;
             for (U32 i = 0; i < entries.size(); ++i) {
-                QString line(entries[i].c_str());
+                QString line(QString::fromUtf8(entries[i].c_str()));
                 if (i < entriesHelp.size() && !entriesHelp[i].empty()) {
-                    line.append("<?>");
-                    line.append(entriesHelp[i].c_str());
+                    line.append(QString::fromUtf8("<?>"));
+                    line.append(QString::fromUtf8(entriesHelp[i].c_str()));
                 }
                 data.append(line);
-                data.append('\n');
+                data.append(QLatin1Char('\n'));
             }
             _imp->menuItemsEdit->setPlainText(data);
         }
@@ -876,7 +876,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         KnobChoice* isChoice = dynamic_cast<KnobChoice*>(knob.get());
         
         if (isChoice) {
-            _imp->defaultStr->setText(isChoice->getEntry(isChoice->getDefaultValue(0)).c_str());
+            _imp->defaultStr->setText(QString::fromUtf8(isChoice->getEntry(isChoice->getDefaultValue(0)).c_str()));
         } else if (isDbl) {
             _imp->default0->setValue(isDbl->getDefaultValue(0));
             if (isDbl->getDimension() >= 2) {
@@ -900,14 +900,14 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         } else if (isBool) {
             _imp->defaultBool->setChecked(isBool->getDefaultValue(0));
         } else if (isStr) {
-            _imp->defaultStr->setText(isStr->getDefaultValue(0).c_str());
+            _imp->defaultStr->setText(QString::fromUtf8(isStr->getDefaultValue(0).c_str()));
         }
         
     }
     
     
-    const std::map<boost::weak_ptr<KnobI>,KnobGui*>& knobs = _imp->panel->getKnobs();
-    for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+    const std::list<std::pair<boost::weak_ptr<KnobI>,KnobGuiPtr> >& knobs = _imp->panel->getKnobs();
+    for (std::list<std::pair<boost::weak_ptr<KnobI>,KnobGuiPtr> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         KnobPtr knob = it->first.lock();
         if (!knob) {
             continue;
@@ -953,11 +953,11 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         }
     }
     if (_imp->userPages.empty()) {
-        _imp->parentPage->addItem(NATRON_USER_MANAGED_KNOBS_PAGE);
+        _imp->parentPage->addItem(QString::fromUtf8(NATRON_USER_MANAGED_KNOBS_PAGE));
     }
     
     for (std::list<boost::shared_ptr<KnobPage> >::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it) {
-        _imp->parentPage->addItem((*it)->getName().c_str());
+        _imp->parentPage->addItem(QString::fromUtf8((*it)->getName().c_str()));
     }
     _imp->parentPage->setToolTip(GuiUtils::convertFromPlainText(tr("The tab under which this parameter will appear."), Qt::WhiteSpaceNormal));
     optLayout->addWidget(_imp->parentPage);
@@ -995,37 +995,38 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     }
     
     _imp->mainLayout->addRow(_imp->parentPageLabel, optContainer);
-
+    
     onPageCurrentIndexChanged(pageIndexLoaded == -1 ? 0 : pageIndexLoaded);
     
     if (_imp->parentGroup && knob) {
         boost::shared_ptr<KnobPage> topLvlPage = knob->getTopLevelPage();
-        assert(topLvlPage);
-        KnobPtr parent = knob->getParentKnob();
-        KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>(parent.get());
-        if (isParentGrp) {
-            for (std::list<KnobGroup*>::iterator it = _imp->userGroups.begin(); it != _imp->userGroups.end(); ++it) {
-                boost::shared_ptr<KnobPage> page = (*it)->getTopLevelPage();
-                assert(page);
-                
-                ///add only grps whose parent page is the selected page
-                if (isParentGrp == *it && page == topLvlPage) {
-                    for (int i = 0; i < _imp->parentGroup->count(); ++i) {
-                        if (_imp->parentGroup->itemText(i) == QString(isParentGrp->getName().c_str())) {
-                            _imp->parentGroup->setCurrentIndex(i);
-                            break;
+        if (topLvlPage) {
+            KnobPtr parent = knob->getParentKnob();
+            KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>(parent.get());
+            if (isParentGrp) {
+                for (std::list<KnobGroup*>::iterator it = _imp->userGroups.begin(); it != _imp->userGroups.end(); ++it) {
+                    boost::shared_ptr<KnobPage> page = (*it)->getTopLevelPage();
+                    assert(page);
+                    
+                    ///add only grps whose parent page is the selected page
+                    if (isParentGrp == *it && page == topLvlPage) {
+                        for (int i = 0; i < _imp->parentGroup->count(); ++i) {
+                            if (_imp->parentGroup->itemText(i) == QString::fromUtf8(isParentGrp->getName().c_str())) {
+                                _imp->parentGroup->setCurrentIndex(i);
+                                break;
+                            }
                         }
+                        break;
                     }
-                    break;
+                    
                 }
-                
             }
         }
     } else {
         ///If the selected group name in the manage user params dialog is valid, set the group accordingly
         if (_imp->parentGroup) {
             for (int i = 0; i < _imp->parentGroup->count(); ++i) {
-                if (_imp->parentGroup->itemText(i) == QString(selectedGroupName.c_str())) {
+                if (_imp->parentGroup->itemText(i) == QString::fromUtf8(selectedGroupName.c_str())) {
                     _imp->parentGroup->setCurrentIndex(i);
                     break;
                 }
@@ -1061,7 +1062,7 @@ AddKnobDialog::onPageCurrentIndexChanged(int index)
         return;
     }
     _imp->parentGroup->clear();
-    _imp->parentGroup->addItem("-");
+    _imp->parentGroup->addItem(QString::fromUtf8("-"));
     
     std::string selectedPage = _imp->parentPage->itemText(index).toStdString();
     boost::shared_ptr<KnobPage> parentPage ;
@@ -1083,7 +1084,7 @@ AddKnobDialog::onPageCurrentIndexChanged(int index)
         
         ///add only grps whose parent page is the selected page
         if (page == parentPage) {
-            _imp->parentGroup->addItem((*it)->getName().c_str());
+            _imp->parentGroup->addItem(QString::fromUtf8((*it)->getName().c_str()));
         }
         
     }
@@ -1340,7 +1341,9 @@ AddKnobDialogPrivate::setKnobMinMax(KnobI* knob)
     
     Knob<T>* k = dynamic_cast<Knob<T>*>(knob);
     assert(k);
-    
+    if (!k) {
+        return;
+    }
     std::vector<T> mins(dim),dmins(dim);
     std::vector<T> maxs(dim),dmaxs(dim);
     for (std::size_t i = 0; i < (std::size_t)dim; ++i) {
@@ -1367,7 +1370,6 @@ AddKnobDialogPrivate::setKnobMinMax(KnobI* knob)
     for (U32 i = 0; i < defValues.size(); ++i) {
         k->setDefaultValue(defValues[i],i);
     }
-
 }
 
 void
@@ -1414,7 +1416,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
 
             while (!stream.atEnd()) {
                 QString line = stream.readLine();
-                int foundHelp = line.indexOf("<?>");
+                int foundHelp = line.indexOf(QString::fromUtf8("<?>"));
                 if (foundHelp != -1) {
                     QString entry = line.mid(0,foundHelp);
                     QString help = line.mid(foundHelp + 3,-1);
@@ -1636,10 +1638,10 @@ AddKnobDialog::onOkClicked()
     if (!badFormat) {
         //make sure everything is alphaNumeric without spaces
         for (int i = 0; i < name.size(); ++i) {
-            if (name[i] == QChar('_')) {
+            if (name[i] == QLatin1Char('_')) {
                 continue;
             }
-            if (name[i] == QChar(' ') || !name[i].isLetterOrNumber()) {
+            if (name[i] == QLatin1Char(' ') || !name[i].isLetterOrNumber()) {
                 badFormat = true;
                 break;
             }
@@ -1764,7 +1766,7 @@ AddKnobDialog::onOkClicked()
         }
         
         if (!oldKnobIsPage) {
-            _imp->panel->getHolder()->removeDynamicKnob(_imp->knob.get());
+            _imp->panel->getHolder()->deleteKnob(_imp->knob.get(), true);
             
             if (!_imp->isKnobAlias) {
                 
@@ -1925,8 +1927,8 @@ AddKnobDialog::onOkClicked()
                 std::string expr;
                 if (oldKnobScriptName != _imp->knob->getName()) {
                     //Change in expressions the script-name
-                    QString estr(it->second[i].first.c_str());
-                    estr.replace(oldKnobScriptName.c_str(), _imp->knob->getName().c_str());
+                    QString estr = QString::fromUtf8(it->second[i].first.c_str());
+                    estr.replace(QString::fromUtf8(oldKnobScriptName.c_str()), QString::fromUtf8(_imp->knob->getName().c_str()));
                     expr = estr.toStdString();
                 } else {
                     expr = it->second[i].first;

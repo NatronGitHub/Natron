@@ -8,10 +8,10 @@ This file is supposed to guide you step by step to have working (compiling) vers
 	git clone https://github.com/MrKepzie/Natron.git
 	cd Natron
 
-If you want to compile the bleeding edge version, use the workshop
+If you want to compile the bleeding edge version, use the master
 branch:
 
-	git checkout workshop
+	git checkout master
 	
 Update the submodules:
 
@@ -44,6 +44,10 @@ It is also recommended to add the  following line to `/opt/local/etc/macports/va
 
     -x11 +no_x11 +bash_completion +no_gnome +quartz
 
+If compiling on Mac OS X 10.6 with Xcode 4, you should also revert to the default compilers list of Xcode 3.2.6 (MacPort's `/opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` sets it to a different value for an unknown reason, resulting in llvm-gcc-4.2 being used to compile everything in MacPorts). Add the following line to `/opt/local/etc/macports/macports.conf`:
+
+    default_compilers gcc-4.2 clang llvm-gcc-4.2 macports-clang-3.4 macports-clang-3.3 macports-llvm-gcc-4.2 apple-gcc-4.2 gcc-4.0
+
 And finally install the required packages:
 
 	sudo port install qt4-mac boost glew cairo expat
@@ -73,7 +77,7 @@ EOF
 
 If you intend to build the [openfx-io](https://github.com/MrKepzie/openfx-io) plugins too, you will need these additional packages:
 
-    sudo port -v install openexr ffmpeg opencolorio openimageio
+    sudo port -v install openexr ffmpeg opencolorio openimageio seexpr
 
 and for [openfx-arena](https://github.com/olear/openfx-arena) (note that it installs a version of ImageMagick without support for many image I/O libraries):
 
@@ -83,7 +87,9 @@ and for [openfx-arena](https://github.com/olear/openfx-arena) (note that it inst
 
 Install homebrew from <http://brew.sh/>
 
-Patch the qt recipe to fix the stack overflow issue (see the [homebrew FAQ](https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/FAQ.md) if you wonder what that means):
+Patch the qt4 recipe to fix the stack overflow issue (see [QTBUG-49607](https://bugreports.qt.io/browse/QTBUG-49607), [homebrew issue #46307](https://github.com/Homebrew/homebrew/issues/46307), [MacPorts ticket 49793](http://trac.macports.org/ticket/49793)).
+
+Patching a homebrew recipe is explained in the [homebrew FAQ](https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/FAQ.md).
 
     brew edit qt4
 
@@ -99,13 +105,19 @@ Install libraries:
 
     brew tap homebrew/python
     brew tap homebrew/science
-    brew install --build-from-source qt
+    brew install --build-from-source qt --with-mysql
     brew install expat cairo glew
     brew install pyside
 
-To install the openfx-io and openfx-misc sets of plugin, you also need the following:
+The last command above should tell you do do that if the `homebrew.pth` file does not exist:
 
-    brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openimageio
+    mkdir -p /Users/devernay/Library/Python/2.7/lib/python/site-packages
+    echo 'import site; site.addsitedir("/usr/local/lib/python2.7/site-packages")' >> ~/Library/Python/2.7/lib/python/site-packages/homebrew.pth
+    sudo ln -s ~/Library/Python/2.7/lib/python/site-packages/homebrew.pth /Library/Python/2.7/lib/python/site-packages/homebrew.pth
+
+ To install the openfx-io and openfx-misc sets of plugin, you also need the following:
+
+    brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openimageio seexpr
 
 also set the correct value for the pkg-config path (you can also put
 this in your .bash_profile):
@@ -114,6 +126,7 @@ this in your .bash_profile):
 
 ### Installing a patched Qt to avoid stack overflows
 
+See [QTBUG-49607](https://bugreports.qt.io/browse/QTBUG-49607), [homebrew issue #46307](https://github.com/Homebrew/homebrew/issues/46307), [MacPorts ticket 49793](http://trac.macports.org/ticket/49793).
 
     wget https://download.qt.io/official_releases/qt/4.8/4.8.7/qt-everywhere-opensource-src-4.8.7.tar.gz
     tar zxvf qt-everywhere-opensource-src-4.8.7.tar.gz
@@ -222,9 +235,33 @@ add -spec macx-xcode to the qmake call command:
 	
 Then open the already provided Project-xcode.xcodeproj and compile the target "all"
 
+### Compiling plugins with Xcode
+
+The source distributions of the plugin sets `openfx-io` and
+`openfx-misc` contain Xcode projects, but these require setting a few
+global variables in Xcode. These variables can be used to switch
+between the system-installed version of a package and a custom install
+(e.g. if you need to debug something that happens in OpenImageIO).
+
+In Xcode Preferences, select "Locations", then "Source Trees", and add the following
+variable names/values (Xcode may need to be restarted after setting these):
+- `LOCAL`: `/usr/local` on Homebrew, `/opt/local` on MacPorts
+- `BOOST_PATH`: `$(LOCAL)/include`
+- `EXR_PATH`: `$(LOCAL)`
+- `FFMPEG_PATH`: `$(LOCAL)`
+- `OCIO_PATH`: `$(LOCAL)`
+- `OIIO_PATH`: `$(LOCAL)`
+- `OPENCV_PATH`: `$(LOCAL)`
+- `SEEXPR_PATH`: `$(LOCAL)`
+
+It is also recommended in Xcode Preferences, select "Locations", then
+"Locations", to set the Derived Data location to be Relative, and in
+the advanced settings to set the build location to Legacy (if not,
+build files are somewhere under `~/Library/Developer/Xcode`.
+
 ### Xcode caveats
 
-henever the .pro files change, Xcode will try to launch qmake and
+Whenever the .pro files change, Xcode will try to launch qmake and
 probably fail because it doesn't find the necessary binaries (qmake,
 moc, pkg-config, python3-config, etc.). In this case, just open a
 Terminal and relaunch the above command. This will rebuild the Xcode projects.
@@ -273,7 +310,7 @@ Shiboken has a few glitches which needs fixing with some sed commands, run tools
  
 ## OpenFX plugins
 
-Instructions to build the [openfx-io](https://github.com/MrKepzie/openfx-io) and [openfx-misc](https://github.com/devernay/openfx-misc) sets of plugins can also be found in the [tools/packageOSX.sh](https://github.com/MrKepzie/Natron/blob/workshop/tools/packageOSX.sh) script if you are using MacPorts, or in the .travis.yml file in their respective github repositories if you are using homebrew ([openfx-misc/.travis.yml](https://github.com/devernay/openfx-misc/blob/master/.travis.yml), [openfx-io/.travis.yml](https://github.com/MrKepzie/openfx-io/blob/master/.travis.yml).
+Instructions to build the [openfx-io](https://github.com/MrKepzie/openfx-io) and [openfx-misc](https://github.com/devernay/openfx-misc) sets of plugins can also be found in the [tools/packageOSX.sh](https://github.com/MrKepzie/Natron/blob/master/tools/packageOSX.sh) script if you are using MacPorts, or in the .travis.yml file in their respective github repositories if you are using homebrew ([openfx-misc/.travis.yml](https://github.com/devernay/openfx-misc/blob/master/.travis.yml), [openfx-io/.travis.yml](https://github.com/MrKepzie/openfx-io/blob/master/.travis.yml).
 
 
 You can install [TuttleOFX](http://www.tuttleofx.org/) using homebrew:

@@ -232,3 +232,7 @@ PortIndex.quick
 *.exe*
 tools/Windows/src/*
 tools/linux/src/*
+tools/MacOSX/local.sh
+allfileshas.txt
+bigobjects.txt
+bigtosmall.txt

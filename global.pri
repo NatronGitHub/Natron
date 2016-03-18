@@ -20,9 +20,15 @@ CONFIG += warn_on no_keywords
 DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_VEGAS OFX_SUPPORTS_PARAMETRIC OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_NATRON OFX_SUPPORTS_OPENGLRENDER
 DEFINES += OFX_SUPPORTS_MULTITHREAD
 DEFINES += OFX_SUPPORTS_DIALOG
-
 #Commented-out because many plug-in vendors do not implement it correctly
 #DEFINES += OFX_SUPPORTS_DIALOG_V1
+
+#Since in Natron and OpenFX all strings are supposed UTF-8 and that the constructor
+#for QString(const char*) assumes ASCII strings, we may run into troubles
+DEFINES += QT_NO_CAST_FROM_ASCII
+
+#Uncomment to run Natron without Python functionnalities (for debug purposes)
+#DEFINES += NATRON_RUN_WITHOUT_PYTHON
 
 *g++* | *clang* {
 #See https://bugreports.qt.io/browse/QTBUG-35776 we cannot use
@@ -191,6 +197,10 @@ win32 {
   #DEFINES += _MBCS
   DEFINES += WINDOWS COMPILED_FROM_DSP XML_STATIC  NOMINMAX
   DEFINES -= _UNICODE UNICODE
+  
+  #System library is required on windows to map network share names from drive letters
+  LIBS += -lmpr
+
 }
 
 win32-msvc* {
@@ -221,6 +231,8 @@ win32-msvc* {
         Debug:RCC_DIR = win32/debug/.rcc
         Debug:UI_DIR = win32/debug/.ui
     }
+    #System library is required on windows to map network share names from drive letters
+    LIBS += mpr.lib
 }
 
 

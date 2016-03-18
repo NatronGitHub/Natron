@@ -362,6 +362,78 @@ PYTHON_PATH="$INSTALL_PATH/lib/python2.7"
 PYTHON_INCLUDE="$INSTALL_PATH/include/python2.7"
 export PKG_CONFIG_PATH LD_LIBRARY_PATH PATH QTDIR BOOST_ROOT OPENJPEG_HOME THIRD_PARTY_TOOLS_HOME PYTHON_HOME PYTHON_PATH PYTHON_INCLUDE
 
+# Install swrast
+if [ "$SWRAST" = "1" ]; then
+  # llvm
+  if [ ! -f "$INSTALL_PATH/llvm/bin/llvm-config" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$LLVM_TAR" ]; then
+      wget "$THIRD_PARTY_SRC_URL/$LLVM_TAR" -O "$SRC_PATH/$LLVM_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$LLVM_TAR" || exit 1
+    cd llvm-* || exit 1
+    mkdir build
+    cd build || exit 1
+    cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH/llvm -DBUILD_SHARED_LIBS=OFF -DLLVM_ENABLE_RTTI=1 || exit 1
+    make install || exit 1
+  fi
+  # osmesa
+  if [ ! -f "$INSTALL_PATH/osmesa/lib/pkgconfig/osmesa.pc" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$MESA_TAR" ]; then
+      wget "$THIRD_PARTY_SRC_URL/$MESA_TAR" -O "$SRC_PATH/$MESA_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$MESA_TAR" || exit 1
+    cd mesa-* || exit 1
+    (cd include/GL; sed -e 's@gl.h glext.h@gl.h glext.h ../GLES/gl.h@' -e 's@\^GLAPI@^GL_\\?API@' -i.orig gl_mangle.h)
+    (cd include/GL; sh ./gl_mangle.h > gl_mangle.h.new && mv gl_mangle.h.new gl_mangle.h)
+    autoreconf -fi
+    MESA_CONF="
+    --enable-static
+    --disable-shared
+    --enable-mangling
+    --enable-texture-float
+    --disable-gles1
+    --disable-gles2
+    --disable-dri
+    --disable-dri3
+    --disable-glx
+    --disable-egl
+    --disable-gbm
+    --disable-xvmc
+    --disable-vdpau
+    --disable-omx
+    --disable-va
+    --disable-osmesa
+    --disable-shared-glapi
+    --with-dri-drivers=
+    --with-osmesa-bits=32 
+    --with-egl-platforms=
+    --prefix=${INSTALL_PATH}/osmesa
+    --enable-gallium-osmesa
+    --enable-gallium-llvm=yes
+    --with-llvm-prefix=${INSTALL_PATH}/llvm
+    --disable-llvm-shared-libs
+    --with-gallium-drivers=swrast
+    "
+    CFLAGS="$BF" CXXFLAGS="$BF" ./configure $MESA_CONF || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+  fi
+  # glu
+  if [ ! -f "$INSTALL_PATH/osmesa/lib/pkgconfig/glu.pc" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$GLU_TAR" ]; then
+      wget "$THIRD_PARTY_SRC_URL/$GLU_TAR" -O "$SRC_PATH/$GLU_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$GLU_TAR" || exit 1
+    cd glu-* || exit 1
+    env CFLAGS="$BF" CPPFLAGS="$BF -DUSE_MGL_NAMESPACE" PKG_CONFIG_PATH=$INSTALL_PATH/osmesa/lib/pkgconfig ./configure --enable-static --disable-shared --enable-osmesa --prefix=$INSTALL_PATH/osmesa || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+  fi
+fi
+
 # Install expat
 if [ ! -f "$INSTALL_PATH/lib/pkgconfig/expat.pc" ]; then
     cd "$TMP_PATH" || exit 1
@@ -506,15 +578,31 @@ if [ ! -f "$INSTALL_PATH/lib/libboost_atomic.so" ]; then
     env CFLAGS="$BF" CXXFLAGS="$BF" ./b2 -s NO_BZIP2=1 --prefix=$INSTALL_PATH cflags="-fPIC" --disable-icu -j${MKJOBS} install || exit 1 # link=static
 fi
 
-# Install jpeg
-if [ ! -f $INSTALL_PATH/lib/libjpeg.so ]; then
-    cd $TMP_PATH || exit 1
-    if [ ! -f $SRC_PATH/$JPG_TAR ]; then
-        wget $THIRD_PARTY_SRC_URL/$JPG_TAR -O $SRC_PATH/$JPG_TAR || exit 1
+# install cppunit
+if [ ! -f "$INSTALL_PATH/bin/cppunit-config" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$CPPU_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$CPPU_TAR" -O "$SRC_PATH/$CPPU_TAR" || exit 1
     fi
-    tar xvf $SRC_PATH/$JPG_TAR || exit 1
-    cd jpeg-* || exit 1
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
+    tar xvf "$SRC_PATH/$CPPU_TAR" || exit 1
+    cd cppunit* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+    if [ "$DDIR" != "" ]; then
+      make DESTDIR="${DDIR}" install || exit 1
+    fi
+fi
+
+# Install turbo-jpeg
+if [ ! -f $INSTALL_PATH/lib/libturbojpeg.so.0.1.0 ]; then
+    cd $TMP_PATH || exit 1
+    if [ ! -f $SRC_PATH/$TJPG_TAR ]; then
+        wget $THIRD_PARTY_SRC_URL/$TJPG_TAR -O $SRC_PATH/$TJPG_TAR || exit 1
+    fi
+    tar xvf $SRC_PATH/$TJPG_TAR || exit 1
+    cd libjpeg-turbo-* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --with-jpeg8 --enable-shared --disable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     if [ "$DDIR" != "" ]; then
@@ -537,7 +625,6 @@ if [ ! -f $INSTALL_PATH/lib/libgif.so ]; then
       make DESTDIR="${DDIR}" install || exit 1
     fi
 fi
-
 
 # Install tiff
 if [ "$REBUILD_TIFF" = "1" ]; then
@@ -594,6 +681,38 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/lcms2.pc ]; then
     fi
 fi
 
+# install librevenge
+if [ ! -f "$INSTALL_PATH/lib/pkgconfig/librevenge-0.0.pc" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$REVENGE_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$REVENGE_TAR" -O "$SRC_PATH/$REVENGE_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$REVENGE_TAR" || exit 1
+    cd librevenge* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --disable-werror --prefix="$INSTALL_PATH" --disable-docs --enable-shared || exit 1
+    make -j1 || exit 1
+    make install || exit 1
+    if [ "$DDIR" != "" ]; then
+      make DESTDIR="${DDIR}" install || exit 1
+    fi
+fi
+
+# install libcdr
+if [ ! -f "$INSTALL_PATH/lib/pkgconfig/libcdr-0.1.pc" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$CDR_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$CDR_TAR" -O "$SRC_PATH/$CDR_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$CDR_TAR" || exit 1
+    cd libcdr* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --disable-werror --prefix="$INSTALL_PATH" --disable-docs --enable-shared || exit 1
+    make -j1 || exit 1
+    make install || exit 1
+    if [ "$DDIR" != "" ]; then
+      make DESTDIR="${DDIR}" install || exit 1
+    fi
+fi
+
 # Install openjpeg
 if [ ! -f $INSTALL_PATH/lib/pkgconfig/libopenjpeg.pc ]; then
     cd $TMP_PATH || exit 1
@@ -640,6 +759,8 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/OpenEXR.pc ]; then
     fi
     tar xvf $SRC_PATH/$ILM_TAR || exit 1
     cd ilmbase-* || exit 1
+    patch -p2 < $INC_PATH/patches/OpenEXR/51046a110296a5c95b5c52ce6d9798f6fc9884d3.patch || exit 1
+
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --disable-shared --enable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
@@ -790,7 +911,6 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/Magick++.pc ]; then
     tar xvf $SRC_PATH/$MAGICK_TAR || exit 1
     cd ImageMagick-* || exit 1
     patch -p0 < $INC_PATH/patches/ImageMagick/pango-align-hack.diff || exit 1
-    patch -p0 < $INC_PATH/patches/ImageMagick/xcf-layername.diff || exit 1
     env CFLAGS="$BF -DMAGICKCORE_EXCLUDE_DEPRECATED=1" CXXFLAGS="$BF -DMAGICKCORE_EXCLUDE_DEPRECATED=1" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --with-magick-plus-plus=yes --with-quantum-depth=32 --without-dps --without-djvu --without-fftw --without-fpx --without-gslib --without-gvc --without-jbig --without-jpeg --with-lcms --without-openjp2 --without-lqr --without-lzma --without-openexr --with-pango --with-png --with-rsvg --without-tiff --without-webp --with-xml --without-zlib --without-bzlib --disable-static --enable-shared --enable-hdri --with-freetype --with-fontconfig --without-x --without-modules || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
@@ -844,7 +964,10 @@ if [ ! -f $INSTALL_PATH/lib/libOpenImageIO.so ]; then
     fi
     tar xvf $SRC_PATH/$OIIO_TAR || exit 1
     cd oiio-Release-* || exit 1
-    patch -p1 -i $INC_PATH/patches/OpenImageIO/oiio-exrthreads.patch || exit 1
+    patch -p1 -i $INC_PATH/patches/OpenImageIO/oiio-1.5.23-checkmaxmem.patch || exit 1
+    patch -p1 -i $INC_PATH/patches/OpenImageIO/oiio-1.5.23-invalidatespec.patch || exit 1
+    patch -p1 -i $INC_PATH/patches/OpenImageIO/oiio-1.6.11-fix_exr_threads.patch || exit 1
+
     mkdir build || exit 1
     cd build || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" CXXFLAGS="-fPIC" cmake -DUSE_OPENCV:BOOL=FALSE -DUSE_OPENSSL:BOOL=FALSE -DOPENEXR_HOME=$INSTALL_PATH -DILMBASE_HOME=$INSTALL_PATH -DTHIRD_PARTY_TOOLS_HOME=$INSTALL_PATH -DUSE_QT:BOOL=FALSE -DUSE_TBB:BOOL=FALSE -DUSE_PYTHON:BOOL=FALSE -DUSE_FIELD3D:BOOL=FALSE -DOIIO_BUILD_TESTS=0 -DOIIO_BUILD_TOOLS=1 -DUSE_LIB_RAW=1 -DLIBRAW_PATH=$INSTALL_PATH -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBOOST_ROOT=$INSTALL_PATH -DSTOP_ON_WARNING:BOOL=FALSE -DUSE_GIF:BOOL=TRUE -DUSE_FREETYPE:BOOL=TRUE -DFREETYPE_INCLUDE_PATH=$INSTALL_PATH/include -DUSE_FFMPEG:BOOL=FALSE -DLINKSTATIC=0 -DBUILDSTATIC=0 -DOPENJPEG_HOME=$INSTALL_PATH -DOPENJPEG_INCLUDE_DIR=$INSTALL_PATH/include/openjpeg-1.5 -DOPENJPEG_LIBRARIES=$INSTALL_PATH/lib -DUSE_OPENJPEG:BOOL=TRUE .. || exit 1 
@@ -1132,21 +1255,71 @@ if [ ! -d $INSTALL_PATH/ffmpeg-gpl ] || [ ! -d $INSTALL_PATH/ffmpeg-lgpl ]; then
 fi
 
 # Install qt
-if [ ! -f $INSTALL_PATH/bin/qmake ]; then
+if [ "$REBUILD_QT" = "1" ]; then
+  rm -rf $INSTALL_PATH/bin/qmake* $INSTALL_PATH/lib/libQt* $INSTALL_PATH/include/Qt* $INSTALL_PATH/{plugins,phrasebooks,q3porting.xml,tests,imports,mkspecs,translations}
+fi
+if [ "$SDK_VERSION" = "CY2016" ]; then
+  # Qt5
+  if [ ! -f $INSTALL_PATH/bin/qmake ]; then
     cd $TMP_PATH || exit 1
-    if [ "$1" = "qt5" ]; then
-        QT_TAR=$QT5_TAR
-        QT_CONF="-openssl-linked -opengl desktop -opensource -nomake examples -nomake tests -release -no-gtkstyle -confirm-license -no-c++11 -I${INSTALL_PATH}/include -L${INSTALL_PATH}/lib"
-    else
-        QT_TAR=$QT4_TAR
-        QT_CONF="-system-zlib -system-libtiff -system-libpng -no-libmng -system-libjpeg -no-gtkstyle -glib -xrender -xrandr -xcursor -xfixes -xinerama -fontconfig -xinput -sm -no-multimedia -openssl-linked -confirm-license -release -opensource -opengl desktop -nomake demos -nomake docs -nomake examples -I${INSTALL_PATH}/include -L${INSTALL_PATH}/lib"
-    fi
+    QT_CONF="-openssl-linked -opengl desktop -opensource -nomake examples -nomake tests -release -no-gtkstyle -confirm-license -no-c++11 -I${INSTALL_PATH}/include -L${INSTALL_PATH}/lib -shared -no-xcb"
 
-    if [ ! -f $SRC_PATH/$QT_TAR ]; then
-        wget $THIRD_PARTY_SRC_URL/$QT_TAR -O $SRC_PATH/$QT_TAR || exit 1
+    if [ ! -f $SRC_PATH/$QTBASE_TAR ]; then
+        wget $THIRD_PARTY_SRC_URL/$QTBASE_TAR -O $SRC_PATH/$QTBASE_TAR || exit 1
     fi
-    tar xvf $SRC_PATH/$QT_TAR || exit 1
-    cd qt* || exit 1
+    tar xvf $SRC_PATH/$QTBASE_TAR || exit 1
+
+    cd qtbase-* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure -prefix $INSTALL_PATH $QT_CONF || exit 1
+    LD_LIBRARY_PATH="$LD_LIBRARY_PATH":`pwd`/lib make -j${MKJOBS} || exit  1
+    make install || exit 1
+    QTBASE_PRIV="QtCore QtDBus QtGui QtNetwork QtOpenGL QtPlatformSupport QtPrintSupport QtSql QtTest QtWidgets QtXml"
+    for i in $QTBASE_PRIV; do
+      cd $INSTALL_PATH/include/$i || exit 1
+      ln -sf $QT5_VERSION/$i/private . || exit 1
+    done
+  fi
+  if [ ! -f $INSTALL_PATH/lib/libQt5XmlPatterns.so.$QT5_VERSION ]; then
+    if [ ! -f $SRC_PATH/$QTXMLP_TAR ]; then
+      wget $THIRD_PARTY_SRC_URL/$QTXMLP_TAR -O $SRC_PATH/$QTXMLP_TAR || exit 1
+    fi
+    tar xvf $SRC_PATH/$QTXMLP_TAR || exit 1
+    cd qtxmlpatterns-* || exit 1
+    $INSTALL_PATH/bin/qmake || exit 1
+    make -j${MKJOBS} || exit  1
+    make install || exit 1
+    cd $INSTALL_PATH/include/QtXmlPatterns || exit 1
+    ln -sf $QT5_VERSION/QtXmlPatterns/private . || exit 1
+  fi
+  if [ ! -f $INSTALL_PATH/lib/libQt5Qml.so.$QT5_VERSION ]; then
+    if [ ! -f $SRC_PATH/$QTDEC_TAR ]; then
+      wget $THIRD_PARTY_SRC_URL/$QTDEC_TAR -O $SRC_PATH/$QTDEC_TAR || exit 1
+    fi
+    tar xvf $SRC_PATH/$QTDEC_TAR || exit 1
+    cd qtdeclarative-* || exit 1
+    $INSTALL_PATH/bin/qmake || exit 1
+    make -j${MKJOBS} || exit  1
+    make install || exit 1
+    # TODO symlink private headers
+    QTDEC_PRIV="QtConcurrent QtQml QtQmlDevTools QtQuick QtQuickParticles QtQuickTest QtQuickWidgets"
+    for i in $QTDEC_PRIV; do
+      cd $INSTALL_PATH/include/$i || exit 1
+      ln -sf $QT5_VERSION/$i/private . || exit 1
+    done
+  fi
+  # TODO add more qt modules, like svg etc
+else
+  # Qt4
+  if [ ! -f $INSTALL_PATH/bin/qmake ]; then
+    cd $TMP_PATH || exit 1
+    QT_CONF="-system-zlib -system-libtiff -system-libpng -no-libmng -system-libjpeg -no-gtkstyle -glib -xrender -xrandr -xcursor -xfixes -xinerama -fontconfig -xinput -sm -no-multimedia -openssl-linked -confirm-license -release -opensource -opengl desktop -nomake demos -nomake docs -nomake examples -I${INSTALL_PATH}/include -L${INSTALL_PATH}/lib"
+
+    if [ ! -f $SRC_PATH/$QT4_TAR ]; then
+      wget $THIRD_PARTY_SRC_URL/$QT4_TAR -O $SRC_PATH/$QT4_TAR || exit 1
+    fi
+    tar xvf $SRC_PATH/$QT4_TAR || exit 1
+    cd qt*4.8* || exit 1
+    patch -p0 < $INC_PATH/patches/Qt/patch-qt-custom-threadpool.diff || exit 1
     QT_SRC=`pwd`/src
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure -prefix $INSTALL_PATH $QT_CONF -shared || exit 1
 
@@ -1157,7 +1330,8 @@ if [ ! -f $INSTALL_PATH/bin/qmake ]; then
     if [ "$DDIR" != "" ]; then
       make INSTALL_ROOT="${DDIR}" install || exit 1
     fi
-    rm -rf $TMP_PATH/qt*
+    rm -rf $TMP_PATH/qt*4.8*
+  fi
 fi
 
 # pysetup
@@ -1174,17 +1348,29 @@ else
     PY_INC=$INSTALL_PATH/include/python2.7
     USE_PY3=false
 fi
+if [ "$SDK_VERSION" = "CY2016" ]; then
+  PYSIDE_V=2
+fi
 
 # Install shiboken
-if [ ! -f $INSTALL_PATH/lib/pkgconfig/shiboken.pc ]; then
+if [ ! -f $INSTALL_PATH/lib/pkgconfig/shiboken${PYSIDE_V}.pc ]; then
     cd $TMP_PATH || exit 1
-    if [ ! -f $SRC_PATH/$SHIBOK_TAR ]; then
+
+    if [ "$PYSIDE_V" = "2" ]; then
+      rm -rf shiboken2
+      git clone $SHIBOK2_GIT || exit 1
+      cd shiboken2 || exit 1
+      git checkout $SHIBOK2_COMMIT || exit 1
+    else
+      if [ ! -f $SRC_PATH/$SHIBOK_TAR ]; then
         wget $THIRD_PARTY_SRC_URL/$SHIBOK_TAR -O $SRC_PATH/$SHIBOK_TAR || exit 1
+      fi
+      tar xvf $SRC_PATH/$SHIBOK_TAR || exit 1
+      cd shiboken-* || exit 1
     fi
-    tar xvf $SRC_PATH/$SHIBOK_TAR || exit 1
-    cd shiboken-* || exit 1
+
     mkdir -p build && cd build || exit 1
-    cmake ../ -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH  \
+    env CXXFLAGS="-I${INSTALL_PATH}/include/libxml2" cmake ../ -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH  \
           -DCMAKE_BUILD_TYPE=Release   \
           -DBUILD_TESTS=OFF            \
           -DPYTHON_EXECUTABLE=$PY_EXE \
@@ -1197,13 +1383,22 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/shiboken.pc ]; then
 fi
 
 # Install pyside
-if [ ! -f $INSTALL_PATH/lib/pkgconfig/pyside.pc ]; then
+if [ ! -f $INSTALL_PATH/lib/pkgconfig/pyside${PYSIDE_V}.pc ]; then
     cd $TMP_PATH || exit 1
-    if [ ! -f $SRC_PATH/$PYSIDE_TAR ]; then
+
+    if [ "$PYSIDE_V" = "2" ]; then
+      rm -rf pyside2
+      git clone $PYSIDE2_GIT || exit 1
+      cd pyside2 || exit 1
+      git checkout $PYSIDE_COMMIT || exit 1
+    else
+      if [ ! -f $SRC_PATH/$PYSIDE_TAR ]; then
         wget $THIRD_PARTY_SRC_URL/$PYSIDE_TAR -O $SRC_PATH/$PYSIDE_TAR || exit 1
+      fi
+      tar xvf $SRC_PATH/$PYSIDE_TAR || exit 1
+      cd pyside-* || exit 1
     fi
-    tar xvf $SRC_PATH/$PYSIDE_TAR || exit 1
-    cd pyside-* || exit 1
+
     mkdir -p build && cd build || exit 1
     cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF \
           -DQT_QMAKE_EXECUTABLE=$INSTALL_PATH/bin/qmake \

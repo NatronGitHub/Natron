@@ -81,14 +81,14 @@ public:
                            const QString & initialName = QString(),
                            const QString & helpToolTip = QString(),
                            bool createDefaultPage = false,
-                           const QString & defaultPageName = QString("Default"),
+                           const QString & defaultPageName = QString::fromUtf8("Default"),
                            QWidget *parent = 0);
 
     virtual ~DockablePanel() OVERRIDE;
 
     bool isMinimized() const;
 
-    const std::map<boost::weak_ptr<KnobI>,KnobGui*> & getKnobs() const;
+    const std::list<std::pair<boost::weak_ptr<KnobI>,KnobGuiPtr> > & getKnobs() const;
     QVBoxLayout* getContainer() const;
     boost::shared_ptr<QUndoStack> getUndoStack() const;
 
@@ -105,6 +105,7 @@ public:
 
     void pushUndoCommand(QUndoCommand* cmd);
 
+    void refreshUndoRedoButtonsEnabledNess();
 
     const QUndoCommand* getLastUndoCommand() const;
     Gui* getGui() const;
@@ -114,7 +115,7 @@ public:
     void appendHeaderWidget(QWidget* widget);
 
     QWidget* getHeaderWidget() const;
-    KnobGui* getKnobGui(const KnobPtr & knob) const;
+    KnobGuiPtr getKnobGui(const KnobPtr & knob) const;
 
     ///MT-safe
     virtual QColor getCurrentColor() const {
@@ -143,7 +144,14 @@ public:
 
     void onGuiClosing();
 
-    virtual void scanForNewKnobs(bool restorePageIndex = true) OVERRIDE FINAL;
+    virtual void recreateUserKnobs(bool restorePageIndex) OVERRIDE FINAL;
+    virtual void refreshGuiForKnobsChanges(bool restorePageIndex) OVERRIDE FINAL;
+    
+private:
+    
+    void recreateKnobs(const QString& curTabName,bool restorePageIndex);
+    
+public:
     
     void setUserPageActiveIndex();
     
@@ -231,6 +239,8 @@ public Q_SLOTS:
     
     void onSubGraphEditionChanged(bool editable);
     
+    void onDeleteCurCmdLater();
+    
 Q_SIGNALS:
 
     /*emitted when the panel is clicked*/
@@ -255,6 +265,7 @@ Q_SIGNALS:
 
     void colorChanged(QColor);
     
+    void deleteCurCmdLater();
 
 protected:
     

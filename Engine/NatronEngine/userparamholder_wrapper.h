@@ -3,7 +3,7 @@
 
 #include <shiboken.h>
 
-#include <NodeWrapper.h>
+#include <PyNode.h>
 
 NATRON_NAMESPACE_ENTER;
 class UserParamHolderWrapper : public UserParamHolder

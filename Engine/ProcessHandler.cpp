@@ -57,10 +57,10 @@ ProcessHandler::ProcessHandler(const QString & projectPath,
 {
     ///setup the server used to listen the output of the background process
     _ipcServer = new QLocalServer();
-    QObject::connect( _ipcServer,SIGNAL( newConnection() ),this,SLOT( onNewConnectionPending() ) );
+    QObject::connect( _ipcServer,SIGNAL(newConnection()),this,SLOT(onNewConnectionPending()) );
     QString serverName;
     {
-        QTemporaryFile tmpf(NATRON_APPLICATION_NAME "_OUTPUT_PIPE_");
+        QTemporaryFile tmpf(QString::fromUtf8(NATRON_APPLICATION_NAME "_OUTPUT_PIPE_"));
         tmpf.open();
         serverName = tmpf.fileName();
         tmpf.remove();
@@ -68,22 +68,22 @@ ProcessHandler::ProcessHandler(const QString & projectPath,
     _ipcServer->listen(serverName);
 
 
-    _processArgs << "-b" << "-w" << writer->getScriptName_mt_safe().c_str();
-    _processArgs << "--IPCpipe" << QString("\"") + _ipcServer->fullServerName() + QString("\"");
-    _processArgs << QString("\"") + projectPath + QString("\"");
+    _processArgs << QString::fromUtf8("-b") << QString::fromUtf8("-w") << QString::fromUtf8(writer->getScriptName_mt_safe().c_str());
+    _processArgs << QString::fromUtf8("--IPCpipe") << QString::fromUtf8("\"") + _ipcServer->fullServerName() + QString::fromUtf8("\"");
+    _processArgs << QString::fromUtf8("\"") + projectPath + QString::fromUtf8("\"");
 
     ///connect the useful slots of the process
-    QObject::connect( _process,SIGNAL( readyReadStandardOutput() ),this,SLOT( onStandardOutputBytesWritten() ) );
-    QObject::connect( _process,SIGNAL( readyReadStandardError() ),this,SLOT( onStandardErrorBytesWritten() ) );
-    QObject::connect( _process,SIGNAL( error(QProcess::ProcessError) ),this,SLOT( onProcessError(QProcess::ProcessError) ) );
-    QObject::connect( _process,SIGNAL( finished(int,QProcess::ExitStatus) ),this,SLOT( onProcessEnd(int,QProcess::ExitStatus) ) );
+    QObject::connect( _process,SIGNAL(readyReadStandardOutput()),this,SLOT(onStandardOutputBytesWritten()) );
+    QObject::connect( _process,SIGNAL(readyReadStandardError()),this,SLOT(onStandardErrorBytesWritten()) );
+    QObject::connect( _process,SIGNAL(error(QProcess::ProcessError)),this,SLOT(onProcessError(QProcess::ProcessError)) );
+    QObject::connect( _process,SIGNAL(finished(int,QProcess::ExitStatus)),this,SLOT(onProcessEnd(int,QProcess::ExitStatus)) );
 
 
     ///start the process
-    _processLog.push_back( "Starting background rendering: " + QCoreApplication::applicationFilePath() );
-    _processLog.push_back(" ");
+    _processLog.push_back( QString::fromUtf8("Starting background rendering: ") + QCoreApplication::applicationFilePath() );
+    _processLog.push_back(QString::fromUtf8(" "));
     for (int i = 0; i < _processArgs.size(); ++i) {
-        _processLog.push_back(_processArgs[i] + " ");
+        _processLog.push_back(_processArgs[i] + QString::fromUtf8(" "));
     }
    
 }
@@ -128,7 +128,7 @@ ProcessHandler::onNewConnectionPending()
 
     _bgProcessOutputSocket = _ipcServer->nextPendingConnection();
 
-    QObject::connect( _bgProcessOutputSocket, SIGNAL( readyRead() ), this, SLOT( onDataWrittenToSocket() ) );
+    QObject::connect( _bgProcessOutputSocket, SIGNAL(readyRead()), this, SLOT(onDataWrittenToSocket()) );
 }
 
 void
@@ -137,44 +137,39 @@ ProcessHandler::onDataWrittenToSocket()
     ///always running in the main thread
     assert( QThread::currentThread() == qApp->thread() );
 
-    QString str = _bgProcessOutputSocket->readLine();
-    while ( str.endsWith('\n') ) {
+    QString str = QString::fromUtf8(_bgProcessOutputSocket->readLine());
+    while ( str.endsWith(QLatin1Char('\n')) ) {
         str.chop(1);
     }
-    _processLog.append("Message received: " + str + '\n');
-    if ( str.startsWith(kFrameRenderedStringShort) ) {
-        str = str.remove(kFrameRenderedStringShort);
+    _processLog.append(QString::fromUtf8("Message received: ") + str + QLatin1Char('\n'));
+    if ( str.startsWith(QString::fromUtf8(kFrameRenderedStringShort) )) {
+        str = str.remove(QString::fromUtf8(kFrameRenderedStringShort));
         
+        double progressPercent = 0.;
+        int foundProgress = str.lastIndexOf(QString::fromUtf8(kProgressChangedStringShort));
+        if (foundProgress != -1) {
+            QString progressStr = str.mid(foundProgress);
+            progressStr.remove(QString::fromUtf8(kProgressChangedStringShort));
+            progressPercent = progressStr.toDouble();
+            str = str.mid(0, foundProgress);
+        }
         if (!str.isEmpty()) {
-            if (!str.contains(';')) {
-                //The report does not have extended timer infos
-                Q_EMIT frameRendered( str.toInt() );
-            } else {
-                QStringList splits = str.split(';');
-                if (splits.size() == 3) {
-                    Q_EMIT frameRenderedWithTimer(splits[0].toInt(), splits[1].toDouble(), splits[2].toDouble());
-                } else {
-                    if (!splits.isEmpty()) {
-                        Q_EMIT frameRendered(splits[0].toInt());
-                    }
-                }
-            }
+            //The report does not have extended timer infos
+            Q_EMIT frameRendered(str.toInt(), progressPercent);
+            
         }
         
-    } else if ( str.startsWith(kRenderingFinishedStringShort) ) {
+    } else if ( str.startsWith(QString::fromUtf8(kRenderingFinishedStringShort)) ) {
         ///don't do anything
-    } else if ( str.startsWith(kProgressChangedStringShort) ) {
-        str = str.remove(kProgressChangedStringShort);
-        Q_EMIT frameProgress( str.toInt() );
-    } else if ( str.startsWith(kBgProcessServerCreatedShort) ) {
-        str = str.remove(kBgProcessServerCreatedShort);
+    } else if ( str.startsWith(QString::fromUtf8(kBgProcessServerCreatedShort)) ) {
+        str = str.remove(QString::fromUtf8(kBgProcessServerCreatedShort));
         ///the bg process wants us to create the pipe for its input
         if (!_bgProcessInputSocket) {
             _bgProcessInputSocket = new QLocalSocket();
-            QObject::connect( _bgProcessInputSocket, SIGNAL( connected() ), this, SLOT( onInputPipeConnectionMade() ) );
+            QObject::connect( _bgProcessInputSocket, SIGNAL(connected()), this, SLOT(onInputPipeConnectionMade()) );
             _bgProcessInputSocket->connectToServer(str,QLocalSocket::ReadWrite);
         }
-    } else if ( str.startsWith(kRenderingStartedShort) ) {
+    } else if ( str.startsWith(QString::fromUtf8(kRenderingStartedShort)) ) {
         ///if the user pressed cancel prior to the pipe being created, wait for it to be created and send the abort
         ///message right away
         if (_earlyCancel) {
@@ -183,7 +178,7 @@ ProcessHandler::onDataWrittenToSocket()
             onProcessCanceled();
         }
     } else {
-        _processLog.append("Error: Unable to interpret message.\n");
+        _processLog.append(QString::fromUtf8("Error: Unable to interpret message.\n"));
         throw std::runtime_error("ProcessHandler::onDataWrittenToSocket() received erroneous message");
     }
 }
@@ -194,27 +189,27 @@ ProcessHandler::onInputPipeConnectionMade()
     ///always running in the main thread
     assert( QThread::currentThread() == qApp->thread() );
 
-    _processLog.append("The input channel (the one the bg process listens to) was successfully created and connected.\n");
+    _processLog.append(QString::fromUtf8("The input channel (the one the bg process listens to) was successfully created and connected.\n"));
 }
 
 void
 ProcessHandler::onStandardOutputBytesWritten()
 {
-    QString str( _process->readAllStandardOutput().data() );
+    QString str = QString::fromUtf8( _process->readAllStandardOutput().data() );
 #ifdef DEBUG
     qDebug() << "Message(stdout):" << str;
 #endif
-    _processLog.append("Message(stdout): " + str) + '\n';
+    _processLog.append(QString::fromUtf8("Message(stdout): ") + str) + QLatin1Char('\n');
 }
 
 void
 ProcessHandler::onStandardErrorBytesWritten()
 {
-    QString str( _process->readAllStandardError().data() );
+    QString str=QString::fromUtf8( _process->readAllStandardError().data() );
 #ifdef DEBUG
     qDebug() << "Message(stderr):" << str;
 #endif
-    _processLog.append("Error(stderr): " + str) + '\n';
+    _processLog.append(QString::fromUtf8("Error(stderr): ") + str) + QLatin1Char('\n');
 }
 
 void
@@ -225,7 +220,7 @@ ProcessHandler::onProcessCanceled()
     if (!_bgProcessInputSocket) {
         _earlyCancel = true;
     } else {
-        _bgProcessInputSocket->write( (QString(kAbortRenderingStringShort) + '\n').toUtf8() );
+        _bgProcessInputSocket->write( (QString::fromUtf8(kAbortRenderingStringShort) + QLatin1Char('\n')).toUtf8() );
         _bgProcessInputSocket->flush();
     }
 }
@@ -273,6 +268,7 @@ ProcessInputChannel::ProcessInputChannel(const QString & mainProcessServerName)
 ProcessInputChannel::~ProcessInputChannel()
 {
     if ( isRunning() ) {
+        assert(!_mustQuit);
         _mustQuit = true;
         while (_mustQuit) {
             _mustQuitCond.wait(&_mustQuitMutex);
@@ -289,7 +285,7 @@ ProcessInputChannel::writeToOutputChannel(const QString & message)
 {
     {
         QMutexLocker l(_backgroundOutputPipeMutex);
-        _backgroundOutputPipe->write( (message + '\n').toUtf8() );
+        _backgroundOutputPipe->write( (message + QLatin1Char('\n')).toUtf8() );
         _backgroundOutputPipe->flush();
     }
 }
@@ -302,18 +298,18 @@ ProcessInputChannel::onNewConnectionPending()
         return;
     }
     _backgroundInputPipe = _backgroundIPCServer->nextPendingConnection();
-    QObject::connect( _backgroundInputPipe, SIGNAL( readyRead() ), this, SLOT( onInputChannelMessageReceived() ) );
+    QObject::connect( _backgroundInputPipe, SIGNAL(readyRead()), this, SLOT(onInputChannelMessageReceived()) );
 }
 
 bool
 ProcessInputChannel::onInputChannelMessageReceived()
 {
-    QString str( _backgroundInputPipe->readLine() );
+    QString str = QString::fromUtf8( _backgroundInputPipe->readLine() );
 
-    while ( str.endsWith('\n') ) {
+    while ( str.endsWith(QChar::fromLatin1('\n')) ) {
         str.chop(1);
     }
-    if ( str.startsWith(kAbortRenderingStringShort) ) {
+    if ( str.startsWith(QString::fromUtf8(kAbortRenderingStringShort)) ) {
         qDebug() << "Aborting render!";
         appPTR->abortAnyProcessing();
 
@@ -352,16 +348,23 @@ void
 ProcessInputChannel::initialize()
 {
     _backgroundOutputPipe = new QLocalSocket();
-    QObject::connect( _backgroundOutputPipe, SIGNAL( connected() ), this, SLOT( onOutputPipeConnectionMade() ) );
+    QObject::connect( _backgroundOutputPipe, SIGNAL(connected()), this, SLOT(onOutputPipeConnectionMade()) );
     _backgroundOutputPipe->connectToServer(_mainProcessServerName,QLocalSocket::ReadWrite);
     std::cout << "Attempting connection to " << _mainProcessServerName.toStdString() << std::endl;
 
     _backgroundIPCServer = new QLocalServer();
-    QObject::connect( _backgroundIPCServer,SIGNAL( newConnection() ),this,SLOT( onNewConnectionPending() ) );
+    QObject::connect( _backgroundIPCServer,SIGNAL(newConnection()),this,SLOT(onNewConnectionPending()) );
     QString serverName;
     {
-        QTemporaryFile tmpf( QDir::tempPath() + QDir::separator() + NATRON_APPLICATION_NAME "_INPUT_SOCKET"
-                             + QString::number( QCoreApplication::applicationPid() ) );
+		QString tmpFilePath = QDir::tempPath();
+		if (!tmpFilePath.endsWith(QLatin1Char('/'))) {
+			tmpFilePath += QLatin1Char('/');
+		}
+		tmpFilePath += QString::fromUtf8(NATRON_APPLICATION_NAME);
+		tmpFilePath += QString::fromUtf8("_INPUT_SOCKET");
+		tmpFilePath += QString::number(QCoreApplication::applicationPid());
+		
+        QTemporaryFile tmpf(tmpFilePath);
         tmpf.open();
         serverName = tmpf.fileName();
         tmpf.remove();
@@ -372,7 +375,7 @@ ProcessInputChannel::initialize()
         std::cout << "WARNING: The GUI application failed to respond, canceling this process will not be possible"
             " unless it finishes or you kill it." << std::endl;
     }
-    writeToOutputChannel( QString(kBgProcessServerCreatedShort) + _backgroundIPCServer->fullServerName() );
+    writeToOutputChannel( QString::fromUtf8(kBgProcessServerCreatedShort) + _backgroundIPCServer->fullServerName() );
 
     ///we wait for the GUI app to connect its socket to this server, we let it 5 sec to reply
     _backgroundIPCServer->waitForNewConnection(5000);

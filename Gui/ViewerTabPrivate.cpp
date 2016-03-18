@@ -33,6 +33,7 @@
 #include "Engine/Node.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/ActionShortcuts.h"
@@ -61,12 +62,14 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,ViewerInstance* no
 , layerChoice(NULL)
 , alphaChannelChoice(NULL)
 , viewerChannels(NULL)
+, viewerChannelsAutoswitchedToAlpha(false)
 , zoomCombobox(NULL)
 , syncViewerButton(NULL)
 , centerViewerButton(NULL)
 , clipToProjectFormatButton(NULL)
 , enableViewerRoI(NULL)
 , refreshButton(NULL)
+, pauseButton(NULL)
 , iconRefreshOff()
 , iconRefreshOn()
 , ongoingRenderCount(0)
@@ -102,7 +105,6 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,ViewerInstance* no
 , previousKeyFrame_Button(NULL)
 , play_Backward_Button(NULL)
 , previousFrame_Button(NULL)
-, stop_Button(NULL)
 , nextFrame_Button(NULL)
 , play_Forward_Button(NULL)
 , nextKeyFrame_Button(NULL)
@@ -111,10 +113,12 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,ViewerInstance* no
 , incrementSpinBox(NULL)
 , nextIncrement_Button(NULL)
 , playbackMode_Button(NULL)
+, playBackInputButton(NULL)
+, playBackInputSpinbox(NULL)
+, playBackOutputButton(NULL)
+, playBackOutputSpinbox(NULL)
 , playbackModeMutex()
 , playbackMode(ePlaybackModeLoop)
-, frameRangeEdit(NULL)
-, canEditFrameRangeLabel(NULL)
 , tripleSyncButton(0)
 , canEditFpsBox(NULL)
 , canEditFpsLabel(NULL)
@@ -156,7 +160,7 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,ViewerInstance* no
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
 bool
 ViewerTabPrivate::getOverlayTransform(double time,
-                                      int view,
+                                      ViewIdx view,
                                       const NodePtr& target,
                                       EffectInstance* currentNode,
                                       Transform::Matrix3x3* transform) const
@@ -223,7 +227,7 @@ ViewerTabPrivate::getOverlayTransform(double time,
     } else {
         
         assert(input);
-        double par = input->getPreferredAspectRatio();
+        double par = input->getAspectRatio(-1);
         
         //The mat is in pixel coordinates, though
         mat = Transform::matMul(Transform::matPixelToCanonical(par, 1, 1, false),mat);
@@ -239,13 +243,13 @@ ViewerTabPrivate::getOverlayTransform(double time,
 static double transformTimeForNode(EffectInstance* currentNode, double inTime)
 {
     U64 nodeHash = currentNode->getHash();
-    FramesNeededMap framesNeeded = currentNode->getFramesNeeded_public(nodeHash, inTime, 0, 0);
-    FramesNeededMap::iterator foundInput0 = framesNeeded.find(0);
+    FramesNeededMap framesNeeded = currentNode->getFramesNeeded_public(nodeHash, inTime, ViewIdx(0), 0);
+    FramesNeededMap::iterator foundInput0 = framesNeeded.find(0/*input*/);
     if (foundInput0 == framesNeeded.end()) {
         return inTime;
     }
     
-    std::map<int,std::vector<OfxRangeD> >::iterator foundView0 = foundInput0->second.find(0);
+    FrameRangesMap::iterator foundView0 = foundInput0->second.find(ViewIdx(0));
     if (foundView0 == foundInput0->second.end()) {
         return inTime;
     }
@@ -259,7 +263,7 @@ static double transformTimeForNode(EffectInstance* currentNode, double inTime)
 
 bool
 ViewerTabPrivate::getTimeTransform(double time,
-                                   int view,
+                                   ViewIdx view,
                                    const NodePtr& target,
                                    EffectInstance* currentNode,
                                    double *newTime) const

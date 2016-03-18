@@ -39,6 +39,7 @@
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/RotoLayer.h"
+#include "Engine/FStreamsSupport.h"
 
 #include "Gui/Button.h"
 #include "Gui/Gui.h"
@@ -68,10 +69,10 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
                     DockablePanel::eHeaderModeFullyFeatured,
                     false,
                     NodeUi->getUndoStack(),
-                    NodeUi->getNode()->getLabel().c_str(),
-                    NodeUi->getNode()->getPluginDescription().c_str(),
+                    QString::fromUtf8(NodeUi->getNode()->getLabel().c_str()),
+                    QString::fromUtf8(NodeUi->getNode()->getPluginDescription().c_str()),
                     false,
-                    "Settings",
+                    QString::fromUtf8("Settings"),
                     parent)
       , _nodeGUI(NodeUi)
       , _selected(false)
@@ -83,19 +84,19 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
     }
 
     
-    QObject::connect( this,SIGNAL( closeChanged(bool) ),NodeUi.get(),SLOT( onSettingsPanelClosedChanged(bool) ) );
+    QObject::connect( this,SIGNAL(closeChanged(bool)),NodeUi.get(),SLOT(onSettingsPanelClosedChanged(bool)) );
     
     const QSize mediumBSize(TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
     const QSize mediumIconSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
 
     QPixmap pixSettings;
     appPTR->getIcon(NATRON_PIXMAP_SETTINGS, TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), &pixSettings);
-    _settingsButton = new Button( QIcon(pixSettings),"",getHeaderWidget() );
+    _settingsButton = new Button( QIcon(pixSettings),QString(),getHeaderWidget() );
     _settingsButton->setFixedSize(mediumBSize);
     _settingsButton->setIconSize(mediumIconSize);
     _settingsButton->setToolTip(GuiUtils::convertFromPlainText(tr("Settings and presets."), Qt::WhiteSpaceNormal));
     _settingsButton->setFocusPolicy(Qt::NoFocus);
-    QObject::connect( _settingsButton,SIGNAL( clicked() ),this,SLOT( onSettingsButtonClicked() ) );
+    QObject::connect( _settingsButton,SIGNAL(clicked()),this,SLOT(onSettingsButtonClicked()) );
     insertHeaderWidget(1, _settingsButton);
 }
 
@@ -110,9 +111,11 @@ NodeSettingsPanel::~NodeSettingsPanel()
 void
 NodeSettingsPanel::setSelected(bool s)
 {
-    _selected = s;
-    style()->unpolish(this);
-    style()->polish(this);
+    if (s != _selected) {
+        _selected = s;
+        style()->unpolish(this);
+        style()->polish(this);
+    }
 }
 
 void
@@ -208,12 +211,12 @@ NodeSettingsPanel::onImportPresetsActionTriggered()
         return;
     }
     
-    std::ifstream ifile;
-    try {
-        ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-        ifile.open(filename.c_str(),std::ifstream::in);
-    } catch (const std::ifstream::failure & e) {
-        Dialogs::errorDialog("Presets",e.what());
+
+    
+    FStreamsSupport::ifstream ifile;
+    FStreamsSupport::open(&ifile, filename);
+    if (!ifile) {
+        Dialogs::errorDialog( tr("Presets").toStdString(), tr("Failed to open file: ").toStdString() + filename, false );
         return;
     }
     
@@ -231,15 +234,14 @@ NodeSettingsPanel::onImportPresetsActionTriggered()
         
         
     } catch (const std::exception & e) {
-        ifile.close();
         Dialogs::errorDialog("Presets",e.what());
         return;
     }
     NodeGuiPtr node = getNode();
     if (nodeSerialization.front()->getPluginID() != node->getNode()->getPluginID()) {
-        QString err = QString(tr("You cannot load ") + filename.c_str()  + tr(" which are presets for the plug-in ") +
-                              nodeSerialization.front()->getPluginID().c_str() + tr(" on the plug-in ") +
-                              node->getNode()->getPluginID().c_str());
+        QString err = QString(tr("You cannot load ") + QString::fromUtf8(filename.c_str())  + tr(" which are presets for the plug-in ") +
+                              QString::fromUtf8(nodeSerialization.front()->getPluginID().c_str()) + tr(" on the plug-in ") +
+                              QString::fromUtf8(node->getNode()->getPluginID().c_str()));
         Dialogs::errorDialog(tr("Presets").toStdString(),err.toStdString());
         return;
     }
@@ -268,12 +270,12 @@ NodeSettingsPanel::onExportPresetsActionTriggered()
         filename.append("." NATRON_PRESETS_FILE_EXT);
     }
     
-    std::ofstream ofile;
-    try {
-        ofile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-        ofile.open(filename.c_str(),std::ofstream::out);
-    } catch (const std::ofstream::failure & e) {
-        Dialogs::errorDialog("Presets",e.what());
+
+    FStreamsSupport::ofstream ofile;
+    FStreamsSupport::open(&ofile, filename);
+    if (!ofile) {
+        Dialogs::errorDialog( tr("Presets").toStdString()
+                             , tr("Failed to open file ").toStdString() + filename, false );
         return;
     }
 
@@ -292,7 +294,6 @@ NodeSettingsPanel::onExportPresetsActionTriggered()
         
         
     }  catch (const std::exception & e) {
-        ofile.close();
         Dialogs::errorDialog("Presets",e.what());
         return;
     }

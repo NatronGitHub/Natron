@@ -372,9 +372,9 @@ static void setKnobKeyframesFromMarker(const mv::Marker& mvMarker,
     int time = mvMarker.frame;
     boost::shared_ptr<KnobDouble> correlationKnob = natronMarker->getCorrelationKnob();
     if (result) {
-        correlationKnob->setValueAtTime(time, result->correlation, 0);
+        correlationKnob->setValueAtTime(time, result->correlation, ViewSpec::current(), 0);
     } else {
-        correlationKnob->setValueAtTime(time, 0., 0);
+        correlationKnob->setValueAtTime(time, 0., ViewSpec::current(), 0);
     }
     
     Natron::Point center;
@@ -388,7 +388,7 @@ static void setKnobKeyframesFromMarker(const mv::Marker& mvMarker,
     
     // Set the center
     boost::shared_ptr<KnobDouble> centerKnob = natronMarker->getCenterKnob();
-    centerKnob->setValuesAtTime(time, center.x, center.y, Natron::eValueChangedReasonNatronInternalEdited);
+    centerKnob->setValuesAtTime(time, center.x, center.y, ViewSpec::current(), Natron::eValueChangedReasonNatronInternalEdited);
     
     Natron::Point topLeftCorner,topRightCorner,btmRightCorner,btmLeftCorner;
     topLeftCorner.x = mvMarker.patch.coordinates(0,0) - offset.x - center.x;
@@ -409,10 +409,10 @@ static void setKnobKeyframesFromMarker(const mv::Marker& mvMarker,
     boost::shared_ptr<KnobDouble> pntBtmRightKnob = natronMarker->getPatternBtmRightKnob();
     
     // Set the pattern Quad
-    pntTopLeftKnob->setValuesAtTime(time, topLeftCorner.x, topLeftCorner.y, Natron::eValueChangedReasonNatronInternalEdited);
-    pntTopRightKnob->setValuesAtTime(time, topRightCorner.x, topRightCorner.y, Natron::eValueChangedReasonNatronInternalEdited);
-    pntBtmLeftKnob->setValuesAtTime(time, btmLeftCorner.x, btmLeftCorner.y, Natron::eValueChangedReasonNatronInternalEdited);
-    pntBtmRightKnob->setValuesAtTime(time, btmRightCorner.x, btmRightCorner.y, Natron::eValueChangedReasonNatronInternalEdited);
+    pntTopLeftKnob->setValuesAtTime(time, topLeftCorner.x, topLeftCorner.y, ViewSpec::current(), Natron::eValueChangedReasonNatronInternalEdited);
+    pntTopRightKnob->setValuesAtTime(time, topRightCorner.x, topRightCorner.y, ViewSpec::current(), Natron::eValueChangedReasonNatronInternalEdited);
+    pntBtmLeftKnob->setValuesAtTime(time, btmLeftCorner.x, btmLeftCorner.y,ViewSpec::current(), Natron::eValueChangedReasonNatronInternalEdited);
+    pntBtmRightKnob->setValuesAtTime(time, btmRightCorner.x, btmRightCorner.y, ViewSpec::current(),Natron::eValueChangedReasonNatronInternalEdited);
 }
 
 static void updateLibMvTrackMinimal(const TrackMarker& marker,
@@ -692,7 +692,7 @@ TrackerContext::trackStepV1(int trackIndex, const TrackArgsV1& args, int time)
 {
     assert(trackIndex >= 0 && trackIndex < (int)args.getInstances().size());
     KnobButton* selectedInstance = args.getInstances()[trackIndex];
-    selectedInstance->getHolder()->onKnobValueChanged_public(selectedInstance,eValueChangedReasonNatronInternalEdited,time,
+    selectedInstance->getHolder()->onKnobValueChanged_public(selectedInstance,eValueChangedReasonNatronInternalEdited,time, ViewIdx(0),
                                                              true);
     return true;
 }
@@ -1553,11 +1553,11 @@ FrameAccessorImpl::GetImage(int /*clip*/,
     RectD precomputedRoD;
     if (!region) {
         bool isProjectFormat;
-        Natron::StatusEnum stat = _trackerInput->getEffectInstance()->getRegionOfDefinition_public(_trackerInput->getHashValue(), frame, scale, 0, &precomputedRoD, &isProjectFormat);
+        Natron::StatusEnum stat = _trackerInput->getEffectInstance()->getRegionOfDefinition_public(_trackerInput->getHashValue(), frame, scale, ViewIdx(0), &precomputedRoD, &isProjectFormat);
         if (stat == eStatusFailed) {
             return (mv::FrameAccessor::Key)0;
         }
-        double par = _trackerInput->getEffectInstance()->getPreferredAspectRatio();
+        double par = _trackerInput->getEffectInstance()->getAspectRatio(-1);
         precomputedRoD.toPixelEnclosing((unsigned int)downscale, par, &roi);
     }
     
@@ -1566,14 +1566,13 @@ FrameAccessorImpl::GetImage(int /*clip*/,
     
     NodePtr node = _context->getNode();
     
+    AbortableRenderInfoPtr abortInfo(new AbortableRenderInfo(false, 0));
     ParallelRenderArgsSetter frameRenderArgs(frame,
-                                             0, //<  view 0 (left)
+                                             ViewIdx(0), //<  view 0 (left)
                                              true, //<isRenderUserInteraction
                                              false, //isSequential
-                                             false, //can abort
-                                             0, //render Age
+                                             abortInfo, //abort info
                                              node, //  requester
-                                             0, // request
                                              0, //texture index
                                              node->getApp()->getTimeLine().get(), //Timeline
                                              NodePtr(), // rotoPaintNode
@@ -1586,7 +1585,7 @@ FrameAccessorImpl::GetImage(int /*clip*/,
     EffectInstance::RenderRoIArgs args(frame,
                                        scale,
                                        downscale,
-                                       0,
+                                       ViewIdx(0),
                                        false,
                                        roi,
                                        precomputedRoD,
@@ -1594,7 +1593,7 @@ FrameAccessorImpl::GetImage(int /*clip*/,
                                        Natron::eImageBitDepthFloat,
                                        true,
                                        _context->getNode()->getEffectInstance().get());
-    ImageList planes;
+    std::map<ImageComponents,ImagePtr> planes;
     EffectInstance::RenderRoIRetCode stat = _trackerInput->getEffectInstance()->renderRoI(args, &planes);
     if (stat != EffectInstance::eRenderRoIRetCodeOk || planes.empty()) {
 #ifdef TRACE_LIB_MV
@@ -1605,7 +1604,7 @@ FrameAccessorImpl::GetImage(int /*clip*/,
     }
     
     assert(!planes.empty());
-    const ImagePtr& sourceImage = planes.front();
+    const ImagePtr& sourceImage = planes.begin()->second;
     RectI sourceBounds = sourceImage->getBounds();
     RectI intersectedRoI;
     if (!roi.intersect(sourceBounds, &intersectedRoI)) {
@@ -2192,7 +2191,7 @@ TrackScheduler<TrackArgsType>::TrackScheduler(TrackerParamsProvider* paramsProvi
 , requestedArgs()
 , _functor(functor)
 {
-    setObjectName("TrackScheduler");
+    setObjectName(QString::fromUtf8("TrackScheduler"));
 }
 
 template <class TrackArgsType>
@@ -2225,7 +2224,7 @@ public:
     , _reportProgress(reportProgress)
     {
         if (_effect && _reportProgress) {
-            _effect->getApp()->progressStart(_effect.get(), QObject::tr("Tracking...").toStdString(), "");
+            _effect->getApp()->progressStart(_effect->getNode(), QObject::tr("Tracking...").toStdString(), "");
             _base->emit_trackingStarted();
         }
 
@@ -2236,7 +2235,7 @@ public:
     {
         _v->setDoingPartialUpdates(false);
         if (_effect && _reportProgress) {
-            _effect->getApp()->progressEnd(_effect.get());
+            _effect->getApp()->progressEnd(_effect->getNode());
             _base->emit_trackingFinished();
         }
 
@@ -2352,7 +2351,7 @@ TrackScheduler<TrackArgsType>::run()
                 
                 if (reportProgress && effect) {
                     ///Notify we progressed of 1 frame
-                    if (!effect->getApp()->progressUpdate(effect.get(), progress)) {
+                    if (!effect->getApp()->progressUpdate(effect->getNode(), progress)) {
                         QMutexLocker k(&_imp->abortRequestedMutex);
                         ++_imp->abortRequested;
                     }

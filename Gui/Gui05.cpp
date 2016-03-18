@@ -51,6 +51,7 @@
 #include "Gui/GuiPrivate.h"
 #include "Gui/Histogram.h"
 #include "Gui/NodeGraph.h"
+#include "Gui/ProgressPanel.h"
 #include "Gui/ProjectGui.h"
 #include "Gui/ShortCutEditor.h"
 #include "Gui/GuiApplicationManager.h"
@@ -78,7 +79,7 @@ Gui::setupUi()
 
 
     _imp->_undoStacksGroup = new QUndoGroup;
-    QObject::connect( _imp->_undoStacksGroup, SIGNAL( activeStackChanged(QUndoStack*) ), this, SLOT( onCurrentUndoStackChanged(QUndoStack*) ) );
+    QObject::connect( _imp->_undoStacksGroup, SIGNAL(activeStackChanged(QUndoStack*)), this, SLOT(onCurrentUndoStackChanged(QUndoStack*)) );
 
     createMenuActions();
 
@@ -92,7 +93,7 @@ Gui::setupUi()
 
     _imp->_leftRightSplitter = new Splitter(_imp->_centralWidget);
     _imp->_leftRightSplitter->setChildrenCollapsible(false);
-    _imp->_leftRightSplitter->setObjectName(kMainSplitterObjectName);
+    _imp->_leftRightSplitter->setObjectName(QString::fromUtf8(kMainSplitterObjectName));
     _imp->_splitters.push_back(_imp->_leftRightSplitter);
     _imp->_leftRightSplitter->setOrientation(Qt::Horizontal);
     _imp->_leftRightSplitter->setContentsMargins(0, 0, 0, 0);
@@ -115,6 +116,7 @@ Gui::setupUi()
     _imp->createCurveEditorGui();
     _imp->createDopeSheetGui();
     _imp->createScriptEditorGui();
+    _imp->createProgressPanelGui();
     ///Must be absolutely called once _nodeGraphArea has been initialized.
     _imp->createPropertiesBinGui();
 
@@ -140,11 +142,11 @@ Gui::setupUi()
     //the same action also clears the ofx plugins caches, they are not the same cache but are used to the same end
     
     boost::shared_ptr<Project> project = _imp->_appInstance->getProject();
-    QObject::connect( project.get(), SIGNAL( projectNameChanged(QString, bool) ), this, SLOT( onProjectNameChanged(QString, bool) ) );
+    QObject::connect( project.get(), SIGNAL(projectNameChanged(QString,bool)), this, SLOT(onProjectNameChanged(QString,bool)) );
     
     boost::shared_ptr<TimeLine> timeline = project->getTimeLine();
-    QObject::connect( timeline.get(),SIGNAL( frameChanged(SequenceTime,int) ), this,SLOT( onTimeChanged(SequenceTime,int) ) );
-    QObject::connect( timeline.get(),SIGNAL( frameAboutToChange()), this, SLOT(onTimelineTimeAboutToChange()));
+    QObject::connect( timeline.get(),SIGNAL(frameChanged(SequenceTime,int)), this,SLOT(renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime,int)) );
+    QObject::connect( timeline.get(),SIGNAL(frameAboutToChange()), this, SLOT(onTimelineTimeAboutToChange()));
 
     /*Searches recursively for all child objects of the given object,
        and connects matching signals from them to slots of object that follow the following form:
@@ -214,11 +216,11 @@ Gui::createGroupGui(const NodePtr & group,
     QGraphicsScene* scene = new QGraphicsScene(this);
     scene->setItemIndexMethod(QGraphicsScene::NoIndex);
     NodeGraph* nodeGraph = new NodeGraph(this, collection, scene, this);
-    nodeGraph->setObjectName( group->getLabel().c_str() );
+    nodeGraph->setObjectName( QString::fromUtf8(group->getLabel().c_str()) );
     _imp->_groups.push_back(nodeGraph);
     if ( where && reason == eCreateNodeReasonUserCreate && !getApp()->isCreatingPythonGroup() ) {
         where->appendTab(nodeGraph, nodeGraph);
-        QTimer::singleShot( 25, nodeGraph, SLOT( centerOnAllNodes() ) );
+        QTimer::singleShot( 25, nodeGraph, SLOT(centerOnAllNodes()) );
     } else {
         nodeGraph->setVisible(false);
     }
@@ -258,6 +260,8 @@ Gui::removeGroupGui(NodeGraph* tab,
         if ( it != _imp->_groups.end() ) {
             _imp->_groups.erase(it);
         }
+
+        unregisterTab(tab);
         tab->deleteLater();
     }
 }

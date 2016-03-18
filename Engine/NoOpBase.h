@@ -29,6 +29,7 @@
 #include <boost/shared_ptr.hpp>
 #endif
 #include "Engine/OutputEffectInstance.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -85,10 +86,10 @@ public:
     }
 
     virtual StatusEnum getTransform(double time,
-                                            const RenderScale & renderScale,
-                                            int view,
-                                            EffectInstPtr* inputToTransform,
-                                            Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                    const RenderScale & renderScale,
+                                    ViewIdx view,
+                                    EffectInstPtr* inputToTransform,
+                                    Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual bool getInputsHoldingTransform(std::list<int>* inputs) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
@@ -97,6 +98,7 @@ public:
         return false;
     }
     
+    virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
     
     virtual bool isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE FINAL;
 
@@ -108,8 +110,9 @@ private:
     virtual bool isIdentity(double time,
                             const RenderScale & scale,
                             const RectI & renderWindow,
-                            int view,
+                            ViewIdx view,
                             double* inputTime,
+                            ViewIdx* inputView,
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
 

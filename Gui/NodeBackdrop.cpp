@@ -112,8 +112,8 @@ NodeBackDrop::initialize(const QString & name,
     ///initialize knobs here
     initializeKnobsPublic();
 
-    QObject::connect( _imp->settingsPanel,SIGNAL( nameChanged(QString) ),this,SLOT( onNameChanged(QString) ) );
-    QObject::connect( _imp->settingsPanel,SIGNAL( colorChanged(QColor) ),this,SLOT( onColorChanged(QColor) ) );
+    QObject::connect( _imp->settingsPanel,SIGNAL(nameChanged(QString)),this,SLOT(onNameChanged(QString)) );
+    QObject::connect( _imp->settingsPanel,SIGNAL(colorChanged(QColor)),this,SLOT(onColorChanged(QColor)) );
     dockContainer->addWidget(_imp->settingsPanel);
 
     if (!requestedByLoad) {
@@ -507,15 +507,15 @@ NodeBackDrop::slaveTo(NodeBackDrop* master)
     pen.setWidth(3);
     pen.setBrush( QColor(200,100,100) );
     _imp->slaveMasterLink->setPen(pen);
-    QObject::connect( _imp->master, SIGNAL( positionChanged() ), this, SLOT( refreshSlaveMasterLinkPosition() ) );
-    QObject::connect( this, SIGNAL( positionChanged() ), this, SLOT( refreshSlaveMasterLinkPosition() ) );
+    QObject::connect( _imp->master, SIGNAL(positionChanged()), this, SLOT(refreshSlaveMasterLinkPosition()) );
+    QObject::connect( this, SIGNAL(positionChanged()), this, SLOT(refreshSlaveMasterLinkPosition()) );
 }
 
 void
 NodeBackDrop::unslave()
 {
-    QObject::disconnect( _imp->master, SIGNAL( positionChanged() ), this, SLOT( refreshSlaveMasterLinkPosition() ) );
-    QObject::disconnect( this, SIGNAL( positionChanged() ), this, SLOT( refreshSlaveMasterLinkPosition() ) );
+    QObject::disconnect( _imp->master, SIGNAL(positionChanged()), this, SLOT(refreshSlaveMasterLinkPosition()) );
+    QObject::disconnect( this, SIGNAL(positionChanged()), this, SLOT(refreshSlaveMasterLinkPosition()) );
 
     assert(_imp->slaveMasterLink);
     delete _imp->slaveMasterLink;

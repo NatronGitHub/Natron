@@ -48,14 +48,12 @@ NATRON_NAMESPACE_ENTER;
 class CurveGui
     : public QObject
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 
 public:
 
   
-    CurveGui(const CurveWidget *curveWidget,
+    CurveGui(CurveWidget *curveWidget,
              boost::shared_ptr<Curve>  curve,
              const QString & name,
              const QColor & color,
@@ -135,21 +133,27 @@ public:
     virtual KeyFrameSet getKeyFrames() const;
     virtual int getKeyFrameIndex(double time) const = 0;
     virtual KeyFrame setKeyFrameInterpolation(KeyframeTypeEnum interp,int index) = 0;
-    
-Q_SIGNALS:
 
-    void curveChanged();
-    
-    
 
 private:
-
-    std::pair<KeyFrame,bool> nextPointForSegment(double x1,double* x2,const KeyFrameSet & keyframes);
+    
+    void nextPointForSegment(const double x1,
+                             const KeyFrameSet & keyframes,
+                             const std::list<double>& keysWidgetCoords,
+                             const std::pair<double,double>& curveYRange,
+                             const double xminCurveWidgetCoord,
+                             const double xmaxCurveWidgetCoord,
+                             KeyFrameSet::const_iterator* lastUpperIt,
+                             std::list<double>::const_iterator* lastUpperItCoords,
+                             double* x2,
+                             KeyFrame* key,
+                             bool* isKey );
     
 protected:
     
     boost::shared_ptr<Curve> _internalCurve; ///ptr to the internal curve
-    
+    CurveWidget* _curveWidget;
+
 private:
     
     QString _name; /// the name of the curve
@@ -157,7 +161,6 @@ private:
     int _thickness; /// its thickness
     bool _visible; /// should we draw this curve ?
     bool _selected; /// is this curve selected
-    const CurveWidget* _curveWidget;
    
 };
 
@@ -165,20 +168,23 @@ typedef std::list<boost::shared_ptr<CurveGui> > Curves;
 
 class KnobCurveGui : public CurveGui
 {
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
     
 public:
     
     
-    KnobCurveGui(const CurveWidget *curveWidget,
+    KnobCurveGui(CurveWidget *curveWidget,
              boost::shared_ptr<Curve>  curve,
-             KnobGui* knob,
+             const KnobGuiPtr& knob,
              int dimension,
              const QString & name,
              const QColor & color,
              int thickness = 1);
     
     
-    KnobCurveGui(const CurveWidget *curveWidget,
+    KnobCurveGui(CurveWidget *curveWidget,
                  boost::shared_ptr<Curve>  curve,
                  const KnobPtr& knob,
                  const boost::shared_ptr<RotoContext>& roto,
@@ -191,9 +197,9 @@ public:
     
     virtual boost::shared_ptr<Curve>  getInternalCurve() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    KnobGui* getKnobGui() const
+    KnobGuiPtr getKnobGui() const
     {
-        return _knob;
+        return _knob.lock();
     }
     
     virtual double evaluate(bool useExpr,double x) const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -209,13 +215,17 @@ public:
     
     virtual int getKeyFrameIndex(double time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual KeyFrame setKeyFrameInterpolation(KeyframeTypeEnum interp,int index) OVERRIDE FINAL;
+    
+public Q_SLOTS:
 
+    void onKnobInternalCurveChanged();
+    void onKnobInterpolationChanged();
     
 private:
     
     boost::shared_ptr<RotoContext> _roto;
     KnobPtr _internalKnob;
-    KnobGui* _knob; //< ptr to the knob holding this curve
+    KnobGuiWPtr _knob; //< ptr to the knob holding this curve
     int _dimension; //< which dimension is this curve representing
 };
 
@@ -223,7 +233,7 @@ class BezierCPCurveGui : public CurveGui
 {
 public:
     
-    BezierCPCurveGui(const CurveWidget *curveWidget,
+    BezierCPCurveGui(CurveWidget *curveWidget,
                  const boost::shared_ptr<Bezier>& bezier,
                  const boost::shared_ptr<RotoContext>& roto,
                  const QString & name,
