@@ -16,7 +16,7 @@ name                qt4-mac
 #conflicts           qt3 qt3-mac qt4-mac-devel
 conflicts           qt3 qt3-mac
 version             4.8.7
-revision            105
+revision            106
 set branch          [join [lrange [split ${version} .] 0 1] .]
 
 categories          aqua
