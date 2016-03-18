@@ -137,6 +137,10 @@ GIF_TAR=giflib-5.1.1.tar.gz
 JASP_TAR=jasper-1.900.1.zip
 INSTALLER_BIN_TAR=natron-windows-installer.zip
 
+LLVM_TAR=llvm-3.7.1.src.tar.xz # 3.4 don't have RTTI, higher (3.8) not supported
+MESA_TAR=mesa-11.2.0-rc3.tar.xz # lower had build issues
+GLU_TAR=glu-9.0.0.tar.bz2
+
 FFMPEG_MXE_BIN_64_GPL_TAR=ffmpeg-2.8.3-windows-x86_64-shared-GPLv2.tar.xz
 FFMPEG_MXE_BIN_32_GPL_TAR=ffmpeg-2.8.3-windows-i686-shared-GPLv2.tar.xz
 FFMPEG_MXE_BIN_64_LGPL_TAR=ffmpeg-2.8.3-windows-x86_64-shared-LGPL.tar.xz

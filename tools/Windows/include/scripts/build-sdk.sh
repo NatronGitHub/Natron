@@ -73,6 +73,60 @@ export PYTHON_HOME=$INSTALL_PATH
 export PYTHON_PATH=$INSTALL_PATH/lib/python2.7
 export PYTHON_INCLUDE=$INSTALL_PATH/include/python2.7
 
+# Install llvm
+if [ ! -f "$INSTALL_PATH/llvm/bin/llvm-config.exe" ]; then
+    cd $TMP_BUILD_DIR || exit 1
+    if [ ! -f $SRC_PATH/$LLVM_TAR ]; then
+        wget $THIRD_PARTY_SRC_URL/$LLVM_TAR -O $SRC_PATH/$LLVM_TAR || exit 1
+    fi
+    tar xvf $SRC_PATH/$LLVM_TAR || exit 1
+    cd llvm-* || exit 1
+    patch -p0 < $INC_PATH/patches/llvm/add_pi.diff || exit 1
+    mkdir build
+    cd build || exit 1
+    cmake -G "MSYS Makefiles" -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH/llvm -DLLVM_INCLUDE_TESTS=OFF -DLLVM_ENABLE_CXX1Y=ON -DBUILD_SHARED_LIBS=OFF -DLLVM_ENABLE_RTTI=1 -DCMAKE_BUILD_TYPE=Release .. || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+fi
+
+# Install osmesa
+if [ ! -f "$INSTALLPATH/osmesa/lib/osmesa.dll" ]; then
+    cd $TMP_BUILD_DIR || exit 1
+    if [ ! -f $SRC_PATH/$MESA_TAR ]; then
+        wget $THIRD_PARTY_SRC_URL/$MESA_TAR -O $SRC_PATH/$MESA_TAR || exit 1
+    fi
+    tar xvf $SRC_PATH/$MESA_TAR || exit 1
+    cd mesa-* || exit 1
+    patch -p0 < $INC_PATH/patches/mesa/add_pi.diff
+    patch -p0 < $INC_PATH/patches/mesa/mgl_export.diff
+    patch -p0 < $INC_PATH/patches/mesa/scons_fix.diff
+    # optional, adds failsafe version #patch -p1 < $INC_PATH/patches/mesa/swrast_failsafe.diff
+    mkdir -p $INSTALL_PATH/osmesa/include $INSTALL_PATH/osmesa/lib/pkgconfig
+    cat $INC_PATH/patches/mesa/osmesa.pc | sed "s/__REPLACE__/${INSTALL_PATH}/" > $INSTALL_PATH/osmesa/lib/pkgconfig/osmesa.pc || exit 1
+    (cd include/GL; sed -e 's@gl.h glext.h@gl.h glext.h ../GLES/gl.h@' -e 's@\^GLAPI@^GL_\\?API@' -i.orig gl_mangle.h) 
+    (cd include/GL; sh ./gl_mangle.h > gl_mangle.h.new && mv gl_mangle.h.new gl_mangle.h)
+    if [ "$BIT" = "64" ]; then
+      MESAARCH="x86_64"
+    else
+      MESAARCH="x86"
+    fi
+    LLVM_CONFIG=$INSTALL_PATH/llvm/bin/llvm-config.exe LLVM=$INSTALL_PATH/llvm CFLAGS="-DUSE_MGL_NAMESPACE" CXXFLAGS="-std=c++11" LDFLAGS="-static -s" scons build=release platform=windows toolchain=mingw machine=$MESAARCH texture_float=yes llvm=yes verbose=yes osmesa || exit 1
+    cp build/windows-$MESAARCH/gallium/targets/osmesa/osmesa.dll $INSTALL_PATH/osmesa/lib/ || exit 1
+    cp -a include/GL $INSTALL_PATH/osmesa/include/ || exit 1
+fi
+
+# Install glu
+if [ ! -f "$INSTALL_PATH/osmesa/lib/pkgconfig/glu.pc" ]; then
+    cd $TMP_BUILD_DIR || exit 1
+    if [ ! -f $SRC_PATH/$GLU_TAR ]; then
+        wget $THIRD_PARTY_SRC_URL/$GLU_TAR -O $SRC_PATH/$GLU_TAR || exit 1
+    fi
+    tar xvf $SRC_PATH/$GLU_TAR || exit 1
+    cd glu-* || exit 1
+    env PKG_CONFIG_PATH=$INSTALL_PATH/osmesa/lib/pkgconfig LD_LIBRARY_PATH=$INSTALL_PATH/osmesa/lib ./configure --prefix=$INSTALL_PATH/osmesa --disable-shared --enable-static CPPFLAGS=-DUSE_MGL_NAMESPACE || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+fi
 
 # Install magick
 if [ "$REBUILD_MAGICK" = "1" ]; then
