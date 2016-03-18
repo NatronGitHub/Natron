@@ -791,10 +791,11 @@ TimeLineGui::mouseMoveEvent(QMouseEvent* e)
     if (distortViewPort) {
         double leftMost = toTimeLine(0);
         double rightMost = toTimeLine(width() - 1);
+        double delta = (rightMost - leftMost) * 0.02;
         if (tseq < leftMost) {
-            centerOn(tseq, rightMost);
+            centerOn(leftMost - delta, rightMost - delta, 0);
         } else if (tseq > rightMost) {
-            centerOn(leftMost, tseq);
+            centerOn(leftMost + delta, rightMost + delta, 0);
         } else {
             update();
         }
