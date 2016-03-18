@@ -1057,7 +1057,7 @@ threadFunctionWrapper(OfxThreadFunctionV1 func,
     
 class OfxThread
     : public QThread
-#ifdef QT_USE_NATRON_CUSTOM_THREADPOOL_EXT
+#ifdef QT_CUSTOM_THREADPOOL
     , public AbortableThread
 #endif
 {

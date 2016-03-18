@@ -123,7 +123,7 @@ protected:
 struct OutputSchedulerThreadPrivate;
 class OutputSchedulerThread
 : public QThread
-#ifdef QT_USE_NATRON_CUSTOM_THREADPOOL_EXT
+#ifdef QT_CUSTOM_THREADPOOL
 , public AbortableThread
 #endif
 {
@@ -560,7 +560,7 @@ private:
 struct ViewerCurrentFrameRequestSchedulerPrivate;
 class ViewerCurrentFrameRequestScheduler
 : public QThread
-#ifdef QT_USE_NATRON_CUSTOM_THREADPOOL_EXT
+#ifdef QT_CUSTOM_THREADPOOL
 , public AbortableThread
 #endif
 {
@@ -610,7 +610,7 @@ struct CurrentFrameFunctorArgs;
 struct ViewerCurrentFrameRequestRendererBackupPrivate;
 class ViewerCurrentFrameRequestRendererBackup
 : public QThread
-#ifdef QT_USE_NATRON_CUSTOM_THREADPOOL_EXT
+#ifdef QT_CUSTOM_THREADPOOL
 , public AbortableThread
 #endif
 {

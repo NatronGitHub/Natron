@@ -264,9 +264,9 @@ AppManager::load(int &argc,
     }
     initializeQApp(argc, argv);
     
-#ifdef QT_USE_NATRON_CUSTOM_THREADPOOL_EXT
+#ifdef QT_CUSTOM_THREADPOOL
     // Set the global thread pool
-    qApp->setGlobalThreadPool(new ThreadPool);
+    QThreadPool::setGlobalInstance(new ThreadPool);
 #endif
 
     // set fontconfig path on all platforms

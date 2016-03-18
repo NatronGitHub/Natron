@@ -387,7 +387,7 @@ EffectInstance::aborted() const
 {
     QThread* thisThread = QThread::currentThread();
     
-#ifdef QT_USE_NATRON_CUSTOM_THREADPOOL_EXT
+#ifdef QT_CUSTOM_THREADPOOL
     AbortableThread* isAbortableThread = dynamic_cast<AbortableThread*>(thisThread);
 #endif
     
@@ -397,7 +397,7 @@ EffectInstance::aborted() const
     
     // If the thread is an abortable thread, the first call to abort is slow (using TLS) then others are
     // fast and just dereferences pointers
-#ifdef QT_USE_NATRON_CUSTOM_THREADPOOL_EXT
+#ifdef QT_CUSTOM_THREADPOOL
     if (!isAbortableThread || !isAbortableThread->getAbortInfo(&isRenderUserInteraction, &abortInfo, &treeRoot))
 #endif
     {
@@ -413,7 +413,7 @@ EffectInstance::aborted() const
         abortInfo = args->abortInfo;
         treeRoot = args->treeRoot->getEffectInstance();
         
-#ifdef QT_USE_NATRON_CUSTOM_THREADPOOL_EXT
+#ifdef QT_CUSTOM_THREADPOOL
         if (isAbortableThread) {
             isAbortableThread->setAbortInfo(isRenderUserInteraction, abortInfo, treeRoot);
         }

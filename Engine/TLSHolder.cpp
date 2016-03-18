@@ -99,7 +99,7 @@ AppTLS::cleanupTLSForThread()
     
     QThread* curThread = QThread::currentThread();
 
-#ifdef QT_USE_NATRON_CUSTOM_THREADPOOL_EXT
+#ifdef QT_CUSTOM_THREADPOOL
     AbortableThread* isAbortableThread = dynamic_cast<AbortableThread*>(curThread);
     if (isAbortableThread) {
         isAbortableThread->clearAbortInfo();

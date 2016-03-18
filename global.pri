@@ -27,10 +27,6 @@ DEFINES += OFX_SUPPORTS_DIALOG
 #for QString(const char*) assumes ASCII strings, we may run into troubles
 DEFINES += QT_NO_CAST_FROM_ASCII
 
-# We patched Qt to be able to derive QThreadPool to control the threads that are spawned
-# Disabling this will no longer make use of these extensions which improve performances
-DEFINES+= QT_USE_NATRON_CUSTOM_THREADPOOL_EXT
-
 //Uncomment to run Natron without Python functionnalities (for debug purposes)
 #DEFINES += NATRON_RUN_WITHOUT_PYTHON
 
