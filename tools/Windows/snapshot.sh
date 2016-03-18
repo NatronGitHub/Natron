@@ -19,7 +19,7 @@ fi
 
 PID=$$
 CWD=`pwd`
-TMP=$CWD/.autobuild
+TMP=$HOME/autobuild
 
 TMP_BUILD_DIR=$TMP_PATH$BIT
 
