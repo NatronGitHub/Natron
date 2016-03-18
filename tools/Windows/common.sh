@@ -57,7 +57,7 @@ INSTALL32_PATH=/mingw32
 INSTALL64_PATH=/mingw64
 
 # bump timestamp on SDK changes, important!
-CORELIBS_VERSION=20160121
+CORELIBS_VERSION=20160318
 
 # Common values
 #
