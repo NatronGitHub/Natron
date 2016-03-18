@@ -385,9 +385,9 @@ EffectInstance::Implementation::aborted(bool isRenderResponseToUserInteraction,
 bool
 EffectInstance::aborted() const
 {
-    QThread* thisThread = QThread::currentThread();
     
 #ifdef QT_CUSTOM_THREADPOOL
+    QThread* thisThread = QThread::currentThread();
     AbortableThread* isAbortableThread = dynamic_cast<AbortableThread*>(thisThread);
 #endif
     

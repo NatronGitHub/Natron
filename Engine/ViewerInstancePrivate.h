@@ -258,7 +258,7 @@ public:
             ++it;
             
             for (;it != currentRenderAges[i].end(); ++it) {
-                (*it)->aborted = true;
+                (*it)->aborted = 1;
             }
         }
     }
