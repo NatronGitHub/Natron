@@ -95,6 +95,7 @@ class SequenceFromFiles;
 // Natron Engine
 
 NATRON_NAMESPACE_ENTER;
+struct AbortableRenderInfo;
 class AbstractOfxEffectInstance;
 class AppInstance;
 class AppSettings;
@@ -223,6 +224,9 @@ class Lut;
 namespace Transform {
 struct Matrix3x3;
 }
+
+typedef boost::shared_ptr<AbortableRenderInfo> AbortableRenderInfoPtr;
+
 
 typedef boost::shared_ptr<Node> NodePtr;
 typedef std::list<NodePtr> NodesList;

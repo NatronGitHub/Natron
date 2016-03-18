@@ -78,7 +78,6 @@ struct AbortableRenderInfo
     }
 };
 
-typedef boost::shared_ptr<AbortableRenderInfo> AbortableRenderInfoPtr;
 
 struct NodeFrameRequest;
 
