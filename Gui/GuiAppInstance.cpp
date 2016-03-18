@@ -146,7 +146,7 @@ struct GuiAppInstancePrivate
     
     
     KnobDnDData knobDnd;
-    
+        
     GuiAppInstancePrivate()
     : _gui(NULL)
     , _isClosing(false)

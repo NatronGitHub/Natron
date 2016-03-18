@@ -118,6 +118,7 @@ public:
     
     bool recenterViewport;
     Natron::Point viewportCenter;
+
 };
 
 

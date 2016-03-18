@@ -747,7 +747,6 @@ Knob<T>::getValueAtTime(double time,
                         bool clamp,
                         bool byPassMaster) const
 {
-
     assert(!view.isAll());
     if  (dimension >= (int)_values.size() || dimension < 0) {
         return T();
@@ -1417,6 +1416,7 @@ Knob<T>::setValueAtTime(double time,
     if (newKeyFrame) {
         ret = eValueChangedReturnCodeKeyframeAdded;
     }
+
 
     if (holder) {
         holder->setHasAnimation(true);

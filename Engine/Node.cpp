@@ -1304,6 +1304,7 @@ Node::getStreamWarnings(std::map<StreamWarningEnum,QString>* warnings) const
     *warnings = _imp->streamWarnings;
 }
 
+
 void
 Node::declareRotoPythonField()
 {
@@ -3728,7 +3729,6 @@ Node::initializeKnobs(int renderScaleSupportPref,bool loadingSerialization)
         //initialize default knobs added by Natron
         initializeDefaultKnobs(renderScaleSupportPref, loadingSerialization);
     }
-
 
     if (effectIsGroup) {
         _imp->effect->initializeKnobsPublic();

@@ -755,7 +755,6 @@ GuiApplicationManager::getIcon(PixmapEnum e,
         //*pix = QPixmap::fromImage(img);
         
         // new version:
-
         pix->load(QString::fromUtf8(path.c_str()));
 
         QPixmapCache::insert(QString::number(e), *pix);

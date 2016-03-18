@@ -60,6 +60,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/TrackerContext.h"
+
 #include "Engine/ViewIdx.h"
 
 #include "Gui/AnimatedCheckBox.h"
@@ -1997,6 +1998,7 @@ TrackerPanelV1::onButtonTriggered(KnobButton* button)
 }
 
 
+
 void
 TrackerPanelV1::onTrackingStarted()
 {
@@ -2309,7 +2311,6 @@ TrackerPanelPrivateV1::createCornerPinFromSelection(const std::list<Node*> & sel
     }
     GuiAppInstance* app = publicInterface->getGui()->getApp();
 
-    
     CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_CORNERPIN), eCreateNodeReasonInternal, publicInterface->getMainInstance()->getGroup());
     NodePtr cornerPin = app->createNode(args);
                                                         
@@ -2401,8 +2402,6 @@ TrackerPanelV1::showMenuForInstance(Node* instance)
         centerKnob->copyAnimationToClipboard();
     }
 }
-
-
 
 NATRON_NAMESPACE_EXIT;
 

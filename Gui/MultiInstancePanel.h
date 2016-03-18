@@ -196,7 +196,6 @@ public:
     void clearBackwardAnimationForSelection();
     
     void clearForwardAnimationForSelection();
-        
 public Q_SLOTS:
     
     void onAverageTracksButtonClicked();

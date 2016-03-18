@@ -435,6 +435,7 @@ TrackerGui::createGui()
 
 
 
+
     
     QIcon bwIcon;
     bwIcon.addPixmap(pixStop,QIcon::Normal,QIcon::On);
@@ -448,6 +449,7 @@ TrackerGui::createGui()
     _imp->trackBwButton = new Button(bwIcon,QString(),_imp->buttonsBar);
     _imp->trackBwButton->setFixedSize(medButtonSize);
     _imp->trackBwButton->setIconSize(medButtonIconSize);
+
     _imp->trackBwButton->setToolTip(QString::fromUtf8("<p>") + tr("Track selected tracks backward until left bound of the timeline.") +
                                     QString::fromUtf8("</p><p><b>") + tr("Keyboard shortcut:") + QString::fromUtf8(" Z</b></p>"));
     _imp->trackBwButton->setCheckable(true);
@@ -479,13 +481,14 @@ TrackerGui::createGui()
     QObject::connect( _imp->trackNextButton,SIGNAL( clicked(bool) ),this,SLOT( onTrackNextClicked() ) );
     trackPlayerLayout->addWidget(_imp->trackNextButton);
     
-    
+
     QIcon fwIcon;
     fwIcon.addPixmap(pixStop,QIcon::Normal,QIcon::On);
     fwIcon.addPixmap(fwDisabled,QIcon::Normal,QIcon::Off);
     _imp->trackFwButton = new Button(fwIcon,QString(),_imp->buttonsBar);
     _imp->trackFwButton->setFixedSize(medButtonSize);
     _imp->trackFwButton->setIconSize(medButtonIconSize);
+
     _imp->trackFwButton->setToolTip(QString::fromUtf8("<p>") + tr("Track selected tracks forward until right bound of the timeline.") +
                                     QString::fromUtf8("</p><p><b>") + tr("Keyboard shortcut:") + QString::fromUtf8(" V</b></p>"));
     _imp->trackFwButton->setCheckable(true);
@@ -526,12 +529,14 @@ TrackerGui::createGui()
     
     _imp->buttonsLayout->addWidget(clearAnimationContainer);
     
+
     QIcon updateViewerIC;
     updateViewerIC.addPixmap(pixUpdateViewerEnabled,QIcon::Normal,QIcon::On);
     updateViewerIC.addPixmap(pixUpdateViewerDisabled,QIcon::Normal,QIcon::Off);
     _imp->updateViewerButton = new Button(updateViewerIC,QString(),_imp->buttonsBar);
     _imp->updateViewerButton->setFixedSize(medButtonSize);
     _imp->updateViewerButton->setIconSize(medButtonIconSize);
+
 
     _imp->updateViewerButton->setCheckable(true);
     _imp->updateViewerButton->setChecked(true);
@@ -849,6 +854,7 @@ TrackerGui::drawOverlays(double time,
                     glEnable(GL_LINE_SMOOTH);
                     glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
                     glLineWidth(1.5f);
+
                     for (int l = 0; l < 2; ++l) {
                         // shadow (uses GL_PROJECTION)
                         glMatrixMode(GL_PROJECTION);
@@ -866,6 +872,7 @@ TrackerGui::drawOverlays(double time,
                         
                         double x = centerKnob->getValueAtTime(time,0);
                         double y = centerKnob->getValueAtTime(time,1);
+
                         glPointSize(POINT_SIZE);
                         glBegin(GL_POINTS);
                         glVertex2d(x,y);
@@ -875,6 +882,7 @@ TrackerGui::drawOverlays(double time,
                         glVertex2d(x - CROSS_SIZE * pixelScaleX, y);
                         glVertex2d(x + CROSS_SIZE * pixelScaleX, y);
                         
+
                         glVertex2d(x, y - CROSS_SIZE * pixelScaleY);
                         glVertex2d(x, y + CROSS_SIZE * pixelScaleY);
                         glEnd();
@@ -1230,6 +1238,7 @@ TrackerGui::drawOverlays(double time,
             if (_imp->showMarkerTexture) {
                 _imp->drawSelectedMarkerTexture(std::make_pair(pixelScaleX, pixelScaleY), time, selectedCenter, selectedOffset,  selectedPtnTopLeft, selectedPtnTopRight,selectedPtnBtmRight, selectedPtnBtmLeft, selectedSearchBtmLeft, selectedSearchTopRight);
 
+                
             }
         } // // if (_imp->panelv1) {
         
@@ -1294,6 +1303,7 @@ TrackerGuiPrivate::isInsideKeyFrameTexture(double currentTime, const QPointF& po
     
     if (pos.y() < textureRectCanonical.y1 || pos.y() > textureRectCanonical.y2) {
         return INT_MAX;
+
     }
     if (pos.x() < textureRectCanonical.x2) {
         return INT_MAX;
@@ -3193,6 +3203,7 @@ TrackerGui::keyDown(double time,
         } else {
             _imp->panel->getContext()->selectAll(TrackerContext::eTrackSelectionInternal);
             didSomething = false; //viewer is refreshed already
+
         }
     } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingDelete, modifiers, key) ) {
         if (_imp->panelv1) {
@@ -3217,6 +3228,7 @@ TrackerGui::keyDown(double time,
     } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingForward, modifiers, key) ) {
         onTrackFwClicked();
         didSomething = true;
+
     } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingStop, modifiers, key) ) {
         onStopButtonClicked();
         didSomething = true;
@@ -3336,6 +3348,7 @@ TrackerGui::updateSelectionFromSelectionRectangle(bool onRelease)
                 currentSelection.push_back( instance.get() );
             }
 
+
         }
         _imp->panelv1->selectNodes( currentSelection, (_imp->controlDown > 0) );
     } else {
@@ -3376,7 +3389,7 @@ TrackerGui::onSelectionCleared()
 void
 TrackerGui::onTrackBwClicked()
 {
-  
+
     _imp->trackBwButton->setDown(true);
     _imp->trackBwButton->setChecked(true);
     if (_imp->panelv1) {
@@ -3443,6 +3456,7 @@ TrackerGui::onTrackNextClicked()
 void
 TrackerGui::onTrackFwClicked()
 {
+
     _imp->trackFwButton->setDown(true);
     _imp->trackFwButton->setChecked(true);
     if (_imp->panelv1) {

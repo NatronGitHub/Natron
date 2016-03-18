@@ -1016,7 +1016,6 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
     
     if (useCache) {
         
-
         bool isCached = AppManager::getTextureFromCache(*(outArgs->key), &outArgs->params->cachedFrame);
         
         // If we want to force a refresh, we remove from  the cache texture
@@ -1073,7 +1072,7 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
 {
     // We never use the texture cache when the user RoI is enabled or while painting or when auto-contrast is on, otherwise we would have
     // zillions of textures in the cache, each a few pixels different.
-    const bool useTextureCache = !outArgs->userRoIEnabled && !outArgs->autoContrast && !rotoPaintNode.get() && !isDoingPartialUpdates();
+    const bool useTextureCache = !outArgs->userRoIEnabled && !outArgs->autoContrast && !rotoPaintNode.get();
     
     // If it's eSupportsMaybe and mipMapLevel!=0, don't forget to update
     // this after the first call to getRegionOfDefinition().
@@ -1145,8 +1144,8 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
         
     } // for (int lookup = 0; lookup < nLookups; ++lookup)
     
-    
     return eViewerRenderRetCodeRender;
+
 }
 
 ViewerInstance::ViewerRenderRetCode
@@ -1355,6 +1354,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             
                 //Overwrite the RoI to only the last portion rendered
                 RectD lastPaintBbox = getApp()->getLastPaintStrokeBbox();
+
                 
                 lastPaintBbox.toPixelEnclosing(inArgs.params->mipMapLevel, par, &lastPaintBboxPixel);
 
@@ -1588,7 +1588,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                     if (foundAlphaLayer != planes.end()) {
                         alphaImage = foundAlphaLayer->second;
                     }
-                    
+   
                     
                 } else {
                     //only 1 plane, figure out if the alpha layer is the same as the color layer

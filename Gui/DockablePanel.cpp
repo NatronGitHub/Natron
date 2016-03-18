@@ -1693,6 +1693,7 @@ DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
             KnobGuiPtr knobGui = it->first.lock();
             if (!it->second && knobGui) {
                 knobGui->show();
+
             }
         }
     }

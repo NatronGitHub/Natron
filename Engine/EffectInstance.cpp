@@ -2669,7 +2669,6 @@ EffectInstance::openImageFileKnob()
 void
 EffectInstance::onSignificantEvaluateAboutToBeCalled(KnobI* knob)
 {
-
     KnobButton* button = dynamic_cast<KnobButton*>(knob);
     if (button) {
         if (isWriter()) {
@@ -2723,7 +2722,6 @@ EffectInstance::evaluate(bool isSignificant,
 
   
     NodePtr node = getNode();
-
 
     if (refreshMetadatas && node->isNodeCreated()) {
         refreshMetaDatas_public(true);
