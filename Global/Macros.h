@@ -102,7 +102,7 @@ namespace NATRON_NAMESPACE { }
 //////////////////////////////////////////Natron version/////////////////////////////////////////////
 #define NATRON_VERSION_MAJOR 2
 #define NATRON_VERSION_MINOR 0
-#define NATRON_VERSION_REVISION 0
+#define NATRON_VERSION_REVISION 1
 
 
 #define NATRON_LAST_VERSION_URL "https://raw.githubusercontent.com/MrKepzie/Natron/master/LATEST_VERSION.txt"
