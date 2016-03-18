@@ -50,7 +50,7 @@ GIT_OCIO_CONFIG_TAR=https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natr
 COLOR_PROFILES_VERSION=2.0.1
 
 # bump timestamp on SDK changes, important!
-CORELIBS_VERSION=20160226
+CORELIBS_VERSION=20160318
 
 # SDK
 #
