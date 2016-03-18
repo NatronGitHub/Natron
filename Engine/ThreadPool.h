@@ -34,7 +34,6 @@ NATRON_NAMESPACE_ENTER;
 
 #ifdef QT_USE_NATRON_CUSTOM_THREADPOOL_EXT
 
-struct AbortableRenderInfo;
 
 /**
  * @brief This class provides a fast way to determine whether a render thread
