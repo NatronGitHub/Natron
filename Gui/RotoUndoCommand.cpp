@@ -815,7 +815,9 @@ MoveTangentUndoCommand::undo()
 
     if ( _tangentBeingDragged->isFeatherPoint() ) {
         counterPart = _tangentBeingDragged->getBezier()->getControlPointForFeatherPoint(_tangentBeingDragged);
-        counterPart->clone(*_oldCp);
+        if (counterPart) {
+            counterPart->clone(*_oldCp);
+        }
         _tangentBeingDragged->clone(*_oldFp);
     } else {
         counterPart = _tangentBeingDragged->getBezier()->getFeatherPointForControlPoint(_tangentBeingDragged);
@@ -981,7 +983,9 @@ MoveFeatherBarUndoCommand::redo()
         assert(cps.size() > 1);
         
         std::list<boost::shared_ptr<BezierCP> >::const_iterator cur = std::find(cps.begin(), cps.end(), fp);
-        assert( cur != cps.end() );
+        if ( cur == cps.end() ) {
+            return;
+        }
         // compute previous and next element in the cyclic list
         std::list<boost::shared_ptr<BezierCP> >::const_iterator prev = cur;
         if (prev == cps.begin()) {

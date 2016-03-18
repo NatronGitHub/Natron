@@ -958,18 +958,29 @@ Bezier::addControlPointAfterIndex(int index,
             (*next)->getPositionAtTime(useGuiCurve,*it, ViewIdx(0), &p3.x, &p3.y);
             (*next)->getLeftBezierPointAtTime(useGuiCurve,*it, ViewIdx(0), &p2.x, &p2.y);
             
+            Point p0f,p1f,p2f,p3f;
+            (*prevF)->getPositionAtTime(useGuiCurve,*it, ViewIdx(0), &p0f.x, &p0f.y);
+            (*prevF)->getRightBezierPointAtTime(useGuiCurve,*it, ViewIdx(0), &p1f.x, &p1f.y);
+            (*nextF)->getPositionAtTime(useGuiCurve,*it, ViewIdx(0), &p3f.x, &p3f.y);
+            (*nextF)->getLeftBezierPointAtTime(useGuiCurve,*it, ViewIdx(0), &p2f.x, &p2f.y);
+
+            
             
             Point dest;
             Point p0p1, p1p2, p2p3, p0p1_p1p2, p1p2_p2p3;
             bezierFullPoint(p0, p1, p2, p3, t, &p0p1, &p1p2, &p2p3, &p0p1_p1p2, &p1p2_p2p3, &dest);
+            
+            Point destf;
+            Point p0p1f, p1p2f, p2p3f, p0p1_p1p2f, p1p2_p2p3f;
+            bezierFullPoint(p0f, p1f, p2f, p3f, t, &p0p1f, &p1p2f, &p2p3f, &p0p1_p1p2f, &p1p2_p2p3f, &destf);
             
             //update prev and next inner control points
             (*prev)->setRightBezierPointAtTime(useGuiCurve, *it, p0p1.x, p0p1.y);
             (*next)->setLeftBezierPointAtTime(useGuiCurve, *it, p2p3.x, p2p3.y);
             
             if (useFeatherPoints()) {
-                (*prevF)->setRightBezierPointAtTime(useGuiCurve, *it, p0p1.x, p0p1.y);
-                (*nextF)->setLeftBezierPointAtTime(useGuiCurve, *it, p2p3.x, p2p3.y);
+                (*prevF)->setRightBezierPointAtTime(useGuiCurve, *it, p0p1f.x, p0p1f.y);
+                (*nextF)->setLeftBezierPointAtTime(useGuiCurve, *it, p2p3f.x, p2p3f.y);
             }
             
             
@@ -979,9 +990,9 @@ Bezier::addControlPointAfterIndex(int index,
             p->setRightBezierPointAtTime(useGuiCurve, *it, p1p2_p2p3.x, p1p2_p2p3.y);
             
             if (useFeatherPoints()) {
-                fp->setPositionAtTime(useGuiCurve, *it, dest.x, dest.y);
-                fp->setLeftBezierPointAtTime(useGuiCurve, *it, p0p1_p1p2.x, p0p1_p1p2.y);
-                fp->setRightBezierPointAtTime(useGuiCurve, *it, p1p2_p2p3.x, p1p2_p2p3.y);
+                fp->setPositionAtTime(useGuiCurve, *it, destf.x, destf.y);
+                fp->setLeftBezierPointAtTime(useGuiCurve, *it, p0p1_p1p2f.x, p0p1_p1p2f.y);
+                fp->setRightBezierPointAtTime(useGuiCurve, *it, p1p2_p2p3f.x, p1p2_p2p3f.y);
             }
         }
         
@@ -2694,7 +2705,9 @@ Bezier::getControlPointForFeatherPoint(const boost::shared_ptr<BezierCP> & fp) c
     assert( fp->isFeatherPoint() );
     int index = getFeatherPointIndex(fp);
     assert(index != -1);
-
+    if (index == -1) {
+        return boost::shared_ptr<BezierCP>();
+    }
     return getControlPointAtIndex(index);
 }
 
