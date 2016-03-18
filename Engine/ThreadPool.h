@@ -32,7 +32,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-#ifdef QT_USE_NATRON_CUSTOM_THREADPOOL_EXT
+#ifdef QT_CUSTOM_THREADPOOL
 
 
 /**
@@ -77,7 +77,7 @@ private:
     virtual QThreadPoolThread* createThreadPoolThread() const OVERRIDE FINAL;
 };
 
-#endif // QT_USE_NATRON_CUSTOM_THREADPOOL_EXT
+#endif // QT_CUSTOM_THREADPOOL
 
 NATRON_NAMESPACE_EXIT;
 

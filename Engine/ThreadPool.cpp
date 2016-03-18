@@ -27,7 +27,10 @@
 
 NATRON_NAMESPACE_ENTER;
 
-#ifdef QT_USE_NATRON_CUSTOM_THREADPOOL_EXT
+
+// We patched Qt to be able to derive QThreadPool to control the threads that are spawned to improve performances
+// of the EffectInstance::aborted() function
+#ifdef QT_CUSTOM_THREADPOOL
 
 struct AbortableThreadPrivate
 {

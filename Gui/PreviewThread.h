@@ -44,7 +44,7 @@ NATRON_NAMESPACE_ENTER;
 struct PreviewThreadPrivate;
 class PreviewThread
 : public QThread
-#ifdef QT_USE_NATRON_CUSTOM_THREADPOOL_EXT
+#ifdef QT_CUSTOM_THREADPOOL
 , public AbortableThread
 #endif
 {
