@@ -19,6 +19,8 @@ Functions
 
 *	 def :meth:`addFormat<NatronEngine.App.addFormat>` (formatSpec)
 *    def :meth:`createNode<NatronEngine.App.createNode>` (pluginID[, majorVersion=-1[, group=None]])
+*    def :meth:`createReader<NatronEngine.App.createReader>` (filename[, group=None])
+*    def :meth:`createWriter<NatronEngine.App.createWriter>` (filename[, group=None])
 *    def :meth:`getAppID<NatronEngine.App.getAppID>` ()
 *    def :meth:`getProjectParam<NatronEngine.App.getProjectParam>` (name)
 *    def :meth:`getViewNames<NatronEngine.App.getViewNames>`()
@@ -91,8 +93,19 @@ top level::
 	group = app.createNode("fr.inria.built-in.Group")
 	reader = app.createNode("fr.inria.openfx.ReadOIIO", -1, group)
 
-You find it hard to know what is the plug-in ID of a plug-in ? In Natron you can call the 
-following function to get a sequence with all plug-in IDs currently available::
+For convenience, small wrapper functions have been made to directly create a Reader or Writer
+given a filename::
+
+	reader = app.createReader("/Users/me/Pictures/mySequence###.exr")
+	writer = app.createWriter("/Users/me/Pictures/myVideo.mov")
+	
+In case 2 plug-ins can decode/encode the same format, e.g: ReadPSD and ReadOIIO can both
+read .psd files, internally Natron picks the "best" OpenFX plug-in to decode/encode the image sequence/video
+according to the settings in the Preferences of Natron. 
+If however you need a specific decoder/encoder to decode/encode the file format, you can use
+the :func:`getSettings()<NatronEngine.App.createNode>` function with the exact plug-in ID.
+
+In Natron you can call the  following function to get a sequence with all plug-in IDs currently available::
 
 	natron.getPluginIDs()
 	
@@ -151,6 +164,40 @@ In Natron you can call the  following function to get a sequence with all plug-i
 	natron.getPluginIDs()
 
 
+.. method:: NatronEngine.App.createReader(filename[, group=None]])
+
+
+    :param filename: :class:`str<NatronEngine.std::string>`
+    :param group: :class:`Group<NatronEngine.Group>`
+    :rtype: :class:`Effect<NatronEngine.Effect>`
+
+Creates a reader to decode the given *filename*.    
+The optional *group* parameter can be used to specify into which :doc:`group<Group>` the node
+should be created, *None* meaning the project's top level.
+
+In case 2 plug-ins can decode the same format, e.g: ReadPSD and ReadOIIO can both
+read .psd files, internally Natron picks the "best" OpenFX plug-in to decode the image sequence/video
+according to the settings in the Preferences of Natron. 
+If however you need a specific decoder to decode the file format, you can use
+the :func:`getSettings()<NatronEngine.App.createNode>` function with the exact plug-in ID. 
+
+
+.. method:: NatronEngine.App.createWriter(filename[, group=None]])
+
+
+    :param filename: :class:`str<NatronEngine.std::string>`
+    :param group: :class:`Group<NatronEngine.Group>`
+    :rtype: :class:`Effect<NatronEngine.Effect>`
+
+Creates a reader to decode the given *filename*.    
+The optional *group* parameter can be used to specify into which :doc:`group<Group>` the node
+should be created, *None* meaning the project's top level.
+
+In case 2 plug-ins can encode the same format, e.g: WritePFM and WriteOIIO can both
+write .pfm files, internally Natron picks the "best" OpenFX plug-in to encode the image sequence/video
+according to the settings in the Preferences of Natron. 
+If however you need a specific decoder to encode the file format, you can use
+the :func:`getSettings()<NatronEngine.App.createNode>` function with the exact plug-in ID. 
 
 .. method:: NatronEngine.App.getAppID()
 

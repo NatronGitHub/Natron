@@ -102,7 +102,7 @@ NATRON_NAMESPACE_ENTER;
 AppManager* AppManager::_instance = 0;
 
 
-#ifdef __NATRON_LINUX__
+#ifdef __NATRON_UNIX__
 
 //namespace  {
 static void
@@ -533,14 +533,18 @@ AppManager::loadInternal(const CLArgs& cl)
     }
 #endif
     
-#if defined(__NATRON_LINUX__) && !defined(__FreeBSD__)
+
+#ifdef __NATRON_UNIX__
     if (mustSetSignalsHandlers) {
         setShutDownSignal(SIGINT);   // shut down on ctrl-c
         setShutDownSignal(SIGTERM);   // shut down on killall
+#if defined(__NATRON_LINUX__) && !defined(__FreeBSD__)
         //Catch SIGSEGV only when google-breakpad is not active
         setSigSegvSignal();
+#endif
     }
 #endif
+
     (void)mustSetSignalsHandlers;
     
     _imp->_settings.reset(new Settings());
@@ -668,18 +672,27 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
         if ( (_imp->_appType == eAppTypeBackgroundAutoRun ||
               _imp->_appType == eAppTypeBackgroundAutoRunLaunchedFromGui ||
               _imp->_appType == eAppTypeInterpreter) && mainInstance ) {
-            try {
-                mainInstance->getProject()->closeProject(true);
-            } catch (std::logic_error) {
-                // ignore
+            bool wasKilled = true;
+            const std::map<int,AppInstanceRef>& instances = appPTR->getAppInstances();
+            for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it!=instances.end(); ++it) {
+                if (it->second.app == mainInstance && it->second.status == eAppInstanceStatusActive) {
+                    wasKilled = false;
+                }
             }
-            try {
-                mainInstance->quit();
-            } catch (std::logic_error) {
-                // ignore
+            if (!wasKilled) {
+                try {
+                    mainInstance->getProject()->closeProject(true);
+                } catch (std::logic_error) {
+                    // ignore
+                }
+                try {
+                    mainInstance->quit();
+                } catch (std::logic_error) {
+                    // ignore
+                }
             }
         }
-        
+
         return true;
     }
 }

@@ -767,6 +767,10 @@ Node::load(const CreateNodeArgs& args)
         _imp->effect->setDefaultMetadata();
         
         if (args.serialization) {
+            //We have to declare the node to Python now since we didn't declare it before
+            //with setScriptName_no_error_check
+            declareNodeVariableToPython(getFullyQualifiedName());
+            
             _imp->effect->onKnobsAboutToBeLoaded(args.serialization);
             loadKnobs(*args.serialization);
         }
@@ -853,10 +857,6 @@ Node::load(const CreateNodeArgs& args)
         if (!isMultiInstanceChild && _imp->isMultiInstance) {
             updateEffectLabelKnob( QString::fromUtf8(getScriptName().c_str() ));
         }
-    } else { //nameSet
-        //We have to declare the node to Python now since we didn't declare it before
-        //with setScriptName_no_error_check
-        declareNodeVariableToPython(getFullyQualifiedName());
     }
     if (isMultiInstanceChild && !args.serialization) {
         assert(nameSet);
@@ -896,7 +896,7 @@ Node::load(const CreateNodeArgs& args)
     
     bool isLoadingPyPlug = getApp()->isCreatingPythonGroup();
 
-    _imp->effect->onEffectCreated(canOpenFileDialog);
+    _imp->effect->onEffectCreated(canOpenFileDialog, args.paramValues);
     
 #ifdef NATRON_ENABLE_IO_META_NODES
     if (args.ioContainer) {
@@ -1609,6 +1609,12 @@ Node::loadKnobs(const NodeSerialization & serialization,bool updateKnobGui)
         return;
     }
     
+    
+    //We have to declare the node to Python now since we didn't declare it before
+    //with setScriptName_no_error_check
+    declareNodeVariableToPython(getFullyQualifiedName());
+    
+
     {
         QMutexLocker k(&_imp->createdComponentsMutex);
         _imp->createdComponents = serialization.getUserCreatedComponents();
@@ -3132,7 +3138,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage, int render
     settingsPage->addKnob(useFullScaleImagesWhenRenderScaleUnsupported);
     _imp->useFullScaleImagesWhenRenderScaleUnsupported = useFullScaleImagesWhenRenderScaleUnsupported;
     
-    boost::shared_ptr<KnobString> knobChangedCallback = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After param changed callback").toStdString());
+    boost::shared_ptr<KnobString> knobChangedCallback = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After param changed callback").toStdString(), 1, false);
     knobChangedCallback->setHintToolTip(tr("Set here the name of a function defined in Python which will be called for each  "
                                            "parameter change. Either define this function in the Script Editor "
                                            "or in the init.py script or even in the script of a Python group plug-in.\n"
@@ -3148,7 +3154,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage, int render
     settingsPage->addKnob(knobChangedCallback);
     _imp->knobChangedCallback = knobChangedCallback;
     
-    boost::shared_ptr<KnobString> inputChangedCallback = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After input changed callback").toStdString());
+    boost::shared_ptr<KnobString> inputChangedCallback = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After input changed callback").toStdString(), 1, false);
     inputChangedCallback->setHintToolTip(tr("Set here the name of a function defined in Python which will be called after "
                                             "each connection is changed for the inputs of the node. "
                                             "Either define this function in the Script Editor "
@@ -3167,7 +3173,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage, int render
     
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(_imp->effect.get());
     if (isGroup) {
-        boost::shared_ptr<KnobString> onNodeCreated = AppManager::createKnob<KnobString>(_imp->effect.get(), "After Node Created");
+        boost::shared_ptr<KnobString> onNodeCreated = AppManager::createKnob<KnobString>(_imp->effect.get(), "After Node Created", 1, false);
         onNodeCreated->setName("afterNodeCreated");
         onNodeCreated->setHintToolTip("Add here the name of a Python-defined function that will be called each time a node "
                                       "is created in the group. This will be called in addition to the After Node Created "
@@ -3183,7 +3189,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage, int render
         _imp->nodeCreatedCallback = onNodeCreated;
         settingsPage->addKnob(onNodeCreated);
         
-        boost::shared_ptr<KnobString> onNodeDeleted = AppManager::createKnob<KnobString>(_imp->effect.get(), "Before Node Removal");
+        boost::shared_ptr<KnobString> onNodeDeleted = AppManager::createKnob<KnobString>(_imp->effect.get(), "Before Node Removal", 1 , false);
         onNodeDeleted->setName("beforeNodeRemoval");
         onNodeDeleted->setHintToolTip("Add here the name of a Python-defined function that will be called each time a node "
                                       "is about to be deleted. This will be called in addition to the Before Node Removal "

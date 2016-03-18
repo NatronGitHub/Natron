@@ -61,10 +61,8 @@ App::getInternalApp() const
     return _instance;
 }
 
-Effect*
-App::createNode(const std::string& pluginID,
-                int majorVersion,
-                Group* group) const
+boost::shared_ptr<NodeCollection>
+App::getCollectionFromGroup(Group* group) const
 {
     boost::shared_ptr<NodeCollection> collection;
     if (group) {
@@ -82,20 +80,56 @@ App::createNode(const std::string& pluginID,
                 collection = boost::dynamic_pointer_cast<NodeCollection>(isGrp);
                 assert(collection);
             }
-
+            
         }
     }
     
     if (!collection) {
         collection = boost::dynamic_pointer_cast<NodeCollection>(_instance->getProject());
     }
-    
+    return collection;
+}
+
+Effect*
+App::createNode(const std::string& pluginID,
+                int majorVersion,
+                Group* group) const
+{
+    boost::shared_ptr<NodeCollection> collection = getCollectionFromGroup(group);
     assert(collection);
     
     CreateNodeArgs args(QString::fromUtf8(pluginID.c_str()), eCreateNodeReasonInternal, collection);
     args.majorV = majorVersion;
 
     NodePtr node = _instance->createNode(args);
+    if (node) {
+        return new Effect(node);
+    } else {
+        return NULL;
+    }
+}
+
+Effect*
+App::createReader(const std::string& filename,
+                     Group* group) const
+{
+    boost::shared_ptr<NodeCollection> collection = getCollectionFromGroup(group);
+    assert(collection);
+    NodePtr node = _instance->createReader(filename, eCreateNodeReasonInternal, collection);
+    if (node) {
+        return new Effect(node);
+    } else {
+        return NULL;
+    }
+}
+
+Effect*
+App::createWriter(const std::string& filename,
+                     Group* group) const
+{
+    boost::shared_ptr<NodeCollection> collection = getCollectionFromGroup(group);
+    assert(collection);
+    NodePtr node = _instance->createWriter(filename, eCreateNodeReasonInternal, collection);
     if (node) {
         return new Effect(node);
     } else {

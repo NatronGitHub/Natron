@@ -1766,7 +1766,7 @@ AddKnobDialog::onOkClicked()
         }
         
         if (!oldKnobIsPage) {
-            _imp->panel->getHolder()->removeDynamicKnob(_imp->knob.get());
+            _imp->panel->getHolder()->deleteKnob(_imp->knob.get(), true);
             
             if (!_imp->isKnobAlias) {
                 

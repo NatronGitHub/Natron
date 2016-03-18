@@ -35,8 +35,10 @@ static PyMethodDef NatronEngine_methods[] = {
 };
 
 // Classes initialization functions ------------------------------------------------------------
+void init_UserParamHolder(PyObject* module);
 void init_PyCoreApplication(PyObject* module);
 void init_Group(PyObject* module);
+void init_Effect(PyObject* module);
 void init_App(PyObject* module);
 void init_AppSettings(PyObject* module);
 void init_ItemBase(PyObject* module);
@@ -44,8 +46,6 @@ void init_Layer(PyObject* module);
 void init_BezierCurve(PyObject* module);
 void init_Roto(PyObject* module);
 void init_ImageLayer(PyObject* module);
-void init_UserParamHolder(PyObject* module);
-void init_Effect(PyObject* module);
 void init_Param(PyObject* module);
 void init_AnimatedParam(PyObject* module);
 void init_BooleanParam(PyObject* module);
@@ -606,8 +606,10 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
 #endif
 
     // Initialize classes in the type system
+    init_UserParamHolder(module);
     init_PyCoreApplication(module);
     init_Group(module);
+    init_Effect(module);
     init_App(module);
     init_AppSettings(module);
     init_ItemBase(module);
@@ -615,8 +617,6 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     init_BezierCurve(module);
     init_Roto(module);
     init_ImageLayer(module);
-    init_UserParamHolder(module);
-    init_Effect(module);
     init_Param(module);
     init_AnimatedParam(module);
     init_BooleanParam(module);

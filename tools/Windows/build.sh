@@ -191,8 +191,11 @@ if [ "$SYNC" = "1" ]; then
 		fi
     fi
     rsync -avz --progress --verbose -e ssh "$INSTALL_PATH/symbols/" "${REPO_DEST}/symbols/"
-    rsync -avz --progress --delete --verbose -e ssh $LOGS/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/logs
 fi
+
+# always sync logs
+rsync -avz --progress --delete --verbose -e ssh $LOGS/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/logs
+
 
 kill -9 $KILLBOT
 rm -f $KILLSCRIPT

@@ -56,6 +56,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Project.h"
 #include "Engine/AppInstance.h"
 #include "Engine/ReadNode.h"
+#include "Engine/Node.h"
 #include "Engine/TLSHolder.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/WriteNode.h"

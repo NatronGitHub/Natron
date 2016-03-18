@@ -84,6 +84,12 @@ public:
                        int majorVersion = -1,
                        Group* group = 0) const;
     
+    Effect* createReader(const std::string& filename,
+                         Group* group = 0) const;
+    
+    Effect* createWriter(const std::string& filename,
+                         Group* group = 0) const;
+    
     int timelineGetTime() const;
     
     int timelineGetLeftBound() const;
@@ -120,6 +126,8 @@ protected:
     void renderInternal(bool forceBlocking,Effect* writeNode,int firstFrame, int lastFrame, int frameStep);
     void renderInternal(bool forceBlocking,const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames,
                         const std::list<int>& frameSteps);
+    
+    boost::shared_ptr<NodeCollection> getCollectionFromGroup(Group* group) const;
     
 };
 

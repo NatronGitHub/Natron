@@ -1163,19 +1163,7 @@ KnobGroup::addKnob(const KnobPtr& k)
         }
     }
     
-    
-    KnobPtr parent= k->getParentKnob();
-    if (parent) {
-        KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>(parent.get());
-        KnobPage* isParentPage = dynamic_cast<KnobPage*>(parent.get());
-        if (isParentGrp) {
-            isParentGrp->removeKnob(k.get());
-        } else if (isParentPage) {
-            isParentPage->removeKnob(k.get());
-        }
-        k->setParentKnob(KnobPtr());
-    }
-    
+    k->resetParent();
     
     _children.push_back(k);
     k->setParentKnob(shared_from_this());
@@ -1236,17 +1224,7 @@ KnobGroup::insertKnob(int index, const KnobPtr& k)
         }
     }
     
-    KnobPtr parent= k->getParentKnob();
-    if (parent) {
-        KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>(parent.get());
-        KnobPage* isParentPage = dynamic_cast<KnobPage*>(parent.get());
-        if (isParentGrp) {
-            isParentGrp->removeKnob(k.get());
-        } else if (isParentPage) {
-            isParentPage->removeKnob(k.get());
-        }
-        k->setParentKnob(KnobPtr());
-    }
+    k->resetParent();
 
     if (index >= (int)_children.size()) {
         _children.push_back(k);
@@ -1325,17 +1303,8 @@ KnobPage::addKnob(const KnobPtr &k)
     }
     
     
-    KnobPtr parent= k->getParentKnob();
-    if (parent) {
-        KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>(parent.get());
-        KnobPage* isParentPage = dynamic_cast<KnobPage*>(parent.get());
-        if (isParentGrp) {
-            isParentGrp->removeKnob(k.get());
-        } else if (isParentPage) {
-            isParentPage->removeKnob(k.get());
-        }
-        k->setParentKnob(KnobPtr());
-    }
+    k->resetParent();
+    
     _children.push_back(k);
     k->setParentKnob(shared_from_this());
     
@@ -1350,18 +1319,7 @@ KnobPage::insertKnob(int index, const KnobPtr& k)
         }
     }
     
-    KnobPtr parent= k->getParentKnob();
-    if (parent) {
-        KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>(parent.get());
-        KnobPage* isParentPage = dynamic_cast<KnobPage*>(parent.get());
-        if (isParentGrp) {
-            isParentGrp->removeKnob(k.get());
-        } else if (isParentPage) {
-            isParentPage->removeKnob(k.get());
-        }
-        k->setParentKnob(KnobPtr());
-    }
-    
+    k->resetParent();
     
     if (index >= (int)_children.size()) {
         _children.push_back(k);

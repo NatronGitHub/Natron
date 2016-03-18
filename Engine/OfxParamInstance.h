@@ -152,27 +152,11 @@ public:
         EffectInstPtr holder = getKnobHolder();
         assert(holder);
 #ifdef NATRON_ENABLE_IO_META_NODES
-        const KnobsVec& knobs = holder->getKnobs();
-        for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
-            if ((*it)->getName() == scriptName) {
-                boost::shared_ptr<TYPE> isType = boost::dynamic_pointer_cast<TYPE>(*it);
-                if (isType) {
-                    
-                    //Remove from the parent if it exists, because it will be added again afterwards
-                    KnobPtr parent = isType->getParentKnob();
-                    isType->setParentKnob(KnobPtr());
-                    KnobGroup* parentGroup = dynamic_cast<KnobGroup*>(parent.get());
-                    KnobPage* parentPage = dynamic_cast<KnobPage*>(parent.get());
-                    if (parentGroup) {
-                        parentGroup->removeKnob(isType.get());
-                    }
-                    if (parentPage) {
-                        parentPage->removeKnob(isType.get());
-                    }
-                    return isType;
-                }
-                break;
-            }
+        boost::shared_ptr<TYPE> isType = holder->getKnobByNameAndType<TYPE>(scriptName);
+        if (isType) {
+            //Remove from the parent if it exists, because it will be added again afterwards
+            isType->resetParent();
+            return isType;
         }
 #endif
         boost::shared_ptr<TYPE> ret = AppManager::createKnob<TYPE>(holder.get(), getParamLabel(param), dimension);

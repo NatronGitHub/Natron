@@ -853,6 +853,8 @@ public:
      */
     virtual void setParentKnob(KnobPtr knob) = 0;
 
+    virtual void resetParent() = 0;
+    
     /**
      * @brief Returns a pointer to the parent knob if any.
      */
@@ -1319,6 +1321,7 @@ public:
     virtual const std::string & getName() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual const std::string & getOriginalName() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setParentKnob(KnobPtr knob) OVERRIDE FINAL;
+    virtual void resetParent() OVERRIDE FINAL;
     virtual KnobPtr getParentKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int determineHierarchySize() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setEvaluateOnChange(bool b) OVERRIDE FINAL;
@@ -2007,14 +2010,26 @@ public:
     
     void discardPanelPointer();
     
+    /**
+     * @brief Wipe all user-knobs GUI and re-create it to synchronize it to the current internal state.
+     * This may only be called on the main-thread. This is an expensive operation.
+     **/
     void recreateUserKnobs(bool keepCurPageIndex);
     
+    /**
+     * @brief Wipe all knobs GUI and re-create it to synchronize it to the current internal state. 
+     * This may only be called on the main-thread. This is an expensive operation.
+     **/
     void recreateKnobs(bool keepCurPageIndex);
     
     /**
-     * @brief Dynamically removes a knob (from the GUI also)
+     * @brief Dynamically removes a knob. Can only be called on the main-thread.
+     * @param knob The knob to remove
+     * @param alsoDeleteGui If true, then the knob gui will be removed before returning from this function
+     * In case of removing multiple knobs, it may be more efficient to set alsoDeleteGui to false and to call
+     * recreateKnobs() when finished
      **/
-    void removeDynamicKnob(KnobI* knob);
+    void deleteKnob(KnobI* knob, bool alsoDeleteGui);
     
     //To re-arrange user knobs only, does nothing if knob->isUserKnob() returns false
     bool moveKnobOneStepUp(KnobI* knob);
@@ -2026,6 +2041,23 @@ public:
     AppInstance* getApp() const WARN_UNUSED_RETURN;
     KnobPtr getKnobByName(const std::string & name) const WARN_UNUSED_RETURN;
     KnobPtr getOtherKnobByName(const std::string & name,const KnobI* caller) const WARN_UNUSED_RETURN;
+    
+    template <typename TYPE>
+    boost::shared_ptr<TYPE> getKnobByNameAndType(const std::string & name) const 
+    {
+        const KnobsVec& knobs = getKnobs();
+        for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+            if ((*it)->getName() == name) {
+                boost::shared_ptr<TYPE> isType = boost::dynamic_pointer_cast<TYPE>(*it);
+                if (isType) {
+                    return isType;
+                }
+                break;
+            }
+        }
+        return boost::shared_ptr<TYPE>();
+    }
+    
     const std::vector< KnobPtr > & getKnobs() const WARN_UNUSED_RETURN;
     
     std::vector< KnobPtr >  getKnobs_mt_safe() const WARN_UNUSED_RETURN;
@@ -2262,7 +2294,7 @@ public:
 
     /*Add a knob to the vector. This is called by the
        Knob class. Don't call this*/
-    void addKnob(KnobPtr k);
+    void addKnob(const KnobPtr& k);
     
     void insertKnob(int idx, const KnobPtr& k);
     void removeKnobFromList(const KnobI* knob);

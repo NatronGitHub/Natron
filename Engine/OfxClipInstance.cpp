@@ -1143,6 +1143,7 @@ OfxClipInstance::natronsDepthToOfxDepth(ImageBitDepthEnum depth)
 
         return none;
     }
+    return none;
 }
 
 ImagePremultiplicationEnum
@@ -1175,6 +1176,7 @@ OfxClipInstance::natronsPremultToOfxPremult(ImagePremultiplicationEnum premult)
         case eImagePremultiplicationOpaque:
             return opq;
     }
+    return prem;
 }
 
 ImageFieldingOrderEnum
@@ -1206,6 +1208,7 @@ OfxClipInstance::natronsFieldingToOfxFielding(ImageFieldingOrderEnum fielding)
         case eImageFieldingOrderLower:
             return lowerFielding;
     }
+    return noFielding;
 }
 
 struct OfxImagePrivate

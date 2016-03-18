@@ -362,6 +362,78 @@ PYTHON_PATH="$INSTALL_PATH/lib/python2.7"
 PYTHON_INCLUDE="$INSTALL_PATH/include/python2.7"
 export PKG_CONFIG_PATH LD_LIBRARY_PATH PATH QTDIR BOOST_ROOT OPENJPEG_HOME THIRD_PARTY_TOOLS_HOME PYTHON_HOME PYTHON_PATH PYTHON_INCLUDE
 
+# Install swrast
+if [ "$SWRAST" = "1" ]; then
+  # llvm
+  if [ ! -f "$INSTALL_PATH/llvm/bin/llvm-config" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$LLVM_TAR" ]; then
+      wget "$THIRD_PARTY_SRC_URL/$LLVM_TAR" -O "$SRC_PATH/$LLVM_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$LLVM_TAR" || exit 1
+    cd llvm-* || exit 1
+    mkdir build
+    cd build || exit 1
+    cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH/llvm -DBUILD_SHARED_LIBS=OFF -DLLVM_ENABLE_RTTI=1 || exit 1
+    make install || exit 1
+  fi
+  # osmesa
+  if [ ! -f "$INSTALL_PATH/osmesa/lib/pkgconfig/osmesa.pc" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$MESA_TAR" ]; then
+      wget "$THIRD_PARTY_SRC_URL/$MESA_TAR" -O "$SRC_PATH/$MESA_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$MESA_TAR" || exit 1
+    cd mesa-* || exit 1
+    (cd include/GL; sed -e 's@gl.h glext.h@gl.h glext.h ../GLES/gl.h@' -e 's@\^GLAPI@^GL_\\?API@' -i.orig gl_mangle.h)
+    (cd include/GL; sh ./gl_mangle.h > gl_mangle.h.new && mv gl_mangle.h.new gl_mangle.h)
+    autoreconf -fi
+    MESA_CONF="
+    --enable-static
+    --disable-shared
+    --enable-mangling
+    --enable-texture-float
+    --disable-gles1
+    --disable-gles2
+    --disable-dri
+    --disable-dri3
+    --disable-glx
+    --disable-egl
+    --disable-gbm
+    --disable-xvmc
+    --disable-vdpau
+    --disable-omx
+    --disable-va
+    --disable-osmesa
+    --disable-shared-glapi
+    --with-dri-drivers=
+    --with-osmesa-bits=32 
+    --with-egl-platforms=
+    --prefix=${INSTALL_PATH}/osmesa
+    --enable-gallium-osmesa
+    --enable-gallium-llvm=yes
+    --with-llvm-prefix=${INSTALL_PATH}/llvm
+    --disable-llvm-shared-libs
+    --with-gallium-drivers=swrast
+    "
+    CFLAGS="$BF" CXXFLAGS="$BF" ./configure $MESA_CONF || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+  fi
+  # glu
+  if [ ! -f "$INSTALL_PATH/osmesa/lib/pkgconfig/glu.pc" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$GLU_TAR" ]; then
+      wget "$THIRD_PARTY_SRC_URL/$GLU_TAR" -O "$SRC_PATH/$GLU_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$GLU_TAR" || exit 1
+    cd glu-* || exit 1
+    env CFLAGS="$BF" CPPFLAGS="$BF -DUSE_MGL_NAMESPACE" PKG_CONFIG_PATH=$INSTALL_PATH/osmesa/lib/pkgconfig ./configure --enable-static --disable-shared --enable-osmesa --prefix=$INSTALL_PATH/osmesa || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+  fi
+fi
+
 # Install expat
 if [ ! -f "$INSTALL_PATH/lib/pkgconfig/expat.pc" ]; then
     cd "$TMP_PATH" || exit 1
@@ -1183,18 +1255,67 @@ if [ ! -d $INSTALL_PATH/ffmpeg-gpl ] || [ ! -d $INSTALL_PATH/ffmpeg-lgpl ]; then
 fi
 
 # Install qt
-if [ ! -f $INSTALL_PATH/bin/qmake ]; then
+if [ "$REBUILD_QT" = "1" ]; then
+  rm -rf $INSTALL_PATH/bin/qmake* $INSTALL_PATH/lib/libQt* $INSTALL_PATH/include/Qt* $INSTALL_PATH/{plugins,phrasebooks,q3porting.xml,tests,imports,mkspecs,translations}
+fi
+if [ "$SDK_VERSION" = "CY2016" ]; then
+  # Qt5
+  if [ ! -f $INSTALL_PATH/bin/qmake ]; then
     cd $TMP_PATH || exit 1
-    if [ "$1" = "qt5" ]; then
-        QT_TAR=$QT5_TAR
-        QT_CONF="-openssl-linked -opengl desktop -opensource -nomake examples -nomake tests -release -no-gtkstyle -confirm-license -no-c++11 -I${INSTALL_PATH}/include -L${INSTALL_PATH}/lib"
-    else
-        QT_TAR=$QT4_TAR
-        QT_CONF="-system-zlib -system-libtiff -system-libpng -no-libmng -system-libjpeg -no-gtkstyle -glib -xrender -xrandr -xcursor -xfixes -xinerama -fontconfig -xinput -sm -no-multimedia -openssl-linked -confirm-license -release -opensource -opengl desktop -nomake demos -nomake docs -nomake examples -I${INSTALL_PATH}/include -L${INSTALL_PATH}/lib"
-    fi
+    QT_CONF="-openssl-linked -opengl desktop -opensource -nomake examples -nomake tests -release -no-gtkstyle -confirm-license -no-c++11 -I${INSTALL_PATH}/include -L${INSTALL_PATH}/lib -shared -no-xcb"
 
-    if [ ! -f $SRC_PATH/$QT_TAR ]; then
-        wget $THIRD_PARTY_SRC_URL/$QT_TAR -O $SRC_PATH/$QT_TAR || exit 1
+    if [ ! -f $SRC_PATH/$QTBASE_TAR ]; then
+        wget $THIRD_PARTY_SRC_URL/$QTBASE_TAR -O $SRC_PATH/$QTBASE_TAR || exit 1
+    fi
+    tar xvf $SRC_PATH/$QTBASE_TAR || exit 1
+
+    cd qtbase-* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure -prefix $INSTALL_PATH $QT_CONF || exit 1
+    LD_LIBRARY_PATH="$LD_LIBRARY_PATH":`pwd`/lib make -j${MKJOBS} || exit  1
+    make install || exit 1
+    QTBASE_PRIV="QtCore QtDBus QtGui QtNetwork QtOpenGL QtPlatformSupport QtPrintSupport QtSql QtTest QtWidgets QtXml"
+    for i in $QTBASE_PRIV; do
+      cd $INSTALL_PATH/include/$i || exit 1
+      ln -sf $QT5_VERSION/$i/private . || exit 1
+    done
+  fi
+  if [ ! -f $INSTALL_PATH/lib/libQt5XmlPatterns.so.$QT5_VERSION ]; then
+    if [ ! -f $SRC_PATH/$QTXMLP_TAR ]; then
+      wget $THIRD_PARTY_SRC_URL/$QTXMLP_TAR -O $SRC_PATH/$QTXMLP_TAR || exit 1
+    fi
+    tar xvf $SRC_PATH/$QTXMLP_TAR || exit 1
+    cd qtxmlpatterns-* || exit 1
+    $INSTALL_PATH/bin/qmake || exit 1
+    make -j${MKJOBS} || exit  1
+    make install || exit 1
+    cd $INSTALL_PATH/include/QtXmlPatterns || exit 1
+    ln -sf $QT5_VERSION/QtXmlPatterns/private . || exit 1
+  fi
+  if [ ! -f $INSTALL_PATH/lib/libQt5Qml.so.$QT5_VERSION ]; then
+    if [ ! -f $SRC_PATH/$QTDEC_TAR ]; then
+      wget $THIRD_PARTY_SRC_URL/$QTDEC_TAR -O $SRC_PATH/$QTDEC_TAR || exit 1
+    fi
+    tar xvf $SRC_PATH/$QTDEC_TAR || exit 1
+    cd qtdeclarative-* || exit 1
+    $INSTALL_PATH/bin/qmake || exit 1
+    make -j${MKJOBS} || exit  1
+    make install || exit 1
+    # TODO symlink private headers
+    QTDEC_PRIV="QtConcurrent QtQml QtQmlDevTools QtQuick QtQuickParticles QtQuickTest QtQuickWidgets"
+    for i in $QTDEC_PRIV; do
+      cd $INSTALL_PATH/include/$i || exit 1
+      ln -sf $QT5_VERSION/$i/private . || exit 1
+    done
+  fi
+  # TODO add more qt modules, like svg etc
+else
+  # Qt4
+  if [ ! -f $INSTALL_PATH/bin/qmake ]; then
+    cd $TMP_PATH || exit 1
+    QT_CONF="-system-zlib -system-libtiff -system-libpng -no-libmng -system-libjpeg -no-gtkstyle -glib -xrender -xrandr -xcursor -xfixes -xinerama -fontconfig -xinput -sm -no-multimedia -openssl-linked -confirm-license -release -opensource -opengl desktop -nomake demos -nomake docs -nomake examples -I${INSTALL_PATH}/include -L${INSTALL_PATH}/lib"
+
+    if [ ! -f $SRC_PATH/$QT4_TAR ]; then
+      wget $THIRD_PARTY_SRC_URL/$QT4_TAR -O $SRC_PATH/$QT4_TAR || exit 1
     fi
     tar xvf $SRC_PATH/$QT4_TAR || exit 1
     cd qt*4.8* || exit 1
@@ -1209,7 +1330,8 @@ if [ ! -f $INSTALL_PATH/bin/qmake ]; then
     if [ "$DDIR" != "" ]; then
       make INSTALL_ROOT="${DDIR}" install || exit 1
     fi
-    rm -rf $TMP_PATH/qt*
+    rm -rf $TMP_PATH/qt*4.8*
+  fi
 fi
 
 # pysetup
@@ -1226,17 +1348,29 @@ else
     PY_INC=$INSTALL_PATH/include/python2.7
     USE_PY3=false
 fi
+if [ "$SDK_VERSION" = "CY2016" ]; then
+  PYSIDE_V=2
+fi
 
 # Install shiboken
-if [ ! -f $INSTALL_PATH/lib/pkgconfig/shiboken.pc ]; then
+if [ ! -f $INSTALL_PATH/lib/pkgconfig/shiboken${PYSIDE_V}.pc ]; then
     cd $TMP_PATH || exit 1
-    if [ ! -f $SRC_PATH/$SHIBOK_TAR ]; then
+
+    if [ "$PYSIDE_V" = "2" ]; then
+      rm -rf shiboken2
+      git clone $SHIBOK2_GIT || exit 1
+      cd shiboken2 || exit 1
+      git checkout $SHIBOK2_COMMIT || exit 1
+    else
+      if [ ! -f $SRC_PATH/$SHIBOK_TAR ]; then
         wget $THIRD_PARTY_SRC_URL/$SHIBOK_TAR -O $SRC_PATH/$SHIBOK_TAR || exit 1
+      fi
+      tar xvf $SRC_PATH/$SHIBOK_TAR || exit 1
+      cd shiboken-* || exit 1
     fi
-    tar xvf $SRC_PATH/$SHIBOK_TAR || exit 1
-    cd shiboken-* || exit 1
+
     mkdir -p build && cd build || exit 1
-    cmake ../ -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH  \
+    env CXXFLAGS="-I${INSTALL_PATH}/include/libxml2" cmake ../ -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH  \
           -DCMAKE_BUILD_TYPE=Release   \
           -DBUILD_TESTS=OFF            \
           -DPYTHON_EXECUTABLE=$PY_EXE \
@@ -1249,13 +1383,22 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/shiboken.pc ]; then
 fi
 
 # Install pyside
-if [ ! -f $INSTALL_PATH/lib/pkgconfig/pyside.pc ]; then
+if [ ! -f $INSTALL_PATH/lib/pkgconfig/pyside${PYSIDE_V}.pc ]; then
     cd $TMP_PATH || exit 1
-    if [ ! -f $SRC_PATH/$PYSIDE_TAR ]; then
+
+    if [ "$PYSIDE_V" = "2" ]; then
+      rm -rf pyside2
+      git clone $PYSIDE2_GIT || exit 1
+      cd pyside2 || exit 1
+      git checkout $PYSIDE_COMMIT || exit 1
+    else
+      if [ ! -f $SRC_PATH/$PYSIDE_TAR ]; then
         wget $THIRD_PARTY_SRC_URL/$PYSIDE_TAR -O $SRC_PATH/$PYSIDE_TAR || exit 1
+      fi
+      tar xvf $SRC_PATH/$PYSIDE_TAR || exit 1
+      cd pyside-* || exit 1
     fi
-    tar xvf $SRC_PATH/$PYSIDE_TAR || exit 1
-    cd pyside-* || exit 1
+
     mkdir -p build && cd build || exit 1
     cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF \
           -DQT_QMAKE_EXECUTABLE=$INSTALL_PATH/bin/qmake \

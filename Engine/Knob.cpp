@@ -480,29 +480,19 @@ KnobHelper::deleteKnob()
         clearExpression(i, true);
     }
     
-    KnobPtr parent = _imp->parentKnob.lock();
-    if (parent) {
-        KnobGroup* isGrp =  dynamic_cast<KnobGroup*>(parent.get());
-        KnobPage* isPage = dynamic_cast<KnobPage*>(parent.get());
-        if (isGrp) {
-            isGrp->removeKnob(this);
-        } else if (isPage) {
-            isPage->removeKnob(this);
-        } else {
-            assert(false);
-        }
-    }
+    resetParent();
+
     KnobGroup* isGrp =  dynamic_cast<KnobGroup*>(this);
     KnobPage* isPage = dynamic_cast<KnobPage*>(this);
     if (isGrp) {
         KnobsVec children = isGrp->getChildren();
         for (KnobsVec::iterator it = children.begin(); it != children.end(); ++it) {
-            _imp->holder->removeDynamicKnob(it->get());
+            _imp->holder->deleteKnob(it->get(), true);
         }
     } else if (isPage) {
         KnobsVec children = isPage->getChildren();
         for (KnobsVec::iterator it = children.begin(); it != children.end(); ++it) {
-            _imp->holder->removeDynamicKnob(it->get());
+            _imp->holder->deleteKnob(it->get(), true);
         }
     }
    
@@ -2572,6 +2562,24 @@ KnobHelper::getOriginalName() const
 }
 
 void
+KnobHelper::resetParent()
+{
+    KnobPtr parent = _imp->parentKnob.lock();
+    if (parent) {
+        KnobGroup* isGrp =  dynamic_cast<KnobGroup*>(parent.get());
+        KnobPage* isPage = dynamic_cast<KnobPage*>(parent.get());
+        if (isGrp) {
+            isGrp->removeKnob(this);
+        } else if (isPage) {
+            isPage->removeKnob(this);
+        } else {
+            assert(false);
+        }
+        _imp->parentKnob.reset();
+    }
+}
+
+void
 KnobHelper::setParentKnob(KnobPtr knob)
 {
     _imp->parentKnob = knob;
@@ -3930,10 +3938,15 @@ KnobHolder::isInitializingKnobs() const
 }
 
 void
-KnobHolder::addKnob(KnobPtr k)
+KnobHolder::addKnob(const KnobPtr& k)
 {
     assert(QThread::currentThread() == qApp->thread());
     QMutexLocker kk(&_imp->knobsMutex);
+    for (KnobsVec::iterator it = _imp->knobs.begin(); it!=_imp->knobs.end(); ++it) {
+        if (*it == k) {
+            return;
+        }
+    }
     _imp->knobs.push_back(k);
 }
 
@@ -3944,7 +3957,11 @@ KnobHolder::insertKnob(int index, const KnobPtr& k)
         return;
     }
     QMutexLocker kk(&_imp->knobsMutex);
-    
+    for (KnobsVec::iterator it = _imp->knobs.begin(); it!=_imp->knobs.end(); ++it) {
+        if (*it == k) {
+            return;
+        }
+    }
     if (index >= (int)_imp->knobs.size()) {
         _imp->knobs.push_back(k);
     } else {
@@ -4008,8 +4025,10 @@ KnobHolder::recreateKnobs(bool keepCurPageIndex)
 }
 
 void
-KnobHolder::removeDynamicKnob(KnobI* knob)
+KnobHolder::deleteKnob(KnobI* knob, bool alsoDeleteGui)
 {
+    assert(QThread::currentThread() == qApp->thread());
+    
     KnobsVec knobs;
     {
         QMutexLocker k(&_imp->knobsMutex);
@@ -4018,7 +4037,7 @@ KnobHolder::removeDynamicKnob(KnobI* knob)
     
     KnobPtr sharedKnob;
     for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        if (it->get() == knob && (*it)->isDynamicallyCreated()) {
+        if (it->get() == knob) {
             (*it)->deleteKnob();
             sharedKnob = *it;
             break;
@@ -4028,14 +4047,14 @@ KnobHolder::removeDynamicKnob(KnobI* knob)
     {
         QMutexLocker k(&_imp->knobsMutex);
         for (KnobsVec::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
-            if (it2->get() == knob && (*it2)->isDynamicallyCreated()) {
+            if (it2->get() == knob) {
                 _imp->knobs.erase(it2);
                 break;
             }
         }
     }
     
-    if (_imp->settingsPanel) {
+    if (alsoDeleteGui && _imp->settingsPanel) {
         _imp->settingsPanel->deleteKnobGui(sharedKnob);
     }
     
