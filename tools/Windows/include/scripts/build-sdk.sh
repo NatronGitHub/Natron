@@ -238,6 +238,7 @@ fi
 
 
 
+
 # Install qt
 if [ ! -f "$INSTALL_PATH/bin/qmake.exe" ]; then
   cd $MINGW_PACKAGES_PATH/${MINGW_PREFIX}qt4 || exit 1
