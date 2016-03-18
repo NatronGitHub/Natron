@@ -193,6 +193,8 @@ else
     cp $INSTALL_PATH/bin/NatronRenderer.exe $NATRON_PATH/data/bin/NatronRenderer.exe || exit 1
 fi
 
+cp $FFMPEG_BIN_PATH/bin/{ffmpeg.exe,ffprobe.exe} $NATRON_PATH/data/bin/ || exit 1
+
 wget --no-check-certificate $NATRON_API_DOC || exit 1
 mv natron.pdf $NATRON_PATH/data/docs/Natron_Python_API_Reference.pdf || exit 1
 rm $NATRON_PATH/data/docs/TuttleOFX-README.txt || exit 1
