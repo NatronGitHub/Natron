@@ -6,7 +6,7 @@ Summary: open-source compositing software
 Name: Natron
 
 Version: REPLACE_VERSION
-Release: 2
+Release: 1
 License: GPLv2
 
 Group: System Environment/Base
