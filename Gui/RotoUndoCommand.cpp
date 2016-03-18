@@ -740,19 +740,19 @@ MoveTangentUndoCommand::~MoveTangentUndoCommand()
 }
 
 namespace {
-static void
-dragTangent(double time,
-            BezierCP & p,
-            const Transform::Matrix3x3& transform,
-            double dx,
-            double dy,
-            bool left,
-            bool autoKeying,
-            bool breakTangents)
+    
+static void getDeltaForPoint(const BezierCP& p,
+                             const double time,
+                             const Transform::Matrix3x3& transform,
+                             const double dx, const double dy,
+                             const bool isLeft,
+                             const bool breakTangents,
+                             double* otherDiffX, double* otherDiffY,
+                             bool *isOnKeyframe)
 {
     Transform::Point3D ltan,rtan,pos;
     ltan.z = rtan.z = pos.z = 1;
-    bool isOnKeyframe = p.getLeftBezierPointAtTime(true, time, ViewIdx(0), &ltan.x, &ltan.y, true);
+    *isOnKeyframe = p.getLeftBezierPointAtTime(true, time, ViewIdx(0), &ltan.x, &ltan.y, true);
     p.getRightBezierPointAtTime(true, time, ViewIdx(0), &rtan.x, &rtan.y, true);
     p.getPositionAtTime(true, time, ViewIdx(0), &pos.x, &pos.y, true);
     
@@ -760,30 +760,51 @@ dragTangent(double time,
     ltan = Transform::matApply(transform, ltan);
     rtan = Transform::matApply(transform, rtan);
     
-    double dist = left ?  sqrt( (rtan.x - pos.x) * (rtan.x - pos.x) + (rtan.y - pos.y) * (rtan.y - pos.y) )
-                  : sqrt( (ltan.x - pos.x) * (ltan.x - pos.x) + (ltan.y - pos.y) * (ltan.y - pos.y) );
-    if (left) {
+    double dist = isLeft ?  sqrt( (rtan.x - pos.x) * (rtan.x - pos.x) + (rtan.y - pos.y) * (rtan.y - pos.y) )
+    : sqrt( (ltan.x - pos.x) * (ltan.x - pos.x) + (ltan.y - pos.y) * (ltan.y - pos.y) );
+    if (isLeft) {
         ltan.x += dx;
         ltan.y += dy;
     } else {
         rtan.x += dx;
         rtan.y += dy;
     }
-    double alpha = left ? std::atan2(pos.y - ltan.y,pos.x - ltan.x) : std::atan2(pos.y - rtan.y,pos.x - rtan.x);
-
-    if (left) {
-        double rightDiffX = breakTangents ? 0 : pos.x + std::cos(alpha) * dist - rtan.x;
-        double rightDiffY = breakTangents ? 0 : pos.y + std::sin(alpha) * dist - rtan.y;
-        if (autoKeying || isOnKeyframe) {
-            p.getBezier()->movePointLeftAndRightIndex(p, time, dx, dy, rightDiffX, rightDiffY);
-        }
+    double alpha = isLeft ? std::atan2(pos.y - ltan.y,pos.x - ltan.x) : std::atan2(pos.y - rtan.y,pos.x - rtan.x);
+    
+    if (isLeft) {
+        *otherDiffX = breakTangents ? 0 : pos.x + std::cos(alpha) * dist - rtan.x;
+        *otherDiffY = breakTangents ? 0 : pos.y + std::sin(alpha) * dist - rtan.y;
     } else {
-        double leftDiffX = breakTangents ? 0 : pos.x + std::cos(alpha) * dist - ltan.x;
-        double leftDiffY = breakTangents ? 0 : pos.y + std::sin(alpha) * dist - ltan.y;
-        if (autoKeying || isOnKeyframe) {
-            p.getBezier()->movePointLeftAndRightIndex(p, time, leftDiffX, leftDiffY, dx, dy);
+        *otherDiffX = breakTangents ? 0 : pos.x + std::cos(alpha) * dist - ltan.x;
+        *otherDiffY = breakTangents ? 0 : pos.y + std::sin(alpha) * dist - ltan.y;
+    }
+}
+    
+static void
+dragTangent(double time,
+            BezierCP & cp,
+            BezierCP & fp,
+            const Transform::Matrix3x3& transform,
+            double dx,
+            double dy,
+            bool left,
+            bool autoKeying,
+            bool breakTangents,
+            bool draggedPointIsFeather)
+{
+    bool isOnKeyframe;
+    double otherDiffX,otherDiffY, otherFpDiffX, otherFpDiffY;
+    getDeltaForPoint(cp, time, transform, dx, dy, left, breakTangents, &otherDiffX, &otherDiffY, &isOnKeyframe);
+    getDeltaForPoint(fp, time, transform, dx, dy, left, breakTangents, &otherFpDiffX, &otherFpDiffY, &isOnKeyframe);
+    
+    if (autoKeying || isOnKeyframe) {
+        if (left) {
+            cp.getBezier()->movePointLeftAndRightIndex(cp, fp, time, dx, dy, otherDiffX, otherDiffY, dx, dy, otherFpDiffX, otherFpDiffY, draggedPointIsFeather);
+        } else {
+            cp.getBezier()->movePointLeftAndRightIndex(cp, fp, time, otherDiffX, otherDiffY, dx, dy, otherFpDiffX, otherFpDiffY, dx, dy, draggedPointIsFeather);
         }
     }
+
 }
 }
 
@@ -816,18 +837,20 @@ MoveTangentUndoCommand::undo()
 void
 MoveTangentUndoCommand::redo()
 {
-    boost::shared_ptr<BezierCP> counterPart;
+    boost::shared_ptr<BezierCP> cp, fp;
 
     if ( _tangentBeingDragged->isFeatherPoint() ) {
-        counterPart = _tangentBeingDragged->getBezier()->getControlPointForFeatherPoint(_tangentBeingDragged);
-        _oldCp->clone(*counterPart);
-        _oldFp->clone(*_tangentBeingDragged);
+        cp = _tangentBeingDragged->getBezier()->getControlPointForFeatherPoint(_tangentBeingDragged);
+        fp = _tangentBeingDragged;
+        _oldCp->clone(*cp);
+        _oldFp->clone(*fp);
     } else {
-        counterPart = _tangentBeingDragged->getBezier()->getFeatherPointForControlPoint(_tangentBeingDragged);
-        if (counterPart) {
-            _oldFp->clone(*counterPart);
+        cp = _tangentBeingDragged;
+        fp = _tangentBeingDragged->getBezier()->getFeatherPointForControlPoint(_tangentBeingDragged);
+        if (fp) {
+            _oldFp->clone(*fp);
         }
-        _oldCp->clone(*_tangentBeingDragged);
+        _oldCp->clone(*cp);
     }
     
     _tangentBeingDragged->getBezier()->incrementNodesAge();
@@ -836,10 +859,11 @@ MoveTangentUndoCommand::redo()
     _tangentBeingDragged->getBezier()->getTransformAtTime(_time, &transform);
     
     bool autoKeying = _roto->getContext()->isAutoKeyingEnabled();
-    dragTangent(_time, *_tangentBeingDragged, transform, _dx, _dy, _left,autoKeying,_breakTangents);
-    if (_featherLinkEnabled && counterPart) {
-        dragTangent(_time, *counterPart, transform, _dx, _dy, _left,autoKeying,_breakTangents);
-    }
+    
+
+    
+    dragTangent(_time, *cp, *fp, transform, _dx, _dy, _left,autoKeying,_breakTangents, _tangentBeingDragged->isFeatherPoint());
+
 
     if (_firstRedoCalled) {
         _roto->setSelection(_selectedCurves, _selectedPoints);
