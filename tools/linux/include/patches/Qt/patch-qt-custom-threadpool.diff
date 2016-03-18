@@ -1,14 +1,15 @@
 --- src/corelib/concurrent/qthreadpool.cpp.orig	2015-05-07 16:14:48.000000000 +0200
-+++ src/corelib/concurrent/qthreadpool.cpp	2016-03-17 15:57:50.000000000 +0100
-@@ -42,6 +42,7 @@
- #include "qthreadpool.h"
- #include "qthreadpool_p.h"
- #include "qelapsedtimer.h"
-+#include "QtCore/qcoreapplication.h"
++++ src/corelib/concurrent/qthreadpool.cpp	2016-03-18 11:00:22.000000000 +0100
+@@ -45,6 +45,8 @@
  
  #ifndef QT_NO_THREAD
  
-@@ -56,23 +57,6 @@
++static QScopedPointer<QThreadPool> gThreadPool(new QThreadPool());
++
+ QT_BEGIN_NAMESPACE
+ 
+ inline bool operator<(int priority, const QPair<QRunnable *, int> &p)
+@@ -56,23 +58,6 @@
      return priority < p.second;
  }
  
@@ -32,7 +33,7 @@
  /*
      QThreadPool private class.
  */
-@@ -81,8 +65,8 @@
+@@ -81,8 +66,8 @@
  /*!\internal
  
  */
@@ -43,7 +44,7 @@
  { }
  
  /* \internal
-@@ -240,13 +224,20 @@
+@@ -240,13 +225,20 @@
      return activeThreadCount > maxThreadCount && (activeThreadCount - reservedThreads) > 1;
  }
  
@@ -66,18 +67,24 @@
      allThreads.insert(thread.data());
      ++activeThreads;
  
-@@ -444,7 +435,7 @@
+@@ -444,7 +436,13 @@
  */
  QThreadPool *QThreadPool::globalInstance()
  {
 -    return theInstance();
-+    return qApp->globalThreadPool();
++    return gThreadPool.data();
++}
++
++void
++QThreadPool::setGlobalInstance(QThreadPool* instance)
++{
++    gThreadPool.reset(instance);
  }
  
  /*!
 --- src/corelib/concurrent/qthreadpool.h.orig	2015-05-07 16:14:48.000000000 +0200
-+++ src/corelib/concurrent/qthreadpool.h	2016-03-17 15:54:48.000000000 +0100
-@@ -46,6 +46,7 @@
++++ src/corelib/concurrent/qthreadpool.h	2016-03-18 11:01:55.000000000 +0100
+@@ -46,15 +46,43 @@
  
  #include <QtCore/qthread.h>
  #include <QtCore/qrunnable.h>
@@ -85,7 +92,10 @@
  
  #ifndef QT_NO_THREAD
  
-@@ -54,7 +55,32 @@
++#define QT_CUSTOM_THREADPOOL
++
+ QT_BEGIN_HEADER
+ QT_BEGIN_NAMESPACE
  
  QT_MODULE(Core)
  
@@ -118,7 +128,15 @@
  class Q_CORE_EXPORT QThreadPool : public QObject
  {
      Q_OBJECT
-@@ -86,6 +112,10 @@
+@@ -69,6 +97,7 @@
+     ~QThreadPool();
+ 
+     static QThreadPool *globalInstance();
++    static void setGlobalInstance(QThreadPool* instance);
+ 
+     void start(QRunnable *runnable, int priority = 0);
+     bool tryStart(QRunnable *runnable);
+@@ -86,6 +115,10 @@
  
      void waitForDone();
      bool waitForDone(int msecs);
@@ -129,102 +147,3 @@
  };
  
  QT_END_NAMESPACE
---- src/corelib/kernel/qcoreapplication.h.orig	2015-05-07 16:14:48.000000000 +0200
-+++ src/corelib/kernel/qcoreapplication.h	2016-03-17 14:52:04.000000000 +0100
-@@ -65,6 +65,7 @@
- class QTranslator;
- class QPostEventList;
- class QStringList;
-+class QThreadPool;
- 
- #define qApp QCoreApplication::instance()
- 
-@@ -101,6 +102,7 @@
-     QT_DEPRECATED static int argc();
-     QT_DEPRECATED static char **argv();
- #endif
-+    
-     static QStringList arguments();
- 
-     static void setAttribute(Qt::ApplicationAttribute attribute, bool on = true);
-@@ -188,6 +190,9 @@
-     typedef bool (*EventFilter)(void *message, long *result);
-     EventFilter setEventFilter(EventFilter filter);
-     bool filterEvent(void *message, long *result);
-+    
-+    QThreadPool* globalThreadPool() const;
-+    void setGlobalThreadPool(QThreadPool* threadPool);
- 
- public Q_SLOTS:
-     static void quit();
---- src/corelib/kernel/qcoreapplication.cpp.orig	2015-05-07 16:14:48.000000000 +0200
-+++ src/corelib/kernel/qcoreapplication.cpp	2016-03-17 16:23:35.000000000 +0100
-@@ -429,7 +429,7 @@
- 
- QCoreApplicationPrivate::QCoreApplicationPrivate(int &aargc, char **aargv, uint flags)
-     : QObjectPrivate(), argc(aargc), argv(aargv), application_type(0), eventFilter(0),
--      in_exec(false), aboutToQuitEmitted(false)
-+      in_exec(false), aboutToQuitEmitted(false), gThreadPool(new QThreadPool())
- {
-     app_compile_version = flags & 0xffffff;
- #if defined(QT3_SUPPORT)
-@@ -473,6 +473,8 @@
- 
- QCoreApplicationPrivate::~QCoreApplicationPrivate()
- {
-+    delete gThreadPool;
-+    
-     if (threadData) {
- #ifndef QT_NO_THREAD
-         void *data = &threadData->tls;
-@@ -847,12 +849,7 @@
- #if !defined(QT_NO_THREAD)
- #if !defined(QT_NO_CONCURRENT)
-     // Synchronize and stop the global thread pool threads.
--    QThreadPool *globalThreadPool = 0;
--    QT_TRY {
--        globalThreadPool = QThreadPool::globalInstance();
--    } QT_CATCH (...) {
--        // swallow the exception, since destructors shouldn't throw
--    }
-+    QThreadPool *globalThreadPool = d_func()->gThreadPool;
-     if (globalThreadPool)
-         globalThreadPool->waitForDone();
- #endif
-@@ -2349,6 +2346,17 @@
-     return list;
- }
- 
-+QThreadPool* QCoreApplication::globalThreadPool() const
-+{
-+    return d_func()->gThreadPool;
-+}
-+
-+void QCoreApplication::setGlobalThreadPool(QThreadPool* threadPool)
-+{
-+    delete d_func()->gThreadPool;
-+    d_func()->gThreadPool = threadPool;
-+}
-+
- /*!
-     \property QCoreApplication::organizationName
-     \brief the name of the organization that wrote this application
---- src/corelib/kernel/qcoreapplication_p.h.orig	2015-05-07 16:14:48.000000000 +0200
-+++ src/corelib/kernel/qcoreapplication_p.h	2016-03-17 14:45:59.000000000 +0100
-@@ -73,6 +73,7 @@
- class CApaCommandLine;
- #endif
- class QAbstractEventDispatcher;
-+class QThreadPool;
- 
- class Q_CORE_EXPORT QCoreApplicationPrivate : public QObjectPrivate
- {
-@@ -125,6 +126,8 @@
-     bool aboutToQuitEmitted;
-     QString cachedApplicationDirPath;
-     QString cachedApplicationFilePath;
-+    QThreadPool* gThreadPool;
-+    
- #if defined(Q_OS_SYMBIAN)
- #  if !defined(QT_NO_SYSTEMLOCALE)
-     QScopedPointer<QEnvironmentChangeNotifier> environmentChangeNotifier;
