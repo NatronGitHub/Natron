@@ -28,6 +28,9 @@
 
 #include "Global/QtCompat.h"
 
+#include <QCoreApplication>
+#include <QProcess>
+
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/Node.h"
@@ -167,6 +170,7 @@ struct ReadNodePrivate
     boost::weak_ptr<KnobChoice> pluginSelectorKnob;
     boost::weak_ptr<KnobString> pluginIDStringKnob;
     boost::weak_ptr<KnobSeparator> separatorKnob;
+    boost::weak_ptr<KnobButton> fileInfosKnob;
     
     std::list<boost::weak_ptr<KnobI> > readNodeKnobs;
     
@@ -182,6 +186,7 @@ struct ReadNodePrivate
     , pluginSelectorKnob()
     , pluginIDStringKnob()
     , separatorKnob()
+    , fileInfosKnob()
     , readNodeKnobs()
     , creatingReadNode(0)
     {
@@ -204,6 +209,17 @@ struct ReadNodePrivate
     void createDefaultReadNode();
     
     bool checkDecoderCreated(double time, ViewIdx view);
+    
+    static QString getFFProbeBinaryPath()
+    {
+        QString appPath = QCoreApplication::applicationDirPath();
+        appPath += QLatin1Char('/');
+        appPath += QString::fromUtf8("ffprobe");
+#ifdef __NATRON_WIN32__
+        appPath += QString::fromUtf8(".exe");
+#endif
+        return appPath;
+    }
     
 };
 
@@ -574,6 +590,26 @@ ReadNodePrivate::refreshPluginSelectorKnob()
     pluginIDKnob->blockValueChanges();
     pluginIDKnob->setValue(pluginID);
     pluginIDKnob->unblockValueChanges();
+    
+    
+    
+    boost::shared_ptr<KnobButton> fileInfos = fileInfosKnob.lock();
+    KnobPtr hasMetaDatasKnob = _publicInterface->getKnobByName("showMetadata");
+    
+    bool hasFfprobe = false;
+    if (!hasMetaDatasKnob) {
+        QString ffprobePath = getFFProbeBinaryPath();
+        hasFfprobe = QFile::exists(ffprobePath);
+    } else {
+        hasMetaDatasKnob->setSecret(true);
+    }
+    
+    
+    if (hasMetaDatasKnob || (pluginID == PLUGINID_OFX_READFFMPEG && hasFfprobe)) {
+        fileInfos->setSecret(false);
+    } else {
+        fileInfos->setSecret(true);
+    }
 }
 
 bool
@@ -771,6 +807,12 @@ ReadNode::initializeKnobs()
 {
     boost::shared_ptr<KnobPage> controlpage = AppManager::createKnob<KnobPage>(this, "Controls");
     
+    boost::shared_ptr<KnobButton> fileInfos = AppManager::createKnob<KnobButton>(this, "File Info...");
+    fileInfos->setName("fileInfo");
+    fileInfos->setHintToolTip("Press to display informations about the file");
+    controlpage->addKnob(fileInfos);
+    _imp->fileInfosKnob = fileInfos;
+    _imp->readNodeKnobs.push_back(fileInfos);
     
     boost::shared_ptr<KnobChoice> pluginSelector = AppManager::createKnob<KnobChoice>(this, "Decoder");
     pluginSelector->setAnimationEnabled(false);
@@ -880,6 +922,39 @@ ReadNode::knobChanged(KnobI* k,
         } catch (const std::exception& e) {
             setPersistentMessage(eMessageTypeError, e.what());
         }
+        return;
+    } else if (k == _imp->fileInfosKnob.lock().get()) {
+        
+        if (!_imp->embeddedPlugin) {
+            return;
+        }
+        
+        
+        KnobPtr hasMetaDatasKnob = _imp->embeddedPlugin->getKnobByName("showMetadata");
+        if (hasMetaDatasKnob) {
+            KnobButton* showMetasKnob = dynamic_cast<KnobButton*>(hasMetaDatasKnob.get());
+            if (showMetasKnob) {
+                showMetasKnob->trigger();
+            }
+        } else {
+            QString ffprobePath = ReadNodePrivate::getFFProbeBinaryPath();
+            if (_imp->embeddedPlugin->getPluginID() == PLUGINID_OFX_READFFMPEG && QFile::exists(ffprobePath)) {
+                QProcess proc;
+                QStringList ffprobeArgs;
+                ffprobeArgs << QString::fromUtf8("-show_streams");
+                boost::shared_ptr<KnobFile> fileKnob = _imp->inputFileKnob.lock();
+                assert(fileKnob);
+                std::string filename = fileKnob->getValue();
+                ffprobeArgs << QString::fromUtf8(filename.c_str());
+                proc.start(ffprobePath, ffprobeArgs);
+                proc.waitForFinished();
+                
+                QString procStdError = QString::fromUtf8(proc.readAllStandardError());
+                QString procStdOutput = QString::fromUtf8(proc.readAllStandardOutput());
+                Dialogs::informationDialog(getNode()->getLabel(), procStdError.toStdString() + procStdOutput.toStdString());
+            }
+        }
+        
         return;
     }
     if (_imp->embeddedPlugin) {

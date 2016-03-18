@@ -1506,7 +1506,15 @@ static bool isVideoFileExtension(const std::string& ext)
         ext == "mp4" ||
         ext == "mpeg" ||
         ext == "flv" ||
-        ext == "mkv") {
+        ext == "mkv" ||
+        ext == "mxf" ||
+        ext == "mpg" ||
+        ext == "mts" ||
+        ext == "m2ts" ||
+        ext == "ts" ||
+        ext == "webm" ||
+        ext == "ogg" ||
+        ext == "ogv") {
         return true;
     }
     return false;

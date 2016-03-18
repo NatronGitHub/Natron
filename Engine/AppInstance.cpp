@@ -879,18 +879,33 @@ AppInstance::setGroupLabelIDAndVersion(const NodePtr& node,
     
 }
 
-#ifdef NATRON_ENABLE_IO_META_NODES
 NodePtr
 AppInstance::createReader(const std::string& filename, CreateNodeReason reason, const boost::shared_ptr<NodeCollection>& group)
 {
+#ifdef NATRON_ENABLE_IO_META_NODES
+
     CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_READ),
                         reason,
                         group);
+#else
+    
+    std::map<std::string,std::string> readersForFormat;
+    appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&readersForFormat);
+    QString fileCpy = QString::fromUtf8(filename.c_str());
+    std::string ext = QtCompat::removeFileExtension(fileCpy).toLower().toStdString();
+    std::map<std::string,std::string>::iterator found = readersForFormat.find(ext);
+    if ( found == readersForFormat.end() ) {
+        Dialogs::errorDialog( tr("Reader").toStdString(),
+                             tr("No plugin capable of decoding ").toStdString() + ext + tr(" was found.").toStdString(),false );
+        return NodePtr();
+    }
+    CreateNodeArgs args(QString::fromUtf8(found->second.c_str()), reason, group);
+#endif
     args.paramValues.push_back(createDefaultValueForParam(kOfxImageEffectFileParamName, filename));
     return createNode(args);
 }
 
-#endif
+
 
 NodePtr
 AppInstance::createWriter(const std::string& filename,
