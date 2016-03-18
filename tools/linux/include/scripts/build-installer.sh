@@ -135,6 +135,10 @@ mkdir -p $OFX_IO_PATH/data $OFX_IO_PATH/meta $OFX_IO_PATH/data/Plugins/OFX/Natro
 cat $XML/openfx-io.xml | sed "s/_VERSION_/${OFX_IO_VERSION}/;s/_DATE_/${DATE}/" > $OFX_IO_PATH/meta/package.xml || exit 1
 cat $QS/openfx-io.qs > $OFX_IO_PATH/meta/installscript.qs || exit 1
 cp $INSTALL_PATH/ffmpeg-$FFLIC/bin/{ffmpeg,ffprobe} $OFX_IO_PATH/data/ || exit 1
+( cd $OFX_IO_PATH/data/bin;
+  ln -sf ../ffmpeg .
+  ln -sf ../ffprobe .
+)  
 #cat $CWD/include/scripts/ffmpeg.sh > $OFX_IO_PATH/data/ffmpeg || exit 1
 #cat $CWD/include/scripts/ffmpeg.sh | sed 's/ffmpeg/ffprobe/g' > $OFX_IO_PATH/data/ffprobe || exit 1
 #chmod +x $OFX_IO_PATH/data/{ffmpeg,ffprobe} || exit 1
