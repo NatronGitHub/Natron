@@ -1546,6 +1546,10 @@ TrackerPanel::onItemDataChanged(TableItem* item)
                     case COL_LABEL: {
                         std::string label = item->data(Qt::DisplayRole).toString().toStdString();
                         marker->setLabel(label);
+                        NodePtr node = getContext()->getNode();
+                        if (node) {
+                            node->getApp()->redrawAllViewers();
+                        }
                     }   break;
                     case COL_CENTER_X:
                     case COL_CENTER_Y:
@@ -1994,10 +1998,12 @@ TrackerPanelPrivate::updateTrackKeysInfoBar(int time)
     std::set<int> keyframes;
     std::list<boost::shared_ptr<TrackMarker> > markers;
     context.lock()->getSelectedMarkers(&markers);
+    
     for (std::list<boost::shared_ptr<TrackMarker> >::iterator it = markers.begin(); it!=markers.end(); ++it) {
         std::set<int> keys;
         (*it)->getUserKeyframes(&keys);
         keyframes.insert(keys.begin(), keys.end());
+        
     }
     
     prevKeyframe->setEnabled(!keyframes.empty());
@@ -2044,9 +2050,18 @@ TrackerPanelPrivate::updateTrackKeysInfoBar(int time)
 }
 
 void
-TrackerPanel::onTimeChanged(SequenceTime time, int /*reason*/)
+TrackerPanel::onTimeChanged(SequenceTime time, int reason)
 {
     _imp->updateTrackKeysInfoBar(time);
+    
+    std::vector<boost::shared_ptr<TrackMarker> > markers;
+    _imp->context.lock()->getAllMarkers(&markers);
+    
+    for (std::vector<boost::shared_ptr<TrackMarker> >::iterator it = markers.begin(); it!=markers.end(); ++it) {
+        
+        (*it)->refreshAfterTimeChange(reason == eTimelineChangeReasonPlaybackSeek, time);
+    }
+    
 }
 
 

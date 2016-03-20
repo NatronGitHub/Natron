@@ -127,9 +127,7 @@ public:
     boost::shared_ptr<KnobDouble> getOffsetKnob() const;
     boost::shared_ptr<KnobDouble> getCorrelationKnob() const;
     boost::shared_ptr<KnobChoice> getMotionModelKnob() const;
-    
-    const std::list<boost::shared_ptr<KnobI> >& getKnobs() const;
-    
+        
     int getReferenceFrame(int time, bool forward) const;
     
     bool isUserKeyframe(int time) const;
@@ -161,6 +159,7 @@ public:
     std::pair<boost::shared_ptr<Natron::Image>,RectI> getMarkerImage(int time,const RectI& roi) const;
     
     RectI getMarkerImageRoI(int time) const;
+    
     
     public Q_SLOTS:
     

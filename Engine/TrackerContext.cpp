@@ -1980,8 +1980,8 @@ TrackerContextPrivate::linkMarkerKnobsToGuiKnobs(const std::list<boost::shared_p
         ++next;
     }
     for (std::list<boost::shared_ptr<TrackMarker> >::const_iterator it = markers.begin() ; it!= markers.end(); ++it) {
-        const std::list<boost::shared_ptr<KnobI> >& trackKnobs = (*it)->getKnobs();
-        for (std::list<boost::shared_ptr<KnobI> >::const_iterator it2 = trackKnobs.begin(); it2 != trackKnobs.end(); ++it2) {
+        const KnobsVec& trackKnobs = (*it)->getKnobs();
+        for (KnobsVec::const_iterator it2 = trackKnobs.begin(); it2 != trackKnobs.end(); ++it2) {
             
             // Find the knob in the TrackerContext knobs
             boost::shared_ptr<KnobI> found;

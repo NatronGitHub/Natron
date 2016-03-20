@@ -86,6 +86,8 @@ CLANG_DIAG_ON(uninitialized)
 #define SELECTED_MARKER_KEYFRAME_WIDTH_SCREEN_PX 75
 #define MAX_TRACK_KEYS_TO_DISPLAY 10
 
+#define CORRELATION_ERROR_MIN 0.999
+
 NATRON_NAMESPACE_ENTER;
 
 
@@ -500,21 +502,21 @@ TrackerGui::createGui()
     _imp->clearAllAnimationButton = new Button(QIcon(pixClearAll),QString(),_imp->buttonsBar);
     _imp->clearAllAnimationButton->setFixedSize(medButtonSize);
     _imp->clearAllAnimationButton->setIconSize(medButtonIconSize);
-    _imp->clearAllAnimationButton->setToolTip(GuiUtils::convertFromPlainText(tr("Clear all animation for selected tracks."), Qt::WhiteSpaceNormal));
+    _imp->clearAllAnimationButton->setToolTip(GuiUtils::convertFromPlainText(tr("Reset animation on the center and pattern for selected tracks."), Qt::WhiteSpaceNormal));
     QObject::connect( _imp->clearAllAnimationButton,SIGNAL(clicked(bool)),this,SLOT(onClearAllAnimationClicked()) );
     clearAnimationLayout->addWidget(_imp->clearAllAnimationButton);
     
     _imp->clearBwAnimationButton = new Button(QIcon(pixClearBw),QString(),_imp->buttonsBar);
     _imp->clearBwAnimationButton->setFixedSize(medButtonSize);
     _imp->clearBwAnimationButton->setIconSize(medButtonIconSize);
-    _imp->clearBwAnimationButton->setToolTip(GuiUtils::convertFromPlainText(tr("Clear animation backward from the current frame."), Qt::WhiteSpaceNormal));
+    _imp->clearBwAnimationButton->setToolTip(GuiUtils::convertFromPlainText(tr("Reset animation on the center and pattern backward from the current frame."), Qt::WhiteSpaceNormal));
     QObject::connect( _imp->clearBwAnimationButton,SIGNAL(clicked(bool)),this,SLOT(onClearBwAnimationClicked()) );
     clearAnimationLayout->addWidget(_imp->clearBwAnimationButton);
     
     _imp->clearFwAnimationButton = new Button(QIcon(pixClearFw),QString(),_imp->buttonsBar);
     _imp->clearFwAnimationButton->setFixedSize(medButtonSize);
     _imp->clearFwAnimationButton->setIconSize(medButtonIconSize);
-    _imp->clearFwAnimationButton->setToolTip(GuiUtils::convertFromPlainText(tr("Clear animation forward from the current frame."), Qt::WhiteSpaceNormal));
+    _imp->clearFwAnimationButton->setToolTip(GuiUtils::convertFromPlainText(tr("Reset animation on the center and pattern forward from the current frame."), Qt::WhiteSpaceNormal));
     QObject::connect( _imp->clearFwAnimationButton,SIGNAL(clicked(bool)),this,SLOT(onClearFwAnimationClicked()) );
     clearAnimationLayout->addWidget(_imp->clearFwAnimationButton);
     
@@ -643,7 +645,7 @@ TrackerGui::createGui()
         _imp->resetTrackButton = new Button(QIcon(resetPix), QString(), _imp->buttonsBar);
         _imp->resetTrackButton->setFixedSize(medButtonSize);
         _imp->resetTrackButton->setIconSize(medButtonIconSize);
-        _imp->resetTrackButton->setToolTip(GuiUtils::convertFromPlainText(tr("Resets animation for the selected tracks"), Qt::WhiteSpaceNormal));
+        _imp->resetTrackButton->setToolTip(GuiUtils::convertFromPlainText(tr("Reset pattern search window and track animation for the selected tracks"), Qt::WhiteSpaceNormal));
         QObject::connect( _imp->resetTrackButton,SIGNAL( clicked(bool) ),this,SLOT( onResetTrackButtonClicked() ) );
         _imp->buttonsLayout->addWidget(_imp->resetTrackButton);
         
@@ -1007,14 +1009,17 @@ TrackerGui::drawOverlays(double time,
                         if (!showErrorColor) {
                             glColor3f(0.5 * l,0.5 * l,0.5 * l);
                         }
-                        for (std::map<int,std::pair<Natron::Point,double> >::iterator it = centerPoints.begin() ;it!=centerPoints.end(); ++it) {
+                        for (std::map<int,std::pair<Natron::Point,double> >::iterator it2 = centerPoints.begin() ;it2!=centerPoints.end(); ++it2) {
                             if (showErrorColor) {
                                 if (l != 0) {
                                     /*
-                                     Map the correlation to [0, 0.33] since 0 is Red for HSV and 0.33 is Green. 
+                                     Clamp the correlation to [CORRELATION_ERROR_MIN, 1] then
+                                     Map the correlation to [0, 0.33] since 0 is Red for HSV and 0.33 is Green.
                                      Also clamp to the interval if the correlation is higher, and reverse.
                                      */
-                                    double mappedError = 0.33 - std::max(std::min(0.33,it->second.second / 3.),0.);
+                                    
+                                    double correlation = std::max(std::min(it2->second.second, 1.), CORRELATION_ERROR_MIN);
+                                    double mappedError = 0.33 * (1. - correlation) / (1. - CORRELATION_ERROR_MIN);
                                     QColor c;
                                     c.setHsvF(mappedError, 1., 1.);
                                     glColor3f(c.redF(), c.greenF(), c.blueF());
@@ -1022,7 +1027,7 @@ TrackerGui::drawOverlays(double time,
                                     glColor3f(0., 0., 0.);
                                 }
                             }
-                            glVertex2d(it->second.first.x, it->second.first.y);
+                            glVertex2d(it2->second.first.x, it2->second.first.y);
                         }
                         glEnd();
                         
@@ -3515,12 +3520,21 @@ TrackerGui::onClearAllAnimationClicked()
     if (_imp->panelv1) {
         _imp->panelv1->clearAllAnimationForSelection();
     } else {
-        #pragma message WARN("Todo")
-        /*std::list<boost::shared_ptr<TrackMarker> > markers;
+        std::list<boost::shared_ptr<TrackMarker> > markers;
         _imp->panel->getContext()->getSelectedMarkers(&markers);
-        for (std::list<boost::shared_ptr<TrackMarker> >::iterator it = markers.begin(); it != markers.end(); ++it) {
-            (*it)->removeAllKeyframes();
-        }*/
+        for (std::list<boost::shared_ptr<TrackMarker> >::iterator it = markers.begin(); it!=markers.end(); ++it) {
+            boost::shared_ptr<KnobDouble> offsetKnob = (*it)->getOffsetKnob();
+            assert(offsetKnob);
+            for (int i = 0; i < offsetKnob->getDimension(); ++i) {
+                offsetKnob->resetToDefaultValue(i);
+            }
+            
+            boost::shared_ptr<KnobDouble> centerKnob = (*it)->getCenterKnob();
+            assert(centerKnob);
+            for (int i = 0; i < centerKnob->getDimension(); ++i) {
+                centerKnob->resetToDefaultValue(i);
+            }
+        }
     }
 }
 
@@ -3529,8 +3543,25 @@ TrackerGui::onClearBwAnimationClicked()
 {
     if (_imp->panelv1) {
         _imp->panelv1->clearBackwardAnimationForSelection();
+    } else {
+        
+        int time = _imp->panel->getContext()->getNode()->getApp()->getTimeLine()->currentFrame();
+        std::list<boost::shared_ptr<TrackMarker> > markers;
+        _imp->panel->getContext()->getSelectedMarkers(&markers);
+        for (std::list<boost::shared_ptr<TrackMarker> >::iterator it = markers.begin(); it!=markers.end(); ++it) {
+            boost::shared_ptr<KnobDouble> offsetKnob = (*it)->getOffsetKnob();
+            assert(offsetKnob);
+            for (int i = 0; i < offsetKnob->getDimension(); ++i) {
+                offsetKnob->deleteAnimationBeforeTime(time, ViewSpec::all(), i, eValueChangedReasonNatronGuiEdited);
+            }
+            
+            boost::shared_ptr<KnobDouble> centerKnob = (*it)->getCenterKnob();
+            assert(centerKnob);
+            for (int i = 0; i < centerKnob->getDimension(); ++i) {
+                centerKnob->deleteAnimationBeforeTime(time, ViewSpec::all(), i, eValueChangedReasonNatronGuiEdited);
+            }
+        }
     }
-#pragma message WARN("Todo")
 }
 
 void
@@ -3538,8 +3569,26 @@ TrackerGui::onClearFwAnimationClicked()
 {
     if (_imp->panelv1) {
         _imp->panelv1->clearForwardAnimationForSelection();
+    } else {
+        
+        int time = _imp->panel->getContext()->getNode()->getApp()->getTimeLine()->currentFrame();
+        std::list<boost::shared_ptr<TrackMarker> > markers;
+        _imp->panel->getContext()->getSelectedMarkers(&markers);
+        for (std::list<boost::shared_ptr<TrackMarker> >::iterator it = markers.begin(); it!=markers.end(); ++it) {
+            boost::shared_ptr<KnobDouble> offsetKnob = (*it)->getOffsetKnob();
+            assert(offsetKnob);
+            for (int i = 0; i < offsetKnob->getDimension(); ++i) {
+                offsetKnob->deleteAnimationAfterTime(time, ViewSpec::all(), i, eValueChangedReasonNatronGuiEdited);
+            }
+            
+            boost::shared_ptr<KnobDouble> centerKnob = (*it)->getCenterKnob();
+            assert(centerKnob);
+            for (int i = 0; i < centerKnob->getDimension(); ++i) {
+                centerKnob->deleteAnimationAfterTime(time, ViewSpec::all(), i, eValueChangedReasonNatronGuiEdited);
+            }
+        }
     }
-    #pragma message WARN("Todo")
+    
 }
 
 void

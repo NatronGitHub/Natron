@@ -1940,7 +1940,7 @@ Knob<T>::onTimeChanged(bool isPlayback, double time)
     }
     bool shouldRefresh = false;
     for (int i = 0; i < dims; ++i) {
-        if (getKnobGuiPointer() && _signalSlotHandler && (isAnimated(i, ViewIdx(0)) || !getExpression(i).empty())) {
+        if (_signalSlotHandler && (isAnimated(i, ViewIdx(0)) || !getExpression(i).empty())) {
             shouldRefresh = true;
         }
     }
