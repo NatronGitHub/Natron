@@ -145,7 +145,7 @@ struct TrackMarkerPrivate
             TrackerContext::getMotionModelsAndHelps(&choices,&helps);
             motionModel->populateChoices(choices,helps);
         }
-        motionModel->setDefaultValue(4);
+        motionModel->setDefaultValue(0);
         knobs.push_back(motionModel);
         
         correlation.reset(new KnobDouble(publicInterface,kTrackerParamCorrelationLabel, 1, false));
@@ -161,44 +161,44 @@ TrackMarker::TrackMarker(const boost::shared_ptr<TrackerContext>& context)
 , _imp(new TrackMarkerPrivate(this, context))
 {
     boost::shared_ptr<KnobSignalSlotHandler> handler = _imp->center->getSignalSlotHandler();
-    QObject::connect(handler.get(), SIGNAL(keyFrameSet(double,int,int,bool)), this , SLOT(onCenterKeyframeSet(double,int,int,bool)));
-    QObject::connect(handler.get(), SIGNAL(keyFrameRemoved(double,int,int)), this , SLOT(onCenterKeyframeRemoved(double,int,int)));
-    QObject::connect(handler.get(), SIGNAL(keyFrameMoved(int,double,double)), this , SLOT(onCenterKeyframeMoved(int,double,double)));
-    QObject::connect(handler.get(), SIGNAL(multipleKeyFramesSet(std::list<double>, int, int)), this ,
-                     SLOT(onCenterKeyframesSet(std::list<double>, int, int)));
-    QObject::connect(handler.get(), SIGNAL(animationRemoved(int)), this , SLOT(onCenterAnimationRemoved(int)));
+    QObject::connect(handler.get(), SIGNAL(keyFrameSet(double,ViewSpec,int,int,bool)), this , SLOT(onCenterKeyframeSet(double,ViewSpec,int,int,bool)));
+    QObject::connect(handler.get(), SIGNAL(keyFrameRemoved(double,ViewSpec,int,int)), this , SLOT(onCenterKeyframeRemoved(double,ViewSpec,int,int)));
+    QObject::connect(handler.get(), SIGNAL(keyFrameMoved(ViewSpec,int,double,double)), this , SLOT(onCenterKeyframeMoved(ViewSpec,int,double,double)));
+    QObject::connect(handler.get(), SIGNAL(multipleKeyFramesSet(std::list<double>,ViewSpec, int, int)), this ,
+                     SLOT(onCenterKeyframesSet(std::list<double>,ViewSpec, int, int)));
+    QObject::connect(handler.get(), SIGNAL(animationRemoved(ViewSpec,int)), this , SLOT(onCenterAnimationRemoved(ViewSpec,int)));
     
-    QObject::connect(handler.get(), SIGNAL(valueChanged(int,int)), this, SLOT(onCenterKnobValueChanged(int, int)));
+    QObject::connect(handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onCenterKnobValueChanged(ViewSpec,int, int)));
     handler = _imp->offset->getSignalSlotHandler();
-    QObject::connect(handler.get(), SIGNAL(valueChanged(int,int)), this, SLOT(onOffsetKnobValueChanged(int, int)));
+    QObject::connect(handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onOffsetKnobValueChanged(ViewSpec,int, int)));
     
     handler = _imp->correlation->getSignalSlotHandler();
-    QObject::connect(handler.get(), SIGNAL(valueChanged(int,int)), this, SLOT(onCorrelationKnobValueChanged(int, int)));
+    QObject::connect(handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onCorrelationKnobValueChanged(ViewSpec,int, int)));
     
     handler = _imp->weight->getSignalSlotHandler();
-    QObject::connect(handler.get(), SIGNAL(valueChanged(int,int)), this, SLOT(onWeightKnobValueChanged(int, int)));
+    QObject::connect(handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onWeightKnobValueChanged(ViewSpec,int, int)));
     
     handler = _imp->motionModel->getSignalSlotHandler();
-    QObject::connect(handler.get(), SIGNAL(valueChanged(int,int)), this, SLOT(onMotionModelKnobValueChanged(int, int)));
+    QObject::connect(handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onMotionModelKnobValueChanged(ViewSpec,int, int)));
     
     /*handler = _imp->patternBtmLeft->getSignalSlotHandler();
-     QObject::connect(handler.get(), SIGNAL(valueChanged(int,int)), this, SLOT(onPatternBtmLeftKnobValueChanged(int, int)));
+     QObject::connect(handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onPatternBtmLeftKnobValueChanged(int, int)));
      
      handler = _imp->patternTopLeft->getSignalSlotHandler();
-     QObject::connect(handler.get(), SIGNAL(valueChanged(int,int)), this, SLOT(onPatternTopLeftKnobValueChanged(int, int)));
+     QObject::connect(handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onPatternTopLeftKnobValueChanged(int, int)));
      
      handler = _imp->patternTopRight->getSignalSlotHandler();
-     QObject::connect(handler.get(), SIGNAL(valueChanged(int,int)), this, SLOT(onPatternTopRightKnobValueChanged(int, int)));
+     QObject::connect(handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onPatternTopRightKnobValueChanged(int, int)));
      
      handler = _imp->patternBtmRight->getSignalSlotHandler();
-     QObject::connect(handler.get(), SIGNAL(valueChanged(int,int)), this, SLOT(onPatternBtmRightKnobValueChanged(int, int)));
+     QObject::connect(handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onPatternBtmRightKnobValueChanged(int, int)));
      */
     
     handler = _imp->searchWindowBtmLeft->getSignalSlotHandler();
-    QObject::connect(handler.get(), SIGNAL(valueChanged(int,int)), this, SLOT(onSearchBtmLeftKnobValueChanged(int, int)));
+    QObject::connect(handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onSearchBtmLeftKnobValueChanged(ViewSpec,int, int)));
     
     handler = _imp->searchWindowTopRight->getSignalSlotHandler();
-    QObject::connect(handler.get(), SIGNAL(valueChanged(int,int)), this, SLOT(onSearchTopRightKnobValueChanged(int, int)));
+    QObject::connect(handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onSearchTopRightKnobValueChanged(ViewSpec,int, int)));
 }
 
 
@@ -597,7 +597,7 @@ TrackMarker::removeUserKeyframe(int time)
 }
 
 void
-TrackMarker::onCenterKeyframeSet(double time,int /*dimension*/,int /*reason*/,bool added)
+TrackMarker::onCenterKeyframeSet(double time,ViewSpec /*view*/,int /*dimension*/,int /*reason*/,bool added)
 {
     if (added) {
         getContext()->s_keyframeSetOnTrackCenter(shared_from_this(),time);
@@ -605,56 +605,56 @@ TrackMarker::onCenterKeyframeSet(double time,int /*dimension*/,int /*reason*/,bo
 }
 
 void
-TrackMarker::onCenterKeyframeRemoved(double time,int /*dimension*/,int /*reason*/)
+TrackMarker::onCenterKeyframeRemoved(double time,ViewSpec /*view*/,int /*dimension*/,int /*reason*/)
 {
     getContext()->s_keyframeRemovedOnTrackCenter(shared_from_this(), time);
 }
 
 void
-TrackMarker::onCenterKeyframeMoved(int /*dimension*/,double oldTime,double newTime)
+TrackMarker::onCenterKeyframeMoved(ViewSpec /*view*/, int /*dimension*/,double oldTime,double newTime)
 {
     getContext()->s_keyframeRemovedOnTrackCenter(shared_from_this(), oldTime);
     getContext()->s_keyframeSetOnTrackCenter(shared_from_this(),newTime);
 }
 
 void
-TrackMarker::onCenterKeyframesSet(const std::list<double>& keys, int /*dimension*/, int /*reason*/)
+TrackMarker::onCenterKeyframesSet(const std::list<double>& keys,ViewSpec /*view*/, int /*dimension*/, int /*reason*/)
 {
     getContext()->s_multipleKeyframesSetOnTrackCenter(shared_from_this(), keys);
 }
 
 void
-TrackMarker::onCenterAnimationRemoved(int /*dimension*/)
+TrackMarker::onCenterAnimationRemoved(ViewSpec /*view*/,int /*dimension*/)
 {
     getContext()->s_allKeyframesRemovedOnTrackCenter(shared_from_this());
 }
 
 void
-TrackMarker::onCenterKnobValueChanged(int dimension,int reason)
+TrackMarker::onCenterKnobValueChanged(ViewSpec /*view*/,int dimension,int reason)
 {
     getContext()->s_centerKnobValueChanged(shared_from_this(), dimension, reason);
 }
 
 void
-TrackMarker::onOffsetKnobValueChanged(int dimension,int reason)
+TrackMarker::onOffsetKnobValueChanged(ViewSpec /*view*/,int dimension,int reason)
 {
     getContext()->s_offsetKnobValueChanged(shared_from_this(), dimension, reason);
 }
 
 void
-TrackMarker::onCorrelationKnobValueChanged(int dimension,int reason)
+TrackMarker::onCorrelationKnobValueChanged(ViewSpec /*view*/,int dimension,int reason)
 {
     getContext()->s_correlationKnobValueChanged(shared_from_this(), dimension, reason);
 }
 
 void
-TrackMarker::onWeightKnobValueChanged(int dimension,int reason)
+TrackMarker::onWeightKnobValueChanged(ViewSpec /*view*/,int dimension,int reason)
 {
     getContext()->s_weightKnobValueChanged(shared_from_this(), dimension, reason);
 }
 
 void
-TrackMarker::onMotionModelKnobValueChanged(int dimension,int reason)
+TrackMarker::onMotionModelKnobValueChanged(ViewSpec /*view*/,int dimension,int reason)
 {
     getContext()->s_motionModelKnobValueChanged(shared_from_this(), dimension, reason);
 }
@@ -684,13 +684,13 @@ TrackMarker::onMotionModelKnobValueChanged(int dimension,int reason)
  }
  */
 void
-TrackMarker::onSearchBtmLeftKnobValueChanged(int dimension,int reason)
+TrackMarker::onSearchBtmLeftKnobValueChanged(ViewSpec /*view*/,int dimension,int reason)
 {
     getContext()->s_searchBtmLeftKnobValueChanged(shared_from_this(), dimension, reason);
 }
 
 void
-TrackMarker::onSearchTopRightKnobValueChanged(int dimension,int reason)
+TrackMarker::onSearchTopRightKnobValueChanged(ViewSpec /*view*/,int dimension,int reason)
 {
     getContext()->s_searchTopRightKnobValueChanged(shared_from_this(), dimension, reason);
 }

@@ -77,6 +77,12 @@ public:
                          const boost::shared_ptr<ProcessHandler>& process = boost::shared_ptr<ProcessHandler>());
     
     /**
+     * @brief Start progress report for the given node. The progress bar will be displayed only if the estimated remaining
+     * time is greater than NATRON_DISPLAY_PROGRESS_PANEL_AFTER_MS
+     **/
+    void progressStart(const NodePtr& node, const std::string &message, const std::string &messageid, bool canCancel = true);
+    
+    /**
      * @brief Increase progress to the specified value in the range [0., 1.], the time remaining
      * will be computed automatically.
      * @returns false if the task should be aborted, true otherwise.
@@ -103,9 +109,11 @@ public Q_SLOTS:
     
     void onCancelTasksTriggered();
     
+    void doProgressStartOnMainThread(const boost::shared_ptr<Node>& node, const QString &message, const QString &messageid, bool canCancel);
+    
     void doProgressOnMainThread(const ProgressTaskInfoPtr& task, double progress);
     
-    void doProgressEndOnMainThread(const NodePtr& node);
+    void doProgressEndOnMainThread(const boost::shared_ptr<Node>& node);
     
     void onSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
     
@@ -115,9 +123,12 @@ public Q_SLOTS:
     
 Q_SIGNALS:
     
+    void s_doProgressStartOnMainThread(const boost::shared_ptr<Node>& node, const QString &message, const QString &messageid, bool canCancel);
+    
     void s_doProgressUpdateOnMainThread(const ProgressTaskInfoPtr& task, double progress);
     
-    void s_doProgressEndOnMainThread(const NodePtr& node);
+    void s_doProgressEndOnMainThread(const boost::shared_ptr<Node>& node);
+    
     
     
 private:

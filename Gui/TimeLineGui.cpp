@@ -303,15 +303,15 @@ TimeLineGui::paintGL()
         leftBound = _imp->leftBoundary;
         rightBound = _imp->rightBoundary;
     }
-    SequenceTime cur = _imp->timeline->currentFrame();
+    const SequenceTime currentTime = _imp->timeline->currentFrame();
 
     if (_imp->firstPaint) {
         _imp->firstPaint = false;
         
         if ( (rightBound - leftBound) > 10000 ) {
-            centerOn(cur - 100, cur + 100);
+            centerOn(currentTime - 100, currentTime + 100);
         } else if ( (rightBound - leftBound) < 50 ) {
-            centerOn(cur - DEFAULT_TIMELINE_LEFT_BOUND, cur + DEFAULT_TIMELINE_RIGHT_BOUND);
+            centerOn(currentTime - DEFAULT_TIMELINE_LEFT_BOUND, currentTime + DEFAULT_TIMELINE_RIGHT_BOUND);
         } else {
             centerOn(leftBound,rightBound);
         }
@@ -509,7 +509,7 @@ TimeLineGui::paintGL()
         int cursorWidth = TO_DPIX(CURSOR_WIDTH);
         int cursorHeight = TO_DPIY(CURSOR_HEIGHT);
 
-        QPointF cursorBtm(_imp->timeline->currentFrame(),lineYpos);
+        QPointF cursorBtm(currentTime,lineYpos);
         QPointF cursorBtmWidgetCoord = toWidgetCoordinates( cursorBtm.x(),cursorBtm.y() );
         QPointF cursorTopLeft = toTimeLineCoordinates(cursorBtmWidgetCoord.x() - cursorWidth / 2.,
                                                       cursorBtmWidgetCoord.y() - cursorHeight);
@@ -604,7 +604,7 @@ TimeLineGui::paintGL()
         }
 
         //draw the bounds and the current time cursor
-        TimeLineKeysSet::iterator isCurrentTimeAKeyframe = keyframes.find(TimeLineKey(_imp->timeline->currentFrame()));
+        TimeLineKeysSet::iterator isCurrentTimeAKeyframe = keyframes.find(TimeLineKey(currentTime));
         QColor actualCursorColor;
         if ( isCurrentTimeAKeyframe != keyframes.end() ) {
             if (isCurrentTimeAKeyframe->isUserKey) {
@@ -626,7 +626,7 @@ TimeLineGui::paintGL()
                                       Image::clamp<qreal>(cursorB, 0., 1.));
         }
 
-        QString currentFrameStr( QString::number( _imp->timeline->currentFrame() ) );
+        QString currentFrameStr = QString::number(currentTime);
         double cursorTextXposWidget = cursorBtmWidgetCoord.x() - fontM.width(currentFrameStr) / 2.;
         double cursorTextPos = toTimeLine(cursorTextXposWidget);
         renderText(cursorTextPos,cursorTopLeft.y(), currentFrameStr, actualCursorColor, _imp->font);
@@ -646,7 +646,7 @@ TimeLineGui::paintGL()
         
         {
             if (leftBoundBtm.x() >= btmLeft.x() && leftBoundBtmRight.x() <= topRight.x()) {
-                if ( leftBound != _imp->timeline->currentFrame() ) {
+                if (leftBound != currentTime) {
                     QString leftBoundStr( QString::number(leftBound) );
                     double leftBoundTextXposWidget = toWidgetCoordinates( ( leftBoundBtm.x() + leftBoundBtmRight.x() ) / 2.,0 ).x() - fontM.width(leftBoundStr) / 2.;
                     double leftBoundTextPos = toTimeLine(leftBoundTextXposWidget);
@@ -664,7 +664,7 @@ TimeLineGui::paintGL()
             }
             
             if (rightBoundBtmLeft.x() >= btmLeft.x() && rightBoundBtm.x() <= topRight.x()) {
-                if ( rightBound != cur && rightBound != leftBound ) {
+                if ( rightBound != currentTime && rightBound != leftBound ) {
                     QString rightBoundStr( QString::number( rightBound ) );
                     double rightBoundTextXposWidget = toWidgetCoordinates( ( rightBoundBtm.x() + rightBoundBtmLeft.x() ) / 2.,0 ).x() - fontM.width(rightBoundStr) / 2.;
                     double rightBoundTextPos = toTimeLine(rightBoundTextXposWidget);
@@ -723,17 +723,37 @@ TimeLineGui::paintGL()
         }
         glEnd();
         
-        const double keyHeight = TO_DPIY(USER_KEYFRAMES_HEIGHT);
-        const double keyTop = toTimeLineCoordinates(0, lineYPosWidget - keyHeight).y();
-        const double keyBtm = toTimeLineCoordinates(0, lineYPosWidget + keyHeight).y();
+        //const double keyHeight = TO_DPIY(USER_KEYFRAMES_HEIGHT);
+        //const double keyTop = toTimeLineCoordinates(0, lineYPosWidget - keyHeight).y();
+        //const double keyBtm = toTimeLineCoordinates(0, lineYPosWidget + keyHeight).y();
         glColor4f(userkfR, userkfG, userkfB, 1.);
+        QColor userKeyColor;
+        userKeyColor.setRgbF(Image::clamp<qreal>(userkfR, 0., 1.),
+                              Image::clamp<qreal>(userkfG, 0., 1.),
+                              Image::clamp<qreal>(userkfB, 0., 1.));
         for (std::list<SequenceTime>::iterator it = remainingUserKeys.begin(); it!=remainingUserKeys.end(); ++it) {
+
+            if (*it == currentTime ||
+                *it == leftBound ||
+                *it == rightBound) {
+                continue;
+            }
+            QPointF kfBtm(*it,lineYpos);
+            QPointF kfBtmWidgetCoord = toWidgetCoordinates( kfBtm.x(),kfBtm.y() );
+            QPointF kfTopLeft = toTimeLineCoordinates(kfBtmWidgetCoord.x() - cursorWidth / 2.,
+                                                          kfBtmWidgetCoord.y() - cursorHeight);
+            QPointF kfTopRight = toTimeLineCoordinates(kfBtmWidgetCoord.x() + cursorWidth / 2.,
+                                                           kfBtmWidgetCoord.y() - cursorHeight);
             glBegin(GL_POLYGON);
-            glVertex2f(*it,lineYpos);
-            glVertex2f(*it + 0.5, keyTop);
-            glVertex2f(*it + 1., lineYpos);
-            glVertex2f(*it + 0.5, keyBtm);
+            glVertex2f( kfBtm.x(),cursorBtm.y() );
+            glVertex2f( kfTopLeft.x(),kfTopLeft.y() );
+            glVertex2f( kfTopRight.x(),kfTopRight.y() );
             glEnd();
+
+            /*QString kfStr = QString::number(*it);
+            double kfXposWidget = kfBtmWidgetCoord.x() - fontM.width(kfStr) / 2.;
+            double kfTextPos = toTimeLine(kfXposWidget);
+            renderText(kfTextPos,kfTopLeft.y(), kfStr, userKeyColor, _imp->font);*/
         }
         glCheckErrorIgnoreOSXBug();
         glDisable(GL_POLYGON_SMOOTH);

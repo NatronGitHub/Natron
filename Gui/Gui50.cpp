@@ -209,10 +209,10 @@ Gui::onViewerRotoEvaluated(ViewerTab* viewer)
 void
 Gui::progressStart(const NodePtr& node,
                    const std::string &message,
-                   const std::string &/*messageid*/,
+                   const std::string &messageid,
                    bool canCancel)
 {
-    _imp->_progressPanel->startTask(node, INT_MIN, INT_MAX, 1, false, canCancel, QString::fromUtf8(message.c_str()));
+    _imp->_progressPanel->progressStart(node, message, messageid, canCancel);
 
 }
 

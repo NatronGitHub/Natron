@@ -184,7 +184,11 @@ ProgressPanel::ProgressPanel(Gui* gui)
     QItemSelectionModel* selModel = _imp->view->selectionModel();
     QObject::connect(selModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)), this, SLOT(onSelectionChanged(QItemSelection,QItemSelection)));
     
-
+    QObject::connect(this, SIGNAL(s_doProgressStartOnMainThread(boost::shared_ptr<Node>, QString, QString,bool)), this, SLOT(doProgressStartOnMainThread(boost::shared_ptr<Node>, QString, QString,bool)));
+    QObject::connect(this, SIGNAL(s_doProgressUpdateOnMainThread(ProgressTaskInfoPtr,double)), this, SLOT(doProgressOnMainThread(ProgressTaskInfoPtr,double)));
+    
+    QObject::connect(this, SIGNAL(s_doProgressEndOnMainThread(boost::shared_ptr<Node>)), this, SLOT(doProgressEndOnMainThread(boost::shared_ptr<Node>)));
+                     
     
 }
 
@@ -380,6 +384,26 @@ ProgressPanel::onTaskRestarted(const NodePtr& node,
 }
 
 void
+ProgressPanel::doProgressStartOnMainThread(const NodePtr& node, const QString &message, const QString &/*messageid*/, bool canCancel)
+{
+    startTask(node, INT_MIN, INT_MAX, 1, false, canCancel, message);
+}
+
+void
+ProgressPanel::progressStart(const NodePtr& node, const std::string &message, const std::string &messageid, bool canCancel)
+{
+    if (!node) {
+        return;
+    }
+    bool isMainThread = QThread::currentThread() == qApp->thread();
+    if (isMainThread) {
+        doProgressStartOnMainThread(node, QString::fromUtf8(message.c_str()), QString::fromUtf8(messageid.c_str()), canCancel);
+    } else {
+        Q_EMIT s_doProgressStartOnMainThread(node, QString::fromUtf8(message.c_str()), QString::fromUtf8(messageid.c_str()), canCancel);
+    }
+}
+
+void
 ProgressPanel::startTask(const NodePtr& node,
                          const int firstFrame,
                          const int lastFrame,
@@ -389,6 +413,7 @@ ProgressPanel::startTask(const NodePtr& node,
                          const QString& message,
                          const boost::shared_ptr<ProcessHandler>& process)
 {
+    assert(QThread::currentThread() == qApp->thread());
     if (!node) {
         return;
     }

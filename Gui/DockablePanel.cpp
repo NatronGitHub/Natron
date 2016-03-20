@@ -741,7 +741,7 @@ DockablePanel::initializeKnobsInternal()
     assert(!_imp->_trackerPanel);
     _imp->_trackerPanel = initializeTrackerPanel();
     if (_imp->_trackerPanel) {
-        _imp->_mainLayout->addWidget(_imp->_trackerPanel);
+        _imp->_rightContainerLayout->addWidget(_imp->_trackerPanel);
     }
 
     

@@ -115,7 +115,7 @@ public Q_SLOTS:
 
     void onSelectionCleared();
     
-    void onTrackingStarted();
+    void onTrackingStarted(int step);
         
     void onTrackingEnded();
     

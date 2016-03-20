@@ -92,7 +92,9 @@ NATRON_NAMESPACE_ENTER;
 struct TrackMarkerPrivate;
 class TrackMarker : public KnobHolder, public boost::enable_shared_from_this<TrackMarker>
 {
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
     
 public:
     
@@ -162,25 +164,25 @@ public:
     
     public Q_SLOTS:
     
-    void onCenterKeyframeSet(double time,int dimension,int reason,bool added);
-    void onCenterKeyframeRemoved(double time,int dimension,int reason);
-    void onCenterKeyframeMoved(int dimension,double oldTime,double newTime);
-    void onCenterKeyframesSet(const std::list<double>& keys, int dimension, int reason);
-    void onCenterAnimationRemoved(int dimension);
+    void onCenterKeyframeSet(double time,ViewSpec view,int dimension,int reason,bool added);
+    void onCenterKeyframeRemoved(double time,ViewSpec view,int dimension,int reason);
+    void onCenterKeyframeMoved(ViewSpec view, int dimension,double oldTime,double newTime);
+    void onCenterKeyframesSet(const std::list<double>& keys, ViewSpec view,int dimension, int reason);
+    void onCenterAnimationRemoved(ViewSpec view,int dimension);
     
-    void onCenterKnobValueChanged(int dimension,int reason);
-    void onOffsetKnobValueChanged(int dimension,int reason);
-    void onCorrelationKnobValueChanged(int dimension,int reason);
-    void onWeightKnobValueChanged(int dimension,int reason);
-    void onMotionModelKnobValueChanged(int dimension,int reason);
+    void onCenterKnobValueChanged(ViewSpec,int dimension,int reason);
+    void onOffsetKnobValueChanged(ViewSpec,int dimension,int reason);
+    void onCorrelationKnobValueChanged(ViewSpec,int dimension,int reason);
+    void onWeightKnobValueChanged(ViewSpec,int dimension,int reason);
+    void onMotionModelKnobValueChanged(ViewSpec,int dimension,int reason);
     
     /*void onPatternTopLeftKnobValueChanged(int dimension,int reason);
      void onPatternTopRightKnobValueChanged(int dimension,int reason);
      void onPatternBtmRightKnobValueChanged(int dimension,int reason);
      void onPatternBtmLeftKnobValueChanged(int dimension,int reason);*/
     
-    void onSearchBtmLeftKnobValueChanged(int dimension,int reason);
-    void onSearchTopRightKnobValueChanged(int dimension,int reason);
+    void onSearchBtmLeftKnobValueChanged(ViewSpec, int dimension,int reason);
+    void onSearchTopRightKnobValueChanged(ViewSpec, int dimension,int reason);
     
 private:
     

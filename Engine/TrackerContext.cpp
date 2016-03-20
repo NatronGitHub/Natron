@@ -705,7 +705,8 @@ struct TrackerContextPrivate
     
     std::list<boost::weak_ptr<KnobI> > knobs,perTrackKnobs;
     boost::weak_ptr<KnobBool> enableTrackRed,enableTrackGreen,enableTrackBlue;
-    boost::weak_ptr<KnobDouble> minCorrelation,maxIterations;
+    boost::weak_ptr<KnobDouble> minCorrelation;
+    boost::weak_ptr<KnobInt> maxIterations;
     boost::weak_ptr<KnobBool> bruteForcePreTrack,useNormalizedIntensities;
     boost::weak_ptr<KnobDouble> preBlurSigma;
     boost::weak_ptr<KnobInt> referenceFrame;
@@ -744,7 +745,7 @@ struct TrackerContextPrivate
     , scheduler(_publicInterface ,node, trackStepLibMV)
     {
         EffectInstPtr effect = node->getEffectInstance();
-        QObject::connect(&scheduler, SIGNAL(trackingStarted()), _publicInterface, SIGNAL(trackingStarted()));
+        QObject::connect(&scheduler, SIGNAL(trackingStarted(int)), _publicInterface, SIGNAL(trackingStarted(int)));
         QObject::connect(&scheduler, SIGNAL(trackingFinished()), _publicInterface, SIGNAL(trackingFinished()));
         
         boost::shared_ptr<KnobPage> settingsPage = AppManager::createKnob<KnobPage>(effect.get(), "Controls", 1 , false);
@@ -794,7 +795,7 @@ struct TrackerContextPrivate
         minCorrelation = minCorelKnob;
         knobs.push_back(minCorelKnob);
         
-        boost::shared_ptr<KnobDouble> maxItKnob = AppManager::createKnob<KnobDouble>(effect.get(), kTrackerParamMaximumIterationLabel, 1, false);
+        boost::shared_ptr<KnobInt> maxItKnob = AppManager::createKnob<KnobInt>(effect.get(), kTrackerParamMaximumIterationLabel, 1, false);
         maxItKnob->setName(kTrackerParamMaximumIteration);
         maxItKnob->setHintToolTip(kTrackerParamMaximumIterationHint);
         maxItKnob->setAnimationEnabled(false);
@@ -2012,33 +2013,33 @@ TrackerContextPrivate::linkMarkerKnobsToGuiKnobs(const std::list<boost::shared_p
             }
             
             if (!slave) {
-                QObject::disconnect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,int,int,bool)),
+                QObject::disconnect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,ViewSpec,int,bool)),
                                     _publicInterface, SLOT(onSelectedKnobCurveChanged()));
-                QObject::disconnect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(double,int,int)),
+                QObject::disconnect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(double,ViewSpec,int,int)),
                                     _publicInterface, SLOT(onSelectedKnobCurveChanged()));
-                QObject::disconnect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(int,double,double)),
+                QObject::disconnect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(ViewSpec,int, double,double)),
                                     _publicInterface, SLOT(onSelectedKnobCurveChanged()));
-                QObject::disconnect((*it2)->getSignalSlotHandler().get(), SIGNAL(animationRemoved(int)),
+                QObject::disconnect((*it2)->getSignalSlotHandler().get(), SIGNAL(animationRemoved(ViewSpec,int)),
                                     _publicInterface, SLOT(onSelectedKnobCurveChanged()));
-                QObject::disconnect((*it2)->getSignalSlotHandler().get(), SIGNAL(derivativeMoved(double,int)),
+                QObject::disconnect((*it2)->getSignalSlotHandler().get(), SIGNAL(derivativeMoved(double,ViewSpec,int)),
                                     _publicInterface, SLOT(onSelectedKnobCurveChanged()));
                 
-                QObject::disconnect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameInterpolationChanged(double,int)),
+                QObject::disconnect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameInterpolationChanged(double,ViewSpec,int)),
                                     _publicInterface, SLOT(onSelectedKnobCurveChanged()));
                 
             } else {
-                QObject::connect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,int,int,bool)),
+                QObject::connect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,ViewSpec,int,bool)),
                                  _publicInterface, SLOT(onSelectedKnobCurveChanged()));
-                QObject::connect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(double,int,int)),
+                QObject::connect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(double,ViewSpec,int,int)),
                                  _publicInterface, SLOT(onSelectedKnobCurveChanged()));
-                QObject::connect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(int,double,double)),
+                QObject::connect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(ViewSpec, int,double,double)),
                                  _publicInterface, SLOT(onSelectedKnobCurveChanged()));
-                QObject::connect((*it2)->getSignalSlotHandler().get(), SIGNAL(animationRemoved(int)),
+                QObject::connect((*it2)->getSignalSlotHandler().get(), SIGNAL(animationRemoved(ViewSpec, int)),
                                  _publicInterface, SLOT(onSelectedKnobCurveChanged()));
-                QObject::connect((*it2)->getSignalSlotHandler().get(), SIGNAL(derivativeMoved(double,int)),
+                QObject::connect((*it2)->getSignalSlotHandler().get(), SIGNAL(derivativeMoved(double,ViewSpec, int)),
                                  _publicInterface, SLOT(onSelectedKnobCurveChanged()));
                 
-                QObject::connect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameInterpolationChanged(double,int)),
+                QObject::connect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameInterpolationChanged(double,ViewSpec,int)),
                                  _publicInterface, SLOT(onSelectedKnobCurveChanged()));
             }
             
@@ -2217,7 +2218,7 @@ class IsTrackingFlagSetter_RAII
     
 public:
     
-    IsTrackingFlagSetter_RAII(const EffectInstPtr& effect, TrackSchedulerBase* base, bool reportProgress, ViewerInstance* viewer)
+    IsTrackingFlagSetter_RAII(const EffectInstPtr& effect, TrackSchedulerBase* base, int step, bool reportProgress, ViewerInstance* viewer)
     : _v(viewer)
     , _effect(effect)
     , _base(base)
@@ -2225,7 +2226,7 @@ public:
     {
         if (_effect && _reportProgress) {
             _effect->getApp()->progressStart(_effect->getNode(), QObject::tr("Tracking...").toStdString(), "");
-            _base->emit_trackingStarted();
+            _base->emit_trackingStarted(step);
         }
 
         viewer->setDoingPartialUpdates(true);
@@ -2265,6 +2266,7 @@ TrackScheduler<TrackArgsType>::run()
             curArgs = requestedArgs;
         }
         
+        
         boost::shared_ptr<TimeLine> timeline = curArgs.getTimeLine();
         
         ViewerInstance* viewer =  curArgs.getViewer();
@@ -2278,6 +2280,7 @@ TrackScheduler<TrackArgsType>::run()
         int framesCount = isForward ? (end - start) : (start - end);
         int numTracks = curArgs.getNumTracks();
         
+        
         std::vector<int> trackIndexes;
         for (std::size_t i = 0; i < (std::size_t)numTracks; ++i) {
             trackIndexes.push_back(i);
@@ -2289,8 +2292,14 @@ TrackScheduler<TrackArgsType>::run()
         EffectInstPtr effect = _imp->getNode()->getEffectInstance();
         {
             ///Use RAII style for setting the isDoingPartialUpdates flag so we're sure it gets removed
-            IsTrackingFlagSetter_RAII __istrackingflag__(effect, this, reportProgress, viewer);
+            IsTrackingFlagSetter_RAII __istrackingflag__(effect, this, isForward ? 1 : -1, reportProgress, viewer);
 
+            
+            if ((isForward && start >= end) || (!isForward && start <= end)) {
+                // Invalid range
+                cur = end;
+            }
+            
             while (cur != end) {
                 
                 
@@ -2419,10 +2428,7 @@ template <class TrackArgsType>
 void
 TrackScheduler<TrackArgsType>::track(const TrackArgsType& args)
 {
-    if ((args.getForward() && args.getStart() >= args.getEnd()) || (!args.getForward() && args.getStart() <= args.getEnd())) {
-        Q_EMIT trackingFinished();
-        return;
-    }
+    
     {
         QMutexLocker k(&argsMutex);
         requestedArgs = args;

@@ -197,7 +197,6 @@ struct TrackerGuiPrivate
     Button* addTrackButton;
     Button* trackBwButton;
     Button* trackPrevButton;
-    Button* stopTrackingButton;
     Button* trackNextButton;
     Button* trackFwButton;
     Button* clearAllAnimationButton;
@@ -256,7 +255,6 @@ struct TrackerGuiPrivate
     , addTrackButton(NULL)
     , trackBwButton(NULL)
     , trackPrevButton(NULL)
-    , stopTrackingButton(NULL)
     , trackNextButton(NULL)
     , trackFwButton(NULL)
     , clearAllAnimationButton(NULL)
@@ -465,13 +463,6 @@ TrackerGui::createGui()
     QObject::connect( _imp->trackPrevButton,SIGNAL( clicked(bool) ),this,SLOT( onTrackPrevClicked() ) );
     trackPlayerLayout->addWidget(_imp->trackPrevButton);
     
-    _imp->stopTrackingButton = new Button(QIcon(pixStop),QString(),_imp->buttonsBar);
-    _imp->stopTrackingButton->setFixedSize(medButtonSize);
-    _imp->stopTrackingButton->setIconSize(medButtonIconSize);
-    _imp->stopTrackingButton->setToolTip(QString::fromUtf8("<p>") + tr("Stop the ongoing tracking if any")  +
-                                         QString::fromUtf8("</p><p><b>") + tr("Keyboard shortcut:") + QString::fromUtf8(" Escape</b></p>"));
-    QObject::connect( _imp->stopTrackingButton,SIGNAL( clicked(bool) ),this,SLOT( onStopButtonClicked() ) );
-    trackPlayerLayout->addWidget(_imp->stopTrackingButton);
     
     _imp->trackNextButton = new Button(QIcon(pixNext),QString(),_imp->buttonsBar);
     _imp->trackNextButton->setFixedSize(medButtonSize);
@@ -573,7 +564,7 @@ TrackerGui::createGui()
         QObject::connect(context.get(), SIGNAL(allKeyframesRemovedOnTrack(boost::shared_ptr<TrackMarker>)), this , SLOT(onAllKeyframesRemovedOnTrack(boost::shared_ptr<TrackMarker>)));
         QObject::connect(context.get(), SIGNAL(onNodeInputChanged(int)), this , SLOT(onTrackerInputChanged(int)));
         QObject::connect(context.get(), SIGNAL(trackingFinished()), this , SLOT(onTrackingEnded()));
-        QObject::connect(context.get(), SIGNAL(trackingStarted()), this, SLOT(onTrackingStarted()));
+        QObject::connect(context.get(), SIGNAL(trackingStarted(int)), this, SLOT(onTrackingStarted(int)));
         
         QPixmap addKeyOnPix,addKeyOffPix;
         QIcon addKeyIc;
@@ -3389,9 +3380,9 @@ TrackerGui::onSelectionCleared()
 void
 TrackerGui::onTrackBwClicked()
 {
+    _imp->trackBwButton->setDown(false);
+    _imp->trackBwButton->setChecked(false);
 
-    _imp->trackBwButton->setDown(true);
-    _imp->trackBwButton->setChecked(true);
     if (_imp->panelv1) {
         if (_imp->panelv1->isTracking()) {
             _imp->panelv1->stopTracking();
@@ -3399,8 +3390,7 @@ TrackerGui::onTrackBwClicked()
         }
         if (!_imp->panelv1->trackBackward(_imp->viewer->getInternalNode())) {
             _imp->panelv1->stopTracking();
-            _imp->trackBwButton->setDown(false);
-            _imp->trackBwButton->setChecked(false);
+
         }
     } else {
         boost::shared_ptr<TimeLine> timeline = _imp->viewer->getGui()->getApp()->getTimeLine();
@@ -3457,8 +3447,9 @@ void
 TrackerGui::onTrackFwClicked()
 {
 
-    _imp->trackFwButton->setDown(true);
-    _imp->trackFwButton->setChecked(true);
+ 
+    _imp->trackFwButton->setDown(false);
+    _imp->trackFwButton->setChecked(false);
     if (_imp->panelv1) {
         if (_imp->panelv1->isTracking()) {
             _imp->panelv1->stopTracking();
@@ -3467,8 +3458,7 @@ TrackerGui::onTrackFwClicked()
 
         if (!_imp->panelv1->trackForward(_imp->viewer->getInternalNode())) {
             _imp->panelv1->stopTracking();
-            _imp->trackFwButton->setDown(false);
-            _imp->trackFwButton->setChecked(false);
+        
         }
     } else {
         boost::shared_ptr<TimeLine> timeline = _imp->viewer->getGui()->getApp()->getTimeLine();
@@ -3497,9 +3487,16 @@ TrackerGui::onUpdateViewerClicked(bool clicked)
 }
 
 void
-TrackerGui::onTrackingStarted()
+TrackerGui::onTrackingStarted(int step)
 {
     _imp->isTracking = true;
+    if (step > 0) {
+        _imp->trackFwButton->setChecked(true);
+        _imp->trackFwButton->setDown(true);
+    } else {
+        _imp->trackBwButton->setChecked(true);
+        _imp->trackBwButton->setDown(true);
+    }
 }
 
 void

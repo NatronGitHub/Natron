@@ -358,7 +358,7 @@ Q_SIGNALS:
     void searchBtmLeftKnobValueChanged(boost::shared_ptr<TrackMarker> marker,int,int);
     void searchTopRightKnobValueChanged(boost::shared_ptr<TrackMarker> marker,int,int);
     
-    void trackingStarted();
+    void trackingStarted(int);
     void trackingFinished();
     
     void onNodeInputChanged(int inputNb);
@@ -384,9 +384,9 @@ public:
     
     virtual ~TrackSchedulerBase() {}
     
-    void emit_trackingStarted()
+    void emit_trackingStarted(int step)
     {
-        Q_EMIT trackingStarted();
+        Q_EMIT trackingStarted(step);
     }
     
     void emit_trackingFinished()
@@ -401,7 +401,7 @@ private Q_SLOTS:
     
 Q_SIGNALS:
     
-    void trackingStarted();
+    void trackingStarted(int step);
     
     void trackingFinished();
     

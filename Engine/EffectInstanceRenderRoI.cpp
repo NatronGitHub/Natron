@@ -1540,19 +1540,26 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 it->second.downscaleImage->getRestToRender(roi, restToRender);
             }
             /*
-             If crashing on this assert this is likely due to a bug of the Trimap system. 
-             Most likely another thread started rendering the portion that is in restToRender but did not fill the bitmap with 1
-             yet. Do not remove this assert, there should never be 2 threads running concurrently renderHandler for the same roi 
-             on the same image.
+             We cannot assert that the bitmap is empty because another thread might have started rendering the same image again but
+             needed a different portion of the image. The trimap system does not work for abortable renders
              */
-            if (!restToRender.empty()) {
-                it->second.downscaleImage->printUnrenderedPixels(roi);
+            
+            if (frameArgs->isCurrentFrameRenderNotAbortable()) {
+                if (!restToRender.empty()) {
+                    it->second.downscaleImage->printUnrenderedPixels(roi);
+                }
+                /*
+                 If crashing on this assert this is likely due to a bug of the Trimap system.
+                 Most likely another thread started rendering the portion that is in restToRender but did not fill the bitmap with 1
+                 yet. Do not remove this assert, there should never be 2 threads running concurrently renderHandler for the same roi
+                 on the same image.
+                 */
+                assert( restToRender.empty() );
             }
-            assert( restToRender.empty() );
         }
     }
 #endif
-
+    
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////// Make sure all planes rendered have the requested mipmap level and format ///////////////////////////
 
