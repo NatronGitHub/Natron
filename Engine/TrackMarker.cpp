@@ -28,6 +28,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Image.h"
+#include "Engine/Node.h"
 #include "Engine/TrackerContext.h"
 #include "Engine/TimeLine.h"
 #include "Engine/TrackerSerialization.h"
