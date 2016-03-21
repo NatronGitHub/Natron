@@ -686,7 +686,6 @@ TrackerGui::rebuildMarkerTextures()
         }
     }
     onContextSelectionChanged(TrackerContext::eTrackSelectionInternal);
-
 }
 
 QWidget*
@@ -3680,6 +3679,13 @@ TrackerGui::onContextSelectionChanged(int reason)
    
             _imp->selectedMarker = selectionFront;
             _imp->refreshSelectedMarkerTexture();
+            
+            
+            std::set<int> keys;
+            selectionFront->getUserKeyframes(&keys);
+            for (std::set<int>::iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
+                _imp->makeMarkerKeyTexture(*it2, selectionFront);
+            }
             
             //Don't update in this case, the refresh of the texture will do it for us
             return;

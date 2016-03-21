@@ -270,6 +270,8 @@ struct TrackerPanelPrivate
     Button* removeKeyframe;
     Button* clearAnimation;
     
+    int itemDataChangedRecursion;
+    
     TrackerPanelPrivate(TrackerPanel* publicI, const NodeGuiPtr& n)
     : _publicInterface(publicI)
     , node(n)
@@ -302,6 +304,7 @@ struct TrackerPanelPrivate
     , addKeyframe(0)
     , removeKeyframe(0)
     , clearAnimation(0)
+    , itemDataChangedRecursion(0)
     {
         context = n->getNode()->getTrackerContext();
         assert(context.lock());
@@ -1470,8 +1473,7 @@ TrackerPanel::selectInternal(const std::list<boost::shared_ptr<TrackMarker> >& m
         
         _imp->view->selectionModel()->select(selection, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
         
-        boost::shared_ptr<TimeLine> timeline = _imp->node.lock()->getNode()->getApp()->getTimeLine();
-        _imp->updateTrackKeysInfoBar(timeline->currentFrame());
+      
         
         std::list<int> keysToAdd, userKeysToAdd;
         for (std::list<boost::shared_ptr<TrackMarker> >::const_iterator it = markers.begin(); it!=markers.end(); ++it) {
@@ -1500,6 +1502,9 @@ TrackerPanel::selectInternal(const std::list<boost::shared_ptr<TrackMarker> >& m
         context->clearSelection(selectionReason);
         context->addTracksToSelection(markers, selectionReason);
         context->endEditSelection(selectionReason);
+        
+        boost::shared_ptr<TimeLine> timeline = _imp->node.lock()->getNode()->getApp()->getTimeLine();
+        _imp->updateTrackKeysInfoBar(timeline->currentFrame());
     }
     
     
@@ -1517,6 +1522,10 @@ TrackerPanel::onItemRightClicked(TableItem* /*item*/)
 void
 TrackerPanel::onItemDataChanged(TableItem* item)
 {
+    if (_imp->itemDataChangedRecursion) {
+        return;
+    }
+    
     int time = _imp->node.lock()->getDagGui()->getGui()->getApp()->getTimeLine()->currentFrame();
     
     for (std::size_t it = 0; it < _imp->items.size(); ++it) {
@@ -1525,7 +1534,7 @@ TrackerPanel::onItemDataChanged(TableItem* item)
                 
                 boost::shared_ptr<TrackMarker> marker = _imp->items[it].marker.lock();
                 if (!marker) {
-                    return;
+                    continue;
                 }
                 switch (i) {
                     case COL_ENABLED:
@@ -1843,6 +1852,7 @@ TrackerPanel::onCenterKnobValueChanged(const boost::shared_ptr<TrackMarker>& mar
         return;
     }
     
+    ++_imp->itemDataChangedRecursion;
     boost::shared_ptr<KnobDouble> centerKnob = marker->getCenterKnob();
     for (int i = 0; i < centerKnob->getDimension(); ++i) {
         if (dimension == -1 || i == dimension) {
@@ -1855,7 +1865,7 @@ TrackerPanel::onCenterKnobValueChanged(const boost::shared_ptr<TrackMarker>& mar
             item->setData(Qt::DisplayRole, v);
         }
     }
-    
+    --_imp->itemDataChangedRecursion;
 }
 
 void
@@ -1864,6 +1874,7 @@ TrackerPanel::onOffsetKnobValueChanged(const boost::shared_ptr<TrackMarker>& mar
     if (reason == Natron::eValueChangedReasonNatronGuiEdited) {
         return;
     }
+    ++_imp->itemDataChangedRecursion;
     boost::shared_ptr<KnobDouble> offsetKnob = marker->getOffsetKnob();
     for (int i = 0; i < offsetKnob->getDimension(); ++i) {
         if (dimension == -1 || i == dimension) {
@@ -1875,6 +1886,7 @@ TrackerPanel::onOffsetKnobValueChanged(const boost::shared_ptr<TrackMarker>& mar
             item->setData(Qt::DisplayRole, offsetKnob->getValue(i));
         }
     }
+    --_imp->itemDataChangedRecursion;
 }
 
 void
@@ -1887,7 +1899,9 @@ TrackerPanel::onErrorKnobValueChanged(const boost::shared_ptr<TrackMarker> &mark
     if (!item) {
         return;
     }
+    ++_imp->itemDataChangedRecursion;
     item->setData(Qt::DisplayRole, marker->getErrorKnob()->getValue(0));
+    --_imp->itemDataChangedRecursion;
 }
 
 void
