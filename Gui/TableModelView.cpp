@@ -1117,6 +1117,22 @@ TableView::visualItemRect(const TableItem *item) const
     return visualRect(index);
 }
 
+TableItem*
+TableView::editedItem() const
+{
+    if (state() == QAbstractItemView::EditingState) {
+        return currentItem();
+    } else {
+        return (TableItem*)0;
+    }
+}
+
+TableItem*
+TableView::currentItem() const
+{
+    return _imp->model->item(currentIndex());
+}
+
 void
 TableView::mousePressEvent(QMouseEvent* e)
 {
@@ -1132,8 +1148,10 @@ TableView::mousePressEvent(QMouseEvent* e)
 void
 TableView::mouseDoubleClickEvent(QMouseEvent* e)
 {
-    TableItem* item = itemAt( e->pos() );
+    QModelIndex index = indexAt(e->pos());
+    TableItem* item = _imp->model->item(index);
     if (item) {
+        setCurrentIndex(index);
         Q_EMIT itemDoubleClicked(item);
     }
     QTreeView::mouseDoubleClickEvent(e);

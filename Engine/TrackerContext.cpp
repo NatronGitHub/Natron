@@ -69,10 +69,11 @@
 #define kTrackerParamTrackBlueLabel "Track Blue"
 #define kTrackerParamTrackBlueHint "Enable tracking on the blue channel"
 
-#define kTrackerParamMinimumCorrelation "minCorrelation"
-#define kTrackerParamMinimumCorrelationLabel "Minimum correlation"
-#define kTrackerParamMinimumCorrelationHint "Minimum normalized cross-correlation necessary between the final tracked " \
-"position of the patch on the destination image and the reference patch needed to declare tracking success."
+#define kTrackerParamMaxError "maxError"
+#define kTrackerParamMaxErrorLabel "Max. Error"
+#define kTrackerParamMaxErrorHint "This is the minimum necessary error between the final tracked " \
+"position of the patch on the destination image and the reference patch needed to declare tracking success." \
+"The error is 1 minus the normalized cross-correlation score."
 
 #define kTrackerParamMaximumIteration "maxIterations"
 #define kTrackerParamMaximumIterationLabel "Maximum iterations"
@@ -370,11 +371,11 @@ static void setKnobKeyframesFromMarker(const mv::Marker& mvMarker,
                                        const boost::shared_ptr<TrackMarker>& natronMarker)
 {
     int time = mvMarker.frame;
-    boost::shared_ptr<KnobDouble> correlationKnob = natronMarker->getCorrelationKnob();
+    boost::shared_ptr<KnobDouble> errorKnob = natronMarker->getErrorKnob();
     if (result) {
-        correlationKnob->setValueAtTime(time, result->correlation, ViewSpec::current(), 0);
+        errorKnob->setValueAtTime(time, 1. - result->correlation, ViewSpec::current(), 0);
     } else {
-        correlationKnob->setValueAtTime(time, 0., ViewSpec::current(), 0);
+        errorKnob->setValueAtTime(time, 0., ViewSpec::current(), 0);
     }
     
     Natron::Point center;
@@ -705,7 +706,7 @@ struct TrackerContextPrivate
     
     std::list<boost::weak_ptr<KnobI> > knobs,perTrackKnobs;
     boost::weak_ptr<KnobBool> enableTrackRed,enableTrackGreen,enableTrackBlue;
-    boost::weak_ptr<KnobDouble> minCorrelation;
+    boost::weak_ptr<KnobDouble> maxError;
     boost::weak_ptr<KnobInt> maxIterations;
     boost::weak_ptr<KnobBool> bruteForcePreTrack,useNormalizedIntensities;
     boost::weak_ptr<KnobDouble> preBlurSigma;
@@ -729,7 +730,7 @@ struct TrackerContextPrivate
     , enableTrackRed()
     , enableTrackGreen()
     , enableTrackBlue()
-    , minCorrelation()
+    , maxError()
     , maxIterations()
     , bruteForcePreTrack()
     , useNormalizedIntensities()
@@ -783,17 +784,17 @@ struct TrackerContextPrivate
         enableTrackBlue = enableTrackBlueKnob;
         knobs.push_back(enableTrackBlueKnob);
         
-        boost::shared_ptr<KnobDouble> minCorelKnob = AppManager::createKnob<KnobDouble>(effect.get(), kTrackerParamMinimumCorrelationLabel, 1, false);
-        minCorelKnob->setName(kTrackerParamMinimumCorrelation);
-        minCorelKnob->setHintToolTip(kTrackerParamMinimumCorrelationHint);
-        minCorelKnob->setAnimationEnabled(false);
-        minCorelKnob->setMinimum(0.);
-        minCorelKnob->setMaximum(1.);
-        minCorelKnob->setDefaultValue(0.75);
-        minCorelKnob->setEvaluateOnChange(false);
-        settingsPage->addKnob(minCorelKnob);
-        minCorrelation = minCorelKnob;
-        knobs.push_back(minCorelKnob);
+        boost::shared_ptr<KnobDouble> maxErrorKnob = AppManager::createKnob<KnobDouble>(effect.get(), kTrackerParamMaxErrorLabel, 1, false);
+        maxErrorKnob->setName(kTrackerParamMaxError);
+        maxErrorKnob->setHintToolTip(kTrackerParamMaxErrorHint);
+        maxErrorKnob->setAnimationEnabled(false);
+        maxErrorKnob->setMinimum(0.);
+        maxErrorKnob->setMaximum(1.);
+        maxErrorKnob->setDefaultValue(0.2);
+        maxErrorKnob->setEvaluateOnChange(false);
+        settingsPage->addKnob(maxErrorKnob);
+        maxError = maxErrorKnob;
+        knobs.push_back(maxErrorKnob);
         
         boost::shared_ptr<KnobInt> maxItKnob = AppManager::createKnob<KnobInt>(effect.get(), kTrackerParamMaximumIterationLabel, 1, false);
         maxItKnob->setName(kTrackerParamMaximumIteration);
@@ -1223,7 +1224,8 @@ TrackerContext::getTimeLineLastFrame() const
 void
 TrackerContextPrivate::beginLibMVOptionsForTrack(mv::TrackRegionOptions* options) const
 {
-    options->minimum_correlation = minCorrelation.lock()->getValue();
+    options->minimum_correlation = 1. - maxError.lock()->getValue();
+    assert(options->minimum_correlation >= 0. && options->minimum_correlation <= 1.);
     options->max_iterations = maxIterations.lock()->getValue();
     options->use_brute_initialization = bruteForcePreTrack.lock()->getValue();
     options->use_normalized_intensities = useNormalizedIntensities.lock()->getValue();

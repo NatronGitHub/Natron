@@ -45,7 +45,7 @@ struct TrackMarkerPrivate
     
     // The pattern Quad defined by 4 corners relative to the center
     boost::weak_ptr<KnobDouble> patternTopLeft,patternTopRight,patternBtmRight,patternBtmLeft;
-    boost::weak_ptr<KnobDouble> center,offset,weight,correlation;
+    boost::weak_ptr<KnobDouble> center,offset,weight,error;
     boost::weak_ptr<KnobChoice> motionModel;
     
     mutable QMutex trackMutex;
@@ -64,7 +64,7 @@ struct TrackMarkerPrivate
     , center()
     , offset()
     , weight()
-    , correlation()
+    , error()
     , motionModel()
     , trackMutex()
     , userKeyframes()
@@ -135,10 +135,10 @@ struct TrackMarkerPrivate
         mmodelKnob->setDefaultValue(0);
         motionModel = mmodelKnob;
         
-        boost::shared_ptr<KnobDouble> corKnob = AppManager::createKnob<KnobDouble>(publicInterface, kTrackerParamCorrelationLabel, 1, false);
-        corKnob->setName(kTrackerParamCorrelation);
-        corKnob->populate();
-        correlation = corKnob;
+        boost::shared_ptr<KnobDouble> errKnob = AppManager::createKnob<KnobDouble>(publicInterface, kTrackerParamErrorLabel, 1, false);
+        errKnob->setName(kTrackerParamError);
+        errKnob->populate();
+        error = errKnob;
     }
 };
 
@@ -159,8 +159,8 @@ TrackMarker::TrackMarker(const boost::shared_ptr<TrackerContext>& context)
     handler = _imp->offset.lock()->getSignalSlotHandler();
     QObject::connect(handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onOffsetKnobValueChanged(ViewSpec,int, int)));
     
-    handler = _imp->correlation.lock()->getSignalSlotHandler();
-    QObject::connect(handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onCorrelationKnobValueChanged(ViewSpec,int, int)));
+    handler = _imp->error.lock()->getSignalSlotHandler();
+    QObject::connect(handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onErrorKnobValueChanged(ViewSpec,int, int)));
     
     handler = _imp->weight.lock()->getSignalSlotHandler();
     QObject::connect(handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onWeightKnobValueChanged(ViewSpec,int, int)));
@@ -368,9 +368,9 @@ TrackMarker::getOffsetKnob() const
 }
 
 boost::shared_ptr<KnobDouble>
-TrackMarker::getCorrelationKnob() const
+TrackMarker::getErrorKnob() const
 {
-    return _imp->correlation.lock();
+    return _imp->error.lock();
 }
 
 boost::shared_ptr<KnobChoice>
@@ -631,9 +631,9 @@ TrackMarker::onOffsetKnobValueChanged(ViewSpec /*view*/,int dimension,int reason
 }
 
 void
-TrackMarker::onCorrelationKnobValueChanged(ViewSpec /*view*/,int dimension,int reason)
+TrackMarker::onErrorKnobValueChanged(ViewSpec /*view*/,int dimension,int reason)
 {
-    getContext()->s_correlationKnobValueChanged(shared_from_this(), dimension, reason);
+    getContext()->s_errorKnobValueChanged(shared_from_this(), dimension, reason);
 }
 
 void

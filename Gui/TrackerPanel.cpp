@@ -62,7 +62,7 @@
 #include "Gui/GuiAppInstance.h"
 #include "Gui/Gui.h"
 
-#define NUM_COLS 10
+#define NUM_COLS 9
 
 #define COL_ENABLED 0
 #define COL_LABEL 1
@@ -72,8 +72,7 @@
 #define COL_CENTER_Y 5
 #define COL_OFFSET_X 6
 #define COL_OFFSET_Y 7
-#define COL_CORRELATION 8
-#define COL_WEIGHT 9
+#define COL_ERROR 8
 
 #define kCornerPinInvertParamName "invert"
 
@@ -135,8 +134,13 @@ TrackerTableItemDelegate::paint(QPainter * painter,
         col != COL_CENTER_Y &&
         col != COL_OFFSET_X &&
         col != COL_OFFSET_Y &&
-        col != COL_WEIGHT &&
-        col != COL_CORRELATION) {
+        col != COL_ERROR) {
+        QStyledItemDelegate::paint(painter,option,index);
+        return;
+    }
+    
+    // If the item is being edited, do not draw it
+    if (_view->editedItem() == item) {
         QStyledItemDelegate::paint(painter,option,index);
         return;
     }
@@ -196,13 +200,13 @@ TrackerTableItemDelegate::paint(QPainter * painter,
         data = var.toString();
     } else if (var.canConvert(QVariant::Double)) {
         double d = var.toDouble();
-        data = QString::number(d);
+        data = QString::number(d, 'f', 6);
     } else if (var.canConvert(QVariant::Int)) {
         int i = var.toInt();
         data = QString::number(i);
     }
     
-    painter->drawText(textRect,Qt::TextSingleLine,data,&r);
+    painter->drawText(textRect,Qt::TextSingleLine | Qt::AlignCenter,data,&r);
     
 }
 
@@ -373,13 +377,16 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
                      SLOT(onCenterKnobValueChanged(boost::shared_ptr<TrackMarker>, int, int)));
     QObject::connect(context.get(), SIGNAL(offsetKnobValueChanged(boost::shared_ptr<TrackMarker>,int,int)), this,
                      SLOT(onOffsetKnobValueChanged(boost::shared_ptr<TrackMarker>, int, int)));
-    QObject::connect(context.get(), SIGNAL(correlationKnobValueChanged(boost::shared_ptr<TrackMarker>,int,int)), this,
-                     SLOT(onCorrelationKnobValueChanged(boost::shared_ptr<TrackMarker>, int, int)));
-    QObject::connect(context.get(), SIGNAL(weightKnobValueChanged(boost::shared_ptr<TrackMarker>,int,int)), this,
-                     SLOT(onWeightKnobValueChanged(boost::shared_ptr<TrackMarker>, int, int)));
+    QObject::connect(context.get(), SIGNAL(errorKnobValueChanged(boost::shared_ptr<TrackMarker>,int,int)), this,
+                     SLOT(onErrorKnobValueChanged(boost::shared_ptr<TrackMarker>, int, int)));
+  
     QObject::connect(context.get(), SIGNAL(motionModelKnobValueChanged(boost::shared_ptr<TrackMarker>,int,int)), this,
                      SLOT(onMotionModelKnobValueChanged(boost::shared_ptr<TrackMarker>, int, int)));
-        
+    
+    const QSize medButtonSize(TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE),TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
+    const QSize medButtonIconSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE),TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
+
+    
     _imp->mainLayout = new QVBoxLayout(this);
     
     QWidget* trackContainer = new QWidget(this);
@@ -414,40 +421,40 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_ALL_ANIMATION,NATRON_MEDIUM_BUTTON_ICON_SIZE, &clearAnimPix);
     
     _imp->prevKeyframe = new Button(QIcon(prevPix),QString(),trackContainer);
-    _imp->prevKeyframe->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->prevKeyframe->setIconSize(QSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE));
+    _imp->prevKeyframe->setFixedSize(medButtonSize);
+    _imp->prevKeyframe->setIconSize(medButtonIconSize);
     _imp->prevKeyframe->setToolTip(GuiUtils::convertFromPlainText(tr("Go to the previous keyframe."), Qt::WhiteSpaceNormal));
     _imp->prevKeyframe->setEnabled(false);
     QObject::connect( _imp->prevKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onGoToPrevKeyframeButtonClicked() ) );
     trackLayout->addWidget(_imp->prevKeyframe);
     
     _imp->nextKeyframe = new Button(QIcon(nextPix),QString(),trackContainer);
-    _imp->nextKeyframe->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->nextKeyframe->setIconSize(QSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE));
+    _imp->nextKeyframe->setFixedSize(medButtonSize);
+    _imp->nextKeyframe->setIconSize(medButtonIconSize);
     _imp->nextKeyframe->setToolTip(GuiUtils::convertFromPlainText(tr("Go to the next keyframe."), Qt::WhiteSpaceNormal));
     _imp->nextKeyframe->setEnabled(false);
     QObject::connect( _imp->nextKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onGoToNextKeyframeButtonClicked() ) );
     trackLayout->addWidget(_imp->nextKeyframe);
     
     _imp->addKeyframe = new Button(QIcon(addPix),QString(),trackContainer);
-    _imp->addKeyframe->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->addKeyframe->setIconSize(QSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE));
+    _imp->addKeyframe->setFixedSize(medButtonSize);
+    _imp->addKeyframe->setIconSize(medButtonIconSize);
     _imp->addKeyframe->setToolTip(GuiUtils::convertFromPlainText(tr("Add keyframe at the current timeline's time."), Qt::WhiteSpaceNormal));
     _imp->addKeyframe->setEnabled(false);
     QObject::connect( _imp->addKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onAddKeyframeButtonClicked() ) );
     trackLayout->addWidget(_imp->addKeyframe);
     
     _imp->removeKeyframe = new Button(QIcon(removePix),QString(),trackContainer);
-    _imp->removeKeyframe->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->removeKeyframe->setIconSize(QSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE));
+    _imp->removeKeyframe->setFixedSize(medButtonSize);
+    _imp->removeKeyframe->setIconSize(medButtonIconSize);
     _imp->removeKeyframe->setToolTip(GuiUtils::convertFromPlainText(tr("Remove keyframe at the current timeline's time."), Qt::WhiteSpaceNormal));
     _imp->removeKeyframe->setEnabled(false);
     QObject::connect( _imp->removeKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onRemoveKeyframeButtonClicked() ) );
     trackLayout->addWidget(_imp->removeKeyframe);
     
     _imp->clearAnimation = new Button(QIcon(clearAnimPix),QString(),trackContainer);
-    _imp->clearAnimation->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->clearAnimation->setIconSize(QSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE));
+    _imp->clearAnimation->setFixedSize(medButtonSize);
+    _imp->clearAnimation->setIconSize(medButtonIconSize);
     _imp->clearAnimation->setToolTip(GuiUtils::convertFromPlainText(tr("Remove all animation for the selected track(s)."), Qt::WhiteSpaceNormal));
     _imp->clearAnimation->setEnabled(false);
     QObject::connect( _imp->clearAnimation, SIGNAL( clicked(bool) ), this, SLOT( onRemoveAnimationButtonClicked() ) );
@@ -478,10 +485,11 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     QStringList dimensionNames;
     dimensionNames << tr("Enabled") << tr("Label") << tr("Script-name") << tr("Motion-Model") <<
     tr("Center X") << tr("Center Y") << tr("Offset X") << tr("Offset Y") <<
-    tr("Correlation") << tr("Weight");
+    tr("Error");
     _imp->view->setColumnCount( dimensionNames.size() );
     _imp->view->setHorizontalHeaderLabels(dimensionNames);
     
+    _imp->view->setAttribute(Qt::WA_MacShowFocusRect,0);
     
 #if QT_VERSION < 0x050000
     _imp->view->header()->setResizeMode(QHeaderView::ResizeToContents);
@@ -565,26 +573,32 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     _imp->exportLayout->addStretch();
     _imp->mainLayout->addWidget(_imp->exportContainer);
     
+    
+    const QSize smallButtonSize(TO_DPIX(NATRON_SMALL_BUTTON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_SIZE));
+    const QSize smallButtonIconSize(TO_DPIX(NATRON_SMALL_BUTTON_ICON_SIZE),TO_DPIY(NATRON_SMALL_BUTTON_ICON_SIZE));
+    
     _imp->buttonsContainer = new QWidget(this);
     _imp->buttonsLayout = new QHBoxLayout(_imp->buttonsContainer);
     _imp->buttonsLayout->setContentsMargins(0, 0, 0, 0);
     _imp->addButton = new Button(QIcon(),QString::fromUtf8("+"),_imp->buttonsContainer);
-    _imp->addButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
+    _imp->addButton->setFixedSize(medButtonSize);
+    _imp->addButton->setIconSize(smallButtonIconSize);
     _imp->addButton->setToolTip(GuiUtils::convertFromPlainText(tr("Add new track"), Qt::WhiteSpaceNormal));
     _imp->buttonsLayout->addWidget(_imp->addButton);
     QObject::connect( _imp->addButton, SIGNAL( clicked(bool) ), this, SLOT( onAddButtonClicked() ) );
     
     _imp->removeButton = new Button(QIcon(),QString::fromUtf8("-"),_imp->buttonsContainer);
     _imp->removeButton->setToolTip(GuiUtils::convertFromPlainText(tr("Remove selected tracks"), Qt::WhiteSpaceNormal));
-    _imp->removeButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
+    _imp->removeButton->setFixedSize(medButtonSize);
+    _imp->removeButton->setIconSize(smallButtonIconSize);
     _imp->buttonsLayout->addWidget(_imp->removeButton);
     QObject::connect( _imp->removeButton, SIGNAL( clicked(bool) ), this, SLOT( onRemoveButtonClicked() ) );
     QPixmap selectAll;
     appPTR->getIcon(NATRON_PIXMAP_SELECT_ALL, &selectAll);
     
     _imp->selectAllButton = new Button(QIcon(selectAll),QString(),_imp->buttonsContainer);
-    _imp->selectAllButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
-    _imp->selectAllButton->setIconSize(QSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE));
+    _imp->selectAllButton->setFixedSize(medButtonSize);
+    _imp->selectAllButton->setIconSize(smallButtonIconSize);
     _imp->selectAllButton->setToolTip(GuiUtils::convertFromPlainText(tr("Select all tracks"), Qt::WhiteSpaceNormal));
     _imp->buttonsLayout->addWidget(_imp->selectAllButton);
     QObject::connect( _imp->selectAllButton, SIGNAL( clicked(bool) ), this, SLOT( onSelectAllButtonClicked() ) );
@@ -617,14 +631,14 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker, int row, Track
         QCheckBox* checkbox = new QCheckBox();
         checkbox->setChecked(marker.isEnabled());
         QObject::connect( checkbox,SIGNAL( toggled(bool) ),_publicInterface,SLOT( onItemEnabledCheckBoxChecked(bool) ) );
-        view->setCellWidget(row, COL_ENABLED, checkbox);
         TableItem* newItem = new TableItem;
         newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable | Qt::ItemIsUserCheckable);
         newItem->setToolTip(QObject::tr("When checked, this track will no longer be tracked even if selected"));
-        view->setItem(row, COL_ENABLED, newItem);
-        view->resizeColumnToContents(COL_ENABLED);
         d.item = newItem;
         d.dimension = -1;
+        view->setCellWidget(row, COL_ENABLED, checkbox);
+        view->setItem(row, COL_ENABLED, newItem);
+        view->resizeColumnToContents(COL_ENABLED);
         data.items.push_back(d);
     }
     
@@ -632,12 +646,13 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker, int row, Track
     {
         ItemData d;
         TableItem* newItem = new TableItem;
-        view->setItem(row, COL_LABEL, newItem);
         newItem->setToolTip(QObject::tr("The label of the item as seen in the viewer"));
         newItem->setText(QString::fromUtf8(marker.getLabel().c_str()));
+        newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
         view->resizeColumnToContents(COL_LABEL);
         d.item = newItem;
         d.dimension = -1;
+        view->setItem(row, COL_LABEL, newItem);
         data.items.push_back(d);
     }
     
@@ -645,13 +660,13 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker, int row, Track
     {
         ItemData d;
         TableItem* newItem = new TableItem;
-        view->setItem(row, COL_SCRIPT_NAME, newItem);
         newItem->setToolTip(QObject::tr("The script-name of the item as exposed to Python scripts"));
         newItem->setFlags(newItem->flags() & ~Qt::ItemIsEditable);
         newItem->setText(QString::fromUtf8(marker.getScriptName().c_str()));
         view->resizeColumnToContents(COL_SCRIPT_NAME);
         d.item = newItem;
         d.dimension = -1;
+        view->setItem(row, COL_SCRIPT_NAME, newItem);
         data.items.push_back(d);
     }
     
@@ -669,14 +684,14 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker, int row, Track
             cb->addItem(QString::fromUtf8(choices[i].c_str()), QIcon(),QKeySequence(), QString::fromUtf8(helps[i].c_str()));
         }
         TableItem* newItem = new TableItem;
-        view->setItem(row, COL_MOTION_MODEL, newItem);
         newItem->setToolTip(QObject::tr("The motion model to use for tracking"));
         newItem->setText(QString::fromUtf8(marker.getScriptName().c_str()));
-        view->setCellWidget(row, COL_MOTION_MODEL, cb);
         view->resizeColumnToContents(COL_MOTION_MODEL);
         d.item = newItem;
         d.dimension = 0;
         d.knob = motionModel;
+        view->setItem(row, COL_MOTION_MODEL, newItem);
+        view->setCellWidget(row, COL_MOTION_MODEL, cb);
         data.items.push_back(d);
     }
     
@@ -685,7 +700,6 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker, int row, Track
     {
         ItemData d;
         TableItem* newItem = new TableItem;
-        view->setItem(row, COL_CENTER_X, newItem);
         newItem->setToolTip(QObject::tr("The x coordinate of the center of the track"));
         newItem->setData(Qt::DisplayRole, center->getValue());
         newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
@@ -693,13 +707,13 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker, int row, Track
         d.item = newItem;
         d.knob = center;
         d.dimension = 0;
+        view->setItem(row, COL_CENTER_X, newItem);
         data.items.push_back(d);
     }
     //Center Y
     {
         ItemData d;
         TableItem* newItem = new TableItem;
-        view->setItem(row, COL_CENTER_Y, newItem);
         newItem->setToolTip(QObject::tr("The y coordinate of the center of the track"));
         newItem->setData(Qt::DisplayRole, center->getValue(1));
         newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
@@ -707,6 +721,7 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker, int row, Track
         d.item = newItem;
         d.knob = center;
         d.dimension = 1;
+        view->setItem(row, COL_CENTER_Y, newItem);
         data.items.push_back(d);
     }
     ///Offset X
@@ -714,7 +729,6 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker, int row, Track
     {
         ItemData d;
         TableItem* newItem = new TableItem;
-        view->setItem(row, COL_OFFSET_X, newItem);
         newItem->setToolTip(QObject::tr("The x offset applied to the search window for the track"));
         newItem->setData(Qt::DisplayRole, offset->getValue());
         newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
@@ -722,13 +736,13 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker, int row, Track
         d.item = newItem;
         d.knob = offset;
         d.dimension = 0;
+        view->setItem(row, COL_OFFSET_X, newItem);
         data.items.push_back(d);
     }
     ///Offset Y
     {
         ItemData d;
         TableItem* newItem = new TableItem;
-        view->setItem(row, COL_OFFSET_Y, newItem);
         newItem->setToolTip(QObject::tr("The y offset applied to the search window for the track"));
         newItem->setData(Qt::DisplayRole, offset->getValue(1));
         newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
@@ -736,42 +750,26 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker, int row, Track
         d.item = newItem;
         d.knob = offset;
         d.dimension = 1;
+        view->setItem(row, COL_OFFSET_Y, newItem);
         data.items.push_back(d);
     }
     
     ///Correlation
-    boost::shared_ptr<KnobDouble> correlation = marker.getCorrelationKnob();
+    boost::shared_ptr<KnobDouble> error = marker.getErrorKnob();
     {
         ItemData d;
         TableItem* newItem = new TableItem;
-        view->setItem(row, COL_CORRELATION, newItem);
-        newItem->setToolTip(QObject::tr(correlation->getHintToolTip().c_str()));
-        newItem->setData(Qt::DisplayRole, correlation->getValue());
-        newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
-        view->resizeColumnToContents(COL_CORRELATION);
+        newItem->setToolTip(QObject::tr(error->getHintToolTip().c_str()));
+        newItem->setData(Qt::DisplayRole, error->getValue());
+        newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+        view->resizeColumnToContents(COL_ERROR);
         d.item = newItem;
-        d.knob = correlation;
+        d.knob = error;
         d.dimension = 0;
+        view->setItem(row, COL_ERROR, newItem);
         data.items.push_back(d);
     }
-
-    
-    ///Weight
-    boost::shared_ptr<KnobDouble> weight = marker.getWeightKnob();
-    {
-        ItemData d;
-        TableItem* newItem = new TableItem;
-        view->setItem(row, COL_WEIGHT, newItem);
-        newItem->setToolTip(QObject::tr("The weight determines the amount this marker contributes to the final solution"));
-        newItem->setData(Qt::DisplayRole, weight->getValue());
-        newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
-        view->resizeColumnToContents(COL_WEIGHT);
-        d.item = newItem;
-        d.knob = weight;
-        d.dimension = 0;
-        data.items.push_back(d);
-    }
-
+ 
 }
 
 TrackerPanel::~TrackerPanel()
@@ -1448,7 +1446,7 @@ TrackerPanel::onContextSelectionChanged(int reason)
 }
 
 void
-TrackerPanel::onModelSelectionChanged(const QItemSelection & oldSelection,const QItemSelection & newSelection)
+TrackerPanel::onModelSelectionChanged(const QItemSelection &newSelection ,const QItemSelection & oldSelection)
 {
     if (_imp->selectionRecursion > 0) {
         return;
@@ -1555,8 +1553,7 @@ TrackerPanel::onItemDataChanged(TableItem* item)
                     case COL_CENTER_Y:
                     case COL_OFFSET_X:
                     case COL_OFFSET_Y:
-                    case COL_WEIGHT:
-                    case COL_CORRELATION: {
+                    case COL_ERROR: {
                         boost::shared_ptr<KnobDouble> knob = boost::dynamic_pointer_cast<KnobDouble>(_imp->items[it].items[i].knob.lock());
                         assert(knob);
                         int dim = _imp->items[it].items[i].dimension;
@@ -1889,29 +1886,16 @@ TrackerPanel::onOffsetKnobValueChanged(const boost::shared_ptr<TrackMarker>& mar
 }
 
 void
-TrackerPanel::onCorrelationKnobValueChanged(const boost::shared_ptr<TrackMarker> &marker,int /*dimension*/, int reason)
+TrackerPanel::onErrorKnobValueChanged(const boost::shared_ptr<TrackMarker> &marker,int /*dimension*/, int reason)
 {
     if (reason == Natron::eValueChangedReasonNatronGuiEdited) {
         return;
     }
-    TableItem* item = getItemAt(marker, COL_CORRELATION);
+    TableItem* item = getItemAt(marker, COL_ERROR);
     if (!item) {
         return;
     }
-    item->setData(Qt::DisplayRole, marker->getCorrelationKnob()->getValue(0));
-}
-
-void
-TrackerPanel::onWeightKnobValueChanged(const boost::shared_ptr<TrackMarker> &marker,int /*dimension*/, int reason)
-{
-    if (reason == Natron::eValueChangedReasonNatronGuiEdited) {
-        return;
-    }
-    TableItem* item = getItemAt(marker, COL_WEIGHT);
-    if (!item) {
-        return;
-    }
-    item->setData(Qt::DisplayRole, marker->getWeightKnob()->getValue(0));
+    item->setData(Qt::DisplayRole, marker->getErrorKnob()->getValue(0));
 }
 
 void

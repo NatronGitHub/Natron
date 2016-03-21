@@ -302,7 +302,7 @@ public:
     
     void s_centerKnobValueChanged(const boost::shared_ptr<TrackMarker>& marker,int dimension,int reason) { Q_EMIT centerKnobValueChanged(marker,dimension,reason); }
     void s_offsetKnobValueChanged(const boost::shared_ptr<TrackMarker>& marker,int dimension,int reason) { Q_EMIT offsetKnobValueChanged(marker,dimension,reason); }
-    void s_correlationKnobValueChanged(const boost::shared_ptr<TrackMarker>& marker,int dimension,int reason) { Q_EMIT correlationKnobValueChanged(marker,dimension,reason); }
+    void s_errorKnobValueChanged(const boost::shared_ptr<TrackMarker>& marker,int dimension,int reason) { Q_EMIT errorKnobValueChanged(marker,dimension,reason); }
     void s_weightKnobValueChanged(const boost::shared_ptr<TrackMarker>& marker,int dimension,int reason) { Q_EMIT weightKnobValueChanged(marker,dimension,reason); }
     void s_motionModelKnobValueChanged(const boost::shared_ptr<TrackMarker>& marker,int dimension,int reason) { Q_EMIT motionModelKnobValueChanged(marker,dimension,reason); }
     
@@ -346,7 +346,7 @@ Q_SIGNALS:
     
     void centerKnobValueChanged(boost::shared_ptr<TrackMarker> marker,int,int);
     void offsetKnobValueChanged(boost::shared_ptr<TrackMarker> marker,int,int);
-    void correlationKnobValueChanged(boost::shared_ptr<TrackMarker> marker,int,int);
+    void errorKnobValueChanged(boost::shared_ptr<TrackMarker> marker,int,int);
     void weightKnobValueChanged(boost::shared_ptr<TrackMarker> marker,int,int);
     void motionModelKnobValueChanged(boost::shared_ptr<TrackMarker> marker,int,int);
     

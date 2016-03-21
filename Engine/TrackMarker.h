@@ -83,9 +83,9 @@
 #define kTrackerParamMotionModelAffine "Search for markers that are affine transformed (t,r,k and skew) between frames."
 #define kTrackerParamMotionModelPerspective "Search for markers that are perspectively deformed (homography) between frames."
 
-#define kTrackerParamCorrelation "correlation"
-#define kTrackerParamCorrelationLabel "Correlation"
-#define kTrackerParamCorrelationHint "The correlation score obtained after tracking each frame"
+#define kTrackerParamError "errorValue"
+#define kTrackerParamErrorLabel "Error"
+#define kTrackerParamErrorHint "The error obtained after tracking each frame. This 1 minus the corss-correlation score."
 
 NATRON_NAMESPACE_ENTER;
 
@@ -125,7 +125,7 @@ public:
     boost::shared_ptr<KnobDouble> getWeightKnob() const;
     boost::shared_ptr<KnobDouble> getCenterKnob() const;
     boost::shared_ptr<KnobDouble> getOffsetKnob() const;
-    boost::shared_ptr<KnobDouble> getCorrelationKnob() const;
+    boost::shared_ptr<KnobDouble> getErrorKnob() const;
     boost::shared_ptr<KnobChoice> getMotionModelKnob() const;
         
     int getReferenceFrame(int time, bool forward) const;
@@ -171,7 +171,7 @@ public:
     
     void onCenterKnobValueChanged(ViewSpec,int dimension,int reason);
     void onOffsetKnobValueChanged(ViewSpec,int dimension,int reason);
-    void onCorrelationKnobValueChanged(ViewSpec,int dimension,int reason);
+    void onErrorKnobValueChanged(ViewSpec,int dimension,int reason);
     void onWeightKnobValueChanged(ViewSpec,int dimension,int reason);
     void onMotionModelKnobValueChanged(ViewSpec,int dimension,int reason);
     

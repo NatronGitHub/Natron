@@ -86,7 +86,7 @@ CLANG_DIAG_ON(uninitialized)
 #define SELECTED_MARKER_KEYFRAME_WIDTH_SCREEN_PX 75
 #define MAX_TRACK_KEYS_TO_DISPLAY 10
 
-#define CORRELATION_ERROR_MIN 0.999
+#define CORRELATION_ERROR_MAX_DISPLAY 0.001
 
 NATRON_NAMESPACE_ENTER;
 
@@ -834,7 +834,7 @@ TrackerGui::drawOverlays(double time,
                 
                 boost::shared_ptr<KnobDouble> centerKnob = (*it)->getCenterKnob();
                 boost::shared_ptr<KnobDouble> offsetKnob = (*it)->getOffsetKnob();
-                boost::shared_ptr<KnobDouble> correlationKnob = (*it)->getCorrelationKnob();
+                boost::shared_ptr<KnobDouble> errorKnob = (*it)->getErrorKnob();
                 boost::shared_ptr<KnobDouble> ptnTopLeft = (*it)->getPatternTopLeftKnob();
                 boost::shared_ptr<KnobDouble> ptnTopRight = (*it)->getPatternTopRightKnob();
                 boost::shared_ptr<KnobDouble> ptnBtmRight = (*it)->getPatternBtmRightKnob();
@@ -972,7 +972,7 @@ TrackerGui::drawOverlays(double time,
                     
                     boost::shared_ptr<Curve> xCurve = centerKnob->getCurve(ViewSpec::current(), 0);
                     boost::shared_ptr<Curve> yCurve = centerKnob->getCurve(ViewSpec::current(), 1);
-                    boost::shared_ptr<Curve> errorCurve = correlationKnob->getCurve(ViewSpec::current(), 0);
+                    boost::shared_ptr<Curve> errorCurve = errorKnob->getCurve(ViewSpec::current(), 0);
                     
                     for (int i = 0; i < MAX_CENTER_POINTS_DISPLAYED / 2; ++i) {
                         KeyFrame k;
@@ -1018,8 +1018,8 @@ TrackerGui::drawOverlays(double time,
                                      Also clamp to the interval if the correlation is higher, and reverse.
                                      */
                                     
-                                    double correlation = std::max(std::min(it2->second.second, 1.), CORRELATION_ERROR_MIN);
-                                    double mappedError = 0.33 * (1. - correlation) / (1. - CORRELATION_ERROR_MIN);
+                                    double error = std::min(std::max(it2->second.second, 0.), CORRELATION_ERROR_MAX_DISPLAY);
+                                    double mappedError = 0.33 * error / CORRELATION_ERROR_MAX_DISPLAY;
                                     QColor c;
                                     c.setHsvF(mappedError, 1., 1.);
                                     glColor3f(c.redF(), c.greenF(), c.blueF());
@@ -1488,7 +1488,7 @@ TrackerGuiPrivate::drawSelectedMarkerKeyframes(const std::pair<double,double>& p
     }
     boost::shared_ptr<KnobDouble> centerKnob = marker->getCenterKnob();
     boost::shared_ptr<KnobDouble> offsetKnob = marker->getOffsetKnob();
-    boost::shared_ptr<KnobDouble> correlationKnob = marker->getCorrelationKnob();
+    boost::shared_ptr<KnobDouble> errorKnob = marker->getErrorKnob();
     boost::shared_ptr<KnobDouble> ptnTopLeft = marker->getPatternTopLeftKnob();
     boost::shared_ptr<KnobDouble> ptnTopRight = marker->getPatternTopRightKnob();
     boost::shared_ptr<KnobDouble> ptnBtmRight = marker->getPatternBtmRightKnob();

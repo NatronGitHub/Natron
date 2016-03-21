@@ -140,8 +140,7 @@ public Q_SLOTS:
     
     void onCenterKnobValueChanged(const boost::shared_ptr<TrackMarker>& marker,int,int);
     void onOffsetKnobValueChanged(const boost::shared_ptr<TrackMarker>& marker,int,int);
-    void onCorrelationKnobValueChanged(const boost::shared_ptr<TrackMarker> &marker,int,int);
-    void onWeightKnobValueChanged(const boost::shared_ptr<TrackMarker> &marker,int,int);
+    void onErrorKnobValueChanged(const boost::shared_ptr<TrackMarker> &marker,int,int);
     void onMotionModelKnobValueChanged(const boost::shared_ptr<TrackMarker> &marker,int,int);
     
     /*void onPatternTopLeftKnobValueChanged(const boost::shared_ptr<TrackMarker> &marker,int,int);
