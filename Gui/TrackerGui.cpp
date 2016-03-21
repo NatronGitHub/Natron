@@ -1700,7 +1700,7 @@ TrackerGuiPrivate::drawSelectedMarkerTexture(const std::pair<double,double>& pix
                                              const Natron::Point& selectedSearchWndTopRight)
 {
     boost::shared_ptr<TrackMarker> marker = selectedMarker.lock();
-    if (!selectedMarkerTexture || !marker) {
+    if (!selectedMarkerTexture || !marker || !marker->isEnabled()) {
         return;
     }
     

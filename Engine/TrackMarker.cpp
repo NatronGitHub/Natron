@@ -27,6 +27,7 @@
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/Image.h"
 #include "Engine/Node.h"
 #include "Engine/TrackerContext.h"

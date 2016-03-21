@@ -414,7 +414,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     _imp->prevKeyframe = new Button(QIcon(prevPix),QString(),trackContainer);
     _imp->prevKeyframe->setFixedSize(medButtonSize);
     _imp->prevKeyframe->setIconSize(medButtonIconSize);
-    _imp->prevKeyframe->setToolTip(GuiUtils::convertFromPlainText(tr("Go to the previous keyframe."), Qt::WhiteSpaceNormal));
+    _imp->prevKeyframe->setToolTip(GuiUtils::convertFromPlainText(tr("Go to the previous pattern keyframe."), Qt::WhiteSpaceNormal));
     _imp->prevKeyframe->setEnabled(false);
     QObject::connect( _imp->prevKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onGoToPrevKeyframeButtonClicked() ) );
     trackLayout->addWidget(_imp->prevKeyframe);
@@ -422,7 +422,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     _imp->nextKeyframe = new Button(QIcon(nextPix),QString(),trackContainer);
     _imp->nextKeyframe->setFixedSize(medButtonSize);
     _imp->nextKeyframe->setIconSize(medButtonIconSize);
-    _imp->nextKeyframe->setToolTip(GuiUtils::convertFromPlainText(tr("Go to the next keyframe."), Qt::WhiteSpaceNormal));
+    _imp->nextKeyframe->setToolTip(GuiUtils::convertFromPlainText(tr("Go to the next pattern keyframe."), Qt::WhiteSpaceNormal));
     _imp->nextKeyframe->setEnabled(false);
     QObject::connect( _imp->nextKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onGoToNextKeyframeButtonClicked() ) );
     trackLayout->addWidget(_imp->nextKeyframe);
@@ -430,7 +430,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     _imp->addKeyframe = new Button(QIcon(addPix),QString(),trackContainer);
     _imp->addKeyframe->setFixedSize(medButtonSize);
     _imp->addKeyframe->setIconSize(medButtonIconSize);
-    _imp->addKeyframe->setToolTip(GuiUtils::convertFromPlainText(tr("Add keyframe at the current timeline's time."), Qt::WhiteSpaceNormal));
+    _imp->addKeyframe->setToolTip(GuiUtils::convertFromPlainText(tr("Add a keyframe to the pattern at the current timeline's time."), Qt::WhiteSpaceNormal));
     _imp->addKeyframe->setEnabled(false);
     QObject::connect( _imp->addKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onAddKeyframeButtonClicked() ) );
     trackLayout->addWidget(_imp->addKeyframe);
@@ -438,7 +438,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     _imp->removeKeyframe = new Button(QIcon(removePix),QString(),trackContainer);
     _imp->removeKeyframe->setFixedSize(medButtonSize);
     _imp->removeKeyframe->setIconSize(medButtonIconSize);
-    _imp->removeKeyframe->setToolTip(GuiUtils::convertFromPlainText(tr("Remove keyframe at the current timeline's time."), Qt::WhiteSpaceNormal));
+    _imp->removeKeyframe->setToolTip(GuiUtils::convertFromPlainText(tr("Remove keyframe on the pattern at the current timeline's time."), Qt::WhiteSpaceNormal));
     _imp->removeKeyframe->setEnabled(false);
     QObject::connect( _imp->removeKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onRemoveKeyframeButtonClicked() ) );
     trackLayout->addWidget(_imp->removeKeyframe);
@@ -446,7 +446,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     _imp->clearAnimation = new Button(QIcon(clearAnimPix),QString(),trackContainer);
     _imp->clearAnimation->setFixedSize(medButtonSize);
     _imp->clearAnimation->setIconSize(medButtonIconSize);
-    _imp->clearAnimation->setToolTip(GuiUtils::convertFromPlainText(tr("Remove all animation for the selected track(s)."), Qt::WhiteSpaceNormal));
+    _imp->clearAnimation->setToolTip(GuiUtils::convertFromPlainText(tr("Remove all keyframes on the pattern for the selected track(s)."), Qt::WhiteSpaceNormal));
     _imp->clearAnimation->setEnabled(false);
     QObject::connect( _imp->clearAnimation, SIGNAL( clicked(bool) ), this, SLOT( onRemoveAnimationButtonClicked() ) );
     trackLayout->addWidget(_imp->clearAnimation);
@@ -1579,6 +1579,7 @@ TrackerPanel::onItemEnabledCheckBoxChecked(bool checked)
             break;
         }
     }
+    getNode()->getNode()->getApp()->redrawAllViewers();
 }
 
 void
@@ -1921,6 +1922,8 @@ TrackerPanel::onEnabledChanged(const boost::shared_ptr<TrackMarker>& marker,int 
         return;
     }
     w->setChecked(marker->isEnabled());
+    
+    getNode()->getNode()->getApp()->redrawAllViewers();
 }
 
 void
