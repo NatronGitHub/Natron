@@ -58,14 +58,14 @@ INCLUDEPATH += $$PWD/../libs/SequenceParsing
 
 #include libmv
 INCLUDEPATH += $$PWD/../libs/libmv
-INCLUDEPATH += $$PWD/../libs/libmv/third_party/ceres/config
-INCLUDEPATH += $$PWD/../libs/libmv/third_party/ceres/include
-INCLUDEPATH += $$PWD/../libs/libmv/third_party/ceres/internal
-INCLUDEPATH += $$PWD/../libs/libmv/third_party/gflags
-INCLUDEPATH += $$PWD/../libs/libmv/third_party/gflags/gflags
-INCLUDEPATH += $$PWD/../libs/libmv/third_party/glog/src
+INCLUDEPATH += $$PWD/../libs/ceres/config
+INCLUDEPATH += $$PWD/../libs/ceres/include
+INCLUDEPATH += $$PWD/../libs/ceres/internal
+INCLUDEPATH += $$PWD/../libs/gflags/src
+INCLUDEPATH += $$PWD/../libs/gflags/src/gflags
+INCLUDEPATH += $$PWD/../libs/glog/src
 INCLUDEPATH += $$PWD/../libs/libmv/third_party
-INCLUDEPATH += $$PWD/../libs/libmv/third_party/Eigen3
+INCLUDEPATH += $$PWD/../libs/Eigen3
 
 INCLUDEPATH += $$PWD/../google-breakpad/src
 
