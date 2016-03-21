@@ -194,19 +194,10 @@ TrackerTableItemDelegate::paint(QPainter * painter,
     
     QRect textRect( geom.x() + 5,geom.y(),geom.width() - 5,geom.height() );
     QRect r;
-    QString data;
     QVariant var = item->data(Qt::DisplayRole);
-    if (var.canConvert(QVariant::String)) {
-        data = var.toString();
-    } else if (var.canConvert(QVariant::Double)) {
-        double d = var.toDouble();
-        data = QString::number(d, 'f', 6);
-    } else if (var.canConvert(QVariant::Int)) {
-        int i = var.toInt();
-        data = QString::number(i);
-    }
-    
-    painter->drawText(textRect,Qt::TextSingleLine | Qt::AlignCenter,data,&r);
+    double d = var.toDouble();
+    QString dataStr = QString::number(d, 'f', 6);
+    painter->drawText(textRect,Qt::TextSingleLine | Qt::AlignCenter,dataStr,&r);
     
 }
 
