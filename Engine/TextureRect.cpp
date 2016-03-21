@@ -28,6 +28,7 @@
 #include <stdexcept>
 
 #include "Engine/RectI.h"
+#include "Engine/RectD.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -48,6 +49,17 @@ bool TextureRect::intersect(const RectI & r,
     intersection->y2 = std::min(y2,r.y2);
 
     return true;
+}
+
+void
+TextureRect::toCanonical_noClipping(unsigned int thisLevel,
+                                    double par,
+                                    RectD *rect) const
+{
+    rect->x1 = (x1 << thisLevel) * par;
+    rect->x2 = (x2 << thisLevel) * par;
+    rect->y1 = y1 << thisLevel;
+    rect->y2 = y2 << thisLevel;
 }
 
 NATRON_NAMESPACE_EXIT;

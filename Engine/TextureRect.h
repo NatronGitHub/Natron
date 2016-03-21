@@ -121,14 +121,7 @@ public:
     void
     toCanonical_noClipping(unsigned int thisLevel,
                            double par,
-                           RectD *rect) const
-    {
-        rect->x1 = (x1 << thisLevel) * par;
-        rect->x2 = (x2 << thisLevel) * par;
-        rect->y1 = y1 << thisLevel;
-        rect->y2 = y2 << thisLevel;
-    }
-
+                           RectD *rect) const;
 };
 
 inline bool
