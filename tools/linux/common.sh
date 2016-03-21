@@ -56,7 +56,7 @@ CORELIBS_VERSION=20160318
 #
 
 QT5_VERSION=5.6.0
-SWRAST=0
+SWRAST=1
 SDK_VERSION=CY2015
 SDK_PATH=/opt
 PYV=2 # Python 2 or 3
@@ -199,9 +199,9 @@ PYSIDE2_GIT=https://github.com/PySide/pyside2
 PYSIDE2_COMMIT=7006f35459fb41db6f5087217c1cdc0354a38568
 SHIBOK2_GIT=https://github.com/PySide/shiboken2
 SHIBOK2_COMMIT=32d5805b8489db75d20462e76328b7791735073a
-QTBASE_TAR=qtbase-opensource-src-$QT5_VERSION-rc.tar.xz
-QTXMLP_TAR=qtxmlpatterns-opensource-src-$QT5_VERSION-rc.tar.xz
-QTDEC_TAR=qtdeclarative-opensource-src-$QT5_VERSION-rc.tar.xz
+QTBASE_TAR=qtbase-opensource-src-${QT5_VERSION}.tar.xz
+QTXMLP_TAR=qtxmlpatterns-opensource-src-${QT5_VERSION}.tar.xz
+QTDEC_TAR=qtdeclarative-opensource-src-${QT5_VERSION}.tar.xz
 #QTSVG_TAR=qtsvg-opensource-src-$QT5_VERSION-rc.tar.xz
 
 TC_GCC=4.8.5
@@ -243,14 +243,20 @@ if [ -z "$ARCH" ]; then
         *) export ARCH=`uname -m` ;;
     esac
 fi
+if [ "$DEBUG" = "1" ]; then
+  BFLAGS="-g"
+  SDK_VERSION=${SDK_VERSION}-debug
+else
+  BFLAGS="-O2"
+fi
 if [ "$ARCH" = "i686" ]; then
-    BF="-O2 -march=i686 -mtune=i686"
+    BF="$BFLAGS -march=i686 -mtune=i686"
     BIT=32
 elif [ "$ARCH" = "x86_64" ]; then
-    BF="-O2 -fPIC"
+    BF="$BFLAGS -fPIC"
     BIT=64
 else
-    BF="-O2"
+    BF="$BFLAGS"
 fi
 
 # Threads

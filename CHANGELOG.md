@@ -1,5 +1,15 @@
 # History
 
+## Version 2.0.1
+
+- Major performance improvement for ReadFFMPEG and WriteFFMPEG
+- Fix crash received from crash reporter
+- Roto: fix interaction with feather 
+- Roto: It is now possible to add points to a shape by pressing CTRL+ALT+click
+- Roto: fix a bug where animating any parameter would crash Natron
+- Python: add ability to query the *active project* (i.e: the top level window) with the NatronEngine.natron.getActiveInstance() function
+- Python: fix issue where the argument of *saveProject(filename)* would be ignored 
+
 ## Version 2.0 - stable 
 
 - Python: PyPlugs can now be used to create toolsets, such as Split And Join in the views menu

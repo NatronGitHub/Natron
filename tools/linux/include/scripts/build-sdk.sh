@@ -53,13 +53,6 @@ echo "Building Natron-$SDK_VERSION-$SDK with $MKJOBS threads ..."
 echo
 sleep 2
 
-if [ ! -z "$REBUILD" ]; then
-    if [ -d "$INSTALL_PATH" ]; then
-        rm -rf "$INSTALL_PATH" || exit 1
-    fi
-else
-    echo "Rebuilding ..."
-fi
 if [ -d "$TMP_PATH" ]; then
     rm -rf "$TMP_PATH" || exit 1
 fi
@@ -100,7 +93,12 @@ fi
 # Install static qt4 for installer
 if [ ! -f "$INSTALL_PATH/installer/bin/qmake" ]; then
     cd "$TMP_PATH" || exit 1
-    QTIFW_CONF="-no-multimedia -no-gif -qt-libpng -no-opengl -no-libmng -no-libtiff -no-libjpeg -static -openssl-linked -confirm-license -release -opensource -nomake demos -nomake docs -nomake examples -no-gtkstyle -no-webkit -no-avx -I${INSTALL_PATH}/include -L${INSTALL_PATH}/lib"
+    if [ "$DEBUG" = "1" ]; then
+      QTTYPE="-debug"
+    else
+      QTTYPE="-release"
+    fi
+    QTIFW_CONF="-no-multimedia -no-gif -qt-libpng -no-opengl -no-libmng -no-libtiff -no-libjpeg -static -openssl-linked -confirm-license $QTTYPE -opensource -nomake demos -nomake docs -nomake examples -no-gtkstyle -no-webkit -no-avx -I${INSTALL_PATH}/include -L${INSTALL_PATH}/lib"
 
     if [ ! -f "$SRC_PATH/$QT4_TAR" ]; then
         wget "$THIRD_PARTY_SRC_URL/$QT4_TAR" -O "$SRC_PATH/$QT4_TAR" || exit 1
@@ -946,7 +944,12 @@ if [ ! -f $INSTALL_PATH/lib/libOpenColorIO.so ]; then
     cd OpenColorIO-* || exit 1
     mkdir build || exit 1
     cd build || exit 1
-    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DCMAKE_BUILD_TYPE=Release -DOCIO_BUILD_SHARED=ON -DOCIO_BUILD_STATIC=OFF -DOCIO_BUILD_APPS=OFF -DOCIO_BUILD_PYGLUE=OFF || exit 1
+    if [ "$DEBUG" = "1" ]; then
+      OCIODEBUG="-DCMAKE_BUILD_TYPE=Debug"
+    else
+      OCIODEBUG="-DCMAKE_BUILD_TYPE=Release"
+    fi
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" cmake .. $OCIODEBUG -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DOCIO_BUILD_SHARED=ON -DOCIO_BUILD_STATIC=OFF -DOCIO_BUILD_APPS=OFF -DOCIO_BUILD_PYGLUE=OFF || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     cp ext/dist/lib/{liby*.a,libt*.a} $INSTALL_PATH/lib/ || exit 1
@@ -970,8 +973,16 @@ if [ ! -f $INSTALL_PATH/lib/libOpenImageIO.so ]; then
 
     mkdir build || exit 1
     cd build || exit 1
-    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" CXXFLAGS="-fPIC" cmake -DUSE_OPENCV:BOOL=FALSE -DUSE_OPENSSL:BOOL=FALSE -DOPENEXR_HOME=$INSTALL_PATH -DILMBASE_HOME=$INSTALL_PATH -DTHIRD_PARTY_TOOLS_HOME=$INSTALL_PATH -DUSE_QT:BOOL=FALSE -DUSE_TBB:BOOL=FALSE -DUSE_PYTHON:BOOL=FALSE -DUSE_FIELD3D:BOOL=FALSE -DOIIO_BUILD_TESTS=0 -DOIIO_BUILD_TOOLS=1 -DUSE_LIB_RAW=1 -DLIBRAW_PATH=$INSTALL_PATH -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBOOST_ROOT=$INSTALL_PATH -DSTOP_ON_WARNING:BOOL=FALSE -DUSE_GIF:BOOL=TRUE -DUSE_FREETYPE:BOOL=TRUE -DFREETYPE_INCLUDE_PATH=$INSTALL_PATH/include -DUSE_FFMPEG:BOOL=FALSE -DLINKSTATIC=0 -DBUILDSTATIC=0 -DOPENJPEG_HOME=$INSTALL_PATH -DOPENJPEG_INCLUDE_DIR=$INSTALL_PATH/include/openjpeg-1.5 -DOPENJPEG_LIBRARIES=$INSTALL_PATH/lib -DUSE_OPENJPEG:BOOL=TRUE .. || exit 1 
-    make -j${MKJOBS} || exit 1
+    if [ "$DEBUG" = "1" ]; then
+      OIIODEBUG="-DCMAKE_BUILD_TYPE=Debug"
+    else
+      OIIODEBUG="-DCMAKE_BUILD_TYPE=Release"
+    fi
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" CXXFLAGS="-fPIC" cmake $OIIODEBUG -DUSE_OPENCV:BOOL=FALSE -DUSE_OPENSSL:BOOL=FALSE -DOPENEXR_HOME=$INSTALL_PATH -DILMBASE_HOME=$INSTALL_PATH -DTHIRD_PARTY_TOOLS_HOME=$INSTALL_PATH -DUSE_QT:BOOL=FALSE -DUSE_TBB:BOOL=FALSE -DUSE_PYTHON:BOOL=FALSE -DUSE_FIELD3D:BOOL=FALSE -DOIIO_BUILD_TESTS=0 -DOIIO_BUILD_TOOLS=1 -DUSE_LIB_RAW=1 -DLIBRAW_PATH=$INSTALL_PATH -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBOOST_ROOT=$INSTALL_PATH -DSTOP_ON_WARNING:BOOL=FALSE -DUSE_GIF:BOOL=TRUE -DUSE_FREETYPE:BOOL=TRUE -DFREETYPE_INCLUDE_PATH=$INSTALL_PATH/include -DUSE_FFMPEG:BOOL=FALSE -DLINKSTATIC=0 -DBUILDSTATIC=0 -DOPENJPEG_HOME=$INSTALL_PATH -DOPENJPEG_INCLUDE_DIR=$INSTALL_PATH/include/openjpeg-1.5 -DOPENJPEG_LIBRARIES=$INSTALL_PATH/lib -DUSE_OPENJPEG:BOOL=TRUE .. || exit 1 
+    if [ "$DEBUG" = "1" ]; then
+      OIIOMAKE="debug"
+    fi
+    make -j${MKJOBS} $OIIOMAKE || exit 1
     make install || exit 1
     if [ "$DDIR" != "" ]; then
       make DESTDIR="${DDIR}" install || exit 1
@@ -988,7 +999,12 @@ if [ ! -f $INSTALL_PATH/lib/libSeExpr.so ]; then
     cd SeExpr-* || exit 1
     mkdir build || exit 1
     cd build || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH || exit 1
+    if [ "$DEBUG" = "1" ]; then
+      SEEDEBUG="-DCMAKE_BUILD_TYPE=Debug"
+    else
+      SEEDEBUG="-DCMAKE_BUILD_TYPE=Release"
+    fi
+CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" cmake .. $SEEDEBUG -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH || exit 1
     make || exit 1
     make install || exit 1
     if [ "$DDIR" != "" ]; then
@@ -1258,11 +1274,16 @@ fi
 if [ "$REBUILD_QT" = "1" ]; then
   rm -rf $INSTALL_PATH/bin/qmake* $INSTALL_PATH/lib/libQt* $INSTALL_PATH/include/Qt* $INSTALL_PATH/{plugins,phrasebooks,q3porting.xml,tests,imports,mkspecs,translations}
 fi
+if [ "$DEBUG" = "1" ]; then
+  QTTYPE="-debug"
+else
+  QTTYPE="-release"
+fi
 if [ "$SDK_VERSION" = "CY2016" ]; then
   # Qt5
   if [ ! -f $INSTALL_PATH/bin/qmake ]; then
     cd $TMP_PATH || exit 1
-    QT_CONF="-openssl-linked -opengl desktop -opensource -nomake examples -nomake tests -release -no-gtkstyle -confirm-license -no-c++11 -I${INSTALL_PATH}/include -L${INSTALL_PATH}/lib -shared -no-xcb"
+    QT_CONF="-openssl-linked -opengl desktop -opensource -nomake examples -nomake tests $QTTYPE -no-gtkstyle -confirm-license -no-c++11 -I${INSTALL_PATH}/include -L${INSTALL_PATH}/lib -shared -no-xcb"
 
     if [ ! -f $SRC_PATH/$QTBASE_TAR ]; then
         wget $THIRD_PARTY_SRC_URL/$QTBASE_TAR -O $SRC_PATH/$QTBASE_TAR || exit 1
@@ -1300,7 +1321,6 @@ if [ "$SDK_VERSION" = "CY2016" ]; then
     $INSTALL_PATH/bin/qmake || exit 1
     make -j${MKJOBS} || exit  1
     make install || exit 1
-    # TODO symlink private headers
     QTDEC_PRIV="QtConcurrent QtQml QtQmlDevTools QtQuick QtQuickParticles QtQuickTest QtQuickWidgets"
     for i in $QTDEC_PRIV; do
       cd $INSTALL_PATH/include/$i || exit 1
@@ -1312,7 +1332,7 @@ else
   # Qt4
   if [ ! -f $INSTALL_PATH/bin/qmake ]; then
     cd $TMP_PATH || exit 1
-    QT_CONF="-system-zlib -system-libtiff -system-libpng -no-libmng -system-libjpeg -no-gtkstyle -glib -xrender -xrandr -xcursor -xfixes -xinerama -fontconfig -xinput -sm -no-multimedia -openssl-linked -confirm-license -release -opensource -opengl desktop -nomake demos -nomake docs -nomake examples -I${INSTALL_PATH}/include -L${INSTALL_PATH}/lib"
+    QT_CONF="-system-zlib -system-libtiff -system-libpng -no-libmng -system-libjpeg -no-gtkstyle -glib -xrender -xrandr -xcursor -xfixes -xinerama -fontconfig -xinput -sm -no-multimedia -openssl-linked -confirm-license $QTTYPE -opensource -opengl desktop -nomake demos -nomake docs -nomake examples -I${INSTALL_PATH}/include -L${INSTALL_PATH}/lib"
 
     if [ ! -f $SRC_PATH/$QT4_TAR ]; then
       wget $THIRD_PARTY_SRC_URL/$QT4_TAR -O $SRC_PATH/$QT4_TAR || exit 1
@@ -1351,6 +1371,11 @@ fi
 if [ "$SDK_VERSION" = "CY2016" ]; then
   PYSIDE_V=2
 fi
+if [ "$DEBUG" = "1" ]; then
+  PYDEBUG="-DCMAKE_BUILD_TYPE=Debug"
+else
+  PYDEBUG="-DCMAKE_BUILD_TYPE=Release"
+fi
 
 # Install shiboken
 if [ ! -f $INSTALL_PATH/lib/pkgconfig/shiboken${PYSIDE_V}.pc ]; then
@@ -1370,7 +1395,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/shiboken${PYSIDE_V}.pc ]; then
     fi
 
     mkdir -p build && cd build || exit 1
-    env CXXFLAGS="-I${INSTALL_PATH}/include/libxml2" cmake ../ -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH  \
+    env CXXFLAGS="-I${INSTALL_PATH}/include/libxml2" cmake ../ $PYDEBUG -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH  \
           -DCMAKE_BUILD_TYPE=Release   \
           -DBUILD_TESTS=OFF            \
           -DPYTHON_EXECUTABLE=$PY_EXE \
@@ -1400,7 +1425,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/pyside${PYSIDE_V}.pc ]; then
     fi
 
     mkdir -p build && cd build || exit 1
-    cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF \
+    cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH $PYDEBUG -DBUILD_TESTS=OFF \
           -DQT_QMAKE_EXECUTABLE=$INSTALL_PATH/bin/qmake \
           -DPYTHON_EXECUTABLE=$PY_EXE \
           -DPYTHON_LIBRARY=$PY_LIB \
