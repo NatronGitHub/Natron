@@ -65,7 +65,7 @@
 #if defined(CERES_USE_BOOST_UNORDERED_MAP)
 #  include <boost/unordered_map.hpp>
 #  include <boost/unordered_set.hpp>
-#  define CERES_HASH_NAMESPACE_START namespace std {
+#  define CERES_HASH_NAMESPACE_START namespace boost {
 #  define CERES_HASH_NAMESPACE_END }
 #endif
 
@@ -188,8 +188,8 @@ CERES_HASH_NAMESPACE_START
 
 // Hasher for STL pairs. Requires hashers for both members to be defined.
 template<typename T>
-struct hash<pair<T, T> > {
-  size_t operator()(const pair<T, T>& p) const {
+struct hash<std::pair<T, T> > {
+  size_t operator()(const std::pair<T, T>& p) const {
     size_t h1 = hash<T>()(p.first);
     size_t h2 = hash<T>()(p.second);
     // The decision below is at compile time
@@ -198,8 +198,8 @@ struct hash<pair<T, T> > {
             ceres::internal::Hash64NumWithSeed(h1, h2);
   }
   // Less than operator for MSVC.
-  bool operator()(const pair<T, T>& a,
-                  const pair<T, T>& b) const {
+  bool operator()(const std::pair<T, T>& a,
+                  const std::pair<T, T>& b) const {
     return a < b;
   }
   static const size_t bucket_size = 4;  // These are required by MSVC
