@@ -229,7 +229,7 @@ NATRON_VERSION_REVISION)
 
 //Use this to have all readers inside the same Read meta-node and all the writers
 //into the same Write meta-node
-//#define NATRON_ENABLE_IO_META_NODES 1
+#define NATRON_ENABLE_IO_META_NODES 1
 
 //Uncomment to get access to ReadQt and WriteQt nodes. Note that they are no longer maintained and probably buggy.
 //#define NATRON_ENABLE_QT_IO_NODES

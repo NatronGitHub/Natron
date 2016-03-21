@@ -24,6 +24,8 @@
 
 #include "TrackMarker.h"
 
+#include <QCoreApplication>
+
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
 #include "Engine/KnobTypes.h"
