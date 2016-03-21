@@ -1910,6 +1910,9 @@ static bool parseTokenFrom(int fromDim,
             ++nClosingParenthesisMet;
         }
         if (std::isspace(str[i],loc) ||
+            str[i] == '=' ||
+            str[i] == '\n' ||
+            str[i] == '\t' ||
             str[i] == '+' ||
             str[i] == '-' ||
             str[i] == '*' ||
@@ -2067,7 +2070,7 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
     }
     
     std::string declarations = declarePythonVariables(false, dimension);
-    script = declarations + "\n" + script;
+    script = declarations + "\n" + expressionCopy + "\n" + script;
     ///This will register the listeners
     std::string error;
     bool ok = Python::interpretPythonScript(script, &error,NULL);
