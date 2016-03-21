@@ -243,14 +243,20 @@ if [ -z "$ARCH" ]; then
         *) export ARCH=`uname -m` ;;
     esac
 fi
+if [ "$DEBUG" = "1" ]; then
+  BFLAGS="-g"
+  SDK_VERSION=${SDK_VERSION}-debug
+else
+  BFLAGS="-O2"
+fi
 if [ "$ARCH" = "i686" ]; then
-    BF="-O2 -march=i686 -mtune=i686"
+    BF="$BFLAGS -march=i686 -mtune=i686"
     BIT=32
 elif [ "$ARCH" = "x86_64" ]; then
-    BF="-O2 -fPIC"
+    BF="$BFLAGS -fPIC"
     BIT=64
 else
-    BF="-O2"
+    BF="$BFLAGS"
 fi
 
 # Threads
