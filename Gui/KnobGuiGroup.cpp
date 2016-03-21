@@ -151,7 +151,7 @@ KnobGuiGroup::createWidget(QHBoxLayout* layout)
     _checked = _knob.lock()->getValue();
     _button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _button->setChecked(_checked);
-    QObject::connect( _button, SIGNAL(checked(bool)), this, SLOT(setChecked(bool)) );
+    QObject::connect( _button, SIGNAL(checked(bool)), this, SLOT(onCheckboxChecked(bool)) );
     layout->addWidget(_button);
 }
 
@@ -166,7 +166,7 @@ KnobGuiGroup::setCheckedInternal(bool checked, bool userRequested)
     if (userRequested) {
         boost::shared_ptr<KnobGroup> knob = _knob.lock();
         if (knob) {
-            knob->evaluateValueChange(0, knob->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
+            knob->setValue(checked, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
         }
     }
     
@@ -193,7 +193,7 @@ KnobGuiGroup::setCheckedInternal(bool checked, bool userRequested)
 }
 
 void
-KnobGuiGroup::setChecked(bool b)
+KnobGuiGroup::onCheckboxChecked(bool b)
 {
     setCheckedInternal(b, true);
 }
