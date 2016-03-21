@@ -8,18 +8,7 @@ TEMPLATE = lib
 CONFIG += staticlib
 CONFIG -= qt
 
-include(../global.pri)
-include(../config.pri)
 
-INCLUDEPATH += $$PWD/../libs/libmv/third_party/ceres/config
-INCLUDEPATH += $$PWD/../libs/libmv/third_party/ceres/include
-INCLUDEPATH += $$PWD/../libs/libmv/third_party/ceres/internal
-INCLUDEPATH += $$PWD/../libs/libmv/third_party/gflags
-INCLUDEPATH += $$PWD/../libs/libmv/third_party/gflags/gflags
-INCLUDEPATH += $$PWD/../libs/libmv/third_party/glog/src
-INCLUDEPATH += $$PWD/../libs/libmv/third_party
-INCLUDEPATH += $$PWD/../libs/libmv/third_party/Eigen3
-INCLUDEPATH += $$PWD/../libs/libmv
 
 DEFINES += CERES_HAVE_PTHREAD CERES_NO_SUITESPARSE CERES_NO_CXSPARSE CERES_HAVE_RWLOCK
 
@@ -33,14 +22,28 @@ DEFINES += CERES_NO_LAPACK
 DEFINES += CERES_RESTRICT_SCHUR_SPECIALIZATION
 DEFINES += WITH_LIBMV_GUARDED_ALLOC GOOGLE_GLOG_DLL_DECL= LIBMV_NO_FAST_DETECTOR=
 
-#c++11 ||  *-xcode {
-    DEFINES += CERES_STD_UNORDERED_MAP
+c++11 {
+   DEFINES += CERES_STD_UNORDERED_MAP
+   DEFINES += CERES_USE_STD_SHARED_PTR
+} else {
+   # Use boost::shared_ptr and boost::unordered_map
+   CONFIG += boost
+   DEFINES += CERES_USE_BOOST_SHARED_PTR
+   DEFINES += CERES_USE_BOOST_UNORDERED_MAP
+}
 
-#} else {
-#    DEFINES += CERES_TR1_UNORDERED_MAP
-#    DEFINES += CERES_TR1_MEMORY_HEADER
-#    DEFINES += CERES_TR1_SHARED_PTR
-#}
+include(../global.pri)
+include(../config.pri)
+
+INCLUDEPATH += $$PWD/../libs/libmv/third_party/ceres/config
+INCLUDEPATH += $$PWD/../libs/libmv/third_party/ceres/include
+INCLUDEPATH += $$PWD/../libs/libmv/third_party/ceres/internal
+INCLUDEPATH += $$PWD/../libs/libmv/third_party/gflags
+INCLUDEPATH += $$PWD/../libs/libmv/third_party/gflags/gflags
+INCLUDEPATH += $$PWD/../libs/libmv/third_party/glog/src
+INCLUDEPATH += $$PWD/../libs/libmv/third_party
+INCLUDEPATH += $$PWD/../libs/libmv/third_party/Eigen3
+INCLUDEPATH += $$PWD/../libs/libmv
 
 
 win32* {

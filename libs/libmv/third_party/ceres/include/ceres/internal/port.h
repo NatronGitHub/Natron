@@ -38,10 +38,12 @@
 
 #include "ceres/internal/config.h"
 
-#if defined(CERES_TR1_MEMORY_HEADER)
-#include <tr1/memory>
-#else
-#include <memory>
+#if CERES_USE_STD_SHARED_PTR
+# include <memory>
+#elif defined(CERES_USE_BOOST_SHARED_PTR)
+# include <boost/shared_ptr.hpp>
+#elif defined(CERES_TR1_SHARED_PTR)
+# include <tr1/memory>
 #endif
 
 namespace ceres {
@@ -56,11 +58,14 @@ using namespace std;
 // "string" implementation in the global namespace.
 using std::string;
 
-#if defined(CERES_TR1_SHARED_PTR)
-using std::tr1::shared_ptr;
-#else
+#if CERES_USE_STD_SHARED_PTR
 using std::shared_ptr;
+#elif defined(CERES_USE_BOOST_SHARED_PTR)
+using boost::shared_ptr;
+#elif defined(CERES_TR1_SHARED_PTR)
+using std::tr1::shared_ptr;
 #endif
+
 
 }  // namespace ceres
 

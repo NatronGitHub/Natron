@@ -61,8 +61,16 @@
 #  define CERES_HASH_NAMESPACE_END } }
 #endif
 
+
+#if defined(CERES_USE_BOOST_UNORDERED_MAP)
+#  include <boost/unordered_map.hpp>
+#  include <boost/unordered_set.hpp>
+#  define CERES_HASH_NAMESPACE_START namespace std {
+#  define CERES_HASH_NAMESPACE_END }
+#endif
+
 #if !defined(CERES_NO_UNORDERED_MAP) && !defined(CERES_TR1_UNORDERED_MAP) && \
-    !defined(CERES_STD_UNORDERED_MAP) && !defined(CERES_STD_UNORDERED_MAP_IN_TR1_NAMESPACE)  // NOLINT
+    !defined(CERES_STD_UNORDERED_MAP) && !defined(CERES_STD_UNORDERED_MAP_IN_TR1_NAMESPACE) && !defined(CERES_USE_BOOST_UNORDERED_MAP) // NOLINT
 #  error One of: CERES_NO_UNORDERED_MAP, CERES_TR1_UNORDERED_MAP,\
  CERES_STD_UNORDERED_MAP, CERES_STD_UNORDERED_MAP_IN_TR1_NAMESPACE must be defined!  // NOLINT
 #endif
@@ -106,6 +114,13 @@ template<typename K, typename V>
 struct HashMap : std::unordered_map<K, V> {};
 template<typename K>
 struct HashSet : std::unordered_set<K> {};
+#endif
+    
+#if defined(CERES_USE_BOOST_UNORDERED_MAP)
+template<typename K, typename V>
+struct HashMap : boost::unordered::unordered_map<K, V> {};
+template<typename K>
+struct HashSet : boost::unordered::unordered_set<K> {};
 #endif
 
 #if defined(_WIN32) && !defined(__MINGW64__) && !defined(__MINGW32__)
