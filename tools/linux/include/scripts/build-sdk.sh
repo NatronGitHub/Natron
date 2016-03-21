@@ -898,6 +898,16 @@ if [ ! -f "$INSTALL_PATH/lib/pkgconfig/librsvg-2.0.pc" ]; then
     make install || exit 1
 fi
 
+# Install OpenCL
+if [ ! -d "$INSTALL_PATH/include/CL" ] || [ ! -f "$INSTALL_PATH/lib/libOpenCL.so.1.0.0" ]; then
+  cd $TMP_PATH || exit 1
+  rm -rf OpenCL
+  git clone $GIT_OPENCL || exit 1
+  cp -a OpenCL/CL $INSTALL_PATH/include/ || exit 1
+  cp -a OpenCL/linux$BIT/*so* $INSTALL_PATH/lib/ || exit 1
+  # The libs are only used for linking, we do not distribute them.
+fi
+
 # Install magick
 if [ "$REBUILD_MAGICK" = "1" ]; then
     rm -rf $INSTALL_PATH/include/ImageMagick-6/ $INSTALL_PATH/lib/libMagick* $INSTALL_PATH/share/ImageMagick-6/ $INSTALL_PATH/lib/pkgconfig/{Image,Magick}*
@@ -909,8 +919,13 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/Magick++.pc ]; then
     fi
     tar xvf $SRC_PATH/$MAGICK_TAR || exit 1
     cd ImageMagick-* || exit 1
+    if [ "$MAGICK_CL" = "1" ]; then
+      MAGICK_CL_OPT="--with-x --enable-opencl"
+    else
+      MAGICK_CL_OPT="--without-x"
+    fi
     patch -p0 < $INC_PATH/patches/ImageMagick/pango-align-hack.diff || exit 1
-    env CFLAGS="$BF -DMAGICKCORE_EXCLUDE_DEPRECATED=1" CXXFLAGS="$BF -DMAGICKCORE_EXCLUDE_DEPRECATED=1" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --with-magick-plus-plus=yes --with-quantum-depth=32 --without-dps --without-djvu --without-fftw --without-fpx --without-gslib --without-gvc --without-jbig --without-jpeg --with-lcms --without-openjp2 --without-lqr --without-lzma --without-openexr --with-pango --with-png --with-rsvg --without-tiff --without-webp --with-xml --without-zlib --without-bzlib --disable-static --enable-shared --enable-hdri --with-freetype --with-fontconfig --without-x --without-modules || exit 1
+    env CFLAGS="$BF -DMAGICKCORE_EXCLUDE_DEPRECATED=1" CXXFLAGS="$BF -DMAGICKCORE_EXCLUDE_DEPRECATED=1" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --with-magick-plus-plus=yes --with-quantum-depth=32 --without-dps --without-djvu --without-fftw --without-fpx --without-gslib --without-gvc --without-jbig --without-jpeg --with-lcms --without-openjp2 --without-lqr --without-lzma --without-openexr --with-pango --with-png --with-rsvg --without-tiff --without-webp --with-xml --without-zlib --without-bzlib --disable-static --enable-shared --enable-hdri --with-freetype --with-fontconfig --without-modules $MAGICK_CL_OPT || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     if [ "$DDIR" != "" ]; then
