@@ -1,0 +1,603 @@
+commit 7a676106720fb126a27ff010abdd8bb65d7e0d9a
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Mon Jan 4 18:30:12 2016 +0500
+
+    Fix strict compiler warnings
+
+commit d3537e3709fe11f42312e82cb1c9837c9e742385
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Sun Jan 3 14:17:10 2016 +0500
+
+    GLog/GFlags: Reduce difference between upstream and bundled versions
+    
+    Several things here:
+    
+    - Re-bundled sources using own fork with pull-requests applied on the sources.
+    
+    - Got rid of changes around include "config.h", it was needed by Blender to
+      make it's include directories configuration to work. This could be addressed
+      differently from Blender side.
+    
+    - Moved some customization to defines set by CMakeLists.
+
+commit 1ec37bba2cfbbf0d6568429fa3035ee2164c23e6
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Sat Jan 2 12:42:55 2016 +0500
+
+    GFlags linking errors fix for MSVC
+
+commit df7642b270e8e43685e9ffb404b59d7b226a9f60
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Thu Dec 31 17:56:12 2015 +0500
+
+    Alternative fix for missing prototype for a couple of functions
+
+commit 08f685797b7d776cdaa579136c82b15ddc6ffb30
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Thu Dec 31 17:33:05 2015 +0500
+
+    Update GFlags to the latest upstream version
+    
+    Makes it easier to synchronize some compiler/warning fixes.
+
+commit e0ef5b09203e3906a555e6c2010f25cb667da9cd
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Thu Dec 31 16:15:59 2015 +0500
+
+    GLog: Solve some compilation warnings
+    
+    Those are actually sent to a pull-request, see
+    
+      https://github.com/google/glog/pull/81
+
+commit 2072b213d4d3a55d099a063ed1e7331cc773454e
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Thu Dec 31 16:13:53 2015 +0500
+
+    Add Martijn Berger to the AUTHORS file
+
+commit 4dd0770d98d67896e4f936356e281f63d927410e
+Author: Martijn Berger <martijn.berger@gmail.com>
+Date:   Thu Dec 31 16:13:08 2015 +0500
+
+    Fix compilation error of Glog and Gflags with MSVC2015
+
+commit 2712f42be2ad79e7d3a6c9905f6d8d1e3b7133ac
+Author: Brecht Van Lommel <brechtvanlommel@gmail.com>
+Date:   Thu Dec 31 14:00:58 2015 +0500
+
+    Fix OS X (with 10.11 SDK) glog build errors due to using deprecated code.
+    
+    Some values are now restored to the ones from before the upgrade today.
+
+commit d249280fdf7c937fd6ebbc465508843a70aafd4c
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Wed Dec 30 16:59:28 2015 +0500
+
+    Tweaks to Glog to support building on all platforms
+    
+    This makes it possible to compile Libmv on all platforms,
+    amount of hacks is lower, which could bring some warnings
+    up, but those are better be addressed via upstream which
+    is now rather active.
+
+commit 86c57750ddb857643fb5dd2c83b4953da83dd57d
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Wed Dec 30 16:15:47 2015 +0500
+
+    Enable explicit Schur complement matrix by default
+    
+    Gives up to 2x speed up of camera solving process in average scene.
+    In the really huge one it might be slower, but that we need to investigate.
+
+commit d6c52a70b5a0664b7c74bda68f59a895fe8aa235
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Wed Dec 30 16:13:03 2015 +0500
+
+    Fix one frame memory leak when tracking last frame
+
+commit 6e2ac41d25d5923b2a62c96d27d919a36eff9b48
+Author: Brecht Van Lommel <brechtvanlommel@gmail.com>
+Date:   Wed Dec 30 16:11:24 2015 +0500
+
+    Motion tracking not workig with Xcode 7 on OS X.
+    
+    Caused by use of the uninitialized shape_ variable in Resize().
+
+commit fc72ae06fb4ae559ac37d14d1b34d6669505cc86
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Wed Dec 30 15:56:40 2015 +0500
+
+    Update GLog to latest upstream
+    
+    Should fix issues building with MSVC2015.
+
+commit d4b2d15bd3d195074b074331354de96a1b51042f
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Wed Dec 30 16:01:10 2015 +0500
+
+    Fix wrong README file reference
+
+commit 2b4aa0b7720cae9a408284834559bea9960157ee
+Author: Keir Mierle <mierle@gmail.com>
+Date:   Mon May 11 02:16:53 2015 -0700
+
+    Make README more informative for GitHub viewers
+    
+    Reviewers: sergey
+    
+    Reviewed By: sergey
+    
+    Differential Revision: https://developer.blender.org/D1295
+
+commit 514e4491aea655d20be047ed87f002fb7854d5c9
+Author: Keir Mierle <mierle@gmail.com>
+Date:   Mon May 11 01:54:09 2015 -0700
+
+    Simplify the modal solver Ceres cost function
+    
+    Fix test by flipping the quaternion.
+    
+    Reviewers: sergey
+    
+    Reviewed By: sergey
+    
+    Projects: #libmv
+    
+    Differential Revision: https://developer.blender.org/D756
+
+commit e55fafd31f7d53d42af7c6b7df2eebe3c2568da9
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Wed Dec 31 19:05:51 2014 +0500
+
+    Synchronize MSVC compilation fixes from Blender
+
+commit 7d6020d2ec42c6cb2749bc891186b4880d26d40b
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Wed Dec 31 15:32:07 2014 +0500
+
+    Update GLog to latest upstream revision 143
+    
+    Mainly to solve compilation error with demangle.cc.
+
+commit 5dc746700eaf85cb674f0fb73ff3c1b49a7f6315
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Fri Dec 12 14:59:55 2014 +0500
+
+    Update GFlags to latest release 2.1.1
+    
+    Main purpose of this (andsome of upcoming) update is to check if the
+    upstream sources are useable without any modifications for us. And if
+    not, then we'll need to consider moving some changes into upstream.
+    
+    This commit contains an one-to-one copy of the upstream GFlags library
+    and also changes namespace usage since it's changed in the upstream.
+
+commit 6fe6d75f7e90e161b44643b953f058a3829a5247
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Sat Nov 1 02:53:36 2014 +0500
+
+    Libmv: Code cleanup, mixed class/struct in declaration/definition
+
+commit d2a5f7953812d2d09765431b59c6c4ac72faf35b
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Thu Oct 30 23:13:53 2014 +0500
+
+    Libmv: Support disabled color channels in tracking settings
+    
+    This was never ported to a new tracking pipeline and now it's done using
+    FrameAccessor::Transform routines. Quite striaghtforward, but i've changed
+    order of grayscale conversion in blender side with call of transform callback.
+    
+    This way it's much easier to perform rescaling in libmv side.
+
+commit d976e034cdf74b34860e0632d7b29713f47c5756
+Author: Keir Mierle <mierle@gmail.com>
+Date:   Sat Aug 23 00:38:01 2014 -0700
+
+    Minor keyframe selection cleanups
+    
+    Reviewers: sergey
+    
+    Reviewed By: sergey
+    
+    Differential Revision: https://developer.blender.org/D757
+
+commit bc99ca55dadfca89fde0f93764397c2fe028943d
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Sat Aug 23 01:55:32 2014 +0600
+
+    implement backward prediction
+    
+    The title actually says it all, just extend current implementation
+    of PredictMarkerPosition() to cases when tracking happens in the reverse
+    order (from the end frame to start).
+    
+    it's still doesn't solve all the ambiguity happening in the function
+    in cases when one tracks the feature and then re-tracks it in order
+    to refine the sliding. This is considered a separate TODO for now and
+    will likely be solved by passing tracking direction to the prediction
+    function.
+    
+    Reviewers: keir
+    
+    Reviewed By: keir
+    
+    Differential Revision: https://developer.blender.org/D663
+
+commit 5b87682d98df65ade02638bc6482d824cf0dd0b3
+Author: Keir Mierle <mierle@gmail.com>
+Date:   Thu Aug 21 22:45:22 2014 -0700
+
+    Make libmv compile on Ubuntu 14.04
+    
+    Reviewers: fsiddi
+    
+    Reviewed By: fsiddi
+    
+    Subscribers: sergey
+    
+    Differential Revision: https://developer.blender.org/D755
+
+commit 0a81db623c458e0384b4f7060d1bcff8993fb469
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Wed Jul 23 00:42:00 2014 +0600
+
+    Fix wrong residual blocks counter
+    
+    This happened in cases when having zero-weighted tracks
+    and could lead to some assert failures on marking parameter
+    block constant.
+
+commit 2824dbac54cacf74828678be7a5c9fd960ce83e2
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Fri Jul 18 12:52:03 2014 +0600
+
+    Fix search area sliding issue
+    
+    The only way to do this is to store search region in floats
+    and round when we need to sample it. Otherwise you'll always
+    have sliding effect caused by rounding the issues, especially
+    when doing incremental offset (thing which happens in the
+    prediction code).
+    
+    Pretty much straightforward change apart from stuff to be kept
+    in mind: offset calculation int should happen relative to the
+    rounded search region. This is because tracker works in the space
+    of the search window image which get's rounded on the frame access,
+    
+    This makes API a bit creepy because frame accessor uses the same
+    Region struct as the search window in Marker and ideally we would
+    need to have either IntRegion or Region<int> in order to make
+    Libmv fully track on what's getting rounded and when.
+    
+    Reviewers: keir
+    
+    Reviewed By: keir
+    
+    Differential Revision: https://developer.blender.org/D616
+
+commit 04862c479332308be47a0f27361402444ace8880
+Author: Keir Mierle <mierle@gmail.com>
+Date:   Fri May 9 23:00:03 2014 +0200
+
+    Start the automatic 2D tracking code
+    
+    This starts the 2D automatic tracking code. It is totally unfinished.
+    
+    Reviewers: sergey
+    
+    Reviewed By: sergey
+    
+    Differential Revision: https://developer.blender.org/D523
+
+commit be679f67d807a2139c1f7d7e2ca45141940b30d5
+Author: Keir Mierle <mierle@gmail.com>
+Date:   Fri May 9 14:36:04 2014 +0200
+
+    Also shift the search window
+    
+    Reviewers: sergey
+    
+    Reviewed By: sergey
+    
+    Differential Revision: https://developer.blender.org/D520
+
+commit 66b8f5eef2633ebcde32a388fc14c60171011821
+Author: Keir Mierle <mierle@gmail.com>
+Date:   Fri May 9 13:06:28 2014 +0200
+
+    Change the search region to absolute frame coordinates
+    
+    Smarter Eigen usage
+    
+    Better error logging
+    
+    Reviewers: sergey
+    
+    Reviewed By: sergey
+    
+    Differential Revision: https://developer.blender.org/D519
+
+commit a08193319ae409fad8f08887eae1f79f02e91eaa
+Author: Keir Mierle <mierle@gmail.com>
+Date:   Fri May 9 12:02:47 2014 +0200
+
+    First cut at predictive tracing
+    
+    This adds a Kalman filter-based approach to predict where a marker
+    will go in the next frame to track. Hopefully this will make the
+    tracker work faster by avoiding lengthy searches. This code
+    compiles, but is otherwise untested, and likely does not work.
+    
+    Fix else branch
+    
+    Add some tests
+    
+    Update patch coordinates as well (and test)
+    
+    Reviewers: sergey
+    
+    Reviewed By: sergey
+    
+    Differential Revision: https://developer.blender.org/D518
+
+commit 607ffb2f62b56e34a841abbb952d83e19cd1e23c
+Author: Keir Mierle <mierle@gmail.com>
+Date:   Thu May 8 16:05:28 2014 +0200
+
+    Add constructor to AutoTrack
+
+commit c39e20a0c27da3733804c3848454b5d4c4f0e66b
+Author: Keir Mierle <mierle@gmail.com>
+Date:   Thu May 8 16:04:20 2014 +0200
+
+    Fix GetMarker compilation issue
+
+commit 8dd93e431b6e44439c803bfd26ec2669b656177e
+Author: Keir Mierle <mierle@gmail.com>
+Date:   Thu May 8 15:50:26 2014 +0200
+
+    Expose GetMarker() in AutoTrack
+    
+    Reviewers: sergey
+    
+    Reviewed By: sergey
+    
+    Differential Revision: https://developer.blender.org/D516
+
+commit 4405dff60ea08d454b64da1a7c0595d9328cf8a3
+Author: Keir Mierle <mierle@gmail.com>
+Date:   Thu May 8 15:38:14 2014 +0200
+
+    Add public SetMarkers to AutoTrack
+    
+    Reviewers: sergey
+    
+    Reviewed By: sergey
+    
+    Differential Revision: https://developer.blender.org/D515
+
+commit c90837f6db276a3b1f610eaad509155f6a43b24f
+Author: Keir Mierle <mierle@gmail.com>
+Date:   Thu May 8 15:17:48 2014 +0200
+
+    Make autotrack skeleton compile
+    
+    Reviewers: sergey
+    
+    Reviewed By: sergey
+    
+    Differential Revision: https://developer.blender.org/D514
+
+commit be01baa2e82e36f63e548f073157e68d2ff870c0
+Author: Keir Mierle <mierle@gmail.com>
+Date:   Wed May 7 18:48:55 2014 +0200
+
+    Add preliminary TrackMarkerToFrame in autotrack
+    
+    Reviewers: sergey
+    
+    Reviewed By: sergey
+    
+    Differential Revision: https://developer.blender.org/D509
+
+commit 0cab028d591b3d08672ca86eb6c6e4ac1aacf1d0
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Wed May 7 17:59:11 2014 +0200
+
+    Remove assert from ArrayND Resize
+    
+    That assert broke initialization of arrays which doesn't
+    own the data since constructor uses Resize to set shape
+    and strides.
+    
+    Strides are still to be fixed, but that's for later.
+
+commit 64f9c118029a9351e9023e96527c120e1d724d5b
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Wed May 7 17:42:21 2014 +0200
+
+    Fix ArrayND freeing the data it doesn't own
+    
+    Can't really guarantee it works fully correct now,
+    but at least this check is needed anyway and compilation
+    works just fine.
+    
+    Reviewers: keir
+    
+    Reviewed By: keir
+    
+    Differential Revision: https://developer.blender.org/D508
+
+commit 0618f1c8e88dfc738cdde55784da80b889905e7c
+Author: Keir Mierle <mierle@gmail.com>
+Date:   Wed May 7 12:03:32 2014 +0200
+
+    Minor changes
+    
+    Reviewers: sergey
+    
+    Reviewed By: sergey
+    
+    Differential Revision: https://developer.blender.org/D505
+
+commit 5c34335e1bb90c4ed701ee830c718ed4e20dbffa
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Wed May 7 11:12:23 2014 +0200
+
+    Fix compilation error in frame accessor
+    
+    - int64 is not a standard type, we've got int64_t defined in
+      std int. We also have an msvc port of this header, so should
+      not be an issue.
+    
+    - Fixed inconsistency in usage of CacheKey and Key, used Key.
+    
+    - Some functions weren't marked as virtual.
+    
+    Additional change: added self to authors.
+    
+    Reviewers: keir
+    
+    Reviewed By: keir
+    
+    Differential Revision: https://developer.blender.org/D504
+
+commit 06bc207614e262cd688e2c3ed820ade7c77bdb66
+Author: Keir Mierle <mierle@gmail.com>
+Date:   Tue May 6 22:30:59 2014 +0200
+
+    Start new Tracks implementation
+    
+    This adds the new Tracks implementation, as well as a
+    trivial test to show it compiles.
+    
+    Reviewers: sergey
+    
+    Reviewed By: sergey
+    
+    Differential Revision: https://developer.blender.org/D502
+
+commit 25ce061e6da69881460ba7718bb0d660a2380a02
+Author: Keir Mierle <mierle@gmail.com>
+Date:   Tue May 6 19:10:51 2014 +0200
+
+    Add Reconstruction class for new API
+    
+    This starts the new Reconstruction class (with support for e.g. planes). This
+    also starts the new namespace "mv" which will eventually have all the symbols
+    we wish to export.
+    
+    Reviewers: sergey
+    
+    Reviewed By: sergey
+    
+    Differential Revision: https://developer.blender.org/D501
+
+commit 0a6af3e29016048978aea607673340500e050339
+Author: Keir Mierle <mierle@gmail.com>
+Date:   Tue May 6 17:52:53 2014 +0200
+
+    Add a new Tracks implementation
+    
+    Reviewers: sergey
+    
+    Reviewed By: sergey
+    
+    Differential Revision: https://developer.blender.org/D500
+
+commit 887b68d29c2b198f4939f9ab5153881aa2c1806e
+Author: Keir Mierle <mierle@gmail.com>
+Date:   Tue May 6 17:01:39 2014 +0200
+
+    Initial commit of unfinished AutoTrack API
+    
+    This starts the creating the new AutoTrack API. The new API will
+    make it possible for libmv to do full autotracking, including
+    predictive tracking and also support multiple motion models (3D
+    planes etc).
+    
+    The first goal (not in this patch) is to convert Blender to use
+    the new API without adding any new functionality.
+    
+    Note: This does not add any of the API to the build system!
+    It likely does not compile.
+    
+    Reviewers: sergey
+    
+    Reviewed By: sergey
+    
+    Differential Revision: https://developer.blender.org/D499
+
+commit 08cc227d431d257d27f300fbb8e6991e663302da
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Tue May 6 13:09:22 2014 +0200
+
+    Fix homography test failure
+    
+    It was caused by assuming that reconstructed homography matrix
+    should look exactly the same as the matrix used to generate a
+    test case.
+    
+    It's not actually valid assumption because different-looking
+    matrices could correspond to the same exact transform.
+    
+    In this change we make it so actual "re-projected" vectors
+    are being checked, not the values in matrix. This makes it
+    more predictable verification.
+    
+    Reviewers: keir
+    
+    Reviewed By: keir
+    
+    Differential Revision: https://developer.blender.org/D488
+
+commit 0b7d83dc9627447dc7df64d7e3a468aefe9ddc13
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Wed Apr 23 19:14:55 2014 +0600
+
+    Fix compilation on OSX after previous commit
+    
+    EXPECT_EQ wasn't defined in the scope.
+
+commit d14049e00dabf8fdf49056779f0a3718fbb39e8f
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Wed Apr 23 15:08:16 2014 +0600
+
+    Move aligned malloc implementation into own file
+    
+    It was rather stupid having it in brute region tracker,
+    now it is in own file in base library (which was also
+    added in this commit, before this it consist of header
+    files only).
+    
+    Reviewers: keir
+    
+    Reviewed By: keir
+    
+    Differential Revision: https://developer.blender.org/D479
+
+commit 0ddf3851bfcb8de43660b119a25a77a25674200d
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Mon Apr 21 14:14:03 2014 +0600
+
+    Optimization of PearsonProductMomentCorrelation
+    
+    Pass the arrays by reference rather than by value,
+    should give some percent of speedup.
+    
+    Also don't pass the dimensions to the function but
+    get them from the images themselves.
+    
+    Hopefully this will give some %% of tracker speedup.
+
+commit f68fdbe5896a6c5bd8b500caeec61b876c5e44c6
+Author: Sergey Sharybin <sergey.vfx@gmail.com>
+Date:   Mon Apr 21 14:10:43 2014 +0600
+
+    Fix wrong assert in ResizeImage()
+    
+    The assert didn't make any sense because ComputeBoundingBox()
+    is intended to return bounding box in the following way:
+    (xmin, xmax, ymin, ymax).
