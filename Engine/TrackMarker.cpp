@@ -35,6 +35,7 @@
 #include "Engine/TrackerContext.h"
 #include "Engine/TimeLine.h"
 #include "Engine/TrackerSerialization.h"
+#include "Engine/TLSHolder.h"
 
 
 NATRON_NAMESPACE_ENTER;
@@ -768,6 +769,9 @@ TrackMarker::getMarkerImage(int time, const RectI& roi) const
                                        node->getEffectInstance().get());
     std::map<ImageComponents,ImagePtr> planes;
     EffectInstance::RenderRoIRetCode stat = input->getEffectInstance()->renderRoI(args, &planes);
+    
+    appPTR->getAppTLS()->cleanupTLSForThread();
+    
     if (stat != EffectInstance::eRenderRoIRetCodeOk || planes.empty()) {
         return std::make_pair(ImagePtr(),roi);
     }

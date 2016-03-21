@@ -47,6 +47,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/Project.h"
 #include "Engine/Curve.h"
+#include "Engine/TLSHolder.h"
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerSerialization.h"
 #include "Engine/ViewerInstance.h"
@@ -681,6 +682,8 @@ static bool trackStepLibMV(int trackIndex, const TrackArgsLibMV& args, int time)
         }*/
     } // if (track->mvMarker.source == mv::Marker::MANUAL) {
     
+    appPTR->getAppTLS()->cleanupTLSForThread();
+    
     //Refresh the marker for next iteration
     //int nextFrame = args.getForward() ? time + 1 : time - 1;
     //updateLibMvTrackMinimal(*track->natronMarker, nextFrame, args.getForward(), args.getFormatHeight(), &track->mvMarker);
@@ -695,6 +698,7 @@ TrackerContext::trackStepV1(int trackIndex, const TrackArgsV1& args, int time)
     KnobButton* selectedInstance = args.getInstances()[trackIndex];
     selectedInstance->getHolder()->onKnobValueChanged_public(selectedInstance,eValueChangedReasonNatronInternalEdited,time, ViewIdx(0),
                                                              true);
+    appPTR->getAppTLS()->cleanupTLSForThread();
     return true;
 }
 
@@ -2384,6 +2388,8 @@ TrackScheduler<TrackArgsType>::run()
         } // IsTrackingFlagSetter_RAII
         
         
+        appPTR->getAppTLS()->cleanupTLSForThread();
+        
         //Now that tracking is done update viewer once to refresh the whole visible portion
         
 
@@ -2403,6 +2409,7 @@ TrackScheduler<TrackArgsType>::run()
             QMutexLocker k(&_imp->abortRequestedMutex);
             if (_imp->abortRequested > 0) {
                 _imp->abortRequested = 0;
+                _imp->abortRequestedCond.wakeAll();
                 
             }
         }

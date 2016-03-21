@@ -86,7 +86,7 @@ CLANG_DIAG_ON(uninitialized)
 #define SELECTED_MARKER_KEYFRAME_WIDTH_SCREEN_PX 75
 #define MAX_TRACK_KEYS_TO_DISPLAY 10
 
-#define CORRELATION_ERROR_MAX_DISPLAY 0.001
+#define CORRELATION_ERROR_MAX_DISPLAY 0.2
 
 NATRON_NAMESPACE_ENTER;
 
@@ -1018,7 +1018,7 @@ TrackerGui::drawOverlays(double time,
                                      */
                                     
                                     double error = std::min(std::max(it2->second.second, 0.), CORRELATION_ERROR_MAX_DISPLAY);
-                                    double mappedError = 0.33 * error / CORRELATION_ERROR_MAX_DISPLAY;
+                                    double mappedError = 0.33 - 0.33 * error / CORRELATION_ERROR_MAX_DISPLAY;
                                     QColor c;
                                     c.setHsvF(mappedError, 1., 1.);
                                     glColor3f(c.redF(), c.greenF(), c.blueF());
@@ -1403,12 +1403,11 @@ TrackerGuiPrivate::computeSelectedMarkerCanonicalRect(RectD* rect) const
 }
 
 static Natron::Point toMagWindowPoint(const Natron::Point& ptnPoint,
-                                      const Natron::Point& selectedSearchWndBtmLeft,
-                                      const Natron::Point& selectedSearchWndTopRight,
+                                      const RectD& canonicalSearchWindow,
                                       const RectD& textureRectCanonical) {
     Natron::Point ret;
-    double xCenterPercent = (ptnPoint.x - selectedSearchWndBtmLeft.x) / (selectedSearchWndTopRight.x - selectedSearchWndBtmLeft.x);
-    double yCenterPercent = (ptnPoint.y - selectedSearchWndBtmLeft.y) / (selectedSearchWndTopRight.y - selectedSearchWndBtmLeft.y);
+    double xCenterPercent = (ptnPoint.x - canonicalSearchWindow.x1) / (canonicalSearchWindow.x2 - canonicalSearchWindow.x1);
+    double yCenterPercent = (ptnPoint.y - canonicalSearchWindow.y1) / (canonicalSearchWindow.y2 - canonicalSearchWindow.y1);
     ret.y = textureRectCanonical.y1 + yCenterPercent * (textureRectCanonical.y2 - textureRectCanonical.y1);
     ret.x = textureRectCanonical.x1 + xCenterPercent * (textureRectCanonical.x2 - textureRectCanonical.x1);
     return ret;
@@ -1548,7 +1547,9 @@ TrackerGuiPrivate::drawSelectedMarkerKeyframes(const std::pair<double,double>& p
                 searchBtmRight.y = searchBtmLeft.y;
                 
                 const TextureRect& texRect = it2->second->getTextureRect();
-                assert(texRect.h > 0);
+                if (texRect.h <= 0) {
+                    continue;
+                }
                 double par = texRect.w / (double)texRect.h;
                 RectD textureRectCanonical;
                 
@@ -1559,17 +1560,21 @@ TrackerGuiPrivate::drawSelectedMarkerKeyframes(const std::pair<double,double>& p
                 textureRectCanonical.y1 = textureRectCanonical.y2 - height;
                 
                 
+                RectD canonicalSearchWindow;
+                texRect.toCanonical_noClipping(0, texRect.par,&canonicalSearchWindow);
+                
                 //Remove any offset to the center to see the marker in the magnification window
-                double xCenterPercent = (center.x - searchBtmLeft.x + offset.x) / (searchTopRight.x - searchBtmLeft.x);
-                double yCenterPercent = (center.y - searchBtmLeft.y + offset.y) / (searchTopRight.y - searchBtmLeft.y);
+                double xCenterPercent = (center.x - canonicalSearchWindow.x1 + offset.x) / (canonicalSearchWindow.x2 - canonicalSearchWindow.x1);
+                double yCenterPercent = (center.y - canonicalSearchWindow.y1 + offset.y) / (canonicalSearchWindow.y2 - canonicalSearchWindow.y1);
                 Natron::Point centerPointCanonical;
                 centerPointCanonical.y = textureRectCanonical.y1 + yCenterPercent * (textureRectCanonical.y2 - textureRectCanonical.y1);
                 centerPointCanonical.x = textureRectCanonical.x1 + xCenterPercent * (textureRectCanonical.x2 - textureRectCanonical.x1);
+             
                 
-                Natron::Point innerTopLeft = toMagWindowPoint(topLeft, searchBtmLeft, searchTopRight, textureRectCanonical);
-                Natron::Point innerTopRight = toMagWindowPoint(topRight, searchBtmLeft, searchTopRight, textureRectCanonical);
-                Natron::Point innerBtmLeft = toMagWindowPoint(btmLeft, searchBtmLeft, searchTopRight, textureRectCanonical);
-                Natron::Point innerBtmRight = toMagWindowPoint(btmRight, searchBtmLeft, searchTopRight, textureRectCanonical);
+                Natron::Point innerTopLeft = toMagWindowPoint(topLeft, canonicalSearchWindow, textureRectCanonical);
+                Natron::Point innerTopRight = toMagWindowPoint(topRight, canonicalSearchWindow, textureRectCanonical);
+                Natron::Point innerBtmLeft = toMagWindowPoint(btmLeft, canonicalSearchWindow, textureRectCanonical);
+                Natron::Point innerBtmRight = toMagWindowPoint(btmRight, canonicalSearchWindow, textureRectCanonical);
                 
                 //Map texture
                 glColor4f(1., 1., 1., 1.);
@@ -1695,8 +1700,8 @@ TrackerGuiPrivate::drawSelectedMarkerTexture(const std::pair<double,double>& pix
                                              const Natron::Point& ptnTopRight,
                                              const Natron::Point& ptnBtmRight,
                                              const Natron::Point& ptnBtmLeft,
-                                             const Natron::Point& selectedSearchWndBtmLeft,
-                                             const Natron::Point& selectedSearchWndTopRight)
+                                             const Natron::Point& /*selectedSearchWndBtmLeft*/,
+                                             const Natron::Point& /*selectedSearchWndTopRight*/)
 {
     boost::shared_ptr<TrackMarker> marker = selectedMarker.lock();
     if (isTracking || !selectedMarkerTexture || !marker || !marker->isEnabled()) {
@@ -1709,27 +1714,38 @@ TrackerGuiPrivate::drawSelectedMarkerTexture(const std::pair<double,double>& pix
 
     
     const TextureRect& texRect = selectedMarkerTexture->getTextureRect();
-    RectI texCoords;
-    texCoords.x1 = (texRect.x1 - selectedMarkerTextureRoI.x1) / (double)selectedMarkerTextureRoI.width();
+    RectD texCoords;
+    /*texCoords.x1 = (texRect.x1 - selectedMarkerTextureRoI.x1) / (double)selectedMarkerTextureRoI.width();
     texCoords.y1 = (texRect.y1 - selectedMarkerTextureRoI.y1) / (double)selectedMarkerTextureRoI.height();
-    assert(texRect.x2 <=  selectedMarkerTextureRoI.x2);
-    texCoords.x2 = (texRect.x2 - selectedMarkerTextureRoI.x1) / (double)selectedMarkerTextureRoI.width();
-    assert(texRect.y2 <=  selectedMarkerTextureRoI.y2);
-    texCoords.y2 = (texRect.y2 - selectedMarkerTextureRoI.y1) / (double)selectedMarkerTextureRoI.height();
+    if (texRect.x2 <=  selectedMarkerTextureRoI.x2) {
+        texCoords.x2 = (texRect.x2 - selectedMarkerTextureRoI.x1) / (double)selectedMarkerTextureRoI.width();
+    } else {
+        texCoords.x2 = 1.;
+    }
+    if (texRect.y2 <=  selectedMarkerTextureRoI.y2) {
+        texCoords.y2 = (texRect.y2 - selectedMarkerTextureRoI.y1) / (double)selectedMarkerTextureRoI.height();
+    } else {
+        texCoords.y2 = 1.;
+    }*/
+    texCoords.x1 = texCoords.y1 = 0.;
+    texCoords.x2 = texCoords.y2 = 1.;
+    
+    RectD canonicalSearchWindow;
+    texRect.toCanonical_noClipping(0, texRect.par,&canonicalSearchWindow);
     
     Natron::Point centerPoint, innerTopLeft,innerTopRight,innerBtmLeft,innerBtmRight;
     
     //Remove any offset to the center to see the marker in the magnification window
-    double xCenterPercent = (ptnCenter.x - selectedSearchWndBtmLeft.x + offset.x) / (selectedSearchWndTopRight.x - selectedSearchWndBtmLeft.x);
-    double yCenterPercent = (ptnCenter.y - selectedSearchWndBtmLeft.y + offset.y) / (selectedSearchWndTopRight.y - selectedSearchWndBtmLeft.y);
+    double xCenterPercent = (ptnCenter.x - canonicalSearchWindow.x1 + offset.x) / (canonicalSearchWindow.x2 - canonicalSearchWindow.x1);
+    double yCenterPercent = (ptnCenter.y - canonicalSearchWindow.y1 + offset.y) / (canonicalSearchWindow.y2 - canonicalSearchWindow.y1);
     centerPoint.y = textureRectCanonical.y1 + yCenterPercent * (textureRectCanonical.y2 - textureRectCanonical.y1);
     centerPoint.x = textureRectCanonical.x1 + xCenterPercent * (textureRectCanonical.x2 - textureRectCanonical.x1);
     
     
-    innerTopLeft = toMagWindowPoint(ptnTopLeft, selectedSearchWndBtmLeft, selectedSearchWndTopRight, textureRectCanonical);
-    innerTopRight = toMagWindowPoint(ptnTopRight, selectedSearchWndBtmLeft, selectedSearchWndTopRight, textureRectCanonical);
-    innerBtmLeft = toMagWindowPoint(ptnBtmLeft, selectedSearchWndBtmLeft, selectedSearchWndTopRight, textureRectCanonical);
-    innerBtmRight = toMagWindowPoint(ptnBtmRight, selectedSearchWndBtmLeft, selectedSearchWndTopRight, textureRectCanonical);
+    innerTopLeft = toMagWindowPoint(ptnTopLeft, canonicalSearchWindow, textureRectCanonical);
+    innerTopRight = toMagWindowPoint(ptnTopRight, canonicalSearchWindow, textureRectCanonical);
+    innerBtmLeft = toMagWindowPoint(ptnBtmLeft, canonicalSearchWindow, textureRectCanonical);
+    innerBtmRight = toMagWindowPoint(ptnBtmRight, canonicalSearchWindow, textureRectCanonical);
     
     Transform::Point3D btmLeftTex,topLeftTex,topRightTex,btmRightTex;
     btmLeftTex.z = topLeftTex.z = topRightTex.z = btmRightTex.z = 1.;
@@ -3511,6 +3527,7 @@ TrackerGui::onTrackingEnded()
     _imp->trackBwButton->setDown(false);
     _imp->trackFwButton->setDown(false);
     _imp->isTracking = false;
+    _imp->viewer->getViewer()->redraw();
 }
 
 void
