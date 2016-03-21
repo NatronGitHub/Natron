@@ -342,25 +342,34 @@ ViewerTab::setInfoBarResolution(const Format & f)
 void
 ViewerTab::createTrackerInterface(NodeGui* n)
 {
-    boost::shared_ptr<MultiInstancePanel> multiPanel = n->getMultiInstancePanel();
-    if (!multiPanel) {
-        return;
-    }
     std::map<NodeGui*,TrackerGui*>::iterator found = _imp->trackerNodes.find(n);
     if (found != _imp->trackerNodes.end()) {
         return;
     }
     
-    boost::shared_ptr<TrackerPanel> trackPanel = boost::dynamic_pointer_cast<TrackerPanel>(multiPanel);
-
-    assert(trackPanel);
-    TrackerGui* tracker = new TrackerGui(trackPanel,this);
+    TrackerGui* tracker = 0;
+        if (n->getNode()->getEffectInstance()->isBuiltinTrackerNode()) {
+        TrackerPanel* panel = n->getTrackerPanel();
+        assert(panel);
+        tracker = new TrackerGui(panel,this);
+    } else {
+        assert(n->getNode()->isMultiInstance());
+        n->ensurePanelCreated();
+        boost::shared_ptr<MultiInstancePanel> multiPanel = n->getMultiInstancePanel();
+        if (multiPanel) {
+            boost::shared_ptr<TrackerPanelV1> trackPanel = boost::dynamic_pointer_cast<TrackerPanelV1>(multiPanel);
+            assert(trackPanel);
+            tracker = new TrackerGui(trackPanel,this);
+        }
+    }
+    
+    
     std::pair<std::map<NodeGui*,TrackerGui*>::iterator,bool> ret = _imp->trackerNodes.insert( std::make_pair(n,tracker) );
     assert(ret.second);
     if (!ret.second) {
         qDebug() << "ViewerTab::createTrackerInterface() failed";
         delete tracker;
-
+        
         return;
     }
     QObject::connect( n,SIGNAL(settingsPanelClosed(bool)),this,SLOT(onTrackerNodeGuiSettingsPanelClosed(bool)) );
@@ -372,8 +381,7 @@ ViewerTab::createTrackerInterface(NodeGui* n)
         if (buttonsBar) {
             buttonsBar->hide();
         }
-    }
-}
+    }}
 
 void
 ViewerTab::setTrackerInterface(NodeGui* n)

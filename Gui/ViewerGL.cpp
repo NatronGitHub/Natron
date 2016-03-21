@@ -635,13 +635,6 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
                 drawPickerPixel();
             }
         }
-        
-        if (_imp->isUpdatingTexture) {
-            glBegin(GL_LINES);
-            glVertex2d(_imp->lastTextureRoi.x2, _imp->lastTextureRoi.y2);
-            glVertex2d(_imp->lastTextureRoi.x2, _imp->lastTextureRoi.y1 - 1);
-            glEnd();
-        }
 
     } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
     glCheckError();
@@ -1377,7 +1370,9 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                      ImagePremultiplicationEnum premult,
                                      int textureIndex,
                                      const RectI& roi,
-                                     bool updateOnlyRoi)
+                                     bool updateOnlyRoi,
+                                     bool recenterViewer,
+                                     const Natron::Point& viewportCenter)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -1433,7 +1428,6 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         }
     }
     
-    _imp->isUpdatingTexture = updateOnlyRoi;
     if (updateOnlyRoi) {
         roi.toCanonical_noClipping(mipMapLevel, 1., &_imp->lastTextureRoi);
     }
@@ -1476,7 +1470,12 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         _imp->memoryHeldByLastRenderedImages[textureIndex] = 0;
     }
     
-
+    if (recenterViewer) {
+        QMutexLocker k(&_imp->zoomCtxMutex);
+        double curCenterX = (_imp->zoomCtx.left() + _imp->zoomCtx.right()) / 2.;
+        double curCenterY = (_imp->zoomCtx.bottom() + _imp->zoomCtx.top()) / 2.;
+        _imp->zoomCtx.translate(viewportCenter.x - curCenterX, viewportCenter.y - curCenterY);
+    }
 
     if (!tiles.empty() && tiles.front()) {
         const ImagePtr& firstTile = tiles.front();
@@ -2351,6 +2350,21 @@ ViewerGL::toZoomCoordinates(const QPointF& position) const
 {
     QMutexLocker l(&_imp->zoomCtxMutex);
     return _imp->zoomCtx.toZoomCoordinates(position.x(), position.y());
+}
+
+QPointF
+ViewerGL::toWidgetCoordinates(const QPointF& position) const
+{
+    QMutexLocker l(&_imp->zoomCtxMutex);
+    return _imp->zoomCtx.toWidgetCoordinates(position.x(), position.y());
+}
+
+void
+ViewerGL::getTopLeftAndBottomRightInZoomCoords(QPointF* topLeft, QPointF* bottomRight) const
+{
+    QMutexLocker l(&_imp->zoomCtxMutex);
+    *topLeft = _imp->zoomCtx.toZoomCoordinates(0, 0);
+    *bottomRight = _imp->zoomCtx.toZoomCoordinates(_imp->zoomCtx.screenWidth() - 1, _imp->zoomCtx.screenHeight() - 1);
 }
 
 // used to update the information bar at the bottom of the viewer (not for the ctrl-click color picker)

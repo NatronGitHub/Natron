@@ -295,6 +295,10 @@ public:
     TableItem * itemAt(const QPoint &p) const;
     TableItem * itemAt(int x, int y) const;
     QRect visualItemRect(const TableItem *item) const;
+    
+    TableItem* editedItem() const;
+    
+    TableItem* currentItem() const;
 
 Q_SIGNALS:
 

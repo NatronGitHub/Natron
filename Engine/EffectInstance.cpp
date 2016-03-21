@@ -2723,7 +2723,6 @@ EffectInstance::evaluate(bool isSignificant,
   
     NodePtr node = getNode();
 
-
     if (refreshMetadatas && node->isNodeCreated()) {
         refreshMetaDatas_public(true);
     }
@@ -2919,6 +2918,13 @@ EffectInstance::setCurrentViewportForOverlays_public(OverlaySupport* viewport)
     getNode()->setCurrentViewportForHostOverlays(viewport);
     setCurrentViewportForOverlays(viewport);
 }
+
+void
+EffectInstance::setDoingInteractAction(bool doing)
+{
+    _imp->setDuringInteractAction(doing);
+}
+
 
 void
 EffectInstance::drawOverlay_public(double time,
@@ -3925,7 +3931,7 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
 bool
 EffectInstance::getCreateChannelSelectorKnob() const
 {
-    return !isMultiPlanar() && !isReader() && !isWriter() && !isTrackerNode();
+    return !isMultiPlanar() && !isReader() && !isWriter() && !isTrackerNodePlugin();
 }
 
 int
@@ -4021,6 +4027,27 @@ EffectInstance::getOverlayInteractRenderScale() const
 {
     RenderScale r(1.);
     return r;
+}
+
+void
+EffectInstance::addOverlaySlaveParam(const boost::shared_ptr<KnobI>& knob)
+{
+    _imp->overlaySlaves.push_back(knob);
+}
+
+bool
+EffectInstance::isOverlaySlaveParam(const KnobI* knob) const
+{
+    for (std::list<boost::weak_ptr<KnobI> >::const_iterator it = _imp->overlaySlaves.begin(); it!=_imp->overlaySlaves.end(); ++it) {
+        boost::shared_ptr<KnobI> k = it->lock();
+        if (!k) {
+            continue;
+        }
+        if (k.get() == knob) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void

@@ -919,8 +919,8 @@ Knob<T>::setValue(const T & v,
                   KeyFrame* newKey,
                   bool hasChanged)
 {
-    if ( (0 > dimension) || ( dimension > (int)_values.size() ) ) {
-        throw std::invalid_argument("Knob::setValue(): Dimension out of range");
+    if (dimension < 0 || dimension >= (int)_values.size()) {
+        return eValueChangedReturnCodeNothingChanged;
     }
 
     KnobHelper::ValueChangedReturnCodeEnum ret = eValueChangedReturnCodeNoKeyframeAdded;
@@ -1289,8 +1289,11 @@ Knob<T>::setValueAtTime(double time,
                         KeyFrame* newKey,
                         bool hasChanged)
 {
+    if (dimension < 0 || dimension >= (int)_values.size()) {
+        return eValueChangedReturnCodeNothingChanged;
+    }
     assert(newKey);
-    assert(dimension >= 0 && dimension < getDimension());
+
     if (!canAnimate() || !isAnimationEnabled()) {
         qDebug() << "WARNING: Attempting to call setValueAtTime on " << getName().c_str() << " which does not have animation enabled.";
         setValue(v, view, dimension, reason, newKey);
@@ -1413,6 +1416,7 @@ Knob<T>::setValueAtTime(double time,
     if (newKeyFrame) {
         ret = eValueChangedReturnCodeKeyframeAdded;
     }
+
 
     if (holder) {
         holder->setHasAnimation(true);
@@ -1936,7 +1940,7 @@ Knob<T>::onTimeChanged(bool isPlayback, double time)
     }
     bool shouldRefresh = false;
     for (int i = 0; i < dims; ++i) {
-        if (getKnobGuiPointer() && _signalSlotHandler && (isAnimated(i, ViewIdx(0)) || !getExpression(i).empty())) {
+        if (_signalSlotHandler && (isAnimated(i, ViewIdx(0)) || !getExpression(i).empty())) {
             shouldRefresh = true;
         }
     }

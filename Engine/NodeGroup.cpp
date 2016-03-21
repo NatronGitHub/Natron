@@ -355,12 +355,11 @@ NodeCollection::refreshViewersAndPreviews()
     assert(QThread::currentThread() == qApp->thread());
     
     if ( !getApplication()->isBackground() ) {
-        double time = _imp->app->getTimeLine()->currentFrame();
         
         NodesList nodes = getNodes();
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             assert(*it);
-            (*it)->computePreviewImage(time);
+            (*it)->refreshPreviewsAfterProjectLoad();
             NodeGroup* isGrp = (*it)->isEffectGroup();
             if (isGrp) {
                 isGrp->refreshViewersAndPreviews();

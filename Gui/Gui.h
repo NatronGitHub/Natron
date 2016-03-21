@@ -411,6 +411,11 @@ public:
      * This will create new widgets and enrich the interface of the viewer tab.
      **/
     void createNewTrackerInterface(NodeGui* n);
+    
+    /**
+     * @brief Set the TrackerGui for the node n to be active on all viewers.
+     **/
+    void setTrackerInterface(NodeGui* n);
 
     void removeTrackerInterface(NodeGui* n,bool pluginsly);
 

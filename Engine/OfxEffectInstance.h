@@ -142,7 +142,7 @@ public:
     virtual bool isVideoWriter() const OVERRIDE FINAL WARN_UNUSED_RETURN ;
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isGeneratorAndFilter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isTrackerNode() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isTrackerNodePlugin() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isOpenFX() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;

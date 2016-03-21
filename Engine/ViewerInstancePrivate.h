@@ -141,10 +141,14 @@ public:
     , activateInputChangedFromViewer(false)
     , gammaLookupMutex()
     , gammaLookup()
-    , lastRotoPaintTickParamsMutex()
-    , lastRotoPaintTickParams()
+    , lastRenderParamsMutex()
+    , lastRenderParams()
     , currentlyUpdatingOpenGLViewerMutex()
     , currentlyUpdatingOpenGLViewer(false)
+    , partialUpdateRects()
+    , viewportCenter()
+    , viewportCenterSet(false)
+    , isDoingPartialUpdates(false)
     , renderAgeMutex()
     , renderAge()
     , displayAge()
@@ -407,11 +411,28 @@ public:
     std::vector<float> gammaLookup; // protected by gammaLookupMutex
     
     //When painting, this is the last texture we've drawn onto so that we can update only the specific portion needed
-    mutable QMutex lastRotoPaintTickParamsMutex;
-    boost::shared_ptr<UpdateViewerParams> lastRotoPaintTickParams[2];
+    mutable QMutex lastRenderParamsMutex;
+    boost::shared_ptr<UpdateViewerParams> lastRenderParams[2];
     
     mutable QMutex currentlyUpdatingOpenGLViewerMutex;
     bool currentlyUpdatingOpenGLViewer;
+    
+    /*
+     * @brief If this list is not empty, this is the list of canonical rectangles we should update on the viewer, completly
+     * disregarding the RoI. This is protected by viewerParamsMutex
+     */
+    std::list<RectD> partialUpdateRects;
+    
+    /*
+     * @brief If set, the viewport center will be updated to this point upon the next update of the texture, this is protected by
+     * viewerParamsMutex
+     */
+    Natron::Point viewportCenter;
+    bool viewportCenterSet;
+    
+    //True if during tracking
+    bool isDoingPartialUpdates;
+
     
     mutable QMutex renderAgeMutex; // protects renderAge lastRenderAge currentRenderAges
     U64 renderAge[2];

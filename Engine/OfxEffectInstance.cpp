@@ -196,7 +196,6 @@ struct OfxEffectInstancePrivate
     boost::scoped_ptr<OfxImageEffectInstance> effect;
     std::string natronPluginID; //< small cache to avoid calls to generateImageEffectClassName
     boost::scoped_ptr<OfxOverlayInteract> overlayInteract; // ptr to the overlay interact if any
-    std::list< void* > overlaySlaves; //void* to actually a KnobI* but stored as void to avoid dereferencing
     mutable QReadWriteLock preferencesLock;
     
     mutable QReadWriteLock renderSafetyLock;
@@ -236,7 +235,6 @@ struct OfxEffectInstancePrivate
     : effect()
     , natronPluginID()
     , overlayInteract()
-    , overlaySlaves()
     , preferencesLock(QReadWriteLock::Recursive)
     , renderSafetyLock()
     , renderSafety(eRenderSafetyUnsafe)
@@ -602,7 +600,7 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
             if (!param) {
                 qDebug() << "OfxEffectInstance::tryInitializeOverlayInteracts(): slaveToParam " << slaveParams[i].c_str() << " not available";
             } else {
-                _imp->overlaySlaves.push_back((void*)param.get());
+                addOverlaySlaveParam(param);
             }
         }
         
@@ -695,7 +693,7 @@ OfxEffectInstance::isWriter() const
 }
 
 bool
-OfxEffectInstance::isTrackerNode() const
+OfxEffectInstance::isTrackerNodePlugin() const
 {
     assert(_imp->context != eContextNone);
     return _imp->context == eContextTracker;

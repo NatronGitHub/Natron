@@ -110,6 +110,18 @@ public:
      * @brief Go to the nearest keyframe after the application's timeline's current time.
      **/
     virtual void goToNextKeyframe() {}
+
+    
+    /*
+     * @brief Same as normal keyframes except that these are keyframes generally associated to a more global state, 
+     * such as track user keyframes.
+     */
+    virtual void removeAllUserKeyframesIndicators() {}
+    virtual void addUserKeyframeIndicator(SequenceTime /*time*/) {}
+    virtual void addUserMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime> & /*keys*/,bool /*emitSignal*/) {}
+    virtual void removeUserKeyFrameIndicator(SequenceTime /*time*/) {}
+    virtual void removeUserMultipleKeyframeIndicator(const std::list<SequenceTime> & /*keys*/,bool /*emitSignal*/) {}
+    virtual void getUserKeyframes(std::list<SequenceTime>* /*keys*/) const { }
 };
 
 NATRON_NAMESPACE_EXIT;

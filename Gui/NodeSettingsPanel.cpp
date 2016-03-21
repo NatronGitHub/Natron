@@ -49,6 +49,7 @@
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
+#include "Gui/TrackerPanel.h"
 #include "Gui/RotoPanel.h"
 #include "Gui/Utils.h" // convertFromPlainText
 
@@ -132,6 +133,17 @@ NodeSettingsPanel::initializeRotoPanel()
         return NULL;
     }
 }
+
+TrackerPanel*
+NodeSettingsPanel::initializeTrackerPanel()
+{
+    if (getNode()->getNode()->getEffectInstance()->isBuiltinTrackerNode()) {
+        return new TrackerPanel(_nodeGUI.lock(),this);
+    } else {
+        return NULL;
+    }
+}
+
 
 QColor
 NodeSettingsPanel::getCurrentColor() const

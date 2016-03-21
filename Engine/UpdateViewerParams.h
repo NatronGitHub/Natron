@@ -71,6 +71,8 @@ public:
     , roi()
     , updateOnlyRoi(false)
     , isViewerPaused(false)
+    , recenterViewport(false)
+    , viewportCenter()
     {
     }
     
@@ -113,6 +115,10 @@ public:
     RectI roi;
     bool updateOnlyRoi;
     bool isViewerPaused;
+    
+    bool recenterViewport;
+    Natron::Point viewportCenter;
+
 };
 
 

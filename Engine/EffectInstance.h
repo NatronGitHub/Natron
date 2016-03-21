@@ -93,13 +93,13 @@
 #define PLUGINID_NATRON_ROTO (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Roto")
 #define PLUGINID_NATRON_ROTOSMEAR (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.RotoSmear")
 #define PLUGINID_NATRON_PRECOMP     (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Precomp")
+#define PLUGINID_NATRON_TRACKER   (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Tracker")
 #define PLUGINID_NATRON_JOINVIEWS     (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.JoinViews")
 #define PLUGINID_NATRON_READ    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Read")
 #define PLUGINID_NATRON_WRITE    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Write")
 #define PLUGINID_NATRON_ONEVIEW    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.OneView")
 
 
-#define kNatronTLSEffectPointerProperty "NatronTLSEffectPointerProperty"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -335,7 +335,15 @@ public:
     /**
      * @brief Returns true if this node is a tracker
      **/
-    virtual bool isTrackerNode() const WARN_UNUSED_RETURN
+    virtual bool isTrackerNodePlugin() const WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+
+    /**
+     * @brief Returns true if this is our tracking node.
+     **/
+    virtual bool isBuiltinTrackerNode() const WARN_UNUSED_RETURN
     {
         return false;
     }
@@ -1467,6 +1475,8 @@ public:
 
     virtual bool isDoingInteractAction() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    void setDoingInteractAction(bool doing);
+
     /* @brief Overlay support:
      * Just overload this function in your operator.
      * No need to include any OpenGL related header.
@@ -1480,6 +1490,14 @@ public:
     }
 
     virtual void redrawOverlayInteract();
+
+    /**
+    * @brief Flag that the overlays should be redrawn when this knob changes.
+    **/
+    void addOverlaySlaveParam(const boost::shared_ptr<KnobI>& knob);
+
+    bool isOverlaySlaveParam(const KnobI* knob) const;
+
 
     /**
      * @brief Returns the components available on each input for this effect at the given time.

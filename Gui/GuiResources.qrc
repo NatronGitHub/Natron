@@ -296,6 +296,15 @@
         <file>Resources/Images/oneViewNode.png</file>
         <file>Resources/Images/joinViewsNode.png</file>
         <file>Resources/Images/rotoToolPencil.png</file>
+        <file>Resources/Images/addUserKey.png</file>
+        <file>Resources/Images/hideTrackError.png</file>
+        <file>Resources/Images/removeUserKey.png</file>
+        <file>Resources/Images/resetTrackOffset.png</file>
+        <file>Resources/Images/showTrackError.png</file>
+        <file>Resources/Images/centerOnTrack.png</file>
+        <file>Resources/Images/createKeyOnMoveOn.png</file>
+        <file>Resources/Images/createKeyOnMoveOff.png</file>
+        <file>Resources/Images/removeUserKeys.png</file>
         <file>Resources/Images/AutoContrast.png</file>
         <file>Resources/Images/AutoContrastON.png</file>
         <file>Resources/Images/merge_average.png</file>
@@ -334,5 +343,6 @@
         <file>Resources/Images/merge_xor.png</file>
         <file>Resources/Images/pauseEnabled.png</file>
         <file>Resources/Images/pauseDisabled.png</file>
+        <file>Resources/Images/trackerNodeIcon.png</file>
     </qresource>
 </RCC>

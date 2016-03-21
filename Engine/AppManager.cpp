@@ -88,6 +88,7 @@
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoSmear.h"
 #include "Engine/StandardPaths.h"
+#include "Engine/TrackerNode.h"
 #include "Engine/ThreadPool.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h" // RenderStatsMap
@@ -1128,12 +1129,14 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
     registerBuiltInPlugin<RotoNode>(QString::fromUtf8(NATRON_IMAGES_PATH "rotoNodeIcon.png"), false, false);
     registerBuiltInPlugin<RotoSmear>(QString::fromUtf8(""), false, true);
     registerBuiltInPlugin<PrecompNode>(QString::fromUtf8(NATRON_IMAGES_PATH "precompNodeIcon.png"), false, false);
+    registerBuiltInPlugin<TrackerNode>(QString::fromUtf8(NATRON_IMAGES_PATH "trackerNodeIcon.png"), false, false);
     registerBuiltInPlugin<JoinViewsNode>(QString::fromUtf8(NATRON_IMAGES_PATH "joinViewsNode.png"), false, false);
     registerBuiltInPlugin<OneViewNode>(QString::fromUtf8(NATRON_IMAGES_PATH "oneViewNode.png"), false, false);
 #ifdef NATRON_ENABLE_IO_META_NODES
     registerBuiltInPlugin<ReadNode>(QString::fromUtf8(NATRON_IMAGES_PATH "readImage.png"), false, false);
     registerBuiltInPlugin<WriteNode>(QString::fromUtf8(NATRON_IMAGES_PATH "writeImage.png"), false, false);
 #endif
+
     if (!isBackground()) {
         registerBuiltInPlugin<ViewerInstance>(QString::fromUtf8(NATRON_IMAGES_PATH "viewer_icon.png"), false, false);
     }
@@ -1939,6 +1942,7 @@ AppManager::registerEngineMetaTypes() const
     qRegisterMetaType<RenderStatsMap>("RenderStatsMap");
     qRegisterMetaType<ViewIdx>("ViewIdx");
     qRegisterMetaType<ViewSpec>("ViewSpec");
+    qRegisterMetaType<boost::shared_ptr<Node> >("boost::shared_ptr<Node>");
 #if QT_VERSION < 0x050000
     qRegisterMetaType<QAbstractSocket::SocketState>("SocketState");
 #endif

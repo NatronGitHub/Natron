@@ -266,6 +266,8 @@ NodeGui::initialize(NodeGraph* dag,
             assert(panel);
             panel->onChildCreated(internalNode);
         }
+    } else if (internalNode->getEffectInstance()->isBuiltinTrackerNode()) {
+        ensurePanelCreated();
     }
     
     //Refresh the merge operator icon 
@@ -404,6 +406,9 @@ NodeGui::ensurePanelCreated()
     assert(propsLayout);
     NodeGuiPtr thisShared = shared_from_this();
     _settingsPanel = createPanel(propsLayout,thisShared);
+    
+    initializeKnobs();
+    beginEditKnobs();
     if (_settingsPanel) {
         QObject::connect( _settingsPanel,SIGNAL(nameChanged(QString)),this,SLOT(setName(QString)) );
         QObject::connect( _settingsPanel,SIGNAL(closeChanged(bool)), this, SLOT(onSettingsPanelClosed(bool)) );
@@ -411,12 +416,11 @@ NodeGui::ensurePanelCreated()
         if (getNode()->isRotoPaintingNode()) {
             _graph->getGui()->setRotoInterface(this);
         }
-        if (getNode()->isTrackerNode()) {
-            _graph->getGui()->createNewTrackerInterface(this);
+        if ((getNode()->isTrackerNodePlugin() && !getNode()->getParentMultiInstance()) || getNode()->getEffectInstance()->isBuiltinTrackerNode()) {
+            _graph->getGui()->setTrackerInterface(this);
         }
     }
-    initializeKnobs();
-    beginEditKnobs();
+    
     gui->addNodeGuiToCurveEditor(thisShared);
     gui->addNodeGuiToDopeSheetEditor(thisShared);
     
@@ -478,8 +482,8 @@ NodeGui::createPanel(QVBoxLayout* container,
     if (node->getEffectInstance()->getMakeSettingsPanel()) {
         assert(container);
         boost::shared_ptr<MultiInstancePanel> multiPanel;
-        if ( node->isTrackerNode() && node->isMultiInstance() && node->getParentMultiInstanceName().empty() ) {
-            multiPanel.reset( new TrackerPanel(thisAsShared) );
+        if ( node->isTrackerNodePlugin() && node->isMultiInstance() && node->getParentMultiInstanceName().empty() ) {
+            multiPanel.reset( new TrackerPanelV1(thisAsShared) );
 
             ///This is valid only if the node is a multi-instance and this is the main instance.
             ///The "real" panel showed on the gui will be the _settingsPanel, but we still need to create
@@ -3159,7 +3163,11 @@ boost::shared_ptr<MultiInstancePanel> NodeGui::getMultiInstancePanel() const
     }
 }
 
-
+TrackerPanel*
+NodeGui::getTrackerPanel() const
+{
+    return _settingsPanel ? _settingsPanel->getTrackerPanel() : 0;
+}
 
 void
 NodeGui::setParentMultiInstance(const NodeGuiPtr & node)

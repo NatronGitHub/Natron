@@ -300,6 +300,19 @@ public:
     
     void markAllOnGoingRendersAsAborted();
     
+    /**
+     * @brief Used to re-render only selected portions of the texture.
+     * This requires that the renderviewer_internal() function gets called on a single thread
+     * because the texture will get resized (i.e copied and swapped) to fit new RoIs. 
+     * After this call, the function isDoingPartialUpdates() will return true until
+     * clearPartialUpdateParams() gets called.
+     **/
+    void setPartialUpdateParams(const std::list<RectD>& rois, bool recenterViewer);
+    void clearPartialUpdateParams();
+    
+    void setDoingPartialUpdates(bool doing);
+    bool isDoingPartialUpdates() const;
+    
     virtual void reportStats(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats) OVERRIDE FINAL;
     
     ///Only callable on MT

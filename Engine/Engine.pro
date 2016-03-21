@@ -55,6 +55,18 @@ INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../Global
 INCLUDEPATH += $$PWD/../libs/SequenceParsing
 
+
+#include libmv
+INCLUDEPATH += $$PWD/../libs/libmv
+INCLUDEPATH += $$PWD/../libs/libmv/third_party/ceres/config
+INCLUDEPATH += $$PWD/../libs/libmv/third_party/ceres/include
+INCLUDEPATH += $$PWD/../libs/libmv/third_party/ceres/internal
+INCLUDEPATH += $$PWD/../libs/libmv/third_party/gflags
+INCLUDEPATH += $$PWD/../libs/libmv/third_party/gflags/gflags
+INCLUDEPATH += $$PWD/../libs/libmv/third_party/glog/src
+INCLUDEPATH += $$PWD/../libs/libmv/third_party
+INCLUDEPATH += $$PWD/../libs/libmv/third_party/Eigen3
+
 INCLUDEPATH += $$PWD/../google-breakpad/src
 
 #To overcome wrongly generated #include <...> by shiboken
@@ -64,11 +76,11 @@ DEPENDPATH += $$PWD/NatronEngine
 DEPENDPATH += $$PWD/../Global
 
 win32-msvc* {
-	CONFIG(64bit) {
+        CONFIG(64bit) {
                 QMAKE_LFLAGS += /MACHINE:X64
         } else {
                 QMAKE_LFLAGS += /MACHINE:X86
-	}
+        }
 }
 
 SOURCES += \
@@ -170,6 +182,9 @@ SOURCES += \
     ThreadPool.cpp \
     TimeLine.cpp \
     Timer.cpp \
+    TrackerContext.cpp \
+    TrackMarker.cpp \
+    TrackerNode.cpp \
     TLSHolder.cpp \
     Transform.cpp \
     ViewerInstance.cpp \
@@ -356,6 +371,10 @@ HEADERS += \
     TimeLine.h \
     TimeLineKeyFrames.h \
     Timer.h \
+    TrackerContext.h \
+    TrackerNode.h \
+    TrackMarker.h \
+    TrackerSerialization.h \
     TLSHolder.h \
     TLSHolderImpl.h \
     Transform.h \
@@ -479,7 +498,7 @@ OTHER_FILES += \
 # NatronEngine/pathparam_wrapper.cpp		\
 # NatronEngine/roto_wrapper.cpp			\
 # NatronEngine/stringparam_wrapper.cpp		\
-# NatronEngine/stringparambase_wrapper.cpp    
+# NatronEngine/stringparambase_wrapper.cpp
 
 # defineReplace(shibokenWorkaround) {
 #     SOURCES += $$GENERATED_SOURCES

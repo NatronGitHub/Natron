@@ -182,6 +182,46 @@ win32-msvc*{
 	else:unix: PRE_TARGETDEPS += $$OUT_PWD/../HostSupport/libHostSupport.a
 }
 
+################
+# LibMV
+
+INCLUDEPATH += $$PWD/../libs/libmv
+DEPENDPATH += $$PWD/../libs/libmv
+
+win32-msvc*{
+        CONFIG(64bit) {
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libmv/x64/release/ -lLibMV
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libmv/x64/debug/ -lLibMV
+        } else {
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libmv/win32/release/ -lLibMV
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libmv/win32/debug/ -lLibMV
+        }
+} else {
+        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libmv/release/ -lLibMV
+        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libmv/debug/ -lLibMV
+        else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libmv/build/Release/ -lLibMV
+        else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libmv/build/Debug/ -lLibMV
+        else:unix: LIBS += -L$$OUT_PWD/../libmv/ -lLibMV
+}
+
+win32-msvc*{
+        CONFIG(64bit) {
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libmv/x64/release/libLibMV.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libmv/x64/debug/libLibMV.lib
+        } else {
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libmv/win32/release/libLibMV.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libmv/win32/debug/libLibMV.lib
+        }
+} else {
+        win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libmv/release/libLibMV.a
+        else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libmv/debug/libLibMV.a
+        else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libmv/release/libLibMV.lib
+        else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libmv/debug/libLibMV.lib
+        else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libmv/build/Release/libLibMV.a
+        else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libmv/build/Debug/libLibMV.a
+        else:unix: PRE_TARGETDEPS += $$OUT_PWD/../libmv/libLibMV.a
+}
+
 
 ################
 # BreakpadClient

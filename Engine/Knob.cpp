@@ -3068,9 +3068,7 @@ KnobHelper::deleteAnimationConditional(double time,
     if (holder && holder->getApp()) {
         holder->getApp()->removeMultipleKeyframeIndicator(keysRemoved, true);
     }
-    if (_signalSlotHandler) {
-        _signalSlotHandler->s_animationRemoved(view, dimension);
-    }
+    
 
 }
 

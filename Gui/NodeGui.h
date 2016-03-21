@@ -319,6 +319,9 @@ public:
     }
     
     
+    TrackerPanel* getTrackerPanel() const;
+    
+    
     void setKnobLinksVisible(bool visible);
     
     /**

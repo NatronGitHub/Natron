@@ -111,7 +111,9 @@ public:
                                             ImagePremultiplicationEnum premult,
                                             int textureIndex,
                                             const RectI& roi,
-                                            bool updateOnlyRoi) = 0;
+                                            bool updateOnlyRoi,
+                                            bool recenterViewer,
+                                            const Natron::Point& viewportCenter) = 0;
 
     /**
      * @brief Called when the input of a viewer should render black.

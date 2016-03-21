@@ -133,6 +133,8 @@ public:
 
     ///If the node can have a roto context, create it
     void createRotoContextConditionnally();
+    
+    void createTrackerContextConditionnally();
 
     ///function called by EffectInstance to create a knob
     template <class K>
@@ -260,7 +262,7 @@ public:
     /**
      * @brief Returns true if this node is a tracker
      **/
-    bool isTrackerNode() const;
+    bool isTrackerNodePlugin() const;
     
     bool isPointTrackerNode() const;
 
@@ -281,7 +283,9 @@ public:
      * @brief Returns a pointer to the rotoscoping context if the node is in the paint context, otherwise NULL.
      **/
     boost::shared_ptr<RotoContext> getRotoContext() const;
-
+    
+    boost::shared_ptr<TrackerContext> getTrackerContext() const;
+    
     U64 getRotoAge() const;
     
     /**
@@ -1160,6 +1164,8 @@ public:
     
     QString makeHTMLDocumentation() const;
     
+    void refreshPreviewsAfterProjectLoad();
+
     enum StreamWarningEnum {
         
         //A bitdepth conversion occurs and converts to a lower bitdepth the stream,
@@ -1262,6 +1268,8 @@ public Q_SLOTS:
     void doComputeHashOnMainThread();
     
 Q_SIGNALS:
+    
+    void s_refreshPreviewsAfterProjectLoadRequested();
     
     void hideInputsKnobChanged(bool hidden);
     

@@ -79,8 +79,8 @@ GuiApplicationManager::getIcon(PixmapEnum e,
                                QPixmap* pix) const
 {
     int iconSet = appPTR->getCurrentSettings()->getIconsBlackAndWhite() ? 2 : 3;
-    std::string iconSetStr = QString::number(iconSet).toStdString();
 
+    std::string iconSetStr = QString::number(iconSet).toStdString();
     if ( !QPixmapCache::find(QString::number(e),pix) ) {
         std::string path;
         switch (e) {
@@ -259,8 +259,8 @@ GuiApplicationManager::getIcon(PixmapEnum e,
             case NATRON_PIXMAP_COLOR_PICKER:
                 path = NATRON_IMAGES_PATH "color_picker.png";
                 break;
-
-
+                
+                
             case NATRON_PIXMAP_IO_GROUPING:
                 path = NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/image_grouping_" + iconSetStr + ".png";
                 break;
@@ -306,8 +306,8 @@ GuiApplicationManager::getIcon(PixmapEnum e,
             case NATRON_PIXMAP_PAINT_GROUPING:
                 path = NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/paint_grouping_" + iconSetStr + ".png";
                 break;
-
-
+                
+                
             case NATRON_PIXMAP_OPEN_EFFECTS_GROUPING:
                 path = NATRON_IMAGES_PATH "openeffects.png";
                 break;
@@ -323,7 +323,7 @@ GuiApplicationManager::getIcon(PixmapEnum e,
             case NATRON_PIXMAP_WRITE_IMAGE:
                 path = NATRON_IMAGES_PATH "writeImage.png";
                 break;
-
+                
             case NATRON_PIXMAP_APP_ICON:
                 path = NATRON_APPLICATION_ICON_PATH;
                 break;
@@ -492,6 +492,33 @@ GuiApplicationManager::getIcon(PixmapEnum e,
             case NATRON_PIXMAP_ADD_TRACK:
                 path = NATRON_IMAGES_PATH "addTrack.png";
                 break;
+            case NATRON_PIXMAP_ADD_USER_KEY:
+                path = NATRON_IMAGES_PATH "addUserKey.png";
+                break;
+            case NATRON_PIXMAP_REMOVE_USER_KEY:
+                path = NATRON_IMAGES_PATH "removeUserKey.png";
+                break;
+            case NATRON_PIXMAP_RESET_TRACK_OFFSET:
+                path = NATRON_IMAGES_PATH "resetTrackOffset.png";
+                break;
+            case NATRON_PIXMAP_HIDE_TRACK_ERROR:
+                path = NATRON_IMAGES_PATH "hideTrackError.png";
+                break;
+            case NATRON_PIXMAP_SHOW_TRACK_ERROR:
+                path = NATRON_IMAGES_PATH "showTrackError.png";
+                break;
+            case NATRON_PIXMAP_CREATE_USER_KEY_ON_MOVE_ON:
+                path = NATRON_IMAGES_PATH "createKeyOnMoveOn.png";
+                break;
+            case NATRON_PIXMAP_CREATE_USER_KEY_ON_MOVE_OFF:
+                path = NATRON_IMAGES_PATH "createKeyOnMoveOff.png";
+                break;
+            case NATRON_PIXMAP_RESET_USER_KEYS:
+                path = NATRON_IMAGES_PATH "removeUserKeys.png";
+                break;
+            case NATRON_PIXMAP_CENTER_VIEWER_ON_TRACK:
+                path = NATRON_IMAGES_PATH "centerOnTrack.png";
+                break;
             case NATRON_PIXMAP_SCRIPT_CLEAR_OUTPUT:
                 path = NATRON_IMAGES_PATH "clearOutput.png";
                 break;
@@ -520,7 +547,7 @@ GuiApplicationManager::getIcon(PixmapEnum e,
                 path = NATRON_IMAGES_PATH "saveScript.png";
                 break;
                 
-
+                
             case NATRON_PIXMAP_MERGE_ATOP:
                 path = NATRON_IMAGES_PATH "merge_atop.png";
                 break;
@@ -715,24 +742,25 @@ GuiApplicationManager::getIcon(PixmapEnum e,
             case NATRON_PIXMAP_INTERP_CURVE_Z:
                 path = NATRON_IMAGES_PATH "interp_curve_z.png";
                 break;
-            // DON'T add a default: case here
+                // DON'T add a default: case here
         } // switch
         if (path.empty()) {
             assert(!"Missing image.");
         }
         // put a breakpoint in png_chunk_report to catch the error "libpng warning: iCCP: known incorrect sRGB profile"
-
+        
         // old version:
         //QImage img;
         //img.load(path);
         //*pix = QPixmap::fromImage(img);
-
+        
         // new version:
         pix->load(QString::fromUtf8(path.c_str()));
 
         QPixmapCache::insert(QString::number(e), *pix);
     }
 } // getIcon
+
 
 void
 GuiApplicationManager::getIcon(PixmapEnum e,

@@ -295,7 +295,17 @@ public:
 
     virtual void getKeyframes(std::list<SequenceTime>* keys) const OVERRIDE FINAL;
     
-   
+    virtual void removeAllUserKeyframesIndicators() OVERRIDE FINAL;
+    
+    virtual void addUserKeyframeIndicator(SequenceTime time) OVERRIDE FINAL;
+    
+    virtual void addUserMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime> & keys,bool emitSignal) OVERRIDE FINAL;
+    
+    virtual void removeUserKeyFrameIndicator(SequenceTime time) OVERRIDE FINAL;
+    
+    virtual void removeUserMultipleKeyframeIndicator(const std::list<SequenceTime> & keys,bool emitSignal) OVERRIDE FINAL;
+    
+    virtual void getUserKeyframes(std::list<SequenceTime>* keys) const OVERRIDE FINAL;
     ///////////////// END OVERRIDEN FROM TIMELINEKEYFRAMES
     
 private:

@@ -600,6 +600,15 @@ Settings::initializeKnobsAppearance()
     _keyframeColor->setAddNewLine(false);
     _guiColors->addKnob(_keyframeColor);
     
+    _trackerKeyframeColor =  AppManager::createKnob<KnobColor>(this, "Track User Keyframes",3);
+    _trackerKeyframeColor->setName("trackUserKeyframe");
+    _trackerKeyframeColor->setAnimationEnabled(false);
+    _trackerKeyframeColor->setSimplified(true);
+    _trackerKeyframeColor->setAddNewLine(false);
+    _guiColors->addKnob(_trackerKeyframeColor);
+    
+
+    
     _exprColor =  AppManager::createKnob<KnobColor>(this, "Expression",3);
     _exprColor->setName("exprColor");
     _exprColor->setAnimationEnabled(false);
@@ -1557,6 +1566,11 @@ Settings::setDefaultValues()
     _keyframeColor->setDefaultValue(0.38,1);
     _keyframeColor->setDefaultValue(0.97,2);
     
+    _trackerKeyframeColor->setDefaultValue(0.7,0);
+    _trackerKeyframeColor->setDefaultValue(0.78,1);
+    _trackerKeyframeColor->setDefaultValue(0.39,2);
+
+    
     _exprColor->setDefaultValue(0.7,0);
     _exprColor->setDefaultValue(0.78,1);
     _exprColor->setDefaultValue(0.39,2);
@@ -2096,6 +2110,7 @@ Settings::onKnobValueChanged(KnobI* k,
                 k == _timelineBGColor.get() ||
                 k == _interpolatedColor.get() ||
                 k == _keyframeColor.get() ||
+                k == _trackerKeyframeColor.get() ||
                 k == _cachedFrameColor.get() ||
                 k == _diskCachedFrameColor.get() ||
                 k == _curveEditorBGColor.get() ||
@@ -3283,6 +3298,14 @@ Settings::getKeyframeColor(double* r,double* g,double* b) const
     *r = _keyframeColor->getValue(0);
     *g = _keyframeColor->getValue(1);
     *b = _keyframeColor->getValue(2);
+}
+
+void
+Settings::getTrackerKeyframeColor(double* r,double* g,double* b) const
+{
+    *r = _trackerKeyframeColor->getValue(0);
+    *g = _trackerKeyframeColor->getValue(1);
+    *b = _trackerKeyframeColor->getValue(2);
 }
 
 void

@@ -928,24 +928,25 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 if ( ( found != _imp->imagesBeingRendered.end() ) && found->second->refCount ) {
                     ibr = found->second;
                 }
-            }
-            if (!ibr) {
-                Image::ReadAccess racc( isPlaneCached.get() );
-                isPlaneCached->getRestToRender_trimap(roi, rectsLeftToRender, &planesToRender->isBeingRenderedElsewhere);
-                std::list<RectI> tmpRects;
-                isPlaneCached->getRestToRender(roi, tmpRects);
-
-                //If it crashes here that means the image is no longer being rendered but its bitmap still contains PIXEL_UNAVAILABLE pixels.
-                //The other thread should have removed that image from the cache or marked the image as rendered.
-                assert(!planesToRender->isBeingRenderedElsewhere);
-                assert( rectsLeftToRender.size() == tmpRects.size() );
-
-                std::list<RectI>::iterator oIt = rectsLeftToRender.begin();
-                for (std::list<RectI>::iterator it = tmpRects.begin(); it != tmpRects.end(); ++it, ++oIt) {
-                    assert(*it == *oIt);
+                
+                if (!ibr) {
+                    Image::ReadAccess racc( isPlaneCached.get() );
+                    isPlaneCached->getRestToRender_trimap(roi, rectsLeftToRender, &planesToRender->isBeingRenderedElsewhere);
+                    std::list<RectI> tmpRects;
+                    isPlaneCached->getRestToRender(roi, tmpRects);
+                    
+                    //If it crashes here that means the image is no longer being rendered but its bitmap still contains PIXEL_UNAVAILABLE pixels.
+                    //The other thread should have removed that image from the cache or marked the image as rendered.
+                    assert(!planesToRender->isBeingRenderedElsewhere);
+                    assert( rectsLeftToRender.size() == tmpRects.size() );
+                    
+                    std::list<RectI>::iterator oIt = rectsLeftToRender.begin();
+                    for (std::list<RectI>::iterator it = tmpRects.begin(); it != tmpRects.end(); ++it, ++oIt) {
+                        assert(*it == *oIt);
+                    }
+                } else {
+                    isPlaneCached->getRestToRender_trimap(roi, rectsLeftToRender, &planesToRender->isBeingRenderedElsewhere);
                 }
-            } else {
-                isPlaneCached->getRestToRender_trimap(roi, rectsLeftToRender, &planesToRender->isBeingRenderedElsewhere);
             }
 #endif
         } else {
@@ -1539,19 +1540,26 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 it->second.downscaleImage->getRestToRender(roi, restToRender);
             }
             /*
-             If crashing on this assert this is likely due to a bug of the Trimap system. 
-             Most likely another thread started rendering the portion that is in restToRender but did not fill the bitmap with 1
-             yet. Do not remove this assert, there should never be 2 threads running concurrently renderHandler for the same roi 
-             on the same image.
+             We cannot assert that the bitmap is empty because another thread might have started rendering the same image again but
+             needed a different portion of the image. The trimap system does not work for abortable renders
              */
-            if (!restToRender.empty()) {
-                it->second.downscaleImage->printUnrenderedPixels(roi);
+            
+            if (frameArgs->isCurrentFrameRenderNotAbortable()) {
+                if (!restToRender.empty()) {
+                    it->second.downscaleImage->printUnrenderedPixels(roi);
+                }
+                /*
+                 If crashing on this assert this is likely due to a bug of the Trimap system.
+                 Most likely another thread started rendering the portion that is in restToRender but did not fill the bitmap with 1
+                 yet. Do not remove this assert, there should never be 2 threads running concurrently renderHandler for the same roi
+                 on the same image.
+                 */
+                assert( restToRender.empty() );
             }
-            assert( restToRender.empty() );
         }
     }
 #endif
-
+    
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////// Make sure all planes rendered have the requested mipmap level and format ///////////////////////////
 

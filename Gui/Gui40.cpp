@@ -943,6 +943,10 @@ Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,
         if ((*it)->getInternalNode() == leadViewer && isPlayback) {
             continue;
         }
+        if ((*it)->getInternalNode()->isDoingPartialUpdates()) {
+            //When tracking, we handle rendering separatly
+            continue;
+        }
          (*it)->getInternalNode()->renderCurrentFrame(!isPlayback);
     }
 }

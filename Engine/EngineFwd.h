@@ -37,6 +37,7 @@
 #include <boost/enable_shared_from_this.hpp>
 #endif
 
+
 // boost
 
 namespace boost {
@@ -215,6 +216,10 @@ class StringParam;
 class TLSHolderBase;
 class TextureRect;
 class TimeLine;
+class TrackMarker;
+class TrackerContext;
+class TrackSerialization;
+class TrackerContextSerialization;
 class UserParamHolder;
 class ViewerInstance;
 class ViewIdx;

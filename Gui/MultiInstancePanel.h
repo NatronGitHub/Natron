@@ -41,6 +41,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Knob.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/TrackerContext.h"
 
 #include "Gui/GuiFwd.h"
 
@@ -168,107 +169,56 @@ private:
     boost::scoped_ptr<MultiInstancePanelPrivate> _imp;
 };
 
-struct TrackerPanelPrivate;
-class TrackerPanel
-    : public MultiInstancePanel
+struct TrackerPanelPrivateV1;
+class TrackerPanelV1
+: public MultiInstancePanel, public TrackerParamsProvider
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
-
-public:
-
-    TrackerPanel(const NodeGuiPtr & node);
-
-    virtual ~TrackerPanel();
-
-    ///Each function below returns true if there is a selection, false otherwise
-    bool trackBackward();
-    bool trackForward();
-    bool trackPrevious();
-    bool trackNext();
-    void stopTracking();
-
-    void clearAllAnimationForSelection();
-
-    void clearBackwardAnimationForSelection();
-
-    void clearForwardAnimationForSelection();
-
-    void setUpdateViewerOnTracking(bool update);
-
-    bool isUpdateViewerOnTrackingEnabled() const;
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
     
+public:
+    
+    TrackerPanelV1(const boost::shared_ptr<NodeGui> & node);
+    
+    virtual ~TrackerPanelV1();
+    
+    ///Each function below returns true if there is a selection, false otherwise
+    bool trackBackward(ViewerInstance* viewer);
+    bool trackForward(ViewerInstance* viewer);
+    bool trackPrevious(ViewerInstance* viewer);
+    bool trackNext(ViewerInstance* viewer);
+    void stopTracking();
     bool isTracking() const;
     
+    void clearAllAnimationForSelection();
+    
+    void clearBackwardAnimationForSelection();
+    
+    void clearForwardAnimationForSelection();
 public Q_SLOTS:
-
+    
     void onAverageTracksButtonClicked();
     void onExportButtonClicked();
-
+    
     void onTrackingStarted();
     
     void onTrackingFinished();
-    
-    void onTrackingProgressUpdate(double progress);
     
 Q_SIGNALS:
     
     void trackingEnded();
     
 private:
-
+    
     virtual void initializeExtraKnobs() OVERRIDE FINAL;
     virtual void appendExtraGui(QVBoxLayout* layout) OVERRIDE FINAL;
     virtual void appendButtons(QHBoxLayout* buttonLayout) OVERRIDE FINAL;
     virtual void setIconForButton(KnobButton* knob) OVERRIDE FINAL;
     virtual void onButtonTriggered(KnobButton* button) OVERRIDE FINAL;
     virtual void showMenuForInstance(Node* item) OVERRIDE FINAL;
-
-    boost::scoped_ptr<TrackerPanelPrivate> _imp;
-};
-
-struct TrackSchedulerPrivate;
-class TrackScheduler : public QThread
-{
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
     
-public:
-    
-    TrackScheduler(const TrackerPanel* panel);
-    
-    virtual ~TrackScheduler();
-    
-    /**
-     * @brief Track the selectedInstances, calling the instance change action on each button (either the previous or
-     * next button) in a separate thread. 
-     * @param start the first frame to track, if forward is true then start < end
-     * @param end the next frame after the last frame to track (a la STL iterators), if forward is true then end > start
-     **/
-    void track(int start,int end,bool forward,const std::list<KnobButton*> & selectedInstances);
-    
-    void abortTracking();
-    
-    void quitThread();
-    
-    bool isWorking() const;
-    
-Q_SIGNALS:
-    
-    void trackingStarted();
-    
-    void trackingFinished();
-    
-    void progressUpdate(double progress);
-
-private:
-    
-    virtual void run() OVERRIDE FINAL;
-    
-    boost::scoped_ptr<TrackSchedulerPrivate> _imp;
-    
+    boost::scoped_ptr<TrackerPanelPrivateV1> _imp;
 };
 
 NATRON_NAMESPACE_EXIT;

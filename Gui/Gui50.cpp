@@ -112,10 +112,23 @@ Gui::showErrorLog()
 void
 Gui::createNewTrackerInterface(NodeGui* n)
 {
-    QMutexLocker l(&_imp->_viewerTabsMutex);
-
-    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
+    std::list<ViewerTab*> viewers;
+    {
+        QMutexLocker l(&_imp->_viewerTabsMutex);
+        viewers = _imp->_viewerTabs;
+    }
+    for (std::list<ViewerTab*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
         (*it)->createTrackerInterface(n);
+    }
+}
+
+void
+Gui::setTrackerInterface(NodeGui* n)
+{
+    QMutexLocker l(&_imp->_viewerTabsMutex);
+    
+    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
+        (*it)->setTrackerInterface(n);
     }
 }
 
@@ -196,10 +209,10 @@ Gui::onViewerRotoEvaluated(ViewerTab* viewer)
 void
 Gui::progressStart(const NodePtr& node,
                    const std::string &message,
-                   const std::string &/*messageid*/,
+                   const std::string &messageid,
                    bool canCancel)
 {
-    _imp->_progressPanel->startTask(node, INT_MIN, INT_MAX, 1, false, canCancel, QString::fromUtf8(message.c_str()));
+    _imp->_progressPanel->progressStart(node, message, messageid, canCancel);
 
 }
 

@@ -76,6 +76,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/RotoPanel.h"
 #include "Gui/TabGroup.h"
 #include "Gui/TabWidget.h"
+#include "Gui/TrackerPanel.h"
 #include "Gui/Utils.h" // convertFromPlainText
 #include "Gui/VerticalColorBar.h"
 #include "Gui/ViewerGL.h"
@@ -737,6 +738,13 @@ DockablePanel::initializeKnobsInternal()
         _imp->_rightContainerLayout->addWidget(roto);
     }
 
+    assert(!_imp->_trackerPanel);
+    _imp->_trackerPanel = initializeTrackerPanel();
+    if (_imp->_trackerPanel) {
+        _imp->_rightContainerLayout->addWidget(_imp->_trackerPanel);
+    }
+
+    
     initializeExtraGui(_imp->_rightContainerLayout);
     
     NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
@@ -751,6 +759,12 @@ DockablePanel::initializeKnobsInternal()
     }
     _imp->refreshPagesSecretness();
     
+}
+
+TrackerPanel*
+DockablePanel::getTrackerPanel() const
+{
+    return _imp->_trackerPanel;
 }
 
 void
@@ -1679,6 +1693,7 @@ DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
             KnobGuiPtr knobGui = it->first.lock();
             if (!it->second && knobGui) {
                 knobGui->show();
+
             }
         }
     }
