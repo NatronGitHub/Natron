@@ -87,7 +87,7 @@ public:
     void removeTabWidget();
 
 public Q_SLOTS:
-    void setChecked(bool b);
+    void onCheckboxChecked(bool b);
 
 private:
     

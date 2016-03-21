@@ -105,7 +105,7 @@ namespace NATRON_NAMESPACE { }
 #define NATRON_VERSION_REVISION 1
 
 
-#define NATRON_LAST_VERSION_URL "https://raw.githubusercontent.com/MrKepzie/Natron/master/LATEST_VERSION.txt"
+#define NATRON_LAST_VERSION_URL "http://downloads.natron.fr/LATEST_VERSION.txt"
 #define NATRON_LAST_VERSION_FILE_VERSION 1
 
 // homemade builds should always show "Devel"
