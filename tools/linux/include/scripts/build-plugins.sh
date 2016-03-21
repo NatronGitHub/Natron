@@ -136,6 +136,10 @@ if [ "$BUILD_MISC" = "1" ]; then
     make -C CImg CImg.h || exit 1
     make -C CImg CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp"  CONFIG=relwithdebinfo BITS=$BIT -j${MKJOBS} || exit 1
     make  CONFIG=relwithdebinfo BITS=$BIT -j${MKJOBS} || exit 1
+    if [ "$SWRAST" = "1" ] && [ "$TESTGL" = "1" ]; then
+      LLVM_LIB=`${INSTALL_PATH}/llvm/bin/llvm-config --libs`
+      make -C Test CXXFLAGS_ADD="-DHAVE_OSMESA -I${INSTALL_PATH}/osmesa/include" LDFLAGS_ADD="-L${INSTALL_PATH}/osmesa/lib -L${INSTALL_PATH}/llvm/lib -lGLU -lMangledOSMesa32 -lrt -ldl -lpthread -lz -lm $LLVM_LIB" CONFIG=relwithdebinfo BITS=$BIT || exit 1 
+    fi
     cp -a */Linux-$BIT-*/*.ofx.bundle $INSTALL_PATH/Plugins/ || exit 1
     echo $MISC_V > $INSTALL_PATH/Plugins/Misc.ofx.bundle-version.txt || exit 1
 

@@ -61,6 +61,10 @@ SDK_VERSION=CY2015
 SDK_PATH=/opt
 PYV=2 # Python 2 or 3
 
+if [ "$DEBUG" = "1" ]; then
+  SDK_VERSION=${SDK_VERSION}-debug
+fi
+
 # Common values
 #
 
@@ -245,7 +249,6 @@ if [ -z "$ARCH" ]; then
 fi
 if [ "$DEBUG" = "1" ]; then
   BFLAGS="-g"
-  SDK_VERSION=${SDK_VERSION}-debug
 else
   BFLAGS="-O2"
 fi

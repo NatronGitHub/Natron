@@ -373,6 +373,7 @@ if [ "$SWRAST" = "1" ]; then
     mkdir build
     cd build || exit 1
     cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH/llvm -DBUILD_SHARED_LIBS=OFF -DLLVM_ENABLE_RTTI=1 || exit 1
+    make -j${MKJOBS} || exit 1
     make install || exit 1
   fi
   # osmesa
