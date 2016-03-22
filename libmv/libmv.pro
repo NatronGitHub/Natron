@@ -39,6 +39,7 @@ INCLUDEPATH += $$PWD/../libs/ceres/config
 INCLUDEPATH += $$PWD/../libs/ceres/include
 INCLUDEPATH += $$PWD/../libs/ceres/internal
 INCLUDEPATH += $$PWD/../libs/gflags
+INCLUDEPATH += $$PWD/../libs/gflags/src
 INCLUDEPATH += $$PWD/../libs/gflags/src/gflags
 INCLUDEPATH += $$PWD/../libs/glog/src
 INCLUDEPATH += $$PWD/../libs/libmv/third_party
