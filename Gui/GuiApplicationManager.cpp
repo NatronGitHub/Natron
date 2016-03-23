@@ -940,7 +940,7 @@ GuiApplicationManager::webserverHandler(QHttpRequest *req, QHttpResponse *resp)
 
     // default page
     if (page == QString::fromUtf8("/")) {
-        QString frameSrc = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Frameset//EN\" \"http://www.w3.org/TR/html4/frameset.dtd\"><html><head><title>Natron User Guide</title></head><frameset rows=\"100,*\" frameborder=\"0\"><frame name=\"header\" src=\"_header.html\"><frameset cols=\"300,*\"><frame name=\"menu\" src=\"_menu.html\"><frame name=\"content\" src=\"index.html\"></frameset></frameset></html>");
+        QString frameSrc = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Frameset//EN\" \"http://www.w3.org/TR/html4/frameset.dtd\"><html><head><title>Natron User Guide</title></head><frameset rows=\"100,*\" frameborder=\"0\"><frame name=\"header\" src=\"_header.html\"><frameset cols=\"250,*\"><frame name=\"menu\" src=\"_menu.html\"><frame name=\"content\" src=\"index.html\"></frameset></frameset></html>");
         body = frameSrc.toAscii();
     }
 
@@ -971,13 +971,13 @@ GuiApplicationManager::webserverHandler(QHttpRequest *req, QHttpResponse *resp)
 
     // add custom content
     if (page == QString::fromUtf8("_header.html")) {
-        QString headerSrc = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\"><html><head><title>Natron User Guide Menu</title><link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" /></head><body style=\"margin:0;padding:0;\"><div id=\"leftBox\"><a href=\"/\"><img src=\"_static/natron_logo.png\" alt=\"Logo\" style=\"border:0;\"></a></div><div id=\"rightBox\"><form class=\"search\" action=\"search.html\" target=\"content\" method=\"get\"><input type=\"text\" name=\"q\"><input type=\"submit\" value=\"Go\"><input type=\"hidden\" name=\"check_keywords\" value=\"yes\"><input type=\"hidden\" name=\"area\" value=\"default\"></form></div></body></html>");
+        QString headerSrc = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\"><html><head><title>Natron User Guide Menu</title><link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" /></head><body style=\"margin:0;padding:0;\"><div id=\"leftBox\"><a href=\"/\"><img src=\"_static/header.png\" alt=\"Logo\" style=\"border:0;\"></a></div><div id=\"rightBox\"><form class=\"search\" action=\"search.html\" target=\"content\" method=\"get\"><input type=\"text\" name=\"q\"><input type=\"submit\" value=\"Go\"><input type=\"hidden\" name=\"check_keywords\" value=\"yes\"><input type=\"hidden\" name=\"area\" value=\"default\"></form></div></body></html>");
         body = headerSrc.toAscii();
     }
     else if (page == QString::fromUtf8("_menu.html")) {
         // TODO: generate plugins
         QString menuSrc;
-        QString menuSrcHeader = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\"><html><head><title>Natron User Guide Menu</title><link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"_static/jquery.js\"></script><script type=\"text/javascript\" src=\"_static/dropdown.js\"></script></head><body style=\"background-color:#ffffff;margin-left:10px;\">");
+        QString menuSrcHeader = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\"><html><head><title>Natron User Guide Menu</title><link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/menu.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"_static/jquery.js\"></script><script type=\"text/javascript\" src=\"_static/dropdown.js\"></script></head><body>");
         QString menuSrcFooter = QString::fromUtf8("</body></html>");
         QFile indexFile(docDir + QString::fromUtf8("index.html"));
 
