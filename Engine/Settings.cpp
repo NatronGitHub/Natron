@@ -71,6 +71,8 @@
 
 #define NATRON_CUSTOM_HOST_NAME_ENTRY "Custom..."
 
+#define NATRON_DEFAULT_WWW_PORT 8181
+
 NATRON_NAMESPACE_ENTER;
 
 
@@ -155,7 +157,20 @@ Settings::initializeKnobsGeneral()
                                            "works correctly. Do not use this.");
     _generalTab->addKnob(_testCrashReportButton);
     
-    
+    _wwwServerEnabled = AppManager::createKnob<KnobBool>(this, "Embedded webserver");
+    _wwwServerEnabled->setName("webserverEnable");
+    _wwwServerEnabled->setAnimationEnabled(false);
+    _wwwServerEnabled->setHintToolTip("Embedded webserver used for documentation.\n"
+                                      "Changing this requires a restart of the application to take effect.");
+
+    _wwwServerPort = AppManager::createKnob<KnobInt>(this, "Webserver port");
+    _wwwServerPort->setName("webserverPort");
+    _wwwServerPort->setAnimationEnabled(false);
+    _wwwServerPort->setHintToolTip("Port used by the webserver.\n"
+                                   "Changing this requires a restart of the application to take effect.");
+
+    _generalTab->addKnob(_wwwServerEnabled);
+    _generalTab->addKnob(_wwwServerPort);
     
     _notifyOnFileChange = AppManager::createKnob<KnobBool>(this, "Warn when a file changes externally");
     _notifyOnFileChange->setName("warnOnExternalChange");
@@ -1389,6 +1404,8 @@ Settings::setDefaultValues()
     _fontSize->setDefaultValue(NATRON_FONT_SIZE_DEFAULT);
     _checkForUpdates->setDefaultValue(false);
     _enableCrashReports->setDefaultValue(true);
+    _wwwServerEnabled->setDefaultValue(true);
+    _wwwServerPort->setDefaultValue(NATRON_DEFAULT_WWW_PORT);
     _notifyOnFileChange->setDefaultValue(true);
     _autoSaveDelay->setDefaultValue(5, 0);
     _autoSaveUnSavedProjects->setDefaultValue(true);
@@ -1914,6 +1931,11 @@ Settings::restoreSettings()
             _defaultAppearanceOutdated = true;
             _defaultAppearanceVersion->setValue(NATRON_DEFAULT_APPEARANCE_VERSION);
             saveSetting(_defaultAppearanceVersion.get());
+        }
+
+        int serverPort = _wwwServerPort->getValue();
+        if (serverPort>0) {
+            saveSetting(_wwwServerPort.get());
         }
 
         appPTR->setNThreadsPerEffect(getNumberOfThreadsPerEffect());

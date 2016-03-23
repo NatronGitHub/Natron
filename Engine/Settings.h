@@ -410,7 +410,8 @@ private:
     boost::shared_ptr<KnobChoice> _hostName;
     boost::shared_ptr<KnobString> _customHostName;
     
-    
+    boost::shared_ptr<KnobInt> _wwwServerPort;
+    boost::shared_ptr<KnobBool> _wwwServerEnabled;
     
     boost::shared_ptr<KnobChoice> _ocioConfigKnob;
     boost::shared_ptr<KnobBool> _warnOcioConfigKnobChanged;

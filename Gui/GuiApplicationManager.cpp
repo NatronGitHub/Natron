@@ -48,6 +48,10 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/SplashScreen.h"
 #include "Gui/PreviewThread.h"
 
+#include "qhttpserver.h"
+#include "qhttprequest.h"
+#include "qhttpresponse.h"
+
 //All fixed sizes were calculated for a 96 dpi screen
 #ifndef Q_OS_MAC
 #define NATRON_PIXELS_FOR_DPI_DEFAULT 96.
@@ -825,6 +829,27 @@ GuiApplicationManager::initGui(const CLArgs& args)
         }
     }
     
+    // launch webserver
+    if (!isBackground()) {
+        bool serverEnable = true;
+        int serverPort = 0;
+        if (settings.contains(QString::fromUtf8("webserverEnable"))) {
+            serverEnable = settings.value(QString::fromUtf8("webserverEnable")).toBool();
+        }
+        if (settings.contains(QString::fromUtf8("webserverPort"))) {
+            serverPort = settings.value(QString::fromUtf8("webserverPort")).toInt();
+        }
+        if (serverEnable && serverPort!=0) {
+            QHttpServer *server = new QHttpServer(this);
+            connect(server, SIGNAL(newRequest(QHttpRequest*, QHttpResponse*)),
+                    this, SLOT(webserverHandler(QHttpRequest*, QHttpResponse*)));
+            if (!server->listen(QHostAddress::Any, serverPort)) {
+#ifdef DEBUG
+                qDebug() << "Failed to attach webserver to port " << serverPort;
+#endif
+            }
+        }
+    }
     
     if (settings.contains(QString::fromUtf8("fontSize"))) {
         fontSize = settings.value(QString::fromUtf8("fontSize")).toInt();
@@ -898,6 +923,121 @@ GuiApplicationManager::initGui(const CLArgs& args)
     
     
     return exec();
+}
+
+void
+GuiApplicationManager::webserverHandler(QHttpRequest *req, QHttpResponse *resp)
+{
+    Q_UNUSED(req)
+
+    QString docDir = appPTR->getApplicationBinaryPath() + QString::fromUtf8("/../Resources/docs/html/");
+    QString page = req->url().toString();
+    QByteArray body;
+
+#ifdef DEBUG
+    qDebug() << "www client requested" << page;
+#endif
+
+    // default page
+    if (page == QString::fromUtf8("/")) {
+        QString frameSrc = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Frameset//EN\" \"http://www.w3.org/TR/html4/frameset.dtd\"><html><head><title>Natron User Guide</title></head><frameset rows=\"100,*\" frameborder=\"0\"><frame name=\"header\" src=\"_header.html\"><frameset cols=\"300,*\"><frame name=\"menu\" src=\"_menu.html\"><frame name=\"content\" src=\"index.html\"></frameset></frameset></html>");
+        body = frameSrc.toAscii();
+    }
+
+    // remove slashes
+    if (page.startsWith(QString::fromUtf8("/"))) {
+        page.remove(0,1);
+    }
+    if (page.endsWith(QString::fromUtf8("/"))) {
+        page = page.left(page.length()-1);
+    }
+
+    // get options
+    QStringList options;
+    if (page.contains(QString::fromUtf8("?"))) {
+        QStringList split = page.split(QString::fromUtf8("?"),QString::SkipEmptyParts);
+        page = split.takeFirst();
+        if (split.length()>0) {
+            QString rawOptions = split.takeLast();
+            options = rawOptions.split(QString::fromUtf8("&"),QString::SkipEmptyParts);
+        }
+    }
+
+#ifdef DEBUG
+    if (!options.isEmpty()) {
+        qDebug() << "page options" << options;
+    }
+#endif
+
+    // add custom content
+    if (page == QString::fromUtf8("_header.html")) {
+        QString headerSrc = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\"><html><head><title>Natron User Guide Menu</title><link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" /></head><body style=\"margin:0;padding:0;\"><div id=\"leftBox\"><img src=\"_static/natron_logo.png\" alt=\"Logo\"></div><div id=\"rightBox\"><form class=\"search\" action=\"search.html\" target=\"content\" method=\"get\"><input type=\"text\" name=\"q\"><input type=\"submit\" value=\"Go\"><input type=\"hidden\" name=\"check_keywords\" value=\"yes\"><input type=\"hidden\" name=\"area\" value=\"default\"></form></div></body></html>");
+        body = headerSrc.toAscii();
+    }
+    else if (page == QString::fromUtf8("_menu.html")) {
+        // TODO: generate plugins
+        QString menuSrc;
+        QString menuSrcHeader = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\"><html><head><title>Natron User Guide Menu</title><link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" /></head><body style=\"background-color:#ffffff;margin-left:10px;\">");
+        QString menuSrcFooter = QString::fromUtf8("</body></html>");
+        QFile indexFile(docDir + QString::fromUtf8("index.html"));
+
+        menuSrc.append(menuSrcHeader);
+        if(indexFile.open(QIODevice::ReadOnly|QIODevice::Text)) {
+            QString menuResult;
+            bool getMenu = false;
+            while (!indexFile.atEnd()) {
+                QString line = QString::fromAscii(indexFile.readLine());
+                if (line == QString::fromUtf8("<div class=\"toctree-wrapper compound\">\n")) {
+                    getMenu=true;
+                }
+                if (getMenu) {
+                    menuResult.append(line);
+                }
+                if (line == QString::fromUtf8("</div>\n")) {
+                    getMenu=false;
+                }
+            }
+            if (!menuResult.isEmpty()) {
+                menuResult.replace(QString::fromUtf8("href="), QString::fromUtf8("target=\"content\" href="));
+                menuSrc.append(menuResult);
+            }
+            indexFile.close();
+        }
+        menuSrc.append(menuSrcFooter);
+        body = menuSrc.toAscii();
+    }
+
+    // get static file
+    QFileInfo staticFileInfo;
+    if (page.endsWith(QString::fromUtf8(".html")) || page.endsWith(QString::fromUtf8(".css")) || page.endsWith(QString::fromUtf8(".js")) || page.endsWith(QString::fromUtf8(".txt")) || page.endsWith(QString::fromUtf8(".png")) || page.endsWith(QString::fromUtf8(".jpg"))) {
+        staticFileInfo = docDir+page;
+    }
+    if (staticFileInfo.exists() && body.isEmpty()) {
+        QFile staticFile(staticFileInfo.absoluteFilePath());
+        if (staticFile.open(QIODevice::ReadOnly)) {
+            body = staticFile.readAll();
+            staticFile.close();
+        }
+    }
+
+    // page/file not found
+    if (body.isEmpty()) {
+        QString notFound = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\"><html><head><title>Page not found</title></head><body><p>Page not found</p></body></html>");
+        body = notFound.toAscii();
+    }
+
+    // set header(s)
+    resp->setHeader(QString::fromUtf8("Content-Length"), QString::number(body.size()));
+    if (page.endsWith(QString::fromUtf8(".png"))) {
+        resp->setHeader(QString::fromUtf8("Content-Type"), QString::fromUtf8("image/png"));
+    }
+    else if (page.endsWith(QString::fromUtf8(".jpg"))) {
+        resp->setHeader(QString::fromUtf8("Content-Type"), QString::fromUtf8("image/jpeg"));
+    }
+
+    // return result
+    resp->writeHead(200);
+    resp->end(body);
 }
 
 void

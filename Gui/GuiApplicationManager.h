@@ -36,6 +36,7 @@
 
 #include "Gui/GuiFwd.h"
 
+#include "qhttpserverfwd.h"
 
 #if defined(appPTR)
 #undef appPTR
@@ -218,7 +219,9 @@ public Q_SLOTS:
     void onFontconfigCacheUpdateFinished();
 
     void onFontconfigTimerTriggered();
-    
+
+    void webserverHandler(QHttpRequest *req, QHttpResponse *resp);
+
 private:
 
     virtual void initBuiltinPythonModules() OVERRIDE FINAL;

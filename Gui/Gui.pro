@@ -52,6 +52,9 @@ INCLUDEPATH += $$PWD/../Engine
 INCLUDEPATH += $$PWD/../Engine/NatronEngine
 INCLUDEPATH += $$PWD/../Global
 
+#qhttpserver
+INCLUDEPATH += $$PWD/../libs/qhttpserver/src
+
 #To overcome wrongly generated #include <...> by shiboken
 INCLUDEPATH += $$PWD
 INCLUDEPATH += $$PWD/NatronGui
