@@ -19,10 +19,11 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include "effect_wrapper.h"
 
 // Extra includes
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
 #include <PyNode.h>
 #include <PyParameter.h>
 #include <PyRoto.h>
+#include <PyTracker.h>
 #include <RectD.h>
 #include <list>
 #include <map>
@@ -1088,6 +1089,35 @@ static PyObject* Sbk_EffectFunc_getSize(PyObject* self)
     return pyResult;
 }
 
+static PyObject* Sbk_EffectFunc_getTrackerContext(PyObject* self)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getTrackerContext()const
+            Tracker * cppResult = const_cast<const ::Effect*>(cppSelf)->getTrackerContext();
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_TRACKER_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_EffectFunc_getUserPageParam(PyObject* self)
 {
     ::Effect* cppSelf = 0;
@@ -1522,6 +1552,7 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {"getRotoContext", (PyCFunction)Sbk_EffectFunc_getRotoContext, METH_NOARGS},
     {"getScriptName", (PyCFunction)Sbk_EffectFunc_getScriptName, METH_NOARGS},
     {"getSize", (PyCFunction)Sbk_EffectFunc_getSize, METH_NOARGS},
+    {"getTrackerContext", (PyCFunction)Sbk_EffectFunc_getTrackerContext, METH_NOARGS},
     {"getUserPageParam", (PyCFunction)Sbk_EffectFunc_getUserPageParam, METH_NOARGS},
     {"isNodeSelected", (PyCFunction)Sbk_EffectFunc_isNodeSelected, METH_NOARGS},
     {"setColor", (PyCFunction)Sbk_EffectFunc_setColor, METH_VARARGS},

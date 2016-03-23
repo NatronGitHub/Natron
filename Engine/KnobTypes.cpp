@@ -387,7 +387,7 @@ KnobDouble::restoreTracks(const std::list <SerializedTrack> & tracks,
     for (std::list< SerializedTrack >::const_iterator it = tracks.begin(); it != tracks.end(); ++it) {
         RotoContext* roto = 0;
         ///speed-up by remembering the last one
-        std::string scriptFriendlyRoto = Python::makeNameScriptFriendly(it->rotoNodeName);
+        std::string scriptFriendlyRoto = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(it->rotoNodeName);
         if (it->rotoNodeName == lastNodeName || scriptFriendlyRoto == lastNodeName) {
             roto = lastRoto;
         } else {
@@ -406,7 +406,7 @@ KnobDouble::restoreTracks(const std::list <SerializedTrack> & tracks,
             
             boost::shared_ptr<RotoItem> item = roto->getItemByName(it->bezierName);
             if (!item) {
-                std::string scriptFriendlyBezier = Python::makeNameScriptFriendly(it->bezierName);
+                std::string scriptFriendlyBezier = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(it->bezierName);
                 item = roto->getItemByName(scriptFriendlyBezier);
                 if (!item) {
                     qDebug() << "Failed to restore slaved track " << it->bezierName.c_str();

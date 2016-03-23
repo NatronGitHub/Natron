@@ -18,7 +18,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include "outputfileparam_wrapper.h"
 
 // Extra includes
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
 #include <PyParameter.h>
 
 

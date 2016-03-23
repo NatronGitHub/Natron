@@ -42,6 +42,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
+NATRON_PYTHON_NAMESPACE_ENTER;
 
 class PyGuiApplication : public PyCoreApplication
 {
@@ -112,6 +113,7 @@ public:
     
 };
 
+NATRON_PYTHON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_EXIT;
 
 #endif // GLOBAL_GUI_WRAPPER_H

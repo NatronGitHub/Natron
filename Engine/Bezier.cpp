@@ -1181,7 +1181,7 @@ Bezier::setCurveFinished(bool finished)
         _imp->finished = finished;
     }
     
-    getContext()->resetTransformCenter();
+    resetTransformCenter();
 
     incrementNodesAge();
     refreshPolygonOrientation(false);

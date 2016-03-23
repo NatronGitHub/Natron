@@ -22,7 +22,7 @@ CLANG_DIAG_OFF(header-guard)
 #include "pypanel_wrapper.h"
 
 // Extra includes
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
 #include <PyGuiApp.h>
 #include <PyParameter.h>
 #include <QList>

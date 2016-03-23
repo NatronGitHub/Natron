@@ -64,22 +64,22 @@ TrackerNode::getInputLabel (int inputNb) const
     switch (inputNb) {
         case 0:
             return "Source";
-        case 1:
-            return "Mask";
+        default:
+            break;
     }
     return "";
 }
 
 bool
-TrackerNode::isInputMask(int inputNb) const
+TrackerNode::isInputMask(int /*inputNb*/) const
 {
-    return inputNb == 1;
+    return false;
 }
 
 bool
-TrackerNode::isInputOptional(int inputNb) const
+TrackerNode::isInputOptional(int /*inputNb*/) const
 {
-    return inputNb == 1;
+    return false;
 }
 
 void
@@ -120,6 +120,21 @@ TrackerNode::isIdentity(double time,
     *inputNb = 0;
     *inputView = view;
     return true;
+}
+
+
+void
+TrackerNode::knobChanged(KnobI* k,
+                       ValueChangedReasonEnum reason,
+                       ViewSpec view,
+                       double time,
+                       bool originatedFromMainThread)
+{
+    boost::shared_ptr<TrackerContext> ctx = getNode()->getTrackerContext();
+    if (!ctx) {
+        return;
+    }
+    ctx->knobChanged(k, reason, view, time, originatedFromMainThread);
 }
 
 void

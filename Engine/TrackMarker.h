@@ -87,10 +87,12 @@
 #define kTrackerParamErrorLabel "Error"
 #define kTrackerParamErrorHint "The error obtained after tracking each frame. This 1 minus the corss-correlation score."
 
+//#define NATRON_TRACK_MARKER_USE_WEIGHT
+
 NATRON_NAMESPACE_ENTER;
 
 struct TrackMarkerPrivate;
-class TrackMarker : public KnobHolder, public boost::enable_shared_from_this<TrackMarker>
+class TrackMarker : public NamedKnobHolder, public boost::enable_shared_from_this<TrackMarker>
 {
     GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -111,7 +113,7 @@ public:
     boost::shared_ptr<TrackerContext> getContext() const;
     
     bool setScriptName(const std::string& name);
-    std::string getScriptName() const;
+    virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     void setLabel(const std::string& label);
     std::string getLabel() const;
@@ -122,7 +124,9 @@ public:
     boost::shared_ptr<KnobDouble> getPatternTopRightKnob() const;
     boost::shared_ptr<KnobDouble> getPatternBtmRightKnob() const;
     boost::shared_ptr<KnobDouble> getPatternBtmLeftKnob() const;
+#ifdef NATRON_TRACK_MARKER_USE_WEIGHT
     boost::shared_ptr<KnobDouble> getWeightKnob() const;
+#endif
     boost::shared_ptr<KnobDouble> getCenterKnob() const;
     boost::shared_ptr<KnobDouble> getOffsetKnob() const;
     boost::shared_ptr<KnobDouble> getErrorKnob() const;
@@ -160,8 +164,11 @@ public:
     
     RectI getMarkerImageRoI(int time) const;
     
+    virtual void onKnobSlaved(KnobI* slave,KnobI* master,
+                              int dimension,
+                              bool isSlave) OVERRIDE FINAL;
     
-    public Q_SLOTS:
+public Q_SLOTS:
     
     void onCenterKeyframeSet(double time,ViewSpec view,int dimension,int reason,bool added);
     void onCenterKeyframeRemoved(double time,ViewSpec view,int dimension,int reason);

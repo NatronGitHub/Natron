@@ -44,6 +44,7 @@
 #include "PyNodeGroup.h"
 #include "PyAppInstance.h"
 #include "PyRoto.h"
+#include "PyTracker.h"
 #include "PyNode.h"
 #include "PyParameter.h"
 #include "RectI.h"

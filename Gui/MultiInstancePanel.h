@@ -201,7 +201,7 @@ public Q_SLOTS:
     void onAverageTracksButtonClicked();
     void onExportButtonClicked();
     
-    void onTrackingStarted();
+    void onTrackingStarted(int step);
     
     void onTrackingFinished();
     

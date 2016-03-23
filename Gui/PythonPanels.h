@@ -42,6 +42,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
+NATRON_PYTHON_NAMESPACE_ENTER;
 
 struct DialogParamHolderPrivate;
 class DialogParamHolder : public NamedKnobHolder
@@ -201,6 +202,7 @@ public :
     std::string getScriptName() const;
 };
 
+NATRON_PYTHON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_EXIT;
 
 #endif // PYTHONPANELS_H

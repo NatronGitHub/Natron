@@ -45,7 +45,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF\
 #include <shiboken.h> // produces many warnings@' -i .bak Engine/NatronEngine/*.cpp Gui/NatronGui/*.cpp
 
 sed -e 's@// Extra includes@// Extra includes\
-NATRON_NAMESPACE_USING@' -i .bak Engine/NatronEngine/*.cpp Gui/NatronGui/*.cpp
+NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING@' -i .bak Engine/NatronEngine/*.cpp Gui/NatronGui/*.cpp
 
 # replace NATRON_NAMESPACE with Natron for enums with flags (e.g. StandardButtonEnum)
 sed -e 's@"NatronEngine\.NATRON_NAMESPACE@"NatronEngine.Natron@g' -e 's@"NatronGui\.NATRON_NAMESPACE@"NatronGui.Natron@g' -e 's@"NATRON_NAMESPACE@"Natron@g' -i .bak Engine/NatronEngine/natron_namespace_wrapper.cpp
@@ -53,13 +53,13 @@ sed -e 's@"NatronEngine\.NATRON_NAMESPACE@"NatronEngine.Natron@g' -e 's@"NatronG
 # re-add the Natron namespace
 #sed -e 's@" ::\([^s][^t][^d]\)@ NATRON_NAMESPACE::\1@g' -i .bak Engine/NatronEngine/*.cpp Engine/NatronEngine/*.h Gui/NatronGui/*.cpp Gui/NatronGui/*.h
 
-sed -e 's@SbkType< ::@SbkType<NATRON_NAMESPACE::@g' -e 's@SbkType<NATRON_NAMESPACE::QFlags<@SbkType< ::QFlags<NATRON_NAMESPACE::@g'  -i .bak Engine/NatronEngine/natronengine_python.h Gui/NatronGui/natrongui_python.h
-sed -e 's@^class @NATRON_NAMESPACE_ENTER;\
+sed -e 's@SbkType< ::@SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::@g' -e 's@SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::QFlags<@SbkType< ::QFlags<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::@g' -e's@NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::Rect@NATRON_NAMESPACE::Rect@g' -i .bak Engine/NatronEngine/natronengine_python.h Gui/NatronGui/natrongui_python.h
+sed -e 's@^class @NATRON_NAMESPACE_ENTER; NATRON_PYTHON_NAMESPACE_ENTER;\
 class @g' -e 's@^};@};\
-NATRON_NAMESPACE_EXIT;@g'  -i .bak Engine/NatronEngine/*.h Gui/NatronGui/*.h
+NATRON_PYTHON_NAMESPACE_EXIT; NATRON_NAMESPACE_EXIT;@g'  -i .bak Engine/NatronEngine/*.h Gui/NatronGui/*.h
 
 # replace NATRON_NAMESPACE::NATRON_NAMESPACE with NATRON_NAMESPACE in the enums wrappers
-sed -e 's@NATRON_NAMESPACE::NATRON_NAMESPACE@NATRON_NAMESPACE@g' -i .bak Engine/NatronEngine/natronengine_python.h Gui/NatronGui/natrongui_python.h
+sed -e 's@NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::NATRON_NAMESPACE@NATRON_NAMESPACE@g' -i .bak Engine/NatronEngine/natronengine_python.h Gui/NatronGui/natrongui_python.h
 
 sed -e 's@^#include <pysidemetafunction.h>$@CLANG_DIAG_OFF(header-guard)\
 #include <pysidemetafunction.h> // has wrong header guards in pyside 1.2.2@' -i .bak Engine/NatronEngine/*.cpp Gui/NatronGui/*.cpp

@@ -1755,10 +1755,10 @@ CurveWidget::loopSelectedCurve()
     if (!knobCurve) {
         throw std::logic_error("CurveWidget::loopSelectedCurve");
     }
-    PyModalDialog dialog(_imp->_gui);
-    boost::shared_ptr<IntParam> firstFrame(dialog.createIntParam("firstFrame", "First frame"));
+    NATRON_PYTHON_NAMESPACE::PyModalDialog dialog(_imp->_gui);
+    boost::shared_ptr<NATRON_PYTHON_NAMESPACE::IntParam> firstFrame(dialog.createIntParam("firstFrame", "First frame"));
     firstFrame->setAnimationEnabled(false);
-    boost::shared_ptr<IntParam> lastFrame(dialog.createIntParam("lastFrame", "Last frame"));
+    boost::shared_ptr<NATRON_PYTHON_NAMESPACE::IntParam> lastFrame(dialog.createIntParam("lastFrame", "Last frame"));
     lastFrame->setAnimationEnabled(false);
     dialog.refreshUserParamsGUI();
     if (dialog.exec()) {

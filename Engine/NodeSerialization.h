@@ -336,7 +336,7 @@ private:
         if (version >= NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME) {
             ar & ::boost::serialization::make_nvp("Plugin_script_name",_nodeScriptName);
         } else {
-            _nodeScriptName = Python::makeNameScriptFriendly(_nodeLabel);
+            _nodeScriptName = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(_nodeLabel);
         }
         ar & ::boost::serialization::make_nvp("Plugin_id",_pluginID);
         
@@ -365,7 +365,7 @@ private:
             ar & ::boost::serialization::make_nvp("Inputs_map",_oldInputs);
             if (version < NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME) {
                 for (U32 i = 0; i < _oldInputs.size(); ++i) {
-                    _oldInputs[i] = Python::makeNameScriptFriendly(_oldInputs[i]);
+                    _oldInputs[i] = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(_oldInputs[i]);
                 }
             }
         } else {
@@ -375,7 +375,7 @@ private:
         ar & ::boost::serialization::make_nvp("KnobsAge",_knobsAge);
         ar & ::boost::serialization::make_nvp("MasterNode",_masterNodeName);
         if (version < NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME) {
-            _masterNodeName = Python::makeNameScriptFriendly(_masterNodeName);
+            _masterNodeName = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(_masterNodeName);
         }
         _isNull = false;
         
@@ -395,7 +395,7 @@ private:
         if (version >= NODE_SERIALIZATION_INTRODUCES_MULTI_INSTANCE) {
             ar & ::boost::serialization::make_nvp("MultiInstanceParent",_multiInstanceParentName);
             if (version < NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME) {
-                 _multiInstanceParentName = Python::makeNameScriptFriendly(_multiInstanceParentName);
+                 _multiInstanceParentName = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(_multiInstanceParentName);
             }
         }
         

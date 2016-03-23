@@ -15,7 +15,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 
 
 // Extra includes
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
 
 // Current module's type array.
 PyTypeObject** SbkNatronEngineTypes;
@@ -35,19 +35,27 @@ static PyMethodDef NatronEngine_methods[] = {
 };
 
 // Classes initialization functions ------------------------------------------------------------
-void init_UserParamHolder(PyObject* module);
+void init_RectD(PyObject* module);
 void init_PyCoreApplication(PyObject* module);
 void init_Group(PyObject* module);
-void init_Effect(PyObject* module);
 void init_App(PyObject* module);
 void init_AppSettings(PyObject* module);
 void init_ItemBase(PyObject* module);
 void init_Layer(PyObject* module);
 void init_BezierCurve(PyObject* module);
 void init_Roto(PyObject* module);
+void init_Track(PyObject* module);
+void init_Tracker(PyObject* module);
 void init_ImageLayer(PyObject* module);
+void init_UserParamHolder(PyObject* module);
+void init_Effect(PyObject* module);
 void init_Param(PyObject* module);
 void init_AnimatedParam(PyObject* module);
+void init_DoubleParam(PyObject* module);
+void init_Double2DParam(PyObject* module);
+void init_Double3DParam(PyObject* module);
+void init_ColorParam(PyObject* module);
+void init_ChoiceParam(PyObject* module);
 void init_BooleanParam(PyObject* module);
 void init_StringParamBase(PyObject* module);
 void init_StringParam(PyObject* module);
@@ -57,11 +65,6 @@ void init_PathParam(PyObject* module);
 void init_IntParam(PyObject* module);
 void init_Int2DParam(PyObject* module);
 void init_Int3DParam(PyObject* module);
-void init_DoubleParam(PyObject* module);
-void init_Double2DParam(PyObject* module);
-void init_Double3DParam(PyObject* module);
-void init_ColorParam(PyObject* module);
-void init_ChoiceParam(PyObject* module);
 void init_ButtonParam(PyObject* module);
 void init_SeparatorParam(PyObject* module);
 void init_GroupParam(PyObject* module);
@@ -73,7 +76,6 @@ void init_Double2DTuple(PyObject* module);
 void init_Double3DTuple(PyObject* module);
 void init_ColorTuple(PyObject* module);
 void init_RectI(PyObject* module);
-void init_RectD(PyObject* module);
 void init_NATRON_NAMESPACE(PyObject* module);
 
 // Required modules' type and converter arrays.
@@ -232,6 +234,40 @@ static void conststd_list_std_pair_std_string_std_string__REF_PythonToCpp_consts
 static PythonToCppFunc is_conststd_list_std_pair_std_string_std_string__REF_PythonToCpp_conststd_list_std_pair_std_string_std_string__REF_Convertible(PyObject* pyIn) {
     if (Shiboken::Conversions::convertibleSequenceTypes(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_PAIR_STD_STRING_STD_STRING_IDX], pyIn))
         return conststd_list_std_pair_std_string_std_string__REF_PythonToCpp_conststd_list_std_pair_std_string_std_string__REF;
+    return 0;
+}
+
+// C++ to Python conversion for type 'std::list<Track * > *'.
+static PyObject* std_list_TrackPTR_PTR_CppToPython_std_list_TrackPTR_PTR(const void* cppIn) {
+    ::std::list<Track * >& cppInRef = *((::std::list<Track * >*)cppIn);
+
+                    // TEMPLATE - stdListToPyList - START
+            PyObject* pyOut = PyList_New((int) cppInRef.size());
+            ::std::list<Track * >::const_iterator it = cppInRef.begin();
+            for (int idx = 0; it != cppInRef.end(); ++it, ++idx) {
+            ::Track* cppItem(*it);
+            PyList_SET_ITEM(pyOut, idx, Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_TRACK_IDX], cppItem));
+            }
+            return pyOut;
+        // TEMPLATE - stdListToPyList - END
+
+}
+static void std_list_TrackPTR_PTR_PythonToCpp_std_list_TrackPTR_PTR(PyObject* pyIn, void* cppOut) {
+    ::std::list<Track * >& cppOutRef = *((::std::list<Track * >*)cppOut);
+
+                    // TEMPLATE - pyListToStdList - START
+        for (int i = 0; i < PySequence_Size(pyIn); i++) {
+        Shiboken::AutoDecRef pyItem(PySequence_GetItem(pyIn, i));
+        ::Track* cppItem = ((::Track*)0);
+        Shiboken::Conversions::pythonToCppPointer((SbkObjectType*)SbkNatronEngineTypes[SBK_TRACK_IDX], pyItem, &(cppItem));
+        cppOutRef.push_back(cppItem);
+        }
+    // TEMPLATE - pyListToStdList - END
+
+}
+static PythonToCppFunc is_std_list_TrackPTR_PTR_PythonToCpp_std_list_TrackPTR_PTR_Convertible(PyObject* pyIn) {
+    if (Shiboken::Conversions::checkSequenceTypes(SbkNatronEngineTypes[SBK_TRACK_IDX], pyIn))
+        return std_list_TrackPTR_PTR_PythonToCpp_std_list_TrackPTR_PTR;
     return 0;
 }
 
@@ -606,19 +642,27 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
 #endif
 
     // Initialize classes in the type system
-    init_UserParamHolder(module);
+    init_RectD(module);
     init_PyCoreApplication(module);
     init_Group(module);
-    init_Effect(module);
     init_App(module);
     init_AppSettings(module);
     init_ItemBase(module);
     init_Layer(module);
     init_BezierCurve(module);
     init_Roto(module);
+    init_Track(module);
+    init_Tracker(module);
     init_ImageLayer(module);
+    init_UserParamHolder(module);
+    init_Effect(module);
     init_Param(module);
     init_AnimatedParam(module);
+    init_DoubleParam(module);
+    init_Double2DParam(module);
+    init_Double3DParam(module);
+    init_ColorParam(module);
+    init_ChoiceParam(module);
     init_BooleanParam(module);
     init_StringParamBase(module);
     init_StringParam(module);
@@ -628,11 +672,6 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     init_IntParam(module);
     init_Int2DParam(module);
     init_Int3DParam(module);
-    init_DoubleParam(module);
-    init_Double2DParam(module);
-    init_Double3DParam(module);
-    init_ColorParam(module);
-    init_ChoiceParam(module);
     init_ButtonParam(module);
     init_SeparatorParam(module);
     init_GroupParam(module);
@@ -644,7 +683,6 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     init_Double3DTuple(module);
     init_ColorTuple(module);
     init_RectI(module);
-    init_RectD(module);
     init_NATRON_NAMESPACE(module);
 
     // Register converter for type 'NatronEngine.std::size_t'.
@@ -684,6 +722,13 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_PAIR_STD_STRING_STD_STRING_IDX],
         conststd_list_std_pair_std_string_std_string__REF_PythonToCpp_conststd_list_std_pair_std_string_std_string__REF,
         is_conststd_list_std_pair_std_string_std_string__REF_PythonToCpp_conststd_list_std_pair_std_string_std_string__REF_Convertible);
+
+    // Register converter for type 'std::list<Track*>*'.
+    SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_TRACKPTR_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, std_list_TrackPTR_PTR_CppToPython_std_list_TrackPTR_PTR);
+    Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_TRACKPTR_IDX], "std::list<Track*>*");
+    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_TRACKPTR_IDX],
+        std_list_TrackPTR_PTR_PythonToCpp_std_list_TrackPTR_PTR,
+        is_std_list_TrackPTR_PTR_PythonToCpp_std_list_TrackPTR_PTR_Convertible);
 
     // Register converter for type 'std::list<ItemBase*>'.
     SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_ITEMBASEPTR_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, std_list_ItemBasePTR__CppToPython_std_list_ItemBasePTR_);

@@ -122,10 +122,8 @@ public Q_SLOTS:
     ///An item was removed by the user
     void onItemRemoved(const boost::shared_ptr<RotoItem>& item,int reason);
 
-#ifdef NATRON_ROTO_INVERTIBLE
     ///An item had its inverted state changed
     void onRotoItemInvertedStateChanged();
-#endif
 
     ///An item had its shape color changed
     void onRotoItemShapeColorChanged();

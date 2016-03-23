@@ -458,7 +458,6 @@ DockablePanel::DockablePanel(Gui* gui ,
         _imp->_tabWidget->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Preferred);
     }
     QObject::connect(_imp->_tabWidget, SIGNAL(currentChanged(int)), this, SLOT(onPageIndexChanged(int)));
-    _imp->_rightContainerLayout->addWidget(_imp->_tabWidget);
     _imp->_horizLayout->addWidget(_imp->_rightContainer);
     _imp->_mainLayout->addWidget(_imp->_horizContainer);
 
@@ -726,23 +725,30 @@ DockablePanel::onLineEditNameEditingFinished()
 void
 DockablePanel::initializeKnobsInternal()
 {
-    std::vector< KnobPtr > knobs = _imp->_holder->getKnobs();
-    _imp->initializeKnobVector(knobs, NULL);
-
-    ///add all knobs left  to the default page
+    
+    
+    assert(_imp->_tabWidget);
+    _imp->_rightContainerLayout->addWidget(_imp->_tabWidget);
+    
 
     RotoPanel* roto = initializeRotoPanel();
-    
-    
     if (roto) {
         _imp->_rightContainerLayout->addWidget(roto);
     }
-
+    
+    
     assert(!_imp->_trackerPanel);
     _imp->_trackerPanel = initializeTrackerPanel();
     if (_imp->_trackerPanel) {
         _imp->_rightContainerLayout->addWidget(_imp->_trackerPanel);
     }
+    
+    std::vector< KnobPtr > knobs = _imp->_holder->getKnobs();
+    _imp->initializeKnobVector(knobs, NULL);
+
+    ///add all knobs left  to the default page
+
+   
 
     
     initializeExtraGui(_imp->_rightContainerLayout);

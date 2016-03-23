@@ -67,6 +67,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ViewerInstance.h"
 
 #define kMergeOFXParamOperation "operation"
+#define kMergeOFXParamInvertMask "maskInvert"
 #define kBlurCImgParamSize "size"
 #define kTimeOffsetParamOffset "timeOffset"
 #define kFrameHoldParamFirstFrame "firstFrame"
@@ -501,6 +502,10 @@ void
 RotoDrawableItem::rotoKnobChanged(const KnobPtr& knob, ValueChangedReasonEnum reason)
 {
     boost::shared_ptr<KnobChoice> compKnob = getOperatorKnob();
+#ifdef NATRON_ROTO_INVERTIBLE
+    boost::shared_ptr<KnobBool> invertKnob = getInvertedKnob();
+#endif
+    
     RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
     RotoStrokeType type;
     if (isStroke) {
@@ -524,7 +529,22 @@ RotoDrawableItem::rotoKnobChanged(const KnobPtr& knob, ValueChangedReasonEnum re
         if ( reason == eValueChangedReasonUserEdited) {
             getContext()->refreshRotoPaintTree();
         }
-    } else if (knob == _imp->sourceColor) {
+    }
+#ifdef NATRON_ROTO_INVERTIBLE
+    else if (knob == invertKnob) {
+        KnobPtr mergeMaskInvertKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamInvertMask);
+        KnobBool* mergeMaskInv = dynamic_cast<KnobBool*>(mergeMaskInvertKnob.get());
+        if (mergeMaskInv) {
+            mergeMaskInv->setValue(invertKnob->getValue());
+        }
+        
+        ///Since the invert state might have changed, we may have to change the rotopaint tree layout
+        if ( reason == eValueChangedReasonUserEdited) {
+            getContext()->refreshRotoPaintTree();
+        }
+    }
+#endif
+    else if (knob == _imp->sourceColor) {
         refreshNodesConnections();
     } else if (knob == _imp->effectStrength) {
         
@@ -752,9 +772,7 @@ RotoDrawableItem::refreshNodesConnections()
             revealInput = getContext()->getNode()->getInput(reveal_i - 1);
         }
         if (!revealInput && shouldUseUpstreamForReveal) {
-            if (type != eRotoStrokeTypeSolid) {
-                revealInput = upstreamNode;
-            }
+            revealInput = upstreamNode;
             
         }
         
@@ -1107,15 +1125,16 @@ RotoDrawableItem::getFeatherFallOff(double time) const
     return _imp->featherFallOff->getValueAtTime(time);
 }
 
-#ifdef NATRON_ROTO_INVERTIBLE
 bool
 RotoDrawableItem::getInverted(double time) const
 {
     ///MT-safe thanks to Knob
+#ifdef NATRON_ROTO_INVERTIBLE
     return _imp->inverted->getValueAtTime(time);
-}
-
+#else
+    return false;
 #endif
+}
 
 void
 RotoDrawableItem::getColor(double time,
@@ -1192,14 +1211,15 @@ boost::shared_ptr<KnobDouble> RotoDrawableItem::getOpacityKnob() const
 {
     return _imp->opacity;
 }
-
-#ifdef NATRON_ROTO_INVERTIBLE
 boost::shared_ptr<KnobBool> RotoDrawableItem::getInvertedKnob() const
 {
+#ifdef NATRON_ROTO_INVERTIBLE
     return _imp->inverted;
+#else
+    return boost::shared_ptr<KnobBool>();
+#endif
 }
 
-#endif
 boost::shared_ptr<KnobChoice> RotoDrawableItem::getOperatorKnob() const
 {
     return _imp->compOperator;
@@ -1432,6 +1452,33 @@ RotoDrawableItem::setTransform(double time, double tx, double ty, double sx, dou
     
     onTransformSet(time);
 }
+
+void
+RotoDrawableItem::resetTransformCenter()
+{
+    double time = getContext()->getNode()->getApp()->getTimeLine()->currentFrame();
+    RectD bbox =  getBoundingBox(time);
+    boost::shared_ptr<KnobDouble> centerKnob = _imp->center;
+    centerKnob->beginChanges();
+    
+    std::pair<int, KnobPtr> hasMaster = centerKnob->getMaster(0);
+    if (hasMaster.second) {
+        for (int i = 0; i < centerKnob->getDimension(); ++i) {
+            dynamic_cast<KnobI*>(centerKnob.get())->unSlave(i, false);
+        }
+    }
+    dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(ViewSpec::all(), 0);
+    dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(ViewSpec::all(), 1);
+    centerKnob->setValues((bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2., ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+    if (hasMaster.second) {
+        for (int i = 0; i < centerKnob->getDimension(); ++i) {
+            dynamic_cast<KnobI*>(centerKnob.get())->slaveTo(i, hasMaster.second, i);
+        }
+    }
+    centerKnob->endChanges();
+
+}
+
 
 NATRON_NAMESPACE_EXIT;
 

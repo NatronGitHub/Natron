@@ -2073,7 +2073,7 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
     script = declarations + "\n" + expressionCopy + "\n" + script;
     ///This will register the listeners
     std::string error;
-    bool ok = Python::interpretPythonScript(script, &error,NULL);
+    bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error,NULL);
     if (!error.empty()) {
         qDebug() << error.c_str();
     }
@@ -2161,17 +2161,17 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
     {
         EXPR_RECURSION_LEVEL();
         
-        if (!Python::interpretPythonScript(script, &error, 0)) {
+        if (!NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, 0)) {
             throw std::runtime_error(error);
         }
         
         std::stringstream ss;
         ss << funcExecScript <<'(' << getCurrentTime()<<", " <<  getCurrentView() << ")\n";
-        if (!Python::interpretPythonScript(ss.str(), &error, 0)) {
+        if (!NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &error, 0)) {
             throw std::runtime_error(error);
         }
         
-        PyObject *ret = PyObject_GetAttrString(Python::getMainModule(),"ret"); //get our ret variable created above
+        PyObject *ret = PyObject_GetAttrString(NATRON_PYTHON_NAMESPACE::getMainModule(),"ret"); //get our ret variable created above
         
         if (!ret || PyErr_Occurred()) {
 #ifdef DEBUG
@@ -2235,7 +2235,7 @@ KnobHelper::setExpressionInternal(int dimension,const std::string& expression,bo
         _imp->expressions[dimension].originalExpression = expression;
         
         ///This may throw an exception upon failure
-        //Python::compilePyScript(exprCpy, &_imp->expressions[dimension].code);
+        //NATRON_PYTHON_NAMESPACE::compilePyScript(exprCpy, &_imp->expressions[dimension].code);
     }
   
 
@@ -2412,7 +2412,7 @@ KnobHelper::executeExpression(double time,
     
     //returns a new ref, this function's documentation is not clear onto what it returns...
     //https://docs.python.org/2/c-api/veryhigh.html
-    PyObject* mainModule = Python::getMainModule();
+    PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
     PyObject* globalDict = PyModule_GetDict(mainModule);
     
     std::stringstream ss;
@@ -2434,7 +2434,7 @@ KnobHelper::executeExpression(double time,
             if (errCatcher) {
                 errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
                 assert(errorObj);
-                error = Python::PY3String_asString(errorObj);
+                error = NATRON_PYTHON_NAMESPACE::PY3String_asString(errorObj);
                 PyObject* unicode = PyUnicode_FromString("");
                 PyObject_SetAttrString(errCatcher, "value", unicode);
                 Py_DECREF(errorObj);
@@ -2497,7 +2497,7 @@ KnobHelper::setName(const std::string & name,bool throwExceptions)
 {
     
     _imp->originalName = name;
-    _imp->name = Python::makeNameScriptFriendly(name);
+    _imp->name = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(name);
     
     if (!getHolder()) {
         return;
@@ -2533,7 +2533,7 @@ KnobHelper::setName(const std::string & name,bool throwExceptions)
             newPotentialQualifiedName += finalName;
             
             bool isAttrDefined = false;
-            (void)Python::getAttrRecursive(newPotentialQualifiedName, appPTR->getMainModule(), &isAttrDefined);
+            (void)NATRON_PYTHON_NAMESPACE::getAttrRecursive(newPotentialQualifiedName, appPTR->getMainModule(), &isAttrDefined);
             if (isAttrDefined) {
                 std::stringstream ss;
                 ss << "A Python attribute with the same name (" << newPotentialQualifiedName << ") already exists.";

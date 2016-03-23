@@ -163,6 +163,7 @@ SOURCES += \
     PyParameter.cpp \
     PyRoto.cpp \
     PySideCompat.cpp \
+    PyTracker.cpp \
     ReadNode.cpp \
     RectD.cpp \
     RectI.cpp \
@@ -224,6 +225,8 @@ SOURCES += \
     NatronEngine/imagelayer_wrapper.cpp \
     NatronEngine/layer_wrapper.cpp \
     NatronEngine/roto_wrapper.cpp \
+    NatronEngine/track_wrapper.cpp \
+    NatronEngine/tracker_wrapper.cpp \
     NatronEngine/groupparam_wrapper.cpp \
     NatronEngine/pageparam_wrapper.cpp \
     NatronEngine/appsettings_wrapper.cpp \
@@ -338,6 +341,7 @@ HEADERS += \
     PyNode.h \
     PyParameter.h \
     PyRoto.h \
+    PyTracker.h \
     Pyside_Engine_Python.h \
     ReadNode.h \
     RectD.h \
@@ -449,6 +453,8 @@ HEADERS += \
     NatronEngine/imagelayer_wrapper.h \
     NatronEngine/layer_wrapper.h \
     NatronEngine/roto_wrapper.h \
+    NatronEngine/track_wrapper.h \
+    NatronEngine/tracker_wrapper.h \
     NatronEngine/groupparam_wrapper.h \
     NatronEngine/pageparam_wrapper.h \
     NatronEngine/appsettings_wrapper.h \

@@ -476,7 +476,7 @@ ScriptEditor::onExecScriptClicked()
     }
     std::string error,output;
     
-    if (!Python::interpretPythonScript(script.toStdString(), &error, &output)) {
+    if (!NATRON_PYTHON_NAMESPACE::interpretPythonScript(script.toStdString(), &error, &output)) {
         _imp->outputEdit->append(GuiUtils::convertFromPlainText(QString::fromUtf8(error.c_str()),Qt::WhiteSpaceNormal));
     } else {
         QString toAppend(script);

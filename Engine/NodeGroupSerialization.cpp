@@ -175,7 +175,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 
                 std::string stdModuleName = pythonModuleName.toStdString();
                 bool istoolset;
-                if (Python::getGroupInfos(pythonModuleInfo.path().toStdString() + '/', stdModuleName, &pythonPluginID, &pythonPluginLabel, &pythonIcFilePath, &pythonGrouping, &pythonDesc, &istoolset, &pyVersion)) {
+                if (NATRON_PYTHON_NAMESPACE::getGroupInfos(pythonModuleInfo.path().toStdString() + '/', stdModuleName, &pythonPluginID, &pythonPluginLabel, &pythonIcFilePath, &pythonGrouping, &pythonDesc, &istoolset, &pyVersion)) {
                     
                     if (pyVersion != savedPythonModuleVersion) {
             

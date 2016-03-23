@@ -5,7 +5,7 @@
 
 #include <PyNodeGroup.h>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER; NATRON_PYTHON_NAMESPACE_ENTER;
 class GroupWrapper : public Group
 {
 public:
@@ -13,7 +13,7 @@ public:
     virtual ~GroupWrapper();
     static void pysideInitQtMetaTypes();
 };
-NATRON_NAMESPACE_EXIT;
+NATRON_PYTHON_NAMESPACE_EXIT; NATRON_NAMESPACE_EXIT;
 
 #endif // SBK_GROUPWRAPPER_H
 

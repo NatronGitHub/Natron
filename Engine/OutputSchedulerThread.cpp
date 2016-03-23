@@ -1676,7 +1676,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             std::vector<std::string> args;
             std::string error;
             try {
-                Python::getFunctionArguments(cb, &error, &args);
+                NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
             } catch (const std::exception& e) {
                 effect->getApp()->appendToScriptEditor(std::string("Failed to run onFrameRendered callback: ")
                                                                  + e.what());
@@ -2188,7 +2188,7 @@ OutputSchedulerThread::runCallbackWithVariables(const QString& callback)
         script.append(QString::fromUtf8(")\n"));
         
         std::string err,output;
-        if (!Python::interpretPythonScript(callback.toStdString(), &err, &output)) {
+        if (!NATRON_PYTHON_NAMESPACE::interpretPythonScript(callback.toStdString(), &err, &output)) {
             effect->getApp()->appendToScriptEditor("Failed to run callback: " + err);
             throw std::runtime_error(err);
         } else if (!output.empty()) {
@@ -2423,7 +2423,7 @@ private:
             std::vector<std::string> args;
             std::string error;
             try {
-                Python::getFunctionArguments(cb, &error, &args);
+                NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
             } catch (const std::exception& e) {
                 output->getApp()->appendToScriptEditor(std::string("Failed to run beforeFrameRendered callback: ")
                                                                  + e.what());
@@ -2782,7 +2782,7 @@ DefaultScheduler::aboutToStartRender()
         std::vector<std::string> args;
         std::string error;
         try {
-            Python::getFunctionArguments(cb, &error, &args);
+            NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
         } catch (const std::exception& e) {
             effect->getApp()->appendToScriptEditor(std::string("Failed to run beforeRender callback: ")
                                                              + e.what());
@@ -2844,7 +2844,7 @@ DefaultScheduler::onRenderStopped(bool aborted)
         std::vector<std::string> args;
         std::string error;
         try {
-            Python::getFunctionArguments(cb, &error, &args);
+            NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
         } catch (const std::exception& e) {
             effect->getApp()->appendToScriptEditor(std::string("Failed to run afterRender callback: ")
                                                              + e.what());

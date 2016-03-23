@@ -120,7 +120,6 @@ class FloatingWidget;
 class Histogram;
 class GeneralProgressDialog;
 class Gui;
-class GuiApp;
 class GuiAppInstance;
 class GuiLayoutSerialization;
 class HierarchyView;
@@ -156,9 +155,6 @@ class ProjectGuiSerialization;
 class ProgressPanel;
 class ProgressTaskInfo;
 class PropertiesBinWrapper;
-class PyModalDialog;
-class PyPanel;
-class PyTabWidget;
 class RectI;
 class RenderStatsDialog;
 class RotoGui;
@@ -196,6 +192,13 @@ class Menu;
 namespace QtMac {
 bool isHighDPIInternal(const QWidget* w);
 }
+
+NATRON_PYTHON_NAMESPACE_ENTER;
+class GuiApp;
+class PyModalDialog;
+class PyPanel;
+class PyTabWidget;
+NATRON_PYTHON_NAMESPACE_EXIT;
 
 typedef boost::weak_ptr<NodeGui> NodeGuiWPtr;
 typedef boost::shared_ptr<NodeGui> NodeGuiPtr;

@@ -299,7 +299,7 @@ RotoStrokeItem::setStrokeFinished()
         _imp->strokeDotPatterns.clear();
     }
     
-    getContext()->resetTransformCenter();
+    resetTransformCenter();
     
     NodePtr effectNode = getEffectNode();
     NodePtr mergeNode = getMergeNode();

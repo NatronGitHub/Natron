@@ -2429,7 +2429,7 @@ Settings::populatePluginsTab()
         const QStringList& grouping = (*it->second.rbegin())->getGrouping();
         if (grouping.size() > 0) {
             
-            groupNames.insert(std::make_pair(Python::makeNameScriptFriendly(grouping[0].toStdString()),grouping[0].toStdString()));
+            groupNames.insert(std::make_pair(NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(grouping[0].toStdString()),grouping[0].toStdString()));
         }
     }
     
@@ -2467,7 +2467,7 @@ Settings::populatePluginsTab()
             const QStringList& grouping = plugin->getGrouping();
             if (grouping.size() > 0) {
                 
-                std::string mainGroup = Python::makeNameScriptFriendly(grouping[0].toStdString());
+                std::string mainGroup = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(grouping[0].toStdString());
                 
                 ///Find the corresponding group
                 for (std::list< boost::shared_ptr<KnobGroup> >::const_iterator it3 = groups.begin(); it3 != groups.end(); ++it3) {

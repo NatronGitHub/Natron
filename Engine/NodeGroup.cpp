@@ -467,7 +467,7 @@ NodeCollection::checkNodeName(const Node* node, const std::string& baseName,bool
         return;
     }
     ///Remove any non alpha-numeric characters from the baseName
-    std::string cpy = Python::makeNameScriptFriendly(baseName);
+    std::string cpy = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(baseName);
     if (cpy.empty()) {
         throw std::runtime_error(QObject::tr("Invalid script-name").toStdString());
         return;

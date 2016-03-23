@@ -41,6 +41,9 @@
 #define NATRON_NAMESPACE
 #define NATRON_NAMESPACE_ENTER
 #define NATRON_NAMESPACE_EXIT
+#define NATRON_PYTHON_NAMESPACE
+#define NATRON_PYTHON_NAMESPACE_ENTER
+#define NATRON_PYTHON_NAMESPACE_EXIT
 #else
 #define NATRON_NAMESPACE Natron
 // Macros to use in each file to enter and exit the right name spaces.
@@ -49,6 +52,12 @@
 #define NATRON_NAMESPACE_USING using namespace NATRON_NAMESPACE;
 // Establish the name space.
 namespace NATRON_NAMESPACE { }
+
+#define NATRON_PYTHON_NAMESPACE Python
+#define NATRON_PYTHON_NAMESPACE_ENTER namespace NATRON_PYTHON_NAMESPACE {
+#define NATRON_PYTHON_NAMESPACE_EXIT }
+#define NATRON_PYTHON_NAMESPACE_USING using namespace NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE;
+namespace NATRON_PYTHON_NAMESPACE { }
 #endif
 
 #define NATRON_APPLICATION_DESCRIPTION "Open-source, cross-platform, nodal compositing software."

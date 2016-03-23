@@ -295,7 +295,7 @@ ExportGroupTemplateDialog::onOkClicked()
         Dialogs::errorDialog(tr("Error").toStdString(), tr("You must specify a label to name the script").toStdString());
         return;
     } else {
-        pluginLabel = QString::fromUtf8(Python::makeNameScriptFriendly(pluginLabel.toStdString()).c_str());
+        pluginLabel = QString::fromUtf8(NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(pluginLabel.toStdString()).c_str());
     }
 
     QString pluginID = _imp->idEdit->text();

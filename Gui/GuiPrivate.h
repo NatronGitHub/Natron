@@ -77,7 +77,7 @@ struct GuiPrivate
     mutable QMutex _splittersMutex;
     std::list<Splitter*> _splitters;
     mutable QMutex _pyPanelsMutex;
-    std::map<PyPanel*, std::string> _userPanels;
+    std::map<NATRON_PYTHON_NAMESPACE::PyPanel*, std::string> _userPanels;
 
     bool _isTripleSyncEnabled;
     

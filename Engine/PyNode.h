@@ -42,6 +42,7 @@
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
+NATRON_PYTHON_NAMESPACE_ENTER;
 
 class ImageLayer
 {
@@ -350,6 +351,11 @@ public:
      **/
     Roto* getRotoContext() const;
     
+    /**
+     * @brief Get the tracker context for this node if it has any. Currently only Tracker has one.
+     **/
+    Tracker* getTrackerContext() const;
+    
     RectD getRegionOfDefinition(double time, int /* Python API: do not use ViewIdx */ view) const;
     
     static Param* createParamWrapperForKnob(const KnobPtr& knob);
@@ -371,6 +377,7 @@ public:
     void setPagesOrder(const std::list<std::string>& pages);
 };
 
+NATRON_PYTHON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_EXIT;
 
 #endif // NODEWRAPPER_H

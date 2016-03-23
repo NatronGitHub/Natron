@@ -350,7 +350,7 @@ KnobHelper::pyObjectToType(PyObject* o) const
 {
 #ifndef IS_PYTHON_2
     if (PyUnicode_Check(o)) {
-        return Python::PY3String_asString(o);
+        return NATRON_PYTHON_NAMESPACE::PY3String_asString(o);
     }
 #else
     if (PyString_Check(o)) {
@@ -1606,6 +1606,8 @@ Knob<T>::unSlave(int dimension,
     }
     if (hasChanged) {
         evaluateValueChange(dimension, getCurrentTime(), ViewIdx(0), reason);
+    } else {
+        checkAnimationLevel(ViewSpec::all(), dimension);
     }
 }
 

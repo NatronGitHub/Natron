@@ -372,7 +372,7 @@ EffectInstance::Implementation::runChangedParamCallback(KnobI* k,
         return;
     }
     try {
-        Python::getFunctionArguments(callback, &error, &args);
+        NATRON_PYTHON_NAMESPACE::getFunctionArguments(callback, &error, &args);
     } catch (const std::exception& e) {
         _publicInterface->getApp()->appendToScriptEditor(std::string("Failed to run onParamChanged callback: ")
                                                          + e.what());
@@ -435,7 +435,7 @@ EffectInstance::Implementation::runChangedParamCallback(KnobI* k,
     std::string script = ss.str();
     std::string err;
     std::string output;
-    if ( !Python::interpretPythonScript(script, &err, &output) ) {
+    if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, &output) ) {
         _publicInterface->getApp()->appendToScriptEditor(QObject::tr("Failed to execute onParamChanged callback: ").toStdString() + err);
     } else {
         if ( !output.empty() ) {

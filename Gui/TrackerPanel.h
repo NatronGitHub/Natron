@@ -65,21 +65,21 @@ public:
     
     virtual ~TrackerPanel();
     
-    void addTableRow(const boost::shared_ptr<TrackMarker> & marker);
+    void addTableRow(const TrackMarkerPtr & marker);
     
-    void insertTableRow(const boost::shared_ptr<TrackMarker> & marker, int index);
+    void insertTableRow(const TrackMarkerPtr & marker, int index);
     
     void removeRow(int row);
     
-    void removeMarker(const boost::shared_ptr<TrackMarker> & marker);
+    void removeMarker(const TrackMarkerPtr & marker);
     
     TableItem* getItemAt(int row, int column) const;
     
-    int getMarkerRow(const boost::shared_ptr<TrackMarker> & marker) const;
+    int getMarkerRow(const TrackMarkerPtr & marker) const;
     
-    TableItem* getItemAt(const boost::shared_ptr<TrackMarker> & marker, int column) const;
+    TableItem* getItemAt(const TrackMarkerPtr & marker, int column) const;
     
-    boost::shared_ptr<TrackMarker> getRowMarker(int row) const;
+    TrackMarkerPtr getRowMarker(int row) const;
     
     boost::shared_ptr<KnobI> getKnobAt(int row, int column, int* dimension) const;
     
@@ -94,7 +94,7 @@ public:
     
     void pushUndoCommand(QUndoCommand* command);
     
-    void clearAndSelectTracks(const std::list<boost::shared_ptr<TrackMarker> >& markers, int reason);
+    void clearAndSelectTracks(const std::list<TrackMarkerPtr >& markers, int reason);
     
 public Q_SLOTS:
     
@@ -103,7 +103,6 @@ public Q_SLOTS:
     void onSelectAllButtonClicked();
     void onResetButtonClicked();
     void onAverageButtonClicked();
-    void onExportButtonClicked();
     
     void onGoToPrevKeyframeButtonClicked();
     void onGoToNextKeyframeButtonClicked();
@@ -120,45 +119,45 @@ public Q_SLOTS:
     void onContextSelectionAboutToChange(int reason);
     void onContextSelectionChanged(int reason);
     
-    void onTrackKeyframeSet(const boost::shared_ptr<TrackMarker>& marker, int key);
-    void onTrackKeyframeRemoved(const boost::shared_ptr<TrackMarker>& marker, int key);
-    void onTrackAllKeyframesRemoved(const boost::shared_ptr<TrackMarker>& marker);
+    void onTrackKeyframeSet(const TrackMarkerPtr& marker, int key);
+    void onTrackKeyframeRemoved(const TrackMarkerPtr& marker, int key);
+    void onTrackAllKeyframesRemoved(const TrackMarkerPtr& marker);
     
-    void onKeyframeSetOnTrackCenter(const boost::shared_ptr<TrackMarker> &marker, int key);
-    void onKeyframeRemovedOnTrackCenter(const boost::shared_ptr<TrackMarker> &marker, int key);
-    void onAllKeyframesRemovedOnTrackCenter(const boost::shared_ptr<TrackMarker> &marker);
-    void onMultipleKeyframesSetOnTrackCenter(const boost::shared_ptr<TrackMarker> &marker, const std::list<double>& keys);
+    void onKeyframeSetOnTrackCenter(const TrackMarkerPtr &marker, int key);
+    void onKeyframeRemovedOnTrackCenter(const TrackMarkerPtr &marker, int key);
+    void onAllKeyframesRemovedOnTrackCenter(const TrackMarkerPtr &marker);
+    void onMultipleKeyframesSetOnTrackCenter(const TrackMarkerPtr &marker, const std::list<double>& keys);
     
     void onSettingsPanelClosed(bool closed);
-    void onTrackAboutToClone(const boost::shared_ptr<TrackMarker>& marker);
-    void onTrackCloned(const boost::shared_ptr<TrackMarker>& marker);
+    void onTrackAboutToClone(const TrackMarkerPtr& marker);
+    void onTrackCloned(const TrackMarkerPtr& marker);
     
-    void onTrackInserted(const boost::shared_ptr<TrackMarker>& marker, int index);
-    void onTrackRemoved(const boost::shared_ptr<TrackMarker>& marker);
+    void onTrackInserted(const TrackMarkerPtr& marker, int index);
+    void onTrackRemoved(const TrackMarkerPtr& marker);
     
-    void onEnabledChanged(const boost::shared_ptr<TrackMarker>& marker,int reason);
+    void onEnabledChanged(const TrackMarkerPtr& marker,int reason);
     
-    void onCenterKnobValueChanged(const boost::shared_ptr<TrackMarker>& marker,int,int);
-    void onOffsetKnobValueChanged(const boost::shared_ptr<TrackMarker>& marker,int,int);
-    void onErrorKnobValueChanged(const boost::shared_ptr<TrackMarker> &marker,int,int);
-    void onMotionModelKnobValueChanged(const boost::shared_ptr<TrackMarker> &marker,int,int);
+    void onCenterKnobValueChanged(const TrackMarkerPtr& marker,int,int);
+    void onOffsetKnobValueChanged(const TrackMarkerPtr& marker,int,int);
+    void onErrorKnobValueChanged(const TrackMarkerPtr &marker,int,int);
+    void onMotionModelKnobValueChanged(const TrackMarkerPtr &marker,int,int);
     
-    /*void onPatternTopLeftKnobValueChanged(const boost::shared_ptr<TrackMarker> &marker,int,int);
-    void onPatternTopRightKnobValueChanged(const boost::shared_ptr<TrackMarker> &marker,int,int);
-    void onPatternBtmRightKnobValueChanged(const boost::shared_ptr<TrackMarker> &marker,int,int);
-    void onPatternBtmLeftKnobValueChanged(const boost::shared_ptr<TrackMarker> &marker,int,int);
+    /*void onPatternTopLeftKnobValueChanged(const TrackMarkerPtr &marker,int,int);
+    void onPatternTopRightKnobValueChanged(const TrackMarkerPtr &marker,int,int);
+    void onPatternBtmRightKnobValueChanged(const TrackMarkerPtr &marker,int,int);
+    void onPatternBtmLeftKnobValueChanged(const TrackMarkerPtr &marker,int,int);
     
-    void onSearchBtmLeftKnobValueChanged(const boost::shared_ptr<TrackMarker> &marker,int,int);
-    void onSearchTopRightKnobValueChanged(const boost::shared_ptr<TrackMarker> &marker,int,int);*/
+    void onSearchBtmLeftKnobValueChanged(const TrackMarkerPtr &marker,int,int);
+    void onSearchTopRightKnobValueChanged(const TrackMarkerPtr &marker,int,int);*/
     
     
     void onTimeChanged(SequenceTime time, int reason);
     
 private:
     
-    void onSelectionAboutToChangeInternal(const std::list<boost::shared_ptr<TrackMarker> >& markers);
-    void selectInternal(const std::list<boost::shared_ptr<TrackMarker> >& markers, int reason);
-    boost::shared_ptr<TrackMarker> makeTrackInternal();
+    void onSelectionAboutToChangeInternal(const std::list<TrackMarkerPtr >& markers);
+    void selectInternal(const std::list<TrackMarkerPtr >& markers, int reason);
+    TrackMarkerPtr makeTrackInternal();
     
     boost::scoped_ptr<TrackerPanelPrivate> _imp;
 };
