@@ -156,39 +156,10 @@ SOURCES += \
         ../libs/libmv/libmv/autotrack/autotrack.cc \
         ../libs/libmv/libmv/autotrack/predict_tracks.cc \
         ../libs/libmv/libmv/autotrack/tracks.cc \
-        ../libs/libmv/libmv/base/aligned_malloc.cc \
         ../libs/libmv/libmv/image/array_nd.cc \
         ../libs/libmv/libmv/image/convolve.cc \
-        ../libs/libmv/libmv/multiview/conditioning.cc \
-        ../libs/libmv/libmv/multiview/euclidean_resection.cc \
-        ../libs/libmv/libmv/multiview/fundamental.cc \
         ../libs/libmv/libmv/multiview/homography.cc \
-        ../libs/libmv/libmv/multiview/panography.cc \
-        ../libs/libmv/libmv/multiview/panography_kernel.cc \
-        ../libs/libmv/libmv/multiview/projection.cc \
-        ../libs/libmv/libmv/multiview/triangulation.cc \
-        ../libs/libmv/libmv/numeric/numeric.cc \
-        ../libs/libmv/libmv/numeric/poly.cc \
-        ../libs/libmv/libmv/simple_pipeline/bundle.cc \
-        ../libs/libmv/libmv/simple_pipeline/camera_intrinsics.cc \
-        ../libs/libmv/libmv/simple_pipeline/detect.cc \
-        ../libs/libmv/libmv/simple_pipeline/distortion_models.cc \
-        ../libs/libmv/libmv/simple_pipeline/initialize_reconstruction.cc \
-        ../libs/libmv/libmv/simple_pipeline/intersect.cc \
-        ../libs/libmv/libmv/simple_pipeline/keyframe_selection.cc \
-        ../libs/libmv/libmv/simple_pipeline/modal_solver.cc \
-        ../libs/libmv/libmv/simple_pipeline/pipeline.cc \
-        ../libs/libmv/libmv/simple_pipeline/reconstruction.cc \
-        ../libs/libmv/libmv/simple_pipeline/reconstruction_scale.cc \
-        ../libs/libmv/libmv/simple_pipeline/resect.cc \
-        ../libs/libmv/libmv/simple_pipeline/tracks.cc \
-        ../libs/libmv/libmv/tracking/brute_region_tracker.cc \
-        ../libs/libmv/libmv/tracking/hybrid_region_tracker.cc \
-        ../libs/libmv/libmv/tracking/klt_region_tracker.cc \
-        ../libs/libmv/libmv/tracking/pyramid_region_tracker.cc \
-        ../libs/libmv/libmv/tracking/retrack_region_tracker.cc \
         ../libs/libmv/libmv/tracking/track_region.cc \
-        ../libs/libmv/libmv/tracking/trklt_region_tracker.cc \
         ../libs/gflags/src/gflags.cc \
         ../libs/gflags/src/gflags_completions.cc \
         ../libs/gflags/src/gflags_reporting.cc
