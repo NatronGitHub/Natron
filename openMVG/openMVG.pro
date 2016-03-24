@@ -14,6 +14,9 @@ CONFIG -= qt
 # Do not use any serialization in openmvg (cereal, ply, stlplus ...)
 DEFINES += OPENMVG_NO_SERIALIZATION
 
+# Use this to use OsiMskSolverInterface.cpp
+#DEFINES += OPENMVG_HAVE_MOSEK
+
 include(../global.pri)
 include(../config.pri)
 
@@ -21,6 +24,10 @@ include(../config.pri)
 INCLUDEPATH += $$PWD/../libs/ceres/config
 INCLUDEPATH += $$PWD/../libs/ceres/include
 INCLUDEPATH += $$PWD/../libs/ceres/internal
+INCLUDEPATH += $$PWD/../libs/gflags
+INCLUDEPATH += $$PWD/../libs/gflags/src
+INCLUDEPATH += $$PWD/../libs/gflags/src/gflags
+INCLUDEPATH += $$PWD/../libs/glog/src
 INCLUDEPATH += $$PWD/../libs/openMVG/openMVG
 INCLUDEPATH += $$PWD/../libs/openMVG
 INCLUDEPATH += $$PWD/../libs/openMVG/dependencies/osi_clp/Clp/src
@@ -29,7 +36,7 @@ INCLUDEPATH += $$PWD/../libs/openMVG/dependencies/osi_clp/CoinUtils/src
 INCLUDEPATH += $$PWD/../libs/openMVG/dependencies/osi_clp/Osi/src/Osi
 INCLUDEPATH += $$PWD/../libs/Eigen3
 INCLUDEPATH += $$PWD/../libs/flann/src/cpp
-
+#INCLUDEPATH += $$PWD/../libs/lemon
 
 win32-msvc* {
 	CONFIG(64bit) {
@@ -53,8 +60,8 @@ SOURCES += \
         ../libs/openMVG/openMVG/multiview/conditioning.cpp \
         ../libs/openMVG/openMVG/multiview/essential.cpp \
         ../libs/openMVG/openMVG/multiview/projection.cpp \
-        ../libs/openMVG/openMVG/multiview/rotation_averaging_l1.cpp \
-        ../libs/openMVG/openMVG/multiview/rotation_averaging_l2.cpp \
+#        ../libs/openMVG/openMVG/multiview/rotation_averaging_l1.cpp \
+#        ../libs/openMVG/openMVG/multiview/rotation_averaging_l2.cpp \
         ../libs/openMVG/openMVG/multiview/solver_affine.cpp \
         ../libs/openMVG/openMVG/multiview/solver_essential_five_point.cpp \
         ../libs/openMVG/openMVG/multiview/solver_essential_kernel.cpp \
@@ -66,19 +73,19 @@ SOURCES += \
         ../libs/openMVG/openMVG/multiview/triangulation_nview.cpp \
         ../libs/openMVG/openMVG/multiview/triangulation.cpp \
         ../libs/openMVG/openMVG/numeric/numeric.cpp \
-        ../libs/openMVG/openMVG/sfm/pipelines/global/GlobalSfM_rotation_averaging.cpp \
-        ../libs/openMVG/openMVG/sfm/pipelines/global/GlobalSfM_translation_averaging.cpp \
-        ../libs/openMVG/openMVG/sfm/pipelines/global/sfm_global_engine_relative_motions.cpp \
-        ../libs/openMVG/openMVG/sfm/pipelines/localization/SfM_Localizer_Single_3DTrackObservation_Database.cpp \
-        ../libs/openMVG/openMVG/sfm/pipelines/localization/SfM_Localizer.cpp \
-        ../libs/openMVG/openMVG/sfm/pipelines/sequential/sequential_SfM.cpp \
-        ../libs/openMVG/openMVG/sfm/pipelines/structure_from_known_poses/structure_estimator.cpp \
-        ../libs/openMVG/openMVG/sfm/pipelines/sfm_robust_model_estimation.cpp \
-        ../libs/openMVG/openMVG/sfm/sfm_data_BA_ceres.cpp \
-        ../libs/openMVG/openMVG/sfm/sfm_data_filters_frustum.cpp \
+#        ../libs/openMVG/openMVG/sfm/pipelines/global/GlobalSfM_rotation_averaging.cpp \
+#        ../libs/openMVG/openMVG/sfm/pipelines/global/GlobalSfM_translation_averaging.cpp \
+#        ../libs/openMVG/openMVG/sfm/pipelines/global/sfm_global_engine_relative_motions.cpp \
+#        ../libs/openMVG/openMVG/sfm/pipelines/localization/SfM_Localizer_Single_3DTrackObservation_Database.cpp \
+#        ../libs/openMVG/openMVG/sfm/pipelines/localization/SfM_Localizer.cpp \
+#        ../libs/openMVG/openMVG/sfm/pipelines/sequential/sequential_SfM.cpp \
+#        ../libs/openMVG/openMVG/sfm/pipelines/structure_from_known_poses/structure_estimator.cpp \
+#        ../libs/openMVG/openMVG/sfm/pipelines/sfm_robust_model_estimation.cpp \
+#        ../libs/openMVG/openMVG/sfm/sfm_data_BA_ceres.cpp \
+#        ../libs/openMVG/openMVG/sfm/sfm_data_filters_frustum.cpp \
 #        ../libs/openMVG/openMVG/sfm/sfm_data_io.cpp \
-        ../libs/openMVG/openMVG/sfm/sfm_data_triangulation.cpp \
-        ../libs/openMVG/openMVG/sfm/sfm_data_utils.cpp \
+#        ../libs/openMVG/openMVG/sfm/sfm_data_triangulation.cpp \
+#        ../libs/openMVG/openMVG/sfm/sfm_data_utils.cpp \
         ../libs/openMVG/openMVG/system/timer.cpp
 
 
@@ -115,11 +122,11 @@ HEADERS += \
         ../libs/openMVG/openMVG/geometry/pose3.hpp \
         ../libs/openMVG/openMVG/geometry/rigid_transformation3D_srt.hpp \
         ../libs/openMVG/openMVG/geometry/Similarity3.hpp \
-        ../libs/openMVG/openMVG/graph/connectedComponent.hpp \
-        ../libs/openMVG/openMVG/graph/graph_builder.hpp \
-        ../libs/openMVG/openMVG/graph/graph_graphviz_export.hpp \
-        ../libs/openMVG/openMVG/graph/graph.hpp \
-        ../libs/openMVG/openMVG/graph/triplet_finder.hpp \
+#        ../libs/openMVG/openMVG/graph/connectedComponent.hpp \
+#        ../libs/openMVG/openMVG/graph/graph_builder.hpp \
+#        ../libs/openMVG/openMVG/graph/graph_graphviz_export.hpp \
+#        ../libs/openMVG/openMVG/graph/graph.hpp \
+#        ../libs/openMVG/openMVG/graph/triplet_finder.hpp \
         ../libs/openMVG/openMVG/image/image_concat.hpp \
         ../libs/openMVG/openMVG/image/image_container.hpp \
         ../libs/openMVG/openMVG/image/image_converter.hpp \
@@ -174,9 +181,9 @@ HEADERS += \
         ../libs/openMVG/openMVG/multiview/essential.hpp \
         ../libs/openMVG/openMVG/multiview/projection.hpp \
         ../libs/openMVG/openMVG/multiview/rotation_averaging_common.hpp \
-        ../libs/openMVG/openMVG/multiview/rotation_averaging_l1.hpp \
-        ../libs/openMVG/openMVG/multiview/rotation_averaging_l2.hpp \
-        ../libs/openMVG/openMVG/multiview/rotation_averaging.hpp \
+#        ../libs/openMVG/openMVG/multiview/rotation_averaging_l1.hpp \
+#        ../libs/openMVG/openMVG/multiview/rotation_averaging_l2.hpp \
+#        ../libs/openMVG/openMVG/multiview/rotation_averaging.hpp \
         ../libs/openMVG/openMVG/multiview/solver_affine.hpp \
         ../libs/openMVG/openMVG/multiview/solver_essential_kernel.hpp \
         ../libs/openMVG/openMVG/multiview/solver_fundamental_kernel.hpp \
@@ -204,37 +211,37 @@ HEADERS += \
         ../libs/openMVG/openMVG/robust_estimation/robust_estimator_Ransac.hpp \
         ../libs/openMVG/openMVG/robust_estimation/robust_ransac_tools.hpp \
         ../libs/openMVG/openMVG/robust_estimation/score_evaluator.hpp \
-        ../libs/openMVG/openMVG/sfm/pipelines/global/GlobalSfM_rotation_averaging.hpp \
-        ../libs/openMVG/openMVG/sfm/pipelines/global/GlobalSfM_rotation_averaging/score_evaluator.hpp \
-        ../libs/openMVG/openMVG/sfm/pipelines/global/GlobalSfM_translation_averaging.hpp \
-        ../libs/openMVG/openMVG/sfm/pipelines/global/sfm_global_engine_relative_motions.hpp \
-        ../libs/openMVG/openMVG/sfm/pipelines/global/sfm_global_reindex.hpp \
-        ../libs/openMVG/openMVG/sfm/pipelines/global/triplet_t_ACRansac_kernelAdaptator.hpp \
-        ../libs/openMVG/openMVG/sfm/pipelines/localization/SfM_Localizer_Single_3DTrackObservation_Database.hpp \
-        ../libs/openMVG/openMVG/sfm/pipelines/localization/SfM_Localizer.hpp \
-        ../libs/openMVG/openMVG/sfm/pipelines/sequential/sequential_SfM.hpp \
-        ../libs/openMVG/openMVG/sfm/pipelines/structure_from_known_poses/structure_estimator.hpp \
-        ../libs/openMVG/openMVG/sfm/pipelines/sfm_engine.hpp \
-        ../libs/openMVG/openMVG/sfm/pipelines/sfm_features_provider.hpp \
-        ../libs/openMVG/openMVG/sfm/pipelines/sfm_matches_provider.hpp \
-        ../libs/openMVG/openMVG/sfm/pipelines/sfm_regions_provider.hpp \
-        ../libs/openMVG/openMVG/sfm/pipelines/sfm_robust_model_estimation.hpp \
-        ../libs/openMVG/openMVG/sfm/sfm_data_BA_ceres_camera_functor.hpp \
-        ../libs/openMVG/openMVG/sfm/sfm_data_BA_ceres.hpp \
-        ../libs/openMVG/openMVG/sfm/sfm_data_BA.hpp \
-        ../libs/openMVG/openMVG/sfm/sfm_data_filters_frustum.hpp \
-        ../libs/openMVG/openMVG/sfm/sfm_data_filters.hpp \
+#        ../libs/openMVG/openMVG/sfm/pipelines/global/GlobalSfM_rotation_averaging.hpp \
+#        ../libs/openMVG/openMVG/sfm/pipelines/global/GlobalSfM_rotation_averaging/score_evaluator.hpp \
+#        ../libs/openMVG/openMVG/sfm/pipelines/global/GlobalSfM_translation_averaging.hpp \
+#        ../libs/openMVG/openMVG/sfm/pipelines/global/sfm_global_engine_relative_motions.hpp \
+#        ../libs/openMVG/openMVG/sfm/pipelines/global/sfm_global_reindex.hpp \
+#        ../libs/openMVG/openMVG/sfm/pipelines/global/triplet_t_ACRansac_kernelAdaptator.hpp \
+#        ../libs/openMVG/openMVG/sfm/pipelines/localization/SfM_Localizer_Single_3DTrackObservation_Database.hpp \
+#        ../libs/openMVG/openMVG/sfm/pipelines/localization/SfM_Localizer.hpp \
+#        ../libs/openMVG/openMVG/sfm/pipelines/sequential/sequential_SfM.hpp \
+#        ../libs/openMVG/openMVG/sfm/pipelines/structure_from_known_poses/structure_estimator.hpp \
+#        ../libs/openMVG/openMVG/sfm/pipelines/sfm_engine.hpp \
+#        ../libs/openMVG/openMVG/sfm/pipelines/sfm_features_provider.hpp \
+#        ../libs/openMVG/openMVG/sfm/pipelines/sfm_matches_provider.hpp \
+#        ../libs/openMVG/openMVG/sfm/pipelines/sfm_regions_provider.hpp \
+#        ../libs/openMVG/openMVG/sfm/pipelines/sfm_robust_model_estimation.hpp \
+#        ../libs/openMVG/openMVG/sfm/sfm_data_BA_ceres_camera_functor.hpp \
+#        ../libs/openMVG/openMVG/sfm/sfm_data_BA_ceres.hpp \
+#        ../libs/openMVG/openMVG/sfm/sfm_data_BA.hpp \
+#        ../libs/openMVG/openMVG/sfm/sfm_data_filters_frustum.hpp \
+#        ../libs/openMVG/openMVG/sfm/sfm_data_filters.hpp \
 #        ../libs/openMVG/openMVG/sfm/sfm_data_io_baf.hpp \
 #        ../libs/openMVG/openMVG/sfm/sfm_data_io_cereal.hpp \
 #        ../libs/openMVG/openMVG/sfm/sfm_data_io_ply.hpp \
 #        ../libs/openMVG/openMVG/sfm/sfm_data_io.hpp \
-        ../libs/openMVG/openMVG/sfm/sfm_data_triangulation.hpp \
-        ../libs/openMVG/openMVG/sfm/sfm_data_utils.hpp \
-        ../libs/openMVG/openMVG/sfm/sfm_data.hpp \
-        ../libs/openMVG/openMVG/sfm/sfm_filters.hpp \
-        ../libs/openMVG/openMVG/sfm/sfm_landmark.hpp \
+#        ../libs/openMVG/openMVG/sfm/sfm_data_triangulation.hpp \
+#        ../libs/openMVG/openMVG/sfm/sfm_data_utils.hpp \
+#        ../libs/openMVG/openMVG/sfm/sfm_data.hpp \
+#        ../libs/openMVG/openMVG/sfm/sfm_filters.hpp \
+#        ../libs/openMVG/openMVG/sfm/sfm_landmark.hpp \
 #        ../libs/openMVG/openMVG/sfm/sfm_view.hpp \
-        ../libs/openMVG/openMVG/sfm/sfm.hpp \
+#        ../libs/openMVG/openMVG/sfm/sfm.hpp \
         ../libs/openMVG/openMVG/stl/dynamic_bitset.hpp \
         ../libs/openMVG/openMVG/stl/hash.hpp \
         ../libs/openMVG/openMVG/stl/indexed_sort.hpp \
@@ -503,7 +510,7 @@ SOURCES += \
         ../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiRowCutDebugger.cpp \
         ../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiSolverBranch.cpp \
         ../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiSolverInterface.cpp \
-        ../libs/openMVG/dependencies/osi_clp/Osi/src/OsiMsk/OsiMskSolverInterface.cpp
+#        ../libs/openMVG/dependencies/osi_clp/Osi/src/OsiMsk/OsiMskSolverInterface.cpp
 
 
 HEADERS += \
@@ -522,4 +529,4 @@ HEADERS += \
         ../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiSolverBranch.hpp \
         ../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiSolverInterface.hpp \
         ../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiSolverParameters.hpp \
-        ../libs/openMVG/dependencies/osi_clp/Osi/src/OsiMsk/OsiMskSolverInterface.hpp
+#        ../libs/openMVG/dependencies/osi_clp/Osi/src/OsiMsk/OsiMskSolverInterface.hpp
