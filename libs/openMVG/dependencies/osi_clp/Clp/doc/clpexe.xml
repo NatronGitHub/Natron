@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<chapter id="clpexe">
+  <title>
+  The CLP Executable
+  </title>
+  <section>
+  <title>Quick Start</title>
+  <para>
+  The result of <userinput>make unitTest</userinput> (executed in 
+  <filename>COIN/Clp</filename>) is an executable
+  <filename>clp</filename> as well as the CLP and COIN libraries.
+  The executable can be used to perform various unit tests, but can also be used
+  as a standalone solver.  As the executable has a very simple solution file format,
+  the user may wish to modify <filename>COIN/Clp/Test/ClpMain.cpp</filename>,
+  which contains the source of the executable (modifications could even be
+  offered as a contribution to CLP).
+  </para>
+  <para>
+  The <filename>clp</filename> executable operates in command line mode or 
+  prompted mode.  Entering <userinput>clp</userinput> will invoke the prompted
+  mode, while <userinput>clp &lt;filename&gt;</userinput> will import a problem
+  in MPS format from <filename>filename</filename>, solve it using the dual
+  simplex method and exit. The command
+  <userinput>clp &lt;filename&gt; -primalsimplex</userinput> instructs the
+  executable tp import a file and solve using the primal simplex method.  An
+  additional solitary dash (&quot;<userinput>-</userinput>&quot;) starts the
+  prompt mode once the execution of the initial command has been completed.  The
+  &quot;<userinput>-</userinput>&quot; is necessary as part of the command;
+  invoking prompt mode as a separate command will result in the loss of problem
+  information related to the initial command.  So, the following sequences of commands
+  are equivalent in the sense that both maximize a problem using the dual
+  simplex method and write a solution to file:
+  <filename>solfile</filename>:
+  <blockquote>
+    <literallayout>
+    <prompt>$</prompt> <userinput><command>clp</command> <replaceable>filename</replaceable> -maximize -dualsimplex -solution solfile</userinput>
+    </literallayout>
+  </blockquote>
+  <blockquote>
+    <literallayout>
+    <prompt>$</prompt> <userinput><command>clp</command> <replaceable>filename</replaceable> -maximize -</userinput>
+    <prompt>Clp:</prompt><userinput><command>duals</command></userinput>
+    <prompt>Clp:</prompt><userinput><command>solution</command> solfile</userinput>
+    <prompt>Clp:</prompt><userinput><command>quit</command></userinput>
+    </literallayout>
+  </blockquote>
+  </para>
+  <para>
+  The executable is at a very early stage of development.  Comments and
+  suggestions would be appreciated.
+  </para>
+  </section>
+  <section>
+  <title>
+  Online Help and Basic Usage
+  </title>
+  <para>
+  The executable has some command-completion functionality as well as some online
+  help.  Below is a table with some examples which summarize these capabilities.
+  </para>
+  <table frame="none">
+  <title>Command examples for the clp executable</title>
+  <tgroup cols="2">
+    <thead>
+      <row>
+        <entry align="left">
+	Command&nbsp;&nbsp;&nbsp;&nbsp;
+        </entry>
+        <entry align="left">
+	Result
+        </entry>
+      </row>
+    </thead>
+    <tbody>
+      <row>
+        <entry>
+	<command>?</command>
+        </entry>
+        <entry>
+	Gives a list of all  commands
+        </entry>
+      </row>
+      <row>
+        <entry>
+	<command>p?</command>
+        </entry>
+        <entry>
+	Gives a list of all commands which begin with &lt;p&gt;.
+        </entry>
+      </row>
+      <row>
+        <entry>
+	<command>p??</command>
+        </entry>
+        <entry>
+	Gives a list of all commands which begin with &lt;p&gt;., with a short
+	explanation for each.
+        </entry>
+      </row>
+      <row>
+        <entry>
+	<command>primals??</command>
+        </entry>
+        <entry>
+	If is this is enough to uniquely determine a command (in this example,
+	<command>primalS</command>, for primal simplex), a long explanation
+	is given.
+        </entry>
+      </row>
+    </tbody>
+  </tgroup>
+  </table>
+  <para>
+  In addition, matching a name without a ? will either execute the command or give
+  the value of the corresponding parameter as follows:
+  <userinput><command>primalw</command></userinput> will give the current value of  the
+  <parameter>primalWeight</parameter> parameter while
+  <userinput><command>primalw 1.0e7</command></userinput> will change it to
+  <literal>1.0e7</literal>.
+  </para>
+  </section>
+  <section>
+  <title>A Sample Session</title>
+  <para>
+  Below is a sample CLP executable prompt-mode session.  A small problem is
+  loaded and solved under various conditions with the primal and dual
+  simplex methods.  Note the use of the <command>allslack</command> command; it
+  sets the basis to all slacks and resets the solution.
+  </para>
+  <para>
+    <screen>
+    <prompt>$</prompt><command>clp</command>
+    Coin LP version 0.99.9, build Sep 14 2004
+    Clp takes input from arguments ( - switches to stdin)
+    Enter ? for list of commands or help
+    <prompt>Clp:</prompt><userinput><command>import</command><filename>../Mps/Sample/p0033.mps</filename></userinput>
+    At line 15 NAME          P0033
+    At line 16 ROWS
+    At line 34 COLUMNS
+    At line 109 RHS
+    At line 118 BOUNDS
+    At line 152 ENDATA
+    Problem P0033 has 16 rows, 33 columns and 98 elements
+    Model was imported from ./../Mps/Sample/p0033.mps in 0 seconds
+    <prompt>Clp:</prompt><userinput><command>primals</command></userinput>
+    Presolve 15 (-1) rows, 32 (-1) columns and 97 (-1) elements
+    0  Obj 0 Primal inf 27.2175 (10) Dual inf 6.42094e+11 (32)
+    32  Obj 2520.57
+    Optimal - objective value 2520.57
+    After Postsolve, objective 2520.57, infeasibilities - dual 0 (0), primal 0 (0)
+    Optimal objective 2520.571739 - 32 iterations time 0.012, Presolve 0.01
+    <prompt>Clp:</prompt><userinput><command>max</command></userinput>
+    <prompt>Clp:</prompt><userinput><command>primals</command></userinput>
+    Presolve 11 (-5) rows, 25 (-8) columns and 84 (-14) elements
+    0  Obj 4807.92 Dual inf 1700.71 (15)
+    End of values pass after 2 iterations
+    2  Obj 4921.7 Dual inf 580.637 (5)
+    9  Obj 5299.7
+    Optimal - objective value 5299.7
+    After Postsolve, objective 5299.7, infeasibilities - dual 643.608 (9), primal 27.0826 (10)
+    Presolved model was optimal, full model needs cleaning up
+    0  Obj 5299.7
+    0  Obj 5299.7
+    Optimal - objective value 5299.7
+    Optimal objective 5299.698868 - 9 iterations time 0.022, Presolve 0.02
+    <prompt>Clp:</prompt><userinput><command>allslack</command></userinput>
+    <prompt>Clp:</prompt><userinput><command>duals</command></userinput>
+    Presolve 11 (-5) rows, 25 (-8) columns and 84 (-14) elements
+    0  Obj 2752 Primal inf 24.4867 (6) Dual inf 4280.55 (25)
+    8  Obj 5299.7
+    Optimal - objective value 5299.7
+    After Postsolve, objective 5299.7, infeasibilities - dual 704.58 (8), primal 27.0792 (10)
+    Presolved model was optimal, full model needs cleaning up
+    0  Obj 5299.7
+    0  Obj 5299.7
+    Optimal - objective value 5299.7
+    Optimal objective 5299.698868 - 8 iterations time 0.032, Presolve 0.01
+    <prompt>Clp:</prompt><userinput><command>min</command></userinput>
+    <prompt>Clp:</prompt><userinput><command>duals</command></userinput>
+    Presolve 15 (-1) rows, 32 (-1) columns and 97 (-1) elements
+    0  Obj 5299.7 Dual inf 4632.26 (28)
+    16  Obj 2520.57
+    Optimal - objective value 2520.57
+    After Postsolve, objective 2520.57, infeasibilities - dual 2052.5 (13), primal 27.1143 (10)
+    Presolved model was optimal, full model needs cleaning up
+    0  Obj 2520.57
+    0  Obj 2520.57
+    Optimal - objective value 2520.57
+    Optimal objective 2520.571739 - 16 iterations time 0.012, Presolve 0.01
+    <prompt>Clp:</prompt><userinput><command>allslack</command></userinput>
+    <prompt>Clp:</prompt><userinput><command>presolve off</command></userinput>
+    <prompt>Clp:</prompt><userinput><command>primals</command></userinput>
+    0  Obj 0 Primal inf 27.2175 (10) Dual inf 6.39167e+11 (32)
+    32  Obj 2520.57
+    Optimal - objective value 2520.57
+    Optimal objective 2520.571739 - 32 iterations time 0.002
+    <prompt>Clp:</prompt><userinput><command>allslack</command></userinput>
+    <prompt>Clp:</prompt><userinput><command>maxIt</command> 10</userinput>
+    maxIterations was changed from 99999999 to 10
+    <prompt>Clp:</prompt><userinput><command>primals</command></userinput>
+    0  Obj 0 Primal inf 27.2175 (10) Dual inf 6.39167e+11 (32)
+    Stopped - objective value 4.24664e+10
+    Stopped objective 4.246637759e+10 - 10 iterations time 0.002
+    <prompt>Clp:</prompt><userinput><command>quit</command></userinput>
+    </screen>
+  </para>  
+  </section>
+</chapter>

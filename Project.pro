@@ -27,7 +27,9 @@ SUBDIRS += BreakpadClient CrashReporter CrashReporterCLI
 
 SUBDIRS += \
     HostSupport \
+    ceres \
     libmv \
+    openMVG \
     Engine \
     Renderer \
     Gui \
@@ -48,6 +50,7 @@ OTHER_FILES += \
 
 include(global.pri)
 include(config.pri)
+include(libs.pri)
 
 *-xcode {
   # Qt 4.8.5's XCode generator has a bug and places moc_*.cpp files next to the sources instead of inside the build dir

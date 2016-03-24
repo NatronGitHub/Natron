@@ -1,0 +1,124 @@
+12/06/2014 OsiSpx
+  - added compatibility with SoPlex 2.0 (using SoPlex legacy interface)
+
+10/02/2014 OsiMsk
+  - fixed bug in OsiMsk::getPrimalRays() when number of rows < number of columns
+
+17/01/2014 OsiGrb
+  - fixed bug in OsiGrb::deleteCols() where the columns types got lost
+
+11/18/2013 OsiMsk
+  - changed MIP optimizer to Mosek's own conic MIP optimizer, if Mosek version >= 7
+
+09/11/2013 OsiCpx
+  - fixed getIterationCount() for MIPs (use CPXgetmipitcnt instead of CPXgetitcnt)
+
+08/30/2013 OsiGrb
+  - fixed bug in getObjectiveCoefficients and getBasisStatus for LPs without ranged rows
+
+08/23/2013 OsiGrb
+  - fixed bug in deleting row or column names when deleting several rows/columns at once
+
+04/02/2013 OsiMsk
+  - update to work with Mosek 7, too (contributed by Erling D. Andersen)
+
+02/02/2013 OsiUnitTest
+  - replace macro for asserting a condition and collecting its outcome by a function
+    to improve compilation speed (contributed by Victor Zverovich)
+
+29/11/2012 OsiMsk
+  - added getRescode() to get result code of last MSK_optimize call
+
+21/11/2012 OsiCpx
+  - calling setWarmStart with a too small basis now disables the use of an
+    advanced basis for the next LP solve
+
+20/11/2012 OsiGlpk, OsiCpx
+  - workaround problem in Glpk with empty problem name (patch by Bertrand Le Cun)
+  - not using CPXsolninfo for MIPs with CPLEX < 11.0 anymore
+
+25/07/2012 OsiGrb
+  - fix mipstart option in OsiGrb: pass only values for discrete variables to Gurobi
+
+26/11/2011 OsiGrb
+  - add implementation of OsiGrb::applyCuts that batches the row cuts before transfering them to Gurobi
+
+12/11/2011 OsiSpx
+  - add resolve with cleared basis if solve fails with exception (which may be due to a singular startbasis),
+    needs SoPlex >= 1.5.0.7
+
+03/09/2011 OsiMsk
+  - fix bug in one loadProblem method when NULL was passed as row range array
+
+30/07/2011 Osi
+  - fix writing LP files with names: the objective name was not copied, leading to a segfault in CoinLpIO
+
+30/07/2011 OsiSpx, OsiGlpk
+  - allow NULLs for row* arguments in some loadProblem call
+
+28/07/2011 OsiSpx
+  - invert dual ray in getDualRays to match Osi definition when testing infeasibility proof
+
+12/07/2011 MSVisualStudio
+  - updated MSVC++ v10 project files to catch up with buildsystem changes
+
+25/06/2011 Osi
+  - add generic implementations of is{Primal,Dual}ObjectiveLimitReached
+
+25/06/2011 OsiCommonTest
+  - add unittest command line parameter -onerror to specify behaviour in case of a failing test 
+
+23/06/2011 OsiMsk
+  - add isLicenseError() to check whether last solve was abandoned due to a mosek licensing issue 
+
+22/06/2011 OsiCpx
+  - fix handling of primal/dual objective limit so it correctly takes objoffset into account
+  - preserve objective sense also when empty model is loaded
+  - make sure getWarmStart returns proper atlower/atupper status for inequalities
+
+13/06/2011 OsiCommonTest, unittest
+  - removed now redundant counting of unittest failures, so test functions now return void 
+
+03/06/2011 OsiMsk
+  - fix caching flags (bitwise negation is ~, not !)
+  - free all cached data when loading problem
+  - fix getDualRay and getPrimalRay so they should return a ray now 
+  - fixed various further issues in unittest, so OsiMsk passes it now
+
+15/05/2011 OsiXpr
+  - added option (mipstart) to pass column solution as initial solution to a MIP solve
+
+30/04/2011 OsiCpx, OsiGrb
+  - added option (mipstart) to pass column solution as initial solution to a MIP solve
+
+29/04/2011 OsiMsk
+  - fix loss of Mosek task when copying OsiMsk
+
+25/04/2011 OsiSpx
+  - add methods to set/get/check timelimit
+  - fix bug in solve methods where cached result vectors where not cleared
+  - fix setWarmStart to swap status for slack variables as in getWarmStart
+  - fix caching flags (bitwise negation is ~, not !)
+  - redirect set/get name discipline to base class
+  - fix primal/dual objective limit: take objoffset into account, correct check if limit changed after solve
+  - getColSolution and getObjValue now return lower bound and value in lower bound before solve
+
+01/04/2011 OsiGlpk
+  - if initial basis is invalid or singular in initialSolve or resolve,
+    construct advanced basis and try again
+
+31/03/2011 OsiGrb
+  - fixed handling of free variables in setWarmStart
+
+30/03/2011 OsiGrb
+  - fixed memory leak in loadProblem
+
+21/03/2011 OsiCommonTest, unittest
+  - add classes TestOutcome{s} to collect outcome of unittests
+  - add macros to simplify asserts and exception catching and storing results as TestOutcome
+  - change general and OsiGlpk tests to use new macros
+  - return number of unexpected errors as return code of unittest
+  - add parameter -verbosity to unittest to specify amount of output of unittests
+  - a bit cleanup
+
+21/03/2011 started CHANGELOG

@@ -13,6 +13,8 @@
 			buildPhases = (
 			);
 			dependencies = (
+				AC7BE43B1CA3F0BE00AC1CFE /* PBXTargetDependency */,
+				AC7BE3AD1CA3E11E00AC1CFE /* PBXTargetDependency */,
 				AC3B33CD1C5A97220013CE44 /* PBXTargetDependency */,
 				D7A1964818B2242E00F412DA /* PBXTargetDependency */,
 				1E5F8F5818AA913D0045A477 /* PBXTargetDependency */,
@@ -211,6 +213,34 @@
 			remoteGlobalIDString = 1E5F8F5118AA91330045A477;
 			remoteInfo = libs;
 		};
+		AC7BE3A81CA3E0C300AC1CFE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AC7BE3A21CA3E0C300AC1CFE /* ceres.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = AC7BE3A51CA3E0C300AC1CFE;
+			remoteInfo = ceres;
+		};
+		AC7BE3AC1CA3E11E00AC1CFE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AC7BE3A21CA3E0C300AC1CFE /* ceres.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = B72CC4B33C9020E72F8C7D40;
+			remoteInfo = ceres;
+		};
+		AC7BE4381CA3F0B400AC1CFE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AC7BE4321CA3F0B400AC1CFE /* openMVG.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = AC7BE4351CA3F0B400AC1CFE;
+			remoteInfo = openMVG;
+		};
+		AC7BE43A1CA3F0BE00AC1CFE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AC7BE4321CA3F0B400AC1CFE /* openMVG.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = CA2DB7990DC5AB0FF6462431;
+			remoteInfo = openMVG;
+		};
 		D7A1964518B2242500F412DA /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = D7A1963F18B2242500F412DA /* HostSupport.xcodeproj */;
@@ -237,6 +267,8 @@
 		1EADE5C418AA403700EF3180 /* Gui.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Gui.xcodeproj; path = Gui/Gui.xcodeproj; sourceTree = "<group>"; };
 		1EADE5C718AA403700EF3180 /* Tests.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Tests.xcodeproj; path = Tests/Tests.xcodeproj; sourceTree = "<group>"; };
 		AC1FCAE01C5A806E004F6960 /* LibMV.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = LibMV.xcodeproj; path = libmv/LibMV.xcodeproj; sourceTree = "<group>"; };
+		AC7BE3A21CA3E0C300AC1CFE /* ceres.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = ceres.xcodeproj; path = ceres/ceres.xcodeproj; sourceTree = "<group>"; };
+		AC7BE4321CA3F0B400AC1CFE /* openMVG.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = openMVG.xcodeproj; path = openMVG/openMVG.xcodeproj; sourceTree = "<group>"; };
 		D7A1963F18B2242500F412DA /* HostSupport.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = HostSupport.xcodeproj; path = HostSupport/HostSupport.xcodeproj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -284,6 +316,8 @@
 		1EADE5B718AA400B00EF3180 = {
 			isa = PBXGroup;
 			children = (
+				AC7BE4321CA3F0B400AC1CFE /* openMVG.xcodeproj */,
+				AC7BE3A21CA3E0C300AC1CFE /* ceres.xcodeproj */,
 				AC1FCAE01C5A806E004F6960 /* LibMV.xcodeproj */,
 				1E306DED1C49497200BAC6E3 /* NatronRenderer.xcodeproj */,
 				1E189EBF1C49475E00F1FD20 /* Natron.xcodeproj */,
@@ -329,6 +363,22 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		AC7BE3A31CA3E0C300AC1CFE /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AC7BE3A91CA3E0C300AC1CFE /* libceres.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AC7BE4331CA3F0B400AC1CFE /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AC7BE4391CA3F0B400AC1CFE /* libopenMVG.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		D7A1964018B2242500F412DA /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -365,6 +415,10 @@
 					ProjectRef = 1E8132F71BA31D6D006845CF /* BreakpadClient.xcodeproj */;
 				},
 				{
+					ProductGroup = AC7BE3A31CA3E0C300AC1CFE /* Products */;
+					ProjectRef = AC7BE3A21CA3E0C300AC1CFE /* ceres.xcodeproj */;
+				},
+				{
 					ProductGroup = 1EADE5C218AA403700EF3180 /* Products */;
 					ProjectRef = 1EADE5C118AA403700EF3180 /* Engine.xcodeproj */;
 				},
@@ -395,6 +449,10 @@
 				{
 					ProductGroup = 1E306DE91C49497200BAC6E3 /* Products */;
 					ProjectRef = 1E306DE81C49497200BAC6E3 /* NatronRendererCrashReporter.xcodeproj */;
+				},
+				{
+					ProductGroup = AC7BE4331CA3F0B400AC1CFE /* Products */;
+					ProjectRef = AC7BE4321CA3F0B400AC1CFE /* openMVG.xcodeproj */;
 				},
 				{
 					ProductGroup = 1EADE5C818AA403700EF3180 /* Products */;
@@ -473,6 +531,20 @@
 			fileType = archive.ar;
 			path = libLibMV.a;
 			remoteRef = AC3B33CF1C5A97230013CE44 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		AC7BE3A91CA3E0C300AC1CFE /* libceres.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libceres.a;
+			remoteRef = AC7BE3A81CA3E0C300AC1CFE /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		AC7BE4391CA3F0B400AC1CFE /* libopenMVG.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libopenMVG.a;
+			remoteRef = AC7BE4381CA3F0B400AC1CFE /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 		D7A1964618B2242500F412DA /* libHostSupport.a */ = {
@@ -561,6 +633,16 @@
 			isa = PBXTargetDependency;
 			target = 1E5F8F5118AA91330045A477 /* libs */;
 			targetProxy = AC4AA6371C480E8700C92E12 /* PBXContainerItemProxy */;
+		};
+		AC7BE3AD1CA3E11E00AC1CFE /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = ceres;
+			targetProxy = AC7BE3AC1CA3E11E00AC1CFE /* PBXContainerItemProxy */;
+		};
+		AC7BE43B1CA3F0BE00AC1CFE /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = openMVG;
+			targetProxy = AC7BE43A1CA3F0BE00AC1CFE /* PBXContainerItemProxy */;
 		};
 		D7A1964818B2242E00F412DA /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

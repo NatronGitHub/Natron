@@ -1,0 +1,13 @@
+Project: OSI and CLP
+URLs:
+  https://projects.coin-or.org/Osi/
+  https://projects.coin-or.org/Clp/
+
+License: Eclipse Public License 1.0 http://opensource.org/licenses/eclipse-1.0
+Upstream version:
+  OSI 0.106.10 (include CLP 1.15.11)
+
+Local modifications (pmoulon and bduisit):
+
+  * Add a CMake build system,
+  * make the project compile on linux and windows.

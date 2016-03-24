@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+  <chapter id="intro">
+  <title>
+    Introduction
+  </title>
+  <section>
+  <title>
+  Welcome to CLP!
+  </title>
+  <para>
+  The COIN  Linear Program code or CLP is an open-source simplex solver written
+  in C++.  It is primarily meant to be used as a callable library, but a
+  basic, stand-alone <link linkend="clpexe">executable</link> version is also
+  available.
+  </para>
+  <para>
+  There are a number of resources available to help new CLP users get started.
+  This document is designed to be used in conjunction with the files in the
+  Samples subdirectory of the main CLP directory (<filename>COIN/Clp/Samples</filename>).
+  The Samples illustrate how to use CLP and may also serve as useful starting points
+  for user projects.  In the rare event that either this document or the available
+  <link linkend="doxygen">Doxygen content</link> conflicts with the observed
+  behavior of the source code, the comments in the header files, found in
+  <filename>COIN/Clp/include</filename>, are the ultimate reference.
+  </para>
+  </section>
+  <section>
+  <title>
+  Prerequisites
+  </title>
+  <para>
+  CLP is written in C++, so it is expected that users of CLP will be writing 
+  C++ programs which use CLP as a library.  Thus a working knowledge of 
+  <ulink url="http://www.cplusplus.com/doc/tutorial/">C++</ulink>, including basic
+  object-oriented programming terminology is assumed in this document.  In
+  addition, the user should be familiar with the fundamental concepts of
+  <ulink url="http://carbon.cudenver.edu/~hgreenbe/courseware/LPshort/intro.html">
+  Linear Programming</ulink>.
+  </para>
+  </section>
+  </chapter>

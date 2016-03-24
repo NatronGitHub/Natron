@@ -1,0 +1,532 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<chapter id="moreexamples">
+<title>
+More Samples
+</title>
+<section>
+<title>CLP's Samples Directory</title>
+<para>
+The CLP dsitribution includes a number of <filename>.cpp</filename> sample files.
+Users are encouraged to use them as starting points for their own CLP projects.
+The files can be found in the <filename>&clpsamplesdir;</filename> directory.
+For the latest information on compiling and running these samples, please see
+the file <filename>&clpsamplesdir;INSTALL</filename>.  Below is a list of
+some of the most useful sample files with a short description for each file.
+</para>
+<table frame="none">
+  <title>Basic Samples</title>
+  <tgroup cols="2">
+    <thead>
+      <row>
+        <entry align="left" valign="bottom">
+	Source file&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+	</entry>
+        <entry align="left" valign="bottom">
+	Description
+	</entry>
+      </row>
+    </thead>
+    <tbody>
+      <row>
+        <entry align="left" valign="top">
+	&minimumcpp;
+	</entry>
+        <entry align="left" valign="top">
+	This is a CLP &quot;Hello, world&quot; program.  It reads a problem
+	from an MPS file, and solves the problem.
+	[<link linkend="minimumcppdesc">More...</link>]
+	</entry>
+      </row>
+      <row>
+        <entry align="left" valign="top">
+	&defaultscpp;
+	</entry>
+        <entry align="left" valign="top">
+	This is one of the simpler driver programs available.  It sets
+	tolerances to defaults and is a good place to find straightforward uses
+	of &quot;set&quot; and	&quot;get&quot; methods.  It also prints out full
+	MPS-like solutions.
+	[<link linkend="defaultscppdesc">More...</link>]
+	</entry>
+      </row>
+      <row>
+        <entry align="left" valign="top">
+	&drivercpp;
+	</entry>
+        <entry align="left" valign="top">
+	This is designed to be a file that a user could modify to get a useful
+	driver program for his or her project.  In particular, it demonstrates
+	the use of CLP's  presolve functionality.
+	[<link linkend="drivercppdesc">More...</link>]
+	</entry>
+      </row>
+      <row>
+        <entry align="left" valign="top">
+	&networkcpp;
+	</entry>
+        <entry align="left" valign="top">
+	This shows the use of non-standard matrices and how to load a problem
+	without the use of MPS files.
+	[<link linkend="networkcppdesc">More...</link>]
+	</entry>
+      </row>
+      <row>
+        <entry align="left" valign="top">
+	&testbarriercpp;
+	</entry>
+        <entry align="left" valign="top">
+	This is a basic driver file for the barrier method of CLP, similar to
+	&minimumcpp;.  The barrier method is not currently addressed in this
+	guide.
+	[<link linkend="testbarriercppdesc">More...</link>]
+	</entry>
+      </row>
+    </tbody>
+  </tgroup>
+</table>
+<table frame="none">
+  <title>Advanced Samples</title>
+  <tgroup cols="2">
+    <thead>
+      <row>
+        <entry align="left" valign="bottom">
+	Source file&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+	</entry>
+        <entry align="left" valign="bottom">
+	Description
+	</entry>
+      </row>
+    </thead>
+    <tbody>
+      <row>
+        <entry align="left" valign="top">
+	&driver2cpp;
+	</entry>
+        <entry align="left" valign="top">
+	This sample, in addition to some tasks common to other samples, does
+	some advanced message handling and presolve.
+	</entry>
+      </row>
+      <row>
+        <entry align="left" valign="top">
+	&dualcutscpp;
+	</entry>
+        <entry align="left" valign="top">
+	This sample implements a method of treating a problem as a collection
+	of cuts.
+	</entry>
+      </row>
+      <row>
+        <entry align="left" valign="top">
+	&decomposecpp;
+	</entry>
+        <entry align="left" valign="top">
+	This does full Dantzig-Wolfe decomposition.  It illustrates 
+	the use of many models, adding columns, et cetera.
+	</entry>
+      </row>
+      <row>
+        <entry align="left" valign="top">
+	&sprintcpp;
+	</entry>
+        <entry align="left" valign="top">
+	This solves a long, thin problem by solving smaller subsets.  It is a
+	simplified version of work done by one of the authors on aircrew
+	scheduling problems.  It shows the use of two models and their
+	synchronization.  A more general version can be found in
+	<filename>COIN/Clp/ClpSolve.cpp</filename>
+	</entry>
+      </row>
+      <row>
+        <entry align="left" valign="top">
+	&sprint2cpp;
+	</entry>
+        <entry align="left" valign="top">
+	This is similar to <filename>sprint.cpp</filename> but is designed for
+	solving large problems with little choice.  The idea is that if
+	relatively few variables are fixed, presolve can greatly reduce the
+	problem size so that a series of solves can get close to the optimal
+	solution much faster than would a na&iuml;ve solve of the full problem.
+	</entry>
+      </row>
+    </tbody>
+  </tgroup>
+</table>
+<para>
+The remaining Samples listed here are considered unsupported in that they are of
+a more esoteric nature and are sometimes contributed as a result of an
+individual's request.  The are to be found in
+<filename>&clpsamplesdir;Contributed</filename>.
+</para>
+<table frame="none">
+  <title>Unsupported Samples</title>
+  <tgroup cols="2">
+    <thead>
+      <row>
+        <entry align="left" valign="bottom">
+	Source file&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+	</entry>
+        <entry align="left" valign="bottom">
+	Description
+	</entry>
+      </row>
+    </thead>
+    <tbody>
+      <row>
+        <entry align="left" valign="top">
+	&testbasiscpp;
+	</entry>
+        <entry align="left" valign="top">
+	This sample takes a problem, changes any inequality constraints to
+	equality constraints, solves the problem, and creates the optimal basis.
+	</entry>
+      </row>
+      <row>
+        <entry align="left" valign="top">
+	&testgubcpp;
+	</entry>
+        <entry align="left" valign="top">
+	This sample illustrates the use of the GUB (&quot;Generalized Upper
+	Bound&quot;) technique.
+	</entry>
+      </row>
+      <row>
+        <entry align="left" valign="top">
+	&ekkcpp;
+	</entry>
+        <entry align="left" valign="top">
+	This sample can be used to compare CLP and OSL.  It uses an additional
+	file in the Samples directory, <filename>ekk_interface.cpp</filename>.
+	These sample files are not likely to be interesting to new CLP users
+	who do not have experience with OSL.
+	</entry>
+      </row>
+      <row>
+        <entry align="left" valign="top">
+	&hellocpp;
+	</entry>
+        <entry align="left" valign="top">
+	This sample creates a text-based picture of a matrix on screen 
+	(limited to an 80x80 matrix).  It's not terribly useful but it does
+	illustrate one way to step through the elements of a matrix.
+	</entry>
+      </row>
+      <row>
+        <entry align="left" valign="top">
+	&piececpp;
+	</entry>
+        <entry align="left" valign="top">
+	This sample takes a matrix read in by <classname>CoinMpsIo</classname>
+	(can be used to read in MPS files without a solver), deletes every
+	second column and solves the resulting problem.
+	</entry>
+      </row>
+      <row>
+        <entry align="left" valign="top">
+	&usevolumecpp;
+	</entry>
+        <entry align="left" valign="top">
+	The Volume Algorithm is another solver available as part of the COIN-OR
+	distribution.  This sample shows how to use the Volume Algorithm with
+	CLP.
+	</entry>
+      </row>
+    </tbody>
+  </tgroup>
+</table>
+<!-- subsection -->
+<section id="minimumcppdesc">
+<title>minimum.cpp</title>
+<para>
+This sample is examined in more detail in <xref linkend="firstexample"/>.
+</para>
+</section>
+<!-- end subsection -->
+<!-- subsection -->
+<section id="defaultscppdesc">
+<title>defaults.cpp</title>
+<para>
+This sample begins by reading an MPS file.  The default MPS file is 
+<filename>COIN/Mps/Sample/p0033.mps</filename>; this can be over-riden by a
+command-line specification of a (path and) file name).  The sample then sets
+the pivot algorithm to be exact devex.  It &quot;gets&quot; the default
+infeasibility cost and &quot;sets&quot; it to that value (and prints it to
+standard out).  This sort of getting and setting of various parameters 
+constitutes a common theme in this sample, with the purpose of illustrating
+usage of some of the more common get and set methods available in CLP.
+</para>
+<para>
+At this point the model is solved by the primal method.  A sequence of sets,
+gets and prints is then followed by a number of calls to methods which give
+specific information about the status of the problem (for example, the code
+checks that the current solution has been proven to be optimal by
+<code>assert(model.isProvenOptimal())</code>).
+</para>
+<para>
+Next, a copy of the original model is made.  More sets and gets are
+performed to demonstrate the use of additional options (including 
+the setting of the default message handling as well as changing of the
+&quot;log level&quot; (amount of output)).  The model is solved again a
+number of times between changes of the optimization direction (i.e. changing
+from min to max or vice versa).  The remaining lines of this sample serve to
+display solution and problem information in much the same way as is done in
+driver.cpp.
+</para>
+</section>
+<!-- subsection -->
+<section id="drivercppdesc">
+<title>driver.cpp</title>
+<para>
+This sample begins by reading an MPS file.  The default MPS file is 
+<filename>COIN/Mps/Sample/p0033.mps</filename>; this can be over-riden by a
+command-line specification of a (path and) file name).  A second command-line
+argument can specify that either the &quot;primal&quot; or &quot;dual&quot;
+method (or even the &quot;barrier&quot;, see below) should be used by CLP.
+</para>
+<para>
+Once the problem has been
+read, there are two options for how to solve it, one of which must be chosen at
+compile-time (<code>STYLE1</code> being defined or not determines this
+choice).  The second manner is more flexible and involves more specific
+directions being given to CLP, including the ability to specify that the barrier
+method should be used.
+</para>
+<para>
+At this point in the sample, the problem is solved by CLP, and some basic ouput
+is generated.  If more output is desired, at compile-time, an
+<code>exit(0)</code> statement must either be removed or commented.  There are
+two levels of additional output, the first of which is suppressed  by a 
+<code>#if 0</code> directive which may be modified at compile-time if desired.
+This first level of output only involves non-zero columns, whereas the second
+provides additional information.
+</para>
+</section>
+<!-- end subsection -->
+<!-- subsection -->
+<section id="networkcppdesc">
+<title>network.cpp</title>
+<para>
+This handy sample reads a network problem generated by
+<ulink url="http://www.netlib.org/lp/generators/netgen">netgen</ulink>, converts
+it to an LP using CLP's network matrix type, and solves.  This entirely avoids
+the use of an MPS file, as the LP is built in memory from the network data file
+created by netgen.  Also, the factorization frequency is changed, and the
+problem is solved more than once (demonstrating the change of optimization sense
+as well as switching from dual to primal methods).
+</para>
+</section>
+<!-- end subsection -->
+<!-- subsection -->
+<section id="testbarriercppdesc">
+<title>testBarrier.cpp</title>
+<para>
+This straightfoward sample begins by reading a problem from an MPS file.  It
+then chooses a Cholesky factorization and solves the problem using the
+predictor corrector barrier method.  It then copies the problem and performs a
+crossover to a simplex solution in the new copy.
+</para>
+</section>
+<!-- end subsection -->
+<!-- subsection -->
+<section>
+<title>dualCuts.cpp</title>
+<para>
+This sample begins with only the equality constraints of a problem.  The 
+inequalities are considered to be part of a pool of available cuts in much the
+same way as is done in integer programming.  However, in this case, the cuts are
+not &quot;generated&quot;, they are simply the inequalities of the problem.
+</para>
+</section>
+<!-- end subsection -->
+<!-- subsection -->
+<section>
+<title>decompose.cpp</title>
+<para>
+More on this sample coming soon!
+</para>
+</section>
+<!-- end subsection -->
+<!-- subsection -->
+<section>
+<title>driver2.cpp</title>
+<para>
+More on this sample coming soon!
+</para>
+</section>
+<!-- end subsection -->
+</section>
+<section>
+<title>Common CLP Tasks in the Samples</title>
+<para>
+Below is a listing of a number of common CLP tasks, such as loading a problem
+from an MPS file, matched with a list of each Sample file which illustrates the
+performance of a given task.
+</para>
+<table frame="none">
+  <title>Contents of the Samples directory</title>
+  <tgroup cols="3">
+    <thead>
+      <row>
+        <entry align="left" valign="bottom">
+	CLP Task(s)
+	</entry>
+	<entry>
+	Method(s)
+	</entry>
+        <entry align="left" valign="bottom">
+	Sample(s)
+	</entry>
+      </row>
+    </thead>
+    <tbody>
+      <row>
+        <entry>
+	Read problem from MPS file
+	</entry>
+        <entry>
+	<literallayout><function>int readMps(const char *filename)</function></literallayout>
+	</entry>
+        <entry>
+	&defaultscpp;, &drivercpp;, &minimumcpp;
+	</entry>
+      </row>
+      <row>
+        <entry>
+	Solve by primal method
+	</entry>
+        <entry>
+	<literallayout><function>int primal()</function></literallayout>
+	</entry>
+        <entry>
+	&drivercpp;
+	</entry>
+      </row>
+      <row>
+        <entry>
+	Choose pivot rule
+	</entry>
+        <entry>
+	<literallayout><function>void setPrimalColumnPivotAlgorithm(ClpPrimalColumnPivot &amp;choice)</function>
+	<function>void setDualRowPivotAlgorithm(ClpDualRowPivot &amp;choice)</function></literallayout>
+	</entry>
+        <entry>
+	&defaultscpp;
+	</entry>
+      </row>
+      <row>
+        <entry>
+	Get/set infeasibility cost
+	</entry>
+        <entry>
+	<literallayout><function>void setInfeasibilityCost(double value)</function>
+	<function>void setInfeasibilityCost(double value)</function></literallayout>
+	</entry>
+        <entry>
+	&defaultscpp;
+	</entry>
+      </row>
+      <row>
+        <entry>
+	Get string/&quot;double&quot;/integer information
+	</entry>
+        <entry>
+	<literallayout><function>bool getStrParam(ClpStrParam key, std::string &amp;value) const</function>
+	<function>bool getDblParam(ClpDblParam key, double &amp;value) const</function>
+	<function>bool  getIntParam (ClpIntParam key, int &amp;value) const </function></literallayout>
+	</entry>
+        <entry>
+	&defaultscpp;
+	</entry>
+      </row>
+      <row>
+        <entry>
+	Set maximum number of iterations
+	</entry>
+        <entry>
+	<literallayout><function>void setMaximumIterations(int value)</function></literallayout>
+	</entry>
+        <entry>
+	&defaultscpp;
+	</entry>
+      </row>
+      <row>
+        <entry>
+	Check solution status
+	</entry>
+        <entry>
+	<literallayout><function>int status() const</function>
+	<function>bool isAbandoned() const</function>
+	<function>bool isProvenOptimal() const</function>
+	<function>bool isProvenPrimalInfeasible() const</function>
+	<function>bool isProvenDualInfeasible() const</function>
+	<function>bool isPrimalObjectiveLimitReached() const</function>
+	<function>bool isDualObjectiveLimitReached() const</function>
+	<function>bool isIterationLimitReached() const</function>
+	<function></function>
+	<function></function></literallayout>
+	</entry>
+        <entry>
+	
+	</entry>
+      </row>
+      <row>
+        <entry>
+	
+	</entry>
+        <entry>
+	
+	</entry>
+        <entry>
+	
+	</entry>
+      </row>
+      <row>
+        <entry>
+	
+	</entry>
+        <entry>
+	
+	</entry>
+        <entry>
+	
+	</entry>
+      </row>
+      <row>
+        <entry>
+	
+	</entry>
+        <entry>
+	
+	</entry>
+        <entry>
+	
+	</entry>
+      </row>
+      <row>
+        <entry>
+	
+	</entry>
+        <entry>
+	
+	</entry>
+        <entry>
+	
+	</entry>
+      </row>
+      <row>
+        <entry>
+	
+	</entry>
+        <entry>
+	
+	</entry>
+        <entry>
+	
+	</entry>
+      </row>
+    </tbody>
+  </tgroup>
+</table>
+
+</section>
+</chapter>

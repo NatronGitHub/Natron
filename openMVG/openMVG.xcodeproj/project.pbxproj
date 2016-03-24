@@ -1,0 +1,6540 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+		D7BA7D76DAB5DD13389D6332 = {
+			buildActionMask = 2147483647;
+			files = (
+				);
+			generatedFileNames = (
+				);
+			isa = PBXShellScriptBuildPhase;
+			name = "Qt Qmake";
+			neededFileNames = (
+				);
+			shellPath = "/bin/sh";
+			shellScript = "make\ -C\ /Users/alexandre/development/Natron/openMVG\ -f\ \'openMVG.xcodeproj/qt_makeqmake.mak\'";
+		};
+		56C7E4519720F41F04A88C45 = {
+			isa = PBXFileReference;
+			name = "AKAZE.cpp";
+			path = "../libs/openMVG/openMVG/features/akaze/AKAZE.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		B6812AB07D0D89C019CE6005 = {
+			fileRef = "56C7E4519720F41F04A88C45";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		1FCA2A9A0066ECF0F1DAA654 = {
+			isa = PBXFileReference;
+			name = "liop_descriptor.cpp";
+			path = "../libs/openMVG/openMVG/features/liop/liop_descriptor.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		6BDFB1090D0593E65986F0F0 = {
+			fileRef = "1FCA2A9A0066ECF0F1DAA654";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		3B4216FC4A28857EE25552BC = {
+			isa = PBXFileReference;
+			name = "linearProgrammingMOSEK.cpp";
+			path = "../libs/openMVG/openMVG/linearProgramming/linearProgrammingMOSEK.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		B0EAECDE380E87318E11A76A = {
+			fileRef = "3B4216FC4A28857EE25552BC";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		2B93AF8FDD9CCD9204B0BA75 = {
+			isa = PBXFileReference;
+			name = "resection_kernel.cpp";
+			path = "../libs/openMVG/openMVG/linearProgramming/lInfinityCV/resection_kernel.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		6CB620F61B58C63538EFEA2E = {
+			fileRef = "2B93AF8FDD9CCD9204B0BA75";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		1BA2EFC12F27CFCCEEA117BA = {
+			isa = PBXFileReference;
+			name = "kvld.cpp";
+			path = "../libs/openMVG/openMVG/matching/kvld/kvld.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		76D6E95C3728A036F55674CE = {
+			fileRef = "1BA2EFC12F27CFCCEEA117BA";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		A728733C19AD818E69CEA922 = {
+			isa = PBXFileReference;
+			name = "algorithm.cpp";
+			path = "../libs/openMVG/openMVG/matching/kvld/algorithm.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		B95D895EDAF9D9000CC5683B = {
+			fileRef = "A728733C19AD818E69CEA922";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		A476420F143AE26AFD1D6862 = {
+			isa = PBXFileReference;
+			name = "regions_matcher.cpp";
+			path = "../libs/openMVG/openMVG/matching/regions_matcher.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		9E3A07CF91C2429B6E25C291 = {
+			fileRef = "A476420F143AE26AFD1D6862";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		21DF96E4B7329939790F32BC = {
+			isa = PBXFileReference;
+			name = "Cascade_Hashing_Matcher_Regions_AllInMemory.cpp";
+			path = "../libs/openMVG/openMVG/matching_image_collection/Cascade_Hashing_Matcher_Regions_AllInMemory.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		73B14E9CD0B2D62C978042E1 = {
+			fileRef = "21DF96E4B7329939790F32BC";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		2F9F5DB9EB6BC14F099A1504 = {
+			isa = PBXFileReference;
+			name = "Matcher_Regions_AllInMemory.cpp";
+			path = "../libs/openMVG/openMVG/matching_image_collection/Matcher_Regions_AllInMemory.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		D7966AAE848FFA1C26A64EEE = {
+			fileRef = "2F9F5DB9EB6BC14F099A1504";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		45CA4B0AE0FDBDF9A7EB1FEC = {
+			isa = PBXFileReference;
+			name = "conditioning.cpp";
+			path = "../libs/openMVG/openMVG/multiview/conditioning.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		7A7CBEBA26A8DCE75AE0FEC4 = {
+			fileRef = "45CA4B0AE0FDBDF9A7EB1FEC";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		AF8EA3C2228EE33CC40A7782 = {
+			isa = PBXFileReference;
+			name = "essential.cpp";
+			path = "../libs/openMVG/openMVG/multiview/essential.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		8A1ED3F8BDFB6872EC82EE3B = {
+			fileRef = "AF8EA3C2228EE33CC40A7782";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		E5C406CC868C76B9E2A2C059 = {
+			isa = PBXFileReference;
+			name = "projection.cpp";
+			path = "../libs/openMVG/openMVG/multiview/projection.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		AFE3EAD101F050375E2EA05A = {
+			fileRef = "E5C406CC868C76B9E2A2C059";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		3E84C5975ED0FDCE510B1570 = {
+			isa = PBXFileReference;
+			name = "rotation_averaging_l1.cpp";
+			path = "../libs/openMVG/openMVG/multiview/rotation_averaging_l1.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		3407054DEB2B4BDD32A20367 = {
+			fileRef = "3E84C5975ED0FDCE510B1570";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		2EF469B2166A348B19D76005 = {
+			isa = PBXFileReference;
+			name = "rotation_averaging_l2.cpp";
+			path = "../libs/openMVG/openMVG/multiview/rotation_averaging_l2.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		523ABDE600C35BD662957A0B = {
+			fileRef = "2EF469B2166A348B19D76005";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		9B050750BEAFD7CA84703F22 = {
+			isa = PBXFileReference;
+			name = "solver_affine.cpp";
+			path = "../libs/openMVG/openMVG/multiview/solver_affine.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		2F0402D8A76221A0907E39A5 = {
+			fileRef = "9B050750BEAFD7CA84703F22";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		9DB297116193FD0630A2E121 = {
+			isa = PBXFileReference;
+			name = "solver_essential_five_point.cpp";
+			path = "../libs/openMVG/openMVG/multiview/solver_essential_five_point.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		5D998BB788A02320D20D52BD = {
+			fileRef = "9DB297116193FD0630A2E121";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		B386629287E2C24A4A402061 = {
+			isa = PBXFileReference;
+			name = "solver_essential_kernel.cpp";
+			path = "../libs/openMVG/openMVG/multiview/solver_essential_kernel.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		1A52CD871424878D8BC3F079 = {
+			fileRef = "B386629287E2C24A4A402061";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		6428CC45E7F318AFB467D7F1 = {
+			isa = PBXFileReference;
+			name = "solver_fundamental_kernel.cpp";
+			path = "../libs/openMVG/openMVG/multiview/solver_fundamental_kernel.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		26029BA79D9F4B506BCDE40D = {
+			fileRef = "6428CC45E7F318AFB467D7F1";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		2ACBD6EB60800C25195C17A5 = {
+			isa = PBXFileReference;
+			name = "solver_homography_kernel.cpp";
+			path = "../libs/openMVG/openMVG/multiview/solver_homography_kernel.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		AD6A35A7300F5451D320E58B = {
+			fileRef = "2ACBD6EB60800C25195C17A5";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		2B8B71D4FAC87F534BDF21F9 = {
+			isa = PBXFileReference;
+			name = "solver_resection_kernel.cpp";
+			path = "../libs/openMVG/openMVG/multiview/solver_resection_kernel.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		A3C324B0888380C2EE2B4C85 = {
+			fileRef = "2B8B71D4FAC87F534BDF21F9";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		C341F347C6B7CA7A3AE721EF = {
+			isa = PBXFileReference;
+			name = "translation_averaging_solver_l2_chordal.cpp";
+			path = "../libs/openMVG/openMVG/multiview/translation_averaging_solver_l2_chordal.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		5E86DDDD009BE2EE2081CD13 = {
+			fileRef = "C341F347C6B7CA7A3AE721EF";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		8821F94F006FF07916A76BA7 = {
+			isa = PBXFileReference;
+			name = "translation_averaging_solver_softl1.cpp";
+			path = "../libs/openMVG/openMVG/multiview/translation_averaging_solver_softl1.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		D5B38D8786D243E1AD7A5944 = {
+			fileRef = "8821F94F006FF07916A76BA7";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		E29C791718CBDDC1D15FB2DA = {
+			isa = PBXFileReference;
+			name = "triangulation_nview.cpp";
+			path = "../libs/openMVG/openMVG/multiview/triangulation_nview.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		19EB35FA11096704C125A62C = {
+			fileRef = "E29C791718CBDDC1D15FB2DA";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		8792351B9F3D6E54550474AF = {
+			isa = PBXFileReference;
+			name = "triangulation.cpp";
+			path = "../libs/openMVG/openMVG/multiview/triangulation.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		53A5A4BAB000D76BC9402303 = {
+			fileRef = "8792351B9F3D6E54550474AF";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		E301D00181C8BA177A398794 = {
+			isa = PBXFileReference;
+			name = "numeric.cpp";
+			path = "../libs/openMVG/openMVG/numeric/numeric.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		7A241417BBDE1332AEA0FCEF = {
+			fileRef = "E301D00181C8BA177A398794";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		CFBC57F91448B87CCCB9786C = {
+			isa = PBXFileReference;
+			name = "GlobalSfM_rotation_averaging.cpp";
+			path = "../libs/openMVG/openMVG/sfm/pipelines/global/GlobalSfM_rotation_averaging.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		E3DA9F5F313905410DBC4AAF = {
+			fileRef = "CFBC57F91448B87CCCB9786C";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		35516E786ABB9118FAC0F56A = {
+			isa = PBXFileReference;
+			name = "GlobalSfM_translation_averaging.cpp";
+			path = "../libs/openMVG/openMVG/sfm/pipelines/global/GlobalSfM_translation_averaging.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		498EFE7DD9EDDA4C742BCB6F = {
+			fileRef = "35516E786ABB9118FAC0F56A";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		D17AEEEE2A0BA7BDA6933B34 = {
+			isa = PBXFileReference;
+			name = "sfm_global_engine_relative_motions.cpp";
+			path = "../libs/openMVG/openMVG/sfm/pipelines/global/sfm_global_engine_relative_motions.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		BF6D10155E9F9943D86FAD43 = {
+			fileRef = "D17AEEEE2A0BA7BDA6933B34";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		44AC398E52FED2B856A8BDBA = {
+			isa = PBXFileReference;
+			name = "SfM_Localizer_Single_3DTrackObservation_Database.cpp";
+			path = "../libs/openMVG/openMVG/sfm/pipelines/localization/SfM_Localizer_Single_3DTrackObservation_Database.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		D232E5770F1484F9CF71A2C8 = {
+			fileRef = "44AC398E52FED2B856A8BDBA";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		92F6C906EAA4161502D30221 = {
+			isa = PBXFileReference;
+			name = "SfM_Localizer.cpp";
+			path = "../libs/openMVG/openMVG/sfm/pipelines/localization/SfM_Localizer.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		C228E0ACBC6DA41F5148CCC9 = {
+			fileRef = "92F6C906EAA4161502D30221";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		D5F60E313CA2A1382C07DDF7 = {
+			isa = PBXFileReference;
+			name = "sequential_SfM.cpp";
+			path = "../libs/openMVG/openMVG/sfm/pipelines/sequential/sequential_SfM.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		48C47A3C63F35E7FA7791943 = {
+			fileRef = "D5F60E313CA2A1382C07DDF7";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		F2138AD12C9D533A65893A9B = {
+			isa = PBXFileReference;
+			name = "structure_estimator.cpp";
+			path = "../libs/openMVG/openMVG/sfm/pipelines/structure_from_known_poses/structure_estimator.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		1F510CFD3F560D2A0BB512F4 = {
+			fileRef = "F2138AD12C9D533A65893A9B";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		50ADD059A36ACD38EC44964C = {
+			isa = PBXFileReference;
+			name = "sfm_robust_model_estimation.cpp";
+			path = "../libs/openMVG/openMVG/sfm/pipelines/sfm_robust_model_estimation.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		62DEE8A099C4C80B167D53FA = {
+			fileRef = "50ADD059A36ACD38EC44964C";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		4EFA4C6E61357BCDB4E1EC54 = {
+			isa = PBXFileReference;
+			name = "sfm_data_BA_ceres.cpp";
+			path = "../libs/openMVG/openMVG/sfm/sfm_data_BA_ceres.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		0640CA24B865B2EA3835C47E = {
+			fileRef = "4EFA4C6E61357BCDB4E1EC54";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		25DC30AC2F23574FC71094BD = {
+			isa = PBXFileReference;
+			name = "sfm_data_filters_frustum.cpp";
+			path = "../libs/openMVG/openMVG/sfm/sfm_data_filters_frustum.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		0365D668766E91893BADD5DA = {
+			fileRef = "25DC30AC2F23574FC71094BD";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		9052B6162A87A6D628992806 = {
+			isa = PBXFileReference;
+			name = "sfm_data_io.cpp";
+			path = "../libs/openMVG/openMVG/sfm/sfm_data_io.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		63EB3162C273003D93A9F43D = {
+			fileRef = "9052B6162A87A6D628992806";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		451044C5FE6E992695854E59 = {
+			isa = PBXFileReference;
+			name = "sfm_data_triangulation.cpp";
+			path = "../libs/openMVG/openMVG/sfm/sfm_data_triangulation.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		9E8102BF58A8F55B0DB4AD84 = {
+			fileRef = "451044C5FE6E992695854E59";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		B05CC34AD27ACC2C8F27A273 = {
+			isa = PBXFileReference;
+			name = "sfm_data_utils.cpp";
+			path = "../libs/openMVG/openMVG/sfm/sfm_data_utils.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		3C8CCC43E77EADC408209914 = {
+			fileRef = "B05CC34AD27ACC2C8F27A273";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		66D4A278AB5E7D58674A1A55 = {
+			isa = PBXFileReference;
+			name = "timer.cpp";
+			path = "../libs/openMVG/openMVG/system/timer.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		4E2F730A6B60C5DF474E9672 = {
+			fileRef = "66D4A278AB5E7D58674A1A55";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		33A7D1A4066B6EF45E93A7E8 = {
+			isa = PBXFileReference;
+			name = "CbcOrClpParam.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/CbcOrClpParam.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		22E638C90033928A295D3028 = {
+			fileRef = "33A7D1A4066B6EF45E93A7E8";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		C9F2B53214C58F100298EB2C = {
+			isa = PBXFileReference;
+			name = "Clp_C_Interface.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/Clp_C_Interface.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		DBF281F182089F7277271E6C = {
+			fileRef = "C9F2B53214C58F100298EB2C";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		0FC07DDBE06595BB920DCB18 = {
+			isa = PBXFileReference;
+			name = "ClpCholeskyBase.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpCholeskyBase.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		F005B1059DEC7E348D91FCB5 = {
+			fileRef = "0FC07DDBE06595BB920DCB18";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		41D7BB993B4D65955533F052 = {
+			isa = PBXFileReference;
+			name = "ClpCholeskyDense.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpCholeskyDense.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		3064F46936FAF66B4B9C2C36 = {
+			fileRef = "41D7BB993B4D65955533F052";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		09A4D4EFE19DB72C9FFEA066 = {
+			isa = PBXFileReference;
+			name = "ClpCholeskyTaucs.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpCholeskyTaucs.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		D6F257D5C60C8B02218FCBA5 = {
+			fileRef = "09A4D4EFE19DB72C9FFEA066";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		426999EB5B0893395A2942F8 = {
+			isa = PBXFileReference;
+			name = "ClpConstraint.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpConstraint.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		C3BBCCEA64743DE5B4AFDA2A = {
+			fileRef = "426999EB5B0893395A2942F8";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		CBBA48CB6AC818E2B5C658D4 = {
+			isa = PBXFileReference;
+			name = "ClpConstraintLinear.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpConstraintLinear.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		CCE2F21FFD99B296200AF49E = {
+			fileRef = "CBBA48CB6AC818E2B5C658D4";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		CBE4987CCB66618ED8F2FB02 = {
+			isa = PBXFileReference;
+			name = "ClpConstraintQuadratic.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpConstraintQuadratic.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		5016C157AE714D6A9C08B4F6 = {
+			fileRef = "CBE4987CCB66618ED8F2FB02";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		1A80F2BB36B29A74868B1C1E = {
+			isa = PBXFileReference;
+			name = "ClpDualRowDantzig.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpDualRowDantzig.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		2A8D743E9507DB3513BD309D = {
+			fileRef = "1A80F2BB36B29A74868B1C1E";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		6C6F184B01441A15F073FB12 = {
+			isa = PBXFileReference;
+			name = "ClpDualRowPivot.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpDualRowPivot.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		7F65FD37A2477703F999AB0C = {
+			fileRef = "6C6F184B01441A15F073FB12";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		571E76D5B06E9E8E7318260B = {
+			isa = PBXFileReference;
+			name = "ClpDualRowSteepest.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpDualRowSteepest.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		736C29AB68616B721AD046B0 = {
+			fileRef = "571E76D5B06E9E8E7318260B";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		E9160E67225BD671D345FB45 = {
+			isa = PBXFileReference;
+			name = "ClpDummyMatrix.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpDummyMatrix.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		BE71AF97803462D76F432905 = {
+			fileRef = "E9160E67225BD671D345FB45";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		12ECE38DF373A9079D747AE9 = {
+			isa = PBXFileReference;
+			name = "ClpDynamicExampleMatrix.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpDynamicExampleMatrix.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		125E3A5A06F1453148E2F21B = {
+			fileRef = "12ECE38DF373A9079D747AE9";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		7E05C13976BF7810858072D5 = {
+			isa = PBXFileReference;
+			name = "ClpDynamicMatrix.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpDynamicMatrix.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		ADA8E0B7FBAA7773D8197583 = {
+			fileRef = "7E05C13976BF7810858072D5";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		078B120DA72925D81CEBB4E3 = {
+			isa = PBXFileReference;
+			name = "ClpEventHandler.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpEventHandler.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		554E7BD1328C1ADA9E5713AB = {
+			fileRef = "078B120DA72925D81CEBB4E3";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		C377BB1F3D9573709EE8A162 = {
+			isa = PBXFileReference;
+			name = "ClpFactorization.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpFactorization.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		FE87CE2B95929611E7D84EFC = {
+			fileRef = "C377BB1F3D9573709EE8A162";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		66D1C82DE6AA45F6F3273D5A = {
+			isa = PBXFileReference;
+			name = "ClpGubDynamicMatrix.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpGubDynamicMatrix.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		DD5D965EDFB5407570A8FF9A = {
+			fileRef = "66D1C82DE6AA45F6F3273D5A";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		6837C6C6E2B2DEB2F3C2FFE8 = {
+			isa = PBXFileReference;
+			name = "ClpGubMatrix.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpGubMatrix.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		363EF025BF3B3C787AB8CD56 = {
+			fileRef = "6837C6C6E2B2DEB2F3C2FFE8";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		A68CBF2672427134A019D5AC = {
+			isa = PBXFileReference;
+			name = "ClpHelperFunctions.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpHelperFunctions.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		31621B35137FE52ED2437BC4 = {
+			fileRef = "A68CBF2672427134A019D5AC";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		372D3E91EE7D8BCF499F473C = {
+			isa = PBXFileReference;
+			name = "ClpInterior.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpInterior.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		C64683F19C5869465C4A1BE5 = {
+			fileRef = "372D3E91EE7D8BCF499F473C";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		EC2F1089CE6D9C041502A1AC = {
+			isa = PBXFileReference;
+			name = "ClpLinearObjective.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpLinearObjective.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		BC76D2B4421CB553F4C88BDD = {
+			fileRef = "EC2F1089CE6D9C041502A1AC";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		A0512D63FD53E23FB131CB5F = {
+			isa = PBXFileReference;
+			name = "ClpLsqr.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpLsqr.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		A0E51F77598E88BE6E647B41 = {
+			fileRef = "A0512D63FD53E23FB131CB5F";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		7FC5ED97F5147D2EFC437E7C = {
+			isa = PBXFileReference;
+			name = "ClpMain.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpMain.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		E52569FFCB1C56E9BD8B9248 = {
+			fileRef = "7FC5ED97F5147D2EFC437E7C";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		63817E3247FB8486391E5EE5 = {
+			isa = PBXFileReference;
+			name = "ClpMatrixBase.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpMatrixBase.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		2FBF0A2C7061A0CAD7A7350E = {
+			fileRef = "63817E3247FB8486391E5EE5";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		C25DA38DA02A2D043495B658 = {
+			isa = PBXFileReference;
+			name = "ClpMessage.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpMessage.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		1DF80AA482BA45FE84B74631 = {
+			fileRef = "C25DA38DA02A2D043495B658";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		BDB964190C69FC5AC3E55B9A = {
+			isa = PBXFileReference;
+			name = "ClpModel.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpModel.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		5F018EB064830C5BD2E31042 = {
+			fileRef = "BDB964190C69FC5AC3E55B9A";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		33B6789E483F242A9449E351 = {
+			isa = PBXFileReference;
+			name = "ClpNetworkBasis.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpNetworkBasis.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		BD39F7F9D7D37BFEBE592540 = {
+			fileRef = "33B6789E483F242A9449E351";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		91B797619D35B3F1EBBB164C = {
+			isa = PBXFileReference;
+			name = "ClpNetworkMatrix.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpNetworkMatrix.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		78FD4E7582131632401C98FF = {
+			fileRef = "91B797619D35B3F1EBBB164C";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		397E89D4C9CA2229765B14D0 = {
+			isa = PBXFileReference;
+			name = "ClpNode.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpNode.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		CB384C38007EAD98FF1C7591 = {
+			fileRef = "397E89D4C9CA2229765B14D0";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		F18F16C5944CE1CA249DE117 = {
+			isa = PBXFileReference;
+			name = "ClpNonLinearCost.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpNonLinearCost.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		67AC7DD937CD34C3A54CEB2F = {
+			fileRef = "F18F16C5944CE1CA249DE117";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		9E1907FF958D33DA01537CA9 = {
+			isa = PBXFileReference;
+			name = "ClpObjective.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpObjective.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		06C5A5FC9B3972041EF7EFF2 = {
+			fileRef = "9E1907FF958D33DA01537CA9";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		BDE269123DEADDAEEF94067D = {
+			isa = PBXFileReference;
+			name = "ClpPackedMatrix.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpPackedMatrix.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		F2CCB2ECF5B82EF798296CC0 = {
+			fileRef = "BDE269123DEADDAEEF94067D";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		079D149FE7447A9A38FD1B6F = {
+			isa = PBXFileReference;
+			name = "ClpPdco.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpPdco.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		6CBB7C47C495F5BD340699C8 = {
+			fileRef = "079D149FE7447A9A38FD1B6F";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		77CFCD563A9D684FC0A06939 = {
+			isa = PBXFileReference;
+			name = "ClpPdcoBase.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpPdcoBase.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		6FE2386AB390050A53F130A8 = {
+			fileRef = "77CFCD563A9D684FC0A06939";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		E5B1CC11E74CED6155C47526 = {
+			isa = PBXFileReference;
+			name = "ClpPlusMinusOneMatrix.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpPlusMinusOneMatrix.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		2022E49C57C60E3590E50C81 = {
+			fileRef = "E5B1CC11E74CED6155C47526";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		BF3FBE80197D93C9FB41918F = {
+			isa = PBXFileReference;
+			name = "ClpPredictorCorrector.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpPredictorCorrector.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		B9EA14FCD24E9ABAC913012F = {
+			fileRef = "BF3FBE80197D93C9FB41918F";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		DCC5B1E884CB8F90FD4F524B = {
+			isa = PBXFileReference;
+			name = "ClpPresolve.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpPresolve.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		931363A17F1123B9E6689180 = {
+			fileRef = "DCC5B1E884CB8F90FD4F524B";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		ADA5A7C8E7F363F5007C2F43 = {
+			isa = PBXFileReference;
+			name = "ClpPrimalColumnDantzig.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpPrimalColumnDantzig.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		1C63CFB26B98E965997CD7F7 = {
+			fileRef = "ADA5A7C8E7F363F5007C2F43";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		9CE748E75CB957DCA397B431 = {
+			isa = PBXFileReference;
+			name = "ClpPrimalColumnPivot.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpPrimalColumnPivot.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		A59EDE18C3BB12200976420F = {
+			fileRef = "9CE748E75CB957DCA397B431";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		C6C7199490912EA8614D0EAF = {
+			isa = PBXFileReference;
+			name = "ClpPrimalColumnSteepest.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpPrimalColumnSteepest.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		3F8DB2A029AFE9FEF2B9BFF0 = {
+			fileRef = "C6C7199490912EA8614D0EAF";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		9D84D8F9ECC01C80E2C0AEEA = {
+			isa = PBXFileReference;
+			name = "ClpQuadraticObjective.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpQuadraticObjective.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		2051534901DBA06E07B9C62D = {
+			fileRef = "9D84D8F9ECC01C80E2C0AEEA";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		B566F22ACD8ADB015E06BDA6 = {
+			isa = PBXFileReference;
+			name = "ClpSimplex.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpSimplex.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		762414CB696377FEA3880191 = {
+			fileRef = "B566F22ACD8ADB015E06BDA6";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		7D944FBB44967F37AFFBD007 = {
+			isa = PBXFileReference;
+			name = "ClpSimplexDual.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpSimplexDual.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		0700DD635C113DE863AA4609 = {
+			fileRef = "7D944FBB44967F37AFFBD007";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		2F80B359C666F0353E44F068 = {
+			isa = PBXFileReference;
+			name = "ClpSimplexNonlinear.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpSimplexNonlinear.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		ABAEE98F9CCC048A4152AB21 = {
+			fileRef = "2F80B359C666F0353E44F068";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		4C6944DA2758C5161D0F4811 = {
+			isa = PBXFileReference;
+			name = "ClpSimplexOther.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpSimplexOther.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		BDAB2A34BB1E0C7268C027AB = {
+			fileRef = "4C6944DA2758C5161D0F4811";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		4D11AA0C8C2ADFE5284EF11C = {
+			isa = PBXFileReference;
+			name = "ClpSimplexPrimal.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpSimplexPrimal.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		E51FDA4236BBBABB13CBF943 = {
+			fileRef = "4D11AA0C8C2ADFE5284EF11C";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		2C1ED51601A219ACA01BAC3C = {
+			isa = PBXFileReference;
+			name = "ClpSolve.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpSolve.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		CE40E1DD4B809BC9243531F0 = {
+			fileRef = "2C1ED51601A219ACA01BAC3C";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		4D990F13E65A147137852173 = {
+			isa = PBXFileReference;
+			name = "Idiot.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/Idiot.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		B1A8EEEC7C8AB3F6FDD80389 = {
+			fileRef = "4D990F13E65A147137852173";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		22A19BA9D6CE9DE17731D301 = {
+			isa = PBXFileReference;
+			name = "IdiSolve.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/IdiSolve.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		7CF6B7EB82813FEAC6AB0E4F = {
+			fileRef = "22A19BA9D6CE9DE17731D301";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		88C2B6E3EF456A2FB0A9711D = {
+			isa = PBXFileReference;
+			name = "MyEventHandler.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/MyEventHandler.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		23603EBDCAFBC12B8CCDDEED = {
+			fileRef = "88C2B6E3EF456A2FB0A9711D";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		1695A0B49048E9EC00FAAC49 = {
+			isa = PBXFileReference;
+			name = "MyMessageHandler.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/MyMessageHandler.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		4FDC39C8F73E3D7B86AAC387 = {
+			fileRef = "1695A0B49048E9EC00FAAC49";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		22A19BA9D6CE9DE17731D301 = {
+			isa = PBXFileReference;
+			name = "IdiSolve.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/IdiSolve.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		7CF6B7EB82813FEAC6AB0E4F = {
+			fileRef = "22A19BA9D6CE9DE17731D301";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		8AE943C815111566B43DE0B7 = {
+			isa = PBXFileReference;
+			name = "OsiClpSolverInterface.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/OsiClp/OsiClpSolverInterface.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		0B3E6F287728B68413E4D689 = {
+			fileRef = "8AE943C815111566B43DE0B7";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		AA2F7510C7478C9EDD7A26DC = {
+			isa = PBXFileReference;
+			name = "CoinAlloc.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinAlloc.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		AF4F758B9E86099F4E9D761E = {
+			fileRef = "AA2F7510C7478C9EDD7A26DC";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		91FE596CB1A2223E56EAC3C4 = {
+			isa = PBXFileReference;
+			name = "CoinBuild.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinBuild.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		C445A3CB8385AA6AEBE2007B = {
+			fileRef = "91FE596CB1A2223E56EAC3C4";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		8C303BE637F659855EA8536C = {
+			isa = PBXFileReference;
+			name = "CoinDenseFactorization.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinDenseFactorization.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		39C36F2BAEE4D37D19DC82F2 = {
+			fileRef = "8C303BE637F659855EA8536C";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		9EF06E4A9CD08D4B1203E6B5 = {
+			isa = PBXFileReference;
+			name = "CoinDenseVector.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinDenseVector.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		F9E07B2D550E5C5D6E2221F5 = {
+			fileRef = "9EF06E4A9CD08D4B1203E6B5";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		BBC8EC68B547407EBE1E9581 = {
+			isa = PBXFileReference;
+			name = "CoinError.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinError.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		F9B344E3DB451EDDC11C78A0 = {
+			fileRef = "BBC8EC68B547407EBE1E9581";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		FF9D3F8FA9089799E42F7136 = {
+			isa = PBXFileReference;
+			name = "CoinFactorization1.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinFactorization1.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		DDF511EBDBA30CA745301D0F = {
+			fileRef = "FF9D3F8FA9089799E42F7136";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		3E80B03B1C5D3AAA74F7F348 = {
+			isa = PBXFileReference;
+			name = "CoinFactorization2.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinFactorization2.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		A156C3D4C876439BF807130B = {
+			fileRef = "3E80B03B1C5D3AAA74F7F348";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		259DFB9386724AE2503F5732 = {
+			isa = PBXFileReference;
+			name = "CoinFactorization3.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinFactorization3.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		85BA515905F8B02F8F6072F1 = {
+			fileRef = "259DFB9386724AE2503F5732";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		784129C2A86F6F8D81F6F7E3 = {
+			isa = PBXFileReference;
+			name = "CoinFactorization4.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinFactorization4.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		55BB1189CA104DDA92939198 = {
+			fileRef = "784129C2A86F6F8D81F6F7E3";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		3B437A504D95E05CC6454BDA = {
+			isa = PBXFileReference;
+			name = "CoinFileIO.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinFileIO.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		8B2C3BBC6D54A2AE3925E269 = {
+			fileRef = "3B437A504D95E05CC6454BDA";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		45361FA6B8B1D32C00D92A80 = {
+			isa = PBXFileReference;
+			name = "CoinFinite.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinFinite.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		9508E7319A503A0CF2382102 = {
+			fileRef = "45361FA6B8B1D32C00D92A80";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		5B61576FDD14D7ED27A3A045 = {
+			isa = PBXFileReference;
+			name = "CoinIndexedVector.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinIndexedVector.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		E61DB1738C20C5F0C599FC00 = {
+			fileRef = "5B61576FDD14D7ED27A3A045";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		7889BF917C7D6C230433A428 = {
+			isa = PBXFileReference;
+			name = "CoinLpIO.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinLpIO.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		0C1500DAE58D84344BC70F04 = {
+			fileRef = "7889BF917C7D6C230433A428";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		B3D0973D5D9DC875AA5A1FF1 = {
+			isa = PBXFileReference;
+			name = "CoinMessage.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinMessage.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		9F9A7563E0FDDE0F7978E8E8 = {
+			fileRef = "B3D0973D5D9DC875AA5A1FF1";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		3D5FB000FF239758F1407476 = {
+			isa = PBXFileReference;
+			name = "CoinMessageHandler.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinMessageHandler.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		4AA3011CF36FEA790AEAEE99 = {
+			fileRef = "3D5FB000FF239758F1407476";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		707DAB4A130D97BEEB9051CF = {
+			isa = PBXFileReference;
+			name = "CoinModel.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinModel.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		3F3ADF91DA9FF01416A70D67 = {
+			fileRef = "707DAB4A130D97BEEB9051CF";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		4E6D11F32753F6B311F7C9A2 = {
+			isa = PBXFileReference;
+			name = "CoinModelUseful.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinModelUseful.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		69D16C82A121B39F4B233B1F = {
+			fileRef = "4E6D11F32753F6B311F7C9A2";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		A81D355A8A3E4F5E31F08B13 = {
+			isa = PBXFileReference;
+			name = "CoinModelUseful2.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinModelUseful2.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		FCFD2C4B776C9BE317222ABA = {
+			fileRef = "A81D355A8A3E4F5E31F08B13";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		E3945809B92C73D5F8B631B2 = {
+			isa = PBXFileReference;
+			name = "CoinMpsIO.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinMpsIO.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		E74D43458FF842AF542B85A0 = {
+			fileRef = "E3945809B92C73D5F8B631B2";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		E89D0392C5F3E6CC84A6C54C = {
+			isa = PBXFileReference;
+			name = "CoinOslFactorization.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinOslFactorization.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		8C6FF3D0082B991152C2EA73 = {
+			fileRef = "E89D0392C5F3E6CC84A6C54C";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		D3FEEF750017C51A0B394BD4 = {
+			isa = PBXFileReference;
+			name = "CoinOslFactorization2.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinOslFactorization2.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		53266F3A047396133383F8E1 = {
+			fileRef = "D3FEEF750017C51A0B394BD4";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		91C78B47B722DF0E088AA15C = {
+			isa = PBXFileReference;
+			name = "CoinOslFactorization3.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinOslFactorization3.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		71D40E9DD5A520A0570CCE33 = {
+			fileRef = "91C78B47B722DF0E088AA15C";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		6C41420EAD107F56D68F0B5E = {
+			isa = PBXFileReference;
+			name = "CoinPackedMatrix.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPackedMatrix.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		C2AC382FBCE249D1973E6B19 = {
+			fileRef = "6C41420EAD107F56D68F0B5E";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		EBFF457739BACBD93C94598F = {
+			isa = PBXFileReference;
+			name = "CoinPackedVector.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPackedVector.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		8AB72F8DE79A7DFBDE37203C = {
+			fileRef = "EBFF457739BACBD93C94598F";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		3CE5C800E19B1F692E32C0D6 = {
+			isa = PBXFileReference;
+			name = "CoinPackedVectorBase.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPackedVectorBase.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		73C6106486946F7DD0A28EBE = {
+			fileRef = "3CE5C800E19B1F692E32C0D6";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		244E698B93653A5B7356CF72 = {
+			isa = PBXFileReference;
+			name = "CoinParam.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinParam.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		D1526E5BF19CF82683BFAD0C = {
+			fileRef = "244E698B93653A5B7356CF72";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		1ABD99CD379D8B77644495B5 = {
+			isa = PBXFileReference;
+			name = "CoinParamUtils.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinParamUtils.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		754B6D9178A2E75F43EC3292 = {
+			fileRef = "1ABD99CD379D8B77644495B5";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		C5170766FEFB5FECC66CC499 = {
+			isa = PBXFileReference;
+			name = "CoinPostsolveMatrix.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPostsolveMatrix.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		55982B56C6A5CF51E7BC0A5F = {
+			fileRef = "C5170766FEFB5FECC66CC499";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		B5D48BFBBDE83456EE6BD2B2 = {
+			isa = PBXFileReference;
+			name = "CoinPrePostsolveMatrix.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPrePostsolveMatrix.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		2621DF54377A27B578F99152 = {
+			fileRef = "B5D48BFBBDE83456EE6BD2B2";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		4AA1BFE60E454D889B894EC6 = {
+			isa = PBXFileReference;
+			name = "CoinPresolveDoubleton.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveDoubleton.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		CBA6DC7D84DC4271E7140B7E = {
+			fileRef = "4AA1BFE60E454D889B894EC6";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		8CB2F2702D072604550247A7 = {
+			isa = PBXFileReference;
+			name = "CoinPresolveDual.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveDual.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		F00D06069C59ECE93C3AF954 = {
+			fileRef = "8CB2F2702D072604550247A7";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		7A535F0C95AB78FA9588106A = {
+			isa = PBXFileReference;
+			name = "CoinPresolveDupcol.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveDupcol.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		D626292F762C5BEAD9D0C887 = {
+			fileRef = "7A535F0C95AB78FA9588106A";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		322ABFD294491DBBA85A899C = {
+			isa = PBXFileReference;
+			name = "CoinPresolveEmpty.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveEmpty.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		A380E396312825000C3D04FC = {
+			fileRef = "322ABFD294491DBBA85A899C";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		7EC0B86F19665EDB1FB7C1F0 = {
+			isa = PBXFileReference;
+			name = "CoinPresolveFixed.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveFixed.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		B1CD464E25370D8F00A34A0B = {
+			fileRef = "7EC0B86F19665EDB1FB7C1F0";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		6927B4B4C28849F72E35D06A = {
+			isa = PBXFileReference;
+			name = "CoinPresolveForcing.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveForcing.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		50D99E3DFD2EDC913D6EFF43 = {
+			fileRef = "6927B4B4C28849F72E35D06A";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		887EF8CCE0D652EADA25F6A7 = {
+			isa = PBXFileReference;
+			name = "CoinPresolveHelperFunctions.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveHelperFunctions.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		7AB07BA2CBD30D4D042EE576 = {
+			fileRef = "887EF8CCE0D652EADA25F6A7";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		608A4AE97CCEB2969E15A1A4 = {
+			isa = PBXFileReference;
+			name = "CoinPresolveImpliedFree.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveImpliedFree.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		CFC098DE719F6D7A18AFC6F5 = {
+			fileRef = "608A4AE97CCEB2969E15A1A4";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		55050D8692682C382ADC4156 = {
+			isa = PBXFileReference;
+			name = "CoinPresolveIsolated.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveIsolated.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		C0AAFBB533B9014ACE6AFA12 = {
+			fileRef = "55050D8692682C382ADC4156";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		8FFA7F46312FC7B375083C5E = {
+			isa = PBXFileReference;
+			name = "CoinPresolveMatrix.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveMatrix.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		CEA00105BD3093F817C24022 = {
+			fileRef = "8FFA7F46312FC7B375083C5E";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		7F3A0073133A529C1BF978D2 = {
+			isa = PBXFileReference;
+			name = "CoinPresolveMonitor.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveMonitor.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		BCDC0D4E9FB02DB61477F8C7 = {
+			fileRef = "7F3A0073133A529C1BF978D2";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		BD7298DEDA2D69F40CE49B22 = {
+			isa = PBXFileReference;
+			name = "CoinPresolveSingleton.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveSingleton.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		4A384C97BE5BE64E18FA7A99 = {
+			fileRef = "BD7298DEDA2D69F40CE49B22";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		406468AB0BCBD12554C7AF97 = {
+			isa = PBXFileReference;
+			name = "CoinPresolveSubst.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveSubst.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		F0FA3057BB37AF83AF5C325A = {
+			fileRef = "406468AB0BCBD12554C7AF97";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		2CA99CC6190EA5A6E059FADE = {
+			isa = PBXFileReference;
+			name = "CoinPresolveTighten.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveTighten.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		20FA1EB39B5E4EBEAAC43E94 = {
+			fileRef = "2CA99CC6190EA5A6E059FADE";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		AE47B13B46BEB594C9CDFB56 = {
+			isa = PBXFileReference;
+			name = "CoinPresolveTripleton.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveTripleton.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		8641B53C803E9C225BC0567F = {
+			fileRef = "AE47B13B46BEB594C9CDFB56";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		934F7C2110E55F8D99C070A3 = {
+			isa = PBXFileReference;
+			name = "CoinPresolveUseless.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveUseless.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		F787AA432FC07530F802E496 = {
+			fileRef = "934F7C2110E55F8D99C070A3";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		8423BBC3AE26D28B86DEEB94 = {
+			isa = PBXFileReference;
+			name = "CoinPresolveZeros.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveZeros.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		A46E9682373348360F7EFE7C = {
+			fileRef = "8423BBC3AE26D28B86DEEB94";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		7F55CCC4647071169E7DE64B = {
+			isa = PBXFileReference;
+			name = "CoinSearchTree.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinSearchTree.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		B357DAA4525C9A38D15998BE = {
+			fileRef = "7F55CCC4647071169E7DE64B";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		85C06D3D2A49A73573ECDBF1 = {
+			isa = PBXFileReference;
+			name = "CoinShallowPackedVector.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinShallowPackedVector.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		4DF81D63B54629A9689FD7B0 = {
+			fileRef = "85C06D3D2A49A73573ECDBF1";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		B39F8BACA6A55C279D15A033 = {
+			isa = PBXFileReference;
+			name = "CoinSimpFactorization.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinSimpFactorization.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		FC9BBCB4156F2BCFC64AD9D9 = {
+			fileRef = "B39F8BACA6A55C279D15A033";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		09391211750E935A9AC160A8 = {
+			isa = PBXFileReference;
+			name = "CoinSnapshot.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinSnapshot.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		7DD7C6A5A49A0EC5E1ADFE0E = {
+			fileRef = "09391211750E935A9AC160A8";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		BD151CA81D263C035BAFEE4A = {
+			isa = PBXFileReference;
+			name = "CoinStructuredModel.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinStructuredModel.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		ED865185F4618C44EA38E426 = {
+			fileRef = "BD151CA81D263C035BAFEE4A";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		4A99100FC92249E402CA5F71 = {
+			isa = PBXFileReference;
+			name = "CoinWarmStartBasis.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinWarmStartBasis.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		A7D85EF5429F14C53F92BBB9 = {
+			fileRef = "4A99100FC92249E402CA5F71";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		BB526333E47B8AFF1F8AA17C = {
+			isa = PBXFileReference;
+			name = "CoinWarmStartDual.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinWarmStartDual.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		74AB6DFD3874E5EDDC5A6A4F = {
+			fileRef = "BB526333E47B8AFF1F8AA17C";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		ED63C56E18D7B41EFD420A44 = {
+			isa = PBXFileReference;
+			name = "CoinWarmStartPrimalDual.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinWarmStartPrimalDual.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		AC27CA5DB7F6389F67074AE1 = {
+			fileRef = "ED63C56E18D7B41EFD420A44";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		6F068B6A8E96D0AE2558E642 = {
+			isa = PBXFileReference;
+			name = "CoinWarmStartVector.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinWarmStartVector.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		C9928B1984B842F2D3A112A7 = {
+			fileRef = "6F068B6A8E96D0AE2558E642";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		130641CA78324ABBEC1564B5 = {
+			isa = PBXFileReference;
+			name = "OsiAuxInfo.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiAuxInfo.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		D0F7DF12FFF9E7FC69D597E3 = {
+			fileRef = "130641CA78324ABBEC1564B5";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		34AB63553C3B1689603666D3 = {
+			isa = PBXFileReference;
+			name = "OsiBranchingObject.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiBranchingObject.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		D17FCB0C9C66B82CFE87DF60 = {
+			fileRef = "34AB63553C3B1689603666D3";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		B743651BEFECDD15CC9CB22A = {
+			isa = PBXFileReference;
+			name = "OsiChooseVariable.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiChooseVariable.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		C1A581BF7501E217B2517413 = {
+			fileRef = "B743651BEFECDD15CC9CB22A";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		9C515A4A66B16EA38048C801 = {
+			isa = PBXFileReference;
+			name = "OsiColCut.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiColCut.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		73176BF912B5E499784CF092 = {
+			fileRef = "9C515A4A66B16EA38048C801";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		50470330B7DFB7D2CEF73A5C = {
+			isa = PBXFileReference;
+			name = "OsiCut.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiCut.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		347E78A5DB17BBEAFA792986 = {
+			fileRef = "50470330B7DFB7D2CEF73A5C";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		F154898809862129EA909FA0 = {
+			isa = PBXFileReference;
+			name = "OsiCuts.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiCuts.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		5A3952DF01C53F431DE6156C = {
+			fileRef = "F154898809862129EA909FA0";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		8623ACD53FBEC75EBE9E69AC = {
+			isa = PBXFileReference;
+			name = "OsiNames.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiNames.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		1331C07962F77AC2CD8F90D2 = {
+			fileRef = "8623ACD53FBEC75EBE9E69AC";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		ABCB09C772E8B1DC3A86694A = {
+			isa = PBXFileReference;
+			name = "OsiPresolve.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiPresolve.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		9E08A63074F392657C9D51F6 = {
+			fileRef = "ABCB09C772E8B1DC3A86694A";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		97B8141AA6693F8E8DAE780B = {
+			isa = PBXFileReference;
+			name = "OsiRowCut.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiRowCut.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		C2362F9DB11AD9A59B342980 = {
+			fileRef = "97B8141AA6693F8E8DAE780B";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		EFBAAB1936ACB53687A00C5F = {
+			isa = PBXFileReference;
+			name = "OsiRowCutDebugger.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiRowCutDebugger.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		B410A3BE1550DF86DCD3B154 = {
+			fileRef = "EFBAAB1936ACB53687A00C5F";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		1B005EF478D142F78883B8D1 = {
+			isa = PBXFileReference;
+			name = "OsiSolverBranch.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiSolverBranch.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		B6B1911782728BB77E589373 = {
+			fileRef = "1B005EF478D142F78883B8D1";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		09E2C3D68F2CA23145508091 = {
+			isa = PBXFileReference;
+			name = "OsiSolverInterface.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiSolverInterface.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		01A11DA5986EE892D0420E82 = {
+			fileRef = "09E2C3D68F2CA23145508091";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		76BF27B3669FF91161950C94 = {
+			isa = PBXFileReference;
+			name = "OsiMskSolverInterface.cpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/OsiMsk/OsiMskSolverInterface.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		C7D8A91AE6EFA9388F19FBA8 = {
+			fileRef = "76BF27B3669FF91161950C94";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		CBAE270E3502FBE9414641CE = {
+			isa = PBXFileReference;
+			name = "Camera_Common.hpp";
+			path = "../libs/openMVG/openMVG/cameras/Camera_Common.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		44F8E9B02DF2474876D67B61 = {
+			isa = PBXFileReference;
+			name = "Camera_Intrinsics.hpp";
+			path = "../libs/openMVG/openMVG/cameras/Camera_Intrinsics.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		067C30EA224F6775E4B2852E = {
+			isa = PBXFileReference;
+			name = "Camera_Pinhole_Brown.hpp";
+			path = "../libs/openMVG/openMVG/cameras/Camera_Pinhole_Brown.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		C93EF7F3D213295405825059 = {
+			isa = PBXFileReference;
+			name = "Camera_Pinhole_Radial.hpp";
+			path = "../libs/openMVG/openMVG/cameras/Camera_Pinhole_Radial.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		F0868634865BBD16055A385D = {
+			isa = PBXFileReference;
+			name = "Camera_Pinhole.hpp";
+			path = "../libs/openMVG/openMVG/cameras/Camera_Pinhole.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		98F078203FB057FAF9FA5FC5 = {
+			isa = PBXFileReference;
+			name = "Camera_undistort_image.hpp";
+			path = "../libs/openMVG/openMVG/cameras/Camera_undistort_image.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		862EB7B7C8D5C873E86D8698 = {
+			isa = PBXFileReference;
+			name = "cameras.hpp";
+			path = "../libs/openMVG/openMVG/cameras/cameras.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		DB7A36218E1C1488BAA7ABC3 = {
+			isa = PBXFileReference;
+			name = "PinholeCamera.hpp";
+			path = "../libs/openMVG/openMVG/cameras/PinholeCamera.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		233A07D710461F9959064E50 = {
+			isa = PBXFileReference;
+			name = "Camera_IO.hpp";
+			path = "../libs/openMVG/openMVG/cameras/Camera_IO.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		3784308484C1FED6C0AFA698 = {
+			isa = PBXFileReference;
+			name = "global_quantile_gain_offset_alignment.hpp";
+			path = "../libs/openMVG/openMVG/color_harmonization/global_quantile_gain_offset_alignment.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		C461D32D069A14D427AD8DA1 = {
+			isa = PBXFileReference;
+			name = "selection_fullFrame.hpp";
+			path = "../libs/openMVG/openMVG/color_harmonization/selection_fullFrame.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		2DDD1BD13F6816B86EFCA442 = {
+			isa = PBXFileReference;
+			name = "selection_interface.hpp";
+			path = "../libs/openMVG/openMVG/color_harmonization/selection_interface.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		50CC0926EB9E19B3313D624A = {
+			isa = PBXFileReference;
+			name = "selection_matchedPoints.hpp";
+			path = "../libs/openMVG/openMVG/color_harmonization/selection_matchedPoints.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		C3D6807DD889BA265955F99C = {
+			isa = PBXFileReference;
+			name = "selection_VLDSegment.hpp";
+			path = "../libs/openMVG/openMVG/color_harmonization/selection_VLDSegment.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		D9AA4683C29B4D7A082025CF = {
+			isa = PBXFileReference;
+			name = "AKAZE.hpp";
+			path = "../libs/openMVG/openMVG/features/akaze/AKAZE.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		41483314966D28417B99A9AF = {
+			isa = PBXFileReference;
+			name = "mldb_descriptor.hpp";
+			path = "../libs/openMVG/openMVG/features/akaze/mldb_descriptor.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		C21F28DCAA58FBC5BC90F28D = {
+			isa = PBXFileReference;
+			name = "msurf_descriptor.hpp";
+			path = "../libs/openMVG/openMVG/features/akaze/msurf_descriptor.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		DD82C702E5BAF12A051FF912 = {
+			isa = PBXFileReference;
+			name = "descriptor.hpp";
+			path = "../libs/openMVG/openMVG/features/descriptor.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		04A752EB8E72124BC59D87CB = {
+			isa = PBXFileReference;
+			name = "feature.hpp";
+			path = "../libs/openMVG/openMVG/features/feature.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		C2CA8FB66CB91AC91D2341A5 = {
+			isa = PBXFileReference;
+			name = "features.hpp";
+			path = "../libs/openMVG/openMVG/features/features.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		AA0D244E28229CC9A4C3D6F0 = {
+			isa = PBXFileReference;
+			name = "image_describer.hpp";
+			path = "../libs/openMVG/openMVG/features/image_describer.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		98C240E91183F186F921EBBE = {
+			isa = PBXFileReference;
+			name = "image_describer_akaze.hpp";
+			path = "../libs/openMVG/openMVG/features/image_describer_akaze.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		5BFA2F1F09EB14B767DB5EB0 = {
+			isa = PBXFileReference;
+			name = "io_regions_type.hpp";
+			path = "../libs/openMVG/openMVG/features/io_regions_type.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		3BF1CD2D9F296604D83794E7 = {
+			isa = PBXFileReference;
+			name = "keypointSet.hpp";
+			path = "../libs/openMVG/openMVG/features/keypointSet.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		BE3A4F8B167337AB4036C224 = {
+			isa = PBXFileReference;
+			name = "regions_factory.hpp";
+			path = "../libs/openMVG/openMVG/features/regions_factory.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		EA6FC2FECF40B9BB3DB0765A = {
+			isa = PBXFileReference;
+			name = "regions.hpp";
+			path = "../libs/openMVG/openMVG/features/regions.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		2D90A66EBAE52265473C242B = {
+			isa = PBXFileReference;
+			name = "liop_descriptor.hpp";
+			path = "../libs/openMVG/openMVG/features/liop/liop_descriptor.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		45F6462C6DE8004BCE5F8F4E = {
+			isa = PBXFileReference;
+			name = "frustum.hpp";
+			path = "../libs/openMVG/openMVG/geometry/frustum.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		117E767AD8597D95E1874CC2 = {
+			isa = PBXFileReference;
+			name = "half_space_intersection.hpp";
+			path = "../libs/openMVG/openMVG/geometry/half_space_intersection.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		098F0A2A8F6B0D45081E69B6 = {
+			isa = PBXFileReference;
+			name = "pose3.hpp";
+			path = "../libs/openMVG/openMVG/geometry/pose3.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		0233AF20A14D23B0E30BC877 = {
+			isa = PBXFileReference;
+			name = "rigid_transformation3D_srt.hpp";
+			path = "../libs/openMVG/openMVG/geometry/rigid_transformation3D_srt.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		AE19FB4D9DBCB3A915A93A1B = {
+			isa = PBXFileReference;
+			name = "Similarity3.hpp";
+			path = "../libs/openMVG/openMVG/geometry/Similarity3.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		A8FC112D6164B31CDAC14BC3 = {
+			isa = PBXFileReference;
+			name = "connectedComponent.hpp";
+			path = "../libs/openMVG/openMVG/graph/connectedComponent.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		21C843250C112E3955559F7E = {
+			isa = PBXFileReference;
+			name = "graph_builder.hpp";
+			path = "../libs/openMVG/openMVG/graph/graph_builder.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		8927A2FE47CFD2FE1D0519C6 = {
+			isa = PBXFileReference;
+			name = "graph_graphviz_export.hpp";
+			path = "../libs/openMVG/openMVG/graph/graph_graphviz_export.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		C422707057DDA2DB5488E9BC = {
+			isa = PBXFileReference;
+			name = "graph.hpp";
+			path = "../libs/openMVG/openMVG/graph/graph.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		903A83FC6E6EBC3BA20817D3 = {
+			isa = PBXFileReference;
+			name = "triplet_finder.hpp";
+			path = "../libs/openMVG/openMVG/graph/triplet_finder.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		A5F6E82F9EF7C475B3B642B2 = {
+			isa = PBXFileReference;
+			name = "image_concat.hpp";
+			path = "../libs/openMVG/openMVG/image/image_concat.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		789D9BEFB5EA3D5D06732318 = {
+			isa = PBXFileReference;
+			name = "image_container.hpp";
+			path = "../libs/openMVG/openMVG/image/image_container.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		975432D6930A83ACA0EFCB88 = {
+			isa = PBXFileReference;
+			name = "image_converter.hpp";
+			path = "../libs/openMVG/openMVG/image/image_converter.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		750BD8FF8EB7AB1E6ECAD621 = {
+			isa = PBXFileReference;
+			name = "image_convolution_base.hpp";
+			path = "../libs/openMVG/openMVG/image/image_convolution_base.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		53CAC15B65AA63675E0F2D66 = {
+			isa = PBXFileReference;
+			name = "image_convolution.hpp";
+			path = "../libs/openMVG/openMVG/image/image_convolution.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		0682EDEE1CD0C86BEFAFCB46 = {
+			isa = PBXFileReference;
+			name = "image_diffusion.hpp";
+			path = "../libs/openMVG/openMVG/image/image_diffusion.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		EAEF4C30C105836A2AB9224C = {
+			isa = PBXFileReference;
+			name = "image_drawing.hpp";
+			path = "../libs/openMVG/openMVG/image/image_drawing.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		106577C7CDD49D3F7BDC5288 = {
+			isa = PBXFileReference;
+			name = "image_filtering.hpp";
+			path = "../libs/openMVG/openMVG/image/image_filtering.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		497E411BB2CA9F52F9FA2F8F = {
+			isa = PBXFileReference;
+			name = "image_resampling.hpp";
+			path = "../libs/openMVG/openMVG/image/image_resampling.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		282C597B4D83FDC149CFA0B1 = {
+			isa = PBXFileReference;
+			name = "image.hpp";
+			path = "../libs/openMVG/openMVG/image/image.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		E53BDC069BD093896D58E09A = {
+			isa = PBXFileReference;
+			name = "image_warping.hpp";
+			path = "../libs/openMVG/openMVG/image/image_warping.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		8F11DACA2E7BC08571EECD3F = {
+			isa = PBXFileReference;
+			name = "pixel_types.hpp";
+			path = "../libs/openMVG/openMVG/image/pixel_types.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		4946074AECC3E69D57493DFB = {
+			isa = PBXFileReference;
+			name = "sample.hpp";
+			path = "../libs/openMVG/openMVG/image/sample.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		D606BAD737BCB951EF2D7227 = {
+			isa = PBXFileReference;
+			name = "bisectionLP.hpp";
+			path = "../libs/openMVG/openMVG/linearProgramming/bisectionLP.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		10D57E945DBE909F4BB501E7 = {
+			isa = PBXFileReference;
+			name = "linearProgramming.hpp";
+			path = "../libs/openMVG/openMVG/linearProgramming/linearProgramming.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		E544881851728EB900EEFCFE = {
+			isa = PBXFileReference;
+			name = "linearProgrammingInterface.hpp";
+			path = "../libs/openMVG/openMVG/linearProgramming/linearProgrammingInterface.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		72531BB680D87D300A22E456 = {
+			isa = PBXFileReference;
+			name = "linearProgrammingMOSEK.hpp";
+			path = "../libs/openMVG/openMVG/linearProgramming/linearProgrammingMOSEK.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		5EA6036A0E668A2D3BF76C8F = {
+			isa = PBXFileReference;
+			name = "linearProgrammingOSI_X.hpp";
+			path = "../libs/openMVG/openMVG/linearProgramming/linearProgrammingOSI_X.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		D07B0DD589320B8322850CB9 = {
+			isa = PBXFileReference;
+			name = "global_translations_fromTij.hpp";
+			path = "../libs/openMVG/openMVG/linearProgramming/lInfinityCV/global_translations_fromTij.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		96D940EA77F7B38859367F7D = {
+			isa = PBXFileReference;
+			name = "global_translations_fromTriplets.hpp";
+			path = "../libs/openMVG/openMVG/linearProgramming/lInfinityCV/global_translations_fromTriplets.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		CC57E0FD7FCCA64F5E795867 = {
+			isa = PBXFileReference;
+			name = "lInfinityCV.hpp";
+			path = "../libs/openMVG/openMVG/linearProgramming/lInfinityCV/lInfinityCV.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		6E8EA66FBE1896E39DDC04C0 = {
+			isa = PBXFileReference;
+			name = "resection_kernel.hpp";
+			path = "../libs/openMVG/openMVG/linearProgramming/lInfinityCV/resection_kernel.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		37E9EE252F2F1477DE4BE1FA = {
+			isa = PBXFileReference;
+			name = "tijsAndXis_From_xi_Ri_noise.hpp";
+			path = "../libs/openMVG/openMVG/linearProgramming/lInfinityCV/tijsAndXis_From_xi_Ri_noise.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		F9F35AF53795D11063C25122 = {
+			isa = PBXFileReference;
+			name = "tijsAndXis_From_xi_Ri.hpp";
+			path = "../libs/openMVG/openMVG/linearProgramming/lInfinityCV/tijsAndXis_From_xi_Ri.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		BB7563EF42F639F984720845 = {
+			isa = PBXFileReference;
+			name = "triangulation.hpp";
+			path = "../libs/openMVG/openMVG/linearProgramming/lInfinityCV/triangulation.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		C49609DC6801E9C6185AD517 = {
+			isa = PBXFileReference;
+			name = "triplet_tijsAndXis_kernel.hpp";
+			path = "../libs/openMVG/openMVG/linearProgramming/lInfinityCV/triplet_tijsAndXis_kernel.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		20B11213DBB93A6F075E24B6 = {
+			isa = PBXFileReference;
+			name = "cascade_hasher.hpp";
+			path = "../libs/openMVG/openMVG/matching/cascade_hasher.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		4A2E1C5B6B85429107EECD6C = {
+			isa = PBXFileReference;
+			name = "indMatch_utils.hpp";
+			path = "../libs/openMVG/openMVG/matching/indMatch_utils.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		58C368C5ED3B05CC1FA5B91D = {
+			isa = PBXFileReference;
+			name = "indMatch.hpp";
+			path = "../libs/openMVG/openMVG/matching/indMatch.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		7CE195E00B0F586181EC0E69 = {
+			isa = PBXFileReference;
+			name = "indMatchDecoratorXY.hpp";
+			path = "../libs/openMVG/openMVG/matching/indMatchDecoratorXY.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		E7F37CF68C12FCAB22F93401 = {
+			isa = PBXFileReference;
+			name = "algorithm.hpp";
+			path = "../libs/openMVG/openMVG/matching/kvld/algorithm.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		7C2625F2E116A8DB72C4806D = {
+			isa = PBXFileReference;
+			name = "kvld_draw.hpp";
+			path = "../libs/openMVG/openMVG/matching/kvld/kvld_draw.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		75AFE369105DC9B9E1F29E4B = {
+			isa = PBXFileReference;
+			name = "kvld.hpp";
+			path = "../libs/openMVG/openMVG/matching/kvld/kvld.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		83B19A31CB08F570A1F977D7 = {
+			isa = PBXFileReference;
+			name = "matcher_brute_force.hpp";
+			path = "../libs/openMVG/openMVG/matching/matcher_brute_force.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		8AD00A3BEFE5C390424416F6 = {
+			isa = PBXFileReference;
+			name = "matcher_cascade_hashing.hpp";
+			path = "../libs/openMVG/openMVG/matching/matcher_cascade_hashing.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		459FAD8E74F2E18F4FA1284A = {
+			isa = PBXFileReference;
+			name = "matcher_kdtree_flann.hpp";
+			path = "../libs/openMVG/openMVG/matching/matcher_kdtree_flann.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		5C13736A7A195D70B9F67170 = {
+			isa = PBXFileReference;
+			name = "matcher_type.hpp";
+			path = "../libs/openMVG/openMVG/matching/matcher_type.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		31A18F11A386F080EC65B0F7 = {
+			isa = PBXFileReference;
+			name = "matching_filters.hpp";
+			path = "../libs/openMVG/openMVG/matching/matching_filters.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		88F13768B9B1F23C8280692E = {
+			isa = PBXFileReference;
+			name = "matching_interface.hpp";
+			path = "../libs/openMVG/openMVG/matching/matching_interface.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		4A1D03B5ED74EF99A240355A = {
+			isa = PBXFileReference;
+			name = "metric_hamming.hpp";
+			path = "../libs/openMVG/openMVG/matching/metric_hamming.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		1162782D8A3FD0EBAB9BF32C = {
+			isa = PBXFileReference;
+			name = "metric.hpp";
+			path = "../libs/openMVG/openMVG/matching/metric.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		7C6FC2D1913A0274C0A0147A = {
+			isa = PBXFileReference;
+			name = "pairwiseAdjacencyDisplay.hpp";
+			path = "../libs/openMVG/openMVG/matching/pairwiseAdjacencyDisplay.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		016AFF759C6EEC0C20B3290C = {
+			isa = PBXFileReference;
+			name = "regions_matcher.hpp";
+			path = "../libs/openMVG/openMVG/matching/regions_matcher.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		52A518905B7EC7A29E2AE4DD = {
+			isa = PBXFileReference;
+			name = "Cascade_Hashing_Matcher_Regions_AllInMemory.hpp";
+			path = "../libs/openMVG/openMVG/matching_image_collection/Cascade_Hashing_Matcher_Regions_AllInMemory.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		832D63B64678EA067DE856BC = {
+			isa = PBXFileReference;
+			name = "F_ACRobust.hpp";
+			path = "../libs/openMVG/openMVG/matching_image_collection/F_ACRobust.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		90FDE6EB74D240B88E9A8830 = {
+			isa = PBXFileReference;
+			name = "Geometric_Filter_utils.hpp";
+			path = "../libs/openMVG/openMVG/matching_image_collection/Geometric_Filter_utils.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		547FDA36C1829FE4F9A03640 = {
+			isa = PBXFileReference;
+			name = "GeometricFilter.hpp";
+			path = "../libs/openMVG/openMVG/matching_image_collection/GeometricFilter.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		4955EAEC4B1A425E20B72D36 = {
+			isa = PBXFileReference;
+			name = "H_ACRobust.hpp";
+			path = "../libs/openMVG/openMVG/matching_image_collection/H_ACRobust.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		0E77F77249DC4FF5DEC89711 = {
+			isa = PBXFileReference;
+			name = "Matcher_Regions_AllInMemory.hpp";
+			path = "../libs/openMVG/openMVG/matching_image_collection/Matcher_Regions_AllInMemory.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		DA6C623EEA2DC68B16732880 = {
+			isa = PBXFileReference;
+			name = "Matcher.hpp";
+			path = "../libs/openMVG/openMVG/matching_image_collection/Matcher.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		C3F21C8E135735952A569BDE = {
+			isa = PBXFileReference;
+			name = "Pair_Builder.hpp";
+			path = "../libs/openMVG/openMVG/matching_image_collection/Pair_Builder.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		58AAD26E1407DC93EA915F6C = {
+			isa = PBXFileReference;
+			name = "conditioning.hpp";
+			path = "../libs/openMVG/openMVG/multiview/conditioning.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		2310DF7EA60E79720BB33FA3 = {
+			isa = PBXFileReference;
+			name = "essential.hpp";
+			path = "../libs/openMVG/openMVG/multiview/essential.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		68B80E71CCA6E3A8AEFF480C = {
+			isa = PBXFileReference;
+			name = "projection.hpp";
+			path = "../libs/openMVG/openMVG/multiview/projection.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		0FEBE7190790459227B10367 = {
+			isa = PBXFileReference;
+			name = "rotation_averaging_common.hpp";
+			path = "../libs/openMVG/openMVG/multiview/rotation_averaging_common.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		12C2C670BCA54883B30D7909 = {
+			isa = PBXFileReference;
+			name = "rotation_averaging_l1.hpp";
+			path = "../libs/openMVG/openMVG/multiview/rotation_averaging_l1.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		1C86F86742C65E7610471565 = {
+			isa = PBXFileReference;
+			name = "rotation_averaging_l2.hpp";
+			path = "../libs/openMVG/openMVG/multiview/rotation_averaging_l2.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		6213966E7DC6B5E3CA1EB55E = {
+			isa = PBXFileReference;
+			name = "rotation_averaging.hpp";
+			path = "../libs/openMVG/openMVG/multiview/rotation_averaging.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		CC9F7DC5DDF4D4245E75FC06 = {
+			isa = PBXFileReference;
+			name = "solver_affine.hpp";
+			path = "../libs/openMVG/openMVG/multiview/solver_affine.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		85D76B7ABF32058FAC483103 = {
+			isa = PBXFileReference;
+			name = "solver_essential_kernel.hpp";
+			path = "../libs/openMVG/openMVG/multiview/solver_essential_kernel.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		2C73607FD925540ED3828298 = {
+			isa = PBXFileReference;
+			name = "solver_fundamental_kernel.hpp";
+			path = "../libs/openMVG/openMVG/multiview/solver_fundamental_kernel.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		716E19710AB30F0BC400B96C = {
+			isa = PBXFileReference;
+			name = "solver_homography_kernel.hpp";
+			path = "../libs/openMVG/openMVG/multiview/solver_homography_kernel.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		40E3FBA067C238077F4F2110 = {
+			isa = PBXFileReference;
+			name = "solver_resection_kernel.hpp";
+			path = "../libs/openMVG/openMVG/multiview/solver_resection_kernel.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		C2B0C29BE63E7EFADA1A6566 = {
+			isa = PBXFileReference;
+			name = "solver_resection_p3p.hpp";
+			path = "../libs/openMVG/openMVG/multiview/solver_resection_p3p.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		44695562CF58085C0C54BE7C = {
+			isa = PBXFileReference;
+			name = "solver_translation_knownRotation_kernel.hpp";
+			path = "../libs/openMVG/openMVG/multiview/solver_translation_knownRotation_kernel.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		F6955293A2AC69D91B178768 = {
+			isa = PBXFileReference;
+			name = "translation_averaging_common.hpp";
+			path = "../libs/openMVG/openMVG/multiview/translation_averaging_common.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		AE9262B8CDCCDD39FD3A4231 = {
+			isa = PBXFileReference;
+			name = "translation_averaging_solver.hpp";
+			path = "../libs/openMVG/openMVG/multiview/translation_averaging_solver.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		0AC24352B2AA5C6F2AA895F5 = {
+			isa = PBXFileReference;
+			name = "triangulation_nview.hpp";
+			path = "../libs/openMVG/openMVG/multiview/triangulation_nview.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		846CDB16409810CC779A1506 = {
+			isa = PBXFileReference;
+			name = "triangulation.hpp";
+			path = "../libs/openMVG/openMVG/multiview/triangulation.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		5FD065586452CCF3D6C9D207 = {
+			isa = PBXFileReference;
+			name = "two_view_kernel.hpp";
+			path = "../libs/openMVG/openMVG/multiview/two_view_kernel.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		D21C021D32D8158E403AC0ED = {
+			isa = PBXFileReference;
+			name = "accumulator_trait.hpp";
+			path = "../libs/openMVG/openMVG/numeric/accumulator_trait.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		F4C23A67C72177791D0A937F = {
+			isa = PBXFileReference;
+			name = "lm.hpp";
+			path = "../libs/openMVG/openMVG/numeric/lm.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		4C9EB8213ECEAEB5BD32B1FD = {
+			isa = PBXFileReference;
+			name = "math_trait.hpp";
+			path = "../libs/openMVG/openMVG/numeric/math_trait.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		E8E6111CE386A9D341B265D3 = {
+			isa = PBXFileReference;
+			name = "numeric.hpp";
+			path = "../libs/openMVG/openMVG/numeric/numeric.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		7AFC61FFD0EDBD71DF4D6438 = {
+			isa = PBXFileReference;
+			name = "poly.hpp";
+			path = "../libs/openMVG/openMVG/numeric/poly.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		E37B72278EC521D02CA52B76 = {
+			isa = PBXFileReference;
+			name = "guided_matching.hpp";
+			path = "../libs/openMVG/openMVG/robust_estimation/guided_matching.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		89CCB42F1771AFCA56D8ADA3 = {
+			isa = PBXFileReference;
+			name = "rand_sampling.hpp";
+			path = "../libs/openMVG/openMVG/robust_estimation/rand_sampling.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		555BE9C28FD1FC74DD84FC53 = {
+			isa = PBXFileReference;
+			name = "robust_estimator_ACRansac.hpp";
+			path = "../libs/openMVG/openMVG/robust_estimation/robust_estimator_ACRansac.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		A7D063BB00A6F983B0848BFC = {
+			isa = PBXFileReference;
+			name = "robust_estimator_ACRansacKernelAdaptator.hpp";
+			path = "../libs/openMVG/openMVG/robust_estimation/robust_estimator_ACRansacKernelAdaptator.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		6D3818DF33CF7829A2352976 = {
+			isa = PBXFileReference;
+			name = "robust_estimator_lineKernel_test.hpp";
+			path = "../libs/openMVG/openMVG/robust_estimation/robust_estimator_lineKernel_test.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		35424158E63A83E62C1FBB19 = {
+			isa = PBXFileReference;
+			name = "robust_estimator_LMeds.hpp";
+			path = "../libs/openMVG/openMVG/robust_estimation/robust_estimator_LMeds.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		918B42DF8A8385D19C2CF62A = {
+			isa = PBXFileReference;
+			name = "robust_estimator_MaxConsensus.hpp";
+			path = "../libs/openMVG/openMVG/robust_estimation/robust_estimator_MaxConsensus.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		54B821135190541DFFE5C919 = {
+			isa = PBXFileReference;
+			name = "robust_estimator_Ransac.hpp";
+			path = "../libs/openMVG/openMVG/robust_estimation/robust_estimator_Ransac.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		A498B09A205085A6D269328E = {
+			isa = PBXFileReference;
+			name = "robust_ransac_tools.hpp";
+			path = "../libs/openMVG/openMVG/robust_estimation/robust_ransac_tools.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		64135EC240825346DB32D289 = {
+			isa = PBXFileReference;
+			name = "score_evaluator.hpp";
+			path = "../libs/openMVG/openMVG/robust_estimation/score_evaluator.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		F1FB8219D4E3A3681DC14174 = {
+			isa = PBXFileReference;
+			name = "GlobalSfM_rotation_averaging.hpp";
+			path = "../libs/openMVG/openMVG/sfm/pipelines/global/GlobalSfM_rotation_averaging.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		481DCE3F60F7050E9F4E88C7 = {
+			isa = PBXFileReference;
+			name = "score_evaluator.hpp";
+			path = "../libs/openMVG/openMVG/sfm/pipelines/global/GlobalSfM_rotation_averaging/score_evaluator.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		936EEA7B72C2BB86D7401908 = {
+			isa = PBXFileReference;
+			name = "GlobalSfM_translation_averaging.hpp";
+			path = "../libs/openMVG/openMVG/sfm/pipelines/global/GlobalSfM_translation_averaging.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		4DA05656C5559C0FCF2B7252 = {
+			isa = PBXFileReference;
+			name = "sfm_global_engine_relative_motions.hpp";
+			path = "../libs/openMVG/openMVG/sfm/pipelines/global/sfm_global_engine_relative_motions.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		64B93CD92881830BE6E9738D = {
+			isa = PBXFileReference;
+			name = "sfm_global_reindex.hpp";
+			path = "../libs/openMVG/openMVG/sfm/pipelines/global/sfm_global_reindex.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		B21FB30DA23713D7F105192D = {
+			isa = PBXFileReference;
+			name = "triplet_t_ACRansac_kernelAdaptator.hpp";
+			path = "../libs/openMVG/openMVG/sfm/pipelines/global/triplet_t_ACRansac_kernelAdaptator.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		14AFB11187F71229A1FF71F1 = {
+			isa = PBXFileReference;
+			name = "SfM_Localizer_Single_3DTrackObservation_Database.hpp";
+			path = "../libs/openMVG/openMVG/sfm/pipelines/localization/SfM_Localizer_Single_3DTrackObservation_Database.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		89B66BC07E114B612A7E2D92 = {
+			isa = PBXFileReference;
+			name = "SfM_Localizer.hpp";
+			path = "../libs/openMVG/openMVG/sfm/pipelines/localization/SfM_Localizer.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		99B5D796D0450B3F670A5650 = {
+			isa = PBXFileReference;
+			name = "sequential_SfM.hpp";
+			path = "../libs/openMVG/openMVG/sfm/pipelines/sequential/sequential_SfM.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		3371530D020EE0D0C072E5BD = {
+			isa = PBXFileReference;
+			name = "structure_estimator.hpp";
+			path = "../libs/openMVG/openMVG/sfm/pipelines/structure_from_known_poses/structure_estimator.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		4300E10EF0F0868203E8C4D3 = {
+			isa = PBXFileReference;
+			name = "sfm_engine.hpp";
+			path = "../libs/openMVG/openMVG/sfm/pipelines/sfm_engine.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		BA76CC15A0C393F5E3C6982E = {
+			isa = PBXFileReference;
+			name = "sfm_features_provider.hpp";
+			path = "../libs/openMVG/openMVG/sfm/pipelines/sfm_features_provider.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		673DC4D71339B90C436B8E5C = {
+			isa = PBXFileReference;
+			name = "sfm_matches_provider.hpp";
+			path = "../libs/openMVG/openMVG/sfm/pipelines/sfm_matches_provider.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		93E6CD182B3A35FB1AA607FC = {
+			isa = PBXFileReference;
+			name = "sfm_regions_provider.hpp";
+			path = "../libs/openMVG/openMVG/sfm/pipelines/sfm_regions_provider.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		F1154F4749978A136772A4D5 = {
+			isa = PBXFileReference;
+			name = "sfm_robust_model_estimation.hpp";
+			path = "../libs/openMVG/openMVG/sfm/pipelines/sfm_robust_model_estimation.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		A14CB028E31255E11FEF4F38 = {
+			isa = PBXFileReference;
+			name = "sfm_data_BA_ceres_camera_functor.hpp";
+			path = "../libs/openMVG/openMVG/sfm/sfm_data_BA_ceres_camera_functor.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		EABEE0963C7D3254CE1686F6 = {
+			isa = PBXFileReference;
+			name = "sfm_data_BA_ceres.hpp";
+			path = "../libs/openMVG/openMVG/sfm/sfm_data_BA_ceres.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		A2244C87768A4E2BD2B6DFF4 = {
+			isa = PBXFileReference;
+			name = "sfm_data_BA.hpp";
+			path = "../libs/openMVG/openMVG/sfm/sfm_data_BA.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		AD8A4236B66C93916682E2DB = {
+			isa = PBXFileReference;
+			name = "sfm_data_filters_frustum.hpp";
+			path = "../libs/openMVG/openMVG/sfm/sfm_data_filters_frustum.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		E66F3225A8D9D885B2D85160 = {
+			isa = PBXFileReference;
+			name = "sfm_data_filters.hpp";
+			path = "../libs/openMVG/openMVG/sfm/sfm_data_filters.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		8251CBBBA00CBBFF58CD1DC2 = {
+			isa = PBXFileReference;
+			name = "sfm_data_io_baf.hpp";
+			path = "../libs/openMVG/openMVG/sfm/sfm_data_io_baf.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		2411855EB478DDF209F416CA = {
+			isa = PBXFileReference;
+			name = "sfm_data_io_cereal.hpp";
+			path = "../libs/openMVG/openMVG/sfm/sfm_data_io_cereal.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		1E5FB03E75F4C52C5D3C8397 = {
+			isa = PBXFileReference;
+			name = "sfm_data_io_ply.hpp";
+			path = "../libs/openMVG/openMVG/sfm/sfm_data_io_ply.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		FD7C30853B5A88AAD208B1B8 = {
+			isa = PBXFileReference;
+			name = "sfm_data_io.hpp";
+			path = "../libs/openMVG/openMVG/sfm/sfm_data_io.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		BD684E7F4CA540256635DF3B = {
+			isa = PBXFileReference;
+			name = "sfm_data_triangulation.hpp";
+			path = "../libs/openMVG/openMVG/sfm/sfm_data_triangulation.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		C1679AF245702F55ECB18B67 = {
+			isa = PBXFileReference;
+			name = "sfm_data_utils.hpp";
+			path = "../libs/openMVG/openMVG/sfm/sfm_data_utils.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		224E5AE9841C2EE3E67DDB48 = {
+			isa = PBXFileReference;
+			name = "sfm_data.hpp";
+			path = "../libs/openMVG/openMVG/sfm/sfm_data.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		89BD338E5C995C8448C32DF6 = {
+			isa = PBXFileReference;
+			name = "sfm_filters.hpp";
+			path = "../libs/openMVG/openMVG/sfm/sfm_filters.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		798A06D121C8DB14C2BE3947 = {
+			isa = PBXFileReference;
+			name = "sfm_landmark.hpp";
+			path = "../libs/openMVG/openMVG/sfm/sfm_landmark.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		ACF956664EA2B4FA8D540C6F = {
+			isa = PBXFileReference;
+			name = "sfm_report.hpp";
+			path = "../libs/openMVG/openMVG/sfm/sfm_report.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		5C804EA64A3399AC8CE39B15 = {
+			isa = PBXFileReference;
+			name = "sfm_view.hpp";
+			path = "../libs/openMVG/openMVG/sfm/sfm_view.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		2F8B61AE21AFB7603E336E84 = {
+			isa = PBXFileReference;
+			name = "sfm.hpp";
+			path = "../libs/openMVG/openMVG/sfm/sfm.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		65A0294C40B17386965928C1 = {
+			isa = PBXFileReference;
+			name = "dynamic_bitset.hpp";
+			path = "../libs/openMVG/openMVG/stl/dynamic_bitset.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		6DC3E5EFEF129E66027AD5D7 = {
+			isa = PBXFileReference;
+			name = "hash.hpp";
+			path = "../libs/openMVG/openMVG/stl/hash.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		DF8F50372BCF4B7A1005BD8C = {
+			isa = PBXFileReference;
+			name = "indexed_sort.hpp";
+			path = "../libs/openMVG/openMVG/stl/indexed_sort.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		CF1FECD4EED03C23769EE80A = {
+			isa = PBXFileReference;
+			name = "split.hpp";
+			path = "../libs/openMVG/openMVG/stl/split.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		616A5EADFFAA4EEA9D4DC00D = {
+			isa = PBXFileReference;
+			name = "stl.hpp";
+			path = "../libs/openMVG/openMVG/stl/stl.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		C108471D427E08E9E9F45153 = {
+			isa = PBXFileReference;
+			name = "stlMap.hpp";
+			path = "../libs/openMVG/openMVG/stl/stlMap.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		954A18D0F3BB8C44D6552573 = {
+			isa = PBXFileReference;
+			name = "timer.hpp";
+			path = "../libs/openMVG/openMVG/system/timer.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		39F565321EC683C4D459FBC8 = {
+			isa = PBXFileReference;
+			name = "tracks.hpp";
+			path = "../libs/openMVG/openMVG/tracks/tracks.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		392C36E0DBF5397BC7ED8CD5 = {
+			isa = PBXFileReference;
+			name = "types.hpp";
+			path = "../libs/openMVG/openMVG/types.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		9528C366C07E09081C91B7E7 = {
+			isa = PBXFileReference;
+			name = "version.hpp";
+			path = "../libs/openMVG/openMVG/version.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		EB7E3F583EBF4D647A9B56FD = {
+			isa = PBXFileReference;
+			name = "CbcOrClpParam.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/CbcOrClpParam.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		BF85C9CB8A684E406DF78089 = {
+			isa = PBXFileReference;
+			name = "Clp_C_Interface.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/Clp_C_Interface.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		DBF4A7C68274D8D3D0812E17 = {
+			isa = PBXFileReference;
+			name = "ClpCholeskyBase.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpCholeskyBase.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		6CC7EF4694D964FFE6C10602 = {
+			isa = PBXFileReference;
+			name = "ClpCholeskyDense.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpCholeskyDense.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		C1D19F73B9F09D4AFC47B728 = {
+			isa = PBXFileReference;
+			name = "ClpCholeskyTaucs.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpCholeskyTaucs.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		27F37389D849E64508DC262E = {
+			isa = PBXFileReference;
+			name = "ClpConstraint.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpConstraint.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		8BB2397F3CA759B80CFFB2B2 = {
+			isa = PBXFileReference;
+			name = "ClpConfig.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpConfig.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		1604829C74934A4646036B6C = {
+			isa = PBXFileReference;
+			name = "ClpConstraintLinear.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpConstraintLinear.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		0B817DDE81CA66B5557C01CC = {
+			isa = PBXFileReference;
+			name = "ClpConstraintQuadratic.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpConstraintQuadratic.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		FCAFB6CDDDEF74F192D6089E = {
+			isa = PBXFileReference;
+			name = "ClpDualRowDantzig.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpDualRowDantzig.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		D5A01459812BF68F44BFC49F = {
+			isa = PBXFileReference;
+			name = "ClpDualRowPivot.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpDualRowPivot.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		81A16E2EA6632B450A1C0995 = {
+			isa = PBXFileReference;
+			name = "ClpDualRowSteepest.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpDualRowSteepest.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		76C0D571B590F0A665FB7ACA = {
+			isa = PBXFileReference;
+			name = "ClpDummyMatrix.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpDummyMatrix.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		883F6DE900E2673B646128F4 = {
+			isa = PBXFileReference;
+			name = "ClpDynamicExampleMatrix.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpDynamicExampleMatrix.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		A3F75EC3BE17FDD5A1666192 = {
+			isa = PBXFileReference;
+			name = "ClpDynamicMatrix.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpDynamicMatrix.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		540ADCACC39FBA57E6CB88CD = {
+			isa = PBXFileReference;
+			name = "ClpEventHandler.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpEventHandler.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		DD215432C4CB507619D0E602 = {
+			isa = PBXFileReference;
+			name = "ClpFactorization.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpFactorization.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		C648E6CF1990AB1EF2F0CB75 = {
+			isa = PBXFileReference;
+			name = "ClpGubDynamicMatrix.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpGubDynamicMatrix.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		AC88EB30727A8E586D03D575 = {
+			isa = PBXFileReference;
+			name = "ClpGubMatrix.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpGubMatrix.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		A82FE3AE6696B89A7F4F0E75 = {
+			isa = PBXFileReference;
+			name = "ClpHelperFunctions.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpHelperFunctions.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		6F057D10EA8CF3943AC7047F = {
+			isa = PBXFileReference;
+			name = "ClpInterior.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpInterior.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		4F6ACE4B7BC1B435348E43D7 = {
+			isa = PBXFileReference;
+			name = "ClpLinearObjective.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpLinearObjective.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		1C6444F6077E1AFE579B0D18 = {
+			isa = PBXFileReference;
+			name = "ClpLsqr.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpLsqr.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		CAEF89044775971C961520D1 = {
+			isa = PBXFileReference;
+			name = "ClpMain.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpMain.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		FE55820A9D8DF3E95449A1CD = {
+			isa = PBXFileReference;
+			name = "ClpMatrixBase.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpMatrixBase.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		037600933A86D7B257B7442A = {
+			isa = PBXFileReference;
+			name = "ClpMessage.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpMessage.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		B40C1E911A5806F908CFF345 = {
+			isa = PBXFileReference;
+			name = "ClpModel.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpModel.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		7D7611B2FFA16E26FDAD253D = {
+			isa = PBXFileReference;
+			name = "ClpNetworkBasis.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpNetworkBasis.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		6311C1270EF3FE899BC7E265 = {
+			isa = PBXFileReference;
+			name = "ClpNetworkMatrix.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpNetworkMatrix.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		F77B1767327006B563D44EFC = {
+			isa = PBXFileReference;
+			name = "ClpNode.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpNode.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		A4CD5CEC320EEAD8357862AC = {
+			isa = PBXFileReference;
+			name = "ClpNonLinearCost.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpNonLinearCost.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		B710F3BF0AA08091D260B274 = {
+			isa = PBXFileReference;
+			name = "ClpObjective.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpObjective.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		03F803544632C0F65910DE79 = {
+			isa = PBXFileReference;
+			name = "ClpPackedMatrix.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpPackedMatrix.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		D845A62240B1B76503B65D3D = {
+			isa = PBXFileReference;
+			name = "ClpParameters.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpParameters.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		7C0642CBD02BC186D4F82F5E = {
+			isa = PBXFileReference;
+			name = "ClpPdco.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpPdco.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		29F1A06909586482F8ADF194 = {
+			isa = PBXFileReference;
+			name = "ClpPdcoBase.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpPdcoBase.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		59B8D8525D1612F8A2DBFDDB = {
+			isa = PBXFileReference;
+			name = "ClpPlusMinusOneMatrix.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpPlusMinusOneMatrix.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		C9195F20377DF2EC192BFA52 = {
+			isa = PBXFileReference;
+			name = "ClpPredictorCorrector.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpPredictorCorrector.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		F811338A72B734195EDB2D6E = {
+			isa = PBXFileReference;
+			name = "ClpPresolve.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpPresolve.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		78B7A2739B5DCC119C5F7A26 = {
+			isa = PBXFileReference;
+			name = "ClpPrimalColumnDantzig.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpPrimalColumnDantzig.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		065429BBBE08155DE796641D = {
+			isa = PBXFileReference;
+			name = "ClpPrimalColumnPivot.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpPrimalColumnPivot.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		E7F04B860118261B04F68D32 = {
+			isa = PBXFileReference;
+			name = "ClpPrimalColumnSteepest.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpPrimalColumnSteepest.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		230D86981654BCA2B7B8702B = {
+			isa = PBXFileReference;
+			name = "ClpQuadraticObjective.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpQuadraticObjective.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		22C8575D25B65C873D27D1DD = {
+			isa = PBXFileReference;
+			name = "ClpSimplex.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpSimplex.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		7055CDF4D00992E6AB1CF368 = {
+			isa = PBXFileReference;
+			name = "ClpSimplexDual.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpSimplexDual.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		F792F6BD56A0321718DB2420 = {
+			isa = PBXFileReference;
+			name = "ClpSimplexNonlinear.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpSimplexNonlinear.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		9EA2EF73E4337A743652F1DE = {
+			isa = PBXFileReference;
+			name = "ClpSimplexOther.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpSimplexOther.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		097AD8152CB0D9FD2C15EDA3 = {
+			isa = PBXFileReference;
+			name = "ClpSimplexPrimal.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpSimplexPrimal.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		F153F8EBDB56E6EE7C1A445F = {
+			isa = PBXFileReference;
+			name = "ClpSolve.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/ClpSolve.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		09C1F8D90C30952EBFD1F6BB = {
+			isa = PBXFileReference;
+			name = "Idiot.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/Idiot.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		DF39686BCFB555A52EC51DAC = {
+			isa = PBXFileReference;
+			name = "IdiSolve.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/IdiSolve.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		FE710196D48203A9DBD22B7C = {
+			isa = PBXFileReference;
+			name = "MyEventHandler.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/MyEventHandler.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		CA6FE748E02225FE6C696618 = {
+			isa = PBXFileReference;
+			name = "MyMessageHandler.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/MyMessageHandler.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		DF39686BCFB555A52EC51DAC = {
+			isa = PBXFileReference;
+			name = "IdiSolve.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/IdiSolve.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		13805DCE5A71458468AB504C = {
+			isa = PBXFileReference;
+			name = "OsiClpSolverInterface.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/OsiClp/OsiClpSolverInterface.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		67FB1DD81E6EBD02276DD21C = {
+			isa = PBXFileReference;
+			name = "config_clp_default.h";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/config_clp_default.h";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		95015BB2930097807835EFFA = {
+			isa = PBXFileReference;
+			name = "config_default.h";
+			path = "../libs/openMVG/dependencies/osi_clp/Clp/src/config_default.h";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		DD4CA787E4211C872B80E571 = {
+			isa = PBXFileReference;
+			name = "Coin_C_defines.h";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/Coin_C_defines.h";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		DF70B8ED22591515935CDDED = {
+			isa = PBXFileReference;
+			name = "CoinAlloc.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinAlloc.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		356DF132D911D63353C17EBD = {
+			isa = PBXFileReference;
+			name = "CoinBuild.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinBuild.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		BC1B43377AE6EFC85C1D79F9 = {
+			isa = PBXFileReference;
+			name = "CoinDistance.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinDistance.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		F2709409BF96D65FE4722B4B = {
+			isa = PBXFileReference;
+			name = "CoinDenseFactorization.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinDenseFactorization.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		CF8A8D1BC1C3D80A176597A1 = {
+			isa = PBXFileReference;
+			name = "CoinDenseVector.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinDenseVector.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		A3ADF8F2177A5DAA4D6F35DA = {
+			isa = PBXFileReference;
+			name = "CoinError.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinError.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		A46A403BA523CB6D755978E8 = {
+			isa = PBXFileReference;
+			name = "CoinFactorization.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinFactorization.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		9AB6C68B3E93F8D1199C59C4 = {
+			isa = PBXFileReference;
+			name = "CoinFileIO.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinFileIO.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		CFEB055F8D3A05EC4F329876 = {
+			isa = PBXFileReference;
+			name = "CoinFinite.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinFinite.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		5FD8FF201BEDDA0D02F142B7 = {
+			isa = PBXFileReference;
+			name = "CoinFloatEqual.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinFloatEqual.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		40774AB532BCF622AC0DC26A = {
+			isa = PBXFileReference;
+			name = "CoinHelperFunctions.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinHelperFunctions.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		25A9816597F9DE45EB2DE13A = {
+			isa = PBXFileReference;
+			name = "CoinIndexedVector.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinIndexedVector.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		B095E8F00B61537413A22AC7 = {
+			isa = PBXFileReference;
+			name = "CoinLpIO.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinLpIO.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		DDB80E08CE698ED7A9498CAD = {
+			isa = PBXFileReference;
+			name = "CoinMessage.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinMessage.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		689F1D0C01CD0EB7F295D8E3 = {
+			isa = PBXFileReference;
+			name = "CoinMessageHandler.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinMessageHandler.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		5AE6440464F274227915FF17 = {
+			isa = PBXFileReference;
+			name = "CoinModel.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinModel.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		4469167F8615585D71288056 = {
+			isa = PBXFileReference;
+			name = "CoinModelUseful.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinModelUseful.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		C4BDCD084438CDAF026D74BB = {
+			isa = PBXFileReference;
+			name = "CoinMpsIO.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinMpsIO.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		D6A8BE817921B3FD754E8D1A = {
+			isa = PBXFileReference;
+			name = "CoinOslC.h";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinOslC.h";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		ACCEC0B6D4991B5ACA124E29 = {
+			isa = PBXFileReference;
+			name = "CoinOslFactorization.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinOslFactorization.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		9D03BA3B486E74E86989DFAA = {
+			isa = PBXFileReference;
+			name = "CoinPackedMatrix.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPackedMatrix.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		DD8D9291A669912A847993F7 = {
+			isa = PBXFileReference;
+			name = "CoinPackedVector.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPackedVector.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		3A85BFDFAD4F1846999E3D55 = {
+			isa = PBXFileReference;
+			name = "CoinPackedVectorBase.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPackedVectorBase.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		4F85E2AEC2D026BD6695689D = {
+			isa = PBXFileReference;
+			name = "CoinParam.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinParam.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		6DE74107D425355B6BB930CF = {
+			isa = PBXFileReference;
+			name = "CoinPragma.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPragma.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		F13601F7823ABDAE076983BA = {
+			isa = PBXFileReference;
+			name = "CoinPostsolveMatrix.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPostsolveMatrix.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		58149BF8976D5055F9357821 = {
+			isa = PBXFileReference;
+			name = "CoinPrePostsolveMatrix.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPrePostsolveMatrix.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		ADB973729B7BB041350FE009 = {
+			isa = PBXFileReference;
+			name = "CoinPresolveDoubleton.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveDoubleton.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		40AC7F3AE06728D6F1E5DC65 = {
+			isa = PBXFileReference;
+			name = "CoinPresolveDual.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveDual.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		1975B5DFBE7198135C260D8A = {
+			isa = PBXFileReference;
+			name = "CoinPresolveDupcol.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveDupcol.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		8CBF5715F9287B69F538BC38 = {
+			isa = PBXFileReference;
+			name = "CoinPresolveEmpty.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveEmpty.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		ED11B62023233D95F7BA24F7 = {
+			isa = PBXFileReference;
+			name = "CoinPresolveFixed.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveFixed.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		E301B265B01542B4DFA83862 = {
+			isa = PBXFileReference;
+			name = "CoinPresolveForcing.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveForcing.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		1EFB7FD8E48349E6362BAECE = {
+			isa = PBXFileReference;
+			name = "CoinPresolveImpliedFree.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveImpliedFree.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		B071C360B5AEDAC92EF0B900 = {
+			isa = PBXFileReference;
+			name = "CoinPresolveIsolated.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveIsolated.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		2779CD730AFCDC02D1AD2B58 = {
+			isa = PBXFileReference;
+			name = "CoinPresolveMatrix.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveMatrix.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		5BF72D0961ADFAFAE3840E91 = {
+			isa = PBXFileReference;
+			name = "CoinPresolveMonitor.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveMonitor.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		11FFE9C966BAC9EBF16A40B1 = {
+			isa = PBXFileReference;
+			name = "CoinPresolvePsdebug.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolvePsdebug.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		6AF574A89A3B842F38EF11E5 = {
+			isa = PBXFileReference;
+			name = "CoinPresolveSingleton.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveSingleton.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		3A6DA2EAE0A5A0730623BE1F = {
+			isa = PBXFileReference;
+			name = "CoinPresolveSubst.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveSubst.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		9D9286B1C5425995B7C609B0 = {
+			isa = PBXFileReference;
+			name = "CoinPresolveTighten.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveTighten.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		AA9603C30B5FEF8D7395C2BC = {
+			isa = PBXFileReference;
+			name = "CoinPresolveTripleton.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveTripleton.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		79CB0D86DB71B6933A64A2F3 = {
+			isa = PBXFileReference;
+			name = "CoinPresolveUseless.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveUseless.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		8907DE5BFD492AAE3727822B = {
+			isa = PBXFileReference;
+			name = "CoinPresolveZeros.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinPresolveZeros.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		E53F7D71DFE4EA865017AC26 = {
+			isa = PBXFileReference;
+			name = "CoinSearchTree.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinSearchTree.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		EC9879737EBF937C6C0FFC5F = {
+			isa = PBXFileReference;
+			name = "CoinShallowPackedVector.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinShallowPackedVector.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		C0A7F9A5364ABD74D6604947 = {
+			isa = PBXFileReference;
+			name = "CoinSignal.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinSignal.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		718C94BC8B83FA0D6FE7BC99 = {
+			isa = PBXFileReference;
+			name = "CoinSimpFactorization.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinSimpFactorization.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		8B7E0CA9ACF762C8F2E45081 = {
+			isa = PBXFileReference;
+			name = "CoinSmartPtr.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinSmartPtr.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		CF1397FB1E6350A651F7210A = {
+			isa = PBXFileReference;
+			name = "CoinSnapshot.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinSnapshot.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		8101905754F9AF5355714BA8 = {
+			isa = PBXFileReference;
+			name = "CoinSort.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinSort.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		DF57BB9C5F9DEB4C30DABCE0 = {
+			isa = PBXFileReference;
+			name = "CoinStructuredModel.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinStructuredModel.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		56491179D21B60A603AADD86 = {
+			isa = PBXFileReference;
+			name = "CoinTime.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinTime.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		EA02282E369F68DAEB733FFA = {
+			isa = PBXFileReference;
+			name = "CoinTypes.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinTypes.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		8189301B87E80C608435976C = {
+			isa = PBXFileReference;
+			name = "CoinUtility.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinUtility.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		A446FD1F8ACFD98AEE053888 = {
+			isa = PBXFileReference;
+			name = "CoinUtilsConfig.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinUtilsConfig.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		F378761AA7E4B2DDFA31E3B3 = {
+			isa = PBXFileReference;
+			name = "CoinWarmStart.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinWarmStart.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		3FE32C600483125575014500 = {
+			isa = PBXFileReference;
+			name = "CoinWarmStartBasis.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinWarmStartBasis.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		30C1DEACBC74A2348F4FB0EE = {
+			isa = PBXFileReference;
+			name = "CoinWarmStartDual.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinWarmStartDual.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		24389843B6BA37FD6AD11AF8 = {
+			isa = PBXFileReference;
+			name = "CoinWarmStartPrimalDual.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinWarmStartPrimalDual.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		425E2A868792C131FBBED151 = {
+			isa = PBXFileReference;
+			name = "CoinWarmStartVector.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/CoinWarmStartVector.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		88C5B82025FCD564FF6F7008 = {
+			isa = PBXFileReference;
+			name = "config_coinutils_default.h";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/config_coinutils_default.h";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		9F050C0CE1C18D2B6AFA44D5 = {
+			isa = PBXFileReference;
+			name = "config_default.h";
+			path = "../libs/openMVG/dependencies/osi_clp/CoinUtils/src/config_default.h";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		EB783E502717CE1536E3D754 = {
+			isa = PBXFileReference;
+			name = "config_default.h";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/config_default.h";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		059DD0ED19DFA8D5A30720D6 = {
+			isa = PBXFileReference;
+			name = "config_osi_default.h";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/config_osi_default.h";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		686E4364636EE15CC5BBFA74 = {
+			isa = PBXFileReference;
+			name = "OsiAuxInfo.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiAuxInfo.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		5FDDED3A15ED86270F4D35B6 = {
+			isa = PBXFileReference;
+			name = "OsiBranchingObject.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiBranchingObject.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		21F1490CAB420F3DE89FE24A = {
+			isa = PBXFileReference;
+			name = "OsiChooseVariable.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiChooseVariable.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		5FDCECCB5CA7684A4FA9BD5F = {
+			isa = PBXFileReference;
+			name = "OsiCollections.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiCollections.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		79826169C0A5CC2374D92F0E = {
+			isa = PBXFileReference;
+			name = "OsiColCut.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiColCut.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		3F1D585442822F0B294CEF50 = {
+			isa = PBXFileReference;
+			name = "OsiCut.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiCut.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		68D4C4E34413DE31A12C4A89 = {
+			isa = PBXFileReference;
+			name = "OsiCuts.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiCuts.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		B948E7D831B2CEC637E45ECF = {
+			isa = PBXFileReference;
+			name = "OsiPresolve.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiPresolve.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		BA83BD04E343959E3AC8A8FB = {
+			isa = PBXFileReference;
+			name = "OsiRowCut.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiRowCut.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		681B6B9C05CC7A5CCBCF378D = {
+			isa = PBXFileReference;
+			name = "OsiRowCutDebugger.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiRowCutDebugger.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		49CE4754B57DCC487C26272D = {
+			isa = PBXFileReference;
+			name = "OsiSolverBranch.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiSolverBranch.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		0EA15E3FA550B029ECD5BBA5 = {
+			isa = PBXFileReference;
+			name = "OsiSolverInterface.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiSolverInterface.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		8918AE0F912EC89A397AF3F0 = {
+			isa = PBXFileReference;
+			name = "OsiSolverParameters.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/Osi/OsiSolverParameters.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		3EFF89810CA15F110ABF7805 = {
+			isa = PBXFileReference;
+			name = "OsiMskSolverInterface.hpp";
+			path = "../libs/openMVG/dependencies/osi_clp/Osi/src/OsiMsk/OsiMskSolverInterface.hpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		89585D57262209A953F441D7 = {
+			isa = PBXFileReference;
+			name = "openMVG.pro";
+			path = "openMVG.pro";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		883D7615C4D2DE3FA1218F12 = {
+			isa = PBXGroup;
+			children = (
+				"4458B98565818D7E2682FA2D");
+			name = "Headers";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		4458B98565818D7E2682FA2D = {
+			isa = PBXGroup;
+			children = (
+				"4ADF3BA822EEA2B3AF314130");
+			name = "..";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		4ADF3BA822EEA2B3AF314130 = {
+			isa = PBXGroup;
+			children = (
+				"EFE82DFFFAD9B52716ACD7A4");
+			name = "libs";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		EFE82DFFFAD9B52716ACD7A4 = {
+			isa = PBXGroup;
+			children = (
+				"CF08C922096C0E7F54DC438C",
+				"A7EE1F9403910B9CEA5538DD");
+			name = "openMVG";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		A7EE1F9403910B9CEA5538DD = {
+			isa = PBXGroup;
+			children = (
+				"503E4AAC8A4A664D871C5D20");
+			name = "dependencies";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		503E4AAC8A4A664D871C5D20 = {
+			isa = PBXGroup;
+			children = (
+				"690844491769D37CEFB73F23",
+				"8B8B47CC85CB9DBED46E776D",
+				"DA4A164189A8953458C55F9E");
+			name = "osi_clp";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		690844491769D37CEFB73F23 = {
+			isa = PBXGroup;
+			children = (
+				"D24499F8C74128C050D9F8F0");
+			name = "Clp";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		D24499F8C74128C050D9F8F0 = {
+			isa = PBXGroup;
+			children = (
+				"EB7E3F583EBF4D647A9B56FD",
+				"BF85C9CB8A684E406DF78089",
+				"DBF4A7C68274D8D3D0812E17",
+				"6CC7EF4694D964FFE6C10602",
+				"C1D19F73B9F09D4AFC47B728",
+				"27F37389D849E64508DC262E",
+				"8BB2397F3CA759B80CFFB2B2",
+				"1604829C74934A4646036B6C",
+				"0B817DDE81CA66B5557C01CC",
+				"FCAFB6CDDDEF74F192D6089E",
+				"D5A01459812BF68F44BFC49F",
+				"81A16E2EA6632B450A1C0995",
+				"76C0D571B590F0A665FB7ACA",
+				"883F6DE900E2673B646128F4",
+				"A3F75EC3BE17FDD5A1666192",
+				"540ADCACC39FBA57E6CB88CD",
+				"DD215432C4CB507619D0E602",
+				"C648E6CF1990AB1EF2F0CB75",
+				"AC88EB30727A8E586D03D575",
+				"A82FE3AE6696B89A7F4F0E75",
+				"6F057D10EA8CF3943AC7047F",
+				"4F6ACE4B7BC1B435348E43D7",
+				"1C6444F6077E1AFE579B0D18",
+				"CAEF89044775971C961520D1",
+				"FE55820A9D8DF3E95449A1CD",
+				"037600933A86D7B257B7442A",
+				"B40C1E911A5806F908CFF345",
+				"7D7611B2FFA16E26FDAD253D",
+				"6311C1270EF3FE899BC7E265",
+				"F77B1767327006B563D44EFC",
+				"A4CD5CEC320EEAD8357862AC",
+				"B710F3BF0AA08091D260B274",
+				"03F803544632C0F65910DE79",
+				"D845A62240B1B76503B65D3D",
+				"7C0642CBD02BC186D4F82F5E",
+				"29F1A06909586482F8ADF194",
+				"59B8D8525D1612F8A2DBFDDB",
+				"C9195F20377DF2EC192BFA52",
+				"F811338A72B734195EDB2D6E",
+				"78B7A2739B5DCC119C5F7A26",
+				"065429BBBE08155DE796641D",
+				"E7F04B860118261B04F68D32",
+				"230D86981654BCA2B7B8702B",
+				"22C8575D25B65C873D27D1DD",
+				"7055CDF4D00992E6AB1CF368",
+				"F792F6BD56A0321718DB2420",
+				"9EA2EF73E4337A743652F1DE",
+				"097AD8152CB0D9FD2C15EDA3",
+				"F153F8EBDB56E6EE7C1A445F",
+				"09C1F8D90C30952EBFD1F6BB",
+				"DF39686BCFB555A52EC51DAC",
+				"FE710196D48203A9DBD22B7C",
+				"CA6FE748E02225FE6C696618",
+				"DF39686BCFB555A52EC51DAC",
+				"08660F42E7276110F04E5D79",
+				"67FB1DD81E6EBD02276DD21C",
+				"95015BB2930097807835EFFA");
+			name = "src";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		08660F42E7276110F04E5D79 = {
+			isa = PBXGroup;
+			children = (
+				"13805DCE5A71458468AB504C");
+			name = "OsiClp";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		8B8B47CC85CB9DBED46E776D = {
+			isa = PBXGroup;
+			children = (
+				"F6F2CF6C5CBE8EAA6EF852E0");
+			name = "CoinUtils";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		F6F2CF6C5CBE8EAA6EF852E0 = {
+			isa = PBXGroup;
+			children = (
+				"DD4CA787E4211C872B80E571",
+				"DF70B8ED22591515935CDDED",
+				"356DF132D911D63353C17EBD",
+				"BC1B43377AE6EFC85C1D79F9",
+				"F2709409BF96D65FE4722B4B",
+				"CF8A8D1BC1C3D80A176597A1",
+				"A3ADF8F2177A5DAA4D6F35DA",
+				"A46A403BA523CB6D755978E8",
+				"9AB6C68B3E93F8D1199C59C4",
+				"CFEB055F8D3A05EC4F329876",
+				"5FD8FF201BEDDA0D02F142B7",
+				"40774AB532BCF622AC0DC26A",
+				"25A9816597F9DE45EB2DE13A",
+				"B095E8F00B61537413A22AC7",
+				"DDB80E08CE698ED7A9498CAD",
+				"689F1D0C01CD0EB7F295D8E3",
+				"5AE6440464F274227915FF17",
+				"4469167F8615585D71288056",
+				"C4BDCD084438CDAF026D74BB",
+				"D6A8BE817921B3FD754E8D1A",
+				"ACCEC0B6D4991B5ACA124E29",
+				"9D03BA3B486E74E86989DFAA",
+				"DD8D9291A669912A847993F7",
+				"3A85BFDFAD4F1846999E3D55",
+				"4F85E2AEC2D026BD6695689D",
+				"6DE74107D425355B6BB930CF",
+				"F13601F7823ABDAE076983BA",
+				"58149BF8976D5055F9357821",
+				"ADB973729B7BB041350FE009",
+				"40AC7F3AE06728D6F1E5DC65",
+				"1975B5DFBE7198135C260D8A",
+				"8CBF5715F9287B69F538BC38",
+				"ED11B62023233D95F7BA24F7",
+				"E301B265B01542B4DFA83862",
+				"1EFB7FD8E48349E6362BAECE",
+				"B071C360B5AEDAC92EF0B900",
+				"2779CD730AFCDC02D1AD2B58",
+				"5BF72D0961ADFAFAE3840E91",
+				"11FFE9C966BAC9EBF16A40B1",
+				"6AF574A89A3B842F38EF11E5",
+				"3A6DA2EAE0A5A0730623BE1F",
+				"9D9286B1C5425995B7C609B0",
+				"AA9603C30B5FEF8D7395C2BC",
+				"79CB0D86DB71B6933A64A2F3",
+				"8907DE5BFD492AAE3727822B",
+				"E53F7D71DFE4EA865017AC26",
+				"EC9879737EBF937C6C0FFC5F",
+				"C0A7F9A5364ABD74D6604947",
+				"718C94BC8B83FA0D6FE7BC99",
+				"8B7E0CA9ACF762C8F2E45081",
+				"CF1397FB1E6350A651F7210A",
+				"8101905754F9AF5355714BA8",
+				"DF57BB9C5F9DEB4C30DABCE0",
+				"56491179D21B60A603AADD86",
+				"EA02282E369F68DAEB733FFA",
+				"8189301B87E80C608435976C",
+				"A446FD1F8ACFD98AEE053888",
+				"F378761AA7E4B2DDFA31E3B3",
+				"3FE32C600483125575014500",
+				"30C1DEACBC74A2348F4FB0EE",
+				"24389843B6BA37FD6AD11AF8",
+				"425E2A868792C131FBBED151",
+				"88C5B82025FCD564FF6F7008",
+				"9F050C0CE1C18D2B6AFA44D5");
+			name = "src";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		DA4A164189A8953458C55F9E = {
+			isa = PBXGroup;
+			children = (
+				"68C6D4F8DC02DB08C108A84C");
+			name = "Osi";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		68C6D4F8DC02DB08C108A84C = {
+			isa = PBXGroup;
+			children = (
+				"011B4F82104C2F17E2A3A9BC",
+				"E8707E894BA8BBDDFAE7BE1F");
+			name = "src";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		011B4F82104C2F17E2A3A9BC = {
+			isa = PBXGroup;
+			children = (
+				"EB783E502717CE1536E3D754",
+				"059DD0ED19DFA8D5A30720D6",
+				"686E4364636EE15CC5BBFA74",
+				"5FDDED3A15ED86270F4D35B6",
+				"21F1490CAB420F3DE89FE24A",
+				"5FDCECCB5CA7684A4FA9BD5F",
+				"79826169C0A5CC2374D92F0E",
+				"3F1D585442822F0B294CEF50",
+				"68D4C4E34413DE31A12C4A89",
+				"B948E7D831B2CEC637E45ECF",
+				"BA83BD04E343959E3AC8A8FB",
+				"681B6B9C05CC7A5CCBCF378D",
+				"49CE4754B57DCC487C26272D",
+				"0EA15E3FA550B029ECD5BBA5",
+				"8918AE0F912EC89A397AF3F0");
+			name = "Osi";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		E8707E894BA8BBDDFAE7BE1F = {
+			isa = PBXGroup;
+			children = (
+				"3EFF89810CA15F110ABF7805");
+			name = "OsiMsk";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		CF08C922096C0E7F54DC438C = {
+			isa = PBXGroup;
+			children = (
+				"DFD50A935244CF11B9C26B2D",
+				"E0FF7531F5A90CD9DD4EFEA1",
+				"7B524AA1ED6652E286350073",
+				"2675075D631EB131EAC0658A",
+				"E8182ACBA832441A901033FF",
+				"8ACCACA1A1A296636D362807",
+				"BB0E5D87DFD1C1E18693A8FF",
+				"0191290F6C922A31E7368D20",
+				"5DE557A81C1915D3D5513E8E",
+				"74992D56FEF1A5AF9BBEE4D4",
+				"9DC2D9EE0ADBC5B1F2990F15",
+				"0B57DFEFDEB440E8D481E79E",
+				"71F9B68ABB144B8D4363E9F7",
+				"AB98C72CB8A1A78F78D748D8",
+				"DF8938BBF30DEC1849E3B660",
+				"DD85C548E1BAE0CF9869D5FD",
+				"392C36E0DBF5397BC7ED8CD5",
+				"9528C366C07E09081C91B7E7");
+			name = "openMVG";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		DFD50A935244CF11B9C26B2D = {
+			isa = PBXGroup;
+			children = (
+				"CBAE270E3502FBE9414641CE",
+				"44F8E9B02DF2474876D67B61",
+				"067C30EA224F6775E4B2852E",
+				"C93EF7F3D213295405825059",
+				"F0868634865BBD16055A385D",
+				"98F078203FB057FAF9FA5FC5",
+				"862EB7B7C8D5C873E86D8698",
+				"DB7A36218E1C1488BAA7ABC3",
+				"233A07D710461F9959064E50");
+			name = "cameras";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		E0FF7531F5A90CD9DD4EFEA1 = {
+			isa = PBXGroup;
+			children = (
+				"3784308484C1FED6C0AFA698",
+				"C461D32D069A14D427AD8DA1",
+				"2DDD1BD13F6816B86EFCA442",
+				"50CC0926EB9E19B3313D624A",
+				"C3D6807DD889BA265955F99C");
+			name = "color_harmonization";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		7B524AA1ED6652E286350073 = {
+			isa = PBXGroup;
+			children = (
+				"C316E2C9DBF7F3254AC90C36",
+				"DD82C702E5BAF12A051FF912",
+				"04A752EB8E72124BC59D87CB",
+				"C2CA8FB66CB91AC91D2341A5",
+				"AA0D244E28229CC9A4C3D6F0",
+				"98C240E91183F186F921EBBE",
+				"5BFA2F1F09EB14B767DB5EB0",
+				"3BF1CD2D9F296604D83794E7",
+				"BE3A4F8B167337AB4036C224",
+				"EA6FC2FECF40B9BB3DB0765A",
+				"3462E2D0AE05A80F3ACDABB8");
+			name = "features";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		C316E2C9DBF7F3254AC90C36 = {
+			isa = PBXGroup;
+			children = (
+				"D9AA4683C29B4D7A082025CF",
+				"41483314966D28417B99A9AF",
+				"C21F28DCAA58FBC5BC90F28D");
+			name = "akaze";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		3462E2D0AE05A80F3ACDABB8 = {
+			isa = PBXGroup;
+			children = (
+				"2D90A66EBAE52265473C242B");
+			name = "liop";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		2675075D631EB131EAC0658A = {
+			isa = PBXGroup;
+			children = (
+				"45F6462C6DE8004BCE5F8F4E",
+				"117E767AD8597D95E1874CC2",
+				"098F0A2A8F6B0D45081E69B6",
+				"0233AF20A14D23B0E30BC877",
+				"AE19FB4D9DBCB3A915A93A1B");
+			name = "geometry";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		E8182ACBA832441A901033FF = {
+			isa = PBXGroup;
+			children = (
+				"A8FC112D6164B31CDAC14BC3",
+				"21C843250C112E3955559F7E",
+				"8927A2FE47CFD2FE1D0519C6",
+				"C422707057DDA2DB5488E9BC",
+				"903A83FC6E6EBC3BA20817D3");
+			name = "graph";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		8ACCACA1A1A296636D362807 = {
+			isa = PBXGroup;
+			children = (
+				"A5F6E82F9EF7C475B3B642B2",
+				"789D9BEFB5EA3D5D06732318",
+				"975432D6930A83ACA0EFCB88",
+				"750BD8FF8EB7AB1E6ECAD621",
+				"53CAC15B65AA63675E0F2D66",
+				"0682EDEE1CD0C86BEFAFCB46",
+				"EAEF4C30C105836A2AB9224C",
+				"106577C7CDD49D3F7BDC5288",
+				"497E411BB2CA9F52F9FA2F8F",
+				"282C597B4D83FDC149CFA0B1",
+				"E53BDC069BD093896D58E09A",
+				"8F11DACA2E7BC08571EECD3F",
+				"4946074AECC3E69D57493DFB");
+			name = "image";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		BB0E5D87DFD1C1E18693A8FF = {
+			isa = PBXGroup;
+			children = (
+				"D606BAD737BCB951EF2D7227",
+				"10D57E945DBE909F4BB501E7",
+				"E544881851728EB900EEFCFE",
+				"72531BB680D87D300A22E456",
+				"5EA6036A0E668A2D3BF76C8F",
+				"8C0F682E79373F21D16F6A21");
+			name = "linearProgramming";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		8C0F682E79373F21D16F6A21 = {
+			isa = PBXGroup;
+			children = (
+				"D07B0DD589320B8322850CB9",
+				"96D940EA77F7B38859367F7D",
+				"CC57E0FD7FCCA64F5E795867",
+				"6E8EA66FBE1896E39DDC04C0",
+				"37E9EE252F2F1477DE4BE1FA",
+				"F9F35AF53795D11063C25122",
+				"BB7563EF42F639F984720845",
+				"C49609DC6801E9C6185AD517");
+			name = "lInfinityCV";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		0191290F6C922A31E7368D20 = {
+			isa = PBXGroup;
+			children = (
+				"20B11213DBB93A6F075E24B6",
+				"4A2E1C5B6B85429107EECD6C",
+				"58C368C5ED3B05CC1FA5B91D",
+				"7CE195E00B0F586181EC0E69",
+				"5CA26162D3B3CF8F81D96581",
+				"83B19A31CB08F570A1F977D7",
+				"8AD00A3BEFE5C390424416F6",
+				"459FAD8E74F2E18F4FA1284A",
+				"5C13736A7A195D70B9F67170",
+				"31A18F11A386F080EC65B0F7",
+				"88F13768B9B1F23C8280692E",
+				"4A1D03B5ED74EF99A240355A",
+				"1162782D8A3FD0EBAB9BF32C",
+				"7C6FC2D1913A0274C0A0147A",
+				"016AFF759C6EEC0C20B3290C");
+			name = "matching";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		5CA26162D3B3CF8F81D96581 = {
+			isa = PBXGroup;
+			children = (
+				"E7F37CF68C12FCAB22F93401",
+				"7C2625F2E116A8DB72C4806D",
+				"75AFE369105DC9B9E1F29E4B");
+			name = "kvld";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		5DE557A81C1915D3D5513E8E = {
+			isa = PBXGroup;
+			children = (
+				"52A518905B7EC7A29E2AE4DD",
+				"832D63B64678EA067DE856BC",
+				"90FDE6EB74D240B88E9A8830",
+				"547FDA36C1829FE4F9A03640",
+				"4955EAEC4B1A425E20B72D36",
+				"0E77F77249DC4FF5DEC89711",
+				"DA6C623EEA2DC68B16732880",
+				"C3F21C8E135735952A569BDE");
+			name = "matching_image_collection";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		74992D56FEF1A5AF9BBEE4D4 = {
+			isa = PBXGroup;
+			children = (
+				"58AAD26E1407DC93EA915F6C",
+				"2310DF7EA60E79720BB33FA3",
+				"68B80E71CCA6E3A8AEFF480C",
+				"0FEBE7190790459227B10367",
+				"12C2C670BCA54883B30D7909",
+				"1C86F86742C65E7610471565",
+				"6213966E7DC6B5E3CA1EB55E",
+				"CC9F7DC5DDF4D4245E75FC06",
+				"85D76B7ABF32058FAC483103",
+				"2C73607FD925540ED3828298",
+				"716E19710AB30F0BC400B96C",
+				"40E3FBA067C238077F4F2110",
+				"C2B0C29BE63E7EFADA1A6566",
+				"44695562CF58085C0C54BE7C",
+				"F6955293A2AC69D91B178768",
+				"AE9262B8CDCCDD39FD3A4231",
+				"0AC24352B2AA5C6F2AA895F5",
+				"846CDB16409810CC779A1506",
+				"5FD065586452CCF3D6C9D207");
+			name = "multiview";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		9DC2D9EE0ADBC5B1F2990F15 = {
+			isa = PBXGroup;
+			children = (
+				"D21C021D32D8158E403AC0ED",
+				"F4C23A67C72177791D0A937F",
+				"4C9EB8213ECEAEB5BD32B1FD",
+				"E8E6111CE386A9D341B265D3",
+				"7AFC61FFD0EDBD71DF4D6438");
+			name = "numeric";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		0B57DFEFDEB440E8D481E79E = {
+			isa = PBXGroup;
+			children = (
+				"E37B72278EC521D02CA52B76",
+				"89CCB42F1771AFCA56D8ADA3",
+				"555BE9C28FD1FC74DD84FC53",
+				"A7D063BB00A6F983B0848BFC",
+				"6D3818DF33CF7829A2352976",
+				"35424158E63A83E62C1FBB19",
+				"918B42DF8A8385D19C2CF62A",
+				"54B821135190541DFFE5C919",
+				"A498B09A205085A6D269328E",
+				"64135EC240825346DB32D289");
+			name = "robust_estimation";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		71F9B68ABB144B8D4363E9F7 = {
+			isa = PBXGroup;
+			children = (
+				"DB916C732F2DB005DFEF8CE8",
+				"A14CB028E31255E11FEF4F38",
+				"EABEE0963C7D3254CE1686F6",
+				"A2244C87768A4E2BD2B6DFF4",
+				"AD8A4236B66C93916682E2DB",
+				"E66F3225A8D9D885B2D85160",
+				"8251CBBBA00CBBFF58CD1DC2",
+				"2411855EB478DDF209F416CA",
+				"1E5FB03E75F4C52C5D3C8397",
+				"FD7C30853B5A88AAD208B1B8",
+				"BD684E7F4CA540256635DF3B",
+				"C1679AF245702F55ECB18B67",
+				"224E5AE9841C2EE3E67DDB48",
+				"89BD338E5C995C8448C32DF6",
+				"798A06D121C8DB14C2BE3947",
+				"ACF956664EA2B4FA8D540C6F",
+				"5C804EA64A3399AC8CE39B15",
+				"2F8B61AE21AFB7603E336E84");
+			name = "sfm";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		DB916C732F2DB005DFEF8CE8 = {
+			isa = PBXGroup;
+			children = (
+				"8534523BC55D00163CF9AD5D",
+				"16FB7F89D0F51ACF38C8C1B1",
+				"446934D8B900B7D694F08269",
+				"DEE1E6811724913A9EFD0F1E",
+				"4300E10EF0F0868203E8C4D3",
+				"BA76CC15A0C393F5E3C6982E",
+				"673DC4D71339B90C436B8E5C",
+				"93E6CD182B3A35FB1AA607FC",
+				"F1154F4749978A136772A4D5");
+			name = "pipelines";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		8534523BC55D00163CF9AD5D = {
+			isa = PBXGroup;
+			children = (
+				"F1FB8219D4E3A3681DC14174",
+				"0C7DA345427A1B7714F2DC96",
+				"936EEA7B72C2BB86D7401908",
+				"4DA05656C5559C0FCF2B7252",
+				"64B93CD92881830BE6E9738D",
+				"B21FB30DA23713D7F105192D");
+			name = "global";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		0C7DA345427A1B7714F2DC96 = {
+			isa = PBXGroup;
+			children = (
+				"481DCE3F60F7050E9F4E88C7");
+			name = "GlobalSfM_rotation_averaging";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		16FB7F89D0F51ACF38C8C1B1 = {
+			isa = PBXGroup;
+			children = (
+				"14AFB11187F71229A1FF71F1",
+				"89B66BC07E114B612A7E2D92");
+			name = "localization";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		446934D8B900B7D694F08269 = {
+			isa = PBXGroup;
+			children = (
+				"99B5D796D0450B3F670A5650");
+			name = "sequential";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		DEE1E6811724913A9EFD0F1E = {
+			isa = PBXGroup;
+			children = (
+				"3371530D020EE0D0C072E5BD");
+			name = "structure_from_known_poses";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		AB98C72CB8A1A78F78D748D8 = {
+			isa = PBXGroup;
+			children = (
+				"65A0294C40B17386965928C1",
+				"6DC3E5EFEF129E66027AD5D7",
+				"DF8F50372BCF4B7A1005BD8C",
+				"CF1FECD4EED03C23769EE80A",
+				"616A5EADFFAA4EEA9D4DC00D",
+				"C108471D427E08E9E9F45153");
+			name = "stl";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		DF8938BBF30DEC1849E3B660 = {
+			isa = PBXGroup;
+			children = (
+				"954A18D0F3BB8C44D6552573");
+			name = "system";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		DD85C548E1BAE0CF9869D5FD = {
+			isa = PBXGroup;
+			children = (
+				"39F565321EC683C4D459FBC8");
+			name = "tracks";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		BFA3A29D17FD123C907B6E35 = {
+			isa = PBXGroup;
+			children = (
+				"CF7B803FE3C9F0CA6A6971C2");
+			name = "..";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		CF7B803FE3C9F0CA6A6971C2 = {
+			isa = PBXGroup;
+			children = (
+				"418BC9969FD3D61B16EC497A");
+			name = "libs";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		418BC9969FD3D61B16EC497A = {
+			isa = PBXGroup;
+			children = (
+				"210969C29F4DB4C392182E11",
+				"CA43B5E45B54514069EE314F");
+			name = "openMVG";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		CA43B5E45B54514069EE314F = {
+			isa = PBXGroup;
+			children = (
+				"2180B05F1A8F737079E06282");
+			name = "dependencies";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		2180B05F1A8F737079E06282 = {
+			isa = PBXGroup;
+			children = (
+				"6DD8FFB81522ABA56A24DD7D",
+				"5CFF84EE897FB36C0CE456CD",
+				"0768509DCA3CF39C4EAC5618");
+			name = "osi_clp";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		6DD8FFB81522ABA56A24DD7D = {
+			isa = PBXGroup;
+			children = (
+				"217BD2CB80FF413C96757916");
+			name = "Clp";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		217BD2CB80FF413C96757916 = {
+			isa = PBXGroup;
+			children = (
+				"33A7D1A4066B6EF45E93A7E8",
+				"C9F2B53214C58F100298EB2C",
+				"0FC07DDBE06595BB920DCB18",
+				"41D7BB993B4D65955533F052",
+				"09A4D4EFE19DB72C9FFEA066",
+				"426999EB5B0893395A2942F8",
+				"CBBA48CB6AC818E2B5C658D4",
+				"CBE4987CCB66618ED8F2FB02",
+				"1A80F2BB36B29A74868B1C1E",
+				"6C6F184B01441A15F073FB12",
+				"571E76D5B06E9E8E7318260B",
+				"E9160E67225BD671D345FB45",
+				"12ECE38DF373A9079D747AE9",
+				"7E05C13976BF7810858072D5",
+				"078B120DA72925D81CEBB4E3",
+				"C377BB1F3D9573709EE8A162",
+				"66D1C82DE6AA45F6F3273D5A",
+				"6837C6C6E2B2DEB2F3C2FFE8",
+				"A68CBF2672427134A019D5AC",
+				"372D3E91EE7D8BCF499F473C",
+				"EC2F1089CE6D9C041502A1AC",
+				"A0512D63FD53E23FB131CB5F",
+				"7FC5ED97F5147D2EFC437E7C",
+				"63817E3247FB8486391E5EE5",
+				"C25DA38DA02A2D043495B658",
+				"BDB964190C69FC5AC3E55B9A",
+				"33B6789E483F242A9449E351",
+				"91B797619D35B3F1EBBB164C",
+				"397E89D4C9CA2229765B14D0",
+				"F18F16C5944CE1CA249DE117",
+				"9E1907FF958D33DA01537CA9",
+				"BDE269123DEADDAEEF94067D",
+				"079D149FE7447A9A38FD1B6F",
+				"77CFCD563A9D684FC0A06939",
+				"E5B1CC11E74CED6155C47526",
+				"BF3FBE80197D93C9FB41918F",
+				"DCC5B1E884CB8F90FD4F524B",
+				"ADA5A7C8E7F363F5007C2F43",
+				"9CE748E75CB957DCA397B431",
+				"C6C7199490912EA8614D0EAF",
+				"9D84D8F9ECC01C80E2C0AEEA",
+				"B566F22ACD8ADB015E06BDA6",
+				"7D944FBB44967F37AFFBD007",
+				"2F80B359C666F0353E44F068",
+				"4C6944DA2758C5161D0F4811",
+				"4D11AA0C8C2ADFE5284EF11C",
+				"2C1ED51601A219ACA01BAC3C",
+				"4D990F13E65A147137852173",
+				"22A19BA9D6CE9DE17731D301",
+				"88C2B6E3EF456A2FB0A9711D",
+				"1695A0B49048E9EC00FAAC49",
+				"22A19BA9D6CE9DE17731D301",
+				"BB766724FB52DDAA2FCB38A1");
+			name = "src";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		BB766724FB52DDAA2FCB38A1 = {
+			isa = PBXGroup;
+			children = (
+				"8AE943C815111566B43DE0B7");
+			name = "OsiClp";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		5CFF84EE897FB36C0CE456CD = {
+			isa = PBXGroup;
+			children = (
+				"ED18BDA84E0307A06596D13B");
+			name = "CoinUtils";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		ED18BDA84E0307A06596D13B = {
+			isa = PBXGroup;
+			children = (
+				"AA2F7510C7478C9EDD7A26DC",
+				"91FE596CB1A2223E56EAC3C4",
+				"8C303BE637F659855EA8536C",
+				"9EF06E4A9CD08D4B1203E6B5",
+				"BBC8EC68B547407EBE1E9581",
+				"FF9D3F8FA9089799E42F7136",
+				"3E80B03B1C5D3AAA74F7F348",
+				"259DFB9386724AE2503F5732",
+				"784129C2A86F6F8D81F6F7E3",
+				"3B437A504D95E05CC6454BDA",
+				"45361FA6B8B1D32C00D92A80",
+				"5B61576FDD14D7ED27A3A045",
+				"7889BF917C7D6C230433A428",
+				"B3D0973D5D9DC875AA5A1FF1",
+				"3D5FB000FF239758F1407476",
+				"707DAB4A130D97BEEB9051CF",
+				"4E6D11F32753F6B311F7C9A2",
+				"A81D355A8A3E4F5E31F08B13",
+				"E3945809B92C73D5F8B631B2",
+				"E89D0392C5F3E6CC84A6C54C",
+				"D3FEEF750017C51A0B394BD4",
+				"91C78B47B722DF0E088AA15C",
+				"6C41420EAD107F56D68F0B5E",
+				"EBFF457739BACBD93C94598F",
+				"3CE5C800E19B1F692E32C0D6",
+				"244E698B93653A5B7356CF72",
+				"1ABD99CD379D8B77644495B5",
+				"C5170766FEFB5FECC66CC499",
+				"B5D48BFBBDE83456EE6BD2B2",
+				"4AA1BFE60E454D889B894EC6",
+				"8CB2F2702D072604550247A7",
+				"7A535F0C95AB78FA9588106A",
+				"322ABFD294491DBBA85A899C",
+				"7EC0B86F19665EDB1FB7C1F0",
+				"6927B4B4C28849F72E35D06A",
+				"887EF8CCE0D652EADA25F6A7",
+				"608A4AE97CCEB2969E15A1A4",
+				"55050D8692682C382ADC4156",
+				"8FFA7F46312FC7B375083C5E",
+				"7F3A0073133A529C1BF978D2",
+				"BD7298DEDA2D69F40CE49B22",
+				"406468AB0BCBD12554C7AF97",
+				"2CA99CC6190EA5A6E059FADE",
+				"AE47B13B46BEB594C9CDFB56",
+				"934F7C2110E55F8D99C070A3",
+				"8423BBC3AE26D28B86DEEB94",
+				"7F55CCC4647071169E7DE64B",
+				"85C06D3D2A49A73573ECDBF1",
+				"B39F8BACA6A55C279D15A033",
+				"09391211750E935A9AC160A8",
+				"BD151CA81D263C035BAFEE4A",
+				"4A99100FC92249E402CA5F71",
+				"BB526333E47B8AFF1F8AA17C",
+				"ED63C56E18D7B41EFD420A44",
+				"6F068B6A8E96D0AE2558E642");
+			name = "src";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		0768509DCA3CF39C4EAC5618 = {
+			isa = PBXGroup;
+			children = (
+				"363CBEC7DBB0695E154052C9");
+			name = "Osi";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		363CBEC7DBB0695E154052C9 = {
+			isa = PBXGroup;
+			children = (
+				"6CBD05964D724328D58ECDE3",
+				"75A5672C317447C30E9B1423");
+			name = "src";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		6CBD05964D724328D58ECDE3 = {
+			isa = PBXGroup;
+			children = (
+				"130641CA78324ABBEC1564B5",
+				"34AB63553C3B1689603666D3",
+				"B743651BEFECDD15CC9CB22A",
+				"9C515A4A66B16EA38048C801",
+				"50470330B7DFB7D2CEF73A5C",
+				"F154898809862129EA909FA0",
+				"8623ACD53FBEC75EBE9E69AC",
+				"ABCB09C772E8B1DC3A86694A",
+				"97B8141AA6693F8E8DAE780B",
+				"EFBAAB1936ACB53687A00C5F",
+				"1B005EF478D142F78883B8D1",
+				"09E2C3D68F2CA23145508091");
+			name = "Osi";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		75A5672C317447C30E9B1423 = {
+			isa = PBXGroup;
+			children = (
+				"76BF27B3669FF91161950C94");
+			name = "OsiMsk";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		210969C29F4DB4C392182E11 = {
+			isa = PBXGroup;
+			children = (
+				"59482DB2ADC064E8DAF5A265",
+				"3BB6E42DF9F5BF9CCC1754C7",
+				"7602C5FCA1BDC0C5DFA1C582",
+				"8BBAB0584FBC824A9674BC24",
+				"C4BE9D915A7CC3654EFC3054",
+				"D1533716E70B7881DF3BD3AE",
+				"F51A6222D1B9E39A7F835A4C",
+				"91277D3E0E70DFC69E44C42E");
+			name = "openMVG";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		59482DB2ADC064E8DAF5A265 = {
+			isa = PBXGroup;
+			children = (
+				"4BE85BCE4338213CCE9B1C4C",
+				"2F1F6A36EF118481D4FEAF6F");
+			name = "features";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		4BE85BCE4338213CCE9B1C4C = {
+			isa = PBXGroup;
+			children = (
+				"56C7E4519720F41F04A88C45");
+			name = "akaze";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		2F1F6A36EF118481D4FEAF6F = {
+			isa = PBXGroup;
+			children = (
+				"1FCA2A9A0066ECF0F1DAA654");
+			name = "liop";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		3BB6E42DF9F5BF9CCC1754C7 = {
+			isa = PBXGroup;
+			children = (
+				"3B4216FC4A28857EE25552BC",
+				"1E3F3D98BA8D4A4C850B165A");
+			name = "linearProgramming";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		1E3F3D98BA8D4A4C850B165A = {
+			isa = PBXGroup;
+			children = (
+				"2B93AF8FDD9CCD9204B0BA75");
+			name = "lInfinityCV";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		7602C5FCA1BDC0C5DFA1C582 = {
+			isa = PBXGroup;
+			children = (
+				"693CA7AAD69BE35963D304A0",
+				"A476420F143AE26AFD1D6862");
+			name = "matching";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		693CA7AAD69BE35963D304A0 = {
+			isa = PBXGroup;
+			children = (
+				"1BA2EFC12F27CFCCEEA117BA",
+				"A728733C19AD818E69CEA922");
+			name = "kvld";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		8BBAB0584FBC824A9674BC24 = {
+			isa = PBXGroup;
+			children = (
+				"21DF96E4B7329939790F32BC",
+				"2F9F5DB9EB6BC14F099A1504");
+			name = "matching_image_collection";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		C4BE9D915A7CC3654EFC3054 = {
+			isa = PBXGroup;
+			children = (
+				"45CA4B0AE0FDBDF9A7EB1FEC",
+				"AF8EA3C2228EE33CC40A7782",
+				"E5C406CC868C76B9E2A2C059",
+				"3E84C5975ED0FDCE510B1570",
+				"2EF469B2166A348B19D76005",
+				"9B050750BEAFD7CA84703F22",
+				"9DB297116193FD0630A2E121",
+				"B386629287E2C24A4A402061",
+				"6428CC45E7F318AFB467D7F1",
+				"2ACBD6EB60800C25195C17A5",
+				"2B8B71D4FAC87F534BDF21F9",
+				"C341F347C6B7CA7A3AE721EF",
+				"8821F94F006FF07916A76BA7",
+				"E29C791718CBDDC1D15FB2DA",
+				"8792351B9F3D6E54550474AF");
+			name = "multiview";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		D1533716E70B7881DF3BD3AE = {
+			isa = PBXGroup;
+			children = (
+				"E301D00181C8BA177A398794");
+			name = "numeric";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		F51A6222D1B9E39A7F835A4C = {
+			isa = PBXGroup;
+			children = (
+				"C62726561BA3C09427D47DEA",
+				"4EFA4C6E61357BCDB4E1EC54",
+				"25DC30AC2F23574FC71094BD",
+				"9052B6162A87A6D628992806",
+				"451044C5FE6E992695854E59",
+				"B05CC34AD27ACC2C8F27A273");
+			name = "sfm";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		C62726561BA3C09427D47DEA = {
+			isa = PBXGroup;
+			children = (
+				"4E8A22D850E209350E51BC8E",
+				"B2C00D5499E51024BF47D8B1",
+				"6703C2C1DB5A4B6A01A217C8",
+				"61C46B08552202E420DD164E",
+				"50ADD059A36ACD38EC44964C");
+			name = "pipelines";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		4E8A22D850E209350E51BC8E = {
+			isa = PBXGroup;
+			children = (
+				"CFBC57F91448B87CCCB9786C",
+				"35516E786ABB9118FAC0F56A",
+				"D17AEEEE2A0BA7BDA6933B34");
+			name = "global";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		B2C00D5499E51024BF47D8B1 = {
+			isa = PBXGroup;
+			children = (
+				"44AC398E52FED2B856A8BDBA",
+				"92F6C906EAA4161502D30221");
+			name = "localization";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		6703C2C1DB5A4B6A01A217C8 = {
+			isa = PBXGroup;
+			children = (
+				"D5F60E313CA2A1382C07DDF7");
+			name = "sequential";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		61C46B08552202E420DD164E = {
+			isa = PBXGroup;
+			children = (
+				"F2138AD12C9D533A65893A9B");
+			name = "structure_from_known_poses";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		91277D3E0E70DFC69E44C42E = {
+			isa = PBXGroup;
+			children = (
+				"66D4A278AB5E7D58674A1A55");
+			name = "system";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		FB61758D0F0FDA4BA867C3D5 = {
+			isa = PBXGroup;
+			children = (
+				"BFA3A29D17FD123C907B6E35");
+			name = "Sources";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		7CABE3C80E79AD2B307756D2 = {
+			isa = PBXGroup;
+			children = (
+				"89585D57262209A953F441D7");
+			name = "Sources [qmake]";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		A0A52A2ADF7A1E2A99738674 = {
+			buildActionMask = 2147483647;
+			files = (
+				);
+			generatedFileNames = (
+				"B6812AB07D0D89C019CE6005",
+				"6BDFB1090D0593E65986F0F0",
+				"B0EAECDE380E87318E11A76A",
+				"6CB620F61B58C63538EFEA2E",
+				"76D6E95C3728A036F55674CE",
+				"B95D895EDAF9D9000CC5683B",
+				"9E3A07CF91C2429B6E25C291",
+				"73B14E9CD0B2D62C978042E1",
+				"D7966AAE848FFA1C26A64EEE",
+				"7A7CBEBA26A8DCE75AE0FEC4",
+				"8A1ED3F8BDFB6872EC82EE3B",
+				"AFE3EAD101F050375E2EA05A",
+				"3407054DEB2B4BDD32A20367",
+				"523ABDE600C35BD662957A0B",
+				"2F0402D8A76221A0907E39A5",
+				"5D998BB788A02320D20D52BD",
+				"1A52CD871424878D8BC3F079",
+				"26029BA79D9F4B506BCDE40D",
+				"AD6A35A7300F5451D320E58B",
+				"A3C324B0888380C2EE2B4C85",
+				"5E86DDDD009BE2EE2081CD13",
+				"D5B38D8786D243E1AD7A5944",
+				"19EB35FA11096704C125A62C",
+				"53A5A4BAB000D76BC9402303",
+				"7A241417BBDE1332AEA0FCEF",
+				"E3DA9F5F313905410DBC4AAF",
+				"498EFE7DD9EDDA4C742BCB6F",
+				"BF6D10155E9F9943D86FAD43",
+				"D232E5770F1484F9CF71A2C8",
+				"C228E0ACBC6DA41F5148CCC9",
+				"48C47A3C63F35E7FA7791943",
+				"1F510CFD3F560D2A0BB512F4",
+				"62DEE8A099C4C80B167D53FA",
+				"0640CA24B865B2EA3835C47E",
+				"0365D668766E91893BADD5DA",
+				"63EB3162C273003D93A9F43D",
+				"9E8102BF58A8F55B0DB4AD84",
+				"3C8CCC43E77EADC408209914",
+				"4E2F730A6B60C5DF474E9672",
+				"22E638C90033928A295D3028",
+				"DBF281F182089F7277271E6C",
+				"F005B1059DEC7E348D91FCB5",
+				"3064F46936FAF66B4B9C2C36",
+				"D6F257D5C60C8B02218FCBA5",
+				"C3BBCCEA64743DE5B4AFDA2A",
+				"CCE2F21FFD99B296200AF49E",
+				"5016C157AE714D6A9C08B4F6",
+				"2A8D743E9507DB3513BD309D",
+				"7F65FD37A2477703F999AB0C",
+				"736C29AB68616B721AD046B0",
+				"BE71AF97803462D76F432905",
+				"125E3A5A06F1453148E2F21B",
+				"ADA8E0B7FBAA7773D8197583",
+				"554E7BD1328C1ADA9E5713AB",
+				"FE87CE2B95929611E7D84EFC",
+				"DD5D965EDFB5407570A8FF9A",
+				"363EF025BF3B3C787AB8CD56",
+				"31621B35137FE52ED2437BC4",
+				"C64683F19C5869465C4A1BE5",
+				"BC76D2B4421CB553F4C88BDD",
+				"A0E51F77598E88BE6E647B41",
+				"E52569FFCB1C56E9BD8B9248",
+				"2FBF0A2C7061A0CAD7A7350E",
+				"1DF80AA482BA45FE84B74631",
+				"5F018EB064830C5BD2E31042",
+				"BD39F7F9D7D37BFEBE592540",
+				"78FD4E7582131632401C98FF",
+				"CB384C38007EAD98FF1C7591",
+				"67AC7DD937CD34C3A54CEB2F",
+				"06C5A5FC9B3972041EF7EFF2",
+				"F2CCB2ECF5B82EF798296CC0",
+				"6CBB7C47C495F5BD340699C8",
+				"6FE2386AB390050A53F130A8",
+				"2022E49C57C60E3590E50C81",
+				"B9EA14FCD24E9ABAC913012F",
+				"931363A17F1123B9E6689180",
+				"1C63CFB26B98E965997CD7F7",
+				"A59EDE18C3BB12200976420F",
+				"3F8DB2A029AFE9FEF2B9BFF0",
+				"2051534901DBA06E07B9C62D",
+				"762414CB696377FEA3880191",
+				"0700DD635C113DE863AA4609",
+				"ABAEE98F9CCC048A4152AB21",
+				"BDAB2A34BB1E0C7268C027AB",
+				"E51FDA4236BBBABB13CBF943",
+				"CE40E1DD4B809BC9243531F0",
+				"B1A8EEEC7C8AB3F6FDD80389",
+				"7CF6B7EB82813FEAC6AB0E4F",
+				"23603EBDCAFBC12B8CCDDEED",
+				"4FDC39C8F73E3D7B86AAC387",
+				"7CF6B7EB82813FEAC6AB0E4F",
+				"0B3E6F287728B68413E4D689",
+				"AF4F758B9E86099F4E9D761E",
+				"C445A3CB8385AA6AEBE2007B",
+				"39C36F2BAEE4D37D19DC82F2",
+				"F9E07B2D550E5C5D6E2221F5",
+				"F9B344E3DB451EDDC11C78A0",
+				"DDF511EBDBA30CA745301D0F",
+				"A156C3D4C876439BF807130B",
+				"85BA515905F8B02F8F6072F1",
+				"55BB1189CA104DDA92939198",
+				"8B2C3BBC6D54A2AE3925E269",
+				"9508E7319A503A0CF2382102",
+				"E61DB1738C20C5F0C599FC00",
+				"0C1500DAE58D84344BC70F04",
+				"9F9A7563E0FDDE0F7978E8E8",
+				"4AA3011CF36FEA790AEAEE99",
+				"3F3ADF91DA9FF01416A70D67",
+				"69D16C82A121B39F4B233B1F",
+				"FCFD2C4B776C9BE317222ABA",
+				"E74D43458FF842AF542B85A0",
+				"8C6FF3D0082B991152C2EA73",
+				"53266F3A047396133383F8E1",
+				"71D40E9DD5A520A0570CCE33",
+				"C2AC382FBCE249D1973E6B19",
+				"8AB72F8DE79A7DFBDE37203C",
+				"73C6106486946F7DD0A28EBE",
+				"D1526E5BF19CF82683BFAD0C",
+				"754B6D9178A2E75F43EC3292",
+				"55982B56C6A5CF51E7BC0A5F",
+				"2621DF54377A27B578F99152",
+				"CBA6DC7D84DC4271E7140B7E",
+				"F00D06069C59ECE93C3AF954",
+				"D626292F762C5BEAD9D0C887",
+				"A380E396312825000C3D04FC",
+				"B1CD464E25370D8F00A34A0B",
+				"50D99E3DFD2EDC913D6EFF43",
+				"7AB07BA2CBD30D4D042EE576",
+				"CFC098DE719F6D7A18AFC6F5",
+				"C0AAFBB533B9014ACE6AFA12",
+				"CEA00105BD3093F817C24022",
+				"BCDC0D4E9FB02DB61477F8C7",
+				"4A384C97BE5BE64E18FA7A99",
+				"F0FA3057BB37AF83AF5C325A",
+				"20FA1EB39B5E4EBEAAC43E94",
+				"8641B53C803E9C225BC0567F",
+				"F787AA432FC07530F802E496",
+				"A46E9682373348360F7EFE7C",
+				"B357DAA4525C9A38D15998BE",
+				"4DF81D63B54629A9689FD7B0",
+				"FC9BBCB4156F2BCFC64AD9D9",
+				"7DD7C6A5A49A0EC5E1ADFE0E",
+				"ED865185F4618C44EA38E426",
+				"A7D85EF5429F14C53F92BBB9",
+				"74AB6DFD3874E5EDDC5A6A4F",
+				"AC27CA5DB7F6389F67074AE1",
+				"C9928B1984B842F2D3A112A7",
+				"D0F7DF12FFF9E7FC69D597E3",
+				"D17FCB0C9C66B82CFE87DF60",
+				"C1A581BF7501E217B2517413",
+				"73176BF912B5E499784CF092",
+				"347E78A5DB17BBEAFA792986",
+				"5A3952DF01C53F431DE6156C",
+				"1331C07962F77AC2CD8F90D2",
+				"9E08A63074F392657C9D51F6",
+				"C2362F9DB11AD9A59B342980",
+				"B410A3BE1550DF86DCD3B154",
+				"B6B1911782728BB77E589373",
+				"01A11DA5986EE892D0420E82",
+				"C7D8A91AE6EFA9388F19FBA8");
+			isa = PBXShellScriptBuildPhase;
+			name = "Qt Preprocessors";
+			neededFileNames = (
+				"B6812AB07D0D89C019CE6005",
+				"6BDFB1090D0593E65986F0F0",
+				"B0EAECDE380E87318E11A76A",
+				"6CB620F61B58C63538EFEA2E",
+				"76D6E95C3728A036F55674CE",
+				"B95D895EDAF9D9000CC5683B",
+				"9E3A07CF91C2429B6E25C291",
+				"73B14E9CD0B2D62C978042E1",
+				"D7966AAE848FFA1C26A64EEE",
+				"7A7CBEBA26A8DCE75AE0FEC4",
+				"8A1ED3F8BDFB6872EC82EE3B",
+				"AFE3EAD101F050375E2EA05A",
+				"3407054DEB2B4BDD32A20367",
+				"523ABDE600C35BD662957A0B",
+				"2F0402D8A76221A0907E39A5",
+				"5D998BB788A02320D20D52BD",
+				"1A52CD871424878D8BC3F079",
+				"26029BA79D9F4B506BCDE40D",
+				"AD6A35A7300F5451D320E58B",
+				"A3C324B0888380C2EE2B4C85",
+				"5E86DDDD009BE2EE2081CD13",
+				"D5B38D8786D243E1AD7A5944",
+				"19EB35FA11096704C125A62C",
+				"53A5A4BAB000D76BC9402303",
+				"7A241417BBDE1332AEA0FCEF",
+				"E3DA9F5F313905410DBC4AAF",
+				"498EFE7DD9EDDA4C742BCB6F",
+				"BF6D10155E9F9943D86FAD43",
+				"D232E5770F1484F9CF71A2C8",
+				"C228E0ACBC6DA41F5148CCC9",
+				"48C47A3C63F35E7FA7791943",
+				"1F510CFD3F560D2A0BB512F4",
+				"62DEE8A099C4C80B167D53FA",
+				"0640CA24B865B2EA3835C47E",
+				"0365D668766E91893BADD5DA",
+				"63EB3162C273003D93A9F43D",
+				"9E8102BF58A8F55B0DB4AD84",
+				"3C8CCC43E77EADC408209914",
+				"4E2F730A6B60C5DF474E9672",
+				"22E638C90033928A295D3028",
+				"DBF281F182089F7277271E6C",
+				"F005B1059DEC7E348D91FCB5",
+				"3064F46936FAF66B4B9C2C36",
+				"D6F257D5C60C8B02218FCBA5",
+				"C3BBCCEA64743DE5B4AFDA2A",
+				"CCE2F21FFD99B296200AF49E",
+				"5016C157AE714D6A9C08B4F6",
+				"2A8D743E9507DB3513BD309D",
+				"7F65FD37A2477703F999AB0C",
+				"736C29AB68616B721AD046B0",
+				"BE71AF97803462D76F432905",
+				"125E3A5A06F1453148E2F21B",
+				"ADA8E0B7FBAA7773D8197583",
+				"554E7BD1328C1ADA9E5713AB",
+				"FE87CE2B95929611E7D84EFC",
+				"DD5D965EDFB5407570A8FF9A",
+				"363EF025BF3B3C787AB8CD56",
+				"31621B35137FE52ED2437BC4",
+				"C64683F19C5869465C4A1BE5",
+				"BC76D2B4421CB553F4C88BDD",
+				"A0E51F77598E88BE6E647B41",
+				"E52569FFCB1C56E9BD8B9248",
+				"2FBF0A2C7061A0CAD7A7350E",
+				"1DF80AA482BA45FE84B74631",
+				"5F018EB064830C5BD2E31042",
+				"BD39F7F9D7D37BFEBE592540",
+				"78FD4E7582131632401C98FF",
+				"CB384C38007EAD98FF1C7591",
+				"67AC7DD937CD34C3A54CEB2F",
+				"06C5A5FC9B3972041EF7EFF2",
+				"F2CCB2ECF5B82EF798296CC0",
+				"6CBB7C47C495F5BD340699C8",
+				"6FE2386AB390050A53F130A8",
+				"2022E49C57C60E3590E50C81",
+				"B9EA14FCD24E9ABAC913012F",
+				"931363A17F1123B9E6689180",
+				"1C63CFB26B98E965997CD7F7",
+				"A59EDE18C3BB12200976420F",
+				"3F8DB2A029AFE9FEF2B9BFF0",
+				"2051534901DBA06E07B9C62D",
+				"762414CB696377FEA3880191",
+				"0700DD635C113DE863AA4609",
+				"ABAEE98F9CCC048A4152AB21",
+				"BDAB2A34BB1E0C7268C027AB",
+				"E51FDA4236BBBABB13CBF943",
+				"CE40E1DD4B809BC9243531F0",
+				"B1A8EEEC7C8AB3F6FDD80389",
+				"7CF6B7EB82813FEAC6AB0E4F",
+				"23603EBDCAFBC12B8CCDDEED",
+				"4FDC39C8F73E3D7B86AAC387",
+				"7CF6B7EB82813FEAC6AB0E4F",
+				"0B3E6F287728B68413E4D689",
+				"AF4F758B9E86099F4E9D761E",
+				"C445A3CB8385AA6AEBE2007B",
+				"39C36F2BAEE4D37D19DC82F2",
+				"F9E07B2D550E5C5D6E2221F5",
+				"F9B344E3DB451EDDC11C78A0",
+				"DDF511EBDBA30CA745301D0F",
+				"A156C3D4C876439BF807130B",
+				"85BA515905F8B02F8F6072F1",
+				"55BB1189CA104DDA92939198",
+				"8B2C3BBC6D54A2AE3925E269",
+				"9508E7319A503A0CF2382102",
+				"E61DB1738C20C5F0C599FC00",
+				"0C1500DAE58D84344BC70F04",
+				"9F9A7563E0FDDE0F7978E8E8",
+				"4AA3011CF36FEA790AEAEE99",
+				"3F3ADF91DA9FF01416A70D67",
+				"69D16C82A121B39F4B233B1F",
+				"FCFD2C4B776C9BE317222ABA",
+				"E74D43458FF842AF542B85A0",
+				"8C6FF3D0082B991152C2EA73",
+				"53266F3A047396133383F8E1",
+				"71D40E9DD5A520A0570CCE33",
+				"C2AC382FBCE249D1973E6B19",
+				"8AB72F8DE79A7DFBDE37203C",
+				"73C6106486946F7DD0A28EBE",
+				"D1526E5BF19CF82683BFAD0C",
+				"754B6D9178A2E75F43EC3292",
+				"55982B56C6A5CF51E7BC0A5F",
+				"2621DF54377A27B578F99152",
+				"CBA6DC7D84DC4271E7140B7E",
+				"F00D06069C59ECE93C3AF954",
+				"D626292F762C5BEAD9D0C887",
+				"A380E396312825000C3D04FC",
+				"B1CD464E25370D8F00A34A0B",
+				"50D99E3DFD2EDC913D6EFF43",
+				"7AB07BA2CBD30D4D042EE576",
+				"CFC098DE719F6D7A18AFC6F5",
+				"C0AAFBB533B9014ACE6AFA12",
+				"CEA00105BD3093F817C24022",
+				"BCDC0D4E9FB02DB61477F8C7",
+				"4A384C97BE5BE64E18FA7A99",
+				"F0FA3057BB37AF83AF5C325A",
+				"20FA1EB39B5E4EBEAAC43E94",
+				"8641B53C803E9C225BC0567F",
+				"F787AA432FC07530F802E496",
+				"A46E9682373348360F7EFE7C",
+				"B357DAA4525C9A38D15998BE",
+				"4DF81D63B54629A9689FD7B0",
+				"FC9BBCB4156F2BCFC64AD9D9",
+				"7DD7C6A5A49A0EC5E1ADFE0E",
+				"ED865185F4618C44EA38E426",
+				"A7D85EF5429F14C53F92BBB9",
+				"74AB6DFD3874E5EDDC5A6A4F",
+				"AC27CA5DB7F6389F67074AE1",
+				"C9928B1984B842F2D3A112A7",
+				"D0F7DF12FFF9E7FC69D597E3",
+				"D17FCB0C9C66B82CFE87DF60",
+				"C1A581BF7501E217B2517413",
+				"73176BF912B5E499784CF092",
+				"347E78A5DB17BBEAFA792986",
+				"5A3952DF01C53F431DE6156C",
+				"1331C07962F77AC2CD8F90D2",
+				"9E08A63074F392657C9D51F6",
+				"C2362F9DB11AD9A59B342980",
+				"B410A3BE1550DF86DCD3B154",
+				"B6B1911782728BB77E589373",
+				"01A11DA5986EE892D0420E82",
+				"C7D8A91AE6EFA9388F19FBA8");
+			shellPath = "/bin/sh";
+			shellScript = "make\ -C\ /Users/alexandre/development/Natron/openMVG\ -f\ \'openMVG.xcodeproj/qt_preprocess.mak\'";
+		};
+		C29B8785722055ED95EF7B57 = {
+			buildActionMask = 2147483647;
+			files = (
+				"B6812AB07D0D89C019CE6005",
+				"6BDFB1090D0593E65986F0F0",
+				"B0EAECDE380E87318E11A76A",
+				"6CB620F61B58C63538EFEA2E",
+				"76D6E95C3728A036F55674CE",
+				"B95D895EDAF9D9000CC5683B",
+				"9E3A07CF91C2429B6E25C291",
+				"73B14E9CD0B2D62C978042E1",
+				"D7966AAE848FFA1C26A64EEE",
+				"7A7CBEBA26A8DCE75AE0FEC4",
+				"8A1ED3F8BDFB6872EC82EE3B",
+				"AFE3EAD101F050375E2EA05A",
+				"3407054DEB2B4BDD32A20367",
+				"523ABDE600C35BD662957A0B",
+				"2F0402D8A76221A0907E39A5",
+				"5D998BB788A02320D20D52BD",
+				"1A52CD871424878D8BC3F079",
+				"26029BA79D9F4B506BCDE40D",
+				"AD6A35A7300F5451D320E58B",
+				"A3C324B0888380C2EE2B4C85",
+				"5E86DDDD009BE2EE2081CD13",
+				"D5B38D8786D243E1AD7A5944",
+				"19EB35FA11096704C125A62C",
+				"53A5A4BAB000D76BC9402303",
+				"7A241417BBDE1332AEA0FCEF",
+				"E3DA9F5F313905410DBC4AAF",
+				"498EFE7DD9EDDA4C742BCB6F",
+				"BF6D10155E9F9943D86FAD43",
+				"D232E5770F1484F9CF71A2C8",
+				"C228E0ACBC6DA41F5148CCC9",
+				"48C47A3C63F35E7FA7791943",
+				"1F510CFD3F560D2A0BB512F4",
+				"62DEE8A099C4C80B167D53FA",
+				"0640CA24B865B2EA3835C47E",
+				"0365D668766E91893BADD5DA",
+				"63EB3162C273003D93A9F43D",
+				"9E8102BF58A8F55B0DB4AD84",
+				"3C8CCC43E77EADC408209914",
+				"4E2F730A6B60C5DF474E9672",
+				"22E638C90033928A295D3028",
+				"DBF281F182089F7277271E6C",
+				"F005B1059DEC7E348D91FCB5",
+				"3064F46936FAF66B4B9C2C36",
+				"D6F257D5C60C8B02218FCBA5",
+				"C3BBCCEA64743DE5B4AFDA2A",
+				"CCE2F21FFD99B296200AF49E",
+				"5016C157AE714D6A9C08B4F6",
+				"2A8D743E9507DB3513BD309D",
+				"7F65FD37A2477703F999AB0C",
+				"736C29AB68616B721AD046B0",
+				"BE71AF97803462D76F432905",
+				"125E3A5A06F1453148E2F21B",
+				"ADA8E0B7FBAA7773D8197583",
+				"554E7BD1328C1ADA9E5713AB",
+				"FE87CE2B95929611E7D84EFC",
+				"DD5D965EDFB5407570A8FF9A",
+				"363EF025BF3B3C787AB8CD56",
+				"31621B35137FE52ED2437BC4",
+				"C64683F19C5869465C4A1BE5",
+				"BC76D2B4421CB553F4C88BDD",
+				"A0E51F77598E88BE6E647B41",
+				"E52569FFCB1C56E9BD8B9248",
+				"2FBF0A2C7061A0CAD7A7350E",
+				"1DF80AA482BA45FE84B74631",
+				"5F018EB064830C5BD2E31042",
+				"BD39F7F9D7D37BFEBE592540",
+				"78FD4E7582131632401C98FF",
+				"CB384C38007EAD98FF1C7591",
+				"67AC7DD937CD34C3A54CEB2F",
+				"06C5A5FC9B3972041EF7EFF2",
+				"F2CCB2ECF5B82EF798296CC0",
+				"6CBB7C47C495F5BD340699C8",
+				"6FE2386AB390050A53F130A8",
+				"2022E49C57C60E3590E50C81",
+				"B9EA14FCD24E9ABAC913012F",
+				"931363A17F1123B9E6689180",
+				"1C63CFB26B98E965997CD7F7",
+				"A59EDE18C3BB12200976420F",
+				"3F8DB2A029AFE9FEF2B9BFF0",
+				"2051534901DBA06E07B9C62D",
+				"762414CB696377FEA3880191",
+				"0700DD635C113DE863AA4609",
+				"ABAEE98F9CCC048A4152AB21",
+				"BDAB2A34BB1E0C7268C027AB",
+				"E51FDA4236BBBABB13CBF943",
+				"CE40E1DD4B809BC9243531F0",
+				"B1A8EEEC7C8AB3F6FDD80389",
+				"7CF6B7EB82813FEAC6AB0E4F",
+				"23603EBDCAFBC12B8CCDDEED",
+				"4FDC39C8F73E3D7B86AAC387",
+				"7CF6B7EB82813FEAC6AB0E4F",
+				"0B3E6F287728B68413E4D689",
+				"AF4F758B9E86099F4E9D761E",
+				"C445A3CB8385AA6AEBE2007B",
+				"39C36F2BAEE4D37D19DC82F2",
+				"F9E07B2D550E5C5D6E2221F5",
+				"F9B344E3DB451EDDC11C78A0",
+				"DDF511EBDBA30CA745301D0F",
+				"A156C3D4C876439BF807130B",
+				"85BA515905F8B02F8F6072F1",
+				"55BB1189CA104DDA92939198",
+				"8B2C3BBC6D54A2AE3925E269",
+				"9508E7319A503A0CF2382102",
+				"E61DB1738C20C5F0C599FC00",
+				"0C1500DAE58D84344BC70F04",
+				"9F9A7563E0FDDE0F7978E8E8",
+				"4AA3011CF36FEA790AEAEE99",
+				"3F3ADF91DA9FF01416A70D67",
+				"69D16C82A121B39F4B233B1F",
+				"FCFD2C4B776C9BE317222ABA",
+				"E74D43458FF842AF542B85A0",
+				"8C6FF3D0082B991152C2EA73",
+				"53266F3A047396133383F8E1",
+				"71D40E9DD5A520A0570CCE33",
+				"C2AC382FBCE249D1973E6B19",
+				"8AB72F8DE79A7DFBDE37203C",
+				"73C6106486946F7DD0A28EBE",
+				"D1526E5BF19CF82683BFAD0C",
+				"754B6D9178A2E75F43EC3292",
+				"55982B56C6A5CF51E7BC0A5F",
+				"2621DF54377A27B578F99152",
+				"CBA6DC7D84DC4271E7140B7E",
+				"F00D06069C59ECE93C3AF954",
+				"D626292F762C5BEAD9D0C887",
+				"A380E396312825000C3D04FC",
+				"B1CD464E25370D8F00A34A0B",
+				"50D99E3DFD2EDC913D6EFF43",
+				"7AB07BA2CBD30D4D042EE576",
+				"CFC098DE719F6D7A18AFC6F5",
+				"C0AAFBB533B9014ACE6AFA12",
+				"CEA00105BD3093F817C24022",
+				"BCDC0D4E9FB02DB61477F8C7",
+				"4A384C97BE5BE64E18FA7A99",
+				"F0FA3057BB37AF83AF5C325A",
+				"20FA1EB39B5E4EBEAAC43E94",
+				"8641B53C803E9C225BC0567F",
+				"F787AA432FC07530F802E496",
+				"A46E9682373348360F7EFE7C",
+				"B357DAA4525C9A38D15998BE",
+				"4DF81D63B54629A9689FD7B0",
+				"FC9BBCB4156F2BCFC64AD9D9",
+				"7DD7C6A5A49A0EC5E1ADFE0E",
+				"ED865185F4618C44EA38E426",
+				"A7D85EF5429F14C53F92BBB9",
+				"74AB6DFD3874E5EDDC5A6A4F",
+				"AC27CA5DB7F6389F67074AE1",
+				"C9928B1984B842F2D3A112A7",
+				"D0F7DF12FFF9E7FC69D597E3",
+				"D17FCB0C9C66B82CFE87DF60",
+				"C1A581BF7501E217B2517413",
+				"73176BF912B5E499784CF092",
+				"347E78A5DB17BBEAFA792986",
+				"5A3952DF01C53F431DE6156C",
+				"1331C07962F77AC2CD8F90D2",
+				"9E08A63074F392657C9D51F6",
+				"C2362F9DB11AD9A59B342980",
+				"B410A3BE1550DF86DCD3B154",
+				"B6B1911782728BB77E589373",
+				"01A11DA5986EE892D0420E82",
+				"C7D8A91AE6EFA9388F19FBA8");
+			isa = PBXSourcesBuildPhase;
+			name = "Build Sources";
+		};
+		2A1043669E6E5A7426EA502A = {
+			buildActionMask = 2147483647;
+			files = (
+				);
+			isa = PBXFrameworksBuildPhase;
+			name = "Frameworks & Libraries";
+		};
+		05596AB53D8D521C69802C27 = {
+			children = (
+				"FB61758D0F0FDA4BA867C3D5",
+				"883D7615C4D2DE3FA1218F12",
+				"7CABE3C80E79AD2B307756D2");
+			isa = PBXGroup;
+			name = "openMVG";
+			path = "";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		277713600644ACB16D08574D = {
+			isa = PBXFileReference;
+			explicitFileType = "compiled.mach-o.dylib";
+			path = "libopenMVG.a";
+			refType = 3;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		068F80C7519D0528FB08E821 = {
+			children = (
+				"277713600644ACB16D08574D");
+			isa = PBXGroup;
+			name = "Products";
+			refType = 4;
+		};
+		CA2DB7990DC5AB0FF6462431 = {
+			buildPhases = (
+				"D7BA7D76DAB5DD13389D6332",
+				"A0A52A2ADF7A1E2A99738674",
+				"C29B8785722055ED95EF7B57",
+				"2A1043669E6E5A7426EA502A");
+			buildSettings = {
+				CC = "/usr/bin/clang";
+				CPLUSPLUS = "/usr/bin/clang++";
+				LEXFLAGS = "";
+				YACCFLAGS = "-d";
+				OTHER_REZFLAGS = "";
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = "";
+				PREBINDING = NO;
+				BUILD_ROOT = "/Users/alexandre/development/Natron/openMVG";
+				INSTALL_PATH = "";
+				DYLIB_CURRENT_VERSION = "1.0.0";
+				DYLIB_COMPATIBILITY_VERSION = "1.0";
+				MACOSX_DEPLOYMENT_TARGET = "10.11";
+				LIBRARY_STYLE = "STATIC";
+				PRODUCT_NAME = "openMVG";
+			};
+			conditionalBuildSettings = {
+			};
+			dependencies = (
+				);
+			productReference = "277713600644ACB16D08574D";
+			shouldUseHeadermap = 1;
+			buildConfigurationList = 17B3380A4D6A7D415E7F2E1E;
+			isa = PBXNativeTarget;
+			name = "openMVG";
+			productName = "openMVG";
+			productType = "com.apple.product-type.library.static";
+			startupPath = "<<ProjectDirectory>>";
+		};
+		4B72B24813252891014BCF61 = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = "NO";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = "YES";
+				GCC_OPTIMIZATION_LEVEL = "0";
+				PRODUCT_NAME = "openMVG";
+				HEADER_SEARCH_PATHS = (
+					"../libs/ceres/config",
+					"../libs/ceres/include",
+					"../libs/ceres/internal",
+					"../libs/openMVG/openMVG",
+					"../libs/openMVG",
+					"../libs/openMVG/dependencies/osi_clp/Clp/src",
+					"/Users/alexandre/development/Natron/openMVG/../libs/openMVG/dependencies/osi_clp/Clp/src/OsiClip",
+					"../libs/openMVG/dependencies/osi_clp/CoinUtils/src",
+					"../libs/openMVG/dependencies/osi_clp/Osi/src/Osi",
+					"../libs/Eigen3",
+					"/usr/local/include",
+					"/System/Library/Frameworks/CarbonCore.framework/Headers",
+					"/opt/local/libexec/qt4/share/mkspecs/macx-xcode");
+				LIBRARY_SEARCH_PATHS = (
+					);
+				FRAMEWORK_SEARCH_PATHS = (
+					);
+				INFOPLIST_FILE = "Info.plist";
+				OTHER_CFLAGS = (
+					"-pipe",
+					"-g",
+					"-Wall",
+					"-W",
+					"-fPIC",
+					"-DOFX_EXTENSIONS_NUKE",
+					"-DOFX_EXTENSIONS_TUTTLE",
+					"-DOFX_EXTENSIONS_VEGAS",
+					"-DOFX_SUPPORTS_PARAMETRIC",
+					"-DOFX_EXTENSIONS_TUTTLE",
+					"-DOFX_EXTENSIONS_NATRON",
+					"-DOFX_SUPPORTS_OPENGLRENDER",
+					"-DOFX_SUPPORTS_MULTITHREAD",
+					"-DOFX_SUPPORTS_DIALOG",
+					"-DQT_NO_CAST_FROM_ASCII",
+					"-DDEBUG",
+					"-DNATRON_USE_BREAKPAD",
+					"-DNATRON_BUILD_NUMBER=0");
+				OTHER_CPLUSPLUSFLAGS = (
+					"-pipe",
+					"-ftemplate-depth-1024",
+					"-g",
+					"-Wall",
+					"-W",
+					"-fPIC",
+					"-DOFX_EXTENSIONS_NUKE",
+					"-DOFX_EXTENSIONS_TUTTLE",
+					"-DOFX_EXTENSIONS_VEGAS",
+					"-DOFX_SUPPORTS_PARAMETRIC",
+					"-DOFX_EXTENSIONS_TUTTLE",
+					"-DOFX_EXTENSIONS_NATRON",
+					"-DOFX_SUPPORTS_OPENGLRENDER",
+					"-DOFX_SUPPORTS_MULTITHREAD",
+					"-DOFX_SUPPORTS_DIALOG",
+					"-DQT_NO_CAST_FROM_ASCII",
+					"-DDEBUG",
+					"-DNATRON_USE_BREAKPAD",
+					"-DNATRON_BUILD_NUMBER=0");
+				ARCHS = "x86_64";
+			};
+			name = "Debug";
+		};
+		BEC09A62E69C3553534FF35E = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = "NO";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = "YES";
+				GCC_OPTIMIZATION_LEVEL = "0";
+				PRODUCT_NAME = "openMVG";
+				LIBRARY_STYLE = "STATIC";
+				PRODUCT_NAME = "openMVG";
+			};
+			name = "Debug";
+		};
+		2C641C3335766025DD51B7BD = {
+			buildRules = (
+				);
+			buildSettings = {
+				COPY_PHASE_STRIP = "NO";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = "YES";
+				GCC_OPTIMIZATION_LEVEL = "0";
+				PRODUCT_NAME = "openMVG";
+			};
+			isa = "PBXBuildStyle";
+			name = "Debug";
+		};
+		D70590BEB531B51029F711BB = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = "YES";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = "NO";
+				PRODUCT_NAME = "openMVG";
+				HEADER_SEARCH_PATHS = (
+					"../libs/ceres/config",
+					"../libs/ceres/include",
+					"../libs/ceres/internal",
+					"../libs/openMVG/openMVG",
+					"../libs/openMVG",
+					"../libs/openMVG/dependencies/osi_clp/Clp/src",
+					"/Users/alexandre/development/Natron/openMVG/../libs/openMVG/dependencies/osi_clp/Clp/src/OsiClip",
+					"../libs/openMVG/dependencies/osi_clp/CoinUtils/src",
+					"../libs/openMVG/dependencies/osi_clp/Osi/src/Osi",
+					"../libs/Eigen3",
+					"/usr/local/include",
+					"/System/Library/Frameworks/CarbonCore.framework/Headers",
+					"/opt/local/libexec/qt4/share/mkspecs/macx-xcode");
+				LIBRARY_SEARCH_PATHS = (
+					);
+				FRAMEWORK_SEARCH_PATHS = (
+					);
+				INFOPLIST_FILE = "Info.plist";
+				OTHER_CFLAGS = (
+					"-pipe",
+					"-g",
+					"-Wall",
+					"-W",
+					"-fPIC",
+					"-DOFX_EXTENSIONS_NUKE",
+					"-DOFX_EXTENSIONS_TUTTLE",
+					"-DOFX_EXTENSIONS_VEGAS",
+					"-DOFX_SUPPORTS_PARAMETRIC",
+					"-DOFX_EXTENSIONS_TUTTLE",
+					"-DOFX_EXTENSIONS_NATRON",
+					"-DOFX_SUPPORTS_OPENGLRENDER",
+					"-DOFX_SUPPORTS_MULTITHREAD",
+					"-DOFX_SUPPORTS_DIALOG",
+					"-DQT_NO_CAST_FROM_ASCII",
+					"-DDEBUG",
+					"-DNATRON_USE_BREAKPAD",
+					"-DNATRON_BUILD_NUMBER=0");
+				OTHER_CPLUSPLUSFLAGS = (
+					"-pipe",
+					"-ftemplate-depth-1024",
+					"-g",
+					"-Wall",
+					"-W",
+					"-fPIC",
+					"-DOFX_EXTENSIONS_NUKE",
+					"-DOFX_EXTENSIONS_TUTTLE",
+					"-DOFX_EXTENSIONS_VEGAS",
+					"-DOFX_SUPPORTS_PARAMETRIC",
+					"-DOFX_EXTENSIONS_TUTTLE",
+					"-DOFX_EXTENSIONS_NATRON",
+					"-DOFX_SUPPORTS_OPENGLRENDER",
+					"-DOFX_SUPPORTS_MULTITHREAD",
+					"-DOFX_SUPPORTS_DIALOG",
+					"-DQT_NO_CAST_FROM_ASCII",
+					"-DDEBUG",
+					"-DNATRON_USE_BREAKPAD",
+					"-DNATRON_BUILD_NUMBER=0");
+				ARCHS = "x86_64";
+			};
+			name = "Release";
+		};
+		8C7174830A1E4DCBA0332EC1 = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = "YES";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = "NO";
+				PRODUCT_NAME = "openMVG";
+				LIBRARY_STYLE = "STATIC";
+				PRODUCT_NAME = "openMVG";
+			};
+			name = "Release";
+		};
+		26DE8D2AEA4B3714B41E931F = {
+			buildRules = (
+				);
+			buildSettings = {
+				COPY_PHASE_STRIP = "YES";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = "NO";
+				PRODUCT_NAME = "openMVG";
+			};
+			isa = "PBXBuildStyle";
+			name = "Release";
+		};
+		CC82A9286117DFED018F418F = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				"4B72B24813252891014BCF61",
+				"D70590BEB531B51029F711BB");
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationIsName = "Debug";
+		};
+		17B3380A4D6A7D415E7F2E1E = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				"BEC09A62E69C3553534FF35E",
+				"8C7174830A1E4DCBA0332EC1");
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationIsName = "Debug";
+		};
+		91B15E841AA80083484172DE = {
+			buildStyles = (
+				"2C641C3335766025DD51B7BD",
+				"26DE8D2AEA4B3714B41E931F");
+			hasScannedForEncodings = 1;
+			isa = PBXProject;
+			mainGroup = "05596AB53D8D521C69802C27";
+			buildConfigurationList = "CC82A9286117DFED018F418F";
+			projectDirPath = "";
+			targets = (
+				"CA2DB7990DC5AB0FF6462431");
+		};
+	};
+	rootObject = "91B15E841AA80083484172DE";
+}

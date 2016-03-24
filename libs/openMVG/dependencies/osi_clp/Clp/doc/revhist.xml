@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<appendix>
+<title>Revision History</title>
+<revhistory>
+<revision>
+  <revnumber>0.4</revnumber>
+  <date>18 Oct 2004</date>
+  <authorinitials>DdlN</authorinitials>
+  <revremark>Second official release, including some corrections,
+  clarifications, and several improvements (better treatment of clp
+  executable and Samples).
+  </revremark>
+</revision>
+<revision>
+  <revnumber>0.3</revnumber>
+  <date>19 Aug 2004</date>
+  <authorinitials>DdlN</authorinitials>
+  <revremark>Major overhaul, including transition from MS Word to DocBook
+    XML.
+  </revremark>
+</revision>
+<revision>
+  <revnumber>0.2</revnumber>
+  <date>23 Feb 2004</date>
+  <authorinitials>RLH</authorinitials>
+  <revremark>Revisions to make it clearer to the non-author reader.</revremark>
+</revision>
+<revision>
+  <revnumber>0.1</revnumber>
+  <date>Nov 2003</date>
+  <authorinitials>JF</authorinitials>
+  <revremark>First draft</revremark>
+</revision>
+</revhistory>
+</appendix>

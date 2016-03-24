@@ -1,0 +1,27 @@
+/* inc/config_coinutils.h.in.  */
+
+#ifndef __CONFIG_COINUTILS_H__
+#define __CONFIG_COINUTILS_H__
+
+/* Version number of project */
+#undef COINUTILS_VERSION
+
+/* Major Version number of project */
+#undef COINUTILS_VERSION_MAJOR
+
+/* Minor Version number of project */
+#undef COINUTILS_VERSION_MINOR
+
+/* Release Version number of project */
+#undef COINUTILS_VERSION_RELEASE
+
+/* Define to 64bit integer type */
+#undef COIN_INT64_T
+
+/* Define to integer type capturing pointer */
+#undef COIN_INTPTR_T
+
+/* Define to 64bit unsigned integer type */
+#undef COIN_UINT64_T
+
+#endif
