@@ -3064,7 +3064,7 @@ Node::findPluginFormatKnobs(const KnobsVec & knobs,bool loadingSerialization)
             std::vector<std::string> formats;
             int defValue;
             getApp()->getProject()->getProjectFormatEntries(&formats, &defValue);
-            refreshFormatParamChoice(formats, defValue, !loadingSerialization);
+            refreshFormatParamChoice(formats, defValue, loadingSerialization);
         }
     }
 }
