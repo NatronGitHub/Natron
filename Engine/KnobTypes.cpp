@@ -506,6 +506,20 @@ KnobDouble::normalize(int dimension,
     }
 }
 
+bool
+KnobDouble::computeValuesHaveModifications(int dimension,
+                                    const double& value,
+                                    const double& defaultValue) const
+{
+    if (_defaultValuesAreNormalized) {
+        double tmp = defaultValue;
+        denormalize(dimension, 0, &tmp);
+        return value != tmp;
+    } else {
+        return value != defaultValue;
+    }
+}
+
 /******************************KnobButton**************************************/
 
 KnobButton::KnobButton(KnobHolder*  holder,

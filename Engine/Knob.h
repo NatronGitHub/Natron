@@ -1555,6 +1555,10 @@ public:
     
 protected:
     
+    virtual bool computeValuesHaveModifications(int dimension,
+                                                const T& value,
+                                                const T& defaultValue) const;
+    
     virtual bool hasModificationsVirtual(int /*dimension*/) const { return false; }
     
 public:

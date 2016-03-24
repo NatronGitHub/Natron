@@ -309,6 +309,10 @@ Q_SIGNALS:
 
 private:
 
+    virtual bool computeValuesHaveModifications(int dimension,
+                                            const double& value,
+                                            const double& defaultValue) const OVERRIDE FINAL;
+
 
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;

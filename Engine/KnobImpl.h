@@ -2766,6 +2766,14 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
 }
 
 template <typename T>
+bool Knob<T>::computeValuesHaveModifications(int /*dimension*/,
+                                              const T& value,
+                                              const T& defaultValue) const
+{
+    return value != defaultValue;
+}
+
+template <typename T>
 void Knob<T>::computeHasModifications()
 {
     bool oneChanged = false;
@@ -2794,7 +2802,7 @@ void Knob<T>::computeHasModifications()
         ///Check expressions too in the future
         if (!hasModif) {
             QMutexLocker k(&_valueMutex);
-            if (_values[i] != _defaultValues[i]) {
+            if (computeValuesHaveModifications(i, _values[i], _defaultValues[i])) {
                 hasModif = true;
             }
         }
