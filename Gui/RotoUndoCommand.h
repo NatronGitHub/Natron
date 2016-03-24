@@ -148,7 +148,7 @@ private:
 
     bool _firstRedoCalled; //< false by default
     RotoGui* _roto;
-    boost::shared_ptr<Bezier> _oldCurve,_curve;
+    boost::shared_ptr<Bezier> _curve;
     int _index;
     double _t;
 };

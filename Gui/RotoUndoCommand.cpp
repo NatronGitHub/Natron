@@ -364,13 +364,10 @@ AddPointUndoCommand::AddPointUndoCommand(RotoGui* roto,
     : QUndoCommand()
       , _firstRedoCalled(false)
       , _roto(roto)
-      , _oldCurve()
       , _curve(curve)
       , _index(index)
       , _t(t)
 {
-    _oldCurve.reset( new Bezier(curve->getContext(),curve->getScriptName(),curve->getParentLayer(), false) );
-    _oldCurve->clone(curve.get());
     
 }
 
@@ -381,7 +378,7 @@ AddPointUndoCommand::~AddPointUndoCommand()
 void
 AddPointUndoCommand::undo()
 {
-    _curve->clone(_oldCurve.get());
+    _curve->removeControlPointByIndex(_index + 1);
     _roto->setSelection( _curve, std::make_pair( CpPtr(),CpPtr() ) );
     _roto->evaluate(true);
     setText( QObject::tr("Add point to %1 of %2").arg(QString::fromUtf8( _curve->getLabel().c_str() )).arg( _roto->getNodeName() ) );
@@ -390,7 +387,7 @@ AddPointUndoCommand::undo()
 void
 AddPointUndoCommand::redo()
 {
-    _oldCurve->clone(_curve.get());
+    
     boost::shared_ptr<BezierCP> cp = _curve->addControlPointAfterIndex(_index,_t);
     boost::shared_ptr<BezierCP> newFp = _curve->getFeatherPointAtIndex(_index + 1);
 
