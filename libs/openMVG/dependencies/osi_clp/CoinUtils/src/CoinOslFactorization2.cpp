@@ -1457,10 +1457,9 @@ static int c_ekkbtrn_mpt(COIN_REGISTER3 const EKKfactinfo * COIN_RESTRICT2 fact,
   /*const int *mrstrt	= fact->xrsadr;*/
   
 #ifdef DEBUG
-  int i;
   memset(spare,'A',3*nrow*sizeof(int));
   {
-    
+    int i;
     for (i=1;i<=nrow;i++) {
       if (dpermu[i]) {
 	abort();
@@ -1470,13 +1469,15 @@ static int c_ekkbtrn_mpt(COIN_REGISTER3 const EKKfactinfo * COIN_RESTRICT2 fact,
 #endif
   
   
-  int i;
 #ifdef DEBUG
-  for (i=1;i<=nrow;i++) {
-    if (fact->nonzero[i]||dpermu[i]) {
-      abort();
+    {
+      int i;
+      for (i=1;i<=nrow;i++) {
+        if (fact->nonzero[i]||dpermu[i]) {
+            abort();
+        }
+      }
     }
-  }
 #endif
   assert (fact->if_sparse_update>0&&mpt&&fact->rows_ok) ;
   
@@ -1486,36 +1487,42 @@ static int c_ekkbtrn_mpt(COIN_REGISTER3 const EKKfactinfo * COIN_RESTRICT2 fact,
    * overwrite mpt with the permuted indices;
    * clear the dwork1 vector.
    */
-  for (i=0;i<nincol;i++) {
-    int irow=mpt[i+1];
-    int jrow=mpermu[irow];
-    dpermu[jrow]=dwork1[irow];
-    /*nonzero[jrow-1]=1; this is done in btrn0 */
-    mpt[i+1]=jrow;
-    dwork1[irow]=0.0;
-  }
-  
+    {
+        int i;
+        for (i=0;i<nincol;i++) {
+            int irow=mpt[i+1];
+            int jrow=mpermu[irow];
+            dpermu[jrow]=dwork1[irow];
+            /*nonzero[jrow-1]=1; this is done in btrn0 */
+            mpt[i+1]=jrow;
+            dwork1[irow]=0.0;
+        }
+    }
+    
   if (DENSE_THRESHOLD<nrow) {
     nincol = c_ekkbtrn0_new(fact, dwork1, mpt, nincol,spare);
   } else {
     nincol = c_ekkbtrn(fact, dwork1, mpt, 0);
   }
 #ifdef DEBUG
-  {
-    
-    for (i=1;i<=nrow;i++) {
-      if (dpermu[i]) {
-	abort();
-      }
+    {
+        {
+            int i;
+            for (i=1;i<=nrow;i++) {
+                if (dpermu[i]) {
+                    abort();
+                }
+            }
+        }
+        if (fact->if_sparse_update>0) {
+            int i;
+            for (i=1;i<=nrow;i++) {
+                if (fact->nonzero[i]) {
+                    abort();
+                }
+            }
+        }
     }
-    if (fact->if_sparse_update>0) {
-      for (i=1;i<=nrow;i++) {
-	if (fact->nonzero[i]) {
-	  abort();
-	}
-      }
-    }
-  } 
 #endif
   return nincol;
 }
