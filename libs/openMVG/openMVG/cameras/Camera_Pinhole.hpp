@@ -86,8 +86,11 @@ class Pinhole_Intrinsic : public IntrinsicBase
   // Data wrapper for non linear optimization (get data)
   virtual std::vector<double> getParams() const
   {
-    const std::vector<double> params = {_K(0,0), _K(0,2), _K(1,2)};
-    return params;
+      std::vector<double> params(3);
+      params.push_back(_K(0,0));
+      params.push_back(_K(0,2));
+      params.push_back(_K(1,2));
+      return params;
   }
 
   // Data wrapper for non linear optimization (update from data)
@@ -108,6 +111,7 @@ class Pinhole_Intrinsic : public IntrinsicBase
   /// Return the distorted pixel (with added distortion)
   virtual Vec2 get_d_pixel(const Vec2& p) const {return p;}
 
+#ifndef OPENMVG_NO_SERIALIZATION
   // Serialization
   template <class Archive>
   void save( Archive & ar) const
@@ -129,15 +133,18 @@ class Pinhole_Intrinsic : public IntrinsicBase
     ar(cereal::make_nvp("principal_point", pp));
     *this = Pinhole_Intrinsic(_w, _h, focal_length, pp[0], pp[1]);
   }
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
 };
 
 } // namespace cameras
 } // namespace openMVG
 
+#ifndef OPENMVG_NO_SERIALIZATION
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 
 CEREAL_REGISTER_TYPE_WITH_NAME(openMVG::cameras::Pinhole_Intrinsic, "pinhole");
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
 
 #endif // #ifndef OPENMVG_CAMERA_PINHOLE_HPP
 

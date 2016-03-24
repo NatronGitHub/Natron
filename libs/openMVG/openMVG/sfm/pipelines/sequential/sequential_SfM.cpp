@@ -130,11 +130,12 @@ bool SequentialSfMReconstructionEngine::Process() {
 
     if (bImageAdded)
     {
+#ifndef OPENMVG_NO_SERIALIZATION
       // Scene logging as ply for visual debug
       std::ostringstream os;
       os << std::setw(8) << std::setfill('0') << resectionGroupIndex << "_Resection";
       Save(_sfm_data, stlplus::create_filespec(_sOutDirectory, os.str(), ".ply"), ESfM_Data(ALL));
-
+#endif
       // Perform BA until all point are under the given precision
       do
       {
@@ -583,8 +584,10 @@ bool SequentialSfMReconstructionEngine::MakeInitialPair3D(const Pair & current_p
       landmarks[iterT->first].obs = std::move(obs);
       landmarks[iterT->first].X = X;
     }
+#ifndef OPENMVG_NO_SERIALIZATION
     Save(tiny_scene, stlplus::create_filespec(_sOutDirectory, "initialPair.ply"), ESfM_Data(ALL));
-
+#endif
+      
     // - refine only Structure and Rotations & translations (keep intrinsic constant)
     Bundle_Adjustment_Ceres::BA_options options(true, false);
     options._linear_solver_type = ceres::DENSE_SCHUR;
@@ -683,9 +686,11 @@ bool SequentialSfMReconstructionEngine::MakeInitialPair3D(const Pair & current_p
 
       _htmlDocStream->pushInfo("<hr>");
 
+#ifndef OPENMVG_NO_SERIALIZATION
       ofstream htmlFileStream( string(stlplus::folder_append_separator(_sOutDirectory) +
         "Reconstruction_Report.html").c_str());
       htmlFileStream << _htmlDocStream->getDoc();
+#endif
     }
   }
   return !_sfm_data.structure.empty();

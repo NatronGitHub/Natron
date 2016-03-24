@@ -25,6 +25,8 @@ struct Features_Provider
   /// PointFeature array per ViewId of the considered SfM_Data container
   Hash_Map<IndexT, features::PointFeatures> feats_per_view;
 
+    
+#ifndef OPENMVG_NO_SERIALIZATION
   virtual bool load(
     const SfM_Data & sfm_data,
     const std::string & feat_directory,
@@ -69,7 +71,8 @@ struct Features_Provider
     }
     return bContinue;
   }
-
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
+    
   /// Return the PointFeatures belonging to the View, if the view does not exist
   ///  it return an empty PointFeature array.
   const features::PointFeatures & getFeatures(const IndexT & id_view) const

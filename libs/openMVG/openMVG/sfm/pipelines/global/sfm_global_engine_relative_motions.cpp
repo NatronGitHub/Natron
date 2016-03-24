@@ -214,6 +214,8 @@ bool GlobalSfMReconstructionEngine_RelativeMotions::Compute_Global_Rotations
 
   if (b_rotation_averaging)
   {
+      
+#ifndef OPENMVG_NO_SERIALIZATION
     // Log input graph to the HTML report
     if (!_sLoggingFile.empty() && !_sOutDirectory.empty())
     {
@@ -243,6 +245,7 @@ bool GlobalSfMReconstructionEngine_RelativeMotions::Compute_Global_Rotations
         _htmlDocStream->pushInfo(os.str());
       }
     }
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
   }
 
   return b_rotation_averaging;
@@ -265,13 +268,14 @@ bool GlobalSfMReconstructionEngine_RelativeMotions::Compute_Global_Translations
     global_rotations,
     tripletWise_matches);
 
+#ifndef OPENMVG_NO_SERIALIZATION
   if (!_sLoggingFile.empty())
   {
     Save(_sfm_data,
       stlplus::create_filespec(stlplus::folder_part(_sLoggingFile), "cameraPath_translation_averaging", "ply"),
       ESfM_Data(EXTRINSICS));
   }
-
+#endif
   return bTranslationAveraging;
 }
 
@@ -365,6 +369,7 @@ bool GlobalSfMReconstructionEngine_RelativeMotions::Compute_Initial_Structure
       trackCountBefore - IndexT(_sfm_data.GetLandmarks().size()) << std::endl;
     std::cout << std::endl << "  Triangulation took (s): " << timer.elapsed() << std::endl;
 
+#ifndef OPENMVG_NO_SERIALIZATION
     // Export initial structure
     if (!_sLoggingFile.empty())
     {
@@ -372,7 +377,9 @@ bool GlobalSfMReconstructionEngine_RelativeMotions::Compute_Initial_Structure
         stlplus::create_filespec(stlplus::folder_part(_sLoggingFile), "initial_structure", "ply"),
         ESfM_Data(EXTRINSICS | STRUCTURE));
     }
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
   }
+    
   return !_sfm_data.structure.empty();
 }
 
@@ -386,32 +393,39 @@ bool GlobalSfMReconstructionEngine_RelativeMotions::Adjust()
   bool b_BA_Status = bundle_adjustment_obj.Adjust(_sfm_data, false, true, false);
   if (b_BA_Status)
   {
+#ifndef OPENMVG_NO_SERIALIZATION
     if (!_sLoggingFile.empty())
     {
       Save(_sfm_data,
         stlplus::create_filespec(stlplus::folder_part(_sLoggingFile), "structure_00_refine_T_Xi", "ply"),
         ESfM_Data(EXTRINSICS | STRUCTURE));
     }
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
 
     // - refine only Structure and Rotations & translations
     b_BA_Status = bundle_adjustment_obj.Adjust(_sfm_data, true, true, false);
+#ifndef OPENMVG_NO_SERIALIZATION
     if (b_BA_Status && !_sLoggingFile.empty())
     {
       Save(_sfm_data,
         stlplus::create_filespec(stlplus::folder_part(_sLoggingFile), "structure_01_refine_RT_Xi", "ply"),
         ESfM_Data(EXTRINSICS | STRUCTURE));
     }
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
   }
 
   if (b_BA_Status && !_bFixedIntrinsics) {
     // - refine all: Structure, motion:{rotations, translations} and optics:{intrinsics}
     b_BA_Status = bundle_adjustment_obj.Adjust(_sfm_data, true, true, true);
+      
+#ifndef OPENMVG_NO_SERIALIZATION
     if (b_BA_Status && !_sLoggingFile.empty())
     {
       Save(_sfm_data,
         stlplus::create_filespec(stlplus::folder_part(_sLoggingFile), "structure_02_refine_KRT_Xi", "ply"),
         ESfM_Data(EXTRINSICS | STRUCTURE));
     }
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
   }
 
   // Remove outliers (max_angle, residual error)
@@ -425,12 +439,14 @@ bool GlobalSfMReconstructionEngine_RelativeMotions::Adjust()
     << "\t\t pixel residual filter  #3DPoints: " << pointcount_pixelresidual_filter << "\n"
     << "\t\t angular filter         #3DPoints: " << pointcount_angular_filter << std::endl;
 
+#ifndef OPENMVG_NO_SERIALIZATION
   if (!_sLoggingFile.empty())
   {
     Save(_sfm_data,
       stlplus::create_filespec(stlplus::folder_part(_sLoggingFile), "structure_03_outlier_removed", "ply"),
       ESfM_Data(EXTRINSICS | STRUCTURE));
   }
+#endif//#ifndef OPENMVG_NO_SERIALIZATION
 
   // Check that poses & intrinsic cover some measures (after outlier removal)
   const IndexT minPointPerPose = 12; // 6 min
@@ -445,13 +461,14 @@ bool GlobalSfMReconstructionEngine_RelativeMotions::Adjust()
   }
 
   b_BA_Status = bundle_adjustment_obj.Adjust(_sfm_data, true, true, !_bFixedIntrinsics);
+#ifndef OPENMVG_NO_SERIALIZATION
   if (b_BA_Status && !_sLoggingFile.empty())
   {
     Save(_sfm_data,
       stlplus::create_filespec(stlplus::folder_part(_sLoggingFile), "structure_04_outlier_removed", "ply"),
       ESfM_Data(EXTRINSICS | STRUCTURE));
   }
-
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
   return b_BA_Status;
 }
 
@@ -635,6 +652,8 @@ void GlobalSfMReconstructionEngine_RelativeMotions::Compute_Relative_Rotations
     }
   }
 
+#ifndef OPENMVG_NO_SERIALIZATION
+
   // Log input graph to the HTML report
   if (!_sLoggingFile.empty() && !_sOutDirectory.empty())
   {
@@ -676,6 +695,8 @@ void GlobalSfMReconstructionEngine_RelativeMotions::Compute_Relative_Rotations
       _htmlDocStream->pushInfo(os.str());
     }
   }
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
+
 }
 
 } // namespace sfm

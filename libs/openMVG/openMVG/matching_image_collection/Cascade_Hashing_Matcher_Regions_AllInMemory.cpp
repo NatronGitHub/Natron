@@ -9,8 +9,9 @@
 #include "openMVG/matching/matcher_cascade_hashing.hpp"
 #include "openMVG/matching/indMatchDecoratorXY.hpp"
 #include "openMVG/matching/matching_filters.hpp"
-
+#ifndef OPENMVG_NO_SERIALIZATION
 #include "third_party/stlplus3/filesystemSimplified/file_system.hpp"
+#endif
 #include "third_party/progress/progress.hpp"
 
 namespace openMVG {
@@ -190,7 +191,7 @@ void Match
       for (size_t k=0; k < vec_nn_ratio_idx.size(); ++k)
       {
         const size_t index = vec_nn_ratio_idx[k];
-        vec_putative_matches.emplace_back(pvec_indices[index*2]._j, pvec_indices[index*2]._i);
+        vec_putative_matches.push_back(matching::IndMatch(pvec_indices[index*2]._j, pvec_indices[index*2]._i));
       }
 
       // Remove duplicates

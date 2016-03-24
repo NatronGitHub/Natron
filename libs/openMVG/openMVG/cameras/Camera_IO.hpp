@@ -8,9 +8,11 @@
 #ifndef OPENMVG_CAMERA_IO_H
 #define OPENMVG_CAMERA_IO_H
 
+#ifndef OPENMVG_NO_SERIALIZATION
 #include "openMVG/cameras/PinholeCamera.hpp"
 
 #include "third_party/stlplus3/filesystemSimplified/file_system.hpp"
+#endif
 
 #include <iostream>
 #include <fstream>
@@ -77,5 +79,5 @@ static bool load(
 
 } // namespace cameras
 } // namespace openMVG
-
+#endif
 #endif // OPENMVG_CAMERA_IO_H

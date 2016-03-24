@@ -10,8 +10,9 @@
 #include "openMVG/features/feature.hpp"
 #include "openMVG/sfm/pipelines/sfm_regions_provider.hpp"
 #include "openMVG/matching/indMatch.hpp"
-
+#ifndef OPENMVG_NO_SERIALIZATION
 #include "third_party/stlplus3/filesystemSimplified/file_system.hpp"
+#endif
 #include "third_party/progress/progress.hpp"
 
 #include <vector>

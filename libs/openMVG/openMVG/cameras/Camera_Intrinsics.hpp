@@ -13,7 +13,10 @@
 #include "openMVG/geometry/pose3.hpp"
 #include "openMVG/stl/hash.hpp"
 #include <vector>
+
+#ifndef OPENMVG_NO_SERIALIZATION
 #include <cereal/cereal.hpp> // Serialization
+#endif 
 
 namespace openMVG {
 namespace cameras {
@@ -95,6 +98,7 @@ struct IntrinsicBase
   /// Return the intrinsic (interior & exterior) as a simplified projective projection
   virtual Mat34 get_projective_equivalent(const geometry::Pose3 & pose) const = 0;
 
+#ifndef OPENMVG_NO_SERIALIZATION
   /// Serialization out
   template <class Archive>
   void save( Archive & ar) const
@@ -110,6 +114,7 @@ struct IntrinsicBase
     ar(cereal::make_nvp("width", _w));
     ar(cereal::make_nvp("height", _h));
   }
+#endif
 
   /// Generate an unique Hash from the camera parameters (used for grouping)
   virtual std::size_t hashValue() const

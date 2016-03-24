@@ -7,6 +7,8 @@
 #ifndef OPENMVG_SFM_REPORT_HPP
 #define OPENMVG_SFM_REPORT_HPP
 
+#ifndef OPENMVG_NO_SERIALIZATION
+
 #include "third_party/stlplus3/filesystemSimplified/file_system.hpp"
 #include "third_party/htmlDoc/htmlDoc.hpp"
 #include "third_party/histogram/histogram.hpp"
@@ -176,5 +178,7 @@ static bool Generate_SfM_Report
 
 } // namespace sfm
 } // namespace openMVG
+
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
 
 #endif // OPENMVG_SFM_REPORT_HPP

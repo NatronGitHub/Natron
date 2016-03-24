@@ -12,7 +12,10 @@
 #include "openMVG/matching/regions_matcher.hpp"
 #include "openMVG/matching_image_collection/Matcher.hpp"
 
+#ifndef OPENMVG_NO_SERIALIZATION
 #include "third_party/stlplus3/filesystemSimplified/file_system.hpp"
+#endif
+
 #include "third_party/progress/progress.hpp"
 
 namespace openMVG {

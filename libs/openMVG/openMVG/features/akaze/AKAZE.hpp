@@ -39,7 +39,9 @@
 #include "openMVG/features/feature.hpp"
 #include "openMVG/features/descriptor.hpp"
 
+#ifndef OPENMVG_NO_SERIALIZATION
 #include <cereal/cereal.hpp>
+#endif
 
 namespace openMVG {
 namespace features {
@@ -55,6 +57,7 @@ struct AKAZEConfig
   {
   }
 
+#ifndef OPENMVG_NO_SERIALIZATION
   template<class Archive>
   void serialize(Archive & ar)
   {
@@ -65,7 +68,8 @@ struct AKAZEConfig
       cereal::make_nvp("fThreshold", fThreshold),
       cereal::make_nvp("fDesc_factor", fDesc_factor));
   }
-
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
+    
   int iNbOctave; ///< Octave to process
   int iNbSlicePerOctave; ///< Levels per octave
   float fSigma0; ///< Initial sigma offset (used to suppress low level noise)

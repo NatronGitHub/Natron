@@ -8,7 +8,9 @@
 #define OPENMVG_GEOMETRY_POSE3_H_
 
 #include "openMVG/multiview/projection.hpp"
+#ifndef OPENMVG_NO_SERIALIZATION
 #include <cereal/cereal.hpp> // Serialization
+#endif
 
 namespace openMVG {
 namespace geometry {
@@ -56,7 +58,7 @@ class Pose3
     double depth(const Vec3 &X) const {
       return (_rotation * (X - _center))[2];
     }
-
+#ifndef OPENMVG_NO_SERIALIZATION
     // Serialization
     template <class Archive>
     void save( Archive & ar) const
@@ -88,6 +90,7 @@ class Pose3
       ar(cereal::make_nvp("center", vec));
       _center = Eigen::Map<const Vec3>(&vec[0]);
     }
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
 };
 } // namespace geometry
 } // namespace openMVG

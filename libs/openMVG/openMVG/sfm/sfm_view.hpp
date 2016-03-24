@@ -7,8 +7,11 @@
 #ifndef OPENMVG_SFM_VIEW_HPP
 #define OPENMVG_SFM_VIEW_HPP
 
+#ifndef OPENMVG_NO_SERIALIZATION
+
 #include "third_party/stlplus3/filesystemSimplified/file_system.hpp"
 #include <cereal/cereal.hpp> // Serialization
+#endif
 
 namespace openMVG {
 namespace sfm {
@@ -39,6 +42,7 @@ struct View
     id_pose(pose_id), ui_width(width), ui_height(height)
     {}
 
+#ifndef OPENMVG_NO_SERIALIZATION
   // Serialization
   template <class Archive>
   void serialize( Archive & ar )
@@ -58,6 +62,7 @@ struct View
 
     s_Img_path = stlplus::create_filespec(local_path, filename);
   }
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
 };
 
 } // namespace sfm

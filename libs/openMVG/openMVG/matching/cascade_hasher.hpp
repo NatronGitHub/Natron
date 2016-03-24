@@ -309,7 +309,7 @@ public:
         const uint16_t bucket_id = hashed_desc.bucket_ids[j];
         for (const auto& feature_id : hashed_descriptions2.buckets[j][bucket_id])
         {
-          candidate_descriptors.emplace_back(feature_id);
+          candidate_descriptors.push_back(feature_id);
           used_descriptor[feature_id] = false;
         }
       }
@@ -354,7 +354,7 @@ public:
             descriptions1.row(i).data(),
             descriptions1.cols());
 
-          candidate_euclidean_distances.emplace_back(distance, candidate_id);
+          candidate_euclidean_distances.push_back(std::make_pair(distance, candidate_id));
         }
       }
 
@@ -368,8 +368,8 @@ public:
         // save resulting neighbors
         for (int l = 0; l < NN; ++l)
         {
-          pvec_distances->emplace_back(candidate_euclidean_distances[l].first);
-          pvec_indices->emplace_back(IndMatch(i,candidate_euclidean_distances[l].second));
+          pvec_distances->push_back(candidate_euclidean_distances[l].first);
+          pvec_indices->push_back(IndMatch(i,candidate_euclidean_distances[l].second));
         }
       }
       //else -> too few candidates... (save no one)

@@ -8,6 +8,8 @@
 #ifndef OPENMVG_SFM_DATA_IO_BAF_HPP
 #define OPENMVG_SFM_DATA_IO_BAF_HPP
 
+#ifndef OPENMVG_NO_SERIALIZATION
+
 #include "openMVG/sfm/sfm_data_io.hpp"
 #include <fstream>
 
@@ -140,5 +142,7 @@ static bool Save_BAF(
 
 } // namespace sfm
 } // namespace openMVG
+
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
 
 #endif // OPENMVG_SFM_DATA_IO_PLY_HPP

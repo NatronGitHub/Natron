@@ -8,7 +8,10 @@
 #define OPENMVG_SFM_LANDMARK_HPP
 
 #include "openMVG/numeric/numeric.h"
+
+#ifndef OPENMVG_NO_SERIALIZATION
 #include <cereal/cereal.hpp> // Serialization
+#endif
 
 namespace openMVG {
 namespace sfm {
@@ -22,6 +25,7 @@ struct Observation
   Vec2 x;
   IndexT id_feat;
 
+#ifndef OPENMVG_NO_SERIALIZATION
   // Serialization
   template <class Archive>
   void save( Archive & ar) const
@@ -40,6 +44,7 @@ struct Observation
     ar(cereal::make_nvp("x", p));
     x = Eigen::Map<const Vec2>(&p[0]);
   }
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
 };
 /// Observations are indexed by their View_id
 typedef Hash_Map<IndexT, Observation> Observations;
@@ -50,6 +55,7 @@ struct Landmark
   Observations obs;
   Vec3 X;
 
+#ifndef OPENMVG_NO_SERIALIZATION
   // Serialization
   template <class Archive>
   void save( Archive & ar) const
@@ -67,6 +73,7 @@ struct Landmark
     X = Eigen::Map<const Vec3>(&point[0]);
     ar(cereal::make_nvp("observations", obs));
   }
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
 };
 
 } // namespace sfm

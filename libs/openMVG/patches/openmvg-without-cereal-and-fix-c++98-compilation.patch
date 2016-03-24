@@ -1,0 +1,933 @@
+diff --git a/libs/openMVG/openMVG/cameras/Camera_IO.hpp b/libs/openMVG/openMVG/cameras/Camera_IO.hpp
+index 2108d7c..16015ae 100644
+--- a/libs/openMVG/openMVG/cameras/Camera_IO.hpp
++++ b/libs/openMVG/openMVG/cameras/Camera_IO.hpp
+@@ -8,9 +8,11 @@
+ #ifndef OPENMVG_CAMERA_IO_H
+ #define OPENMVG_CAMERA_IO_H
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
+ #include "openMVG/cameras/PinholeCamera.hpp"
+ 
+ #include "third_party/stlplus3/filesystemSimplified/file_system.hpp"
++#endif
+ 
+ #include <iostream>
+ #include <fstream>
+@@ -77,5 +79,5 @@ static bool load(
+ 
+ } // namespace cameras
+ } // namespace openMVG
+-
++#endif
+ #endif // OPENMVG_CAMERA_IO_H
+diff --git a/libs/openMVG/openMVG/cameras/Camera_Intrinsics.hpp b/libs/openMVG/openMVG/cameras/Camera_Intrinsics.hpp
+index 8d937f3..1356cd9 100644
+--- a/libs/openMVG/openMVG/cameras/Camera_Intrinsics.hpp
++++ b/libs/openMVG/openMVG/cameras/Camera_Intrinsics.hpp
+@@ -13,7 +13,10 @@
+ #include "openMVG/geometry/pose3.hpp"
+ #include "openMVG/stl/hash.hpp"
+ #include <vector>
++
++#ifndef OPENMVG_NO_SERIALIZATION
+ #include <cereal/cereal.hpp> // Serialization
++#endif 
+ 
+ namespace openMVG {
+ namespace cameras {
+@@ -95,6 +98,7 @@ struct IntrinsicBase
+   /// Return the intrinsic (interior & exterior) as a simplified projective projection
+   virtual Mat34 get_projective_equivalent(const geometry::Pose3 & pose) const = 0;
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
+   /// Serialization out
+   template <class Archive>
+   void save( Archive & ar) const
+@@ -110,6 +114,7 @@ struct IntrinsicBase
+     ar(cereal::make_nvp("width", _w));
+     ar(cereal::make_nvp("height", _h));
+   }
++#endif
+ 
+   /// Generate an unique Hash from the camera parameters (used for grouping)
+   virtual std::size_t hashValue() const
+diff --git a/libs/openMVG/openMVG/cameras/Camera_Pinhole.hpp b/libs/openMVG/openMVG/cameras/Camera_Pinhole.hpp
+index 1190d28..580e2cb 100644
+--- a/libs/openMVG/openMVG/cameras/Camera_Pinhole.hpp
++++ b/libs/openMVG/openMVG/cameras/Camera_Pinhole.hpp
+@@ -86,8 +86,11 @@ class Pinhole_Intrinsic : public IntrinsicBase
+   // Data wrapper for non linear optimization (get data)
+   virtual std::vector<double> getParams() const
+   {
+-    const std::vector<double> params = {_K(0,0), _K(0,2), _K(1,2)};
+-    return params;
++      std::vector<double> params(3);
++      params.push_back(_K(0,0));
++      params.push_back(_K(0,2));
++      params.push_back(_K(1,2));
++      return params;
+   }
+ 
+   // Data wrapper for non linear optimization (update from data)
+@@ -108,6 +111,7 @@ class Pinhole_Intrinsic : public IntrinsicBase
+   /// Return the distorted pixel (with added distortion)
+   virtual Vec2 get_d_pixel(const Vec2& p) const {return p;}
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
+   // Serialization
+   template <class Archive>
+   void save( Archive & ar) const
+@@ -129,15 +133,18 @@ class Pinhole_Intrinsic : public IntrinsicBase
+     ar(cereal::make_nvp("principal_point", pp));
+     *this = Pinhole_Intrinsic(_w, _h, focal_length, pp[0], pp[1]);
+   }
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
+ };
+ 
+ } // namespace cameras
+ } // namespace openMVG
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
+ #include <cereal/types/polymorphic.hpp>
+ #include <cereal/types/vector.hpp>
+ 
+ CEREAL_REGISTER_TYPE_WITH_NAME(openMVG::cameras::Pinhole_Intrinsic, "pinhole");
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
+ 
+ #endif // #ifndef OPENMVG_CAMERA_PINHOLE_HPP
+ 
+diff --git a/libs/openMVG/openMVG/cameras/Camera_Pinhole_Brown.hpp b/libs/openMVG/openMVG/cameras/Camera_Pinhole_Brown.hpp
+index 7ff95ed..857a340 100644
+--- a/libs/openMVG/openMVG/cameras/Camera_Pinhole_Brown.hpp
++++ b/libs/openMVG/openMVG/cameras/Camera_Pinhole_Brown.hpp
+@@ -34,7 +34,11 @@ class Pinhole_Intrinsic_Brown_T2 : public Pinhole_Intrinsic
+         double t1 = 0.0, double t2 = 0.0)
+             :Pinhole_Intrinsic(w, h, focal, ppx, ppy)
+     {
+-        _params = {k1, k2, k3, t1, t2};
++        _params.push_back(k1);
++        _params.push_back(k2);
++        _params.push_back(k3);
++        _params.push_back(t1);
++        _params.push_back(t2);
+     }
+ 
+     EINTRINSIC getType() const { return PINHOLE_CAMERA_BROWN; }
+@@ -100,7 +104,7 @@ class Pinhole_Intrinsic_Brown_T2 : public Pinhole_Intrinsic
+     {
+       return cam2ima( add_disto(ima2cam(p)) );
+     }
+-
++#ifndef OPENMVG_NO_SERIALIZATION
+     // Serialization
+     template <class Archive>
+     void save( Archive & ar) const
+@@ -116,7 +120,7 @@ class Pinhole_Intrinsic_Brown_T2 : public Pinhole_Intrinsic
+       Pinhole_Intrinsic::load(ar);
+       ar(cereal::make_nvp("disto_t2", _params));
+     }
+-
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
+     private:
+ 
+     /// Functor to calculate distortion offset accounting for both radial and tangential distortion
+@@ -138,9 +142,11 @@ class Pinhole_Intrinsic_Brown_T2 : public Pinhole_Intrinsic
+ } // namespace cameras
+ } // namespace openMVG
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
+ #include <cereal/types/polymorphic.hpp>
+ #include <cereal/types/vector.hpp>
+ 
+ CEREAL_REGISTER_TYPE_WITH_NAME(openMVG::cameras::Pinhole_Intrinsic_Brown_T2, "pinhole_brown_t2");
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
+ 
+ #endif // #ifndef OPENMVG_CAMERA_PINHOLE_RADIAL_K_HPP
+diff --git a/libs/openMVG/openMVG/cameras/Camera_Pinhole_Radial.hpp b/libs/openMVG/openMVG/cameras/Camera_Pinhole_Radial.hpp
+index 79b7fec..1914413 100644
+--- a/libs/openMVG/openMVG/cameras/Camera_Pinhole_Radial.hpp
++++ b/libs/openMVG/openMVG/cameras/Camera_Pinhole_Radial.hpp
+@@ -127,7 +127,7 @@ class Pinhole_Intrinsic_Radial_K1 : public Pinhole_Intrinsic
+   {
+     return cam2ima( add_disto(ima2cam(p)) );
+   }
+-
++#ifndef OPENMVG_NO_SERIALIZATION
+   // Serialization
+   template <class Archive>
+   void save( Archive & ar) const
+@@ -143,7 +143,7 @@ class Pinhole_Intrinsic_Radial_K1 : public Pinhole_Intrinsic
+     Pinhole_Intrinsic::load(ar);
+     ar(cereal::make_nvp("disto_k1", _params));
+   }
+-
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
+   private:
+ 
+   /// Functor to solve Square(disto(radius(p'))) = r^2
+@@ -242,6 +242,7 @@ class Pinhole_Intrinsic_Radial_K3 : public Pinhole_Intrinsic
+     return cam2ima( add_disto(ima2cam(p)) );
+   }
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
+   // Serialization
+   template <class Archive>
+   void save( Archive & ar) const
+@@ -257,7 +258,7 @@ class Pinhole_Intrinsic_Radial_K3 : public Pinhole_Intrinsic
+     Pinhole_Intrinsic::load(ar);
+     ar(cereal::make_nvp("disto_k3", _params));
+   }
+-
++#endif // OPENMVG_NO_SERIALIZATION
+   private:
+ 
+   /// Functor to solve Square(disto(radius(p'))) = r^2
+@@ -271,11 +272,13 @@ class Pinhole_Intrinsic_Radial_K3 : public Pinhole_Intrinsic
+ } // namespace cameras
+ } // namespace openMVG
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
+ #include <cereal/types/polymorphic.hpp>
+ #include <cereal/types/vector.hpp>
+ 
+ CEREAL_REGISTER_TYPE_WITH_NAME(openMVG::cameras::Pinhole_Intrinsic_Radial_K1, "pinhole_radial_k1");
+ CEREAL_REGISTER_TYPE_WITH_NAME(openMVG::cameras::Pinhole_Intrinsic_Radial_K3, "pinhole_radial_k3");
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
+ 
+ #endif // #ifndef OPENMVG_CAMERA_PINHOLE_RADIAL_K_HPP
+ 
+diff --git a/libs/openMVG/openMVG/features/akaze/AKAZE.hpp b/libs/openMVG/openMVG/features/akaze/AKAZE.hpp
+index 9006989..5994f20 100644
+--- a/libs/openMVG/openMVG/features/akaze/AKAZE.hpp
++++ b/libs/openMVG/openMVG/features/akaze/AKAZE.hpp
+@@ -39,7 +39,9 @@
+ #include "openMVG/features/feature.hpp"
+ #include "openMVG/features/descriptor.hpp"
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
+ #include <cereal/cereal.hpp>
++#endif
+ 
+ namespace openMVG {
+ namespace features {
+@@ -55,6 +57,7 @@ struct AKAZEConfig
+   {
+   }
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
+   template<class Archive>
+   void serialize(Archive & ar)
+   {
+@@ -65,7 +68,8 @@ struct AKAZEConfig
+       cereal::make_nvp("fThreshold", fThreshold),
+       cereal::make_nvp("fDesc_factor", fDesc_factor));
+   }
+-
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
++    
+   int iNbOctave; ///< Octave to process
+   int iNbSlicePerOctave; ///< Levels per octave
+   float fSigma0; ///< Initial sigma offset (used to suppress low level noise)
+diff --git a/libs/openMVG/openMVG/features/image_describer.hpp b/libs/openMVG/openMVG/features/image_describer.hpp
+index 5df23ab..8cee223 100644
+--- a/libs/openMVG/openMVG/features/image_describer.hpp
++++ b/libs/openMVG/openMVG/features/image_describer.hpp
+@@ -12,7 +12,10 @@
+ #include "openMVG/features/regions.hpp"
+ #include "openMVG/image/image_container.hpp"
+ #include <memory>
++
++#ifndef OPENMVG_NO_SERIALIZATION
+ #include <cereal/cereal.hpp> // Serialization
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
+ 
+ namespace openMVG {
+ namespace features {
+@@ -51,6 +54,7 @@ public:
+   /// Allocate regions depending of the Image_describer
+   virtual void Allocate(std::unique_ptr<Regions> &regions) const = 0;
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
+   //--
+   // IO - one file for region features, one file for region descriptors
+   //--
+@@ -68,6 +72,7 @@ public:
+   {
+     return regions->Save(sfileNameFeats, sfileNameDescs);
+   };
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
+ 
+   virtual bool LoadFeatures(Regions * regions,
+     const std::string& sfileNameFeats) const
+diff --git a/libs/openMVG/openMVG/features/image_describer_akaze.hpp b/libs/openMVG/openMVG/features/image_describer_akaze.hpp
+index 072547c..affff89 100644
+--- a/libs/openMVG/openMVG/features/image_describer_akaze.hpp
++++ b/libs/openMVG/openMVG/features/image_describer_akaze.hpp
+@@ -16,7 +16,10 @@
+ #include "openMVG/features/akaze/msurf_descriptor.hpp"
+ #include "openMVG/features/akaze/mldb_descriptor.hpp"
+ #include "openMVG/features/liop/liop_descriptor.hpp"
++
++#ifndef OPENMVG_NO_SERIALIZATION
+ #include <cereal/cereal.hpp>
++#endif
+ 
+ using namespace std;
+ 
+@@ -259,7 +262,7 @@ public:
+       break;
+     }
+   }
+-
++#ifndef OPENMVG_NO_SERIALIZATION
+   template<class Archive>
+   void serialize(Archive & ar)
+   {
+@@ -267,6 +270,7 @@ public:
+      cereal::make_nvp("params", _params),
+      cereal::make_nvp("bOrientation", _bOrientation));
+   }
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
+ 
+ 
+ private:
+@@ -277,8 +281,10 @@ private:
+ } // namespace features
+ } // namespace openMVG
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
+ #include <cereal/types/polymorphic.hpp>
+ #include <cereal/archives/json.hpp>
+ CEREAL_REGISTER_TYPE_WITH_NAME(openMVG::features::AKAZE_Image_describer, "AKAZE_Image_describer");
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
+ 
+ #endif // OPENMVG_FEATURES_AKAZE_IMAGE_DESCRIBER_HPP
+diff --git a/libs/openMVG/openMVG/features/io_regions_type.hpp b/libs/openMVG/openMVG/features/io_regions_type.hpp
+index 0716e7d..bd66f7c 100644
+--- a/libs/openMVG/openMVG/features/io_regions_type.hpp
++++ b/libs/openMVG/openMVG/features/io_regions_type.hpp
+@@ -8,8 +8,10 @@
+ #ifndef IO_REGIONS_TYPE_HPP
+ #define IO_REGIONS_TYPE_HPP
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
+ #include "openMVG/features/features.hpp"
+ #include "third_party/stlplus3/filesystemSimplified/file_system.hpp"
++
+ #include <cereal/archives/json.hpp>
+ 
+ #include <fstream>
+@@ -46,4 +48,8 @@ static std::unique_ptr<features::Regions> Init_region_type_from_file
+ } // namespace features
+ } // namespace openMVG
+ 
++
++
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
++
+ #endif // IO_REGIONS_TYPE_HPP
+diff --git a/libs/openMVG/openMVG/features/regions.hpp b/libs/openMVG/openMVG/features/regions.hpp
+index 7ea98e2..454b355 100644
+--- a/libs/openMVG/openMVG/features/regions.hpp
++++ b/libs/openMVG/openMVG/features/regions.hpp
+@@ -12,7 +12,11 @@
+ #include "openMVG/features/feature.hpp"
+ #include "openMVG/features/descriptor.hpp"
+ #include "openMVG/matching/metric.hpp"
++
++#ifndef OPENMVG_NO_SERIALIZATION
+ #include "cereal/types/vector.hpp"
++#endif 
++
+ #include <string>
+ #include <typeinfo>
+ 
+diff --git a/libs/openMVG/openMVG/features/regions_factory.hpp b/libs/openMVG/openMVG/features/regions_factory.hpp
+index 15ae1a3..e40f3b6 100644
+--- a/libs/openMVG/openMVG/features/regions_factory.hpp
++++ b/libs/openMVG/openMVG/features/regions_factory.hpp
+@@ -26,6 +26,7 @@ typedef Binary_Regions<SIOPointFeature,64> AKAZE_Binary_Regions;
+ } // namespace features
+ } // namespace openMVG
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
+ //--
+ // Register region type for serialization
+ //--
+@@ -36,5 +37,6 @@ CEREAL_REGISTER_TYPE_WITH_NAME(openMVG::features::SIFT_Regions, "SIFT_Regions");
+ CEREAL_REGISTER_TYPE_WITH_NAME(openMVG::features::AKAZE_Float_Regions, "AKAZE_Float_Regions");
+ CEREAL_REGISTER_TYPE_WITH_NAME(openMVG::features::AKAZE_Liop_Regions, "AKAZE_Liop_Regions");
+ CEREAL_REGISTER_TYPE_WITH_NAME(openMVG::features::AKAZE_Binary_Regions, "AKAZE_Binary_Regions");
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
+ 
+ #endif // OPENMVG_FEATURES_REGIONS_FACTORY_HPP
+diff --git a/libs/openMVG/openMVG/geometry/pose3.hpp b/libs/openMVG/openMVG/geometry/pose3.hpp
+index 0f8ff2a..c4dd5ff 100644
+--- a/libs/openMVG/openMVG/geometry/pose3.hpp
++++ b/libs/openMVG/openMVG/geometry/pose3.hpp
+@@ -8,7 +8,9 @@
+ #define OPENMVG_GEOMETRY_POSE3_H_
+ 
+ #include "openMVG/multiview/projection.hpp"
++#ifndef OPENMVG_NO_SERIALIZATION
+ #include <cereal/cereal.hpp> // Serialization
++#endif
+ 
+ namespace openMVG {
+ namespace geometry {
+@@ -56,7 +58,7 @@ class Pose3
+     double depth(const Vec3 &X) const {
+       return (_rotation * (X - _center))[2];
+     }
+-
++#ifndef OPENMVG_NO_SERIALIZATION
+     // Serialization
+     template <class Archive>
+     void save( Archive & ar) const
+@@ -88,6 +90,7 @@ class Pose3
+       ar(cereal::make_nvp("center", vec));
+       _center = Eigen::Map<const Vec3>(&vec[0]);
+     }
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
+ };
+ } // namespace geometry
+ } // namespace openMVG
+diff --git a/libs/openMVG/openMVG/matching/cascade_hasher.hpp b/libs/openMVG/openMVG/matching/cascade_hasher.hpp
+index dc22ff7..28757c6 100644
+--- a/libs/openMVG/openMVG/matching/cascade_hasher.hpp
++++ b/libs/openMVG/openMVG/matching/cascade_hasher.hpp
+@@ -309,7 +309,7 @@ public:
+         const uint16_t bucket_id = hashed_desc.bucket_ids[j];
+         for (const auto& feature_id : hashed_descriptions2.buckets[j][bucket_id])
+         {
+-          candidate_descriptors.emplace_back(feature_id);
++          candidate_descriptors.push_back(feature_id);
+           used_descriptor[feature_id] = false;
+         }
+       }
+@@ -354,7 +354,7 @@ public:
+             descriptions1.row(i).data(),
+             descriptions1.cols());
+ 
+-          candidate_euclidean_distances.emplace_back(distance, candidate_id);
++          candidate_euclidean_distances.push_back(std::make_pair(distance, candidate_id));
+         }
+       }
+ 
+@@ -368,8 +368,8 @@ public:
+         // save resulting neighbors
+         for (int l = 0; l < NN; ++l)
+         {
+-          pvec_distances->emplace_back(candidate_euclidean_distances[l].first);
+-          pvec_indices->emplace_back(IndMatch(i,candidate_euclidean_distances[l].second));
++          pvec_distances->push_back(candidate_euclidean_distances[l].first);
++          pvec_indices->push_back(IndMatch(i,candidate_euclidean_distances[l].second));
+         }
+       }
+       //else -> too few candidates... (save no one)
+diff --git a/libs/openMVG/openMVG/matching/matcher_kdtree_flann.hpp b/libs/openMVG/openMVG/matching/matcher_kdtree_flann.hpp
+index e719af3..0e6e706 100644
+--- a/libs/openMVG/openMVG/matching/matcher_kdtree_flann.hpp
++++ b/libs/openMVG/openMVG/matching/matcher_kdtree_flann.hpp
+@@ -136,8 +136,8 @@ class ArrayMatcher_Kdtree_Flann : public ArrayMatcher<Scalar, Metric>
+           {
+             if (indices[i] > 0)
+             {
+-              pvec_indices->emplace_back(IndMatch(i, vec_indices[i*NN+j]));
+-              pvec_distances->emplace_back(vec_distances[i*NN+j]);
++              pvec_indices->push_back(IndMatch(i, vec_indices[i*NN+j]));
++              pvec_distances->push_back(vec_distances[i*NN+j]);
+             }
+           }
+         }
+diff --git a/libs/openMVG/openMVG/matching/regions_matcher.hpp b/libs/openMVG/openMVG/matching/regions_matcher.hpp
+index fd78f5b..84c0275 100644
+--- a/libs/openMVG/openMVG/matching/regions_matcher.hpp
++++ b/libs/openMVG/openMVG/matching/regions_matcher.hpp
+@@ -168,7 +168,7 @@ public:
+     for (size_t k=0; k < vec_nn_ratio_idx.size(); ++k)
+     {
+       const size_t index = vec_nn_ratio_idx[k];
+-      vec_putative_matches.emplace_back(vec_nIndice[index*NNN__]._j, vec_nIndice[index*NNN__]._i);
++      vec_putative_matches.push_back(matching::IndMatch(vec_nIndice[index*NNN__]._j, vec_nIndice[index*NNN__]._i));
+     }
+ 
+     // Remove duplicates
+diff --git a/libs/openMVG/openMVG/matching_image_collection/Cascade_Hashing_Matcher_Regions_AllInMemory.cpp b/libs/openMVG/openMVG/matching_image_collection/Cascade_Hashing_Matcher_Regions_AllInMemory.cpp
+index 7c77e1f..459c0b5 100644
+--- a/libs/openMVG/openMVG/matching_image_collection/Cascade_Hashing_Matcher_Regions_AllInMemory.cpp
++++ b/libs/openMVG/openMVG/matching_image_collection/Cascade_Hashing_Matcher_Regions_AllInMemory.cpp
+@@ -9,8 +9,9 @@
+ #include "openMVG/matching/matcher_cascade_hashing.hpp"
+ #include "openMVG/matching/indMatchDecoratorXY.hpp"
+ #include "openMVG/matching/matching_filters.hpp"
+-
++#ifndef OPENMVG_NO_SERIALIZATION
+ #include "third_party/stlplus3/filesystemSimplified/file_system.hpp"
++#endif
+ #include "third_party/progress/progress.hpp"
+ 
+ namespace openMVG {
+@@ -190,7 +191,7 @@ void Match
+       for (size_t k=0; k < vec_nn_ratio_idx.size(); ++k)
+       {
+         const size_t index = vec_nn_ratio_idx[k];
+-        vec_putative_matches.emplace_back(pvec_indices[index*2]._j, pvec_indices[index*2]._i);
++        vec_putative_matches.push_back(matching::IndMatch(pvec_indices[index*2]._j, pvec_indices[index*2]._i));
+       }
+ 
+       // Remove duplicates
+diff --git a/libs/openMVG/openMVG/matching_image_collection/GeometricFilter.hpp b/libs/openMVG/openMVG/matching_image_collection/GeometricFilter.hpp
+index 8218aa1..9031235 100644
+--- a/libs/openMVG/openMVG/matching_image_collection/GeometricFilter.hpp
++++ b/libs/openMVG/openMVG/matching_image_collection/GeometricFilter.hpp
+@@ -10,8 +10,9 @@
+ #include "openMVG/features/feature.hpp"
+ #include "openMVG/sfm/pipelines/sfm_regions_provider.hpp"
+ #include "openMVG/matching/indMatch.hpp"
+-
++#ifndef OPENMVG_NO_SERIALIZATION
+ #include "third_party/stlplus3/filesystemSimplified/file_system.hpp"
++#endif
+ #include "third_party/progress/progress.hpp"
+ 
+ #include <vector>
+diff --git a/libs/openMVG/openMVG/matching_image_collection/Matcher_Regions_AllInMemory.cpp b/libs/openMVG/openMVG/matching_image_collection/Matcher_Regions_AllInMemory.cpp
+index faaaac0..975c214 100644
+--- a/libs/openMVG/openMVG/matching_image_collection/Matcher_Regions_AllInMemory.cpp
++++ b/libs/openMVG/openMVG/matching_image_collection/Matcher_Regions_AllInMemory.cpp
+@@ -12,7 +12,10 @@
+ #include "openMVG/matching/regions_matcher.hpp"
+ #include "openMVG/matching_image_collection/Matcher.hpp"
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
+ #include "third_party/stlplus3/filesystemSimplified/file_system.hpp"
++#endif
++
+ #include "third_party/progress/progress.hpp"
+ 
+ namespace openMVG {
+diff --git a/libs/openMVG/openMVG/sfm/pipelines/global/GlobalSfM_translation_averaging.cpp b/libs/openMVG/openMVG/sfm/pipelines/global/GlobalSfM_translation_averaging.cpp
+index d33e255..6845398 100644
+--- a/libs/openMVG/openMVG/sfm/pipelines/global/GlobalSfM_translation_averaging.cpp
++++ b/libs/openMVG/openMVG/sfm/pipelines/global/GlobalSfM_translation_averaging.cpp
+@@ -25,7 +25,9 @@
+ #include "openMVG/sfm/pipelines/global/triplet_t_ACRansac_kernelAdaptator.hpp"
+ #include "third_party/histogram/histogram.hpp"
+ #include "third_party/progress/progress.hpp"
++#ifndef OPENMVG_NO_SERIALIZATION
+ #include "third_party/stlplus3/filesystemSimplified/file_system.hpp"
++#endif
+ 
+ namespace openMVG{
+ namespace sfm{
+diff --git a/libs/openMVG/openMVG/sfm/pipelines/global/sfm_global_engine_relative_motions.cpp b/libs/openMVG/openMVG/sfm/pipelines/global/sfm_global_engine_relative_motions.cpp
+index f27e855..f6fbed6 100644
+--- a/libs/openMVG/openMVG/sfm/pipelines/global/sfm_global_engine_relative_motions.cpp
++++ b/libs/openMVG/openMVG/sfm/pipelines/global/sfm_global_engine_relative_motions.cpp
+@@ -214,6 +214,8 @@ bool GlobalSfMReconstructionEngine_RelativeMotions::Compute_Global_Rotations
+ 
+   if (b_rotation_averaging)
+   {
++      
++#ifndef OPENMVG_NO_SERIALIZATION
+     // Log input graph to the HTML report
+     if (!_sLoggingFile.empty() && !_sOutDirectory.empty())
+     {
+@@ -243,6 +245,7 @@ bool GlobalSfMReconstructionEngine_RelativeMotions::Compute_Global_Rotations
+         _htmlDocStream->pushInfo(os.str());
+       }
+     }
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
+   }
+ 
+   return b_rotation_averaging;
+@@ -265,13 +268,14 @@ bool GlobalSfMReconstructionEngine_RelativeMotions::Compute_Global_Translations
+     global_rotations,
+     tripletWise_matches);
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
+   if (!_sLoggingFile.empty())
+   {
+     Save(_sfm_data,
+       stlplus::create_filespec(stlplus::folder_part(_sLoggingFile), "cameraPath_translation_averaging", "ply"),
+       ESfM_Data(EXTRINSICS));
+   }
+-
++#endif
+   return bTranslationAveraging;
+ }
+ 
+@@ -365,6 +369,7 @@ bool GlobalSfMReconstructionEngine_RelativeMotions::Compute_Initial_Structure
+       trackCountBefore - IndexT(_sfm_data.GetLandmarks().size()) << std::endl;
+     std::cout << std::endl << "  Triangulation took (s): " << timer.elapsed() << std::endl;
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
+     // Export initial structure
+     if (!_sLoggingFile.empty())
+     {
+@@ -372,7 +377,9 @@ bool GlobalSfMReconstructionEngine_RelativeMotions::Compute_Initial_Structure
+         stlplus::create_filespec(stlplus::folder_part(_sLoggingFile), "initial_structure", "ply"),
+         ESfM_Data(EXTRINSICS | STRUCTURE));
+     }
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
+   }
++    
+   return !_sfm_data.structure.empty();
+ }
+ 
+@@ -386,32 +393,39 @@ bool GlobalSfMReconstructionEngine_RelativeMotions::Adjust()
+   bool b_BA_Status = bundle_adjustment_obj.Adjust(_sfm_data, false, true, false);
+   if (b_BA_Status)
+   {
++#ifndef OPENMVG_NO_SERIALIZATION
+     if (!_sLoggingFile.empty())
+     {
+       Save(_sfm_data,
+         stlplus::create_filespec(stlplus::folder_part(_sLoggingFile), "structure_00_refine_T_Xi", "ply"),
+         ESfM_Data(EXTRINSICS | STRUCTURE));
+     }
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
+ 
+     // - refine only Structure and Rotations & translations
+     b_BA_Status = bundle_adjustment_obj.Adjust(_sfm_data, true, true, false);
++#ifndef OPENMVG_NO_SERIALIZATION
+     if (b_BA_Status && !_sLoggingFile.empty())
+     {
+       Save(_sfm_data,
+         stlplus::create_filespec(stlplus::folder_part(_sLoggingFile), "structure_01_refine_RT_Xi", "ply"),
+         ESfM_Data(EXTRINSICS | STRUCTURE));
+     }
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
+   }
+ 
+   if (b_BA_Status && !_bFixedIntrinsics) {
+     // - refine all: Structure, motion:{rotations, translations} and optics:{intrinsics}
+     b_BA_Status = bundle_adjustment_obj.Adjust(_sfm_data, true, true, true);
++      
++#ifndef OPENMVG_NO_SERIALIZATION
+     if (b_BA_Status && !_sLoggingFile.empty())
+     {
+       Save(_sfm_data,
+         stlplus::create_filespec(stlplus::folder_part(_sLoggingFile), "structure_02_refine_KRT_Xi", "ply"),
+         ESfM_Data(EXTRINSICS | STRUCTURE));
+     }
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
+   }
+ 
+   // Remove outliers (max_angle, residual error)
+@@ -425,12 +439,14 @@ bool GlobalSfMReconstructionEngine_RelativeMotions::Adjust()
+     << "\t\t pixel residual filter  #3DPoints: " << pointcount_pixelresidual_filter << "\n"
+     << "\t\t angular filter         #3DPoints: " << pointcount_angular_filter << std::endl;
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
+   if (!_sLoggingFile.empty())
+   {
+     Save(_sfm_data,
+       stlplus::create_filespec(stlplus::folder_part(_sLoggingFile), "structure_03_outlier_removed", "ply"),
+       ESfM_Data(EXTRINSICS | STRUCTURE));
+   }
++#endif//#ifndef OPENMVG_NO_SERIALIZATION
+ 
+   // Check that poses & intrinsic cover some measures (after outlier removal)
+   const IndexT minPointPerPose = 12; // 6 min
+@@ -445,13 +461,14 @@ bool GlobalSfMReconstructionEngine_RelativeMotions::Adjust()
+   }
+ 
+   b_BA_Status = bundle_adjustment_obj.Adjust(_sfm_data, true, true, !_bFixedIntrinsics);
++#ifndef OPENMVG_NO_SERIALIZATION
+   if (b_BA_Status && !_sLoggingFile.empty())
+   {
+     Save(_sfm_data,
+       stlplus::create_filespec(stlplus::folder_part(_sLoggingFile), "structure_04_outlier_removed", "ply"),
+       ESfM_Data(EXTRINSICS | STRUCTURE));
+   }
+-
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
+   return b_BA_Status;
+ }
+ 
+@@ -635,6 +652,8 @@ void GlobalSfMReconstructionEngine_RelativeMotions::Compute_Relative_Rotations
+     }
+   }
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
++
+   // Log input graph to the HTML report
+   if (!_sLoggingFile.empty() && !_sOutDirectory.empty())
+   {
+@@ -676,6 +695,8 @@ void GlobalSfMReconstructionEngine_RelativeMotions::Compute_Relative_Rotations
+       _htmlDocStream->pushInfo(os.str());
+     }
+   }
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
++
+ }
+ 
+ } // namespace sfm
+diff --git a/libs/openMVG/openMVG/sfm/pipelines/sequential/sequential_SfM.cpp b/libs/openMVG/openMVG/sfm/pipelines/sequential/sequential_SfM.cpp
+index c01dec3..e999997 100644
+--- a/libs/openMVG/openMVG/sfm/pipelines/sequential/sequential_SfM.cpp
++++ b/libs/openMVG/openMVG/sfm/pipelines/sequential/sequential_SfM.cpp
+@@ -130,11 +130,12 @@ bool SequentialSfMReconstructionEngine::Process() {
+ 
+     if (bImageAdded)
+     {
++#ifndef OPENMVG_NO_SERIALIZATION
+       // Scene logging as ply for visual debug
+       std::ostringstream os;
+       os << std::setw(8) << std::setfill('0') << resectionGroupIndex << "_Resection";
+       Save(_sfm_data, stlplus::create_filespec(_sOutDirectory, os.str(), ".ply"), ESfM_Data(ALL));
+-
++#endif
+       // Perform BA until all point are under the given precision
+       do
+       {
+@@ -583,8 +584,10 @@ bool SequentialSfMReconstructionEngine::MakeInitialPair3D(const Pair & current_p
+       landmarks[iterT->first].obs = std::move(obs);
+       landmarks[iterT->first].X = X;
+     }
++#ifndef OPENMVG_NO_SERIALIZATION
+     Save(tiny_scene, stlplus::create_filespec(_sOutDirectory, "initialPair.ply"), ESfM_Data(ALL));
+-
++#endif
++      
+     // - refine only Structure and Rotations & translations (keep intrinsic constant)
+     Bundle_Adjustment_Ceres::BA_options options(true, false);
+     options._linear_solver_type = ceres::DENSE_SCHUR;
+@@ -683,9 +686,11 @@ bool SequentialSfMReconstructionEngine::MakeInitialPair3D(const Pair & current_p
+ 
+       _htmlDocStream->pushInfo("<hr>");
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
+       ofstream htmlFileStream( string(stlplus::folder_append_separator(_sOutDirectory) +
+         "Reconstruction_Report.html").c_str());
+       htmlFileStream << _htmlDocStream->getDoc();
++#endif
+     }
+   }
+   return !_sfm_data.structure.empty();
+diff --git a/libs/openMVG/openMVG/sfm/pipelines/sfm_features_provider.hpp b/libs/openMVG/openMVG/sfm/pipelines/sfm_features_provider.hpp
+index a892791..84cffa8 100644
+--- a/libs/openMVG/openMVG/sfm/pipelines/sfm_features_provider.hpp
++++ b/libs/openMVG/openMVG/sfm/pipelines/sfm_features_provider.hpp
+@@ -25,6 +25,8 @@ struct Features_Provider
+   /// PointFeature array per ViewId of the considered SfM_Data container
+   Hash_Map<IndexT, features::PointFeatures> feats_per_view;
+ 
++    
++#ifndef OPENMVG_NO_SERIALIZATION
+   virtual bool load(
+     const SfM_Data & sfm_data,
+     const std::string & feat_directory,
+@@ -69,7 +71,8 @@ struct Features_Provider
+     }
+     return bContinue;
+   }
+-
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
++    
+   /// Return the PointFeatures belonging to the View, if the view does not exist
+   ///  it return an empty PointFeature array.
+   const features::PointFeatures & getFeatures(const IndexT & id_view) const
+diff --git a/libs/openMVG/openMVG/sfm/pipelines/sfm_matches_provider.hpp b/libs/openMVG/openMVG/sfm/pipelines/sfm_matches_provider.hpp
+index 8cb3de5..c54bb1a 100644
+--- a/libs/openMVG/openMVG/sfm/pipelines/sfm_matches_provider.hpp
++++ b/libs/openMVG/openMVG/sfm/pipelines/sfm_matches_provider.hpp
+@@ -20,6 +20,7 @@ struct Matches_Provider
+ {
+   matching::PairWiseMatches _pairWise_matches;
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
+   // Load matches from the provided matches file
+   virtual bool load(const SfM_Data & sfm_data, const std::string & matchesfile)
+   {
+@@ -51,6 +52,7 @@ struct Matches_Provider
+     }
+     return true;
+   }
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
+ 
+   /// Return the pairs used by the visibility graph defined by the pairwiser matches
+   virtual Pair_Set getPairs() const
+diff --git a/libs/openMVG/openMVG/sfm/pipelines/sfm_regions_provider.hpp b/libs/openMVG/openMVG/sfm/pipelines/sfm_regions_provider.hpp
+index 87163a9..70863ee 100644
+--- a/libs/openMVG/openMVG/sfm/pipelines/sfm_regions_provider.hpp
++++ b/libs/openMVG/openMVG/sfm/pipelines/sfm_regions_provider.hpp
+@@ -26,6 +26,8 @@ struct Regions_Provider
+   /// Regions per ViewId of the considered SfM_Data container
+   Hash_Map<IndexT, std::unique_ptr<features::Regions> > regions_per_view;
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
++    
+   // Load Regions related to a provided SfM_Data View container
+   virtual bool load(
+     const SfM_Data & sfm_data,
+@@ -72,6 +74,8 @@ struct Regions_Provider
+     return true;
+   }
+ 
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
++    
+ }; // Regions_Provider
+ 
+ } // namespace sfm
+diff --git a/libs/openMVG/openMVG/sfm/sfm_data_io.cpp b/libs/openMVG/openMVG/sfm/sfm_data_io.cpp
+index 32efa74..d333413 100644
+--- a/libs/openMVG/openMVG/sfm/sfm_data_io.cpp
++++ b/libs/openMVG/openMVG/sfm/sfm_data_io.cpp
+@@ -5,7 +5,7 @@
+ // License, v. 2.0. If a copy of the MPL was not distributed with this
+ // file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ 
+-
++#ifndef OPENMVG_NO_SERIALIZATION
+ #include "openMVG/sfm/sfm_data_io.hpp"
+ 
+ #include "openMVG/stl/stlMap.hpp"
+@@ -106,4 +106,4 @@ bool Save(const SfM_Data & sfm_data, const std::string & filename, ESfM_Data fla
+ } // namespace sfm
+ } // namespace openMVG
+ 
+-
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
+diff --git a/libs/openMVG/openMVG/sfm/sfm_data_io_baf.hpp b/libs/openMVG/openMVG/sfm/sfm_data_io_baf.hpp
+index 6e01196..e0ece27 100644
+--- a/libs/openMVG/openMVG/sfm/sfm_data_io_baf.hpp
++++ b/libs/openMVG/openMVG/sfm/sfm_data_io_baf.hpp
+@@ -8,6 +8,8 @@
+ #ifndef OPENMVG_SFM_DATA_IO_BAF_HPP
+ #define OPENMVG_SFM_DATA_IO_BAF_HPP
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
++
+ #include "openMVG/sfm/sfm_data_io.hpp"
+ #include <fstream>
+ 
+@@ -141,4 +143,6 @@ static bool Save_BAF(
+ } // namespace sfm
+ } // namespace openMVG
+ 
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
++
+ #endif // OPENMVG_SFM_DATA_IO_PLY_HPP
+diff --git a/libs/openMVG/openMVG/sfm/sfm_data_io_cereal.hpp b/libs/openMVG/openMVG/sfm/sfm_data_io_cereal.hpp
+index 99a3f09..77ef4bb 100644
+--- a/libs/openMVG/openMVG/sfm/sfm_data_io_cereal.hpp
++++ b/libs/openMVG/openMVG/sfm/sfm_data_io_cereal.hpp
+@@ -9,6 +9,8 @@
+ #ifndef OPENMVG_SFM_DATA_IO_CEREAL_HPP
+ #define OPENMVG_SFM_DATA_IO_CEREAL_HPP
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
++
+ #include "openMVG/sfm/sfm_data_io.hpp"
+ 
+ #include <cereal/archives/portable_binary.hpp>
+@@ -174,4 +176,6 @@ bool Save_Cereal(
+ } // namespace sfm
+ } // namespace openMVG
+ 
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
++
+ #endif // OPENMVG_SFM_DATA_IO_CEREAL_HPP
+diff --git a/libs/openMVG/openMVG/sfm/sfm_landmark.hpp b/libs/openMVG/openMVG/sfm/sfm_landmark.hpp
+index 58b5530..940dc95 100644
+--- a/libs/openMVG/openMVG/sfm/sfm_landmark.hpp
++++ b/libs/openMVG/openMVG/sfm/sfm_landmark.hpp
+@@ -8,7 +8,10 @@
+ #define OPENMVG_SFM_LANDMARK_HPP
+ 
+ #include "openMVG/numeric/numeric.h"
++
++#ifndef OPENMVG_NO_SERIALIZATION
+ #include <cereal/cereal.hpp> // Serialization
++#endif
+ 
+ namespace openMVG {
+ namespace sfm {
+@@ -22,6 +25,7 @@ struct Observation
+   Vec2 x;
+   IndexT id_feat;
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
+   // Serialization
+   template <class Archive>
+   void save( Archive & ar) const
+@@ -40,6 +44,7 @@ struct Observation
+     ar(cereal::make_nvp("x", p));
+     x = Eigen::Map<const Vec2>(&p[0]);
+   }
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
+ };
+ /// Observations are indexed by their View_id
+ typedef Hash_Map<IndexT, Observation> Observations;
+@@ -50,6 +55,7 @@ struct Landmark
+   Observations obs;
+   Vec3 X;
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
+   // Serialization
+   template <class Archive>
+   void save( Archive & ar) const
+@@ -67,6 +73,7 @@ struct Landmark
+     X = Eigen::Map<const Vec3>(&point[0]);
+     ar(cereal::make_nvp("observations", obs));
+   }
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
+ };
+ 
+ } // namespace sfm
+diff --git a/libs/openMVG/openMVG/sfm/sfm_report.hpp b/libs/openMVG/openMVG/sfm/sfm_report.hpp
+index c38ea82..76dec78 100644
+--- a/libs/openMVG/openMVG/sfm/sfm_report.hpp
++++ b/libs/openMVG/openMVG/sfm/sfm_report.hpp
+@@ -7,6 +7,8 @@
+ #ifndef OPENMVG_SFM_REPORT_HPP
+ #define OPENMVG_SFM_REPORT_HPP
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
++
+ #include "third_party/stlplus3/filesystemSimplified/file_system.hpp"
+ #include "third_party/htmlDoc/htmlDoc.hpp"
+ #include "third_party/histogram/histogram.hpp"
+@@ -177,4 +179,6 @@ static bool Generate_SfM_Report
+ } // namespace sfm
+ } // namespace openMVG
+ 
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
++
+ #endif // OPENMVG_SFM_REPORT_HPP
+diff --git a/libs/openMVG/openMVG/sfm/sfm_view.hpp b/libs/openMVG/openMVG/sfm/sfm_view.hpp
+index d45991d..fefa7ca 100644
+--- a/libs/openMVG/openMVG/sfm/sfm_view.hpp
++++ b/libs/openMVG/openMVG/sfm/sfm_view.hpp
+@@ -7,8 +7,11 @@
+ #ifndef OPENMVG_SFM_VIEW_HPP
+ #define OPENMVG_SFM_VIEW_HPP
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
++
+ #include "third_party/stlplus3/filesystemSimplified/file_system.hpp"
+ #include <cereal/cereal.hpp> // Serialization
++#endif
+ 
+ namespace openMVG {
+ namespace sfm {
+@@ -39,6 +42,7 @@ struct View
+     id_pose(pose_id), ui_width(width), ui_height(height)
+     {}
+ 
++#ifndef OPENMVG_NO_SERIALIZATION
+   // Serialization
+   template <class Archive>
+   void serialize( Archive & ar )
+@@ -58,6 +62,7 @@ struct View
+ 
+     s_Img_path = stlplus::create_filespec(local_path, filename);
+   }
++#endif // #ifndef OPENMVG_NO_SERIALIZATION
+ };
+ 
+ } // namespace sfm

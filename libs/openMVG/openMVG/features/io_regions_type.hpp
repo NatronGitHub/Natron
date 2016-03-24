@@ -8,8 +8,10 @@
 #ifndef IO_REGIONS_TYPE_HPP
 #define IO_REGIONS_TYPE_HPP
 
+#ifndef OPENMVG_NO_SERIALIZATION
 #include "openMVG/features/features.hpp"
 #include "third_party/stlplus3/filesystemSimplified/file_system.hpp"
+
 #include <cereal/archives/json.hpp>
 
 #include <fstream>
@@ -45,5 +47,9 @@ static std::unique_ptr<features::Regions> Init_region_type_from_file
 
 } // namespace features
 } // namespace openMVG
+
+
+
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
 
 #endif // IO_REGIONS_TYPE_HPP

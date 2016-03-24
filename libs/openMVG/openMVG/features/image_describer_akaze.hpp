@@ -16,7 +16,10 @@
 #include "openMVG/features/akaze/msurf_descriptor.hpp"
 #include "openMVG/features/akaze/mldb_descriptor.hpp"
 #include "openMVG/features/liop/liop_descriptor.hpp"
+
+#ifndef OPENMVG_NO_SERIALIZATION
 #include <cereal/cereal.hpp>
+#endif
 
 using namespace std;
 
@@ -259,7 +262,7 @@ public:
       break;
     }
   }
-
+#ifndef OPENMVG_NO_SERIALIZATION
   template<class Archive>
   void serialize(Archive & ar)
   {
@@ -267,6 +270,7 @@ public:
      cereal::make_nvp("params", _params),
      cereal::make_nvp("bOrientation", _bOrientation));
   }
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
 
 
 private:
@@ -277,8 +281,10 @@ private:
 } // namespace features
 } // namespace openMVG
 
+#ifndef OPENMVG_NO_SERIALIZATION
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/archives/json.hpp>
 CEREAL_REGISTER_TYPE_WITH_NAME(openMVG::features::AKAZE_Image_describer, "AKAZE_Image_describer");
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
 
 #endif // OPENMVG_FEATURES_AKAZE_IMAGE_DESCRIBER_HPP

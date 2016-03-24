@@ -127,7 +127,7 @@ class Pinhole_Intrinsic_Radial_K1 : public Pinhole_Intrinsic
   {
     return cam2ima( add_disto(ima2cam(p)) );
   }
-
+#ifndef OPENMVG_NO_SERIALIZATION
   // Serialization
   template <class Archive>
   void save( Archive & ar) const
@@ -143,7 +143,7 @@ class Pinhole_Intrinsic_Radial_K1 : public Pinhole_Intrinsic
     Pinhole_Intrinsic::load(ar);
     ar(cereal::make_nvp("disto_k1", _params));
   }
-
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
   private:
 
   /// Functor to solve Square(disto(radius(p'))) = r^2
@@ -242,6 +242,7 @@ class Pinhole_Intrinsic_Radial_K3 : public Pinhole_Intrinsic
     return cam2ima( add_disto(ima2cam(p)) );
   }
 
+#ifndef OPENMVG_NO_SERIALIZATION
   // Serialization
   template <class Archive>
   void save( Archive & ar) const
@@ -257,7 +258,7 @@ class Pinhole_Intrinsic_Radial_K3 : public Pinhole_Intrinsic
     Pinhole_Intrinsic::load(ar);
     ar(cereal::make_nvp("disto_k3", _params));
   }
-
+#endif // OPENMVG_NO_SERIALIZATION
   private:
 
   /// Functor to solve Square(disto(radius(p'))) = r^2
@@ -271,11 +272,13 @@ class Pinhole_Intrinsic_Radial_K3 : public Pinhole_Intrinsic
 } // namespace cameras
 } // namespace openMVG
 
+#ifndef OPENMVG_NO_SERIALIZATION
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 
 CEREAL_REGISTER_TYPE_WITH_NAME(openMVG::cameras::Pinhole_Intrinsic_Radial_K1, "pinhole_radial_k1");
 CEREAL_REGISTER_TYPE_WITH_NAME(openMVG::cameras::Pinhole_Intrinsic_Radial_K3, "pinhole_radial_k3");
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
 
 #endif // #ifndef OPENMVG_CAMERA_PINHOLE_RADIAL_K_HPP
 

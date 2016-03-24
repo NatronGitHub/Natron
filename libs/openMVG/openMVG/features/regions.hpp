@@ -12,7 +12,11 @@
 #include "openMVG/features/feature.hpp"
 #include "openMVG/features/descriptor.hpp"
 #include "openMVG/matching/metric.hpp"
+
+#ifndef OPENMVG_NO_SERIALIZATION
 #include "cereal/types/vector.hpp"
+#endif 
+
 #include <string>
 #include <typeinfo>
 

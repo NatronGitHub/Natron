@@ -5,7 +5,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-
+#ifndef OPENMVG_NO_SERIALIZATION
 #include "openMVG/sfm/sfm_data_io.hpp"
 
 #include "openMVG/stl/stlMap.hpp"
@@ -106,4 +106,4 @@ bool Save(const SfM_Data & sfm_data, const std::string & filename, ESfM_Data fla
 } // namespace sfm
 } // namespace openMVG
 
-
+#endif // #ifndef OPENMVG_NO_SERIALIZATION

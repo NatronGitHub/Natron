@@ -34,7 +34,11 @@ class Pinhole_Intrinsic_Brown_T2 : public Pinhole_Intrinsic
         double t1 = 0.0, double t2 = 0.0)
             :Pinhole_Intrinsic(w, h, focal, ppx, ppy)
     {
-        _params = {k1, k2, k3, t1, t2};
+        _params.push_back(k1);
+        _params.push_back(k2);
+        _params.push_back(k3);
+        _params.push_back(t1);
+        _params.push_back(t2);
     }
 
     EINTRINSIC getType() const { return PINHOLE_CAMERA_BROWN; }
@@ -100,7 +104,7 @@ class Pinhole_Intrinsic_Brown_T2 : public Pinhole_Intrinsic
     {
       return cam2ima( add_disto(ima2cam(p)) );
     }
-
+#ifndef OPENMVG_NO_SERIALIZATION
     // Serialization
     template <class Archive>
     void save( Archive & ar) const
@@ -116,7 +120,7 @@ class Pinhole_Intrinsic_Brown_T2 : public Pinhole_Intrinsic
       Pinhole_Intrinsic::load(ar);
       ar(cereal::make_nvp("disto_t2", _params));
     }
-
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
     private:
 
     /// Functor to calculate distortion offset accounting for both radial and tangential distortion
@@ -138,9 +142,11 @@ class Pinhole_Intrinsic_Brown_T2 : public Pinhole_Intrinsic
 } // namespace cameras
 } // namespace openMVG
 
+#ifndef OPENMVG_NO_SERIALIZATION
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 
 CEREAL_REGISTER_TYPE_WITH_NAME(openMVG::cameras::Pinhole_Intrinsic_Brown_T2, "pinhole_brown_t2");
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
 
 #endif // #ifndef OPENMVG_CAMERA_PINHOLE_RADIAL_K_HPP

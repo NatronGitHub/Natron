@@ -20,6 +20,7 @@ struct Matches_Provider
 {
   matching::PairWiseMatches _pairWise_matches;
 
+#ifndef OPENMVG_NO_SERIALIZATION
   // Load matches from the provided matches file
   virtual bool load(const SfM_Data & sfm_data, const std::string & matchesfile)
   {
@@ -51,6 +52,7 @@ struct Matches_Provider
     }
     return true;
   }
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
 
   /// Return the pairs used by the visibility graph defined by the pairwiser matches
   virtual Pair_Set getPairs() const

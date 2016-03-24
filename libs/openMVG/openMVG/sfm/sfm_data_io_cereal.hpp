@@ -9,6 +9,8 @@
 #ifndef OPENMVG_SFM_DATA_IO_CEREAL_HPP
 #define OPENMVG_SFM_DATA_IO_CEREAL_HPP
 
+#ifndef OPENMVG_NO_SERIALIZATION
+
 #include "openMVG/sfm/sfm_data_io.hpp"
 
 #include <cereal/archives/portable_binary.hpp>
@@ -173,5 +175,7 @@ bool Save_Cereal(
 
 } // namespace sfm
 } // namespace openMVG
+
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
 
 #endif // OPENMVG_SFM_DATA_IO_CEREAL_HPP

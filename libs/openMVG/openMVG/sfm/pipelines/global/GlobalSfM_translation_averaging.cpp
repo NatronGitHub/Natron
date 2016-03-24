@@ -25,7 +25,9 @@
 #include "openMVG/sfm/pipelines/global/triplet_t_ACRansac_kernelAdaptator.hpp"
 #include "third_party/histogram/histogram.hpp"
 #include "third_party/progress/progress.hpp"
+#ifndef OPENMVG_NO_SERIALIZATION
 #include "third_party/stlplus3/filesystemSimplified/file_system.hpp"
+#endif
 
 namespace openMVG{
 namespace sfm{

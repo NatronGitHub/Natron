@@ -12,7 +12,10 @@
 #include "openMVG/features/regions.hpp"
 #include "openMVG/image/image_container.hpp"
 #include <memory>
+
+#ifndef OPENMVG_NO_SERIALIZATION
 #include <cereal/cereal.hpp> // Serialization
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
 
 namespace openMVG {
 namespace features {
@@ -51,6 +54,7 @@ public:
   /// Allocate regions depending of the Image_describer
   virtual void Allocate(std::unique_ptr<Regions> &regions) const = 0;
 
+#ifndef OPENMVG_NO_SERIALIZATION
   //--
   // IO - one file for region features, one file for region descriptors
   //--
@@ -68,6 +72,7 @@ public:
   {
     return regions->Save(sfileNameFeats, sfileNameDescs);
   };
+#endif // #ifndef OPENMVG_NO_SERIALIZATION
 
   virtual bool LoadFeatures(Regions * regions,
     const std::string& sfileNameFeats) const
