@@ -157,9 +157,9 @@ HEADERS += \
         ../libs/openMVG/openMVG/matching/indMatch_utils.hpp \
         ../libs/openMVG/openMVG/matching/indMatch.hpp \
         ../libs/openMVG/openMVG/matching/indMatchDecoratorXY.hpp \
-        ../libs/openMVG/openMVG/matching/kvld/algorithm.hpp \
-        ../libs/openMVG/openMVG/matching/kvld/kvld_draw.hpp \
-        ../libs/openMVG/openMVG/matching/kvld/kvld.hpp \
+        ../libs/openMVG/openMVG/matching/kvld/algorithm.h \
+        ../libs/openMVG/openMVG/matching/kvld/kvld_draw.h \
+        ../libs/openMVG/openMVG/matching/kvld/kvld.h \
         ../libs/openMVG/openMVG/matching/matcher_brute_force.hpp \
         ../libs/openMVG/openMVG/matching/matcher_cascade_hashing.hpp \
 #        ../libs/openMVG/openMVG/matching/matcher_kdtree_flann.hpp \
@@ -199,8 +199,8 @@ HEADERS += \
         ../libs/openMVG/openMVG/numeric/accumulator_trait.hpp \
         ../libs/openMVG/openMVG/numeric/lm.hpp \
         ../libs/openMVG/openMVG/numeric/math_trait.hpp \
-        ../libs/openMVG/openMVG/numeric/numeric.hpp \
-        ../libs/openMVG/openMVG/numeric/poly.hpp \
+        ../libs/openMVG/openMVG/numeric/numeric.h \
+        ../libs/openMVG/openMVG/numeric/poly.h \
         ../libs/openMVG/openMVG/robust_estimation/guided_matching.hpp \
         ../libs/openMVG/openMVG/robust_estimation/rand_sampling.hpp \
         ../libs/openMVG/openMVG/robust_estimation/robust_estimator_ACRansac.hpp \
