@@ -43,6 +43,7 @@
 #include "Engine/EngineFwd.h"
 #include "Engine/RectI.h"
 #include "Engine/ThreadPool.h"
+#include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER;
 
