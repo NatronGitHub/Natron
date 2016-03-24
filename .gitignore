@@ -13,6 +13,8 @@ build64
 sed*
 *latex*
 DerivedData
+ceres.xcodeproj
+openMVG.xcodeproj
 Natron.xcodeproj
 Natron-bin.xcodeproj
 NatronRenderer-bin.xcodeproj
