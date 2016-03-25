@@ -2070,7 +2070,13 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
     }
     
     std::string declarations = declarePythonVariables(false, dimension);
-    script = declarations + "\n" + expressionCopy + "\n" + script;
+    std::stringstream ss;
+    ss << "frame=0\n";
+    ss << "view=0\n";
+    ss << declarations << '\n';
+    ss << expressionCopy << '\n';
+    ss << script;
+    script = ss.str();
     ///This will register the listeners
     std::string error;
     bool ok = Python::interpretPythonScript(script, &error,NULL);
@@ -5274,7 +5280,6 @@ AnimatingKnobStringHelper::stringFromInterpolatedValue(double interpolated,
                                                        std::string* returnValue) const
 {
     assert(!view.isAll());
-    assert(!view.isCurrent()); // not yet implemented
     Q_UNUSED(view);
     _animation->stringFromInterpolatedIndex(interpolated, returnValue);
 }
