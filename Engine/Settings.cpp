@@ -157,20 +157,18 @@ Settings::initializeKnobsGeneral()
                                            "works correctly. Do not use this.");
     _generalTab->addKnob(_testCrashReportButton);
     
-    _wwwServerEnabled = AppManager::createKnob<KnobBool>(this, "Embedded webserver");
+    _wwwServerEnabled = AppManager::createKnob<KnobBool>(this, "Local webserver");
     _wwwServerEnabled->setName("webserverEnable");
     _wwwServerEnabled->setAnimationEnabled(false);
-    _wwwServerEnabled->setHintToolTip("Embedded webserver used for documentation.\n"
+    _wwwServerEnabled->setHintToolTip("Local webserver used for documentation.\n"
                                       "Changing this requires a restart of the application to take effect.");
 
-    _wwwServerPort = AppManager::createKnob<KnobInt>(this, "Webserver port");
+    /// used to store temp port for the webserver
+    _wwwServerPort = AppManager::createKnob<KnobInt>(this, "Local webserver port");
     _wwwServerPort->setName("webserverPort");
     _wwwServerPort->setAnimationEnabled(false);
-    _wwwServerPort->setHintToolTip("Port used by the webserver.\n"
-                                   "Changing this requires a restart of the application to take effect.");
 
     _generalTab->addKnob(_wwwServerEnabled);
-    _generalTab->addKnob(_wwwServerPort);
     
     _notifyOnFileChange = AppManager::createKnob<KnobBool>(this, "Warn when a file changes externally");
     _notifyOnFileChange->setName("warnOnExternalChange");
@@ -1933,11 +1931,6 @@ Settings::restoreSettings()
             saveSetting(_defaultAppearanceVersion.get());
         }
 
-        int serverPort = _wwwServerPort->getValue();
-        if (serverPort>0) {
-            saveSetting(_wwwServerPort.get());
-        }
-
         appPTR->setNThreadsPerEffect(getNumberOfThreadsPerEffect());
         appPTR->setNThreadsToRender(getNumberOfThreads());
         appPTR->setUseThreadPool(_useThreadPool->getValue());
@@ -2575,6 +2568,21 @@ Settings::isPluginDeactivated(const Plugin* p) const
         return false;
     }
     return !found->second.enabled->getValue();
+}
+
+bool Settings::isServerEnabled() const
+{
+    return _wwwServerEnabled->getValue();
+}
+
+int Settings::getServerPort() const
+{
+    return _wwwServerPort->getValue();
+}
+
+void Settings::setServerPort(int port) const
+{
+    _wwwServerPort->setValue(port);
 }
 
 int

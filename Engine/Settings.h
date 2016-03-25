@@ -353,6 +353,10 @@ public:
     std::string getUserStyleSheetFilePath() const;
     
     bool isPluginDeactivated(const Plugin* p) const;
+
+    bool isServerEnabled() const;
+    int getServerPort() const;
+    void setServerPort(int port) const;
     
 Q_SIGNALS:
     
