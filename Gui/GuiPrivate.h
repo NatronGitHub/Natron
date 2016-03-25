@@ -126,6 +126,7 @@ struct GuiPrivate
     QAction* actionHelpIssues;
     QAction* actionHelpPython;
     QAction* actionHelpWiki;
+    QAction* actionHelpDocumentation;
 
     ///the main "central" widget
     QWidget *_centralWidget;

@@ -635,6 +635,11 @@ Gui::createMenuActions()
     _imp->cacheMenu->addAction(_imp->actionClearPluginsLoadingCache);
 
     // Help menu
+    _imp->actionHelpDocumentation = new QAction(this);
+    _imp->actionHelpDocumentation->setText(QObject::tr("Documentation"));
+    _imp->menuHelp->addAction(_imp->actionHelpDocumentation);
+    QObject::connect( _imp->actionHelpDocumentation, SIGNAL(triggered()), this, SLOT(openHelpDocumentation()) );
+
     _imp->actionHelpWebsite = new QAction(this);
     _imp->actionHelpWebsite->setText(QObject::tr("Website"));
     _imp->menuHelp->addAction(_imp->actionHelpWebsite);
@@ -694,6 +699,20 @@ void
 Gui::openHelpWiki()
 {
     QDesktopServices::openUrl(QUrl(QString::fromUtf8(NATRON_WIKI_URL)));
+}
+
+void
+Gui::openHelpDocumentation()
+{
+    bool serverEnable = appPTR->getCurrentSettings()->isServerEnabled();
+    int serverPort = appPTR->getCurrentSettings()->getServerPort();
+    if (serverEnable) {
+        QString url = QString::fromUtf8("http://localhost:")+QString::number(serverPort);
+        QDesktopServices::openUrl(QUrl(url));
+    }
+    else {
+        QDesktopServices::openUrl(QUrl(QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE)));
+    }
 }
 
 void

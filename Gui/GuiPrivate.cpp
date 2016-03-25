@@ -197,6 +197,7 @@ GuiPrivate::GuiPrivate(GuiAppInstance* app,
 , actionHelpIssues(0)
 , actionHelpPython(0)
 , actionHelpWiki(0)
+, actionHelpDocumentation(0)
 , _centralWidget(0)
 , _mainLayout(0)
 , _lastLoadSequenceOpenedDir()

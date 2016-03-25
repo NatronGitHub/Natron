@@ -720,6 +720,7 @@ public Q_SLOTS:
     void openHelpIssues();
     void openHelpPython();
     void openHelpWiki();
+    void openHelpDocumentation();
 
 private:
 
