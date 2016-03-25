@@ -3912,33 +3912,12 @@ Node::makeHTMLDocumentation() const
     }
     
     ts << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
-    ts << "<html>";
-    ts << "<head>";
+    ts << "<html><head>";
     ts << "<title>" << pluginLabel << "</title>";
-    
-    ///Stylesheet
-    ts << "<style>";
-    ts << "body {margin:0;padding:0;}";
-    ts << "h3 {font-weight:normal;font-size:xx-large;}";
-    ts << "p {text-align:justify;}";
-    ts << "table.myTable {width:100%;}";
-    ts << "td.myTableValue {background-color:#d3d3d3;}";
-    ts << "td.myTableHeader";
-    ts << "{font-weight:bold;color:white;background-color:#000;text-align:center;}";
-    ts << "div#myFooter {text-align:center;margin:10px;font-size:small;}";
-    ts << "div#myHeader {height:150px;background:black;}";
-    ts << "div#myHeaderLeft";
-    ts << "{height:150px;width:150px;float:left;background:url(natron.png) no-repeat #fff;}";
-    ts << "div#myHeaderLeft span {display:none;}";
-    ts << "div#myHeaderRight {height:150px;width:200px;float:right;background:green;}";
-    ts << "div#myContainer {margin-left:300px;margin-right:30px;}";
-    ts << "div#myLeftMenu {float:left;width:250px;background:yellow;}";
-    ts << "div#myleftMenu h4 {font-weight:normal;margin-left:5px;}";
-    ts << "</style>";
-    ts << "</head>";
-    
-    ts << "<body>";
-    ts << "<h3>" << pluginLabel << " version " << majorVersion << "." << minorVersion << "</h3>";
+    ts << "<link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" />";
+    ts << "</head><body><div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\">";
+    ts << "<h1>" << pluginLabel << " version " << majorVersion << "." << minorVersion << "</h1>";
+    ts << "<!--ADD_SCREENSHOT_HERE-->";
     ts << "<p>" << pluginDescription << "</p>";
     ts << "<h3>" << "Inputs & Controls" << "</h3>";
     
@@ -3950,7 +3929,6 @@ Node::makeHTMLDocumentation() const
     
     const KnobsVec& knobs = getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
-        
         ts << "<tr>";
 
         if ((*it)->getDefaultIsSecret()) {
@@ -3960,8 +3938,8 @@ Node::makeHTMLDocumentation() const
         QString knobLabel = QString::fromUtf8((*it)->getLabel().c_str());
         QString knobHint = QString::fromUtf8((*it)->getHintToolTip().c_str());
         
-        ts << "<td class=\"knobsTableValue\">" << knobLabel << "</td>";
-        ts << "<td class=\"knobsTableValue\">" << knobScriptName << "</td>";
+        ts << "<td class=\"knobsTableValueLabel\">" << knobLabel << "</td>";
+        ts << "<td class=\"knobsTableValueScript\">" << knobScriptName << "</td>";
         
         QString defValuesStr;
 
@@ -4019,22 +3997,15 @@ Node::makeHTMLDocumentation() const
             }
         }
         
-        
-      
-        
         ts << "<td class=\"knobsTableValue\">" << defValuesStr << "</td>";
         ts << "<td class=\"knobsTableValue\">" << knobHint << "</td>";
-
-        
         ts << "</tr>";
 
     } // for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
     
     ts << "</table>";
-
-    //ts << "<div id=\"myFooter\">&copy; 2016 foobar</div>";
-    
-    ts << "</body>";
+    ts << "<!--ADD_MORE_HERE-->";
+    ts << "</div></div></div></body>";
     ts << "</html>";
     return ret;
 }
