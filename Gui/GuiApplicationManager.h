@@ -221,6 +221,8 @@ public Q_SLOTS:
     void onFontconfigTimerTriggered();
 
     void webserverHandler(QHttpRequest *req, QHttpResponse *resp);
+    QString webserverHTMLParser(QString);
+    void webserverSetPort(int port);
 
 private:
 

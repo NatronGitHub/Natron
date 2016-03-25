@@ -831,21 +831,15 @@ GuiApplicationManager::initGui(const CLArgs& args)
     
     // launch webserver
     if (!isBackground()) {
-        bool serverEnable = true;
-        int serverPort = 0;
-        if (settings.contains(QString::fromUtf8("webserverEnable"))) {
-            serverEnable = settings.value(QString::fromUtf8("webserverEnable")).toBool();
-        }
-        if (settings.contains(QString::fromUtf8("webserverPort"))) {
-            serverPort = settings.value(QString::fromUtf8("webserverPort")).toInt();
-        }
-        if (serverEnable && serverPort!=0) {
+        bool serverEnable = appPTR->getCurrentSettings()->isServerEnabled();
+        if (serverEnable) {
             QHttpServer *server = new QHttpServer(this);
-            connect(server, SIGNAL(newRequest(QHttpRequest*, QHttpResponse*)),
-                    this, SLOT(webserverHandler(QHttpRequest*, QHttpResponse*)));
-            if (!server->listen(QHostAddress::Any, serverPort)) {
+            connect(server, SIGNAL(newRequest(QHttpRequest*, QHttpResponse*)), this, SLOT(webserverHandler(QHttpRequest*, QHttpResponse*)));
+            connect(server,SIGNAL(newPort(int)), this, SLOT(webserverSetPort(int)));
+            if (!server->listen(QHostAddress::Any, 0)) {
+                /// Should we set serverEnable to false if this happens?
 #ifdef DEBUG
-                qDebug() << "Failed to attach webserver to port " << serverPort;
+                qDebug() << "Failed to start webserver";
 #endif
             }
         }
@@ -925,6 +919,26 @@ GuiApplicationManager::initGui(const CLArgs& args)
     return exec();
 }
 
+// Get webserver port
+void
+GuiApplicationManager::webserverSetPort(int port)
+{
+#ifdef DEBUG
+    qDebug() << "webserver is attached to port" << port;
+#endif
+    appPTR->getCurrentSettings()->setServerPort(port);
+}
+
+// Will be used to add header/menu to exists html's, so we don't need frames
+QString
+GuiApplicationManager::webserverHTMLParser(QString)
+{
+    QString html;
+    // TODO
+    return html;
+}
+
+// Handles webserver requests, still WIP!!! cleanup etc is on the TODO, also move out of guiapplicationmanager
 void
 GuiApplicationManager::webserverHandler(QHttpRequest *req, QHttpResponse *resp)
 {
@@ -938,20 +952,6 @@ GuiApplicationManager::webserverHandler(QHttpRequest *req, QHttpResponse *resp)
     qDebug() << "www client requested" << page;
 #endif
 
-    // default page
-    if (page == QString::fromUtf8("/")) {
-        QString frameSrc = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Frameset//EN\" \"http://www.w3.org/TR/html4/frameset.dtd\"><html><head><title>Natron User Guide</title></head><frameset rows=\"100,*\" frameborder=\"0\"><frame name=\"header\" src=\"_header.html\"><frameset cols=\"250,*\"><frame name=\"menu\" src=\"_menu.html\"><frame name=\"content\" src=\"index.html\"></frameset></frameset></html>");
-        body = frameSrc.toAscii();
-    }
-
-    // remove slashes
-    if (page.startsWith(QString::fromUtf8("/"))) {
-        page.remove(0,1);
-    }
-    if (page.endsWith(QString::fromUtf8("/"))) {
-        page = page.left(page.length()-1);
-    }
-
     // get options
     QStringList options;
     if (page.contains(QString::fromUtf8("?"))) {
@@ -963,11 +963,39 @@ GuiApplicationManager::webserverHandler(QHttpRequest *req, QHttpResponse *resp)
         }
     }
 
-#ifdef DEBUG
-    if (!options.isEmpty()) {
-        qDebug() << "page options" << options;
+    // default page
+    /// TODO remove frames!
+    if (page == QString::fromUtf8("/") || page.startsWith(QString::fromUtf8("/_index"))) {
+        QString contentLink = QString::fromUtf8("index.html");
+        QString headerLink = QString::fromUtf8("_header.html");
+        QString menuLink = QString::fromUtf8("_menu.html");
+        for (int i = 0; i < options.size(); ++i) {
+            if (options.at(i).contains(QString::fromUtf8("plugin="))) {
+                QStringList split = options.at(i).split(QString::fromUtf8("="));
+                if (split.length()>0) {
+                    QString pluginID = split.takeLast();
+                    contentLink = QString::fromUtf8("/_plugin.html?id=")+pluginID;
+                }
+            }
+        }
+        QString frameSrc;
+        frameSrc.append(QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Frameset//EN\" \"http://www.w3.org/TR/html4/frameset.dtd\"><html><head><title>Natron User Guide</title></head><frameset rows=\"100,*\" frameborder=\"0\"><frame name=\"header\" src='"));
+        frameSrc.append(headerLink);
+        frameSrc.append(QString::fromUtf8("'><frameset cols=\"250,*\"><frame name=\"menu\" src='"));
+        frameSrc.append(menuLink);
+        frameSrc.append(QString::fromUtf8("'><frame name=\"content\" src='"));
+        frameSrc.append(contentLink);
+        frameSrc.append(QString::fromUtf8("'></frameset></frameset></html>"));
+        body = frameSrc.toAscii();
     }
-#endif
+
+    // remove slashes
+    if (page.startsWith(QString::fromUtf8("/"))) {
+        page.remove(0,1);
+    }
+    if (page.endsWith(QString::fromUtf8("/"))) {
+        page = page.left(page.length()-1);
+    }
 
     // add custom content
     if (page == QString::fromUtf8("_header.html")) {
@@ -975,15 +1003,13 @@ GuiApplicationManager::webserverHandler(QHttpRequest *req, QHttpResponse *resp)
         body = headerSrc.toAscii();
     }
     else if (page == QString::fromUtf8("_menu.html")) {
-        // TODO: generate plugins
         QString menuSrc;
         QString menuSrcHeader = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\"><html><head><title>Natron User Guide Menu</title><link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/menu.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"_static/jquery.js\"></script><script type=\"text/javascript\" src=\"_static/dropdown.js\"></script></head><body>");
         QString menuSrcFooter = QString::fromUtf8("</body></html>");
         QFile indexFile(docDir + QString::fromUtf8("index.html"));
-
         menuSrc.append(menuSrcHeader);
         if(indexFile.open(QIODevice::ReadOnly|QIODevice::Text)) {
-            QString menuResult;
+            QStringList menuResult;
             bool getMenu = false;
             while (!indexFile.atEnd()) {
                 QString line = QString::fromAscii(indexFile.readLine());
@@ -991,20 +1017,165 @@ GuiApplicationManager::webserverHandler(QHttpRequest *req, QHttpResponse *resp)
                     getMenu=true;
                 }
                 if (getMenu) {
-                    menuResult.append(line);
+                    menuResult << line;
                 }
                 if (line == QString::fromUtf8("</div>\n")) {
                     getMenu=false;
                 }
             }
             if (!menuResult.isEmpty()) {
-                menuResult.replace(QString::fromUtf8("href="), QString::fromUtf8("target=\"content\" href="));
-                menuSrc.append(menuResult);
+                int menuEnd = menuResult.size()-2; /// hackish
+                for (int i = 0; i < menuEnd; ++i) {
+                    QString tmp = menuResult.at(i);
+                    tmp.replace(QString::fromUtf8("href="), QString::fromUtf8("target=\"content\" href="));
+                    menuSrc.append(tmp);
+                }
             }
             indexFile.close();
         }
+        /// TODO probably a better way to get categories, fix
+        QStringList groups;
+        std::list<std::string> pluginIDs = appPTR->getPluginIDs();
+        for (std::list<std::string>::iterator it=pluginIDs.begin(); it != pluginIDs.end(); ++it) {
+            Plugin* plugin = 0;
+            QString pluginID = QString::fromUtf8(it->c_str());
+            plugin = appPTR->getPluginBinary(pluginID,-1,-1,false);
+            if (plugin) {
+                QStringList groupList = plugin->getGrouping();
+                QString groupString;
+                //for (int i = 0; i < groupList.size(); ++i) {
+                    groupString.append(groupList.at(0)/*i)+QString::fromUtf8("|")*/);
+                //}
+                groups << groupString;
+            }
+        }
+        groups.removeDuplicates();
+        QString html;
+        html.append(QString::fromUtf8("<li class=\"toctree-l1\"><a target=\"content\" href=\"/_group.html\">Reference Guide</a>"));
+        html.append(QString::fromUtf8("\n<ul>"));
+        for (int i = 0; i < groups.size(); ++i) {
+            html.append(QString::fromUtf8("\n<li class='toctree-l2'><a target=\"content\" href='/_group.html?id=")+groups.at(i)+QString::fromUtf8("'>")+groups.at(i)+QString::fromUtf8("</a></li>"));
+        }
+        html.append(QString::fromUtf8("\n</ul></li></ul>"));
+
+        menuSrc.append(html);
         menuSrc.append(menuSrcFooter);
         body = menuSrc.toAscii();
+    }
+    else if (page == QString::fromUtf8("_plugin.html")) {
+        for (int i = 0; i < options.size(); ++i) {
+            if (options.at(i).contains(QString::fromUtf8("id="))) {
+                QStringList split = options.at(i).split(QString::fromUtf8("="));
+                if (split.length()>0) {
+                    QString pluginID = split.takeLast();
+                    if (!pluginID.isEmpty()) {
+                        CreateNodeArgs args(pluginID, eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
+                        args.createGui = false;
+                        args.addToProject = false;
+                        NodePtr node = appPTR->getTopLevelInstance()->createNode(args);
+                        if (node) {
+                            QString html = node->makeHTMLDocumentation();
+                            QFileInfo screenshot(docDir+QString::fromUtf8("_static/plugins/")+pluginID+QString::fromUtf8(".png"));
+                            QFileInfo moreinfo(docDir+QString::fromUtf8("_static/plugins/")+pluginID+QString::fromUtf8(".html"));
+                            /// TODO also add actual plugin icon from it's folder
+                            if (screenshot.exists()) {
+                                html.replace(QString::fromUtf8("<!--ADD_SCREENSHOT_HERE-->"),QString::fromUtf8("<p><img class=\"screenshot\" src='/_static/plugins/")+pluginID+QString::fromUtf8(".png'></p>"));
+                            }
+                            /// TODO also add actual plugin html from it's folder
+                            if (moreinfo.exists()) {
+                                QString morehtml;
+                                QFile moreinfoFile(moreinfo.absoluteFilePath());
+                                if (moreinfoFile.open(QIODevice::Text|QIODevice::ReadOnly)) {
+                                    morehtml = QString::fromUtf8(moreinfoFile.readAll());
+                                    moreinfoFile.close();
+                                }
+                                if (!morehtml.isEmpty()) {
+                                    html.replace(QString::fromUtf8("<!--ADD_MORE_HERE-->"),morehtml);
+                                }
+                            }
+                            html.replace(QString::fromUtf8("\n"),QString::fromUtf8("</p><p>"));
+                            body=html.toAscii();
+                        }
+                    }
+                }
+            }
+        }
+    }
+    else if (page == QString::fromUtf8("_group.html")) {
+        QString html;
+        QString group;
+        QString groupHeader = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\"><html><head><title>Natron User Guide Menu</title><link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/pygments.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" /></head><body>");
+        QString groupBodyEnd = QString::fromUtf8("</ul></div></div></div></div>");
+        QString groupFooter = QString::fromUtf8("</body></html>");
+        for (int i = 0; i < options.size(); ++i) {
+            if (options.at(i).contains(QString::fromUtf8("id="))) {
+                QStringList split = options.at(i).split(QString::fromUtf8("="),QString::SkipEmptyParts);
+                if (split.length()>0) {
+                    QString groupID = split.takeLast();
+                    group = groupID;
+                }
+            }
+        }
+        if (!group.isEmpty()) {
+            QVector<QStringList> plugins;
+            std::list<std::string> pluginIDs = appPTR->getPluginIDs();
+            for (std::list<std::string>::iterator it=pluginIDs.begin(); it != pluginIDs.end(); ++it) {
+                Plugin* plugin = 0;
+                QString pluginID = QString::fromUtf8(it->c_str());
+                plugin = appPTR->getPluginBinary(pluginID,-1,-1,false);
+                if (plugin) {
+                    QStringList groupList = plugin->getGrouping();
+                    //for (int i = 0; i < groupList.size(); ++i) {
+                        if (groupList.at(0/*i*/)==group) {
+                            QStringList result;
+                            result<< pluginID << plugin->getPluginLabel();
+                            plugins.append(result);
+                        }
+                    //}
+                }
+            }
+            if (!plugins.isEmpty()) {
+                QString groupBodyStart = QString::fromUtf8("<div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\"><h1>")+group+QString::fromUtf8("</h1><p>")+QObject::tr("This manual is intended as a reference for all the parameters within each node in ")+group+QString::fromUtf8(".</p><div class=\"toctree-wrapper compound\"><ul>");
+                html.append(groupHeader);
+                html.append(groupBodyStart);
+                for (int i = 0; i < plugins.size(); ++i) {
+                    QStringList pluginInfo = plugins.at(i);
+                    QString plugID,plugName;
+                    if (pluginInfo.length()==2) {
+                        plugID=pluginInfo.at(0);
+                        plugName=pluginInfo.at(1);
+                    }
+                    if (!plugID.isEmpty() && !plugName.isEmpty()) {
+                        html.append(QString::fromUtf8("<li class=\"toctree-l1\"><a target=\"content\" href='/_plugin.html?id=")+plugID+QString::fromUtf8("'>")+plugName+QString::fromUtf8("</a></li>"));
+                    }
+                }
+                html.append(groupBodyEnd);
+                html.append(groupFooter);
+            }
+        }
+        else {
+            QString groupBodyStart = QString::fromUtf8("<div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\"><h1>")+QObject::tr("Reference Guide")+QString::fromUtf8("</h1><p>")+QObject::tr("This manual is intended as a reference for all the parameters within each node in Natron.")+QString::fromUtf8("</p><div class=\"toctree-wrapper compound\"><ul>");
+            html.append(groupHeader);
+            html.append(groupBodyStart);
+            QStringList groups;
+            std::list<std::string> pluginIDs = appPTR->getPluginIDs();
+            for (std::list<std::string>::iterator it=pluginIDs.begin(); it != pluginIDs.end(); ++it) {
+                Plugin* plugin = 0;
+                QString pluginID = QString::fromUtf8(it->c_str());
+                plugin = appPTR->getPluginBinary(pluginID,-1,-1,false);
+                if (plugin) {
+                    QStringList groupList = plugin->getGrouping();
+                    groups << groupList.at(0);
+                }
+            }
+            groups.removeDuplicates();
+            for (int i = 0; i < groups.size(); ++i) {
+                html.append(QString::fromUtf8("\n<li class='toctree-l1'><a target=\"content\" href='/_group.html?id=")+groups.at(i)+QString::fromUtf8("'>")+groups.at(i)+QString::fromUtf8("</a></li>"));
+            }
+            html.append(groupBodyEnd);
+            html.append(groupFooter);
+        }
+        body = html.toAscii();
     }
 
     // get static file
@@ -1020,13 +1191,15 @@ GuiApplicationManager::webserverHandler(QHttpRequest *req, QHttpResponse *resp)
         }
     }
 
-    // page/file not found
+    // page not found
+    /// should probably just issue a 404 and don't write anything to body?
     if (body.isEmpty()) {
         QString notFound = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\"><html><head><title>Page not found</title></head><body><p>Page not found</p></body></html>");
         body = notFound.toAscii();
     }
 
     // set header(s)
+    /// should probably add for each text file also, not important, but should be done
     resp->setHeader(QString::fromUtf8("Content-Length"), QString::number(body.size()));
     if (page.endsWith(QString::fromUtf8(".png"))) {
         resp->setHeader(QString::fromUtf8("Content-Type"), QString::fromUtf8("image/png"));
@@ -1036,7 +1209,7 @@ GuiApplicationManager::webserverHandler(QHttpRequest *req, QHttpResponse *resp)
     }
 
     // return result
-    resp->writeHead(200);
+    resp->writeHead(200); /// should be fixed, can't always be 200 ;)
     resp->end(body);
 }
 
