@@ -396,22 +396,15 @@ StatusEnum EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         
         fvRequest = &nodeRequest->frames[frameView];
         
-        ///Get the RoD
-        StatusEnum stat = effect->getRegionOfDefinition_public(nodeRequest->nodeHash, time, nodeRequest->mappedScale, view, &fvRequest->globalData.rod, &fvRequest->globalData.isProjectFormat);
-        //If failed it should have failed earlier
-        if (stat == eStatusFailed && !fvRequest->globalData.rod.isNull()) {
-            return stat;
-        }
-        
         
         ///Check identity
         fvRequest->globalData.identityInputNb = -1;
         fvRequest->globalData.inputIdentityTime = 0.;
         fvRequest->globalData.identityView = view;
         
-        RectI pixelRod;
-        fvRequest->globalData.rod.toPixelEnclosing(mappedLevel, par, &pixelRod);
         
+        RectI identityRegionPixel;
+        canonicalRenderWindow.toPixelEnclosing(mappedLevel, par, &identityRegionPixel);
         
         if (view != 0 && viewInvariance == eViewInvarianceAllViewsInvariant) {
             fvRequest->globalData.isIdentity = true;
@@ -419,11 +412,26 @@ StatusEnum EffectInstance::getInputsRoIsFunctor(bool useTransforms,
             fvRequest->globalData.inputIdentityTime = time;
         } else {
             try {
-                fvRequest->globalData.isIdentity = effect->isIdentity_public(true, nodeRequest->nodeHash, time, nodeRequest->mappedScale, pixelRod, view, &fvRequest->globalData.inputIdentityTime, &fvRequest->globalData.identityView, &fvRequest->globalData.identityInputNb);
+                fvRequest->globalData.isIdentity = effect->isIdentity_public(true, nodeRequest->nodeHash, time, nodeRequest->mappedScale, identityRegionPixel, view, &fvRequest->globalData.inputIdentityTime, &fvRequest->globalData.identityView, &fvRequest->globalData.identityInputNb);
             } catch (...) {
                 return eStatusFailed;
             }
         }
+        
+        /*
+         Do NOT call getRegionOfDefinition on the identity time, if the plug-in returns an identity time different from
+         this time, we expect that it handles getRegionOfDefinition itself correctly.
+         */
+        double rodTime = time;//fvRequest->globalData.isIdentity ? fvRequest->globalData.inputIdentityTime : time;
+        ViewIdx rodView = view;//fvRequest->globalData.isIdentity ? fvRequest->globalData.identityView : view;
+        
+        ///Get the RoD
+        StatusEnum stat = effect->getRegionOfDefinition_public(nodeRequest->nodeHash, rodTime, nodeRequest->mappedScale, rodView, &fvRequest->globalData.rod, &fvRequest->globalData.isProjectFormat);
+        //If failed it should have failed earlier
+        if (stat == eStatusFailed && !fvRequest->globalData.rod.isNull()) {
+            return stat;
+        }
+
         
         
         ///Concatenate transforms if needed
