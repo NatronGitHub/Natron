@@ -132,18 +132,18 @@ BezierCP::setPositionAtTime(bool useGuiCurves,
         k.setInterpolation(eKeyframeTypeLinear);
         if (!useGuiCurves) {
             _imp->curveX->addKeyFrame(k);
-        } else {
-            _imp->guiCurveX->addKeyFrame(k);
         }
+        _imp->guiCurveX->addKeyFrame(k);
+        
     }
     {
         KeyFrame k(time,y);
         k.setInterpolation(eKeyframeTypeLinear);
         if (!useGuiCurves) {
             _imp->curveY->addKeyFrame(k);
-        } else {
-            _imp->guiCurveY->addKeyFrame(k);
         }
+        _imp->guiCurveY->addKeyFrame(k);
+        
     }
 }
 
@@ -156,10 +156,10 @@ BezierCP::setStaticPosition(bool useGuiCurves,
     if (!useGuiCurves) {
         _imp->x = x;
         _imp->y = y;
-    } else {
-        _imp->guiX = x;
-        _imp->guiY = y;
     }
+    _imp->guiX = x;
+    _imp->guiY = y;
+    
 }
 
 void
@@ -171,10 +171,10 @@ BezierCP::setLeftBezierStaticPosition(bool useGuiCurves,
     if (!useGuiCurves) {
         _imp->leftX = x;
         _imp->leftY = y;
-    } else {
-        _imp->guiLeftX = x;
-        _imp->guiLeftY = y;
     }
+    _imp->guiLeftX = x;
+    _imp->guiLeftY = y;
+    
 }
 
 void
@@ -186,10 +186,10 @@ BezierCP::setRightBezierStaticPosition(bool useGuiCurves,
     if (!useGuiCurves) {
         _imp->rightX = x;
         _imp->rightY = y;
-    } else {
-        _imp->guiRightX = x;
-        _imp->guiRightY = y;
     }
+    _imp->guiRightX = x;
+    _imp->guiRightY = y;
+    
 }
 
 bool
@@ -351,18 +351,18 @@ BezierCP::setRightBezierPointAtTime(bool useGuiCurves,
         k.setInterpolation(eKeyframeTypeLinear);
         if (!useGuiCurves) {
             _imp->curveRightBezierX->addKeyFrame(k);
-        } else {
-            _imp->guiCurveRightBezierX->addKeyFrame(k);
         }
+        _imp->guiCurveRightBezierX->addKeyFrame(k);
+        
     }
     {
         KeyFrame k(time,y);
         k.setInterpolation(eKeyframeTypeLinear);
         if (!useGuiCurves) {
             _imp->curveRightBezierY->addKeyFrame(k);
-        } else {
-            _imp->guiCurveRightBezierY->addKeyFrame(k);
         }
+        _imp->guiCurveRightBezierY->addKeyFrame(k);
+        
     }
 }
 
@@ -380,15 +380,15 @@ BezierCP::removeAnimation(bool useGuiCurves,double currentTime)
                 _imp->leftY = _imp->curveLeftBezierY->getValueAt(currentTime);
                 _imp->rightX = _imp->curveRightBezierX->getValueAt(currentTime);
                 _imp->rightY = _imp->curveRightBezierY->getValueAt(currentTime);
-            } else {
-                _imp->guiX = _imp->guiCurveX->getValueAt(currentTime);
-                _imp->guiY = _imp->guiCurveY->getValueAt(currentTime);
-                _imp->guiLeftX = _imp->guiCurveLeftBezierX->getValueAt(currentTime);
-                _imp->guiLeftY = _imp->guiCurveLeftBezierY->getValueAt(currentTime);
-                _imp->guiRightX = _imp->guiCurveRightBezierX->getValueAt(currentTime);
-                _imp->guiRightY = _imp->guiCurveRightBezierY->getValueAt(currentTime);
-
             }
+            _imp->guiX = _imp->guiCurveX->getValueAt(currentTime);
+            _imp->guiY = _imp->guiCurveY->getValueAt(currentTime);
+            _imp->guiLeftX = _imp->guiCurveLeftBezierX->getValueAt(currentTime);
+            _imp->guiLeftY = _imp->guiCurveLeftBezierY->getValueAt(currentTime);
+            _imp->guiRightX = _imp->guiCurveRightBezierX->getValueAt(currentTime);
+            _imp->guiRightY = _imp->guiCurveRightBezierY->getValueAt(currentTime);
+            
+            
         } catch (const std::exception & e) {
             //
         }
@@ -426,14 +426,14 @@ BezierCP::removeKeyframe(bool useGuiCurves,double time)
             _imp->leftY = _imp->curveLeftBezierY->getValueAt(time);
             _imp->rightX = _imp->curveRightBezierX->getValueAt(time);
             _imp->rightY = _imp->curveRightBezierY->getValueAt(time);
-        } else {
-            _imp->guiX = _imp->guiCurveX->getValueAt(time);
-            _imp->guiY = _imp->guiCurveY->getValueAt(time);
-            _imp->guiLeftX = _imp->guiCurveLeftBezierX->getValueAt(time);
-            _imp->guiLeftY = _imp->guiCurveLeftBezierY->getValueAt(time);
-            _imp->guiRightX = _imp->guiCurveRightBezierX->getValueAt(time);
-            _imp->guiRightY = _imp->guiCurveRightBezierY->getValueAt(time);
         }
+        _imp->guiX = _imp->guiCurveX->getValueAt(time);
+        _imp->guiY = _imp->guiCurveY->getValueAt(time);
+        _imp->guiLeftX = _imp->guiCurveLeftBezierX->getValueAt(time);
+        _imp->guiLeftY = _imp->guiCurveLeftBezierY->getValueAt(time);
+        _imp->guiRightX = _imp->guiCurveRightBezierX->getValueAt(time);
+        _imp->guiRightY = _imp->guiCurveRightBezierY->getValueAt(time);
+        
     }
 
     try {
@@ -444,14 +444,14 @@ BezierCP::removeKeyframe(bool useGuiCurves,double time)
             _imp->curveRightBezierX->removeKeyFrameWithTime(time);
             _imp->curveLeftBezierY->removeKeyFrameWithTime(time);
             _imp->curveRightBezierY->removeKeyFrameWithTime(time);
-        } else {
-            _imp->guiCurveX->removeKeyFrameWithTime(time);
-            _imp->guiCurveY->removeKeyFrameWithTime(time);
-            _imp->guiCurveLeftBezierX->removeKeyFrameWithTime(time);
-            _imp->guiCurveRightBezierX->removeKeyFrameWithTime(time);
-            _imp->guiCurveLeftBezierY->removeKeyFrameWithTime(time);
-            _imp->guiCurveRightBezierY->removeKeyFrameWithTime(time);
         }
+        _imp->guiCurveX->removeKeyFrameWithTime(time);
+        _imp->guiCurveY->removeKeyFrameWithTime(time);
+        _imp->guiCurveLeftBezierX->removeKeyFrameWithTime(time);
+        _imp->guiCurveRightBezierX->removeKeyFrameWithTime(time);
+        _imp->guiCurveLeftBezierY->removeKeyFrameWithTime(time);
+        _imp->guiCurveRightBezierY->removeKeyFrameWithTime(time);
+        
     } catch (...) {
     }
 }
