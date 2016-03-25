@@ -89,6 +89,9 @@ Q_SIGNALS:
         @param response Response object to the request. */
     void newRequest(QHttpRequest *request, QHttpResponse *response);
 
+    /// Emit port used
+    void newPort(int port);
+
 private Q_SLOTS:
     void newConnection();
 
