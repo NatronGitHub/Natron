@@ -901,15 +901,16 @@ DockablePanel::showHelp()
         const Plugin* plugin = iseffect->getNode()->getPlugin();
         assert(plugin);
         if (plugin) {
-            Dialogs::informationDialog(plugin->getPluginLabel().toStdString(), helpString().toStdString(), true);
+            bool serverEnable = appPTR->getCurrentSettings()->isServerEnabled();
+            int serverPort = appPTR->getCurrentSettings()->getServerPort();
+            if (serverEnable) {
+                QString url = QString::fromUtf8("http://localhost:")+QString::number(serverPort)+QString::fromUtf8("/_index?plugin=")+plugin->getPluginID();
+                QDesktopServices::openUrl(QUrl(url));
+            }
+            else {
+                Dialogs::informationDialog(plugin->getPluginLabel().toStdString(), helpString().toStdString(), true);
+            }
         }
-        
-        //Todo here: request to the local webserver the html page for this plug-in ID
-        //QString str = iseffect->getNode()->makeHTMLDocumentation();
-        //QUrl url = QUrl::fromEncoded(url);
-        //QDesktopServices::openUrl(url)
-
-        
     }
 }
 
