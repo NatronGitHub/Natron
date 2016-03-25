@@ -3478,16 +3478,24 @@ Node::findOrCreateChannelEnabled(const boost::shared_ptr<KnobPage>& mainPage)
     
     bool foundAll = foundEnabled[0] && foundEnabled[1] && foundEnabled[2] && foundEnabled[3];
     
+    bool isWriter = _imp->effect->isWriter();
+    
     if (foundAll) {
         
         for (int i = 0; i < 4; ++i) {
-            if (foundEnabled[i]->getParentKnob() == mainPage) {
-                //foundEnabled[i]->setAddNewLine(i == 3);
-                mainPage->removeKnob(foundEnabled[i].get());
-                mainPage->insertKnob(i,foundEnabled[i]);
+            
+            // Writers already have their checkboxes places correctly
+            if (!isWriter) {
+                if (foundEnabled[i]->getParentKnob() == mainPage) {
+                    //foundEnabled[i]->setAddNewLine(i == 3);
+                    mainPage->removeKnob(foundEnabled[i].get());
+                    mainPage->insertKnob(i,foundEnabled[i]);
+                }
             }
             _imp->enabledChan[i] = foundEnabled[i];
         }
+        
+        
     }
     
     bool pluginDefaultPref[4];
@@ -3512,7 +3520,7 @@ Node::findOrCreateChannelEnabled(const boost::shared_ptr<KnobPage>& mainPage)
             foundAll = true;
         }
     }
-    if (foundAll && !getApp()->isBackground()) {
+    if (!isWriter && foundAll && !getApp()->isBackground()) {
         _imp->enabledChan[3].lock()->setAddNewLine(false);
         boost::shared_ptr<KnobString> premultWarning = AppManager::createKnob<KnobString>(_imp->effect.get(), "", 1, false);
         premultWarning->setIconLabel("dialog-warning");
@@ -7603,6 +7611,24 @@ Node::onEffectKnobValueChanged(KnobI* what,
                 }
             }
         } else if (_imp->effect->isWriter()) {
+            
+            KnobPtr sublabelKnob = getKnobByName(kNatronOfxParamStringSublabelName);
+            KnobOutputFile* isFile = dynamic_cast<KnobOutputFile*>(what);
+            if (isFile && sublabelKnob && reason != eValueChangedReasonPluginEdited) {
+                Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(sublabelKnob.get());
+                
+                std::string pattern = isFile->getValue();
+                if (isString) {
+                    
+                    std::size_t foundSlash = pattern.find_last_of("/");
+                    if (foundSlash != std::string::npos) {
+                        pattern = pattern.substr(foundSlash + 1);
+                    }
+
+                    isString->setValue(pattern);
+                }
+            }
+            
             /*
              Check if the filename param has a %V in it, in which case make sure to hide the Views parameter
              */
@@ -9578,6 +9604,9 @@ Node::getChannelSelectorKnob(int inputNb) const
 void
 Node::checkForPremultWarningAndCheckboxes()
 {
+    if (isOutputNode()) {
+        return;
+    }
     boost::shared_ptr<KnobBool> chans[4];
     boost::shared_ptr<KnobString> premultWarn = _imp->premultWarning.lock();
     if (!premultWarn) {

@@ -846,7 +846,10 @@ WriteNode::onEffectCreated(bool mayCreateFileDialog, const std::list<boost::shar
     std::string pattern;
     
     if (mayCreateFileDialog) {
-        pattern = getApp()->saveImageFileDialog();
+        bool useDialogForWriters = appPTR->getCurrentSettings()->isFileDialogEnabledForNewWriters();
+        if (useDialogForWriters) {
+            pattern = getApp()->saveImageFileDialog();
+        }
         
         //The user selected a file, if it fails to read do not create the node
         throwErrors = true;

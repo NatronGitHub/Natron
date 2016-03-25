@@ -1311,24 +1311,36 @@ Gui::createWriter()
     for (std::map<std::string, std::string>::const_iterator it = writersForFormat.begin(); it != writersForFormat.end(); ++it) {
         filters.push_back(it->first);
     }
-    std::string file = popSaveFileDialog( true, filters, _imp->_lastSaveSequenceOpenedDir.toStdString(), true );
-    if ( !file.empty() ) {
-        
+    
+    
+    std::string file;
+#ifdef NATRON_ENABLE_IO_META_NODES
+    bool useDialogForWriters = appPTR->getCurrentSettings()->isFileDialogEnabledForNewWriters();
+    if (useDialogForWriters) {
+        file = popSaveFileDialog( true, filters, _imp->_lastSaveSequenceOpenedDir.toStdString(), true );
+        if (file.empty()) {
+            return NodePtr();
+        }
+    }
+#endif
+    
+    if (!file.empty()) {
         std::string patternCpy = file;
         std::string path = SequenceParsing::removePath(patternCpy);
         _imp->_lastSaveSequenceOpenedDir = QString::fromUtf8(path.c_str());
-        
-        NodeGraph* graph = 0;
-        if (_imp->_lastFocusedGraph) {
-            graph = _imp->_lastFocusedGraph;
-        } else {
-            graph = _imp->_nodeGraphArea;
-        }
-        boost::shared_ptr<NodeCollection> group = graph->getGroup();
-        assert(group);
-        
-        ret =  getApp()->createWriter(file, eCreateNodeReasonUserCreate, group);
     }
+    
+    NodeGraph* graph = 0;
+    if (_imp->_lastFocusedGraph) {
+        graph = _imp->_lastFocusedGraph;
+    } else {
+        graph = _imp->_nodeGraphArea;
+    }
+    boost::shared_ptr<NodeCollection> group = graph->getGroup();
+    assert(group);
+    
+    ret =  getApp()->createWriter(file, eCreateNodeReasonUserCreate, group);
+    
     
     return ret;
 }
