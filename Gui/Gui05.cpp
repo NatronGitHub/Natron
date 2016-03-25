@@ -281,6 +281,20 @@ Gui::getLastSelectedGraph() const
     return _imp->_lastFocusedGraph;
 }
 
+void
+Gui::setActiveViewer(ViewerTab* viewer)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    _imp->_activeViewer = viewer;
+}
+
+ViewerTab*
+Gui::getActiveViewer() const
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    return _imp->_activeViewer;
+}
+
 boost::shared_ptr<NodeCollection>
 Gui::getLastSelectedNodeCollection() const
 {

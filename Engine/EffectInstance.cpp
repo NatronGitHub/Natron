@@ -2471,7 +2471,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                                                it->second.tmpImage->getPremultiplication(),
                                                it->second.tmpImage->getFieldingOrder(),
                                                false));
-                        it->second.tmpImage->upscaleMipMap(downscaledRectToRender, originalInputImage->getMipMapLevel(), 0, tmp.get());
+                        originalInputImage->upscaleMipMap(downscaledRectToRender, originalInputImage->getMipMapLevel(), 0, tmp.get());
                         mappedOriginalInputImage = tmp;
                     }
                 }

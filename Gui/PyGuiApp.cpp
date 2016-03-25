@@ -93,6 +93,16 @@ GuiApp::getTabWidget(const std::string& name) const
     return 0;
 }
 
+PyTabWidget*
+GuiApp::getActiveTabWidget() const
+{
+    TabWidget* tab =  _app->getGui()->getLastEnteredTabWidget();
+    if (!tab) {
+        return 0;
+    }
+    return new PyTabWidget(tab);
+}
+
 bool
 GuiApp::moveTab(const std::string& scriptName,PyTabWidget* pane)
 {
@@ -461,6 +471,24 @@ GuiApp::getViewer(const std::string& scriptName) const
     }
     
     return new PyViewer(ptr);
+}
+
+PyViewer*
+GuiApp::getActiveViewer() const
+{
+    ViewerTab* tab = _app->getGui()->getActiveViewer();
+    if (!tab) {
+        return 0;
+    }
+    ViewerInstance* instance = tab->getInternalNode();
+    if (!instance) {
+        return 0;
+    }
+    NodePtr node = instance->getNode();
+    if (!node) {
+        return 0;
+    }
+    return new PyViewer(node);
 }
 
 

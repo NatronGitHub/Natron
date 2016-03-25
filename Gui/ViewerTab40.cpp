@@ -636,6 +636,9 @@ void
 ViewerTab::onMousePressCalledInViewer()
 {
     takeClickFocus();
+    if (getGui()) {
+        getGui()->setActiveViewer(this);
+    }
 }
 
 void

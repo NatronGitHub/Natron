@@ -482,6 +482,10 @@ Gui::removeViewerTab(ViewerTab* tab,
     assert(tab);
     unregisterTab(tab);
 
+    if (tab == _imp->_activeViewer) {
+        _imp->_activeViewer = 0;
+    }
+    
     NodeGraph* graph = 0;
     NodeGroup* isGrp = 0;
     boost::shared_ptr<NodeCollection> collection;

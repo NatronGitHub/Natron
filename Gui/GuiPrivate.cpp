@@ -209,6 +209,7 @@ GuiPrivate::GuiPrivate(GuiAppInstance* app,
 , _viewerTabsMutex()
 , _viewerTabs()
 , _masterSyncViewer(0)
+, _activeViewer(0)
 , _histogramsMutex()
 , _histograms()
 , _nextHistogramIndex(1)

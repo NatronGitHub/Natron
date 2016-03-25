@@ -534,6 +534,9 @@ ViewerTab::leaveEvent(QEvent* e)
 void
 ViewerTab::keyPressEvent(QKeyEvent* e)
 {
+    if (getGui()) {
+        getGui()->setActiveViewer(this);
+    }
     
     bool accept = true;
     

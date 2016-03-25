@@ -31,6 +31,12 @@
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
+        <modify-function signature="getActiveTabWidget()const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+
         <modify-function signature="getSelectedNodes(Group*)const">
             <inject-code class="target" position="beginning">
                 std::list&lt;Effect*&gt; effects = %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
@@ -46,6 +52,11 @@
             </inject-code>
         </modify-function>
         <modify-function signature="getViewer(std::string)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getActiveViewer()const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>

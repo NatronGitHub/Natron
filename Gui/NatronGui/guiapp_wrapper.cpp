@@ -184,6 +184,64 @@ static PyObject* Sbk_GuiAppFunc_deselectNode(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
+static PyObject* Sbk_GuiAppFunc_getActiveTabWidget(PyObject* self)
+{
+    ::GuiApp* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::GuiApp*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getActiveTabWidget()const
+            PyTabWidget * cppResult = const_cast<const ::GuiApp*>(cppSelf)->getActiveTabWidget();
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_GuiAppFunc_getActiveViewer(PyObject* self)
+{
+    ::GuiApp* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::GuiApp*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getActiveViewer()const
+            PyViewer * cppResult = const_cast<const ::GuiApp*>(cppSelf)->getActiveViewer();
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronGuiTypes[SBK_PYVIEWER_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_GuiAppFunc_getDirectoryDialog(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ::GuiApp* cppSelf = 0;
@@ -1306,6 +1364,8 @@ static PyMethodDef Sbk_GuiApp_methods[] = {
     {"clearSelection", (PyCFunction)Sbk_GuiAppFunc_clearSelection, METH_VARARGS|METH_KEYWORDS},
     {"createModalDialog", (PyCFunction)Sbk_GuiAppFunc_createModalDialog, METH_NOARGS},
     {"deselectNode", (PyCFunction)Sbk_GuiAppFunc_deselectNode, METH_O},
+    {"getActiveTabWidget", (PyCFunction)Sbk_GuiAppFunc_getActiveTabWidget, METH_NOARGS},
+    {"getActiveViewer", (PyCFunction)Sbk_GuiAppFunc_getActiveViewer, METH_NOARGS},
     {"getDirectoryDialog", (PyCFunction)Sbk_GuiAppFunc_getDirectoryDialog, METH_VARARGS|METH_KEYWORDS},
     {"getFilenameDialog", (PyCFunction)Sbk_GuiAppFunc_getFilenameDialog, METH_VARARGS|METH_KEYWORDS},
     {"getRGBColorDialog", (PyCFunction)Sbk_GuiAppFunc_getRGBColorDialog, METH_NOARGS},

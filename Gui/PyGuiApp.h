@@ -119,6 +119,8 @@ public:
         
     PyTabWidget* getTabWidget(const std::string& name) const;
     
+    PyTabWidget* getActiveTabWidget() const;
+    
     bool moveTab(const std::string& scriptName,PyTabWidget* pane);
     
     void registerPythonPanel(PyPanel* panel,const std::string& pythonFunction);
@@ -145,6 +147,8 @@ public:
     void clearSelection(Group* group = 0);
     
     PyViewer* getViewer(const std::string& scriptName) const;
+    
+    PyViewer* getActiveViewer() const;
     
     PyPanel* getUserPanel(const std::string& scriptName) const;
     

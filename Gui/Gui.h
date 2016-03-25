@@ -111,7 +111,10 @@ public:
     void setLastSelectedGraph(NodeGraph* graph);
 
     NodeGraph* getLastSelectedGraph() const;
-
+    
+    void setActiveViewer(ViewerTab* viewer);
+    ViewerTab* getActiveViewer() const;
+    
     boost::shared_ptr<NodeCollection> getLastSelectedNodeCollection() const;
 
     /**
