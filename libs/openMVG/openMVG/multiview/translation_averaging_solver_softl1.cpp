@@ -14,6 +14,7 @@
 #include "ceres/rotation.h"
 
 #include <vector>
+#include <cstddef>
 
 namespace openMVG {
 
@@ -126,7 +127,7 @@ bool solve_translations_problem_softl1
   }
 
   ceres::LossFunction * loss =
-    (d_l1_loss_threshold < 0) ? nullptr : new ceres::SoftLOneLoss(d_l1_loss_threshold);
+    (d_l1_loss_threshold < 0) ? NULL : new ceres::SoftLOneLoss(d_l1_loss_threshold);
 
   // Add constraints to the minimization
   //
@@ -167,7 +168,7 @@ bool solve_translations_problem_softl1
         new ceres::AutoDiffCostFunction<SmallScaleError, 1, 1>(
             new SmallScaleError(1.0));
 
-    problem.AddResidualBlock(cost_function, nullptr, &vec_scales[i]);
+    problem.AddResidualBlock(cost_function, NULL, &vec_scales[i]);
   }
   // Set one center as known (to fix the gauge freedom)
   vec_translations[0] = vec_translations[1] = vec_translations[2] = 0.0;

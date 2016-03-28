@@ -94,10 +94,27 @@ index bd66f7c..fe0dd8e 100644
    {
      // Dynamically load the regions type from the file
 diff --git a/libs/openMVG/openMVG/matching/matcher_brute_force.hpp b/libs/openMVG/openMVG/matching/matcher_brute_force.hpp
-index 15ad7fc..ed0f788 100644
+index 15ad7fc..536be72 100644
 --- a/libs/openMVG/openMVG/matching/matcher_brute_force.hpp
 +++ b/libs/openMVG/openMVG/matching/matcher_brute_force.hpp
-@@ -150,7 +150,7 @@ class ArrayMatcherBruteForce  : public ArrayMatcher<Scalar, Metric>
+@@ -13,6 +13,7 @@
+ #include "openMVG/stl/indexed_sort.hpp"
+ #include <memory>
+ #include <iostream>
++#include <cstddef>
+ 
+ namespace openMVG {
+ namespace matching {
+@@ -40,7 +41,7 @@ class ArrayMatcherBruteForce  : public ArrayMatcher<Scalar, Metric>
+    */
+   bool Build(const Scalar * dataset, int nbRows, int dimension) {
+     if (nbRows < 1) {
+-      memMapping.reset(nullptr);
++      memMapping.reset(NULL);
+       return false;
+     }
+     memMapping.reset(new Eigen::Map<BaseMat>( (Scalar*)dataset, nbRows, dimension) );
+@@ -150,7 +151,7 @@ class ArrayMatcherBruteForce  : public ArrayMatcher<Scalar, Metric>
  private:
    typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> BaseMat;
    /// Use a memory mapping in order to avoid memory re-allocation
@@ -107,10 +124,27 @@ index 15ad7fc..ed0f788 100644
  
  }  // namespace matching
 diff --git a/libs/openMVG/openMVG/matching/matcher_cascade_hashing.hpp b/libs/openMVG/openMVG/matching/matcher_cascade_hashing.hpp
-index 00b85d8..1502ffc 100644
+index 00b85d8..3dcb963 100644
 --- a/libs/openMVG/openMVG/matching/matcher_cascade_hashing.hpp
 +++ b/libs/openMVG/openMVG/matching/matcher_cascade_hashing.hpp
-@@ -133,7 +133,7 @@ class ArrayMatcherCascadeHashing  : public ArrayMatcher<Scalar, Metric>
+@@ -12,6 +12,7 @@
+ #include <memory>
+ #include <random>
+ #include <cmath>
++#include <cstddef>
+ 
+ namespace openMVG {
+ namespace matching {
+@@ -50,7 +51,7 @@ class ArrayMatcherCascadeHashing  : public ArrayMatcher<Scalar, Metric>
+    */
+   bool Build(const Scalar * dataset, int nbRows, int dimension) {
+     if (nbRows < 1) {
+-      memMapping.reset(nullptr);
++      memMapping.reset(NULL);
+       return false;
+     }
+     memMapping.reset(new Eigen::Map<BaseMat>( (Scalar*)dataset, nbRows, dimension) );
+@@ -133,7 +134,7 @@ class ArrayMatcherCascadeHashing  : public ArrayMatcher<Scalar, Metric>
  private:
    typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> BaseMat;
    /// Use a memory mapping in order to avoid memory re-allocation
@@ -224,6 +258,36 @@ index 46956b4..917ac93 100644
      const Pair_Set & pairs, // list of pair to consider for matching
      matching::PairWiseMatches & map_putatives_matches // the output pairwise photometric corresponding points
      )const = 0;
+diff --git a/libs/openMVG/openMVG/multiview/translation_averaging_solver_softl1.cpp b/libs/openMVG/openMVG/multiview/translation_averaging_solver_softl1.cpp
+index b35084d..743bd12 100644
+--- a/libs/openMVG/openMVG/multiview/translation_averaging_solver_softl1.cpp
++++ b/libs/openMVG/openMVG/multiview/translation_averaging_solver_softl1.cpp
+@@ -14,6 +14,7 @@
+ #include "ceres/rotation.h"
+ 
+ #include <vector>
++#include <cstddef>
+ 
+ namespace openMVG {
+ 
+@@ -126,7 +127,7 @@ bool solve_translations_problem_softl1
+   }
+ 
+   ceres::LossFunction * loss =
+-    (d_l1_loss_threshold < 0) ? nullptr : new ceres::SoftLOneLoss(d_l1_loss_threshold);
++    (d_l1_loss_threshold < 0) ? NULL : new ceres::SoftLOneLoss(d_l1_loss_threshold);
+ 
+   // Add constraints to the minimization
+   //
+@@ -167,7 +168,7 @@ bool solve_translations_problem_softl1
+         new ceres::AutoDiffCostFunction<SmallScaleError, 1, 1>(
+             new SmallScaleError(1.0));
+ 
+-    problem.AddResidualBlock(cost_function, nullptr, &vec_scales[i]);
++    problem.AddResidualBlock(cost_function, NULL, &vec_scales[i]);
+   }
+   // Set one center as known (to fix the gauge freedom)
+   vec_translations[0] = vec_translations[1] = vec_translations[2] = 0.0;
 diff --git a/libs/openMVG/openMVG/types.hpp b/libs/openMVG/openMVG/types.hpp
 index 43a053d..21c5790 100644
 --- a/libs/openMVG/openMVG/types.hpp

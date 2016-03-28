@@ -12,6 +12,7 @@
 #include <memory>
 #include <random>
 #include <cmath>
+#include <cstddef>
 
 namespace openMVG {
 namespace matching {
@@ -50,7 +51,7 @@ class ArrayMatcherCascadeHashing  : public ArrayMatcher<Scalar, Metric>
    */
   bool Build(const Scalar * dataset, int nbRows, int dimension) {
     if (nbRows < 1) {
-      memMapping.reset(nullptr);
+      memMapping.reset(NULL);
       return false;
     }
     memMapping.reset(new Eigen::Map<BaseMat>( (Scalar*)dataset, nbRows, dimension) );
