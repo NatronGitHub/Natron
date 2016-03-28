@@ -28,7 +28,7 @@
 #endif
 
 #if defined(OPENMVG_BOOST_UNIQUE_PTR)
-#include <boost/unique_ptr.hpp>
+#include <boost/move/unique_ptr.hpp>
 #endif
 
 namespace openMVG{
@@ -63,7 +63,7 @@ using std::shared_ptr;
 #endif
 
 #if defined(OPENMVG_BOOST_UNIQUE_PTR)
-using boost::unique_ptr;
+using boost::movelib::unique_ptr;
 #else
 using std::unique_ptr;
 #endif
