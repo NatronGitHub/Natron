@@ -240,43 +240,6 @@ win32-msvc*{
 } #static-host-support
 
 ################
-# ceres
-static-ceres {
-win32-msvc*{
-        CONFIG(64bit) {
-                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../ceres/x64/release/ -lceres
-                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../ceres/x64/debug/ -lceres
-        } else {
-                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../ceres/win32/release/ -lceres
-                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../ceres/win32/debug/ -lceres
-        }
-} else {
-        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../ceres/release/ -lceres
-        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../ceres/debug/ -lceres
-        else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../ceres/build/Release/ -lceres
-        else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../ceres/build/Debug/ -lceres
-        else:unix: LIBS += -L$$OUT_PWD/../ceres/ -lceres
-}
-
-win32-msvc*{
-        CONFIG(64bit) {
-                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/x64/release/libceres.lib
-                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/x64/debug/libceres.lib
-        } else {
-                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/win32/release/libceres.lib
-                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/win32/debug/libceres.lib
-        }
-} else {
-        win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/release/libceres.a
-        else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/debug/libceres.a
-        else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/release/libceres.lib
-        else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/debug/libceres.lib
-        else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/build/Release/libceres.a
-        else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/build/Debug/libceres.a
-        else:unix: PRE_TARGETDEPS += $$OUT_PWD/../ceres/libceres.a
-}
-} # static-ceres {
-################
 # LibMV
 static-libmv {
 INCLUDEPATH += $$OUT_PWD/../libs/libmv
@@ -359,7 +322,45 @@ win32-msvc*{
         else:unix: PRE_TARGETDEPS += $$OUT_PWD/../openMVG/libopenMVG.a
 }
 
-} # static-libmv
+} # static-openmvg
+
+################
+# ceres (also contains glog)
+static-ceres {
+win32-msvc*{
+        CONFIG(64bit) {
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../ceres/x64/release/ -lceres
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../ceres/x64/debug/ -lceres
+        } else {
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../ceres/win32/release/ -lceres
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../ceres/win32/debug/ -lceres
+        }
+} else {
+        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../ceres/release/ -lceres
+        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../ceres/debug/ -lceres
+        else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../ceres/build/Release/ -lceres
+        else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../ceres/build/Debug/ -lceres
+        else:unix: LIBS += -L$$OUT_PWD/../ceres/ -lceres
+}
+
+win32-msvc*{
+        CONFIG(64bit) {
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/x64/release/libceres.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/x64/debug/libceres.lib
+        } else {
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/win32/release/libceres.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/win32/debug/libceres.lib
+        }
+} else {
+        win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/release/libceres.a
+        else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/debug/libceres.a
+        else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/release/libceres.lib
+        else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/debug/libceres.lib
+        else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/build/Release/libceres.a
+        else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/build/Debug/libceres.a
+        else:unix: PRE_TARGETDEPS += $$OUT_PWD/../ceres/libceres.a
+}
+} # static-ceres {
 
 ################
 # BreakpadClient
