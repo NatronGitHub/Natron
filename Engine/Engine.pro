@@ -26,10 +26,13 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
 !noexpat: CONFIG += expat
 
-# Don't uncomment the following: pyside requires QtGui, because PySide/QtCore/pyside_qtcore_python.h includes qtextdocument.h
+# Do not uncomment the following: pyside requires QtGui, because PySide/QtCore/pyside_qtcore_python.h includes qtextdocument.h
 #QT -= gui
 
+CONFIG += libmv-flags
+
 include(../global.pri)
+include(../libs.pri)
 include(../config.pri)
 
 log {
@@ -55,18 +58,6 @@ INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../Global
 INCLUDEPATH += $$PWD/../libs/SequenceParsing
 
-
-#include libmv
-INCLUDEPATH += $$PWD/../libs/libmv
-INCLUDEPATH += $$PWD/../libs/ceres/config
-INCLUDEPATH += $$PWD/../libs/ceres/include
-INCLUDEPATH += $$PWD/../libs/ceres/internal
-INCLUDEPATH += $$PWD/../libs/gflags/src
-INCLUDEPATH += $$PWD/../libs/gflags/src/gflags
-INCLUDEPATH += $$PWD/../libs/glog/src
-INCLUDEPATH += $$PWD/../libs/libmv/third_party
-INCLUDEPATH += $$PWD/../libs/Eigen3
-
 INCLUDEPATH += $$PWD/../google-breakpad/src
 
 #To overcome wrongly generated #include <...> by shiboken
@@ -74,14 +65,6 @@ INCLUDEPATH += $$PWD
 INCLUDEPATH += $$PWD/NatronEngine
 DEPENDPATH += $$PWD/NatronEngine
 DEPENDPATH += $$PWD/../Global
-
-win32-msvc* {
-        CONFIG(64bit) {
-                QMAKE_LFLAGS += /MACHINE:X64
-        } else {
-                QMAKE_LFLAGS += /MACHINE:X86
-        }
-}
 
 SOURCES += \
     AppInstance.cpp \

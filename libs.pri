@@ -19,6 +19,53 @@
 # Use this for binaries in App.pro, Renderer.pro etc...this way
 # CONFIG += static-gui static-engine static-host-support static-breakpadclient static-ceres static-libmv
 
+libmv-flags {
+CONFIG += ceres-flags
+INCLUDEPATH += $$PWD/libs/libmv/third_party
+INCLUDEPATH += $$PWD/libs/libmv
+}
+
+ceres-flags {
+DEFINES += CERES_HAVE_PTHREAD CERES_NO_SUITESPARSE CERES_NO_CXSPARSE CERES_HAVE_RWLOCK
+# Comment to make ceres use a lapack library
+DEFINES += CERES_NO_LAPACK
+# Uncomment to make ceres use openmp
+#DEFINES += CERES_USE_OPENMP
+#If undefined, make sure to add to sources all the files in ceres/internal/ceres/generated
+DEFINES += CERES_RESTRICT_SCHUR_SPECIALIZATION
+DEFINES += WITH_LIBMV_GUARDED_ALLOC GOOGLE_GLOG_DLL_DECL= LIBMV_NO_FAST_DETECTOR=
+c++11 {
+   DEFINES += CERES_STD_UNORDERED_MAP
+   DEFINES += CERES_STD_SHARED_PTR
+} else {
+   # Use boost::shared_ptr and boost::unordered_map
+   CONFIG += boost
+   DEFINES += CERES_BOOST_SHARED_PTR
+   DEFINES += CERES_BOOST_UNORDERED_MAP
+}
+INCLUDEPATH += $$PWD/libs/ceres/config
+INCLUDEPATH += $$PWD/libs/ceres/include
+INCLUDEPATH += $$PWD/libs/ceres/internal
+INCLUDEPATH += $$PWD/libs/Eigen3
+INCLUDEPATH += $$PWD/libs/gflags
+INCLUDEPATH += $$PWD/libs/gflags/src
+INCLUDEPATH += $$PWD/libs/gflags/src/gflags
+INCLUDEPATH += $$PWD/libs/glog/src
+win32* {
+     INCLUDEPATH += $$PWD/libs/glog/src/windows
+}
+!win32* {
+    INCLUDEPATH += $$PWD/libs/glog/src
+}
+win32-msvc* {
+	CONFIG(64bit) {
+		QMAKE_LFLAGS += /MACHINE:X64
+	} else {
+		QMAKE_LFLAGS += /MACHINE:X86
+	}
+}
+}
+
 ################
 # Gui
 static-gui {
@@ -236,6 +283,7 @@ win32-msvc*{
 }
 
 } # static-libmv
+
 
 ################
 # openMVG

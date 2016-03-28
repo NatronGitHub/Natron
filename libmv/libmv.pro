@@ -8,35 +8,13 @@ TEMPLATE = lib
 CONFIG += staticlib
 CONFIG -= qt
 
+CONFIG += libmv-flags
+
 include(../global.pri)
+include(../libs.pri)
 include(../config.pri)
 
-INCLUDEPATH += $$PWD/../libs/ceres/config
-INCLUDEPATH += $$PWD/../libs/ceres/include
-INCLUDEPATH += $$PWD/../libs/ceres/internal
-INCLUDEPATH += $$PWD/../libs/gflags
-INCLUDEPATH += $$PWD/../libs/gflags/src
-INCLUDEPATH += $$PWD/../libs/gflags/src/gflags
-INCLUDEPATH += $$PWD/../libs/glog/src
-INCLUDEPATH += $$PWD/../libs/libmv/third_party
-INCLUDEPATH += $$PWD/../libs/Eigen3
-INCLUDEPATH += $$PWD/../libs/libmv
-
-
-win32* {
-     INCLUDEPATH += $$PWD/../libs/glog/src/windows
-}
-
-!win32* {
-    INCLUDEPATH += $$PWD/../libs/glog/src
-}
-
 win32-msvc* {
-	CONFIG(64bit) {
-		QMAKE_LFLAGS += /MACHINE:X64
-	} else {
-		QMAKE_LFLAGS += /MACHINE:X86
-	}
         INCLUDEPATH += $$PWD/../libs/libmv/third_party/msinttypes
 }
 

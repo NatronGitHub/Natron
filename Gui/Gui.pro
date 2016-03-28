@@ -25,6 +25,7 @@ QT += gui core opengl network
 greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
 include(../global.pri)
+include(../libs.pri)
 include(../config.pri)
 
 precompile_header {
