@@ -62,10 +62,12 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
         J='-j1'
     fi
     export MAKEFLAGS="$J" # qmake doesn't seem to pass MAKEFLAGS for recursive builds
+    make $J -C libs/gflags
+    make $J -C libs/glog
+    make $J -C libs/ceres
+    make $J -C libs/libmv
+    make $J -C libs/openMVG
     make $J -C HostSupport;
-    make $J -C ceres
-    make $J -C libmv
-    make $J -C openMVG
     make $J -C Engine;
     make $J -C Gui;
     make -C App; # linking Natron may break the 3Gb limit
