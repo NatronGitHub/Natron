@@ -62,10 +62,11 @@ using boost::shared_ptr;
 using std::shared_ptr;
 #endif
 
-#if defined(OPENMVG_BOOST_UNIQUE_PTR)
-using boost::movelib::unique_ptr;
+#if defined(OPENMVG_NO_UNIQUE_PTR)
+// shared_ptr does not guarantee uniqueness, but can be used as a drop-in replacement
+#define OPENMVG_UNIQUE_PTR shared_ptr;
 #else
-using std::unique_ptr;
+#define OPENMVG_UNIQUE_PTR std::unique_ptr;
 #endif
 
 } // namespace openMVG

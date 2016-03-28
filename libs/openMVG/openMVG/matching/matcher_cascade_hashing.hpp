@@ -133,7 +133,7 @@ class ArrayMatcherCascadeHashing  : public ArrayMatcher<Scalar, Metric>
 private:
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> BaseMat;
   /// Use a memory mapping in order to avoid memory re-allocation
-  unique_ptr< Eigen::Map<BaseMat> > memMapping;
+  OPENMVG_UNIQUE_PTR< Eigen::Map<BaseMat> > memMapping;
   CascadeHasher cascade_hasher_;
   HashedDescriptions hashed_base_;
   Eigen::VectorXf zero_mean_descriptor_;

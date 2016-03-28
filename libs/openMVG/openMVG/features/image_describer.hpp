@@ -48,7 +48,7 @@ public:
      Non-zero values depict the region of interest.
   */
   virtual bool Describe(const image::Image<unsigned char> & image,
-    unique_ptr<Regions> &regions,
+    OPENMVG_UNIQUE_PTR<Regions> &regions,
     const image::Image<unsigned char> * mask = NULL) = 0;
 
   /// Allocate regions depending of the Image_describer

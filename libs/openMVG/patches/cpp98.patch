@@ -34,7 +34,7 @@ index 00ca9a0..bc40623 100644
  }
  
 diff --git a/libs/openMVG/openMVG/features/image_describer.hpp b/libs/openMVG/openMVG/features/image_describer.hpp
-index 8cee223..07e05cc 100644
+index 8cee223..f31e5a8 100644
 --- a/libs/openMVG/openMVG/features/image_describer.hpp
 +++ b/libs/openMVG/openMVG/features/image_describer.hpp
 @@ -48,11 +48,11 @@ public:
@@ -42,7 +42,7 @@ index 8cee223..07e05cc 100644
    */
    virtual bool Describe(const image::Image<unsigned char> & image,
 -    std::unique_ptr<Regions> &regions,
-+    unique_ptr<Regions> &regions,
++    OPENMVG_UNIQUE_PTR<Regions> &regions,
      const image::Image<unsigned char> * mask = NULL) = 0;
  
    /// Allocate regions depending of the Image_describer
@@ -52,7 +52,7 @@ index 8cee223..07e05cc 100644
  #ifndef OPENMVG_NO_SERIALIZATION
    //--
 diff --git a/libs/openMVG/openMVG/features/image_describer_akaze.hpp b/libs/openMVG/openMVG/features/image_describer_akaze.hpp
-index affff89..06d4b1f 100644
+index affff89..af537bf 100644
 --- a/libs/openMVG/openMVG/features/image_describer_akaze.hpp
 +++ b/libs/openMVG/openMVG/features/image_describer_akaze.hpp
 @@ -87,7 +87,7 @@ public:
@@ -60,7 +60,7 @@ index affff89..06d4b1f 100644
    */
    bool Describe(const image::Image<unsigned char>& image,
 -    std::unique_ptr<Regions> &regions,
-+    unique_ptr<Regions> &regions,
++    OPENMVG_UNIQUE_PTR<Regions> &regions,
      const image::Image<unsigned char> * mask = NULL)
    {
      _params._options.fDesc_factor =
@@ -69,12 +69,12 @@ index affff89..06d4b1f 100644
  
    /// Allocate Regions type depending of the Image_describer
 -  void Allocate(std::unique_ptr<Regions> &regions) const
-+  void Allocate(unique_ptr<Regions> &regions) const
++  void Allocate(OPENMVG_UNIQUE_PTR<Regions> &regions) const
    {
      switch(_params._eAkazeDescriptor)
      {
 diff --git a/libs/openMVG/openMVG/features/io_regions_type.hpp b/libs/openMVG/openMVG/features/io_regions_type.hpp
-index bd66f7c..cc51c1d 100644
+index bd66f7c..fe0dd8e 100644
 --- a/libs/openMVG/openMVG/features/io_regions_type.hpp
 +++ b/libs/openMVG/openMVG/features/io_regions_type.hpp
 @@ -21,13 +21,13 @@ namespace openMVG {
@@ -82,19 +82,19 @@ index bd66f7c..cc51c1d 100644
  
  // Init the regions_type from an image describer file (used for regions loading)
 -static std::unique_ptr<features::Regions> Init_region_type_from_file
-+static unique_ptr<features::Regions> Init_region_type_from_file
++static OPENMVG_UNIQUE_PTR<features::Regions> Init_region_type_from_file
  (
    const std::string & sImage_describer_file
  )
  {
    using namespace openMVG::features;
 -  std::unique_ptr<Regions> regions_type;
-+  unique_ptr<Regions> regions_type;
++  OPENMVG_UNIQUE_PTR<Regions> regions_type;
    if (stlplus::is_file(sImage_describer_file))
    {
      // Dynamically load the regions type from the file
 diff --git a/libs/openMVG/openMVG/matching/matcher_brute_force.hpp b/libs/openMVG/openMVG/matching/matcher_brute_force.hpp
-index 15ad7fc..d0d241a 100644
+index 15ad7fc..ed0f788 100644
 --- a/libs/openMVG/openMVG/matching/matcher_brute_force.hpp
 +++ b/libs/openMVG/openMVG/matching/matcher_brute_force.hpp
 @@ -150,7 +150,7 @@ class ArrayMatcherBruteForce  : public ArrayMatcher<Scalar, Metric>
@@ -102,12 +102,12 @@ index 15ad7fc..d0d241a 100644
    typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> BaseMat;
    /// Use a memory mapping in order to avoid memory re-allocation
 -  std::unique_ptr< Eigen::Map<BaseMat> > memMapping;
-+  unique_ptr< Eigen::Map<BaseMat> > memMapping;
++  OPENMVG_UNIQUE_PTR< Eigen::Map<BaseMat> > memMapping;
  };
  
  }  // namespace matching
 diff --git a/libs/openMVG/openMVG/matching/matcher_cascade_hashing.hpp b/libs/openMVG/openMVG/matching/matcher_cascade_hashing.hpp
-index 00b85d8..3fef53a 100644
+index 00b85d8..1502ffc 100644
 --- a/libs/openMVG/openMVG/matching/matcher_cascade_hashing.hpp
 +++ b/libs/openMVG/openMVG/matching/matcher_cascade_hashing.hpp
 @@ -133,7 +133,7 @@ class ArrayMatcherCascadeHashing  : public ArrayMatcher<Scalar, Metric>
@@ -115,7 +115,7 @@ index 00b85d8..3fef53a 100644
    typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> BaseMat;
    /// Use a memory mapping in order to avoid memory re-allocation
 -  std::unique_ptr< Eigen::Map<BaseMat> > memMapping;
-+  unique_ptr< Eigen::Map<BaseMat> > memMapping;
++  OPENMVG_UNIQUE_PTR< Eigen::Map<BaseMat> > memMapping;
    CascadeHasher cascade_hasher_;
    HashedDescriptions hashed_base_;
    Eigen::VectorXf zero_mean_descriptor_;
@@ -225,7 +225,7 @@ index 46956b4..917ac93 100644
      matching::PairWiseMatches & map_putatives_matches // the output pairwise photometric corresponding points
      )const = 0;
 diff --git a/libs/openMVG/openMVG/types.hpp b/libs/openMVG/openMVG/types.hpp
-index 43a053d..d7ed33b 100644
+index 43a053d..21c5790 100644
 --- a/libs/openMVG/openMVG/types.hpp
 +++ b/libs/openMVG/openMVG/types.hpp
 @@ -9,19 +9,31 @@
@@ -262,7 +262,7 @@ index 43a053d..d7ed33b 100644
  static const IndexT UndefinedIndexT = std::numeric_limits<IndexT>::max();
  
  typedef std::pair<IndexT,IndexT> Pair;
-@@ -34,11 +46,26 @@ typedef std::vector<Pair> Pair_Vec;
+@@ -34,11 +46,27 @@ typedef std::vector<Pair> Pair_Vec;
  template<typename K, typename V>
  struct Hash_Map : std::map<K, V, std::less<K>,
   Eigen::aligned_allocator<std::pair<K,V> > > {};
@@ -285,10 +285,11 @@ index 43a053d..d7ed33b 100644
 +using std::shared_ptr;
 +#endif
 +
-+#if defined(OPENMVG_BOOST_UNIQUE_PTR)
-+using boost::movelib::unique_ptr;
++#if defined(OPENMVG_NO_UNIQUE_PTR)
++// shared_ptr does not guarantee uniqueness, but can be used as a drop-in replacement
++#define OPENMVG_UNIQUE_PTR shared_ptr;
 +#else
-+using std::unique_ptr;
++#define OPENMVG_UNIQUE_PTR std::unique_ptr;
  #endif
  
  } // namespace openMVG
