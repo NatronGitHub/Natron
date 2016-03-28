@@ -48,11 +48,11 @@ public:
      Non-zero values depict the region of interest.
   */
   virtual bool Describe(const image::Image<unsigned char> & image,
-    std::unique_ptr<Regions> &regions,
+    unique_ptr<Regions> &regions,
     const image::Image<unsigned char> * mask = NULL) = 0;
 
   /// Allocate regions depending of the Image_describer
-  virtual void Allocate(std::unique_ptr<Regions> &regions) const = 0;
+  virtual void Allocate(unique_ptr<Regions> &regions) const = 0;
 
 #ifndef OPENMVG_NO_SERIALIZATION
   //--

@@ -31,7 +31,7 @@ class Cascade_Hashing_Matcher_Regions_AllInMemory : public Matcher
   void Match
   (
     const sfm::SfM_Data & sfm_data,
-    const std::shared_ptr<sfm::Regions_Provider> & regions_provider,
+    const shared_ptr<sfm::Regions_Provider> & regions_provider,
     const Pair_Set & pairs,
     matching::PairWiseMatches & map_PutativesMatches // the pairwise photometric corresponding points
   )const;

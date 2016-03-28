@@ -21,13 +21,13 @@ namespace openMVG {
 namespace features {
 
 // Init the regions_type from an image describer file (used for regions loading)
-static std::unique_ptr<features::Regions> Init_region_type_from_file
+static unique_ptr<features::Regions> Init_region_type_from_file
 (
   const std::string & sImage_describer_file
 )
 {
   using namespace openMVG::features;
-  std::unique_ptr<Regions> regions_type;
+  unique_ptr<Regions> regions_type;
   if (stlplus::is_file(sImage_describer_file))
   {
     // Dynamically load the regions type from the file

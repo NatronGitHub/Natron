@@ -1,0 +1,294 @@
+diff --git a/libs/openMVG/openMVG/features/akaze/AKAZE.cpp b/libs/openMVG/openMVG/features/akaze/AKAZE.cpp
+index 00ca9a0..bc40623 100644
+--- a/libs/openMVG/openMVG/features/akaze/AKAZE.cpp
++++ b/libs/openMVG/openMVG/features/akaze/AKAZE.cpp
+@@ -6,6 +6,12 @@
+ 
+ #include "openMVG/features/akaze/AKAZE.hpp"
+ 
++#include <cmath>
++
++#ifndef M_LN2
++#define M_LN2          0.69314718055994530942  /* log_e 2 */
++#endif
++
+ namespace openMVG {
+ namespace features {
+ 
+@@ -64,7 +70,7 @@ float AKAZE::ComputeAutomaticContrastFactor( const Image<float> & src , const fl
+ 
+       if( val > 0 )
+       {
+-        int bin_id = floor( (val / grad_max ) * static_cast<float>(nb_bin) ) ;
++        int bin_id = std::floor( (val / grad_max ) * static_cast<float>(nb_bin) ) ;
+ 
+         // Handle overflow (need to do it in a cleaner way)
+         if( bin_id == nb_bin )
+@@ -201,7 +207,7 @@ AKAZE::AKAZE(const Image<unsigned char> & in, const AKAZEConfig & options):
+   in_ = in.GetMat().cast<float>() / 255.f;
+   options_.fDesc_factor = std::max(6.f*sqrtf(2.f), options_.fDesc_factor);
+   //-- Safety check to limit the computable octave count
+-  const int nbOctaveMax = ceil(std::log2( std::min(in_.Width(), in_.Height())));
++  const int nbOctaveMax = std::ceil(std::log( std::min(in_.Width(), in_.Height()))/M_LN2);
+   options_.iNbOctave = std::min(options_.iNbOctave, nbOctaveMax);
+ }
+ 
+diff --git a/libs/openMVG/openMVG/features/image_describer.hpp b/libs/openMVG/openMVG/features/image_describer.hpp
+index 8cee223..07e05cc 100644
+--- a/libs/openMVG/openMVG/features/image_describer.hpp
++++ b/libs/openMVG/openMVG/features/image_describer.hpp
+@@ -48,11 +48,11 @@ public:
+      Non-zero values depict the region of interest.
+   */
+   virtual bool Describe(const image::Image<unsigned char> & image,
+-    std::unique_ptr<Regions> &regions,
++    unique_ptr<Regions> &regions,
+     const image::Image<unsigned char> * mask = NULL) = 0;
+ 
+   /// Allocate regions depending of the Image_describer
+-  virtual void Allocate(std::unique_ptr<Regions> &regions) const = 0;
++  virtual void Allocate(unique_ptr<Regions> &regions) const = 0;
+ 
+ #ifndef OPENMVG_NO_SERIALIZATION
+   //--
+diff --git a/libs/openMVG/openMVG/features/image_describer_akaze.hpp b/libs/openMVG/openMVG/features/image_describer_akaze.hpp
+index affff89..06d4b1f 100644
+--- a/libs/openMVG/openMVG/features/image_describer_akaze.hpp
++++ b/libs/openMVG/openMVG/features/image_describer_akaze.hpp
+@@ -87,7 +87,7 @@ public:
+      Non-zero values depict the region of interest.
+   */
+   bool Describe(const image::Image<unsigned char>& image,
+-    std::unique_ptr<Regions> &regions,
++    unique_ptr<Regions> &regions,
+     const image::Image<unsigned char> * mask = NULL)
+   {
+     _params._options.fDesc_factor =
+@@ -248,7 +248,7 @@ public:
+   };
+ 
+   /// Allocate Regions type depending of the Image_describer
+-  void Allocate(std::unique_ptr<Regions> &regions) const
++  void Allocate(unique_ptr<Regions> &regions) const
+   {
+     switch(_params._eAkazeDescriptor)
+     {
+diff --git a/libs/openMVG/openMVG/features/io_regions_type.hpp b/libs/openMVG/openMVG/features/io_regions_type.hpp
+index bd66f7c..cc51c1d 100644
+--- a/libs/openMVG/openMVG/features/io_regions_type.hpp
++++ b/libs/openMVG/openMVG/features/io_regions_type.hpp
+@@ -21,13 +21,13 @@ namespace openMVG {
+ namespace features {
+ 
+ // Init the regions_type from an image describer file (used for regions loading)
+-static std::unique_ptr<features::Regions> Init_region_type_from_file
++static unique_ptr<features::Regions> Init_region_type_from_file
+ (
+   const std::string & sImage_describer_file
+ )
+ {
+   using namespace openMVG::features;
+-  std::unique_ptr<Regions> regions_type;
++  unique_ptr<Regions> regions_type;
+   if (stlplus::is_file(sImage_describer_file))
+   {
+     // Dynamically load the regions type from the file
+diff --git a/libs/openMVG/openMVG/matching/matcher_brute_force.hpp b/libs/openMVG/openMVG/matching/matcher_brute_force.hpp
+index 15ad7fc..d0d241a 100644
+--- a/libs/openMVG/openMVG/matching/matcher_brute_force.hpp
++++ b/libs/openMVG/openMVG/matching/matcher_brute_force.hpp
+@@ -150,7 +150,7 @@ class ArrayMatcherBruteForce  : public ArrayMatcher<Scalar, Metric>
+ private:
+   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> BaseMat;
+   /// Use a memory mapping in order to avoid memory re-allocation
+-  std::unique_ptr< Eigen::Map<BaseMat> > memMapping;
++  unique_ptr< Eigen::Map<BaseMat> > memMapping;
+ };
+ 
+ }  // namespace matching
+diff --git a/libs/openMVG/openMVG/matching/matcher_cascade_hashing.hpp b/libs/openMVG/openMVG/matching/matcher_cascade_hashing.hpp
+index 00b85d8..3fef53a 100644
+--- a/libs/openMVG/openMVG/matching/matcher_cascade_hashing.hpp
++++ b/libs/openMVG/openMVG/matching/matcher_cascade_hashing.hpp
+@@ -133,7 +133,7 @@ class ArrayMatcherCascadeHashing  : public ArrayMatcher<Scalar, Metric>
+ private:
+   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> BaseMat;
+   /// Use a memory mapping in order to avoid memory re-allocation
+-  std::unique_ptr< Eigen::Map<BaseMat> > memMapping;
++  unique_ptr< Eigen::Map<BaseMat> > memMapping;
+   CascadeHasher cascade_hasher_;
+   HashedDescriptions hashed_base_;
+   Eigen::VectorXf zero_mean_descriptor_;
+diff --git a/libs/openMVG/openMVG/matching_image_collection/Cascade_Hashing_Matcher_Regions_AllInMemory.hpp b/libs/openMVG/openMVG/matching_image_collection/Cascade_Hashing_Matcher_Regions_AllInMemory.hpp
+index fffd166..a00f2f8 100644
+--- a/libs/openMVG/openMVG/matching_image_collection/Cascade_Hashing_Matcher_Regions_AllInMemory.hpp
++++ b/libs/openMVG/openMVG/matching_image_collection/Cascade_Hashing_Matcher_Regions_AllInMemory.hpp
+@@ -31,7 +31,7 @@ class Cascade_Hashing_Matcher_Regions_AllInMemory : public Matcher
+   void Match
+   (
+     const sfm::SfM_Data & sfm_data,
+-    const std::shared_ptr<sfm::Regions_Provider> & regions_provider,
++    const shared_ptr<sfm::Regions_Provider> & regions_provider,
+     const Pair_Set & pairs,
+     matching::PairWiseMatches & map_PutativesMatches // the pairwise photometric corresponding points
+   )const;
+diff --git a/libs/openMVG/openMVG/matching_image_collection/F_ACRobust.hpp b/libs/openMVG/openMVG/matching_image_collection/F_ACRobust.hpp
+index 17ee664..bf1e942 100644
+--- a/libs/openMVG/openMVG/matching_image_collection/F_ACRobust.hpp
++++ b/libs/openMVG/openMVG/matching_image_collection/F_ACRobust.hpp
+@@ -34,7 +34,7 @@ struct GeometricFilter_FMatrix_AC
+   /// Robust fitting of the FUNDAMENTAL matrix
+   bool Robust_estimation(
+     const sfm::SfM_Data * sfm_data,
+-    const std::shared_ptr<sfm::Regions_Provider> & regions_provider,
++    const shared_ptr<sfm::Regions_Provider> & regions_provider,
+     const Pair pairIndex,
+     const matching::IndMatches & vec_PutativeMatches,
+     matching::IndMatches & geometric_inliers)
+@@ -95,7 +95,7 @@ struct GeometricFilter_FMatrix_AC
+   bool Geometry_guided_matching
+   (
+     const sfm::SfM_Data * sfm_data,
+-    const std::shared_ptr<sfm::Regions_Provider> & regions_provider,
++    const shared_ptr<sfm::Regions_Provider> & regions_provider,
+     const Pair pairIndex,
+     const double dDistanceRatio,
+     matching::IndMatches & matches
+diff --git a/libs/openMVG/openMVG/matching_image_collection/GeometricFilter.hpp b/libs/openMVG/openMVG/matching_image_collection/GeometricFilter.hpp
+index 9031235..d31aaa6 100644
+--- a/libs/openMVG/openMVG/matching_image_collection/GeometricFilter.hpp
++++ b/libs/openMVG/openMVG/matching_image_collection/GeometricFilter.hpp
+@@ -30,7 +30,7 @@ struct ImageCollectionGeometricFilter
+   ImageCollectionGeometricFilter
+   (
+     const sfm::SfM_Data * sfm_data,
+-    const std::shared_ptr<sfm::Regions_Provider> & regions_provider
++    const shared_ptr<sfm::Regions_Provider> & regions_provider
+   ):_sfm_data(sfm_data), _regions_provider(regions_provider)
+   {}
+ 
+@@ -48,7 +48,7 @@ struct ImageCollectionGeometricFilter
+ 
+   // Data
+   const sfm::SfM_Data * _sfm_data;
+-  const std::shared_ptr<sfm::Regions_Provider> & _regions_provider;
++  const shared_ptr<sfm::Regions_Provider> & _regions_provider;
+   PairWiseMatches _map_GeometricMatches;
+ };
+ 
+diff --git a/libs/openMVG/openMVG/matching_image_collection/Geometric_Filter_utils.hpp b/libs/openMVG/openMVG/matching_image_collection/Geometric_Filter_utils.hpp
+index 6921538..c4576e3 100644
+--- a/libs/openMVG/openMVG/matching_image_collection/Geometric_Filter_utils.hpp
++++ b/libs/openMVG/openMVG/matching_image_collection/Geometric_Filter_utils.hpp
+@@ -47,7 +47,7 @@ void MatchesPairToMat
+   const Pair pairIndex,
+   const matching::IndMatches & putativeMatches,
+   const sfm::SfM_Data * sfm_data,
+-  const std::shared_ptr<sfm::Regions_Provider> & regions_provider,
++  const shared_ptr<sfm::Regions_Provider> & regions_provider,
+   MatT & x_I, MatT & x_J
+ )
+ {
+diff --git a/libs/openMVG/openMVG/matching_image_collection/H_ACRobust.hpp b/libs/openMVG/openMVG/matching_image_collection/H_ACRobust.hpp
+index ab814ba..cdc7107 100644
+--- a/libs/openMVG/openMVG/matching_image_collection/H_ACRobust.hpp
++++ b/libs/openMVG/openMVG/matching_image_collection/H_ACRobust.hpp
+@@ -33,7 +33,7 @@ struct GeometricFilter_HMatrix_AC
+   /// Robust fitting of the HOMOGRAPHY matrix
+   bool Robust_estimation(
+     const sfm::SfM_Data * sfm_data,
+-    const std::shared_ptr<sfm::Regions_Provider> & regions_provider,
++    const shared_ptr<sfm::Regions_Provider> & regions_provider,
+     const Pair pairIndex,
+     const matching::IndMatches & vec_PutativeMatches,
+     matching::IndMatches & geometric_inliers)
+@@ -117,7 +117,7 @@ struct GeometricFilter_HMatrix_AC
+   bool Geometry_guided_matching
+   (
+     const sfm::SfM_Data * sfm_data,
+-    const std::shared_ptr<sfm::Regions_Provider> & regions_provider,
++    const shared_ptr<sfm::Regions_Provider> & regions_provider,
+     const Pair pairIndex,
+     const double dDistanceRatio,
+     matching::IndMatches & matches
+diff --git a/libs/openMVG/openMVG/matching_image_collection/Matcher.hpp b/libs/openMVG/openMVG/matching_image_collection/Matcher.hpp
+index 46956b4..917ac93 100644
+--- a/libs/openMVG/openMVG/matching_image_collection/Matcher.hpp
++++ b/libs/openMVG/openMVG/matching_image_collection/Matcher.hpp
+@@ -31,7 +31,7 @@ class Matcher
+   /// Find corresponding points between some pair of view Ids
+   virtual void Match(
+     const sfm::SfM_Data & sfm_data,
+-    const std::shared_ptr<sfm::Regions_Provider> & regions_provider,
++    const shared_ptr<sfm::Regions_Provider> & regions_provider,
+     const Pair_Set & pairs, // list of pair to consider for matching
+     matching::PairWiseMatches & map_putatives_matches // the output pairwise photometric corresponding points
+     )const = 0;
+diff --git a/libs/openMVG/openMVG/types.hpp b/libs/openMVG/openMVG/types.hpp
+index 43a053d..d7ed33b 100644
+--- a/libs/openMVG/openMVG/types.hpp
++++ b/libs/openMVG/openMVG/types.hpp
+@@ -9,19 +9,31 @@
+ 
+ #include <Eigen/Core>
+ 
+-#include <cstdint>
+ #include <limits>
+ #include <map>
+ #include <set>
+ #include <vector>
++#include <memory>
+ 
+ #if defined OPENMVG_STD_UNORDERED_MAP
+ #include <unordered_map>
+ #endif
+ 
++#if defined(OPENMVG_BOOST_UNORDERED_MAP)
++#include <boost/unordered_map.hpp>
++#endif
++
++#if defined(OPENMVG_BOOST_SHARED_PTR)
++#include <boost/shared_ptr.hpp>
++#endif
++
++#if defined(OPENMVG_BOOST_UNIQUE_PTR)
++#include <boost/unique_ptr.hpp>
++#endif
++
+ namespace openMVG{
+ 
+-typedef uint32_t IndexT;
++typedef unsigned long IndexT;
+ static const IndexT UndefinedIndexT = std::numeric_limits<IndexT>::max();
+ 
+ typedef std::pair<IndexT,IndexT> Pair;
+@@ -34,11 +46,26 @@ typedef std::vector<Pair> Pair_Vec;
+ template<typename K, typename V>
+ struct Hash_Map : std::map<K, V, std::less<K>,
+  Eigen::aligned_allocator<std::pair<K,V> > > {};
+-#endif
+-
+-#if defined OPENMVG_STD_UNORDERED_MAP
++#elif defined OPENMVG_STD_UNORDERED_MAP
+ template<typename Key, typename Value>
+ struct Hash_Map : std::unordered_map<Key, Value> {};
++#elif defined OPENMVG_BOOST_UNORDERED_MAP
++template<typename Key, typename Value>
++struct Hash_Map : boost::unordered_map<Key, Value> {};
++#endif
++
++#if defined(OPENMVG_TR1_SHARED_PTR)
++using std::tr1::shared_ptr;
++#elif defined(OPENMVG_BOOST_SHARED_PTR)
++using boost::shared_ptr;
++#else
++using std::shared_ptr;
++#endif
++
++#if defined(OPENMVG_BOOST_UNIQUE_PTR)
++using boost::unique_ptr;
++#else
++using std::unique_ptr;
+ #endif
+ 
+ } // namespace openMVG

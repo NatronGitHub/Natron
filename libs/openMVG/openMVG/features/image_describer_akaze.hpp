@@ -87,7 +87,7 @@ public:
      Non-zero values depict the region of interest.
   */
   bool Describe(const image::Image<unsigned char>& image,
-    std::unique_ptr<Regions> &regions,
+    unique_ptr<Regions> &regions,
     const image::Image<unsigned char> * mask = NULL)
   {
     _params._options.fDesc_factor =
@@ -248,7 +248,7 @@ public:
   };
 
   /// Allocate Regions type depending of the Image_describer
-  void Allocate(std::unique_ptr<Regions> &regions) const
+  void Allocate(unique_ptr<Regions> &regions) const
   {
     switch(_params._eAkazeDescriptor)
     {

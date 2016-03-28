@@ -34,7 +34,7 @@ struct GeometricFilter_FMatrix_AC
   /// Robust fitting of the FUNDAMENTAL matrix
   bool Robust_estimation(
     const sfm::SfM_Data * sfm_data,
-    const std::shared_ptr<sfm::Regions_Provider> & regions_provider,
+    const shared_ptr<sfm::Regions_Provider> & regions_provider,
     const Pair pairIndex,
     const matching::IndMatches & vec_PutativeMatches,
     matching::IndMatches & geometric_inliers)
@@ -95,7 +95,7 @@ struct GeometricFilter_FMatrix_AC
   bool Geometry_guided_matching
   (
     const sfm::SfM_Data * sfm_data,
-    const std::shared_ptr<sfm::Regions_Provider> & regions_provider,
+    const shared_ptr<sfm::Regions_Provider> & regions_provider,
     const Pair pairIndex,
     const double dDistanceRatio,
     matching::IndMatches & matches

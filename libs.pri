@@ -36,6 +36,18 @@ DEFINES += OPENMVG_NO_SERIALIZATION
 # Use this to use OsiMskSolverInterface.cpp
 #DEFINES += OPENMVG_HAVE_MOSEK
 
+c++11 {
+   DEFINES += OPENMVG_STD_UNORDERED_MAP
+   DEFINES += OPENMVG_STD_SHARED_PTR
+   DEFINES += OPENMVG_STD_UNIQUE_PTR
+} else {
+   # Use boost::shared_ptr and boost::unordered_map
+   CONFIG += boost
+   DEFINES += OPENMVG_BOOST_UNORDERED_MAP
+   DEFINES += OPENMVG_BOOST_SHARED_PTR
+   DEFINES += OPENMVG_BOOST_UNIQUE_PTR
+}
+
 INCLUDEPATH += $$PWD/libs/openMVG/openMVG
 INCLUDEPATH += $$PWD/libs/openMVG
 INCLUDEPATH += $$PWD/libs/openMVG/dependencies/osi_clp/Clp/src

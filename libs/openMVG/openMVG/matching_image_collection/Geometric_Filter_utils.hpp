@@ -47,7 +47,7 @@ void MatchesPairToMat
   const Pair pairIndex,
   const matching::IndMatches & putativeMatches,
   const sfm::SfM_Data * sfm_data,
-  const std::shared_ptr<sfm::Regions_Provider> & regions_provider,
+  const shared_ptr<sfm::Regions_Provider> & regions_provider,
   MatT & x_I, MatT & x_J
 )
 {

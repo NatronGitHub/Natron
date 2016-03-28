@@ -150,7 +150,7 @@ class ArrayMatcherBruteForce  : public ArrayMatcher<Scalar, Metric>
 private:
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> BaseMat;
   /// Use a memory mapping in order to avoid memory re-allocation
-  std::unique_ptr< Eigen::Map<BaseMat> > memMapping;
+  unique_ptr< Eigen::Map<BaseMat> > memMapping;
 };
 
 }  // namespace matching
