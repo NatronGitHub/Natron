@@ -9,7 +9,6 @@
 
 #include <Eigen/Core>
 
-#include <cstdint>
 #include <limits>
 #include <map>
 #include <set>
@@ -21,7 +20,7 @@
 
 namespace openMVG{
 
-typedef std::uint32_t IndexT;
+typedef unsigned long IndexT;
 static const IndexT UndefinedIndexT = std::numeric_limits<IndexT>::max();
 
 typedef std::pair<IndexT,IndexT> Pair;

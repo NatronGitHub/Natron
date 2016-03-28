@@ -30,15 +30,44 @@ index 00ca9a0..4ee533a 100644
  }
  
 diff --git a/libs/openMVG/openMVG/types.hpp b/libs/openMVG/openMVG/types.hpp
-index 43a053d..f115b40 100644
+index f115b40..c12ae81 100644
 --- a/libs/openMVG/openMVG/types.hpp
 +++ b/libs/openMVG/openMVG/types.hpp
-@@ -21,7 +21,7 @@
+@@ -9,7 +9,6 @@
+ 
+ #include <Eigen/Core>
+ 
+-#include <cstdint>
+ #include <limits>
+ #include <map>
+ #include <set>
+@@ -21,7 +20,7 @@
  
  namespace openMVG{
  
 -typedef uint32_t IndexT;
-+typedef std::uint32_t IndexT;
++typedef unsigned long IndexT;
  static const IndexT UndefinedIndexT = std::numeric_limits<IndexT>::max();
  
  typedef std::pair<IndexT,IndexT> Pair;
+diff --git a/libs/openMVG/patches/stdcpp.patch b/libs/openMVG/patches/stdcpp.patch
+index 34202e9..17b14f3 100644
+--- a/libs/openMVG/patches/stdcpp.patch
++++ b/libs/openMVG/patches/stdcpp.patch
+@@ -29,16 +29,3 @@ index 00ca9a0..4ee533a 100644
+    options_.iNbOctave = std::min(options_.iNbOctave, nbOctaveMax);
+  }
+  
+-diff --git a/libs/openMVG/openMVG/types.hpp b/libs/openMVG/openMVG/types.hpp
+-index 43a053d..f115b40 100644
+---- a/libs/openMVG/openMVG/types.hpp
+-+++ b/libs/openMVG/openMVG/types.hpp
+-@@ -21,7 +21,7 @@
+- 
+- namespace openMVG{
+- 
+--typedef uint32_t IndexT;
+-+typedef std::uint32_t IndexT;
+- static const IndexT UndefinedIndexT = std::numeric_limits<IndexT>::max();
+- 
+- typedef std::pair<IndexT,IndexT> Pair;
