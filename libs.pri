@@ -36,14 +36,14 @@ DEFINES += OPENMVG_NO_SERIALIZATION
 # Use this to use OsiMskSolverInterface.cpp
 #DEFINES += OPENMVG_HAVE_MOSEK
 
-INCLUDEPATH += $$PWD/../libs/openMVG/openMVG
-INCLUDEPATH += $$PWD/../libs/openMVG
-INCLUDEPATH += $$PWD/../libs/openMVG/dependencies/osi_clp/Clp/src
-INCLUDEPATH += $$PWD/../libs/openMVG/dependencies/osi_clp/Clp/src/OsiClip
-INCLUDEPATH += $$PWD/../libs/openMVG/dependencies/osi_clp/CoinUtils/src
-INCLUDEPATH += $$PWD/../libs/openMVG/dependencies/osi_clp/Osi/src/Osi
-INCLUDEPATH += $$PWD/../libs/flann/src/cpp
-#INCLUDEPATH += $$PWD/../libs/lemon
+INCLUDEPATH += $$PWD/libs/openMVG/openMVG
+INCLUDEPATH += $$PWD/libs/openMVG
+INCLUDEPATH += $$PWD/libs/openMVG/dependencies/osi_clp/Clp/src
+INCLUDEPATH += $$PWD/libs/openMVG/dependencies/osi_clp/Clp/src/OsiClip
+INCLUDEPATH += $$PWD/libs/openMVG/dependencies/osi_clp/CoinUtils/src
+INCLUDEPATH += $$PWD/libs/openMVG/dependencies/osi_clp/Osi/src/Osi
+INCLUDEPATH += $$PWD/libs/flann/src/cpp
+#INCLUDEPATH += $$PWD/libs/lemon
 
 }
 
