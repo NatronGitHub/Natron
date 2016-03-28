@@ -13,8 +13,11 @@ build64
 sed*
 *latex*
 DerivedData
-*ceres.xcodeproj*
-*openMVG.xcodeproj*
+libs/ceres/ceres.xcodeproj
+libs/openMVG/openMVG.xcodeproj
+libs/libmv/LibMV.xcodeproj
+libs/glog/glog.xcodeproj
+libs/gflags/gflags.xcodeproj
 Natron.xcodeproj
 Natron-bin.xcodeproj
 NatronRenderer-bin.xcodeproj
@@ -25,7 +28,6 @@ CrashReporter/NatronCrashReporter
 NatronRendererCrashReporter.xcodeproj
 Tests.xcodeproj
 HostSupport.xcodeproj
-LibMV.xcodeproj
 Gui.xcodeproj
 Engine.xcodeproj
 Project.xcodeproj

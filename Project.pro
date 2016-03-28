@@ -27,9 +27,11 @@ SUBDIRS += BreakpadClient CrashReporter CrashReporterCLI
 
 SUBDIRS += \
     HostSupport \
-    ceres \
-    libmv \
-    openMVG \
+    libs/gflags \
+    libs/glog \
+    libs/ceres \
+    libs/libmv \
+    libs/openMVG \
     Engine \
     Renderer \
     Gui \

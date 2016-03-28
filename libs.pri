@@ -60,6 +60,7 @@ INCLUDEPATH += $$PWD/libs/flann/src/cpp
 
 
 ceres-flags {
+CONFIG += glog-flags
 DEFINES += CERES_HAVE_PTHREAD CERES_NO_SUITESPARSE CERES_NO_CXSPARSE CERES_HAVE_RWLOCK
 # Comment to make ceres use a lapack library
 DEFINES += CERES_NO_LAPACK
@@ -81,6 +82,18 @@ INCLUDEPATH += $$PWD/libs/ceres/config
 INCLUDEPATH += $$PWD/libs/ceres/include
 INCLUDEPATH += $$PWD/libs/ceres/internal
 INCLUDEPATH += $$PWD/libs/Eigen3
+win32-msvc* {
+	CONFIG(64bit) {
+		QMAKE_LFLAGS += /MACHINE:X64
+	} else {
+		QMAKE_LFLAGS += /MACHINE:X86
+	}
+}
+}
+
+glog-flags {
+CONFIG += gflags-flags
+DEFINES += GOOGLE_GLOG_DLL_DECL=
 INCLUDEPATH += $$PWD/libs/gflags
 INCLUDEPATH += $$PWD/libs/gflags/src
 INCLUDEPATH += $$PWD/libs/gflags/src/gflags
@@ -98,6 +111,12 @@ win32-msvc* {
 		QMAKE_LFLAGS += /MACHINE:X86
 	}
 }
+}
+
+gflags-flags {
+INCLUDEPATH += $$PWD/libs/gflags
+INCLUDEPATH += $$PWD/libs/gflags/src
+INCLUDEPATH += $$PWD/libs/gflags/src/gflags
 }
 
 ################
@@ -247,36 +266,36 @@ DEPENDPATH += $$OUT_PWD/../libs/libmv
 
 win32-msvc*{
         CONFIG(64bit) {
-                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libmv/x64/release/ -lLibMV
-                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libmv/x64/debug/ -lLibMV
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/libmv/x64/release/ -lLibMV
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/libmv/x64/debug/ -lLibMV
         } else {
-                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libmv/win32/release/ -lLibMV
-                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libmv/win32/debug/ -lLibMV
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/libmv/win32/release/ -lLibMV
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/libmv/win32/debug/ -lLibMV
         }
 } else {
-        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libmv/release/ -lLibMV
-        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libmv/debug/ -lLibMV
-        else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libmv/build/Release/ -lLibMV
-        else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libmv/build/Debug/ -lLibMV
-        else:unix: LIBS += -L$$OUT_PWD/../libmv/ -lLibMV
+        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/libmv/release/ -lLibMV
+        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/libmv/debug/ -lLibMV
+        else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/libmv/build/Release/ -lLibMV
+        else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/libmv/build/Debug/ -lLibMV
+        else:unix: LIBS += -L$$OUT_PWD/../libs/libmv/ -lLibMV
 }
 
 win32-msvc*{
         CONFIG(64bit) {
-                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libmv/x64/release/libLibMV.lib
-                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libmv/x64/debug/libLibMV.lib
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/libmv/x64/release/libLibMV.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/libmv/x64/debug/libLibMV.lib
         } else {
-                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libmv/win32/release/libLibMV.lib
-                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libmv/win32/debug/libLibMV.lib
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/libmv/win32/release/libLibMV.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/libmv/win32/debug/libLibMV.lib
         }
 } else {
-        win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libmv/release/libLibMV.a
-        else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libmv/debug/libLibMV.a
-        else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libmv/release/libLibMV.lib
-        else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libmv/debug/libLibMV.lib
-        else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libmv/build/Release/libLibMV.a
-        else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libmv/build/Debug/libLibMV.a
-        else:unix: PRE_TARGETDEPS += $$OUT_PWD/../libmv/libLibMV.a
+        win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/libmv/release/libLibMV.a
+        else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/libmv/debug/libLibMV.a
+        else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/libmv/release/libLibMV.lib
+        else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/libmv/debug/libLibMV.lib
+        else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/libmv/build/Release/libLibMV.a
+        else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/libmv/build/Debug/libLibMV.a
+        else:unix: PRE_TARGETDEPS += $$OUT_PWD/../libs/libmv/libLibMV.a
 }
 
 } # static-libmv
@@ -290,36 +309,36 @@ DEPENDPATH += $$OUT_PWD/../libs/openMVG
 
 win32-msvc*{
         CONFIG(64bit) {
-                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../openMVG/x64/release/ -lopenMVG
-                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../openMVG/x64/debug/ -lopenMVG
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/openMVG/x64/release/ -lopenMVG
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/openMVG/x64/debug/ -lopenMVG
         } else {
-                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../openMVG/win32/release/ -lopenMVG
-                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../openMVG/win32/debug/ -lopenMVG
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/openMVG/win32/release/ -lopenMVG
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/openMVG/win32/debug/ -lopenMVG
         }
 } else {
-        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../openMVG/release/ -lopenMVG
-        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../openMVG/debug/ -lopenMVG
-        else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../openMVG/build/Release/ -lopenMVG
-        else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../openMVG/build/Debug/ -lopenMVG
+        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/openMVG/release/ -lopenMVG
+        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/openMVG/debug/ -lopenMVG
+        else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/openMVG/build/Release/ -lopenMVG
+        else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/openMVG/build/Debug/ -lopenMVG
         else:unix: LIBS += -L$$OUT_PWD/../libmv/ -lLibMV
 }
 
 win32-msvc*{
         CONFIG(64bit) {
-                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../openMVG/x64/release/libopenMVG.lib
-                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../openMVG/x64/debug/libopenMVG.lib
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/openMVG/x64/release/libopenMVG.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/openMVG/x64/debug/libopenMVG.lib
         } else {
-                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../openMVG/win32/release/libopenMVG.lib
-                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../openMVG/win32/debug/libopenMVG.lib
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/openMVG/win32/release/libopenMVG.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/openMVG/win32/debug/libopenMVG.lib
         }
 } else {
-        win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../openMVG/release/libopenMVG.a
-        else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../openMVG/debug/libopenMVG.a
-        else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../openMVG/release/libopenMVG.lib
-        else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../openMVG/debug/libopenMVG.lib
-        else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../openMVG/build/Release/libopenMVG.a
-        else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../openMVG/build/Debug/libopenMVG.a
-        else:unix: PRE_TARGETDEPS += $$OUT_PWD/../openMVG/libopenMVG.a
+        win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/openMVG/release/libopenMVG.a
+        else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/openMVG/debug/libopenMVG.a
+        else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/openMVG/release/libopenMVG.lib
+        else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/openMVG/debug/libopenMVG.lib
+        else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/openMVG/build/Release/libopenMVG.a
+        else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/openMVG/build/Debug/libopenMVG.a
+        else:unix: PRE_TARGETDEPS += $$OUT_PWD/../libs/openMVG/libopenMVG.a
 }
 
 } # static-openmvg
@@ -329,38 +348,114 @@ win32-msvc*{
 static-ceres {
 win32-msvc*{
         CONFIG(64bit) {
-                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../ceres/x64/release/ -lceres
-                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../ceres/x64/debug/ -lceres
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/ceres/x64/release/ -lceres
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/ceres/x64/debug/ -lceres
         } else {
-                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../ceres/win32/release/ -lceres
-                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../ceres/win32/debug/ -lceres
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/ceres/win32/release/ -lceres
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/ceres/win32/debug/ -lceres
         }
 } else {
-        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../ceres/release/ -lceres
-        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../ceres/debug/ -lceres
-        else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../ceres/build/Release/ -lceres
-        else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../ceres/build/Debug/ -lceres
-        else:unix: LIBS += -L$$OUT_PWD/../ceres/ -lceres
+        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/ceres/release/ -lceres
+        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/ceres/debug/ -lceres
+        else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/ceres/build/Release/ -lceres
+        else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/ceres/build/Debug/ -lceres
+        else:unix: LIBS += -L$$OUT_PWD/../libs/ceres/ -lceres
 }
 
 win32-msvc*{
         CONFIG(64bit) {
-                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/x64/release/libceres.lib
-                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/x64/debug/libceres.lib
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/ceres/x64/release/libceres.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/ceres/x64/debug/libceres.lib
         } else {
-                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/win32/release/libceres.lib
-                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/win32/debug/libceres.lib
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/ceres/win32/release/libceres.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/ceres/win32/debug/libceres.lib
         }
 } else {
-        win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/release/libceres.a
-        else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/debug/libceres.a
-        else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/release/libceres.lib
-        else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/debug/libceres.lib
-        else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/build/Release/libceres.a
-        else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../ceres/build/Debug/libceres.a
-        else:unix: PRE_TARGETDEPS += $$OUT_PWD/../ceres/libceres.a
+        win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/ceres/release/libceres.a
+        else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/ceres/debug/libceres.a
+        else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/ceres/release/libceres.lib
+        else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/ceres/debug/libceres.lib
+        else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/ceres/build/Release/libceres.a
+        else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/ceres/build/Debug/libceres.a
+        else:unix: PRE_TARGETDEPS += $$OUT_PWD/../libs/ceres/libceres.a
 }
 } # static-ceres {
+
+################
+# glog
+static-glog {
+win32-msvc*{
+        CONFIG(64bit) {
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/glog/x64/release/ -lglog
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/glog/x64/debug/ -lglog
+        } else {
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/glog/win32/release/ -lglog
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/glog/win32/debug/ -lglog
+        }
+} else {
+        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/glog/release/ -lglog
+        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/glog/debug/ -lglog
+        else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/glog/build/Release/ -lglog
+        else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/glog/build/Debug/ -lglog
+        else:unix: LIBS += -L$$OUT_PWD/../libs/glog/ -lglog
+}
+
+win32-msvc*{
+        CONFIG(64bit) {
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/glog/x64/release/libglog.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/glog/x64/debug/libglog.lib
+        } else {
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/glog/win32/release/libglog.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/glog/win32/debug/libglog.lib
+        }
+} else {
+        win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/glog/release/libglog.a
+        else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/glog/debug/libglog.a
+        else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/glog/release/libglog.lib
+        else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/glog/debug/libglog.lib
+        else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/glog/build/Release/libglog.a
+        else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/glog/build/Debug/libglog.a
+        else:unix: PRE_TARGETDEPS += $$OUT_PWD/../libs/glog/libglog.a
+}
+} # static-glog {
+
+################
+# gflags
+static-gflags {
+win32-msvc*{
+        CONFIG(64bit) {
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/gflags/x64/release/ -lgflags
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/gflags/x64/debug/ -lgflags
+        } else {
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/gflags/win32/release/ -lgflags
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/gflags/win32/debug/ -lgflags
+        }
+} else {
+        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/gflags/release/ -lgflags
+        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/gflags/debug/ -lgflags
+        else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/gflags/build/Release/ -lgflags
+        else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/gflags/build/Debug/ -lgflags
+        else:unix: LIBS += -L$$OUT_PWD/../libs/gflags/ -lgflags
+}
+
+win32-msvc*{
+        CONFIG(64bit) {
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/gflags/x64/release/libgflags.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/gflags/x64/debug/libgflags.lib
+        } else {
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/gflags/win32/release/libgflags.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/gflags/win32/debug/libgflags.lib
+        }
+} else {
+        win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/gflags/release/libgflags.a
+        else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/gflags/debug/libgflags.a
+        else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/gflags/release/libgflags.lib
+        else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/gflags/debug/libgflags.lib
+        else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/gflags/build/Release/libgflags.a
+        else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/gflags/build/Debug/libgflags.a
+        else:unix: PRE_TARGETDEPS += $$OUT_PWD/../libs/gflags/libgflags.a
+}
+} # static-gflags {
 
 ################
 # BreakpadClient
