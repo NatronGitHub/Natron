@@ -122,6 +122,7 @@ INCLUDEPATH += $$PWD/libs/gflags/src/gflags
 ################
 # Gui
 static-gui {
+CONFIG += static-engine
 win32-msvc*{
         CONFIG(64bit) {
                 CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../Gui/x64/release/ -lGui
@@ -168,7 +169,7 @@ win32-msvc*{
 # Engine
 
 static-engine {
-
+CONFIG += static-libmv static-openmvg
 
 win32-msvc*{
         CONFIG(64bit) {
@@ -261,6 +262,7 @@ win32-msvc*{
 ################
 # LibMV
 static-libmv {
+CONFIG += static-ceres
 INCLUDEPATH += $$OUT_PWD/../libs/libmv
 DEPENDPATH += $$OUT_PWD/../libs/libmv
 
@@ -304,6 +306,7 @@ win32-msvc*{
 ################
 # openMVG
 static-openmvg {
+CONFIG += static-ceres
 INCLUDEPATH += $$OUT_PWD/../libs/openMVG
 DEPENDPATH += $$OUT_PWD/../libs/openMVG
 
@@ -344,8 +347,9 @@ win32-msvc*{
 } # static-openmvg
 
 ################
-# ceres (also contains glog)
+# ceres
 static-ceres {
+CONFIG += static-glog
 win32-msvc*{
         CONFIG(64bit) {
                 CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/ceres/x64/release/ -lceres
@@ -384,6 +388,7 @@ win32-msvc*{
 ################
 # glog
 static-glog {
+CONFIG += static-gflags
 win32-msvc*{
         CONFIG(64bit) {
                 CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/glog/x64/release/ -lglog
