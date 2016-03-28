@@ -418,7 +418,7 @@ bool
 AnimatedParam::setExpression(const std::string& expr,bool hasRetVariable,int dimension)
 {
     try {
-        _knob.lock()->setExpression(dimension,expr,hasRetVariable);
+        _knob.lock()->setExpression(dimension,expr,hasRetVariable, true);
     } catch (...) {
         return false;
     }

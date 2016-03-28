@@ -2905,8 +2905,8 @@ EffectInstance::onAllKnobsSlaved(bool isSlave,
 }
 
 void
-EffectInstance::onKnobSlaved(KnobI* slave,
-                             KnobI* master,
+EffectInstance::onKnobSlaved(const KnobPtr& slave,
+                             const KnobPtr& master,
                              int dimension,
                              bool isSlave)
 {

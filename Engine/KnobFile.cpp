@@ -84,7 +84,7 @@ KnobFile::typeName() const
 
 
 std::string
-KnobFile::getFileName(int time, ViewSpec view) const
+KnobFile::getFileName(int time, ViewSpec view)
 {
     if (!_isInputImage) {
         return getValue(0, view);
@@ -133,7 +133,7 @@ KnobOutputFile::typeName() const
 }
 
 QString
-KnobOutputFile::generateFileNameAtTime(SequenceTime time, ViewSpec view) const
+KnobOutputFile::generateFileNameAtTime(SequenceTime time, ViewSpec view) 
 {
     std::vector<std::string> views;
     if (getHolder() && getHolder()->getApp()) {
@@ -202,7 +202,7 @@ KnobPath::getIsStringList() const
 }
 
 void
-KnobPath::getVariables(std::list<std::pair<std::string,std::string> >* paths) const
+KnobPath::getVariables(std::list<std::pair<std::string,std::string> >* paths)
 {
     if (!_isMultiPath) {
         return;
@@ -250,7 +250,7 @@ KnobPath::getVariables(std::list<std::pair<std::string,std::string> >* paths) co
 
 
 void
-KnobPath::getPaths(std::list<std::string> *paths) const
+KnobPath::getPaths(std::list<std::string> *paths) 
 {
     std::string raw = getValue().c_str();
     

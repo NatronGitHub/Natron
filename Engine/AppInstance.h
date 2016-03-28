@@ -336,6 +336,10 @@ public:
 
 public:
     
+    void addInvalidExpressionKnob(const KnobPtr& knob);
+    void removeInvalidExpressionKnob(const KnobI* knob);
+    void recheckInvalidExpressions();
+    
     virtual void clearViewersLastRenderedTexture() {}
 
     virtual void toggleAutoHideGraphInputs() {}

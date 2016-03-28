@@ -142,7 +142,7 @@ Settings::initializeKnobsGeneral()
     _enableCrashReports = AppManager::createKnob<KnobBool>(this, "Enable crash reporting");
     _enableCrashReports->setName("enableCrashReports");
     _enableCrashReports->setAnimationEnabled(false);
-    _enableCrashReports->setHintToolTip("When checked, if " NATRON_APPLICATION_NAME "crashes a window will pop-up asking you "
+    _enableCrashReports->setHintToolTip("When checked, if " NATRON_APPLICATION_NAME " crashes a window will pop-up asking you "
                                         "whether you want to upload the crash dump to the developers or not. "
                                         "This can help them track down the bug.\n"
                                         "If you need to turn the crash reporting system off, uncheck this.\n"

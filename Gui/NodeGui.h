@@ -401,6 +401,8 @@ public:
     virtual void onIdentityStateChanged(int inputNb) OVERRIDE FINAL;
 
     void copyPreviewImageBuffer(const std::vector<unsigned int>& data, int width, int height);
+    
+    void onKnobExpressionChanged(const KnobGui* knob);
 
 protected:
     
@@ -633,9 +635,30 @@ private:
     boost::weak_ptr<NodeGui> _masterNodeGui;
 
     ///For each knob that has a link to another parameter, display an arrow
+    struct LinkedKnob {
+        
+        KnobWPtr master;
+        KnobWPtr slave;
+        
+        // Is this link valid (counter for all dimensions)
+        int linkInValid;
+        
+        // The dimensions of the slave linked to the master
+        std::set<int> dimensions;
+        
+        LinkedKnob()
+        : master()
+        , slave()
+        , linkInValid(false)
+        , dimensions()
+        {
+            
+        }
+        
+    };
     struct LinkedDim
     {
-        std::list<std::pair<KnobI*,KnobI*> > knobs;
+        std::list<LinkedKnob> knobs;
         LinkArrow* arrow;
     };
 

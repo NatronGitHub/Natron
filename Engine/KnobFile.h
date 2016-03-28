@@ -91,7 +91,7 @@ public:
      * @brief getRandomFrameName
      * @param f The index of the frame.
      */
-    std::string getFileName(int time, ViewSpec view) const;
+    std::string getFileName(int time, ViewSpec view) ;
 
 Q_SIGNALS:
 
@@ -161,7 +161,7 @@ public:
         return _sequenceDialog;
     }
 
-    QString generateFileNameAtTime(SequenceTime time, ViewSpec view) const;
+    QString generateFileNameAtTime(SequenceTime time, ViewSpec view) ;
 
 Q_SIGNALS:
 
@@ -215,10 +215,10 @@ public:
 
     bool isMultiPath() const;
 
-    void getPaths(std::list<std::string>* paths) const;
+    void getPaths(std::list<std::string>* paths) ;
     
     ///Doesn't work if isMultiPath() == false
-    void getVariables(std::list<std::pair<std::string,std::string> >* paths) const;
+    void getVariables(std::list<std::pair<std::string,std::string> >* paths) ;
     
     static std::string encodeToMultiPathFormat(const std::list<std::pair<std::string,std::string> >& paths);
     

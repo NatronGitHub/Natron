@@ -729,7 +729,7 @@ KnobChoice::getEntriesHelp_mt_safe() const
 }
 
 std::string
-KnobChoice::getActiveEntryText_mt_safe() const
+KnobChoice::getActiveEntryText_mt_safe() 
 {
     int activeIndex = getValue();
     
@@ -1074,7 +1074,7 @@ KnobString::typeName() const
 }
 
 bool
-KnobString::hasContentWithoutHtmlTags() const
+KnobString::hasContentWithoutHtmlTags() 
 {
     std::string str = getValue();
     if (str.empty()) {

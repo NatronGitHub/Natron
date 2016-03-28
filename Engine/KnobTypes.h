@@ -426,7 +426,7 @@ public:
     std::vector<std::string> getEntries_mt_safe() const;
     const std::string& getEntry(int v) const;
     std::vector<std::string> getEntriesHelp_mt_safe() const;
-    std::string getActiveEntryText_mt_safe() const;
+    std::string getActiveEntryText_mt_safe() ;
     
     int getNumEntries() const;
 
@@ -696,7 +696,7 @@ public:
      * @brief Relevant for multi-lines with rich text enables. It tells if
      * the string has content without the html tags
      **/
-    bool hasContentWithoutHtmlTags() const;
+    bool hasContentWithoutHtmlTags() ;
 
 private:
 

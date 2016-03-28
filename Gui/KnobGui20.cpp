@@ -316,7 +316,7 @@ KnobGui::linkTo(int dimension)
             thisKnob->beginChanges();
             for (int i = 0; i < thisKnob->getDimension(); ++i) {
                 if (i == dimension || dimension == -1) {
-                    thisKnob->setExpression(i, expr.str(), false);
+                    thisKnob->setExpression(i, expr.str(), false, false);
                 }
             }
             thisKnob->endChanges();
@@ -711,14 +711,47 @@ KnobGui::onExprChanged(int dimension)
     reflectExpressionState(dimension,!exp.empty());
     if (exp.empty()) {
         reflectAnimationLevel(dimension, knob->getAnimationLevel(dimension));
+    } else {
+        
+        NodeSettingsPanel* isNodeSettings = dynamic_cast<NodeSettingsPanel*>(_imp->container);
+        if (isNodeSettings) {
+            NodeGuiPtr node = isNodeSettings->getNode();
+            if (node) {
+                node->onKnobExpressionChanged(this);
+            }
+        }
+        
+        if (_imp->expressionWarningLabel) {
+            bool invalid = false;
+            QString fullErrTooltip;
+            int dims = knob->getDimension();
+            for (int i = 0; i < dims; ++i) {
+                std::string err;
+                if (!knob->isExpressionValid(i, &err)) {
+                    invalid = true;
+                }
+                if (dims > 1 && invalid) {
+                    fullErrTooltip += QString::fromUtf8("<p><b>");
+                    fullErrTooltip += QString::fromUtf8(knob->getDimensionName(i).c_str());
+                    fullErrTooltip += QString::fromUtf8("</b></p>");
+                }
+                if (!err.empty()) {
+                    fullErrTooltip += QString::fromUtf8(err.c_str());
+                }
+            }
+            if (invalid) {
+                _imp->expressionWarningLabel->show();
+                _imp->expressionWarningLabel->setToolTip(fullErrTooltip);
+            } else {
+                _imp->expressionWarningLabel->hide();
+            }
+        }
+        onHelpChanged();
+        Q_EMIT expressionChanged();
         
     }
-    
-    onHelpChanged();
-    
     updateGUI(dimension);
     
-    Q_EMIT expressionChanged();
 }
 
 void

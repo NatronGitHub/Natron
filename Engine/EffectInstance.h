@@ -1944,7 +1944,7 @@ private:
     virtual void onSignificantEvaluateAboutToBeCalled(KnobI* knob) OVERRIDE FINAL;
 
     virtual void onAllKnobsSlaved(bool isSlave, KnobHolder* master) OVERRIDE FINAL;
-    virtual void onKnobSlaved(KnobI* slave, KnobI* master,
+    virtual void onKnobSlaved(const KnobPtr& slave, const KnobPtr& master,
                               int dimension,
                               bool isSlave) OVERRIDE FINAL;
     enum RenderingFunctorRetEnum

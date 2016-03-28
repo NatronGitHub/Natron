@@ -117,6 +117,7 @@ public:
                    QWidget* fieldContainer,
                    QWidget* labelContainer,
                    KnobClickableLabel* label,
+                   Label* expressinoLabelWarning,
                    QHBoxLayout* layout,
                    bool isOnNewLine,
                    const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine);

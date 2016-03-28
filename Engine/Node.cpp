@@ -4772,6 +4772,8 @@ Node::connectInput(const NodePtr & input,
         input->connectOutput(useGuiInputs,shared_from_this());
     }
     
+    getApp()->recheckInvalidExpressions();
+    
     ///Get notified when the input name has changed
     QObject::connect( input.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
     
@@ -5301,9 +5303,10 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
     clearPersistentMessage(false);
     
     boost::shared_ptr<NodeCollection> parentCol = getGroup();
-    NodeGroup* isParentGroup = dynamic_cast<NodeGroup*>(parentCol.get());
     
-    ///For all knobs that have listeners, kill expressions
+    
+    ///For all knobs that have listeners, invalidate expressions
+    NodeGroup* isParentGroup = dynamic_cast<NodeGroup*>(parentCol.get());
     const KnobsVec & knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         KnobI::ListenerDimsMap listeners;
@@ -5342,12 +5345,18 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
                 
                 std::string hasExpr = listener->getExpression(dim);
                 if (!hasExpr.empty()) {
-                    listener->clearExpression(dim,true);
+                    std::stringstream ss;
+                    ss << tr("Missing node ").toStdString();
+                    ss << getFullyQualifiedName();
+                    ss << ' ';
+                    ss << tr("in expression.").toStdString();
+                    listener->setExpressionInvalid(dim, false, ss.str());
                 }
             }
             isEffect->endChanges(true);
         }
     }
+
     
     ///if the node has 1 non-optional input, attempt to connect the outputs to the input of the current node
     ///this node is the node the outputs should attempt to connect to
@@ -5504,6 +5513,8 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
         _imp->runOnNodeDeleteCB();
     }
     
+    deleteNodeVariableToPython(getFullyQualifiedName());
+    
 } // deactivate
 
 void
@@ -5596,6 +5607,9 @@ Node::activate(const std::list< NodePtr > & outputsToRestore,
     }
     
     _imp->runOnNodeCreatedCB(true);
+    
+    getApp()->recheckInvalidExpressions();
+    declareAllPythonAttributes();
 } // activate
 
 void
@@ -5645,6 +5659,8 @@ Node::destroyNodeInternal(bool fromDest, bool autoReconnect)
     ///Remove all images in the cache associated to this node
     ///This will not remove from the disk cache if the project is closing
     removeAllImagesFromCache(false);
+    
+    getApp()->recheckInvalidExpressions();
     
     ///Remove the Python node
     deleteNodeVariableToPython(getFullyQualifiedName());
@@ -6541,7 +6557,7 @@ Node::onAllKnobsSlaved(bool isSlave,
 }
 
 void
-Node::onKnobSlaved(KnobI* slave,KnobI* master,
+Node::onKnobSlaved(const KnobPtr& slave,const KnobPtr& master,
                    int dimension,
                    bool isSlave)
 {
@@ -7007,7 +7023,7 @@ Node::duringInputChangedAction() const
 }
 
 void
-Node::computeFrameRangeForReader(const KnobI* fileKnob)
+Node::computeFrameRangeForReader(KnobI* fileKnob)
 {
     /*
      We compute the original frame range of the sequence for the plug-in
@@ -7034,7 +7050,7 @@ Node::computeFrameRangeForReader(const KnobI* fileKnob)
         KnobInt* originalFrameRange = dynamic_cast<KnobInt*>(knob.get());
         if (originalFrameRange && originalFrameRange->getDimension() == 2) {
             
-            const KnobFile* isFile = dynamic_cast<const KnobFile*>(fileKnob);
+            KnobFile* isFile = dynamic_cast<KnobFile*>(fileKnob);
             assert(isFile);
             if (!isFile) {
                 throw std::logic_error("Node::computeFrameRangeForReader");
@@ -9311,7 +9327,16 @@ Node::removeParameterFromPython(const std::string& parameterName)
     }
 }
 
-
+void
+Node::declareAllPythonAttributes()
+{
+    declareNodeVariableToPython(getFullyQualifiedName());
+    declarePythonFields();
+    if (_imp->rotoContext) {
+        declareRotoPythonField();
+    }
+#pragma message WARN("Also declare tracker ctx to python in 2.1")
+}
 
 std::string
 Node::getKnobChangedCallback() const

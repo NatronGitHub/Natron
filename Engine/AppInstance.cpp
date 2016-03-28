@@ -124,6 +124,9 @@ struct AppInstancePrivate
     mutable QMutex renderQueueMutex;
     std::list<RenderQueueItem> renderQueue, activeRenders;
     
+    mutable QMutex invalidExprKnobsMutex;
+    std::list<KnobWPtr> invalidExprKnobs;
+    
     AppInstancePrivate(int appID,
                        AppInstance* app)
     : _publicInterface(app)
@@ -136,6 +139,9 @@ struct AppInstancePrivate
     , _creatingTree(0)
     , renderQueueMutex()
     , renderQueue()
+    , activeRenders()
+    , invalidExprKnobsMutex()
+    , invalidExprKnobs()
     {
     }
     
@@ -1903,6 +1909,55 @@ AppInstance::newProject()
     CLArgs cl;
     AppInstance* app = appPTR->newAppInstance(cl, false);
     return app;
+}
+
+void
+AppInstance::addInvalidExpressionKnob(const KnobPtr& knob)
+{
+    QMutexLocker k(&_imp->invalidExprKnobsMutex);
+    for (std::list<KnobWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it!=_imp->invalidExprKnobs.end(); ++it) {
+        if (it->lock().get()) {
+            return;
+        }
+    }
+    _imp->invalidExprKnobs.push_back(knob);
+}
+
+void
+AppInstance::removeInvalidExpressionKnob(const KnobI* knob)
+{
+    QMutexLocker k(&_imp->invalidExprKnobsMutex);
+    for (std::list<KnobWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it!=_imp->invalidExprKnobs.end(); ++it) {
+        if (it->lock().get() == knob) {
+            _imp->invalidExprKnobs.erase(it);
+            break;
+        }
+    }
+}
+
+void
+AppInstance::recheckInvalidExpressions()
+{
+    std::list<KnobPtr> knobs;
+    {
+        QMutexLocker k(&_imp->invalidExprKnobsMutex);
+        for (std::list<KnobWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it!=_imp->invalidExprKnobs.end(); ++it) {
+            KnobPtr k = it->lock();
+            if (k) {
+                knobs.push_back(k);
+            }
+        }
+    }
+    std::list<KnobWPtr> newInvalidKnobs;
+    for (std::list<KnobPtr>::iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        if (!(*it)->checkInvalidExpressions()) {
+            newInvalidKnobs.push_back(*it);
+        }
+    }
+    {
+        QMutexLocker k(&_imp->invalidExprKnobsMutex);
+        _imp->invalidExprKnobs = newInvalidKnobs;
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

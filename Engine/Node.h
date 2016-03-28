@@ -813,7 +813,7 @@ public:
 
     void onAllKnobsSlaved(bool isSlave,KnobHolder* master);
 
-    void onKnobSlaved(KnobI* slave,KnobI* master,int dimension,bool isSlave);
+    void onKnobSlaved(const KnobPtr& slave,const KnobPtr& master,int dimension,bool isSlave);
 
     NodePtr getMasterNode() const;
     
@@ -915,8 +915,8 @@ public:
     struct KnobLink
     {
         ///The knob being slaved
-        KnobI* slave;
-        KnobI* master;
+        KnobWPtr slave;
+        KnobWPtr master;
 
         ///The master node to which the knob is slaved to
         NodeWPtr masterNode;
@@ -1013,7 +1013,14 @@ public:
      * @brief Declares to Python all parameters as attribute of the variable representing this node.
      **/
     void declarePythonFields();
-        
+   
+private:
+    /**
+     * @brief Declares to Python all parameters, roto, tracking attributes
+     * This is called in activate() whenever the node was deleted
+     **/
+    void declareAllPythonAttributes();
+public:
     /**
      * @brief Set the node name.
      * Throws a run-time error with the message in case of error
@@ -1051,7 +1058,7 @@ public:
     std::string getAfterNodeCreatedCallback() const;
     std::string getBeforeNodeRemovalCallback() const;
     
-    void computeFrameRangeForReader(const KnobI* fileKnob);
+    void computeFrameRangeForReader(KnobI* fileKnob);
     
     bool getOverlayColor(double* r,double* g,double* b) const;
     

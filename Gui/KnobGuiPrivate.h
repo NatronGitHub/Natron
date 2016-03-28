@@ -117,6 +117,7 @@ struct KnobGuiPrivate
     QWidget* field;
     QWidget* labelContainer;
     KnobClickableLabel* descriptionLabel;
+    Label* expressionWarningLabel;
     bool isOnNewLine;
     CustomParamInteract* customInteract;
 
