@@ -1,0 +1,44 @@
+diff --git a/libs/openMVG/openMVG/features/akaze/AKAZE.cpp b/libs/openMVG/openMVG/features/akaze/AKAZE.cpp
+index 00ca9a0..4ee533a 100644
+--- a/libs/openMVG/openMVG/features/akaze/AKAZE.cpp
++++ b/libs/openMVG/openMVG/features/akaze/AKAZE.cpp
+@@ -6,6 +6,8 @@
+ 
+ #include "openMVG/features/akaze/AKAZE.hpp"
+ 
++#include <cmath>
++
+ namespace openMVG {
+ namespace features {
+ 
+@@ -64,7 +66,7 @@ float AKAZE::ComputeAutomaticContrastFactor( const Image<float> & src , const fl
+ 
+       if( val > 0 )
+       {
+-        int bin_id = floor( (val / grad_max ) * static_cast<float>(nb_bin) ) ;
++        int bin_id = std::floor( (val / grad_max ) * static_cast<float>(nb_bin) ) ;
+ 
+         // Handle overflow (need to do it in a cleaner way)
+         if( bin_id == nb_bin )
+@@ -201,7 +203,7 @@ AKAZE::AKAZE(const Image<unsigned char> & in, const AKAZEConfig & options):
+   in_ = in.GetMat().cast<float>() / 255.f;
+   options_.fDesc_factor = std::max(6.f*sqrtf(2.f), options_.fDesc_factor);
+   //-- Safety check to limit the computable octave count
+-  const int nbOctaveMax = ceil(std::log2( std::min(in_.Width(), in_.Height())));
++  const int nbOctaveMax = std::ceil(std::log2( std::min(in_.Width(), in_.Height())));
+   options_.iNbOctave = std::min(options_.iNbOctave, nbOctaveMax);
+ }
+ 
+diff --git a/libs/openMVG/openMVG/types.hpp b/libs/openMVG/openMVG/types.hpp
+index 43a053d..f115b40 100644
+--- a/libs/openMVG/openMVG/types.hpp
++++ b/libs/openMVG/openMVG/types.hpp
+@@ -21,7 +21,7 @@
+ 
+ namespace openMVG{
+ 
+-typedef uint32_t IndexT;
++typedef std::uint32_t IndexT;
+ static const IndexT UndefinedIndexT = std::numeric_limits<IndexT>::max();
+ 
+ typedef std::pair<IndexT,IndexT> Pair;
