@@ -8,35 +8,12 @@ TEMPLATE = lib
 CONFIG += staticlib
 CONFIG -= qt
 
-# Make openMVG use openmp
-#DEFINES += OPENMVG_USE_OPENMP
-
-# Do not use any serialization in openmvg (cereal, ply, stlplus ...)
-DEFINES += OPENMVG_NO_SERIALIZATION
-
-# Use this to use OsiMskSolverInterface.cpp
-#DEFINES += OPENMVG_HAVE_MOSEK
+CONFIG += openmvg-flags
 
 include(../global.pri)
+include(../libs.pri)
 include(../config.pri)
 
-
-INCLUDEPATH += $$PWD/../libs/ceres/config
-INCLUDEPATH += $$PWD/../libs/ceres/include
-INCLUDEPATH += $$PWD/../libs/ceres/internal
-INCLUDEPATH += $$PWD/../libs/gflags
-INCLUDEPATH += $$PWD/../libs/gflags/src
-INCLUDEPATH += $$PWD/../libs/gflags/src/gflags
-INCLUDEPATH += $$PWD/../libs/glog/src
-INCLUDEPATH += $$PWD/../libs/openMVG/openMVG
-INCLUDEPATH += $$PWD/../libs/openMVG
-INCLUDEPATH += $$PWD/../libs/openMVG/dependencies/osi_clp/Clp/src
-INCLUDEPATH += $$PWD/../libs/openMVG/dependencies/osi_clp/Clp/src/OsiClip
-INCLUDEPATH += $$PWD/../libs/openMVG/dependencies/osi_clp/CoinUtils/src
-INCLUDEPATH += $$PWD/../libs/openMVG/dependencies/osi_clp/Osi/src/Osi
-INCLUDEPATH += $$PWD/../libs/Eigen3
-INCLUDEPATH += $$PWD/../libs/flann/src/cpp
-#INCLUDEPATH += $$PWD/../libs/lemon
 
 win32-msvc* {
 	CONFIG(64bit) {

@@ -25,6 +25,29 @@ INCLUDEPATH += $$PWD/libs/libmv/third_party
 INCLUDEPATH += $$PWD/libs/libmv
 }
 
+openmvg-flags {
+CONFIG += ceres-flags
+# Make openMVG use openmp
+#DEFINES += OPENMVG_USE_OPENMP
+
+# Do not use any serialization in openmvg (cereal, ply, stlplus ...)
+DEFINES += OPENMVG_NO_SERIALIZATION
+
+# Use this to use OsiMskSolverInterface.cpp
+#DEFINES += OPENMVG_HAVE_MOSEK
+
+INCLUDEPATH += $$PWD/../libs/openMVG/openMVG
+INCLUDEPATH += $$PWD/../libs/openMVG
+INCLUDEPATH += $$PWD/../libs/openMVG/dependencies/osi_clp/Clp/src
+INCLUDEPATH += $$PWD/../libs/openMVG/dependencies/osi_clp/Clp/src/OsiClip
+INCLUDEPATH += $$PWD/../libs/openMVG/dependencies/osi_clp/CoinUtils/src
+INCLUDEPATH += $$PWD/../libs/openMVG/dependencies/osi_clp/Osi/src/Osi
+INCLUDEPATH += $$PWD/../libs/flann/src/cpp
+#INCLUDEPATH += $$PWD/../libs/lemon
+
+}
+
+
 ceres-flags {
 DEFINES += CERES_HAVE_PTHREAD CERES_NO_SUITESPARSE CERES_NO_CXSPARSE CERES_HAVE_RWLOCK
 # Comment to make ceres use a lapack library
