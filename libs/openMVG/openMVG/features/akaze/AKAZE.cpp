@@ -8,6 +8,10 @@
 
 #include <cmath>
 
+#ifndef M_LN2
+#define M_LN2          0.69314718055994530942  /* log_e 2 */
+#endif
+
 namespace openMVG {
 namespace features {
 
@@ -203,7 +207,7 @@ AKAZE::AKAZE(const Image<unsigned char> & in, const AKAZEConfig & options):
   in_ = in.GetMat().cast<float>() / 255.f;
   options_.fDesc_factor = std::max(6.f*sqrtf(2.f), options_.fDesc_factor);
   //-- Safety check to limit the computable octave count
-  const int nbOctaveMax = std::ceil(std::log2( std::min(in_.Width(), in_.Height())));
+  const int nbOctaveMax = std::ceil(std::log( std::min(in_.Width(), in_.Height()))/M_LN2);
   options_.iNbOctave = std::min(options_.iNbOctave, nbOctaveMax);
 }
 
