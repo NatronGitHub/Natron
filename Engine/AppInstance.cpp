@@ -1281,7 +1281,7 @@ void AppInstance::exportHTMLDocs(const QString path)
                             QFile htmlFile(path+QString::fromUtf8("/")+pluginID+QString::fromUtf8(".html"));
                             if (htmlFile.open(QIODevice::Text|QIODevice::WriteOnly)) {
                                 QTextStream out(&htmlFile);
-                                out << parseHTMLDoc(html, path);
+                                out << parseHTMLDoc(html, path, true);
                                 htmlFile.close();
                             }
                         }
@@ -1313,14 +1313,36 @@ void AppInstance::exportHTMLDocs(const QString path)
             QFile htmlFile(path+QString::fromUtf8("/group")+categories.at(i)+QString::fromUtf8(".html"));
             if (htmlFile.open(QIODevice::Text|QIODevice::WriteOnly)) {
                 QTextStream out(&htmlFile);
-                out << parseHTMLDoc(html, path);
+                out << parseHTMLDoc(html, path, true);
                 htmlFile.close();
+            }
+        }
+
+        // Add menu to existing sphinx html's in path
+        QDir htmlDir(path);
+        QFileInfoList dirList = htmlDir.entryInfoList();
+        for (int x = 0; x < dirList.size(); ++x) {
+            QFileInfo sphinxInfo = dirList.at(x);
+            if (sphinxInfo.exists() && sphinxInfo.suffix()==QString::fromUtf8("html")) {
+                QFile sphinxFile(sphinxInfo.absoluteFilePath());
+                QString input;
+                if (sphinxFile.open(QIODevice::ReadOnly|QIODevice::Text)) {
+                    input = QString::fromUtf8(sphinxFile.readAll());
+                    sphinxFile.close();
+                }
+                if (input.contains(QString::fromUtf8("http://sphinx.pocoo.org/")) && !input.contains(QString::fromUtf8("mainMenu"))) {
+                    if (sphinxFile.open(QIODevice::WriteOnly|QIODevice::Truncate|QIODevice::Text)) {
+                        QTextStream output(&sphinxFile);
+                        output << parseHTMLDoc(input, path, false);
+                        sphinxFile.close();
+                    }
+                }
             }
         }
     }
 }
 
-QString AppInstance::parseHTMLDoc(const QString html, const QString path) const
+QString AppInstance::parseHTMLDoc(const QString html, const QString path, bool replaceNewline) const
 {
     QString result = html;
 
@@ -1384,7 +1406,9 @@ QString AppInstance::parseHTMLDoc(const QString html, const QString path) const
     // return result
     menuHTML.append(refHTML);
     menuHTML.append(QString::fromUtf8("</div>\n</div>\n"));
-    result.replace(QString::fromUtf8("\n"),QString::fromUtf8("</p><p>"));
+    if (replaceNewline) {
+        result.replace(QString::fromUtf8("\n"),QString::fromUtf8("</p><p>"));
+    }
     result.replace(QString::fromUtf8("<body>"),menuHTML);
     return result;
 }
