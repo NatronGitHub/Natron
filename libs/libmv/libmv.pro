@@ -25,8 +25,10 @@ SOURCES += \
         libmv/autotrack/tracks.cc \
         libmv/image/array_nd.cc \
         libmv/image/convolve.cc \
-        libmv/multiview/homography.cc \
         libmv/multiview/conditioning.cc \
+        libmv/multiview/homography.cc \
+        libmv/multiview/projection.cc \
+        libmv/numeric/numeric.cc \
         libmv/tracking/track_region.cc \
 
 HEADERS += \
