@@ -4139,7 +4139,9 @@ static void applyNodeRedirectionsDownstream(int recurseCounter, const NodePtr& n
     if (isOutput) {
         //The node is the output of a group, its outputs are the outputs of the group
         boost::shared_ptr<NodeCollection> collection = isOutput->getNode()->getGroup();
-        assert(collection);
+        if (!collection) {
+            return;
+        }
         isGrp = dynamic_cast<NodeGroup*>(collection.get());
         if (isGrp) {
             

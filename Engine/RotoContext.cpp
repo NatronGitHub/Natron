@@ -1783,9 +1783,12 @@ std::list< boost::shared_ptr<RotoDrawableItem> >
 RotoContext::getCurvesByRenderOrder(bool onlyActivated) const
 {
     std::list< boost::shared_ptr<RotoDrawableItem> > ret;
-    
+    NodePtr node = getNode();
+    if (!node) {
+        return ret;
+    }
     ///Note this might not be the timeline's current frame if this is a render thread.
-    EffectInstPtr effect = getNode()->getEffectInstance();
+    EffectInstPtr effect = node->getEffectInstance();
     if (!effect) {
         return ret;
     }
