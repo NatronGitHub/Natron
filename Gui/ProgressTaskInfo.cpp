@@ -24,6 +24,8 @@
 
 #include "ProgressTaskInfo.h"
 
+#include "Global/Macros.h"
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QTimer>
