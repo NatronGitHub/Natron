@@ -3914,7 +3914,7 @@ Node::makeHTMLDocumentation() const
     ts << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
     ts << "<html><head>";
     ts << "<title>" << pluginLabel << "</title>";
-    ts << "<link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" />";
+    ts << "<link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"_static/jquery.js\"></script><script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>";
     ts << "</head><body><div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\">";
     ts << "<h1>" << pluginLabel << " version " << majorVersion << "." << minorVersion << "</h1>";
     ts << "<!--ADD_SCREENSHOT_HERE-->";

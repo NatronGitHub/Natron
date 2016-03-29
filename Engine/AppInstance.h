@@ -183,6 +183,7 @@ public:
     int getAppID() const;
 
     void exportHTMLDocs(const QString path);
+    QString parseHTMLDoc(const QString html, const QString path) const;
 
     /** @brief Create a new node  in the node graph.
      **/

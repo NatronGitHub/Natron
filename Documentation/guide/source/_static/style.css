@@ -66,6 +66,14 @@ table.knobsTable {
   margin-bottom:10px;
 }
 
-h3 {
+/*h3 {
 clear:both;
+}*/
+
+div#mainMenu {
+  width: 250px;
+  float:left;
+}
+div.document {
+  margin-left:250px;
 }
