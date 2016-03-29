@@ -80,6 +80,11 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     export PKG_CONFIG_PATH=/opt/X11/lib/pkgconfig
     if [ "$CC" = "gcc" ]; then qmake -r -spec unsupported/macx-clang-libc++ QMAKE_CC=gcc QMAKE_CXX=g++ CONFIG+="debug $BREAKPAD $SILENT"; else qmake -r -spec unsupported/macx-clang-libc++ CONFIG+="debug $BREAKPAD $SILENT"; fi
     export MAKEFLAGS="$J" # qmake doesn't seem to pass MAKEFLAGS for recursive builds
+    make $J -C libs/gflags
+    make $J -C libs/glog
+    make $J -C libs/ceres
+    make $J -C libs/libmv
+    make $J -C libs/openMVG
     make $J -C HostSupport;
     make $J -C Engine;
     make $J -C Gui;
