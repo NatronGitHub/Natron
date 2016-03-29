@@ -79,6 +79,8 @@ struct CLArgsPrivate
     QString breakpadProcessFilePath;
     
     qint64 breakpadProcessPID;
+
+    QString exportDocsPath;
     
     CLArgsPrivate()
     : args()
@@ -102,6 +104,7 @@ struct CLArgsPrivate
     , breakpadPipeClientID(-1)
     , breakpadProcessFilePath()
     , breakpadProcessPID(-1)
+    , exportDocsPath()
     {
         
     }
@@ -194,6 +197,7 @@ CLArgs::operator=(const CLArgs& other)
     _imp->enableRenderStats = other._imp->enableRenderStats;
     _imp->isEmpty = other._imp->isEmpty;
     _imp->imageFilename = other._imp->imageFilename;
+    _imp->exportDocsPath = other._imp->exportDocsPath;
 }
 
 bool
@@ -485,6 +489,11 @@ CLArgs::getBreakpadComPipeFilePath() const
     return _imp->breakpadComPipeFilePath;
 }
 
+const QString &CLArgs::getExportDocsPath() const
+{
+    return _imp->exportDocsPath;
+}
+
 QStringList::iterator
 CLArgsPrivate::findFileNameWithExtension(const QString& extension)
 {
@@ -760,7 +769,21 @@ CLArgsPrivate::parse()
         }
     }
 
-    
+    {
+        QStringList::iterator it = hasToken(QString::fromUtf8("export-docs"), QString());
+        if (it != args.end()) {
+            ++it;
+            if (it != args.end()) {
+                exportDocsPath = *it;
+                args.erase(it);
+            } else {
+                std::cout << QObject::tr("You must specify the doc dir path").toStdString() << std::endl;
+                error = 1;
+                return;
+            }
+        }
+    }
+
     {
         QStringList::iterator it = hasToken(QString::fromUtf8("IPCpipe"), QString());
         if (it != args.end()) {

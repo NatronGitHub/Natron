@@ -129,6 +129,8 @@ public:
     const QString& getBreakpadPipeFilePath() const;
     
     const QString& getBreakpadComPipeFilePath() const;
+
+    const QString& getExportDocsPath() const;
     
 private:
     

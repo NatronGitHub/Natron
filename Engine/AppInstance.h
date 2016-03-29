@@ -182,6 +182,8 @@ public:
 
     int getAppID() const;
 
+    void exportHTMLDocs(const QString path);
+
     /** @brief Create a new node  in the node graph.
      **/
     NodePtr createNode(CreateNodeArgs & args);

@@ -513,7 +513,12 @@ AppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
     
     _imp->executeCommandLinePythonCommands(cl);
 
-    
+    QString exportDocPath = cl.getExportDocsPath();
+    if (!exportDocPath.isEmpty()) {
+        exportHTMLDocs(exportDocPath);
+        return;
+    }
+
     ///if the app is a background project autorun and the project name is empty just throw an exception.
     if ( (appPTR->getAppType() == AppManager::eAppTypeBackgroundAutoRun ||
           appPTR->getAppType() == AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui)) {
@@ -1240,6 +1245,44 @@ int
 AppInstance::getAppID() const
 {
     return _imp->_appID;
+}
+
+void AppInstance::exportHTMLDocs(const QString path)
+{
+    qDebug() << "export docs" << path;
+    if (!path.isEmpty()) {
+        std::list<std::string> pluginIDs = appPTR->getPluginIDs();
+        for (std::list<std::string>::iterator it=pluginIDs.begin(); it != pluginIDs.end(); ++it) {
+            QString pluginID = QString::fromUtf8(it->c_str());
+            if (!pluginID.isEmpty()) {
+                Plugin* plugin = 0;
+                QString pluginID = QString::fromUtf8(it->c_str());
+                plugin = appPTR->getPluginBinary(pluginID,-1,-1,false);
+                if (plugin) {
+                    if (!plugin->getIsForInternalUseOnly()) {
+                        CreateNodeArgs args(pluginID, eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
+                        args.createGui = false;
+                        args.addToProject = false;
+                        NodePtr node = appPTR->getTopLevelInstance()->createNode(args);
+                        if (node) {
+                            QString html = node->makeHTMLDocumentation();
+                            QDir htmlDir(path);
+                            if (!htmlDir.exists()) {
+                                htmlDir.mkdir(path);
+                            }
+                            /// TODO: replace <body> with header and menu
+                            QFile htmlFile(path+QString::fromUtf8("/")+pluginID+QString::fromUtf8(".html"));
+                            if (htmlFile.open(QIODevice::Text|QIODevice::WriteOnly)) {
+                                QTextStream out(&htmlFile);
+                                out << html;
+                                htmlFile.close();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 NodePtr
