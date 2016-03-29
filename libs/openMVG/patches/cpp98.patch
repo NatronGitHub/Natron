@@ -357,3 +357,29 @@ index 43a053d..21c5790 100644
  #endif
  
  } // namespace openMVG
+diff --git a/libs/openMVG/openMVG/multiview/translation_averaging_solver_softl1.cpp b/libs/openMVG/openMVG/multiview/translation_averaging_solver_softl1.cpp
+index 743bd12..fc2681f 100644
+--- a/libs/openMVG/openMVG/multiview/translation_averaging_solver_softl1.cpp
++++ b/libs/openMVG/openMVG/multiview/translation_averaging_solver_softl1.cpp
+@@ -118,8 +118,9 @@ bool solve_translations_problem_softl1
+   // Relative rotations array
+   std::vector<double> vec_relative_rotations(vec_initial_estimates.size()*3, 0.0);
+   size_t cpt = 0;
+-  for (const openMVG::relativeInfo & info : vec_initial_estimates)
++  for (std::vector<openMVG::relativeInfo >::const_iterator it = vec_initial_estimates.begin(); it != vec_initial_estimates.end(); ++it)
+   {
++    const openMVG::relativeInfo & info = *it;
+     ceres::RotationMatrixToAngleAxis(
+       (const double*)info.second.first.data(),
+       &vec_relative_rotations[cpt]);
+@@ -134,8 +135,9 @@ bool solve_translations_problem_softl1
+   // A. Add cost functor from camera translation to the relative informations
+   cpt = 0;
+   IndexT scale_idx = 0;
+-  for (const openMVG::relativeInfo & info : vec_initial_estimates)
++  for (std::vector<openMVG::relativeInfo >::const_iterator it = vec_initial_estimates.begin(); it != vec_initial_estimates.end(); ++it)
+   {
++    const openMVG::relativeInfo & info = *it;
+     const Pair & ids = info.first;
+     const IndexT I = ids.first;
+     const IndexT J = ids.second;
