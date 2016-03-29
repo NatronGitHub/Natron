@@ -903,8 +903,8 @@ DockablePanel::showHelp()
         if (plugin) {
             int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
             int serverPort = appPTR->getCurrentSettings()->getServerPort();
-            QString localUrl = QString::fromUtf8("http://localhost:")+QString::number(serverPort)+QString::fromUtf8("/_index?plugin=")+plugin->getPluginID();
-            QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE)+QString::fromUtf8("/plugins/")+plugin->getPluginID()+QString::fromUtf8(".html");
+            QString localUrl = QString::fromUtf8("http://localhost:")+QString::number(serverPort)+QString::fromUtf8("/_plugin.html?id=")+plugin->getPluginID();
+            QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE)+QString::fromUtf8("/")+plugin->getPluginID()+QString::fromUtf8(".html");
             switch (docSource) {
             case 0:
                 QDesktopServices::openUrl(QUrl(localUrl));
