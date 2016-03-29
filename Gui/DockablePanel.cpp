@@ -901,14 +901,20 @@ DockablePanel::showHelp()
         const Plugin* plugin = iseffect->getNode()->getPlugin();
         assert(plugin);
         if (plugin) {
-            bool serverEnable = appPTR->getCurrentSettings()->isServerEnabled();
+            int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
             int serverPort = appPTR->getCurrentSettings()->getServerPort();
-            if (serverEnable) {
-                QString url = QString::fromUtf8("http://localhost:")+QString::number(serverPort)+QString::fromUtf8("/_index?plugin=")+plugin->getPluginID();
-                QDesktopServices::openUrl(QUrl(url));
-            }
-            else {
+            QString localUrl = QString::fromUtf8("http://localhost:")+QString::number(serverPort)+QString::fromUtf8("/_index?plugin=")+plugin->getPluginID();
+            QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE)+QString::fromUtf8("/plugins/")+plugin->getPluginID()+QString::fromUtf8(".html");
+            switch (docSource) {
+            case 0:
+                QDesktopServices::openUrl(QUrl(localUrl));
+                break;
+            case 1:
+                QDesktopServices::openUrl(QUrl(remoteUrl));
+                break;
+            case 2:
                 Dialogs::informationDialog(plugin->getPluginLabel().toStdString(), helpString().toStdString(), true);
+                break;
             }
         }
     }

@@ -71,8 +71,6 @@
 
 #define NATRON_CUSTOM_HOST_NAME_ENTRY "Custom..."
 
-#define NATRON_DEFAULT_WWW_PORT 8181
-
 NATRON_NAMESPACE_ENTER;
 
 
@@ -157,19 +155,22 @@ Settings::initializeKnobsGeneral()
                                            "works correctly. Do not use this.");
     _generalTab->addKnob(_testCrashReportButton);
     
-    _wwwServerEnabled = AppManager::createKnob<KnobBool>(this, "Local webserver");
-    _wwwServerEnabled->setName("webserverEnable");
-    _wwwServerEnabled->setAnimationEnabled(false);
-    _wwwServerEnabled->setHintToolTip("Local webserver used for documentation.\n"
-                                      "Changing this requires a restart of the application to take effect.");
+    _documentationSource = AppManager::createKnob<KnobChoice>(this, "Documentation Source");
+    _documentationSource->setName("documentationSource");
+    _documentationSource->setAnimationEnabled(false);
+    _documentationSource->setHintToolTip("Documentation source\n"
+                                         "Changing this may require a restart of the application to take effect.");
+    _documentationSource->appendChoice("Local");
+    _documentationSource->appendChoice("Online");
+    _documentationSource->appendChoice("None");
 
-    /// used to store temp port for the webserver
+    _generalTab->addKnob(_documentationSource);
+
+    /// used to store temp port for local webserver
     _wwwServerPort = AppManager::createKnob<KnobInt>(this, "Local webserver port");
     _wwwServerPort->setName("webserverPort");
     _wwwServerPort->setAnimationEnabled(false);
 
-    _generalTab->addKnob(_wwwServerEnabled);
-    
     _notifyOnFileChange = AppManager::createKnob<KnobBool>(this, "Warn when a file changes externally");
     _notifyOnFileChange->setName("warnOnExternalChange");
     _notifyOnFileChange->setAnimationEnabled(false);
@@ -1402,8 +1403,7 @@ Settings::setDefaultValues()
     _fontSize->setDefaultValue(NATRON_FONT_SIZE_DEFAULT);
     _checkForUpdates->setDefaultValue(false);
     _enableCrashReports->setDefaultValue(true);
-    _wwwServerEnabled->setDefaultValue(true);
-    _wwwServerPort->setDefaultValue(NATRON_DEFAULT_WWW_PORT);
+    _documentationSource->setDefaultValue(0);
     _notifyOnFileChange->setDefaultValue(true);
     _autoSaveDelay->setDefaultValue(5, 0);
     _autoSaveUnSavedProjects->setDefaultValue(true);
@@ -2570,9 +2570,9 @@ Settings::isPluginDeactivated(const Plugin* p) const
     return !found->second.enabled->getValue();
 }
 
-bool Settings::isServerEnabled() const
+int Settings::getDocumentationSource() const
 {
-    return _wwwServerEnabled->getValue();
+    return _documentationSource->getValue();
 }
 
 int Settings::getServerPort() const

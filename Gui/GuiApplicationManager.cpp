@@ -831,13 +831,12 @@ GuiApplicationManager::initGui(const CLArgs& args)
     
     // launch webserver
     if (!isBackground()) {
-        bool serverEnable = appPTR->getCurrentSettings()->isServerEnabled();
-        if (serverEnable) {
+        int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
+        if (docSource == 0) {
             QHttpServer *server = new QHttpServer(this);
             connect(server, SIGNAL(newRequest(QHttpRequest*, QHttpResponse*)), this, SLOT(webserverHandler(QHttpRequest*, QHttpResponse*)));
             connect(server,SIGNAL(newPort(int)), this, SLOT(webserverSetPort(int)));
             if (!server->listen(QHostAddress::Any, 0)) {
-                /// Should we set serverEnable to false if this happens?
 #ifdef DEBUG
                 qDebug() << "Failed to start webserver";
 #endif

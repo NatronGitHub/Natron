@@ -63,7 +63,7 @@ namespace NATRON_NAMESPACE { }
 #define NATRON_PYTHON_URL "https://natron.readthedocs.org/en/master/"
 #define NATRON_WIKI_URL "https://github.com/MrKepzie/Natron/wiki"
 #define NATRON_ISSUE_TRACKER_URL "https://github.com/MrKepzie/Natron/issues"
-#define NATRON_DOCUMENTATION_ONLINE "http://natron.fr"
+#define NATRON_DOCUMENTATION_ONLINE "http://help.natron.fr"
 // The MIME types for Natron documents are:
 // *.ntp: application/vnd.natron.project
 // *.nps: application/vnd.natron.nodepresets

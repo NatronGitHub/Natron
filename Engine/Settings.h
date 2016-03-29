@@ -354,7 +354,7 @@ public:
     
     bool isPluginDeactivated(const Plugin* p) const;
 
-    bool isServerEnabled() const;
+    int getDocumentationSource() const;
     int getServerPort() const;
     void setServerPort(int port) const;
     
@@ -415,7 +415,7 @@ private:
     boost::shared_ptr<KnobString> _customHostName;
     
     boost::shared_ptr<KnobInt> _wwwServerPort;
-    boost::shared_ptr<KnobBool> _wwwServerEnabled;
+    boost::shared_ptr<KnobChoice> _documentationSource;
     
     boost::shared_ptr<KnobChoice> _ocioConfigKnob;
     boost::shared_ptr<KnobBool> _warnOcioConfigKnobChanged;

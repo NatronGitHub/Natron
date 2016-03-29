@@ -704,14 +704,20 @@ Gui::openHelpWiki()
 void
 Gui::openHelpDocumentation()
 {
-    bool serverEnable = appPTR->getCurrentSettings()->isServerEnabled();
+    int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
     int serverPort = appPTR->getCurrentSettings()->getServerPort();
-    if (serverEnable) {
-        QString url = QString::fromUtf8("http://localhost:")+QString::number(serverPort);
-        QDesktopServices::openUrl(QUrl(url));
-    }
-    else {
-        QDesktopServices::openUrl(QUrl(QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE)));
+    QString localUrl = QString::fromUtf8("http://localhost:")+QString::number(serverPort);
+    QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE);
+    switch (docSource) {
+    case 0:
+        QDesktopServices::openUrl(QUrl(localUrl));
+        break;
+    case 1:
+        QDesktopServices::openUrl(QUrl(remoteUrl));
+        break;
+    case 2:
+        Dialogs::informationDialog(tr("Missing documentation").toStdString(), QObject::tr("Missing documentation, please go to settings and select local or online documentation source.").toStdString(), true);
+        break;
     }
 }
 
