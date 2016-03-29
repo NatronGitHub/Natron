@@ -24,6 +24,8 @@
 
 #include "KnobWidgetDnD.h"
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QDrag>
 #include <QMimeData>
 #include <QPainter>
@@ -34,6 +36,8 @@
 #include <QImage>
 #include <QWidget>
 #include <QApplication>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Knob.h"
 #include "Engine/NodeGroup.h"
