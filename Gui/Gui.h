@@ -252,10 +252,10 @@ public:
     void registerSplitter(Splitter* s);
     void unregisterSplitter(Splitter* s);
 
-    void registerPyPanel(PyPanel* panel,const std::string& pythonFunction);
-    void unregisterPyPanel(PyPanel* panel);
+    void registerPyPanel(NATRON_PYTHON_NAMESPACE::PyPanel* panel,const std::string& pythonFunction);
+    void unregisterPyPanel(NATRON_PYTHON_NAMESPACE::PyPanel* panel);
 
-    std::map<PyPanel*,std::string> getPythonPanels() const;
+    std::map<NATRON_PYTHON_NAMESPACE::PyPanel*,std::string> getPythonPanels() const;
 
 
     /**

@@ -5,7 +5,7 @@
 
 #include <PyGlobalFunctions.h>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER; NATRON_PYTHON_NAMESPACE_ENTER;
 class PyCoreApplicationWrapper : public PyCoreApplication
 {
 public:
@@ -13,7 +13,7 @@ public:
     virtual ~PyCoreApplicationWrapper();
     static void pysideInitQtMetaTypes();
 };
-NATRON_NAMESPACE_EXIT;
+NATRON_PYTHON_NAMESPACE_EXIT; NATRON_NAMESPACE_EXIT;
 
 #endif // SBK_PYCOREAPPLICATIONWRAPPER_H
 

@@ -38,6 +38,7 @@
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
+NATRON_PYTHON_NAMESPACE_ENTER;
 
 class Layer; // defined below
 
@@ -231,6 +232,7 @@ private:
     boost::shared_ptr<RotoContext> _ctx;
 };
 
+NATRON_PYTHON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_EXIT;
 
 #endif // ROTOWRAPPER_H

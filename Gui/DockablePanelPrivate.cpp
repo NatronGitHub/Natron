@@ -617,11 +617,11 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
         }
         const std::string& labelIconFilePath = knob->getIconLabel();
         QWidget *labelContainer = 0;
+        QHBoxLayout *labelLayout = 0;
 
         const bool hasLabel = ret->isLabelVisible() && (isLabelKnob || !descriptionLabel.empty() || !labelIconFilePath.empty());
         if (hasLabel) {
             
-            QHBoxLayout *labelLayout = 0;
             if (makeNewLine) {
                 labelContainer = new QWidget(page->second.tab);
                 labelLayout = new QHBoxLayout(labelContainer);
@@ -755,11 +755,15 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
             if (!hasLabel) {
                 layout->addWidget(fieldContainer,rowIndex,0, 1, 2);
             } else {
-                if (labelOnSameColumn && label) {
-                    fieldLayout->insertWidget(0, labelContainer);
+                if (label) {
+                    if (labelOnSameColumn) {
+                        labelLayout->addWidget(fieldContainer);
+                        layout->addWidget(labelContainer, rowIndex, 0, 1, 2);
+                    } else {
+                        layout->addWidget(labelContainer, rowIndex, 0, 1, 1, Qt::AlignRight);
+                        layout->addWidget(fieldContainer,rowIndex,1, 1, 1);
+                    }
                 }
-                layout->addWidget(fieldContainer,rowIndex,1, 1, 1);
-                layout->addWidget(labelContainer, rowIndex, 0, 1, 1, Qt::AlignRight);
                 
             }
             

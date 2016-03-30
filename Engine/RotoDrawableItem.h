@@ -135,9 +135,7 @@ public:
      **/
     void getOverlayColor(double* color) const;
     void setOverlayColor(const double* color);
-
     bool getInverted(double time) const;
-
     void getColor(double time,double* color) const;
     void setColor(double time,double r,double g,double b);
     
@@ -150,9 +148,7 @@ public:
     boost::shared_ptr<KnobDouble> getFeatherKnob() const;
     boost::shared_ptr<KnobDouble> getFeatherFallOffKnob() const;
     boost::shared_ptr<KnobDouble> getOpacityKnob() const;
-#ifdef NATRON_ROTO_INVERTIBLE
     boost::shared_ptr<KnobBool> getInvertedKnob() const;
-#endif
     boost::shared_ptr<KnobChoice> getOperatorKnob() const;
     boost::shared_ptr<KnobColor> getColorKnob() const;
     boost::shared_ptr<KnobDouble> getCenterKnob() const;
@@ -202,12 +198,12 @@ public:
 
     virtual std::string getCacheID() const OVERRIDE FINAL;
     
+    void resetTransformCenter();
+    
 Q_SIGNALS:
 
-#ifdef NATRON_ROTO_INVERTIBLE
     void invertedStateChanged();
-#endif
-
+    
     void overlayColorChanged();
 
     void shapeColorChanged();
@@ -215,6 +211,7 @@ Q_SIGNALS:
     void compositingOperatorChanged(ViewSpec,int,int);
 
 public Q_SLOTS:
+    
     
     void onRotoKnobChanged(ViewSpec, int,int);
     

@@ -5,7 +5,7 @@
 
 #include <PyParameter.h>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER; NATRON_PYTHON_NAMESPACE_ENTER;
 class AnimatedParamWrapper : public AnimatedParam
 {
 public:
@@ -13,7 +13,7 @@ public:
     virtual ~AnimatedParamWrapper();
     static void pysideInitQtMetaTypes();
 };
-NATRON_NAMESPACE_EXIT;
+NATRON_PYTHON_NAMESPACE_EXIT; NATRON_NAMESPACE_EXIT;
 
 #endif // SBK_ANIMATEDPARAMWRAPPER_H
 

@@ -840,7 +840,7 @@ Gui::onUserCommandTriggered()
     if ( found != _imp->pythonCommands.end() ) {
         std::string err;
         std::string output;
-        if ( !Python::interpretPythonScript(found->second, &err, &output) ) {
+        if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(found->second, &err, &output) ) {
             getApp()->appendToScriptEditor(err);
         } else {
             getApp()->appendToScriptEditor(output);

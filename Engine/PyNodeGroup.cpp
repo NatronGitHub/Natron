@@ -32,6 +32,7 @@
 #include "Engine/PyNode.h"
 
 NATRON_NAMESPACE_ENTER;
+NATRON_PYTHON_NAMESPACE_ENTER;
 
 Group::Group()
 : _collection()
@@ -82,4 +83,5 @@ Group::getChildren() const
     return ret;
 }
 
+NATRON_PYTHON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_EXIT;

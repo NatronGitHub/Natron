@@ -74,30 +74,50 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define VALUE_SERIALIZATION_REMOVES_EXPRESSIONS_RESULTS 6
 #define VALUE_SERIALIZATION_VERSION VALUE_SERIALIZATION_REMOVES_EXPRESSIONS_RESULTS
 
+#define MASTER_SERIALIZATION_INTRODUCE_MASTER_TRACK_NAME 2
+#define MASTER_SERIALIZATION_VERSION MASTER_SERIALIZATION_INTRODUCE_MASTER_TRACK_NAME
+
 NATRON_NAMESPACE_ENTER;
 
 struct MasterSerialization
 {
     int masterDimension;
     std::string masterNodeName;
+    std::string masterTrackName;
     std::string masterKnobName;
 
     MasterSerialization()
-        : masterDimension(-1)
-          , masterNodeName()
-          , masterKnobName()
+    : masterDimension(-1)
+    , masterNodeName()
+    , masterTrackName()
+    , masterKnobName()
     {
     }
-
+    
     template<class Archive>
-    void serialize(Archive & ar,
-                   const unsigned int version)
+    void save(Archive & ar,
+              const unsigned int /*version*/) const
     {
-        Q_UNUSED(version);
         ar & ::boost::serialization::make_nvp("MasterDimension",masterDimension);
         ar & ::boost::serialization::make_nvp("MasterNodeName",masterNodeName);
         ar & ::boost::serialization::make_nvp("MasterKnobName",masterKnobName);
+        ar & ::boost::serialization::make_nvp("MasterTrackName",masterTrackName);
+
     }
+
+    template<class Archive>
+    void load(Archive & ar,
+              const unsigned int version)
+    {
+        ar & ::boost::serialization::make_nvp("MasterDimension",masterDimension);
+        ar & ::boost::serialization::make_nvp("MasterNodeName",masterNodeName);
+        ar & ::boost::serialization::make_nvp("MasterKnobName",masterKnobName);
+        if (version >= MASTER_SERIALIZATION_INTRODUCE_MASTER_TRACK_NAME) {
+            ar & ::boost::serialization::make_nvp("MasterTrackName",masterTrackName);
+        }
+    }
+    
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 
 class TypeExtraData
@@ -597,7 +617,7 @@ class KnobSerialization : public KnobSerializationBase
                 KnobDouble::SerializedTrack t;
                 ar & ::boost::serialization::make_nvp("SlavePtNodeName",t.rotoNodeName);
                 if (version >= KNOB_SERIALIZATION_NODE_SCRIPT_NAME) {
-                    t.rotoNodeName = Python::makeNameScriptFriendly(t.rotoNodeName);
+                    t.rotoNodeName = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(t.rotoNodeName);
                 }
                 ar & ::boost::serialization::make_nvp("SlavePtBezier",t.bezierName);
                 ar & ::boost::serialization::make_nvp("SlavePtIndex",t.cpIndex);
@@ -1117,5 +1137,6 @@ NATRON_NAMESPACE_EXIT;
 
 BOOST_CLASS_VERSION(NATRON_NAMESPACE::KnobSerialization, KNOB_SERIALIZATION_VERSION)
 BOOST_CLASS_VERSION(NATRON_NAMESPACE::ValueSerialization, VALUE_SERIALIZATION_VERSION)
+BOOST_CLASS_VERSION(NATRON_NAMESPACE::MasterSerialization, MASTER_SERIALIZATION_VERSION)
 
 #endif // KNOBSERIALIZATION_H

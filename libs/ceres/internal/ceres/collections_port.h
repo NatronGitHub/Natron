@@ -116,9 +116,9 @@ struct HashSet : std::unordered_set<K> {};
 
 #if defined(CERES_BOOST_UNORDERED_MAP)
 template<typename K, typename V>
-struct HashMap : boost::unordered::unordered_map<K, V> {};
+struct HashMap : boost::unordered_map<K, V> {};
 template<typename K>
-struct HashSet : boost::unordered::unordered_set<K> {};
+struct HashSet : boost::unordered_set<K> {};
 #endif
     
 #if defined(_WIN32) && !defined(__MINGW64__) && !defined(__MINGW32__)

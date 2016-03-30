@@ -48,7 +48,7 @@ class AddTrackCommand
     
 public:
     
-    AddTrackCommand(const boost::shared_ptr<TrackMarker> &marker, const boost::shared_ptr<TrackerContext>& context);
+    AddTrackCommand(const TrackMarkerPtr &marker, const boost::shared_ptr<TrackerContext>& context);
     
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
@@ -58,7 +58,7 @@ private:
     
     //Hold shared_ptrs otherwise no one is holding a shared_ptr while items are removed from the context
    
-    std::list<boost::shared_ptr<TrackMarker> > _markers;
+    std::list<TrackMarkerPtr > _markers;
     boost::weak_ptr<TrackerContext> _context;
     
 };
@@ -70,7 +70,7 @@ class RemoveTracksCommand
 
 public:
     
-    RemoveTracksCommand(const std::list<boost::shared_ptr<TrackMarker> > &markers, const boost::shared_ptr<TrackerContext>& context);
+    RemoveTracksCommand(const std::list<TrackMarkerPtr > &markers, const boost::shared_ptr<TrackerContext>& context);
     
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
@@ -81,7 +81,7 @@ private:
     //Hold shared_ptrs otherwise no one is holding a shared_ptr while items are removed from the context
     struct TrackToRemove
     {
-        boost::shared_ptr<TrackMarker> track;
+        TrackMarkerPtr track;
         boost::weak_ptr<TrackMarker> prevTrack;
     };
     

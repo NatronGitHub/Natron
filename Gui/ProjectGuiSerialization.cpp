@@ -151,8 +151,8 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
     
     _scriptEditorInput = projectGui->getGui()->getScriptEditor()->getAutoSavedScript().toStdString();
     
-    std::map<PyPanel*,std::string> pythonPanels = projectGui->getGui()->getPythonPanels();
-    for ( std::map<PyPanel*,std::string>::iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
+    std::map<NATRON_PYTHON_NAMESPACE::PyPanel*,std::string> pythonPanels = projectGui->getGui()->getPythonPanels();
+    for ( std::map<NATRON_PYTHON_NAMESPACE::PyPanel*,std::string>::iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
         boost::shared_ptr<PythonPanelSerialization> s(new PythonPanelSerialization);
         s->initialize(it->first, it->second);
         _pythonPanels.push_back(s);
@@ -283,12 +283,12 @@ GuiLayoutSerialization::initialize(Gui* gui)
 
 
 void
-PythonPanelSerialization::initialize(PyPanel* tab,const std::string& func)
+PythonPanelSerialization::initialize(NATRON_PYTHON_NAMESPACE::PyPanel* tab,const std::string& func)
 {
     name = tab->getLabel();
     pythonFunction = func;
-    std::list<Param*> parameters = tab->getParams();
-    for (std::list<Param*>::iterator it = parameters.begin(); it != parameters.end(); ++it) {
+    std::list<NATRON_PYTHON_NAMESPACE::Param*> parameters = tab->getParams();
+    for (std::list<NATRON_PYTHON_NAMESPACE::Param*>::iterator it = parameters.begin(); it != parameters.end(); ++it) {
         
         KnobPtr knob = (*it)->getInternalKnob();
         KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knob.get() );

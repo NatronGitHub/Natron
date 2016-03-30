@@ -22,15 +22,21 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Gui/KnobGui.h"
+
 #include <cassert>
 #include <stdexcept>
 
 #include <boost/weak_ptr.hpp>
 
+#include "Global/Macros.h"
+
 #include "Engine/KnobTypes.h"
+#include "Engine/TrackMarker.h"
+#include "Engine/TrackerContext.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/ViewIdx.h"
 
-#include "Gui/KnobGui.h"
 #include "Gui/KnobGuiPrivate.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiApplicationManager.h"
@@ -667,28 +673,18 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
             std::pair<int,KnobPtr > master = knob->getMaster(dimension);
             assert(master.second);
             
-            assert(collec);
-            if (collec) {
-                NodesList nodes = collec->getNodes();
-                if (isCollecGroup) {
-                    nodes.push_back(isCollecGroup->getNode());
-                }
-                for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-                    const std::vector< KnobPtr > & knobs = (*it)->getKnobs();
-                    bool shouldStop = false;
-                    for (U32 j = 0; j < knobs.size(); ++j) {
-                        if ( knobs[j].get() == master.second.get() ) {
-                            knobName.append((*it)->getScriptName() );
-                            shouldStop = true;
-                            break;
-                        }
-                    }
-                    if (shouldStop) {
-                        break;
-                        
-                    }
+            KnobHolder* masterHolder = master.second->getHolder();
+            if (masterHolder) {
+                TrackMarker* isTrackMarker = dynamic_cast<TrackMarker*>(masterHolder);
+                if (isTrackMarker) {
+                    knobName.append(isTrackMarker->getContext()->getNode()->getScriptName());
+                    knobName += '.';
+                    knobName += isTrackMarker->getScriptName_mt_safe();
+                    
                 }
             }
+            
+        
             knobName.append(".");
             knobName.append( master.second->getName() );
             if (!aliasMaster && master.second->getDimension() > 1) {

@@ -26,10 +26,13 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
 !noexpat: CONFIG += expat
 
-# Don't uncomment the following: pyside requires QtGui, because PySide/QtCore/pyside_qtcore_python.h includes qtextdocument.h
+# Do not uncomment the following: pyside requires QtGui, because PySide/QtCore/pyside_qtcore_python.h includes qtextdocument.h
 #QT -= gui
 
+CONFIG += libmv-flags openmvg-flags
+
 include(../global.pri)
+include(../libs.pri)
 include(../config.pri)
 
 log {
@@ -55,18 +58,6 @@ INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../Global
 INCLUDEPATH += $$PWD/../libs/SequenceParsing
 
-
-#include libmv
-INCLUDEPATH += $$PWD/../libs/libmv
-INCLUDEPATH += $$PWD/../libs/ceres/config
-INCLUDEPATH += $$PWD/../libs/ceres/include
-INCLUDEPATH += $$PWD/../libs/ceres/internal
-INCLUDEPATH += $$PWD/../libs/gflags/src
-INCLUDEPATH += $$PWD/../libs/gflags/src/gflags
-INCLUDEPATH += $$PWD/../libs/glog/src
-INCLUDEPATH += $$PWD/../libs/libmv/third_party
-INCLUDEPATH += $$PWD/../libs/Eigen3
-
 INCLUDEPATH += $$PWD/../google-breakpad/src
 
 #To overcome wrongly generated #include <...> by shiboken
@@ -74,14 +65,6 @@ INCLUDEPATH += $$PWD
 INCLUDEPATH += $$PWD/NatronEngine
 DEPENDPATH += $$PWD/NatronEngine
 DEPENDPATH += $$PWD/../Global
-
-win32-msvc* {
-        CONFIG(64bit) {
-                QMAKE_LFLAGS += /MACHINE:X64
-        } else {
-                QMAKE_LFLAGS += /MACHINE:X86
-        }
-}
 
 SOURCES += \
     AppInstance.cpp \
@@ -163,6 +146,7 @@ SOURCES += \
     PyParameter.cpp \
     PyRoto.cpp \
     PySideCompat.cpp \
+    PyTracker.cpp \
     ReadNode.cpp \
     RectD.cpp \
     RectI.cpp \
@@ -224,6 +208,8 @@ SOURCES += \
     NatronEngine/imagelayer_wrapper.cpp \
     NatronEngine/layer_wrapper.cpp \
     NatronEngine/roto_wrapper.cpp \
+    NatronEngine/track_wrapper.cpp \
+    NatronEngine/tracker_wrapper.cpp \
     NatronEngine/groupparam_wrapper.cpp \
     NatronEngine/pageparam_wrapper.cpp \
     NatronEngine/appsettings_wrapper.cpp \
@@ -338,6 +324,7 @@ HEADERS += \
     PyNode.h \
     PyParameter.h \
     PyRoto.h \
+    PyTracker.h \
     Pyside_Engine_Python.h \
     ReadNode.h \
     RectD.h \
@@ -449,6 +436,8 @@ HEADERS += \
     NatronEngine/imagelayer_wrapper.h \
     NatronEngine/layer_wrapper.h \
     NatronEngine/roto_wrapper.h \
+    NatronEngine/track_wrapper.h \
+    NatronEngine/tracker_wrapper.h \
     NatronEngine/groupparam_wrapper.h \
     NatronEngine/pageparam_wrapper.h \
     NatronEngine/appsettings_wrapper.h \

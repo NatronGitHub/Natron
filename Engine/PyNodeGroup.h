@@ -34,6 +34,7 @@
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
+NATRON_PYTHON_NAMESPACE_ENTER;
 
 class Group
 {
@@ -68,6 +69,7 @@ public:
 
 };
 
+NATRON_PYTHON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_NodeGroupWrapper_h

@@ -238,7 +238,7 @@ NewLayerDialog::getComponents() const
     QString g = _imp->gEdit->text();
     QString b = _imp->bEdit->text();
     QString a = _imp->aEdit->text();
-    std::string layerFixed = Python::makeNameScriptFriendly(layer.toStdString());
+    std::string layerFixed = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(layer.toStdString());
     if (layerFixed.empty()) {
         return ImageComponents::getNoneComponents();
     }

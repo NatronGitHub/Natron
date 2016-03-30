@@ -241,7 +241,7 @@ struct PythonPanelSerialization
     std::string pythonFunction;
     std::string userData;
     
-    void initialize(PyPanel* tab,const std::string& pythonFunction);
+    void initialize(NATRON_PYTHON_NAMESPACE::PyPanel* tab,const std::string& pythonFunction);
     
     template<class Archive>
     void save(Archive & ar,

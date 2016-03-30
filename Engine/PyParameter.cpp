@@ -33,6 +33,7 @@
 #include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER;
+NATRON_PYTHON_NAMESPACE_ENTER;
 
 Param::Param(const KnobPtr& knob)
 : _knob(knob)
@@ -1722,5 +1723,6 @@ ParametricParam::deleteAllControlPoints(int dimension)
     return _parametricKnob.lock()->deleteAllControlPoints(dimension);
 }
 
+NATRON_PYTHON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_EXIT;
 

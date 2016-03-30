@@ -58,7 +58,7 @@ public:
     
     virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return 2;
+        return 1;
     }
     
     virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
@@ -115,6 +115,10 @@ public:
         return false;
     }
     
+    virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN {
+        return false;
+    }
+    
     virtual bool hasOverlay() const OVERRIDE FINAL
     {
         return true;
@@ -129,6 +133,13 @@ private:
                             double* inputTime,
                             ViewIdx* inputView,
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual void knobChanged(KnobI* k,
+                             ValueChangedReasonEnum reason,
+                             ViewSpec view,
+                             double time,
+                             bool originatedFromMainThread) OVERRIDE FINAL;
+    
 };
 
 NATRON_NAMESPACE_EXIT;

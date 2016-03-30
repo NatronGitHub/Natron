@@ -34,9 +34,11 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/PyRoto.h"
+#include "Engine/PyTracker.h"
 #include "Engine/Hash64.h"
 
 NATRON_NAMESPACE_ENTER;
+NATRON_PYTHON_NAMESPACE_ENTER;
 
 ImageLayer::ImageLayer(const std::string& layerName,
            const std::string& componentsPrettyName,
@@ -715,6 +717,16 @@ Effect::getRotoContext() const
     return 0;
 }
 
+Tracker*
+Effect::getTrackerContext() const
+{
+    boost::shared_ptr<TrackerContext> t = getInternalNode()->getTrackerContext();
+    if (t) {
+        return new Tracker(t);
+    }
+    return 0;
+}
+
 RectD
 Effect::getRegionOfDefinition(double time,
                               int view) const
@@ -831,4 +843,6 @@ Effect::setPagesOrder(const std::list<std::string>& pages)
     getInternalNode()->setPagesOrder(pages);
 }
 
+
+NATRON_PYTHON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_EXIT;

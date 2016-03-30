@@ -164,8 +164,8 @@ struct TrackRequestKey_compareLess
         } else if (lhs.time > rhs.time) {
             return false;
         } else {
-            boost::shared_ptr<TrackMarker> lptr = lhs.track.lock();
-            boost::shared_ptr<TrackMarker> rptr = rhs.track.lock();
+            TrackMarkerPtr lptr = lhs.track.lock();
+            TrackMarkerPtr rptr = rhs.track.lock();
             if (lptr.get() < rptr.get()) {
                 return true;
             } else if (lptr.get() > rptr.get()) {
@@ -224,7 +224,7 @@ struct TrackerGuiPrivate
     TrackerMouseStateEnum eventState;
     TrackerDrawStateEnum hoverState;
     
-    boost::shared_ptr<TrackMarker> interactMarker,hoverMarker;
+    TrackMarkerPtr interactMarker,hoverMarker;
     
     typedef std::map<int,boost::shared_ptr<Texture> > KeyFrameTexIDs;
     typedef std::map<boost::weak_ptr<TrackMarker>, KeyFrameTexIDs> TrackKeysMap;
@@ -306,7 +306,7 @@ struct TrackerGuiPrivate
     
     void convertImageTosRGBOpenGLTexture(const boost::shared_ptr<Image>& image,const boost::shared_ptr<Texture>& tex, const RectI& renderWindow);
     
-    void makeMarkerKeyTexture(int time, const boost::shared_ptr<TrackMarker>& track);
+    void makeMarkerKeyTexture(int time, const TrackMarkerPtr& track);
     
     void drawSelectedMarkerTexture(const std::pair<double,double>& pixelScale,
                                    int currentTime,
@@ -561,9 +561,9 @@ TrackerGui::createGui()
     
         assert(context);
         QObject::connect(context.get(), SIGNAL(selectionChanged(int)), this , SLOT(onContextSelectionChanged(int)));
-        QObject::connect(context.get(), SIGNAL(keyframeSetOnTrack(boost::shared_ptr<TrackMarker>,int)), this , SLOT(onKeyframeSetOnTrack(boost::shared_ptr<TrackMarker>,int)));
-        QObject::connect(context.get(), SIGNAL(keyframeRemovedOnTrack(boost::shared_ptr<TrackMarker>,int)), this , SLOT(onKeyframeRemovedOnTrack(boost::shared_ptr<TrackMarker>,int)));
-        QObject::connect(context.get(), SIGNAL(allKeyframesRemovedOnTrack(boost::shared_ptr<TrackMarker>)), this , SLOT(onAllKeyframesRemovedOnTrack(boost::shared_ptr<TrackMarker>)));
+        QObject::connect(context.get(), SIGNAL(keyframeSetOnTrack(TrackMarkerPtr,int)), this , SLOT(onKeyframeSetOnTrack(TrackMarkerPtr,int)));
+        QObject::connect(context.get(), SIGNAL(keyframeRemovedOnTrack(TrackMarkerPtr,int)), this , SLOT(onKeyframeRemovedOnTrack(TrackMarkerPtr,int)));
+        QObject::connect(context.get(), SIGNAL(allKeyframesRemovedOnTrack(TrackMarkerPtr)), this , SLOT(onAllKeyframesRemovedOnTrack(TrackMarkerPtr)));
         QObject::connect(context.get(), SIGNAL(onNodeInputChanged(int)), this , SLOT(onTrackerInputChanged(int)));
         QObject::connect(context.get(), SIGNAL(trackingFinished()), this , SLOT(onTrackingEnded()));
         QObject::connect(context.get(), SIGNAL(trackingStarted(int)), this, SLOT(onTrackingStarted(int)));
@@ -676,9 +676,9 @@ void
 TrackerGui::rebuildMarkerTextures()
 {
     ///Refreh textures for all markers
-    std::list<boost::shared_ptr<TrackMarker> > markers;
+    std::list<TrackMarkerPtr > markers;
     _imp->panel->getContext()->getSelectedMarkers(&markers);
-    for (std::list<boost::shared_ptr<TrackMarker> >::iterator it = markers.begin(); it!=markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it!=markers.end(); ++it) {
         std::set<int> keys;
         (*it)->getUserKeyframes(&keys);
         for (std::set<int>::iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
@@ -812,8 +812,8 @@ TrackerGui::drawOverlays(double time,
                 markerColor[0] = markerColor[1] = markerColor[2] = 0.8;
             }
             
-            std::vector<boost::shared_ptr<TrackMarker> > allMarkers;
-            std::list<boost::shared_ptr<TrackMarker> > selectedMarkers;
+            std::vector<TrackMarkerPtr > allMarkers;
+            std::list<TrackMarkerPtr > selectedMarkers;
             
             boost::shared_ptr<TrackerContext> context = _imp->panel->getContext();
             context->getSelectedMarkers(&selectedMarkers);
@@ -821,14 +821,14 @@ TrackerGui::drawOverlays(double time,
             
             bool showErrorColor = _imp->showCorrelationButton->isChecked();
             
-            boost::shared_ptr<TrackMarker> selectedMarker = _imp->selectedMarker.lock();
+            TrackMarkerPtr selectedMarker = _imp->selectedMarker.lock();
             Natron::Point selectedCenter,selectedPtnTopLeft,selectedPtnTopRight,selectedPtnBtmRight,selectedPtnBtmLeft, selectedOffset, selectedSearchBtmLeft, selectedSearchTopRight;
             
-            for (std::vector<boost::shared_ptr<TrackMarker> >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
+            for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
                 if (!(*it)->isEnabled()) {
                     continue;
                 }
-                std::list<boost::shared_ptr<TrackMarker> >::iterator foundSelected = std::find(selectedMarkers.begin(),selectedMarkers.end(),*it);
+                std::list<TrackMarkerPtr >::iterator foundSelected = std::find(selectedMarkers.begin(),selectedMarkers.end(),*it);
                 bool isSelected = foundSelected != selectedMarkers.end();
                 
                 boost::shared_ptr<KnobDouble> centerKnob = (*it)->getCenterKnob();
@@ -1228,7 +1228,7 @@ TrackerGui::drawOverlays(double time,
                     } // for (int l = 0; l < 2; ++l) {
 
                 } // if (!isSelected) {
-            } // for (std::vector<boost::shared_ptr<TrackMarker> >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
+            } // for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
             
             if (_imp->showMarkerTexture) {
                 _imp->drawSelectedMarkerTexture(std::make_pair(pixelScaleX, pixelScaleY), time, selectedCenter, selectedOffset,  selectedPtnTopLeft, selectedPtnTopRight,selectedPtnBtmRight, selectedPtnBtmLeft, selectedSearchBtmLeft, selectedSearchTopRight);
@@ -1304,7 +1304,7 @@ TrackerGuiPrivate::isInsideKeyFrameTexture(double currentTime, const QPointF& po
         return INT_MAX;
     }
     
-    boost::shared_ptr<TrackMarker> marker = selectedMarker.lock();
+    TrackMarkerPtr marker = selectedMarker.lock();
     if (!marker) {
         return INT_MAX;
     }
@@ -1476,7 +1476,7 @@ TrackerGuiPrivate::getKeysToRenderForMarker(double currentTime, const KeyFrameTe
 void
 TrackerGuiPrivate::drawSelectedMarkerKeyframes(const std::pair<double,double>& pixelScale, int currentTime)
 {
-    boost::shared_ptr<TrackMarker> marker = selectedMarker.lock();
+    TrackMarkerPtr marker = selectedMarker.lock();
     assert(marker);
     if (!marker) {
         return;
@@ -1703,7 +1703,7 @@ TrackerGuiPrivate::drawSelectedMarkerTexture(const std::pair<double,double>& pix
                                              const Natron::Point& /*selectedSearchWndBtmLeft*/,
                                              const Natron::Point& /*selectedSearchWndTopRight*/)
 {
-    boost::shared_ptr<TrackMarker> marker = selectedMarker.lock();
+    TrackMarkerPtr marker = selectedMarker.lock();
     if (isTracking || !selectedMarkerTexture || !marker || !marker->isEnabled()) {
         return;
     }
@@ -1967,9 +1967,9 @@ TrackerGui::penDown(double time,
     } else { // if (_imp->panelv1) {
         
         boost::shared_ptr<TrackerContext> context = _imp->panel->getContext();
-        std::vector<boost::shared_ptr<TrackMarker> > allMarkers;
+        std::vector<TrackMarkerPtr > allMarkers;
         context->getAllMarkers(&allMarkers);
-        for (std::vector<boost::shared_ptr<TrackMarker> >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
+        for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
             if (!(*it)->isEnabled()) {
                 continue;
             }
@@ -2146,10 +2146,10 @@ TrackerGui::penDown(double time,
             if (didSomething) {
                 break;
             }
-        } // for (std::vector<boost::shared_ptr<TrackMarker> >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
+        } // for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
         
         if (_imp->clickToAddTrackEnabled && !didSomething) {
-            boost::shared_ptr<TrackMarker> marker = context->createMarker();
+            TrackMarkerPtr marker = context->createMarker();
             boost::shared_ptr<KnobDouble> centerKnob = marker->getCenterKnob();
             centerKnob->setValuesAtTime(time, pos.x(), pos.y(), view, Natron::eValueChangedReasonNatronInternalEdited);
             if (_imp->createKeyOnMoveButton->isChecked()) {
@@ -2183,7 +2183,7 @@ TrackerGui::penDown(double time,
             }
         }
         if (!didSomething) {
-            std::list<boost::shared_ptr<TrackMarker> > selectedMarkers;
+            std::list<TrackMarkerPtr > selectedMarkers;
             context->getSelectedMarkers(&selectedMarkers);
             if (!selectedMarkers.empty()) {
                 context->clearSelection(TrackerContext::eTrackSelectionViewer);
@@ -2515,11 +2515,11 @@ TrackerGui::penMotion(double time,
         }
         
         boost::shared_ptr<TrackerContext> context = _imp->panel->getContext();
-        std::vector<boost::shared_ptr<TrackMarker> > allMarkers;
+        std::vector<TrackMarkerPtr > allMarkers;
         context->getAllMarkers(&allMarkers);
         
         bool hoverProcess = false;
-        for (std::vector<boost::shared_ptr<TrackMarker> >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
+        for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
             if (!(*it)->isEnabled()) {
                 continue;
             }
@@ -2689,7 +2689,7 @@ TrackerGui::penMotion(double time,
             if (hoverProcess) {
                 break;
             }
-        } // for (std::vector<boost::shared_ptr<TrackMarker> >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
+        } // for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
         
         if (_imp->showMarkerTexture && _imp->selectedMarkerTexture && _imp->isNearbySelectedMarkerTextureResizeAnchor(pos)) {
             _imp->viewer->getViewer()->setCursor(Qt::SizeFDiagCursor);
@@ -3053,7 +3053,7 @@ TrackerGui::penMotion(double time,
             }   break;
             case eMouseStateScalingSelectedMarker:
             {
-                boost::shared_ptr<TrackMarker> marker = _imp->selectedMarker.lock();
+                TrackMarkerPtr marker = _imp->selectedMarker.lock();
                 assert(marker);
                 RectD markerMagRect;
                 _imp->computeSelectedMarkerCanonicalRect(&markerMagRect);
@@ -3363,8 +3363,8 @@ TrackerGui::updateSelectionFromSelectionRectangle(bool onRelease)
         }
         _imp->panelv1->selectNodes( currentSelection, (_imp->controlDown > 0) );
     } else {
-        std::vector<boost::shared_ptr<TrackMarker> > allMarkers;
-        std::list<boost::shared_ptr<TrackMarker> > selectedMarkers;
+        std::vector<TrackMarkerPtr > allMarkers;
+        std::list<TrackMarkerPtr > selectedMarkers;
         boost::shared_ptr<TrackerContext> context = _imp->panel->getContext();
         context->getAllMarkers(&allMarkers);
         for (std::size_t i = 0; i < allMarkers.size(); ++i) {
@@ -3536,9 +3536,9 @@ TrackerGui::onClearAllAnimationClicked()
     if (_imp->panelv1) {
         _imp->panelv1->clearAllAnimationForSelection();
     } else {
-        std::list<boost::shared_ptr<TrackMarker> > markers;
+        std::list<TrackMarkerPtr > markers;
         _imp->panel->getContext()->getSelectedMarkers(&markers);
-        for (std::list<boost::shared_ptr<TrackMarker> >::iterator it = markers.begin(); it!=markers.end(); ++it) {
+        for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it!=markers.end(); ++it) {
             boost::shared_ptr<KnobDouble> offsetKnob = (*it)->getOffsetKnob();
             assert(offsetKnob);
             for (int i = 0; i < offsetKnob->getDimension(); ++i) {
@@ -3562,9 +3562,9 @@ TrackerGui::onClearBwAnimationClicked()
     } else {
         
         int time = _imp->panel->getContext()->getNode()->getApp()->getTimeLine()->currentFrame();
-        std::list<boost::shared_ptr<TrackMarker> > markers;
+        std::list<TrackMarkerPtr > markers;
         _imp->panel->getContext()->getSelectedMarkers(&markers);
-        for (std::list<boost::shared_ptr<TrackMarker> >::iterator it = markers.begin(); it!=markers.end(); ++it) {
+        for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it!=markers.end(); ++it) {
             boost::shared_ptr<KnobDouble> offsetKnob = (*it)->getOffsetKnob();
             assert(offsetKnob);
             for (int i = 0; i < offsetKnob->getDimension(); ++i) {
@@ -3588,9 +3588,9 @@ TrackerGui::onClearFwAnimationClicked()
     } else {
         
         int time = _imp->panel->getContext()->getNode()->getApp()->getTimeLine()->currentFrame();
-        std::list<boost::shared_ptr<TrackMarker> > markers;
+        std::list<TrackMarkerPtr > markers;
         _imp->panel->getContext()->getSelectedMarkers(&markers);
-        for (std::list<boost::shared_ptr<TrackMarker> >::iterator it = markers.begin(); it!=markers.end(); ++it) {
+        for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it!=markers.end(); ++it) {
             boost::shared_ptr<KnobDouble> offsetKnob = (*it)->getOffsetKnob();
             assert(offsetKnob);
             for (int i = 0; i < offsetKnob->getDimension(); ++i) {
@@ -3636,9 +3636,9 @@ void
 TrackerGui::onSetKeyframeButtonClicked()
 {
     int time = _imp->panel->getNode()->getNode()->getApp()->getTimeLine()->currentFrame();
-    std::list<boost::shared_ptr<TrackMarker> > markers;
+    std::list<TrackMarkerPtr > markers;
     _imp->panel->getContext()->getSelectedMarkers(&markers);
-    for (std::list<boost::shared_ptr<TrackMarker> >::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->setUserKeyframe(time);
     }
 }
@@ -3647,9 +3647,9 @@ void
 TrackerGui::onRemoveKeyframeButtonClicked()
 {
     int time = _imp->panel->getNode()->getNode()->getApp()->getTimeLine()->currentFrame();
-    std::list<boost::shared_ptr<TrackMarker> > markers;
+    std::list<TrackMarkerPtr > markers;
     _imp->panel->getContext()->getSelectedMarkers(&markers);
-    for (std::list<boost::shared_ptr<TrackMarker> >::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->removeUserKeyframe(time);
     }
 }
@@ -3658,9 +3658,9 @@ TrackerGui::onRemoveKeyframeButtonClicked()
 void
 TrackerGui::onResetOffsetButtonClicked()
 {
-    std::list<boost::shared_ptr<TrackMarker> > markers;
+    std::list<TrackMarkerPtr > markers;
     _imp->panel->getContext()->getSelectedMarkers(&markers);
-    for (std::list<boost::shared_ptr<TrackMarker> >::iterator it = markers.begin(); it!=markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it!=markers.end(); ++it) {
         boost::shared_ptr<KnobDouble> offsetKnob = (*it)->getOffsetKnob();
         assert(offsetKnob);
         for (int i = 0; i < offsetKnob->getDimension(); ++i) {
@@ -3682,7 +3682,7 @@ TrackerGui::onResetTrackButtonClicked()
 void
 TrackerGui::onContextSelectionChanged(int reason)
 {
-    std::list<boost::shared_ptr<TrackMarker> > selection;
+    std::list<TrackMarkerPtr > selection;
     _imp->panel->getContext()->getSelectedMarkers(&selection);
     if (selection.empty() || selection.size() > 1) {
         _imp->showMarkerTexture = false;
@@ -3690,8 +3690,8 @@ TrackerGui::onContextSelectionChanged(int reason)
         
         assert(selection.size() == 1);
         
-        const boost::shared_ptr<TrackMarker>& selectionFront = selection.front();
-        boost::shared_ptr<TrackMarker> oldMarker = _imp->selectedMarker.lock();
+        const TrackMarkerPtr& selectionFront = selection.front();
+        TrackMarkerPtr oldMarker = _imp->selectedMarker.lock();
         if (oldMarker != selectionFront) {
    
             _imp->selectedMarker = selectionFront;
@@ -3779,7 +3779,7 @@ TrackerGui::onKeyFrameImageRenderingFinished()
     for (TrackKeyframeRequests::iterator it = _imp->trackRequestsMap.begin(); it!=_imp->trackRequestsMap.end(); ++it) {
         if (it->second.get() == future) {
             
-            boost::shared_ptr<TrackMarker> track = it->first.track.lock();
+            TrackMarkerPtr track = it->first.track.lock();
             if (!track) {
                 return;
             }
@@ -3928,7 +3928,7 @@ TrackerGuiPrivate::refreshSelectedMarkerTexture()
     if (isTracking) {
         return;
     }
-    boost::shared_ptr<TrackMarker> marker = selectedMarker.lock();
+    TrackMarkerPtr marker = selectedMarker.lock();
     if (!marker) {
         return;
     }
@@ -3953,7 +3953,7 @@ TrackerGuiPrivate::refreshSelectedMarkerTexture()
 }
 
 void
-TrackerGuiPrivate::makeMarkerKeyTexture(int time, const boost::shared_ptr<TrackMarker>& track)
+TrackerGuiPrivate::makeMarkerKeyTexture(int time, const TrackMarkerPtr& track)
 {
     assert(QThread::currentThread() == qApp->thread());
     TrackRequestKey k;
@@ -3985,13 +3985,13 @@ TrackerGuiPrivate::makeMarkerKeyTexture(int time, const boost::shared_ptr<TrackM
 
 
 void
-TrackerGui::onKeyframeSetOnTrack(const boost::shared_ptr<TrackMarker>& marker, int key)
+TrackerGui::onKeyframeSetOnTrack(const TrackMarkerPtr& marker, int key)
 {
     _imp->makeMarkerKeyTexture(key,marker);
 }
 
 void
-TrackerGui::onKeyframeRemovedOnTrack(const boost::shared_ptr<TrackMarker>& marker, int key)
+TrackerGui::onKeyframeRemovedOnTrack(const TrackMarkerPtr& marker, int key)
 {
     for (TrackerGuiPrivate::TrackKeysMap::iterator it = _imp->trackTextures.begin(); it!=_imp->trackTextures.end(); ++it) {
         if (it->first.lock() == marker) {
@@ -4006,7 +4006,7 @@ TrackerGui::onKeyframeRemovedOnTrack(const boost::shared_ptr<TrackMarker>& marke
 }
 
 void
-TrackerGui::onAllKeyframesRemovedOnTrack(const boost::shared_ptr<TrackMarker>& marker)
+TrackerGui::onAllKeyframesRemovedOnTrack(const TrackMarkerPtr& marker)
 {
     for (TrackerGuiPrivate::TrackKeysMap::iterator it = _imp->trackTextures.begin(); it!=_imp->trackTextures.end(); ++it) {
         if (it->first.lock() == marker) {

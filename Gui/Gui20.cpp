@@ -714,11 +714,11 @@ Gui::unregisterSplitter(Splitter* s)
 }
 
 void
-Gui::registerPyPanel(PyPanel* panel,
+Gui::registerPyPanel(NATRON_PYTHON_NAMESPACE::PyPanel* panel,
                      const std::string & pythonFunction)
 {
     QMutexLocker l(&_imp->_pyPanelsMutex);
-    std::map<PyPanel*, std::string>::iterator found = _imp->_userPanels.find(panel);
+    std::map<NATRON_PYTHON_NAMESPACE::PyPanel*, std::string>::iterator found = _imp->_userPanels.find(panel);
 
     if ( found == _imp->_userPanels.end() ) {
         _imp->_userPanels.insert( std::make_pair(panel, pythonFunction) );
@@ -726,17 +726,17 @@ Gui::registerPyPanel(PyPanel* panel,
 }
 
 void
-Gui::unregisterPyPanel(PyPanel* panel)
+Gui::unregisterPyPanel(NATRON_PYTHON_NAMESPACE::PyPanel* panel)
 {
     QMutexLocker l(&_imp->_pyPanelsMutex);
-    std::map<PyPanel*, std::string>::iterator found = _imp->_userPanels.find(panel);
+    std::map<NATRON_PYTHON_NAMESPACE::PyPanel*, std::string>::iterator found = _imp->_userPanels.find(panel);
 
     if ( found != _imp->_userPanels.end() ) {
         _imp->_userPanels.erase(found);
     }
 }
 
-std::map<PyPanel*, std::string>
+std::map<NATRON_PYTHON_NAMESPACE::PyPanel*, std::string>
 Gui::getPythonPanels() const
 {
     QMutexLocker l(&_imp->_pyPanelsMutex);

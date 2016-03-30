@@ -5,7 +5,7 @@
 
 #include <PyGlobalGui.h>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER; NATRON_PYTHON_NAMESPACE_ENTER;
 class PyGuiApplicationWrapper : public PyGuiApplication
 {
 public:
@@ -13,7 +13,7 @@ public:
     virtual ~PyGuiApplicationWrapper();
     static void pysideInitQtMetaTypes();
 };
-NATRON_NAMESPACE_EXIT;
+NATRON_PYTHON_NAMESPACE_EXIT; NATRON_NAMESPACE_EXIT;
 
 #endif // SBK_PYGUIAPPLICATIONWRAPPER_H
 

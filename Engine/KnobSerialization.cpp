@@ -37,6 +37,8 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/AppInstance.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/TrackMarker.h"
+#include "Engine/TrackerContext.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -67,10 +69,17 @@ ValueSerialization::ValueSerialization(const KnobPtr & knob,
     if ( m.second && !knob->isMastersPersistenceIgnored() ) {
         _master.masterDimension = m.first;
         NamedKnobHolder* holder = dynamic_cast<NamedKnobHolder*>( m.second->getHolder() );
-        
         assert(holder);
-        // coverity[dead_error_line]
-        _master.masterNodeName = holder ? holder->getScriptName_mt_safe() : "";
+        
+        TrackMarker* isMarker = dynamic_cast<TrackMarker*>(holder);
+        if (isMarker) {
+            _master.masterTrackName = isMarker->getScriptName_mt_safe();
+            _master.masterNodeName = isMarker->getContext()->getNode()->getScriptName_mt_safe();
+        } else {
+        
+            // coverity[dead_error_line]
+            _master.masterNodeName = holder ? holder->getScriptName_mt_safe() : "";
+        }
         _master.masterKnobName = m.second->getName();
     } else {
         _master.masterDimension = -1;
@@ -123,10 +132,11 @@ KnobPtr KnobSerialization::createKnob(const std::string & typeName,
 }
 
 static KnobPtr findMaster(const KnobPtr & knob,
-                                           const NodesList & allNodes,
-                                           const std::string& masterKnobName,
-                                           const std::string& masterNodeName,
-                                           const std::map<std::string,std::string>& oldNewScriptNamesMapping)
+                          const NodesList & allNodes,
+                          const std::string& masterKnobName,
+                          const std::string& masterNodeName,
+                          const std::string& masterTrackName,
+                          const std::map<std::string,std::string>& oldNewScriptNamesMapping)
 {
     ///we need to cycle through all the nodes of the project to find the real master
     NodePtr masterNode;
@@ -153,20 +163,27 @@ static KnobPtr findMaster(const KnobPtr & knob,
         return KnobPtr();
     }
     
-    ///now that we have the master node, find the corresponding knob
-    const std::vector< KnobPtr > & otherKnobs = masterNode->getKnobs();
-    int found = -1;
-    for (std::size_t j = 0; j < otherKnobs.size(); ++j) {
-        if ( (otherKnobs[j]->getName() == masterKnobName) && otherKnobs[j]->getIsPersistant() ) {
-            found = (int)j;
-            break;
+    if (!masterTrackName.empty()) {
+        boost::shared_ptr<TrackerContext> context = masterNode->getTrackerContext();
+        if (context) {
+            TrackMarkerPtr marker = context->getMarkerByName(masterTrackName);
+            if (marker) {
+                return marker->getKnobByName(masterKnobName);
+            }
+        }
+    } else {
+        
+        ///now that we have the master node, find the corresponding knob
+        const std::vector< KnobPtr > & otherKnobs = masterNode->getKnobs();
+        for (std::size_t j = 0; j < otherKnobs.size(); ++j) {
+            if ( (otherKnobs[j]->getName() == masterKnobName) && otherKnobs[j]->getIsPersistant() ) {
+                return otherKnobs[j];
+                break;
+            }
         }
     }
-    if (found == -1) {
-        qDebug() << "Link slave/master for " << knob->getName().c_str() <<   " failed to restore the following linkage: " << masterNodeNameToFind.c_str();
-    } else {
-        return otherKnobs[found];
-    }
+    
+    qDebug() << "Link slave/master for " << knob->getName().c_str() <<   " failed to restore the following linkage: " << masterNodeNameToFind.c_str();
     return KnobPtr();
 }
 
@@ -184,7 +201,8 @@ KnobSerialization::restoreKnobLinks(const KnobPtr & knob,
         if (!_masters.empty()) {
             const std::string& aliasKnobName = _masters.front().masterKnobName;
             const std::string& aliasNodeName = _masters.front().masterNodeName;
-            KnobPtr alias = findMaster(knob, allNodes, aliasKnobName, aliasNodeName, oldNewScriptNamesMapping);
+            const std::string& masterTrackName  = _masters.front().masterTrackName;
+            KnobPtr alias = findMaster(knob, allNodes, aliasKnobName, aliasNodeName, masterTrackName, oldNewScriptNamesMapping);
             if (alias) {
                 knob->setKnobAsAliasOfThis(alias, true);
             }
@@ -193,7 +211,7 @@ KnobSerialization::restoreKnobLinks(const KnobPtr & knob,
         
         for (std::list<MasterSerialization>::iterator it = _masters.begin(); it != _masters.end(); ++it) {
             if (it->masterDimension != -1) {
-                KnobPtr master = findMaster(knob, allNodes, it->masterKnobName, it->masterNodeName, oldNewScriptNamesMapping);
+                KnobPtr master = findMaster(knob, allNodes, it->masterKnobName, it->masterNodeName, it->masterTrackName, oldNewScriptNamesMapping);
                 if (master) {
                     knob->slaveTo(i, master, it->masterDimension);
                 }

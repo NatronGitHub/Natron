@@ -485,7 +485,7 @@ AppInstancePrivate::executeCommandLinePythonCommands(const CLArgs& args)
     for (std::list<std::string>::const_iterator it = commands.begin(); it!=commands.end(); ++it) {
         std::string err;
         std::string output;
-        bool ok  = Python::interpretPythonScript(*it, &err, &output);
+        bool ok  = NATRON_PYTHON_NAMESPACE::interpretPythonScript(*it, &err, &output);
         if (!ok) {
             QString m = QObject::tr("Failed to execute given command-line Python command: ");
             m.append(QString::fromUtf8(it->c_str()));
@@ -654,14 +654,14 @@ AppInstance::loadPythonScript(const QFileInfo& file)
     addToPythonPath += "\")\n";
     
     std::string err;
-    bool ok  = Python::interpretPythonScript(addToPythonPath, &err, 0);
+    bool ok  = NATRON_PYTHON_NAMESPACE::interpretPythonScript(addToPythonPath, &err, 0);
     assert(ok);
     if (!ok) {
         throw std::runtime_error("AppInstance::loadPythonScript(" + file.path().toStdString() + "): interpretPythonScript("+addToPythonPath+" failed!");
     }
 
     std::string s = "app = app1\n";
-    ok = Python::interpretPythonScript(s, &err, 0);
+    ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(s, &err, 0);
     assert(ok);
     if (!ok) {
         throw std::runtime_error("AppInstance::loadPythonScript(" + file.path().toStdString() + "): interpretPythonScript("+s+" failed!");
@@ -709,7 +709,7 @@ AppInstance::loadPythonScript(const QFileInfo& file)
         std::string output;
         FlagSetter flag(true, &_imp->_creatingGroup, &_imp->creatingGroupMutex);
         CreatingNodeTreeFlag_RAII createNodeTree(this);
-        if (!Python::interpretPythonScript(ss.str(), &err, &output)) {
+        if (!NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &err, &output)) {
             if (!err.empty()) {
                 Dialogs::errorDialog(tr("Python").toStdString(), err);
             }
@@ -729,7 +729,7 @@ AppInstance::loadPythonScript(const QFileInfo& file)
         QFile f(file.absoluteFilePath());
         PyRun_SimpleString(content.toStdString().c_str());
         
-        PyObject* mainModule = Python::getMainModule();
+        PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
         std::string error;
         ///Gui session, do stdout, stderr redirection
         PyObject *errCatcher = 0;
@@ -744,7 +744,7 @@ AppInstance::loadPythonScript(const QFileInfo& file)
         if (errCatcher) {
             errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
             assert(errorObj);
-            error = Python::PY3String_asString(errorObj);
+            error = NATRON_PYTHON_NAMESPACE::PY3String_asString(errorObj);
             PyObject* unicode = PyUnicode_FromString("");
             PyObject_SetAttrString(errCatcher, "value", unicode);
             Py_DECREF(errorObj);
@@ -828,7 +828,7 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
         ss << ")\n";
         std::string err;
         std::string output;
-        if (!Python::interpretPythonScript(ss.str(), &err, &output)) {
+        if (!NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &err, &output)) {
             Dialogs::errorDialog(tr("Group plugin creation error").toStdString(), err);
             if (containerNode) {
                 containerNode->destroyNode(false);
@@ -866,7 +866,7 @@ AppInstance::setGroupLabelIDAndVersion(const NodePtr& node,
     std::string pluginID,pluginLabel,iconFilePath,pluginGrouping,description;
     unsigned int version;
     bool istoolset;
-    if (Python::getGroupInfos(pythonModulePath.toStdString(),pythonModule.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &description, &istoolset, &version)) {
+    if (NATRON_PYTHON_NAMESPACE::getGroupInfos(pythonModulePath.toStdString(),pythonModule.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &description, &istoolset, &version)) {
         node->setPluginIconFilePath(iconFilePath);
         node->setPluginDescription(description);
         
@@ -1867,7 +1867,7 @@ AppInstance::declareCurrentAppVariable_Python()
     std::string script = ss.str();
     std::string err;
     
-    bool ok = Python::interpretPythonScript(script, &err, 0);
+    bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
     assert(ok);
     if (!ok) {
         throw std::runtime_error("AppInstance::declareCurrentAppVariable_Python() failed!");
@@ -1875,7 +1875,7 @@ AppInstance::declareCurrentAppVariable_Python()
 
     if (appPTR->isBackground()) {
         std::string err;
-        ok = Python::interpretPythonScript("app = app1\n", &err, 0);
+        ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript("app = app1\n", &err, 0);
         assert(ok);
     }
 }
@@ -1930,7 +1930,7 @@ AppInstance::execOnProjectCreatedCallback()
     std::vector<std::string> args;
     std::string error;
     try {
-        Python::getFunctionArguments(cb, &error, &args);
+        NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
     } catch (const std::exception& e) {
         appendToScriptEditor(std::string("Failed to run onProjectCreated callback: ")
                                                          + e.what());
@@ -1960,7 +1960,7 @@ AppInstance::execOnProjectCreatedCallback()
     script = script + "\n" + cb + "(" + appID + ")\n";
     std::string err;
     std::string output;
-    if (!Python::interpretPythonScript(script, &err, &output)) {
+    if (!NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, &output)) {
         appendToScriptEditor("Failed to run onProjectCreated callback: " + err);
     } else {
         if (!output.empty()) {

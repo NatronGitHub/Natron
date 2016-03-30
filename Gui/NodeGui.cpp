@@ -1658,8 +1658,15 @@ NodeGui::setUserSelected(bool b)
     if (_settingsPanel) {
         _settingsPanel->setSelected(b);
         _settingsPanel->update();
-        if ( b && isSettingsPanelVisible() && (getNode()->isRotoPaintingNode())) {
-            _graph->getGui()->setRotoInterface(this);
+        if ( b && isSettingsPanelVisible()) {
+            
+            if (getNode()->isRotoPaintingNode()) {
+                _graph->getGui()->setRotoInterface(this);
+            }
+            if ((getNode()->isTrackerNodePlugin() && !getNode()->getParentMultiInstance()) || getNode()->getEffectInstance()->isBuiltinTrackerNode()) {
+                _graph->getGui()->setTrackerInterface(this);
+            }
+            
         }
     }
 
@@ -1846,6 +1853,9 @@ NodeGui::showGui()
         }
         if (node->isRotoPaintingNode()) {
             _graph->getGui()->setRotoInterface(this);
+        }
+        if ((node->isTrackerNodePlugin() && !node->getParentMultiInstance()) || node->getEffectInstance()->isBuiltinTrackerNode()) {
+            _graph->getGui()->setTrackerInterface(this);
         }
         OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>( node->getEffectInstance().get() );
         if (ofxNode) {
@@ -3212,7 +3222,7 @@ NodeGui::setName(const QString & newName)
     
     
     std::string stdName = newName.toStdString();
-    stdName = Python::makeNameScriptFriendly(stdName);
+    stdName = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(stdName);
     
   
     std::string oldScriptName = getNode()->getScriptName();

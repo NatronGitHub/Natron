@@ -920,7 +920,7 @@ CLArgsPrivate::parse()
         
         
         //Check that the name is conform to a Python acceptable script name
-        std::string pythonConform = Python::makeNameScriptFriendly(next->toStdString());
+        std::string pythonConform = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(next->toStdString());
         if (next->toStdString() != pythonConform) {
             std::cout << QObject::tr("The name of the Write node specified is not valid: it cannot contain non alpha-numerical "
                                      "characters and must not start with a digit.").toStdString() << std::endl;
@@ -979,7 +979,7 @@ CLArgsPrivate::parse()
         
         
         //Check that the name is conform to a Python acceptable script name
-        std::string pythonConform = Python::makeNameScriptFriendly(next->toStdString());
+        std::string pythonConform = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(next->toStdString());
         if (next->toStdString() != pythonConform) {
             std::cout << QObject::tr("The name of the Read node specified is not valid: it cannot contain non alpha-numerical "
                                      "characters and must not start with a digit.").toStdString() << std::endl;

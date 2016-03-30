@@ -102,14 +102,12 @@
 #define kRotoLockedHint \
     "Control whether the layer/curve is editable or locked."
 
-#ifdef NATRON_ROTO_INVERTIBLE
 #define kRotoInvertedParam "inverted"
 #define kRotoInvertedParamLabel "Inverted"
 
 #define kRotoInvertedHint \
     "Controls whether the selected shape(s) should be inverted. When inverted everything " \
     "outside the shape will be set to 1 and everything inside the shape will be set to 0."
-#endif
 
 #define kRotoOverlayHint "Color of the display overlay for this curve. Doesn't affect output."
 
@@ -852,15 +850,13 @@ struct RotoDrawableItemPrivate
         knobs.push_back(activated);
 
 #ifdef NATRON_ROTO_INVERTIBLE
-        inverted.reset(new KnobBool(NULL, kRotoInvertedParamLable, 1, false));
+        inverted.reset(new KnobBool(NULL, kRotoInvertedParamLabel, 1, false));
         inverted->setHintToolTip(kRotoInvertedHint);
         inverted->setName(kRotoInvertedParam);
         inverted->populate();
         inverted->setDefaultValue(false);
         knobs.push_back(inverted);
 #endif
-        
-
         color.reset(new KnobColor(NULL, kRotoColorParamLabel, 3, false));
         color->setHintToolTip(kRotoColorHint);
         color->setName(kRotoColorParam);
@@ -1266,6 +1262,7 @@ struct RotoContextPrivate
     boost::weak_ptr<KnobChoice> lifeTime;
     boost::weak_ptr<KnobBool> activated; //<allows to disable a shape on a specific frame range
     boost::weak_ptr<KnobInt> lifeTimeFrame;
+    
 #ifdef NATRON_ROTO_INVERTIBLE
     boost::weak_ptr<KnobBool> inverted;
 #endif
@@ -2151,7 +2148,7 @@ struct RotoContextPrivate
     
     void renderBezier(cairo_t* cr,const Bezier* bezier, double opacity, double time, unsigned int mipmapLevel);
     
-    void renderFeather(const Bezier* bezier,double time, unsigned int mipmapLevel, bool inverted, double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t* mesh);
+    void renderFeather(const Bezier* bezier,double time, unsigned int mipmapLevel,  double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t* mesh);
 
     void renderInternalShape(double time,unsigned int mipmapLevel,double shapeColor[3], double opacity,const Transform::Matrix3x3& transform, cairo_t* cr, cairo_pattern_t* mesh, const BezierCPs & cps);
     

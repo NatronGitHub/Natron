@@ -50,7 +50,10 @@ struct TrackMarkerPrivate
     
     // The pattern Quad defined by 4 corners relative to the center
     boost::weak_ptr<KnobDouble> patternTopLeft,patternTopRight,patternBtmRight,patternBtmLeft;
-    boost::weak_ptr<KnobDouble> center,offset,weight,error;
+    boost::weak_ptr<KnobDouble> center,offset,error;
+#ifdef NATRON_TRACK_MARKER_USE_WEIGHT
+    boost::weak_ptr<KnobDouble> weight;
+#endif
     boost::weak_ptr<KnobChoice> motionModel;
     
     mutable QMutex trackMutex;
@@ -68,8 +71,10 @@ struct TrackMarkerPrivate
     , patternBtmLeft()
     , center()
     , offset()
-    , weight()
     , error()
+#ifdef NATRON_TRACK_MARKER_USE_WEIGHT
+    , weight()
+#endif
     , motionModel()
     , trackMutex()
     , userKeyframes()
@@ -81,12 +86,14 @@ struct TrackMarkerPrivate
         swbbtmLeft->setName(kTrackerParamSearchWndBtmLeft);
         swbbtmLeft->setDefaultValue(-25, 0);
         swbbtmLeft->setDefaultValue(-25, 1);
+        swbbtmLeft->setHintToolTip(kTrackerParamSearchWndBtmLeftHint);
         searchWindowBtmLeft = swbbtmLeft;
         
         boost::shared_ptr<KnobDouble> swbtRight = AppManager::createKnob<KnobDouble>(publicInterface, kTrackerParamSearchWndTopRightLabel, 2, false);
         swbtRight->setName(kTrackerParamSearchWndTopRight);
         swbtRight->setDefaultValue(25, 0);
         swbtRight->setDefaultValue(25, 1);
+        swbtRight->setHintToolTip(kTrackerParamSearchWndTopRightHint);
         searchWindowTopRight = swbtRight;
         
         
@@ -94,47 +101,57 @@ struct TrackMarkerPrivate
         ptLeft->setName(kTrackerParamPatternTopLeft);
         ptLeft->setDefaultValue(-15, 0);
         ptLeft->setDefaultValue(15, 1);
+        ptLeft->setHintToolTip(kTrackerParamPatternTopLeftHint);
         patternTopLeft = ptLeft;
 
         boost::shared_ptr<KnobDouble> ptRight = AppManager::createKnob<KnobDouble>(publicInterface, kTrackerParamPatternTopRightLabel, 2, false);
         ptRight->setName(kTrackerParamPatternTopRight);
         ptRight->setDefaultValue(15, 0);
         ptRight->setDefaultValue(15, 1);
+        ptRight->setHintToolTip(kTrackerParamPatternTopRightHint);
         patternTopRight = ptRight;
         
         boost::shared_ptr<KnobDouble> pBRight = AppManager::createKnob<KnobDouble>(publicInterface, kTrackerParamPatternBtmRightLabel, 2, false);
         pBRight->setName(kTrackerParamPatternBtmRight);
         pBRight->setDefaultValue(15, 0);
         pBRight->setDefaultValue(-15, 1);
+        pBRight->setHintToolTip(kTrackerParamPatternBtmRightHint);
         patternBtmRight = pBRight;
         
         boost::shared_ptr<KnobDouble> pBLeft = AppManager::createKnob<KnobDouble>(publicInterface, kTrackerParamPatternBtmLeftLabel, 2, false);
         pBLeft->setName(kTrackerParamPatternBtmLeft);
         pBLeft->setDefaultValue(-15, 0);
         pBLeft->setDefaultValue(-15, 1);
+        pBLeft->setHintToolTip(kTrackerParamPatternBtmLeftHint);
         patternBtmLeft = pBLeft;
         
         boost::shared_ptr<KnobDouble> centerKnob = AppManager::createKnob<KnobDouble>(publicInterface, kTrackerParamCenterLabel, 2, false);
         centerKnob->setName(kTrackerParamCenter);
+        centerKnob->setHintToolTip(kTrackerParamCenterHint);
         center = centerKnob;
         
         boost::shared_ptr<KnobDouble> offsetKnob = AppManager::createKnob<KnobDouble>(publicInterface, kTrackerParamOffsetLabel, 2, false);
         offsetKnob->setName(kTrackerParamOffset);
+        offsetKnob->setHintToolTip(kTrackerParamOffsetHint);
         offset = offsetKnob;
-        
+
+#ifdef NATRON_TRACK_MARKER_USE_WEIGHT
         boost::shared_ptr<KnobDouble> weightKnob = AppManager::createKnob<KnobDouble>(publicInterface, kTrackerParamTrackWeightLabel, 1, false);
         weightKnob->setName(kTrackerParamTrackWeight);
+        weightKnob->setHintToolTip(kTrackerParamTrackWeightHint);
         weightKnob->setDefaultValue(1.);
         weightKnob->setAnimationEnabled(false);
         weightKnob->setMinimum(0.);
         weightKnob->setMaximum(1.);
         weight = weightKnob;
+#endif
         
         boost::shared_ptr<KnobChoice> mmodelKnob = AppManager::createKnob<KnobChoice>(publicInterface, kTrackerParamMotionModelLabel, 1, false);
+        mmodelKnob->setHintToolTip(kTrackerParamMotionModelHint);
         mmodelKnob->setName(kTrackerParamMotionModel);
         {
             std::vector<std::string> choices,helps;
-            TrackerContext::getMotionModelsAndHelps(&choices,&helps);
+            TrackerContext::getMotionModelsAndHelps(true, &choices,&helps);
             mmodelKnob->populateChoices(choices,helps);
         }
         mmodelKnob->setDefaultValue(0);
@@ -142,13 +159,12 @@ struct TrackMarkerPrivate
         
         boost::shared_ptr<KnobDouble> errKnob = AppManager::createKnob<KnobDouble>(publicInterface, kTrackerParamErrorLabel, 1, false);
         errKnob->setName(kTrackerParamError);
-        errKnob->populate();
         error = errKnob;
     }
 };
 
 TrackMarker::TrackMarker(const boost::shared_ptr<TrackerContext>& context)
-: KnobHolder(context->getNode()->getApp())
+: NamedKnobHolder(context->getNode()->getApp())
 , boost::enable_shared_from_this<TrackMarker>()
 , _imp(new TrackMarkerPrivate(this, context))
 {
@@ -167,8 +183,10 @@ TrackMarker::TrackMarker(const boost::shared_ptr<TrackerContext>& context)
     handler = _imp->error.lock()->getSignalSlotHandler();
     QObject::connect(handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onErrorKnobValueChanged(ViewSpec,int, int)));
     
+#ifdef NATRON_TRACK_MARKER_USE_WEIGHT
     handler = _imp->weight.lock()->getSignalSlotHandler();
     QObject::connect(handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onWeightKnobValueChanged(ViewSpec,int, int)));
+#endif
     
     handler = _imp->motionModel.lock()->getSignalSlotHandler();
     QObject::connect(handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onMotionModelKnobValueChanged(ViewSpec,int, int)));
@@ -202,7 +220,7 @@ TrackMarker::~TrackMarker()
 void
 TrackMarker::clone(const TrackMarker& other)
 {
-    boost::shared_ptr<TrackMarker> thisShared = shared_from_this();
+    TrackMarkerPtr thisShared = shared_from_this();
     boost::shared_ptr<TrackerContext> context = getContext();
     context->s_trackAboutToClone(thisShared);
     
@@ -279,13 +297,13 @@ TrackMarker::setScriptName(const std::string& name)
     }
     
     
-    std::string cpy = Python::makeNameScriptFriendly(name);
+    std::string cpy = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(name);
     
     if (cpy.empty()) {
         return false;
     }
     
-    boost::shared_ptr<TrackMarker> existingItem = getContext()->getMarkerByName(name);
+    TrackMarkerPtr existingItem = getContext()->getMarkerByName(name);
     if ( existingItem && (existingItem.get() != this) ) {
         return false;
     }
@@ -298,7 +316,7 @@ TrackMarker::setScriptName(const std::string& name)
 }
 
 std::string
-TrackMarker::getScriptName() const
+TrackMarker::getScriptName_mt_safe() const
 {
     QMutexLocker l(&_imp->trackMutex);
     return _imp->trackScriptName;
@@ -354,11 +372,13 @@ TrackMarker::getPatternBtmLeftKnob() const
     return _imp->patternBtmLeft.lock();
 }
 
+#ifdef NATRON_TRACK_MARKER_USE_WEIGHT
 boost::shared_ptr<KnobDouble>
 TrackMarker::getWeightKnob() const
 {
     return _imp->weight.lock();
 }
+#endif
 
 boost::shared_ptr<KnobDouble>
 TrackMarker::getCenterKnob() const
@@ -778,7 +798,16 @@ TrackMarker::getMarkerImage(int time, const RectI& roi) const
     return std::make_pair(planes.begin()->second,roi);
 }
 
-
+void
+TrackMarker::onKnobSlaved(KnobI* slave,KnobI* master,
+                  int dimension,
+                  bool isSlave)
+{
+    EffectInstPtr effect = getContext()->getNode()->getEffectInstance();
+    if (effect) {
+        effect->onKnobSlaved(slave, master, dimension, isSlave);
+    }
+}
 
 NATRON_NAMESPACE_EXIT;
 

@@ -1552,6 +1552,9 @@ public:
     virtual void onEffectCreated(bool /*mayCreateFileDialog*/, const std::list<boost::shared_ptr<KnobSerialization> >& /*defaultParamValues*/) {}
 
 
+    virtual void onKnobSlaved(KnobI* slave, KnobI* master,
+                          int dimension,
+                          bool isSlave) OVERRIDE FINAL;
 private:
 
 
@@ -1962,9 +1965,7 @@ private:
     virtual void onSignificantEvaluateAboutToBeCalled(KnobI* knob) OVERRIDE FINAL;
 
     virtual void onAllKnobsSlaved(bool isSlave, KnobHolder* master) OVERRIDE FINAL;
-    virtual void onKnobSlaved(KnobI* slave, KnobI* master,
-                              int dimension,
-                              bool isSlave) OVERRIDE FINAL;
+
     enum RenderingFunctorRetEnum
     {
         eRenderingFunctorRetFailed, //< must stop rendering

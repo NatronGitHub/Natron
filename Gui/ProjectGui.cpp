@@ -535,7 +535,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
         std::string appID = _gui->getApp()->getAppIDString();
         std::string err;
         std::string script = "app = " + appID + '\n';
-        bool ok = Python::interpretPythonScript(script, &err, 0);
+        bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
         assert(ok);
         if (!ok) {
             throw std::runtime_error("ProjectGui::load(): interpretPythonScript("+script+") failed!");
@@ -544,7 +544,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
     for (std::list<boost::shared_ptr<PythonPanelSerialization> >::const_iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
         std::string script = (*it)->pythonFunction + "()\n";
         std::string err,output;
-        if (!Python::interpretPythonScript(script, &err, &output)) {
+        if (!NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, &output)) {
             _gui->getApp()->appendToScriptEditor(err);
         } else {
             if (!output.empty()) {
@@ -554,11 +554,11 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
         const RegisteredTabs& registeredTabs = _gui->getRegisteredTabs();
         RegisteredTabs::const_iterator found = registeredTabs.find((*it)->name);
         if (found != registeredTabs.end()) {
-            PyPanel* panel = dynamic_cast<PyPanel*>(found->second.first);
+            NATRON_PYTHON_NAMESPACE::PyPanel* panel = dynamic_cast<NATRON_PYTHON_NAMESPACE::PyPanel*>(found->second.first);
             if (panel) {
                 panel->restore((*it)->userData);
                 for (std::list<boost::shared_ptr<KnobSerialization> >::iterator it2 = (*it)->knobs.begin(); it2!=(*it)->knobs.end(); ++it2) {
-                    Param* param = panel->getParam((*it2)->getName());
+                    NATRON_PYTHON_NAMESPACE::Param* param = panel->getParam((*it2)->getName());
                     if (param) {
                         param->getInternalKnob()->clone((*it2)->getKnob());
                         delete param;

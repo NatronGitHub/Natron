@@ -22,6 +22,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Gui/KnobGui.h"
+
 #include <cassert>
 #include <stdexcept>
 
@@ -29,7 +31,6 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/ViewIdx.h"
 
-#include "Gui/KnobGui.h"
 #include "Gui/KnobGuiPrivate.h"
 #include "Gui/KnobUndoCommand.h" // SetExpressionCommand...
 

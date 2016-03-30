@@ -426,14 +426,14 @@ TabWidget::createMenu()
     menu.addAction( tr("Progress Panel here"), this, SLOT(moveProgressPanelHere()) );
     
     
-    std::map<PyPanel*,std::string> userPanels = _imp->gui->getPythonPanels();
+    std::map<NATRON_PYTHON_NAMESPACE::PyPanel*,std::string> userPanels = _imp->gui->getPythonPanels();
     if (!userPanels.empty()) {
         Menu* userPanelsMenu = new Menu(tr("User panels"),&menu);
         //userPanelsMenu->setFont(f);
         menu.addAction(userPanelsMenu->menuAction());
         
         
-        for (std::map<PyPanel*,std::string>::iterator it = userPanels.begin(); it != userPanels.end(); ++it) {
+        for (std::map<NATRON_PYTHON_NAMESPACE::PyPanel*,std::string>::iterator it = userPanels.begin(); it != userPanels.end(); ++it) {
             QAction* pAction = new QAction(QString::fromUtf8(it->first->getPanelLabel().c_str()) + tr(" here"),userPanelsMenu);
             QObject::connect(pAction, SIGNAL(triggered()), this, SLOT(onUserPanelActionTriggered()));
             pAction->setData(QString::fromUtf8(it->first->getScriptName().c_str()));
@@ -1998,7 +1998,7 @@ TabWidget::setObjectName_mt_safe(const QString & str)
 
     std::string script = ss.str();
     std::string err;
-    bool ok = Python::interpretPythonScript(script, &err, 0);
+    bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
     if (!ok) {
         appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(err.c_str()));
     }
@@ -2100,7 +2100,7 @@ TabWidget::onTabScriptNameChanged(PanelWidget* tab,const std::string& oldName,co
     std::string err;
     std::string script = ss.str();
     _imp->gui->printAutoDeclaredVariable(script);
-    bool ok = Python::interpretPythonScript(script, &err, 0);
+    bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
     assert(ok);
     if (!ok) {
         throw std::runtime_error("TabWidget::onTabScriptNameChanged: " + err);
@@ -2111,7 +2111,7 @@ void
 TabWidgetPrivate::declareTabToPython(PanelWidget* widget,const std::string& tabName)
 {
     ViewerTab* isViewer = dynamic_cast<ViewerTab*>(widget);
-    PyPanel* isPanel = dynamic_cast<PyPanel*>(widget);
+    NATRON_PYTHON_NAMESPACE::PyPanel* isPanel = dynamic_cast<NATRON_PYTHON_NAMESPACE::PyPanel*>(widget);
     
     if (!isViewer && !isPanel) {
         return;
@@ -2131,7 +2131,7 @@ TabWidgetPrivate::declareTabToPython(PanelWidget* widget,const std::string& tabN
     std::string script = ss.str();
     std::string err;
     gui->printAutoDeclaredVariable(script);
-    bool ok = Python::interpretPythonScript(script, &err, 0);
+    bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
     assert(ok);
     if (!ok) {
         throw std::runtime_error("TabWidget::declareTabToPython: " + err);
@@ -2145,7 +2145,7 @@ TabWidgetPrivate::removeTabToPython(PanelWidget* widget,const std::string& tabNa
         return;
     }
     ViewerTab* isViewer = dynamic_cast<ViewerTab*>(widget);
-    PyPanel* isPanel = dynamic_cast<PyPanel*>(widget);
+    NATRON_PYTHON_NAMESPACE::PyPanel* isPanel = dynamic_cast<NATRON_PYTHON_NAMESPACE::PyPanel*>(widget);
     
     if (!isViewer && !isPanel) {
         return;
@@ -2159,7 +2159,7 @@ TabWidgetPrivate::removeTabToPython(PanelWidget* widget,const std::string& tabNa
     std::string err;
     std::string script = ss.str();
     gui->printAutoDeclaredVariable(script);
-    bool ok = Python::interpretPythonScript(script, &err, 0);
+    bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
     assert(ok);
     if (!ok) {
         throw std::runtime_error("TabWidget::removeTabToPython: " + err);

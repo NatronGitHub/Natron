@@ -52,6 +52,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Engine/EngineFwd.h"
 
 
+//#define NATRON_ROTO_INVERTIBLE
 //#define NATRON_ROTO_ENABLE_MOTION_BLUR
 
 NATRON_NAMESPACE_ENTER;
@@ -227,7 +228,8 @@ public:
                                                           const double time,
                                                           const ViewIdx view,
                                                           const ImageBitDepthEnum depth,
-                                                          const unsigned int mipmapLevel);
+                                                          const unsigned int mipmapLevel,
+                                                          const RectD& rotoNodeSrcRod);
     
     double renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
                             const RectD& rod,
@@ -248,6 +250,7 @@ private:
                                                         const double endTime,
                                                         const double timeStep,
                                                         const double time,
+                                                        const bool inverted,
                                                         const ImageBitDepthEnum depth,
                                                         const unsigned int mipmapLevel,
                                                         const std::list<std::list<std::pair<Point,double> > >& strokes,
@@ -344,6 +347,7 @@ public:
 #ifdef NATRON_ROTO_INVERTIBLE
     boost::shared_ptr<KnobBool> getInvertedKnob() const;
 #endif
+    
     boost::shared_ptr<KnobColor> getColorKnob() const;
 
     void resetTransformCenter();

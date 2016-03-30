@@ -13,6 +13,12 @@ Natron binaries include components from the following libraries:
 * openfx-io (GPLv2) https://github.com/MrKepzie/openfx-io
 * openfx-misc (GPLv2) https://github.com/devernay/openfx-misc
 * openfx-arena (GPLv2) https://github.com/olear/openfx-arena
+* Eigen 3 (MPL 2.0) http://eigen.tuxfamily.org/
+* Ceres Solver (New BSD) http://ceres-solver.org/
+* gflags (New BSD) http://gflags.github.io/gflags/
+* glog (New BSD) https://github.com/google/glog
+* libmv (BSD) https://github.com/libmv/libmv
+* OpenMVG (MPL 2.0) http://imagine.enpc.fr/~moulonp/openMVG/
 
 # Additional dependencies
 
@@ -33,6 +39,7 @@ Natron binaries include components from the following libraries:
 * libopus (3-clause BSD) http://opus-codec.org/ (used by openfx-io via FFmpeg)
 * libmodplug (Public Domain) http://modplug-xmms.sourceforge.net/ (used by openfx-io via FFmpeg) 
 * libmp3lame (LGPL 2.1) http://lame.sourceforge.net/ (used by openfx-io via FFmpeg) 
+* openh264 (BSD) http://www.openh264.org/ (used by openfx-io via FFmpeg)
 * orc (BSD) http://code.entropywave.com/orc/ (used by openfx-io via FFmpeg and schroedinger) 
 * Schroedinger (MIT) http://diracvideo.org/ (used by openfx-io via FFmpeg) 
 

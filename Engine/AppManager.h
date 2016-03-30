@@ -654,7 +654,7 @@ StandardButtonEnum questionDialog(const std::string & title,const std::string & 
 } // namespace Dialogs
 
 // put global functions in a namespace, see https://google.github.io/styleguide/cppguide.html#Nonmember,_Static_Member,_and_Global_Functions
-namespace Python {
+namespace NATRON_PYTHON_NAMESPACE {
 
 /**
  * @brief Ensures that the given Python script as imported the given module
@@ -710,7 +710,7 @@ void getFunctionArguments(const std::string& pyFunc,std::string* error,std::vect
 **/
 PyObject* getAttrRecursive(const std::string& fullyQualifiedName,PyObject* parentObj,bool* isDefined);
 
-} // namespace Python
+} // namespace NATRON_PYTHON_NAMESPACE
 
 /**
  * @brief Small helper class to use as RAII to hold the GIL (Global Interpreter Lock) before calling ANY Python code.

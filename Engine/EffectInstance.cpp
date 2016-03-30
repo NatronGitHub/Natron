@@ -659,8 +659,9 @@ EffectInstance::getImage(int inputNb,
         roto = attachedStroke->getContext();
     }
     bool useRotoInput = false;
+    bool inputIsRotoBrush = roto && isInputRotoBrush(inputNb);
     if (roto) {
-        useRotoInput = isMask || isInputRotoBrush(inputNb);
+        useRotoInput = isMask || inputIsRotoBrush;
     }
 
     ///This is the actual layer that we are fetching in input
@@ -891,8 +892,25 @@ EffectInstance::getImage(int inputNb,
             if (duringPaintStroke) {
                 inputImg = getNode()->getOrRenderLastStrokeImage(mipMapLevel, par, components, depth);
             } else {
+                
+                RectD rotoSrcRod;
+                if (inputIsRotoBrush) {
+                    //If the roto is inverted, we need to fill the full RoD of the input
+                    bool inverted = attachedStroke->getInverted(time);
+                    if (inverted) {
+                        EffectInstPtr rotoInput = getInput(0);
+                        if (rotoInput) {
+                            bool isProjectFormat;
+                            StatusEnum st = rotoInput->getRegionOfDefinition_public(rotoInput->getRenderHash(), time, scale, view, &rotoSrcRod, &isProjectFormat);
+                            (void)st;
+
+                        }
+                    }
+                    
+                }
+                
                 inputImg = roto->renderMaskFromStroke(attachedStroke, components,
-                                                      time, view, depth, mipMapLevel);
+                                                      time, view, depth, mipMapLevel, rotoSrcRod);
                 if ( roto->isDoingNeatRender() ) {
                     getApp()->updateStrokeImage(inputImg, 0, false);
                 }

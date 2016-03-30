@@ -39,6 +39,7 @@
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
+NATRON_PYTHON_NAMESPACE_ENTER;
 
 App::App(AppInstance* instance)
 : Group()
@@ -370,4 +371,5 @@ App::getViewNames() const
     return ret;
 }
 
+NATRON_PYTHON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_EXIT;

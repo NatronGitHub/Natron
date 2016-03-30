@@ -34,7 +34,11 @@
 #include <boost/enable_shared_from_this.hpp>
 #endif
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QWidget>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"

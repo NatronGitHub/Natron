@@ -696,6 +696,11 @@
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
+        <modify-function signature="getTrackerContext()const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
         <modify-function signature="getAvailableLayers()const">
             <inject-code class="target" position="beginning">
                 std::map&lt;ImageLayer,Effect*&gt; comps = %CPPSELF.%FUNCTION_NAME();
@@ -1131,6 +1136,64 @@
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
+        </modify-function>
+    </object-type>
+    <object-type name="Track">
+        <modify-function signature="getParam(std::string)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+    </object-type>
+        
+    <object-type name="Tracker">
+        <modify-function signature="getTrackByName(std::string)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getAllTracks(std::list&lt;Track*&gt;*)const">
+            <modify-argument index="1">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="PyList"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                std::list&lt;Track*&gt; tracks;
+                %CPPSELF.%FUNCTION_NAME(&amp;tracks);
+                PyObject* ret = PyList_New((int) tracks.size());
+                int idx = 0;
+                for (std::list&lt;Track*&gt;::iterator it = tracks.begin(); it!=tracks.end(); ++it,++idx) {
+                PyObject* item = %CONVERTTOPYTHON[Track*](*it);
+                // Ownership transferences.
+                Shiboken::Object::getOwnership(item);
+                PyList_SET_ITEM(ret, idx, item);
+                }
+                return ret;
+            </inject-code>
+            
+        </modify-function>
+        <modify-function signature="getSelectedTracks(std::list&lt;Track*&gt;*)const">
+            <modify-argument index="1">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="PyList"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                std::list&lt;Track*&gt; tracks;
+                %CPPSELF.%FUNCTION_NAME(&amp;tracks);
+                PyObject* ret = PyList_New((int) tracks.size());
+                int idx = 0;
+                for (std::list&lt;Track*&gt;::iterator it = tracks.begin(); it!=tracks.end(); ++it,++idx) {
+                PyObject* item = %CONVERTTOPYTHON[Track*](*it);
+                // Ownership transferences.
+                Shiboken::Object::getOwnership(item);
+                PyList_SET_ITEM(ret, idx, item);
+                }
+                return ret;
+            </inject-code>
         </modify-function>
     </object-type>
     <object-type name="Roto">

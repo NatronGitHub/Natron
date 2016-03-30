@@ -1752,7 +1752,7 @@ TrackerPanelV1::TrackerPanelV1(const boost::shared_ptr<NodeGui> & node)
 : MultiInstancePanel(node)
 , _imp( new TrackerPanelPrivateV1(this, node) )
 {
-    QObject::connect(&_imp->scheduler, SIGNAL(trackingStarted()), this, SLOT(onTrackingStarted()));
+    QObject::connect(&_imp->scheduler, SIGNAL(trackingStarted(int)), this, SLOT(onTrackingStarted(int)));
     QObject::connect(&_imp->scheduler, SIGNAL(trackingFinished()), this, SLOT(onTrackingFinished()));
 }
 
@@ -2000,7 +2000,7 @@ TrackerPanelV1::onButtonTriggered(KnobButton* button)
 
 
 void
-TrackerPanelV1::onTrackingStarted()
+TrackerPanelV1::onTrackingStarted(int /*step*/)
 {
     ///freeze the tracker node
     setKnobsFrozen(true);

@@ -131,9 +131,9 @@ public Q_SLOTS:
     void onResetTrackButtonClicked();
     
     void onContextSelectionChanged(int reason);
-    void onKeyframeSetOnTrack(const boost::shared_ptr<TrackMarker> &marker, int key);
-    void onKeyframeRemovedOnTrack(const boost::shared_ptr<TrackMarker> &marker, int key);
-    void onAllKeyframesRemovedOnTrack(const boost::shared_ptr<TrackMarker>& marker);
+    void onKeyframeSetOnTrack(const TrackMarkerPtr &marker, int key);
+    void onKeyframeRemovedOnTrack(const TrackMarkerPtr &marker, int key);
+    void onAllKeyframesRemovedOnTrack(const TrackMarkerPtr& marker);
  
     void updateSelectedMarkerTexture();
     
