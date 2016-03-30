@@ -605,6 +605,15 @@ CallbacksManager::uploadFileToRepository(const QString& filepath, const QString&
 {
     assert(!_uploadReply);
     
+    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
+    QString clientUsername, clientPassword;
+    if (settings.value(QString::fromUtf8("clientUsername")).isValid()) {
+        clientUsername = settings.value(QString::fromUtf8("clientUsername")).toString();
+    }
+    if (settings.value(QString::fromUtf8("clientPassword")).isValid()) {
+        clientPassword = settings.value(QString::fromUtf8("clientPassword")).toString();
+    }
+
     const QString productName = QString::fromUtf8(NATRON_APPLICATION_NAME);
     QString versionStr = getVersionString();
     const QString gitHash = QString::fromUtf8(GIT_COMMIT);
@@ -651,6 +660,10 @@ CallbacksManager::uploadFileToRepository(const QString& filepath, const QString&
     // http://doc.qt.io/qt-4.8/qhttpmultipart.html#ContentType-enum
     QHttpMultiPart *multiPart = new QHttpMultiPart(QHttpMultiPart::FormDataType);
     
+    if (!clientUsername.isEmpty() && !clientPassword.isEmpty()) {
+        addTextHttpPart(multiPart, QString::fromUtf8("clientUsername"),clientUsername);
+        addTextHttpPart(multiPart, QString::fromUtf8("clientPassword"),clientPassword);
+    }
     addTextHttpPart(multiPart, QString::fromUtf8("ProductName"), productName);
     addTextHttpPart(multiPart, QString::fromUtf8("Version"), versionStr);
     addTextHttpPart(multiPart, QString::fromUtf8("GitHash"), gitHash);
