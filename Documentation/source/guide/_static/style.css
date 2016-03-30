@@ -1,0 +1,79 @@
+body {
+  background-color: #ffffff;
+}
+
+div#rightBox {
+  width: 250px;
+  height: 30px;
+  float:right;
+  margin-top:60px;
+}
+div#leftBox {
+  margin:0;
+  padding:0;
+  width:250px;
+  height:100px;
+  float:left;
+}
+
+div.body h1,
+div.body h2,
+div.body h3,
+div.body h4,
+div.body h5,
+div.body h6 {
+  background:none;
+}
+
+li.toctree-l1 ul,
+li.toctree-l2 ul,
+li.toctree-l3 ul {
+  display:none;
+}
+
+table.knobsTable {
+  width:100%;
+}
+
+.knobsTableValueLabel,
+.knobsTableValueScript,
+.knobsTableValue {
+  padding:3px;
+  vertical-align: text-top;
+  background: #f9f9f9;
+  border:2px solid #ffffff;
+}
+
+.knobsTableValueLabel,
+.knobsTableValueScript {
+ 
+}
+
+.knobsTableHeader {
+  font-family: 'Trebuchet MS', sans-serif;
+  background-color: #f2f2f2;
+  font-weight: bold;
+  color: #20435c;
+  border-bottom: 1px solid #ccc;
+  padding:3px;
+  min-width:200px;
+}
+
+.screenshot {
+  border:2px solid #cccccc;
+  float:right;
+  margin-left:10px;
+  margin-bottom:10px;
+}
+
+/*h3 {
+clear:both;
+}*/
+
+div#mainMenu {
+  width: 250px;
+  float:left;
+}
+div.document {
+  margin-left:250px;
+}

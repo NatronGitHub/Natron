@@ -1,16 +1,15 @@
 .. Natron documentation master file, created by
-   sphinx-quickstart on Tue Mar 29 18:02:16 2016.
+   sphinx-quickstart on Mon Jan 19 11:24:25 2015.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Natron documentation
-====================
-
-Contents:
+Natron Developers Guide
+=======================
 
 .. toctree::
-       :maxdepth: 2
+	:maxdepth: 2
 
-    guide/index.rst
-    devel/index.rst
-
+	APIReference
+	introduction
+	gettingstarted
+	
