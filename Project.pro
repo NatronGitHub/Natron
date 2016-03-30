@@ -32,6 +32,7 @@ SUBDIRS += \
     libs/ceres \
     libs/libmv \
     libs/openMVG \
+    libs/qhttpserver \
     Engine \
     Renderer \
     Gui \
