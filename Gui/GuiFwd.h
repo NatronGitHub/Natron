@@ -132,6 +132,8 @@ class KnobClickableLabel;
 class KnobCurveGui;
 class KnobGui;
 class KnobGuiFactory;
+class KnobGuiTable;
+class KnobGuiLayers;
 class KnobHolder;
 class KnobWidgetDnD;
 class LineEdit;

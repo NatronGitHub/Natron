@@ -605,7 +605,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
         
         ///Create the label if needed
         KnobClickableLabel* label = 0;
-        Label* exprLabelWarn = 0;
+        Label* warningLabel = 0;
         std::string descriptionLabel;
         KnobString* isStringKnob = dynamic_cast<KnobString*>(knob.get());
         bool isLabelKnob = isStringKnob && isStringKnob->isLabel();
@@ -629,14 +629,13 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
             }
             
             label = new KnobClickableLabel(QString(), ret, page->second.tab);
-            exprLabelWarn = new Label(page->second.tab);
-            exprLabelWarn->setToolTip(QObject::tr("Expression invalid, value returned is the underlying curve."));
-            exprLabelWarn->setVisible(false);
+            warningLabel = new Label(page->second.tab);
+            warningLabel->setVisible(false);
             QFontMetrics fm(label->font(),0);
             int pixSize = fm.height();
             QPixmap stdErrorPix;
             stdErrorPix = getStandardIcon(QMessageBox::Critical, pixSize, label);
-            exprLabelWarn->setPixmap(stdErrorPix);
+            warningLabel->setPixmap(stdErrorPix);
             
             bool pixmapSet = false;
             if (!labelIconFilePath.empty()) {
@@ -673,7 +672,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
                 
             
             if (makeNewLine) {
-                labelLayout->addWidget(exprLabelWarn);
+                labelLayout->addWidget(warningLabel);
                 labelLayout->addWidget(label);
             }
 
@@ -733,7 +732,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
         }
         
         ///fill the fieldLayout with the widgets
-        ret->createGUI(layout,fieldContainer, labelContainer, label, exprLabelWarn, fieldLayout,makeNewLine,knobsOnSameLine);
+        ret->createGUI(layout,fieldContainer, labelContainer, label, warningLabel, fieldLayout,makeNewLine,knobsOnSameLine);
         
         
         ret->setEnabledSlot();

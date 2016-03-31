@@ -958,7 +958,8 @@ private:
     void createMaskSelectors(const std::vector<std::pair<bool,bool> >& hasMaskChannelSelector,
                              const std::vector<std::string>& inputLabels,
                              const boost::shared_ptr<KnobPage>& mainPage,
-                             bool addNewLineOnLastMask);
+                             bool addNewLineOnLastMask,
+                             KnobPtr* lastKnobCreated);
     
     boost::shared_ptr<KnobPage> getOrCreateMainPage();
     
@@ -968,7 +969,8 @@ private:
     
     void createChannelSelectors(const std::vector<std::pair<bool,bool> >& hasMaskChannelSelector,
                                 const std::vector<std::string>& inputLabels,
-                                const boost::shared_ptr<KnobPage>& mainPage);
+                                const boost::shared_ptr<KnobPage>& mainPage,
+                                KnobPtr* lastKnobBeforeAdvancedOption);
     
 public:
     

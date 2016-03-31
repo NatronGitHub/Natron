@@ -3152,9 +3152,7 @@ Python::compilePyScript(const std::string& script,PyObject** code)
 }
 #endif
 
-    
-std::string
-Python::makeNameScriptFriendly(const std::string& str)
+static std::string makeNameScriptFriendlyInternal(const std::string& str, bool allowDots)
 {
     if (str == "from") {
         return "pFrom";
@@ -3179,11 +3177,23 @@ Python::makeNameScriptFriendly(const std::string& str)
         }
         
         ///Non alpha-numeric characters are not allowed in python
-        else if (str[i] == '_' || std::isalnum(str[i], loc)) {
+        else if (str[i] == '_' || std::isalnum(str[i], loc) || (allowDots && str[i] == '.')) {
             cpy.push_back(str[i]);
         }
     }
     return cpy;
+}
+
+std::string
+Python::makeNameScriptFriendlyWithDots(const std::string& str)
+{
+    return makeNameScriptFriendlyInternal(str, true);
+}
+
+std::string
+Python::makeNameScriptFriendly(const std::string& str)
+{
+    return makeNameScriptFriendlyInternal(str, false);
 }
 
 PythonGILLocker::PythonGILLocker()

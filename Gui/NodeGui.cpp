@@ -376,7 +376,7 @@ NodeGui::restoreStateAfterCreation()
 {
     NodePtr internalNode = getNode();
     ///Refresh the disabled knob
-    
+
     setColorFromGrouping();
     boost::shared_ptr<KnobBool> disabledknob = internalNode->getDisabledKnob();
     if (disabledknob && disabledknob->getValue()) {
@@ -388,6 +388,7 @@ NodeGui::restoreStateAfterCreation()
     }
     ///Refresh the name in the line edit
     onInternalNameChanged( QString::fromUtf8(internalNode->getLabel().c_str()) );
+    onOutputLayerChanged();
     internalNode->refreshIdentityState();
     onPersistentMessageChanged();
 }

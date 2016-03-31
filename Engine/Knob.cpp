@@ -1528,17 +1528,16 @@ KnobHelper::evaluateValueChangeInternal(int dimension,
     
     /// For eValueChangedReasonTimeChanged we never call the instanceChangedAction and evaluate otherwise it would just throttle
     /// the application responsiveness
+    onInternalValueChanged(dimension, time, view);
+
     if ((originalReason != eValueChangedReasonTimeChanged || evaluateValueChangeOnTimeChange()) && _imp->holder) {
-        if (!app || !app->getProject()->isLoadingProject()) {
             
             _imp->holder->beginChanges();
             _imp->holder->appendValueChange(shared_from_this(), dimension, refreshWidget, time, view, originalReason, reason);
             _imp->holder->endChanges();
-            
-        }
+        
     }
     
-    onInternalValueChanged(dimension, time, view);
     
     if (!_imp->holder && _signalSlotHandler) {
         computeHasModifications();
@@ -3884,7 +3883,7 @@ KnobHelper::setKnobAsAliasOfThis(const KnobPtr& master, bool doAlias)
             assert(thisChoice);
             if (thisChoice) {
                 isChoice->populateChoices(thisChoice->getEntries_mt_safe(),
-                                          thisChoice->getEntriesHelp_mt_safe());
+                                          thisChoice->getEntriesHelp_mt_safe(), 0, 0, false);
             }
         }
     }
@@ -3899,8 +3898,9 @@ KnobHelper::setKnobAsAliasOfThis(const KnobPtr& master, bool doAlias)
             assert(ok);
             Q_UNUSED(ok);
         }
-        handleSignalSlotsForAliasLink(master,doAlias);
     }
+    handleSignalSlotsForAliasLink(master,doAlias);
+
     endChanges();
         
     QWriteLocker k(&_imp->mastersMutex);
@@ -4766,7 +4766,7 @@ KnobHolder::endChanges(bool discardRendering)
     
     // Call instanceChanged on each knob
     for (KnobChanges::iterator it = knobChanged.begin(); it!=knobChanged.end(); ++it) {
-        if (it->knob && !it->valueChangeBlocked) {
+        if (it->knob && !it->valueChangeBlocked && !isLoadingProject) {
             if (!it->originatedFromMainThread && !canHandleEvaluateOnChangeInOtherThread()) {
                 Q_EMIT doValueChangeOnMainThread(it->knob.get(), it->originalReason, it->time, it->view, it->originatedFromMainThread);
             } else {

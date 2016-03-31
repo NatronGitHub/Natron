@@ -1469,7 +1469,7 @@ Settings::setDefaultValues()
     setCachingLabels();
     _autoTurbo->setDefaultValue(false);
     _usePluginIconsInNodeGraph->setDefaultValue(true);
-    _useAntiAliasing->setDefaultValue(false);
+    _useAntiAliasing->setDefaultValue(true);
     _defaultNodeColor->setDefaultValue(0.7,0);
     _defaultNodeColor->setDefaultValue(0.7,1);
     _defaultNodeColor->setDefaultValue(0.7,2);
@@ -3193,6 +3193,7 @@ void
 Settings::getPythonGroupsSearchPaths(std::list<std::string>* templates) const
 {
     _templatesPluginPaths->getPaths(templates);
+    
 }
 
 void

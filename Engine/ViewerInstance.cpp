@@ -2365,7 +2365,11 @@ ViewerInstance::interpolateGammaLut(float value)
 void
 ViewerInstance::markAllOnGoingRendersAsAborted()
 {
-    _imp->markAllRendersAsAborted();
+    
+    bool keepOldest = getApp()->isDraftRenderEnabled();
+    
+    //Do not abort the oldest render while scrubbing timeline or sliders so that the user gets some feedback
+    _imp->markAllRendersAsAborted(keepOldest);
 }
 
 template <typename PIX,int maxValue,bool opaque, bool applyMatte, int rOffset,int gOffset,int bOffset>

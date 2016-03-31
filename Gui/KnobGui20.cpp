@@ -699,6 +699,39 @@ KnobGui::onRedrawGuiCurve(int reason,
     
 }
 
+void
+KnobGui::setWarningValue(KnobWarningEnum warn,const QString& value)
+{
+    QString& warning = _imp->warningsMapping[warn];
+    if (warning != value) {
+        warning = value;
+        refreshKnobWarningIndicatorVisibility();
+    }
+}
+
+void
+KnobGui::refreshKnobWarningIndicatorVisibility()
+{
+    if (!_imp->warningIndicator) {
+        return;
+    }
+    QString fullTooltip;
+    bool hasWarning = false;
+    for (std::map<KnobGui::KnobWarningEnum, QString>::iterator it = _imp->warningsMapping.begin(); it!=_imp->warningsMapping.end(); ++it) {
+        if (!it->second.isEmpty()) {
+            hasWarning = true;
+            fullTooltip += QString::fromUtf8("<p>");
+            fullTooltip += it->second;
+            fullTooltip += QString::fromUtf8("</p>");
+
+        }
+    }
+    if (hasWarning) {
+        _imp->warningIndicator->setToolTip(fullTooltip);
+    }
+    _imp->warningIndicator->setVisible(hasWarning);
+    
+}
 
 void
 KnobGui::onExprChanged(int dimension)
@@ -721,7 +754,7 @@ KnobGui::onExprChanged(int dimension)
             }
         }
         
-        if (_imp->expressionWarningLabel) {
+        if (_imp->warningIndicator) {
             bool invalid = false;
             QString fullErrTooltip;
             int dims = knob->getDimension();
@@ -740,10 +773,15 @@ KnobGui::onExprChanged(int dimension)
                 }
             }
             if (invalid) {
-                _imp->expressionWarningLabel->show();
-                _imp->expressionWarningLabel->setToolTip(fullErrTooltip);
+                QString toPrepend;
+                toPrepend += QString::fromUtf8("<p>");
+                toPrepend += QObject::tr("Invalid expression(s), value returned is the underlying curve:");
+                toPrepend += QString::fromUtf8("</p>");
+                fullErrTooltip.prepend(toPrepend);
+                
+                setWarningValue(eKnobWarningExpressionInvalid, fullErrTooltip);
             } else {
-                _imp->expressionWarningLabel->hide();
+                setWarningValue(eKnobWarningExpressionInvalid, QString());
             }
         }
         onHelpChanged();

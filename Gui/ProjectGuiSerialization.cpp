@@ -113,6 +113,8 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
                 viewerData.fpsLocked = tab->isFPSLocked();
                 viewerData.isPauseEnabled[0] = tab->isViewerPaused(0);
                 viewerData.isPauseEnabled[1] = tab->isViewerPaused(1);
+                viewerData.layerName = tab->getCurrentLayerName().toStdString();
+                viewerData.alphaLayerName = tab->getCurrentAlphaLayerName().toStdString();
                 tab->getTimelineBounds(&viewerData.leftBound, &viewerData.rightBound);
                 tab->getActiveInputs(&viewerData.aChoice, &viewerData.bChoice);
                 viewerData.version = VIEWER_DATA_SERIALIZATION_VERSION;

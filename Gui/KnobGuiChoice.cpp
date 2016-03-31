@@ -36,7 +36,9 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QColorDialog>
 #include <QToolTip>
 #include <QTreeWidget>
+#include <QAction>
 #include <QTreeWidgetItem>
+#include <QMenu>
 #include <QHeaderView>
 #include <QApplication>
 #include <QScrollArea>
@@ -239,6 +241,7 @@ KnobGuiChoice::createWidget(QHBoxLayout* layout)
 void
 KnobGuiChoice::onCurrentIndexChanged(int i)
 {
+    setWarningValue(KnobGui::eKnobWarningChoiceMenuOutOfDate, QString());
     pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(),_knob.lock()->getValue(0),i, 0, false, 0) );
 }
 
@@ -253,17 +256,41 @@ KnobGuiChoice::onEntryAppended(const QString& entry, const QString& help)
         _comboBox->addItem(entry, QIcon(), QKeySequence(), help);
     }
     int activeIndex = knob->getValue();
-    _comboBox->setCurrentIndex_no_emit(activeIndex);
+    if (activeIndex >= 0) {
+        _comboBox->setCurrentIndex_no_emit(activeIndex);
+    } else {
+        _comboBox->setCurrentText(QString::fromUtf8(knob->getActiveEntryText_mt_safe().c_str()));
+    }
+    
 }
 
 void
 KnobGuiChoice::onEntriesReset()
 {
-    _comboBox->clear();
+    onEntriesPopulated();
+}
+
+void
+KnobGuiChoice::addRightClickMenuEntries(QMenu* menu)
+{
     boost::shared_ptr<KnobChoice> knob = _knob.lock();
-    if (knob->getHostCanAddOptions() &&
-        (knob->getName() == kNatronOfxParamOutputChannels || knob->getName() == kOutputChannelsKnobName)) {
-        _comboBox->addItemNew();
+    if (!knob) {
+        return;
+    }
+    
+    QAction* refreshMenuAction = new QAction(QObject::tr("Refresh Menu"),menu);
+    QObject::connect(refreshMenuAction,SIGNAL(triggered()),this,SLOT(onRefreshMenuActionTriggered()));
+    refreshMenuAction->setToolTip(QObject::tr("Synchronize the menu with the actual state of the parameter"));
+    menu->addAction(refreshMenuAction);
+    
+}
+
+void
+KnobGuiChoice::onRefreshMenuActionTriggered()
+{
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    if (knob) {
+        knob->refreshMenu();
     }
 }
 
@@ -271,16 +298,19 @@ void
 KnobGuiChoice::onEntriesPopulated()
 {
     boost::shared_ptr<KnobChoice> knob = _knob.lock();
-    int activeIndex = knob->getValue();
 
     _comboBox->clear();
     std::vector<std::string> entries = knob->getEntries_mt_safe();
     const std::vector<std::string> help =  knob->getEntriesHelp_mt_safe();
+    
+    std::string activeEntry = knob->getActiveEntryText_mt_safe();
+    
     for (U32 i = 0; i < entries.size(); ++i) {
         std::string helpStr;
         if ( !help.empty() && !help[i].empty() ) {
             helpStr = help[i];
         }
+   
         _comboBox->addItem( QString::fromUtf8(entries[i].c_str()), QIcon(), QKeySequence(), QString::fromUtf8( helpStr.c_str() ) );
     }
     // the "New" menu is only added to known parameters (e.g. the choice of output channels)
@@ -290,18 +320,36 @@ KnobGuiChoice::onEntriesPopulated()
     }
     ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and
     ///we don't want that to happen because the index actually didn't change.
-    _comboBox->setCurrentIndex_no_emit(activeIndex);
-
+    if (_comboBox->isCascading() || activeEntry.empty()) {
+        _comboBox->setCurrentIndex_no_emit(knob->getValue());
+    } else {
+        _comboBox->setCurrentText_no_emit(QString::fromUtf8(activeEntry.c_str()));
+    }
+    
+    
+    if (!activeEntry.empty()) {
+        bool activeIndexPresent = knob->isActiveEntryPresentInEntries();
+        if (!activeIndexPresent) {
+            QString error = tr("The value set to this parameter no longer exist in the menu. Right click and press Refresh Menu to update the menu and then pick a new value.");
+            setWarningValue(KnobGui::eKnobWarningChoiceMenuOutOfDate, GuiUtils::convertFromPlainText(error, Qt::WhiteSpaceNormal));
+        } else {
+            setWarningValue(KnobGui::eKnobWarningChoiceMenuOutOfDate, QString());
+        }
+        
+    }
 }
+
 
 void
 KnobGuiChoice::onItemNewSelected()
 {
-    NewLayerDialog dialog(getGui());
+    NewLayerDialog dialog(ImageComponents::getNoneComponents(),getGui());
     if (dialog.exec()) {
         ImageComponents comps = dialog.getComponents();
         if (comps == ImageComponents::getNoneComponents()) {
-            Dialogs::errorDialog(tr("Layer").toStdString(), tr("Invalid layer").toStdString());
+            Dialogs::errorDialog(tr("Layer").toStdString(), tr("A layer must contain at least 1 channel and channel names must be "
+                                                               "Python compliant.").toStdString());
+
             return;
         }
         KnobHolder* holder = _knob.lock()->getHolder();
@@ -341,7 +389,24 @@ KnobGuiChoice::updateGUI(int /*dimension*/)
     ///change the internal value of the knob again...
     ///The slot connected to onCurrentIndexChanged is reserved to catch user interaction with the combobox.
     ///This function is called in response to an internal change.
-    _comboBox->setCurrentIndex_no_emit( _knob.lock()->getValue(0) );
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    
+    std::string activeEntry = knob->getActiveEntryText_mt_safe();
+    if (!activeEntry.empty()) {
+        bool activeIndexPresent = knob->isActiveEntryPresentInEntries();
+        if (!activeIndexPresent) {
+            QString error = tr("The value set to this parameter no longer exist in the menu. Right click and press Refresh Menu to update the menu and then pick a new value.");
+            setWarningValue(KnobGui::eKnobWarningChoiceMenuOutOfDate, GuiUtils::convertFromPlainText(error, Qt::WhiteSpaceNormal));
+        } else {
+            setWarningValue(KnobGui::eKnobWarningChoiceMenuOutOfDate, QString());
+        }
+        
+    }
+    if (_comboBox->isCascading() || activeEntry.empty()) {
+        _comboBox->setCurrentIndex_no_emit(knob->getValue());
+    } else {
+        _comboBox->setCurrentText(QString::fromUtf8(activeEntry.c_str()));
+    }
 }
 
 void

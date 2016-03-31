@@ -83,6 +83,55 @@ static PyObject* Sbk_AppFunc_addFormat(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
+static PyObject* Sbk_AppFunc_addProjectLayer(PyObject* self, PyObject* pyArg)
+{
+    AppWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: addProjectLayer(ImageLayer)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_IMAGELAYER_IDX], (pyArg)))) {
+        overloadId = 0; // addProjectLayer(ImageLayer)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_AppFunc_addProjectLayer_TypeError;
+
+    // Call function/method
+    {
+        if (!Shiboken::Object::isValid(pyArg))
+            return 0;
+        ::ImageLayer cppArg0_local = ::ImageLayer(::std::string(), ::std::string(), ::std::vector<std::string >());
+        ::ImageLayer* cppArg0 = &cppArg0_local;
+        if (Shiboken::Conversions::isImplicitConversion((SbkObjectType*)SbkNatronEngineTypes[SBK_IMAGELAYER_IDX], pythonToCpp))
+            pythonToCpp(pyArg, &cppArg0_local);
+        else
+            pythonToCpp(pyArg, &cppArg0);
+
+
+        if (!PyErr_Occurred()) {
+            // addProjectLayer(ImageLayer)
+            cppSelf->addProjectLayer(*cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_AppFunc_addProjectLayer_TypeError:
+        const char* overloads[] = {"NatronEngine.ImageLayer", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.App.addProjectLayer", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_AppFunc_closeProject(PyObject* self)
 {
     AppWrapper* cppSelf = 0;
@@ -1014,6 +1063,7 @@ static PyObject* Sbk_AppFunc_writeToScriptEditor(PyObject* self, PyObject* pyArg
 
 static PyMethodDef Sbk_App_methods[] = {
     {"addFormat", (PyCFunction)Sbk_AppFunc_addFormat, METH_O},
+    {"addProjectLayer", (PyCFunction)Sbk_AppFunc_addProjectLayer, METH_O},
     {"closeProject", (PyCFunction)Sbk_AppFunc_closeProject, METH_NOARGS},
     {"createNode", (PyCFunction)Sbk_AppFunc_createNode, METH_VARARGS|METH_KEYWORDS},
     {"createReader", (PyCFunction)Sbk_AppFunc_createReader, METH_VARARGS|METH_KEYWORDS},

@@ -411,7 +411,9 @@ EffectInstance::aborted() const
         const boost::shared_ptr<ParallelRenderArgs> & args = tls->frameArgs.back();
         isRenderUserInteraction = args->isRenderResponseToUserInteraction;
         abortInfo = args->abortInfo;
-        treeRoot = args->treeRoot->getEffectInstance();
+        if (args->treeRoot) {
+            treeRoot = args->treeRoot->getEffectInstance();
+        }
         
 #ifdef QT_CUSTOM_THREADPOOL
         if (isAbortableThread) {
@@ -3683,6 +3685,11 @@ EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
     if (!processAll) {
         std::list<ImageComponents> userComps;
         node->getUserCreatedComponents(&userComps);
+        
+        ///Add to the user comps the project components
+        std::vector<ImageComponents> projectLayers = getApp()->getProject()->getProjectDefaultLayers();
+        userComps.insert(userComps.end(), projectLayers.begin(), projectLayers.end());
+        
         ///Foreach user component, add it as an available component, but use this node only if it is also
         ///in the "needed components" list
         for (std::list<ImageComponents>::iterator it = userComps.begin(); it != userComps.end(); ++it) {
@@ -3851,7 +3858,7 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
     *passThroughView = view;
     int idx = getNode()->getPreferredInput();
     *passThroughInput = getNode()->getInput(idx);
-    
+    *processAllRequested = false;
     if (!useThisNodeComponentsNeeded) {
         return;
     }

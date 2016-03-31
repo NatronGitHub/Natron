@@ -722,17 +722,10 @@ KnobGuiOutputFile::updateToolTip()
 //============================PATH_KNOB_GUI====================================
 KnobGuiPath::KnobGuiPath(KnobPtr knob,
                            DockablePanel *container)
-    : KnobGui(knob, container)
+    : KnobGuiTable(knob, container)
     , _mainContainer(0)
     , _lineEdit(0)
     , _openFileButton(0)
-    , _table(0)
-    , _model(0)
-    , _addPathButton(0)
-    , _removePathButton(0)
-    , _editPathButton(0)
-    , _isInsertingItem(false)
-    , _dragAndDropping(false)
 {
     _knob = boost::dynamic_pointer_cast<KnobPath>(knob);
     assert(_knob.lock());
@@ -744,165 +737,24 @@ KnobGuiPath::~KnobGuiPath()
 
 void KnobGuiPath::removeSpecificGui()
 {
-    _mainContainer->deleteLater();
-    _mainContainer = 0;
-}
-
-////////////// TableView delegate
-
-class PathKnobTableItemDelegate
-: public QStyledItemDelegate
-{
-    TableView* _view;
-    bool _isStringList;
-public:
-    
-    explicit PathKnobTableItemDelegate(TableView* view, bool isStringList);
-    
-private:
-    
-    virtual void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const OVERRIDE FINAL;
-};
-
-PathKnobTableItemDelegate::PathKnobTableItemDelegate(TableView* view,bool isStringList)
-: QStyledItemDelegate(view)
-, _view(view)
-, _isStringList(isStringList)
-{
-}
-
-void
-PathKnobTableItemDelegate::paint(QPainter * painter,
-                         const QStyleOptionViewItem & option,
-                         const QModelIndex & index) const
-{
-    
-    if (!index.isValid() || option.state & QStyle::State_Selected) {
-        QStyledItemDelegate::paint(painter,option,index);
-        
-        return;
+    if (_mainContainer) {
+        _mainContainer->deleteLater();
+        _mainContainer = 0;
     }
-    TableModel* model = dynamic_cast<TableModel*>( _view->model() );
-    assert(model);
-    if (!model) {
-        // coverity[dead_error_begin]
-        QStyledItemDelegate::paint(painter, option, index);
-        return;
-    }
-    TableItem* item = model->item(index);
-    if (!item) {
-        QStyledItemDelegate::paint(painter, option, index);
-        return;
-    }
-    QPen pen;
-    
-    if (!item->flags().testFlag(Qt::ItemIsEnabled)) {
-        pen.setColor(Qt::black);
-    } else {
-        pen.setColor( QColor(200,200,200) );
-        
-    }
-    painter->setPen(pen);
-    
-    // get the proper subrect from the style
-    QStyle *style = QApplication::style();
-    QRect geom = style->subElementRect(QStyle::SE_ItemViewItemText, &option);
-    
-    ///Draw the item name column
-    if (option.state & QStyle::State_Selected) {
-        painter->fillRect( geom, option.palette.highlight() );
-    }
-    QRect r;
-    QString str = item->data(Qt::DisplayRole).toString();
-    if (!_isStringList && index.column() == 0) {
-        ///Env vars are used between brackets
-        str.prepend(QLatin1Char('['));
-        str.append(QLatin1Char(']'));
-    }
-    painter->drawText(geom,Qt::TextSingleLine,str,&r);
+    KnobGuiTable::removeSpecificGui();
 }
 
 
 void
 KnobGuiPath::createWidget(QHBoxLayout* layout)
 {
-    _mainContainer = new QWidget(layout->parentWidget());
     boost::shared_ptr<KnobPath> knob = _knob.lock();
     if (knob->isMultiPath()) {
-        QVBoxLayout* mainLayout = new QVBoxLayout(_mainContainer);
-        mainLayout->setContentsMargins(0, 0, 0, 0);
         
-        _table = new TableView( _mainContainer );
-        QObject::connect( _table,SIGNAL(aboutToDrop()),this,SLOT(onItemAboutToDrop()) );
-        QObject::connect( _table,SIGNAL(itemDropped()),this,SLOT(onItemDropped()) );
-        layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-        //    QObject::connect( _table, SIGNAL(editingFinished()), this, SLOT(onReturnPressed()) );
-  
-        _table->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-        _table->setAttribute(Qt::WA_MacShowFocusRect,0);
-
-#if QT_VERSION < 0x050000
-        _table->header()->setResizeMode(QHeaderView::ResizeToContents);
-#else
-        _table->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
-#endif
-        _table->setDragDropMode(QAbstractItemView::InternalMove);
-        _table->header()->setStretchLastSection(true);
-        _table->setUniformRowHeights(true);
-        _table->setItemDelegate(new PathKnobTableItemDelegate(_table, knob->getIsStringList()));
-        
-        _model = new TableModel(0,0,_table);
-        QObject::connect( _model,SIGNAL(s_itemChanged(TableItem*)),this,SLOT(onItemDataChanged(TableItem*)) );
-        
-        
-        _table->setTableModel(_model);
-        _table->setColumnCount(2);
-        if (knob->getIsStringList()) {
-            _table->setColumnHidden(1, true);
-            _table->header()->hide();
-        }
-        QStringList headers;
-        headers << tr("Variable name") << tr("Value");
-        _table->setHorizontalHeaderLabels(headers);
-        
-        ///set the copy/link actions in the right click menu
-        enableRightClickMenu(_table, 0);
-        
-        QWidget* buttonsContainer = new QWidget(_mainContainer);
-        QHBoxLayout* buttonsLayout = new QHBoxLayout(buttonsContainer);
-        buttonsLayout->setContentsMargins(0, 0, 0, 0);
-        
-        _addPathButton = new Button( tr("Add..."),buttonsContainer );
-        if (!knob->getIsStringList()) {
-            _addPathButton->setToolTip(GuiUtils::convertFromPlainText(tr("Click to add a new project path."), Qt::WhiteSpaceNormal));
-        }
-        QObject::connect( _addPathButton, SIGNAL(clicked()), this, SLOT(onAddButtonClicked()) );
-        
-        _removePathButton = new Button( tr("Remove"),buttonsContainer);
-        QObject::connect( _removePathButton, SIGNAL(clicked()), this, SLOT(onRemoveButtonClicked()) );
-        if (!knob->getIsStringList()) {
-            _removePathButton->setToolTip(GuiUtils::convertFromPlainText(tr("Click to remove selected project path."), Qt::WhiteSpaceNormal));
-        }
-        
-        _editPathButton = new Button( tr("Edit..."), buttonsContainer);
-        QObject::connect( _editPathButton, SIGNAL(clicked()), this, SLOT(onEditButtonClicked()) );
-        _editPathButton->setToolTip(GuiUtils::convertFromPlainText(tr("Click to change the path of the selected project path."), Qt::WhiteSpaceNormal));
-        
-        
-        
-        buttonsLayout->addWidget(_addPathButton);
-        buttonsLayout->addWidget(_removePathButton);
-        buttonsLayout->addWidget(_editPathButton);
-        buttonsLayout->addStretch();
-        
-        mainLayout->addWidget(_table);
-        mainLayout->addWidget(buttonsContainer);
-        
-        if (knob->getIsStringList()) {
-            _editPathButton->hide();
-        }
+        KnobGuiTable::createWidget(layout);
         
     } else { // _knob->isMultiPath()
+        _mainContainer = new QWidget(layout->parentWidget());
         QHBoxLayout* mainLayout = new QHBoxLayout(_mainContainer);
         mainLayout->setContentsMargins(0, 0, 0, 0);
         _lineEdit = new LineEdit(_mainContainer);
@@ -920,93 +772,10 @@ KnobGuiPath::createWidget(QHBoxLayout* layout)
         
         mainLayout->addWidget(_lineEdit);
         mainLayout->addWidget(_openFileButton);
-        
+        layout->addWidget(_mainContainer);
+
        
     }
-    
-    layout->addWidget(_mainContainer);
-}
-
-void
-KnobGuiPath::onAddButtonClicked()
-{
-    boost::shared_ptr<KnobPath> knob = _knob.lock();
-    if (knob->getIsStringList()) {
-        QStringList existingEntries;
-        for (Variables::iterator it = _items.begin(); it!=_items.end(); ++it) {
-            existingEntries.push_back(it->second.varName->text());
-        }
-        
-        QString newItemName = QString::fromUtf8("Placeholder");
-        int i = 1;
-        while (existingEntries.contains(newItemName)) {
-            newItemName = QString::fromUtf8("Placeholder") + QString::number(i);
-            ++i;
-        }
-        
-        std::string oldValue = knob->getValue();
-        int rowCount = (int)_items.size();
-        createItem(rowCount, QString(), newItemName);
-        std::string newPath = rebuildPath();
-        pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),oldValue,newPath));
-    } else {
-        std::vector<std::string> filters;
-        SequenceFileDialog dialog( _mainContainer, filters, false, SequenceFileDialog::eFileDialogModeDir, _lastOpened.toStdString(),getGui(),true);
-        
-        if (dialog.exec()) {
-            std::string dirPath = dialog.selectedDirectory();
-            if (!dirPath.empty() && dirPath[dirPath.size() - 1] == '/') {
-                dirPath.erase(dirPath.size() - 1, 1);
-            }
-            updateLastOpened(QString::fromUtf8(dirPath.c_str()));
-            
-            
-            std::string oldValue = knob->getValue();
-            
-            int rowCount = (int)_items.size();
-            
-            QString varName = QString(tr("Path") + QString::fromUtf8("%1")).arg(rowCount);
-
-            createItem(rowCount, QString::fromUtf8(dirPath.c_str()), varName);
-
-            std::string newPath = rebuildPath();
-            
-            pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),oldValue,newPath ) );
-        }
-    }
-}
-
-void
-KnobGuiPath::onEditButtonClicked()
-{
-    std::string oldValue = _knob.lock()->getValue();
-    QModelIndexList selection = _table->selectionModel()->selectedRows();
-    
-    if (selection.size() != 1) {
-        return;
-    }
-    
-    Variables::iterator found = _items.find(selection[0].row());
-    if (found != _items.end()) {
-        std::vector<std::string> filters;
-        
-        SequenceFileDialog dialog( _mainContainer, filters, false, SequenceFileDialog::eFileDialogModeDir, found->second.value->text().toStdString(),getGui(),true );
-        if (dialog.exec()) {
-            
-            std::string dirPath = dialog.selectedDirectory();
-            if (!dirPath.empty() && dirPath[dirPath.size() - 1] == '/') {
-                dirPath.erase(dirPath.size() - 1, 1);
-            }
-            updateLastOpened(QString::fromUtf8(dirPath.c_str()));
-            
-            found->second.value->setText(QString::fromUtf8(dirPath.c_str()));
-            std::string newPath = rebuildPath();
-
-            pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),oldValue,newPath ) );
-        }
-    }
-
-    
     
 }
 
@@ -1027,44 +796,98 @@ KnobGuiPath::onOpenFileButtonClicked()
 
 }
 
-void
-KnobGuiPath::onRemoveButtonClicked()
+bool
+KnobGuiPath::addNewUserEntry(QStringList& row)
 {
-    boost::shared_ptr<KnobPath> knob = _knob.lock();
-    std::string oldValue = knob->getValue();
-    QModelIndexList selection = _table->selectionModel()->selectedRows();
-
-	if (selection.isEmpty()) {
-		return;
-	}
+    std::vector<std::string> filters;
+    SequenceFileDialog dialog( getGui(), filters, false, SequenceFileDialog::eFileDialogModeDir, _lastOpened.toStdString(),getGui(),true);
     
-    std::list<std::string> removeVars;
-    for (int i = 0; i < selection.size(); ++i) {
-        Variables::iterator found = _items.find(selection[i].row());
-        if (found != _items.end()) {
-            removeVars.push_back(found->second.varName->text().toStdString());
-            _items.erase(found);
+    if (dialog.exec()) {
+        std::string dirPath = dialog.selectedDirectory();
+        if (!dirPath.empty() && dirPath[dirPath.size() - 1] == '/') {
+            dirPath.erase(dirPath.size() - 1, 1);
         }
-    }
-    
-    
-    _model->removeRows(selection.front().row(),selection.size());
-
-    
-    ///Fix all variables if needed
-    if (knob->getHolder() && knob->getHolder() == getGui()->getApp()->getProject().get() &&
-        appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
-        for (std::list<std::string>::iterator it = removeVars.begin(); it != removeVars.end(); ++it) {
-            getGui()->getApp()->getProject()->fixRelativeFilePaths(*it, "",false);
-        }
+        QString path = QString::fromUtf8(dirPath.c_str());
+        updateLastOpened(path);
         
+        int rc = rowCount();
+        QString varName = QString(tr("Path") + QString::fromUtf8("%1")).arg(rc);
+        row.push_back(path);
+        return true;
     }
-    
-    std::string newPath = rebuildPath();
-    
-    pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),oldValue,newPath ) );
+    return false;
 }
 
+bool
+KnobGuiPath::editUserEntry(QStringList& row)
+{
+    std::vector<std::string> filters;
+    
+    SequenceFileDialog dialog(getGui(), filters, false, SequenceFileDialog::eFileDialogModeDir, row[1].toStdString(),getGui(),true );
+    if (dialog.exec()) {
+        std::string dirPath = dialog.selectedDirectory();
+        if (!dirPath.empty() && dirPath[dirPath.size() - 1] == '/') {
+            dirPath.erase(dirPath.size() - 1, 1);
+        }
+        QString path = QString::fromUtf8(dirPath.c_str());
+        updateLastOpened(path);
+        row[1] = path;
+        return true;
+    }
+    return false;
+}
+
+void
+KnobGuiPath::entryRemoved(const QStringList& row)
+{
+    boost::shared_ptr<KnobPath> knob = _knob.lock();
+    ///Fix all variables if needed
+    if (knob && knob->getHolder() && knob->getHolder() == getGui()->getApp()->getProject().get() &&
+        appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
+        getGui()->getApp()->getProject()->fixRelativeFilePaths(row[0].toStdString(), std::string(),false);
+    }
+    
+}
+
+void
+KnobGuiPath::tableChanged(int row, int col,std::string* newEncodedValue)
+{
+    boost::shared_ptr<KnobTable> knob = boost::dynamic_pointer_cast<KnobTable>(getKnob());
+    assert(knob);
+    
+    if (knob->getHolder() && knob->getHolder()->isProject() &&
+        appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
+        
+        if (col == 0) {
+            
+            std::list<std::vector<std::string> > oldTable,newTable;
+            knob->decodeFromKnobTableFormat(knob->getValue(), &oldTable);
+            knob->decodeFromKnobTableFormat(*newEncodedValue, &newTable);
+            
+            
+            ///Compare the 2 maps to find-out if a path has changed or just a name
+            if (oldTable.size() == newTable.size() && row < (int)oldTable.size()) {
+                std::list<std::vector<std::string> >::iterator itOld = oldTable.begin();
+                std::list<std::vector<std::string> >::iterator itNew = newTable.begin();
+                std::advance(itOld, row);
+                std::advance(itNew, row);
+                
+                
+                if ((*itOld)[0] != (*itNew)[0]) {
+                    ///a name has changed
+                    getGui()->getApp()->getProject()->fixPathName((*itOld)[0], (*itNew)[0]);
+                } else if ((*itOld)[1] != (*itNew)[1]) {
+                    getGui()->getApp()->getProject()->fixRelativeFilePaths((*itOld)[0], (*itNew)[1],false);
+                }
+                
+            }
+        }
+       
+    }
+    
+    
+    
+}
 
 void
 KnobGuiPath::onTextEdited()
@@ -1075,13 +898,6 @@ KnobGuiPath::onTextEdited()
     }
     updateLastOpened(QString::fromUtf8(dirPath.c_str()));
     
-    
-    
-//    if (allowSimplification && _knob->getHolder() && _knob->getHolder()->getApp()) {
-//        std::map<std::string,std::string> envvar;
-//        _knob->getHolder()->getApp()->getProject()->getEnvironmentVariables(envvar);
-//        Project::findReplaceVariable(envvar,dirPath);
-//    }
 
     
     std::string oldValue = _knob.lock()->getValue();
@@ -1099,91 +915,46 @@ KnobGuiPath::updateLastOpened(const QString &str)
 }
 
 void
-KnobGuiPath::updateGUI(int /*dimension*/)
+KnobGuiPath::updateGUI(int dimension)
 {
-    boost::shared_ptr<KnobPath> knob = _knob.lock();
-	std::string value = _knob.lock()->getValue();
-
     
-    if (_knob.lock()->isMultiPath()) {
-        std::vector<std::pair<std::string,std::string> > variables;
-        Project::makeEnvMapUnordered(value, variables);
+	
+    boost::shared_ptr<KnobPath> knob = _knob.lock();
+    if (!knob->isMultiPath()) {
         
-        
-        _model->clear();
-        _items.clear();
-        int i = 0;
-
-        for (std::vector<std::pair<std::string,std::string> >::const_iterator it = variables.begin(); it != variables.end(); ++it, ++i) {
-            createItem(i, QString::fromUtf8(it->second.c_str()), QString::fromUtf8(it->first.c_str()));
-        }
-    } else {
+        std::string value = knob->getValue();
         _lineEdit->setText(QString::fromUtf8(value.c_str()));
+    } else {
+        KnobGuiTable::updateGUI(dimension);
     }
-}
-
-void
-KnobGuiPath::createItem(int row,const QString& value,const QString& varName)
-{
-    
-    
-    Qt::ItemFlags flags;
-    
-    boost::shared_ptr<KnobPath> knob = _knob.lock();
-    
-    ///Project env var is disabled and uneditable and set automatically by the project
-    if (varName != QString::fromUtf8(NATRON_PROJECT_ENV_VAR_NAME) && varName != QString::fromUtf8(NATRON_OCIO_ENV_VAR_NAME)) {
-        flags = Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable;
-        if (knob->getIsStringList()) {
-            flags |= Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled | Qt::ItemIsUserCheckable;
-        }
-    }
-    TableItem* cell0 = new TableItem;
-    cell0->setText(varName);
-    cell0->setFlags(flags);
-    
-    TableItem* cell1 = new TableItem;
-    cell1->setText(value);
-    cell1->setFlags(flags);
-    
-    Row r;
-    r.varName = cell0;
-    r.value = cell1;
-    
-    _items.insert(std::make_pair(row, r));
-    int modelRowCount = _model->rowCount();
-    if (row >= modelRowCount) {
-        _model->insertRow(row);
-    }
-    _isInsertingItem = true;
-    _table->setItem(row, 0, cell0);
-    _table->setItem(row, 1, cell1);
-    _isInsertingItem = false;
-    _table->resizeColumnToContents(0);
-    _table->resizeColumnToContents(1);
 }
 
 void
 KnobGuiPath::_hide()
 {
-    _mainContainer->hide();
+    if (_mainContainer) {
+        _mainContainer->hide();
+    }
+    KnobGuiTable::_hide();
 }
 
 void
 KnobGuiPath::_show()
 {
-    _mainContainer->show();
+    if (_mainContainer) {
+        _mainContainer->show();
+    }
+    KnobGuiTable::_show();
 }
 
 void
 KnobGuiPath::setEnabled()
 {
-    bool enabled = getKnob()->isEnabled(0);
+    
     if (_knob.lock()->isMultiPath()) {
-        _table->setEnabled(enabled);
-        _addPathButton->setEnabled(enabled);
-        _removePathButton->setEnabled(enabled);
+        KnobGuiTable::setEnabled();
     } else {
+        bool enabled = getKnob()->isEnabled(0);
         _lineEdit->setReadOnly_NoFocusRect(!enabled);
         _openFileButton->setEnabled(enabled);
     }
@@ -1191,12 +962,10 @@ KnobGuiPath::setEnabled()
 
 void
 KnobGuiPath::setReadOnly(bool readOnly,
-                          int /*dimension*/)
+                          int dimension)
 {
     if (_knob.lock()->isMultiPath()) {
-        _table->setEnabled(!readOnly);
-        _addPathButton->setEnabled(!readOnly);
-        _removePathButton->setEnabled(!readOnly);
+        KnobGuiTable::setReadOnly(readOnly, dimension);
     } else {
         _lineEdit->setReadOnly_NoFocusRect(readOnly);
         _openFileButton->setEnabled(!readOnly);
@@ -1206,114 +975,12 @@ KnobGuiPath::setReadOnly(bool readOnly,
 void
 KnobGuiPath::setDirty(bool /*dirty*/)
 {
-    
+
 }
 
 KnobPtr KnobGuiPath::getKnob() const
 {
     return _knob.lock();
-}
-
-void
-KnobGuiPath::onItemAboutToDrop()
-{
-    _dragAndDropping = true;
-}
-
-void
-KnobGuiPath::onItemDropped()
-{
-    _items.clear();
-    
-    ///Rebuild the mapping
-    int rowCount = _table->rowCount();
-    int colCount = _table->columnCount();
-    assert(colCount == 2);
-    for (int i = 0; i < rowCount; ++i) {
-        Row& r = _items[i];
-        r.varName = _table->item(i, 0);
-        r.value = _table->item(i, 1);
-    }
-    _dragAndDropping = false;
-    
-    //Now refresh the knob balue
-    onItemDataChanged(0);
-}
-
-void
-KnobGuiPath::onItemDataChanged(TableItem* /*item*/)
-{
-    if (_isInsertingItem || _dragAndDropping) {
-        return;
-    }
-    boost::shared_ptr<KnobPath> knob = _knob.lock();
-    std::string newPath = rebuildPath();
-    std::string oldPath = knob->getValue();
-    
-    if (oldPath != newPath) {
-        
-        if (knob->getHolder() && knob->getHolder()->isProject() &&
-            appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
-            std::map<std::string,std::string> oldEnv,newEnv;
-            
-            Project::makeEnvMap(oldPath,oldEnv);
-            Project::makeEnvMap(newPath, newEnv);
-            
-            ///Compare the 2 maps to find-out if a path has changed or just a name
-            if (oldEnv.size() == newEnv.size()) {
-                std::map<std::string,std::string>::iterator itOld = oldEnv.begin();
-                for (std::map<std::string,std::string>::iterator itNew = newEnv.begin(); itNew != newEnv.end(); ++itNew, ++itOld) {
-                    
-                    if (itOld->first != itNew->first) {
-                        ///a name has changed
-                        getGui()->getApp()->getProject()->fixPathName(itOld->first, itNew->first);
-                        break;
-                    } else if (itOld->second != itOld->second) {
-                        getGui()->getApp()->getProject()->fixRelativeFilePaths(itOld->first, itNew->second,false);
-                        break;
-                    }
-                }
-            }
-        }
-        
-        pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(),oldPath,newPath ) );
-    }
-}
-
-/**
- * @brief A Path knob could also be called Environment_variable_Knob.
- * The string is encoded the following way:
- * [VariableName1]:[Value1];[VariableName2]:[Value2] etc...
- * Split all the ';' characters to get all different variables
- * then for each variable split the ':' to get the name and the value of the variable.
- **/
-std::string
-KnobGuiPath::rebuildPath() const
-{
-    std::string path;
-    
-    Variables::const_iterator next = _items.begin();
-    if (next != _items.end()) {
-        ++next;
-    }
-    for (Variables::const_iterator it = _items.begin(); it != _items.end(); ++it) {
-        // In order to use XML tags, the text inside the tags has to be escaped.
-        path += NATRON_ENV_VAR_NAME_START_TAG;
-        path += Project::escapeXML(it->second.varName->text().toStdString());
-        path += NATRON_ENV_VAR_NAME_END_TAG;
-        path += NATRON_ENV_VAR_VALUE_START_TAG;
-		std::string value = it->second.value->text().toStdString();
-		std::string escaped = Project::escapeXML(value);
-		assert(value == Project::unescapeXML(escaped));
-        path += escaped;
-        path += NATRON_ENV_VAR_VALUE_END_TAG;
-
-        // increment for next iteration
-        if (next != _items.end()) {
-            ++next;
-        }
-    } // for(it)
-    return path;
 }
 
 
@@ -1409,7 +1076,7 @@ KnobGuiPath::updateToolTip()
         if (!_knob.lock()->isMultiPath()) {
             _lineEdit->setToolTip(tt);
         } else {
-            _table->setToolTip(tt);
+            KnobGuiTable::updateToolTip();
         }
     }
 }

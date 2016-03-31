@@ -27,7 +27,7 @@ DEFINES += OFX_SUPPORTS_DIALOG
 #for QString(const char*) assumes ASCII strings, we may run into troubles
 DEFINES += QT_NO_CAST_FROM_ASCII
 
-//Uncomment to run Natron without Python functionnalities (for debug purposes)
+#Uncomment to run Natron without Python functionnalities (for debug purposes)
 #DEFINES += NATRON_RUN_WITHOUT_PYTHON
 
 *g++* | *clang* {

@@ -245,7 +245,7 @@ public:
     
     
     void
-    markAllRendersAsAborted()
+    markAllRendersAsAborted(bool keepOldest)
     {
         QMutexLocker k(&renderAgeMutex);
         for (int i = 0; i < 2; ++i) {
@@ -255,7 +255,9 @@ public:
             
             //Do not abort the oldest render, let it finish
             OnGoingRenders::iterator it = currentRenderAges[i].begin();
-            ++it;
+            if (!keepOldest) {
+                ++it;
+            }
             
             for (;it != currentRenderAges[i].end(); ++it) {
                 (*it)->aborted = 1;

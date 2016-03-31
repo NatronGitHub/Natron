@@ -182,6 +182,8 @@ ViewerTab::isViewerPaused(int texIndex) const
     return _imp->viewerNode->isViewerPaused(texIndex);
 }
 
+
+
 void
 ViewerTab::toggleViewerPauseMode(bool allInputs)
 {
@@ -916,16 +918,9 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
         
     }
     
-    int layerIdx;
-    if (foundCurIt == components.end()) {
-        layerCurChoice = QString::fromUtf8("-");
-    }
-
-    
-    
-    if (layerCurChoice == QString::fromUtf8("-")) {
+    if (layerCurChoice == QString::fromUtf8("-") || layerCurChoice.isEmpty() || foundCurIt == components.end()) {
         
-        ///Try to find color plane, otherwise fallback on any other layer
+        // Try to find color plane, otherwise fallback on any other layer
         if (foundColorIt != components.end()) {
             layerCurChoice = QString::fromUtf8(foundColorIt->getLayerName().c_str())
             + QLatin1Char('.') + QString::fromUtf8(foundColorIt->getComponentsGlobalName().c_str());
@@ -942,15 +937,16 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
         
         
     }
-    layerIdx = _imp->layerChoice->itemIndex(layerCurChoice);
-    assert(layerIdx != -1);
-
     
     
-    _imp->layerChoice->setCurrentIndex_no_emit(layerIdx);
     if (foundCurIt == components.end()) {
+        _imp->layerChoice->setCurrentText_no_emit(layerCurChoice);
         _imp->viewerNode->setActiveLayer(ImageComponents::getNoneComponents(), false);
     } else {
+        
+        int layerIdx = _imp->layerChoice->itemIndex(layerCurChoice);
+        assert(layerIdx != -1);
+        _imp->layerChoice->setCurrentIndex_no_emit(layerIdx);
         if (foundCurIt->getNumComponents() == 1) {
             //Switch auto to alpha if there's only this to view
             _imp->viewerChannels->setCurrentIndex_no_emit(5);
@@ -966,12 +962,7 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
         _imp->viewerNode->setActiveLayer(*foundCurIt, false);
     }
     
-    int alphaIdx;
-    if (foundCurAlphaIt == components.end() || foundAlphaChannel.empty()) {
-        alphaCurChoice = QString::fromUtf8("-");
-    }
-    
-    if (alphaCurChoice == QString::fromUtf8("-")) {
+    if (alphaCurChoice == QString::fromUtf8("-") || alphaCurChoice.isEmpty() || foundCurAlphaIt == components.end()) {
         
         ///Try to find color plane, otherwise fallback on any other layer
         if (foundColorIt != components.end() &&
@@ -993,18 +984,24 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
         
     }
     
-    alphaIdx = _imp->alphaChannelChoice->itemIndex(alphaCurChoice);
-    if (alphaIdx == -1) {
-        alphaIdx = 0;
-    }
-    
-    _imp->alphaChannelChoice->setCurrentIndex_no_emit(alphaIdx);
-    if (foundCurAlphaIt != components.end()) {
-        _imp->viewerNode->setAlphaChannel(*foundCurAlphaIt, foundAlphaChannel, false);
-    } else {
+    if (foundCurAlphaIt == components.end() || foundAlphaChannel.empty()) {
+        _imp->alphaChannelChoice->setCurrentText_no_emit(alphaCurChoice);
         _imp->viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string(), false);
+    } else {
+        int layerIdx = _imp->alphaChannelChoice->itemIndex(alphaCurChoice);
+        assert(layerIdx != -1);
+        _imp->alphaChannelChoice->setCurrentIndex_no_emit(layerIdx);
+
+        _imp->viewerNode->setAlphaChannel(*foundCurAlphaIt, foundAlphaChannel, false);
+
     }
     
+    {
+        QMutexLocker k(&_imp->currentLayerMutex);
+        _imp->currentLayerChoice = layerCurChoice;
+        _imp->currentAlphaLayerChoice = alphaCurChoice;
+    }
+
 }
 
 void
@@ -1012,6 +1009,11 @@ ViewerTab::onAlphaChannelComboChanged(int index)
 {
     std::set<ImageComponents> components;
     _imp->getComponentsAvailabel(&components);
+    
+    {
+        QMutexLocker k(&_imp->currentLayerMutex);
+        _imp->currentAlphaLayerChoice = _imp->alphaChannelChoice->getCurrentIndexText();
+    }
     int i = 1; // because of the "-" choice
     for (std::set<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
         
@@ -1029,6 +1031,7 @@ ViewerTab::onAlphaChannelComboChanged(int index)
         }
     }
     _imp->viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string(), true);
+    
 }
 
 void
@@ -1036,6 +1039,10 @@ ViewerTab::onLayerComboChanged(int index)
 {
     std::set<ImageComponents> components;
     _imp->getComponentsAvailabel(&components);
+    {
+        QMutexLocker k(&_imp->currentLayerMutex);
+        _imp->currentLayerChoice = _imp->layerChoice->getCurrentIndexText();
+    }
     if (index >= (int)(components.size() + 1) || index < 0) {
         qDebug() << "ViewerTab::onLayerComboChanged: invalid index";
         return;
@@ -1061,6 +1068,28 @@ ViewerTab::onLayerComboChanged(int index)
     _imp->viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string(), false);
     _imp->viewerNode->setActiveLayer(ImageComponents::getNoneComponents(), true);
     
+}
+
+QString
+ViewerTab::getCurrentLayerName() const
+{
+    QMutexLocker k(&_imp->currentLayerMutex);
+    return _imp->currentLayerChoice;
+}
+
+QString
+ViewerTab::getCurrentAlphaLayerName() const
+{
+    QMutexLocker k(&_imp->currentLayerMutex);
+    return _imp->currentAlphaLayerChoice;
+}
+
+void
+ViewerTab::setCurrentLayers(const QString& layer, const QString& alphaLayer)
+{
+    _imp->layerChoice->setCurrentText_no_emit(layer);
+    _imp->alphaChannelChoice->setCurrentText_no_emit(alphaLayer);
+    refreshLayerAndAlphaChannelComboBox();
 }
 
 void

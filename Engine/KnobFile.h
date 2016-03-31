@@ -185,14 +185,11 @@ private:
 
 
 /**
- * @brief A Path knob could also be called Environment_variable_Knob. 
- * The string is encoded the following way:
+ * @brief The string value is encoded the following way:
  * <Name>Lala</Name><Value>MyValue</Value>
- * Split all the ';' characters to get all different variables
- * then for each variable split the ':' to get the name and the value of the variable.
  **/
 class KnobPath
-    : public Knob<std::string>
+    : public KnobTable
 {
 
 public:
@@ -215,29 +212,46 @@ public:
 
     bool isMultiPath() const;
 
-    void getPaths(std::list<std::string>* paths) ;
-    
-    ///Doesn't work if isMultiPath() == false
-    void getVariables(std::list<std::pair<std::string,std::string> >* paths) ;
-    
-    static std::string encodeToMultiPathFormat(const std::list<std::pair<std::string,std::string> >& paths);
-    
-    void setPaths(const std::list<std::pair<std::string,std::string> >& paths);
-    
-    void prependPath(const std::string& path) ;
-    void appendPath(const std::string& path) ;
-
     /*
      @brief same as setMultiPath except that there will be only variable names, no values
      */
     void setAsStringList(bool b);
     bool getIsStringList() const;
     
+    void getPaths(std::list<std::string>* paths) ;
+    void prependPath(const std::string& path) ;
+    void appendPath(const std::string& path) ;
+
+    
+    virtual int getColumnsCount() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return _isStringList ? 1 : 2;
+    }
+    
+    virtual std::string getColumnLabel(int col) const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        switch (col) {
+            case 0:
+                return "Name";
+            case 1:
+                return "Value";
+            default:
+                return "";
+        }
+    }
+    
+    virtual bool isCellEnabled(int row, int col, const QStringList& values) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool isCellBracketDecorated(int row, int col) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool useEditButton() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return _isMultiPath && !_isStringList;
+    }
+
 private:
     
-    static std::string generateUniquePathID(const std::list<std::pair<std::string,std::string> >& paths);
-
-    virtual bool canAnimate() const OVERRIDE FINAL;
+    static std::string generateUniquePathID(const std::list<std::vector<std::string> >& paths);
     virtual const std::string & typeName() const OVERRIDE FINAL;
 
 private:

@@ -370,4 +370,10 @@ App::getViewNames() const
     return ret;
 }
 
+void
+App::addProjectLayer(const ImageLayer& layer)
+{
+    _instance->getProject()->addProjectDefaultLayer(layer.getInternalComps());
+}
+
 NATRON_NAMESPACE_EXIT;

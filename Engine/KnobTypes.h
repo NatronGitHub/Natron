@@ -391,6 +391,21 @@ private:
 };
 
 /******************************KnobChoice**************************************/
+class KnobChoiceMergeEntriesData
+{
+public:
+    
+    KnobChoiceMergeEntriesData()
+    {
+        
+    }
+    
+    virtual void clear() = 0;
+    
+    virtual ~KnobChoiceMergeEntriesData() {
+        
+    }
+};
 
 class KnobChoice
     : public QObject,public Knob<int>
@@ -400,6 +415,13 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
+    
+    // Used in populateChoices() to add new entries in the menu. If not passed the entries will be completly replaced.
+    // It should return wether a equals b. The userData are the one passed to populateChoice and can be used to store temporary
+    // potentially costly operations.
+    // The clear() function will be called right before attempting to compare the first member of the entries to merge to b.
+    // Then throughout the cycling of the internal entries, b will remain at the same value and temporary data can be used.
+    typedef bool (*MergeMenuEqualityFunctor)(const std::string& a, const std::string& b, KnobChoiceMergeEntriesData* userData);
 
     static KnobHelper * BuildKnob(KnobHolder* holder,
                                   const std::string &label,
@@ -416,12 +438,28 @@ public:
 
     virtual ~KnobChoice();
 
-    /*Must be called right away after the constructor.*/
-    void populateChoices( const std::vector<std::string> &entries, const std::vector<std::string> &entriesHelp = std::vector<std::string>() );
+    /**
+     * @brief Fills-up the menu with the given entries and optionnally their tooltip.
+     * @param entriesHelp Can either be empty, meaning no-tooltip or must be of the size of the entries.
+     * @param mergingFunctor If not set, the internal menu will be completely reset and replaced with the given entries.
+     * Otherwise the internal menu entries will be merged with the given entries according to this equality functor.
+     * @param mergingData Can be passed when mergingFunctor is not null to speed up the comparisons. 
+     *
+     * @returns true if something changed, false otherwise.
+     **/
+    bool populateChoices(const std::vector<std::string> &entries,
+                         const std::vector<std::string> &entriesHelp = std::vector<std::string>(),
+                         MergeMenuEqualityFunctor mergingFunctor = 0,
+                         KnobChoiceMergeEntriesData* mergingData = 0,
+                         bool restoreOldChoice = true);
     
     void resetChoices();
     
     void appendChoice(const std::string& entry, const std::string& help = std::string());
+    
+    void refreshMenu();
+    
+    bool isActiveEntryPresentInEntries() const;
     
     std::vector<std::string> getEntries_mt_safe() const;
     const std::string& getEntry(int v) const;
@@ -482,21 +520,26 @@ Q_SIGNALS:
 
 private:
 
-
-    void findAndSetOldChoice(const std::vector<std::string>& newEntries);
+    void findAndSetOldChoice(MergeMenuEqualityFunctor mergingFunctor = 0,
+                             KnobChoiceMergeEntriesData* mergingData = 0);
     
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
     virtual void handleSignalSlotsForAliasLink(const KnobPtr& alias,bool connect) OVERRIDE FINAL;
     virtual void onInternalValueChanged(int dimension, double time, ViewSpec view) OVERRIDE FINAL;
     
+    virtual void cloneExtraData(KnobI* other,int dimension = -1) OVERRIDE FINAL;
+    virtual bool cloneExtraDataAndCheckIfChanged(KnobI* other,int dimension = -1) OVERRIDE FINAL;
+    virtual void cloneExtraData(KnobI* other, double offset, const RangeD* range,int dimension = -1) OVERRIDE FINAL;
 private:
     
     mutable QMutex _entriesMutex;
-    std::vector<std::string> _entries;
-    std::vector<std::string> _entriesHelp;
+    std::vector<std::string> _newEntries,_mergedEntries;
     
-    std::string _lastValidEntry; // protected by _entriesMutex
+    
+    std::vector<std::string> _newEntriesHelp,_mergedEntriesHelp;
+    
+    std::string _currentEntryLabel; // protected by _entriesMutex
     bool _addNewChoice;
     static const std::string _typeNameStr;
     bool _isCascading;
@@ -920,6 +963,132 @@ private:
     virtual void cloneExtraData(KnobI* other,int dimension = -1) OVERRIDE FINAL;
     virtual bool cloneExtraDataAndCheckIfChanged(KnobI* other,int dimension = -1) OVERRIDE FINAL;
     virtual void cloneExtraData(KnobI* other, double offset, const RangeD* range,int dimension = -1) OVERRIDE FINAL;
+    static const std::string _typeNameStr;
+};
+
+/**
+ * @brief A Table containing strings. The number of columns is static.
+ **/
+class KnobTable
+: public Knob<std::string>
+{
+    
+public:
+    
+    
+    KnobTable(KnobHolder* holder,
+             const std::string &description,
+             int dimension,
+             bool declaredByPlugin);
+    
+    virtual ~KnobTable();
+
+    void getTable(std::list<std::vector<std::string> >* table);
+    void getTableSingleCol(std::list<std::string>* table);
+   
+    void decodeFromKnobTableFormat(const std::string& value, std::list<std::vector<std::string> >* table);
+    std::string encodeToKnobTableFormat(const std::list<std::vector<std::string> >& table);
+    std::string encodeToKnobTableFormatSingleCol(const std::list<std::string>& table);
+    
+    void setTable(const std::list<std::vector<std::string> >& table);
+    void setTableSingleCol(const std::list<std::string>& table);
+    void appendRow(const std::vector<std::string>& row);
+    void appendRowSingleCol(const std::string& row);
+    void insertRow(int index, const std::vector<std::string>& row);
+    void insertRowSingleCol(int index, const std::string& row);
+    void removeRow(int index);
+        
+    virtual int getColumnsCount() const = 0;
+    
+    virtual std::string getColumnLabel(int col) const = 0;
+    
+    virtual bool isCellEnabled(int row, int col, const QStringList& values) const = 0;
+    
+    virtual bool isCellBracketDecorated(int /*row*/, int /*col*/) const {
+        return false;
+    }
+    
+    virtual bool isColumnEditable(int /*col*/) {
+        return true;
+    }
+    
+    virtual bool useEditButton() const
+    {
+        return true;
+    }
+    
+private:
+    
+    
+    virtual bool canAnimate() const OVERRIDE FINAL {
+        return false;
+    }
+
+};
+
+class KnobLayers
+: public KnobTable
+{
+    
+public:
+    
+    static KnobHelper * BuildKnob(KnobHolder* holder,
+                                  const std::string &label,
+                                  int dimension,
+                                  bool declaredByPlugin = true)
+    {
+        return new KnobLayers(holder, label, dimension, declaredByPlugin);
+    }
+    
+    KnobLayers(KnobHolder* holder,
+              const std::string &description,
+              int dimension,
+              bool declaredByPlugin)
+    : KnobTable(holder, description, dimension, declaredByPlugin)
+    {
+        
+    }
+    
+    virtual ~KnobLayers()
+    {
+        
+    }
+    
+    virtual int getColumnsCount() const OVERRIDE FINAL
+    {
+        return 2;
+    }
+    
+    virtual std::string getColumnLabel(int col) const OVERRIDE FINAL
+    {
+        if (col == 0) {
+            return "Name";
+        } else if (col == 1) {
+            return "Channels";
+        } else {
+            return "";
+        }
+    }
+    
+    virtual bool isCellEnabled(int /*row*/, int /*col*/, const QStringList& /*values*/) const OVERRIDE FINAL WARN_UNUSED_RETURN {
+        return true;
+    }
+    
+    virtual bool isColumnEditable(int col) OVERRIDE FINAL WARN_UNUSED_RETURN {
+        if (col == 1) {
+            return false;
+        }
+        return true;
+    }
+    
+    static const std::string & typeNameStatic() WARN_UNUSED_RETURN;
+    
+private:
+    
+    virtual const std::string & typeName() const OVERRIDE FINAL
+    {
+        return typeNameStatic();
+    }
     static const std::string _typeNameStr;
 };
 

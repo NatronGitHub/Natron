@@ -54,6 +54,10 @@ public:
     
     ImageLayer(const ImageComponents& internalComps);
     
+    ImageComponents getInternalComps() const
+    {
+        return _comps;
+    }
     
     ~ImageLayer() {}
     

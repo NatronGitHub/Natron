@@ -415,9 +415,9 @@ NodeGraph::createNodeGUI(const NodePtr & node,
         _imp->_nodes.push_back(node_ui);
     }
 
-    NodeGroup* parentIsGroup = dynamic_cast<NodeGroup*>(node->getGroup().get());;
+    //NodeGroup* parentIsGroup = dynamic_cast<NodeGroup*>(node->getGroup().get());;
     
-    if (args.reason != eCreateNodeReasonProjectLoad && (!getGui()->getApp()->isCreatingPythonGroup() || node->isEffectGroup()) && !parentIsGroup) {
+    if (args.reason != eCreateNodeReasonProjectLoad && (!getGui()->getApp()->isCreatingPythonGroup() || node->isEffectGroup()) ) {
         node_ui->ensurePanelCreated();
     }
     

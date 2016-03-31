@@ -121,6 +121,8 @@ public:
     
     std::list<std::string> getViewNames() const;
     
+    void addProjectLayer(const ImageLayer& layer);
+    
 protected:
     
     void renderInternal(bool forceBlocking,Effect* writeNode,int firstFrame, int lastFrame, int frameStep);

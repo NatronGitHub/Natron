@@ -170,7 +170,7 @@ KnobGui::createGUI(QGridLayout* containerLayout,
                    QWidget* fieldContainer,
                    QWidget* labelContainer,
                    KnobClickableLabel* label,
-                   Label* expressinoLabelWarning,
+                   Label* warningIndicator,
                    QHBoxLayout* layout,
                    bool isOnNewLine,
                    const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine)
@@ -186,13 +186,13 @@ KnobGui::createGUI(QGridLayout* containerLayout,
     _imp->field = fieldContainer;
     _imp->labelContainer = labelContainer;
     _imp->descriptionLabel = label;
-    _imp->expressionWarningLabel = expressinoLabelWarning;
+    _imp->warningIndicator = warningIndicator;
     _imp->isOnNewLine = isOnNewLine;
     if (!isOnNewLine) {
         //layout->addStretch();
         layout->addSpacing(TO_DPIX(15));
         if (label) {
-            layout->addWidget(_imp->expressionWarningLabel);
+            layout->addWidget(_imp->warningIndicator);
             layout->addWidget(label);
         }
     }
