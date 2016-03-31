@@ -915,7 +915,7 @@ Node::load(const CreateNodeArgs& args)
     
     ///Now that the instance is created, make sure instanceChangedActino is called for all extra default values
     ///that we set
-    double time = getEffectInstance()->getCurrentTime();
+   /* double time = getEffectInstance()->getCurrentTime();
     for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = args.paramValues.begin(); it != args.paramValues.end(); ++it) {
         KnobPtr knob = getKnobByName((*it)->getName());
         if (knob) {
@@ -935,7 +935,7 @@ Node::load(const CreateNodeArgs& args)
         }
     }
 #endif
-    
+    */
 } // load
 
 bool
