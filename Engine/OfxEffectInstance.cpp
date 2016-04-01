@@ -231,6 +231,7 @@ struct OfxEffectInstancePrivate
     bool supportsMultipleClipsPar;
     bool supportsMultipleClipsBitdepth;
     bool doesTemporalAccess;
+    bool multiplanar;
     
     OfxEffectInstancePrivate()
     : effect()
@@ -254,6 +255,7 @@ struct OfxEffectInstancePrivate
     , supportsMultipleClipsPar(false)
     , supportsMultipleClipsBitdepth(false)
     , doesTemporalAccess(false)
+    , multiplanar(false)
     {
         
     }
@@ -366,6 +368,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         _imp->supportsMultipleClipsPar = _imp->effect->supportsMultipleClipPARs();
         _imp->supportsMultipleClipsBitdepth = _imp->effect->supportsMultipleClipDepths();
         _imp->doesTemporalAccess = _imp->effect->temporalAccess();
+        _imp->multiplanar = _imp->effect->isMultiPlanar();
         int sequential = _imp->effect->getPlugin()->getDescriptor().getProps().getIntProperty(kOfxImageEffectInstancePropSequentialRender);
         switch (sequential) {
             case 0:
@@ -2582,7 +2585,7 @@ OfxEffectInstance::getComponentsNeededAndProduced(double time,
 bool
 OfxEffectInstance::isMultiPlanar() const
 {
-    return effectInstance()->isMultiPlanar();
+    return _imp->multiplanar;
 }
 
 EffectInstance::PassThroughEnum

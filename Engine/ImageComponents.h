@@ -113,6 +113,14 @@ public:
     ///E.g "rgba"
     const std::string& getComponentsGlobalName() const;
     
+    /**
+     * @brief If this layer is paired (i.e: isPairedComponents()) then returns true
+     * and set the pairedLayer 
+     **/
+    bool isEqualToPairedPlane(const ImageComponents& other, ImageComponents* pairedLayer) const;
+    
+    bool getPlanesPair(ImageComponents* first, ImageComponents* second) const;
+    
     bool operator==(const ImageComponents& other) const;
     
     bool operator!=(const ImageComponents& other) const {

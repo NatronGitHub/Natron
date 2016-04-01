@@ -798,6 +798,15 @@ Node::load(const CreateNodeArgs& args)
 #endif
         assert(_imp->effect);
     }
+    
+    // For readers, set their original frame range when creating them
+    if (!args.serialization && _imp->effect->isReader()) {
+        KnobPtr filenameKnob = getKnobByName(kOfxImageEffectFileParamName);
+        if (filenameKnob) {
+            computeFrameRangeForReader(filenameKnob.get());
+        }
+    }
+    
     _imp->effect->initializeOverlayInteract();
     
     
