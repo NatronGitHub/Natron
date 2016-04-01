@@ -102,7 +102,7 @@ EffectInstance::EffectInstance(NodePtr node)
 
 EffectInstance::~EffectInstance()
 {
-    clearPluginMemoryChunks();
+    
 }
 
 

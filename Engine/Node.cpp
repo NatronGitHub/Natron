@@ -5692,6 +5692,7 @@ Node::destroyNodeInternal(bool fromDest, bool autoReconnect)
      }*/
     
     ///Kill the effect
+    _imp->effect->clearPluginMemoryChunks();
     _imp->effect.reset();
     
     ///If inside the group, remove it from the group

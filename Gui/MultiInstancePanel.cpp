@@ -465,10 +465,11 @@ MultiInstancePanel::initializeKnobs()
             for (U32 j = 0; j < otherChildren.size(); ++j) {
                 if ( !otherChildren[j]->isInstanceSpecific() ) {
                     KnobPtr thisChild = getKnobByName( otherChildren[j]->getName() );
-                    assert(thisChild);
-                    isPage->addKnob(thisChild);
-                    if ( isNodePage && !thisChild->isDeclaredByPlugin() ) {
-                        thisChild->setAllDimensionsEnabled(false);
+                    if (thisChild) {
+                        isPage->addKnob(thisChild);
+                        if ( isNodePage && !thisChild->isDeclaredByPlugin() ) {
+                            thisChild->setAllDimensionsEnabled(false);
+                        }
                     }
                 }
             }
