@@ -9730,6 +9730,9 @@ public:
     virtual void clear()
     {
         dataSet = false;
+        bNode.clear();
+        bLayer.clear();
+        bChannel.clear();
     }
     
     virtual ~MergeMaskChannelData()

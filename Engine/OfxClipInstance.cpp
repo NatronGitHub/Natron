@@ -695,7 +695,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     bool isMultiplanar = effect->isMultiPlanar();
     
     ImageComponents comp;
-    if (!isMultiplanar) {
+    if (!ofxPlane) {
         
         boost::shared_ptr<EffectInstance::ComponentsNeededMap> neededComps;
         effect->getThreadLocalNeededComponents(&neededComps);
