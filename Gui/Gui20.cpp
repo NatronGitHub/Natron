@@ -1316,13 +1316,16 @@ Gui::createWriter()
     std::string file;
 #ifdef NATRON_ENABLE_IO_META_NODES
     bool useDialogForWriters = appPTR->getCurrentSettings()->isFileDialogEnabledForNewWriters();
+#else
+    bool useDialogForWriters = true;
+#endif
     if (useDialogForWriters) {
         file = popSaveFileDialog( true, filters, _imp->_lastSaveSequenceOpenedDir.toStdString(), true );
         if (file.empty()) {
             return NodePtr();
         }
     }
-#endif
+
     
     if (!file.empty()) {
         std::string patternCpy = file;

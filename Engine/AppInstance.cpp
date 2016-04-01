@@ -848,7 +848,11 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
         if (!moduleName.isEmpty()) {
             setGroupLabelIDAndVersion(node,modulePath, moduleName);
         }
-     
+        
+        // If there's a serialization, restore the serialization of the group node because the Python script probably overriden any state
+        if (serialization) {
+            containerNode->loadKnobs(*serialization);
+        }
         
     } //FlagSetter fs(true,&_imp->_creatingGroup,&_imp->creatingGroupMutex);
     

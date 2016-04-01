@@ -705,10 +705,16 @@ KnobChoice::findAndSetOldChoice(MergeMenuEqualityFunctor mergingFunctor,
             mergingFunctor = stringEqualFunctor;
         }
         int found = -1;
-        for (std::size_t i = 0; i < _mergedEntries.size(); ++i) {
-            if (mergingFunctor(_mergedEntries[i],curEntry, mergingData)) {
-                found = i;
-                break;
+        {
+            QMutexLocker k(&_entriesMutex);
+            for (std::size_t i = 0; i < _mergedEntries.size(); ++i) {
+                if (mergingFunctor(_mergedEntries[i],curEntry, mergingData)) {
+                    found = i;
+                    
+                    // Update the label if different
+                    _currentEntryLabel = _mergedEntries[i];
+                    break;
+                }
             }
         }
         if (found != -1) {
@@ -752,6 +758,10 @@ KnobChoice::populateChoices(const std::vector<std::string> &entries,
                 bool found = false;
                 for (std::size_t j = 0; j < _mergedEntries.size(); ++j) {
                     if (mergingFunctor(_mergedEntries[j],entries[i], mergingData)) {
+                        if (_mergedEntries[j] != entries[i]) {
+                            hasChanged = true;
+                            _mergedEntries[j] = entries[i];
+                        }
                         found = true;
                         break;
                     }
@@ -1040,7 +1050,7 @@ KnobChoice::choiceRestoration(KnobChoice* knob,const ChoiceExtraData* data)
             setEnabled( i, knob->isEnabled(i) );
         }
     }
-    
+
     {
         QMutexLocker k(&_entriesMutex);
         _currentEntryLabel = data->_choiceString;
@@ -1074,7 +1084,7 @@ KnobChoice::onOriginalKnobPopulated()
     if (!isChoice) {
         return;
     }
-    populateChoices(isChoice->_mergedEntries,isChoice->_mergedEntriesHelp, 0, 0, false);
+    populateChoices(isChoice->_mergedEntries,isChoice->_mergedEntriesHelp, 0, 0, true);
 }
 
 void

@@ -3894,6 +3894,7 @@ KnobHelper::setKnobAsAliasOfThis(const KnobPtr& master, bool doAlias)
             unSlave(i, false);
         }
         if (doAlias) {
+            master->clone(this, i);
             bool ok = slaveTo(i, master, i, eValueChangedReasonNatronInternalEdited, false);
             assert(ok);
             Q_UNUSED(ok);

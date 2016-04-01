@@ -244,27 +244,6 @@ public:
     }
     
     
-    void
-    markAllRendersAsAborted(bool keepOldest)
-    {
-        QMutexLocker k(&renderAgeMutex);
-        for (int i = 0; i < 2; ++i) {
-            if (currentRenderAges[i].empty()) {
-                continue;
-            }
-            
-            //Do not abort the oldest render, let it finish
-            OnGoingRenders::iterator it = currentRenderAges[i].begin();
-            if (!keepOldest) {
-                ++it;
-            }
-            
-            for (;it != currentRenderAges[i].end(); ++it) {
-                (*it)->aborted = 1;
-            }
-        }
-    }
-    
     /**
      * @brief To be called to check if there we are the last requested render (true) or if there were
      * more recent requests (false).

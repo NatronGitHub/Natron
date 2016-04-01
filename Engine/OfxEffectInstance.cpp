@@ -1811,9 +1811,10 @@ OfxEffectInstance::render(const RenderActionArgs& args)
     for (std::list<std::pair<ImageComponents,boost::shared_ptr<Image> > >::const_iterator it = args.outputPlanes.begin();
          it!=args.outputPlanes.end(); ++it) {
         if (!multiPlanar) {
-            ofxPlanes.push_back(OfxClipInstance::natronsPlaneToOfxPlane(it->second->getComponents()));
+            // When not multi-planar, the components of the image will be the colorplane
+            OfxClipInstance::natronsPlaneToOfxPlane(it->second->getComponents(), &ofxPlanes);
         } else {
-            ofxPlanes.push_back(OfxClipInstance::natronsPlaneToOfxPlane(it->first));
+            OfxClipInstance::natronsPlaneToOfxPlane(it->first, &ofxPlanes);
         }
     }
     
@@ -2564,7 +2565,9 @@ OfxEffectInstance::getComponentsNeededAndProduced(double time,
                     std::vector<ImageComponents> compNeeded;
                     for (std::list<std::string>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
                         ImageComponents ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(*it2);
-                        compNeeded.push_back(ofxComp);
+                        if (ofxComp.getNumComponents() > 0) {
+                            compNeeded.push_back(ofxComp);
+                        }
                     }
                     comps->insert(std::make_pair(index, compNeeded));
                 }

@@ -574,28 +574,33 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 RenderRoIRetCode ret =  inputEffectIdentity->renderRoI(*inputArgs, &identityPlanes);
                 if (ret == eRenderRoIRetCodeOk) {
                     outputPlanes->insert(identityPlanes.begin(),identityPlanes.end());
-                    std::map<ImageComponents,ImagePtr> convertedPlanes;
-                    AppInstance* app = getApp();
-                    assert(args.components.size() == outputPlanes->size() || outputPlanes->empty());
-                    bool useAlpha0ForRGBToRGBAConversion = args.caller ? args.caller->getNode()->usesAlpha0ToConvertFromRGBToRGBA() : false;
                     
-                    std::list<ImageComponents>::const_iterator compIt = args.components.begin();
-                    
-                    for (std::map<ImageComponents,ImagePtr>::iterator it = outputPlanes->begin(); it!=outputPlanes->end(); ++it,++compIt) {
+                    if (fetchUserSelectedComponentsUpstream) {
+                        // We fetched potentially different components, so convert them to the format requested
+                        std::map<ImageComponents,ImagePtr> convertedPlanes;
+                        AppInstance* app = getApp();
                         
-                        ImagePremultiplicationEnum premult;
-                        const ImageComponents & outComp = outputComponents.front();
-                        if ( outComp.isColorPlane() ) {
-                            premult = thisEffectOutputPremult;
-                        } else {
-                            premult = eImagePremultiplicationOpaque;
+                        bool useAlpha0ForRGBToRGBAConversion = args.caller ? args.caller->getNode()->usesAlpha0ToConvertFromRGBToRGBA() : false;
+                        
+                        std::list<ImageComponents>::const_iterator compIt = args.components.begin();
+                        
+                        for (std::map<ImageComponents,ImagePtr>::iterator it = outputPlanes->begin(); it!=outputPlanes->end(); ++it,++compIt) {
+                            
+                            ImagePremultiplicationEnum premult;
+                            const ImageComponents & outComp = outputComponents.front();
+                            if ( outComp.isColorPlane() ) {
+                                premult = thisEffectOutputPremult;
+                            } else {
+                                premult = eImagePremultiplicationOpaque;
+                            }
+                            
+                            ImagePtr tmp = convertPlanesFormatsIfNeeded(app, it->second, args.roi, *compIt, inputArgs->bitdepth, useAlpha0ForRGBToRGBAConversion, premult, -1);
+                            assert(tmp);
+                            convertedPlanes[it->first] = tmp;
                         }
-                        
-                        ImagePtr tmp = convertPlanesFormatsIfNeeded(app, it->second, args.roi, *compIt, inputArgs->bitdepth, useAlpha0ForRGBToRGBAConversion, premult, -1);
-                        assert(tmp);
-                        convertedPlanes[it->first] = tmp;
+                        *outputPlanes = convertedPlanes;
                     }
-                    *outputPlanes = convertedPlanes;
+                   
                 } else {
                     return ret;
                 }

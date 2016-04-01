@@ -1042,13 +1042,19 @@ OfxClipInstance::ofxPlaneToNatronPlane(const std::string& plane)
     }
 }
 
-std::string
-OfxClipInstance::natronsPlaneToOfxPlane(const ImageComponents& plane)
+void
+OfxClipInstance::natronsPlaneToOfxPlane(const ImageComponents& plane, std::list<std::string>* ofxPlanes)
 {
     if (plane.getLayerName() == kNatronColorPlaneName) {
-        return kFnOfxImagePlaneColour;
+        ofxPlanes->push_back(kFnOfxImagePlaneColour);
+    } else if (plane == ImageComponents::getPairedMotionVectors()) {
+        ofxPlanes->push_back(kFnOfxImagePlaneBackwardMotionVector);
+        ofxPlanes->push_back(kFnOfxImagePlaneForwardMotionVector);
+    } else if (plane == ImageComponents::getPairedStereoDisparity()) {
+        ofxPlanes->push_back(kFnOfxImagePlaneStereoDisparityLeft);
+        ofxPlanes->push_back(kFnOfxImagePlaneStereoDisparityRight);
     } else {
-        return natronCustomCompToOfxComp(plane);
+        ofxPlanes->push_back(natronCustomCompToOfxComp(plane));
     }
 }
 
@@ -1064,9 +1070,16 @@ OfxClipInstance::natronsComponentsToOfxComponents(const ImageComponents& comp)
         return kOfxImageComponentRGB;
     } else if (comp == ImageComponents::getRGBAComponents()) {
         return kOfxImageComponentRGBA;
-    } else if (QString::fromUtf8(comp.getComponentsGlobalName().c_str()).compare(QString::fromUtf8("UV"), Qt::CaseInsensitive) == 0) {
+   /* }
+    else if (QString::fromUtf8(comp.getComponentsGlobalName().c_str()).compare(QString::fromUtf8("UV"), Qt::CaseInsensitive) == 0) {
         return kFnOfxImageComponentMotionVectors;
     } else if (QString::fromUtf8(comp.getComponentsGlobalName().c_str()).compare(QString::fromUtf8("XY"), Qt::CaseInsensitive) == 0) {
+        return kFnOfxImageComponentStereoDisparity;*/
+    } else if (comp == ImageComponents::getXYComponents()) {
+        return kNatronOfxImageComponentXY;
+    } else if (comp == ImageComponents::getPairedMotionVectors()) {
+        return kFnOfxImageComponentMotionVectors;
+    } else if (comp == ImageComponents::getPairedStereoDisparity()) {
         return kFnOfxImageComponentStereoDisparity;
     } else {
         return natronCustomCompToOfxComp(comp);

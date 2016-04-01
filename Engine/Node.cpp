@@ -2145,7 +2145,16 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 continue;
             }
             knob->cloneDefaultValues(sKnob.get());
-            knob->clone(sKnob.get());
+            if (isChoice) {
+                const ChoiceExtraData* data = dynamic_cast<const ChoiceExtraData*>(isRegular->getExtraData());
+                assert(data);
+                if (data) {
+                    isChoice->choiceRestoration(dynamic_cast<KnobChoice*>(sKnob.get()), data);
+                }
+            } else {
+            
+                knob->clone(sKnob.get());
+            }
             knob->setAsUserKnob();
             if (group) {
                 group->addKnob(knob);
@@ -6747,39 +6756,7 @@ Node::isMaskChannelKnob(const KnobI* knob) const
     return -1;
 }
 
-int
-Node::getMaskChannel(int inputNb,ImageComponents* comps,NodePtr* maskInput) const
-{
-    std::map<int, MaskSelector >::const_iterator it = _imp->maskSelectors.find(inputNb);
-    if ( it != _imp->maskSelectors.end() ) {
-        int index =  it->second.channel.lock()->getValue();
-        if (index == 0) {
-            *comps = ImageComponents::getNoneComponents();
-            maskInput->reset();
-            return -1;
-        } else {
-            index -= 1; // None choice
-            QMutexLocker locker(&it->second.compsMutex);
-            int k = 0;
-            for (std::size_t i = 0; i < it->second.compsAvailable.size(); ++i) {
-                if (index >= k && index < (it->second.compsAvailable[i].first.getNumComponents() + k)) {
-                    int compIndex = index - k;
-                    assert(compIndex >= 0 && compIndex <= 3);
-                    *comps = it->second.compsAvailable[i].first;
-                    *maskInput = it->second.compsAvailable[i].second.lock();
-                    return compIndex;
-                }
-                k += it->second.compsAvailable[i].first.getNumComponents();
-            }
-            
-        }
-        //Default to alpha
-        *comps = ImageComponents::getAlphaComponents();
-        return 0;
-    }
-    return -1;
-    
-}
+
 
 bool
 Node::isMaskEnabled(int inputNb) const
@@ -9694,27 +9671,35 @@ static void parseLayerString(const std::string& encoded, bool* isColor)
     }
 }
 
-static void parseMaskChannelString(const std::string& encodedChannel,
+static bool parseMaskChannelString(const std::string& encodedChannel,
                                    std::string* nodeName,
                                    std::string* layerName,
                                    std::string* channelName,
                                    bool *isColor)
 {
-    std::size_t foundLastDot = encodedChannel.find_last_of(".");
-    if (foundLastDot != std::string::npos) {
-        *layerName = encodedChannel.substr(0, foundLastDot);
-        std::size_t foundPrevDot = layerName->find_first_of(".");
-        if (foundPrevDot != std::string::npos) {
-            //Remove the node name
-            *layerName = layerName->substr(foundPrevDot + 1);
-            *nodeName = layerName->substr(0, foundPrevDot);
-        } else {
-            *nodeName = *layerName;
-            layerName->clear();
+    std::size_t foundLastDot = encodedChannel.find_last_of('.');
+    if (foundLastDot == std::string::npos) {
+        *isColor = false;
+        if (encodedChannel == "None") {
+            *layerName = "None";
+            return true;
         }
-        *isColor = *layerName == kNatronRGBAComponentsName || *layerName == kNatronRGBComponentsName || *layerName == kNatronAlphaComponentsName;
-        *channelName = encodedChannel.substr(foundLastDot + 1);
+        return false;
     }
+    *channelName = encodedChannel.substr(foundLastDot + 1);
+    
+    std::string baseName = encodedChannel.substr(0, foundLastDot);
+    std::size_t foundPrevDot = baseName.find_first_of('.');
+    if (foundPrevDot != std::string::npos) {
+        //Remove the node name
+        *layerName = baseName.substr(foundPrevDot + 1);
+        *nodeName = baseName.substr(0, foundPrevDot);
+    } else {
+        *layerName = baseName;
+        nodeName->clear();
+    }
+    *isColor = *layerName == kNatronRGBAComponentsName || *layerName == kNatronRGBComponentsName || *layerName == kNatronAlphaComponentsName;
+    return true;
 }
 
 class MergeMaskChannelData : public KnobChoiceMergeEntriesData
@@ -9825,6 +9810,45 @@ static bool layerEqualityFunctor(const std::string& a, const std::string& b, Kno
         return true;
     }
     return false;
+}
+
+int
+Node::getMaskChannel(int inputNb,ImageComponents* comps,NodePtr* maskInput) const
+{
+    std::map<int, MaskSelector >::const_iterator it = _imp->maskSelectors.find(inputNb);
+    if ( it != _imp->maskSelectors.end() ) {
+        std::string maskEncoded =  it->second.channel.lock()->getActiveEntryText_mt_safe();
+        std::string nodeName, layerName, channelName;
+        bool isColor;
+        bool ok = parseMaskChannelString(maskEncoded, &nodeName, &layerName, &channelName, &isColor);
+        if (!ok || layerName == "None") {
+            *comps = ImageComponents::getNoneComponents();
+            maskInput->reset();
+            return -1;
+        } else {
+            QMutexLocker locker(&it->second.compsMutex);
+            for (std::size_t i = 0; i < it->second.compsAvailable.size(); ++i) {
+                if (it->second.compsAvailable[i].first.getLayerName() == layerName ||
+                    (isColor && it->second.compsAvailable[i].first.isColorPlane())) {
+                    
+                    const std::vector<std::string>& channels = it->second.compsAvailable[i].first.getComponentsNames();
+                    for (std::size_t j = 0; j < channels.size(); ++j) {
+                        if (channels[j] == channelName) {
+                            *comps = it->second.compsAvailable[i].first;
+                            *maskInput = it->second.compsAvailable[i].second.lock();
+                            return j;
+                        }
+                    }
+                }
+            }
+            
+        }
+        //Default to alpha
+       // *comps = ImageComponents::getAlphaComponents();
+        //return 0;
+    }
+    return -1;
+    
 }
 
 bool
@@ -10046,7 +10070,8 @@ Node::refreshChannelSelectors()
         for (std::vector<std::pair<ImageComponents,NodeWPtr > >::iterator it2 = compsOrdered.begin(); it2!= compsOrdered.end(); ++it2) {
             
             const std::vector<std::string>& channels = it2->first.getComponentsNames();
-            const std::string& layerName = it2->first.isColorPlane() ? it2->first.getComponentsGlobalName() : it2->first.getLayerName();
+            bool isColor = it2->first.isColorPlane();
+            const std::string& layerName = isColor ? it2->first.getComponentsGlobalName() : it2->first.getLayerName();
             
             NodePtr providerNode = it2->second.lock();
             std::string nodeName;
@@ -10057,9 +10082,11 @@ Node::refreshChannelSelectors()
             for (std::size_t i = 0; i < channels.size(); ++i) {
                 
                 std::string option;
-                option += nodeName;
-                if (!nodeName.empty()) {
-                    option += '.';
+                if (!isColor) {
+                    option += nodeName;
+                    if (!nodeName.empty()) {
+                        option += '.';
+                    }
                 }
                 option += layerName;
                 if (!layerName.empty()) {

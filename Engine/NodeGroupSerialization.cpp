@@ -258,6 +258,10 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
 
             }
         }
+        if (!createNodes && n) {
+            // If we created the node using a PyPlug, deserialize the project too to override any modification made by the user.
+            n->loadKnobs(**it);
+        }
         assert(n);
 
         createdNodes[n] = *it;

@@ -193,7 +193,7 @@ ImageComponents::operator==(const ImageComponents& other) const
             return false;
         }
     }
-    return _layerName == other._layerName;
+    return _layerName == other._layerName && _pairedLayer == other._pairedLayer;
 }
 
 bool
@@ -318,14 +318,16 @@ const
 ImageComponents&
 ImageComponents::getPairedMotionVectors()
 {
-    static const ImageComponents comp(kFnOfxImagePlaneForwardMotionVector,kFnOfxImagePlaneBackwardMotionVector,kFnOfxImageComponentMotionVectors,motionComps,2);
+    //static const ImageComponents comp(kFnOfxImagePlaneForwardMotionVector,kFnOfxImagePlaneBackwardMotionVector,kFnOfxImageComponentMotionVectors,motionComps,2);
+    static const ImageComponents comp(kNatronForwardMotionVectorsPlaneUserName,kNatronBackwardMotionVectorsPlaneUserName,kNatronMotionComponentsName,motionComps,2);
     return comp;
 }
 
 const ImageComponents&
 ImageComponents::getPairedStereoDisparity()
 {
-    static const ImageComponents comp(kFnOfxImagePlaneStereoDisparityLeft,kFnOfxImagePlaneStereoDisparityRight,kFnOfxImageComponentStereoDisparity,xyComps,2);
+    //static const ImageComponents comp(kFnOfxImagePlaneStereoDisparityLeft,kFnOfxImagePlaneStereoDisparityRight,kFnOfxImageComponentStereoDisparity,xyComps,2);
+    static const ImageComponents comp(kNatronDisparityLeftPlaneUserName,kNatronDisparityRightPlaneUserName,kNatronDisparityComponentsName,xyComps,2);
     return comp;
 }
 
