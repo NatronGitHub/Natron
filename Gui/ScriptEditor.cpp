@@ -38,6 +38,7 @@
 #include <QSplitter>
 #include <QTimer>
 #include <QMutex>
+#include <QFont>
 #include <QScrollBar>
 #include <QKeyEvent>
 
@@ -245,20 +246,14 @@ ScriptEditor::ScriptEditor(Gui* gui)
     
     QSplitter* splitter = new QSplitter(Qt::Vertical,this);
     
-    QFont scriptFont(QString::fromUtf8("Courier New"), 12);
-    if (!scriptFont.exactMatch()) {
-        scriptFont = font();
-    }
-    
+
     _imp->outputEdit = new OutputScriptTextEdit(this);
     QObject::connect(_imp->outputEdit, SIGNAL(userScrollChanged(bool)), this, SLOT(onUserScrollChanged(bool)));
     _imp->outputEdit->setFocusPolicy(Qt::ClickFocus);
     _imp->outputEdit->setReadOnly(true);
-    _imp->outputEdit->setFont(scriptFont);
     
     _imp->inputEdit = new InputScriptTextEdit(gui, this);
     QObject::connect(_imp->inputEdit, SIGNAL(textChanged()), this, SLOT(onInputScriptTextChanged()));
-    _imp->inputEdit->setFont(scriptFont);
     QFontMetrics fm = _imp->inputEdit->fontMetrics();
     _imp->inputEdit->setTabStopWidth(fm.width(QLatin1Char(' ')) * 4);
     _imp->outputEdit->setTabStopWidth(fm.width(QLatin1Char(' ')) * 4);
@@ -272,6 +267,8 @@ ScriptEditor::ScriptEditor(Gui* gui)
     QObject::connect(&_imp->history, SIGNAL(canRedoChanged(bool)), this, SLOT(onHistoryCanRedoChanged(bool)));
     
     _imp->autoSaveTimer.setSingleShot(true);
+    
+    reloadFont();
 }
 
 ScriptEditor::~ScriptEditor()
@@ -285,6 +282,19 @@ ScriptEditor::reloadHighlighter()
     if (_imp->inputEdit) {
         _imp->inputEdit->reloadHighlighter();
     }
+}
+
+void
+ScriptEditor::reloadFont()
+{
+    QString fontFamily = QString::fromUtf8(appPTR->getCurrentSettings()->getSEFontFamily().c_str());
+    int fontSize = appPTR->getCurrentSettings()->getSEFontSize();
+    QFont font(fontFamily, fontSize);
+    if (font.exactMatch()) {
+        _imp->inputEdit->setFont(font);
+        _imp->outputEdit->setFont(font);
+    }
+
 }
 
 void

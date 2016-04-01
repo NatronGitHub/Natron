@@ -693,6 +693,19 @@ Settings::initializeKnobsAppearance()
     _dopeSheetEditorColors->addKnob(_dopeSheetEditorGridColor);
     
     
+    _scriptEditorFontChoice = AppManager::createKnob<KnobChoice>(this, "Font");
+    _scriptEditorFontChoice->setHintToolTip("List of all fonts available on your system");
+    _scriptEditorFontChoice->setName("scriptEditorFont");
+    _scriptEditorFontChoice->setAddNewLine(false);
+    _scriptEditorFontChoice->setAnimationEnabled(false);
+    _scriptEditorColors->addKnob(_scriptEditorFontChoice);
+    
+    _scriptEditorFontSize = AppManager::createKnob<KnobInt>(this, "Font Size");
+    _scriptEditorFontSize->setHintToolTip("The font size");
+    _scriptEditorFontSize->setName("scriptEditorFontSize");
+    _scriptEditorFontSize->setAnimationEnabled(false);
+    _scriptEditorColors->addKnob(_scriptEditorFontSize);
+    
     _curLineColor = AppManager::createKnob<KnobColor>(this, "Current Line Color", 3);
     _curLineColor->setName("currentLineColor");
     _curLineColor->setAnimationEnabled(false);
@@ -1661,6 +1674,9 @@ Settings::setDefaultValues()
     _curLineColor->setDefaultValue(0.35,0);
     _curLineColor->setDefaultValue(0.35,1);
     _curLineColor->setDefaultValue(0.35,2);
+    
+    _scriptEditorFontChoice->setDefaultValue(0);
+    _scriptEditorFontSize->setDefaultValue(NATRON_FONT_SIZE_DEFAULT);
 
     endChanges();
 } // setDefaultValues
@@ -2162,6 +2178,8 @@ Settings::onKnobValueChanged(KnobI* k,
         if (reply == eStandardButtonYes) {
             crash_application();
         }
+    } else if (k == _scriptEditorFontChoice.get() || k == _scriptEditorFontSize.get()) {
+        appPTR->reloadScriptEditorFonts();
     }
     if ((k == _hostName.get() || k == _customHostName.get()) && !_restoringSettings) {
         Dialogs::warningDialog(tr("Host-name change").toStdString(), tr("Changing this requires a restart of " NATRON_APPLICATION_NAME
@@ -2589,21 +2607,37 @@ void
 Settings::populateSystemFonts(const QSettings& settings,const std::vector<std::string>& fonts)
 {
     _systemFontChoice->populateChoices(fonts);
-    
+    _scriptEditorFontChoice->populateChoices(fonts);
     for (U32 i = 0; i < fonts.size(); ++i) {
         if (fonts[i] == NATRON_FONT) {
             _systemFontChoice->setDefaultValue(i);
-            break;
+        }
+        if (fonts[i] == NATRON_SCRIPT_FONT) {
+            _scriptEditorFontChoice->setDefaultValue(i);
         }
     }
     ///Now restore properly the system font choice
-    QString name = QString::fromUtf8(_systemFontChoice->getName().c_str());
-    if (settings.contains(name)) {
-        std::string value = settings.value(name).toString().toStdString();
-        for (U32 i = 0; i < fonts.size(); ++i) {
-            if (fonts[i] == value) {
-                _systemFontChoice->setValue(i);
-                break;
+    {
+        QString name = QString::fromUtf8(_systemFontChoice->getName().c_str());
+        if (settings.contains(name)) {
+            std::string value = settings.value(name).toString().toStdString();
+            for (U32 i = 0; i < fonts.size(); ++i) {
+                if (fonts[i] == value) {
+                    _systemFontChoice->setValue(i);
+                    break;
+                }
+            }
+        }
+    }
+    {
+        QString name = QString::fromUtf8(_scriptEditorFontChoice->getName().c_str());
+        if (settings.contains(name)) {
+            std::string value = settings.value(name).toString().toStdString();
+            for (U32 i = 0; i < fonts.size(); ++i) {
+                if (fonts[i] == value) {
+                    _scriptEditorFontChoice->setValue(i);
+                    break;
+                }
             }
         }
     }
@@ -3517,6 +3551,18 @@ Settings::getSECurLineColor(double* r,double* g, double* b) const
     *r = _curLineColor->getValue(0);
     *g = _curLineColor->getValue(1);
     *b = _curLineColor->getValue(2);
+}
+
+int
+Settings::getSEFontSize() const
+{
+    return _scriptEditorFontSize->getValue();
+}
+
+std::string
+Settings::getSEFontFamily() const
+{
+    return _scriptEditorFontChoice->getActiveEntryText_mt_safe();
 }
 
 

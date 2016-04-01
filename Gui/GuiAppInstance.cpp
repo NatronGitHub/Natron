@@ -58,6 +58,7 @@
 #include "Gui/ProgressPanel.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/SplashScreen.h"
+#include "Gui/ScriptEditor.h"
 #include "Gui/ViewerGL.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -1536,6 +1537,12 @@ GuiAppInstance::checkAllReadersModificationDate(bool errorAndWarn)
         }
     }
     return changed;
+}
+
+void
+GuiAppInstance::reloadScriptEditorFonts()
+{
+    _imp->_gui->getScriptEditor()->reloadFont();
 }
 
 NATRON_NAMESPACE_EXIT;

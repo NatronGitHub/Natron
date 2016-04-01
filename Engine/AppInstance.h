@@ -443,6 +443,8 @@ public:
     
     void removeRenderFromQueue(OutputEffectInstance* writer);
     
+    virtual void reloadScriptEditorFonts() {}
+    
 public Q_SLOTS:
     
     void quit();

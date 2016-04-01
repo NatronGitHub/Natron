@@ -520,6 +520,7 @@ public:
     
     bool isSpawnedFromCrashReporter() const;
     
+    virtual void reloadScriptEditorFonts() {}
     
 public Q_SLOTS:
     

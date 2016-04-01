@@ -69,6 +69,8 @@ public:
     
     void reloadHighlighter();
     
+    void reloadFont();
+    
 public Q_SLOTS:
     
     void doAppendToScriptEditorOnMainThread(const QString& str);

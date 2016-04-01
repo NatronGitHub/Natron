@@ -146,7 +146,6 @@ EditScriptDialog::create(const QString& initialScript,bool makeUseRetButton)
 {
     setTitle();
     
-    QFont font(appFont,appFontSize);
     _imp->mainLayout = new QVBoxLayout(this);
     
     QStringList modules;
@@ -172,14 +171,11 @@ EditScriptDialog::create(const QString& initialScript,bool makeUseRetButton)
     }
     
     _imp->expressionLabel = new Label(labelHtml,this);
-    //_imp->expressionLabel->setFont(font);
     _imp->mainLayout->addWidget(_imp->expressionLabel);
     
     _imp->expressionEdit = new InputScriptTextEdit(_imp->gui,this);
     _imp->expressionEdit->setAcceptDrops(true);
     _imp->expressionEdit->setMouseTracking(true);
-    QFontMetrics fm = _imp->expressionEdit->fontMetrics();
-    _imp->expressionEdit->setTabStopWidth(4 * fm.width(QLatin1Char(' ')));
     _imp->mainLayout->addWidget(_imp->expressionEdit);
     _imp->expressionEdit->setPlainText(initialScript);
     
@@ -214,7 +210,6 @@ EditScriptDialog::create(const QString& initialScript,bool makeUseRetButton)
     _imp->mainLayout->addWidget(_imp->midButtonsContainer);
     
     _imp->resultLabel = new Label(tr("Result:"),this);
-    //_imp->resultLabel->setFont(font);
     _imp->mainLayout->addWidget(_imp->resultLabel);
     
     _imp->resultEdit = new OutputScriptTextEdit(this);
@@ -232,6 +227,16 @@ EditScriptDialog::create(const QString& initialScript,bool makeUseRetButton)
     }
     QObject::connect(_imp->expressionEdit, SIGNAL(textChanged()), this, SLOT(onTextEditChanged()));
     _imp->expressionEdit->setFocus();
+    
+    QString fontFamily = QString::fromUtf8(appPTR->getCurrentSettings()->getSEFontFamily().c_str());
+    int fontSize = appPTR->getCurrentSettings()->getSEFontSize();
+    QFont font(fontFamily, fontSize);
+    if (font.exactMatch()) {
+        _imp->expressionEdit->setFont(font);
+        _imp->resultEdit->setFont(font);
+    }
+    QFontMetrics fm = _imp->expressionEdit->fontMetrics();
+    _imp->expressionEdit->setTabStopWidth(4 * fm.width(QLatin1Char(' ')));
 }
 
 

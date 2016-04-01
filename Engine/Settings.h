@@ -337,6 +337,9 @@ public:
     void getSENumbersColor(double* r,double* g, double* b) const;
     void getSECurLineColor(double* r,double* g, double* b) const;
     
+    int getSEFontSize() const;
+    std::string getSEFontFamily() const;
+    
     
     void getPluginIconFrameColor(int *r, int *g, int *b) const;
     int getDopeSheetEditorNodeSeparationWith() const;
@@ -556,6 +559,8 @@ private:
     boost::shared_ptr<KnobColor> _commentsColor;
     boost::shared_ptr<KnobColor> _selfColor;
     boost::shared_ptr<KnobColor> _numbersColor;
+    boost::shared_ptr<KnobChoice> _scriptEditorFontChoice;
+    boost::shared_ptr<KnobInt> _scriptEditorFontSize;
     
     
     struct PerPluginKnobs

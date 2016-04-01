@@ -1227,4 +1227,16 @@ GuiApplicationManager::reloadStylesheets()
     }
 }
 
+void
+GuiApplicationManager::reloadScriptEditorFonts()
+{
+    const std::map<int,AppInstanceRef>& instances = getAppInstances();
+    for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(it->second.app);
+        if (guiApp) {
+            guiApp->reloadScriptEditorFonts();
+        }
+    }
+}
+
 NATRON_NAMESPACE_EXIT;
