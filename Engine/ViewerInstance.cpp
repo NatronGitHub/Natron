@@ -3158,6 +3158,9 @@ ViewerInstance::refreshActiveInputs(int inputNbChanged)
                 
             } else {
                 _imp->activeInputs[0] = inputNbChanged;
+                if (_imp->activeInputs[1] == -1) {
+                    _imp->activeInputs[1] = inputNbChanged;
+                }
             }
         }
     }
