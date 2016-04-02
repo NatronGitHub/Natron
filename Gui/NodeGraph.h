@@ -163,7 +163,7 @@ public:
     void pasteCliboard(const NodeClipBoard& clipboard,std::list<std::pair<std::string,NodeGuiPtr > >* newNodes);
     
     void duplicateSelectedNodes(const QPointF& pos);
-    void pasteNodeClipBoards(const QPointF& pos);
+    bool pasteNodeClipBoards(const QPointF& pos);
     void cloneSelectedNodes(const QPointF& pos);
     
     QPointF getRootPos() const;
@@ -206,7 +206,7 @@ public Q_SLOTS:
     void copySelectedNodes();
 
     void cutSelectedNodes();
-    void pasteNodeClipBoards();
+    bool pasteNodeClipBoards();
     void duplicateSelectedNodes();
     void cloneSelectedNodes();
     void decloneSelectedNodes();

@@ -425,6 +425,7 @@ public:
     bool progressUpdate(const NodePtr& node,double t);
     
     void ensureProgressPanelVisible();
+    void ensureScriptEditorVisible();
 
     /*Useful function that saves on disk the image in png format.
        The name of the image will be the hash key of the image.*/
@@ -566,6 +567,8 @@ public:
     bool saveProjectAs(const std::string& filename);
 
     static void fileSequencesFromUrls(const QList<QUrl>& urls, std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> >* sequences);
+    
+    void handleOpenFilesFromUrls(const QList<QUrl>& urls, const QPoint& globalPos);
     
 protected:
     // Reimplemented Protected Functions

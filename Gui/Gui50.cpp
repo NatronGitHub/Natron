@@ -47,11 +47,13 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QMenuBar>
 #include <QToolButton>
 #include <QProgressDialog>
+#include <QClipBoard>
 #include <QVBoxLayout>
 #include <QTreeWidget>
 #include <QTabBar>
 #include <QTextEdit>
 #include <QLineEdit>
+#include <QCursor>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QTreeView>
@@ -78,6 +80,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/GuiPrivate.h"
+#include "Gui/GuiMacros.h"
 #include "Gui/LogWindow.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
@@ -396,6 +399,34 @@ Gui::keyPressEvent(QKeyEvent* e)
         if (panel) {
             panel->getPanel()->closePanel();
         }
+    } else if (key == Qt::Key_V && modCASIsControl(e)) {
+        // CTRL +V should have been caught by the Nodegraph if it contained a valid Natron graph.
+        // We still try to check if it is a readable Python script
+        QClipboard* clipboard = QApplication::clipboard();
+        const QMimeData* mimedata = clipboard->mimeData();
+        if (mimedata->hasFormat(QLatin1String("text/plain"))) {
+            
+            QByteArray data = mimedata->data(QLatin1String("text/plain"));
+            QString str = QString::fromUtf8(data);
+            if (QFile::exists(str)) {
+                QList<QUrl> urls;
+                urls.push_back(QUrl::fromLocalFile(str));
+                handleOpenFilesFromUrls(urls, QCursor::pos());
+            } else {
+                std::string error, output;
+                if (!Python::interpretPythonScript(str.toStdString(), &error, &output)) {
+                    _imp->_scriptEditor->appendToScriptEditor(QString::fromUtf8(error.c_str()));
+                    ensureScriptEditorVisible();
+                } else if (!output.empty()) {
+                    _imp->_scriptEditor->appendToScriptEditor(QString::fromUtf8(output.c_str()));
+                }
+            }
+            
+        } else if (mimedata->hasUrls()) {
+            QList<QUrl> urls = mimedata->urls();
+            handleOpenFilesFromUrls(urls, QCursor::pos());
+        }
+        
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
         if ( getNodeGraph()->getLastSelectedViewer() ) {
             getNodeGraph()->getLastSelectedViewer()->previousFrame();
@@ -1065,20 +1096,11 @@ static NodeGraph* isNodeGraphChild(QWidget* w) {
 }
 
 void
-Gui::dropEvent(QDropEvent* e)
+Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls, const QPoint& globalPos)
 {
-    if ( !e->mimeData()->hasUrls() ) {
-        return;
-    }
-    
-    e->accept();
-    
-    QList<QUrl> urls = e->mimeData()->urls();
-    
     std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > sequences;
     fileSequencesFromUrls(urls, &sequences);
- 
-    QPoint globalPos = mapToGlobal(e->pos());
+    
     QWidget* widgetUnderMouse = QApplication::widgetAt(globalPos);
     NodeGraph* graph = isNodeGraphChild(widgetUnderMouse);
     
@@ -1116,28 +1138,8 @@ Gui::dropEvent(QDropEvent* e)
             const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();
             assert(!content.empty());
             _imp->_scriptEditor->sourceScript(QString::fromUtf8(content.begin()->second.absoluteFileName().c_str()));
-            
-            // Ensure that the script editor is visible
-            TabWidget* pane = _imp->_scriptEditor->getParentPane();
-            if (pane != 0) {
-                pane->setCurrentWidget(_imp->_scriptEditor);
-            } else {
-                pane = graph->getParentPane();
-                if (!pane) {
-                    std::list<TabWidget*> tabs;
-                    {
-                        QMutexLocker k(&_imp->_panesMutex);
-                        tabs = _imp->_panes;
-                    }
-                    if (tabs.empty()) {
-                        return;
-                    }
-                    pane = tabs.front();
-                }
-                assert(pane);
-                pane->moveScriptEditorHere();
-            }
-            
+            ensureScriptEditorVisible();
+           
         } else {
             
             std::map<std::string,std::string> readersForFormat;
@@ -1163,6 +1165,20 @@ Gui::dropEvent(QDropEvent* e)
             }
         }
     }
+}
+
+void
+Gui::dropEvent(QDropEvent* e)
+{
+    if ( !e->mimeData()->hasUrls() ) {
+        return;
+    }
+    
+    e->accept();
+    
+    QList<QUrl> urls = e->mimeData()->urls();
+    
+    handleOpenFilesFromUrls(urls, mapToGlobal(e->pos()));
 } // dropEvent
 
 

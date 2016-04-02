@@ -67,6 +67,7 @@
 #include "Gui/ProgressPanel.h"
 #include "Gui/Splitter.h"
 #include "Gui/TabWidget.h"
+#include "Gui/ScriptEditor.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/NodeSettingsPanel.h"
@@ -666,6 +667,32 @@ Gui::onRenderRestarted(OutputEffectInstance* writer,
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->_progressPanel->onTaskRestarted(writer->getNode(), process);
+}
+
+void
+Gui::ensureScriptEditorVisible()
+{
+    // Ensure that the script editor is visible
+    TabWidget* pane = _imp->_scriptEditor->getParentPane();
+    if (pane != 0) {
+        pane->setCurrentWidget(_imp->_scriptEditor);
+    } else {
+        pane = _imp->_nodeGraphArea->getParentPane();
+        if (!pane) {
+            std::list<TabWidget*> tabs;
+            {
+                QMutexLocker k(&_imp->_panesMutex);
+                tabs = _imp->_panes;
+            }
+            if (tabs.empty()) {
+                return;
+            }
+            pane = tabs.front();
+        }
+        assert(pane);
+        pane->moveScriptEditorHere();
+    }
+    
 }
 
 void

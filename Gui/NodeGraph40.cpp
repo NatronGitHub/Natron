@@ -157,13 +157,13 @@ NodeGraph::pasteCliboard(const NodeClipBoard& clipboard,std::list<std::pair<std:
     _imp->pasteNodesInternal(clipboard,position, false, newNodes);
 }
 
-void
+bool
 NodeGraph::pasteNodeClipBoards(const QPointF& pos)
 {
     QClipboard* clipboard = QApplication::clipboard();
     const QMimeData* mimedata = clipboard->mimeData();
     if (!mimedata->hasFormat(QLatin1String("text/plain"))) {
-        return;
+        return false;
     }
     QByteArray data = mimedata->data(QLatin1String("text/plain"));
     
@@ -179,17 +179,17 @@ NodeGraph::pasteNodeClipBoards(const QPointF& pos)
         boost::archive::xml_iarchive iArchive(ss);
         iArchive >> boost::serialization::make_nvp("Clipboard",cb);
     } catch (...) {
-        Dialogs::errorDialog(tr("Paste").toStdString(), tr("Clipboard does not contain a Natron graph").toStdString());
-        return;
+        return false;
     }
     _imp->pasteNodesInternal(cb,pos, true, &newNodes);
+    return true;
 }
 
-void
+bool
 NodeGraph::pasteNodeClipBoards()
 {
     QPointF position = _imp->_root->mapFromScene(mapToScene(mapFromGlobal(QCursor::pos())));
-    pasteNodeClipBoards(position);
+    return pasteNodeClipBoards(position);
 }
 
 
