@@ -900,7 +900,7 @@ AppInstance::createReader(const std::string& filename, CreateNodeReason reason, 
 #else
     
     std::map<std::string,std::string> readersForFormat;
-    appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&readersForFormat);
+    appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
     QString fileCpy = QString::fromUtf8(filename.c_str());
     std::string ext = QtCompat::removeFileExtension(fileCpy).toLower().toStdString();
     std::map<std::string,std::string>::iterator found = readersForFormat.find(ext);
