@@ -343,6 +343,20 @@ ScriptEditor::onRedoClicked()
 }
 
 void
+ScriptEditor::sourceScript(const QString& filename)
+{
+    QFile file(filename);
+    if (file.open(QIODevice::ReadOnly)) {
+        QTextStream ts(&file);
+        QString content = ts.readAll();
+        _imp->inputEdit->setPlainText(content);
+        onExecScriptClicked();
+    } else {
+        Dialogs::errorDialog(tr("Operation failed").toStdString(), tr("Failed to open ").toStdString() + filename.toStdString());
+    }
+}
+
+void
 ScriptEditor::onSourceScriptClicked()
 {
     std::vector<std::string> filters;
@@ -356,15 +370,7 @@ ScriptEditor::onSourceScriptClicked()
         getGui()->updateLastOpenedProjectPath(currentDir.absolutePath());
 
         QString fileName(QString::fromUtf8(dialog.selectedFiles().c_str()));
-        QFile file(fileName);
-        if (file.open(QIODevice::ReadOnly)) {
-            QTextStream ts(&file);
-            QString content = ts.readAll();
-            _imp->inputEdit->setPlainText(content);
-            onExecScriptClicked();
-        } else {
-            Dialogs::errorDialog(tr("Operation failed").toStdString(), tr("Failure to open the file").toStdString());
-        }
+        sourceScript(fileName);
         
     }
 }
@@ -648,6 +654,13 @@ ScriptEditor::onShowAutoDeclVarsClicked(bool clicked)
     _imp->showAutoDeclVarsB->setDown(clicked);
     _imp->showAutoDeclVarsB->setChecked(clicked);
     appPTR->getCurrentSettings()->setAutoDeclaredVariablePrintEnabled(clicked);
+}
+
+void
+ScriptEditor::focusInEvent(QFocusEvent* e)
+{
+    _imp->inputEdit->setFocus();
+    QWidget::focusInEvent(e);
 }
 
 NATRON_NAMESPACE_EXIT;

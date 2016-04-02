@@ -264,10 +264,6 @@ private:
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
-    virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
-    virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE FINAL;
-    virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
-    virtual void dragLeaveEvent(QDragLeaveEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual QUndoStack* getUndoStack() const OVERRIDE FINAL WARN_UNUSED_RETURN;

@@ -84,7 +84,6 @@ NodeGraph::NodeGraph(Gui* gui,
     
     group->setNodeGraphPointer(this);
     
-    setAcceptDrops(true);
     setAttribute(Qt::WA_MacShowFocusRect,0);
 
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>(group.get());
@@ -175,6 +174,8 @@ NodeGraph::NodeGraph(Gui* gui,
 
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    
+    setAcceptDrops(false);
 
     _imp->_menu = new Menu(this);
     

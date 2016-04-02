@@ -71,6 +71,8 @@ public:
     
     void reloadFont();
     
+    void sourceScript(const QString& filename);
+    
 public Q_SLOTS:
     
     void doAppendToScriptEditorOnMainThread(const QString& str);
@@ -110,6 +112,7 @@ Q_SIGNALS:
     
 private:
     
+    virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void enterEvent(QEvent *e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent *e) OVERRIDE FINAL;
