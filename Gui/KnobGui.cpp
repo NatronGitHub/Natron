@@ -22,6 +22,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "KnobGui.h"
+
 #include <cassert>
 #include <stdexcept>
 
@@ -30,7 +32,6 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/ViewIdx.h"
 
-#include "Gui/KnobGui.h"
 #include "Gui/KnobGuiPrivate.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiApplicationManager.h"

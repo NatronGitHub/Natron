@@ -22,11 +22,11 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "PreviewThread.h"
+
 #include <list>
 #include <vector>
 #include <stdexcept>
-
-#include "PreviewThread.h"
 
 #include <QWaitCondition>
 #include <QMutex>

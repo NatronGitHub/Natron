@@ -22,9 +22,10 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "ScriptTextEdit.h"
+
 #include <stdexcept>
 
-#include "ScriptTextEdit.h"
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)

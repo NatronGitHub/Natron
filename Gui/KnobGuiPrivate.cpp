@@ -22,7 +22,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Gui/KnobGuiPrivate.h"
+#include "KnobGuiPrivate.h"
 
 #include <stdexcept>
 
