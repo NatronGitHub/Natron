@@ -25,7 +25,11 @@
 #include <cassert>
 #include <stdexcept>
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QAction>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/ViewIdx.h"
 

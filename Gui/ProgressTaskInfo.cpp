@@ -24,12 +24,16 @@
 
 #include "ProgressTaskInfo.h"
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QTimer>
 #include <QProgressBar>
 #include <QApplication>
 #include <QThread>
 #include <QProgressBar>
 #include <QHBoxLayout>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/AppInstance.h"
 #include "Engine/Image.h"
