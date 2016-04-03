@@ -322,9 +322,9 @@ static PyObject* Sbk_RotoFunc_getItemByName(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: getItemByName(std::string)const
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // getItemByName(std::string)const
+    // 0: getItemByName(QString)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // getItemByName(QString)const
     }
 
     // Function signature not found.
@@ -332,11 +332,11 @@ static PyObject* Sbk_RotoFunc_getItemByName(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getItemByName(std::string)const
+            // getItemByName(QString)const
             ItemBase * cppResult = const_cast<const ::Roto*>(cppSelf)->getItemByName(cppArg0);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_ITEMBASE_IDX], cppResult);
 
@@ -352,7 +352,7 @@ static PyObject* Sbk_RotoFunc_getItemByName(PyObject* self, PyObject* pyArg)
     return pyResult;
 
     Sbk_RotoFunc_getItemByName_TypeError:
-        const char* overloads[] = {"std::string", 0};
+        const char* overloads[] = {"unicode", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Roto.getItemByName", overloads);
         return 0;
 }

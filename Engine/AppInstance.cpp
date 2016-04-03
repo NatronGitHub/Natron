@@ -745,7 +745,7 @@ AppInstance::loadPythonScript(const QFileInfo& file)
         if (errCatcher) {
             errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
             assert(errorObj);
-            error = Python::PY3String_asString(errorObj);
+            error = Python::PyString_asString(errorObj);
             PyObject* unicode = PyUnicode_FromString("");
             PyObject_SetAttrString(errCatcher, "value", unicode);
             Py_DECREF(errorObj);

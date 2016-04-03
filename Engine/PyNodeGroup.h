@@ -59,7 +59,7 @@ public:
      * This function is called recursively on subgroups until a match is found. 
      * It is meant to be called only on the project's root.
      **/
-    Effect* getNode(const std::string& fullySpecifiedName) const;
+    Effect* getNode(const QString& fullySpecifiedName) const;
     
     /**
      * @brief Get all nodes in the project's root.

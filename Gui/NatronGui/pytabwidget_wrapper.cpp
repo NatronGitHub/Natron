@@ -306,8 +306,8 @@ static PyObject* Sbk_PyTabWidgetFunc_getScriptName(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getScriptName()const
-            std::string cppResult = const_cast<const ::PyTabWidget*>(cppSelf)->getScriptName();
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+            QString cppResult = const_cast<const ::PyTabWidget*>(cppSelf)->getScriptName();
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
         }
     }
 
@@ -346,8 +346,8 @@ static PyObject* Sbk_PyTabWidgetFunc_getTabLabel(PyObject* self, PyObject* pyArg
 
         if (!PyErr_Occurred()) {
             // getTabLabel(int)const
-            std::string cppResult = const_cast<const ::PyTabWidget*>(cppSelf)->getTabLabel(cppArg0);
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+            QString cppResult = const_cast<const ::PyTabWidget*>(cppSelf)->getTabLabel(cppArg0);
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
         }
     }
 

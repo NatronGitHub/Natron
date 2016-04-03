@@ -559,9 +559,9 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
         if (found != registeredTabs.end()) {
             PyPanel* panel = dynamic_cast<PyPanel*>(found->second.first);
             if (panel) {
-                panel->restore((*it)->userData);
+                panel->restore(QString::fromUtf8((*it)->userData.c_str()));
                 for (std::list<boost::shared_ptr<KnobSerialization> >::iterator it2 = (*it)->knobs.begin(); it2!=(*it)->knobs.end(); ++it2) {
-                    Param* param = panel->getParam((*it2)->getName());
+                    Param* param = panel->getParam(QString::fromUtf8((*it2)->getName().c_str()));
                     if (param) {
                         param->getInternalKnob()->clone((*it2)->getKnob());
                         delete param;

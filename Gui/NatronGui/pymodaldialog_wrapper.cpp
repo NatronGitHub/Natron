@@ -1382,9 +1382,9 @@ static PyObject* Sbk_PyModalDialogFunc_getParam(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: getParam(std::string)const
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // getParam(std::string)const
+    // 0: getParam(QString)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // getParam(QString)const
     }
 
     // Function signature not found.
@@ -1392,11 +1392,11 @@ static PyObject* Sbk_PyModalDialogFunc_getParam(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getParam(std::string)const
+            // getParam(QString)const
             Param * cppResult = const_cast<const ::PyModalDialogWrapper*>(cppSelf)->getParam(cppArg0);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], cppResult);
 
@@ -1412,7 +1412,7 @@ static PyObject* Sbk_PyModalDialogFunc_getParam(PyObject* self, PyObject* pyArg)
     return pyResult;
 
     Sbk_PyModalDialogFunc_getParam_TypeError:
-        const char* overloads[] = {"std::string", 0};
+        const char* overloads[] = {"unicode", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyModalDialog.getParam", overloads);
         return 0;
 }
@@ -1486,9 +1486,9 @@ static PyObject* Sbk_PyModalDialogFunc_setParamChangedCallback(PyObject* self, P
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: setParamChangedCallback(std::string)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // setParamChangedCallback(std::string)
+    // 0: setParamChangedCallback(QString)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // setParamChangedCallback(QString)
     }
 
     // Function signature not found.
@@ -1496,11 +1496,11 @@ static PyObject* Sbk_PyModalDialogFunc_setParamChangedCallback(PyObject* self, P
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // setParamChangedCallback(std::string)
+            // setParamChangedCallback(QString)
             cppSelf->setParamChangedCallback(cppArg0);
         }
     }
@@ -1511,7 +1511,7 @@ static PyObject* Sbk_PyModalDialogFunc_setParamChangedCallback(PyObject* self, P
     Py_RETURN_NONE;
 
     Sbk_PyModalDialogFunc_setParamChangedCallback_TypeError:
-        const char* overloads[] = {"std::string", 0};
+        const char* overloads[] = {"unicode", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyModalDialog.setParamChangedCallback", overloads);
         return 0;
 }

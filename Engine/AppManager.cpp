@@ -1167,7 +1167,7 @@ static bool findAndRunScriptFile(const QString& path,const QStringList& files,co
                 if (errCatcher) {
                     errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
                     assert(errorObj);
-                    error = Python::PY3String_asString(errorObj);
+                    error = Python::PyString_asString(errorObj);
                     PyObject* unicode = PyUnicode_FromString("");
                     PyObject_SetAttrString(errCatcher, "value", unicode);
                     Py_DECREF(errorObj);
@@ -2456,15 +2456,28 @@ oom:
 
 
 std::string
-Python::PY3String_asString(PyObject* obj)
+Python::PyString_asString(PyObject* obj)
 {
+    
     std::string ret;
-    if (PyUnicode_Check(obj)) {
-        PyObject * temp_bytes = PyUnicode_AsEncodedString(obj, "ASCII", "strict"); // Owned reference
-        if (temp_bytes != NULL) {
-            char* cstr = PyBytes_AS_STRING(temp_bytes); // Borrowed pointer
+
+    if (PyString_Check(obj)) {
+        char* buf = PyString_AsString(obj);
+        if (buf) {
+            ret += std::string(buf);
+        }
+    } else if (PyUnicode_Check(obj)) {
+        /*PyObject * temp_bytes = PyUnicode_AsEncodedString(obj, "ASCII", "strict"); // Owned reference
+         if (temp_bytes != NULL) {
+         char* cstr = PyBytes_AS_STRING(temp_bytes); // Borrowed pointer
+         ret.append(cstr);
+         Py_DECREF(temp_bytes);
+         }*/
+        PyObject* utf8pyobj = PyUnicode_AsUTF8String(obj); // newRef
+        if (utf8pyobj) {
+            char* cstr = PyBytes_AS_STRING(utf8pyobj); // Borrowed pointer
             ret.append(cstr);
-            Py_DECREF(temp_bytes);
+            Py_DECREF(utf8pyobj);
         }
     } else if (PyBytes_Check(obj)) {
         char* cstr = PyBytes_AS_STRING(obj); // Borrowed pointer
@@ -3102,7 +3115,7 @@ Python::interpretPythonScript(const std::string& script,std::string* error,std::
         if (errCatcher && error) {
             errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
             assert(errorObj);
-            *error = PY3String_asString(errorObj);
+            *error = PyString_asString(errorObj);
             PyObject* unicode = PyUnicode_FromString("");
             PyObject_SetAttrString(errCatcher, "value", unicode);
             Py_DECREF(errorObj);
@@ -3112,7 +3125,7 @@ Python::interpretPythonScript(const std::string& script,std::string* error,std::
         if (outCatcher && output) {
             outObj = PyObject_GetAttrString(outCatcher,"value"); //get the stdout from our catchOut object, new ref
             assert(outObj);
-            *output = PY3String_asString(outObj);
+            *output = PyString_asString(outObj);
             PyObject* unicode = PyUnicode_FromString("");
             PyObject_SetAttrString(outCatcher, "value", unicode);
             Py_DECREF(outObj);
@@ -3323,17 +3336,17 @@ static bool getGroupInfosInternal(const std::string& modulePath,
     
     assert(labelObj);
     
-    *pluginLabel = Python::PY3String_asString(labelObj);
+    *pluginLabel = Python::PyString_asString(labelObj);
     Py_XDECREF(labelObj);
     
     if (idObj) {
-        *pluginID = Python::PY3String_asString(idObj);
+        *pluginID = Python::PyString_asString(idObj);
         deleteScript.append("del pluginID\n");
         Py_XDECREF(idObj);
     }
     
     if (iconObj) {
-        *iconFilePath = Python::PY3String_asString(iconObj);
+        *iconFilePath = Python::PyString_asString(iconObj);
         QFileInfo iconInfo(QString::fromUtf8(modulePath.c_str()) + QString::fromUtf8(iconFilePath->c_str()));
         *iconFilePath =  iconInfo.canonicalFilePath().toStdString();
         
@@ -3341,7 +3354,7 @@ static bool getGroupInfosInternal(const std::string& modulePath,
         Py_XDECREF(iconObj);
     }
     if (iconGrouping) {
-        *grouping = Python::PY3String_asString(iconGrouping);
+        *grouping = Python::PyString_asString(iconGrouping);
         deleteScript.append("del templateGrouping\n");
         Py_XDECREF(iconGrouping);
     }
@@ -3360,7 +3373,7 @@ static bool getGroupInfosInternal(const std::string& modulePath,
 
     
     if (pluginDescriptionObj) {
-        *description = Python::PY3String_asString(pluginDescriptionObj);
+        *description = Python::PyString_asString(pluginDescriptionObj);
         deleteScript.append("del description\n");
         Py_XDECREF(pluginDescriptionObj);
     }
@@ -3482,7 +3495,7 @@ Python::getFunctionArguments(const std::string& pyFunc,std::string* error,std::v
                 PyObject* itemObj = PyList_GetItem(argListObj, i);
                 assert(itemObj);
                 if (itemObj) {
-                    std::string itemName = PY3String_asString(itemObj);
+                    std::string itemName = PyString_asString(itemObj);
                     assert(!itemName.empty());
                     if (!itemName.empty()) {
                         args->push_back(itemName);

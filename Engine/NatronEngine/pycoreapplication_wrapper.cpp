@@ -20,7 +20,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // Extra includes
 NATRON_NAMESPACE_USING
 #include <PyAppInstance.h>
-#include <list>
 
 
 // Native ---------------------------------------------------------
@@ -84,9 +83,9 @@ static PyObject* Sbk_PyCoreApplicationFunc_appendToNatronPath(PyObject* self, Py
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: appendToNatronPath(std::string)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // appendToNatronPath(std::string)
+    // 0: appendToNatronPath(QString)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // appendToNatronPath(QString)
     }
 
     // Function signature not found.
@@ -94,11 +93,11 @@ static PyObject* Sbk_PyCoreApplicationFunc_appendToNatronPath(PyObject* self, Py
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // appendToNatronPath(std::string)
+            // appendToNatronPath(QString)
             cppSelf->appendToNatronPath(cppArg0);
         }
     }
@@ -109,7 +108,7 @@ static PyObject* Sbk_PyCoreApplicationFunc_appendToNatronPath(PyObject* self, Py
     Py_RETURN_NONE;
 
     Sbk_PyCoreApplicationFunc_appendToNatronPath_TypeError:
-        const char* overloads[] = {"std::string", 0};
+        const char* overloads[] = {"unicode", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.PyCoreApplication.appendToNatronPath", overloads);
         return 0;
 }
@@ -231,8 +230,8 @@ static PyObject* Sbk_PyCoreApplicationFunc_getNatronDevelopmentStatus(PyObject* 
 
         if (!PyErr_Occurred()) {
             // getNatronDevelopmentStatus()const
-            std::string cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getNatronDevelopmentStatus();
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+            QString cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getNatronDevelopmentStatus();
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
         }
     }
 
@@ -257,8 +256,8 @@ static PyObject* Sbk_PyCoreApplicationFunc_getNatronPath(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getNatronPath()const
-            std::list<std::string > cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getNatronPath();
-            pyResult = Shiboken::Conversions::copyToPython(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX], &cppResult);
+            QStringList cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getNatronPath();
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRINGLIST_IDX], &cppResult);
         }
     }
 
@@ -387,8 +386,8 @@ static PyObject* Sbk_PyCoreApplicationFunc_getNatronVersionString(PyObject* self
 
         if (!PyErr_Occurred()) {
             // getNatronVersionString()const
-            std::string cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getNatronVersionString();
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+            QString cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getNatronVersionString();
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
         }
     }
 
@@ -474,12 +473,12 @@ static PyObject* Sbk_PyCoreApplicationFunc_getPluginIDs(PyObject* self, PyObject
 
     // Overloaded function decisor
     // 0: getPluginIDs()const
-    // 1: getPluginIDs(std::string)const
+    // 1: getPluginIDs(QString)const
     if (numArgs == 0) {
         overloadId = 0; // getPluginIDs()const
     } else if (numArgs == 1
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))) {
-        overloadId = 1; // getPluginIDs(std::string)const
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))) {
+        overloadId = 1; // getPluginIDs(QString)const
     }
 
     // Function signature not found.
@@ -492,20 +491,20 @@ static PyObject* Sbk_PyCoreApplicationFunc_getPluginIDs(PyObject* self, PyObject
 
             if (!PyErr_Occurred()) {
                 // getPluginIDs()const
-                std::list<std::string > cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getPluginIDs();
-                pyResult = Shiboken::Conversions::copyToPython(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX], &cppResult);
+                QStringList cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getPluginIDs();
+                pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRINGLIST_IDX], &cppResult);
             }
             break;
         }
-        case 1: // getPluginIDs(const std::string & filter) const
+        case 1: // getPluginIDs(const QString & filter) const
         {
-            ::std::string cppArg0;
+            ::QString cppArg0 = ::QString();
             pythonToCpp[0](pyArgs[0], &cppArg0);
 
             if (!PyErr_Occurred()) {
-                // getPluginIDs(std::string)const
-                std::list<std::string > cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getPluginIDs(cppArg0);
-                pyResult = Shiboken::Conversions::copyToPython(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX], &cppResult);
+                // getPluginIDs(QString)const
+                QStringList cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getPluginIDs(cppArg0);
+                pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRINGLIST_IDX], &cppResult);
             }
             break;
         }
@@ -518,7 +517,7 @@ static PyObject* Sbk_PyCoreApplicationFunc_getPluginIDs(PyObject* self, PyObject
     return pyResult;
 
     Sbk_PyCoreApplicationFunc_getPluginIDs_TypeError:
-        const char* overloads[] = {"", "std::string", 0};
+        const char* overloads[] = {"", "unicode", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.PyCoreApplication.getPluginIDs", overloads);
         return 0;
 }
@@ -720,9 +719,9 @@ static PyObject* Sbk_PyCoreApplicationFunc_setOnProjectCreatedCallback(PyObject*
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: setOnProjectCreatedCallback(std::string)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // setOnProjectCreatedCallback(std::string)
+    // 0: setOnProjectCreatedCallback(QString)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // setOnProjectCreatedCallback(QString)
     }
 
     // Function signature not found.
@@ -730,11 +729,11 @@ static PyObject* Sbk_PyCoreApplicationFunc_setOnProjectCreatedCallback(PyObject*
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // setOnProjectCreatedCallback(std::string)
+            // setOnProjectCreatedCallback(QString)
             cppSelf->setOnProjectCreatedCallback(cppArg0);
         }
     }
@@ -745,7 +744,7 @@ static PyObject* Sbk_PyCoreApplicationFunc_setOnProjectCreatedCallback(PyObject*
     Py_RETURN_NONE;
 
     Sbk_PyCoreApplicationFunc_setOnProjectCreatedCallback_TypeError:
-        const char* overloads[] = {"std::string", 0};
+        const char* overloads[] = {"unicode", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.PyCoreApplication.setOnProjectCreatedCallback", overloads);
         return 0;
 }
@@ -762,9 +761,9 @@ static PyObject* Sbk_PyCoreApplicationFunc_setOnProjectLoadedCallback(PyObject* 
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: setOnProjectLoadedCallback(std::string)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // setOnProjectLoadedCallback(std::string)
+    // 0: setOnProjectLoadedCallback(QString)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // setOnProjectLoadedCallback(QString)
     }
 
     // Function signature not found.
@@ -772,11 +771,11 @@ static PyObject* Sbk_PyCoreApplicationFunc_setOnProjectLoadedCallback(PyObject* 
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // setOnProjectLoadedCallback(std::string)
+            // setOnProjectLoadedCallback(QString)
             cppSelf->setOnProjectLoadedCallback(cppArg0);
         }
     }
@@ -787,7 +786,7 @@ static PyObject* Sbk_PyCoreApplicationFunc_setOnProjectLoadedCallback(PyObject* 
     Py_RETURN_NONE;
 
     Sbk_PyCoreApplicationFunc_setOnProjectLoadedCallback_TypeError:
-        const char* overloads[] = {"std::string", 0};
+        const char* overloads[] = {"unicode", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.PyCoreApplication.setOnProjectLoadedCallback", overloads);
         return 0;
 }

@@ -71,17 +71,16 @@ extern SbkConverter** SbkNatronGuiTypeConverters;
 
 // Converter indices
 #define SBK_NATRONGUI_STD_LIST_EFFECTPTR_IDX                         0 // std::list<Effect * >
-#define SBK_NATRONGUI_STD_VECTOR_STD_STRING_IDX                      1 // const std::vector<std::string > &
-#define SBK_NATRONGUI_STD_LIST_STD_STRING_IDX                        2 // std::list<std::string >
-#define SBK_NATRONGUI_STD_LIST_INT_IDX                               3 // const std::list<int > &
-#define SBK_NATRONGUI_QLIST_QACTIONPTR_IDX                           4 // QList<QAction * >
-#define SBK_NATRONGUI_QLIST_QOBJECTPTR_IDX                           5 // const QList<QObject * > &
-#define SBK_NATRONGUI_QLIST_QBYTEARRAY_IDX                           6 // QList<QByteArray >
-#define SBK_NATRONGUI_STD_LIST_PARAMPTR_IDX                          7 // std::list<Param * >
-#define SBK_NATRONGUI_QLIST_QVARIANT_IDX                             8 // QList<QVariant >
-#define SBK_NATRONGUI_QLIST_QSTRING_IDX                              9 // QList<QString >
-#define SBK_NATRONGUI_QMAP_QSTRING_QVARIANT_IDX                      10 // QMap<QString, QVariant >
-#define SBK_NatronGui_CONVERTERS_IDX_COUNT                           11
+#define SBK_NATRONGUI_STD_LIST_QSTRING_IDX                           1 // std::list<QString >
+#define SBK_NATRONGUI_STD_LIST_INT_IDX                               2 // const std::list<int > &
+#define SBK_NATRONGUI_QLIST_QACTIONPTR_IDX                           3 // QList<QAction * >
+#define SBK_NATRONGUI_QLIST_QOBJECTPTR_IDX                           4 // const QList<QObject * > &
+#define SBK_NATRONGUI_QLIST_QBYTEARRAY_IDX                           5 // QList<QByteArray >
+#define SBK_NATRONGUI_STD_LIST_PARAMPTR_IDX                          6 // std::list<Param * >
+#define SBK_NATRONGUI_QLIST_QVARIANT_IDX                             7 // QList<QVariant >
+#define SBK_NATRONGUI_QLIST_QSTRING_IDX                              8 // QList<QString >
+#define SBK_NATRONGUI_QMAP_QSTRING_QVARIANT_IDX                      9 // QMap<QString, QVariant >
+#define SBK_NatronGui_CONVERTERS_IDX_COUNT                           10
 
 // Macros for type check
 

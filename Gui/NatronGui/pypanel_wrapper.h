@@ -11,7 +11,7 @@ NATRON_NAMESPACE_ENTER;
 class PyPanelWrapper : public PyPanel
 {
 public:
-    PyPanelWrapper(const std::string & scriptName, const std::string & label, bool useUserParameters, GuiApp * app);
+    PyPanelWrapper(const QString & scriptName, const QString & label, bool useUserParameters, GuiApp * app);
     inline void actionEvent_protected(QActionEvent * event) { PyPanel::actionEvent(event); }
     virtual void actionEvent(QActionEvent * event);
     inline void changeEvent_protected(QEvent * event) { PyPanel::changeEvent(event); }
@@ -87,9 +87,9 @@ public:
     inline void resetInputContext_protected() { PyPanel::resetInputContext(); }
     inline void resizeEvent_protected(QResizeEvent * event) { PyPanel::resizeEvent(event); }
     virtual void resizeEvent(QResizeEvent * event);
-    virtual void restore(const std::string & arg__1);
-    inline std::string save_protected() { return PyPanel::save(); }
-    virtual std::string save();
+    virtual void restore(const QString & arg__1);
+    inline QString save_protected() { return PyPanel::save(); }
+    virtual QString save();
     inline QObject * sender_protected() const { return PyPanel::sender(); }
     inline int senderSignalIndex_protected() const { return PyPanel::senderSignalIndex(); }
     virtual void setVisible(bool visible);

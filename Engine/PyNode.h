@@ -45,18 +45,22 @@ NATRON_NAMESPACE_ENTER;
 
 class ImageLayer
 {
-    ImageComponents _comps;
+    QString _layerName;
+    QString _componentsPrettyName;
+    QStringList _componentsName;
+    boost::shared_ptr<ImageComponents> _comps;
+    
 public:
     
-    ImageLayer(const std::string& layerName,
-               const std::string& componentsPrettyName,
-               const std::vector<std::string>& componentsName);
+    ImageLayer(const QString& layerName,
+               const QString& componentsPrettyName,
+               const QStringList& componentsName);
+  
+    ImageLayer(const ImageComponents& comps);
     
-    ImageLayer(const ImageComponents& internalComps);
-    
-    ImageComponents getInternalComps() const
+    const ImageComponents& getInternalComps() const
     {
-        return _comps;
+        return *_comps;
     }
     
     ~ImageLayer() {}
@@ -67,11 +71,11 @@ public:
     
     int getNumComponents() const;
     
-    const std::string& getLayerName() const;
+    const QString& getLayerName() const;
     
-    const std::vector<std::string>& getComponentsNames() const;
+    const QStringList& getComponentsNames() const;
     
-    const std::string& getComponentsPrettyName() const;
+    const QString& getComponentsPrettyName() const;
 
     bool operator==(const ImageLayer& other) const;
     
@@ -167,37 +171,37 @@ public:
     ////////////  Note that ParametricParam , GroupParam, PageParam, ButtonParam, FileParam, OutputFileParam,
     ////////////  PathParam cannot animate at all.
     
-    IntParam* createIntParam(const std::string& name, const std::string& label);
-    Int2DParam* createInt2DParam(const std::string& name, const std::string& label);
-    Int3DParam* createInt3DParam(const std::string& name, const std::string& label);
+    IntParam* createIntParam(const QString& name, const QString& label);
+    Int2DParam* createInt2DParam(const QString& name, const QString& label);
+    Int3DParam* createInt3DParam(const QString& name, const QString& label);
     
-    DoubleParam* createDoubleParam(const std::string& name, const std::string& label);
-    Double2DParam* createDouble2DParam(const std::string& name, const std::string& label);
-    Double3DParam* createDouble3DParam(const std::string& name, const std::string& label);
+    DoubleParam* createDoubleParam(const QString& name, const QString& label);
+    Double2DParam* createDouble2DParam(const QString& name, const QString& label);
+    Double3DParam* createDouble3DParam(const QString& name, const QString& label);
     
-    BooleanParam* createBooleanParam(const std::string& name, const std::string& label);
+    BooleanParam* createBooleanParam(const QString& name, const QString& label);
     
-    ChoiceParam* createChoiceParam(const std::string& name, const std::string& label);
+    ChoiceParam* createChoiceParam(const QString& name, const QString& label);
     
-    ColorParam* createColorParam(const std::string& name, const std::string& label, bool useAlpha);
+    ColorParam* createColorParam(const QString& name, const QString& label, bool useAlpha);
     
-    StringParam* createStringParam(const std::string& name, const std::string& label);
+    StringParam* createStringParam(const QString& name, const QString& label);
     
-    FileParam* createFileParam(const std::string& name, const std::string& label);
+    FileParam* createFileParam(const QString& name, const QString& label);
     
-    OutputFileParam* createOutputFileParam(const std::string& name, const std::string& label);
+    OutputFileParam* createOutputFileParam(const QString& name, const QString& label);
     
-    PathParam* createPathParam(const std::string& name, const std::string& label);
+    PathParam* createPathParam(const QString& name, const QString& label);
     
-    ButtonParam* createButtonParam(const std::string& name, const std::string& label);
+    ButtonParam* createButtonParam(const QString& name, const QString& label);
     
-    SeparatorParam* createSeparatorParam(const std::string& name, const std::string& label);
+    SeparatorParam* createSeparatorParam(const QString& name, const QString& label);
     
-    GroupParam* createGroupParam(const std::string& name, const std::string& label);
+    GroupParam* createGroupParam(const QString& name, const QString& label);
     
-    PageParam* createPageParam(const std::string& name, const std::string& label);
+    PageParam* createPageParam(const QString& name, const QString& label);
     
-    ParametricParam* createParametricParam(const std::string& name, const std::string& label,int nbCurves);
+    ParametricParam* createParametricParam(const QString& name, const QString& label,int nbCurves);
     
     bool removeParam(Param* param);
     
@@ -260,33 +264,33 @@ public:
     /**
      * @brief Returns the name of the Effect as used internally
      **/
-    std::string getScriptName() const;
+    QString getScriptName() const;
     
     /**
      * @brief Set the internal script name of the effect
      * @returns False upon failure, True upon success.
      **/
-    bool setScriptName(const std::string& scriptName);
+    bool setScriptName(const QString& scriptName);
     
     /**
      * @brief Returns the name of the Effect as displayed on the GUI
      **/
-    std::string getLabel() const;
+    QString getLabel() const;
     
     /**
      * @brief Set the name of the Effect as used on the GUI
      **/
-    void setLabel(const std::string& name);
+    void setLabel(const QString& name);
     
     /**
      * @brief Returns the ID of the plug-in embedded into the Effect
      **/
-    std::string getPluginID() const;
+    QString getPluginID() const;
     
     /**
      * @brief Returns the label of the input at the given index
      **/
-    std::string getInputLabel(int inputNumber);
+    QString getInputLabel(int inputNumber);
     
     /**
      * @brief Returns a list of all parameters for the Effect. These are the parameters located in the settings panel
@@ -297,7 +301,7 @@ public:
     /**
      * @brief Returns a pointer to the Param named after the given name or NULL if no parameter with the given name could be found.
      **/
-    Param* getParam(const std::string& name) const;
+    Param* getParam(const QString& name) const;
     
     /**
      * @brief When called, all parameter changes will not call the callback onParamChanged and will not attempt to trigger a new render.
@@ -360,7 +364,7 @@ public:
     
     void setSubGraphEditable(bool editable);
     
-    bool addUserPlane(const std::string& planeName, const std::vector<std::string>& channels);
+    bool addUserPlane(const QString& planeName, const QStringList& channels);
     
     std::map<ImageLayer,Effect*> getAvailableLayers() const;
     
@@ -372,7 +376,7 @@ public:
     
     NATRON_NAMESPACE::ImagePremultiplicationEnum getPremult() const;
     
-    void setPagesOrder(const std::list<std::string>& pages);
+    void setPagesOrder(const QStringList& pages);
 };
 
 NATRON_NAMESPACE_EXIT;

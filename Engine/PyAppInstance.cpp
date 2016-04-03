@@ -91,14 +91,14 @@ App::getCollectionFromGroup(Group* group) const
 }
 
 Effect*
-App::createNode(const std::string& pluginID,
+App::createNode(const QString& pluginID,
                 int majorVersion,
                 Group* group) const
 {
     boost::shared_ptr<NodeCollection> collection = getCollectionFromGroup(group);
     assert(collection);
     
-    CreateNodeArgs args(QString::fromUtf8(pluginID.c_str()), eCreateNodeReasonInternal, collection);
+    CreateNodeArgs args(pluginID, eCreateNodeReasonInternal, collection);
     args.majorV = majorVersion;
 
     NodePtr node = _instance->createNode(args);
@@ -110,12 +110,12 @@ App::createNode(const std::string& pluginID,
 }
 
 Effect*
-App::createReader(const std::string& filename,
+App::createReader(const QString& filename,
                      Group* group) const
 {
     boost::shared_ptr<NodeCollection> collection = getCollectionFromGroup(group);
     assert(collection);
-    NodePtr node = _instance->createReader(filename, eCreateNodeReasonInternal, collection);
+    NodePtr node = _instance->createReader(filename.toStdString(), eCreateNodeReasonInternal, collection);
     if (node) {
         return new Effect(node);
     } else {
@@ -124,12 +124,12 @@ App::createReader(const std::string& filename,
 }
 
 Effect*
-App::createWriter(const std::string& filename,
+App::createWriter(const QString& filename,
                      Group* group) const
 {
     boost::shared_ptr<NodeCollection> collection = getCollectionFromGroup(group);
     assert(collection);
-    NodePtr node = _instance->createWriter(filename, eCreateNodeReasonInternal, collection);
+    NodePtr node = _instance->createWriter(filename.toStdString(), eCreateNodeReasonInternal, collection);
     if (node) {
         return new Effect(node);
     } else {
@@ -167,9 +167,9 @@ AppSettings::AppSettings(const boost::shared_ptr<Settings>& settings)
 }
 
 Param*
-AppSettings::getParam(const std::string& scriptName) const
+AppSettings::getParam(const QString& scriptName) const
 {
-    KnobPtr knob = _settings->getKnobByName(scriptName);
+    KnobPtr knob = _settings->getKnobByName(scriptName.toStdString());
     if (!knob) {
         return 0;
     }
@@ -281,9 +281,9 @@ App::renderInternal(bool forceBlocking,const std::list<Effect*>& effects,const s
 }
 
 Param*
-App::getProjectParam(const std::string& name) const
+App::getProjectParam(const QString& name) const
 {
-    KnobPtr knob =  _instance->getProject()->getKnobByName(name);
+    KnobPtr knob =  _instance->getProject()->getKnobByName(name.toStdString());
     if (!knob) {
         return 0;
     }
@@ -291,42 +291,42 @@ App::getProjectParam(const std::string& name) const
 }
 
 void
-App::writeToScriptEditor(const std::string& message)
+App::writeToScriptEditor(const QString& message)
 {
-    _instance->appendToScriptEditor(message);
+    _instance->appendToScriptEditor(message.toStdString());
 }
 
 void
-App::addFormat(const std::string& formatSpec)
+App::addFormat(const QString& formatSpec)
 {
-    if (!_instance->getProject()->addFormat(formatSpec)) {
-        _instance->appendToScriptEditor(formatSpec);
+    if (!_instance->getProject()->addFormat(formatSpec.toStdString())) {
+        _instance->appendToScriptEditor(formatSpec.toStdString());
     }
 }
 
 bool
-App::saveTempProject(const std::string& filename)
+App::saveTempProject(const QString& filename)
 {
-    return _instance->saveTemp(filename);
+    return _instance->saveTemp(filename.toStdString());
 }
 
 bool
-App::saveProject(const std::string& filename)
+App::saveProject(const QString& filename)
 {
-    return _instance->save(filename);
+    return _instance->save(filename.toStdString());
 }
 
 
 bool
-App::saveProjectAs(const std::string& filename)
+App::saveProjectAs(const QString& filename)
 {
-    return _instance->saveAs(filename);
+    return _instance->saveAs(filename.toStdString());
 }
 
 App*
-App::loadProject(const std::string& filename)
+App::loadProject(const QString& filename)
 {
-    AppInstance* app  =_instance->loadProject(filename);
+    AppInstance* app  =_instance->loadProject(filename.toStdString());
     if (!app) {
         return 0;
     }
@@ -359,13 +359,13 @@ App::newProject()
 
 }
 
-std::list<std::string>
+std::list<QString>
 App::getViewNames() const
 {
-    std::list<std::string> ret;
+    std::list<QString> ret;
     const std::vector<std::string>& v = _instance->getProject()->getProjectViewNames();
     for (std::size_t i = 0; i < v.size(); ++i) {
-        ret.push_back(v[i]);
+        ret.push_back(QString::fromUtf8(v[i].c_str()));
     }
     return ret;
 }

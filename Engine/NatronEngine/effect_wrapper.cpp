@@ -26,7 +26,6 @@ NATRON_NAMESPACE_USING
 #include <RectD.h>
 #include <list>
 #include <map>
-#include <vector>
 
 
 // Native ---------------------------------------------------------
@@ -66,11 +65,11 @@ static PyObject* Sbk_EffectFunc_addUserPlane(PyObject* self, PyObject* args)
 
 
     // Overloaded function decisor
-    // 0: addUserPlane(std::string,std::vector<std::string>)
+    // 0: addUserPlane(QString,QStringList)
     if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_VECTOR_STD_STRING_IDX], (pyArgs[1])))) {
-        overloadId = 0; // addUserPlane(std::string,std::vector<std::string>)
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRINGLIST_IDX], (pyArgs[1])))) {
+        overloadId = 0; // addUserPlane(QString,QStringList)
     }
 
     // Function signature not found.
@@ -78,13 +77,13 @@ static PyObject* Sbk_EffectFunc_addUserPlane(PyObject* self, PyObject* args)
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::std::vector<std::string > cppArg1;
+        ::QStringList cppArg1 = ::QStringList();
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // addUserPlane(std::string,std::vector<std::string>)
+            // addUserPlane(QString,QStringList)
             bool cppResult = cppSelf->addUserPlane(cppArg0, cppArg1);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
@@ -97,7 +96,7 @@ static PyObject* Sbk_EffectFunc_addUserPlane(PyObject* self, PyObject* args)
     return pyResult;
 
     Sbk_EffectFunc_addUserPlane_TypeError:
-        const char* overloads[] = {"std::string, list", 0};
+        const char* overloads[] = {"unicode, QStringList", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.addUserPlane", overloads);
         return 0;
 }
@@ -668,8 +667,8 @@ static PyObject* Sbk_EffectFunc_getInputLabel(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // getInputLabel(int)
-            std::string cppResult = cppSelf->getInputLabel(cppArg0);
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+            QString cppResult = cppSelf->getInputLabel(cppArg0);
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
         }
     }
 
@@ -699,8 +698,8 @@ static PyObject* Sbk_EffectFunc_getLabel(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getLabel()const
-            std::string cppResult = const_cast<const ::Effect*>(cppSelf)->getLabel();
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+            QString cppResult = const_cast<const ::Effect*>(cppSelf)->getLabel();
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
         }
     }
 
@@ -750,9 +749,9 @@ static PyObject* Sbk_EffectFunc_getParam(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: getParam(std::string)const
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // getParam(std::string)const
+    // 0: getParam(QString)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // getParam(QString)const
     }
 
     // Function signature not found.
@@ -760,11 +759,11 @@ static PyObject* Sbk_EffectFunc_getParam(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getParam(std::string)const
+            // getParam(QString)const
             Param * cppResult = const_cast<const ::Effect*>(cppSelf)->getParam(cppArg0);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], cppResult);
 
@@ -780,7 +779,7 @@ static PyObject* Sbk_EffectFunc_getParam(PyObject* self, PyObject* pyArg)
     return pyResult;
 
     Sbk_EffectFunc_getParam_TypeError:
-        const char* overloads[] = {"std::string", 0};
+        const char* overloads[] = {"unicode", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Effect.getParam", overloads);
         return 0;
 }
@@ -865,8 +864,8 @@ static PyObject* Sbk_EffectFunc_getPluginID(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getPluginID()const
-            std::string cppResult = const_cast<const ::Effect*>(cppSelf)->getPluginID();
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+            QString cppResult = const_cast<const ::Effect*>(cppSelf)->getPluginID();
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
         }
     }
 
@@ -1040,8 +1039,8 @@ static PyObject* Sbk_EffectFunc_getScriptName(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getScriptName()const
-            std::string cppResult = const_cast<const ::Effect*>(cppSelf)->getScriptName();
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+            QString cppResult = const_cast<const ::Effect*>(cppSelf)->getScriptName();
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
         }
     }
 
@@ -1213,9 +1212,9 @@ static PyObject* Sbk_EffectFunc_setLabel(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: setLabel(std::string)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // setLabel(std::string)
+    // 0: setLabel(QString)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // setLabel(QString)
     }
 
     // Function signature not found.
@@ -1223,11 +1222,11 @@ static PyObject* Sbk_EffectFunc_setLabel(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // setLabel(std::string)
+            // setLabel(QString)
             // Begin code injection
 
             cppSelf->setLabel(cppArg0);
@@ -1244,7 +1243,7 @@ static PyObject* Sbk_EffectFunc_setLabel(PyObject* self, PyObject* pyArg)
     Py_RETURN_NONE;
 
     Sbk_EffectFunc_setLabel_TypeError:
-        const char* overloads[] = {"std::string", 0};
+        const char* overloads[] = {"unicode", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Effect.setLabel", overloads);
         return 0;
 }
@@ -1261,9 +1260,9 @@ static PyObject* Sbk_EffectFunc_setPagesOrder(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: setPagesOrder(std::list<std::string>)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX], (pyArg)))) {
-        overloadId = 0; // setPagesOrder(std::list<std::string>)
+    // 0: setPagesOrder(QStringList)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRINGLIST_IDX], (pyArg)))) {
+        overloadId = 0; // setPagesOrder(QStringList)
     }
 
     // Function signature not found.
@@ -1271,11 +1270,11 @@ static PyObject* Sbk_EffectFunc_setPagesOrder(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        ::std::list<std::string > cppArg0;
+        ::QStringList cppArg0 = ::QStringList();
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // setPagesOrder(std::list<std::string>)
+            // setPagesOrder(QStringList)
             cppSelf->setPagesOrder(cppArg0);
         }
     }
@@ -1286,7 +1285,7 @@ static PyObject* Sbk_EffectFunc_setPagesOrder(PyObject* self, PyObject* pyArg)
     Py_RETURN_NONE;
 
     Sbk_EffectFunc_setPagesOrder_TypeError:
-        const char* overloads[] = {"list", 0};
+        const char* overloads[] = {"QStringList", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Effect.setPagesOrder", overloads);
         return 0;
 }
@@ -1359,9 +1358,9 @@ static PyObject* Sbk_EffectFunc_setScriptName(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: setScriptName(std::string)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // setScriptName(std::string)
+    // 0: setScriptName(QString)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // setScriptName(QString)
     }
 
     // Function signature not found.
@@ -1369,11 +1368,11 @@ static PyObject* Sbk_EffectFunc_setScriptName(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // setScriptName(std::string)
+            // setScriptName(QString)
             // Begin code injection
 
             bool cppResult = cppSelf->setScriptName(cppArg0);
@@ -1392,7 +1391,7 @@ static PyObject* Sbk_EffectFunc_setScriptName(PyObject* self, PyObject* pyArg)
     return pyResult;
 
     Sbk_EffectFunc_setScriptName_TypeError:
-        const char* overloads[] = {"std::string", 0};
+        const char* overloads[] = {"unicode", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Effect.setScriptName", overloads);
         return 0;
 }

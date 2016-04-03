@@ -347,8 +347,8 @@ static PyObject* Sbk_ParamFunc_getHelp(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getHelp()const
-            std::string cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->getHelp();
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+            QString cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->getHelp();
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
         }
     }
 
@@ -522,8 +522,8 @@ static PyObject* Sbk_ParamFunc_getLabel(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getLabel()const
-            std::string cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->getLabel();
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+            QString cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->getLabel();
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
         }
     }
 
@@ -603,8 +603,8 @@ static PyObject* Sbk_ParamFunc_getScriptName(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getScriptName()const
-            std::string cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->getScriptName();
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+            QString cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->getScriptName();
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
         }
     }
 
@@ -629,8 +629,8 @@ static PyObject* Sbk_ParamFunc_getTypeName(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getTypeName()const
-            std::string cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->getTypeName();
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+            QString cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->getTypeName();
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
         }
     }
 
@@ -1153,9 +1153,9 @@ static PyObject* Sbk_ParamFunc_setHelp(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: setHelp(std::string)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // setHelp(std::string)
+    // 0: setHelp(QString)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // setHelp(QString)
     }
 
     // Function signature not found.
@@ -1163,11 +1163,11 @@ static PyObject* Sbk_ParamFunc_setHelp(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // setHelp(std::string)
+            // setHelp(QString)
             cppSelf->setHelp(cppArg0);
         }
     }
@@ -1178,7 +1178,7 @@ static PyObject* Sbk_ParamFunc_setHelp(PyObject* self, PyObject* pyArg)
     Py_RETURN_NONE;
 
     Sbk_ParamFunc_setHelp_TypeError:
-        const char* overloads[] = {"std::string", 0};
+        const char* overloads[] = {"unicode", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setHelp", overloads);
         return 0;
 }

@@ -82,11 +82,11 @@ GuiApp::createModalDialog()
 
 
 PyTabWidget*
-GuiApp::getTabWidget(const std::string& name) const
+GuiApp::getTabWidget(const QString& name) const
 {
     const std::list<TabWidget*>& tabs = _app->getGui()->getPanes();
     for ( std::list<TabWidget*>::const_iterator it = tabs.begin(); it != tabs.end(); ++it) {
-        if ((*it)->objectName_mt_safe().toStdString() == name) {
+        if ((*it)->objectName_mt_safe() == name) {
             return new PyTabWidget(*it);
         }
     }
@@ -104,11 +104,11 @@ GuiApp::getActiveTabWidget() const
 }
 
 bool
-GuiApp::moveTab(const std::string& scriptName,PyTabWidget* pane)
+GuiApp::moveTab(const QString& scriptName,PyTabWidget* pane)
 {
     PanelWidget* w;
     ScriptObject* o;
-    _app->getGui()->findExistingTab(scriptName, &w, &o);
+    _app->getGui()->findExistingTab(scriptName.toStdString(), &w, &o);
     if (!w || !o) {
         return false;
     }
@@ -117,9 +117,9 @@ GuiApp::moveTab(const std::string& scriptName,PyTabWidget* pane)
 }
 
 void
-GuiApp::registerPythonPanel(PyPanel* panel,const std::string& pythonFunction)
+GuiApp::registerPythonPanel(PyPanel* panel,const QString& pythonFunction)
 {
-    _app->getGui()->registerPyPanel(panel,pythonFunction);
+    _app->getGui()->registerPyPanel(panel,pythonFunction.toStdString());
 }
 
 void
@@ -128,105 +128,119 @@ GuiApp::unregisterPythonPanel(PyPanel* panel)
     _app->getGui()->unregisterPyPanel(panel);
 }
 
-std::string
-GuiApp::getFilenameDialog(const std::vector<std::string>& filters,
-                          const std::string& location) const
+QString
+GuiApp::getFilenameDialog(const QStringList& filters,
+                          const QString& location) const
 {
     Gui* gui = _app->getGui();
     
+    std::vector<std::string> f;
+    for (QStringList::const_iterator it = filters.begin(); it!=filters.end(); ++it) {
+        f.push_back(it->toStdString());
+    }
     SequenceFileDialog dialog(gui,
-                              filters,
+                              f,
                               false,
                               SequenceFileDialog::eFileDialogModeOpen,
-                              location,
+                              location.toStdString(),
                               gui,
                               false);
     if (dialog.exec()) {
-        std::string ret = dialog.selectedFiles();
+        QString ret = QString::fromUtf8(dialog.selectedFiles().c_str());
         return ret;
     }
-    return std::string();
+    return QString();
 }
 
-std::string
-GuiApp::getSequenceDialog(const std::vector<std::string>& filters,
-                          const std::string& location) const
+QString
+GuiApp::getSequenceDialog(const QStringList& filters,
+                          const QString& location) const
 {
     Gui* gui = _app->getGui();
-    
+    std::vector<std::string> f;
+    for (QStringList::const_iterator it = filters.begin(); it!=filters.end(); ++it) {
+        f.push_back(it->toStdString());
+    }
     SequenceFileDialog dialog(gui,
-                              filters,
+                              f,
                               true,
                               SequenceFileDialog::eFileDialogModeOpen,
-                              location,
+                              location.toStdString(),
                               gui,
                               false);
     if (dialog.exec()) {
-        std::string ret = dialog.selectedFiles();
+        QString ret = QString::fromUtf8(dialog.selectedFiles().c_str());
         return ret;
     }
-    return std::string();
+    return QString();
 }
 
-std::string
-GuiApp::getDirectoryDialog(const std::string& location) const
+QString
+GuiApp::getDirectoryDialog(const QString& location) const
 {
     Gui* gui = _app->getGui();
-    std::vector<std::string> filters;
+    std::vector<std::string> f;
+
     SequenceFileDialog dialog(gui,
-                              filters,
+                              f,
                               false,
                               SequenceFileDialog::eFileDialogModeDir,
-                              location,
+                              location.toStdString(),
                               gui,
                               false);
     if (dialog.exec()) {
-        std::string ret = dialog.selectedDirectory();
+        QString ret = QString::fromUtf8(dialog.selectedDirectory().c_str());
         return ret;
     }
-    return std::string();
+    return QString();
 
 }
 
-std::string
-GuiApp::saveFilenameDialog(const std::vector<std::string>& filters,
-                           const std::string& location) const
+QString
+GuiApp::saveFilenameDialog(const QStringList& filters,
+                           const QString& location) const
 {
     Gui* gui = _app->getGui();
-    
+    std::vector<std::string> f;
+    for (QStringList::const_iterator it = filters.begin(); it!=filters.end(); ++it) {
+        f.push_back(it->toStdString());
+    }
     SequenceFileDialog dialog(gui,
-                              filters,
+                              f,
                               false,
                               SequenceFileDialog::eFileDialogModeSave,
-                              location,
+                              location.toStdString(),
                               gui,
                               false);
     if (dialog.exec()) {
-        std::string ret = dialog.filesToSave();
+        QString ret = QString::fromUtf8(dialog.filesToSave().c_str());
         return ret;
     }
-    return std::string();
+    return QString();
 
 }
 
-std::string
-GuiApp::saveSequenceDialog(const std::vector<std::string>& filters,
-                           const std::string& location) const
+QString
+GuiApp::saveSequenceDialog(const QStringList& filters,
+                           const QString& location) const
 {
     Gui* gui = _app->getGui();
-    
+    std::vector<std::string> f;
+    for (QStringList::const_iterator it = filters.begin(); it!=filters.end(); ++it) {
+        f.push_back(it->toStdString());
+    }
     SequenceFileDialog dialog(gui,
-                              filters,
+                              f,
                               true,
                               SequenceFileDialog::eFileDialogModeSave,
-                              location,
+                              location.toStdString(),
                               gui,
                               false);
     if (dialog.exec()) {
-        std::string ret = dialog.filesToSave();
+        QString ret = QString::fromUtf8(dialog.filesToSave().c_str());
         return ret;
     }
-    return std::string();
+    return QString();
 
 }
 
@@ -458,9 +472,9 @@ GuiApp::clearSelection(Group* group)
 }
 
 PyViewer*
-GuiApp::getViewer(const std::string& scriptName) const
+GuiApp::getViewer(const QString& scriptName) const
 {
-    NodePtr ptr = _app->getNodeByFullySpecifiedName(scriptName);
+    NodePtr ptr = _app->getNodeByFullySpecifiedName(scriptName.toStdString());
     if (!ptr || !ptr->isActivated()) {
         return 0;
     }
@@ -493,9 +507,9 @@ GuiApp::getActiveViewer() const
 
 
 PyPanel*
-GuiApp::getUserPanel(const std::string& scriptName) const
+GuiApp::getUserPanel(const QString& scriptName) const
 {
-    PanelWidget* w = _app->getGui()->findExistingTab(scriptName);
+    PanelWidget* w = _app->getGui()->findExistingTab(scriptName.toStdString());
     if (!w) {
         return 0;
     }

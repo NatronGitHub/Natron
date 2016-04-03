@@ -65,7 +65,7 @@ void PyPanelWrapper::pysideInitQtMetaTypes()
 {
 }
 
-PyPanelWrapper::PyPanelWrapper(const std::string & scriptName, const std::string & label, bool useUserParameters, GuiApp * app) : PyPanel(scriptName, label, useUserParameters, app) {
+PyPanelWrapper::PyPanelWrapper(const QString & scriptName, const QString & label, bool useUserParameters, GuiApp * app) : PyPanel(scriptName, label, useUserParameters, app) {
     // ... middle
 }
 
@@ -1075,7 +1075,7 @@ void PyPanelWrapper::resizeEvent(QResizeEvent * event)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-void PyPanelWrapper::restore(const std::string & arg__1)
+void PyPanelWrapper::restore(const QString & arg__1)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -1087,7 +1087,7 @@ void PyPanelWrapper::restore(const std::string & arg__1)
     }
 
     Shiboken::AutoDecRef pyArgs(Py_BuildValue("(N)",
-        Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &arg__1)
+        Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &arg__1)
     ));
 
     Shiboken::AutoDecRef pyResult(PyObject_Call(pyOverride, pyArgs, NULL));
@@ -1098,11 +1098,11 @@ void PyPanelWrapper::restore(const std::string & arg__1)
     }
 }
 
-std::string PyPanelWrapper::save()
+QString PyPanelWrapper::save()
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
-        return ::std::string();
+        return ::QString();
     Shiboken::AutoDecRef pyOverride(Shiboken::BindingManager::instance().getOverride(this, "save"));
     if (pyOverride.isNull()) {
         gil.release();
@@ -1115,15 +1115,15 @@ std::string PyPanelWrapper::save()
     // An error happened in python code!
     if (pyResult.isNull()) {
         PyErr_Print();
-        return ::std::string();
+        return ::QString();
     }
     // Check return type
-    PythonToCppFunc pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), pyResult);
+    PythonToCppFunc pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], pyResult);
     if (!pythonToCpp) {
-        Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "PyPanel.save", "string", pyResult->ob_type->tp_name);
-        return ::std::string();
+        Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "PyPanel.save", "QString", pyResult->ob_type->tp_name);
+        return ::QString();
     }
-    ::std::string cppResult;
+    ::QString cppResult = ::QString();
     pythonToCpp(pyResult, &cppResult);
     return cppResult;
 }
@@ -1350,13 +1350,13 @@ Sbk_PyPanel_Init(PyObject* self, PyObject* args, PyObject* kwds)
 
 
     // Overloaded function decisor
-    // 0: PyPanel(std::string,std::string,bool,GuiApp*)
+    // 0: PyPanel(QString,QString,bool,GuiApp*)
     if (numArgs == 4
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))
         && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[2])))
         && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronGuiTypes[SBK_GUIAPP_IDX], (pyArgs[3])))) {
-        overloadId = 0; // PyPanel(std::string,std::string,bool,GuiApp*)
+        overloadId = 0; // PyPanel(QString,QString,bool,GuiApp*)
     }
 
     // Function signature not found.
@@ -1364,9 +1364,9 @@ Sbk_PyPanel_Init(PyObject* self, PyObject* args, PyObject* kwds)
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::std::string cppArg1;
+        ::QString cppArg1 = ::QString();
         pythonToCpp[1](pyArgs[1], &cppArg1);
         bool cppArg2;
         pythonToCpp[2](pyArgs[2], &cppArg2);
@@ -1376,7 +1376,7 @@ Sbk_PyPanel_Init(PyObject* self, PyObject* args, PyObject* kwds)
         pythonToCpp[3](pyArgs[3], &cppArg3);
 
         if (!PyErr_Occurred()) {
-            // PyPanel(std::string,std::string,bool,GuiApp*)
+            // PyPanel(QString,QString,bool,GuiApp*)
             void* addr = PySide::nextQObjectMemoryAddr();
             if (addr) {
                 cptr = new (addr) ::PyPanelWrapper(cppArg0, cppArg1, cppArg2, cppArg3);
@@ -1408,7 +1408,7 @@ Sbk_PyPanel_Init(PyObject* self, PyObject* args, PyObject* kwds)
     return 1;
 
     Sbk_PyPanel_Init_TypeError:
-        const char* overloads[] = {"std::string, std::string, bool, NatronGui.GuiApp", 0};
+        const char* overloads[] = {"unicode, unicode, bool, NatronGui.GuiApp", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronGui.PyPanel", overloads);
         return -1;
 }
@@ -1471,8 +1471,8 @@ static PyObject* Sbk_PyPanelFunc_getPanelLabel(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getPanelLabel()const
-            std::string cppResult = const_cast<const ::PyPanelWrapper*>(cppSelf)->getPanelLabel();
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+            QString cppResult = const_cast<const ::PyPanelWrapper*>(cppSelf)->getPanelLabel();
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
         }
     }
 
@@ -1497,8 +1497,8 @@ static PyObject* Sbk_PyPanelFunc_getPanelScriptName(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getPanelScriptName()const
-            std::string cppResult = const_cast<const ::PyPanelWrapper*>(cppSelf)->getPanelScriptName();
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+            QString cppResult = const_cast<const ::PyPanelWrapper*>(cppSelf)->getPanelScriptName();
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
         }
     }
 
@@ -1522,9 +1522,9 @@ static PyObject* Sbk_PyPanelFunc_getParam(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: getParam(std::string)const
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // getParam(std::string)const
+    // 0: getParam(QString)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // getParam(QString)const
     }
 
     // Function signature not found.
@@ -1532,11 +1532,11 @@ static PyObject* Sbk_PyPanelFunc_getParam(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getParam(std::string)const
+            // getParam(QString)const
             Param * cppResult = const_cast<const ::PyPanelWrapper*>(cppSelf)->getParam(cppArg0);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], cppResult);
 
@@ -1552,7 +1552,7 @@ static PyObject* Sbk_PyPanelFunc_getParam(PyObject* self, PyObject* pyArg)
     return pyResult;
 
     Sbk_PyPanelFunc_getParam_TypeError:
-        const char* overloads[] = {"std::string", 0};
+        const char* overloads[] = {"unicode", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyPanel.getParam", overloads);
         return 0;
 }
@@ -1689,9 +1689,9 @@ static PyObject* Sbk_PyPanelFunc_restore(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: restore(std::string)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // restore(std::string)
+    // 0: restore(QString)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // restore(QString)
     }
 
     // Function signature not found.
@@ -1699,11 +1699,11 @@ static PyObject* Sbk_PyPanelFunc_restore(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // restore(std::string)
+            // restore(QString)
             Shiboken::Object::hasCppWrapper(reinterpret_cast<SbkObject*>(self)) ? cppSelf->::PyPanel::restore(cppArg0) : cppSelf->restore(cppArg0);
         }
     }
@@ -1714,7 +1714,7 @@ static PyObject* Sbk_PyPanelFunc_restore(PyObject* self, PyObject* pyArg)
     Py_RETURN_NONE;
 
     Sbk_PyPanelFunc_restore_TypeError:
-        const char* overloads[] = {"std::string", 0};
+        const char* overloads[] = {"unicode", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyPanel.restore", overloads);
         return 0;
 }
@@ -1733,8 +1733,8 @@ static PyObject* Sbk_PyPanelFunc_save(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // save()
-            std::string cppResult = ((::PyPanelWrapper*) cppSelf)->PyPanelWrapper::save_protected();
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+            QString cppResult = ((::PyPanelWrapper*) cppSelf)->PyPanelWrapper::save_protected();
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
         }
     }
 
@@ -1757,9 +1757,9 @@ static PyObject* Sbk_PyPanelFunc_setPanelLabel(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: setPanelLabel(std::string)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // setPanelLabel(std::string)
+    // 0: setPanelLabel(QString)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // setPanelLabel(QString)
     }
 
     // Function signature not found.
@@ -1767,11 +1767,11 @@ static PyObject* Sbk_PyPanelFunc_setPanelLabel(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // setPanelLabel(std::string)
+            // setPanelLabel(QString)
             cppSelf->setPanelLabel(cppArg0);
         }
     }
@@ -1782,7 +1782,7 @@ static PyObject* Sbk_PyPanelFunc_setPanelLabel(PyObject* self, PyObject* pyArg)
     Py_RETURN_NONE;
 
     Sbk_PyPanelFunc_setPanelLabel_TypeError:
-        const char* overloads[] = {"std::string", 0};
+        const char* overloads[] = {"unicode", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyPanel.setPanelLabel", overloads);
         return 0;
 }
@@ -1799,9 +1799,9 @@ static PyObject* Sbk_PyPanelFunc_setParamChangedCallback(PyObject* self, PyObjec
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: setParamChangedCallback(std::string)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // setParamChangedCallback(std::string)
+    // 0: setParamChangedCallback(QString)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // setParamChangedCallback(QString)
     }
 
     // Function signature not found.
@@ -1809,11 +1809,11 @@ static PyObject* Sbk_PyPanelFunc_setParamChangedCallback(PyObject* self, PyObjec
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // setParamChangedCallback(std::string)
+            // setParamChangedCallback(QString)
             cppSelf->setParamChangedCallback(cppArg0);
         }
     }
@@ -1824,7 +1824,7 @@ static PyObject* Sbk_PyPanelFunc_setParamChangedCallback(PyObject* self, PyObjec
     Py_RETURN_NONE;
 
     Sbk_PyPanelFunc_setParamChangedCallback_TypeError:
-        const char* overloads[] = {"std::string", 0};
+        const char* overloads[] = {"unicode", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyPanel.setParamChangedCallback", overloads);
         return 0;
 }

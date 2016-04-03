@@ -26,7 +26,7 @@
 
 
     <object-type name="GuiApp">
-        <modify-function signature="getTabWidget(std::string)const">
+        <modify-function signature="getTabWidget(QString)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
@@ -51,7 +51,7 @@
                 return ret;
             </inject-code>
         </modify-function>
-        <modify-function signature="getViewer(std::string)const">
+        <modify-function signature="getViewer(QString)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
@@ -152,7 +152,7 @@
     </object-type>
 
 	<object-type name="PyModalDialog">
-        <modify-function signature="getParam(std::string)const">
+        <modify-function signature="getParam(QString)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
@@ -160,7 +160,7 @@
 	</object-type>
     
     <object-type name="PyPanel">
-        <modify-function signature="getParam(std::string)const">
+        <modify-function signature="getParam(QString)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>

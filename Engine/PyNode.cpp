@@ -38,26 +38,40 @@
 
 NATRON_NAMESPACE_ENTER;
 
-ImageLayer::ImageLayer(const std::string& layerName,
-           const std::string& componentsPrettyName,
-           const std::vector<std::string>& componentsName)
-: _comps(layerName,componentsPrettyName, componentsName)
+ImageLayer::ImageLayer(const QString& layerName,
+           const QString& componentsPrettyName,
+           const QStringList& componentsName)
+: _layerName(layerName)
+, _componentsPrettyName(componentsPrettyName)
+, _componentsName(componentsName)
+, _comps()
 {
     
+    std::vector<std::string> channels(componentsName.size());
+    int i = 0;
+    for (QStringList::const_iterator it = componentsName.begin(); it!=componentsName.end(); ++it,++i) {
+        channels[i] = it->toStdString();
+    }
+    _comps.reset(new ImageComponents(layerName.toStdString(), componentsPrettyName.toStdString(), channels));
 }
 
-ImageLayer::ImageLayer(const ImageComponents& internalComps)
-: _comps(internalComps)
+ImageLayer::ImageLayer(const ImageComponents& comps)
+: _layerName(QString::fromUtf8(comps.getLayerName().c_str()))
+, _componentsPrettyName(QString::fromUtf8(comps.getComponentsGlobalName().c_str()))
 {
-    
+    const std::vector<std::string>& channels = comps.getComponentsNames();
+    for (std::size_t i = 0; i < channels.size(); ++i) {
+        _componentsName.push_back(QString::fromUtf8(channels[i].c_str()));
+    }
+    _comps.reset(new ImageComponents(comps));
 }
 
 int
 ImageLayer::getHash(const ImageLayer& layer)
 {
     Hash64 h;
-    Hash64_appendQString(&h, QString::fromUtf8(layer._comps.getLayerName().c_str()));
-    const std::vector<std::string>& comps = layer._comps.getComponentsNames();
+    Hash64_appendQString(&h, QString::fromUtf8(layer._comps->getLayerName().c_str()));
+    const std::vector<std::string>& comps = layer._comps->getComponentsNames();
     for (std::size_t i = 0; i < comps.size(); ++i) {
         Hash64_appendQString(&h, QString::fromUtf8(comps[i].c_str()));
     }
@@ -67,31 +81,31 @@ ImageLayer::getHash(const ImageLayer& layer)
 bool
 ImageLayer::isColorPlane() const
 {
-    return _comps.isColorPlane();
+    return _comps->isColorPlane();
 }
 
 int
 ImageLayer::getNumComponents() const
 {
-    return _comps.getNumComponents();
+    return _comps->getNumComponents();
 }
 
-const std::string&
+const QString&
 ImageLayer::getLayerName() const
 {
-    return _comps.getLayerName();
+    return _layerName;
 }
 
-const std::vector<std::string>&
+const QStringList&
 ImageLayer::getComponentsNames() const
 {
-    return _comps.getComponentsNames();
+    return _componentsName;
 }
 
-const std::string&
+const QString&
 ImageLayer::getComponentsPrettyName() const
 {
-    return _comps.getComponentsGlobalName();
+    return _componentsPrettyName;
 }
 
 bool ImageLayer::operator==(const ImageLayer& other) const
@@ -249,51 +263,51 @@ Effect::getInput(int inputNumber) const
     return NULL;
 }
 
-std::string
+QString
 Effect::getScriptName() const
 {
-    return getInternalNode()->getScriptName_mt_safe();
+    return QString::fromUtf8(getInternalNode()->getScriptName_mt_safe().c_str());
 }
 
 bool
-Effect::setScriptName(const std::string& scriptName)
+Effect::setScriptName(const QString& scriptName)
 {
     try {
-        getInternalNode()->setScriptName(scriptName);
+        getInternalNode()->setScriptName(scriptName.toStdString());
     } catch (...) {
         return false;
     }
     return true;
 }
 
-std::string
+QString
 Effect::getLabel() const
 {
-    return getInternalNode()->getLabel_mt_safe();
+    return QString::fromUtf8(getInternalNode()->getLabel_mt_safe().c_str());
 }
 
 
 void
-Effect::setLabel(const std::string& name)
+Effect::setLabel(const QString& name)
 {
-    return getInternalNode()->setLabel(name);
+    return getInternalNode()->setLabel(name.toStdString());
 }
 
-std::string
+QString
 Effect::getInputLabel(int inputNumber)
 {
     try {
-        return getInternalNode()->getInputLabel(inputNumber);
+        return QString::fromUtf8(getInternalNode()->getInputLabel(inputNumber).c_str());
     } catch (const std::exception& e) {
         getInternalNode()->getApp()->appendToScriptEditor(e.what());
     }
-    return std::string();
+    return QString();
 }
 
-std::string
+QString
 Effect::getPluginID() const
 {
-    return getInternalNode()->getPluginID();
+    return QString::fromUtf8(getInternalNode()->getPluginID().c_str());
 }
 
 Param*
@@ -380,9 +394,9 @@ Effect::getParams() const
 }
 
 Param*
-Effect::getParam(const std::string& name) const
+Effect::getParam(const QString& name) const
 {
-    KnobPtr knob = getInternalNode()->getKnobByName(name);
+    KnobPtr knob = getInternalNode()->getKnobByName(name.toStdString());
     if (knob) {
         return createParamWrapperForKnob(knob);
     } else {
@@ -453,9 +467,9 @@ Effect::endChanges()
 }
 
 IntParam*
-UserParamHolder::createIntParam(const std::string& name, const std::string& label)
+UserParamHolder::createIntParam(const QString& name, const QString& label)
 {
-    boost::shared_ptr<KnobInt> knob = _holder->createIntKnob(name, label, 1);
+    boost::shared_ptr<KnobInt> knob = _holder->createIntKnob(name.toStdString(), label.toStdString(), 1);
     if (knob) {
         return new IntParam(knob);
     } else {
@@ -464,9 +478,9 @@ UserParamHolder::createIntParam(const std::string& name, const std::string& labe
 }
 
 Int2DParam*
-UserParamHolder::createInt2DParam(const std::string& name, const std::string& label)
+UserParamHolder::createInt2DParam(const QString& name, const QString& label)
 {
-    boost::shared_ptr<KnobInt> knob = _holder->createIntKnob(name, label, 2);
+    boost::shared_ptr<KnobInt> knob = _holder->createIntKnob(name.toStdString(), label.toStdString(), 2);
     if (knob) {
         return new Int2DParam(knob);
     } else {
@@ -476,9 +490,9 @@ UserParamHolder::createInt2DParam(const std::string& name, const std::string& la
 }
 
 Int3DParam*
-UserParamHolder::createInt3DParam(const std::string& name, const std::string& label)
+UserParamHolder::createInt3DParam(const QString& name, const QString& label)
 {
-    boost::shared_ptr<KnobInt> knob = _holder->createIntKnob(name, label, 3);
+    boost::shared_ptr<KnobInt> knob = _holder->createIntKnob(name.toStdString(), label.toStdString(), 3);
     if (knob) {
         return new Int3DParam(knob);
     } else {
@@ -488,9 +502,9 @@ UserParamHolder::createInt3DParam(const std::string& name, const std::string& la
 }
 
 DoubleParam*
-UserParamHolder::createDoubleParam(const std::string& name, const std::string& label)
+UserParamHolder::createDoubleParam(const QString& name, const QString& label)
 {
-    boost::shared_ptr<KnobDouble> knob = _holder->createDoubleKnob(name, label, 1);
+    boost::shared_ptr<KnobDouble> knob = _holder->createDoubleKnob(name.toStdString(), label.toStdString(), 1);
     if (knob) {
         return new DoubleParam(knob);
     } else {
@@ -500,9 +514,9 @@ UserParamHolder::createDoubleParam(const std::string& name, const std::string& l
 }
 
 Double2DParam*
-UserParamHolder::createDouble2DParam(const std::string& name, const std::string& label)
+UserParamHolder::createDouble2DParam(const QString& name, const QString& label)
 {
-    boost::shared_ptr<KnobDouble> knob = _holder->createDoubleKnob(name, label, 2);
+    boost::shared_ptr<KnobDouble> knob = _holder->createDoubleKnob(name.toStdString(), label.toStdString(), 2);
     if (knob) {
         return new Double2DParam(knob);
     } else {
@@ -511,9 +525,9 @@ UserParamHolder::createDouble2DParam(const std::string& name, const std::string&
 }
 
 Double3DParam*
-UserParamHolder::createDouble3DParam(const std::string& name, const std::string& label)
+UserParamHolder::createDouble3DParam(const QString& name, const QString& label)
 {
-    boost::shared_ptr<KnobDouble> knob = _holder->createDoubleKnob(name, label, 3);
+    boost::shared_ptr<KnobDouble> knob = _holder->createDoubleKnob(name.toStdString(), label.toStdString(), 3);
     if (knob) {
         return new Double3DParam(knob);
     } else {
@@ -522,9 +536,9 @@ UserParamHolder::createDouble3DParam(const std::string& name, const std::string&
 }
 
 BooleanParam*
-UserParamHolder::createBooleanParam(const std::string& name, const std::string& label)
+UserParamHolder::createBooleanParam(const QString& name, const QString& label)
 {
-    boost::shared_ptr<KnobBool> knob = _holder->createBoolKnob(name, label);
+    boost::shared_ptr<KnobBool> knob = _holder->createBoolKnob(name.toStdString(), label.toStdString());
     if (knob) {
         return new BooleanParam(knob);
     } else {
@@ -533,9 +547,9 @@ UserParamHolder::createBooleanParam(const std::string& name, const std::string& 
 }
 
 ChoiceParam*
-UserParamHolder::createChoiceParam(const std::string& name, const std::string& label)
+UserParamHolder::createChoiceParam(const QString& name, const QString& label)
 {
-    boost::shared_ptr<KnobChoice> knob = _holder->createChoiceKnob(name, label);
+    boost::shared_ptr<KnobChoice> knob = _holder->createChoiceKnob(name.toStdString(), label.toStdString());
     if (knob) {
         return new ChoiceParam(knob);
     } else {
@@ -544,9 +558,9 @@ UserParamHolder::createChoiceParam(const std::string& name, const std::string& l
 }
 
 ColorParam*
-UserParamHolder::createColorParam(const std::string& name, const std::string& label, bool useAlpha)
+UserParamHolder::createColorParam(const QString& name, const QString& label, bool useAlpha)
 {
-    boost::shared_ptr<KnobColor> knob = _holder->createColorKnob(name, label, useAlpha ? 4 : 3);
+    boost::shared_ptr<KnobColor> knob = _holder->createColorKnob(name.toStdString(), label.toStdString(), useAlpha ? 4 : 3);
     if (knob) {
         return new ColorParam(knob);
     } else {
@@ -555,9 +569,9 @@ UserParamHolder::createColorParam(const std::string& name, const std::string& la
 }
 
 StringParam*
-UserParamHolder::createStringParam(const std::string& name, const std::string& label)
+UserParamHolder::createStringParam(const QString& name, const QString& label)
 {
-    boost::shared_ptr<KnobString> knob = _holder->createStringKnob(name, label);
+    boost::shared_ptr<KnobString> knob = _holder->createStringKnob(name.toStdString(), label.toStdString());
     if (knob) {
         return new StringParam(knob);
     } else {
@@ -566,9 +580,9 @@ UserParamHolder::createStringParam(const std::string& name, const std::string& l
 }
 
 FileParam*
-UserParamHolder::createFileParam(const std::string& name, const std::string& label)
+UserParamHolder::createFileParam(const QString& name, const QString& label)
 {
-    boost::shared_ptr<KnobFile> knob = _holder->createFileKnob(name, label);
+    boost::shared_ptr<KnobFile> knob = _holder->createFileKnob(name.toStdString(), label.toStdString());
     if (knob) {
         return new FileParam(knob);
     } else {
@@ -577,9 +591,9 @@ UserParamHolder::createFileParam(const std::string& name, const std::string& lab
 }
 
 OutputFileParam*
-UserParamHolder::createOutputFileParam(const std::string& name, const std::string& label)
+UserParamHolder::createOutputFileParam(const QString& name, const QString& label)
 {
-    boost::shared_ptr<KnobOutputFile> knob = _holder->createOuptutFileKnob(name, label);
+    boost::shared_ptr<KnobOutputFile> knob = _holder->createOuptutFileKnob(name.toStdString(), label.toStdString());
     if (knob) {
         return new OutputFileParam(knob);
     } else {
@@ -588,9 +602,9 @@ UserParamHolder::createOutputFileParam(const std::string& name, const std::strin
 }
 
 PathParam*
-UserParamHolder::createPathParam(const std::string& name, const std::string& label)
+UserParamHolder::createPathParam(const QString& name, const QString& label)
 {
-    boost::shared_ptr<KnobPath> knob = _holder->createPathKnob(name, label);
+    boost::shared_ptr<KnobPath> knob = _holder->createPathKnob(name.toStdString(), label.toStdString());
     if (knob) {
         return new PathParam(knob);
     } else {
@@ -599,9 +613,9 @@ UserParamHolder::createPathParam(const std::string& name, const std::string& lab
 }
 
 ButtonParam*
-UserParamHolder::createButtonParam(const std::string& name, const std::string& label)
+UserParamHolder::createButtonParam(const QString& name, const QString& label)
 {
-    boost::shared_ptr<KnobButton> knob = _holder->createButtonKnob(name, label);
+    boost::shared_ptr<KnobButton> knob = _holder->createButtonKnob(name.toStdString(), label.toStdString());
     if (knob) {
         return new ButtonParam(knob);
     } else {
@@ -610,9 +624,9 @@ UserParamHolder::createButtonParam(const std::string& name, const std::string& l
 }
 
 SeparatorParam*
-UserParamHolder::createSeparatorParam(const std::string& name, const std::string& label)
+UserParamHolder::createSeparatorParam(const QString& name, const QString& label)
 {
-    boost::shared_ptr<KnobSeparator> knob = _holder->createSeparatorKnob(name, label);
+    boost::shared_ptr<KnobSeparator> knob = _holder->createSeparatorKnob(name.toStdString(), label.toStdString());
     if (knob) {
         return new SeparatorParam(knob);
     } else {
@@ -621,9 +635,9 @@ UserParamHolder::createSeparatorParam(const std::string& name, const std::string
 }
 
 GroupParam*
-UserParamHolder::createGroupParam(const std::string& name, const std::string& label)
+UserParamHolder::createGroupParam(const QString& name, const QString& label)
 {
-    boost::shared_ptr<KnobGroup> knob = _holder->createGroupKnob(name, label);
+    boost::shared_ptr<KnobGroup> knob = _holder->createGroupKnob(name.toStdString(), label.toStdString());
     if (knob) {
         return new GroupParam(knob);
     } else {
@@ -632,13 +646,13 @@ UserParamHolder::createGroupParam(const std::string& name, const std::string& la
 }
 
 PageParam*
-UserParamHolder::createPageParam(const std::string& name, const std::string& label)
+UserParamHolder::createPageParam(const QString& name, const QString& label)
 {
     if (!_holder) {
         assert(false);
         return 0;
     }
-    boost::shared_ptr<KnobPage> knob = _holder->createPageKnob(name, label);
+    boost::shared_ptr<KnobPage> knob = _holder->createPageKnob(name.toStdString(), label.toStdString());
     if (knob) {
         return new PageParam(knob);
     } else {
@@ -647,9 +661,9 @@ UserParamHolder::createPageParam(const std::string& name, const std::string& lab
 }
 
 ParametricParam*
-UserParamHolder::createParametricParam(const std::string& name, const std::string& label, int nbCurves)
+UserParamHolder::createParametricParam(const QString& name, const QString& label, int nbCurves)
 {
-    boost::shared_ptr<KnobParametric> knob = _holder->createParametricKnob(name, label, nbCurves);
+    boost::shared_ptr<KnobParametric> knob = _holder->createParametricKnob(name.toStdString(), label.toStdString(), nbCurves);
     if (knob) {
         return new ParametricParam(knob);
     } else {
@@ -746,18 +760,23 @@ Effect::setSubGraphEditable(bool editable)
 }
 
 bool
-Effect::addUserPlane(const std::string& planeName, const std::vector<std::string>& channels)
+Effect::addUserPlane(const QString& planeName, const QStringList& channels)
 {
-    if (planeName.empty() ||
+    if (planeName.isEmpty() ||
         channels.size() < 1 ||
         channels.size() > 4) {
         return false;
     }
     std::string compsGlobal;
-    for (std::size_t i = 0; i < channels.size(); ++i) {
-        compsGlobal.append(channels[i]);
+    std::vector<std::string> chans(channels.size());
+    int i = 0;
+    for (QStringList::const_iterator it = channels.begin(); it != channels.end(); ++it,++i) {
+        std::string c = it->toStdString();
+        compsGlobal.append(c);
+        chans[i] = c;
+        
     }
-    ImageComponents comp(planeName,compsGlobal,channels);
+    ImageComponents comp(planeName.toStdString(),compsGlobal,chans);
     return getInternalNode()->addUserComponents(comp);
 }
 
@@ -823,12 +842,17 @@ Effect::getPremult() const
 
 
 void
-Effect::setPagesOrder(const std::list<std::string>& pages)
+Effect::setPagesOrder(const QStringList& pages)
 {
     if (!getInternalNode()) {
         return;
     }
-    getInternalNode()->setPagesOrder(pages);
+    
+    std::list<std::string> order;
+    for (QStringList::const_iterator it= pages.begin() ; it!=pages.end(); ++it) {
+        order.push_back(it->toStdString());
+    }
+    getInternalNode()->setPagesOrder(order);
 }
 
 NATRON_NAMESPACE_EXIT;

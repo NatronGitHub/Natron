@@ -34,7 +34,7 @@
 #define SBK_RUN
 
 #include <pyside_global.h>
-
+#include <string>
 //Global
 #include <GlobalDefines.h>
 #include <Enums.h>

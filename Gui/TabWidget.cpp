@@ -434,7 +434,7 @@ TabWidget::createMenu()
         
         
         for (std::map<PyPanel*,std::string>::iterator it = userPanels.begin(); it != userPanels.end(); ++it) {
-            QAction* pAction = new QAction(QString::fromUtf8(it->first->getPanelLabel().c_str()) + tr(" here"),userPanelsMenu);
+            QAction* pAction = new QAction(it->first->getPanelLabel() + tr(" here"),userPanelsMenu);
             QObject::connect(pAction, SIGNAL(triggered()), this, SLOT(onUserPanelActionTriggered()));
             pAction->setData(QString::fromUtf8(it->first->getScriptName().c_str()));
             userPanelsMenu->addAction(pAction);

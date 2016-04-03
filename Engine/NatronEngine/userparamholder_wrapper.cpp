@@ -93,11 +93,11 @@ static PyObject* Sbk_UserParamHolderFunc_createBooleanParam(PyObject* self, PyOb
 
 
     // Overloaded function decisor
-    // 0: createBooleanParam(std::string,std::string)
+    // 0: createBooleanParam(QString,QString)
     if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
-        overloadId = 0; // createBooleanParam(std::string,std::string)
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+        overloadId = 0; // createBooleanParam(QString,QString)
     }
 
     // Function signature not found.
@@ -105,13 +105,13 @@ static PyObject* Sbk_UserParamHolderFunc_createBooleanParam(PyObject* self, PyOb
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::std::string cppArg1;
+        ::QString cppArg1 = ::QString();
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // createBooleanParam(std::string,std::string)
+            // createBooleanParam(QString,QString)
             BooleanParam * cppResult = cppSelf->createBooleanParam(cppArg0, cppArg1);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], cppResult);
 
@@ -127,7 +127,7 @@ static PyObject* Sbk_UserParamHolderFunc_createBooleanParam(PyObject* self, PyOb
     return pyResult;
 
     Sbk_UserParamHolderFunc_createBooleanParam_TypeError:
-        const char* overloads[] = {"std::string, std::string", 0};
+        const char* overloads[] = {"unicode, unicode", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createBooleanParam", overloads);
         return 0;
 }
@@ -154,11 +154,11 @@ static PyObject* Sbk_UserParamHolderFunc_createButtonParam(PyObject* self, PyObj
 
 
     // Overloaded function decisor
-    // 0: createButtonParam(std::string,std::string)
+    // 0: createButtonParam(QString,QString)
     if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
-        overloadId = 0; // createButtonParam(std::string,std::string)
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+        overloadId = 0; // createButtonParam(QString,QString)
     }
 
     // Function signature not found.
@@ -166,13 +166,13 @@ static PyObject* Sbk_UserParamHolderFunc_createButtonParam(PyObject* self, PyObj
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::std::string cppArg1;
+        ::QString cppArg1 = ::QString();
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // createButtonParam(std::string,std::string)
+            // createButtonParam(QString,QString)
             ButtonParam * cppResult = cppSelf->createButtonParam(cppArg0, cppArg1);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_BUTTONPARAM_IDX], cppResult);
 
@@ -188,7 +188,7 @@ static PyObject* Sbk_UserParamHolderFunc_createButtonParam(PyObject* self, PyObj
     return pyResult;
 
     Sbk_UserParamHolderFunc_createButtonParam_TypeError:
-        const char* overloads[] = {"std::string, std::string", 0};
+        const char* overloads[] = {"unicode, unicode", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createButtonParam", overloads);
         return 0;
 }
@@ -215,11 +215,11 @@ static PyObject* Sbk_UserParamHolderFunc_createChoiceParam(PyObject* self, PyObj
 
 
     // Overloaded function decisor
-    // 0: createChoiceParam(std::string,std::string)
+    // 0: createChoiceParam(QString,QString)
     if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
-        overloadId = 0; // createChoiceParam(std::string,std::string)
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+        overloadId = 0; // createChoiceParam(QString,QString)
     }
 
     // Function signature not found.
@@ -227,13 +227,13 @@ static PyObject* Sbk_UserParamHolderFunc_createChoiceParam(PyObject* self, PyObj
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::std::string cppArg1;
+        ::QString cppArg1 = ::QString();
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // createChoiceParam(std::string,std::string)
+            // createChoiceParam(QString,QString)
             ChoiceParam * cppResult = cppSelf->createChoiceParam(cppArg0, cppArg1);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], cppResult);
 
@@ -249,7 +249,7 @@ static PyObject* Sbk_UserParamHolderFunc_createChoiceParam(PyObject* self, PyObj
     return pyResult;
 
     Sbk_UserParamHolderFunc_createChoiceParam_TypeError:
-        const char* overloads[] = {"std::string, std::string", 0};
+        const char* overloads[] = {"unicode, unicode", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createChoiceParam", overloads);
         return 0;
 }
@@ -276,12 +276,12 @@ static PyObject* Sbk_UserParamHolderFunc_createColorParam(PyObject* self, PyObje
 
 
     // Overloaded function decisor
-    // 0: createColorParam(std::string,std::string,bool)
+    // 0: createColorParam(QString,QString,bool)
     if (numArgs == 3
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))
         && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[2])))) {
-        overloadId = 0; // createColorParam(std::string,std::string,bool)
+        overloadId = 0; // createColorParam(QString,QString,bool)
     }
 
     // Function signature not found.
@@ -289,15 +289,15 @@ static PyObject* Sbk_UserParamHolderFunc_createColorParam(PyObject* self, PyObje
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::std::string cppArg1;
+        ::QString cppArg1 = ::QString();
         pythonToCpp[1](pyArgs[1], &cppArg1);
         bool cppArg2;
         pythonToCpp[2](pyArgs[2], &cppArg2);
 
         if (!PyErr_Occurred()) {
-            // createColorParam(std::string,std::string,bool)
+            // createColorParam(QString,QString,bool)
             ColorParam * cppResult = cppSelf->createColorParam(cppArg0, cppArg1, cppArg2);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORPARAM_IDX], cppResult);
 
@@ -313,7 +313,7 @@ static PyObject* Sbk_UserParamHolderFunc_createColorParam(PyObject* self, PyObje
     return pyResult;
 
     Sbk_UserParamHolderFunc_createColorParam_TypeError:
-        const char* overloads[] = {"std::string, std::string, bool", 0};
+        const char* overloads[] = {"unicode, unicode, bool", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createColorParam", overloads);
         return 0;
 }
@@ -340,11 +340,11 @@ static PyObject* Sbk_UserParamHolderFunc_createDouble2DParam(PyObject* self, PyO
 
 
     // Overloaded function decisor
-    // 0: createDouble2DParam(std::string,std::string)
+    // 0: createDouble2DParam(QString,QString)
     if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
-        overloadId = 0; // createDouble2DParam(std::string,std::string)
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+        overloadId = 0; // createDouble2DParam(QString,QString)
     }
 
     // Function signature not found.
@@ -352,13 +352,13 @@ static PyObject* Sbk_UserParamHolderFunc_createDouble2DParam(PyObject* self, PyO
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::std::string cppArg1;
+        ::QString cppArg1 = ::QString();
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // createDouble2DParam(std::string,std::string)
+            // createDouble2DParam(QString,QString)
             Double2DParam * cppResult = cppSelf->createDouble2DParam(cppArg0, cppArg1);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE2DPARAM_IDX], cppResult);
 
@@ -374,7 +374,7 @@ static PyObject* Sbk_UserParamHolderFunc_createDouble2DParam(PyObject* self, PyO
     return pyResult;
 
     Sbk_UserParamHolderFunc_createDouble2DParam_TypeError:
-        const char* overloads[] = {"std::string, std::string", 0};
+        const char* overloads[] = {"unicode, unicode", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createDouble2DParam", overloads);
         return 0;
 }
@@ -401,11 +401,11 @@ static PyObject* Sbk_UserParamHolderFunc_createDouble3DParam(PyObject* self, PyO
 
 
     // Overloaded function decisor
-    // 0: createDouble3DParam(std::string,std::string)
+    // 0: createDouble3DParam(QString,QString)
     if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
-        overloadId = 0; // createDouble3DParam(std::string,std::string)
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+        overloadId = 0; // createDouble3DParam(QString,QString)
     }
 
     // Function signature not found.
@@ -413,13 +413,13 @@ static PyObject* Sbk_UserParamHolderFunc_createDouble3DParam(PyObject* self, PyO
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::std::string cppArg1;
+        ::QString cppArg1 = ::QString();
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // createDouble3DParam(std::string,std::string)
+            // createDouble3DParam(QString,QString)
             Double3DParam * cppResult = cppSelf->createDouble3DParam(cppArg0, cppArg1);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DPARAM_IDX], cppResult);
 
@@ -435,7 +435,7 @@ static PyObject* Sbk_UserParamHolderFunc_createDouble3DParam(PyObject* self, PyO
     return pyResult;
 
     Sbk_UserParamHolderFunc_createDouble3DParam_TypeError:
-        const char* overloads[] = {"std::string, std::string", 0};
+        const char* overloads[] = {"unicode, unicode", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createDouble3DParam", overloads);
         return 0;
 }
@@ -462,11 +462,11 @@ static PyObject* Sbk_UserParamHolderFunc_createDoubleParam(PyObject* self, PyObj
 
 
     // Overloaded function decisor
-    // 0: createDoubleParam(std::string,std::string)
+    // 0: createDoubleParam(QString,QString)
     if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
-        overloadId = 0; // createDoubleParam(std::string,std::string)
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+        overloadId = 0; // createDoubleParam(QString,QString)
     }
 
     // Function signature not found.
@@ -474,13 +474,13 @@ static PyObject* Sbk_UserParamHolderFunc_createDoubleParam(PyObject* self, PyObj
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::std::string cppArg1;
+        ::QString cppArg1 = ::QString();
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // createDoubleParam(std::string,std::string)
+            // createDoubleParam(QString,QString)
             DoubleParam * cppResult = cppSelf->createDoubleParam(cppArg0, cppArg1);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], cppResult);
 
@@ -496,7 +496,7 @@ static PyObject* Sbk_UserParamHolderFunc_createDoubleParam(PyObject* self, PyObj
     return pyResult;
 
     Sbk_UserParamHolderFunc_createDoubleParam_TypeError:
-        const char* overloads[] = {"std::string, std::string", 0};
+        const char* overloads[] = {"unicode, unicode", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createDoubleParam", overloads);
         return 0;
 }
@@ -523,11 +523,11 @@ static PyObject* Sbk_UserParamHolderFunc_createFileParam(PyObject* self, PyObjec
 
 
     // Overloaded function decisor
-    // 0: createFileParam(std::string,std::string)
+    // 0: createFileParam(QString,QString)
     if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
-        overloadId = 0; // createFileParam(std::string,std::string)
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+        overloadId = 0; // createFileParam(QString,QString)
     }
 
     // Function signature not found.
@@ -535,13 +535,13 @@ static PyObject* Sbk_UserParamHolderFunc_createFileParam(PyObject* self, PyObjec
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::std::string cppArg1;
+        ::QString cppArg1 = ::QString();
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // createFileParam(std::string,std::string)
+            // createFileParam(QString,QString)
             FileParam * cppResult = cppSelf->createFileParam(cppArg0, cppArg1);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_FILEPARAM_IDX], cppResult);
 
@@ -557,7 +557,7 @@ static PyObject* Sbk_UserParamHolderFunc_createFileParam(PyObject* self, PyObjec
     return pyResult;
 
     Sbk_UserParamHolderFunc_createFileParam_TypeError:
-        const char* overloads[] = {"std::string, std::string", 0};
+        const char* overloads[] = {"unicode, unicode", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createFileParam", overloads);
         return 0;
 }
@@ -584,11 +584,11 @@ static PyObject* Sbk_UserParamHolderFunc_createGroupParam(PyObject* self, PyObje
 
 
     // Overloaded function decisor
-    // 0: createGroupParam(std::string,std::string)
+    // 0: createGroupParam(QString,QString)
     if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
-        overloadId = 0; // createGroupParam(std::string,std::string)
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+        overloadId = 0; // createGroupParam(QString,QString)
     }
 
     // Function signature not found.
@@ -596,13 +596,13 @@ static PyObject* Sbk_UserParamHolderFunc_createGroupParam(PyObject* self, PyObje
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::std::string cppArg1;
+        ::QString cppArg1 = ::QString();
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // createGroupParam(std::string,std::string)
+            // createGroupParam(QString,QString)
             GroupParam * cppResult = cppSelf->createGroupParam(cppArg0, cppArg1);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_GROUPPARAM_IDX], cppResult);
 
@@ -618,7 +618,7 @@ static PyObject* Sbk_UserParamHolderFunc_createGroupParam(PyObject* self, PyObje
     return pyResult;
 
     Sbk_UserParamHolderFunc_createGroupParam_TypeError:
-        const char* overloads[] = {"std::string, std::string", 0};
+        const char* overloads[] = {"unicode, unicode", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createGroupParam", overloads);
         return 0;
 }
@@ -645,11 +645,11 @@ static PyObject* Sbk_UserParamHolderFunc_createInt2DParam(PyObject* self, PyObje
 
 
     // Overloaded function decisor
-    // 0: createInt2DParam(std::string,std::string)
+    // 0: createInt2DParam(QString,QString)
     if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
-        overloadId = 0; // createInt2DParam(std::string,std::string)
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+        overloadId = 0; // createInt2DParam(QString,QString)
     }
 
     // Function signature not found.
@@ -657,13 +657,13 @@ static PyObject* Sbk_UserParamHolderFunc_createInt2DParam(PyObject* self, PyObje
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::std::string cppArg1;
+        ::QString cppArg1 = ::QString();
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // createInt2DParam(std::string,std::string)
+            // createInt2DParam(QString,QString)
             Int2DParam * cppResult = cppSelf->createInt2DParam(cppArg0, cppArg1);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_INT2DPARAM_IDX], cppResult);
 
@@ -679,7 +679,7 @@ static PyObject* Sbk_UserParamHolderFunc_createInt2DParam(PyObject* self, PyObje
     return pyResult;
 
     Sbk_UserParamHolderFunc_createInt2DParam_TypeError:
-        const char* overloads[] = {"std::string, std::string", 0};
+        const char* overloads[] = {"unicode, unicode", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createInt2DParam", overloads);
         return 0;
 }
@@ -706,11 +706,11 @@ static PyObject* Sbk_UserParamHolderFunc_createInt3DParam(PyObject* self, PyObje
 
 
     // Overloaded function decisor
-    // 0: createInt3DParam(std::string,std::string)
+    // 0: createInt3DParam(QString,QString)
     if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
-        overloadId = 0; // createInt3DParam(std::string,std::string)
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+        overloadId = 0; // createInt3DParam(QString,QString)
     }
 
     // Function signature not found.
@@ -718,13 +718,13 @@ static PyObject* Sbk_UserParamHolderFunc_createInt3DParam(PyObject* self, PyObje
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::std::string cppArg1;
+        ::QString cppArg1 = ::QString();
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // createInt3DParam(std::string,std::string)
+            // createInt3DParam(QString,QString)
             Int3DParam * cppResult = cppSelf->createInt3DParam(cppArg0, cppArg1);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_INT3DPARAM_IDX], cppResult);
 
@@ -740,7 +740,7 @@ static PyObject* Sbk_UserParamHolderFunc_createInt3DParam(PyObject* self, PyObje
     return pyResult;
 
     Sbk_UserParamHolderFunc_createInt3DParam_TypeError:
-        const char* overloads[] = {"std::string, std::string", 0};
+        const char* overloads[] = {"unicode, unicode", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createInt3DParam", overloads);
         return 0;
 }
@@ -767,11 +767,11 @@ static PyObject* Sbk_UserParamHolderFunc_createIntParam(PyObject* self, PyObject
 
 
     // Overloaded function decisor
-    // 0: createIntParam(std::string,std::string)
+    // 0: createIntParam(QString,QString)
     if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
-        overloadId = 0; // createIntParam(std::string,std::string)
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+        overloadId = 0; // createIntParam(QString,QString)
     }
 
     // Function signature not found.
@@ -779,13 +779,13 @@ static PyObject* Sbk_UserParamHolderFunc_createIntParam(PyObject* self, PyObject
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::std::string cppArg1;
+        ::QString cppArg1 = ::QString();
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // createIntParam(std::string,std::string)
+            // createIntParam(QString,QString)
             IntParam * cppResult = cppSelf->createIntParam(cppArg0, cppArg1);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_INTPARAM_IDX], cppResult);
 
@@ -801,7 +801,7 @@ static PyObject* Sbk_UserParamHolderFunc_createIntParam(PyObject* self, PyObject
     return pyResult;
 
     Sbk_UserParamHolderFunc_createIntParam_TypeError:
-        const char* overloads[] = {"std::string, std::string", 0};
+        const char* overloads[] = {"unicode, unicode", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createIntParam", overloads);
         return 0;
 }
@@ -828,11 +828,11 @@ static PyObject* Sbk_UserParamHolderFunc_createOutputFileParam(PyObject* self, P
 
 
     // Overloaded function decisor
-    // 0: createOutputFileParam(std::string,std::string)
+    // 0: createOutputFileParam(QString,QString)
     if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
-        overloadId = 0; // createOutputFileParam(std::string,std::string)
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+        overloadId = 0; // createOutputFileParam(QString,QString)
     }
 
     // Function signature not found.
@@ -840,13 +840,13 @@ static PyObject* Sbk_UserParamHolderFunc_createOutputFileParam(PyObject* self, P
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::std::string cppArg1;
+        ::QString cppArg1 = ::QString();
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // createOutputFileParam(std::string,std::string)
+            // createOutputFileParam(QString,QString)
             OutputFileParam * cppResult = cppSelf->createOutputFileParam(cppArg0, cppArg1);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_OUTPUTFILEPARAM_IDX], cppResult);
 
@@ -862,7 +862,7 @@ static PyObject* Sbk_UserParamHolderFunc_createOutputFileParam(PyObject* self, P
     return pyResult;
 
     Sbk_UserParamHolderFunc_createOutputFileParam_TypeError:
-        const char* overloads[] = {"std::string, std::string", 0};
+        const char* overloads[] = {"unicode, unicode", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createOutputFileParam", overloads);
         return 0;
 }
@@ -889,11 +889,11 @@ static PyObject* Sbk_UserParamHolderFunc_createPageParam(PyObject* self, PyObjec
 
 
     // Overloaded function decisor
-    // 0: createPageParam(std::string,std::string)
+    // 0: createPageParam(QString,QString)
     if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
-        overloadId = 0; // createPageParam(std::string,std::string)
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+        overloadId = 0; // createPageParam(QString,QString)
     }
 
     // Function signature not found.
@@ -901,13 +901,13 @@ static PyObject* Sbk_UserParamHolderFunc_createPageParam(PyObject* self, PyObjec
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::std::string cppArg1;
+        ::QString cppArg1 = ::QString();
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // createPageParam(std::string,std::string)
+            // createPageParam(QString,QString)
             PageParam * cppResult = cppSelf->createPageParam(cppArg0, cppArg1);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PAGEPARAM_IDX], cppResult);
 
@@ -923,7 +923,7 @@ static PyObject* Sbk_UserParamHolderFunc_createPageParam(PyObject* self, PyObjec
     return pyResult;
 
     Sbk_UserParamHolderFunc_createPageParam_TypeError:
-        const char* overloads[] = {"std::string, std::string", 0};
+        const char* overloads[] = {"unicode, unicode", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createPageParam", overloads);
         return 0;
 }
@@ -950,12 +950,12 @@ static PyObject* Sbk_UserParamHolderFunc_createParametricParam(PyObject* self, P
 
 
     // Overloaded function decisor
-    // 0: createParametricParam(std::string,std::string,int)
+    // 0: createParametricParam(QString,QString,int)
     if (numArgs == 3
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))
         && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[2])))) {
-        overloadId = 0; // createParametricParam(std::string,std::string,int)
+        overloadId = 0; // createParametricParam(QString,QString,int)
     }
 
     // Function signature not found.
@@ -963,15 +963,15 @@ static PyObject* Sbk_UserParamHolderFunc_createParametricParam(PyObject* self, P
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::std::string cppArg1;
+        ::QString cppArg1 = ::QString();
         pythonToCpp[1](pyArgs[1], &cppArg1);
         int cppArg2;
         pythonToCpp[2](pyArgs[2], &cppArg2);
 
         if (!PyErr_Occurred()) {
-            // createParametricParam(std::string,std::string,int)
+            // createParametricParam(QString,QString,int)
             ParametricParam * cppResult = cppSelf->createParametricParam(cppArg0, cppArg1, cppArg2);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], cppResult);
 
@@ -987,7 +987,7 @@ static PyObject* Sbk_UserParamHolderFunc_createParametricParam(PyObject* self, P
     return pyResult;
 
     Sbk_UserParamHolderFunc_createParametricParam_TypeError:
-        const char* overloads[] = {"std::string, std::string, int", 0};
+        const char* overloads[] = {"unicode, unicode, int", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createParametricParam", overloads);
         return 0;
 }
@@ -1014,11 +1014,11 @@ static PyObject* Sbk_UserParamHolderFunc_createPathParam(PyObject* self, PyObjec
 
 
     // Overloaded function decisor
-    // 0: createPathParam(std::string,std::string)
+    // 0: createPathParam(QString,QString)
     if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
-        overloadId = 0; // createPathParam(std::string,std::string)
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+        overloadId = 0; // createPathParam(QString,QString)
     }
 
     // Function signature not found.
@@ -1026,13 +1026,13 @@ static PyObject* Sbk_UserParamHolderFunc_createPathParam(PyObject* self, PyObjec
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::std::string cppArg1;
+        ::QString cppArg1 = ::QString();
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // createPathParam(std::string,std::string)
+            // createPathParam(QString,QString)
             PathParam * cppResult = cppSelf->createPathParam(cppArg0, cppArg1);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PATHPARAM_IDX], cppResult);
 
@@ -1048,7 +1048,7 @@ static PyObject* Sbk_UserParamHolderFunc_createPathParam(PyObject* self, PyObjec
     return pyResult;
 
     Sbk_UserParamHolderFunc_createPathParam_TypeError:
-        const char* overloads[] = {"std::string, std::string", 0};
+        const char* overloads[] = {"unicode, unicode", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createPathParam", overloads);
         return 0;
 }
@@ -1075,11 +1075,11 @@ static PyObject* Sbk_UserParamHolderFunc_createSeparatorParam(PyObject* self, Py
 
 
     // Overloaded function decisor
-    // 0: createSeparatorParam(std::string,std::string)
+    // 0: createSeparatorParam(QString,QString)
     if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
-        overloadId = 0; // createSeparatorParam(std::string,std::string)
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+        overloadId = 0; // createSeparatorParam(QString,QString)
     }
 
     // Function signature not found.
@@ -1087,13 +1087,13 @@ static PyObject* Sbk_UserParamHolderFunc_createSeparatorParam(PyObject* self, Py
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::std::string cppArg1;
+        ::QString cppArg1 = ::QString();
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // createSeparatorParam(std::string,std::string)
+            // createSeparatorParam(QString,QString)
             SeparatorParam * cppResult = cppSelf->createSeparatorParam(cppArg0, cppArg1);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_SEPARATORPARAM_IDX], cppResult);
 
@@ -1109,7 +1109,7 @@ static PyObject* Sbk_UserParamHolderFunc_createSeparatorParam(PyObject* self, Py
     return pyResult;
 
     Sbk_UserParamHolderFunc_createSeparatorParam_TypeError:
-        const char* overloads[] = {"std::string, std::string", 0};
+        const char* overloads[] = {"unicode, unicode", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createSeparatorParam", overloads);
         return 0;
 }
@@ -1136,11 +1136,11 @@ static PyObject* Sbk_UserParamHolderFunc_createStringParam(PyObject* self, PyObj
 
 
     // Overloaded function decisor
-    // 0: createStringParam(std::string,std::string)
+    // 0: createStringParam(QString,QString)
     if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
-        overloadId = 0; // createStringParam(std::string,std::string)
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+        overloadId = 0; // createStringParam(QString,QString)
     }
 
     // Function signature not found.
@@ -1148,13 +1148,13 @@ static PyObject* Sbk_UserParamHolderFunc_createStringParam(PyObject* self, PyObj
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::std::string cppArg1;
+        ::QString cppArg1 = ::QString();
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // createStringParam(std::string,std::string)
+            // createStringParam(QString,QString)
             StringParam * cppResult = cppSelf->createStringParam(cppArg0, cppArg1);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_STRINGPARAM_IDX], cppResult);
 
@@ -1170,7 +1170,7 @@ static PyObject* Sbk_UserParamHolderFunc_createStringParam(PyObject* self, PyObj
     return pyResult;
 
     Sbk_UserParamHolderFunc_createStringParam_TypeError:
-        const char* overloads[] = {"std::string, std::string", 0};
+        const char* overloads[] = {"unicode, unicode", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createStringParam", overloads);
         return 0;
 }

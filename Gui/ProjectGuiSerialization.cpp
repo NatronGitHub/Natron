@@ -305,7 +305,7 @@ PythonPanelSerialization::initialize(PyPanel* tab,const std::string& func)
         delete *it;
     }
     
-    userData = tab->save_serialization_thread();
+    userData = tab->save_serialization_thread().toStdString();
 }
 
 NATRON_NAMESPACE_EXIT;

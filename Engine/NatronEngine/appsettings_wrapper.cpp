@@ -40,9 +40,9 @@ static PyObject* Sbk_AppSettingsFunc_getParam(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: getParam(std::string)const
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // getParam(std::string)const
+    // 0: getParam(QString)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // getParam(QString)const
     }
 
     // Function signature not found.
@@ -50,11 +50,11 @@ static PyObject* Sbk_AppSettingsFunc_getParam(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getParam(std::string)const
+            // getParam(QString)const
             Param * cppResult = const_cast<const ::AppSettings*>(cppSelf)->getParam(cppArg0);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], cppResult);
 
@@ -70,7 +70,7 @@ static PyObject* Sbk_AppSettingsFunc_getParam(PyObject* self, PyObject* pyArg)
     return pyResult;
 
     Sbk_AppSettingsFunc_getParam_TypeError:
-        const char* overloads[] = {"std::string", 0};
+        const char* overloads[] = {"unicode", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.AppSettings.getParam", overloads);
         return 0;
 }

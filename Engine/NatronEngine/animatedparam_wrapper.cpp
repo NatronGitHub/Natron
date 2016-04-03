@@ -247,9 +247,9 @@ static PyObject* Sbk_AnimatedParamFunc_getExpression(PyObject* self, PyObject* p
             // Begin code injection
 
             bool hasRetVar;
-            std::string cppResult = cppSelf->getExpression(cppArg0,&hasRetVar);
+            QString cppResult = cppSelf->getExpression(cppArg0,&hasRetVar);
             pyResult = PyTuple_New(2);
-            PyTuple_SET_ITEM(pyResult, 0, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult));
+            PyTuple_SET_ITEM(pyResult, 0, Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult));
             PyTuple_SET_ITEM(pyResult, 1, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &hasRetVar));
             return pyResult;
 
@@ -738,14 +738,14 @@ static PyObject* Sbk_AnimatedParamFunc_setExpression(PyObject* self, PyObject* a
 
 
     // Overloaded function decisor
-    // 0: setExpression(std::string,bool,int)
+    // 0: setExpression(QString,bool,int)
     if (numArgs >= 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[1])))) {
         if (numArgs == 2) {
-            overloadId = 0; // setExpression(std::string,bool,int)
+            overloadId = 0; // setExpression(QString,bool,int)
         } else if ((pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[2])))) {
-            overloadId = 0; // setExpression(std::string,bool,int)
+            overloadId = 0; // setExpression(QString,bool,int)
         }
     }
 
@@ -765,7 +765,7 @@ static PyObject* Sbk_AnimatedParamFunc_setExpression(PyObject* self, PyObject* a
                     goto Sbk_AnimatedParamFunc_setExpression_TypeError;
             }
         }
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp[0](pyArgs[0], &cppArg0);
         bool cppArg1;
         pythonToCpp[1](pyArgs[1], &cppArg1);
@@ -773,7 +773,7 @@ static PyObject* Sbk_AnimatedParamFunc_setExpression(PyObject* self, PyObject* a
         if (pythonToCpp[2]) pythonToCpp[2](pyArgs[2], &cppArg2);
 
         if (!PyErr_Occurred()) {
-            // setExpression(std::string,bool,int)
+            // setExpression(QString,bool,int)
             // Begin code injection
 
             bool cppResult = cppSelf->setExpression(cppArg0,cppArg1,cppArg2);
@@ -792,7 +792,7 @@ static PyObject* Sbk_AnimatedParamFunc_setExpression(PyObject* self, PyObject* a
     return pyResult;
 
     Sbk_AnimatedParamFunc_setExpression_TypeError:
-        const char* overloads[] = {"std::string, bool, int = 0", 0};
+        const char* overloads[] = {"unicode, bool, int = 0", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.AnimatedParam.setExpression", overloads);
         return 0;
 }

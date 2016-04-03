@@ -83,8 +83,8 @@ static PyObject* Sbk_StringParamBaseFunc_addAsDependencyOf(PyObject* self, PyObj
 
         if (!PyErr_Occurred()) {
             // addAsDependencyOf(int,Param*,int)
-            std::string cppResult = cppSelf->addAsDependencyOf(cppArg0, cppArg1, cppArg2);
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+            QString cppResult = cppSelf->addAsDependencyOf(cppArg0, cppArg1, cppArg2);
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
         }
     }
 
@@ -141,8 +141,8 @@ static PyObject* Sbk_StringParamBaseFunc_get(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // get()const
-                std::string cppResult = const_cast<const ::StringParamBaseWrapper*>(cppSelf)->get();
-                pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+                QString cppResult = const_cast<const ::StringParamBaseWrapper*>(cppSelf)->get();
+                pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
             }
             break;
         }
@@ -153,8 +153,8 @@ static PyObject* Sbk_StringParamBaseFunc_get(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // get(double)const
-                std::string cppResult = const_cast<const ::StringParamBaseWrapper*>(cppSelf)->get(cppArg0);
-                pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+                QString cppResult = const_cast<const ::StringParamBaseWrapper*>(cppSelf)->get(cppArg0);
+                pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
             }
             break;
         }
@@ -186,8 +186,8 @@ static PyObject* Sbk_StringParamBaseFunc_getDefaultValue(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getDefaultValue()const
-            std::string cppResult = const_cast<const ::StringParamBaseWrapper*>(cppSelf)->getDefaultValue();
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+            QString cppResult = const_cast<const ::StringParamBaseWrapper*>(cppSelf)->getDefaultValue();
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
         }
     }
 
@@ -212,8 +212,8 @@ static PyObject* Sbk_StringParamBaseFunc_getValue(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getValue()const
-            std::string cppResult = const_cast<const ::StringParamBaseWrapper*>(cppSelf)->getValue();
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+            QString cppResult = const_cast<const ::StringParamBaseWrapper*>(cppSelf)->getValue();
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
         }
     }
 
@@ -252,8 +252,8 @@ static PyObject* Sbk_StringParamBaseFunc_getValueAtTime(PyObject* self, PyObject
 
         if (!PyErr_Occurred()) {
             // getValueAtTime(double)const
-            std::string cppResult = const_cast<const ::StringParamBaseWrapper*>(cppSelf)->getValueAtTime(cppArg0);
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+            QString cppResult = const_cast<const ::StringParamBaseWrapper*>(cppSelf)->getValueAtTime(cppArg0);
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
         }
     }
 
@@ -313,14 +313,14 @@ static PyObject* Sbk_StringParamBaseFunc_set(PyObject* self, PyObject* args)
 
 
     // Overloaded function decisor
-    // 0: set(std::string)
-    // 1: set(std::string,double)
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))) {
+    // 0: set(QString)
+    // 1: set(QString,double)
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))) {
         if (numArgs == 1) {
-            overloadId = 0; // set(std::string)
+            overloadId = 0; // set(QString)
         } else if (numArgs == 2
             && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
-            overloadId = 1; // set(std::string,double)
+            overloadId = 1; // set(QString,double)
         }
     }
 
@@ -329,26 +329,26 @@ static PyObject* Sbk_StringParamBaseFunc_set(PyObject* self, PyObject* args)
 
     // Call function/method
     switch (overloadId) {
-        case 0: // set(const std::string & x)
+        case 0: // set(const QString & x)
         {
-            ::std::string cppArg0;
+            ::QString cppArg0 = ::QString();
             pythonToCpp[0](pyArgs[0], &cppArg0);
 
             if (!PyErr_Occurred()) {
-                // set(std::string)
+                // set(QString)
                 cppSelf->set(cppArg0);
             }
             break;
         }
-        case 1: // set(const std::string & x, double frame)
+        case 1: // set(const QString & x, double frame)
         {
-            ::std::string cppArg0;
+            ::QString cppArg0 = ::QString();
             pythonToCpp[0](pyArgs[0], &cppArg0);
             double cppArg1;
             pythonToCpp[1](pyArgs[1], &cppArg1);
 
             if (!PyErr_Occurred()) {
-                // set(std::string,double)
+                // set(QString,double)
                 cppSelf->set(cppArg0, cppArg1);
             }
             break;
@@ -361,7 +361,7 @@ static PyObject* Sbk_StringParamBaseFunc_set(PyObject* self, PyObject* args)
     Py_RETURN_NONE;
 
     Sbk_StringParamBaseFunc_set_TypeError:
-        const char* overloads[] = {"std::string", "std::string, float", 0};
+        const char* overloads[] = {"unicode", "unicode, float", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.StringParamBase.set", overloads);
         return 0;
 }
@@ -378,9 +378,9 @@ static PyObject* Sbk_StringParamBaseFunc_setDefaultValue(PyObject* self, PyObjec
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: setDefaultValue(std::string)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // setDefaultValue(std::string)
+    // 0: setDefaultValue(QString)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // setDefaultValue(QString)
     }
 
     // Function signature not found.
@@ -388,11 +388,11 @@ static PyObject* Sbk_StringParamBaseFunc_setDefaultValue(PyObject* self, PyObjec
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // setDefaultValue(std::string)
+            // setDefaultValue(QString)
             cppSelf->setDefaultValue(cppArg0);
         }
     }
@@ -403,7 +403,7 @@ static PyObject* Sbk_StringParamBaseFunc_setDefaultValue(PyObject* self, PyObjec
     Py_RETURN_NONE;
 
     Sbk_StringParamBaseFunc_setDefaultValue_TypeError:
-        const char* overloads[] = {"std::string", 0};
+        const char* overloads[] = {"unicode", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.StringParamBase.setDefaultValue", overloads);
         return 0;
 }
@@ -420,9 +420,9 @@ static PyObject* Sbk_StringParamBaseFunc_setValue(PyObject* self, PyObject* pyAr
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: setValue(std::string)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // setValue(std::string)
+    // 0: setValue(QString)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // setValue(QString)
     }
 
     // Function signature not found.
@@ -430,11 +430,11 @@ static PyObject* Sbk_StringParamBaseFunc_setValue(PyObject* self, PyObject* pyAr
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // setValue(std::string)
+            // setValue(QString)
             cppSelf->setValue(cppArg0);
         }
     }
@@ -445,7 +445,7 @@ static PyObject* Sbk_StringParamBaseFunc_setValue(PyObject* self, PyObject* pyAr
     Py_RETURN_NONE;
 
     Sbk_StringParamBaseFunc_setValue_TypeError:
-        const char* overloads[] = {"std::string", 0};
+        const char* overloads[] = {"unicode", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.StringParamBase.setValue", overloads);
         return 0;
 }
@@ -471,11 +471,11 @@ static PyObject* Sbk_StringParamBaseFunc_setValueAtTime(PyObject* self, PyObject
 
 
     // Overloaded function decisor
-    // 0: setValueAtTime(std::string,double)
+    // 0: setValueAtTime(QString,double)
     if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
-        overloadId = 0; // setValueAtTime(std::string,double)
+        overloadId = 0; // setValueAtTime(QString,double)
     }
 
     // Function signature not found.
@@ -483,13 +483,13 @@ static PyObject* Sbk_StringParamBaseFunc_setValueAtTime(PyObject* self, PyObject
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp[0](pyArgs[0], &cppArg0);
         double cppArg1;
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // setValueAtTime(std::string,double)
+            // setValueAtTime(QString,double)
             cppSelf->setValueAtTime(cppArg0, cppArg1);
         }
     }
@@ -500,7 +500,7 @@ static PyObject* Sbk_StringParamBaseFunc_setValueAtTime(PyObject* self, PyObject
     Py_RETURN_NONE;
 
     Sbk_StringParamBaseFunc_setValueAtTime_TypeError:
-        const char* overloads[] = {"std::string, float", 0};
+        const char* overloads[] = {"unicode, float", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.StringParamBase.setValueAtTime", overloads);
         return 0;
 }
