@@ -47,7 +47,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QMenuBar>
 #include <QToolButton>
 #include <QProgressDialog>
-#include <QClipBoard>
+#include <QClipboard>
 #include <QVBoxLayout>
 #include <QTreeWidget>
 #include <QTabBar>
