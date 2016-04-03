@@ -270,6 +270,23 @@ private:
 
 private:
     
+    enum NearbyItemEnum
+    {
+        eNearbyItemNone = 0,
+        eNearbyItemNode,
+        eNearbyItemBackdropResizeHandle,
+        eNearbyItemBackdropFrame,
+        eNearbyItemNodeEdge,
+        eNearbyItemEdgeBendPoint,
+        
+    };
+    
+    void getNodesWithinViewportRect(const QRect& rect, std::set<NodeGui*>* nodes) const;
+    
+    NearbyItemEnum hasItemNearbyMouse(const QPoint& mousePosViewport,
+                            NodeGui** node,
+                            Edge** edge);
+    
     void moveRootInternal(double dx, double dy);
     
     void wheelEventInternal(bool ctrlDown,double delta);
