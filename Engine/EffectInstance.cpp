@@ -33,18 +33,20 @@
 #include <cassert>
 #include <stdexcept>
 
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
+#include <boost/bind.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/scoped_ptr.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
 
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QtConcurrentRun>
-#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
-#include <boost/bind.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
+
 #include <SequenceParsing.h>
 
 #include "Global/MemoryInfo.h"
@@ -2587,7 +2589,7 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImageComponen
     
     const EffectInstance::PlaneToRender & firstPlane = tls->currentRenderArgs.outputPlanes.begin()->second;
     bool useCache = firstPlane.fullscaleImage->usesBitMap() || firstPlane.downscaleImage->usesBitMap();
-    if (getNode()->getPluginID().find("uk.co.thefoundry.furnace") != std::string::npos) {
+    if (boost::starts_with(getNode()->getPluginID(), "uk.co.thefoundry.furnace")) {
         //Furnace plug-ins are bugged and do not render properly both planes, just wipe the image.
         useCache = false;
     }
@@ -3958,7 +3960,8 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
 bool
 EffectInstance::getCreateChannelSelectorKnob() const
 {
-    return !isMultiPlanar() && !isReader() && !isWriter() && !isTrackerNode() && getPluginID().find("uk.co.thefoundry.furnace") == std::string::npos;
+    return (!isMultiPlanar() && !isReader() && !isWriter() && !isTrackerNode() &&
+            !boost::starts_with(getPluginID(), "uk.co.thefoundry.furnace"));
 }
 
 int

@@ -31,9 +31,13 @@
 #include <cassert>
 #include <stdexcept>
 
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/math/special_functions/fpclassify.hpp>
+#include <boost/algorithm/string/trim.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
 
 #include <QDebug>
 #include <QThread>
@@ -666,6 +670,8 @@ KnobChoice::onInternalValueChanged(int /*dimension*/, double time, ViewSpec /*vi
     }
 }
 
+#if 0 // dead code
+// replaced by boost::iequals(a, b)
 static bool caseInsensitiveCompare(const std::string& a, const std::string& b)
 {
     if (a.size() != b.size()) {
@@ -681,6 +687,7 @@ static bool caseInsensitiveCompare(const std::string& a, const std::string& b)
     }
     return true;
 }
+#endif
 
 static bool stringEqualFunctor(const std::string& a, const std::string& b, KnobChoiceMergeEntriesData* /*data*/)
 {
@@ -927,7 +934,8 @@ KnobChoice::getActiveEntryText_mt_safe()
 }
 
 
-
+#if 0 // dead code
+// replaced by boost::trim_copy(str)
 static std::string
 trim(std::string const & str)
 {
@@ -946,6 +954,7 @@ trim(std::string const & str)
     return str.substr(first, last - first + 1);
 }
 
+// replaced by std::replace_if(str.begin(), str.end(), ::isspace, ' ');
 static void
 whitespacify(std::string & str)
 {
@@ -955,6 +964,7 @@ whitespacify(std::string & str)
     std::replace( str.begin(), str.end(), '\n', ' ');
     std::replace( str.begin(), str.end(), '\r', ' ');
 }
+#endif
 
 std::string
 KnobChoice::getHintToolTipFull() const
@@ -978,7 +988,7 @@ KnobChoice::getHintToolTipFull() const
     }
     std::stringstream ss;
     if ( !getHintToolTip().empty() ) {
-        ss << trim( getHintToolTip() );
+        ss << boost::trim_copy( getHintToolTip() );
         if (gothelp) {
             // if there are per-option help strings, separate them from main hint
             ss << "\n\n";
@@ -988,10 +998,10 @@ KnobChoice::getHintToolTipFull() const
     if (gothelp) {
         for (U32 i = 0; i < _mergedEntriesHelp.size(); ++i) {
             if ( !_mergedEntriesHelp[i].empty() ) { // no help line is needed if help is unavailable for this option
-                std::string entry = trim(_mergedEntries[i]);
-                whitespacify(entry);
-                std::string help = trim(_mergedEntriesHelp[i]);
-                whitespacify(help);
+                std::string entry = boost::trim_copy(_mergedEntries[i]);
+                std::replace_if(entry.begin(), entry.end(), ::isspace, ' ');
+                std::string help = boost::trim_copy(_mergedEntriesHelp[i]);
+                std::replace_if(help.begin(), help.end(), ::isspace, ' ');
                 ss << entry;
                 ss << ": ";
                 ss << help;
@@ -1012,7 +1022,7 @@ KnobChoice::setValueFromLabel(const std::string & value,
                                bool turnOffAutoKeying)
 {
     for (std::size_t i = 0; i < _mergedEntries.size(); ++i) {
-        if (caseInsensitiveCompare(_mergedEntries[i], value)) {
+        if (boost::iequals(_mergedEntries[i], value)) {
             return setValue(i, ViewIdx(0), dimension, turnOffAutoKeying);
         }
     }
@@ -1029,7 +1039,7 @@ KnobChoice::setDefaultValueFromLabel(const std::string & value,
                                       int dimension)
 {
     for (std::size_t i = 0; i < _mergedEntries.size(); ++i) {
-        if (caseInsensitiveCompare(_mergedEntries[i], value)) {
+        if (boost::iequals(_mergedEntries[i], value)) {
             return setDefaultValue(i, dimension);
         }
     }
@@ -1063,7 +1073,7 @@ KnobChoice::choiceRestoration(KnobChoice* knob,const ChoiceExtraData* data)
     } else {
         // try to find the same label at some other index
         for (std::size_t i = 0; i < _mergedEntries.size(); ++i) {
-            if (caseInsensitiveCompare(_mergedEntries[i], data->_choiceString)) {
+            if (boost::iequals(_mergedEntries[i], data->_choiceString)) {
                 setValue(i);
                 return;
             }
