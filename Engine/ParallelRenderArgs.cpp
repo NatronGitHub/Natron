@@ -493,7 +493,7 @@ StatusEnum EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         }
         
         //Identity but no input, if it's optional ignore, otherwise fail
-        if (callerNode && callerNode != node) {
+        /*if (callerNode && callerNode != node) {
             
             int inputIndex = callerNode->getInputIndex(node.get());
             if (callerNode->getEffectInstance()->isInputOptional(inputIndex)
@@ -503,7 +503,10 @@ StatusEnum EffectInstance::getInputsRoIsFunctor(bool useTransforms,
                 return eStatusOK;
             }
         }
-        return eStatusFailed;
+        return eStatusFailed;*/
+        
+        // EDIT: always accept if identity has no input, it will produce a black image in the worst case scenario.
+        return eStatusOK;
     }
     
     ///Compute the regions of interest in input for this RoI
