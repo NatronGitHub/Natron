@@ -654,7 +654,8 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
     //Now that the locale is set, re-parse the command line arguments because the filenames might have non UTF-8 encodings
     CLArgs args;
     if (!cl.getScriptFilename().isEmpty()) {
-        args = CLArgs(qApp->arguments(), cl.isBackgroundMode());
+        const QStringList& appArgs = qApp->arguments();
+        args = CLArgs(appArgs, cl.isBackgroundMode());
     } else{
         args = cl;
     }
