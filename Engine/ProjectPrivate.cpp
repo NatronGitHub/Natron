@@ -356,7 +356,7 @@ ProjectPrivate::runOnProjectSaveCallback(const std::string& filename, bool autoS
                 }
                 std::string filePath = filename;
                 if (ret) {
-                    filePath = Python::PyString_asString(ret);
+                    filePath = Python::PyStringToStdString(ret);
                     std::string script = "del ret\n";
                     bool ok = Python::interpretPythonScript(script, &err, 0);
                     assert(ok);

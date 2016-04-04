@@ -687,7 +687,7 @@ bool interpretPythonScript(const std::string& script, std::string* error, std::s
 
 //void compilePyScript(const std::string& script,PyObject** code);
 
-std::string PyString_asString(PyObject* obj);
+std::string PyStringToStdString(PyObject* obj);
 
 std::string makeNameScriptFriendlyWithDots(const std::string& str);
     

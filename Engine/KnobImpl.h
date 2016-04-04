@@ -348,15 +348,18 @@ template <>
 std::string
 KnobHelper::pyObjectToType(PyObject* o) const
 {
-#ifndef IS_PYTHON_2
     if (PyUnicode_Check(o)) {
-        return Python::PY3String_asString(o);
-    }
-#else
-    if (PyString_Check(o)) {
+        std::string ret;
+        PyObject* utf8pyobj = PyUnicode_AsUTF8String(o); // newRef
+        if (utf8pyobj) {
+            char* cstr = PyBytes_AS_STRING(utf8pyobj); // Borrowed pointer
+            ret.append(cstr);
+            Py_DECREF(utf8pyobj);
+        }
+        return ret;
+    } else if (PyString_Check(o)) {
         return std::string(PyString_AsString(o));
     }
-#endif
     
     int index = 0;
     if (PyFloat_Check(o)) {
