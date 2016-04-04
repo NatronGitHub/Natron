@@ -4757,7 +4757,7 @@ KnobHolder::endChanges(bool discardRendering)
     
     
     // Increment hash only if significant
-    if (significant && !ignoreHashChangeAndRender && firstKnobChanged) {
+    if (significant && !ignoreHashChangeAndRender) {
         onSignificantEvaluateAboutToBeCalled(firstKnobChanged.get());
     }
     

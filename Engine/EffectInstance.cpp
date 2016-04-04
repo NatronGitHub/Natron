@@ -913,8 +913,9 @@ EffectInstance::getImage(int inputNb,
                     
                 }
                 
-                inputImg = roto->renderMaskFromStroke(attachedStroke, components,
+                inputImg = attachedStroke->renderMaskFromStroke(components,
                                                       time, view, depth, mipMapLevel, rotoSrcRod);
+
                 if ( roto->isDoingNeatRender() ) {
                     getApp()->updateStrokeImage(inputImg, 0, false);
                 }

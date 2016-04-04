@@ -1214,7 +1214,7 @@ Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
     double distNextIn;
     boost::shared_ptr<Image> strokeImage;
     getApp()->getRenderStrokeData(&lastStrokeBbox, &lastStrokePoints, &distNextIn, &strokeImage);
-    double distToNextOut = stroke->renderSingleStroke(stroke, lastStrokeBbox, lastStrokePoints, mipMapLevel, par, components, depth, distNextIn, &strokeImage);
+    double distToNextOut = stroke->renderSingleStroke(lastStrokeBbox, lastStrokePoints, mipMapLevel, par, components, depth, distNextIn, &strokeImage);
 
     getApp()->updateStrokeImage(strokeImage, distToNextOut, true);
     
