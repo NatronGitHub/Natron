@@ -19,8 +19,8 @@ SOURCES += \
 	src/logging.cc \
 	src/raw_logging.cc \
 	src/utilities.cc \
-	src/vlog_is_on.cc \
-	src/windows/port.cc
+        src/vlog_is_on.cc \
+        src/windows/port.cc
 
 HEADERS += \
 	src/utilities.h \
@@ -38,8 +38,8 @@ HEADERS += \
 	src/windows/glog/vlog_is_on.h \
 	src/windows/glog/logging.h \
 	src/windows/glog/log_severity.h \
-	src/windows/port.h \
-	src/windows/config.h \
+        src/windows/port.h \
+        src/windows/config.h
 
 } else {
 SOURCES += \

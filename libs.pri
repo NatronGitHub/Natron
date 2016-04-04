@@ -100,6 +100,12 @@ INCLUDEPATH += $$PWD/libs/gflags/src/gflags
 INCLUDEPATH += $$PWD/libs/glog/src
 win32* {
      INCLUDEPATH += $$PWD/libs/glog/src/windows
+
+    # wingdi.h defines ERROR to be 0. When we call LOG(ERROR), it gets
+    # substituted with 0, and it expands to COMPACT_GOOGLE_LOG_0. To allow us
+    # to keep using this syntax, we define this macro to do the same thing
+    # as COMPACT_GOOGLE_LOG_ERROR.
+     DEFINES += GLOG_NO_ABBREVIATED_SEVERITIES
 }
 !win32* {
     INCLUDEPATH += $$PWD/libs/glog/src
@@ -142,7 +148,7 @@ win32-msvc*{
             !macx: LIBS += -lGLU
         }
 }
-INCLUDEPATH += $$OUT_PWD/../Gui
+INCLUDEPATH += $$PWD/Gui
 DEPENDPATH += $$OUT_PWD/../Gui
 
 win32-msvc*{
@@ -187,10 +193,10 @@ win32-msvc*{
         else:unix: LIBS += -L$$OUT_PWD/../Engine/ -lEngine
 }
 
-INCLUDEPATH += $$OUT_PWD/../Engine
+INCLUDEPATH += $$PWD/Engine
 DEPENDPATH += $$OUT_PWD/../Engine
-INCLUDEPATH += $$OUT_PWD/../libs/SequenceParsing
-INCLUDEPATH += $$OUT_PWD/../Global
+INCLUDEPATH += $$PWD/libs/SequenceParsing
+INCLUDEPATH += $$PWD/Global
 
 win32-msvc*{
         CONFIG(64bit) {
@@ -232,13 +238,13 @@ win32-msvc*{
         else:unix: LIBS += -L$$OUT_PWD/../HostSupport/ -lHostSupport
 }
 
-INCLUDEPATH += $$OUT_PWD/../HostSupport
+INCLUDEPATH += $$PWD/HostSupport
 DEPENDPATH += $$OUT_PWD/../HostSupport
 #OpenFX C api includes and OpenFX c++ layer includes that are located in the submodule under /libs/OpenFX
-INCLUDEPATH += $$OUT_PWD/../libs/OpenFX/include
-INCLUDEPATH += $$OUT_PWD/../libs/OpenFX_extensions
-INCLUDEPATH += $$OUT_PWD/../libs/OpenFX/HostSupport/include
-INCLUDEPATH += $$OUT_PWD/..
+INCLUDEPATH += $$PWD/libs/OpenFX/include
+INCLUDEPATH += $$PWD/libs/OpenFX_extensions
+INCLUDEPATH += $$PWD/libs/OpenFX/HostSupport/include
+INCLUDEPATH += $$PWD
 
 win32-msvc*{
         CONFIG(64bit) {
@@ -263,7 +269,7 @@ win32-msvc*{
 # LibMV
 static-libmv {
 CONFIG += static-ceres
-INCLUDEPATH += $$OUT_PWD/../libs/libmv
+INCLUDEPATH += $$PWD/libs/libmv
 DEPENDPATH += $$OUT_PWD/../libs/libmv
 
 win32-msvc*{
@@ -307,7 +313,7 @@ win32-msvc*{
 # openMVG
 static-openmvg {
 CONFIG += static-ceres
-INCLUDEPATH += $$OUT_PWD/../libs/openMVG
+INCLUDEPATH += $$PWD/libs/openMVG
 DEPENDPATH += $$OUT_PWD/../libs/openMVG
 
 win32-msvc*{
@@ -484,7 +490,7 @@ win32-msvc*{
         else:unix: LIBS += -L$$OUT_PWD/../BreakpadClient/ -lBreakpadClient
 }
 
-BREAKPAD_PATH = $$OUT_PWD/../google-breakpad/src
+BREAKPAD_PATH = $$PWD/google-breakpad/src
 INCLUDEPATH += $$BREAKPAD_PATH
 DEPENDPATH += $$BREAKPAD_PATH
 
