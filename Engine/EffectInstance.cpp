@@ -895,7 +895,7 @@ EffectInstance::getImage(int inputNb,
             if (duringPaintStroke) {
                 inputImg = getNode()->getOrRenderLastStrokeImage(mipMapLevel, par, components, depth);
             } else {
-                inputImg = roto->renderMaskFromStroke(attachedStroke, components,
+                inputImg = attachedStroke->renderMaskFromStroke(components,
                                                       time, view, depth, mipMapLevel);
                 if ( roto->isDoingNeatRender() ) {
                     getApp()->updateStrokeImage(inputImg, 0, false);

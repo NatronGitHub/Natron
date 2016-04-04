@@ -95,8 +95,7 @@ public:
     std::vector<cairo_pattern_t*> getPatternCache() const;
     void updatePatternCache(const std::vector<cairo_pattern_t*>& cache);
     
-    double renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
-                              const RectD& rod,
+    double renderSingleStroke(const RectD& rod,
                               const std::list<std::pair<Point,double> >& points,
                               unsigned int mipmapLevel,
                               double par,

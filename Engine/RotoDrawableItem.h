@@ -202,6 +202,26 @@ public:
 
     virtual std::string getCacheID() const OVERRIDE FINAL;
     
+    boost::shared_ptr<Image> renderMaskFromStroke(const ImageComponents& components,
+                                                  const double time,
+                                                  const ViewIdx view,
+                                                  const ImageBitDepthEnum depth,
+                                                  const unsigned int mipmapLevel);
+
+    
+private:
+    
+    boost::shared_ptr<Image> renderMaskInternal(const RectI & roi,
+                                                const ImageComponents& components,
+                                                const double startTime,
+                                                const double endTime,
+                                                const double timeStep,
+                                                const double time,
+                                                const ImageBitDepthEnum depth,
+                                                const unsigned int mipmapLevel,
+                                                const std::list<std::list<std::pair<Point,double> > >& strokes,
+                                                const boost::shared_ptr<Image> &image);
+    
 Q_SIGNALS:
 
 #ifdef NATRON_ROTO_INVERTIBLE

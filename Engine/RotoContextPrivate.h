@@ -741,6 +741,9 @@ struct RotoDrawableItemPrivate
     boost::shared_ptr<KnobDouble> customOffset;
 #endif
     std::list<KnobPtr > knobs; //< list for easy access to all knobs
+    
+    //Used to prevent 2 threads from writing the same image in the rotocontext
+    mutable QMutex cacheAccessMutex;
 
     RotoDrawableItemPrivate(bool isPaintingNode)
     : effectNode()
@@ -789,6 +792,7 @@ struct RotoDrawableItemPrivate
     , timeOffset(new KnobInt(NULL, kRotoBrushTimeOffsetParamLabel, 1, false))
     , timeOffsetMode(new KnobChoice(NULL, kRotoBrushTimeOffsetModeParamLabel, 1, false))
     , knobs()
+    , cacheAccessMutex()
     {
         opacity.reset(new KnobDouble(NULL, kRotoOpacityParamLabel, 1, false));
         opacity->setHintToolTip(kRotoOpacityHint);
@@ -1328,8 +1332,7 @@ struct RotoContextPrivate
     boost::shared_ptr<RotoItem> lastInsertedItem;
     boost::shared_ptr<RotoItem> lastLockedItem;
     
-    //Used to prevent 2 threads from writing the same image in the rotocontext
-    mutable QMutex cacheAccessMutex;
+
     
     mutable QMutex doingNeatRenderMutex;
     QWaitCondition doingNeatRenderCond;
@@ -2143,21 +2146,21 @@ struct RotoContextPrivate
                         std::vector<cairo_pattern_t*>& dotPatterns,
                         const std::list<std::list<std::pair<Point,double> > >& strokes,
                         double distToNext,
-                        const boost::shared_ptr<RotoDrawableItem>& stroke,
+                        const RotoDrawableItem* stroke,
                         bool doBuildup,
                         double opacity, 
                         double time,
                         unsigned int mipmapLevel);
     
-    void renderBezier(cairo_t* cr,const Bezier* bezier, double opacity, double time, unsigned int mipmapLevel);
+    static void renderBezier(cairo_t* cr,const Bezier* bezier, double opacity, double time, unsigned int mipmapLevel);
     
-    void renderFeather(const Bezier* bezier,double time, unsigned int mipmapLevel, bool inverted, double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t* mesh);
+    static void renderFeather(const Bezier* bezier,double time, unsigned int mipmapLevel, bool inverted, double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t* mesh);
 
-    void renderInternalShape(double time,unsigned int mipmapLevel,double shapeColor[3], double opacity,const Transform::Matrix3x3& transform, cairo_t* cr, cairo_pattern_t* mesh, const BezierCPs & cps);
+    static void renderInternalShape(double time,unsigned int mipmapLevel,double shapeColor[3], double opacity,const Transform::Matrix3x3& transform, cairo_t* cr, cairo_pattern_t* mesh, const BezierCPs & cps);
     
     static void bezulate(double time,const BezierCPs& cps,std::list<BezierCPs>* patches);
 
-    void applyAndDestroyMask(cairo_t* cr,cairo_pattern_t* mesh);
+    static void applyAndDestroyMask(cairo_t* cr,cairo_pattern_t* mesh);
 };
 
 NATRON_NAMESPACE_EXIT;

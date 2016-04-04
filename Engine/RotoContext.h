@@ -218,40 +218,7 @@ private:
     
     void getItemsRegionOfDefinition(const std::list<boost::shared_ptr<RotoItem> >& items, double time, ViewIdx view, RectD* rod) const;
     
-public:
-    
-    
-   
-    boost::shared_ptr<Image> renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& stroke,
-                                                          const ImageComponents& components,
-                                                          const double time,
-                                                          const ViewIdx view,
-                                                          const ImageBitDepthEnum depth,
-                                                          const unsigned int mipmapLevel);
-    
-    double renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
-                            const RectD& rod,
-                            const std::list<std::pair<Point,double> >& points,
-                            unsigned int mipmapLevel,
-                            double par,
-                            const ImageComponents& components,
-                            ImageBitDepthEnum depth,
-                            double distToNext,
-                            boost::shared_ptr<Image> *wholeStrokeImage);
-    
-private:
-    
-    boost::shared_ptr<Image> renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& stroke,
-                                                        const RectI & roi,
-                                                        const ImageComponents& components,
-                                                        const double startTime,
-                                                        const double endTime,
-                                                        const double timeStep,
-                                                        const double time,
-                                                        const ImageBitDepthEnum depth,
-                                                        const unsigned int mipmapLevel,
-                                                        const std::list<std::list<std::pair<Point,double> > >& strokes,
-                                                        const boost::shared_ptr<Image> &image);
+  
     
 public:
     
