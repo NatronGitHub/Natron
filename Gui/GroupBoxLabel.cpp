@@ -22,7 +22,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "KnobGuiGroup.h"
+#include "GroupBoxLabel.h"
 
 #include <cfloat>
 #include <algorithm> // min, max
@@ -63,11 +63,11 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ComboBox.h"
 #include "Gui/CurveGui.h"
 #include "Gui/DockablePanel.h"
-#include "Gui/GroupBoxLabel.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/KnobGuiGroup.h"
 #include "Gui/KnobUndoCommand.h"
 #include "Gui/Label.h"
 #include "Gui/NewLayerDialog.h"

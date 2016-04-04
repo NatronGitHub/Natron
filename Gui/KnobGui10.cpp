@@ -22,7 +22,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Gui/KnobGui.h"
+
+#include "KnobGui.h"
 
 #include <cassert>
 #include <stdexcept>
