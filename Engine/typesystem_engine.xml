@@ -37,68 +37,7 @@
     <primitive-type name="unsigned long"/>
     <primitive-type name="long long"/>
     <primitive-type name="unsigned long long"/>
-    <primitive-type name="std::string"  target-lang-api-name="PyUnicode">
-        <conversion-rule>
-            <native-to-target>
-                return PyUnicode_FromString(%in.c_str());
-            </native-to-target>
-            <target-to-native>
-                <add-conversion type="PyUnicode">
-                    std::string %out;
-                    
-                    if (PyString_Check(%in)) {
-                        char* buf = PyString_AsString(obj);
-                        if (buf) {
-                            %out += std::string(buf);
-                        }
-                    } else if (PyUnicode_Check(%in)) {
-                        /*PyObject * temp_bytes = PyUnicode_AsEncodedString(%in, "ASCII", "strict"); // Owned reference
-                        if (temp_bytes != NULL) {
-                            char* cstr = PyBytes_AS_STRING(temp_bytes); // Borrowed pointer
-                            %out.append(cstr);
-                            Py_DECREF(temp_bytes);
-                        }*/
-                        PyObject* utf8pyobj = PyUnicode_AsUTF8String(%in); // newRef
-                        if (utf8pyobj) {
-                            char* cstr = PyBytes_AS_STRING(utf8pyobj); // Borrowed pointer
-                            %out.append(cstr);
-                            Py_DECREF(utf8pyobj);
-                        }
-                    } else if (PyBytes_Check(%in)) {
-                        char* cstr = PyBytes_AS_STRING(%in); // Borrowed pointer
-                        %out.append(cstr);
-                    }
-                    return %out;
-                </add-conversion>
-                <add-conversion type="PyString">
-                    std::string %out;
-                    
-                    if (PyString_Check(%in)) {
-                    char* buf = PyString_AsString(obj);
-                    if (buf) {
-                    %out += std::string(buf);
-                    }
-                    } else if (PyUnicode_Check(%in)) {
-                    /*PyObject * temp_bytes = PyUnicode_AsEncodedString(%in, "ASCII", "strict"); // Owned reference
-                    if (temp_bytes != NULL) {
-                    char* cstr = PyBytes_AS_STRING(temp_bytes); // Borrowed pointer
-                    %out.append(cstr);
-                    Py_DECREF(temp_bytes);
-                    }*/
-                    PyObject* utf8pyobj = PyUnicode_AsUTF8String(%in); // newRef
-                    if (utf8pyobj) {
-                    char* cstr = PyBytes_AS_STRING(utf8pyobj); // Borrowed pointer
-                    %out.append(cstr);
-                    Py_DECREF(utf8pyobj);
-                    }
-                    } else if (PyBytes_Check(%in)) {
-                    char* cstr = PyBytes_AS_STRING(%in); // Borrowed pointer
-                    %out.append(cstr);
-                    }
-                    return %out;
-                </add-conversion>
-            </target-to-native>
-        </conversion-rule>
+    <primitive-type name="std::string">
     </primitive-type>
     <primitive-type name="std::size_t" target-lang-api-name="PyLong">
         <conversion-rule>
