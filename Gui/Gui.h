@@ -36,6 +36,7 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QMainWindow>
+#include <QUrl>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -111,7 +112,10 @@ public:
     void setLastSelectedGraph(NodeGraph* graph);
 
     NodeGraph* getLastSelectedGraph() const;
-
+    
+    void setActiveViewer(ViewerTab* viewer);
+    ViewerTab* getActiveViewer() const;
+    
     boost::shared_ptr<NodeCollection> getLastSelectedNodeCollection() const;
 
     /**
@@ -426,6 +430,7 @@ public:
     bool progressUpdate(const NodePtr& node,double t);
     
     void ensureProgressPanelVisible();
+    void ensureScriptEditorVisible();
 
     /*Useful function that saves on disk the image in png format.
        The name of the image will be the hash key of the image.*/
@@ -566,6 +571,9 @@ public:
 
     bool saveProjectAs(const std::string& filename);
 
+    static void fileSequencesFromUrls(const QList<QUrl>& urls, std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> >* sequences);
+    
+    void handleOpenFilesFromUrls(const QList<QUrl>& urls, const QPoint& globalPos);
     
 protected:
     // Reimplemented Protected Functions
@@ -740,6 +748,11 @@ private:
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
+    
+    virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE FINAL;
+    virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
+    virtual void dragLeaveEvent(QDragLeaveEvent* e) OVERRIDE FINAL;
+    virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
     
     boost::scoped_ptr<GuiPrivate> _imp;
 };

@@ -378,7 +378,7 @@ NodeGui::restoreStateAfterCreation()
 {
     NodePtr internalNode = getNode();
     ///Refresh the disabled knob
-    
+
     setColorFromGrouping();
     boost::shared_ptr<KnobBool> disabledknob = internalNode->getDisabledKnob();
     if (disabledknob && disabledknob->getValue()) {
@@ -390,6 +390,7 @@ NodeGui::restoreStateAfterCreation()
     }
     ///Refresh the name in the line edit
     onInternalNameChanged( QString::fromUtf8(internalNode->getLabel().c_str()) );
+    onOutputLayerChanged();
     internalNode->refreshIdentityState();
     onPersistentMessageChanged();
 }
@@ -2388,6 +2389,47 @@ static QString makeLinkString(Node* masterNode,KnobI* master,Node* slaveNode,Kno
 }
 
 void
+NodeGui::onKnobExpressionChanged(const KnobGui* knob)
+{
+    KnobPtr internalKnob = knob->getKnob();
+    
+    for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it != _knobsLinks.end(); ++it) {
+        
+        int totalLinks = 0;
+        int totalInvalid = 0;
+        
+        bool isCurrentLink = false;
+        
+        for (std::list<LinkedKnob>::iterator it2 = it->second.knobs.begin(); it2 != it->second.knobs.end(); ++it2) {
+            KnobPtr slave = it2->slave.lock();
+            if (slave == internalKnob) {
+                isCurrentLink = true;
+            }
+            int ndims = slave->getDimension();
+            int invalid = 0;
+            for (int i = 0; i < ndims; ++i) {
+                if (!slave->getExpression(i).empty() && !slave->isExpressionValid(i, 0)) {
+                    ++invalid;
+                }
+            }
+            totalLinks += it2->dimensions.size();
+            totalInvalid += invalid;
+            
+            it2->linkInValid = invalid;
+            
+        }
+        if (isCurrentLink) {
+            if (totalLinks > 0) {
+                it->second.arrow->setVisible(totalLinks > totalInvalid);
+            }
+            break;
+        }
+    }
+    
+    
+}
+
+void
 NodeGui::onKnobsLinksChanged()
 {
     NodePtr node = getNode();
@@ -2424,26 +2466,30 @@ NodeGui::onKnobsLinksChanged()
       
         KnobGuiLinks::iterator foundGuiLink = masterNode ? _knobsLinks.find(it->masterNode) : _knobsLinks.end();
         if (foundGuiLink != _knobsLinks.end()) {
-            
-            
             //We already have a link to the master node
-            bool found = false;
+            std::list<LinkedKnob>::iterator found = foundGuiLink->second.knobs.end();
 
-            for (std::list<std::pair<KnobI*,KnobI*> >::iterator it2 = foundGuiLink->second.knobs.begin(); it2 != foundGuiLink->second.knobs.end(); ++it2) {
-                if (it2->first == it->slave && it2->second == it->master) {
-                    found = true;
+            for (std::list<LinkedKnob>::iterator it2 = foundGuiLink->second.knobs.begin(); it2 != foundGuiLink->second.knobs.end(); ++it2) {
+                if (it2->slave.lock() == it->slave.lock() && it2->master.lock() == it->master.lock()) {
+                    found = it2;
                     break;
                 }
             }
-            if (!found) {
+            if (found == foundGuiLink->second.knobs.end()) {
                 ///There's no link for this knob, add info to the tooltip of the link arrow
-
-                foundGuiLink->second.knobs.push_back(std::make_pair(it->slave,it->master));
+                LinkedKnob k;
+                k.slave = it->slave;
+                k.master = it->master;
+                k.dimensions.insert(it->dimension);
+                k.linkInValid = 0;
+                foundGuiLink->second.knobs.push_back(k);
                 QString fullTooltip;
-                for (std::list<std::pair<KnobI*,KnobI*> >::iterator it2 = foundGuiLink->second.knobs.begin(); it2 != foundGuiLink->second.knobs.end(); ++it2) {
-                    QString tt = makeLinkString(masterNode.get(),it2->second,node.get(),it2->first);
+                for (std::list<LinkedKnob>::iterator it2 = foundGuiLink->second.knobs.begin(); it2 != foundGuiLink->second.knobs.end(); ++it2) {
+                    QString tt = makeLinkString(masterNode.get(),it2->master.lock().get(),node.get(),it2->slave.lock().get());
                     fullTooltip.append(tt);
                 }
+            } else {
+                found->dimensions.insert(it->dimension);
             }
         } else {
 
@@ -2452,20 +2498,25 @@ NodeGui::onKnobsLinksChanged()
                 boost::shared_ptr<NodeGuiI> master_i = masterNode->getNodeGui();
                 NodeGuiPtr master = boost::dynamic_pointer_cast<NodeGui>(master_i);
                 assert(master);
+                
                 LinkArrow* arrow = new LinkArrow( master,thisShared,parentItem() );
                 arrow->setWidth(2);
                 arrow->setColor( QColor(143,201,103) );
                 arrow->setArrowHeadColor( QColor(200,255,200) );
 
-                QString tt = makeLinkString(masterNode.get(),it->master,node.get(),it->slave);
+                QString tt = makeLinkString(masterNode.get(),it->master.lock().get(),node.get(),it->slave.lock().get());
                 arrow->setToolTip(tt);
                 if ( !getDagGui()->areKnobLinksVisible() ) {
                     arrow->setVisible(false);
                 }
-                LinkedDim guilink;
-                guilink.knobs.push_back(std::make_pair(it->slave,it->master));
+                LinkedDim& guilink = _knobsLinks[it->masterNode];
                 guilink.arrow = arrow;
-                _knobsLinks.insert(std::make_pair(it->masterNode,guilink));
+                LinkedKnob k;
+                k.slave = it->slave;
+                k.master = it->master;
+                k.dimensions.insert(it->dimension);
+                k.linkInValid = 0;
+                guilink.knobs.push_back(k);
             }
         }
 

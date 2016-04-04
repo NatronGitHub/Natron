@@ -77,6 +77,8 @@ struct ViewerTabPrivate
     //ComboBox* viewerLayers;
     ComboBox* layerChoice;
     ComboBox* alphaChannelChoice;
+    mutable QMutex currentLayerMutex;
+    QString currentLayerChoice,currentAlphaLayerChoice;
     ChannelsComboBox* viewerChannels;
     bool viewerChannelsAutoswitchedToAlpha;
     ComboBox* zoomCombobox;

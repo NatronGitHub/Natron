@@ -520,6 +520,7 @@ public:
     
     bool isSpawnedFromCrashReporter() const;
     
+    virtual void reloadScriptEditorFonts() {}
     
 public Q_SLOTS:
     
@@ -686,7 +687,9 @@ bool interpretPythonScript(const std::string& script, std::string* error, std::s
 
 //void compilePyScript(const std::string& script,PyObject** code);
 
-std::string PY3String_asString(PyObject* obj);
+std::string PyString_asString(PyObject* obj);
+
+std::string makeNameScriptFriendlyWithDots(const std::string& str);
     
 std::string makeNameScriptFriendly(const std::string& str);
     

@@ -124,6 +124,9 @@ struct AppInstancePrivate
     mutable QMutex renderQueueMutex;
     std::list<RenderQueueItem> renderQueue, activeRenders;
     
+    mutable QMutex invalidExprKnobsMutex;
+    std::list<KnobWPtr> invalidExprKnobs;
+    
     AppInstancePrivate(int appID,
                        AppInstance* app)
     : _publicInterface(app)
@@ -136,6 +139,9 @@ struct AppInstancePrivate
     , _creatingTree(0)
     , renderQueueMutex()
     , renderQueue()
+    , activeRenders()
+    , invalidExprKnobsMutex()
+    , invalidExprKnobs()
     {
     }
     
@@ -739,7 +745,7 @@ AppInstance::loadPythonScript(const QFileInfo& file)
         if (errCatcher) {
             errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
             assert(errorObj);
-            error = NATRON_PYTHON_NAMESPACE::PY3String_asString(errorObj);
+            error = NATRON_PYTHON_NAMESPACE::PyString_asString(errorObj);
             PyObject* unicode = PyUnicode_FromString("");
             PyObject_SetAttrString(errCatcher, "value", unicode);
             Py_DECREF(errorObj);
@@ -842,7 +848,11 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
         if (!moduleName.isEmpty()) {
             setGroupLabelIDAndVersion(node,modulePath, moduleName);
         }
-     
+        
+        // If there's a serialization, restore the serialization of the group node because the Python script probably overriden any state
+        if (serialization) {
+            containerNode->loadKnobs(*serialization);
+        }
         
     } //FlagSetter fs(true,&_imp->_creatingGroup,&_imp->creatingGroupMutex);
     
@@ -890,7 +900,7 @@ AppInstance::createReader(const std::string& filename, CreateNodeReason reason, 
 #else
     
     std::map<std::string,std::string> readersForFormat;
-    appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&readersForFormat);
+    appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
     QString fileCpy = QString::fromUtf8(filename.c_str());
     std::string ext = QtCompat::removeFileExtension(fileCpy).toLower().toStdString();
     std::map<std::string,std::string>::iterator found = readersForFormat.find(ext);
@@ -1903,6 +1913,55 @@ AppInstance::newProject()
     CLArgs cl;
     AppInstance* app = appPTR->newAppInstance(cl, false);
     return app;
+}
+
+void
+AppInstance::addInvalidExpressionKnob(const KnobPtr& knob)
+{
+    QMutexLocker k(&_imp->invalidExprKnobsMutex);
+    for (std::list<KnobWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it!=_imp->invalidExprKnobs.end(); ++it) {
+        if (it->lock().get()) {
+            return;
+        }
+    }
+    _imp->invalidExprKnobs.push_back(knob);
+}
+
+void
+AppInstance::removeInvalidExpressionKnob(const KnobI* knob)
+{
+    QMutexLocker k(&_imp->invalidExprKnobsMutex);
+    for (std::list<KnobWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it!=_imp->invalidExprKnobs.end(); ++it) {
+        if (it->lock().get() == knob) {
+            _imp->invalidExprKnobs.erase(it);
+            break;
+        }
+    }
+}
+
+void
+AppInstance::recheckInvalidExpressions()
+{
+    std::list<KnobPtr> knobs;
+    {
+        QMutexLocker k(&_imp->invalidExprKnobsMutex);
+        for (std::list<KnobWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it!=_imp->invalidExprKnobs.end(); ++it) {
+            KnobPtr k = it->lock();
+            if (k) {
+                knobs.push_back(k);
+            }
+        }
+    }
+    std::list<KnobWPtr> newInvalidKnobs;
+    for (std::list<KnobPtr>::iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        if (!(*it)->checkInvalidExpressions()) {
+            newInvalidKnobs.push_back(*it);
+        }
+    }
+    {
+        QMutexLocker k(&_imp->invalidExprKnobsMutex);
+        _imp->invalidExprKnobs = newInvalidKnobs;
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

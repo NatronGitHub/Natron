@@ -72,6 +72,7 @@ struct ProjectPrivate
     boost::shared_ptr<KnobChoice> formatKnob; //< built from builtinFormats & additionalFormats
     boost::shared_ptr<KnobButton> addFormatKnob;
     boost::shared_ptr<KnobPath> viewsList;
+    boost::shared_ptr<KnobLayers> defaultLayersList;
     boost::shared_ptr<KnobButton> setupForStereoButton;
     boost::shared_ptr<KnobBool> previewMode; //< auto or manual
     boost::shared_ptr<KnobChoice> colorSpace8u;
@@ -113,7 +114,7 @@ struct ProjectPrivate
     bool restoreFromSerialization(const ProjectSerialization & obj,const QString& name,const QString& path, bool* mustSave);
 
     bool findFormat(int index,Format* format) const;
-    
+    bool findFormat(const std::string& formatSpec,Format* format) const;
     /**
      * @brief Auto fills the project directory parameter given the project file path
      **/
@@ -154,7 +155,7 @@ struct ProjectPrivate
     generateFormatFromString(const QString& spec, Format* f)
     {
         QStringList splits = spec.split(QLatin1Char(' '));
-        if (splits.size() != 3) {
+        if (splits.size() < 2 || splits.size() > 3) {
             return false;
         }
 
@@ -169,7 +170,9 @@ struct ProjectPrivate
         f->x2 = sizes[0].toInt();
         f->y2 = sizes[1].toInt();
         
-        f->setPixelAspectRatio(splits[2].toDouble());
+        if (splits.size() > 2) {
+            f->setPixelAspectRatio(splits[2].toDouble());
+        }
         return true;
     }
     

@@ -72,6 +72,12 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
+    enum KnobWarningEnum
+    {
+        eKnobWarningExpressionInvalid = 0,
+        eKnobWarningChoiceMenuOutOfDate
+    };
+
 
     KnobGui(const KnobPtr& knob,
             DockablePanel* container);
@@ -117,6 +123,7 @@ public:
                    QWidget* fieldContainer,
                    QWidget* labelContainer,
                    KnobClickableLabel* label,
+                   Label* warningIndicator,
                    QHBoxLayout* layout,
                    bool isOnNewLine,
                    const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine);
@@ -275,6 +282,8 @@ public:
     
     virtual bool getAllDimensionsVisible() const OVERRIDE { return true; }
 
+    void setWarningValue(KnobWarningEnum warn,const QString& value);
+
 public Q_SLOTS:
     
     void onRemoveAliasLinkActionTriggered();
@@ -425,6 +434,8 @@ protected:
     virtual void reflectModificationsState() {}
     
 private:
+
+    void refreshKnobWarningIndicatorVisibility();
 
     void updateGuiInternal(int dimension);
 

@@ -50,13 +50,13 @@ class DialogParamHolder : public NamedKnobHolder
     
 public:
     
-    DialogParamHolder(const std::string& uniqueID,AppInstance* app);
+    DialogParamHolder(const QString& uniqueID,AppInstance* app);
     
     virtual ~DialogParamHolder();
     
     virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL;
     
-    void setParamChangedCallback(const std::string& callback);
+    void setParamChangedCallback(const QString& callback);
     
     
 private:
@@ -86,9 +86,9 @@ public:
     
     virtual ~PyModalDialog();
     
-    Param* getParam(const std::string& scriptName) const;
+    Param* getParam(const QString& scriptName) const;
         
-    void setParamChangedCallback(const std::string& callback);
+    void setParamChangedCallback(const QString& callback);
     
     void insertWidget(int index, QWidget* widget);
     
@@ -111,25 +111,25 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     
 public:
     
-    PyPanel(const std::string& scriptName,const std::string& label,bool useUserParameters,GuiApp* app);
+    PyPanel(const QString& scriptName,const QString& label,bool useUserParameters,GuiApp* app);
     
     virtual ~PyPanel();
         
-    std::string save_serialization_thread() const;
+    QString save_serialization_thread() const;
     
-    virtual void restore(const std::string& /*data*/) {}
+    virtual void restore(const QString& /*data*/) {}
     
-    std::string getPanelScriptName() const;
+    QString getPanelScriptName() const;
     
-    void setPanelLabel(const std::string& label);
+    void setPanelLabel(const QString& label);
     
-    std::string getPanelLabel() const;
+    QString getPanelLabel() const;
     
-    Param* getParam(const std::string& scriptName) const;
+    Param* getParam(const QString& scriptName) const;
     
     std::list<Param*> getParams() const;
     
-    void setParamChangedCallback(const std::string& callback);
+    void setParamChangedCallback(const QString& callback);
     
     void insertWidget(int index, QWidget* widget);
     
@@ -137,7 +137,7 @@ public:
     
 protected:
     
-    virtual std::string save() { return std::string(); }
+    virtual QString save() { return QString(); }
     
     void onUserDataChanged();
     
@@ -175,7 +175,7 @@ public :
     
     void closeTab(int index);
     
-    std::string getTabLabel(int index) const;
+    QString getTabLabel(int index) const;
     
     int count();
     
@@ -199,7 +199,7 @@ public :
     
     void closeCurrentTab();
     
-    std::string getScriptName() const;
+    QString getScriptName() const;
 };
 
 NATRON_PYTHON_NAMESPACE_EXIT;

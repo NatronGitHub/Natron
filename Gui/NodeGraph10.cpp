@@ -44,6 +44,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/Edge.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/NodeGui.h"
 #include "Gui/NodeSettingsPanel.h"
@@ -52,6 +53,107 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 NATRON_NAMESPACE_ENTER;
 
+static NodeGui* isNodeGuiChild(QGraphicsItem* item)
+{
+    NodeGui* n = dynamic_cast<NodeGui*>(item);
+    if (n) {
+        return n;
+    }
+    QGraphicsItem* parent = item->parentItem();
+    if (parent) {
+        return isNodeGuiChild(parent);
+    } else {
+        return 0;
+    }
+}
+
+static Edge* isEdgeChild(QGraphicsItem* item)
+{
+    Edge* n = dynamic_cast<Edge*>(item);
+    if (n) {
+        return n;
+    }
+    QGraphicsItem* parent = item->parentItem();
+    if (parent) {
+        return isEdgeChild(parent);
+    } else {
+        return 0;
+    }
+}
+
+void
+NodeGraph::getNodesWithinViewportRect(const QRect& rect, std::set<NodeGui*>* nodes) const
+{
+    QList<QGraphicsItem*> selectedItems = items(rect, Qt::IntersectsItemShape);
+    for (QList<QGraphicsItem*>::Iterator it = selectedItems.begin(); it!=selectedItems.end(); ++it) {
+        NodeGui* n = isNodeGuiChild(*it);
+        if (n) {
+            nodes->insert(n);
+        }
+    }
+}
+
+NodeGraph::NearbyItemEnum
+NodeGraph::hasItemNearbyMouse(const QPoint& mousePosViewport,
+                              NodeGui** node,
+                              Edge** edge)
+{
+    assert(node && edge);
+    *node = 0;
+    *edge = 0;
+    double tolerance = TO_DPIX(10.);
+    QRect toleranceRect(mousePosViewport.x() - tolerance / 2.,
+                        mousePosViewport.y() - tolerance / 2.,
+                        tolerance,
+                        tolerance);
+    QList<QGraphicsItem*> selectedItems = items(toleranceRect, Qt::IntersectsItemShape);
+    std::set<Edge*> edges;
+    std::set<NodeGui*> nodes;
+    for (QList<QGraphicsItem*>::Iterator it = selectedItems.begin(); it!=selectedItems.end(); ++it) {
+        Edge* isEdge = isEdgeChild(*it);
+        if (isEdge) {
+            edges.insert(isEdge);
+        }
+        NodeGui* n = isNodeGuiChild(*it);
+        if (n) {
+            nodes.insert(n);
+        }
+    }
+  
+    for (std::set<NodeGui*>::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        if ( (*it)->isVisible() && (*it)->isActive() ) {
+            
+            QPointF localPoint = (*it)->mapFromScene(mapToScene(mousePosViewport));
+            BackdropGui* isBd = dynamic_cast<BackdropGui*>(*it);
+            if (isBd) {
+                if (isBd->isNearbyNameFrame(localPoint)) {
+                    *node = *it;
+                    return eNearbyItemBackdropFrame;
+                } else if (isBd->isNearbyResizeHandle(localPoint)) {
+                    *node = *it;
+                    return eNearbyItemBackdropResizeHandle;
+                }
+            } else {
+                *node = *it;
+                return eNearbyItemNode;
+            }
+            
+        }
+
+    }
+    if (!edges.empty()) {
+        *edge = *edges.begin();
+        
+        QPointF scenePos = mapToScene(mousePosViewport);
+        if ((*edge)->hasSource() && (*edge)->isBendPointVisible() && (*edge)->isNearbyBendPoint(scenePos)) {
+            return eNearbyItemEdgeBendPoint;
+        } else {
+            return eNearbyItemNodeEdge;
+        }
+        return eNearbyItemNodeEdge;
+    }
+    return eNearbyItemNone;
+}
 
 void
 NodeGraph::mousePressEvent(QMouseEvent* e)
@@ -92,6 +194,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         groupEdited = isGroup->getNode()->hasPyPlugBeenEdited();
     }
     
+  
     if (!groupEdited) {
         
         if (isGroupEditable) {
@@ -120,74 +223,35 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         }
     }
 
-    
-    NodeGuiPtr selected;
-    Edge* selectedEdge = 0;
-    Edge* selectedBendPoint = 0;
-    {
-        
-        QMutexLocker l(&_imp->_nodesMutex);
-        
-        ///Find matches, sorted by depth
-        std::map<double,NodeGuiPtr> matches;
-        for (NodesGuiList::reverse_iterator it = _imp->_nodes.rbegin(); it != _imp->_nodes.rend(); ++it) {
-            QPointF evpt = (*it)->mapFromScene(lastMousePosScene);
-            if ( (*it)->isVisible() && (*it)->isActive() ) {
-                
-                BackdropGui* isBd = dynamic_cast<BackdropGui*>(it->get());
-                if (isBd) {
-                    if (isBd->isNearbyNameFrame(evpt)) {
-                        matches.insert(std::make_pair((*it)->zValue(),*it));
-                    } else if (isBd->isNearbyResizeHandle(evpt) && groupEdited) {
-                        selected = *it;
-                        _imp->_backdropResized = *it;
-                        _imp->_evtState = eEventStateResizingBackdrop;
-                        break;
-                    }
-                } else {
-                    if ((*it)->contains(evpt)) {
-                        matches.insert(std::make_pair((*it)->zValue(),*it));
-                    }
-                }
-                
-            }
-        }
-        if (!matches.empty() && _imp->_evtState != eEventStateResizingBackdrop) {
-            selected = matches.rbegin()->second;
-        }
-        if (!selected) {
-            ///try to find a selected edge
-            for (NodesGuiList::reverse_iterator it = _imp->_nodes.rbegin(); it != _imp->_nodes.rend(); ++it) {
-                Edge* bendPointEdge = (*it)->hasBendPointNearbyPoint(lastMousePosScene);
-
-                if (bendPointEdge) {
-                    selectedBendPoint = bendPointEdge;
-                    break;
-                }
-                Edge* edge = (*it)->hasEdgeNearbyPoint(lastMousePosScene);
-                if (edge) {
-                    selectedEdge = edge;
-                }
-                
-            }
-        }
+    NodeGui* nearbyNode;
+    Edge* nearbyEdge;
+    NearbyItemEnum nearbyItemCode = hasItemNearbyMouse(e->pos(), &nearbyNode, &nearbyEdge);
+    if (nearbyItemCode == eNearbyItemBackdropResizeHandle) {
+        assert(nearbyNode);
+        didSomething = true;
+        _imp->_backdropResized = nearbyNode->shared_from_this();
+        _imp->_evtState = eEventStateResizingBackdrop;
     }
     
     
-    if (selected) {
+    if ((nearbyItemCode == eNearbyItemNode || nearbyItemCode == eNearbyItemBackdropFrame) && groupEdited) {
+        assert(nearbyNode);
+        
+        NodeGuiPtr selectedNode = nearbyNode->shared_from_this();
+
         didSomething = true;
-        if ( buttonDownIsLeft(e) ) {
+        if (buttonDownIsLeft(e)) {
             
-            BackdropGui* isBd = dynamic_cast<BackdropGui*>(selected.get());
+            BackdropGui* isBd = dynamic_cast<BackdropGui*>(selectedNode.get());
             if (!isBd) {
-                _imp->_magnifiedNode = selected;
+                _imp->_magnifiedNode = selectedNode;
             }
             
-            if ( !selected->getIsSelected() ) {
-                selectNode( selected, modCASIsShift(e) );
+            if (!selectedNode->getIsSelected()) {
+                selectNode(selectedNode, modCASIsShift(e));
             } else if ( modCASIsShift(e) ) {
                 NodesGuiList::iterator it = std::find(_imp->_selection.begin(),
-                                                     _imp->_selection.end(),selected);
+                                                      _imp->_selection.end(),selectedNode);
                 if ( it != _imp->_selection.end() ) {
                     (*it)->setUserSelected(false);
                     _imp->_selection.erase(it);
@@ -205,20 +269,22 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
                     _imp->_nodesWithinBDAtPenDown.insert(std::make_pair(*it,nodesWithin));
                 }
             }
-
-        } else if ( buttonDownIsRight(e) ) {
-            if ( !selected->getIsSelected() ) {
-                selectNode(selected,true); ///< don't wipe the selection
+            
+        } else if (buttonDownIsRight(e)) {
+            if ( !selectedNode->getIsSelected() ) {
+                selectNode(selectedNode,true); //< don't wipe the selection
             }
         }
-    } else if (selectedBendPoint && groupEdited) {
+    }
+ 
+    if (nearbyItemCode == eNearbyItemEdgeBendPoint && groupEdited) {
         _imp->setNodesBendPointsVisible(false);
-        
+        assert(nearbyEdge);
         ///Now connect the node to the edge input
-        NodePtr inputNode = selectedBendPoint->getSource()->getNode();
+        NodePtr inputNode = nearbyEdge->getSource()->getNode();
         assert(inputNode);
         ///disconnect previous connection
-        NodePtr outputNode = selectedBendPoint->getDest()->getNode();
+        NodePtr outputNode = nearbyEdge->getDest()->getNode();
         assert(outputNode);
         int inputNb = outputNode->inputIndex(inputNode);
         if (inputNb == -1) {
@@ -269,8 +335,9 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         
         _imp->_evtState = eEventStateDraggingNode;
         didSomething = true;
-    } else if (selectedEdge && groupEdited) {
-        _imp->_arrowSelected = selectedEdge;
+    } else if (nearbyItemCode == eNearbyItemNodeEdge && groupEdited) {
+        assert(nearbyEdge);
+        _imp->_arrowSelected = nearbyEdge;
         didSomething = true;
         _imp->_evtState = eEventStateDraggingArrow;
     }

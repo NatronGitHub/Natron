@@ -26,7 +26,6 @@ NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
 #include <PyParameter.h>
 #include <PythonPanels.h>
 #include <list>
-#include <vector>
 
 
 // Native ---------------------------------------------------------
@@ -184,6 +183,64 @@ static PyObject* Sbk_GuiAppFunc_deselectNode(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
+static PyObject* Sbk_GuiAppFunc_getActiveTabWidget(PyObject* self)
+{
+    ::GuiApp* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::GuiApp*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getActiveTabWidget()const
+            PyTabWidget * cppResult = const_cast<const ::GuiApp*>(cppSelf)->getActiveTabWidget();
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_GuiAppFunc_getActiveViewer(PyObject* self)
+{
+    ::GuiApp* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::GuiApp*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getActiveViewer()const
+            PyViewer * cppResult = const_cast<const ::GuiApp*>(cppSelf)->getActiveViewer();
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronGuiTypes[SBK_PYVIEWER_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_GuiAppFunc_getDirectoryDialog(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ::GuiApp* cppSelf = 0;
@@ -210,11 +267,11 @@ static PyObject* Sbk_GuiAppFunc_getDirectoryDialog(PyObject* self, PyObject* arg
 
 
     // Overloaded function decisor
-    // 0: getDirectoryDialog(std::string)const
+    // 0: getDirectoryDialog(QString)const
     if (numArgs == 0) {
-        overloadId = 0; // getDirectoryDialog(std::string)const
-    } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))) {
-        overloadId = 0; // getDirectoryDialog(std::string)const
+        overloadId = 0; // getDirectoryDialog(QString)const
+    } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))) {
+        overloadId = 0; // getDirectoryDialog(QString)const
     }
 
     // Function signature not found.
@@ -229,17 +286,17 @@ static PyObject* Sbk_GuiAppFunc_getDirectoryDialog(PyObject* self, PyObject* arg
                 return 0;
             } else if (value) {
                 pyArgs[0] = value;
-                if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0]))))
+                if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0]))))
                     goto Sbk_GuiAppFunc_getDirectoryDialog_TypeError;
             }
         }
-        ::std::string cppArg0 = std::string();
+        ::QString cppArg0 = QString();
         if (pythonToCpp[0]) pythonToCpp[0](pyArgs[0], &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getDirectoryDialog(std::string)const
-            std::string cppResult = const_cast<const ::GuiApp*>(cppSelf)->getDirectoryDialog(cppArg0);
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+            // getDirectoryDialog(QString)const
+            QString cppResult = const_cast<const ::GuiApp*>(cppSelf)->getDirectoryDialog(cppArg0);
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
         }
     }
 
@@ -250,7 +307,7 @@ static PyObject* Sbk_GuiAppFunc_getDirectoryDialog(PyObject* self, PyObject* arg
     return pyResult;
 
     Sbk_GuiAppFunc_getDirectoryDialog_TypeError:
-        const char* overloads[] = {"std::string = std.string()", 0};
+        const char* overloads[] = {"unicode = QString()", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.getDirectoryDialog", overloads);
         return 0;
 }
@@ -284,12 +341,12 @@ static PyObject* Sbk_GuiAppFunc_getFilenameDialog(PyObject* self, PyObject* args
 
 
     // Overloaded function decisor
-    // 0: getFilenameDialog(std::vector<std::string>,std::string)const
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_VECTOR_STD_STRING_IDX], (pyArgs[0])))) {
+    // 0: getFilenameDialog(QStringList,QString)const
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRINGLIST_IDX], (pyArgs[0])))) {
         if (numArgs == 1) {
-            overloadId = 0; // getFilenameDialog(std::vector<std::string>,std::string)const
-        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
-            overloadId = 0; // getFilenameDialog(std::vector<std::string>,std::string)const
+            overloadId = 0; // getFilenameDialog(QStringList,QString)const
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+            overloadId = 0; // getFilenameDialog(QStringList,QString)const
         }
     }
 
@@ -305,19 +362,19 @@ static PyObject* Sbk_GuiAppFunc_getFilenameDialog(PyObject* self, PyObject* args
                 return 0;
             } else if (value) {
                 pyArgs[1] = value;
-                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1]))))
+                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1]))))
                     goto Sbk_GuiAppFunc_getFilenameDialog_TypeError;
             }
         }
-        ::std::vector<std::string > cppArg0;
+        ::QStringList cppArg0 = ::QStringList();
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::std::string cppArg1 = std::string();
+        ::QString cppArg1 = QString();
         if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // getFilenameDialog(std::vector<std::string>,std::string)const
-            std::string cppResult = const_cast<const ::GuiApp*>(cppSelf)->getFilenameDialog(cppArg0, cppArg1);
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+            // getFilenameDialog(QStringList,QString)const
+            QString cppResult = const_cast<const ::GuiApp*>(cppSelf)->getFilenameDialog(cppArg0, cppArg1);
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
         }
     }
 
@@ -328,7 +385,7 @@ static PyObject* Sbk_GuiAppFunc_getFilenameDialog(PyObject* self, PyObject* args
     return pyResult;
 
     Sbk_GuiAppFunc_getFilenameDialog_TypeError:
-        const char* overloads[] = {"list, std::string = std.string()", 0};
+        const char* overloads[] = {"QStringList, unicode = QString()", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.getFilenameDialog", overloads);
         return 0;
 }
@@ -475,12 +532,12 @@ static PyObject* Sbk_GuiAppFunc_getSequenceDialog(PyObject* self, PyObject* args
 
 
     // Overloaded function decisor
-    // 0: getSequenceDialog(std::vector<std::string>,std::string)const
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_VECTOR_STD_STRING_IDX], (pyArgs[0])))) {
+    // 0: getSequenceDialog(QStringList,QString)const
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRINGLIST_IDX], (pyArgs[0])))) {
         if (numArgs == 1) {
-            overloadId = 0; // getSequenceDialog(std::vector<std::string>,std::string)const
-        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
-            overloadId = 0; // getSequenceDialog(std::vector<std::string>,std::string)const
+            overloadId = 0; // getSequenceDialog(QStringList,QString)const
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+            overloadId = 0; // getSequenceDialog(QStringList,QString)const
         }
     }
 
@@ -496,19 +553,19 @@ static PyObject* Sbk_GuiAppFunc_getSequenceDialog(PyObject* self, PyObject* args
                 return 0;
             } else if (value) {
                 pyArgs[1] = value;
-                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1]))))
+                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1]))))
                     goto Sbk_GuiAppFunc_getSequenceDialog_TypeError;
             }
         }
-        ::std::vector<std::string > cppArg0;
+        ::QStringList cppArg0 = ::QStringList();
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::std::string cppArg1 = std::string();
+        ::QString cppArg1 = QString();
         if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // getSequenceDialog(std::vector<std::string>,std::string)const
-            std::string cppResult = const_cast<const ::GuiApp*>(cppSelf)->getSequenceDialog(cppArg0, cppArg1);
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+            // getSequenceDialog(QStringList,QString)const
+            QString cppResult = const_cast<const ::GuiApp*>(cppSelf)->getSequenceDialog(cppArg0, cppArg1);
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
         }
     }
 
@@ -519,7 +576,7 @@ static PyObject* Sbk_GuiAppFunc_getSequenceDialog(PyObject* self, PyObject* args
     return pyResult;
 
     Sbk_GuiAppFunc_getSequenceDialog_TypeError:
-        const char* overloads[] = {"list, std::string = std.string()", 0};
+        const char* overloads[] = {"QStringList, unicode = QString()", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.getSequenceDialog", overloads);
         return 0;
 }
@@ -537,9 +594,9 @@ static PyObject* Sbk_GuiAppFunc_getTabWidget(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: getTabWidget(std::string)const
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // getTabWidget(std::string)const
+    // 0: getTabWidget(QString)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // getTabWidget(QString)const
     }
 
     // Function signature not found.
@@ -547,11 +604,11 @@ static PyObject* Sbk_GuiAppFunc_getTabWidget(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getTabWidget(std::string)const
+            // getTabWidget(QString)const
             PyTabWidget * cppResult = const_cast<const ::GuiApp*>(cppSelf)->getTabWidget(cppArg0);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX], cppResult);
 
@@ -567,7 +624,7 @@ static PyObject* Sbk_GuiAppFunc_getTabWidget(PyObject* self, PyObject* pyArg)
     return pyResult;
 
     Sbk_GuiAppFunc_getTabWidget_TypeError:
-        const char* overloads[] = {"std::string", 0};
+        const char* overloads[] = {"unicode", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.GuiApp.getTabWidget", overloads);
         return 0;
 }
@@ -585,9 +642,9 @@ static PyObject* Sbk_GuiAppFunc_getUserPanel(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: getUserPanel(std::string)const
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // getUserPanel(std::string)const
+    // 0: getUserPanel(QString)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // getUserPanel(QString)const
     }
 
     // Function signature not found.
@@ -595,11 +652,11 @@ static PyObject* Sbk_GuiAppFunc_getUserPanel(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getUserPanel(std::string)const
+            // getUserPanel(QString)const
             PyPanel * cppResult = const_cast<const ::GuiApp*>(cppSelf)->getUserPanel(cppArg0);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronGuiTypes[SBK_PYPANEL_IDX], cppResult);
         }
@@ -612,7 +669,7 @@ static PyObject* Sbk_GuiAppFunc_getUserPanel(PyObject* self, PyObject* pyArg)
     return pyResult;
 
     Sbk_GuiAppFunc_getUserPanel_TypeError:
-        const char* overloads[] = {"std::string", 0};
+        const char* overloads[] = {"unicode", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.GuiApp.getUserPanel", overloads);
         return 0;
 }
@@ -630,9 +687,9 @@ static PyObject* Sbk_GuiAppFunc_getViewer(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: getViewer(std::string)const
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // getViewer(std::string)const
+    // 0: getViewer(QString)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // getViewer(QString)const
     }
 
     // Function signature not found.
@@ -640,11 +697,11 @@ static PyObject* Sbk_GuiAppFunc_getViewer(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getViewer(std::string)const
+            // getViewer(QString)const
             PyViewer * cppResult = const_cast<const ::GuiApp*>(cppSelf)->getViewer(cppArg0);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronGuiTypes[SBK_PYVIEWER_IDX], cppResult);
 
@@ -660,7 +717,7 @@ static PyObject* Sbk_GuiAppFunc_getViewer(PyObject* self, PyObject* pyArg)
     return pyResult;
 
     Sbk_GuiAppFunc_getViewer_TypeError:
-        const char* overloads[] = {"std::string", 0};
+        const char* overloads[] = {"unicode", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.GuiApp.getViewer", overloads);
         return 0;
 }
@@ -687,11 +744,11 @@ static PyObject* Sbk_GuiAppFunc_moveTab(PyObject* self, PyObject* args)
 
 
     // Overloaded function decisor
-    // 0: moveTab(std::string,PyTabWidget*)
+    // 0: moveTab(QString,PyTabWidget*)
     if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX], (pyArgs[1])))) {
-        overloadId = 0; // moveTab(std::string,PyTabWidget*)
+        overloadId = 0; // moveTab(QString,PyTabWidget*)
     }
 
     // Function signature not found.
@@ -699,7 +756,7 @@ static PyObject* Sbk_GuiAppFunc_moveTab(PyObject* self, PyObject* args)
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp[0](pyArgs[0], &cppArg0);
         if (!Shiboken::Object::isValid(pyArgs[1]))
             return 0;
@@ -707,7 +764,7 @@ static PyObject* Sbk_GuiAppFunc_moveTab(PyObject* self, PyObject* args)
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // moveTab(std::string,PyTabWidget*)
+            // moveTab(QString,PyTabWidget*)
             bool cppResult = cppSelf->moveTab(cppArg0, cppArg1);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
@@ -720,7 +777,7 @@ static PyObject* Sbk_GuiAppFunc_moveTab(PyObject* self, PyObject* args)
     return pyResult;
 
     Sbk_GuiAppFunc_moveTab_TypeError:
-        const char* overloads[] = {"std::string, NatronGui.PyTabWidget", 0};
+        const char* overloads[] = {"unicode, NatronGui.PyTabWidget", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.moveTab", overloads);
         return 0;
 }
@@ -746,11 +803,11 @@ static PyObject* Sbk_GuiAppFunc_registerPythonPanel(PyObject* self, PyObject* ar
 
 
     // Overloaded function decisor
-    // 0: registerPythonPanel(PyPanel*,std::string)
+    // 0: registerPythonPanel(PyPanel*,QString)
     if (numArgs == 2
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronGuiTypes[SBK_PYPANEL_IDX], (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
-        overloadId = 0; // registerPythonPanel(PyPanel*,std::string)
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+        overloadId = 0; // registerPythonPanel(PyPanel*,QString)
     }
 
     // Function signature not found.
@@ -762,11 +819,11 @@ static PyObject* Sbk_GuiAppFunc_registerPythonPanel(PyObject* self, PyObject* ar
             return 0;
         ::PyPanel* cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::std::string cppArg1;
+        ::QString cppArg1 = ::QString();
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // registerPythonPanel(PyPanel*,std::string)
+            // registerPythonPanel(PyPanel*,QString)
             cppSelf->registerPythonPanel(cppArg0, cppArg1);
         }
     }
@@ -777,7 +834,7 @@ static PyObject* Sbk_GuiAppFunc_registerPythonPanel(PyObject* self, PyObject* ar
     Py_RETURN_NONE;
 
     Sbk_GuiAppFunc_registerPythonPanel_TypeError:
-        const char* overloads[] = {"NatronGui.PyPanel, std::string", 0};
+        const char* overloads[] = {"NatronGui.PyPanel, unicode", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.registerPythonPanel", overloads);
         return 0;
 }
@@ -962,12 +1019,12 @@ static PyObject* Sbk_GuiAppFunc_saveFilenameDialog(PyObject* self, PyObject* arg
 
 
     // Overloaded function decisor
-    // 0: saveFilenameDialog(std::vector<std::string>,std::string)const
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_VECTOR_STD_STRING_IDX], (pyArgs[0])))) {
+    // 0: saveFilenameDialog(QStringList,QString)const
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRINGLIST_IDX], (pyArgs[0])))) {
         if (numArgs == 1) {
-            overloadId = 0; // saveFilenameDialog(std::vector<std::string>,std::string)const
-        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
-            overloadId = 0; // saveFilenameDialog(std::vector<std::string>,std::string)const
+            overloadId = 0; // saveFilenameDialog(QStringList,QString)const
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+            overloadId = 0; // saveFilenameDialog(QStringList,QString)const
         }
     }
 
@@ -983,19 +1040,19 @@ static PyObject* Sbk_GuiAppFunc_saveFilenameDialog(PyObject* self, PyObject* arg
                 return 0;
             } else if (value) {
                 pyArgs[1] = value;
-                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1]))))
+                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1]))))
                     goto Sbk_GuiAppFunc_saveFilenameDialog_TypeError;
             }
         }
-        ::std::vector<std::string > cppArg0;
+        ::QStringList cppArg0 = ::QStringList();
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::std::string cppArg1 = std::string();
+        ::QString cppArg1 = QString();
         if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // saveFilenameDialog(std::vector<std::string>,std::string)const
-            std::string cppResult = const_cast<const ::GuiApp*>(cppSelf)->saveFilenameDialog(cppArg0, cppArg1);
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+            // saveFilenameDialog(QStringList,QString)const
+            QString cppResult = const_cast<const ::GuiApp*>(cppSelf)->saveFilenameDialog(cppArg0, cppArg1);
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
         }
     }
 
@@ -1006,7 +1063,7 @@ static PyObject* Sbk_GuiAppFunc_saveFilenameDialog(PyObject* self, PyObject* arg
     return pyResult;
 
     Sbk_GuiAppFunc_saveFilenameDialog_TypeError:
-        const char* overloads[] = {"list, std::string = std.string()", 0};
+        const char* overloads[] = {"QStringList, unicode = QString()", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.saveFilenameDialog", overloads);
         return 0;
 }
@@ -1040,12 +1097,12 @@ static PyObject* Sbk_GuiAppFunc_saveSequenceDialog(PyObject* self, PyObject* arg
 
 
     // Overloaded function decisor
-    // 0: saveSequenceDialog(std::vector<std::string>,std::string)const
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_VECTOR_STD_STRING_IDX], (pyArgs[0])))) {
+    // 0: saveSequenceDialog(QStringList,QString)const
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRINGLIST_IDX], (pyArgs[0])))) {
         if (numArgs == 1) {
-            overloadId = 0; // saveSequenceDialog(std::vector<std::string>,std::string)const
-        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
-            overloadId = 0; // saveSequenceDialog(std::vector<std::string>,std::string)const
+            overloadId = 0; // saveSequenceDialog(QStringList,QString)const
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+            overloadId = 0; // saveSequenceDialog(QStringList,QString)const
         }
     }
 
@@ -1061,19 +1118,19 @@ static PyObject* Sbk_GuiAppFunc_saveSequenceDialog(PyObject* self, PyObject* arg
                 return 0;
             } else if (value) {
                 pyArgs[1] = value;
-                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1]))))
+                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1]))))
                     goto Sbk_GuiAppFunc_saveSequenceDialog_TypeError;
             }
         }
-        ::std::vector<std::string > cppArg0;
+        ::QStringList cppArg0 = ::QStringList();
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::std::string cppArg1 = std::string();
+        ::QString cppArg1 = QString();
         if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // saveSequenceDialog(std::vector<std::string>,std::string)const
-            std::string cppResult = const_cast<const ::GuiApp*>(cppSelf)->saveSequenceDialog(cppArg0, cppArg1);
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+            // saveSequenceDialog(QStringList,QString)const
+            QString cppResult = const_cast<const ::GuiApp*>(cppSelf)->saveSequenceDialog(cppArg0, cppArg1);
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
         }
     }
 
@@ -1084,7 +1141,7 @@ static PyObject* Sbk_GuiAppFunc_saveSequenceDialog(PyObject* self, PyObject* arg
     return pyResult;
 
     Sbk_GuiAppFunc_saveSequenceDialog_TypeError:
-        const char* overloads[] = {"list, std::string = std.string()", 0};
+        const char* overloads[] = {"QStringList, unicode = QString()", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.saveSequenceDialog", overloads);
         return 0;
 }
@@ -1306,6 +1363,8 @@ static PyMethodDef Sbk_GuiApp_methods[] = {
     {"clearSelection", (PyCFunction)Sbk_GuiAppFunc_clearSelection, METH_VARARGS|METH_KEYWORDS},
     {"createModalDialog", (PyCFunction)Sbk_GuiAppFunc_createModalDialog, METH_NOARGS},
     {"deselectNode", (PyCFunction)Sbk_GuiAppFunc_deselectNode, METH_O},
+    {"getActiveTabWidget", (PyCFunction)Sbk_GuiAppFunc_getActiveTabWidget, METH_NOARGS},
+    {"getActiveViewer", (PyCFunction)Sbk_GuiAppFunc_getActiveViewer, METH_NOARGS},
     {"getDirectoryDialog", (PyCFunction)Sbk_GuiAppFunc_getDirectoryDialog, METH_VARARGS|METH_KEYWORDS},
     {"getFilenameDialog", (PyCFunction)Sbk_GuiAppFunc_getFilenameDialog, METH_VARARGS|METH_KEYWORDS},
     {"getRGBColorDialog", (PyCFunction)Sbk_GuiAppFunc_getRGBColorDialog, METH_NOARGS},

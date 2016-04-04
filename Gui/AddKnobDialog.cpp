@@ -1809,7 +1809,7 @@ AddKnobDialog::onOkClicked()
         try {
             for (std::size_t i = 0 ; i < expressions.size(); ++i) {
                 if (!expressions[i].first.empty()) {
-                    _imp->knob->setExpression(i, expressions[i].first, expressions[i].second);
+                    _imp->knob->setExpression(i, expressions[i].first, expressions[i].second, false);
                 }
             }
         } catch (...) {
@@ -1933,7 +1933,7 @@ AddKnobDialog::onOkClicked()
                 } else {
                     expr = it->second[i].first;
                 }
-                it->first->setExpression(i, expr, it->second[i].second);
+                it->first->setExpression(i, expr, it->second[i].second, false);
             } catch (...) {
                 
             }

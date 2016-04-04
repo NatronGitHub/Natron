@@ -153,6 +153,7 @@ struct GuiPrivate
 
     ///Used when all viewers are synchronized to determine which one triggered the sync
     ViewerTab* _masterSyncViewer;
+    ViewerTab* _activeViewer;
 
     ///a list of ptrs to all histograms
     mutable QMutex _histogramsMutex;

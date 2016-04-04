@@ -101,6 +101,7 @@ Gui::Gui(GuiAppInstance* app,
     QObject::connect(qApp, SIGNAL(focusChanged(QWidget*,QWidget*)), this, SLOT(onFocusChanged(QWidget*,QWidget*)));
     
 
+    setAcceptDrops(true);
 
 }
 

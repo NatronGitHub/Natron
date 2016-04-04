@@ -72,24 +72,24 @@ public:
      * @brief Returns the name of the Param internally. This is the identifier that allows the Python programmer
      * to find and identify a specific Param.
      **/
-    std::string getScriptName() const;
+    QString getScriptName() const;
     
     /**
      * @brief Returns the label of the Param as shown on the GUI.
      **/
-    std::string getLabel() const;
+    QString getLabel() const;
     
     /**
      * @brief Returns the type of the parameter. The list of known type is:
      * "Int" "Bool" "Double" "Button" "Choice" "Color" "String" "Group" "Page" "Parametric" "InputFile" "OutputFile" "Path"
      **/
-    std::string getTypeName() const;
+    QString getTypeName() const;
     
     /**
      * @brief Returns the help that describes the parameter, its effect, etc...
      **/
-    std::string getHelp() const;
-    void setHelp(const std::string& help);
+    QString getHelp() const;
+    void setHelp(const QString& help);
     
     /**
      * @brief Returns true if this parameter is visible in the user interface, false if it is hidden.
@@ -259,8 +259,8 @@ public:
     /**
      * @brief Set an expression on the Param. This is a Python script, see documentation for more infos.
      **/
-    bool setExpression(const std::string& expr,bool hasRetVariable,int dimension = 0);
-    std::string getExpression(int dimension,bool* hasRetVariable) const;
+    bool setExpression(const QString& expr,bool hasRetVariable,int dimension = 0);
+    QString getExpression(int dimension,bool* hasRetVariable) const;
     
     bool setInterpolationAtTime(double time, NATRON_NAMESPACE::KeyframeTypeEnum interpolation, int dimension = 0);
 };
@@ -724,7 +724,7 @@ public:
      * @brief Set the value from label if it exists. 
      * The label will be compared without case sensitivity to existing entries. If it's not found, nothing is done.
      */
-    void set(const std::string& label);
+    void set(const QString& label);
     
     /**
      * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
@@ -758,7 +758,7 @@ public:
     /**
      * @brief Set the default value from an existing entry. If it does not match (without case sensitivity) an existing entry, nothing is done.
      **/
-    void setDefaultValue(const std::string& value);
+    void setDefaultValue(const QString& value);
     
     /**
      * @brief Return the default value for the given dimension
@@ -773,17 +773,17 @@ public:
     /**
      * @brief Add a new option to the drop-down menu
      **/
-    void addOption(const std::string& option,const std::string& help);
+    void addOption(const QString& option,const QString& help);
     
     /**
      * @brief Set all options at once
      **/
-    void setOptions(const std::list<std::pair<std::string,std::string> >& options);
+    void setOptions(const std::list<std::pair<QString,QString> >& options);
     
     /**
      * @brief Returns the option at the given index
      **/
-    std::string getOption(int index) const;
+    QString getOption(int index) const;
     
     /**
      * @brief Returns the count of options
@@ -793,7 +793,7 @@ public:
     /**
      * @brief Returns all options
      **/
-    std::vector<std::string> getOptions() const;
+    QStringList getOptions() const;
     
     /**
      * @brief Adds this Param as a dependency of the given Param. This is used mainly by the GUI to notify the user
@@ -891,48 +891,48 @@ public:
     /**
      * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
      **/
-    std::string get() const;
-    std::string get(double frame) const;
+    QString get() const;
+    QString get(double frame) const;
     
     /**
      * @brief Convenience functions for multi-dimensional setting of values
      **/
-    void set(const std::string& x);
-    void set(const std::string& x, double frame);
+    void set(const QString& x);
+    void set(const QString& x, double frame);
     
     /**
      * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
      * will be called instead at the current's timeline position.
      **/
-    std::string getValue() const;
+    QString getValue() const;
     
     /**
      * @brief Set the value held by the parameter. If it is animated
      * this function will either add a new keyframe or modify a keyframe already existing at the current time.
      **/
-    void setValue(const std::string& value);
+    void setValue(const QString& value);
     
     /**
      * @brief If this parameter is animated for the given dimension, this function returns a value interpolated between the
      * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.
      * If this parameter is not animated for the given dimension, then this function returns the same as getValue(int)
      **/
-    std::string getValueAtTime(double time) const;
+    QString getValueAtTime(double time) const;
     
     /**
      * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
      **/
-    void setValueAtTime(const std::string& value,double time);
+    void setValueAtTime(const QString& value,double time);
     
     /**
      * @brief Set the default value for the given dimension
      **/
-    void setDefaultValue(const std::string& value);
+    void setDefaultValue(const QString& value);
     
     /**
      * @brief Return the default value for the given dimension
      **/
-    std::string getDefaultValue() const;
+    QString getDefaultValue() const;
     
     /**
      * @brief Restores the default value for the given dimension
@@ -944,7 +944,7 @@ public:
      * when a dependency (through expressions) is destroyed (because the holding node has been removed).
      * You should not call this directly.
      **/
-    std::string addAsDependencyOf(int fromExprDimension,Param* param,int thisDimension);
+    QString addAsDependencyOf(int fromExprDimension,Param* param,int thisDimension);
     
    
     
@@ -1053,7 +1053,7 @@ public:
      * @brief Set the icon file-path that should be used for the button.
      * This can only be called right away after the parameter has been created.
      **/
-    void setIconFilePath(const std::string& icon);
+    void setIconFilePath(const QString& icon);
     
     void trigger();
 };

@@ -438,7 +438,7 @@ FileSystemItem::matchPath(const QStringList& path, int startIndex) const
         
         const boost::shared_ptr<FileSystemItem>& child = _imp->children[i];
         
-        if ( child->fileName() == pathBit ) {
+        if ( child && child->fileName() == pathBit ) {
             
             if ( startIndex == path.size() -1 ) {
                 return child;

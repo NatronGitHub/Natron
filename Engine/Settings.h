@@ -275,6 +275,8 @@ public:
     
     void setAutoTurboModeEnabled(bool e);
     
+    bool isFileDialogEnabledForNewWriters() const;
+    
     void setOptionalInputsAutoHidden(bool hidden);
     bool areOptionalInputsAutoHidden() const;
     
@@ -336,6 +338,9 @@ public:
     void getSENumbersColor(double* r,double* g, double* b) const;
     void getSECurLineColor(double* r,double* g, double* b) const;
     
+    int getSEFontSize() const;
+    std::string getSEFontFamily() const;
+    
     
     void getPluginIconFrameColor(int *r, int *g, int *b) const;
     int getDopeSheetEditorNodeSeparationWith() const;
@@ -383,34 +388,42 @@ private:
     boost::shared_ptr<KnobPage> _generalTab;
     boost::shared_ptr<KnobBool> _natronSettingsExist;
   
+    
+    // Natron
     boost::shared_ptr<KnobBool> _checkForUpdates;
     boost::shared_ptr<KnobBool> _enableCrashReports;
     boost::shared_ptr<KnobButton> _testCrashReportButton;
-    boost::shared_ptr<KnobBool> _notifyOnFileChange;
     boost::shared_ptr<KnobBool> _autoSaveUnSavedProjects;
     boost::shared_ptr<KnobInt> _autoSaveDelay;
-    boost::shared_ptr<KnobBool> _linearPickers;
-    boost::shared_ptr<KnobBool> _convertNaNValues;
+    boost::shared_ptr<KnobChoice> _hostName;
+    boost::shared_ptr<KnobString> _customHostName;
+    
+    // Threading
     boost::shared_ptr<KnobInt> _numberOfThreads;
     boost::shared_ptr<KnobInt> _numberOfParallelRenders;
     boost::shared_ptr<KnobBool> _useThreadPool;
     boost::shared_ptr<KnobInt> _nThreadsPerEffect;
     boost::shared_ptr<KnobBool> _renderInSeparateProcess;
     boost::shared_ptr<KnobBool> _queueRenders;
-    boost::shared_ptr<KnobBool> _autoPreviewEnabledForNewProjects;
+    
+    // Misc
+    boost::shared_ptr<KnobBool> _notifyOnFileChange;
+    boost::shared_ptr<KnobBool> _filedialogForWriters;
     boost::shared_ptr<KnobBool> _firstReadSetProjectFormat;
+    boost::shared_ptr<KnobBool> _convertNaNValues;
+    boost::shared_ptr<KnobBool> _autoPreviewEnabledForNewProjects;
     boost::shared_ptr<KnobBool> _fixPathsOnProjectPathChanged;
+    boost::shared_ptr<KnobBool> _renderOnEditingFinished;
+    boost::shared_ptr<KnobBool> _activateRGBSupport;
+    boost::shared_ptr<KnobBool> _activateTransformConcatenationSupport;
+
+    // User Interface
+    boost::shared_ptr<KnobBool> _linearPickers;
     boost::shared_ptr<KnobInt> _maxPanelsOpened;
     boost::shared_ptr<KnobBool> _useCursorPositionIncrements;
     boost::shared_ptr<KnobFile> _defaultLayoutFile;
     boost::shared_ptr<KnobBool> _loadProjectsWorkspace;
-    boost::shared_ptr<KnobBool> _renderOnEditingFinished;
-    boost::shared_ptr<KnobBool> _activateRGBSupport;
-    boost::shared_ptr<KnobBool> _activateTransformConcatenationSupport;
-    boost::shared_ptr<KnobChoice> _hostName;
-    boost::shared_ptr<KnobString> _customHostName;
-    
-    
+
     
     boost::shared_ptr<KnobChoice> _ocioConfigKnob;
     boost::shared_ptr<KnobBool> _warnOcioConfigKnobChanged;
@@ -548,6 +561,8 @@ private:
     boost::shared_ptr<KnobColor> _commentsColor;
     boost::shared_ptr<KnobColor> _selfColor;
     boost::shared_ptr<KnobColor> _numbersColor;
+    boost::shared_ptr<KnobChoice> _scriptEditorFontChoice;
+    boost::shared_ptr<KnobInt> _scriptEditorFontSize;
     
     
     struct PerPluginKnobs

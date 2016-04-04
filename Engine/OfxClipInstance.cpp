@@ -646,7 +646,15 @@ OfxClipInstance::getImagePlane(OfxTime time,
 
         return NULL;
     }
-    return getImagePlaneInternal(time, ViewIdx(view), optionalBounds, &plane);
+    
+    ViewSpec spec;
+    // The Foundry Furnace plug-ins pass -1 to the view parameter, we need to deal with it.
+    if (view == -1) {
+        spec = ViewSpec::current();
+    } else {
+        spec = ViewIdx(view);
+    }
+    return getImagePlaneInternal(time, spec, optionalBounds, &plane);
 }
 
 OFX::Host::ImageEffect::Image*
@@ -683,6 +691,9 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     int inputnb = getInputNb();
     //If components param is not set (i.e: the plug-in uses regular clipGetImage call) then figure out the plane from the TLS set in OfxEffectInstance::render
     //otherwise use the param sent by the plug-in call of clipGetImagePlane
+    
+    bool isMultiplanar = effect->isMultiPlanar();
+    
     ImageComponents comp;
     if (!ofxPlane) {
         
@@ -786,7 +797,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
 
     //If the plug-in used fetchImage and not fetchImagePlane it is expected that we return
     //an image mapped to the clip components
-    const bool mapImageToClipPref = ofxPlane == 0;
+    const bool mapImageToClipPref = !isMultiplanar;
     ImagePtr image = effect->getImage(inputnb, time, renderScale, view,
                                       optionalBounds ? &bounds : NULL,
                                       &comp,
@@ -844,6 +855,8 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane)
 
     EffectInstPtr effect = getEffectHolder();
     
+    bool isMultiplanar = effect->isMultiPlanar();
+
     ImageComponents natronPlane;
     if (!ofxPlane) {
     
@@ -885,7 +898,6 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane)
      If the plugin is multiplanar return exactly what it requested.
      Otherwise, hack the clipGetImage and return the plane requested by the user via the interface instead of the colour plane.
      */
-    bool multiPlanar = effect->isMultiPlanar();
     const std::string& layerName = /*multiPlanar ?*/ natronPlane.getLayerName();// : planeBeingRendered.getLayerName();
     
     for (std::map<ImageComponents,EffectInstance::PlaneToRender>::iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
@@ -923,7 +935,7 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane)
     //This is the firs time the plug-ins asks for this OfxImage, just allocate it and register it in the TLS
     std::string ofxComponents;
     int nComps;
-    if (multiPlanar) {
+    if (isMultiplanar) {
         ofxComponents = OfxClipInstance::natronsComponentsToOfxComponents(outputImage->getComponents());
         nComps = outputImage->getComponents().getNumComponents();
     } else {
@@ -1042,13 +1054,19 @@ OfxClipInstance::ofxPlaneToNatronPlane(const std::string& plane)
     }
 }
 
-std::string
-OfxClipInstance::natronsPlaneToOfxPlane(const ImageComponents& plane)
+void
+OfxClipInstance::natronsPlaneToOfxPlane(const ImageComponents& plane, std::list<std::string>* ofxPlanes)
 {
     if (plane.getLayerName() == kNatronColorPlaneName) {
-        return kFnOfxImagePlaneColour;
+        ofxPlanes->push_back(kFnOfxImagePlaneColour);
+    } else if (plane == ImageComponents::getPairedMotionVectors()) {
+        ofxPlanes->push_back(kFnOfxImagePlaneBackwardMotionVector);
+        ofxPlanes->push_back(kFnOfxImagePlaneForwardMotionVector);
+    } else if (plane == ImageComponents::getPairedStereoDisparity()) {
+        ofxPlanes->push_back(kFnOfxImagePlaneStereoDisparityLeft);
+        ofxPlanes->push_back(kFnOfxImagePlaneStereoDisparityRight);
     } else {
-        return natronCustomCompToOfxComp(plane);
+        ofxPlanes->push_back(natronCustomCompToOfxComp(plane));
     }
 }
 
@@ -1064,9 +1082,16 @@ OfxClipInstance::natronsComponentsToOfxComponents(const ImageComponents& comp)
         return kOfxImageComponentRGB;
     } else if (comp == ImageComponents::getRGBAComponents()) {
         return kOfxImageComponentRGBA;
-    } else if (QString::fromUtf8(comp.getComponentsGlobalName().c_str()).compare(QString::fromUtf8("UV"), Qt::CaseInsensitive) == 0) {
+   /* }
+    else if (QString::fromUtf8(comp.getComponentsGlobalName().c_str()).compare(QString::fromUtf8("UV"), Qt::CaseInsensitive) == 0) {
         return kFnOfxImageComponentMotionVectors;
     } else if (QString::fromUtf8(comp.getComponentsGlobalName().c_str()).compare(QString::fromUtf8("XY"), Qt::CaseInsensitive) == 0) {
+        return kFnOfxImageComponentStereoDisparity;*/
+    } else if (comp == ImageComponents::getXYComponents()) {
+        return kNatronOfxImageComponentXY;
+    } else if (comp == ImageComponents::getPairedMotionVectors()) {
+        return kFnOfxImageComponentMotionVectors;
+    } else if (comp == ImageComponents::getPairedStereoDisparity()) {
         return kFnOfxImageComponentStereoDisparity;
     } else {
         return natronCustomCompToOfxComp(comp);

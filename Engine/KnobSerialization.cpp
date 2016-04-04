@@ -114,6 +114,8 @@ KnobPtr KnobSerialization::createKnob(const std::string & typeName,
         ret.reset( new KnobColor(NULL,"",dimension,false) );
     } else if ( typeName == KnobPath::typeNameStatic() ) {
         ret.reset( new KnobPath(NULL,"",dimension,false) );
+    } else if ( typeName == KnobLayers::typeNameStatic() ) {
+        ret.reset( new KnobLayers(NULL,"",dimension,false) );
     } else if ( typeName == KnobFile::typeNameStatic() ) {
         ret.reset( new KnobFile(NULL,"",dimension,false) );
     } else if ( typeName == KnobOutputFile::typeNameStatic() ) {

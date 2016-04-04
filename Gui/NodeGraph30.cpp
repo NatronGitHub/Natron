@@ -334,9 +334,8 @@ NodeGraph::deleteSelection()
                                                                               "parameters from which other parameters "
                                                                               "of the project rely on through expressions "
                                                                               "or links. Deleting this node will "
-                                                                              "remove these expressions. "
-                                                                              ". Undoing the action will not recover "
-                                                                              "them. \nContinue anyway ?")
+                                                                              "may break these expressions."
+                                                                              "\nContinue anyway ?")
                                                                            .toStdString(), false );
                     if (reply == eStandardButtonNo) {
                         return;

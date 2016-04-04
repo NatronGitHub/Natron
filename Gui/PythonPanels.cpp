@@ -55,8 +55,8 @@ struct DialogParamHolderPrivate
     QMutex paramChangedCBMutex;
     std::string paramChangedCB;
     
-    DialogParamHolderPrivate(const std::string& uniqueID)
-    : uniqueID(uniqueID)
+    DialogParamHolderPrivate(const QString& uniqueID)
+    : uniqueID(uniqueID.toStdString())
     , paramChangedCBMutex()
     , paramChangedCB()
     {
@@ -64,7 +64,7 @@ struct DialogParamHolderPrivate
     }
 };
 
-DialogParamHolder::DialogParamHolder(const std::string& uniqueID,AppInstance* app)
+DialogParamHolder::DialogParamHolder(const QString& uniqueID,AppInstance* app)
 : NamedKnobHolder(app)
 , _imp(new DialogParamHolderPrivate(uniqueID))
 {
@@ -83,10 +83,10 @@ DialogParamHolder::getScriptName_mt_safe() const
 }
 
 void
-DialogParamHolder::setParamChangedCallback(const std::string& callback)
+DialogParamHolder::setParamChangedCallback(const QString& callback)
 {
     QMutexLocker k(&_imp->paramChangedCBMutex);
-    _imp->paramChangedCB = callback;
+    _imp->paramChangedCB = callback.toStdString();
 }
 
 void
@@ -187,7 +187,7 @@ PyModalDialog::PyModalDialog(Gui* gui)
 , UserParamHolder()
 , _imp(new PyModalDialogPrivate(gui))
 {
-    _imp->holder = new DialogParamHolder(std::string(),gui->getApp());
+    _imp->holder = new DialogParamHolder(QString(),gui->getApp());
     setHolder(_imp->holder);
     _imp->holder->initializeKnobsPublic();
     _imp->mainLayout = new QVBoxLayout(this);
@@ -240,15 +240,15 @@ PyModalDialog::addWidget(QWidget* widget)
 
 
 void
-PyModalDialog::setParamChangedCallback(const std::string& callback)
+PyModalDialog::setParamChangedCallback(const QString& callback)
 {
     _imp->holder->setParamChangedCallback(callback);
 }
 
 Param*
-PyModalDialog::getParam(const std::string& scriptName) const
+PyModalDialog::getParam(const QString& scriptName) const
 {
-    KnobPtr knob =  _imp->holder->getKnobByName(scriptName);
+    KnobPtr knob =  _imp->holder->getKnobByName(scriptName.toStdString());
     if (!knob) {
         return 0;
     }
@@ -270,7 +270,7 @@ struct PyPanelPrivate
     QVBoxLayout* centerLayout;
 
     mutable QMutex serializationMutex;
-    std::string serialization;
+    QString serialization;
 
     
     PyPanelPrivate()
@@ -288,17 +288,17 @@ struct PyPanelPrivate
 
 
 
-PyPanel::PyPanel(const std::string& scriptName,const std::string& label,bool useUserParameters,GuiApp* app)
+PyPanel::PyPanel(const QString& scriptName,const QString& label,bool useUserParameters,GuiApp* app)
 : QWidget(app->getGui())
 , UserParamHolder()
 , PanelWidget(this,app->getGui())
 , _imp(new PyPanelPrivate())
 {
-    setLabel(label.c_str());
+    setLabel(label.toStdString());
 
     
     int idx = 1;
-    std::string name = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(scriptName);
+    std::string name = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(scriptName.toStdString());
     PanelWidget* existing = 0;
     existing = getGui()->findExistingTab(name);
     while (existing) {
@@ -316,7 +316,7 @@ PyPanel::PyPanel(const std::string& scriptName,const std::string& label,bool use
 
     
     if (useUserParameters) {
-        _imp->holder = new DialogParamHolder(name,getGui()->getApp());
+        _imp->holder = new DialogParamHolder(QString::fromUtf8(name.c_str()),getGui()->getApp());
         setHolder(_imp->holder);
         _imp->holder->initializeKnobsPublic();
         _imp->mainLayout = new QVBoxLayout(this);
@@ -349,36 +349,35 @@ PyPanel::~PyPanel()
     getGui()->unregisterPyPanel(this);
 }
 
-std::string
+QString
 PyPanel::getPanelScriptName() const
 {
-    return getScriptName();
+    return QString::fromUtf8(getScriptName().c_str());
 }
 
 void
-PyPanel::setPanelLabel(const std::string& label)
+PyPanel::setPanelLabel(const QString& label)
 {
-    setLabel(label);
-    QString name = QString::fromUtf8(label.c_str());
+    setLabel(label.toStdString());
     TabWidget* parent = dynamic_cast<TabWidget*>(parentWidget());
     if (parent) {
-        parent->setTabLabel(this, name);
+        parent->setTabLabel(this, label);
     }
 }
 
-std::string
+QString
 PyPanel::getPanelLabel() const
 {
-    return getLabel();
+    return QString::fromUtf8(getLabel().c_str());
 }
 
 Param*
-PyPanel::getParam(const std::string& scriptName) const
+PyPanel::getParam(const QString& scriptName) const
 {
     if (!_imp->holder) {
         return 0;
     }
-    KnobPtr knob =  _imp->holder->getKnobByName(scriptName);
+    KnobPtr knob =  _imp->holder->getKnobByName(scriptName.toStdString());
     if (!knob) {
         return 0;
     }
@@ -405,7 +404,7 @@ PyPanel::getParams() const
 
 
 void
-PyPanel::setParamChangedCallback(const std::string& callback)
+PyPanel::setParamChangedCallback(const QString& callback)
 {
     if (_imp->holder) {
         _imp->holder->setParamChangedCallback(callback);
@@ -437,7 +436,7 @@ PyPanel::onUserDataChanged()
     _imp->serialization = save();
 }
 
-std::string
+QString
 PyPanel::save_serialization_thread() const
 {
     QMutexLocker k(&_imp->serializationMutex);
@@ -516,10 +515,10 @@ PyTabWidget::closeTab(int index)
     _tab->removeTab(index, true);
 }
 
-std::string
+QString
 PyTabWidget::getTabLabel(int index) const
 {
-    return _tab->getTabLabel(index).toStdString();
+    return QString::fromUtf8(_tab->getTabLabel(index).toStdString().c_str());
 }
 
 int
@@ -608,10 +607,10 @@ PyTabWidget::closeCurrentTab()
     _tab->closeCurrentWidget();
 }
 
-std::string
+QString
 PyTabWidget::getScriptName() const
 {
-    return _tab->objectName_mt_safe().toStdString();
+    return _tab->objectName_mt_safe();
 }
 
 NATRON_PYTHON_NAMESPACE_EXIT;

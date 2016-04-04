@@ -133,6 +133,7 @@ SOURCES += \
     KnobGuiColor.cpp \
     KnobGuiString.cpp \
     KnobGuiGroup.cpp \
+    KnobGuiTable.cpp \
     KnobGuiParametric.cpp \
     KnobUndoCommand.cpp \
     KnobWidgetDnD.cpp \
@@ -285,6 +286,7 @@ HEADERS += \
     KnobGuiColor.h \
     KnobGuiString.h \
     KnobGuiGroup.h \
+    KnobGuiTable.h \
     KnobGuiParametric.h \
     KnobUndoCommand.h \
     KnobWidgetDnD.h \

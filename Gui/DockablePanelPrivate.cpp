@@ -606,7 +606,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
         
         ///Create the label if needed
         KnobClickableLabel* label = 0;
-        
+        Label* warningLabel = 0;
         std::string descriptionLabel;
         KnobString* isStringKnob = dynamic_cast<KnobString*>(knob.get());
         bool isLabelKnob = isStringKnob && isStringKnob->isLabel();
@@ -630,17 +630,24 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
             }
             
             label = new KnobClickableLabel(QString(), ret, page->second.tab);
+            warningLabel = new Label(page->second.tab);
+            warningLabel->setVisible(false);
+            QFontMetrics fm(label->font(),0);
+            int pixSize = fm.height();
+            QPixmap stdErrorPix;
+            stdErrorPix = getStandardIcon(QMessageBox::Critical, pixSize, label);
+            warningLabel->setPixmap(stdErrorPix);
+            
             bool pixmapSet = false;
             if (!labelIconFilePath.empty()) {
                 QPixmap pix;
-                QFontMetrics fm(label->font(),0);
-                int pixSize = fm.height();
+           
                 if (labelIconFilePath == "dialog-warning") {
                     pix = getStandardIcon(QMessageBox::Warning, pixSize, label);
                 } else if (labelIconFilePath == "dialog-question") {
                     pix = getStandardIcon(QMessageBox::Question, pixSize, label);
                 } else if (labelIconFilePath == "dialog-error") {
-                    pix = getStandardIcon(QMessageBox::Critical, pixSize, label);
+                    pix = stdErrorPix;
                 } else if (labelIconFilePath == "dialog-information") {
                     pix = getStandardIcon(QMessageBox::Information, pixSize, label);
                 } else {
@@ -666,6 +673,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
                 
             
             if (makeNewLine) {
+                labelLayout->addWidget(warningLabel);
                 labelLayout->addWidget(label);
             }
 
@@ -725,7 +733,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
         }
         
         ///fill the fieldLayout with the widgets
-        ret->createGUI(layout,fieldContainer, labelContainer, label,fieldLayout,makeNewLine,knobsOnSameLine);
+        ret->createGUI(layout,fieldContainer, labelContainer, label, warningLabel, fieldLayout,makeNewLine,knobsOnSameLine);
         
         
         ret->setEnabledSlot();

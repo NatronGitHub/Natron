@@ -336,6 +336,10 @@ public:
 
 public:
     
+    void addInvalidExpressionKnob(const KnobPtr& knob);
+    void removeInvalidExpressionKnob(const KnobI* knob);
+    void recheckInvalidExpressions();
+    
     virtual void clearViewersLastRenderedTexture() {}
 
     virtual void toggleAutoHideGraphInputs() {}
@@ -438,6 +442,8 @@ public:
     virtual RectD getPaintStrokeWholeBbox() const { return RectD(); }
     
     void removeRenderFromQueue(OutputEffectInstance* writer);
+    
+    virtual void reloadScriptEditorFonts() {}
     
 public Q_SLOTS:
     

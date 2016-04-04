@@ -103,7 +103,7 @@ KnobGuiFactory::loadBultinKnobs()
     _loadedKnobs.insert( knobGuiFactoryEntry<KnobBool, KnobGuiBool>() );
     _loadedKnobs.insert( knobGuiFactoryEntry<KnobParametric, KnobGuiParametric>() );
     _loadedKnobs.insert( knobGuiFactoryEntry<KnobPath, KnobGuiPath>() );
-    // _loadedKnobs.insert(knobGuiFactoryEntry<KnobTable, KnobTableGui>());
+    _loadedKnobs.insert( knobGuiFactoryEntry<KnobLayers, KnobGuiLayers>() );
 }
 
 KnobGui *

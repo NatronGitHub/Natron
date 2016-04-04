@@ -84,7 +84,6 @@ NodeGraph::NodeGraph(Gui* gui,
     
     group->setNodeGraphPointer(this);
     
-    setAcceptDrops(true);
     setAttribute(Qt::WA_MacShowFocusRect,0);
 
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>(group.get());
@@ -175,6 +174,8 @@ NodeGraph::NodeGraph(Gui* gui,
 
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    
+    setAcceptDrops(false);
 
     _imp->_menu = new Menu(this);
     
@@ -415,9 +416,9 @@ NodeGraph::createNodeGUI(const NodePtr & node,
         _imp->_nodes.push_back(node_ui);
     }
 
-    NodeGroup* parentIsGroup = dynamic_cast<NodeGroup*>(node->getGroup().get());;
+    //NodeGroup* parentIsGroup = dynamic_cast<NodeGroup*>(node->getGroup().get());;
     
-    if (args.reason != eCreateNodeReasonProjectLoad && (!getGui()->getApp()->isCreatingPythonGroup() || node->isEffectGroup()) && !parentIsGroup) {
+    if (args.reason != eCreateNodeReasonProjectLoad && args.reason != eCreateNodeReasonCopyPaste && ((!getGui()->getApp()->isCreatingPythonGroup()) || isGrp) ) {
         node_ui->ensurePanelCreated();
     }
     

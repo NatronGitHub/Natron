@@ -206,7 +206,7 @@ KnobI::getTopLevelPage()
 /***********************************KNOB HELPER******************************************/
 
 ///for each dimension, the dimension of the master this dimension is linked to, and a pointer to the master
-typedef std::vector< std::pair< int,KnobPtr > > MastersMap;
+typedef std::vector< std::pair< int,KnobWPtr > > MastersMap;
 
 ///a curve for each dimension
 typedef std::vector< boost::shared_ptr<Curve> > CurvesMap;
@@ -215,15 +215,15 @@ struct Expr
 {
     std::string expression; //< the one modified by Natron
     std::string originalExpression; //< the one input by the user
-    
+    std::string exprInvalid;
     bool hasRet;
     
     ///The list of pair<knob, dimension> dpendencies for an expression
-    std::list< std::pair<KnobI*,int> > dependencies;
+    std::list< std::pair<KnobWPtr,int> > dependencies;
     
     //PyObject* code;
     
-    Expr() : expression(), originalExpression(), hasRet(false) /*, code(0)*/{}
+    Expr() : expression(), originalExpression(), exprInvalid(), hasRet(false) /*, code(0)*/{}
 };
 
 
@@ -470,10 +470,14 @@ KnobHelper::deleteKnob()
             knob->setKnobAsAliasOfThis(aliasKnob, false);
         }
         for (int i = 0; i < knob->getDimension(); ++i) {
-            knob->clearExpression(i,true);
+            knob->setExpressionInvalid(i, false, getName() + QObject::tr(": parameter does not exist").toStdString());
             knob->unSlave(i, false);
         }
         
+    }
+    
+    if (getHolder() && getHolder()->getApp()) {
+        getHolder()->getApp()->recheckInvalidExpressions();
     }
     
     for (int i = 0; i < getDimension(); ++i) {
@@ -1524,17 +1528,16 @@ KnobHelper::evaluateValueChangeInternal(int dimension,
     
     /// For eValueChangedReasonTimeChanged we never call the instanceChangedAction and evaluate otherwise it would just throttle
     /// the application responsiveness
+    onInternalValueChanged(dimension, time, view);
+
     if ((originalReason != eValueChangedReasonTimeChanged || evaluateValueChangeOnTimeChange()) && _imp->holder) {
-        if (!app || !app->getProject()->isLoadingProject()) {
             
             _imp->holder->beginChanges();
             _imp->holder->appendValueChange(shared_from_this(), dimension, refreshWidget, time, view, originalReason, reason);
             _imp->holder->endChanges();
-            
-        }
+        
     }
     
-    onInternalValueChanged(dimension, time, view);
     
     if (!_imp->holder && _signalSlotHandler) {
         computeHasModifications();
@@ -2070,7 +2073,13 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
     }
     
     std::string declarations = declarePythonVariables(false, dimension);
-    script = declarations + "\n" + expressionCopy + "\n" + script;
+    std::stringstream ss;
+    ss << "frame=0\n";
+    ss << "view=0\n";
+    ss << declarations << '\n';
+    ss << expressionCopy << '\n';
+    ss << script;
+    script = ss.str();
     ///This will register the listeners
     std::string error;
     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error,NULL);
@@ -2206,8 +2215,107 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
     return funcExecScript;
 }
 
+bool
+KnobHelper::checkInvalidExpressions()
+{
+    int ndims = getDimension();
+    std::vector<std::pair<std::string,bool> > exprToReapply(ndims);
+    {
+        QMutexLocker k(&_imp->expressionMutex);
+        for (int i = 0; i < ndims; ++i) {
+            if (!_imp->expressions[i].exprInvalid.empty()) {
+                exprToReapply[i] = std::make_pair(_imp->expressions[i].originalExpression, _imp->expressions[i].hasRet);
+            }
+        }
+    }
+    bool isInvalid = false;
+    for (int i = 0; i < ndims; ++i) {
+        if (!exprToReapply[i].first.empty()) {
+            setExpressionInternal(i, exprToReapply[i].first, exprToReapply[i].second, true, false);
+        }
+        std::string err;
+        if (!isExpressionValid(i, &err)) {
+            isInvalid = true;
+        }
+    }
+    return !isInvalid;
+}
+
+bool
+KnobHelper::isExpressionValid(int dimension, std::string* error) const
+{
+    int ndims = getDimension();
+    if (dimension < 0 || dimension >= ndims) {
+        return false;
+    }
+    {
+        QMutexLocker k(&_imp->expressionMutex);
+        if (error) {
+            *error = _imp->expressions[dimension].exprInvalid;
+        }
+        return _imp->expressions[dimension].exprInvalid.empty();
+    }
+}
+
 void
-KnobHelper::setExpressionInternal(int dimension,const std::string& expression,bool hasRetVariable,bool clearResults)
+KnobHelper::setExpressionInvalid(int dimension, bool valid,  const std::string& error)
+{
+    int ndims = getDimension();
+    if (dimension < 0 || dimension >= ndims) {
+        return;
+    }
+    bool wasValid;
+    {
+        QMutexLocker k(&_imp->expressionMutex);
+        wasValid = _imp->expressions[dimension].exprInvalid.empty();
+        _imp->expressions[dimension].exprInvalid = error;
+    }
+    if (getHolder() && getHolder()->getApp()) {
+        if (wasValid && !valid) {
+            bool haveOtherExprInvalid = false;
+            {
+                QMutexLocker k(&_imp->expressionMutex);
+                for (int i = 0; i < ndims; ++i) {
+                    if (i != dimension) {
+                        if (!_imp->expressions[dimension].exprInvalid.empty()) {
+                            haveOtherExprInvalid = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (!haveOtherExprInvalid) {
+                getHolder()->getApp()->addInvalidExpressionKnob(boost::const_pointer_cast<KnobI>(shared_from_this()));
+            }
+            if (_signalSlotHandler) {
+                _signalSlotHandler->s_expressionChanged(dimension);
+            }
+        } else if (!wasValid && valid) {
+            bool haveOtherExprInvalid = false;
+            {
+                QMutexLocker k(&_imp->expressionMutex);
+                for (int i = 0; i < ndims; ++i) {
+                    if (i != dimension) {
+                        if (!_imp->expressions[dimension].exprInvalid.empty()) {
+                            haveOtherExprInvalid = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (!haveOtherExprInvalid) {
+                getHolder()->getApp()->removeInvalidExpressionKnob(this);
+            }
+            if (_signalSlotHandler) {
+                _signalSlotHandler->s_expressionChanged(dimension);
+            }
+        }
+    }
+   
+}
+
+void
+KnobHelper::setExpressionInternal(int dimension,const std::string& expression,bool hasRetVariable,bool clearResults, bool failIfInvalid)
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
     return;
@@ -2224,7 +2332,18 @@ KnobHelper::setExpressionInternal(int dimension,const std::string& expression,bo
     }
     
     std::string exprResult;
-    std::string exprCpy = validateExpression(expression, dimension, hasRetVariable,&exprResult);
+    std::string exprCpy;
+    
+    std::string exprInvalid;
+    try {
+        exprCpy = validateExpression(expression, dimension, hasRetVariable,&exprResult);
+    } catch (const std::exception &e) {
+        exprInvalid = e.what();
+        exprCpy = expression;
+        if (failIfInvalid) {
+            throw e;
+        }
+    }
     
     //Set internal fields
 
@@ -2233,19 +2352,31 @@ KnobHelper::setExpressionInternal(int dimension,const std::string& expression,bo
         _imp->expressions[dimension].hasRet = hasRetVariable;
         _imp->expressions[dimension].expression = exprCpy;
         _imp->expressions[dimension].originalExpression = expression;
+        _imp->expressions[dimension].exprInvalid = exprInvalid;
         
         ///This may throw an exception upon failure
         //NATRON_PYTHON_NAMESPACE::compilePyScript(exprCpy, &_imp->expressions[dimension].code);
     }
   
-
-    //Parse listeners of the expression, to keep track of dependencies to indicate them to the user.
     if (getHolder()) {
-        {
+        
+        
+        
+        //Parse listeners of the expression, to keep track of dependencies to indicate them to the user.
+        
+        if (exprInvalid.empty()) {
+            
             EXPR_RECURSION_LEVEL();
             _imp->parseListenersFromExpression(dimension);
+            
+        } else {
+            AppInstance* app = getHolder()->getApp();
+            if (app) {
+                app->addInvalidExpressionKnob(shared_from_this());
+            }
         }
     }
+
     
     //Notify the expr. has changed
     expressionChanged(dimension);
@@ -2279,7 +2410,7 @@ KnobHelper::replaceNodeNameInExpression(int dimension,
         QString estr = QString::fromUtf8(hasExpr.c_str());
         estr.replace(QString::fromUtf8(oldName.c_str()), QString::fromUtf8(newName.c_str()));
         hasExpr = estr.toStdString();
-        setExpression(dimension, hasExpr, hasRetVar);
+        setExpression(dimension, hasExpr, hasRetVar, false);
     } catch (...) {
         
     }
@@ -2296,7 +2427,7 @@ KnobHelper::isExpressionUsingRetVariable(int dimension) const
 }
 
 bool
-KnobHelper::getExpressionDependencies(int dimension, std::list<std::pair<KnobI*,int> >& dependencies) const
+KnobHelper::getExpressionDependencies(int dimension, std::list<std::pair<KnobWPtr,int> >& dependencies) const
 {
     QMutexLocker k(&_imp->expressionMutex);
     if (!_imp->expressions[dimension].expression.empty()) {
@@ -2316,20 +2447,23 @@ KnobHelper::clearExpression(int dimension,bool clearResults)
         hadExpression = !_imp->expressions[dimension].originalExpression.empty();
         _imp->expressions[dimension].expression.clear();
         _imp->expressions[dimension].originalExpression.clear();
+        _imp->expressions[dimension].exprInvalid.clear();
         //Py_XDECREF(_imp->expressions[dimension].code); //< new ref
         //_imp->expressions[dimension].code = 0;
     }
+    KnobPtr thisShared = shared_from_this();
     {
-        std::list<std::pair<KnobI*,int> > dependencies;
+        std::list<std::pair<KnobWPtr,int> > dependencies;
         {
             QWriteLocker kk(&_imp->mastersMutex);
             dependencies = _imp->expressions[dimension].dependencies;
             _imp->expressions[dimension].dependencies.clear();
         }
-        for (std::list<std::pair<KnobI*,int> >::iterator it = dependencies.begin();
+        for (std::list<std::pair<KnobWPtr,int> >::iterator it = dependencies.begin();
              it != dependencies.end(); ++it) {
             
-            KnobHelper* other = dynamic_cast<KnobHelper*>(it->first);
+            KnobPtr otherKnob = it->first.lock();
+            KnobHelper* other = dynamic_cast<KnobHelper*>(otherKnob.get());
             assert(other);
             if (!other) {
                 continue;
@@ -2365,7 +2499,7 @@ KnobHelper::clearExpression(int dimension,bool clearResults)
             }
 
             if (getHolder()) {
-                getHolder()->onKnobSlaved(this, other,dimension,false );
+                getHolder()->onKnobSlaved(thisShared, otherKnob,dimension,false );
             }
 
             
@@ -2398,10 +2532,35 @@ KnobHelper::expressionChanged(int dimension)
     computeHasModifications();
 }
 
-PyObject*
+static bool catchErrors(PyObject* mainModule, std::string* error) {
+    if (PyErr_Occurred()) {
+        
+        PyErr_Print();
+        ///Gui session, do stdout, stderr redirection
+        if (PyObject_HasAttrString(mainModule, "catchErr")) {
+            PyObject* errCatcher = PyObject_GetAttrString(mainModule,"catchErr"); //get our catchOutErr created above, new ref
+            PyObject *errorObj = 0;
+            if (errCatcher) {
+                errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
+                assert(errorObj);
+                *error = NATRON_PYTHON_NAMESPACE::PyString_asString(errorObj);
+                PyObject* unicode = PyUnicode_FromString("");
+                PyObject_SetAttrString(errCatcher, "value", unicode);
+                Py_DECREF(errorObj);
+                Py_DECREF(errCatcher);
+            }
+            
+        }
+        return false;
+    }
+    return true;
+}
+
+bool
 KnobHelper::executeExpression(double time,
                               ViewIdx view,
-                              int dimension) const
+                              int dimension,
+                              PyObject** ret, std::string* error) const
 {
     
     std::string expr;
@@ -2421,43 +2580,20 @@ KnobHelper::executeExpression(double time,
     PyObject* v = PyRun_String(script.c_str(), Py_file_input, globalDict, 0);
     Py_XDECREF(v);
     
-    
-    
-    if (PyErr_Occurred()) {
-#ifdef DEBUG
-        PyErr_Print();
-        ///Gui session, do stdout, stderr redirection
-        if (PyObject_HasAttrString(mainModule, "catchErr")) {
-            std::string error;
-            PyObject* errCatcher = PyObject_GetAttrString(mainModule,"catchErr"); //get our catchOutErr created above, new ref
-            PyObject *errorObj = 0;
-            if (errCatcher) {
-                errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
-                assert(errorObj);
-                error = NATRON_PYTHON_NAMESPACE::PY3String_asString(errorObj);
-                PyObject* unicode = PyUnicode_FromString("");
-                PyObject_SetAttrString(errCatcher, "value", unicode);
-                Py_DECREF(errorObj);
-                Py_DECREF(errCatcher);
-                qDebug() << "Expression dump:\n=========================================================";
-                qDebug() << expr.c_str();
-                qDebug() << error.c_str();
-            }
+    *ret = 0;
 
-        }
-
-#endif
-        throw std::runtime_error("Failed to execute expression");
+    if (!catchErrors(mainModule, error)) {
+        return false;
     }
-    PyObject *ret = PyObject_GetAttrString(mainModule,"ret"); //get our ret variable created above
-    
-    if (!ret || PyErr_Occurred()) {
-#ifdef DEBUG
-        PyErr_Print();
-#endif
-        throw std::runtime_error("return value must be assigned to the \"ret\" variable");
+    *ret = PyObject_GetAttrString(mainModule,"ret"); //get our ret variable created above
+    if (!*ret) {
+        *error = "Missing ret variable";
+        return false;
     }
-    return ret;
+    if (!catchErrors(mainModule, error)) {
+        return false;
+    }
+    return true;
     
 }
 
@@ -2864,7 +3000,7 @@ KnobHelper::slaveTo(int dimension,
     }
     {
         QWriteLocker l(&_imp->mastersMutex);
-        if (_imp->masters[dimension].second) {
+        if (_imp->masters[dimension].second.lock()) {
             return false;
         }
         _imp->ignoreMasterPersistence = ignoreMasterPersistence;
@@ -2929,8 +3065,8 @@ std::pair<int,KnobPtr > KnobHelper::getMaster(int dimension) const
 {
     assert(dimension >= 0 && dimension < (int)_imp->masters.size());
     QReadLocker l(&_imp->mastersMutex);
-    
-    return _imp->masters[dimension];
+    std::pair<int,KnobPtr > ret = std::make_pair(_imp->masters[dimension].first, _imp->masters[dimension].second.lock());
+    return ret;
 }
 
 void
@@ -2948,15 +3084,9 @@ KnobHelper::isSlave(int dimension) const
     assert(dimension >= 0);
     QReadLocker l(&_imp->mastersMutex);
     
-    return bool(_imp->masters[dimension].second);
+    return bool(_imp->masters[dimension].second.lock());
 }
 
-std::vector< std::pair<int,KnobPtr > > KnobHelper::getMasters_mt_safe() const
-{
-    QReadLocker l(&_imp->mastersMutex);
-    
-    return _imp->masters;
-}
 
 void
 KnobHelper::checkAnimationLevel(ViewSpec view,
@@ -3260,7 +3390,7 @@ KnobHelper::cloneExpressions(KnobI* other,int dimension)
                 std::string expr = other->getExpression(i);
                 bool hasRet = other->isExpressionUsingRetVariable(i);
                 if (!expr.empty()) {
-                    setExpression(i, expr,hasRet);
+                    setExpression(i, expr,hasRet, false);
                     cloneExpressionsResults(other,i);
                 }
             }
@@ -3282,7 +3412,7 @@ KnobHelper::cloneExpressionsAndCheckIfChanged(KnobI* other,int dimension)
                 std::string expr = other->getExpression(i);
                 bool hasRet = other->isExpressionUsingRetVariable(i);
                 if (!expr.empty() && (expr != _imp->expressions[i].originalExpression || hasRet != _imp->expressions[i].hasRet)) {
-                    setExpression(i, expr,hasRet);
+                    setExpression(i, expr,hasRet, false);
                     cloneExpressionsResults(other,i);
                     ret = true;
                 }
@@ -3307,13 +3437,13 @@ KnobHelper::addListener(const bool isExpression,
     if (!listenerIsHelper) {
         return;
     }
-    
+    KnobPtr thisShared = shared_from_this();
     if (listenerIsHelper->_signalSlotHandler && _signalSlotHandler) {
         
         
         //Notify the holder one of its knob is now slaved
         if (listenerIsHelper->getHolder()) {
-            listenerIsHelper->getHolder()->onKnobSlaved(listenerIsHelper, this,listenerDimension,true );
+            listenerIsHelper->getHolder()->onKnobSlaved(listener, thisShared,listenerDimension,true );
         }
         
     }
@@ -3338,7 +3468,7 @@ KnobHelper::addListener(const bool isExpression,
     if (isExpression) {
         QMutexLocker k(&listenerIsHelper->_imp->expressionMutex);
         assert(listenerDimension >= 0 && listenerDimension < listenerIsHelper->_imp->dimension);
-        listenerIsHelper->_imp->expressions[listenerDimension].dependencies.push_back(std::make_pair(this,listenedToDimension));
+        listenerIsHelper->_imp->expressions[listenerDimension].dependencies.push_back(std::make_pair(thisShared,listenedToDimension));
     }
     
     
@@ -3689,7 +3819,7 @@ KnobHelper::createDuplicateOnNode(EffectInstance* effect,
             std::string script = ss.str();
             for (int i = 0; i < getDimension(); ++i) {
                 clearExpression(i, true);
-                setExpression(i, script, false);
+                setExpression(i, script, false, false);
             }
         } catch (...) {
             
@@ -3751,7 +3881,7 @@ KnobHelper::setKnobAsAliasOfThis(const KnobPtr& master, bool doAlias)
             assert(thisChoice);
             if (thisChoice) {
                 isChoice->populateChoices(thisChoice->getEntries_mt_safe(),
-                                          thisChoice->getEntriesHelp_mt_safe());
+                                          thisChoice->getEntriesHelp_mt_safe(), 0, 0, false);
             }
         }
     }
@@ -3762,12 +3892,14 @@ KnobHelper::setKnobAsAliasOfThis(const KnobPtr& master, bool doAlias)
             unSlave(i, false);
         }
         if (doAlias) {
+            master->clone(this, i);
             bool ok = slaveTo(i, master, i, eValueChangedReasonNatronInternalEdited, false);
             assert(ok);
             Q_UNUSED(ok);
         }
-        handleSignalSlotsForAliasLink(master,doAlias);
     }
+    handleSignalSlotsForAliasLink(master,doAlias);
+
     endChanges();
         
     QWriteLocker k(&_imp->mastersMutex);
@@ -3789,14 +3921,17 @@ KnobHelper::getAliasMaster()  const
 void
 KnobHelper::getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) const
 {
-    std::set<KnobI*> deps;
+    std::set<KnobPtr> deps;
     {
         QMutexLocker k(&_imp->expressionMutex);
         for (int i = 0; i < _imp->dimension; ++i) {
-            for (std::list< std::pair<KnobI*,int> >::const_iterator it = _imp->expressions[i].dependencies.begin();
+            for (std::list< std::pair<KnobWPtr,int> >::const_iterator it = _imp->expressions[i].dependencies.begin();
                  it != _imp->expressions[i].dependencies.end(); ++it) {
+                KnobPtr knob = it->first.lock();
+                if (knob) {
+                    deps.insert(knob);
+                }
                 
-                deps.insert(it->first);
                
             }
         }
@@ -3804,16 +3939,17 @@ KnobHelper::getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) con
     {
         QReadLocker k(&_imp->mastersMutex);
         for (int i = 0; i < _imp->dimension; ++i) {
-            if (_imp->masters[i].second) {
-                if (std::find(deps.begin(), deps.end(), _imp->masters[i].second.get()) == deps.end()) {
-                    deps.insert(_imp->masters[i].second.get());
+            KnobPtr master = _imp->masters[i].second.lock();
+            if (master) {
+                if (std::find(deps.begin(), deps.end(), master) == deps.end()) {
+                    deps.insert(master);
                 }
             }
         }
     }
     
-    std::list<KnobI*> knobsToInspectRecursive;
-    for (std::set<KnobI*>::iterator it = deps.begin(); it!=deps.end(); ++it) {
+    std::list<KnobPtr> knobsToInspectRecursive;
+    for (std::set<KnobPtr>::iterator it = deps.begin(); it!=deps.end(); ++it) {
         EffectInstance* effect  = dynamic_cast<EffectInstance*>((*it)->getHolder());
         if (effect) {
             NodePtr node = effect->getNode();
@@ -3826,7 +3962,7 @@ KnobHelper::getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) con
     }
     
     
-    for (std::list<KnobI*>::iterator it = knobsToInspectRecursive.begin(); it!=knobsToInspectRecursive.end(); ++it) {
+    for (std::list<KnobPtr>::iterator it = knobsToInspectRecursive.begin(); it!=knobsToInspectRecursive.end(); ++it) {
         (*it)->getAllExpressionDependenciesRecursive(nodes);
     }
 }
@@ -4629,7 +4765,7 @@ KnobHolder::endChanges(bool discardRendering)
     
     // Call instanceChanged on each knob
     for (KnobChanges::iterator it = knobChanged.begin(); it!=knobChanged.end(); ++it) {
-        if (it->knob && !it->valueChangeBlocked) {
+        if (it->knob && !it->valueChangeBlocked && !isLoadingProject) {
             if (!it->originatedFromMainThread && !canHandleEvaluateOnChangeInOtherThread()) {
                 Q_EMIT doValueChangeOnMainThread(it->knob.get(), it->originalReason, it->time, it->view, it->originatedFromMainThread);
             } else {
@@ -5272,7 +5408,6 @@ AnimatingKnobStringHelper::stringFromInterpolatedValue(double interpolated,
                                                        std::string* returnValue) const
 {
     assert(!view.isAll());
-    assert(!view.isCurrent()); // not yet implemented
     Q_UNUSED(view);
     _animation->stringFromInterpolatedIndex(interpolated, returnValue);
 }
@@ -5293,7 +5428,7 @@ AnimatingKnobStringHelper::keyframeRemoved_virtual(int /*dimension*/,
 std::string
 AnimatingKnobStringHelper::getStringAtTime(double time,
                                            ViewSpec view,
-                                           int dimension) const
+                                           int dimension) 
 {
     std::string ret;
    // assert(!view.isAll());

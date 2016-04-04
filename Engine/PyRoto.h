@@ -56,11 +56,11 @@ public:
         return _item;
     }
     
-    void setLabel(const std::string & name);
-    std::string getLabel() const;
+    void setLabel(const QString & name);
+    QString getLabel() const;
     
-    bool setScriptName(const std::string& name);
-    std::string getScriptName() const;
+    bool setScriptName(const QString& name);
+    QString getScriptName() const;
     
     void setLocked(bool locked);
     bool getLocked() const;
@@ -71,7 +71,7 @@ public:
     
     Layer* getParentLayer() const;
     
-    Param* getParam(const std::string& name) const;
+    Param* getParam(const QString& name) const;
     
 private:
     
@@ -217,7 +217,7 @@ public:
         
     Layer* getBaseLayer() const;
     
-    ItemBase* getItemByName(const std::string& name) const;
+    ItemBase* getItemByName(const QString& name) const;
     
     Layer* createLayer();
     

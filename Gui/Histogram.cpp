@@ -478,7 +478,7 @@ boost::shared_ptr<Image> HistogramPrivate::getHistogramImage(RectI* imagePortion
         return boost::shared_ptr<Image>();
     } else if (index == 1) {
         //current viewer
-        viewer = widget->getGui()->getNodeGraph()->getLastSelectedViewer();
+        viewer = widget->getGui()->getActiveViewer();
         
     } else {
         boost::shared_ptr<Image> ret;

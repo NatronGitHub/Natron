@@ -2422,7 +2422,26 @@ ViewerInstance::interpolateGammaLut(float value)
 void
 ViewerInstance::markAllOnGoingRendersAsAborted()
 {
-    _imp->markAllRendersAsAborted();
+    
+    //Do not abort the oldest render while scrubbing timeline or sliders so that the user gets some feedback
+    bool keepOldest = getApp()->isDraftRenderEnabled();
+    
+    QMutexLocker k(&_imp->renderAgeMutex);
+    for (int i = 0; i < 2; ++i) {
+        if (_imp->currentRenderAges[i].empty()) {
+            continue;
+        }
+        
+        //Do not abort the oldest render, let it finish
+        OnGoingRenders::iterator it = _imp->currentRenderAges[i].begin();
+        if (keepOldest) {
+            ++it;
+        }
+        
+        for (;it != _imp->currentRenderAges[i].end(); ++it) {
+            (*it)->aborted = 1;
+        }
+    }
 }
 
 template <typename PIX,int maxValue,bool opaque, bool applyMatte, int rOffset,int gOffset,int bOffset>
@@ -3198,6 +3217,9 @@ ViewerInstance::refreshActiveInputs(int inputNbChanged)
                 
             } else {
                 _imp->activeInputs[0] = inputNbChanged;
+                if (_imp->activeInputs[1] == -1) {
+                    _imp->activeInputs[1] = inputNbChanged;
+                }
             }
         }
     }

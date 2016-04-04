@@ -164,7 +164,7 @@ public:
     
     RectI getMarkerImageRoI(int time) const;
     
-    virtual void onKnobSlaved(KnobI* slave,KnobI* master,
+    virtual void onKnobSlaved(const KnobPtr& slave,const KnobPtr& master,
                               int dimension,
                               bool isSlave) OVERRIDE FINAL;
     

@@ -29,6 +29,7 @@
 #include <algorithm> // min, max
 #include <map>
 #include <list>
+#include <locale>
 #include <utility>
 #include <stdexcept>
 
@@ -46,19 +47,25 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QMenuBar>
 #include <QToolButton>
 #include <QProgressDialog>
+#include <QClipboard>
 #include <QVBoxLayout>
 #include <QTreeWidget>
 #include <QTabBar>
 #include <QTextEdit>
 #include <QLineEdit>
+#include <QCursor>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QTreeView>
+
+#include "Global/QtCompat.h"
 
 #include "Engine/GroupOutput.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h" // NodesList, NodeCollection
 #include "Engine/Project.h"
+#include "Engine/KnobSerialization.h"
+#include "Engine/FileSystemModel.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewerInstance.h"
@@ -73,6 +80,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/GuiPrivate.h"
+#include "Gui/GuiMacros.h"
 #include "Gui/LogWindow.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
@@ -87,6 +95,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
+#include "Gui/SequenceFileDialog.h"
 #include "Gui/PropertiesBinWrapper.h"
 #include "Gui/Histogram.h"
 
@@ -403,6 +412,34 @@ Gui::keyPressEvent(QKeyEvent* e)
         if (panel) {
             panel->getPanel()->closePanel();
         }
+    } else if (key == Qt::Key_V && modCASIsControl(e)) {
+        // CTRL +V should have been caught by the Nodegraph if it contained a valid Natron graph.
+        // We still try to check if it is a readable Python script
+        QClipboard* clipboard = QApplication::clipboard();
+        const QMimeData* mimedata = clipboard->mimeData();
+        if (mimedata->hasFormat(QLatin1String("text/plain"))) {
+            
+            QByteArray data = mimedata->data(QLatin1String("text/plain"));
+            QString str = QString::fromUtf8(data);
+            if (QFile::exists(str)) {
+                QList<QUrl> urls;
+                urls.push_back(QUrl::fromLocalFile(str));
+                handleOpenFilesFromUrls(urls, QCursor::pos());
+            } else {
+                std::string error, output;
+                if (!Python::interpretPythonScript(str.toStdString(), &error, &output)) {
+                    _imp->_scriptEditor->appendToScriptEditor(QString::fromUtf8(error.c_str()));
+                    ensureScriptEditorVisible();
+                } else if (!output.empty()) {
+                    _imp->_scriptEditor->appendToScriptEditor(QString::fromUtf8(output.c_str()));
+                }
+            }
+            
+        } else if (mimedata->hasUrls()) {
+            QList<QUrl> urls = mimedata->urls();
+            handleOpenFilesFromUrls(urls, QCursor::pos());
+        }
+        
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
         if ( getNodeGraph()->getLastSelectedViewer() ) {
             getNodeGraph()->getLastSelectedViewer()->previousFrame();
@@ -976,5 +1013,188 @@ Gui::onFocusChanged(QWidget* /*old*/, QWidget* newFocus)
         pw->takeClickFocus();
     }
 }
+
+void
+Gui::fileSequencesFromUrls(const QList<QUrl>& urls, std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> >* sequences)
+{
+    QStringList filesList;
+    for (int i = 0; i < urls.size(); ++i) {
+        const QUrl rl = QtCompat::toLocalFileUrlFixed(urls.at(i));
+        QString path = rl.toLocalFile();
+        
+#ifdef __NATRON_WIN32__
+        if ( !path.isEmpty() && ( path.at(0) == QLatin1Char('/')  || path.at(0) == QLatin1Char('\\') ) ) {
+            path = path.remove(0,1);
+        }
+        path = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(path);
+        
+#endif
+        QDir dir(path);
+        
+        //if the path dropped is not a directory append it
+        if (!dir.exists()) {
+            filesList << path;
+        } else {
+            //otherwise append everything inside the dir recursively
+            SequenceFileDialog::appendFilesFromDirRecursively(&dir,&filesList);
+        }
+    }
+    
+    QStringList supportedExtensions;
+    supportedExtensions.push_back(QString::fromLatin1(NATRON_PROJECT_FILE_EXT));
+    supportedExtensions.push_back(QString::fromLatin1("py"));
+    ///get all the decoders
+    std::map<std::string,std::string> readersForFormat;
+    appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
+    for (std::map<std::string,std::string>::const_iterator it = readersForFormat.begin(); it != readersForFormat.end(); ++it) {
+        supportedExtensions.push_back( QString::fromUtf8(it->first.c_str()) );
+    }
+    *sequences = SequenceFileDialog::fileSequencesFromFilesList(filesList,supportedExtensions);
+
+
+}
+
+void
+Gui::dragEnterEvent(QDragEnterEvent* e)
+{
+    if (!e->mimeData()->hasUrls()) {
+        return;
+    }
+    
+    QList<QUrl> urls = e->mimeData()->urls();
+    
+    std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > sequences;
+    fileSequencesFromUrls(urls, &sequences);
+    
+    if (!sequences.empty()) {
+        e->accept();
+    }
+}
+
+void
+Gui::dragMoveEvent(QDragMoveEvent* e)
+{
+    if (!e->mimeData()->hasUrls()) {
+        return;
+    }
+    
+    QList<QUrl> urls = e->mimeData()->urls();
+    
+    std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > sequences;
+    fileSequencesFromUrls(urls, &sequences);
+    
+    if (!sequences.empty()) {
+        e->accept();
+    }
+}
+
+void
+Gui::dragLeaveEvent(QDragLeaveEvent* e)
+{
+    e->accept();
+}
+
+static NodeGraph* isNodeGraphChild(QWidget* w) {
+    NodeGraph* n = dynamic_cast<NodeGraph*>(w);
+    if (n) {
+        return n;
+    } else {
+        QWidget* parent = w->parentWidget();
+        if (parent) {
+            return isNodeGraphChild(parent);
+        } else {
+            return 0;
+        }
+    }
+}
+
+void
+Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls, const QPoint& globalPos)
+{
+    std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > sequences;
+    fileSequencesFromUrls(urls, &sequences);
+    
+    QWidget* widgetUnderMouse = QApplication::widgetAt(globalPos);
+    NodeGraph* graph = isNodeGraphChild(widgetUnderMouse);
+    
+    if (!graph) {
+        // No grpah under mouse, use top level one
+        graph = _imp->_nodeGraphArea;
+    }
+    assert(graph);
+    if (!graph) {
+        return;
+    }
+    
+    QPointF graphScenePos = graph->mapToScene(graph->mapFromGlobal(globalPos));
+    
+    std::locale local;
+    for (U32 i = 0; i < sequences.size(); ++i) {
+        
+        
+        boost::shared_ptr<SequenceParsing::SequenceFromFiles> & sequence = sequences[i];
+        if (sequence->count() < 1) {
+            continue;
+        }
+        
+        ///find a decoder for this file type
+        std::string ext = sequence->fileExtension();
+        std::string extLower;
+        for (size_t j = 0; j < ext.size(); ++j) {
+            extLower.append( 1,std::tolower( ext.at(j),local ) );
+        }
+        if (extLower == NATRON_PROJECT_FILE_EXT) {
+            const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();
+            assert(!content.empty());
+            (void)openProject(content.begin()->second.absoluteFileName());
+        } else if (extLower == "py") {
+            const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();
+            assert(!content.empty());
+            _imp->_scriptEditor->sourceScript(QString::fromUtf8(content.begin()->second.absoluteFileName().c_str()));
+            ensureScriptEditorVisible();
+           
+        } else {
+            
+            std::map<std::string,std::string> readersForFormat;
+            appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
+            std::map<std::string,std::string>::iterator found = readersForFormat.find(extLower);
+            if ( found == readersForFormat.end() ) {
+                Dialogs::errorDialog("Reader", "No plugin capable of decoding " + extLower + " was found.");
+            } else {
+                
+                std::string pattern = sequence->generateValidSequencePattern();
+                
+                CreateNodeArgs args(QString::fromUtf8(found->second.c_str()), eCreateNodeReasonUserCreate, graph->getGroup());
+                args.xPosHint = graphScenePos.x();
+                args.yPosHint = graphScenePos.y();
+                args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern));
+                
+                NodePtr n = getApp()->createNode(args);
+                
+                //And offset scenePos by the Width of the previous node created if several nodes are created
+                double w,h;
+                n->getSize(&w, &h);
+                graphScenePos.rx() += (w + 10);
+            }
+        }
+    }
+}
+
+void
+Gui::dropEvent(QDropEvent* e)
+{
+    if ( !e->mimeData()->hasUrls() ) {
+        return;
+    }
+    
+    e->accept();
+    
+    QList<QUrl> urls = e->mimeData()->urls();
+    
+    handleOpenFilesFromUrls(urls, mapToGlobal(e->pos()));
+} // dropEvent
+
+
+
 
 NATRON_NAMESPACE_EXIT;

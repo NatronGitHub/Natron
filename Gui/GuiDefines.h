@@ -52,6 +52,7 @@
 //#define NATRON_FONT_ALT "Times"
 #define NATRON_FONT "Droid Sans"
 #define NATRON_FONT_ALT "Droid Sans"
+#define NATRON_SCRIPT_FONT "Courier New"
 #define NATRON_FONT_SIZE_6 6
 #define NATRON_FONT_SIZE_8 8
 #define NATRON_FONT_SIZE_10 10

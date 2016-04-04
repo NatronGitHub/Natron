@@ -84,7 +84,7 @@ KnobFile::typeName() const
 
 
 std::string
-KnobFile::getFileName(int time, ViewSpec view) const
+KnobFile::getFileName(int time, ViewSpec view)
 {
     if (!_isInputImage) {
         return getValue(0, view);
@@ -133,7 +133,7 @@ KnobOutputFile::typeName() const
 }
 
 QString
-KnobOutputFile::generateFileNameAtTime(SequenceTime time, ViewSpec view) const
+KnobOutputFile::generateFileNameAtTime(SequenceTime time, ViewSpec view) 
 {
     std::vector<std::string> views;
     if (getHolder() && getHolder()->getApp()) {
@@ -151,7 +151,7 @@ KnobPath::KnobPath(KnobHolder* holder,
                      const std::string &description,
                      int dimension,
                      bool declaredByPlugin)
-: Knob<std::string>(holder,description,dimension,declaredByPlugin)
+: KnobTable(holder,description,dimension,declaredByPlugin)
 , _isMultiPath(false)
 , _isStringList(false)
 {
@@ -162,12 +162,6 @@ const std::string &
 KnobPath::typeNameStatic()
 {
     return _typeNameStr;
-}
-
-bool
-KnobPath::canAnimate() const
-{
-    return false;
 }
 
 const std::string &
@@ -201,100 +195,9 @@ KnobPath::getIsStringList() const
     return _isStringList;
 }
 
-void
-KnobPath::getVariables(std::list<std::pair<std::string,std::string> >* paths) const
-{
-    if (!_isMultiPath) {
-        return;
-    }
-    
-    std::string startNameTag(NATRON_ENV_VAR_NAME_START_TAG);
-    std::string endNameTag(NATRON_ENV_VAR_NAME_END_TAG);
-    std::string startValueTag(NATRON_ENV_VAR_VALUE_START_TAG);
-    std::string endValueTag(NATRON_ENV_VAR_VALUE_END_TAG);
-    
-    std::string raw = getValue().c_str();
-    size_t i = raw.find(startNameTag);
-    while (i != std::string::npos) {
-        i += startNameTag.size();
-        assert(i < raw.size());
-        size_t endNamePos = raw.find(endNameTag,i);
-        assert(endNamePos != std::string::npos && endNamePos < raw.size());
-        if (endNamePos == std::string::npos || endNamePos >= raw.size()) {
-            throw std::logic_error("KnobPath::getVariables()");
-        }
-        std::string name,value;
-        while (i < endNamePos) {
-            name.push_back(raw[i]);
-            ++i;
-        }
-        
-        i = raw.find(startValueTag,i);
-        i += startValueTag.size();
-        assert(i != std::string::npos && i < raw.size());
-        
-        size_t endValuePos = raw.find(endValueTag,i);
-        assert(endValuePos != std::string::npos && endValuePos < raw.size());
-
-        while (endValuePos != std::string::npos && endValuePos < raw.size() && i < endValuePos) {
-            value.push_back(raw.at(i));
-            ++i;
-        }
-        
-        // In order to use XML tags, the text inside the tags has to be unescaped.
-        paths->push_back(std::make_pair(name,Project::unescapeXML(value).c_str()));
-        
-        i = raw.find(startNameTag,i);
-    }
-}
-
-
-void
-KnobPath::getPaths(std::list<std::string> *paths) const
-{
-    std::string raw = getValue().c_str();
-    
-    if (_isMultiPath) {
-        std::list<std::pair<std::string,std::string> > ret;
-        getVariables(&ret);
-        for (std::list<std::pair<std::string,std::string> >::iterator it = ret.begin(); it != ret.end(); ++it) {
-            paths->push_back(it->second);
-        }
-    } else {
-        paths->push_back(raw);
-    }
-    
-}
 
 std::string
-KnobPath::encodeToMultiPathFormat(const std::list<std::pair<std::string,std::string> >& paths)
-{
-    std::string path;
-    
-    
-    for (std::list<std::pair<std::string,std::string> >::const_iterator it = paths.begin(); it != paths.end(); ++it) {
-        // In order to use XML tags, the text inside the tags has to be escaped.
-        path += NATRON_ENV_VAR_NAME_START_TAG;
-        path += Project::escapeXML(it->first);
-        path += NATRON_ENV_VAR_NAME_END_TAG;
-        path += NATRON_ENV_VAR_VALUE_START_TAG;
-        path += Project::escapeXML(it->second);
-        path += NATRON_ENV_VAR_VALUE_END_TAG;
-    }
-    return path;
-}
-
-void
-KnobPath::setPaths(const std::list<std::pair<std::string,std::string> >& paths)
-{
-    if (!_isMultiPath) {
-        return;
-    }
-    setValue(encodeToMultiPathFormat(paths));
-}
-
-std::string
-KnobPath::generateUniquePathID(const std::list<std::pair<std::string,std::string> >& paths)
+KnobPath::generateUniquePathID(const std::list<std::vector<std::string> >& paths)
 {
     std::string baseName("Path");
     int idx = 0;
@@ -308,8 +211,8 @@ KnobPath::generateUniquePathID(const std::list<std::pair<std::string,std::string
         ss << idx;
         name = ss.str();
         found = false;
-        for (std::list<std::pair<std::string,std::string> >::const_iterator it = paths.begin(); it != paths.end(); ++it) {
-            if (it->first == name) {
+        for (std::list<std::vector<std::string> >::const_iterator it = paths.begin(); it != paths.end(); ++it) {
+            if ((*it)[0] == name) {
                 found = true;
                 break;
             }
@@ -319,17 +222,52 @@ KnobPath::generateUniquePathID(const std::list<std::pair<std::string,std::string
     return name;
 }
 
+bool
+KnobPath::isCellEnabled(int /*row*/, int /*col*/, const QStringList& values) const
+{
+    
+    if (values[0] == QString::fromUtf8(NATRON_PROJECT_ENV_VAR_NAME) ||
+        values[0] == QString::fromUtf8(NATRON_OCIO_ENV_VAR_NAME)) {
+        return false;
+    }
+    
+    return true;
+}
+
+bool
+KnobPath::isCellBracketDecorated(int /*row*/, int col) const
+{
+    if (col == 0 && _isMultiPath && !_isStringList) {
+        return true;
+    }
+    return false;
+}
+
+void
+KnobPath::getPaths(std::list<std::string>* paths)
+{
+    std::list<std::vector<std::string> > table;
+    getTable(&table);
+    for (std::list<std::vector<std::string> >::iterator it = table.begin(); it!=table.end(); ++it) {
+        assert(it->size() == 2);
+        paths->push_back((*it)[1]);
+    }
+}
+
 void
 KnobPath::prependPath(const std::string& path)
 {
     if (!_isMultiPath) {
         setValue(path);
     } else {
-        std::list<std::pair<std::string,std::string> > paths;
-        getVariables(&paths);
+        std::list<std::vector<std::string> > paths;
+        getTable(&paths);
         std::string name = generateUniquePathID(paths);
-        paths.push_front(std::make_pair(name, path));
-        setPaths(paths);
+        std::vector<std::string> row(2);
+        row[0] = name;
+        row[1] = path;
+        paths.push_front(row);
+        setTable(paths);
     }
 }
 
@@ -339,16 +277,19 @@ KnobPath::appendPath(const std::string& path)
     if (!_isMultiPath) {
         setValue(path);
     } else {
-        std::list<std::pair<std::string,std::string> > paths;
-        getVariables(&paths);
-        for (std::list<std::pair<std::string,std::string> >::iterator it = paths.begin(); it!=paths.end(); ++it) {
-            if (it->second == path) {
+        std::list<std::vector<std::string> > paths;
+        getTable(&paths);
+        for (std::list<std::vector<std::string> >::iterator it = paths.begin(); it!=paths.end(); ++it) {
+            if ((*it)[1] == path) {
                 return;
             }
         }
         std::string name = generateUniquePathID(paths);
-        paths.push_back(std::make_pair(name, path));
-        setPaths(paths);
+        std::vector<std::string> row(2);
+        row[0] = name;
+        row[1] = path;
+        paths.push_back(row);
+        setTable(paths);
     }
 }
 

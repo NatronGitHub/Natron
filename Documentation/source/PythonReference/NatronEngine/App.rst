@@ -16,7 +16,7 @@ See :ref:`detailed<app.details>` description...
 
 Functions
 ^^^^^^^^^
-
+*	 def :meth:`addProjectLayer<NatronEngine.App.addProjectLayer>` (layer)
 *	 def :meth:`addFormat<NatronEngine.App.addFormat>` (formatSpec)
 *    def :meth:`createNode<NatronEngine.App.createNode>` (pluginID[, majorVersion=-1[, group=None]])
 *    def :meth:`createReader<NatronEngine.App.createReader>` (filename[, group=None])
@@ -131,6 +131,16 @@ You can get a specific :doc:`parameter<Param>` of the project settings with the
 
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. method:: NatronEngine.App.addProjectLayer(layer)
+	
+	:param layer: :class:`ImageLayer<NatronEngine.ImageLayer>`
+	
+Appends a new project-wide layer. It will be available to all layer menus of all nodes.
+Each layer menu must be refreshed individually with either a right click on the menu or
+by changing nodes connections to get access to the new layer. Layer names are unique:
+even if you add duplicates to the layers list, only the first one in the list with that name
+will be available in the menus.
 
 .. method:: NatronEngine.App.addFormat(formatSpec)
 

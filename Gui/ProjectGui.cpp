@@ -399,6 +399,9 @@ void loadNodeGuiSerialization(Gui* gui,
             tab->setInfobarVisible(found->second.infobarVisible);
             tab->setTimelineVisible(found->second.timelineVisible);
             tab->setCheckerboardEnabled(found->second.checkerboardEnabled);
+            if (!found->second.layerName.empty()) {
+                tab->setCurrentLayers(QString::fromUtf8(found->second.layerName.c_str()), QString::fromUtf8(found->second.alphaLayerName.c_str()));
+            }
             
             if (found->second.isPauseEnabled[0] && found->second.isPauseEnabled[1]) {
                 tab->setViewerPaused(true, true);
@@ -556,9 +559,9 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
         if (found != registeredTabs.end()) {
             NATRON_PYTHON_NAMESPACE::PyPanel* panel = dynamic_cast<NATRON_PYTHON_NAMESPACE::PyPanel*>(found->second.first);
             if (panel) {
-                panel->restore((*it)->userData);
+                panel->restore(QString::fromUtf8((*it)->userData.c_str()));
                 for (std::list<boost::shared_ptr<KnobSerialization> >::iterator it2 = (*it)->knobs.begin(); it2!=(*it)->knobs.end(); ++it2) {
-                    NATRON_PYTHON_NAMESPACE::Param* param = panel->getParam((*it2)->getName());
+                    NATRON_PYTHON_NAMESPACE::Param* param = panel->getParam(QString::fromUtf8((*it2)->getName().c_str()));
                     if (param) {
                         param->getInternalKnob()->clone((*it2)->getKnob());
                         delete param;

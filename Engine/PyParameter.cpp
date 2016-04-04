@@ -63,38 +63,38 @@ Param::getNumDimensions() const
     return getInternalKnob()->getDimension();
 }
 
-std::string
+QString
 Param::getScriptName() const
 {
-    return getInternalKnob()->getName();
+    return QString::fromUtf8(getInternalKnob()->getName().c_str());
 }
 
-std::string
+QString
 Param::getLabel() const
 {
-    return getInternalKnob()->getLabel();
+    return QString::fromUtf8(getInternalKnob()->getLabel().c_str());
 }
 
 
-std::string
+QString
 Param::getTypeName() const
 {
-    return getInternalKnob()->typeName();
+    return QString::fromUtf8(getInternalKnob()->typeName().c_str());
 }
 
-std::string
+QString
 Param::getHelp() const
 {
-    return getInternalKnob()->getHintToolTip();
+    return QString::fromUtf8(getInternalKnob()->getHintToolTip().c_str());
 }
 
 void
-Param::setHelp(const std::string& help)
+Param::setHelp(const QString& help)
 {
     if (!getInternalKnob()->isUserKnob()) {
         return;
     }
-    getInternalKnob()->setHintToolTip(help);
+    getInternalKnob()->setHintToolTip(help.toStdString());
 }
 
 bool
@@ -416,20 +416,20 @@ Param::_addAsDependencyOf(int fromExprDimension,Param* param,int thisDimension)
 }
 
 bool
-AnimatedParam::setExpression(const std::string& expr,bool hasRetVariable,int dimension)
+AnimatedParam::setExpression(const QString& expr,bool hasRetVariable,int dimension)
 {
     try {
-        _knob.lock()->setExpression(dimension,expr,hasRetVariable);
+        _knob.lock()->setExpression(dimension,expr.toStdString(),hasRetVariable, true);
     } catch (...) {
         return false;
     }
     return true;
 }
 
-std::string
+QString
 AnimatedParam::getExpression(int dimension,bool* hasRetVariable) const
 {
-    std::string ret = _knob.lock()->getExpression(dimension);
+    QString ret = QString::fromUtf8(_knob.lock()->getExpression(dimension).c_str());
     *hasRetVariable = _knob.lock()->isExpressionUsingRetVariable(dimension);
     return ret;
 }
@@ -1094,9 +1094,9 @@ ChoiceParam::set(int x, double frame)
 }
 
 void
-ChoiceParam::set(const std::string& label)
+ChoiceParam::set(const QString& label)
 {
-    KnobHelper::ValueChangedReturnCodeEnum s = _choiceKnob.lock()->setValueFromLabel(label, 0);
+    KnobHelper::ValueChangedReturnCodeEnum s = _choiceKnob.lock()->setValueFromLabel(label.toStdString(), 0);
     Q_UNUSED(s);
 }
 
@@ -1131,9 +1131,9 @@ ChoiceParam::setDefaultValue(int value)
 }
 
 void
-ChoiceParam::setDefaultValue(const std::string& value)
+ChoiceParam::setDefaultValue(const QString& value)
 {
-    _choiceKnob.lock()->setDefaultValueFromLabel(value);
+    _choiceKnob.lock()->setDefaultValueFromLabel(value.toStdString());
 }
 
 int
@@ -1149,7 +1149,7 @@ ChoiceParam::restoreDefaultValue()
 }
 
 void
-ChoiceParam::addOption(const std::string& option,const std::string& help)
+ChoiceParam::addOption(const QString& option,const QString& help)
 {
     boost::shared_ptr<KnobChoice> knob = _choiceKnob.lock();
     if (!knob->isUserKnob()) {
@@ -1157,16 +1157,12 @@ ChoiceParam::addOption(const std::string& option,const std::string& help)
     }
     std::vector<std::string> entries = knob->getEntries_mt_safe();
     std::vector<std::string> helps = knob->getEntriesHelp_mt_safe();
-    entries.push_back(option);
-    if (!help.empty()) {
-        helps.push_back(help);
-    }
-    knob->populateChoices(entries,helps);
+    knob->appendChoice(option.toStdString(), help.toStdString());
     
 }
 
 void
-ChoiceParam::setOptions(const std::list<std::pair<std::string,std::string> >& options)
+ChoiceParam::setOptions(const std::list<std::pair<QString,QString> >& options)
 {
     boost::shared_ptr<KnobChoice> knob = _choiceKnob.lock();
     if (!knob->isUserKnob()) {
@@ -1174,21 +1170,21 @@ ChoiceParam::setOptions(const std::list<std::pair<std::string,std::string> >& op
     }
     
     std::vector<std::string> entries,helps;
-    for (std::list<std::pair<std::string,std::string> >::const_iterator it = options.begin(); it != options.end(); ++it) {
-        entries.push_back(it->first);
-        helps.push_back(it->second);
+    for (std::list<std::pair<QString,QString> >::const_iterator it = options.begin(); it != options.end(); ++it) {
+        entries.push_back(it->first.toStdString());
+        helps.push_back(it->second.toStdString());
     }
     knob->populateChoices(entries,helps);
 }
 
-std::string
+QString
 ChoiceParam::getOption(int index) const
 {
     std::vector<std::string> entries =  _choiceKnob.lock()->getEntries_mt_safe();
     if (index < 0 || index >= (int)entries.size()) {
-        return std::string();
+        return QString();
     }
-    return entries[index];
+    return QString::fromUtf8(entries[index].c_str());
 }
 
 
@@ -1198,10 +1194,15 @@ ChoiceParam::getNumOptions() const
     return _choiceKnob.lock()->getNumEntries();
 }
 
-std::vector<std::string>
+QStringList
 ChoiceParam::getOptions() const
 {
-    return _choiceKnob.lock()->getEntries_mt_safe();
+    QStringList ret;
+    std::vector<std::string> entries = _choiceKnob.lock()->getEntries_mt_safe();
+    for (std::size_t i = 0; i < entries.size(); ++i) {
+        ret.push_back(QString::fromUtf8(entries[i].c_str()));
+    }
+    return ret;
 }
 
 int
@@ -1317,65 +1318,65 @@ StringParamBase::~StringParamBase()
 }
 
 
-std::string
+QString
 StringParamBase::get() const
 {
-    return _stringKnob.lock()->getValue(0);
+    return QString::fromUtf8(_stringKnob.lock()->getValue(0).c_str());
 }
 
-std::string
+QString
 StringParamBase::get(double frame) const
 {
-    return _stringKnob.lock()->getValueAtTime(frame,0);
+    return QString::fromUtf8(_stringKnob.lock()->getValueAtTime(frame,0).c_str());
 }
 
 
 void
-StringParamBase::set(const std::string& x)
+StringParamBase::set(const QString& x)
 {
-    _stringKnob.lock()->setValue(x, ViewSpec::current(), 0);
+    _stringKnob.lock()->setValue(x.toStdString(), ViewSpec::current(), 0);
 }
 
 void
-StringParamBase::set(const std::string& x, double frame)
+StringParamBase::set(const QString& x, double frame)
 {
-    _stringKnob.lock()->setValueAtTime(frame, x, ViewSpec::current(), 0);
+    _stringKnob.lock()->setValueAtTime(frame, x.toStdString(), ViewSpec::current(), 0);
 }
 
-std::string
+QString
 StringParamBase::getValue() const
 {
-    return _stringKnob.lock()->getValue(0);
+    return QString::fromUtf8(_stringKnob.lock()->getValue(0).c_str());
 }
 
 void
-StringParamBase::setValue(const std::string& value)
+StringParamBase::setValue(const QString& value)
 {
-    _stringKnob.lock()->setValue(value, ViewSpec::current(), 0);
+    _stringKnob.lock()->setValue(value.toStdString(), ViewSpec::current(), 0);
 }
 
-std::string
+QString
 StringParamBase::getValueAtTime(double time) const
 {
-    return _stringKnob.lock()->getValueAtTime(time,0);
+    return QString::fromUtf8(_stringKnob.lock()->getValueAtTime(time,0).c_str());
 }
 
 void
-StringParamBase::setValueAtTime(const std::string& value,double time)
+StringParamBase::setValueAtTime(const QString& value,double time)
 {
-    _stringKnob.lock()->setValueAtTime(time, value, ViewSpec::current(), 0);
+    _stringKnob.lock()->setValueAtTime(time, value.toStdString(), ViewSpec::current(), 0);
 }
 
 void
-StringParamBase::setDefaultValue(const std::string& value)
+StringParamBase::setDefaultValue(const QString& value)
 {
-    _stringKnob.lock()->setDefaultValue(value,0);
+    _stringKnob.lock()->setDefaultValue(value.toStdString(),0);
 }
 
-std::string
+QString
 StringParamBase::getDefaultValue() const
 {
-    return _stringKnob.lock()->getDefaultValues_mt_safe()[0];
+    return QString::fromUtf8( _stringKnob.lock()->getDefaultValues_mt_safe()[0].c_str());
 }
 
 void
@@ -1385,11 +1386,11 @@ StringParamBase::restoreDefaultValue()
 }
 
 
-std::string
+QString
 StringParamBase::addAsDependencyOf(int fromExprDimension,Param* param,int thisDimension)
 {
     _addAsDependencyOf(fromExprDimension, param,thisDimension);
-    return _stringKnob.lock()->getValue();
+    return QString::fromUtf8(_stringKnob.lock()->getValue().c_str());
 }
 
 
@@ -1539,9 +1540,9 @@ ButtonParam::~ButtonParam()
 }
 
 void
-ButtonParam::setIconFilePath(const std::string& icon)
+ButtonParam::setIconFilePath(const QString& icon)
 {
-    _buttonKnob.lock()->setIconLabel(icon);
+    _buttonKnob.lock()->setIconLabel(icon.toStdString());
 }
 
 void

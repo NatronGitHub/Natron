@@ -66,31 +66,22 @@ void
 NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
 {
     
-    QPointF lastMousePosScene = mapToScene(_imp->_lastMousePos);
+    NodeGui* nearbyNode;
+    Edge* nearbyEdge;
+    NearbyItemEnum nearbyItemCode = hasItemNearbyMouse(e->pos(), &nearbyNode, &nearbyEdge);
 
-    NodesGuiList nodes = getAllActiveNodes_mt_safe();
-    
-    ///Matches sorted by depth
-    std::map<double,NodeGuiPtr> matches;
-    for (NodesGuiList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        QPointF evpt = (*it)->mapFromScene(lastMousePosScene);
-        if ( (*it)->isVisible() && (*it)->isActive() && (*it)->contains(evpt) ) {
-            matches.insert(std::make_pair((*it)->zValue(), *it));
-        }
-    }
-    if (!matches.empty()) {
-        const NodeGuiPtr& node = matches.rbegin()->second;
+    if (nearbyItemCode == eNearbyItemNode) {
         if (modCASIsControl(e)) {
-            node->ensurePanelCreated();
-            if (node->getSettingPanel()) {
-                node->getSettingPanel()->floatPanel();
+            nearbyNode->ensurePanelCreated();
+            if (nearbyNode->getSettingPanel()) {
+                nearbyNode->getSettingPanel()->floatPanel();
             }
         } else {
-            node->setVisibleSettingsPanel(true);
-            if (node->getSettingPanel()) {
-                getGui()->putSettingsPanelFirst( node->getSettingPanel() );
+            nearbyNode->setVisibleSettingsPanel(true);
+            if (nearbyNode->getSettingPanel()) {
+                getGui()->putSettingsPanelFirst(nearbyNode->getSettingPanel());
             } else {
-                ViewerInstance* isViewer = node->getNode()->isEffectViewer();
+                ViewerInstance* isViewer = nearbyNode->getNode()->isEffectViewer();
                 if (isViewer) {
                     ViewerGL* viewer = dynamic_cast<ViewerGL*>(isViewer->getUiContext());
                     assert(viewer);
@@ -129,12 +120,12 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
                 }
             }
         }
-        if ( !node->wasBeginEditCalled() ) {
-            node->beginEditKnobs();
+        if (!nearbyNode->wasBeginEditCalled()) {
+            nearbyNode->beginEditKnobs();
         }
         
         if (modCASIsShift(e)) {
-            NodeGroup* isGrp = node->getNode()->isEffectGroup();
+            NodeGroup* isGrp = nearbyNode->getNode()->isEffectGroup();
             if (isGrp) {
                 NodeGraphI* graph_i = isGrp->getNodeGraph();
                 assert(graph_i);
@@ -260,7 +251,9 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCopy, modifiers, key) ) {
         copySelectedNodes();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphPaste, modifiers, key) ) {
-        pasteNodeClipBoards();
+        if (!pasteNodeClipBoards()) {
+            accept = false;
+        }
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCut, modifiers, key) ) {
         cutSelectedNodes();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDuplicate, modifiers, key) ) {

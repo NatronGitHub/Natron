@@ -6,7 +6,7 @@ Version 2.0:
 Frédéric Devernay <devernay@github>
 Alexandre Gauthier-Foichat <MrKepzie@github>
 Ole-André Rodlie <olear@github> (Openfx-Arena Plug-Ins)
-Axel Airo-Farulla  <AxelAF@github> 
+Axel Airo-Farulla  <Eaknyt@github>
 
 #Artists:
 

@@ -177,6 +177,9 @@ public Q_SLOTS:
     void onDisplayMinMaxChanged(double min, double max, int index);
     void onMinMaxChanged(double min, double max, int index);
     void onKnobAnimationLevelChanged(ViewSpec view, int dimension);
+    void onChoiceMenuReset();
+    void onChoiceMenuPopulated();
+    void onChoiceMenuEntryAppended(const QString& entry, const QString& help);
     
 protected:
     

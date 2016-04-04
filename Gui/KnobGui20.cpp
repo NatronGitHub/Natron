@@ -323,7 +323,7 @@ KnobGui::linkTo(int dimension)
             thisKnob->beginChanges();
             for (int i = 0; i < thisKnob->getDimension(); ++i) {
                 if (i == dimension || dimension == -1) {
-                    thisKnob->setExpression(i, expr.str(), false);
+                    thisKnob->setExpression(i, expr.str(), false, false);
                 }
             }
             thisKnob->endChanges();
@@ -706,6 +706,39 @@ KnobGui::onRedrawGuiCurve(int reason,
     
 }
 
+void
+KnobGui::setWarningValue(KnobWarningEnum warn,const QString& value)
+{
+    QString& warning = _imp->warningsMapping[warn];
+    if (warning != value) {
+        warning = value;
+        refreshKnobWarningIndicatorVisibility();
+    }
+}
+
+void
+KnobGui::refreshKnobWarningIndicatorVisibility()
+{
+    if (!_imp->warningIndicator) {
+        return;
+    }
+    QString fullTooltip;
+    bool hasWarning = false;
+    for (std::map<KnobGui::KnobWarningEnum, QString>::iterator it = _imp->warningsMapping.begin(); it!=_imp->warningsMapping.end(); ++it) {
+        if (!it->second.isEmpty()) {
+            hasWarning = true;
+            fullTooltip += QString::fromUtf8("<p>");
+            fullTooltip += it->second;
+            fullTooltip += QString::fromUtf8("</p>");
+
+        }
+    }
+    if (hasWarning) {
+        _imp->warningIndicator->setToolTip(fullTooltip);
+    }
+    _imp->warningIndicator->setVisible(hasWarning);
+    
+}
 
 void
 KnobGui::onExprChanged(int dimension)
@@ -718,14 +751,52 @@ KnobGui::onExprChanged(int dimension)
     reflectExpressionState(dimension,!exp.empty());
     if (exp.empty()) {
         reflectAnimationLevel(dimension, knob->getAnimationLevel(dimension));
+    } else {
+        
+        NodeSettingsPanel* isNodeSettings = dynamic_cast<NodeSettingsPanel*>(_imp->container);
+        if (isNodeSettings) {
+            NodeGuiPtr node = isNodeSettings->getNode();
+            if (node) {
+                node->onKnobExpressionChanged(this);
+            }
+        }
+        
+        if (_imp->warningIndicator) {
+            bool invalid = false;
+            QString fullErrTooltip;
+            int dims = knob->getDimension();
+            for (int i = 0; i < dims; ++i) {
+                std::string err;
+                if (!knob->isExpressionValid(i, &err)) {
+                    invalid = true;
+                }
+                if (dims > 1 && invalid) {
+                    fullErrTooltip += QString::fromUtf8("<p><b>");
+                    fullErrTooltip += QString::fromUtf8(knob->getDimensionName(i).c_str());
+                    fullErrTooltip += QString::fromUtf8("</b></p>");
+                }
+                if (!err.empty()) {
+                    fullErrTooltip += QString::fromUtf8(err.c_str());
+                }
+            }
+            if (invalid) {
+                QString toPrepend;
+                toPrepend += QString::fromUtf8("<p>");
+                toPrepend += QObject::tr("Invalid expression(s), value returned is the underlying curve:");
+                toPrepend += QString::fromUtf8("</p>");
+                fullErrTooltip.prepend(toPrepend);
+                
+                setWarningValue(eKnobWarningExpressionInvalid, fullErrTooltip);
+            } else {
+                setWarningValue(eKnobWarningExpressionInvalid, QString());
+            }
+        }
+        onHelpChanged();
+        Q_EMIT expressionChanged();
         
     }
-    
-    onHelpChanged();
-    
     updateGUI(dimension);
     
-    Q_EMIT expressionChanged();
 }
 
 void

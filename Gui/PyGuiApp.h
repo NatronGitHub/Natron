@@ -118,22 +118,24 @@ public:
     
     PyModalDialog* createModalDialog();
         
-    PyTabWidget* getTabWidget(const std::string& name) const;
+    PyTabWidget* getTabWidget(const QString& name) const;
     
-    bool moveTab(const std::string& scriptName,PyTabWidget* pane);
+    PyTabWidget* getActiveTabWidget() const;
     
-    void registerPythonPanel(PyPanel* panel,const std::string& pythonFunction);
+    bool moveTab(const QString& scriptName,PyTabWidget* pane);
+    
+    void registerPythonPanel(PyPanel* panel,const QString& pythonFunction);
     void unregisterPythonPanel(PyPanel* panel);
     
-    std::string getFilenameDialog(const std::vector<std::string>& filters,const std::string& location = std::string()) const;
+    QString getFilenameDialog(const QStringList& filters,const QString& location = QString()) const;
     
-    std::string getSequenceDialog(const std::vector<std::string>& filters,const std::string& location = std::string()) const;
+    QString getSequenceDialog(const QStringList& filters,const QString& location = QString()) const;
     
-    std::string getDirectoryDialog(const std::string& location = std::string()) const;
+    QString getDirectoryDialog(const QString& location = QString()) const;
     
-    std::string saveFilenameDialog(const std::vector<std::string>& filters,const std::string& location = std::string()) const;
+    QString saveFilenameDialog(const QStringList& filters,const QString& location = QString()) const;
     
-    std::string saveSequenceDialog(const std::vector<std::string>& filters,const std::string& location = std::string()) const;
+    QString saveSequenceDialog(const QStringList& filters,const QString& location = QString()) const;
 
     ColorTuple getRGBColorDialog() const;
     
@@ -145,9 +147,11 @@ public:
     void deselectNode(Effect* effect);
     void clearSelection(Group* group = 0);
     
-    PyViewer* getViewer(const std::string& scriptName) const;
+    PyViewer* getViewer(const QString& scriptName) const;
     
-    PyPanel* getUserPanel(const std::string& scriptName) const;
+    PyViewer* getActiveViewer() const;
+    
+    PyPanel* getUserPanel(const QString& scriptName) const;
     
     void renderBlocking(Effect* writeNode,int firstFrame, int lastFrame,int frameStep = 1);
     void renderBlocking(const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames,const std::list<int>& frameSteps);

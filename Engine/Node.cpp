@@ -111,7 +111,6 @@ namespace { // protect local classes in anonymous namespace
     public:
         
         boost::weak_ptr<KnobChoice> layer;
-        boost::weak_ptr<KnobString> layerName;
         bool hasAllChoice; // if true, the layer has a "all" entry
         
         mutable QMutex compsMutex;
@@ -121,7 +120,6 @@ namespace { // protect local classes in anonymous namespace
         
         ChannelSelector()
         : layer()
-        , layerName()
         , hasAllChoice(false)
         , compsMutex()
         , compsAvailable()
@@ -136,7 +134,6 @@ namespace { // protect local classes in anonymous namespace
         void operator=(const ChannelSelector& other) {
             layer = other.layer;
             hasAllChoice = other.hasAllChoice;
-            layerName = other.layerName;
             QMutexLocker k(&compsMutex);
             compsAvailable = other.compsAvailable;
         }
@@ -148,7 +145,6 @@ namespace { // protect local classes in anonymous namespace
         
         boost::weak_ptr<KnobBool> enabled;
         boost::weak_ptr<KnobChoice> channel;
-        boost::weak_ptr<KnobString> channelName;
         
         mutable QMutex compsMutex;
         //Stores the components available at build time of the choice menu
@@ -158,7 +154,6 @@ namespace { // protect local classes in anonymous namespace
         MaskSelector()
         : enabled()
         , channel()
-        , channelName()
         , compsMutex()
         , compsAvailable()
         {
@@ -172,7 +167,6 @@ namespace { // protect local classes in anonymous namespace
         void operator=(const MaskSelector& other) {
             enabled = other.enabled;
             channel = other.channel;
-            channelName = other.channelName;
             QMutexLocker k(&compsMutex);
             compsAvailable = other.compsAvailable;
         }
@@ -368,7 +362,7 @@ struct Node::Implementation
     
     void runInputChangedCallback(int index,const std::string& script);
     
-    void createChannelSelector(int inputNb,const std::string & inputName, bool isOutput,const boost::shared_ptr<KnobPage>& page);
+    void createChannelSelector(int inputNb,const std::string & inputName, bool isOutput,const boost::shared_ptr<KnobPage>& page, KnobPtr* lastKnobBeforeAdvancedOption);
     
     void onLayerChanged(int inputNb,const ChannelSelector& selector);
     
@@ -822,6 +816,15 @@ Node::load(const CreateNodeArgs& args)
 #endif
         assert(_imp->effect);
     }
+    
+    // For readers, set their original frame range when creating them
+    if (!args.serialization && _imp->effect->isReader()) {
+        KnobPtr filenameKnob = getKnobByName(kOfxImageEffectFileParamName);
+        if (filenameKnob) {
+            computeFrameRangeForReader(filenameKnob.get());
+        }
+    }
+    
     _imp->effect->initializeOverlayInteract();
     
     
@@ -942,7 +945,7 @@ Node::load(const CreateNodeArgs& args)
     
     ///Now that the instance is created, make sure instanceChangedActino is called for all extra default values
     ///that we set
-    double time = getEffectInstance()->getCurrentTime();
+   /* double time = getEffectInstance()->getCurrentTime();
     for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = args.paramValues.begin(); it != args.paramValues.end(); ++it) {
         KnobPtr knob = getKnobByName((*it)->getName());
         if (knob) {
@@ -962,7 +965,7 @@ Node::load(const CreateNodeArgs& args)
         }
     }
 #endif
-    
+    */
 } // load
 
 bool
@@ -2198,7 +2201,16 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 continue;
             }
             knob->cloneDefaultValues(sKnob.get());
-            knob->clone(sKnob.get());
+            if (isChoice) {
+                const ChoiceExtraData* data = dynamic_cast<const ChoiceExtraData*>(isRegular->getExtraData());
+                assert(data);
+                if (data) {
+                    isChoice->choiceRestoration(dynamic_cast<KnobChoice*>(sKnob.get()), data);
+                }
+            } else {
+            
+                knob->clone(sKnob.get());
+            }
             knob->setAsUserKnob();
             if (group) {
                 group->addKnob(knob);
@@ -3111,7 +3123,7 @@ Node::findPluginFormatKnobs(const KnobsVec & knobs,bool loadingSerialization)
             std::vector<std::string> formats;
             int defValue;
             getApp()->getProject()->getProjectFormatEntries(&formats, &defValue);
-            refreshFormatParamChoice(formats, defValue, !loadingSerialization);
+            refreshFormatParamChoice(formats, defValue, loadingSerialization);
         }
     }
 }
@@ -3351,7 +3363,8 @@ void
 Node::createMaskSelectors(const std::vector<std::pair<bool,bool> >& hasMaskChannelSelector,
                          const std::vector<std::string>& inputLabels,
                          const boost::shared_ptr<KnobPage>& mainPage,
-                          bool addNewLineOnLastMask)
+                          bool addNewLineOnLastMask,
+                          KnobPtr* lastKnobCreated)
 {
     assert(hasMaskChannelSelector.size() == inputLabels.size());
     
@@ -3390,6 +3403,14 @@ Node::createMaskSelectors(const std::vector<std::pair<bool,bool> >& hasMaskChann
         
         std::vector<std::string> choices;
         choices.push_back("None");
+        
+        const ImageComponents& rgba = ImageComponents::getRGBAComponents();
+        const std::string& rgbaCompname = rgba.getComponentsGlobalName();
+        const std::vector<std::string>& rgbaChannels = rgba.getComponentsNames();
+        for (std::size_t i = 0; i < rgbaChannels.size(); ++i) {
+            std::string option = rgbaCompname + '.' + rgbaChannels[i];
+            choices.push_back(option);
+        }
         /*const ImageComponents& rgba = ImageComponents::getRGBAComponents();
          const std::vector<std::string>& channels = rgba.getComponentsNames();
          const std::string& layerName = rgba.getComponentsGlobalName();
@@ -3410,27 +3431,19 @@ Node::createMaskSelectors(const std::vector<std::pair<bool,bool> >& hasMaskChann
             channel->setName(channelMaskName);
         }
         sel.channel = channel;
-        channel->setAddNewLine(false);
         if (mainPage) {
             mainPage->addKnob(channel);
         }
-        
-        boost::shared_ptr<KnobString> channelName = AppManager::createKnob<KnobString>(_imp->effect.get(), "",1,false);
-        channelName->setSecretByDefault(true);
-        channelName->setEvaluateOnChange(false);
-        channelName->setDefaultValue(choices[choices.size() - 1]);
-        if (mainPage) {
-            mainPage->addKnob(channelName);
-        }
-        sel.channelName = channelName;
-        
+
         //Make sure the first default param in the vector is MaskInvert
         
         if (!addNewLineOnLastMask) {
             //If there is a MaskInvert parameter, make it on the same line as the Mask channel parameter
-            channelName->setAddNewLine(false);
+            channel->setAddNewLine(false);
         }
-        
+        if (!*lastKnobCreated) {
+            *lastKnobCreated = channel;
+        }
         
         _imp->maskSelectors[i] = sel;
         
@@ -3525,16 +3538,24 @@ Node::findOrCreateChannelEnabled(const boost::shared_ptr<KnobPage>& mainPage)
     
     bool foundAll = foundEnabled[0] && foundEnabled[1] && foundEnabled[2] && foundEnabled[3];
     
+    bool isWriter = _imp->effect->isWriter();
+    
     if (foundAll) {
         
         for (int i = 0; i < 4; ++i) {
-            if (foundEnabled[i]->getParentKnob() == mainPage) {
-                //foundEnabled[i]->setAddNewLine(i == 3);
-                mainPage->removeKnob(foundEnabled[i].get());
-                mainPage->insertKnob(i,foundEnabled[i]);
+            
+            // Writers already have their checkboxes places correctly
+            if (!isWriter) {
+                if (foundEnabled[i]->getParentKnob() == mainPage) {
+                    //foundEnabled[i]->setAddNewLine(i == 3);
+                    mainPage->removeKnob(foundEnabled[i].get());
+                    mainPage->insertKnob(i,foundEnabled[i]);
+                }
             }
             _imp->enabledChan[i] = foundEnabled[i];
         }
+        
+        
     }
     
     bool pluginDefaultPref[4];
@@ -3559,7 +3580,7 @@ Node::findOrCreateChannelEnabled(const boost::shared_ptr<KnobPage>& mainPage)
             foundAll = true;
         }
     }
-    if (foundAll && !getApp()->isBackground()) {
+    if (!isWriter && foundAll && !getApp()->isBackground()) {
         _imp->enabledChan[3].lock()->setAddNewLine(false);
         boost::shared_ptr<KnobString> premultWarning = AppManager::createKnob<KnobString>(_imp->effect.get(), "", 1, false);
         premultWarning->setIconLabel("dialog-warning");
@@ -3581,26 +3602,19 @@ Node::findOrCreateChannelEnabled(const boost::shared_ptr<KnobPage>& mainPage)
 void
 Node::createChannelSelectors(const std::vector<std::pair<bool,bool> >& hasMaskChannelSelector,
                              const std::vector<std::string>& inputLabels,
-                             const boost::shared_ptr<KnobPage>& mainPage)
+                             const boost::shared_ptr<KnobPage>& mainPage,
+                             KnobPtr* lastKnobBeforeAdvancedOption)
 {
-    KnobsVec mainPageChildren = mainPage->getChildren();
-    bool skipSeparator = !mainPageChildren.empty() && dynamic_cast<KnobSeparator*>(mainPageChildren.back().get());
-    
-    if (!skipSeparator) {
-        boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>(_imp->effect.get(), "", 1, false);
-        sep->setName("advancedSep");
-        mainPage->addKnob(sep);
-    }
-    
+  
     ///Create input layer selectors
     for (std::size_t i = 0; i < inputLabels.size(); ++i) {
         if (!hasMaskChannelSelector[i].first) {
-            _imp->createChannelSelector(i,inputLabels[i], false, mainPage);
+            _imp->createChannelSelector(i,inputLabels[i], false, mainPage, lastKnobBeforeAdvancedOption);
         }
         
     }
     ///Create output layer selectors
-    _imp->createChannelSelector(-1, "Output", true, mainPage);
+    _imp->createChannelSelector(-1, "Output", true, mainPage, lastKnobBeforeAdvancedOption);
 }
 
 void
@@ -3662,8 +3676,9 @@ Node::initializeDefaultKnobs(int renderScaleSupportPref,bool loadingSerializatio
     assert(mainPage);
     
     // Create the Output Layer choice if needed plus input layers selectors
+    KnobPtr lastKnobBeforeAdvancedOption;
     if (_imp->effect->getCreateChannelSelectorKnob()) {
-        createChannelSelectors(hasMaskChannelSelector, inputLabels, mainPage);
+        createChannelSelectors(hasMaskChannelSelector, inputLabels, mainPage, &lastKnobBeforeAdvancedOption);
     }
     
     
@@ -3686,7 +3701,7 @@ Node::initializeDefaultKnobs(int renderScaleSupportPref,bool loadingSerializatio
     
     assert(foundPluginDefaultKnobsToReorder.size() > 0 && foundPluginDefaultKnobsToReorder[0].first == kOfxMaskInvertParamName);
     
-    createMaskSelectors(hasMaskChannelSelector, inputLabels, mainPage, !foundPluginDefaultKnobsToReorder[0].second.get());
+    createMaskSelectors(hasMaskChannelSelector, inputLabels, mainPage, !foundPluginDefaultKnobsToReorder[0].second.get(), &lastKnobBeforeAdvancedOption);
     
     
     //Create the host mix if needed
@@ -3706,6 +3721,28 @@ Node::initializeDefaultKnobs(int renderScaleSupportPref,bool loadingSerializatio
             }
         }
     }
+    
+    if (lastKnobBeforeAdvancedOption) {
+        KnobsVec mainPageChildren = mainPage->getChildren();
+        int i = 0;
+        for (KnobsVec::iterator it = mainPageChildren.begin(); it != mainPageChildren.end(); ++it, ++i) {
+            if (*it == lastKnobBeforeAdvancedOption) {
+                if (i > 0) {
+                    KnobsVec::iterator prev = it;
+                    --prev;
+                    if (!dynamic_cast<KnobSeparator*>(prev->get())) {
+                        boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>(_imp->effect.get(), "", 1, false);
+                        sep->setName("advancedSep");
+                        mainPage->insertKnob(i - 1, sep);
+                    }
+                }
+                
+                break;
+            }
+        }
+        
+    }
+    
     
     createNodePage(settingsPage,renderScaleSupportPref);
     createInfoPage();
@@ -3767,7 +3804,8 @@ Node::initializeKnobs(int renderScaleSupportPref,bool loadingSerialization)
 
 void
 Node::Implementation::createChannelSelector(int inputNb,const std::string & inputName,bool isOutput,
-                                            const boost::shared_ptr<KnobPage>& page)
+                                            const boost::shared_ptr<KnobPage>& page,
+                                            KnobPtr* lastKnobBeforeAdvancedOption)
 {
     
     ChannelSelector sel;
@@ -3797,14 +3835,9 @@ Node::Implementation::createChannelSelector(int inputNb,const std::string & inpu
     
     std::map<std::string, int > defaultLayers;
     {
-        int i = 0;
-        while (ImageComponents::defaultComponents[i][0] != 0) {
-            std::string layer = ImageComponents::defaultComponents[i][0];
-            if (layer != kNatronAlphaComponentsName && layer != kNatronRGBAComponentsName && layer != kNatronRGBComponentsName) {
-                //Do not add the color plane, because it is handled in a separate case to make sure it is always the first choice
-                defaultLayers[layer] = -1;
-            }
-            ++i;
+        std::vector<std::string> projectLayers = _publicInterface->getApp()->getProject()->getProjectDefaultLayerNames();
+        for (std::size_t i = 0; i < projectLayers.size(); ++i) {
+            defaultLayers[projectLayers[i]] = -1;
         }
     }
     baseLayers.push_back(kNatronRGBAPlaneUserName);
@@ -3827,14 +3860,9 @@ Node::Implementation::createChannelSelector(int inputNb,const std::string & inpu
     }
     layer->setDefaultValue(defVal);
     
-    boost::shared_ptr<KnobString> layerName = AppManager::createKnob<KnobString>(effect.get(), inputName + "_layer_name", 1, false);
-    layerName->setSecretByDefault(true);
-    layerName->setAnimationEnabled(false);
-    layerName->setEvaluateOnChange(false);
-    layerName->setDefaultValue(baseLayers[defVal]);
-    //layerName->setAddNewLine(!sel.useRGBASelectors);
-    page->addKnob(layerName);
-    sel.layerName = layerName;
+    if (!*lastKnobBeforeAdvancedOption) {
+        *lastKnobBeforeAdvancedOption = layer;
+    }
     
     channelsSelectors[inputNb] = sel;
     
@@ -4818,6 +4846,8 @@ Node::connectInput(const NodePtr & input,
         input->connectOutput(useGuiInputs,shared_from_this());
     }
     
+    getApp()->recheckInvalidExpressions();
+    
     ///Get notified when the input name has changed
     QObject::connect( input.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
     
@@ -5347,9 +5377,10 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
     clearPersistentMessage(false);
     
     boost::shared_ptr<NodeCollection> parentCol = getGroup();
-    NodeGroup* isParentGroup = dynamic_cast<NodeGroup*>(parentCol.get());
     
-    ///For all knobs that have listeners, kill expressions
+    
+    ///For all knobs that have listeners, invalidate expressions
+    NodeGroup* isParentGroup = dynamic_cast<NodeGroup*>(parentCol.get());
     const KnobsVec & knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         KnobI::ListenerDimsMap listeners;
@@ -5388,12 +5419,18 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
                 
                 std::string hasExpr = listener->getExpression(dim);
                 if (!hasExpr.empty()) {
-                    listener->clearExpression(dim,true);
+                    std::stringstream ss;
+                    ss << tr("Missing node ").toStdString();
+                    ss << getFullyQualifiedName();
+                    ss << ' ';
+                    ss << tr("in expression.").toStdString();
+                    listener->setExpressionInvalid(dim, false, ss.str());
                 }
             }
             isEffect->endChanges(true);
         }
     }
+
     
     ///if the node has 1 non-optional input, attempt to connect the outputs to the input of the current node
     ///this node is the node the outputs should attempt to connect to
@@ -5550,6 +5587,8 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
         _imp->runOnNodeDeleteCB();
     }
     
+    deleteNodeVariableToPython(getFullyQualifiedName());
+    
 } // deactivate
 
 void
@@ -5642,6 +5681,9 @@ Node::activate(const std::list< NodePtr > & outputsToRestore,
     }
     
     _imp->runOnNodeCreatedCB(true);
+    
+    getApp()->recheckInvalidExpressions();
+    declareAllPythonAttributes();
 } // activate
 
 void
@@ -5692,6 +5734,8 @@ Node::destroyNodeInternal(bool fromDest, bool autoReconnect)
     ///This will not remove from the disk cache if the project is closing
     removeAllImagesFromCache(false);
     
+    getApp()->recheckInvalidExpressions();
+    
     ///Remove the Python node
     deleteNodeVariableToPython(getFullyQualifiedName());
     
@@ -5702,6 +5746,7 @@ Node::destroyNodeInternal(bool fromDest, bool autoReconnect)
      }*/
     
     ///Kill the effect
+    _imp->effect->clearPluginMemoryChunks();
     _imp->effect.reset();
     
     ///If inside the group, remove it from the group
@@ -6593,7 +6638,7 @@ Node::onAllKnobsSlaved(bool isSlave,
 }
 
 void
-Node::onKnobSlaved(KnobI* slave,KnobI* master,
+Node::onKnobSlaved(const KnobPtr& slave,const KnobPtr& master,
                    int dimension,
                    bool isSlave)
 {
@@ -6787,39 +6832,7 @@ Node::isMaskChannelKnob(const KnobI* knob) const
     return -1;
 }
 
-int
-Node::getMaskChannel(int inputNb,ImageComponents* comps,NodePtr* maskInput) const
-{
-    std::map<int, MaskSelector >::const_iterator it = _imp->maskSelectors.find(inputNb);
-    if ( it != _imp->maskSelectors.end() ) {
-        int index =  it->second.channel.lock()->getValue();
-        if (index == 0) {
-            *comps = ImageComponents::getNoneComponents();
-            maskInput->reset();
-            return -1;
-        } else {
-            index -= 1; // None choice
-            QMutexLocker locker(&it->second.compsMutex);
-            int k = 0;
-            for (std::size_t i = 0; i < it->second.compsAvailable.size(); ++i) {
-                if (index >= k && index < (it->second.compsAvailable[i].first.getNumComponents() + k)) {
-                    int compIndex = index - k;
-                    assert(compIndex >= 0 && compIndex <= 3);
-                    *comps = it->second.compsAvailable[i].first;
-                    *maskInput = it->second.compsAvailable[i].second.lock();
-                    return compIndex;
-                }
-                k += it->second.compsAvailable[i].first.getNumComponents();
-            }
-            
-        }
-        //Default to alpha
-        *comps = ImageComponents::getAlphaComponents();
-        return 0;
-    }
-    return -1;
-    
-}
+
 
 bool
 Node::isMaskEnabled(int inputNb) const
@@ -7065,7 +7078,7 @@ Node::duringInputChangedAction() const
 }
 
 void
-Node::computeFrameRangeForReader(const KnobI* fileKnob)
+Node::computeFrameRangeForReader(KnobI* fileKnob)
 {
     /*
      We compute the original frame range of the sequence for the plug-in
@@ -7092,7 +7105,7 @@ Node::computeFrameRangeForReader(const KnobI* fileKnob)
         KnobInt* originalFrameRange = dynamic_cast<KnobInt*>(knob.get());
         if (originalFrameRange && originalFrameRange->getDimension() == 2) {
             
-            const KnobFile* isFile = dynamic_cast<const KnobFile*>(fileKnob);
+            KnobFile* isFile = dynamic_cast<KnobFile*>(fileKnob);
             assert(isFile);
             if (!isFile) {
                 throw std::logic_error("Node::computeFrameRangeForReader");
@@ -7669,6 +7682,24 @@ Node::onEffectKnobValueChanged(KnobI* what,
                 }
             }
         } else if (_imp->effect->isWriter()) {
+            
+            KnobPtr sublabelKnob = getKnobByName(kNatronOfxParamStringSublabelName);
+            KnobOutputFile* isFile = dynamic_cast<KnobOutputFile*>(what);
+            if (isFile && sublabelKnob && reason != eValueChangedReasonPluginEdited) {
+                Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(sublabelKnob.get());
+                
+                std::string pattern = isFile->getValue();
+                if (isString) {
+                    
+                    std::size_t foundSlash = pattern.find_last_of("/");
+                    if (foundSlash != std::string::npos) {
+                        pattern = pattern.substr(foundSlash + 1);
+                    }
+
+                    isString->setValue(pattern);
+                }
+            }
+            
             /*
              Check if the filename param has a %V in it, in which case make sure to hide the Views parameter
              */
@@ -7765,15 +7796,8 @@ Node::Implementation::getSelectedLayerInternal(int inputNb,const ChannelSelector
     
     boost::shared_ptr<KnobChoice> layerKnob = selector.layer.lock();
     assert(layerKnob);
-    int index = layerKnob->getValue();
-    std::vector<std::string> entries = layerKnob->getEntries_mt_safe();
-    if (entries.empty()) {
-        return false;
-    }
-    if (index < 0 || index >= (int)entries.size()) {
-        return false;
-    }
-    const std::string& layer = entries[index];
+    std::string layer = layerKnob->getActiveEntryText_mt_safe();
+
     if (layer == "All") {
         return false;
     }
@@ -7803,17 +7827,16 @@ Node::Implementation::getSelectedLayerInternal(int inputNb,const ChannelSelector
             }
         }
     }
+    
+
     if (comp->getNumComponents() == 0) {
-        if (mappedLayerName == kNatronRGBAComponentsName) {
-            *comp = ImageComponents::getRGBAComponents();
-        } else if (mappedLayerName == kNatronDisparityLeftPlaneName) {
-            *comp = ImageComponents::getDisparityLeftComponents();
-        } else if (mappedLayerName == kNatronDisparityRightPlaneName) {
-            *comp = ImageComponents::getDisparityRightComponents();
-        } else if (mappedLayerName == kNatronBackwardMotionVectorsPlaneName) {
-            *comp = ImageComponents::getBackwardMotionComponents();
-        } else if (mappedLayerName == kNatronForwardMotionVectorsPlaneName) {
-            *comp = ImageComponents::getForwardMotionComponents();
+        
+        std::vector<ImageComponents> projectLayers = _publicInterface->getApp()->getProject()->getProjectDefaultLayers();
+        for (std::size_t i = 0; i < projectLayers.size(); ++i) {
+            if (projectLayers[i].getLayerName() == mappedLayerName) {
+                *comp = projectLayers[i];
+                break;
+            }
         }
     }
     return true;
@@ -7826,13 +7849,10 @@ Node::Implementation::onLayerChanged(int inputNb,const ChannelSelector& selector
 {
     
     boost::shared_ptr<KnobChoice> layerKnob = selector.layer.lock();
-    std::vector<std::string> entries = layerKnob->getEntries_mt_safe();
-    int curLayer_i = layerKnob->getValue();
-    assert(curLayer_i >= 0 && curLayer_i < (int)entries.size());
-    selector.layerName.lock()->setValue(entries[curLayer_i]);
+    std::string curLayer = layerKnob->getActiveEntryText_mt_safe();
     
     if (inputNb == -1) {
-        bool outputIsAll = entries[curLayer_i] == "All";
+        bool outputIsAll = curLayer == "All";
         
         ///Disable all input selectors as it doesn't make sense to edit them whilst output is All
         for (std::map<int,ChannelSelector>::iterator it = channelsSelectors.begin(); it != channelsSelectors.end(); ++it) {
@@ -7948,15 +7968,6 @@ Node::Implementation::onMaskSelectorChanged(int inputNb,const MaskSelector& sele
             enabled->setValue(true);
         }
     }
-    
-    std::vector<std::string> entries = channel->getEntries_mt_safe();
-    int curChan_i = channel->getValue();
-    if (curChan_i < 0 || curChan_i >= (int)entries.size()) {
-        _publicInterface->refreshChannelSelectors();
-        return;
-    }
-    selector.channelName.lock()->setValue(entries[curChan_i]);
-    
     
     if (!isRefreshingInputRelatedData) {
         ///Clip preferences have changed
@@ -8754,7 +8765,7 @@ bool
 Node::refreshLayersChoiceSecretness(int inputNb)
 {
     std::map<int,ChannelSelector>::iterator foundChan = _imp->channelsSelectors.find(inputNb);
-    NodePtr inp = getInput(inputNb);
+    NodePtr inp = getInputInternal(false/*useGuiInput*/, false/*useGroupRedirections*/, inputNb);
     if ( foundChan != _imp->channelsSelectors.end() ) {
         std::map<int,ChannelSelector>::iterator foundOuptut = _imp->channelsSelectors.find(-1);
         bool outputIsAll = false;
@@ -8834,12 +8845,16 @@ Node::refreshAllInputRelatedData(bool /*canChangeValues*/,const std::vector<Node
     bool hasChanged = false;
     hasChanged |= refreshDraftFlagInternal(inputs);
 
+    bool loadingProject = getApp()->getProject()->isLoadingProject();
     ///if all non optional clips are connected, call getClipPrefs
     ///The clip preferences action is never called until all non optional clips have been attached to the plugin.
-    if (!hasMandatoryInputDisconnected()) {
+    /// EDIT: we allow calling getClipPreferences even if some non optional clip is not connected so that layer menus get properly created
+    const bool canCallRefreshMetaData = true; // = !hasMandatoryInputDisconnected();
+    
+    if (canCallRefreshMetaData) {
         
         
-        if (getApp()->getProject()->isLoadingProject()) {
+        if (loadingProject) {
             //Nb: we clear the action cache because when creating the node many calls to getRoD and stuff might have returned
             //empty rectangles, but since we force the hash to remain what was in the project file, we might then get wrong RoDs returned
             _imp->effect->clearActionsCache();
@@ -8871,7 +8886,7 @@ Node::refreshAllInputRelatedData(bool /*canChangeValues*/,const std::vector<Node
     
     refreshIdentityState();
     
-    if (getApp()->getProject()->isLoadingProject()) {
+    if (loadingProject) {
         //When loading the project, refresh the hash of the nodes in a recursive manner in the proper order
         //for the disk cache to work
         hasChanged |= computeHashInternal();
@@ -9252,14 +9267,21 @@ Node::deleteNodeVariableToPython(const std::string& nodeName)
         return;
     }
     QString appID = QString::fromUtf8(getApp()->getAppIDString().c_str());
-    QString str = QString(QString::fromUtf8("del ") + appID + QString::fromUtf8(".%1")).arg(QString::fromUtf8(nodeName.c_str()));
-    std::string script = str.toStdString();
-    std::string err;
-    if (!appPTR->isBackground()) {
-        getApp()->printAutoDeclaredVariable(script);
-    }
-    if (!NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0)) {
-        qDebug() << err.c_str();
+
+    std::string nodeFullName = appID.toStdString() + "." + nodeName;
+    bool alreadyDefined = false;
+    PyObject* nodeObj = Python::getAttrRecursive(nodeFullName, appPTR->getMainModule(), &alreadyDefined);
+    assert(nodeObj);
+    Q_UNUSED(nodeObj);
+    if (alreadyDefined) {
+        std::string script = "del " + nodeFullName;
+        std::string err;
+        if (!appPTR->isBackground()) {
+            getApp()->printAutoDeclaredVariable(script);
+        }
+        if (!NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0)) {
+            qDebug() << err.c_str();
+        }
     }
 }
 
@@ -9357,7 +9379,16 @@ Node::removeParameterFromPython(const std::string& parameterName)
     }
 }
 
-
+void
+Node::declareAllPythonAttributes()
+{
+    declareNodeVariableToPython(getFullyQualifiedName());
+    declarePythonFields();
+    if (_imp->rotoContext) {
+        declareRotoPythonField();
+    }
+#pragma message WARN("Also declare tracker ctx to python in 2.1")
+}
 
 std::string
 Node::getKnobChangedCallback() const
@@ -9650,6 +9681,9 @@ Node::getChannelSelectorKnob(int inputNb) const
 void
 Node::checkForPremultWarningAndCheckboxes()
 {
+    if (isOutputNode()) {
+        return;
+    }
     boost::shared_ptr<KnobBool> chans[4];
     boost::shared_ptr<KnobString> premultWarn = _imp->premultWarning.lock();
     if (!premultWarn) {
@@ -9708,6 +9742,201 @@ Node::checkForPremultWarningAndCheckboxes()
 
 }
 
+
+static void parseLayerString(const std::string& encoded, bool* isColor)
+{
+    if (encoded == kNatronRGBAPlaneUserName ||
+        encoded == kNatronRGBPlaneUserName ||
+        encoded == kNatronAlphaPlaneUserName) {
+        *isColor = true;
+    } else {
+        *isColor = false;
+    }
+}
+
+static bool parseMaskChannelString(const std::string& encodedChannel,
+                                   std::string* nodeName,
+                                   std::string* layerName,
+                                   std::string* channelName,
+                                   bool *isColor)
+{
+    std::size_t foundLastDot = encodedChannel.find_last_of('.');
+    if (foundLastDot == std::string::npos) {
+        *isColor = false;
+        if (encodedChannel == "None") {
+            *layerName = "None";
+            return true;
+        }
+        return false;
+    }
+    *channelName = encodedChannel.substr(foundLastDot + 1);
+    
+    std::string baseName = encodedChannel.substr(0, foundLastDot);
+    std::size_t foundPrevDot = baseName.find_first_of('.');
+    if (foundPrevDot != std::string::npos) {
+        //Remove the node name
+        *layerName = baseName.substr(foundPrevDot + 1);
+        *nodeName = baseName.substr(0, foundPrevDot);
+    } else {
+        *layerName = baseName;
+        nodeName->clear();
+    }
+    *isColor = *layerName == kNatronRGBAComponentsName || *layerName == kNatronRGBComponentsName || *layerName == kNatronAlphaComponentsName;
+    return true;
+}
+
+class MergeMaskChannelData : public KnobChoiceMergeEntriesData
+{
+public:
+    
+    std::string bNode, bLayer, bChannel;
+    bool isColor;
+    bool dataSet;
+    
+    MergeMaskChannelData()
+    : KnobChoiceMergeEntriesData()
+    , isColor(false)
+    , dataSet(false)
+    {
+        
+    }
+    
+    virtual void clear()
+    {
+        dataSet = false;
+        bNode.clear();
+        bLayer.clear();
+        bChannel.clear();
+    }
+    
+    virtual ~MergeMaskChannelData()
+    {
+        
+    }
+};
+
+static bool maskChannelEqualityFunctorInternal(const std::string& aLayer,
+                                               const std::string& aChannel,
+                                               const std::string& bLayer,
+                                               const std::string& bChannel,
+                                               bool aIsColor,
+                                               bool bIsColor)
+{
+    if (aChannel.empty() && bChannel.empty()) {
+        // None choice
+        return aLayer == bLayer;
+    } else if (aChannel != bChannel) {
+        return false;
+    } else {
+        // Same channel, check layer
+        if (aLayer == bLayer) {
+            return true;
+        } else if (aIsColor && bIsColor) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool maskChannelEqualityFunctor(const std::string& a, const std::string& b, KnobChoiceMergeEntriesData* data)
+{
+    MergeMaskChannelData* mergeData = dynamic_cast<MergeMaskChannelData*>(data);
+    assert(mergeData);
+    std::string aNode,aLayer,aChannel;
+    bool aIsColor;
+    parseMaskChannelString(a,&aNode,&aLayer,&aChannel,&aIsColor);
+    if (!mergeData->dataSet) {
+        parseMaskChannelString(b,&mergeData->bNode,&mergeData->bLayer,&mergeData->bChannel,&mergeData->isColor);
+        mergeData->dataSet = true;
+    }
+    return maskChannelEqualityFunctorInternal(aLayer, aChannel, mergeData->bLayer, mergeData->bChannel, aIsColor, mergeData->isColor);
+}
+
+
+class MergeLayerData : public KnobChoiceMergeEntriesData
+{
+public:
+    
+    bool isColor;
+    bool dataSet;
+    
+    MergeLayerData()
+    : KnobChoiceMergeEntriesData()
+    , isColor(false)
+    , dataSet(false)
+    {
+        
+    }
+    
+    virtual void clear()
+    {
+        dataSet = false;
+    }
+    
+    virtual ~MergeLayerData()
+    {
+        
+    }
+};
+
+
+static bool layerEqualityFunctor(const std::string& a, const std::string& b, KnobChoiceMergeEntriesData* data)
+{
+    MergeLayerData* mergeData = dynamic_cast<MergeLayerData*>(data);
+    assert(mergeData);
+    bool aIsColor;
+    parseLayerString(a, &aIsColor);
+    if (!mergeData->dataSet) {
+        parseLayerString(b, &mergeData->isColor);
+        mergeData->dataSet = true;
+    }
+    if (aIsColor && mergeData->isColor) {
+        return true;
+    } else if (a == b) {
+        return true;
+    }
+    return false;
+}
+
+int
+Node::getMaskChannel(int inputNb,ImageComponents* comps,NodePtr* maskInput) const
+{
+    std::map<int, MaskSelector >::const_iterator it = _imp->maskSelectors.find(inputNb);
+    if ( it != _imp->maskSelectors.end() ) {
+        std::string maskEncoded =  it->second.channel.lock()->getActiveEntryText_mt_safe();
+        std::string nodeName, layerName, channelName;
+        bool isColor;
+        bool ok = parseMaskChannelString(maskEncoded, &nodeName, &layerName, &channelName, &isColor);
+        if (!ok || layerName == "None") {
+            *comps = ImageComponents::getNoneComponents();
+            maskInput->reset();
+            return -1;
+        } else {
+            QMutexLocker locker(&it->second.compsMutex);
+            for (std::size_t i = 0; i < it->second.compsAvailable.size(); ++i) {
+                if (it->second.compsAvailable[i].first.getLayerName() == layerName ||
+                    (isColor && it->second.compsAvailable[i].first.isColorPlane())) {
+                    
+                    const std::vector<std::string>& channels = it->second.compsAvailable[i].first.getComponentsNames();
+                    for (std::size_t j = 0; j < channels.size(); ++j) {
+                        if (channels[j] == channelName) {
+                            *comps = it->second.compsAvailable[i].first;
+                            *maskInput = it->second.compsAvailable[i].second.lock();
+                            return j;
+                        }
+                    }
+                }
+            }
+            
+        }
+        //Default to alpha
+       // *comps = ImageComponents::getAlphaComponents();
+        //return 0;
+    }
+    return -1;
+    
+}
+
 bool
 Node::refreshChannelSelectors()
 {
@@ -9729,12 +9958,8 @@ Node::refreshChannelSelectors()
         }
         
         boost::shared_ptr<KnobChoice> layerKnob = it->second.layer.lock();
-        const std::vector<std::string> currentLayerEntries = layerKnob->getEntries_mt_safe();
-        const std::string curLayer_internalName = it->second.layerName.lock()->getValue();
-        const std::string curLayer = ImageComponents::mapUserFriendlyPlaneNameToNatronInternalPlaneName(curLayer_internalName);
-        
-        bool isCurLayerColorComp = curLayer == kNatronAlphaComponentsName || curLayer == kNatronRGBAComponentsName || curLayer == kNatronRGBComponentsName;
-        
+
+        // The Output Layer menu has a All choice, input layers menus have a None choice.
         std::vector<std::string> choices;
         if (it->second.hasAllChoice) {
             choices.push_back("All");
@@ -9743,31 +9968,25 @@ Node::refreshChannelSelectors()
         }
         int gotColor = -1;
 
-        ImageComponents colorComp,selectedComp;
+        ImageComponents colorComp;
 
-        /*
-         These are default layers that we always display in the layer selector.
-         If one of them is found in the clip preferences, we set the default value to it.
-         */
+        //
+        // These are default layers that we always display in the layer selector.
+        // If one of them is found in the clip preferences, we set the default value to it.
+        //
         std::map<std::string, int > defaultLayers;
         {
-            int i = 0;
-            while (ImageComponents::defaultComponents[i][0] != 0) {
-                std::string layer = ImageComponents::defaultComponents[i][0];
-                if (layer != kNatronAlphaComponentsName && layer != kNatronRGBAComponentsName && layer != kNatronRGBComponentsName) {
-                    //Do not add the color plane, because it is handled in a separate case to make sure it is always the first choice
-                    defaultLayers[layer] = -1;
-                }
-                ++i;
+            std::vector<std::string> projectLayers = getApp()->getProject()->getProjectDefaultLayerNames();
+            for (std::size_t i = 0; i < projectLayers.size(); ++i) {
+                defaultLayers[projectLayers[i]] = -1;
             }
         }
+
         
-        int foundCurLayerChoice = -1;
-        if (curLayer == "All" || curLayer == "None") {
-            foundCurLayerChoice = 0;
-        }
-        
+        // We may not have an input
         if (node) {
+            
+            // Get the components available on the node
             EffectInstance::ComponentsAvailableMap compsAvailable;
             node->getEffectInstance()->getComponentsAvailable(it->first != -1, true, time, &compsAvailable);
             {
@@ -9775,6 +9994,8 @@ Node::refreshChannelSelectors()
                 it->second.compsAvailable = compsAvailable;
             }
             for (EffectInstance::ComponentsAvailableMap::iterator it2 = compsAvailable.begin(); it2!= compsAvailable.end(); ++it2) {
+                
+                // Insert the color plane second in the menu
                 if (it2->first.isColorPlane()) {
                     int numComp = it2->first.getNumComponents();
                     colorComp = it2->first;
@@ -9797,13 +10018,8 @@ Node::refreshChannelSelectors()
                     }
                     choices.insert(pos,colorCompName);
                     
-                    if (foundCurLayerChoice == -1 && isCurLayerColorComp) {
-                        selectedComp = it2->first;
-                        foundCurLayerChoice = 1;
-                    }
-
-                    
-                    ///Increment all default indexes
+   
+                    // Increment all default indexes since we inserted color in the list
                     for (std::map<std::string, int >::iterator it = defaultLayers.begin() ;it!=defaultLayers.end(); ++it) {
                         if (it->second != -1) {
                             ++it->second;
@@ -9820,15 +10036,11 @@ Node::refreshChannelSelectors()
                    
                     choices.push_back(choiceName);
                     
-                    if (foundCurLayerChoice == -1 && it2->first.getLayerName() == curLayer) {
-                        selectedComp = it2->first;
-                        foundCurLayerChoice = choices.size()-1;
-                    }
-                    
                 }
             }
         } // if (node) {
         
+        // If we did not find the color plane, insert it since it is the unique mandatory plane.
         if (gotColor == -1) {
             assert(choices.size() > 0);
             std::vector<std::string>::iterator pos = choices.begin();
@@ -9844,76 +10056,29 @@ Node::refreshChannelSelectors()
             choices.insert(pos,kNatronRGBAPlaneUserName);
             
         }
+        
+        // Insert default layers
         for (std::map<std::string, int>::iterator itl = defaultLayers.begin(); itl != defaultLayers.end(); ++itl) {
             if (itl->second == -1) {
                 std::string choiceName = ImageComponents::mapNatronInternalPlaneNameToUserFriendlyPlaneName(itl->first);
                 choices.push_back(choiceName);
-                
-                if (foundCurLayerChoice == -1 && itl->first == curLayer) {
-                    selectedComp = ImageComponents::getDefaultComponent(itl->first);
-                    foundCurLayerChoice = choices.size()-1;
-                }
-
             }
         }
 
-        if (choices.size() != currentLayerEntries.size()) {
-            hasChanged = true;
-        } else {
-            for (std::size_t i = 0; i < currentLayerEntries.size(); ++i) {
-                if (currentLayerEntries[i] != choices[i]) {
-                    hasChanged = true;
-                    break;
-                }
+        const std::vector<std::string> currentLayerEntries = layerKnob->getEntries_mt_safe();
+        const std::string curLayer_FriendlyName = layerKnob->getActiveEntryText_mt_safe();
+        const std::string curLayer = ImageComponents::mapUserFriendlyPlaneNameToNatronInternalPlaneName(curLayer_FriendlyName);
+        
+        
+        {
+            MergeLayerData tmpData;
+            bool menuChanged = layerKnob->populateChoices(choices, std::vector<std::string>(), layerEqualityFunctor,&tmpData);
+            if (menuChanged) {
+                hasChanged = true;
+                s_outputLayerChanged();
             }
         }
         
-        layerKnob->populateChoices(choices);
-        if (hasChanged) {
-            s_outputLayerChanged();
-        }
-        
-        
-        if (!curLayer.empty() && foundCurLayerChoice != -1) {
-            //We already had a choice and it was found in the current layers
-            assert(foundCurLayerChoice >= 0 && foundCurLayerChoice < (int)choices.size());
-            layerKnob->blockValueChanges();
-            _imp->effect->beginChanges();
-            layerKnob->setValue(foundCurLayerChoice);
-            _imp->effect->endChanges(true);
-            layerKnob->unblockValueChanges();
-            if (it->first == -1 && _imp->enabledChan[0].lock()) {
-                refreshEnabledKnobsLabel(selectedComp);
-            }
-            
-        } else {
-            //fallback
-            bool foundLayer = false;
-            if (!curLayer_internalName.empty()) {
-                //check if the layer is in the available options: since we had default layers that may not be produced, it may be in the list
-                //but not in the components presents
-                for (std::size_t i = 0; i < currentLayerEntries.size(); ++i) {
-                    if (currentLayerEntries[i] == curLayer_internalName) {
-                        layerKnob->setValue(i);
-                        it->second.layerName.lock()->setValue(choices[i]);
-                        foundLayer = true;
-                        break;
-                    }
-                }
-
-            }
-            if (!foundLayer) {
-                if (it->second.hasAllChoice &&
-                    _imp->effect->isPassThroughForNonRenderedPlanes() == EffectInstance::ePassThroughRenderAllRequestedPlanes) {
-                    layerKnob->setValue(0);
-                    it->second.layerName.lock()->setValue(choices[0]);
-                } else {         
-                    assert(gotColor != -1 && gotColor >= 0 && gotColor < (int)choices.size());
-                    layerKnob->setValue(gotColor);
-                    it->second.layerName.lock()->setValue(choices[gotColor]);
-                }
-            } // !foundLayer
-        }
     } // for (std::map<int,ChannelSelector>::iterator it = _imp->channelsSelectors.begin(); it != _imp->channelsSelectors.end(); ++it) {
     
     NodePtr prefInputNode;
@@ -9931,33 +10096,10 @@ Node::refreshChannelSelectors()
         } else {
             node = getInput(it->first);
         }
-        
-        boost::shared_ptr<KnobChoice> channelKnob = it->second.channel.lock();
-        boost::shared_ptr<KnobString> channelNameKnob = it->second.channelName.lock();
 
-        const std::vector<std::string> currentLayerEntries = channelKnob->getEntries_mt_safe();
-        const std::string curLayer = channelNameKnob->getValue();
-        std::string curLayerName = curLayer,curChannelName;
-        {
-            std::size_t foundLastDot = curLayer.find_last_of(".");
-            if (foundLastDot != std::string::npos) {
-                curLayerName = curLayer.substr(0, foundLastDot);
-                std::size_t foundPrevDot = curLayerName.find_first_of(".");
-                if (foundPrevDot != std::string::npos) {
-                    //Remove the node name
-                    curLayerName = curLayerName.substr(foundPrevDot + 1);
-                }
-                curChannelName = curLayer.substr(foundLastDot + 1);
-            }
-        }
-        
-        bool isCurLayerColor = curLayerName == kNatronRGBAComponentsName ||
-        curLayerName == kNatronRGBComponentsName ||
-        curLayerName == kNatronAlphaComponentsName;
-        
+    
         std::vector<std::string> choices;
         choices.push_back("None");
-        int alphaIndex = 0;
         
         //Get the mask input components
         EffectInstance::ComponentsAvailableMap compsAvailable;
@@ -10010,21 +10152,12 @@ Node::refreshChannelSelectors()
             QMutexLocker k(&it->second.compsMutex);
             it->second.compsAvailable = compsOrdered;
         }
-        int foundLastLayerChoice = -1;
-        if (curLayer == "None") {
-            foundLastLayerChoice = 0;
-        }
+        
         for (std::vector<std::pair<ImageComponents,NodeWPtr > >::iterator it2 = compsOrdered.begin(); it2!= compsOrdered.end(); ++it2) {
             
             const std::vector<std::string>& channels = it2->first.getComponentsNames();
-            const std::string& layerName = it2->first.isColorPlane() ? it2->first.getComponentsGlobalName() : it2->first.getLayerName();
-            bool isLastLayer = false;
-            bool isColorPlane = it2->first.isColorPlane();
-            
-            if (foundLastLayerChoice == -1 && (layerName == curLayerName || (isCurLayerColor && isColorPlane))) {
-                isLastLayer = true;
-            }
-            
+            bool isColor = it2->first.isColorPlane();
+            const std::string& layerName = isColor ? it2->first.getComponentsGlobalName() : it2->first.getLayerName();
             
             NodePtr providerNode = it2->second.lock();
             std::string nodeName;
@@ -10033,74 +10166,36 @@ Node::refreshChannelSelectors()
             }
             
             for (std::size_t i = 0; i < channels.size(); ++i) {
+                
                 std::string option;
-                if (!nodeName.empty()) {
+                if (!isColor) {
                     option += nodeName;
-                    option += '.';
+                    if (!nodeName.empty()) {
+                        option += '.';
+                    }
                 }
+                option += layerName;
                 if (!layerName.empty()) {
-                    option += layerName;
                     option += '.';
                 }
                 option += channels[i];
                 choices.push_back(option);
-                if (isLastLayer && channels[i] == curChannelName) {
-                    foundLastLayerChoice = choices.size() - 1;
-                }
             }
             
-            if (it2->first.isColorPlane()) {
-                if (channels.size() == 1 || channels.size() == 4) {
-                    alphaIndex = choices.size() - 1;
-                } else {
-                    alphaIndex = 0;
-                }
-            }
+            
+            
         }
         
+        boost::shared_ptr<KnobChoice> channelKnob = it->second.channel.lock();
+        const std::vector<std::string> currentLayerEntries = channelKnob->getEntries_mt_safe();
+        const std::string curChannelEncoded = channelKnob->getActiveEntryText_mt_safe();
         
-        /*if (!gotColor) {
-            const ImageComponents& rgba = ImageComponents::getRGBAComponents();
-            const std::vector<std::string>& channels = rgba.getComponentsNames();
-            const std::string& layerName = rgba.getComponentsGlobalName();
-            for (std::size_t i = 0; i < channels.size(); ++i) {
-                choices.push_back(layerName + "." + channels[i]);
-            }
-            alphaIndex = choices.size() - 1;
-        }*/
-        
-        if (choices.size() != currentLayerEntries.size()) {
-            hasChanged = true;
-        } else {
-            for (std::size_t i = 0; i < currentLayerEntries.size(); ++i) {
-                if (currentLayerEntries[i] != choices[i]) {
-                    hasChanged = true;
-                    break;
-                }
-            }
+        // This will merge previous channels with new channels available while retaining previously existing channels.
+        {
+            MergeMaskChannelData tmpData;
+            hasChanged |= channelKnob->populateChoices(choices, std::vector<std::string>(), maskChannelEqualityFunctor, &tmpData);
         }
-        channelKnob->populateChoices(choices);
         
-        
-        /*if (setValues) {
-            assert(alphaIndex != -1 && alphaIndex >= 0 && alphaIndex < (int)choices.size());
-            channelKnob->setValue(alphaIndex,0);
-            channelNameKnob->setValue(choices[alphaIndex], 0);
-        } else {*/
-            if (foundLastLayerChoice != -1 && foundLastLayerChoice != 0) {
-                channelKnob->blockValueChanges();
-                _imp->effect->beginChanges();
-                channelKnob->setValue(foundLastLayerChoice);
-                channelKnob->unblockValueChanges();
-                channelNameKnob->setValue(choices[foundLastLayerChoice]);
-                _imp->effect->endChanges();
-                
-            } else {
-                assert(alphaIndex != -1 && alphaIndex >= 0 && alphaIndex < (int)choices.size());
-                channelKnob->setValue(alphaIndex);
-                channelNameKnob->setValue(choices[alphaIndex]);
-            }
-        //}
     }
     
     //Notify the effect channels have changed (the viewer needs this)

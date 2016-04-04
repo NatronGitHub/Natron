@@ -25,6 +25,11 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <string>
+#include <list>
+#include <set>
+#include <utility>
+
 #include "Global/Macros.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -163,7 +168,7 @@ public:
     void pasteCliboard(const NodeClipBoard& clipboard,std::list<std::pair<std::string,NodeGuiPtr > >* newNodes);
     
     void duplicateSelectedNodes(const QPointF& pos);
-    void pasteNodeClipBoards(const QPointF& pos);
+    bool pasteNodeClipBoards(const QPointF& pos);
     void cloneSelectedNodes(const QPointF& pos);
     
     QPointF getRootPos() const;
@@ -206,7 +211,7 @@ public Q_SLOTS:
     void copySelectedNodes();
 
     void cutSelectedNodes();
-    void pasteNodeClipBoards();
+    bool pasteNodeClipBoards();
     void duplicateSelectedNodes();
     void cloneSelectedNodes();
     void decloneSelectedNodes();
@@ -264,15 +269,28 @@ private:
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
-    virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
-    virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE FINAL;
-    virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
-    virtual void dragLeaveEvent(QDragLeaveEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual QUndoStack* getUndoStack() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 private:
+    
+    enum NearbyItemEnum
+    {
+        eNearbyItemNone = 0,
+        eNearbyItemNode,
+        eNearbyItemBackdropResizeHandle,
+        eNearbyItemBackdropFrame,
+        eNearbyItemNodeEdge,
+        eNearbyItemEdgeBendPoint,
+        
+    };
+    
+    void getNodesWithinViewportRect(const QRect& rect, std::set<NodeGui*>* nodes) const;
+    
+    NearbyItemEnum hasItemNearbyMouse(const QPoint& mousePosViewport,
+                            NodeGui** node,
+                            Edge** edge);
     
     void moveRootInternal(double dx, double dy);
     

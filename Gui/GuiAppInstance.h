@@ -273,7 +273,7 @@ public:
                                             boost::shared_ptr<RotoStrokeItem>* stroke,
                                             bool* isPainting) const OVERRIDE FINAL;
     
-    
+    virtual void reloadScriptEditorFonts() OVERRIDE FINAL;
     ///////////////// OVERRIDEN FROM TIMELINEKEYFRAMES
     virtual void removeAllKeyframesIndicators() OVERRIDE FINAL;
     

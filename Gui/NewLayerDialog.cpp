@@ -122,10 +122,11 @@ struct NewLayerDialogPrivate
     }
 };
 
-NewLayerDialog::NewLayerDialog(QWidget* parent)
+NewLayerDialog::NewLayerDialog(const ImageComponents& original, QWidget* parent)
 : QDialog(parent)
 , _imp(new NewLayerDialogPrivate())
 {
+    
     _imp->mainLayout = new QGridLayout(this);
     _imp->layerLabel = new Label(tr("Layer Name"),this);
     _imp->layerEdit = new LineEdit(this);
@@ -178,7 +179,22 @@ NewLayerDialog::NewLayerDialog(QWidget* parent)
     
     _imp->mainLayout->addWidget(_imp->buttons, 7, 0, 1, 2);
 
-
+    if (original.getNumComponents() != 0) {
+        _imp->layerEdit->setText(QString::fromUtf8(original.getLayerName().c_str()));
+        
+        LineEdit* edits[4] = {_imp->rEdit, _imp->gEdit, _imp->bEdit, _imp->aEdit};
+        Label* labels[4] = {_imp->rLabel, _imp->gLabel, _imp->bLabel, _imp->aLabel};
+        const std::vector<std::string>& channels = original.getComponentsNames();
+        for (int i = 0; i < 4; ++i) {
+            if (i >= (int)channels.size() ) {
+                edits[i]->setVisible(false);
+                labels[i]->setVisible(false);
+            } else {
+                edits[i]->setText(QString::fromUtf8(channels[i].c_str()));
+            }
+        }
+        _imp->numCompsBox->setValue((double)channels.size());
+    }
     
 }
 
@@ -238,7 +254,14 @@ NewLayerDialog::getComponents() const
     QString g = _imp->gEdit->text();
     QString b = _imp->bEdit->text();
     QString a = _imp->aEdit->text();
-    std::string layerFixed = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(layer.toStdString());
+
+    std::string layerFixed = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendlyWithDots(layer.toStdString());
+    
+    std::string rFixed = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendlyWithDots(r.toStdString());
+    std::string gFixed = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendlyWithDots(g.toStdString());
+    std::string bFixed = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendlyWithDots(b.toStdString());
+    std::string aFixed = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendlyWithDots(a.toStdString());
+    
     if (layerFixed.empty()) {
         return ImageComponents::getNoneComponents();
     }
@@ -249,47 +272,47 @@ NewLayerDialog::getComponents() const
         }
         std::vector<std::string> comps;
         std::string compsGlobal;
-        comps.push_back(a.toStdString());
-        compsGlobal.append(a.toStdString());
+        comps.push_back(aFixed);
+        compsGlobal.append(aFixed);
         return ImageComponents(layerFixed,compsGlobal,comps);
     } else if (nComps == 2) {
-        if (r.isEmpty() || g.isEmpty()) {
+        if (rFixed.empty() || gFixed.empty()) {
             return ImageComponents::getNoneComponents();
         }
         std::vector<std::string> comps;
         std::string compsGlobal;
-        comps.push_back(r.toStdString());
-        compsGlobal.append(r.toStdString());
-        comps.push_back(g.toStdString());
-        compsGlobal.append(g.toStdString());
+        comps.push_back(rFixed);
+        compsGlobal.append(rFixed);
+        comps.push_back(gFixed);
+        compsGlobal.append(gFixed);
         return ImageComponents(layerFixed,compsGlobal,comps);
     } else if (nComps == 3) {
-        if (r.isEmpty() || g.isEmpty() || b.isEmpty()) {
+        if (rFixed.empty() || gFixed.empty() || bFixed.empty()) {
             return ImageComponents::getNoneComponents();
         }
         std::vector<std::string> comps;
         std::string compsGlobal;
-        comps.push_back(r.toStdString());
-        compsGlobal.append(r.toStdString());
-        comps.push_back(g.toStdString());
-        compsGlobal.append(g.toStdString());
-        comps.push_back(b.toStdString());
-        compsGlobal.append(b.toStdString());
+        comps.push_back(rFixed);
+        compsGlobal.append(rFixed);
+        comps.push_back(gFixed);
+        compsGlobal.append(gFixed);
+        comps.push_back(bFixed);
+        compsGlobal.append(bFixed);
         return ImageComponents(layerFixed,compsGlobal,comps);
     } else if (nComps == 4) {
-        if (r.isEmpty() || g.isEmpty() || b.isEmpty() | a.isEmpty())  {
+        if (rFixed.empty() || gFixed.empty() || bFixed.empty() || aFixed.empty())  {
             return ImageComponents::getNoneComponents();
         }
         std::vector<std::string> comps;
         std::string compsGlobal;
-        comps.push_back(r.toStdString());
-        compsGlobal.append(r.toStdString());
-        comps.push_back(g.toStdString());
-        compsGlobal.append(g.toStdString());
-        comps.push_back(b.toStdString());
-        compsGlobal.append(b.toStdString());
-        comps.push_back(a.toStdString());
-        compsGlobal.append(a.toStdString());
+        comps.push_back(rFixed);
+        compsGlobal.append(rFixed);
+        comps.push_back(gFixed);
+        compsGlobal.append(gFixed);
+        comps.push_back(bFixed);
+        compsGlobal.append(bFixed);
+        comps.push_back(aFixed);
+        compsGlobal.append(aFixed);
         return ImageComponents(layerFixed,compsGlobal,comps);
     }
     return ImageComponents::getNoneComponents();

@@ -38,7 +38,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
-#include "Gui/KnobGui.h"
+#include "Gui/KnobGuiTable.h"
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -188,7 +188,7 @@ private:
 //================================
 
 class KnobGuiPath
-    : public KnobGui
+    : public KnobGuiTable
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -212,18 +212,8 @@ public:
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
 
 public Q_SLOTS:
-
-
-
-    void onAddButtonClicked();
-    
-    void onRemoveButtonClicked();
-    
-    void onEditButtonClicked();
-    
+        
     void onOpenFileButtonClicked();
-    
-    void onItemDataChanged(TableItem* item);
     
     void onTextEdited();
 
@@ -232,13 +222,10 @@ public Q_SLOTS:
     void onMakeRelativeTriggered();
     
     void onSimplifyTriggered();
-    
-    void onItemAboutToDrop();
-    void onItemDropped();
+
 
 private:
     virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
-    virtual bool shouldAddStretch() const OVERRIDE FINAL { return false; }
     virtual void createWidget(QHBoxLayout *layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
@@ -251,41 +238,20 @@ private:
     virtual void updateToolTip() OVERRIDE FINAL;
     void updateLastOpened(const QString &str);
 
-    /**
-     * @brief A Path knob could also be called Environment_variable_Knob.
-     * The string is encoded the following way:
-     * [VariableName1]:[Value1];[VariableName2]:[Value2] etc...
-     * Split all the ';' characters to get all different variables
-     * then for each variable split the ':' to get the name and the value of the variable.
-     **/
-    std::string rebuildPath() const;
-    
-    void createItem(int row,const QString& value,const QString& varName);
-    
-    struct Row
-    {
-        TableItem* varName;
-        TableItem* value;
-    };
-    typedef std::map<int,Row> Variables;
-    
+    virtual bool addNewUserEntry(QStringList& row) OVERRIDE FINAL;
+    // row has been set-up with old value
+    virtual bool editUserEntry(QStringList& row) OVERRIDE FINAL;
+    virtual void entryRemoved(const QStringList& row) OVERRIDE FINAL;
+    virtual void tableChanged(int row, int col,std::string*  newEncodedValue) OVERRIDE FINAL;
  
     QWidget* _mainContainer;
     
     LineEdit* _lineEdit;
     Button* _openFileButton;
     
-    
-    TableView *_table;
-    TableModel* _model;
-    Button *_addPathButton;
-    Button* _removePathButton;
-    Button* _editPathButton;
+
     QString _lastOpened;
     boost::weak_ptr<KnobPath> _knob;
-    bool _isInsertingItem;
-    Variables _items;
-    bool _dragAndDropping;
 };
 
 NATRON_NAMESPACE_EXIT;
