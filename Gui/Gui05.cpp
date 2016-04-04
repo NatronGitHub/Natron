@@ -72,7 +72,7 @@ Gui::setupUi()
     installEventFilter(this);
     assert( !isFullScreen() );
 
-    loadStyleSheet();
+    //Gui::loadStyleSheet();
 
     ///Restores position, size of the main window as well as whether it was fullscreen or not.
     _imp->restoreGuiGeometry();

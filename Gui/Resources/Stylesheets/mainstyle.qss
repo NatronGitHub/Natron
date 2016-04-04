@@ -19,9 +19,7 @@ QLabel {
 }
 
 
-QGroupBox {
-   color: black;
-}
+
 
 
 
@@ -57,10 +55,10 @@ image: url(handle.png);
 }TODO*/
 
 QGroupBox {
-    border: 1px solid black;
-    border-radius : 4px;
-    margin-top : 1px;
+    color: %5;
+    background-color: %2;
 }
+
 QGroupBox::title {
     subcontrol-origin: margin;
     subcontrol-position: top left; /* position at the top center */
@@ -381,11 +379,6 @@ QScrollArea {
     background-color: %2;
 }
 
-QGroupBox {
-    color: %5;
-    background-color: %2;
-    border:0px;
-}
 
 QComboBox {
     color: %5;

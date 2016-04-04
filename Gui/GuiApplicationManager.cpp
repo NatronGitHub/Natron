@@ -895,7 +895,8 @@ GuiApplicationManager::initGui(const CLArgs& args)
     
     _imp->fontconfigUpdateWatcher->setFuture(QtConcurrent::run(_imp.get(),&GuiApplicationManagerPrivate::updateFontConfigCache));
     
-    
+    Gui::loadStyleSheet();
+
     
     return exec();
 }

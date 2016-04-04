@@ -305,7 +305,7 @@ GuiApplicationManager::initializeQApp(int &argc,
     // Q_INIT_RESOURCES expanded, and fixed for use from inside a namespace:
     // (requires using Q_INIT_RESOURCES_EXTERN(GuiResources) before entering the namespace)
     ::qInitResources_GuiResources();
-
+        
     ///Register all the shortcuts.
     populateShortcuts();
 }

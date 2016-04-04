@@ -124,22 +124,21 @@ extern PyTypeObject** SbkNatronEngineTypes;
 extern SbkConverter** SbkNatronEngineTypeConverters;
 
 // Converter indices
-#define SBK_STD_STRING_IDX                                           0
-#define SBK_STD_SIZE_T_IDX                                           1
-#define SBK_NATRONENGINE_STD_VECTOR_RECTI_IDX                        2 // std::vector<RectI >
-#define SBK_NATRONENGINE_STD_PAIR_QSTRING_QSTRING_IDX                3 // std::pair<QString, QString >
-#define SBK_NATRONENGINE_STD_LIST_STD_PAIR_QSTRING_QSTRING_IDX       4 // const std::list<std::pair<QString, QString > > &
-#define SBK_NATRONENGINE_STD_LIST_TRACKPTR_IDX                       5 // std::list<Track * > *
-#define SBK_NATRONENGINE_STD_LIST_ITEMBASEPTR_IDX                    6 // std::list<ItemBase * >
-#define SBK_NATRONENGINE_STD_LIST_PARAMPTR_IDX                       7 // std::list<Param * >
-#define SBK_NATRONENGINE_STD_LIST_EFFECTPTR_IDX                      8 // std::list<Effect * >
-#define SBK_NATRONENGINE_STD_LIST_QSTRING_IDX                        9 // std::list<QString >
-#define SBK_NATRONENGINE_STD_LIST_INT_IDX                            10 // const std::list<int > &
-#define SBK_NATRONENGINE_STD_MAP_IMAGELAYER_EFFECTPTR_IDX            11 // std::map<ImageLayer, Effect * >
-#define SBK_NATRONENGINE_QLIST_QVARIANT_IDX                          12 // QList<QVariant >
-#define SBK_NATRONENGINE_QLIST_QSTRING_IDX                           13 // QList<QString >
-#define SBK_NATRONENGINE_QMAP_QSTRING_QVARIANT_IDX                   14 // QMap<QString, QVariant >
-#define SBK_NatronEngine_CONVERTERS_IDX_COUNT                        15
+#define SBK_STD_SIZE_T_IDX                                           0
+#define SBK_NATRONENGINE_STD_VECTOR_RECTI_IDX                        1 // std::vector<RectI >
+#define SBK_NATRONENGINE_STD_PAIR_QSTRING_QSTRING_IDX                2 // std::pair<QString, QString >
+#define SBK_NATRONENGINE_STD_LIST_STD_PAIR_QSTRING_QSTRING_IDX       3 // const std::list<std::pair<QString, QString > > &
+#define SBK_NATRONENGINE_STD_LIST_TRACKPTR_IDX                       4 // std::list<Track * > *
+#define SBK_NATRONENGINE_STD_LIST_ITEMBASEPTR_IDX                    5 // std::list<ItemBase * >
+#define SBK_NATRONENGINE_STD_LIST_PARAMPTR_IDX                       6 // std::list<Param * >
+#define SBK_NATRONENGINE_STD_LIST_EFFECTPTR_IDX                      7 // std::list<Effect * >
+#define SBK_NATRONENGINE_STD_LIST_QSTRING_IDX                        8 // std::list<QString >
+#define SBK_NATRONENGINE_STD_LIST_INT_IDX                            9 // const std::list<int > &
+#define SBK_NATRONENGINE_STD_MAP_IMAGELAYER_EFFECTPTR_IDX            10 // std::map<ImageLayer, Effect * >
+#define SBK_NATRONENGINE_QLIST_QVARIANT_IDX                          11 // QList<QVariant >
+#define SBK_NATRONENGINE_QLIST_QSTRING_IDX                           12 // QList<QString >
+#define SBK_NATRONENGINE_QMAP_QSTRING_QVARIANT_IDX                   13 // QMap<QString, QVariant >
+#define SBK_NatronEngine_CONVERTERS_IDX_COUNT                        14
 
 // Macros for type check
 
