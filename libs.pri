@@ -100,6 +100,12 @@ INCLUDEPATH += $$PWD/libs/gflags/src/gflags
 INCLUDEPATH += $$PWD/libs/glog/src
 win32* {
      INCLUDEPATH += $$PWD/libs/glog/src/windows
+
+    # wingdi.h defines ERROR to be 0. When we call LOG(ERROR), it gets
+    # substituted with 0, and it expands to COMPACT_GOOGLE_LOG_0. To allow us
+    # to keep using this syntax, we define this macro to do the same thing
+    # as COMPACT_GOOGLE_LOG_ERROR.
+     DEFINES += GLOG_NO_ABBREVIATED_SEVERITIES
 }
 !win32* {
     INCLUDEPATH += $$PWD/libs/glog/src
