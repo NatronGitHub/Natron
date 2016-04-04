@@ -1,5 +1,26 @@
 # History
 
+## Version 2.0.2
+
+- Expressions are now persistant: it can become invalid if a condition is not met currently to successfully run the expression, but can become valid again automatically.
+- Layers/Channels are now persistant: when copy pasting small "graphlets" or even creating PyPlugs, they will be remembered for convenience. An error may occur next to the corresponding parameter if the channel/layer does not exist any longer. You may right click the drop-down parameter to synchronize the menu to the actual state of the node to see the layers available.
+- Fix a bug where the Format parameter would be reseted automatically for the Reformat node
+- Fix a bug with QGroupBox stylesheet for PySide 
+- Fix a bug with keyframes for Rotoshapes where some control points would not get keyframed
+- Fix a bug where a size parameter could get ignored from the project if with=1 and height=1
+- Fix a bug with PNG reading: if a sequence of PNG would contain grayscale/RGB images then it would be assumed that the format of the first image in the sequence would be the format of the whole sequence. 
+- It is now possible to turn off the file dialog prompt when creating a Write node from the Preferences->General tab
+- Write nodes now default their frame range to the project range
+- Fix a bug where the Write node channels checkboxes would not be taken into account correctly
+- Python API: add app.getActiveViewer() and app.getActiveTabWidget(), see Python reference for documentation
+- Viewer: Whenever the B input is not set, set it automatically to the A input for convenience
+- Drag and Drop: It is now possible to drag&drop images to anywhere in the Natron UI, not necessarily in the Node Graph. It is also possible to drop Natron projects or Python scripts. 
+- Copy/Paste: It is now possible to paste python code directly into Natron UI, which will be run in the Script Editor automatically if valid 
+- Node graph: improve performances
+- Script Editor font and font size can now be customized from the Preferences-->Appearance tab
+- Fix a bug where rendering in a separate process would always fail on Windows.
+- WriteFFMPEG: fix a bug with multi-threading that was introduced with enhancements in 2.0.1 for certain codecs that do not support it
+
 ## Version 2.0 - stable 
 
 - Python: PyPlugs can now be used to create toolsets, such as Split And Join in the views menu
