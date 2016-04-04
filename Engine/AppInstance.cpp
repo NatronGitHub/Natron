@@ -524,15 +524,20 @@ AppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
     if ( (appPTR->getAppType() == AppManager::eAppTypeBackgroundAutoRun ||
           appPTR->getAppType() == AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui)) {
         
-        if (cl.getScriptFilename().isEmpty()) {
+        const QString& scriptFilename =  cl.getScriptFilename();
+
+        if (scriptFilename.isEmpty()) {
             // cannot start a background process without a file
             throw std::invalid_argument(tr("Project file name empty").toStdString());
         }
         
 
-        QFileInfo info(cl.getScriptFilename());
+        QFileInfo info(scriptFilename);
         if (!info.exists()) {
-            throw std::invalid_argument(tr("Specified project file does not exist").toStdString());
+            std::stringstream ss;
+            ss << scriptFilename.toStdString();
+            ss << tr(": No such file").toStdString();
+            throw std::invalid_argument(ss.str());
         }
         
         std::list<AppInstance::RenderWork> writersWork;

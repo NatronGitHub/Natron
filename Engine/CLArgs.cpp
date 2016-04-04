@@ -145,7 +145,7 @@ CLArgs::CLArgs(int& argc,char* argv[],bool forceBackground)
     _imp->parse();
 }
 
-CLArgs::CLArgs(const QStringList &arguments, bool forceBackground)
+CLArgs:: CLArgs(const QStringList &arguments, bool forceBackground)
     : _imp(new CLArgsPrivate())
 {
     _imp->isEmpty = false;
@@ -154,6 +154,8 @@ CLArgs::CLArgs(const QStringList &arguments, bool forceBackground)
     }
     for (int i = 0; i < arguments.size(); ++i) {
         QString str = arguments[i];
+
+        // Remove surrounding quotes
         if (str.size() >= 2 && str[0] == QChar::fromLatin1('"') && str[str.size() - 1] == QChar::fromLatin1('"')) {
             str.remove(0, 1);
             str.remove(str.size() - 1, 1);
