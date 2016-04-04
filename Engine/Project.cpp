@@ -544,7 +544,9 @@ Project::saveProjectInternal(const QString & path,
         }
     } // ofile
     
-    QFile::remove(filePath);
+    if (QFile::exists(filePath)) {
+        QFile::remove(filePath);
+    }
     int nAttemps = 0;
 
     while ( nAttemps < 10 && !fileCopy(tmpFilename, filePath) ) {
