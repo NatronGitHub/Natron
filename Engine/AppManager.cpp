@@ -1146,7 +1146,9 @@ static bool findAndRunScriptFile(const QString& path,const QStringList& files,co
 #endif
     for (QStringList::const_iterator it = files.begin(); it != files.end(); ++it) {
         if (*it == script) {
-            QFile file(path + *it);
+            
+            QString absolutePath = path + *it;
+            QFile file(absolutePath);
             if (file.open(QIODevice::ReadOnly)) {
                 QTextStream ts(&file);
                 QString content = ts.readAll();
@@ -1194,12 +1196,22 @@ static bool findAndRunScriptFile(const QString& path,const QStringList& files,co
 
                 if (!error.empty()) {
                     QString message(QString::fromUtf8("Failed to load "));
-                    message.append(script);
+                    message.append(absolutePath);
                     message.append(QString::fromUtf8(": "));
                     message.append(QString::fromUtf8(error.c_str()));
                     appPTR->writeToErrorLog_mt_safe(message);
                     std::cerr << message.toStdString() << std::endl;
                     return false;
+                }
+                if (!output.empty()) {
+                    QString message;
+                    message.append(absolutePath);
+                    message.append(QString::fromUtf8(": "));
+                    message.append(QString::fromUtf8(output.c_str()));
+                    if (appPTR->getTopLevelInstance()) {
+                        appPTR->getTopLevelInstance()->appendToScriptEditor(message.toStdString());
+                    }
+                    std::cout << message.toStdString() << std::endl;
                 }
                 return true;
             }

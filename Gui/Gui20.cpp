@@ -141,7 +141,7 @@ getPixmapForGrouping(QPixmap* pixmap,
 void
 Gui::reloadStylesheet()
 {
-    loadStyleSheet();
+    Gui::loadStyleSheet();
     if (_imp->_scriptEditor) {
         _imp->_scriptEditor->reloadHighlighter();
     }
@@ -259,7 +259,7 @@ Gui::loadStyleSheet()
                   | QIODevice::Text) ) {
         QTextStream in(&qss);
         QString content( in.readAll() );
-        setStyleSheet( content
+        qApp->setStyleSheet( content
                        .arg(qcolor_to_qstring(selCol)) // %1: selection-color
                        .arg(qcolor_to_qstring(baseCol)) // %2: medium background
                        .arg(qcolor_to_qstring(raisedCol)) // %3: soft background
