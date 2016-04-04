@@ -356,7 +356,7 @@ ProjectPrivate::runOnProjectSaveCallback(const std::string& filename, bool autoS
                 }
                 std::string filePath = filename;
                 if (ret) {
-                    filePath = NATRON_PYTHON_NAMESPACE::PyString_asString(ret);
+                    filePath = NATRON_PYTHON_NAMESPACE::PyStringToStdString(ret);
                     std::string script = "del ret\n";
                     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
                     assert(ok);

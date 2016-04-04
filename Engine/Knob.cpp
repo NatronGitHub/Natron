@@ -2543,7 +2543,7 @@ static bool catchErrors(PyObject* mainModule, std::string* error) {
             if (errCatcher) {
                 errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
                 assert(errorObj);
-                *error = NATRON_PYTHON_NAMESPACE::PyString_asString(errorObj);
+                *error = NATRON_PYTHON_NAMESPACE::PyStringToStdString(errorObj);
                 PyObject* unicode = PyUnicode_FromString("");
                 PyObject_SetAttrString(errCatcher, "value", unicode);
                 Py_DECREF(errorObj);
