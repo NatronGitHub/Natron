@@ -199,7 +199,7 @@ ProcessHandler::onStandardOutputBytesWritten()
 #ifdef DEBUG
     qDebug() << "Message(stdout):" << str;
 #endif
-    _processLog.append(QString::fromUtf8("Message(stdout): ") + str) + QLatin1Char('\n');
+    _processLog.append(QString::fromUtf8("Message(stdout): ") + str) ;
 }
 
 void
@@ -209,7 +209,7 @@ ProcessHandler::onStandardErrorBytesWritten()
 #ifdef DEBUG
     qDebug() << "Message(stderr):" << str;
 #endif
-    _processLog.append(QString::fromUtf8("Error(stderr): ") + str) + QLatin1Char('\n');
+    _processLog.append(QString::fromUtf8("Error(stderr): ") + str);
 }
 
 void

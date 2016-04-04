@@ -248,6 +248,9 @@ ProgressTaskInfo::cancelTask(bool calledFromRenderEngine, int retCode)
                 _imp->statusItem->setTextColor(Qt::black);
                 _imp->statusItem->setText(tr("Finished"));
                 _imp->status = eProgressTaskStatusFinished;
+                if (_imp->progressBar) {
+                    _imp->progressBar->setValue(100);
+                }
             } else {
                 _imp->statusItem->setTextColor(Qt::red);
                 _imp->statusItem->setText(tr("Failed"));
@@ -372,6 +375,12 @@ NodePtr
 ProgressTaskInfo::getNode() const
 {
     return _imp->node.lock();
+}
+
+boost::shared_ptr<ProcessHandler>
+ProgressTaskInfo::getProcess() const
+{
+    return _imp->process;
 }
 
 bool

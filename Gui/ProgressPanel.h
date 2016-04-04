@@ -117,6 +117,8 @@ public Q_SLOTS:
     
     void onShowProgressPanelTimerTriggered();
     
+    void onItemRightClicked(TableItem* item);
+    
 Q_SIGNALS:
     
     void s_doProgressUpdateOnMainThread(const ProgressTaskInfoPtr& task, double progress);

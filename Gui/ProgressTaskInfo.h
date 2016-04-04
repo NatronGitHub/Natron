@@ -93,6 +93,8 @@ public:
     
     NodePtr getNode() const;
     
+    boost::shared_ptr<ProcessHandler> getProcess() const;
+    
     public Q_SLOTS:
     
     void onRefreshLabelTimeout();

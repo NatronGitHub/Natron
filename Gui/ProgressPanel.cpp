@@ -36,6 +36,7 @@
 #include <QThread>
 #include <QHeaderView>
 #include <QCheckBox>
+#include <QCursor>
 #include <QTimer>
 
 #include "Engine/AppInstance.h"
@@ -55,6 +56,8 @@
 #include "Gui/GuiAppInstance.h"
 #include "Gui/Button.h"
 #include "Gui/Utils.h"
+#include "Gui/Menu.h"
+#include "Gui/LogWindow.h"
 #include "Gui/NodeGui.h"
 #include "Gui/TableModelView.h"
 
@@ -117,6 +120,21 @@ struct ProgressPanelPrivate
         return ProgressTaskInfoPtr();
     }
     
+    ProgressTaskInfoPtr findTask(const TableItem* item) const
+    {
+        assert(!tasksMutex.tryLock());
+        
+        for (TasksMap::const_iterator it = tasks.begin(); it!=tasks.end(); ++it) {
+            std::vector<TableItem*> items;
+            it->second->getTableItems(&items);
+            for (std::size_t i = 0; i < items.size(); ++i) {
+                if (items[i] == item) {
+                    return it->second;
+                }
+            }
+        }
+        return ProgressTaskInfoPtr();
+    }
     
 };
 
@@ -164,6 +182,7 @@ ProgressPanel::ProgressPanel(Gui* gui)
     
     _imp->mainLayout->addWidget(_imp->view);
 
+    QObject::connect(_imp->view, SIGNAL(itemRightClicked(TableItem*)), this, SLOT(onItemRightClicked(TableItem*)));
     
     QStringList dimensionNames;
     dimensionNames
@@ -563,6 +582,41 @@ void
 ProgressPanel::onQueueRendersCheckboxChecked()
 {
     appPTR->getCurrentSettings()->setRenderQueuingEnabled(_imp->queueTasksCheckbox->isChecked());
+}
+
+void
+ProgressPanel::onItemRightClicked(TableItem* item)
+{
+    ProgressTaskInfoPtr task;
+    {
+        QMutexLocker k(&_imp->tasksMutex);
+        task = _imp->findTask(item);
+    }
+    if (!task) {
+        return;
+    }
+    boost::shared_ptr<ProcessHandler> hasProcess = task->getProcess();
+
+    
+    Menu m(this);
+    
+    QAction* showLogAction = 0;
+    if (hasProcess) {
+        showLogAction = new QAction(tr("Show Process Log"), &m);
+        m.addAction(showLogAction);
+    }
+    
+    QAction* triggered = 0;
+    if (!m.isEmpty()) {
+        triggered = m.exec(QCursor::pos());
+    }
+    if (triggered == showLogAction && showLogAction) {
+        const QString& log = hasProcess->getProcessLog();
+        LogWindow window(log,this);
+        window.setWindowTitle(tr("Background Render Log"));
+        ignore_result(window.exec());
+
+    }
 }
 
 NATRON_NAMESPACE_EXIT;
