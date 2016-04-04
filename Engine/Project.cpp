@@ -32,6 +32,12 @@
 #include <cassert>
 #include <stdexcept>
 
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <boost/algorithm/string/predicate.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
+
 #include "Global/Macros.h"
 
 #ifdef __NATRON_WIN32__
@@ -1232,7 +1238,8 @@ Project::setupProjectForStereo()
     _imp->viewsList->setValue(encoded);
 }
    
-
+#if 0 // dead code
+// replaced by boost::to_lower(str)
 static std::string toLowerString(const std::string& str)
 {
     std::string ret;
@@ -1243,12 +1250,14 @@ static std::string toLowerString(const std::string& str)
     return ret;
 }
     
+// replaced by boost::iequals(lhs, rhs)
 static bool caseInsensitiveCompare(const std::string& lhs, const std::string& rhs)
 {
     std::string lowerLhs = toLowerString(lhs);
     std::string lowerRhs = toLowerString(rhs);
     return lowerLhs == lowerRhs;
 }
+#endif
 
 void
 Project::createProjectViews(const std::vector<std::string>& views)
@@ -1259,7 +1268,7 @@ Project::createProjectViews(const std::vector<std::string>& views)
     for (std::size_t i = 0; i < views.size(); ++i) {
         bool found = false;
         for (std::list<std::string>::iterator it = pairs.begin(); it != pairs.end(); ++it) {
-            if (caseInsensitiveCompare(*it,views[i])) {
+            if (boost::iequals(*it,views[i])) {
                 found = true;
                 break;
             }

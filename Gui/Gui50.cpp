@@ -33,6 +33,12 @@
 #include <utility>
 #include <stdexcept>
 
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <boost/algorithm/string/case_conv.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
+
 #include "Global/Macros.h"
 
 #include <QtCore/QDebug>
@@ -1138,11 +1144,9 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls, const QPoint& globalPos)
         }
         
         ///find a decoder for this file type
-        std::string ext = sequence->fileExtension();
-        std::string extLower;
-        for (size_t j = 0; j < ext.size(); ++j) {
-            extLower.append( 1,std::tolower( ext.at(j),local ) );
-        }
+        //std::string ext = sequence->fileExtension();
+        std::string extLower = sequence->fileExtension();
+        boost::to_lower(extLower);
         if (extLower == NATRON_PROJECT_FILE_EXT) {
             const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();
             assert(!content.empty());

@@ -41,6 +41,7 @@
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
 #include <boost/bind.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
@@ -1106,7 +1107,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     {
         ///Furnace plug-ins don't handle using the thread pool
         boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
-        if (foundPluginID.find("uk.co.thefoundry.furnace") != std::string::npos &&
+        if (boost::starts_with(foundPluginID, "uk.co.thefoundry.furnace") &&
             (settings->useGlobalThreadPool() || settings->getNumberOfParallelRenders() != 1)) {
             StandardButtonEnum reply = Dialogs::questionDialog(tr("Warning").toStdString(),
                                                                   tr("The settings of the application are currently set to use "
