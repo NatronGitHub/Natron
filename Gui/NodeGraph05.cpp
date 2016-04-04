@@ -201,13 +201,13 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
             
         } else {
             
-            ViewerInstance* isSelectedViewer = selectedNodeInternal->isEffectViewer();
-            if (isSelectedViewer) {
+            //ViewerInstance* isSelectedViewer = selectedNodeInternal->isEffectViewer();
                 //Don't pop a dot, it will most likely annoy the user, just fallback on behavior 0
-                position.setX( ( viewPos.bottomRight().x() + viewPos.topLeft().x() ) / 2. );
+            /*    position.setX( ( viewPos.bottomRight().x() + viewPos.topLeft().x() ) / 2. );
                 position.setY( ( viewPos.topLeft().y() + viewPos.bottomRight().y() ) / 2. );
-            } else {
-                
+            }
+            else {
+              */
                 QRectF selectedBbox = selected->mapToScene(selected->boundingRect()).boundingRect();
                 QPointF selectedCenter = selectedBbox.center();
                 
@@ -220,36 +220,12 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
                 
                 int index = selectedNodeInternal->getPreferredInputForConnection();
                 if (index != -1) {
-                    
-                    ///Create a dot to make things nicer
-                    
-                    CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_DOT), eCreateNodeReasonInternal, createdNodeInternal->getGroup());
-
-                    NodePtr dotNode = getGui()->getApp()->createNode(args);
-                    assert(dotNode);
-                    boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
-                    assert(dotNodeGui_i);
-                    NodeGui* dotGui = dynamic_cast<NodeGui*>(dotNodeGui_i.get());
-                    assert(dotGui);
-                    if (dotGui) {
-                        double dotW,dotH;
-                        dotGui->getSize(&dotW,&dotH);
-                        QPointF dotPos(x - dotW / 2., selectedCenter.y() - dotH / 2.);
-                        dotPos = dotGui->mapToParent(dotGui->mapFromScene(dotPos));
-                        dotNodeGui_i->setPosition(dotPos.x(),dotPos.y());
-                    }
-
-                    ///connect the nodes
-                    
-                    int index = selectedNodeInternal->getPreferredInputForConnection();
-                    
-                    bool ok = proj->connectNodes(index, dotNode, selectedNodeInternal, true);
-                    if (ok) {
-                        proj->connectNodes(0, createdNodeInternal, dotNode);
-                    }
+                                        
+                    (void)proj->connectNodes(index, createdNodeInternal, selectedNodeInternal, true);
+               
                     
                 }
-            } // if (isSelectedViewer) {
+            //} // if (isSelectedViewer) {*/
         } // if (nbConnectedInput == 0) {
 
     } else {
@@ -333,36 +309,14 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
             
             position.setX(x  - createdNodeSize.width() / 2.);
             position.setY(y);
+
             
+            
+            //Don't pop a dot, it will most likely annoy the user, just fallback on behavior 0
+ 
             int index = createdNodeInternal->getPreferredInputForConnection();
-            if (index != -1) {
-                ///Create a dot to make things nicer
-                CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_DOT), eCreateNodeReasonInternal, createdNodeInternal->getGroup());
-                NodePtr dotNode = getGui()->getApp()->createNode(args);
-                assert(dotNode);
-                if (dotNode) {
-                    boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
-                    assert(dotNodeGui_i);
-                    NodeGui* dotGui = dynamic_cast<NodeGui*>(dotNodeGui_i.get());
-                    assert(dotGui);
-                    if (dotGui) {
-                        double dotW,dotH;
-                        dotGui->getSize(&dotW,&dotH);
-                        QPointF dotPos(x - dotW / 2., selectedCenter.y() - dotH / 2.);
-                        dotPos = dotGui->mapToParent(dotGui->mapFromScene(dotPos));
-                        dotNodeGui_i->setPosition(dotPos.x(),dotPos.y());
-                    }
+            (void)proj->connectNodes(index, selectedNodeInternal, createdNodeInternal, true);
 
-                    ///connect the nodes
-
-                    int index = createdNodeInternal->getPreferredInputForConnection();
-
-                    bool ok = proj->connectNodes(index, dotNode, createdNodeInternal, true);
-                    if (ok) {
-                        proj->connectNodes(0, selectedNodeInternal, dotNode);
-                    }
-                }
-            }
         }
     }
     position = node->mapFromScene(position);
