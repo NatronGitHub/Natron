@@ -12,10 +12,24 @@
 # OFFLINE=1 : Make the offline installer too
 # NO_INSTALLER: Do not make any installer, only zip if NO_ZIP!=1
 # Usage:
-# NO_ZIP=1 NATRON_LICENSE=GPL OFFLINE=1 BUILD_CONFIG=BETA BUILD_NUMBER=1 sh build-installer 64 master
+# NO_ZIP=1 NATRON_LICENSE=GPL OFFLINE=1 BUILD_CONFIG=BETA BUILD_NUMBER=1 sh build-installer 64
 
 source `pwd`/common.sh || exit 1
-source `pwd`/commits-hash.sh || exit 1
+
+if [ -z "$BUILD_CONFIG" ]; then
+  echo "Please define BUILD_CONFIG"
+  exit 1
+fi
+NATRON_BRANCH=$GIT_BRANCH
+if [ -z "$NATRON_BRANCH" ] && [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
+  echo "No branch selected, fail"
+  exit 1
+fi
+if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
+  source $(pwd)/commits-hash-$NATRON_BRANCH.sh
+else
+  source $(pwd)/commits-hash.sh
+fi
 
 
 if [ "$1" = "32" ]; then
@@ -26,10 +40,6 @@ else
     INSTALL_PATH=$INSTALL64_PATH
 fi
 
-if [ "$NATRON_LICENSE" != "GPL" ] && [ "$NATRON_LICENSE" != "COMMERCIAL" ]; then
-    echo "Please select a License with NATRON_LICENSE=(GPL,COMMERCIAL)"
-    exit 1
-fi
 if [ "$NATRON_LICENSE" = "GPL" ]; then
     FFMPEG_BIN_PATH=$INSTALL_PATH/ffmpeg-GPL
 elif [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
@@ -72,7 +82,7 @@ fi
 
 if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
     NATRON_VERSION=$NATRON_DEVEL_GIT
-    REPO_BRANCH=snapshots
+    REPO_BRANCH=snapshots/$NATRON_BRANCH
     APP_INSTALL_SUFFIX=INRIA/Natron-snapshots
 	ONLINE_TAG=snapshot
 else

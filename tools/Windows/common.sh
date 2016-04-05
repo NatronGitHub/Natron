@@ -48,6 +48,7 @@ COLOR_PROFILES_VERSION=2.0.0
 # SDK
 #
 
+MASTER_BRANCH=master
 SDK_VERSION=2.0
 MINGW_PACKAGES_PATH=$CWD/MINGW-packages
 MINGW_PREFIX=mingw-w64-
@@ -155,4 +156,14 @@ DEFAULT_MKJOBS=4
 if [ -z "$MKJOBS" ]; then
     MKJOBS=$DEFAULT_MKJOBS
 fi
+echo "===> MKJOBS set to $MKJOBS"
+
+# License
+#
+#
+if [ "$NATRON_LICENSE" != "GPL" ] && [ "$NATRON_LICENSE" != "COMMERCIAL" ]; then
+    echo "Please select a License with NATRON_LICENSE=(GPL,COMMERCIAL)"
+    exit 1
+fi
+echo "===> NATRON_LICENSE set to $NATRON_LICENSE"
 

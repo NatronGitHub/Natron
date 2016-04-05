@@ -39,22 +39,47 @@ fi
 EOF
 chmod +x $KILLSCRIPT
 
-#If "master" is passed, use master branch for all plug-ins otherwise use the git tags in common.sh
-IO_BRANCH=master
-MISC_BRANCH=master
-ARENA_BRANCH=master
-CV_BRANCH=master
-
-if [ "$2" != "master" ]; then
-  IO_BRANCH=$IOPLUG_GIT_TAG
-  MISC_BRANCH=$MISCPLUG_GIT_TAG
-  ARENA_V=$ARENAPLUG_GIT_TAG
-  CV_V=$CVPLUG_GIT_TAG
+# Always use BUILD_CONFIG
+if [ -z "$BUILD_CONFIG" ]; then
+  echo "Please define BUILD_CONFIG"
+  exit 1
 fi
 
-if [ "$NATRON_LICENSE" != "GPL" ] && [ "$NATRON_LICENSE" != "COMMERCIAL" ]; then
-    echo "Please select a License with NATRON_LICENSE=(GPL,COMMERCIAL)"
-    exit 1
+# Set to MASTER_BRANCH as default
+IO_BRANCH=$MASTER_BRANCH
+MISC_BRANCH=$MASTER_BRANCH
+ARENA_BRANCH=$MASTER_BRANCH
+CV_BRANCH=$MASTER_BRANCH
+
+if [ -z "$GIT_BRANCH"  ]; then
+  NATRON_BRANCH=$MASTER_BRANCH
+  if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
+    COMMITS_HASH=$CWD/commits-hash-$NATRON_BRANCH.sh
+  else
+    COMMITS_HASH=$CWD/commits-hash.sh
+  fi
+else
+  NATRON_BRANCH=$GIT_BRANCH
+  COMMITS_HASH=$CWD/commits-hash-$NATRON_BRANCH.sh
+fi
+
+if [ "$BUILD_CONFIG" != "SNAPSHOT" ]; then
+  IO_BRANCH=$IOPLUG_GIT_TAG
+  MISC_BRANCH=$MISCPLUG_GIT_TAG
+  ARENA_BRANCH=$ARENAPLUG_GIT_TAG
+  CV_BRANCH=$CVPLUG_GIT_TAG
+fi
+
+if [ ! -f "$COMMITS_HASH" ]; then
+cat <<EOF > "$COMMITS_HASH"
+#!/bin/sh
+NATRON_DEVEL_GIT=#
+IOPLUG_DEVEL_GIT=#
+MISCPLUG_DEVEL_GIT=#
+ARENAPLUG_DEVEL_GIT=#
+CVPLUG_DEVEL_GIT=#
+NATRON_VERSION_NUMBER=#
+EOF
 fi
 
 
@@ -130,7 +155,7 @@ fi
 
 #Always bump git commit, it is only used to version-stamp binaries
 MISC_V=$MISC_GIT_VERSION
-sed -i "s/MISCPLUG_DEVEL_GIT=.*/MISCPLUG_DEVEL_GIT=${MISC_V}/" $CWD/commits-hash.sh || exit 1
+sed -i "s/MISCPLUG_DEVEL_GIT=.*/MISCPLUG_DEVEL_GIT=${MISC_V}/" $COMMITS_HASH || exit 1
 
 make -C CImg CImg.h || exit 1
 make -C CImg CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" CONFIG=relwithdebinfo BITS=$BIT -j${MKJOBS} || exit 1
@@ -178,7 +203,7 @@ fi
 
 #Always bump git commit, it is only used to version-stamp binaries
 IO_V=$IO_GIT_VERSION
-sed -i "s/IOPLUG_DEVEL_GIT=.*/IOPLUG_DEVEL_GIT=${IO_V}/" $CWD/commits-hash.sh || exit 1
+sed -i "s/IOPLUG_DEVEL_GIT=.*/IOPLUG_DEVEL_GIT=${IO_V}/" $COMMITS_HASH || exit 1
 
 
 env CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" make CONFIG=relwithdebinfo BITS=$BIT -j${MKJOBS} || exit 1
@@ -229,7 +254,7 @@ fi
 
 #Always bump git commit, it is only used to version-stamp binaries
 ARENA_V=$ARENA_GIT_VERSION
-sed -i "s/ARENAPLUG_DEVEL_GIT=.*/ARENAPLUG_DEVEL_GIT=${ARENA_V}/" $CWD/commits-hash.sh || exit 1
+sed -i "s/ARENAPLUG_DEVEL_GIT=.*/ARENAPLUG_DEVEL_GIT=${ARENA_V}/" $COMMITS_HASH || exit 1
 
 
 env CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" make MINGW=1 USE_SVG=1 USE_PANGO=1 STATIC=1 CONFIG=relwithdebinfo BITS=$BIT -j${MKJOBS} || exit 1
@@ -271,7 +296,7 @@ fi
 
 #Always bump git commit, it is only used to version-stamp binaries
 CV_V=$CV_GIT_VERSION
-sed -i "s/CVPLUG_DEVEL_GIT=.*/CVPLUG_DEVEL_GIT=${CV_V}/" $CWD/commits-hash.sh || exit 1
+sed -i "s/CVPLUG_DEVEL_GIT=.*/CVPLUG_DEVEL_GIT=${CV_V}/" $COMMITS_HASH || exit 1
 
 
 cd opencv2fx || exit 1

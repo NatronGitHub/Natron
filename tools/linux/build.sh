@@ -20,12 +20,10 @@
 #
 # Build and package Natron for Linux
 #
-# (options) sh build.sh (threads, 4 is default)
+# (options) sh build.sh
 # 
 # Options (optional):
 # NOPKG=1 : Don't build installer/repo
-# NOCLEAN=1 : Don't remove sdk installation
-# REBUILD_SDK=1 : Trigger rebuild of sdk
 # NOBUILD=1 : Don't build anything
 # SYNC=1 : Sync files with server
 # ONLY_NATRON=1 : Don't build plugins
@@ -39,10 +37,10 @@
 # BUILD_CONFIG=(SNAPSHOT,ALPHA,BETA,RC,STABLE,CUSTOM)
 # CUSTOM_BUILD_USER_NAME="Toto" : to be set if BUILD_CONFIG=CUSTOM
 # BUILD_NUMBER=X: To be set to indicate the revision number of the build. For example RC1,RC2, RC3 etc...
-# TARSRC=1 : tar sources
 # NATRON_LICENSE=(GPL,COMMERCIAL)
-
-# USAGE example: BUILD_CONFIG=STABLE BUILD_NUMBER=1 NATRON_LICENSE=GPL BUILD_CONFIG=SNAPSHOT build2.sh master<branch> 8<noThreads>
+# GIT_BRANCH=xxx
+# GIT_COMMIT=xxx
+# USAGE example: GIT_BRANCH=RB-2.0 BUILD_CONFIG=STABLE BUILD_NUMBER=1 NATRON_LICENSE=GPL BUILD_CONFIG=SNAPSHOT build.sh
 
 source `pwd`/common.sh || exit 1
 
@@ -64,34 +62,25 @@ EOF
 chmod +x $KILLSCRIPT
 
 if [ "$OS" = "GNU/Linux" ]; then
-    PKGOS=Linux
+  PKGOS=Linux
 else
-    echo "Linux-only!"
-    exit 1
-fi
-
-if [ "$1" = "master" ]; then
-    BRANCH=$1
-    REPO_SUFFIX=snapshot
-else
-    REPO_SUFFIX=release
-fi
-
-if [ "$2" != "" ]; then
-    JOBS=$2
-else
-    #Default to 4 threads
-    JOBS=$DEFAULT_MKJOBS
-fi
-
-if [ "$NATRON_LICENSE" != "GPL" -a "$NATRON_LICENSE" != "COMMERCIAL" ]; then
-    echo "Please select a License with NATRON_LICENSE=(GPL,COMMERCIAL)"
-    exit 1
+  echo "Linux-only!"
+  exit 1
 fi
 
 if [ -z "$BUILD_CONFIG" ]; then
-	echo "You must select a BUILD_CONFIG".
-	exit 1
+  echo "You must select a BUILD_CONFIG".
+  exit 1
+fi
+
+if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
+    if [ -z "$GIT_BRANCH" ]; then
+      REPO_SUFFIX=snapshot-$MASTER_BRANCH
+    else
+      REPO_SUFFIX=snapshot-$GIT_BRANCH
+    fi
+else
+    REPO_SUFFIX=release
 fi
 
 if [ -z "$IO" ]; then
@@ -120,8 +109,18 @@ fi
 
 FAIL=0
 
-if [ ! -f "$CWD/commits-hash.sh" ]; then
-    cat <<EOF > "${CWD}/commits-hash.sh"
+if [ -z "$GIT_BRANCH" ]; then
+  if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
+    COMMITS_HASH=$CWD/commits-hash-$MASTER_BRANCH.sh
+  else
+    COMMITS_HASH=$CWD/commits-hash.sh
+  fi
+else
+  COMMITS_HASH=$CWD/commits-hash-$GIT_BRANCH.sh
+fi
+
+if [ ! -f "$COMMITS_HASH" ]; then
+cat <<EOF > "$COMMITS_HASH"
 #!/bin/sh
 NATRON_DEVEL_GIT=#
 IOPLUG_DEVEL_GIT=#
@@ -132,12 +131,11 @@ NATRON_VERSION_NUMBER=#
 EOF
 fi
 
-
 if [ "$NOBUILD" != "1" ]; then
     if [ "$ONLY_NATRON" != "1" ]; then
         log="$LOGS/plugins.$PKGOS$BIT.$TAG.log"
-        echo -n "Building Plugins (log in $log)..."
-        env MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER BUILD_CV=$CV BUILD_IO=$IO BUILD_MISC=$MISC BUILD_ARENA=$ARENA sh "$INC_PATH/scripts/build-plugins.sh" $BRANCH >& "$log" || FAIL=1
+        echo -n "=====> Building Plugins (log in $log)..."
+        env BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER BUILD_CV=$CV BUILD_IO=$IO BUILD_MISC=$MISC BUILD_ARENA=$ARENA sh "$INC_PATH/scripts/build-plugins.sh" >& "$log" || FAIL=1
         if [ "$FAIL" != "1" ]; then
             echo OK
         else
@@ -148,8 +146,8 @@ if [ "$NOBUILD" != "1" ]; then
     fi
     if [ "$FAIL" != "1" -a "$ONLY_PLUGINS" != "1" ]; then
         log="$LOGS/natron.$PKGOS$BIT.$TAG.log"
-        echo -n "Building Natron (log in $log)..."
-        env MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER DISABLE_BREAKPAD=$DISABLE_BREAKPAD sh "$INC_PATH/scripts/build-natron.sh" $BRANCH >& "$log" || FAIL=1
+        echo -n "=====> Building Natron (log in $log)..."
+        env BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER DISABLE_BREAKPAD=$DISABLE_BREAKPAD sh "$INC_PATH/scripts/build-natron.sh" >& "$log" || FAIL=1
         if [ "$FAIL" != "1" ]; then
             echo OK
         else
@@ -162,8 +160,8 @@ fi
 
 if [ "$NOPKG" != "1" -a "$FAIL" != "1" ]; then
     log="$LOGS/installer.$PKGOS$BIT.$TAG.log"
-    echo -n "Building Packages (log in $log)... "
-    env OFFLINE=${OFFLINE_INSTALLER} DISABLE_BREAKPAD=$DISABLE_BREAKPAD NOTGZ=1 sh "$INC_PATH/scripts/build-installer.sh" $BRANCH >& "$log" || FAIL=1
+    echo -n "=====> Building Packages (log in $log)... "
+    env OFFLINE=${OFFLINE_INSTALLER} DISABLE_BREAKPAD=$DISABLE_BREAKPAD NOTGZ=1 sh "$INC_PATH/scripts/build-installer.sh" >& "$log" || FAIL=1
     if [ "$FAIL" != "1" ]; then
         echo OK
     else
@@ -179,24 +177,24 @@ BIT_TAG="$BIT$BIT_SUFFIX"
 $KILLSCRIPT $PID &
 KILLBOT=$!
 
-if [ "$BRANCH" = "master" ]; then
-  ONLINE_REPO_BRANCH=snapshots
+if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
+  ONLINE_REPO_BRANCH="snapshots/$GIT_BRANCH"
 else
   ONLINE_REPO_BRANCH=releases
 fi
 
 if [ "$SYNC" = "1" -a "$FAIL" != "1" ]; then
-    echo "Syncing packages ... "
+    echo "=====> Syncing packages ... "
     rsync -avz --progress --delete --verbose -e ssh "$REPO_DIR/packages/" "$REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/packages"
 
     rsync -avz --progress  --verbose -e ssh "$REPO_DIR/installers/" "$REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/files" 
 
   # Symbols
-  echo "sync symbols ..."
   rsync -avz --progress --verbose -e ssh "$INSTALL_PATH/symbols/" "${REPO_DEST}/symbols/"
 fi
 
 #Always upload logs, even upon failure
+echo "=====> Syncing logs ..."
 rsync -avz --progress --delete --verbose -e ssh "$LOGS/" "$REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/logs"
 
 kill -9 $KILLBOT

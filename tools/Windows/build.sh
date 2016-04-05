@@ -53,19 +53,19 @@ else
     INSTALL_PATH=$INSTALL64_PATH
 fi
 
-if [ "$2" = "master" ]; then
-    BRANCH=$2
-    REPO_SUFFIX=snapshot
-	NO_ZIP=1
-else
-    REPO_SUFFIX=release
+if [ -z "$BUILD_CONFIG" ]; then
+  echo "You must select a BUILD_CONFIG".
+  exit 1
 fi
 
-if [ "$3" != "" ]; then
-    JOBS=$3
+if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
+    if [ -z "$GIT_BRANCH" ]; then
+      REPO_SUFFIX=snapshot-$MASTER_BRANCH
+    else
+      REPO_SUFFIX=snapshot-$GIT_BRANCH
+    fi
 else
-    #Default to 4 threads
-    JOBS=$DEFAULT_MKJOBS
+    REPO_SUFFIX=release
 fi
 
 # make kill bot
@@ -113,22 +113,33 @@ fi
 
 FAIL=0
 
-if [ ! -f `pwd`/commits-hash.sh ]; then
-    touch $CWD/commits-hash.sh
-    echo "#!/bin/sh" >> $CWD/commits-hash.sh
-    echo "NATRON_DEVEL_GIT=#" >> $CWD/commits-hash.sh
-    echo "IOPLUG_DEVEL_GIT=#" >> $CWD/commits-hash.sh
-    echo "MISCPLUG_DEVEL_GIT=#" >> $CWD/commits-hash.sh
-    echo "ARENAPLUG_DEVEL_GIT=#" >> $CWD/commits-hash.sh
-    echo "CVPLUG_DEVEL_GIT=#" >> $CWD/commits-hash.sh
-    echo "NATRON_VERSION_NUMBER=#" >> $CWD/commits-hash.sh
+if [ -z "$GIT_BRANCH" ]; then
+  if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
+    COMMITS_HASH=$CWD/commits-hash-$MASTER_BRANCH.sh
+  else
+    COMMITS_HASH=$CWD/commits-hash.sh
+  fi
+else
+  COMMITS_HASH=$CWD/commits-hash-$GIT_BRANCH.sh
+fi
+
+if [ ! -f "$COMMITS_HASH" ]; then
+cat <<EOF > "$COMMITS_HASH"
+#!/bin/sh
+NATRON_DEVEL_GIT=#
+IOPLUG_DEVEL_GIT=#
+MISCPLUG_DEVEL_GIT=#
+ARENAPLUG_DEVEL_GIT=#
+CVPLUG_DEVEL_GIT=#
+NATRON_VERSION_NUMBER=#
+EOF
 fi
 
 
 if [ "$NOBUILD" != "1" ]; then
     if [ "$ONLY_NATRON" != "1" ]; then
-        echo -n "Building Plugins ... "
-        env NATRON_LICENSE=$NATRON_LICENSE MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CV=0 BUILD_IO=$IO BUILD_MISC=$MISC BUILD_ARENA=$ARENA sh $INC_PATH/scripts/build-plugins.sh $BIT $BRANCH >& $LOGS/plugins.$PKGOS$BIT.$TAG.log || FAIL=1
+        echo -n "=====> Building Plugins ... "
+        env NATRON_LICENSE=$NATRON_LICENSE MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CV=0 BUILD_IO=$IO BUILD_MISC=$MISC BUILD_ARENA=$ARENA sh $INC_PATH/scripts/build-plugins.sh $BIT >& $LOGS/plugins.$PKGOS$BIT.$TAG.log || FAIL=1
         if [ "$FAIL" != "1" ]; then
             echo OK
         else
@@ -140,8 +151,8 @@ if [ "$NOBUILD" != "1" ]; then
         fi  
     fi
     if [ "$FAIL" != "1" -a "$ONLY_PLUGINS" != "1" ]; then
-        echo -n "Building Natron ... "
-        env NATRON_LICENSE=$NATRON_LICENSE MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER DISABLE_BREAKPAD=$DISABLE_BREAKPAD sh $INC_PATH/scripts/build-natron.sh $BIT $BRANCH >& $LOGS/natron.$PKGOS$BIT.$TAG.log || FAIL=1
+        echo -n "=====> Building Natron ... "
+        env NATRON_LICENSE=$NATRON_LICENSE MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER DISABLE_BREAKPAD=$DISABLE_BREAKPAD sh $INC_PATH/scripts/build-natron.sh $BIT >& $LOGS/natron.$PKGOS$BIT.$TAG.log || FAIL=1
         if [ "$FAIL" != "1" ]; then
             echo OK
         else
@@ -155,8 +166,8 @@ if [ "$NOBUILD" != "1" ]; then
 fi
 
 if [ "$NOPKG" != "1" -a "$FAIL" != "1" ]; then
-    echo -n "Building Packages ... "
-    env NATRON_LICENSE=$NATRON_LICENSE OFFLINE=${OFFLINE_INSTALLER} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER NO_ZIP=$NO_ZIP BUNDLE_CV=0 BUNDLE_IO=$IO BUNDLE_MISC=$MISC BUNDLE_ARENA=$ARENA DISABLE_BREAKPAD=$DISABLE_BREAKPAD sh $INC_PATH/scripts/build-installer.sh $BIT $BRANCH   >& $LOGS/installer.$PKGOS$BIT.$TAG.log || FAIL=1
+    echo -n "=====> Building Packages ... "
+    env NATRON_LICENSE=$NATRON_LICENSE OFFLINE=${OFFLINE_INSTALLER} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER NO_ZIP=$NO_ZIP BUNDLE_CV=0 BUNDLE_IO=$IO BUNDLE_MISC=$MISC BUNDLE_ARENA=$ARENA DISABLE_BREAKPAD=$DISABLE_BREAKPAD sh $INC_PATH/scripts/build-installer.sh $BIT >& $LOGS/installer.$PKGOS$BIT.$TAG.log || FAIL=1
     if [ "$FAIL" != "1" ]; then
         echo OK
     else
@@ -172,18 +183,19 @@ $KILLSCRIPT $PID &
 KILLBOT=$!
 
 
-if [ "$BRANCH" = "master" ]; then
-  ONLINE_REPO_BRANCH=snapshots
+if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
+  ONLINE_REPO_BRANCH="snapshots/$GIT_BRANCH"
 else
   ONLINE_REPO_BRANCH=releases
 fi
+
 BIT_SUFFIX=bit
 BIT_TAG=$BIT$BIT_SUFFIX
 
 
 if [ "$SYNC" = "1" ]; then
     if [ "$FAIL" != "1" ]; then
-        echo "Syncing packages ... "
+        echo "=====> Syncing packages ... "
         rsync -avz --progress --delete --verbose -e ssh  $REPO_DIR/packages/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/packages
         rsync -avz --progress  --verbose -e ssh $REPO_DIR/installers/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/files
 		if [ "$NO_ZIP" != "1" ]; then
@@ -194,6 +206,7 @@ if [ "$SYNC" = "1" ]; then
 fi
 
 # always sync logs
+echo "=====> Syncing logs ..."
 rsync -avz --progress --delete --verbose -e ssh $LOGS/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/logs
 
 
