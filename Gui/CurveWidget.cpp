@@ -41,6 +41,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Project.h"
 #include "Engine/RotoContext.h"
 #include "Engine/Settings.h"
+#include "Engine/KnobTypes.h"
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/CurveEditor.h"
@@ -52,6 +53,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h"
 
+#include "Gui/KnobGui.h"
 #include "Gui/PythonPanels.h" // PyModelDialog
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerGL.h"
@@ -592,6 +594,19 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
         return;
     }
     
+    
+    KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(selectedKeyCurve.get());
+    if (isKnobCurve) {
+        KnobGuiPtr knobUI = isKnobCurve->getKnobGui();
+        if (knobUI) {
+            
+            int curveDim = isKnobCurve->getDimension();
+            KnobPtr internalKnob = knobUI->getKnob();
+            if (internalKnob && (!internalKnob->isEnabled(curveDim) || internalKnob->isSlave(curveDim))) {
+                return;
+            }
+        }
+    }
 
     EditKeyFrameDialog::EditModeEnum mode = EditKeyFrameDialog::eEditModeKeyframePosition;
     
