@@ -94,6 +94,7 @@ struct RenderScale : public OfxPointD {
 typedef OfxPointD Point;
 
 typedef OfxRGBAColourF RGBAColourF;
+typedef OfxRGBAColourD RGBAColourD;
 typedef OfxRangeD RangeD;
 
 

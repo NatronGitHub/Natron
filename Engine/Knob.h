@@ -1022,7 +1022,11 @@ protected:
      **/
     virtual void unSlave(int dimension,ValueChangedReasonEnum reason,bool copyState) = 0;
 
+    
 public:
+    
+    virtual void onKnobAboutToAlias(const KnobPtr& /*slave*/) {}
+
 
     /**
      * @brief Calls slaveTo with a value changed reason of eValueChangedReasonNatronInternalEdited.

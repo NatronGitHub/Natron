@@ -1976,8 +1976,9 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             KnobPath* isPath = dynamic_cast<KnobPath*>(sKnob.get());
             KnobButton* isBtn = dynamic_cast<KnobButton*>(sKnob.get());
             KnobSeparator* isSep = dynamic_cast<KnobSeparator*>(sKnob.get());
+            KnobParametric* isParametric = dynamic_cast<KnobParametric*>(sKnob.get());
             
-            assert(isInt || isDbl || isBool || isChoice || isColor || isStr || isFile || isOutFile || isPath || isBtn || isSep);
+            assert(isInt || isDbl || isBool || isChoice || isColor || isStr || isFile || isOutFile || isPath || isBtn || isSep || isParametric);
             
             if (isInt) {
                 boost::shared_ptr<KnobInt> k;
@@ -2194,6 +2195,17 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                     }
                 }
                 knob = k;
+            } else if (isParametric) {
+                boost::shared_ptr<KnobParametric> k;
+                if (!found) {
+                    k = AppManager::createKnob<KnobParametric>(effect.get(), isRegular->getLabel(), sKnob->getDimension() , false);
+                } else {
+                    k = boost::dynamic_pointer_cast<KnobParametric>(found);
+                    if (!k) {
+                        continue;
+                    }
+                }
+                knob = k;
             }
             
             assert(knob);
@@ -2217,6 +2229,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             } else if (page) {
                 page->addKnob(knob);
             }
+         
             knob->setIsPersistant(isRegular->isPersistent());
             knob->setAnimationEnabled(isRegular->isAnimationEnabled());
             knob->setEvaluateOnChange(isRegular->getEvaluatesOnChange());
@@ -5664,6 +5677,10 @@ Node::activate(const std::list< NodePtr > & outputsToRestore,
     }
     Q_EMIT activated(triggerRender);
     
+    
+    getApp()->recheckInvalidExpressions();
+    declareAllPythonAttributes();
+    
     ///If the node is a group, activate all nodes within the group first
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>(_imp->effect.get());
     if (isGrp) {
@@ -5681,9 +5698,7 @@ Node::activate(const std::list< NodePtr > & outputsToRestore,
     }
     
     _imp->runOnNodeCreatedCB(true);
-    
-    getApp()->recheckInvalidExpressions();
-    declareAllPythonAttributes();
+  
 } // activate
 
 void
@@ -9382,12 +9397,16 @@ Node::removeParameterFromPython(const std::string& parameterName)
 void
 Node::declareAllPythonAttributes()
 {
-    declareNodeVariableToPython(getFullyQualifiedName());
-    declarePythonFields();
-    if (_imp->rotoContext) {
-        declareRotoPythonField();
-    }
+    try {
+        declareNodeVariableToPython(getFullyQualifiedName());
+        declarePythonFields();
+        if (_imp->rotoContext) {
+            declareRotoPythonField();
+        }
 #pragma message WARN("Also declare tracker ctx to python in 2.1")
+    } catch (const std::exception& e) {
+        qDebug() << e.what();
+    }
 }
 
 std::string
