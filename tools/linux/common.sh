@@ -264,7 +264,7 @@ DEFAULT_MKJOBS=4
 if [ -z "$MKJOBS" ]; then
   MKJOBS=$DEFAULT_MKJOBS
 fi
-echo "==> MKJOBS set to $MKJOBS"
+echo "===> MKJOBS set to $MKJOBS"
 
 # License
 #
@@ -273,14 +273,4 @@ if [ "$NATRON_LICENSE" != "GPL" ] && [ "$NATRON_LICENSE" != "COMMERCIAL" ]; then
   echo "Please select a License with NATRON_LICENSE=(GPL,COMMERCIAL)"
   exit 1
 fi
-echo "===> License set to $NATRON_LICENSE"
-
-# Build config
-#
-#
-if [ -z "$BUILD_CONFIG" ]; then
-  echo "You must select a BUILD_CONFIG".
-  exit 1
-fi
-echo "===> BUILD_CONFIG set to $BUILD_CONFIG"
-
+echo "===> NATRON_LICENSE set to $NATRON_LICENSE"
