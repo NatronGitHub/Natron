@@ -519,6 +519,8 @@ Q_SIGNALS:
     void entryAppended(QString,QString);
 
 private:
+    
+    virtual void onKnobAboutToAlias(const KnobPtr& slave) OVERRIDE FINAL;
 
     void findAndSetOldChoice(MergeMenuEqualityFunctor mergingFunctor = 0,
                              KnobChoiceMergeEntriesData* mergingData = 0);
@@ -867,7 +869,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     mutable QMutex _curvesMutex;
     std::vector< boost::shared_ptr<Curve> > _curves, _defaultCurves;
-    std::vector<RGBAColourF> _curvesColor;
+    std::vector<RGBAColourD> _curvesColor;
 
 public:
 
@@ -955,6 +957,8 @@ Q_SIGNALS:
 
     void curveColorChanged(int);
 private:
+    
+    virtual void onKnobAboutToAlias(const KnobPtr& slave) OVERRIDE FINAL;
 
     virtual void resetExtraToDefaultValue(int dimension) OVERRIDE FINAL;
     virtual bool hasModificationsVirtual(int dimension) const OVERRIDE FINAL;

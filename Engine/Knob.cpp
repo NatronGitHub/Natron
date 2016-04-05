@@ -3772,7 +3772,9 @@ KnobHelper::createDuplicateOnNode(EffectInstance* effect,
     if (!output) {
         return KnobPtr();
     }
-    
+    for (int i = 0; i < getDimension(); ++i) {
+        output->setDimensionName(i, getDimensionName(i));
+    }
     output->setName(newScriptName, true);
     output->setAsUserKnob();
     output->cloneDefaultValues(this);
@@ -3877,15 +3879,7 @@ KnobHelper::setKnobAsAliasOfThis(const KnobPtr& master, bool doAlias)
      For choices, copy exactly the menu entries because they have to be the same
      */
     if (doAlias) {
-        KnobChoice* isChoice = dynamic_cast<KnobChoice*>(master.get());
-        if (isChoice) {
-            KnobChoice* thisChoice = dynamic_cast<KnobChoice*>(this);
-            assert(thisChoice);
-            if (thisChoice) {
-                isChoice->populateChoices(thisChoice->getEntries_mt_safe(),
-                                          thisChoice->getEntriesHelp_mt_safe(), 0, 0, false);
-            }
-        }
+        master->onKnobAboutToAlias(shared_from_this());
     }
     beginChanges();
     for (int i = 0; i < getDimension(); ++i) {
@@ -3899,6 +3893,9 @@ KnobHelper::setKnobAsAliasOfThis(const KnobPtr& master, bool doAlias)
             assert(ok);
             Q_UNUSED(ok);
         }
+    }
+    for (int i = 0; i < getDimension(); ++i) {
+        master->setDimensionName(i, getDimensionName(i));
     }
     handleSignalSlotsForAliasLink(master,doAlias);
 

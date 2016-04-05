@@ -60,6 +60,7 @@ public Q_SLOTS:
     
     void onNodeComboEditingFinished();
     void onPageComboIndexChanged(int index);
+    void onKnobComboIndexChanged(int index);
     
 private:
     

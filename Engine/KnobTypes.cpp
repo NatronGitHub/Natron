@@ -1087,6 +1087,16 @@ KnobChoice::choiceRestoration(KnobChoice* knob,const ChoiceExtraData* data)
 }
 
 void
+KnobChoice::onKnobAboutToAlias(const KnobPtr &slave)
+{
+    KnobChoice* isChoice = dynamic_cast<KnobChoice*>(slave.get());
+    if (isChoice) {
+        populateChoices(isChoice->getEntries_mt_safe(),
+                        isChoice->getEntriesHelp_mt_safe(), 0, 0, false);
+    }
+}
+
+void
 KnobChoice::onOriginalKnobPopulated()
 {
     
@@ -1599,7 +1609,7 @@ KnobParametric::KnobParametric(KnobHolder* holder,
 , _curvesColor(dimension)
 {
     for (int i = 0; i < dimension; ++i) {
-        RGBAColourF color;
+        RGBAColourD color;
         color.r = color.g = color.b = color.a = 1.;
         _curvesColor[i] = color;
         _curves[i] = boost::shared_ptr<Curve>( new Curve(this,i) );
@@ -1653,9 +1663,17 @@ KnobParametric::getCurveColor(int dimension,
     ///Mt-safe as it never changes
     
     assert( dimension < (int)_curvesColor.size() );
-    *r = _curvesColor[dimension].r;
-    *g = _curvesColor[dimension].g;
-    *b = _curvesColor[dimension].b;
+    std::pair<int,KnobPtr >  master = getMaster(dimension);
+    if (master.second) {
+        KnobParametric* m = dynamic_cast<KnobParametric*>(master.second.get());
+        assert(m);
+        return m->getCurveColor(dimension, r, g, b);
+    } else {
+        *r = _curvesColor[dimension].r;
+        *g = _curvesColor[dimension].g;
+        *b = _curvesColor[dimension].b;
+    }
+
 }
 
 
@@ -1988,6 +2006,21 @@ KnobParametric::hasModificationsVirtual(int dimension) const
     return false;
 }
 
+void
+KnobParametric::onKnobAboutToAlias(const KnobPtr& slave)
+{
+    KnobParametric* isParametric = dynamic_cast<KnobParametric*>(slave.get());
+    if (isParametric) {
+        _defaultCurves.resize(isParametric->_defaultCurves.size());
+        _curvesColor.resize(isParametric->_curvesColor.size());
+        assert(_curvesColor.size() == _defaultCurves.size());
+        for (std::size_t i = 0; i < isParametric->_defaultCurves.size(); ++i) {
+            _defaultCurves[i].reset(new Curve(this,i));
+            _defaultCurves[i]->clone(*isParametric->_defaultCurves[i]);
+            _curvesColor[i] = isParametric->_curvesColor[i];
+        }
+    }
+}
 
 
 KnobTable::KnobTable(KnobHolder* holder,
