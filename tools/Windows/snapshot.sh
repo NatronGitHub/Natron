@@ -112,7 +112,7 @@ if [ "$CURRENT_BRANCH" != "$MASTER_BRANCH" ]; then
   echo "===> Checking $CURRENT_BRANCH ..."
   if [ "$NATRON_DEVEL_GIT" != "#" ] && [ "$NATRON_DEVEL_GIT" != "" ]; then
     echo "===> Checking for #snapshot ..."
-    GITV_NATRON=`git --no-pager log --pretty=oneline ${NATRON_DEVEL_GIT}..HEAD --grep=#snapshot --since=1.week |head -1|awk '{print $1}'`
+    GITV_NATRON=`git --no-pager log --pretty=oneline ${NATRON_DEVEL_GIT}..HEAD --grep=#snapshot --since=1.days |head -1|awk '{print $1}'`
   else
     echo "===> first-run, so don't build anything"
     NATRON_LATEST_COMMIT=`git log |head -1|awk '{print $2}'`
@@ -125,7 +125,7 @@ if [ "$CURRENT_BRANCH" != "$MASTER_BRANCH" ]; then
   fi
 else
   GITV_NATRON=`git log |head -1|awk '{print $2}'`
-  MASTER_SNAPSHOT=`git --no-pager log --pretty=oneline ${NATRON_DEVEL_GIT}..HEAD --grep=#snapshot --since=1.week |head -1|awk '{print $1}'`
+  MASTER_SNAPSHOT=`git --no-pager log --pretty=oneline ${NATRON_DEVEL_GIT}..HEAD --grep=#snapshot --since=1.days |head -1|awk '{print $1}'`
 fi
 
 ORIG_NATRON=$NATRON_DEVEL_GIT
