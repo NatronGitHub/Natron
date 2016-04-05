@@ -114,6 +114,7 @@ if [ "$CURRENT_BRANCH" != "$MASTER_BRANCH" ]; then
       NATRON_LATEST_COMMIT="#"
     fi
     sed -i "s/NATRON_DEVEL_GIT=.*/NATRON_DEVEL_GIT=${NATRON_LATEST_COMMIT}/" $CWD/commits-hash-${CURRENT_BRANCH}.sh || exit 1
+    GITV_NATRON=""
   fi
 else
   GITV_NATRON=`git log |head -1|awk '{print $2}'`
