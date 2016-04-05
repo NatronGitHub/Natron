@@ -138,7 +138,7 @@ fi
 
 if [ "$NOBUILD" != "1" ]; then
     if [ "$ONLY_NATRON" != "1" ]; then
-        echo -n "Building Plugins ... "
+        echo -n "=====> Building Plugins ... "
         env NATRON_LICENSE=$NATRON_LICENSE MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CV=0 BUILD_IO=$IO BUILD_MISC=$MISC BUILD_ARENA=$ARENA sh $INC_PATH/scripts/build-plugins.sh $BIT >& $LOGS/plugins.$PKGOS$BIT.$TAG.log || FAIL=1
         if [ "$FAIL" != "1" ]; then
             echo OK
@@ -151,7 +151,7 @@ if [ "$NOBUILD" != "1" ]; then
         fi  
     fi
     if [ "$FAIL" != "1" -a "$ONLY_PLUGINS" != "1" ]; then
-        echo -n "Building Natron ... "
+        echo -n "=====> Building Natron ... "
         env NATRON_LICENSE=$NATRON_LICENSE MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER DISABLE_BREAKPAD=$DISABLE_BREAKPAD sh $INC_PATH/scripts/build-natron.sh $BIT >& $LOGS/natron.$PKGOS$BIT.$TAG.log || FAIL=1
         if [ "$FAIL" != "1" ]; then
             echo OK
@@ -166,7 +166,7 @@ if [ "$NOBUILD" != "1" ]; then
 fi
 
 if [ "$NOPKG" != "1" -a "$FAIL" != "1" ]; then
-    echo -n "Building Packages ... "
+    echo -n "=====> Building Packages ... "
     env NATRON_LICENSE=$NATRON_LICENSE OFFLINE=${OFFLINE_INSTALLER} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER NO_ZIP=$NO_ZIP BUNDLE_CV=0 BUNDLE_IO=$IO BUNDLE_MISC=$MISC BUNDLE_ARENA=$ARENA DISABLE_BREAKPAD=$DISABLE_BREAKPAD sh $INC_PATH/scripts/build-installer.sh $BIT >& $LOGS/installer.$PKGOS$BIT.$TAG.log || FAIL=1
     if [ "$FAIL" != "1" ]; then
         echo OK
@@ -195,7 +195,7 @@ BIT_TAG=$BIT$BIT_SUFFIX
 
 if [ "$SYNC" = "1" ]; then
     if [ "$FAIL" != "1" ]; then
-        echo "Syncing packages ... "
+        echo "=====> Syncing packages ... "
         rsync -avz --progress --delete --verbose -e ssh  $REPO_DIR/packages/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/packages
         rsync -avz --progress  --verbose -e ssh $REPO_DIR/installers/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/files
 		if [ "$NO_ZIP" != "1" ]; then
@@ -206,6 +206,7 @@ if [ "$SYNC" = "1" ]; then
 fi
 
 # always sync logs
+echo "=====> Syncing logs ..."
 rsync -avz --progress --delete --verbose -e ssh $LOGS/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/logs
 
 

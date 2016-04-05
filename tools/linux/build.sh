@@ -134,7 +134,7 @@ fi
 if [ "$NOBUILD" != "1" ]; then
     if [ "$ONLY_NATRON" != "1" ]; then
         log="$LOGS/plugins.$PKGOS$BIT.$TAG.log"
-        echo -n "Building Plugins (log in $log)..."
+        echo -n "=====> Building Plugins (log in $log)..."
         env BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER BUILD_CV=$CV BUILD_IO=$IO BUILD_MISC=$MISC BUILD_ARENA=$ARENA sh "$INC_PATH/scripts/build-plugins.sh" >& "$log" || FAIL=1
         if [ "$FAIL" != "1" ]; then
             echo OK
@@ -146,7 +146,7 @@ if [ "$NOBUILD" != "1" ]; then
     fi
     if [ "$FAIL" != "1" -a "$ONLY_PLUGINS" != "1" ]; then
         log="$LOGS/natron.$PKGOS$BIT.$TAG.log"
-        echo -n "Building Natron (log in $log)..."
+        echo -n "=====> Building Natron (log in $log)..."
         env BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER DISABLE_BREAKPAD=$DISABLE_BREAKPAD sh "$INC_PATH/scripts/build-natron.sh" >& "$log" || FAIL=1
         if [ "$FAIL" != "1" ]; then
             echo OK
@@ -160,7 +160,7 @@ fi
 
 if [ "$NOPKG" != "1" -a "$FAIL" != "1" ]; then
     log="$LOGS/installer.$PKGOS$BIT.$TAG.log"
-    echo -n "Building Packages (log in $log)... "
+    echo -n "=====> Building Packages (log in $log)... "
     env OFFLINE=${OFFLINE_INSTALLER} DISABLE_BREAKPAD=$DISABLE_BREAKPAD NOTGZ=1 sh "$INC_PATH/scripts/build-installer.sh" >& "$log" || FAIL=1
     if [ "$FAIL" != "1" ]; then
         echo OK
@@ -184,17 +184,17 @@ else
 fi
 
 if [ "$SYNC" = "1" -a "$FAIL" != "1" ]; then
-    echo "Syncing packages ... "
+    echo "=====> Syncing packages ... "
     rsync -avz --progress --delete --verbose -e ssh "$REPO_DIR/packages/" "$REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/packages"
 
     rsync -avz --progress  --verbose -e ssh "$REPO_DIR/installers/" "$REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/files" 
 
   # Symbols
-  echo "sync symbols ..."
   rsync -avz --progress --verbose -e ssh "$INSTALL_PATH/symbols/" "${REPO_DEST}/symbols/"
 fi
 
 #Always upload logs, even upon failure
+echo "=====> Syncing logs ..."
 rsync -avz --progress --delete --verbose -e ssh "$LOGS/" "$REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/logs"
 
 kill -9 $KILLBOT
