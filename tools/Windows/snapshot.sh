@@ -125,6 +125,7 @@ if [ "$CURRENT_BRANCH" != "$MASTER_BRANCH" ]; then
   fi
 else
   GITV_NATRON=`git log |head -1|awk '{print $2}'`
+  MASTER_SNAPSHOT=`git --no-pager log --pretty=oneline ${NATRON_DEVEL_GIT}..HEAD --grep=#snapshot --since=1.week |head -1|awk '{print $1}'`
 fi
 
 ORIG_NATRON=$NATRON_DEVEL_GIT
@@ -132,6 +133,14 @@ echo "==========> Natron $GITV_NATRON vs. $ORIG_NATRON"
 if [ "$GITV_NATRON" != "$ORIG_NATRON" -a "$FAIL" != "1" -a "$GITV_NATRON" != "" -a "$GITV_NATRON" != "#" ]; then
   echo "Natron update needed"
   BUILD_NATRON=1
+fi
+if [ ! -z "$MASTER_SNAPSHOT" ]; then
+  echo "===> MASTER_BRANCH has an snapshot!"
+  echo "=====> MASTER_BRANCH $MASTER_SNAPSHOT vs. $ORIG_NATRON"
+  if [ "$MASTER_SNAPSHOT" != "$ORIG_NATRON" ]; then
+    echo "===> Natron upate needed!"
+    BUILD_NATRON=1
+  fi
 fi
 
 BUILD_IO=0
@@ -148,7 +157,7 @@ if [ "$FAIL" != "1" ]; then
   ORIG_IO=$IOPLUG_DEVEL_GIT
   echo "==========> IO $GITV_IO vs. $ORIG_IO"
   if [ "$GITV_IO" != "$ORIG_IO" -a "$FAIL" != "1" ]; then
-    echo "IO update needed"
+    echo "===> IO update needed!"
     BUILD_IO=1
   fi
 fi
@@ -168,7 +177,7 @@ if [ "$FAIL" != "1" ]; then
   ORIG_MISC=$MISCPLUG_DEVEL_GIT
   echo "==========> Misc $GITV_MISC vs. $ORIG_MISC"
   if [ "$GITV_MISC" != "$ORIG_MISC" -a "$FAIL" != "1" ]; then
-    echo "Misc update needed"
+    echo "===> Misc update needed!"
     BUILD_MISC=1
   fi
 fi
@@ -188,7 +197,7 @@ if [ "$FAIL" != "1" ]; then
   ORIG_ARENA=$ARENAPLUG_DEVEL_GIT
   echo "==========> Arena $GITV_ARENA vs. $ORIG_ARENA"
   if [ "$GITV_ARENA" != "$ORIG_ARENA" -a "$FAIL" != "1" ]; then
-    echo "Arena update needed"
+    echo "===> Arena update needed!"
     BUILD_ARENA=1
   fi
 fi
@@ -208,28 +217,17 @@ if [ "$CURRENT_BRANCH" != "$MASTER_BRANCH" ]; then
 else
   if [ "$BUILD_NATRON" = "1" -o "$BUILD_IO" = "1" -o "$BUILD_MISC" = "1" -o "$BUILD_ARENA" = "1" -o "$BUILD_CV" = "1" ]; then
 
-    #GIT_COMMENT=`( cd $TMP/Natron ; git --no-pager log ${NATRON_DEVEL_GIT}..HEAD)`
-    #GIT_SYNC=`echo $GIT_COMMENT|grep "#snapshot"`
-    #if [ "$GIT_SYNC" = "" ]; then
-    # GIT_COMMENT=`( cd $TMP/openfx-io ; git --no-pager log ${IOPLUG_DEVEL_GIT}..HEAD)`
-    # GIT_SYNC=`echo $GIT_COMMENT|grep "#snapshot"`
-    #fi
-    #if [ "$GIT_SYNC" = "" ]; then
-    # GIT_COMMENT=`( cd $TMP/openfx-misc ; git --no-pager log ${MISCPLUG_DEVEL_GIT}..HEAD)`
-    # GIT_SYNC=`echo $GIT_COMMENT|grep "#snapshot"`
-    #fi
-    #if [ "$GIT_SYNC" = "" ]; then
-    # GIT_COMMENT=`( cd $TMP/openfx-arena ; git --no-pager log ${ARENAPLUG_DEVEL_GIT}..HEAD)`
-    # GIT_SYNC=`echo $GIT_COMMENT|grep "#snapshot"`
-    #fi
-
-    #if [ "$GIT_SYNC" != "" ]; then
-    #  DO_SYNC=1
-    #else
+    if [ ! -z "$MASTER_SNAPSHOT" ]; then
+      DO_SYNC=1
+      NOMKINSTALL=0
+      DOTEST=0
+    else
+      NOMKINSTALL=1
       DO_SYNC=0
-    #fi
+      DOTEST=0
+    fi
 
-    UNIT_TEST=0 NO_INSTALLER=1 GIT_BRANCH=$CURRENT_BRANCH NATRON_LICENSE=$NATRON_LICENSE OFFLINE_INSTALLER=1 SYNC=$DO_SYNC BUILD_CONFIG=SNAPSHOT sh build.sh $BIT
+    UNIT_TEST=$DOTEST NO_INSTALLER=$NOMKINSTALL GIT_BRANCH=$CURRENT_BRANCH NATRON_LICENSE=$NATRON_LICENSE OFFLINE_INSTALLER=1 SYNC=$DO_SYNC BUILD_CONFIG=SNAPSHOT sh build.sh $BIT
   fi
 fi
 
