@@ -157,3 +157,12 @@ if [ -z "$MKJOBS" ]; then
     MKJOBS=$DEFAULT_MKJOBS
 fi
 
+# License
+#
+#
+if [ "$NATRON_LICENSE" != "GPL" ] && [ "$NATRON_LICENSE" != "COMMERCIAL" ]; then
+    echo "Please select a License with NATRON_LICENSE=(GPL,COMMERCIAL)"
+    exit 1
+fi
+
+
