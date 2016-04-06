@@ -36,7 +36,8 @@
 
 #include "Gui/GuiFwd.h"
 
-#include "qhttpserverfwd.h"
+#include "DocumentationManager.h"
+#include "LoginDialog.h"
 
 #if defined(appPTR)
 #undef appPTR
@@ -217,12 +218,7 @@ public:
 public Q_SLOTS:
     
     void onFontconfigCacheUpdateFinished();
-
     void onFontconfigTimerTriggered();
-
-    void webserverHandler(QHttpRequest *req, QHttpResponse *resp);
-    QString webserverHTMLParser(QString html, QString path) const;
-    void webserverSetPort(int port);
 
 private:
 
@@ -251,6 +247,8 @@ private:
     void populateShortcuts();
 
     boost::scoped_ptr<GuiApplicationManagerPrivate> _imp;
+
+    DocumentationManager* documentation;
 };
 
 NATRON_NAMESPACE_EXIT;
