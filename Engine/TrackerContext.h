@@ -284,9 +284,49 @@ public:
     
     void goToPreviousKeyFrame(int time);
     void goToNextKeyFrame(int time);
-    
-    
+
     void exportTrackDataFromExportOptions();
+    
+    /**
+     * @brief Computes the translation that best fit the set of correspondences x1 and x2.
+     * Requires at least 1 point. x1 and x2 must have the same size.
+     * This function throws an exception with an error message upon failure.
+     **/
+    static void computeTranslationFromNPoints(const std::vector<Point>& x1,
+                                              const std::vector<Point>& x2,
+                                              int w1, int h1, int w2, int h2,
+                                              Point* translation);
+    
+    /**
+     * @brief Computes the translation, rotation and scale that best fit the set of correspondences x1 and x2.
+     * Requires at least 2 point. x1 and x2 must have the same size.
+     * This function throws an exception with an error message upon failure.
+     **/
+    static void computeSimilarityFromNPoints(const std::vector<Point>& x1,
+                                      const std::vector<Point>& x2,
+                                      int w1, int h1, int w2, int h2,
+                                      Point* translation,
+                                      double* rotate,
+                                      double* scale);
+    /**
+     * @brief Computes the homography that best fit the set of correspondences x1 and x2.
+     * Requires at least 4 point. x1 and x2 must have the same size.
+     * This function throws an exception with an error message upon failure.
+     **/
+    static void computeHomographyFromNPoints(const std::vector<Point>& x1,
+                                             const std::vector<Point>& x2,
+                                             int w1, int h1, int w2, int h2,
+                                             Transform::Matrix3x3* homog);
+    
+    /**
+     * @brief Computes the fundamental matrix that best fit the set of correspondences x1 and x2.
+     * Requires at least 7 point. x1 and x2 must have the same size.
+     * This function throws an exception with an error message upon failure.
+     **/
+    static void computeFundamentalFromNPoints(const std::vector<Point>& x1,
+                                             const std::vector<Point>& x2,
+                                              int w1, int h1, int w2, int h2,
+                                             Transform::Matrix3x3* fundamental);
     
     void knobChanged(KnobI* k,
                      ValueChangedReasonEnum reason,
