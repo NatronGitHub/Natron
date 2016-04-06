@@ -1,0 +1,276 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN" "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node>
+  <interface name="org.kde.KWallet">
+    <signal name="walletListDirty">
+    </signal>
+    <signal name="walletCreated">
+      <arg name="wallet" type="s" direction="out"/>
+    </signal>
+    <signal name="walletOpened">
+      <arg name="wallet" type="s" direction="out"/>
+    </signal>
+    <signal name="walletAsyncOpened">
+      <arg name="tId" type="i" direction="out"/>
+      <arg name="handle" type="i" direction="out"/>
+    </signal>
+    <signal name="walletDeleted">
+      <arg name="wallet" type="s" direction="out"/>
+    </signal>
+    <signal name="walletClosed">
+      <arg name="wallet" type="s" direction="out"/>
+    </signal>
+    <signal name="walletClosed">
+      <arg name="handle" type="i" direction="out"/>
+    </signal>
+    <signal name="allWalletsClosed">
+    </signal>
+    <signal name="folderListUpdated">
+      <arg name="wallet" type="s" direction="out"/>
+    </signal>
+    <signal name="folderUpdated">
+      <arg type="s" direction="out"/>
+      <arg type="s" direction="out"/>
+    </signal>
+    <signal name="applicationDisconnected">
+      <arg name="wallet" type="s" direction="out"/>
+      <arg name="application" type="s" direction="out"/>
+    </signal>
+    <method name="isEnabled">
+      <arg type="b" direction="out"/>
+    </method>
+    <method name="open">
+      <arg type="i" direction="out"/>
+      <arg name="wallet" type="s" direction="in"/>
+      <arg name="wId" type="x" direction="in"/>
+      <arg name="appid" type="s" direction="in"/>
+    </method>
+    <method name="openPath">
+      <arg type="i" direction="out"/>
+      <arg name="path" type="s" direction="in"/>
+      <arg name="wId" type="x" direction="in"/>
+      <arg name="appid" type="s" direction="in"/>
+    </method>
+    <method name="openAsync">
+      <arg type="i" direction="out"/>
+      <arg name="wallet" type="s" direction="in"/>
+      <arg name="wId" type="x" direction="in"/>
+      <arg name="appid" type="s" direction="in"/>
+      <arg name="handleSession" type="b" direction="in"/>
+    </method>
+    <method name="openPathAsync">
+      <arg type="i" direction="out"/>
+      <arg name="path" type="s" direction="in"/>
+      <arg name="wId" type="x" direction="in"/>
+      <arg name="appid" type="s" direction="in"/>
+      <arg name="handleSession" type="b" direction="in"/>
+    </method>
+    <method name="close">
+      <arg type="i" direction="out"/>
+      <arg name="wallet" type="s" direction="in"/>
+      <arg name="force" type="b" direction="in"/>
+    </method>
+    <method name="close">
+      <arg type="i" direction="out"/>
+      <arg name="handle" type="i" direction="in"/>
+      <arg name="force" type="b" direction="in"/>
+      <arg name="appid" type="s" direction="in"/>
+    </method>
+    <method name="sync">
+      <arg name="handle" type="i" direction="in"/>
+      <arg name="appid" type="s" direction="in"/>
+      <annotation name="org.freedesktop.DBus.Method.NoReply" value="true"/>
+    </method>
+    <method name="deleteWallet">
+      <arg type="i" direction="out"/>
+      <arg name="wallet" type="s" direction="in"/>
+    </method>
+    <method name="isOpen">
+      <arg type="b" direction="out"/>
+      <arg name="wallet" type="s" direction="in"/>
+    </method>
+    <method name="isOpen">
+      <arg type="b" direction="out"/>
+      <arg name="handle" type="i" direction="in"/>
+    </method>
+    <method name="users">
+      <arg type="as" direction="out"/>
+      <arg name="wallet" type="s" direction="in"/>
+    </method>
+    <method name="changePassword">
+      <arg name="wallet" type="s" direction="in"/>
+      <arg name="wId" type="x" direction="in"/>
+      <arg name="appid" type="s" direction="in"/>
+    </method>
+    <method name="wallets">
+      <arg type="as" direction="out"/>
+    </method>
+    <method name="folderList">
+      <arg type="as" direction="out"/>
+      <arg name="handle" type="i" direction="in"/>
+      <arg name="appid" type="s" direction="in"/>
+    </method>
+    <method name="hasFolder">
+      <arg type="b" direction="out"/>
+      <arg name="handle" type="i" direction="in"/>
+      <arg name="folder" type="s" direction="in"/>
+      <arg name="appid" type="s" direction="in"/>
+    </method>
+    <method name="createFolder">
+      <arg type="b" direction="out"/>
+      <arg name="handle" type="i" direction="in"/>
+      <arg name="folder" type="s" direction="in"/>
+      <arg name="appid" type="s" direction="in"/>
+    </method>
+    <method name="removeFolder">
+      <arg type="b" direction="out"/>
+      <arg name="handle" type="i" direction="in"/>
+      <arg name="folder" type="s" direction="in"/>
+      <arg name="appid" type="s" direction="in"/>
+    </method>
+    <method name="entryList">
+      <arg type="as" direction="out"/>
+      <arg name="handle" type="i" direction="in"/>
+      <arg name="folder" type="s" direction="in"/>
+      <arg name="appid" type="s" direction="in"/>
+    </method>
+    <method name="readEntry">
+      <arg type="ay" direction="out"/>
+      <arg name="handle" type="i" direction="in"/>
+      <arg name="folder" type="s" direction="in"/>
+      <arg name="key" type="s" direction="in"/>
+      <arg name="appid" type="s" direction="in"/>
+    </method>
+    <method name="readMap">
+      <arg type="ay" direction="out"/>
+      <arg name="handle" type="i" direction="in"/>
+      <arg name="folder" type="s" direction="in"/>
+      <arg name="key" type="s" direction="in"/>
+      <arg name="appid" type="s" direction="in"/>
+    </method>
+    <method name="readPassword">
+      <arg type="s" direction="out"/>
+      <arg name="handle" type="i" direction="in"/>
+      <arg name="folder" type="s" direction="in"/>
+      <arg name="key" type="s" direction="in"/>
+      <arg name="appid" type="s" direction="in"/>
+    </method>
+    <method name="readEntryList">
+      <arg type="a{sv}" direction="out"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="QVariantMap"/>
+      <arg name="handle" type="i" direction="in"/>
+      <arg name="folder" type="s" direction="in"/>
+      <arg name="key" type="s" direction="in"/>
+      <arg name="appid" type="s" direction="in"/>
+    </method>
+    <method name="readMapList">
+      <arg type="a{sv}" direction="out"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="QVariantMap"/>
+      <arg name="handle" type="i" direction="in"/>
+      <arg name="folder" type="s" direction="in"/>
+      <arg name="key" type="s" direction="in"/>
+      <arg name="appid" type="s" direction="in"/>
+    </method>
+    <method name="readPasswordList">
+      <arg type="a{sv}" direction="out"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="QVariantMap"/>
+      <arg name="handle" type="i" direction="in"/>
+      <arg name="folder" type="s" direction="in"/>
+      <arg name="key" type="s" direction="in"/>
+      <arg name="appid" type="s" direction="in"/>
+    </method>
+    <method name="renameEntry">
+      <arg type="i" direction="out"/>
+      <arg name="handle" type="i" direction="in"/>
+      <arg name="folder" type="s" direction="in"/>
+      <arg name="oldName" type="s" direction="in"/>
+      <arg name="newName" type="s" direction="in"/>
+      <arg name="appid" type="s" direction="in"/>
+    </method>
+    <method name="writeEntry">
+      <arg type="i" direction="out"/>
+      <arg name="handle" type="i" direction="in"/>
+      <arg name="folder" type="s" direction="in"/>
+      <arg name="key" type="s" direction="in"/>
+      <arg name="value" type="ay" direction="in"/>
+      <arg name="entryType" type="i" direction="in"/>
+      <arg name="appid" type="s" direction="in"/>
+    </method>
+    <method name="writeEntry">
+      <arg type="i" direction="out"/>
+      <arg name="handle" type="i" direction="in"/>
+      <arg name="folder" type="s" direction="in"/>
+      <arg name="key" type="s" direction="in"/>
+      <arg name="value" type="ay" direction="in"/>
+      <arg name="appid" type="s" direction="in"/>
+    </method>
+    <method name="writeMap">
+      <arg type="i" direction="out"/>
+      <arg name="handle" type="i" direction="in"/>
+      <arg name="folder" type="s" direction="in"/>
+      <arg name="key" type="s" direction="in"/>
+      <arg name="value" type="ay" direction="in"/>
+      <arg name="appid" type="s" direction="in"/>
+    </method>
+    <method name="writePassword">
+      <arg type="i" direction="out"/>
+      <arg name="handle" type="i" direction="in"/>
+      <arg name="folder" type="s" direction="in"/>
+      <arg name="key" type="s" direction="in"/>
+      <arg name="value" type="s" direction="in"/>
+      <arg name="appid" type="s" direction="in"/>
+    </method>
+    <method name="hasEntry">
+      <arg type="b" direction="out"/>
+      <arg name="handle" type="i" direction="in"/>
+      <arg name="folder" type="s" direction="in"/>
+      <arg name="key" type="s" direction="in"/>
+      <arg name="appid" type="s" direction="in"/>
+    </method>
+    <method name="entryType">
+      <arg type="i" direction="out"/>
+      <arg name="handle" type="i" direction="in"/>
+      <arg name="folder" type="s" direction="in"/>
+      <arg name="key" type="s" direction="in"/>
+      <arg name="appid" type="s" direction="in"/>
+    </method>
+    <method name="removeEntry">
+      <arg type="i" direction="out"/>
+      <arg name="handle" type="i" direction="in"/>
+      <arg name="folder" type="s" direction="in"/>
+      <arg name="key" type="s" direction="in"/>
+      <arg name="appid" type="s" direction="in"/>
+    </method>
+    <method name="disconnectApplication">
+      <arg type="b" direction="out"/>
+      <arg name="wallet" type="s" direction="in"/>
+      <arg name="application" type="s" direction="in"/>
+    </method>
+    <method name="reconfigure">
+    </method>
+    <method name="folderDoesNotExist">
+      <arg type="b" direction="out"/>
+      <arg name="wallet" type="s" direction="in"/>
+      <arg name="folder" type="s" direction="in"/>
+    </method>
+    <method name="keyDoesNotExist">
+      <arg type="b" direction="out"/>
+      <arg name="wallet" type="s" direction="in"/>
+      <arg name="folder" type="s" direction="in"/>
+      <arg name="key" type="s" direction="in"/>
+    </method>
+    <method name="closeAllWallets">
+    </method>
+    <method name="networkWallet">
+      <arg type="s" direction="out"/>
+    </method>
+    <method name="localWallet">
+      <arg type="s" direction="out"/>
+    </method>
+    <method name="pamOpen">
+      <arg name="wallet" type="s" direction="in"/>
+      <arg name="passwordHash" type="ay" direction="in"/>
+      <arg name="sessionTimeout" type="i" direction="in"/>
+      <annotation name="org.freedesktop.DBus.Method.NoReply" value="true"/>
+    </method>
+  </interface>
+</node>

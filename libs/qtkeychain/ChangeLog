@@ -1,0 +1,32 @@
+ChangeLog
+=========
+
+version 0.6.2 (release 2016-04-04)
+  * KWallet: Fixes a crash when storing passwords, seen on Debian/KDE4
+
+version 0.6.1 (release 2016-03-31)
+  * Fix KWallet not working (regressions in 0.6.0)
+
+version 0.6.0 (release 2016-03-18)
+  * Added support for the Windows Credential Store
+
+version 0.5.0 (release 2015-05-04)
+  * Added support for KWallet5 (KDE5/KF)
+ 
+version 0.4.0 (release 2014-09-01)
+  * KWallet: Handle case where no wallet exists yet (Liviu Cristian Mirea Ghiban <contact@liviucmg.com>)
+  * Improved desktop environment detection at runtime (Daniel Molkentin <daniel@molkentin.de>)
+
+version 0.3.0 (release 2014-03-13)
+  * Gnome Keyring supported added (Francois Ferrand <thetypz@gmail.com>)
+  * Improved Qt 5 support 
+  * KWallet: Distinguish empty passwords from non-existing entries
+  * KWallet: Do not use hardcoded wallet name 
+  * German translation (Daniel Molkentin <daniel@molkentin.de>)
+  * Romanian translation (Arthur Țițeică <arthur@psw.ro>)
+
+version 0.2.0: no official release
+
+version 0.1.0 (release 2013-01-16)
+  * Initial release
+  
