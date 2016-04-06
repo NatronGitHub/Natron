@@ -23,6 +23,7 @@
 # MKJOBS: Number of threads
 # CONFIG=(debug,release,relwithdebinfo): the build type
 # DISABLE_BREAKPAD=1: When set, automatic crash reporting (google-breakpad support) will be disabled
+# COMMIT=xxx
 #Usage MKJOBS=4 BUILD_CONFIG=SNAPSHOT CONFIG=relwithdebinfo BRANCH=master PLUGINDIR="..."  ./build-natron.sh
 
 source `pwd`/common.sh || exit 1
@@ -32,26 +33,44 @@ QTDIR="${MACPORTS}/libexec/qt4"
 cd "$CWD/build" || exit 1
 
 
-if [ "$BRANCH" = "master" ]; then
-    NATRON_BRANCH=$BRANCH
-    IO_BRANCH=master
-    MISC_BRANCH=master
-    ARENA_BRANCH=master
-
-else
+NATRON_BRANCH=$BRANCH
+if [ -z "$NATRON_BRANCH" ]; then
+  if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
+    NATRON_BRANCH=$MASTER_BRANCH
+    COMMITS_HASH=$CWD/commits-hash-$NATRON_BRANCH.sh
+  else
     NATRON_BRANCH=$NATRON_GIT_TAG
-    IO_BRANCH=$IOPLUG_GIT_TAG
-    MISC_BRANCH=$MISCPLUG_GIT_TAG
-    ARENA_BRANCH=$ARENAPLUG_GIT_TAG
+    COMMITS_HASH=$CWD/commits-hash.sh
+  fi
+else
+  COMMITS_HASH=$CWD/commits-hash-$NATRON_BRANCH.sh
 fi
+if [ "$BRANCH" = "$MASTER_BRANCH" ]; then
+    IO_BRANCH=$MASTER_BRANCH
+    MISC_BRANCH=$MASTER_BRANC
+    ARENA_BRANCH=$MASTER_BRANCH
+fi
+if [ "$BUILD_CONFIG" != "SNAPSHOT" ]; then
+  IO_BRANCH=$IOPLUG_GIT_TAG
+  MISC_BRANCH=$MISCPLUG_GIT_TAG
+  ARENA_BRANCH=$ARENAPLUG_GIT_TAG
+  CV_BRANCH=$CVPLUG_GIT_TAG
+fi
+
 
 git clone $GIT_NATRON
 cd Natron || exit 1
 git checkout $NATRON_BRANCH || exit 1
-git pull origin $NATRON_BRANCH
+
+if [ -z "$COMMIT" ]; then
+  git pull origin $NATRON_BRANCH
+else
+  git checkout $COMMIT
+fi
+
 git submodule update -i --recursive || exit 1
 
-if [ "$BRANCH" = "master" ]; then
+if [ "$BRANCH" = "$MASTER_BRANCH" ]; then
     # the snapshots are always built with the latest version of submodules
     git submodule foreach git pull origin master
 fi
@@ -61,12 +80,24 @@ REL_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 #Always bump NATRON_DEVEL_GIT, it is only used to version-stamp binaries
 NATRON_REL_V=`git log|head -1|awk '{print $2}'`
 
-sed -i "" -e "s/NATRON_DEVEL_GIT=.*/NATRON_DEVEL_GIT=${NATRON_REL_V}/" $CWD/commits-hash.sh || exit 1
+if [ ! -f "$COMMITS_HASH" ]; then
+cat <<EOF > "$COMMITS_HASH"
+#!/bin/sh
+NATRON_DEVEL_GIT=#
+IOPLUG_DEVEL_GIT=#
+MISCPLUG_DEVEL_GIT=#
+ARENAPLUG_DEVEL_GIT=#
+CVPLUG_DEVEL_GIT=#
+NATRON_VERSION_NUMBER=#
+EOF
+fi
+
+sed -i "" -e "s/NATRON_DEVEL_GIT=.*/NATRON_DEVEL_GIT=${NATRON_REL_V}/" "$COMMITS_HASH" || exit 1
 
 NATRON_MAJOR=`grep "define NATRON_VERSION_MAJOR" $TMP/Natron/Global/Macros.h | awk '{print $3}'`
 NATRON_MINOR=`grep "define NATRON_VERSION_MINOR" $TMP/Natron/Global/Macros.h | awk '{print $3}'`
 NATRON_REVISION=`grep "define NATRON_VERSION_REVISION" $TMP/Natron/Global/Macros.h | awk '{print $3}'`
-sed -i "" -e "s/NATRON_VERSION_NUMBER=.*/NATRON_VERSION_NUMBER=${NATRON_MAJOR}.${NATRON_MINOR}.${NATRON_REVISION}/" "$CWD/commits-hash.sh" || exit 1
+sed -i "" -e "s/NATRON_VERSION_NUMBER=.*/NATRON_VERSION_NUMBER=${NATRON_MAJOR}.${NATRON_MINOR}.${NATRON_REVISION}/" "$COMMITS_HASH" || exit 1
 
 echo
 echo "Building Natron $NATRON_REL_V from $NATRON_BRANCH on $OS using $MKJOBS threads."

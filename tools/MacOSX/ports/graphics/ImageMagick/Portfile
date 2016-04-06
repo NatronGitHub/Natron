@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 145758 2016-02-16 08:58:01Z ryandesign@macports.org $
+# $Id: Portfile 147230 2016-03-31 19:52:33Z cal@macports.org $
 
 PortSystem                  1.0
 PortGroup                   conflicts_build 1.0
@@ -97,8 +97,7 @@ configure.args              --enable-shared \
                             --with-gslib \
                             --with-jbig \
                             --with-jpeg \
-                            --without-lcms \
-                            --with-lcms2 \
+                            --with-lcms \
                             --without-lzma \
                             --with-openjp2 \
                             --with-png \
@@ -135,11 +134,6 @@ variant natron conflicts x11 requires pango rsvg q32 hdri universal description 
     # PNG is required for povray,openraster,krita plugin, see https://github.com/olear/openfx-arena/commit/48064135604d1c2d07362bc16cecc7a16a640d3e#commitcomment-14356716
     # depends_lib-delete       port:png
     # configure.args-replace  --with-png --without-png
-    # [FD] why LCMS and not LCMS2? because IM now only supports one LCMS (v2), so they removed the 'lcms2' option in favour of 'lcms'.
-    depends_lib-delete       port:lcms2
-    configure.args-replace  --with-lcms2 --without-lcms2
-    depends_lib-append       port:lcms
-    configure.args-replace  --without-lcms --with-lcms
     depends_lib-delete       port:openjpeg
     configure.args-replace  --with-openjp2 --without-openjp2
     depends_lib-delete       port:openexr

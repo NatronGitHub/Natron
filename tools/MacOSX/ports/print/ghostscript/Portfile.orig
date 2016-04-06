@@ -1,44 +1,39 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 137621 2015-06-15 14:56:57Z mf2k@macports.org $
+# $Id: Portfile 147287 2016-04-01 15:47:32Z cal@macports.org $
 
 PortSystem          1.0
 PortGroup           muniversal 1.0
 
 name                ghostscript
-version             9.16
-revision            1
+version             9.19
 categories          print
-license             AGPL-3
+license             AGPL-3 BSD
 maintainers         nomaintainer
 description         GPL Ghostscript, An interpreter for PostScript and PDF
 long_description    Ghostscript is the well-known PostScript interpreter which \
                     is available for all common and most esoteric platforms and \
                     supports many different printers and some displays.
 platforms           darwin
-homepage            http://www.cs.wisc.edu/~ghost/
-master_sites        http://downloads.ghostscript.com/public/:source \
+homepage            http://www.ghostscript.com/
+master_sites        https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs919:source \
                     sourceforge:gs-fonts:fonts \
                     https://github.com/adobe-type-tools/mapping-resources-pdf/archive/:misc
 
 # Note: this needs to be manually updated for new upstream commits
 set mappingresources_commit \
-                    3128b3872aa14a4c066d5cbcdde66a3b6bba0982
+                    0bdcfbe5e394d4519e5969918c34d4eebf76a386
 
 distfiles           ${distname}.tar.gz:source \
                     ghostscript-fonts-other-6.0.tar.gz:fonts \
                     ghostscript-fonts-std-8.11.tar.gz:fonts \
                     ${mappingresources_commit}.zip:misc
 
-# Fix for github's "stealth update". I have no idea how or why that even happened.
-dist_subdir         ${name}/${version}_1
-
 patchfiles          patch-base_unix-dll.mak.diff \
-                    patch-base_stdpre.h.diff \
                     no-werror.diff
 
 checksums           ${distname}.tar.gz \
-                    rmd160  9c483b93ccd106bae6db36b3335fae4e91177aec \
-                    sha256  746d77280cca8afdd3d4c2c1389e332ed9b0605bd107bcaae1d761b061d1a68d \
+                    rmd160  26acb114f30cbfa8f0e4912829a4ac38a35f5ea0 \
+                    sha256  cf3c0dce67db1557a87366969945f9c5235887989c0b585e037af366dc035989 \
                     ghostscript-fonts-other-6.0.tar.gz \
                     rmd160  ab60dbf71e7d91283a106c3df381cadfe173082f \
                     sha256  4fa051e341167008d37fe34c19d241060cd17b13909932cd7ca7fe759243c2de \
@@ -46,8 +41,8 @@ checksums           ${distname}.tar.gz \
                     rmd160  10a19a10d0388bc084a7c1d3da845068d7169054 \
                     sha256  0eb6f356119f2e49b2563210852e17f57f9dcc5755f350a69a46a0d641a0c401 \
                     ${mappingresources_commit}.zip \
-                    rmd160  b00725e3f5615ac6aaa20a7b4d0dd6e769dca6ee \
-                    sha256  27f87e56092a8293d17f683b008327afbb79fad9f1328227a9916f9be69c9db2
+                    rmd160  ee0acf3e8a37c75db1a22af0248a0be25b31de93 \
+                    sha256  64b1a28060fe04518ee152d1d479a5e8989519db756c35848257d29478936d1c
 
 depends_lib         port:expat \
                     port:fontconfig \
@@ -59,9 +54,8 @@ depends_lib         port:expat \
                     port:libpaper \
                     port:libpng \
                     port:tiff \
-                    port:zlib
-#                   port:lcms2
-#                   port:ijs
+                    port:zlib \
+                    port:lcms2
 
 depends_build       port:pkgconfig
 
@@ -73,18 +67,14 @@ extract.only        ${distname}.tar.gz \
 
 post-extract {
     system -W ${workpath} "unzip '${distpath}/${mappingresources_commit}.zip'"
-    system -W ${workpath} "unzip '${workpath}/mapping-resources-pdf-${mappingresources_commit}/mappingresources4pdf_2unicode.zip'"
-    system -W ${workpath} "unzip '${workpath}/mapping-resources-pdf-${mappingresources_commit}/mappingresources4pdf_other.zip'"
 
-#   MacPorts's lcms2 is 2.4 and it doesn't support cmsPluginTHR() yet.
-#   foreach d {freetype jbig2dec jpeg lcms2 libpng tiff zlib} 
-    foreach d {freetype jbig2dec jpeg       libpng tiff zlib} {
+    foreach d {freetype jbig2dec jpeg lcms2 libpng tiff zlib} {
         move ${worksrcpath}/${d} ${worksrcpath}/${d}_local
     }
 
     #move ${workpath}/MappingOther/Adobe-CNS1-ETen-B5 ${workpath}/MappingOther/Adobe-CNS1-ETenms-B5
-    copy -force {*}[glob ${workpath}/mappingresources4pdf_2unicode/*] ${worksrcpath}/Resource/CMap
-    copy -force {*}[glob ${workpath}/mappingresources4pdf_other/*]    ${worksrcpath}/Resource/CMap
+    copy -force {*}[glob ${workpath}/mapping-resources-pdf-${mappingresources_commit}/mappingresources4pdf_2unicode/*] ${worksrcpath}/Resource/CMap
+    copy -force {*}[glob ${workpath}/mapping-resources-pdf-${mappingresources_commit}/mappingresources4pdf_other/*]    ${worksrcpath}/Resource/CMap
 }
 
 post-patch {
@@ -116,7 +106,6 @@ configure.args      --disable-compile-inits \
                     --with-system-libtiff
 
 build.target        so
-use_parallel_build  yes
 
 destroot.target     soinstall
 post-destroot {
@@ -145,6 +134,10 @@ post-destroot {
     xinstall -m 0644 -W ${workpath}/fonts \
             COPYING ChangeLog README README.tweaks TODO \
             ${destroot}${prefix}/share/doc/${name}/fonts
+
+    # install missing header
+    xinstall -m 0644 ${worksrcpath}/base/gserrors.h \
+            ${destroot}${prefix}/include/ghostscript/
 }
 
 post-activate {

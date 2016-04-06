@@ -44,11 +44,29 @@ fi
 EOF
 chmod +x $KILLSCRIPT
 
-#Assume that $1 is the branch to build, otherwise if empty use the NATRON_GIT_TAG in common.sh
-NATRON_BRANCH=$2
-if [ -z "$NATRON_BRANCH" ]; then
-    NATRON_BRANCH=$NATRON_GIT_TAG
+
+# we need $BUILD_CONFIG
+if [ -z "$BUILD_CONFIG" ]; then
+  echo "Please define BUILD_CONFIG"
+  exit 1
 fi
+
+
+# Assume that $GIT_BRANCH is the branch to build, otherwise if empty use the NATRON_GIT_TAG in common.sh, but if BUILD_CONFIG=SNAPSHOT use MASTER_BRANCH
+NATRON_BRANCH=$GIT_BRANCH
+if [ -z "$NATRON_BRANCH" ]; then
+  if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
+    NATRON_BRANCH=$MASTER_BRANCH
+    COMMITS_HASH=$CWD/commits-hash-$NATRON_BRANCH.sh
+  else
+    NATRON_BRANCH=$NATRON_GIT_TAG
+    COMMITS_HASH=$CWD/commits-hash.sh
+  fi
+else
+  COMMITS_HASH=$CWD/commits-hash-$NATRON_BRANCH.sh
+fi
+
+echo "===> Using branch $NATRON_BRANCH"
 
 if [ ! -d $INSTALL_PATH ]; then
     if [ -f "$SRC_PATH/Natron-$SDK_VERSION-Windows-$OS-$BIT-SDK.tar.xz" ]; then
@@ -79,45 +97,54 @@ cd $TMP_BUILD_DIR || exit 1
 $KILLSCRIPT $PID &
 KILLBOT=$!
 
+# clone natron
 git clone $GIT_NATRON || exit 1
 cd Natron || exit 1
+
+# checkout branch
 git checkout $NATRON_BRANCH || exit 1
-git pull origin $NATRON_BRANCH
-git submodule update -i --recursive || exit 1
-if [ "$NATRON_BRANCH" = "master" ]; then
-    # the snapshots are always built with the latest version of submodules
-    git submodule foreach git pull origin master
+
+# if we have a predefined commit use that, else use latest commit from branch
+if [ -z "$GIT_COMMIT" ]; then
+  git pull origin $NATRON_BRANCH
+else
+  git checkout $GIT_COMMIT
 fi
 
+# Update submodule
+git submodule update -i --recursive || exit 1
+
+# the snapshot are always built with latest version
+if [ "$NATRON_BRANCH" = "$MASTER_BRANCH" ]; then
+  git submodule foreach git pull origin master
+fi
 
 kill -o $KILLBOT
 
 REL_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 
-# mksrc
-if [ "$MKSRC" = "1" ]; then
-    cd .. || exit 1
-    cp -a Natron "Natron-$REL_GIT_VERSION" || exit 1
-    (cd "Natron-$REL_GIT_VERSION";find . -type d -name .git -exec rm -rf {} \;)
-    tar cvvJf "$SRC_PATH/Natron-$REL_GIT_VERSION.tar.xz" "Natron-$REL_GIT_VERSION" || exit 1
-    rm -rf "Natron-$REL_GIT_VERSION" || exit 1
-    cd Natron || exit 1 
-fi
-
 #Always bump NATRON_DEVEL_GIT, it is only used to version-stamp binaries
 NATRON_REL_V="$REL_GIT_VERSION"
-
-sed -i "s/NATRON_DEVEL_GIT=.*/NATRON_DEVEL_GIT=${NATRON_REL_V}/" "$CWD/commits-hash.sh" || exit 1
 
 NATRON_MAJOR=`grep "define NATRON_VERSION_MAJOR" $TMP_BUILD_DIR/Natron/Global/Macros.h | awk '{print $3}'`
 NATRON_MINOR=`grep "define NATRON_VERSION_MINOR" $TMP_BUILD_DIR/Natron/Global/Macros.h | awk '{print $3}'`
 NATRON_REVISION=`grep "define NATRON_VERSION_REVISION" $TMP_BUILD_DIR/Natron/Global/Macros.h | awk '{print $3}'`
-sed -i "s/NATRON_VERSION_NUMBER=.*/NATRON_VERSION_NUMBER=${NATRON_MAJOR}.${NATRON_MINOR}.${NATRON_REVISION}/" "$CWD/commits-hash.sh" || exit 1
 
-echo
-echo "Building Natron $NATRON_REL_V from $NATRON_BRANCH against SDK $SDK_VERSION on Windows-$BIT using $MKJOBS threads."
-echo
-sleep 2
+if [ ! -f "$COMMITS_HASH" ]; then
+cat <<EOF > "$COMMITS_HASH"
+#!/bin/sh
+NATRON_DEVEL_GIT=#
+IOPLUG_DEVEL_GIT=#
+MISCPLUG_DEVEL_GIT=#
+ARENAPLUG_DEVEL_GIT=#
+CVPLUG_DEVEL_GIT=#
+NATRON_VERSION_NUMBER=#
+EOF
+fi
+
+sed -i "s/NATRON_DEVEL_GIT=.*/NATRON_DEVEL_GIT=${NATRON_REL_V}/" $COMMITS_HASH || exit 1
+sed -i "s/NATRON_VERSION_NUMBER=.*/NATRON_VERSION_NUMBER=${NATRON_MAJOR}.${NATRON_MINOR}.${NATRON_REVISION}/" $COMMITS_HASH || exit 1
+
 
 # Plugins git hash
 IO_VERSION_FILE=$INSTALL_PATH/Plugins/IO.ofx.bundle-version.txt

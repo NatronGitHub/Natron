@@ -30,9 +30,23 @@
 # BUILD_NUMBER=X: To be set to indicate the revision number of the build. For example RC1,RC2, RC3 etc...
 # NATRON_LICENSE=(GPL,COMMERCIAL)
 # Usage: 
-# OFFLINE=1 BUILD_CONFIG=SNAPSHOT sh build-installer.sh master 
+# OFFLINE=1 BUILD_CONFIG=SNAPSHOT sh build-installer.sh
 source $(pwd)/common.sh || exit 1
-source $(pwd)/commits-hash.sh || exit 1
+
+if [ -z "$BUILD_CONFIG" ]; then
+  echo "Please define BUILD_CONFIG"
+  exit 1
+fi
+NATRON_BRANCH=$GIT_BRANCH
+if [ -z "$NATRON_BRANCH" ] && [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
+  echo "No branch selected, fail"
+  exit 1
+fi
+if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
+  source $(pwd)/commits-hash-$NATRON_BRANCH.sh
+else
+  source $(pwd)/commits-hash.sh
+fi
 
 PID=$$
 if [ -f $TMP_DIR/natron-build-installer.pid ]; then
@@ -76,14 +90,16 @@ elif [ "$BUILD_CONFIG" = "CUSTOM" ]; then
 fi
 
 if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
-    NATRON_VERSION=$NATRON_DEVEL_GIT
-    REPO_BRANCH=snapshots
-	ONLINE_TAG=snapshot
+  NATRON_VERSION=$NATRON_DEVEL_GIT
+  REPO_BRANCH=snapshots/$NATRON_BRANCH
+  ONLINE_TAG=snapshot
+  REPO_SUFFIX=snapshot-$NATRON_BRANCH
 else
-    REPO_BRANCH=releases
-	ONLINE_TAG=release
+  REPO_BRANCH=releases
+  ONLINE_TAG=release
+  REPO_SUFFIX=release
 fi
-
+REPO_DIR="$REPO_DIR_PREFIX$REPO_SUFFIX"
 
 DATE=$(date +%Y-%m-%d)
 PKGOS=Linux-x86_${BIT}bit
@@ -486,10 +502,12 @@ chown root:root -R $INSTALLER/*
 (cd $INSTALLER; find . -type d -name .git -exec rm -rf {} \;)
 
 # Build repo and packages
-
+if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
+  SNAPDATE="${TAG}-"
+fi
 ONLINE_INSTALL=Natron-${PKGOS}-online-install-$ONLINE_TAG
-BUNDLED_INSTALL=Natron-$NATRON_VERSION-${PKGOS}
-REPO_DIR=$REPO_DIR_PREFIX$ONLINE_TAG
+BUNDLED_INSTALL=Natron-${SNAPDATE}$NATRON_VERSION-${PKGOS}
+#REPO_DIR=$REPO_DIR_PREFIX$ONLINE_TAG
 rm -rf $REPO_DIR/packages $REPO_DIR/installers
 mkdir -p $REPO_DIR/{packages,installers} || exit 1
 
