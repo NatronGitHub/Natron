@@ -133,43 +133,40 @@ AboutWindow::AboutWindow(Gui* gui,
         aboutText.append(endAbout);
     }
     {
+        QString argStr = (QString::fromUtf8("<a href=\"https://github.com/MrKepzie/Natron/tree/"GIT_COMMIT"\">")
+                          + QString::fromUtf8(GIT_COMMIT).mid(0, 7)
+                          + QString::fromUtf8("</a>"));
         QString gitStr = (QString::fromUtf8("<p>This software was compiled on %3 from the source "
                                             "code branch %1 at version %2.</p>")
                           .arg(QString::fromUtf8("<a href=\"https://github.com/MrKepzie/Natron/tree/"GIT_BRANCH"\">"GIT_BRANCH"</a>")) // %1
-                          .arg(QString::fromUtf8("<a href=\"https://github.com/MrKepzie/Natron/tree/"GIT_COMMIT"\">"GIT_COMMIT"</a>")) // %2
-                          .arg(QString::fromUtf8(__DATE__)));
+                          .arg(argStr) // %2
+                          .arg(QString::fromUtf8(__DATE__))); // %3
         aboutText.append(gitStr);
     }
     if (!std::string(IO_GIT_COMMIT).empty()) {
-        QString argStr = QString::fromUtf8("<a href=\"https://github.com/MrKepzie/openfx-io/tree/"IO_GIT_COMMIT"\">");
-        QString commitStr = QString::fromUtf8(IO_GIT_COMMIT);
-        commitStr = commitStr.mid(0, 7);
-        argStr += commitStr;
-        argStr += QString::fromUtf8("</a>");
+        QString argStr = (QString::fromUtf8("<a href=\"https://github.com/MrKepzie/openfx-io/tree/"IO_GIT_COMMIT"\">")
+                          + QString::fromUtf8(IO_GIT_COMMIT).mid(0, 7)
+                          + QString::fromUtf8("</a>"));
         QString gitStr = QString::fromUtf8("<p>The bundled <a href=\"https://github.com/MrKepzie/openfx-io\">openfx-io</a> "
-                                            "plugins were compiled from version %2.</p>")
+                                            "plugins were compiled from version %1.</p>")
                           .arg(argStr); // %1
         aboutText.append(gitStr);
     }
     if (!std::string(MISC_GIT_COMMIT).empty()) {
-        QString argStr = QString::fromUtf8("<a href=\"https://github.com/devernay/openfx-misc/tree/"MISC_GIT_COMMIT"\">");
-        QString commitStr = QString::fromUtf8(MISC_GIT_COMMIT);
-        commitStr = commitStr.mid(0, 7);
-        argStr += commitStr;
-        argStr += QString::fromUtf8("</a>");
+        QString argStr = (QString::fromUtf8("<a href=\"https://github.com/devernay/openfx-misc/tree/"MISC_GIT_COMMIT"\">")
+                          + QString::fromUtf8(MISC_GIT_COMMIT).mid(0, 7)
+                          + QString::fromUtf8("</a>"));
         QString gitStr = QString::fromUtf8("<p>The bundled <a href=\"https://github.com/devernay/openfx-misc\">openfx-misc</a> "
-                                            "plugins were compiled from version %2.</p>")
+                                            "plugins were compiled from version %1.</p>")
                           .arg(argStr); // %1
         aboutText.append(gitStr);
     }
     if (!std::string(ARENA_GIT_COMMIT).empty()) {
-        QString argStr = QString::fromUtf8("<a href=\"https://github.com/olear/openfx-arena/tree/"ARENA_GIT_COMMIT"\">");
-        QString commitStr = QString::fromUtf8(ARENA_GIT_COMMIT);
-        commitStr = commitStr.mid(0, 7);
-        argStr += commitStr;
-        argStr += QString::fromUtf8("</a>");
+        QString argStr = (QString::fromUtf8("<a href=\"https://github.com/olear/openfx-arena/tree/"ARENA_GIT_COMMIT"\">")
+                          + QString::fromUtf8(ARENA_GIT_COMMIT).mid(0, 7)
+                          + QString::fromUtf8("</a>"));
         QString gitStr = QString::fromUtf8("<p>The bundled <a href=\"https://github.com/olear/openfx-arena\">openfx-arena</a> "
-                                            "plugins were compiled from version %2.</p>")
+                                            "plugins were compiled from version %1.</p>")
                           .arg(argStr); // %1
         aboutText.append(gitStr);
     }
