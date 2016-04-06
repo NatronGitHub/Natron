@@ -171,6 +171,7 @@ Settings::initializeKnobsGeneral()
     _wwwServerPort = AppManager::createKnob<KnobInt>(this, "Local webserver port");
     _wwwServerPort->setName("webserverPort");
     _wwwServerPort->setAnimationEnabled(false);
+    _wwwServerPort->setSecret(true);
     
     _autoSaveDelay = AppManager::createKnob<KnobInt>(this, "Auto-save trigger delay");
     _autoSaveDelay->setName("autoSaveDelay");
