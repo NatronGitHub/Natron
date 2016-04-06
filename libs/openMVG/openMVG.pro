@@ -228,7 +228,9 @@ HEADERS += \
         openMVG/system/timer.hpp \
         openMVG/tracks/tracks.hpp \
         openMVG/types.hpp \
-        openMVG/version.hpp
+        openMVG/version.hpp \
+    openMVG/robust_estimation/robust_estimator_Prosac.hpp \
+    openMVG/robust_estimation/robust_estimator_ProsacKernelAdaptator.hpp
 
 
 #SOURCES += \

@@ -37,6 +37,8 @@
 #include <libmv/autotrack/frame_accessor.h>
 #include <libmv/image/array_nd.h>
 
+#include <openMVG/robust_estimation/robust_estimator_Prosac.hpp>
+
 #include <boost/bind.hpp>
 
 #include "Engine/AppInstance.h"
@@ -48,6 +50,7 @@
 #include "Engine/Project.h"
 #include "Engine/Curve.h"
 #include "Engine/TLSHolder.h"
+#include "Engine/Transform.h"
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerSerialization.h"
 #include "Engine/ViewerInstance.h"
@@ -2471,6 +2474,113 @@ TrackerContext::declarePythonFields()
     for (std::vector< TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
         declareItemAsPythonField(*it);
     }
+}
+
+using namespace openMVG::robust;
+
+static void throwProsacError(ProsacReturnCodeEnum c, int nMinSamples) {
+    switch (c) {
+        case openMVG::robust::eProsacReturnCodeFoundModel:
+            break;
+        case openMVG::robust::eProsacReturnCodeInliersIsMinSamples:
+            break;
+        case openMVG::robust::eProsacReturnCodeNoModelFound:
+            throw std::runtime_error("Could not find a model for the given correspondences.");
+            break;
+        case openMVG::robust::eProsacReturnCodeNotEnoughPoints:
+        {
+            std::stringstream ss;
+            ss << "This model requires a minimum of ";
+            ss << nMinSamples;
+            ss << " correspondences.";
+            throw std::runtime_error(ss.str());
+        }   break;
+        case openMVG::robust::eProsacReturnCodeMaxIterationsFromProportionParamReached:
+            throw std::runtime_error("Maximum iterations computed from outliers proportion reached");
+            break;
+        case openMVG::robust::eProsacReturnCodeMaxIterationsParamReached:
+            throw std::runtime_error("Maximum solver iterations reached");
+            break;
+    }
+}
+
+template <typename MODELTYPE>
+void runProsacForModel(const std::vector<Point>& x1,
+                       const std::vector<Point>& x2,
+                       int w1, int h1, int w2, int h2,
+                       typename MODELTYPE::Model* foundModel)
+{
+    typedef ProsacKernelAdaptor<MODELTYPE> KernelType;
+    
+    assert(x1.size() == x2.size());
+    openMVG::Mat M1(2, x1.size()),M2(2, x2.size());
+    for (std::size_t i = 0; i < x1.size(); ++i) {
+        M1(0, i) = x1[i].x;
+        M1(1, i) = x1[i].y;
+        
+        M2(0, i) = x2[i].x;
+        M2(1, i) = x2[i].y;
+    }
+    KernelType kernel(M1, w1, h1, M2, w2, h2);
+    ProsacReturnCodeEnum ret = prosac(kernel, foundModel);
+    throwProsacError(ret, KernelType::MinimumSamples());
+    kernel.Unnormalize(foundModel);
+}
+
+void
+TrackerContext::computeTranslationFromNPoints(const std::vector<Point>& x1,
+                                              const std::vector<Point>& x2,
+                                              int w1, int h1, int w2, int h2,
+                                              Point* translation)
+{
+    openMVG::Vec2 model;
+    runProsacForModel<openMVG::robust::Translation2DSolver>(x1, x2, w1, h1, w2, h2, &model);
+    translation->x = model(0);
+    translation->y = model(1);
+}
+
+
+void
+TrackerContext::computeSimilarityFromNPoints(const std::vector<Point>& x1,
+                                      const std::vector<Point>& x2,
+                                      int w1, int h1, int w2, int h2,
+                                      Point* translation,
+                                      double* rotate,
+                                      double* scale)
+{
+    openMVG::Vec4 model;
+    runProsacForModel<openMVG::robust::Similarity2DSolver>(x1, x2, w1, h1, w2, h2, &model);
+    openMVG::robust::Similarity2DSolver::rtsFromVec4(model, &translation->x, &translation->y, scale, rotate);
+
+}
+
+
+void
+TrackerContext::computeHomographyFromNPoints(const std::vector<Point>& x1,
+                                             const std::vector<Point>& x2,
+                                             int w1, int h1, int w2, int h2,
+                                             Transform::Matrix3x3* homog)
+{
+    openMVG::Mat3 model;
+    runProsacForModel<openMVG::robust::Homography2DSolver>(x1, x2, w1, h1, w2, h2, &model);
+    
+    *homog = Transform::Matrix3x3(model(0,0),model(0,1),model(0,2),
+                                  model(1,0),model(1,1),model(1,2),
+                                  model(2,0),model(2,1),model(2,2));
+}
+
+void
+TrackerContext::computeFundamentalFromNPoints(const std::vector<Point>& x1,
+                                              const std::vector<Point>& x2,
+                                              int w1, int h1, int w2, int h2,
+                                              Transform::Matrix3x3* fundamental)
+{
+    openMVG::Mat3 model;
+    runProsacForModel<openMVG::robust::FundamentalSolver>(x1, x2, w1, h1, w2, h2, &model);
+    
+    *fundamental = Transform::Matrix3x3(model(0,0),model(0,1),model(0,2),
+                                  model(1,0),model(1,1),model(1,2),
+                                  model(2,0),model(2,1),model(2,2));
 }
 
 

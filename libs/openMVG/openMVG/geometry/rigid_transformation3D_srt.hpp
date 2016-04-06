@@ -31,7 +31,7 @@ namespace geometry {
  * \note Need at least 3 points
  */
 
-static bool FindRTS(const Mat &x1,
+inline bool FindRTS(const Mat &x1,
   const Mat &x2,
   double * S,
   Vec3 * t,
