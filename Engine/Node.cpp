@@ -800,10 +800,10 @@ Node::load(const CreateNodeArgs& args)
     }
     
     // For readers, set their original frame range when creating them
-    if (!args.serialization && _imp->effect->isReader()) {
+    if (!args.serialization && (_imp->effect->isReader() || _imp->effect->isWriter())) {
         KnobPtr filenameKnob = getKnobByName(kOfxImageEffectFileParamName);
         if (filenameKnob) {
-            computeFrameRangeForReader(filenameKnob.get());
+            onFileNameParameterChanged(filenameKnob.get());
         }
     }
     
@@ -7027,6 +7027,72 @@ Node::duringInputChangedAction() const
 }
 
 void
+Node::onFileNameParameterChanged(KnobI* fileKnob)
+{
+    if (_imp->effect->isReader()) {
+        
+        computeFrameRangeForReader(fileKnob);
+        
+        ///Refresh the preview automatically if the filename changed
+        incrementKnobsAge(); //< since evaluate() is called after knobChanged we have to do this  by hand
+        //computePreviewImage( getApp()->getTimeLine()->currentFrame() );
+        
+        ///union the project frame range if not locked with the reader frame range
+        bool isLocked = getApp()->getProject()->isFrameRangeLocked();
+        if (!isLocked) {
+            double leftBound = INT_MIN,rightBound = INT_MAX;
+            _imp->effect->getFrameRange_public(getHashValue(), &leftBound, &rightBound, true);
+            
+            if (leftBound != INT_MIN && rightBound != INT_MAX) {
+                if (getGroup()) {
+                    getApp()->getProject()->unionFrameRangeWith(leftBound, rightBound);
+                }
+            }
+        }
+    } else if (_imp->effect->isWriter()) {
+        
+        KnobPtr sublabelKnob = getKnobByName(kNatronOfxParamStringSublabelName);
+        KnobOutputFile* isFile = dynamic_cast<KnobOutputFile*>(fileKnob);
+        if (isFile && sublabelKnob) {
+            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(sublabelKnob.get());
+            
+            std::string pattern = isFile->getValue();
+            if (isString) {
+                
+                std::size_t foundSlash = pattern.find_last_of("/");
+                if (foundSlash != std::string::npos) {
+                    pattern = pattern.substr(foundSlash + 1);
+                }
+                
+                isString->setValue(pattern);
+            }
+        }
+        
+        /*
+         Check if the filename param has a %V in it, in which case make sure to hide the Views parameter
+         */
+        KnobOutputFile* fileParam = dynamic_cast<KnobOutputFile*>(fileKnob);
+        if (fileParam) {
+            std::string pattern = fileParam->getValue();
+            std::size_t foundViewPattern = pattern.find_first_of("%v");
+            if (foundViewPattern == std::string::npos) {
+                foundViewPattern = pattern.find_first_of("%V");
+            }
+            if (foundViewPattern != std::string::npos) {
+                //We found view pattern
+                KnobPtr viewsKnob = getKnobByName(kWriteOIIOParamViewsSelector);
+                if (viewsKnob) {
+                    KnobChoice* viewsSelector = dynamic_cast<KnobChoice*>(viewsKnob.get());
+                    if (viewsSelector) {
+                        viewsSelector->setSecret(true);
+                    }
+                }
+            }
+        }
+    }
+}
+
+void
 Node::computeFrameRangeForReader(KnobI* fileKnob)
 {
     /*
@@ -7611,66 +7677,6 @@ Node::onEffectKnobValueChanged(KnobI* what,
         }
     } else if (what == _imp->hideInputs.lock().get()) {
         Q_EMIT hideInputsKnobChanged(_imp->hideInputs.lock()->getValue());
-    } else if (what->getName() == kOfxImageEffectFileParamName && reason != eValueChangedReasonTimeChanged) {
-        
-        if (_imp->effect->isReader()) {
-            ///Refresh the preview automatically if the filename changed
-            incrementKnobsAge(); //< since evaluate() is called after knobChanged we have to do this  by hand
-            //computePreviewImage( getApp()->getTimeLine()->currentFrame() );
-            
-            ///union the project frame range if not locked with the reader frame range
-            bool isLocked = getApp()->getProject()->isFrameRangeLocked();
-            if (!isLocked) {
-                double leftBound = INT_MIN,rightBound = INT_MAX;
-                _imp->effect->getFrameRange_public(getHashValue(), &leftBound, &rightBound, true);
-                
-                if (leftBound != INT_MIN && rightBound != INT_MAX) {
-                    if (getGroup()) {
-                        getApp()->getProject()->unionFrameRangeWith(leftBound, rightBound);
-                    }
-                }
-            }
-        } else if (_imp->effect->isWriter()) {
-            
-            KnobPtr sublabelKnob = getKnobByName(kNatronOfxParamStringSublabelName);
-            KnobOutputFile* isFile = dynamic_cast<KnobOutputFile*>(what);
-            if (isFile && sublabelKnob && reason != eValueChangedReasonPluginEdited) {
-                Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(sublabelKnob.get());
-                
-                std::string pattern = isFile->getValue();
-                if (isString) {
-                    
-                    std::size_t foundSlash = pattern.find_last_of("/");
-                    if (foundSlash != std::string::npos) {
-                        pattern = pattern.substr(foundSlash + 1);
-                    }
-
-                    isString->setValue(pattern);
-                }
-            }
-            
-            /*
-             Check if the filename param has a %V in it, in which case make sure to hide the Views parameter
-             */
-            KnobOutputFile* fileParam = dynamic_cast<KnobOutputFile*>(what);
-            if (fileParam) {
-                std::string pattern = fileParam->getValue();
-                std::size_t foundViewPattern = pattern.find_first_of("%v");
-                if (foundViewPattern == std::string::npos) {
-                    foundViewPattern = pattern.find_first_of("%V");
-                }
-                if (foundViewPattern != std::string::npos) {
-                    //We found view pattern
-                    KnobPtr viewsKnob = getKnobByName(kWriteOIIOParamViewsSelector);
-                    if (viewsKnob) {
-                        KnobChoice* viewsSelector = dynamic_cast<KnobChoice*>(viewsKnob.get());
-                        if (viewsSelector) {
-                            viewsSelector->setSecret(true);
-                        }
-                    }
-                }
-            }
-        }
     } else if (_imp->effect->isReader() && what->getName() == kReadOIIOAvailableViewsKnobName) {
         refreshCreatedViews(what);
     } else if ( what == _imp->refreshInfoButton.lock().get() ) {

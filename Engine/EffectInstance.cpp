@@ -4074,8 +4074,8 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         return;
     }
 
-    if ( reason != eValueChangedReasonTimeChanged && isReader() && (k->getName() == kOfxImageEffectFileParamName) ) {
-        node->computeFrameRangeForReader(k);
+    if ( reason != eValueChangedReasonTimeChanged && (isReader() || isWriter()) && (k->getName() == kOfxImageEffectFileParamName) ) {
+        node->onFileNameParameterChanged(k);
     }
 
    // assert(!(view.isAll() || view.isCurrent())); // not yet implemented
