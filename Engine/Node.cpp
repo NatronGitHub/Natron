@@ -817,6 +817,21 @@ Node::load(const CreateNodeArgs& args)
         assert(_imp->effect);
     }
     
+    
+#ifdef NATRON_ENABLE_IO_META_NODES
+    if (args.ioContainer) {
+        ReadNode* isReader = dynamic_cast<ReadNode*>(args.ioContainer->getEffectInstance().get());
+        if (isReader) {
+            isReader->setEmbeddedReader(thisShared);
+        } else {
+            WriteNode* isWriter = dynamic_cast<WriteNode*>(args.ioContainer->getEffectInstance().get());
+            assert(isWriter);
+            isWriter->setEmbeddedWriter(thisShared);
+        }
+    }
+#endif
+    
+    
     // For readers, set their original frame range when creating them
     if (!args.serialization && (_imp->effect->isReader() || _imp->effect->isWriter())) {
         KnobPtr filenameKnob = getKnobByName(kOfxImageEffectFileParamName);
@@ -921,20 +936,7 @@ Node::load(const CreateNodeArgs& args)
     bool isLoadingPyPlug = getApp()->isCreatingPythonGroup();
 
     _imp->effect->onEffectCreated(canOpenFileDialog, args.paramValues);
-    
-#ifdef NATRON_ENABLE_IO_META_NODES
-    if (args.ioContainer) {
-        ReadNode* isReader = dynamic_cast<ReadNode*>(args.ioContainer->getEffectInstance().get());
-        if (isReader) {
-            isReader->setEmbeddedReader(thisShared);
-        } else {
-            WriteNode* isWriter = dynamic_cast<WriteNode*>(args.ioContainer->getEffectInstance().get());
-            assert(isWriter);
-            isWriter->setEmbeddedWriter(thisShared);
-        }
-    }
-#endif
-    
+
     if (!getApp()->isCreatingNodeTree()) {
         refreshAllInputRelatedData(!args.serialization);
     }
