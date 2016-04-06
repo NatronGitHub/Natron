@@ -55,6 +55,7 @@ LineEdit::LineEdit(QWidget* parent)
 {
     setAttribute(Qt::WA_MacShowFocusRect,0);
     connect( this, SIGNAL(editingFinished()), this, SLOT(onEditingFinished()) );
+    setContentsMargins(0,0,0,1);
 }
 
 LineEdit::~LineEdit()
