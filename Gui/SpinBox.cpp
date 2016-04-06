@@ -118,7 +118,6 @@ SpinBox::SpinBox(QWidget* parent,
     setMinimumWidth(TO_DPIX(SPINBOX_MIN_WIDTH));
     setFocusPolicy(Qt::WheelFocus); // mouse wheel gives focus too - see also SpinBox::focusInEvent()
     decimals(_imp->decimals);
-    setContentsMargins(0,0,0,1);
 
     setType(type);
 }
