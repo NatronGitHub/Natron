@@ -141,15 +141,25 @@ There is some documentation, which is probably outdated, for [GNU/Linux](tools/l
 Planned features
 ----------------
 
-### Features planned for the next major version
+### Features planned for 2.1 (ETA: End of May 2016)
 
-- Optical Flow nodes: VectorGenerator, MotionBlur, RollingShutter, Retiming
+- Integration of Blender's production proven point tracker in Natron to replace the existing TrackerPM node.
 
-- Integration of Blender's production proven tracker in Natron to replace the existing tracker
+- Planar tracking of Rotoshapes
+
+- Single Read/Write node instead of many Readers (ReadOIIO, ReadFFMPEG etc...)/Writers  (WriteOIIO, WriteFFMPEG...)
 
 - Node-graph enhancement and optimization
 
-- Multi-layered EXR decoding enhancement (currently the OpenImageIO backend is slow)
+- RotoPaint: add ability to use custom masks from inputs instead of a paint brush. Also improve the tree view with more per-shape attributes.
+
+- Roto: add support for DopeSheet
+
+### Features for 2.2 (ETA: End of july 2016)
+
+- Optical Flow nodes: VectorGenerator, MotionBlur, RollingShutter, Retiming
+
+- User manual and Reference guide
 
 
 ### Features planned for future versions
