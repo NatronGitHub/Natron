@@ -19,23 +19,11 @@ onParamChanged callback on the node.
 Functions
 ^^^^^^^^^
 
-*    def :meth:`setIconFilePath<NatronEngine.ButtonParam.setIconFilePath>` (icon)
 *    def :meth:`trigger<NatronEngine.ButtonParam.trigger>` ()
 
 
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-.. method:: NatronEngine.ButtonParam.setIconFilePath(icon)
-
-
-    :param icon: :class:`str<NatronEngine.std::string>`
-
-Set here the icon file path for the button. This should be either an absolute path or
-a file-path relative to a path in the NATRON_PLUGIN_PATH.
-
-
 
 
 .. method:: NatronEngine.ButtonParam.trigger()

@@ -39,6 +39,7 @@ Functions
 *    def :meth:`setEnabled<NatronEngine.Param.setEnabled>` (enabled[, dimension=0])
 *    def :meth:`setEnabledByDefault<NatronEngine.Param.setEnabledByDefault>` (enabled)
 *    def :meth:`setEvaluateOnChange<NatronEngine.Param.setEvaluateOnChange>` (eval)
+*    def :meth:`setIconFilePath<NatronEngine.Param.setIconFilePath>` (icon)
 *    def :meth:`setHelp<NatronEngine.Param.setHelp>` (help)
 *    def :meth:`setPersistant<NatronEngine.Param.setPersistant>` (persistant)
 *    def :meth:`setVisible<NatronEngine.Param.setVisible>` (visible)
@@ -470,6 +471,18 @@ to edit it.
 Set whether evaluation should be enabled for this parameter. When True, calling any
 function that change the value of the parameter will trigger a new render.
 See :func:`getEvaluateOnChange()<NatronEngine.Param.getEvaluateOnChange>`
+
+
+.. method:: NatronEngine.Param.setIconFilePath(icon)
+
+
+    :param icon: :class:`str<NatronEngine.std::string>`
+
+Set here the icon file path for the label. This should be either an absolute path or
+a file-path relative to a path in the NATRON_PLUGIN_PATH. The icon will replace the
+label of the parameter.
+
+
 
 
 

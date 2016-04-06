@@ -80,6 +80,12 @@ public:
     QString getLabel() const;
     
     /**
+     * @brief Set the icon file-path that should be used for the button.
+     * This can only be called right away after the parameter has been created.
+     **/
+    void setIconFilePath(const QString& icon);
+    
+    /**
      * @brief Returns the type of the parameter. The list of known type is:
      * "Int" "Bool" "Double" "Button" "Choice" "Color" "String" "Group" "Page" "Parametric" "InputFile" "OutputFile" "Path"
      **/
@@ -1049,11 +1055,6 @@ public:
     
     virtual ~ButtonParam();
     
-    /**
-     * @brief Set the icon file-path that should be used for the button.
-     * This can only be called right away after the parameter has been created.
-     **/
-    void setIconFilePath(const QString& icon);
     
     void trigger();
 };
