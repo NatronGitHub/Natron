@@ -107,6 +107,11 @@ public:
     {
         _cascading = cascading;
     }
+    
+    bool isCascading() const
+    {
+        return _cascading;
+    }
 
     /*Insert a new item BEFORE the specified index.*/
     void insertItem( int index,const QString &item,QIcon icon = QIcon(),QKeySequence = QKeySequence(),const QString & toolTip = QString() );

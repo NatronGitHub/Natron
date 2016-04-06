@@ -42,22 +42,33 @@ NATRON_PYTHON_NAMESPACE_ENTER;
 class PyCoreApplication
 {
     
+    
 public:
     
     PyCoreApplication() {}
     
     virtual ~PyCoreApplication() {}
     
-    inline std::list<std::string>
+    inline QStringList
     getPluginIDs() const
     {
-        return appPTR->getPluginIDs();
+        QStringList ret;
+        std::list<std::string> list =  appPTR->getPluginIDs();
+        for (std::list<std::string>::iterator it = list.begin(); it!=list.end(); ++it) {
+            ret.push_back(QString::fromUtf8(it->c_str()));
+        }
+        return ret;
     }
     
-    inline std::list<std::string>
-    getPluginIDs(const std::string& filter) const
+    inline QStringList
+    getPluginIDs(const QString& filter) const
     {
-        return appPTR->getPluginIDs(filter);
+        QStringList ret;
+        std::list<std::string> list =  appPTR->getPluginIDs(filter.toStdString());
+        for (std::list<std::string>::iterator it = list.begin(); it!=list.end(); ++it) {
+            ret.push_back(QString::fromUtf8(it->c_str()));
+        }
+        return ret;
     }
     
     inline int
@@ -66,16 +77,21 @@ public:
         return appPTR->getNumInstances();
     }
     
-    inline std::list<std::string>
+    inline QStringList
     getNatronPath() const
     {
-        return appPTR->getNatronPath();
+        QStringList ret;
+        std::list<std::string> list =  appPTR->getNatronPath();
+        for (std::list<std::string>::iterator it = list.begin(); it!=list.end(); ++it) {
+            ret.push_back(QString::fromUtf8(it->c_str()));
+        }
+        return ret;
     }
     
     inline void
-    appendToNatronPath(const std::string& path)
+    appendToNatronPath(const QString& path)
     {
-        appPTR->appendToNatronPath(path);
+        appPTR->appendToNatronPath(path.toStdString());
     }
     
     inline bool isLinux() const
@@ -114,9 +130,9 @@ public:
 #endif
     }
     
-    inline std::string getNatronVersionString() const
+    inline QString getNatronVersionString() const
     {
-        return NATRON_VERSION_STRING;
+        return QString::fromUtf8(NATRON_VERSION_STRING);
     }
     
     inline int getNatronVersionMajor() const
@@ -139,9 +155,9 @@ public:
         return NATRON_VERSION_ENCODED;
     }
     
-    inline std::string getNatronDevelopmentStatus() const
+    inline QString getNatronDevelopmentStatus() const
     {
-        return std::string(NATRON_DEVELOPMENT_STATUS);
+        return QString::fromUtf8(NATRON_DEVELOPMENT_STATUS);
     }
     
     inline int getBuildNumber() const
@@ -190,14 +206,14 @@ public:
         return new AppSettings(appPTR->getCurrentSettings());
     }
     
-    inline void setOnProjectCreatedCallback(const std::string& pythonFunctionName)
+    inline void setOnProjectCreatedCallback(const QString& pythonFunctionName)
     {
-        appPTR->setOnProjectCreatedCallback(pythonFunctionName);
+        appPTR->setOnProjectCreatedCallback(pythonFunctionName.toStdString());
     }
     
-    inline void setOnProjectLoadedCallback(const std::string& pythonFunctionName)
+    inline void setOnProjectLoadedCallback(const QString& pythonFunctionName)
     {
-        appPTR->setOnProjectLoadedCallback(pythonFunctionName);
+        appPTR->setOnProjectLoadedCallback(pythonFunctionName.toStdString());
     }
     
     

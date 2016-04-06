@@ -43,6 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Settings.h"
 #include "Engine/EffectInstance.h" // PLUGINID_OFX_*
 
+#include "Gui/Gui.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/KnobGuiFactory.h"
 #include "Gui/SplashScreen.h"
@@ -825,12 +826,7 @@ GuiApplicationManager::initGui(const CLArgs& args)
         }
     }
     
-    // launch webserver
-    documentation = new DocumentationManager;
-    if (!documentation->webserverStart()) {
-        std::cout << QObject::tr("Failed to launch documentation server") << std::endl;
-    }
-
+    
     if (settings.contains(QString::fromUtf8("fontSize"))) {
         fontSize = settings.value(QString::fromUtf8("fontSize")).toInt();
     }
@@ -899,6 +895,14 @@ GuiApplicationManager::initGui(const CLArgs& args)
     _imp->updateSplashscreenTimer.start(1000);
     
     _imp->fontconfigUpdateWatcher->setFuture(QtConcurrent::run(_imp.get(),&GuiApplicationManagerPrivate::updateFontConfigCache));
+    
+    Gui::loadStyleSheet();
+
+    // launch webserver
+    documentation = new DocumentationManager;
+    if (!documentation->webserverStart()) {
+        std::cout << "Failed to launch documentation server" << std::endl;
+    }
 
     return exec();
 }

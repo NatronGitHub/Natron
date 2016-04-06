@@ -45,7 +45,7 @@ public:
     
     AppSettings(const boost::shared_ptr<Settings>& settings);
     
-    Param* getParam(const std::string& scriptName) const;
+    Param* getParam(const QString& scriptName) const;
     
     std::list<Param*> getParams() const;
     
@@ -81,14 +81,14 @@ public:
      * @param group If not NULL, this should be a pointer to a group node where-in to insert the newly created effect.
      * If NULL, the newly created node will be inserted in the project's root.
      **/
-    Effect* createNode(const std::string& pluginID,
+    Effect* createNode(const QString& pluginID,
                        int majorVersion = -1,
                        Group* group = 0) const;
     
-    Effect* createReader(const std::string& filename,
+    Effect* createReader(const QString& filename,
                          Group* group = 0) const;
     
-    Effect* createWriter(const std::string& filename,
+    Effect* createWriter(const QString& filename,
                          Group* group = 0) const;
     
     int timelineGetTime() const;
@@ -97,19 +97,19 @@ public:
     
     int timelineGetRightBound() const;
     
-    void addFormat(const std::string& formatSpec);
+    void addFormat(const QString& formatSpec);
     
     void render(Effect* writeNode,int firstFrame, int lastFrame, int frameStep = 1);
     void render(const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames, const std::list<int>& frameSteps);
     
-    Param* getProjectParam(const std::string& name) const;
+    Param* getProjectParam(const QString& name) const;
     
-    void writeToScriptEditor(const std::string& message);
+    void writeToScriptEditor(const QString& message);
     
-    bool saveProject(const std::string& filename);
-    bool saveProjectAs(const std::string& filename);
-    bool saveTempProject(const std::string& filename);
-    App* loadProject(const std::string& filename);
+    bool saveProject(const QString& filename);
+    bool saveProjectAs(const QString& filename);
+    bool saveTempProject(const QString& filename);
+    App* loadProject(const QString& filename);
     
     ///Close the current project but keep the window
     bool resetProject();
@@ -120,7 +120,9 @@ public:
     ///Opens a new window
     App* newProject();
     
-    std::list<std::string> getViewNames() const;
+    std::list<QString> getViewNames() const;
+    
+    void addProjectLayer(const ImageLayer& layer);
     
 protected:
     

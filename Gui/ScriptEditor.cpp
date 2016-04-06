@@ -38,6 +38,7 @@
 #include <QSplitter>
 #include <QTimer>
 #include <QMutex>
+#include <QFont>
 #include <QScrollBar>
 #include <QKeyEvent>
 
@@ -245,20 +246,14 @@ ScriptEditor::ScriptEditor(Gui* gui)
     
     QSplitter* splitter = new QSplitter(Qt::Vertical,this);
     
-    QFont scriptFont(QString::fromUtf8("Courier New"), 12);
-    if (!scriptFont.exactMatch()) {
-        scriptFont = font();
-    }
-    
+
     _imp->outputEdit = new OutputScriptTextEdit(this);
     QObject::connect(_imp->outputEdit, SIGNAL(userScrollChanged(bool)), this, SLOT(onUserScrollChanged(bool)));
     _imp->outputEdit->setFocusPolicy(Qt::ClickFocus);
     _imp->outputEdit->setReadOnly(true);
-    _imp->outputEdit->setFont(scriptFont);
     
     _imp->inputEdit = new InputScriptTextEdit(gui, this);
     QObject::connect(_imp->inputEdit, SIGNAL(textChanged()), this, SLOT(onInputScriptTextChanged()));
-    _imp->inputEdit->setFont(scriptFont);
     QFontMetrics fm = _imp->inputEdit->fontMetrics();
     _imp->inputEdit->setTabStopWidth(fm.width(QLatin1Char(' ')) * 4);
     _imp->outputEdit->setTabStopWidth(fm.width(QLatin1Char(' ')) * 4);
@@ -272,6 +267,8 @@ ScriptEditor::ScriptEditor(Gui* gui)
     QObject::connect(&_imp->history, SIGNAL(canRedoChanged(bool)), this, SLOT(onHistoryCanRedoChanged(bool)));
     
     _imp->autoSaveTimer.setSingleShot(true);
+    
+    reloadFont();
 }
 
 ScriptEditor::~ScriptEditor()
@@ -285,6 +282,19 @@ ScriptEditor::reloadHighlighter()
     if (_imp->inputEdit) {
         _imp->inputEdit->reloadHighlighter();
     }
+}
+
+void
+ScriptEditor::reloadFont()
+{
+    QString fontFamily = QString::fromUtf8(appPTR->getCurrentSettings()->getSEFontFamily().c_str());
+    int fontSize = appPTR->getCurrentSettings()->getSEFontSize();
+    QFont font(fontFamily, fontSize);
+    if (font.exactMatch()) {
+        _imp->inputEdit->setFont(font);
+        _imp->outputEdit->setFont(font);
+    }
+
 }
 
 void
@@ -333,6 +343,20 @@ ScriptEditor::onRedoClicked()
 }
 
 void
+ScriptEditor::sourceScript(const QString& filename)
+{
+    QFile file(filename);
+    if (file.open(QIODevice::ReadOnly)) {
+        QTextStream ts(&file);
+        QString content = ts.readAll();
+        _imp->inputEdit->setPlainText(content);
+        onExecScriptClicked();
+    } else {
+        Dialogs::errorDialog(tr("Operation failed").toStdString(), tr("Failed to open ").toStdString() + filename.toStdString());
+    }
+}
+
+void
 ScriptEditor::onSourceScriptClicked()
 {
     std::vector<std::string> filters;
@@ -346,15 +370,7 @@ ScriptEditor::onSourceScriptClicked()
         getGui()->updateLastOpenedProjectPath(currentDir.absolutePath());
 
         QString fileName(QString::fromUtf8(dialog.selectedFiles().c_str()));
-        QFile file(fileName);
-        if (file.open(QIODevice::ReadOnly)) {
-            QTextStream ts(&file);
-            QString content = ts.readAll();
-            _imp->inputEdit->setPlainText(content);
-            onExecScriptClicked();
-        } else {
-            Dialogs::errorDialog(tr("Operation failed").toStdString(), tr("Failure to open the file").toStdString());
-        }
+        sourceScript(fileName);
         
     }
 }
@@ -638,6 +654,13 @@ ScriptEditor::onShowAutoDeclVarsClicked(bool clicked)
     _imp->showAutoDeclVarsB->setDown(clicked);
     _imp->showAutoDeclVarsB->setChecked(clicked);
     appPTR->getCurrentSettings()->setAutoDeclaredVariablePrintEnabled(clicked);
+}
+
+void
+ScriptEditor::focusInEvent(QFocusEvent* e)
+{
+    _imp->inputEdit->setFocus();
+    QWidget::focusInEvent(e);
 }
 
 NATRON_NAMESPACE_EXIT;

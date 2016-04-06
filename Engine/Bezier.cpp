@@ -2072,13 +2072,13 @@ Bezier::setKeyframe(double time)
             double x, y;
             double leftDerivX, rightDerivX, leftDerivY, rightDerivY;
 
-            (*it)->getPositionAtTime(true, time, ViewIdx(0), &x, &y, true);
-            (*it)->setPositionAtTime(true, time, x, y);
+            (*it)->getPositionAtTime(false, time, ViewIdx(0), &x, &y, true);
+            (*it)->setPositionAtTime(false, time, x, y);
 
-            (*it)->getLeftBezierPointAtTime(true, time, ViewIdx(0),&leftDerivX, &leftDerivY, true);
-            (*it)->getRightBezierPointAtTime(true, time, ViewIdx(0),&rightDerivX, &rightDerivY, true);
-            (*it)->setLeftBezierPointAtTime(true, time, leftDerivX, leftDerivY);
-            (*it)->setRightBezierPointAtTime(true, time, rightDerivX, rightDerivY);
+            (*it)->getLeftBezierPointAtTime(false, time, ViewIdx(0),&leftDerivX, &leftDerivY, true);
+            (*it)->getRightBezierPointAtTime(false, time, ViewIdx(0),&rightDerivX, &rightDerivY, true);
+            (*it)->setLeftBezierPointAtTime(false, time, leftDerivX, leftDerivY);
+            (*it)->setRightBezierPointAtTime(false, time, rightDerivX, rightDerivY);
         }
 
         if (useFeather) {
@@ -2086,17 +2086,17 @@ Bezier::setKeyframe(double time)
                 double x, y;
                 double leftDerivX, rightDerivX, leftDerivY, rightDerivY;
 
-                (*it)->getPositionAtTime(true, time, ViewIdx(0),&x, &y, true);
-                (*it)->setPositionAtTime(true, time, x, y);
+                (*it)->getPositionAtTime(false, time, ViewIdx(0),&x, &y, true);
+                (*it)->setPositionAtTime(false, time, x, y);
 
-                (*it)->getLeftBezierPointAtTime(true, time, ViewIdx(0),&leftDerivX, &leftDerivY, true);
-                (*it)->getRightBezierPointAtTime(true, time, ViewIdx(0),&rightDerivX, &rightDerivY, true);
-                (*it)->setLeftBezierPointAtTime(true, time, leftDerivX, leftDerivY);
-                (*it)->setRightBezierPointAtTime(true, time, rightDerivX, rightDerivY);
+                (*it)->getLeftBezierPointAtTime(false, time, ViewIdx(0),&leftDerivX, &leftDerivY, true);
+                (*it)->getRightBezierPointAtTime(false, time, ViewIdx(0),&rightDerivX, &rightDerivY, true);
+                (*it)->setLeftBezierPointAtTime(false, time, leftDerivX, leftDerivY);
+                (*it)->setRightBezierPointAtTime(false, time, rightDerivX, rightDerivY);
             }
         }
     }
-    _imp->setMustCopyGuiBezier(true);
+   // _imp->setMustCopyGuiBezier(true);
     Q_EMIT keyframeSet(time);
 }
 

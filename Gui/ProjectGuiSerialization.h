@@ -65,7 +65,8 @@ GCC_DIAG_ON(unused-parameter)
 #define VIEWER_DATA_INTRODUCES_GAMMA 10
 #define VIEWER_DATA_INTRODUCES_ACTIVE_INPUTS 11
 #define VIEWER_DATA_INTRODUCES_PAUSE_VIEWER 12
-#define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_INTRODUCES_PAUSE_VIEWER
+#define VIEWER_DATA_INTRODUCES_LAYER 13
+#define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_INTRODUCES_LAYER
 
 #define PROJECT_GUI_INTRODUCES_BACKDROPS 2
 #define PROJECT_GUI_REMOVES_ALL_NODE_PREVIEW_TOGGLED 3
@@ -110,6 +111,7 @@ struct ViewerData
     int mipMapLevel;
     std::string colorSpace;
     std::string channels;
+    std::string layerName,alphaLayerName;
     bool zoomOrPanSinceLastFit;
     int wipeCompositingOp;
     
@@ -158,6 +160,10 @@ struct ViewerData
             gamma = 1.;
         }
         ar & ::boost::serialization::make_nvp("ColorSpace",colorSpace);
+        if (version >= VIEWER_DATA_INTRODUCES_LAYER) {
+            ar & ::boost::serialization::make_nvp("Layer",layerName);
+            ar & ::boost::serialization::make_nvp("AlphaLayer",alphaLayerName);
+        }
         ar & ::boost::serialization::make_nvp("Channels",channels);
         ar & ::boost::serialization::make_nvp("RenderScaleActivated",renderScaleActivated);
         ar & ::boost::serialization::make_nvp("MipMapLevel",mipMapLevel);

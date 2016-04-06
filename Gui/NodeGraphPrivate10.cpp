@@ -22,10 +22,10 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <stdexcept>
-
 #include "NodeGraphPrivate.h"
 #include "NodeGraph.h"
+
+#include <stdexcept>
 
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
@@ -158,7 +158,6 @@ NodeGraphPrivate::pasteNode(const boost::shared_ptr<NodeSerialization> & interna
     args.serialization = internalSerialization;
     NodePtr n = _publicInterface->getGui()->getApp()->createNode(args);
 
-    assert(n);
     if (!n) {
         return NodeGuiPtr();
     }

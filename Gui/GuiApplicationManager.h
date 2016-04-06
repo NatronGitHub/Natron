@@ -184,6 +184,8 @@ public:
     
     virtual void reloadStylesheets() OVERRIDE FINAL;
     
+    virtual void reloadScriptEditorFonts() OVERRIDE FINAL;
+    
     void clearNodeClipBoard();
     
     virtual void addCommand(const QString& grouping,const std::string& pythonFunction, Qt::Key key,const Qt::KeyboardModifiers& modifiers) OVERRIDE;

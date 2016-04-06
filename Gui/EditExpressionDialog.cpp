@@ -22,7 +22,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Gui/EditExpressionDialog.h"
+#include "EditExpressionDialog.h"
 
 #include <cassert>
 #include <climits>

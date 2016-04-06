@@ -44,21 +44,21 @@ Track::~Track()
 }
 
 void
-Track::setScriptName(const std::string& scriptName)
+Track::setScriptName(const QString& scriptName)
 {
-    _marker->setScriptName(scriptName);
+    _marker->setScriptName(scriptName.toStdString());
 }
 
-std::string
+QString
 Track::getScriptName() const
 {
-    return _marker->getScriptName_mt_safe();
+    return QString::fromUtf8(_marker->getScriptName_mt_safe().c_str());
 }
 
 Param*
-Track::getParam(const std::string& scriptName) const
+Track::getParam(const QString& scriptName) const
 {
-    KnobPtr knob = _marker->getKnobByName(scriptName);
+    KnobPtr knob = _marker->getKnobByName(scriptName.toStdString());
     if (!knob) {
         return 0;
     }
@@ -84,9 +84,9 @@ Tracker::~Tracker()
 }
 
 Track*
-Tracker::getTrackByName(const std::string& name) const
+Tracker::getTrackByName(const QString& name) const
 {
-    TrackMarkerPtr t = _ctx->getMarkerByName(name);
+    TrackMarkerPtr t = _ctx->getMarkerByName(name.toStdString());
     if (t) {
         return new Track(t);
     } else {

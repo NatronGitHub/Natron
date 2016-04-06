@@ -1,19 +1,6 @@
 #include "LoginDialog.h"
 
 LoginDialog::LoginDialog(const QString html): QDialog(0,Qt::Dialog | Qt::WindowStaysOnTopHint)
-  ,loginButton(0)
-  ,mainLayout(0)
-  ,loginButton(0)
-  ,signupButton(0)
-  ,mainLayout(0)
-  ,mainFrame(0)
-  ,mainFrameLayout(0)
-  ,buttonsLayout(0)
-  ,buttonsFrame(0)
-  ,loginUsername(0)
-  ,loginPassword(0)
-  ,loginEditLayout(0)
-  ,loginInfo(0)
 {
     setWindowTitle(QObject::tr("Natron Login"));
     setMinimumWidth(530);

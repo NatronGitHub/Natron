@@ -58,19 +58,43 @@ ProcessHandler::ProcessHandler(const QString & projectPath,
     ///setup the server used to listen the output of the background process
     _ipcServer = new QLocalServer();
     QObject::connect( _ipcServer,SIGNAL(newConnection()),this,SLOT(onNewConnectionPending()) );
-    QString serverName;
+
+
+
+    QString tmpFileName;
+#if defined(Q_OS_WIN)
+    tmpFileName += QString::fromUtf8("//./pipe");
+    tmpFileName += QLatin1Char('/');
+    tmpFileName += QString::fromUtf8(NATRON_APPLICATION_NAME);
+    tmpFileName += QString::fromUtf8("_INPUT_SOCKET");
+#endif
+
     {
-        QTemporaryFile tmpf(QString::fromUtf8(NATRON_APPLICATION_NAME "_OUTPUT_PIPE_"));
-        tmpf.open();
-        serverName = tmpf.fileName();
+#if defined(Q_OS_UNIX)
+        QTemporaryFile tmpf(tmpFileName);
+        tmpFileName = tmpf.fileName();
         tmpf.remove();
+#else
+        QTemporaryFile tmpf;
+        tmpf.open();
+        QString tmpFilePath = tmpf.fileName();
+        QString baseName;
+        int lastSlash = tmpFilePath.lastIndexOf(QLatin1Char('/'));
+        if (lastSlash != -1 && lastSlash < tmpFilePath.size() - 1) {
+            baseName = tmpFilePath.mid(lastSlash + 1);
+        } else {
+            baseName = tmpFilePath;
+        }
+        tmpFileName += baseName;
+        tmpf.remove();
+#endif
     }
-    _ipcServer->listen(serverName);
+    _ipcServer->listen(tmpFileName);
 
 
     _processArgs << QString::fromUtf8("-b") << QString::fromUtf8("-w") << QString::fromUtf8(writer->getScriptName_mt_safe().c_str());
-    _processArgs << QString::fromUtf8("--IPCpipe") << QString::fromUtf8("\"") + _ipcServer->fullServerName() + QString::fromUtf8("\"");
-    _processArgs << QString::fromUtf8("\"") + projectPath + QString::fromUtf8("\"");
+    _processArgs << QString::fromUtf8("--IPCpipe") <<  tmpFileName;
+    _processArgs << projectPath;
 
     ///connect the useful slots of the process
     QObject::connect( _process,SIGNAL(readyReadStandardOutput()),this,SLOT(onStandardOutputBytesWritten()) );
@@ -199,7 +223,7 @@ ProcessHandler::onStandardOutputBytesWritten()
 #ifdef DEBUG
     qDebug() << "Message(stdout):" << str;
 #endif
-    _processLog.append(QString::fromUtf8("Message(stdout): ") + str) + QLatin1Char('\n');
+    _processLog.append(QString::fromUtf8("Message(stdout): ") + str) ;
 }
 
 void
@@ -209,7 +233,7 @@ ProcessHandler::onStandardErrorBytesWritten()
 #ifdef DEBUG
     qDebug() << "Message(stderr):" << str;
 #endif
-    _processLog.append(QString::fromUtf8("Error(stderr): ") + str) + QLatin1Char('\n');
+    _processLog.append(QString::fromUtf8("Error(stderr): ") + str);
 }
 
 void
@@ -354,28 +378,43 @@ ProcessInputChannel::initialize()
 
     _backgroundIPCServer = new QLocalServer();
     QObject::connect( _backgroundIPCServer,SIGNAL(newConnection()),this,SLOT(onNewConnectionPending()) );
-    QString serverName;
+
+
+    QString tmpFileName;
+#if defined(Q_OS_WIN)
+    tmpFileName += QString::fromUtf8("//./pipe");
+    tmpFileName += QLatin1Char('/');
+    tmpFileName += QString::fromUtf8(NATRON_APPLICATION_NAME);
+    tmpFileName += QString::fromUtf8("_INPUT_SOCKET");
+#endif
+
     {
-		QString tmpFilePath = QDir::tempPath();
-		if (!tmpFilePath.endsWith(QLatin1Char('/'))) {
-			tmpFilePath += QLatin1Char('/');
-		}
-		tmpFilePath += QString::fromUtf8(NATRON_APPLICATION_NAME);
-		tmpFilePath += QString::fromUtf8("_INPUT_SOCKET");
-		tmpFilePath += QString::number(QCoreApplication::applicationPid());
-		
-        QTemporaryFile tmpf(tmpFilePath);
-        tmpf.open();
-        serverName = tmpf.fileName();
+#if defined(Q_OS_UNIX)
+        QTemporaryFile tmpf(tmpFileName);
+        tmpFileName = tmpf.fileName();
         tmpf.remove();
+#else
+        QTemporaryFile tmpf;
+        tmpf.open();
+        QString tmpFilePath = tmpf.fileName();
+        QString baseName;
+        int lastSlash = tmpFilePath.lastIndexOf(QLatin1Char('/'));
+        if (lastSlash != -1 && lastSlash < tmpFilePath.size() - 1) {
+            baseName = tmpFilePath.mid(lastSlash + 1);
+        } else {
+            baseName = tmpFilePath;
+        }
+        tmpFileName += baseName;
+        tmpf.remove();
+#endif
     }
-    _backgroundIPCServer->listen(serverName);
+    _backgroundIPCServer->listen(tmpFileName);
 
     if ( !_backgroundOutputPipe->waitForConnected(5000) ) { //< blocking, we wait for the server to respond
         std::cout << "WARNING: The GUI application failed to respond, canceling this process will not be possible"
             " unless it finishes or you kill it." << std::endl;
     }
-    writeToOutputChannel( QString::fromUtf8(kBgProcessServerCreatedShort) + _backgroundIPCServer->fullServerName() );
+    writeToOutputChannel( QString::fromUtf8(kBgProcessServerCreatedShort) + tmpFileName );
 
     ///we wait for the GUI app to connect its socket to this server, we let it 5 sec to reply
     _backgroundIPCServer->waitForNewConnection(5000);

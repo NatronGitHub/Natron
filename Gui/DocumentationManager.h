@@ -4,7 +4,7 @@
 #include <QObject>
 
 #include "Gui/GuiFwd.h"
-#include "qhttpserverfwd.h"
+
 #include "qhttpserver.h"
 #include "qhttprequest.h"
 #include "qhttpresponse.h"

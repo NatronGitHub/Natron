@@ -27,17 +27,40 @@ source `pwd`/common.sh || exit 1
 
 cd $CWD/build || exit 1
 
-#If "master" is passed, use master branch for all plug-ins otherwise use the git tags in common.sh
-if [ "$BRANCH" = "master" ]; then
-    IO_BRANCH=master
-    MISC_BRANCH=master
-    ARENA_BRANCH=master
-    CV_BRANCH=master
+# Set to MASTER_BRANCH as default
+IO_BRANCH=$MASTER_BRANCH
+MISC_BRANCH=$MASTER_BRANCH
+ARENA_BRANCH=$MASTER_BRANCH
+CV_BRANCH=$MASTER_BRANCH
+
+if [ -z "$BRANCH"  ]; then
+  BRANCH=$MASTER_BRANCH
+  if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
+    COMMITS_HASH=$CWD/commits-hash-$BRANCH.sh
+  else
+    COMMITS_HASH=$CWD/commits-hash.sh
+  fi
 else
-    IO_BRANCH=$IOPLUG_GIT_TAG
-    MISC_BRANCH=$MISCPLUG_GIT_TAG
-    ARENA_BRANCH=$ARENAPLUG_GIT_TAG
-    CV_BRANCH=$CVPLUG_GIT_TAG
+  COMMITS_HASH=$CWD/commits-hash-$BRANCH.sh
+fi
+
+if [ "$BUILD_CONFIG" != "SNAPSHOT" ]; then
+  IO_BRANCH=$IOPLUG_GIT_TAG
+  MISC_BRANCH=$MISCPLUG_GIT_TAG
+  ARENA_BRANCH=$ARENAPLUG_GIT_TAG
+  CV_BRANCH=$CVPLUG_GIT_TAG
+fi
+
+if [ ! -f "$COMMITS_HASH" ]; then
+cat <<EOF > "$COMMITS_HASH"
+#!/bin/sh
+NATRON_DEVEL_GIT=#
+IOPLUG_DEVEL_GIT=#
+MISCPLUG_DEVEL_GIT=#
+ARENAPLUG_DEVEL_GIT=#
+CVPLUG_DEVEL_GIT=#
+NATRON_VERSION_NUMBER=#
+EOF
 fi
 
 # tag symbols we want to keep with 'release'
@@ -74,14 +97,14 @@ git clone $GIT_MISC
 cd openfx-misc || exit 1
 git checkout "$MISC_BRANCH" || exit 1
 git submodule update -i --recursive || exit 1
-if [ "$MISC_BRANCH" = "master" ]; then
+if [ "$MISC_BRANCH" = "$MASTER_BRANCH" ]; then
     # the snapshots are always built with the latest version of submodules
-    git submodule foreach git pull origin master
+    git submodule foreach git pull origin $MASTER_BRANCH
 fi
 
 #Always bump git commit, it is only used to version-stamp binaries
 MISC_GIT_VERSION=`git log|head -1|awk '{print $2}'`
-sed -i "" -e "s/MISCPLUG_DEVEL_GIT=.*/MISCPLUG_DEVEL_GIT=${MISC_GIT_VERSION}/" $CWD/commits-hash.sh || exit 1
+sed -i "" -e "s/MISCPLUG_DEVEL_GIT=.*/MISCPLUG_DEVEL_GIT=${MISC_GIT_VERSION}/" "$COMMITS_HASH" || exit 1
 
 make CXX="$CXX" BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} HAVE_CIMG=0 || exit 1
 cp -r Misc/$OS-$BITS-$CONFIG/Misc.ofx.bundle "$PLUGINDIR/OFX/Natron" || exit 1
@@ -104,10 +127,10 @@ git clone $GIT_ARENA
 cd openfx-arena || exit 1
 git checkout "$ARENA_BRANCH" || exit 1
 git submodule update -i --recursive || exit 1
-if [ "$ARENA_BRANCH" = "master" ]; then
+if [ "$ARENA_BRANCH" = "$MASTER_BRANCH" ]; then
     # the snapshots are always built with the latest version of submodules
     if true; then
-        git submodule foreach git pull origin master
+        git submodule foreach git pull origin $MASTER_BRANCH
     else
        echo "Warning: openfx-arena submodules not updated..."
     fi
@@ -118,7 +141,7 @@ sed -e s/-lgomp// -i.orig Makefile.master
 
 #Always bump git commit, it is only used to version-stamp binaries
 ARENA_GIT_VERSION=`git log|head -1|awk '{print $2}'`
-sed -i "" -e "s/ARENAPLUG_DEVEL_GIT=.*/ARENAPLUG_DEVEL_GIT=${ARENA_GIT_VERSION}/" $CWD/commits-hash.sh || exit 1
+sed -i "" -e "s/ARENAPLUG_DEVEL_GIT=.*/ARENAPLUG_DEVEL_GIT=${ARENA_GIT_VERSION}/" "$COMMITS_HASH" || exit 1
 
 make CXX="$CXX" USE_PANGO=1 USE_SVG=1 STATIC=1 BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} || exit 1
 cp -r Bundle/$OS-$BITS-$CONFIG/Arena.ofx.bundle "$PLUGINDIR/OFX/Natron" || exit 1

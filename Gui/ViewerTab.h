@@ -282,6 +282,13 @@ public:
     
     bool isViewerPaused(int texIndex) const;
     
+    QString getCurrentLayerName() const;
+    
+    QString getCurrentAlphaLayerName() const;
+    
+    void setCurrentLayers(const QString& layer, const QString& alphaLayer);
+    
+    
 public Q_SLOTS:
     
     void onPauseViewerButtonClicked(bool clicked);

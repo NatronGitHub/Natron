@@ -79,36 +79,36 @@ public:
         return new GuiApp(app);
     }
     
-    void informationDialog(const std::string& title,const std::string& message)
+    void informationDialog(const QString& title,const QString& message)
     {
-        Dialogs::informationDialog(title, message);
+        Dialogs::informationDialog(title.toStdString(), message.toStdString());
     }
     
-    void warningDialog(const std::string& title,const std::string& message)
+    void warningDialog(const QString& title,const QString& message)
     {
-        Dialogs::warningDialog(title,message);
+        Dialogs::warningDialog(title.toStdString(),message.toStdString());
     }
     
-    void errorDialog(const std::string& title,const std::string& message)
+    void errorDialog(const QString& title,const QString& message)
     {
-        Dialogs::errorDialog(title,message);
+        Dialogs::errorDialog(title.toStdString(),message.toStdString());
     }
     
-    StandardButtonEnum questionDialog(const std::string& title,const std::string& message)
+    StandardButtonEnum questionDialog(const QString& title,const QString& message)
     {
-        return Dialogs::questionDialog(title, message, false);
+        return Dialogs::questionDialog(title.toStdString(), message.toStdString(), false);
     }
     
-    void addMenuCommand(const std::string& grouping,const std::string& pythonFunctionName)
+    void addMenuCommand(const QString& grouping,const QString& pythonFunctionName)
     {
-        appPTR->addCommand(QString::fromUtf8(grouping.c_str()), pythonFunctionName, (Qt::Key)0, Qt::NoModifier);
+        appPTR->addCommand(grouping, pythonFunctionName.toStdString(), (Qt::Key)0, Qt::NoModifier);
     }
     
     
-    void addMenuCommand(const std::string& grouping,const std::string& pythonFunctionName,
+    void addMenuCommand(const QString& grouping,const QString& pythonFunctionName,
                         Qt::Key key, const Qt::KeyboardModifiers& modifiers)
     {
-        appPTR->addCommand(QString::fromUtf8(grouping.c_str()), pythonFunctionName, key, modifiers);
+        appPTR->addCommand(grouping, pythonFunctionName.toStdString(), key, modifiers);
     }
     
 };

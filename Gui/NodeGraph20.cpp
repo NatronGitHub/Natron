@@ -89,9 +89,12 @@ NodeGraph::checkForHints(bool shiftdown, bool controlDown, const NodeGuiPtr& sel
     NodePtr selectedNodeInternalNode = selectedNode->getNode();
     bool selectedNodeIsReader = selectedNodeInternalNode->getEffectInstance()->isReader() || selectedNodeInternalNode->getMaxInputCount() == 0;
     Edge* edge = 0;
+    
+    std::set<NodeGui*> nodesWithinRect;
+    getNodesWithinViewportRect(visibleWidgetRect(), &nodesWithinRect);
+    
     {
-        QMutexLocker l(&_imp->_nodesMutex);
-        for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+        for (std::set<NodeGui*>::iterator it = nodesWithinRect.begin(); it != nodesWithinRect.end(); ++it) {
             
             bool isAlreadyAnOutput = false;
             const NodesWList& outputs = internalNode->getGuiOutputs();
@@ -109,7 +112,7 @@ NodeGraph::checkForHints(bool shiftdown, bool controlDown, const NodeGuiPtr& sel
                 continue;
             }
             QRectF nodeBbox = (*it)->boundingRectWithEdges();
-            if ((*it) != selectedNode && (*it)->isVisible() && nodeBbox.intersects(visibleSceneR)) {
+            if ((*it) != selectedNode.get() && (*it)->isVisible() && nodeBbox.intersects(visibleSceneR)) {
                 
                 if (doMergeHints) {
                     
@@ -139,7 +142,7 @@ NodeGraph::checkForHints(bool shiftdown, bool controlDown, const NodeGuiPtr& sel
                             }
                         }
                         if (isValid) {
-                            nodeToShowMergeRect = *it;
+                            nodeToShowMergeRect = (*it)->shared_from_this();
                         }
                     } else {
                         (*it)->setMergeHintActive(false);
@@ -430,38 +433,41 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     
     QRectF sceneR = visibleSceneRect();
     if (groupEdited && _imp->_evtState != eEventStateSelectionRect && _imp->_evtState != eEventStateDraggingArrow) {
-        ///set cursor
+        // Set cursor
+        
+        std::set<NodeGui*> visibleNodes;
+        getNodesWithinViewportRect(visibleWidgetRect(), &visibleNodes);
+        
         NodeGuiPtr selected;
         Edge* selectedEdge = 0;
-        {
-            bool optionalInputsAutoHidden = areOptionalInputsAutoHidden();
-            QMutexLocker l(&_imp->_nodesMutex);
-            for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
-                QPointF evpt = (*it)->mapFromScene(newPos);
-                
-                QRectF bbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
-                if ((*it)->isActive() && bbox.intersects(sceneR)) {
-                    if ((*it)->contains(evpt)) {
-                        selected = (*it);
-                        if (optionalInputsAutoHidden) {
-                            (*it)->refreshEdgesVisility(true);
-                        } else {
+        
+        bool optionalInputsAutoHidden = areOptionalInputsAutoHidden();
+
+        for (std::set<NodeGui*>::iterator it = visibleNodes.begin(); it!=visibleNodes.end(); ++it) {
+            QPointF evpt = (*it)->mapFromScene(newPos);
+            
+            QRectF bbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
+            if ((*it)->isActive() && bbox.intersects(sceneR)) {
+                if ((*it)->contains(evpt)) {
+                    selected = (*it)->shared_from_this();
+                    if (optionalInputsAutoHidden) {
+                        (*it)->refreshEdgesVisility(true);
+                    } else {
+                        break;
+                    }
+                } else {
+                    Edge* edge = (*it)->hasEdgeNearbyPoint(newPos);
+                    if (edge) {
+                        selectedEdge = edge;
+                        if (!optionalInputsAutoHidden) {
                             break;
                         }
-                    } else {
-                        Edge* edge = (*it)->hasEdgeNearbyPoint(newPos);
-                        if (edge) {
-                            selectedEdge = edge;
-                            if (!optionalInputsAutoHidden) {
-                                break;
-                            }
-                        } else if (optionalInputsAutoHidden && !(*it)->getIsSelected()) {
-                            (*it)->refreshEdgesVisility(false);
-                        }
+                    } else if (optionalInputsAutoHidden && !(*it)->getIsSelected()) {
+                        (*it)->refreshEdgesVisility(false);
                     }
                 }
-                
             }
+            
         }
         if (selected) {
             _imp->cursorSet = true;

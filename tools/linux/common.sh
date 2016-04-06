@@ -17,11 +17,6 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-# Natron Common Build Options
-
-# Versions
-#
-
 #THE FOLLOWING CAN BE MODIFIED TO CONFIGURE RELEASE BUILDS
 #----------------------------------------------------------
 NATRON_GIT_TAG=tags/2.0.1
@@ -31,9 +26,8 @@ ARENAPLUG_GIT_TAG=tags/Natron-2.0.1
 CVPLUG_GIT_TAG=tags/Natron-2.0.1
 #----------------------------------------------------------
 
-
-#Name of the packages in the installer
-#If you change this, don't forget to change the xml file associated in include/xml
+# Name of the packages in the installer
+# If you change this, don't forget to change the xml file associated in include/xml
 NATRON_PKG=fr.inria.natron
 IOPLUG_PKG=fr.inria.openfx.io
 MISCPLUG_PKG=fr.inria.openfx.misc
@@ -43,7 +37,6 @@ CORELIBS_PKG=fr.inria.natron.libs
 PROFILES_PKG=fr.inria.natron.color
 
 PACKAGES=$NATRON_PKG,$CORELIBS_PKG,$PROFILES_PKG,$IOPLUG_PKG,$MISCPLUG_PKG,$ARENAPLUG_PKG #,$CVPLUG_PKG
-
 
 # bump number when OpenColorIO-Configs changes
 GIT_OCIO_CONFIG_TAR=https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.0.tar.gz
@@ -55,6 +48,7 @@ CORELIBS_VERSION=20160318
 # SDK
 #
 
+MASTER_BRANCH=master
 QT5_VERSION=5.6.0
 SWRAST=1
 SDK_VERSION=CY2015
@@ -79,7 +73,7 @@ INC_PATH=$CWD/include
 
 # Keep existing tag, else make a new one
 if [ -z "$TAG" ]; then
-    TAG=`date +%Y%m%d%H%M`
+  TAG=`date +%Y%m%d%H%M`
 fi
 
 OS=`uname -o`
@@ -89,13 +83,13 @@ REPO_DIR_PREFIX=$CWD/build_
 # Repo settings
 #
 if [ -f $CWD/repo.sh ]; then
-    source $CWD/repo.sh
+  source $CWD/repo.sh
 else
-    REPO_DEST=localhost
-    REPO_URL=http://localhost
-    REPO_SYM_URL=root@betelgeuse.inrialpes.fr #for internal testing
-    REPO_SYM_PORT=-P2121
-    REPO_SYM_PATH=/home/uploads
+  REPO_DEST=localhost
+  REPO_URL=http://localhost
+  REPO_SYM_URL=root@betelgeuse.inrialpes.fr #for internal testing
+  REPO_SYM_PORT=-P2121
+  REPO_SYM_PATH=/home/uploads
 fi
 
 #Dist repo is expected to be layout as such:
@@ -103,11 +97,11 @@ fi
 #   Windows/
 #   Linux/
 #       releases/
-#       snapshots/
-#           32bit/
-#           64bit/
-#               files/ (where installers should be
-#               packages/ (where the updates for the maintenance tool should be)
+#       snapshots/BRANCH
+#                 32bit/
+#                 64bit/
+#                       files/ (where installers should be)
+#                       packages/ (where the updates for the maintenance tool should be)
 
 
 # Third-party sources
@@ -227,15 +221,15 @@ CLOOG_TAR=cloog-$TC_CLOOG.tar.gz
 # Check distro and version. CentOS/RHEL 6.4 only!
 
 if [ ! -f /etc/redhat-release ]; then
-    echo "SDK has been designed for CentOS/RHEL, use at OWN risk!"
-    sleep 5
+  echo "SDK has been designed for CentOS/RHEL, use at OWN risk!"
+  sleep 5
 else
-    RHEL_MAJOR=`cat /etc/redhat-release | cut -d" " -f3 | cut -d "." -f1`
-    RHEL_MINOR=`cat /etc/redhat-release | cut -d" " -f3 | cut -d "." -f2`
-    if [ "$RHEL_MAJOR" != "6" ] || [ "$RHEL_MINOR" != "4" ]; then
-        echo "Wrong version of CentOS/RHEL, 6.4 is the only tested version!"
-        sleep 5
-    fi
+  RHEL_MAJOR=`cat /etc/redhat-release | cut -d" " -f3 | cut -d "." -f1`
+  RHEL_MINOR=`cat /etc/redhat-release | cut -d" " -f3 | cut -d "." -f2`
+  if [ "$RHEL_MAJOR" != "6" ] || [ "$RHEL_MINOR" != "4" ]; then
+    echo "Wrong version of CentOS/RHEL, 6.4 is the only tested version!"
+    sleep 5
+  fi
 fi
 
 # Arch
@@ -243,10 +237,10 @@ fi
 # Default build flags
 
 if [ -z "$ARCH" ]; then
-    case `uname -m` in
-        i?86) export ARCH=i686 ;;
-        *) export ARCH=`uname -m` ;;
-    esac
+  case `uname -m` in
+    i?86) export ARCH=i686 ;;
+    *) export ARCH=`uname -m` ;;
+  esac
 fi
 if [ "$DEBUG" = "1" ]; then
   BFLAGS="-g"
@@ -254,13 +248,13 @@ else
   BFLAGS="-O2"
 fi
 if [ "$ARCH" = "i686" ]; then
-    BF="$BFLAGS -march=i686 -mtune=i686"
-    BIT=32
+  BF="$BFLAGS -march=i686 -mtune=i686"
+  BIT=32
 elif [ "$ARCH" = "x86_64" ]; then
-    BF="$BFLAGS -fPIC"
-    BIT=64
+  BF="$BFLAGS -fPIC"
+  BIT=64
 else
-    BF="$BFLAGS"
+  BF="$BFLAGS"
 fi
 
 # Threads
@@ -268,13 +262,15 @@ fi
 # Set build threads to 4 if not exists
 DEFAULT_MKJOBS=4
 if [ -z "$MKJOBS" ]; then
-    MKJOBS=$DEFAULT_MKJOBS
+  MKJOBS=$DEFAULT_MKJOBS
 fi
+echo "===> MKJOBS set to $MKJOBS"
 
 # License
 #
 #
 if [ "$NATRON_LICENSE" != "GPL" ] && [ "$NATRON_LICENSE" != "COMMERCIAL" ]; then
-    echo "Please select a License with NATRON_LICENSE=(GPL,COMMERCIAL)"
-    exit 1
+  echo "Please select a License with NATRON_LICENSE=(GPL,COMMERCIAL)"
+  exit 1
 fi
+echo "===> NATRON_LICENSE set to $NATRON_LICENSE"

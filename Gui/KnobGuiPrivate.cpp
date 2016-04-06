@@ -22,7 +22,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Gui/KnobGuiPrivate.h"
+#include "KnobGuiPrivate.h"
 
 #include <stdexcept>
 
@@ -41,6 +41,7 @@ KnobGuiPrivate::KnobGuiPrivate(DockablePanel* container)
 , field(NULL)
 , labelContainer(NULL)
 , descriptionLabel(NULL)
+, warningIndicator(NULL)
 , isOnNewLine(false)
 , customInteract(NULL)
 , guiCurves()

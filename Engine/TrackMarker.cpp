@@ -799,7 +799,7 @@ TrackMarker::getMarkerImage(int time, const RectI& roi) const
 }
 
 void
-TrackMarker::onKnobSlaved(KnobI* slave,KnobI* master,
+TrackMarker::onKnobSlaved(const KnobPtr& slave,const KnobPtr& master,
                   int dimension,
                   bool isSlave)
 {

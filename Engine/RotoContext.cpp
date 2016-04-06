@@ -2482,28 +2482,27 @@ convertNatronImageToCairoImage(unsigned char* cairoImg,
 }
 
 double
-RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
-                                const RectD& pointsBbox,
-                                const std::list<std::pair<Point,double> >& points,
-                                unsigned int mipmapLevel,
-                                double par,
-                                const ImageComponents& components,
-                                ImageBitDepthEnum depth,
-                                double distToNext,
-                                boost::shared_ptr<Image> *image)
+RotoStrokeItem::renderSingleStroke(const RectD& pointsBbox,
+                                     const std::list<std::pair<Point,double> >& points,
+                                     unsigned int mipmapLevel,
+                                     double par,
+                                     const ImageComponents& components,
+                                     ImageBitDepthEnum depth,
+                                     double distToNext,
+                                     boost::shared_ptr<Image> *image)
 {
     
-    double time = getTimelineCurrentTime();
+    double time = getContext()->getTimelineCurrentTime();
 
     double shapeColor[3];
-    stroke->getColor(time, shapeColor);
+    getColor(time, shapeColor);
     
     boost::shared_ptr<Image> source = *image;
     RectI pixelPointsBbox;
     pointsBbox.toPixelEnclosing(mipmapLevel, par, &pixelPointsBbox);
     
     
-    NodePtr node = getNode();
+    NodePtr node = getContext()->getNode();
     ImageFieldingOrderEnum fielding = node->getEffectInstance()->getFieldingOrder();
     ImagePremultiplicationEnum premult = node->getEffectInstance()->getPremult();
     
@@ -2584,7 +2583,7 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
         copyFromImage = true;
     }
 
-    bool doBuildUp = stroke->getBuildupKnob()->getValueAtTime(time);
+    bool doBuildUp = getBuildupKnob()->getValueAtTime(time);
 
     
     cairo_format_t cairoImgFormat;
@@ -2603,7 +2602,7 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
     ////Allocate the cairo temporary buffer
     CairoImageWrapper imgWrapper;
 
-    double opacity = stroke->getOpacity(time);
+    double opacity = getOpacity(time);
 
     std::vector<unsigned char> buf;
     if (copyFromImage) {
@@ -2650,7 +2649,10 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
     }
     strokes.push_back(toScalePoints);
     
-    std::vector<cairo_pattern_t*> dotPatterns = stroke->getPatternCache();
+    QMutexLocker k(&_imp->strokeDotPatternsMutex);
+
+    
+    std::vector<cairo_pattern_t*> dotPatterns = getPatternCache();
     if (mipMapLevelChanged) {
         for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
             if (dotPatterns[i]) {
@@ -2667,9 +2669,9 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
         }
     }
 
-    distToNext = _imp->renderStroke(imgWrapper.ctx, dotPatterns, strokes, distToNext, stroke, doBuildUp, opacity, time, mipmapLevel);
+    distToNext = RotoContextPrivate::renderStroke(imgWrapper.ctx, dotPatterns, strokes, distToNext, this, doBuildUp, opacity, time, mipmapLevel);
     
-    stroke->updatePatternCache(dotPatterns);
+    updatePatternCache(dotPatterns);
     
     assert(cairo_surface_status(imgWrapper.cairoImg) == CAIRO_STATUS_SUCCESS);
     
@@ -2686,15 +2688,14 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
 
 
 boost::shared_ptr<Image>
-RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& stroke,
-                                  const ImageComponents& components,
-                                  const double time,
-                                  const ViewIdx view,
-                                  const ImageBitDepthEnum depth,
-                                  const unsigned int mipmapLevel,
-                                  const RectD& rotoNodeSrcRod)
+RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
+                                       const double time,
+                                       const ViewIdx view,
+                                       const ImageBitDepthEnum depth,
+                                       const unsigned int mipmapLevel,
+                                       const RectD& rotoNodeSrcRod)
 {
-    NodePtr node = getNode();
+    NodePtr node = getContext()->getNode();
     
     
     
@@ -2705,7 +2706,7 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
     U64 rotoHash;
     {
         Hash64 hash;
-        U64 mergeNodeHash = stroke->getMergeNode()->getEffectInstance()->getRenderHash();
+        U64 mergeNodeHash = getMergeNode()->getEffectInstance()->getRenderHash();
         hash.append(mergeNodeHash);
         hash.computeHash();
         rotoHash = hash.value();
@@ -2713,7 +2714,7 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
     }
     
     boost::scoped_ptr<ImageKey> key;
-    key.reset(new ImageKey(stroke.get(), rotoHash, /*frameVaryingOrAnimated=*/true, time, view, /*pixelAspect=*/1., /*draftMode=*/false, /*fullScaleWithDownscaleInputs=*/false));
+    key.reset(new ImageKey(this, rotoHash, /*frameVaryingOrAnimated=*/true, time, view, /*pixelAspect=*/1., /*draftMode=*/false, /*fullScaleWithDownscaleInputs=*/false));
 
     {
         QMutexLocker k(&_imp->cacheAccessMutex);
@@ -2724,8 +2725,8 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
     }
     
     
-    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(stroke.get());
-    Bezier* isBezier = dynamic_cast<Bezier*>(stroke.get());
+    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
+    Bezier* isBezier = dynamic_cast<Bezier*>(this);
     
     double startTime = time, mbFrameStep = 1., endTime = time;
 #ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
@@ -2814,7 +2815,8 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
     image->allocateMemory();
     
 
-    image = renderMaskInternal(stroke, pixelRod, components, startTime, endTime, mbFrameStep, time, inverted, depth, mipmapLevel, strokes, image);
+
+    image = renderMaskInternal(pixelRod, components, startTime, endTime, mbFrameStep, time, inverted, depth, mipmapLevel, strokes, image);
     
     return image;
 }
@@ -2823,8 +2825,7 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
 
 
 boost::shared_ptr<Image>
-RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& stroke,
-                                const RectI & roi,
+RotoDrawableItem::renderMaskInternal(const RectI & roi,
                                 const ImageComponents& components,
                                 const double startTime,
                                 const double endTime,
@@ -2839,10 +2840,10 @@ RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& strok
     Q_UNUSED(startTime);
     Q_UNUSED(endTime);
     Q_UNUSED(timeStep);
-    NodePtr node = getNode();
+    NodePtr node = getContext()->getNode();
     
-    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(stroke.get());
-    Bezier* isBezier = dynamic_cast<Bezier*>(stroke.get());
+    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
+    Bezier* isBezier = dynamic_cast<Bezier*>(this);
     cairo_format_t cairoImgFormat;
     
     int srcNComps;
@@ -2852,7 +2853,7 @@ RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& strok
         //Motion-blur is not supported for strokes
         assert(startTime == endTime);
         
-        doBuildUp = stroke->getBuildupKnob()->getValueAtTime(time);
+        doBuildUp = getBuildupKnob()->getValueAtTime(time);
         //For the non build-up case, we use the LIGHTEN compositing operator, which only works on colors
         if (!doBuildUp || components.getNumComponents() > 1) {
             cairoImgFormat = CAIRO_FORMAT_ARGB32;
@@ -2869,9 +2870,9 @@ RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& strok
     
 
     double shapeColor[3];
-    stroke->getColor(time, shapeColor);
+    getColor(time, shapeColor);
     
-    double opacity = stroke->getOpacity(time);
+    double opacity = getOpacity(time);
 
     ////Allocate the cairo temporary buffer
     CairoImageWrapper imgWrapper;
@@ -2900,7 +2901,7 @@ RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& strok
         for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
             dotPatterns[i] = (cairo_pattern_t*)0;
         }
-        _imp->renderStroke(imgWrapper.ctx, dotPatterns, strokes, 0, stroke, doBuildUp, opacity, time, mipmapLevel);
+        RotoContextPrivate::renderStroke(imgWrapper.ctx, dotPatterns, strokes, 0, this, doBuildUp, opacity, time, mipmapLevel);
         
         for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
             if (dotPatterns[i]) {
@@ -2911,7 +2912,7 @@ RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& strok
         
         
     } else {
-        _imp->renderBezier(imgWrapper.ctx, isBezier, opacity, time, mipmapLevel);
+        RotoContextPrivate::renderBezier(imgWrapper.ctx, isBezier, opacity, time, mipmapLevel);
     }
     
     bool useOpacityToConvert = (isBezier != 0);
@@ -3052,7 +3053,7 @@ RotoContextPrivate::renderStroke(cairo_t* cr,
                                  std::vector<cairo_pattern_t*>& dotPatterns,
                                  const std::list<std::list<std::pair<Point,double> > >& strokes,
                                  double distToNext,
-                                 const boost::shared_ptr<RotoDrawableItem>&  stroke,
+                                 const RotoDrawableItem* stroke,
                                  bool doBuildup,
                                  double alpha,
                                  double time,
@@ -3260,7 +3261,7 @@ RotoContextPrivate::renderBezier(cairo_t* cr,const Bezier* bezier, double opacit
     renderInternalShape(time, mipmapLevel, shapeColor, opacity, transform, cr, mesh, cps);
     
     
-    applyAndDestroyMask(cr, mesh);
+    RotoContextPrivate::applyAndDestroyMask(cr, mesh);
 
 }
 

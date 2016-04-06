@@ -491,12 +491,12 @@ public:
      * @brief Evaluates the curve at the given dimension and at the given time. This returns the value of the curve directly.
      * If the knob is holding a string, it will return the index.
      **/
-    virtual double getRawCurveValueAt(double time, ViewSpec view, int dimension) const = 0;
+    virtual double getRawCurveValueAt(double time, ViewSpec view, int dimension)  = 0;
     
     /**
      * @brief Same as getRawCurveValueAt, but first check if an expression is present. The expression should return a PoD.
      **/
-    virtual double getValueAtWithExpression(double time, ViewSpec view, int dimension) const = 0;
+    virtual double getValueAtWithExpression(double time, ViewSpec view, int dimension) = 0;
     
 protected:
 
@@ -579,15 +579,23 @@ public:
      * just store it. This flag is used for serialisation, you should always pass false
      **/
 protected:
-    virtual void setExpressionInternal(int dimension,const std::string& expression,bool hasRetVariable,bool clearResults) = 0;
+    virtual void setExpressionInternal(int dimension,const std::string& expression,bool hasRetVariable,bool clearResults, bool failIfInvalid) = 0;
 public:
     
     void restoreExpression(int dimension,const std::string& expression,bool hasRetVariable) {
-        setExpressionInternal(dimension, expression, hasRetVariable, false);
+        setExpressionInternal(dimension, expression, hasRetVariable, false, false);
     }
-    void setExpression(int dimension,const std::string& expression,bool hasRetVariable) {
-        setExpressionInternal(dimension, expression, hasRetVariable, true);
+    void setExpression(int dimension,const std::string& expression,bool hasRetVariable, bool failIfInvalid) {
+        setExpressionInternal(dimension, expression, hasRetVariable, true, failIfInvalid);
     }
+    
+    /**
+     * @brief Tries to re-apply invalid expressions, returns true if they are all valid
+     **/
+    virtual bool checkInvalidExpressions() = 0;
+    virtual bool isExpressionValid(int dimension, std::string* error) const = 0;
+    virtual void setExpressionInvalid(int dimension, bool valid, const std::string& error) = 0;
+
     
     /**
      * @brief For each dimension, try to find in the expression, if set, the node name "oldName" and replace
@@ -630,7 +638,7 @@ public:
      * @brief Returns in dependencies a list of all the knobs used in the expression at the given dimension
      * @returns True on sucess, false if no expression is set.
      **/
-    virtual bool getExpressionDependencies(int dimension, std::list<std::pair<KnobI*,int> >& dependencies) const = 0;
+    virtual bool getExpressionDependencies(int dimension, std::list<std::pair<KnobWPtr,int> >& dependencies) const = 0;
 
 
     /**
@@ -650,12 +658,12 @@ public:
     /**
      * @brief Compute the derivative at time as a double
      **/
-    virtual double getDerivativeAtTime(double time, ViewSpec view, int dimension = 0) const = 0;
+    virtual double getDerivativeAtTime(double time, ViewSpec view, int dimension = 0)  = 0;
 
     /**
      * @brief Compute the integral of dimension from time1 to time2 as a double
      **/
-    virtual double getIntegrateFromTimeToTime(double time1, double time2, ViewSpec view, int dimension = 0) const = 0;
+    virtual double getIntegrateFromTimeToTime(double time1, double time2, ViewSpec view, int dimension = 0)  = 0;
 
     /**
      * @brief Places in time the keyframe time at the given index.
@@ -1014,7 +1022,11 @@ protected:
      **/
     virtual void unSlave(int dimension,ValueChangedReasonEnum reason,bool copyState) = 0;
 
+    
 public:
+    
+    virtual void onKnobAboutToAlias(const KnobPtr& /*slave*/) {}
+
 
     /**
      * @brief Calls slaveTo with a value changed reason of eValueChangedReasonNatronInternalEdited.
@@ -1071,12 +1083,6 @@ public:
      * @brief Returns true if the value at the given dimension is slave to another parameter
      **/
     virtual bool isSlave(int dimension) const = 0;
-
-    /**
-     * @brief Same as getMaster but for all dimensions.
-     **/
-    virtual std::vector<std::pair<int,KnobPtr > > getMasters_mt_safe() const = 0;
-
 
     /**
      * @brief Get the current animation level.
@@ -1267,7 +1273,16 @@ public:
     virtual boost::shared_ptr<Curve> getCurve(ViewSpec view, int dimension,bool byPassMaster = false) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isAnimated(int dimension, ViewSpec view = ViewSpec::current()) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasAnimation() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setExpressionInternal(int dimension,const std::string& expression,bool hasRetVariable,bool clearResults) OVERRIDE FINAL;
+    virtual bool checkInvalidExpressions() OVERRIDE FINAL;
+    virtual bool isExpressionValid(int dimension, std::string* error) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setExpressionInvalid(int dimension, bool valid, const std::string& error) OVERRIDE FINAL;
+
+protected:
+    
+    
+public:
+    
+    virtual void setExpressionInternal(int dimension,const std::string& expression,bool hasRetVariable,bool clearResults, bool failIfInvalid) OVERRIDE FINAL;
     virtual void replaceNodeNameInExpression(int dimension,
                                             const std::string& oldName,
                                             const std::string& newName) OVERRIDE FINAL;
@@ -1285,7 +1300,7 @@ protected:
 public:
     
     virtual bool isExpressionUsingRetVariable(int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getExpressionDependencies(int dimension, std::list<std::pair<KnobI*,int> >& dependencies) const OVERRIDE FINAL;
+    virtual bool getExpressionDependencies(int dimension, std::list<std::pair<KnobWPtr,int> >& dependencies) const OVERRIDE FINAL;
     virtual std::string getExpression(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual const std::vector< boost::shared_ptr<Curve>  > & getCurves() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAnimationEnabled(bool val) OVERRIDE FINAL;
@@ -1388,13 +1403,12 @@ protected:
     void resetMaster(int dimension);
     
     ///The return value must be Py_DECRREF
-    PyObject* executeExpression(double time, ViewIdx view, int dimension) const;
+    bool executeExpression(double time, ViewIdx view, int dimension, PyObject** ret, std::string* error) const;
 
 public:
 
     virtual std::pair<int,KnobPtr > getMaster(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isSlave(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::vector<std::pair<int,KnobPtr > > getMasters_mt_safe() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual AnimationLevelEnum getAnimationLevel(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isTypeCompatible(const KnobPtr & other) const OVERRIDE WARN_UNUSED_RETURN = 0;
 
@@ -1555,6 +1569,10 @@ public:
     
 protected:
     
+    virtual bool computeValuesHaveModifications(int dimension,
+                                                const T& value,
+                                                const T& defaultValue) const;
+    
     virtual bool hasModificationsVirtual(int /*dimension*/) const { return false; }
     
 public:
@@ -1563,7 +1581,7 @@ public:
      * @brief Get the current value of the knob for the given dimension.
      * If it is animated, it will return the value at the current time.
      **/
-    T getValue(int dimension = 0, ViewSpec view = ViewSpec::current(), bool clampToMinMax = true) const WARN_UNUSED_RETURN;
+    T getValue(int dimension = 0, ViewSpec view = ViewSpec::current(), bool clampToMinMax = true) WARN_UNUSED_RETURN;
     
 
     /**
@@ -1573,10 +1591,10 @@ public:
      * This function is overloaded by the KnobString which can have its custom interpolation
      * but this should be the only knob which should ever need to overload it.
      **/
-    T getValueAtTime(double time, int dimension = 0, ViewSpec view = ViewSpec::current(), bool clampToMinMax = true,bool byPassMaster = false) const WARN_UNUSED_RETURN;
+    T getValueAtTime(double time, int dimension = 0, ViewSpec view = ViewSpec::current(), bool clampToMinMax = true,bool byPassMaster = false)  WARN_UNUSED_RETURN;
     
-    virtual double getRawCurveValueAt(double time, ViewSpec view,  int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual double getValueAtWithExpression(double time, ViewSpec view, int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual double getRawCurveValueAt(double time, ViewSpec view,  int dimension)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual double getValueAtWithExpression(double time, ViewSpec view, int dimension)  OVERRIDE FINAL WARN_UNUSED_RETURN;
     
 private:
 
@@ -1766,9 +1784,9 @@ public:
     virtual void onTimeChanged(bool isPlayback, double time) OVERRIDE FINAL;
 
     ///Cannot be overloaded by KnobHelper as it requires the value member
-    virtual double getDerivativeAtTime(double time, ViewSpec view, int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual double getIntegrateFromTimeToTime(double time1, double time2, ViewSpec view, int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    double getIntegrateFromTimeToTimeSimpson(double time1, double time2, ViewSpec view, int dimension = 0) const;
+    virtual double getDerivativeAtTime(double time, ViewSpec view, int dimension = 0)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual double getIntegrateFromTimeToTime(double time1, double time2, ViewSpec view, int dimension = 0)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    double getIntegrateFromTimeToTimeSimpson(double time1, double time2, ViewSpec view, int dimension = 0) ;
 
     ///Cannot be overloaded by KnobHelper as it requires setValue
     virtual void resetToDefaultValue(int dimension) OVERRIDE FINAL;
@@ -1807,10 +1825,10 @@ public:
         map = _exprRes[dim];
     }
     
-    T getValueFromMasterAt(double time, ViewSpec view, int dimension, KnobI* master) const;
-    T getValueFromMaster(ViewSpec view, int dimension, KnobI* master, bool clamp) const;
+    T getValueFromMasterAt(double time, ViewSpec view, int dimension, KnobI* master) ;
+    T getValueFromMaster(ViewSpec view, int dimension, KnobI* master, bool clamp) ;
     
-    bool getValueFromCurve(double time, ViewSpec view, int dimension, bool useGuiCurve, bool byPassMaster, bool clamp, T* ret) const;
+    bool getValueFromCurve(double time, ViewSpec view, int dimension, bool useGuiCurve, bool byPassMaster, bool clamp, T* ret) ;
     
 protected:
     
@@ -1851,17 +1869,17 @@ private:
 
 private:
     
-    T evaluateExpression(double time, ViewIdx view, int dimension) const;
+    bool evaluateExpression(double time, ViewIdx view, int dimension, T* ret, std::string* error);
     
     /*
      * @brief Same as evaluateExpression but expects it to return a PoD
      */
-    double evaluateExpression_pod(double time, ViewIdx view, int dimension) const;
+    bool evaluateExpression_pod(double time, ViewIdx view, int dimension, double* value, std::string* error);
 
     
-    bool getValueFromExpression(double time, ViewIdx view, int dimension,bool clamp,T* ret) const;
+    bool getValueFromExpression(double time, ViewIdx view, int dimension,bool clamp,T* ret);
     
-    bool getValueFromExpression_pod(double time, ViewIdx view, int dimension,bool clamp,double* ret) const;
+    bool getValueFromExpression_pod(double time, ViewIdx view, int dimension,bool clamp,double* ret);
 
     //////////////////////////////////////////////////////////////////////
     /////////////////////////////////// End implementation of KnobI
@@ -1952,7 +1970,7 @@ public:
 
     void stringFromInterpolatedValue(double interpolated, ViewSpec view, std::string* returnValue) const;
 
-    std::string getStringAtTime(double time, ViewSpec view, int dimension) const;
+    std::string getStringAtTime(double time, ViewSpec view, int dimension) ;
 
 protected:
 
@@ -2390,7 +2408,7 @@ public:
     /**
      * @brief Same as onAllKnobsSlaved but called when only 1 knob is slaved
      **/
-    virtual void onKnobSlaved(KnobI* /*slave*/,KnobI* /*master*/,
+    virtual void onKnobSlaved(const KnobPtr& /*slave*/,const KnobPtr& /*master*/,
                               int /*dimension*/,
                               bool /*isSlave*/)
     {

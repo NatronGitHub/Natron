@@ -52,12 +52,12 @@ Group::~Group()
 }
 
 Effect*
-Group::getNode(const std::string& fullySpecifiedName) const
+Group::getNode(const QString& fullySpecifiedName) const
 {
     if (!_collection.lock()) {
         return 0;
     }
-    NodePtr node = _collection.lock()->getNodeByFullySpecifiedName(fullySpecifiedName);
+    NodePtr node = _collection.lock()->getNodeByFullySpecifiedName(fullySpecifiedName.toStdString());
     if (node && node->isActivated()) {
         return new Effect(node);
     } else {

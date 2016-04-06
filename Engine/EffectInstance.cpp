@@ -33,18 +33,20 @@
 #include <cassert>
 #include <stdexcept>
 
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
+#include <boost/bind.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/scoped_ptr.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
 
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QtConcurrentRun>
-#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
-#include <boost/bind.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
+
 #include <SequenceParsing.h>
 
 #include "Global/MemoryInfo.h"
@@ -102,7 +104,7 @@ EffectInstance::EffectInstance(NodePtr node)
 
 EffectInstance::~EffectInstance()
 {
-    clearPluginMemoryChunks();
+    
 }
 
 
@@ -411,7 +413,9 @@ EffectInstance::aborted() const
         const boost::shared_ptr<ParallelRenderArgs> & args = tls->frameArgs.back();
         isRenderUserInteraction = args->isRenderResponseToUserInteraction;
         abortInfo = args->abortInfo;
-        treeRoot = args->treeRoot->getEffectInstance();
+        if (args->treeRoot) {
+            treeRoot = args->treeRoot->getEffectInstance();
+        }
         
 #ifdef QT_CUSTOM_THREADPOOL
         if (isAbortableThread) {
@@ -909,8 +913,9 @@ EffectInstance::getImage(int inputNb,
                     
                 }
                 
-                inputImg = roto->renderMaskFromStroke(attachedStroke, components,
+                inputImg = attachedStroke->renderMaskFromStroke(components,
                                                       time, view, depth, mipMapLevel, rotoSrcRod);
+
                 if ( roto->isDoingNeatRender() ) {
                     getApp()->updateStrokeImage(inputImg, 0, false);
                 }
@@ -981,21 +986,7 @@ EffectInstance::getImage(int inputNb,
      * instantaneous thanks to the image cache.
      */
 
-#ifdef DEBUG
-    ///Check that the rendered image contains what we requested.
-    if ((!isMask && inputImg->getComponents() != components) || (isMask && inputImg->getComponents() != maskComps)) {
-        ImageComponents cc;
-        if (isMask) {
-            cc = maskComps;
-        } else {
-            cc = components;
-        }
-        qDebug() << "WARNING:"<< getNode()->getScriptName_mt_safe().c_str() << "requested" << cc.getComponentsGlobalName().c_str() << "but" << inputEffect->getScriptName_mt_safe().c_str() << "returned an image with"
-        << inputImg->getComponents().getComponentsGlobalName().c_str();
-        qDebug() << inputEffect->getScriptName_mt_safe().c_str() << "output clip preference is" << inputEffect->getComponents(-1).getComponentsGlobalName().c_str();
-    }
 
-#endif
     
     if (roiPixel) {
         *roiPixel = pixelRoI;
@@ -1043,6 +1034,22 @@ EffectInstance::getImage(int inputNb,
     if (mapToClipPrefs) {
         inputImg = convertPlanesFormatsIfNeeded(getApp(), inputImg, pixelRoI, clipPrefComps, depth, getNode()->usesAlpha0ToConvertFromRGBToRGBA(), outputPremult, channelForMask);
     }
+    
+#ifdef DEBUG
+    ///Check that the rendered image contains what we requested.
+    if (!mapToClipPrefs && ((!isMask && inputImg->getComponents() != components) || (isMask && inputImg->getComponents() != maskComps))) {
+        ImageComponents cc;
+        if (isMask) {
+            cc = maskComps;
+        } else {
+            cc = components;
+        }
+        qDebug() << "WARNING:"<< getNode()->getScriptName_mt_safe().c_str() << "requested" << cc.getComponentsGlobalName().c_str() << "but" << inputEffect->getScriptName_mt_safe().c_str() << "returned an image with"
+        << inputImg->getComponents().getComponentsGlobalName().c_str();
+        qDebug() << inputEffect->getScriptName_mt_safe().c_str() << "output clip preference is" << inputEffect->getComponents(-1).getComponentsGlobalName().c_str();
+    }
+    
+#endif
     
     if (inputImagesThreadLocal.empty()) {
         ///If the effect is analysis (e.g: Tracker) there's no input images in the tread local storage, hence add it
@@ -2489,7 +2496,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                                                it->second.tmpImage->getPremultiplication(),
                                                it->second.tmpImage->getFieldingOrder(),
                                                false));
-                        it->second.tmpImage->upscaleMipMap(downscaledRectToRender, originalInputImage->getMipMapLevel(), 0, tmp.get());
+                        originalInputImage->upscaleMipMap(downscaledRectToRender, originalInputImage->getMipMapLevel(), 0, tmp.get());
                         mappedOriginalInputImage = tmp;
                     }
                 }
@@ -2601,7 +2608,7 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImageComponen
     
     const EffectInstance::PlaneToRender & firstPlane = tls->currentRenderArgs.outputPlanes.begin()->second;
     bool useCache = firstPlane.fullscaleImage->usesBitMap() || firstPlane.downscaleImage->usesBitMap();
-    if (getNode()->getPluginID().find("uk.co.thefoundry.furnace") != std::string::npos) {
+    if (boost::starts_with(getNode()->getPluginID(), "uk.co.thefoundry.furnace")) {
         //Furnace plug-ins are bugged and do not render properly both planes, just wipe the image.
         useCache = false;
     }
@@ -2922,8 +2929,8 @@ EffectInstance::onAllKnobsSlaved(bool isSlave,
 }
 
 void
-EffectInstance::onKnobSlaved(KnobI* slave,
-                             KnobI* master,
+EffectInstance::onKnobSlaved(const KnobPtr& slave,
+                             const KnobPtr& master,
                              int dimension,
                              bool isSlave)
 {
@@ -3707,6 +3714,11 @@ EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
     if (!processAll) {
         std::list<ImageComponents> userComps;
         node->getUserCreatedComponents(&userComps);
+        
+        ///Add to the user comps the project components
+        std::vector<ImageComponents> projectLayers = getApp()->getProject()->getProjectDefaultLayers();
+        userComps.insert(userComps.end(), projectLayers.begin(), projectLayers.end());
+        
         ///Foreach user component, add it as an available component, but use this node only if it is also
         ///in the "needed components" list
         for (std::list<ImageComponents>::iterator it = userComps.begin(); it != userComps.end(); ++it) {
@@ -3875,7 +3887,7 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
     *passThroughView = view;
     int idx = getNode()->getPreferredInput();
     *passThroughInput = getNode()->getInput(idx);
-    
+    *processAllRequested = false;
     if (!useThisNodeComponentsNeeded) {
         return;
     }
@@ -3889,18 +3901,29 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
             ok = getNode()->getSelectedLayer(-1, processChannels, processAllRequested, &layer);
         }
 
+        std::vector<ImageComponents> clipPrefsAllComps;
         ImageComponents clipPrefsComps = getComponents(-1);
+        {
+            if (clipPrefsComps.isPairedComponents()) {
+                ImageComponents first,second;
+                clipPrefsComps.getPlanesPair(&first,&second);
+                clipPrefsAllComps.push_back(first);
+                clipPrefsAllComps.push_back(second);
+            } else {
+                clipPrefsAllComps.push_back(clipPrefsComps);
+            }
+        }
         
         if (ok && layer.getNumComponents() != 0 && !layer.isColorPlane()) {
             
             compVec.push_back(layer);
             
             if (!clipPrefsComps.isColorPlane()) {
-                compVec.push_back(clipPrefsComps);
+                compVec.insert(compVec.end() ,clipPrefsAllComps.begin(), clipPrefsAllComps.end());
             }
             
         } else {
-            compVec.push_back(clipPrefsComps);
+           compVec.insert(compVec.end() ,clipPrefsAllComps.begin(), clipPrefsAllComps.end());
         }
         
         comps->insert( std::make_pair(-1, compVec) );
@@ -3925,12 +3948,25 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
             NodePtr maskInput;
             int channelMask = getNode()->getMaskChannel(i, &maskComp, &maskInput);
             
+            std::vector<ImageComponents> clipPrefsAllComps;
+            {
+                ImageComponents clipPrefsComps = getComponents(i);
+                if (clipPrefsComps.isPairedComponents()) {
+                    ImageComponents first,second;
+                    clipPrefsComps.getPlanesPair(&first,&second);
+                    clipPrefsAllComps.push_back(first);
+                    clipPrefsAllComps.push_back(second);
+                } else {
+                    clipPrefsAllComps.push_back(clipPrefsComps);
+                }
+            }
+            
             if (ok && !isAll) {
                 if ( !layer.isColorPlane() ) {
                     compVec.push_back(layer);
                 } else {
                     //Use regular clip preferences
-                    compVec.push_back(getComponents(i));
+                    compVec.insert(compVec.end() ,clipPrefsAllComps.begin(), clipPrefsAllComps.end());
                 }
             } else if ( (channelMask != -1) && (maskComp.getNumComponents() > 0) ) {
                 std::vector<ImageComponents> compVec;
@@ -3938,7 +3974,7 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
                 comps->insert( std::make_pair(i, compVec) );
             } else {
                 //Use regular clip preferences
-                compVec.push_back(getComponents(i));
+                compVec.insert(compVec.end() ,clipPrefsAllComps.begin(), clipPrefsAllComps.end());
             }
             comps->insert( std::make_pair(i, compVec) );
         }
@@ -3949,7 +3985,8 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
 bool
 EffectInstance::getCreateChannelSelectorKnob() const
 {
-    return !isMultiPlanar() && !isReader() && !isWriter() && !isTrackerNodePlugin();
+    return (!isMultiPlanar() && !isReader() && !isWriter() && !isTrackerNodePlugin() &&
+            !boost::starts_with(getPluginID(), "uk.co.thefoundry.furnace"));
 }
 
 int
@@ -4595,8 +4632,8 @@ static ImageComponents getUnmappedComponentsForInput(EffectInstance* self,
         rawComps = firstNonOptionalConnectedInputComps;
     }
     if (rawComps) {
-        if (!rawComps.isColorPlane()) {
-            //this is not the color plane, don't remap
+        if (!rawComps) {
+            //None comps
             return rawComps;
         } else {
             rawComps = self->findClosestSupportedComponents(inputNb, rawComps); //turn that into a comp the plugin expects on that clip

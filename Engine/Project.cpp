@@ -32,6 +32,12 @@
 #include <cassert>
 #include <stdexcept>
 
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <boost/algorithm/string/predicate.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
+
 #include "Global/Macros.h"
 
 #ifdef __NATRON_WIN32__
@@ -544,7 +550,9 @@ Project::saveProjectInternal(const QString & path,
         }
     } // ofile
     
-    QFile::remove(filePath);
+    if (QFile::exists(filePath)) {
+        QFile::remove(filePath);
+    }
     int nAttemps = 0;
 
     while ( nAttemps < 10 && !fileCopy(tmpFilename, filePath) ) {
@@ -750,64 +758,16 @@ Project::initializeKnobs()
     _imp->addFormatKnob->setName("newFormat");
     page->addKnob(_imp->addFormatKnob);
 
-    boost::shared_ptr<KnobPage> viewsPage = AppManager::createKnob<KnobPage>(this, "Views");
-    
-    _imp->viewsList = AppManager::createKnob<KnobPath>(this, "Views List");
-    _imp->viewsList->setName("viewsList");
-    _imp->viewsList->setHintToolTip("The list of the views in the project");
-    _imp->viewsList->setAnimationEnabled(false);
-    _imp->viewsList->setEvaluateOnChange(false);
-    _imp->viewsList->setAsStringList(true);
-    std::list<std::pair<std::string,std::string> > defaultViews;
-    defaultViews.push_back(std::make_pair("Main",""));
-    std::string encodedDefaultViews = KnobPath::encodeToMultiPathFormat(defaultViews);
-    _imp->viewsList->setDefaultValue(encodedDefaultViews);
-    viewsPage->addKnob(_imp->viewsList);
-    
-    _imp->setupForStereoButton = AppManager::createKnob<KnobButton>(this, "Setup views for stereo");
-    _imp->setupForStereoButton->setName("setupForStereo");
-    _imp->setupForStereoButton->setHintToolTip("Quickly setup the views list for stereo");
-    _imp->setupForStereoButton->setEvaluateOnChange(false);
-    viewsPage->addKnob(_imp->setupForStereoButton);
-
     _imp->previewMode = AppManager::createKnob<KnobBool>(this, "Auto Previews");
     _imp->previewMode->setName("autoPreviews");
     _imp->previewMode->setHintToolTip("When checked, preview images on the node graph will be "
-                                      "refreshed automatically. You can uncheck this option to improve performances."
-                                      "Press P in the node graph to refresh the previews yourself.");
+                                      "refreshed automatically. You can uncheck this option to improve performances.");
     _imp->previewMode->setAnimationEnabled(false);
     _imp->previewMode->setEvaluateOnChange(false);
     page->addKnob(_imp->previewMode);
     bool autoPreviewEnabled = appPTR->getCurrentSettings()->isAutoPreviewOnForNewProjects();
     _imp->previewMode->setDefaultValue(autoPreviewEnabled,0);
 
-    std::vector<std::string> colorSpaces;
-    colorSpaces.push_back("sRGB");
-    colorSpaces.push_back("Linear");
-    colorSpaces.push_back("Rec.709");
-    _imp->colorSpace8u = AppManager::createKnob<KnobChoice>(this, "Colorspace for 8-Bit Integer Images");
-    _imp->colorSpace8u->setName("defaultColorSpace8u");
-    _imp->colorSpace8u->setHintToolTip("Defines the color-space in which 8-bit images are assumed to be by default.");
-    _imp->colorSpace8u->setAnimationEnabled(false);
-    _imp->colorSpace8u->populateChoices(colorSpaces);
-    _imp->colorSpace8u->setDefaultValue(0);
-    page->addKnob(_imp->colorSpace8u);
-    
-    _imp->colorSpace16u = AppManager::createKnob<KnobChoice>(this, "Colorspace for 16-Bit Integer Images");
-    _imp->colorSpace16u->setName("defaultColorSpace16u");
-    _imp->colorSpace16u->setHintToolTip("Defines the color-space in which 16-bit integer images are assumed to be by default.");
-    _imp->colorSpace16u->setAnimationEnabled(false);
-    _imp->colorSpace16u->populateChoices(colorSpaces);
-    _imp->colorSpace16u->setDefaultValue(2);
-    page->addKnob(_imp->colorSpace16u);
-    
-    _imp->colorSpace32f = AppManager::createKnob<KnobChoice>(this, "Colorspace for 32-Bit Floating Point Images");
-    _imp->colorSpace32f->setName("defaultColorSpace32f");
-    _imp->colorSpace32f->setHintToolTip("Defines the color-space in which 32-bit floating point images are assumed to be by default.");
-    _imp->colorSpace32f->setAnimationEnabled(false);
-    _imp->colorSpace32f->populateChoices(colorSpaces);
-    _imp->colorSpace32f->setDefaultValue(1);
-    page->addKnob(_imp->colorSpace32f);
     
     _imp->frameRange = AppManager::createKnob<KnobInt>(this, "Frame Range",2);
     _imp->frameRange->setDefaultValue(1,0);
@@ -842,6 +802,92 @@ Project::initializeKnobs()
     _imp->frameRate->setDisplayMinimum(0.);
     _imp->frameRate->setDisplayMaximum(50.);
     page->addKnob(_imp->frameRate);
+    
+    
+    boost::shared_ptr<KnobPage> viewsPage = AppManager::createKnob<KnobPage>(this, "Views");
+    
+    _imp->viewsList = AppManager::createKnob<KnobPath>(this, "Views List");
+    _imp->viewsList->setName("viewsList");
+    _imp->viewsList->setHintToolTip("The list of the views in the project");
+    _imp->viewsList->setAnimationEnabled(false);
+    _imp->viewsList->setEvaluateOnChange(false);
+    _imp->viewsList->setAsStringList(true);
+    std::list<std::string> defaultViews;
+    defaultViews.push_back("Main");
+    std::string encodedDefaultViews = _imp->viewsList->encodeToKnobTableFormatSingleCol(defaultViews);
+    _imp->viewsList->setDefaultValue(encodedDefaultViews);
+    viewsPage->addKnob(_imp->viewsList);
+    
+    _imp->setupForStereoButton = AppManager::createKnob<KnobButton>(this, "Setup views for stereo");
+    _imp->setupForStereoButton->setName("setupForStereo");
+    _imp->setupForStereoButton->setHintToolTip("Quickly setup the views list for stereo");
+    _imp->setupForStereoButton->setEvaluateOnChange(false);
+    viewsPage->addKnob(_imp->setupForStereoButton);
+
+    
+    boost::shared_ptr<KnobPage> LayersPage = AppManager::createKnob<KnobPage>(this, "Layers");
+    
+    _imp->defaultLayersList = AppManager::createKnob<KnobLayers>(this, "Default Layers");
+    _imp->defaultLayersList->setName("defaultLayers");
+    _imp->defaultLayersList->setHintToolTip("The list of the default layers available in layers menus on nodes.");
+    _imp->defaultLayersList->setAnimationEnabled(false);
+    _imp->defaultLayersList->setEvaluateOnChange(false);
+    std::list<std::vector<std::string> > defaultLayers;
+    {
+        //Do not add the color plane, because it is handled in a separate case to make sure it is always the first choice
+        int i = 3;
+        while (ImageComponents::defaultComponents[i][0]) {
+            std::vector<std::string> row(2);
+            row[0] = ImageComponents::defaultComponents[i][1];
+            const ImageComponents& comps = ImageComponents::getDefaultComponent(ImageComponents::defaultComponents[i][0]);
+            std::string channelsStr;
+            const std::vector<std::string>& channels = comps.getComponentsNames();
+            for (std::size_t i = 0; i < channels.size(); ++i) {
+                channelsStr += channels[i];
+                if (i < (channels.size() - 1)) {
+                    channelsStr += ' ';
+                }
+            }
+            row[1] = channelsStr;
+            defaultLayers.push_back(row);
+            ++i;
+        }
+    }
+    std::string encodedDefaultLayers = _imp->defaultLayersList->encodeToKnobTableFormat(defaultLayers);
+    _imp->defaultLayersList->setDefaultValue(encodedDefaultLayers);
+    LayersPage->addKnob(_imp->defaultLayersList);
+
+    
+    
+    boost::shared_ptr<KnobPage> lutPages = AppManager::createKnob<KnobPage>(this, "LUT");
+    
+    std::vector<std::string> colorSpaces;
+    colorSpaces.push_back("sRGB");
+    colorSpaces.push_back("Linear");
+    colorSpaces.push_back("Rec.709");
+    _imp->colorSpace8u = AppManager::createKnob<KnobChoice>(this, "8-Bit Colorspace");
+    _imp->colorSpace8u->setName("defaultColorSpace8u");
+    _imp->colorSpace8u->setHintToolTip("Defines the color-space in which 8-bit images are assumed to be by default.");
+    _imp->colorSpace8u->setAnimationEnabled(false);
+    _imp->colorSpace8u->populateChoices(colorSpaces);
+    _imp->colorSpace8u->setDefaultValue(0);
+    lutPages->addKnob(_imp->colorSpace8u);
+    
+    _imp->colorSpace16u = AppManager::createKnob<KnobChoice>(this, "16-Bit Colorspace");
+    _imp->colorSpace16u->setName("defaultColorSpace16u");
+    _imp->colorSpace16u->setHintToolTip("Defines the color-space in which 16-bit integer images are assumed to be by default.");
+    _imp->colorSpace16u->setAnimationEnabled(false);
+    _imp->colorSpace16u->populateChoices(colorSpaces);
+    _imp->colorSpace16u->setDefaultValue(2);
+    lutPages->addKnob(_imp->colorSpace16u);
+    
+    _imp->colorSpace32f = AppManager::createKnob<KnobChoice>(this, "32-Bit f.p Colorspace ");
+    _imp->colorSpace32f->setName("defaultColorSpace32f");
+    _imp->colorSpace32f->setHintToolTip("Defines the color-space in which 32-bit floating point images are assumed to be by default.");
+    _imp->colorSpace32f->setAnimationEnabled(false);
+    _imp->colorSpace32f->populateChoices(colorSpaces);
+    _imp->colorSpace32f->setDefaultValue(1);
+    lutPages->addKnob(_imp->colorSpace32f);
     
     boost::shared_ptr<KnobPage> infoPage = AppManager::createKnob<KnobPage>(this, tr("Info").toStdString());
     
@@ -932,7 +978,7 @@ Project::initializeKnobs()
                                           "- app: points to the current application instance\n");
     _imp->onProjectLoadCB->setAnimationEnabled(false);
     std::string onProjectLoad = appPTR->getCurrentSettings()->getDefaultOnProjectLoadedCB();
-    _imp->onProjectLoadCB->setValue(onProjectLoad);
+    _imp->onProjectLoadCB->setDefaultValue(onProjectLoad);
     pythonPage->addKnob(_imp->onProjectLoadCB);
     
     
@@ -948,7 +994,7 @@ Project::initializeKnobs()
                                           "You should return the new filename under which the project should be saved.");
     _imp->onProjectSaveCB->setAnimationEnabled(false);
     std::string onProjectSave = appPTR->getCurrentSettings()->getDefaultOnProjectSaveCB();
-    _imp->onProjectSaveCB->setValue(onProjectSave);
+    _imp->onProjectSaveCB->setDefaultValue(onProjectSave);
     pythonPage->addKnob(_imp->onProjectSaveCB);
     
     _imp->onProjectCloseCB = AppManager::createKnob<KnobString>(this, "Before Project Close");
@@ -975,7 +1021,7 @@ Project::initializeKnobs()
                                         "- app: points to the current application instance\n");
     _imp->onNodeCreated->setAnimationEnabled(false);
     std::string onNodeCreated = appPTR->getCurrentSettings()->getDefaultOnNodeCreatedCB();
-    _imp->onNodeCreated->setValue(onNodeCreated);
+    _imp->onNodeCreated->setDefaultValue(onNodeCreated);
     pythonPage->addKnob(_imp->onNodeCreated);
     
     _imp->onNodeDeleted = AppManager::createKnob<KnobString>(this, "Before Node Removal");
@@ -987,7 +1033,7 @@ Project::initializeKnobs()
                                         "- app: points to the current application instance\n");
     _imp->onNodeDeleted->setAnimationEnabled(false);
     std::string onNodeDelete = appPTR->getCurrentSettings()->getDefaultOnNodeDeleteCB();
-    _imp->onNodeDeleted->setValue(onNodeDelete);
+    _imp->onNodeDeleted->setDefaultValue(onNodeDelete);
     pythonPage->addKnob(_imp->onNodeDeleted);
     
 
@@ -1006,8 +1052,12 @@ Project::getProjectDefaultFormat(Format *f) const
 {
     assert(f);
     QMutexLocker l(&_imp->formatMutex);
-    int index = _imp->formatKnob->getValue();
-    _imp->findFormat(index, f);
+    std::string formatSpec = _imp->formatKnob->getActiveEntryText_mt_safe();
+    if (!formatSpec.empty()) {
+        ProjectPrivate::generateFormatFromString(QString::fromUtf8(formatSpec.c_str()), f);
+    } else {
+        _imp->findFormat(_imp->formatKnob->getValue(), f);
+    }
 }
 
 bool
@@ -1056,9 +1106,8 @@ Project::tryAddProjectFormat(const Format & f)
         entries.push_back( formatStr.toStdString() );
     }
     QString formatStr = ProjectPrivate::generateStringFromFormat(f);
-    entries.push_back( formatStr.toStdString() );
     _imp->additionalFormats.push_back(f);
-    _imp->formatKnob->populateChoices(entries);
+    _imp->formatKnob->appendChoice(formatStr.toStdString());
 
     return ( _imp->builtinFormats.size() + _imp->additionalFormats.size() ) - 1;
 }
@@ -1083,9 +1132,82 @@ Project::getProjectFormatEntries(std::vector<std::string>* formatStrings, int* c
 int
 Project::getProjectViewsCount() const
 {
-    std::list<std::pair<std::string,std::string> > pairs;
-    _imp->viewsList->getVariables(&pairs);
+    std::list<std::vector<std::string> > pairs;
+    _imp->viewsList->getTable(&pairs);
     return (int)pairs.size();
+}
+
+std::vector<ImageComponents>
+Project::getProjectDefaultLayers() const
+{
+    std::vector<ImageComponents> ret;
+    
+    std::list<std::vector<std::string> > pairs;
+    _imp->defaultLayersList->getTable(&pairs);
+    for (std::list<std::vector<std::string> >::iterator it = pairs.begin();
+         it != pairs.end(); ++it) {
+        
+        bool found = false;
+        for (std::size_t i = 0; i < ret.size(); ++i) {
+            if (ret[i].getLayerName() == (*it)[0]) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            std::vector<std::string> componentsName;
+            QString str = QString::fromUtf8((*it)[1].c_str());
+            QStringList channels = str.split(QLatin1Char(' '));
+            componentsName.resize(channels.size());
+            for (int i = 0; i < channels.size(); ++i) {
+                componentsName[i] = channels[i].toStdString();
+            }
+            ImageComponents c((*it)[0],std::string(),componentsName);
+            ret.push_back(c);
+        }
+    }
+    return ret;
+
+}
+
+void
+Project::addProjectDefaultLayer(const ImageComponents& comps)
+{
+    const std::vector<std::string>& channels = comps.getComponentsNames();
+    std::vector<std::string> row(2);
+    row[0] = comps.getLayerName();
+    std::string channelsStr;
+    for (std::size_t i = 0; i < channels.size(); ++i) {
+        channelsStr += channels[i];
+        if (i < (channels.size() -1)) {
+            channelsStr += ' ';
+        }
+    }
+    row[1] = channelsStr;
+    _imp->defaultLayersList->appendRow(row);
+}
+
+std::vector<std::string>
+Project::getProjectDefaultLayerNames() const
+{
+    std::vector<std::string> ret;
+    
+    std::list<std::vector<std::string> > pairs;
+    _imp->defaultLayersList->getTable(&pairs);
+    for (std::list<std::vector<std::string> >::iterator it = pairs.begin();
+         it != pairs.end(); ++it) {
+        bool found = false;
+        for (std::size_t i = 0; i < ret.size(); ++i) {
+            if (ret[i] == (*it)[0]) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            ret.push_back((*it)[0]);
+        }
+    }
+    return ret;
 }
     
 const std::vector<std::string>&
@@ -1096,11 +1218,11 @@ Project::getProjectViewNames() const
     std::vector<std::string>& tls = _imp->tlsData->getOrCreateTLSData()->viewNames;
     tls.clear();
     
-    std::list<std::pair<std::string,std::string> > pairs;
-    _imp->viewsList->getVariables(&pairs);
-    for (std::list<std::pair<std::string,std::string> >::iterator it = pairs.begin();
+    std::list<std::vector<std::string> > pairs;
+    _imp->viewsList->getTable(&pairs);
+    for (std::list<std::vector<std::string> >::iterator it = pairs.begin();
          it != pairs.end(); ++it) {
-        tls.push_back(it->first);
+        tls.push_back((*it)[0]);
     }
     return tls;
 }
@@ -1108,14 +1230,16 @@ Project::getProjectViewNames() const
 void
 Project::setupProjectForStereo()
 {
-    std::list<std::pair<std::string,std::string> > pairs;
-    pairs.push_back(std::make_pair("Left",""));
-    pairs.push_back(std::make_pair("Right",""));
-    std::string encoded = KnobPath::encodeToMultiPathFormat(pairs);
+    
+    std::list<std::string> views;
+    views.push_back("Left");
+    views.push_back("Right");
+    std::string encoded = _imp->viewsList->encodeToKnobTableFormatSingleCol(views);
     _imp->viewsList->setValue(encoded);
 }
    
-
+#if 0 // dead code
+// replaced by boost::to_lower(str)
 static std::string toLowerString(const std::string& str)
 {
     std::string ret;
@@ -1126,23 +1250,25 @@ static std::string toLowerString(const std::string& str)
     return ret;
 }
     
+// replaced by boost::iequals(lhs, rhs)
 static bool caseInsensitiveCompare(const std::string& lhs, const std::string& rhs)
 {
     std::string lowerLhs = toLowerString(lhs);
     std::string lowerRhs = toLowerString(rhs);
     return lowerLhs == lowerRhs;
 }
+#endif
 
 void
 Project::createProjectViews(const std::vector<std::string>& views)
 {
-    std::list<std::pair<std::string,std::string> > pairs;
-    _imp->viewsList->getVariables(&pairs);
+    std::list<std::string> pairs;
+    _imp->viewsList->getTableSingleCol(&pairs);
     
     for (std::size_t i = 0; i < views.size(); ++i) {
         bool found = false;
-        for (std::list<std::pair<std::string,std::string> >::iterator it = pairs.begin(); it != pairs.end(); ++it) {
-            if (caseInsensitiveCompare(it->first,views[i])) {
+        for (std::list<std::string>::iterator it = pairs.begin(); it != pairs.end(); ++it) {
+            if (boost::iequals(*it,views[i])) {
                 found = true;
                 break;
             }
@@ -1152,9 +1278,9 @@ Project::createProjectViews(const std::vector<std::string>& views)
         }
         std::string view = views[i];
         view[0] = std::toupper(view[0]);
-        pairs.push_back(std::make_pair(view,std::string()));
+        pairs.push_back(view);
     }
-    std::string encoded = KnobPath::encodeToMultiPathFormat(pairs);
+    std::string encoded = _imp->viewsList->encodeToKnobTableFormatSingleCol(pairs);
     _imp->viewsList->setValue(encoded);
 
 }
@@ -1273,6 +1399,11 @@ Project::onKnobValueChanged(KnobI* knob,
             forceComputeInputDependentDataOnAllTrees();
         }
         Q_EMIT projectViewsChanged();
+    } else if  (knob == _imp->defaultLayersList.get()) {
+        if (reason == eValueChangedReasonUserEdited) {
+            ///default layers change, notify all nodes so they rebuild their layers menus
+            forceComputeInputDependentDataOnAllTrees();
+        }
     } else if (knob == _imp->setupForStereoButton.get()) {
         setupProjectForStereo();
     } else if ( knob == _imp->formatKnob.get() ) {
@@ -1764,63 +1895,17 @@ Project::unescapeXML(const std::string &istr)
     return str;
 }
 
-void
-    Project::makeEnvMapUnordered(const std::string& encoded,std::vector<std::pair<std::string,std::string> >& variables)
-{
-    std::string startNameTag(NATRON_ENV_VAR_NAME_START_TAG);
-    std::string endNameTag(NATRON_ENV_VAR_NAME_END_TAG);
-    std::string startValueTag(NATRON_ENV_VAR_VALUE_START_TAG);
-    std::string endValueTag(NATRON_ENV_VAR_VALUE_END_TAG);
-    
-    size_t i = encoded.find(startNameTag);
-    while (i != std::string::npos) {
-        i += startNameTag.size();
-        assert(i < encoded.size());
-        size_t endNamePos = encoded.find(endNameTag,i);
-        assert(endNamePos != std::string::npos && endNamePos < encoded.size());
-        if (endNamePos == std::string::npos || endNamePos >= encoded.size()) {
-            throw std::logic_error("Project::makeEnvMap()");
-        }
-        std::string name,value;
-        while (i < endNamePos) {
-            name.push_back(encoded[i]);
-            ++i;
-        }
-        
-        i = encoded.find(startValueTag,i);
-        i += startValueTag.size();
-        assert(i != std::string::npos && i < encoded.size());
-        
-        size_t endValuePos = encoded.find(endValueTag,i);
-        assert(endValuePos != std::string::npos && endValuePos < encoded.size());
-        
-        while (endValuePos != std::string::npos && endValuePos < encoded.size() && i < endValuePos) {
-            value.push_back(encoded.at(i));
-            ++i;
-        }
-        
-        // In order to use XML tags, the text inside the tags has to be unescaped.
-        variables.push_back(std::make_pair(unescapeXML(name), unescapeXML(value)));
-		
-        i = encoded.find(startNameTag,i);
-    }
-}
-    
-void
-Project::makeEnvMap(const std::string& encoded,std::map<std::string,std::string>& variables)
-{
-    std::vector<std::pair<std::string,std::string> > pairs;
-    makeEnvMapUnordered(encoded,pairs);
-    for (std::size_t i = 0; i < pairs.size(); ++i) {
-        variables[pairs[i].first] = pairs[i].second;
-    }
-}
+
 
 void
 Project::getEnvironmentVariables(std::map<std::string,std::string>& env) const
 {
-    std::string raw = _imp->envVars->getValue();
-    makeEnvMap(raw, env);
+    std::list<std::vector<std::string> > table;
+    _imp->envVars->getTable(&table);
+    for (std::list<std::vector<std::string> >::iterator it = table.begin(); it!=table.end(); ++it) {
+        assert(it->size() == 2);
+        env[(*it)[0]] = (*it)[1];
+    }
 }
     
 void
@@ -2017,30 +2102,30 @@ Project::onOCIOConfigPathChanged(const std::string& path,bool block)
     beginChanges();
     
     try {
-        std::string env = _imp->envVars->getValue();
-        std::map<std::string, std::string> envMap;
-        makeEnvMap(env, envMap);
+        
+        std::string oldEnv = _imp->envVars->getValue();
+        std::list<std::vector<std::string> > table;
+        _imp->envVars->decodeFromKnobTableFormat(oldEnv, &table);
 
         ///If there was already a OCIO variable, update it, otherwise create it
-
-        std::map<std::string, std::string>::iterator foundOCIO = envMap.find(NATRON_OCIO_ENV_VAR_NAME);
-        if (foundOCIO != envMap.end()) {
-            foundOCIO->second = path;
-        } else {
-            envMap.insert(std::make_pair(NATRON_OCIO_ENV_VAR_NAME, path));
+        bool found = false;
+        for (std::list<std::vector<std::string> >::iterator it = table.begin(); it!=table.end(); ++it) {
+            if ((*it)[0] == NATRON_OCIO_ENV_VAR_NAME) {
+                (*it)[1] = path;
+                found = true;
+                break;
+            }
         }
-
-        std::string newEnv;
-        for (std::map<std::string, std::string>::iterator it = envMap.begin(); it != envMap.end(); ++it) {
-            // In order to use XML tags, the text inside the tags has to be escaped.
-            newEnv += NATRON_ENV_VAR_NAME_START_TAG;
-            newEnv += Project::escapeXML(it->first);
-            newEnv += NATRON_ENV_VAR_NAME_END_TAG;
-            newEnv += NATRON_ENV_VAR_VALUE_START_TAG;
-            newEnv += Project::escapeXML(it->second);
-            newEnv += NATRON_ENV_VAR_VALUE_END_TAG;
+        if (!found) {
+            std::vector<std::string> vec(2);
+            vec[0] = NATRON_OCIO_ENV_VAR_NAME;
+            vec[1] = path;
+            table.push_back(vec);
         }
-        if (env != newEnv) {
+        
+        std::string newEnv = _imp->envVars->encodeToKnobTableFormat(table);
+
+        if (oldEnv != newEnv) {
             if (appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
                 fixRelativeFilePaths(NATRON_OCIO_ENV_VAR_NAME, path,block);
             }

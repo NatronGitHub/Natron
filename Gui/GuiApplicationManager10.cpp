@@ -305,7 +305,7 @@ GuiApplicationManager::initializeQApp(int &argc,
     // Q_INIT_RESOURCES expanded, and fixed for use from inside a namespace:
     // (requires using Q_INIT_RESOURCES_EXTERN(GuiResources) before entering the namespace)
     ::qInitResources_GuiResources();
-
+        
     ///Register all the shortcuts.
     populateShortcuts();
 }
@@ -1223,6 +1223,18 @@ GuiApplicationManager::reloadStylesheets()
         GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(it->second.app);
         if (guiApp) {
             guiApp->reloadStylesheet();
+        }
+    }
+}
+
+void
+GuiApplicationManager::reloadScriptEditorFonts()
+{
+    const std::map<int,AppInstanceRef>& instances = getAppInstances();
+    for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(it->second.app);
+        if (guiApp) {
+            guiApp->reloadScriptEditorFonts();
         }
     }
 }

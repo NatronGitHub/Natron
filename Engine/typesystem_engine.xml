@@ -37,8 +37,8 @@
     <primitive-type name="unsigned long"/>
     <primitive-type name="long long"/>
     <primitive-type name="unsigned long long"/>
-    <primitive-type name="std::string"/>
-    
+    <primitive-type name="std::string">
+    </primitive-type>
     <primitive-type name="std::size_t" target-lang-api-name="PyLong">
         <conversion-rule>
             <native-to-target>
@@ -313,7 +313,7 @@
             :doc:`App` which represents an instance of Natron, or more specifically an opened project.
             :doc:`Effect` which represents a node in the nodegraph.
         </inject-documentation>
-        <modify-function signature="getNode(std::string)const">
+        <modify-function signature="getNode(QString)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
@@ -336,7 +336,7 @@
     </object-type>
     
     <object-type name="App" copyable="false">
-        <modify-function signature="createNode(std::string,int,Group*)const">
+        <modify-function signature="createNode(QString,int,Group*)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
@@ -345,7 +345,7 @@
                 %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
             </inject-code>
         </modify-function>
-        <modify-function signature="createReader(std::string,Group*)const">
+        <modify-function signature="createReader(QString,Group*)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
@@ -354,7 +354,7 @@
                 %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
             </inject-code>
         </modify-function>
-        <modify-function signature="createWriter(std::string,Group*)const">
+        <modify-function signature="createWriter(QString,Group*)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
@@ -363,7 +363,7 @@
                 %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
             </inject-code>
         </modify-function>
-        <modify-function signature="getProjectParam(std::string)const">
+        <modify-function signature="getProjectParam(QString)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
@@ -427,7 +427,7 @@
                 %CPPSELF.%FUNCTION_NAME(effects,firstFrames,lastFrames, frameSteps);
             </inject-code>
         </modify-function>
-        <modify-function signature="loadProject(std::string)">
+        <modify-function signature="loadProject(QString)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
@@ -448,92 +448,92 @@
     </object-type>
     
     <object-type name="UserParamHolder" copyable="false">
-    	<modify-function signature="createIntParam(std::string,std::string)">
+    	<modify-function signature="createIntParam(QString,QString)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="createInt2DParam(std::string,std::string)">
+        <modify-function signature="createInt2DParam(QString,QString)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="createInt3DParam(std::string,std::string)">
+        <modify-function signature="createInt3DParam(QString,QString)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="createDoubleParam(std::string,std::string)">
+        <modify-function signature="createDoubleParam(QString,QString)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="createDouble2DParam(std::string,std::string)">
+        <modify-function signature="createDouble2DParam(QString,QString)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="createDouble3DParam(std::string,std::string)">
+        <modify-function signature="createDouble3DParam(QString,QString)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="createBooleanParam(std::string,std::string)">
+        <modify-function signature="createBooleanParam(QString,QString)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="createChoiceParam(std::string,std::string)">
+        <modify-function signature="createChoiceParam(QString,QString)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="createColorParam(std::string,std::string,bool)">
+        <modify-function signature="createColorParam(QString,QString,bool)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="createStringParam(std::string,std::string)">
+        <modify-function signature="createStringParam(QString,QString)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="createFileParam(std::string,std::string)">
+        <modify-function signature="createFileParam(QString,QString)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="createOutputFileParam(std::string,std::string)">
+        <modify-function signature="createOutputFileParam(QString,QString)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="createPathParam(std::string,std::string)">
+        <modify-function signature="createPathParam(QString,QString)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="createButtonParam(std::string,std::string)">
+        <modify-function signature="createButtonParam(QString,QString)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="createSeparatorParam(std::string,std::string)">
+        <modify-function signature="createSeparatorParam(QString,QString)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="createGroupParam(std::string,std::string)">
+        <modify-function signature="createGroupParam(QString,QString)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="createPageParam(std::string,std::string)">
+        <modify-function signature="createPageParam(QString,QString)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="createParametricParam(std::string,std::string,int)">
+        <modify-function signature="createParametricParam(QString,QString,int)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
@@ -560,7 +560,7 @@
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="getParam(std::string)const">
+        <modify-function signature="getParam(QString)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
@@ -584,12 +584,12 @@
                 %CPPSELF.%FUNCTION_NAME(%1);
             </inject-code>
         </modify-function>
-        <modify-function signature="setLabel(std::string)">
+        <modify-function signature="setLabel(QString)">
             <inject-code class="target" position="beginning">
                 %CPPSELF.%FUNCTION_NAME(%1);
             </inject-code>
         </modify-function>
-        <modify-function signature="setScriptName(std::string)">
+        <modify-function signature="setScriptName(QString)">
             <inject-code class="target" position="beginning">
                 %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1);
                 %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
@@ -660,9 +660,9 @@
             
         </modify-function>
         <!-- It doesn't seem that Shiboken allows to remove an overload:
-         signature 'getNode(std::string)const' for function modification in 'Effect' not found. Possible candidates: getNode(std::string)const in Group
+         signature 'getNode(QString)const' for function modification in 'Effect' not found. Possible candidates: getNode(QString)const in Group
          -->
-        <!--<modify-function signature="getNode(std::string)const" remove="all">
+        <!--<modify-function signature="getNode(QString)const" remove="all">
         </modify-function>-->
         
         <modify-function signature="getUserPageParam()const">
@@ -725,7 +725,7 @@
 
     
     <object-type name="AppSettings">
-        <modify-function signature="getParam(std::string)const">
+        <modify-function signature="getParam(QString)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
@@ -756,7 +756,7 @@
         </modify-function>
     </object-type>
     <object-type name="AnimatedParam">
-        <modify-function signature="setExpression(std::string,bool,int)">
+        <modify-function signature="setExpression(QString,bool,int)">
             <inject-code class="target" position="beginning">
                 %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1,%2,%3);
                 %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
@@ -1057,13 +1057,13 @@
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="setScriptName(std::string)">
+        <modify-function signature="setScriptName(QString)">
             <inject-code class="target" position="beginning">
                 %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1);
                 %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
             </inject-code>
         </modify-function>
-        <modify-function signature="setLabel(std::string)">
+        <modify-function signature="setLabel(QString)">
             <inject-code class="target" position="beginning">
                 %CPPSELF.%FUNCTION_NAME(%1);
             </inject-code>
@@ -1139,7 +1139,7 @@
         </modify-function>
     </object-type>
     <object-type name="Track">
-        <modify-function signature="getParam(std::string)const">
+        <modify-function signature="getParam(QString)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
@@ -1147,7 +1147,7 @@
     </object-type>
         
     <object-type name="Tracker">
-        <modify-function signature="getTrackByName(std::string)const">
+        <modify-function signature="getTrackByName(QString)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
@@ -1202,7 +1202,7 @@
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="getItemByName(std::string)const">
+        <modify-function signature="getItemByName(QString)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>

@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 NATRON_NAMESPACE_ENTER;
 
 extern const char* fragRGB;

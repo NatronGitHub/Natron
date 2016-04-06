@@ -22,30 +22,61 @@ fi
 EOF
 chmod +x $KILLSCRIPT
 
-#If "master" is passed, use master branch for all plug-ins otherwise use the git tags in common.sh
-IO_BRANCH=master
-MISC_BRANCH=master
-ARENA_BRANCH=master
-CV_BRANCH=master
-if [ "$1" != "master" ]; then
-    IO_BRANCH=$IOPLUG_GIT_TAG
-    MISC_BRANCH=$MISCPLUG_GIT_TAG
-    ARENA_BRANCH=$ARENAPLUG_GIT_TAG
-    CV_BRANCH=$CVPLUG_GIT_TAG
+# Always use BUILD_CONFIG
+if [ -z "$BUILD_CONFIG" ]; then
+  echo "Please define BUILD_CONFIG"
+  exit 1
+fi
+
+# Set to MASTER_BRANCH as default
+IO_BRANCH=$MASTER_BRANCH
+MISC_BRANCH=$MASTER_BRANCH
+ARENA_BRANCH=$MASTER_BRANCH
+CV_BRANCH=$MASTER_BRANCH
+
+if [ -z "$GIT_BRANCH"  ]; then
+  NATRON_BRANCH=$MASTER_BRANCH
+  if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
+    COMMITS_HASH=$CWD/commits-hash-$NATRON_BRANCH.sh
+  else
+    COMMITS_HASH=$CWD/commits-hash.sh  
+  fi
+else
+  NATRON_BRANCH=$GIT_BRANCH
+  COMMITS_HASH=$CWD/commits-hash-$NATRON_BRANCH.sh
+fi
+
+if [ "$BUILD_CONFIG" != "SNAPSHOT" ]; then
+  IO_BRANCH=$IOPLUG_GIT_TAG
+  MISC_BRANCH=$MISCPLUG_GIT_TAG
+  ARENA_BRANCH=$ARENAPLUG_GIT_TAG
+  CV_BRANCH=$CVPLUG_GIT_TAG
+fi
+
+if [ ! -f "$COMMITS_HASH" ]; then
+cat <<EOF > "$COMMITS_HASH"
+#!/bin/sh
+NATRON_DEVEL_GIT=#
+IOPLUG_DEVEL_GIT=#
+MISCPLUG_DEVEL_GIT=#
+ARENAPLUG_DEVEL_GIT=#
+CVPLUG_DEVEL_GIT=#
+NATRON_VERSION_NUMBER=#
+EOF
 fi
 
 if [ ! -d $INSTALL_PATH ]; then
-    if [ -f $SRC_PATH/Natron-$SDK_VERSION-Linux-$ARCH-SDK.tar.xz ]; then
-        echo "Found binary SDK, extracting ..."
-        tar xvJf $SRC_PATH/Natron-$SDK_VERSION-Linux-$ARCH-SDK.tar.xz -C $SDK_PATH/ || exit 1
-    else
-        echo "Need to build SDK ..."
-        MKJOBS=$MKJOBS TAR_SDK=1 sh $INC_PATH/scripts/build-sdk.sh || exit 1
-    fi
+  if [ -f $SRC_PATH/Natron-$SDK_VERSION-Linux-$ARCH-SDK.tar.xz ]; then
+    echo "Found binary SDK, extracting ..."
+    tar xvJf $SRC_PATH/Natron-$SDK_VERSION-Linux-$ARCH-SDK.tar.xz -C $SDK_PATH/ || exit 1
+  else
+    echo "Need to build SDK ..."
+    MKJOBS=$MKJOBS TAR_SDK=1 sh $INC_PATH/scripts/build-sdk.sh || exit 1
+  fi
 fi
 
 if [ -d $TMP_PATH ]; then
-    rm -rf $TMP_PATH || exit 1
+  rm -rf $TMP_PATH || exit 1
 fi
 mkdir -p $TMP_PATH || exit 1
 
@@ -60,37 +91,37 @@ export LD_LIBRARY_PATH=$INSTALL_PATH/lib
 export PATH=$INSTALL_PATH/gcc/bin:$INSTALL_PATH/bin:$PATH
 
 if [ "$ARCH" = "x86_64" ]; then
-    export LD_LIBRARY_PATH=$INSTALL_PATH/gcc/lib64:$LD_LIBRARY_PATH
+  export LD_LIBRARY_PATH=$INSTALL_PATH/gcc/lib64:$LD_LIBRARY_PATH
 else
-    export LD_LIBRARY_PATH=$INSTALL_PATH/gcc/lib:$LD_LIBRARY_PATH
+  export LD_LIBRARY_PATH=$INSTALL_PATH/gcc/lib:$LD_LIBRARY_PATH
 fi
 
 if [ "$NATRON_LICENSE" = "GPL" ]; then
-    export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$INSTALL_PATH/ffmpeg-gpl/lib/pkgconfig
-    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSTALL_PATH/ffmpeg-gpl/lib
-    FF_INC="-I${INSTALL_PATH}/ffmpeg-gpl/include"
-    FF_LIB="-L${INSTALL_PATH}/ffmpeg-gpl/lib"
+  export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$INSTALL_PATH/ffmpeg-gpl/lib/pkgconfig
+  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSTALL_PATH/ffmpeg-gpl/lib
+  FF_INC="-I${INSTALL_PATH}/ffmpeg-gpl/include"
+  FF_LIB="-L${INSTALL_PATH}/ffmpeg-gpl/lib"
 else
-    export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$INSTALL_PATH/ffmpeg-lgpl/lib/pkgconfig
-    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSTALL_PATH/ffmpeg-lgpl/lib
-    FF_INC="-I${INSTALL_PATH}/ffmpeg-lgpl/include"
-    FF_LIB="-L${INSTALL_PATH}/ffmpeg-lgpl/lib"
+  export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$INSTALL_PATH/ffmpeg-lgpl/lib/pkgconfig
+  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSTALL_PATH/ffmpeg-lgpl/lib
+  FF_INC="-I${INSTALL_PATH}/ffmpeg-lgpl/include"
+  FF_LIB="-L${INSTALL_PATH}/ffmpeg-lgpl/lib"
 fi
 
 if [ -d $INSTALL_PATH/Plugins ]; then
-    rm -rf $INSTALL_PATH/Plugins || exit 1
+  rm -rf $INSTALL_PATH/Plugins || exit 1
 fi
 mkdir -p $INSTALL_PATH/Plugins || exit 1
 rm -rf $INSTALL_PATH/docs/openfx-* || exit 1
 
 if [ -z "$BUILD_IO" ]; then
-    BUILD_IO=1
+  BUILD_IO=1
 fi
 if [ -z "$BUILD_MISC" ]; then
-    BUILD_MISC=1
+  BUILD_MISC=1
 fi
 if [ -z "$BUILD_ARENA" ]; then
-    BUILD_ARENA=1
+  BUILD_ARENA=1
 fi
 BUILD_CV=0
 
@@ -107,7 +138,7 @@ if [ "$BUILD_MISC" = "1" ]; then
 
     git checkout ${MISC_BRANCH} || exit 1
     git submodule update -i --recursive || exit 1
-    if [ "$MISC_BRANCH" = "master" ]; then
+    if [ "$MISC_BRANCH" = "$MASTER_BRANCH" ]; then
         # the snapshots are always built with the latest version of submodules
         git submodule foreach git pull origin master
     fi
@@ -130,7 +161,7 @@ if [ "$BUILD_MISC" = "1" ]; then
 
     #Always bump git commit, it is only used to version-stamp binaries
     MISC_V=$MISC_GIT_VERSION
-    sed -i "s/MISCPLUG_DEVEL_GIT=.*/MISCPLUG_DEVEL_GIT=${MISC_V}/" $CWD/commits-hash.sh || exit 1
+    sed -i "s/MISCPLUG_DEVEL_GIT=.*/MISCPLUG_DEVEL_GIT=${MISC_V}/" $COMMITS_HASH || exit 1
 
     # build CImg with OpenMP support
     make -C CImg CImg.h || exit 1
@@ -161,7 +192,7 @@ if [ "$BUILD_IO" = "1" ]; then
     cd openfx-io || exit 1
     git checkout ${IO_BRANCH} || exit 1
     git submodule update -i --recursive || exit 1
-    if [ "$IO_BRANCH" = "master" ]; then
+    if [ "$IO_BRANCH" = "$MASTER_BRANCH" ]; then
         # the snapshots are always built with the latest version of submodules
         git submodule foreach git pull origin master
     fi
@@ -182,7 +213,7 @@ if [ "$BUILD_IO" = "1" ]; then
 
     #Always bump git commit, it is only used to version-stamp binaries
     IO_V=$IO_GIT_VERSION
-    sed -i "s/IOPLUG_DEVEL_GIT=.*/IOPLUG_DEVEL_GIT=${IO_V}/" $CWD/commits-hash.sh || exit 1
+    sed -i "s/IOPLUG_DEVEL_GIT=.*/IOPLUG_DEVEL_GIT=${IO_V}/" $COMMITS_HASH|| exit 1
 
 
     make OIIO_HOME="${INSTALL_PATH}" SEEXPR_HOME="${INSTALL_PATH}" CONFIG=relwithdebinfo BITS=$BIT -j${MKJOBS} || exit 1
@@ -207,7 +238,7 @@ if [ "$BUILD_ARENA" = "1" ]; then
     cd openfx-arena || exit 1
     git checkout ${ARENA_BRANCH} || exit 1
     git submodule update -i --recursive || exit 1
-    if [ "$ARENA_BRANCH" = "master" ]; then
+    if [ "$ARENA_BRANCH" = "$MASTER_BRANCH" ]; then
         # the snapshots are always built with the latest version of submodules
         if true; then
             git submodule foreach git pull origin master
@@ -232,7 +263,7 @@ if [ "$BUILD_ARENA" = "1" ]; then
 
     #Always bump git commit, it is only used to version-stamp binaries
     ARENA_V=$ARENA_GIT_VERSION
-    sed -i "s/ARENAPLUG_DEVEL_GIT=.*/ARENAPLUG_DEVEL_GIT=${ARENA_V}/" $CWD/commits-hash.sh || exit 1
+    sed -i "s/ARENAPLUG_DEVEL_GIT=.*/ARENAPLUG_DEVEL_GIT=${ARENA_V}/" $COMMITS_HASH|| exit 1
 
 
     make USE_SVG=1 USE_PANGO=1 STATIC=1 CONFIG=relwithdebinfo BITS=$BIT -j${MKJOBS} || exit 1
@@ -254,7 +285,7 @@ if [ "$BUILD_CV" = "1" ]; then
     cd openfx-opencv || exit 1
     git checkout ${CV_BRANCH} || exit 1
     git submodule update -i --recursive || exit 1
-    if [ "$CV_BRANCH" = "master" ]; then
+    if [ "$CV_BRANCH" = "$MASTER_BRANCH" ]; then
         # the snapshots are always built with the latest version of submodules
         git submodule foreach git pull origin master
     fi
@@ -273,7 +304,7 @@ if [ "$BUILD_CV" = "1" ]; then
 
     #Always bump git commit, it is only used to version-stamp binaries
     CV_V=$CV_GIT_VERSION
-    sed -i "s/CVPLUG_DEVEL_GIT=.*/CVPLUG_DEVEL_GIT=${CV_V}/" $CWD/commits-hash.sh || exit 1
+    sed -i "s/CVPLUG_DEVEL_GIT=.*/CVPLUG_DEVEL_GIT=${CV_V}/" $COMMITS_HASH || exit 1
 
 
     cd opencv2fx || exit 1

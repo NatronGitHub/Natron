@@ -72,7 +72,7 @@ Gui::setupUi()
     installEventFilter(this);
     assert( !isFullScreen() );
 
-    loadStyleSheet();
+    //Gui::loadStyleSheet();
 
     ///Restores position, size of the main window as well as whether it was fullscreen or not.
     _imp->restoreGuiGeometry();
@@ -279,6 +279,20 @@ Gui::getLastSelectedGraph() const
     assert( QThread::currentThread() == qApp->thread() );
 
     return _imp->_lastFocusedGraph;
+}
+
+void
+Gui::setActiveViewer(ViewerTab* viewer)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    _imp->_activeViewer = viewer;
+}
+
+ViewerTab*
+Gui::getActiveViewer() const
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    return _imp->_activeViewer;
 }
 
 boost::shared_ptr<NodeCollection>

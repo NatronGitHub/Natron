@@ -125,6 +125,8 @@ public Q_SLOTS:
     
     void onShowProgressPanelTimerTriggered();
     
+    void onItemRightClicked(TableItem* item);
+    
 Q_SIGNALS:
     
     void s_doProgressStartOnMainThread(const boost::shared_ptr<Node>& node, const QString &message, const QString &messageid, bool canCancel);

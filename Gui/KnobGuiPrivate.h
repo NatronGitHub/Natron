@@ -33,7 +33,7 @@
 #include <climits>
 #include <cfloat>
 #include <stdexcept>
-
+#include <map>
 #include <boost/weak_ptr.hpp>
 
 
@@ -102,6 +102,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 NATRON_NAMESPACE_ENTER;
 
+
 struct KnobGuiPrivate
 {
     bool triggerNewLine;
@@ -117,6 +118,8 @@ struct KnobGuiPrivate
     QWidget* field;
     QWidget* labelContainer;
     KnobClickableLabel* descriptionLabel;
+    Label* warningIndicator;
+    std::map<KnobGui::KnobWarningEnum, QString> warningsMapping;
     bool isOnNewLine;
     CustomParamInteract* customInteract;
 

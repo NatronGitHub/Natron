@@ -120,8 +120,11 @@ public Q_SLOTS:
     
     void onItemNewSelected();
 
+    void onRefreshMenuActionTriggered();
+    
 private:
-
+    
+    virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;

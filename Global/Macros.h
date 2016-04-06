@@ -95,11 +95,6 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_ENGINE_PYTHON_MODULE_NAME "NatronEngine"
 #define NATRON_GUI_PYTHON_MODULE_NAME "NatronGui"
 
-#define NATRON_ENV_VAR_NAME_START_TAG "<Name>"
-#define NATRON_ENV_VAR_NAME_END_TAG "</Name>"
-#define NATRON_ENV_VAR_VALUE_START_TAG "<Value>"
-#define NATRON_ENV_VAR_VALUE_END_TAG "</Value>"
-
 #define NATRON_PROJECT_ENV_VAR_MAX_RECURSION 100
 #define NATRON_MAX_CACHE_FILES_OPENED 20000
 #define NATRON_CUSTOM_HTML_TAG_START "<" NATRON_APPLICATION_NAME ">"
@@ -112,7 +107,7 @@ namespace NATRON_PYTHON_NAMESPACE { }
 //////////////////////////////////////////Natron version/////////////////////////////////////////////
 #define NATRON_VERSION_MAJOR 2
 #define NATRON_VERSION_MINOR 0
-#define NATRON_VERSION_REVISION 1
+#define NATRON_VERSION_REVISION 2
 
 
 #define NATRON_LAST_VERSION_URL "http://downloads.natron.fr/LATEST_VERSION.txt"

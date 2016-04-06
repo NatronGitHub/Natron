@@ -86,7 +86,7 @@ ComboBox::ComboBox(QWidget* parent)
     , _altered(false)
     , _cascading(false)
     , _cascadingIndex(0)
-    , _currentIndex(0)
+    , _currentIndex(-1)
     , _currentText()
     , _separators()
     , _rootNode(new ComboBoxMenuNode())
@@ -345,7 +345,12 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
         int flags = align | Qt::TextForceLeftToRight;
         
         ///Draw the text
-        QPen pen;
+        QPen pen = p.pen();
+        if (_currentIndex == -1) {
+            QFont f = p.font();
+            f.setItalic(true);
+            p.setFont(f);
+        }
         pen.setColor(textColor);
         p.setPen(pen);
         
@@ -577,6 +582,9 @@ ComboBox::addItem(const QString & item,
                   QKeySequence key,
                   const QString & toolTip)
 {
+    if (item.isEmpty()) {
+        return;
+    }
     if (!_cascading) {
         QAction* action =  new QAction(this);
         
@@ -701,7 +709,7 @@ ComboBox::setCurrentText_internal(const QString & text)
     }
     
     int ret = -1;
-    if ( (_currentIndex != index) && (index != -1) ) {
+    if (_currentIndex != index) {
         _currentIndex = index;
         ret = index;
     }
@@ -773,6 +781,9 @@ static QString getNodeTextRecursive(ComboBoxMenuNode* node,ComboBoxMenuNode* roo
 QString
 ComboBox::getCurrentIndexText() const
 {
+    if (_currentIndex == -1) {
+        return _currentText;
+    }
     ComboBoxMenuNode* node = getCurrentIndexNode(_currentIndex, _rootNode.get());
     if (!node) {
         return QString();
@@ -931,7 +942,7 @@ ComboBox::clear()
     _rootNode->isMenu->clear();
     _cascadingIndex = 0;
     _separators.clear();
-    _currentIndex = 0;
+    _currentIndex = -1;
     updateLabel();
 }
 

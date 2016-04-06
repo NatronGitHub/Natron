@@ -125,7 +125,6 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
     bool hasMovedOnce = modCASIsControl(e) || _imp->_hasMovedOnce;
     if (state == eEventStateDraggingArrow && hasMovedOnce) {
         
-        QRectF sceneR = visibleSceneRect();
         
         bool foundSrc = false;
         assert(_imp->_arrowSelected);
@@ -133,59 +132,49 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                                                      _imp->_arrowSelected->getSource() : _imp->_arrowSelected->getDest();
         assert(nodeHoldingEdge);
         
-        NodesGuiList nodes = getAllActiveNodes_mt_safe();
-        QPointF ep = mapToScene( e->pos() );
         
-        for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
-            NodeGuiPtr & n = *it;
-            
-            BackdropGui* isBd = dynamic_cast<BackdropGui*>(n.get());
-            if (isBd) {
-                continue;
-            }
-            
-            QRectF bbox = n->mapToScene(n->boundingRect()).boundingRect();
-            
-            if (n->isActive() && n->isVisible() && bbox.intersects(sceneR) &&
-                n->isNearby(ep) &&
-                n->getNode()->getScriptName() != nodeHoldingEdge->getNode()->getScriptName()) {
+        NodeGui* nearbyNode;
+        Edge* nearbyEdge;
+        NearbyItemEnum nearbyItemCode = hasItemNearbyMouse(e->pos(), &nearbyNode, &nearbyEdge);
+
+        if (nearbyItemCode == eNearbyItemNode) {
+            NodeGuiPtr targetNode = nearbyNode->shared_from_this();
+            if (targetNode != nodeHoldingEdge) {
                 
-                if ( !_imp->_arrowSelected->isOutputEdge() ) {
+                if (!_imp->_arrowSelected->isOutputEdge()) {
                     
-                    bool ok = handleConnectionError(nodeHoldingEdge, n, _imp->_arrowSelected->getInputNumber());
-                                        _imp->_arrowSelected->stackBefore( n.get() );
-                    if (!ok) {
-                        break;
+                    bool ok = handleConnectionError(nodeHoldingEdge, targetNode, _imp->_arrowSelected->getInputNumber());
+                    _imp->_arrowSelected->stackBefore( targetNode.get() );
+                    if (ok) {
+                        foundSrc = true;
+                        pushUndoCommand(new ConnectCommand(this,_imp->_arrowSelected,_imp->_arrowSelected->getSource(),targetNode));
                     }
-                    pushUndoCommand( new ConnectCommand(this,_imp->_arrowSelected,_imp->_arrowSelected->getSource(),n) );
                 } else {
-                    ///Find the input edge of the node we just released the mouse over,
-                    ///and use that edge to connect to the source of the selected edge.
-                    int preferredInput = n->getNode()->getPreferredInputForConnection();
-                    if (preferredInput != -1) {
-                        
-                        bool ok = handleConnectionError(n, nodeHoldingEdge, preferredInput);
-                        if (!ok) {
-                            break;
+                    // Find the input edge of the node we just released the mouse over,
+                    // and use that edge to connect to the source of the selected edge.
+                    int preferredInput = targetNode->getNode()->getPreferredInputForConnection();
+                    if (preferredInput != -1) { 
+                        bool ok = handleConnectionError(targetNode, nodeHoldingEdge, preferredInput);
+                        if (ok) {
+                            
+                            Edge* foundInput = targetNode->getInputArrow(preferredInput);
+                            assert(foundInput);
+                            foundSrc = true;
+                            pushUndoCommand(new ConnectCommand(this,foundInput,
+                                                               foundInput->getSource(),_imp->_arrowSelected->getSource()));
                         }
-                       
-                        Edge* foundInput = n->getInputArrow(preferredInput);
-                        assert(foundInput);
-                        pushUndoCommand( new ConnectCommand( this,foundInput,
-                                                                  foundInput->getSource(),_imp->_arrowSelected->getSource() ) );
                     }
                 }
-                foundSrc = true;
                 
-                break;
             }
         }
-        ///if we disconnected the input edge, use the undo/redo stack.
-        ///Output edges can never be really connected, they're just there
-        ///So the user understands some nodes can have output
-        if ( !foundSrc && !_imp->_arrowSelected->isOutputEdge() && _imp->_arrowSelected->getSource() ) {
-            pushUndoCommand( new ConnectCommand( this,_imp->_arrowSelected,_imp->_arrowSelected->getSource(),
-                                                      NodeGuiPtr() ) );
+    
+        // If we disconnected the input edge, use the undo/redo stack.
+        // Output edges can never be really connected, they're just there
+        // So the user understands some nodes can have output
+        if (!foundSrc && !_imp->_arrowSelected->isOutputEdge() && _imp->_arrowSelected->getSource()) {
+            pushUndoCommand(new ConnectCommand(this,_imp->_arrowSelected,_imp->_arrowSelected->getSource(),
+                                                      NodeGuiPtr()));
         }
         
         

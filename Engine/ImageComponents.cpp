@@ -166,6 +166,44 @@ ImageComponents::isColorPlane() const
     return _layerName == kNatronColorPlaneName;
 }
 
+
+bool
+ImageComponents::isEqualToPairedPlane(const ImageComponents& other, ImageComponents* pairedLayer) const
+{
+    assert(!other.isPairedComponents());
+    if (!isPairedComponents()) {
+        return false;
+    }
+    if (_componentNames.size() != other._componentNames.size()) {
+        return false;
+    }
+    
+    for (std::size_t i = 0; i < _componentNames.size(); ++i) {
+        if (_componentNames[i] != other._componentNames[i]) {
+            return false;
+        }
+    }
+    if (_layerName == other._layerName) {
+        *pairedLayer = ImageComponents(_layerName, _globalComponentsName, _componentNames);
+        return true;
+    } else if (_pairedLayer == other._layerName) {
+        *pairedLayer = ImageComponents(_pairedLayer, _globalComponentsName, _componentNames);
+        return true;
+    }
+    return false;
+}
+
+bool
+ImageComponents::getPlanesPair(ImageComponents* first, ImageComponents* second) const
+{
+    if (!isPairedComponents()) {
+        return false;
+    }
+    *first = ImageComponents(_layerName, _globalComponentsName, _componentNames);
+    *second = ImageComponents(_pairedLayer, _globalComponentsName, _componentNames);
+    return true;
+}
+
 bool
 ImageComponents::isConvertibleTo(const ImageComponents& other) const
 {
@@ -193,7 +231,7 @@ ImageComponents::operator==(const ImageComponents& other) const
             return false;
         }
     }
-    return _layerName == other._layerName;
+    return _layerName == other._layerName && _pairedLayer == other._pairedLayer;
 }
 
 bool
@@ -318,14 +356,16 @@ const
 ImageComponents&
 ImageComponents::getPairedMotionVectors()
 {
-    static const ImageComponents comp(kFnOfxImagePlaneForwardMotionVector,kFnOfxImagePlaneBackwardMotionVector,kFnOfxImageComponentMotionVectors,motionComps,2);
+    //static const ImageComponents comp(kFnOfxImagePlaneForwardMotionVector,kFnOfxImagePlaneBackwardMotionVector,kFnOfxImageComponentMotionVectors,motionComps,2);
+    static const ImageComponents comp(kNatronForwardMotionVectorsPlaneUserName,kNatronBackwardMotionVectorsPlaneUserName,kNatronMotionComponentsName,motionComps,2);
     return comp;
 }
 
 const ImageComponents&
 ImageComponents::getPairedStereoDisparity()
 {
-    static const ImageComponents comp(kFnOfxImagePlaneStereoDisparityLeft,kFnOfxImagePlaneStereoDisparityRight,kFnOfxImageComponentStereoDisparity,xyComps,2);
+    //static const ImageComponents comp(kFnOfxImagePlaneStereoDisparityLeft,kFnOfxImagePlaneStereoDisparityRight,kFnOfxImageComponentStereoDisparity,xyComps,2);
+    static const ImageComponents comp(kNatronDisparityLeftPlaneUserName,kNatronDisparityRightPlaneUserName,kNatronDisparityComponentsName,xyComps,2);
     return comp;
 }
 

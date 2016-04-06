@@ -53,10 +53,10 @@ public:
         return _marker;
     }
     
-    void setScriptName(const std::string& scriptName);
-    std::string getScriptName() const;
+    void setScriptName(const QString& scriptName);
+    QString getScriptName() const;
     
-    Param* getParam(const std::string& scriptName) const;
+    Param* getParam(const QString& scriptName) const;
     
     void reset();
     
@@ -73,7 +73,7 @@ public:
     
     ~Tracker();
     
-    Track* getTrackByName(const std::string& name) const;
+    Track* getTrackByName(const QString& name) const;
     
     void getAllTracks(std::list<Track*>* markers) const;
     

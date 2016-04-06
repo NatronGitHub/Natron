@@ -22,7 +22,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Gui/LinkToKnobDialog.h"
+#include "LinkToKnobDialog.h"
 
 #include <cassert>
 #include <climits>

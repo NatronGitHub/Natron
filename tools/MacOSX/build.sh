@@ -102,8 +102,18 @@ EOFF
     exit 1
 fi
 
-if [ ! -f "$CWD/commits-hash.sh" ]; then
-    cat <<EOF > "$CWD/commits-hash.sh"
+if [ -z "$BRANCH" ]; then
+  if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
+    COMMITS_HASH=$CWD/commits-hash-$MASTER_BRANCH.sh
+  else
+    COMMITS_HASH=$CWD/commits-hash.sh
+  fi
+else
+  COMMITS_HASH=$CWD/commits-hash-$BRANCH.sh
+fi
+
+if [ ! -f "$COMMITS_HASH" ]; then
+cat <<EOF > "$COMMITS_HASH"
 #!/bin/sh
 NATRON_DEVEL_GIT=#
 IOPLUG_DEVEL_GIT=#
@@ -113,8 +123,8 @@ CVPLUG_DEVEL_GIT=#
 NATRON_VERSION_NUMBER=#
 EOF
 fi
+source "$COMMITS_HASH"
 
-source "$CWD/commits-hash.sh" || exit 1
 
 if [ "$NO_CLEAN" != "1" ]; then
     rm -rf "$CWD/build"
@@ -199,7 +209,7 @@ fi
 
 if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
     NATRON_VERSION=$NATRON_DEVEL_GIT
-    UPLOAD_BRANCH=snapshots
+    UPLOAD_BRANCH=snapshots/$BRANCH
 else
     UPLOAD_BRANCH=releases
 fi

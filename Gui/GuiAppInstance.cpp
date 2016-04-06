@@ -58,6 +58,7 @@
 #include "Gui/ProgressPanel.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/SplashScreen.h"
+#include "Gui/ScriptEditor.h"
 #include "Gui/ViewerGL.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -1184,9 +1185,13 @@ GuiAppInstance::isRenderStatsActionChecked() const
 bool
 GuiAppInstance::save(const std::string& filename)
 {
-    boost::shared_ptr<Project> project = getProject();
-    if (project->hasProjectBeenSavedByUser()) {
-        return _imp->_gui->saveProject();
+    if (filename.empty()) {
+        boost::shared_ptr<Project> project= getProject();
+        if (project->hasProjectBeenSavedByUser()) {
+            return _imp->_gui->saveProject();
+        } else {
+            return _imp->_gui->saveProjectAs();
+        }
     } else {
         return _imp->_gui->saveProjectAs(filename);
     }
@@ -1617,6 +1622,12 @@ GuiAppInstance::checkAllReadersModificationDate(bool errorAndWarn)
         }
     }
     return changed;
+}
+
+void
+GuiAppInstance::reloadScriptEditorFonts()
+{
+    _imp->_gui->getScriptEditor()->reloadFont();
 }
 
 NATRON_NAMESPACE_EXIT;

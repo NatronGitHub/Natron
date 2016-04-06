@@ -126,9 +126,9 @@ static PyObject* Sbk_TrackerFunc_getTrackByName(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: getTrackByName(std::string)const
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // getTrackByName(std::string)const
+    // 0: getTrackByName(QString)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // getTrackByName(QString)const
     }
 
     // Function signature not found.
@@ -136,11 +136,11 @@ static PyObject* Sbk_TrackerFunc_getTrackByName(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getTrackByName(std::string)const
+            // getTrackByName(QString)const
             Track * cppResult = const_cast<const ::Tracker*>(cppSelf)->getTrackByName(cppArg0);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_TRACK_IDX], cppResult);
 
@@ -156,7 +156,7 @@ static PyObject* Sbk_TrackerFunc_getTrackByName(PyObject* self, PyObject* pyArg)
     return pyResult;
 
     Sbk_TrackerFunc_getTrackByName_TypeError:
-        const char* overloads[] = {"std::string", 0};
+        const char* overloads[] = {"unicode", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Tracker.getTrackByName", overloads);
         return 0;
 }

@@ -545,21 +545,6 @@ RotoStrokeItem::updatePatternCache(const std::vector<cairo_pattern_t*>& cache)
     _imp->strokeDotPatterns = cache;
 }
 
-double
-RotoStrokeItem::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
-                          const RectD& rod,
-                          const std::list<std::pair<Point,double> >& points,
-                          unsigned int mipmapLevel,
-                          double par,
-                          const ImageComponents& components,
-                          ImageBitDepthEnum depth,
-                          double distToNext,
-                          boost::shared_ptr<Image> *wholeStrokeImage)
-{
-    QMutexLocker k(&_imp->strokeDotPatternsMutex);
-    return getContext()->renderSingleStroke(stroke, rod, points, mipmapLevel, par, components, depth, distToNext, wholeStrokeImage);
-}
-
 RectD
 RotoStrokeItem::getWholeStrokeRoDWhilePainting() const
 {

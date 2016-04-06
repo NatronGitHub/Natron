@@ -1,10 +1,10 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 146258 2016-03-02 23:05:42Z devans@macports.org $
+# $Id: Portfile 147130 2016-03-29 04:33:04Z ryandesign@macports.org $
 
 PortSystem                      1.0
 
 name                            curl
-version                         7.47.1
+version                         7.48.0
 categories                      net www
 platforms                       darwin freebsd
 maintainers                     ryandesign
@@ -28,20 +28,20 @@ set curl_distfile               ${distfiles}
 distfiles                       ${curl_distfile}:curl
 
 checksums                       ${curl_distfile} \
-                                rmd160  cfcdd8632aab2a8ef40435ae1ed7f499741cb1f3 \
-                                sha256  ddc643ab9382e24bbe4747d43df189a0a6ce38fcb33df041b9cb0b3cd47ae98f
+                                rmd160  3dc03df4ba48eb71e257db1f5dda7f88c59df88e \
+                                sha256  864e7819210b586d42c674a1fdd577ce75a78b3dda64c63565abe5aefd72c753
 
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
 
-    revision                    1
+    revision                    0
 
     depends_build               port:pkgconfig
 
     depends_lib                 port:zlib
 
     patchfiles                  patch-curl.h.diff \
-                                yosemite-libtool.patch
+                                patch-lib-vtls-openssl.c.diff
 
     configure.args              --enable-ipv6 \
                                 --without-gnutls \

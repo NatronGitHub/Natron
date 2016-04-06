@@ -41,6 +41,7 @@
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
 #include <boost/bind.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
@@ -124,6 +125,9 @@ struct AppInstancePrivate
     mutable QMutex renderQueueMutex;
     std::list<RenderQueueItem> renderQueue, activeRenders;
     
+    mutable QMutex invalidExprKnobsMutex;
+    std::list<KnobWPtr> invalidExprKnobs;
+    
     AppInstancePrivate(int appID,
                        AppInstance* app)
     : _publicInterface(app)
@@ -136,6 +140,9 @@ struct AppInstancePrivate
     , _creatingTree(0)
     , renderQueueMutex()
     , renderQueue()
+    , activeRenders()
+    , invalidExprKnobsMutex()
+    , invalidExprKnobs()
     {
     }
     
@@ -523,15 +530,20 @@ AppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
     if ( (appPTR->getAppType() == AppManager::eAppTypeBackgroundAutoRun ||
           appPTR->getAppType() == AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui)) {
         
-        if (cl.getScriptFilename().isEmpty()) {
+        const QString& scriptFilename =  cl.getScriptFilename();
+
+        if (scriptFilename.isEmpty()) {
             // cannot start a background process without a file
             throw std::invalid_argument(tr("Project file name empty").toStdString());
         }
         
 
-        QFileInfo info(cl.getScriptFilename());
+        QFileInfo info(scriptFilename);
         if (!info.exists()) {
-            throw std::invalid_argument(tr("Specified project file does not exist").toStdString());
+            std::stringstream ss;
+            ss << scriptFilename.toStdString();
+            ss << tr(": No such file").toStdString();
+            throw std::invalid_argument(ss.str());
         }
         
         std::list<AppInstance::RenderWork> writersWork;
@@ -744,7 +756,7 @@ AppInstance::loadPythonScript(const QFileInfo& file)
         if (errCatcher) {
             errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
             assert(errorObj);
-            error = NATRON_PYTHON_NAMESPACE::PY3String_asString(errorObj);
+            error = NATRON_PYTHON_NAMESPACE::PyStringToStdString(errorObj);
             PyObject* unicode = PyUnicode_FromString("");
             PyObject_SetAttrString(errCatcher, "value", unicode);
             Py_DECREF(errorObj);
@@ -847,7 +859,11 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
         if (!moduleName.isEmpty()) {
             setGroupLabelIDAndVersion(node,modulePath, moduleName);
         }
-     
+        
+        // If there's a serialization, restore the serialization of the group node because the Python script probably overriden any state
+        if (serialization) {
+            containerNode->loadKnobs(*serialization);
+        }
         
     } //FlagSetter fs(true,&_imp->_creatingGroup,&_imp->creatingGroupMutex);
     
@@ -895,7 +911,7 @@ AppInstance::createReader(const std::string& filename, CreateNodeReason reason, 
 #else
     
     std::map<std::string,std::string> readersForFormat;
-    appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&readersForFormat);
+    appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
     QString fileCpy = QString::fromUtf8(filename.c_str());
     std::string ext = QtCompat::removeFileExtension(fileCpy).toLower().toStdString();
     std::map<std::string,std::string>::iterator found = readersForFormat.find(ext);
@@ -1096,7 +1112,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     {
         ///Furnace plug-ins don't handle using the thread pool
         boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
-        if (foundPluginID.find("uk.co.thefoundry.furnace") != std::string::npos &&
+        if (boost::starts_with(foundPluginID, "uk.co.thefoundry.furnace") &&
             (settings->useGlobalThreadPool() || settings->getNumberOfParallelRenders() != 1)) {
             StandardButtonEnum reply = Dialogs::questionDialog(tr("Warning").toStdString(),
                                                                   tr("The settings of the application are currently set to use "
@@ -2074,6 +2090,55 @@ AppInstance::newProject()
     CLArgs cl;
     AppInstance* app = appPTR->newAppInstance(cl, false);
     return app;
+}
+
+void
+AppInstance::addInvalidExpressionKnob(const KnobPtr& knob)
+{
+    QMutexLocker k(&_imp->invalidExprKnobsMutex);
+    for (std::list<KnobWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it!=_imp->invalidExprKnobs.end(); ++it) {
+        if (it->lock().get()) {
+            return;
+        }
+    }
+    _imp->invalidExprKnobs.push_back(knob);
+}
+
+void
+AppInstance::removeInvalidExpressionKnob(const KnobI* knob)
+{
+    QMutexLocker k(&_imp->invalidExprKnobsMutex);
+    for (std::list<KnobWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it!=_imp->invalidExprKnobs.end(); ++it) {
+        if (it->lock().get() == knob) {
+            _imp->invalidExprKnobs.erase(it);
+            break;
+        }
+    }
+}
+
+void
+AppInstance::recheckInvalidExpressions()
+{
+    std::list<KnobPtr> knobs;
+    {
+        QMutexLocker k(&_imp->invalidExprKnobsMutex);
+        for (std::list<KnobWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it!=_imp->invalidExprKnobs.end(); ++it) {
+            KnobPtr k = it->lock();
+            if (k) {
+                knobs.push_back(k);
+            }
+        }
+    }
+    std::list<KnobWPtr> newInvalidKnobs;
+    for (std::list<KnobPtr>::iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        if (!(*it)->checkInvalidExpressions()) {
+            newInvalidKnobs.push_back(*it);
+        }
+    }
+    {
+        QMutexLocker k(&_imp->invalidExprKnobsMutex);
+        _imp->invalidExprKnobs = newInvalidKnobs;
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

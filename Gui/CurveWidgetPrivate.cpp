@@ -35,6 +35,7 @@
 #include "Engine/Bezier.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Settings.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/Image.h" // Image::clamp
 
 #include "Gui/ActionShortcuts.h"
@@ -42,6 +43,7 @@
 #include "Gui/CurveWidget.h"
 #include "Gui/DopeSheetEditor.h"
 #include "Gui/Gui.h"
+#include "Gui/KnobGui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Menu.h"
@@ -1156,6 +1158,18 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
             canMoveY = false;
         }
         
+        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->first.get());
+        if (isKnobCurve) {
+            KnobGuiPtr knobUI = isKnobCurve->getKnobGui();
+            if (knobUI) {
+                
+                int curveDim = isKnobCurve->getDimension();
+                KnobPtr internalKnob = knobUI->getKnob();
+                if (internalKnob && (!internalKnob->isEnabled(curveDim) || internalKnob->isSlave(curveDim))) {
+                    continue;
+                }
+            }
+        }
         
         boost::shared_ptr<Curve> curve = it->first->getInternalCurve();
         
@@ -1295,10 +1309,28 @@ CurveWidgetPrivate::transformSelectedKeyFrames(const QPointF & oldClick_opengl,c
     
     QPointF totalMovement(newClick_opengl.x() - dragStartPointOpenGL.x(), newClick_opengl.y() - dragStartPointOpenGL.y());
 
+    
+    SelectedKeys keysToTransform;
+    
+    
     for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
+        
+        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->first.get());
+        if (isKnobCurve) {
+            KnobGuiPtr knobUI = isKnobCurve->getKnobGui();
+            if (knobUI) {
+                
+                int curveDim = isKnobCurve->getDimension();
+                KnobPtr internalKnob = knobUI->getKnob();
+                if (internalKnob && (!internalKnob->isEnabled(curveDim) || internalKnob->isSlave(curveDim))) {
+                    continue;
+                }
+            }
+        }
+        
+        keysToTransform.insert(*it);
         if (it->first->areKeyFramesValuesClampedToBooleans() ) {
             totalMovement.ry() = std::max( 0.,std::min(std::floor(totalMovement.y() + 0.5),1.) );
-            break;
         } else if (it->first->areKeyFramesValuesClampedToIntegers() ) {
             totalMovement.ry() = std::floor(totalMovement.y() + 0.5);
         }
@@ -1359,7 +1391,7 @@ CurveWidgetPrivate::transformSelectedKeyFrames(const QPointF & oldClick_opengl,c
                 
             }
         }
-        _widget->pushUndoCommand( new TransformKeysCommand(_widget,_selectedKeyFrames,center.x(),center.y(),tx,ty,sx,sy,!updateOnPenUpOnly) );
+        _widget->pushUndoCommand( new TransformKeysCommand(_widget,keysToTransform,center.x(),center.y(),tx,ty,sx,sy,!updateOnPenUpOnly) );
         _evaluateOnPenUp = true;
     }
     //update last drag movement

@@ -49,9 +49,9 @@ static PyObject* Sbk_ButtonParamFunc_setIconFilePath(PyObject* self, PyObject* p
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: setIconFilePath(std::string)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // setIconFilePath(std::string)
+    // 0: setIconFilePath(QString)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // setIconFilePath(QString)
     }
 
     // Function signature not found.
@@ -59,11 +59,11 @@ static PyObject* Sbk_ButtonParamFunc_setIconFilePath(PyObject* self, PyObject* p
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // setIconFilePath(std::string)
+            // setIconFilePath(QString)
             cppSelf->setIconFilePath(cppArg0);
         }
     }
@@ -74,7 +74,7 @@ static PyObject* Sbk_ButtonParamFunc_setIconFilePath(PyObject* self, PyObject* p
     Py_RETURN_NONE;
 
     Sbk_ButtonParamFunc_setIconFilePath_TypeError:
-        const char* overloads[] = {"std::string", 0};
+        const char* overloads[] = {"unicode", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ButtonParam.setIconFilePath", overloads);
         return 0;
 }

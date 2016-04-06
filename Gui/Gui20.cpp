@@ -141,7 +141,7 @@ getPixmapForGrouping(QPixmap* pixmap,
 void
 Gui::reloadStylesheet()
 {
-    loadStyleSheet();
+    Gui::loadStyleSheet();
     if (_imp->_scriptEditor) {
         _imp->_scriptEditor->reloadHighlighter();
     }
@@ -259,7 +259,7 @@ Gui::loadStyleSheet()
                   | QIODevice::Text) ) {
         QTextStream in(&qss);
         QString content( in.readAll() );
-        setStyleSheet( content
+        qApp->setStyleSheet( content
                        .arg(qcolor_to_qstring(selCol)) // %1: selection-color
                        .arg(qcolor_to_qstring(baseCol)) // %2: medium background
                        .arg(qcolor_to_qstring(raisedCol)) // %3: soft background
@@ -482,6 +482,10 @@ Gui::removeViewerTab(ViewerTab* tab,
     assert(tab);
     unregisterTab(tab);
 
+    if (tab == _imp->_activeViewer) {
+        _imp->_activeViewer = 0;
+    }
+    
     NodeGraph* graph = 0;
     NodeGroup* isGrp = 0;
     boost::shared_ptr<NodeCollection> collection;
@@ -1307,24 +1311,39 @@ Gui::createWriter()
     for (std::map<std::string, std::string>::const_iterator it = writersForFormat.begin(); it != writersForFormat.end(); ++it) {
         filters.push_back(it->first);
     }
-    std::string file = popSaveFileDialog( true, filters, _imp->_lastSaveSequenceOpenedDir.toStdString(), true );
-    if ( !file.empty() ) {
-        
+    
+    
+    std::string file;
+#ifdef NATRON_ENABLE_IO_META_NODES
+    bool useDialogForWriters = appPTR->getCurrentSettings()->isFileDialogEnabledForNewWriters();
+#else
+    bool useDialogForWriters = true;
+#endif
+    if (useDialogForWriters) {
+        file = popSaveFileDialog( true, filters, _imp->_lastSaveSequenceOpenedDir.toStdString(), true );
+        if (file.empty()) {
+            return NodePtr();
+        }
+    }
+
+    
+    if (!file.empty()) {
         std::string patternCpy = file;
         std::string path = SequenceParsing::removePath(patternCpy);
         _imp->_lastSaveSequenceOpenedDir = QString::fromUtf8(path.c_str());
-        
-        NodeGraph* graph = 0;
-        if (_imp->_lastFocusedGraph) {
-            graph = _imp->_lastFocusedGraph;
-        } else {
-            graph = _imp->_nodeGraphArea;
-        }
-        boost::shared_ptr<NodeCollection> group = graph->getGroup();
-        assert(group);
-        
-        ret =  getApp()->createWriter(file, eCreateNodeReasonUserCreate, group);
     }
+    
+    NodeGraph* graph = 0;
+    if (_imp->_lastFocusedGraph) {
+        graph = _imp->_lastFocusedGraph;
+    } else {
+        graph = _imp->_nodeGraphArea;
+    }
+    boost::shared_ptr<NodeCollection> group = graph->getGroup();
+    assert(group);
+    
+    ret =  getApp()->createWriter(file, eCreateNodeReasonUserCreate, group);
+    
     
     return ret;
 }

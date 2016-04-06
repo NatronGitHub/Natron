@@ -393,30 +393,43 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
              * we try to render with those instead.
              */
             for (std::list<ImageComponents>::const_iterator it = args.components.begin(); it != args.components.end(); ++it) {
+                
+                // We may not request paired layers
+                assert(*it && !it->isPairedComponents());
                 assert(it->getNumComponents() > 0);
 
                 bool isColorComponents = it->isColorPlane();
-                ComponentsAvailableMap::iterator found = componentsAvailables.end();
+
+                bool found = false;
+                ImageComponents foundComponent;
+                NodePtr foundNode;
+                
                 for (ComponentsAvailableMap::iterator it2 = componentsAvailables.begin(); it2 != componentsAvailables.end(); ++it2) {
+                    
                     if (it2->first == *it) {
-                        found = it2;
+                        found = true;
+                        foundComponent = *it;
+                        foundNode = it2->second.lock();
                         break;
                     } else {
                         if ( isColorComponents && it2->first.isColorPlane() && isSupportedComponent(-1, it2->first) ) {
                             //We found another set of components in the color plane, take it
-                            found = it2;
+                            found = true;
+                            foundComponent = it2->first;
+                            foundNode = it2->second.lock();
                             break;
                         }
+                        
                     }
                 }
 
                 // If  the requested component is not present, then it will just return black and transparant to the plug-in.
-                if ( found != componentsAvailables.end() ) {
-                    if ( found->second.lock() == getNode() ) {
-                        requestedComponents.push_back(*it);
+                if (found) {
+                    if (foundNode == getNode()) {
+                        requestedComponents.push_back(foundComponent);
                     } else {
                         //The component is not available directly from this node, fetch it upstream
-                        componentsToFetchUpstream.push_back( std::make_pair( *it, found->second.lock() ) );
+                        componentsToFetchUpstream.push_back(std::make_pair(foundComponent, foundNode));
                     }
                 }
             }
@@ -574,28 +587,33 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 RenderRoIRetCode ret =  inputEffectIdentity->renderRoI(*inputArgs, &identityPlanes);
                 if (ret == eRenderRoIRetCodeOk) {
                     outputPlanes->insert(identityPlanes.begin(),identityPlanes.end());
-                    std::map<ImageComponents,ImagePtr> convertedPlanes;
-                    AppInstance* app = getApp();
-                    assert(args.components.size() == outputPlanes->size() || outputPlanes->empty());
-                    bool useAlpha0ForRGBToRGBAConversion = args.caller ? args.caller->getNode()->usesAlpha0ToConvertFromRGBToRGBA() : false;
                     
-                    std::list<ImageComponents>::const_iterator compIt = args.components.begin();
-                    
-                    for (std::map<ImageComponents,ImagePtr>::iterator it = outputPlanes->begin(); it!=outputPlanes->end(); ++it,++compIt) {
+                    if (fetchUserSelectedComponentsUpstream) {
+                        // We fetched potentially different components, so convert them to the format requested
+                        std::map<ImageComponents,ImagePtr> convertedPlanes;
+                        AppInstance* app = getApp();
                         
-                        ImagePremultiplicationEnum premult;
-                        const ImageComponents & outComp = outputComponents.front();
-                        if ( outComp.isColorPlane() ) {
-                            premult = thisEffectOutputPremult;
-                        } else {
-                            premult = eImagePremultiplicationOpaque;
+                        bool useAlpha0ForRGBToRGBAConversion = args.caller ? args.caller->getNode()->usesAlpha0ToConvertFromRGBToRGBA() : false;
+                        
+                        std::list<ImageComponents>::const_iterator compIt = args.components.begin();
+                        
+                        for (std::map<ImageComponents,ImagePtr>::iterator it = outputPlanes->begin(); it!=outputPlanes->end(); ++it,++compIt) {
+                            
+                            ImagePremultiplicationEnum premult;
+                            const ImageComponents & outComp = outputComponents.front();
+                            if ( outComp.isColorPlane() ) {
+                                premult = thisEffectOutputPremult;
+                            } else {
+                                premult = eImagePremultiplicationOpaque;
+                            }
+                            
+                            ImagePtr tmp = convertPlanesFormatsIfNeeded(app, it->second, args.roi, *compIt, inputArgs->bitdepth, useAlpha0ForRGBToRGBAConversion, premult, -1);
+                            assert(tmp);
+                            convertedPlanes[it->first] = tmp;
                         }
-                        
-                        ImagePtr tmp = convertPlanesFormatsIfNeeded(app, it->second, args.roi, *compIt, inputArgs->bitdepth, useAlpha0ForRGBToRGBAConversion, premult, -1);
-                        assert(tmp);
-                        convertedPlanes[it->first] = tmp;
+                        *outputPlanes = convertedPlanes;
                     }
-                    *outputPlanes = convertedPlanes;
+                   
                 } else {
                     return ret;
                 }

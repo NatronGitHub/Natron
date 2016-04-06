@@ -348,15 +348,18 @@ template <>
 std::string
 KnobHelper::pyObjectToType(PyObject* o) const
 {
-#ifndef IS_PYTHON_2
     if (PyUnicode_Check(o)) {
-        return NATRON_PYTHON_NAMESPACE::PY3String_asString(o);
-    }
-#else
-    if (PyString_Check(o)) {
+        std::string ret;
+        PyObject* utf8pyobj = PyUnicode_AsUTF8String(o); // newRef
+        if (utf8pyobj) {
+            char* cstr = PyBytes_AS_STRING(utf8pyobj); // Borrowed pointer
+            ret.append(cstr);
+            Py_DECREF(utf8pyobj);
+        }
+        return ret;
+    } else if (PyString_Check(o)) {
         return std::string(PyString_AsString(o));
     }
-#endif
     
     int index = 0;
     if (PyFloat_Check(o)) {
@@ -388,55 +391,57 @@ inline unsigned int hashFunction(unsigned int a)
 }
 
 template <typename T>
-T
+bool
 Knob<T>::evaluateExpression(double time,
                             ViewIdx view,
-                            int dimension) const
+                            int dimension,
+                            T* value,
+                            std::string* error)
 {
+    
     PythonGILLocker pgl;
     PyObject *ret;
     
     ///Reset the random state to reproduce the sequence
     randomSeed(time, hashFunction(dimension));
-    try {
-        ret = executeExpression(time, view,  dimension);
-    } catch (...) {
-        return T();
+    bool exprOk = executeExpression(time, view, dimension, &ret, error);
+    if (!exprOk) {
+        return false;
     }
-    
-    T val =  pyObjectToType<T>(ret);
+    *value =  pyObjectToType<T>(ret);
     Py_DECREF(ret); //< new ref
-    return val;
+    return true;
 }
 
 template <typename T>
-double
+bool
 Knob<T>::evaluateExpression_pod(double time,
                                 ViewIdx view,
-                                int dimension) const
+                                int dimension,
+                                double* value,
+                                std::string* error) 
 {
     PythonGILLocker pgl;
     PyObject *ret;
     
     ///Reset the random state to reproduce the sequence
     randomSeed(time, hashFunction(dimension));
-    try {
-        ret = executeExpression(time, view, dimension);
-    } catch (...) {
-        return 0.;
+    bool exprOk = executeExpression(time, view, dimension, &ret, error);
+    if (!exprOk) {
+        return false;
     }
     
     if (PyFloat_Check(ret)) {
-        return (double)PyFloat_AsDouble(ret);
+        *value =  (double)PyFloat_AsDouble(ret);
     } else if (PyLong_Check(ret)) {
-        return (int)PyInt_AsLong(ret);
+        *value = (int)PyInt_AsLong(ret);
     } else if (PyObject_IsTrue(ret) == 1) {
-        return 1;
+        *value = 1;
     } else {
         //Strings should always fall here
-        return 0.;
+        *value = 0.;
     }
-
+    return true;
 }
 
 template <typename T>
@@ -445,15 +450,14 @@ Knob<T>::getValueFromExpression(double time,
                                 ViewIdx view,
                                 int dimension,
                                 bool clamp,
-                                T* ret) const
+                                T* ret)
 {
 
     ///Prevent recursive call of the expression
-    
-    
     if (getExpressionRecursionLevel() > 0) {
         return false;
     }
+    
     
     
     ///Check first if a value was already computed:
@@ -467,10 +471,19 @@ Knob<T>::getValueFromExpression(double time,
         }
     }
     
-    
+    bool exprWasValid = isExpressionValid(dimension, 0);
     {
         EXPR_RECURSION_LEVEL();
-        *ret = evaluateExpression(time, view,  dimension);
+        std::string error;
+        bool exprOk = evaluateExpression(time, view,  dimension, ret, &error);
+        if (!exprOk) {
+            setExpressionInvalid(dimension, false, error);
+            return false;
+        } else {
+            if (!exprWasValid) {
+                setExpressionInvalid(dimension, true, error);
+            }
+        }
     }
     
     if (clamp) {
@@ -489,7 +502,7 @@ Knob<std::string>::getValueFromExpression_pod(double time,
                                               ViewIdx view,
                                               int dimension,
                                               bool /*clamp*/,
-                                              double* ret) const
+                                              double* ret)
 {
     ///Prevent recursive call of the expression
     
@@ -498,9 +511,19 @@ Knob<std::string>::getValueFromExpression_pod(double time,
         return false;
     }
     
+    bool exprWasValid = isExpressionValid(dimension, 0);
     {
         EXPR_RECURSION_LEVEL();
-        *ret = evaluateExpression_pod(time, view, dimension);
+        std::string error;
+        bool exprOk = evaluateExpression_pod(time, view,  dimension, ret, &error);
+        if (!exprOk) {
+            setExpressionInvalid(dimension, false, error);
+            return false;
+        } else {
+            if (!exprWasValid) {
+                setExpressionInvalid(dimension, true, error);
+            }
+        }
     }
     return true;
     
@@ -513,7 +536,7 @@ Knob<T>::getValueFromExpression_pod(double time,
                                     ViewIdx view,
                                     int dimension,
                                     bool clamp,
-                                    double* ret) const
+                                    double* ret)
 {
     ///Prevent recursive call of the expression
     
@@ -534,9 +557,19 @@ Knob<T>::getValueFromExpression_pod(double time,
     }
     
     
+    bool exprWasValid = isExpressionValid(dimension, 0);
     {
         EXPR_RECURSION_LEVEL();
-        *ret = evaluateExpression_pod(time, view, dimension);
+        std::string error;
+        bool exprOk = evaluateExpression_pod(time, view, dimension, ret, &error);
+        if (!exprOk) {
+            setExpressionInvalid(dimension, false, error);
+            return false;
+        } else {
+            if (!exprWasValid) {
+                setExpressionInvalid(dimension, true, error);
+            }
+        }
     }
     
     if (clamp) {
@@ -554,7 +587,7 @@ std::string
 Knob<std::string>::getValueFromMasterAt(double time,
                                         ViewSpec view,
                                         int dimension,
-                                        KnobI* master) const
+                                        KnobI* master)
 {
     Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >(master);
     assert(isString); //< other data types aren't supported
@@ -570,7 +603,7 @@ std::string
 Knob<std::string>::getValueFromMaster(ViewSpec view,
                                       int dimension,
                                       KnobI* master,
-                                      bool /*clamp*/) const
+                                      bool /*clamp*/)
 {
     Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >(master);
     assert(isString); //< other data types aren't supported
@@ -586,7 +619,7 @@ T
 Knob<T>::getValueFromMasterAt(double time,
                               ViewSpec view,
                               int dimension,
-                              KnobI* master) const
+                              KnobI* master)
 {
     Knob<int>* isInt = dynamic_cast<Knob<int>* >(master);
     Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(master);
@@ -607,7 +640,7 @@ T
 Knob<T>::getValueFromMaster(ViewSpec view,
                             int dimension,
                             KnobI* master,
-                            bool clamp) const
+                            bool clamp)
 {
     Knob<int>* isInt = dynamic_cast<Knob<int>* >(master);
     Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(master);
@@ -630,7 +663,7 @@ template <typename T>
 T
 Knob<T>::getValue(int dimension,
                   ViewSpec view,
-                  bool clamp) const
+                  bool clamp)
 {
     assert(!view.isAll());
     bool useGuiValues = QThread::currentThread() == qApp->thread();
@@ -683,7 +716,7 @@ Knob<T>::getValueFromCurve(double time,
                            bool useGuiCurve,
                            bool byPassMaster,
                            bool clamp,
-                           T* ret) const
+                           T* ret)
 {
     boost::shared_ptr<Curve> curve;
     
@@ -709,10 +742,10 @@ Knob<std::string>::getValueFromCurve(double time,
                                      bool useGuiCurve,
                                      bool byPassMaster,
                                      bool /*clamp*/,
-                                     std::string* ret) const
+                                     std::string* ret)
 {
     
-    const AnimatingKnobStringHelper* isStringAnimated = dynamic_cast<const AnimatingKnobStringHelper* >(this);
+    AnimatingKnobStringHelper* isStringAnimated = dynamic_cast<AnimatingKnobStringHelper* >(this);
     if (isStringAnimated) {
         *ret = isStringAnimated->getStringAtTime(time,view, dimension);
         ///ret is not empty if the animated string knob has a custom interpolation
@@ -745,7 +778,7 @@ Knob<T>::getValueAtTime(double time,
                         int dimension,
                         ViewSpec view,
                         bool clamp,
-                        bool byPassMaster) const
+                        bool byPassMaster) 
 {
     assert(!view.isAll());
     if  (dimension >= (int)_values.size() || dimension < 0) {
@@ -792,7 +825,7 @@ template <>
 double
 Knob<std::string>::getRawCurveValueAt(double time,
                                       ViewSpec view,
-                                      int dimension) const
+                                      int dimension)
 {
     boost::shared_ptr<Curve> curve  = getCurve(view, dimension,true);
     if (curve && curve->getKeyFramesCount() > 0) {
@@ -806,7 +839,7 @@ template <typename T>
 double
 Knob<T>::getRawCurveValueAt(double time,
                             ViewSpec view,
-                            int dimension) const
+                            int dimension)
 {
     boost::shared_ptr<Curve> curve  = getCurve(view, dimension,true);
     if (curve && curve->getKeyFramesCount() > 0) {
@@ -822,10 +855,12 @@ template <typename T>
 double
 Knob<T>::getValueAtWithExpression(double time,
                                   ViewSpec view,
-                                  int dimension) const
+                                  int dimension) 
 {
+    bool exprValid = isExpressionValid(dimension, 0);
+        
     std::string expr = getExpression(dimension);
-    if (!expr.empty()) {
+    if (!expr.empty() && exprValid) {
         double ret;
         if (getValueFromExpression_pod(time, /*view*/ ViewIdx(0), dimension,false, &ret)) {
             return ret;
@@ -1599,7 +1634,7 @@ Knob<T>::unSlave(int dimension,
         }
     }
     if (getHolder() && _signalSlotHandler) {
-        getHolder()->onKnobSlaved( this, master.second.get(),dimension,false );
+        getHolder()->onKnobSlaved( shared_from_this(), master.second,dimension,false );
     }
     if (masterHelper) {
         masterHelper->removeListener(this, dimension);
@@ -1971,7 +2006,7 @@ template<typename T>
 double
 Knob<T>::getDerivativeAtTime(double time,
                              ViewSpec view,
-                             int dimension) const
+                             int dimension)
 {
     if ( ( dimension > getDimension() ) || (dimension < 0) ) {
         throw std::invalid_argument("Knob::getDerivativeAtTime(): Dimension out of range");
@@ -2003,7 +2038,7 @@ template<>
 double
 Knob<std::string>::getDerivativeAtTime(double /*time*/,
                                        ViewSpec /*view*/,
-                                       int /*dimension*/) const
+                                       int /*dimension*/)
 {
     throw std::invalid_argument("Knob<string>::getDerivativeAtTime() not available");
 }
@@ -2015,7 +2050,7 @@ double
 Knob<T>::getIntegrateFromTimeToTimeSimpson(double time1,
                                            double time2,
                                            ViewSpec view,
-                                           int dimension) const
+                                           int dimension)
 {
     double fa = getValueAtTime(time1, dimension, view);
     double fm = getValueAtTime((time1+time2)/2, dimension, view);
@@ -2028,7 +2063,7 @@ double
 Knob<T>::getIntegrateFromTimeToTime(double time1,
                                     double time2,
                                     ViewSpec view,
-                                    int dimension) const
+                                    int dimension)
 {
     if ( ( dimension > getDimension() ) || (dimension < 0) ) {
         throw std::invalid_argument("Knob::getIntegrateFromTimeToTime(): Dimension out of range");
@@ -2088,7 +2123,7 @@ double
 Knob<std::string>::getIntegrateFromTimeToTimeSimpson(double /*time1*/,
                                                      double /*time2*/,
                                                      ViewSpec /*view*/,
-                                                     int /*dimension*/) const
+                                                     int /*dimension*/)
 {
     return 0; // dummy value
 }
@@ -2098,7 +2133,7 @@ double
 Knob<std::string>::getIntegrateFromTimeToTime(double /*time1*/,
                                               double /*time2*/,
                                               ViewSpec /*view*/,
-                                              int /*dimension*/) const
+                                              int /*dimension*/) 
 {
     throw std::invalid_argument("Knob<string>::getIntegrateFromTimeToTime() not available");
 }
@@ -2772,6 +2807,14 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
 }
 
 template <typename T>
+bool Knob<T>::computeValuesHaveModifications(int /*dimension*/,
+                                              const T& value,
+                                              const T& defaultValue) const
+{
+    return value != defaultValue;
+}
+
+template <typename T>
 void Knob<T>::computeHasModifications()
 {
     bool oneChanged = false;
@@ -2800,7 +2843,7 @@ void Knob<T>::computeHasModifications()
         ///Check expressions too in the future
         if (!hasModif) {
             QMutexLocker k(&_valueMutex);
-            if (_values[i] != _defaultValues[i]) {
+            if (computeValuesHaveModifications(i, _values[i], _defaultValues[i])) {
                 hasModif = true;
             }
         }

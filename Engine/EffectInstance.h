@@ -1551,10 +1551,10 @@ public:
      **/
     virtual void onEffectCreated(bool /*mayCreateFileDialog*/, const std::list<boost::shared_ptr<KnobSerialization> >& /*defaultParamValues*/) {}
 
-
-    virtual void onKnobSlaved(KnobI* slave, KnobI* master,
+    virtual void onKnobSlaved(const KnobPtr& slave, const KnobPtr& master,
                           int dimension,
                           bool isSlave) OVERRIDE FINAL;
+
 private:
 
 

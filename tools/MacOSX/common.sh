@@ -19,6 +19,8 @@ GIT_ARENA=https://github.com/olear/openfx-arena.git
 
 GIT_OCIO_CONFIG_TAR=https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.0.tar.gz
 
+MASTER_BRANCH=master
+
 TMP=$CWD/tmp
 
 PKGOS=OSX

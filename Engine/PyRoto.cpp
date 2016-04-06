@@ -52,27 +52,27 @@ ItemBase::~ItemBase()
 }
 
 void
-ItemBase::setLabel(const std::string & name)
+ItemBase::setLabel(const QString & name)
 {
-    _item->setLabel(name);
+    _item->setLabel(name.toStdString());
 }
 
-std::string
+QString
 ItemBase::getLabel() const
 {
-    return _item->getLabel();
+    return QString::fromUtf8(_item->getLabel().c_str());
 }
 
 bool
-ItemBase::setScriptName(const std::string& name)
+ItemBase::setScriptName(const QString& name)
 {
-    return _item->setScriptName(name);
+    return _item->setScriptName(name.toStdString());
 }
 
-std::string
+QString
 ItemBase::getScriptName() const
 {
-    return _item->getScriptName();
+    return QString::fromUtf8(_item->getScriptName().c_str());
 }
 
 void
@@ -117,13 +117,13 @@ ItemBase::getParentLayer() const
 }
 
 Param*
-ItemBase::getParam(const std::string& name) const
+ItemBase::getParam(const QString& name) const
 {
     RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(_item.get());
     if (!drawable) {
         return 0;
     }
-    KnobPtr knob = drawable->getKnobByName(name);
+    KnobPtr knob = drawable->getKnobByName(name.toStdString());
     if (!knob) {
         return 0;
     }
@@ -513,9 +513,9 @@ Roto::getBaseLayer() const
 }
 
 ItemBase*
-Roto::getItemByName(const std::string& name) const
+Roto::getItemByName(const QString& name) const
 {
-    boost::shared_ptr<RotoItem> item =  _ctx->getItemByName(name);
+    boost::shared_ptr<RotoItem> item =  _ctx->getItemByName(name.toStdString());
     if (!item) {
         return 0;
     }

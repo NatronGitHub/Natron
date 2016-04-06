@@ -22,6 +22,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Shaders.h"
+
 #include "Global/Macros.h"
 
 #include <stdexcept>

@@ -130,7 +130,9 @@ Settings::initializeKnobsGeneral()
     _natronSettingsExist->setSecretByDefault(true);
     _generalTab->addKnob(_natronSettingsExist);
     
-
+    boost::shared_ptr<KnobSeparator> softwareSep = AppManager::createKnob<KnobSeparator>(this, NATRON_APPLICATION_NAME);
+    _generalTab->addKnob(softwareSep);
+                         
     _checkForUpdates = AppManager::createKnob<KnobBool>(this, "Always check for updates on start-up");
     _checkForUpdates->setName("checkForUpdates");
     _checkForUpdates->setAnimationEnabled(false);
@@ -140,7 +142,7 @@ Settings::initializeKnobsGeneral()
     _enableCrashReports = AppManager::createKnob<KnobBool>(this, "Enable crash reporting");
     _enableCrashReports->setName("enableCrashReports");
     _enableCrashReports->setAnimationEnabled(false);
-    _enableCrashReports->setHintToolTip("When checked, if " NATRON_APPLICATION_NAME "crashes a window will pop-up asking you "
+    _enableCrashReports->setHintToolTip("When checked, if " NATRON_APPLICATION_NAME " crashes a window will pop-up asking you "
                                         "whether you want to upload the crash dump to the developers or not. "
                                         "This can help them track down the bug.\n"
                                         "If you need to turn the crash reporting system off, uncheck this.\n"
@@ -158,8 +160,7 @@ Settings::initializeKnobsGeneral()
     _documentationSource = AppManager::createKnob<KnobChoice>(this, "Documentation Source");
     _documentationSource->setName("documentationSource");
     _documentationSource->setAnimationEnabled(false);
-    _documentationSource->setHintToolTip("Documentation source\n"
-                                         "Changing this may require a restart of the application to take effect.");
+    _documentationSource->setHintToolTip("Documentation source");
     _documentationSource->appendChoice("Local");
     _documentationSource->appendChoice("Online");
     _documentationSource->appendChoice("None");
@@ -170,14 +171,7 @@ Settings::initializeKnobsGeneral()
     _wwwServerPort = AppManager::createKnob<KnobInt>(this, "Local webserver port");
     _wwwServerPort->setName("webserverPort");
     _wwwServerPort->setAnimationEnabled(false);
-
-    _notifyOnFileChange = AppManager::createKnob<KnobBool>(this, "Warn when a file changes externally");
-    _notifyOnFileChange->setName("warnOnExternalChange");
-    _notifyOnFileChange->setAnimationEnabled(false);
-    _notifyOnFileChange->setHintToolTip("When checked, if a file read from a file parameter changes externally, a warning will be displayed "
-                                        "on the viewer. Turning this off will suspend the notification system.");
-    _generalTab->addKnob(_notifyOnFileChange);
-
+    
     _autoSaveDelay = AppManager::createKnob<KnobInt>(this, "Auto-save trigger delay");
     _autoSaveDelay->setName("autoSaveDelay");
     _autoSaveDelay->setAnimationEnabled(false);
@@ -186,10 +180,10 @@ Settings::initializeKnobsGeneral()
     _autoSaveDelay->setMaximum(60);
     _autoSaveDelay->setAddNewLine(false);
     _autoSaveDelay->setHintToolTip("The number of seconds after an event that " NATRON_APPLICATION_NAME " should wait before "
-                                                                                                        " auto-saving. Note that if a render is in progress, " NATRON_APPLICATION_NAME " will "
-                                                                                                                                                                                       " wait until it is done to actually auto-save.");
+                                   " auto-saving. Note that if a render is in progress, " NATRON_APPLICATION_NAME " will "
+                                   " wait until it is done to actually auto-save.");
     _generalTab->addKnob(_autoSaveDelay);
-
+    
     
     
     _autoSaveUnSavedProjects = AppManager::createKnob<KnobBool>(this, "Enable Auto-save for unsaved projects");
@@ -200,175 +194,6 @@ Settings::initializeKnobsGeneral()
                                              "Disabling this will no longer save un-saved project.");
     _generalTab->addKnob(_autoSaveUnSavedProjects);
 
-    _linearPickers = AppManager::createKnob<KnobBool>(this, "Linear color pickers");
-    _linearPickers->setName("linearPickers");
-    _linearPickers->setAnimationEnabled(false);
-    _linearPickers->setHintToolTip("When activated, all colors picked from the color parameters are linearized "
-                                   "before being fetched. Otherwise they are in the same colorspace "
-                                   "as the viewer they were picked from.");
-    _generalTab->addKnob(_linearPickers);
-    
-    _convertNaNValues = AppManager::createKnob<KnobBool>(this, "Convert NaN values");
-    _convertNaNValues->setName("convertNaNs");
-    _convertNaNValues->setAnimationEnabled(false);
-    _convertNaNValues->setHintToolTip("When activated, any pixel that is a Not-a-Number will be converted to 1 to avoid potential crashes from "
-                                      "downstream nodes. These values can be produced by faulty plug-ins when they use wrong arithmetic such as "
-                                      "division by zero. Disabling this option will keep the NaN(s) in the buffers: this may lead to an "
-                                      "undefined behavior.");
-    _generalTab->addKnob(_convertNaNValues);
-
-    _numberOfThreads = AppManager::createKnob<KnobInt>(this, "Number of render threads (0=\"guess\")");
-    _numberOfThreads->setName("noRenderThreads");
-    _numberOfThreads->setAnimationEnabled(false);
-
-    QString numberOfThreadsToolTip = QString::fromUtf8("Controls how many threads " NATRON_APPLICATION_NAME " should use to render. \n"
-                                                                                                  "-1: Disable multithreading totally (useful for debugging) \n"
-                                                                                                  "0: Guess the thread count from the number of cores. The ideal threads count for this hardware is %1.").arg( QThread::idealThreadCount() );
-    _numberOfThreads->setHintToolTip( numberOfThreadsToolTip.toStdString() );
-    _numberOfThreads->disableSlider();
-    _numberOfThreads->setMinimum(-1);
-    _numberOfThreads->setDisplayMinimum(-1);
-    _generalTab->addKnob(_numberOfThreads);
-    
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-    _numberOfParallelRenders = AppManager::createKnob<KnobInt>(this, "Number of parallel renders (0=\"guess\")");
-    _numberOfParallelRenders->setHintToolTip("Controls the number of parallel frame that will be rendered at the same time by the renderer."
-                                             "A value of 0 indicate that " NATRON_APPLICATION_NAME " should automatically determine "
-                                                                                                   "the best number of parallel renders to launch given your CPU activity. "
-                                                                                                   "Setting a value different than 0 should be done only if you know what you're doing and can lead "
-                                                                                                   "in some situations to worse performances. Overall to get the best performances you should have your "
-                                                                                                   "CPU at 100% activity without idle times. ");
-    _numberOfParallelRenders->setName("nParallelRenders");
-    _numberOfParallelRenders->setMinimum(0);
-    _numberOfParallelRenders->disableSlider();
-    _numberOfParallelRenders->setAnimationEnabled(false);
-    _generalTab->addKnob(_numberOfParallelRenders);
-#endif
-    
-    _useThreadPool = AppManager::createKnob<KnobBool>(this, "Effects use thread-pool");
-    _useThreadPool->setName("useThreadPool");
-    _useThreadPool->setHintToolTip("When checked, all effects will use a global thread-pool to do their processing instead of launching "
-                                   "their own threads. "
-                                   "This suppresses the overhead created by the operating system creating new threads on demand for "
-                                   "each rendering of a special effect. As a result of this, the rendering might be faster on systems "
-                                   "with a lot of cores (>= 8). \n"
-                                   "WARNING: This is known not to work when using The Foundry's Furnace plug-ins (and potentially "
-                                   "some other plug-ins that the dev team hasn't not tested against it). When using these plug-ins, "
-                                   "make sure to uncheck this option first otherwise it will crash " NATRON_APPLICATION_NAME);
-    _useThreadPool->setAnimationEnabled(false);
-    _generalTab->addKnob(_useThreadPool);
-
-    _nThreadsPerEffect = AppManager::createKnob<KnobInt>(this, "Max threads usable per effect (0=\"guess\")");
-    _nThreadsPerEffect->setName("nThreadsPerEffect");
-    _nThreadsPerEffect->setAnimationEnabled(false);
-    _nThreadsPerEffect->setHintToolTip("Controls how many threads a specific effect can use at most to do its processing. "
-                                       "A high value will allow 1 effect to spawn lots of thread and might not be efficient because "
-                                       "the time spent to launch all the threads might exceed the time spent actually processing."
-                                       "By default (0) the renderer applies an heuristic to determine what's the best number of threads "
-                                       "for an effect.");
-    
-    _nThreadsPerEffect->setMinimum(0);
-    _nThreadsPerEffect->disableSlider();
-    _generalTab->addKnob(_nThreadsPerEffect);
-
-    _renderInSeparateProcess = AppManager::createKnob<KnobBool>(this, "Render in a separate process");
-    _renderInSeparateProcess->setName("renderNewProcess");
-    _renderInSeparateProcess->setAnimationEnabled(false);
-    _renderInSeparateProcess->setHintToolTip("If true, " NATRON_APPLICATION_NAME " will render frames to disk in "
-                                                                                 "a separate process so that if the main application crashes, the render goes on.");
-    _generalTab->addKnob(_renderInSeparateProcess);
-
-    _queueRenders = AppManager::createKnob<KnobBool>(this, "Append new renders to queue");
-    _queueRenders->setHintToolTip("When checked, renders will be queued in the Progress Panel and will start only when all "
-                                  "other prior tasks are done.");
-    _queueRenders->setAnimationEnabled(false);
-    _queueRenders->setName("queueRenders");
-    _generalTab->addKnob(_queueRenders);
-    
-    _autoPreviewEnabledForNewProjects = AppManager::createKnob<KnobBool>(this, "Auto-preview enabled by default for new projects");
-    _autoPreviewEnabledForNewProjects->setName("enableAutoPreviewNewProjects");
-    _autoPreviewEnabledForNewProjects->setAnimationEnabled(false);
-    _autoPreviewEnabledForNewProjects->setHintToolTip("If checked, then when creating a new project, the Auto-preview option"
-                                                      " is enabled.");
-    _generalTab->addKnob(_autoPreviewEnabledForNewProjects);
-
-
-    _firstReadSetProjectFormat = AppManager::createKnob<KnobBool>(this, "First image read set project format");
-    _firstReadSetProjectFormat->setName("autoProjectFormat");
-    _firstReadSetProjectFormat->setAnimationEnabled(false);
-    _firstReadSetProjectFormat->setHintToolTip("If checked, the first image you read in the project sets the project format to the "
-                                               "image size.");
-    _generalTab->addKnob(_firstReadSetProjectFormat);
-    
-    _fixPathsOnProjectPathChanged = AppManager::createKnob<KnobBool>(this, "Auto fix relative file-paths");
-    _fixPathsOnProjectPathChanged->setAnimationEnabled(false);
-    _fixPathsOnProjectPathChanged->setHintToolTip("If checked, when a project-path changes (either the name or the value pointed to), "
-                                                  NATRON_APPLICATION_NAME " checks all file-path parameters in the project and tries to fix them.");
-    _fixPathsOnProjectPathChanged->setName("autoFixRelativePaths");
-    _generalTab->addKnob(_fixPathsOnProjectPathChanged);
-    
-    _maxPanelsOpened = AppManager::createKnob<KnobInt>(this, "Maximum number of open settings panels (0=\"unlimited\")");
-    _maxPanelsOpened->setName("maxPanels");
-    _maxPanelsOpened->setHintToolTip("This property holds the maximum number of settings panels that can be "
-                                     "held by the properties dock at the same time."
-                                     "The special value of 0 indicates there can be an unlimited number of panels opened.");
-    _maxPanelsOpened->setAnimationEnabled(false);
-    _maxPanelsOpened->disableSlider();
-    _maxPanelsOpened->setMinimum(1);
-    _maxPanelsOpened->setMaximum(100);
-    _generalTab->addKnob(_maxPanelsOpened);
-
-    _useCursorPositionIncrements = AppManager::createKnob<KnobBool>(this, "Value increments based on cursor position");
-    _useCursorPositionIncrements->setName("cursorPositionAwareFields");
-    _useCursorPositionIncrements->setHintToolTip("When enabled, incrementing the value fields of parameters with the "
-                                                 "mouse wheel or with arrow keys will increment the digits on the right "
-                                                 "of the cursor. \n"
-                                                 "When disabled, the value fields are incremented given what the plug-in "
-                                                 "decided it should be. You can alter this increment by holding "
-                                                 "Shift (x10) or Control (/10) while incrementing.");
-    _useCursorPositionIncrements->setAnimationEnabled(false);
-    _generalTab->addKnob(_useCursorPositionIncrements);
-
-    _defaultLayoutFile = AppManager::createKnob<KnobFile>(this, "Default layout file");
-    _defaultLayoutFile->setName("defaultLayout");
-    _defaultLayoutFile->setHintToolTip("When set, " NATRON_APPLICATION_NAME " uses the given layout file "
-                                                                            "as default layout for new projects. You can export/import a layout to/from a file "
-                                                                            "from the Layout menu. If empty, the default application layout is used.");
-    _defaultLayoutFile->setAnimationEnabled(false);
-    _generalTab->addKnob(_defaultLayoutFile);
-    
-    _loadProjectsWorkspace = AppManager::createKnob<KnobBool>(this, "Load workspace embedded within projects");
-    _loadProjectsWorkspace->setName("loadProjectWorkspace");
-    _loadProjectsWorkspace->setHintToolTip("When checked, when loading a project, the workspace (windows layout) will also be loaded, otherwise it "
-                                           "will use your current layout.");
-    _loadProjectsWorkspace->setAnimationEnabled(false);
-    _generalTab->addKnob(_loadProjectsWorkspace);
-
-    _renderOnEditingFinished = AppManager::createKnob<KnobBool>(this, "Refresh viewer only when editing is finished");
-    _renderOnEditingFinished->setName("renderOnEditingFinished");
-    _renderOnEditingFinished->setHintToolTip("When checked, the viewer triggers a new render only when mouse is released when editing parameters, curves "
-                                             " or the timeline. This setting doesn't apply to roto splines editing.");
-    _renderOnEditingFinished->setAnimationEnabled(false);
-    _generalTab->addKnob(_renderOnEditingFinished);
-    
-    _activateRGBSupport = AppManager::createKnob<KnobBool>(this, "RGB components support");
-    _activateRGBSupport->setHintToolTip("When checked " NATRON_APPLICATION_NAME " is able to process images with only RGB components "
-                                                                                "(support for images with RGBA and Alpha components is always enabled). "
-                                                                                "Un-checking this option may prevent plugins that do not well support RGB components from crashing " NATRON_APPLICATION_NAME ". "
-                                                                                                                                                                                                             "Changing this option requires a restart of the application.");
-    _activateRGBSupport->setAnimationEnabled(false);
-    _activateRGBSupport->setName("rgbSupport");
-    _generalTab->addKnob(_activateRGBSupport);
-
-
-    _activateTransformConcatenationSupport = AppManager::createKnob<KnobBool>(this, "Transforms concatenation support");
-    _activateTransformConcatenationSupport->setHintToolTip("When checked " NATRON_APPLICATION_NAME " is able to concatenate transform effects "
-                                                                                                   "when they are chained in the compositing tree. This yields better results and faster "
-                                                                                                   "render times because the image is only filtered once instead of as many times as there are "
-                                                                                                   "transformations.");
-    _activateTransformConcatenationSupport->setAnimationEnabled(false);
-    _activateTransformConcatenationSupport->setName("transformCatSupport");
-    _generalTab->addKnob(_activateTransformConcatenationSupport);
     
     _hostName = AppManager::createKnob<KnobChoice>(this, "Appear to plug-ins as");
     _hostName->setName("pluginHostName");
@@ -465,16 +290,221 @@ Settings::initializeKnobsGeneral()
     _customHostName = AppManager::createKnob<KnobString>(this, "Custom Host name");
     _customHostName->setName("customHostName");
     _customHostName->setHintToolTip("This is the name of the OpenFX host (application) as it appears to the OpenFX plugins. "
-                              "Changing it to the name of another application can help loading some plugins which "
-                              "restrict their usage to specific OpenFX hosts. You shoud leave "
-                              "this to its default value, unless a specific plugin refuses to load or run. "
-                              "Changing this takes effect upon the next application launch, and requires clearing "
-                              "the OpenFX plugins cache from the Cache menu. "
-                              "The default host name is: \n"
-                              NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
+                                    "Changing it to the name of another application can help loading some plugins which "
+                                    "restrict their usage to specific OpenFX hosts. You shoud leave "
+                                    "this to its default value, unless a specific plugin refuses to load or run. "
+                                    "Changing this takes effect upon the next application launch, and requires clearing "
+                                    "the OpenFX plugins cache from the Cache menu. "
+                                    "The default host name is: \n"
+                                    NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
     _customHostName->setAnimationEnabled(false);
     _customHostName->setSecretByDefault(true);
     _generalTab->addKnob(_customHostName);
+    
+    boost::shared_ptr<KnobSeparator> sepThreading = AppManager::createKnob<KnobSeparator>(this, "Threading");
+    _generalTab->addKnob(sepThreading);
+    
+    _numberOfThreads = AppManager::createKnob<KnobInt>(this, "Number of render threads (0=\"guess\")");
+    _numberOfThreads->setName("noRenderThreads");
+    _numberOfThreads->setAnimationEnabled(false);
+    
+    QString numberOfThreadsToolTip = QString::fromUtf8("Controls how many threads " NATRON_APPLICATION_NAME " should use to render. \n"
+                                                       "-1: Disable multithreading totally (useful for debugging) \n"
+                                                       "0: Guess the thread count from the number of cores. The ideal threads count for this hardware is %1.").arg( QThread::idealThreadCount() );
+    _numberOfThreads->setHintToolTip( numberOfThreadsToolTip.toStdString() );
+    _numberOfThreads->disableSlider();
+    _numberOfThreads->setMinimum(-1);
+    _numberOfThreads->setDisplayMinimum(-1);
+    _generalTab->addKnob(_numberOfThreads);
+    
+#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
+    _numberOfParallelRenders = AppManager::createKnob<KnobInt>(this, "Number of parallel renders (0=\"guess\")");
+    _numberOfParallelRenders->setHintToolTip("Controls the number of parallel frame that will be rendered at the same time by the renderer."
+                                             "A value of 0 indicate that " NATRON_APPLICATION_NAME " should automatically determine "
+                                             "the best number of parallel renders to launch given your CPU activity. "
+                                             "Setting a value different than 0 should be done only if you know what you're doing and can lead "
+                                             "in some situations to worse performances. Overall to get the best performances you should have your "
+                                             "CPU at 100% activity without idle times. ");
+    _numberOfParallelRenders->setName("nParallelRenders");
+    _numberOfParallelRenders->setMinimum(0);
+    _numberOfParallelRenders->disableSlider();
+    _numberOfParallelRenders->setAnimationEnabled(false);
+    _generalTab->addKnob(_numberOfParallelRenders);
+#endif
+    
+    _useThreadPool = AppManager::createKnob<KnobBool>(this, "Effects use thread-pool");
+    _useThreadPool->setName("useThreadPool");
+    _useThreadPool->setHintToolTip("When checked, all effects will use a global thread-pool to do their processing instead of launching "
+                                   "their own threads. "
+                                   "This suppresses the overhead created by the operating system creating new threads on demand for "
+                                   "each rendering of a special effect. As a result of this, the rendering might be faster on systems "
+                                   "with a lot of cores (>= 8). \n"
+                                   "WARNING: This is known not to work when using The Foundry's Furnace plug-ins (and potentially "
+                                   "some other plug-ins that the dev team hasn't not tested against it). When using these plug-ins, "
+                                   "make sure to uncheck this option first otherwise it will crash " NATRON_APPLICATION_NAME);
+    _useThreadPool->setAnimationEnabled(false);
+    _generalTab->addKnob(_useThreadPool);
+    
+    _nThreadsPerEffect = AppManager::createKnob<KnobInt>(this, "Max threads usable per effect (0=\"guess\")");
+    _nThreadsPerEffect->setName("nThreadsPerEffect");
+    _nThreadsPerEffect->setAnimationEnabled(false);
+    _nThreadsPerEffect->setHintToolTip("Controls how many threads a specific effect can use at most to do its processing. "
+                                       "A high value will allow 1 effect to spawn lots of thread and might not be efficient because "
+                                       "the time spent to launch all the threads might exceed the time spent actually processing."
+                                       "By default (0) the renderer applies an heuristic to determine what's the best number of threads "
+                                       "for an effect.");
+    
+    _nThreadsPerEffect->setMinimum(0);
+    _nThreadsPerEffect->disableSlider();
+    _generalTab->addKnob(_nThreadsPerEffect);
+    
+    _renderInSeparateProcess = AppManager::createKnob<KnobBool>(this, "Render in a separate process");
+    _renderInSeparateProcess->setName("renderNewProcess");
+    _renderInSeparateProcess->setAnimationEnabled(false);
+    _renderInSeparateProcess->setHintToolTip("If true, " NATRON_APPLICATION_NAME " will render frames to disk in "
+                                             "a separate process so that if the main application crashes, the render goes on.");
+    _generalTab->addKnob(_renderInSeparateProcess);
+    
+    _queueRenders = AppManager::createKnob<KnobBool>(this, "Append new renders to queue");
+    _queueRenders->setHintToolTip("When checked, renders will be queued in the Progress Panel and will start only when all "
+                                  "other prior tasks are done.");
+    _queueRenders->setAnimationEnabled(false);
+    _queueRenders->setName("queueRenders");
+    _generalTab->addKnob(_queueRenders);
+    
+    
+    boost::shared_ptr<KnobSeparator> sepMisc = AppManager::createKnob<KnobSeparator>(this, "Misc.");
+    _generalTab->addKnob(sepMisc);
+
+    _notifyOnFileChange = AppManager::createKnob<KnobBool>(this, "Warn when a file changes externally");
+    _notifyOnFileChange->setName("warnOnExternalChange");
+    _notifyOnFileChange->setAnimationEnabled(false);
+    _notifyOnFileChange->setHintToolTip("When checked, if a file read from a file parameter changes externally, a warning will be displayed "
+                                        "on the viewer. Turning this off will suspend the notification system.");
+    _generalTab->addKnob(_notifyOnFileChange);
+
+    _filedialogForWriters = AppManager::createKnob<KnobBool>(this, "Prompt with file dialog when creating Write node");
+    _filedialogForWriters->setName("writeUseDialog");
+    _filedialogForWriters->setDefaultValue(true);
+    _filedialogForWriters->setAnimationEnabled(false);
+    _filedialogForWriters->setHintToolTip("When checked, opens-up a file dialog when creating a Write node");
+    _generalTab->addKnob(_filedialogForWriters);
+
+    
+    _firstReadSetProjectFormat = AppManager::createKnob<KnobBool>(this, "First image read set project format");
+    _firstReadSetProjectFormat->setName("autoProjectFormat");
+    _firstReadSetProjectFormat->setAnimationEnabled(false);
+    _firstReadSetProjectFormat->setHintToolTip("If checked, the first image you read in the project sets the project format to the "
+                                               "image size.");
+    _generalTab->addKnob(_firstReadSetProjectFormat);
+    
+    
+    
+    _convertNaNValues = AppManager::createKnob<KnobBool>(this, "Convert NaN values");
+    _convertNaNValues->setName("convertNaNs");
+    _convertNaNValues->setAnimationEnabled(false);
+    _convertNaNValues->setHintToolTip("When activated, any pixel that is a Not-a-Number will be converted to 1 to avoid potential crashes from "
+                                      "downstream nodes. These values can be produced by faulty plug-ins when they use wrong arithmetic such as "
+                                      "division by zero. Disabling this option will keep the NaN(s) in the buffers: this may lead to an "
+                                      "undefined behavior.");
+    _generalTab->addKnob(_convertNaNValues);
+
+    
+    
+    _autoPreviewEnabledForNewProjects = AppManager::createKnob<KnobBool>(this, "Auto-preview enabled by default for new projects");
+    _autoPreviewEnabledForNewProjects->setName("enableAutoPreviewNewProjects");
+    _autoPreviewEnabledForNewProjects->setAnimationEnabled(false);
+    _autoPreviewEnabledForNewProjects->setHintToolTip("If checked, then when creating a new project, the Auto-preview option"
+                                                      " is enabled.");
+    _generalTab->addKnob(_autoPreviewEnabledForNewProjects);
+
+
+    
+    _fixPathsOnProjectPathChanged = AppManager::createKnob<KnobBool>(this, "Auto fix relative file-paths");
+    _fixPathsOnProjectPathChanged->setAnimationEnabled(false);
+    _fixPathsOnProjectPathChanged->setHintToolTip("If checked, when a project-path changes (either the name or the value pointed to), "
+                                                  NATRON_APPLICATION_NAME " checks all file-path parameters in the project and tries to fix them.");
+    _fixPathsOnProjectPathChanged->setName("autoFixRelativePaths");
+    _generalTab->addKnob(_fixPathsOnProjectPathChanged);
+    
+    _renderOnEditingFinished = AppManager::createKnob<KnobBool>(this, "Refresh viewer only when editing is finished");
+    _renderOnEditingFinished->setName("renderOnEditingFinished");
+    _renderOnEditingFinished->setHintToolTip("When checked, the viewer triggers a new render only when mouse is released when editing parameters, curves "
+                                             " or the timeline. This setting doesn't apply to roto splines editing.");
+    _renderOnEditingFinished->setAnimationEnabled(false);
+    _generalTab->addKnob(_renderOnEditingFinished);
+    
+    _activateRGBSupport = AppManager::createKnob<KnobBool>(this, "RGB components support");
+    _activateRGBSupport->setHintToolTip("When checked " NATRON_APPLICATION_NAME " is able to process images with only RGB components "
+                                        "(support for images with RGBA and Alpha components is always enabled). "
+                                        "Un-checking this option may prevent plugins that do not well support RGB components from crashing " NATRON_APPLICATION_NAME ". "
+                                        "Changing this option requires a restart of the application.");
+    _activateRGBSupport->setAnimationEnabled(false);
+    _activateRGBSupport->setName("rgbSupport");
+    _generalTab->addKnob(_activateRGBSupport);
+    
+    
+    _activateTransformConcatenationSupport = AppManager::createKnob<KnobBool>(this, "Transforms concatenation support");
+    _activateTransformConcatenationSupport->setHintToolTip("When checked " NATRON_APPLICATION_NAME " is able to concatenate transform effects "
+                                                           "when they are chained in the compositing tree. This yields better results and faster "
+                                                           "render times because the image is only filtered once instead of as many times as there are "
+                                                           "transformations.");
+    _activateTransformConcatenationSupport->setAnimationEnabled(false);
+    _activateTransformConcatenationSupport->setName("transformCatSupport");
+    _generalTab->addKnob(_activateTransformConcatenationSupport);
+    
+    
+    boost::shared_ptr<KnobSeparator> sepUI = AppManager::createKnob<KnobSeparator>(this, "User Interface");
+    _generalTab->addKnob(sepUI);
+    
+    _linearPickers = AppManager::createKnob<KnobBool>(this, "Linear color pickers");
+    _linearPickers->setName("linearPickers");
+    _linearPickers->setAnimationEnabled(false);
+    _linearPickers->setHintToolTip("When activated, all colors picked from the color parameters are linearized "
+                                   "before being fetched. Otherwise they are in the same colorspace "
+                                   "as the viewer they were picked from.");
+    _generalTab->addKnob(_linearPickers);
+    
+    _maxPanelsOpened = AppManager::createKnob<KnobInt>(this, "Maximum number of open settings panels (0=\"unlimited\")");
+    _maxPanelsOpened->setName("maxPanels");
+    _maxPanelsOpened->setHintToolTip("This property holds the maximum number of settings panels that can be "
+                                     "held by the properties dock at the same time."
+                                     "The special value of 0 indicates there can be an unlimited number of panels opened.");
+    _maxPanelsOpened->setAnimationEnabled(false);
+    _maxPanelsOpened->disableSlider();
+    _maxPanelsOpened->setMinimum(1);
+    _maxPanelsOpened->setMaximum(100);
+    _generalTab->addKnob(_maxPanelsOpened);
+
+    _useCursorPositionIncrements = AppManager::createKnob<KnobBool>(this, "Value increments based on cursor position");
+    _useCursorPositionIncrements->setName("cursorPositionAwareFields");
+    _useCursorPositionIncrements->setHintToolTip("When enabled, incrementing the value fields of parameters with the "
+                                                 "mouse wheel or with arrow keys will increment the digits on the right "
+                                                 "of the cursor. \n"
+                                                 "When disabled, the value fields are incremented given what the plug-in "
+                                                 "decided it should be. You can alter this increment by holding "
+                                                 "Shift (x10) or Control (/10) while incrementing.");
+    _useCursorPositionIncrements->setAnimationEnabled(false);
+    _generalTab->addKnob(_useCursorPositionIncrements);
+
+    _defaultLayoutFile = AppManager::createKnob<KnobFile>(this, "Default layout file");
+    _defaultLayoutFile->setName("defaultLayout");
+    _defaultLayoutFile->setHintToolTip("When set, " NATRON_APPLICATION_NAME " uses the given layout file "
+                                                                            "as default layout for new projects. You can export/import a layout to/from a file "
+                                                                            "from the Layout menu. If empty, the default application layout is used.");
+    _defaultLayoutFile->setAnimationEnabled(false);
+    _generalTab->addKnob(_defaultLayoutFile);
+    
+    _loadProjectsWorkspace = AppManager::createKnob<KnobBool>(this, "Load workspace embedded within projects");
+    _loadProjectsWorkspace->setName("loadProjectWorkspace");
+    _loadProjectsWorkspace->setHintToolTip("When checked, when loading a project, the workspace (windows layout) will also be loaded, otherwise it "
+                                           "will use your current layout.");
+    _loadProjectsWorkspace->setAnimationEnabled(false);
+    _generalTab->addKnob(_loadProjectsWorkspace);
+
+    
+    
+    
 }
 
 void
@@ -685,6 +715,19 @@ Settings::initializeKnobsAppearance()
     _dopeSheetEditorGridColor->setSimplified(true);
     _dopeSheetEditorColors->addKnob(_dopeSheetEditorGridColor);
     
+    
+    _scriptEditorFontChoice = AppManager::createKnob<KnobChoice>(this, "Font");
+    _scriptEditorFontChoice->setHintToolTip("List of all fonts available on your system");
+    _scriptEditorFontChoice->setName("scriptEditorFont");
+    _scriptEditorFontChoice->setAddNewLine(false);
+    _scriptEditorFontChoice->setAnimationEnabled(false);
+    _scriptEditorColors->addKnob(_scriptEditorFontChoice);
+    
+    _scriptEditorFontSize = AppManager::createKnob<KnobInt>(this, "Font Size");
+    _scriptEditorFontSize->setHintToolTip("The font size");
+    _scriptEditorFontSize->setName("scriptEditorFontSize");
+    _scriptEditorFontSize->setAnimationEnabled(false);
+    _scriptEditorColors->addKnob(_scriptEditorFontSize);
     
     _curLineColor = AppManager::createKnob<KnobColor>(this, "Current Line Color", 3);
     _curLineColor->setName("currentLineColor");
@@ -1463,7 +1506,7 @@ Settings::setDefaultValues()
     setCachingLabels();
     _autoTurbo->setDefaultValue(false);
     _usePluginIconsInNodeGraph->setDefaultValue(true);
-    _useAntiAliasing->setDefaultValue(false);
+    _useAntiAliasing->setDefaultValue(true);
     _defaultNodeColor->setDefaultValue(0.7,0);
     _defaultNodeColor->setDefaultValue(0.7,1);
     _defaultNodeColor->setDefaultValue(0.7,2);
@@ -1660,6 +1703,9 @@ Settings::setDefaultValues()
     _curLineColor->setDefaultValue(0.35,0);
     _curLineColor->setDefaultValue(0.35,1);
     _curLineColor->setDefaultValue(0.35,2);
+    
+    _scriptEditorFontChoice->setDefaultValue(0);
+    _scriptEditorFontSize->setDefaultValue(NATRON_FONT_SIZE_DEFAULT);
 
     endChanges();
 } // setDefaultValues
@@ -2162,6 +2208,8 @@ Settings::onKnobValueChanged(KnobI* k,
         if (reply == eStandardButtonYes) {
             crash_application();
         }
+    } else if (k == _scriptEditorFontChoice.get() || k == _scriptEditorFontSize.get()) {
+        appPTR->reloadScriptEditorFonts();
     }
     if ((k == _hostName.get() || k == _customHostName.get()) && !_restoringSettings) {
         Dialogs::warningDialog(tr("Host-name change").toStdString(), tr("Changing this requires a restart of " NATRON_APPLICATION_NAME
@@ -2604,21 +2652,37 @@ void
 Settings::populateSystemFonts(const QSettings& settings,const std::vector<std::string>& fonts)
 {
     _systemFontChoice->populateChoices(fonts);
-    
+    _scriptEditorFontChoice->populateChoices(fonts);
     for (U32 i = 0; i < fonts.size(); ++i) {
         if (fonts[i] == NATRON_FONT) {
             _systemFontChoice->setDefaultValue(i);
-            break;
+        }
+        if (fonts[i] == NATRON_SCRIPT_FONT) {
+            _scriptEditorFontChoice->setDefaultValue(i);
         }
     }
     ///Now restore properly the system font choice
-    QString name = QString::fromUtf8(_systemFontChoice->getName().c_str());
-    if (settings.contains(name)) {
-        std::string value = settings.value(name).toString().toStdString();
-        for (U32 i = 0; i < fonts.size(); ++i) {
-            if (fonts[i] == value) {
-                _systemFontChoice->setValue(i);
-                break;
+    {
+        QString name = QString::fromUtf8(_systemFontChoice->getName().c_str());
+        if (settings.contains(name)) {
+            std::string value = settings.value(name).toString().toStdString();
+            for (U32 i = 0; i < fonts.size(); ++i) {
+                if (fonts[i] == value) {
+                    _systemFontChoice->setValue(i);
+                    break;
+                }
+            }
+        }
+    }
+    {
+        QString name = QString::fromUtf8(_scriptEditorFontChoice->getName().c_str());
+        if (settings.contains(name)) {
+            std::string value = settings.value(name).toString().toStdString();
+            for (U32 i = 0; i < fonts.size(); ++i) {
+                if (fonts[i] == value) {
+                    _scriptEditorFontChoice->setValue(i);
+                    break;
+                }
             }
         }
     }
@@ -3208,6 +3272,7 @@ void
 Settings::getPythonGroupsSearchPaths(std::list<std::string>* templates) const
 {
     _templatesPluginPaths->getPaths(templates);
+    
 }
 
 void
@@ -3541,6 +3606,18 @@ Settings::getSECurLineColor(double* r,double* g, double* b) const
     *b = _curLineColor->getValue(2);
 }
 
+int
+Settings::getSEFontSize() const
+{
+    return _scriptEditorFontSize->getValue();
+}
+
+std::string
+Settings::getSEFontFamily() const
+{
+    return _scriptEditorFontChoice->getActiveEntryText_mt_safe();
+}
+
 
 void Settings::getPluginIconFrameColor(int *r, int *g, int *b) const
 {
@@ -3638,6 +3715,12 @@ bool
 Settings::isRenderQueuingEnabled() const
 {
     return _queueRenders->getValue();
+}
+
+bool
+Settings::isFileDialogEnabledForNewWriters() const
+{
+    return _filedialogForWriters->getValue();
 }
 
 NATRON_NAMESPACE_EXIT;

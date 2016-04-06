@@ -266,28 +266,29 @@ ProjectPrivate::autoSetProjectDirectory(const QString& path)
         pathCpy.erase(pathCpy.size() - 1, 1);
     }
     std::string env = envVars->getValue();
-    std::map<std::string, std::string> envMap;
-    Project::makeEnvMap(env, envMap);
+    std::list<std::vector<std::string> > table;
+    envVars->decodeFromKnobTableFormat(env, &table);
     
     ///If there was already a OCIO variable, update it, otherwise create it
-    
-    std::map<std::string, std::string>::iterator foundPROJECT = envMap.find(NATRON_PROJECT_ENV_VAR_NAME);
-    if (foundPROJECT != envMap.end()) {
-        foundPROJECT->second = pathCpy;
-    } else {
-        envMap.insert(std::make_pair(NATRON_PROJECT_ENV_VAR_NAME, pathCpy));
+    bool foundProject = false;
+    for (std::list<std::vector<std::string> >::iterator it = table.begin(); it != table.end(); ++it) {
+        if ((*it)[0] == NATRON_PROJECT_ENV_VAR_NAME) {
+            (*it)[1] = pathCpy;
+            foundProject = true;
+            break;
+        }
     }
-    
-    std::string newEnv;
-    for (std::map<std::string, std::string>::iterator it = envMap.begin(); it != envMap.end(); ++it) {
-        newEnv += NATRON_ENV_VAR_NAME_START_TAG;
-        // In order to use XML tags, the text inside the tags has to be escaped.
-        newEnv += Project::escapeXML(it->first);
-        newEnv += NATRON_ENV_VAR_NAME_END_TAG;
-        newEnv += NATRON_ENV_VAR_VALUE_START_TAG;
-        newEnv += Project::escapeXML(it->second);
-        newEnv += NATRON_ENV_VAR_VALUE_END_TAG;
+    if (!foundProject) {
+        std::vector<std::string> vec(2);
+        vec[0] = NATRON_PROJECT_ENV_VAR_NAME;
+        vec[1] = pathCpy;
+        table.push_back(vec);
     }
+   
+    
+    
+    
+    std::string newEnv = envVars->encodeToKnobTableFormat(table);
     if (env != newEnv) {
         if (appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
             _publicInterface->fixRelativeFilePaths(NATRON_PROJECT_ENV_VAR_NAME, pathCpy,false);
@@ -355,7 +356,7 @@ ProjectPrivate::runOnProjectSaveCallback(const std::string& filename, bool autoS
                 }
                 std::string filePath = filename;
                 if (ret) {
-                    filePath = NATRON_PYTHON_NAMESPACE::PY3String_asString(ret);
+                    filePath = NATRON_PYTHON_NAMESPACE::PyStringToStdString(ret);
                     std::string script = "del ret\n";
                     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
                     assert(ok);

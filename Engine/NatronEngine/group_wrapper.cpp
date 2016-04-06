@@ -125,9 +125,9 @@ static PyObject* Sbk_GroupFunc_getNode(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: getNode(std::string)const
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // getNode(std::string)const
+    // 0: getNode(QString)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // getNode(QString)const
     }
 
     // Function signature not found.
@@ -135,11 +135,11 @@ static PyObject* Sbk_GroupFunc_getNode(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        ::std::string cppArg0;
+        ::QString cppArg0 = ::QString();
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getNode(std::string)const
+            // getNode(QString)const
             Effect * cppResult = const_cast<const ::Group*>(cppSelf)->getNode(cppArg0);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], cppResult);
 
@@ -155,7 +155,7 @@ static PyObject* Sbk_GroupFunc_getNode(PyObject* self, PyObject* pyArg)
     return pyResult;
 
     Sbk_GroupFunc_getNode_TypeError:
-        const char* overloads[] = {"std::string", 0};
+        const char* overloads[] = {"unicode", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Group.getNode", overloads);
         return 0;
 }

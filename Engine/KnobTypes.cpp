@@ -31,9 +31,13 @@
 #include <cassert>
 #include <stdexcept>
 
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/math/special_functions/fpclassify.hpp>
+#include <boost/algorithm/string/trim.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
 
 #include <QDebug>
 #include <QThread>
@@ -49,6 +53,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/KnobFile.h"
 #include "Engine/KnobSerialization.h"
 #include "Engine/Node.h"
+#include "Engine/Project.h"
 #include "Engine/RotoContext.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
@@ -506,6 +511,20 @@ KnobDouble::normalize(int dimension,
     }
 }
 
+bool
+KnobDouble::computeValuesHaveModifications(int dimension,
+                                    const double& value,
+                                    const double& defaultValue) const
+{
+    if (_defaultValuesAreNormalized) {
+        double tmp = defaultValue;
+        denormalize(dimension, 0, &tmp);
+        return value != tmp;
+    } else {
+        return value != defaultValue;
+    }
+}
+
 /******************************KnobButton**************************************/
 
 KnobButton::KnobButton(KnobHolder*  holder,
@@ -553,6 +572,7 @@ KnobChoice::KnobChoice(KnobHolder* holder,
                          bool declaredByPlugin)
 : Knob<int>(holder, label, dimension, declaredByPlugin)
 , _entriesMutex()
+, _currentEntryLabel()
 , _addNewChoice(false)
 , _isCascading(false)
 {
@@ -593,6 +613,49 @@ KnobChoice::typeName() const
     return typeNameStatic();
 }
 
+void
+KnobChoice::cloneExtraData(KnobI* other,int /*dimension*/)
+{
+    KnobChoice* isChoice = dynamic_cast<KnobChoice*>(other);
+    if (!isChoice) {
+        return;
+    }
+    
+    QMutexLocker k(&_entriesMutex);
+    _currentEntryLabel = isChoice->getActiveEntryText_mt_safe();
+}
+
+bool
+KnobChoice::cloneExtraDataAndCheckIfChanged(KnobI* other,int /*dimension*/)
+{
+    KnobChoice* isChoice = dynamic_cast<KnobChoice*>(other);
+    if (!isChoice) {
+        return false;
+    }
+    
+    QMutexLocker k(&_entriesMutex);
+    std::string otherEntry = isChoice->getActiveEntryText_mt_safe();
+    if (_currentEntryLabel != otherEntry) {
+        _currentEntryLabel = otherEntry;
+        return true;
+    }
+    return false;
+}
+
+void
+KnobChoice::cloneExtraData(KnobI* other, double /*offset*/, const RangeD* /*range*/,int /*dimension*/)
+{
+    KnobChoice* isChoice = dynamic_cast<KnobChoice*>(other);
+    if (!isChoice) {
+        return;
+    }
+    
+    QMutexLocker k(&_entriesMutex);
+    _currentEntryLabel = isChoice->getActiveEntryText_mt_safe();
+
+}
+
+
 #ifdef DEBUG
 #pragma message WARN("When enabling multi-view knobs, make this multi-view too")
 #endif
@@ -602,52 +665,168 @@ KnobChoice::onInternalValueChanged(int /*dimension*/, double time, ViewSpec /*vi
     
     int index = getValueAtTime(time, 0);
     QMutexLocker k(&_entriesMutex);
-    if (index >= 0 &&  index < (int)_entries.size()) {
-        _lastValidEntry = _entries[index];
+    if (index >= 0 &&  index < (int)_mergedEntries.size()) {
+        _currentEntryLabel = _mergedEntries[index];
     }
 }
 
+#if 0 // dead code
+// replaced by boost::iequals(a, b)
+static bool caseInsensitiveCompare(const std::string& a, const std::string& b)
+{
+    if (a.size() != b.size()) {
+        return false;
+    }
+    std::locale loc;
+    for (std::size_t i = 0; i < a.size(); ++i) {
+        char aLow = std::tolower(a[i],loc);
+        char bLow = std::tolower(b[i],loc);
+        if (aLow != bLow) {
+            return false;
+        }
+    }
+    return true;
+}
+#endif
+
+static bool stringEqualFunctor(const std::string& a, const std::string& b, KnobChoiceMergeEntriesData* /*data*/)
+{
+    return a == b;
+}
+
 void
-KnobChoice::findAndSetOldChoice(const std::vector<std::string>& newEntries)
+KnobChoice::findAndSetOldChoice(MergeMenuEqualityFunctor mergingFunctor,
+                                KnobChoiceMergeEntriesData* mergingData)
 {
     std::string curEntry;
     {
         QMutexLocker k(&_entriesMutex);
-        curEntry = _lastValidEntry;
+        curEntry = _currentEntryLabel;
     }
     if (!curEntry.empty()) {
-        for (std::size_t i = 0; i < newEntries.size(); ++i) {
-            if (newEntries[i] == curEntry) {
-                blockValueChanges();
-                setValue((int)i);
-                unblockValueChanges();
-                break;
+        
+        if (mergingFunctor) {
+            assert(mergingData);
+            mergingData->clear();
+        } else {
+            mergingFunctor = stringEqualFunctor;
+        }
+        int found = -1;
+        {
+            QMutexLocker k(&_entriesMutex);
+            for (std::size_t i = 0; i < _mergedEntries.size(); ++i) {
+                if (mergingFunctor(_mergedEntries[i],curEntry, mergingData)) {
+                    found = i;
+                    
+                    // Update the label if different
+                    _currentEntryLabel = _mergedEntries[i];
+                    break;
+                }
             }
+        }
+        if (found != -1) {
+            blockValueChanges();
+            setValue(found);
+            unblockValueChanges();
+        } else {
+            /*// We are in invalid state
+            blockValueChanges();
+            setValue(-1);
+            unblockValueChanges();*/
         }
     }
 }
 
-/*Must be called right away after the constructor.*/
-void
+
+
+bool
 KnobChoice::populateChoices(const std::vector<std::string> &entries,
-                             const std::vector<std::string> &entriesHelp)
+                            const std::vector<std::string> &entriesHelp,
+                            MergeMenuEqualityFunctor mergingFunctor,
+                            KnobChoiceMergeEntriesData* mergingData,
+                            bool restoreOldChoice)
 {
     assert( entriesHelp.empty() || entriesHelp.size() == entries.size() );
+    bool hasChanged;
     {
         QMutexLocker l(&_entriesMutex);
-        _entriesHelp = entriesHelp;
-        _entries = entries;
+        
+        _newEntries = entries;
+        if (!entriesHelp.empty()) {
+            _newEntriesHelp = entriesHelp;
+        } else {
+            _newEntriesHelp.resize(entries.size());
+        }
+        if (mergingFunctor) {
+            assert(mergingData);
+            for (std::size_t i = 0; i < entries.size(); ++i) {
+                
+                mergingData->clear();
+                bool found = false;
+                for (std::size_t j = 0; j < _mergedEntries.size(); ++j) {
+                    if (mergingFunctor(_mergedEntries[j],entries[i], mergingData)) {
+                        if (_mergedEntries[j] != entries[i]) {
+                            hasChanged = true;
+                            _mergedEntries[j] = entries[i];
+                        }
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    hasChanged = true;
+                    if (i < (int)_newEntriesHelp.size()) {
+                        _mergedEntriesHelp.push_back(_newEntriesHelp[i]);
+                    }
+                    _mergedEntries.push_back(entries[i]);
+                }
+            }
+            
+        } else {
+            _mergedEntries = _newEntries;
+            _mergedEntriesHelp = _newEntriesHelp;
+            hasChanged = true;
+        }
     }
     
     /*
-     Try to restore the last choice. 
-     This has been commented-out because it will loose the user choice in case of alias knobs
+     Try to restore the last choice.
      */
-    //findAndSetOldChoice(entries);
-    
-    if (_signalSlotHandler) {
-        _signalSlotHandler->s_helpChanged();
+    if (hasChanged) {
+        if (restoreOldChoice) {
+            findAndSetOldChoice(mergingFunctor, mergingData);
+        }
+        
+        if (_signalSlotHandler) {
+            _signalSlotHandler->s_helpChanged();
+        }
+        Q_EMIT populated();
     }
+    return hasChanged;
+}
+
+
+void
+KnobChoice::refreshMenu()
+{
+    KnobHolder* holder = getHolder();
+    if (holder) {
+        // In OpenFX we reset the menu with a button
+        KnobPtr hasRefreshButton = holder->getKnobByName(getName() + "RefreshButton");
+        if (hasRefreshButton) {
+            KnobButton* button = dynamic_cast<KnobButton*>(hasRefreshButton.get());
+            button->trigger();
+            return;
+        }
+    }
+    std::vector<std::string> entries;
+    {
+        QMutexLocker l(&_entriesMutex);
+ 
+        _mergedEntries = _newEntries;
+        _mergedEntriesHelp = _newEntriesHelp;
+    }
+    findAndSetOldChoice();
     Q_EMIT populated();
 }
 
@@ -656,9 +835,13 @@ KnobChoice::resetChoices()
 {
     {
         QMutexLocker l(&_entriesMutex);
-        _entries.clear();
-        _entriesHelp.clear();
+        _newEntries.clear();
+        _newEntriesHelp.clear();
+        _mergedEntries.clear();
+        _mergedEntriesHelp.clear();
+        
     }
+    findAndSetOldChoice();
     if (_signalSlotHandler) {
         _signalSlotHandler->s_helpChanged();
     }
@@ -668,67 +851,91 @@ KnobChoice::resetChoices()
 void
 KnobChoice::appendChoice(const std::string& entry, const std::string& help)
 {
-    std::vector<std::string> curEntries,newEntries;
     {
         QMutexLocker l(&_entriesMutex);
-        _entriesHelp.push_back(help);
-        _entries.push_back(entry);
-        newEntries = _entries;
+        
+        _mergedEntriesHelp.push_back(help);
+        _mergedEntries.push_back(entry);
+        _newEntries.push_back(entry);
+        _newEntriesHelp.push_back(help);
+        
     }
     
-    //findAndSetOldChoice(newEntries);
-    
+    findAndSetOldChoice();
     if (_signalSlotHandler) {
         _signalSlotHandler->s_helpChanged();
     }
     Q_EMIT entryAppended(QString::fromUtf8(entry.c_str()), QString::fromUtf8(help.c_str()));
+    
 }
 
 std::vector<std::string>
 KnobChoice::getEntries_mt_safe() const
 {
     QMutexLocker l(&_entriesMutex);
-    return _entries;
+    return _mergedEntries;
+}
+
+bool
+KnobChoice::isActiveEntryPresentInEntries() const
+{
+    
+    QMutexLocker k(&_entriesMutex);
+    if (_currentEntryLabel.empty()) {
+        return true;
+    }
+    for (std::size_t i = 0; i < _newEntries.size(); ++i) {
+        if (_newEntries[i] == _currentEntryLabel) {
+            return true;
+        }
+    }
+    return false;
 }
 
 const std::string&
 KnobChoice::getEntry(int v) const
 {
-    if (v < 0 || (int)_entries.size() <= v) {
+    assert(v != -1); // use getActiveEntryText_mt_safe() otherwise
+    if ((int)_mergedEntries.size() <= v) {
         throw std::runtime_error(std::string("KnobChoice::getEntry: index out of range"));
     }
-    return _entries[v];
+    return _mergedEntries[v];
 }
 
 int
 KnobChoice::getNumEntries() const
 {
     QMutexLocker l(&_entriesMutex);
-    return (int)_entries.size();
+    return (int)_mergedEntries.size();
 }
 
 std::vector<std::string>
 KnobChoice::getEntriesHelp_mt_safe() const
 {
     QMutexLocker l(&_entriesMutex);
-    return _entriesHelp;
+    return _mergedEntriesHelp;
 }
 
 std::string
-KnobChoice::getActiveEntryText_mt_safe() const
+KnobChoice::getActiveEntryText_mt_safe() 
 {
-    int activeIndex = getValue();
+    
     
     QMutexLocker l(&_entriesMutex);
-    if ( activeIndex < (int)_entries.size()) {
-        return _entries[activeIndex];
+    if (!_currentEntryLabel.empty()) {
+        return _currentEntryLabel;
+    }
+    int activeIndex = getValue();
+    if ( activeIndex < (int)_mergedEntries.size()) {
+        return _mergedEntries[activeIndex];
     }
     return std::string();
     
 }
 
 
-
+#if 0 // dead code
+// replaced by boost::trim_copy(str)
 static std::string
 trim(std::string const & str)
 {
@@ -747,6 +954,7 @@ trim(std::string const & str)
     return str.substr(first, last - first + 1);
 }
 
+// replaced by std::replace_if(str.begin(), str.end(), ::isspace, ' ');
 static void
 whitespacify(std::string & str)
 {
@@ -756,6 +964,7 @@ whitespacify(std::string & str)
     std::replace( str.begin(), str.end(), '\n', ' ');
     std::replace( str.begin(), str.end(), '\r', ' ');
 }
+#endif
 
 std::string
 KnobChoice::getHintToolTipFull() const
@@ -764,10 +973,10 @@ KnobChoice::getHintToolTipFull() const
     
     int gothelp = 0;
     
-    if ( !_entriesHelp.empty() ) {
-        assert( _entriesHelp.size() == _entries.size() );
-        for (U32 i = 0; i < _entries.size(); ++i) {
-            if ( !_entriesHelp.empty() && !_entriesHelp[i].empty() ) {
+    if ( !_mergedEntriesHelp.empty() ) {
+        assert( _mergedEntriesHelp.size() == _mergedEntries.size() );
+        for (U32 i = 0; i < _mergedEntries.size(); ++i) {
+            if ( !_mergedEntriesHelp.empty() && !_mergedEntriesHelp[i].empty() ) {
                 ++gothelp;
             }
         }
@@ -779,7 +988,7 @@ KnobChoice::getHintToolTipFull() const
     }
     std::stringstream ss;
     if ( !getHintToolTip().empty() ) {
-        ss << trim( getHintToolTip() );
+        ss << boost::trim_copy( getHintToolTip() );
         if (gothelp) {
             // if there are per-option help strings, separate them from main hint
             ss << "\n\n";
@@ -787,16 +996,16 @@ KnobChoice::getHintToolTipFull() const
     }
     // param may have no hint but still have per-option help
     if (gothelp) {
-        for (U32 i = 0; i < _entriesHelp.size(); ++i) {
-            if ( !_entriesHelp[i].empty() ) { // no help line is needed if help is unavailable for this option
-                std::string entry = trim(_entries[i]);
-                whitespacify(entry);
-                std::string help = trim(_entriesHelp[i]);
-                whitespacify(help);
+        for (U32 i = 0; i < _mergedEntriesHelp.size(); ++i) {
+            if ( !_mergedEntriesHelp[i].empty() ) { // no help line is needed if help is unavailable for this option
+                std::string entry = boost::trim_copy(_mergedEntries[i]);
+                std::replace_if(entry.begin(), entry.end(), ::isspace, ' ');
+                std::string help = boost::trim_copy(_mergedEntriesHelp[i]);
+                std::replace_if(help.begin(), help.end(), ::isspace, ' ');
                 ss << entry;
                 ss << ": ";
                 ss << help;
-                if (i < _entriesHelp.size() - 1) {
+                if (i < _mergedEntriesHelp.size() - 1) {
                     ss << '\n';
                 }
             }
@@ -806,46 +1015,35 @@ KnobChoice::getHintToolTipFull() const
     return ss.str();
 }
 
-static bool caseInsensitiveCompare(const std::string& a,const std::string& b)
-{
-    if (a.size() != b.size()) {
-        return false;
-    }
-    std::locale loc;
-    for (std::size_t i = 0; i < a.size(); ++i) {
-        char aLow = std::tolower(a[i],loc);
-        char bLow = std::tolower(b[i],loc);
-        if (aLow != bLow) {
-            return false;
-        }
-    }
-    return true;
-}
 
 KnobHelper::ValueChangedReturnCodeEnum
 KnobChoice::setValueFromLabel(const std::string & value,
                                int dimension,
                                bool turnOffAutoKeying)
 {
-    for (std::size_t i = 0; i < _entries.size(); ++i) {
-        if (caseInsensitiveCompare(_entries[i], value)) {
+    for (std::size_t i = 0; i < _mergedEntries.size(); ++i) {
+        if (boost::iequals(_mergedEntries[i], value)) {
             return setValue(i, ViewIdx(0), dimension, turnOffAutoKeying);
         }
     }
-    return KnobHelper::eValueChangedReturnCodeNothingChanged;
-    //throw std::runtime_error(std::string("KnobChoice::setValueFromLabel: unknown label ") + value);
+    /*{
+        QMutexLocker k(&_entriesMutex);
+        _currentEntryLabel = value;
+    }
+    return setValue(-1, ViewIdx(0), dimension, turnOffAutoKeying);*/
+    throw std::runtime_error(std::string("KnobChoice::setValueFromLabel: unknown label ") + value);
 }
 
 void
 KnobChoice::setDefaultValueFromLabel(const std::string & value,
                                       int dimension)
 {
-    for (std::size_t i = 0; i < _entries.size(); ++i) {
-        if (caseInsensitiveCompare(_entries[i], value)) {
+    for (std::size_t i = 0; i < _mergedEntries.size(); ++i) {
+        if (boost::iequals(_mergedEntries[i], value)) {
             return setDefaultValue(i, dimension);
         }
     }
-    //throw std::runtime_error(std::string("KnobChoice::setDefaultValueFromLabel: unknown label ") + value);
+    throw std::runtime_error(std::string("KnobChoice::setDefaultValueFromLabel: unknown label ") + value);
 }
 
 void
@@ -853,7 +1051,7 @@ KnobChoice::choiceRestoration(KnobChoice* knob,const ChoiceExtraData* data)
 {
     assert(knob && data);
     
-    
+ 
     ///Clone first and then handle restoration of the static value
     clone(knob);
     setSecret( knob->getIsSecret() );
@@ -862,21 +1060,40 @@ KnobChoice::choiceRestoration(KnobChoice* knob,const ChoiceExtraData* data)
             setEnabled( i, knob->isEnabled(i) );
         }
     }
+
+    {
+        QMutexLocker k(&_entriesMutex);
+        _currentEntryLabel = data->_choiceString;
+    }
     
     int serializedIndex = knob->getValue();
-    if ( ( serializedIndex < (int)_entries.size() ) && (_entries[serializedIndex] == data->_choiceString) ) {
+    if ((serializedIndex < (int)_mergedEntries.size()) && (_mergedEntries[serializedIndex] == data->_choiceString)) {
         // we're lucky, entry hasn't changed
         setValue(serializedIndex);
     } else {
         // try to find the same label at some other index
-        for (std::size_t i = 0; i < _entries.size(); ++i) {
-            if (caseInsensitiveCompare(_entries[i], data->_choiceString)) {
+        for (std::size_t i = 0; i < _mergedEntries.size(); ++i) {
+            if (boost::iequals(_mergedEntries[i], data->_choiceString)) {
                 setValue(i);
                 return;
             }
         }
+        
+     
+        //   setValue(-1);
+        
     }
     
+}
+
+void
+KnobChoice::onKnobAboutToAlias(const KnobPtr &slave)
+{
+    KnobChoice* isChoice = dynamic_cast<KnobChoice*>(slave.get());
+    if (isChoice) {
+        populateChoices(isChoice->getEntries_mt_safe(),
+                        isChoice->getEntriesHelp_mt_safe(), 0, 0, false);
+    }
 }
 
 void
@@ -887,7 +1104,7 @@ KnobChoice::onOriginalKnobPopulated()
     if (!isChoice) {
         return;
     }
-    populateChoices(isChoice->_entries,isChoice->_entriesHelp);
+    populateChoices(isChoice->_mergedEntries,isChoice->_mergedEntriesHelp, 0, 0, true);
 }
 
 void
@@ -1060,7 +1277,7 @@ KnobString::typeName() const
 }
 
 bool
-KnobString::hasContentWithoutHtmlTags() const
+KnobString::hasContentWithoutHtmlTags() 
 {
     std::string str = getValue();
     if (str.empty()) {
@@ -1392,7 +1609,7 @@ KnobParametric::KnobParametric(KnobHolder* holder,
 , _curvesColor(dimension)
 {
     for (int i = 0; i < dimension; ++i) {
-        RGBAColourF color;
+        RGBAColourD color;
         color.r = color.g = color.b = color.a = 1.;
         _curvesColor[i] = color;
         _curves[i] = boost::shared_ptr<Curve>( new Curve(this,i) );
@@ -1446,9 +1663,17 @@ KnobParametric::getCurveColor(int dimension,
     ///Mt-safe as it never changes
     
     assert( dimension < (int)_curvesColor.size() );
-    *r = _curvesColor[dimension].r;
-    *g = _curvesColor[dimension].g;
-    *b = _curvesColor[dimension].b;
+    std::pair<int,KnobPtr >  master = getMaster(dimension);
+    if (master.second) {
+        KnobParametric* m = dynamic_cast<KnobParametric*>(master.second.get());
+        assert(m);
+        return m->getCurveColor(dimension, r, g, b);
+    } else {
+        *r = _curvesColor[dimension].r;
+        *g = _curvesColor[dimension].g;
+        *b = _curvesColor[dimension].b;
+    }
+
 }
 
 
@@ -1779,6 +2004,242 @@ KnobParametric::hasModificationsVirtual(int dimension) const
         }
     }
     return false;
+}
+
+void
+KnobParametric::onKnobAboutToAlias(const KnobPtr& slave)
+{
+    KnobParametric* isParametric = dynamic_cast<KnobParametric*>(slave.get());
+    if (isParametric) {
+        _defaultCurves.resize(isParametric->_defaultCurves.size());
+        _curvesColor.resize(isParametric->_curvesColor.size());
+        assert(_curvesColor.size() == _defaultCurves.size());
+        for (std::size_t i = 0; i < isParametric->_defaultCurves.size(); ++i) {
+            _defaultCurves[i].reset(new Curve(this,i));
+            _defaultCurves[i]->clone(*isParametric->_defaultCurves[i]);
+            _curvesColor[i] = isParametric->_curvesColor[i];
+        }
+    }
+}
+
+
+KnobTable::KnobTable(KnobHolder* holder,
+          const std::string &description,
+          int dimension,
+          bool declaredByPlugin)
+: Knob<std::string>(holder,description,dimension,declaredByPlugin)
+{
+    
+}
+
+KnobTable::~KnobTable()
+{
+    
+}
+
+void
+KnobTable::getTableSingleCol(std::list<std::string>* table)
+{
+    std::list<std::vector<std::string> > tmp;
+    getTable(&tmp);
+    for (std::list<std::vector<std::string> >::iterator it = tmp.begin(); it!=tmp.end(); ++it) {
+        table->push_back((*it)[0]);
+    }
+}
+
+void
+KnobTable::getTable(std::list<std::vector<std::string> >* table)
+{
+    
+    decodeFromKnobTableFormat(getValue(), table);
+}
+
+void
+KnobTable::decodeFromKnobTableFormat(const std::string& value, std::list<std::vector<std::string> >* table)
+{
+    QString raw = QString::fromUtf8(value.c_str());
+    if (raw.isEmpty()) {
+        return;
+    }
+    const int colsCount = getColumnsCount();
+    assert(colsCount > 0);
+    
+    
+    
+    QString startTag = QString::fromUtf8("<%1>");
+    QString endTag = QString::fromUtf8("</%1>");
+    
+    int lastFoundIndex = 0;
+    
+    for (;;) {
+        
+        int colIndex = 0;
+        std::vector<std::string> row;
+        bool mustStop = false;
+        while (colIndex < colsCount) {
+            
+            QString colLabel = QString::fromUtf8(getColumnLabel(colIndex).c_str());
+            const QString startToFind = startTag.arg(colLabel);
+            const QString endToFind = endTag.arg(colLabel);
+            
+            lastFoundIndex = raw.indexOf(startToFind, lastFoundIndex);
+            if (lastFoundIndex == -1) {
+                mustStop = true;
+                break;
+            }
+            
+            lastFoundIndex += startToFind.size();
+            assert(lastFoundIndex < raw.size());
+            
+            int endNamePos = raw.indexOf(endToFind,lastFoundIndex);
+            assert(endNamePos != -1 && endNamePos < raw.size());
+            
+            if (endNamePos == -1 || endNamePos >= raw.size()) {
+                throw std::logic_error("KnobTable: mal-formed table");
+            }
+            
+            std::string value;
+            while (lastFoundIndex < endNamePos) {
+                value.push_back(raw[lastFoundIndex].toAscii());
+                ++lastFoundIndex;
+            }
+            
+            // In order to use XML tags, the text inside the tags has to be unescaped.
+            value = Project::unescapeXML(value);
+            
+            row.push_back(value);
+            
+            ++colIndex;
+        }
+        
+        if (mustStop) {
+            break;
+        }
+        
+        if ((int)row.size() == colsCount) {
+            table->push_back(row);
+        } else {
+            throw std::logic_error("KnobTable: mal-formed table");
+        }
+        
+        
+    }
+}
+
+std::string
+KnobTable::encodeToKnobTableFormatSingleCol(const std::list<std::string>& table)
+{
+    std::list<std::vector<std::string> > tmp;
+    for (std::list<std::string>::const_iterator it = table.begin(); it!=table.end(); ++it) {
+        std::vector<std::string> vec;
+        vec.push_back(*it);
+        tmp.push_back(vec);
+    }
+    return encodeToKnobTableFormat(tmp);
+}
+
+
+
+std::string
+KnobTable::encodeToKnobTableFormat(const std::list<std::vector<std::string> >& table)
+{
+    std::stringstream ss;
+    
+    
+    for (std::list<std::vector<std::string> >::const_iterator it = table.begin(); it != table.end(); ++it) {
+        // In order to use XML tags, the text inside the tags has to be escaped.
+        for (std::size_t c = 0; c < it->size(); ++c) {
+            
+            std::string label = getColumnLabel(c);
+            ss << "<" << label << ">";
+            ss << Project::escapeXML((*it)[c]);
+            ss << "</" << label << ">";
+        }
+    }
+    return ss.str();
+
+}
+
+void
+KnobTable::setTableSingleCol(const std::list<std::string>& table)
+{
+    std::list<std::vector<std::string> > tmp;
+    for (std::list<std::string>::const_iterator it = table.begin(); it!=table.end(); ++it) {
+        std::vector<std::string> vec;
+        vec.push_back(*it);
+        tmp.push_back(vec);
+    }
+    setTable(tmp);
+}
+
+void
+KnobTable::setTable(const std::list<std::vector<std::string> >& table)
+{
+    setValue(encodeToKnobTableFormat(table));
+}
+
+void
+KnobTable::appendRowSingleCol(const std::string& row)
+{
+    std::vector<std::string> tmp;
+    tmp.push_back(row);
+    appendRow(tmp);
+}
+
+void
+KnobTable::appendRow(const std::vector<std::string>& row)
+{
+    std::list<std::vector<std::string> > table;
+    getTable(&table);
+    table.push_back(row);
+    setTable(table);
+}
+
+void
+KnobTable::insertRowSingleCol(int index, const std::string& row)
+{
+    std::vector<std::string> tmp;
+    tmp.push_back(row);
+    insertRow(index, tmp);
+}
+
+void
+KnobTable::insertRow(int index, const std::vector<std::string>& row)
+{
+    std::list<std::vector<std::string> > table;
+    getTable(&table);
+    if (index < 0 || index >= (int)table.size()) {
+        table.push_back(row);
+    } else {
+        std::list<std::vector<std::string> >::iterator pos = table.begin();
+        std::advance(pos, index);
+        table.insert(pos, row);
+    }
+    
+    setTable(table);
+}
+
+void
+KnobTable::removeRow(int index)
+{
+    std::list<std::vector<std::string> > table;
+    getTable(&table);
+    if (index < 0 || index >= (int)table.size()) {
+        return;
+    }
+    std::list<std::vector<std::string> >::iterator pos = table.begin();
+    std::advance(pos, index);
+    table.erase(pos);
+    setTable(table);
+}
+
+
+const std::string KnobLayers::_typeNameStr("Layers");
+
+const std::string&
+KnobLayers::typeNameStatic()
+{
+    return _typeNameStr;
 }
 
 NATRON_NAMESPACE_EXIT;

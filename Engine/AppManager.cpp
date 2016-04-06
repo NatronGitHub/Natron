@@ -655,7 +655,8 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
     //Now that the locale is set, re-parse the command line arguments because the filenames might have non UTF-8 encodings
     CLArgs args;
     if (!cl.getScriptFilename().isEmpty()) {
-        args = CLArgs(qApp->arguments(), cl.isBackgroundMode());
+        const QStringList& appArgs = qApp->arguments();
+        args = CLArgs(appArgs, cl.isBackgroundMode());
     } else{
         args = cl;
     }
@@ -1149,19 +1150,28 @@ static bool findAndRunScriptFile(const QString& path,const QStringList& files,co
 #endif
     for (QStringList::const_iterator it = files.begin(); it != files.end(); ++it) {
         if (*it == script) {
-            QFile file(path + *it);
+            
+            QString absolutePath = path + *it;
+            QFile file(absolutePath);
             if (file.open(QIODevice::ReadOnly)) {
                 QTextStream ts(&file);
                 QString content = ts.readAll();
                 PyRun_SimpleString(content.toStdString().c_str());
 
+
                 PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
-                std::string error;
+                std::string error,output;
+                
                 ///Gui session, do stdout, stderr redirection
                 PyObject *errCatcher = 0;
+                PyObject *outCatcher = 0;
                 
                 if (PyObject_HasAttrString(mainModule, "catchErr")) {
                     errCatcher = PyObject_GetAttrString(mainModule,"catchErr"); //get our catchOutErr created above, new ref
+                }
+                
+                if (PyObject_HasAttrString(mainModule, "catchOut")) {
+                    outCatcher = PyObject_GetAttrString(mainModule,"catchOut"); //get our catchOutErr created above, new ref
                 }
                 
                 PyErr_Print(); //make python print any errors
@@ -1170,21 +1180,43 @@ static bool findAndRunScriptFile(const QString& path,const QStringList& files,co
                 if (errCatcher) {
                     errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
                     assert(errorObj);
-                    error = NATRON_PYTHON_NAMESPACE::PY3String_asString(errorObj);
+
+                    error = NATRON_PYTHON_NAMESPACE::PyStringToStdString(errorObj);
                     PyObject* unicode = PyUnicode_FromString("");
                     PyObject_SetAttrString(errCatcher, "value", unicode);
                     Py_DECREF(errorObj);
                     Py_DECREF(errCatcher);
                 }
+                PyObject *outObj = 0;
+                if (outCatcher) {
+                    outObj = PyObject_GetAttrString(outCatcher,"value"); //get the stdout from our catchOut object, new ref
+                    assert(outObj);
+                    output = Python::PyStringToStdString(outObj);
+                    PyObject* unicode = PyUnicode_FromString("");
+                    PyObject_SetAttrString(outCatcher, "value", unicode);
+                    Py_DECREF(outObj);
+                    Py_DECREF(outCatcher);
+                }
+                
 
                 if (!error.empty()) {
                     QString message(QString::fromUtf8("Failed to load "));
-                    message.append(script);
+                    message.append(absolutePath);
                     message.append(QString::fromUtf8(": "));
                     message.append(QString::fromUtf8(error.c_str()));
                     appPTR->writeToErrorLog_mt_safe(message);
                     std::cerr << message.toStdString() << std::endl;
                     return false;
+                }
+                if (!output.empty()) {
+                    QString message;
+                    message.append(absolutePath);
+                    message.append(QString::fromUtf8(": "));
+                    message.append(QString::fromUtf8(output.c_str()));
+                    if (appPTR->getTopLevelInstance()) {
+                        appPTR->getTopLevelInstance()->appendToScriptEditor(message.toStdString());
+                    }
+                    std::cout << message.toStdString() << std::endl;
                 }
                 return true;
             }
@@ -2460,15 +2492,28 @@ oom:
 
 
 std::string
-NATRON_PYTHON_NAMESPACE::PY3String_asString(PyObject* obj)
+NATRON_PYTHON_NAMESPACE::PyStringToStdString(PyObject* obj)
 {
+    
     std::string ret;
-    if (PyUnicode_Check(obj)) {
-        PyObject * temp_bytes = PyUnicode_AsEncodedString(obj, "ASCII", "strict"); // Owned reference
-        if (temp_bytes != NULL) {
-            char* cstr = PyBytes_AS_STRING(temp_bytes); // Borrowed pointer
+
+    if (PyString_Check(obj)) {
+        char* buf = PyString_AsString(obj);
+        if (buf) {
+            ret += std::string(buf);
+        }
+    } else if (PyUnicode_Check(obj)) {
+        /*PyObject * temp_bytes = PyUnicode_AsEncodedString(obj, "ASCII", "strict"); // Owned reference
+         if (temp_bytes != NULL) {
+         char* cstr = PyBytes_AS_STRING(temp_bytes); // Borrowed pointer
+         ret.append(cstr);
+         Py_DECREF(temp_bytes);
+         }*/
+        PyObject* utf8pyobj = PyUnicode_AsUTF8String(obj); // newRef
+        if (utf8pyobj) {
+            char* cstr = PyBytes_AS_STRING(utf8pyobj); // Borrowed pointer
             ret.append(cstr);
-            Py_DECREF(temp_bytes);
+            Py_DECREF(utf8pyobj);
         }
     } else if (PyBytes_Check(obj)) {
         char* cstr = PyBytes_AS_STRING(obj); // Borrowed pointer
@@ -3106,7 +3151,7 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,std::st
         if (errCatcher && error) {
             errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
             assert(errorObj);
-            *error = PY3String_asString(errorObj);
+            *error = PyStringToStdString(errorObj);
             PyObject* unicode = PyUnicode_FromString("");
             PyObject_SetAttrString(errCatcher, "value", unicode);
             Py_DECREF(errorObj);
@@ -3116,7 +3161,7 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,std::st
         if (outCatcher && output) {
             outObj = PyObject_GetAttrString(outCatcher,"value"); //get the stdout from our catchOut object, new ref
             assert(outObj);
-            *output = PY3String_asString(outObj);
+            *output = PyStringToStdString(outObj);
             PyObject* unicode = PyUnicode_FromString("");
             PyObject_SetAttrString(outCatcher, "value", unicode);
             Py_DECREF(outObj);
@@ -3156,9 +3201,7 @@ NATRON_PYTHON_NAMESPACE::compilePyScript(const std::string& script,PyObject** co
 }
 #endif
 
-    
-std::string
-NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(const std::string& str)
+static std::string makeNameScriptFriendlyInternal(const std::string& str, bool allowDots)
 {
     if (str == "from") {
         return "pFrom";
@@ -3183,11 +3226,23 @@ NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(const std::string& str)
         }
         
         ///Non alpha-numeric characters are not allowed in python
-        else if (str[i] == '_' || std::isalnum(str[i], loc)) {
+        else if (str[i] == '_' || std::isalnum(str[i], loc) || (allowDots && str[i] == '.')) {
             cpy.push_back(str[i]);
         }
     }
     return cpy;
+}
+
+std::string
+NATRON_PYTHON_NAMESPACE::makeNameScriptFriendlyWithDots(const std::string& str)
+{
+    return makeNameScriptFriendlyInternal(str, true);
+}
+
+std::string
+NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(const std::string& str)
+{
+    return makeNameScriptFriendlyInternal(str, false);
 }
 
 PythonGILLocker::PythonGILLocker()
@@ -3317,17 +3372,18 @@ static bool getGroupInfosInternal(const std::string& modulePath,
     
     assert(labelObj);
     
-    *pluginLabel = NATRON_PYTHON_NAMESPACE::PY3String_asString(labelObj);
+
+    *pluginLabel = NATRON_PYTHON_NAMESPACE::PyStringToStdString(labelObj);
     Py_XDECREF(labelObj);
     
     if (idObj) {
-        *pluginID = NATRON_PYTHON_NAMESPACE::PY3String_asString(idObj);
+        *pluginID = NATRON_PYTHON_NAMESPACE::PyStringToStdString(idObj);
         deleteScript.append("del pluginID\n");
         Py_XDECREF(idObj);
     }
     
     if (iconObj) {
-        *iconFilePath = NATRON_PYTHON_NAMESPACE::PY3String_asString(iconObj);
+        *iconFilePath = NATRON_PYTHON_NAMESPACE::PyStringToStdString(iconObj);
         QFileInfo iconInfo(QString::fromUtf8(modulePath.c_str()) + QString::fromUtf8(iconFilePath->c_str()));
         *iconFilePath =  iconInfo.canonicalFilePath().toStdString();
         
@@ -3335,7 +3391,7 @@ static bool getGroupInfosInternal(const std::string& modulePath,
         Py_XDECREF(iconObj);
     }
     if (iconGrouping) {
-        *grouping = NATRON_PYTHON_NAMESPACE::PY3String_asString(iconGrouping);
+        *grouping = NATRON_PYTHON_NAMESPACE::PyStringToStdString(iconGrouping);
         deleteScript.append("del templateGrouping\n");
         Py_XDECREF(iconGrouping);
     }
@@ -3354,7 +3410,7 @@ static bool getGroupInfosInternal(const std::string& modulePath,
 
     
     if (pluginDescriptionObj) {
-        *description = NATRON_PYTHON_NAMESPACE::PY3String_asString(pluginDescriptionObj);
+        *description = NATRON_PYTHON_NAMESPACE::PyStringToStdString(pluginDescriptionObj);
         deleteScript.append("del description\n");
         Py_XDECREF(pluginDescriptionObj);
     }
@@ -3476,7 +3532,7 @@ NATRON_PYTHON_NAMESPACE::getFunctionArguments(const std::string& pyFunc,std::str
                 PyObject* itemObj = PyList_GetItem(argListObj, i);
                 assert(itemObj);
                 if (itemObj) {
-                    std::string itemName = PY3String_asString(itemObj);
+                    std::string itemName = PyStringToStdString(itemObj);
                     assert(!itemName.empty());
                     if (!itemName.empty()) {
                         args->push_back(itemName);
