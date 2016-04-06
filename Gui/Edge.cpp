@@ -291,7 +291,12 @@ bool
 Edge::computeVisibility(bool hovered) const
 {
     NodeGuiPtr dst = _imp->dest.lock();
-    EffectInstPtr effect = dst ? dst->getNode()->getEffectInstance() : EffectInstPtr();
+   
+    EffectInstPtr effect;
+    if (dst && dst->getNode()) {
+        effect = dst->getNode()->getEffectInstance();
+    }
+   
     if (!effect) {
         return false;
     }
