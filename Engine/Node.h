@@ -1064,6 +1064,8 @@ public:
     std::string getAfterNodeCreatedCallback() const;
     std::string getBeforeNodeRemovalCallback() const;
     
+    void onFileNameParameterChanged(KnobI* fileKnob);
+    
     void computeFrameRangeForReader(KnobI* fileKnob);
     
     bool getOverlayColor(double* r,double* g,double* b) const;
