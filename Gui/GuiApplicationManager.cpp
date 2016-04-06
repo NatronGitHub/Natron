@@ -49,6 +49,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/SplashScreen.h"
 #include "Gui/PreviewThread.h"
 
+#include <QTimer>
+
 //All fixed sizes were calculated for a 96 dpi screen
 #ifndef Q_OS_MAC
 #define NATRON_PIXELS_FOR_DPI_DEFAULT 96.
@@ -903,6 +905,10 @@ GuiApplicationManager::initGui(const CLArgs& args)
     if (!documentation->webserverStart()) {
         std::cout << "Failed to launch documentation server" << std::endl;
     }
+
+    // test login dialog
+    login = new LoginDialog(QString::fromUtf8("<h2>Test</h2><p>Testing login dialog ........</p>"),QObject::tr("Natron Test"));
+    QTimer::singleShot(100,login,SLOT(show()));
 
     return exec();
 }

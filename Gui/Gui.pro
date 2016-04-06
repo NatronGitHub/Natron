@@ -56,6 +56,10 @@ INCLUDEPATH += $$PWD/../Global
 #qhttpserver
 INCLUDEPATH += $$PWD/../libs/qhttpserver/src
 
+#qtkeychain
+INCLUDEPATH += $$PWD/../libs/qtkeychain
+
+
 #To overcome wrongly generated #include <...> by shiboken
 INCLUDEPATH += $$PWD
 INCLUDEPATH += $$PWD/NatronGui
@@ -229,7 +233,8 @@ SOURCES += \
     NatronGui/pytabwidget_wrapper.cpp \
     NatronGui/pyviewer_wrapper.cpp \
     LoginDialog.cpp \
-    DocumentationManager.cpp
+    DocumentationManager.cpp \
+    KeychainManager.cpp
 
 HEADERS += \
     AboutWindow.h \
@@ -396,7 +401,8 @@ HEADERS += \
     NatronGui/pytabwidget_wrapper.h \
     NatronGui/pyviewer_wrapper.h \
     LoginDialog.h \
-    DocumentationManager.h
+    DocumentationManager.h \
+    KeychainManager.h
 
 
 RESOURCES += \
