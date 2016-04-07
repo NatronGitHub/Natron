@@ -3841,7 +3841,8 @@ TrackerGuiPrivate::convertImageTosRGBOpenGLTexture(const boost::shared_ptr<Image
             *dstPixels = toBGRA(0, 0, 0, 255);
         }
     } else {
-        assert(image->getComponents() == Natron::ImageComponents::getRGBComponents());
+        int srcNComps = (int)image->getComponentsCount();
+        assert(srcNComps >= 3);
         Image::ReadAccess acc(image.get());
         
         
@@ -3851,7 +3852,7 @@ TrackerGuiPrivate::convertImageTosRGBOpenGLTexture(const boost::shared_ptr<Image
         assert(srcPixels);
         
         int w = roi.width();
-        int srcRowElements = bounds.width() * 3;
+        int srcRowElements = bounds.width() * srcNComps;
         
         const Natron::Color::Lut* lut = Natron::Color::LutManager::sRGBLut();
         lut->validate();
@@ -3872,9 +3873,9 @@ TrackerGuiPrivate::convertImageTosRGBOpenGLTexture(const boost::shared_ptr<Image
                 
                 while (index < w && index >= 0) {
                     
-                    float r = srcPixels[index * 3];
-                    float g = srcPixels[index * 3 + 1];
-                    float b = srcPixels[index * 3 + 2];
+                    float r = srcPixels[index * srcNComps];
+                    float g = srcPixels[index * srcNComps + 1];
+                    float b = srcPixels[index * srcNComps + 2];
                     
                     error_r = (error_r & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(r);
                     error_g = (error_g & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(g);
