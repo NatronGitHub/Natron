@@ -349,9 +349,7 @@ public:
     unsigned int getAutoProxyMipMapLevel() const;
     
     bool isNaNHandlingEnabled() const;
-    
-    bool isInViewerProgressReportEnabled() const;
-    
+        
     bool isDefaultAppearanceOutdated() const;
     void restoreDefaultAppearance();
     
@@ -465,7 +463,6 @@ private:
     boost::shared_ptr<KnobBool> _autoWipe;
     boost::shared_ptr<KnobBool> _autoProxyWhenScrubbingTimeline;
     boost::shared_ptr<KnobChoice> _autoProxyLevel;
-    boost::shared_ptr<KnobBool> _enableProgressReport;
     
     boost::shared_ptr<KnobPage> _nodegraphTab;
     boost::shared_ptr<KnobBool> _autoTurbo;

@@ -226,12 +226,12 @@ struct TrackerGuiPrivate
     
     TrackMarkerPtr interactMarker,hoverMarker;
     
-    typedef std::map<int,boost::shared_ptr<Texture> > KeyFrameTexIDs;
+    typedef std::map<int,GLTexturePtr > KeyFrameTexIDs;
     typedef std::map<boost::weak_ptr<TrackMarker>, KeyFrameTexIDs> TrackKeysMap;
     TrackKeysMap trackTextures;
     TrackKeyframeRequests trackRequestsMap;
     
-    boost::shared_ptr<Texture> selectedMarkerTexture;
+    GLTexturePtr selectedMarkerTexture;
     RectI selectedMarkerTextureRoI;
     //If theres a single selection, this points to it
     boost::weak_ptr<TrackMarker> selectedMarker;
@@ -3784,7 +3784,7 @@ TrackerGui::onKeyFrameImageRenderingFinished()
                 return;
             }
             TrackerGuiPrivate::KeyFrameTexIDs& keyTextures = _imp->trackTextures[track];
-            boost::shared_ptr<Texture> tex(new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE));
+            GLTexturePtr tex(new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE));
             keyTextures[it->first.time] = tex;
             _imp->convertImageTosRGBOpenGLTexture(ret.first, tex, ret.second);
             

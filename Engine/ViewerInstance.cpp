@@ -937,6 +937,7 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
         outArgs->params->layer = _imp->viewerParamsLayer;
         outArgs->params->alphaLayer = _imp->viewerParamsAlphaLayer;
         outArgs->params->alphaChannelName = _imp->viewerParamsAlphaChannelName;
+        outArgs->isDoingPartialUpdates = _imp->isDoingPartialUpdates;
     }
     
     // Fill the gamma LUT if it has never been filled yet
@@ -1072,7 +1073,7 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
 {
     // We never use the texture cache when the user RoI is enabled or while painting or when auto-contrast is on, otherwise we would have
     // zillions of textures in the cache, each a few pixels different.
-    const bool useTextureCache = !outArgs->userRoIEnabled && !outArgs->autoContrast && !rotoPaintNode.get();
+    const bool useTextureCache = !outArgs->userRoIEnabled && !outArgs->autoContrast && !rotoPaintNode.get() && !outArgs->isDoingPartialUpdates;
     
     // If it's eSupportsMaybe and mipMapLevel!=0, don't forget to update
     // this after the first call to getRegionOfDefinition().
@@ -1207,7 +1208,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                       bool singleThreaded,
                                       bool isSequentialRender,
                                       U64 viewerHash,
-                                      bool canAbort,
+                                      bool /*canAbort*/,
                                       NodePtr rotoPaintNode,
                                       bool useTLS,
                                       const boost::shared_ptr<RequestedFrame>& request,
@@ -1219,9 +1220,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
     
     boost::shared_ptr<ViewerParallelRenderArgsSetter> frameArgs;
     
-    bool tilingProgressReportPrefEnabled = false;
     if (useTLS) {
-        tilingProgressReportPrefEnabled = appPTR->getCurrentSettings()->isInViewerProgressReportEnabled();
 
         frameArgs.reset(new ViewerParallelRenderArgsSetter(inArgs.params->time,
                                                            inArgs.params->view,
@@ -1235,7 +1234,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                                            rotoPaintNode,
                                                            inArgs.activeInputToRender->getNode(),
                                                            inArgs.draftModeEnabled,
-                                                           tilingProgressReportPrefEnabled,
+                                                           false,
                                                            stats));
     }
     
@@ -1323,41 +1322,46 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
     RectI lastPaintBboxPixel;
     
     std::list<RectD> partialRectsToRender;
+
     const double par = inArgs.activeInputToRender->getAspectRatio(-1);
-    bool currentlyTracking = isDoingPartialUpdates();
     
-    bool useTmpBuffer = inArgs.forceRender || inArgs.userRoIEnabled || inArgs.autoContrast || rotoPaintNode.get() != 0 || currentlyTracking;
+    bool useTmpBuffer = inArgs.forceRender || inArgs.userRoIEnabled || inArgs.autoContrast || rotoPaintNode.get() != 0 || inArgs.isDoingPartialUpdates;
     
     if (useTmpBuffer) {
-    
         
         assert(!inArgs.params->cachedFrame);
-        //if we are actively painting, re-use the last texture instead of re-drawing everything
-        if (rotoPaintNode || currentlyTracking) {
-            
-            if (currentlyTracking) {
-                QMutexLocker k(&_imp->viewerParamsMutex);
-                partialRectsToRender = _imp->partialUpdateRects;
-                inArgs.params->recenterViewport = _imp->viewportCenterSet;
-                inArgs.params->viewportCenter = _imp->viewportCenter;
-            }
-            
+        
+        // If we are tracking, only update the partial rectangles
+        if (inArgs.isDoingPartialUpdates) {
+            QMutexLocker k(&_imp->viewerParamsMutex);
+            partialRectsToRender = _imp->partialUpdateRects;
+            inArgs.params->recenterViewport = _imp->viewportCenterSet;
+            inArgs.params->viewportCenter = _imp->viewportCenter;
+        }
+        // If we are actively painting, re-use the last texture instead of re-drawing everything
+        else if (rotoPaintNode) {
             
             /*
              Check if we have a last valid texture and re-use the old texture only if the new texture is at least as big
              as the old texture.
              */
             QMutexLocker k(&_imp->lastRenderParamsMutex);
-            if (_imp->lastRenderParams[inArgs.params->textureIndex] &&
-                inArgs.params->mipMapLevel == _imp->lastRenderParams[inArgs.params->textureIndex]->mipMapLevel &&
-                inArgs.params->textureRect.contains(_imp->lastRenderParams[inArgs.params->textureIndex]->textureRect)) {
             
+            bool canUseOldTex = _imp->lastRenderParams[inArgs.params->textureIndex] &&
+            inArgs.params->mipMapLevel == _imp->lastRenderParams[inArgs.params->textureIndex]->mipMapLevel &&
+            inArgs.params->textureRect.contains(_imp->lastRenderParams[inArgs.params->textureIndex]->textureRect);
+            
+            if (!canUseOldTex) {
+                //The old texture did not exist or was not usable, just make a new buffer
+                inArgs.params->mustFreeRamBuffer = true;
+                inArgs.params->ramBuffer =  (unsigned char*)malloc(inArgs.params->bytesCount);
+            } else {
                 //Overwrite the RoI to only the last portion rendered
                 RectD lastPaintBbox = getApp()->getLastPaintStrokeBbox();
-
+                
                 
                 lastPaintBbox.toPixelEnclosing(inArgs.params->mipMapLevel, par, &lastPaintBboxPixel);
-
+                
                 //The last buffer must be valid
                 assert(_imp->lastRenderParams[inArgs.params->textureIndex]->ramBuffer);
                 inArgs.params->ramBuffer =  0;
@@ -1381,14 +1385,11 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                 if (!inArgs.params->ramBuffer) {
                     return eViewerRenderRetCodeFail;
                 }
-            } else {
-                //The old texture did not exist or was not usable, just make a new buffer
-                inArgs.params->mustFreeRamBuffer = true;
-                inArgs.params->ramBuffer =  (unsigned char*)malloc(inArgs.params->bytesCount);
             }
             _imp->lastRenderParams[inArgs.params->textureIndex] = inArgs.params;
-        } else { // if (rotoPaintNode || currentlyTracking) {
-            // Make a new buffer that will be freed when the params get destroyed
+        }
+        // Make a new buffer that will be freed when the params get destroyed
+        else {
             inArgs.params->mustFreeRamBuffer = true;
             inArgs.params->ramBuffer =  (unsigned char*)malloc(inArgs.params->bytesCount);
         }
@@ -1437,7 +1438,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         inArgs.params->ramBuffer = inArgs.params->cachedFrame->data();
         
     } // useTmpBuffer
-    assert(inArgs.params->ramBuffer);
+
     
     //We are going to render a non cached frame and not in playback, clear persistent messages
     if (!inArgs.params->isSequential) {
@@ -1495,12 +1496,6 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             }
             
         }
-    } else if (tilingProgressReportPrefEnabled && inArgs.params->cachedFrame && !isSequentialRender && canAbort && inArgs.activeInputToRender->supportsTiles()) {
-        
-        /*
-         Split the RoI in tiles and update viewer if rendering takes too much time.
-         */
-        splitRoi = roi.splitIntoSmallerRects(0);
     } else {
         /*
          Just render 1 tile
@@ -1538,18 +1533,9 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         stats->setGlobalRenderInfosForNode(getNode(), inArgs.params->rod, inArgs.params->srcPremult, channelsRendered, true, true, inArgs.params->mipMapLevel);
     }
     
-    /*
-     Use a timer to enable progress report if the amount spent rendering exceeds some time
-     */
-    double totalRenderTime = 0.; // estimated total time in seconds
-    TimeLapse timer;
-    // List of the tiles that the progress did not report until now
-    std::list<RectI> unreportedTiles;
-    
+    BufferableObjectList partialUpdateObjects;
     for (std::size_t rectIndex = 0; rectIndex < splitRoi.size(); ++rectIndex) {
-        
-        bool reportProgress = false;
-
+      
         
         //AlphaImage will only be set when displaying the Matte overlay
         ImagePtr alphaImage,colorImage;
@@ -1619,13 +1605,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                     return eViewerRenderRetCodeRedraw;
                 }
             }
-            
-            if (!reportProgress && splitRoi.size() > 1 && partialRectsToRender.empty()) {
-                double timeSpan = timer.getTimeElapsedReset();
-                totalRenderTime += timeSpan;
-                reportProgress = totalRenderTime > NATRON_TIME_ELASPED_BEFORE_PROGRESS_REPORT && !isCurrentlyUpdatingOpenGLViewer();
-            }
-            
+      
             
         } catch (...) {
             ///If the plug-in was aborted, this is probably not a failure due to render but because of abortion.
@@ -1646,15 +1626,45 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         if (inArgs.activeInputToRender->aborted()) {
             return eViewerRenderRetCodeRedraw;
         }
+        //Make sure the viewer does not render something outside the bounds
+        RectI viewerRenderRoI;
+        splitRoi[rectIndex].intersect(colorImage->getBounds(), &viewerRenderRoI);
+        
+        boost::shared_ptr<UpdateViewerParams> updateParams;
+        if (!partialRectsToRender.empty()) {
+            updateParams.reset(new UpdateViewerParams(*inArgs.params));
+            assert(!updateParams->ramBuffer);
+            updateParams->mustFreeRamBuffer = true;
+            updateParams->isPartialRect = true;
+            updateParams->textureRect.x1 = viewerRenderRoI.x1;
+            updateParams->textureRect.x2 = viewerRenderRoI.x2;
+            updateParams->textureRect.y1 = viewerRenderRoI.y1;
+            updateParams->textureRect.y2 = viewerRenderRoI.y2;
+            updateParams->textureRect.w = viewerRenderRoI.width();
+            updateParams->textureRect.h = viewerRenderRoI.height();
+            updateParams->bytesCount = updateParams->textureRect.w * updateParams->textureRect.h * 4;
+            assert(updateParams->bytesCount > 0);
+            if (updateParams->depth == eImageBitDepthFloat) {
+                updateParams->bytesCount *= sizeof(float);
+            }
+            std::size_t pixelSize = 4;
+            if (updateParams->depth == eImageBitDepthFloat) {
+                pixelSize *= sizeof(float);
+            }
+            std::size_t dstRowSize = updateParams->textureRect.w * pixelSize;
+            updateParams->bytesCount = updateParams->textureRect.h * dstRowSize;
+            updateParams->ramBuffer =  (unsigned char*)malloc(updateParams->bytesCount);
+        } else {
+            updateParams = inArgs.params;
+            assert(updateParams->ramBuffer);
+        }
         
         ViewerColorSpaceEnum srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth( colorImage->getBitDepth() );
         
         assert((inArgs.channels != eDisplayChannelsMatte && alphaChannelIndex < (int)colorImage->getComponentsCount()) ||
                (inArgs.channels == eDisplayChannelsMatte && ((alphaImage && alphaChannelIndex < (int)alphaImage->getComponentsCount()) || !alphaImage)));
         
-        //Make sure the viewer does not render something outside the bounds
-        RectI viewerRenderRoI;
-        splitRoi[rectIndex].intersect(colorImage->getBounds(), &viewerRenderRoI);
+      
         
         //If we are painting, only render the portion needed
         if (!lastPaintBboxPixel.isNull()) {
@@ -1678,28 +1688,28 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                 if (vmin == vmax) {
                     vmin = vmax - 1.;
                 }
-                inArgs.params->gain = 1 / (vmax - vmin);
-                inArgs.params->offset = -vmin / ( vmax - vmin);
+                updateParams->gain = 1 / (vmax - vmin);
+                updateParams->offset = -vmin / ( vmax - vmin);
             }
             
             const RenderViewerArgs args(colorImage,
                                         alphaImage,
-                                        inArgs.params->textureRect,
+                                        updateParams->textureRect,
                                         inArgs.channels,
-                                        inArgs.params->srcPremult,
+                                        updateParams->srcPremult,
                                         inArgs.key->getBitDepth(),
-                                        inArgs.params->gain,
-                                        inArgs.params->gamma == 0. ? 0. : 1. / inArgs.params->gamma,
-                                        inArgs.params->offset,
+                                        updateParams->gain,
+                                        updateParams->gamma == 0. ? 0. : 1. / updateParams->gamma,
+                                        updateParams->offset,
                                         lutFromColorspace(srcColorSpace),
-                                        lutFromColorspace(inArgs.params->lut),
+                                        lutFromColorspace(updateParams->lut),
                                         alphaChannelIndex);
             
             QReadLocker k(&_imp->gammaLookupMutex);
             renderFunctor(viewerRenderRoI,
                           args,
                           this,
-                          inArgs.params->ramBuffer);
+                          updateParams->ramBuffer);
         } else {
             
             bool runInCurrentThread = QThreadPool::globalInstance()->activeThreadCount() >= QThreadPool::globalInstance()->maxThreadCount();
@@ -1756,20 +1766,20 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             
             const RenderViewerArgs args(colorImage,
                                         alphaImage,
-                                        inArgs.params->textureRect,
+                                        updateParams->textureRect,
                                         inArgs.channels,
-                                        inArgs.params->srcPremult,
+                                        updateParams->srcPremult,
                                         inArgs.key->getBitDepth(),
-                                        inArgs.params->gain,
-                                        inArgs.params->gamma == 0. ? 0. : 1. / inArgs.params->gamma,
-                                        inArgs.params->offset,
+                                        updateParams->gain,
+                                        updateParams->gamma == 0. ? 0. : 1. / updateParams->gamma,
+                                        updateParams->offset,
                                         lutFromColorspace(srcColorSpace),
-                                        lutFromColorspace(inArgs.params->lut),
+                                        lutFromColorspace(updateParams->lut),
                                         alphaChannelIndex);
             if (runInCurrentThread) {
                 QReadLocker k(&_imp->gammaLookupMutex);
                 renderFunctor(viewerRenderRoI,
-                              args, this, inArgs.params->ramBuffer);
+                              args, this, updateParams->ramBuffer);
             } else {
                 QReadLocker k(&_imp->gammaLookupMutex);
                 QtConcurrent::map( splitRects,
@@ -1777,17 +1787,11 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                               _1,
                                               args,
                                               this,
-                                              inArgs.params->ramBuffer) ).waitForFinished();
+                                              updateParams->ramBuffer) ).waitForFinished();
             }
             
             if (!partialRectsToRender.empty()) {
-                unreportedTiles.push_back(viewerRenderRoI);
-            } else if (splitRoi.size() > 1 && rectIndex < (splitRoi.size() -1)) {
-                unreportedTiles.push_back(viewerRenderRoI);
-                if (reportProgress) {
-                    _imp->reportProgress(inArgs.params, unreportedTiles, stats, request);
-                    unreportedTiles.clear();
-                }
+                partialUpdateObjects.push_back(updateParams);
             }
         } // if (singleThreaded)
         if (inArgs.params->cachedFrame && colorImage) {
@@ -1803,10 +1807,9 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
     /*
      If we were rendering only partial rectangles, update them all at once
      */
-    if (!partialRectsToRender.empty()) {
-        _imp->reportProgress(inArgs.params, unreportedTiles, stats, request);
-        
-        //If we reply OK, it will append another updateViewer for nothing
+    if (!partialUpdateObjects.empty()) {
+        getRenderEngine()->notifyFrameProduced(partialUpdateObjects, stats, request);
+        //If we reply eViewerRenderRetCodeRender, it will append another updateViewer for nothing
         return eViewerRenderRetCodeRedraw;
     }
  
@@ -1814,50 +1817,6 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
     return eViewerRenderRetCodeRender;
 } // renderViewer_internal
 
-void
-ViewerInstance::ViewerInstancePrivate::reportProgress(const boost::shared_ptr<UpdateViewerParams>& originalParams,
-                                                      const std::list<RectI>& rectangles,
-                                                      const boost::shared_ptr<RenderStats>& stats,
-                                                      const boost::shared_ptr<RequestedFrame>& request)
-{
-    //update the viewer to report progress
-    BufferableObjectList ret;
-    for (std::list<RectI>::const_iterator it = rectangles.begin(); it!= rectangles.end(); ++it) {
-        
-        /*
-         We must make a new buffer and copy the requested portion because when OpenGL is going to use this buffer, this thread
-         might very well have started rendering and freed the original texture already
-         */
-        boost::shared_ptr<UpdateViewerParams> params(new UpdateViewerParams(*originalParams));
-        params->roi = *it;
-        params->updateOnlyRoi = true;
-        std::size_t pixelSize = 4;
-        if (params->depth == eImageBitDepthFloat) {
-            pixelSize *= sizeof(float);
-        }
-        std::size_t srcRowSize = params->textureRect.w * pixelSize;
-        std::size_t dstRowSize = params->roi.width() * pixelSize;
-        params->bytesCount = params->roi.height() * dstRowSize;
-        
-        
-        ///Allocate a temporary buffer in which we copy the texture for the RoI
-        unsigned char* tmpBuffer = (unsigned char*)malloc(params->bytesCount);
-        if (!tmpBuffer) {
-            continue;
-        }
-        params->mustFreeRamBuffer = true;
-        
-        unsigned char* dstPixels = tmpBuffer;
-        for (int y = it->y1; y < it->y2; ++y, dstPixels += dstRowSize) {
-            const unsigned char* srcPixels = params->ramBuffer + (y - params->textureRect.y1) * srcRowSize + (it->x1 - params->textureRect.x1) * pixelSize;
-            memcpy(dstPixels, srcPixels, dstRowSize);
-        }
-        
-        params->ramBuffer = tmpBuffer;
-        ret.push_back(params);
-    }
-    instance->getRenderEngine()->notifyFrameProduced(ret, stats, request);
-}
 
 void
 ViewerInstance::setCurrentlyUpdatingOpenGLViewer(bool updating)
@@ -1871,6 +1830,13 @@ ViewerInstance::isCurrentlyUpdatingOpenGLViewer() const
 {
     QMutexLocker k(&_imp->currentlyUpdatingOpenGLViewerMutex);
     return _imp->currentlyUpdatingOpenGLViewer;
+}
+
+void
+ViewerInstance::aboutToUpdateTextures()
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
+    _imp->uiContext->clearPartialUpdateTextures();
 }
 
 void
@@ -2781,7 +2747,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
     assert(params->ramBuffer);
     
     bool doUpdate = true;
-    if (!params->updateOnlyRoi && !params->isSequential && !checkAndUpdateDisplayAge(params->textureIndex,params->abortInfo->age)) {
+    if (!params->isPartialRect && !params->isSequential && !checkAndUpdateDisplayAge(params->textureIndex,params->abortInfo->age)) {
         doUpdate = false;
     }
     if (doUpdate) {
@@ -2820,8 +2786,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
                                               params->mipMapLevel,
                                               params->srcPremult,
                                               params->textureIndex,
-                                              params->roi,
-                                              params->updateOnlyRoi,
+                                              params->isPartialRect,
                                               params->recenterViewport,
                                               params->viewportCenter);
         updateViewerPboIndex = (updateViewerPboIndex + 1) % 2;

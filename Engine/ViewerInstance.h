@@ -54,6 +54,7 @@ struct ViewerArgs
     DisplayChannelsEnum channels;
     bool userRoIEnabled;
     bool mustComputeRoDAndLookupCache;
+    bool isDoingPartialUpdates;
 };
 
 class ViewerInstance
@@ -202,7 +203,8 @@ public:
                                                      boost::shared_ptr<ViewerArgs>* argsA,
                                                      boost::shared_ptr<ViewerArgs>* argsB);
 
-
+    void aboutToUpdateTextures();
+    
     void updateViewer(boost::shared_ptr<UpdateViewerParams> & frame);
     
     virtual bool getMakeSettingsPanel() const OVERRIDE FINAL { return false; }

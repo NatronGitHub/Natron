@@ -92,6 +92,11 @@ public:
     virtual RectD getUserRegionOfInterest() const = 0;
 
     /**
+     * @brief Should clear any partial texture overlayed previously transferred with transferBufferFromRAMtoGPU
+     **/
+    virtual void clearPartialUpdateTextures()  = 0;
+    
+    /**
      * @brief This function must do the following:
      * 1) glMapBuffer to map a GPU buffer to the RAM
      * 2) memcpy to copy the ramBuffer to previously mapped buffer.
@@ -110,8 +115,7 @@ public:
                                             unsigned int mipMapLevel,
                                             ImagePremultiplicationEnum premult,
                                             int textureIndex,
-                                            const RectI& roi,
-                                            bool updateOnlyRoi,
+                                            bool isPartialRect,
                                             bool recenterViewer,
                                             const Natron::Point& viewportCenter) = 0;
 

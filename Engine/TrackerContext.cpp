@@ -142,7 +142,7 @@
 
 
 #ifdef DEBUG
-#define TRACE_LIB_MV 1
+//#define TRACE_LIB_MV 1
 #endif
 
 NATRON_NAMESPACE_ENTER;

@@ -428,6 +428,21 @@ ViewerGL::paintGL()
                     _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWhole);
                 }
             }
+            for (std::size_t i = 0; i < _imp->partialUpdateTextures.size(); ++i) {
+                const TextureRect &r = _imp->partialUpdateTextures[i]->getTextureRect();
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, _imp->partialUpdateTextures[i]->getTexID());
+                glBegin(GL_POLYGON);
+                glTexCoord2d(0, 0); glVertex2d(r.x1, r.y1);
+                glTexCoord2d(0, 1); glVertex2d(r.x1, r.y2);
+                glTexCoord2d(1, 1); glVertex2d(r.x2, r.y2);
+                glTexCoord2d(1, 0); glVertex2d(r.x2, r.y1);
+                glEnd();
+                glBindTexture(GL_TEXTURE_2D, 0);
+                
+                glCheckError();
+
+            }
         } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 
         ///Unbind render textures for overlays
@@ -1351,7 +1366,11 @@ ViewerGL::initShaderGLSL()
     }
 }
 
-
+void
+ViewerGL::clearPartialUpdateTextures()
+{
+    _imp->partialUpdateTextures.clear();
+}
 
 void
 ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
@@ -1369,8 +1388,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                      unsigned int mipMapLevel,
                                      ImagePremultiplicationEnum premult,
                                      int textureIndex,
-                                     const RectI& roi,
-                                     bool updateOnlyRoi,
+                                     bool isPartialRect,
                                      bool recenterViewer,
                                      const Natron::Point& viewportCenter)
 {
@@ -1392,47 +1410,15 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     ImageBitDepthEnum bd = getBitDepth();
     assert(textureIndex == 0 || textureIndex == 1);
     
-    if (updateOnlyRoi) {
-        //Make sure the texture is allocated on the full portion
-        Texture::DataTypeEnum type = Texture::eDataTypeNone;
-        switch (bd) {
-            case eImageBitDepthByte: {
-                type = Texture::eDataTypeByte;
-                break;
-            }
-            case eImageBitDepthFloat: {
-                type = Texture::eDataTypeFloat;
-                //do 32bit fp textures either way, don't bother with half float. We might support it one day.
-                break;
-            }
-            default:
-                throw std::logic_error("ViewerGL::transferBufferFromRAMtoGPU(): unknown texture type");
-        }
-        if (_imp->displayTextures[textureIndex]->mustAllocTexture(region)) {
-            ///Initialize with black and transparant
-            std::size_t bytesToInit = region.w * region.h * 4;
-            if (depth == eImageBitDepthFloat) {
-                bytesToInit *= sizeof(float);
-            }
-            glBindBufferARB( GL_PIXEL_UNPACK_BUFFER_ARB, pboId );
-            glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesToInit, NULL, GL_DYNAMIC_DRAW_ARB);
-            GLvoid *ret = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-            glCheckError();
-            assert(ret);
-            memset(ret, 0, bytesToInit);
-            glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
-            glCheckError();
-            _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region, type, roi, false);
-            glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
-            glCheckError();
-        }
+    GLTexturePtr tex;
+    if (isPartialRect) {
+        
+        tex.reset(new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE));
+        
+    } else {
+        tex = _imp->displayTextures[textureIndex];
     }
-    
-    if (updateOnlyRoi) {
-        roi.toCanonical_noClipping(mipMapLevel, 1., &_imp->lastTextureRoi);
-    }
-    
-    
+
 
     glBindBufferARB( GL_PIXEL_UNPACK_BUFFER_ARB, pboId );
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesCount, NULL, GL_DYNAMIC_DRAW_ARB);
@@ -1445,30 +1431,18 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     glCheckError();
 
-    
+    Texture::DataTypeEnum dataType;
     if (bd == eImageBitDepthByte) {
-        _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region, Texture::eDataTypeByte, roi, updateOnlyRoi);
-    } else if (bd == eImageBitDepthFloat) {
+        dataType = Texture::eDataTypeByte;
+    } else {
         //do 32bit fp textures either way, don't bother with half float. We might support it further on.
-        _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region, Texture::eDataTypeFloat, roi, updateOnlyRoi);
+        dataType = Texture::eDataTypeFloat;
     }
+    tex->fillOrAllocateTexture(region, dataType, RectI(), false);
+
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
     //glBindTexture(GL_TEXTURE_2D, 0); // why should we bind texture 0?
     glCheckError();
-    _imp->activeTextures[textureIndex] = _imp->displayTextures[textureIndex];
-    _imp->displayingImageGain[textureIndex] = gain;
-    _imp->displayingImageGamma[textureIndex] = gamma;
-    _imp->displayingImageOffset[textureIndex] = offset;
-    _imp->displayingImageMipMapLevel[textureIndex] = mipMapLevel;
-    _imp->displayingImageLut = (ViewerColorSpaceEnum)lut;
-    _imp->displayingImagePremult[textureIndex] = premult;
-    _imp->displayingImageTime[textureIndex] = time;
-    ViewerInstance* internalNode = getInternalNode();
-    
-    if (_imp->memoryHeldByLastRenderedImages[textureIndex] > 0) {
-        internalNode->unregisterPluginMemory(_imp->memoryHeldByLastRenderedImages[textureIndex]);
-        _imp->memoryHeldByLastRenderedImages[textureIndex] = 0;
-    }
     
     if (recenterViewer) {
         QMutexLocker k(&_imp->zoomCtxMutex);
@@ -1476,34 +1450,61 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         double curCenterY = (_imp->zoomCtx.bottom() + _imp->zoomCtx.top()) / 2.;
         _imp->zoomCtx.translate(viewportCenter.x - curCenterX, viewportCenter.y - curCenterY);
     }
-
-    if (!tiles.empty() && tiles.front()) {
-        const ImagePtr& firstTile = tiles.front();
-        _imp->viewerTab->setImageFormat(textureIndex, firstTile->getComponents(), depth);
-        RectI pixelRoD;
-        firstTile->getRoD().toPixelEnclosing(0, firstTile->getPixelAspectRatio(), &pixelRoD);
-        {
-            QMutexLocker k(&_imp->projectFormatMutex);
-            _imp->currentViewerInfo[textureIndex].setDisplayWindow(Format(_imp->projectFormat, firstTile->getPixelAspectRatio()));
-        }
-        {
-            QMutexLocker k(&_imp->lastRenderedImageMutex);
-            _imp->lastRenderedTiles[textureIndex][mipMapLevel] = tiles;
-        }
-        _imp->memoryHeldByLastRenderedImages[textureIndex] = 0;
-        for (ImageList::const_iterator it = tiles.begin(); it != tiles.end(); ++it) {
-            _imp->memoryHeldByLastRenderedImages[textureIndex] += (*it)->size();
-        }
-        internalNode->registerPluginMemory(_imp->memoryHeldByLastRenderedImages[textureIndex]);
-        Q_EMIT imageChanged(textureIndex,true);
+    
+    if (isPartialRect) {
+        _imp->partialUpdateTextures.push_back(tex);
+        // Update time otherwise overlays won't refresh
+        _imp->displayingImageTime[0] = time;
+        _imp->displayingImageTime[1] = time;
     } else {
-        if (_imp->lastRenderedTiles[textureIndex][mipMapLevel].empty()) {
-            Q_EMIT imageChanged(textureIndex,false);
-        } else {
-            Q_EMIT imageChanged(textureIndex,true);
+    
+        ViewerInstance* internalNode = getInternalNode();
+
+        _imp->activeTextures[textureIndex] = _imp->displayTextures[textureIndex];
+        _imp->displayingImageGain[textureIndex] = gain;
+        _imp->displayingImageGamma[textureIndex] = gamma;
+        _imp->displayingImageOffset[textureIndex] = offset;
+        _imp->displayingImageMipMapLevel[textureIndex] = mipMapLevel;
+        _imp->displayingImageLut = (ViewerColorSpaceEnum)lut;
+        _imp->displayingImagePremult[textureIndex] = premult;
+        _imp->displayingImageTime[textureIndex] = time;
+        
+        if (_imp->memoryHeldByLastRenderedImages[textureIndex] > 0) {
+            internalNode->unregisterPluginMemory(_imp->memoryHeldByLastRenderedImages[textureIndex]);
+            _imp->memoryHeldByLastRenderedImages[textureIndex] = 0;
         }
+        
+        
+        if (!tiles.empty() && tiles.front()) {
+            const ImagePtr& firstTile = tiles.front();
+            _imp->viewerTab->setImageFormat(textureIndex, firstTile->getComponents(), depth);
+            RectI pixelRoD;
+            firstTile->getRoD().toPixelEnclosing(0, firstTile->getPixelAspectRatio(), &pixelRoD);
+            {
+                QMutexLocker k(&_imp->projectFormatMutex);
+                _imp->currentViewerInfo[textureIndex].setDisplayWindow(Format(_imp->projectFormat, firstTile->getPixelAspectRatio()));
+            }
+            {
+                QMutexLocker k(&_imp->lastRenderedImageMutex);
+                _imp->lastRenderedTiles[textureIndex][mipMapLevel] = tiles;
+            }
+            _imp->memoryHeldByLastRenderedImages[textureIndex] = 0;
+            for (ImageList::const_iterator it = tiles.begin(); it != tiles.end(); ++it) {
+                _imp->memoryHeldByLastRenderedImages[textureIndex] += (*it)->size();
+            }
+            internalNode->registerPluginMemory(_imp->memoryHeldByLastRenderedImages[textureIndex]);
+            Q_EMIT imageChanged(textureIndex,true);
+        } else {
+            if (_imp->lastRenderedTiles[textureIndex][mipMapLevel].empty()) {
+                Q_EMIT imageChanged(textureIndex,false);
+            } else {
+                Q_EMIT imageChanged(textureIndex,true);
+            }
+        }
+        setRegionOfDefinition(rod,region.par,textureIndex);
     }
-    setRegionOfDefinition(rod,region.par,textureIndex);
+   
+
 
 }
 
@@ -1531,8 +1532,8 @@ ViewerGL::disconnectInputTexture(int textureIndex)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert(textureIndex == 0 || textureIndex == 1);
-    if (_imp->activeTextures[textureIndex] != 0) {
-        _imp->activeTextures[textureIndex] = 0;
+    if (_imp->activeTextures[textureIndex]) {
+        _imp->activeTextures[textureIndex].reset();
         RectI r(0,0,0,0);
         _imp->infoViewer[textureIndex]->setDataWindow(r);
     }
@@ -2880,8 +2881,8 @@ ViewerGL::clearViewer()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    _imp->activeTextures[0] = 0;
-    _imp->activeTextures[1] = 0;
+    _imp->activeTextures[0].reset();
+    _imp->activeTextures[1].reset();
     update();
 }
 

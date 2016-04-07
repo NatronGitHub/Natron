@@ -2920,6 +2920,9 @@ ViewerDisplayScheduler::processFrame(const BufferedFrames& frames)
 
     boost::shared_ptr<ViewerInstance> viewer = _viewer.lock();
     if (!frames.empty()) {
+        viewer->aboutToUpdateTextures();
+    }
+    if (!frames.empty()) {
         for (BufferedFrames::const_iterator it = frames.begin(); it != frames.end(); ++it) {
             boost::shared_ptr<UpdateViewerParams> params = boost::dynamic_pointer_cast<UpdateViewerParams>(it->frame);
             assert(params);
@@ -3821,6 +3824,10 @@ void
 ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const RenderStatsPtr& stats, const BufferableObjectList& frames)
 {
     assert(QThread::currentThread() == qApp->thread());
+    
+    if (!frames.empty()) {
+        viewer->aboutToUpdateTextures();
+    }
     
     //bool hasDoneSomething = false;
     for (BufferableObjectList::const_iterator it2 = frames.begin(); it2 != frames.end(); ++it2) {

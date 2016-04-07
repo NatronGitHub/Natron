@@ -916,18 +916,7 @@ Settings::initializeKnobsViewers()
     autoProxyChoices.push_back("32");
     _autoProxyLevel->populateChoices(autoProxyChoices);
     _viewersTab->addKnob(_autoProxyLevel);
-    
-    
-    _enableProgressReport = AppManager::createKnob<KnobBool>(this, "Enable progress-report (experimental, slower)");
-    _enableProgressReport->setName("inViewerProgress");
-    _enableProgressReport->setAnimationEnabled(false);
-    _enableProgressReport->setHintToolTip("When enabled, the viewer will decompose the portion to render in small tiles and will "
-                                          "display them whenever they are ready to be displayed. This should provide faster results "
-                                          "on partial images. Note that this option does not support well all effects that have "
-                                          "a larger region to compute that what the real render window is (e.g: Blur). As a result of this, "
-                                          "any graph containing such effect(s) will be slower to render on the viewer than when this option "
-                                          "is unchecked.");
-    _viewersTab->addKnob(_enableProgressReport);
+
     
 }
 
@@ -1477,7 +1466,6 @@ Settings::setDefaultValues()
     _autoWipe->setDefaultValue(true);
     _autoProxyWhenScrubbingTimeline->setDefaultValue(true);
     _autoProxyLevel->setDefaultValue(1);
-    _enableProgressReport->setDefaultValue(false);
     
     _warnOcioConfigKnobChanged->setDefaultValue(true);
     _ocioStartupCheck->setDefaultValue(true);
@@ -3630,12 +3618,6 @@ void
 Settings::setOnProjectLoadedCB(const std::string& func)
 {
     _defaultOnProjectLoaded->setValue(func);
-}
-
-bool
-Settings::isInViewerProgressReportEnabled() const
-{
-    return _enableProgressReport->getValue();
 }
 
 bool
