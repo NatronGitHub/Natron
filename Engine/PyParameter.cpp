@@ -316,6 +316,13 @@ Param::setAsAlias(Param* other)
     return otherKnob->setKnobAsAliasOfThis(thisKnob, true);
 }
 
+
+void
+Param::setIconFilePath(const QString& icon)
+{
+    _knob.lock()->setIconLabel(icon.toStdString());
+}
+
 AnimatedParam::AnimatedParam(const KnobPtr& knob)
 : Param(knob)
 {
@@ -1539,11 +1546,6 @@ ButtonParam::~ButtonParam()
     
 }
 
-void
-ButtonParam::setIconFilePath(const QString& icon)
-{
-    _buttonKnob.lock()->setIconLabel(icon.toStdString());
-}
 
 void
 ButtonParam::trigger()
