@@ -28,17 +28,11 @@ SOURCES += \
         openMVG/features/akaze/AKAZE.cpp \
         openMVG/features/liop/liop_descriptor.cpp \
         openMVG/linearProgramming/linearProgrammingMOSEK.cpp \
-#        openMVG/linearProgramming/lInfinityCV/resection_kernel.cpp \
         openMVG/matching/kvld/kvld.cpp \
         openMVG/matching/kvld/algorithm.cpp \
-#        openMVG/matching/regions_matcher.cpp \
-#        openMVG/matching_image_collection/Cascade_Hashing_Matcher_Regions_AllInMemory.cpp \
-#        openMVG/matching_image_collection/Matcher_Regions_AllInMemory.cpp \
         openMVG/multiview/conditioning.cpp \
         openMVG/multiview/essential.cpp \
         openMVG/multiview/projection.cpp \
-#        openMVG/multiview/rotation_averaging_l1.cpp \
-#        openMVG/multiview/rotation_averaging_l2.cpp \
         openMVG/multiview/solver_affine.cpp \
         openMVG/multiview/solver_essential_five_point.cpp \
         openMVG/multiview/solver_essential_kernel.cpp \
@@ -50,6 +44,8 @@ SOURCES += \
         openMVG/multiview/triangulation_nview.cpp \
         openMVG/multiview/triangulation.cpp \
         openMVG/numeric/numeric.cpp \
+        openMVG/system/timer.cpp
+
 #        openMVG/sfm/pipelines/global/GlobalSfM_rotation_averaging.cpp \
 #        openMVG/sfm/pipelines/global/GlobalSfM_translation_averaging.cpp \
 #        openMVG/sfm/pipelines/global/sfm_global_engine_relative_motions.cpp \
@@ -63,8 +59,12 @@ SOURCES += \
 #        openMVG/sfm/sfm_data_io.cpp \
 #        openMVG/sfm/sfm_data_triangulation.cpp \
 #        openMVG/sfm/sfm_data_utils.cpp \
-        openMVG/system/timer.cpp
-
+#        openMVG/multiview/rotation_averaging_l1.cpp \
+#        openMVG/multiview/rotation_averaging_l2.cpp \
+#        openMVG/matching/regions_matcher.cpp \
+#        openMVG/matching_image_collection/Cascade_Hashing_Matcher_Regions_AllInMemory.cpp \
+#        openMVG/matching_image_collection/Matcher_Regions_AllInMemory.cpp \
+#        openMVG/linearProgramming/lInfinityCV/resection_kernel.cpp \
 
 HEADERS += \
         openMVG/cameras/Camera_Common.hpp \
@@ -99,11 +99,6 @@ HEADERS += \
         openMVG/geometry/pose3.hpp \
         openMVG/geometry/rigid_transformation3D_srt.hpp \
         openMVG/geometry/Similarity3.hpp \
-#        openMVG/graph/connectedComponent.hpp \
-#        openMVG/graph/graph_builder.hpp \
-#        openMVG/graph/graph_graphviz_export.hpp \
-#        openMVG/graph/graph.hpp \
-#        openMVG/graph/triplet_finder.hpp \
         openMVG/image/image_concat.hpp \
         openMVG/image/image_container.hpp \
         openMVG/image/image_converter.hpp \
@@ -139,28 +134,22 @@ HEADERS += \
         openMVG/matching/kvld/kvld.h \
         openMVG/matching/matcher_brute_force.hpp \
         openMVG/matching/matcher_cascade_hashing.hpp \
-#        openMVG/matching/matcher_kdtree_flann.hpp \
         openMVG/matching/matcher_type.hpp \
         openMVG/matching/matching_filters.hpp \
         openMVG/matching/matching_interface.hpp \
         openMVG/matching/metric_hamming.hpp \
         openMVG/matching/metric.hpp \
-#        openMVG/matching/regions_matcher.hpp \
         openMVG/matching_image_collection/Cascade_Hashing_Matcher_Regions_AllInMemory.hpp \
         openMVG/matching_image_collection/F_ACRobust.hpp \
         openMVG/matching_image_collection/Geometric_Filter_utils.hpp \
         openMVG/matching_image_collection/GeometricFilter.hpp \
         openMVG/matching_image_collection/H_ACRobust.hpp \
-#        openMVG/matching_image_collection/Matcher_Regions_AllInMemory.hpp \
         openMVG/matching_image_collection/Matcher.hpp \
         openMVG/matching_image_collection/Pair_Builder.hpp \
         openMVG/multiview/conditioning.hpp \
         openMVG/multiview/essential.hpp \
         openMVG/multiview/projection.hpp \
         openMVG/multiview/rotation_averaging_common.hpp \
-#        openMVG/multiview/rotation_averaging_l1.hpp \
-#        openMVG/multiview/rotation_averaging_l2.hpp \
-#        openMVG/multiview/rotation_averaging.hpp \
         openMVG/multiview/solver_affine.hpp \
         openMVG/multiview/solver_essential_kernel.hpp \
         openMVG/multiview/solver_fundamental_kernel.hpp \
@@ -188,6 +177,30 @@ HEADERS += \
         openMVG/robust_estimation/robust_estimator_Ransac.hpp \
         openMVG/robust_estimation/robust_ransac_tools.hpp \
         openMVG/robust_estimation/score_evaluator.hpp \
+        openMVG/stl/dynamic_bitset.hpp \
+        openMVG/stl/hash.hpp \
+        openMVG/stl/indexed_sort.hpp \
+        openMVG/stl/split.hpp \
+        openMVG/stl/stl.hpp \
+        openMVG/stl/stlMap.hpp \
+        openMVG/system/timer.hpp \
+        openMVG/tracks/tracks.hpp \
+        openMVG/types.hpp \
+        openMVG/version.hpp \
+        openMVG/robust_estimation/robust_estimator_Prosac.hpp \
+        openMVG/robust_estimation/robust_estimator_ProsacKernelAdaptator.hpp
+
+#        openMVG/matching/matcher_kdtree_flann.hpp \
+#        openMVG/matching/regions_matcher.hpp \
+#        openMVG/matching_image_collection/Matcher_Regions_AllInMemory.hpp \
+#        openMVG/multiview/rotation_averaging_l1.hpp \
+#        openMVG/multiview/rotation_averaging_l2.hpp \
+#        openMVG/multiview/rotation_averaging.hpp \
+#        openMVG/graph/connectedComponent.hpp \
+#        openMVG/graph/graph_builder.hpp \
+#        openMVG/graph/graph_graphviz_export.hpp \
+#        openMVG/graph/graph.hpp \
+#        openMVG/graph/triplet_finder.hpp \
 #        openMVG/sfm/pipelines/global/GlobalSfM_rotation_averaging.hpp \
 #        openMVG/sfm/pipelines/global/GlobalSfM_rotation_averaging/score_evaluator.hpp \
 #        openMVG/sfm/pipelines/global/GlobalSfM_translation_averaging.hpp \
@@ -219,18 +232,6 @@ HEADERS += \
 #        openMVG/sfm/sfm_landmark.hpp \
 #        openMVG/sfm/sfm_view.hpp \
 #        openMVG/sfm/sfm.hpp \
-        openMVG/stl/dynamic_bitset.hpp \
-        openMVG/stl/hash.hpp \
-        openMVG/stl/indexed_sort.hpp \
-        openMVG/stl/split.hpp \
-        openMVG/stl/stl.hpp \
-        openMVG/stl/stlMap.hpp \
-        openMVG/system/timer.hpp \
-        openMVG/tracks/tracks.hpp \
-        openMVG/types.hpp \
-        openMVG/version.hpp \
-    openMVG/robust_estimation/robust_estimator_Prosac.hpp \
-    openMVG/robust_estimation/robust_estimator_ProsacKernelAdaptator.hpp
 
 
 #SOURCES += \

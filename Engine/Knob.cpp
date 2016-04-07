@@ -4685,20 +4685,6 @@ KnobHolder::endChanges(bool discardRendering)
         QMutexLocker l(&_imp->evaluationBlockedMutex);
         
         knobChanged = _imp->knobChanged;
-        for (KnobChanges::iterator it = knobChanged.begin(); it!=knobChanged.end(); ++it) {
-            if (it->knob->getEvaluateOnChange()) {
-                significant = true;
-            }
-            
-            if (!it->valueChangeBlocked && it->knob->getIsMetadataSlave()) {
-                ++_imp->nbChangesRequiringMetadataRefresh;
-            }
-            
-        }
-        if (significant) {
-            ++_imp->nbSignificantChangesDuringEvaluationBlock;
-        }
-        ++_imp->nbChangesDuringEvaluationBlock;
 
         if (_imp->nbSignificantChangesDuringEvaluationBlock) {
             significant = true;
@@ -4863,6 +4849,15 @@ KnobHolder::appendValueChange(const KnobPtr& knob,
             foundChange->dimensionChanged.insert(dimension);
         }
         
+        if (!foundChange->valueChangeBlocked && knob->getIsMetadataSlave()) {
+            ++_imp->nbChangesRequiringMetadataRefresh;
+        }
+        
+        if (knob->getEvaluateOnChange()) {
+            ++_imp->nbSignificantChangesDuringEvaluationBlock;
+        }
+        ++_imp->nbChangesDuringEvaluationBlock;
+    
         //We do not call instanceChanged now since the hash did not change!
         //Make sure to call it after
         

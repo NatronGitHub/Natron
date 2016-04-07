@@ -68,8 +68,7 @@ public:
     , rod()
     , abortInfo()
     , isSequential(false)
-    , roi()
-    , updateOnlyRoi(false)
+    , isPartialRect(false)
     , isViewerPaused(false)
     , recenterViewport(false)
     , viewportCenter()
@@ -112,8 +111,7 @@ public:
     RectD rod;
     AbortableRenderInfoPtr abortInfo;
     bool isSequential;
-    RectI roi;
-    bool updateOnlyRoi;
+    bool isPartialRect;
     bool isViewerPaused;
     
     bool recenterViewport;

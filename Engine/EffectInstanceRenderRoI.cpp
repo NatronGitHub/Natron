@@ -1582,6 +1582,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////// Make sure all planes rendered have the requested mipmap level and format ///////////////////////////
 
     bool useAlpha0ForRGBToRGBAConversion = args.caller ? args.caller->getNode()->usesAlpha0ToConvertFromRGBToRGBA() : false;
+    
+    // If the caller is not multiplanar, for the color plane we remap it to the components metadata obtained from the metadata pass, otherwise we stick to returning
+    bool callerIsMultiplanar = args.caller ? args.caller->isMultiPlanar() : false;
+    
     //bool multiplanar = isMultiPlanar();
     for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
         
@@ -1617,11 +1621,27 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             it->second.fullscaleImage->downscaleMipMap( it->second.fullscaleImage->getRoD(), originalRoI, 0, args.mipMapLevel, false, it->second.downscaleImage.get() );
         }
         
+        const ImageComponents* comp = 0;
+        if (!it->first.isColorPlane()) {
+            comp = &it->first;
+        } else {
+            // If we were requested the color plane, we rendered what the node's metadata is for the color plane. Map it to what was requested
+            for (std::list<ImageComponents>::const_iterator it2 = args.components.begin(); it2 != args.components.end(); ++it2) {
+                if (it2->isColorPlane()) {
+                    comp = &(*it2);
+                    break;
+                }
+            }
+        }
+        assert(comp);
         ///The image might need to be converted to fit the original requested format
-        it->second.downscaleImage = convertPlanesFormatsIfNeeded(getApp(), it->second.downscaleImage, originalRoI, it->first, args.bitdepth, useAlpha0ForRGBToRGBAConversion, planesToRender->outputPremult, -1);
+        if (comp) {
+            it->second.downscaleImage = convertPlanesFormatsIfNeeded(getApp(), it->second.downscaleImage, originalRoI, *comp, args.bitdepth, useAlpha0ForRGBToRGBAConversion, planesToRender->outputPremult, -1);
+            assert(it->second.downscaleImage->getComponents() == *comp && it->second.downscaleImage->getBitDepth() == args.bitdepth);
+            outputPlanes->insert(std::make_pair(*comp,it->second.downscaleImage));
+            
+        }
         
-        assert(it->second.downscaleImage->getComponents() == it->first && it->second.downscaleImage->getBitDepth() == args.bitdepth);
-        outputPlanes->insert(std::make_pair(it->first,it->second.downscaleImage));
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

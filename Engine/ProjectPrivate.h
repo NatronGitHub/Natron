@@ -154,24 +154,65 @@ struct ProjectPrivate
     static bool
     generateFormatFromString(const QString& spec, Format* f)
     {
-        QStringList splits = spec.split(QLatin1Char(' '));
-        if (splits.size() < 2 || splits.size() > 3) {
+        QString str = spec.trimmed();
+        
+        // Some old specs were like this: ' 960 x 540 1" meaning we have to remove spaces before 'x' and after
+        int foundX = str.lastIndexOf(QLatin1Char('x'));
+        if (foundX == -1) {
             return false;
         }
-
-        QStringList sizes = splits[1].split(QLatin1Char('x'));
-        if (sizes.size() != 2) {
-            return false;
+        
+        QString widthStr,heightStr, formatName, parStr;
+        int i = foundX - 1;
+        
+        // Iterate backward to get width string, then forward
+        // ignore initial spaces
+        while (i >= 0 && str[i] == QLatin1Char(' ')) {
+            --i;
         }
-
-        f->setName(splits[0].toStdString());
+        
+        while (i >= 0 && str[i] != QLatin1Char(' ')) {
+            widthStr.push_front(str[i]);
+            --i;
+        }
+        
+        while (i >= 0 && str[i] == QLatin1Char(' ')) {
+            --i;
+        }
+        
+        while (i >= 0 && str[i] != QLatin1Char(' ')) {
+            formatName.push_front(str[i]);
+            --i;
+        }
+        
+        i = foundX + 1;
+        while (i < str.size() && str[i] == QLatin1Char(' ')) {
+            ++i;
+        }
+        
+        while (i < str.size() && str[i] != QLatin1Char(' ')) {
+            heightStr.push_back(str[i]);
+            ++i;
+        }
+        
+        while (i < str.size() && str[i] == QLatin1Char(' ')) {
+            ++i;
+        }
+        
+        while (i < str.size() && str[i] != QLatin1Char(' ')) {
+            parStr.push_back(str[i]);
+            ++i;
+        }
+        
+        
+        f->setName(formatName.toStdString());
         f->x1 = 0;
         f->y1 = 0;
-        f->x2 = sizes[0].toInt();
-        f->y2 = sizes[1].toInt();
-        
-        if (splits.size() > 2) {
-            f->setPixelAspectRatio(splits[2].toDouble());
+        f->x2 = widthStr.toInt();
+        f->y2 = heightStr.toInt();
+
+        if (!parStr.isEmpty()) {
+            f->setPixelAspectRatio(parStr.toDouble());
         }
         return true;
     }

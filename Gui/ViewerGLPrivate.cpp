@@ -72,6 +72,7 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_, ViewerTab* parent)
 , iboTriangleStripId(0)
 , activeTextures()
 , displayTextures()
+, partialUpdateTextures()
 , shaderRGB(0)
 , shaderBlack(0)
 , shaderLoaded(false)
@@ -137,16 +138,11 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_, ViewerTab* parent)
 , pressureOnPress(1.)
 , pressureOnRelease(1.)
 , wheelDeltaSeekFrame(0)
-, lastTextureRoi()
 , isUpdatingTexture(false)
 , renderOnPenUp(false)
 {
     infoViewer[0] = 0;
     infoViewer[1] = 0;
-    displayTextures[0] = 0;
-    displayTextures[1] = 0;
-    activeTextures[0] = 0;
-    activeTextures[1] = 0;
     memoryHeldByLastRenderedImages[0] = memoryHeldByLastRenderedImages[1] = 0;
     displayingImageGain[0] = displayingImageGain[1] = 1.;
     displayingImageGamma[0] = displayingImageGamma[1] = 1.;
@@ -181,8 +177,9 @@ ViewerGL::Implementation::~Implementation()
         this->shaderBlack->removeAllShaders();
         delete this->shaderBlack;
     }
-    delete this->displayTextures[0];
-    delete this->displayTextures[1];
+    displayTextures[0].reset();
+    displayTextures[1].reset();
+    partialUpdateTextures.clear();
     glCheckError();
     for (U32 i = 0; i < this->pboIds.size(); ++i) {
         glDeleteBuffers(1,&this->pboIds[i]);
@@ -453,8 +450,8 @@ ViewerGL::Implementation::initializeGL()
     if (!supportsOpenGL) {
         return;
     }
-    this->displayTextures[0] = new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE);
-    this->displayTextures[1] = new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE);
+    displayTextures[0].reset(new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE));
+    displayTextures[1].reset(new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE));
 
 
     // glGenVertexArrays(1, &_vaoId);

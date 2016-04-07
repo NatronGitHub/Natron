@@ -855,7 +855,14 @@ ReadNode::onEffectCreated(bool mayCreateFileDialog,
     std::string pattern;
    
     if (mayCreateFileDialog) {
-        pattern = getApp()->openImageFileDialog();
+        if (!getApp()->isBackground()) {
+            pattern = getApp()->openImageFileDialog();
+            
+            // File dialog was closed, ignore
+            if (pattern.empty()) {
+                throw std::runtime_error("");
+            }
+        }
         
         //The user selected a file, if it fails to read do not create the node
         throwErrors = true;

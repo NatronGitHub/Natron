@@ -195,7 +195,7 @@ TrackerTableItemDelegate::paint(QPainter * painter,
     QVariant var = item->data(Qt::DisplayRole);
     double d = var.toDouble();
     QString dataStr = QString::number(d, 'f', 6);
-    painter->drawText(textRect,Qt::TextSingleLine | Qt::AlignCenter,dataStr,&r);
+    painter->drawText(textRect,Qt::TextSingleLine | Qt::AlignVCenter | Qt::AlignLeft,dataStr,&r);
     
 }
 

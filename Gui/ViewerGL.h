@@ -159,7 +159,8 @@ public:
      **/
     void turnOffOverlay();
 
-
+    virtual void clearPartialUpdateTextures() OVERRIDE FINAL;
+    
     /**
      *@brief Copies the data stored in the  RAM buffer into the currently
      * used texture.
@@ -178,8 +179,7 @@ public:
                                             double gain, double gamma, double offset, int lut, int pboIndex,
                                             unsigned int mipMapLevel,ImagePremultiplicationEnum premult,
                                             int textureIndex,
-                                            const RectI& roi,
-                                            bool updateOnlyRoi,
+                                            bool isPartialRect,
                                             bool recenterViewer,
                                             const Natron::Point& viewportCenter) OVERRIDE FINAL;
     

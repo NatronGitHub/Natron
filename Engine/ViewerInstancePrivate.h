@@ -331,11 +331,7 @@ public:
         }
 
     }
-    
-    void reportProgress(const boost::shared_ptr<UpdateViewerParams>& originalParams,
-                        const std::list<RectI>& rectangles,
-                        const boost::shared_ptr<RenderStats>& stats,
-                        const boost::shared_ptr<RequestedFrame>& request);
+
 
 public Q_SLOTS:
 

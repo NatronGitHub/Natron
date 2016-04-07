@@ -205,6 +205,7 @@ NATRON_PYTHON_NAMESPACE_EXIT;
 typedef boost::weak_ptr<NodeGui> NodeGuiWPtr;
 typedef boost::shared_ptr<NodeGui> NodeGuiPtr;
 typedef std::list<NodeGuiPtr> NodesGuiList;
+typedef boost::shared_ptr<Texture> GLTexturePtr;
 typedef boost::shared_ptr<ProgressTaskInfo> ProgressTaskInfoPtr;
 typedef boost::shared_ptr<KnobGui> KnobGuiPtr;
 typedef boost::weak_ptr<KnobGui> KnobGuiWPtr;

@@ -1158,11 +1158,13 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
         if (args.group) {
             args.group->removeNode(node);
         }
-        std::string title("Error while creating node");
-        std::string message = title + " " + foundPluginID + ": " + e.what();
-        qDebug() << message.c_str();
-        errorDialog(title, message, false);
-
+        std::string error(e.what());
+        if (!error.empty()) {
+            std::string title("Error while creating node");
+            std::string message = title + " " + foundPluginID + ": " + e.what();
+            qDebug() << message.c_str();
+            errorDialog(title, message, false);
+        }
         return NodePtr();
     } catch (...) {
         if (args.group) {

@@ -7085,7 +7085,7 @@ Node::onFileNameParameterChanged(KnobI* fileKnob)
             _imp->effect->getFrameRange_public(getHashValue(), &leftBound, &rightBound, true);
             
             if (leftBound != INT_MIN && rightBound != INT_MAX) {
-                if (getGroup()) {
+                if (getGroup() || getIOContainer()) {
                     getApp()->getProject()->unionFrameRangeWith(leftBound, rightBound);
                 }
             }

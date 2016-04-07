@@ -329,7 +329,7 @@ win32-msvc*{
         else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/openMVG/debug/ -lopenMVG
         else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/openMVG/build/Release/ -lopenMVG
         else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/openMVG/build/Debug/ -lopenMVG
-        else:unix: LIBS += -L$$OUT_PWD/../libmv/ -lLibMV
+        else:unix: LIBS += -L$$OUT_PWD/../libs/openMVG/ -lopenMVG
 }
 
 win32-msvc*{

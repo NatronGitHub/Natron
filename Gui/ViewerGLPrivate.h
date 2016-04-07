@@ -111,8 +111,9 @@ struct ViewerGL::Implementation
     GLuint vboVerticesId; //!< VBO holding the vertices for the texture mapping.
     GLuint vboTexturesId; //!< VBO holding texture coordinates.
     GLuint iboTriangleStripId; /*!< IBOs holding vertices indexes for triangle strip sets*/
-    Texture* activeTextures[2]; /*!< A pointer to the current textures used to display. One for A and B. May point to blackTex */
-    Texture* displayTextures[2]; /*!< A pointer to the textures that would be used if A and B are displayed*/
+    GLTexturePtr activeTextures[2]; /*!< A pointer to the current textures used to display. One for A and B. May point to blackTex */
+    GLTexturePtr displayTextures[2]; /*!< A pointer to the textures that would be used if A and B are displayed*/
+    std::vector<GLTexturePtr> partialUpdateTextures; /*!< Pointer to the partial rectangle textures overlayed onto the displayed texture when tracking*/
     QGLShaderProgram* shaderRGB; /*!< The shader program used to render RGB data*/
     QGLShaderProgram* shaderBlack; /*!< The shader program used when the viewer is disconnected.*/
     bool shaderLoaded; /*!< Flag to check whether the shaders have already been loaded.*/
@@ -205,7 +206,6 @@ struct ViewerGL::Implementation
 
     int wheelDeltaSeekFrame; // accumulated wheel delta for frame seeking (crtl+wheel)
     
-    RectD lastTextureRoi;
     bool isUpdatingTexture;
     
     bool renderOnPenUp;
