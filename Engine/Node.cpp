@@ -1916,7 +1916,7 @@ Node::restoreUserKnobs(const NodeSerialization& serialization)
         boost::shared_ptr<KnobPage> page;
         if (!found) {
             page = AppManager::createKnob<KnobPage>(_imp->effect.get(), (*it)->getLabel() , 1, false);
-            page->setAsUserKnob();
+            page->setAsUserKnob(true);
             page->setName((*it)->getName());
             
         } else {
@@ -1952,7 +1952,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                     continue;
                 }
             }
-            grp->setAsUserKnob();
+            grp->setAsUserKnob(true);
             grp->setName((*it)->getName());
             if (isGrp && isGrp->isSetAsTab()) {
                 grp->setAsTab();
@@ -2225,7 +2225,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             
                 knob->clone(sKnob.get());
             }
-            knob->setAsUserKnob();
+            knob->setAsUserKnob(true);
             if (group) {
                 group->addKnob(knob);
             } else if (page) {
@@ -5419,7 +5419,9 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
             }
             
             boost::shared_ptr<NodeCollection> effectParent = isEffect->getNode()->getGroup();
-            assert(effectParent);
+            if (!effectParent) {
+                continue;
+            }
             NodeGroup* isEffectParentGroup = dynamic_cast<NodeGroup*>(effectParent.get());
             if (isEffectParentGroup && isEffectParentGroup == _imp->effect.get()) {
                 continue;
@@ -9388,8 +9390,8 @@ Node::removeParameterFromPython(const std::string& parameterName)
     assert(nodeObj);
     Q_UNUSED(nodeObj);
     if (!alreadyDefined) {
-        qDebug() << QString::fromUtf8("declarePythonFields(): attribute ") + QString::fromUtf8(nodeFullName.c_str()) + QString::fromUtf8(" is not defined");
-        throw std::logic_error(std::string("declarePythonFields(): attribute ") + nodeFullName + " is not defined");
+        qDebug() << QString::fromUtf8("removeParameterFromPython(): attribute ") + QString::fromUtf8(nodeFullName.c_str()) + QString::fromUtf8(" is not defined");
+        throw std::logic_error(std::string("removeParameterFromPython(): attribute ") + nodeFullName + " is not defined");
     }
     assert(PyObject_HasAttrString(nodeObj, parameterName.c_str()));
     std::string script = "del " + nodeFullName + "." + parameterName;
@@ -9411,7 +9413,9 @@ Node::declareAllPythonAttributes()
         if (_imp->rotoContext) {
             declareRotoPythonField();
         }
-#pragma message WARN("Also declare tracker ctx to python in 2.1")
+        if (_imp->trackContext) {
+            declareTrackerPythonField();
+        }
     } catch (const std::exception& e) {
         qDebug() << e.what();
     }

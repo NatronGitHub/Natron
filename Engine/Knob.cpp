@@ -169,7 +169,7 @@ KnobI::removeAnimation(ViewSpec view,
                        int dimension)
 {
     if (canAnimate()) {
-        removeAnimation(view, dimension, eValueChangedReasonNatronInternalEdited);
+        removeAnimationWithReason(view, dimension, eValueChangedReasonNatronInternalEdited);
     }
 }
 
@@ -179,7 +179,7 @@ KnobI::onAnimationRemoved(ViewSpec view,
                           int dimension)
 {
     if (canAnimate()) {
-        removeAnimation(view, dimension, eValueChangedReasonUserEdited);
+        removeAnimationWithReason(view, dimension, eValueChangedReasonUserEdited);
     }
 }
 
@@ -574,10 +574,10 @@ KnobHelper::isDynamicallyCreated() const
 }
 
 void
-KnobHelper::setAsUserKnob()
+KnobHelper::setAsUserKnob(bool b)
 {
-    _imp->userKnob = true;
-    _imp->dynamicallyCreated = true;
+    _imp->userKnob = b;
+    _imp->dynamicallyCreated = b;
 }
 
 bool
@@ -1250,13 +1250,12 @@ KnobHelper::moveDerivativeAtTime(CurveChangeReason reason,
 }
 
 void
-KnobHelper::removeAnimation(ViewSpec view, int dimension,
+KnobHelper::removeAnimationWithReason(ViewSpec view, int dimension,
                             ValueChangedReasonEnum reason)
 {
-    assert(QThread::currentThread() == qApp->thread());
     assert(0 <= dimension);
     if ( (dimension < 0) || ( (int)_imp->curves.size() <= dimension ) ) {
-        throw std::invalid_argument("KnobHelper::removeAnimation(): Dimension out of range");
+        throw std::invalid_argument("KnobHelper::removeAnimationWithReason(): Dimension out of range");
     }
 
 
@@ -3651,7 +3650,8 @@ KnobHelper::createDuplicateOnNode(EffectInstance* effect,
                                   const std::string& newScriptName,
                                   const std::string& newLabel,
                                   const std::string& newToolTip,
-                                  bool refreshParams)
+                                  bool refreshParams,
+                                  bool isUserKnob)
 {
     ///find-out to which node that master knob belongs to
     if (!getHolder()->getApp()) {
@@ -3691,31 +3691,31 @@ KnobHelper::createDuplicateOnNode(EffectInstance* effect,
     
     KnobPtr output;
     if (isBool) {
-        boost::shared_ptr<KnobBool> newKnob = effect->createBoolKnob(newScriptName, newLabel);
+        boost::shared_ptr<KnobBool> newKnob = effect->createBoolKnob(newScriptName, newLabel, isUserKnob);
         output = newKnob;
     } else if (isInt) {
-        boost::shared_ptr<KnobInt> newKnob = effect->createIntKnob(newScriptName, newLabel,getDimension());
+        boost::shared_ptr<KnobInt> newKnob = effect->createIntKnob(newScriptName, newLabel,getDimension(), isUserKnob);
         newKnob->setMinimumsAndMaximums(isInt->getMinimums(), isInt->getMaximums());
         newKnob->setDisplayMinimumsAndMaximums(isInt->getDisplayMinimums(),isInt->getDisplayMaximums());
         output = newKnob;
     } else if (isDbl) {
-        boost::shared_ptr<KnobDouble> newKnob = effect->createDoubleKnob(newScriptName, newLabel,getDimension());
+        boost::shared_ptr<KnobDouble> newKnob = effect->createDoubleKnob(newScriptName, newLabel,getDimension(), isUserKnob);
         newKnob->setMinimumsAndMaximums(isDbl->getMinimums(), isDbl->getMaximums());
         newKnob->setDisplayMinimumsAndMaximums(isDbl->getDisplayMinimums(),isDbl->getDisplayMaximums());
         output = newKnob;
     } else if (isChoice) {
-        boost::shared_ptr<KnobChoice> newKnob = effect->createChoiceKnob(newScriptName, newLabel);
+        boost::shared_ptr<KnobChoice> newKnob = effect->createChoiceKnob(newScriptName, newLabel, isUserKnob);
         if (!makeAlias) {
             newKnob->populateChoices(isChoice->getEntries_mt_safe(),isChoice->getEntriesHelp_mt_safe());
         }
         output = newKnob;
     } else if (isColor) {
-        boost::shared_ptr<KnobColor> newKnob = effect->createColorKnob(newScriptName, newLabel,getDimension());
+        boost::shared_ptr<KnobColor> newKnob = effect->createColorKnob(newScriptName, newLabel,getDimension(), isUserKnob);
         newKnob->setMinimumsAndMaximums(isColor->getMinimums(), isColor->getMaximums());
         newKnob->setDisplayMinimumsAndMaximums(isColor->getDisplayMinimums(),isColor->getDisplayMaximums());
         output = newKnob;
     } else if (isString) {
-        boost::shared_ptr<KnobString> newKnob = effect->createStringKnob(newScriptName, newLabel);
+        boost::shared_ptr<KnobString> newKnob = effect->createStringKnob(newScriptName, newLabel, isUserKnob);
         if (isString->isLabel()) {
             newKnob->setAsLabel();
         }
@@ -3730,41 +3730,41 @@ KnobHelper::createDuplicateOnNode(EffectInstance* effect,
         }
         output = newKnob;
     } else if (isFile) {
-        boost::shared_ptr<KnobFile> newKnob = effect->createFileKnob(newScriptName, newLabel);
+        boost::shared_ptr<KnobFile> newKnob = effect->createFileKnob(newScriptName, newLabel, isUserKnob);
         if (isFile->isInputImageFile()) {
             newKnob->setAsInputImage();
         }
         output = newKnob;
     } else if (isOutputFile) {
-        boost::shared_ptr<KnobOutputFile> newKnob = effect->createOuptutFileKnob(newScriptName, newLabel);
+        boost::shared_ptr<KnobOutputFile> newKnob = effect->createOuptutFileKnob(newScriptName, newLabel, isUserKnob);
         if (isOutputFile->isOutputImageFile()) {
             newKnob->setAsOutputImageFile();
         }
         output = newKnob;
     } else if (isPath) {
-        boost::shared_ptr<KnobPath> newKnob = effect->createPathKnob(newScriptName, newLabel);
+        boost::shared_ptr<KnobPath> newKnob = effect->createPathKnob(newScriptName, newLabel, isUserKnob);
         if (isPath->isMultiPath()) {
             newKnob->setMultiPath(true);
         }
         output = newKnob;
         
     } else if (isGrp) {
-        boost::shared_ptr<KnobGroup> newKnob = effect->createGroupKnob(newScriptName, newLabel);
+        boost::shared_ptr<KnobGroup> newKnob = effect->createGroupKnob(newScriptName, newLabel, isUserKnob);
         if (isGrp->isTab()) {
             newKnob->setAsTab();
         }
         output = newKnob;
         
     } else if (isPage) {
-        boost::shared_ptr<KnobPage> newKnob = effect->createPageKnob(newScriptName, newLabel);
+        boost::shared_ptr<KnobPage> newKnob = effect->createPageKnob(newScriptName, newLabel, isUserKnob);
         output = newKnob;
         
     } else if (isBtn) {
-        boost::shared_ptr<KnobButton> newKnob = effect->createButtonKnob(newScriptName, newLabel);
+        boost::shared_ptr<KnobButton> newKnob = effect->createButtonKnob(newScriptName, newLabel, isUserKnob);
         output = newKnob;
         
     } else if (isParametric) {
-        boost::shared_ptr<KnobParametric> newKnob = effect->createParametricKnob(newScriptName, newLabel, isParametric->getDimension());
+        boost::shared_ptr<KnobParametric> newKnob = effect->createParametricKnob(newScriptName, newLabel, isParametric->getDimension(), isUserKnob);
         output = newKnob;
     }
     if (!output) {
@@ -3774,7 +3774,6 @@ KnobHelper::createDuplicateOnNode(EffectInstance* effect,
         output->setDimensionName(i, getDimensionName(i));
     }
     output->setName(newScriptName, true);
-    output->setAsUserKnob();
     output->cloneDefaultValues(this);
     output->clone(this);
     if (canAnimate()) {
@@ -3797,7 +3796,9 @@ KnobHelper::createDuplicateOnNode(EffectInstance* effect,
             destPage->insertKnob(indexInParent, output);
         }
     }
-    effect->getNode()->declarePythonFields();
+    if (isUserKnob) {
+        effect->getNode()->declarePythonFields();
+    }
     if (!makeAlias) {
         
         boost::shared_ptr<NodeCollection> collec;
@@ -4361,7 +4362,7 @@ KnobHolder::getOrCreateUserPageKnob()
         return ret;
     }
     ret = AppManager::createKnob<KnobPage>(this,NATRON_USER_MANAGED_KNOBS_PAGE_LABEL,1,false);
-    ret->setAsUserKnob();
+    ret->setAsUserKnob(true);
     ret->setName(NATRON_USER_MANAGED_KNOBS_PAGE);
     
     
@@ -4373,7 +4374,7 @@ KnobHolder::getOrCreateUserPageKnob()
 }
 
 boost::shared_ptr<KnobInt>
-KnobHolder::createIntKnob(const std::string& name, const std::string& label,int dimension)
+KnobHolder::createIntKnob(const std::string& name, const std::string& label,int dimension, bool userKnob)
 {
     KnobPtr existingKnob = getKnobByName(name);
     if (existingKnob) {
@@ -4381,18 +4382,18 @@ KnobHolder::createIntKnob(const std::string& name, const std::string& label,int 
     }
     boost::shared_ptr<KnobInt> ret = AppManager::createKnob<KnobInt>(this,label, dimension, false);
     ret->setName(name);
-    ret->setAsUserKnob();
+    ret->setAsUserKnob(userKnob);
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
     Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect) {
+    if (isEffect && userKnob) {
         isEffect->getNode()->declarePythonFields();
     }
     return ret;
 }
 
 boost::shared_ptr<KnobDouble>
-KnobHolder::createDoubleKnob(const std::string& name, const std::string& label,int dimension)
+KnobHolder::createDoubleKnob(const std::string& name, const std::string& label,int dimension, bool userKnob)
 {
     KnobPtr existingKnob = getKnobByName(name);
     if (existingKnob) {
@@ -4400,18 +4401,18 @@ KnobHolder::createDoubleKnob(const std::string& name, const std::string& label,i
     }
     boost::shared_ptr<KnobDouble> ret = AppManager::createKnob<KnobDouble>(this,label, dimension, false);
     ret->setName(name);
-    ret->setAsUserKnob();
+    ret->setAsUserKnob(userKnob);
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
     Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect) {
+    if (isEffect && userKnob) {
         isEffect->getNode()->declarePythonFields();
     }
     return ret;
 }
 
 boost::shared_ptr<KnobColor>
-KnobHolder::createColorKnob(const std::string& name, const std::string& label,int dimension)
+KnobHolder::createColorKnob(const std::string& name, const std::string& label,int dimension,  bool userKnob)
 {
     KnobPtr existingKnob = getKnobByName(name);
     if (existingKnob) {
@@ -4419,18 +4420,18 @@ KnobHolder::createColorKnob(const std::string& name, const std::string& label,in
     }
     boost::shared_ptr<KnobColor> ret = AppManager::createKnob<KnobColor>(this,label, dimension, false);
     ret->setName(name);
-    ret->setAsUserKnob();
+    ret->setAsUserKnob(userKnob);
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
     Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect) {
+    if (isEffect && userKnob) {
         isEffect->getNode()->declarePythonFields();
     }
     return ret;
 }
 
 boost::shared_ptr<KnobBool>
-KnobHolder::createBoolKnob(const std::string& name, const std::string& label)
+KnobHolder::createBoolKnob(const std::string& name, const std::string& label,  bool userKnob)
 {
     KnobPtr existingKnob = getKnobByName(name);
     if (existingKnob) {
@@ -4438,18 +4439,18 @@ KnobHolder::createBoolKnob(const std::string& name, const std::string& label)
     }
     boost::shared_ptr<KnobBool> ret = AppManager::createKnob<KnobBool>(this,label, 1, false);
     ret->setName(name);
-    ret->setAsUserKnob();
+    ret->setAsUserKnob(userKnob);
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
     Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect) {
+    if (isEffect && userKnob) {
         isEffect->getNode()->declarePythonFields();
     }
     return ret;
 }
 
 boost::shared_ptr<KnobChoice>
-KnobHolder::createChoiceKnob(const std::string& name, const std::string& label)
+KnobHolder::createChoiceKnob(const std::string& name, const std::string& label,  bool userKnob)
 {
     KnobPtr existingKnob = getKnobByName(name);
     if (existingKnob) {
@@ -4457,18 +4458,18 @@ KnobHolder::createChoiceKnob(const std::string& name, const std::string& label)
     }
     boost::shared_ptr<KnobChoice> ret = AppManager::createKnob<KnobChoice>(this,label, 1, false);
     ret->setName(name);
-    ret->setAsUserKnob();
+    ret->setAsUserKnob(userKnob);
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
     Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect) {
+    if (isEffect && userKnob) {
         isEffect->getNode()->declarePythonFields();
     }
     return ret;
 }
 
 boost::shared_ptr<KnobButton>
-KnobHolder::createButtonKnob(const std::string& name, const std::string& label)
+KnobHolder::createButtonKnob(const std::string& name, const std::string& label,  bool userKnob)
 {
     KnobPtr existingKnob = getKnobByName(name);
     if (existingKnob) {
@@ -4476,18 +4477,18 @@ KnobHolder::createButtonKnob(const std::string& name, const std::string& label)
     }
     boost::shared_ptr<KnobButton> ret = AppManager::createKnob<KnobButton>(this,label, 1, false);
     ret->setName(name);
-    ret->setAsUserKnob();
+    ret->setAsUserKnob(userKnob);
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
     Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect) {
+    if (isEffect && userKnob) {
         isEffect->getNode()->declarePythonFields();
     }
     return ret;
 }
 
 boost::shared_ptr<KnobSeparator>
-KnobHolder::createSeparatorKnob(const std::string& name, const std::string& label)
+KnobHolder::createSeparatorKnob(const std::string& name, const std::string& label,  bool userKnob)
 {
     KnobPtr existingKnob = getKnobByName(name);
     if (existingKnob) {
@@ -4495,11 +4496,11 @@ KnobHolder::createSeparatorKnob(const std::string& name, const std::string& labe
     }
     boost::shared_ptr<KnobSeparator> ret = AppManager::createKnob<KnobSeparator>(this,label, 1, false);
     ret->setName(name);
-    ret->setAsUserKnob();
+    ret->setAsUserKnob(userKnob);
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
      Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect) {
+    if (isEffect && userKnob) {
         isEffect->getNode()->declarePythonFields();
     }
     return ret;
@@ -4508,7 +4509,7 @@ KnobHolder::createSeparatorKnob(const std::string& name, const std::string& labe
 
 //Type corresponds to the Type enum defined in StringParamBase in Parameter.h
 boost::shared_ptr<KnobString>
-KnobHolder::createStringKnob(const std::string& name, const std::string& label)
+KnobHolder::createStringKnob(const std::string& name, const std::string& label,  bool userKnob)
 {
     KnobPtr existingKnob = getKnobByName(name);
     if (existingKnob) {
@@ -4516,11 +4517,11 @@ KnobHolder::createStringKnob(const std::string& name, const std::string& label)
     }
     boost::shared_ptr<KnobString> ret = AppManager::createKnob<KnobString>(this,label, 1, false);
     ret->setName(name);
-    ret->setAsUserKnob();
+    ret->setAsUserKnob(userKnob);
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
     Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect) {
+    if (isEffect && userKnob) {
         isEffect->getNode()->declarePythonFields();
     }
     return ret;
@@ -4528,7 +4529,7 @@ KnobHolder::createStringKnob(const std::string& name, const std::string& label)
 }
 
 boost::shared_ptr<KnobFile>
-KnobHolder::createFileKnob(const std::string& name, const std::string& label)
+KnobHolder::createFileKnob(const std::string& name, const std::string& label,  bool userKnob)
 {
     KnobPtr existingKnob = getKnobByName(name);
     if (existingKnob) {
@@ -4536,18 +4537,18 @@ KnobHolder::createFileKnob(const std::string& name, const std::string& label)
     }
     boost::shared_ptr<KnobFile> ret = AppManager::createKnob<KnobFile>(this,label, 1, false);
     ret->setName(name);
-    ret->setAsUserKnob();
+    ret->setAsUserKnob(userKnob);
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
     Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect) {
+    if (isEffect && userKnob) {
         isEffect->getNode()->declarePythonFields();
     }
     return ret;
 }
 
 boost::shared_ptr<KnobOutputFile>
-KnobHolder::createOuptutFileKnob(const std::string& name, const std::string& label)
+KnobHolder::createOuptutFileKnob(const std::string& name, const std::string& label,  bool userKnob)
 {
     KnobPtr existingKnob = getKnobByName(name);
     if (existingKnob) {
@@ -4555,11 +4556,11 @@ KnobHolder::createOuptutFileKnob(const std::string& name, const std::string& lab
     }
     boost::shared_ptr<KnobOutputFile> ret = AppManager::createKnob<KnobOutputFile>(this,label, 1, false);
     ret->setName(name);
-    ret->setAsUserKnob();
+    ret->setAsUserKnob(userKnob);
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
     Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect) {
+    if (isEffect && userKnob) {
         isEffect->getNode()->declarePythonFields();
     }
     return ret;
@@ -4567,7 +4568,7 @@ KnobHolder::createOuptutFileKnob(const std::string& name, const std::string& lab
 }
 
 boost::shared_ptr<KnobPath>
-KnobHolder::createPathKnob(const std::string& name, const std::string& label)
+KnobHolder::createPathKnob(const std::string& name, const std::string& label,  bool userKnob)
 {
     KnobPtr existingKnob = getKnobByName(name);
     if (existingKnob) {
@@ -4575,11 +4576,11 @@ KnobHolder::createPathKnob(const std::string& name, const std::string& label)
     }
     boost::shared_ptr<KnobPath> ret = AppManager::createKnob<KnobPath>(this,label, 1, false);
     ret->setName(name);
-    ret->setAsUserKnob();
+    ret->setAsUserKnob(userKnob);
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
     Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect) {
+    if (isEffect && userKnob) {
         isEffect->getNode()->declarePythonFields();
     }
     return ret;
@@ -4587,7 +4588,7 @@ KnobHolder::createPathKnob(const std::string& name, const std::string& label)
 }
 
 boost::shared_ptr<KnobGroup>
-KnobHolder::createGroupKnob(const std::string& name, const std::string& label)
+KnobHolder::createGroupKnob(const std::string& name, const std::string& label,  bool userKnob)
 {
     KnobPtr existingKnob = getKnobByName(name);
     if (existingKnob) {
@@ -4595,11 +4596,11 @@ KnobHolder::createGroupKnob(const std::string& name, const std::string& label)
     }
     boost::shared_ptr<KnobGroup> ret = AppManager::createKnob<KnobGroup>(this,label, 1, false);
     ret->setName(name);
-    ret->setAsUserKnob();
+    ret->setAsUserKnob(userKnob);
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
     Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect) {
+    if (isEffect && userKnob) {
         isEffect->getNode()->declarePythonFields();
     }
     return ret;
@@ -4607,7 +4608,7 @@ KnobHolder::createGroupKnob(const std::string& name, const std::string& label)
 }
 
 boost::shared_ptr<KnobPage>
-KnobHolder::createPageKnob(const std::string& name, const std::string& label)
+KnobHolder::createPageKnob(const std::string& name, const std::string& label,  bool userKnob)
 {
     KnobPtr existingKnob = getKnobByName(name);
     if (existingKnob) {
@@ -4615,11 +4616,11 @@ KnobHolder::createPageKnob(const std::string& name, const std::string& label)
     }
     boost::shared_ptr<KnobPage> ret = AppManager::createKnob<KnobPage>(this,label, 1, false);
     ret->setName(name);
-    ret->setAsUserKnob();
+    ret->setAsUserKnob(userKnob);
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
     Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect) {
+    if (isEffect && userKnob) {
         isEffect->getNode()->declarePythonFields();
     }
     return ret;
@@ -4627,7 +4628,7 @@ KnobHolder::createPageKnob(const std::string& name, const std::string& label)
 }
 
 boost::shared_ptr<KnobParametric>
-KnobHolder::createParametricKnob(const std::string& name, const std::string& label,int nbCurves)
+KnobHolder::createParametricKnob(const std::string& name, const std::string& label,int nbCurves,  bool userKnob)
 {
     KnobPtr existingKnob = getKnobByName(name);
     if (existingKnob) {
@@ -4635,11 +4636,11 @@ KnobHolder::createParametricKnob(const std::string& name, const std::string& lab
     }
     boost::shared_ptr<KnobParametric> ret = AppManager::createKnob<KnobParametric>(this,label, nbCurves, false);
     ret->setName(name);
-    ret->setAsUserKnob();
+    ret->setAsUserKnob(userKnob);
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
     Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect) {
+    if (isEffect && userKnob) {
         isEffect->getNode()->declarePythonFields();
     }
     return ret;

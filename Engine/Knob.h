@@ -376,7 +376,7 @@ public:
     /**
      * @brief A user knob is a knob created by the user by the gui
      **/
-    virtual void setAsUserKnob() = 0;
+    virtual void setAsUserKnob(bool b) = 0;
     virtual bool isUserKnob() const = 0;
 
 
@@ -504,7 +504,7 @@ protected:
     /**
      * @brief Removes all the keyframes in the given dimension.
      **/
-    virtual void removeAnimation(ViewSpec view, int dimension,ValueChangedReasonEnum reason) = 0;
+    virtual void removeAnimationWithReason(ViewSpec view, int dimension,ValueChangedReasonEnum reason) = 0;
 
 
 public:
@@ -1036,14 +1036,15 @@ public:
     virtual bool isMastersPersistenceIgnored() const = 0;
     
     virtual KnobPtr createDuplicateOnNode(EffectInstance* effect,
-                                                           const boost::shared_ptr<KnobPage>& page,
-                                                           const boost::shared_ptr<KnobGroup>& group,
-                                                           int indexInParent,
-                                                           bool makeAlias,
-                                                           const std::string& newScriptName,
-                                                           const std::string& newLabel,
-                                                           const std::string& newToolTip,
-                                                           bool refreshParams) = 0;
+                                          const boost::shared_ptr<KnobPage>& page,
+                                          const boost::shared_ptr<KnobGroup>& group,
+                                          int indexInParent,
+                                          bool makeAlias,
+                                          const std::string& newScriptName,
+                                          const std::string& newLabel,
+                                          const std::string& newToolTip,
+                                          bool refreshParams,
+                                          bool isUserKnob) = 0;
     
     /**
      * @brief If a knob was created using createDuplicateOnNode(effect,true), this function will return true
@@ -1169,7 +1170,7 @@ public:
     virtual void setDynamicallyCreated() OVERRIDE FINAL;
     virtual bool isDynamicallyCreated() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual void setAsUserKnob() OVERRIDE FINAL;
+    virtual void setAsUserKnob(bool b) OVERRIDE FINAL;
     virtual bool isUserKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     /**
      * @brief Set a shared ptr to the signal slot handler, that will live as long as the knob lives.
@@ -1230,7 +1231,7 @@ private:
 
     
     
-    virtual void removeAnimation(ViewSpec view, int dimension,ValueChangedReasonEnum reason) OVERRIDE FINAL;
+    virtual void removeAnimationWithReason(ViewSpec view, int dimension,ValueChangedReasonEnum reason) OVERRIDE FINAL;
     virtual void deleteValueAtTime(CurveChangeReason curveChangeReason,double time, ViewSpec view,  int dimension) OVERRIDE FINAL;
 
 public:
@@ -1375,14 +1376,15 @@ public:
 
     
     virtual KnobPtr createDuplicateOnNode(EffectInstance* effect,
-                                                           const boost::shared_ptr<KnobPage>& page,
-                                                           const boost::shared_ptr<KnobGroup>& group,
-                                                           int indexInParent,
-                                                           bool makeAlias,
-                                                           const std::string& newScriptName,
-                                                           const std::string& newLabel,
-                                                           const std::string& newToolTip,
-                                                           bool refreshParams) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                          const boost::shared_ptr<KnobPage>& page,
+                                          const boost::shared_ptr<KnobGroup>& group,
+                                          int indexInParent,
+                                          bool makeAlias,
+                                          const std::string& newScriptName,
+                                          const std::string& newLabel,
+                                          const std::string& newToolTip,
+                                          bool refreshParams,
+                                          bool isUserKnob) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual KnobPtr getAliasMaster() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool setKnobAsAliasOfThis(const KnobPtr& master, bool doAlias) OVERRIDE FINAL;
     
@@ -2164,34 +2166,34 @@ public:
      * to create knobs on the fly. Their gui will be properly created. In order to notify the GUI that new parameters were
      * created, you must call refreshKnobs() that will re-scan for new parameters
      **/
-    boost::shared_ptr<KnobInt> createIntKnob(const std::string& name, const std::string& label,int dimension);
+    boost::shared_ptr<KnobInt> createIntKnob(const std::string& name, const std::string& label,int dimension, bool userKnob = true);
     
-    boost::shared_ptr<KnobDouble> createDoubleKnob(const std::string& name, const std::string& label,int dimension);
+    boost::shared_ptr<KnobDouble> createDoubleKnob(const std::string& name, const std::string& label,int dimension, bool userKnob = true);
     
-    boost::shared_ptr<KnobColor> createColorKnob(const std::string& name, const std::string& label,int dimension);
+    boost::shared_ptr<KnobColor> createColorKnob(const std::string& name, const std::string& label,int dimension, bool userKnob = true);
     
-    boost::shared_ptr<KnobBool> createBoolKnob(const std::string& name, const std::string& label);
+    boost::shared_ptr<KnobBool> createBoolKnob(const std::string& name, const std::string& label, bool userKnob = true);
     
-    boost::shared_ptr<KnobChoice> createChoiceKnob(const std::string& name, const std::string& label);
+    boost::shared_ptr<KnobChoice> createChoiceKnob(const std::string& name, const std::string& label, bool userKnob = true);
     
-    boost::shared_ptr<KnobButton> createButtonKnob(const std::string& name, const std::string& label);
+    boost::shared_ptr<KnobButton> createButtonKnob(const std::string& name, const std::string& label, bool userKnob = true);
     
-    boost::shared_ptr<KnobSeparator> createSeparatorKnob(const std::string& name, const std::string& label);
+    boost::shared_ptr<KnobSeparator> createSeparatorKnob(const std::string& name, const std::string& label, bool userKnob = true);
     
     //Type corresponds to the Type enum defined in StringParamBase in Parameter.h
-    boost::shared_ptr<KnobString> createStringKnob(const std::string& name, const std::string& label);
+    boost::shared_ptr<KnobString> createStringKnob(const std::string& name, const std::string& label, bool userKnob = true);
     
-    boost::shared_ptr<KnobFile> createFileKnob(const std::string& name, const std::string& label);
+    boost::shared_ptr<KnobFile> createFileKnob(const std::string& name, const std::string& label, bool userKnob = true);
     
-    boost::shared_ptr<KnobOutputFile> createOuptutFileKnob(const std::string& name, const std::string& label);
+    boost::shared_ptr<KnobOutputFile> createOuptutFileKnob(const std::string& name, const std::string& label, bool userKnob = true);
     
-    boost::shared_ptr<KnobPath> createPathKnob(const std::string& name, const std::string& label);
+    boost::shared_ptr<KnobPath> createPathKnob(const std::string& name, const std::string& label, bool userKnob = true);
     
-    boost::shared_ptr<KnobPage> createPageKnob(const std::string& name, const std::string& label);
+    boost::shared_ptr<KnobPage> createPageKnob(const std::string& name, const std::string& label, bool userKnob = true);
     
-    boost::shared_ptr<KnobGroup> createGroupKnob(const std::string& name, const std::string& label);
+    boost::shared_ptr<KnobGroup> createGroupKnob(const std::string& name, const std::string& label, bool userKnob = true);
     
-    boost::shared_ptr<KnobParametric> createParametricKnob(const std::string& name, const std::string& label,int nbCurves);
+    boost::shared_ptr<KnobParametric> createParametricKnob(const std::string& name, const std::string& label,int nbCurves, bool userKnob = true);
     /**
      * @brief Returns whether the onKnobValueChanged can be called by a separate thread
      **/

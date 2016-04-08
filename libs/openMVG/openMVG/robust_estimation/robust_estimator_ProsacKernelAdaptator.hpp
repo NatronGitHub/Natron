@@ -414,9 +414,9 @@ namespace openMVG {
             static void Solve(const Mat &x, const Mat &y, std::vector<Model> *Hs)
             {
                 Vec4 model;
-                Vec weights(1,x.cols());
+                Vec weights(x.cols());
                 for (int i = 0; i < x.cols(); ++i) {
-                    weights(0, i) = 1.;
+                    weights(i) = 1.;
                 }
                 if (Similarity2DFromNPoints(x, y, weights, &model)) {
                     Hs->push_back(model);
@@ -576,8 +576,8 @@ namespace openMVG {
                                 const Mat &x2, int w2, int h2,
                                 double sigma = 1. // Estimated noise on points position in pixels, this will be normalized to w1,h1 size
                                 )
-            : _x1(x1.rows(), x1.cols())
-            , _x2(x2.rows(), x2.cols())
+            : _x1(x1)
+            , _x2(x2)
             , _N1(3, 3)
             , _N2(3, 3)
             , beta(0.01)

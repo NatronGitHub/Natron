@@ -128,15 +128,72 @@
 #define kTrackerParamExportDataChoiceTransformMatchMoveBaked "Transform (Match-move), baked"
 
 
-#define kTrackerParamReferenceFrame "referenceFrame"
-#define kTrackerParamReferenceFrameLabel "Reference frame"
-#define kTrackerParamReferenceFrameHint "When exporting tracks to a CornerPin or Transform, this will be the frame number at which the transform will be an identity."
-
 #define kTrackerParamExportButton "export"
 #define kTrackerParamExportButtonLabel "Export"
 #define kTrackerParamExportButtonHint "Creates a node referencing the tracked data according to the export type chosen on the left"
 
 #define kCornerPinInvertParamName "invert"
+
+#define kTrackerParamTransformType "transformType"
+#define kTrackerParamTransformTypeLabel "Transform Type"
+#define kTrackerParamTransformTypeHint "The type of transform in output of this node."
+
+#define kTrackerParamTransformTypeNone "None"
+#define kTrackerParamTransformTypeNoneHelp "No transformation applied in output to the image: this node is a pass-through. Set it to this mode when tracking to correclty see the input image on the viewer"
+
+#define kTrackerParamTransformTypeStabilize "Stabilize"
+#define kTrackerParamTransformTypeStabilizeHelp "Transforms the image so that the tracked points do not move"
+
+#define kTrackerParamTransformTypeMatchMove "Match-Move"
+#define kTrackerParamTransformTypeMatchMoveHelp "Transforms a different image so that it moves to match the tracked points"
+
+#define kTrackerParamTransformTypeRemoveJitter "Remove Jitter"
+#define kTrackerParamTransformTypeRemoveJitterHelp "Transforms the image so that the tracked points move smoothly with high frequencies removed"
+
+enum TrackerTransformTypeEnum
+{
+    eTrackerTransformTypeNone,
+    eTrackerTransformTypeStabilize,
+    eTrackerTransformTypeMatchMove,
+    eTrackerTransformTypeRemoveJitter,
+    eTrackerTransformTypeAddJitter
+};
+
+#define kTrackerParamTransformTypeAddJitter "Add Jitter"
+#define kTrackerParamTransformTypeAddJitterHelp "Transforms the image by the high frequencies of the animation of the tracks to increase the shake or apply it on another image"
+
+#define kTrackerParamReferenceFrame "referenceFrame"
+#define kTrackerParamReferenceFrameLabel "Reference frame"
+#define kTrackerParamReferenceFrameHint "When exporting tracks to a CornerPin or Transform, this will be the frame number at which the transform will be an identity."
+
+#define kTrackerParamSetReferenceFrame "setReferenceButton"
+#define kTrackerParamSetReferenceFrameLabel "Set To Current Frame"
+#define kTrackerParamSetReferenceFrameHint "Set the reference frame to the timeline's current frame"
+
+#define kTrackerParamJitterPeriod "jitterPeriod"
+#define kTrackerParamJitterPeriodLabel "Jitter Period"
+#define kTrackerParamJitterPeriodHint "Number of frames to average together to remove high frequencies for the add/remove jitter transform type"
+
+#define kTrackerParamSmooth "smooth"
+#define kTrackerParamSmoothLabel "Smooth"
+#define kTrackerParamSmoothHint "Smooth the translation/rotation/scale by averaging this number of frames together"
+
+#define kTransformParamTranslate "translate"
+#define kTransformParamRotate "rotate"
+#define kTransformParamScale "scale"
+#define kTransformParamUniform "uniform"
+#define kTransformParamSkewX "skewX"
+#define kTransformParamSkewY "skewY"
+#define kTransformParamSkewOrder "skewOrder"
+#define kTransformParamCenter "center"
+#define kTransformParamInvert "invert"
+#define kTransformParamFilter "filter"
+#define kTransformParamClamp "clamp"
+#define kTransformParamBlackOutside "black_outside"
+#define kTransformParamMotionBlur "motionBlur"
+#define kTransformParamShutter "shutter"
+#define kTransformParamShutterOffset "shutterOffset"
+#define kTransformParamCustomShutterOffset "shutterCustomOffset"
 
 //////// Per-track parameters
 
@@ -773,7 +830,30 @@ struct TrackerContextPrivate
     boost::weak_ptr<KnobSeparator> exportDataSep;
     boost::weak_ptr<KnobChoice> exportChoice;
     boost::weak_ptr<KnobButton> exportButton;
+    
+    NodePtr internalTransformNode;
+    
+    boost::weak_ptr<KnobChoice> transformType;
     boost::weak_ptr<KnobInt> referenceFrame;
+    boost::weak_ptr<KnobButton> setCurrentFrameButton;
+    boost::weak_ptr<KnobInt> jitterPeriod;
+    boost::weak_ptr<KnobInt> smoothTransform;
+    boost::weak_ptr<KnobDouble> translate;
+    boost::weak_ptr<KnobDouble> rotate;
+    boost::weak_ptr<KnobDouble> scale;
+    boost::weak_ptr<KnobBool> scaleUniform;
+    boost::weak_ptr<KnobDouble> skewX;
+    boost::weak_ptr<KnobDouble> skewY;
+    boost::weak_ptr<KnobChoice> skewOrder;
+    boost::weak_ptr<KnobDouble> center;
+    boost::weak_ptr<KnobBool> invertTransform;
+    boost::weak_ptr<KnobChoice> filter;
+    boost::weak_ptr<KnobBool> clamp;
+    boost::weak_ptr<KnobBool> blackOutside;
+    boost::weak_ptr<KnobDouble> motionBlur;
+    boost::weak_ptr<KnobDouble> shutter;
+    boost::weak_ptr<KnobChoice> shutterOffset;
+    boost::weak_ptr<KnobDouble> customShutterOffset;
     
     mutable QMutex trackerContextMutex;
     std::vector<TrackMarkerPtr > markers;
@@ -815,6 +895,16 @@ struct TrackerContextPrivate
         QObject::connect(&scheduler, SIGNAL(trackingStarted(int)), _publicInterface, SIGNAL(trackingStarted(int)));
         QObject::connect(&scheduler, SIGNAL(trackingFinished()), _publicInterface, SIGNAL(trackingFinished()));
         
+        QString fixedNamePrefix = QString::fromUtf8(node->getScriptName_mt_safe().c_str());
+        fixedNamePrefix.append(QLatin1Char('_'));
+        fixedNamePrefix += QLatin1String("Transform");
+        
+        CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_TRANSFORM), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
+        args.fixedName = fixedNamePrefix;
+        args.createGui = false;
+        args.addToProject = false;
+        internalTransformNode = node->getApp()->createNode(args);
+
         boost::shared_ptr<KnobPage> settingsPage = AppManager::createKnob<KnobPage>(effect.get(), "Controls", 1 , false);
         boost::shared_ptr<KnobPage> transformPage = AppManager::createKnob<KnobPage>(effect.get(), "Transform", 1 , false);
         
@@ -956,16 +1046,158 @@ struct TrackerContextPrivate
         exportButton = exportButtonKnob;
         knobs.push_back(exportButtonKnob);
         
-        boost::shared_ptr<KnobInt> referenceFrameKnob = AppManager::createKnob<KnobInt>(effect.get(), kTrackerParamReferenceFrameLabel, 1, false);
+        boost::shared_ptr<KnobChoice> transformTypeKnob = AppManager::createKnob<KnobChoice>(effect.get(), kTrackerParamTransformTypeLabel, 1);
+        transformTypeKnob->setName(kTrackerParamTransformType);
+        transformTypeKnob->setHintToolTip(kTrackerParamTransformTypeHint);
+        {
+            std::vector<std::string> choices,helps;
+            choices.push_back(kTrackerParamTransformTypeNone);
+            helps.push_back(kTrackerParamTransformTypeNoneHelp);
+            choices.push_back(kTrackerParamTransformTypeStabilize);
+            helps.push_back(kTrackerParamTransformTypeStabilizeHelp);
+            choices.push_back(kTrackerParamTransformTypeMatchMove);
+            helps.push_back(kTrackerParamTransformTypeMatchMoveHelp);
+            choices.push_back(kTrackerParamTransformTypeRemoveJitter);
+            helps.push_back(kTrackerParamTransformTypeRemoveJitterHelp);
+            choices.push_back(kTrackerParamTransformTypeAddJitter);
+            helps.push_back(kTrackerParamTransformTypeAddJitterHelp);
+
+            transformTypeKnob->populateChoices(choices,helps);
+        }
+        transformType = transformTypeKnob;
+        transformPage->addKnob(transformTypeKnob);
+
+        
+        boost::shared_ptr<KnobInt> referenceFrameKnob = AppManager::createKnob<KnobInt>(effect.get(), kTrackerParamReferenceFrameLabel, 1);
         referenceFrameKnob->setName(kTrackerParamReferenceFrame);
         referenceFrameKnob->setHintToolTip(kTrackerParamReferenceFrameHint);
         referenceFrameKnob->setAnimationEnabled(false);
-        referenceFrameKnob->setDefaultValue(0.9);
+        referenceFrameKnob->setDefaultValue(0);
+        referenceFrameKnob->setAddNewLine(false);
         referenceFrameKnob->setEvaluateOnChange(false);
         transformPage->addKnob(referenceFrameKnob);
         referenceFrame = referenceFrameKnob;
         knobs.push_back(referenceFrameKnob);
+        
+        boost::shared_ptr<KnobButton> setCurrentFrameKnob = AppManager::createKnob<KnobButton>(effect.get(), kTrackerParamSetReferenceFrameLabel, 1);
+        setCurrentFrameKnob->setName(kTrackerParamSetReferenceFrame);
+        setCurrentFrameKnob->setHintToolTip(kTrackerParamSetReferenceFrameHint);
+        transformPage->addKnob(setCurrentFrameKnob);
+        setCurrentFrameButton = setCurrentFrameKnob;
+        
+        boost::shared_ptr<KnobInt>  jitterPeriodKnob = AppManager::createKnob<KnobInt>(effect.get(), kTrackerParamJitterPeriodLabel, 1);
+        jitterPeriodKnob->setName(kTrackerParamJitterPeriod);
+        jitterPeriodKnob->setHintToolTip(kTrackerParamJitterPeriodHint);
+        jitterPeriodKnob->setAnimationEnabled(false);
+        jitterPeriodKnob->setDefaultValue(10);
+        jitterPeriodKnob->setMinimum(0, 0);
+        jitterPeriodKnob->setEvaluateOnChange(false);
+        transformPage->addKnob(jitterPeriodKnob);
+        jitterPeriod = jitterPeriodKnob;
+        knobs.push_back(jitterPeriodKnob);
+        
+        boost::shared_ptr<KnobInt>  smoothTransformKnob = AppManager::createKnob<KnobInt>(effect.get(), kTrackerParamSmoothLabel, 3);
+        smoothTransformKnob->setName(kTrackerParamSmooth);
+        smoothTransformKnob->setHintToolTip(kTrackerParamSmoothHint);
+        smoothTransformKnob->setAnimationEnabled(false);
+        smoothTransformKnob->disableSlider();
+        smoothTransformKnob->setDimensionName(0, "t");
+        smoothTransformKnob->setDimensionName(1, "r");
+        smoothTransformKnob->setDimensionName(2, "s");
+        for (int i = 0;i < 3; ++i) {
+            smoothTransformKnob->setMinimum(0, i);
+        }
+        smoothTransformKnob->setEvaluateOnChange(false);
+        transformPage->addKnob(smoothTransformKnob);
+        smoothTransform = smoothTransformKnob;
+        knobs.push_back(smoothTransformKnob);
+        
+        KnobPtr translateKnob = internalTransformNode->getKnobByName(kTransformParamTranslate);
+        assert(translateKnob);
+        KnobPtr translateK = translateKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, translateKnob->getName(), translateKnob->getLabel(), translateKnob->getHintToolTip(), false, false);
+        translate = boost::dynamic_pointer_cast<KnobDouble>(translateK);
+        
+        KnobPtr rotateKnob = internalTransformNode->getKnobByName(kTransformParamRotate);
+        assert(rotateKnob);
+        KnobPtr rotateK = rotateKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, rotateKnob->getName(), rotateKnob->getLabel(), rotateKnob->getHintToolTip(), false, false);
+        rotate = boost::dynamic_pointer_cast<KnobDouble>(rotateK);
+        
+        KnobPtr scaleKnob = internalTransformNode->getKnobByName(kTransformParamScale);
+        assert(scaleKnob);
+        KnobPtr scaleK = scaleKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, scaleKnob->getName(), scaleKnob->getLabel(), scaleKnob->getHintToolTip(), false, false);
+        scaleK->setAddNewLine(false);
+        scale = boost::dynamic_pointer_cast<KnobDouble>(scaleK);
+        
+        KnobPtr scaleUniformKnob = internalTransformNode->getKnobByName(kTransformParamUniform);
+        assert(scaleUniformKnob);
+        KnobPtr scaleUniK = scaleUniformKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, scaleUniformKnob->getName(), scaleUniformKnob->getLabel(), scaleKnob->getHintToolTip(), false, false);
+        scaleUniform = boost::dynamic_pointer_cast<KnobBool>(scaleUniK);
+        
+        KnobPtr skewXKnob = internalTransformNode->getKnobByName(kTransformParamSkewX);
+        assert(skewXKnob);
+        KnobPtr skewXK = skewXKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, skewXKnob->getName(), skewXKnob->getLabel(), skewXKnob->getHintToolTip(), false, false);
+        skewX = boost::dynamic_pointer_cast<KnobDouble>(skewXK);
+        
+        KnobPtr skewYKnob = internalTransformNode->getKnobByName(kTransformParamSkewY);
+        assert(skewYKnob);
+        KnobPtr skewYK = skewYKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, skewYKnob->getName(), skewYKnob->getLabel(), skewYKnob->getHintToolTip(), false, false);
+        skewY = boost::dynamic_pointer_cast<KnobDouble>(skewYK);
+        
+        KnobPtr skewOrderKnob = internalTransformNode->getKnobByName(kTransformParamSkewOrder);
+        assert(skewOrderKnob);
+        KnobPtr skewOrderK = skewOrderKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, skewOrderKnob->getName(), skewOrderKnob->getLabel(), skewOrderKnob->getHintToolTip(), false, false);
+        skewOrder = boost::dynamic_pointer_cast<KnobChoice>(skewOrderK);
+        
+        KnobPtr centerKnob = internalTransformNode->getKnobByName(kTransformParamCenter);
+        assert(centerKnob);
+        KnobPtr centerK = centerKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, centerKnob->getName(), centerKnob->getLabel(), centerKnob->getHintToolTip(), false, false);
+        center = boost::dynamic_pointer_cast<KnobDouble>(centerK);
+        
+        KnobPtr invertKnob = internalTransformNode->getKnobByName(kTransformParamInvert);
+        assert(invertKnob);
+        KnobPtr invertK = invertKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, invertKnob->getName(), invertKnob->getLabel(), invertKnob->getHintToolTip(), false, false);
+        invertTransform = boost::dynamic_pointer_cast<KnobBool>(invertK);
 
+        
+        KnobPtr filterKnob = internalTransformNode->getKnobByName(kTransformParamFilter);
+        assert(filterKnob);
+        KnobPtr filterK = filterKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, filterKnob->getName(), filterKnob->getLabel(), filterKnob->getHintToolTip(), false, false);
+        filterK->setAddNewLine(false);
+        filter = boost::dynamic_pointer_cast<KnobChoice>(filterK);
+        
+        KnobPtr clampKnob = internalTransformNode->getKnobByName(kTransformParamClamp);
+        assert(clampKnob);
+        KnobPtr clampK = clampKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, clampKnob->getName(), clampKnob->getLabel(), clampKnob->getHintToolTip(), false, false);
+        clampK->setAddNewLine(false);
+        clamp = boost::dynamic_pointer_cast<KnobBool>(clampK);
+        
+        KnobPtr boKnob = internalTransformNode->getKnobByName(kTransformParamBlackOutside);
+        assert(boKnob);
+        KnobPtr boK = boKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, boKnob->getName(), boKnob->getLabel(), boKnob->getHintToolTip(), false, false);
+        blackOutside = boost::dynamic_pointer_cast<KnobBool>(boK);
+        
+        KnobPtr mbKnob = internalTransformNode->getKnobByName(kTransformParamMotionBlur);
+        assert(mbKnob);
+        KnobPtr mbK = mbKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, mbKnob->getName(), mbKnob->getLabel(), mbKnob->getHintToolTip(), false, false);
+        motionBlur = boost::dynamic_pointer_cast<KnobDouble>(mbK);
+        
+        KnobPtr shutterKnob = internalTransformNode->getKnobByName(kTransformParamShutter);
+        assert(shutterKnob);
+        KnobPtr shutterK = shutterKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, shutterKnob->getName(), shutterKnob->getLabel(), shutterKnob->getHintToolTip(), false, false);
+        shutter = boost::dynamic_pointer_cast<KnobDouble>(shutterK);
+        
+        KnobPtr shutterOffKnob = internalTransformNode->getKnobByName(kTransformParamShutterOffset);
+        assert(shutterOffKnob);
+        KnobPtr shutterOffK = shutterOffKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, shutterOffKnob->getName(), shutterOffKnob->getLabel(), shutterOffKnob->getHintToolTip(), false, false);
+        shutterOffK->setAddNewLine(false);
+        shutterOffset = boost::dynamic_pointer_cast<KnobChoice>(shutterOffK);
+        
+        KnobPtr customShutterKnob = internalTransformNode->getKnobByName(kTransformParamCustomShutterOffset);
+        assert(customShutterKnob);
+        KnobPtr customShutterK = customShutterKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, customShutterKnob->getName(), customShutterKnob->getLabel(), customShutterKnob->getHintToolTip(), false, false);
+        customShutterOffset = boost::dynamic_pointer_cast<KnobDouble>(customShutterK);
+        
+        node->addTransformInteract(translate.lock(), scale.lock(), scaleUniform.lock(), rotate.lock(), skewX.lock(), skewY.lock(), skewOrder.lock(), center.lock());
     }
     
 
@@ -2083,6 +2315,17 @@ TrackerContext::getAllMarkers(std::vector<TrackMarkerPtr >* markers) const
 }
 
 void
+TrackerContext::getAllEnabledMarkers(std::vector<TrackMarkerPtr >* markers) const
+{
+    QMutexLocker k(&_imp->trackerContextMutex);
+    for (std::size_t i = 0; i < _imp->markers.size(); ++i) {
+        if (_imp->markers[i]->isEnabled()) {
+            markers->push_back(_imp->markers[i]);
+        }
+    }
+}
+
+void
 TrackerContext::getSelectedMarkers(std::list<TrackMarkerPtr >* markers) const
 {
     QMutexLocker k(&_imp->trackerContextMutex);
@@ -2425,6 +2668,11 @@ TrackerContext::knobChanged(KnobI* k,
 {
     if (k == _imp->exportButton.lock().get()) {
         exportTrackDataFromExportOptions();
+    } else if (k == _imp->setCurrentFrameButton.lock().get()) {
+        boost::shared_ptr<KnobInt> refFrame = _imp->referenceFrame.lock();
+        refFrame->setValue(_imp->node.lock()->getApp()->getTimeLine()->currentFrame());
+    } else if (k == _imp->transformType.lock().get()) {
+        
     }
 }
 
@@ -2524,7 +2772,6 @@ void runProsacForModel(const std::vector<Point>& x1,
     KernelType kernel(M1, w1, h1, M2, w2, h2);
     ProsacReturnCodeEnum ret = prosac(kernel, foundModel);
     throwProsacError(ret, KernelType::MinimumSamples());
-    kernel.Unnormalize(foundModel);
 }
 
 void
@@ -2583,6 +2830,401 @@ TrackerContext::computeFundamentalFromNPoints(const std::vector<Point>& x1,
                                   model(2,0),model(2,1),model(2,2));
 }
 
+RectD
+TrackerContext::getInputRoDAtTime(double time) const
+{
+    NodePtr input = getNode()->getInput(0);
+    bool useProjFormat = false;
+    RectD ret;
+    if (!input) {
+        useProjFormat = true;
+    } else {
+        StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getHashValue(), time, RenderScale(1.), ViewIdx(0), &ret, 0);
+        if (stat == eStatusFailed) {
+            useProjFormat = true;
+        } else {
+            return ret;
+        }
+    }
+    if (useProjFormat) {
+        Format f;
+        getNode()->getApp()->getProject()->getProjectDefaultFormat(&f);
+        ret.x1 = f.x1;
+        ret.x2 = f.x2;
+        ret.y1 = f.y1;
+        ret.y2 = f.y2;
+    }
+    return ret;
+}
+
+void
+TrackerContext::resetTransformCenter()
+{
+    std::vector<TrackMarkerPtr> tracks;
+    getAllEnabledMarkers(&tracks);
+    
+    double time = (double)getTransformReferenceFrame();
+    
+    Point center;
+    if (tracks.empty()) {
+        RectD rod = getInputRoDAtTime(time);
+        center.x = (rod.x1 + rod.x2) / 2.;
+        center.y = (rod.y1 + rod.y2) / 2.;
+
+    } else {
+        for (std::size_t i = 0; i < tracks.size(); ++i) {
+            boost::shared_ptr<KnobDouble> centerKnob = tracks[i]->getCenterKnob();
+            center.x += centerKnob->getValueAtTime(time, 0);
+            center.y += centerKnob->getValueAtTime(time, 1);
+            
+        }
+        center.x /= tracks.size();
+        center.y /= tracks.size();
+    }
+    
+    boost::shared_ptr<KnobDouble> centerKnob = _imp->center.lock();
+    centerKnob->resetToDefaultValue(0);
+    centerKnob->resetToDefaultValue(1);
+    centerKnob->setValues(center.x, center.y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+}
+
+void
+TrackerContext::resetTransformParams()
+{
+    boost::shared_ptr<KnobDouble> translate = _imp->translate.lock();
+    translate->resetToDefaultValue(0);
+    translate->resetToDefaultValue(1);
+    
+    boost::shared_ptr<KnobDouble> rotate = _imp->rotate.lock();
+    rotate->resetToDefaultValue(0);
+    
+    boost::shared_ptr<KnobDouble> scale = _imp->scale.lock();
+    scale->resetToDefaultValue(0);
+    scale->resetToDefaultValue(1);
+    
+    boost::shared_ptr<KnobDouble> skewX = _imp->skewX.lock();
+    skewX->resetToDefaultValue(0);
+    
+    boost::shared_ptr<KnobDouble> skewY = _imp->skewY.lock();
+    skewY->resetToDefaultValue(0);
+    
+    resetTransformCenter();
+}
+
+struct PointWithError
+{
+    Point p1,p2;
+    double error;
+};
+
+static bool PointWithErrorCompareLess(const PointWithError& lhs, const PointWithError& rhs)
+{
+    return lhs.error < rhs.error;
+}
+
+void
+TrackerContext::extractSortedPointsFromMarkers(double refTime,
+                                               double time,
+                                               const std::vector<TrackMarkerPtr>& markers,
+                                               int jitterPeriod,
+                                               bool jitterAdd,
+                                               std::vector<Point>* x1,
+                                               std::vector<Point>* x2)
+{
+    assert(!markers.empty());
+
+    std::vector<PointWithError> pointsWithErrors;
+    
+    bool useJitter = jitterPeriod > 1;
+    int halfJitter = jitterPeriod / 2;
+    // Prosac expects the points to be sorted by decreasing correlation score (increasing error)
+    for (std::size_t i = 0; i < markers.size(); ++i) {
+        boost::shared_ptr<KnobDouble> centerKnob = markers[i]->getCenterKnob();
+        boost::shared_ptr<KnobDouble> errorKnob = markers[i]->getErrorKnob();
+        
+        if (centerKnob->getKeyFrameIndex(ViewSpec::current(), 0, time) < 0) {
+            continue;
+        }
+        pointsWithErrors.resize(pointsWithErrors.size() + 1);
+        
+        if (!useJitter) {
+            pointsWithErrors[i].p1.x = centerKnob->getValueAtTime(refTime, 0);
+            pointsWithErrors[i].p1.y = centerKnob->getValueAtTime(refTime, 1);
+            pointsWithErrors[i].p2.x = centerKnob->getValueAtTime(time, 0);
+            pointsWithErrors[i].p2.y = centerKnob->getValueAtTime(time, 1);
+        } else {
+            // Average halfJitter frames before and after refTime and time together to smooth the center
+            std::vector<Point> x1PointJitter,x2PointJitter;
+            Point x1AtTime,x2AtTime;
+            for (double t = refTime - halfJitter; t <= refTime + halfJitter; t += 1.) {
+                Point p;
+                p.x = centerKnob->getValueAtTime(t, 0);
+                p.y = centerKnob->getValueAtTime(t, 1);
+                if (t == refTime) {
+                    x1AtTime = p;
+                }
+                x1PointJitter.push_back(p);
+            }
+            for (double t = time - halfJitter; t <= time + halfJitter; t += 1.) {
+                Point p;
+                p.x = centerKnob->getValueAtTime(t, 0);
+                p.y = centerKnob->getValueAtTime(t, 1);
+                if (t == time) {
+                    x2AtTime = p;
+                }
+                x2PointJitter.push_back(p);
+            }
+            assert(x1PointJitter.size() == x2PointJitter.size());
+            Point x1avg = {0,0},x2avg = {0,0};
+            for (std::size_t i = 0; i < x1PointJitter.size(); ++i) {
+                x1avg.x += x1PointJitter[i].x;
+                x1avg.y += x1PointJitter[i].y;
+                x2avg.x += x2PointJitter[i].x;
+                x2avg.y += x2PointJitter[i].y;
+            }
+            if (!jitterAdd) {
+                pointsWithErrors[i].p1.x = x1avg.x;
+                pointsWithErrors[i].p1.y = x1avg.y;
+                pointsWithErrors[i].p2.x = x2avg.x;
+                pointsWithErrors[i].p2.y = x2avg.y;
+            } else {
+                Point highFreqX1,highFreqX2;
+                highFreqX1.x = x1AtTime.x - x1avg.x;
+                highFreqX1.y = x1AtTime.y - x1avg.y;
+                
+                highFreqX2.x = x2AtTime.x - x2avg.x;
+                highFreqX2.y = x2AtTime.y - x2avg.y;
+                
+                pointsWithErrors[i].p1.x = x1AtTime.x + highFreqX1.x;
+                pointsWithErrors[i].p1.y = x1AtTime.y + highFreqX1.y;
+                pointsWithErrors[i].p2.x = x2AtTime.x + highFreqX2.x;
+                pointsWithErrors[i].p2.y = x2AtTime.y + highFreqX2.y;
+                
+            }
+        }
+        
+        pointsWithErrors[i].error = errorKnob->getValueAtTime(time, 0);
+    }
+    
+    std::sort(pointsWithErrors.begin(), pointsWithErrors.end(), PointWithErrorCompareLess);
+    
+    x1->resize(pointsWithErrors.size());
+    x2->resize(pointsWithErrors.size());
+    int r = 0;
+    for (int i = (int)pointsWithErrors.size() - 1; i >= 0; --i, ++r) {
+        (*x1)[r] = pointsWithErrors[i].p1;
+        (*x2)[r] = pointsWithErrors[i].p2;
+    }
+
+}
+
+void
+TrackerContext::computeTransformParamsFromTracksAtTime(double refTime,
+                                                       double time,
+                                                       int jitterPeriod,
+                                                       bool jitterAdd,
+                                                       const std::vector<TrackMarkerPtr>& markers,
+                                                       TransformData* data)
+{
+    assert(!markers.empty());
+    std::vector<Point> x1, x2;
+    extractSortedPointsFromMarkers(refTime, time, markers, jitterPeriod, jitterAdd, &x1, &x2);
+    
+    RectD rodRef = getInputRoDAtTime(refTime);
+    RectD rodTime = getInputRoDAtTime(time);
+    
+    int w1 = rodRef.width();
+    int h1 = rodRef.height();
+    
+    int w2 = rodTime.width();
+    int h2 = rodTime.height();
+    
+    if (x1.size() == 1) {
+        data->hasRotationAndScale = false;
+        computeTranslationFromNPoints(x1, x2, w1, h1, w2, h2, &data->translation);
+    } else {
+        data->hasRotationAndScale = true;
+        computeSimilarityFromNPoints(x1, x2, w1, h1, w2, h2, &data->translation, &data->rotation, &data->scale);
+    }
+}
+
+struct TransformDataWithTime
+{
+    TrackerContext::TransformData data;
+    double time;
+};
+
+void
+TrackerContext::computeTransformParamsFromTracks(const std::vector<TrackMarkerPtr>& markers)
+{
+    if (markers.empty()) {
+        return;
+    }
+    int transformType_i = _imp->transformType.lock()->getValue();
+    TrackerTransformTypeEnum type =  (TrackerTransformTypeEnum)transformType_i;
+    
+    double refTime = (double)getTransformReferenceFrame();
+
+    int jitterPeriod = 0;
+    bool jitterAdd = false;
+    switch (type) {
+        case eTrackerTransformTypeNone:
+        case eTrackerTransformTypeMatchMove:
+        case eTrackerTransformTypeStabilize:
+            break;
+        case eTrackerTransformTypeAddJitter:
+        case eTrackerTransformTypeRemoveJitter:
+        {
+            jitterPeriod = _imp->jitterPeriod.lock()->getValue();
+            jitterAdd = type == eTrackerTransformTypeAddJitter;
+        } break;
+            
+    }
+    
+    std::set<double> keyframes;
+    {
+        for (std::size_t i = 0; i < markers.size(); ++i) {
+            std::set<double> keys;
+            markers[i]->getCenterKeyframes(&keys);
+            for (std::set<double>::iterator it = keys.begin(); it!= keys.end(); ++it) {
+                keyframes.insert(*it);
+            }
+            
+        }
+    }
+
+    boost::shared_ptr<KnobInt> smoothKnob = _imp->smoothTransform.lock();
+    int smoothTJitter,smoothRJitter, smoothSJitter;
+    smoothTJitter = smoothKnob->getValue(0);
+    smoothRJitter = smoothKnob->getValue(1);
+    smoothSJitter = smoothKnob->getValue(2);
+    
+    
+    
+    std::vector<TransformDataWithTime> dataAtTime;
+    for (std::set<double>::iterator it = keyframes.begin(); it!=keyframes.end(); ++it) {
+        TransformDataWithTime t;
+        t.time = *it;
+        try {
+            computeTransformParamsFromTracksAtTime(refTime, t.time, jitterPeriod, jitterAdd, markers, &t.data);
+        } catch (const std::exception& e) {
+            qDebug() << e.what();
+            continue;
+        }
+        dataAtTime.push_back(t);
+    }
+    
+    NodePtr node = getNode();
+    node->getEffectInstance()->beginChanges();
+    
+    boost::shared_ptr<KnobDouble> translationKnob = _imp->translate.lock();
+    boost::shared_ptr<KnobDouble> scaleKnob = _imp->scale.lock();
+    boost::shared_ptr<KnobDouble> rotationKnob = _imp->rotate.lock();
+    
+    translationKnob->removeAnimation(ViewSpec::all(),0);
+    translationKnob->removeAnimation(ViewSpec::all(),1);
+    
+    scaleKnob->removeAnimation(ViewSpec::all(),0);
+    rotationKnob->removeAnimation(ViewSpec::all(),0);
+    
+    for (std::size_t i = 0; i < dataAtTime.size(); ++i) {
+        if (smoothTJitter > 1) {
+            int halfJitter = smoothTJitter / 2;
+            Point avgT = {0,0};
+            
+            int nSamples = 0;
+            for (int t = std::max(0, (int)i - halfJitter); t < (i + halfJitter) && t < (int)dataAtTime.size(); ++t, ++nSamples) {
+                avgT.x += dataAtTime[t].data.translation.x;
+                avgT.y += dataAtTime[t].data.translation.y;
+            }
+            avgT.x /= nSamples;
+            avgT.y /= nSamples;
+            
+            translationKnob->setValueAtTime(dataAtTime[i].time, avgT.x, ViewSpec::all(), 0);
+            translationKnob->setValueAtTime(dataAtTime[i].time, avgT.y, ViewSpec::all(), 1);
+        } else {
+            translationKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.translation.x, ViewSpec::all(), 0);
+            translationKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.translation.y, ViewSpec::all(), 1);
+        }
+        
+        if (smoothRJitter > 1) {
+            int halfJitter = smoothRJitter / 2;
+            double avg = dataAtTime[i].data.rotation;
+            int nSamples = 1;
+            int offset = 1;
+            while (nSamples < halfJitter) {
+                bool canMoveForward = i + offset < dataAtTime.size();
+                if (canMoveForward) {
+                    if (dataAtTime[i + offset].data.hasRotationAndScale) {
+                        avg += dataAtTime[i + offset].data.rotation;
+                        ++nSamples;
+                    }
+                }
+                bool canMoveBackward = (int)i - offset >= 0;
+                if (canMoveForward) {
+                    if (dataAtTime[i - offset].data.hasRotationAndScale) {
+                        avg += dataAtTime[i - offset].data.rotation;
+                        ++nSamples;
+                    }
+                }
+                if (canMoveForward || canMoveBackward) {
+                    ++nSamples;
+                } else if (!canMoveBackward && !canMoveForward) {
+                    break;
+                }
+            }
+        
+            avg /= nSamples;
+            
+            rotationKnob->setValueAtTime(dataAtTime[i].time, avg, ViewSpec::all(), 0);
+        } else {
+            rotationKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.rotation, ViewSpec::all(), 0);
+        }
+        
+        if (smoothSJitter > 1) {
+            int halfJitter = smoothSJitter / 2;
+            double avg = dataAtTime[i].data.scale;
+            int nSamples = 1;
+            int offset = 1;
+            while (nSamples < halfJitter) {
+                bool canMoveForward = i + offset < dataAtTime.size();
+                if (canMoveForward) {
+                    if (dataAtTime[i + offset].data.hasRotationAndScale) {
+                        avg += dataAtTime[i + offset].data.scale;
+                        ++nSamples;
+                    }
+                }
+                bool canMoveBackward = (int)i - offset >= 0;
+                if (canMoveForward) {
+                    if (dataAtTime[i - offset].data.hasRotationAndScale) {
+                        avg += dataAtTime[i - offset].data.scale;
+                        ++nSamples;
+                    }
+                }
+                if (canMoveForward || canMoveBackward) {
+                    ++nSamples;
+                } else if (!canMoveBackward && !canMoveForward) {
+                    break;
+                }
+            }
+            avg /= nSamples;
+            
+            scaleKnob->setValueAtTime(dataAtTime[i].time, avg, ViewSpec::all(), 0);
+        } else {
+            scaleKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.scale, ViewSpec::all(), 0);
+        }
+    } // for (std::size_t i = 0; i < dataAtTime.size(); ++i)
+    
+    node->getEffectInstance()->endChanges();
+}
+
+void
+TrackerContext::computeTransformParamsFromEnabledTracks()
+{
+    std::vector<TrackMarkerPtr> tracks;
+    getAllEnabledMarkers(&tracks);
+    computeTransformParamsFromTracks(tracks);
+}
 
 //////////////////////// TrackScheduler
 
@@ -2849,12 +3491,15 @@ TrackScheduler<TrackArgsType>::run()
         
         } // IsTrackingFlagSetter_RAII
         
+        TrackerContext* isContext = dynamic_cast<TrackerContext*>(_imp->paramsProvider);
+        if (isContext) {
+            isContext->computeTransformParamsFromEnabledTracks();
+        }
         
         appPTR->getAppTLS()->cleanupTLSForThread();
         
         //Now that tracking is done update viewer once to refresh the whole visible portion
         
-
         if (_imp->paramsProvider->getUpdateViewer()) {
             //Refresh all viewers to the current frame
             timeline->seekFrame(lastValidFrame, true, 0, Natron::eTimelineChangeReasonOtherSeek);

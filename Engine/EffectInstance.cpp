@@ -2725,12 +2725,13 @@ EffectInstance::onSignificantEvaluateAboutToBeCalled(KnobI* knob)
         return;
     }
     
-    if (!knob || knob->getEvaluateOnChange()) {
+    bool isMT = QThread::currentThread() == qApp->thread();
+
+    if (isMT && (!knob || knob->getEvaluateOnChange())) {
         getApp()->triggerAutoSave();
     }
     
     
-    bool isMT = QThread::currentThread() == qApp->thread();
     if (isMT) {
         node->refreshIdentityState();
         
@@ -3408,7 +3409,9 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
             EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
             if (tls && tls->currentRenderArgs.validArgs) {
                 *rod = tls->currentRenderArgs.rod;
-                *isProjectFormat = false;
+                if (isProjectFormat) {
+                    *isProjectFormat = false;
+                }
                 return eStatusOK;
             }
         }
