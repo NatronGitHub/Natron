@@ -236,7 +236,7 @@ NodeCollection::getWriters(std::list<OutputEffectInstance*>* writers) const
 {
     QMutexLocker k(&_imp->nodesMutex);
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ((*it)->getEffectInstance()->isWriter()) {
+        if ((*it)->getGroup() && (*it)->isActivated() && (*it)->getEffectInstance()->isWriter()) {
             OutputEffectInstance* out = dynamic_cast<OutputEffectInstance*>((*it)->getEffectInstance().get());
             assert(out);
             writers->push_back(out);
