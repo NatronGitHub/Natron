@@ -737,6 +737,16 @@ KnobGuiInt::reflectModificationsState()
     }
 }
 
+void
+KnobGuiInt::refreshDimensionName(int dim)
+{
+    if (dim < 0 || dim >= (int)_spinBoxes.size()) {
+        return;
+    }
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    _spinBoxes[dim].second->setText(QString::fromUtf8(knob->getDimensionName(dim).c_str()));;
+}
+
 NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;

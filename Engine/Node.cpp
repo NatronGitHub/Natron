@@ -9336,7 +9336,6 @@ Node::declareAllPythonAttributes()
         if (_imp->rotoContext) {
             declareRotoPythonField();
         }
-#pragma message WARN("Also declare tracker ctx to python in 2.1")
     } catch (const std::exception& e) {
         qDebug() << e.what();
     }

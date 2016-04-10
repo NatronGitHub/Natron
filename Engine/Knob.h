@@ -210,6 +210,11 @@ public:
         Q_EMIT evaluateOnChangeChanged(value);
     }
     
+    void s_dimensionNameChanged(int dimension)
+    {
+        Q_EMIT dimensionNameChanged(dimension);
+    }
+    
 public Q_SLOTS:
 
     /**
@@ -299,6 +304,8 @@ Q_SIGNALS:
     void hasModificationsChanged();
     
     void labelChanged();
+    
+    void dimensionNameChanged(int dimension);
 };
 
 struct KnobChange

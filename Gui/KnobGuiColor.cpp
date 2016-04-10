@@ -1368,6 +1368,32 @@ KnobGuiColor::reflectModificationsState()
     }
 }
 
+void
+KnobGuiColor::refreshDimensionName(int dim)
+{
+    if (dim < 0 || dim >= _dimension) {
+        return;
+    }
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    QString text = QString::fromUtf8(knob->getDimensionName(dim).c_str());
+    switch (dim) {
+        case 0:
+            _rLabel->setText(text);
+            break;
+        case 1:
+            _gLabel->setText(text);
+            break;
+        case 2:
+            _bLabel->setText(text);
+            break;
+        case 3:
+            _aLabel->setText(text);
+            break;
+        default:
+            break;
+    }
+}
+
 NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;

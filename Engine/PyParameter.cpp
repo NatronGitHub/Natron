@@ -1662,9 +1662,15 @@ ParametricParam::getCurveColor(int dimension, ColorTuple& ret) const
 }
 
 StatusEnum
-ParametricParam::addControlPoint(int dimension,double key,double value)
+ParametricParam::addControlPoint(int dimension,double key,double value, NATRON_NAMESPACE::KeyframeTypeEnum interpolation)
 {
-    return _parametricKnob.lock()->addControlPoint(dimension, key, value);
+    return _parametricKnob.lock()->addControlPoint(dimension, key, value, interpolation);
+}
+
+NATRON_NAMESPACE::StatusEnum
+ParametricParam::addControlPoint(int dimension,double key,double value, double leftDerivative, double rightDerivative, NATRON_NAMESPACE::KeyframeTypeEnum interpolation)
+{
+    return _parametricKnob.lock()->addControlPoint(dimension, key, value, leftDerivative, rightDerivative, interpolation);
 }
 
 double
@@ -1711,6 +1717,14 @@ ParametricParam::setNthControlPoint(int dimension,
     return _parametricKnob.lock()->setNthControlPoint(dimension, nthCtl, key, value,leftDerivative,rightDerivative);
 }
 
+NATRON_NAMESPACE::StatusEnum
+ParametricParam::setNthControlPointInterpolation(int dimension,
+                                                 int nThCtl,
+                                                 KeyframeTypeEnum interpolation)
+{
+    return _parametricKnob.lock()->setNthControlPointInterpolation(dimension, nThCtl, interpolation);
+}
+
 StatusEnum
 ParametricParam::deleteControlPoint(int dimension, int nthCtl)
 {
@@ -1721,6 +1735,13 @@ StatusEnum
 ParametricParam::deleteAllControlPoints(int dimension)
 {
     return _parametricKnob.lock()->deleteAllControlPoints(dimension);
+}
+
+
+void
+ParametricParam::setDefaultCurvesFromCurrentCurves()
+{
+    _parametricKnob.lock()->setDefaultCurvesFromCurves();
 }
 
 NATRON_NAMESPACE_EXIT;

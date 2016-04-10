@@ -666,6 +666,7 @@ KnobHelper::setDimensionName(int dim,const std::string & name)
 {
     assert(QThread::currentThread() == qApp->thread());
     _imp->dimensionNames[dim] = name;
+    _signalSlotHandler->s_dimensionNameChanged(dim);
 }
 
 template <typename T>

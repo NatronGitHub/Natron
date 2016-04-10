@@ -846,4 +846,10 @@ KnobGui::onLabelChanged()
     }
 }
 
+void
+KnobGui::onDimensionNameChanged(int dimension)
+{
+    refreshDimensionName(dimension);
+}
+
 NATRON_NAMESPACE_EXIT;
