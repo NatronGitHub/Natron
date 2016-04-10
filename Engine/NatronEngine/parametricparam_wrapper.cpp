@@ -37,7 +37,7 @@ ParametricParamWrapper::~ParametricParamWrapper()
 // Target ---------------------------------------------------------
 
 extern "C" {
-static PyObject* Sbk_ParametricParamFunc_addControlPoint(PyObject* self, PyObject* args)
+static PyObject* Sbk_ParametricParamFunc_addControlPoint(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ParametricParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -46,43 +46,113 @@ static PyObject* Sbk_ParametricParamFunc_addControlPoint(PyObject* self, PyObjec
     cppSelf = (ParametricParamWrapper*)((::ParametricParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0, 0};
+    PyObject* pyArgs[] = {0, 0, 0, 0, 0, 0};
 
     // invalid argument lengths
+    if (numArgs + numNamedArgs > 6) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.ParametricParam.addControlPoint(): too many arguments");
+        return 0;
+    } else if (numArgs < 3) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.ParametricParam.addControlPoint(): not enough arguments");
+        return 0;
+    }
 
-
-    if (!PyArg_UnpackTuple(args, "addControlPoint", 3, 3, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
+    if (!PyArg_ParseTuple(args, "|OOOOOO:addControlPoint", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3]), &(pyArgs[4]), &(pyArgs[5])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: addControlPoint(int,double,double)
-    if (numArgs == 3
+    // 0: addControlPoint(int,double,double,NATRON_NAMESPACE::KeyframeTypeEnum)
+    // 1: addControlPoint(int,double,double,double,double,NATRON_NAMESPACE::KeyframeTypeEnum)
+    if (numArgs >= 3
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
         && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))) {
-        overloadId = 0; // addControlPoint(int,double,double)
+        if (numArgs == 3) {
+            overloadId = 0; // addControlPoint(int,double,double,NATRON_NAMESPACE::KeyframeTypeEnum)
+        } else if ((pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_KEYFRAMETYPEENUM_IDX]), (pyArgs[3])))) {
+            overloadId = 0; // addControlPoint(int,double,double,NATRON_NAMESPACE::KeyframeTypeEnum)
+        } else if (numArgs >= 5
+            && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3])))
+            && (pythonToCpp[4] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[4])))) {
+            if (numArgs == 5) {
+                overloadId = 1; // addControlPoint(int,double,double,double,double,NATRON_NAMESPACE::KeyframeTypeEnum)
+            } else if ((pythonToCpp[5] = Shiboken::Conversions::isPythonToCppConvertible(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_KEYFRAMETYPEENUM_IDX]), (pyArgs[5])))) {
+                overloadId = 1; // addControlPoint(int,double,double,double,double,NATRON_NAMESPACE::KeyframeTypeEnum)
+            }
+        }
     }
 
     // Function signature not found.
     if (overloadId == -1) goto Sbk_ParametricParamFunc_addControlPoint_TypeError;
 
     // Call function/method
-    {
-        int cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
-        double cppArg1;
-        pythonToCpp[1](pyArgs[1], &cppArg1);
-        double cppArg2;
-        pythonToCpp[2](pyArgs[2], &cppArg2);
+    switch (overloadId) {
+        case 0: // addControlPoint(int dimension, double key, double value, NATRON_NAMESPACE::KeyframeTypeEnum interpolation)
+        {
+            if (kwds) {
+                PyObject* value = PyDict_GetItemString(kwds, "interpolation");
+                if (value && pyArgs[3]) {
+                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ParametricParam.addControlPoint(): got multiple values for keyword argument 'interpolation'.");
+                    return 0;
+                } else if (value) {
+                    pyArgs[3] = value;
+                    if (!(pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_KEYFRAMETYPEENUM_IDX]), (pyArgs[3]))))
+                        goto Sbk_ParametricParamFunc_addControlPoint_TypeError;
+                }
+            }
+            int cppArg0;
+            pythonToCpp[0](pyArgs[0], &cppArg0);
+            double cppArg1;
+            pythonToCpp[1](pyArgs[1], &cppArg1);
+            double cppArg2;
+            pythonToCpp[2](pyArgs[2], &cppArg2);
+            ::NATRON_NAMESPACE::KeyframeTypeEnum cppArg3 = NATRON_NAMESPACE::eKeyframeTypeSmooth;
+            if (pythonToCpp[3]) pythonToCpp[3](pyArgs[3], &cppArg3);
 
-        if (!PyErr_Occurred()) {
-            // addControlPoint(int,double,double)
-            NATRON_NAMESPACE::StatusEnum cppResult = NATRON_NAMESPACE::StatusEnum(cppSelf->addControlPoint(cppArg0, cppArg1, cppArg2));
-            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_STATUSENUM_IDX]), &cppResult);
+            if (!PyErr_Occurred()) {
+                // addControlPoint(int,double,double,NATRON_NAMESPACE::KeyframeTypeEnum)
+                NATRON_NAMESPACE::StatusEnum cppResult = NATRON_NAMESPACE::StatusEnum(cppSelf->addControlPoint(cppArg0, cppArg1, cppArg2, cppArg3));
+                pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_STATUSENUM_IDX]), &cppResult);
+            }
+            break;
+        }
+        case 1: // addControlPoint(int dimension, double key, double value, double leftDerivative, double rightDerivative, NATRON_NAMESPACE::KeyframeTypeEnum interpolation)
+        {
+            if (kwds) {
+                PyObject* value = PyDict_GetItemString(kwds, "interpolation");
+                if (value && pyArgs[5]) {
+                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ParametricParam.addControlPoint(): got multiple values for keyword argument 'interpolation'.");
+                    return 0;
+                } else if (value) {
+                    pyArgs[5] = value;
+                    if (!(pythonToCpp[5] = Shiboken::Conversions::isPythonToCppConvertible(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_KEYFRAMETYPEENUM_IDX]), (pyArgs[5]))))
+                        goto Sbk_ParametricParamFunc_addControlPoint_TypeError;
+                }
+            }
+            int cppArg0;
+            pythonToCpp[0](pyArgs[0], &cppArg0);
+            double cppArg1;
+            pythonToCpp[1](pyArgs[1], &cppArg1);
+            double cppArg2;
+            pythonToCpp[2](pyArgs[2], &cppArg2);
+            double cppArg3;
+            pythonToCpp[3](pyArgs[3], &cppArg3);
+            double cppArg4;
+            pythonToCpp[4](pyArgs[4], &cppArg4);
+            ::NATRON_NAMESPACE::KeyframeTypeEnum cppArg5 = NATRON_NAMESPACE::eKeyframeTypeSmooth;
+            if (pythonToCpp[5]) pythonToCpp[5](pyArgs[5], &cppArg5);
+
+            if (!PyErr_Occurred()) {
+                // addControlPoint(int,double,double,double,double,NATRON_NAMESPACE::KeyframeTypeEnum)
+                NATRON_NAMESPACE::StatusEnum cppResult = NATRON_NAMESPACE::StatusEnum(cppSelf->addControlPoint(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4, cppArg5));
+                pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_STATUSENUM_IDX]), &cppResult);
+            }
+            break;
         }
     }
 
@@ -93,7 +163,7 @@ static PyObject* Sbk_ParametricParamFunc_addControlPoint(PyObject* self, PyObjec
     return pyResult;
 
     Sbk_ParametricParamFunc_addControlPoint_TypeError:
-        const char* overloads[] = {"int, float, float", 0};
+        const char* overloads[] = {"int, float, float, NatronEngine.NATRON_NAMESPACE.KeyframeTypeEnum = eKeyframeTypeSmooth", "int, float, float, float, float, NatronEngine.NATRON_NAMESPACE.KeyframeTypeEnum = eKeyframeTypeSmooth", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ParametricParam.addControlPoint", overloads);
         return 0;
 }
@@ -489,6 +559,29 @@ static PyObject* Sbk_ParametricParamFunc_setCurveColor(PyObject* self, PyObject*
         return 0;
 }
 
+static PyObject* Sbk_ParametricParamFunc_setDefaultCurvesFromCurrentCurves(PyObject* self)
+{
+    ParametricParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ParametricParamWrapper*)((::ParametricParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], (SbkObject*)self));
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // setDefaultCurvesFromCurrentCurves()
+            cppSelf->setDefaultCurvesFromCurrentCurves();
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+}
+
 static PyObject* Sbk_ParametricParamFunc_setNthControlPoint(PyObject* self, PyObject* args)
 {
     ParametricParamWrapper* cppSelf = 0;
@@ -560,7 +653,7 @@ static PyObject* Sbk_ParametricParamFunc_setNthControlPoint(PyObject* self, PyOb
 }
 
 static PyMethodDef Sbk_ParametricParam_methods[] = {
-    {"addControlPoint", (PyCFunction)Sbk_ParametricParamFunc_addControlPoint, METH_VARARGS},
+    {"addControlPoint", (PyCFunction)Sbk_ParametricParamFunc_addControlPoint, METH_VARARGS|METH_KEYWORDS},
     {"deleteAllControlPoints", (PyCFunction)Sbk_ParametricParamFunc_deleteAllControlPoints, METH_O},
     {"deleteControlPoint", (PyCFunction)Sbk_ParametricParamFunc_deleteControlPoint, METH_VARARGS},
     {"getCurveColor", (PyCFunction)Sbk_ParametricParamFunc_getCurveColor, METH_O},
@@ -568,6 +661,7 @@ static PyMethodDef Sbk_ParametricParam_methods[] = {
     {"getNthControlPoint", (PyCFunction)Sbk_ParametricParamFunc_getNthControlPoint, METH_VARARGS},
     {"getValue", (PyCFunction)Sbk_ParametricParamFunc_getValue, METH_VARARGS},
     {"setCurveColor", (PyCFunction)Sbk_ParametricParamFunc_setCurveColor, METH_VARARGS},
+    {"setDefaultCurvesFromCurrentCurves", (PyCFunction)Sbk_ParametricParamFunc_setDefaultCurvesFromCurrentCurves, METH_NOARGS},
     {"setNthControlPoint", (PyCFunction)Sbk_ParametricParamFunc_setNthControlPoint, METH_VARARGS},
 
     {0} // Sentinel

@@ -1752,6 +1752,26 @@ KnobParametric::addControlPoint(int dimension,
 }
 
 StatusEnum
+KnobParametric::addControlPoint(int dimension,double key,double value, double leftDerivative, double rightDerivative, KeyframeTypeEnum interpolation)
+{
+    ///Mt-safe as Curve is MT-safe
+    if (dimension >= (int)_curves.size() ||
+        key != key || // check for NaN
+        boost::math::isinf(key) ||
+        value != value || // check for NaN
+        boost::math::isinf(value)) {
+        return eStatusFailed;
+    }
+    
+    KeyFrame k(key,value, leftDerivative, rightDerivative);
+    k.setInterpolation(interpolation);
+    _curves[dimension]->addKeyFrame(k);
+    Q_EMIT curveChanged(dimension);
+    
+    return eStatusOK;
+}
+
+StatusEnum
 KnobParametric::getValue(int dimension,
                           double parametricPosition,
                           double *returnValue) const
@@ -1826,6 +1846,25 @@ KnobParametric::getNthControlPoint(int dimension,
     *rightDerivative = kf.getRightDerivative();
     return eStatusOK;
 
+}
+
+StatusEnum
+KnobParametric::setNthControlPointInterpolation(int dimension,
+                                           int nThCtl,
+                                           KeyframeTypeEnum interpolation)
+{
+    ///Mt-safe as Curve is MT-safe
+    if ( dimension >= (int)_curves.size() ) {
+        return eStatusFailed;
+    }
+    try {
+        _curves[dimension]->setKeyFrameInterpolation(interpolation, nThCtl);
+    } catch (...) {
+        return eStatusFailed;
+    }
+    Q_EMIT curveChanged(dimension);
+    
+    return eStatusOK;
 }
 
 StatusEnum
@@ -1910,7 +1949,7 @@ KnobParametric::cloneExtraData(KnobI* other,int dimension )
     if ( isParametric && ( isParametric->getDimension() == getDimension() ) ) {
         for (int i = 0; i < getDimension(); ++i) {
             if (i == dimension || dimension == -1) {
-                _curves[i]->clone( *isParametric->getParametricCurve(i) );
+                _curves[i]->clone(*isParametric->_curves[i]);
             }
         }
     }
@@ -1925,7 +1964,7 @@ KnobParametric::cloneExtraDataAndCheckIfChanged(KnobI* other,int dimension) {
     if ( isParametric && ( isParametric->getDimension() == getDimension() ) ) {
         for (int i = 0; i < getDimension(); ++i) {
             if (i == dimension || dimension == -1) {
-                hasChanged |= _curves[i]->cloneAndCheckIfChanged( *isParametric->getParametricCurve(i) );
+                hasChanged |= _curves[i]->cloneAndCheckIfChanged( *isParametric->_curves[i]);
             }
         }
     }
@@ -1944,7 +1983,7 @@ KnobParametric::cloneExtraData(KnobI* other,
         int dimMin = std::min( getDimension(), isParametric->getDimension() );
         for (int i = 0; i < dimMin; ++i) {
             if (i == dimension || dimension == -1) {
-                _curves[i]->clone(*isParametric->getParametricCurve(i), offset, range);
+                _curves[i]->clone(*isParametric->_curves[i], offset, range);
             }
         }
     }

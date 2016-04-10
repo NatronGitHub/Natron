@@ -111,6 +111,8 @@ private:
     {
     }
 
+    virtual void refreshDimensionName(int dim) OVERRIDE FINAL;
+
 private:
     // TODO: PIMPL
     QWidget* treeColumn;
@@ -123,7 +125,7 @@ private:
         QTreeWidgetItem* treeItem;
     };
 
-    typedef std::map<int,CurveDescriptor> CurveGuis;
+    typedef std::vector<CurveDescriptor> CurveGuis;
     CurveGuis _curves;
     boost::weak_ptr<KnobParametric> _knob;
 };

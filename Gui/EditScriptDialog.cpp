@@ -167,7 +167,8 @@ EditScriptDialog::create(const QString& initialScript,bool makeUseRetButton)
             QString toAppend = QString::fromUtf8("<b>%1</b>: %2<br />").arg(it->first).arg(it->second);
             labelHtml.append(toAppend);
         }
-        labelHtml.append(QString::fromUtf8("<p>") + tr("Note that parameters can be referenced by drag&dropping them from their animation button.") + QString::fromUtf8("</p>"));
+        QKeySequence s(Qt::CTRL);
+        labelHtml.append(QString::fromUtf8("<p>") + tr("Note that parameters can be referenced by drag&dropping while holding %1 on their widget").arg(s.toString(QKeySequence::NativeText)) + QString::fromUtf8("</p>"));
     }
     
     _imp->expressionLabel = new Label(labelHtml,this);
