@@ -1378,16 +1378,24 @@ KnobGuiColor::refreshDimensionName(int dim)
     QString text = QString::fromUtf8(knob->getDimensionName(dim).c_str());
     switch (dim) {
         case 0:
-            _rLabel->setText(text);
+            if (_rLabel) {
+                _rLabel->setText(text);
+            }
             break;
         case 1:
-            _gLabel->setText(text);
+            if (_gLabel) {
+                _gLabel->setText(text);
+            }
             break;
         case 2:
-            _bLabel->setText(text);
+            if (_bLabel) {
+                _bLabel->setText(text);
+            }
             break;
         case 3:
-            _aLabel->setText(text);
+            if (_aLabel) {
+                _aLabel->setText(text);
+            }
             break;
         default:
             break;
