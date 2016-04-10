@@ -4642,15 +4642,15 @@ static Node::CanConnectInputReturnValue checkCanConnectNoMultiRes(const Node* ou
         return Node::eCanConnectInput_multiResNotSupported;
     }
     
-  /*  RectD outputRod;
-    stat = output->getEffectInstance()->getRegionOfDefinition_public(output->getHashValue(), output->getApp()->getTimeLine()->currentFrame(), scale, 0, &outputRod, &isProjectFormat);
-    if (stat == eStatusFailed && !outputRod.isNull()) {
+    RectD outputRod;
+    stat = output->getEffectInstance()->getRegionOfDefinition_public(output->getHashValue(), output->getApp()->getTimeLine()->currentFrame(), scale, ViewIdx(0), &outputRod, &isProjectFormat);
+    /*if (stat == eStatusFailed && !outputRod.isNull()) {
         return Node::eCanConnectInput_givenNodeNotConnectable;
-    }
-    
-    if (rod != outputRod) {
-        return Node::eCanConnectInput_multiResNotSupported;
     }*/
+    
+    if (!outputRod.isNull() && rod != outputRod) {
+        return Node::eCanConnectInput_multiResNotSupported;
+    }
     
     for (int i = 0; i < output->getMaxInputCount(); ++i) {
         NodePtr inputNode = output->getInput(i);

@@ -95,7 +95,7 @@ static bool handleConnectionError(const NodeGuiPtr& outputNode, const NodeGuiPtr
             QString error = QString(QObject::tr("You cannot connect ") + QString::fromUtf8("%1") + QObject::tr(" to ") + QString::fromUtf8("%2 ") + QObject::tr("because multi-resolution is not supported on ") + QString::fromUtf8("%1 ")
                                     + QObject::tr("which means that it cannot receive images with a lower left corner different than (0,0) and cannot have "
                                          "multiple inputs/outputs with different image sizes.\n"
-                                                  "To overcome this, use a Resize or Crop node upstream to change the image size.")).arg(QString::fromUtf8(outputNode->getNode()->getLabel().c_str()))
+                                                  "To overcome this, use a Resize or Crop node upstream to change the image size. In some cases you might also need to make sure the input image size is the project size.")).arg(QString::fromUtf8(outputNode->getNode()->getLabel().c_str()))
             .arg(QString::fromUtf8(inputNode->getNode()->getLabel().c_str()));
             Dialogs::errorDialog(QObject::tr("Multi-resolution not supported").toStdString(),
                                 error.toStdString());;
