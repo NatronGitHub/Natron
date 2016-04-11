@@ -356,7 +356,7 @@ struct TrackerContextPrivate
     boost::weak_ptr<KnobChoice> exportChoice;
     boost::weak_ptr<KnobButton> exportButton;
     
-    NodePtr internalTransformNode;
+    NodePtr transformNode, cornerPinNode;
     
     boost::weak_ptr<KnobChoice> transformType;
     boost::weak_ptr<KnobInt> referenceFrame;

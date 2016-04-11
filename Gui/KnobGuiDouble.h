@@ -94,6 +94,8 @@ public Q_SLOTS:
 
     void onDimensionSwitchClicked();
 
+    void onRectangleFormatButtonClicked();
+    
 private:
     void expandAllDimensions();
     void foldAllDimensions();
@@ -130,8 +132,10 @@ private:
     std::vector<std::pair<SpinBox *, Label *> > _spinBoxes;
     QWidget *_container;
     ScaleSliderQWidget *_slider;
+    Button* _rectangleFormatButton;
     Button *_dimensionSwitchButton;
     boost::weak_ptr<KnobDouble> _knob;
+    bool _rectangleFormatIsWidthHeight;
 };
 
 NATRON_NAMESPACE_EXIT;

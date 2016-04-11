@@ -137,7 +137,9 @@ KnobGuiDouble::KnobGuiDouble(KnobPtr knob,
 : KnobGui(knob, container)
 , _container(0)
 , _slider(0)
+, _rectangleFormatButton(0)
 , _dimensionSwitchButton(0)
+, _rectangleFormatIsWidthHeight(true)
 {
     boost::shared_ptr<KnobDouble> k = boost::dynamic_pointer_cast<KnobDouble>(knob);
     assert(k);
@@ -186,7 +188,7 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
         layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     }
 
-    int dim = getKnob()->getDimension();
+    const int dim = getKnob()->getDimension();
 
 
     //  const std::vector<double> &maximums = dbl_knob->getMaximums();
@@ -197,6 +199,21 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
     const std::vector<double > & mins = knob->getMinimums();
     const std::vector<double > & maxs = knob->getMaximums();
     const std::vector<int> &decimals = knob->getDecimals();
+    
+    std::vector<std::string> dimensionLabels(dim);
+    
+    bool isRectangleParam = dim == 4;
+    // This is a rectangle parameter
+    if (isRectangleParam) {
+        dimensionLabels[0] = "x";
+        dimensionLabels[1] = "y";
+        dimensionLabels[2] = "w";
+        dimensionLabels[3] = "h";
+    } else {
+        for (int i = 0; i < dim; ++i) {
+            dimensionLabels[i] = knob->getDimensionName(i);
+        }
+    }
     
     KnobGuiPtr thisShared = shared_from_this();
     for (std::size_t i = 0; i < (std::size_t)dim; ++i) {
@@ -209,12 +226,7 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
         boxContainerLayout->setSpacing(3);
         Label *subDesc = 0;
         if (dim != 1) {
-            std::string dimLabel = getKnob()->getDimensionName(i);
-            /*if (!dimLabel.empty()) {
-                dimLabel.append(":");
-            }*/
-            subDesc = new Label(QString::fromUtf8(dimLabel.c_str()), boxContainer);
-            //subDesc->setFont( QFont(appFont,appFontSize) );
+            subDesc = new Label(QString::fromUtf8(dimensionLabels[i].c_str()), boxContainer);
             boxContainerLayout->addWidget(subDesc);
         }
         SpinBox *box = new KnobSpinBox(layout->parentWidget(), SpinBox::eSpinBoxTypeDouble, thisShared , i);
@@ -247,7 +259,7 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
     }
     
     bool sliderVisible = false;
-    if ( !knob->isSliderDisabled()) {
+    if ( !knob->isSliderDisabled() && !isRectangleParam) {
         double dispmin = displayMins[0];
         double dispmax = displayMaxs[0];
         if (dispmin == -DBL_MAX) {
@@ -300,6 +312,19 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
     
     QSize medSize(TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
     QSize medIconSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    
+    if (isRectangleParam) {
+        _rectangleFormatButton = new Button(QIcon(),QString::fromUtf8("wh"), _container);
+        _rectangleFormatButton->setToolTip(GuiUtils::convertFromPlainText(tr("Switch between width/height and right/top notation"), Qt::WhiteSpaceNormal));
+        _rectangleFormatButton->setFixedSize(medSize);
+        _rectangleFormatButton->setIconSize(medIconSize);
+        _rectangleFormatButton->setFocusPolicy(Qt::NoFocus);
+        _rectangleFormatButton->setCheckable(true);
+        _rectangleFormatButton->setChecked(_rectangleFormatIsWidthHeight);
+        _rectangleFormatButton->setDown(_rectangleFormatIsWidthHeight);
+        QObject::connect( _rectangleFormatButton, SIGNAL(clicked(bool)), this, SLOT(onRectangleFormatButtonClicked()) );
+        containerLayout->addWidget(_rectangleFormatButton);
+    }
 
     if (dim > 1 && !knob->isSliderDisabled() && sliderVisible ) {
         _dimensionSwitchButton = new Button(QIcon(),QString::number(dim), _container);
@@ -360,6 +385,33 @@ KnobGuiDouble::getDimensionForSpinBox(const SpinBox* spinbox) const
         }
     }
     return -1;
+}
+
+void
+KnobGuiDouble::onRectangleFormatButtonClicked()
+{
+    if (!_rectangleFormatButton) {
+        return;
+    }
+    _rectangleFormatIsWidthHeight = !_rectangleFormatIsWidthHeight;
+    _rectangleFormatButton->setDown(_rectangleFormatIsWidthHeight);
+    if (_rectangleFormatIsWidthHeight) {
+        if (_spinBoxes[2].second) {
+            _spinBoxes[2].second->setText(QString::fromUtf8("w"));
+        }
+        if (_spinBoxes[3].second) {
+            _spinBoxes[3].second->setText(QString::fromUtf8("h"));
+        }
+    } else {
+        if (_spinBoxes[2].second) {
+            _spinBoxes[2].second->setText(QString::fromUtf8("r"));
+        }
+        if (_spinBoxes[3].second) {
+            _spinBoxes[3].second->setText(QString::fromUtf8("t"));
+        }
+    }
+    updateGUI(2);
+    updateGUI(3);
 }
 
 void
@@ -525,6 +577,13 @@ KnobGuiDouble::updateGUI(int dimension)
         if (knob->getValueIsNormalized(i) != KnobDouble::eValueIsNormalizedNone) {
             knob->denormalize(i, time, &v);
         }
+        if (knobDim == 4 && !_rectangleFormatIsWidthHeight) {
+            if (i == 2) {
+                v = values[0] + v;
+            } else if (i == 3) {
+                v = values[1] + v;
+            }
+        }
         values[i] = v;
         expressions[i] = knob->getExpression(i);
     }
@@ -687,6 +746,13 @@ KnobGuiDouble::onSpinBoxValueChanged()
             if (_spinBoxes[i].first == box) {
                 newValue = _spinBoxes[i].first->value();
                 valueAccordingToType(true, i, &newValue);
+                if (_spinBoxes.size() == 4 && !_rectangleFormatIsWidthHeight) {
+                    if (i == 2) {
+                        newValue = _spinBoxes[0].first->value();
+                    } else if (i == 3) {
+                        newValue = _spinBoxes[1].first->value();
+                    }
+                }
                 oldValue = _knob.lock()->getValue(i);
                 spinBoxDim = i;
             }
@@ -733,6 +799,9 @@ KnobGuiDouble::_hide()
     if (_dimensionSwitchButton) {
         _dimensionSwitchButton->hide();
     }
+    if (_rectangleFormatButton) {
+        _rectangleFormatButton->hide();
+    }
 }
 
 void
@@ -758,6 +827,9 @@ KnobGuiDouble::_show()
     }
     if (_dimensionSwitchButton) {
         _dimensionSwitchButton->show();
+    }
+    if (_rectangleFormatButton) {
+        _rectangleFormatButton->show();
     }
 }
 
