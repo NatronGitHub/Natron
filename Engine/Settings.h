@@ -412,7 +412,11 @@ private:
     
     // Misc
     boost::shared_ptr<KnobBool> _notifyOnFileChange;
+    
+#ifdef NATRON_ENABLE_IO_META_NODES
     boost::shared_ptr<KnobBool> _filedialogForWriters;
+#endif
+    
     boost::shared_ptr<KnobBool> _firstReadSetProjectFormat;
     boost::shared_ptr<KnobBool> _convertNaNValues;
     boost::shared_ptr<KnobBool> _autoPreviewEnabledForNewProjects;
@@ -555,6 +559,7 @@ private:
     boost::shared_ptr<KnobColor> _dopeSheetEditorGridColor;
     
     boost::shared_ptr<KnobGroup> _scriptEditorColors;
+    boost::shared_ptr<KnobGroup> _graphColors;
     boost::shared_ptr<KnobColor> _curLineColor;
     boost::shared_ptr<KnobColor> _keywordColor;
     boost::shared_ptr<KnobColor> _operatorColor;

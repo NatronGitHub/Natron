@@ -55,7 +55,25 @@ TrackerNode::getPluginLabel() const
 std::string
 TrackerNode::getPluginDescription() const
 {
-    return "Track a 2D point using LibMV from the Blender open-source software.";
+    return "Track one or more 2D point(s) using LibMV from the Blender open-source software.\n"
+    "\n"
+    "<b>Goal</b>:\n"
+    "- Track one or more 2D point and use them to either make another object/image match-move their motion or to stabilize the input image."
+    "\n"
+    "<b>Tracking</b>:\n"
+    "- Connect a Tracker node to the image containing the item you need to track\n"
+    "- Place tracking markers with CTRL+ALT+Click on the Viewer or by clicking the \"+\" button below the track table in the settings panel"
+    "- Setup the motion model to match the motion type of the item you need to track. By default the tracker will only assume the item is underoing a translation. Other motion models can be used for complex tracks but may be slower.\n"
+    "- Select in the settings panel or on the Viewer the markers you want to track and then start tracking with the player buttons on the top of the Viewer.\n"
+    "- If a track is getting lost or fails at some point, you may refine it by moving the marker at its correct position, this will force a new keyframe on the pattern which will be visible in the Viewer and on the timeline.\n"
+    "\n"
+    "<b>Using the tracks data</b>:\n"
+    "You can either use the Tracker node itself to use the track data or you may export it to another node.\n"
+    "Using the Transform within the Tracker node:\n"
+    "Go to the Transform tab in the settings panel, and set the Transform Type to the operation you want to achieve. During tracking, the Transform Type should always been set to None if you want to correctly see the tracks on the Viewer."
+    "You will notice that the transform parameters will be set automatically when the tracking is finished. Depending on the Transform Type, the values will be computed either to match-move the motion of the tracked points or to stabilize the image.\n"
+    "Exporting the tracking data:\n"
+    "You may export the tracking data either to a CornerPin node or to a Transform node. The CornerPin node performs a warp that may be more stable than a Transform node when using 4 or more tracks: it retains more information than the Transform node.";
 }
 
 std::string

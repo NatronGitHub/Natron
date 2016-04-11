@@ -167,6 +167,8 @@ SOURCES += \
     TimeLine.cpp \
     Timer.cpp \
     TrackerContext.cpp \
+    TrackerContextPrivate.cpp \
+    TrackerFrameAccessor.cpp \
     TrackMarker.cpp \
     TrackerNode.cpp \
     TLSHolder.cpp \
@@ -359,6 +361,8 @@ HEADERS += \
     TimeLineKeyFrames.h \
     Timer.h \
     TrackerContext.h \
+    TrackerContextPrivate.h \
+    TrackerFrameAccessor.h \
     TrackerNode.h \
     TrackMarker.h \
     TrackerSerialization.h \
