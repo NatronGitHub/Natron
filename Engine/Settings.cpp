@@ -542,6 +542,10 @@ Settings::initializeKnobsAppearance()
     _scriptEditorColors->setAsTab();
     _appearanceTab->addKnob(_scriptEditorColors);
     
+    _graphColors = AppManager::createKnob<KnobGroup>(this, "Node Graph");
+    _graphColors->setAsTab();
+    _appearanceTab->addKnob(_graphColors);
+    
     _useBWIcons = AppManager::createKnob<KnobBool>(this, "Use black & white toolbutton icons");
     _useBWIcons->setName("useBwIcons");
     _useBWIcons->setHintToolTip("When checked, the tools icons in the left toolbar are greyscale. Changing this takes "
@@ -835,8 +839,6 @@ Settings::initializeKnobsAppearance()
     ocioTab->addKnob(_ocioStartupCheck);
     
     
-    boost::shared_ptr<KnobPage> graphTab = AppManager::createKnob<KnobPage>(this, "Node Graph");
-    
     
     _usePluginIconsInNodeGraph = AppManager::createKnob<KnobBool>(this, "Display plug-in icon on node-graph");
     _usePluginIconsInNodeGraph->setName("usePluginIcons");
@@ -844,14 +846,14 @@ Settings::initializeKnobsAppearance()
                                                "Changing this option will not affect already existing nodes, unless a restart of Natron is made.");
     _usePluginIconsInNodeGraph->setAnimationEnabled(false);
     _usePluginIconsInNodeGraph->setAddNewLine(false);
-    graphTab->addKnob(_usePluginIconsInNodeGraph);
+    _graphColors->addKnob(_usePluginIconsInNodeGraph);
     
     _useAntiAliasing = AppManager::createKnob<KnobBool>(this, "Anti-Aliasing");
     _useAntiAliasing->setName("antiAliasing");
     _useAntiAliasing->setHintToolTip("When checked, the node graph will be painted using anti-aliasing. Unchecking it may increase performances."
                                      " Changing this requires a restart of Natron");
     _useAntiAliasing->setAnimationEnabled(false);
-    graphTab->addKnob(_useAntiAliasing);
+    _graphColors->addKnob(_useAntiAliasing);
     
  
     _defaultNodeColor = AppManager::createKnob<KnobColor>(this, "Default node color",3);
@@ -861,7 +863,7 @@ Settings::initializeKnobsAppearance()
     _defaultNodeColor->setAddNewLine(false);
     _defaultNodeColor->setHintToolTip("The default color used for newly created nodes.");
     
-    graphTab->addKnob(_defaultNodeColor);
+    _graphColors->addKnob(_defaultNodeColor);
     
     
     _defaultBackdropColor =  AppManager::createKnob<KnobColor>(this, "Default backdrop color",3);
@@ -870,7 +872,7 @@ Settings::initializeKnobsAppearance()
     _defaultBackdropColor->setSimplified(true);
     _defaultBackdropColor->setAddNewLine(false);
     _defaultBackdropColor->setHintToolTip("The default color used for newly created backdrop nodes.");
-    graphTab->addKnob(_defaultBackdropColor);
+    _graphColors->addKnob(_defaultBackdropColor);
     
     _defaultReaderColor =  AppManager::createKnob<KnobColor>(this, PLUGIN_GROUP_IMAGE_READERS,3);
     _defaultReaderColor->setName("readerColor");
@@ -878,7 +880,7 @@ Settings::initializeKnobsAppearance()
     _defaultReaderColor->setSimplified(true);
     _defaultReaderColor->setAddNewLine(false);
     _defaultReaderColor->setHintToolTip("The color used for newly created Reader nodes.");
-    graphTab->addKnob(_defaultReaderColor);
+    _graphColors->addKnob(_defaultReaderColor);
     
     _defaultWriterColor =  AppManager::createKnob<KnobColor>(this, PLUGIN_GROUP_IMAGE_WRITERS,3);
     _defaultWriterColor->setName("writerColor");
@@ -886,14 +888,14 @@ Settings::initializeKnobsAppearance()
     _defaultWriterColor->setSimplified(true);
     _defaultWriterColor->setAddNewLine(false);
     _defaultWriterColor->setHintToolTip("The color used for newly created Writer nodes.");
-    graphTab->addKnob(_defaultWriterColor);
+    _graphColors->addKnob(_defaultWriterColor);
     
     _defaultGeneratorColor =  AppManager::createKnob<KnobColor>(this, "Generators",3);
     _defaultGeneratorColor->setName("generatorColor");
     _defaultGeneratorColor->setAnimationEnabled(false);
     _defaultGeneratorColor->setSimplified(true);
     _defaultGeneratorColor->setHintToolTip("The color used for newly created Generator nodes.");
-    graphTab->addKnob(_defaultGeneratorColor);
+    _graphColors->addKnob(_defaultGeneratorColor);
     
     _defaultColorGroupColor =  AppManager::createKnob<KnobColor>(this, "Color group",3);
     _defaultColorGroupColor->setName("colorNodesColor");
@@ -901,7 +903,7 @@ Settings::initializeKnobsAppearance()
     _defaultColorGroupColor->setSimplified(true);
     _defaultColorGroupColor->setAddNewLine(false);
     _defaultColorGroupColor->setHintToolTip("The color used for newly created Color nodes.");
-    graphTab->addKnob(_defaultColorGroupColor);
+    _graphColors->addKnob(_defaultColorGroupColor);
     
     _defaultFilterGroupColor =  AppManager::createKnob<KnobColor>(this, "Filter group",3);
     _defaultFilterGroupColor->setName("filterNodesColor");
@@ -909,7 +911,7 @@ Settings::initializeKnobsAppearance()
     _defaultFilterGroupColor->setSimplified(true);
     _defaultFilterGroupColor->setAddNewLine(false);
     _defaultFilterGroupColor->setHintToolTip("The color used for newly created Filter nodes.");
-    graphTab->addKnob(_defaultFilterGroupColor);
+    _graphColors->addKnob(_defaultFilterGroupColor);
     
     _defaultTransformGroupColor =  AppManager::createKnob<KnobColor>(this, "Transform group",3);
     _defaultTransformGroupColor->setName("transformNodesColor");
@@ -917,7 +919,7 @@ Settings::initializeKnobsAppearance()
     _defaultTransformGroupColor->setSimplified(true);
     _defaultTransformGroupColor->setAddNewLine(false);
     _defaultTransformGroupColor->setHintToolTip("The color used for newly created Transform nodes.");
-    graphTab->addKnob(_defaultTransformGroupColor);
+    _graphColors->addKnob(_defaultTransformGroupColor);
     
     _defaultTimeGroupColor =  AppManager::createKnob<KnobColor>(this, "Time group",3);
     _defaultTimeGroupColor->setName("timeNodesColor");
@@ -925,14 +927,14 @@ Settings::initializeKnobsAppearance()
     _defaultTimeGroupColor->setSimplified(true);
     _defaultTimeGroupColor->setAddNewLine(false);
     _defaultTimeGroupColor->setHintToolTip("The color used for newly created Time nodes.");
-    graphTab->addKnob(_defaultTimeGroupColor);
+    _graphColors->addKnob(_defaultTimeGroupColor);
     
     _defaultDrawGroupColor =  AppManager::createKnob<KnobColor>(this, "Draw group",3);
     _defaultDrawGroupColor->setName("drawNodesColor");
     _defaultDrawGroupColor->setAnimationEnabled(false);
     _defaultDrawGroupColor->setSimplified(true);
     _defaultDrawGroupColor->setHintToolTip("The color used for newly created Draw nodes.");
-    graphTab->addKnob(_defaultDrawGroupColor);
+    _graphColors->addKnob(_defaultDrawGroupColor);
     
     _defaultKeyerGroupColor =  AppManager::createKnob<KnobColor>(this, "Keyer group",3);
     _defaultKeyerGroupColor->setName("keyerNodesColor");
@@ -940,7 +942,7 @@ Settings::initializeKnobsAppearance()
     _defaultKeyerGroupColor->setSimplified(true);
     _defaultKeyerGroupColor->setAddNewLine(false);
     _defaultKeyerGroupColor->setHintToolTip("The color used for newly created Keyer nodes.");
-    graphTab->addKnob(_defaultKeyerGroupColor);
+    _graphColors->addKnob(_defaultKeyerGroupColor);
     
     _defaultChannelGroupColor =  AppManager::createKnob<KnobColor>(this, "Channel group",3);
     _defaultChannelGroupColor->setName("channelNodesColor");
@@ -948,7 +950,7 @@ Settings::initializeKnobsAppearance()
     _defaultChannelGroupColor->setSimplified(true);
     _defaultChannelGroupColor->setAddNewLine(false);
     _defaultChannelGroupColor->setHintToolTip("The color used for newly created Channel nodes.");
-    graphTab->addKnob(_defaultChannelGroupColor);
+    _graphColors->addKnob(_defaultChannelGroupColor);
     
     _defaultMergeGroupColor =  AppManager::createKnob<KnobColor>(this, "Merge group",3);
     _defaultMergeGroupColor->setName("defaultMergeColor");
@@ -956,7 +958,7 @@ Settings::initializeKnobsAppearance()
     _defaultMergeGroupColor->setSimplified(true);
     _defaultMergeGroupColor->setAddNewLine(false);
     _defaultMergeGroupColor->setHintToolTip("The color used for newly created Merge nodes.");
-    graphTab->addKnob(_defaultMergeGroupColor);
+    _graphColors->addKnob(_defaultMergeGroupColor);
     
     _defaultViewsGroupColor =  AppManager::createKnob<KnobColor>(this, "Views group",3);
     _defaultViewsGroupColor->setName("defaultViewsColor");
@@ -964,14 +966,14 @@ Settings::initializeKnobsAppearance()
     _defaultViewsGroupColor->setSimplified(true);
     _defaultViewsGroupColor->setAddNewLine(false);
     _defaultViewsGroupColor->setHintToolTip("The color used for newly created Views nodes.");
-    graphTab->addKnob(_defaultViewsGroupColor);
+    _graphColors->addKnob(_defaultViewsGroupColor);
     
     _defaultDeepGroupColor =  AppManager::createKnob<KnobColor>(this, "Deep group",3);
     _defaultDeepGroupColor->setName("defaultDeepColor");
     _defaultDeepGroupColor->setAnimationEnabled(false);
     _defaultDeepGroupColor->setSimplified(true);
     _defaultDeepGroupColor->setHintToolTip("The color used for newly created Deep nodes.");
-    graphTab->addKnob(_defaultDeepGroupColor);
+    _graphColors->addKnob(_defaultDeepGroupColor);
 
 }
 
