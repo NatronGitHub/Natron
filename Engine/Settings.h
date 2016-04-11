@@ -360,6 +360,8 @@ public:
     int getDocumentationSource() const;
     int getServerPort() const;
     void setServerPort(int port) const;
+
+    QString makeHTMLDocumentation(bool menu, bool staticPages) const;
     
 Q_SIGNALS:
     

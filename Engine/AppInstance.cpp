@@ -1336,6 +1336,17 @@ void AppInstance::exportHTMLDocs(const QString path)
             }
         }
 
+        // Generate prefs
+        boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+        QString prefsHTML = settings->makeHTMLDocumentation(false, true);
+        prefsHTML = parseHTMLDoc(prefsHTML, path, true);
+        QFile prefsHTMLFile(path+QString::fromUtf8("/preferences.html"));
+        if (prefsHTMLFile.open(QIODevice::Text|QIODevice::WriteOnly)) {
+            QTextStream out(&prefsHTMLFile);
+            out << parseHTMLDoc(prefsHTML, path, false);
+            prefsHTMLFile.close();
+        }
+
         // Add menu to existing sphinx html's in path
         QDir htmlDir(path);
         QFileInfoList dirList = htmlDir.entryInfoList();
@@ -1363,6 +1374,10 @@ void AppInstance::exportHTMLDocs(const QString path)
 QString AppInstance::parseHTMLDoc(const QString html, const QString path, bool replaceNewline) const
 {
     QString result = html;
+
+    if (html.contains(QString::fromUtf8("mainMenu"))) {
+        return result;
+    }
 
     // get static menu from index.html
     QFile indexFile(path+QString::fromUtf8("/index.html"));
@@ -1399,6 +1414,11 @@ QString AppInstance::parseHTMLDoc(const QString html, const QString path, bool r
     else {
         std::cout << "index.html does not exist! No menu will be generated for static content." << std::endl;
     }
+
+    // preferences
+    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    QString prefsHTML = settings->makeHTMLDocumentation(true, true);
+    menuHTML.append(prefsHTML);
 
     /// TODO probably a better way to get categories...
     QStringList groups;

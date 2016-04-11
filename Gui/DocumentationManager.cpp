@@ -102,6 +102,12 @@ void DocumentationManager::webserverHandler(QHttpRequest *req, QHttpResponse *re
             }
         }
     }
+    else if (page == QString::fromUtf8("_prefs.html")) {
+        boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+        QString html = settings->makeHTMLDocumentation(false, false);
+        html = webserverHTMLParser(html,docDir);
+        body=html.toAscii();
+    }
     else if (page == QString::fromUtf8("_group.html")) {
         QString html;
         QString group;
@@ -276,6 +282,11 @@ QString DocumentationManager::webserverHTMLParser(QString html, QString path) co
     else {
         std::cout << "index.html does not exist! No menu will be generated for static content." << std::endl;
     }
+
+    // preferences
+    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    QString prefsHTML = settings->makeHTMLDocumentation(true, false);
+    menuHTML.append(prefsHTML);
 
     /// TODO probably a better way to get categories...
     QStringList groups;

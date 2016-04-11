@@ -32,6 +32,7 @@
 #include <QtCore/QSettings>
 #include <QtCore/QThreadPool>
 #include <QtCore/QThread>
+#include <QTextStream>
 
 #ifdef WINDOWS
 #include <tchar.h>
@@ -2620,6 +2621,75 @@ int Settings::getServerPort() const
 void Settings::setServerPort(int port) const
 {
     _wwwServerPort->setValue(port);
+}
+
+QString Settings::makeHTMLDocumentation(bool menu, bool staticPages) const
+{
+    assert(QThread::currentThread() == qApp->thread());
+
+    QString ret;
+    QTextStream ts(&ret);
+
+    QString pageName;
+
+    if (staticPages) {
+        pageName = QString::fromUtf8("preferences.html");
+    } else {
+        pageName = QString::fromUtf8("/_prefs.html");
+    }
+
+    if (!menu) {
+        ts << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
+        ts << "<html><head>";
+        ts << "<title>Natron Preferences</title>";
+        ts << "<link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"_static/jquery.js\"></script><script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>";
+        ts << "</head><body><div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\">";
+        ts << "<h1>Preferences</h1>";
+    }
+    else {
+        ts << "<li class=\"toctree-l1\"><a href='" << pageName << "'>Preferences</a>\n<ul>\n";
+    }
+
+    const KnobsVec& knobs = getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        if ((*it)->getDefaultIsSecret()) {
+            continue;
+        }
+        QString knobScriptName = QString::fromUtf8((*it)->getName().c_str());
+        QString knobLabel = QString::fromUtf8((*it)->getLabel().c_str());
+        QString knobHint = QString::fromUtf8((*it)->getHintToolTip().c_str());
+        KnobPage* isPage = dynamic_cast<KnobPage*>(it->get());
+        KnobSeparator* isSep = dynamic_cast<KnobSeparator*>(it->get());
+
+        if (!menu) {
+            if (isPage) {
+                ts << "<h2 id='" << knobScriptName << "'>" << knobLabel << "</h2>";
+            }
+            else if (isSep) {
+                ts << "<h3 id='" << knobScriptName << "'>" << knobLabel << "</h3>";
+            }
+            else {
+                ts << "<h4 id='" << knobScriptName << "'>" << knobLabel << "</h4>";
+            }
+            if (!knobHint.isEmpty()) {
+                ts << "<p>" << knobHint << "</p>";
+            }
+        }
+        else {
+            if (isPage) {
+                ts << "<li class='toctree-l2'><a href='" << pageName << "#" << knobScriptName << "'>" << knobLabel << "</a></li>\n";
+            }
+        }
+    }
+
+    if (!menu) {
+        ts << "</body></html>";
+    }
+    else {
+        ts << "</ul></li>";
+    }
+
+    return ret;
 }
 
 int
