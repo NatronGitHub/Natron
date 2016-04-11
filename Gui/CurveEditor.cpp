@@ -441,7 +441,8 @@ static void createElementsForKnob(QTreeWidgetItem* parent,const KnobGuiPtr& kgui
         }
         curveWidget->addCurveAndSetColor(knobCurve);
         
-        if ( !k->getCurve(ViewIdx(0),0)->isAnimated() ) {
+        std::string expr = k->getExpression(0);
+        if ( !k->getCurve(ViewIdx(0),0)->isAnimated() && expr.empty()) {
             knobItem->setHidden(true);
         } else {
             *hasCurveVisible = true;

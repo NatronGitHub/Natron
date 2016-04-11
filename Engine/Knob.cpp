@@ -3953,10 +3953,9 @@ KnobHelper::getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) con
         if (effect) {
             NodePtr node = effect->getNode();
 
-            std::pair<std::set<NodePtr>::iterator,bool> ok = nodes.insert(node);
-            if (ok.second) {
-                knobsToInspectRecursive.push_back(*it);
-            }
+            nodes.insert(node);
+            knobsToInspectRecursive.push_back(*it);
+
         }
     }
     
