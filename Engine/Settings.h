@@ -407,7 +407,11 @@ private:
     
     // Misc
     boost::shared_ptr<KnobBool> _notifyOnFileChange;
+    
+#ifdef NATRON_ENABLE_IO_META_NODES
     boost::shared_ptr<KnobBool> _filedialogForWriters;
+#endif
+    
     boost::shared_ptr<KnobBool> _firstReadSetProjectFormat;
     boost::shared_ptr<KnobBool> _convertNaNValues;
     boost::shared_ptr<KnobBool> _autoPreviewEnabledForNewProjects;
