@@ -194,6 +194,8 @@ class StringAnimationManager;
 class TLSHolderBase;
 class TextureRect;
 class TimeLine;
+class TrackArgsLibMV;
+class TrackerFrameAccessor;
 class TrackMarker;
 class TrackerContext;
 class TrackSerialization;
