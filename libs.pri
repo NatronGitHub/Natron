@@ -67,6 +67,9 @@ DEFINES += CERES_NO_LAPACK
 # Uncomment to make ceres use openmp
 *g++* {
     DEFINES += CERES_USE_OPENMP
+    QMAKE_CXXFLAGS += -fopenmp
+    QMAKE_CFLAGS += -fopenmp
+    QMAKE_LFLAGS += -fopenmp
 }
 #If undefined, make sure to add to sources all the files in ceres/internal/ceres/generated
 DEFINES += CERES_RESTRICT_SCHUR_SPECIALIZATION
