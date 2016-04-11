@@ -333,7 +333,7 @@ StatusEnum EffectInstance::getInputsRoIsFunctor(bool useTransforms,
                                                 ViewIdx view,
                                                 unsigned originalMipMapLevel,
                                                 const NodePtr& node,
-                                                const NodePtr& callerNode,
+                                                const NodePtr& /*callerNode*/,
                                                 const NodePtr& treeRoot,
                                                 const RectD& canonicalRenderWindow,
                                                 FrameRequestMap& requests)
@@ -693,7 +693,7 @@ static void getAllUpstreamNodesRecursiveWithDependencies_internal(const NodePtr&
         //Also add all expression dependencies but mark them as we did not recursed on them yet
         for (std::set<NodePtr>::iterator it = expressionsDeps.begin(); it!=expressionsDeps.end(); ++it) {
             FindDependenciesNode n;
-            n.node = node;
+            n.node = *it;
             n.recursed = false;
             finalNodes.insert(n);
         }
