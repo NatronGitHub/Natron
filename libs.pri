@@ -65,7 +65,9 @@ DEFINES += CERES_HAVE_PTHREAD CERES_NO_SUITESPARSE CERES_NO_CXSPARSE CERES_HAVE_
 # Comment to make ceres use a lapack library
 DEFINES += CERES_NO_LAPACK
 # Uncomment to make ceres use openmp
-#DEFINES += CERES_USE_OPENMP
+*g++* {
+    DEFINES += CERES_USE_OPENMP
+}
 #If undefined, make sure to add to sources all the files in ceres/internal/ceres/generated
 DEFINES += CERES_RESTRICT_SCHUR_SPECIALIZATION
 DEFINES += WITH_LIBMV_GUARDED_ALLOC GOOGLE_GLOG_DLL_DECL= LIBMV_NO_FAST_DETECTOR=

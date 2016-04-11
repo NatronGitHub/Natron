@@ -39,11 +39,6 @@
 #include "Engine/TrackerContext.h"
 
 
-#ifdef DEBUG
-//#define TRACE_LIB_MV 1
-#endif
-
-
 #define kTrackBaseName "track"
 #define TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE 8
 

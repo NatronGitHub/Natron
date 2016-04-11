@@ -748,10 +748,6 @@ TrackerContextPrivate::trackStepLibMV(int trackIndex, const TrackArgsLibMV& args
     
     appPTR->getAppTLS()->cleanupTLSForThread();
     
-    //Refresh the marker for next iteration
-    //int nextFrame = args.getForward() ? time + 1 : time - 1;
-    //updateLibMvTrackMinimal(*track->natronMarker, nextFrame, args.getForward(), args.getFormatHeight(), &track->mvMarker);
-    
     return true;
 }
 

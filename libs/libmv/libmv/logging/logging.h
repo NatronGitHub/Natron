@@ -23,9 +23,20 @@
 
 #include <glog/logging.h>
 
-#define LG LOG(INFO)
-#define V0 LOG(INFO)
-#define V1 LOG(INFO)
-#define V2 LOG(INFO)
+#ifdef DEBUG
+//#define TRACE_LIB_MV 1
+#endif
+
+#ifdef TRACE_LIB_MV
+#define LIBMV_LOG(severity) DLOG(severity)
+#else
+#define LIBMV_LOG(severity) \
+true ? (void) 0 : google::LogMessageVoidify() & LOG(severity)
+#endif
+
+#define LG LIBMV_LOG(INFO)
+#define V0 LIBMV_LOG(INFO)
+#define V1 LIBMV_LOG(INFO)
+#define V2 LIBMV_LOG(INFO)
 
 #endif  // LIBMV_LOGGING_LOGGING_H

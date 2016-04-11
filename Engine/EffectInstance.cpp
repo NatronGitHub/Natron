@@ -241,7 +241,7 @@ EffectInstance::setParallelRenderArgsTLS(double time,
     args->isDuringPaintStrokeCreation = isDuringPaintStrokeCreation;
     args->currentThreadSafety = currentThreadSafety;
     args->rotoPaintNodes = rotoPaintNodes;
-    args->doNansHandling = doNanHandling;
+    args->doNansHandling = isAnalysis ? false : doNanHandling;
     args->draftMode = draftMode;
     args->tilesSupported = getNode()->getCurrentSupportTiles();
     args->viewerProgressReportEnabled = viewerProgressReportEnabled;
