@@ -553,6 +553,7 @@ private:
     boost::shared_ptr<KnobColor> _dopeSheetEditorGridColor;
     
     boost::shared_ptr<KnobGroup> _scriptEditorColors;
+    boost::shared_ptr<KnobGroup> _graphColors;
     boost::shared_ptr<KnobColor> _curLineColor;
     boost::shared_ptr<KnobColor> _keywordColor;
     boost::shared_ptr<KnobColor> _operatorColor;
