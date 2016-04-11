@@ -320,8 +320,8 @@ static void setStringPropertyN(const std::vector<std::string>& entries,
                                const std::string& property)
 {
     try {
-        OFX::Host::Property::PropertyTemplate<OFX::Host::Property::StringValue> *prop = 0;
-        if (param->getProperties().fetchTypedProperty(property, prop)) {
+        OFX::Host::Property::String *prop = 0;
+        if (param->getProperties().fetchStringProperty(property, prop)) {
             prop->reset();
             for (std::size_t i = 0; i < entries.size(); ++i) {
                 prop->setValue(entries[i], i);
