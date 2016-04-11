@@ -1537,7 +1537,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
     
     
     assert(knob);
-    knob->setAsUserKnob();
+    knob->setAsUserKnob(true);
     if (knob->canAnimate()) {
         knob->setAnimationEnabled(animatesCheckbox->isChecked());
     }
@@ -1839,7 +1839,8 @@ AddKnobDialog::onOkClicked()
                                                                   stdName,
                                                                   _imp->labelLineEdit->text().toStdString(),
                                                                   _imp->tooltipArea->toPlainText().toStdString(),
-                                                                  false);
+                                                                  false,
+                                                                  true);
         } catch (const std::exception& e) {
             Dialogs::errorDialog(tr("Error while creating parameter").toStdString(), e.what());
             return;

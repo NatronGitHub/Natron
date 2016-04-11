@@ -42,6 +42,7 @@
 
 #include "Engine/EngineFwd.h"
 #include "Engine/RectI.h"
+#include "Engine/RectD.h"
 #include "Engine/ThreadPool.h"
 #include "Engine/ViewIdx.h"
 
@@ -157,6 +158,10 @@ public:
         
     }
     
+    virtual ~TrackerParamsProvider() {
+        
+    }
+    
     void setCenterOnTrack(bool centerTrack)
     {
         QMutexLocker k(&_trackParamsMutex);
@@ -212,7 +217,7 @@ public:
     
     TrackerContext(const boost::shared_ptr<Natron::Node> &node);
     
-    ~TrackerContext();
+    virtual ~TrackerContext();
     
     void load(const TrackerContextSerialization& serialization);
     
@@ -274,6 +279,8 @@ public:
     
     void getSelectedMarkers(std::list<TrackMarkerPtr >* markers) const;
     
+    void getAllEnabledMarkers(std::vector<TrackMarkerPtr >* markers) const;
+    
     bool isMarkerSelected(const TrackMarkerPtr& marker) const;
     
     static void getMotionModelsAndHelps(bool addPerspective,
@@ -284,8 +291,56 @@ public:
     
     void goToPreviousKeyFrame(int time);
     void goToNextKeyFrame(int time);
+    
+    void resetTransformCenter();
+    
+    void resetTransformParams();
+    
+    struct TransformData
+    {
+        Point translation;
+        double rotation;
+        double scale;
+        bool hasRotationAndScale;
+    };
+    
+    
+private:
+    
+    /**
+     * @brief Extracts the values of the center point of the given markers at x1Time and x2Time.
+     * @param jitterPeriod If jitterPeriod > 1 this is the amount of frames that will be averaged together to add
+     * jitter or remove jitter.
+     * @param jitterAdd If jitterPeriod > 1 this parameter is disregarded. Otherwise, if jitterAdd is false, then 
+     * the values of the center points are smoothed with high frequencies removed (using average over jitterPeriod)
+     * If jitterAdd is true, then we compute the smoothed points (using average over jitterPeriod), and substract it
+     * from the original points to get the high frequencies. We then add those high frequencies back to the original 
+     * points to increase shaking/motion
+     **/
+    static void extractSortedPointsFromMarkers(double x1Time, double x2Time,
+                                               const std::vector<TrackMarkerPtr>& markers,
+                                               int jitterPeriod,
+                                               bool jitterAdd,
+                                               std::vector<Point>* x1,
+                                               std::vector<Point>* x2);
+    
+    void computeTransformParamsFromTracksAtTime(double refTime,
+                                                double time,
+                                                int jitterPeriod,
+                                                bool jitterAdd,
+                                                const std::vector<TrackMarkerPtr>& markers,
+                                                TransformData* data);
+public:
+    
+    
+    void computeTransformParamsFromTracks(const std::vector<TrackMarkerPtr>& markers);
+    
+    void computeTransformParamsFromEnabledTracks();
+
 
     void exportTrackDataFromExportOptions();
+    
+    RectD getInputRoDAtTime(double time) const;
     
     /**
      * @brief Computes the translation that best fit the set of correspondences x1 and x2.

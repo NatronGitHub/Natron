@@ -1584,7 +1584,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     bool useAlpha0ForRGBToRGBAConversion = args.caller ? args.caller->getNode()->usesAlpha0ToConvertFromRGBToRGBA() : false;
     
     // If the caller is not multiplanar, for the color plane we remap it to the components metadata obtained from the metadata pass, otherwise we stick to returning
-    bool callerIsMultiplanar = args.caller ? args.caller->isMultiPlanar() : false;
+    //bool callerIsMultiplanar = args.caller ? args.caller->isMultiPlanar() : false;
     
     //bool multiplanar = isMultiPlanar();
     for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {

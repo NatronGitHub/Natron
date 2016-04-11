@@ -433,8 +433,10 @@ Knob<T>::evaluateExpression_pod(double time,
     
     if (PyFloat_Check(ret)) {
         *value =  (double)PyFloat_AsDouble(ret);
-    } else if (PyLong_Check(ret)) {
+    } else if (PyInt_Check(ret)) {
         *value = (int)PyInt_AsLong(ret);
+    } else if (PyLong_Check(ret)) {
+        *value = (int)PyLong_AsLong(ret);
     } else if (PyObject_IsTrue(ret) == 1) {
         *value = 1;
     } else {

@@ -182,6 +182,7 @@ private:
     virtual void reflectModificationsState() OVERRIDE FINAL;
     
     void updateLabel(double r, double g, double b, double a);
+    virtual void refreshDimensionName(int dim) OVERRIDE FINAL;
 
 private:
     QWidget *mainContainer;

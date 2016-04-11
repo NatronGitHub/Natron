@@ -58,7 +58,7 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
-#define NATRON_PYPLUG_EXPORTER_VERSION 7
+#define NATRON_PYPLUG_EXPORTER_VERSION 8
 
 NATRON_NAMESPACE_ENTER;
 
@@ -236,7 +236,7 @@ NodeCollection::getWriters(std::list<OutputEffectInstance*>* writers) const
 {
     QMutexLocker k(&_imp->nodesMutex);
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ((*it)->getEffectInstance()->isWriter()) {
+        if ((*it)->getGroup() && (*it)->isActivated() && (*it)->getEffectInstance()->isWriter()) {
             OutputEffectInstance* out = dynamic_cast<OutputEffectInstance*>((*it)->getEffectInstance().get());
             assert(out);
             writers->push_back(out);
@@ -1642,11 +1642,48 @@ static bool exportKnobValues(int indentLevel,
             if (curve) {
                 KeyFrameSet keys = curve->getKeyFrames_mt_safe();
                 int c = 0;
+                if (!keys.empty()) {
+                    WRITE_INDENT(innerIdent); WRITE_STRING(QString::fromUtf8("param.deleteAllControlPoints(") + NUM_INT(i) + QString::fromUtf8(")"));
+                }
                 for (KeyFrameSet::iterator it3 = keys.begin(); it3 != keys.end(); ++it3, ++c) {
-                    WRITE_INDENT(innerIdent); WRITE_STRING(QString::fromUtf8("param.setNthControlPoint(") + NUM_INT(i) + QString::fromUtf8(", ") +
-                                                  NUM_INT(c) + QString::fromUtf8(", ") + NUM_TIME(it3->getTime()) + QString::fromUtf8(", ") +
+                    QString interpStr;
+                    switch (it3->getInterpolation()) {
+                        case eKeyframeTypeNone:
+                            interpStr = QString::fromUtf8("NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeNone");
+                            break;
+                        case eKeyframeTypeSmooth:
+                            interpStr = QString::fromUtf8("NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeSmooth");
+                            break;
+                        case eKeyframeTypeBroken:
+                            interpStr = QString::fromUtf8("NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeBroken");
+                            break;
+                        case eKeyframeTypeCatmullRom:
+                            interpStr = QString::fromUtf8("NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeCatmullRom");
+                            break;
+                        case eKeyframeTypeConstant:
+                            interpStr = QString::fromUtf8("NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeConstant");
+                            break;
+                        case eKeyframeTypeCubic:
+                            interpStr = QString::fromUtf8("NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeCubic");
+                            break;
+                        case eKeyframeTypeFree:
+                            interpStr = QString::fromUtf8("NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeFree");
+                            break;
+                        case eKeyframeTypeHorizontal:
+                            interpStr = QString::fromUtf8("NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeHorizontal");
+                            break;
+                        case eKeyframeTypeLinear:
+                            interpStr = QString::fromUtf8("NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeLinear");
+                            break;
+                        default:
+                            break;
+                    }
+                    
+                    
+                    WRITE_INDENT(innerIdent); WRITE_STRING(QString::fromUtf8("param.addControlPoint(") + NUM_INT(i) + QString::fromUtf8(", ") +
+                                                  NUM_TIME(it3->getTime()) + QString::fromUtf8(", ") +
                                                   NUM_VALUE(it3->getValue()) + QString::fromUtf8(", ") + NUM_VALUE(it3->getLeftDerivative())
-                                                  + QString::fromUtf8(", ") + NUM_VALUE(it3->getRightDerivative()) + QString::fromUtf8(")"));
+                                                  + QString::fromUtf8(", ") + NUM_VALUE(it3->getRightDerivative()) + QString::fromUtf8(", ") + interpStr + QString::fromUtf8(")"));
                 }
                 
             }

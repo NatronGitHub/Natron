@@ -271,6 +271,10 @@ ProsacReturnCodeEnum prosac(const Kernel &kernel,
                         ++loransac_iter;
                     } // LO-RANSAC
                 }
+#else
+                if (I_N > I_N_best) {
+                    I_N_best = I_N;
+                }
 #endif
                 
                 if (bestInliers) {

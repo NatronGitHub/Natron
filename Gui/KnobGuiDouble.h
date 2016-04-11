@@ -124,6 +124,8 @@ private:
     virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
     virtual void reflectModificationsState() OVERRIDE FINAL;
+    virtual void refreshDimensionName(int dim) OVERRIDE FINAL;
+    
 private:
     std::vector<std::pair<SpinBox *, Label *> > _spinBoxes;
     QWidget *_container;

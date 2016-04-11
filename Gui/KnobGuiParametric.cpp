@@ -164,7 +164,7 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
         CurveDescriptor desc;
         desc.curve = curve;
         desc.treeItem = item;
-        _curves.insert( std::make_pair(i, desc) );
+        _curves.push_back(desc);
         if ( curve->isVisible() ) {
             visibleCurves.push_back(curve);
         }
@@ -177,14 +177,17 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
 void
 KnobGuiParametric::onColorChanged(int dimension)
 {
+    if (dimension < 0 || dimension >= (int)_curves.size()) {
+        return;
+    }
     double r, g, b;
     _knob.lock()->getCurveColor(dimension, &r, &g, &b);
-    CurveGuis::iterator found = _curves.find(dimension);
-    if (found != _curves.end()) {
-        QColor c;
-        c.setRgbF(r, g, b);
-        found->second.curve->setColor(c);
-    }
+    
+    CurveDescriptor& found = _curves[dimension];
+    QColor c;
+    c.setRgbF(r, g, b);
+    found.curve->setColor(c);
+    
     _curveWidget->update();
 }
 
@@ -222,15 +225,16 @@ KnobGuiParametric::updateGUI(int /*dimension*/)
 void
 KnobGuiParametric::onCurveChanged(int dimension)
 {
-    CurveGuis::iterator it = _curves.find(dimension);
-
-    assert( it != _curves.end() );
+    if (dimension < 0 || dimension >= (int)_curves.size()) {
+        return;
+    }
+    CurveDescriptor& found = _curves[dimension];
 
     // even when there is only one keyframe, there may be tangents!
-    if ( (it->second.curve->getInternalCurve()->getKeyFramesCount() > 0) && it->second.treeItem->isSelected() ) {
-        it->second.curve->setVisible(true);
+    if ((found.curve->getInternalCurve()->getKeyFramesCount() > 0) && found.treeItem->isSelected()) {
+        found.curve->setVisible(true);
     } else {
-        it->second.curve->setVisible(false);
+        found.curve->setVisible(false);
     }
     _curveWidget->update();
 }
@@ -243,9 +247,9 @@ KnobGuiParametric::onItemsSelectionChanged()
     QList<QTreeWidgetItem*> selectedItems = _tree->selectedItems();
     for (int i = 0; i < selectedItems.size(); ++i) {
         for (CurveGuis::iterator it = _curves.begin(); it != _curves.end(); ++it) {
-            if ( it->second.treeItem == selectedItems.at(i) ) {
-                if ( it->second.curve->getInternalCurve()->isAnimated() ) {
-                    curves.push_back(it->second.curve);
+            if (it->treeItem == selectedItems.at(i) ) {
+                if ( it->curve->getInternalCurve()->isAnimated() ) {
+                    curves.push_back(it->curve);
                 }
                 break;
             }
@@ -265,8 +269,8 @@ KnobGuiParametric::getSelectedCurves(std::vector<boost::shared_ptr<CurveGui> >* 
     for (int i = 0; i < selected.size(); ++i) {
         //find the items in the curves
         for (CurveGuis::iterator it = _curves.begin(); it != _curves.end(); ++it) {
-            if ( it->second.treeItem == selected.at(i) ) {
-                selection->push_back(it->second.curve);
+            if ( it->treeItem == selected.at(i) ) {
+                selection->push_back(it->curve);
             }
         }
     }
@@ -280,8 +284,8 @@ KnobGuiParametric::resetSelectedCurves()
     for (int i = 0; i < selected.size(); ++i) {
         //find the items in the curves
         for (CurveGuis::iterator it = _curves.begin(); it != _curves.end(); ++it) {
-            if ( it->second.treeItem == selected.at(i) ) {
-                k->resetToDefaultValue(it->second.curve->getDimension());
+            if ( it->treeItem == selected.at(i) ) {
+                k->resetToDefaultValue(it->curve->getDimension());
                 break;
             }
         }
@@ -293,6 +297,22 @@ KnobPtr KnobGuiParametric::getKnob() const
 {
     return _knob.lock();
 }
+
+
+void
+KnobGuiParametric::refreshDimensionName(int dim)
+{
+    if (dim < 0 || dim >= (int)_curves.size()) {
+        return;
+    }
+    boost::shared_ptr<KnobParametric> knob = _knob.lock();
+    CurveDescriptor& found = _curves[dim];
+    QString name = QString::fromUtf8(knob->getDimensionName(dim).c_str());
+    found.curve->setName(name);
+    found.treeItem->setText(0, name);
+    _curveWidget->update();
+}
+
 
 NATRON_NAMESPACE_EXIT;
 

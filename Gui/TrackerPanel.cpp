@@ -601,7 +601,7 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker, int row, Track
         QObject::connect( checkbox,SIGNAL( toggled(bool) ),_publicInterface,SLOT( onItemEnabledCheckBoxChecked(bool) ) );
         TableItem* newItem = new TableItem;
         newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable | Qt::ItemIsUserCheckable);
-        newItem->setToolTip(QObject::tr("When checked, this track will no longer be tracked even if selected"));
+        newItem->setToolTip(GuiUtils::convertFromPlainText(QObject::tr("When unchecked, this track will no longer be tracked even if selected. Also the transform parameters in the Transform tab will not take this track into account"), Qt::WhiteSpaceNormal));
         d.item = newItem;
         d.dimension = -1;
         view->setCellWidget(row, COL_ENABLED, checkbox);

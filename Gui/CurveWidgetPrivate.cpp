@@ -683,7 +683,9 @@ CurveWidgetPrivate::isNearbyKeyFrame(const QPoint & pt, boost::shared_ptr<CurveG
             KeyFrameSet::const_iterator it2 = set.begin();
             KeyFrameSet::const_iterator prev = set.end();
             KeyFrameSet::const_iterator next = it2;
-            ++next;
+            if (!set.empty()) {
+                ++next;
+            }
             for (;it2 != set.end(); ++it2) {
                 
                 QPointF keyFramewidgetPos = zoomCtx.toWidgetCoordinates( it2->getTime(), it2->getValue() );

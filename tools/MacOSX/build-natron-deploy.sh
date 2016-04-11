@@ -128,7 +128,9 @@ done
 # see https://trac.macports.org/ticket/49344
 if [ ! -d "${package}/Contents/PlugIns" -a -d "$QTDIR/share/plugins" ]; then
     echo "Warning: Qt plugins not copied by macdeployqt, see https://trac.macports.org/ticket/49344. Copying them now."
-    cp -r "$QTDIR/share/plugins" "${package}/Contents/PlugIns" || exit 1
+    mkdir -p "${package}/Contents/PlugIns/sqldrivers"  || exit 1
+    cp -r "$QTDIR/share/plugins"/{graphicssystems,iconengines,imageformats} "${package}/Contents/PlugIns/" || exit 1
+    #cp -r "$QTDIR/share/plugins/sqldrivers/libqsqlite.dylib" "${package}/Contents/PlugIns/sqldrivers/" || exit 1
     for binary in "${package}/Contents/PlugIns"/*/*.dylib; do
         chmod +w "$binary"
         for lib in libjpeg.9.dylib libmng.2.dylib libtiff.5.dylib libQGLViewer.2.dylib; do

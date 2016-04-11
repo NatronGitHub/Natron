@@ -323,6 +323,10 @@ NodeGraph::deleteSelection()
                         continue;
                     }
                     
+                    if (!isEffect->getNode()->getGroup()) {
+                        continue;
+                    }
+                    
                     if ( isEffect && ( isEffect != (*it)->getNode()->getEffectInstance().get() ) ) {
                         foundEffect = true;
                         break;

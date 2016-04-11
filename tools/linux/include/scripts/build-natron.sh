@@ -241,6 +241,8 @@ env CFLAGS="$BF" CXXFLAGS="$BF" $INSTALL_PATH/bin/qmake -r CONFIG+=relwithdebinf
 make -j${MKJOBS} || exit 1
 
 # install app(s)
+rm -f $INSTALL_PATH/Natron*
+
 cp App/Natron $INSTALL_PATH/bin/ || exit 1
 cp Renderer/NatronRenderer $INSTALL_PATH/bin/ || exit 1
 

@@ -2,17 +2,25 @@
 
 source `pwd`/common.sh
 
+PID=$$
+if [ -f $TMP_DIR/natron-snapshot.pid ]; then
+  OLDPID=$(cat $TMP_DIR/natron-snapshot.pid)
+  RUNNING=$(ps aux|awk '{print $2}'|grep $OLDPID)
+  if [ ! -z "$RUNNING" ]; then
+    echo "===> Already running"
+    exit 1
+  fi
+fi
+echo $PID > $TMP_DIR/natron-snapshot.pid || exit 1
+
 if [ -z "$MASTER_BRANCH" ]; then 
-  echo "no MASTER_BRANCH defined"
+  echo "===> no MASTER_BRANCH defined"
   exit 1
 fi
 
 CWD=`pwd`
 TMP=$CWD/.autobuild
 
-#if [ ! -d $LOGS ]; then
-#  mkdir -p $LOGS || exit 1
-#fi
 if [ ! -d $TMP ]; then
   mkdir -p $TMP || exit 1
 fi
@@ -78,15 +86,19 @@ chmod +x $KILLSCRIPT
 
 # parse commits hash
 if [ ! -f $CWD/commits-hash-${CURRENT_BRANCH}.sh ]; then
-    echo "#!/bin/sh" > $CWD/commits-hash-${CURRENT_BRANCH}.sh
-    echo "NATRON_DEVEL_GIT=#" >> $CWD/commits-hash-${CURRENT_BRANCH}.sh
-    echo "IOPLUG_DEVEL_GIT=#" >> $CWD/commits-hash-${CURRENT_BRANCH}.sh
-    echo "MISCPLUG_DEVEL_GIT=#" >> $CWD/commits-hash-${CURRENT_BRANCH}.sh
-    echo "ARENAPLUG_DEVEL_GIT=#" >> $CWD/commits-hash-${CURRENT_BRANCH}.sh
-    echo "CVPLUG_DEVEL_GIT=#" >> $CWD/commits-hash-${CURRENT_BRANCH}.sh
-    echo "NATRON_VERSION_NUMBER=#" >> $CWD/commits-hash-${CURRENT_BRANCH}.sh
+  echo "#!/bin/sh" > $CWD/commits-hash-${CURRENT_BRANCH}.sh
+  echo "NATRON_DEVEL_GIT=#" >> $CWD/commits-hash-${CURRENT_BRANCH}.sh
+  echo "IOPLUG_DEVEL_GIT=#" >> $CWD/commits-hash-${CURRENT_BRANCH}.sh
+  echo "MISCPLUG_DEVEL_GIT=#" >> $CWD/commits-hash-${CURRENT_BRANCH}.sh
+  echo "ARENAPLUG_DEVEL_GIT=#" >> $CWD/commits-hash-${CURRENT_BRANCH}.sh
+  echo "CVPLUG_DEVEL_GIT=#" >> $CWD/commits-hash-${CURRENT_BRANCH}.sh
+  echo "NATRON_VERSION_NUMBER=#" >> $CWD/commits-hash-${CURRENT_BRANCH}.sh
+  echo "LATEST_SNAPSHOT_BUILD=#" >> $CWD/commits-hash-${CURRENT_BRANCH}.sh
 fi
 source $CWD/commits-hash-${CURRENT_BRANCH}.sh
+if [ -z "$LATEST_SNAPSHOT_BUILD" ]; then
+  echo "LATEST_SNAPSHOT_BUILD=#" >> $CWD/commits-hash-${CURRENT_BRANCH}.sh
+fi
 
 REPO_SUFFIX=snapshot-$CURRENT_BRANCH
 LOGS=$REPO_DIR_PREFIX$REPO_SUFFIX/logs
@@ -105,6 +117,13 @@ if [ "$CURRENT_BRANCH" != "$MASTER_BRANCH" ]; then
   if [ "$NATRON_DEVEL_GIT" != "#" ] && [ "$NATRON_DEVEL_GIT" != "" ]; then
     echo "===> Checking for #snapshot ..."
     GITV_NATRON=`git --no-pager log --pretty=oneline ${NATRON_DEVEL_GIT}..HEAD --grep=#snapshot --since=1.days |head -1|awk '{print $1}'`
+    if [ ! -z "$GITV_NATRON" ]; then
+      if [ "$GITV_NATRON" != "$LATEST_SNAPSHOT_BUILD" ]; then
+        sed -i "s/LATEST_SNAPSHOT_BUILD=.*/LATEST_SNAPSHOT_BUILD=${GITV_NATRON}/" $CWD/commits-hash-${CURRENT_BRANCH}.sh || exit 1
+      else
+        GITV_NATRON=""
+      fi
+    fi
   else
     echo "===> first-run, so don't build anything"
     NATRON_LATEST_COMMIT=`git log |head -1|awk '{print $2}'`
@@ -119,25 +138,31 @@ if [ "$CURRENT_BRANCH" != "$MASTER_BRANCH" ]; then
 else
   GITV_NATRON=`git log |head -1|awk '{print $2}'`
   MASTER_SNAPSHOT=`git --no-pager log --pretty=oneline ${NATRON_DEVEL_GIT}..HEAD --grep=#snapshot --since=1.days |head -1|awk '{print $1}'`
+  if [ ! -z "$MASTER_SNAPSHOT" ] && [ "$MASTER_SNAPSHOT" != "$LATEST_SNAPSHOT_BUILD" ]; then
+    sed -i "s/LATEST_SNAPSHOT_BUILD=.*/LATEST_SNAPSHOT_BUILD=${MASTER_SNAPSHOT}/" $CWD/commits-hash-${CURRENT_BRANCH}.sh || exit 1
+  else
+    MASTER_SNAPSHOT=""
+  fi
 fi
 
 ORIG_NATRON=$NATRON_DEVEL_GIT
 echo "==========> Natron $GITV_NATRON vs. $ORIG_NATRON"
 if [ "$GITV_NATRON" != "$ORIG_NATRON" -a "$FAIL" != "1" -a "$GITV_NATRON" != "" -a "$GITV_NATRON" != "#" ]; then
-  echo "===> Natron update needed!"
-  BUILD_NATRON=1
+  if [ "$GITV_NATRON" != "$LATEST_SNAPSHOT_BUILD" ]; then
+    echo "===> Natron update needed!"
+    BUILD_NATRON=1
+  fi
 fi
 if [ ! -z "$MASTER_SNAPSHOT" ]; then
   echo "===> MASTER_BRANCH has an snapshot!"
   echo "=====> MASTER_BRANCH $MASTER_SNAPSHOT vs. $ORIG_NATRON"
-  if [ "$MASTER_SNAPSHOT" != "$ORIG_NATRON" ]; then
+  if [ "$MASTER_SNAPSHOT" != "$ORIG_NATRON" ] && [ "$MASTER_SNAPSHOT" != "$LATEST_SNAPSHOT_BUILD" ]; then
     echo "===> Natron upate needed!"
     BUILD_NATRON=1
   fi
 fi
 
 BUILD_IO=0
-if [ "$CURRENT_BRANCH" = "$MASTER_BRANCH" ]; then
 if [ "$FAIL" != "1" ]; then
   cd $TMP/openfx-io
 
@@ -146,18 +171,27 @@ if [ "$FAIL" != "1" ]; then
   $GITSCRIPT $MASTER_BRANCH
   kill -9 $KILLBOT
 
-  GITV_IO=`git log|head -1|awk '{print $2}'`
-  ORIG_IO=$IOPLUG_DEVEL_GIT
-  echo "==========> IO $GITV_IO vs. $ORIG_IO"
-  if [ "$GITV_IO" != "$ORIG_IO" -a "$FAIL" != "1" ]; then
-    echo "===> IO update needed!"
-    BUILD_IO=1
+  DO_SNAPSHOT_ON_BRANCH=`git --no-pager log --pretty=oneline --grep="#snapshot natron_branch=" --since=1.days | head -1 | sed 's/.*\#//;s/=/ /' | awk '{print $3}'`
+  VALID_COMMIT=`git --no-pager log --pretty=oneline --grep="#snapshot natron_branch=" --since=1.days | head -1 | awk '{print $1}'`
+  if [ "$VALID_COMMIT" = "$IOPLUG_DEVEL_GIT" ]; then
+    DO_SNAPSHOT_ON_BRANCH=""
   fi
-fi
+  if [ "$CURRENT_BRANCH" = "$DO_SNAPSHOT_ON_BRANCH" ]; then
+    echo "=====> Plugin has a #snapshot for $CURRENT_BRANCH !"
+    BUILD_NATRON=1
+  fi
+  if [ "$CURRENT_BRANCH" = "$MASTER_BRANCH" ] && [ "$DO_SNAPSHOT_ON_BRANCH" != "$MASTER_BRANCH" ]; then
+    GITV_IO=`git log|head -1|awk '{print $2}'`
+    ORIG_IO=$IOPLUG_DEVEL_GIT
+    echo "==========> IO $GITV_IO vs. $ORIG_IO"
+    if [ "$GITV_IO" != "$ORIG_IO" -a "$FAIL" != "1" ]; then
+      echo "===> IO update needed!"
+      BUILD_IO=1
+    fi
+  fi
 fi
 
 BUILD_MISC=0
-if [ "$CURRENT_BRANCH" = "$MASTER_BRANCH" ]; then
 if [ "$FAIL" != "1" ]; then
   cd $TMP/openfx-misc
 
@@ -166,18 +200,27 @@ if [ "$FAIL" != "1" ]; then
   $GITSCRIPT $MASTER_BRANCH
   kill -9 $KILLBOT
 
-  GITV_MISC=`git log|head -1|awk '{print $2}'`
-  ORIG_MISC=$MISCPLUG_DEVEL_GIT
-  echo "==========> Misc $GITV_MISC vs. $ORIG_MISC"
-  if [ "$GITV_MISC" != "$ORIG_MISC" -a "$FAIL" != "1" ]; then
-    echo "===> Misc update needed!"
-    BUILD_MISC=1
+  DO_SNAPSHOT_ON_BRANCH=`git --no-pager log --pretty=oneline --grep="#snapshot natron_branch=" --since=1.days | head -1 | sed 's/.*\#//;s/=/ /' | awk '{print $3}'`
+  VALID_COMMIT=`git --no-pager log --pretty=oneline --grep="#snapshot natron_branch=" --since=1.days | head -1 | awk '{print $1}'`
+  if [ "$VALID_COMMIT" = "$MISCPLUG_DEVEL_GIT" ]; then
+    DO_SNAPSHOT_ON_BRANCH=""
   fi
-fi
+  if [ "$CURRENT_BRANCH" = "$DO_SNAPSHOT_ON_BRANCH" ]; then
+    echo "=====> Plugin has a #snapshot for $CURRENT_BRANCH !"
+    BUILD_NATRON=1
+  fi
+  if [ "$CURRENT_BRANCH" = "$MASTER_BRANCH" ] && [ "$DO_SNAPSHOT_ON_BRANCH" != "$MASTER_BRANCH" ]; then
+    GITV_MISC=`git log|head -1|awk '{print $2}'`
+    ORIG_MISC=$MISCPLUG_DEVEL_GIT
+    echo "==========> Misc $GITV_MISC vs. $ORIG_MISC"
+    if [ "$GITV_MISC" != "$ORIG_MISC" -a "$FAIL" != "1" ]; then
+      echo "===> Misc update needed!"
+      BUILD_MISC=1
+    fi
+  fi
 fi
 
 BUILD_ARENA=0
-if [ "$CURRENT_BRANCH" = "$MASTER_BRANCH" ]; then
 if [ "$FAIL" != "1" ]; then
   cd $TMP/openfx-arena
 
@@ -186,14 +229,24 @@ if [ "$FAIL" != "1" ]; then
   $GITSCRIPT $MASTER_BRANCH
   kill -9 $KILLBOT
 
-  GITV_ARENA=`git log|head -1|awk '{print $2}'`
-  ORIG_ARENA=$ARENAPLUG_DEVEL_GIT
-  echo "==========> Arena $GITV_ARENA vs. $ORIG_ARENA"
-  if [ "$GITV_ARENA" != "$ORIG_ARENA" -a "$FAIL" != "1" ]; then
-    echo "===> Arena update needed!"
-    BUILD_ARENA=1
+  DO_SNAPSHOT_ON_BRANCH=`git --no-pager log --pretty=oneline --grep="#snapshot natron_branch=" --since=1.days | head -1 | sed 's/.*\#//;s/=/ /' | awk '{print $3}'`
+  VALID_COMMIT=`git --no-pager log --pretty=oneline --grep="#snapshot natron_branch=" --since=1.days | head -1 | awk '{print $1}'`
+  if [ "$VALID_COMMIT" = "$ARENAPLUG_DEVEL_GIT" ]; then
+    DO_SNAPSHOT_ON_BRANCH=""
   fi
-fi
+  if [ "$CURRENT_BRANCH" = "$DO_SNAPSHOT_ON_BRANCH"  ]; then
+    echo "=====> Plugin has a #snapshot for $CURRENT_BRANCH !"
+    BUILD_NATRON=1
+  fi
+  if [ "$CURRENT_BRANCH" = "$MASTER_BRANCH" ] && [ "$DO_SNAPSHOT_ON_BRANCH" != "$MASTER_BRANCH" ]; then
+    GITV_ARENA=`git log|head -1|awk '{print $2}'`
+    ORIG_ARENA=$ARENAPLUG_DEVEL_GIT
+    echo "==========> Arena $GITV_ARENA vs. $ORIG_ARENA"
+    if [ "$GITV_ARENA" != "$ORIG_ARENA" -a "$FAIL" != "1" ]; then
+      echo "===> Arena update needed!"
+      BUILD_ARENA=1
+    fi
+  fi
 fi
 
 rm -f $GITSCRIPT $KILLSCRIPT
@@ -204,12 +257,16 @@ if [ "$FAIL" != "1" ]; then
 
 if [ "$CURRENT_BRANCH" != "$MASTER_BRANCH" ]; then
   if [ "$BUILD_NATRON" = "1" ];  then
-    sed -i "s/NATRON_DEVEL_GIT=.*/NATRON_DEVEL_GIT=${GITV_NATRON}/" $CWD/commits-hash-$CURRENT_BRANCH.sh || exit 1
-    GIT_BRANCH=$CURRENT_BRANCH GIT_COMMIT=$GITV_NATRON NATRON_LICENSE=$NATRON_LICENSE OFFLINE_INSTALLER=1 SYNC=1 BUILD_CONFIG=SNAPSHOT sh build.sh
+    if [ "$CURRENT_BRANCH" = "$DO_SNAPSHOT_ON_BRANCH" ]; then
+      GITV_NATRON=""
+    else
+      sed -i "s/NATRON_DEVEL_GIT=.*/NATRON_DEVEL_GIT=${GITV_NATRON}/" $CWD/commits-hash-$CURRENT_BRANCH.sh || exit 1
+    fi
+    echo "==========> BUILDING FROM $CURRENT_BRANCH BRANCH ..."
+    UNIT_TEST=0 GIT_BRANCH=$CURRENT_BRANCH GIT_COMMIT=$GITV_NATRON NATRON_LICENSE=$NATRON_LICENSE OFFLINE_INSTALLER=1 SYNC=1 BUILD_CONFIG=SNAPSHOT sh build.sh
   fi
 else
   if [ "$BUILD_NATRON" = "1" -o "$BUILD_IO" = "1" -o "$BUILD_MISC" = "1" -o "$BUILD_ARENA" = "1" -o "$BUILD_CV" = "1" ]; then
-
     if [ ! -z "$MASTER_SNAPSHOT" ]; then
       DO_SYNC=1
       NOMKINSTALL=0
@@ -219,8 +276,15 @@ else
       DO_SYNC=0
       DOTEST=0
     fi
+    if [ "$MASTER_BRANCH" = "$DO_SNAPSHOT_ON_BRANCH" ]; then
+      DO_SYNC=1
+      NOMKINSTALL=0
+      DOTEST=0
+      MASTER_SNAPSHOT=""
+    fi
 
-    UNIT_TEST=$DOTEST NO_INSTALLER=$NOMKINSTALL GIT_BRANCH=$CURRENT_BRANCH NATRON_LICENSE=$NATRON_LICENSE OFFLINE_INSTALLER=1 SYNC=$DO_SYNC BUILD_CONFIG=SNAPSHOT sh build.sh
+    echo "==========> BUILDING FROM $CURRENT_BRANCH BRANCH ..."
+    UNIT_TEST=$DOTEST NO_INSTALLER=$NOMKINSTALL GIT_BRANCH=$CURRENT_BRANCH GIT_COMMIT=$MASTER_SNAPSHOT NATRON_LICENSE=$NATRON_LICENSE OFFLINE_INSTALLER=1 SYNC=$DO_SYNC BUILD_CONFIG=SNAPSHOT sh build.sh
   fi
 fi
 

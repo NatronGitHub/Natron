@@ -291,7 +291,9 @@ public Q_SLOTS:
     void onUnlinkActionTriggered();
 
     void onRedrawGuiCurve(int reason, ViewSpec view, int dimension);
-    
+
+    void onDimensionNameChanged(int dimension);
+
     /**
      * @brief Called when the internal value held by the knob is changed. It calls updateGUI().
      **/
@@ -450,6 +452,8 @@ private:
     virtual void setDirty(bool dirty) = 0;
     
     virtual void onLabelChangedInternal() {}
+
+    virtual void refreshDimensionName(int /*dim*/) {}
 
     /**
      * @brief Must fill the horizontal layout with all the widgets composing the knob.

@@ -47,11 +47,13 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/Image.h"
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/Lut.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerContext.h"
+#include "Engine/ViewerInstance.h"
 
 #include "Engine/ViewIdx.h"
 
@@ -1235,6 +1237,10 @@ TrackerGui::drawOverlays(double time,
 
                 
             }
+            
+            NodePtr node = _imp->panel->getContext()->getNode();
+            node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer->getViewer());
+            node->drawHostOverlay(time, renderScale);
         } // // if (_imp->panelv1) {
         
         
@@ -1704,7 +1710,7 @@ TrackerGuiPrivate::drawSelectedMarkerTexture(const std::pair<double,double>& pix
                                              const Natron::Point& /*selectedSearchWndTopRight*/)
 {
     TrackMarkerPtr marker = selectedMarker.lock();
-    if (isTracking || !selectedMarkerTexture || !marker || !marker->isEnabled()) {
+    if (isTracking || !selectedMarkerTexture || !marker || !marker->isEnabled() || viewer->getInternalNode()->getRenderEngine()->isDoingSequentialRender()) {
         return;
     }
     
@@ -1908,7 +1914,15 @@ TrackerGui::penDown(double time,
     ViewerGL* viewer = _imp->viewer->getViewer();
     viewer->getPixelScale(pixelScale.first, pixelScale.second);
     bool didSomething = false;
- 
+    
+    if (_imp->panel) {
+        NodePtr node = _imp->panel->getContext()->getNode();
+        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if (node->onOverlayPenDownDefault(renderScale, viewportPos, pos, pressure)) {
+            return true;
+        }
+    }
+    
     
     if (_imp->panelv1) {
         
@@ -2486,6 +2500,13 @@ TrackerGui::penMotion(double time,
     viewer->getPixelScale(pixelScale.first, pixelScale.second);
     bool didSomething = false;
     
+    if (_imp->panel) {
+        NodePtr node = _imp->panel->getContext()->getNode();
+        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if (node->onOverlayPenMotionDefault(renderScale, viewportPos, pos, pressure)) {
+            return true;
+        }
+    }
     
     Natron::Point delta;
     delta.x = pos.x() - _imp->lastMousePos.x();
@@ -3131,6 +3152,15 @@ TrackerGui::penUp(double time,
     
     bool didSomething = false;
     
+    if (_imp->panel) {
+        NodePtr node = _imp->panel->getContext()->getNode();
+        node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer->getViewer());
+        if (node->onOverlayPenUpDefault(renderScale, viewportPos, pos, pressure)) {
+            return true;
+        }
+    }
+
+    
     TrackerMouseStateEnum state = _imp->eventState;
     _imp->eventState = eMouseStateIdle;
     if (_imp->panelv1) {
@@ -3171,6 +3201,15 @@ TrackerGui::keyDown(double time,
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)e->key();
 
+    Key natronKey = QtEnumConvert::fromQtKey(key);
+    KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers(modifiers);
+    if (_imp->panel) {
+        NodePtr node = _imp->panel->getContext()->getNode();
+        node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer->getViewer());
+        if (node->onOverlayKeyDownDefault(renderScale, natronKey, natronMod)) {
+            return true;
+        }
+    }
 
     if (e->key() == Qt::Key_Control) {
         ++_imp->controlDown;
@@ -3178,8 +3217,6 @@ TrackerGui::keyDown(double time,
         ++_imp->shiftDown;
     }
 
-    Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
-    KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
     
     if (_imp->panelv1) {
         const std::list<std::pair<NodeWPtr,bool> > & instances = _imp->panelv1->getInstances();
@@ -3257,6 +3294,16 @@ TrackerGui::keyUp(double time,
     
     FLAG_DURING_INTERACT
     
+    Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
+    KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
+    if (_imp->panel) {
+        NodePtr node = _imp->panel->getContext()->getNode();
+        node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer->getViewer());
+        if (node->onOverlayKeyUpDefault(renderScale, natronKey, natronMod)) {
+            return true;
+        }
+    }
+    
     bool didSomething = false;
 
     if (e->key() == Qt::Key_Control) {
@@ -3272,9 +3319,6 @@ TrackerGui::keyUp(double time,
             didSomething = true;
         }
     }
-    
-    Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
-    KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
     
     if (_imp->panelv1) {
         const std::list<std::pair<NodeWPtr,bool> > & instances = _imp->panelv1->getInstances();
@@ -3310,6 +3354,15 @@ TrackerGui::loseFocus(double time,
 {
     bool didSomething = false;
     
+    if (_imp->panel) {
+        NodePtr node = _imp->panel->getContext()->getNode();
+        node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer->getViewer());
+        if (node->onOverlayFocusLostDefault(renderScale)) {
+            return true;
+        }
+    }
+
+    
     _imp->controlDown = 0;
     _imp->shiftDown = 0;
     
@@ -3337,6 +3390,8 @@ TrackerGui::updateSelectionFromSelectionRectangle(bool onRelease)
     if (!onRelease) {
         return;
     }
+    
+    
     double l,r,b,t;
     _imp->viewer->getViewer()->getSelectionRectangle(l, r, b, t);
     
@@ -3721,9 +3776,9 @@ TrackerGui::onContextSelectionChanged(int reason)
 }
 
 void
-TrackerGui::onTimelineTimeChanged(SequenceTime /*time*/, int /*reason*/)
+TrackerGui::onTimelineTimeChanged(SequenceTime /*time*/, int reason)
 {
-    if (_imp->showMarkerTexture) {
+    if (_imp->showMarkerTexture && reason != eTimelineChangeReasonPlaybackSeek) {
         _imp->refreshSelectedMarkerTexture();
     }
 }
