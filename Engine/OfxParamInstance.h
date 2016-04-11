@@ -93,7 +93,7 @@ class OfxParamToKnob : public QObject
     
     OFX::Host::Interact::Descriptor interactDesc;
     mutable QMutex dynamicPropModifiedMutex;
-    bool _dynamicPropModified;
+    int _dynamicPropModified;
     boost::weak_ptr<EffectInstance> _effect;
     
 public:
@@ -101,7 +101,7 @@ public:
 
     OfxParamToKnob(const EffectInstPtr& effect)
     : dynamicPropModifiedMutex()
-    , _dynamicPropModified(false)
+    , _dynamicPropModified(0)
     , _effect(effect)
     {
     }
@@ -158,6 +158,8 @@ public:
             isType->resetParent();
             return isType;
         }
+#else
+        (void)scriptName;
 #endif
         boost::shared_ptr<TYPE> ret = AppManager::createKnob<TYPE>(holder.get(), getParamLabel(param), dimension);
         return ret;
@@ -186,13 +188,19 @@ protected:
     void setDynamicPropertyModified(bool dynamicPropModified)
     {
         QMutexLocker k(&dynamicPropModifiedMutex);
-        _dynamicPropModified = dynamicPropModified;
+        if (dynamicPropModified) {
+            ++_dynamicPropModified;
+        } else {
+            if (_dynamicPropModified > 0) {
+                --_dynamicPropModified;
+            }
+        }
     }
     
     bool isDynamicPropertyBeingModified() const
     {
         QMutexLocker k(&dynamicPropModifiedMutex);
-        return _dynamicPropModified;
+        return _dynamicPropModified > 0;
     }
     
     virtual bool hasDoubleMinMaxProps() const { return true; }

@@ -369,13 +369,14 @@ Settings::initializeKnobsGeneral()
                                         "on the viewer. Turning this off will suspend the notification system.");
     _generalTab->addKnob(_notifyOnFileChange);
 
+#ifdef NATRON_ENABLE_IO_META_NODES
     _filedialogForWriters = AppManager::createKnob<KnobBool>(this, "Prompt with file dialog when creating Write node");
     _filedialogForWriters->setName("writeUseDialog");
     _filedialogForWriters->setDefaultValue(true);
     _filedialogForWriters->setAnimationEnabled(false);
     _filedialogForWriters->setHintToolTip("When checked, opens-up a file dialog when creating a Write node");
     _generalTab->addKnob(_filedialogForWriters);
-
+#endif
     
     _firstReadSetProjectFormat = AppManager::createKnob<KnobBool>(this, "First image read set project format");
     _firstReadSetProjectFormat->setName("autoProjectFormat");
@@ -3672,7 +3673,11 @@ Settings::isRenderQueuingEnabled() const
 bool
 Settings::isFileDialogEnabledForNewWriters() const
 {
+#ifdef NATRON_ENABLE_IO_META_NODES
     return _filedialogForWriters->getValue();
+#else
+    return true;
+#endif
 }
 
 NATRON_NAMESPACE_EXIT;
