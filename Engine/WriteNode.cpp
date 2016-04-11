@@ -183,8 +183,7 @@ struct WriteNodePrivate
     
     void placeWriteNodeKnobsInPage();
     
-    void createWriteNode(bool throwErrors, const std::string& filename, const boost::shared_ptr<NodeSerialization>& serialization,
-                         const std::list<boost::shared_ptr<KnobSerialization> >& defaultParamValues);
+    void createWriteNode(bool throwErrors, const std::string& filename, const boost::shared_ptr<NodeSerialization>& serialization);
     
     void destroyWriteNode();
     
@@ -402,10 +401,24 @@ WriteNodePrivate::checkEncoderCreated(double time, ViewIdx view)
     return true;
 }
 
+static std::string getFileNameFromSerialization(const std::list<boost::shared_ptr<KnobSerialization> >& serializations)
+{
+    std::string filePattern;
+    for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = serializations.begin(); it!=serializations.end(); ++it) {
+        if ((*it)->getKnob()->getName() == kOfxImageEffectFileParamName) {
+            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>((*it)->getKnob().get());
+            assert(isString);
+            if (isString) {
+                filePattern = isString->getValue();
+            }
+            break;
+        }
+    }
+    return filePattern;
+}
 
 void
-WriteNodePrivate::createWriteNode(bool throwErrors, const std::string& filename, const boost::shared_ptr<NodeSerialization>& serialization,
-                                  const std::list<boost::shared_ptr<KnobSerialization> >& defaultParamValues)
+WriteNodePrivate::createWriteNode(bool throwErrors, const std::string& filename, const boost::shared_ptr<NodeSerialization>& serialization)
 {
     if (creatingWriteNode) {
         return;
@@ -413,20 +426,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors, const std::string& filename,
     
     SetCreatingWriterRAIIFlag creatingNode__(this);
     
-    std::string filePattern = filename;
-    if (filename.empty()) {
-        for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = defaultParamValues.begin(); it!=defaultParamValues.end(); ++it) {
-            if ((*it)->getKnob()->getName() == kOfxImageEffectFileParamName) {
-                Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>((*it)->getKnob().get());
-                assert(isString);
-                if (isString) {
-                    filePattern = isString->getValue();
-                }
-                break;
-            }
-        }
-    }
-    QString qpattern = QString::fromUtf8(filePattern.c_str());
+    QString qpattern = QString::fromUtf8(filename.c_str());
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
     
     boost::shared_ptr<KnobString> pluginIDKnob = pluginIDStringKnob.lock();
@@ -470,6 +470,9 @@ WriteNodePrivate::createWriteNode(bool throwErrors, const std::string& filename,
         defaultFallback = true;
         
     } else {
+        if (writerPluginID.empty()) {
+            writerPluginID = WRITE_NODE_DEFAULT_WRITER;
+        }
         CreateNodeArgs args(QString::fromUtf8(writerPluginID.c_str()), serialization ? eCreateNodeReasonProjectLoad : eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
         args.createGui = false;
         args.addToProject = false;
@@ -478,8 +481,8 @@ WriteNodePrivate::createWriteNode(bool throwErrors, const std::string& filename,
         args.ioContainer = _publicInterface->getNode();
         
         //Set a pre-value for the inputfile knob only if it did not exist
-        if (!filePattern.empty()/* && !inputFileKnob.lock()*/) {
-            args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filePattern));
+        if (!filename.empty() && !serialization) {
+            args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filename));
         }
         embeddedPlugin = _publicInterface->getApp()->createNode(args);
         if (pluginIDKnob) {
@@ -853,8 +856,11 @@ WriteNode::onEffectCreated(bool mayCreateFileDialog, const std::list<boost::shar
         
         //The user selected a file, if it fails to read do not create the node
         throwErrors = true;
+    } else {
+        
     }
-    _imp->createWriteNode(throwErrors, pattern, boost::shared_ptr<NodeSerialization>(),defaultParamValues);
+    
+    _imp->createWriteNode(throwErrors, pattern, boost::shared_ptr<NodeSerialization>());
     _imp->refreshPluginSelectorKnob();
 }
 
@@ -870,8 +876,9 @@ WriteNode::onKnobsAboutToBeLoaded(const boost::shared_ptr<NodeSerialization>& se
     //Load the pluginID to create first.
     node->loadKnob(_imp->pluginIDStringKnob.lock(), serialization->getKnobsValues());
     
+    std::string filename = getFileNameFromSerialization(serialization->getKnobsValues());
     //Create the Reader with the serialization
-    _imp->createWriteNode(false, std::string(), serialization, std::list<boost::shared_ptr<KnobSerialization> >());
+    _imp->createWriteNode(false, filename, serialization);
 }
 
 void
@@ -895,7 +902,7 @@ WriteNode::knobChanged(KnobI* k,
         std::string filename = fileKnob->getValue();
         
         try {
-            _imp->createWriteNode(false, filename, boost::shared_ptr<NodeSerialization>(), std::list<boost::shared_ptr<KnobSerialization> >());
+            _imp->createWriteNode(false, filename, boost::shared_ptr<NodeSerialization>());
         } catch (const std::exception& e) {
             setPersistentMessage(eMessageTypeError, e.what());
         }
@@ -914,7 +921,7 @@ WriteNode::knobChanged(KnobI* k,
         std::string filename = fileKnob->getValue();
         
         try {
-            _imp->createWriteNode(false, filename, boost::shared_ptr<NodeSerialization>(), std::list<boost::shared_ptr<KnobSerialization> >());
+            _imp->createWriteNode(false, filename, boost::shared_ptr<NodeSerialization>());
         } catch (const std::exception& e) {
             setPersistentMessage(eMessageTypeError, e.what());
         }
