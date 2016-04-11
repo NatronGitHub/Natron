@@ -529,6 +529,7 @@ Settings::initializeKnobsAppearance()
     _guiColors->setAsTab();
     _appearanceTab->addKnob(_guiColors);
     
+    
     _curveEditorColors = AppManager::createKnob<KnobGroup>(this, "Curve Editor");
     _curveEditorColors->setAsTab();
     _appearanceTab->addKnob(_curveEditorColors);
@@ -540,6 +541,15 @@ Settings::initializeKnobsAppearance()
     _scriptEditorColors = AppManager::createKnob<KnobGroup>(this, "Script Editor");
     _scriptEditorColors->setAsTab();
     _appearanceTab->addKnob(_scriptEditorColors);
+    
+    _useBWIcons = AppManager::createKnob<KnobBool>(this, "Use black & white toolbutton icons");
+    _useBWIcons->setName("useBwIcons");
+    _useBWIcons->setHintToolTip("When checked, the tools icons in the left toolbar are greyscale. Changing this takes "
+                                "effect upon the next launch of the application.");
+    _useBWIcons->setAnimationEnabled(false);
+    _guiColors->addKnob(_useBWIcons);
+    
+    
     
     _sunkenColor =  AppManager::createKnob<KnobColor>(this, "Sunken",3);
     _sunkenColor->setName("sunken");
@@ -832,6 +842,146 @@ Settings::initializeKnobsAppearance()
     _ocioStartupCheck->setName("startupCheckOCIO");
     _ocioStartupCheck->setAnimationEnabled(false);
     ocioTab->addKnob(_ocioStartupCheck);
+    
+    
+    boost::shared_ptr<KnobPage> graphTab = AppManager::createKnob<KnobPage>(this, "Node Graph");
+    
+    
+    _usePluginIconsInNodeGraph = AppManager::createKnob<KnobBool>(this, "Display plug-in icon on node-graph");
+    _usePluginIconsInNodeGraph->setName("usePluginIcons");
+    _usePluginIconsInNodeGraph->setHintToolTip("When checked, each node that has a plug-in icon will display it in the node-graph."
+                                               "Changing this option will not affect already existing nodes, unless a restart of Natron is made.");
+    _usePluginIconsInNodeGraph->setAnimationEnabled(false);
+    _usePluginIconsInNodeGraph->setAddNewLine(false);
+    graphTab->addKnob(_usePluginIconsInNodeGraph);
+    
+    _useAntiAliasing = AppManager::createKnob<KnobBool>(this, "Anti-Aliasing");
+    _useAntiAliasing->setName("antiAliasing");
+    _useAntiAliasing->setHintToolTip("When checked, the node graph will be painted using anti-aliasing. Unchecking it may increase performances."
+                                     " Changing this requires a restart of Natron");
+    _useAntiAliasing->setAnimationEnabled(false);
+    graphTab->addKnob(_useAntiAliasing);
+    
+ 
+    _defaultNodeColor = AppManager::createKnob<KnobColor>(this, "Default node color",3);
+    _defaultNodeColor->setName("defaultNodeColor");
+    _defaultNodeColor->setAnimationEnabled(false);
+    _defaultNodeColor->setSimplified(true);
+    _defaultNodeColor->setAddNewLine(false);
+    _defaultNodeColor->setHintToolTip("The default color used for newly created nodes.");
+    
+    graphTab->addKnob(_defaultNodeColor);
+    
+    
+    _defaultBackdropColor =  AppManager::createKnob<KnobColor>(this, "Default backdrop color",3);
+    _defaultBackdropColor->setName("backdropColor");
+    _defaultBackdropColor->setAnimationEnabled(false);
+    _defaultBackdropColor->setSimplified(true);
+    _defaultBackdropColor->setAddNewLine(false);
+    _defaultBackdropColor->setHintToolTip("The default color used for newly created backdrop nodes.");
+    graphTab->addKnob(_defaultBackdropColor);
+    
+    _defaultReaderColor =  AppManager::createKnob<KnobColor>(this, PLUGIN_GROUP_IMAGE_READERS,3);
+    _defaultReaderColor->setName("readerColor");
+    _defaultReaderColor->setAnimationEnabled(false);
+    _defaultReaderColor->setSimplified(true);
+    _defaultReaderColor->setAddNewLine(false);
+    _defaultReaderColor->setHintToolTip("The color used for newly created Reader nodes.");
+    graphTab->addKnob(_defaultReaderColor);
+    
+    _defaultWriterColor =  AppManager::createKnob<KnobColor>(this, PLUGIN_GROUP_IMAGE_WRITERS,3);
+    _defaultWriterColor->setName("writerColor");
+    _defaultWriterColor->setAnimationEnabled(false);
+    _defaultWriterColor->setSimplified(true);
+    _defaultWriterColor->setAddNewLine(false);
+    _defaultWriterColor->setHintToolTip("The color used for newly created Writer nodes.");
+    graphTab->addKnob(_defaultWriterColor);
+    
+    _defaultGeneratorColor =  AppManager::createKnob<KnobColor>(this, "Generators",3);
+    _defaultGeneratorColor->setName("generatorColor");
+    _defaultGeneratorColor->setAnimationEnabled(false);
+    _defaultGeneratorColor->setSimplified(true);
+    _defaultGeneratorColor->setHintToolTip("The color used for newly created Generator nodes.");
+    graphTab->addKnob(_defaultGeneratorColor);
+    
+    _defaultColorGroupColor =  AppManager::createKnob<KnobColor>(this, "Color group",3);
+    _defaultColorGroupColor->setName("colorNodesColor");
+    _defaultColorGroupColor->setAnimationEnabled(false);
+    _defaultColorGroupColor->setSimplified(true);
+    _defaultColorGroupColor->setAddNewLine(false);
+    _defaultColorGroupColor->setHintToolTip("The color used for newly created Color nodes.");
+    graphTab->addKnob(_defaultColorGroupColor);
+    
+    _defaultFilterGroupColor =  AppManager::createKnob<KnobColor>(this, "Filter group",3);
+    _defaultFilterGroupColor->setName("filterNodesColor");
+    _defaultFilterGroupColor->setAnimationEnabled(false);
+    _defaultFilterGroupColor->setSimplified(true);
+    _defaultFilterGroupColor->setAddNewLine(false);
+    _defaultFilterGroupColor->setHintToolTip("The color used for newly created Filter nodes.");
+    graphTab->addKnob(_defaultFilterGroupColor);
+    
+    _defaultTransformGroupColor =  AppManager::createKnob<KnobColor>(this, "Transform group",3);
+    _defaultTransformGroupColor->setName("transformNodesColor");
+    _defaultTransformGroupColor->setAnimationEnabled(false);
+    _defaultTransformGroupColor->setSimplified(true);
+    _defaultTransformGroupColor->setAddNewLine(false);
+    _defaultTransformGroupColor->setHintToolTip("The color used for newly created Transform nodes.");
+    graphTab->addKnob(_defaultTransformGroupColor);
+    
+    _defaultTimeGroupColor =  AppManager::createKnob<KnobColor>(this, "Time group",3);
+    _defaultTimeGroupColor->setName("timeNodesColor");
+    _defaultTimeGroupColor->setAnimationEnabled(false);
+    _defaultTimeGroupColor->setSimplified(true);
+    _defaultTimeGroupColor->setAddNewLine(false);
+    _defaultTimeGroupColor->setHintToolTip("The color used for newly created Time nodes.");
+    graphTab->addKnob(_defaultTimeGroupColor);
+    
+    _defaultDrawGroupColor =  AppManager::createKnob<KnobColor>(this, "Draw group",3);
+    _defaultDrawGroupColor->setName("drawNodesColor");
+    _defaultDrawGroupColor->setAnimationEnabled(false);
+    _defaultDrawGroupColor->setSimplified(true);
+    _defaultDrawGroupColor->setHintToolTip("The color used for newly created Draw nodes.");
+    graphTab->addKnob(_defaultDrawGroupColor);
+    
+    _defaultKeyerGroupColor =  AppManager::createKnob<KnobColor>(this, "Keyer group",3);
+    _defaultKeyerGroupColor->setName("keyerNodesColor");
+    _defaultKeyerGroupColor->setAnimationEnabled(false);
+    _defaultKeyerGroupColor->setSimplified(true);
+    _defaultKeyerGroupColor->setAddNewLine(false);
+    _defaultKeyerGroupColor->setHintToolTip("The color used for newly created Keyer nodes.");
+    graphTab->addKnob(_defaultKeyerGroupColor);
+    
+    _defaultChannelGroupColor =  AppManager::createKnob<KnobColor>(this, "Channel group",3);
+    _defaultChannelGroupColor->setName("channelNodesColor");
+    _defaultChannelGroupColor->setAnimationEnabled(false);
+    _defaultChannelGroupColor->setSimplified(true);
+    _defaultChannelGroupColor->setAddNewLine(false);
+    _defaultChannelGroupColor->setHintToolTip("The color used for newly created Channel nodes.");
+    graphTab->addKnob(_defaultChannelGroupColor);
+    
+    _defaultMergeGroupColor =  AppManager::createKnob<KnobColor>(this, "Merge group",3);
+    _defaultMergeGroupColor->setName("defaultMergeColor");
+    _defaultMergeGroupColor->setAnimationEnabled(false);
+    _defaultMergeGroupColor->setSimplified(true);
+    _defaultMergeGroupColor->setAddNewLine(false);
+    _defaultMergeGroupColor->setHintToolTip("The color used for newly created Merge nodes.");
+    graphTab->addKnob(_defaultMergeGroupColor);
+    
+    _defaultViewsGroupColor =  AppManager::createKnob<KnobColor>(this, "Views group",3);
+    _defaultViewsGroupColor->setName("defaultViewsColor");
+    _defaultViewsGroupColor->setAnimationEnabled(false);
+    _defaultViewsGroupColor->setSimplified(true);
+    _defaultViewsGroupColor->setAddNewLine(false);
+    _defaultViewsGroupColor->setHintToolTip("The color used for newly created Views nodes.");
+    graphTab->addKnob(_defaultViewsGroupColor);
+    
+    _defaultDeepGroupColor =  AppManager::createKnob<KnobColor>(this, "Deep group",3);
+    _defaultDeepGroupColor->setName("defaultDeepColor");
+    _defaultDeepGroupColor->setAnimationEnabled(false);
+    _defaultDeepGroupColor->setSimplified(true);
+    _defaultDeepGroupColor->setHintToolTip("The color used for newly created Deep nodes.");
+    graphTab->addKnob(_defaultDeepGroupColor);
+
 }
 
 void
@@ -941,12 +1091,6 @@ Settings::initializeKnobsNodeGraph()
     _snapNodesToConnections->setAnimationEnabled(false);
     _nodegraphTab->addKnob(_snapNodesToConnections);
 
-    _useBWIcons = AppManager::createKnob<KnobBool>(this, "Use black & white toolbutton icons");
-    _useBWIcons->setName("useBwIcons");
-    _useBWIcons->setHintToolTip("When checked, the tools icons in the left toolbar are greyscale. Changing this takes "
-                                "effect upon the next launch of the application.");
-    _useBWIcons->setAnimationEnabled(false);
-    _nodegraphTab->addKnob(_useBWIcons);
 
     _useNodeGraphHints = AppManager::createKnob<KnobBool>(this, "Use connection hints");
     _useNodeGraphHints->setName("useHints");
@@ -992,142 +1136,7 @@ Settings::initializeKnobsNodeGraph()
                                                   "This also applies to any other node with inputs named A and B.");
     _nodegraphTab->addKnob(_useInputAForMergeAutoConnect);
     
-    _usePluginIconsInNodeGraph = AppManager::createKnob<KnobBool>(this, "Display plug-in icon on node-graph");
-    _usePluginIconsInNodeGraph->setName("usePluginIcons");
-    _usePluginIconsInNodeGraph->setHintToolTip("When checked, each node that has a plug-in icon will display it in the node-graph."
-                                               "Changing this option will not affect already existing nodes, unless a restart of Natron is made.");
-    _usePluginIconsInNodeGraph->setAnimationEnabled(false);
-    _nodegraphTab->addKnob(_usePluginIconsInNodeGraph);
-    
-    _useAntiAliasing = AppManager::createKnob<KnobBool>(this, "Anti-Aliasing");
-    _useAntiAliasing->setName("antiAliasing");
-    _useAntiAliasing->setHintToolTip("When checked, the node graph will be painted using anti-aliasing. Unchecking it may increase performances."
-                                     " Changing this requires a restart of Natron");
-    _useAntiAliasing->setAnimationEnabled(false);
-    _nodegraphTab->addKnob(_useAntiAliasing);
-    
-   
-    _defaultNodeColor = AppManager::createKnob<KnobColor>(this, "Default node color",3);
-    _defaultNodeColor->setName("defaultNodeColor");
-    _defaultNodeColor->setAnimationEnabled(false);
-    _defaultNodeColor->setSimplified(true);
-    _defaultNodeColor->setAddNewLine(false);
-    _defaultNodeColor->setHintToolTip("The default color used for newly created nodes.");
-
-    _nodegraphTab->addKnob(_defaultNodeColor);
-
-
-    _defaultBackdropColor =  AppManager::createKnob<KnobColor>(this, "Default backdrop color",3);
-    _defaultBackdropColor->setName("backdropColor");
-    _defaultBackdropColor->setAnimationEnabled(false);
-    _defaultBackdropColor->setSimplified(true);
-    _defaultBackdropColor->setAddNewLine(false);
-    _defaultBackdropColor->setHintToolTip("The default color used for newly created backdrop nodes.");
-    _nodegraphTab->addKnob(_defaultBackdropColor);
-
-    ///////////////////DEFAULT GROUP COLORS
-
-    _defaultReaderColor =  AppManager::createKnob<KnobColor>(this, PLUGIN_GROUP_IMAGE_READERS,3);
-    _defaultReaderColor->setName("readerColor");
-    _defaultReaderColor->setAnimationEnabled(false);
-    _defaultReaderColor->setSimplified(true);
-    _defaultReaderColor->setAddNewLine(false);
-    _defaultReaderColor->setHintToolTip("The color used for newly created Reader nodes.");
-    _nodegraphTab->addKnob(_defaultReaderColor);
-
-    _defaultWriterColor =  AppManager::createKnob<KnobColor>(this, PLUGIN_GROUP_IMAGE_WRITERS,3);
-    _defaultWriterColor->setName("writerColor");
-    _defaultWriterColor->setAnimationEnabled(false);
-    _defaultWriterColor->setSimplified(true);
-    _defaultWriterColor->setAddNewLine(false);
-    _defaultWriterColor->setHintToolTip("The color used for newly created Writer nodes.");
-    _nodegraphTab->addKnob(_defaultWriterColor);
-
-    _defaultGeneratorColor =  AppManager::createKnob<KnobColor>(this, "Generators",3);
-    _defaultGeneratorColor->setName("generatorColor");
-    _defaultGeneratorColor->setAnimationEnabled(false);
-    _defaultGeneratorColor->setSimplified(true);
-    _defaultGeneratorColor->setHintToolTip("The color used for newly created Generator nodes.");
-    _nodegraphTab->addKnob(_defaultGeneratorColor);
-
-    _defaultColorGroupColor =  AppManager::createKnob<KnobColor>(this, "Color group",3);
-    _defaultColorGroupColor->setName("colorNodesColor");
-    _defaultColorGroupColor->setAnimationEnabled(false);
-    _defaultColorGroupColor->setSimplified(true);
-    _defaultColorGroupColor->setAddNewLine(false);
-    _defaultColorGroupColor->setHintToolTip("The color used for newly created Color nodes.");
-    _nodegraphTab->addKnob(_defaultColorGroupColor);
-
-    _defaultFilterGroupColor =  AppManager::createKnob<KnobColor>(this, "Filter group",3);
-    _defaultFilterGroupColor->setName("filterNodesColor");
-    _defaultFilterGroupColor->setAnimationEnabled(false);
-    _defaultFilterGroupColor->setSimplified(true);
-    _defaultFilterGroupColor->setAddNewLine(false);
-    _defaultFilterGroupColor->setHintToolTip("The color used for newly created Filter nodes.");
-    _nodegraphTab->addKnob(_defaultFilterGroupColor);
-
-    _defaultTransformGroupColor =  AppManager::createKnob<KnobColor>(this, "Transform group",3);
-    _defaultTransformGroupColor->setName("transformNodesColor");
-    _defaultTransformGroupColor->setAnimationEnabled(false);
-    _defaultTransformGroupColor->setSimplified(true);
-    _defaultTransformGroupColor->setAddNewLine(false);
-    _defaultTransformGroupColor->setHintToolTip("The color used for newly created Transform nodes.");
-    _nodegraphTab->addKnob(_defaultTransformGroupColor);
-
-    _defaultTimeGroupColor =  AppManager::createKnob<KnobColor>(this, "Time group",3);
-    _defaultTimeGroupColor->setName("timeNodesColor");
-    _defaultTimeGroupColor->setAnimationEnabled(false);
-    _defaultTimeGroupColor->setSimplified(true);
-    _defaultTimeGroupColor->setAddNewLine(false);
-    _defaultTimeGroupColor->setHintToolTip("The color used for newly created Time nodes.");
-    _nodegraphTab->addKnob(_defaultTimeGroupColor);
-
-    _defaultDrawGroupColor =  AppManager::createKnob<KnobColor>(this, "Draw group",3);
-    _defaultDrawGroupColor->setName("drawNodesColor");
-    _defaultDrawGroupColor->setAnimationEnabled(false);
-    _defaultDrawGroupColor->setSimplified(true);
-    _defaultDrawGroupColor->setHintToolTip("The color used for newly created Draw nodes.");
-    _nodegraphTab->addKnob(_defaultDrawGroupColor);
-
-    _defaultKeyerGroupColor =  AppManager::createKnob<KnobColor>(this, "Keyer group",3);
-    _defaultKeyerGroupColor->setName("keyerNodesColor");
-    _defaultKeyerGroupColor->setAnimationEnabled(false);
-    _defaultKeyerGroupColor->setSimplified(true);
-    _defaultKeyerGroupColor->setAddNewLine(false);
-    _defaultKeyerGroupColor->setHintToolTip("The color used for newly created Keyer nodes.");
-    _nodegraphTab->addKnob(_defaultKeyerGroupColor);
-
-    _defaultChannelGroupColor =  AppManager::createKnob<KnobColor>(this, "Channel group",3);
-    _defaultChannelGroupColor->setName("channelNodesColor");
-    _defaultChannelGroupColor->setAnimationEnabled(false);
-    _defaultChannelGroupColor->setSimplified(true);
-    _defaultChannelGroupColor->setAddNewLine(false);
-    _defaultChannelGroupColor->setHintToolTip("The color used for newly created Channel nodes.");
-    _nodegraphTab->addKnob(_defaultChannelGroupColor);
-
-    _defaultMergeGroupColor =  AppManager::createKnob<KnobColor>(this, "Merge group",3);
-    _defaultMergeGroupColor->setName("defaultMergeColor");
-    _defaultMergeGroupColor->setAnimationEnabled(false);
-    _defaultMergeGroupColor->setSimplified(true);
-    _defaultMergeGroupColor->setAddNewLine(false);
-    _defaultMergeGroupColor->setHintToolTip("The color used for newly created Merge nodes.");
-    _nodegraphTab->addKnob(_defaultMergeGroupColor);
-
-    _defaultViewsGroupColor =  AppManager::createKnob<KnobColor>(this, "Views group",3);
-    _defaultViewsGroupColor->setName("defaultViewsColor");
-    _defaultViewsGroupColor->setAnimationEnabled(false);
-    _defaultViewsGroupColor->setSimplified(true);
-    _defaultViewsGroupColor->setAddNewLine(false);
-    _defaultViewsGroupColor->setHintToolTip("The color used for newly created Views nodes.");
-    _nodegraphTab->addKnob(_defaultViewsGroupColor);
-
-    _defaultDeepGroupColor =  AppManager::createKnob<KnobColor>(this, "Deep group",3);
-    _defaultDeepGroupColor->setName("defaultDeepColor");
-    _defaultDeepGroupColor->setAnimationEnabled(false);
-    _defaultDeepGroupColor->setSimplified(true);
-    _defaultDeepGroupColor->setHintToolTip("The color used for newly created Deep nodes.");
-    _nodegraphTab->addKnob(_defaultDeepGroupColor);
-}
+   }
 
 void
 Settings::initializeKnobsCaching()
