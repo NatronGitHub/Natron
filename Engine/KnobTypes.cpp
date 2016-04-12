@@ -72,6 +72,7 @@ KnobInt::KnobInt(KnobHolder* holder,
 : Knob<int>(holder, label, dimension, declaredByPlugin)
 , _increments(dimension)
 , _disableSlider(false)
+, _isRectangle(false)
 {
     for (int i = 0; i < dimension; ++i) {
         _increments[i] = 1;
@@ -185,6 +186,7 @@ KnobDouble::KnobDouble(KnobHolder* holder,
                          bool declaredByPlugin)
 : Knob<double>(holder, label, dimension, declaredByPlugin)
 , _spatial(false)
+, _isRectangle(false)
 , _increments(dimension)
 , _decimals(dimension)
 , _disableSlider(false)

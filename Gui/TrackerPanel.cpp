@@ -50,7 +50,7 @@
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Label.h"
 #include "Gui/GuiDefines.h"
-#include "Gui/KnobGuiDouble.h"
+#include "Gui/KnobGuiValue.h"
 #include "Gui/KnobGuiChoice.h"
 #include "Gui/TableModelView.h"
 #include "Gui/Utils.h"

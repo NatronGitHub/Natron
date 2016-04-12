@@ -2200,13 +2200,13 @@ Knob<double>::resetToDefaultValue(int dimension)
     // see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamPropDefaultCoordinateSystem
     if (isDouble) {
         if (isDouble->getDefaultValuesAreNormalized()) {
-            if (isDouble->getValueIsNormalized(dimension) == KnobDouble::eValueIsNormalizedNone) {
+            if (isDouble->getValueIsNormalized(dimension) == eValueIsNormalizedNone) {
                 // default is normalized, value is non-normalized: denormalize it!
                 double time = getCurrentTime();
                 isDouble->denormalize(dimension, time, &def);
             }
         } else {
-            if (isDouble->getValueIsNormalized(dimension) != KnobDouble::eValueIsNormalizedNone) {
+            if (isDouble->getValueIsNormalized(dimension) != eValueIsNormalizedNone) {
                 // default is non-normalized, value is normalized: normalize it!
                 double time = getCurrentTime();
                 isDouble->normalize(dimension, time, &def);

@@ -16,14 +16,15 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef Gui_KnobGuiDouble_h
-#define Gui_KnobGuiDouble_h
+#ifndef KNOBGUIVALUE_H
+#define KNOBGUIVALUE_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
+
 
 #include "Global/Macros.h"
 
@@ -53,54 +54,76 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-class KnobGuiDouble
-    : public KnobGui
+struct KnobGuiValuePrivate;
+class KnobGuiValue
+: public KnobGui
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
-
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
+    
 public:
-
-    static KnobGui * BuildKnobGui(KnobPtr knob,
-                                  DockablePanel *container)
-    {
-        return new KnobGuiDouble(knob, container);
-    }
-
-    KnobGuiDouble(KnobPtr knob,
-                   DockablePanel *container);
-
-    virtual ~KnobGuiDouble() OVERRIDE;
+    
+    KnobGuiValue(KnobPtr knob,
+                  DockablePanel *container);
+    
+    virtual ~KnobGuiValue() OVERRIDE;
     
     virtual void removeSpecificGui() OVERRIDE FINAL;
-
+    
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
-
+    
     virtual bool getAllDimensionsVisible() const OVERRIDE FINAL;
     
     int getDimensionForSpinBox(const SpinBox* spinbox) const;
     
 public Q_SLOTS:
+    
     void onSpinBoxValueChanged();
     void onSliderValueChanged(double);
     void onSliderEditingFinished(bool hasMovedOnce);
-#ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
     void onMinMaxChanged(double mini, double maxi, int index = 0);
-#endif
     void onDisplayMinMaxChanged(double mini,double maxi,int index = 0);
     void onIncrementChanged(double incr, int index = 0);
     void onDecimalsChanged(int deci, int index = 0);
-
+    
     void onDimensionSwitchClicked();
-
+    
     void onRectangleFormatButtonClicked();
     
-private:
-    void expandAllDimensions();
-    void foldAllDimensions();
+protected:
+    
 
-    void sliderEditingEnd(double d);
+    virtual bool isSliderDisabled() const = 0;
+    
+    virtual bool isRectangleType() const = 0;
+    
+    virtual bool isSpatialType() const = 0;
+    
+    virtual ValueIsNormalizedEnum getNormalizationPolicy(int /*dimension*/) const {
+        return eValueIsNormalizedNone;
+    }
+    
+    virtual void denormalize(int /*dimension*/, double /*time*/, double* /*value*/) const
+    {
+        
+    }
+    
+    virtual void normalize(int /*dimension*/, double /*time*/, double* /*value*/) const
+    {
+        
+    }
+    
+    virtual void connectKnobSignalSlots() {}
+    
+    virtual void disableSlider() = 0;
+    
+    virtual void getIncrements(std::vector<double>* increments) const = 0;
+    
+    virtual void getDecimals(std::vector<int>* /*decimals*/) const {}
+    
+private:
+    
     /**
      * @brief Normalized parameters handling. It converts from project format
      * to normailzed coords or from project format to normalized coords.
@@ -110,11 +133,17 @@ private:
      **/
     void valueAccordingToType(bool normalize,int dimension,double* value);
 
+    
+    void expandAllDimensions();
+    void foldAllDimensions();
+    
+    void sliderEditingEnd(double d);
+   
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
-
+    
     void setMaximum(int);
     void setMinimum(int);
-
+    
     virtual bool shouldAddStretch() const OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
@@ -129,15 +158,89 @@ private:
     virtual void refreshDimensionName(int dim) OVERRIDE FINAL;
     
 private:
-    std::vector<std::pair<SpinBox *, Label *> > _spinBoxes;
-    QWidget *_container;
-    ScaleSliderQWidget *_slider;
-    Button* _rectangleFormatButton;
-    Button *_dimensionSwitchButton;
+    
+    boost::scoped_ptr<KnobGuiValuePrivate> _imp;
+    
+};
+
+class KnobGuiDouble : public KnobGuiValue
+{
     boost::weak_ptr<KnobDouble> _knob;
-    bool _rectangleFormatIsWidthHeight;
+    
+public:
+    
+    static KnobGui * BuildKnobGui(KnobPtr knob,
+                                  DockablePanel *container)
+    {
+        return new KnobGuiDouble(knob, container);
+    }
+    
+    KnobGuiDouble(KnobPtr knob,
+                  DockablePanel *container);
+    
+    virtual ~KnobGuiDouble() {}
+    
+private:
+    
+    
+    virtual bool isSliderDisabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool isRectangleType() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool isSpatialType() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual ValueIsNormalizedEnum getNormalizationPolicy(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual void denormalize(int dimension, double time, double* value) const OVERRIDE FINAL ;
+    
+    virtual void normalize(int dimension, double time, double* value) const OVERRIDE FINAL;
+    
+    virtual void connectKnobSignalSlots() OVERRIDE FINAL;
+    
+    virtual void disableSlider() OVERRIDE FINAL;
+    
+    virtual void getIncrements(std::vector<double>* increments) const OVERRIDE FINAL;
+    
+    virtual void getDecimals(std::vector<int>* decimals) const OVERRIDE FINAL;
+};
+
+class KnobGuiInt : public KnobGuiValue
+{
+    boost::weak_ptr<KnobInt> _knob;
+    
+public:
+    
+    static KnobGui * BuildKnobGui(KnobPtr knob,
+                                  DockablePanel *container)
+    {
+        return new KnobGuiInt(knob, container);
+    }
+    
+    KnobGuiInt(KnobPtr knob,
+                  DockablePanel *container);
+    
+    virtual ~KnobGuiInt() {}
+    
+private:
+    
+    virtual bool isSpatialType() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+
+    virtual bool isSliderDisabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool isRectangleType() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual void connectKnobSignalSlots() OVERRIDE FINAL;
+    
+    virtual void disableSlider() OVERRIDE FINAL;
+    
+    virtual void getIncrements(std::vector<double>* increments) const OVERRIDE FINAL;
+    
 };
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // Gui_KnobGuiDouble_h
+
+#endif // KNOBGUIVALUE_H

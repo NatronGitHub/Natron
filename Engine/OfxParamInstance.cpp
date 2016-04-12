@@ -688,10 +688,10 @@ OfxDoubleInstance::OfxDoubleInstance(const boost::shared_ptr<OfxEffectInstance>&
     const std::string & doubleType = getDoubleType();
     if ( (doubleType == kOfxParamDoubleTypeNormalisedX) ||
          ( doubleType == kOfxParamDoubleTypeNormalisedXAbsolute) ) {
-        dblKnob->setValueIsNormalized(0, KnobDouble::eValueIsNormalizedX);
+        dblKnob->setValueIsNormalized(0, eValueIsNormalizedX);
     } else if ( (doubleType == kOfxParamDoubleTypeNormalisedY) ||
                 ( doubleType == kOfxParamDoubleTypeNormalisedYAbsolute) ) {
-        dblKnob->setValueIsNormalized(0, KnobDouble::eValueIsNormalizedY);
+        dblKnob->setValueIsNormalized(0, eValueIsNormalizedY);
     }
 
     double min = properties.getDoubleProperty(kOfxParamPropMin);
@@ -718,10 +718,10 @@ OfxDoubleInstance::OfxDoubleInstance(const boost::shared_ptr<OfxEffectInstance>&
     // and http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#APIChanges_1_2_SpatialParameters
     if (doubleType == kOfxParamDoubleTypeNormalisedX ||
         doubleType == kOfxParamDoubleTypeNormalisedXAbsolute) {
-        dblKnob->setValueIsNormalized(0, KnobDouble::eValueIsNormalizedX);
+        dblKnob->setValueIsNormalized(0, eValueIsNormalizedX);
     } else if (doubleType == kOfxParamDoubleTypeNormalisedY ||
               doubleType == kOfxParamDoubleTypeNormalisedYAbsolute) {
-        dblKnob->setValueIsNormalized(0, KnobDouble::eValueIsNormalizedY);
+        dblKnob->setValueIsNormalized(0, eValueIsNormalizedY);
     }
     dblKnob->setDefaultValuesAreNormalized(coordSystem == kOfxParamCoordinatesNormalised ||
                                            doubleType == kOfxParamDoubleTypeNormalisedX ||
@@ -1750,8 +1750,8 @@ OfxDouble2DInstance::OfxDouble2DInstance(const boost::shared_ptr<OfxEffectInstan
     const std::string & doubleType = getDoubleType();
     if (doubleType == kOfxParamDoubleTypeNormalisedXY ||
         doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute) {
-        dblKnob->setValueIsNormalized(0, KnobDouble::eValueIsNormalizedX);
-        dblKnob->setValueIsNormalized(1, KnobDouble::eValueIsNormalizedY);
+        dblKnob->setValueIsNormalized(0, eValueIsNormalizedX);
+        dblKnob->setValueIsNormalized(1, eValueIsNormalizedY);
     }
     // disable slider if the type is an absolute position
     if (doubleType == kOfxParamDoubleTypeXYAbsolute ||
@@ -1760,6 +1760,9 @@ OfxDouble2DInstance::OfxDouble2DInstance(const boost::shared_ptr<OfxEffectInstan
         dblKnob->disableSlider();
     }
 
+    if (isRectangleType > 0) {
+        dblKnob->setAsRectangle();
+    }
     std::vector<double> minimum(ofxDims);
     std::vector<double> maximum(ofxDims);
     std::vector<double> increment(ofxDims);
@@ -1805,8 +1808,8 @@ OfxDouble2DInstance::OfxDouble2DInstance(const boost::shared_ptr<OfxEffectInstan
                         doubleType == kOfxParamDoubleTypeXYAbsolute);
     if (doubleType == kOfxParamDoubleTypeNormalisedXY ||
         doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute) {
-        dblKnob->setValueIsNormalized(0 + startDimIndex, KnobDouble::eValueIsNormalizedX);
-        dblKnob->setValueIsNormalized(1 + startDimIndex, KnobDouble::eValueIsNormalizedY);
+        dblKnob->setValueIsNormalized(0 + startDimIndex, eValueIsNormalizedX);
+        dblKnob->setValueIsNormalized(1 + startDimIndex, eValueIsNormalizedY);
     }
     dblKnob->setDefaultValuesAreNormalized(coordSystem == kOfxParamCoordinatesNormalised ||
                                            doubleType == kOfxParamDoubleTypeNormalisedXY ||
@@ -2046,7 +2049,7 @@ OfxInteger2DInstance::OfxInteger2DInstance(const boost::shared_ptr<OfxEffectInst
     _knob = iKnob;
 
     if (isRectangleType) {
-        iKnob->disableSlider();
+        iKnob->setAsRectangle();
     }
     
     std::vector<int> minimum(ofxDims);

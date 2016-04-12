@@ -576,6 +576,13 @@ enum KnobClipBoardType
     eKnobClipBoardTypeCopyLink
 };
     
+enum ValueIsNormalizedEnum
+{
+    eValueIsNormalizedNone = 0, ///< indicating that the dimension holds a  non-normalized value.
+    eValueIsNormalizedX, ///< indicating that the dimension holds a value normalized against the X dimension of the project format
+    eValueIsNormalizedY ///< indicating that the dimension holds a value normalized against the Y dimension of the project format
+};
+    
 //typedef QFlags<StandardButtonEnum> StandardButtons;
 Q_DECLARE_FLAGS(StandardButtons,StandardButtonEnum)
     

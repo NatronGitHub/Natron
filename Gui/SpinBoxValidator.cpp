@@ -28,8 +28,7 @@
 
 #include "Engine/KnobTypes.h"
 #include "Gui/KnobUndoCommand.h"
-#include "Gui/KnobGuiDouble.h"
-#include "Gui/KnobGuiInt.h"
+#include "Gui/KnobGuiValue.h"
 #include "Gui/KnobGuiColor.h"
 #include "Gui/SpinBox.h"
 

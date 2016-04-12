@@ -35,8 +35,7 @@
 
 #include "Gui/KnobGui.h"
 #include "Gui/KnobGuiFile.h"
-#include "Gui/KnobGuiInt.h"
-#include "Gui/KnobGuiDouble.h"
+#include "Gui/KnobGuiValue.h"
 #include "Gui/KnobGuiBool.h"
 #include "Gui/KnobGuiButton.h"
 #include "Gui/KnobGuiChoice.h"

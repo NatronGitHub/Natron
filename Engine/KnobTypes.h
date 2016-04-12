@@ -82,6 +82,18 @@ public:
 
     static const std::string & typeNameStatic();
 
+    void setAsRectangle() {
+        if (getDimension() == 4) {
+            _isRectangle = true;
+            disableSlider();
+        }
+    }
+    
+    bool isRectangle() const
+    {
+        return _isRectangle;
+    }
+    
 public:
 
     void setIncrement(int incr, int index = 0);
@@ -106,6 +118,7 @@ private:
 
     std::vector<int> _increments;
     bool _disableSlider;
+    bool _isRectangle;
     static const std::string _typeNameStr;
 };
 
@@ -159,12 +172,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    enum ValueIsNormalizedEnum
-    {
-        eValueIsNormalizedNone = 0, ///< indicating that the dimension holds a  non-normalized value.
-        eValueIsNormalizedX, ///< indicating that the dimension holds a value normalized against the X dimension of the project format
-        eValueIsNormalizedY ///< indicating that the dimension holds a value normalized against the Y dimension of the project format
-    };
+    
 
     static KnobHelper * BuildKnob(KnobHolder* holder,
                                   const std::string &label,
@@ -295,6 +303,18 @@ public:
     bool getHasHostOverlayHandle() const;
     
     virtual bool useHostOverlayHandle() const OVERRIDE { return getHasHostOverlayHandle(); }
+
+    void setAsRectangle() {
+        if (getDimension() == 4) {
+            _isRectangle = true;
+            disableSlider();
+        }
+    }
+
+    bool isRectangle() const
+    {
+        return _isRectangle;
+    }
     
 public Q_SLOTS:
 
@@ -320,6 +340,7 @@ private:
 private:
     
     bool _spatial;
+    bool _isRectangle;
     std::vector<double>  _increments;
     std::vector<int> _decimals;
     bool _disableSlider;

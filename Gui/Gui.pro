@@ -125,9 +125,7 @@ SOURCES += \
     KnobGuiFile.cpp \
     FileTypeMainWindow_win.cpp \
     KnobGuiButton.cpp \
-    KnobGuiInt.cpp \
     KnobGuiBool.cpp \
-    KnobGuiDouble.cpp \
     KnobGuiChoice.cpp \
     KnobGuiSeparator.cpp \
     KnobGuiColor.cpp \
@@ -135,6 +133,7 @@ SOURCES += \
     KnobGuiGroup.cpp \
     KnobGuiTable.cpp \
     KnobGuiParametric.cpp \
+    KnobGuiValue.cpp \
     KnobUndoCommand.cpp \
     KnobWidgetDnD.cpp \
     Label.cpp \
@@ -278,9 +277,7 @@ HEADERS += \
     KnobGuiFactory.h \
     KnobGuiFile.h \
     KnobGuiButton.h \
-    KnobGuiInt.h \
     KnobGuiBool.h \
-    KnobGuiDouble.h \
     KnobGuiChoice.h \
     KnobGuiSeparator.h \
     KnobGuiColor.h \
@@ -288,6 +285,7 @@ HEADERS += \
     KnobGuiGroup.h \
     KnobGuiTable.h \
     KnobGuiParametric.h \
+    KnobGuiValue.h \
     KnobUndoCommand.h \
     KnobWidgetDnD.h \
     Label.h \
