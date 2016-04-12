@@ -106,7 +106,7 @@ public:
 Q_SIGNALS:
 
 
-    void incrementChanged(int incr, int index = 0);
+    void incrementChanged(double incr, int index = 0);
 
 private:
 

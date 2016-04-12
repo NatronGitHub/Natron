@@ -490,14 +490,7 @@ namespace openMVG {
             static std::size_t MaximumModels() { return 1; }
             
             enum CoDimensionEnum { CODIMENSION = 2 };
-            
-            /** 3D rigid transformation estimation (7 dof) with z=1
-             * Compute a Scale Rotation and Translation rigid transformation.
-             * This transformation provide a distortion-free transformation
-             * using the following formulation Xb = S * R * Xa + t.
-             * "Least-squares estimation of transformation parameters between two point patterns",
-             * Shinji Umeyama, PAMI 1991, DOI: 10.1109/34.88573
-             */
+        
             static void Solve(const Mat &x, const Mat &y, std::vector<Model> *Hs)
             {
                 Vec2 model;

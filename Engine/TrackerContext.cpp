@@ -1055,9 +1055,17 @@ TrackerContext::computeTransformParamsFromTracksAtTime(double refTime,
                                                        const std::vector<TrackMarkerPtr>& markers,
                                                        TransformData* data)
 {
+    
     assert(!markers.empty());
     std::vector<Point> x1, x2;
     extractSortedPointsFromMarkers(refTime, time, markers, jitterPeriod, jitterAdd, &x1, &x2);
+    
+    if (refTime == time) {
+        data->hasRotationAndScale = x1.size() > 1;
+        data->translation.x = data->translation.y = data->rotation = 0;
+        data->scale = 1.;
+        return;
+    }
     
     RectD rodRef = getInputRoDAtTime(refTime);
     RectD rodTime = getInputRoDAtTime(time);
@@ -1150,11 +1158,11 @@ TrackerContext::computeTransformParamsFromTracks(const std::vector<TrackMarkerPt
     boost::shared_ptr<KnobDouble> scaleKnob = _imp->scale.lock();
     boost::shared_ptr<KnobDouble> rotationKnob = _imp->rotate.lock();
     
-    translationKnob->removeAnimation(ViewSpec::all(),0);
-    translationKnob->removeAnimation(ViewSpec::all(),1);
+    translationKnob->resetToDefaultValue(0);
+    translationKnob->resetToDefaultValue(1);
     
-    scaleKnob->removeAnimation(ViewSpec::all(),0);
-    rotationKnob->removeAnimation(ViewSpec::all(),0);
+    scaleKnob->resetToDefaultValue(0);
+    rotationKnob->resetToDefaultValue(0);
     
     for (std::size_t i = 0; i < dataAtTime.size(); ++i) {
         if (smoothTJitter > 1) {
@@ -1179,7 +1187,7 @@ TrackerContext::computeTransformParamsFromTracks(const std::vector<TrackMarkerPt
         if (smoothRJitter > 1) {
             int halfJitter = smoothRJitter / 2;
             double avg = dataAtTime[i].data.rotation;
-            int nSamples = 1;
+            int nSamples = dataAtTime[i].data.hasRotationAndScale ? 1 : 0;
             int offset = 1;
             while (nSamples < halfJitter) {
                 bool canMoveForward = i + offset < dataAtTime.size();
@@ -1202,18 +1210,21 @@ TrackerContext::computeTransformParamsFromTracks(const std::vector<TrackMarkerPt
                     break;
                 }
             }
-        
-            avg /= nSamples;
+            if (nSamples) {
+                avg /= nSamples;
+            }
             
             rotationKnob->setValueAtTime(dataAtTime[i].time, avg, ViewSpec::all(), 0);
         } else {
-            rotationKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.rotation, ViewSpec::all(), 0);
+            if (dataAtTime[i].data.hasRotationAndScale) {
+                rotationKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.rotation, ViewSpec::all(), 0);
+            }
         }
         
         if (smoothSJitter > 1) {
             int halfJitter = smoothSJitter / 2;
             double avg = dataAtTime[i].data.scale;
-            int nSamples = 1;
+            int nSamples = dataAtTime[i].data.hasRotationAndScale ? 1 : 0;
             int offset = 1;
             while (nSamples < halfJitter) {
                 bool canMoveForward = i + offset < dataAtTime.size();
@@ -1236,11 +1247,15 @@ TrackerContext::computeTransformParamsFromTracks(const std::vector<TrackMarkerPt
                     break;
                 }
             }
-            avg /= nSamples;
+            if (nSamples) {
+                avg /= nSamples;
+                scaleKnob->setValueAtTime(dataAtTime[i].time, avg, ViewSpec::all(), 0);
+            }
             
-            scaleKnob->setValueAtTime(dataAtTime[i].time, avg, ViewSpec::all(), 0);
         } else {
-            scaleKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.scale, ViewSpec::all(), 0);
+            if (dataAtTime[i].data.hasRotationAndScale) {
+                scaleKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.scale, ViewSpec::all(), 0);
+            }
         }
     } // for (std::size_t i = 0; i < dataAtTime.size(); ++i)
     
