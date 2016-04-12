@@ -88,7 +88,6 @@ struct Point4D
     bool operator==(const Point4D & o) const;
 };
 
-
 /**
  * @brief A simple 3 * 3 matrix class layed out as such:
  *  a b c

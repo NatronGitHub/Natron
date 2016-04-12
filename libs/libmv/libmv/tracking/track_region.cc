@@ -555,8 +555,9 @@ class PixelDifferenceCostFunctor {
     double var_x = sXX - sX*sX;
     double var_y = sYY - sY*sY;
     double covariance_xy = sXY - sX*sY;
-
-    double correlation = covariance_xy / sqrt(var_x * var_y);
+      
+    double mult = var_x * var_y;
+    double correlation = mult != 0 ? covariance_xy / sqrt(mult) : 1.;
     LG << "Covariance xy: " << covariance_xy
        << ", var 1: " << var_x << ", var 2: " << var_y
        << ", correlation: " << correlation;

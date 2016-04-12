@@ -798,8 +798,25 @@ void runProsacForModel(const std::vector<Point>& x1,
         M2(0, i) = x2[i].x;
         M2(1, i) = x2[i].y;
     }
-    KernelType kernel(M1, w1, h1, M2, w2, h2);
-    ProsacReturnCodeEnum ret = prosac(kernel, foundModel);
+    
+    ProsacReturnCodeEnum ret;
+    
+    const std::size_t minSamples = (std::size_t)openMVG::robust::Similarity2DSolver::MinimumSamples();
+    if (x1.size() > minSamples) {
+        KernelType kernel(M1, w1, h1, M2, w2, h2);
+        ret = prosac(kernel, foundModel);
+    } else if (x1.size() == minSamples) {
+        std::vector<typename MODELTYPE::Model> models;
+        MODELTYPE::Solve(M1, M2, &models);
+        if (!models.empty()) {
+            *foundModel = models[0];
+            ret = eProsacReturnCodeFoundModel;
+        } else {
+            ret = eProsacReturnCodeNoModelFound;
+        }
+    } else {
+        ret = eProsacReturnCodeNotEnoughPoints;
+    }
     throwProsacError(ret, KernelType::MinimumSamples());
 }
 
@@ -827,6 +844,7 @@ TrackerContext::computeSimilarityFromNPoints(const std::vector<Point>& x1,
     openMVG::Vec4 model;
     runProsacForModel<openMVG::robust::Similarity2DSolver>(x1, x2, w1, h1, w2, h2, &model);
     openMVG::robust::Similarity2DSolver::rtsFromVec4(model, &translation->x, &translation->y, scale, rotate);
+    *rotate = Transform::toDegrees(*rotate);
 
 }
 
@@ -1155,14 +1173,32 @@ TrackerContext::computeTransformParamsFromTracks(const std::vector<TrackMarkerPt
     node->getEffectInstance()->beginChanges();
     
     boost::shared_ptr<KnobDouble> translationKnob = _imp->translate.lock();
+    boost::shared_ptr<KnobDouble> centerKnob = _imp->center.lock();
     boost::shared_ptr<KnobDouble> scaleKnob = _imp->scale.lock();
     boost::shared_ptr<KnobDouble> rotationKnob = _imp->rotate.lock();
     
     translationKnob->resetToDefaultValue(0);
     translationKnob->resetToDefaultValue(1);
     
+    centerKnob->resetToDefaultValue(0);
+    centerKnob->resetToDefaultValue(1);
+    
     scaleKnob->resetToDefaultValue(0);
     rotationKnob->resetToDefaultValue(0);
+    
+    // Set the center at the reference frame
+    Point centerValue = {0,0};
+    for (std::size_t i = 0; i < markers.size(); ++i) {
+        
+        boost::shared_ptr<KnobDouble> markerCenterKnob = markers[i]->getCenterKnob();
+        
+        centerValue.x += markerCenterKnob->getValueAtTime(refTime, 0);
+        centerValue.y += markerCenterKnob->getValueAtTime(refTime, 1);
+    }
+    centerValue.x /= markers.size();
+    centerValue.y /= markers.size();
+    
+    centerKnob->setValues(centerValue.x, centerValue.y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
     
     for (std::size_t i = 0; i < dataAtTime.size(); ++i) {
         if (smoothTJitter > 1) {

@@ -25,6 +25,8 @@ CONFIG += static-gui static-engine static-host-support static-breakpadclient sta
 QT += gui core opengl network
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 
+CONFIG += openmvg-flags
+
 !noexpat: CONFIG += expat
 
 INCLUDEPATH += google-test/include
@@ -49,7 +51,8 @@ SOURCES += \
     Image_Test.cpp \
     Lut_Test.cpp \
     KnobFile_Test.cpp \
-    Curve_Test.cpp
+    Curve_Test.cpp \
+    Tracker_Test.cpp
 
 HEADERS += \
     BaseTest.h
