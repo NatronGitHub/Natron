@@ -67,17 +67,151 @@ namespace openMVG {
             return inverse;
         }
         
+        inline Vec3 crossprod(const Vec3& p1, const Vec3& p2) {
+            return p1.cross(p2);
+        }
+        
+        /**
+         * \brief Compute a homography from 4 points correspondences
+         * \param p1 source point
+         * \param p2 source point
+         * \param p3 source point
+         * \param p4 source point
+         * \param q1 target point
+         * \param q2 target point
+         * \param q3 target point
+         * \param q4 target point
+         * \return the homography matrix that maps pi's to qi's
+         *
+         Using four point-correspondences pi ↔ pi^, we can set up an equation system to solve for the homography matrix H.
+         An algorithm to obtain these parameters requiring only the inversion of a 3 × 3 equation system is as follows.
+         From the four point-correspondences pi ↔ pi^ with (i ∈ {1, 2, 3, 4}),
+         compute h1 = (p1 × p2 ) × (p3 × p4 ), h2 = (p1 × p3 ) × (p2 × p4 ), h3 = (p1 × p4 ) × (p2 × p3 ).
+         Also compute h1^ , h2^ , h3^ using the same principle from the points pi^.
+         Now, the homography matrix H can be obtained easily from
+         H · [h1 h2 h3] = [h1^ h2^ h3^],
+         which only requires the inversion of the matrix [h1 h2 h3].
+         
+         Algo from:
+         http://www.dirk-farin.net/phd/text/AB_EfficientComputationOfHomographiesFromFourCorrespondences.pdf
+         */
+        inline bool
+        homography_from_four_points(const Vec3 &p1, const Vec3 &p2, const Vec3 &p3, const Vec3 &p4,
+                                    const Vec3 &q1, const Vec3 &q2, const Vec3 &q3, const Vec3 &q4,
+                                    Mat3 *H)
+        {
+            Mat3 invHp;
+            Mat3 Hp;
+            Hp.col(0) = crossprod(crossprod(p1,p2),crossprod(p3,p4));
+            Hp.col(1) = crossprod(crossprod(p1,p3),crossprod(p2,p4));
+            Hp.col(2) = crossprod(crossprod(p1,p4),crossprod(p2,p3));
+            
+            double detHp = Hp.determinant();
+            if (detHp == 0.) {
+                return false;
+            }
+            Mat3 Hq;
+            Hq.col(0) = crossprod(crossprod(q1,q2),crossprod(q3,q4));
+            Hq.col(1) = crossprod(crossprod(q1,q3),crossprod(q2,q4));
+            Hq.col(2) = crossprod(crossprod(q1,q4),crossprod(q2,q3));
+            
+            double detHq;
+            bool invertible;
+            Hp.computeInverseAndDetWithCheck(invHp, detHq,invertible);
+            if (!invertible) {
+                return false;
+            }
+            *H = Hq * invHp;
+            return true;
+        }
+        
+        
+        /**
+         In non-normalized coordinates, (0, 0) is the center of the upper-left pixel
+         and (w-1, h-1) is the center of the lower-right pixel.
+         
+         In normalized coordinates, (-1, h/w) is the upper-left corner of the upper-left pixel
+         and (1, -h/w) is the lowerright corner of the lower-righ pixel.
+         
+         image width is w in non-normalized units, 2 in normalized units
+         image height is h in non-normalized units, 2h/w in normalized units
+         
+         normalization matrix =
+         [ 2/w,    0, -(w - 1)/w]
+         [   0, -2/w,  (h - 1)/w]
+         [   0,    0,          1]
+         **/
         struct Mat3ModelNormalizer {
             
-            static void Normalize(Mat* normalizedPoints, Mat3* t, int w, int h)
+            static void Normalize(double *x, double *y, int w, int h)
             {
-                // Normalize point in image coordinates to [-.5, .5]
-                openMVG::NormalizePoints(*normalizedPoints, normalizedPoints, t, w, h);
+                *x = (2. / w) * *x - (w - 1.) / w;
+                *y = -(2. / w) * *y + (h - 1.) / w;
             }
             
-            static void Unnormalize(Mat3* model, const Mat3& t1, const Mat3& t2inv) {
+            static void Normalize(Mat* normalizedPoints, int w, int h)
+            {
+                assert(normalizedPoints->rows() == 2);
+                for (int i = 0; i < normalizedPoints->cols(); ++i) {
+                    Normalize(&(*normalizedPoints)(0,i), &(*normalizedPoints)(1,i), w, h);
+                }
+            }
+            
+            static void Normalize(Mat* x1, Mat* x2, int w1, int h1, int /*w2*/, int /*h2*/)
+            {
+                Mat3ModelNormalizer::Normalize(x1, w1, h1);
+                Mat3ModelNormalizer::Normalize(x2, w1, h1);
+            }
+            
+            static void RectificationChangeBoundingBox(const Mat3 &rect,
+                                                       double current_up_left_x, double current_up_left_y,
+                                                       double current_bottom_right_x, double current_bottom_right_y,
+                                                       double new_up_left_x, double new_up_left_y,
+                                                       double new_bottom_right_x, double new_bottom_right_y,
+                                                       Mat3 *rect_new)
+            {
+                assert(current_up_left_x != current_bottom_right_x && current_up_left_y != current_bottom_right_y);
+                assert(new_up_left_x != new_bottom_right_x && new_up_left_y != new_bottom_right_y);
+                
+                // Compute transformation A from new bounding box to current bounding box.
+                Mat3 A;
+                
+                homography_from_four_points(Vec3(     new_up_left_x,      new_up_left_y, 1),
+                                            Vec3(new_bottom_right_x,      new_up_left_y, 1),
+                                            Vec3(new_bottom_right_x, new_bottom_right_y, 1),
+                                            Vec3(     new_up_left_x, new_bottom_right_y, 1),
+                                            Vec3(     current_up_left_x,      current_up_left_y, 1.),
+                                            Vec3(current_bottom_right_x,      current_up_left_y, 1.),
+                                            Vec3(current_bottom_right_x, current_bottom_right_y, 1.),
+                                            Vec3(     current_up_left_x, current_bottom_right_y, 1.),
+                                            &A);
+                
+                
+                Mat3 Ainv;
+                double detA;
+                bool invertible;
+                A.computeInverseAndDetWithCheck(Ainv, detA,invertible, 0.);
+                assert(invertible);
+                assert(detA != 0.); // homography_from_four_points always returns a non-singular matrix
+                
+                Mat3 rect_A = rect * A;
+                *rect_new = Ainv * rect_A;
+            }
+            
+            static void RectificationNormalizedToCImg(const Mat3 &rect_norm,
+                                                      double aspectRatio,
+                                                      double width, double height,
+                                                      Mat3 *rect_cimg)
+            {
+                RectificationChangeBoundingBox(rect_norm, -1, 1./aspectRatio, 1, -1./aspectRatio,
+                                               -0.5, -0.5, width-0.5, height-0.5, rect_cimg);
+            }
+            
+            static void Unnormalize(Mat3* model, int w1, int h1) {
+                RectificationNormalizedToCImg(*model, (double)w1 / (double)h1, w1, h1, model);
                 // Unnormalize model from the computed conditioning.
-                *model = t2inv * (*model) * t1;
+                //*model = t2inv * (*model) * t1;
+                
             }
         };
         
@@ -151,14 +285,13 @@ namespace openMVG {
                 return openMVG::fundamental::kernel::SampsonError::Error(model, x1, x2);
             }
             
-            static void Normalize(Mat* x1, Mat* x2, Mat3* t1, Mat3* t2, int w1, int h1, int w2, int h2)
+            static void Normalize(Mat* x1, Mat* x2, int w1, int h1, int w2, int h2)
             {
-                Mat3ModelNormalizer::Normalize(x1, t1, w1, h1);
-                Mat3ModelNormalizer::Normalize(x2, t2, w2, h2);
+                Mat3ModelNormalizer::Normalize(x1, x2, w1, h1, w2, h2);
             }
             
-            static void Unnormalize(Model* model, const Mat3& t1, const Mat3& t2) {
-                Mat3ModelNormalizer::Unnormalize(model, t1, t2);
+            static void Unnormalize(Model* model, int w1, int h1) {
+                Mat3ModelNormalizer::Unnormalize(model, w1, h1);
             }
 
         };
@@ -174,63 +307,6 @@ namespace openMVG {
             
             enum CoDimensionEnum { CODIMENSION = 2 };
             
-            static Vec3 crossprod(const Vec3& p1, const Vec3& p2) {
-                return p1.cross(p2);
-            }
-            
-             /**
-              * \brief Compute a homography from 4 points correspondences
-              * \param p1 source point
-              * \param p2 source point
-              * \param p3 source point
-              * \param p4 source point
-              * \param q1 target point
-              * \param q2 target point
-              * \param q3 target point
-              * \param q4 target point
-              * \return the homography matrix that maps pi's to qi's
-              *
-              Using four point-correspondences pi ↔ pi^, we can set up an equation system to solve for the homography matrix H.
-              An algorithm to obtain these parameters requiring only the inversion of a 3 × 3 equation system is as follows.
-              From the four point-correspondences pi ↔ pi^ with (i ∈ {1, 2, 3, 4}),
-              compute h1 = (p1 × p2 ) × (p3 × p4 ), h2 = (p1 × p3 ) × (p2 × p4 ), h3 = (p1 × p4 ) × (p2 × p3 ).
-              Also compute h1^ , h2^ , h3^ using the same principle from the points pi^.
-              Now, the homography matrix H can be obtained easily from
-              H · [h1 h2 h3] = [h1^ h2^ h3^],
-              which only requires the inversion of the matrix [h1 h2 h3].
-              
-              Algo from:
-              http://www.dirk-farin.net/phd/text/AB_EfficientComputationOfHomographiesFromFourCorrespondences.pdf
-              */
-            static bool
-            homography_from_four_points(const Vec3 &p1, const Vec3 &p2, const Vec3 &p3, const Vec3 &p4,
-                                        const Vec3 &q1, const Vec3 &q2, const Vec3 &q3, const Vec3 &q4,
-                                        Mat3 *H)
-            {
-                Mat3 invHp;
-                Mat3 Hp;
-                Hp.col(0) = crossprod(crossprod(p1,p2),crossprod(p3,p4));
-                Hp.col(1) = crossprod(crossprod(p1,p3),crossprod(p2,p4));
-                Hp.col(2) = crossprod(crossprod(p1,p4),crossprod(p2,p3));
-                
-                double detHp = Hp.determinant();
-                if (detHp == 0.) {
-                    return false;
-                }
-                Mat3 Hq;
-                Hq.col(0) = crossprod(crossprod(q1,q2),crossprod(q3,q4));
-                Hq.col(1) = crossprod(crossprod(q1,q3),crossprod(q2,q4));
-                Hq.col(2) = crossprod(crossprod(q1,q4),crossprod(q2,q3));
-                
-                double detHq;
-                bool invertible;
-                Hp.computeInverseAndDetWithCheck(invHp, detHq,invertible);
-                if (!invertible) {
-                    return false;
-                }
-                *H = Hq * invHp;
-                return true;
-            }
             
             /// computes the center and average distance to the center of the columns of M weighted by W
             static void CenterScale(const Mat &M,
@@ -484,14 +560,13 @@ namespace openMVG {
                 return Homography2DSampsonDistance(model, x1, x2);
             }
             
-            static void Normalize(Mat* x1, Mat* x2, Mat3* t1, Mat3* t2, int w1, int h1, int w2, int h2)
+            static void Normalize(Mat* x1, Mat* x2, int w1, int h1, int w2, int h2)
             {
-                Mat3ModelNormalizer::Normalize(x1, t1, w1, h1);
-                Mat3ModelNormalizer::Normalize(x2, t2, w2, h2);
+                Mat3ModelNormalizer::Normalize(x1, x2, w1, h1, w2, h2);
             }
             
-            static void Unnormalize(Model* model, const Mat3& t1, const Mat3& t2) {
-                Mat3ModelNormalizer::Unnormalize(model, t1, t2);
+            static void Unnormalize(Model* model, int w1, int h1) {
+                Mat3ModelNormalizer::Unnormalize(model, w1, h1);
             }
         };
         
@@ -610,7 +685,7 @@ namespace openMVG {
                 return std::sqrt(dx * dx + dy * dy) * fac; // be consistent with image distance in each image
             }
             
-            static void Normalize(Mat* x1, Mat* x2, Mat3* t1, Mat3* t2, int w1, int h1, int /*w2*/, int /*h2*/)
+            static void Normalize(Mat* x1, Mat* x2, int w1, int h1, int /*w2*/, int /*h2*/)
             {
                 // Use same scale for both axis because this is a similarity
                 double s1 = (double)std::max(w1,h1);
@@ -622,21 +697,15 @@ namespace openMVG {
                     (*x2)(0,i) /= s1;
                     (*x2)(1,i) /= s1;
                 }
-                // we just store the scale factor in the first member of the matrice
-                (*t1)(0,0) = s1;
-                (*t2)(0,0) = s1;
             }
             
             
             
-            static void Unnormalize(Model* model, const Mat3& t1, const Mat3& t2) {
+            static void Unnormalize(Model* model, int w1, int h1) {
                 
-                double s1 = t1(0,0);
-                double s2 = t2(0,0);
+                double s1 = (double)std::max(w1,h1);
                 (*model)(0) *= s1;
-                (*model)(1) *= s2;
-                (*model)(2) *= s1 / s2;
-                (*model)(2) *= s1 / s2;
+                (*model)(1) *= s1;
             }
            
         };
@@ -677,7 +746,7 @@ namespace openMVG {
                 return tmp.norm();
             }
             
-            static void Normalize(Mat* x1, Mat* x2, Mat3* t1, Mat3* t2, int w1, int h1, int /*w2*/, int /*h2*/)
+            static void Normalize(Mat* x1, Mat* x2, int w1, int h1, int /*w2*/, int /*h2*/)
             {
                 double s1 = (double)std::max(w1,h1);
                 //double s2 = (double)std::max(w2,h2);
@@ -689,20 +758,14 @@ namespace openMVG {
                     (*x2)(1,i) /= s1;
 
                 }
-                
-                // we just store the scale factor in the first member of the matrice
-                (*t1)(0,0) = s1;
-                (*t2)(0,0) = s1;
+
             }
-            
-            
-            
-            static void Unnormalize(Model* model, const Mat3& t1, const Mat3& t2) {
+           
+            static void Unnormalize(Model* model, int w1, int h1) {
                 
-                double s1 = t1(0,0);
-                double s2 = t2(0,0);
+                double s1 = (double)std::max(w1,h1);
                 (*model)(0) *= s1;
-                (*model)(1) *= s2;
+                (*model)(1) *= s1;
             }
         };
         
@@ -732,8 +795,10 @@ namespace openMVG {
                                 )
             : _x1(x1)
             , _x2(x2)
-            , _N1(3, 3)
-            , _N2(3, 3)
+            , _w1(w1)
+            , _h1(h1)
+            , _w2(w2)
+            , _h2(h2)
             , beta(0.01)
             , inlierThreshold(0.)
             , maxOutliersProportion(0.8)
@@ -746,9 +811,7 @@ namespace openMVG {
                 assert(x1.rows() == x2.rows());
                 assert(x1.cols() == x2.cols());
                 
-                Solver::Normalize(&_x1, &_x2, &_N1, &_N2, w1, h1, w2, h2);
-                
-                _N2 = _N2.inverse();
+                Solver::Normalize(&_x1, &_x2, w1, h1, w2, h2);
                 
                 assert(w1 != 0 && h1 != 0 && w2 != 0 && h2 != 0);
                 double normalizedSigma = sigma / (double)(w1 * h1);
@@ -764,7 +827,7 @@ namespace openMVG {
             
             void Unnormalize(Model* model) const {
                 // Unnormalize model from the computed conditioning.
-                Solver::Unnormalize(model, _N1, _N2);
+                Solver::Unnormalize(model, _w1, _h1);
             }
             
             
@@ -813,7 +876,7 @@ namespace openMVG {
         private:
             
             Mat _x1, _x2;       // Normalized input data
-            Mat3 _N1,_N2;
+            int _w1,_h1,_w2,_h2;
             
             double beta; // beta is the probability that a match is declared inlier by mistake, i.e. the ratio of the "inlier"
             // surface by the total surface. The inlier surface is a disc with radius 1.96s for
