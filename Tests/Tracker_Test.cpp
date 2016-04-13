@@ -24,7 +24,7 @@
 
 #include <vector>
 #include <cmath>
-#include <random>
+#include <cstdlib>
 #include <gtest/gtest.h>
 #include <openMVG/robust_estimation/robust_estimator_Prosac.hpp>
 
