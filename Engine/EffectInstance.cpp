@@ -826,7 +826,7 @@ EffectInstance::getImage(int inputNb,
                 roi = thisRod;
             } else {
                 if (inputEffect) {
-                    Natron::StatusEnum stat = inputEffect->getRegionOfDefinition(inputEffect->getRenderHash(), time, scale, view, &inputRoD);
+                    StatusEnum stat = inputEffect->getRegionOfDefinition(inputEffect->getRenderHash(), time, scale, view, &inputRoD);
                     if (stat != eStatusFailed) {
                         inputRoDSet = true;
                     }

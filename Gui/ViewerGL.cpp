@@ -1390,7 +1390,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                      int textureIndex,
                                      bool isPartialRect,
                                      bool recenterViewer,
-                                     const Natron::Point& viewportCenter)
+                                     const Point& viewportCenter)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );

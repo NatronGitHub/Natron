@@ -343,7 +343,7 @@ struct TrackerContextPrivate
 {
     
     TrackerContext* _publicInterface;
-    boost::weak_ptr<Natron::Node> node;
+    boost::weak_ptr<Node> node;
     
     std::list<boost::weak_ptr<KnobI> > knobs,perTrackKnobs;
     boost::weak_ptr<KnobBool> enableTrackRed,enableTrackGreen,enableTrackBlue;
@@ -389,7 +389,7 @@ struct TrackerContextPrivate
     TrackScheduler<TrackArgsLibMV> scheduler;
     
     
-    TrackerContextPrivate(TrackerContext* publicInterface, const boost::shared_ptr<Natron::Node> &node);
+    TrackerContextPrivate(TrackerContext* publicInterface, const boost::shared_ptr<Node> &node);
     
     
     /// Make all calls to getValue() that are global to the tracker context in here

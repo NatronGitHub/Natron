@@ -3919,7 +3919,7 @@ Node::handleFormatKnob(KnobI* knob)
     
     _imp->effect->beginChanges();
     size->blockValueChanges();
-    size->setValues(f.width(), f.height(), ViewSpec::all(), Natron::eValueChangedReasonNatronInternalEdited);
+    size->setValues(f.width(), f.height(), ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
     size->unblockValueChanges();
     par->blockValueChanges();
     par->setValue(f.getPixelAspectRatio());
@@ -9744,7 +9744,7 @@ Node::checkForPremultWarningAndCheckboxes()
         }
     }
     
-    Natron::ImagePremultiplicationEnum premult = _imp->effect->getPremult();
+    ImagePremultiplicationEnum premult = _imp->effect->getPremult();
     
     //not premult
     if (premult != eImagePremultiplicationPremultiplied) {

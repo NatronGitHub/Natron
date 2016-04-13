@@ -37,7 +37,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface, const boost::shared_ptr<Natron::Node> &node)
+TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface, const boost::shared_ptr<Node> &node)
 : _publicInterface(publicInterface)
 , node(node)
 , knobs()
@@ -388,7 +388,7 @@ TrackArgsLibMV::getRedrawAreasNeeded(int time, std::list<RectD>* canonicalRects)
         boost::shared_ptr<KnobDouble> centerKnob = (*it)->natronMarker->getCenterKnob();
         boost::shared_ptr<KnobDouble> offsetKnob = (*it)->natronMarker->getOffsetKnob();
         
-        Natron::Point offset,center,btmLeft,topRight;
+        Point offset,center,btmLeft,topRight;
         offset.x = offsetKnob->getValueAtTime(time, 0);
         offset.y = offsetKnob->getValueAtTime(time, 1);
         
@@ -432,20 +432,20 @@ TrackerContextPrivate::setKnobKeyframesFromMarker(const mv::Marker& mvMarker,
         errorKnob->setValueAtTime(time, 0., ViewSpec::current(), 0);
     }
     
-    Natron::Point center;
+    Point center;
     center.x = (double)mvMarker.center(0);
     center.y = (double)TrackerFrameAccessor::invertYCoordinate(mvMarker.center(1), formatHeight);
     
     boost::shared_ptr<KnobDouble> offsetKnob = natronMarker->getOffsetKnob();
-    Natron::Point offset;
+    Point offset;
     offset.x = offsetKnob->getValueAtTime(time,0);
     offset.y = offsetKnob->getValueAtTime(time,1);
     
     // Set the center
     boost::shared_ptr<KnobDouble> centerKnob = natronMarker->getCenterKnob();
-    centerKnob->setValuesAtTime(time, center.x, center.y, ViewSpec::current(), Natron::eValueChangedReasonNatronInternalEdited);
+    centerKnob->setValuesAtTime(time, center.x, center.y, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
     
-    Natron::Point topLeftCorner,topRightCorner,btmRightCorner,btmLeftCorner;
+    Point topLeftCorner,topRightCorner,btmRightCorner,btmLeftCorner;
     topLeftCorner.x = mvMarker.patch.coordinates(0,0) - offset.x - center.x;
     topLeftCorner.y = TrackerFrameAccessor::invertYCoordinate(mvMarker.patch.coordinates(0,1),formatHeight) - offset.y - center.y;
     
@@ -464,10 +464,10 @@ TrackerContextPrivate::setKnobKeyframesFromMarker(const mv::Marker& mvMarker,
     boost::shared_ptr<KnobDouble> pntBtmRightKnob = natronMarker->getPatternBtmRightKnob();
     
     // Set the pattern Quad
-    pntTopLeftKnob->setValuesAtTime(time, topLeftCorner.x, topLeftCorner.y, ViewSpec::current(), Natron::eValueChangedReasonNatronInternalEdited);
-    pntTopRightKnob->setValuesAtTime(time, topRightCorner.x, topRightCorner.y, ViewSpec::current(), Natron::eValueChangedReasonNatronInternalEdited);
-    pntBtmLeftKnob->setValuesAtTime(time, btmLeftCorner.x, btmLeftCorner.y,ViewSpec::current(), Natron::eValueChangedReasonNatronInternalEdited);
-    pntBtmRightKnob->setValuesAtTime(time, btmRightCorner.x, btmRightCorner.y, ViewSpec::current(),Natron::eValueChangedReasonNatronInternalEdited);
+    pntTopLeftKnob->setValuesAtTime(time, topLeftCorner.x, topLeftCorner.y, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
+    pntTopRightKnob->setValuesAtTime(time, topRightCorner.x, topRightCorner.y, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
+    pntBtmLeftKnob->setValuesAtTime(time, btmLeftCorner.x, btmLeftCorner.y,ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
+    pntBtmRightKnob->setValuesAtTime(time, btmRightCorner.x, btmRightCorner.y, ViewSpec::current(),eValueChangedReasonNatronInternalEdited);
 }
 
 
@@ -512,7 +512,7 @@ TrackerContextPrivate::natronTrackerToLibMVTracker(bool useRefFrameForSearchWind
     } else {
         mvMarker->source = mv::Marker::TRACKED;
     }
-    Natron::Point nCenter;
+    Point nCenter;
     nCenter.x = centerKnob->getValueAtTime(time, 0);
     nCenter.y = centerKnob->getValueAtTime(time, 1);
     mvMarker->center(0) = nCenter.x;
@@ -526,7 +526,7 @@ TrackerContextPrivate::natronTrackerToLibMVTracker(bool useRefFrameForSearchWind
     (trackChannels[1] ? LIBMV_MARKER_CHANNEL_G : 0) |
     (trackChannels[2] ? LIBMV_MARKER_CHANNEL_B : 0);
     
-    Natron::Point searchWndBtmLeft,searchWndTopRight;
+    Point searchWndBtmLeft,searchWndTopRight;
     int searchWinTime = useRefFrameForSearchWindow ? mvMarker->reference_frame : time;
     searchWndBtmLeft.x = searchWindowBtmLeftKnob->getValueAtTime(searchWinTime, 0);
     searchWndBtmLeft.y = searchWindowBtmLeftKnob->getValueAtTime(searchWinTime, 1);
@@ -534,12 +534,12 @@ TrackerContextPrivate::natronTrackerToLibMVTracker(bool useRefFrameForSearchWind
     searchWndTopRight.x = searchWindowTopRightKnob->getValueAtTime(searchWinTime, 0);
     searchWndTopRight.y = searchWindowTopRightKnob->getValueAtTime(searchWinTime, 1);
     
-    Natron::Point offset;
+    Point offset;
     offset.x = offsetKnob->getValueAtTime(time,0);
     offset.y = offsetKnob->getValueAtTime(time,1);
     
     
-    Natron::Point tl,tr,br,bl;
+    Point tl,tr,br,bl;
     tl.x = patternTopLeftKnob->getValueAtTime(time, 0);
     tl.y = patternTopLeftKnob->getValueAtTime(time, 1);
     

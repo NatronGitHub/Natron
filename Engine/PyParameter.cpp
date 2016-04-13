@@ -550,14 +550,14 @@ void
 Int2DParam::set(int x, int y, double frame)
 {
     boost::shared_ptr<KnobInt> knob = _intKnob.lock();
-    knob->setValuesAtTime(frame, x, y, ViewSpec::current(), Natron::eValueChangedReasonNatronInternalEdited);
+    knob->setValuesAtTime(frame, x, y, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
 }
 
 void
 Int3DParam::set(int x, int y, int z, double frame)
 {
     boost::shared_ptr<KnobInt> knob = _intKnob.lock();
-    knob->setValuesAtTime(frame, x, y, z, ViewSpec::current(), Natron::eValueChangedReasonNatronInternalEdited);
+    knob->setValuesAtTime(frame, x, y, z, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
 }
 
 int

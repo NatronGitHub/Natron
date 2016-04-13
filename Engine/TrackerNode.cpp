@@ -29,8 +29,8 @@
 
 NATRON_NAMESPACE_ENTER;
 
-TrackerNode::TrackerNode(boost::shared_ptr<Natron::Node> node)
-: Natron::EffectInstance(node)
+TrackerNode::TrackerNode(boost::shared_ptr<Node> node)
+: EffectInstance(node)
 {
 }
 
@@ -101,7 +101,7 @@ TrackerNode::isInputOptional(int /*inputNb*/) const
 }
 
 void
-TrackerNode::addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps)
+TrackerNode::addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps)
 {
     
     if (inputNb != 1) {
@@ -113,9 +113,9 @@ TrackerNode::addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents
 }
 
 void
-TrackerNode::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
+TrackerNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 {
-    depths->push_back(Natron::eImageBitDepthFloat);
+    depths->push_back(eImageBitDepthFloat);
 }
 
 void

@@ -1186,7 +1186,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
             qDebug() << message.c_str();
             errorDialog(title, message, false);
             
-            return boost::shared_ptr<Natron::Node>();
+            return boost::shared_ptr<Node>();
         }
     }
     

@@ -215,7 +215,7 @@ public:
         
     };
     
-    TrackerContext(const boost::shared_ptr<Natron::Node> &node);
+    TrackerContext(const boost::shared_ptr<Node> &node);
     
     virtual ~TrackerContext();
     
@@ -224,7 +224,7 @@ public:
     void save(TrackerContextSerialization* serialization) const;
 
     
-    boost::shared_ptr<Natron::Node> getNode() const;
+    boost::shared_ptr<Node> getNode() const;
     
     TrackMarkerPtr createMarker();
     

@@ -29,16 +29,16 @@
 
 NATRON_NAMESPACE_ENTER;
 
-class TrackerNode : Natron::EffectInstance
+class TrackerNode : EffectInstance
 {
 public:
     
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
     {
         return new TrackerNode(n);
     }
     
-    TrackerNode(boost::shared_ptr<Natron::Node> node);
+    TrackerNode(boost::shared_ptr<Node> node);
     
     virtual ~TrackerNode();
     
@@ -80,14 +80,14 @@ public:
     
     virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE FINAL;
     
-    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     
     virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
     
-    virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return Natron::eRenderSafetyFullySafeFrame;
+        return eRenderSafetyFullySafeFrame;
     }
     
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN

@@ -115,7 +115,7 @@ public:
     bool isViewerPaused;
     
     bool recenterViewport;
-    Natron::Point viewportCenter;
+    Point viewportCenter;
 
 };
 
