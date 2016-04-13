@@ -25,18 +25,22 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Engine/TrackerContext.h"
+
 #include <list>
 
+#include "Global/Macros.h"
 
-
+GCC_DIAG_OFF(unused-function)
+GCC_DIAG_OFF(unused-parameter)
 #include <libmv/autotrack/autotrack.h>
+GCC_DIAG_ON(unused-function)
+GCC_DIAG_ON(unused-parameter)
 
 #include <openMVG/robust_estimation/robust_estimator_Prosac.hpp>
 
-#include "Engine/EngineFwd.h"
 #include "Engine/RectD.h"
-
-#include "Engine/TrackerContext.h"
+#include "Engine/EngineFwd.h"
 
 
 #define kTrackBaseName "track"
