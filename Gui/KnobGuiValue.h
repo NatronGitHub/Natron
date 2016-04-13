@@ -87,12 +87,13 @@ public Q_SLOTS:
     void onIncrementChanged(double incr, int index = 0);
     void onDecimalsChanged(int deci, int index = 0);
     
-    void onDimensionSwitchClicked();
+    void onDimensionSwitchClicked(bool);
     
     void onRectangleFormatButtonClicked();
     
 protected:
     
+    void getSpinBox(int dim, SpinBox** spinbox, Label** label = 0) const;
 
     virtual bool isSliderDisabled() const = 0;
     
@@ -122,6 +123,21 @@ protected:
     
     virtual void getDecimals(std::vector<int>* /*decimals*/) const {}
     
+    virtual void addExtraWidgets(QHBoxLayout* /*containerLayout*/) {}
+    
+    virtual void _hide() OVERRIDE;
+    virtual void _show() OVERRIDE;
+    
+    virtual void setEnabledExtraGui(bool /*enabled*/) {}
+    
+    virtual void onDimensionsFolded() {}
+    
+    virtual void onDimensionsExpanded() {}
+    
+    virtual void updateExtraGui(const std::vector<double>& /*values*/) {
+        
+    }
+    
 private:
     
     /**
@@ -145,8 +161,6 @@ private:
     void setMinimum(int);
     
     virtual bool shouldAddStretch() const OVERRIDE FINAL;
-    virtual void _hide() OVERRIDE FINAL;
-    virtual void _show() OVERRIDE FINAL;
     virtual void setEnabled() OVERRIDE FINAL;
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;

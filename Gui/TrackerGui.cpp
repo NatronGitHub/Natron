@@ -1006,6 +1006,7 @@ TrackerGui::drawOverlays(double time,
                         
                         ///Draw center position
                         
+                        glEnable(GL_POINT_SMOOTH);
                         glBegin(GL_POINTS);
                         if (!showErrorColor) {
                             glColor3f(0.5 * l,0.5 * l,0.5 * l);
@@ -1031,6 +1032,7 @@ TrackerGui::drawOverlays(double time,
                             glVertex2d(it2->second.first.x, it2->second.first.y);
                         }
                         glEnd();
+                        glDisable(GL_POINT_SMOOTH);
                         
                         glBegin(GL_LINE_STRIP);
                         glColor3f(0.5 * l,0.5 * l,0.5 * l);
@@ -2153,7 +2155,12 @@ TrackerGui::penDown(double time,
             //If we hit the interact, make sure it is selected
             if (_imp->interactMarker) {
                 if (!isSelected) {
+                    context->beginEditSelection();
+                    if (!modCASIsShift(e)) {
+                        context->clearSelection(TrackerContext::eTrackSelectionViewer);
+                    }
                     context->addTrackToSelection(_imp->interactMarker, TrackerContext::eTrackSelectionViewer);
+                    context->endEditSelection(TrackerContext::eTrackSelectionViewer);
                 }
             }
             

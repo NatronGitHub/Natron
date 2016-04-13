@@ -423,7 +423,11 @@ TrackerContextPrivate::setKnobKeyframesFromMarker(const mv::Marker& mvMarker,
     int time = mvMarker.frame;
     boost::shared_ptr<KnobDouble> errorKnob = natronMarker->getErrorKnob();
     if (result) {
-        errorKnob->setValueAtTime(time, 1. - result->correlation, ViewSpec::current(), 0);
+        double corr = result->correlation;
+        if (corr != corr) {
+            corr = 1.;
+        }
+        errorKnob->setValueAtTime(time, 1. - corr, ViewSpec::current(), 0);
     } else {
         errorKnob->setValueAtTime(time, 0., ViewSpec::current(), 0);
     }
@@ -726,6 +730,7 @@ TrackerContextPrivate::trackStepLibMV(int trackIndex, const TrackArgsLibMV& args
 #ifdef TRACE_LIB_MV
             qDebug() << QThread::currentThread() << "Tracking FAILED (" << (int)result.termination <<  ") for track" << trackIndex << "at frame" << time;
 #endif
+            // Todo: report error to user
             return false;
         }
         

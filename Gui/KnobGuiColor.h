@@ -46,7 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/EngineFwd.h"
 
 #include "Gui/CurveSelection.h"
-#include "Gui/KnobGui.h"
+#include "Gui/KnobGuiValue.h"
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
@@ -105,14 +105,16 @@ private:
 };
 
 
-class KnobGuiColor
-    : public KnobGui
+class KnobGuiColor : public KnobGuiValue
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
-
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
+    
+    
 public:
+    
     static KnobGui * BuildKnobGui(KnobPtr knob,
                                   DockablePanel *container)
     {
@@ -120,91 +122,75 @@ public:
     }
 
     KnobGuiColor(KnobPtr knob,
-                  DockablePanel *container);
-
-    virtual ~KnobGuiColor() OVERRIDE;
+               DockablePanel *container);
     
-    virtual void removeSpecificGui() OVERRIDE FINAL;
-
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
-
-    virtual bool getAllDimensionsVisible() const OVERRIDE FINAL;
-
-    int getDimensionForSpinBox(const SpinBox* spinbox) const;
+    virtual ~KnobGuiColor() {}
+    
     
 public Q_SLOTS:
+
     
-    void onSpinBoxValueChanged();
-
-    void onMinMaxChanged(double mini, double maxi, int index);
-    void onDisplayMinMaxChanged(double mini, double maxi, int index);
-
     void showColorDialog();
-
-    void setPickingEnabled(bool enabled);
-
-
-    void onPickingEnabled(bool enabled);
-
-    void onDimensionSwitchClicked();
-
-    void onSliderValueChanged(double v);
     
-    void onSliderEditingFinished(bool hasMovedOnce);
-
+    void setPickingEnabled(bool enabled);
+    
+    void onPickingEnabled(bool enabled);
+    
     void onMustShowAllDimension();
-
+    
     void onDialogCurrentColorChanged(const QColor & color);
-
+    
 Q_SIGNALS:
-
+    
     void dimensionSwitchToggled(bool b);
-
+    
 private:
     
-    void onColorChangedInternal();
-
-
-    void expandAllDimensions();
-    void foldAllDimensions();
-
-    virtual bool shouldAddStretch() const OVERRIDE { return false; }
-    virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
-    virtual void _hide() OVERRIDE FINAL;
-    virtual void _show() OVERRIDE FINAL;
-    virtual void setEnabled() OVERRIDE FINAL;
-    virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
-    virtual void updateGUI(int dimension) OVERRIDE FINAL;
-    virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension,AnimationLevelEnum level) OVERRIDE FINAL;
-    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
-    virtual void updateToolTip() OVERRIDE FINAL;
-    virtual void reflectModificationsState() OVERRIDE FINAL;
+    virtual bool isSpatialType() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+    
+    virtual bool isSliderDisabled() const OVERRIDE FINAL WARN_UNUSED_RETURN {
+        return false;
+    }
+    
+    virtual bool isRectangleType() const OVERRIDE FINAL WARN_UNUSED_RETURN {
+        return false;
+    }
+    
+    virtual void disableSlider() OVERRIDE FINAL {
+        
+    }
+    
+    virtual void connectKnobSignalSlots() OVERRIDE FINAL;
+    
+    virtual void getIncrements(std::vector<double>* increments) const OVERRIDE FINAL;
+    
+    virtual void getDecimals(std::vector<int>* decimals) const OVERRIDE FINAL;
+    
+    virtual void addExtraWidgets(QHBoxLayout* containerLayout) OVERRIDE FINAL;
+    
+    virtual void updateExtraGui(const std::vector<double>& values) OVERRIDE FINAL;
     
     void updateLabel(double r, double g, double b, double a);
-    virtual void refreshDimensionName(int dim) OVERRIDE FINAL;
 
+    virtual void _show() OVERRIDE FINAL ;
+    
+    virtual void _hide() OVERRIDE FINAL;
+    
+    virtual void setEnabledExtraGui(bool enabled) OVERRIDE FINAL;
+    
+    virtual void onDimensionsFolded() OVERRIDE FINAL;
+    
+    virtual void onDimensionsExpanded() OVERRIDE FINAL;
+    
 private:
-    QWidget *mainContainer;
-    QHBoxLayout *mainLayout;
-    QWidget *boxContainers;
-    QHBoxLayout *boxLayout;
-    QWidget *colorContainer;
-    QHBoxLayout *colorLayout;
-    Label *_rLabel;
-    Label *_gLabel;
-    Label *_bLabel;
-    Label *_aLabel;
-    SpinBox *_rBox;
-    SpinBox *_gBox;
-    SpinBox *_bBox;
-    SpinBox *_aBox;
+    
+    boost::weak_ptr<KnobColor> _knob;
+    
     ColorPickerLabel *_colorLabel;
     Button *_colorDialogButton;
-    Button *_dimensionSwitchButton;
-    ScaleSliderQWidget* _slider;
-    int _dimension;
-    boost::weak_ptr<KnobColor> _knob;
     std::vector<double> _lastColor;
 };
 

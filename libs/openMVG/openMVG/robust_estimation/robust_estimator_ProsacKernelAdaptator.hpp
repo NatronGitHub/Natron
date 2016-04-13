@@ -11,6 +11,7 @@
 #include <vector>
 #include <cassert>
 #include <cmath>
+#include <cfloat>
 #include <algorithm>
 
 #include "openMVG/multiview/solver_homography_kernel.hpp"
@@ -74,9 +75,9 @@ namespace openMVG {
                 openMVG::NormalizePoints(*normalizedPoints, normalizedPoints, t, w, h);
             }
             
-            static void Unnormalize(Mat3* model, const Mat3& t1, const Mat3& t2) {
+            static void Unnormalize(Mat3* model, const Mat3& t1, const Mat3& t2inv) {
                 // Unnormalize model from the computed conditioning.
-                *model = t2.inverse() * (*model) * t1;
+                *model = t2inv * (*model) * t1;
             }
         };
         
@@ -173,6 +174,210 @@ namespace openMVG {
             
             enum CoDimensionEnum { CODIMENSION = 2 };
             
+            static Vec3 crossprod(const Vec3& p1, const Vec3& p2) {
+                return p1.cross(p2);
+            }
+            
+             /**
+              * \brief Compute a homography from 4 points correspondences
+              * \param p1 source point
+              * \param p2 source point
+              * \param p3 source point
+              * \param p4 source point
+              * \param q1 target point
+              * \param q2 target point
+              * \param q3 target point
+              * \param q4 target point
+              * \return the homography matrix that maps pi's to qi's
+              *
+              Using four point-correspondences pi ↔ pi^, we can set up an equation system to solve for the homography matrix H.
+              An algorithm to obtain these parameters requiring only the inversion of a 3 × 3 equation system is as follows.
+              From the four point-correspondences pi ↔ pi^ with (i ∈ {1, 2, 3, 4}),
+              compute h1 = (p1 × p2 ) × (p3 × p4 ), h2 = (p1 × p3 ) × (p2 × p4 ), h3 = (p1 × p4 ) × (p2 × p3 ).
+              Also compute h1^ , h2^ , h3^ using the same principle from the points pi^.
+              Now, the homography matrix H can be obtained easily from
+              H · [h1 h2 h3] = [h1^ h2^ h3^],
+              which only requires the inversion of the matrix [h1 h2 h3].
+              
+              Algo from:
+              http://www.dirk-farin.net/phd/text/AB_EfficientComputationOfHomographiesFromFourCorrespondences.pdf
+              */
+            static bool
+            homography_from_four_points(const Vec3 &p1, const Vec3 &p2, const Vec3 &p3, const Vec3 &p4,
+                                        const Vec3 &q1, const Vec3 &q2, const Vec3 &q3, const Vec3 &q4,
+                                        Mat3 *H)
+            {
+                Mat3 invHp;
+                Mat3 Hp;
+                Hp.col(0) = crossprod(crossprod(p1,p2),crossprod(p3,p4));
+                Hp.col(1) = crossprod(crossprod(p1,p3),crossprod(p2,p4));
+                Hp.col(2) = crossprod(crossprod(p1,p4),crossprod(p2,p3));
+                
+                double detHp = Hp.determinant();
+                if (detHp == 0.) {
+                    return false;
+                }
+                Mat3 Hq;
+                Hq.col(0) = crossprod(crossprod(q1,q2),crossprod(q3,q4));
+                Hq.col(1) = crossprod(crossprod(q1,q3),crossprod(q2,q4));
+                Hq.col(2) = crossprod(crossprod(q1,q4),crossprod(q2,q3));
+                
+                double detHq;
+                bool invertible;
+                Hp.computeInverseAndDetWithCheck(invHp, detHq,invertible);
+                if (!invertible) {
+                    return false;
+                }
+                *H = Hq * invHp;
+                return true;
+            }
+            
+            /// computes the center and average distance to the center of the columns of M weighted by W
+            static void CenterScale(const Mat &M,
+                             const Vec &W,
+                             Vec2 *m,
+                             double *scale)
+            {
+                
+                assert(M.cols() == W.cols() && M.rows() == m->rows());
+                double sumW = W.sum();
+                *scale = 0.;
+                if (sumW == 0.) {
+                    m->setZero();
+                    return;
+                }
+                *m = (M * W) / sumW;
+                for (int i = 0; i < M.cols(); ++i) {
+                    *scale += W(i) * (M.col(i) - *m).norm();
+                }
+                assert(sumW != 0);
+                *scale /= sumW;
+            }
+            
+            /// compute H-matrix using DLT method [HZ, Sec. 4.1, p89]
+            static int Homography2DFromNPointsDLT(const Mat &X1,
+                                                  const Mat &X2,
+                                                  const Vec& weights,
+                                                  bool normalize,
+                                                  Mat3 *H)
+            {
+                
+                assert(X1.rows() == 2 && X2.rows() == 2 && X1.cols() == X2.cols() && X1.cols() == weights.rows());
+                const int n = X1.cols();
+                Vec2 center1, center2;
+                double scale1 = 1.;
+                double scale2 = 1.;
+                center1.setZero();
+                center2.setZero();
+                if (n < 4) {
+                    return 0; // there must be at least 4 matches
+                }
+                if (normalize) {
+                    CenterScale(X1, weights, &center1, &scale1);
+                    CenterScale(X2, weights, &center2, &scale2);
+                    if( scale1 < FLT_EPSILON || scale2 < FLT_EPSILON ) {
+                        return 0;
+                    }
+                    
+                    scale1 = std::sqrt(2.)/scale1;
+                    scale2 = std::sqrt(2.)/scale2;
+                }
+                
+                
+                
+                // form a linear system Ax=0: for each selected pair of points m1 & m2,
+                // X_i  = (x_i,  y_i,  w_i)
+                // X'_i = (x'_i, y'_i, w'_i)
+                // A_i = [    O^T     -w'_i.X_i^T  y'_i.X_i^T]
+                //       [ w'_i.X_i^T      O^T    -x'_i.X_i^T]
+                //     ( h1 ) (first row of H)
+                // x = ( h2 ) (second row of H)
+                //     ( h3 ) (third row of H)
+                // SVD  Decomposition A = UDV^T (destructive wrt A)
+                // h is the column of V associated with the smallest singular value of A
+                // or h is the eigenvector associated with the smallest eigenvalue of AtA
+                typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> ColMajorMat;
+                ColMajorMat A(2*n,9);
+                
+                A.setZero();
+                int nbInliers = 0;
+                for( int i = 0; i < n; ++i ) {
+                    if (weights[i] > 0.) {
+                        Vec3 x1h((X1(0,i) - center1(0)) * scale1, (X1(1,i) - center1(1)) * scale1, 1.);
+                        Vec2 x2 = (X2.col(i) - center2) * scale2;
+                        const double w = weights(i); // each equation is weighted by weights[i]
+                        
+                        
+                        A(nbInliers * 2, 3) = -w * x1h(0);
+                        A(nbInliers * 2, 4) = -w * x1h(1);
+                        A(nbInliers * 2, 5) = -w * x1h(2);
+                        
+                        A(nbInliers * 2, 6) = w * x2(1) * x1h(0);
+                        A(nbInliers * 2, 7) = w * x2(1) * x1h(1);
+                        A(nbInliers * 2, 8) = w * x2(1) * x1h(2);
+                        
+                        A(nbInliers * 2 + 1, 0) = w * x1h(0);
+                        A(nbInliers * 2 + 1, 1) = w * x1h(1);
+                        A(nbInliers * 2 + 1, 2) = w * x1h(2);
+                        
+                        A(nbInliers * 2 + 1, 6) = -w * x2(0) * x1h(0);
+                        A(nbInliers * 2 + 1, 7) = -w * x2(0) * x1h(1);
+                        A(nbInliers * 2 + 1, 8) = -w * x2(0) * x1h(2);
+                        
+                        ++nbInliers;
+                    }
+                }
+                if (nbInliers < 4) {
+                    return 0;
+                }
+                A.resize(2*nbInliers,9);
+                                 
+                typedef Eigen::Matrix<double, 9, 1> Vec9;
+                Eigen::JacobiSVD<ColMajorMat> svd(A ,Eigen::ComputeThinU | Eigen::ComputeThinV);
+                
+                Vec9 b;
+                b.setZero();
+                Vec9 h = svd.solve(b);
+                if (svd.rank() < 8) {
+                    return 0; // degenerate case
+                }
+                
+                // take the last column of v as a solution of Af = 0
+                H->row(0) = h.segment(0,3);
+                H->row(1) = h.segment(3,3);
+                H->row(2) = h.segment(6,3);
+                
+                // apply the transformation that is inverse
+                // to what we used to normalize the point coordinates
+                if (normalize) {
+                    Mat3 T1;
+                    T1.setZero();
+                    T1(0,0) = scale1;
+                    T1(0,2) = -scale1*center1(0);
+                    T1(1,1) = scale1;
+                    T1(1,2) = -scale1*center1(1);
+                    T1(2,2) = 1.;
+        
+                    Mat3 invT2;
+                    invT2.setZero();
+                    invT2(0,0) = 1./scale2;
+                    invT2(0,2) = center2(0);
+                    invT2(1,1) = 1/scale2;
+                    invT2(1,2) = center2(1);
+                    invT2(2,2) = 1.;
+                    // H <- inverse(T1)*H*T0
+                    Mat3 HT1 = *H * T1;
+                    *H = invT2 * HT1;
+                }
+                
+                // normalize H using the norm_inf, since the Frobenius norm may cause overflows (don't make H(3,3) = 1, since it may be very close to 0)
+                double norm = H->lpNorm<Eigen::Infinity>();
+                assert(norm != 0);
+                *H /= norm;
+                
+                return 1;
+            }
+            
             /**
              * Computes the homography that transforms x to y with the Direct Linear
              * Transform (DLT).
@@ -185,7 +390,32 @@ namespace openMVG {
              */
             static void Solve(const Mat &x, const Mat &y, std::vector<Model> *Hs)
             {
-                return openMVG::homography::kernel::FourPointSolver::Solve(x , y, Hs);
+                assert(x.cols() == y.cols() && x.rows() == y.rows() && x.rows() == 2);
+                if (x.cols() == 4) {
+                    // Convert to homogeneous coords
+                    Mat p(3,4), q(3,4);
+                    for (int i = 0; i < 4; ++i) {
+                        p(0,i) = x(0,i);
+                        p(1,i) = x(1,i);
+                        p(2,i) = 1.;
+                        
+                        q(0,i) = y(0,i);
+                        q(1,i) = y(1,i);
+                        q(2,i) = 1.;
+                    }
+                    Mat3 h;
+                    if (homography_from_four_points(p.col(0), p.col(1), p.col(2), p.col(3),
+                                                    q.col(0), q.col(1), q.col(2), q.col(3),&h)) {
+                        Hs->push_back(h);
+                    }
+                    
+                } else {
+                    Vec weights = Vec::Ones(x.cols(), 1);
+                    Mat3 h;
+                    if (Homography2DFromNPointsDLT(x, y, weights, true, &h)) {
+                        Hs->push_back(h);
+                    }
+                }
             }
             
             /// Beta is the probability that a match is declared inlier by mistake,
@@ -229,30 +459,16 @@ namespace openMVG {
                 double h4 = model(1,0), h5 = model(1,1), h6 = model(1,2);
                 double h7 = model(2,0), h8 = model(2,1), h9 = model(2,2);
                 
-                Vec2 t(x1 * h1 + y1 * h2 + h3 - x1 * x2 * h7- y1 * x2 * h8 - x2 * h9,
-                       x1 *h4 + y1 * h5 + h6 - x1 * y2 * h7 - y1 * y2 * h8 - y2 * h9);
+                Vec2 t(x1 * h1 + y1 * h2 + h3 - x1 * x2 * h7 - y1 * x2 * h8 - x2 * h9,
+                       x1 * h4 + y1 * h5 + h6 - x1 * y2 * h7 - y1 * y2 * h8 - y2 * h9);
                 
                 double j1 = h1-h7*x2, j2 = h2-h8*x2, j3 = -h7*x1-h8*y1-h9, j4 = h4-h7*y2, j5 =h5-h8*y2;
+                                
+                Mat J(2,4);
+                J << j1, j2, j3, 0,
+                    j4, j5, 0, j3;
                 
-                typedef Eigen::Matrix<double, 2, 4> Mat24;
-                typedef Eigen::Matrix<double, 4, 2> Mat42;
-                
-                Mat24 J;
-                J(0,0) = j1; J(0,1) = j2; J(0,2) = j3; J(0,3) = 0;
-                J(1,0) = j4; J(1,1) = j5; J(1,2) = 0; J(1,3) = j3;
-                
-                // J
                 *dX = J.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(t);
-                
-                /*Mat2 JJt = J * J.transpose();
-                double det = JJt.determinant();
-                if (det != 0.) {
-                    Mat2 invJJt = JJt.inverse();
-                    *dX = J.transpose() * Vec2(invJJt * t);
-                } else {
-                    // if the closed-form formula for the Moore-Penrose pseudo-inverse doesn't work, use SVD
-                    *dX = pseudoInverse<Mat24,Mat42>(J) * t;
-                }*/
 
             }
             
@@ -312,113 +528,58 @@ namespace openMVG {
              Shinji Umeyama, IEEE PAMI 13(9), April 1991 (eqs. 40 to 43)
              */
             static int Similarity2DFromNPoints(const Mat &x1,
+                                               const Mat &x2,
+                                               Vec4 *similarity)
+            {
+                assert(x1.rows() == 2 && x2.rows() == 2 && x1.cols() == x2.cols());
+                Mat3 Rt = Eigen::umeyama(x1, x2);
+                                
+                // S = (tx, ty, c.sin(alpha), c.cos(alpha))
+                (*similarity)(0) =  Rt(0, 2);
+                (*similarity)(1) =  Rt(1, 2);
+                (*similarity)(2) =  Rt(1, 0);
+                (*similarity)(3) =  Rt(0, 0);
+                
+                return 1;
+
+                
+            }
+            
+            /*static int Similarity2DFromNPointsWeighted(const Mat &x1,
                                         const Mat &x2,
                                         const Vec& weights,
-                                        Vec4 *S)
+                                        Vec4 *similarity)
             {
                 assert(x1.rows() == 2 && x2.rows() == 2 && x1.cols() == x2.cols() && weights.rows() == x1.cols());
-
-                const int n = x1.cols() ;
                 
-                if (n < 2) {
-                    return 0; // there must be at least 2 matches
-                }
-                
+                Mat x1_w,x2_w;
                 double sumW = 0;
                 for (int i = 0; i < weights.rows();++i) {
-                    sumW += weights[i];
+                    if (weights[i] > 0.) {
+                        x1_w.resize(x1.rows(), x1_w.cols() + 1);
+                        x2_w.resize(x2.rows(), x2_w.cols() + 1);
+                        sumW += weights[i];
+                        x1_w(0, i) = x1(0, i) * weights[i];
+                        x1_w(1, i) = x1(1, i) * weights[i];
+                        x2_w(0, i) = x2(0, i) * weights[i];
+                        x2_w(1, i) = x2(1, i) * weights[i];
+                    }
                 }
                 if (sumW <= 0) {
                     return 0;
                 }
-                Vec2 mu1 = (x1 * weights) / sumW;
-                Vec2 mu2 = (x2 * weights) / sumW;
-                double var1 = 0.;
-                //double var2 = 0; // var2 is only used to compute the value of the minimum (Umeyama, eq. (33))
-                double covar = 0;
-                int nbInliers = 0;
-                for (int i = 0; i < n; ++i) {
-                    if (weights(i) > 0) {
-                        Vec2 dx1 = x1.col(i) - mu1;
-                        Vec2 dx2 = x2.col(i) - mu2;
-                        var1 += weights(i) * dx1.dot(dx1); //inner_prod(dx1, dx1);
-                        //var2 += weights(i)*inner_prod(dx2, dx2);
-                        // covar can be updated using outer prod:
-                        // (outer_prod (v1, v2)) [i] [j] = v1 [i] * v2 [j]
-                        covar += weights(i) * (dx2(1) * dx1(0) - dx2(0) * dx1(1));
-                        ++nbInliers;
-                    }
-                }
-                if (var1 == 0) {
-                    return 0; // there must be at least 2 distinct points
-                }
-                if (nbInliers < 2) {
-                    return 0; // there must be at least 2 matches
-                }
-                var1 /= sumW;
-                //var2 /= sumW;
-                covar /= sumW;
-                // TODO: 2x2 SVD algorithm (T=theta, P=phi s=sigma) "direct two-angle method" :
-                //[[cos(T) sin(T)][-sin(T) cos(T)]]^T [[a b][c d]] [[cos(P) sin(P)][-sin(P) cos(P)]] = [[s_1 0][0 s_2]]
-                //with P+T = atan((c+b)/(d-a)), P-T = atan((c-b)/(d+a)) [be careful with zero denominators]
-                //
-                /* -*- maple -*- code
-                 with(LinearAlgebra):
-                 U := <cos(theta),sin(theta) | -sin(theta), cos(theta)>;
-                 V := <cos(phi),sin(phi) | -sin(phi), cos(phi)>;
-                 Sigma := <sigma[1],0 | 0, sigma[2]>;
-                 M:= < a, b | c, d >;
-                 phi := (arctan((c+b)/(d-a))+arctan((c-b)/(d+a)))/2;
-                 theta := (arctan((c+b)/(d-a))-arctan((c-b)/(d+a)))/2;
-                 S := Transpose(U).M.V;
-                 */
                 
-                Mat2 covarMat;
-                covarMat(0,0) = covarMat(0,1) = covarMat(1,0) = covarMat(1,1) = covar;
-
-                Eigen::JacobiSVD<Mat2> covsvd(covarMat, Eigen::ComputeFullU | Eigen::ComputeFullV);
-
-                if (covsvd.rank() < 1) {
-                    return 0; // probably no two points are distinct
-                }
-                Mat2 U = covsvd.matrixU();
-                Mat2 VT = covsvd.matrixV().transpose();
-                Vec2 D = covsvd.singularValues();
-                Mat2 R; // actually, we only need one line or column of R
-                double c;
-                // R = U S V^T
-                // c = 1/var1 tr(DS)
-                // t = mu2 - c R mu1
-                // where S = (1, ..., 1, 1)  if det(U)det(V) = 1
-                //       S = (1, ..., 1, -1) if det(U)det(V) = -1
-                if (U.determinant() * VT.determinant() > 0) {
-                    R = U * VT;
-                    c = (D(0) + D(1))/var1;
-                } else {
-                    // multiply U by S
-                    U.col(1) *= -1;
-                    R = U * VT;
-                    c = (D(0) - D(1))/var1;
-                }
-                Vec2 t = mu2 - c * R * mu1;
+                x1_w /= sumW;
+                x2_w /= sumW;
                 
-                // S = (tx, ty, c.sin(alpha), c.cos(alpha))
-                (*S)(0) =  t(0);
-                (*S)(1) =  t(1);
-                (*S)(2) =  c*R(1,0);
-                (*S)(3) =  c*R(0,0);
+                return Similarity2DFromNPoints(x1_w, x2_w, similarity);
                 
-                return 1;
-            }
+            }*/
            
             static void Solve(const Mat &x, const Mat &y, std::vector<Model> *Hs)
             {
                 Vec4 model;
-                Vec weights(x.cols());
-                for (int i = 0; i < x.cols(); ++i) {
-                    weights(i) = 1.;
-                }
-                if (Similarity2DFromNPoints(x, y, weights, &model)) {
+                if (Similarity2DFromNPoints(x, y, &model)) {
                     Hs->push_back(model);
                 }
             }
@@ -449,21 +610,21 @@ namespace openMVG {
                 return std::sqrt(dx * dx + dy * dy) * fac; // be consistent with image distance in each image
             }
             
-            static void Normalize(Mat* x1, Mat* x2, Mat3* t1, Mat3* t2, int w1, int h1, int w2, int h2)
+            static void Normalize(Mat* x1, Mat* x2, Mat3* t1, Mat3* t2, int w1, int h1, int /*w2*/, int /*h2*/)
             {
                 // Use same scale for both axis because this is a similarity
                 double s1 = (double)std::max(w1,h1);
-                double s2 = (double)std::max(w2,h2);
+                //double s2 = (double)std::max(w2,h2);
                 for (int i = 0; i < x1->cols(); ++i) {
                     (*x1)(0,i) /= s1;
                     (*x1)(1,i) /= s1;
                     
-                    (*x2)(0,i) /= s2;
-                    (*x2)(1,i) /= s2;
+                    (*x2)(0,i) /= s1;
+                    (*x2)(1,i) /= s1;
                 }
                 // we just store the scale factor in the first member of the matrice
                 (*t1)(0,0) = s1;
-                (*t2)(0,0) = s2;
+                (*t2)(0,0) = s1;
             }
             
             
@@ -490,14 +651,7 @@ namespace openMVG {
             static std::size_t MaximumModels() { return 1; }
             
             enum CoDimensionEnum { CODIMENSION = 2 };
-            
-            /** 3D rigid transformation estimation (7 dof) with z=1
-             * Compute a Scale Rotation and Translation rigid transformation.
-             * This transformation provide a distortion-free transformation
-             * using the following formulation Xb = S * R * Xa + t.
-             * "Least-squares estimation of transformation parameters between two point patterns",
-             * Shinji Umeyama, PAMI 1991, DOI: 10.1109/34.88573
-             */
+        
             static void Solve(const Mat &x, const Mat &y, std::vector<Model> *Hs)
             {
                 Vec2 model;
@@ -523,22 +677,22 @@ namespace openMVG {
                 return tmp.norm();
             }
             
-            static void Normalize(Mat* x1, Mat* x2, Mat3* t1, Mat3* t2, int w1, int h1, int w2, int h2)
+            static void Normalize(Mat* x1, Mat* x2, Mat3* t1, Mat3* t2, int w1, int h1, int /*w2*/, int /*h2*/)
             {
                 double s1 = (double)std::max(w1,h1);
-                double s2 = (double)std::max(w2,h2);
+                //double s2 = (double)std::max(w2,h2);
                 for (int i = 0; i < x1->cols(); ++i) {
                     (*x1)(0,i) /= s1;
                     (*x1)(1,i) /= s1;
                     
-                    (*x2)(0,i) /= s2;
-                    (*x2)(1,i) /= s2;
+                    (*x2)(0,i) /= s1;
+                    (*x2)(1,i) /= s1;
 
                 }
                 
                 // we just store the scale factor in the first member of the matrice
                 (*t1)(0,0) = s1;
-                (*t2)(0,0) = s2;
+                (*t2)(0,0) = s1;
             }
             
             
@@ -594,8 +748,10 @@ namespace openMVG {
                 
                 Solver::Normalize(&_x1, &_x2, &_N1, &_N2, w1, h1, w2, h2);
                 
+                _N2 = _N2.inverse();
+                
                 assert(w1 != 0 && h1 != 0 && w2 != 0 && h2 != 0);
-                double normalizedSigma = sigma / (double)w1 * h1;
+                double normalizedSigma = sigma / (double)(w1 * h1);
                 
                 inlierThreshold = InlierThreshold<Solver::CODIMENSION>(normalizedSigma);
                 beta = Solver::Beta(inlierThreshold, w1, h1);

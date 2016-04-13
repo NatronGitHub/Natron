@@ -719,7 +719,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     const bool draftModeSupported = getNode()->isDraftModeUsed();
 
     const bool isFrameVaryingOrAnimated = isFrameVaryingOrAnimated_Recursive();
-    const bool createInCache = shouldCacheOutput(isFrameVaryingOrAnimated, args.time, args.view);
+    
+    // in Analysis, the node upstream of te analysis node should always cache
+    const bool createInCache = (frameArgs->isAnalysis && frameArgs->treeRoot->getEffectInstance().get() == args.caller) ? true : shouldCacheOutput(isFrameVaryingOrAnimated, args.time, args.view);
     ///Do we want to render the graph upstream at scale 1 or at the requested render scale ? (user setting)
     bool renderScaleOneUpstreamIfRenderScaleSupportDisabled = false;
     if (renderFullScaleThenDownscale) {
