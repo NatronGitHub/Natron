@@ -370,11 +370,11 @@ win32-msvc*{
                 CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/ceres/win32/debug/ -lceres
         }
 } else {
-        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/ceres/release/ -lceres -lgomp
-        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/ceres/debug/ -lceres -lgomp
+        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/ceres/release/ -lceres
+        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/ceres/debug/ -lceres
         else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/ceres/build/Release/ -lceres
         else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/ceres/build/Debug/ -lceres
-        else:unix: LIBS += -L$$OUT_PWD/../libs/ceres/ -lceres -lgomp
+        else:unix: LIBS += -L$$OUT_PWD/../libs/ceres/ -lceres
 }
 
 win32-msvc*{
