@@ -24,6 +24,7 @@
 
 #include <vector>
 #include <cmath>
+#include <random>
 #include <gtest/gtest.h>
 #include <openMVG/robust_estimation/robust_estimator_Prosac.hpp>
 
@@ -43,12 +44,6 @@ static void padd(std::vector<Point>& v, double x, double y)
     p.y = y;
 }
 
-static void padd(openMVG::Mat& m, double x, double y)
-{
-    m.resize(m.rows(), m.cols() + 1);
-    m(0, m.cols() -1) = x;
-    m(1, m.cols() -1) = y;
-}
 
 static void throwProsacError(ProsacReturnCodeEnum c, int nMinSamples) {
     switch (c) {
@@ -409,8 +404,8 @@ static void testHomography(std::vector<Point>& x1)
     ASSERT_TRUE(x1.size() == x2.size());
     
     
-    int originalInliers = std::accumulate(inliers.begin(), inliers.end(), 0);
-    EXPECT_EQ(originalInliers, (int)x1.size() - nbOutliers);
+    int nbInliers = std::accumulate(inliers.begin(), inliers.end(), 0);
+    EXPECT_EQ(nbInliers, (int)x1.size() - nbOutliers);
     
     // Check the found model
     for (int i = 0; i < H.rows(); ++i) {
@@ -424,22 +419,22 @@ TEST(ModelSearch,HomographyMinimal)
 {
     std::vector<Point> x1;
     padd(x1, 50, 50);
-    padd(x1, 70, 100);
-    padd(x1, 60, 100);
-    padd(x1, 90, 100);
+    padd(x1, 240, 60);
+    padd(x1, 223, 342);
+    padd(x1, 13, 310);
     testHomography(x1);
 }
 
 TEST(ModelSearch,HomographyNPoints)
 {
     std::vector<Point> x1;
-    const int n = 1000;
+    const int n = 100;
     x1.resize(n);
     
     std::srand(2000);
     for (int i = 0; i < n ; ++i) {
-        x1[i].x = rand() % 500;
-        x1[i].y = rand() % 500;
+        x1[i].x = std::rand() % 500 + 1;
+        x1[i].y = std::rand() % 500 + 1;
     }
     testHomography(x1);
 }

@@ -801,7 +801,7 @@ void runProsacForModel(const std::vector<Point>& x1,
     
     ProsacReturnCodeEnum ret;
     
-    const std::size_t minSamples = (std::size_t)openMVG::robust::Similarity2DSolver::MinimumSamples();
+    const std::size_t minSamples = (std::size_t)MODELTYPE::MinimumSamples();
     if (x1.size() > minSamples) {
         KernelType kernel(M1, w1, h1, M2, w2, h2);
         ret = prosac(kernel, foundModel);
@@ -1163,7 +1163,6 @@ TrackerContext::computeTransformParamsFromTracks(const std::vector<TrackMarkerPt
         try {
             computeTransformParamsFromTracksAtTime(refTime, t.time, jitterPeriod, jitterAdd, markers, &t.data);
         } catch (const std::exception& e) {
-            qDebug() << e.what();
             continue;
         }
         dataAtTime.push_back(t);
