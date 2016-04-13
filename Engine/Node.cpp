@@ -631,6 +631,12 @@ Node::Node(AppInstance* app,
     QObject::connect(this, SIGNAL(refreshIdentityStateRequested()), this, SLOT(onRefreshIdentityStateRequestReceived()), Qt::QueuedConnection);
 }
 
+bool
+Node::isPartOfProject() const
+{
+    return _imp->isPartOfProject;
+}
+
 void
 Node::createRotoContextConditionnally()
 {

@@ -29,8 +29,17 @@
 
 NATRON_NAMESPACE_ENTER;
 
+struct TrackerNodePrivate
+{
+    TrackerNodePrivate()
+    {
+        
+    }
+};
+
 TrackerNode::TrackerNode(boost::shared_ptr<Natron::Node> node)
-: Natron::EffectInstance(node)
+: NodeGroup(node)
+, _imp(new TrackerNodePrivate())
 {
 }
 
@@ -76,69 +85,27 @@ TrackerNode::getPluginDescription() const
     "You may export the tracking data either to a CornerPin node or to a Transform node. The CornerPin node performs a warp that may be more stable than a Transform node when using 4 or more tracks: it retains more information than the Transform node.";
 }
 
-std::string
-TrackerNode::getInputLabel (int inputNb) const
-{
-    switch (inputNb) {
-        case 0:
-            return "Source";
-        default:
-            break;
-    }
-    return "";
-}
-
-bool
-TrackerNode::isInputMask(int /*inputNb*/) const
-{
-    return false;
-}
-
-bool
-TrackerNode::isInputOptional(int /*inputNb*/) const
-{
-    return false;
-}
-
-void
-TrackerNode::addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps)
-{
-    
-    if (inputNb != 1) {
-        comps->push_back(ImageComponents::getRGBAComponents());
-        comps->push_back(ImageComponents::getRGBComponents());
-        comps->push_back(ImageComponents::getXYComponents());
-    }
-    comps->push_back(ImageComponents::getAlphaComponents());
-}
-
-void
-TrackerNode::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
-{
-    depths->push_back(Natron::eImageBitDepthFloat);
-}
-
 void
 TrackerNode::initializeKnobs()
 {
-    
+
 }
 
+/*
 bool
 TrackerNode::isIdentity(double time,
-                        const RenderScale & /*scale*/,
-                        const RectI & /*roi*/,
+                        const RenderScale & scale,
+                        const RectI & roi,
                         ViewIdx view,
                         double* inputTime,
                         ViewIdx* inputView,
                         int* inputNb)
 {
-    // Identity for now, until we can apply a transform
     *inputTime = time;
     *inputNb = 0;
     *inputView = view;
     return true;
-}
+}*/
 
 
 void

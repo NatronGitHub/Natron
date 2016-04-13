@@ -67,15 +67,89 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface, co
     QObject::connect(&scheduler, SIGNAL(trackingStarted(int)), _publicInterface, SIGNAL(trackingStarted(int)));
     QObject::connect(&scheduler, SIGNAL(trackingFinished()), _publicInterface, SIGNAL(trackingFinished()));
     
+    boost::shared_ptr<TrackerNode> isTrackerNode = boost::dynamic_pointer_cast<TrackerNode>(effect);
+    
     QString fixedNamePrefix = QString::fromUtf8(node->getScriptName_mt_safe().c_str());
     fixedNamePrefix.append(QLatin1Char('_'));
-    fixedNamePrefix += QLatin1String("Transform");
-    
-    CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_TRANSFORM), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
-    args.fixedName = fixedNamePrefix;
-    args.createGui = false;
-    args.addToProject = false;
-    transformNode = node->getApp()->createNode(args);
+    if (isTrackerNode) {
+        NodePtr input,output;
+        //NodePtr maskInput;
+        
+        {
+            CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_OUTPUT), eCreateNodeReasonInternal, isTrackerNode);
+            args.createGui = false;
+            args.addToProject = false;
+            output = node->getApp()->createNode(args);
+            try {
+                output->setScriptName("Output");
+            } catch (...) {
+                
+            }
+            assert(output);
+        }
+        {
+            CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_INPUT), eCreateNodeReasonInternal, isTrackerNode);
+            args.fixedName = QLatin1String("Source");
+            args.createGui = false;
+            args.addToProject = false;
+            input = node->getApp()->createNode(args);
+            assert(input);
+        }
+        
+       /* {
+            CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_INPUT), eCreateNodeReasonInternal, isTrackerNode);
+            args.fixedName = QLatin1String("Mask");
+            args.createGui = false;
+            args.addToProject = false;
+            maskInput = node->getApp()->createNode(args);
+            assert(maskInput);
+            KnobPtr isMaskInputKnob = maskInput->getKnobByName(kNatronGroupInputIsMaskParamName);
+            if (isMaskInputKnob) {
+                KnobBool* maskInputKnob = dynamic_cast<KnobBool*>(isMaskInputKnob.get());
+                assert(maskInputKnob);
+                if (maskInputKnob) {
+                    maskInputKnob->setValue(true);
+                }
+            }
+            KnobPtr isOptionalInputKnob = maskInput->getKnobByName(kNatronGroupInputIsOptionalParamName);
+            if (isOptionalInputKnob) {
+                KnobBool* optionalInputKnob = dynamic_cast<KnobBool*>(isOptionalInputKnob.get());
+                assert(optionalInputKnob);
+                if (optionalInputKnob) {
+                    optionalInputKnob->setValue(true);
+                }
+            }
+
+        }*/
+
+        {
+            QString cornerPinName = fixedNamePrefix + QLatin1String("CornerPin");
+            
+            CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_CORNERPIN), eCreateNodeReasonInternal, isTrackerNode);
+            args.fixedName = cornerPinName;
+            args.createGui = false;
+            args.addToProject = false;
+            NodePtr cpNode = node->getApp()->createNode(args);
+            cornerPinNode = cpNode;
+        }
+        
+        {
+            QString transformName = fixedNamePrefix + QLatin1String("Transform");
+            
+            CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_TRANSFORM), eCreateNodeReasonInternal, isTrackerNode);
+            args.fixedName = transformName;
+            args.createGui = false;
+            args.addToProject = false;
+            NodePtr tNode = node->getApp()->createNode(args);
+            transformNode = tNode;
+            
+            output->connectInput(tNode, 0);
+            NodePtr cpNode = cornerPinNode.lock();
+            tNode->connectInput(cpNode, 0);
+            cpNode->connectInput(input, 0);
+
+        }
+    }
     
     boost::shared_ptr<KnobPage> settingsPage = AppManager::createKnob<KnobPage>(effect.get(), "Controls", 1 , false);
     boost::shared_ptr<KnobPage> transformPage = AppManager::createKnob<KnobPage>(effect.get(), "Transform", 1 , false);
@@ -284,92 +358,96 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface, co
     smoothTransform = smoothTransformKnob;
     knobs.push_back(smoothTransformKnob);
     
-    KnobPtr translateKnob = transformNode->getKnobByName(kTransformParamTranslate);
-    assert(translateKnob);
-    KnobPtr translateK = translateKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, translateKnob->getName(), translateKnob->getLabel(), translateKnob->getHintToolTip(), false, false);
-    translate = boost::dynamic_pointer_cast<KnobDouble>(translateK);
+    NodePtr tNode = transformNode.lock();
+    if (tNode) {
+        KnobPtr translateKnob = tNode->getKnobByName(kTransformParamTranslate);
+        assert(translateKnob);
+        KnobPtr translateK = translateKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, translateKnob->getName(), translateKnob->getLabel(), translateKnob->getHintToolTip(), false, false);
+        translate = boost::dynamic_pointer_cast<KnobDouble>(translateK);
+        
+        KnobPtr rotateKnob = tNode->getKnobByName(kTransformParamRotate);
+        assert(rotateKnob);
+        KnobPtr rotateK = rotateKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, rotateKnob->getName(), rotateKnob->getLabel(), rotateKnob->getHintToolTip(), false, false);
+        rotate = boost::dynamic_pointer_cast<KnobDouble>(rotateK);
+        
+        KnobPtr scaleKnob = tNode->getKnobByName(kTransformParamScale);
+        assert(scaleKnob);
+        KnobPtr scaleK = scaleKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, scaleKnob->getName(), scaleKnob->getLabel(), scaleKnob->getHintToolTip(), false, false);
+        scaleK->setAddNewLine(false);
+        scale = boost::dynamic_pointer_cast<KnobDouble>(scaleK);
+        
+        KnobPtr scaleUniformKnob = tNode->getKnobByName(kTransformParamUniform);
+        assert(scaleUniformKnob);
+        KnobPtr scaleUniK = scaleUniformKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, scaleUniformKnob->getName(), scaleUniformKnob->getLabel(), scaleKnob->getHintToolTip(), false, false);
+        scaleUniform = boost::dynamic_pointer_cast<KnobBool>(scaleUniK);
+        
+        KnobPtr skewXKnob = tNode->getKnobByName(kTransformParamSkewX);
+        assert(skewXKnob);
+        KnobPtr skewXK = skewXKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, skewXKnob->getName(), skewXKnob->getLabel(), skewXKnob->getHintToolTip(), false, false);
+        skewX = boost::dynamic_pointer_cast<KnobDouble>(skewXK);
+        
+        KnobPtr skewYKnob = tNode->getKnobByName(kTransformParamSkewY);
+        assert(skewYKnob);
+        KnobPtr skewYK = skewYKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, skewYKnob->getName(), skewYKnob->getLabel(), skewYKnob->getHintToolTip(), false, false);
+        skewY = boost::dynamic_pointer_cast<KnobDouble>(skewYK);
+        
+        KnobPtr skewOrderKnob = tNode->getKnobByName(kTransformParamSkewOrder);
+        assert(skewOrderKnob);
+        KnobPtr skewOrderK = skewOrderKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, skewOrderKnob->getName(), skewOrderKnob->getLabel(), skewOrderKnob->getHintToolTip(), false, false);
+        skewOrder = boost::dynamic_pointer_cast<KnobChoice>(skewOrderK);
+        
+        KnobPtr centerKnob = tNode->getKnobByName(kTransformParamCenter);
+        assert(centerKnob);
+        KnobPtr centerK = centerKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, centerKnob->getName(), centerKnob->getLabel(), centerKnob->getHintToolTip(), false, false);
+        center = boost::dynamic_pointer_cast<KnobDouble>(centerK);
+        
+        KnobPtr invertKnob = tNode->getKnobByName(kTransformParamInvert);
+        assert(invertKnob);
+        KnobPtr invertK = invertKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, invertKnob->getName(), invertKnob->getLabel(), invertKnob->getHintToolTip(), false, false);
+        invertTransform = boost::dynamic_pointer_cast<KnobBool>(invertK);
+        
+        
+        KnobPtr filterKnob = tNode->getKnobByName(kTransformParamFilter);
+        assert(filterKnob);
+        KnobPtr filterK = filterKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, filterKnob->getName(), filterKnob->getLabel(), filterKnob->getHintToolTip(), false, false);
+        filterK->setAddNewLine(false);
+        filter = boost::dynamic_pointer_cast<KnobChoice>(filterK);
+        
+        KnobPtr clampKnob = tNode->getKnobByName(kTransformParamClamp);
+        assert(clampKnob);
+        KnobPtr clampK = clampKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, clampKnob->getName(), clampKnob->getLabel(), clampKnob->getHintToolTip(), false, false);
+        clampK->setAddNewLine(false);
+        clamp = boost::dynamic_pointer_cast<KnobBool>(clampK);
+        
+        KnobPtr boKnob = tNode->getKnobByName(kTransformParamBlackOutside);
+        assert(boKnob);
+        KnobPtr boK = boKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, boKnob->getName(), boKnob->getLabel(), boKnob->getHintToolTip(), false, false);
+        blackOutside = boost::dynamic_pointer_cast<KnobBool>(boK);
+        
+        KnobPtr mbKnob = tNode->getKnobByName(kTransformParamMotionBlur);
+        assert(mbKnob);
+        KnobPtr mbK = mbKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, mbKnob->getName(), mbKnob->getLabel(), mbKnob->getHintToolTip(), false, false);
+        motionBlur = boost::dynamic_pointer_cast<KnobDouble>(mbK);
+        
+        KnobPtr shutterKnob = tNode->getKnobByName(kTransformParamShutter);
+        assert(shutterKnob);
+        KnobPtr shutterK = shutterKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, shutterKnob->getName(), shutterKnob->getLabel(), shutterKnob->getHintToolTip(), false, false);
+        shutter = boost::dynamic_pointer_cast<KnobDouble>(shutterK);
+        
+        KnobPtr shutterOffKnob = tNode->getKnobByName(kTransformParamShutterOffset);
+        assert(shutterOffKnob);
+        KnobPtr shutterOffK = shutterOffKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, shutterOffKnob->getName(), shutterOffKnob->getLabel(), shutterOffKnob->getHintToolTip(), false, false);
+        shutterOffK->setAddNewLine(false);
+        shutterOffset = boost::dynamic_pointer_cast<KnobChoice>(shutterOffK);
+        
+        KnobPtr customShutterKnob = tNode->getKnobByName(kTransformParamCustomShutterOffset);
+        assert(customShutterKnob);
+        KnobPtr customShutterK = customShutterKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, customShutterKnob->getName(), customShutterKnob->getLabel(), customShutterKnob->getHintToolTip(), false, false);
+        customShutterOffset = boost::dynamic_pointer_cast<KnobDouble>(customShutterK);
+        
+        node->addTransformInteract(translate.lock(), scale.lock(), scaleUniform.lock(), rotate.lock(), skewX.lock(), skewY.lock(), skewOrder.lock(), center.lock());
+    } // tNode
     
-    KnobPtr rotateKnob = transformNode->getKnobByName(kTransformParamRotate);
-    assert(rotateKnob);
-    KnobPtr rotateK = rotateKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, rotateKnob->getName(), rotateKnob->getLabel(), rotateKnob->getHintToolTip(), false, false);
-    rotate = boost::dynamic_pointer_cast<KnobDouble>(rotateK);
-    
-    KnobPtr scaleKnob = transformNode->getKnobByName(kTransformParamScale);
-    assert(scaleKnob);
-    KnobPtr scaleK = scaleKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, scaleKnob->getName(), scaleKnob->getLabel(), scaleKnob->getHintToolTip(), false, false);
-    scaleK->setAddNewLine(false);
-    scale = boost::dynamic_pointer_cast<KnobDouble>(scaleK);
-    
-    KnobPtr scaleUniformKnob = transformNode->getKnobByName(kTransformParamUniform);
-    assert(scaleUniformKnob);
-    KnobPtr scaleUniK = scaleUniformKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, scaleUniformKnob->getName(), scaleUniformKnob->getLabel(), scaleKnob->getHintToolTip(), false, false);
-    scaleUniform = boost::dynamic_pointer_cast<KnobBool>(scaleUniK);
-    
-    KnobPtr skewXKnob = transformNode->getKnobByName(kTransformParamSkewX);
-    assert(skewXKnob);
-    KnobPtr skewXK = skewXKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, skewXKnob->getName(), skewXKnob->getLabel(), skewXKnob->getHintToolTip(), false, false);
-    skewX = boost::dynamic_pointer_cast<KnobDouble>(skewXK);
-    
-    KnobPtr skewYKnob = transformNode->getKnobByName(kTransformParamSkewY);
-    assert(skewYKnob);
-    KnobPtr skewYK = skewYKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, skewYKnob->getName(), skewYKnob->getLabel(), skewYKnob->getHintToolTip(), false, false);
-    skewY = boost::dynamic_pointer_cast<KnobDouble>(skewYK);
-    
-    KnobPtr skewOrderKnob = transformNode->getKnobByName(kTransformParamSkewOrder);
-    assert(skewOrderKnob);
-    KnobPtr skewOrderK = skewOrderKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, skewOrderKnob->getName(), skewOrderKnob->getLabel(), skewOrderKnob->getHintToolTip(), false, false);
-    skewOrder = boost::dynamic_pointer_cast<KnobChoice>(skewOrderK);
-    
-    KnobPtr centerKnob = transformNode->getKnobByName(kTransformParamCenter);
-    assert(centerKnob);
-    KnobPtr centerK = centerKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, centerKnob->getName(), centerKnob->getLabel(), centerKnob->getHintToolTip(), false, false);
-    center = boost::dynamic_pointer_cast<KnobDouble>(centerK);
-    
-    KnobPtr invertKnob = transformNode->getKnobByName(kTransformParamInvert);
-    assert(invertKnob);
-    KnobPtr invertK = invertKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, invertKnob->getName(), invertKnob->getLabel(), invertKnob->getHintToolTip(), false, false);
-    invertTransform = boost::dynamic_pointer_cast<KnobBool>(invertK);
-    
-    
-    KnobPtr filterKnob = transformNode->getKnobByName(kTransformParamFilter);
-    assert(filterKnob);
-    KnobPtr filterK = filterKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, filterKnob->getName(), filterKnob->getLabel(), filterKnob->getHintToolTip(), false, false);
-    filterK->setAddNewLine(false);
-    filter = boost::dynamic_pointer_cast<KnobChoice>(filterK);
-    
-    KnobPtr clampKnob = transformNode->getKnobByName(kTransformParamClamp);
-    assert(clampKnob);
-    KnobPtr clampK = clampKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, clampKnob->getName(), clampKnob->getLabel(), clampKnob->getHintToolTip(), false, false);
-    clampK->setAddNewLine(false);
-    clamp = boost::dynamic_pointer_cast<KnobBool>(clampK);
-    
-    KnobPtr boKnob = transformNode->getKnobByName(kTransformParamBlackOutside);
-    assert(boKnob);
-    KnobPtr boK = boKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, boKnob->getName(), boKnob->getLabel(), boKnob->getHintToolTip(), false, false);
-    blackOutside = boost::dynamic_pointer_cast<KnobBool>(boK);
-    
-    KnobPtr mbKnob = transformNode->getKnobByName(kTransformParamMotionBlur);
-    assert(mbKnob);
-    KnobPtr mbK = mbKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, mbKnob->getName(), mbKnob->getLabel(), mbKnob->getHintToolTip(), false, false);
-    motionBlur = boost::dynamic_pointer_cast<KnobDouble>(mbK);
-    
-    KnobPtr shutterKnob = transformNode->getKnobByName(kTransformParamShutter);
-    assert(shutterKnob);
-    KnobPtr shutterK = shutterKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, shutterKnob->getName(), shutterKnob->getLabel(), shutterKnob->getHintToolTip(), false, false);
-    shutter = boost::dynamic_pointer_cast<KnobDouble>(shutterK);
-    
-    KnobPtr shutterOffKnob = transformNode->getKnobByName(kTransformParamShutterOffset);
-    assert(shutterOffKnob);
-    KnobPtr shutterOffK = shutterOffKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, shutterOffKnob->getName(), shutterOffKnob->getLabel(), shutterOffKnob->getHintToolTip(), false, false);
-    shutterOffK->setAddNewLine(false);
-    shutterOffset = boost::dynamic_pointer_cast<KnobChoice>(shutterOffK);
-    
-    KnobPtr customShutterKnob = transformNode->getKnobByName(kTransformParamCustomShutterOffset);
-    assert(customShutterKnob);
-    KnobPtr customShutterK = customShutterKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, customShutterKnob->getName(), customShutterKnob->getLabel(), customShutterKnob->getHintToolTip(), false, false);
-    customShutterOffset = boost::dynamic_pointer_cast<KnobDouble>(customShutterK);
-    
-    node->addTransformInteract(translate.lock(), scale.lock(), scaleUniform.lock(), rotate.lock(), skewX.lock(), skewY.lock(), skewOrder.lock(), center.lock());
 }
 
 
