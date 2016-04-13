@@ -14,6 +14,7 @@ include(../../global.pri)
 include(../../libs.pri)
 include(../../config.pri)
 
+CONFIG -= warn_on
 
 SOURCES += \
 	internal/ceres/array_utils.cc \

@@ -14,7 +14,6 @@ include(../../global.pri)
 include(../../libs.pri)
 include(../../config.pri)
 
-
 win32-msvc* {
 	CONFIG(64bit) {
 		QMAKE_LFLAGS += /MACHINE:X64
@@ -23,6 +22,7 @@ win32-msvc* {
 	}
 }
 
+CONFIG -= warn_on
 
 SOURCES += \
         openMVG/features/akaze/AKAZE.cpp \
