@@ -22,13 +22,16 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Engine/EngineFwd.h"
-
-
 #include "TrackerFrameAccessor.h"
 
+#include "Global/Macros.h"
+
+GCC_DIAG_OFF(unused-function)
+GCC_DIAG_OFF(unused-parameter)
 #include <libmv/image/array_nd.h>
 #include <libmv/autotrack/region.h>
+GCC_DIAG_ON(unused-function)
+GCC_DIAG_ON(unused-parameter)
 
 #include <QDebug>
 
@@ -124,13 +127,13 @@ typedef std::multimap<FrameAccessorCacheKey, FrameAccessorCacheEntry, CacheKey_c
 
 
 template <bool doR, bool doG, bool doB>
-void natronImageToLibMvFloatImageForChannels(const Natron::Image* source,
+void natronImageToLibMvFloatImageForChannels(const Image* source,
                                              const RectI& roi,
                                              MvFloatImage& mvImg)
 {
     //mvImg is expected to have its bounds equal to roi
     
-    Natron::Image::ReadAccess racc(source);
+    Image::ReadAccess racc(source);
     
     unsigned int compsCount = source->getComponentsCount();
     assert(compsCount == 3);
@@ -169,7 +172,7 @@ void natronImageToLibMvFloatImageForChannels(const Natron::Image* source,
 
 
 static void natronImageToLibMvFloatImage(bool enabledChannels[3],
-                                         const Natron::Image* source,
+                                         const Image* source,
                                          const RectI& roi,
                                          MvFloatImage& mvImg)
 {
@@ -213,7 +216,7 @@ struct TrackerFrameAccessorPrivate
 {
     
     const TrackerContext* context;
-    boost::shared_ptr<Natron::Node> trackerInput;
+    boost::shared_ptr<Node> trackerInput;
     
     mutable QMutex cacheMutex;
     FrameAccessorCache cache;
@@ -339,7 +342,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
     RectD precomputedRoD;
     if (!region) {
         bool isProjectFormat;
-        Natron::StatusEnum stat = _imp->trackerInput->getEffectInstance()->getRegionOfDefinition_public(_imp->trackerInput->getHashValue(), frame, scale, ViewIdx(0), &precomputedRoD, &isProjectFormat);
+        StatusEnum stat = _imp->trackerInput->getEffectInstance()->getRegionOfDefinition_public(_imp->trackerInput->getHashValue(), frame, scale, ViewIdx(0), &precomputedRoD, &isProjectFormat);
         if (stat == eStatusFailed) {
             return (mv::FrameAccessor::Key)0;
         }
@@ -376,7 +379,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
                                        roi,
                                        precomputedRoD,
                                        components,
-                                       Natron::eImageBitDepthFloat,
+                                       eImageBitDepthFloat,
                                        true,
                                        _imp->context->getNode()->getEffectInstance().get());
     std::map<ImageComponents,ImagePtr> planes;

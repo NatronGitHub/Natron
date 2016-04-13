@@ -25,18 +25,22 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Engine/TrackerContext.h"
+
 #include <list>
 
+#include "Global/Macros.h"
 
-
+GCC_DIAG_OFF(unused-function)
+GCC_DIAG_OFF(unused-parameter)
 #include <libmv/autotrack/autotrack.h>
+GCC_DIAG_ON(unused-function)
+GCC_DIAG_ON(unused-parameter)
 
 #include <openMVG/robust_estimation/robust_estimator_Prosac.hpp>
 
-#include "Engine/EngineFwd.h"
 #include "Engine/RectD.h"
-
-#include "Engine/TrackerContext.h"
+#include "Engine/EngineFwd.h"
 
 
 #define kTrackBaseName "track"
@@ -120,22 +124,37 @@
 
 #define kTrackerParamTransformType "transformType"
 #define kTrackerParamTransformTypeLabel "Transform Type"
-#define kTrackerParamTransformTypeHint "The type of transform in output of this node."
+#define kTrackerParamTransformTypeHint "The type of transform used to produce the results."
 
-#define kTrackerParamTransformTypeNone "None"
-#define kTrackerParamTransformTypeNoneHelp "No transformation applied in output to the image: this node is a pass-through. Set it to this mode when tracking to correclty see the input image on the viewer"
+#define kTrackerParamTransformTypeTransform "Transform"
+#define kTrackerParamTransformTypeTransformHelp "The tracks motion will be used to compute the translation, scale and rotation parameter " \
+"of a Transform node. At least 1 track is required to compute the translation and 2 for scale and rotation. The more tracks you use, " \
+"the more stable and precise the resulting transform will be."
 
-#define kTrackerParamTransformTypeStabilize "Stabilize"
-#define kTrackerParamTransformTypeStabilizeHelp "Transforms the image so that the tracked points do not move"
+#define kTrackerParamTransformTypeCornerPin "CornerPin"
+#define kTrackerParamTransformTypeCornerPinHelp "The tracks motion will be used to compute a CornerPin. " \
+"A CornerPin is useful if you are tracking an image portion that has a perspective distortion, such as a rectangular window moving in the scene. " \
+"At least 4 tracks are required to compute the homography transforming the \"From\" points to the \"To\" points. " \
+"The more points you add, the more stable and precise the resulting CornerPin will be."
 
-#define kTrackerParamTransformTypeMatchMove "Match-Move"
-#define kTrackerParamTransformTypeMatchMoveHelp "Transforms a different image so that it moves to match the tracked points"
+#define kTrackerParamMotionType "motionType"
+#define kTrackerParamMotionTypeLabel "Motion Type"
+#define kTrackerParamMotionTypeHint "The type of motion in output of this node."
 
-#define kTrackerParamTransformTypeRemoveJitter "Remove Jitter"
-#define kTrackerParamTransformTypeRemoveJitterHelp "Transforms the image so that the tracked points move smoothly with high frequencies removed"
+#define kTrackerParamMotionTypeNone "None"
+#define kTrackerParamMotionTypeNoneHelp "No transformation applied in output to the image: this node is a pass-through. Set it to this mode when tracking to correclty see the input image on the viewer"
 
-#define kTrackerParamTransformTypeAddJitter "Add Jitter"
-#define kTrackerParamTransformTypeAddJitterHelp "Transforms the image by the high frequencies of the animation of the tracks to increase the shake or apply it on another image"
+#define kTrackerParamMotionTypeStabilize "Stabilize"
+#define kTrackerParamMotionTypeStabilizeHelp "Transforms the image so that the tracked points do not move"
+
+#define kTrackerParamMotionTypeMatchMove "Match-Move"
+#define kTrackerParamMotionTypeMatchMoveHelp "Transforms a different image so that it moves to match the tracked points"
+
+#define kTrackerParamMotionTypeRemoveJitter "Remove Jitter"
+#define kTrackerParamMotionTypeRemoveJitterHelp "Transforms the image so that the tracked points move smoothly with high frequencies removed"
+
+#define kTrackerParamMotionTypeAddJitter "Add Jitter"
+#define kTrackerParamMotionTypeAddJitterHelp "Transforms the image by the high frequencies of the animation of the tracks to increase the shake or apply it on another image"
 
 #define kTrackerParamReferenceFrame "referenceFrame"
 #define kTrackerParamReferenceFrameLabel "Reference frame"
@@ -170,17 +189,35 @@
 #define kTransformParamShutterOffset "shutterOffset"
 #define kTransformParamCustomShutterOffset "shutterCustomOffset"
 
+#define kCornerPinParamFrom "from"
+#define kCornerPinParamTo "to"
+
+#define kCornerPinParamFrom1 "from1"
+#define kCornerPinParamFrom2 "from2"
+#define kCornerPinParamFrom3 "from3"
+#define kCornerPinParamFrom4 "from4"
+
+#define kCornerPinParamTo1 "to1"
+#define kCornerPinParamTo2 "to2"
+#define kCornerPinParamTo3 "to3"
+#define kCornerPinParamTo4 "to4"
 
 NATRON_NAMESPACE_ENTER;
 
 
-enum TrackerTransformTypeEnum
+enum TrackerMotionTypeEnum
 {
-    eTrackerTransformTypeNone,
-    eTrackerTransformTypeStabilize,
-    eTrackerTransformTypeMatchMove,
-    eTrackerTransformTypeRemoveJitter,
-    eTrackerTransformTypeAddJitter
+    eTrackerMotionTypeNone,
+    eTrackerMotionTypeStabilize,
+    eTrackerMotionTypeMatchMove,
+    eTrackerMotionTypeRemoveJitter,
+    eTrackerMotionTypeAddJitter
+};
+
+enum TrackerTransformNodeEnum
+{
+    eTrackerTransformNodeTransform,
+    eTrackerTransformNodeCornerPin
 };
 
 enum libmv_MarkerChannelEnum {
@@ -343,7 +380,7 @@ struct TrackerContextPrivate
 {
     
     TrackerContext* _publicInterface;
-    boost::weak_ptr<Natron::Node> node;
+    boost::weak_ptr<Node> node;
     
     std::list<boost::weak_ptr<KnobI> > knobs,perTrackKnobs;
     boost::weak_ptr<KnobBool> enableTrackRed,enableTrackGreen,enableTrackBlue;
@@ -358,11 +395,12 @@ struct TrackerContextPrivate
     
     NodeWPtr transformNode, cornerPinNode;
     
-    boost::weak_ptr<KnobChoice> transformType;
+    boost::weak_ptr<KnobChoice> transformType,motionType;
     boost::weak_ptr<KnobInt> referenceFrame;
     boost::weak_ptr<KnobButton> setCurrentFrameButton;
     boost::weak_ptr<KnobInt> jitterPeriod;
     boost::weak_ptr<KnobInt> smoothTransform;
+    
     boost::weak_ptr<KnobDouble> translate;
     boost::weak_ptr<KnobDouble> rotate;
     boost::weak_ptr<KnobDouble> scale;
@@ -380,6 +418,9 @@ struct TrackerContextPrivate
     boost::weak_ptr<KnobChoice> shutterOffset;
     boost::weak_ptr<KnobDouble> customShutterOffset;
     
+    boost::weak_ptr<KnobGroup> fromGroup,toGroup;
+    boost::weak_ptr<KnobDouble> fromPoints[4],toPoints[4];
+    
     mutable QMutex trackerContextMutex;
     std::vector<TrackMarkerPtr > markers;
     std::list<TrackMarkerPtr > selectedMarkers,markersToSlave,markersToUnslave;
@@ -389,7 +430,7 @@ struct TrackerContextPrivate
     TrackScheduler<TrackArgsLibMV> scheduler;
     
     
-    TrackerContextPrivate(TrackerContext* publicInterface, const boost::shared_ptr<Natron::Node> &node);
+    TrackerContextPrivate(TrackerContext* publicInterface, const boost::shared_ptr<Node> &node);
     
     
     /// Make all calls to getValue() that are global to the tracker context in here
@@ -442,6 +483,11 @@ struct TrackerContextPrivate
     void createTransformFromSelection(const std::list<TrackMarkerPtr > & selection,
                                       bool linked,
                                       bool invert);
+    
+    void refreshVisibilityFromTransformType();
+    void refreshVisibilityFromTransformTypeInternal(TrackerTransformNodeEnum transformType);
+    
+    void refreshTransformKnobs();
     
         
     static void natronTrackerToLibMVTracker(bool useRefFrameForSearchWindow,

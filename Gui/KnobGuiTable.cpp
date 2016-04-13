@@ -454,8 +454,8 @@ KnobGuiTable::updateGUI(int /*dimension*/)
     for (std::list<std::vector<std::string> >::const_iterator it = table.begin(); it != table.end(); ++it, ++i) {
         
         QStringList row;
-        for (std::size_t i = 0; i < it->size(); ++i) {
-            row.push_back(QString::fromUtf8((*it)[i].c_str()));
+        for (std::size_t j = 0; j < it->size(); ++j) {
+            row.push_back(QString::fromUtf8((*it)[j].c_str()));
         }
         _imp->createItem(knob, i, row);
     }

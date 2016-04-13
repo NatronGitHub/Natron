@@ -1150,7 +1150,8 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls, const QPoint& globalPos)
         if (extLower == NATRON_PROJECT_FILE_EXT) {
             const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();
             assert(!content.empty());
-            (void)openProject(content.begin()->second.absoluteFileName());
+            AppInstance* app = openProject(content.begin()->second.absoluteFileName());
+            Q_UNUSED(app);
         } else if (extLower == "py") {
             const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();
             assert(!content.empty());

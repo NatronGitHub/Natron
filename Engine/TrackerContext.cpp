@@ -89,7 +89,7 @@ TrackArgsV1::getRedrawAreasNeeded(int time, std::list<RectD>* canonicalRects) co
         boost::shared_ptr<KnobDouble> centerKnob = boost::dynamic_pointer_cast<KnobDouble>(effect->getKnobByName("center"));
         boost::shared_ptr<KnobDouble> offsetKnob = boost::dynamic_pointer_cast<KnobDouble>(effect->getKnobByName("offset"));
         assert(searchBtmLeft  && searchTopRight && centerKnob && offsetKnob);
-        Natron::Point offset,center,btmLeft,topRight;
+        Point offset,center,btmLeft,topRight;
         offset.x = offsetKnob->getValueAtTime(time, 0);
         offset.y = offsetKnob->getValueAtTime(time, 1);
         
@@ -124,7 +124,7 @@ TrackerContext::trackStepV1(int trackIndex, const TrackArgsV1& args, int time)
 }
 
 
-TrackerContext::TrackerContext(const boost::shared_ptr<Natron::Node> &node)
+TrackerContext::TrackerContext(const boost::shared_ptr<Node> &node)
 : boost::enable_shared_from_this<TrackerContext>()
 , _imp(new TrackerContextPrivate(this, node))
 {
@@ -182,8 +182,8 @@ TrackerContext::goToPreviousKeyFrame(int time)
         }
     }
     if (minimum != INT_MIN) {
-        getNode()->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Natron::Node>());
-        getNode()->getApp()->getTimeLine()->seekFrame(minimum, false,  NULL, Natron::eTimelineChangeReasonPlaybackSeek);
+        getNode()->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Node>());
+        getNode()->getApp()->getTimeLine()->seekFrame(minimum, false,  NULL, eTimelineChangeReasonPlaybackSeek);
     }
 }
 
@@ -201,8 +201,8 @@ TrackerContext::goToNextKeyFrame(int time)
         }
     }
     if (maximum != INT_MAX) {
-        getNode()->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Natron::Node>());
-        getNode()->getApp()->getTimeLine()->seekFrame(maximum, false,  NULL, Natron::eTimelineChangeReasonPlaybackSeek);
+        getNode()->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Node>());
+        getNode()->getApp()->getTimeLine()->seekFrame(maximum, false,  NULL, eTimelineChangeReasonPlaybackSeek);
     }
 }
 
@@ -353,7 +353,7 @@ TrackerContext::removeMarker(const TrackMarkerPtr& marker)
     Q_EMIT trackRemoved(marker);
 }
 
-boost::shared_ptr<Natron::Node>
+boost::shared_ptr<Node>
 TrackerContext::getNode() const
 {
     return _imp->node.lock();
@@ -362,7 +362,7 @@ TrackerContext::getNode() const
 int
 TrackerContext::getTimeLineFirstFrame() const
 {
-    boost::shared_ptr<Natron::Node> node = getNode();
+    boost::shared_ptr<Node> node = getNode();
     if (!node) {
         return -1;
     }
@@ -374,7 +374,7 @@ TrackerContext::getTimeLineFirstFrame() const
 int
 TrackerContext::getTimeLineLastFrame() const
 {
-    boost::shared_ptr<Natron::Node> node = getNode();
+    boost::shared_ptr<Node> node = getNode();
     if (!node) {
         return -1;
     }
@@ -689,6 +689,12 @@ TrackerContext::onSelectedKnobCurveChanged()
 }
 
 void
+TrackerContext::onKnobsLoaded()
+{
+    _imp->refreshVisibilityFromTransformType();
+}
+
+void
 TrackerContext::knobChanged(KnobI* k,
                  ValueChangedReasonEnum /*reason*/,
                  ViewSpec /*view*/,
@@ -701,7 +707,8 @@ TrackerContext::knobChanged(KnobI* k,
         boost::shared_ptr<KnobInt> refFrame = _imp->referenceFrame.lock();
         refFrame->setValue(_imp->node.lock()->getApp()->getTimeLine()->currentFrame());
     } else if (k == _imp->transformType.lock().get()) {
-        
+        _imp->refreshTransformKnobs();
+        _imp->refreshVisibilityFromTransformType();
     }
 }
 
@@ -1116,22 +1123,22 @@ TrackerContext::computeTransformParamsFromTracks(const std::vector<TrackMarkerPt
         return;
     }
     int transformType_i = _imp->transformType.lock()->getValue();
-    TrackerTransformTypeEnum type =  (TrackerTransformTypeEnum)transformType_i;
+    TrackerMotionTypeEnum type =  (TrackerMotionTypeEnum)transformType_i;
     
     double refTime = (double)getTransformReferenceFrame();
 
     int jitterPeriod = 0;
     bool jitterAdd = false;
     switch (type) {
-        case eTrackerTransformTypeNone:
-        case eTrackerTransformTypeMatchMove:
-        case eTrackerTransformTypeStabilize:
+        case eTrackerMotionTypeNone:
+        case eTrackerMotionTypeMatchMove:
+        case eTrackerMotionTypeStabilize:
             break;
-        case eTrackerTransformTypeAddJitter:
-        case eTrackerTransformTypeRemoveJitter:
+        case eTrackerMotionTypeAddJitter:
+        case eTrackerMotionTypeRemoveJitter:
         {
             jitterPeriod = _imp->jitterPeriod.lock()->getValue();
-            jitterAdd = type == eTrackerTransformTypeAddJitter;
+            jitterAdd = type == eTrackerMotionTypeAddJitter;
         } break;
             
     }
@@ -1205,7 +1212,7 @@ TrackerContext::computeTransformParamsFromTracks(const std::vector<TrackMarkerPt
             Point avgT = {0,0};
             
             int nSamples = 0;
-            for (int t = std::max(0, (int)i - halfJitter); t < (i + halfJitter) && t < (int)dataAtTime.size(); ++t, ++nSamples) {
+            for (int t = std::max(0, (int)i - halfJitter); t < ((int)i + halfJitter) && t < (int)dataAtTime.size(); ++t, ++nSamples) {
                 avgT.x += dataAtTime[t].data.translation.x;
                 avgT.y += dataAtTime[t].data.translation.y;
             }
@@ -1533,7 +1540,7 @@ TrackScheduler<TrackArgsType>::run()
                     
                     //This will not refresh the viewer since when tracking, renderCurrentFrame()
                     //is not called on viewers, see Gui::onTimeChanged
-                    timeline->seekFrame(cur, true, 0, Natron::eTimelineChangeReasonOtherSeek);
+                    timeline->seekFrame(cur, true, 0, eTimelineChangeReasonOtherSeek);
                     
                     ///Beyond TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE it becomes more expensive to render all partial rectangles
                     ///than just render the whole viewer RoI
@@ -1581,7 +1588,7 @@ TrackScheduler<TrackArgsType>::run()
         
         if (_imp->paramsProvider->getUpdateViewer()) {
             //Refresh all viewers to the current frame
-            timeline->seekFrame(lastValidFrame, true, 0, Natron::eTimelineChangeReasonOtherSeek);
+            timeline->seekFrame(lastValidFrame, true, 0, eTimelineChangeReasonOtherSeek);
         }
         
         ///Flag that we're no longer working

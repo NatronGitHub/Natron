@@ -14,6 +14,8 @@ include(../../global.pri)
 include(../../libs.pri)
 include(../../config.pri)
 
+CONFIG -= warn_on
+
 SOURCES += \
 	src/gflags.cc \
 	src/gflags_completions.cc \

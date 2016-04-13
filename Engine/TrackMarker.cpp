@@ -516,11 +516,11 @@ TrackMarker::resetCenter()
         scale.x = scale.y = 1;
         RectD rod;
         bool isProjectFormat;
-        Natron::StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getHashValue(), time, scale, ViewIdx(0), &rod, &isProjectFormat);
-        Natron::Point center;
+        StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getHashValue(), time, scale, ViewIdx(0), &rod, &isProjectFormat);
+        Point center;
         center.x = 0;
         center.y = 0;
-        if (stat == Natron::eStatusOK) {
+        if (stat == eStatusOK) {
             center.x = (rod.x1 + rod.x2) / 2.;
             center.y = (rod.y1 + rod.y2) / 2.;
         }
@@ -545,7 +545,7 @@ void
 TrackMarker::resetTrack()
 {
     
-    Natron::Point curCenter;
+    Point curCenter;
     boost::shared_ptr<KnobDouble> knob = getCenterKnob();
     curCenter.x = knob->getValue(0);
     curCenter.y = knob->getValue(1);
@@ -714,7 +714,7 @@ TrackMarker::getMarkerImageRoI(int time) const
 {
     const unsigned int mipmapLevel = 0;
     
-    Natron::Point center,offset;
+    Point center,offset;
     boost::shared_ptr<KnobDouble> centerKnob = getCenterKnob();
     boost::shared_ptr<KnobDouble> offsetKnob = getOffsetKnob();
     center.x = centerKnob->getValueAtTime(time, 0);
@@ -744,7 +744,7 @@ TrackMarker::getMarkerImageRoI(int time) const
     return roi;
 }
 
-std::pair<boost::shared_ptr<Natron::Image>,RectI>
+std::pair<boost::shared_ptr<Image>,RectI>
 TrackMarker::getMarkerImage(int time, const RectI& roi) const
 {
     std::list<ImageComponents> components;
@@ -784,7 +784,7 @@ TrackMarker::getMarkerImage(int time, const RectI& roi) const
                                        roi,
                                        RectD(),
                                        components,
-                                       Natron::eImageBitDepthFloat,
+                                       eImageBitDepthFloat,
                                        false,
                                        node->getEffectInstance().get());
     std::map<ImageComponents,ImagePtr> planes;

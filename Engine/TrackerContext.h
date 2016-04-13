@@ -215,7 +215,7 @@ public:
         
     };
     
-    TrackerContext(const boost::shared_ptr<Natron::Node> &node);
+    TrackerContext(const boost::shared_ptr<Node> &node);
     
     virtual ~TrackerContext();
     
@@ -224,7 +224,7 @@ public:
     void save(TrackerContextSerialization* serialization) const;
 
     
-    boost::shared_ptr<Natron::Node> getNode() const;
+    boost::shared_ptr<Node> getNode() const;
     
     TrackMarkerPtr createMarker();
     
@@ -382,6 +382,8 @@ public:
                                              const std::vector<Point>& x2,
                                               int w1, int h1, int w2, int h2,
                                              Transform::Matrix3x3* fundamental);
+    
+    void onKnobsLoaded();
     
     void knobChanged(KnobI* k,
                      ValueChangedReasonEnum reason,

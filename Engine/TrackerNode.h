@@ -34,12 +34,12 @@ class TrackerNode : public NodeGroup
 {
 public:
     
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
     {
         return new TrackerNode(n);
     }
     
-    TrackerNode(boost::shared_ptr<Natron::Node> node);
+    TrackerNode(boost::shared_ptr<Node> node);
     
     virtual ~TrackerNode();
     
@@ -70,12 +70,12 @@ public:
     {
         grouping->push_back(PLUGIN_GROUP_TRANSFORM);
     }
-        
+
     virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
     
-    virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return Natron::eRenderSafetyFullySafeFrame;
+        return eRenderSafetyFullySafeFrame;
     }
     
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN
@@ -118,6 +118,8 @@ public:
     }
 
 
+    virtual void onKnobsLoaded() OVERRIDE FINAL;
+    
 private:
     
     /*virtual bool isIdentity(double time,

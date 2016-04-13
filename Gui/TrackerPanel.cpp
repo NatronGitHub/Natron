@@ -148,7 +148,7 @@ TrackerTableItemDelegate::paint(QPainter * painter,
     QRect geom = style->subElementRect(QStyle::SE_ItemViewItemText, &option);
     
     int dim;
-    Natron::AnimationLevelEnum level = eAnimationLevelNone;
+    AnimationLevelEnum level = eAnimationLevelNone;
     boost::shared_ptr<KnobI> knob = _panel->getKnobAt(index.row(), index.column(), &dim);
     assert(knob);
     if (knob) {
@@ -397,11 +397,11 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     int medIconSize = TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE);
     
     QPixmap prevPix,nextPix,addPix,removePix,clearAnimPix;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_PREVIOUS_KEY,medIconSize, &prevPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_NEXT_KEY, medIconSize,&nextPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_ADD_USER_KEY, medIconSize,&addPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_REMOVE_USER_KEY,medIconSize, &removePix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_ALL_ANIMATION,medIconSize, &clearAnimPix);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PREVIOUS_KEY,medIconSize, &prevPix);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_NEXT_KEY, medIconSize,&nextPix);
+    appPTR->getIcon(NATRON_PIXMAP_ADD_USER_KEY, medIconSize,&addPix);
+    appPTR->getIcon(NATRON_PIXMAP_REMOVE_USER_KEY,medIconSize, &removePix);
+    appPTR->getIcon(NATRON_PIXMAP_CLEAR_ALL_ANIMATION,medIconSize, &clearAnimPix);
     
     _imp->prevKeyframe = new Button(QIcon(prevPix),QString(),trackContainer);
     _imp->prevKeyframe->setFixedSize(medButtonSize);
@@ -1010,11 +1010,11 @@ TrackerPanel::onAverageButtonClicked()
     
     bool hasKeyFrame = keyframesRange.min != INT_MIN && keyframesRange.max != INT_MAX;
     for (double t = keyframesRange.min; t <= keyframesRange.max; t += 1) {
-        Natron::Point avgCenter;
+        Point avgCenter;
         avgCenter.x = avgCenter.y = 0.;
 
 #ifdef AVERAGE_ALSO_PATTERN_QUAD
-        Natron::Point avgTopLeft, avgTopRight,avgBtmRight,avgBtmLeft;
+        Point avgTopLeft, avgTopRight,avgBtmRight,avgBtmLeft;
         avgTopLeft.x = avgTopLeft.y = avgTopRight.x = avgTopRight.y = avgBtmRight.x = avgBtmRight.y = avgBtmLeft.x = avgBtmLeft.y = 0;
 #endif
         
@@ -1367,9 +1367,9 @@ TrackerPanel::onItemDataChanged(TableItem* item)
                         double value = item->data(Qt::DisplayRole).toDouble();
                         if (knob->isAnimationEnabled() && knob->isAnimated(dim)) {
                             KeyFrame kf;
-                            knob->setValueAtTime(time, value, ViewSpec(0), dim, Natron::eValueChangedReasonNatronGuiEdited, &kf);
+                            knob->setValueAtTime(time, value, ViewSpec(0), dim, eValueChangedReasonNatronGuiEdited, &kf);
                         } else {
-                            knob->setValue(value, ViewSpec(0), dim, Natron::eValueChangedReasonNatronGuiEdited, 0);
+                            knob->setValue(value, ViewSpec(0), dim, eValueChangedReasonNatronGuiEdited, 0);
                         }
                         
                     }   break;
@@ -1389,7 +1389,7 @@ TrackerPanel::onItemEnabledCheckBoxChecked(bool checked)
         QWidget* cellW = _imp->view->cellWidget(i, COL_ENABLED);
         if (widget == cellW) {
             TrackMarkerPtr marker = _imp->items[i].marker.lock();
-            marker->setEnabled(checked, Natron::eValueChangedReasonNatronGuiEdited);
+            marker->setEnabled(checked, eValueChangedReasonNatronGuiEdited);
             break;
         }
     }
@@ -1405,7 +1405,7 @@ TrackerPanel::onItemMotionModelChanged(int index)
         QWidget* cellW = _imp->view->cellWidget(i, COL_MOTION_MODEL);
         if (widget == cellW) {
             TrackMarkerPtr marker = _imp->items[i].marker.lock();
-            marker->getMotionModelKnob()->setValue(index, ViewSpec(0), 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+            marker->getMotionModelKnob()->setValue(index, ViewSpec(0), 0, eValueChangedReasonNatronGuiEdited, 0);
             break;
         }
     }
@@ -1653,7 +1653,7 @@ TrackerPanel::onTrackRemoved(const TrackMarkerPtr& marker)
 void
 TrackerPanel::onCenterKnobValueChanged(const TrackMarkerPtr& marker,int dimension, int reason)
 {
-    if (reason == Natron::eValueChangedReasonNatronGuiEdited) {
+    if (reason == eValueChangedReasonNatronGuiEdited) {
         return;
     }
     
@@ -1676,7 +1676,7 @@ TrackerPanel::onCenterKnobValueChanged(const TrackMarkerPtr& marker,int dimensio
 void
 TrackerPanel::onOffsetKnobValueChanged(const TrackMarkerPtr& marker,int dimension, int reason)
 {
-    if (reason == Natron::eValueChangedReasonNatronGuiEdited) {
+    if (reason == eValueChangedReasonNatronGuiEdited) {
         return;
     }
     ++_imp->itemDataChangedRecursion;
@@ -1697,7 +1697,7 @@ TrackerPanel::onOffsetKnobValueChanged(const TrackMarkerPtr& marker,int dimensio
 void
 TrackerPanel::onErrorKnobValueChanged(const TrackMarkerPtr &marker,int /*dimension*/, int reason)
 {
-    if (reason == Natron::eValueChangedReasonNatronGuiEdited) {
+    if (reason == eValueChangedReasonNatronGuiEdited) {
         return;
     }
     TableItem* item = getItemAt(marker, COL_ERROR);
@@ -1712,7 +1712,7 @@ TrackerPanel::onErrorKnobValueChanged(const TrackMarkerPtr &marker,int /*dimensi
 void
 TrackerPanel::onMotionModelKnobValueChanged(const TrackMarkerPtr &marker,int /*dimension*/, int reason)
 {
-    if (reason == Natron::eValueChangedReasonNatronGuiEdited) {
+    if (reason == eValueChangedReasonNatronGuiEdited) {
         return;
     }
     int row = getMarkerRow(marker);
@@ -1729,7 +1729,7 @@ TrackerPanel::onMotionModelKnobValueChanged(const TrackMarkerPtr &marker,int /*d
 void
 TrackerPanel::onEnabledChanged(const TrackMarkerPtr& marker,int reason)
 {
-    if (reason == Natron::eValueChangedReasonNatronGuiEdited) {
+    if (reason == eValueChangedReasonNatronGuiEdited) {
         return;
     }
     int row = getMarkerRow(marker);

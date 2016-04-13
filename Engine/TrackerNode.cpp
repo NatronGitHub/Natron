@@ -85,6 +85,7 @@ TrackerNode::getPluginDescription() const
     "You may export the tracking data either to a CornerPin node or to a Transform node. The CornerPin node performs a warp that may be more stable than a Transform node when using 4 or more tracks: it retains more information than the Transform node.";
 }
 
+
 void
 TrackerNode::initializeKnobs()
 {
@@ -120,6 +121,16 @@ TrackerNode::knobChanged(KnobI* k,
         return;
     }
     ctx->knobChanged(k, reason, view, time, originatedFromMainThread);
+}
+
+void
+TrackerNode::onKnobsLoaded()
+{
+    boost::shared_ptr<TrackerContext> ctx = getNode()->getTrackerContext();
+    if (!ctx) {
+        return;
+    }
+    ctx->onKnobsLoaded();
 }
 
 void
