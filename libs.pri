@@ -64,12 +64,11 @@ CONFIG += glog-flags
 DEFINES += CERES_HAVE_PTHREAD CERES_NO_SUITESPARSE CERES_NO_CXSPARSE CERES_HAVE_RWLOCK
 # Comment to make ceres use a lapack library
 DEFINES += CERES_NO_LAPACK
-# Uncomment to make ceres use openmp
 *g++* {
+    CONFIG += openmp
+}
+openmp {
     DEFINES += CERES_USE_OPENMP
-    QMAKE_CXXFLAGS += -fopenmp
-    QMAKE_CFLAGS += -fopenmp
-    QMAKE_LFLAGS += -fopenmp
 }
 #If undefined, make sure to add to sources all the files in ceres/internal/ceres/generated
 DEFINES += CERES_RESTRICT_SCHUR_SPECIALIZATION
@@ -361,6 +360,9 @@ win32-msvc*{
 # ceres
 static-ceres {
 CONFIG += static-glog
+*g++* {
+    CONFIG += openmp
+}
 win32-msvc*{
         CONFIG(64bit) {
                 CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/ceres/x64/release/ -lceres
