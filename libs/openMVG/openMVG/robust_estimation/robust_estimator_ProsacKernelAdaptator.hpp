@@ -229,18 +229,17 @@ namespace openMVG {
                 double h4 = model(1,0), h5 = model(1,1), h6 = model(1,2);
                 double h7 = model(2,0), h8 = model(2,1), h9 = model(2,2);
                 
-                Vec2 t(x1 * h1 + y1 * h2 + h3 - x1 * x2 * h7- y1 * x2 * h8 - x2 * h9,
-                       x1 *h4 + y1 * h5 + h6 - x1 * y2 * h7 - y1 * y2 * h8 - y2 * h9);
+                Vec2 t(x1 * h1 + y1 * h2 + h3 - x1 * x2 * h7 - y1 * x2 * h8 - x2 * h9,
+                       x1 * h4 + y1 * h5 + h6 - x1 * y2 * h7 - y1 * y2 * h8 - y2 * h9);
                 
                 double j1 = h1-h7*x2, j2 = h2-h8*x2, j3 = -h7*x1-h8*y1-h9, j4 = h4-h7*y2, j5 =h5-h8*y2;
                 
                 typedef Eigen::Matrix<double, 2, 4> Mat24;
                 
-                Mat24 J;
-                J(0,0) = j1; J(0,1) = j2; J(0,2) = j3; J(0,3) = 0;
-                J(1,0) = j4; J(1,1) = j5; J(1,2) = 0; J(1,3) = j3;
+                Mat J(2,4);
+                J << j1, j2, j3, 0,
+                    j4, j5, 0, j3;
                 
-                // J
                 *dX = J.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(t);
                 
                 /*Mat2 JJt = J * J.transpose();

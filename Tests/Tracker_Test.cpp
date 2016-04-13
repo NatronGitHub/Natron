@@ -23,6 +23,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include <vector>
+#include <cmath>
 #include <gtest/gtest.h>
 #include <openMVG/robust_estimation/robust_estimator_Prosac.hpp>
 
@@ -40,6 +41,13 @@ static void padd(std::vector<Point>& v, double x, double y)
     Point& p = v.back();
     p.x = x;
     p.y = y;
+}
+
+static void padd(openMVG::Mat& m, double x, double y)
+{
+    m.resize(m.rows(), m.cols() + 1);
+    m(0, m.cols() -1) = x;
+    m(1, m.cols() -1) = y;
 }
 
 static void throwProsacError(ProsacReturnCodeEnum c, int nMinSamples) {
@@ -337,4 +345,101 @@ TEST(ModelSearch,SimilarityNPoints)
     padd(x1, 23, 32);
     padd(x1, 44, 75);
     testSimilarity(x1);
+}
+
+
+static void computeHomography(int w1, int h1, int w2, int h2,
+                              const openMVG::Mat3& H,
+                              int nbOutliers,
+                              std::vector<Point>& x1,
+                              std::vector<Point>* x2,
+                              openMVG::Mat3* model,
+                              InliersVec* inliers)
+{
+    x2->resize(x1.size());
+    
+    // Compute the x2 points from the ground truth homography using homogeneous coords.
+    for (std::size_t i = 0; i < x1.size(); ++i) {
+        openMVG::Vec3 v;
+        v(0) = x1[i].x;
+        v(1) = x1[i].y;
+        v(2) = 1.;
+        openMVG::Vec3 u = H * v;
+        (*x2)[i].x = u(0);
+        (*x2)[i].y = u(1);
+    }
+    
+    ASSERT_TRUE(nbOutliers < (int)x1.size());
+    
+    // Introduce outliers in x1
+    for (int i = 0; i < nbOutliers; ++i) {
+        x1[i].x = x1[i].x + i * 5.5;
+        x1[i].y = x1[i].y + 7.8;
+    }
+    
+    runProsacForModel<openMVG::robust::Homography2DSolver>(x1, *x2, w1, h1, w2, h2, model, inliers);
+    
+}
+
+static void testHomography(std::vector<Point>& x1)
+{
+    
+    const int w1 = 500;
+    const int h1 = 500;
+    const int w2 = 600;
+    const int h2 = 600;
+    
+    
+    openMVG::Mat3 H;
+    H << 1, 0, -4,
+    0, 1,  5,
+    0, 0,  1;
+    
+    const double outliersProp = x1.size() == 4 ? 0. : 0.2;
+    const int nbOutliers = x1.size() * outliersProp;
+    
+    std::vector<Point> x2;
+    openMVG::Mat3 foundModel;
+    InliersVec inliers;
+    try {
+        computeHomography(w1, h1, w2, h2, H, nbOutliers, x1, &x2, &foundModel, &inliers);
+    } catch (...) {
+        ASSERT_TRUE(false);
+    }
+    ASSERT_TRUE(x1.size() == x2.size());
+    
+    
+    int originalInliers = std::accumulate(inliers.begin(), inliers.end(), 0);
+    EXPECT_EQ(originalInliers, (int)x1.size() - nbOutliers);
+    
+    // Check the found model
+    for (int i = 0; i < H.rows(); ++i) {
+        for (int j = 0; j < H.cols(); ++j) {
+            EXPECT_NEAR(H(i,j), foundModel(i,j), 1e-5);
+        }
+    }
+}
+
+TEST(ModelSearch,HomographyMinimal)
+{
+    std::vector<Point> x1;
+    padd(x1, 50, 50);
+    padd(x1, 70, 100);
+    padd(x1, 60, 100);
+    padd(x1, 90, 100);
+    testHomography(x1);
+}
+
+TEST(ModelSearch,HomographyNPoints)
+{
+    std::vector<Point> x1;
+    const int n = 1000;
+    x1.resize(n);
+    
+    std::srand(2000);
+    for (int i = 0; i < n ; ++i) {
+        x1[i].x = rand() % 500;
+        x1[i].y = rand() % 500;
+    }
+    testHomography(x1);
 }
