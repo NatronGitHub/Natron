@@ -24,10 +24,17 @@
 
 #include "Image.h"
 
+#include "Global/Macros.h"
+
 #include <cassert>
 #include <stdexcept>
 
 #include <QDebug>
+
+
+// disable some warnings due to unused parameters
+GCC_DIAG_OFF(unused-parameter)
+GCC_DIAG_OFF(unused-but-set-variable)
 
 // NATRON_COPY_CHANNELS_UNPREMULT:
 // Repremult R G and B if output is premult and alpha was modified.
