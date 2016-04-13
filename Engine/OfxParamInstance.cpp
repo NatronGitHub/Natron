@@ -320,8 +320,8 @@ static void setStringPropertyN(const std::vector<std::string>& entries,
                                const std::string& property)
 {
     try {
-        OFX::Host::Property::String *prop = 0;
-        if (param->getProperties().fetchStringProperty(property, prop)) {
+        OFX::Host::Property::String *prop = param->getProperties().fetchStringProperty(property);
+        if (prop) {
             prop->reset();
             for (std::size_t i = 0; i < entries.size(); ++i) {
                 prop->setValue(entries[i], i);
@@ -688,10 +688,10 @@ OfxDoubleInstance::OfxDoubleInstance(const boost::shared_ptr<OfxEffectInstance>&
     const std::string & doubleType = getDoubleType();
     if ( (doubleType == kOfxParamDoubleTypeNormalisedX) ||
          ( doubleType == kOfxParamDoubleTypeNormalisedXAbsolute) ) {
-        dblKnob->setValueIsNormalized(0, KnobDouble::eValueIsNormalizedX);
+        dblKnob->setValueIsNormalized(0, eValueIsNormalizedX);
     } else if ( (doubleType == kOfxParamDoubleTypeNormalisedY) ||
                 ( doubleType == kOfxParamDoubleTypeNormalisedYAbsolute) ) {
-        dblKnob->setValueIsNormalized(0, KnobDouble::eValueIsNormalizedY);
+        dblKnob->setValueIsNormalized(0, eValueIsNormalizedY);
     }
 
     double min = properties.getDoubleProperty(kOfxParamPropMin);
@@ -718,10 +718,10 @@ OfxDoubleInstance::OfxDoubleInstance(const boost::shared_ptr<OfxEffectInstance>&
     // and http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#APIChanges_1_2_SpatialParameters
     if (doubleType == kOfxParamDoubleTypeNormalisedX ||
         doubleType == kOfxParamDoubleTypeNormalisedXAbsolute) {
-        dblKnob->setValueIsNormalized(0, KnobDouble::eValueIsNormalizedX);
+        dblKnob->setValueIsNormalized(0, eValueIsNormalizedX);
     } else if (doubleType == kOfxParamDoubleTypeNormalisedY ||
               doubleType == kOfxParamDoubleTypeNormalisedYAbsolute) {
-        dblKnob->setValueIsNormalized(0, KnobDouble::eValueIsNormalizedY);
+        dblKnob->setValueIsNormalized(0, eValueIsNormalizedY);
     }
     dblKnob->setDefaultValuesAreNormalized(coordSystem == kOfxParamCoordinatesNormalised ||
                                            doubleType == kOfxParamDoubleTypeNormalisedX ||
@@ -1724,37 +1724,59 @@ OfxDouble2DInstance::OfxDouble2DInstance(const boost::shared_ptr<OfxEffectInstan
 {
     const OFX::Host::Property::Set &properties = getProperties();
     const std::string & coordSystem = getDefaultCoordinateSystem();
-    const int dims = 2;
+    
+    const int ofxDims = 2;
+    int knobDims = 2;
+    int startDimIndex = 0;
+    
+    int isRectangleType = properties.getIntProperty(kNatronOfxParamPropTypeRectangle);
+    std::string paramName = descriptor.getName();
+    if (isRectangleType == 1) {
+        std::size_t found = paramName.find("_position");
+        assert(found != std::string::npos);
+        paramName = paramName.substr(0, found);
+        knobDims = 4;
+    } else if (isRectangleType == 2) {
+        std::size_t found = paramName.find("_size");
+        assert(found != std::string::npos);
+        paramName = paramName.substr(0, found);
+        knobDims = 4;
+        startDimIndex = 2;
+    }
 
-    boost::shared_ptr<KnobDouble> dblKnob = checkIfKnobExistsWithNameOrCreate<KnobDouble>(descriptor.getName(), this, dims);
+    boost::shared_ptr<KnobDouble> dblKnob = checkIfKnobExistsWithNameOrCreate<KnobDouble>(paramName, this, knobDims);
     _knob = dblKnob;
 
     const std::string & doubleType = getDoubleType();
     if (doubleType == kOfxParamDoubleTypeNormalisedXY ||
         doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute) {
-        dblKnob->setValueIsNormalized(0, KnobDouble::eValueIsNormalizedX);
-        dblKnob->setValueIsNormalized(1, KnobDouble::eValueIsNormalizedY);
+        dblKnob->setValueIsNormalized(0, eValueIsNormalizedX);
+        dblKnob->setValueIsNormalized(1, eValueIsNormalizedY);
     }
     // disable slider if the type is an absolute position
     if (doubleType == kOfxParamDoubleTypeXYAbsolute ||
-        doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute) {
+        doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute ||
+        isRectangleType > 0) {
         dblKnob->disableSlider();
     }
 
-    std::vector<double> minimum(dims);
-    std::vector<double> maximum(dims);
-    std::vector<double> increment(dims);
-    std::vector<double> displayMins(dims);
-    std::vector<double> displayMaxs(dims);
-    std::vector<int> decimals(dims);
-    std::vector<double> def(dims);
+    if (isRectangleType > 0) {
+        dblKnob->setAsRectangle();
+    }
+    std::vector<double> minimum(ofxDims);
+    std::vector<double> maximum(ofxDims);
+    std::vector<double> increment(ofxDims);
+    std::vector<double> displayMins(ofxDims);
+    std::vector<double> displayMaxs(ofxDims);
+    std::vector<int> decimals(ofxDims);
+    std::vector<double> def(ofxDims);
 
     // kOfxParamPropIncrement and kOfxParamPropDigits only have one dimension,
     // @see Descriptor::addNumericParamProps() in ofxhParam.cpp
     // @see gDoubleParamProps in ofxsPropertyValidation.cpp
     double incr = properties.getDoubleProperty(kOfxParamPropIncrement);
     int dig = properties.getIntProperty(kOfxParamPropDigits);
-    for (int i = 0; i < dims; ++i) {
+    for (int i = 0; i < ofxDims; ++i) {
         minimum[i] = properties.getDoubleProperty(kOfxParamPropMin,i);
         maximum[i] = properties.getDoubleProperty(kOfxParamPropMax,i);
         increment[i] = incr;
@@ -1762,7 +1784,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(const boost::shared_ptr<OfxEffectInstan
         def[i] = properties.getDoubleProperty(kOfxParamPropDefault,i);
 
         std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,i);
-        dblKnob->setDimensionName(i, dimensionName);
+        dblKnob->setDimensionName(i + startDimIndex, dimensionName);
         
     }
     dblKnob->setMinimumsAndMaximums(minimum, maximum);
@@ -1773,7 +1795,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(const boost::shared_ptr<OfxEffectInstan
     // Only create native overlays if there is no interact or kOfxParamPropUseHostOverlayHandle is set
     // see https://github.com/MrKepzie/Natron/issues/932
     // only create automatic overlay for kOfxParamDoubleTypeXYAbsolute and kOfxParamDoubleTypeNormalisedXYAbsolute
-    if ((!node->effectInstance()->getOverlayInteractMainEntry() &&
+    if ((!node->effectInstance()->getOverlayInteractMainEntry() && !isRectangleType &&
          (getDoubleType() == kOfxParamDoubleTypeXYAbsolute ||
           getDoubleType() == kOfxParamDoubleTypeNormalisedXYAbsolute)) ||
         properties.getIntProperty(kOfxParamPropUseHostOverlayHandle) == 1) {
@@ -1786,14 +1808,14 @@ OfxDouble2DInstance::OfxDouble2DInstance(const boost::shared_ptr<OfxEffectInstan
                         doubleType == kOfxParamDoubleTypeXYAbsolute);
     if (doubleType == kOfxParamDoubleTypeNormalisedXY ||
         doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute) {
-        dblKnob->setValueIsNormalized(0, KnobDouble::eValueIsNormalizedX);
-        dblKnob->setValueIsNormalized(1, KnobDouble::eValueIsNormalizedY);
+        dblKnob->setValueIsNormalized(0 + startDimIndex, eValueIsNormalizedX);
+        dblKnob->setValueIsNormalized(1 + startDimIndex, eValueIsNormalizedY);
     }
     dblKnob->setDefaultValuesAreNormalized(coordSystem == kOfxParamCoordinatesNormalised ||
                                            doubleType == kOfxParamDoubleTypeNormalisedXY ||
                                            doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute);
     dblKnob->blockValueChanges();
-    for (int i = 0; i < dims; ++i) {
+    for (int i = startDimIndex; i < startDimIndex + ofxDims; ++i) {
         dblKnob->setDefaultValue(def[i], i);
     }
     dblKnob->unblockValueChanges();
@@ -1999,21 +2021,45 @@ OfxInteger2DInstance::OfxInteger2DInstance(const boost::shared_ptr<OfxEffectInst
 , OFX::Host::Param::Integer2DInstance( descriptor,node->effectInstance() )
 
 {
-    const int dims = 2;
+    
     const OFX::Host::Property::Set &properties = getProperties();
 
+    const int ofxDims = 2;
+    int knobDims = 2;
+    
+    int startDimIndex = 0;
+    int isRectangleType = properties.getIntProperty(kNatronOfxParamPropTypeRectangle);
+    std::string paramName = descriptor.getName();
+    if (isRectangleType == 1) {
+        std::size_t found = paramName.find("_position");
+        assert(found != std::string::npos);
+        paramName = paramName.substr(0, found);
+        knobDims = 4;
+    } else if (isRectangleType == 2) {
+        std::size_t found = paramName.find("_size");
+        assert(found != std::string::npos);
+        paramName = paramName.substr(0, found);
+        knobDims = 4;
+        startDimIndex = 2;
+    }
 
-    boost::shared_ptr<KnobInt> iKnob = checkIfKnobExistsWithNameOrCreate<KnobInt>(descriptor.getName(), this, dims);
+  
+
+    boost::shared_ptr<KnobInt> iKnob = checkIfKnobExistsWithNameOrCreate<KnobInt>(paramName, this, knobDims);
     _knob = iKnob;
 
-    std::vector<int> minimum(dims);
-    std::vector<int> maximum(dims);
-    std::vector<int> increment(dims);
-    std::vector<int> displayMins(dims);
-    std::vector<int> displayMaxs(dims);
-    boost::scoped_array<int> def(new int[dims]);
+    if (isRectangleType) {
+        iKnob->setAsRectangle();
+    }
+    
+    std::vector<int> minimum(ofxDims);
+    std::vector<int> maximum(ofxDims);
+    std::vector<int> increment(ofxDims);
+    std::vector<int> displayMins(ofxDims);
+    std::vector<int> displayMaxs(ofxDims);
+    boost::scoped_array<int> def(new int[ofxDims]);
 
-    for (int i = 0; i < dims; ++i) {
+    for (int i = 0; i < ofxDims; ++i) {
         minimum[i] = properties.getIntProperty(kOfxParamPropMin,i);
         displayMins[i] = properties.getIntProperty(kOfxParamPropDisplayMin,i);
         displayMaxs[i] = properties.getIntProperty(kOfxParamPropDisplayMax,i);
@@ -2021,15 +2067,15 @@ OfxInteger2DInstance::OfxInteger2DInstance(const boost::shared_ptr<OfxEffectInst
         increment[i] = 1; // kOfxParamPropIncrement only exists for Double
         def[i] = properties.getIntProperty(kOfxParamPropDefault,i);
         std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,i);
-        iKnob->setDimensionName(i, dimensionName);
+        iKnob->setDimensionName(i + startDimIndex, dimensionName);
     }
 
     iKnob->setMinimumsAndMaximums(minimum, maximum);
     iKnob->setIncrement(increment);
     iKnob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
     iKnob->blockValueChanges();
-    iKnob->setDefaultValue(def[0], 0);
-    iKnob->setDefaultValue(def[1], 1);
+    iKnob->setDefaultValue(def[0 + startDimIndex], 0);
+    iKnob->setDefaultValue(def[1 + startDimIndex], 1);
     iKnob->unblockValueChanges();
 }
 
@@ -2194,27 +2240,53 @@ OfxDouble3DInstance::OfxDouble3DInstance(const boost::shared_ptr<OfxEffectInstan
 : OfxParamToKnob(node)
 , OFX::Host::Param::Double3DInstance( descriptor,node->effectInstance() )
 {
-    const int dims = 3;
+    const int ofxDims = 3;
     const OFX::Host::Property::Set &properties = getProperties();
 
+    int knobDims = 3;
+    
+    int isMatrixType = properties.getIntProperty(kNatronOfxParamPropDoubleTypeMatrix3x3);
+    std::string paramName = descriptor.getName();
+    
+    int startDimIndex = 0;
+    if (isMatrixType == 1) {
+        std::size_t found = paramName.find("_row1");
+        assert(found != std::string::npos);
+        paramName = paramName.substr(0, found);
+        knobDims = 9;
+    } else if (isMatrixType == 2) {
+        std::size_t found = paramName.find("_row2");
+        assert(found != std::string::npos);
+        paramName = paramName.substr(0, found);
+        knobDims = 9;
+        startDimIndex = 3;
+    } else if (isMatrixType == 3) {
+        std::size_t found = paramName.find("_row3");
+        assert(found != std::string::npos);
+        paramName = paramName.substr(0, found);
+        knobDims = 9;
+        startDimIndex = 6;
+    }
 
-    boost::shared_ptr<KnobDouble> knob = checkIfKnobExistsWithNameOrCreate<KnobDouble>(descriptor.getName(), this, dims);
+    
+
+    boost::shared_ptr<KnobDouble> knob = checkIfKnobExistsWithNameOrCreate<KnobDouble>(paramName, this, knobDims);
     _knob = knob;
 
-    std::vector<double> minimum(dims);
-    std::vector<double> maximum(dims);
-    std::vector<double> increment(dims);
-    std::vector<double> displayMins(dims);
-    std::vector<double> displayMaxs(dims);
-    std::vector<int> decimals(dims);
-    std::vector<double> def(dims);
+    std::vector<double> minimum(ofxDims);
+    std::vector<double> maximum(ofxDims);
+    std::vector<double> increment(ofxDims);
+    std::vector<double> displayMins(ofxDims);
+    std::vector<double> displayMaxs(ofxDims);
+    std::vector<int> decimals(ofxDims);
+    std::vector<double> def(ofxDims);
 
     // kOfxParamPropIncrement and kOfxParamPropDigits only have one dimension,
     // @see Descriptor::addNumericParamProps() in ofxhParam.cpp
     // @see gDoubleParamProps in ofxsPropertyValidation.cpp
     double incr = properties.getDoubleProperty(kOfxParamPropIncrement);
     int dig = properties.getIntProperty(kOfxParamPropDigits);
-    for (int i = 0; i < dims; ++i) {
+    for (int i = 0; i < ofxDims; ++i) {
         minimum[i] = properties.getDoubleProperty(kOfxParamPropMin,i);
         displayMins[i] = properties.getDoubleProperty(kOfxParamPropDisplayMin,i);
         displayMaxs[i] = properties.getDoubleProperty(kOfxParamPropDisplayMax,i);
@@ -2223,7 +2295,7 @@ OfxDouble3DInstance::OfxDouble3DInstance(const boost::shared_ptr<OfxEffectInstan
         decimals[i] = dig;
         def[i] = properties.getDoubleProperty(kOfxParamPropDefault,i);
         std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,i);
-        knob->setDimensionName(i, dimensionName);
+        knob->setDimensionName(startDimIndex + i, dimensionName);
     }
 
     knob->setMinimumsAndMaximums(minimum, maximum);
@@ -2231,7 +2303,7 @@ OfxDouble3DInstance::OfxDouble3DInstance(const boost::shared_ptr<OfxEffectInstan
     knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
     knob->setDecimals(decimals);
     knob->blockValueChanges();
-    for (int i = 0; i < dims; ++i) {
+    for (int i = startDimIndex; i < startDimIndex + ofxDims; ++i) {
         knob->setDefaultValue(def[i], i);
     }
     knob->unblockValueChanges();

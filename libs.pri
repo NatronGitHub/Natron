@@ -65,7 +65,12 @@ DEFINES += CERES_HAVE_PTHREAD CERES_NO_SUITESPARSE CERES_NO_CXSPARSE CERES_HAVE_
 # Comment to make ceres use a lapack library
 DEFINES += CERES_NO_LAPACK
 # Uncomment to make ceres use openmp
-#DEFINES += CERES_USE_OPENMP
+*g++* {
+    DEFINES += CERES_USE_OPENMP
+    QMAKE_CXXFLAGS += -fopenmp
+    QMAKE_CFLAGS += -fopenmp
+    QMAKE_LFLAGS += -fopenmp
+}
 #If undefined, make sure to add to sources all the files in ceres/internal/ceres/generated
 DEFINES += CERES_RESTRICT_SCHUR_SPECIALIZATION
 DEFINES += WITH_LIBMV_GUARDED_ALLOC GOOGLE_GLOG_DLL_DECL= LIBMV_NO_FAST_DETECTOR=
@@ -365,11 +370,11 @@ win32-msvc*{
                 CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/ceres/win32/debug/ -lceres
         }
 } else {
-        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/ceres/release/ -lceres
-        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/ceres/debug/ -lceres
+        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/ceres/release/ -lceres -lgomp
+        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/ceres/debug/ -lceres -lgomp
         else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/ceres/build/Release/ -lceres
         else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/ceres/build/Debug/ -lceres
-        else:unix: LIBS += -L$$OUT_PWD/../libs/ceres/ -lceres
+        else:unix: LIBS += -L$$OUT_PWD/../libs/ceres/ -lceres -lgomp
 }
 
 win32-msvc*{

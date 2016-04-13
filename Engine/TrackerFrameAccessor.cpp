@@ -28,7 +28,9 @@
 #include "TrackerFrameAccessor.h"
 
 #include <libmv/image/array_nd.h>
-#include "libmv/autotrack/region.h"
+#include <libmv/autotrack/region.h>
+
+#include <QDebug>
 
 #include "Engine/AppInstance.h"
 #include "Engine/Project.h"

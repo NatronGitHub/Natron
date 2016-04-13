@@ -59,6 +59,9 @@ win32-msvc* {
 
 include(../libs.pri)
 include(../OpenColorIO-Configs.pri)
+include(../global.pri)
+include(../config.pri)
+
 macx {
     Resources.files += $$PWD/../Gui/Resources/Images/natronProjectIcon_osx.icns
     Resources.path = Contents/Resources
@@ -72,8 +75,7 @@ macx {
     INSTALLS += Resources
 }
 
-include(../global.pri)
-include(../config.pri)
+
 
 win32-g++ {
 #Gcc is very picky here, if we include these libraries before the includes commands above, it will yield tons of unresolved externals
