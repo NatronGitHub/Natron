@@ -1156,10 +1156,13 @@ Knob<T>::setValue(const T & v,
 template <typename T>
 void
 Knob<T>::setValues(const T& value0,
-                   const T& value1,
-                   ViewSpec view,
-                   ValueChangedReasonEnum reason)
+               const T& value1,
+               ViewSpec view,
+               ValueChangedReasonEnum reason,
+               int dimensionOffset)
 {
+    assert(dimensionOffset + 2 <= getDimension());
+
     KnobHolder* holder = getHolder();
     EffectInstance* effect = 0;
     bool doEditEnd = false;
@@ -1178,10 +1181,10 @@ Knob<T>::setValues(const T& value0,
     assert(getDimension() == 2);
     beginChanges();
     blockValueChanges();
-    ret = setValue(value0, view, 0, reason, &newKey, hasChanged);
+    ret = setValue(value0, view, 0 + dimensionOffset, reason, &newKey, hasChanged);
     hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
     unblockValueChanges();
-    ret = setValue(value1, view, 1, reason, &newKey, hasChanged);
+    ret = setValue(value1, view, 1 + dimensionOffset, reason, &newKey, hasChanged);
     hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
     Q_UNUSED(hasChanged);
     endChanges();
@@ -1194,10 +1197,34 @@ template <typename T>
 void
 Knob<T>::setValues(const T& value0,
                    const T& value1,
+                   ViewSpec view,
+                   ValueChangedReasonEnum reason)
+{
+    setValues(value0, value1, view, reason, 0);
+}
+
+template <typename T>
+void
+Knob<T>::setValues(const T& value0,
+                   const T& value1,
                    const T& value2,
                    ViewSpec view,
                    ValueChangedReasonEnum reason)
 {
+    setValues(value0, value1, value2, view, reason, 0);
+}
+
+template <typename T>
+void
+Knob<T>::setValues(const T& value0,
+                   const T& value1,
+                   const T& value2,
+                   ViewSpec view,
+                   ValueChangedReasonEnum reason,
+                   int dimensionOffset)
+{
+    assert(dimensionOffset + 3 <= getDimension());
+    
     KnobHolder* holder = getHolder();
     EffectInstance* effect = 0;
     bool doEditEnd = false;
@@ -1210,25 +1237,26 @@ Knob<T>::setValues(const T& value0,
             }
         }
     }
-
+    
     KeyFrame newKey;
     KnobHelper::ValueChangedReturnCodeEnum ret;
     bool hasChanged = false;
     assert(getDimension() == 3);
     beginChanges();
     blockValueChanges();
-    ret = setValue(value0, view,  0, reason, &newKey, hasChanged);
+    ret = setValue(value0, view,  0 + dimensionOffset, reason, &newKey, hasChanged);
     hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
-    ret = setValue(value1, view, 1, reason, &newKey, hasChanged);
+    ret = setValue(value1, view, 1 + dimensionOffset, reason, &newKey, hasChanged);
     hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
     unblockValueChanges();
-    ret = setValue(value2, view, 2, reason, &newKey, hasChanged);
+    ret = setValue(value2, view, 2 + dimensionOffset, reason, &newKey, hasChanged);
     hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
     Q_UNUSED(hasChanged);
     endChanges();
     if (doEditEnd) {
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
     }
+
 }
 
 template <typename T>
@@ -1479,9 +1507,10 @@ Knob<T>::setValuesAtTime(double time,
                          const T& value0,
                          const T& value1,
                          ViewSpec view,
-                         ValueChangedReasonEnum reason)
+                         ValueChangedReasonEnum reason,
+                         int dimensionOffset)
 {
-    
+    assert(dimensionOffset + 2 <= getDimension());
     KnobHolder* holder = getHolder();
     EffectInstance* effect = 0;
     bool doEditEnd = false;
@@ -1500,10 +1529,10 @@ Knob<T>::setValuesAtTime(double time,
     assert(getDimension() == 2);
     beginChanges();
     blockValueChanges();
-    ret = setValueAtTime(time, value0, view, 0, reason, &newKey, hasChanged);
+    ret = setValueAtTime(time, value0, view, 0 + dimensionOffset, reason, &newKey, hasChanged);
     hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
     unblockValueChanges();
-    ret = setValueAtTime(time, value1, view, 1, reason, &newKey, hasChanged);
+    ret = setValueAtTime(time, value1, view, 1 + dimensionOffset, reason, &newKey, hasChanged);
     hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
     Q_UNUSED(hasChanged);
     endChanges();
@@ -1517,10 +1546,24 @@ void
 Knob<T>::setValuesAtTime(double time,
                          const T& value0,
                          const T& value1,
-                         const T& value2,
                          ViewSpec view,
                          ValueChangedReasonEnum reason)
 {
+    
+    setValuesAtTime(time, value0, value1, view, reason, 0);
+}
+
+template<typename T>
+void
+Knob<T>::setValuesAtTime(double time,
+                         const T& value0,
+                         const T& value1,
+                         const T& value2,
+                         ViewSpec view,
+                         ValueChangedReasonEnum reason,
+                         int dimensionOffset)
+{
+    assert(dimensionOffset + 3 <= getDimension());
     KnobHolder* holder = getHolder();
     EffectInstance* effect = 0;
     bool doEditEnd = false;
@@ -1539,12 +1582,12 @@ Knob<T>::setValuesAtTime(double time,
     assert(getDimension() == 3);
     beginChanges();
     blockValueChanges();
-    ret = setValueAtTime(time, value0, view, 0, reason, &newKey, hasChanged);
+    ret = setValueAtTime(time, value0, view, 0 + dimensionOffset, reason, &newKey, hasChanged);
     hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
-    ret = setValueAtTime(time, value1, view, 1, reason, &newKey, hasChanged);
+    ret = setValueAtTime(time, value1, view, 1 + dimensionOffset, reason, &newKey, hasChanged);
     hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
     unblockValueChanges();
-    ret = setValueAtTime(time, value2, view, 2, reason, &newKey, hasChanged);
+    ret = setValueAtTime(time, value2, view, 2 + dimensionOffset, reason, &newKey, hasChanged);
     hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
     Q_UNUSED(hasChanged);
     endChanges();
@@ -1552,6 +1595,18 @@ Knob<T>::setValuesAtTime(double time,
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
     }
 
+}
+
+template<typename T>
+void
+Knob<T>::setValuesAtTime(double time,
+                         const T& value0,
+                         const T& value1,
+                         const T& value2,
+                         ViewSpec view,
+                         ValueChangedReasonEnum reason)
+{
+    setValuesAtTime(time, value0, value1, value2, view, reason , 0);
 }
 
 template<typename T>

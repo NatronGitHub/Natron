@@ -199,6 +199,9 @@ KnobDouble::KnobDouble(KnobHolder* holder,
         _decimals[i] = 2;
         _valueIsNormalized[i] = eValueIsNormalizedNone;
     }
+    if (dimension >= 4) {
+        disableSlider();
+    }
 }
 
 void

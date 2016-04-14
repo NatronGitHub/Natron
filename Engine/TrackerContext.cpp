@@ -803,6 +803,9 @@ TrackerContext::knobChanged(KnobI* k,
     } else if (k == _imp->transformType.lock().get()) {
         _imp->refreshTransformKnobs();
         _imp->refreshVisibilityFromTransformType();
+    } else if (k == _imp->motionType.lock().get()) {
+        _imp->refreshTransformKnobs();
+        _imp->refreshVisibilityFromTransformType();
     }
 }
 

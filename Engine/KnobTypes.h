@@ -307,7 +307,6 @@ public:
     void setAsRectangle() {
         if (getDimension() == 4) {
             _isRectangle = true;
-            disableSlider();
         }
     }
 

@@ -1661,12 +1661,26 @@ public:
                    const T& value1,
                    ViewSpec view,
                    ValueChangedReasonEnum reason);
+    
+    void setValues(const T& value0,
+                   const T& value1,
+                   ViewSpec view,
+                   ValueChangedReasonEnum reason,
+                   int dimensionOffset);
 
     void setValues(const T& value0,
                    const T& value1,
                    const T& value2,
                    ViewSpec view,
                    ValueChangedReasonEnum reason);
+    
+    void setValues(const T& value0,
+                   const T& value1,
+                   const T& value2,
+                   ViewSpec view,
+                   ValueChangedReasonEnum reason,
+                   int dimensionOffset);
+
 
     void setValues(const T& value0,
                    const T& value1,
@@ -1723,6 +1737,13 @@ public:
                          const T& value1,
                          ViewSpec view,
                          ValueChangedReasonEnum reason);
+    
+    void setValuesAtTime(double time,
+                         const T& value0,
+                         const T& value1,
+                         ViewSpec view,
+                         ValueChangedReasonEnum reason,
+                         int dimensionOffset);
 
     void setValuesAtTime(double time,
                          const T& value0,
@@ -1730,6 +1751,14 @@ public:
                          const T& value2,
                          ViewSpec view,
                          ValueChangedReasonEnum reason);
+    
+    void setValuesAtTime(double time,
+                         const T& value0,
+                         const T& value1,
+                         const T& value2,
+                         ViewSpec view,
+                         ValueChangedReasonEnum reason,
+                         int dimensionOffset);
 
     void setValuesAtTime(double time,
                          const T& value0,

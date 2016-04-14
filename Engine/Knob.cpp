@@ -332,7 +332,7 @@ struct KnobHelperPrivate
     , label(label_)
     , labelVisible(true)
     , iconFilePath()
-    , name( label_.c_str() )
+    , name(label_.c_str())
     , originalName(label_.c_str())
     , newLine(true)
     , addSeparator(false)
@@ -3698,9 +3698,22 @@ KnobHelper::createDuplicateOnNode(EffectInstance* effect,
         boost::shared_ptr<KnobInt> newKnob = effect->createIntKnob(newScriptName, newLabel,getDimension(), isUserKnob);
         newKnob->setMinimumsAndMaximums(isInt->getMinimums(), isInt->getMaximums());
         newKnob->setDisplayMinimumsAndMaximums(isInt->getDisplayMinimums(),isInt->getDisplayMaximums());
+        if (isInt->isSliderDisabled()) {
+            newKnob->disableSlider();
+        }
         output = newKnob;
     } else if (isDbl) {
         boost::shared_ptr<KnobDouble> newKnob = effect->createDoubleKnob(newScriptName, newLabel,getDimension(), isUserKnob);
+        newKnob->setSpatial(isDbl->getIsSpatial());
+        if (isDbl->isRectangle()) {
+            newKnob->setAsRectangle();
+        }
+        for (int i = 0; i < getDimension(); ++i) {
+            newKnob->setValueIsNormalized(i, isDbl->getValueIsNormalized(i));
+        }
+        if (isDbl->isSliderDisabled()) {
+            newKnob->disableSlider();
+        }
         newKnob->setMinimumsAndMaximums(isDbl->getMinimums(), isDbl->getMaximums());
         newKnob->setDisplayMinimumsAndMaximums(isDbl->getDisplayMinimums(),isDbl->getDisplayMaximums());
         output = newKnob;

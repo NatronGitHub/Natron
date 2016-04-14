@@ -151,6 +151,10 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface, co
             args.createGui = false;
             args.addToProject = false;
             NodePtr cpNode = node->getApp()->createNode(args);
+            if (!cpNode) {
+                throw std::runtime_error(QObject::tr("The Tracker node requires the Misc.ofx.bundle plug-in to be installed").toStdString());
+            }
+            cpNode->setNodeDisabled(true);
             cornerPinNode = cpNode;
         }
         
@@ -162,6 +166,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface, co
             args.createGui = false;
             args.addToProject = false;
             NodePtr tNode = node->getApp()->createNode(args);
+            tNode->setNodeDisabled(true);
             transformNode = tNode;
             
             output->connectInput(tNode, 0);
@@ -356,7 +361,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface, co
     
     NodePtr tNode = transformNode.lock();
     if (tNode) {
-        
+
         translate = createDuplicateKnob<KnobDouble>(kTransformParamTranslate, tNode, effect, transformPage);
         rotate = createDuplicateKnob<KnobDouble>(kTransformParamRotate, tNode, effect, transformPage);
         scale = createDuplicateKnob<KnobDouble>(kTransformParamScale, tNode, effect, transformPage);
@@ -399,6 +404,10 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface, co
         }
         
         cornerPinOverlayPoints = createDuplicateKnob<KnobChoice>(kCornerPinParamOverlayPoints, cNode, effect, transformPage);
+        cornerPinOverlayPoints.lock()->setSecret(true);
+
+        cornerPinMatrix = createDuplicateKnob<KnobDouble>(kCornerPinParamMatrix, cNode, effect, transformPage);
+        cornerPinMatrix.lock()->setSecret(true);
         
     } // cNode
     
@@ -1182,8 +1191,15 @@ TrackerContextPrivate::refreshVisibilityFromTransformTypeInternal(TrackerTransfo
         return;
     }
     
-    transformNode.lock()->setNodeDisabled(transformType == eTrackerTransformNodeCornerPin);
-    cornerPinNode.lock()->setNodeDisabled(transformType == eTrackerTransformNodeTransform);
+    boost::shared_ptr<KnobChoice> motionTypeKnob = motionType.lock();
+    if (!motionTypeKnob) {
+        return;
+    }
+    int motionType_i = motionTypeKnob->getValue();
+    TrackerMotionTypeEnum motionType = (TrackerMotionTypeEnum)motionType_i;
+    
+    transformNode.lock()->setNodeDisabled(transformType == eTrackerTransformNodeCornerPin || motionType == eTrackerMotionTypeNone);
+    cornerPinNode.lock()->setNodeDisabled(transformType == eTrackerTransformNodeTransform || motionType == eTrackerMotionTypeNone);
     
     if (transformType == eTrackerTransformNodeTransform) {
         transformControlsSeparator.lock()->setLabel("Transform Controls");
@@ -1194,6 +1210,7 @@ TrackerContextPrivate::refreshVisibilityFromTransformTypeInternal(TrackerTransfo
     toGroup.lock()->setSecret(transformType == eTrackerTransformNodeTransform);
     fromGroup.lock()->setSecret(transformType == eTrackerTransformNodeTransform);
     cornerPinOverlayPoints.lock()->setSecret(transformType == eTrackerTransformNodeTransform);
+    cornerPinMatrix.lock()->setSecret(transformType == eTrackerTransformNodeTransform);
     
     translate.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin);
     scale.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin);

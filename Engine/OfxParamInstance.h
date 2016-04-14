@@ -137,10 +137,7 @@ public:
         if ( label.empty() ) {
             label = param->getLongLabel();
         }
-        if ( label.empty() ) {
-            label = param->getName();
-        }
-        
+   
         return label;
     }
     
@@ -162,6 +159,7 @@ public:
         (void)scriptName;
 #endif
         boost::shared_ptr<TYPE> ret = AppManager::createKnob<TYPE>(holder.get(), getParamLabel(param), dimension);
+        ret->setName(scriptName);
         return ret;
     }
 
@@ -533,10 +531,12 @@ public:
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
-    bool isAnimated(int dimension) const;
+    //bool isAnimated(int dimension) const;
     bool isAnimated() const;
 
 private:
+    
+    int _startIndex;
     boost::weak_ptr<KnobDouble> _knob;
 };
 
@@ -581,6 +581,7 @@ private:
     
     virtual bool hasDoubleMinMaxProps() const OVERRIDE FINAL { return false; }
     
+    int _startIndex;
     boost::weak_ptr<KnobInt> _knob;
 };
 
@@ -626,6 +627,8 @@ public:
     bool isAnimated() const;
 
 private:
+    
+    int _startIndex;
     boost::weak_ptr<KnobDouble> _knob;
 };
 

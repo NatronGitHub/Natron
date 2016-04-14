@@ -189,6 +189,9 @@ GCC_DIAG_ON(unused-parameter)
 
 #define kCornerPinParamOverlayPoints "overlayPoints"
 
+#define kCornerPinParamMatrix "transform"
+
+
 NATRON_NAMESPACE_ENTER;
 
 
@@ -413,6 +416,7 @@ struct TrackerContextPrivate
     boost::weak_ptr<KnobGroup> fromGroup,toGroup;
     boost::weak_ptr<KnobDouble> fromPoints[4],toPoints[4];
     boost::weak_ptr<KnobBool> enableToPoint[4];
+    boost::weak_ptr<KnobDouble> cornerPinMatrix;
     boost::weak_ptr<KnobChoice> cornerPinOverlayPoints;
     
     mutable QMutex trackerContextMutex;
