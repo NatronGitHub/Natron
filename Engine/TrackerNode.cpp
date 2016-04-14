@@ -29,8 +29,17 @@
 
 NATRON_NAMESPACE_ENTER;
 
-TrackerNode::TrackerNode(boost::shared_ptr<Node> node)
-: EffectInstance(node)
+struct TrackerNodePrivate
+{
+    TrackerNodePrivate()
+    {
+        
+    }
+};
+
+TrackerNode::TrackerNode(boost::shared_ptr<Natron::Node> node)
+: NodeGroup(node)
+, _imp(new TrackerNodePrivate())
 {
 }
 
@@ -57,17 +66,17 @@ TrackerNode::getPluginDescription() const
 {
     return "Track one or more 2D point(s) using LibMV from the Blender open-source software.\n"
     "\n"
-    "<b>Goal</b>:\n"
+    "Goal:\n"
     "- Track one or more 2D point and use them to either make another object/image match-move their motion or to stabilize the input image."
     "\n"
-    "<b>Tracking</b>:\n"
+    "Tracking:\n"
     "- Connect a Tracker node to the image containing the item you need to track\n"
     "- Place tracking markers with CTRL+ALT+Click on the Viewer or by clicking the \"+\" button below the track table in the settings panel"
     "- Setup the motion model to match the motion type of the item you need to track. By default the tracker will only assume the item is underoing a translation. Other motion models can be used for complex tracks but may be slower.\n"
     "- Select in the settings panel or on the Viewer the markers you want to track and then start tracking with the player buttons on the top of the Viewer.\n"
     "- If a track is getting lost or fails at some point, you may refine it by moving the marker at its correct position, this will force a new keyframe on the pattern which will be visible in the Viewer and on the timeline.\n"
     "\n"
-    "<b>Using the tracks data</b>:\n"
+    "Using the tracks data:\n"
     "You can either use the Tracker node itself to use the track data or you may export it to another node.\n"
     "Using the Transform within the Tracker node:\n"
     "Go to the Transform tab in the settings panel, and set the Transform Type to the operation you want to achieve. During tracking, the Transform Type should always been set to None if you want to correctly see the tracks on the Viewer."
@@ -76,69 +85,28 @@ TrackerNode::getPluginDescription() const
     "You may export the tracking data either to a CornerPin node or to a Transform node. The CornerPin node performs a warp that may be more stable than a Transform node when using 4 or more tracks: it retains more information than the Transform node.";
 }
 
-std::string
-TrackerNode::getInputLabel (int inputNb) const
-{
-    switch (inputNb) {
-        case 0:
-            return "Source";
-        default:
-            break;
-    }
-    return "";
-}
-
-bool
-TrackerNode::isInputMask(int /*inputNb*/) const
-{
-    return false;
-}
-
-bool
-TrackerNode::isInputOptional(int /*inputNb*/) const
-{
-    return false;
-}
-
-void
-TrackerNode::addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps)
-{
-    
-    if (inputNb != 1) {
-        comps->push_back(ImageComponents::getRGBAComponents());
-        comps->push_back(ImageComponents::getRGBComponents());
-        comps->push_back(ImageComponents::getXYComponents());
-    }
-    comps->push_back(ImageComponents::getAlphaComponents());
-}
-
-void
-TrackerNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
-{
-    depths->push_back(eImageBitDepthFloat);
-}
 
 void
 TrackerNode::initializeKnobs()
 {
-    
+
 }
 
+/*
 bool
 TrackerNode::isIdentity(double time,
-                        const RenderScale & /*scale*/,
-                        const RectI & /*roi*/,
+                        const RenderScale & scale,
+                        const RectI & roi,
                         ViewIdx view,
                         double* inputTime,
                         ViewIdx* inputView,
                         int* inputNb)
 {
-    // Identity for now, until we can apply a transform
     *inputTime = time;
     *inputNb = 0;
     *inputView = view;
     return true;
-}
+}*/
 
 
 void
@@ -153,6 +121,16 @@ TrackerNode::knobChanged(KnobI* k,
         return;
     }
     ctx->knobChanged(k, reason, view, time, originatedFromMainThread);
+}
+
+void
+TrackerNode::onKnobsLoaded()
+{
+    boost::shared_ptr<TrackerContext> ctx = getNode()->getTrackerContext();
+    if (!ctx) {
+        return;
+    }
+    ctx->onKnobsLoaded();
 }
 
 void

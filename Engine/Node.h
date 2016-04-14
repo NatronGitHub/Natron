@@ -97,6 +97,12 @@ public:
 
     boost::shared_ptr<NodeCollection> getGroup() const;
     
+    /**
+     * @brief Returns true if this node is a "user" node. For internal invisible node, this would return false.
+     * If this function returns false, the node will not be serialized.
+     **/
+    bool isPartOfProject() const;
+    
     const Plugin* getPlugin() const;
     
     /**
@@ -547,12 +553,14 @@ public:
 
     boost::shared_ptr<NodeGuiI> getNodeGui() const;
     
-    bool isSettingsPanelOpened() const;
+    bool isSettingsPanelVisible() const;
+    
+    bool isSettingsPanelMinimized() const;
     
 private:
     
     
-    bool isSettingsPanelOpenedInternal(std::set<const Node*>& recursionList) const;
+    bool isSettingsPanelVisibleInternal(std::set<const Node*>& recursionList) const;
     
 public:
     

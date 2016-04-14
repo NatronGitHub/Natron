@@ -393,7 +393,7 @@ TrackerContext::trackSelectedMarkers(int start, int end, bool forward, ViewerIns
         QMutexLocker k(&_imp->trackerContextMutex);
         for (std::list<TrackMarkerPtr >::iterator it = _imp->selectedMarkers.begin();
              it != _imp->selectedMarkers.end(); ++it) {
-            if ((*it)->isEnabled()) {
+            if ((*it)->isEnabled((*it)->getCurrentTime())) {
                 markers.push_back(*it);
             }
         }
@@ -551,7 +551,7 @@ TrackerContext::getAllEnabledMarkers(std::vector<TrackMarkerPtr >* markers) cons
 {
     QMutexLocker k(&_imp->trackerContextMutex);
     for (std::size_t i = 0; i < _imp->markers.size(); ++i) {
-        if (_imp->markers[i]->isEnabled()) {
+        if (_imp->markers[i]->isEnabled(_imp->markers[i]->getCurrentTime())) {
             markers->push_back(_imp->markers[i]);
         }
     }
@@ -631,43 +631,127 @@ TrackerContext::endSelection(TrackSelectionReason reason)
     --_imp->selectionRecursion;
 }
 
+static
+boost::shared_ptr<KnobDouble>
+getCornerPinPoint(Node* node,
+                  bool isFrom,
+                  int index)
+{
+    assert(0 <= index && index < 4);
+    QString name = isFrom ? QString::fromUtf8("from%1").arg(index + 1) : QString::fromUtf8("to%1").arg(index + 1);
+    boost::shared_ptr<KnobI> knob = node->getKnobByName( name.toStdString() );
+    assert(knob);
+    boost::shared_ptr<KnobDouble>  ret = boost::dynamic_pointer_cast<KnobDouble>(knob);
+    assert(ret);
+    return ret;
+}
+
 
 void
 TrackerContext::exportTrackDataFromExportOptions()
 {
-    int exportType_i = _imp->exportChoice.lock()->getValue();
-    TrackExportTypeEnum type = (TrackExportTypeEnum)exportType_i;
+
+    bool transformLink = _imp->exportLink.lock()->getValue();
     
-    std::list<TrackMarkerPtr > selection;
-    getSelectedMarkers(&selection);
+    boost::shared_ptr<KnobChoice> transformTypeKnob = _imp->transformType.lock();
+    assert(transformTypeKnob);
+    int transformType_i = transformTypeKnob->getValue();
+    TrackerTransformNodeEnum transformType = (TrackerTransformNodeEnum)transformType_i;
     
-    // createCornerPinFromSelection(selection, linked, useTransformRefFrame, invert)
-    switch (type) {
-        case eTrackExportTypeCornerPinThisFrame:
-            _imp->createCornerPinFromSelection(selection, true, false, false);
+    boost::shared_ptr<KnobChoice> motionTypeKnob = _imp->motionType.lock();
+    if (!motionTypeKnob) {
+        return;
+    }
+    int motionType_i = motionTypeKnob->getValue();
+    TrackerMotionTypeEnum mt = (TrackerMotionTypeEnum)motionType_i;
+    
+    if (mt == eTrackerMotionTypeNone) {
+        Dialogs::errorDialog(QObject::tr("Tracker Export").toStdString(), QObject::tr("Please select the export mode with the Motion Type parameter").toStdString());
+        return;
+    }
+
+    QString pluginID;
+    switch (transformType) {
+        case eTrackerTransformNodeCornerPin:
+            pluginID = QString::fromUtf8(PLUGINID_OFX_CORNERPIN);
             break;
-        case eTrackExportTypeCornerPinRefFrame:
-            _imp->createCornerPinFromSelection(selection, true, true, false);
-            break;
-        case eTrackExportTypeCornerPinThisFrameBaked:
-            _imp->createCornerPinFromSelection(selection, false, false, false);
-            break;
-        case eTrackExportTypeCornerPinRefFrameBaked:
-            _imp->createCornerPinFromSelection(selection, false, true, false);
-            break;
-        case eTrackExportTypeTransformStabilize:
-            _imp->createTransformFromSelection(selection, true, true);
-            break;
-        case eTrackExportTypeTransformMatchMove:
-            _imp->createTransformFromSelection(selection, true, false);
-            break;
-        case eTrackExportTypeTransformStabilizeBaked:
-            _imp->createTransformFromSelection(selection, false, true);
-            break;
-        case eTrackExportTypeTransformMatchMoveBaked:
-            _imp->createTransformFromSelection(selection, false, false);
+        case eTrackerTransformNodeTransform:
+            pluginID = QString::fromUtf8(PLUGINID_OFX_TRANSFORM);
             break;
     }
+    
+    
+    NodePtr thisNode = getNode();
+    
+    AppInstance* app = thisNode->getApp();
+    CreateNodeArgs args(pluginID, eCreateNodeReasonInternal, thisNode->getGroup());
+    NodePtr createdNode = app->createNode(args);
+    if (!createdNode) {
+        return;
+    }
+    
+    // Move the new node
+    double thisNodePos[2];
+    double thisNodeSize[2];
+    thisNode->getPosition(&thisNodePos[0], &thisNodePos[1]);
+    thisNode->getSize(&thisNodeSize[0], &thisNodeSize[1]);
+    createdNode->setPosition(thisNodePos[0] + thisNodeSize[0] * 2., thisNodePos[1]);
+    
+    int refFrame = getTransformReferenceFrame();
+    
+    
+    switch (transformType) {
+        case eTrackerTransformNodeCornerPin:
+        {
+            boost::shared_ptr<KnobDouble> createdToPoints[4];
+            boost::shared_ptr<KnobDouble> createdFromPoints[4];
+            
+            /*for (int int i = 0; i < 4; ++i) {
+                createdFromPoints[i] = getCornerPinPoint(createdNode.get(), true, i);
+                assert(fromPoints[i] && centers[i]);
+                for (int j = 0; j < fromPoints[i]->getDimension(); ++j) {
+                    fromPoints[i]->setValue(centers[i]->getValueAtTime(timeForFromPoints,j), ViewSpec(0), j);
+                }
+                
+                toPoints[i] = getCornerPinPoint(cornerPin.get(), false, i);
+                assert(toPoints[i]);
+                if (!linked) {
+                    toPoints[i]->cloneAndUpdateGui(centers[i].get());
+                } else {
+                    bool ok = false;
+                    for (int d = 0; d < toPoints[i]->getDimension() ; ++d) {
+                        ok = dynamic_cast<KnobI*>(toPoints[i].get())->slaveTo(d, centers[i], d);
+                    }
+                    (void)ok;
+                    assert(ok);
+                }
+            }
+            
+            ///Disable all non used points
+            for (unsigned int i = selection.size(); i < 4; ++i) {
+                QString enableName = QString::fromUtf8("enable%1").arg(i + 1);
+                KnobPtr knob = cornerPin->getKnobByName( enableName.toStdString() );
+                assert(knob);
+                KnobBool* enableKnob = dynamic_cast<KnobBool*>( knob.get() );
+                assert(enableKnob);
+                enableKnob->setValue(false, ViewSpec(0), 0);
+            }
+            
+            if (motionType == eTrackerMotionTypeStabilize) {
+                KnobPtr invertKnob = cornerPin->getKnobByName(kCornerPinInvertParamName);
+                assert(invertKnob);
+                KnobBool* isBool = dynamic_cast<KnobBool*>(invertKnob.get());
+                assert(isBool);
+                isBool->setValue(true, ViewSpec(0), 0);
+            }*/
+
+        }   break;
+        case eTrackerTransformNodeTransform:
+        {
+            
+        }   break;
+    }
+    
 }
 
 
@@ -678,7 +762,7 @@ TrackerContext::onSelectedKnobCurveChanged()
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>(sender());
     if (handler) {
         boost::shared_ptr<KnobI> knob = handler->getKnob();
-        for (std::list<boost::weak_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
+        for (std::list<boost::weak_ptr<KnobI> >::const_iterator it = _imp->perTrackKnobs.begin(); it != _imp->perTrackKnobs.end(); ++it) {
             boost::shared_ptr<KnobI> k = it->lock();
             if (k->getName() == knob->getName()) {
                 k->clone(knob.get());
@@ -686,6 +770,22 @@ TrackerContext::onSelectedKnobCurveChanged()
             }
         }
     }
+}
+
+void
+TrackerContext::onMarkerEnabledChanged(int reason)
+{
+    TrackMarker* m = qobject_cast<TrackMarker*>(sender());
+    if (!m) {
+        return;
+    }
+    Q_EMIT enabledChanged(m->shared_from_this(), reason);
+}
+
+void
+TrackerContext::onKnobsLoaded()
+{
+    _imp->refreshVisibilityFromTransformType();
 }
 
 void
@@ -701,7 +801,8 @@ TrackerContext::knobChanged(KnobI* k,
         boost::shared_ptr<KnobInt> refFrame = _imp->referenceFrame.lock();
         refFrame->setValue(_imp->node.lock()->getApp()->getTimeLine()->currentFrame());
     } else if (k == _imp->transformType.lock().get()) {
-        
+        _imp->refreshTransformKnobs();
+        _imp->refreshVisibilityFromTransformType();
     }
 }
 
@@ -1116,22 +1217,22 @@ TrackerContext::computeTransformParamsFromTracks(const std::vector<TrackMarkerPt
         return;
     }
     int transformType_i = _imp->transformType.lock()->getValue();
-    TrackerTransformTypeEnum type =  (TrackerTransformTypeEnum)transformType_i;
+    TrackerMotionTypeEnum type =  (TrackerMotionTypeEnum)transformType_i;
     
     double refTime = (double)getTransformReferenceFrame();
 
     int jitterPeriod = 0;
     bool jitterAdd = false;
     switch (type) {
-        case eTrackerTransformTypeNone:
-        case eTrackerTransformTypeMatchMove:
-        case eTrackerTransformTypeStabilize:
+        case eTrackerMotionTypeNone:
+        case eTrackerMotionTypeMatchMove:
+        case eTrackerMotionTypeStabilize:
             break;
-        case eTrackerTransformTypeAddJitter:
-        case eTrackerTransformTypeRemoveJitter:
+        case eTrackerMotionTypeAddJitter:
+        case eTrackerMotionTypeRemoveJitter:
         {
             jitterPeriod = _imp->jitterPeriod.lock()->getValue();
-            jitterAdd = type == eTrackerTransformTypeAddJitter;
+            jitterAdd = type == eTrackerMotionTypeAddJitter;
         } break;
             
     }
@@ -1205,7 +1306,7 @@ TrackerContext::computeTransformParamsFromTracks(const std::vector<TrackMarkerPt
             Point avgT = {0,0};
             
             int nSamples = 0;
-            for (int t = std::max(0, (int)i - halfJitter); t < (i + halfJitter) && t < (int)dataAtTime.size(); ++t, ++nSamples) {
+            for (int t = std::max(0, (int)i - halfJitter); t < ((int)i + halfJitter) && t < (int)dataAtTime.size(); ++t, ++nSamples) {
                 avgT.x += dataAtTime[t].data.translation.x;
                 avgT.y += dataAtTime[t].data.translation.y;
             }
@@ -1296,6 +1397,185 @@ TrackerContext::computeTransformParamsFromTracks(const std::vector<TrackMarkerPt
     
     node->getEffectInstance()->endChanges();
 }
+
+NodePtr
+TrackerContext::getCurrentlySelectedTransformNode() const
+{
+    boost::shared_ptr<KnobChoice> transformTypeKnob = _imp->transformType.lock();
+    assert(transformTypeKnob);
+    int transformType_i = transformTypeKnob->getValue();
+    TrackerTransformNodeEnum transformType = (TrackerTransformNodeEnum)transformType_i;
+    switch (transformType) {
+        case eTrackerTransformNodeTransform:
+            return _imp->transformNode.lock();
+        case eTrackerTransformNodeCornerPin:
+            return _imp->cornerPinNode.lock();
+    }
+    return NodePtr();
+}
+
+void
+TrackerContext::drawInternalNodesOverlay(double time,
+                                         const RenderScale& renderScale,
+                                         ViewIdx view,
+                                         OverlaySupport* viewer)
+{
+    if (_imp->transformPageKnob.lock()->getIsSecret()) {
+        return;
+    }
+    NodePtr node = getCurrentlySelectedTransformNode();
+    if (node) {
+        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        node->getEffectInstance()->drawOverlay_public(time, renderScale, view);
+    }
+}
+
+bool
+TrackerContext::onOverlayPenDownInternalNodes(double time,
+                                              const RenderScale & renderScale,
+                                              ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, OverlaySupport* viewer)
+{
+    if (_imp->transformPageKnob.lock()->getIsSecret()) {
+        return false;
+    }
+    NodePtr node = getCurrentlySelectedTransformNode();
+    if (node) {
+        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if (node->getEffectInstance()->onOverlayPenDown_public(time, renderScale, view, viewportPos, pos, pressure)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+TrackerContext::onOverlayPenMotionInternalNodes(double time,
+                                                const RenderScale & renderScale,
+                                                ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, OverlaySupport* viewer)
+{
+    if (_imp->transformPageKnob.lock()->getIsSecret()) {
+        return false;
+    }
+    NodePtr node = getCurrentlySelectedTransformNode();
+    if (node) {
+        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if (node->getEffectInstance()->onOverlayPenMotion_public(time, renderScale, view,  viewportPos, pos, pressure)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+TrackerContext::onOverlayPenUpInternalNodes(double time,
+                                            const RenderScale & renderScale,
+                                            ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, OverlaySupport* viewer)
+{
+    if (_imp->transformPageKnob.lock()->getIsSecret()) {
+        return false;
+    }
+    NodePtr node = getCurrentlySelectedTransformNode();
+    if (node) {
+        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if (node->getEffectInstance()->onOverlayPenUp_public(time, renderScale, view, viewportPos, pos, pressure)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+TrackerContext::onOverlayKeyDownInternalNodes(double time,
+                                              const RenderScale & renderScale,
+                                              ViewIdx view, Key key,KeyboardModifiers modifiers, OverlaySupport* viewer)
+{
+    if (_imp->transformPageKnob.lock()->getIsSecret()) {
+        return false;
+    }
+    NodePtr node = getCurrentlySelectedTransformNode();
+    if (node) {
+        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if (node->getEffectInstance()->onOverlayKeyDown_public(time, renderScale, view, key, modifiers)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+TrackerContext::onOverlayKeyUpInternalNodes(double time,
+                                            const RenderScale & renderScale,
+                                            ViewIdx view, Key key,KeyboardModifiers modifiers, OverlaySupport* viewer)
+{
+    if (_imp->transformPageKnob.lock()->getIsSecret()) {
+        return false;
+    }
+    NodePtr node = getCurrentlySelectedTransformNode();
+    if (node) {
+        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if (node->getEffectInstance()->onOverlayKeyUp_public(time, renderScale, view, key, modifiers)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+TrackerContext::onOverlayKeyRepeatInternalNodes(double time,
+                                                const RenderScale & renderScale,
+                                                ViewIdx view, Key key,KeyboardModifiers modifiers, OverlaySupport* viewer)
+{
+    if (_imp->transformPageKnob.lock()->getIsSecret()) {
+        return false;
+    }
+    NodePtr node = getCurrentlySelectedTransformNode();
+    if (node) {
+        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if (node->getEffectInstance()->onOverlayKeyRepeat_public(time, renderScale, view, key, modifiers)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+TrackerContext::onOverlayFocusGainedInternalNodes(double time,
+                                                  const RenderScale & renderScale,
+                                                  ViewIdx view,
+                                                  OverlaySupport* viewer)
+{
+    if (_imp->transformPageKnob.lock()->getIsSecret()) {
+        return false;
+    }
+    NodePtr node = getCurrentlySelectedTransformNode();
+    if (node) {
+        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if (node->getEffectInstance()->onOverlayFocusGained_public(time, renderScale, view)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+TrackerContext::onOverlayFocusLostInternalNodes(double time,
+                                                const RenderScale & renderScale,
+                                                ViewIdx view,
+                                                OverlaySupport* viewer)
+{
+    if (_imp->transformPageKnob.lock()->getIsSecret()) {
+        return false;
+    }
+    NodePtr node = getCurrentlySelectedTransformNode();
+    if (node) {
+        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if (node->getEffectInstance()->onOverlayFocusLost_public(time, renderScale, view)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 
 void
 TrackerContext::computeTransformParamsFromEnabledTracks()

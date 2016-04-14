@@ -521,7 +521,7 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
     }
 
     NodeGroup* isGroup = node->isEffectGroup();
-    if (isGroup) {
+    if (isGroup && isGroup->isSubGraphUserVisible()) {
         _imp->_gui->createGroupGui(node, args.reason);
     }
 

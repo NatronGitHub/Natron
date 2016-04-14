@@ -628,12 +628,14 @@ KnobGui::hide()
     }
 
     if (shouldRemoveWidget) {
-        _imp->field->hide();
+        if (_imp->field) {
+            _imp->field->hide();
+        }
         if (_imp->container) {
             _imp->container->refreshTabWidgetMaxHeight();
         }
     } else {
-        if (!_imp->field->isVisible()) {
+        if (_imp->field && !_imp->field->isVisible()) {
             _imp->field->show();
         }
     }
@@ -662,12 +664,14 @@ KnobGui::show(int /*index*/)
     if ( knob && knob->getHolder() && knob->getHolder()->getApp() ) {
         getGui()->getCurveEditor()->showCurves(shared_from_this());
     }
-
+    
     //if (_imp->isOnNewLine) {
+    if (_imp->field) {
         _imp->field->show();
-        if (_imp->container) {
-            _imp->container->refreshTabWidgetMaxHeight();
-        }
+    }
+    if (_imp->container) {
+        _imp->container->refreshTabWidgetMaxHeight();
+    }
     //}
     
     if (_imp->labelContainer) {

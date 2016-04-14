@@ -827,7 +827,7 @@ TrackerGui::drawOverlays(double time,
             Point selectedCenter,selectedPtnTopLeft,selectedPtnTopRight,selectedPtnBtmRight,selectedPtnBtmLeft, selectedOffset, selectedSearchBtmLeft, selectedSearchTopRight;
             
             for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
-                if (!(*it)->isEnabled()) {
+                if (!(*it)->isEnabled((*it)->getCurrentTime())) {
                     continue;
                 }
                 std::list<TrackMarkerPtr >::iterator foundSelected = std::find(selectedMarkers.begin(),selectedMarkers.end(),*it);
@@ -1239,10 +1239,7 @@ TrackerGui::drawOverlays(double time,
 
                 
             }
-            
-            NodePtr node = _imp->panel->getContext()->getNode();
-            node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer->getViewer());
-            node->drawHostOverlay(time, renderScale);
+            _imp->panel->getContext()->drawInternalNodesOverlay(time, renderScale, view, _imp->viewer->getViewer());
         } // // if (_imp->panelv1) {
         
         
@@ -1489,7 +1486,7 @@ TrackerGuiPrivate::drawSelectedMarkerKeyframes(const std::pair<double,double>& p
     if (!marker) {
         return;
     }
-    if (!marker->isEnabled()) {
+    if (!marker->isEnabled(currentTime)) {
         return;
     }
     boost::shared_ptr<KnobDouble> centerKnob = marker->getCenterKnob();
@@ -1705,7 +1702,7 @@ TrackerGuiPrivate::drawSelectedMarkerTexture(const std::pair<double,double>& pix
                                              const Point& /*selectedSearchWndTopRight*/)
 {
     TrackMarkerPtr marker = selectedMarker.lock();
-    if (isTracking || !selectedMarkerTexture || !marker || !marker->isEnabled() || viewer->getInternalNode()->getRenderEngine()->isDoingSequentialRender()) {
+    if (isTracking || !selectedMarkerTexture || !marker || !marker->isEnabled(currentTime) || viewer->getInternalNode()->getRenderEngine()->isDoingSequentialRender()) {
         return;
     }
     
@@ -1911,11 +1908,10 @@ TrackerGui::penDown(double time,
     bool didSomething = false;
     
     if (_imp->panel) {
-        NodePtr node = _imp->panel->getContext()->getNode();
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if (node->onOverlayPenDownDefault(renderScale, viewportPos, pos, pressure)) {
+        if (_imp->panel->getContext()->onOverlayPenDownInternalNodes(time, renderScale, view, viewportPos, pos, pressure, _imp->viewer->getViewer())) {
             return true;
         }
+        
     }
     
     
@@ -1979,7 +1975,7 @@ TrackerGui::penDown(double time,
         std::vector<TrackMarkerPtr > allMarkers;
         context->getAllMarkers(&allMarkers);
         for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
-            if (!(*it)->isEnabled()) {
+            if (!(*it)->isEnabled(time)) {
                 continue;
             }
             
@@ -2491,11 +2487,10 @@ TrackerGui::penMotion(double time,
     bool didSomething = false;
     
     if (_imp->panel) {
-        NodePtr node = _imp->panel->getContext()->getNode();
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if (node->onOverlayPenMotionDefault(renderScale, viewportPos, pos, pressure)) {
+        if (_imp->panel->getContext()->onOverlayPenMotionInternalNodes(time, renderScale, view, viewportPos, pos, pressure, _imp->viewer->getViewer())) {
             return true;
         }
+        
     }
     
     Point delta;
@@ -2531,7 +2526,7 @@ TrackerGui::penMotion(double time,
         
         bool hoverProcess = false;
         for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
-            if (!(*it)->isEnabled()) {
+            if (!(*it)->isEnabled(time)) {
                 continue;
             }
             
@@ -3187,11 +3182,10 @@ TrackerGui::penUp(double time,
     bool didSomething = false;
     
     if (_imp->panel) {
-        NodePtr node = _imp->panel->getContext()->getNode();
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer->getViewer());
-        if (node->onOverlayPenUpDefault(renderScale, viewportPos, pos, pressure)) {
+        if (_imp->panel->getContext()->onOverlayPenUpInternalNodes(time, renderScale, view, viewportPos, pos, pressure, _imp->viewer->getViewer())) {
             return true;
         }
+        
     }
 
     
@@ -3238,11 +3232,10 @@ TrackerGui::keyDown(double time,
     Key natronKey = QtEnumConvert::fromQtKey(key);
     KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers(modifiers);
     if (_imp->panel) {
-        NodePtr node = _imp->panel->getContext()->getNode();
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer->getViewer());
-        if (node->onOverlayKeyDownDefault(renderScale, natronKey, natronMod)) {
+        if (_imp->panel->getContext()->onOverlayKeyDownInternalNodes(time, renderScale, view,natronKey, natronMod,  _imp->viewer->getViewer())) {
             return true;
         }
+        
     }
 
     if (e->key() == Qt::Key_Control) {
@@ -3331,11 +3324,10 @@ TrackerGui::keyUp(double time,
     Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
     KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
     if (_imp->panel) {
-        NodePtr node = _imp->panel->getContext()->getNode();
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer->getViewer());
-        if (node->onOverlayKeyUpDefault(renderScale, natronKey, natronMod)) {
+        if (_imp->panel->getContext()->onOverlayKeyUpInternalNodes(time, renderScale, view,natronKey, natronMod,  _imp->viewer->getViewer())) {
             return true;
         }
+        
     }
     
     bool didSomething = false;
@@ -3382,6 +3374,19 @@ TrackerGui::keyUp(double time,
 }
 
 bool
+TrackerGui::gainFocus(double time, const RenderScale & renderScale, ViewIdx view)
+{
+    bool didSomething = false;
+    
+    if (_imp->panel) {
+        if (_imp->panel->getContext()->onOverlayFocusGainedInternalNodes(time, renderScale, view, _imp->viewer->getViewer())) {
+            didSomething = true;
+        }
+    }
+    return didSomething;
+}
+
+bool
 TrackerGui::loseFocus(double time,
                       const RenderScale & renderScale,
                       ViewIdx view)
@@ -3389,10 +3394,8 @@ TrackerGui::loseFocus(double time,
     bool didSomething = false;
     
     if (_imp->panel) {
-        NodePtr node = _imp->panel->getContext()->getNode();
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer->getViewer());
-        if (node->onOverlayFocusLostDefault(renderScale)) {
-            return true;
+        if (_imp->panel->getContext()->onOverlayFocusLostInternalNodes(time, renderScale, view, _imp->viewer->getViewer())) {
+            didSomething = true;
         }
     }
 
@@ -3457,7 +3460,7 @@ TrackerGui::updateSelectionFromSelectionRectangle(bool onRelease)
         boost::shared_ptr<TrackerContext> context = _imp->panel->getContext();
         context->getAllMarkers(&allMarkers);
         for (std::size_t i = 0; i < allMarkers.size(); ++i) {
-            if (!allMarkers[i]->isEnabled()) {
+            if (!allMarkers[i]->isEnabled(allMarkers[i]->getCurrentTime())) {
                 continue;
             }
             boost::shared_ptr<KnobDouble> center = allMarkers[i]->getCenterKnob();

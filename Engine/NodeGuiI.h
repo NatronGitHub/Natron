@@ -45,16 +45,21 @@ public :
      * anywhere. Upon returning this function, the caller should have a shared_ptr use_count() of 1
      **/
     virtual void destroyGui() = 0;
+
+    /**
+     * @brief Returns whether the settings panel of this node is visible or not.
+     **/
+    virtual bool isSettingsPanelVisible() const = 0;
     
     /**
-     * @brief Returns whether the settings panel of this node is opened or not.
+     * @brief Returns whether the settings panel of this node is minimized or not.
      **/
-    virtual bool isSettingsPanelOpened() const = 0;
+    virtual bool isSettingsPanelMinimized() const = 0;
     
     /**
-     * @brief Returns whether the node should draw an overlay (if it has any) on the viewer or not.
+     * @brief If this is a parent multi-instance, returns whether the given node is selected by the user or not
      **/
-    virtual bool shouldDrawOverlay() const = 0;
+    virtual bool isSelectedInParentMultiInstance(const Node* node) const = 0;
     
     /**
      * @brief Set the position of the node in the nodegraph.

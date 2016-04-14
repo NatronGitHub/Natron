@@ -857,7 +857,7 @@ WriteNode::onEffectCreated(bool mayCreateFileDialog, const std::list<boost::shar
         //The user selected a file, if it fails to read do not create the node
         throwErrors = true;
     } else {
-        
+        pattern = getFileNameFromSerialization(defaultParamValues);
     }
     
     _imp->createWriteNode(throwErrors, pattern, boost::shared_ptr<NodeSerialization>());

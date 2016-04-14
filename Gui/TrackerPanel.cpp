@@ -44,6 +44,7 @@
 #include "Engine/TimeLine.h"
 #include "Engine/TrackMarker.h"
 
+#include "Gui/AnimatedCheckBox.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/Button.h"
 #include "Gui/ComboBox.h"
@@ -596,8 +597,9 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker, int row, Track
     ///Enabled
     {
         ItemData d;
-        QCheckBox* checkbox = new QCheckBox();
-        checkbox->setChecked(marker.isEnabled());
+        AnimatedCheckBox* checkbox = new AnimatedCheckBox();
+        checkbox->setChecked(marker.isEnabled(marker.getCurrentTime()));
+        checkbox->setAnimation((int)marker.getEnabledNessAnimationLevel());
         QObject::connect( checkbox,SIGNAL( toggled(bool) ),_publicInterface,SLOT( onItemEnabledCheckBoxChecked(bool) ) );
         TableItem* newItem = new TableItem;
         newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable | Qt::ItemIsUserCheckable);
@@ -1383,13 +1385,13 @@ TrackerPanel::onItemDataChanged(TableItem* item)
 void
 TrackerPanel::onItemEnabledCheckBoxChecked(bool checked)
 {
-    QCheckBox* widget = qobject_cast<QCheckBox*>(sender());
+    AnimatedCheckBox* widget = qobject_cast<AnimatedCheckBox*>(sender());
     assert(widget);
     for (std::size_t i = 0; i < _imp->items.size(); ++i) {
         QWidget* cellW = _imp->view->cellWidget(i, COL_ENABLED);
         if (widget == cellW) {
             TrackMarkerPtr marker = _imp->items[i].marker.lock();
-            marker->setEnabled(checked, eValueChangedReasonNatronGuiEdited);
+            marker->setEnabledFromGui(marker->getCurrentTime(), checked);
             break;
         }
     }
@@ -1736,11 +1738,11 @@ TrackerPanel::onEnabledChanged(const TrackMarkerPtr& marker,int reason)
     if (row == -1) {
         return;
     }
-    QCheckBox* w = dynamic_cast<QCheckBox*>(_imp->view->cellWidget(row, COL_ENABLED));
+    AnimatedCheckBox* w = dynamic_cast<AnimatedCheckBox*>(_imp->view->cellWidget(row, COL_ENABLED));
     if (!w) {
         return;
     }
-    w->setChecked(marker->isEnabled());
+    w->setChecked(marker->isEnabled(marker->getCurrentTime()));
     
     getNode()->getNode()->getApp()->redrawAllViewers();
 }

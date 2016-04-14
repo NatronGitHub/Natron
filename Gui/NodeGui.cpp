@@ -260,7 +260,7 @@ NodeGui::initialize(NodeGraph* dag,
         boost::shared_ptr<NodeGuiI> parentNodeGui_i = parent->getNodeGui();
         NodeGui* parentGui = dynamic_cast<NodeGui*>(parentNodeGui_i.get());
         assert(parentGui);
-        if (parentGui && parentGui->isSettingsPanelOpened()) {
+        if (parentGui && parentGui->isSettingsPanelVisible()) {
             ensurePanelCreated();
             boost::shared_ptr<MultiInstancePanel> panel = parentGui->getMultiInstancePanel();
             assert(panel);
@@ -1649,6 +1649,24 @@ NodeGui::refreshCurrentBrush()
 
 }
 
+bool
+NodeGui::isSelectedInParentMultiInstance(const Node* node) const
+{
+    boost::shared_ptr<MultiInstancePanel> multiInstance = getMultiInstancePanel();
+    if (!multiInstance) {
+        return false;
+    }
+    
+    const std::list< std::pair<NodeWPtr,bool > >& instances = multiInstance->getInstances();
+    for (std::list< std::pair<NodeWPtr,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        NodePtr instance = it->first.lock();
+        if (instance.get() == node) {
+            return it->second;
+        }
+    }
+    return false;
+}
+
 void
 NodeGui::setUserSelected(bool b)
 {
@@ -1955,7 +1973,7 @@ NodeGui::hideGui()
         }
 
         NodeGroup* isGrp = node->isEffectGroup();
-        if (isGrp) {
+        if (isGrp && isGrp->isSubGraphUserVisible()) {
             NodeGraphI* graph_i = isGrp->getNodeGraph();
             assert(graph_i);
             NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
@@ -3290,63 +3308,6 @@ NodeGui::setName(const QString & newName)
     _settingNameFromGui = false;
     
     onInternalNameChanged(newName);
-}
-
-bool
-NodeGui::isSettingsPanelOpened() const
-{
-    return isSettingsPanelVisible();
-}
-
-bool
-NodeGui::shouldDrawOverlay() const
-{
-    NodePtr internalNode = getNode();
-    if (!internalNode) {
-        return false;
-    }
-
-    NodePtr parentMultiInstance = internalNode->getParentMultiInstance();
-
-
-    if (parentMultiInstance) {
-        boost::shared_ptr<NodeGuiI> gui_i = parentMultiInstance->getNodeGui();
-        assert(gui_i);
-        NodeGui *parentGui = dynamic_cast<NodeGui*>(gui_i.get());
-        assert(parentGui);
-        if (parentGui) {
-            boost::shared_ptr<MultiInstancePanel> multiInstance = parentGui->getMultiInstancePanel();
-            assert(multiInstance);
-
-            const std::list< std::pair<NodeWPtr,bool > >& instances = multiInstance->getInstances();
-            for (std::list< std::pair<NodeWPtr,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-                NodePtr instance = it->first.lock();
-
-                if (instance == internalNode) {
-                    if (parentGui->isSettingsPanelVisible() &&
-                        !parentGui->isSettingsPanelMinimized() &&
-                        instance->isActivated() &&
-                        it->second &&
-                        !instance->isNodeDisabled()) {
-
-                        return true;
-                    } else {
-
-                        return false;
-                    }
-                }
-            }
-        }
-    } else {
-        if (!internalNode->isNodeDisabled() &&
-            internalNode->isActivated() &&
-            isSettingsPanelVisible() &&
-            !isSettingsPanelMinimized() ) {
-
-            return true;
-        }
-    }
-    return false;
 }
 
 void

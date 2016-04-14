@@ -697,23 +697,8 @@ Gui::getNodesEntitledForOverlays(NodesList & nodes) const
         NodeGuiPtr node = panel->getNode();
         NodePtr internalNode = node->getNode();
         if (node && internalNode) {
-            boost::shared_ptr<MultiInstancePanel> multiInstance = node->getMultiInstancePanel();
-            if (multiInstance) {
-                if ( internalNode->hasOverlay() &&
-                    !internalNode->isNodeDisabled() &&
-                    node->isSettingsPanelVisible() &&
-                    !node->isSettingsPanelMinimized() ) {
-                    nodes.push_back( node->getNode() );
-                }
-            } else {
-                if ( ( internalNode->hasOverlay() || internalNode->getRotoContext() ) &&
-                    !internalNode->isNodeDisabled() &&
-                    !internalNode->getParentMultiInstance() &&
-                    internalNode->isActivated() &&
-                    node->isSettingsPanelVisible() &&
-                    !node->isSettingsPanelMinimized() ) {
-                    nodes.push_back( node->getNode() );
-                }
+            if (internalNode->shouldDrawOverlay()) {
+                nodes.push_back(node->getNode());
             }
         }
         
