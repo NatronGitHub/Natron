@@ -3458,7 +3458,7 @@ NodeGui::onOverlayPenUpDefault(const RenderScale & renderScale, const QPointF & 
 }
 
 bool
-NodeGui::onOverlayKeyDownDefault(const RenderScale & renderScale, Key key,KeyboardModifiers /*modifiers*/)
+NodeGui::onOverlayKeyDownDefault(const RenderScale & renderScale, Key key, KeyboardModifiers /*modifiers*/)
 {
     if (_hostOverlay) {
         QByteArray keyStr;
@@ -3468,7 +3468,7 @@ NodeGui::onOverlayKeyDownDefault(const RenderScale & renderScale, Key key,Keyboa
 }
 
 bool
-NodeGui::onOverlayKeyUpDefault(const RenderScale & renderScale, Key key,KeyboardModifiers /*modifiers*/)
+NodeGui::onOverlayKeyUpDefault(const RenderScale & renderScale, Key key, KeyboardModifiers /*modifiers*/)
 {
     if (_hostOverlay) {
         QByteArray keyStr;
@@ -3479,7 +3479,7 @@ NodeGui::onOverlayKeyUpDefault(const RenderScale & renderScale, Key key,Keyboard
 }
 
 bool
-NodeGui::onOverlayKeyRepeatDefault(const RenderScale & renderScale, Key key,KeyboardModifiers /*modifiers*/)
+NodeGui::onOverlayKeyRepeatDefault(const RenderScale & renderScale, Key key, KeyboardModifiers /*modifiers*/)
 {
     if (_hostOverlay) {
         QByteArray keyStr;

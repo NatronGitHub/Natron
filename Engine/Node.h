@@ -1091,11 +1091,11 @@ public:
     
     bool onOverlayPenUpDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
     
-    bool onOverlayKeyDownDefault(const RenderScale & renderScale, Key key,KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyDownDefault(const RenderScale & renderScale, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
     
-    bool onOverlayKeyUpDefault(const RenderScale & renderScale, Key key,KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyUpDefault(const RenderScale & renderScale, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
     
-    bool onOverlayKeyRepeatDefault(const RenderScale & renderScale, Key key,KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyRepeatDefault(const RenderScale & renderScale, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
     
     bool onOverlayFocusGainedDefault(const RenderScale & renderScale) WARN_UNUSED_RETURN;
     

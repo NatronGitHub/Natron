@@ -1490,7 +1490,7 @@ TrackerContext::onOverlayPenUpInternalNodes(double time,
 bool
 TrackerContext::onOverlayKeyDownInternalNodes(double time,
                                               const RenderScale & renderScale,
-                                              ViewIdx view, Key key,KeyboardModifiers modifiers, OverlaySupport* viewer)
+                                              ViewIdx view, Key key, KeyboardModifiers modifiers, OverlaySupport* viewer)
 {
     if (_imp->transformPageKnob.lock()->getIsSecret()) {
         return false;
@@ -1508,7 +1508,7 @@ TrackerContext::onOverlayKeyDownInternalNodes(double time,
 bool
 TrackerContext::onOverlayKeyUpInternalNodes(double time,
                                             const RenderScale & renderScale,
-                                            ViewIdx view, Key key,KeyboardModifiers modifiers, OverlaySupport* viewer)
+                                            ViewIdx view, Key key, KeyboardModifiers modifiers, OverlaySupport* viewer)
 {
     if (_imp->transformPageKnob.lock()->getIsSecret()) {
         return false;
@@ -1526,7 +1526,7 @@ TrackerContext::onOverlayKeyUpInternalNodes(double time,
 bool
 TrackerContext::onOverlayKeyRepeatInternalNodes(double time,
                                                 const RenderScale & renderScale,
-                                                ViewIdx view, Key key,KeyboardModifiers modifiers, OverlaySupport* viewer)
+                                                ViewIdx view, Key key, KeyboardModifiers modifiers, OverlaySupport* viewer)
 {
     if (_imp->transformPageKnob.lock()->getIsSecret()) {
         return false;

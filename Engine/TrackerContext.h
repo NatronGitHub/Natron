@@ -40,6 +40,7 @@
 #include <QThread>
 #include <QMutex>
 
+#include "Global/KeySymbols.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/RectI.h"
 #include "Engine/RectD.h"
@@ -314,15 +315,15 @@ public:
     
     bool onOverlayKeyDownInternalNodes(double time,
                                        const RenderScale & renderScale,
-                                       ViewIdx view, Key key,KeyboardModifiers modifiers, OverlaySupport* viewer) WARN_UNUSED_RETURN;
+                                       ViewIdx view, Key key, KeyboardModifiers modifiers, OverlaySupport* viewer) WARN_UNUSED_RETURN;
     
     bool onOverlayKeyUpInternalNodes(double time,
                                      const RenderScale & renderScale,
-                                     ViewIdx view, Key key,KeyboardModifiers modifiers, OverlaySupport* viewer) WARN_UNUSED_RETURN;
+                                     ViewIdx view, Key key, KeyboardModifiers modifiers, OverlaySupport* viewer) WARN_UNUSED_RETURN;
     
     bool onOverlayKeyRepeatInternalNodes(double time,
                                          const RenderScale & renderScale,
-                                         ViewIdx view, Key key,KeyboardModifiers modifiers, OverlaySupport* viewer) WARN_UNUSED_RETURN;
+                                         ViewIdx view, Key key, KeyboardModifiers modifiers, OverlaySupport* viewer) WARN_UNUSED_RETURN;
     
     bool onOverlayFocusGainedInternalNodes(double time,
                                            const RenderScale & renderScale,
