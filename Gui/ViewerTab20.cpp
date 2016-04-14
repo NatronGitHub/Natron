@@ -1056,6 +1056,14 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
         }
 #endif
         
+        if (_imp->currentTracker.first && (*it) == _imp->currentTracker.first->getNode()) {
+            if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
+                if ( _imp->currentTracker.second->gainFocus(time, renderScale, view) ) {
+                    ret = true;
+                }
+            }
+        }
+        
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
         bool didSmthing = effect->onOverlayFocusGained_public(time, renderScale, view);
         if (didSmthing) {
@@ -1114,7 +1122,7 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
         } else if (_imp->currentTracker.first && (*it) == _imp->currentTracker.first->getNode()) {
             if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
                 if ( _imp->currentTracker.second->loseFocus(time, renderScale, view) ) {
-                    return true;
+                    ret = true;
                 }
             }
         }

@@ -86,6 +86,8 @@ public:
     bool keyUp(double time, const RenderScale & renderScale, ViewIdx view, QKeyEvent* e);
 
     bool loseFocus(double time, const RenderScale & renderScale, ViewIdx view);
+    
+    bool gainFocus(double time, const RenderScale & renderScale, ViewIdx view);
 
 public Q_SLOTS:
 

@@ -88,37 +88,17 @@ GCC_DIAG_ON(unused-parameter)
 #define kTrackerParamExportDataSeparator "exportDataSection"
 #define kTrackerParamExportDataSeparatorLabel "Export"
 
-#define kTrackerParamExportDataChoice "exportDataOptions"
-#define kTrackerParamExportDataChoiceLabel "Type"
-#define kTrackerParamExportDataChoiceHint "Select the desired option to the Transform/CornerPin node that will be exported. " \
-"Each export has a \"baked\" option which will copy the animation out of the tracks instead of linking them directly."
+#define kTrackerParamExportLink "exportLink"
+#define kTrackerParamExportLinkLabel "Link"
+#define kTrackerParamExportLinkHint "When checked, the node created will be linked to the parameters from this tab. When unchecked, the node created will copy the animation of all the parameters in this tab but will not be updated if any modification is made to this tab's parameters."
 
-#define kTrackerParamExportDataChoiceCPThisFrame "CornerPin (Use current frame), linked"
-#define kTrackerParamExportDataChoiceCPThisFrameHint "Warp the image according to the relative transform using the current frame as reference"
-
-#define kTrackerParamExportDataChoiceCPRefFrame "CornerPin (Reference frame), linked"
-#define kTrackerParamExportDataChoiceCPRefFrameHint "Warp the image according to the relative transform using the reference frame selected in " \
-" the Transform tab as reference"
-
-#define kTrackerParamExportDataChoiceCPThisFrameBaked "CornerPin (Use current frame), baked"
-
-#define kTrackerParamExportDataChoiceCPRefFrameBaked "CornerPin (Reference frame), baked"
-
-#define kTrackerParamExportDataChoiceTransformStabilize "Transform (Stabilize), linked"
-#define kTrackerParamExportDataChoiceTransformStabilizeHint "Creates a Transform node that will stabilize the footage. The Transform is identity " \
-"at the reference frame selected in the Transform tab"
-
-#define kTrackerParamExportDataChoiceTransformMatchMove "Transform (Match-move), linked"
-#define kTrackerParamExportDataChoiceTransformMatchMoveHint "Creates a Transform node that will match-move the footage. The Transform is identity " \
-"at the reference frame selected in the Transform tab"
-
-#define kTrackerParamExportDataChoiceTransformStabilizeBaked "Transform (Stabilize), baked"
-#define kTrackerParamExportDataChoiceTransformMatchMoveBaked "Transform (Match-move), baked"
-
+#define kTrackerParamExportUseCurrentFrame "exportUseCurrentFrame"
+#define kTrackerParamExportUseCurrentFrameLabel "Use Current Frame"
+#define kTrackerParamExportUseCurrentFrameHint "When checked, the exported Transform or CornerPin node will be identity at the current timeline's time. When unchecked, it will be identity at the frame indicated by the Reference Frame parameter."
 
 #define kTrackerParamExportButton "export"
 #define kTrackerParamExportButtonLabel "Export"
-#define kTrackerParamExportButtonHint "Creates a node referencing the tracked data according to the export type chosen on the left"
+#define kTrackerParamExportButtonHint "Creates a node referencing the tracked data. The node type depends on the node selected by the Transfor Type parameter."
 
 #define kCornerPinInvertParamName "invert"
 
@@ -201,6 +181,13 @@ GCC_DIAG_ON(unused-parameter)
 #define kCornerPinParamTo2 "to2"
 #define kCornerPinParamTo3 "to3"
 #define kCornerPinParamTo4 "to4"
+
+#define kCornerPinParamEnable1 "enable1"
+#define kCornerPinParamEnable2 "enable2"
+#define kCornerPinParamEnable3 "enable3"
+#define kCornerPinParamEnable4 "enable4"
+
+#define kCornerPinParamOverlayPoints "overlayPoints"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -382,25 +369,30 @@ struct TrackerContextPrivate
     TrackerContext* _publicInterface;
     boost::weak_ptr<Node> node;
     
-    std::list<boost::weak_ptr<KnobI> > knobs,perTrackKnobs;
+    std::list<boost::weak_ptr<KnobI> > perTrackKnobs;
     boost::weak_ptr<KnobBool> enableTrackRed,enableTrackGreen,enableTrackBlue;
     boost::weak_ptr<KnobDouble> maxError;
     boost::weak_ptr<KnobInt> maxIterations;
     boost::weak_ptr<KnobBool> bruteForcePreTrack,useNormalizedIntensities;
     boost::weak_ptr<KnobDouble> preBlurSigma;
     
+    boost::weak_ptr<KnobBool> activateTrack;
+    
     boost::weak_ptr<KnobSeparator> exportDataSep;
-    boost::weak_ptr<KnobChoice> exportChoice;
+    boost::weak_ptr<KnobBool> exportLink;
     boost::weak_ptr<KnobButton> exportButton;
     
     NodeWPtr transformNode, cornerPinNode;
     
+    boost::weak_ptr<KnobPage> transformPageKnob;
+    boost::weak_ptr<KnobSeparator> transformGenerationSeparator;
     boost::weak_ptr<KnobChoice> transformType,motionType;
     boost::weak_ptr<KnobInt> referenceFrame;
     boost::weak_ptr<KnobButton> setCurrentFrameButton;
     boost::weak_ptr<KnobInt> jitterPeriod;
     boost::weak_ptr<KnobInt> smoothTransform;
     
+    boost::weak_ptr<KnobSeparator> transformControlsSeparator;
     boost::weak_ptr<KnobDouble> translate;
     boost::weak_ptr<KnobDouble> rotate;
     boost::weak_ptr<KnobDouble> scale;
@@ -420,6 +412,8 @@ struct TrackerContextPrivate
     
     boost::weak_ptr<KnobGroup> fromGroup,toGroup;
     boost::weak_ptr<KnobDouble> fromPoints[4],toPoints[4];
+    boost::weak_ptr<KnobBool> enableToPoint[4];
+    boost::weak_ptr<KnobChoice> cornerPinOverlayPoints;
     
     mutable QMutex trackerContextMutex;
     std::vector<TrackMarkerPtr > markers;
@@ -476,13 +470,10 @@ struct TrackerContextPrivate
                                    bool slave);
     
     void createCornerPinFromSelection(const std::list<TrackMarkerPtr > & selection,
-                                      bool linked,
-                                      bool useTransformRefFrame,
-                                      bool invert);
+                                      bool linked);
     
     void createTransformFromSelection(const std::list<TrackMarkerPtr > & selection,
-                                      bool linked,
-                                      bool invert);
+                                      bool linked);
     
     void refreshVisibilityFromTransformType();
     void refreshVisibilityFromTransformTypeInternal(TrackerTransformNodeEnum transformType);

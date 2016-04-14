@@ -173,10 +173,12 @@ public:
         return _graph;
     }
     
-    virtual bool isSettingsPanelOpened() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isSelectedInParentMultiInstance(const Node* node) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual bool shouldDrawOverlay() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
+    virtual bool isSettingsPanelVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    virtual bool isSettingsPanelMinimized() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+            
     virtual void setPosition(double x,double y) OVERRIDE FINAL;
     
     virtual void getPosition(double *x, double* y) const OVERRIDE FINAL;
@@ -271,11 +273,7 @@ public:
     void refreshPosition( double x,double y,bool skipMagnet = false,const QPointF & mouseScenePos = QPointF() );
 
     void changePosition(double dx,double dy);
-
-    bool isSettingsPanelVisible() const;
     
-    bool isSettingsPanelMinimized() const;
-
     void removeSettingsPanel();
 
     boost::shared_ptr<QUndoStack> getUndoStack() const;

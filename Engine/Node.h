@@ -553,12 +553,14 @@ public:
 
     boost::shared_ptr<NodeGuiI> getNodeGui() const;
     
-    bool isSettingsPanelOpened() const;
+    bool isSettingsPanelVisible() const;
+    
+    bool isSettingsPanelMinimized() const;
     
 private:
     
     
-    bool isSettingsPanelOpenedInternal(std::set<const Node*>& recursionList) const;
+    bool isSettingsPanelVisibleInternal(std::set<const Node*>& recursionList) const;
     
 public:
     

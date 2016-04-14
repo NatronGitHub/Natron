@@ -7245,11 +7245,31 @@ Node::getOverlayColor(double* r,double* g,double* b) const
 bool
 Node::shouldDrawOverlay() const
 {
-    boost::shared_ptr<NodeGuiI> gui_i = getNodeGui();
-    if (!gui_i) {
+    
+    if (!hasOverlay() && !getRotoContext()) {
         return false;
     }
-    return gui_i->shouldDrawOverlay();
+    
+    if (!isActivated()) {
+        return false;
+    }
+    
+    if (isNodeDisabled()) {
+        return false;
+    }
+    
+    if (getParentMultiInstance()) {
+        return false;
+    }
+    
+    if (!isSettingsPanelVisible()) {
+        return false;
+    }
+    
+    if (isSettingsPanelMinimized()) {
+        return false;
+    }
+    return true;
 }
 
 void
@@ -8731,7 +8751,7 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view
                 //This image never changes, cache it once.
                 return true;
             }
-            if (output->isSettingsPanelOpened()) {
+            if (output->isSettingsPanelVisible()) {
                 //Output node has panel opened, meaning the user is likely to be heavily editing
                 //that output node, hence requesting this node a lot. Cache it.
                 return true;
@@ -8770,13 +8790,13 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view
                 return true;
             }
             
-            if (isRotoPaintingNode() && isSettingsPanelOpened()) {
+            if (isRotoPaintingNode() && isSettingsPanelVisible()) {
                 ///The Roto node is being edited, cache its output (special case because Roto has an internal node tree)
                 return true;
             }
             
             boost::shared_ptr<RotoDrawableItem> attachedStroke = _imp->paintStroke.lock();
-            if (attachedStroke && attachedStroke->getContext()->getNode()->isSettingsPanelOpened()) {
+            if (attachedStroke && attachedStroke->getContext()->getNode()->isSettingsPanelVisible()) {
                 ///Internal RotoPaint tree and the Roto node has its settings panel opened, cache it.
                 return true;
             }
@@ -8785,7 +8805,7 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view
             // outputs == 0, never cache, unless explicitly set or rotopaint internal node
             boost::shared_ptr<RotoDrawableItem> attachedStroke = _imp->paintStroke.lock();
             return isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled() ||
-            (attachedStroke && attachedStroke->getContext()->getNode()->isSettingsPanelOpened());
+            (attachedStroke && attachedStroke->getContext()->getNode()->isSettingsPanelVisible());
         }
     }
     
@@ -9169,7 +9189,17 @@ Node::isUserSelected() const
 }
 
 bool
-Node::isSettingsPanelOpenedInternal(std::set<const Node*>& recursionList) const
+Node::isSettingsPanelMinimized() const
+{
+    boost::shared_ptr<NodeGuiI> gui = _imp->guiPointer.lock();
+    if (!gui) {
+        return false;
+    }
+    return gui->isSettingsPanelMinimized();
+}
+
+bool
+Node::isSettingsPanelVisibleInternal(std::set<const Node*>& recursionList) const
 {
     boost::shared_ptr<NodeGuiI> gui = _imp->guiPointer.lock();
     if (!gui) {
@@ -9177,7 +9207,7 @@ Node::isSettingsPanelOpenedInternal(std::set<const Node*>& recursionList) const
     }
     NodePtr parent = _imp->multiInstanceParent.lock();
     if (parent) {
-        return parent->isSettingsPanelOpened();
+        return parent->isSettingsPanelVisible();
     }
     
     if (recursionList.find(this) != recursionList.end()) {
@@ -9188,23 +9218,23 @@ Node::isSettingsPanelOpenedInternal(std::set<const Node*>& recursionList) const
     {
         NodePtr master = getMasterNode();
         if (master) {
-            return master->isSettingsPanelOpened();
+            return master->isSettingsPanelVisible();
         }
         for (KnobLinkList::iterator it = _imp->nodeLinks.begin(); it != _imp->nodeLinks.end(); ++it) {
             NodePtr masterNode = it->masterNode.lock();
-            if (masterNode && masterNode.get() != this && masterNode->isSettingsPanelOpenedInternal(recursionList)) {
+            if (masterNode && masterNode.get() != this && masterNode->isSettingsPanelVisibleInternal(recursionList)) {
                 return true;
             }
         }
     }
-    return gui->isSettingsPanelOpened();
+    return gui->isSettingsPanelVisible();
 }
 
 bool
-Node::isSettingsPanelOpened() const
+Node::isSettingsPanelVisible() const
 {
     std::set<const Node*> tmplist;
-    return isSettingsPanelOpenedInternal(tmplist);
+    return isSettingsPanelVisibleInternal(tmplist);
 }
 
 

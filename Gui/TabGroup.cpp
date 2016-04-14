@@ -23,69 +23,171 @@
 // ***** END PYTHON BLOCK *****
 
 #include "TabGroup.h"
-
+#include <map>
 #include <stdexcept>
 
 #include <QHBoxLayout>
 #include <QVBoxLayout>
+#include <QTabWidget>
 #include <QGridLayout>
+
+#include "Engine/KnobTypes.h"
+
 
 #define NATRON_FORM_LAYOUT_LINES_SPACING 0
 
-
-using std::make_pair;
 NATRON_NAMESPACE_ENTER;
 
+struct TabGroupTab
+{
+    boost::weak_ptr<KnobGroup> groupKnob;
+    QWidget* tab;
+    QGridLayout* layout;
+    bool visible;
+    
+    TabGroupTab()
+    : groupKnob()
+    , tab(0)
+    , layout(0)
+    , visible(false)
+    {
+        
+    }
+};
+
+struct TabGroupPrivate
+{
+    QTabWidget* tabWidget;
+    std::vector<TabGroupTab> tabs;
+    
+    TabGroupPrivate()
+    : tabWidget(0)
+    , tabs()
+    {
+        
+    }
+};
 
 TabGroup::TabGroup(QWidget* parent)
 : QFrame(parent)
+, _imp(new TabGroupPrivate())
 {
     setFrameShadow(QFrame::Raised);
     setFrameShape(QFrame::Box);
     QHBoxLayout* frameLayout = new QHBoxLayout(this);
-    _tabWidget = new QTabWidget(this);
-    frameLayout->addWidget(_tabWidget);
+    _imp->tabWidget = new QTabWidget(this);
+    frameLayout->addWidget(_imp->tabWidget);
+}
+
+TabGroup::~TabGroup()
+{
+    
+}
+
+bool
+TabGroup::isEmpty() const
+{
+    return _imp->tabs.empty();
 }
 
 QGridLayout*
 TabGroup::addTab(const boost::shared_ptr<KnobGroup>& group, const QString& label)
 {
     
-    QWidget* tab = 0;
-    QGridLayout* tabLayout = 0;
-    for (U32 i = 0 ; i < _tabs.size(); ++i) {
-        if (_tabs[i].lock() == group) {
-            tab = _tabWidget->widget(i);
-            assert(tab);
-            tabLayout = qobject_cast<QGridLayout*>( tab->layout() );
-            assert(tabLayout);
+    TabGroupTab* tabGroup = 0;
+    for (std::size_t i = 0 ; i < _imp->tabs.size(); ++i) {
+        if (_imp->tabs[i].groupKnob.lock() == group) {
+            tabGroup = &_imp->tabs[i];
         }
     }
    
-    if (!tab) {
-        tab = new QWidget(_tabWidget);
-        tabLayout = new QGridLayout(tab);
-        tabLayout->setColumnStretch(1, 1);
-        //tabLayout->setContentsMargins(0, 0, 0, 0);
-        tabLayout->setSpacing(NATRON_FORM_LAYOUT_LINES_SPACING); // unfortunately, this leaves extra space when parameters are hidden
-        _tabWidget->addTab(tab, label);
-        _tabs.push_back(group);
+    if (!tabGroup) {
+        
+        _imp->tabs.resize(_imp->tabs.size() + 1);
+        tabGroup = &_imp->tabs.back();
+        tabGroup->groupKnob = group;
+        bool visible = !group->getIsSecret();
+        tabGroup->visible = visible;
+        tabGroup->tab = new QWidget(_imp->tabWidget);
+        tabGroup->tab->setObjectName(label);
+        tabGroup->layout = new QGridLayout(tabGroup->tab);
+        tabGroup->layout->setColumnStretch(1, 1);
+        tabGroup->layout->setSpacing(NATRON_FORM_LAYOUT_LINES_SPACING); // unfortunately, this leaves extra space when parameters are hidden
+        
+        if (visible) {
+            _imp->tabWidget->addTab(tabGroup->tab, label);
+        }
+        //tabGroup->tab->setVisible(visible);
+        
+        boost::shared_ptr<KnobSignalSlotHandler> handler = group->getSignalSlotHandler();
+        QObject::connect(handler.get(), SIGNAL(secretChanged()), this, SLOT(onGroupKnobSecretChanged()));
+    
     }
-    assert(tabLayout);
-    return tabLayout;
+    assert(tabGroup->layout);
+    return tabGroup->layout;
 }
 
 void
 TabGroup::removeTab(KnobGroup* group)
 {
-    int i = 0;
-    for (std::vector<boost::weak_ptr<KnobGroup> >::iterator it = _tabs.begin(); it != _tabs.end(); ++it, ++i) {
-        if (it->lock().get() == group) {
-            _tabWidget->removeTab(i);
-            _tabs.erase(it);
-            break;
+    for (std::size_t i = 0; i < _imp->tabs.size(); ++i) {
+        if (_imp->tabs[i].groupKnob.lock().get() == group) {
+            _imp->tabWidget->removeTab(i);
+            _imp->tabs.erase(_imp->tabs.begin() + i);
         }
     }
 }
 
+void
+TabGroup::refreshTabSecretNess(KnobGroup* groupKnob)
+{
+    bool isVisible = !groupKnob->getIsSecret();
+    
+    bool oneVisible = false;
+    for (std::size_t i = 0; i < _imp->tabs.size(); ++i) {
+        if (_imp->tabs[i].groupKnob.lock().get() == groupKnob) {
+            _imp->tabs[i].visible = isVisible;
+            if (!isVisible) {
+                _imp->tabs[i].tab->hide();
+                _imp->tabWidget->removeTab(i);
+            } else {
+                _imp->tabs[i].tab->show();
+                _imp->tabWidget->insertTab(i, _imp->tabs[i].tab, _imp->tabs[i].tab->objectName());
+            }
+        }
+        if (_imp->tabs[i].visible) {
+            oneVisible = true;
+        }
+    }
+    if (!oneVisible) {
+        hide();
+    } else {
+        show();
+    }
+}
+
+void
+TabGroup::onGroupKnobSecretChanged()
+{
+    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>(sender());
+    if (!handler) {
+        return;
+    }
+    
+    KnobPtr knob = handler->getKnob();
+    if (!knob) {
+        return;
+    }
+    
+    KnobGroup* groupKnob = dynamic_cast<KnobGroup*>(knob.get());
+    if (!groupKnob) {
+        return;
+    }
+    refreshTabSecretNess(groupKnob);
+    
+}
+
 NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_USING;
+
+#include "moc_TabGroup.cpp"
