@@ -812,6 +812,7 @@ KnobGuiPath::addNewUserEntry(QStringList& row)
         
         int rc = rowCount();
         QString varName = QString(tr("Path") + QString::fromUtf8("%1")).arg(rc);
+        row.push_back(varName);
         row.push_back(path);
         return true;
     }
