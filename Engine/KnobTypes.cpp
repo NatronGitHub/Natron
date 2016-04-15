@@ -1035,6 +1035,17 @@ KnobChoice::setValueFromLabel(const std::string & value,
 }
 
 void
+KnobChoice::setDefaultValueFromLabelWithoutApplying(const std::string & value,int dimension)
+{
+    for (std::size_t i = 0; i < _mergedEntries.size(); ++i) {
+        if (boost::iequals(_mergedEntries[i], value)) {
+            return setDefaultValueWithoutApplying(i, dimension);
+        }
+    }
+    throw std::runtime_error(std::string("KnobChoice::setDefaultValueFromLabel: unknown label ") + value);
+}
+
+void
 KnobChoice::setDefaultValueFromLabel(const std::string & value,
                                       int dimension)
 {
