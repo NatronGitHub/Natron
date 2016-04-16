@@ -1627,7 +1627,9 @@ struct RotoContextPrivate
             knobs.push_back(resetCloneTransform);
             resetCloneTransformKnob = resetCloneTransform;
             
-            node.lock()->addTransformInteract(translate, scale, scaleUniform, rotate, skewX, skewY, skewOrder, center);
+            node.lock()->addTransformInteract(translate, scale, scaleUniform, rotate, skewX, skewY, skewOrder, center,
+                                              boost::shared_ptr<KnobBool>() /*invert*/,
+                                              boost::shared_ptr<KnobBool>() /*interactive*/);
             
             boost::shared_ptr<KnobChoice> filter = AppManager::createKnob<KnobChoice>(effect.get(),kRotoBrushFilterParamLabel,1,false);
             filter->setName(kRotoBrushFilterParam);
@@ -1943,7 +1945,9 @@ struct RotoContextPrivate
         knobs.push_back(resetTransform);
         resetTransformKnob = resetTransform;
         
-        node.lock()->addTransformInteract(translate, scale, scaleUniform, rotate, skewX, skewY, skewOrder, center);
+        node.lock()->addTransformInteract(translate, scale, scaleUniform, rotate, skewX, skewY, skewOrder, center,
+                                          boost::shared_ptr<KnobBool>() /*invert*/,
+                                          boost::shared_ptr<KnobBool>() /*interactive*/);
         
         
 #ifdef NATRON_ROTO_ENABLE_MOTION_BLUR

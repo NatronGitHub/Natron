@@ -1436,6 +1436,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         ///The viewer is actually done with it.
         /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
         inArgs.params->ramBuffer = inArgs.params->cachedFrame->data();
+        assert(inArgs.params->ramBuffer);
         
     } // useTmpBuffer
 

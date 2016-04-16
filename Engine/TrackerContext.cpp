@@ -1428,8 +1428,9 @@ TrackerContext::drawInternalNodesOverlay(double time,
     }
     NodePtr node = getCurrentlySelectedTransformNode();
     if (node) {
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        node->getEffectInstance()->drawOverlay_public(time, renderScale, view);
+        NodePtr thisNode = getNode();
+        thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        thisNode->drawHostOverlay(time, renderScale, view);
     }
 }
 
@@ -1443,8 +1444,9 @@ TrackerContext::onOverlayPenDownInternalNodes(double time,
     }
     NodePtr node = getCurrentlySelectedTransformNode();
     if (node) {
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if (node->getEffectInstance()->onOverlayPenDown_public(time, renderScale, view, viewportPos, pos, pressure)) {
+        NodePtr thisNode = getNode();
+        thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if (thisNode->onOverlayPenDownDefault(time, renderScale, view, viewportPos, pos, pressure)) {
             return true;
         }
     }
@@ -1461,8 +1463,9 @@ TrackerContext::onOverlayPenMotionInternalNodes(double time,
     }
     NodePtr node = getCurrentlySelectedTransformNode();
     if (node) {
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if (node->getEffectInstance()->onOverlayPenMotion_public(time, renderScale, view,  viewportPos, pos, pressure)) {
+        NodePtr thisNode = getNode();
+        thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if (thisNode->onOverlayPenMotionDefault(time, renderScale, view, viewportPos, pos, pressure)) {
             return true;
         }
     }
@@ -1479,8 +1482,9 @@ TrackerContext::onOverlayPenUpInternalNodes(double time,
     }
     NodePtr node = getCurrentlySelectedTransformNode();
     if (node) {
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if (node->getEffectInstance()->onOverlayPenUp_public(time, renderScale, view, viewportPos, pos, pressure)) {
+        NodePtr thisNode = getNode();
+        thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if (thisNode->onOverlayPenUpDefault(time, renderScale, view, viewportPos, pos, pressure)) {
             return true;
         }
     }
@@ -1497,8 +1501,9 @@ TrackerContext::onOverlayKeyDownInternalNodes(double time,
     }
     NodePtr node = getCurrentlySelectedTransformNode();
     if (node) {
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if (node->getEffectInstance()->onOverlayKeyDown_public(time, renderScale, view, key, modifiers)) {
+        NodePtr thisNode = getNode();
+        thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if (thisNode->onOverlayKeyDownDefault(time, renderScale, view, key, modifiers)) {
             return true;
         }
     }
@@ -1515,8 +1520,9 @@ TrackerContext::onOverlayKeyUpInternalNodes(double time,
     }
     NodePtr node = getCurrentlySelectedTransformNode();
     if (node) {
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if (node->getEffectInstance()->onOverlayKeyUp_public(time, renderScale, view, key, modifiers)) {
+        NodePtr thisNode = getNode();
+        thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if (thisNode->onOverlayKeyUpDefault(time, renderScale, view, key, modifiers)) {
             return true;
         }
     }
@@ -1533,8 +1539,9 @@ TrackerContext::onOverlayKeyRepeatInternalNodes(double time,
     }
     NodePtr node = getCurrentlySelectedTransformNode();
     if (node) {
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if (node->getEffectInstance()->onOverlayKeyRepeat_public(time, renderScale, view, key, modifiers)) {
+        NodePtr thisNode = getNode();
+        thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if (thisNode->onOverlayKeyRepeatDefault(time, renderScale, view, key, modifiers)) {
             return true;
         }
     }
@@ -1552,8 +1559,9 @@ TrackerContext::onOverlayFocusGainedInternalNodes(double time,
     }
     NodePtr node = getCurrentlySelectedTransformNode();
     if (node) {
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if (node->getEffectInstance()->onOverlayFocusGained_public(time, renderScale, view)) {
+        NodePtr thisNode = getNode();
+        thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if (thisNode->onOverlayFocusGainedDefault(time, renderScale, view)) {
             return true;
         }
     }
@@ -1571,8 +1579,9 @@ TrackerContext::onOverlayFocusLostInternalNodes(double time,
     }
     NodePtr node = getCurrentlySelectedTransformNode();
     if (node) {
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if (node->getEffectInstance()->onOverlayFocusLost_public(time, renderScale, view)) {
+        NodePtr thisNode = getNode();
+        thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if (thisNode->onOverlayFocusLostDefault(time, renderScale, view)) {
             return true;
         }
     }

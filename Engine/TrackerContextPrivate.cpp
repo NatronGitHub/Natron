@@ -371,7 +371,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface, co
         skewY = createDuplicateKnob<KnobDouble>(kTransformParamSkewY, tNode, effect, transformPage);
         skewOrder = createDuplicateKnob<KnobChoice>(kTransformParamSkewOrder, tNode, effect, transformPage);
         center = createDuplicateKnob<KnobDouble>(kTransformParamCenter, tNode, effect, transformPage);
-        node->addTransformInteract(translate.lock(), scale.lock(), scaleUniform.lock(), rotate.lock(), skewX.lock(), skewY.lock(), skewOrder.lock(), center.lock());
+     
     } // tNode
     NodePtr cNode = cornerPinNode.lock();
     if (cNode) {
@@ -424,6 +424,12 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface, co
         shutter = createDuplicateKnob<KnobDouble>(kTransformParamShutter, tNode, effect, transformPage, boost::shared_ptr<KnobGroup>(), cNode);
         shutterOffset = createDuplicateKnob<KnobChoice>(kTransformParamShutterOffset, tNode, effect, transformPage, boost::shared_ptr<KnobGroup>(), cNode);
         customShutterOffset = createDuplicateKnob<KnobDouble>(kTransformParamCustomShutterOffset, tNode, effect, transformPage, boost::shared_ptr<KnobGroup>(), cNode);
+        
+        node->addTransformInteract(translate.lock(), scale.lock(), scaleUniform.lock(), rotate.lock(), skewX.lock(), skewY.lock(), skewOrder.lock(), center.lock(), invertTransform.lock(), boost::shared_ptr<KnobBool>() /*interactive*/);
+        
+        node->addCornerPinInteract(fromPoints[0].lock(), fromPoints[1].lock(), fromPoints[2].lock(), fromPoints[3].lock(),
+                                   toPoints[0].lock(), toPoints[1].lock(), toPoints[2].lock(), toPoints[3].lock(),
+                                   enableToPoint[0].lock(), enableToPoint[1].lock(), enableToPoint[2].lock(), enableToPoint[3].lock(), cornerPinOverlayPoints.lock(), invertTransform.lock(), boost::shared_ptr<KnobBool>() /*interactive*/);
        
     }
     

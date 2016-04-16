@@ -2974,7 +2974,7 @@ EffectInstance::drawOverlay_public(double time,
     
     _imp->setDuringInteractAction(true);
     drawOverlay(time, actualScale, view);
-    getNode()->drawHostOverlay(time, actualScale);
+    getNode()->drawHostOverlay(time, actualScale, view);
     _imp->setDuringInteractAction(false);
 }
 
@@ -3005,7 +3005,7 @@ EffectInstance::onOverlayPenDown_public(double time,
         _imp->setDuringInteractAction(true);
         ret = onOverlayPenDown(time, actualScale, view, viewportPos, pos, pressure);
         if (!ret) {
-            ret |= getNode()->onOverlayPenDownDefault(actualScale, viewportPos, pos, pressure);
+            ret |= getNode()->onOverlayPenDownDefault(time, actualScale, view, viewportPos, pos, pressure);
         }
         _imp->setDuringInteractAction(false);
     }
@@ -3040,7 +3040,7 @@ EffectInstance::onOverlayPenMotion_public(double time,
     _imp->setDuringInteractAction(true);
     bool ret = onOverlayPenMotion(time, actualScale, view, viewportPos, pos, pressure);
     if (!ret) {
-        ret |= getNode()->onOverlayPenMotionDefault(actualScale, viewportPos, pos, pressure);
+        ret |= getNode()->onOverlayPenMotionDefault(time, actualScale, view, viewportPos, pos, pressure);
     }
     _imp->setDuringInteractAction(false);
     //Don't chek if render is needed on pen motion, wait for the pen up
@@ -3076,7 +3076,7 @@ EffectInstance::onOverlayPenUp_public(double time,
         _imp->setDuringInteractAction(true);
         ret = onOverlayPenUp(time, actualScale, view, viewportPos, pos, pressure);
         if (!ret) {
-            ret |= getNode()->onOverlayPenUpDefault(actualScale, viewportPos, pos, pressure);
+            ret |= getNode()->onOverlayPenUpDefault(time, actualScale, view, viewportPos, pos, pressure);
         }
         _imp->setDuringInteractAction(false);
     }
@@ -3111,7 +3111,7 @@ EffectInstance::onOverlayKeyDown_public(double time,
         _imp->setDuringInteractAction(true);
         ret = onOverlayKeyDown(time, actualScale, view, key, modifiers);
         if (!ret) {
-            ret |= getNode()->onOverlayKeyDownDefault(actualScale, key, modifiers);
+            ret |= getNode()->onOverlayKeyDownDefault(time, actualScale, view, key, modifiers);
         }
         _imp->setDuringInteractAction(false);
     }
@@ -3147,7 +3147,7 @@ EffectInstance::onOverlayKeyUp_public(double time,
         _imp->setDuringInteractAction(true);
         ret = onOverlayKeyUp(time, actualScale, view, key, modifiers);
         if (!ret) {
-            ret |= getNode()->onOverlayKeyUpDefault(actualScale, key, modifiers);
+            ret |= getNode()->onOverlayKeyUpDefault(time, actualScale, view, key, modifiers);
         }
         _imp->setDuringInteractAction(false);
     }
@@ -3182,7 +3182,7 @@ EffectInstance::onOverlayKeyRepeat_public(double time,
         _imp->setDuringInteractAction(true);
         ret = onOverlayKeyRepeat(time, actualScale, view, key, modifiers);
         if (!ret) {
-            ret |= getNode()->onOverlayKeyRepeatDefault(actualScale, key, modifiers);
+            ret |= getNode()->onOverlayKeyRepeatDefault(time, actualScale, view, key, modifiers);
         }
         _imp->setDuringInteractAction(false);
     }
@@ -3215,7 +3215,7 @@ EffectInstance::onOverlayFocusGained_public(double time,
         _imp->setDuringInteractAction(true);
         ret = onOverlayFocusGained(time, actualScale, view);
         if (!ret) {
-            ret |= getNode()->onOverlayFocusGainedDefault(actualScale);
+            ret |= getNode()->onOverlayFocusGainedDefault(time, actualScale, view);
         }
         _imp->setDuringInteractAction(false);
     }
@@ -3248,7 +3248,7 @@ EffectInstance::onOverlayFocusLost_public(double time,
         _imp->setDuringInteractAction(true);
         ret = onOverlayFocusLost(time, actualScale, view);
         if (!ret) {
-            ret |= getNode()->onOverlayFocusLostDefault(actualScale);
+            ret |= getNode()->onOverlayFocusLostDefault(time, actualScale, view);
         }
         _imp->setDuringInteractAction(false);
     }

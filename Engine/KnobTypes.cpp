@@ -221,7 +221,8 @@ KnobDouble::setHasHostOverlayHandle(bool handle)
         boost::shared_ptr<KnobDouble> thisSharedDouble = boost::dynamic_pointer_cast<KnobDouble>(thisShared);
         assert(thisSharedDouble);
         if (handle) {
-            effect->getNode()->addDefaultPositionOverlay(thisSharedDouble);
+            effect->getNode()->addPositionInteract(thisSharedDouble,
+                                                   boost::shared_ptr<KnobBool>()/*interactive*/);
         } else {
             effect->getNode()->removePositionHostOverlay(this);
         }

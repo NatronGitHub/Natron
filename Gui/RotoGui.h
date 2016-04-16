@@ -173,23 +173,23 @@ public:
      **/
     RotoGui::RotoRoleEnum getCurrentRole() const;
 
-    void drawOverlays(double time, const RenderScale & renderScale) const;
+    void drawOverlays(double time, const RenderScale & renderScale, ViewIdx view) const;
 
-    bool penDown(double time, const RenderScale & renderScale, PenType pen, bool isTabletEvent, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
+    bool penDown(double time, const RenderScale & renderScale, ViewIdx view, PenType pen, bool isTabletEvent, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
 
-    bool penDoubleClicked(double time, const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool penDoubleClicked(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
 
-    bool penMotion(double time, const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QInputEvent* e);
+    bool penMotion(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QInputEvent* e);
 
-    bool penUp(double time, const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
+    bool penUp(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
 
-    bool keyDown(double time, const RenderScale & renderScale, QKeyEvent* e);
+    bool keyDown(double time, const RenderScale & renderScale, ViewIdx view, QKeyEvent* e);
 
-    bool keyUp(double time, const RenderScale & renderScale, QKeyEvent* e);
+    bool keyUp(double time, const RenderScale & renderScale, ViewIdx view, QKeyEvent* e);
 
-    bool keyRepeat(double time, const RenderScale & renderScale, QKeyEvent* e);
+    bool keyRepeat(double time, const RenderScale & renderScale, ViewIdx view, QKeyEvent* e);
     
-    void focusOut(double time);
+    void focusOut(double time, ViewIdx view);
 
     bool isStickySelectionEnabled() const;
 

@@ -3367,36 +3367,18 @@ NodeGui::setColor(double r, double g, double b)
 }
 
 void
-NodeGui::addDefaultPositionInteract(const boost::shared_ptr<KnobDouble>& point)
+NodeGui::addDefaultInteract(const boost::shared_ptr<HostOverlayKnobs>& knobs)
 {
     assert(QThread::currentThread() == qApp->thread());
     if (!_hostOverlay) {
         _hostOverlay.reset(new HostOverlay(shared_from_this()));
     }
-    if (_hostOverlay->addPositionParam(point)) {
+    
+    if (_hostOverlay->addInteract(knobs)) {
         getDagGui()->getGui()->redrawAllViewers();
     }
 }
 
-void
-NodeGui::addTransformInteract(const boost::shared_ptr<KnobDouble>& translate,
-                          const boost::shared_ptr<KnobDouble>& scale,
-                          const boost::shared_ptr<KnobBool>& scaleUniform,
-                          const boost::shared_ptr<KnobDouble>& rotate,
-                          const boost::shared_ptr<KnobDouble>& skewX,
-                          const boost::shared_ptr<KnobDouble>& skewY,
-                          const boost::shared_ptr<KnobChoice>& skewOrder,
-                          const boost::shared_ptr<KnobDouble>& center)
-{
-    assert(QThread::currentThread() == qApp->thread());
-    if (!_hostOverlay) {
-        _hostOverlay.reset(new HostOverlay(shared_from_this()));
-    }
-    if (_hostOverlay->addTransformInteract(translate,scale,scaleUniform,rotate,skewX,skewY, skewOrder,center)) {
-        getDagGui()->getGui()->redrawAllViewers();
-    }
-
-}
 
 boost::shared_ptr<HostOverlay>
 NodeGui::getHostOverlay() const
@@ -3422,90 +3404,108 @@ NodeGui::setCurrentViewportForHostOverlays(OverlaySupport* viewPort)
 }
 
 void
-NodeGui::drawHostOverlay(double time, const RenderScale & renderScale)
+NodeGui::drawHostOverlay(double time,
+                         const RenderScale& renderScale,
+                         ViewIdx view)
 {
     if (_hostOverlay) {
         NatronOverlayInteractSupport::OGLContextSaver s(_hostOverlay->getLastCallingViewport());
-        _hostOverlay->draw(time , renderScale);
+        _hostOverlay->draw(time , renderScale, view);
     }
 }
 
 bool
-NodeGui::onOverlayPenDownDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure)
+NodeGui::onOverlayPenDownDefault(double time,
+                                 const RenderScale& renderScale,
+                                 ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)
 {
     if (_hostOverlay) {
-       return _hostOverlay->penDown(getNode()->getEffectInstance()->getCurrentTime(), renderScale, pos, viewportPos.toPoint(), pressure);
+       return _hostOverlay->penDown(time, renderScale, view, pos, viewportPos.toPoint(), pressure);
     }
     return false;
 }
 
 bool
-NodeGui::onOverlayPenMotionDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure)
+NodeGui::onOverlayPenMotionDefault(double time,
+                                   const RenderScale& renderScale,
+                                   ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)
 {
     if (_hostOverlay) {
-        return _hostOverlay->penMotion(getNode()->getEffectInstance()->getCurrentTime(), renderScale, pos, viewportPos.toPoint(), pressure);
+        return _hostOverlay->penMotion(time, renderScale, view, pos, viewportPos.toPoint(), pressure);
     }
     return false;
 }
 
 bool
-NodeGui::onOverlayPenUpDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure)
+NodeGui::onOverlayPenUpDefault(double time,
+                               const RenderScale& renderScale,
+                               ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)
 {
     if (_hostOverlay) {
-        return _hostOverlay->penUp(getNode()->getEffectInstance()->getCurrentTime(), renderScale, pos, viewportPos.toPoint(), pressure);
+        return _hostOverlay->penUp(time, renderScale, view, pos, viewportPos.toPoint(), pressure);
     }
     return false;
 }
 
 bool
-NodeGui::onOverlayKeyDownDefault(const RenderScale & renderScale, Key key, KeyboardModifiers /*modifiers*/)
+NodeGui::onOverlayKeyDownDefault(double time,
+                                 const RenderScale& renderScale,
+                                 ViewIdx view, Key key, KeyboardModifiers /*modifiers*/)
 {
     if (_hostOverlay) {
         QByteArray keyStr;
-        return _hostOverlay->keyDown(getNode()->getEffectInstance()->getCurrentTime(), renderScale, (int)key,keyStr.data());
+        return _hostOverlay->keyDown(time, renderScale, view, (int)key,keyStr.data());
     }
     return false;
 }
 
 bool
-NodeGui::onOverlayKeyUpDefault(const RenderScale & renderScale, Key key, KeyboardModifiers /*modifiers*/)
+NodeGui::onOverlayKeyUpDefault(double time,
+                               const RenderScale& renderScale,
+                               ViewIdx view, Key key, KeyboardModifiers /*modifiers*/)
 {
     if (_hostOverlay) {
         QByteArray keyStr;
-        return _hostOverlay->keyUp(getNode()->getEffectInstance()->getCurrentTime(), renderScale, (int)key,keyStr.data());
-
-    }
-    return false;
-}
-
-bool
-NodeGui::onOverlayKeyRepeatDefault(const RenderScale & renderScale, Key key, KeyboardModifiers /*modifiers*/)
-{
-    if (_hostOverlay) {
-        QByteArray keyStr;
-        return _hostOverlay->keyRepeat(getNode()->getEffectInstance()->getCurrentTime(), renderScale, (int)key,keyStr.data());
+        return _hostOverlay->keyUp(time, renderScale, view, (int)key,keyStr.data());
 
     }
     return false;
 }
 
 bool
-NodeGui::onOverlayFocusGainedDefault(const RenderScale & renderScale)
+NodeGui::onOverlayKeyRepeatDefault(double time,
+                                   const RenderScale& renderScale,
+                                   ViewIdx view, Key key, KeyboardModifiers /*modifiers*/)
 {
     if (_hostOverlay) {
         QByteArray keyStr;
-        return _hostOverlay->gainFocus(getNode()->getEffectInstance()->getCurrentTime(), renderScale);
+        return _hostOverlay->keyRepeat(time, renderScale, view, (int)key,keyStr.data());
 
     }
     return false;
 }
 
 bool
-NodeGui::onOverlayFocusLostDefault(const RenderScale & renderScale)
+NodeGui::onOverlayFocusGainedDefault(double time,
+                                     const RenderScale& renderScale,
+                                     ViewIdx view)
 {
     if (_hostOverlay) {
         QByteArray keyStr;
-        return _hostOverlay->loseFocus(getNode()->getEffectInstance()->getCurrentTime(), renderScale);
+        return _hostOverlay->gainFocus(time, renderScale, view);
+
+    }
+    return false;
+}
+
+bool
+NodeGui::onOverlayFocusLostDefault(double time,
+                                   const RenderScale& renderScale,
+                                   ViewIdx view)
+{
+    if (_hostOverlay) {
+        QByteArray keyStr;
+        return _hostOverlay->loseFocus(time, renderScale, view);
     }
     return false;
 }

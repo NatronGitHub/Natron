@@ -142,7 +142,7 @@ ViewerTab::drawOverlays(double time,
         
         if (_imp->currentRoto.first && (*it) == _imp->currentRoto.first->getNode()) {
             if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-                _imp->currentRoto.second->drawOverlays(time, renderScale);
+                _imp->currentRoto.second->drawOverlays(time, renderScale, view);
             }
         } else if (_imp->currentTracker.first && (*it) == _imp->currentTracker.first->getNode()) {
             if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
@@ -236,7 +236,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
     
     if (_imp->currentRoto.first && node == _imp->currentRoto.first->getNode()) {
         if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentRoto.second->penDown(time, renderScale, pen, isTabletEvent, transformViewportPos, transformPos, pressure, timestamp, e) ) {
+            if ( _imp->currentRoto.second->penDown(time, renderScale, view, pen, isTabletEvent, transformViewportPos, transformPos, pressure, timestamp, e) ) {
                 _imp->lastOverlayNode = node;
                 return true;
             }
@@ -391,7 +391,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
 #endif
         
         if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentRoto.second->penDoubleClicked(time, renderScale, transformViewportPos, transformPos, e) ) {
+            if ( _imp->currentRoto.second->penDoubleClicked(time, renderScale, view, transformViewportPos, transformPos, e) ) {
                 _imp->lastOverlayNode = _imp->currentRoto.first->getNode();
                 return true;
             }
@@ -475,7 +475,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
     
     if (_imp->currentRoto.first && node == _imp->currentRoto.first->getNode()) {
         if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentRoto.second->penMotion(time, renderScale, transformViewportPos, transformPos, pressure, timestamp, e) ) {
+            if ( _imp->currentRoto.second->penMotion(time, renderScale, view, transformViewportPos, transformPos, pressure, timestamp, e) ) {
                 _imp->lastOverlayNode = node;
                 return true;
             }
@@ -680,7 +680,7 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
         if (_imp->currentRoto.first && (*it) == _imp->currentRoto.first->getNode()) {
             
             if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-                didSomething |= _imp->currentRoto.second->penUp(time, renderScale, transformViewportPos, transformPos, pressure, timestamp, e);
+                didSomething |= _imp->currentRoto.second->penUp(time, renderScale, view, transformViewportPos, transformPos, pressure, timestamp, e);
             }
         }
         if (_imp->currentTracker.first && (*it) == _imp->currentTracker.first->getNode()) {
@@ -744,7 +744,7 @@ ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
     if (_imp->currentRoto.first && node == _imp->currentRoto.first->getNode()) {
         
         if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentRoto.second->keyDown(time, renderScale, e) ) {
+            if ( _imp->currentRoto.second->keyDown(time, renderScale, view, e) ) {
                 _imp->lastOverlayNode = node;
                 return true;
             }
@@ -884,7 +884,7 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
         
         if (_imp->currentRoto.first && (*it) == _imp->currentRoto.first->getNode()) {
             if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-                didSomething |= _imp->currentRoto.second->keyUp(time, renderScale, e);
+                didSomething |= _imp->currentRoto.second->keyUp(time, renderScale, view, e);
             }
         }
         if (_imp->currentTracker.first && (*it) == _imp->currentTracker.first->getNode()) {
@@ -948,7 +948,7 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
     if (_imp->currentRoto.first && node == _imp->currentRoto.first->getNode()) {
         
         if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentRoto.second->keyRepeat(time, renderScale, e) ) {
+            if ( _imp->currentRoto.second->keyRepeat(time, renderScale, view, e) ) {
                 _imp->lastOverlayNode = node;
                 return true;
             }
@@ -1117,7 +1117,7 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
         if (_imp->currentRoto.first && (*it) == _imp->currentRoto.first->getNode()) {
             
             if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-                _imp->currentRoto.second->focusOut(time);
+                _imp->currentRoto.second->focusOut(time, view);
             }
         } else if (_imp->currentTracker.first && (*it) == _imp->currentTracker.first->getNode()) {
             if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {

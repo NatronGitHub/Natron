@@ -359,36 +359,45 @@ public:
     
     virtual bool getOverlayColor(double* r, double* g, double* b) const OVERRIDE FINAL;
     
-    virtual void addDefaultPositionInteract(const boost::shared_ptr<KnobDouble>& point) OVERRIDE FINAL;
-    
-    virtual void addTransformInteract(const boost::shared_ptr<KnobDouble>& translate,
-                                      const boost::shared_ptr<KnobDouble>& scale,
-                                      const boost::shared_ptr<KnobBool>& scaleUniform,
-                                      const boost::shared_ptr<KnobDouble>& rotate,
-                                      const boost::shared_ptr<KnobDouble>& skewX,
-                                      const boost::shared_ptr<KnobDouble>& skewY,
-                                      const boost::shared_ptr<KnobChoice>& skewOrder,
-                                      const boost::shared_ptr<KnobDouble>& center) OVERRIDE FINAL;
-    
+    virtual void addDefaultInteract(const boost::shared_ptr<HostOverlayKnobs>& knobs) OVERRIDE FINAL;
+
     boost::shared_ptr<HostOverlay> getHostOverlay() const WARN_UNUSED_RETURN;
     
-    virtual void drawHostOverlay(double time, const RenderScale & renderScale)  OVERRIDE FINAL;
+    virtual void drawHostOverlay(double time,
+                                 const RenderScale& renderScale,
+                                 ViewIdx view)  OVERRIDE FINAL;
     
-    virtual bool onOverlayPenDownDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenDownDefault(double time,
+                                         const RenderScale& renderScale,
+                                         ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)  OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual bool onOverlayPenMotionDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenMotionDefault(double time,
+                                           const RenderScale& renderScale,
+                                           ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)  OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual bool onOverlayPenUpDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenUpDefault(double time,
+                                       const RenderScale& renderScale,
+                                       ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)  OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual bool onOverlayKeyDownDefault(const RenderScale & renderScale, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayKeyDownDefault(double time,
+                                         const RenderScale& renderScale,
+                                         ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual bool onOverlayKeyUpDefault(const RenderScale & renderScale, Key key, KeyboardModifiers modifiers)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayKeyUpDefault(double time,
+                                       const RenderScale& renderScale,
+                                       ViewIdx view, Key key, KeyboardModifiers modifiers)  OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual bool onOverlayKeyRepeatDefault(const RenderScale & renderScale, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayKeyRepeatDefault(double time,
+                                           const RenderScale& renderScale,
+                                           ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual bool onOverlayFocusGainedDefault(const RenderScale & renderScale) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayFocusGainedDefault(double time,
+                                             const RenderScale& renderScale,
+                                             ViewIdx view) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual bool onOverlayFocusLostDefault(const RenderScale & renderScale) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayFocusLostDefault(double time,
+                                           const RenderScale& renderScale,
+                                           ViewIdx view) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual bool hasHostOverlay() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     

@@ -64,7 +64,132 @@ CLANG_DIAG_ON(deprecated)
 
 NATRON_NAMESPACE_ENTER;
 
-namespace {
+
+
+DefaultInteractI::DefaultInteractI(HostOverlay* overlay)
+: _overlay(overlay)
+{
+    
+}
+
+DefaultInteractI::~DefaultInteractI()
+{
+    
+}
+
+
+void DefaultInteractI::renderText(float x, float y, float scalex, float scaley, const QString &text, const QColor &color, const QFont &font) const
+{
+    _overlay->renderText(x, y, scalex, scaley, text, color, font);
+}
+
+void
+DefaultInteractI::requestRedraw()
+{
+    _overlay->requestRedraw();
+}
+
+void
+DefaultInteractI::getPixelScale(double& scaleX, double& scaleY) const
+{
+    _overlay->n_getPixelScale(scaleX, scaleY);
+}
+
+void DefaultInteractI::draw(double /*time*/,
+                            const RenderScale& /*renderScale*/,
+                            ViewIdx /*view*/,
+                            const OfxPointD& /*pscale*/,
+                            const QPointF& /*lastPenPos*/,
+                            const OfxRGBColourD& /*color*/,
+                            const OfxPointD& /*shadow*/,
+                            const QFont& /*font*/,
+                            const QFontMetrics& /*fm*/)
+{
+    
+}
+
+bool DefaultInteractI::penMotion(double /*time*/,
+                                 const RenderScale& /*renderScale*/,
+                                 ViewIdx /*view*/,
+                                 const OfxPointD& /*pscale*/,
+                                 const QPointF& /*lastPenPos*/,
+                                 const QPointF &/*penPos*/,
+                                 const QPoint &/*penPosViewport*/,
+                                 double /*pressure*/)
+{
+    return false;
+}
+
+bool DefaultInteractI::penUp(double /*time*/,
+                             const RenderScale& /*renderScale*/,
+                             ViewIdx /*view*/,
+                             const OfxPointD& /*pscale*/,
+                             const QPointF& /*lastPenPos*/,
+                             const QPointF &/*penPos*/,
+                             const QPoint &/*penPosViewport*/,
+                             double  /*pressure*/)
+{
+    return false;
+}
+
+
+bool DefaultInteractI::penDown(double /*time*/,
+                               const RenderScale& /*renderScale*/,
+                               ViewIdx /*view*/,
+                               const OfxPointD& /*pscale*/,
+                               const QPointF& /*lastPenPos*/,
+                               const QPointF &/*penPos*/,
+                               const QPoint &/*penPosViewport*/,
+                               double  /*pressure*/)
+{
+    return false;
+}
+
+
+bool DefaultInteractI::keyDown(double /*time*/,
+                               const RenderScale& /*renderScale*/,
+                               ViewIdx /*view*/,
+                               int     /*key*/,
+                               char*   /*keyString*/)
+{
+    return false;
+}
+
+
+bool DefaultInteractI::keyUp(double /*time*/,
+                             const RenderScale& /*renderScale*/,
+                             ViewIdx /*view*/,
+                             int     /*key*/,
+                             char*   /*keyString*/)
+{
+    return false;
+}
+
+
+bool DefaultInteractI::keyRepeat(double /*time*/,
+                                 const RenderScale& /*renderScale*/,
+                                 ViewIdx /*view*/,
+                                 int     /*key*/,
+                                 char*   /*keyString*/) {
+    return false;
+}
+
+
+bool DefaultInteractI::gainFocus(double /*time*/,
+                                 const RenderScale& /*renderScale*/,
+                                 ViewIdx /*view*/)
+{
+    return false;
+}
+
+
+bool DefaultInteractI::loseFocus(double /*time*/,
+                                 const RenderScale& /*renderScale*/,
+                                 ViewIdx /*view*/)
+{
+    return false;
+}
+
 
 enum PositionInteractState
 {
@@ -74,12 +199,38 @@ enum PositionInteractState
 };
 
 
-struct PositionInteract
+class PositionInteract: public DefaultInteractI
 {
-    boost::weak_ptr<KnobDouble> param;
-    QPointF dragPos;
-    PositionInteractState state;
+    boost::weak_ptr<KnobDouble> _param;
+    boost::weak_ptr<KnobBool> _interactive;
+    QPointF _dragPos;
+    bool _interactiveDrag;
+    PositionInteractState _state;
     
+public:
+    
+    PositionInteract(const PositionOverlayKnobs* knobs,
+                     HostOverlay* overlay)
+    : DefaultInteractI(overlay)
+    , _param()
+    , _interactive()
+    , _dragPos()
+    , _interactiveDrag(false)
+    , _state(ePositionInteractStateInactive)
+    {
+        _param = knobs->getKnob<KnobDouble>(PositionOverlayKnobs::eKnobsEnumerationPosition);
+        _interactive = knobs->getKnob<KnobBool>(PositionOverlayKnobs::eKnobsEnumerationInteractive);
+    }
+    
+    virtual ~PositionInteract()
+    {
+        
+    }
+    
+    virtual bool isInteractForKnob(const KnobI* knob) const OVERRIDE FINAL
+    {
+        return _param.lock().get() == knob;
+    }
     
     double pointSize() const
     {
@@ -91,11 +242,60 @@ struct PositionInteract
         return 6.;
     }
     
+    bool getInteractive(double time) const
+    {
+        if (_interactive.lock()) {
+            return _interactive.lock()->getValueAtTime(time);
+        } else {
+            return appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
+        }
+    }
     
+    virtual void draw(double time,
+                      const RenderScale& renderScale,
+                      ViewIdx view,
+                      const OfxPointD& pscale,
+                      const QPointF& lastPenPos,
+                      const OfxRGBColourD& color,
+                      const OfxPointD& shadow,
+                      const QFont& font,
+                      const QFontMetrics& fm) OVERRIDE FINAL;
+    
+    virtual bool penMotion(double time,
+                           const RenderScale& renderScale,
+                           ViewIdx view,
+                           const OfxPointD& pscale,
+                           const QPointF& lastPenPos,
+                           const QPointF &penPos,
+                           const QPoint &penPosViewport,
+                           double pressure) OVERRIDE FINAL;
+    
+    virtual bool penUp(double time,
+                       const RenderScale& renderScale,
+                       ViewIdx view,
+                       const OfxPointD& pscale,
+                       const QPointF& lastPenPos,
+                       const QPointF &penPos,
+                       const QPoint &penPosViewport,
+                       double  pressure) OVERRIDE FINAL;
+    
+    virtual bool penDown(double time,
+                         const RenderScale& renderScale,
+                         ViewIdx view,
+                         const OfxPointD& pscale,
+                         const QPointF& lastPenPos,
+                         const QPointF &penPos,
+                         const QPoint &penPosViewport,
+                         double  pressure) OVERRIDE FINAL;
+    
+    virtual bool loseFocus(double time,
+                           const RenderScale& renderScale,
+                           ViewIdx view) OVERRIDE FINAL;
+
 };
 
 
-struct TransformInteract
+class TransformInteract : public DefaultInteractI
 {
     
     enum DrawStateEnum {
@@ -133,14 +333,17 @@ struct TransformInteract
         eOrientationVertical
     };
     
-    boost::weak_ptr<KnobDouble> translate;
-    boost::weak_ptr<KnobDouble> scale;
-    boost::weak_ptr<KnobBool> scaleUniform;
-    boost::weak_ptr<KnobDouble> rotate;
-    boost::weak_ptr<KnobDouble> center;
-    boost::weak_ptr<KnobDouble> skewX;
-    boost::weak_ptr<KnobDouble> skewY;
-    boost::weak_ptr<KnobChoice> skewOrder;
+    
+    boost::weak_ptr<KnobDouble> _translate;
+    boost::weak_ptr<KnobDouble> _scale;
+    boost::weak_ptr<KnobBool> _scaleUniform;
+    boost::weak_ptr<KnobDouble> _rotate;
+    boost::weak_ptr<KnobDouble> _center;
+    boost::weak_ptr<KnobDouble> _skewX;
+    boost::weak_ptr<KnobDouble> _skewY;
+    boost::weak_ptr<KnobChoice> _skewOrder;
+    boost::weak_ptr<KnobBool> _invert;
+    boost::weak_ptr<KnobBool> _interactive;
     
     DrawStateEnum _drawState;
     MouseStateEnum _mouseState;
@@ -156,18 +359,24 @@ struct TransformInteract
     double _skewXDrag;
     double _skewYDrag;
     int _skewOrderDrag;
+    bool _invertedDrag;
     bool _interactiveDrag;
     
+public:
     
-    TransformInteract()
-    : translate()
-    , scale()
-    , scaleUniform()
-    , rotate()
-    , center()
-    , skewX()
-    , skewY()
-    , skewOrder()
+    TransformInteract(const TransformOverlayKnobs* knobs,
+                      HostOverlay* overlay)
+    : DefaultInteractI(overlay)
+    , _translate()
+    , _scale()
+    , _scaleUniform()
+    , _rotate()
+    , _center()
+    , _skewX()
+    , _skewY()
+    , _skewOrder()
+    , _invert()
+    , _interactive()
     , _drawState(eInActive)
     , _mouseState(eReleased)
     , _modifierStateCtrl(0)
@@ -181,9 +390,38 @@ struct TransformInteract
     , _skewXDrag(0)
     , _skewYDrag(0)
     , _skewOrderDrag(0)
+    , _invertedDrag(false)
     , _interactiveDrag(false)
     {
+        _translate = knobs->getKnob<KnobDouble>(TransformOverlayKnobs::eKnobsEnumerationTranslate);
+        _scale = knobs->getKnob<KnobDouble>(TransformOverlayKnobs::eKnobsEnumerationScale);
+        _scaleUniform = knobs->getKnob<KnobBool>(TransformOverlayKnobs::eKnobsEnumerationUniform);
+        _rotate = knobs->getKnob<KnobDouble>(TransformOverlayKnobs::eKnobsEnumerationRotate);
+        _center = knobs->getKnob<KnobDouble>(TransformOverlayKnobs::eKnobsEnumerationCenter);
+        _skewX = knobs->getKnob<KnobDouble>(TransformOverlayKnobs::eKnobsEnumerationSkewx);
+        _skewY = knobs->getKnob<KnobDouble>(TransformOverlayKnobs::eKnobsEnumerationSkewy);
+        _skewOrder = knobs->getKnob<KnobChoice>(TransformOverlayKnobs::eKnobsEnumerationSkewOrder);
+        _invert = knobs->getKnob<KnobBool>(TransformOverlayKnobs::eKnobsEnumerationInvert);
+        _interactive = knobs->getKnob<KnobBool>(TransformOverlayKnobs::eKnobsEnumerationInteractive);
+    }
+    
+    virtual ~TransformInteract()
+    {
         
+    }
+    
+    virtual bool isInteractForKnob(const KnobI* knob) const OVERRIDE FINAL
+    {
+        return knob == _translate.lock().get() ||
+        knob == _scale.lock().get() ||
+        knob == _scaleUniform.lock().get() ||
+        knob == _rotate.lock().get() ||
+        knob == _center.lock().get() ||
+        knob == _skewX.lock().get() ||
+        knob == _skewY.lock().get() ||
+        knob == _skewOrder.lock().get() ||
+        knob == _invert.lock().get() ||
+        knob == _interactive.lock().get();
     }
     
     static double circleRadiusBase() { return 30.; }
@@ -191,11 +429,11 @@ struct TransformInteract
     static double circleRadiusMax() { return 300.; }
     static double pointSize() { return 7.; }
     static double ellipseNPoints() { return 50.; }
-
+    
     
     void getTranslate(double time, double* tx, double* ty) const
     {
-        boost::shared_ptr<KnobDouble> knob = translate.lock();
+        boost::shared_ptr<KnobDouble> knob = _translate.lock();
         assert(knob);
         *tx = knob->getValueAtTime(time,0);
         *ty = knob->getValueAtTime(time,1);
@@ -203,7 +441,7 @@ struct TransformInteract
     
     void getCenter(double time, double* cx, double* cy) const
     {
-        boost::shared_ptr<KnobDouble> knob = center.lock();
+        boost::shared_ptr<KnobDouble> knob = _center.lock();
         assert(knob);
         *cx = knob->getValueAtTime(time,0);
         *cy = knob->getValueAtTime(time,1);
@@ -211,7 +449,7 @@ struct TransformInteract
     
     void getScale(double time, double* sx, double* sy) const
     {
-        boost::shared_ptr<KnobDouble> knob = scale.lock();
+        boost::shared_ptr<KnobDouble> knob = _scale.lock();
         assert(knob);
         *sx = knob->getValueAtTime(time,0);
         *sy = knob->getValueAtTime(time,1);
@@ -219,63 +457,326 @@ struct TransformInteract
     
     void getRotate(double time, double* rot) const
     {
-        boost::shared_ptr<KnobDouble> knob = rotate.lock();
+        boost::shared_ptr<KnobDouble> knob = _rotate.lock();
         assert(knob);
         *rot = knob->getValueAtTime(time,0);
     }
     
     void getSkewX(double time, double* x) const
     {
-        boost::shared_ptr<KnobDouble> knob = skewX.lock();
+        boost::shared_ptr<KnobDouble> knob = _skewX.lock();
         assert(knob);
         *x = knob->getValueAtTime(time,0);
     }
     
     void getSkewY(double time, double* y) const
     {
-        boost::shared_ptr<KnobDouble> knob = skewY.lock();
+        boost::shared_ptr<KnobDouble> knob = _skewY.lock();
         assert(knob);
         *y = knob->getValueAtTime(time,0);
     }
     
     void getSkewOrder(double time, int* order) const
     {
-        boost::shared_ptr<KnobChoice> knob = skewOrder.lock();
+        boost::shared_ptr<KnobChoice> knob = _skewOrder.lock();
         assert(knob);
         *order = knob->getValueAtTime(time,0);
     }
     
     void getScaleUniform(double time, bool* uniform) const
     {
-        boost::shared_ptr<KnobBool> knob = scaleUniform.lock();
+        boost::shared_ptr<KnobBool> knob = _scaleUniform.lock();
         assert(knob);
         *uniform = knob->getValueAtTime(time,0);
     }
+    
+    bool getInvert(double time) const
+    {
+        boost::shared_ptr<KnobBool> knob = _invert.lock();
+        if (knob) {
+            return knob->getValueAtTime(time);
+        } else {
+            return false;
+        }
+
+    }
+    
+    bool getInteractive(double time) const
+    {
+        if (_interactive.lock()) {
+            return _interactive.lock()->getValueAtTime(time);
+        } else {
+            return appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
+        }
+    }
+    
+    virtual void draw(double time,
+                      const RenderScale& renderScale,
+                      ViewIdx view,
+                      const OfxPointD& pscale,
+                      const QPointF& lastPenPos,
+                      const OfxRGBColourD& color,
+                      const OfxPointD& shadow,
+                      const QFont& font,
+                      const QFontMetrics& fm) OVERRIDE FINAL;
+    
+    virtual bool penMotion(double time,
+                           const RenderScale& renderScale,
+                           ViewIdx view,
+                           const OfxPointD& pscale,
+                           const QPointF& lastPenPos,
+                           const QPointF &penPos,
+                           const QPoint &penPosViewport,
+                           double pressure) OVERRIDE FINAL;
+    
+    virtual bool penUp(double time,
+                       const RenderScale& renderScale,
+                       ViewIdx view,
+                       const OfxPointD& pscale,
+                       const QPointF& lastPenPos,
+                       const QPointF &penPos,
+                       const QPoint &penPosViewport,
+                       double  pressure) OVERRIDE FINAL;
+    
+    virtual bool penDown(double time,
+                         const RenderScale& renderScale,
+                         ViewIdx view,
+                         const OfxPointD& pscale,
+                         const QPointF& lastPenPos,
+                         const QPointF &penPos,
+                         const QPoint &penPosViewport,
+                         double  pressure) OVERRIDE FINAL;
+    
+    virtual bool keyDown(double time,
+                         const RenderScale& renderScale,
+                         ViewIdx view,
+                         int     key,
+                         char*   keyString) OVERRIDE FINAL;
+    
+    virtual bool keyUp(double time,
+                       const RenderScale& renderScale,
+                       ViewIdx view,
+                       int     key,
+                       char*   keyString) OVERRIDE FINAL;
+    
+    virtual bool loseFocus(double time,
+                           const RenderScale& renderScale,
+                           ViewIdx view) OVERRIDE FINAL;
 
 };
+
+class CornerPinInteract : public DefaultInteractI
+{
+    
+    
+    std::vector<boost::weak_ptr<KnobDouble> > _from,_to;
+    std::vector<boost::weak_ptr<KnobBool> > _enable;
+    boost::weak_ptr<KnobBool> _invert;
+    boost::weak_ptr<KnobChoice> _overlayPoints;
+    boost::weak_ptr<KnobBool> _interactive;
+    
+    int _dragging; // -1: idle, else dragging point number
+    int _hovering; // -1: idle, else hovering point number
+    Point _toDrag[4];
+    Point _fromDrag[4];
+    bool _enableDrag[4];
+    bool _useFromDrag;
+    bool _interactiveDrag;
+    
+public:
+    
+    CornerPinInteract(const CornerPinOverlayKnobs* knobs,
+                      HostOverlay* overlay)
+    : DefaultInteractI(overlay)
+    , _invert()
+    , _interactive()
+    , _dragging(-1)
+    , _hovering(-1)
+    , _useFromDrag(false)
+    , _interactiveDrag(false)
+    {
+
+        _from.resize(4);
+        _to.resize(4);
+        _enable.resize(4);
+        
+        _from[0] = knobs->getKnob<KnobDouble>(CornerPinOverlayKnobs::eKnobsEnumerationFrom1);
+        _from[1] = knobs->getKnob<KnobDouble>(CornerPinOverlayKnobs::eKnobsEnumerationFrom2);
+        _from[2] = knobs->getKnob<KnobDouble>(CornerPinOverlayKnobs::eKnobsEnumerationFrom3);
+        _from[3] = knobs->getKnob<KnobDouble>(CornerPinOverlayKnobs::eKnobsEnumerationFrom4);
+        
+        _to[0] = knobs->getKnob<KnobDouble>(CornerPinOverlayKnobs::eKnobsEnumerationTo1);
+        _to[1] = knobs->getKnob<KnobDouble>(CornerPinOverlayKnobs::eKnobsEnumerationTo2);
+        _to[2] = knobs->getKnob<KnobDouble>(CornerPinOverlayKnobs::eKnobsEnumerationTo3);
+        _to[3] = knobs->getKnob<KnobDouble>(CornerPinOverlayKnobs::eKnobsEnumerationTo4);
+
+        
+        _enable[0] = knobs->getKnob<KnobBool>(CornerPinOverlayKnobs::eKnobsEnumerationEnable1);
+        _enable[1] = knobs->getKnob<KnobBool>(CornerPinOverlayKnobs::eKnobsEnumerationEnable2);
+        _enable[2] = knobs->getKnob<KnobBool>(CornerPinOverlayKnobs::eKnobsEnumerationEnable3);
+        _enable[3] = knobs->getKnob<KnobBool>(CornerPinOverlayKnobs::eKnobsEnumerationEnable4);
+        
+        _overlayPoints = knobs->getKnob<KnobChoice>(CornerPinOverlayKnobs::eKnobsEnumerationOverlayPoints);
+        _invert = knobs->getKnob<KnobBool>(CornerPinOverlayKnobs::eKnobsEnumerationInvert);
+        _interactive = knobs->getKnob<KnobBool>(CornerPinOverlayKnobs::eKnobsEnumerationInteractive);
+
+    }
+    
+    virtual ~CornerPinInteract()
+    {
+        
+    }
+    
+    virtual bool isInteractForKnob(const KnobI* knob) const OVERRIDE FINAL
+    {
+        for (int i = 0; i < 4; ++i) {
+            if (_from[i].lock().get() == knob) {
+                return true;
+            } else if (_to[i].lock().get() == knob) {
+                return true;
+            } else if (_enable[i].lock().get() == knob) {
+                return true;
+            }
+        }
+        if (_invert.lock().get() == knob) {
+            return true;
+        }
+        if (_overlayPoints.lock().get() == knob) {
+            return true;
+        }
+        if (_interactive.lock().get() == knob) {
+            return true;
+        }
+        return false;
+    }
+    
+    static double pointSize() { return 5.; }
+    static double pointTolerance() { return 6.; }
+    
+    static bool
+    isNearby(const QPointF & p,
+             double x,
+             double y,
+             double tolerance,
+             const OfxPointD & pscale)
+    {
+        return std::fabs(p.x() - x) <= tolerance * pscale.x &&  std::fabs(p.y() - y) <= tolerance * pscale.y;
+    }
+    
+    void getFrom(double time, int index, double* tx, double* ty) const
+    {
+        boost::shared_ptr<KnobDouble> knob = _from[index].lock();
+        assert(knob);
+        *tx = knob->getValueAtTime(time,0);
+        *ty = knob->getValueAtTime(time,1);
+    }
+    
+    void getTo(double time, int index, double* tx, double* ty) const
+    {
+        boost::shared_ptr<KnobDouble> knob = _to[index].lock();
+        assert(knob);
+        *tx = knob->getValueAtTime(time,0);
+        *ty = knob->getValueAtTime(time,1);
+    }
+    
+    bool getEnabled(double time, int index) const
+    {
+        boost::shared_ptr<KnobBool> knob = _enable[index].lock();
+        assert(knob);
+        return knob->getValueAtTime(time);
+    }
+    
+    
+    
+    bool getInverted(double time) const
+    {
+        boost::shared_ptr<KnobBool> knob = _invert.lock();
+        assert(knob);
+        return knob->getValueAtTime(time);
+    }
+    
+    bool getUseFromPoints(double time) const
+    {
+        boost::shared_ptr<KnobChoice> knob = _overlayPoints.lock();
+        assert(knob);
+        return knob->getValueAtTime(time) == 1;
+    }
+    
+    bool getInteractive(double time) const
+    {
+        if (_interactive.lock()) {
+            return _interactive.lock()->getValueAtTime(time);
+        } else {
+            return appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
+        }
+    }
+    
+    virtual void draw(double time,
+                      const RenderScale& renderScale,
+                      ViewIdx view,
+                      const OfxPointD& pscale,
+                      const QPointF& lastPenPos,
+                      const OfxRGBColourD& color,
+                      const OfxPointD& shadow,
+                      const QFont& font,
+                      const QFontMetrics& fm) OVERRIDE FINAL;
+    
+    virtual bool penMotion(double time,
+                           const RenderScale& renderScale,
+                           ViewIdx view,
+                           const OfxPointD& pscale,
+                           const QPointF& lastPenPos,
+                           const QPointF &penPos,
+                           const QPoint &penPosViewport,
+                           double pressure) OVERRIDE FINAL;
+    
+    virtual bool penUp(double time,
+                       const RenderScale& renderScale,
+                       ViewIdx view,
+                       const OfxPointD& pscale,
+                       const QPointF& lastPenPos,
+                       const QPointF &penPos,
+                       const QPoint &penPosViewport,
+                       double  pressure) OVERRIDE FINAL;
+    
+    virtual bool penDown(double time,
+                         const RenderScale& renderScale,
+                         ViewIdx view,
+                         const OfxPointD& pscale,
+                         const QPointF& lastPenPos,
+                         const QPointF &penPos,
+                         const QPoint &penPosViewport,
+                         double  pressure) OVERRIDE FINAL;
+    
+    virtual bool loseFocus(double time,
+                           const RenderScale& renderScale,
+                           ViewIdx view) OVERRIDE FINAL;
+
+    
+};
+
 
 // round to the closest int, 1/10 int, etc
 // this make parameter editing easier
 // pscale is args.pixelScale.x / args.renderScale.x;
 // pscale10 is the power of 10 below pscale
 inline double fround(double val,
-                         double pscale)
+                     double pscale)
 {
     double pscale10 = std::pow( 10.,std::floor( std::log10(pscale) ) );
     
     return pscale10 * std::floor(val / pscale10 + 0.5);
 }
-    
-typedef std::list<PositionInteract> PositionInteracts;
+
+typedef boost::shared_ptr<DefaultInteractI> InteractPtr;
+typedef std::list<InteractPtr> InteractList;
 typedef std::list<TransformInteract> TransformInteracts;
-    
-}
+
 
 struct HostOverlayPrivate
 {
     HostOverlay* _publicInterface;
-    PositionInteracts positions;
-    TransformInteracts transforms;
+    InteractList interacts;
     boost::weak_ptr<NodeGui> node;
     
     QPointF lastPenPos;
@@ -286,8 +787,7 @@ struct HostOverlayPrivate
     
     HostOverlayPrivate(HostOverlay* publicInterface, const NodeGuiPtr& node)
     : _publicInterface(publicInterface)
-    , positions()
-    , transforms()
+    , interacts()
     , node(node)
     , lastPenPos()
     , textRenderer()
@@ -301,134 +801,19 @@ struct HostOverlayPrivate
         node.lock()->getNode()->getApp()->queueRedrawForAllViewers();
     }
     
-    void drawPosition(const PositionInteract& p,
-                      double time,
-                      const OfxPointD& pscale,
-                      const OfxRGBColourD& color,
-                      const OfxPointD& shadow,
-                      const QFont& font,
-                      const QFontMetrics& fm);
-    
-    void drawTransform(const TransformInteract& p,
-                       double time,
-                       const OfxPointD& pscale,
-                       const OfxRGBColourD& color,
-                       const OfxPointD& shadow,
-                       const QFont& font,
-                       const QFontMetrics& fm);
-    
-    ////////Position interacts
-    bool penMotion(double time,
-                   const RenderScale &renderScale,
-                   const QPointF &penPos,
-                   const QPoint &penPosViewport,
-                   double pressure,
-                   PositionInteract* it);
-    
-    bool penUp(double time,
-               const RenderScale &renderScale,
-               const QPointF &penPos,
-               const QPoint &penPosViewport,
-               double  pressure,
-               PositionInteract* it);
-    
-    
-    bool penDown(double time,
-                 const RenderScale &renderScale,
-                 const QPointF &penPos,
-                 const QPoint &penPosViewport,
-                 double  pressure,
-                 PositionInteract* it);
-    
-    
-    bool keyDown(double time,
-                 const RenderScale &renderScale,
-                 int     key,
-                 char*   keyString,
-                 PositionInteract* it);
-    
-    
-    bool keyUp(double time,
-               const RenderScale &renderScale,
-               int     key,
-               char*   keyString,
-               PositionInteract* it);
-    
-    
-    bool keyRepeat(double time,
-                   const RenderScale &renderScale,
-                   int     key,
-                   char*   keyString,
-                   PositionInteract* it);
-    
-    
-    bool gainFocus(double time,
-                   const RenderScale &renderScale,
-                   PositionInteract* it);
-    
-    
-    bool loseFocus(double  time,
-                   const RenderScale &renderScale,
-                   PositionInteract* it);
-    
-    
-    /////Transform interacts
-    
-    bool penMotion(double time,
-                   const RenderScale &renderScale,
-                   const QPointF &penPos,
-                   const QPoint &penPosViewport,
-                   double pressure,
-                   TransformInteract* it);
-    
-    bool penUp(double time,
-               const RenderScale &renderScale,
-               const QPointF &penPos,
-               const QPoint &penPosViewport,
-               double  pressure,
-               TransformInteract* it);
-    
-    
-    bool penDown(double time,
-                 const RenderScale &renderScale,
-                 const QPointF &penPos,
-                 const QPoint &penPosViewport,
-                 double  pressure,
-                 TransformInteract* it);
-    
-    
-    bool keyDown(double time,
-                 const RenderScale &renderScale,
-                 int     key,
-                 char*   keyString,
-                 TransformInteract* it);
-    
-    
-    bool keyUp(double time,
-               const RenderScale &renderScale,
-               int     key,
-               char*   keyString,
-               TransformInteract* it);
-    
-    
-    bool keyRepeat(double time,
-                   const RenderScale &renderScale,
-                   int     key,
-                   char*   keyString,
-                   TransformInteract* it);
-    
-    
-    bool gainFocus(double time,
-                   const RenderScale &renderScale,
-                   TransformInteract* it);
-    
-    
-    bool loseFocus(double  time,
-                   const RenderScale &renderScale,
-                   TransformInteract* it);
-
-    
 };
+
+void
+HostOverlay::renderText(float x, float y, float scalex, float scaley, const QString &text, const QColor &color, const QFont &font) const
+{
+    _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font);
+}
+
+void
+HostOverlay::requestRedraw()
+{
+    _imp->requestRedraw();
+}
 
 HostOverlay::HostOverlay(const NodeGuiPtr& node)
 : _imp(new HostOverlayPrivate(this, node))
@@ -447,65 +832,57 @@ HostOverlay::getNode() const
 }
 
 bool
-HostOverlay::addPositionParam(const boost::shared_ptr<KnobDouble>& position)
+HostOverlay::addInteract(const boost::shared_ptr<HostOverlayKnobs>& knobs)
 {
     assert(QThread::currentThread() == qApp->thread());
     
-    for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
-        if (it->param.lock() == position) {
+    KnobPtr firstKnob = knobs->getFirstKnob();
+    if (!firstKnob) {
+        return false;
+    }
+    for (InteractList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
+        if ((*it)->isInteractForKnob(firstKnob.get())) {
             return false;
         }
     }
     
-    PositionInteract p;
-    p.param = position;
-    p.state = ePositionInteractStateInactive;
-    _imp->positions.push_back(p);
-    return true;
-}
-
-bool
-HostOverlay::addTransformInteract(const boost::shared_ptr<KnobDouble>& translate,
-                                  const boost::shared_ptr<KnobDouble>& scale,
-                                  const boost::shared_ptr<KnobBool>& scaleUniform,
-                                  const boost::shared_ptr<KnobDouble>& rotate,
-                                  const boost::shared_ptr<KnobDouble>& skewX,
-                                  const boost::shared_ptr<KnobDouble>& skewY,
-                                  const boost::shared_ptr<KnobChoice>& skewOrder,
-                                  const boost::shared_ptr<KnobDouble>& center)
-{
-    assert(QThread::currentThread() == qApp->thread());
-
-    for (TransformInteracts::iterator it = _imp->transforms.begin(); it != _imp->transforms.end(); ++it) {
-        if (it->translate.lock() == translate) {
-            return false;
-        }
+    if (!knobs->checkHostOverlayValid()) {
+        return false;
     }
-    TransformInteract p;
-    p.translate = translate;
-    p.scale = scale;
-    p.scaleUniform = scaleUniform;
-    p.rotate = rotate;
-    p.skewX = skewX;
-    p.skewY = skewY;
-    p.skewOrder = skewOrder;
-    p.center = center;
-    p._drawState = TransformInteract::eInActive;
-    p._mouseState = TransformInteract::eReleased;
-    _imp->transforms.push_back(p);
+    
+    PositionOverlayKnobs* isPosition = dynamic_cast<PositionOverlayKnobs*>(knobs.get());
+    TransformOverlayKnobs* isTransform = dynamic_cast<TransformOverlayKnobs*>(knobs.get());
+    CornerPinOverlayKnobs* isCornerPin = dynamic_cast<CornerPinOverlayKnobs*>(knobs.get());
+    
+    boost::shared_ptr<DefaultInteractI> overlay;
+    if (isPosition) {
+        boost::shared_ptr<PositionInteract> p(new PositionInteract(isPosition, this));
+        overlay = p;
+    } else if (isTransform) {
+        boost::shared_ptr<TransformInteract> p(new TransformInteract(isTransform, this));
+        overlay = p;
+    } else if (isCornerPin) {
+        boost::shared_ptr<CornerPinInteract> p(new CornerPinInteract(isCornerPin, this));
+        overlay = p;
+    }
+
+    _imp->interacts.push_back(overlay);
     return true;
+
 }
 
 void
-HostOverlayPrivate::drawPosition(const PositionInteract& p,
-                                 double time,
-                                 const OfxPointD& pscale,
-                                 const OfxRGBColourD& color,
-                                 const OfxPointD& shadow,
-                                 const QFont& font,
-                                 const QFontMetrics& fm)
+PositionInteract::draw(double time,
+                       const RenderScale& /*renderScale*/,
+                       ViewIdx /*view*/,
+                       const OfxPointD& pscale,
+                       const QPointF& lastPenPos,
+                       const OfxRGBColourD& color,
+                       const OfxPointD& shadow,
+                       const QFont& font,
+                       const QFontMetrics& fm)
 {
-    boost::shared_ptr<KnobDouble> knob = p.param.lock();
+    boost::shared_ptr<KnobDouble> knob = _param.lock();
     // do not show interact if knob is secret or not enabled
     // see https://github.com/MrKepzie/Natron/issues/932
     if (!knob || knob->getIsSecretRecursive() || !knob->isEnabled(0) || !knob->isEnabled(1)) {
@@ -515,7 +892,7 @@ HostOverlayPrivate::drawPosition(const PositionInteract& p,
     float pR = 1.f;
     float pG = 1.f;
     float pB = 1.f;
-    switch (p.state) {
+    switch (_state) {
         case ePositionInteractStateInactive:
             pR = (float)color.r; pG = (float)color.g; pB = (float)color.b; break;
         case ePositionInteractStatePoised:
@@ -525,7 +902,7 @@ HostOverlayPrivate::drawPosition(const PositionInteract& p,
     }
     
     QPointF pos;
-    if (p.state == ePositionInteractStatePicked) {
+    if (_state == ePositionInteractStatePicked) {
         pos = lastPenPos;
     } else {
         double p[2];
@@ -539,7 +916,7 @@ HostOverlayPrivate::drawPosition(const PositionInteract& p,
         pos.setY(p[1]);
     }
     //glPushAttrib(GL_ALL_ATTRIB_BITS); // caller is responsible for protecting attribs
-    glPointSize( (GLfloat)p.pointSize() );
+    glPointSize( (GLfloat)pointSize() );
     // Draw everything twice
     // l = 0: shadow
     // l = 1: drawing
@@ -558,7 +935,7 @@ HostOverlayPrivate::drawPosition(const PositionInteract& p,
         QColor c;
         c.setRgbF(pR * l, pG * l, pB * l);
         
-        textRenderer.renderText(pos.x(), pos.y() - (fm.height() + p.pointSize()) * pscale.y,
+        renderText(pos.x(), pos.y() - (fm.height() + pointSize()) * pscale.y,
                                 pscale.x, pscale.y, QString::fromUtf8(knob->getOriginalName().c_str()), c, font);
     }
 }
@@ -880,18 +1257,20 @@ drawRotationBar(const OfxRGBColourD& color,
 }
 
 void
-HostOverlayPrivate::drawTransform(const TransformInteract& p,
-                                  double time,
-                                  const OfxPointD& pscale,
-                                  const OfxRGBColourD& color,
-                                  const OfxPointD& shadow,
-                                  const QFont& /*font*/,
-                                  const QFontMetrics& /*fm*/)
+TransformInteract::draw(double time,
+                        const RenderScale& /*renderScale*/,
+                        ViewIdx /*view*/,
+                        const OfxPointD& pscale,
+                        const QPointF& lastPenPos,
+                        const OfxRGBColourD& color,
+                        const OfxPointD& shadow,
+                        const QFont& /*font*/,
+                        const QFontMetrics& /*fm*/)
 {
     
     // do not show interact if knob is secret or not enabled
     // see https://github.com/MrKepzie/Natron/issues/932
-    boost::shared_ptr<KnobDouble> translateKnob = p.translate.lock();
+    boost::shared_ptr<KnobDouble> translateKnob = _translate.lock();
     if (!translateKnob || translateKnob->getIsSecretRecursive() || !translateKnob->isEnabled(0)) {
         return;
     }
@@ -905,24 +1284,26 @@ HostOverlayPrivate::drawTransform(const TransformInteract& p,
     int skewOrder;
     bool inverted = false;
     
-    if (p._mouseState == TransformInteract::eReleased) {
-        p.getCenter(time, &center.x, &center.y);
-        p.getTranslate(time, &translate.x, &translate.y);
-        p.getScale(time, &scaleParam.x, &scaleParam.y);
-        p.getScaleUniform(time, &scaleUniform);
-        p.getRotate(time, &rotate);
-        p.getSkewX(time, &skewX);
-        p.getSkewY(time, &skewY);
-        p.getSkewOrder(time, &skewOrder);
+    if (_mouseState == TransformInteract::eReleased) {
+        getCenter(time, &center.x, &center.y);
+        getTranslate(time, &translate.x, &translate.y);
+        getScale(time, &scaleParam.x, &scaleParam.y);
+        getScaleUniform(time, &scaleUniform);
+        getRotate(time, &rotate);
+        getSkewX(time, &skewX);
+        getSkewY(time, &skewY);
+        getSkewOrder(time, &skewOrder);
+        inverted = getInvert(time);
     } else {
-        center = p._centerDrag;
-        translate = p._translateDrag;
-        scaleParam = p._scaleParamDrag;
-        scaleUniform = p._scaleUniformDrag;
-        rotate = p._rotateDrag;
-        skewX = p._skewXDrag;
-        skewY = p._skewYDrag;
-        skewOrder = p._skewOrderDrag;
+        center = _centerDrag;
+        translate = _translateDrag;
+        scaleParam = _scaleParamDrag;
+        scaleUniform = _scaleUniformDrag;
+        rotate = _rotateDrag;
+        skewX = _skewXDrag;
+        skewY = _skewYDrag;
+        skewOrder = _skewOrderDrag;
+        inverted = _invertedDrag;
     }
     
     OfxPointD targetCenter;
@@ -971,16 +1352,16 @@ HostOverlayPrivate::drawTransform(const TransformInteract& p,
         glTranslated(targetCenter.x, targetCenter.y, 0.);
         
         glRotated(rotate, 0, 0., 1.);
-        drawRotationBar(color, pscale, targetRadius.x, p._mouseState == TransformInteract::eDraggingRotationBar || p._drawState == TransformInteract::eRotationBarHovered, inverted, l);
+        drawRotationBar(color, pscale, targetRadius.x, _mouseState == TransformInteract::eDraggingRotationBar || _drawState == TransformInteract::eRotationBarHovered, inverted, l);
         glMultMatrixd(skewMatrix);
         glTranslated(-targetCenter.x, -targetCenter.y, 0.);
         
-        drawEllipse(color, targetCenter, targetRadius, p._mouseState == TransformInteract::eDraggingCircle || p._drawState == TransformInteract::eCircleHovered, l);
+        drawEllipse(color, targetCenter, targetRadius, _mouseState == TransformInteract::eDraggingCircle || _drawState == TransformInteract::eCircleHovered, l);
         
         // add 180 to the angle to draw the arrows on the other side. unfortunately, this requires knowing
         // the mouse position in the ellipse frame
         double flip = 0.;
-        if (p._drawState == TransformInteract::eSkewXBarHoverered || p._drawState == TransformInteract::eSkewYBarHoverered) {
+        if (_drawState == TransformInteract::eSkewXBarHoverered || _drawState == TransformInteract::eSkewYBarHoverered) {
             double rot = Transform::toRadians(rotate);
             Transform::Matrix3x3 transformscale;
             transformscale = Transform::matInverseTransformCanonical(0., 0., scale.x, scale.y, skewX, skewY, (bool)skewOrder, rot, targetCenter.x, targetCenter.y);
@@ -994,28 +1375,165 @@ HostOverlayPrivate::drawTransform(const TransformInteract& p,
                 previousPos.x /= previousPos.z;
                 previousPos.y /= previousPos.z;
             }
-            if ((p._drawState == TransformInteract::eSkewXBarHoverered && previousPos.y > targetCenter.y) ||
-                (p._drawState == TransformInteract::eSkewYBarHoverered && previousPos.x > targetCenter.x)) {
+            if ((_drawState == TransformInteract::eSkewXBarHoverered && previousPos.y > targetCenter.y) ||
+                (_drawState == TransformInteract::eSkewYBarHoverered && previousPos.x > targetCenter.x)) {
                 flip = 180.;
             }
         }
-        drawSkewBar(color, targetCenter, pscale, targetRadius.y, p._mouseState == TransformInteract::eDraggingSkewXBar || p._drawState == TransformInteract::eSkewXBarHoverered, flip, l);
-        drawSkewBar(color, targetCenter, pscale, targetRadius.x, p._mouseState == TransformInteract::eDraggingSkewYBar || p._drawState == TransformInteract::eSkewYBarHoverered, flip - 90., l);
+        drawSkewBar(color, targetCenter, pscale, targetRadius.y, _mouseState == TransformInteract::eDraggingSkewXBar || _drawState == TransformInteract::eSkewXBarHoverered, flip, l);
+        drawSkewBar(color, targetCenter, pscale, targetRadius.x, _mouseState == TransformInteract::eDraggingSkewYBar || _drawState == TransformInteract::eSkewYBarHoverered, flip - 90., l);
         
         
-        drawSquare(color, targetCenter, pscale, p._mouseState == TransformInteract::eDraggingTranslation || p._mouseState == TransformInteract::eDraggingCenter || p._drawState == TransformInteract::eCenterPointHovered, p._modifierStateCtrl, l);
-        drawSquare(color, left, pscale, p._mouseState == TransformInteract::eDraggingLeftPoint || p._drawState == TransformInteract::eLeftPointHovered, false, l);
-        drawSquare(color, right, pscale, p._mouseState == TransformInteract::eDraggingRightPoint || p._drawState == TransformInteract::eRightPointHovered, false, l);
-        drawSquare(color, top, pscale, p._mouseState == TransformInteract::eDraggingTopPoint || p._drawState == TransformInteract::eTopPointHovered, false, l);
-        drawSquare(color, bottom, pscale, p._mouseState == TransformInteract::eDraggingBottomPoint || p._drawState == TransformInteract::eBottomPointHovered, false, l);
+        drawSquare(color, targetCenter, pscale, _mouseState == TransformInteract::eDraggingTranslation || _mouseState == TransformInteract::eDraggingCenter || _drawState == TransformInteract::eCenterPointHovered, _modifierStateCtrl, l);
+        drawSquare(color, left, pscale, _mouseState == TransformInteract::eDraggingLeftPoint || _drawState == TransformInteract::eLeftPointHovered, false, l);
+        drawSquare(color, right, pscale, _mouseState == TransformInteract::eDraggingRightPoint || _drawState == TransformInteract::eRightPointHovered, false, l);
+        drawSquare(color, top, pscale, _mouseState == TransformInteract::eDraggingTopPoint || _drawState == TransformInteract::eTopPointHovered, false, l);
+        drawSquare(color, bottom, pscale, _mouseState == TransformInteract::eDraggingBottomPoint || _drawState == TransformInteract::eBottomPointHovered, false, l);
         
         glPopMatrix();
     }
     //glPopAttrib();
 }
 
+
 void
-HostOverlay::draw(double time,const RenderScale & /*renderScale*/)
+CornerPinInteract::draw(double time,
+                        const RenderScale& /*renderScale*/,
+                        ViewIdx /*view*/,
+                        const OfxPointD& pscale,
+                        const QPointF& /*lastPenPos*/,
+                        const OfxRGBColourD& color,
+                        const OfxPointD& shadow,
+                        const QFont& font,
+                        const QFontMetrics& /*fm*/)
+{
+    
+    // do not show interact if knob is secret or not enabled
+    // see https://github.com/MrKepzie/Natron/issues/932
+    boost::shared_ptr<KnobDouble> from1Knob = _from[0].lock();
+    if (!from1Knob || from1Knob->getIsSecretRecursive() || !from1Knob->isEnabled(0)) {
+        return;
+    }
+    
+    GLdouble projection[16];
+    glGetDoublev( GL_PROJECTION_MATRIX, projection);
+    GLint viewport[4];
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    
+    
+    OfxPointD to[4];
+    OfxPointD from[4];
+    bool enable[4];
+    bool useFrom;
+    
+    if (_dragging == -1) {
+        for (int i = 0; i < 4; ++i) {
+            getFrom(time, i, &from[i].x, &from[i].y);
+            getTo(time, i, &to[i].x, &to[i].y);
+            enable[i] = getEnabled(time, i);
+        }
+        useFrom = getUseFromPoints(time);
+        
+    } else {
+        for (int i = 0; i < 4; ++i) {
+            to[i] = _toDrag[i];
+            from[i] = _fromDrag[i];
+            enable[i] = _enableDrag[i];
+        }
+        useFrom = _useFromDrag;
+    }
+    
+    OfxPointD p[4];
+    OfxPointD q[4];
+    int enableBegin = 4;
+    int enableEnd = 0;
+    for (int i = 0; i < 4; ++i) {
+        if (enable[i]) {
+            if (useFrom) {
+                p[i] = from[i];
+                q[i] = to[i];
+            } else {
+                q[i] = from[i];
+                p[i] = to[i];
+            }
+            if (i < enableBegin) {
+                enableBegin = i;
+            }
+            if (i + 1 > enableEnd) {
+                enableEnd = i + 1;
+            }
+        }
+    }
+    
+    //glPushAttrib(GL_ALL_ATTRIB_BITS); // caller is responsible for protecting attribs
+    
+    //glDisable(GL_LINE_STIPPLE);
+    glEnable(GL_LINE_SMOOTH);
+    //glEnable(GL_POINT_SMOOTH);
+    glEnable(GL_BLEND);
+    glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+    glLineWidth(1.5f);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    
+    glPointSize(CornerPinInteract::pointSize());
+    // Draw everything twice
+    // l = 0: shadow
+    // l = 1: drawing
+    for (int l = 0; l < 2; ++l) {
+        // shadow (uses GL_PROJECTION)
+        glMatrixMode(GL_PROJECTION);
+        int direction = (l == 0) ? 1 : -1;
+        // translate (1,-1) pixels
+        glTranslated(direction * shadow.x, -direction * shadow.y, 0);
+        glMatrixMode(GL_MODELVIEW); // Modelview should be used on Nuke
+        
+        glColor3f( (float)(color.r / 2) * l, (float)(color.g / 2) * l, (float)(color.b / 2) * l );
+        glBegin(GL_LINES);
+        for (int i = enableBegin; i < enableEnd; ++i) {
+            if (enable[i]) {
+                glVertex2d(p[i].x, p[i].y);
+                glVertex2d(q[i].x, q[i].y);
+            }
+        }
+        glEnd();
+        glColor3f( (float)color.r * l, (float)color.g * l, (float)color.b * l );
+        glBegin(GL_LINE_LOOP);
+        for (int i = enableBegin; i < enableEnd; ++i) {
+            if (enable[i]) {
+                glVertex2d(p[i].x, p[i].y);
+            }
+        }
+        glEnd();
+        glBegin(GL_POINTS);
+        for (int i = enableBegin; i < enableEnd; ++i) {
+            if (enable[i]) {
+                if ( (_hovering == i) || (_dragging == i) ) {
+                    glColor3f(0.f * l, 1.f * l, 0.f * l);
+                } else {
+                    glColor3f( (float)color.r * l, (float)color.g * l, (float)color.b * l );
+                }
+                glVertex2d(p[i].x, p[i].y);
+            }
+        }
+        glEnd();
+        QColor c;
+        c.setRgbF(color.r * l, color.g * l, color.b * l);
+        for (int i = enableBegin; i < enableEnd; ++i) {
+            if (enable[i]) {
+                renderText(p[i].x, p[i].y, pscale.x, pscale.y, useFrom ? QString::fromUtf8(_from[i].lock()->getName().c_str()) : QString::fromUtf8(_to[i].lock()->getName().c_str()), c, font);
+                
+            }
+        }
+    }
+    
+    //glPopAttrib();
+    
+}
+
+void
+HostOverlay::draw(double time,
+                  const RenderScale& renderScale,
+                  ViewIdx view)
 {
     OfxRGBColourD color;
     if (!getNode()->getOverlayColor(&color.r, &color.g, &color.b)) {
@@ -1036,96 +1554,90 @@ HostOverlay::draw(double time,const RenderScale & /*renderScale*/)
     QFont font(appFont,appFontSize);
     QFontMetrics fm(font);
     // draw in reverse order
-    for (PositionInteracts::reverse_iterator it = _imp->positions.rbegin(); it != _imp->positions.rend(); ++it) {
-        _imp->drawPosition(*it, time, pscale, color, shadow, font, fm);
+    for (InteractList::reverse_iterator it = _imp->interacts.rbegin(); it != _imp->interacts.rend(); ++it) {
+        (*it)->draw(time, renderScale, view, pscale, _imp->lastPenPos, color, shadow, font, fm);
     }
-    for (TransformInteracts::reverse_iterator it = _imp->transforms.rbegin(); it != _imp->transforms.rend(); ++it) {
-        _imp->drawTransform(*it, time, pscale, color, shadow, font, fm);
-    }
-
+    
+    
 }
 
 bool
-HostOverlayPrivate::penMotion(double time,
-                          const RenderScale &/*renderScale*/,
-                          const QPointF &penPos,
-                          const QPoint &/*penPosViewport*/,
-                          double /*pressure*/,
-                          PositionInteract* it)
+PositionInteract::penMotion(double time,
+                            const RenderScale& /*renderScale*/,
+                            ViewIdx /*view*/,
+                            const OfxPointD& pscale,
+                            const QPointF& lastPenPos,
+                            const QPointF &penPos,
+                            const QPoint &/*penPosViewport*/,
+                            double /*pressure*/)
 {
-    boost::shared_ptr<KnobDouble> knob = it->param.lock();
+    boost::shared_ptr<KnobDouble> knob = _param.lock();
     // do not show interact if knob is secret or not enabled
     // see https://github.com/MrKepzie/Natron/issues/932
     if (!knob || knob->getIsSecretRecursive() || !knob->isEnabled(0) || !knob->isEnabled(1)) {
         return false;
     }
-
-    OfxPointD pscale;
-    _publicInterface->n_getPixelScale(pscale.x, pscale.y);
-
+    
     QPointF pos;
-    if (it->state == ePositionInteractStatePicked) {
+    if (_state == ePositionInteractStatePicked) {
         pos = lastPenPos;
     } else {
-        boost::shared_ptr<KnobDouble> knob = it->param.lock();
-        if (knob) {
-            double p[2];
-            for (int i = 0; i < 2; ++i) {
-                p[i] = knob->getValueAtTime(time, i);
-                if (knob->getValueIsNormalized(i) != eValueIsNormalizedNone) {
-                    knob->denormalize(i, time, &p[i]);
-                }
+        double p[2];
+        for (int i = 0; i < 2; ++i) {
+            p[i] = knob->getValueAtTime(time, i);
+            if (knob->getValueIsNormalized(i) != eValueIsNormalizedNone) {
+                knob->denormalize(i, time, &p[i]);
             }
-            pos.setX(p[0]);
-            pos.setY(p[1]);
         }
+        pos.setX(p[0]);
+        pos.setY(p[1]);
+        
     }
-
+    
     bool didSomething = false;
     bool valuesChanged = false;
-
-    switch (it->state) {
+    
+    switch (_state) {
         case ePositionInteractStateInactive:
         case ePositionInteractStatePoised: {
             // are we in the box, become 'poised'
             PositionInteractState newState;
-            if ( ( std::fabs(penPos.x() - pos.x()) <= it->pointTolerance() * pscale.x) &&
-                ( std::fabs(penPos.y() - pos.y()) <= it->pointTolerance() * pscale.y) ) {
+            if ( ( std::fabs(penPos.x() - pos.x()) <= pointTolerance() * pscale.x) &&
+                ( std::fabs(penPos.y() - pos.y()) <= pointTolerance() * pscale.y) ) {
                 newState = ePositionInteractStatePoised;
             } else   {
                 newState = ePositionInteractStateInactive;
             }
-
-            if (it->state != newState) {
+            
+            if (_state != newState) {
                 // state changed, must redraw
                 requestRedraw();
             }
-            it->state = newState;
+            _state = newState;
             //}
         }
             break;
-
+            
         case ePositionInteractStatePicked: {
             valuesChanged = true;
         }
             break;
     }
-    didSomething = (it->state == ePositionInteractStatePoised) || (it->state == ePositionInteractStatePicked);
-
-    if (it->state != ePositionInteractStateInactive && interactiveDrag && valuesChanged) {
-        boost::shared_ptr<KnobDouble> knob = it->param.lock();
-        if (knob) {
-            double p[2];
-            p[0] = fround(lastPenPos.x(), pscale.x);
-            p[1] = fround(lastPenPos.y(), pscale.y);
-            for (int i = 0; i < 2; ++i) {
-                if (knob->getValueIsNormalized(i) != eValueIsNormalizedNone) {
-                    knob->normalize(i, time, &p[i]);
-                }
+    didSomething = (_state == ePositionInteractStatePoised) || (_state == ePositionInteractStatePicked);
+    
+    if (_state != ePositionInteractStateInactive && _interactiveDrag && valuesChanged) {
+        
+        double p[2];
+        p[0] = fround(lastPenPos.x(), pscale.x);
+        p[1] = fround(lastPenPos.y(), pscale.y);
+        for (int i = 0; i < 2; ++i) {
+            if (knob->getValueIsNormalized(i) != eValueIsNormalizedNone) {
+                knob->normalize(i, time, &p[i]);
             }
-
-            knob->setValues(p[0], p[1], ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
         }
+        
+        knob->setValues(p[0], p[1], ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
+        
     }
     return (didSomething || valuesChanged);
 }
@@ -1222,22 +1734,22 @@ static OfxRectD rectFromCenterPoint(const OfxPointD& center,
 
 
 bool
-HostOverlayPrivate::penMotion(double time,
-                              const RenderScale &/*renderScale*/,
-                              const QPointF &penPosParam,
-                              const QPoint &/*penPosViewport*/,
-                              double /*pressure*/,
-                              TransformInteract* it)
+TransformInteract::penMotion(double time,
+                             const RenderScale& /*renderScale*/,
+                             ViewIdx /*view*/,
+                             const OfxPointD& pscale,
+                             const QPointF& lastPenPos,
+                             const QPointF &penPosParam,
+                             const QPoint &/*penPosViewport*/,
+                             double /*pressure*/)
 {
     
     // do not show interact if knob is secret or not enabled
     // see https://github.com/MrKepzie/Natron/issues/932
-    boost::shared_ptr<KnobDouble> translateKnob = it->translate.lock();
+    boost::shared_ptr<KnobDouble> translateKnob = _translate.lock();
     if (!translateKnob || translateKnob->getIsSecretRecursive() || !translateKnob->isEnabled(0)) {
         return false;
     }
-    OfxPointD pscale;
-    _publicInterface->n_getPixelScale(pscale.x, pscale.y);
     
     OfxPointD center;
     OfxPointD translate;
@@ -1246,26 +1758,28 @@ HostOverlayPrivate::penMotion(double time,
     double rotate;
     double skewX, skewY;
     int skewOrder;
-    //bool inverted = false;
+    bool inverted = false;
     
-    if (it->_mouseState == TransformInteract::eReleased) {
-        it->getCenter(time, &center.x, &center.y);
-        it->getTranslate(time, &translate.x, &translate.y);
-        it->getScale(time, &scaleParam.x, &scaleParam.y);
-        it->getScaleUniform(time, &scaleUniform);
-        it->getRotate(time, &rotate);
-        it->getSkewX(time, &skewX);
-        it->getSkewY(time, &skewY);
-        it->getSkewOrder(time, &skewOrder);
+    if (_mouseState == TransformInteract::eReleased) {
+        getCenter(time, &center.x, &center.y);
+        getTranslate(time, &translate.x, &translate.y);
+        getScale(time, &scaleParam.x, &scaleParam.y);
+        getScaleUniform(time, &scaleUniform);
+        getRotate(time, &rotate);
+        getSkewX(time, &skewX);
+        getSkewY(time, &skewY);
+        getSkewOrder(time, &skewOrder);
+        inverted = getInvert(time);
     } else {
-        center = it->_centerDrag;
-        translate = it->_translateDrag;
-        scaleParam = it->_scaleParamDrag;
-        scaleUniform = it->_scaleUniformDrag;
-        rotate = it->_rotateDrag;
-        skewX = it->_skewXDrag;
-        skewY = it->_skewYDrag;
-        skewOrder = it->_skewOrderDrag;
+        center = _centerDrag;
+        translate = _translateDrag;
+        scaleParam = _scaleParamDrag;
+        scaleUniform = _scaleUniformDrag;
+        rotate = _rotateDrag;
+        skewX = _skewXDrag;
+        skewY = _skewYDrag;
+        skewOrder = _skewOrderDrag;
+        inverted = _invertedDrag;
     }
     
     bool didSomething = false;
@@ -1311,7 +1825,7 @@ HostOverlayPrivate::penMotion(double time,
     
     Transform::Matrix3x3 rotation, transform, transformscale;
     ////for the rotation bar/translation/center dragging we dont use the same transform, we don't want to undo the rotation transform
-    if (it->_mouseState != TransformInteract::eDraggingTranslation && it->_mouseState != TransformInteract::eDraggingCenter) {
+    if (_mouseState != TransformInteract::eDraggingTranslation && _mouseState != TransformInteract::eDraggingCenter) {
         ///undo skew + rotation to the current position
         rotation = Transform::matInverseTransformCanonical(0., 0., 1., 1., 0., 0., false, rot, targetCenter.x, targetCenter.y);
         transform = Transform::matInverseTransformCanonical(0., 0., 1., 1., skewX, skewY, (bool)skewOrder, rot, targetCenter.x, targetCenter.y);
@@ -1348,49 +1862,49 @@ HostOverlayPrivate::penMotion(double time,
     
     double minX,minY,maxX,maxY;
     
-    boost::shared_ptr<KnobDouble> scaleKnob = it->scale.lock();
+    boost::shared_ptr<KnobDouble> scaleKnob = _scale.lock();
     assert(scaleKnob);
     
     minX = scaleKnob->getMinimum(0);
     minY = scaleKnob->getMinimum(1);
     maxX = scaleKnob->getMaximum(0);
     maxY = scaleKnob->getMaximum(1);
-
-    if (it->_mouseState == TransformInteract::eReleased) {
+    
+    if (_mouseState == TransformInteract::eReleased) {
         // we are not axis-aligned
         double meanPixelScale = (pscale.x + pscale.y) / 2.;
         double hoverTolerance = (TransformInteract::pointSize() / 2.) * meanPixelScale;
         if (squareContains(transformedPos, centerPoint)) {
-            it->_drawState = TransformInteract::eCenterPointHovered;
+            _drawState = TransformInteract::eCenterPointHovered;
             didSomething = true;
         } else if (squareContains(transformedPos, leftPoint)) {
-            it->_drawState = TransformInteract::eLeftPointHovered;
+            _drawState = TransformInteract::eLeftPointHovered;
             didSomething = true;
         } else if (squareContains(transformedPos, rightPoint)) {
-            it->_drawState = TransformInteract::eRightPointHovered;
+            _drawState = TransformInteract::eRightPointHovered;
             didSomething = true;
         } else if (squareContains(transformedPos, topPoint)) {
-            it->_drawState = TransformInteract::eTopPointHovered;
+            _drawState = TransformInteract::eTopPointHovered;
             didSomething = true;
         } else if (squareContains(transformedPos, bottomPoint)) {
-            it->_drawState = TransformInteract::eBottomPointHovered;
+            _drawState = TransformInteract::eBottomPointHovered;
             didSomething = true;
         } else if (isOnEllipseBorder(transformedPos, targetRadius, targetCenter)) {
-            it->_drawState = TransformInteract::eCircleHovered;
+            _drawState = TransformInteract::eCircleHovered;
             didSomething = true;
         } else if (isOnRotationBar(rotationPos, targetRadius.x, targetCenter, pscale, hoverTolerance)) {
-            it->_drawState = TransformInteract::eRotationBarHovered;
+            _drawState = TransformInteract::eRotationBarHovered;
             didSomething = true;
         } else if (isOnSkewXBar(transformedPos, targetRadius.y, targetCenter, pscale, hoverTolerance)) {
-            it->_drawState = TransformInteract::eSkewXBarHoverered;
+            _drawState = TransformInteract::eSkewXBarHoverered;
             didSomething = true;
         } else if (isOnSkewYBar(transformedPos, targetRadius.x, targetCenter, pscale, hoverTolerance)) {
-            it->_drawState = TransformInteract::eSkewYBarHoverered;
+            _drawState = TransformInteract::eSkewYBarHoverered;
             didSomething = true;
         } else {
-            it->_drawState = TransformInteract::eInActive;
+            _drawState = TransformInteract::eInActive;
         }
-    } else if (it->_mouseState == TransformInteract::eDraggingCircle) {
+    } else if (_mouseState == TransformInteract::eDraggingCircle) {
         
         // we need to compute the backtransformed points with the scale
         
@@ -1404,7 +1918,7 @@ HostOverlayPrivate::penMotion(double time,
             //_scale->setValue(scale.x, scale.y);
             scaleChanged = true;
         }
-    } else if (it->_mouseState == TransformInteract::eDraggingLeftPoint || it->_mouseState == TransformInteract::eDraggingRightPoint) {
+    } else if (_mouseState == TransformInteract::eDraggingLeftPoint || _mouseState == TransformInteract::eDraggingRightPoint) {
         // avoid division by zero
         if (targetCenter.x != previousPos.x) {
             const double scaleRatio = (targetCenter.x - currentPos.x)/(targetCenter.x - previousPos.x);
@@ -1416,7 +1930,7 @@ HostOverlayPrivate::penMotion(double time,
             //_scale->setValue(scale.x, scale.y);
             scaleChanged = true;
         }
-    } else if (it->_mouseState == TransformInteract::eDraggingTopPoint || it->_mouseState == TransformInteract::eDraggingBottomPoint) {
+    } else if (_mouseState == TransformInteract::eDraggingTopPoint || _mouseState == TransformInteract::eDraggingBottomPoint) {
         // avoid division by zero
         if (targetCenter.y != previousPos.y) {
             const double scaleRatio = (targetCenter.y - currentPos.y)/(targetCenter.y - previousPos.y);
@@ -1428,16 +1942,16 @@ HostOverlayPrivate::penMotion(double time,
             //_scale->setValue(scale.x, scale.y);
             scaleChanged = true;
         }
-    } else if (it->_mouseState == TransformInteract::eDraggingTranslation) {
+    } else if (_mouseState == TransformInteract::eDraggingTranslation) {
         double dx = penPosParam.x() - lastPenPos.x();
         double dy = penPosParam.y() - lastPenPos.y();
         
-        if (it->_orientation == TransformInteract::eOrientationNotSet && it->_modifierStateShift > 0) {
-            it->_orientation = std::abs(dx) > std::abs(dy) ? TransformInteract::eOrientationHorizontal : TransformInteract::eOrientationVertical;
+        if (_orientation == TransformInteract::eOrientationNotSet && _modifierStateShift > 0) {
+            _orientation = std::abs(dx) > std::abs(dy) ? TransformInteract::eOrientationHorizontal : TransformInteract::eOrientationVertical;
         }
         
-        dx = it->_orientation == TransformInteract::eOrientationVertical ? 0 : dx;
-        dy = it->_orientation == TransformInteract::eOrientationHorizontal ? 0 : dy;
+        dx = _orientation == TransformInteract::eOrientationVertical ? 0 : dx;
+        dy = _orientation == TransformInteract::eOrientationHorizontal ? 0 : dy;
         double newx = translate.x + dx;
         double newy = translate.y + dy;
         // round newx/y to the closest int, 1/10 int, etc
@@ -1448,19 +1962,19 @@ HostOverlayPrivate::penMotion(double time,
         translate.y = newy;
         //_translate->setValue(translate.x, translate.y);
         translateChanged = true;
-    } else if (it->_mouseState == TransformInteract::eDraggingCenter) {
+    } else if (_mouseState == TransformInteract::eDraggingCenter) {
         OfxPointD currentCenter = center;
         Transform::Matrix3x3 R = Transform::matMul(Transform::matMul(Transform::matScale(1. / scale.x, 1. / scale.y), Transform::matSkewXY(-skewX, -skewY, !skewOrder)), Transform::matRotation(rot));
         
         double dx = penPosParam.x() - lastPenPos.x();
         double dy = penPosParam.y() - lastPenPos.y();
         
-        if (it->_orientation == TransformInteract::eOrientationNotSet && it->_modifierStateShift > 0) {
-            it->_orientation = std::abs(dx) > std::abs(dy) ? TransformInteract::eOrientationHorizontal : TransformInteract::eOrientationVertical;
+        if (_orientation == TransformInteract::eOrientationNotSet && _modifierStateShift > 0) {
+            _orientation = std::abs(dx) > std::abs(dy) ? TransformInteract::eOrientationHorizontal : TransformInteract::eOrientationVertical;
         }
         
-        dx = it->_orientation == TransformInteract::eOrientationVertical ? 0 : dx;
-        dy = it->_orientation == TransformInteract::eOrientationHorizontal ? 0 : dy;
+        dx = _orientation == TransformInteract::eOrientationVertical ? 0 : dx;
+        dy = _orientation == TransformInteract::eOrientationHorizontal ? 0 : dy;
         
         Transform::Point3D dRot;
         dRot.x = dx;
@@ -1509,7 +2023,7 @@ HostOverlayPrivate::penMotion(double time,
             translateChanged = true;
         }
         //_effect->endEditBlock();
-    } else if (it->_mouseState == TransformInteract::eDraggingRotationBar) {
+    } else if (_mouseState == TransformInteract::eDraggingRotationBar) {
         OfxPointD diffToCenter;
         ///the current mouse position (untransformed) is doing has a certain angle relative to the X axis
         ///which can be computed by : angle = arctan(opposite / adjacent)
@@ -1526,7 +2040,7 @@ HostOverlayPrivate::penMotion(double time,
         //_rotate->setValue(rotate);
         rotateChanged = true;
         
-    } else if (it->_mouseState == TransformInteract::eDraggingSkewXBar) {
+    } else if (_mouseState == TransformInteract::eDraggingSkewXBar) {
         // avoid division by zero
         if (scale.y != 0. && targetCenter.y != previousPos.y) {
             const double addSkew = (scale.x/scale.y)*(currentPos.x - previousPos.x)/(currentPos.y - targetCenter.y);
@@ -1534,7 +2048,7 @@ HostOverlayPrivate::penMotion(double time,
             //_skewX->setValue(skewX);
             skewXChanged = true;
         }
-    } else if (it->_mouseState == TransformInteract::eDraggingSkewYBar) {
+    } else if (_mouseState == TransformInteract::eDraggingSkewYBar) {
         // avoid division by zero
         if (scale.x != 0. && targetCenter.x != previousPos.x) {
             const double addSkew = (scale.y/scale.x)*(currentPos.y - previousPos.y)/(currentPos.x - targetCenter.x);
@@ -1546,43 +2060,44 @@ HostOverlayPrivate::penMotion(double time,
         assert(false);
     }
     
-    it->_centerDrag = center;
-    it->_translateDrag = translate;
-    it->_scaleParamDrag = scale;
-    it->_scaleUniformDrag = scaleUniform;
-    it->_rotateDrag = rotate;
-    it->_skewXDrag = skewX;
-    it->_skewYDrag = skewY;
-    it->_skewOrderDrag = skewOrder;
+    _centerDrag = center;
+    _translateDrag = translate;
+    _scaleParamDrag = scale;
+    _scaleUniformDrag = scaleUniform;
+    _rotateDrag = rotate;
+    _skewXDrag = skewX;
+    _skewYDrag = skewY;
+    _skewOrderDrag = skewOrder;
+    _invertedDrag = inverted;
     
     bool valuesChanged = (centerChanged || translateChanged || scaleChanged || rotateChanged || skewXChanged || skewYChanged);
     
-    if (it->_mouseState != TransformInteract::eReleased && it->_interactiveDrag && valuesChanged) {
+    if (_mouseState != TransformInteract::eReleased && _interactiveDrag && valuesChanged) {
         // no need to redraw overlay since it is slave to the paramaters
-        EffectInstPtr holder = node.lock()->getNode()->getEffectInstance();
+        EffectInstPtr holder = _overlay->getNode()->getNode()->getEffectInstance();
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
         if (centerChanged) {
-            boost::shared_ptr<KnobDouble> knob = it->center.lock();
+            boost::shared_ptr<KnobDouble> knob = _center.lock();
             knob->setValues(center.x, center.y, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
         }
         if (translateChanged) {
-            boost::shared_ptr<KnobDouble> knob = it->translate.lock();
+            boost::shared_ptr<KnobDouble> knob = _translate.lock();
             knob->setValues(translate.x, translate.y, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
         }
         if (scaleChanged) {
-            boost::shared_ptr<KnobDouble> knob = it->scale.lock();
+            boost::shared_ptr<KnobDouble> knob = _scale.lock();
             knob->setValues(scale.x, scale.y, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
         }
         if (rotateChanged) {
-            boost::shared_ptr<KnobDouble> knob = it->rotate.lock();
+            boost::shared_ptr<KnobDouble> knob = _rotate.lock();
             knob->setValue(rotate, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited);
         }
         if (skewXChanged) {
-            boost::shared_ptr<KnobDouble> knob = it->skewX.lock();
+            boost::shared_ptr<KnobDouble> knob = _skewX.lock();
             knob->setValue(skewX, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited);
         }
         if (skewYChanged) {
-            boost::shared_ptr<KnobDouble> knob = it->skewY.lock();
+            boost::shared_ptr<KnobDouble> knob = _skewY.lock();
             knob->setValue(skewY, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited);
         }
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
@@ -1594,203 +2109,341 @@ HostOverlayPrivate::penMotion(double time,
 }
 
 bool
-HostOverlay::penMotion(double time,
-                          const RenderScale &renderScale,
-                          const QPointF &penPos,
-                          const QPoint &penPosViewport,
-                          double pressure)
+CornerPinInteract::penMotion(double time,
+                             const RenderScale& /*renderScale*/,
+                             ViewIdx /*view*/,
+                             const OfxPointD& pscale,
+                             const QPointF& lastPenPos,
+                             const QPointF &penPos,
+                             const QPoint &/*penPosViewport*/,
+                             double /*pressure*/)
 {
+    // do not show interact if knob is secret or not enabled
+    // see https://github.com/MrKepzie/Natron/issues/932
+    boost::shared_ptr<KnobDouble> from1Knob = _from[0].lock();
+    if (!from1Knob || from1Knob->getIsSecretRecursive() || !from1Knob->isEnabled(0)) {
+        return false;
+    }
+    
+    OfxPointD to[4];
+    OfxPointD from[4];
+    bool enable[4];
+    bool useFrom;
+    
+    if (_dragging == -1) {
+        for (int i = 0; i < 4; ++i) {
+            getFrom(time, i, &from[i].x, &from[i].y);
+            getTo(time, i, &to[i].x, &to[i].y);
+            enable[i] = getEnabled(time, i);
+        }
+        useFrom = getUseFromPoints(time);
+        
+    } else {
+        for (int i = 0; i < 4; ++i) {
+            to[i] = _toDrag[i];
+            from[i] = _fromDrag[i];
+            enable[i] = _enableDrag[i];
+        }
+        useFrom = _useFromDrag;
+    }
+
+    
+    OfxPointD p[4];
+    OfxPointD q[4];
+    int enableBegin = 4;
+    int enableEnd = 0;
+    for (int i = 0; i < 4; ++i) {
+        if (enable[i]) {
+            if (useFrom) {
+                p[i] = from[i];
+                q[i] = to[i];
+            } else {
+                q[i] = from[i];
+                p[i] = to[i];
+            }
+            if (i < enableBegin) {
+                enableBegin = i;
+            }
+            if (i + 1 > enableEnd) {
+                enableEnd = i + 1;
+            }
+        }
+    }
+    
+    bool didSomething = false;
+    bool valuesChanged = false;
+    OfxPointD delta;
+    delta.x = penPos.x() - lastPenPos.x();
+    delta.y = penPos.y() - lastPenPos.y();
+    
+    _hovering = -1;
+    
+    for (int i = enableBegin; i < enableEnd; ++i) {
+        if (enable[i]) {
+            if (_dragging == i) {
+                if (useFrom) {
+                    from[i].x += delta.x;
+                    from[i].y += delta.y;
+                    _fromDrag[i] = from[i];
+                } else {
+                    to[i].x += delta.x;
+                    to[i].y += delta.y;
+                    _toDrag[i] = to[i];
+                }
+                valuesChanged = true;
+            } else if ( CornerPinInteract::isNearby(penPos, p[i].x, p[i].y, CornerPinInteract::pointTolerance(), pscale) ) {
+                _hovering = i;
+                didSomething = true;
+            }
+        }
+    }
+    
+    if ( (_dragging != -1) && _interactiveDrag && valuesChanged ) {
+        // no need to redraw overlay since it is slave to the paramaters
+        
+        if (_useFromDrag) {
+            boost::shared_ptr<KnobDouble> knob = _from[_dragging].lock();
+            assert(knob);
+            knob->setValues(from[_dragging].x, from[_dragging].y, ViewSpec::all(), eValueChangedReasonPluginEdited);
+        } else {
+            boost::shared_ptr<KnobDouble> knob = _to[_dragging].lock();
+            assert(knob);
+            knob->setValues(to[_dragging].x, to[_dragging].y, ViewSpec::all(), eValueChangedReasonPluginEdited);
+        }
+    }
+    return didSomething || valuesChanged;
+}
+
+
+bool
+HostOverlay::penMotion(double time,
+                       const RenderScale& renderScale,
+                       ViewIdx view,
+                       const QPointF &penPos,
+                       const QPoint &penPosViewport,
+                       double pressure)
+{
+    
     OfxPointD pscale;
     n_getPixelScale(pscale.x, pscale.y);
+    for (InteractList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
+        if ((*it)->penMotion(time, renderScale, view, pscale, _imp->lastPenPos, penPos, penPosViewport, pressure)) {
+            _imp->lastPenPos = penPos;
+            return true;
+        }
+    }
     
-    for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
-        if (_imp->penMotion(time, renderScale, penPos, penPosViewport, pressure, &(*it))) {
-            _imp->lastPenPos = penPos;
-            return true;
-        }
-    }
-    for (TransformInteracts::iterator it = _imp->transforms.begin(); it != _imp->transforms.end(); ++it) {
-        if (_imp->penMotion(time, renderScale, penPos, penPosViewport, pressure, &(*it))) {
-            _imp->lastPenPos = penPos;
-            return true;
-        }
-    }
     _imp->lastPenPos = penPos;
     return false;
 }
 
 
 bool
-HostOverlayPrivate::penUp(double time,
-                      const RenderScale &renderScale,
-                      const QPointF &penPos,
-                      const QPoint &penPosViewport,
-                      double  pressure,
-                      PositionInteract* it)
+PositionInteract::penUp(double time,
+                        const RenderScale& renderScale,
+                        ViewIdx view,
+                        const OfxPointD& pscale,
+                        const QPointF& lastPenPos,
+                        const QPointF &penPos,
+                        const QPoint &penPosViewport,
+                        double  pressure)
 {
-    boost::shared_ptr<KnobDouble> knob = it->param.lock();
+    boost::shared_ptr<KnobDouble> knob = _param.lock();
     // do not show interact if knob is secret or not enabled
     // see https://github.com/MrKepzie/Natron/issues/932
     if (!knob || knob->getIsSecretRecursive() || !knob->isEnabled(0) || !knob->isEnabled(1)) {
         return false;
     }
-
-    OfxPointD pscale;
-    _publicInterface->n_getPixelScale(pscale.x, pscale.y);
     
     bool didSomething = false;
-    if (it->state == ePositionInteractStatePicked) {
-        if (!interactiveDrag) {
-            boost::shared_ptr<KnobDouble> knob = it->param.lock();
-            if (knob) {
-                double p[2];
-                p[0] = fround(lastPenPos.x(), pscale.x);
-                p[1] = fround(lastPenPos.y(), pscale.y);
-                for (int i = 0; i < 2; ++i) {
-                    if (knob->getValueIsNormalized(i) != eValueIsNormalizedNone) {
-                        knob->normalize(i, time, &p[i]);
-                    }
+    if (_state == ePositionInteractStatePicked) {
+        if (!_interactiveDrag) {
+            boost::shared_ptr<KnobDouble> knob = _param.lock();
+            double p[2];
+            p[0] = fround(lastPenPos.x(), pscale.x);
+            p[1] = fround(lastPenPos.y(), pscale.y);
+            for (int i = 0; i < 2; ++i) {
+                if (knob->getValueIsNormalized(i) != eValueIsNormalizedNone) {
+                    knob->normalize(i, time, &p[i]);
                 }
-
-                knob->setValues(p[0], p[1], ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
             }
+            
+            knob->setValues(p[0], p[1], ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
+            
         }
-
-        it->state = ePositionInteractStateInactive;
-        bool motion = penMotion(time, renderScale, penPos, penPosViewport, pressure, it);
+        
+        _state = ePositionInteractStateInactive;
+        bool motion = penMotion(time, renderScale, view, pscale, lastPenPos, penPos, penPosViewport, pressure);
         Q_UNUSED(motion);
         didSomething = true;
     }
-
+    
     return didSomething;
 }
 
 bool
-HostOverlayPrivate::penUp(double /*time*/,
-                          const RenderScale &/*renderScale*/,
-                          const QPointF &/*penPos*/,
-                          const QPoint &/*penPosViewport*/,
-                          double  /*pressure*/,
-                          TransformInteract* it)
+TransformInteract::penUp(double /*time*/,
+                         const RenderScale& /*renderScale*/,
+                         ViewIdx /*view*/,
+                         const OfxPointD& /*pscale*/,
+                         const QPointF& /*lastPenPos*/,
+                         const QPointF &/*penPos*/,
+                         const QPoint &/*penPosViewport*/,
+                          double  /*pressure*/)
 {
-
     
-    bool ret = it->_mouseState != TransformInteract::eReleased;
     
-    if (!it->_interactiveDrag && it->_mouseState != TransformInteract::eReleased) {
+    bool ret = _mouseState != TransformInteract::eReleased;
+    
+    if (!_interactiveDrag && _mouseState != TransformInteract::eReleased) {
         // no need to redraw overlay since it is slave to the paramaters
         
         /*
          Give eValueChangedReasonPluginEdited reason so that the command uses the undo/redo stack
          see Knob::setValue
          */
-        EffectInstPtr holder = node.lock()->getNode()->getEffectInstance();
+        EffectInstPtr holder = _overlay->getNode()->getNode()->getEffectInstance();
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
         {
-            boost::shared_ptr<KnobDouble> knob = it->center.lock();
-            knob->setValues(it->_centerDrag.x, it->_centerDrag.y, ViewSpec::all(),  eValueChangedReasonPluginEdited);
+            boost::shared_ptr<KnobDouble> knob = _center.lock();
+            knob->setValues(_centerDrag.x, _centerDrag.y, ViewSpec::all(),  eValueChangedReasonPluginEdited);
         }
         {
-            boost::shared_ptr<KnobDouble> knob = it->translate.lock();
-            knob->setValues(it->_translateDrag.x, it->_translateDrag.y, ViewSpec::all(), eValueChangedReasonPluginEdited);
+            boost::shared_ptr<KnobDouble> knob = _translate.lock();
+            knob->setValues(_translateDrag.x, _translateDrag.y, ViewSpec::all(), eValueChangedReasonPluginEdited);
         }
         {
-            boost::shared_ptr<KnobDouble> knob = it->scale.lock();
-            knob->setValues(it->_scaleParamDrag.x, it->_scaleParamDrag.y, ViewSpec::all(), eValueChangedReasonPluginEdited);
+            boost::shared_ptr<KnobDouble> knob = _scale.lock();
+            knob->setValues(_scaleParamDrag.x, _scaleParamDrag.y, ViewSpec::all(), eValueChangedReasonPluginEdited);
         }
         {
-            boost::shared_ptr<KnobDouble> knob = it->rotate.lock();
+            boost::shared_ptr<KnobDouble> knob = _rotate.lock();
             KeyFrame k;
-            knob->setValue(it->_rotateDrag, ViewSpec::all(),  0, eValueChangedReasonPluginEdited, &k);
+            knob->setValue(_rotateDrag, ViewSpec::all(),  0, eValueChangedReasonPluginEdited, &k);
         }
         {
-            boost::shared_ptr<KnobDouble> knob = it->skewX.lock();
+            boost::shared_ptr<KnobDouble> knob = _skewX.lock();
             KeyFrame k;
-            knob->setValue(it->_skewXDrag, ViewSpec::all(), 0, eValueChangedReasonPluginEdited, &k);
+            knob->setValue(_skewXDrag, ViewSpec::all(), 0, eValueChangedReasonPluginEdited, &k);
         }
         {
-            boost::shared_ptr<KnobDouble> knob = it->skewY.lock();
+            boost::shared_ptr<KnobDouble> knob = _skewY.lock();
             KeyFrame k;
-            knob->setValue(it->_skewYDrag, ViewSpec::all(),  0, eValueChangedReasonPluginEdited,&k);
+            knob->setValue(_skewYDrag, ViewSpec::all(),  0, eValueChangedReasonPluginEdited,&k);
         }
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
         
-
-    } else if (it->_mouseState != TransformInteract::eReleased) {
+        
+    } else if (_mouseState != TransformInteract::eReleased) {
         requestRedraw();
     }
     
-    it->_mouseState = TransformInteract::eReleased;
+    _mouseState = TransformInteract::eReleased;
     
     return ret;
+    
+}
 
+bool
+CornerPinInteract::penUp(double /*time*/,
+                         const RenderScale& /*renderScale*/,
+                         ViewIdx /*view*/,
+                         const OfxPointD& /*pscale*/,
+                         const QPointF& /*lastPenPos*/,
+                         const QPointF &/*penPos*/,
+                         const QPoint &/*penPosViewport*/,
+                         double  /*pressure*/)
+{
+    // do not show interact if knob is secret or not enabled
+    // see https://github.com/MrKepzie/Natron/issues/932
+    boost::shared_ptr<KnobDouble> from1Knob = _from[0].lock();
+    if (!from1Knob || from1Knob->getIsSecretRecursive() || !from1Knob->isEnabled(0)) {
+        return false;
+    }
+    
+    bool didSomething = _dragging != -1;
+    
+    if ( !_interactiveDrag && (_dragging != -1) ) {
+        // no need to redraw overlay since it is slave to the paramaters
+        if (_useFromDrag) {
+            boost::shared_ptr<KnobDouble> knob = _from[_dragging].lock();
+            assert(knob);
+            knob->setValues(_fromDrag[_dragging].x, _fromDrag[_dragging].y, ViewSpec::all(), eValueChangedReasonPluginEdited);
+        } else {
+            boost::shared_ptr<KnobDouble> knob = _to[_dragging].lock();
+            assert(knob);
+            knob->setValues(_toDrag[_dragging].x, _toDrag[_dragging].y, ViewSpec::all(), eValueChangedReasonPluginEdited);
+        }
+    }
+    _dragging = -1;
+    
+    return didSomething;
 }
 
 bool
 HostOverlay::penUp(double time,
-                      const RenderScale &renderScale,
-                      const QPointF &penPos,
-                      const QPoint &penPosViewport,
-                      double  pressure)
+                   const RenderScale& renderScale,
+                   ViewIdx view,
+                   const QPointF &penPos,
+                   const QPoint &penPosViewport,
+                   double  pressure)
 {
     OfxPointD pscale;
     n_getPixelScale(pscale.x, pscale.y);
-
+    
     bool didSomething = false;
-    for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
-        didSomething |= _imp->penUp(time, renderScale, penPos, penPosViewport, pressure, &(*it));
+    for (InteractList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
+        didSomething |= (*it)->penUp(time, renderScale, view, pscale, _imp->lastPenPos, penPos, penPosViewport, pressure);
     }
-    for (TransformInteracts::iterator it = _imp->transforms.begin(); it != _imp->transforms.end(); ++it) {
-        didSomething |= _imp->penUp(time, renderScale, penPos, penPosViewport, pressure, &(*it));
-    }
+    
     return didSomething;
 }
 
 
 bool
-HostOverlayPrivate::penDown(double time,
-                        const RenderScale &renderScale,
-                        const QPointF &penPos,
-                        const QPoint &penPosViewport,
-                        double  pressure,
-                        PositionInteract* it)
+PositionInteract::penDown(double time,
+                          const RenderScale& renderScale,
+                          ViewIdx view,
+                          const OfxPointD& pscale,
+                          const QPointF& lastPenPos,
+                          const QPointF &penPos,
+                          const QPoint &penPosViewport,
+                          double  pressure)
 {
-    boost::shared_ptr<KnobDouble> knob = it->param.lock();
+    boost::shared_ptr<KnobDouble> knob = _param.lock();
     // do not show interact if knob is secret or not enabled
     // see https://github.com/MrKepzie/Natron/issues/932
     if (!knob || knob->getIsSecretRecursive() || !knob->isEnabled(0) || !knob->isEnabled(1)) {
         return false;
     }
-
-    bool motion = penMotion(time,renderScale,penPos,penPosViewport,pressure, it);
+    
+    bool motion = penMotion(time,renderScale, view, pscale, lastPenPos,penPos,penPosViewport,pressure);
     Q_UNUSED(motion);
-    if (it->state == ePositionInteractStatePoised) {
-        it->state = ePositionInteractStatePicked;
-        if (interactiveDrag) {
-            interactiveDrag = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
-        }
+    if (_state == ePositionInteractStatePoised) {
+        _state = ePositionInteractStatePicked;
+        _interactiveDrag = getInteractive(time);
         return true;
     }
     return false;
 }
 
 bool
-HostOverlayPrivate::penDown(double time,
-                            const RenderScale &/*renderScale*/,
-                            const QPointF &penPosParam,
-                            const QPoint &/*penPosViewport*/,
-                            double  /*pressure*/,
-                            TransformInteract* it)
+TransformInteract::penDown(double time,
+                           const RenderScale& /*renderScale*/,
+                           ViewIdx /*view*/,
+                           const OfxPointD& pscale,
+                           const QPointF& /*lastPenPos*/,
+                           const QPointF &penPosParam,
+                           const QPoint &/*penPosViewport*/,
+                           double  /*pressure*/)
 {
     // do not show interact if knob is secret or not enabled
     // see https://github.com/MrKepzie/Natron/issues/932
-    boost::shared_ptr<KnobDouble> translateKnob = it->translate.lock();
+    boost::shared_ptr<KnobDouble> translateKnob = _translate.lock();
     if (!translateKnob || translateKnob->getIsSecretRecursive() || !translateKnob->isEnabled(0)) {
         return false;
     }
-    OfxPointD pscale;
-    _publicInterface->n_getPixelScale(pscale.x, pscale.y);
-    
+
     OfxPointD center;
     OfxPointD translate;
     OfxPointD scaleParam;
@@ -1798,28 +2451,31 @@ HostOverlayPrivate::penDown(double time,
     double rotate;
     double skewX, skewY;
     int skewOrder;
-    //bool inverted = false;
+    bool inverted = false;
     
-    if (it->_mouseState == TransformInteract::eReleased) {
-        it->getCenter(time, &center.x, &center.y);
-        it->getTranslate(time, &translate.x, &translate.y);
-        it->getScale(time, &scaleParam.x, &scaleParam.y);
-        it->getScaleUniform(time, &scaleUniform);
-        it->getRotate(time, &rotate);
-        it->getSkewX(time, &skewX);
-        it->getSkewY(time, &skewY);
-        it->getSkewOrder(time, &skewOrder);
+    if (_mouseState == TransformInteract::eReleased) {
+        getCenter(time, &center.x, &center.y);
+        getTranslate(time, &translate.x, &translate.y);
+        getScale(time, &scaleParam.x, &scaleParam.y);
+        getScaleUniform(time, &scaleUniform);
+        getRotate(time, &rotate);
+        getSkewX(time, &skewX);
+        getSkewY(time, &skewY);
+        getSkewOrder(time, &skewOrder);
+        inverted = getInvert(time);
+        _interactiveDrag = getInteractive(time);
     } else {
-        center = it->_centerDrag;
-        translate = it->_translateDrag;
-        scaleParam = it->_scaleParamDrag;
-        scaleUniform = it->_scaleUniformDrag;
-        rotate = it->_rotateDrag;
-        skewX = it->_skewXDrag;
-        skewY = it->_skewYDrag;
-        skewOrder = it->_skewOrderDrag;
+        center = _centerDrag;
+        translate = _translateDrag;
+        scaleParam = _scaleParamDrag;
+        scaleUniform = _scaleUniformDrag;
+        rotate = _rotateDrag;
+        skewX = _skewXDrag;
+        skewY = _skewYDrag;
+        skewOrder = _skewOrderDrag;
+        inverted = _invertedDrag;
     }
-
+    
     
     OfxPointD targetCenter;
     getTargetCenter(center, translate, &targetCenter);
@@ -1863,64 +2519,64 @@ HostOverlayPrivate::penDown(double time,
         transformedPos.y /= transformedPos.z;
     }
     
-    it->_orientation = TransformInteract::eOrientationAllDirections;
+    _orientation = TransformInteract::eOrientationAllDirections;
     
     double pressToleranceX = 5 * pscale.x;
     double pressToleranceY = 5 * pscale.y;
     
     bool didSomething = false;
     if (squareContains(transformedPos, centerPoint,pressToleranceX,pressToleranceY)) {
-        it->_mouseState = it->_modifierStateCtrl ? TransformInteract::eDraggingCenter : TransformInteract::eDraggingTranslation;
-        if (it->_modifierStateShift > 0) {
-            it->_orientation = TransformInteract::eOrientationNotSet;
+        _mouseState = _modifierStateCtrl ? TransformInteract::eDraggingCenter : TransformInteract::eDraggingTranslation;
+        if (_modifierStateShift > 0) {
+            _orientation = TransformInteract::eOrientationNotSet;
         }
         didSomething = true;
         
     } else if (squareContains(transformedPos, leftPoint,pressToleranceX,pressToleranceY)) {
-        it->_mouseState = TransformInteract::eDraggingLeftPoint;
+        _mouseState = TransformInteract::eDraggingLeftPoint;
         didSomething = true;
         
     } else if (squareContains(transformedPos, rightPoint,pressToleranceX,pressToleranceY)) {
-        it->_mouseState = TransformInteract::eDraggingRightPoint;
+        _mouseState = TransformInteract::eDraggingRightPoint;
         didSomething = true;
         
     } else if (squareContains(transformedPos, topPoint,pressToleranceX,pressToleranceY)) {
-        it->_mouseState = TransformInteract::eDraggingTopPoint;
+        _mouseState = TransformInteract::eDraggingTopPoint;
         didSomething = true;
         
     } else if (squareContains(transformedPos, bottomPoint,pressToleranceX,pressToleranceY)) {
-        it->_mouseState = TransformInteract::eDraggingBottomPoint;
+        _mouseState = TransformInteract::eDraggingBottomPoint;
         didSomething = true;
         
     } else if (isOnEllipseBorder(transformedPos, targetRadius, targetCenter)) {
-        it->_mouseState = TransformInteract::eDraggingCircle;
+        _mouseState = TransformInteract::eDraggingCircle;
         didSomething = true;
         
     } else if (isOnRotationBar(rotationPos, targetRadius.x, targetCenter, pscale, pressToleranceY)) {
-        it->_mouseState = TransformInteract::eDraggingRotationBar;
+        _mouseState = TransformInteract::eDraggingRotationBar;
         didSomething = true;
         
     } else if (isOnSkewXBar(transformedPos, targetRadius.y, targetCenter, pscale, pressToleranceY)) {
-        it->_mouseState = TransformInteract::eDraggingSkewXBar;
+        _mouseState = TransformInteract::eDraggingSkewXBar;
         didSomething = true;
         
     } else if (isOnSkewYBar(transformedPos, targetRadius.x, targetCenter, pscale, pressToleranceX)) {
-        it->_mouseState = TransformInteract::eDraggingSkewYBar;
+        _mouseState = TransformInteract::eDraggingSkewYBar;
         didSomething = true;
         
     } else {
-        it->_mouseState = TransformInteract::eReleased;
+        _mouseState = TransformInteract::eReleased;
     }
     
-    it->_centerDrag = center;
-    it->_translateDrag = translate;
-    it->_scaleParamDrag = scaleParam;
-    it->_scaleUniformDrag = scaleUniform;
-    it->_rotateDrag = rotate;
-    it->_skewXDrag = skewX;
-    it->_skewYDrag = skewY;
-    it->_skewOrderDrag = skewOrder;
-    //it->_invertedDrag = inverted;
+    _centerDrag = center;
+    _translateDrag = translate;
+    _scaleParamDrag = scaleParam;
+    _scaleUniformDrag = scaleUniform;
+    _rotateDrag = rotate;
+    _skewXDrag = skewX;
+    _skewYDrag = skewY;
+    _skewOrderDrag = skewOrder;
+    _invertedDrag = inverted;
     
     if (didSomething) {
         requestRedraw();
@@ -1929,48 +2585,117 @@ HostOverlayPrivate::penDown(double time,
     return didSomething;
 }
 
+
+bool
+CornerPinInteract::penDown(double time,
+                           const RenderScale& /*renderScale*/,
+                           ViewIdx /*view*/,
+                           const OfxPointD& pscale,
+                           const QPointF& /*lastPenPos*/,
+                           const QPointF &penPos,
+                           const QPoint &/*penPosViewport*/,
+                           double  /*pressure*/)
+{
+    // do not show interact if knob is secret or not enabled
+    // see https://github.com/MrKepzie/Natron/issues/932
+    boost::shared_ptr<KnobDouble> from1Knob = _from[0].lock();
+    if (!from1Knob || from1Knob->getIsSecretRecursive() || !from1Knob->isEnabled(0)) {
+        return false;
+    }
+    
+    OfxPointD to[4];
+    OfxPointD from[4];
+    bool enable[4];
+    bool useFrom;
+    
+    if (_dragging == -1) {
+        for (int i = 0; i < 4; ++i) {
+            getFrom(time, i, &from[i].x, &from[i].y);
+            getTo(time, i, &to[i].x, &to[i].y);
+            enable[i] = getEnabled(time, i);
+        }
+        useFrom = getUseFromPoints(time);
+        
+    } else {
+        for (int i = 0; i < 4; ++i) {
+            to[i] = _toDrag[i];
+            from[i] = _fromDrag[i];
+            enable[i] = _enableDrag[i];
+        }
+        _interactiveDrag = getInteractive(time);
+        useFrom = _useFromDrag;
+    }
+
+    
+    OfxPointD p[4];
+    OfxPointD q[4];
+    int enableBegin = 4;
+    int enableEnd = 0;
+    for (int i = 0; i < 4; ++i) {
+        if (enable[i]) {
+            if (useFrom) {
+                p[i] = from[i];
+                q[i] = to[i];
+            } else {
+                q[i] = from[i];
+                p[i] = to[i];
+            }
+            if (i < enableBegin) {
+                enableBegin = i;
+            }
+            if (i + 1 > enableEnd) {
+                enableEnd = i + 1;
+            }
+        }
+    }
+    bool didSomething = false;
+    
+    for (int i = enableBegin; i < enableEnd; ++i) {
+        if (enable[i]) {
+            if ( CornerPinInteract::isNearby(penPos, p[i].x, p[i].y, CornerPinInteract::pointTolerance(), pscale) ) {
+                _dragging = i;
+                didSomething = true;
+            }
+            _toDrag[i] = to[i];
+            _fromDrag[i] = from[i];
+            _enableDrag[i] = enable[i];
+        }
+    }
+    _useFromDrag = useFrom;
+    
+    
+    return didSomething;
+}
+
 bool
 HostOverlay::penDown(double time,
-                        const RenderScale &renderScale,
-                        const QPointF &penPos,
-                        const QPoint &penPosViewport,
-                        double  pressure)
+                     const RenderScale& renderScale,
+                     ViewIdx view,
+                     const QPointF &penPos,
+                     const QPoint &penPosViewport,
+                     double  pressure)
 {
-    for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
-        if (_imp->penDown(time, renderScale, penPos, penPosViewport, pressure, &(*it))) {
+    OfxPointD pscale;
+    n_getPixelScale(pscale.x, pscale.y);
+    for (InteractList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
+        if ((*it)->penDown(time, renderScale, view, pscale, _imp->lastPenPos, penPos, penPosViewport, pressure)) {
             _imp->lastPenPos = penPos;
             return true;
         }
         
     }
-    for (TransformInteracts::iterator it = _imp->transforms.begin(); it != _imp->transforms.end(); ++it) {
-        if (_imp->penDown(time, renderScale, penPos, penPosViewport, pressure, &(*it))) {
-            _imp->lastPenPos = penPos;
-            return true;
-        }
-        
-    }
+    
     _imp->lastPenPos = penPos;
     return false;
 }
 
 
 bool
-HostOverlayPrivate::keyDown(double /*time*/,
-                        const RenderScale &/*renderScale*/,
-                        int     /*key*/,
-                        char*   /*keyString*/,
-                        PositionInteract* /*it*/)
-{
-    return false;
-}
-
-bool
-HostOverlayPrivate::keyDown(double /*time*/,
-                            const RenderScale &/*renderScale*/,
+TransformInteract::keyDown(double /*time*/,
+                           const RenderScale& /*renderScale*/,
+                           ViewIdx /*view*/,
                             int     key,
-                            char*   /*keyString*/,
-                            TransformInteract* it)
+                            char*   /*keyString*/)
 {
     // Always process, even if interact is not open, since this concerns modifiers
     //if (!_interactOpen->getValueAtTime(args.time)) {
@@ -1985,14 +2710,14 @@ HostOverlayPrivate::keyDown(double /*time*/,
     
     // the two control keys may be pressed consecutively, be aware about this
     if (key == kOfxKey_Control_L || key == kOfxKey_Control_R) {
-        mustRedraw = it->_modifierStateCtrl == 0;
-        ++it->_modifierStateCtrl;
+        mustRedraw = _modifierStateCtrl == 0;
+        ++_modifierStateCtrl;
     }
     if (key == kOfxKey_Shift_L || key == kOfxKey_Shift_R) {
-        mustRedraw = it->_modifierStateShift == 0;
-        ++it->_modifierStateShift;
-        if (it->_modifierStateShift > 0) {
-            it->_orientation = TransformInteract::eOrientationNotSet;
+        mustRedraw = _modifierStateShift == 0;
+        ++_modifierStateShift;
+        if (_modifierStateShift > 0) {
+            _orientation = TransformInteract::eOrientationNotSet;
         }
     }
     if (mustRedraw) {
@@ -2005,18 +2730,13 @@ HostOverlayPrivate::keyDown(double /*time*/,
 
 bool
 HostOverlay::keyDown(double time,
-                        const RenderScale &renderScale,
-                        int     key,
-                        char*   keyString)
+                     const RenderScale& renderScale,
+                     ViewIdx view,
+                     int     key,
+                     char*   keyString)
 {
-    for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
-        if (_imp->keyDown(time, renderScale, key, keyString, &(*it))) {
-            return true;
-        }
-
-    }
-    for (TransformInteracts::iterator it = _imp->transforms.begin(); it != _imp->transforms.end(); ++it) {
-        if (_imp->keyDown(time, renderScale, key, keyString, &(*it))) {
+    for (InteractList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
+        if ((*it)->keyDown(time, renderScale, view, key, keyString)) {
             return true;
         }
         
@@ -2025,40 +2745,31 @@ HostOverlay::keyDown(double time,
 }
 
 
-bool
-HostOverlayPrivate::keyUp(double /*time*/,
-                      const RenderScale &/*renderScale*/,
-                      int     /*key*/,
-                      char*   /*keyString*/,
-                      PositionInteract* /*it*/)
-{
-    return false;
-}
 
 bool
-HostOverlayPrivate::keyUp(double /*time*/,
-                          const RenderScale &/*renderScale*/,
+TransformInteract::keyUp(double /*time*/,
+                         const RenderScale& /*renderScale*/,
+                         ViewIdx /*view*/,
                           int     key,
-                          char*   /*keyString*/,
-                          TransformInteract* it)
+                          char*   /*keyString*/)
 {
     
     bool mustRedraw = false;
     
     if (key == kOfxKey_Control_L || key == kOfxKey_Control_R) {
         // we may have missed a keypress
-        if (it->_modifierStateCtrl > 0) {
-            --it->_modifierStateCtrl;
-            mustRedraw = it->_modifierStateCtrl == 0;
+        if (_modifierStateCtrl > 0) {
+            --_modifierStateCtrl;
+            mustRedraw = _modifierStateCtrl == 0;
         }
     }
     if (key == kOfxKey_Shift_L || key == kOfxKey_Shift_R) {
-        if (it->_modifierStateShift > 0) {
-            --it->_modifierStateShift;
-            mustRedraw = it->_modifierStateShift == 0;
+        if (_modifierStateShift > 0) {
+            --_modifierStateShift;
+            mustRedraw = _modifierStateShift == 0;
         }
-        if (it->_modifierStateShift == 0) {
-            it->_orientation = TransformInteract::eOrientationAllDirections;
+        if (_modifierStateShift == 0) {
+            _orientation = TransformInteract::eOrientationAllDirections;
         }
     }
     if (mustRedraw) {
@@ -2068,105 +2779,68 @@ HostOverlayPrivate::keyUp(double /*time*/,
     return false;
 }
 
+
+
 bool
 HostOverlay::keyUp(double time,
-                      const RenderScale &renderScale,
-                      int     key,
-                      char*   keyString)
+                   const RenderScale& renderScale,
+                   ViewIdx view,
+                   int     key,
+                   char*   keyString)
 {
     bool didSomething = false;
-    for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
-        didSomething |= _imp->keyUp(time, renderScale, key, keyString, &(*it));
+    for (InteractList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
+        didSomething |= (*it)->keyUp(time, renderScale, view, key, keyString);
     }
-    for (TransformInteracts::iterator it = _imp->transforms.begin(); it != _imp->transforms.end(); ++it) {
-        didSomething |= _imp->keyUp(time, renderScale, key, keyString, &(*it));
-    }
+
     return didSomething;
 }
 
 
-bool
-HostOverlayPrivate::keyRepeat(double /*time*/,
-                          const RenderScale &/*renderScale*/,
-                          int     /*key*/,
-                          char*   /*keyString*/,
-                          PositionInteract* /*it*/)
-{
-    return false;
-}
-
-bool
-HostOverlayPrivate::keyRepeat(double /*time*/,
-                              const RenderScale &/*renderScale*/,
-                              int     /*key*/,
-                              char*   /*keyString*/,
-                              TransformInteract* /*it*/)
-{
-    return false;
-}
 
 bool
 HostOverlay::keyRepeat(double time,
-               const RenderScale &renderScale,
-               int     key,
-               char*   keyString)
+                       const RenderScale& renderScale,
+                       ViewIdx view,
+                       int     key,
+                       char*   keyString)
 {
     bool didSomething = false;
-    for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
-        didSomething |= _imp->keyRepeat(time, renderScale, key, keyString, &(*it));
-    }
-    for (TransformInteracts::iterator it = _imp->transforms.begin(); it != _imp->transforms.end(); ++it) {
-        didSomething |= _imp->keyRepeat(time, renderScale, key, keyString, &(*it));
+    for (InteractList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
+        didSomething |= (*it)->keyRepeat(time, renderScale, view, key, keyString);
     }
     return didSomething;
 }
 
 
-bool
-HostOverlayPrivate::gainFocus(double /*time*/,
-                          const RenderScale &/*renderScale*/,
-                          PositionInteract* /*it*/)
-{
-    return false;
-}
-
-bool
-HostOverlayPrivate::gainFocus(double /*time*/,
-                              const RenderScale &/*renderScale*/,
-                              TransformInteract* /*it*/)
-{
-    return false;
-}
 
 bool
 HostOverlay::gainFocus(double time,
-                          const RenderScale &renderScale)
+                       const RenderScale& renderScale,
+                       ViewIdx view)
 {
     bool didSomething = false;
-    for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
-        didSomething |= _imp->gainFocus(time, renderScale, &(*it));
-    }
-    for (TransformInteracts::iterator it = _imp->transforms.begin(); it != _imp->transforms.end(); ++it) {
-        didSomething |= _imp->gainFocus(time, renderScale, &(*it));
+    for (InteractList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
+        didSomething |= (*it)->gainFocus(time, renderScale, view);
     }
     return didSomething;
 }
 
 
 bool
-HostOverlayPrivate::loseFocus(double  /*time*/,
-                          const RenderScale &/*renderScale*/,
-                          PositionInteract* it)
+PositionInteract::loseFocus(double  /*time*/,
+                            const RenderScale &/*renderScale*/,
+                            ViewIdx /*view*/)
 {
-    boost::shared_ptr<KnobDouble> knob = it->param.lock();
+    boost::shared_ptr<KnobDouble> knob = _param.lock();
     // do not show interact if knob is secret or not enabled
     // see https://github.com/MrKepzie/Natron/issues/932
     if (!knob || knob->getIsSecretRecursive() || !knob->isEnabled(0) || !knob->isEnabled(1)) {
         return false;
     }
-
-    if (it->state != ePositionInteractStateInactive) {
-        it->state = ePositionInteractStateInactive;
+    
+    if (_state != ePositionInteractStateInactive) {
+        _state = ePositionInteractStateInactive;
         // state changed, must redraw
         requestRedraw();
     }
@@ -2174,36 +2848,46 @@ HostOverlayPrivate::loseFocus(double  /*time*/,
 }
 
 bool
-HostOverlayPrivate::loseFocus(double  /*time*/,
-                              const RenderScale &/*renderScale*/,
-                              TransformInteract* it)
+TransformInteract::loseFocus(double  /*time*/,
+                            const RenderScale &/*renderScale*/,
+                            ViewIdx /*view*/)
 {
     // do not show interact if knob is secret or not enabled
     // see https://github.com/MrKepzie/Natron/issues/932
-    boost::shared_ptr<KnobDouble> translateKnob = it->translate.lock();
+    boost::shared_ptr<KnobDouble> translateKnob = _translate.lock();
     if (!translateKnob || translateKnob->getIsSecretRecursive() || !translateKnob->isEnabled(0)) {
         return false;
     }
     // reset the modifiers state
-    it->_modifierStateCtrl = 0;
-    it->_modifierStateShift = 0;
-    it->_interactiveDrag = false;
-    it->_mouseState = TransformInteract::eReleased;
-    it->_drawState = TransformInteract::eInActive;
+    _modifierStateCtrl = 0;
+    _modifierStateShift = 0;
+    _interactiveDrag = false;
+    _mouseState = TransformInteract::eReleased;
+    _drawState = TransformInteract::eInActive;
+    
+    return false;
+}
 
+bool
+CornerPinInteract::loseFocus(double  /*time*/,
+                             const RenderScale &/*renderScale*/,
+                             ViewIdx /*view*/)
+{
+    _dragging = -1;
+    _hovering = -1;
+    _interactiveDrag = false;
+    
     return false;
 }
 
 bool
 HostOverlay::loseFocus(double  time,
-                          const RenderScale &renderScale)
+                       const RenderScale &renderScale,
+                       ViewIdx view)
 {
     bool didSomething = false;
-    for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
-        didSomething |= _imp->loseFocus(time, renderScale, &(*it));
-    }
-    for (TransformInteracts::iterator it = _imp->transforms.begin(); it != _imp->transforms.end(); ++it) {
-        didSomething |= _imp->loseFocus(time, renderScale, &(*it));
+    for (InteractList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
+        didSomething |= (*it)->loseFocus(time, renderScale, view);
     }
     return didSomething;
 }
@@ -2212,32 +2896,21 @@ bool
 HostOverlay::hasHostOverlayForParam(const KnobI* param)
 {
     assert(QThread::currentThread() == qApp->thread());
-    for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
-        if (it->param.lock().get() == param) {
+    for (InteractList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
+        if ((*it)->isInteractForKnob(param)) {
             return true;
         }
     }
-    for (TransformInteracts::iterator it = _imp->transforms.begin(); it != _imp->transforms.end(); ++it) {
-        if (it->translate.lock().get() == param ||
-            it->scale.lock().get() == param ||
-            it->scaleUniform.lock().get() == param ||
-            it->rotate.lock().get() == param ||
-            it->center.lock().get() == param ||
-            it->skewOrder.lock().get() == param ||
-            it->skewX.lock().get() == param ||
-            it->skewY.lock().get() == param) {
-            return true;
-        }
-    }
+    
     return false;
 }
 
 void
 HostOverlay::removePositionHostOverlay(KnobI* knob)
 {
-    for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
-        if (it->param.lock().get() == knob) {
-            _imp->positions.erase(it);
+    for (InteractList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
+        if ((*it)->isInteractForKnob(knob)) {
+            _imp->interacts.erase(it);
             return;
         }
     }
@@ -2246,7 +2919,7 @@ HostOverlay::removePositionHostOverlay(KnobI* knob)
 bool
 HostOverlay::isEmpty() const
 {
-    if (_imp->positions.empty() && _imp->transforms.empty()) {
+    if (_imp->interacts.empty()) {
         return true;
     }
     return false;
