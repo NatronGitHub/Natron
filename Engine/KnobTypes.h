@@ -525,6 +525,7 @@ public:
     
     /// set the KnobChoice default value from the label
     void setDefaultValueFromLabel(const std::string & value,int dimension = 0);
+    void setDefaultValueFromLabelWithoutApplying(const std::string & value,int dimension = 0);
 
 public Q_SLOTS:
     

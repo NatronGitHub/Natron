@@ -587,7 +587,7 @@ IntParam::setValueAtTime(int value, double time, int dimension)
 void
 IntParam::setDefaultValue(int value,int dimension)
 {
-    _intKnob.lock()->setDefaultValue(value,dimension);
+    _intKnob.lock()->setDefaultValueWithoutApplying(value,dimension);
 }
 
 int
@@ -810,7 +810,7 @@ DoubleParam::setValueAtTime(double value,double time,int dimension)
 void
 DoubleParam::setDefaultValue(double value,int dimension)
 {
-    _doubleKnob.lock()->setDefaultValue(value,dimension);
+    _doubleKnob.lock()->setDefaultValueWithoutApplying(value,dimension);
 }
 
 double
@@ -985,7 +985,7 @@ ColorParam::setValueAtTime(double value,double time,int dimension)
 void
 ColorParam::setDefaultValue(double value,int dimension)
 {
-    _colorKnob.lock()->setDefaultValue(value,dimension);
+    _colorKnob.lock()->setDefaultValueWithoutApplying(value,dimension);
 }
 
 double
@@ -1134,13 +1134,13 @@ ChoiceParam::setValueAtTime(int value,double time)
 void
 ChoiceParam::setDefaultValue(int value)
 {
-    _choiceKnob.lock()->setDefaultValue(value,0);
+    _choiceKnob.lock()->setDefaultValueWithoutApplying(value,0);
 }
 
 void
 ChoiceParam::setDefaultValue(const QString& value)
 {
-    _choiceKnob.lock()->setDefaultValueFromLabel(value.toStdString());
+    _choiceKnob.lock()->setDefaultValueFromLabelWithoutApplying(value.toStdString());
 }
 
 int
@@ -1286,7 +1286,7 @@ BooleanParam::setValueAtTime(bool value,double time)
 void
 BooleanParam::setDefaultValue(bool value)
 {
-    _boolKnob.lock()->setDefaultValue(value,0);
+    _boolKnob.lock()->setDefaultValueWithoutApplying(value,0);
 }
 
 bool
@@ -1377,7 +1377,7 @@ StringParamBase::setValueAtTime(const QString& value,double time)
 void
 StringParamBase::setDefaultValue(const QString& value)
 {
-    _stringKnob.lock()->setDefaultValue(value.toStdString(),0);
+    _stringKnob.lock()->setDefaultValueWithoutApplying(value.toStdString(),0);
 }
 
 QString

@@ -3935,10 +3935,11 @@ Node::refreshFormatParamChoice(const std::vector<std::string>& entries, int defV
         if (curIndex < (int)entries.size()) {
             choice->setValue(curIndex);
         }
-    } else {
-        //changedKnob was not called because we are initializing knobs
-        handleFormatKnob(choice.get());
     }
+    
+    //changedKnob was not called because we are initializing knobs
+    handleFormatKnob(choice.get());
+    
     choice->endChanges();
 }
 
