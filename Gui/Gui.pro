@@ -227,7 +227,6 @@ SOURCES += \
     NatronGui/pypanel_wrapper.cpp \
     NatronGui/pytabwidget_wrapper.cpp \
     NatronGui/pyviewer_wrapper.cpp \
-    LoginDialog.cpp \
     DocumentationManager.cpp
 
 HEADERS += \
@@ -393,7 +392,6 @@ HEADERS += \
     NatronGui/pypanel_wrapper.h \
     NatronGui/pytabwidget_wrapper.h \
     NatronGui/pyviewer_wrapper.h \
-    LoginDialog.h \
     DocumentationManager.h
 
 
