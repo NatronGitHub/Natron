@@ -900,15 +900,9 @@ GuiApplicationManager::initGui(const CLArgs& args)
     
     Gui::loadStyleSheet();
 
-    // launch webserver
+    // Init documentation manager
     documentation = new DocumentationManager;
-    if (!documentation->webserverStart()) {
-        std::cout << "Failed to launch documentation server" << std::endl;
-    }
-
-    // test login dialog
-    login = new LoginDialog(QString::fromUtf8("<h2>Test</h2><p>Testing login dialog ........</p>"),QObject::tr("Natron Test"));
-    QTimer::singleShot(100,login,SLOT(show()));
+    documentation->startServer();
 
     return exec();
 }
