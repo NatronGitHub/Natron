@@ -2637,8 +2637,6 @@ void Settings::setServerPort(int port) const
 
 QString Settings::makeHTMLDocumentation(bool menu, bool staticPages) const
 {
-    assert(QThread::currentThread() == qApp->thread());
-
     QString ret;
     QTextStream ts(&ret);
 
@@ -2655,14 +2653,18 @@ QString Settings::makeHTMLDocumentation(bool menu, bool staticPages) const
         ts << "<html><head>";
         ts << "<title>Natron Preferences</title>";
         ts << "<link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"_static/jquery.js\"></script><script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>";
-        ts << "</head><body><div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\">";
+        ts << "</head><body>";
+        ts << "<div class=\"related\"><h3>Navigation</h3><ul>";
+        ts << "<li><a href=\"/index.html\">Natron 2.0 documentation</a> &raquo;</li>";
+        ts << "</ul></div>";
+        ts << "<div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\">";
         ts << "<h1>Preferences</h1>";
     }
     else {
         ts << "<li class=\"toctree-l1\"><a href='" << pageName << "'>Preferences</a>\n<ul>\n";
     }
 
-    const KnobsVec& knobs = getKnobs();
+    const KnobsVec& knobs = getKnobs_mt_safe();
     for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
         if ((*it)->getDefaultIsSecret()) {
             continue;

@@ -16,14 +16,15 @@ class DocumentationManager : public QObject
     Q_OBJECT
 public:
     explicit DocumentationManager(QObject *parent = 0);
+    ~DocumentationManager();
 
-Q_SIGNALS:
 public Q_SLOTS:
-    bool webserverStart();
-    void webserverStop();
-    void webserverHandler(QHttpRequest *req, QHttpResponse *resp);
-    QString webserverHTMLParser(QString html, QString path) const;
-    void webserverSetPort(int port);
+    void startServer();
+    void stopServer();
+    QString parser(QString html, QString path) const;
+private Q_SLOTS:
+    void handler(QHttpRequest *req, QHttpResponse *resp);
+    void setPort(int port);
 private:
     QHttpServer *server;
 };
