@@ -27,25 +27,14 @@
 
 #include "Global/Macros.h"
 
-#include <map>
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QFrame>
-#include <QTabWidget>
-#include <QDialog>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
-
-#include "Engine/DockablePanelI.h"
 
 #include "Gui/GuiFwd.h"
 
@@ -54,24 +43,35 @@ NATRON_NAMESPACE_ENTER;
 /**
  * @brief Used when group are using the kFnOfxParamPropGroupIsTab extension
  **/
+struct TabGroupPrivate;
 class TabGroup : public QFrame
 {
-    QTabWidget* _tabWidget;
-    std::vector<boost::weak_ptr<KnobGroup> > _tabs;
+    
+    Q_OBJECT
     
 public:
     
     TabGroup(QWidget* parent);
     
+    virtual ~TabGroup();
+    
     QGridLayout* addTab(const boost::shared_ptr<KnobGroup>& group, const QString &label);
     
     void removeTab(KnobGroup* group);
     
-    bool isEmpty() const
-    {
-        return _tabs.empty();
-    }
+    bool isEmpty() const;
+    
+    void refreshTabSecretNess(KnobGroup* group);
+    
+public Q_SLOTS:
+    
+    void onGroupKnobSecretChanged();
+    
+private:
+    
+    boost::scoped_ptr<TabGroupPrivate> _imp;
 };
+
 
 NATRON_NAMESPACE_EXIT;
 

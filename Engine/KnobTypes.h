@@ -307,7 +307,6 @@ public:
     void setAsRectangle() {
         if (getDimension() == 4) {
             _isRectangle = true;
-            disableSlider();
         }
     }
 
@@ -526,6 +525,7 @@ public:
     
     /// set the KnobChoice default value from the label
     void setDefaultValueFromLabel(const std::string & value,int dimension = 0);
+    void setDefaultValueFromLabelWithoutApplying(const std::string & value,int dimension = 0);
 
 public Q_SLOTS:
     

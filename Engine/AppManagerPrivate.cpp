@@ -155,7 +155,7 @@ AppManagerPrivate::initBreakpad(const QString& breakpadPipePath, const QString& 
 void
 AppManagerPrivate::createBreakpadHandler(const QString& breakpadPipePath, int breakpad_client_fd)
 {
-    QString dumpPath = StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationTemp);
+    QString dumpPath = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
     Q_UNUSED(breakpad_client_fd);
     try {
 #if defined(Q_OS_MAC)

@@ -14,6 +14,8 @@ include(../../global.pri)
 include(../../libs.pri)
 include(../../config.pri)
 
+CONFIG -= warn_on
+
 win32-msvc* {
         INCLUDEPATH += third_party/msinttypes
 }

@@ -37,10 +37,32 @@
 
 NATRON_NAMESPACE_ENTER;
 
-TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface, const boost::shared_ptr<Natron::Node> &node)
+/**
+ * @brief Creates a duplicate of the knob identified by knobName which is a knob in the internalNode onto the effect and add it to the given page.
+ * If otherNode is set, also fetch a knob of the given name on the otherNode and link it to the newly created knob.
+ **/
+
+template <typename KNOBTYPE>
+boost::shared_ptr<KNOBTYPE> createDuplicateKnob(const std::string& knobName, const NodePtr& internalNode, const EffectInstPtr& effect, const boost::shared_ptr<KnobPage>& page = boost::shared_ptr<KnobPage>(), const boost::shared_ptr<KnobGroup>& group = boost::shared_ptr<KnobGroup>(), const NodePtr& otherNode = NodePtr()) {
+    KnobPtr internalNodeKnob = internalNode->getKnobByName(knobName);
+    assert(internalNodeKnob);
+    KnobPtr duplicateKnob = internalNodeKnob->createDuplicateOnNode(effect.get(), page, group, -1, true, internalNodeKnob->getName(), internalNodeKnob->getLabel(), internalNodeKnob->getHintToolTip(), false, false);
+    
+    if (otherNode) {
+        KnobPtr otherNodeKnob = otherNode->getKnobByName(knobName);
+        assert(otherNodeKnob);
+        for (int i = 0; i < otherNodeKnob->getDimension(); ++i) {
+            otherNodeKnob->slaveTo(i, duplicateKnob, i);
+        }
+    }
+    
+    return boost::dynamic_pointer_cast<KNOBTYPE>(duplicateKnob);
+
+}
+
+TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface, const boost::shared_ptr<Node> &node)
 : _publicInterface(publicInterface)
 , node(node)
-, knobs()
 , perTrackKnobs()
 , enableTrackRed()
 , enableTrackGreen()
@@ -51,7 +73,6 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface, co
 , useNormalizedIntensities()
 , preBlurSigma()
 , exportDataSep()
-, exportChoice()
 , exportButton()
 , referenceFrame()
 , trackerContextMutex()
@@ -67,18 +88,98 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface, co
     QObject::connect(&scheduler, SIGNAL(trackingStarted(int)), _publicInterface, SIGNAL(trackingStarted(int)));
     QObject::connect(&scheduler, SIGNAL(trackingFinished()), _publicInterface, SIGNAL(trackingFinished()));
     
+    boost::shared_ptr<TrackerNode> isTrackerNode = boost::dynamic_pointer_cast<TrackerNode>(effect);
+    
     QString fixedNamePrefix = QString::fromUtf8(node->getScriptName_mt_safe().c_str());
     fixedNamePrefix.append(QLatin1Char('_'));
-    fixedNamePrefix += QLatin1String("Transform");
+    if (isTrackerNode) {
+        NodePtr input,output;
+        //NodePtr maskInput;
+        
+        {
+            CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_OUTPUT), eCreateNodeReasonInternal, isTrackerNode);
+            args.createGui = false;
+            args.addToProject = false;
+            output = node->getApp()->createNode(args);
+            try {
+                output->setScriptName("Output");
+            } catch (...) {
+                
+            }
+            assert(output);
+        }
+        {
+            CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_INPUT), eCreateNodeReasonInternal, isTrackerNode);
+            args.fixedName = QLatin1String("Source");
+            args.createGui = false;
+            args.addToProject = false;
+            input = node->getApp()->createNode(args);
+            assert(input);
+        }
+        
+       /* {
+            CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_INPUT), eCreateNodeReasonInternal, isTrackerNode);
+            args.fixedName = QLatin1String("Mask");
+            args.createGui = false;
+            args.addToProject = false;
+            maskInput = node->getApp()->createNode(args);
+            assert(maskInput);
+            KnobPtr isMaskInputKnob = maskInput->getKnobByName(kNatronGroupInputIsMaskParamName);
+            if (isMaskInputKnob) {
+                KnobBool* maskInputKnob = dynamic_cast<KnobBool*>(isMaskInputKnob.get());
+                assert(maskInputKnob);
+                if (maskInputKnob) {
+                    maskInputKnob->setValue(true);
+                }
+            }
+            KnobPtr isOptionalInputKnob = maskInput->getKnobByName(kNatronGroupInputIsOptionalParamName);
+            if (isOptionalInputKnob) {
+                KnobBool* optionalInputKnob = dynamic_cast<KnobBool*>(isOptionalInputKnob.get());
+                assert(optionalInputKnob);
+                if (optionalInputKnob) {
+                    optionalInputKnob->setValue(true);
+                }
+            }
+
+        }*/
+
+        {
+            QString cornerPinName = fixedNamePrefix + QLatin1String("CornerPin");
+            
+            CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_CORNERPIN), eCreateNodeReasonInternal, isTrackerNode);
+            args.fixedName = cornerPinName;
+            args.createGui = false;
+            args.addToProject = false;
+            NodePtr cpNode = node->getApp()->createNode(args);
+            if (!cpNode) {
+                throw std::runtime_error(QObject::tr("The Tracker node requires the Misc.ofx.bundle plug-in to be installed").toStdString());
+            }
+            cpNode->setNodeDisabled(true);
+            cornerPinNode = cpNode;
+        }
+        
+        {
+            QString transformName = fixedNamePrefix + QLatin1String("Transform");
+            
+            CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_TRANSFORM), eCreateNodeReasonInternal, isTrackerNode);
+            args.fixedName = transformName;
+            args.createGui = false;
+            args.addToProject = false;
+            NodePtr tNode = node->getApp()->createNode(args);
+            tNode->setNodeDisabled(true);
+            transformNode = tNode;
+            
+            output->connectInput(tNode, 0);
+            NodePtr cpNode = cornerPinNode.lock();
+            tNode->connectInput(cpNode, 0);
+            cpNode->connectInput(input, 0);
+
+        }
+    }
     
-    CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_TRANSFORM), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
-    args.fixedName = fixedNamePrefix;
-    args.createGui = false;
-    args.addToProject = false;
-    transformNode = node->getApp()->createNode(args);
-    
-    boost::shared_ptr<KnobPage> settingsPage = AppManager::createKnob<KnobPage>(effect.get(), "Controls", 1 , false);
+    boost::shared_ptr<KnobPage> settingsPage = AppManager::createKnob<KnobPage>(effect.get(), "Tracking", 1 , false);
     boost::shared_ptr<KnobPage> transformPage = AppManager::createKnob<KnobPage>(effect.get(), "Transform", 1 , false);
+    transformPageKnob = transformPage;
     
     boost::shared_ptr<KnobBool> enableTrackRedKnob = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamTrackRedLabel, 1, false);
     enableTrackRedKnob->setName(kTrackerParamTrackRed);
@@ -89,7 +190,6 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface, co
     enableTrackRedKnob->setEvaluateOnChange(false);
     settingsPage->addKnob(enableTrackRedKnob);
     enableTrackRed = enableTrackRedKnob;
-    knobs.push_back(enableTrackRedKnob);
     
     boost::shared_ptr<KnobBool> enableTrackGreenKnob = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamTrackGreenLabel, 1, false);
     enableTrackGreenKnob->setName(kTrackerParamTrackGreen);
@@ -100,7 +200,6 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface, co
     enableTrackGreenKnob->setEvaluateOnChange(false);
     settingsPage->addKnob(enableTrackGreenKnob);
     enableTrackGreen = enableTrackGreenKnob;
-    knobs.push_back(enableTrackGreenKnob);
     
     boost::shared_ptr<KnobBool> enableTrackBlueKnob = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamTrackBlueLabel, 1, false);
     enableTrackBlueKnob->setName(kTrackerParamTrackBlue);
@@ -110,7 +209,6 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface, co
     enableTrackBlueKnob->setEvaluateOnChange(false);
     settingsPage->addKnob(enableTrackBlueKnob);
     enableTrackBlue = enableTrackBlueKnob;
-    knobs.push_back(enableTrackBlueKnob);
     
     boost::shared_ptr<KnobDouble> maxErrorKnob = AppManager::createKnob<KnobDouble>(effect.get(), kTrackerParamMaxErrorLabel, 1, false);
     maxErrorKnob->setName(kTrackerParamMaxError);
@@ -122,7 +220,6 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface, co
     maxErrorKnob->setEvaluateOnChange(false);
     settingsPage->addKnob(maxErrorKnob);
     maxError = maxErrorKnob;
-    knobs.push_back(maxErrorKnob);
     
     boost::shared_ptr<KnobInt> maxItKnob = AppManager::createKnob<KnobInt>(effect.get(), kTrackerParamMaximumIterationLabel, 1, false);
     maxItKnob->setName(kTrackerParamMaximumIteration);
@@ -134,7 +231,6 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface, co
     maxItKnob->setDefaultValue(50);
     settingsPage->addKnob(maxItKnob);
     maxIterations = maxItKnob;
-    knobs.push_back(maxItKnob);
     
     boost::shared_ptr<KnobBool> usePretTrackBF = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamBruteForcePreTrackLabel, 1, false);
     usePretTrackBF->setName(kTrackerParamBruteForcePreTrack);
@@ -145,7 +241,6 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface, co
     usePretTrackBF->setAddNewLine(false);
     settingsPage->addKnob(usePretTrackBF);
     bruteForcePreTrack = usePretTrackBF;
-    knobs.push_back(usePretTrackBF);
     
     boost::shared_ptr<KnobBool> useNormalizedInt = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamNormalizeIntensitiesLabel, 1, false);
     useNormalizedInt->setName(kTrackerParamNormalizeIntensities);
@@ -155,7 +250,6 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface, co
     useNormalizedInt->setEvaluateOnChange(false);
     settingsPage->addKnob(useNormalizedInt);
     useNormalizedIntensities = useNormalizedInt;
-    knobs.push_back(useNormalizedInt);
     
     boost::shared_ptr<KnobDouble> preBlurSigmaKnob = AppManager::createKnob<KnobDouble>(effect.get(), kTrackerParamPreBlurSigmaLabel, 1, false);
     preBlurSigmaKnob->setName(kTrackerParamPreBlurSigma);
@@ -167,78 +261,59 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface, co
     preBlurSigmaKnob->setEvaluateOnChange(false);
     settingsPage->addKnob(preBlurSigmaKnob);
     preBlurSigma = preBlurSigmaKnob;
-    knobs.push_back(preBlurSigmaKnob);
+    
+    boost::shared_ptr<KnobBool> enableTrackKnob = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamEnabledLabel, 1, false);
+    enableTrackKnob->setName(kTrackerParamEnabled);
+    enableTrackKnob->setHintToolTip(kTrackerParamEnabledHint);
+    enableTrackKnob->setAnimationEnabled(true);
+    enableTrackKnob->setDefaultValue(true);
+    enableTrackKnob->setEvaluateOnChange(false);
+    enableTrackKnob->setAllDimensionsEnabled(false);
+    settingsPage->addKnob(enableTrackKnob);
+    activateTrack = enableTrackKnob;
+    perTrackKnobs.push_back(enableTrackKnob);
     
     
-    boost::shared_ptr<KnobSeparator> exportDataSepKnob = AppManager::createKnob<KnobSeparator>(effect.get(), kTrackerParamExportDataSeparatorLabel, 1, false);
-    exportDataSepKnob->setName(kTrackerParamExportDataSeparator);
-    settingsPage->addKnob(exportDataSepKnob);
-    exportDataSep = exportDataSepKnob;
-    knobs.push_back(exportDataSepKnob);
+    boost::shared_ptr<KnobSeparator>  transformGenerationSeparatorKnob = AppManager::createKnob<KnobSeparator>(effect.get(), "Transform Generation", 3);
+    transformPage->addKnob(transformGenerationSeparatorKnob);
+    transformGenerationSeparator = transformGenerationSeparatorKnob;
     
-    boost::shared_ptr<KnobChoice> exportDataKnob = AppManager::createKnob<KnobChoice>(effect.get(), kTrackerParamExportDataChoiceLabel, 1, false);
-    exportDataKnob->setName(kTrackerParamExportDataChoice);
-    exportDataKnob->setHintToolTip(kTrackerParamExportDataChoiceHint);
+    boost::shared_ptr<KnobChoice> motionTypeKnob = AppManager::createKnob<KnobChoice>(effect.get(), kTrackerParamMotionTypeLabel, 1);
+    motionTypeKnob->setName(kTrackerParamMotionType);
+    motionTypeKnob->setHintToolTip(kTrackerParamMotionTypeHint);
     {
-        std::vector<std::string> entries, helps;
-        entries.push_back(kTrackerParamExportDataChoiceCPThisFrame);
-        helps.push_back(kTrackerParamExportDataChoiceCPThisFrameHint);
+        std::vector<std::string> choices,helps;
+        choices.push_back(kTrackerParamMotionTypeNone);
+        helps.push_back(kTrackerParamMotionTypeNoneHelp);
+        choices.push_back(kTrackerParamMotionTypeStabilize);
+        helps.push_back(kTrackerParamMotionTypeStabilizeHelp);
+        choices.push_back(kTrackerParamMotionTypeMatchMove);
+        helps.push_back(kTrackerParamMotionTypeMatchMoveHelp);
+        choices.push_back(kTrackerParamMotionTypeRemoveJitter);
+        helps.push_back(kTrackerParamMotionTypeRemoveJitterHelp);
+        choices.push_back(kTrackerParamMotionTypeAddJitter);
+        helps.push_back(kTrackerParamMotionTypeAddJitterHelp);
         
-        entries.push_back(kTrackerParamExportDataChoiceCPRefFrame);
-        helps.push_back(kTrackerParamExportDataChoiceCPRefFrameHint);
-        
-        entries.push_back(kTrackerParamExportDataChoiceCPThisFrameBaked);
-        helps.push_back(kTrackerParamExportDataChoiceCPThisFrameHint);
-        
-        entries.push_back(kTrackerParamExportDataChoiceCPRefFrameBaked);
-        helps.push_back(kTrackerParamExportDataChoiceCPRefFrameHint);
-        
-        entries.push_back(kTrackerParamExportDataChoiceTransformStabilize);
-        helps.push_back(kTrackerParamExportDataChoiceTransformStabilizeHint);
-        
-        entries.push_back(kTrackerParamExportDataChoiceTransformMatchMove);
-        helps.push_back(kTrackerParamExportDataChoiceTransformMatchMoveHint);
-        
-        entries.push_back(kTrackerParamExportDataChoiceTransformStabilizeBaked);
-        helps.push_back(kTrackerParamExportDataChoiceTransformStabilizeHint);
-        
-        entries.push_back(kTrackerParamExportDataChoiceTransformMatchMoveBaked);
-        helps.push_back(kTrackerParamExportDataChoiceTransformMatchMoveHint);
-        exportDataKnob->populateChoices(entries,helps);
+        motionTypeKnob->populateChoices(choices,helps);
     }
-    exportDataKnob->setAddNewLine(false);
-    settingsPage->addKnob(exportDataKnob);
-    exportChoice = exportDataKnob;
-    knobs.push_back(exportDataKnob);
-    
-    boost::shared_ptr<KnobButton> exportButtonKnob = AppManager::createKnob<KnobButton>(effect.get(), kTrackerParamExportButtonLabel, 1);
-    exportButtonKnob->setName(kTrackerParamExportButton);
-    exportButtonKnob->setHintToolTip(kTrackerParamExportButtonHint);
-    settingsPage->addKnob(exportButtonKnob);
-    exportButton = exportButtonKnob;
-    knobs.push_back(exportButtonKnob);
-    
+    motionTypeKnob->setAddNewLine(false);
+    motionType = motionTypeKnob;
+    transformPage->addKnob(motionTypeKnob);
+
     boost::shared_ptr<KnobChoice> transformTypeKnob = AppManager::createKnob<KnobChoice>(effect.get(), kTrackerParamTransformTypeLabel, 1);
     transformTypeKnob->setName(kTrackerParamTransformType);
     transformTypeKnob->setHintToolTip(kTrackerParamTransformTypeHint);
     {
         std::vector<std::string> choices,helps;
-        choices.push_back(kTrackerParamTransformTypeNone);
-        helps.push_back(kTrackerParamTransformTypeNoneHelp);
-        choices.push_back(kTrackerParamTransformTypeStabilize);
-        helps.push_back(kTrackerParamTransformTypeStabilizeHelp);
-        choices.push_back(kTrackerParamTransformTypeMatchMove);
-        helps.push_back(kTrackerParamTransformTypeMatchMoveHelp);
-        choices.push_back(kTrackerParamTransformTypeRemoveJitter);
-        helps.push_back(kTrackerParamTransformTypeRemoveJitterHelp);
-        choices.push_back(kTrackerParamTransformTypeAddJitter);
-        helps.push_back(kTrackerParamTransformTypeAddJitterHelp);
+        choices.push_back(kTrackerParamTransformTypeTransform);
+        helps.push_back(kTrackerParamTransformTypeTransformHelp);
+        choices.push_back(kTrackerParamTransformTypeCornerPin);
+        helps.push_back(kTrackerParamTransformTypeCornerPinHelp);
         
         transformTypeKnob->populateChoices(choices,helps);
     }
     transformType = transformTypeKnob;
     transformPage->addKnob(transformTypeKnob);
-    
     
     boost::shared_ptr<KnobInt> referenceFrameKnob = AppManager::createKnob<KnobInt>(effect.get(), kTrackerParamReferenceFrameLabel, 1);
     referenceFrameKnob->setName(kTrackerParamReferenceFrame);
@@ -249,7 +324,6 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface, co
     referenceFrameKnob->setEvaluateOnChange(false);
     transformPage->addKnob(referenceFrameKnob);
     referenceFrame = referenceFrameKnob;
-    knobs.push_back(referenceFrameKnob);
     
     boost::shared_ptr<KnobButton> setCurrentFrameKnob = AppManager::createKnob<KnobButton>(effect.get(), kTrackerParamSetReferenceFrameLabel, 1);
     setCurrentFrameKnob->setName(kTrackerParamSetReferenceFrame);
@@ -266,7 +340,6 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface, co
     jitterPeriodKnob->setEvaluateOnChange(false);
     transformPage->addKnob(jitterPeriodKnob);
     jitterPeriod = jitterPeriodKnob;
-    knobs.push_back(jitterPeriodKnob);
     
     boost::shared_ptr<KnobInt>  smoothTransformKnob = AppManager::createKnob<KnobInt>(effect.get(), kTrackerParamSmoothLabel, 3);
     smoothTransformKnob->setName(kTrackerParamSmooth);
@@ -282,94 +355,125 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface, co
     smoothTransformKnob->setEvaluateOnChange(false);
     transformPage->addKnob(smoothTransformKnob);
     smoothTransform = smoothTransformKnob;
-    knobs.push_back(smoothTransformKnob);
     
-    KnobPtr translateKnob = transformNode->getKnobByName(kTransformParamTranslate);
-    assert(translateKnob);
-    KnobPtr translateK = translateKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, translateKnob->getName(), translateKnob->getLabel(), translateKnob->getHintToolTip(), false, false);
-    translate = boost::dynamic_pointer_cast<KnobDouble>(translateK);
+    boost::shared_ptr<KnobInt>  smoothCornerPinKnob = AppManager::createKnob<KnobInt>(effect.get(), kTrackerParamSmoothCornerPinLabel, 1);
+    smoothCornerPinKnob->setName(kTrackerParamSmoothCornerPin);
+    smoothCornerPinKnob->setHintToolTip(kTrackerParamSmoothCornerPinHint);
+    smoothCornerPinKnob->setAnimationEnabled(false);
+    smoothCornerPinKnob->disableSlider();
+    smoothCornerPinKnob->setMinimum(0, 0);
+    smoothCornerPinKnob->setEvaluateOnChange(false);
+    smoothCornerPinKnob->setSecret(true);
+    transformPage->addKnob(smoothCornerPinKnob);
+    smoothCornerPin = smoothCornerPinKnob;
     
-    KnobPtr rotateKnob = transformNode->getKnobByName(kTransformParamRotate);
-    assert(rotateKnob);
-    KnobPtr rotateK = rotateKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, rotateKnob->getName(), rotateKnob->getLabel(), rotateKnob->getHintToolTip(), false, false);
-    rotate = boost::dynamic_pointer_cast<KnobDouble>(rotateK);
+    boost::shared_ptr<KnobSeparator>  transformSeparator = AppManager::createKnob<KnobSeparator>(effect.get(), "Transform Controls", 3);
+    transformPage->addKnob(transformSeparator);
+    transformControlsSeparator = transformSeparator;
     
-    KnobPtr scaleKnob = transformNode->getKnobByName(kTransformParamScale);
-    assert(scaleKnob);
-    KnobPtr scaleK = scaleKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, scaleKnob->getName(), scaleKnob->getLabel(), scaleKnob->getHintToolTip(), false, false);
-    scaleK->setAddNewLine(false);
-    scale = boost::dynamic_pointer_cast<KnobDouble>(scaleK);
+    NodePtr tNode = transformNode.lock();
+    if (tNode) {
+
+        translate = createDuplicateKnob<KnobDouble>(kTransformParamTranslate, tNode, effect, transformPage);
+        rotate = createDuplicateKnob<KnobDouble>(kTransformParamRotate, tNode, effect, transformPage);
+        scale = createDuplicateKnob<KnobDouble>(kTransformParamScale, tNode, effect, transformPage);
+        scale.lock()->setAddNewLine(false);
+        scaleUniform = createDuplicateKnob<KnobBool>(kTransformParamUniform, tNode, effect, transformPage);
+        skewX = createDuplicateKnob<KnobDouble>(kTransformParamSkewX, tNode, effect, transformPage);
+        skewY = createDuplicateKnob<KnobDouble>(kTransformParamSkewY, tNode, effect, transformPage);
+        skewOrder = createDuplicateKnob<KnobChoice>(kTransformParamSkewOrder, tNode, effect, transformPage);
+        center = createDuplicateKnob<KnobDouble>(kTransformParamCenter, tNode, effect, transformPage);
+     
+    } // tNode
+    NodePtr cNode = cornerPinNode.lock();
+    if (cNode) {
+        boost::shared_ptr<KnobGroup>  toGroupKnob = AppManager::createKnob<KnobGroup>(effect.get(), kCornerPinParamTo, 1);
+        toGroupKnob->setName(kCornerPinParamTo);
+        toGroupKnob->setAsTab();
+        toGroupKnob->setSecret(true);
+        transformPage->addKnob(toGroupKnob);
+        toGroup = toGroupKnob;
+        
+        boost::shared_ptr<KnobGroup>  fromGroupKnob = AppManager::createKnob<KnobGroup>(effect.get(), kCornerPinParamFrom, 1);
+        fromGroupKnob->setName(kCornerPinParamFrom);
+        fromGroupKnob->setAsTab();
+        fromGroupKnob->setSecret(true);
+        transformPage->addKnob(fromGroupKnob);
+        fromGroup = fromGroupKnob;
+        
+        const char* fromPointNames[4] = {kCornerPinParamFrom1, kCornerPinParamFrom2, kCornerPinParamFrom3, kCornerPinParamFrom4};
+        const char* toPointNames[4] = {kCornerPinParamTo1, kCornerPinParamTo2, kCornerPinParamTo3, kCornerPinParamTo4};
+        const char* enablePointNames[4] = {kCornerPinParamEnable1, kCornerPinParamEnable2, kCornerPinParamEnable3, kCornerPinParamEnable4};
+        
+        for (int i = 0; i < 4; ++i) {
+            
+            fromPoints[i] = createDuplicateKnob<KnobDouble>(fromPointNames[i], cNode, effect, transformPage, fromGroupKnob);
+            
+            toPoints[i] = createDuplicateKnob<KnobDouble>(toPointNames[i], cNode, effect, transformPage, toGroupKnob);
+            toPoints[i].lock()->setAddNewLine(false);
+            enableToPoint[i] = createDuplicateKnob<KnobBool>(enablePointNames[i], cNode, effect, transformPage, toGroupKnob);
+            
+        }
+        
+        cornerPinOverlayPoints = createDuplicateKnob<KnobChoice>(kCornerPinParamOverlayPoints, cNode, effect, transformPage);
+        cornerPinOverlayPoints.lock()->setSecret(true);
+
+        cornerPinMatrix = createDuplicateKnob<KnobDouble>(kCornerPinParamMatrix, cNode, effect, transformPage);
+        cornerPinMatrix.lock()->setSecret(true);
+        
+    } // cNode
     
-    KnobPtr scaleUniformKnob = transformNode->getKnobByName(kTransformParamUniform);
-    assert(scaleUniformKnob);
-    KnobPtr scaleUniK = scaleUniformKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, scaleUniformKnob->getName(), scaleUniformKnob->getLabel(), scaleKnob->getHintToolTip(), false, false);
-    scaleUniform = boost::dynamic_pointer_cast<KnobBool>(scaleUniK);
+    // Add filtering & motion blur knobs
+    if (tNode) {
+        
+        invertTransform = createDuplicateKnob<KnobBool>(kTransformParamInvert, tNode, effect, transformPage, boost::shared_ptr<KnobGroup>(), cNode);
+        filter = createDuplicateKnob<KnobChoice>(kTransformParamFilter, tNode, effect, transformPage, boost::shared_ptr<KnobGroup>(), cNode);
+        filter.lock()->setAddNewLine(false);
+        clamp = createDuplicateKnob<KnobBool>(kTransformParamClamp, tNode, effect, transformPage, boost::shared_ptr<KnobGroup>(), cNode);
+        clamp.lock()->setAddNewLine(false);
+        blackOutside = createDuplicateKnob<KnobBool>(kTransformParamBlackOutside, tNode, effect, transformPage, boost::shared_ptr<KnobGroup>(), cNode);
+        motionBlur = createDuplicateKnob<KnobDouble>(kTransformParamMotionBlur, tNode, effect, transformPage, boost::shared_ptr<KnobGroup>(), cNode);
+        shutter = createDuplicateKnob<KnobDouble>(kTransformParamShutter, tNode, effect, transformPage, boost::shared_ptr<KnobGroup>(), cNode);
+        shutterOffset = createDuplicateKnob<KnobChoice>(kTransformParamShutterOffset, tNode, effect, transformPage, boost::shared_ptr<KnobGroup>(), cNode);
+        customShutterOffset = createDuplicateKnob<KnobDouble>(kTransformParamCustomShutterOffset, tNode, effect, transformPage, boost::shared_ptr<KnobGroup>(), cNode);
+        
+        node->addTransformInteract(translate.lock(), scale.lock(), scaleUniform.lock(), rotate.lock(), skewX.lock(), skewY.lock(), skewOrder.lock(), center.lock(), invertTransform.lock(), boost::shared_ptr<KnobBool>() /*interactive*/);
+        
+        node->addCornerPinInteract(fromPoints[0].lock(), fromPoints[1].lock(), fromPoints[2].lock(), fromPoints[3].lock(),
+                                   toPoints[0].lock(), toPoints[1].lock(), toPoints[2].lock(), toPoints[3].lock(),
+                                   enableToPoint[0].lock(), enableToPoint[1].lock(), enableToPoint[2].lock(), enableToPoint[3].lock(), cornerPinOverlayPoints.lock(), invertTransform.lock(), boost::shared_ptr<KnobBool>() /*interactive*/);
+       
+    }
     
-    KnobPtr skewXKnob = transformNode->getKnobByName(kTransformParamSkewX);
-    assert(skewXKnob);
-    KnobPtr skewXK = skewXKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, skewXKnob->getName(), skewXKnob->getLabel(), skewXKnob->getHintToolTip(), false, false);
-    skewX = boost::dynamic_pointer_cast<KnobDouble>(skewXK);
+    boost::shared_ptr<KnobSeparator> exportDataSepKnob = AppManager::createKnob<KnobSeparator>(effect.get(), kTrackerParamExportDataSeparatorLabel, 1, false);
+    exportDataSepKnob->setName(kTrackerParamExportDataSeparator);
+    transformPage->addKnob(exportDataSepKnob);
+    exportDataSep = exportDataSepKnob;
     
-    KnobPtr skewYKnob = transformNode->getKnobByName(kTransformParamSkewY);
-    assert(skewYKnob);
-    KnobPtr skewYK = skewYKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, skewYKnob->getName(), skewYKnob->getLabel(), skewYKnob->getHintToolTip(), false, false);
-    skewY = boost::dynamic_pointer_cast<KnobDouble>(skewYK);
+    boost::shared_ptr<KnobBool> exporLinkKnob = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamExportLinkLabel, 1, false);
+    exporLinkKnob->setName(kTrackerParamExportLink);
+    exporLinkKnob->setHintToolTip(kTrackerParamExportLinkHint);
+    exporLinkKnob->setAnimationEnabled(false);
+    exporLinkKnob->setAddNewLine(false);
+    exporLinkKnob->setDefaultValue(true);
+    transformPage->addKnob(exporLinkKnob);
+    exportLink = exporLinkKnob;
     
-    KnobPtr skewOrderKnob = transformNode->getKnobByName(kTransformParamSkewOrder);
-    assert(skewOrderKnob);
-    KnobPtr skewOrderK = skewOrderKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, skewOrderKnob->getName(), skewOrderKnob->getLabel(), skewOrderKnob->getHintToolTip(), false, false);
-    skewOrder = boost::dynamic_pointer_cast<KnobChoice>(skewOrderK);
+   /* boost::shared_ptr<KnobBool> exporUseCurFrameKnob = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamExportUseCurrentFrameLabel, 1, false);
+    exporUseCurFrameKnob->setName(kTrackerParamExportUseCurrentFrame);
+    exporUseCurFrameKnob->setHintToolTip(kTrackerParamExportUseCurrentFrameHint);
+    exporUseCurFrameKnob->setAnimationEnabled(false);
+    exporUseCurFrameKnob->setAddNewLine(false);
+    exporUseCurFrameKnob->setDefaultValue(false);
+    transformPage->addKnob(exporUseCurFrameKnob);
+    exportUseCurrentFrame = exporUseCurFrameKnob;
+    knobs.push_back(exporUseCurFrameKnob);*/
     
-    KnobPtr centerKnob = transformNode->getKnobByName(kTransformParamCenter);
-    assert(centerKnob);
-    KnobPtr centerK = centerKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, centerKnob->getName(), centerKnob->getLabel(), centerKnob->getHintToolTip(), false, false);
-    center = boost::dynamic_pointer_cast<KnobDouble>(centerK);
-    
-    KnobPtr invertKnob = transformNode->getKnobByName(kTransformParamInvert);
-    assert(invertKnob);
-    KnobPtr invertK = invertKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, invertKnob->getName(), invertKnob->getLabel(), invertKnob->getHintToolTip(), false, false);
-    invertTransform = boost::dynamic_pointer_cast<KnobBool>(invertK);
-    
-    
-    KnobPtr filterKnob = transformNode->getKnobByName(kTransformParamFilter);
-    assert(filterKnob);
-    KnobPtr filterK = filterKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, filterKnob->getName(), filterKnob->getLabel(), filterKnob->getHintToolTip(), false, false);
-    filterK->setAddNewLine(false);
-    filter = boost::dynamic_pointer_cast<KnobChoice>(filterK);
-    
-    KnobPtr clampKnob = transformNode->getKnobByName(kTransformParamClamp);
-    assert(clampKnob);
-    KnobPtr clampK = clampKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, clampKnob->getName(), clampKnob->getLabel(), clampKnob->getHintToolTip(), false, false);
-    clampK->setAddNewLine(false);
-    clamp = boost::dynamic_pointer_cast<KnobBool>(clampK);
-    
-    KnobPtr boKnob = transformNode->getKnobByName(kTransformParamBlackOutside);
-    assert(boKnob);
-    KnobPtr boK = boKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, boKnob->getName(), boKnob->getLabel(), boKnob->getHintToolTip(), false, false);
-    blackOutside = boost::dynamic_pointer_cast<KnobBool>(boK);
-    
-    KnobPtr mbKnob = transformNode->getKnobByName(kTransformParamMotionBlur);
-    assert(mbKnob);
-    KnobPtr mbK = mbKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, mbKnob->getName(), mbKnob->getLabel(), mbKnob->getHintToolTip(), false, false);
-    motionBlur = boost::dynamic_pointer_cast<KnobDouble>(mbK);
-    
-    KnobPtr shutterKnob = transformNode->getKnobByName(kTransformParamShutter);
-    assert(shutterKnob);
-    KnobPtr shutterK = shutterKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, shutterKnob->getName(), shutterKnob->getLabel(), shutterKnob->getHintToolTip(), false, false);
-    shutter = boost::dynamic_pointer_cast<KnobDouble>(shutterK);
-    
-    KnobPtr shutterOffKnob = transformNode->getKnobByName(kTransformParamShutterOffset);
-    assert(shutterOffKnob);
-    KnobPtr shutterOffK = shutterOffKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, shutterOffKnob->getName(), shutterOffKnob->getLabel(), shutterOffKnob->getHintToolTip(), false, false);
-    shutterOffK->setAddNewLine(false);
-    shutterOffset = boost::dynamic_pointer_cast<KnobChoice>(shutterOffK);
-    
-    KnobPtr customShutterKnob = transformNode->getKnobByName(kTransformParamCustomShutterOffset);
-    assert(customShutterKnob);
-    KnobPtr customShutterK = customShutterKnob->createDuplicateOnNode(effect.get(), transformPage, boost::shared_ptr<KnobGroup>(), -1, true, customShutterKnob->getName(), customShutterKnob->getLabel(), customShutterKnob->getHintToolTip(), false, false);
-    customShutterOffset = boost::dynamic_pointer_cast<KnobDouble>(customShutterK);
-    
-    node->addTransformInteract(translate.lock(), scale.lock(), scaleUniform.lock(), rotate.lock(), skewX.lock(), skewY.lock(), skewOrder.lock(), center.lock());
+    boost::shared_ptr<KnobButton> exportButtonKnob = AppManager::createKnob<KnobButton>(effect.get(), kTrackerParamExportButtonLabel, 1);
+    exportButtonKnob->setName(kTrackerParamExportButton);
+    exportButtonKnob->setHintToolTip(kTrackerParamExportButtonHint);
+    transformPage->addKnob(exportButtonKnob);
+    exportButton = exportButtonKnob;
 }
 
 
@@ -388,7 +492,7 @@ TrackArgsLibMV::getRedrawAreasNeeded(int time, std::list<RectD>* canonicalRects)
         boost::shared_ptr<KnobDouble> centerKnob = (*it)->natronMarker->getCenterKnob();
         boost::shared_ptr<KnobDouble> offsetKnob = (*it)->natronMarker->getOffsetKnob();
         
-        Natron::Point offset,center,btmLeft,topRight;
+        Point offset,center,btmLeft,topRight;
         offset.x = offsetKnob->getValueAtTime(time, 0);
         offset.y = offsetKnob->getValueAtTime(time, 1);
         
@@ -432,20 +536,20 @@ TrackerContextPrivate::setKnobKeyframesFromMarker(const mv::Marker& mvMarker,
         errorKnob->setValueAtTime(time, 0., ViewSpec::current(), 0);
     }
     
-    Natron::Point center;
+    Point center;
     center.x = (double)mvMarker.center(0);
     center.y = (double)TrackerFrameAccessor::invertYCoordinate(mvMarker.center(1), formatHeight);
     
     boost::shared_ptr<KnobDouble> offsetKnob = natronMarker->getOffsetKnob();
-    Natron::Point offset;
+    Point offset;
     offset.x = offsetKnob->getValueAtTime(time,0);
     offset.y = offsetKnob->getValueAtTime(time,1);
     
     // Set the center
     boost::shared_ptr<KnobDouble> centerKnob = natronMarker->getCenterKnob();
-    centerKnob->setValuesAtTime(time, center.x, center.y, ViewSpec::current(), Natron::eValueChangedReasonNatronInternalEdited);
+    centerKnob->setValuesAtTime(time, center.x, center.y, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
     
-    Natron::Point topLeftCorner,topRightCorner,btmRightCorner,btmLeftCorner;
+    Point topLeftCorner,topRightCorner,btmRightCorner,btmLeftCorner;
     topLeftCorner.x = mvMarker.patch.coordinates(0,0) - offset.x - center.x;
     topLeftCorner.y = TrackerFrameAccessor::invertYCoordinate(mvMarker.patch.coordinates(0,1),formatHeight) - offset.y - center.y;
     
@@ -464,10 +568,10 @@ TrackerContextPrivate::setKnobKeyframesFromMarker(const mv::Marker& mvMarker,
     boost::shared_ptr<KnobDouble> pntBtmRightKnob = natronMarker->getPatternBtmRightKnob();
     
     // Set the pattern Quad
-    pntTopLeftKnob->setValuesAtTime(time, topLeftCorner.x, topLeftCorner.y, ViewSpec::current(), Natron::eValueChangedReasonNatronInternalEdited);
-    pntTopRightKnob->setValuesAtTime(time, topRightCorner.x, topRightCorner.y, ViewSpec::current(), Natron::eValueChangedReasonNatronInternalEdited);
-    pntBtmLeftKnob->setValuesAtTime(time, btmLeftCorner.x, btmLeftCorner.y,ViewSpec::current(), Natron::eValueChangedReasonNatronInternalEdited);
-    pntBtmRightKnob->setValuesAtTime(time, btmRightCorner.x, btmRightCorner.y, ViewSpec::current(),Natron::eValueChangedReasonNatronInternalEdited);
+    pntTopLeftKnob->setValuesAtTime(time, topLeftCorner.x, topLeftCorner.y, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
+    pntTopRightKnob->setValuesAtTime(time, topRightCorner.x, topRightCorner.y, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
+    pntBtmLeftKnob->setValuesAtTime(time, btmLeftCorner.x, btmLeftCorner.y,ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
+    pntBtmRightKnob->setValuesAtTime(time, btmRightCorner.x, btmRightCorner.y, ViewSpec::current(),eValueChangedReasonNatronInternalEdited);
 }
 
 
@@ -512,7 +616,7 @@ TrackerContextPrivate::natronTrackerToLibMVTracker(bool useRefFrameForSearchWind
     } else {
         mvMarker->source = mv::Marker::TRACKED;
     }
-    Natron::Point nCenter;
+    Point nCenter;
     nCenter.x = centerKnob->getValueAtTime(time, 0);
     nCenter.y = centerKnob->getValueAtTime(time, 1);
     mvMarker->center(0) = nCenter.x;
@@ -526,7 +630,7 @@ TrackerContextPrivate::natronTrackerToLibMVTracker(bool useRefFrameForSearchWind
     (trackChannels[1] ? LIBMV_MARKER_CHANNEL_G : 0) |
     (trackChannels[2] ? LIBMV_MARKER_CHANNEL_B : 0);
     
-    Natron::Point searchWndBtmLeft,searchWndTopRight;
+    Point searchWndBtmLeft,searchWndTopRight;
     int searchWinTime = useRefFrameForSearchWindow ? mvMarker->reference_frame : time;
     searchWndBtmLeft.x = searchWindowBtmLeftKnob->getValueAtTime(searchWinTime, 0);
     searchWndBtmLeft.y = searchWindowBtmLeftKnob->getValueAtTime(searchWinTime, 1);
@@ -534,12 +638,12 @@ TrackerContextPrivate::natronTrackerToLibMVTracker(bool useRefFrameForSearchWind
     searchWndTopRight.x = searchWindowTopRightKnob->getValueAtTime(searchWinTime, 0);
     searchWndTopRight.y = searchWindowTopRightKnob->getValueAtTime(searchWinTime, 1);
     
-    Natron::Point offset;
+    Point offset;
     offset.x = offsetKnob->getValueAtTime(time,0);
     offset.y = offsetKnob->getValueAtTime(time,1);
     
     
-    Natron::Point tl,tr,br,bl;
+    Point tl,tr,br,bl;
     tl.x = patternTopLeftKnob->getValueAtTime(time, 0);
     tl.y = patternTopLeftKnob->getValueAtTime(time, 1);
     
@@ -902,7 +1006,7 @@ TrackerContextPrivate::linkMarkerKnobsToGuiKnobs(const std::list<TrackMarkerPtr 
             }
             
             if (!slave) {
-                QObject::disconnect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,ViewSpec,int,bool)),
+                QObject::disconnect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,ViewSpec,int,int,bool)),
                                     _publicInterface, SLOT(onSelectedKnobCurveChanged()));
                 QObject::disconnect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(double,ViewSpec,int,int)),
                                     _publicInterface, SLOT(onSelectedKnobCurveChanged()));
@@ -917,7 +1021,7 @@ TrackerContextPrivate::linkMarkerKnobsToGuiKnobs(const std::list<TrackMarkerPtr 
                                     _publicInterface, SLOT(onSelectedKnobCurveChanged()));
                 
             } else {
-                QObject::connect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,ViewSpec,int,bool)),
+                QObject::connect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,ViewSpec,int,int,bool)),
                                  _publicInterface, SLOT(onSelectedKnobCurveChanged()));
                 QObject::connect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(double,ViewSpec,int,int)),
                                  _publicInterface, SLOT(onSelectedKnobCurveChanged()));
@@ -941,28 +1045,13 @@ TrackerContextPrivate::linkMarkerKnobsToGuiKnobs(const std::list<TrackMarkerPtr 
 
 
 
-static
-boost::shared_ptr<KnobDouble>
-getCornerPinPoint(Node* node,
-                  bool isFrom,
-                  int index)
-{
-    assert(0 <= index && index < 4);
-    QString name = isFrom ? QString::fromUtf8("from%1").arg(index + 1) : QString::fromUtf8("to%1").arg(index + 1);
-    boost::shared_ptr<KnobI> knob = node->getKnobByName( name.toStdString() );
-    assert(knob);
-    boost::shared_ptr<KnobDouble>  ret = boost::dynamic_pointer_cast<KnobDouble>(knob);
-    assert(ret);
-    return ret;
-}
+
 
 void
 TrackerContextPrivate::createCornerPinFromSelection(const std::list<TrackMarkerPtr > & selection,
-                                                    bool linked,
-                                                    bool useTransformRefFrame,
-                                                    bool invert)
+                                                    bool linked)
 {
-    if (selection.size() > 4 || selection.empty()) {
+        if (selection.size() > 4 || selection.empty()) {
         Dialogs::errorDialog(QObject::tr("Export").toStdString(),
                              QObject::tr("Export to corner pin needs between 1 and 4 selected tracks.").toStdString());
         
@@ -994,7 +1083,7 @@ TrackerContextPrivate::createCornerPinFromSelection(const std::list<TrackMarkerP
     cornerPin->setPosition(thisNodePos[0] + thisNodeSize[0] * 2., thisNodePos[1]);
     
     
-    boost::shared_ptr<KnobDouble> toPoints[4];
+    /*boost::shared_ptr<KnobDouble> toPoints[4];
     boost::shared_ptr<KnobDouble> fromPoints[4];
     
     int timeForFromPoints = useTransformRefFrame ? _publicInterface->getTransformReferenceFrame() : app->getTimeLine()->currentFrame();
@@ -1030,21 +1119,32 @@ TrackerContextPrivate::createCornerPinFromSelection(const std::list<TrackMarkerP
         enableKnob->setValue(false, ViewSpec(0), 0);
     }
     
-    if (invert) {
+    if (motionType == eTrackerMotionTypeStabilize) {
         KnobPtr invertKnob = cornerPin->getKnobByName(kCornerPinInvertParamName);
         assert(invertKnob);
         KnobBool* isBool = dynamic_cast<KnobBool*>(invertKnob.get());
         assert(isBool);
         isBool->setValue(true, ViewSpec(0), 0);
     }
-    
+    */
 }
 
 void
 TrackerContextPrivate::createTransformFromSelection(const std::list<TrackMarkerPtr > & selection,
-                                                    bool linked,
-                                                    bool invert)
+                                                    bool linked)
 {
+    boost::shared_ptr<KnobChoice> motionTypeKnob = motionType.lock();
+    if (!motionTypeKnob) {
+        return;
+    }
+    int motionType_i = motionTypeKnob->getValue();
+    TrackerMotionTypeEnum mt = (TrackerMotionTypeEnum)motionType_i;
+
+    if (mt == eTrackerMotionTypeNone) {
+        Dialogs::errorDialog(QObject::tr("Tracker Export").toStdString(), QObject::tr("Please select the export mode with the Transform Type parameter").toStdString());
+        return;
+    }
+
     NodePtr thisNode = node.lock();
     
     AppInstance* app = thisNode->getApp();
@@ -1065,6 +1165,62 @@ TrackerContextPrivate::createTransformFromSelection(const std::list<TrackMarkerP
 #pragma message WARN("TODO")
 }
 
+
+void
+TrackerContextPrivate::refreshVisibilityFromTransformTypeInternal(TrackerTransformNodeEnum transformType)
+{
+    if (!transformNode.lock()) {
+        return;
+    }
+    
+    boost::shared_ptr<KnobChoice> motionTypeKnob = motionType.lock();
+    if (!motionTypeKnob) {
+        return;
+    }
+    int motionType_i = motionTypeKnob->getValue();
+    TrackerMotionTypeEnum motionType = (TrackerMotionTypeEnum)motionType_i;
+    
+    transformNode.lock()->setNodeDisabled(transformType == eTrackerTransformNodeCornerPin || motionType == eTrackerMotionTypeNone);
+    cornerPinNode.lock()->setNodeDisabled(transformType == eTrackerTransformNodeTransform || motionType == eTrackerMotionTypeNone);
+    
+    if (transformType == eTrackerTransformNodeTransform) {
+        transformControlsSeparator.lock()->setLabel("Transform Controls");
+    } else if (transformType == eTrackerTransformNodeCornerPin) {
+        transformControlsSeparator.lock()->setLabel("CornerPin Controls");
+    }
+    
+    smoothTransform.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin);
+    smoothCornerPin.lock()->setSecret(transformType == eTrackerTransformNodeTransform);
+    
+    toGroup.lock()->setSecret(transformType == eTrackerTransformNodeTransform);
+    fromGroup.lock()->setSecret(transformType == eTrackerTransformNodeTransform);
+    cornerPinOverlayPoints.lock()->setSecret(transformType == eTrackerTransformNodeTransform);
+    cornerPinMatrix.lock()->setSecret(transformType == eTrackerTransformNodeTransform);
+    
+    translate.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin);
+    scale.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin);
+    scaleUniform.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin);
+    rotate.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin);
+    center.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin);
+    skewX.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin);
+    skewY.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin);
+    skewOrder.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin);
+    filter.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin);
+    clamp.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin);
+    blackOutside.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin);
+}
+
+void
+TrackerContextPrivate::refreshVisibilityFromTransformType()
+{
+   
+    boost::shared_ptr<KnobChoice> transformTypeKnob = transformType.lock();
+    assert(transformTypeKnob);
+    int transformType_i = transformTypeKnob->getValue();
+    TrackerTransformNodeEnum transformType = (TrackerTransformNodeEnum)transformType_i;
+    refreshVisibilityFromTransformTypeInternal(transformType);
+    
+}
 
 
 NATRON_NAMESPACE_EXIT;

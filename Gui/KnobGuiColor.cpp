@@ -351,7 +351,7 @@ KnobGuiColor::_show()
 void
 KnobGuiColor::updateExtraGui(const std::vector<double>& values)
 {
-    assert(values.size() >= 0);
+    assert(values.size() > 0);
     double r = values[0];
     double g = r;
     double b = r;

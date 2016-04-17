@@ -288,7 +288,17 @@ WriteNodePrivate::cloneGenericKnobs()
         KnobPtr serializedKnob = (*it)->getKnob();
         for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
             if ((*it2)->getName() == serializedKnob->getName()) {
-                (*it2)->clone(serializedKnob.get());
+                KnobChoice* isChoice = dynamic_cast<KnobChoice*>((*it2).get());
+                KnobChoice* serializedIsChoice = dynamic_cast<KnobChoice*>(serializedKnob.get());;
+                if (isChoice && serializedIsChoice) {
+                    const ChoiceExtraData* extraData = dynamic_cast<const ChoiceExtraData*>((*it)->getExtraData());
+                    assert(extraData);
+                    if (extraData) {
+                        isChoice->choiceRestoration(serializedIsChoice, extraData);
+                    }
+                } else {
+                    (*it2)->clone(serializedKnob.get());
+                }
                 break;
             }
         }
@@ -857,7 +867,7 @@ WriteNode::onEffectCreated(bool mayCreateFileDialog, const std::list<boost::shar
         //The user selected a file, if it fails to read do not create the node
         throwErrors = true;
     } else {
-        
+        pattern = getFileNameFromSerialization(defaultParamValues);
     }
     
     _imp->createWriteNode(throwErrors, pattern, boost::shared_ptr<NodeSerialization>());

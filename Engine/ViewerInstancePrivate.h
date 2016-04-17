@@ -404,7 +404,7 @@ public:
      * @brief If set, the viewport center will be updated to this point upon the next update of the texture, this is protected by
      * viewerParamsMutex
      */
-    Natron::Point viewportCenter;
+    Point viewportCenter;
     bool viewportCenterSet;
     
     //True if during tracking

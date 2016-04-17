@@ -172,19 +172,6 @@ namespace { // protect local classes in anonymous namespace
         }
         
     };
-    
-    struct NativeTransformOverlayKnobs
-    {
-        boost::shared_ptr<KnobDouble> translate;
-        boost::shared_ptr<KnobDouble> scale;
-        boost::shared_ptr<KnobBool> scaleUniform;
-        boost::shared_ptr<KnobDouble> rotate;
-        boost::shared_ptr<KnobDouble> skewX;
-        boost::shared_ptr<KnobDouble> skewY;
-        boost::shared_ptr<KnobChoice> skewOrder;
-        boost::shared_ptr<KnobDouble> center;
-    };
-    
  
     
     struct FormatKnob {
@@ -298,8 +285,7 @@ struct Node::Implementation
     , persistentMessageType(0)
     , persistentMessageMutex()
     , guiPointer()
-    , nativePositionOverlays()
-    , nativeTransformOverlays()
+    , nativeOverlays()
     , nodeCreated(false)
     , createdComponentsMutex()
     , createdComponents()
@@ -536,8 +522,7 @@ struct Node::Implementation
     
     boost::weak_ptr<NodeGuiI> guiPointer;
     
-    std::list<boost::shared_ptr<KnobDouble> > nativePositionOverlays;
-    std::list<NativeTransformOverlayKnobs> nativeTransformOverlays;
+    std::list<boost::shared_ptr<HostOverlayKnobs> > nativeOverlays;
     
     
     bool nodeCreated;
@@ -629,6 +614,12 @@ Node::Node(AppInstance* app,
     QObject::connect(this, SIGNAL(mustDequeueActions()), this, SLOT(dequeueActions()));
     QObject::connect(this, SIGNAL(mustComputeHashOnMainThread()), this, SLOT(doComputeHashOnMainThread()));
     QObject::connect(this, SIGNAL(refreshIdentityStateRequested()), this, SLOT(onRefreshIdentityStateRequestReceived()), Qt::QueuedConnection);
+}
+
+bool
+Node::isPartOfProject() const
+{
+    return _imp->isPartOfProject;
 }
 
 void
@@ -3919,7 +3910,7 @@ Node::handleFormatKnob(KnobI* knob)
     
     _imp->effect->beginChanges();
     size->blockValueChanges();
-    size->setValues(f.width(), f.height(), ViewSpec::all(), Natron::eValueChangedReasonNatronInternalEdited);
+    size->setValues(f.width(), f.height(), ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
     size->unblockValueChanges();
     par->blockValueChanges();
     par->setValue(f.getPixelAspectRatio());
@@ -3944,10 +3935,11 @@ Node::refreshFormatParamChoice(const std::vector<std::string>& entries, int defV
         if (curIndex < (int)entries.size()) {
             choice->setValue(curIndex);
         }
-    } else {
-        //changedKnob was not called because we are initializing knobs
-        handleFormatKnob(choice.get());
     }
+    
+    //changedKnob was not called because we are initializing knobs
+    handleFormatKnob(choice.get());
+    
     choice->endChanges();
 }
 
@@ -5957,6 +5949,8 @@ Node::makePreviewImage(SequenceTime time,
         return false;
     }
     
+    effect->clearPersistentMessage(false);
+    
     StatusEnum stat = effect->getRegionOfDefinition_public(nodeHash, time, scale, ViewIdx(0), &rod, &isProjectFormat);
     if ( (stat == eStatusFailed) || rod.isNull() ) {
         return false;
@@ -7237,98 +7231,142 @@ Node::getOverlayColor(double* r,double* g,double* b) const
 bool
 Node::shouldDrawOverlay() const
 {
-    boost::shared_ptr<NodeGuiI> gui_i = getNodeGui();
-    if (!gui_i) {
+    
+    if (!hasOverlay() && !getRotoContext()) {
         return false;
     }
-    return gui_i->shouldDrawOverlay();
+    
+    if (!_imp->isPartOfProject) {
+        return false;
+    }
+    
+    if (!isActivated()) {
+        return false;
+    }
+    
+    if (isNodeDisabled()) {
+        return false;
+    }
+    
+    if (getParentMultiInstance()) {
+        return false;
+    }
+    
+    if (!isSettingsPanelVisible()) {
+        return false;
+    }
+    
+    if (isSettingsPanelMinimized()) {
+        return false;
+    }
+    
+    
+    return true;
 }
 
 void
-Node::drawHostOverlay(double time, const RenderScale & renderScale)
+Node::drawHostOverlay(double time,
+                      const RenderScale& renderScale,
+                      ViewIdx view)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
-        nodeGui->drawHostOverlay(time, renderScale);
+        nodeGui->drawHostOverlay(time, renderScale, view);
     }
 }
 
 bool
-Node::onOverlayPenDownDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure)
+Node::onOverlayPenDownDefault(double time,
+                              const RenderScale& renderScale,
+                              ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
-        return nodeGui->onOverlayPenDownDefault(renderScale, viewportPos, pos, pressure);
-    }
-    return false;
-}
-
-bool
-Node::onOverlayPenMotionDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure)
-{
-    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
-    if (nodeGui) {
-        return nodeGui->onOverlayPenMotionDefault(renderScale, viewportPos, pos, pressure);
+        return nodeGui->onOverlayPenDownDefault(time ,renderScale, view, viewportPos, pos, pressure);
     }
     return false;
 }
 
 bool
-Node::onOverlayPenUpDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure)
+Node::onOverlayPenMotionDefault(double time,
+                                const RenderScale& renderScale,
+                                ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
-        return nodeGui->onOverlayPenUpDefault(renderScale, viewportPos, pos, pressure);
+        return nodeGui->onOverlayPenMotionDefault(time ,renderScale, view, viewportPos, pos, pressure);
     }
     return false;
 }
 
 bool
-Node::onOverlayKeyDownDefault(const RenderScale & renderScale, Key key, KeyboardModifiers modifiers)
+Node::onOverlayPenUpDefault(double time,
+                            const RenderScale& renderScale,
+                            ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
-        return nodeGui->onOverlayKeyDownDefault(renderScale, key, modifiers);
+        return nodeGui->onOverlayPenUpDefault(time ,renderScale, view, viewportPos, pos, pressure);
     }
     return false;
 }
 
 bool
-Node::onOverlayKeyUpDefault(const RenderScale & renderScale, Key key, KeyboardModifiers modifiers)
+Node::onOverlayKeyDownDefault(double time,
+                              const RenderScale& renderScale,
+                              ViewIdx view, Key key, KeyboardModifiers modifiers)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
-        return nodeGui->onOverlayKeyUpDefault(renderScale, key, modifiers);
+        return nodeGui->onOverlayKeyDownDefault(time ,renderScale, view, key, modifiers);
     }
     return false;
 }
 
 bool
-Node::onOverlayKeyRepeatDefault(const RenderScale & renderScale, Key key, KeyboardModifiers modifiers)
+Node::onOverlayKeyUpDefault(double time,
+                            const RenderScale& renderScale,
+                            ViewIdx view, Key key, KeyboardModifiers modifiers)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
-        return nodeGui->onOverlayKeyRepeatDefault(renderScale, key, modifiers);
+        return nodeGui->onOverlayKeyUpDefault(time ,renderScale, view, key, modifiers);
     }
     return false;
 }
 
 bool
-Node::onOverlayFocusGainedDefault(const RenderScale & renderScale)
+Node::onOverlayKeyRepeatDefault(double time,
+                                const RenderScale& renderScale,
+                                ViewIdx view, Key key, KeyboardModifiers modifiers)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
-        return nodeGui->onOverlayFocusGainedDefault(renderScale);
+        return nodeGui->onOverlayKeyRepeatDefault(time ,renderScale, view, key, modifiers);
     }
     return false;
 }
 
 bool
-Node::onOverlayFocusLostDefault(const RenderScale & renderScale)
+Node::onOverlayFocusGainedDefault(double time,
+                                  const RenderScale& renderScale,
+                                  ViewIdx view)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
-        return nodeGui->onOverlayFocusLostDefault(renderScale);
+        return nodeGui->onOverlayFocusGainedDefault(time, renderScale, view);
+    }
+    return false;
+}
+
+bool
+Node::onOverlayFocusLostDefault(double time,
+                                const RenderScale& renderScale,
+                                ViewIdx view)
+{
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    if (nodeGui) {
+        return nodeGui->onOverlayFocusLostDefault(time ,renderScale, view);
     }
     return false;
 }
@@ -7343,17 +7381,24 @@ Node::removePositionHostOverlay(KnobI* knob)
 }
 
 void
-Node::addDefaultPositionOverlay(const boost::shared_ptr<KnobDouble>& position)
+Node::addPositionInteract(const boost::shared_ptr<KnobDouble>& position,
+                          const boost::shared_ptr<KnobBool>& interactive)
 {
     assert(QThread::currentThread() == qApp->thread());
     if (appPTR->isBackground()) {
         return;
     }
+    
+    boost::shared_ptr<PositionOverlayKnobs> knobs(new PositionOverlayKnobs());
+    knobs->addKnob(position, PositionOverlayKnobs::eKnobsEnumerationPosition);
+    if (interactive) {
+        knobs->addKnob(interactive, PositionOverlayKnobs::eKnobsEnumerationInteractive);
+    }
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (!nodeGui) {
-        _imp->nativePositionOverlays.push_back(position);
-    } else if (position->getDimension() == 2) {
-        nodeGui->addDefaultPositionInteract(position);
+        _imp->nativeOverlays.push_back(knobs);
+    } else {
+        nodeGui->addDefaultInteract(knobs);
     }
 }
 
@@ -7365,28 +7410,90 @@ Node::addTransformInteract(const boost::shared_ptr<KnobDouble>& translate,
                           const boost::shared_ptr<KnobDouble>& skewX,
                           const boost::shared_ptr<KnobDouble>& skewY,
                           const boost::shared_ptr<KnobChoice>& skewOrder,
-                          const boost::shared_ptr<KnobDouble>& center)
+                          const boost::shared_ptr<KnobDouble>& center,
+                           const boost::shared_ptr<KnobBool>& invert,
+                           const boost::shared_ptr<KnobBool>& interactive)
 {
     assert(QThread::currentThread() == qApp->thread());
     if (appPTR->isBackground()) {
         return;
     }
+    
+    boost::shared_ptr<TransformOverlayKnobs> knobs(new TransformOverlayKnobs());
+    knobs->addKnob(translate, TransformOverlayKnobs::eKnobsEnumerationTranslate);
+    knobs->addKnob(scale, TransformOverlayKnobs::eKnobsEnumerationScale);
+    knobs->addKnob(scaleUniform, TransformOverlayKnobs::eKnobsEnumerationUniform);
+    knobs->addKnob(rotate, TransformOverlayKnobs::eKnobsEnumerationRotate);
+    knobs->addKnob(center, TransformOverlayKnobs::eKnobsEnumerationCenter);
+    knobs->addKnob(skewX, TransformOverlayKnobs::eKnobsEnumerationSkewx);
+    knobs->addKnob(skewY, TransformOverlayKnobs::eKnobsEnumerationSkewy);
+    knobs->addKnob(skewOrder, TransformOverlayKnobs::eKnobsEnumerationSkewOrder);
+    if (invert) {
+        knobs->addKnob(invert, TransformOverlayKnobs::eKnobsEnumerationInvert);
+    }
+    if (interactive) {
+        knobs->addKnob(interactive, PositionOverlayKnobs::eKnobsEnumerationInteractive);
+    }
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (!nodeGui) {
-        NativeTransformOverlayKnobs t;
-        t.translate = translate;
-        t.scale = scale;
-        t.scaleUniform = scaleUniform;
-        t.rotate = rotate;
-        t.skewX = skewX;
-        t.skewY = skewY;
-        t.skewOrder = skewOrder;
-        t.center = center;
-        _imp->nativeTransformOverlays.push_back(t);
+        _imp->nativeOverlays.push_back(knobs);
     } else {
-        nodeGui->addTransformInteract(translate, scale, scaleUniform, rotate, skewX, skewY, skewOrder, center);
+        nodeGui->addDefaultInteract(knobs);
     }
 
+}
+
+void
+Node::addCornerPinInteract(const boost::shared_ptr<KnobDouble>& from1,
+                          const boost::shared_ptr<KnobDouble>& from2,
+                          const boost::shared_ptr<KnobDouble>& from3,
+                          const boost::shared_ptr<KnobDouble>& from4,
+                          const boost::shared_ptr<KnobDouble>& to1,
+                          const boost::shared_ptr<KnobDouble>& to2,
+                          const boost::shared_ptr<KnobDouble>& to3,
+                          const boost::shared_ptr<KnobDouble>& to4,
+                          const boost::shared_ptr<KnobBool>& enable1,
+                          const boost::shared_ptr<KnobBool>& enable2,
+                          const boost::shared_ptr<KnobBool>& enable3,
+                          const boost::shared_ptr<KnobBool>& enable4,
+                           const boost::shared_ptr<KnobChoice>& overlayPoints,
+                          const boost::shared_ptr<KnobBool>& invert,
+                          const boost::shared_ptr<KnobBool>& interactive)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    if (appPTR->isBackground()) {
+        return;
+    }
+    boost::shared_ptr<CornerPinOverlayKnobs> knobs(new CornerPinOverlayKnobs());
+    knobs->addKnob(from1, CornerPinOverlayKnobs::eKnobsEnumerationFrom1);
+    knobs->addKnob(from2, CornerPinOverlayKnobs::eKnobsEnumerationFrom2);
+    knobs->addKnob(from3, CornerPinOverlayKnobs::eKnobsEnumerationFrom3);
+    knobs->addKnob(from4, CornerPinOverlayKnobs::eKnobsEnumerationFrom4);
+    
+    knobs->addKnob(to1, CornerPinOverlayKnobs::eKnobsEnumerationTo1);
+    knobs->addKnob(to2, CornerPinOverlayKnobs::eKnobsEnumerationTo2);
+    knobs->addKnob(to3, CornerPinOverlayKnobs::eKnobsEnumerationTo3);
+    knobs->addKnob(to4, CornerPinOverlayKnobs::eKnobsEnumerationTo4);
+    
+    knobs->addKnob(enable1, CornerPinOverlayKnobs::eKnobsEnumerationEnable1);
+    knobs->addKnob(enable2, CornerPinOverlayKnobs::eKnobsEnumerationEnable2);
+    knobs->addKnob(enable3, CornerPinOverlayKnobs::eKnobsEnumerationEnable3);
+    knobs->addKnob(enable4, CornerPinOverlayKnobs::eKnobsEnumerationEnable4);
+    
+    knobs->addKnob(overlayPoints, CornerPinOverlayKnobs::eKnobsEnumerationOverlayPoints);
+    
+    if (invert) {
+        knobs->addKnob(invert, CornerPinOverlayKnobs::eKnobsEnumerationInvert);
+    }
+    if (interactive) {
+        knobs->addKnob(interactive, CornerPinOverlayKnobs::eKnobsEnumerationInteractive);
+    }
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    if (!nodeGui) {
+        _imp->nativeOverlays.push_back(knobs);
+    } else {
+        nodeGui->addDefaultInteract(knobs);
+    }
 }
 
 void
@@ -7396,16 +7503,10 @@ Node::initializeHostOverlays()
     if (!nodeGui) {
         return;
     }
-    for (std::list<boost::shared_ptr<KnobDouble> > ::iterator it = _imp->nativePositionOverlays.begin(); it != _imp->nativePositionOverlays.end(); ++it)
-    {
-        nodeGui->addDefaultPositionInteract(*it);
+    for (std::list<boost::shared_ptr<HostOverlayKnobs> > ::iterator it = _imp->nativeOverlays.begin(); it != _imp->nativeOverlays.end(); ++it) {
+        nodeGui->addDefaultInteract(*it);
     }
-    _imp->nativePositionOverlays.clear();
-    for (std::list<NativeTransformOverlayKnobs> ::iterator it = _imp->nativeTransformOverlays.begin(); it != _imp->nativeTransformOverlays.end(); ++it)
-    {
-        nodeGui->addTransformInteract(it->translate, it->scale, it->scaleUniform, it->rotate, it->skewX, it->skewY, it->skewOrder, it->center);
-    }
-    _imp->nativeTransformOverlays.clear();
+    _imp->nativeOverlays.clear();
 }
 
 void
@@ -8723,7 +8824,7 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view
                 //This image never changes, cache it once.
                 return true;
             }
-            if (output->isSettingsPanelOpened()) {
+            if (output->isSettingsPanelVisible()) {
                 //Output node has panel opened, meaning the user is likely to be heavily editing
                 //that output node, hence requesting this node a lot. Cache it.
                 return true;
@@ -8762,13 +8863,13 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view
                 return true;
             }
             
-            if (isRotoPaintingNode() && isSettingsPanelOpened()) {
+            if (isRotoPaintingNode() && isSettingsPanelVisible()) {
                 ///The Roto node is being edited, cache its output (special case because Roto has an internal node tree)
                 return true;
             }
             
             boost::shared_ptr<RotoDrawableItem> attachedStroke = _imp->paintStroke.lock();
-            if (attachedStroke && attachedStroke->getContext()->getNode()->isSettingsPanelOpened()) {
+            if (attachedStroke && attachedStroke->getContext()->getNode()->isSettingsPanelVisible()) {
                 ///Internal RotoPaint tree and the Roto node has its settings panel opened, cache it.
                 return true;
             }
@@ -8777,7 +8878,7 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view
             // outputs == 0, never cache, unless explicitly set or rotopaint internal node
             boost::shared_ptr<RotoDrawableItem> attachedStroke = _imp->paintStroke.lock();
             return isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled() ||
-            (attachedStroke && attachedStroke->getContext()->getNode()->isSettingsPanelOpened());
+            (attachedStroke && attachedStroke->getContext()->getNode()->isSettingsPanelVisible());
         }
     }
     
@@ -9161,7 +9262,17 @@ Node::isUserSelected() const
 }
 
 bool
-Node::isSettingsPanelOpenedInternal(std::set<const Node*>& recursionList) const
+Node::isSettingsPanelMinimized() const
+{
+    boost::shared_ptr<NodeGuiI> gui = _imp->guiPointer.lock();
+    if (!gui) {
+        return false;
+    }
+    return gui->isSettingsPanelMinimized();
+}
+
+bool
+Node::isSettingsPanelVisibleInternal(std::set<const Node*>& recursionList) const
 {
     boost::shared_ptr<NodeGuiI> gui = _imp->guiPointer.lock();
     if (!gui) {
@@ -9169,7 +9280,7 @@ Node::isSettingsPanelOpenedInternal(std::set<const Node*>& recursionList) const
     }
     NodePtr parent = _imp->multiInstanceParent.lock();
     if (parent) {
-        return parent->isSettingsPanelOpened();
+        return parent->isSettingsPanelVisible();
     }
     
     if (recursionList.find(this) != recursionList.end()) {
@@ -9180,23 +9291,23 @@ Node::isSettingsPanelOpenedInternal(std::set<const Node*>& recursionList) const
     {
         NodePtr master = getMasterNode();
         if (master) {
-            return master->isSettingsPanelOpened();
+            return master->isSettingsPanelVisible();
         }
         for (KnobLinkList::iterator it = _imp->nodeLinks.begin(); it != _imp->nodeLinks.end(); ++it) {
             NodePtr masterNode = it->masterNode.lock();
-            if (masterNode && masterNode.get() != this && masterNode->isSettingsPanelOpenedInternal(recursionList)) {
+            if (masterNode && masterNode.get() != this && masterNode->isSettingsPanelVisibleInternal(recursionList)) {
                 return true;
             }
         }
     }
-    return gui->isSettingsPanelOpened();
+    return gui->isSettingsPanelVisible();
 }
 
 bool
-Node::isSettingsPanelOpened() const
+Node::isSettingsPanelVisible() const
 {
     std::set<const Node*> tmplist;
-    return isSettingsPanelOpenedInternal(tmplist);
+    return isSettingsPanelVisibleInternal(tmplist);
 }
 
 
@@ -9742,7 +9853,7 @@ Node::checkForPremultWarningAndCheckboxes()
         }
     }
     
-    Natron::ImagePremultiplicationEnum premult = _imp->effect->getPremult();
+    ImagePremultiplicationEnum premult = _imp->effect->getPremult();
     
     //not premult
     if (premult != eImagePremultiplicationPremultiplied) {

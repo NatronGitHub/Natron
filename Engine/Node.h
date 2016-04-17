@@ -97,6 +97,12 @@ public:
 
     boost::shared_ptr<NodeCollection> getGroup() const;
     
+    /**
+     * @brief Returns true if this node is a "user" node. For internal invisible node, this would return false.
+     * If this function returns false, the node will not be serialized.
+     **/
+    bool isPartOfProject() const;
+    
     const Plugin* getPlugin() const;
     
     /**
@@ -547,12 +553,14 @@ public:
 
     boost::shared_ptr<NodeGuiI> getNodeGui() const;
     
-    bool isSettingsPanelOpened() const;
+    bool isSettingsPanelVisible() const;
+    
+    bool isSettingsPanelMinimized() const;
     
 private:
     
     
-    bool isSettingsPanelOpenedInternal(std::set<const Node*>& recursionList) const;
+    bool isSettingsPanelVisibleInternal(std::set<const Node*>& recursionList) const;
     
 public:
     
@@ -1075,25 +1083,44 @@ public:
     bool shouldDrawOverlay() const;
     
     
-    void drawHostOverlay(double time, const RenderScale & renderScale);
+    void drawHostOverlay(double time,
+                         const RenderScale& renderScale,
+                         ViewIdx view);
     
-    bool onOverlayPenDownDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
+    bool onOverlayPenDownDefault(double time,
+                                 const RenderScale& renderScale,
+                                 ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
     
-    bool onOverlayPenMotionDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
+    bool onOverlayPenMotionDefault(double time,
+                                   const RenderScale& renderScale,
+                                   ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
     
-    bool onOverlayPenUpDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
+    bool onOverlayPenUpDefault(double time,
+                               const RenderScale& renderScale,
+                               ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
     
-    bool onOverlayKeyDownDefault(const RenderScale & renderScale, Key key,KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyDownDefault(double time,
+                                 const RenderScale& renderScale,
+                                 ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
     
-    bool onOverlayKeyUpDefault(const RenderScale & renderScale, Key key,KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyUpDefault(double time,
+                               const RenderScale& renderScale,
+                               ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
     
-    bool onOverlayKeyRepeatDefault(const RenderScale & renderScale, Key key,KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyRepeatDefault(double time,
+                                   const RenderScale& renderScale,
+                                   ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
     
-    bool onOverlayFocusGainedDefault(const RenderScale & renderScale) WARN_UNUSED_RETURN;
+    bool onOverlayFocusGainedDefault(double time,
+                                     const RenderScale& renderScale,
+                                     ViewIdx view) WARN_UNUSED_RETURN;
     
-    bool onOverlayFocusLostDefault(const RenderScale & renderScale) WARN_UNUSED_RETURN;
+    bool onOverlayFocusLostDefault(double time,
+                                   const RenderScale& renderScale,
+                                   ViewIdx view) WARN_UNUSED_RETURN;
     
-    void addDefaultPositionOverlay(const boost::shared_ptr<KnobDouble>& position);
+    void addPositionInteract(const boost::shared_ptr<KnobDouble>& position,
+                             const boost::shared_ptr<KnobBool>& interactive);
     
     void addTransformInteract(const boost::shared_ptr<KnobDouble>& translate,
                               const boost::shared_ptr<KnobDouble>& scale,
@@ -1102,7 +1129,25 @@ public:
                               const boost::shared_ptr<KnobDouble>& skewX,
                               const boost::shared_ptr<KnobDouble>& skewY,
                               const boost::shared_ptr<KnobChoice>& skewOrder,
-                              const boost::shared_ptr<KnobDouble>& center);
+                              const boost::shared_ptr<KnobDouble>& center,
+                              const boost::shared_ptr<KnobBool>& invert,
+                              const boost::shared_ptr<KnobBool>& interactive);
+    
+    void addCornerPinInteract(const boost::shared_ptr<KnobDouble>& from1,
+                              const boost::shared_ptr<KnobDouble>& from2,
+                              const boost::shared_ptr<KnobDouble>& from3,
+                              const boost::shared_ptr<KnobDouble>& from4,
+                              const boost::shared_ptr<KnobDouble>& to1,
+                              const boost::shared_ptr<KnobDouble>& to2,
+                              const boost::shared_ptr<KnobDouble>& to3,
+                              const boost::shared_ptr<KnobDouble>& to4,
+                              const boost::shared_ptr<KnobBool>& enable1,
+                              const boost::shared_ptr<KnobBool>& enable2,
+                              const boost::shared_ptr<KnobBool>& enable3,
+                              const boost::shared_ptr<KnobBool>& enable4,
+                              const boost::shared_ptr<KnobChoice>& overlayPoints,
+                              const boost::shared_ptr<KnobBool>& invert,
+                              const boost::shared_ptr<KnobBool>& interactive);
     
     void removePositionHostOverlay(KnobI* knob);
     

@@ -59,7 +59,7 @@ struct TrackMarkerPrivate
     mutable QMutex trackMutex;
     std::set<int> userKeyframes;
     std::string trackScriptName,trackLabel;
-    bool enabled;
+    boost::weak_ptr<KnobBool> enabled;
     
     TrackMarkerPrivate(TrackMarker* publicInterface, const boost::shared_ptr<TrackerContext>& context)
     : context(context)
@@ -80,7 +80,7 @@ struct TrackMarkerPrivate
     , userKeyframes()
     , trackScriptName()
     , trackLabel()
-    , enabled(true)
+    , enabled()
     {
         boost::shared_ptr<KnobDouble> swbbtmLeft = AppManager::createKnob<KnobDouble>(publicInterface, kTrackerParamSearchWndBtmLeftLabel, 2, false);
         swbbtmLeft->setName(kTrackerParamSearchWndBtmLeft);
@@ -160,6 +160,13 @@ struct TrackMarkerPrivate
         boost::shared_ptr<KnobDouble> errKnob = AppManager::createKnob<KnobDouble>(publicInterface, kTrackerParamErrorLabel, 1, false);
         errKnob->setName(kTrackerParamError);
         error = errKnob;
+        
+        boost::shared_ptr<KnobBool> enableKnob = AppManager::createKnob<KnobBool>(publicInterface, kTrackerParamEnabledLabel, 1, false);
+        enableKnob->setName(kTrackerParamEnabled);
+        enableKnob->setHintToolTip(kTrackerParamEnabledHint);
+        enableKnob->setAnimationEnabled(true);
+        enableKnob->setDefaultValue(true);
+        enabled = enableKnob;
     }
 };
 
@@ -168,6 +175,7 @@ TrackMarker::TrackMarker(const boost::shared_ptr<TrackerContext>& context)
 , boost::enable_shared_from_this<TrackMarker>()
 , _imp(new TrackMarkerPrivate(this, context))
 {
+    QObject::connect(this, SIGNAL(enabledChanged(int)), context.get(), SLOT(onMarkerEnabledChanged(int)));
     boost::shared_ptr<KnobSignalSlotHandler> handler = _imp->center.lock()->getSignalSlotHandler();
     QObject::connect(handler.get(), SIGNAL(keyFrameSet(double,ViewSpec,int,int,bool)), this , SLOT(onCenterKeyframeSet(double,ViewSpec,int,int,bool)));
     QObject::connect(handler.get(), SIGNAL(keyFrameRemoved(double,ViewSpec,int,int)), this , SLOT(onCenterKeyframeRemoved(double,ViewSpec,int,int)));
@@ -209,6 +217,9 @@ TrackMarker::TrackMarker(const boost::shared_ptr<TrackerContext>& context)
     
     handler = _imp->searchWindowTopRight.lock()->getSignalSlotHandler();
     QObject::connect(handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onSearchTopRightKnobValueChanged(ViewSpec,int, int)));
+    
+    handler = _imp->enabled.lock()->getSignalSlotHandler();
+    QObject::connect(handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onEnabledValueChanged(ViewSpec,int, int)));
 }
 
 
@@ -245,7 +256,6 @@ void
 TrackMarker::load(const TrackSerialization& serialization)
 {
     QMutexLocker k(&_imp->trackMutex);
-    _imp->enabled = serialization._enabled;
     _imp->trackLabel = serialization._label;
     _imp->trackScriptName = serialization._scriptName;
     const KnobsVec& knobs = getKnobs();
@@ -267,7 +277,6 @@ void
 TrackMarker::save(TrackSerialization* serialization) const
 {
     QMutexLocker k(&_imp->trackMutex);
-    serialization->_enabled = _imp->enabled;
     serialization->_label = _imp->trackLabel;
     serialization->_scriptName = _imp->trackScriptName;
     KnobsVec knobs = getKnobs_mt_safe();
@@ -454,20 +463,35 @@ TrackMarker::getCenterKeyframes(std::set<double>* keyframes) const
 }
 
 bool
-TrackMarker::isEnabled() const
+TrackMarker::isEnabled(double time) const
 {
-    QMutexLocker k(&_imp->trackMutex);
-    return _imp->enabled;
+    return _imp->enabled.lock()->getValueAtTime(time, 0);
+}
+
+AnimationLevelEnum
+TrackMarker::getEnabledNessAnimationLevel() const
+{
+    return _imp->enabled.lock()->getAnimationLevel(0);
 }
 
 void
-TrackMarker::setEnabled(bool enabled, int reason)
+TrackMarker::setEnabledFromGui(double /*time*/, bool enabled)
 {
-    {
-        QMutexLocker k(&_imp->trackMutex);
-        _imp->enabled = enabled;
+
+    boost::shared_ptr<KnobBool> knob =_imp->enabled.lock();
+    if (!knob) {
+        return;
     }
-    getContext()->s_enabledChanged(shared_from_this(), reason);
+    KeyFrame k;
+    knob->onValueChanged(enabled, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, &k);
+    
+    
+}
+
+void
+TrackMarker::onEnabledValueChanged(ViewSpec, int /*dimension*/,int reason)
+{
+    Q_EMIT enabledChanged(reason);
 }
 
 int
@@ -516,11 +540,11 @@ TrackMarker::resetCenter()
         scale.x = scale.y = 1;
         RectD rod;
         bool isProjectFormat;
-        Natron::StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getHashValue(), time, scale, ViewIdx(0), &rod, &isProjectFormat);
-        Natron::Point center;
+        StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getHashValue(), time, scale, ViewIdx(0), &rod, &isProjectFormat);
+        Point center;
         center.x = 0;
         center.y = 0;
-        if (stat == Natron::eStatusOK) {
+        if (stat == eStatusOK) {
             center.x = (rod.x1 + rod.x2) / 2.;
             center.y = (rod.y1 + rod.y2) / 2.;
         }
@@ -545,7 +569,7 @@ void
 TrackMarker::resetTrack()
 {
     
-    Natron::Point curCenter;
+    Point curCenter;
     boost::shared_ptr<KnobDouble> knob = getCenterKnob();
     curCenter.x = knob->getValue(0);
     curCenter.y = knob->getValue(1);
@@ -714,7 +738,7 @@ TrackMarker::getMarkerImageRoI(int time) const
 {
     const unsigned int mipmapLevel = 0;
     
-    Natron::Point center,offset;
+    Point center,offset;
     boost::shared_ptr<KnobDouble> centerKnob = getCenterKnob();
     boost::shared_ptr<KnobDouble> offsetKnob = getOffsetKnob();
     center.x = centerKnob->getValueAtTime(time, 0);
@@ -744,7 +768,7 @@ TrackMarker::getMarkerImageRoI(int time) const
     return roi;
 }
 
-std::pair<boost::shared_ptr<Natron::Image>,RectI>
+std::pair<boost::shared_ptr<Image>,RectI>
 TrackMarker::getMarkerImage(int time, const RectI& roi) const
 {
     std::list<ImageComponents> components;
@@ -784,7 +808,7 @@ TrackMarker::getMarkerImage(int time, const RectI& roi) const
                                        roi,
                                        RectD(),
                                        components,
-                                       Natron::eImageBitDepthFloat,
+                                       eImageBitDepthFloat,
                                        false,
                                        node->getEffectInstance().get());
     std::map<ImageComponents,ImagePtr> planes;

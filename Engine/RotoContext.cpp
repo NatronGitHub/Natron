@@ -3197,7 +3197,7 @@ RotoContext::allocateAndRenderSingleDotStroke(int brushSizePixel, double brushHa
     double internalDotRadius, externalDotRadius, spacing;
     std::vector<std::pair<double,double> > opacityStops;
     
-    Natron::Point p;
+    Point p;
     p.x = brushSizePixel / 2.;
     p.y = brushSizePixel / 2.;
     

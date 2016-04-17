@@ -497,6 +497,8 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
             if (!existed) {
                 layout->addWidget(page->second.groupAsTab, page->second.currentRow, 0, 1, 2);
             }
+            
+            page->second.groupAsTab->refreshTabSecretNess(isGroup.get());
         } else {
             assert(parentIsGroup);
             assert(parentGui);
@@ -545,7 +547,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
                 
                 layout->addWidget(groupAsTab, page->second.currentRow, 0, 1, 2);
             }
-            
+            groupAsTab->refreshTabSecretNess(isGroup.get());
         }
         
     } else if (!ret->hasWidgetBeenCreated()) {
@@ -619,7 +621,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
         QWidget *labelContainer = 0;
         QHBoxLayout *labelLayout = 0;
 
-        const bool hasLabel = ret->isLabelVisible() && (isLabelKnob || !descriptionLabel.empty() || !labelIconFilePath.empty());
+        const bool hasLabel = ret->isLabelVisible() || isLabelKnob;
         if (hasLabel) {
             
             if (makeNewLine) {

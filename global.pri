@@ -149,6 +149,11 @@ unix:LIBS += $$QMAKE_LIBS_DYNLOAD
       }
     }
   }
+  openmp {
+    QMAKE_CXXFLAGS += -fopenmp
+    QMAKE_CFLAGS += -fopenmp
+    QMAKE_LFLAGS += -fopenmp
+   }
 }
 
 macx {

@@ -24,6 +24,7 @@
 
 #include <vector>
 #include <cmath>
+#include <cstdlib>
 #include <gtest/gtest.h>
 #include <openMVG/robust_estimation/robust_estimator_Prosac.hpp>
 
@@ -43,12 +44,6 @@ static void padd(std::vector<Point>& v, double x, double y)
     p.y = y;
 }
 
-static void padd(openMVG::Mat& m, double x, double y)
-{
-    m.resize(m.rows(), m.cols() + 1);
-    m(0, m.cols() -1) = x;
-    m(1, m.cols() -1) = y;
-}
 
 static void throwProsacError(ProsacReturnCodeEnum c, int nMinSamples) {
     switch (c) {
@@ -350,9 +345,10 @@ TEST(ModelSearch,SimilarityNPoints)
 
 static void computeHomography(int w1, int h1, int w2, int h2,
                               const openMVG::Mat3& H,
-                              int nbOutliers,
+                              const double outliersProp,
                               std::vector<Point>& x1,
                               std::vector<Point>* x2,
+                              int* nbOutliers,
                               openMVG::Mat3* model,
                               InliersVec* inliers)
 {
@@ -369,12 +365,23 @@ static void computeHomography(int w1, int h1, int w2, int h2,
         (*x2)[i].y = u(1);
     }
     
-    ASSERT_TRUE(nbOutliers < (int)x1.size());
+    assert(outliersProp >= 0 && outliersProp <= 1.);
+    *nbOutliers = x1.size() * outliersProp;
+    assert(*nbOutliers < (int)x1.size());
     
-    // Introduce outliers in x1
-    for (int i = 0; i < nbOutliers; ++i) {
-        x1[i].x = x1[i].x + i * 5.5;
-        x1[i].y = x1[i].y + 7.8;
+    // Introduce outliers in x1, set them so that there is a better probability to have inliers in the start of the point set so that Prosac works well
+    
+    // This is the probability that a sample is a outliers, the more we reach the end, the more it increases
+    *nbOutliers = 0;
+    for (std::size_t i = 0; i < x1.size(); ++i) {
+        double prob = (outliersProp * i) / (double)x1.size();
+        double s = std::rand() % 100;
+        bool isOutlier = s <= (prob * 100);
+        if (isOutlier) {
+            x1[i].x = x1[i].x + i * 5.5;
+            x1[i].y = x1[i].y + 7.8;
+            *nbOutliers = *nbOutliers + 1;
+        }
     }
     
     runProsacForModel<openMVG::robust::Homography2DSolver>(x1, *x2, w1, h1, w2, h2, model, inliers);
@@ -396,21 +403,21 @@ static void testHomography(std::vector<Point>& x1)
     0, 0,  1;
     
     const double outliersProp = x1.size() == 4 ? 0. : 0.2;
-    const int nbOutliers = x1.size() * outliersProp;
+    int nbOutliers;
     
     std::vector<Point> x2;
     openMVG::Mat3 foundModel;
     InliersVec inliers;
     try {
-        computeHomography(w1, h1, w2, h2, H, nbOutliers, x1, &x2, &foundModel, &inliers);
+        computeHomography(w1, h1, w2, h2, H, outliersProp, x1, &x2, &nbOutliers, &foundModel, &inliers);
     } catch (...) {
         ASSERT_TRUE(false);
     }
     ASSERT_TRUE(x1.size() == x2.size());
     
     
-    int originalInliers = std::accumulate(inliers.begin(), inliers.end(), 0);
-    EXPECT_EQ(originalInliers, (int)x1.size() - nbOutliers);
+    int nbInliers = std::accumulate(inliers.begin(), inliers.end(), 0);
+    EXPECT_EQ(nbInliers, (int)x1.size() - nbOutliers);
     
     // Check the found model
     for (int i = 0; i < H.rows(); ++i) {
@@ -424,9 +431,9 @@ TEST(ModelSearch,HomographyMinimal)
 {
     std::vector<Point> x1;
     padd(x1, 50, 50);
-    padd(x1, 70, 100);
-    padd(x1, 60, 100);
-    padd(x1, 90, 100);
+    padd(x1, 240, 60);
+    padd(x1, 223, 342);
+    padd(x1, 13, 310);
     testHomography(x1);
 }
 
@@ -438,8 +445,8 @@ TEST(ModelSearch,HomographyNPoints)
     
     std::srand(2000);
     for (int i = 0; i < n ; ++i) {
-        x1[i].x = rand() % 500;
-        x1[i].y = rand() % 500;
+        x1[i].x = std::rand() % 500 + 1;
+        x1[i].y = std::rand() % 500 + 1;
     }
     testHomography(x1);
 }

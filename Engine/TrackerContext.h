@@ -40,10 +40,12 @@
 #include <QThread>
 #include <QMutex>
 
+#include "Global/KeySymbols.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/RectI.h"
 #include "Engine/RectD.h"
 #include "Engine/ThreadPool.h"
+#include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -201,21 +203,9 @@ public:
         eTrackSelectionViewer,
         eTrackSelectionInternal,
     };
+  
     
-    enum TrackExportTypeEnum
-    {
-        eTrackExportTypeCornerPinThisFrame = 0,
-        eTrackExportTypeCornerPinRefFrame,
-        eTrackExportTypeCornerPinThisFrameBaked,
-        eTrackExportTypeCornerPinRefFrameBaked,
-        eTrackExportTypeTransformStabilize,
-        eTrackExportTypeTransformMatchMove,
-        eTrackExportTypeTransformStabilizeBaked,
-        eTrackExportTypeTransformMatchMoveBaked
-        
-    };
-    
-    TrackerContext(const boost::shared_ptr<Natron::Node> &node);
+    TrackerContext(const boost::shared_ptr<Node> &node);
     
     virtual ~TrackerContext();
     
@@ -224,7 +214,7 @@ public:
     void save(TrackerContextSerialization* serialization) const;
 
     
-    boost::shared_ptr<Natron::Node> getNode() const;
+    boost::shared_ptr<Node> getNode() const;
     
     TrackMarkerPtr createMarker();
     
@@ -256,6 +246,7 @@ public:
                       int end,
                       bool forward,
                       ViewerInstance* viewer);
+    
     
     void abortTracking();
     
@@ -304,6 +295,50 @@ public:
         bool hasRotationAndScale;
     };
     
+    struct CornerPinData
+    {
+        Transform::Matrix3x3 h;
+        int nbEnabledPoints;
+    };
+    
+    NodePtr getCurrentlySelectedTransformNode() const;
+    
+    void drawInternalNodesOverlay(double time,
+                                  const RenderScale& scale,
+                                  ViewIdx view,
+                                  OverlaySupport* viewer);
+    
+    bool onOverlayPenDownInternalNodes(double time,
+                                       const RenderScale & renderScale,
+                                       ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, OverlaySupport* viewer) WARN_UNUSED_RETURN;
+    
+    bool onOverlayPenMotionInternalNodes(double time,
+                                         const RenderScale & renderScale,
+                                         ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, OverlaySupport* viewer) WARN_UNUSED_RETURN;
+    
+    bool onOverlayPenUpInternalNodes(double time,
+                                     const RenderScale & renderScale,
+                                     ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, OverlaySupport* viewer) WARN_UNUSED_RETURN;
+    
+    bool onOverlayKeyDownInternalNodes(double time,
+                                       const RenderScale & renderScale,
+                                       ViewIdx view, Key key, KeyboardModifiers modifiers, OverlaySupport* viewer) WARN_UNUSED_RETURN;
+    
+    bool onOverlayKeyUpInternalNodes(double time,
+                                     const RenderScale & renderScale,
+                                     ViewIdx view, Key key, KeyboardModifiers modifiers, OverlaySupport* viewer) WARN_UNUSED_RETURN;
+    
+    bool onOverlayKeyRepeatInternalNodes(double time,
+                                         const RenderScale & renderScale,
+                                         ViewIdx view, Key key, KeyboardModifiers modifiers, OverlaySupport* viewer) WARN_UNUSED_RETURN;
+    
+    bool onOverlayFocusGainedInternalNodes(double time,
+                                           const RenderScale & renderScale,
+                                           ViewIdx view, OverlaySupport* viewer) WARN_UNUSED_RETURN;
+    
+    bool onOverlayFocusLostInternalNodes(double time,
+                                         const RenderScale & renderScale,
+                                         ViewIdx view, OverlaySupport* viewer) WARN_UNUSED_RETURN;
     
 private:
     
@@ -330,12 +365,30 @@ private:
                                                 bool jitterAdd,
                                                 const std::vector<TrackMarkerPtr>& markers,
                                                 TransformData* data);
+    
+    void computeCornerPinParamsFromTracksAtTime(double refTime,
+                                                double time,
+                                                int jitterPeriod,
+                                                bool jitterAdd,
+                                                const std::vector<TrackMarkerPtr>& markers,
+                                                CornerPinData* data);
+
+    
+    void computeTransformParamsFromTracks(double refTime,
+                                          const std::set<double>& keyframes,
+                                          int jitterPeriod,
+                                          bool jitterAdd,
+                                          const std::vector<TrackMarkerPtr>& allMarkers);
+    
+    void computeCornerParamsFromTracks(double refTime,
+                                       const std::set<double>& keyframes,
+                                       int jitterPeriod,
+                                       bool jitterAdd,
+                                       const std::vector<TrackMarkerPtr>& allMarkers);
 public:
     
     
-    void computeTransformParamsFromTracks(const std::vector<TrackMarkerPtr>& markers);
-    
-    void computeTransformParamsFromEnabledTracks();
+    void solveTransformParams();
 
 
     void exportTrackDataFromExportOptions();
@@ -383,6 +436,8 @@ public:
                                               int w1, int h1, int w2, int h2,
                                              Transform::Matrix3x3* fundamental);
     
+    void onKnobsLoaded();
+    
     void knobChanged(KnobI* k,
                      ValueChangedReasonEnum reason,
                      ViewSpec view,
@@ -417,9 +472,7 @@ public:
     
     void s_trackAboutToClone(const TrackMarkerPtr& marker) { Q_EMIT trackAboutToClone(marker); }
     void s_trackCloned(const TrackMarkerPtr& marker) { Q_EMIT trackCloned(marker); }
-    
-    void s_enabledChanged(TrackMarkerPtr marker,int reason) { Q_EMIT enabledChanged(marker, reason); }
-    
+        
     void s_centerKnobValueChanged(const TrackMarkerPtr& marker,int dimension,int reason) { Q_EMIT centerKnobValueChanged(marker,dimension,reason); }
     void s_offsetKnobValueChanged(const TrackMarkerPtr& marker,int dimension,int reason) { Q_EMIT offsetKnobValueChanged(marker,dimension,reason); }
     void s_errorKnobValueChanged(const TrackMarkerPtr& marker,int dimension,int reason) { Q_EMIT errorKnobValueChanged(marker,dimension,reason); }
@@ -440,7 +493,8 @@ public Q_SLOTS:
     
     void onSelectedKnobCurveChanged();
     
-    
+    void onMarkerEnabledChanged(int reason);
+
 Q_SIGNALS:
     
     void keyframeSetOnTrack(TrackMarkerPtr marker, int);
@@ -483,7 +537,6 @@ Q_SIGNALS:
     
     void onNodeInputChanged(int inputNb);
     
-
 
     
 private:

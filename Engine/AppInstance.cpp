@@ -1104,9 +1104,9 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     bool useInspector = isEntitledForInspector(plugin,ofxDesc);
     
     if (!useInspector) {
-        node.reset(new Node(this, args.addToProject ? args.group : boost::shared_ptr<NodeCollection>(), plugin));
+        node.reset(new Node(this, args.group, plugin));
     } else {
-        node.reset(new InspectorNode(this, args.addToProject ? args.group : boost::shared_ptr<NodeCollection>(), plugin));
+        node.reset(new InspectorNode(this, args.group, plugin));
     }
     
     {
@@ -1143,14 +1143,13 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     }
     
     
-    if (args.addToProject) {
+    //if (args.addToProject) {
         //Add the node to the project before loading it so it is present when the python script that registers a variable of the name
-        //of the node works
-        assert(args.group);
-        if (args.group) {
-            args.group->addNode(node);
-        }
+    //of the node works
+    if (args.group) {
+        args.group->addNode(node);
     }
+    //}
     assert(node);
     try {
         node->load(args);
@@ -1191,7 +1190,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
             qDebug() << message.c_str();
             errorDialog(title, message, false);
             
-            return boost::shared_ptr<Natron::Node>();
+            return boost::shared_ptr<Node>();
         }
     }
     
@@ -1215,7 +1214,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
             }
             onGroupCreationFinished(node, args.reason);
 
-        } else if (args.reason == eCreateNodeReasonUserCreate && !_imp->_creatingGroup) {
+        } else if (args.reason == eCreateNodeReasonUserCreate && !_imp->_creatingGroup && isGrp->getPluginID() == PLUGINID_NATRON_GROUP) {
             //if the node is a group and we're not loading the project, create one input and one output
             NodePtr input,output;
             

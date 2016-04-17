@@ -89,7 +89,7 @@ TrackArgsV1::getRedrawAreasNeeded(int time, std::list<RectD>* canonicalRects) co
         boost::shared_ptr<KnobDouble> centerKnob = boost::dynamic_pointer_cast<KnobDouble>(effect->getKnobByName("center"));
         boost::shared_ptr<KnobDouble> offsetKnob = boost::dynamic_pointer_cast<KnobDouble>(effect->getKnobByName("offset"));
         assert(searchBtmLeft  && searchTopRight && centerKnob && offsetKnob);
-        Natron::Point offset,center,btmLeft,topRight;
+        Point offset,center,btmLeft,topRight;
         offset.x = offsetKnob->getValueAtTime(time, 0);
         offset.y = offsetKnob->getValueAtTime(time, 1);
         
@@ -124,7 +124,7 @@ TrackerContext::trackStepV1(int trackIndex, const TrackArgsV1& args, int time)
 }
 
 
-TrackerContext::TrackerContext(const boost::shared_ptr<Natron::Node> &node)
+TrackerContext::TrackerContext(const boost::shared_ptr<Node> &node)
 : boost::enable_shared_from_this<TrackerContext>()
 , _imp(new TrackerContextPrivate(this, node))
 {
@@ -182,8 +182,8 @@ TrackerContext::goToPreviousKeyFrame(int time)
         }
     }
     if (minimum != INT_MIN) {
-        getNode()->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Natron::Node>());
-        getNode()->getApp()->getTimeLine()->seekFrame(minimum, false,  NULL, Natron::eTimelineChangeReasonPlaybackSeek);
+        getNode()->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Node>());
+        getNode()->getApp()->getTimeLine()->seekFrame(minimum, false,  NULL, eTimelineChangeReasonPlaybackSeek);
     }
 }
 
@@ -201,8 +201,8 @@ TrackerContext::goToNextKeyFrame(int time)
         }
     }
     if (maximum != INT_MAX) {
-        getNode()->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Natron::Node>());
-        getNode()->getApp()->getTimeLine()->seekFrame(maximum, false,  NULL, Natron::eTimelineChangeReasonPlaybackSeek);
+        getNode()->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Node>());
+        getNode()->getApp()->getTimeLine()->seekFrame(maximum, false,  NULL, eTimelineChangeReasonPlaybackSeek);
     }
 }
 
@@ -353,7 +353,7 @@ TrackerContext::removeMarker(const TrackMarkerPtr& marker)
     Q_EMIT trackRemoved(marker);
 }
 
-boost::shared_ptr<Natron::Node>
+boost::shared_ptr<Node>
 TrackerContext::getNode() const
 {
     return _imp->node.lock();
@@ -362,7 +362,7 @@ TrackerContext::getNode() const
 int
 TrackerContext::getTimeLineFirstFrame() const
 {
-    boost::shared_ptr<Natron::Node> node = getNode();
+    boost::shared_ptr<Node> node = getNode();
     if (!node) {
         return -1;
     }
@@ -374,7 +374,7 @@ TrackerContext::getTimeLineFirstFrame() const
 int
 TrackerContext::getTimeLineLastFrame() const
 {
-    boost::shared_ptr<Natron::Node> node = getNode();
+    boost::shared_ptr<Node> node = getNode();
     if (!node) {
         return -1;
     }
@@ -393,7 +393,7 @@ TrackerContext::trackSelectedMarkers(int start, int end, bool forward, ViewerIns
         QMutexLocker k(&_imp->trackerContextMutex);
         for (std::list<TrackMarkerPtr >::iterator it = _imp->selectedMarkers.begin();
              it != _imp->selectedMarkers.end(); ++it) {
-            if ((*it)->isEnabled()) {
+            if ((*it)->isEnabled((*it)->getCurrentTime())) {
                 markers.push_back(*it);
             }
         }
@@ -551,7 +551,7 @@ TrackerContext::getAllEnabledMarkers(std::vector<TrackMarkerPtr >* markers) cons
 {
     QMutexLocker k(&_imp->trackerContextMutex);
     for (std::size_t i = 0; i < _imp->markers.size(); ++i) {
-        if (_imp->markers[i]->isEnabled()) {
+        if (_imp->markers[i]->isEnabled(_imp->markers[i]->getCurrentTime())) {
             markers->push_back(_imp->markers[i]);
         }
     }
@@ -606,12 +606,12 @@ TrackerContext::endSelection(TrackSelectionReason reason)
         bool selectionEmpty = _imp->selectedMarkers.empty();
         
         
-        //_imp->linkMarkerKnobsToGuiKnobs(_imp->markersToUnslave, selectionIsDirty, false);
+        _imp->linkMarkerKnobsToGuiKnobs(_imp->markersToUnslave, selectionIsDirty, false);
         _imp->markersToUnslave.clear();
         
         
         
-        //_imp->linkMarkerKnobsToGuiKnobs(_imp->markersToSlave, selectionIsDirty, true);
+        _imp->linkMarkerKnobsToGuiKnobs(_imp->markersToSlave, selectionIsDirty, true);
         _imp->markersToSlave.clear();
         
         
@@ -631,43 +631,127 @@ TrackerContext::endSelection(TrackSelectionReason reason)
     --_imp->selectionRecursion;
 }
 
+static
+boost::shared_ptr<KnobDouble>
+getCornerPinPoint(Node* node,
+                  bool isFrom,
+                  int index)
+{
+    assert(0 <= index && index < 4);
+    QString name = isFrom ? QString::fromUtf8("from%1").arg(index + 1) : QString::fromUtf8("to%1").arg(index + 1);
+    boost::shared_ptr<KnobI> knob = node->getKnobByName( name.toStdString() );
+    assert(knob);
+    boost::shared_ptr<KnobDouble>  ret = boost::dynamic_pointer_cast<KnobDouble>(knob);
+    assert(ret);
+    return ret;
+}
+
 
 void
 TrackerContext::exportTrackDataFromExportOptions()
 {
-    int exportType_i = _imp->exportChoice.lock()->getValue();
-    TrackExportTypeEnum type = (TrackExportTypeEnum)exportType_i;
+
+    bool transformLink = _imp->exportLink.lock()->getValue();
     
-    std::list<TrackMarkerPtr > selection;
-    getSelectedMarkers(&selection);
+    boost::shared_ptr<KnobChoice> transformTypeKnob = _imp->transformType.lock();
+    assert(transformTypeKnob);
+    int transformType_i = transformTypeKnob->getValue();
+    TrackerTransformNodeEnum transformType = (TrackerTransformNodeEnum)transformType_i;
     
-    // createCornerPinFromSelection(selection, linked, useTransformRefFrame, invert)
-    switch (type) {
-        case eTrackExportTypeCornerPinThisFrame:
-            _imp->createCornerPinFromSelection(selection, true, false, false);
+    boost::shared_ptr<KnobChoice> motionTypeKnob = _imp->motionType.lock();
+    if (!motionTypeKnob) {
+        return;
+    }
+    int motionType_i = motionTypeKnob->getValue();
+    TrackerMotionTypeEnum mt = (TrackerMotionTypeEnum)motionType_i;
+    
+    if (mt == eTrackerMotionTypeNone) {
+        Dialogs::errorDialog(QObject::tr("Tracker Export").toStdString(), QObject::tr("Please select the export mode with the Motion Type parameter").toStdString());
+        return;
+    }
+
+    QString pluginID;
+    switch (transformType) {
+        case eTrackerTransformNodeCornerPin:
+            pluginID = QString::fromUtf8(PLUGINID_OFX_CORNERPIN);
             break;
-        case eTrackExportTypeCornerPinRefFrame:
-            _imp->createCornerPinFromSelection(selection, true, true, false);
-            break;
-        case eTrackExportTypeCornerPinThisFrameBaked:
-            _imp->createCornerPinFromSelection(selection, false, false, false);
-            break;
-        case eTrackExportTypeCornerPinRefFrameBaked:
-            _imp->createCornerPinFromSelection(selection, false, true, false);
-            break;
-        case eTrackExportTypeTransformStabilize:
-            _imp->createTransformFromSelection(selection, true, true);
-            break;
-        case eTrackExportTypeTransformMatchMove:
-            _imp->createTransformFromSelection(selection, true, false);
-            break;
-        case eTrackExportTypeTransformStabilizeBaked:
-            _imp->createTransformFromSelection(selection, false, true);
-            break;
-        case eTrackExportTypeTransformMatchMoveBaked:
-            _imp->createTransformFromSelection(selection, false, false);
+        case eTrackerTransformNodeTransform:
+            pluginID = QString::fromUtf8(PLUGINID_OFX_TRANSFORM);
             break;
     }
+    
+    
+    NodePtr thisNode = getNode();
+    
+    AppInstance* app = thisNode->getApp();
+    CreateNodeArgs args(pluginID, eCreateNodeReasonInternal, thisNode->getGroup());
+    NodePtr createdNode = app->createNode(args);
+    if (!createdNode) {
+        return;
+    }
+    
+    // Move the new node
+    double thisNodePos[2];
+    double thisNodeSize[2];
+    thisNode->getPosition(&thisNodePos[0], &thisNodePos[1]);
+    thisNode->getSize(&thisNodeSize[0], &thisNodeSize[1]);
+    createdNode->setPosition(thisNodePos[0] + thisNodeSize[0] * 2., thisNodePos[1]);
+    
+    int refFrame = getTransformReferenceFrame();
+    
+    
+    switch (transformType) {
+        case eTrackerTransformNodeCornerPin:
+        {
+            boost::shared_ptr<KnobDouble> createdToPoints[4];
+            boost::shared_ptr<KnobDouble> createdFromPoints[4];
+            
+            /*for (int int i = 0; i < 4; ++i) {
+                createdFromPoints[i] = getCornerPinPoint(createdNode.get(), true, i);
+                assert(fromPoints[i] && centers[i]);
+                for (int j = 0; j < fromPoints[i]->getDimension(); ++j) {
+                    fromPoints[i]->setValue(centers[i]->getValueAtTime(timeForFromPoints,j), ViewSpec(0), j);
+                }
+                
+                toPoints[i] = getCornerPinPoint(cornerPin.get(), false, i);
+                assert(toPoints[i]);
+                if (!linked) {
+                    toPoints[i]->cloneAndUpdateGui(centers[i].get());
+                } else {
+                    bool ok = false;
+                    for (int d = 0; d < toPoints[i]->getDimension() ; ++d) {
+                        ok = dynamic_cast<KnobI*>(toPoints[i].get())->slaveTo(d, centers[i], d);
+                    }
+                    (void)ok;
+                    assert(ok);
+                }
+            }
+            
+            ///Disable all non used points
+            for (unsigned int i = selection.size(); i < 4; ++i) {
+                QString enableName = QString::fromUtf8("enable%1").arg(i + 1);
+                KnobPtr knob = cornerPin->getKnobByName( enableName.toStdString() );
+                assert(knob);
+                KnobBool* enableKnob = dynamic_cast<KnobBool*>( knob.get() );
+                assert(enableKnob);
+                enableKnob->setValue(false, ViewSpec(0), 0);
+            }
+            
+            if (motionType == eTrackerMotionTypeStabilize) {
+                KnobPtr invertKnob = cornerPin->getKnobByName(kCornerPinInvertParamName);
+                assert(invertKnob);
+                KnobBool* isBool = dynamic_cast<KnobBool*>(invertKnob.get());
+                assert(isBool);
+                isBool->setValue(true, ViewSpec(0), 0);
+            }*/
+
+        }   break;
+        case eTrackerTransformNodeTransform:
+        {
+            
+        }   break;
+    }
+    
 }
 
 
@@ -678,7 +762,7 @@ TrackerContext::onSelectedKnobCurveChanged()
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>(sender());
     if (handler) {
         boost::shared_ptr<KnobI> knob = handler->getKnob();
-        for (std::list<boost::weak_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
+        for (std::list<boost::weak_ptr<KnobI> >::const_iterator it = _imp->perTrackKnobs.begin(); it != _imp->perTrackKnobs.end(); ++it) {
             boost::shared_ptr<KnobI> k = it->lock();
             if (k->getName() == knob->getName()) {
                 k->clone(knob.get());
@@ -686,6 +770,22 @@ TrackerContext::onSelectedKnobCurveChanged()
             }
         }
     }
+}
+
+void
+TrackerContext::onMarkerEnabledChanged(int reason)
+{
+    TrackMarker* m = qobject_cast<TrackMarker*>(sender());
+    if (!m) {
+        return;
+    }
+    Q_EMIT enabledChanged(m->shared_from_this(), reason);
+}
+
+void
+TrackerContext::onKnobsLoaded()
+{
+    _imp->refreshVisibilityFromTransformType();
 }
 
 void
@@ -701,7 +801,19 @@ TrackerContext::knobChanged(KnobI* k,
         boost::shared_ptr<KnobInt> refFrame = _imp->referenceFrame.lock();
         refFrame->setValue(_imp->node.lock()->getApp()->getTimeLine()->currentFrame());
     } else if (k == _imp->transformType.lock().get()) {
-        
+        solveTransformParams();
+        _imp->refreshVisibilityFromTransformType();
+    } else if (k == _imp->motionType.lock().get()) {
+        solveTransformParams();
+        _imp->refreshVisibilityFromTransformType();
+    } else if (k == _imp->jitterPeriod.lock().get()) {
+        solveTransformParams();
+    } else if (k == _imp->smoothCornerPin.lock().get()) {
+        solveTransformParams();
+    } else if (k == _imp->smoothTransform.lock().get()) {
+        solveTransformParams();
+    } else if (k == _imp->referenceFrame.lock().get()) {
+        solveTransformParams();
     }
 }
 
@@ -801,7 +913,7 @@ void runProsacForModel(const std::vector<Point>& x1,
     
     ProsacReturnCodeEnum ret;
     
-    const std::size_t minSamples = (std::size_t)openMVG::robust::Similarity2DSolver::MinimumSamples();
+    const std::size_t minSamples = (std::size_t)MODELTYPE::MinimumSamples();
     if (x1.size() > minSamples) {
         KernelType kernel(M1, w1, h1, M2, w2, h2);
         ret = prosac(kernel, foundModel);
@@ -1029,6 +1141,13 @@ TrackerContext::extractSortedPointsFromMarkers(double refTime,
                 x2avg.x += x2PointJitter[i].x;
                 x2avg.y += x2PointJitter[i].y;
             }
+            if (!x1PointJitter.empty()) {
+                x1avg.x /= x1PointJitter.size();
+                x1avg.y /= x1PointJitter.size();
+                
+                x2avg.x /= x1PointJitter.size();
+                x2avg.y /= x1PointJitter.size();
+            }
             if (!jitterAdd) {
                 pointsWithErrors[i].p1.x = x1avg.x;
                 pointsWithErrors[i].p1.y = x1avg.y;
@@ -1077,7 +1196,10 @@ TrackerContext::computeTransformParamsFromTracksAtTime(double refTime,
     assert(!markers.empty());
     std::vector<Point> x1, x2;
     extractSortedPointsFromMarkers(refTime, time, markers, jitterPeriod, jitterAdd, &x1, &x2);
-    
+    assert(x1.size() == x2.size());
+    if (x1.empty()) {
+        throw std::runtime_error("Empty points");
+    }
     if (refTime == time) {
         data->hasRotationAndScale = x1.size() > 1;
         data->translation.x = data->translation.y = data->rotation = 0;
@@ -1103,51 +1225,270 @@ TrackerContext::computeTransformParamsFromTracksAtTime(double refTime,
     }
 }
 
+static Transform::Point3D euclideanToHomogenous(const Point& p)
+{
+    Transform::Point3D r;
+    r.x = p.x;
+    r.y = p.y;
+    r.z = 1;
+    return r;
+}
+
+void
+TrackerContext::computeCornerPinParamsFromTracksAtTime(double refTime,
+                                            double time,
+                                            int jitterPeriod,
+                                            bool jitterAdd,
+                                            const std::vector<TrackMarkerPtr>& markers,
+                                            CornerPinData* data)
+{
+    assert(!markers.empty());
+    std::vector<Point> x1, x2;
+    extractSortedPointsFromMarkers(refTime, time, markers, jitterPeriod, jitterAdd, &x1, &x2);
+    assert(x1.size() == x2.size());
+    if (x1.empty()) {
+        throw std::runtime_error("Empty points");
+    }
+    if (refTime == time) {
+        data->h.setIdentity();
+        data->nbEnabledPoints = 4;
+        return;
+    }
+    
+    RectD rodRef = getInputRoDAtTime(refTime);
+    RectD rodTime = getInputRoDAtTime(time);
+    
+    int w1 = rodRef.width();
+    int h1 = rodRef.height();
+    
+    int w2 = rodTime.width();
+    int h2 = rodTime.height();
+    
+    if (x1.size() == 1) {
+        data->h.setTranslationFromOnePoint(euclideanToHomogenous(x1[0]), euclideanToHomogenous(x2[0]));
+        data->nbEnabledPoints = 1;
+    } else if (x1.size() == 2) {
+        data->h.setSimilarityFromTwoPoints(euclideanToHomogenous(x1[0]), euclideanToHomogenous(x1[1]), euclideanToHomogenous(x2[0]), euclideanToHomogenous(x2[1]));
+        data->nbEnabledPoints = 2;
+    } else if (x1.size() == 3) {
+        data->h.setAffineFromThreePoints(euclideanToHomogenous(x1[0]), euclideanToHomogenous(x1[1]), euclideanToHomogenous(x1[2]), euclideanToHomogenous(x2[0]), euclideanToHomogenous(x2[1]), euclideanToHomogenous(x2[2]));
+        data->nbEnabledPoints = 3;
+    } else {
+        computeHomographyFromNPoints(x1, x2, w1, h1, w2, h2, &data->h);
+        data->nbEnabledPoints = 4;
+    }
+    
+
+}
+
+struct CornerPinDataWithTime
+{
+    TrackerContext::CornerPinData data;
+    double time;
+};
+
+
+static Point applyHomography(const Point& p, Transform::Matrix3x3& h)
+{
+    Transform::Point3D a = euclideanToHomogenous(p);
+    a = Transform::matApply(h, a);
+    Point ret;
+    ret.x = a.x / a.z;
+    ret.y /= a.y / a.z;
+    return ret;
+}
+
+void
+TrackerContext::computeCornerParamsFromTracks(double refTime,
+                                   const std::set<double>& keyframes,
+                                   int jitterPeriod,
+                                   bool jitterAdd,
+                                   const std::vector<TrackMarkerPtr>& allMarkers)
+{
+    boost::shared_ptr<KnobInt> smoothCornerPinKnob = _imp->smoothCornerPin.lock();
+    int smoothJitter = smoothCornerPinKnob->getValue();
+    std::vector<CornerPinDataWithTime> dataAtTime;
+    for (std::set<double>::const_iterator it = keyframes.begin(); it!=keyframes.end(); ++it) {
+        CornerPinDataWithTime t;
+        t.time = *it;
+        
+        std::vector<TrackMarkerPtr> enabledMarkersAtTime;
+        for (std::size_t i = 0; i < allMarkers.size(); ++i) {
+            if (allMarkers[i]->isEnabled(*it)) {
+                enabledMarkersAtTime.push_back(allMarkers[i]);
+            }
+        }
+        try {
+            computeCornerPinParamsFromTracksAtTime(refTime, t.time, jitterPeriod, jitterAdd, enabledMarkersAtTime, &t.data);
+        } catch (const std::exception& /*e*/) {
+            continue;
+        }
+        dataAtTime.push_back(t);
+    }
+    
+    
+    NodePtr node = getNode();
+    node->getEffectInstance()->beginChanges();
+    
+    RectD rodRef = getInputRoDAtTime(refTime);
+    
+    boost::shared_ptr<KnobDouble> fromPoints[4];
+    boost::shared_ptr<KnobDouble> toPoints[4];
+    boost::shared_ptr<KnobBool> enabledPoints[4];
+    for (int i = 0; i < 4; ++i) {
+        fromPoints[i] = _imp->fromPoints[i].lock();
+        toPoints[i] = _imp->toPoints[i].lock();
+        enabledPoints[i] = _imp->enableToPoint[i].lock();
+    }
+    //boost::shared_ptr<KnobDouble> matrixKnob = _imp->cornerPinMatrix.lock();
+    boost::shared_ptr<KnobDouble> centerKnob = _imp->center.lock();
+    
+    /*for (int i = 0; i < matrixKnob->getDimension(); ++i) {
+        matrixKnob->resetToDefaultValue(i);
+    }*/
+    
+    
+    std::list<KnobPtr> animatedKnobsChanged;
+   
+    
+    for (int i = 0; i < 4; ++i) {
+        fromPoints[i]->removeAnimation(ViewSpec::all(), 0);
+        fromPoints[i]->removeAnimation(ViewSpec::all(), 1);
+        toPoints[i]->blockValueChanges();
+        toPoints[i]->resetToDefaultValue(0);
+        toPoints[i]->resetToDefaultValue(1);
+        animatedKnobsChanged.push_back(toPoints[i]);
+        
+        enabledPoints[i]->resetToDefaultValue(0);
+    }
+    centerKnob->resetToDefaultValue(0);
+    centerKnob->resetToDefaultValue(1);
+    
+    Point refFrom[4];
+    refFrom[0].x = rodRef.x1;
+    refFrom[0].y = rodRef.y1;
+    
+    refFrom[1].x = rodRef.x2;
+    refFrom[1].y = rodRef.y1;
+    
+    refFrom[2].x = rodRef.x2;
+    refFrom[2].y = rodRef.y2;
+    
+    refFrom[3].x = rodRef.x1;
+    refFrom[3].y = rodRef.y2;
+    
+    // Set the center at the reference frame
+    Point centerValue = {0,0};
+    int nSamplesAtRefTime = 0;
+    for (std::size_t i = 0; i < allMarkers.size(); ++i) {
+        
+        if (!allMarkers[i]->isEnabled(refTime)) {
+            continue;
+        }
+        boost::shared_ptr<KnobDouble> markerCenterKnob = allMarkers[i]->getCenterKnob();
+        
+        centerValue.x += markerCenterKnob->getValueAtTime(refTime, 0);
+        centerValue.y += markerCenterKnob->getValueAtTime(refTime, 1);
+        ++nSamplesAtRefTime;
+    }
+    if (nSamplesAtRefTime) {
+        centerValue.x /= nSamplesAtRefTime;
+        centerValue.y /= nSamplesAtRefTime;
+        centerKnob->setValues(centerValue.x, centerValue.y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+    }
+    
+    for (int c = 0;  c < 4; ++c) {
+        fromPoints[c]->setValues(refFrom[c].x, refFrom[c].y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+    }
+    
+    for (std::size_t i = 0; i < dataAtTime.size(); ++i) {
+        if (smoothJitter > 1) {
+            int halfJitter = smoothJitter / 2;
+            
+            
+            Point avgTos[4] = {{0,0},{0,0},{0,0},{0,0}};
+            
+            int nSamples = 0;
+            for (int t = std::max(0, (int)i - halfJitter); t < ((int)i + halfJitter) && t < (int)dataAtTime.size(); ++t, ++nSamples) {
+                Point to[4];
+                for (int c = 0; c < 4; ++c) {
+                    to[c] = applyHomography(refFrom[c], dataAtTime[i].data.h);
+                    avgTos[c].x += to[c].x;
+                    avgTos[c].y += to[c].y;
+                }
+            }
+            if (nSamples > 0) {
+                for (int c = 0; c < 4; ++c) {
+                    avgTos[c].x /= nSamples;
+                    avgTos[c].y /= nSamples;
+                }
+                
+                for (int c = 0; c < 4; ++c) {
+                    toPoints[c]->setValues(avgTos[c].x, avgTos[c].y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+                }
+                
+                
+                /*Transform::Matrix3x3 h;
+                h.setHomographyFromFourPoints(euclideanToHomogenous(avgFroms[0]), euclideanToHomogenous(avgFroms[1]), euclideanToHomogenous(avgFroms[2]), euclideanToHomogenous(avgFroms[3]), euclideanToHomogenous(avgTos[0]), euclideanToHomogenous(avgTos[1]), euclideanToHomogenous(avgTos[2]), euclideanToHomogenous(avgTos[3]));
+                matrixKnob->blockValueChanges();
+                matrixKnob->setValueAtTime(dataAtTime[i].time, h.a, ViewSpec::all(), 0);
+                matrixKnob->setValueAtTime(dataAtTime[i].time, h.b, ViewSpec::all(), 1);
+                matrixKnob->setValueAtTime(dataAtTime[i].time, h.c, ViewSpec::all(), 2);
+                matrixKnob->setValueAtTime(dataAtTime[i].time, h.d, ViewSpec::all(), 3);
+                matrixKnob->setValueAtTime(dataAtTime[i].time, h.e, ViewSpec::all(), 4);
+                matrixKnob->setValueAtTime(dataAtTime[i].time, h.f, ViewSpec::all(), 5);
+                matrixKnob->setValueAtTime(dataAtTime[i].time, h.g, ViewSpec::all(), 6);
+                matrixKnob->setValueAtTime(dataAtTime[i].time, h.h, ViewSpec::all(), 7);
+                matrixKnob->unblockValueChanges();
+                matrixKnob->setValueAtTime(dataAtTime[i].time, h.i, ViewSpec::all(), 8);*/
+            }
+
+        } else {
+            
+            for (int c = 0; c < 4; ++c) {
+                Point toPoint;
+                toPoint = applyHomography(refFrom[c], dataAtTime[i].data.h);
+                toPoints[c]->setValuesAtTime(dataAtTime[i].time,toPoint.x, toPoint.y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+            }
+            
+            /*matrixKnob->blockValueChanges();
+            matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.a, ViewSpec::all(), 0);
+            matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.b, ViewSpec::all(), 1);
+            matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.c, ViewSpec::all(), 2);
+            matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.d, ViewSpec::all(), 3);
+            matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.e, ViewSpec::all(), 4);
+            matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.f, ViewSpec::all(), 5);
+            matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.g, ViewSpec::all(), 6);
+            matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.h, ViewSpec::all(), 7);
+            matrixKnob->unblockValueChanges();
+            matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.i, ViewSpec::all(), 8);*/
+            
+        }
+    } // for (std::size_t i = 0; i < dataAtTime.size(); ++i)
+    for (std::list<KnobPtr>::iterator it = animatedKnobsChanged.begin(); it!= animatedKnobsChanged.end();++it) {
+        (*it)->unblockValueChanges();
+        int nDims = (*it)->getDimension();
+        for (int i = 0; i < nDims; ++i) {
+            (*it)->evaluateValueChange(i, refTime, ViewIdx(0), eValueChangedReasonNatronInternalEdited);
+        }
+    }
+    node->getEffectInstance()->endChanges();
+}
+
 struct TransformDataWithTime
 {
     TrackerContext::TransformData data;
     double time;
 };
 
+
 void
-TrackerContext::computeTransformParamsFromTracks(const std::vector<TrackMarkerPtr>& markers)
+TrackerContext::computeTransformParamsFromTracks(double refTime,
+                                                      const std::set<double>& keyframes,
+                                                      int jitterPeriod,
+                                                      bool jitterAdd,
+                                                      const std::vector<TrackMarkerPtr>& allMarkers)
 {
-    if (markers.empty()) {
-        return;
-    }
-    int transformType_i = _imp->transformType.lock()->getValue();
-    TrackerTransformTypeEnum type =  (TrackerTransformTypeEnum)transformType_i;
-    
-    double refTime = (double)getTransformReferenceFrame();
-
-    int jitterPeriod = 0;
-    bool jitterAdd = false;
-    switch (type) {
-        case eTrackerTransformTypeNone:
-        case eTrackerTransformTypeMatchMove:
-        case eTrackerTransformTypeStabilize:
-            break;
-        case eTrackerTransformTypeAddJitter:
-        case eTrackerTransformTypeRemoveJitter:
-        {
-            jitterPeriod = _imp->jitterPeriod.lock()->getValue();
-            jitterAdd = type == eTrackerTransformTypeAddJitter;
-        } break;
-            
-    }
-    
-    std::set<double> keyframes;
-    {
-        for (std::size_t i = 0; i < markers.size(); ++i) {
-            std::set<double> keys;
-            markers[i]->getCenterKeyframes(&keys);
-            for (std::set<double>::iterator it = keys.begin(); it!= keys.end(); ++it) {
-                keyframes.insert(*it);
-            }
-            
-        }
-    }
-
     boost::shared_ptr<KnobInt> smoothKnob = _imp->smoothTransform.lock();
     int smoothTJitter,smoothRJitter, smoothSJitter;
     smoothTJitter = smoothKnob->getValue(0);
@@ -1160,10 +1501,16 @@ TrackerContext::computeTransformParamsFromTracks(const std::vector<TrackMarkerPt
     for (std::set<double>::iterator it = keyframes.begin(); it!=keyframes.end(); ++it) {
         TransformDataWithTime t;
         t.time = *it;
+        
+        std::vector<TrackMarkerPtr> enabledMarkersAtTime;
+        for (std::size_t i = 0; i < allMarkers.size(); ++i) {
+            if (allMarkers[i]->isEnabled(*it)) {
+                enabledMarkersAtTime.push_back(allMarkers[i]);
+            }
+        }
         try {
-            computeTransformParamsFromTracksAtTime(refTime, t.time, jitterPeriod, jitterAdd, markers, &t.data);
-        } catch (const std::exception& e) {
-            qDebug() << e.what();
+            computeTransformParamsFromTracksAtTime(refTime, t.time, jitterPeriod, jitterAdd, enabledMarkersAtTime, &t.data);
+        } catch (const std::exception& /*e*/) {
             continue;
         }
         dataAtTime.push_back(t);
@@ -1177,28 +1524,44 @@ TrackerContext::computeTransformParamsFromTracks(const std::vector<TrackMarkerPt
     boost::shared_ptr<KnobDouble> scaleKnob = _imp->scale.lock();
     boost::shared_ptr<KnobDouble> rotationKnob = _imp->rotate.lock();
     
+    translationKnob->blockValueChanges();
     translationKnob->resetToDefaultValue(0);
     translationKnob->resetToDefaultValue(1);
     
     centerKnob->resetToDefaultValue(0);
     centerKnob->resetToDefaultValue(1);
     
+    scaleKnob->blockValueChanges();
     scaleKnob->resetToDefaultValue(0);
+    
+    rotationKnob->blockValueChanges();
     rotationKnob->resetToDefaultValue(0);
+    
+    std::list<KnobPtr> animatedKnobsChanged;
+    animatedKnobsChanged.push_back(translationKnob);
+    animatedKnobsChanged.push_back(scaleKnob);
+    animatedKnobsChanged.push_back(rotationKnob);
     
     // Set the center at the reference frame
     Point centerValue = {0,0};
-    for (std::size_t i = 0; i < markers.size(); ++i) {
+    int nSamplesAtRefTime = 0;
+    for (std::size_t i = 0; i < allMarkers.size(); ++i) {
         
-        boost::shared_ptr<KnobDouble> markerCenterKnob = markers[i]->getCenterKnob();
+        if (!allMarkers[i]->isEnabled(refTime)) {
+            continue;
+        }
+        boost::shared_ptr<KnobDouble> markerCenterKnob = allMarkers[i]->getCenterKnob();
         
         centerValue.x += markerCenterKnob->getValueAtTime(refTime, 0);
         centerValue.y += markerCenterKnob->getValueAtTime(refTime, 1);
+        ++nSamplesAtRefTime;
     }
-    centerValue.x /= markers.size();
-    centerValue.y /= markers.size();
+    if (nSamplesAtRefTime) {
+        centerValue.x /= nSamplesAtRefTime;
+        centerValue.y /= nSamplesAtRefTime;
+        centerKnob->setValues(centerValue.x, centerValue.y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+    }
     
-    centerKnob->setValues(centerValue.x, centerValue.y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
     
     for (std::size_t i = 0; i < dataAtTime.size(); ++i) {
         if (smoothTJitter > 1) {
@@ -1206,7 +1569,7 @@ TrackerContext::computeTransformParamsFromTracks(const std::vector<TrackMarkerPt
             Point avgT = {0,0};
             
             int nSamples = 0;
-            for (int t = std::max(0, (int)i - halfJitter); t < (i + halfJitter) && t < (int)dataAtTime.size(); ++t, ++nSamples) {
+            for (int t = std::max(0, (int)i - halfJitter); t < ((int)i + halfJitter) && t < (int)dataAtTime.size(); ++t, ++nSamples) {
                 avgT.x += dataAtTime[t].data.translation.x;
                 avgT.y += dataAtTime[t].data.translation.y;
             }
@@ -1295,16 +1658,271 @@ TrackerContext::computeTransformParamsFromTracks(const std::vector<TrackMarkerPt
         }
     } // for (std::size_t i = 0; i < dataAtTime.size(); ++i)
     
+    
+    for (std::list<KnobPtr>::iterator it = animatedKnobsChanged.begin(); it!= animatedKnobsChanged.end();++it) {
+        (*it)->unblockValueChanges();
+        int nDims = (*it)->getDimension();
+        for (int i = 0; i < nDims; ++i) {
+            (*it)->evaluateValueChange(i, refTime, ViewIdx(0), eValueChangedReasonNatronInternalEdited);
+        }
+    }
     node->getEffectInstance()->endChanges();
 }
 
+
 void
-TrackerContext::computeTransformParamsFromEnabledTracks()
+TrackerContext::solveTransformParams()
 {
-    std::vector<TrackMarkerPtr> tracks;
-    getAllEnabledMarkers(&tracks);
-    computeTransformParamsFromTracks(tracks);
+    
+    std::vector<TrackMarkerPtr> markers;
+    getAllMarkers(&markers);
+    if (markers.empty()) {
+        return;
+    }
+    int motionType_i = _imp->motionType.lock()->getValue();
+    TrackerMotionTypeEnum type =  (TrackerMotionTypeEnum)motionType_i;
+    
+    double refTime = (double)getTransformReferenceFrame();
+
+    int jitterPeriod = 0;
+    bool jitterAdd = false;
+    switch (type) {
+        case eTrackerMotionTypeNone:
+            return;
+        case eTrackerMotionTypeMatchMove:
+        case eTrackerMotionTypeStabilize:
+            break;
+        case eTrackerMotionTypeAddJitter:
+        case eTrackerMotionTypeRemoveJitter:
+        {
+            jitterPeriod = _imp->jitterPeriod.lock()->getValue();
+            jitterAdd = type == eTrackerMotionTypeAddJitter;
+        } break;
+            
+    }
+    
+    std::set<double> keyframes;
+    {
+        for (std::size_t i = 0; i < markers.size(); ++i) {
+            std::set<double> keys;
+            markers[i]->getCenterKeyframes(&keys);
+            for (std::set<double>::iterator it = keys.begin(); it!= keys.end(); ++it) {
+                keyframes.insert(*it);
+            }
+            
+        }
+    }
+    
+    boost::shared_ptr<KnobChoice> transformTypeKnob = _imp->transformType.lock();
+    assert(transformTypeKnob);
+    int transformType_i = transformTypeKnob->getValue();
+    TrackerTransformNodeEnum transformType = (TrackerTransformNodeEnum)transformType_i;
+    
+    if (type == eTrackerMotionTypeStabilize) {
+        _imp->invertTransform.lock()->setValue(true);
+    } else {
+        _imp->invertTransform.lock()->setValue(false);
+    }
+    
+    switch (transformType) {
+        case eTrackerTransformNodeTransform:
+            computeTransformParamsFromTracks(refTime, keyframes, jitterPeriod, jitterAdd, markers);
+            break;
+        case eTrackerTransformNodeCornerPin:
+            computeCornerParamsFromTracks(refTime, keyframes, jitterPeriod, jitterAdd, markers);
+            break;
+    }
+    
 }
+
+NodePtr
+TrackerContext::getCurrentlySelectedTransformNode() const
+{
+    boost::shared_ptr<KnobChoice> transformTypeKnob = _imp->transformType.lock();
+    assert(transformTypeKnob);
+    int transformType_i = transformTypeKnob->getValue();
+    TrackerTransformNodeEnum transformType = (TrackerTransformNodeEnum)transformType_i;
+    switch (transformType) {
+        case eTrackerTransformNodeTransform:
+            return _imp->transformNode.lock();
+        case eTrackerTransformNodeCornerPin:
+            return _imp->cornerPinNode.lock();
+    }
+    return NodePtr();
+}
+
+void
+TrackerContext::drawInternalNodesOverlay(double time,
+                                         const RenderScale& renderScale,
+                                         ViewIdx view,
+                                         OverlaySupport* viewer)
+{
+    if (_imp->transformPageKnob.lock()->getIsSecret()) {
+        return;
+    }
+    NodePtr node = getCurrentlySelectedTransformNode();
+    if (node) {
+        NodePtr thisNode = getNode();
+        thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        thisNode->drawHostOverlay(time, renderScale, view);
+    }
+}
+
+bool
+TrackerContext::onOverlayPenDownInternalNodes(double time,
+                                              const RenderScale & renderScale,
+                                              ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, OverlaySupport* viewer)
+{
+    if (_imp->transformPageKnob.lock()->getIsSecret()) {
+        return false;
+    }
+    NodePtr node = getCurrentlySelectedTransformNode();
+    if (node) {
+        NodePtr thisNode = getNode();
+        thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if (thisNode->onOverlayPenDownDefault(time, renderScale, view, viewportPos, pos, pressure)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+TrackerContext::onOverlayPenMotionInternalNodes(double time,
+                                                const RenderScale & renderScale,
+                                                ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, OverlaySupport* viewer)
+{
+    if (_imp->transformPageKnob.lock()->getIsSecret()) {
+        return false;
+    }
+    NodePtr node = getCurrentlySelectedTransformNode();
+    if (node) {
+        NodePtr thisNode = getNode();
+        thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if (thisNode->onOverlayPenMotionDefault(time, renderScale, view, viewportPos, pos, pressure)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+TrackerContext::onOverlayPenUpInternalNodes(double time,
+                                            const RenderScale & renderScale,
+                                            ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, OverlaySupport* viewer)
+{
+    if (_imp->transformPageKnob.lock()->getIsSecret()) {
+        return false;
+    }
+    NodePtr node = getCurrentlySelectedTransformNode();
+    if (node) {
+        NodePtr thisNode = getNode();
+        thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if (thisNode->onOverlayPenUpDefault(time, renderScale, view, viewportPos, pos, pressure)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+TrackerContext::onOverlayKeyDownInternalNodes(double time,
+                                              const RenderScale & renderScale,
+                                              ViewIdx view, Key key, KeyboardModifiers modifiers, OverlaySupport* viewer)
+{
+    if (_imp->transformPageKnob.lock()->getIsSecret()) {
+        return false;
+    }
+    NodePtr node = getCurrentlySelectedTransformNode();
+    if (node) {
+        NodePtr thisNode = getNode();
+        thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if (thisNode->onOverlayKeyDownDefault(time, renderScale, view, key, modifiers)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+TrackerContext::onOverlayKeyUpInternalNodes(double time,
+                                            const RenderScale & renderScale,
+                                            ViewIdx view, Key key, KeyboardModifiers modifiers, OverlaySupport* viewer)
+{
+    if (_imp->transformPageKnob.lock()->getIsSecret()) {
+        return false;
+    }
+    NodePtr node = getCurrentlySelectedTransformNode();
+    if (node) {
+        NodePtr thisNode = getNode();
+        thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if (thisNode->onOverlayKeyUpDefault(time, renderScale, view, key, modifiers)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+TrackerContext::onOverlayKeyRepeatInternalNodes(double time,
+                                                const RenderScale & renderScale,
+                                                ViewIdx view, Key key, KeyboardModifiers modifiers, OverlaySupport* viewer)
+{
+    if (_imp->transformPageKnob.lock()->getIsSecret()) {
+        return false;
+    }
+    NodePtr node = getCurrentlySelectedTransformNode();
+    if (node) {
+        NodePtr thisNode = getNode();
+        thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if (thisNode->onOverlayKeyRepeatDefault(time, renderScale, view, key, modifiers)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+TrackerContext::onOverlayFocusGainedInternalNodes(double time,
+                                                  const RenderScale & renderScale,
+                                                  ViewIdx view,
+                                                  OverlaySupport* viewer)
+{
+    if (_imp->transformPageKnob.lock()->getIsSecret()) {
+        return false;
+    }
+    NodePtr node = getCurrentlySelectedTransformNode();
+    if (node) {
+        NodePtr thisNode = getNode();
+        thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if (thisNode->onOverlayFocusGainedDefault(time, renderScale, view)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+TrackerContext::onOverlayFocusLostInternalNodes(double time,
+                                                const RenderScale & renderScale,
+                                                ViewIdx view,
+                                                OverlaySupport* viewer)
+{
+    if (_imp->transformPageKnob.lock()->getIsSecret()) {
+        return false;
+    }
+    NodePtr node = getCurrentlySelectedTransformNode();
+    if (node) {
+        NodePtr thisNode = getNode();
+        thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if (thisNode->onOverlayFocusLostDefault(time, renderScale, view)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
 
 //////////////////////// TrackScheduler
 
@@ -1534,7 +2152,7 @@ TrackScheduler<TrackArgsType>::run()
                     
                     //This will not refresh the viewer since when tracking, renderCurrentFrame()
                     //is not called on viewers, see Gui::onTimeChanged
-                    timeline->seekFrame(cur, true, 0, Natron::eTimelineChangeReasonOtherSeek);
+                    timeline->seekFrame(cur, true, 0, eTimelineChangeReasonOtherSeek);
                     
                     ///Beyond TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE it becomes more expensive to render all partial rectangles
                     ///than just render the whole viewer RoI
@@ -1573,7 +2191,7 @@ TrackScheduler<TrackArgsType>::run()
         
         TrackerContext* isContext = dynamic_cast<TrackerContext*>(_imp->paramsProvider);
         if (isContext) {
-            isContext->computeTransformParamsFromEnabledTracks();
+            isContext->solveTransformParams();
         }
         
         appPTR->getAppTLS()->cleanupTLSForThread();
@@ -1582,7 +2200,7 @@ TrackScheduler<TrackArgsType>::run()
         
         if (_imp->paramsProvider->getUpdateViewer()) {
             //Refresh all viewers to the current frame
-            timeline->seekFrame(lastValidFrame, true, 0, Natron::eTimelineChangeReasonOtherSeek);
+            timeline->seekFrame(lastValidFrame, true, 0, eTimelineChangeReasonOtherSeek);
         }
         
         ///Flag that we're no longer working

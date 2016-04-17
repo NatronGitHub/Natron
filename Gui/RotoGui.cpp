@@ -1484,7 +1484,7 @@ drawEllipse(double x, double y, double radiusX, double radiusY, int l, double r,
 
 void
 RotoGui::drawOverlays(double time,
-                      const RenderScale & renderScale) const
+                      const RenderScale & renderScale,ViewIdx view) const
 {
     
     
@@ -1911,7 +1911,7 @@ RotoGui::drawOverlays(double time,
     
     NodePtr node = _imp->node->getNode();
     node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
-    node->drawHostOverlay(time, renderScale);
+    node->drawHostOverlay(time, renderScale, view);
 } // drawOverlays
 
 void
@@ -2370,6 +2370,7 @@ RotoGui::RotoGuiPrivate::handleControlPointSelection(const std::pair<boost::shar
 bool
 RotoGui::penDown(double time,
                  const RenderScale & renderScale,
+                 ViewIdx view,
                  PenType pen,
                  bool isTabletEvent,
                  const QPointF & viewportPos,
@@ -2380,7 +2381,7 @@ RotoGui::penDown(double time,
 {
     NodePtr node = _imp->node->getNode();
     node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
-    if (node->onOverlayPenDownDefault(renderScale, viewportPos, pos, pressure)) {
+    if (node->onOverlayPenDownDefault(time, renderScale, view, viewportPos, pos, pressure)) {
         return true;
     }
     
@@ -2819,6 +2820,7 @@ RotoGui::penDown(double time,
 bool
 RotoGui::penDoubleClicked(double /*time*/,
                           const RenderScale & /*renderScale*/,
+                          ViewIdx /*view*/,
                           const QPointF & /*viewportPos*/,
                           const QPointF & pos,
                           QMouseEvent* e)
@@ -2861,6 +2863,7 @@ RotoGui::penDoubleClicked(double /*time*/,
 bool
 RotoGui::penMotion(double time,
                    const RenderScale & renderScale,
+                   ViewIdx view,
                    const QPointF & viewportPos,
                    const QPointF & pos,
                    double pressure,
@@ -2869,7 +2872,7 @@ RotoGui::penMotion(double time,
 {
     NodePtr node = _imp->node->getNode();
     node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
-    if (node->onOverlayPenMotionDefault(renderScale, viewportPos, pos, pressure)) {
+    if (node->onOverlayPenMotionDefault(time, renderScale, view, viewportPos, pos, pressure)) {
         return true;
     }
     
@@ -3282,8 +3285,9 @@ RotoGui::autoSaveAndRedraw()
 }
 
 bool
-RotoGui::penUp(double /*time*/,
+RotoGui::penUp(double time,
                const RenderScale & renderScale,
+               ViewIdx view,
                const QPointF & viewportPos,
                const QPointF & pos,
                double pressure ,
@@ -3292,7 +3296,7 @@ RotoGui::penUp(double /*time*/,
 {
     NodePtr node = _imp->node->getNode();
     node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
-    if (node->onOverlayPenUpDefault(renderScale, viewportPos, pos, pressure)) {
+    if (node->onOverlayPenUpDefault(time, renderScale, view, viewportPos, pos, pressure)) {
         return true;
     }
     
@@ -3578,15 +3582,16 @@ RotoGui::removeCurve(const boost::shared_ptr<RotoDrawableItem>& curve)
 }
 
 bool
-RotoGui::keyDown(double /*time*/,
+RotoGui::keyDown(double time,
                  const RenderScale & renderScale,
+                 ViewIdx view,
                  QKeyEvent* e)
 {
     Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
     KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
     NodePtr node = _imp->node->getNode();
     node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
-    if (node->onOverlayKeyDownDefault(renderScale, natronKey, natronMod)) {
+    if (node->onOverlayKeyDownDefault(time, renderScale, view, natronKey, natronMod)) {
         return true;
     }
     
@@ -3723,15 +3728,16 @@ RotoGui::keyDown(double /*time*/,
 } // keyDown
 
 bool
-RotoGui::keyRepeat(double /*time*/,
+RotoGui::keyRepeat(double time,
                    const RenderScale & renderScale,
+                   ViewIdx view,
                    QKeyEvent* e)
 {
     NodePtr node = _imp->node->getNode();
     node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
     Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
     KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
-    if (node->onOverlayKeyRepeatDefault(renderScale, natronKey, natronMod)) {
+    if (node->onOverlayKeyRepeatDefault(time, renderScale, view, natronKey, natronMod)) {
         return true;
     }
     
@@ -3755,22 +3761,24 @@ RotoGui::keyRepeat(double /*time*/,
 }
 
 void
-RotoGui::focusOut(double /*time*/)
+RotoGui::focusOut(double /*time*/,
+                ViewIdx /*view*/)
 {
     _imp->shiftDown = 0;
     _imp->ctrlDown = 0;
 }
 
 bool
-RotoGui::keyUp(double /*time*/,
+RotoGui::keyUp(double time,
                const RenderScale & renderScale,
+               ViewIdx view,
                QKeyEvent* e)
 {
     Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
     KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
     NodePtr node = _imp->node->getNode();
     node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
-    if (node->onOverlayKeyUpDefault(renderScale, natronKey, natronMod)) {
+    if (node->onOverlayKeyUpDefault(time, renderScale, view, natronKey, natronMod)) {
         return true;
     }
     

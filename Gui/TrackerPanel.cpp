@@ -44,6 +44,7 @@
 #include "Engine/TimeLine.h"
 #include "Engine/TrackMarker.h"
 
+#include "Gui/AnimatedCheckBox.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/Button.h"
 #include "Gui/ComboBox.h"
@@ -148,7 +149,7 @@ TrackerTableItemDelegate::paint(QPainter * painter,
     QRect geom = style->subElementRect(QStyle::SE_ItemViewItemText, &option);
     
     int dim;
-    Natron::AnimationLevelEnum level = eAnimationLevelNone;
+    AnimationLevelEnum level = eAnimationLevelNone;
     boost::shared_ptr<KnobI> knob = _panel->getKnobAt(index.row(), index.column(), &dim);
     assert(knob);
     if (knob) {
@@ -397,11 +398,11 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     int medIconSize = TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE);
     
     QPixmap prevPix,nextPix,addPix,removePix,clearAnimPix;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_PREVIOUS_KEY,medIconSize, &prevPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_NEXT_KEY, medIconSize,&nextPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_ADD_USER_KEY, medIconSize,&addPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_REMOVE_USER_KEY,medIconSize, &removePix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_ALL_ANIMATION,medIconSize, &clearAnimPix);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PREVIOUS_KEY,medIconSize, &prevPix);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_NEXT_KEY, medIconSize,&nextPix);
+    appPTR->getIcon(NATRON_PIXMAP_ADD_USER_KEY, medIconSize,&addPix);
+    appPTR->getIcon(NATRON_PIXMAP_REMOVE_USER_KEY,medIconSize, &removePix);
+    appPTR->getIcon(NATRON_PIXMAP_CLEAR_ALL_ANIMATION,medIconSize, &clearAnimPix);
     
     _imp->prevKeyframe = new Button(QIcon(prevPix),QString(),trackContainer);
     _imp->prevKeyframe->setFixedSize(medButtonSize);
@@ -596,15 +597,22 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker, int row, Track
     ///Enabled
     {
         ItemData d;
-        QCheckBox* checkbox = new QCheckBox();
-        checkbox->setChecked(marker.isEnabled());
+        QWidget *checkboxContainer = new QWidget(0);
+        QHBoxLayout* checkboxLayout = new QHBoxLayout(checkboxContainer);
+        AnimatedCheckBox* checkbox = new AnimatedCheckBox(checkboxContainer);
+        checkboxLayout->addWidget(checkbox, Qt::AlignLeft | Qt::AlignVCenter);
+        checkboxLayout->setContentsMargins(0, 0, 0, 0);
+        checkboxLayout->setSpacing(0);
+        checkbox->setFixedSize(TO_DPIX(NATRON_SMALL_BUTTON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_SIZE));
+        checkbox->setChecked(marker.isEnabled(marker.getCurrentTime()));
+        checkbox->setAnimation((int)marker.getEnabledNessAnimationLevel());
         QObject::connect( checkbox,SIGNAL( toggled(bool) ),_publicInterface,SLOT( onItemEnabledCheckBoxChecked(bool) ) );
         TableItem* newItem = new TableItem;
         newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable | Qt::ItemIsUserCheckable);
         newItem->setToolTip(GuiUtils::convertFromPlainText(QObject::tr("When unchecked, this track will no longer be tracked even if selected. Also the transform parameters in the Transform tab will not take this track into account"), Qt::WhiteSpaceNormal));
         d.item = newItem;
         d.dimension = -1;
-        view->setCellWidget(row, COL_ENABLED, checkbox);
+        view->setCellWidget(row, COL_ENABLED, checkboxContainer);
         view->setItem(row, COL_ENABLED, newItem);
         view->resizeColumnToContents(COL_ENABLED);
         data.items.push_back(d);
@@ -1010,11 +1018,11 @@ TrackerPanel::onAverageButtonClicked()
     
     bool hasKeyFrame = keyframesRange.min != INT_MIN && keyframesRange.max != INT_MAX;
     for (double t = keyframesRange.min; t <= keyframesRange.max; t += 1) {
-        Natron::Point avgCenter;
+        Point avgCenter;
         avgCenter.x = avgCenter.y = 0.;
 
 #ifdef AVERAGE_ALSO_PATTERN_QUAD
-        Natron::Point avgTopLeft, avgTopRight,avgBtmRight,avgBtmLeft;
+        Point avgTopLeft, avgTopRight,avgBtmRight,avgBtmLeft;
         avgTopLeft.x = avgTopLeft.y = avgTopRight.x = avgTopRight.y = avgBtmRight.x = avgBtmRight.y = avgBtmLeft.x = avgBtmLeft.y = 0;
 #endif
         
@@ -1367,9 +1375,9 @@ TrackerPanel::onItemDataChanged(TableItem* item)
                         double value = item->data(Qt::DisplayRole).toDouble();
                         if (knob->isAnimationEnabled() && knob->isAnimated(dim)) {
                             KeyFrame kf;
-                            knob->setValueAtTime(time, value, ViewSpec(0), dim, Natron::eValueChangedReasonNatronGuiEdited, &kf);
+                            knob->setValueAtTime(time, value, ViewSpec(0), dim, eValueChangedReasonNatronGuiEdited, &kf);
                         } else {
-                            knob->setValue(value, ViewSpec(0), dim, Natron::eValueChangedReasonNatronGuiEdited, 0);
+                            knob->setValue(value, ViewSpec(0), dim, eValueChangedReasonNatronGuiEdited, 0);
                         }
                         
                     }   break;
@@ -1383,13 +1391,13 @@ TrackerPanel::onItemDataChanged(TableItem* item)
 void
 TrackerPanel::onItemEnabledCheckBoxChecked(bool checked)
 {
-    QCheckBox* widget = qobject_cast<QCheckBox*>(sender());
+    AnimatedCheckBox* widget = qobject_cast<AnimatedCheckBox*>(sender());
     assert(widget);
     for (std::size_t i = 0; i < _imp->items.size(); ++i) {
         QWidget* cellW = _imp->view->cellWidget(i, COL_ENABLED);
         if (widget == cellW) {
             TrackMarkerPtr marker = _imp->items[i].marker.lock();
-            marker->setEnabled(checked, Natron::eValueChangedReasonNatronGuiEdited);
+            marker->setEnabledFromGui(marker->getCurrentTime(), checked);
             break;
         }
     }
@@ -1405,7 +1413,7 @@ TrackerPanel::onItemMotionModelChanged(int index)
         QWidget* cellW = _imp->view->cellWidget(i, COL_MOTION_MODEL);
         if (widget == cellW) {
             TrackMarkerPtr marker = _imp->items[i].marker.lock();
-            marker->getMotionModelKnob()->setValue(index, ViewSpec(0), 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+            marker->getMotionModelKnob()->setValue(index, ViewSpec(0), 0, eValueChangedReasonNatronGuiEdited, 0);
             break;
         }
     }
@@ -1653,7 +1661,7 @@ TrackerPanel::onTrackRemoved(const TrackMarkerPtr& marker)
 void
 TrackerPanel::onCenterKnobValueChanged(const TrackMarkerPtr& marker,int dimension, int reason)
 {
-    if (reason == Natron::eValueChangedReasonNatronGuiEdited) {
+    if (reason == eValueChangedReasonNatronGuiEdited) {
         return;
     }
     
@@ -1676,7 +1684,7 @@ TrackerPanel::onCenterKnobValueChanged(const TrackMarkerPtr& marker,int dimensio
 void
 TrackerPanel::onOffsetKnobValueChanged(const TrackMarkerPtr& marker,int dimension, int reason)
 {
-    if (reason == Natron::eValueChangedReasonNatronGuiEdited) {
+    if (reason == eValueChangedReasonNatronGuiEdited) {
         return;
     }
     ++_imp->itemDataChangedRecursion;
@@ -1697,7 +1705,7 @@ TrackerPanel::onOffsetKnobValueChanged(const TrackMarkerPtr& marker,int dimensio
 void
 TrackerPanel::onErrorKnobValueChanged(const TrackMarkerPtr &marker,int /*dimension*/, int reason)
 {
-    if (reason == Natron::eValueChangedReasonNatronGuiEdited) {
+    if (reason == eValueChangedReasonNatronGuiEdited) {
         return;
     }
     TableItem* item = getItemAt(marker, COL_ERROR);
@@ -1712,7 +1720,7 @@ TrackerPanel::onErrorKnobValueChanged(const TrackMarkerPtr &marker,int /*dimensi
 void
 TrackerPanel::onMotionModelKnobValueChanged(const TrackMarkerPtr &marker,int /*dimension*/, int reason)
 {
-    if (reason == Natron::eValueChangedReasonNatronGuiEdited) {
+    if (reason == eValueChangedReasonNatronGuiEdited) {
         return;
     }
     int row = getMarkerRow(marker);
@@ -1729,20 +1737,29 @@ TrackerPanel::onMotionModelKnobValueChanged(const TrackMarkerPtr &marker,int /*d
 void
 TrackerPanel::onEnabledChanged(const TrackMarkerPtr& marker,int reason)
 {
-    if (reason == Natron::eValueChangedReasonNatronGuiEdited) {
+    if (reason == eValueChangedReasonNatronGuiEdited) {
         return;
     }
     int row = getMarkerRow(marker);
     if (row == -1) {
         return;
     }
-    QCheckBox* w = dynamic_cast<QCheckBox*>(_imp->view->cellWidget(row, COL_ENABLED));
+    QWidget* w = _imp->view->cellWidget(row, COL_ENABLED);
     if (!w) {
         return;
     }
-    w->setChecked(marker->isEnabled());
+    const QObjectList& childrenObjects = w->children();
+    for (QObjectList::const_iterator it = childrenObjects.begin(); it != childrenObjects.end(); ++it) {
+        AnimatedCheckBox* isCheckbox = dynamic_cast<AnimatedCheckBox*>(*it);
+        if (isCheckbox) {
+            isCheckbox->setChecked(marker->isEnabled(marker->getCurrentTime()));
+            getNode()->getNode()->getApp()->redrawAllViewers();
+            break;
+        }
+    }
     
-    getNode()->getNode()->getApp()->redrawAllViewers();
+    
+    
 }
 
 void

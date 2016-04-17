@@ -1185,6 +1185,10 @@ public:
         return false;
     }
 
+    virtual bool supportsMultipleClipsFPS() const
+    {
+        return false;
+    }
 
     virtual bool doesTemporalClipAccess() const
     {

@@ -181,7 +181,7 @@ public:
                                             int textureIndex,
                                             bool isPartialRect,
                                             bool recenterViewer,
-                                            const Natron::Point& viewportCenter) OVERRIDE FINAL;
+                                            const Point& viewportCenter) OVERRIDE FINAL;
     
     virtual void clearLastRenderedImage() OVERRIDE FINAL;
     

@@ -117,7 +117,7 @@ public:
                                             int textureIndex,
                                             bool isPartialRect,
                                             bool recenterViewer,
-                                            const Natron::Point& viewportCenter) = 0;
+                                            const Point& viewportCenter) = 0;
 
     /**
      * @brief Called when the input of a viewer should render black.

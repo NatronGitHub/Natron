@@ -155,8 +155,10 @@ NodeSerialization::NodeSerialization(const NodePtr & n,bool serializeInputs)
             _children.clear();
             
             for (NodesList::iterator it = nodes.begin(); it != nodes.end() ; ++it) {
-                boost::shared_ptr<NodeSerialization> state(new NodeSerialization(*it));
-                _children.push_back(state);
+                if ((*it)->isPartOfProject()) {
+                    boost::shared_ptr<NodeSerialization> state(new NodeSerialization(*it));
+                    _children.push_back(state);
+                }
             }
 
         }

@@ -68,6 +68,7 @@
 #include <stdlib.h>
 #include <cmath>
 #include <cassert>
+#include <cstdlib> //rand
 
 namespace openMVG {
 namespace robust{

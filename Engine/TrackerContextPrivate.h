@@ -25,18 +25,22 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Engine/TrackerContext.h"
+
 #include <list>
 
+#include "Global/Macros.h"
 
-
+GCC_DIAG_OFF(unused-function)
+GCC_DIAG_OFF(unused-parameter)
 #include <libmv/autotrack/autotrack.h>
+GCC_DIAG_ON(unused-function)
+GCC_DIAG_ON(unused-parameter)
 
 #include <openMVG/robust_estimation/robust_estimator_Prosac.hpp>
 
-#include "Engine/EngineFwd.h"
 #include "Engine/RectD.h"
-
-#include "Engine/TrackerContext.h"
+#include "Engine/EngineFwd.h"
 
 
 #define kTrackBaseName "track"
@@ -84,58 +88,53 @@
 #define kTrackerParamExportDataSeparator "exportDataSection"
 #define kTrackerParamExportDataSeparatorLabel "Export"
 
-#define kTrackerParamExportDataChoice "exportDataOptions"
-#define kTrackerParamExportDataChoiceLabel "Type"
-#define kTrackerParamExportDataChoiceHint "Select the desired option to the Transform/CornerPin node that will be exported. " \
-"Each export has a \"baked\" option which will copy the animation out of the tracks instead of linking them directly."
+#define kTrackerParamExportLink "exportLink"
+#define kTrackerParamExportLinkLabel "Link"
+#define kTrackerParamExportLinkHint "When checked, the node created will be linked to the parameters from this tab. When unchecked, the node created will copy the animation of all the parameters in this tab but will not be updated if any modification is made to this tab's parameters."
 
-#define kTrackerParamExportDataChoiceCPThisFrame "CornerPin (Use current frame), linked"
-#define kTrackerParamExportDataChoiceCPThisFrameHint "Warp the image according to the relative transform using the current frame as reference"
-
-#define kTrackerParamExportDataChoiceCPRefFrame "CornerPin (Reference frame), linked"
-#define kTrackerParamExportDataChoiceCPRefFrameHint "Warp the image according to the relative transform using the reference frame selected in " \
-" the Transform tab as reference"
-
-#define kTrackerParamExportDataChoiceCPThisFrameBaked "CornerPin (Use current frame), baked"
-
-#define kTrackerParamExportDataChoiceCPRefFrameBaked "CornerPin (Reference frame), baked"
-
-#define kTrackerParamExportDataChoiceTransformStabilize "Transform (Stabilize), linked"
-#define kTrackerParamExportDataChoiceTransformStabilizeHint "Creates a Transform node that will stabilize the footage. The Transform is identity " \
-"at the reference frame selected in the Transform tab"
-
-#define kTrackerParamExportDataChoiceTransformMatchMove "Transform (Match-move), linked"
-#define kTrackerParamExportDataChoiceTransformMatchMoveHint "Creates a Transform node that will match-move the footage. The Transform is identity " \
-"at the reference frame selected in the Transform tab"
-
-#define kTrackerParamExportDataChoiceTransformStabilizeBaked "Transform (Stabilize), baked"
-#define kTrackerParamExportDataChoiceTransformMatchMoveBaked "Transform (Match-move), baked"
-
+#define kTrackerParamExportUseCurrentFrame "exportUseCurrentFrame"
+#define kTrackerParamExportUseCurrentFrameLabel "Use Current Frame"
+#define kTrackerParamExportUseCurrentFrameHint "When checked, the exported Transform or CornerPin node will be identity at the current timeline's time. When unchecked, it will be identity at the frame indicated by the Reference Frame parameter."
 
 #define kTrackerParamExportButton "export"
 #define kTrackerParamExportButtonLabel "Export"
-#define kTrackerParamExportButtonHint "Creates a node referencing the tracked data according to the export type chosen on the left"
+#define kTrackerParamExportButtonHint "Creates a node referencing the tracked data. The node type depends on the node selected by the Transfor Type parameter."
 
 #define kCornerPinInvertParamName "invert"
 
 #define kTrackerParamTransformType "transformType"
 #define kTrackerParamTransformTypeLabel "Transform Type"
-#define kTrackerParamTransformTypeHint "The type of transform in output of this node."
+#define kTrackerParamTransformTypeHint "The type of transform used to produce the results."
 
-#define kTrackerParamTransformTypeNone "None"
-#define kTrackerParamTransformTypeNoneHelp "No transformation applied in output to the image: this node is a pass-through. Set it to this mode when tracking to correclty see the input image on the viewer"
+#define kTrackerParamTransformTypeTransform "Transform"
+#define kTrackerParamTransformTypeTransformHelp "The tracks motion will be used to compute the translation, scale and rotation parameter " \
+"of a Transform node. At least 1 track is required to compute the translation and 2 for scale and rotation. The more tracks you use, " \
+"the more stable and precise the resulting transform will be."
 
-#define kTrackerParamTransformTypeStabilize "Stabilize"
-#define kTrackerParamTransformTypeStabilizeHelp "Transforms the image so that the tracked points do not move"
+#define kTrackerParamTransformTypeCornerPin "CornerPin"
+#define kTrackerParamTransformTypeCornerPinHelp "The tracks motion will be used to compute a CornerPin. " \
+"A CornerPin is useful if you are tracking an image portion that has a perspective distortion, such as a rectangular window moving in the scene. " \
+"At least 4 tracks are required to compute the homography transforming the \"From\" points to the \"To\" points. " \
+"The more points you add, the more stable and precise the resulting CornerPin will be."
 
-#define kTrackerParamTransformTypeMatchMove "Match-Move"
-#define kTrackerParamTransformTypeMatchMoveHelp "Transforms a different image so that it moves to match the tracked points"
+#define kTrackerParamMotionType "motionType"
+#define kTrackerParamMotionTypeLabel "Motion Type"
+#define kTrackerParamMotionTypeHint "The type of motion in output of this node."
 
-#define kTrackerParamTransformTypeRemoveJitter "Remove Jitter"
-#define kTrackerParamTransformTypeRemoveJitterHelp "Transforms the image so that the tracked points move smoothly with high frequencies removed"
+#define kTrackerParamMotionTypeNone "None"
+#define kTrackerParamMotionTypeNoneHelp "No transformation applied in output to the image: this node is a pass-through. Set it to this mode when tracking to correclty see the input image on the viewer"
 
-#define kTrackerParamTransformTypeAddJitter "Add Jitter"
-#define kTrackerParamTransformTypeAddJitterHelp "Transforms the image by the high frequencies of the animation of the tracks to increase the shake or apply it on another image"
+#define kTrackerParamMotionTypeStabilize "Stabilize"
+#define kTrackerParamMotionTypeStabilizeHelp "Transforms the image so that the tracked points do not move"
+
+#define kTrackerParamMotionTypeMatchMove "Match-Move"
+#define kTrackerParamMotionTypeMatchMoveHelp "Transforms a different image so that it moves to match the tracked points"
+
+#define kTrackerParamMotionTypeRemoveJitter "Remove Jitter"
+#define kTrackerParamMotionTypeRemoveJitterHelp "Transforms the image so that the tracked points move smoothly with high frequencies removed"
+
+#define kTrackerParamMotionTypeAddJitter "Add Jitter"
+#define kTrackerParamMotionTypeAddJitterHelp "Transforms the image by the high frequencies of the animation of the tracks to increase the shake or apply it on another image"
 
 #define kTrackerParamReferenceFrame "referenceFrame"
 #define kTrackerParamReferenceFrameLabel "Reference frame"
@@ -152,6 +151,11 @@
 #define kTrackerParamSmooth "smooth"
 #define kTrackerParamSmoothLabel "Smooth"
 #define kTrackerParamSmoothHint "Smooth the translation/rotation/scale by averaging this number of frames together"
+
+#define kTrackerParamSmoothCornerPin "smoothCornerPin"
+#define kTrackerParamSmoothCornerPinLabel "Smooth"
+#define kTrackerParamSmoothCornerPinHint "Smooth the Corner Pin by averaging this number of frames together"
+
 
 #define kTransformParamTranslate "translate"
 #define kTransformParamRotate "rotate"
@@ -170,17 +174,45 @@
 #define kTransformParamShutterOffset "shutterOffset"
 #define kTransformParamCustomShutterOffset "shutterCustomOffset"
 
+#define kCornerPinParamFrom "from"
+#define kCornerPinParamTo "to"
+
+#define kCornerPinParamFrom1 "from1"
+#define kCornerPinParamFrom2 "from2"
+#define kCornerPinParamFrom3 "from3"
+#define kCornerPinParamFrom4 "from4"
+
+#define kCornerPinParamTo1 "to1"
+#define kCornerPinParamTo2 "to2"
+#define kCornerPinParamTo3 "to3"
+#define kCornerPinParamTo4 "to4"
+
+#define kCornerPinParamEnable1 "enable1"
+#define kCornerPinParamEnable2 "enable2"
+#define kCornerPinParamEnable3 "enable3"
+#define kCornerPinParamEnable4 "enable4"
+
+#define kCornerPinParamOverlayPoints "overlayPoints"
+
+#define kCornerPinParamMatrix "transform"
+
 
 NATRON_NAMESPACE_ENTER;
 
 
-enum TrackerTransformTypeEnum
+enum TrackerMotionTypeEnum
 {
-    eTrackerTransformTypeNone,
-    eTrackerTransformTypeStabilize,
-    eTrackerTransformTypeMatchMove,
-    eTrackerTransformTypeRemoveJitter,
-    eTrackerTransformTypeAddJitter
+    eTrackerMotionTypeNone,
+    eTrackerMotionTypeStabilize,
+    eTrackerMotionTypeMatchMove,
+    eTrackerMotionTypeRemoveJitter,
+    eTrackerMotionTypeAddJitter
+};
+
+enum TrackerTransformNodeEnum
+{
+    eTrackerTransformNodeTransform,
+    eTrackerTransformNodeCornerPin
 };
 
 enum libmv_MarkerChannelEnum {
@@ -343,26 +375,33 @@ struct TrackerContextPrivate
 {
     
     TrackerContext* _publicInterface;
-    boost::weak_ptr<Natron::Node> node;
+    boost::weak_ptr<Node> node;
     
-    std::list<boost::weak_ptr<KnobI> > knobs,perTrackKnobs;
+    std::list<boost::weak_ptr<KnobI> > perTrackKnobs;
     boost::weak_ptr<KnobBool> enableTrackRed,enableTrackGreen,enableTrackBlue;
     boost::weak_ptr<KnobDouble> maxError;
     boost::weak_ptr<KnobInt> maxIterations;
     boost::weak_ptr<KnobBool> bruteForcePreTrack,useNormalizedIntensities;
     boost::weak_ptr<KnobDouble> preBlurSigma;
     
+    boost::weak_ptr<KnobBool> activateTrack;
+    
     boost::weak_ptr<KnobSeparator> exportDataSep;
-    boost::weak_ptr<KnobChoice> exportChoice;
+    boost::weak_ptr<KnobBool> exportLink;
     boost::weak_ptr<KnobButton> exportButton;
     
-    NodePtr transformNode, cornerPinNode;
+    NodeWPtr transformNode, cornerPinNode;
     
-    boost::weak_ptr<KnobChoice> transformType;
+    boost::weak_ptr<KnobPage> transformPageKnob;
+    boost::weak_ptr<KnobSeparator> transformGenerationSeparator;
+    boost::weak_ptr<KnobChoice> transformType,motionType;
     boost::weak_ptr<KnobInt> referenceFrame;
     boost::weak_ptr<KnobButton> setCurrentFrameButton;
     boost::weak_ptr<KnobInt> jitterPeriod;
     boost::weak_ptr<KnobInt> smoothTransform;
+    boost::weak_ptr<KnobInt> smoothCornerPin;
+    
+    boost::weak_ptr<KnobSeparator> transformControlsSeparator;
     boost::weak_ptr<KnobDouble> translate;
     boost::weak_ptr<KnobDouble> rotate;
     boost::weak_ptr<KnobDouble> scale;
@@ -380,6 +419,12 @@ struct TrackerContextPrivate
     boost::weak_ptr<KnobChoice> shutterOffset;
     boost::weak_ptr<KnobDouble> customShutterOffset;
     
+    boost::weak_ptr<KnobGroup> fromGroup,toGroup;
+    boost::weak_ptr<KnobDouble> fromPoints[4],toPoints[4];
+    boost::weak_ptr<KnobBool> enableToPoint[4];
+    boost::weak_ptr<KnobDouble> cornerPinMatrix;
+    boost::weak_ptr<KnobChoice> cornerPinOverlayPoints;
+    
     mutable QMutex trackerContextMutex;
     std::vector<TrackMarkerPtr > markers;
     std::list<TrackMarkerPtr > selectedMarkers,markersToSlave,markersToUnslave;
@@ -389,7 +434,7 @@ struct TrackerContextPrivate
     TrackScheduler<TrackArgsLibMV> scheduler;
     
     
-    TrackerContextPrivate(TrackerContext* publicInterface, const boost::shared_ptr<Natron::Node> &node);
+    TrackerContextPrivate(TrackerContext* publicInterface, const boost::shared_ptr<Node> &node);
     
     
     /// Make all calls to getValue() that are global to the tracker context in here
@@ -435,13 +480,14 @@ struct TrackerContextPrivate
                                    bool slave);
     
     void createCornerPinFromSelection(const std::list<TrackMarkerPtr > & selection,
-                                      bool linked,
-                                      bool useTransformRefFrame,
-                                      bool invert);
+                                      bool linked);
     
     void createTransformFromSelection(const std::list<TrackMarkerPtr > & selection,
-                                      bool linked,
-                                      bool invert);
+                                      bool linked);
+    
+    void refreshVisibilityFromTransformType();
+    void refreshVisibilityFromTransformTypeInternal(TrackerTransformNodeEnum transformType);
+    
     
         
     static void natronTrackerToLibMVTracker(bool useRefFrameForSearchWindow,

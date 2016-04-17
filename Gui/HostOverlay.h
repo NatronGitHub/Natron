@@ -36,13 +36,106 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/OfxOverlayInteract.h"
-
+#include "Engine/HostOverlaySupport.h"
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
 // defined below:
 struct HostOverlayPrivate;
+
+class DefaultInteractI
+{
+    
+protected:
+    
+    HostOverlay* _overlay;
+    
+public:
+    
+    DefaultInteractI(HostOverlay* overlay);
+    
+    virtual ~DefaultInteractI();
+    
+    virtual bool isInteractForKnob(const KnobI* knob) const = 0;
+    
+    virtual void draw(double time,
+                      const RenderScale& renderScale,
+                      ViewIdx view,
+                      const OfxPointD& pscale,
+                      const QPointF& lastPenPos,
+                      const OfxRGBColourD& color,
+                      const OfxPointD& shadow,
+                      const QFont& font,
+                      const QFontMetrics& fm);
+    
+    virtual bool penMotion(double time,
+                           const RenderScale& renderScale,
+                           ViewIdx view,
+                           const OfxPointD& pscale,
+                           const QPointF& lastPenPos,
+                           const QPointF &penPos,
+                           const QPoint &penPosViewport,
+                           double pressure);
+    
+    virtual bool penUp(double time,
+                       const RenderScale& renderScale,
+                       ViewIdx view,
+                       const OfxPointD& pscale,
+                       const QPointF& lastPenPos,
+                       const QPointF &penPos,
+                       const QPoint &penPosViewport,
+                       double  pressure);
+    
+    virtual bool penDown(double time,
+                         const RenderScale& renderScale,
+                         ViewIdx view,
+                         const OfxPointD& pscale,
+                         const QPointF& lastPenPos,
+                         const QPointF &penPos,
+                         const QPoint &penPosViewport,
+                         double  pressure);
+    
+    
+    virtual bool keyDown(double time,
+                         const RenderScale& renderScale,
+                         ViewIdx view,
+                         int     key,
+                         char*   keyString);
+    
+    
+    virtual bool keyUp(double time,
+                       const RenderScale& renderScale,
+                       ViewIdx view,
+                       int     key,
+                       char*   keyString);
+    
+    
+    virtual bool keyRepeat(double time,
+                           const RenderScale& renderScale,
+                           ViewIdx view,
+                           int     key,
+                           char*   keyString) ;
+    
+    
+    virtual bool gainFocus(double time,
+                           const RenderScale& renderScale,
+                           ViewIdx view);
+    
+    
+    virtual bool loseFocus(double time,
+                           const RenderScale& renderScale,
+                           ViewIdx view);
+    
+protected:
+    
+    void renderText(float x, float y, float scalex, float scaley, const QString &text, const QColor &color, const QFont &font) const;
+    
+    void requestRedraw();
+    
+    void getPixelScale(double& scaleX, double& scaleY) const;
+};
+
 
 class HostOverlay : public NatronOverlayInteractSupport
 {
@@ -55,66 +148,68 @@ public:
     
     NodeGuiPtr getNode() const;
     
-    bool addPositionParam(const boost::shared_ptr<KnobDouble>& position);
+    bool addInteract(const boost::shared_ptr<HostOverlayKnobs>& knobs);
     
-    bool addTransformInteract(const boost::shared_ptr<KnobDouble>& translate,
-                              const boost::shared_ptr<KnobDouble>& scale,
-                              const boost::shared_ptr<KnobBool>& scaleUniform,
-                              const boost::shared_ptr<KnobDouble>& rotate,
-                              const boost::shared_ptr<KnobDouble>& skewX,
-                              const boost::shared_ptr<KnobDouble>& skewY,
-                              const boost::shared_ptr<KnobChoice>& skewOrder,
-                              const boost::shared_ptr<KnobDouble>& center);
     
-    void draw(double time,const RenderScale & renderScale);
+    void draw(double time,
+              const RenderScale& renderScale,
+              ViewIdx view);
     
     
 
     bool penMotion(double time,
-                   const RenderScale &renderScale,
+                   const RenderScale& renderScale,
+                   ViewIdx view,
                    const QPointF &penPos,
                    const QPoint &penPosViewport,
                    double pressure);
     
     
     bool penUp(double time,
-               const RenderScale &renderScale,
+               const RenderScale& renderScale,
+               ViewIdx view,
                const QPointF &penPos,
                const QPoint &penPosViewport,
                double  pressure);
     
     
     bool penDown(double time,
-                 const RenderScale &renderScale,
+                 const RenderScale& renderScale,
+                 ViewIdx view,
                  const QPointF &penPos,
                  const QPoint &penPosViewport,
                  double  pressure);
     
     
     bool keyDown(double time,
-                 const RenderScale &renderScale,
+                 const RenderScale& renderScale,
+                 ViewIdx view,
                  int     key,
                  char*   keyString);
     
     
     bool keyUp(double time,
-               const RenderScale &renderScale,
+               const RenderScale& renderScale,
+               ViewIdx view,
                int     key,
                char*   keyString);
     
     
     bool keyRepeat(double time,
-                   const RenderScale &renderScale,
+                   const RenderScale& renderScale,
+                   ViewIdx view,
                    int     key,
                    char*   keyString);
     
     
     bool gainFocus(double time,
-                   const RenderScale &renderScale);
+                   const RenderScale& renderScale,
+                   ViewIdx view);
     
     
-    bool loseFocus(double  time,
-                   const RenderScale &renderScale);
+    bool loseFocus(double time,
+                   const RenderScale& renderScale,
+                   ViewIdx view);
     
     bool hasHostOverlayForParam(const KnobI* param);
     
@@ -122,7 +217,13 @@ public:
     
     bool isEmpty() const;
     
+    
 private:
+    
+    friend class DefaultInteractI;
+    void renderText(float x, float y, float scalex, float scaley, const QString &text, const QColor &color, const QFont &font) const;
+    
+    void requestRedraw();
     
     boost::scoped_ptr<HostOverlayPrivate> _imp;
 };

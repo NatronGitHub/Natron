@@ -199,6 +199,9 @@ KnobDouble::KnobDouble(KnobHolder* holder,
         _decimals[i] = 2;
         _valueIsNormalized[i] = eValueIsNormalizedNone;
     }
+    if (dimension >= 4) {
+        disableSlider();
+    }
 }
 
 void
@@ -218,7 +221,8 @@ KnobDouble::setHasHostOverlayHandle(bool handle)
         boost::shared_ptr<KnobDouble> thisSharedDouble = boost::dynamic_pointer_cast<KnobDouble>(thisShared);
         assert(thisSharedDouble);
         if (handle) {
-            effect->getNode()->addDefaultPositionOverlay(thisSharedDouble);
+            effect->getNode()->addPositionInteract(thisSharedDouble,
+                                                   boost::shared_ptr<KnobBool>()/*interactive*/);
         } else {
             effect->getNode()->removePositionHostOverlay(this);
         }
@@ -1034,6 +1038,17 @@ KnobChoice::setValueFromLabel(const std::string & value,
     }
     return setValue(-1, ViewIdx(0), dimension, turnOffAutoKeying);*/
     throw std::runtime_error(std::string("KnobChoice::setValueFromLabel: unknown label ") + value);
+}
+
+void
+KnobChoice::setDefaultValueFromLabelWithoutApplying(const std::string & value,int dimension)
+{
+    for (std::size_t i = 0; i < _mergedEntries.size(); ++i) {
+        if (boost::iequals(_mergedEntries[i], value)) {
+            return setDefaultValueWithoutApplying(i, dimension);
+        }
+    }
+    throw std::runtime_error(std::string("KnobChoice::setDefaultValueFromLabel: unknown label ") + value);
 }
 
 void

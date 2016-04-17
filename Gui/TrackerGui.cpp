@@ -148,7 +148,7 @@ enum TrackerDrawStateEnum
     eDrawStateShowScalingHint,
 };
 
-typedef QFutureWatcher<std::pair<boost::shared_ptr<Natron::Image>,RectI> > TrackWatcher;
+typedef QFutureWatcher<std::pair<boost::shared_ptr<Image>,RectI> > TrackWatcher;
 typedef boost::shared_ptr<TrackWatcher> TrackWatcherPtr;
 
 struct TrackRequestKey {
@@ -302,7 +302,7 @@ struct TrackerGuiPrivate
         glDeleteBuffers(1, &pboID);
     }
     
-    void transformPattern(double time, TrackerMouseStateEnum state, const Natron::Point& delta);
+    void transformPattern(double time, TrackerMouseStateEnum state, const Point& delta);
     
     void refreshSelectedMarkerTexture();
     
@@ -312,14 +312,14 @@ struct TrackerGuiPrivate
     
     void drawSelectedMarkerTexture(const std::pair<double,double>& pixelScale,
                                    int currentTime,
-                                   const Natron::Point& selectedCenter,
-                                   const Natron::Point& offset,
-                                   const Natron::Point& selectedPtnTopLeft,
-                                   const Natron::Point& selectedPtnTopRight,
-                                   const Natron::Point& selectedPtnBtmRight,
-                                   const Natron::Point& selectedPtnBtmLeft,
-                                   const Natron::Point& selectedSearchWndBtmLeft,
-                                   const Natron::Point& selectedSearchWndTopRight);
+                                   const Point& selectedCenter,
+                                   const Point& offset,
+                                   const Point& selectedPtnTopLeft,
+                                   const Point& selectedPtnTopRight,
+                                   const Point& selectedPtnBtmRight,
+                                   const Point& selectedPtnBtmLeft,
+                                   const Point& selectedSearchWndBtmLeft,
+                                   const Point& selectedSearchWndTopRight);
     
     void drawSelectedMarkerKeyframes(const std::pair<double,double>& pixelScale, int currentTime);
     
@@ -541,7 +541,7 @@ TrackerGui::createGui()
     _imp->buttonsLayout->addWidget(_imp->updateViewerButton);
 
     QPixmap centerViewerPix;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_CENTER_VIEWER_ON_TRACK, &centerViewerPix);
+    appPTR->getIcon(NATRON_PIXMAP_CENTER_VIEWER_ON_TRACK, &centerViewerPix);
     
     _imp->centerViewerButton = new Button(QIcon(centerViewerPix),QString(),_imp->buttonsBar);
     _imp->centerViewerButton->setFixedSize(medButtonSize);
@@ -572,8 +572,8 @@ TrackerGui::createGui()
         
         QPixmap addKeyOnPix,addKeyOffPix;
         QIcon addKeyIc;
-        appPTR->getIcon(Natron::NATRON_PIXMAP_CREATE_USER_KEY_ON_MOVE_ON, &addKeyOnPix);
-        appPTR->getIcon(Natron::NATRON_PIXMAP_CREATE_USER_KEY_ON_MOVE_OFF, &addKeyOffPix);
+        appPTR->getIcon(NATRON_PIXMAP_CREATE_USER_KEY_ON_MOVE_ON, &addKeyOnPix);
+        appPTR->getIcon(NATRON_PIXMAP_CREATE_USER_KEY_ON_MOVE_OFF, &addKeyOffPix);
         addKeyIc.addPixmap(addKeyOnPix, QIcon::Normal, QIcon::On);
         addKeyIc.addPixmap(addKeyOffPix, QIcon::Normal, QIcon::Off);
         
@@ -588,8 +588,8 @@ TrackerGui::createGui()
         _imp->buttonsLayout->addWidget(_imp->createKeyOnMoveButton);
         
         QPixmap showCorrPix,hideCorrPix;
-        appPTR->getIcon(Natron::NATRON_PIXMAP_SHOW_TRACK_ERROR, &showCorrPix);
-        appPTR->getIcon(Natron::NATRON_PIXMAP_HIDE_TRACK_ERROR, &hideCorrPix);
+        appPTR->getIcon(NATRON_PIXMAP_SHOW_TRACK_ERROR, &showCorrPix);
+        appPTR->getIcon(NATRON_PIXMAP_HIDE_TRACK_ERROR, &hideCorrPix);
         QIcon corrIc;
         corrIc.addPixmap(showCorrPix, QIcon::Normal, QIcon::On);
         corrIc.addPixmap(hideCorrPix, QIcon::Normal, QIcon::Off);
@@ -611,10 +611,10 @@ TrackerGui::createGui()
         keyframeLayout->setSpacing(0);
         
         QPixmap addKeyPix,removeKeyPix,resetOffsetPix,removeAllUserKeysPix;
-        appPTR->getIcon(Natron::NATRON_PIXMAP_ADD_USER_KEY, &addKeyPix);
-        appPTR->getIcon(Natron::NATRON_PIXMAP_REMOVE_USER_KEY, &removeKeyPix);
-        appPTR->getIcon(Natron::NATRON_PIXMAP_RESET_TRACK_OFFSET, &resetOffsetPix);
-        appPTR->getIcon(Natron::NATRON_PIXMAP_RESET_USER_KEYS, &removeAllUserKeysPix);
+        appPTR->getIcon(NATRON_PIXMAP_ADD_USER_KEY, &addKeyPix);
+        appPTR->getIcon(NATRON_PIXMAP_REMOVE_USER_KEY, &removeKeyPix);
+        appPTR->getIcon(NATRON_PIXMAP_RESET_TRACK_OFFSET, &resetOffsetPix);
+        appPTR->getIcon(NATRON_PIXMAP_RESET_USER_KEYS, &removeAllUserKeysPix);
         
         
         _imp->setKeyFrameButton = new Button(QIcon(addKeyPix), QString(), keyframeContainer);
@@ -636,7 +636,7 @@ TrackerGui::createGui()
         _imp->buttonsLayout->addWidget(keyframeContainer);
         
         QPixmap resetPix;
-        appPTR->getIcon(Natron::NATRON_PIXMAP_RESTORE_DEFAULTS_ENABLED, &resetPix);
+        appPTR->getIcon(NATRON_PIXMAP_RESTORE_DEFAULTS_ENABLED, &resetPix);
         _imp->resetOffsetButton = new Button(QIcon(resetOffsetPix), QString(), _imp->buttonsBar);
         _imp->resetOffsetButton->setFixedSize(medButtonSize);
         _imp->resetOffsetButton->setIconSize(medButtonIconSize);
@@ -708,7 +708,7 @@ TrackerGui::onAddTrackClicked(bool clicked)
 static QPointF computeMidPointExtent(const QPointF& prev, const QPointF& next, const QPointF& point,
                                      const QPointF& handleSize)
 {
-    Natron::Point leftDeriv,rightDeriv;
+    Point leftDeriv,rightDeriv;
     leftDeriv.x = prev.x() - point.x();
     leftDeriv.y = prev.y() - point.y();
     
@@ -754,7 +754,7 @@ TrackerGui::drawOverlays(double time,
             const std::list<std::pair<NodeWPtr,bool> > & instances = _imp->panelv1->getInstances();
             for (std::list<std::pair<NodeWPtr,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
                 
-                boost::shared_ptr<Natron::Node> instance = it->first.lock();
+                boost::shared_ptr<Node> instance = it->first.lock();
                 
                 if (instance->isNodeDisabled()) {
                     continue;
@@ -824,10 +824,10 @@ TrackerGui::drawOverlays(double time,
             bool showErrorColor = _imp->showCorrelationButton->isChecked();
             
             TrackMarkerPtr selectedMarker = _imp->selectedMarker.lock();
-            Natron::Point selectedCenter,selectedPtnTopLeft,selectedPtnTopRight,selectedPtnBtmRight,selectedPtnBtmLeft, selectedOffset, selectedSearchBtmLeft, selectedSearchTopRight;
+            Point selectedCenter,selectedPtnTopLeft,selectedPtnTopRight,selectedPtnBtmRight,selectedPtnBtmLeft, selectedOffset, selectedSearchBtmLeft, selectedSearchTopRight;
             
             for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
-                if (!(*it)->isEnabled()) {
+                if (!(*it)->isEnabled((*it)->getCurrentTime())) {
                     continue;
                 }
                 std::list<TrackMarkerPtr >::iterator foundSelected = std::find(selectedMarkers.begin(),selectedMarkers.end(),*it);
@@ -891,38 +891,30 @@ TrackerGui::drawOverlays(double time,
                     shadow.x = 2./(projection[0] * viewportSize[0]);
                     shadow.y = 2./(projection[5] * viewportSize[1]);
                     
-                    QPointF offset,center,topLeft,topRight,btmRight,btmLeft;
-                    QPointF searchTopLeft,searchTopRight,searchBtmLeft,searchBtmRight;
-                    center.rx() = centerKnob->getValueAtTime(time, 0);
-                    center.ry() = centerKnob->getValueAtTime(time, 1);
-                    offset.rx() = offsetKnob->getValueAtTime(time, 0);
-                    offset.ry() = offsetKnob->getValueAtTime(time, 1);
-                    
-                    topLeft.rx() = ptnTopLeft->getValueAtTime(time, 0) + offset.x() + center.x();
-                    topLeft.ry() = ptnTopLeft->getValueAtTime(time, 1) + offset.y() + center.y();
-                    
-                    topRight.rx() = ptnTopRight->getValueAtTime(time, 0) + offset.x() + center.x();
-                    topRight.ry() = ptnTopRight->getValueAtTime(time, 1) + offset.y() + center.y();
-                    
-                    btmRight.rx() = ptnBtmRight->getValueAtTime(time, 0) + offset.x() + center.x();
-                    btmRight.ry() = ptnBtmRight->getValueAtTime(time, 1) + offset.y() + center.y();
-                    
-                    btmLeft.rx() = ptnBtmLeft->getValueAtTime(time, 0) + offset.x() + center.x();
-                    btmLeft.ry() = ptnBtmLeft->getValueAtTime(time, 1) + offset.y() + center.y();
-                    
-                    searchBtmLeft.rx() = searchWndBtmLeft->getValueAtTime(time, 0) + offset.x() + center.x();
-                    searchBtmLeft.ry() = searchWndBtmLeft->getValueAtTime(time, 1) + offset.y() + center.y();
-                    
-                    searchTopRight.rx() = searchWndTopRight->getValueAtTime(time, 0) + offset.x() + center.x();
-                    searchTopRight.ry() = searchWndTopRight->getValueAtTime(time, 1) + offset.y() + center.y();
-                    
-                    searchTopLeft.rx() = searchBtmLeft.x();
-                    searchTopLeft.ry() = searchTopRight.y();
-                    
-                    searchBtmRight.rx() = searchTopRight.x();
-                    searchBtmRight.ry() = searchBtmLeft.y();
-                    
-                    
+                    const QPointF center(centerKnob->getValueAtTime(time, 0),
+                                         centerKnob->getValueAtTime(time, 1));
+                    const QPointF offset(offsetKnob->getValueAtTime(time, 0),
+                                         offsetKnob->getValueAtTime(time, 1));
+
+                    const QPointF topLeft(ptnTopLeft->getValueAtTime(time, 0) + offset.x() + center.x(),
+                                          ptnTopLeft->getValueAtTime(time, 1) + offset.y() + center.y());
+
+                    const QPointF topRight(ptnTopRight->getValueAtTime(time, 0) + offset.x() + center.x(),
+                                           ptnTopRight->getValueAtTime(time, 1) + offset.y() + center.y());
+
+                    const QPointF btmRight(ptnBtmRight->getValueAtTime(time, 0) + offset.x() + center.x(),
+                                           ptnBtmRight->getValueAtTime(time, 1) + offset.y() + center.y());
+
+                    const QPointF btmLeft(ptnBtmLeft->getValueAtTime(time, 0) + offset.x() + center.x(),
+                                          ptnBtmLeft->getValueAtTime(time, 1) + offset.y() + center.y());
+
+                    const double searchLeft   = searchWndBtmLeft->getValueAtTime(time, 0)  + offset.x() + center.x();
+                    const double searchBottom = searchWndBtmLeft->getValueAtTime(time, 1)  + offset.y() + center.y();
+                    const double searchRight  = searchWndTopRight->getValueAtTime(time, 0) + offset.x() + center.x();
+                    const double searchTop    = searchWndTopRight->getValueAtTime(time, 1) + offset.y() + center.y();
+                    const double searchMidX   = (searchLeft + searchRight) / 2;
+                    const double searchMidY   = (searchTop + searchBottom) / 2;
+
                     if (selectedMarker == *it) {
                         selectedCenter.x = center.x();
                         selectedCenter.y = center.y();
@@ -936,39 +928,47 @@ TrackerGui::drawOverlays(double time,
                         selectedPtnTopRight.y = topRight.y();
                         selectedPtnTopLeft.x = topLeft.x();
                         selectedPtnTopLeft.y = topLeft.y();
-                        selectedSearchBtmLeft.x = searchBtmLeft.x();
-                        selectedSearchBtmLeft.y = searchBtmLeft.y();
+                        selectedSearchBtmLeft.x = searchLeft;
+                        selectedSearchBtmLeft.y = searchBottom;
                         
-                        selectedSearchTopRight.x = searchTopRight.x();
-                        selectedSearchTopRight.y = searchTopRight.y();
+                        selectedSearchTopRight.x = searchRight;
+                        selectedSearchTopRight.y = searchTop;
                     }
                     
-                    QPointF innerMidLeft((btmLeft.x() + topLeft.x()) / 2., (btmLeft.y() + topLeft.y()) / 2.),
-                    innerMidTop((topLeft.x() + topRight.x()) / 2., (topLeft.y() + topRight.y()) / 2.),
-                    innerMidRight((btmRight.x() + topRight.x()) / 2., (btmRight.y() + topRight.y()) / 2.),
-                    innerMidBtm((btmLeft.x() + btmRight.x()) / 2., (btmLeft.y() + btmRight.y()) / 2.),
-                    outterMidLeft((searchBtmLeft.x() + searchTopLeft.x()) / 2., (searchBtmLeft.y() + searchTopLeft.y()) / 2.),
-                    outterMidTop((searchTopLeft.x() + searchTopRight.x()) / 2., (searchTopLeft.y() + searchTopRight.y()) / 2.),
-                    outterMidRight((searchBtmRight.x() + searchTopRight.x()) / 2., (searchBtmRight.y() + searchTopRight.y()) / 2.),
-                    outterMidBtm((searchBtmLeft.x() + searchBtmRight.x()) / 2., (searchBtmLeft.y() + searchBtmRight.y()) / 2.);
+                    const QPointF innerMidLeft((btmLeft + topLeft) / 2);
+                    const QPointF innerMidTop((topLeft + topRight) / 2);
+                    const QPointF innerMidRight((btmRight + topRight) / 2);
+                    const QPointF innerMidBtm((btmLeft + btmRight) / 2);
+                    const QPointF outterMidLeft(searchLeft, searchMidY);
+                    const QPointF outterMidTop(searchMidX, searchTop);
+                    const QPointF outterMidRight(searchRight, searchMidY);
+                    const QPointF outterMidBtm(searchMidX, searchBottom);
                     
-                    QPointF handleSize;
-                    handleSize.rx() = HANDLE_SIZE * pixelScaleX;
-                    handleSize.ry() = handleSize.x();
+                    const QPointF handleSize(HANDLE_SIZE * pixelScaleX, handleSize.x());
                     
-                    QPointF innerMidLeftExt = computeMidPointExtent(topLeft, btmLeft, innerMidLeft, handleSize);
-                    QPointF innerMidRightExt = computeMidPointExtent(btmRight, topRight, innerMidRight, handleSize);
-                    QPointF innerMidTopExt = computeMidPointExtent(topRight, topLeft, innerMidTop, handleSize);
-                    QPointF innerMidBtmExt = computeMidPointExtent(btmLeft, btmRight, innerMidBtm, handleSize);
-                    
-                    QPointF outterMidLeftExt = computeMidPointExtent(searchTopLeft, searchBtmLeft, outterMidLeft, handleSize);
-                    QPointF outterMidRightExt = computeMidPointExtent(searchBtmRight, searchTopRight, outterMidRight, handleSize);
-                    QPointF outterMidTopExt = computeMidPointExtent(searchTopRight, searchTopLeft, outterMidTop, handleSize);
-                    QPointF outterMidBtmExt = computeMidPointExtent(searchBtmLeft,searchBtmRight, outterMidBtm, handleSize);
+                    const QPointF innerMidLeftExt = computeMidPointExtent(topLeft, btmLeft, innerMidLeft, handleSize);
+                    const QPointF innerMidRightExt = computeMidPointExtent(btmRight, topRight, innerMidRight, handleSize);
+                    const QPointF innerMidTopExt = computeMidPointExtent(topRight, topLeft, innerMidTop, handleSize);
+                    const QPointF innerMidBtmExt = computeMidPointExtent(btmLeft, btmRight, innerMidBtm, handleSize);
+
+                    const QPointF searchTopLeft(searchLeft, searchTop);
+                    const QPointF searchTopRight(searchRight, searchTop);
+                    const QPointF searchBtmRight(searchRight, searchBottom);
+                    const QPointF searchBtmLeft(searchLeft, searchBottom);
+
+                    const QPointF searchTopMid(searchMidX, searchTop);
+                    const QPointF searchRightMid(searchRight, searchMidY);
+                    const QPointF searchLeftMid(searchLeft, searchMidY);
+                    const QPointF searchBtmMid(searchMidX, searchBottom);
+
+                    const QPointF outterMidLeftExt  = computeMidPointExtent(searchTopLeft,  searchBtmLeft,  outterMidLeft,  handleSize);
+                    const QPointF outterMidRightExt = computeMidPointExtent(searchBtmRight, searchTopRight, outterMidRight, handleSize);
+                    const QPointF outterMidTopExt   = computeMidPointExtent(searchTopRight, searchTopLeft,  outterMidTop,   handleSize);
+                    const QPointF outterMidBtmExt   = computeMidPointExtent(searchBtmLeft,  searchBtmRight, outterMidBtm,   handleSize);
                     
                     std::string name = (*it)->getLabel();
 
-                    std::map<int,std::pair<Natron::Point,double> > centerPoints;
+                    std::map<int,std::pair<Point,double> > centerPoints;
                     int floorTime = std::floor(time + 0.5);
                     
                     boost::shared_ptr<Curve> xCurve = centerKnob->getCurve(ViewSpec::current(), 0);
@@ -981,7 +981,7 @@ TrackerGui::drawOverlays(double time,
                         
                         for (int j = 0; j < 2; ++j) {
                             if (xCurve->getKeyFrameWithTime(keyTimes[j], &k)) {
-                                std::pair<Natron::Point,double>& p = centerPoints[k.getTime()];
+                                std::pair<Point,double>& p = centerPoints[k.getTime()];
                                 p.first.x = k.getValue();
                                 p.first.y = INT_MIN;
                                 
@@ -1006,11 +1006,12 @@ TrackerGui::drawOverlays(double time,
                         
                         ///Draw center position
                         
+                        glEnable(GL_POINT_SMOOTH);
                         glBegin(GL_POINTS);
                         if (!showErrorColor) {
                             glColor3f(0.5 * l,0.5 * l,0.5 * l);
                         }
-                        for (std::map<int,std::pair<Natron::Point,double> >::iterator it2 = centerPoints.begin() ;it2!=centerPoints.end(); ++it2) {
+                        for (std::map<int,std::pair<Point,double> >::iterator it2 = centerPoints.begin() ;it2!=centerPoints.end(); ++it2) {
                             if (showErrorColor) {
                                 if (l != 0) {
                                     /*
@@ -1031,10 +1032,11 @@ TrackerGui::drawOverlays(double time,
                             glVertex2d(it2->second.first.x, it2->second.first.y);
                         }
                         glEnd();
+                        glDisable(GL_POINT_SMOOTH);
                         
                         glBegin(GL_LINE_STRIP);
                         glColor3f(0.5 * l,0.5 * l,0.5 * l);
-                        for (std::map<int,std::pair<Natron::Point,double> >::iterator it = centerPoints.begin() ;it!=centerPoints.end(); ++it) {
+                        for (std::map<int,std::pair<Point,double> >::iterator it = centerPoints.begin() ;it!=centerPoints.end(); ++it) {
                             glVertex2d(it->second.first.x, it->second.first.y);
                         }
                         glEnd();
@@ -1237,10 +1239,7 @@ TrackerGui::drawOverlays(double time,
 
                 
             }
-            
-            NodePtr node = _imp->panel->getContext()->getNode();
-            node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer->getViewer());
-            node->drawHostOverlay(time, renderScale);
+            _imp->panel->getContext()->drawInternalNodesOverlay(time, renderScale, view, _imp->viewer->getViewer());
         } // // if (_imp->panelv1) {
         
         
@@ -1408,10 +1407,10 @@ TrackerGuiPrivate::computeSelectedMarkerCanonicalRect(RectD* rect) const
     computeTextureCanonicalRect(*selectedMarkerTexture, 0, selectedMarkerWidth, rect);
 }
 
-static Natron::Point toMagWindowPoint(const Natron::Point& ptnPoint,
+static Point toMagWindowPoint(const Point& ptnPoint,
                                       const RectD& canonicalSearchWindow,
                                       const RectD& textureRectCanonical) {
-    Natron::Point ret;
+    Point ret;
     double xCenterPercent = (ptnPoint.x - canonicalSearchWindow.x1) / (canonicalSearchWindow.x2 - canonicalSearchWindow.x1);
     double yCenterPercent = (ptnPoint.y - canonicalSearchWindow.y1) / (canonicalSearchWindow.y2 - canonicalSearchWindow.y1);
     ret.y = textureRectCanonical.y1 + yCenterPercent * (textureRectCanonical.y2 - textureRectCanonical.y1);
@@ -1487,7 +1486,7 @@ TrackerGuiPrivate::drawSelectedMarkerKeyframes(const std::pair<double,double>& p
     if (!marker) {
         return;
     }
-    if (!marker->isEnabled()) {
+    if (!marker->isEnabled(currentTime)) {
         return;
     }
     boost::shared_ptr<KnobDouble> centerKnob = marker->getCenterKnob();
@@ -1521,8 +1520,8 @@ TrackerGuiPrivate::drawSelectedMarkerKeyframes(const std::pair<double,double>& p
                 
                 double time = (double)it2->first;
                 
-                Natron::Point offset,center,topLeft,topRight,btmRight,btmLeft;
-                Natron::Point searchTopLeft,searchTopRight,searchBtmLeft,searchBtmRight;
+                Point offset, center, topLeft,topRight,btmRight,btmLeft;
+
                 center.x = centerKnob->getValueAtTime(time, 0);
                 center.y = centerKnob->getValueAtTime(time, 1);
                 offset.x = offsetKnob->getValueAtTime(time, 0);
@@ -1540,17 +1539,10 @@ TrackerGuiPrivate::drawSelectedMarkerKeyframes(const std::pair<double,double>& p
                 btmLeft.x = ptnBtmLeft->getValueAtTime(time, 0) + offset.x + center.x;
                 btmLeft.y = ptnBtmLeft->getValueAtTime(time, 1) + offset.y + center.y;
                 
-                searchBtmLeft.x = searchWndBtmLeft->getValueAtTime(time, 0) + offset.x + center.x;
-                searchBtmLeft.y = searchWndBtmLeft->getValueAtTime(time, 1) + offset.y + center.y;
-                
-                searchTopRight.x = searchWndTopRight->getValueAtTime(time, 0) + offset.x + center.x;
-                searchTopRight.y = searchWndTopRight->getValueAtTime(time, 1) + offset.y + center.y;
-                
-                searchTopLeft.x = searchBtmLeft.x;
-                searchTopLeft.y = searchTopRight.y;
-                
-                searchBtmRight.x = searchTopRight.x;
-                searchBtmRight.y = searchBtmLeft.y;
+                //const double searchLeft   = searchWndBtmLeft->getValueAtTime(time, 0) + offset.x + center.x;
+                //const double searchRight  = searchWndTopRight->getValueAtTime(time, 0) + offset.x + center.x;
+                //const double searchBottom = searchWndBtmLeft->getValueAtTime(time, 1) + offset.y + center.y;
+                //const double searchTop    = searchWndTopRight->getValueAtTime(time, 1) + offset.y + center.y;
                 
                 const TextureRect& texRect = it2->second->getTextureRect();
                 if (texRect.h <= 0) {
@@ -1572,15 +1564,15 @@ TrackerGuiPrivate::drawSelectedMarkerKeyframes(const std::pair<double,double>& p
                 //Remove any offset to the center to see the marker in the magnification window
                 double xCenterPercent = (center.x - canonicalSearchWindow.x1 + offset.x) / (canonicalSearchWindow.x2 - canonicalSearchWindow.x1);
                 double yCenterPercent = (center.y - canonicalSearchWindow.y1 + offset.y) / (canonicalSearchWindow.y2 - canonicalSearchWindow.y1);
-                Natron::Point centerPointCanonical;
+                Point centerPointCanonical;
                 centerPointCanonical.y = textureRectCanonical.y1 + yCenterPercent * (textureRectCanonical.y2 - textureRectCanonical.y1);
                 centerPointCanonical.x = textureRectCanonical.x1 + xCenterPercent * (textureRectCanonical.x2 - textureRectCanonical.x1);
              
                 
-                Natron::Point innerTopLeft = toMagWindowPoint(topLeft, canonicalSearchWindow, textureRectCanonical);
-                Natron::Point innerTopRight = toMagWindowPoint(topRight, canonicalSearchWindow, textureRectCanonical);
-                Natron::Point innerBtmLeft = toMagWindowPoint(btmLeft, canonicalSearchWindow, textureRectCanonical);
-                Natron::Point innerBtmRight = toMagWindowPoint(btmRight, canonicalSearchWindow, textureRectCanonical);
+                Point innerTopLeft = toMagWindowPoint(topLeft, canonicalSearchWindow, textureRectCanonical);
+                Point innerTopRight = toMagWindowPoint(topRight, canonicalSearchWindow, textureRectCanonical);
+                Point innerBtmLeft = toMagWindowPoint(btmLeft, canonicalSearchWindow, textureRectCanonical);
+                Point innerBtmRight = toMagWindowPoint(btmRight, canonicalSearchWindow, textureRectCanonical);
                 
                 //Map texture
                 glColor4f(1., 1., 1., 1.);
@@ -1700,17 +1692,17 @@ TrackerGuiPrivate::drawSelectedMarkerKeyframes(const std::pair<double,double>& p
 void
 TrackerGuiPrivate::drawSelectedMarkerTexture(const std::pair<double,double>& pixelScale,
                                              int currentTime,
-                                             const Natron::Point& ptnCenter,
-                                             const Natron::Point& offset,
-                                             const Natron::Point& ptnTopLeft,
-                                             const Natron::Point& ptnTopRight,
-                                             const Natron::Point& ptnBtmRight,
-                                             const Natron::Point& ptnBtmLeft,
-                                             const Natron::Point& /*selectedSearchWndBtmLeft*/,
-                                             const Natron::Point& /*selectedSearchWndTopRight*/)
+                                             const Point& ptnCenter,
+                                             const Point& offset,
+                                             const Point& ptnTopLeft,
+                                             const Point& ptnTopRight,
+                                             const Point& ptnBtmRight,
+                                             const Point& ptnBtmLeft,
+                                             const Point& /*selectedSearchWndBtmLeft*/,
+                                             const Point& /*selectedSearchWndTopRight*/)
 {
     TrackMarkerPtr marker = selectedMarker.lock();
-    if (isTracking || !selectedMarkerTexture || !marker || !marker->isEnabled() || viewer->getInternalNode()->getRenderEngine()->isDoingSequentialRender()) {
+    if (isTracking || !selectedMarkerTexture || !marker || !marker->isEnabled(currentTime) || viewer->getInternalNode()->getRenderEngine()->isDoingSequentialRender()) {
         return;
     }
     
@@ -1739,7 +1731,7 @@ TrackerGuiPrivate::drawSelectedMarkerTexture(const std::pair<double,double>& pix
     RectD canonicalSearchWindow;
     texRect.toCanonical_noClipping(0, texRect.par,&canonicalSearchWindow);
     
-    Natron::Point centerPoint, innerTopLeft,innerTopRight,innerBtmLeft,innerBtmRight;
+    Point centerPoint, innerTopLeft,innerTopRight,innerBtmLeft,innerBtmRight;
     
     //Remove any offset to the center to see the marker in the magnification window
     double xCenterPercent = (ptnCenter.x - canonicalSearchWindow.x1 + offset.x) / (canonicalSearchWindow.x2 - canonicalSearchWindow.x1);
@@ -1884,9 +1876,9 @@ static bool isNearbyPoint(const QPointF& p,
     return false;
 }
 
-static void findLineIntersection(const Natron::Point& p, const Natron::Point& l1, const Natron::Point& l2, Natron::Point* inter)
+static void findLineIntersection(const Point& p, const Point& l1, const Point& l2, Point* inter)
 {
-    Natron::Point h,u;
+    Point h,u;
     double a;
     h.x = p.x - l1.x;
     h.y = p.y - l1.y;
@@ -1916,11 +1908,10 @@ TrackerGui::penDown(double time,
     bool didSomething = false;
     
     if (_imp->panel) {
-        NodePtr node = _imp->panel->getContext()->getNode();
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if (node->onOverlayPenDownDefault(renderScale, viewportPos, pos, pressure)) {
+        if (_imp->panel->getContext()->onOverlayPenDownInternalNodes(time, renderScale, view, viewportPos, pos, pressure, _imp->viewer->getViewer())) {
             return true;
         }
+        
     }
     
     
@@ -1984,7 +1975,7 @@ TrackerGui::penDown(double time,
         std::vector<TrackMarkerPtr > allMarkers;
         context->getAllMarkers(&allMarkers);
         for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
-            if (!(*it)->isEnabled()) {
+            if (!(*it)->isEnabled(time)) {
                 continue;
             }
             
@@ -2085,36 +2076,26 @@ TrackerGui::penDown(double time,
                     didSomething = true;
                 }
             }
+            
             if (!didSomething && isSelected) {
-              
-                
                 ///Test search window
-                QPointF searchTopLeft,searchTopRight,searchBtmRight,searchBtmLeft;
-                searchTopRight.rx() = searchWndTopRight->getValueAtTime(time, 0) + centerPoint.x() + offset.x();
-                searchTopRight.ry() = searchWndTopRight->getValueAtTime(time, 1) + centerPoint.y() + offset.y();
-                
-                searchBtmLeft.rx() = searchWndBtmLeft->getValueAtTime(time, 0) + centerPoint.x() + offset.x();
-                searchBtmLeft.ry() = searchWndBtmLeft->getValueAtTime(time, 1) + + centerPoint.y() + offset.y();
-                
-                searchTopLeft.rx() = searchBtmLeft.x();
-                searchTopLeft.ry() = searchTopRight.y();
-                
-                searchBtmRight.rx() = searchTopRight.x();
-                searchBtmRight.ry() = searchBtmLeft.y();
-                
-                QPointF searchTopMid,searchRightMid,searchLeftMid,searchBtmMid;
-                searchTopMid.rx() = (searchTopLeft.x() + searchTopRight.x()) / 2.;
-                searchTopMid.ry() = (searchTopLeft.y() + searchTopRight.y()) / 2.;
-                
-                searchRightMid.rx() = (searchBtmRight.x() + searchTopRight.x()) / 2.;
-                searchRightMid.ry() = (searchBtmRight.y() + searchTopRight.y()) / 2.;
-                
-                searchBtmMid.rx() = (searchBtmRight.x() + searchBtmLeft.x()) / 2.;
-                searchBtmMid.ry() = (searchBtmRight.y() + searchBtmLeft.y()) / 2.;
-                
-                searchLeftMid.rx() = (searchTopLeft.x() + searchBtmLeft.x()) / 2.;
-                searchLeftMid.ry() = (searchTopLeft.y() + searchBtmLeft.y()) / 2.;
-                
+                const double searchLeft = searchWndBtmLeft->getValueAtTime(time, 0) + centerPoint.x() + offset.x();
+                const double searchRight = searchWndTopRight->getValueAtTime(time, 0) + centerPoint.x() + offset.x();
+                const double searchTop = searchWndTopRight->getValueAtTime(time, 1) + centerPoint.y() + offset.y();
+                const double searchBottom = searchWndBtmLeft->getValueAtTime(time, 1) + + centerPoint.y() + offset.y();
+                const double searchMidX = (searchLeft + searchRight) / 2.;
+                const double searchMidY = (searchTop + searchBottom) / 2.;
+
+                const QPointF searchTopLeft(searchLeft, searchTop);
+                const QPointF searchTopRight(searchRight, searchTop);
+                const QPointF searchBtmRight(searchRight, searchBottom);
+                const QPointF searchBtmLeft(searchLeft, searchBottom);
+
+                const QPointF searchTopMid(searchMidX, searchTop);
+                const QPointF searchRightMid(searchRight, searchMidY);
+                const QPointF searchLeftMid(searchLeft, searchMidY);
+                const QPointF searchBtmMid(searchMidX, searchBottom);
+
                 if (isNearbyPoint(searchTopLeft, viewer, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE)) {
                     _imp->eventState = eMouseStateDraggingOuterTopLeft;
                     _imp->interactMarker = *it;
@@ -2170,7 +2151,7 @@ TrackerGui::penDown(double time,
         if (_imp->clickToAddTrackEnabled && !didSomething) {
             TrackMarkerPtr marker = context->createMarker();
             boost::shared_ptr<KnobDouble> centerKnob = marker->getCenterKnob();
-            centerKnob->setValuesAtTime(time, pos.x(), pos.y(), view, Natron::eValueChangedReasonNatronInternalEdited);
+            centerKnob->setValuesAtTime(time, pos.x(), pos.y(), view, eValueChangedReasonNatronInternalEdited);
             if (_imp->createKeyOnMoveButton->isChecked()) {
                 marker->setUserKeyframe(time);
             }
@@ -2230,7 +2211,7 @@ TrackerGui::penDoubleClicked(double /*time*/,
 }
 
 void
-TrackerGuiPrivate::transformPattern(double time, TrackerMouseStateEnum state, const Natron::Point& delta)
+TrackerGuiPrivate::transformPattern(double time, TrackerMouseStateEnum state, const Point& delta)
 {
     boost::shared_ptr<KnobDouble> searchWndTopRight,searchWndBtmLeft;
     boost::shared_ptr<KnobDouble> patternCorners[4];
@@ -2457,9 +2438,9 @@ TrackerGuiPrivate::transformPattern(double time, TrackerMouseStateEnum state, co
             
             
             if (patternCorners[i]->hasAnimation()) {
-                patternCorners[i]->setValuesAtTime(time, patternPoints[i].x(), patternPoints[i].y(), ViewSpec::current(), Natron::eValueChangedReasonNatronInternalEdited);
+                patternCorners[i]->setValuesAtTime(time, patternPoints[i].x(), patternPoints[i].y(), ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
             } else {
-                patternCorners[i]->setValues(patternPoints[i].x(), patternPoints[i].y(), ViewSpec::current(), Natron::eValueChangedReasonNatronInternalEdited);
+                patternCorners[i]->setValues(patternPoints[i].x(), patternPoints[i].y(), ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
             }
         }
     }
@@ -2470,15 +2451,15 @@ TrackerGuiPrivate::transformPattern(double time, TrackerMouseStateEnum state, co
     searchPoints[3].ry() -= (centerPoint.y() + offset.y());
     
     if (searchWndBtmLeft->hasAnimation()) {
-        searchWndBtmLeft->setValuesAtTime(time, searchPoints[1].x(), searchPoints[1].y(),ViewSpec::current(),  Natron::eValueChangedReasonNatronInternalEdited);
+        searchWndBtmLeft->setValuesAtTime(time, searchPoints[1].x(), searchPoints[1].y(),ViewSpec::current(),  eValueChangedReasonNatronInternalEdited);
     } else {
-        searchWndBtmLeft->setValues(searchPoints[1].x(), searchPoints[1].y(), ViewSpec::current(), Natron::eValueChangedReasonNatronInternalEdited);
+        searchWndBtmLeft->setValues(searchPoints[1].x(), searchPoints[1].y(), ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
     }
     
     if (searchWndTopRight->hasAnimation()) {
-        searchWndTopRight->setValuesAtTime(time, searchPoints[3].x(), searchPoints[3].y(), ViewSpec::current(), Natron::eValueChangedReasonNatronInternalEdited);
+        searchWndTopRight->setValuesAtTime(time, searchPoints[3].x(), searchPoints[3].y(), ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
     } else {
-        searchWndTopRight->setValues(searchPoints[3].x(), searchPoints[3].y(), ViewSpec::current(), Natron::eValueChangedReasonNatronInternalEdited);
+        searchWndTopRight->setValues(searchPoints[3].x(), searchPoints[3].y(), ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
     }
     effect->endChanges();
     
@@ -2506,14 +2487,13 @@ TrackerGui::penMotion(double time,
     bool didSomething = false;
     
     if (_imp->panel) {
-        NodePtr node = _imp->panel->getContext()->getNode();
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if (node->onOverlayPenMotionDefault(renderScale, viewportPos, pos, pressure)) {
+        if (_imp->panel->getContext()->onOverlayPenMotionInternalNodes(time, renderScale, view, viewportPos, pos, pressure, _imp->viewer->getViewer())) {
             return true;
         }
+        
     }
     
-    Natron::Point delta;
+    Point delta;
     delta.x = pos.x() - _imp->lastMousePos.x();
     delta.y = pos.y() - _imp->lastMousePos.y();
     
@@ -2546,7 +2526,7 @@ TrackerGui::penMotion(double time,
         
         bool hoverProcess = false;
         for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
-            if (!(*it)->isEnabled()) {
+            if (!(*it)->isEnabled(time)) {
                 continue;
             }
             
@@ -2564,9 +2544,9 @@ TrackerGui::penMotion(double time,
             boost::shared_ptr<KnobDouble> searchWndBtmLeft = (*it)->getSearchWindowBottomLeftKnob();
             
             
-            QPointF centerPoint;
-            centerPoint.rx() = centerKnob->getValueAtTime(time, 0);
-            centerPoint.ry() = centerKnob->getValueAtTime(time, 1);
+            QPointF center;
+            center.rx() = centerKnob->getValueAtTime(time, 0);
+            center.ry() = centerKnob->getValueAtTime(time, 1);
             
             QPointF offset;
             offset.rx() = offsetKnob->getValueAtTime(time, 0);
@@ -2575,7 +2555,7 @@ TrackerGui::penMotion(double time,
                 _imp->hoverState = eDrawStateHoveringCenter;
                 _imp->hoverMarker = *it;
                 hoverProcess = true;
-            } else if ((offset.x() != 0 || offset.y() != 0) && isNearbyPoint(QPointF(centerPoint.x() + offset.x(), centerPoint.y() + offset.y()), viewer, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE)) {
+            } else if ((offset.x() != 0 || offset.y() != 0) && isNearbyPoint(QPointF(center.x() + offset.x(), center.y() + offset.y()), viewer, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE)) {
                 _imp->hoverState = eDrawStateHoveringCenter;
                 _imp->hoverMarker = *it;
                 didSomething = true;
@@ -2585,17 +2565,17 @@ TrackerGui::penMotion(double time,
             
             if (!hoverProcess) {
                 QPointF topLeft,topRight,btmRight,btmLeft;
-                topLeft.rx() = ptnTopLeft->getValueAtTime(time, 0) + offset.x() + centerPoint.x();
-                topLeft.ry() = ptnTopLeft->getValueAtTime(time, 1) + offset.y() + centerPoint.y();
+                topLeft.rx() = ptnTopLeft->getValueAtTime(time, 0) + offset.x() + center.x();
+                topLeft.ry() = ptnTopLeft->getValueAtTime(time, 1) + offset.y() + center.y();
                 
-                topRight.rx() = ptnTopRight->getValueAtTime(time, 0) + offset.x() + centerPoint.x();
-                topRight.ry() = ptnTopRight->getValueAtTime(time, 1) + offset.y() + centerPoint.y();
+                topRight.rx() = ptnTopRight->getValueAtTime(time, 0) + offset.x() + center.x();
+                topRight.ry() = ptnTopRight->getValueAtTime(time, 1) + offset.y() + center.y();
                 
-                btmRight.rx() = ptnBtmRight->getValueAtTime(time, 0) + offset.x() + centerPoint.x();
-                btmRight.ry() = ptnBtmRight->getValueAtTime(time, 1) + offset.y() + centerPoint.y();
+                btmRight.rx() = ptnBtmRight->getValueAtTime(time, 0) + offset.x() + center.x();
+                btmRight.ry() = ptnBtmRight->getValueAtTime(time, 1) + offset.y() + center.y();
                 
-                btmLeft.rx() = ptnBtmLeft->getValueAtTime(time, 0) + offset.x() + centerPoint.x();
-                btmLeft.ry() = ptnBtmLeft->getValueAtTime(time, 1) + offset.y() + centerPoint.y();
+                btmLeft.rx() = ptnBtmLeft->getValueAtTime(time, 0) + offset.x() + center.x();
+                btmLeft.ry() = ptnBtmLeft->getValueAtTime(time, 1) + offset.y() + center.y();
                 
                 QPointF midTop,midRight,midBtm,midLeft;
                 midTop.rx() = (topLeft.x() + topRight.x()) / 2.;
@@ -2645,36 +2625,26 @@ TrackerGui::penMotion(double time,
                     hoverProcess = true;
                 }
             }
+
             if (!hoverProcess && isSelected) {
-               
-                
                 ///Test search window
-                QPointF searchTopLeft,searchTopRight,searchBtmRight,searchBtmLeft;
-                searchTopRight.rx() = searchWndTopRight->getValueAtTime(time, 0) + centerPoint.x() + offset.x();
-                searchTopRight.ry() = searchWndTopRight->getValueAtTime(time, 1) + centerPoint.y() + offset.y();
-                
-                searchBtmLeft.rx() = searchWndBtmLeft->getValueAtTime(time, 0) + centerPoint.x() + offset.x();
-                searchBtmLeft.ry() = searchWndBtmLeft->getValueAtTime(time, 1) + + centerPoint.y() + offset.y();
-                
-                searchTopLeft.rx() = searchBtmLeft.x();
-                searchTopLeft.ry() = searchTopRight.y();
-                
-                searchBtmRight.rx() = searchTopRight.x();
-                searchBtmRight.ry() = searchBtmLeft.y();
-                
-                QPointF searchTopMid,searchRightMid,searchLeftMid,searchBtmMid;
-                searchTopMid.rx() = (searchTopLeft.x() + searchTopRight.x()) / 2.;
-                searchTopMid.ry() = (searchTopLeft.y() + searchTopRight.y()) / 2.;
-                
-                searchRightMid.rx() = (searchBtmRight.x() + searchTopRight.x()) / 2.;
-                searchRightMid.ry() = (searchBtmRight.y() + searchTopRight.y()) / 2.;
-                
-                searchBtmMid.rx() = (searchBtmRight.x() + searchBtmLeft.x()) / 2.;
-                searchBtmMid.ry() = (searchBtmRight.y() + searchBtmLeft.y()) / 2.;
-                
-                searchLeftMid.rx() = (searchTopLeft.x() + searchBtmLeft.x()) / 2.;
-                searchLeftMid.ry() = (searchTopLeft.y() + searchBtmLeft.y()) / 2.;
-                
+                const double searchLeft   = searchWndBtmLeft->getValueAtTime(time, 0)  + offset.x() + center.x();
+                const double searchBottom = searchWndBtmLeft->getValueAtTime(time, 1)  + offset.y() + center.y();
+                const double searchRight  = searchWndTopRight->getValueAtTime(time, 0) + offset.x() + center.x();
+                const double searchTop    = searchWndTopRight->getValueAtTime(time, 1) + offset.y() + center.y();
+                const double searchMidX   = (searchLeft + searchRight) / 2;
+                const double searchMidY   = (searchTop + searchBottom) / 2;
+
+                const QPointF searchTopLeft(searchLeft, searchTop);
+                const QPointF searchTopRight(searchRight, searchTop);
+                const QPointF searchBtmRight(searchRight, searchBottom);
+                const QPointF searchBtmLeft(searchLeft, searchBottom);
+
+                const QPointF searchTopMid(searchMidX, searchTop);
+                const QPointF searchRightMid(searchRight, searchMidY);
+                const QPointF searchLeftMid(searchLeft, searchMidY);
+                const QPointF searchBtmMid(searchMidX, searchBottom);
+
                 if (isNearbyPoint(searchTopLeft, viewer, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE)) {
                     _imp->hoverState = eDrawStateHoveringOuterTopLeft;
                     _imp->hoverMarker = *it;
@@ -2772,12 +2742,12 @@ TrackerGui::penMotion(double time,
                     offsetKnob->setValues(offsetKnob->getValueAtTime(time,0) + delta.x,
                                           offsetKnob->getValueAtTime(time,1) + delta.y,
                                           view,
-                                          Natron::eValueChangedReasonPluginEdited);
+                                          eValueChangedReasonPluginEdited);
                 } else {
                     centerKnob->setValuesAtTime(time, centerKnob->getValueAtTime(time,0) + delta.x,
                                                 centerKnob->getValueAtTime(time,1) + delta.y,
                                                 view,
-                                                Natron::eValueChangedReasonPluginEdited);
+                                                eValueChangedReasonPluginEdited);
                     for (int i = 0; i < 4; ++i) {
                         for (int d = 0; d < patternCorners[i]->getDimension(); ++d) {
                             patternCorners[i]->setValueAtTime(time, patternCorners[i]->getValueAtTime(i, d), view,d);
@@ -2818,14 +2788,14 @@ TrackerGui::penMotion(double time,
                 int diagIndex = (index + 2) % 4;
                 
                 
-                Natron::Point center,offset;
+                Point center;
                 center.x = centerKnob->getValueAtTime(time,0);
                 center.y = centerKnob->getValueAtTime(time,1);
-                
+                Point offset;
                 offset.x = offsetKnob->getValueAtTime(time, 0);
                 offset.y = offsetKnob->getValueAtTime(time, 1);
-                
-                Natron::Point cur,prev,next,diag;
+
+                Point cur,prev,next,diag;
                 cur.x = patternCorners[index]->getValueAtTime(time,0) + delta.x  + center.x + offset.x;;
                 cur.y = patternCorners[index]->getValueAtTime(time,1) + delta.y  + center.y + offset.y;
                 
@@ -2838,15 +2808,15 @@ TrackerGui::penMotion(double time,
                 diag.x = patternCorners[diagIndex]->getValueAtTime(time,0)  + center.x + offset.x;;
                 diag.y = patternCorners[diagIndex]->getValueAtTime(time,1) + center.y + offset.y;
                 
-                Natron::Point nextVec;
+                Point nextVec;
                 nextVec.x = next.x - cur.x;
                 nextVec.y = next.y - cur.y;
                 
-                Natron::Point prevVec;
+                Point prevVec;
                 prevVec.x = cur.x - prev.x;
                 prevVec.y = cur.y - prev.y;
                 
-                Natron::Point nextDiagVec,prevDiagVec;
+                Point nextDiagVec,prevDiagVec;
                 prevDiagVec.x = diag.x - next.x;
                 prevDiagVec.y = diag.y - next.y;
                 
@@ -2865,7 +2835,7 @@ TrackerGui::penMotion(double time,
                 }
                 
                 
-                Natron::Point searchWindowCorners[2];
+                Point searchWindowCorners[2];
                 searchWindowCorners[0].x = searchWndBtmLeft->getValueAtTime(time, 0) + center.x + offset.x;
                 searchWindowCorners[0].y = searchWndBtmLeft->getValueAtTime(time, 1) + center.y + offset.y;
                 
@@ -2879,9 +2849,9 @@ TrackerGui::penMotion(double time,
                 cur.y -= (center.y + offset.y);
                 
                 if (patternCorners[index]->hasAnimation()) {
-                    patternCorners[index]->setValuesAtTime(time, cur.x, cur.y,view, Natron::eValueChangedReasonNatronInternalEdited);
+                    patternCorners[index]->setValuesAtTime(time, cur.x, cur.y,view, eValueChangedReasonNatronInternalEdited);
                 } else {
-                    patternCorners[index]->setValues(cur.x, cur.y, view,Natron::eValueChangedReasonNatronInternalEdited);
+                    patternCorners[index]->setValues(cur.x, cur.y, view, eValueChangedReasonNatronInternalEdited);
                 }
                 if (_imp->createKeyOnMoveButton->isChecked()) {
                     _imp->interactMarker->setUserKeyframe(time);
@@ -2895,34 +2865,47 @@ TrackerGui::penMotion(double time,
                     didSomething = true;
                     break;
                 }
-                Natron::Point center,offset;
+                Point center;
                 center.x = centerKnob->getValueAtTime(time,0);
                 center.y = centerKnob->getValueAtTime(time,1);
-                
+                Point offset;
                 offset.x = offsetKnob->getValueAtTime(time, 0);
                 offset.y = offsetKnob->getValueAtTime(time, 1);
-                
-                Natron::Point p;
+
+                Point p;
                 p.x = searchWndBtmLeft->getValueAtTime(time, 0) + center.x + offset.x + delta.x;
                 p.y = searchWndBtmLeft->getValueAtTime(time, 1) + center.y + offset.y + delta.y;
                 
-                Natron::Point btmLeft,btmRight,topLeft;
-                btmLeft.x = patternCorners[1]->getValueAtTime(time,0) + center.x + offset.x;
-                btmLeft.y = patternCorners[1]->getValueAtTime(time,1) + center.y + offset.y;
-                btmRight.y = patternCorners[2]->getValueAtTime(time,1) + center.y + offset.y;
-                topLeft.x = patternCorners[0]->getValueAtTime(time,0) + center.x + offset.x;
+                Point topLeft;
+                topLeft.x = patternCorners[0]->getValueAtTime(time, 0) + center.x + offset.x;
+                topLeft.y = patternCorners[0]->getValueAtTime(time, 1) + center.y + offset.y;
+                Point btmLeft;
+                btmLeft.x = patternCorners[1]->getValueAtTime(time, 0) + center.x + offset.x;
+                btmLeft.y = patternCorners[1]->getValueAtTime(time, 1) + center.y + offset.y;
+                Point btmRight;
+                btmRight.y = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
+                btmRight.y = patternCorners[2]->getValueAtTime(time, 1) + center.y + offset.y;
+                Point topRight;
+                topRight.x = patternCorners[3]->getValueAtTime(time, 0) + center.x + offset.x;
+                topRight.y = patternCorners[3]->getValueAtTime(time, 1) + center.y + offset.y;
 
+                // test every point: even topRight pattern corner may be on the left of topLeft
                 p.x = std::min(p.x, topLeft.x);
                 p.x = std::min(p.x, btmLeft.x);
+                p.x = std::min(p.x, btmRight.x);
+                p.x = std::min(p.x, topRight.x);
+
+                p.y = std::min(p.y, topLeft.y);
                 p.y = std::min(p.y, btmLeft.y);
                 p.y = std::min(p.y, btmRight.y);
-                
+                p.y = std::min(p.y, topRight.y);
+
                 p.x -= (center.x + offset.x);
                 p.y -= (center.y + offset.y);
                 if (searchWndBtmLeft->hasAnimation()) {
-                    searchWndBtmLeft->setValuesAtTime(time, p.x, p.y, view,Natron::eValueChangedReasonNatronInternalEdited);
+                    searchWndBtmLeft->setValuesAtTime(time, p.x, p.y, view,eValueChangedReasonNatronInternalEdited);
                 } else {
-                    searchWndBtmLeft->setValues(p.x, p.y,view, Natron::eValueChangedReasonNatronInternalEdited);
+                    searchWndBtmLeft->setValues(p.x, p.y,view, eValueChangedReasonNatronInternalEdited);
                 }
 
                 updateSelectedMarkerTexture();
@@ -2936,27 +2919,41 @@ TrackerGui::penMotion(double time,
                     didSomething = true;
                     break;
                 }
-                Natron::Point center,offset;
+                Point center;
                 center.x = centerKnob->getValueAtTime(time,0);
                 center.y = centerKnob->getValueAtTime(time,1);
-                
+                Point offset;
                 offset.x = offsetKnob->getValueAtTime(time, 0);
                 offset.y = offsetKnob->getValueAtTime(time, 1);
-                
-                Natron::Point p;
+
+                Point p;
                 p.x = searchWndTopRight->getValueAtTime(time, 0) + center.x + offset.x + delta.x;
                 p.y = searchWndBtmLeft->getValueAtTime(time, 1) + center.y + offset.y + delta.y;
                 
-                Natron::Point btmLeft,btmRight,topRight;
-                btmLeft.y = patternCorners[1]->getValueAtTime(time,1) + center.y + offset.y;
-                btmRight.x = patternCorners[2]->getValueAtTime(time,0) + center.x + offset.x;
-                btmRight.y = patternCorners[2]->getValueAtTime(time,1) + center.y + offset.y;
-                topRight.x = patternCorners[0]->getValueAtTime(time,0) + center.x + offset.x;
-                p.x = std::max(p.x, topRight.x);
+                Point topLeft;
+                topLeft.x = patternCorners[0]->getValueAtTime(time, 0) + center.x + offset.x;
+                topLeft.y = patternCorners[0]->getValueAtTime(time, 1) + center.y + offset.y;
+                Point btmLeft;
+                btmLeft.x = patternCorners[1]->getValueAtTime(time, 0) + center.x + offset.x;
+                btmLeft.y = patternCorners[1]->getValueAtTime(time, 1) + center.y + offset.y;
+                Point btmRight;
+                btmRight.y = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
+                btmRight.y = patternCorners[2]->getValueAtTime(time, 1) + center.y + offset.y;
+                Point topRight;
+                topRight.x = patternCorners[3]->getValueAtTime(time, 0) + center.x + offset.x;
+                topRight.y = patternCorners[3]->getValueAtTime(time, 1) + center.y + offset.y;
+
+                // test every point: even topRight pattern corner may be on the left of topLeft
+                p.x = std::max(p.x, topLeft.x);
+                p.x = std::max(p.x, btmLeft.x);
                 p.x = std::max(p.x, btmRight.x);
-                p.y = std::min(p.y, btmRight.y);
+                p.x = std::max(p.x, topRight.x);
+
+                p.y = std::min(p.y, topLeft.y);
                 p.y = std::min(p.y, btmLeft.y);
-                
+                p.y = std::min(p.y, btmRight.y);
+                p.y = std::min(p.y, topRight.y);
+
                 p.x -= (center.x + offset.x);
                 p.y -= (center.y + offset.y);
                 if (searchWndBtmLeft->hasAnimation()) {
@@ -2980,34 +2977,47 @@ TrackerGui::penMotion(double time,
                     didSomething = true;
                     break;
                 }
-                Natron::Point center,offset;
+                Point center;
                 center.x = centerKnob->getValueAtTime(time,0);
                 center.y = centerKnob->getValueAtTime(time,1);
-                
+                Point offset;
                 offset.x = offsetKnob->getValueAtTime(time, 0);
                 offset.y = offsetKnob->getValueAtTime(time, 1);
-                
-                Natron::Point p;
+
+                Point p;
                 p.x = searchWndTopRight->getValueAtTime(time, 0) + center.x + offset.x + delta.x;
                 p.y = searchWndTopRight->getValueAtTime(time, 1) + center.y + offset.y + delta.y;
                 
-                Natron::Point topLeft,btmRight,topRight;
-                topRight.x = patternCorners[3]->getValueAtTime(time,0) + center.x + offset.x;
-                topRight.y = patternCorners[3]->getValueAtTime(time,1) + center.y + offset.y;
-                btmRight.x = patternCorners[2]->getValueAtTime(time,0) + center.x + offset.x;
-                topLeft.y = patternCorners[0]->getValueAtTime(time,1) + center.y + offset.y;
-                
-                p.x = std::max(p.x, topRight.x);
-                p.y = std::max(p.y, topRight.y);
+                Point topLeft;
+                topLeft.x = patternCorners[0]->getValueAtTime(time, 0) + center.x + offset.x;
+                topLeft.y = patternCorners[0]->getValueAtTime(time, 1) + center.y + offset.y;
+                Point btmLeft;
+                btmLeft.x = patternCorners[1]->getValueAtTime(time, 0) + center.x + offset.x;
+                btmLeft.y = patternCorners[1]->getValueAtTime(time, 1) + center.y + offset.y;
+                Point btmRight;
+                btmRight.y = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
+                btmRight.y = patternCorners[2]->getValueAtTime(time, 1) + center.y + offset.y;
+                Point topRight;
+                topRight.x = patternCorners[3]->getValueAtTime(time, 0) + center.x + offset.x;
+                topRight.y = patternCorners[3]->getValueAtTime(time, 1) + center.y + offset.y;
+
+                // test every point: even topRight pattern corner may be on the left of topLeft
+                p.x = std::max(p.x, topLeft.x);
+                p.x = std::max(p.x, btmLeft.x);
                 p.x = std::max(p.x, btmRight.x);
+                p.x = std::max(p.x, topRight.x);
+
                 p.y = std::max(p.y, topLeft.y);
-                
+                p.y = std::max(p.y, btmLeft.y);
+                p.y = std::max(p.y, btmRight.y);
+                p.y = std::max(p.y, topRight.y);
+
                 p.x -= (center.x + offset.x);
                 p.y -= (center.y + offset.y);
                 if (searchWndTopRight->hasAnimation()) {
-                    searchWndTopRight->setValuesAtTime(time, p.x , p.y, view,Natron::eValueChangedReasonNatronInternalEdited);
+                    searchWndTopRight->setValuesAtTime(time, p.x , p.y, view, eValueChangedReasonNatronInternalEdited);
                 } else {
-                    searchWndTopRight->setValues(p.x, p.y,view,Natron::eValueChangedReasonNatronInternalEdited);
+                    searchWndTopRight->setValues(p.x, p.y, view, eValueChangedReasonNatronInternalEdited);
                 }
                 
                 updateSelectedMarkerTexture();
@@ -3021,27 +3031,41 @@ TrackerGui::penMotion(double time,
                     didSomething = true;
                     break;
                 }
-                Natron::Point center,offset;
+                Point center;
                 center.x = centerKnob->getValueAtTime(time,0);
                 center.y = centerKnob->getValueAtTime(time,1);
-                
+                Point offset;
                 offset.x = offsetKnob->getValueAtTime(time, 0);
                 offset.y = offsetKnob->getValueAtTime(time, 1);
-                
-                Natron::Point p;
+
+                Point p;
                 p.x = searchWndBtmLeft->getValueAtTime(time, 0) + center.x + offset.x + delta.x;
                 p.y = searchWndTopRight->getValueAtTime(time, 1) + center.y + offset.y + delta.y;
                 
-                Natron::Point btmLeft,topLeft,topRight;
-                topLeft.x = patternCorners[0]->getValueAtTime(time,0) + center.x + offset.x;
-                topLeft.y = patternCorners[0]->getValueAtTime(time,1) + center.y + offset.y;
-                btmLeft.x = patternCorners[1]->getValueAtTime(time,0) + center.x + offset.x;
-                topRight.y = patternCorners[3]->getValueAtTime(time,1) + center.y + offset.y;
+                Point topLeft;
+                topLeft.x = patternCorners[0]->getValueAtTime(time, 0) + center.x + offset.x;
+                topLeft.y = patternCorners[0]->getValueAtTime(time, 1) + center.y + offset.y;
+                Point btmLeft;
+                btmLeft.x = patternCorners[1]->getValueAtTime(time, 0) + center.x + offset.x;
+                btmLeft.y = patternCorners[1]->getValueAtTime(time, 1) + center.y + offset.y;
+                Point btmRight;
+                btmRight.y = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
+                btmRight.y = patternCorners[2]->getValueAtTime(time, 1) + center.y + offset.y;
+                Point topRight;
+                topRight.x = patternCorners[3]->getValueAtTime(time, 0) + center.x + offset.x;
+                topRight.y = patternCorners[3]->getValueAtTime(time, 1) + center.y + offset.y;
+
+                // test every point: even topRight pattern corner may be on the left of topLeft
                 p.x = std::min(p.x, topLeft.x);
-                p.y = std::max(p.y, topLeft.y);
                 p.x = std::min(p.x, btmLeft.x);
+                p.x = std::min(p.x, btmRight.x);
+                p.x = std::min(p.x, topRight.x);
+
+                p.y = std::max(p.y, topLeft.y);
+                p.y = std::max(p.y, btmLeft.y);
+                p.y = std::max(p.y, btmRight.y);
                 p.y = std::max(p.y, topRight.y);
-                
+
                 p.x -= (center.x + offset.x);
                 p.y -= (center.y + offset.y);
                 if (searchWndBtmLeft->hasAnimation()) {
@@ -3088,7 +3112,7 @@ TrackerGui::penMotion(double time,
                 boost::shared_ptr<KnobDouble> searchBtmLeft = marker->getSearchWindowBottomLeftKnob();
                 boost::shared_ptr<KnobDouble> searchTopRight = marker->getSearchWindowTopRightKnob();
                 
-                Natron::Point center,offset,btmLeft,topRight;
+                Point center,offset,btmLeft,topRight;
                 center.x = centerKnob->getValueAtTime(time, 0);
                 center.y = centerKnob->getValueAtTime(time, 1);
                 offset.x = offsetKnob->getValueAtTime(time, 0);
@@ -3097,14 +3121,14 @@ TrackerGui::penMotion(double time,
                 btmLeft.y = searchBtmLeft->getValueAtTime(time , 1) + center.y + offset.y;
                 topRight.x = searchTopRight->getValueAtTime(time , 0) + center.x + offset.x;
                 topRight.y = searchTopRight->getValueAtTime(time , 1) + center.y + offset.y;
-                Natron::Point centerPoint;
-                
+
                 //Remove any offset to the center to see the marker in the magnification window
                 double xCenterPercent = (center.x - btmLeft.x + offset.x) / (topRight.x - btmLeft.x);
                 double yCenterPercent = (center.y - btmLeft.y + offset.y) / (topRight.y - btmLeft.y);
-                centerPoint.y = markerMagRect.y1 + yCenterPercent * (markerMagRect.y2 - markerMagRect.y1);
+                Point centerPoint;
                 centerPoint.x = markerMagRect.x1 + xCenterPercent * (markerMagRect.x2 - markerMagRect.x1);
-                
+                centerPoint.y = markerMagRect.y1 + yCenterPercent * (markerMagRect.y2 - markerMagRect.y1);
+
                 double prevDist = std::sqrt((_imp->lastMousePos.x() - centerPoint.x ) * ( _imp->lastMousePos.x() - centerPoint.x) + ( _imp->lastMousePos.y() - centerPoint.y) * ( _imp->lastMousePos.y() - centerPoint.y));
                 if (prevDist != 0) {
                     double dist = std::sqrt(( pos.x() - centerPoint.x) * ( pos.x() - centerPoint.x) + ( pos.y() - centerPoint.y) * ( pos.y() - centerPoint.y));
@@ -3121,7 +3145,7 @@ TrackerGui::penMotion(double time,
                 double y = centerKnob->getValueAtTime(time,1);
                 x -= delta.x *  _imp->selectedMarkerScale.x;
                 y -= delta.y *  _imp->selectedMarkerScale.y;
-                centerKnob->setValuesAtTime(time, x,y,view,Natron::eValueChangedReasonPluginEdited);
+                centerKnob->setValuesAtTime(time, x, y, view, eValueChangedReasonPluginEdited);
             
                 if (_imp->createKeyOnMoveButton->isChecked()) {
                     _imp->interactMarker->setUserKeyframe(time);
@@ -3158,11 +3182,10 @@ TrackerGui::penUp(double time,
     bool didSomething = false;
     
     if (_imp->panel) {
-        NodePtr node = _imp->panel->getContext()->getNode();
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer->getViewer());
-        if (node->onOverlayPenUpDefault(renderScale, viewportPos, pos, pressure)) {
+        if (_imp->panel->getContext()->onOverlayPenUpInternalNodes(time, renderScale, view, viewportPos, pos, pressure, _imp->viewer->getViewer())) {
             return true;
         }
+        
     }
 
     
@@ -3209,11 +3232,10 @@ TrackerGui::keyDown(double time,
     Key natronKey = QtEnumConvert::fromQtKey(key);
     KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers(modifiers);
     if (_imp->panel) {
-        NodePtr node = _imp->panel->getContext()->getNode();
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer->getViewer());
-        if (node->onOverlayKeyDownDefault(renderScale, natronKey, natronMod)) {
+        if (_imp->panel->getContext()->onOverlayKeyDownInternalNodes(time, renderScale, view,natronKey, natronMod,  _imp->viewer->getViewer())) {
             return true;
         }
+        
     }
 
     if (e->key() == Qt::Key_Control) {
@@ -3250,7 +3272,7 @@ TrackerGui::keyDown(double time,
     } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingSelectAll, modifiers, key) ) {
         if (_imp->panelv1) {
             _imp->panelv1->onSelectAllButtonClicked();
-            std::list<Natron::Node*> selectedInstances;
+            std::list<Node*> selectedInstances;
             _imp->panelv1->getSelectedInstances(&selectedInstances);
             didSomething = !selectedInstances.empty();
         } else {
@@ -3261,7 +3283,7 @@ TrackerGui::keyDown(double time,
     } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingDelete, modifiers, key) ) {
         if (_imp->panelv1) {
             _imp->panelv1->onDeleteKeyPressed();
-            std::list<Natron::Node*> selectedInstances;
+            std::list<Node*> selectedInstances;
             _imp->panelv1->getSelectedInstances(&selectedInstances);
             didSomething = !selectedInstances.empty();
         } else {
@@ -3302,11 +3324,10 @@ TrackerGui::keyUp(double time,
     Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
     KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
     if (_imp->panel) {
-        NodePtr node = _imp->panel->getContext()->getNode();
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer->getViewer());
-        if (node->onOverlayKeyUpDefault(renderScale, natronKey, natronMod)) {
+        if (_imp->panel->getContext()->onOverlayKeyUpInternalNodes(time, renderScale, view,natronKey, natronMod,  _imp->viewer->getViewer())) {
             return true;
         }
+        
     }
     
     bool didSomething = false;
@@ -3353,6 +3374,19 @@ TrackerGui::keyUp(double time,
 }
 
 bool
+TrackerGui::gainFocus(double time, const RenderScale & renderScale, ViewIdx view)
+{
+    bool didSomething = false;
+    
+    if (_imp->panel) {
+        if (_imp->panel->getContext()->onOverlayFocusGainedInternalNodes(time, renderScale, view, _imp->viewer->getViewer())) {
+            didSomething = true;
+        }
+    }
+    return didSomething;
+}
+
+bool
 TrackerGui::loseFocus(double time,
                       const RenderScale & renderScale,
                       ViewIdx view)
@@ -3360,10 +3394,8 @@ TrackerGui::loseFocus(double time,
     bool didSomething = false;
     
     if (_imp->panel) {
-        NodePtr node = _imp->panel->getContext()->getNode();
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer->getViewer());
-        if (node->onOverlayFocusLostDefault(renderScale)) {
-            return true;
+        if (_imp->panel->getContext()->onOverlayFocusLostInternalNodes(time, renderScale, view, _imp->viewer->getViewer())) {
+            didSomething = true;
         }
     }
 
@@ -3401,7 +3433,7 @@ TrackerGui::updateSelectionFromSelectionRectangle(bool onRelease)
     _imp->viewer->getViewer()->getSelectionRectangle(l, r, b, t);
     
     if (_imp->panelv1) {
-        std::list<Natron::Node*> currentSelection;
+        std::list<Node*> currentSelection;
         const std::list<std::pair<NodeWPtr,bool> > & instances = _imp->panelv1->getInstances();
         for (std::list<std::pair<NodeWPtr,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
             
@@ -3428,7 +3460,7 @@ TrackerGui::updateSelectionFromSelectionRectangle(bool onRelease)
         boost::shared_ptr<TrackerContext> context = _imp->panel->getContext();
         context->getAllMarkers(&allMarkers);
         for (std::size_t i = 0; i < allMarkers.size(); ++i) {
-            if (!allMarkers[i]->isEnabled()) {
+            if (!allMarkers[i]->isEnabled(allMarkers[i]->getCurrentTime())) {
                 continue;
             }
             boost::shared_ptr<KnobDouble> center = allMarkers[i]->getCenterKnob();
@@ -3803,9 +3835,9 @@ TrackerGui::onTrackImageRenderingFinished()
 {
     
     assert(QThread::currentThread() == qApp->thread());
-    QFutureWatcher<std::pair<boost::shared_ptr<Natron::Image>,RectI> >* future = dynamic_cast<QFutureWatcher<std::pair<boost::shared_ptr<Natron::Image>,RectI> >*>(sender());
+    QFutureWatcher<std::pair<boost::shared_ptr<Image>,RectI> >* future = dynamic_cast<QFutureWatcher<std::pair<boost::shared_ptr<Image>,RectI> >*>(sender());
     assert(future);
-    std::pair<boost::shared_ptr<Natron::Image>,RectI> ret = future->result();
+    std::pair<boost::shared_ptr<Image>,RectI> ret = future->result();
     
     
     _imp->viewer->getViewer()->makeOpenGLcontextCurrent();
@@ -3829,7 +3861,7 @@ TrackerGui::onKeyFrameImageRenderingFinished()
     assert(QThread::currentThread() == qApp->thread());
     TrackWatcher* future = dynamic_cast<TrackWatcher*>(sender());
     assert(future);
-    std::pair<boost::shared_ptr<Natron::Image>,RectI> ret = future->result();
+    std::pair<boost::shared_ptr<Image>,RectI> ret = future->result();
     if (!ret.first || ret.second.isNull()) {
         return;
     }
@@ -3914,7 +3946,7 @@ TrackerGuiPrivate::convertImageTosRGBOpenGLTexture(const boost::shared_ptr<Image
         int w = roi.width();
         int srcRowElements = bounds.width() * srcNComps;
         
-        const Natron::Color::Lut* lut = Natron::Color::LutManager::sRGBLut();
+        const Color::Lut* lut = Color::LutManager::sRGBLut();
         lut->validate();
         assert(lut);
         

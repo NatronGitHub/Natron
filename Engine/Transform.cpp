@@ -156,6 +156,124 @@ Matrix3x3::Matrix3x3(const Matrix3x3 & mat)
     : a(mat.a), b(mat.b), c(mat.c), d(mat.d), e(mat.e), f(mat.f), g(mat.g), h(mat.h), i(mat.i)
 {
 }
+    
+bool Matrix3x3::setHomographyFromFourPoints(const Point3D &p1,
+                                     const Point3D &p2,
+                                     const Point3D &p3,
+                                     const Point3D &p4,
+                                     const Point3D &q1,
+                                     const Point3D &q2,
+                                     const Point3D &q3,
+                                     const Point3D &q4)
+{
+    Matrix3x3 invHp;
+    Matrix3x3 Hp( crossprod( crossprod(p1, p2), crossprod(p3, p4) ),
+                 crossprod( crossprod(p1, p3), crossprod(p2, p4) ),
+                 crossprod( crossprod(p1, p4), crossprod(p2, p3) ) );
+    double detHp = matDeterminant(Hp);
+    
+    if (detHp == 0.) {
+        return false;
+    }
+    Matrix3x3 Hq( crossprod( crossprod(q1, q2), crossprod(q3, q4) ),
+                 crossprod( crossprod(q1, q3), crossprod(q2, q4) ),
+                 crossprod( crossprod(q1, q4), crossprod(q2, q3) ) );
+    double detHq = matDeterminant(Hq);
+    if (detHq == 0.) {
+        return false;
+    }
+    invHp = matInverse(Hp, detHp);
+    *this = matMul(Hq, invHp);
+    
+    return true;
+}
+    
+bool Matrix3x3::setAffineFromThreePoints(const Point3D &p1,
+                                  const Point3D &p2,
+                                  const Point3D &p3,
+                                  const Point3D &q1,
+                                  const Point3D &q2,
+                                  const Point3D &q3)
+{
+    Matrix3x3 invHp;
+    Matrix3x3 Hp(p1, p2, p3);
+    double detHp = matDeterminant(Hp);
+    
+    if (detHp == 0.) {
+        return false;
+    }
+    Matrix3x3 Hq(q1, q2, q3);
+    double detHq = matDeterminant(Hq);
+    if (detHq == 0.) {
+        return false;
+    }
+    invHp = matInverse(Hp,detHp);
+    *this = matMul(Hq, invHp);
+    
+    return true;
+}
+    
+bool Matrix3x3::setSimilarityFromTwoPoints(const Point3D &p1,
+                                    const Point3D &p2,
+                                    const Point3D &q1,
+                                    const Point3D &q2)
+{
+    // Generate a third point so that p1p3 is orthogonal to p1p2, and compute the affine transform
+    Point3D p3, q3;
+    
+    p3.x = p1.x - (p2.y - p1.y);
+    p3.y = p1.y + (p2.x - p1.x);
+    p3.z = 1.;
+    q3.x = q1.x - (q2.y - q1.y);
+    q3.y = q1.y + (q2.x - q1.x);
+    q3.z = 1.;
+    
+    return setAffineFromThreePoints(p1, p2, p3, q1, q2, q3);
+    /*
+     there is probably a better solution.
+     we have to solve for H in
+     [x1 x2]
+     [ h1 -h2 h3] [y1 y2]   [x1' x2']
+     [ h2  h1 h4] [ 1  1] = [y1' y2']
+     
+     which is equivalent to
+     [x1 -y1 1 0] [h1]   [x1']
+     [x2 -y2 1 0] [h2]   [x2']
+     [y1  x1 0 1] [h3] = [y1']
+     [y2  x2 0 1] [h4]   [y2']
+     The 4x4 matrix should be easily invertible
+     
+     with(linalg);
+     M := Matrix([[x1, -y1, 1, 0], [x2, -y2, 1, 0], [y1, x1, 0, 1], [y2, x2, 0, 1]]);
+     inverse(M);
+     */
+    /*
+     double det = p1.x*p1.x - 2*p2.x*p1.x + p2.x*p2.x +p1.y*p1.y -2*p1.y*p2.y +p2.y*p2.y;
+     if (det == 0.) {
+     return false;
+     }
+     double h1 = (p1.x-p2.x)*(q1.x-q2.x) + (p1.y-p2.y)*(q1.y-q2.y);
+     double h2 = (p1.x-p2.x)*(q1.y-q2.y) - (p1.y-p2.y)*(q1.x-q2.x);
+     double h3 =
+     todo...
+     */
+}
+    
+bool Matrix3x3::setTranslationFromOnePoint(const Point3D &p1,
+                                    const Point3D &q1)
+{
+    a = 1.;
+    b = 0.;
+    c = q1.x - p1.x;
+    d = 0.;
+    e = 1.;
+    f = q1.y - p1.y;
+    g = 0.;
+    h = 0.;
+    i = 1.;
+    
+    return true;
+}
 
 Matrix3x3 &
 Matrix3x3::operator=(const Matrix3x3 & m)

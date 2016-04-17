@@ -295,19 +295,46 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
         type = SpinBox::eSpinBoxTypeInt;
     }
     
+    
+    int nItemsPerRow = nDims;
+    if (std::floor(nDims / 3. + 0.5) == nDims / 3.) {
+        nItemsPerRow = 3;
+    }
+    if (std::floor(nDims / 4. + 0.5) == nDims / 4.) {
+        nItemsPerRow = 4;
+    }
+    
+    int nbRows = nDims / nItemsPerRow;
+    assert(nbRows >= 1);
+    QWidget* allSpinBoxesContainer = 0;
+    QGridLayout* spinBoxesGrid = 0;
+    if (nbRows == 1) {
+        allSpinBoxesContainer = _imp->container;
+    } else {
+        allSpinBoxesContainer = new QWidget(_imp->container);
+        spinBoxesGrid = new QGridLayout(allSpinBoxesContainer);
+        spinBoxesGrid->setContentsMargins(0, 0, 0, 0);
+        spinBoxesGrid->setVerticalSpacing(TO_DPIY(1));
+        spinBoxesGrid->setHorizontalSpacing(TO_DPIX(1));
+    }
+    
     _imp->spinBoxes.resize(nDims);
+    
+    int rowIndex = 0;
+    int columnIndex = 0;
     for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
         
-        QWidget *boxContainer = new QWidget(_imp->container);
+        QWidget *boxContainer = new QWidget(allSpinBoxesContainer);
         boxContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         
-        QHBoxLayout *boxContainerLayout = new QHBoxLayout(boxContainer);
-
+        QHBoxLayout *boxContainerLayout = 0;
+        boxContainerLayout = new QHBoxLayout(boxContainer);
         boxContainerLayout->setContentsMargins(0, 0, 0, 0);
         boxContainerLayout->setSpacing(3);
         
+        
         Label *subDesc = 0;
-        if (nDims != 1) {
+        if (nDims != 1 && nbRows == 1) {
             subDesc = new Label(QString::fromUtf8(dimensionLabels[i].c_str()), boxContainer);
             boxContainerLayout->addWidget(subDesc);
         }
@@ -345,8 +372,22 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
             box->setIncrement(incr);
         }
         boxContainerLayout->addWidget(box);
-        containerLayout->addWidget(boxContainer);
-        _imp->spinBoxes[i] = std::make_pair(box, subDesc);;
+        if (!spinBoxesGrid) {
+            containerLayout->addWidget(boxContainer);
+        } else {
+            spinBoxesGrid->addWidget(boxContainer, rowIndex, columnIndex);
+        }
+        _imp->spinBoxes[i] = std::make_pair(box, subDesc);
+        
+        ++columnIndex;
+        if (columnIndex >= nItemsPerRow) {
+            columnIndex = 0;
+            ++rowIndex;
+        }
+    }
+    
+    if (spinBoxesGrid) {
+        containerLayout->addWidget(allSpinBoxesContainer);
     }
     
     bool sliderVisible = false;

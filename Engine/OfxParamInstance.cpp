@@ -78,10 +78,17 @@ struct OfxKeyFrames_compare {
 
 typedef std::set<double, OfxKeyFrames_compare> OfxKeyFramesSet;
 
-static void getOfxKeyFrames(KnobI* knob, OfxKeyFramesSet &keyframes)
+static void getOfxKeyFrames(KnobI* knob, OfxKeyFramesSet &keyframes, int startDim = - 1, int endDim = -1)
 {
+    if (startDim == -1) {
+        startDim = 0;
+    }
+    if (endDim == -1) {
+        endDim = knob->getDimension();
+    }
+    assert(startDim < endDim && startDim >= 0);
     if (knob->canAnimate()) {
-        for (int i = 0; i < knob->getDimension(); ++i) {
+        for (int i = startDim; i < endDim; ++i) {
             
             // Was added for https://github.com/MrKepzie/Natron/issues/690 but cannot figure out what this fixes
             /*std::list<std::pair<KnobI*,int> > dependencies;
@@ -110,11 +117,12 @@ namespace OfxKeyFrame {
 static
 OfxStatus
 getNumKeys(KnobI* knob,
-           unsigned int &nKeys)
+           unsigned int &nKeys,
+           int startDim = - 1, int endDim = -1)
 {
 
     OfxKeyFramesSet keyframes;
-    getOfxKeyFrames(knob,keyframes);
+    getOfxKeyFrames(knob,keyframes, startDim, endDim);
     nKeys = (unsigned int)keyframes.size();
     return kOfxStatOK;
 }
@@ -123,13 +131,14 @@ static
 OfxStatus
 getKeyTime(const KnobPtr& knob,
            int nth,
-           OfxTime & time)
+           OfxTime & time,
+           int startDim = - 1, int endDim = -1)
 {
     if (nth < 0) {
         return kOfxStatErrBadIndex;
     }
     OfxKeyFramesSet keyframes;
-    getOfxKeyFrames(knob.get(),keyframes);
+    getOfxKeyFrames(knob.get(),keyframes, startDim, endDim);
     if (nth >= (int)keyframes.size()) {
         return kOfxStatErrBadIndex;
     }
@@ -144,11 +153,12 @@ OfxStatus
 getKeyIndex(const KnobPtr& knob,
             OfxTime time,
             int direction,
-            int & index)
+            int & index,
+            int startDim = - 1, int endDim = -1)
 {
 
     OfxKeyFramesSet keyframes;
-    getOfxKeyFrames(knob.get(),keyframes);
+    getOfxKeyFrames(knob.get(),keyframes, startDim, endDim);
     int i = 0;
     if (direction == 0) {
         //search for key at indicated time
@@ -200,9 +210,17 @@ getKeyIndex(const KnobPtr& knob,
 static
 OfxStatus
 deleteKey(const KnobPtr& knob,
-          OfxTime time)
+          OfxTime time,
+          int startDim = - 1, int endDim = -1)
 {
-    for (int i = 0; i < knob->getDimension(); ++i) {
+    if (startDim == -1) {
+        startDim = 0;
+    }
+    if (endDim == -1) {
+        endDim = knob->getDimension();
+    }
+    assert(startDim < endDim && startDim >= 0);
+    for (int i = startDim; i < endDim; ++i) {
         knob->deleteValueAtTime(eCurveChangeReasonInternal, time, ViewSpec::all(), i);
     }
 
@@ -211,9 +229,16 @@ deleteKey(const KnobPtr& knob,
 
 static
 OfxStatus
-deleteAllKeys(const KnobPtr& knob)
+deleteAllKeys(const KnobPtr& knob, int startDim = - 1, int endDim = -1)
 {
-    for (int i = 0; i < knob->getDimension(); ++i) {
+    if (startDim == -1) {
+        startDim = 0;
+    }
+    if (endDim == -1) {
+        endDim = knob->getDimension();
+    }
+    assert(startDim < endDim && startDim >= 0);
+    for (int i = startDim; i < endDim; ++i) {
         knob->removeAnimation(ViewSpec::all(), i);
     }
 
@@ -226,15 +251,18 @@ OfxStatus
 copyFrom(const KnobPtr & from,
          const KnobPtr &to,
          OfxTime offset,
-         const OfxRangeD* range)
+         const OfxRangeD* range,
+         int startDim = - 1, int endDim = -1)
 {
     ///copy only if type is the same
     if ( from->typeName() == to->typeName() ) {
         to->beginChanges();
-        to->clone(from,offset,range);
-        int dims = to->getDimension();
+        for (int i = startDim; i < endDim; ++i) {
+            to->clone(from,offset,range, i);
+        }
+        int dims = std::min(endDim, to->getDimension());
         double curTime = from->getCurrentTime();
-        for (int i = 0; i < dims; ++i) {
+        for (int i = startDim; i < dims; ++i) {
             to->evaluateValueChange(i, curTime, ViewIdx(0),  eValueChangedReasonPluginEdited);
         }
         to->endChanges();
@@ -1727,7 +1755,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(const boost::shared_ptr<OfxEffectInstan
     
     const int ofxDims = 2;
     int knobDims = 2;
-    int startDimIndex = 0;
+    _startIndex = 0;
     
     int isRectangleType = properties.getIntProperty(kNatronOfxParamPropTypeRectangle);
     std::string paramName = descriptor.getName();
@@ -1741,10 +1769,13 @@ OfxDouble2DInstance::OfxDouble2DInstance(const boost::shared_ptr<OfxEffectInstan
         assert(found != std::string::npos);
         paramName = paramName.substr(0, found);
         knobDims = 4;
-        startDimIndex = 2;
+        _startIndex = 2;
     }
 
-    boost::shared_ptr<KnobDouble> dblKnob = checkIfKnobExistsWithNameOrCreate<KnobDouble>(paramName, this, knobDims);
+    boost::shared_ptr<KnobDouble> dblKnob = node->getKnobByNameAndType<KnobDouble>(paramName);
+    if (!dblKnob) {
+        dblKnob = checkIfKnobExistsWithNameOrCreate<KnobDouble>(paramName, this, knobDims);
+    }
     _knob = dblKnob;
 
     const std::string & doubleType = getDoubleType();
@@ -1784,13 +1815,17 @@ OfxDouble2DInstance::OfxDouble2DInstance(const boost::shared_ptr<OfxEffectInstan
         def[i] = properties.getDoubleProperty(kOfxParamPropDefault,i);
 
         std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,i);
-        dblKnob->setDimensionName(i + startDimIndex, dimensionName);
+        dblKnob->setDimensionName(i + _startIndex, dimensionName);
+        
+        dblKnob->setIncrement(incr, _startIndex + i);
+        dblKnob->setDecimals(decimals[i], _startIndex + i);
+        dblKnob->setMinimum(minimum[i], _startIndex + i);
+        dblKnob->setMaximum(maximum[i], _startIndex + i);
+        dblKnob->setDisplayMinimum(displayMins[i], _startIndex + i);
+        dblKnob->setDisplayMaximum(displayMaxs[i], _startIndex + i);
         
     }
-    dblKnob->setMinimumsAndMaximums(minimum, maximum);
     setDisplayRange();
-    dblKnob->setIncrement(increment);
-    dblKnob->setDecimals(decimals);
 
     // Only create native overlays if there is no interact or kOfxParamPropUseHostOverlayHandle is set
     // see https://github.com/MrKepzie/Natron/issues/932
@@ -1808,15 +1843,15 @@ OfxDouble2DInstance::OfxDouble2DInstance(const boost::shared_ptr<OfxEffectInstan
                         doubleType == kOfxParamDoubleTypeXYAbsolute);
     if (doubleType == kOfxParamDoubleTypeNormalisedXY ||
         doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute) {
-        dblKnob->setValueIsNormalized(0 + startDimIndex, eValueIsNormalizedX);
-        dblKnob->setValueIsNormalized(1 + startDimIndex, eValueIsNormalizedY);
+        dblKnob->setValueIsNormalized(0 + _startIndex, eValueIsNormalizedX);
+        dblKnob->setValueIsNormalized(1 + _startIndex, eValueIsNormalizedY);
     }
     dblKnob->setDefaultValuesAreNormalized(coordSystem == kOfxParamCoordinatesNormalised ||
                                            doubleType == kOfxParamDoubleTypeNormalisedXY ||
                                            doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute);
     dblKnob->blockValueChanges();
-    for (int i = startDimIndex; i < startDimIndex + ofxDims; ++i) {
-        dblKnob->setDefaultValue(def[i], i);
+    for (int i = 0; i < ofxDims; ++i) {
+        dblKnob->setDefaultValue(def[i], i + _startIndex);
     }
     dblKnob->unblockValueChanges();
 }
@@ -1826,8 +1861,8 @@ OfxDouble2DInstance::get(double & x1,
                          double & x2)
 {
     boost::shared_ptr<KnobDouble> dblKnob = _knob.lock();
-    x1 = dblKnob->getValue(0);
-    x2 = dblKnob->getValue(1);
+    x1 = dblKnob->getValue(_startIndex);
+    x2 = dblKnob->getValue(_startIndex+ 1);
 
     return kOfxStatOK;
 }
@@ -1838,8 +1873,8 @@ OfxDouble2DInstance::get(OfxTime time,
                          double & x2)
 {
     boost::shared_ptr<KnobDouble> dblKnob = _knob.lock();
-    x1 = dblKnob->getValueAtTime(time,0);
-    x2 = dblKnob->getValueAtTime(time,1);
+    x1 = dblKnob->getValueAtTime(time,_startIndex);
+    x2 = dblKnob->getValueAtTime(time,_startIndex+ 1);
 
     return kOfxStatOK;
 }
@@ -1849,7 +1884,7 @@ OfxDouble2DInstance::set(double x1,
                          double x2)
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    knob->setValues(x1, x2, ViewSpec::current(), eValueChangedReasonPluginEdited);
+    knob->setValues(x1, x2, ViewSpec::current(), eValueChangedReasonPluginEdited,_startIndex);
     return kOfxStatOK;
 }
 
@@ -1859,7 +1894,7 @@ OfxDouble2DInstance::set(OfxTime time,
                          double x2)
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    knob->setValuesAtTime(time, x1, x2, ViewSpec::current(), eValueChangedReasonPluginEdited);
+    knob->setValuesAtTime(time, x1, x2, ViewSpec::current(), eValueChangedReasonPluginEdited,_startIndex);
     return kOfxStatOK;
 }
 
@@ -1869,8 +1904,8 @@ OfxDouble2DInstance::derive(OfxTime time,
                             double & x2)
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    x1 = knob->getDerivativeAtTime(time, ViewSpec::current(), 0);
-    x2 = knob->getDerivativeAtTime(time, ViewSpec::current(), 1);
+    x1 = knob->getDerivativeAtTime(time, ViewSpec::current(), _startIndex);
+    x2 = knob->getDerivativeAtTime(time, ViewSpec::current(), 1 + _startIndex);
 
     return kOfxStatOK;
 }
@@ -1882,8 +1917,8 @@ OfxDouble2DInstance::integrate(OfxTime time1,
                                double & x2)
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    x1 = knob->getIntegrateFromTimeToTime(time1, time2, ViewSpec::current(), 0);
-    x2 = knob->getIntegrateFromTimeToTime(time1, time2, ViewSpec::current(), 1);
+    x1 = knob->getIntegrateFromTimeToTime(time1, time2, ViewSpec::current(), _startIndex);
+    x2 = knob->getIntegrateFromTimeToTime(time1, time2, ViewSpec::current(), 1+ _startIndex);
 
     return kOfxStatOK;
 }
@@ -1925,12 +1960,16 @@ OfxDouble2DInstance::setDisplayRange()
     DYNAMIC_PROPERTY_CHECK();
     std::vector<double> displayMins(2);
     std::vector<double> displayMaxs(2);
-
+    
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
     displayMins[0] = getProperties().getDoubleProperty(kOfxParamPropDisplayMin,0);
     displayMins[1] = getProperties().getDoubleProperty(kOfxParamPropDisplayMin,1);
     displayMaxs[0] = getProperties().getDoubleProperty(kOfxParamPropDisplayMax,0);
     displayMaxs[1] = getProperties().getDoubleProperty(kOfxParamPropDisplayMax,1);
-    _knob.lock()->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+    for (int i = 0; i < 2; ++i) {
+        knob->setDisplayMinimum(displayMins[i], i + _startIndex);
+        knob->setDisplayMaximum(displayMaxs[i], i + _startIndex);
+    }
 }
 
 void
@@ -1940,11 +1979,15 @@ OfxDouble2DInstance::setRange()
     std::vector<double> displayMins(2);
     std::vector<double> displayMaxs(2);
     
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
     displayMins[0] = getProperties().getDoubleProperty(kOfxParamPropMin,0);
     displayMins[1] = getProperties().getDoubleProperty(kOfxParamPropMin,1);
     displayMaxs[0] = getProperties().getDoubleProperty(kOfxParamPropMax,0);
     displayMaxs[1] = getProperties().getDoubleProperty(kOfxParamPropMax,1);
-    _knob.lock()->setMinimumsAndMaximums(displayMins, displayMaxs);
+    for (int i = 0; i < 2; ++i) {
+        knob->setMinimum(displayMins[i], i + _startIndex);
+        knob->setMaximum(displayMaxs[i], i + _startIndex);
+    }
 
 }
 
@@ -1954,32 +1997,32 @@ OfxDouble2DInstance::getKnob() const
 {
     return _knob.lock();
 }
-
+#if 0
 bool
 OfxDouble2DInstance::isAnimated(int dimension) const
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    return knob->isAnimated(dimension, ViewSpec::current());
+    return knob->isAnimated(dimension + _startIndex, ViewSpec::current());
 }
-
+#endif
 bool
 OfxDouble2DInstance::isAnimated() const
 {
     boost::shared_ptr<KnobDouble> dblKnob = _knob.lock();
-    return dblKnob->isAnimated(0, ViewSpec::current()) || dblKnob->isAnimated(1, ViewSpec::current());
+    return dblKnob->isAnimated(0 + _startIndex, ViewSpec::current()) || dblKnob->isAnimated(1 + _startIndex, ViewSpec::current());
 }
 
 OfxStatus
 OfxDouble2DInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock().get(), nKeys);
+    return OfxKeyFrame::getNumKeys(_knob.lock().get(), nKeys, _startIndex, _startIndex + 2);
 }
 
 OfxStatus
 OfxDouble2DInstance::getKeyTime(int nth,
                                 OfxTime & time) const
 {
-    return OfxKeyFrame::getKeyTime(_knob.lock(), nth, time);
+    return OfxKeyFrame::getKeyTime(_knob.lock(), nth, time, _startIndex, _startIndex + 2);
 }
 
 OfxStatus
@@ -1987,19 +2030,19 @@ OfxDouble2DInstance::getKeyIndex(OfxTime time,
                                  int direction,
                                  int & index) const
 {
-    return OfxKeyFrame::getKeyIndex(_knob.lock(), time, direction, index);
+    return OfxKeyFrame::getKeyIndex(_knob.lock(), time, direction, index, _startIndex, _startIndex + 2);
 }
 
 OfxStatus
 OfxDouble2DInstance::deleteKey(OfxTime time)
 {
-    return OfxKeyFrame::deleteKey(_knob.lock(), time);
+    return OfxKeyFrame::deleteKey(_knob.lock(), time, _startIndex, _startIndex + 2);
 }
 
 OfxStatus
 OfxDouble2DInstance::deleteAllKeys()
 {
-    return OfxKeyFrame::deleteAllKeys(_knob.lock());
+    return OfxKeyFrame::deleteAllKeys(_knob.lock(), _startIndex, _startIndex + 2);
 }
 
 OfxStatus
@@ -2009,7 +2052,7 @@ OfxDouble2DInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 {
     const OfxParamToKnob & other = dynamic_cast<const OfxParamToKnob &>(instance);
 
-    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
+    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range, _startIndex, _startIndex + 2);
 }
 
 
@@ -2027,7 +2070,7 @@ OfxInteger2DInstance::OfxInteger2DInstance(const boost::shared_ptr<OfxEffectInst
     const int ofxDims = 2;
     int knobDims = 2;
     
-    int startDimIndex = 0;
+    _startIndex = 0;
     int isRectangleType = properties.getIntProperty(kNatronOfxParamPropTypeRectangle);
     std::string paramName = descriptor.getName();
     if (isRectangleType == 1) {
@@ -2040,12 +2083,14 @@ OfxInteger2DInstance::OfxInteger2DInstance(const boost::shared_ptr<OfxEffectInst
         assert(found != std::string::npos);
         paramName = paramName.substr(0, found);
         knobDims = 4;
-        startDimIndex = 2;
+        _startIndex = 2;
     }
 
   
-
-    boost::shared_ptr<KnobInt> iKnob = checkIfKnobExistsWithNameOrCreate<KnobInt>(paramName, this, knobDims);
+    boost::shared_ptr<KnobInt> iKnob = node->getKnobByNameAndType<KnobInt>(paramName);
+    if (!iKnob) {
+        iKnob = checkIfKnobExistsWithNameOrCreate<KnobInt>(paramName, this, knobDims);
+    }
     _knob = iKnob;
 
     if (isRectangleType) {
@@ -2067,15 +2112,18 @@ OfxInteger2DInstance::OfxInteger2DInstance(const boost::shared_ptr<OfxEffectInst
         increment[i] = 1; // kOfxParamPropIncrement only exists for Double
         def[i] = properties.getIntProperty(kOfxParamPropDefault,i);
         std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,i);
-        iKnob->setDimensionName(i + startDimIndex, dimensionName);
+        iKnob->setDimensionName(i + _startIndex, dimensionName);
+        
+        iKnob->setIncrement(increment[i], _startIndex + i);
+        iKnob->setMinimum(minimum[i], _startIndex + i);
+        iKnob->setMaximum(maximum[i], _startIndex + i);
+        iKnob->setDisplayMinimum(displayMins[i], _startIndex + i);
+        iKnob->setDisplayMaximum(displayMaxs[i], _startIndex + i);
     }
 
-    iKnob->setMinimumsAndMaximums(minimum, maximum);
-    iKnob->setIncrement(increment);
-    iKnob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
     iKnob->blockValueChanges();
-    iKnob->setDefaultValue(def[0 + startDimIndex], 0);
-    iKnob->setDefaultValue(def[1 + startDimIndex], 1);
+    iKnob->setDefaultValue(def[0], 0 + _startIndex);
+    iKnob->setDefaultValue(def[1], 1 + _startIndex);
     iKnob->unblockValueChanges();
 }
 
@@ -2084,8 +2132,8 @@ OfxInteger2DInstance::get(int & x1,
                           int & x2)
 {
     boost::shared_ptr<KnobInt> iKnob = _knob.lock();
-    x1 = iKnob->getValue(0);
-    x2 = iKnob->getValue(1);
+    x1 = iKnob->getValue(_startIndex);
+    x2 = iKnob->getValue(_startIndex + 1);
 
     return kOfxStatOK;
 }
@@ -2096,8 +2144,8 @@ OfxInteger2DInstance::get(OfxTime time,
                           int & x2)
 {
     boost::shared_ptr<KnobInt> iKnob = _knob.lock();
-    x1 = iKnob->getValueAtTime(time, 0);
-    x2 = iKnob->getValueAtTime(time, 1);
+    x1 = iKnob->getValueAtTime(time, _startIndex);
+    x2 = iKnob->getValueAtTime(time, _startIndex + 1);
 
     return kOfxStatOK;
 }
@@ -2107,7 +2155,7 @@ OfxInteger2DInstance::set(int x1,
                           int x2)
 {
     boost::shared_ptr<KnobInt> knob = _knob.lock();
-    knob->setValues(x1, x2 , ViewSpec::current(), eValueChangedReasonPluginEdited);
+    knob->setValues(x1, x2 , ViewSpec::current(), eValueChangedReasonPluginEdited, _startIndex);
     return kOfxStatOK;
 }
 
@@ -2117,7 +2165,7 @@ OfxInteger2DInstance::set(OfxTime time,
                           int x2)
 {
     boost::shared_ptr<KnobInt> knob = _knob.lock();
-    knob->setValuesAtTime(time, x1, x2, ViewSpec::current(), eValueChangedReasonPluginEdited);
+    knob->setValuesAtTime(time, x1, x2, ViewSpec::current(), eValueChangedReasonPluginEdited, _startIndex);
     return kOfxStatOK;
 }
 
@@ -2152,11 +2200,15 @@ OfxInteger2DInstance::setDisplayRange()
     std::vector<int> displayMins(2);
     std::vector<int> displayMaxs(2);
     
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
     displayMins[0] = getProperties().getIntProperty(kOfxParamPropDisplayMin,0);
     displayMins[1] = getProperties().getIntProperty(kOfxParamPropDisplayMin,1);
     displayMaxs[0] = getProperties().getIntProperty(kOfxParamPropDisplayMax,0);
     displayMaxs[1] = getProperties().getIntProperty(kOfxParamPropDisplayMax,1);
-    _knob.lock()->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+    for (int i = 0; i < 2; ++i) {
+        knob->setDisplayMinimum(displayMins[i], i + _startIndex);
+        knob->setDisplayMaximum(displayMaxs[i], i + _startIndex);
+    }
     
 }
 
@@ -2167,12 +2219,15 @@ OfxInteger2DInstance::setRange()
     
     std::vector<int> displayMins(2);
     std::vector<int> displayMaxs(2);
-    
+        boost::shared_ptr<KnobInt> knob = _knob.lock();
     displayMins[0] = getProperties().getIntProperty(kOfxParamPropMin,0);
     displayMins[1] = getProperties().getIntProperty(kOfxParamPropMin,1);
     displayMaxs[0] = getProperties().getIntProperty(kOfxParamPropMax,0);
     displayMaxs[1] = getProperties().getIntProperty(kOfxParamPropMax,1);
-    _knob.lock()->setMinimumsAndMaximums(displayMins, displayMaxs);
+    for (int i = 0; i < 2; ++i) {
+        knob->setMinimum(displayMins[i], i + _startIndex);
+        knob->setMaximum(displayMaxs[i], i + _startIndex);
+    }
     
 }
 
@@ -2192,14 +2247,14 @@ OfxInteger2DInstance::getKnob() const
 OfxStatus
 OfxInteger2DInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock().get(), nKeys);
+    return OfxKeyFrame::getNumKeys(_knob.lock().get(), nKeys, _startIndex, 2 + _startIndex);
 }
 
 OfxStatus
 OfxInteger2DInstance::getKeyTime(int nth,
                                  OfxTime & time) const
 {
-    return OfxKeyFrame::getKeyTime(_knob.lock(), nth, time);
+    return OfxKeyFrame::getKeyTime(_knob.lock(), nth, time, _startIndex, 2 + _startIndex);
 }
 
 OfxStatus
@@ -2207,19 +2262,19 @@ OfxInteger2DInstance::getKeyIndex(OfxTime time,
                                   int direction,
                                   int & index) const
 {
-    return OfxKeyFrame::getKeyIndex(_knob.lock(), time, direction, index);
+    return OfxKeyFrame::getKeyIndex(_knob.lock(), time, direction, index, _startIndex, 2 + _startIndex);
 }
 
 OfxStatus
 OfxInteger2DInstance::deleteKey(OfxTime time)
 {
-    return OfxKeyFrame::deleteKey(_knob.lock(), time);
+    return OfxKeyFrame::deleteKey(_knob.lock(), time, _startIndex, 2 + _startIndex);
 }
 
 OfxStatus
 OfxInteger2DInstance::deleteAllKeys()
 {
-    return OfxKeyFrame::deleteAllKeys(_knob.lock());
+    return OfxKeyFrame::deleteAllKeys(_knob.lock(), _startIndex, 2 + _startIndex);
 }
 
 OfxStatus
@@ -2229,7 +2284,7 @@ OfxInteger2DInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 {
     const OfxParamToKnob & other = dynamic_cast<const OfxParamToKnob &>(instance);
 
-    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
+    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range, _startIndex, 2 + _startIndex);
 }
 
 
@@ -2248,7 +2303,7 @@ OfxDouble3DInstance::OfxDouble3DInstance(const boost::shared_ptr<OfxEffectInstan
     int isMatrixType = properties.getIntProperty(kNatronOfxParamPropDoubleTypeMatrix3x3);
     std::string paramName = descriptor.getName();
     
-    int startDimIndex = 0;
+    _startIndex = 0;
     if (isMatrixType == 1) {
         std::size_t found = paramName.find("_row1");
         assert(found != std::string::npos);
@@ -2259,23 +2314,24 @@ OfxDouble3DInstance::OfxDouble3DInstance(const boost::shared_ptr<OfxEffectInstan
         assert(found != std::string::npos);
         paramName = paramName.substr(0, found);
         knobDims = 9;
-        startDimIndex = 3;
+        _startIndex = 3;
     } else if (isMatrixType == 3) {
         std::size_t found = paramName.find("_row3");
         assert(found != std::string::npos);
         paramName = paramName.substr(0, found);
         knobDims = 9;
-        startDimIndex = 6;
+        _startIndex = 6;
     }
 
     
-
-    boost::shared_ptr<KnobDouble> knob = checkIfKnobExistsWithNameOrCreate<KnobDouble>(paramName, this, knobDims);
+    boost::shared_ptr<KnobDouble> knob = node->getKnobByNameAndType<KnobDouble>(paramName);
+    if (!knob) {
+        knob = checkIfKnobExistsWithNameOrCreate<KnobDouble>(paramName, this, knobDims);
+    }
     _knob = knob;
 
     std::vector<double> minimum(ofxDims);
     std::vector<double> maximum(ofxDims);
-    std::vector<double> increment(ofxDims);
     std::vector<double> displayMins(ofxDims);
     std::vector<double> displayMaxs(ofxDims);
     std::vector<int> decimals(ofxDims);
@@ -2291,20 +2347,21 @@ OfxDouble3DInstance::OfxDouble3DInstance(const boost::shared_ptr<OfxEffectInstan
         displayMins[i] = properties.getDoubleProperty(kOfxParamPropDisplayMin,i);
         displayMaxs[i] = properties.getDoubleProperty(kOfxParamPropDisplayMax,i);
         maximum[i] = properties.getDoubleProperty(kOfxParamPropMax,i);
-        increment[i] = incr;
         decimals[i] = dig;
         def[i] = properties.getDoubleProperty(kOfxParamPropDefault,i);
         std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,i);
-        knob->setDimensionName(startDimIndex + i, dimensionName);
+        knob->setDimensionName(_startIndex + i, dimensionName);
+        knob->setIncrement(incr, _startIndex + i);
+        knob->setDecimals(decimals[i], _startIndex + i);
+        knob->setMinimum(minimum[i], _startIndex + i);
+        knob->setMaximum(maximum[i], _startIndex + i);
+        knob->setDisplayMinimum(displayMins[i], _startIndex + i);
+        knob->setDisplayMaximum(displayMaxs[i], _startIndex + i);
     }
 
-    knob->setMinimumsAndMaximums(minimum, maximum);
-    knob->setIncrement(increment);
-    knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
-    knob->setDecimals(decimals);
     knob->blockValueChanges();
-    for (int i = startDimIndex; i < startDimIndex + ofxDims; ++i) {
-        knob->setDefaultValue(def[i], i);
+    for (int i = 0; i <  ofxDims; ++i) {
+        knob->setDefaultValue(def[i], _startIndex + i);
     }
     knob->unblockValueChanges();
 }
@@ -2315,9 +2372,9 @@ OfxDouble3DInstance::get(double & x1,
                          double & x3)
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    x1 = knob->getValue(0);
-    x2 = knob->getValue(1);
-    x3 = knob->getValue(2);
+    x1 = knob->getValue(0 + _startIndex);
+    x2 = knob->getValue(1 + _startIndex);
+    x3 = knob->getValue(2 + _startIndex);
 
     return kOfxStatOK;
 }
@@ -2329,9 +2386,9 @@ OfxDouble3DInstance::get(OfxTime time,
                          double & x3)
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    x1 = knob->getValueAtTime(time,0);
-    x2 = knob->getValueAtTime(time,1);
-    x3 = knob->getValueAtTime(time,2);
+    x1 = knob->getValueAtTime(time,0 + _startIndex);
+    x2 = knob->getValueAtTime(time,1 + _startIndex);
+    x3 = knob->getValueAtTime(time,2 + _startIndex);
 
     return kOfxStatOK;
 }
@@ -2343,7 +2400,7 @@ OfxDouble3DInstance::set(double x1,
 {
     
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    knob->setValues(x1, x2 , x3, ViewSpec::current(), eValueChangedReasonPluginEdited);
+    knob->setValues(x1, x2 , x3, ViewSpec::current(), eValueChangedReasonPluginEdited, _startIndex);
     return kOfxStatOK;
 }
 
@@ -2354,7 +2411,7 @@ OfxDouble3DInstance::set(OfxTime time,
                          double x3)
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    knob->setValuesAtTime(time, x1, x2 , x3, ViewSpec::current(), eValueChangedReasonPluginEdited);
+    knob->setValuesAtTime(time, x1, x2 , x3, ViewSpec::current(), eValueChangedReasonPluginEdited, _startIndex);
     return kOfxStatOK;
 }
 
@@ -2365,9 +2422,9 @@ OfxDouble3DInstance::derive(OfxTime time,
                             double & x3)
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    x1 = knob->getDerivativeAtTime(time, ViewSpec::current(), 0);
-    x2 = knob->getDerivativeAtTime(time, ViewSpec::current(), 1);
-    x3 = knob->getDerivativeAtTime(time, ViewSpec::current(), 2);
+    x1 = knob->getDerivativeAtTime(time, ViewSpec::current(), 0 + _startIndex);
+    x2 = knob->getDerivativeAtTime(time, ViewSpec::current(), 1 + _startIndex);
+    x3 = knob->getDerivativeAtTime(time, ViewSpec::current(), 2 + _startIndex);
 
     return kOfxStatOK;
 }
@@ -2380,9 +2437,9 @@ OfxDouble3DInstance::integrate(OfxTime time1,
                                double & x3)
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    x1 = knob->getIntegrateFromTimeToTime(time1, time2, ViewSpec::current(), 0);
-    x2 = knob->getIntegrateFromTimeToTime(time1, time2, ViewSpec::current(), 1);
-    x3 = knob->getIntegrateFromTimeToTime(time1, time2, ViewSpec::current(), 2);
+    x1 = knob->getIntegrateFromTimeToTime(time1, time2, ViewSpec::current(), 0 + _startIndex);
+    x2 = knob->getIntegrateFromTimeToTime(time1, time2, ViewSpec::current(), 1 + _startIndex);
+    x3 = knob->getIntegrateFromTimeToTime(time1, time2, ViewSpec::current(), 2 + _startIndex);
 
     return kOfxStatOK;
 }
@@ -2418,14 +2475,17 @@ OfxDouble3DInstance::setDisplayRange()
     std::vector<double> displayMins(3);
     std::vector<double> displayMaxs(3);
     
-    
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
     displayMins[0] = getProperties().getDoubleProperty(kOfxParamPropDisplayMin,0);
     displayMins[1] = getProperties().getDoubleProperty(kOfxParamPropDisplayMin,1);
     displayMins[2] = getProperties().getDoubleProperty(kOfxParamPropDisplayMin,2);
     displayMaxs[0] = getProperties().getDoubleProperty(kOfxParamPropDisplayMax,0);
     displayMaxs[1] = getProperties().getDoubleProperty(kOfxParamPropDisplayMax,1);
     displayMaxs[2] = getProperties().getDoubleProperty(kOfxParamPropDisplayMax,2);
-    _knob.lock()->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+    for (int i = 0; i < 3; ++i) {
+        knob->setDisplayMinimum(displayMins[i], i + _startIndex);
+        knob->setDisplayMaximum(displayMaxs[i], i + _startIndex);
+    }
 }
 
 void
@@ -2435,13 +2495,17 @@ OfxDouble3DInstance::setRange()
     std::vector<double> displayMins(3);
     std::vector<double> displayMaxs(3);
     
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
     displayMins[0] = getProperties().getDoubleProperty(kOfxParamPropMin,0);
     displayMins[1] = getProperties().getDoubleProperty(kOfxParamPropMin,1);
     displayMins[2] = getProperties().getDoubleProperty(kOfxParamPropMin,2);
     displayMaxs[0] = getProperties().getDoubleProperty(kOfxParamPropMax,0);
     displayMaxs[1] = getProperties().getDoubleProperty(kOfxParamPropMax,1);
     displayMaxs[2] = getProperties().getDoubleProperty(kOfxParamPropMax,2);
-    _knob.lock()->setMinimumsAndMaximums(displayMins, displayMaxs);
+    for (int i = 0; i < 3; ++i) {
+        knob->setMinimum(displayMins[i], i + _startIndex);
+        knob->setMaximum(displayMaxs[i], i + _startIndex);
+    }
     
 }
 
@@ -2469,20 +2533,20 @@ bool
 OfxDouble3DInstance::isAnimated() const
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    return knob->isAnimated(0, ViewSpec::current()) || knob->isAnimated(1, ViewSpec::current()) || knob->isAnimated(2, ViewSpec::current());
+    return knob->isAnimated(0 + _startIndex, ViewSpec::current()) || knob->isAnimated(1 + _startIndex, ViewSpec::current()) || knob->isAnimated(2 + _startIndex, ViewSpec::current());
 }
 
 OfxStatus
 OfxDouble3DInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock().get(), nKeys);
+    return OfxKeyFrame::getNumKeys(_knob.lock().get(), nKeys, _startIndex, 3 + _startIndex);
 }
 
 OfxStatus
 OfxDouble3DInstance::getKeyTime(int nth,
                                 OfxTime & time) const
 {
-    return OfxKeyFrame::getKeyTime(_knob.lock(), nth, time);
+    return OfxKeyFrame::getKeyTime(_knob.lock(), nth, time, _startIndex, 3 + _startIndex);
 }
 
 OfxStatus
@@ -2490,19 +2554,19 @@ OfxDouble3DInstance::getKeyIndex(OfxTime time,
                                  int direction,
                                  int & index) const
 {
-    return OfxKeyFrame::getKeyIndex(_knob.lock(), time, direction, index);
+    return OfxKeyFrame::getKeyIndex(_knob.lock(), time, direction, index, _startIndex, 3 + _startIndex);
 }
 
 OfxStatus
 OfxDouble3DInstance::deleteKey(OfxTime time)
 {
-    return OfxKeyFrame::deleteKey(_knob.lock(), time);
+    return OfxKeyFrame::deleteKey(_knob.lock(), time, _startIndex, 3 + _startIndex);
 }
 
 OfxStatus
 OfxDouble3DInstance::deleteAllKeys()
 {
-    return OfxKeyFrame::deleteAllKeys(_knob.lock());
+    return OfxKeyFrame::deleteAllKeys(_knob.lock(), _startIndex, 3 + _startIndex);
 }
 
 OfxStatus
@@ -2512,7 +2576,7 @@ OfxDouble3DInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 {
     const OfxParamToKnob & other = dynamic_cast<const OfxParamToKnob &>(instance);
 
-    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
+    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range, _startIndex, 3 + _startIndex);
 }
 
 

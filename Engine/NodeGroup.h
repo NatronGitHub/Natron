@@ -307,37 +307,37 @@ public:
     
     virtual ~NodeGroup();
     
-    virtual int getMajorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual int getMajorVersion() const OVERRIDE WARN_UNUSED_RETURN
     {
         return 1;
     }
     
-    virtual int getMinorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual int getMinorVersion() const OVERRIDE WARN_UNUSED_RETURN
     {
         return 0;
     }
     
-    virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual std::string getPluginID() const OVERRIDE WARN_UNUSED_RETURN
     {
         return PLUGINID_NATRON_GROUP;
     }
     
-    virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual std::string getPluginLabel() const OVERRIDE WARN_UNUSED_RETURN
     {
         return "Group";
     }
     
-    virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL
+    virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE
     {
         grouping->push_back(PLUGIN_GROUP_OTHER);
     }
     
-    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE WARN_UNUSED_RETURN
     {
         return eRenderSafetyFullySafeFrame;
     }
     
-    virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual bool isOutput() const OVERRIDE WARN_UNUSED_RETURN
     {
         return false;
     }
@@ -349,7 +349,7 @@ public:
     
     virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual std::string getPluginDescription() const OVERRIDE WARN_UNUSED_RETURN;
     
     virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
@@ -366,7 +366,7 @@ public:
     virtual void notifyInputMaskStateChanged(const NodePtr& node) OVERRIDE FINAL;
     virtual void notifyNodeNameChanged(const NodePtr& node) OVERRIDE FINAL;
     
-    virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
+    virtual bool getCreateChannelSelectorKnob() const OVERRIDE WARN_UNUSED_RETURN { return false; }
     
     virtual bool isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
     
@@ -390,6 +390,11 @@ public:
     
     void setSubGraphEditable(bool editable);
     bool isSubGraphEditable() const;
+
+    virtual bool isSubGraphUserVisible() const
+    {
+        return true;
+    }
     
 Q_SIGNALS:
     
@@ -397,12 +402,12 @@ Q_SIGNALS:
     
 private:
     
-    virtual void initializeKnobs() OVERRIDE FINAL;
+    virtual void initializeKnobs() OVERRIDE;
     
     virtual void knobChanged(KnobI* k,ValueChangedReasonEnum reason,
                              ViewSpec /*view*/,
                              double /*time*/,
-                             bool /*originatedFromMainThread*/) OVERRIDE FINAL;
+                             bool /*originatedFromMainThread*/) OVERRIDE;
     
     boost::scoped_ptr<NodeGroupPrivate> _imp;
 };

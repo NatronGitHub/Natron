@@ -451,7 +451,7 @@ StatusEnum EffectInstance::getInputsRoIsFunctor(bool useTransforms,
     assert(fvRequest);
     
     
-     if (fvRequest->globalData.identityInputNb == -2) {
+    if (fvRequest->globalData.identityInputNb == -2) {
         assert(fvRequest->globalData.inputIdentityTime != time || viewInvariance == eViewInvarianceAllViewsInvariant);
         // be safe in release mode otherwise we hit an infinite recursion
         if (fvRequest->globalData.inputIdentityTime != time || viewInvariance == eViewInvarianceAllViewsInvariant) {

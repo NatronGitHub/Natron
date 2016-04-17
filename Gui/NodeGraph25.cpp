@@ -126,7 +126,7 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
         
         if (modCASIsShift(e)) {
             NodeGroup* isGrp = nearbyNode->getNode()->isEffectGroup();
-            if (isGrp) {
+            if (isGrp && isGrp->isSubGraphUserVisible()) {
                 NodeGraphI* graph_i = isGrp->getNodeGraph();
                 assert(graph_i);
                 NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);

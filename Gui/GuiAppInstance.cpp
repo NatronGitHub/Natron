@@ -521,7 +521,7 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
     }
 
     NodeGroup* isGroup = node->isEffectGroup();
-    if (isGroup) {
+    if (isGroup && isGroup->isSubGraphUserVisible()) {
         _imp->_gui->createGroupGui(node, args.reason);
     }
 
@@ -545,12 +545,12 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
         if (selectedNodes.empty()) {
             autoConnect = false;
         }
-        if ( (args.xPosHint != INT_MIN) && (args.yPosHint != INT_MIN) && !autoConnect ) {
+        if ( (args.xPosHint != INT_MIN) && (args.yPosHint != INT_MIN) && (!autoConnect)) {
             QPointF pos = nodegui->mapToParent( nodegui->mapFromScene(QPointF(args.xPosHint,args.yPosHint)));
             nodegui->refreshPosition( pos.x(),pos.y(), true );
         } else {
             BackdropGui* isBd = dynamic_cast<BackdropGui*>(nodegui.get());
-            if (!isBd && !isGroup) {
+            if (!isBd) {
                 NodeGuiPtr selectedNode;
                 if (args.reason == eCreateNodeReasonUserCreate && selectedNodes.size() == 1) {
                     selectedNode = selectedNodes.front();

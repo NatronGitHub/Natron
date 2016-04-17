@@ -697,23 +697,8 @@ Gui::getNodesEntitledForOverlays(NodesList & nodes) const
         NodeGuiPtr node = panel->getNode();
         NodePtr internalNode = node->getNode();
         if (node && internalNode) {
-            boost::shared_ptr<MultiInstancePanel> multiInstance = node->getMultiInstancePanel();
-            if (multiInstance) {
-                if ( internalNode->hasOverlay() &&
-                    !internalNode->isNodeDisabled() &&
-                    node->isSettingsPanelVisible() &&
-                    !node->isSettingsPanelMinimized() ) {
-                    nodes.push_back( node->getNode() );
-                }
-            } else {
-                if ( ( internalNode->hasOverlay() || internalNode->getRotoContext() ) &&
-                    !internalNode->isNodeDisabled() &&
-                    !internalNode->getParentMultiInstance() &&
-                    internalNode->isActivated() &&
-                    node->isSettingsPanelVisible() &&
-                    !node->isSettingsPanelMinimized() ) {
-                    nodes.push_back( node->getNode() );
-                }
+            if (internalNode->shouldDrawOverlay()) {
+                nodes.push_back(node->getNode());
             }
         }
         
@@ -1150,7 +1135,8 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls, const QPoint& globalPos)
         if (extLower == NATRON_PROJECT_FILE_EXT) {
             const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();
             assert(!content.empty());
-            (void)openProject(content.begin()->second.absoluteFileName());
+            AppInstance* app = openProject(content.begin()->second.absoluteFileName());
+            Q_UNUSED(app);
         } else if (extLower == "py") {
             const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();
             assert(!content.empty());

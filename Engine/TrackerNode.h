@@ -25,20 +25,21 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Engine/EffectInstance.h"
+#include "Engine/NodeGroup.h"
 
 NATRON_NAMESPACE_ENTER;
 
-class TrackerNode : Natron::EffectInstance
+struct TrackerNodePrivate;
+class TrackerNode : public NodeGroup
 {
 public:
     
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
     {
         return new TrackerNode(n);
     }
     
-    TrackerNode(boost::shared_ptr<Natron::Node> node);
+    TrackerNode(boost::shared_ptr<Node> node);
     
     virtual ~TrackerNode();
     
@@ -56,10 +57,6 @@ public:
         return 0;
     }
     
-    virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return 1;
-    }
     
     virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
     
@@ -73,21 +70,12 @@ public:
     {
         grouping->push_back(PLUGIN_GROUP_TRANSFORM);
     }
-    
-    virtual std::string getInputLabel (int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
-    virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
-    virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE FINAL;
-    
-    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
-    
+
     virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
     
-    virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return Natron::eRenderSafetyFullySafeFrame;
+        return eRenderSafetyFullySafeFrame;
     }
     
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN
@@ -123,16 +111,24 @@ public:
     {
         return true;
     }
+    
+    virtual bool isSubGraphUserVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return false;
+    }
 
+
+    virtual void onKnobsLoaded() OVERRIDE FINAL;
+    
 private:
     
-    virtual bool isIdentity(double time,
+    /*virtual bool isIdentity(double time,
                             const RenderScale & scale,
                             const RectI & roi,
                             ViewIdx view,
                             double* inputTime,
                             ViewIdx* inputView,
-                            int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                            int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;*/
     
     virtual void knobChanged(KnobI* k,
                              ValueChangedReasonEnum reason,
@@ -140,6 +136,9 @@ private:
                              double time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
     
+private:
+    
+    boost::scoped_ptr<TrackerNodePrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT;

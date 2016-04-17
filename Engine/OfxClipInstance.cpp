@@ -692,7 +692,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     //If components param is not set (i.e: the plug-in uses regular clipGetImage call) then figure out the plane from the TLS set in OfxEffectInstance::render
     //otherwise use the param sent by the plug-in call of clipGetImagePlane
     
-    bool isMultiplanar = effect->isMultiPlanar();
+    //bool isMultiplanar = effect->isMultiPlanar();
     
     ImageComponents comp;
     if (!ofxPlane) {
@@ -797,7 +797,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
 
     //If the plug-in used fetchImage and not fetchImagePlane it is expected that we return
     //an image mapped to the clip components
-    const bool mapImageToClipPref = !isMultiplanar;
+    const bool mapImageToClipPref = !ofxPlane || *ofxPlane == kFnOfxImagePlaneColour;
     ImagePtr image = effect->getImage(inputnb, time, renderScale, view,
                                       optionalBounds ? &bounds : NULL,
                                       &comp,

@@ -87,6 +87,9 @@
 #define kTrackerParamErrorLabel "Error"
 #define kTrackerParamErrorHint "The error obtained after tracking each frame. This 1 minus the corss-correlation score."
 
+#define kTrackerParamEnabled "enabled"
+#define kTrackerParamEnabledLabel "Enabled"
+#define kTrackerParamEnabledHint "When checked, this track data will be used to generate the resulting Transform/CornerPin out of the tracker. You can animate this parameter to control the lifetime of the track."
 //#define NATRON_TRACK_MARKER_USE_WEIGHT
 
 NATRON_NAMESPACE_ENTER;
@@ -144,9 +147,11 @@ public:
     
     void getCenterKeyframes(std::set<double>* keyframes) const;
     
-    bool isEnabled() const;
+    bool isEnabled(double time) const;
     
-    void setEnabled(bool enabled, int reason);
+    AnimationLevelEnum getEnabledNessAnimationLevel() const;
+    
+    void setEnabledFromGui(double time, bool enabled);
     
     void resetCenter();
     
@@ -160,7 +165,7 @@ public:
     
     void removeAllKeyframes();
     
-    std::pair<boost::shared_ptr<Natron::Image>,RectI> getMarkerImage(int time,const RectI& roi) const;
+    std::pair<boost::shared_ptr<Image>,RectI> getMarkerImage(int time,const RectI& roi) const;
     
     RectI getMarkerImageRoI(int time) const;
     
@@ -189,6 +194,14 @@ public Q_SLOTS:
     
     void onSearchBtmLeftKnobValueChanged(ViewSpec, int dimension,int reason);
     void onSearchTopRightKnobValueChanged(ViewSpec, int dimension,int reason);
+    
+public Q_SLOTS:
+    
+    void onEnabledValueChanged(ViewSpec, int dimension,int reason);
+    
+Q_SIGNALS:
+    
+    void enabledChanged(int reason);
     
 private:
     
