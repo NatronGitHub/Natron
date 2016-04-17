@@ -1189,6 +1189,9 @@ TrackerContextPrivate::refreshVisibilityFromTransformTypeInternal(TrackerTransfo
         transformControlsSeparator.lock()->setLabel("CornerPin Controls");
     }
     
+    smoothTransform.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin);
+    smoothCornerPin.lock()->setSecret(transformType == eTrackerTransformNodeTransform);
+    
     toGroup.lock()->setSecret(transformType == eTrackerTransformNodeTransform);
     fromGroup.lock()->setSecret(transformType == eTrackerTransformNodeTransform);
     cornerPinOverlayPoints.lock()->setSecret(transformType == eTrackerTransformNodeTransform);

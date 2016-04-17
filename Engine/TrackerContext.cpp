@@ -1288,14 +1288,6 @@ struct CornerPinDataWithTime
 };
 
 
-static Point getPoint(double time, const boost::shared_ptr<KnobDouble>& k)
-{
-    Point p;
-    p.x = k->getValueAtTime(time, 0);
-    p.y = k->getValueAtTime(time, 1);
-    return p;
-}
-
 static Point applyHomography(const Point& p, Transform::Matrix3x3& h)
 {
     Transform::Point3D a = euclideanToHomogenous(p);
