@@ -2512,7 +2512,7 @@ NodeGui::onKnobsLinksChanged()
         } else {
 
             ///There's no link to the master node yet
-            if (masterNode->getNodeGui().get() != this && masterNode->getGroup() == getNode()->getGroup()) {
+            if (masterNode && masterNode->getNodeGui().get() != this && masterNode->getGroup() == getNode()->getGroup()) {
                 boost::shared_ptr<NodeGuiI> master_i = masterNode->getNodeGui();
                 NodeGuiPtr master = boost::dynamic_pointer_cast<NodeGui>(master_i);
                 assert(master);

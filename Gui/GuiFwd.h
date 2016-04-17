@@ -46,6 +46,7 @@ class QFileSystemModel;
 class QFileSystemWatcher;
 class QFont;
 class QFontComboBox;
+class QFontMetrics;
 class QFrame;
 class QGLShaderProgram;
 class QGraphicsLineItem;

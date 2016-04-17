@@ -5062,6 +5062,7 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
     
     const bool supportsMultipleDepth = _publicInterface->supportsMultipleClipsBitDepth();
     const bool supportsMultiplePARS = _publicInterface->supportsMultipleClipsPAR();
+    const bool supportsMultipleFPS = _publicInterface->supportsMultipleClipsFPS();
     
     std::vector<EffectInstPtr> inputs(nInputs);
     for (int i = 0; i < nInputs; ++i) {
@@ -5103,12 +5104,14 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
             }
         }
         
-        if (!outputFrameRateSet) {
-            outputFrameRate = fps;
-            outputFrameRateSet = true;
-        } else if (std::abs(outputFrameRate - fps) > 0.01) {
-            // We have several inputs with different frame rates
-            mustWarnFPS = true;
+        if (!supportsMultipleFPS) {
+            if (!outputFrameRateSet) {
+                outputFrameRate = fps;
+                outputFrameRateSet = true;
+            } else if (std::abs(outputFrameRate - fps) > 0.01) {
+                // We have several inputs with different frame rates
+                mustWarnFPS = true;
+            }
         }
         
         

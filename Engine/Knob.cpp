@@ -4786,7 +4786,9 @@ KnobHolder::endChanges(bool discardRendering)
 
         }
         
-        it->knob->refreshListenersAfterValueChange(it->view, it->originalReason, dimension);
+        if (!it->valueChangeBlocked) {
+            it->knob->refreshListenersAfterValueChange(it->view, it->originalReason, dimension);
+        }
     }
     
     

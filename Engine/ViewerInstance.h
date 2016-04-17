@@ -78,6 +78,16 @@ public:
     ///Called upon node creation and then never changed
     void setUiContext(OpenGLViewerI* viewer);
 
+    virtual bool supportsMultipleClipsBitDepth() const OVERRIDE FINAL
+    {
+        return true;
+    }
+    
+    virtual bool supportsMultipleClipsFPS() const OVERRIDE FINAL
+    {
+        return true;
+    }
+
     /**
      * @brief Set the uiContext pointer to NULL, preventing the gui to be deleted twice when
      * the node is deleted.

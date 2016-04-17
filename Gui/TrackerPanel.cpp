@@ -597,7 +597,13 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker, int row, Track
     ///Enabled
     {
         ItemData d;
-        AnimatedCheckBox* checkbox = new AnimatedCheckBox();
+        QWidget *checkboxContainer = new QWidget(0);
+        QHBoxLayout* checkboxLayout = new QHBoxLayout(checkboxContainer);
+        AnimatedCheckBox* checkbox = new AnimatedCheckBox(checkboxContainer);
+        checkboxLayout->addWidget(checkbox, Qt::AlignLeft | Qt::AlignVCenter);
+        checkboxLayout->setContentsMargins(0, 0, 0, 0);
+        checkboxLayout->setSpacing(0);
+        checkbox->setFixedSize(TO_DPIX(NATRON_SMALL_BUTTON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_SIZE));
         checkbox->setChecked(marker.isEnabled(marker.getCurrentTime()));
         checkbox->setAnimation((int)marker.getEnabledNessAnimationLevel());
         QObject::connect( checkbox,SIGNAL( toggled(bool) ),_publicInterface,SLOT( onItemEnabledCheckBoxChecked(bool) ) );
@@ -606,7 +612,7 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker, int row, Track
         newItem->setToolTip(GuiUtils::convertFromPlainText(QObject::tr("When unchecked, this track will no longer be tracked even if selected. Also the transform parameters in the Transform tab will not take this track into account"), Qt::WhiteSpaceNormal));
         d.item = newItem;
         d.dimension = -1;
-        view->setCellWidget(row, COL_ENABLED, checkbox);
+        view->setCellWidget(row, COL_ENABLED, checkboxContainer);
         view->setItem(row, COL_ENABLED, newItem);
         view->resizeColumnToContents(COL_ENABLED);
         data.items.push_back(d);
@@ -1738,13 +1744,22 @@ TrackerPanel::onEnabledChanged(const TrackMarkerPtr& marker,int reason)
     if (row == -1) {
         return;
     }
-    AnimatedCheckBox* w = dynamic_cast<AnimatedCheckBox*>(_imp->view->cellWidget(row, COL_ENABLED));
+    QWidget* w = _imp->view->cellWidget(row, COL_ENABLED);
     if (!w) {
         return;
     }
-    w->setChecked(marker->isEnabled(marker->getCurrentTime()));
+    const QObjectList& childrenObjects = w->children();
+    for (QObjectList::const_iterator it = childrenObjects.begin(); it != childrenObjects.end(); ++it) {
+        AnimatedCheckBox* isCheckbox = dynamic_cast<AnimatedCheckBox*>(*it);
+        if (isCheckbox) {
+            isCheckbox->setChecked(marker->isEnabled(marker->getCurrentTime()));
+            getNode()->getNode()->getApp()->redrawAllViewers();
+            break;
+        }
+    }
     
-    getNode()->getNode()->getApp()->redrawAllViewers();
+    
+    
 }
 
 void

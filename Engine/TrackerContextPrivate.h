@@ -152,6 +152,11 @@ GCC_DIAG_ON(unused-parameter)
 #define kTrackerParamSmoothLabel "Smooth"
 #define kTrackerParamSmoothHint "Smooth the translation/rotation/scale by averaging this number of frames together"
 
+#define kTrackerParamSmoothCornerPin "smoothCornerPin"
+#define kTrackerParamSmoothCornerPinLabel "Smooth"
+#define kTrackerParamSmoothCornerPinHint "Smooth the Corner Pin by averaging this number of frames together"
+
+
 #define kTransformParamTranslate "translate"
 #define kTransformParamRotate "rotate"
 #define kTransformParamScale "scale"
@@ -394,6 +399,7 @@ struct TrackerContextPrivate
     boost::weak_ptr<KnobButton> setCurrentFrameButton;
     boost::weak_ptr<KnobInt> jitterPeriod;
     boost::weak_ptr<KnobInt> smoothTransform;
+    boost::weak_ptr<KnobInt> smoothCornerPin;
     
     boost::weak_ptr<KnobSeparator> transformControlsSeparator;
     boost::weak_ptr<KnobDouble> translate;
@@ -482,7 +488,6 @@ struct TrackerContextPrivate
     void refreshVisibilityFromTransformType();
     void refreshVisibilityFromTransformTypeInternal(TrackerTransformNodeEnum transformType);
     
-    void refreshTransformKnobs();
     
         
     static void natronTrackerToLibMVTracker(bool useRefFrameForSearchWindow,

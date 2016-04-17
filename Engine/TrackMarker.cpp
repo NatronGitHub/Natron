@@ -161,10 +161,11 @@ struct TrackMarkerPrivate
         errKnob->setName(kTrackerParamError);
         error = errKnob;
         
-        boost::shared_ptr<KnobBool> enableKnob = AppManager::createKnob<KnobBool>(publicInterface, kTrackerParamEnabledLabel, 2, false);
+        boost::shared_ptr<KnobBool> enableKnob = AppManager::createKnob<KnobBool>(publicInterface, kTrackerParamEnabledLabel, 1, false);
         enableKnob->setName(kTrackerParamEnabled);
         enableKnob->setHintToolTip(kTrackerParamEnabledHint);
         enableKnob->setAnimationEnabled(true);
+        enableKnob->setDefaultValue(true);
         enabled = enableKnob;
     }
 };
@@ -174,6 +175,7 @@ TrackMarker::TrackMarker(const boost::shared_ptr<TrackerContext>& context)
 , boost::enable_shared_from_this<TrackMarker>()
 , _imp(new TrackMarkerPrivate(this, context))
 {
+    QObject::connect(this, SIGNAL(enabledChanged(int)), context.get(), SLOT(onMarkerEnabledChanged(int)));
     boost::shared_ptr<KnobSignalSlotHandler> handler = _imp->center.lock()->getSignalSlotHandler();
     QObject::connect(handler.get(), SIGNAL(keyFrameSet(double,ViewSpec,int,int,bool)), this , SLOT(onCenterKeyframeSet(double,ViewSpec,int,int,bool)));
     QObject::connect(handler.get(), SIGNAL(keyFrameRemoved(double,ViewSpec,int,int)), this , SLOT(onCenterKeyframeRemoved(double,ViewSpec,int,int)));
@@ -473,7 +475,7 @@ TrackMarker::getEnabledNessAnimationLevel() const
 }
 
 void
-TrackMarker::setEnabledFromGui(double time, bool enabled)
+TrackMarker::setEnabledFromGui(double /*time*/, bool enabled)
 {
 
     boost::shared_ptr<KnobBool> knob =_imp->enabled.lock();

@@ -2671,8 +2671,11 @@ OfxEffectInstance::getTransform(double time,
                                             view,
                                             Image::getLevelFromScale(renderScale.x));
         
-        
-        stat = effectInstance()->getTransformAction((OfxTime)time, field, renderScale, view, clipName, tmpTransform);
+        try {
+            stat = effectInstance()->getTransformAction((OfxTime)time, field, renderScale, view, clipName, tmpTransform);
+        } catch (...) {
+            return eStatusFailed;
+        }
         if (stat == kOfxStatReplyDefault) {
             return eStatusReplyDefault;
         } else if (stat == kOfxStatFailed) {

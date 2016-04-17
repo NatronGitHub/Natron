@@ -45,6 +45,7 @@
 #include "Engine/RectI.h"
 #include "Engine/RectD.h"
 #include "Engine/ThreadPool.h"
+#include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -294,6 +295,12 @@ public:
         bool hasRotationAndScale;
     };
     
+    struct CornerPinData
+    {
+        Transform::Matrix3x3 h;
+        int nbEnabledPoints;
+    };
+    
     NodePtr getCurrentlySelectedTransformNode() const;
     
     void drawInternalNodesOverlay(double time,
@@ -358,12 +365,30 @@ private:
                                                 bool jitterAdd,
                                                 const std::vector<TrackMarkerPtr>& markers,
                                                 TransformData* data);
+    
+    void computeCornerPinParamsFromTracksAtTime(double refTime,
+                                                double time,
+                                                int jitterPeriod,
+                                                bool jitterAdd,
+                                                const std::vector<TrackMarkerPtr>& markers,
+                                                CornerPinData* data);
+
+    
+    void computeTransformParamsFromTracks(double refTime,
+                                          const std::set<double>& keyframes,
+                                          int jitterPeriod,
+                                          bool jitterAdd,
+                                          const std::vector<TrackMarkerPtr>& allMarkers);
+    
+    void computeCornerParamsFromTracks(double refTime,
+                                       const std::set<double>& keyframes,
+                                       int jitterPeriod,
+                                       bool jitterAdd,
+                                       const std::vector<TrackMarkerPtr>& allMarkers);
 public:
     
     
-    void computeTransformParamsFromTracks(const std::vector<TrackMarkerPtr>& markers);
-    
-    void computeTransformParamsFromEnabledTracks();
+    void solveTransformParams();
 
 
     void exportTrackDataFromExportOptions();

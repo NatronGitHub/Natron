@@ -268,6 +268,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface, co
     enableTrackKnob->setAnimationEnabled(true);
     enableTrackKnob->setDefaultValue(true);
     enableTrackKnob->setEvaluateOnChange(false);
+    enableTrackKnob->setAllDimensionsEnabled(false);
     settingsPage->addKnob(enableTrackKnob);
     activateTrack = enableTrackKnob;
     perTrackKnobs.push_back(enableTrackKnob);
@@ -354,6 +355,17 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface, co
     smoothTransformKnob->setEvaluateOnChange(false);
     transformPage->addKnob(smoothTransformKnob);
     smoothTransform = smoothTransformKnob;
+    
+    boost::shared_ptr<KnobInt>  smoothCornerPinKnob = AppManager::createKnob<KnobInt>(effect.get(), kTrackerParamSmoothCornerPinLabel, 1);
+    smoothCornerPinKnob->setName(kTrackerParamSmoothCornerPin);
+    smoothCornerPinKnob->setHintToolTip(kTrackerParamSmoothCornerPinHint);
+    smoothCornerPinKnob->setAnimationEnabled(false);
+    smoothCornerPinKnob->disableSlider();
+    smoothCornerPinKnob->setMinimum(0, 0);
+    smoothCornerPinKnob->setEvaluateOnChange(false);
+    smoothCornerPinKnob->setSecret(true);
+    transformPage->addKnob(smoothCornerPinKnob);
+    smoothCornerPin = smoothCornerPinKnob;
     
     boost::shared_ptr<KnobSeparator>  transformSeparator = AppManager::createKnob<KnobSeparator>(effect.get(), "Transform Controls", 3);
     transformPage->addKnob(transformSeparator);
@@ -994,7 +1006,7 @@ TrackerContextPrivate::linkMarkerKnobsToGuiKnobs(const std::list<TrackMarkerPtr 
             }
             
             if (!slave) {
-                QObject::disconnect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,ViewSpec,int,bool)),
+                QObject::disconnect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,ViewSpec,int,int,bool)),
                                     _publicInterface, SLOT(onSelectedKnobCurveChanged()));
                 QObject::disconnect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(double,ViewSpec,int,int)),
                                     _publicInterface, SLOT(onSelectedKnobCurveChanged()));
@@ -1009,7 +1021,7 @@ TrackerContextPrivate::linkMarkerKnobsToGuiKnobs(const std::list<TrackMarkerPtr 
                                     _publicInterface, SLOT(onSelectedKnobCurveChanged()));
                 
             } else {
-                QObject::connect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,ViewSpec,int,bool)),
+                QObject::connect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,ViewSpec,int,int,bool)),
                                  _publicInterface, SLOT(onSelectedKnobCurveChanged()));
                 QObject::connect((*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(double,ViewSpec,int,int)),
                                  _publicInterface, SLOT(onSelectedKnobCurveChanged()));
@@ -1153,42 +1165,6 @@ TrackerContextPrivate::createTransformFromSelection(const std::list<TrackMarkerP
 #pragma message WARN("TODO")
 }
 
-void
-TrackerContextPrivate::refreshTransformKnobs()
-{
-    boost::shared_ptr<KnobChoice> motionTypeKnob = motionType.lock();
-    if (!motionTypeKnob) {
-        return;
-    }
-    int motionType_i = motionTypeKnob->getValue();
-    TrackerMotionTypeEnum motionType = (TrackerMotionTypeEnum)motionType_i;
-    
-    boost::shared_ptr<KnobChoice> transformTypeKnob = transformType.lock();
-    assert(transformTypeKnob);
-    
-    int transformType_i = transformTypeKnob->getValue();
-    TrackerTransformNodeEnum transformType = (TrackerTransformNodeEnum)transformType_i;
-    
-    switch (motionType) {
-        case eTrackerMotionTypeNone:
-        {
-        }   break;
-        case eTrackerMotionTypeMatchMove:
-        {
-        }   break;
-        case eTrackerMotionTypeStabilize:
-        {
-        }   break;
-        case eTrackerMotionTypeAddJitter:
-        {
-        }   break;
-        case eTrackerMotionTypeRemoveJitter:
-        {
-        }   break;
-        default:
-            break;
-    }
-}
 
 void
 TrackerContextPrivate::refreshVisibilityFromTransformTypeInternal(TrackerTransformNodeEnum transformType)

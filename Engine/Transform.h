@@ -68,6 +68,24 @@ struct Point3D
 
     bool operator==(const Point3D & other) const;
 };
+    
+    
+    /**
+     * \brief Compute the cross-product of two vectors
+     *
+     */
+inline Point3D
+crossprod(const Point3D & a,
+              const Point3D & b)
+{
+        Point3D c;
+        
+        c.x = a.y * b.z - a.z * b.y;
+        c.y = a.z * b.x - a.x * b.z;
+        c.z = a.x * b.y - a.y * b.x;
+        
+        return c;
+}
 
 struct Point4D
 {
@@ -112,10 +130,68 @@ struct Matrix3x3
 
     Matrix3x3(const Matrix3x3 & mat);
     Matrix3x3 & operator=(const Matrix3x3 & m);
+    
+    /// Contruct from columns
+    Matrix3x3(const Point3D &m0,
+              const Point3D &m1,
+              const Point3D &m2)
+    {
+        a = m0.x; b = m1.x; c = m2.x;
+        d = m0.y; e = m1.y; f = m2.y;
+        g = m0.z; h = m1.z; i = m2.z;
+    }
 
     bool isIdentity() const;
 
     void setIdentity();
+    
+    /**
+     * \brief Compute a homography from 4 points correspondences
+     * \param p1 source point
+     * \param p2 source point
+     * \param p3 source point
+     * \param p4 source point
+     * \param q1 target point
+     * \param q2 target point
+     * \param q3 target point
+     * \param q4 target point
+     * \return the homography matrix that maps pi's to qi's
+     *
+     Using four point-correspondences pi ↔ pi^, we can set up an equation system to solve for the homography matrix H.
+     An algorithm to obtain these parameters requiring only the inversion of a 3 × 3 equation system is as follows.
+     From the four point-correspondences pi ↔ pi^ with (i ∈ {1, 2, 3, 4}),
+     compute h1 = (p1 × p2 ) × (p3 × p4 ), h2 = (p1 × p3 ) × (p2 × p4 ), h3 = (p1 × p4 ) × (p2 × p3 ).
+     Also compute h1^ , h2^ , h3^ using the same principle from the points pi^.
+     Now, the homography matrix H can be obtained easily from
+     H · [h1 h2 h3] = [h1^ h2^ h3^],
+     which only requires the inversion of the matrix [h1 h2 h3].
+     
+     Algo from:
+     http://www.dirk-farin.net/publications/phd/text/AB_EfficientComputationOfHomographiesFromFourCorrespondences.pdf
+     */
+    bool setHomographyFromFourPoints(const Point3D &p1,
+                                     const Point3D &p2,
+                                     const Point3D &p3,
+                                     const Point3D &p4,
+                                     const Point3D &q1,
+                                     const Point3D &q2,
+                                     const Point3D &q3,
+                                     const Point3D &q4);
+    
+    bool setAffineFromThreePoints(const Point3D &p1,
+                                  const Point3D &p2,
+                                  const Point3D &p3,
+                                  const Point3D &q1,
+                                  const Point3D &q2,
+                                  const Point3D &q3);
+    
+    bool setSimilarityFromTwoPoints(const Point3D &p1,
+                                    const Point3D &p2,
+                                    const Point3D &q1,
+                                    const Point3D &q2);
+    
+    bool setTranslationFromOnePoint(const Point3D &p1,
+                                    const Point3D &q1);
 };
 
  double matDeterminant(const Matrix3x3& M);
