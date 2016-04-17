@@ -6,6 +6,5 @@ Getting Started
    
    about
    installation
-   preferences
    enviroment
    

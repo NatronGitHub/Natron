@@ -9,8 +9,10 @@ Natron documentation
 Contents:
 
 .. toctree::
-       :maxdepth: 2
+    :maxdepth: 2
 
     guide/index.rst
     devel/index.rst
+    _prefs.rst
+    _group.rst
 
