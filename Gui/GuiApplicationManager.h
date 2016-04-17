@@ -251,7 +251,6 @@ private:
     boost::scoped_ptr<GuiApplicationManagerPrivate> _imp;
 
     DocumentationManager* documentation;
-    LoginDialog* login;
 };
 
 NATRON_NAMESPACE_EXIT;

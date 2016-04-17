@@ -132,7 +132,7 @@ INCLUDEPATH += $$PWD/libs/gflags/src/gflags
 ################
 # Gui
 static-gui {
-CONFIG += static-engine static-qhttpserver static-qtkeychain
+CONFIG += static-engine static-qhttpserver
 win32-msvc*{
         CONFIG(64bit) {
                 CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../Gui/x64/release/ -lGui
@@ -568,7 +568,6 @@ win32-msvc*{
 # qtkeychain
 
 static-qtkeychain {
-unix:!mac: QT+= dbus xml
 INCLUDEPATH += $$PWD/libs/qtkeychain
 DEPENDPATH += $$OUT_PWD/../libs/qtkeychain
 
