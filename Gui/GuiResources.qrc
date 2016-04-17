@@ -350,6 +350,5 @@
         <file>Resources/Images/pauseEnabled.png</file>
         <file>Resources/Images/pauseDisabled.png</file>
         <file>Resources/Images/trackerNodeIcon.png</file>
-        <file>Resources/Images/logindialog-background.png</file>
     </qresource>
 </RCC>

@@ -37,7 +37,6 @@
 #include "Gui/GuiFwd.h"
 
 #include "DocumentationManager.h"
-#include "LoginDialog.h"
 
 #if defined(appPTR)
 #undef appPTR
