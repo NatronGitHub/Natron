@@ -3961,31 +3961,49 @@ Node::refreshPreviewsAfterProjectLoad()
 QString
 Node::makeHTMLDocumentation() const
 {
-    assert(QThread::currentThread() == qApp->thread());
     
     QString ret;
     QTextStream ts(&ret);
     
     //bool isPyPlug;
-    QString pluginID,pluginLabel,pluginDescription;
+    QString pluginID,pluginLabel,pluginDescription,pluginIcon;
     int majorVersion = getMajorVersion();
     int minorVersion = getMinorVersion();
-    
+    QStringList pluginGroup;
+
     {
         QMutexLocker k(&_imp->pluginPythonModuleMutex);
         //isPyPlug = !_imp->pyPlugID.empty();
         pluginID = _imp->pyPlugID.empty() ? _imp->plugin->getPluginID() : QString::fromUtf8(_imp->pyPlugID.c_str());
         pluginLabel = _imp->pyPlugLabel.empty() ? _imp->plugin->getPluginLabel() : QString::fromUtf8(_imp->pyPlugLabel.c_str());
         pluginDescription = _imp->pyPlugDesc.empty() ? QString::fromUtf8(_imp->effect->getPluginDescription().c_str()) : QString::fromUtf8(_imp->pyPlugDesc.c_str());
+        pluginIcon = _imp->plugin->getIconFilePath();
+        pluginGroup = _imp->plugin->getGrouping();
     }
     
     ts << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
     ts << "<html><head>";
-    ts << "<title>" << pluginLabel << "</title>";
+    ts << "<title>" << pluginLabel << " - Natron 2.0 documentation</title>"; /// version string will be replaced in parser
     ts << "<link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"_static/jquery.js\"></script><script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>";
-    ts << "</head><body><div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\">";
+    ts << "</head><body>";
+
+    ts << "<div class=\"related\"><h3>Navigation</h3><ul>";
+    ts << "<li><a href=\"/index.html\">Natron 2.0 documentation</a> &raquo;</li>";
+    ts << "<li><a href=\"/_group.html\">Reference Guide</a> &raquo;</li>";
+    if (!pluginGroup.isEmpty()) {
+        QString group = pluginGroup.at(0);
+        if (!group.isEmpty()) {
+            ts << "<li><a href=\"/_group.html?id=" << group << "\">" << group << "</a> &raquo;</li>";
+        }
+    }
+    ts << "</ul></div>";
+
+
+    ts << "<div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\">";
     ts << "<h1>" << pluginLabel << " version " << majorVersion << "." << minorVersion << "</h1>";
-    ts << "<!--ADD_SCREENSHOT_HERE-->";
+    if (!pluginIcon.isEmpty()) {
+        ts << "<p><img class=\"screenshot\" src=\"/LOCAL_FILE/" << pluginIcon << "\"></p>";
+    }
     ts << "<p>" << pluginDescription << "</p>";
     ts << "<h3>" << "Inputs & Controls" << "</h3>";
     
@@ -3995,7 +4013,7 @@ Node::makeHTMLDocumentation() const
     ts << "<td class=\"knobsTableHeader\">Default-Value</td>";
     ts << "<td class=\"knobsTableHeader\">Function</td>";
     
-    const KnobsVec& knobs = getKnobs();
+    KnobsVec knobs = getEffectInstance()->getKnobs_mt_safe();
     for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
         ts << "<tr>";
 
@@ -4073,7 +4091,14 @@ Node::makeHTMLDocumentation() const
     
     ts << "</table>";
     ts << "<!--ADD_MORE_HERE-->";
-    ts << "</div></div></div></body>";
+    ts << "</div></div></div>";
+
+    if (!pluginIcon.isEmpty()) {
+        QString tmp = pluginIcon;
+        tmp.replace(pluginID+QString::fromUtf8(".png"),pluginID+QString::fromUtf8(".html"));
+    }
+
+    ts << "</body>";
     ts << "</html>";
     return ret;
 }
