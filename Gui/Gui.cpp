@@ -42,6 +42,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/Settings.h"
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/CurveEditor.h"
