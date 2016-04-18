@@ -564,11 +564,14 @@ RotoPaint::clearLastRenderedImage()
 {
     EffectInstance::clearLastRenderedImage();
     NodesList rotoPaintNodes;
-    boost::shared_ptr<RotoContext> roto = getNode()->getRotoContext();
-    assert(roto);
-    roto->getRotoPaintTreeNodes(&rotoPaintNodes);
-    for (NodesList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
-        (*it)->clearLastRenderedImage();
+    NodePtr node = getNode();
+    if (node) {
+        boost::shared_ptr<RotoContext> roto = node->getRotoContext();
+        assert(roto);
+        roto->getRotoPaintTreeNodes(&rotoPaintNodes);
+        for (NodesList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
+            (*it)->clearLastRenderedImage();
+        }
     }
 }
 

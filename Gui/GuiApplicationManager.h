@@ -36,6 +36,7 @@
 
 #include "Gui/GuiFwd.h"
 
+#include "DocumentationManager.h"
 
 #if defined(appPTR)
 #undef appPTR
@@ -218,9 +219,8 @@ public:
 public Q_SLOTS:
     
     void onFontconfigCacheUpdateFinished();
-
     void onFontconfigTimerTriggered();
-    
+
 private:
 
     virtual void initBuiltinPythonModules() OVERRIDE FINAL;
@@ -248,6 +248,8 @@ private:
     void populateShortcuts();
 
     boost::scoped_ptr<GuiApplicationManagerPrivate> _imp;
+
+    DocumentationManager* documentation;
 };
 
 NATRON_NAMESPACE_EXIT;

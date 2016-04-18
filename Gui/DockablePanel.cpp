@@ -49,6 +49,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/NodeGuiI.h"
 #include "Engine/Plugin.h"
 #include "Engine/ViewIdx.h"
+#include "Engine/Settings.h"
 
 #include "Gui/Button.h"
 #include "Gui/CurveGui.h"
@@ -907,15 +908,22 @@ DockablePanel::showHelp()
         const Plugin* plugin = iseffect->getNode()->getPlugin();
         assert(plugin);
         if (plugin) {
-            Dialogs::informationDialog(plugin->getPluginLabel().toStdString(), helpString().toStdString(), true);
+            int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
+            int serverPort = appPTR->getCurrentSettings()->getServerPort();
+            QString localUrl = QString::fromUtf8("http://localhost:")+QString::number(serverPort)+QString::fromUtf8("/_plugin.html?id=")+plugin->getPluginID();
+            QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE)+QString::fromUtf8("/")+plugin->getPluginID()+QString::fromUtf8(".html");
+            switch (docSource) {
+            case 0:
+                QDesktopServices::openUrl(QUrl(localUrl));
+                break;
+            case 1:
+                QDesktopServices::openUrl(QUrl(remoteUrl));
+                break;
+            case 2:
+                Dialogs::informationDialog(plugin->getPluginLabel().toStdString(), helpString().toStdString(), true);
+                break;
+            }
         }
-        
-        //Todo here: request to the local webserver the html page for this plug-in ID
-        //QString str = iseffect->getNode()->makeHTMLDocumentation();
-        //QUrl url = QUrl::fromEncoded(url);
-        //QDesktopServices::openUrl(url)
-
-        
     }
 }
 

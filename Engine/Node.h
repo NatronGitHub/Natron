@@ -1218,7 +1218,7 @@ public:
     
     bool handleFormatKnob(KnobI* knob);
     
-    QString makeHTMLDocumentation() const;
+    QString makeHTMLDocumentation(bool offline) const;
     
     void refreshPreviewsAfterProjectLoad();
 

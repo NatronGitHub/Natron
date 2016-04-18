@@ -53,6 +53,9 @@ INCLUDEPATH += $$PWD/../Engine
 INCLUDEPATH += $$PWD/../Engine/NatronEngine
 INCLUDEPATH += $$PWD/../Global
 
+#qhttpserver
+INCLUDEPATH += $$PWD/../libs/qhttpserver/src
+
 #To overcome wrongly generated #include <...> by shiboken
 INCLUDEPATH += $$PWD
 INCLUDEPATH += $$PWD/NatronGui
@@ -223,7 +226,8 @@ SOURCES += \
     NatronGui/pymodaldialog_wrapper.cpp \
     NatronGui/pypanel_wrapper.cpp \
     NatronGui/pytabwidget_wrapper.cpp \
-    NatronGui/pyviewer_wrapper.cpp
+    NatronGui/pyviewer_wrapper.cpp \
+    DocumentationManager.cpp
 
 HEADERS += \
     AboutWindow.h \
@@ -387,7 +391,8 @@ HEADERS += \
     NatronGui/pymodaldialog_wrapper.h \
     NatronGui/pypanel_wrapper.h \
     NatronGui/pytabwidget_wrapper.h \
-    NatronGui/pyviewer_wrapper.h
+    NatronGui/pyviewer_wrapper.h \
+    DocumentationManager.h
 
 
 RESOURCES += \

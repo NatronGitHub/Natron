@@ -42,6 +42,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/Settings.h"
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/CurveEditor.h"
@@ -637,6 +638,11 @@ Gui::createMenuActions()
     _imp->cacheMenu->addAction(_imp->actionClearPluginsLoadingCache);
 
     // Help menu
+    _imp->actionHelpDocumentation = new QAction(this);
+    _imp->actionHelpDocumentation->setText(QObject::tr("Documentation"));
+    _imp->menuHelp->addAction(_imp->actionHelpDocumentation);
+    QObject::connect( _imp->actionHelpDocumentation, SIGNAL(triggered()), this, SLOT(openHelpDocumentation()) );
+
     _imp->actionHelpWebsite = new QAction(this);
     _imp->actionHelpWebsite->setText(QObject::tr("Website"));
     _imp->menuHelp->addAction(_imp->actionHelpWebsite);
@@ -651,16 +657,6 @@ Gui::createMenuActions()
     _imp->actionHelpIssues->setText(QObject::tr("Issues"));
     _imp->menuHelp->addAction(_imp->actionHelpIssues);
     QObject::connect( _imp->actionHelpIssues, SIGNAL(triggered()), this, SLOT(openHelpIssues()) );
-
-    _imp->actionHelpWiki = new QAction(this);
-    _imp->actionHelpWiki->setText(QObject::tr("Wiki"));
-    _imp->menuHelp->addAction(_imp->actionHelpWiki);
-    QObject::connect( _imp->actionHelpWiki, SIGNAL(triggered()), this, SLOT(openHelpWiki()) );
-
-    _imp->actionHelpPython = new QAction(this);
-    _imp->actionHelpPython->setText(QObject::tr("Python API"));
-    _imp->menuHelp->addAction(_imp->actionHelpPython);
-    QObject::connect( _imp->actionHelpPython, SIGNAL(triggered()), this, SLOT(openHelpPython()) );
 
 #ifndef __APPLE__
     _imp->menuHelp->addSeparator();
@@ -693,15 +689,23 @@ Gui::openHelpIssues()
 }
 
 void
-Gui::openHelpWiki()
+Gui::openHelpDocumentation()
 {
-    QDesktopServices::openUrl(QUrl(QString::fromUtf8(NATRON_WIKI_URL)));
-}
-
-void
-Gui::openHelpPython()
-{
-    QDesktopServices::openUrl(QUrl(QString::fromUtf8(NATRON_PYTHON_URL)));
+    int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
+    int serverPort = appPTR->getCurrentSettings()->getServerPort();
+    QString localUrl = QString::fromUtf8("http://localhost:")+QString::number(serverPort);
+    QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE);
+    switch (docSource) {
+    case 0:
+        QDesktopServices::openUrl(QUrl(localUrl));
+        break;
+    case 1:
+        QDesktopServices::openUrl(QUrl(remoteUrl));
+        break;
+    case 2:
+        Dialogs::informationDialog(tr("Missing documentation").toStdString(), QObject::tr("Missing documentation, please go to settings and select local or online documentation source.").toStdString(), true);
+        break;
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

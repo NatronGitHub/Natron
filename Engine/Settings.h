@@ -356,6 +356,12 @@ public:
     std::string getUserStyleSheetFilePath() const;
     
     bool isPluginDeactivated(const Plugin* p) const;
+
+    int getDocumentationSource() const;
+    int getServerPort() const;
+    void setServerPort(int port) const;
+
+    QString makeHTMLDocumentation(bool menu, bool staticPages) const;
     
 Q_SIGNALS:
     
@@ -566,6 +572,8 @@ private:
     boost::shared_ptr<KnobChoice> _scriptEditorFontChoice;
     boost::shared_ptr<KnobInt> _scriptEditorFontSize;
     
+    boost::shared_ptr<KnobInt> _wwwServerPort;
+    boost::shared_ptr<KnobChoice> _documentationSource;
     
     struct PerPluginKnobs
     {

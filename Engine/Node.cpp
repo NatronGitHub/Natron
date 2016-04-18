@@ -3951,54 +3951,68 @@ Node::refreshPreviewsAfterProjectLoad()
 }
 
 QString
-Node::makeHTMLDocumentation() const
+Node::makeHTMLDocumentation(bool offline) const
 {
-    assert(QThread::currentThread() == qApp->thread());
     
     QString ret;
     QTextStream ts(&ret);
     
     //bool isPyPlug;
-    QString pluginID,pluginLabel,pluginDescription;
+    QString pluginID,pluginLabel,pluginDescription,pluginIcon;
     int majorVersion = getMajorVersion();
     int minorVersion = getMinorVersion();
-    
+    QStringList pluginGroup;
+
     {
         QMutexLocker k(&_imp->pluginPythonModuleMutex);
         //isPyPlug = !_imp->pyPlugID.empty();
         pluginID = _imp->pyPlugID.empty() ? _imp->plugin->getPluginID() : QString::fromUtf8(_imp->pyPlugID.c_str());
         pluginLabel = _imp->pyPlugLabel.empty() ? _imp->plugin->getPluginLabel() : QString::fromUtf8(_imp->pyPlugLabel.c_str());
         pluginDescription = _imp->pyPlugDesc.empty() ? QString::fromUtf8(_imp->effect->getPluginDescription().c_str()) : QString::fromUtf8(_imp->pyPlugDesc.c_str());
+        pluginIcon = _imp->plugin->getIconFilePath();
+        pluginGroup = _imp->plugin->getGrouping();
     }
     
     ts << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
-    ts << "<html>";
-    ts << "<head>";
-    ts << "<title>" << pluginLabel << "</title>";
-    
-    ///Stylesheet
-    ts << "<style>";
-    ts << "body {margin:0;padding:0;}";
-    ts << "h3 {font-weight:normal;font-size:xx-large;}";
-    ts << "p {text-align:justify;}";
-    ts << "table.myTable {width:100%;}";
-    ts << "td.myTableValue {background-color:#d3d3d3;}";
-    ts << "td.myTableHeader";
-    ts << "{font-weight:bold;color:white;background-color:#000;text-align:center;}";
-    ts << "div#myFooter {text-align:center;margin:10px;font-size:small;}";
-    ts << "div#myHeader {height:150px;background:black;}";
-    ts << "div#myHeaderLeft";
-    ts << "{height:150px;width:150px;float:left;background:url(natron.png) no-repeat #fff;}";
-    ts << "div#myHeaderLeft span {display:none;}";
-    ts << "div#myHeaderRight {height:150px;width:200px;float:right;background:green;}";
-    ts << "div#myContainer {margin-left:300px;margin-right:30px;}";
-    ts << "div#myLeftMenu {float:left;width:250px;background:yellow;}";
-    ts << "div#myleftMenu h4 {font-weight:normal;margin-left:5px;}";
-    ts << "</style>";
-    ts << "</head>";
-    
-    ts << "<body>";
-    ts << "<h3>" << pluginLabel << " version " << majorVersion << "." << minorVersion << "</h3>";
+    ts << "<html><head>";
+    ts << "<title>" << pluginLabel << " - Natron 2.0 documentation</title>"; /// version string will be replaced in parser
+    ts << "<link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"_static/jquery.js\"></script><script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>";
+    ts << "</head><body>";
+
+    ts << "<div class=\"related\"><h3>Navigation</h3><ul>";
+
+    if (offline) {
+        ts << "<li><a href=\"index.html\">Natron 2.0 documentation</a> &raquo;</li>";
+    }
+    else {
+        ts << "<li><a href=\"/index.html\">Natron 2.0 documentation</a> &raquo;</li>";
+    }
+    if (offline) {
+        ts << "<li><a href=\"_group.html\">Reference Guide</a> &raquo;</li>";
+    }
+    else {
+        ts << "<li><a href=\"/_group.html\">Reference Guide</a> &raquo;</li>";
+    }
+
+    if (!pluginGroup.isEmpty()) {
+        QString group = pluginGroup.at(0);
+        if (!group.isEmpty()) {
+            if (offline) {
+                ts << "<li><a href=\"group" << group << ".html\">" << group << "</a> &raquo;</li>";
+            }
+            else {
+                ts << "<li><a href=\"/_group.html?id=" << group << "\">" << group << "</a> &raquo;</li>";
+            }
+        }
+    }
+    ts << "</ul></div>";
+
+
+    ts << "<div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\">";
+    ts << "<h1>" << pluginLabel << " version " << majorVersion << "." << minorVersion << "</h1>";
+    if (!pluginIcon.isEmpty()) {
+        ts << "<p><img class=\"screenshot\" src=\"/LOCAL_FILE/" << pluginIcon << "\"></p>";
+    }
     ts << "<p>" << pluginDescription << "</p>";
     ts << "<h3>" << "Inputs & Controls" << "</h3>";
     
@@ -4008,9 +4022,8 @@ Node::makeHTMLDocumentation() const
     ts << "<td class=\"knobsTableHeader\">Default-Value</td>";
     ts << "<td class=\"knobsTableHeader\">Function</td>";
     
-    const KnobsVec& knobs = getKnobs();
+    KnobsVec knobs = getEffectInstance()->getKnobs_mt_safe();
     for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
-        
         ts << "<tr>";
 
         if ((*it)->getDefaultIsSecret()) {
@@ -4020,8 +4033,8 @@ Node::makeHTMLDocumentation() const
         QString knobLabel = QString::fromUtf8((*it)->getLabel().c_str());
         QString knobHint = QString::fromUtf8((*it)->getHintToolTip().c_str());
         
-        ts << "<td class=\"knobsTableValue\">" << knobLabel << "</td>";
-        ts << "<td class=\"knobsTableValue\">" << knobScriptName << "</td>";
+        ts << "<td class=\"knobsTableValueLabel\">" << knobLabel << "</td>";
+        ts << "<td class=\"knobsTableValueScript\">" << knobScriptName << "</td>";
         
         QString defValuesStr;
 
@@ -4079,21 +4092,21 @@ Node::makeHTMLDocumentation() const
             }
         }
         
-        
-      
-        
         ts << "<td class=\"knobsTableValue\">" << defValuesStr << "</td>";
         ts << "<td class=\"knobsTableValue\">" << knobHint << "</td>";
-
-        
         ts << "</tr>";
 
     } // for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
     
     ts << "</table>";
+    ts << "<!--ADD_MORE_HERE-->";
+    ts << "</div></div></div>";
 
-    //ts << "<div id=\"myFooter\">&copy; 2016 foobar</div>";
-    
+    if (!pluginIcon.isEmpty()) {
+        QString tmp = pluginIcon;
+        tmp.replace(pluginID+QString::fromUtf8(".png"),pluginID+QString::fromUtf8(".html"));
+    }
+
     ts << "</body>";
     ts << "</html>";
     return ret;
@@ -4228,7 +4241,9 @@ static void applyNodeRedirectionsDownstream(int recurseCounter, const NodePtr& n
     if (isOutput) {
         //The node is the output of a group, its outputs are the outputs of the group
         boost::shared_ptr<NodeCollection> collection = isOutput->getNode()->getGroup();
-        assert(collection);
+        if (!collection) {
+            return;
+        }
         isGrp = dynamic_cast<NodeGroup*>(collection.get());
         if (isGrp) {
             
