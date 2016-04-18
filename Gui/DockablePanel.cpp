@@ -49,6 +49,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/NodeGuiI.h"
 #include "Engine/Plugin.h"
 #include "Engine/ViewIdx.h"
+#include "Engine/Settings.h"
 
 #include "Gui/Button.h"
 #include "Gui/CurveGui.h"
