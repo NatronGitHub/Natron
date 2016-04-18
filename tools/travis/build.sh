@@ -67,6 +67,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     make $J -C libs/ceres
     make $J -C libs/libmv
     make $J -C libs/openMVG
+    make $J -C libs/qhttpserver
     make $J -C HostSupport;
     make $J -C Engine;
     make $J -C Gui;
@@ -85,6 +86,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     make $J -C libs/ceres
     make $J -C libs/libmv
     make $J -C libs/openMVG
+    make $J -C libs/qhttpserver
     make $J -C HostSupport;
     make $J -C Engine;
     make $J -C Gui;

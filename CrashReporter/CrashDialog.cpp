@@ -41,8 +41,8 @@
 #include <QTextDocument>
 #include <QMessageBox>
 #include <QStyle>
-#include <QSettings>
-#include <QCryptographicHash>
+
+
 
 class PlaceHolderTextEdit: public QTextEdit
 {
@@ -114,16 +114,6 @@ CrashDialog::CrashDialog(const QString &filePath)
 , _saveReportButton(0)
 , _pressedButton(0)
 {
-    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
-
-    QString clientUser,clientPasswd;
-    if (settings.value(QString::fromUtf8("clientUsername")).isValid()) {
-        clientUser = settings.value(QString::fromUtf8("clientUsername")).toString();
-    }
-    if (settings.value(QString::fromUtf8("clientPassword")).isValid()) {
-        clientPasswd = settings.value(QString::fromUtf8("clientPassword")).toString();
-    }
-
     QFile qss(QString::fromUtf8(":/Resources/Stylesheets/mainstyle.qss"));
 
         if ( qss.open(QIODevice::ReadOnly
@@ -192,41 +182,6 @@ CrashDialog::CrashDialog(const QString &filePath)
     _gridLayout->addWidget(_descEdit, 3, 1 ,1, 1);
     
     _mainLayout->addWidget(_mainFrame);
-
-    _clientFrame = new QFrame(this);
-    _clientFrame->setFrameShape(QFrame::Box);
-    _clientLayout = new QHBoxLayout(_clientFrame);
-    _clientUsernameLabel = new QLabel(tr("Client username:"),_clientFrame);
-    _clientPasswordLabel = new QLabel(tr("Client password:"),_clientFrame);
-    _clientUsernameEdit = new QLineEdit(_clientFrame);
-    _clientEditPassword = new QPushButton(tr("Edit password"),_clientFrame);
-    _clientPasswordEdit = new QLineEdit(_clientFrame);
-
-    _clientPasswordEdit->setEchoMode(QLineEdit::Password);
-
-    QObject::connect(_clientEditPassword, SIGNAL(clicked()), this, SLOT(editClientPassword()));
-
-    if (!clientUser.isEmpty()) {
-        _clientUsernameEdit->setText(clientUser);
-    }
-
-    if (!clientPasswd.isEmpty()) {
-        _clientPasswordEdit->setDisabled(true);
-        _clientPasswordEdit->hide();
-        _clientPasswordLabel->hide();
-    }
-    else {
-        _clientEditPassword->setDisabled(true);
-        _clientEditPassword->hide();
-    }
-
-    _clientLayout->addWidget(_clientUsernameLabel);
-    _clientLayout->addWidget(_clientUsernameEdit);
-    _clientLayout->addWidget(_clientPasswordLabel);
-    _clientLayout->addWidget(_clientPasswordEdit);
-    _clientLayout->addWidget(_clientEditPassword);
-
-    _mainLayout->addWidget(_clientFrame);
     
     _buttonsFrame = new QFrame(this);
     _buttonsFrame->setFrameShape(QFrame::Box);
@@ -294,9 +249,6 @@ CrashDialog::onSendClicked()
             }
         }
     }
-
-    saveClientSettings();
-
     _pressedButton = _sendButton;
     accept();
 }
@@ -304,8 +256,6 @@ CrashDialog::onSendClicked()
 void
 CrashDialog::onDontSendClicked()
 {
-    saveClientSettings();
-
     _pressedButton = _dontSendButton;
     reject();
 }
@@ -313,8 +263,6 @@ CrashDialog::onDontSendClicked()
 void
 CrashDialog::onSaveClicked()
 {
-    saveClientSettings();
-
     _pressedButton = _saveReportButton;
 
     QString fileName = _filePath;
@@ -351,37 +299,4 @@ CrashDialog::onSaveClicked()
     
     accept();
 
-}
-
-void CrashDialog::editClientPassword()
-{
-    if (_clientPasswordLabel->isHidden()) {
-        _clientPasswordLabel->show();
-    }
-    if (_clientPasswordEdit->isHidden()) {
-        _clientPasswordEdit->show();
-    }
-    if (!_clientPasswordEdit->isEnabled()) {
-        _clientPasswordEdit->clear();
-        _clientPasswordEdit->setEnabled(true);
-    }
-    if (_clientEditPassword->isEnabled()) {
-        _clientEditPassword->setDisabled(true);
-    }
-    if (!_clientEditPassword->isHidden()) {
-        _clientEditPassword->hide();
-    }
-}
-
-void CrashDialog::saveClientSettings()
-{
-    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
-    if (!_clientUsernameEdit->text().isEmpty() && !_clientPasswordLabel->text().isEmpty()) {
-        QString clientUser = _clientUsernameEdit->text();
-        QByteArray clientPasswd;
-        clientPasswd.append(_clientPasswordEdit->text());
-        settings.setValue(QString::fromUtf8("clientUsername"),clientUser);
-        settings.setValue(QString::fromUtf8("clientPassword"),QCryptographicHash::hash(clientPasswd,QCryptographicHash::Sha1).toHex()); /// TODO: change to sha512 when qt4 is patched
-        settings.sync();
-    }
 }

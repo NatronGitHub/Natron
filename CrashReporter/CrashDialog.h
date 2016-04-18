@@ -26,7 +26,6 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#include <QLineEdit>
 
 class QVBoxLayout;
 class QLabel;
@@ -68,8 +67,6 @@ public Q_SLOTS:
     void onDontSendClicked();
     
     void onSaveClicked();
-    void editClientPassword();
-    void saveClientSettings();
     
 private:
     
@@ -90,13 +87,6 @@ private:
     QPushButton* _dontSendButton;
     QPushButton* _saveReportButton;
     QPushButton* _pressedButton;
-    QHBoxLayout* _clientLayout;
-    QFrame* _clientFrame;
-    QLabel* _clientUsernameLabel;
-    QLabel* _clientPasswordLabel;
-    QLineEdit* _clientUsernameEdit;
-    QLineEdit* _clientPasswordEdit;
-    QPushButton* _clientEditPassword;
 };
 
 #endif // _CrashReporter_CrashDialog_h_
