@@ -1,5 +1,11 @@
 #include "DocumentationManager.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
+#include "Engine/AppInstance.h"
+#include "Engine/Node.h"
+#include "Engine/Settings.h"
+
+#include <QFile>
+#include <QFileInfo>
 
 NATRON_NAMESPACE_ENTER;
 DocumentationManager::DocumentationManager(QObject *parent) : QObject(parent)

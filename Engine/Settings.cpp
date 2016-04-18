@@ -2682,11 +2682,11 @@ QString Settings::makeHTMLDocumentation(bool menu, bool staticPages) const
             else if (isSep) {
                 ts << "<h3 id='" << knobScriptName << "'>" << knobLabel << "</h3>";
             }
-            else {
-                ts << "<h4 id='" << knobScriptName << "'>" << knobLabel << "</h4>";
-            }
-            if (!knobHint.isEmpty()) {
-                ts << "<p>" << knobHint << "</p>";
+            else if (!knobLabel.isEmpty() && !knobHint.isEmpty()){
+                if (knobLabel != QString::fromUtf8("Enabled") && knobLabel != QString::fromUtf8("Zoom support")) {
+                    ts << "<h4 id='" << knobScriptName << "'>" << knobLabel << "</h4>";
+                    ts << "<p>" << knobHint << "</p>";
+                }
             }
         }
         else {
