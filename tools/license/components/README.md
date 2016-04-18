@@ -22,6 +22,10 @@ Natron binaries include components from the following libraries:
 
 # Additional dependencies
 
+## openfx-misc
+
+* Mesa (MIT) http://www.mesa3d.org
+
 ## openfx-io
 
 * OpenImageIO (Modified BSD) https://openimageio.org

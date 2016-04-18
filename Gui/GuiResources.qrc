@@ -21,7 +21,8 @@
         <file alias="LICENSE-JasPer.txt">../tools/license/components/LICENSE-JasPer.txt</file>
         <file alias="LICENSE-LGPL-2.1.txt">../tools/license/components/LICENSE-LGPL-2.1.txt</file>
         <file alias="LICENSE-Little-CMS.txt">../tools/license/components/LICENSE-Little-CMS.txt</file>
-        <file alias="LICENSE-Little-MPL-2.0.txt">../tools/license/components/LICENSE-MPL-2.0.txt</file>
+        <file alias="LICENSE-MPL-2.0.txt">../tools/license/components/LICENSE-MPL-2.0.txt</file>
+        <file alias="LICENSE-Mesa.txt">../tools/license/components/LICENSE-Mesa.txt</file>
         <file alias="LICENSE-OpenColorIO.txt">../tools/license/components/LICENSE-OpenColorIO.txt</file>
         <file alias="LICENSE-OpenEXR.txt">../tools/license/components/LICENSE-OpenEXR.txt</file>
         <file alias="LICENSE-OpenImageIO.txt">../tools/license/components/LICENSE-OpenImageIO.txt</file>
