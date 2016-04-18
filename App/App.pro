@@ -44,7 +44,8 @@ macx {
   QMAKE_PKGINFO_TYPEINFO = Ntrn
 }
 
-
+#qhttpserver
+INCLUDEPATH += $$PWD/../libs/qhttpserver/src
 
 
 win32-msvc* {

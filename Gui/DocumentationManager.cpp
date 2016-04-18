@@ -85,7 +85,7 @@ void DocumentationManager::handler(QHttpRequest *req, QHttpResponse *resp)
                             args.addToProject = false;
                             NodePtr node = appPTR->getTopLevelInstance()->createNode(args);
                             if (node) {
-                                QString html = node->makeHTMLDocumentation();
+                                QString html = node->makeHTMLDocumentation(false);
                                 /*QFileInfo moreinfo(docDir+QString::fromUtf8("_static/plugins/")+pluginID+QString::fromUtf8(".html"));
                                 /// TODO also add actual plugin html from it's folder
                                 if (moreinfo.exists()) {

@@ -3951,7 +3951,7 @@ Node::refreshPreviewsAfterProjectLoad()
 }
 
 QString
-Node::makeHTMLDocumentation() const
+Node::makeHTMLDocumentation(bool offline) const
 {
     
     QString ret;
@@ -3980,12 +3980,29 @@ Node::makeHTMLDocumentation() const
     ts << "</head><body>";
 
     ts << "<div class=\"related\"><h3>Navigation</h3><ul>";
-    ts << "<li><a href=\"/index.html\">Natron 2.0 documentation</a> &raquo;</li>";
-    ts << "<li><a href=\"/_group.html\">Reference Guide</a> &raquo;</li>";
+
+    if (offline) {
+        ts << "<li><a href=\"index.html\">Natron 2.0 documentation</a> &raquo;</li>";
+    }
+    else {
+        ts << "<li><a href=\"/index.html\">Natron 2.0 documentation</a> &raquo;</li>";
+    }
+    if (offline) {
+        ts << "<li><a href=\"_group.html\">Reference Guide</a> &raquo;</li>";
+    }
+    else {
+        ts << "<li><a href=\"/_group.html\">Reference Guide</a> &raquo;</li>";
+    }
+
     if (!pluginGroup.isEmpty()) {
         QString group = pluginGroup.at(0);
         if (!group.isEmpty()) {
-            ts << "<li><a href=\"/_group.html?id=" << group << "\">" << group << "</a> &raquo;</li>";
+            if (offline) {
+                ts << "<li><a href=\"group" << group << ".html\">" << group << "</a> &raquo;</li>";
+            }
+            else {
+                ts << "<li><a href=\"/_group.html?id=" << group << "\">" << group << "</a> &raquo;</li>";
+            }
         }
     }
     ts << "</ul></div>";
