@@ -658,16 +658,6 @@ Gui::createMenuActions()
     _imp->menuHelp->addAction(_imp->actionHelpIssues);
     QObject::connect( _imp->actionHelpIssues, SIGNAL(triggered()), this, SLOT(openHelpIssues()) );
 
-    _imp->actionHelpWiki = new QAction(this);
-    _imp->actionHelpWiki->setText(QObject::tr("Wiki"));
-    _imp->menuHelp->addAction(_imp->actionHelpWiki);
-    QObject::connect( _imp->actionHelpWiki, SIGNAL(triggered()), this, SLOT(openHelpWiki()) );
-
-    _imp->actionHelpPython = new QAction(this);
-    _imp->actionHelpPython->setText(QObject::tr("Python API"));
-    _imp->menuHelp->addAction(_imp->actionHelpPython);
-    QObject::connect( _imp->actionHelpPython, SIGNAL(triggered()), this, SLOT(openHelpPython()) );
-
 #ifndef __APPLE__
     _imp->menuHelp->addSeparator();
     _imp->menuHelp->addAction(_imp->actionShowAboutWindow);
@@ -699,12 +689,6 @@ Gui::openHelpIssues()
 }
 
 void
-Gui::openHelpWiki()
-{
-    QDesktopServices::openUrl(QUrl(QString::fromUtf8(NATRON_WIKI_URL)));
-}
-
-void
 Gui::openHelpDocumentation()
 {
     int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
@@ -722,12 +706,6 @@ Gui::openHelpDocumentation()
         Dialogs::informationDialog(tr("Missing documentation").toStdString(), QObject::tr("Missing documentation, please go to settings and select local or online documentation source.").toStdString(), true);
         break;
     }
-}
-
-void
-Gui::openHelpPython()
-{
-    QDesktopServices::openUrl(QUrl(QString::fromUtf8(NATRON_PYTHON_URL)));
 }
 
 NATRON_NAMESPACE_EXIT;

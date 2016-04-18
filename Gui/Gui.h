@@ -726,8 +726,6 @@ public Q_SLOTS:
     void openHelpWebsite();
     void openHelpForum();
     void openHelpIssues();
-    void openHelpPython();
-    void openHelpWiki();
     void openHelpDocumentation();
 
 private:

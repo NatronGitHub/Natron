@@ -195,8 +195,6 @@ GuiPrivate::GuiPrivate(GuiAppInstance* app,
 , actionHelpWebsite(0)
 , actionHelpForum(0)
 , actionHelpIssues(0)
-, actionHelpPython(0)
-, actionHelpWiki(0)
 , actionHelpDocumentation(0)
 , _centralWidget(0)
 , _mainLayout(0)
