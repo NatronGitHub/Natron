@@ -2794,8 +2794,8 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
         
         NodePtr rotoPaintNode;
         boost::shared_ptr<RotoStrokeItem> curStroke;
-        bool isDrawing;
-        instance->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke,&isDrawing);
+        bool isDrawing = false;
+        instance->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke, &isDrawing);
         
         if (!isDrawing) {
             uiContext->updateColorPicker(params->textureIndex);
