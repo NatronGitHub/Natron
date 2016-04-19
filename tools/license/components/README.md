@@ -19,6 +19,7 @@ Natron binaries include components from the following libraries:
 * glog (New BSD) https://github.com/google/glog
 * libmv (BSD) https://github.com/libmv/libmv
 * OpenMVG (MPL 2.0) http://imagine.enpc.fr/~moulonp/openMVG/
+* qhttpserver (BSD) https://github.com/nikhilm/qhttpserver
 
 # Additional dependencies
 
@@ -51,7 +52,7 @@ Natron binaries include components from the following libraries:
 
 * OpenEXR & IlmBase (Modified BSD)  http://www.openexr.com/license.html (used by openfx-io via OpenImageIO) 
 * libtiff (Modified BSD) http://www.remotesensing.org/libtiff (used by openfx-io via OpenImageIO) 
-* libpng (libpng/zlib License) http://www.libpng.org (used by openfx-io via OpenImageIO) 
+* libpng (libpng/zlib License) http://www.libpng.org (used by openfx-io via OpenImageIO and openfx-arena via ImageMagick)
 * libjpeg (Modified BSD) http://ijg.org (used by openfx-io via OpenImageIO) 
 * openjpeg (2-clauses BSD) http://www.openjpeg.org (used by openfx-io via OpenImageIO) 
 * webp (Modified BSD) https://developers.google.com/speed/webp (used by openfx-io via OpenImageIO) 
@@ -63,27 +64,32 @@ Natron binaries include components from the following libraries:
 
 ## openfx-arena
 
-* ImageMagick (Apache 2.0 with attribution clause) http://www.imagemagick.org/script/license.php (used by openfx-arena)
-* fontconfig (Modified BSD) http://www.freedesktop.org/wiki/Software/fontconfig/ (used by openfx-arena)
+* ImageMagick (Apache 2.0 with attribution clause) http://www.imagemagick.org/script/license.php
+* fontconfig (Modified BSD) http://www.freedesktop.org/wiki/Software/fontconfig/
+* Pango (LGPL 2.1) http://www.pango.org/
+* Little CMS (MIT) http://www.littlecms.com/
+* librsvg (LGPL 2.1) http://live.gnome.org/LibRsvg
+* libzip (BSD) http://www.nih.at/libzip/
+* Cairo (MPL 1.1) http://cairographics.org/
+* librevenge (MPL 2.0) https://sourceforge.net/p/libwpd/librevenge/
+* libcdr (MPL 2.0) https://github.com/LibreOffice/libcdr
 
 ## Indirect dependencies
 
-* TinyXML (libpng/zlib license) http://www.sourceforge.net/projects/tinyxml (used by openfx-io via OpenColorIO)
-* Pango (LGPL 2.1) http://www.pango.org/ (used by openfx-arena via ImageMagick) 
+* TinyXML (libpng/zlib license) http://www.sourceforge.net/projects/tinyxml (used by openfx-io via OpenColorIO and openfx-arena via OpenColorIO)
 * FreeType (Modified BSD) http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT (used by Natron, openfx-io and openfx-arena via Cairo, ImageMagick and OpenImageIO) 
 * Expat (MITX) http://expat.sourceforge.net/ (used by openfx) 
-* librsvg (LGPL 2.1) http://live.gnome.org/LibRsvg (used by openfx-arena via ImageMagick) 
-* libxml (MIT) http://www.xmlsoft.org/(used by openfx-arena via ImageMagick via librsvg)
-* Pixman (MIT) http://www.pixman.org/ (used by Natron via Cairo)
+* libxml (MIT) http://www.xmlsoft.org/(used by openfx-arena via ImageMagick and librsvg)
+* Pixman (MIT) http://www.pixman.org/ (used by Natron and openfx-arena via Cairo)
 * libmng (libpng/zlib License) http://www.libpng.org/pub/mng/ (used by Qt)
 * OpenSSL (Apache 1.0 or 4-clause BSD) http://www.openssl.org (used by Qt and Python)
 * gdk_pixbuf (LGPL 2.1) https://developer.gnome.org/gdk-pixbuf/stable/ (used by openfx-arena via librsvg)
 * Little CMS (MIT) http://www.littlecms.com/ (used by Qt and openfx-io via libmng and LibRaw)
 * libcroco (LGPL 2.1) https://github.com/GNOME/libcroco (used by openfx-arena via librsvg)
-* GLib (LGPL 2.1) http://www.gtk.org (used by openfx-arena via libcroco, harfbuzz, Pango, librsvg)
+* GLib (LGPL 2.1) http://www.gtk.org (used by Qt and openfx-arena via libcroco, harfbuzz, Pango, librsvg)
 * HarfBuzz (MIT) http://www.freedesktop.org/wiki/Software/HarfBuzz/ (used by Qt and openfx-arena via Pango)
 * libffi (MIT) https://sourceware.org/libffi/ (used Python and openfx-arena via GLib)
-* ICU (MIT) http://www.icu-project.org/ (used by Boost)
+* ICU (MIT) http://www.icu-project.org/ (used by Boost and openfx-arena via libcdr)
 * Graphite (LGPL 2.1) http://graphite.sil.org (used by openfx-arena via HarfBuzz)
 * libedit (BSD) http://thrysoee.dk/editline/ (used by Python) 
 * Berkeley DB (AGPLv3) http://www.oracle.com/us/products/database/berkeley-db (used by Python) 
