@@ -183,6 +183,8 @@ DopeSheetPrivate::pushUndoCommand(QUndoCommand *cmd)
 {
     if (editor) {
         editor->pushUndoCommand(cmd);
+    } else {
+        delete cmd;
     }
 }
 
