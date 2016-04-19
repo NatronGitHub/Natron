@@ -48,6 +48,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/KnobGuiFactory.h"
 #include "Gui/SplashScreen.h"
 #include "Gui/PreviewThread.h"
+#include "Gui/DocumentationManager.h"
 
 //All fixed sizes were calculated for a 96 dpi screen
 #ifndef Q_OS_MAC

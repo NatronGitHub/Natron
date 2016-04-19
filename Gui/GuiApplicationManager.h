@@ -36,8 +36,6 @@
 
 #include "Gui/GuiFwd.h"
 
-#include "DocumentationManager.h"
-
 #if defined(appPTR)
 #undef appPTR
 #endif

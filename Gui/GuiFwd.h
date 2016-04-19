@@ -110,6 +110,7 @@ class CurveWidget;
 class DSKnob;
 class DSNode;
 class DockablePanel;
+class DocumentationManager;
 class DopeSheet;
 class DopeSheetEditor;
 class DopeSheetKey;
