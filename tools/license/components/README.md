@@ -17,8 +17,8 @@ Natron binaries include components from the following libraries:
 * Ceres Solver (New BSD) http://ceres-solver.org/
 * gflags (New BSD) http://gflags.github.io/gflags/
 * glog (New BSD) https://github.com/google/glog
-* libmv (BSD) https://github.com/libmv/libmv
-* OpenMVG (MPL 2.0) http://imagine.enpc.fr/~moulonp/openMVG/
+* libmv (BSD) https://developer.blender.org/project/profile/59/
+* openMVG (MPL 2.0) http://imagine.enpc.fr/~moulonp/openMVG/
 * qhttpserver (BSD) https://github.com/nikhilm/qhttpserver
 
 # Additional dependencies

@@ -56,6 +56,7 @@
         <file alias="LICENSE-openh264.txt">../tools/license/components/LICENSE-openh264.txt</file>
         <file alias="LICENSE-openjpeg.txt">../tools/license/components/LICENSE-openjpeg.txt</file>
         <file alias="LICENSE-orc.txt">../tools/license/components/LICENSE-orc.txt</file>
+        <file alias="LICENSE-qhttpserver.txt">../tools/license/components/LICENSE-qhttpserver.txt</file>
         <file alias="LICENSE-webp.txt">../tools/license/components/LICENSE-webp.txt</file>
         <file alias="LICENSE-zlib.txt">../tools/license/components/LICENSE-zlib.txt</file>
         <file>Resources/Fonts/DroidSans-Bold.ttf</file>
