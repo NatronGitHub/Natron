@@ -4055,6 +4055,10 @@ Node::makeHTMLDocumentation(bool offline) const
         }
 
         ts << "<td class=\"knobsTableValue\">" << defValuesStr << "</td>";
+
+        // replace urls with a href's
+        knobHint.replace(QRegExp(QString::fromUtf8("((?:https?|ftp)://\\S+)")), QString::fromUtf8("<a target=\"_blank\" href=\"\\1\">\\1</a>"));
+
         ts << "<td class=\"knobsTableValue\">" << knobHint << "</td>";
         ts << "</tr>";
     } // for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
