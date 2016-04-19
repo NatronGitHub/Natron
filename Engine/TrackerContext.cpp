@@ -631,6 +631,7 @@ TrackerContext::endSelection(TrackSelectionReason reason)
     --_imp->selectionRecursion;
 }
 
+#if 0
 static
 boost::shared_ptr<KnobDouble>
 getCornerPinPoint(Node* node,
@@ -645,14 +646,12 @@ getCornerPinPoint(Node* node,
     assert(ret);
     return ret;
 }
-
+#endif
 
 void
 TrackerContext::exportTrackDataFromExportOptions()
 {
-
-    bool transformLink = _imp->exportLink.lock()->getValue();
-    
+    //bool transformLink = _imp->exportLink.lock()->getValue();
     boost::shared_ptr<KnobChoice> transformTypeKnob = _imp->transformType.lock();
     assert(transformTypeKnob);
     int transformType_i = transformTypeKnob->getValue();
@@ -679,8 +678,7 @@ TrackerContext::exportTrackDataFromExportOptions()
             pluginID = QString::fromUtf8(PLUGINID_OFX_TRANSFORM);
             break;
     }
-    
-    
+
     NodePtr thisNode = getNode();
     
     AppInstance* app = thisNode->getApp();
@@ -697,16 +695,15 @@ TrackerContext::exportTrackDataFromExportOptions()
     thisNode->getSize(&thisNodeSize[0], &thisNodeSize[1]);
     createdNode->setPosition(thisNodePos[0] + thisNodeSize[0] * 2., thisNodePos[1]);
     
-    int refFrame = getTransformReferenceFrame();
-    
+    //int refFrame = getTransformReferenceFrame();
     
     switch (transformType) {
-        case eTrackerTransformNodeCornerPin:
-        {
+        case eTrackerTransformNodeCornerPin: {
+            /*
             boost::shared_ptr<KnobDouble> createdToPoints[4];
             boost::shared_ptr<KnobDouble> createdFromPoints[4];
             
-            /*for (int int i = 0; i < 4; ++i) {
+            for (int int i = 0; i < 4; ++i) {
                 createdFromPoints[i] = getCornerPinPoint(createdNode.get(), true, i);
                 assert(fromPoints[i] && centers[i]);
                 for (int j = 0; j < fromPoints[i]->getDimension(); ++j) {
@@ -1095,8 +1092,8 @@ TrackerContext::extractSortedPointsFromMarkers(double refTime,
 
     std::vector<PointWithError> pointsWithErrors;
     
-    bool useJitter = jitterPeriod > 1;
-    int halfJitter = jitterPeriod / 2;
+    bool useJitter = (jitterPeriod > 1);
+    int halfJitter = std::max(0, jitterPeriod / 2);
     // Prosac expects the points to be sorted by decreasing correlation score (increasing error)
     for (std::size_t i = 0; i < markers.size(); ++i) {
         boost::shared_ptr<KnobDouble> centerKnob = markers[i]->getCenterKnob();
@@ -1115,26 +1112,21 @@ TrackerContext::extractSortedPointsFromMarkers(double refTime,
         } else {
             // Average halfJitter frames before and after refTime and time together to smooth the center
             std::vector<Point> x1PointJitter,x2PointJitter;
-            Point x1AtTime,x2AtTime;
             for (double t = refTime - halfJitter; t <= refTime + halfJitter; t += 1.) {
                 Point p;
                 p.x = centerKnob->getValueAtTime(t, 0);
                 p.y = centerKnob->getValueAtTime(t, 1);
-                if (t == refTime) {
-                    x1AtTime = p;
-                }
                 x1PointJitter.push_back(p);
             }
             for (double t = time - halfJitter; t <= time + halfJitter; t += 1.) {
                 Point p;
                 p.x = centerKnob->getValueAtTime(t, 0);
                 p.y = centerKnob->getValueAtTime(t, 1);
-                if (t == time) {
-                    x2AtTime = p;
-                }
                 x2PointJitter.push_back(p);
             }
             assert(x1PointJitter.size() == x2PointJitter.size());
+            Point x1AtTime = x1PointJitter[(x1PointJitter.size()-1)/2];
+            Point x2AtTime = x2PointJitter[(x2PointJitter.size()-1)/2];
             Point x1avg = {0,0},x2avg = {0,0};
             for (std::size_t i = 0; i < x1PointJitter.size(); ++i) {
                 x1avg.x += x1PointJitter[i].x;
