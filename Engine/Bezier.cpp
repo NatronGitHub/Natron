@@ -1441,8 +1441,9 @@ Bezier::setPointByIndexInternal(bool useGuiCurve,
 
     {
         QMutexLocker l(&itemMutex);
-        Transform::Point3D p,left,right;
-        p.z = left.z = right.z = 1;
+        Transform::Point3D p(0., 0., 1.);
+        Transform::Point3D left(0., 0., 1.);
+        Transform::Point3D right(0., 0., 1.);
 
         boost::shared_ptr<BezierCP> cp;
         bool isOnKeyframe = false;
@@ -1452,6 +1453,7 @@ Bezier::setPointByIndexInternal(bool useGuiCurve,
         cp = *it;
         cp->getPositionAtTime(useGuiCurve, time, ViewIdx(0), &p.x, &p.y, true);
         isOnKeyframe |= cp->getLeftBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &left.x, &left.y, true);
+        Q_UNUSED(isOnKeyframe);
         cp->getRightBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &right.x, &right.y, true);
 
         p = Transform::matApply(trans, p);
