@@ -1131,11 +1131,11 @@ TabWidget::removeTab(int index,bool userAction)
 
     if (userAction) {
       
-        if (isViewer) {
+        if (isViewer && _imp->gui) {
             /*special care is taken if this is a viewer: we also
              need to delete the viewer node.*/
             _imp->gui->removeViewerTab(isViewer,false,false);
-        } else if (isHisto) {
+        } else if (isHisto && _imp->gui) {
             _imp->gui->removeHistogram(isHisto);
             //Return because at this point isHisto is invalid
             return tab;
@@ -1146,7 +1146,7 @@ TabWidget::removeTab(int index,bool userAction)
     } else {
         w->setVisible(false);
     }
-    if (isGraph && _imp->gui->getLastSelectedGraph() == isGraph) {
+    if (isGraph && _imp->gui && _imp->gui->getLastSelectedGraph() == isGraph) {
         _imp->gui->setLastSelectedGraph(0);
     }
 	w->setParent(_imp->gui);
