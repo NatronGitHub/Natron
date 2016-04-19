@@ -375,7 +375,7 @@ ViewerTab::createTrackerInterface(NodeGui* n)
     QObject::connect( n,SIGNAL(settingsPanelClosed(bool)),this,SLOT(onTrackerNodeGuiSettingsPanelClosed(bool)) );
     if ( n->isSettingsPanelVisible() ) {
         setTrackerInterface(n);
-    } else {
+    } else if (tracker) {
         QWidget* buttonsBar = tracker->getButtonsBar();
         assert(buttonsBar);
         if (buttonsBar) {
