@@ -6,6 +6,7 @@
 
 #include <QFile>
 #include <QFileInfo>
+#include <QVector>
 
 NATRON_NAMESPACE_ENTER;
 DocumentationManager::DocumentationManager(QObject *parent) : QObject(parent)
