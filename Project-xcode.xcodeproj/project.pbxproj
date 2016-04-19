@@ -20,6 +20,7 @@
 				1E1525401CA9CD8D0056C506 /* PBXTargetDependency */,
 				D7A1964818B2242E00F412DA /* PBXTargetDependency */,
 				1E5F8F5818AA913D0045A477 /* PBXTargetDependency */,
+				1E12F4BD1CC6594E00105A34 /* PBXTargetDependency */,
 				1E5F8F5A18AA913D0045A477 /* PBXTargetDependency */,
 				1EA307F71C4E7DF800B77270 /* PBXTargetDependency */,
 			);
@@ -68,6 +69,20 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXContainerItemProxy section */
+		1E12F4BA1CC6593300105A34 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1E12F4B41CC6593300105A34 /* qhttpserver.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 1E12F4B71CC6593300105A34;
+			remoteInfo = qhttpserver;
+		};
+		1E12F4BC1CC6594E00105A34 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1E12F4B41CC6593300105A34 /* qhttpserver.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 7B66319A2D661600E54F0DA9;
+			remoteInfo = qhttpserver;
+		};
 		1E15250D1CA9CCA70056C506 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1E1524F31CA9CCA60056C506 /* ceres.xcodeproj */;
@@ -288,6 +303,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		1E12F4B41CC6593300105A34 /* qhttpserver.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = qhttpserver.xcodeproj; path = libs/qhttpserver/src/qhttpserver.xcodeproj; sourceTree = "<group>"; };
 		1E1524F31CA9CCA60056C506 /* ceres.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = ceres.xcodeproj; path = libs/ceres/ceres.xcodeproj; sourceTree = "<group>"; };
 		1E1524F81CA9CCA60056C506 /* gflags.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = gflags.xcodeproj; path = libs/gflags/gflags.xcodeproj; sourceTree = "<group>"; };
 		1E1524FD1CA9CCA60056C506 /* glog.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = glog.xcodeproj; path = libs/glog/glog.xcodeproj; sourceTree = "<group>"; };
@@ -305,6 +321,14 @@
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		1E12F4B51CC6593300105A34 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1E12F4BB1CC6593300105A34 /* libqhttpserver.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		1E1524F41CA9CCA60056C506 /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -393,6 +417,7 @@
 				1E1524FD1CA9CCA60056C506 /* glog.xcodeproj */,
 				1E1525021CA9CCA60056C506 /* LibMV.xcodeproj */,
 				1E1525071CA9CCA60056C506 /* openMVG.xcodeproj */,
+				1E12F4B41CC6593300105A34 /* qhttpserver.xcodeproj */,
 				D7A1963F18B2242500F412DA /* HostSupport.xcodeproj */,
 				1E306DED1C49497200BAC6E3 /* NatronRenderer.xcodeproj */,
 				1E189EBF1C49475E00F1FD20 /* Natron.xcodeproj */,
@@ -513,6 +538,10 @@
 					ProjectRef = 1E1525071CA9CCA60056C506 /* openMVG.xcodeproj */;
 				},
 				{
+					ProductGroup = 1E12F4B51CC6593300105A34 /* Products */;
+					ProjectRef = 1E12F4B41CC6593300105A34 /* qhttpserver.xcodeproj */;
+				},
+				{
 					ProductGroup = 1EADE5C818AA403700EF3180 /* Products */;
 					ProjectRef = 1EADE5C718AA403700EF3180 /* Tests.xcodeproj */;
 				},
@@ -528,6 +557,13 @@
 /* End PBXProject section */
 
 /* Begin PBXReferenceProxy section */
+		1E12F4BB1CC6593300105A34 /* libqhttpserver.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libqhttpserver.a;
+			remoteRef = 1E12F4BA1CC6593300105A34 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 		1E15250E1CA9CCA70056C506 /* libceres.a */ = {
 			isa = PBXReferenceProxy;
 			fileType = archive.ar;
@@ -646,6 +682,11 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		1E12F4BD1CC6594E00105A34 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = qhttpserver;
+			targetProxy = 1E12F4BC1CC6594E00105A34 /* PBXContainerItemProxy */;
+		};
 		1E1525381CA9CD8D0056C506 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = ceres;
