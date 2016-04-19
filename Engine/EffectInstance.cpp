@@ -4715,7 +4715,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
                 if (rawPreMult == eImagePremultiplicationPremultiplied) {
                     premult = eImagePremultiplicationPremultiplied;
                     premultSet = true;
-                } else if (rawPreMult == eImagePremultiplicationUnPremultiplied && premult != eImagePremultiplicationPremultiplied) {
+                } else if (rawPreMult == eImagePremultiplicationUnPremultiplied && (!premultSet || premult != eImagePremultiplicationPremultiplied)) {
                     premult = eImagePremultiplicationUnPremultiplied;
                     premultSet = true;
                 }
