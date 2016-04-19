@@ -538,8 +538,8 @@ win32-msvc*{
                 CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/qhttpserver/build/win32/debug/ -lqhttpserver
         }
 } else {
-        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/qhttpserver/build/release/ -lqhttpserver
-        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/qhttpserver/build/debug/ -lqhttpserver
+        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/qhttpserver/build/ -lqhttpserver
+        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/qhttpserver/build/ -lqhttpserver
         else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/qhttpserver/build/Release/ -lqhttpserver
         else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/qhttpserver/build/Debug/ -lqhttpserver
         else:unix: LIBS += -L$$OUT_PWD/../libs/qhttpserver/build/ -lqhttpserver
