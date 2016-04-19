@@ -1204,7 +1204,7 @@ Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
     
     RectD lastStrokeBbox;
     std::list<std::pair<Point,double> > lastStrokePoints;
-    double distNextIn;
+    double distNextIn = 0.;
     boost::shared_ptr<Image> strokeImage;
     getApp()->getRenderStrokeData(&lastStrokeBbox, &lastStrokePoints, &distNextIn, &strokeImage);
     double distToNextOut = stroke->renderSingleStroke(lastStrokeBbox, lastStrokePoints, mipMapLevel, par, components, depth, distNextIn, &strokeImage);
@@ -4707,6 +4707,7 @@ static Node::CanConnectInputReturnValue checkCanConnectNoMultiRes(const Node* ou
     
     RectD outputRod;
     stat = output->getEffectInstance()->getRegionOfDefinition_public(output->getHashValue(), output->getApp()->getTimeLine()->currentFrame(), scale, ViewIdx(0), &outputRod, &isProjectFormat);
+    Q_UNUSED(stat);
     /*if (stat == eStatusFailed && !outputRod.isNull()) {
         return Node::eCanConnectInput_givenNodeNotConnectable;
     }*/
@@ -7970,7 +7971,7 @@ Node::Implementation::getSelectedLayerInternal(int inputNb,const ChannelSelector
     }
     
 
-    if (comp->getNumComponents() == 0) {
+    if (comp->getNumComponents() == 0 && _publicInterface) {
         
         std::vector<ImageComponents> projectLayers = _publicInterface->getApp()->getProject()->getProjectDefaultLayers();
         for (std::size_t i = 0; i < projectLayers.size(); ++i) {
@@ -10204,6 +10205,7 @@ Node::refreshChannelSelectors()
             std::vector<std::string>::iterator pos = choices.begin();
             ++pos;
             gotColor = 1;
+            Q_UNUSED(gotColor);
             ///Increment all default indexes
             for (std::map<std::string, int>::iterator it = defaultLayers.begin() ;it!=defaultLayers.end(); ++it) {
                 if (it->second != -1) {
