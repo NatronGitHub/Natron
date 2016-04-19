@@ -39,6 +39,7 @@
 #include <QtCore/QWaitCondition>
 #include <QtCore/QTextStream>
 #include <QtCore/QFile>
+#include <QtCore/QRegExp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
 #include <boost/bind.hpp>
@@ -3971,6 +3972,10 @@ Node::makeHTMLDocumentation(bool offline) const
             ts << "<p><img class=\"screenshot\" src=\"/LOCAL_FILE/" << pluginIcon << "\"></p>";
         }
     }
+
+    // replace urls with a href's
+    pluginDescription.replace(QRegExp(QString::fromUtf8("((?:https?|ftp)://\\S+)")), QString::fromUtf8("<a target=\"_blank\" href=\"\\1\">\\1</a>"));
+
     ts << "<p>" << pluginDescription << "</p>";
     ts << "<h3>" << "Inputs & Controls" << "</h3>";
 
