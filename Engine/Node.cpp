@@ -38,6 +38,7 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QWaitCondition>
 #include <QtCore/QTextStream>
+#include <QtCore/QFile>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
 #include <boost/bind.hpp>
@@ -4011,7 +4012,10 @@ Node::makeHTMLDocumentation(bool offline) const
     ts << "<div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\">";
     ts << "<h1>" << pluginLabel << " version " << majorVersion << "." << minorVersion << "</h1>";
     if (!pluginIcon.isEmpty()) {
-        ts << "<p><img class=\"screenshot\" src=\"/LOCAL_FILE/" << pluginIcon << "\"></p>";
+        QFile iconFile(pluginIcon);
+        if (iconFile.exists()) {
+            ts << "<p><img class=\"screenshot\" src=\"/LOCAL_FILE/" << pluginIcon << "\"></p>";
+        }
     }
     ts << "<p>" << pluginDescription << "</p>";
     ts << "<h3>" << "Inputs & Controls" << "</h3>";
