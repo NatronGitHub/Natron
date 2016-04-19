@@ -531,36 +531,36 @@ DEPENDPATH += $$OUT_PWD/../libs/qhttpserver/src
 
 win32-msvc*{
         CONFIG(64bit) {
-                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/qhttpserver/src/build/x64/release/ -lqhttpserver
-                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/qhttpserver/src/build/x64/debug/ -lqhttpserver
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/qhttpserver/build/x64/release/ -lqhttpserver
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/qhttpserver/build/x64/debug/ -lqhttpserver
         } else {
-                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/qhttpserver/src/build/win32/release/ -lqhttpserver
-                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/qhttpserver/src/build/win32/debug/ -lqhttpserver
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/qhttpserver/build/win32/release/ -lqhttpserver
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/qhttpserver/build/win32/debug/ -lqhttpserver
         }
 } else {
-        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/qhttpserver/src/build/ -lqhttpserver
-        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/qhttpserver/src/build/ -lqhttpserver
-        else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/qhttpserver/src/build/Release/ -lqhttpserver
-        else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/qhttpserver/src/build/Debug/ -lqhttpserver
-        else:unix: LIBS += -L$$OUT_PWD/../libs/qhttpserver/src/build/ -lqhttpserver
+        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/qhttpserver/build/ -lqhttpserver
+        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/qhttpserver/build/ -lqhttpserver
+        else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/qhttpserver/build/Release/ -lqhttpserver
+        else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/qhttpserver/build/Debug/ -lqhttpserver
+        else:unix: LIBS += -L$$OUT_PWD/../libs/qhttpserver/build/ -lqhttpserver
 }
 
 win32-msvc*{
         CONFIG(64bit) {
-                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/qhttpserver/src/build/x64/release/libqhttpserver.lib
-                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/qhttpserver/src/build/x64/debug/libqhttpserver.lib
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/qhttpserver/build/x64/release/libqhttpserver.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/qhttpserver/build/x64/debug/libqhttpserver.lib
         } else {
-                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/qhttpserver/src/build/win32/release/libqhttpserver.lib
-                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/qhttpserver/src/build/win32/debug/libqhttpserver.lib
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/qhttpserver/build/win32/release/libqhttpserver.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/qhttpserver/build/win32/debug/libqhttpserver.lib
         }
 } else {
-        win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/qhttpserver/src/build/libqhttpserver.a
-        else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/qhttpserver/src/build/libqhttpserver.a
-        else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/qhttpserver/src/build/release/libqhttpserver.lib
-        else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/qhttpserver/src/build/debug/libqhttpserver.lib
-        else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/qhttpserver/src/build/Release/libqhttpserver.a
-        else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/qhttpserver/src/build/Debug/libqhttpserver.a
-        else:unix: PRE_TARGETDEPS += $$OUT_PWD/../libs/qhttpserver/src/build/libqhttpserver.a
+        win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/qhttpserver/build/libqhttpserver.a
+        else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/qhttpserver/build/libqhttpserver.a
+        else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/qhttpserver/build/release/libqhttpserver.lib
+        else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/qhttpserver/build/debug/libqhttpserver.lib
+        else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/qhttpserver/build/Release/libqhttpserver.a
+        else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/qhttpserver/build/Debug/libqhttpserver.a
+        else:unix: PRE_TARGETDEPS += $$OUT_PWD/../libs/qhttpserver/build/libqhttpserver.a
 }
 } # static-qhttpserver
 
