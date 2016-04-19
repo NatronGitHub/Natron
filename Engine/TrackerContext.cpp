@@ -1031,6 +1031,7 @@ TrackerContext::resetTransformCenter()
         center.y = (rod.y1 + rod.y2) / 2.;
 
     } else {
+        center.x = center.y = 0.;
         for (std::size_t i = 0; i < tracks.size(); ++i) {
             boost::shared_ptr<KnobDouble> centerKnob = tracks[i]->getCenterKnob();
             center.x += centerKnob->getValueAtTime(time, 0);
@@ -1294,7 +1295,7 @@ static Point applyHomography(const Point& p, Transform::Matrix3x3& h)
     a = Transform::matApply(h, a);
     Point ret;
     ret.x = a.x / a.z;
-    ret.y /= a.y / a.z;
+    ret.y = a.y / a.z;
     return ret;
 }
 
