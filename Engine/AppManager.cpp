@@ -1744,7 +1744,8 @@ AppManager::getPluginBinary(const QString & pluginId,
     QString exc = QString::fromUtf8("Couldn't find a plugin attached to the ID %1, with a major version of %2")
     .arg(pluginId)
     .arg(majorVersion);
-    throw std::invalid_argument( exc.toStdString() );
+    std::cout << exc.toStdString() << std::endl;
+    //throw std::invalid_argument( exc.toStdString() );
     return 0;
     
 }
