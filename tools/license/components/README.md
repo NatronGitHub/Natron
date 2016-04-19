@@ -73,13 +73,13 @@ Natron binaries include components from the following libraries:
 * Cairo (MPL 1.1) http://cairographics.org/
 * librevenge (MPL 2.0) https://sourceforge.net/p/libwpd/librevenge/
 * libcdr (MPL 2.0) https://github.com/LibreOffice/libcdr
+* libxml (MIT) http://www.xmlsoft.org/
 
 ## Indirect dependencies
 
 * TinyXML (libpng/zlib license) http://www.sourceforge.net/projects/tinyxml (used by openfx-io via OpenColorIO and openfx-arena via OpenColorIO)
 * FreeType (Modified BSD) http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT (used by Natron, openfx-io and openfx-arena via Cairo, ImageMagick and OpenImageIO) 
 * Expat (MITX) http://expat.sourceforge.net/ (used by openfx) 
-* libxml (MIT) http://www.xmlsoft.org/(used by openfx-arena via ImageMagick and librsvg)
 * Pixman (MIT) http://www.pixman.org/ (used by Natron and openfx-arena via Cairo)
 * libmng (libpng/zlib License) http://www.libpng.org/pub/mng/ (used by Qt)
 * OpenSSL (Apache 1.0 or 4-clause BSD) http://www.openssl.org (used by Qt and Python)
