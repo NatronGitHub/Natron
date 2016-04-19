@@ -1568,7 +1568,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
     // otherwise the OutputSchedulerThread thread calls the render of the Writer.
     U64 nbTotalFrames;
     U64 nbFramesRendered;
-    bool renderingIsFinished = false;
+    //bool renderingIsFinished = false;
     if (policy == eSchedulingPolicyFFA) {
         
         QMutexLocker l(&_imp->runArgsMutex);
@@ -1606,7 +1606,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             
 #endif
         }
-        renderingIsFinished = _imp->renderFinished;
+        //renderingIsFinished = _imp->renderFinished;
         
     } else {
         {
