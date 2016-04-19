@@ -94,6 +94,7 @@ AnimatingTextEdit::AnimatingTextEdit(const KnobGuiPtr& knob, int dimension, QWid
 , dirty(false)
 , _dnd(new KnobWidgetDnD(knob, dimension, this))
 {
+    setTabStopWidth(20); // a tab width of 20 is more reasonable than 80 for programming languages (e.g. Shadertoy)
 }
 
 AnimatingTextEdit::~AnimatingTextEdit()
