@@ -753,7 +753,7 @@ KnobChoice::populateChoices(const std::vector<std::string> &entries,
                             bool restoreOldChoice)
 {
     assert( entriesHelp.empty() || entriesHelp.size() == entries.size() );
-    bool hasChanged;
+    bool hasChanged = false;
     {
         QMutexLocker l(&_entriesMutex);
         
