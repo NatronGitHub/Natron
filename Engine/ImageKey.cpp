@@ -32,15 +32,15 @@
 NATRON_NAMESPACE_ENTER;
 
 ImageKey::ImageKey()
-: KeyHelper<U64>()
-, _nodeHashKey(0)
-, _time(0)
+    : KeyHelper<U64>()
+    , _nodeHashKey(0)
+    , _time(0)
 //, _mipMapLevel(0)
-, _pixelAspect(1)
-, _view(0)
-, _draftMode(false)
-, _frameVaryingOrAnimated(false)
-, _fullScaleWithDownscaleInputs(false)
+    , _pixelAspect(1)
+    , _view(0)
+    , _draftMode(false)
+    , _frameVaryingOrAnimated(false)
+    , _fullScaleWithDownscaleInputs(false)
 {
 }
 
@@ -53,14 +53,14 @@ ImageKey::ImageKey(const CacheEntryHolder* holder,
                    double pixelAspect,
                    bool draftMode,
                    bool fullScaleWithDownscaleInputs)
-: KeyHelper<U64>(holder)
-, _nodeHashKey(nodeHashKey)
-, _time(time)
-, _pixelAspect(pixelAspect)
-, _view(view)
-, _draftMode(draftMode)
-, _frameVaryingOrAnimated(frameVaryingOrAnimated)
-, _fullScaleWithDownscaleInputs(fullScaleWithDownscaleInputs)
+    : KeyHelper<U64>(holder)
+    , _nodeHashKey(nodeHashKey)
+    , _time(time)
+    , _pixelAspect(pixelAspect)
+    , _view(view)
+    , _draftMode(draftMode)
+    , _frameVaryingOrAnimated(frameVaryingOrAnimated)
+    , _fullScaleWithDownscaleInputs(fullScaleWithDownscaleInputs)
 {
 }
 
@@ -82,17 +82,17 @@ ImageKey::operator==(const ImageKey & other) const
 {
     if (_frameVaryingOrAnimated) {
         return _nodeHashKey == other._nodeHashKey &&
-        _time == other._time &&
-        _view == other._view &&
-        _pixelAspect == other._pixelAspect &&
-        _draftMode == other._draftMode &&
-        _fullScaleWithDownscaleInputs == other._fullScaleWithDownscaleInputs;
+               _time == other._time &&
+               _view == other._view &&
+               _pixelAspect == other._pixelAspect &&
+               _draftMode == other._draftMode &&
+               _fullScaleWithDownscaleInputs == other._fullScaleWithDownscaleInputs;
     } else {
         return _nodeHashKey == other._nodeHashKey &&
-        _view == other._view &&
-        _pixelAspect == other._pixelAspect &&
-        _draftMode == other._draftMode &&
-        _fullScaleWithDownscaleInputs == other._fullScaleWithDownscaleInputs;
+               _view == other._view &&
+               _pixelAspect == other._pixelAspect &&
+               _draftMode == other._draftMode &&
+               _fullScaleWithDownscaleInputs == other._fullScaleWithDownscaleInputs;
     }
 }
 

@@ -51,29 +51,26 @@ NATRON_PYTHON_NAMESPACE_ENTER;
 struct DialogParamHolderPrivate
 {
     std::string uniqueID;
-    
     QMutex paramChangedCBMutex;
     std::string paramChangedCB;
-    
+
     DialogParamHolderPrivate(const QString& uniqueID)
-    : uniqueID(uniqueID.toStdString())
-    , paramChangedCBMutex()
-    , paramChangedCB()
+        : uniqueID( uniqueID.toStdString() )
+        , paramChangedCBMutex()
+        , paramChangedCB()
     {
-        
     }
 };
 
-DialogParamHolder::DialogParamHolder(const QString& uniqueID,AppInstance* app)
-: NamedKnobHolder(app)
-, _imp(new DialogParamHolderPrivate(uniqueID))
+DialogParamHolder::DialogParamHolder(const QString& uniqueID,
+                                     AppInstance* app)
+    : NamedKnobHolder(app)
+    , _imp( new DialogParamHolderPrivate(uniqueID) )
 {
-    
 }
 
 DialogParamHolder::~DialogParamHolder()
 {
-    
 }
 
 std::string
@@ -86,6 +83,7 @@ void
 DialogParamHolder::setParamChangedCallback(const QString& callback)
 {
     QMutexLocker k(&_imp->paramChangedCBMutex);
+
     _imp->paramChangedCB = callback.toStdString();
 }
 
@@ -101,39 +99,43 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
         QMutexLocker k(&_imp->paramChangedCBMutex);
         callback = _imp->paramChangedCB;
     }
-    if (!callback.empty()) {
+
+    if ( !callback.empty() ) {
         bool userEdited = reason == eValueChangedReasonNatronGuiEdited ||
-        reason == eValueChangedReasonUserEdited;
-        
-        
+                          reason == eValueChangedReasonUserEdited;
         std::vector<std::string> args;
         std::string error;
         try {
             NATRON_PYTHON_NAMESPACE::getFunctionArguments(callback, &error, &args);
         } catch (const std::exception& e) {
-            getApp()->appendToScriptEditor(std::string("Failed to run onParamChanged callback: ")
-                                                             + e.what());
+            getApp()->appendToScriptEditor( std::string("Failed to run onParamChanged callback: ")
+                                            + e.what() );
+
             return;
         }
-        if (!error.empty()) {
+
+        if ( !error.empty() ) {
             getApp()->appendToScriptEditor("Failed to run onParamChanged callback: " + error);
+
             return;
         }
-        
+
         std::string signatureError;
         signatureError.append("The param changed callback supports the following signature(s):\n");
         signatureError.append("- callback(paramName,app,userEdited)");
         if (args.size() != 3) {
             getApp()->appendToScriptEditor("Failed to run onParamChanged callback: " + signatureError);
-            return;
-        }
-        
-        if ((args[0] != "paramName" || args[1] != "app" || args[2] != "userEdited")) {
-            getApp()->appendToScriptEditor("Failed to run onParamChanged callback: " + signatureError);
+
             return;
         }
 
-        
+        if ( ( (args[0] != "paramName") || (args[1] != "app") || (args[2] != "userEdited") ) ) {
+            getApp()->appendToScriptEditor("Failed to run onParamChanged callback: " + signatureError);
+
+            return;
+        }
+
+
         std::string appID =  getApp()->getAppIDString();
         std::stringstream ss;
         ss << callback << "(\"" << k->getName() << "\"," << appID << ",";
@@ -143,90 +145,85 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
             ss << "False";
         }
         ss << ")\n";
-        
+
         std::string script = ss.str();
         std::string err;
         std::string output;
-        if (!NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err,&output)) {
+        if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, &output) ) {
             getApp()->appendToScriptEditor(QObject::tr("Failed to execute callback: ").toStdString() + err);
-        } else if (!output.empty()) {
+        } else if ( !output.empty() ) {
             getApp()->appendToScriptEditor(output);
         }
-
     }
-}
+} // DialogParamHolder::onKnobValueChanged
 
 struct PyModalDialogPrivate
 {
     Gui* gui;
     DialogParamHolder* holder;
-    
     QVBoxLayout* mainLayout;
     DockablePanel* panel;
-    
     QWidget* centerContainer;
     QVBoxLayout* centerLayout;
-    
     QDialogButtonBox* buttons;
-        
+
     PyModalDialogPrivate(Gui* gui)
-    : gui(gui)
-    , holder(0)
-    , mainLayout(0)
-    , panel(0)
-    , centerContainer(0)
-    , centerLayout(0)
-    , buttons(0)
+        : gui(gui)
+        , holder(0)
+        , mainLayout(0)
+        , panel(0)
+        , centerContainer(0)
+        , centerLayout(0)
+        , buttons(0)
     {
-        
     }
 };
 
 PyModalDialog::PyModalDialog(Gui* gui)
-: QDialog(gui)
-, UserParamHolder()
-, _imp(new PyModalDialogPrivate(gui))
+    : QDialog(gui)
+    , UserParamHolder()
+    , _imp( new PyModalDialogPrivate(gui) )
 {
-    _imp->holder = new DialogParamHolder(QString(),gui->getApp());
+    _imp->holder = new DialogParamHolder( QString(), gui->getApp() );
     setHolder(_imp->holder);
     _imp->holder->initializeKnobsPublic();
     _imp->mainLayout = new QVBoxLayout(this);
     _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
-    
+
     _imp->centerContainer = new QWidget(this);
     _imp->centerLayout = new QVBoxLayout(_imp->centerContainer);
     _imp->centerLayout->setContentsMargins(0, 0, 0, 0);
-    
-    
+
+
     _imp->panel = new DockablePanel(gui,
                                     _imp->holder,
                                     _imp->mainLayout,
                                     DockablePanel::eHeaderModeNoHeader,
                                     false,
                                     boost::shared_ptr<QUndoStack>(),
-                                    QString(),QString(),
+                                    QString(), QString(),
                                     false,
                                     QString::fromUtf8("Default"),
                                     _imp->centerContainer);
     _imp->panel->turnOffPages();
     _imp->panel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
-    _imp->centerLayout->insertWidget(0,_imp->panel);
-    
+    _imp->centerLayout->insertWidget(0, _imp->panel);
+
     _imp->mainLayout->addWidget(_imp->centerContainer);
-    
-    _imp->buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal,this);
-    QObject::connect(_imp->buttons, SIGNAL(accepted()), this, SLOT(accept()));
-    QObject::connect(_imp->buttons, SIGNAL(rejected()), this, SLOT(reject()));
+
+    _imp->buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, this);
+    QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(accept()) );
+    QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(reject()) );
     _imp->mainLayout->addWidget(_imp->buttons);
 }
 
 PyModalDialog::~PyModalDialog()
 {
-    
 }
 
 void
-PyModalDialog::insertWidget(int index, QWidget* widget)
+PyModalDialog::insertWidget(int index,
+                            QWidget* widget)
 {
     _imp->centerLayout->insertWidget(index, widget);
 }
@@ -237,8 +234,6 @@ PyModalDialog::addWidget(QWidget* widget)
     _imp->centerLayout->addWidget(widget);
 }
 
-
-
 void
 PyModalDialog::setParamChangedCallback(const QString& callback)
 {
@@ -248,97 +243,92 @@ PyModalDialog::setParamChangedCallback(const QString& callback)
 Param*
 PyModalDialog::getParam(const QString& scriptName) const
 {
-    KnobPtr knob =  _imp->holder->getKnobByName(scriptName.toStdString());
+    KnobPtr knob =  _imp->holder->getKnobByName( scriptName.toStdString() );
+
     if (!knob) {
         return 0;
     }
+
     return Effect::createParamWrapperForKnob(knob);
 }
 
-
-
 struct PyPanelPrivate
 {
-    
-    
     DialogParamHolder* holder;
-    
     QVBoxLayout* mainLayout;
     DockablePanel* panel;
-    
     QWidget* centerContainer;
     QVBoxLayout* centerLayout;
-
     mutable QMutex serializationMutex;
     QString serialization;
 
-    
+
     PyPanelPrivate()
-    : holder(0)
-    , mainLayout(0)
-    , panel(0)
-    , centerContainer(0)
-    , centerLayout(0)
-    , serializationMutex()
-    , serialization()
+        : holder(0)
+        , mainLayout(0)
+        , panel(0)
+        , centerContainer(0)
+        , centerLayout(0)
+        , serializationMutex()
+        , serialization()
     {
-        
     }
 };
 
-
-
-PyPanel::PyPanel(const QString& scriptName,const QString& label,bool useUserParameters,GuiApp* app)
-: QWidget(app->getGui())
-, UserParamHolder()
-, PanelWidget(this,app->getGui())
-, _imp(new PyPanelPrivate())
+PyPanel::PyPanel(const QString& scriptName,
+                 const QString& label,
+                 bool useUserParameters,
+                 GuiApp* app)
+    : QWidget( app->getGui() )
+    , UserParamHolder()
+    , PanelWidget( this, app->getGui() )
+    , _imp( new PyPanelPrivate() )
 {
-    setLabel(label.toStdString());
+    setLabel( label.toStdString() );
 
-    
+
     int idx = 1;
-    std::string name = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(scriptName.toStdString());
+    std::string name = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly( scriptName.toStdString() );
     PanelWidget* existing = 0;
     existing = getGui()->findExistingTab(name);
     while (existing) {
         std::stringstream ss;
         ss << name << idx;
-        existing = getGui()->findExistingTab(ss.str());
+        existing = getGui()->findExistingTab( ss.str() );
         if (!existing) {
             name = ss.str();
         }
         ++idx;
     }
-    
-    setScriptName(name);
-    getGui()->registerTab(this,this);
 
-    
+    setScriptName(name);
+    getGui()->registerTab(this, this);
+
+
     if (useUserParameters) {
-        _imp->holder = new DialogParamHolder(QString::fromUtf8(name.c_str()),getGui()->getApp());
+        _imp->holder = new DialogParamHolder( QString::fromUtf8( name.c_str() ), getGui()->getApp() );
         setHolder(_imp->holder);
         _imp->holder->initializeKnobsPublic();
         _imp->mainLayout = new QVBoxLayout(this);
         _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
-        
+
         _imp->centerContainer = new QWidget(this);
         _imp->centerLayout = new QVBoxLayout(_imp->centerContainer);
         _imp->centerLayout->setContentsMargins(0, 0, 0, 0);
-        
+
         _imp->panel = new DockablePanel(getGui(),
                                         _imp->holder,
                                         _imp->mainLayout,
                                         DockablePanel::eHeaderModeNoHeader,
                                         false,
                                         boost::shared_ptr<QUndoStack>(),
-                                        QString(),QString(),
+                                        QString(), QString(),
                                         false,
                                         QString::fromUtf8("Default"),
                                         _imp->centerContainer);
         _imp->panel->turnOffPages();
-        _imp->centerLayout->insertWidget(0,_imp->panel);
-        
+        _imp->centerLayout->insertWidget(0, _imp->panel);
+
         _imp->mainLayout->addWidget(_imp->centerContainer);
         _imp->mainLayout->addStretch();
     }
@@ -352,14 +342,14 @@ PyPanel::~PyPanel()
 QString
 PyPanel::getPanelScriptName() const
 {
-    return QString::fromUtf8(getScriptName().c_str());
+    return QString::fromUtf8( getScriptName().c_str() );
 }
 
 void
 PyPanel::setPanelLabel(const QString& label)
 {
-    setLabel(label.toStdString());
-    TabWidget* parent = dynamic_cast<TabWidget*>(parentWidget());
+    setLabel( label.toStdString() );
+    TabWidget* parent = dynamic_cast<TabWidget*>( parentWidget() );
     if (parent) {
         parent->setTabLabel(this, label);
     }
@@ -368,7 +358,7 @@ PyPanel::setPanelLabel(const QString& label)
 QString
 PyPanel::getPanelLabel() const
 {
-    return QString::fromUtf8(getLabel().c_str());
+    return QString::fromUtf8( getLabel().c_str() );
 }
 
 Param*
@@ -377,18 +367,19 @@ PyPanel::getParam(const QString& scriptName) const
     if (!_imp->holder) {
         return 0;
     }
-    KnobPtr knob =  _imp->holder->getKnobByName(scriptName.toStdString());
+    KnobPtr knob =  _imp->holder->getKnobByName( scriptName.toStdString() );
     if (!knob) {
         return 0;
     }
-    return Effect::createParamWrapperForKnob(knob);
 
+    return Effect::createParamWrapperForKnob(knob);
 }
 
 std::list<Param*>
 PyPanel::getParams() const
 {
     std::list<Param*> ret;
+
     if (!_imp->holder) {
         return ret;
     }
@@ -399,9 +390,9 @@ PyPanel::getParams() const
             ret.push_back(p);
         }
     }
+
     return ret;
 }
-
 
 void
 PyPanel::setParamChangedCallback(const QString& callback)
@@ -412,7 +403,8 @@ PyPanel::setParamChangedCallback(const QString& callback)
 }
 
 void
-PyPanel::insertWidget(int index, QWidget* widget)
+PyPanel::insertWidget(int index,
+                      QWidget* widget)
 {
     if (!_imp->centerLayout) {
         return;
@@ -433,6 +425,7 @@ void
 PyPanel::onUserDataChanged()
 {
     QMutexLocker k(&_imp->serializationMutex);
+
     _imp->serialization = save();
 }
 
@@ -440,6 +433,7 @@ QString
 PyPanel::save_serialization_thread() const
 {
     QMutexLocker k(&_imp->serializationMutex);
+
     return _imp->serialization;
 }
 
@@ -471,24 +465,23 @@ PyPanel::keyPressEvent(QKeyEvent* e)
 }
 
 PyTabWidget::PyTabWidget(TabWidget* pane)
-: _tab(pane)
+    : _tab(pane)
 {
-    
 }
 
 PyTabWidget::~PyTabWidget()
 {
-    
 }
 
 bool
 PyTabWidget::appendTab(PyPanel* tab)
 {
-    return _tab->appendTab(tab,tab);
+    return _tab->appendTab(tab, tab);
 }
 
 void
-PyTabWidget::insertTab(int index,PyPanel* tab)
+PyTabWidget::insertTab(int index,
+                       PyPanel* tab)
 {
     _tab->insertTab(index, QIcon(), tab, tab);
 }
@@ -497,6 +490,7 @@ void
 PyTabWidget::removeTab(QWidget* tab)
 {
     PyPanel* isPanel = dynamic_cast<PyPanel*>(tab);
+
     if (!isPanel) {
         return;
     }
@@ -518,7 +512,7 @@ PyTabWidget::closeTab(int index)
 QString
 PyTabWidget::getTabLabel(int index) const
 {
-    return QString::fromUtf8(_tab->getTabLabel(index).toStdString().c_str());
+    return QString::fromUtf8( _tab->getTabLabel(index).toStdString().c_str() );
 }
 
 int
@@ -531,9 +525,11 @@ QWidget*
 PyTabWidget::currentWidget()
 {
     PanelWidget* w =  _tab->currentWidget();
+
     if (!w) {
         return 0;
     }
+
     return w->getWidget();
 }
 
@@ -553,6 +549,7 @@ PyTabWidget*
 PyTabWidget::splitHorizontally()
 {
     TabWidget* ret = _tab->splitHorizontally();
+
     if (ret) {
         return new PyTabWidget(ret);
     } else {
@@ -564,19 +561,20 @@ PyTabWidget*
 PyTabWidget::splitVertically()
 {
     TabWidget* ret = _tab->splitVertically();
+
     if (ret) {
         return new PyTabWidget(ret);
     } else {
         return 0;
     }
-
 }
 
 void
 PyTabWidget::closePane()
 {
     if (_tab->getGui()->getPanes().size() == 1) {
-        _tab->getGui()->getApp()->appendToScriptEditor(QObject::tr("Cannot close pane when this is the last one remaining.").toStdString());
+        _tab->getGui()->getApp()->appendToScriptEditor( QObject::tr("Cannot close pane when this is the last one remaining.").toStdString() );
+
         return;
     }
     _tab->closePane();

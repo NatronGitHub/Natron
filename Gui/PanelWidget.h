@@ -39,57 +39,59 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-class PanelWidget : public ScriptObject
+class PanelWidget
+    : public ScriptObject
 {
     QWidget* _thisWidget;
     Gui* _gui;
+
 public:
-    
-    PanelWidget(QWidget* thisWidget,Gui* gui);
-    
+
+    PanelWidget(QWidget* thisWidget, Gui* gui);
+
     Gui* getGui() const;
-    
+
     void notifyGuiClosingPublic();
-    
+
     virtual ~PanelWidget();
-    
+
     QWidget* getWidget() const
     {
         return _thisWidget;
     }
-    
+
     TabWidget* getParentPane() const;
-    
+
     void removeClickFocus();
-    
+
     void takeClickFocus();
-    
+
     bool isClickFocusPanel() const;
-    
-    
+
+
     /*
      * @brief To be called when a keypress event is not accepted
      */
     void handleUnCaughtKeyPressEvent(QKeyEvent* e);
-    
+
     /*
      * @brief To be called when a keyrelease event is not accepted
      */
     void handleUnCaughtKeyUpEvent(QKeyEvent* e);
-    
+
     virtual void pushUndoCommand(QUndoCommand* command);
-    
+
 protected:
-    
+
     virtual QUndoStack* getUndoStack() const { return 0; }
-    
+
     virtual void notifyGuiClosing() {}
-    
+
     /**
      * @brief To be called in the enterEvent handler of all derived classes.
      **/
     void enterEventBase();
-    
+
     /**
      * @brief To be called in the leaveEvent handler of all derived classes.
      **/

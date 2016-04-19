@@ -34,12 +34,11 @@ class FeatherPoint
     : public BezierCP
 {
 public:
-    
+
     FeatherPoint(const BezierCP& other)
-    : BezierCP(other)
+        : BezierCP(other)
     {
     }
-
 
     FeatherPoint(const boost::shared_ptr<Bezier>& curve)
         : BezierCP(curve)

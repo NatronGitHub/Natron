@@ -45,7 +45,6 @@ ActionsCache::ActionsCacheInstance::ActionsCacheInstance()
 {
 }
 
-
 std::list<ActionsCache::ActionsCacheInstance>::iterator
 ActionsCache::createActionCacheInternal(U64 newHash)
 {
@@ -57,7 +56,6 @@ ActionsCache::createActionCacheInternal(U64 newHash)
 
     return _instances.insert(_instances.end(), cache);
 }
-
 
 ActionsCache::ActionsCacheInstance &
 ActionsCache::getOrCreateActionCache(U64 newHash)
@@ -78,14 +76,12 @@ ActionsCache::getOrCreateActionCache(U64 newHash)
     return *found;
 }
 
-
 ActionsCache::ActionsCache(int maxAvailableHashes)
-        : _cacheMutex()
-        , _instances()
-        , _maxInstances((std::size_t)maxAvailableHashes)
+    : _cacheMutex()
+    , _instances()
+    , _maxInstances( (std::size_t)maxAvailableHashes )
 {
 }
-
 
 void
 ActionsCache::clearAll()
@@ -95,7 +91,6 @@ ActionsCache::clearAll()
     _instances.clear();
 }
 
-
 void
 ActionsCache::invalidateAll(U64 newHash)
 {
@@ -103,7 +98,6 @@ ActionsCache::invalidateAll(U64 newHash)
 
     createActionCacheInternal(newHash);
 }
-
 
 bool
 ActionsCache::getIdentityResult(U64 hash,
@@ -127,6 +121,7 @@ ActionsCache::getIdentityResult(U64 hash,
                 *inputNbIdentity = found->second.inputIdentityNb;
                 *identityTime = found->second.inputIdentityTime;
                 *inputView = found->second.inputView;
+
                 return true;
             }
 
@@ -136,7 +131,6 @@ ActionsCache::getIdentityResult(U64 hash,
 
     return false;
 }
-
 
 void
 ActionsCache::setIdentityResult(U64 hash,
@@ -159,7 +153,6 @@ ActionsCache::setIdentityResult(U64 hash,
     v.inputIdentityTime = identityTime;
     v.inputView = inputView;
 }
-
 
 bool
 ActionsCache::getRoDResult(U64 hash,
@@ -191,7 +184,6 @@ ActionsCache::getRoDResult(U64 hash,
     return false;
 }
 
-
 void
 ActionsCache::setRoDResult(U64 hash,
                            double time,
@@ -209,7 +201,6 @@ ActionsCache::setRoDResult(U64 hash,
 
     cache._rodCache[key] = rod;
 }
-
 
 bool
 ActionsCache::getFramesNeededResult(U64 hash,
@@ -241,7 +232,6 @@ ActionsCache::getFramesNeededResult(U64 hash,
     return false;
 }
 
-
 void
 ActionsCache::setFramesNeededResult(U64 hash,
                                     double time,
@@ -259,7 +249,6 @@ ActionsCache::setFramesNeededResult(U64 hash,
 
     cache._framesNeededCache[key] = framesNeeded;
 }
-
 
 bool
 ActionsCache::getTimeDomainResult(U64 hash,
@@ -280,7 +269,6 @@ ActionsCache::getTimeDomainResult(U64 hash,
     return false;
 }
 
-
 void
 ActionsCache::setTimeDomainResult(U64 hash,
                                   double first,
@@ -294,51 +282,47 @@ ActionsCache::setTimeDomainResult(U64 hash,
     cache._timeDomain.max = last;
 }
 
-
 EffectInstance::RenderArgs::RenderArgs()
-: rod()
-, regionOfInterestResults()
-, renderWindowPixel()
-, time(0)
-, view(0)
-, validArgs(false)
-, isIdentity(false)
-, identityTime(0)
-, identityInput()
-, inputImages()
-, outputPlanes()
-, outputPlaneBeingRendered()
-, firstFrame(0)
-, lastFrame(0)
-, transformRedirections()
+    : rod()
+    , regionOfInterestResults()
+    , renderWindowPixel()
+    , time(0)
+    , view(0)
+    , validArgs(false)
+    , isIdentity(false)
+    , identityTime(0)
+    , identityInput()
+    , inputImages()
+    , outputPlanes()
+    , outputPlaneBeingRendered()
+    , firstFrame(0)
+    , lastFrame(0)
+    , transformRedirections()
 {
 }
-
 
 EffectInstance::RenderArgs::RenderArgs(const RenderArgs & o)
-: rod(o.rod)
-, regionOfInterestResults(o.regionOfInterestResults)
-, renderWindowPixel(o.renderWindowPixel)
-, time(o.time)
-, view(o.view)
-, validArgs(o.validArgs)
-, isIdentity(o.isIdentity)
-, identityTime(o.identityTime)
-, identityInput(o.identityInput)
-, inputImages(o.inputImages)
-, outputPlanes(o.outputPlanes)
-, outputPlaneBeingRendered(o.outputPlaneBeingRendered)
-, firstFrame(o.firstFrame)
-, lastFrame(o.lastFrame)
-, transformRedirections(o.transformRedirections)
+    : rod(o.rod)
+    , regionOfInterestResults(o.regionOfInterestResults)
+    , renderWindowPixel(o.renderWindowPixel)
+    , time(o.time)
+    , view(o.view)
+    , validArgs(o.validArgs)
+    , isIdentity(o.isIdentity)
+    , identityTime(o.identityTime)
+    , identityInput(o.identityInput)
+    , inputImages(o.inputImages)
+    , outputPlanes(o.outputPlanes)
+    , outputPlaneBeingRendered(o.outputPlaneBeingRendered)
+    , firstFrame(o.firstFrame)
+    , lastFrame(o.lastFrame)
+    , transformRedirections(o.transformRedirections)
 {
 }
-
-
 
 EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
     : _publicInterface(publicInterface)
-    , tlsData(new TLSHolder<EffectTLSData>())
+    , tlsData( new TLSHolder<EffectTLSData>() )
     , duringInteractActionMutex()
     , duringInteractAction(false)
     , pluginMemoryChunksMutex()
@@ -359,7 +343,6 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
 {
 }
 
-
 void
 EffectInstance::Implementation::runChangedParamCallback(KnobI* k,
                                                         bool userEdited,
@@ -374,10 +357,12 @@ EffectInstance::Implementation::runChangedParamCallback(KnobI* k,
     try {
         NATRON_PYTHON_NAMESPACE::getFunctionArguments(callback, &error, &args);
     } catch (const std::exception& e) {
-        _publicInterface->getApp()->appendToScriptEditor(std::string("Failed to run onParamChanged callback: ")
-                                                         + e.what());
+        _publicInterface->getApp()->appendToScriptEditor( std::string("Failed to run onParamChanged callback: ")
+                                                          + e.what() );
+
         return;
     }
+
     if ( !error.empty() ) {
         _publicInterface->getApp()->appendToScriptEditor("Failed to run onParamChanged callback: " + error);
 
@@ -444,7 +429,6 @@ EffectInstance::Implementation::runChangedParamCallback(KnobI* k,
     }
 } // EffectInstance::Implementation::runChangedParamCallback
 
-
 void
 EffectInstance::Implementation::setDuringInteractAction(bool b)
 {
@@ -452,7 +436,6 @@ EffectInstance::Implementation::setDuringInteractAction(bool b)
 
     duringInteractAction = b;
 }
-
 
 #if NATRON_ENABLE_TRIMAP
 void
@@ -471,7 +454,6 @@ EffectInstance::Implementation::markImageAsBeingRendered(const boost::shared_ptr
         imagesBeingRendered.insert( std::make_pair(img, ibr) );
     }
 }
-
 
 bool
 EffectInstance::Implementation::waitForImageBeingRenderedElsewhereAndUnmark(const RectI & roi,
@@ -525,7 +507,6 @@ EffectInstance::Implementation::waitForImageBeingRenderedElsewhereAndUnmark(cons
     return !hasFailed;
 }
 
-
 void
 EffectInstance::Implementation::unmarkImageAsBeingRendered(const boost::shared_ptr<Image> & img,
                                                            bool renderFailed)
@@ -552,7 +533,6 @@ EffectInstance::Implementation::unmarkImageAsBeingRendered(const boost::shared_p
 #endif // if NATRON_ENABLE_TRIMAP
 
 
-
 EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectDataTLSPtr& tlsData,
                                                                    const RectD & rod,
                                                                    const RectI & renderWindow,
@@ -566,7 +546,7 @@ EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectD
                                                                    const RoIMap & roiMap,
                                                                    int firstFrame,
                                                                    int lastFrame)
-: tlsData(tlsData)
+    : tlsData(tlsData)
 {
     tlsData->currentRenderArgs.rod = rod;
     tlsData->currentRenderArgs.renderWindowPixel = renderWindow;
@@ -576,7 +556,7 @@ EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectD
     tlsData->currentRenderArgs.identityTime = identityTime;
     tlsData->currentRenderArgs.identityInput = identityInput;
     tlsData->currentRenderArgs.compsNeeded = compsNeeded;
-    tlsData->currentRenderArgs.inputImages.insert(inputImages.begin(), inputImages.end());
+    tlsData->currentRenderArgs.inputImages.insert( inputImages.begin(), inputImages.end() );
     tlsData->currentRenderArgs.regionOfInterestResults = roiMap;
     tlsData->currentRenderArgs.firstFrame = firstFrame;
     tlsData->currentRenderArgs.lastFrame = lastFrame;
@@ -584,14 +564,12 @@ EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectD
     tlsData->currentRenderArgs.validArgs = true;
 }
 
-
 EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectDataTLSPtr& tlsData,
                                                                    const EffectDataTLSPtr& otherThreadData)
     : tlsData(tlsData)
 {
     tlsData->currentRenderArgs = otherThreadData->currentRenderArgs;
 }
-
 
 EffectInstance::Implementation::ScopedRenderArgs::~ScopedRenderArgs()
 {
@@ -601,30 +579,27 @@ EffectInstance::Implementation::ScopedRenderArgs::~ScopedRenderArgs()
     tlsData->currentRenderArgs.validArgs = false;
 }
 
-
-
 void
 EffectInstance::Implementation::addInputImageTempPointer(int inputNb,
                                                          const boost::shared_ptr<Image> & img)
 {
     EffectDataTLSPtr tls = tlsData->getTLSData();
+
     if (!tls) {
         return;
     }
     tls->currentRenderArgs.inputImages[inputNb].push_back(img);
-
 }
-
 
 void
 EffectInstance::Implementation::clearInputImagePointers()
 {
     EffectDataTLSPtr tls = tlsData->getTLSData();
+
     if (!tls) {
         return;
     }
     tls->currentRenderArgs.inputImages.clear();
-
 }
 
 NATRON_NAMESPACE_EXIT;

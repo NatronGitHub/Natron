@@ -65,12 +65,12 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    ColorPickerLabel(KnobGuiColor* knob,QWidget* parent = NULL);
+    ColorPickerLabel(KnobGuiColor* knob, QWidget* parent = NULL);
 
     virtual ~ColorPickerLabel() OVERRIDE
     {
     }
-    
+
     bool isPickingEnabled() const
     {
         return _pickingEnabled;
@@ -84,7 +84,7 @@ public:
     }
 
     void setPickingEnabled(bool enabled);
-    
+
     void setEnabledMode(bool enabled);
 
 Q_SIGNALS:
@@ -105,16 +105,15 @@ private:
 };
 
 
-class KnobGuiColor : public KnobGuiValue
+class KnobGuiColor
+    : public KnobGuiValue
 {
-    
-    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-    GCC_DIAG_SUGGEST_OVERRIDE_ON
-    
-    
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
-    
+
     static KnobGui * BuildKnobGui(KnobPtr knob,
                                   DockablePanel *container)
     {
@@ -122,73 +121,65 @@ public:
     }
 
     KnobGuiColor(KnobPtr knob,
-               DockablePanel *container);
-    
+                 DockablePanel *container);
+
     virtual ~KnobGuiColor() {}
-    
-    
+
 public Q_SLOTS:
 
-    
+
     void showColorDialog();
-    
+
     void setPickingEnabled(bool enabled);
-    
+
     void onPickingEnabled(bool enabled);
-    
+
     void onMustShowAllDimension();
-    
+
     void onDialogCurrentColorChanged(const QColor & color);
-    
+
 Q_SIGNALS:
-    
+
     void dimensionSwitchToggled(bool b);
-    
+
 private:
-    
+
     virtual bool isSpatialType() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return false;
     }
-    
-    virtual bool isSliderDisabled() const OVERRIDE FINAL WARN_UNUSED_RETURN {
+
+    virtual bool isSliderDisabled() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
         return false;
     }
-    
-    virtual bool isRectangleType() const OVERRIDE FINAL WARN_UNUSED_RETURN {
+
+    virtual bool isRectangleType() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
         return false;
     }
-    
-    virtual void disableSlider() OVERRIDE FINAL {
-        
+
+    virtual void disableSlider() OVERRIDE FINAL
+    {
     }
-    
+
     virtual void connectKnobSignalSlots() OVERRIDE FINAL;
-    
     virtual void getIncrements(std::vector<double>* increments) const OVERRIDE FINAL;
-    
     virtual void getDecimals(std::vector<int>* decimals) const OVERRIDE FINAL;
-    
     virtual void addExtraWidgets(QHBoxLayout* containerLayout) OVERRIDE FINAL;
-    
     virtual void updateExtraGui(const std::vector<double>& values) OVERRIDE FINAL;
-    
+
     void updateLabel(double r, double g, double b, double a);
 
-    virtual void _show() OVERRIDE FINAL ;
-    
+    virtual void _show() OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
-    
     virtual void setEnabledExtraGui(bool enabled) OVERRIDE FINAL;
-    
     virtual void onDimensionsFolded() OVERRIDE FINAL;
-    
     virtual void onDimensionsExpanded() OVERRIDE FINAL;
-    
+
 private:
-    
+
     boost::weak_ptr<KnobColor> _knob;
-    
     ColorPickerLabel *_colorLabel;
     Button *_colorDialogButton;
     std::vector<double> _lastColor;

@@ -73,7 +73,7 @@ public:
     virtual std::string getPluginLabel() const OVERRIDE;
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
     virtual std::string getPluginDescription() const OVERRIDE;
-    virtual void getFrameRange(double *first,double *last) OVERRIDE;
+    virtual void getFrameRange(double *first, double *last) OVERRIDE;
     virtual int getMaxInputCount() const OVERRIDE
     {
         return 1;
@@ -85,7 +85,7 @@ public:
                      double time,
                      bool originatedFromMainThread) OVERRIDE FINAL;
     virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE;
-    virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
 protected:

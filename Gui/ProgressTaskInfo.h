@@ -41,17 +41,17 @@
 NATRON_NAMESPACE_ENTER;
 
 struct ProgressTaskInfoPrivate;
-class ProgressTaskInfo : public QObject, public boost::enable_shared_from_this<ProgressTaskInfo>
+class ProgressTaskInfo
+    : public QObject, public boost::enable_shared_from_this<ProgressTaskInfo>
 {
-    
-    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-    GCC_DIAG_SUGGEST_OVERRIDE_ON
-    
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
     friend class ProgressPanel;
-    
+
 public:
-    
+
     enum ProgressTaskStatusEnum
     {
         eProgressTaskStatusPaused,
@@ -60,86 +60,86 @@ public:
         eProgressTaskStatusFinished,
         eProgressTaskStatusCanceled
     };
-    
+
     ProgressTaskInfo(ProgressPanel* panel,
-             const NodePtr& node,
-             const int firstFrame,
-             const int lastFrame,
-             const int frameStep,
-             const bool canPause,
-             const bool canCancel,
-             const QString& message,
-             const boost::shared_ptr<ProcessHandler>& process);
-    
+                     const NodePtr& node,
+                     const int firstFrame,
+                     const int lastFrame,
+                     const int frameStep,
+                     const bool canPause,
+                     const bool canCancel,
+                     const QString& message,
+                     const boost::shared_ptr<ProcessHandler>& process);
+
     virtual ~ProgressTaskInfo();
-    
+
     bool wasCanceled() const;
-    
+
     bool canPause() const;
-    
+
     void createItems();
-    
+
     /**
      * @brief If the task has been restarted, totalProgress is the progress over the whole task,
      * and subTaskProgress is the progress over the smaller range from which we stopped.
      **/
-    void updateProgressBar(double totalProgress,double subTaskProgress);
-    
+    void updateProgressBar(double totalProgress, double subTaskProgress);
+
     void updateProgress(const int frame, double progress);
-    
+
     void cancelTask(bool calledFromRenderEngine, int retCode);
-    
+
     void restartTask();
-    
+
     NodePtr getNode() const;
-    
+
     boost::shared_ptr<ProcessHandler> getProcess() const;
-    
-    public Q_SLOTS:
-    
+
+public Q_SLOTS:
+
     void onRefreshLabelTimeout();
-    
+
     /**
      * @brief Slot executed when a render engine reports progress
      **/
     void onRenderEngineFrameComputed(int frame, double progress);
-    
+
     /**
      * @brief Executed when a render engine stops, retCode can be 1 in which case that means the render
      * was aborted, or 0 in which case the render was successful or a failure.
      **/
     void onRenderEngineStopped(int retCode);
-    
+
     void onProcessCanceled();
-    
+
     void getTableItems(std::vector<TableItem*>* items) const;
-    
+
     void createCellWidgets();
-    
+
     ProgressTaskStatusEnum getStatus() const;
 
 public Q_SLOTS:
-    
-    
+
+
     void onPauseTriggered();
     void onCancelTriggered();
     void onRestartTriggered();
-    
+
 Q_SIGNALS:
-    
+
     void taskCanceled();
-    
+
 private:
-    
+
     void setCellWidgets(int row, TableView* view);
     void removeCellWidgets(int row, TableView* view);
 
-    
+
     void setProcesshandler(const boost::shared_ptr<ProcessHandler>& process);
 
-    
+
     void clearItems();
-    
+
     boost::scoped_ptr<ProgressTaskInfoPrivate> _imp;
 };
 

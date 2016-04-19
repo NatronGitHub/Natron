@@ -37,7 +37,7 @@
 NATRON_NAMESPACE_ENTER;
 
 class FrameParams
-        : public NonKeyParams
+    : public NonKeyParams
 {
 public:
 
@@ -60,7 +60,7 @@ public:
                 int texW,
                 int texH,
                 const boost::shared_ptr<Image>& originalImage)
-        : NonKeyParams(1,bitDepth != 0 ? texW * texH * 16 : texW * texH * 4)
+        : NonKeyParams(1, bitDepth != 0 ? texW * texH * 16 : texW * texH * 4)
         , _tiles()
         , _rod(rod)
     {
@@ -80,12 +80,12 @@ public:
     {
         return NonKeyParams::operator==(other) && _rod == other._rod;
     }
-    
+
     bool operator!=(const FrameParams & other) const
     {
         return !(*this == other);
     }
-    
+
     void getOriginalTiles(std::list<boost::shared_ptr<Image> >* ret) const
     {
         for (std::list<boost::weak_ptr<Image> >::const_iterator it = _tiles.begin(); it != _tiles.end(); ++it) {
@@ -95,12 +95,12 @@ public:
             }
         }
     }
-    
+
     void addOriginalTile(const boost::shared_ptr<Image>& image)
     {
         _tiles.push_back(image);
     }
-    
+
 private:
 
     std::list<boost::weak_ptr<Image> > _tiles;

@@ -85,7 +85,7 @@ using std::make_pair;
 //=============================SEPARATOR_KNOB_GUI===================================
 
 KnobGuiSeparator::KnobGuiSeparator(KnobPtr knob,
-                                     DockablePanel *container)
+                                   DockablePanel *container)
     : KnobGui(knob, container)
     , _line(0)
 {
@@ -95,13 +95,13 @@ KnobGuiSeparator::KnobGuiSeparator(KnobPtr knob,
 void
 KnobGuiSeparator::createWidget(QHBoxLayout* layout)
 {
-    layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Expanding);
+    layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     _line = new QFrame( layout->parentWidget() );
-    _line->setFixedHeight(TO_DPIY(2));
-    _line->setGeometry(0, 0, TO_DPIX(300),TO_DPIY(2));
+    _line->setFixedHeight( TO_DPIY(2) );
+    _line->setGeometry( 0, 0, TO_DPIX(300), TO_DPIY(2) );
     _line->setFrameShape(QFrame::HLine);
     _line->setFrameShadow(QFrame::Sunken);
-    
+
     //Without that the frame won't showup
     _line->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     layout->addWidget(_line);
@@ -109,11 +109,10 @@ KnobGuiSeparator::createWidget(QHBoxLayout* layout)
 
 KnobGuiSeparator::~KnobGuiSeparator()
 {
-    
 }
 
 bool
-KnobGuiSeparator::isLabelOnSameColumn() const 
+KnobGuiSeparator::isLabelOnSameColumn() const
 {
     return true;
 }
@@ -124,8 +123,8 @@ KnobGuiSeparator::isLabelBold() const
     return true;
 }
 
-
-void KnobGuiSeparator::removeSpecificGui()
+void
+KnobGuiSeparator::removeSpecificGui()
 {
     delete _line;
 }
@@ -142,7 +141,8 @@ KnobGuiSeparator::_show()
     _line->show();
 }
 
-KnobPtr KnobGuiSeparator::getKnob() const
+KnobPtr
+KnobGuiSeparator::getKnob() const
 {
     return _knob.lock();
 }

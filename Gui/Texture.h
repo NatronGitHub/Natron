@@ -73,7 +73,7 @@ public:
     {
         return _type;
     }
-    
+
     bool mustAllocTexture(const TextureRect& rect) const;
 
     /*allocates the texture*/
@@ -90,7 +90,7 @@ private:
 
     U32 _texID;
     U32 _target;
-    int _minFilter,_magFilter, _clamp;
+    int _minFilter, _magFilter, _clamp;
     TextureRect _textureRect;
     DataTypeEnum _type;
 };

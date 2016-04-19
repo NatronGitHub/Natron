@@ -34,7 +34,7 @@
 NATRON_NAMESPACE_ENTER;
 
 class FrameKey
-        : public KeyHelper<U64>
+    : public KeyHelper<U64>
 {
 public:
     FrameKey();
@@ -126,7 +126,7 @@ private:
     int _lut;
     int _bitDepth;
     int _channels;
-    int/*ViewIdx*/ _view; // store it locally as an int for easier serialization
+    int /*ViewIdx*/ _view; // store it locally as an int for easier serialization
     TextureRect _textureRect;     // texture rectangle definition (bounds in the original image + width and height)
     RenderScale _scale;
     std::string _inputName;

@@ -29,7 +29,9 @@
 
 NATRON_NAMESPACE_USING
 
-TEST(Hash64,GeneralTest) {
+TEST(Hash64,
+     GeneralTest)
+{
     Hash64 hash1;
 
     ASSERT_FALSE( hash1.valid() ) << "A fresh hash is not valid.";
@@ -84,4 +86,5 @@ TEST(Hash64,GeneralTest) {
 
     EXPECT_NE( hash1.value(), hash2.value() );
     EXPECT_NE(hash1, hash2);
-}
+} // TEST
+

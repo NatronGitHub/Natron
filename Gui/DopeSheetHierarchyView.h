@@ -59,15 +59,16 @@ class HierarchyViewPrivate;
  * this class is set as the selection model of the HierarchyView class.
  *
  */
-class HierarchyViewSelectionModel : public QItemSelectionModel
+class HierarchyViewSelectionModel
+    : public QItemSelectionModel
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    
-    
+
+
     explicit HierarchyViewSelectionModel(DopeSheet* dopesheetModel,
                                          HierarchyView* view,
                                          QAbstractItemModel *model,
@@ -75,21 +76,21 @@ public:
     ~HierarchyViewSelectionModel();
 
     void selectWithRecursion(const QItemSelection &userSelection,
-                QItemSelectionModel::SelectionFlags command,
-                bool recurse);
-    
+                             QItemSelectionModel::SelectionFlags command,
+                             bool recurse);
+
 public Q_SLOTS:
-    
+
     virtual void select(const QItemSelection &userSelection,
                         QItemSelectionModel::SelectionFlags command) OVERRIDE FINAL;
 
 private: /* functions */
-    
-    void selectInternal(const QItemSelection &userSelection,
-                QItemSelectionModel::SelectionFlags command,
-                bool recurse);
 
-    
+    void selectInternal(const QItemSelection &userSelection,
+                        QItemSelectionModel::SelectionFlags command,
+                        bool recurse);
+
+
     /**
      * @brief Selects recursively all children of 'index' and put them in
      * 'selection'.
@@ -100,10 +101,10 @@ private: /* functions */
      * @brief Selects parents of 'index' and put them in 'selection'.
      */
     void checkParentsSelectedStates(const QModelIndex &index, QItemSelectionModel::SelectionFlags flags,
-                                   const QItemSelection &unitedSelection, QItemSelection *finalSelection) const;
-    
+                                    const QItemSelection &unitedSelection, QItemSelection *finalSelection) const;
+
 private:
-    
+
     DopeSheet* _dopesheetModel;
     HierarchyView* _view;
 };
@@ -126,7 +127,8 @@ private:
  * - select the associated keyframes by select an item.
  * - put a settings panel on top by double clicking on an item.
  */
-class HierarchyView : public QTreeWidget
+class HierarchyView
+    : public QTreeWidget
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -159,12 +161,11 @@ public:
      * @brief Returns the last visible (not hidden and not collapsed
      * in its parent) child of 'item".
      */
-    QTreeWidgetItem *lastVisibleChild(QTreeWidgetItem *item) const;
-    
+    QTreeWidgetItem * lastVisibleChild(QTreeWidgetItem *item) const;
     QTreeWidgetItem* getTreeItemForModelIndex(const QModelIndex& index) const;
 
     void setCanResizeOtherWidget(bool canResize);
-    
+
 protected:
     virtual void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
     virtual void drawBranches(QPainter *painter, const QRect &rect, const QModelIndex &index) const OVERRIDE FINAL;
@@ -179,7 +180,7 @@ protected:
      * @brief A conveniance function that allow the caller to get the parent
      * item of 'item', no matter if 'item' is a top level or a child item.
      */
-    QTreeWidgetItem *getParentItem(QTreeWidgetItem *item) const;
+    QTreeWidgetItem * getParentItem(QTreeWidgetItem *item) const;
 
     /**
      * @brief Removes 'child' from its parent and append it to the list of
@@ -245,9 +246,8 @@ private Q_SLOTS:
     void onSelectionChanged();
 
 private:
-    
+
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
-    
     boost::scoped_ptr<HierarchyViewPrivate> _imp;
 };
 
@@ -262,8 +262,9 @@ private:
  *
  * It also sets the size of each item : the height of an item associated with a
  * knob or a node is unchanged, instead of the height of a range-based node.
-*/
-class HierarchyViewItemDelegate : public QStyledItemDelegate
+ */
+class HierarchyViewItemDelegate
+    : public QStyledItemDelegate
 {
 public:
     explicit HierarchyViewItemDelegate(QObject *parent = 0);

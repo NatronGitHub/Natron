@@ -35,7 +35,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-typedef std::map<std::string,std::pair<PanelWidget*,ScriptObject*> > RegisteredTabs;
+typedef std::map<std::string, std::pair<PanelWidget*, ScriptObject*> > RegisteredTabs;
 
 NATRON_NAMESPACE_EXIT;
 

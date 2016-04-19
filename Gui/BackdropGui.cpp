@@ -53,19 +53,17 @@ NATRON_NAMESPACE_ENTER;
 struct BackdropGuiPrivate
 {
     BackdropGui* _publicInterface;
-    
     NodeGraphTextItem* label;
 
     BackdropGuiPrivate(BackdropGui* publicInterface)
-    : _publicInterface(publicInterface)
-    , label(0)
+        : _publicInterface(publicInterface)
+        , label(0)
     {
     }
 
-    void refreshLabelText(int nameHeight,const QString & text);
-    
+    void refreshLabelText(int nameHeight, const QString & text);
+
     std::string getLabelValue() const;
-    
 };
 
 BackdropGui::BackdropGui(QGraphicsItem* parent)
@@ -74,26 +72,25 @@ BackdropGui::BackdropGui(QGraphicsItem* parent)
 {
 }
 
-
 BackdropGui::~BackdropGui()
 {
-    
 }
-
-
 
 std::string
 BackdropGuiPrivate::getLabelValue() const
 {
     KnobPtr k = _publicInterface->getNode()->getKnobByName("Label");
+
     assert(k);
-    KnobString* isStr = dynamic_cast<KnobString*>(k.get());
+    KnobString* isStr = dynamic_cast<KnobString*>( k.get() );
     assert(isStr);
+
     return isStr ? isStr->getValue() : "";
 }
 
 void
-BackdropGui::getInitialSize(int *w, int *h) const
+BackdropGui::getInitialSize(int *w,
+                            int *h) const
 {
     *w = TO_DPIX(NATRON_BACKDROP_DEFAULT_WIDTH);
     *h = TO_DPIY(NATRON_BACKDROP_DEFAULT_HEIGHT);
@@ -103,18 +100,18 @@ void
 BackdropGui::createGui()
 {
     NodeGui::createGui();
-    
+
     _imp->label = new NodeGraphTextItem(getDagGui(), this, false);
-    _imp->label->setDefaultTextColor( QColor(0,0,0,255) );
+    _imp->label->setDefaultTextColor( QColor(0, 0, 0, 255) );
     _imp->label->setZValue(getBaseDepth() + 1);
-    
+
     EffectInstPtr effect = getNode()->getEffectInstance();
     assert(effect);
-    Backdrop* isBd = dynamic_cast<Backdrop*>(effect.get());
+    Backdrop* isBd = dynamic_cast<Backdrop*>( effect.get() );
     assert(isBd);
-    
-    QObject::connect(isBd,SIGNAL(labelChanged(QString)),this, SLOT(onLabelChanged(QString)));
-    
+
+    QObject::connect( isBd, SIGNAL(labelChanged(QString)), this, SLOT(onLabelChanged(QString)) );
+
     refreshTextLabelFromKnob();
 }
 
@@ -122,30 +119,32 @@ void
 BackdropGui::onLabelChanged(const QString& label)
 {
     int nameHeight = getFrameNameHeight();
+
     _imp->refreshLabelText(nameHeight, label);
 }
 
-
 void
-BackdropGui::adjustSizeToContent(int *w,int *h,bool /*adjustToTextSize*/)
+BackdropGui::adjustSizeToContent(int *w,
+                                 int *h,
+                                 bool /*adjustToTextSize*/)
 {
-    NodeGui::adjustSizeToContent(w, h,false);
+    NodeGui::adjustSizeToContent(w, h, false);
     QRectF labelBbox = _imp->label->boundingRect();
-    
-    *h = std::max((double)*h,labelBbox.height() * 1.5);
-    *w = std::max((double)*w, _imp->label->textWidth());
-    
+
+    *h = std::max( (double)*h, labelBbox.height() * 1.5 );
+    *w = std::max( (double)*w, _imp->label->textWidth() );
 }
 
 void
-BackdropGui::resizeExtraContent(int /*w*/,int /*h*/,bool forceResize)
+BackdropGui::resizeExtraContent(int /*w*/,
+                                int /*h*/,
+                                bool forceResize)
 {
     QPointF p = pos();
     QPointF thisItemPos = mapFromParent(p);
-    
     int nameHeight = getFrameNameHeight();
-    
-    _imp->label->setPos(thisItemPos.x(), thisItemPos.y() + nameHeight + TO_DPIY(10));
+
+    _imp->label->setPos( thisItemPos.x(), thisItemPos.y() + nameHeight + TO_DPIY(10) );
     if (!forceResize) {
         _imp->label->adjustSize();
     }
@@ -155,41 +154,41 @@ void
 BackdropGui::refreshTextLabelFromKnob()
 {
     int nameHeight = getFrameNameHeight();
+
     _imp->refreshLabelText( nameHeight, QString::fromUtf8( _imp->getLabelValue().c_str() ) );
 }
 
 void
-BackdropGuiPrivate::refreshLabelText(int nameHeight,const QString &text)
+BackdropGuiPrivate::refreshLabelText(int nameHeight,
+                                     const QString &text)
 {
     QString textLabel = text;
 
-    textLabel.replace(QString::fromUtf8("\n"), QString::fromUtf8("<br>"));
-    textLabel.prepend(QString::fromUtf8("<div align=\"left\">"));
-    textLabel.append(QString::fromUtf8("</div>"));
+    textLabel.replace( QString::fromUtf8("\n"), QString::fromUtf8("<br>") );
+    textLabel.prepend( QString::fromUtf8("<div align=\"left\">") );
+    textLabel.append( QString::fromUtf8("</div>") );
     QFont f;
     QColor color;
-    if (!text.isEmpty()) {
+    if ( !text.isEmpty() ) {
         KnobGuiString::parseFont(textLabel, &f, &color);
-        
         bool antialias = appPTR->getCurrentSettings()->isNodeGraphAntiAliasingEnabled();
         if (!antialias) {
             f.setStyleStrategy(QFont::NoAntialias);
         }
         label->setFont(f);
     }
-    
+
     label->setHtml(textLabel);
 
-    
+
     QRectF bbox = _publicInterface->boundingRect();
-    
+
     //label->adjustSize();
     int w = std::max( bbox.width(), label->textWidth() * 1.2 );
     QRectF labelBbox = label->boundingRect();
     int h = std::max( labelBbox.height() + nameHeight + TO_DPIX(10), bbox.height() );
     _publicInterface->resize(w, h);
     _publicInterface->update();
-    
 }
 
 NATRON_NAMESPACE_EXIT;

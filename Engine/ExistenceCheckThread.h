@@ -41,34 +41,33 @@
 NATRON_NAMESPACE_ENTER;
 
 struct ExistenceCheckerThreadPrivate;
-class ExistenceCheckerThread : public QThread
+class ExistenceCheckerThread
+    : public QThread
 {
-    
-    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-    GCC_DIAG_SUGGEST_OVERRIDE_ON
-    
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
-    
+
     ExistenceCheckerThread(const QString& checkMessage,
                            const QString& acknowledgementMessage,
                            const QString& comServerPipePath);
-    
+
     virtual ~ExistenceCheckerThread();
-    
+
     void quitThread();
-    
+
 Q_SIGNALS:
-    
+
     /**
      * @brief Emitted whenever the other process do no longer seem to exist
      **/
     void otherProcessUnreachable();
 
 private:
-    
+
     virtual void run() OVERRIDE FINAL;
-    
     boost::scoped_ptr<ExistenceCheckerThreadPrivate> _imp;
 };
 

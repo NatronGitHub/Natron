@@ -29,45 +29,48 @@
 NATRON_NAMESPACE_ENTER;
 
 namespace GuiUtils {
-
 /*!
- \fn QString GuiUtils::convertFromPlainText(const QString &plain, WhiteSpaceMode mode)
+   \fn QString GuiUtils::convertFromPlainText(const QString &plain, WhiteSpaceMode mode)
 
- Converts the plain text string \a plain to an HTML-formatted
- paragraph while preserving most of its look.
+   Converts the plain text string \a plain to an HTML-formatted
+   paragraph while preserving most of its look.
 
- \a mode defines how whitespace is handled.
+   \a mode defines how whitespace is handled.
 
- This function was adapted from GuiUtils::convertFromPlainText()
- (see src/gui/text/qtextdocument.cpp in the Qt sources)
- The difference is that in Qt::WhiteSpaceNormal mode, spaces are preserved at the beginning of the line.
+   This function was adapted from GuiUtils::convertFromPlainText()
+   (see src/gui/text/qtextdocument.cpp in the Qt sources)
+   The difference is that in Qt::WhiteSpaceNormal mode, spaces are preserved at the beginning of the line.
  */
-QString convertFromPlainText(const QString &plain, Qt::WhiteSpaceMode mode)
+QString
+convertFromPlainText(const QString &plain,
+                     Qt::WhiteSpaceMode mode)
 {
     int col = 0;
     bool bol = true;
     QString rich;
+
     rich += QLatin1String("<p>");
     for (int i = 0; i < plain.length(); ++i) {
-        if (plain[i] == QLatin1Char('\n')){
+        if ( plain[i] == QLatin1Char('\n') ) {
             int c = 1;
-            while (i+1 < plain.length() && plain[i+1] == QLatin1Char('\n')) {
+            while ( i + 1 < plain.length() && plain[i + 1] == QLatin1Char('\n') ) {
                 i++;
                 c++;
             }
-            if (c == 1)
+            if (c == 1) {
                 rich += QLatin1String("<br>\n");
-            else {
+            } else {
                 rich += QLatin1String("</p>\n");
-                while (--c > 1)
+                while (--c > 1) {
                     rich += QLatin1String("<br>\n");
+                }
                 rich += QLatin1String("<p>");
             }
             col = 0;
             bol = true;
         } else {
             bool bolagain = false;
-            if (mode == Qt::WhiteSpacePre && plain[i] == QLatin1Char('\t')){
+            if ( (mode == Qt::WhiteSpacePre) && ( plain[i] == QLatin1Char('\t') ) ) {
                 rich += QChar(0x00a0U);
                 ++col;
                 while (col % 8) {
@@ -75,28 +78,28 @@ QString convertFromPlainText(const QString &plain, Qt::WhiteSpaceMode mode)
                     ++col;
                 }
                 bolagain = bol;
-            }
-            else if ((bol || mode == Qt::WhiteSpacePre) && plain[i].isSpace()){
+            } else if ( ( bol || (mode == Qt::WhiteSpacePre) ) && plain[i].isSpace() )       {
                 rich += QChar(0x00a0U);
                 bolagain = bol;
-            }
-            else if (plain[i] == QLatin1Char('<'))
+            } else if ( plain[i] == QLatin1Char('<') )   {
                 rich += QLatin1String("&lt;");
-            else if (plain[i] == QLatin1Char('>'))
+            } else if ( plain[i] == QLatin1Char('>') ) {
                 rich += QLatin1String("&gt;");
-            else if (plain[i] == QLatin1Char('&'))
+            } else if ( plain[i] == QLatin1Char('&') ) {
                 rich += QLatin1String("&amp;");
-            else
+            } else {
                 rich += plain[i];
+            }
             ++col;
             bol = bolagain;
         }
     }
-    if (col != 0)
+    if (col != 0) {
         rich += QLatin1String("</p>");
-    return rich;
-}
+    }
 
+    return rich;
+} // convertFromPlainText
 } // namespace GuiUtils
 
 NATRON_NAMESPACE_EXIT;

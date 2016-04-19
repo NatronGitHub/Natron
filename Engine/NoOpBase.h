@@ -59,7 +59,7 @@ public:
     {
         return 1;
     }
-    
+
     virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
 
     virtual std::string getPluginID() const OVERRIDE WARN_UNUSED_RETURN = 0;
@@ -73,10 +73,9 @@ public:
     virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE
     {
         return false;
-
     }
 
-    virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
     ///Doesn't really matter here since it won't be used (this effect is always an identity)
@@ -90,17 +89,15 @@ public:
                                     ViewIdx view,
                                     EffectInstPtr* inputToTransform,
                                     Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
     virtual bool getInputsHoldingTransform(std::list<int>* inputs) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
     virtual bool isOutput() const OVERRIDE WARN_UNUSED_RETURN
     {
         return false;
     }
-    
+
     virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
-    
-    virtual bool isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE FINAL;
+
+    virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE FINAL;
 
 private:
 

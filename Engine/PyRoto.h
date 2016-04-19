@@ -44,85 +44,85 @@ class Layer; // defined below
 
 class ItemBase
 {
-    
 public:
-    
+
     ItemBase(const boost::shared_ptr<RotoItem>& item);
-    
+
     virtual ~ItemBase();
-    
+
     boost::shared_ptr<RotoItem> getInternalItem() const
     {
         return _item;
     }
-    
+
     void setLabel(const QString & name);
     QString getLabel() const;
-    
+
     bool setScriptName(const QString& name);
     QString getScriptName() const;
-    
+
     void setLocked(bool locked);
     bool getLocked() const;
     bool getLockedRecursive() const;
-    
+
     void setVisible(bool activated);
     bool getVisible() const;
-    
+
     Layer* getParentLayer() const;
-    
     Param* getParam(const QString& name) const;
-    
+
 private:
-    
+
     boost::shared_ptr<RotoItem> _item;
 };
 
-class Layer : public ItemBase
+class Layer
+    : public ItemBase
 {
 public:
-    
+
     Layer(const boost::shared_ptr<RotoItem>& item);
-    
+
     virtual ~Layer();
-    
+
     void addItem(ItemBase* item);
-    
+
     void insertItem(int pos, ItemBase* item);
-    
+
     void removeItem(ItemBase* item);
-    
+
     std::list<ItemBase*> getChildren() const;
-  
+
 private:
-    
+
     boost::shared_ptr<RotoLayer> _layer;
-    
 };
 
-class BezierCurve : public ItemBase
+class BezierCurve
+    : public ItemBase
 {
 public:
-    
-    enum CairoOperatorEnum {
+
+    enum CairoOperatorEnum
+    {
         CAIRO_OPERATOR_CLEAR,
-        
+
         CAIRO_OPERATOR_SOURCE,
         CAIRO_OPERATOR_OVER,
         CAIRO_OPERATOR_IN,
         CAIRO_OPERATOR_OUT,
         CAIRO_OPERATOR_ATOP,
-        
+
         CAIRO_OPERATOR_DEST,
         CAIRO_OPERATOR_DEST_OVER,
         CAIRO_OPERATOR_DEST_IN,
         CAIRO_OPERATOR_DEST_OUT,
         CAIRO_OPERATOR_DEST_ATOP,
-        
+
         CAIRO_OPERATOR_XOR,
         CAIRO_OPERATOR_ADD,
         CAIRO_OPERATOR_SATURATE,
-        
+
         CAIRO_OPERATOR_MULTIPLY,
         CAIRO_OPERATOR_SCREEN,
         CAIRO_OPERATOR_OVERLAY,
@@ -140,95 +140,89 @@ public:
         CAIRO_OPERATOR_HSL_LUMINOSITY
     };
 
-    
+
     BezierCurve(const boost::shared_ptr<RotoItem>& item);
-    
+
     virtual ~BezierCurve();
-    
-    
+
+
     void setCurveFinished(bool finished);
     bool isCurveFinished() const;
-    
+
     void addControlPoint(double x, double y);
-    
-    void addControlPointOnSegment(int index,double t);
-    
+
+    void addControlPointOnSegment(int index, double t);
+
     void removeControlPointByIndex(int index);
-    
-    void movePointByIndex(int index,double time,double dx,double dy);
-    
-    void moveFeatherByIndex(int index,double time,double dx,double dy);
-    
-    void moveLeftBezierPoint(int index,double time,double dx,double dy);
-    
-    void moveRightBezierPoint(int index,double time,double dx,double dy);
-    
-    void setPointAtIndex(int index,double time,double x,double y,double lx,double ly,double rx,double ry);
-    
-    void setFeatherPointAtIndex(int index,double time,double x,double y,double lx,double ly,double rx,double ry);
-    
-    void slavePointToTrack(int index, double trackTime,DoubleParam* trackCenter);
-    
+
+    void movePointByIndex(int index, double time, double dx, double dy);
+
+    void moveFeatherByIndex(int index, double time, double dx, double dy);
+
+    void moveLeftBezierPoint(int index, double time, double dx, double dy);
+
+    void moveRightBezierPoint(int index, double time, double dx, double dy);
+
+    void setPointAtIndex(int index, double time, double x, double y, double lx, double ly, double rx, double ry);
+
+    void setFeatherPointAtIndex(int index, double time, double x, double y, double lx, double ly, double rx, double ry);
+
+    void slavePointToTrack(int index, double trackTime, DoubleParam* trackCenter);
+
     DoubleParam* getPointMasterTrack(int index) const;
-    
+
     int getNumControlPoints() const;
-    
+
     void setActivated(double time, bool activated);
     bool getIsActivated(double time);
-    
+
     void setOpacity(double opacity, double time);
     double getOpacity(double time) const;
-    
+
     ColorTuple getOverlayColor() const;
-    void setOverlayColor(double r,double g,double b);
-    
+    void setOverlayColor(double r, double g, double b);
+
     double getFeatherDistance(double time) const;
-    void setFeatherDistance(double dist,double time);
-    
+    void setFeatherDistance(double dist, double time);
+
     double getFeatherFallOff(double time) const;
-    void setFeatherFallOff(double falloff,double time);
-    
+    void setFeatherFallOff(double falloff, double time);
+
     ColorTuple getColor(double time);
-    void setColor(double time,double r,double g, double b);
-    
+    void setColor(double time, double r, double g, double b);
+
     void setCompositingOperator(CairoOperatorEnum op);
     CairoOperatorEnum getCompositingOperator() const;
-    
+
     BooleanParam* getActivatedParam() const;
     DoubleParam* getOpacityParam() const;
     DoubleParam* getFeatherDistanceParam() const;
     DoubleParam* getFeatherFallOffParam() const;
     ColorParam* getColorParam() const;
     ChoiceParam* getCompositingOperatorParam() const;
-    
+
 private:
-    
+
     boost::shared_ptr<Bezier> _bezier;
-    
 };
 
 class Roto
 {
 public:
-    
+
     Roto(const boost::shared_ptr<RotoContext>& ctx);
-    
+
     ~Roto();
-        
+
     Layer* getBaseLayer() const;
-    
     ItemBase* getItemByName(const QString& name) const;
-    
     Layer* createLayer();
-    
-    BezierCurve* createBezier(double x,double y, double time);
-    
-    BezierCurve* createEllipse(double x,double y,double diameter,bool fromCenter,double time);
-    
-    BezierCurve* createRectangle(double x,double y,double size, double time);
-    
+    BezierCurve* createBezier(double x, double y, double time);
+    BezierCurve* createEllipse(double x, double y, double diameter, bool fromCenter, double time);
+    BezierCurve* createRectangle(double x, double y, double size, double time);
+
 private:
-    
+
     boost::shared_ptr<RotoContext> _ctx;
 };
 

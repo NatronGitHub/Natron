@@ -65,21 +65,21 @@ public:
                          ViewerTab* viewerTab);
 
     virtual ~TimeLineGui() OVERRIDE;
-    
+
     void discardGuiPointer();
-    
+
     void setTimeline(const boost::shared_ptr<TimeLine>& timeline);
     boost::shared_ptr<TimeLine> getTimeline() const;
 
     /*initialises the boundaries on the timeline*/
     void setBoundaries(SequenceTime first, SequenceTime last);
-    
+
 
     SequenceTime leftBound() const;
     SequenceTime rightBound() const;
     SequenceTime currentFrame() const;
-    
-    void getBounds(SequenceTime* left,SequenceTime* right) const;
+
+    void getBounds(SequenceTime* left, SequenceTime* right) const;
 
     void setCursorColor(const QColor & cursorColor);
     void setBoundsColor(const QColor & boundsColor);
@@ -90,7 +90,7 @@ public:
 
     void seek(SequenceTime time);
 
-    void renderText(double x,double y,const QString & text,const QColor & color,const QFont & font) const;
+    void renderText(double x, double y, const QString & text, const QColor & color, const QFont & font) const;
 
 
     /**
@@ -117,41 +117,41 @@ public:
      * a main window (an AppInstance) draw some cached line because another instance is running some playback or rendering something.
      **/
     void disconnectSlotsFromViewerCache();
-    
+
     bool isFrameRangeEdited() const;
-    
+
     void setFrameRangeEdited(bool edited);
 
     void centerOn_tripleSync(SequenceTime left, SequenceTime right);
-    
+
     void getVisibleRange(SequenceTime* left, SequenceTime* right) const;
 
 public Q_SLOTS:
-    
+
     void recenterOnBounds();
 
     void centerOn(SequenceTime left, SequenceTime right, int margin = 5);
 
-    void onFrameChanged(SequenceTime,int);
+    void onFrameChanged(SequenceTime, int);
 
     void onCachedFrameAdded(SequenceTime time);
-    void onCachedFrameRemoved(SequenceTime time,int storage);
-    void onCachedFrameStorageChanged(SequenceTime time,int oldStorage,int newStorage);
+    void onCachedFrameRemoved(SequenceTime time, int storage);
+    void onCachedFrameStorageChanged(SequenceTime time, int oldStorage, int newStorage);
     void onMemoryCacheCleared();
     void onDiskCacheCleared();
 
     void clearCachedFrames();
 
     void onKeyframesIndicatorsChanged();
-    
-    void onProjectFrameRangeChanged(int,int);
+
+    void onProjectFrameRangeChanged(int, int);
 
 private:
-    
-    void setBoundariesInternal(SequenceTime first, SequenceTime last,bool emitSignal);
+
+    void setBoundariesInternal(SequenceTime first, SequenceTime last, bool emitSignal);
 
     virtual void initializeGL() OVERRIDE FINAL;
-    virtual void resizeGL(int width,int height) OVERRIDE FINAL;
+    virtual void resizeGL(int width, int height) OVERRIDE FINAL;
     virtual void paintGL() OVERRIDE FINAL;
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
@@ -163,7 +163,7 @@ private:
 
 Q_SIGNALS:
 
-    void boundariesChanged(SequenceTime,SequenceTime);
+    void boundariesChanged(SequenceTime, SequenceTime);
 
 private:
 

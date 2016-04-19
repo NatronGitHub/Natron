@@ -41,9 +41,7 @@ NATRON_NAMESPACE_ENTER;
 class Label
     : public QLabel
 {
-    
-    Q_OBJECT
-    Q_PROPERTY(bool altered READ getAltered WRITE setAltered)
+    Q_OBJECT Q_PROPERTY(bool altered READ getAltered WRITE setAltered)
 
 public:
 
@@ -53,22 +51,22 @@ public:
 
     Label(QWidget *parent = 0,
           Qt::WindowFlags f = 0);
-    
+
     bool getAltered() const;
-    
+
     void setAltered(bool a);
-    
+
     virtual bool canAlter() const
     {
         return true;
     }
-    
+
 protected:
-    
+
     void refreshStyle();
-    
+
 private:
-    
+
     //When altered, the label is displayed in grey instead of white
     bool altered;
 };

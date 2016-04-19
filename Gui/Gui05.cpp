@@ -93,7 +93,7 @@ Gui::setupUi()
 
     _imp->_leftRightSplitter = new Splitter(_imp->_centralWidget);
     _imp->_leftRightSplitter->setChildrenCollapsible(false);
-    _imp->_leftRightSplitter->setObjectName(QString::fromUtf8(kMainSplitterObjectName));
+    _imp->_leftRightSplitter->setObjectName( QString::fromUtf8(kMainSplitterObjectName) );
     _imp->_splitters.push_back(_imp->_leftRightSplitter);
     _imp->_leftRightSplitter->setOrientation(Qt::Horizontal);
     _imp->_leftRightSplitter->setContentsMargins(0, 0, 0, 0);
@@ -102,7 +102,7 @@ Gui::setupUi()
     _imp->_toolBox = new AutoHideToolBar(this, _imp->_leftRightSplitter);
     _imp->_toolBox->setToolButtonStyle(Qt::ToolButtonIconOnly);
     _imp->_toolBox->setOrientation(Qt::Vertical);
-    _imp->_toolBox->setMaximumWidth(TO_DPIX(NATRON_TOOL_BUTTON_SIZE));
+    _imp->_toolBox->setMaximumWidth( TO_DPIX(NATRON_TOOL_BUTTON_SIZE) );
 
     if (_imp->leftToolBarDisplayedOnHoverOnly) {
         _imp->refreshLeftToolBarVisibility( mapFromGlobal( QCursor::pos() ) );
@@ -140,13 +140,12 @@ Gui::setupUi()
 
 
     //the same action also clears the ofx plugins caches, they are not the same cache but are used to the same end
-    
+
     boost::shared_ptr<Project> project = _imp->_appInstance->getProject();
     QObject::connect( project.get(), SIGNAL(projectNameChanged(QString,bool)), this, SLOT(onProjectNameChanged(QString,bool)) );
-    
     boost::shared_ptr<TimeLine> timeline = project->getTimeLine();
-    QObject::connect( timeline.get(),SIGNAL(frameChanged(SequenceTime,int)), this,SLOT(renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime,int)) );
-    QObject::connect( timeline.get(),SIGNAL(frameAboutToChange()), this, SLOT(onTimelineTimeAboutToChange()));
+    QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime,int)) );
+    QObject::connect( timeline.get(), SIGNAL(frameAboutToChange()), this, SLOT(onTimelineTimeAboutToChange()) );
 
     /*Searches recursively for all child objects of the given object,
        and connects matching signals from them to slots of object that follow the following form:
@@ -161,11 +160,9 @@ Gui::setupUi()
        If object itself has a properly set object name, its own signals are also connected to its respective slots.
      */
     QMetaObject::connectSlotsByName(this);
-    
-    appPTR->setOFXHostHandle(_imp->_appInstance->getOfxHostOSHandle());
-    
-} // setupUi
 
+    appPTR->setOFXHostHandle( _imp->_appInstance->getOfxHostOSHandle() );
+} // setupUi
 
 void
 Gui::onPropertiesScrolled()
@@ -216,9 +213,9 @@ Gui::createGroupGui(const NodePtr & group,
     QGraphicsScene* scene = new QGraphicsScene(this);
     scene->setItemIndexMethod(QGraphicsScene::NoIndex);
     NodeGraph* nodeGraph = new NodeGraph(this, collection, scene, this);
-    nodeGraph->setObjectName( QString::fromUtf8(group->getLabel().c_str()) );
+    nodeGraph->setObjectName( QString::fromUtf8( group->getLabel().c_str() ) );
     _imp->_groups.push_back(nodeGraph);
-    if ( where && reason == eCreateNodeReasonUserCreate && !getApp()->isCreatingPythonGroup() ) {
+    if ( where && (reason == eCreateNodeReasonUserCreate) && !getApp()->isCreatingPythonGroup() ) {
         where->appendTab(nodeGraph, nodeGraph);
         QTimer::singleShot( 25, nodeGraph, SLOT(centerOnAllNodes()) );
     } else {
@@ -292,6 +289,7 @@ ViewerTab*
 Gui::getActiveViewer() const
 {
     assert( QThread::currentThread() == qApp->thread() );
+
     return _imp->_activeViewer;
 }
 
@@ -311,7 +309,6 @@ Gui::getLastSelectedNodeCollection() const
     return group;
 }
 
-
 void
 Gui::wipeLayout()
 {
@@ -321,24 +318,23 @@ Gui::wipeLayout()
         panesCpy = _imp->_panes;
         _imp->_panes.clear();
     }
-    
     std::list<FloatingWidget*> floatingWidgets = getFloatingWindows();
-    
-    for (std::list<FloatingWidget*>::const_iterator it = floatingWidgets.begin(); it!=floatingWidgets.end(); ++it) {
+
+    for (std::list<FloatingWidget*>::const_iterator it = floatingWidgets.begin(); it != floatingWidgets.end(); ++it) {
         (*it)->deleteLater();
     }
     {
         QMutexLocker k(&_imp->_floatingWindowMutex);
         _imp->_floatingWindows.clear();
     }
-    
+
 
     for (std::list<TabWidget*>::iterator it = panesCpy.begin(); it != panesCpy.end(); ++it) {
         ///Conserve tabs by removing them from the tab widgets. This way they will not be deleted.
         while ( (*it)->count() > 0 ) {
             (*it)->removeTab(0, false);
         }
-    //(*it)->setParent(NULL);
+        //(*it)->setParent(NULL);
         (*it)->deleteLater();
     }
 
@@ -357,8 +353,7 @@ Gui::wipeLayout()
             (*it)->deleteLater();
         }
     }
-    
-  
+
 
     Splitter *newSplitter = new Splitter(_imp->_centralWidget);
     newSplitter->addWidget(_imp->_toolBox);
@@ -374,6 +369,6 @@ Gui::wipeLayout()
         QMutexLocker l(&_imp->_splittersMutex);
         _imp->_splitters.push_back(newSplitter);
     }
-}
+} // Gui::wipeLayout
 
 NATRON_NAMESPACE_EXIT;

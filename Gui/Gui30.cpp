@@ -302,10 +302,11 @@ Gui::onDoDialog(int type,
 {
     QWidget* currentActiveWindow = qApp->activeWindow();
     QDialog* isActiveWindowADialog = 0;
+
     if (currentActiveWindow) {
         isActiveWindowADialog = qobject_cast<QDialog*>(currentActiveWindow);
     }
-    
+
     QString msg = useHtml ? content : GuiUtils::convertFromPlainText(content.trimmed(), Qt::WhiteSpaceNormal);
 
     if (type == 0) { // error dialog
@@ -320,7 +321,7 @@ Gui::onDoDialog(int type,
         ignore_result( warning.exec() );
     } else if (type == 2) { // information dialog
         if (msg.count() < 1000) {
-            QMessageBox info(QMessageBox::Information, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint| Qt::WindowStaysOnTopHint);
+            QMessageBox info(QMessageBox::Information, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
             info.setTextFormat(Qt::RichText);
             info.setWindowFlags(info.windowFlags() | Qt::WindowStaysOnTopHint);
             ignore_result( info.exec() );
@@ -360,7 +361,7 @@ Gui::onDoDialog(int type,
     if (currentActiveWindow && !isActiveWindowADialog) {
         currentActiveWindow->activateWindow();
     }
-}
+} // Gui::onDoDialog
 
 StandardButtonEnum
 Gui::questionDialog(const std::string & title,
@@ -465,7 +466,7 @@ Gui::onDoDialogWithStopAskingCheckbox(int type,
         _imp->_lastQuestionDialogAnswer = dialog.getReply();
         _imp->_lastStopAskingAnswer = stopAskingCheckbox->isChecked();
     }
-    
+
     {
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         assert(_imp->_uiUsingMainThread);
@@ -487,7 +488,7 @@ void
 Gui::connectInput(int inputNb)
 {
     NodeGraph* graph = 0;
-    
+
     if (_imp->_lastFocusedGraph) {
         graph = _imp->_lastFocusedGraph;
     } else {
@@ -499,7 +500,8 @@ Gui::connectInput(int inputNb)
 void
 Gui::connectInput()
 {
-    QAction* action = qobject_cast<QAction*>(sender());
+    QAction* action = qobject_cast<QAction*>( sender() );
+
     if (!action) {
         return;
     }
@@ -510,61 +512,61 @@ Gui::connectInput()
 void
 Gui::showView0()
 {
-    _imp->_appInstance->setViewersCurrentView(ViewIdx(0));
+    _imp->_appInstance->setViewersCurrentView( ViewIdx(0) );
 }
 
 void
 Gui::showView1()
 {
-    _imp->_appInstance->setViewersCurrentView(ViewIdx(1));
+    _imp->_appInstance->setViewersCurrentView( ViewIdx(1) );
 }
 
 void
 Gui::showView2()
 {
-    _imp->_appInstance->setViewersCurrentView(ViewIdx(2));
+    _imp->_appInstance->setViewersCurrentView( ViewIdx(2) );
 }
 
 void
 Gui::showView3()
 {
-    _imp->_appInstance->setViewersCurrentView(ViewIdx(3));
+    _imp->_appInstance->setViewersCurrentView( ViewIdx(3) );
 }
 
 void
 Gui::showView4()
 {
-    _imp->_appInstance->setViewersCurrentView(ViewIdx(4));
+    _imp->_appInstance->setViewersCurrentView( ViewIdx(4) );
 }
 
 void
 Gui::showView5()
 {
-    _imp->_appInstance->setViewersCurrentView(ViewIdx(5));
+    _imp->_appInstance->setViewersCurrentView( ViewIdx(5) );
 }
 
 void
 Gui::showView6()
 {
-    _imp->_appInstance->setViewersCurrentView(ViewIdx(6));
+    _imp->_appInstance->setViewersCurrentView( ViewIdx(6) );
 }
 
 void
 Gui::showView7()
 {
-    _imp->_appInstance->setViewersCurrentView(ViewIdx(7));
+    _imp->_appInstance->setViewersCurrentView( ViewIdx(7) );
 }
 
 void
 Gui::showView8()
 {
-    _imp->_appInstance->setViewersCurrentView(ViewIdx(8));
+    _imp->_appInstance->setViewersCurrentView( ViewIdx(8) );
 }
 
 void
 Gui::showView9()
 {
-    _imp->_appInstance->setViewersCurrentView(ViewIdx(9));
+    _imp->_appInstance->setViewersCurrentView( ViewIdx(9) );
 }
 
 void
@@ -610,9 +612,10 @@ void
 Gui::removeUndoStack(QUndoStack* stack)
 {
     std::map<QUndoStack*, std::pair<QAction*, QAction*> >::iterator it = _imp->_undoStacksActions.find(stack);
-	if (it == _imp->_undoStacksActions.end()) {
-		return;
-	}
+
+    if ( it == _imp->_undoStacksActions.end() ) {
+        return;
+    }
     if (_imp->_currentUndoAction == it->second.first) {
         _imp->menuEdit->removeAction(_imp->_currentUndoAction);
     }

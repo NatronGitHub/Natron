@@ -32,14 +32,14 @@
 NATRON_NAMESPACE_ENTER;
 
 class ImageKey
-        :  public KeyHelper<U64>
+    :  public KeyHelper<U64>
 {
 public:
 
     U64 _nodeHashKey;
     double _time;
     double _pixelAspect;
-    int/*ViewIdx*/ _view; // store it locally as an int for easier serialization
+    int /*ViewIdx*/ _view; // store it locally as an int for easier serialization
     bool _draftMode;
     bool _frameVaryingOrAnimated;
 
@@ -71,7 +71,7 @@ public:
     {
         return _time;
     }
-    
+
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
 };

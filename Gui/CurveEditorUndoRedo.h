@@ -52,44 +52,42 @@ NATRON_NAMESPACE_ENTER;
 struct SelectedKey
 {
     boost::shared_ptr<CurveGui> curve;
-    KeyFrame key,prevKey,nextKey;
+    KeyFrame key, prevKey, nextKey;
     bool hasPrevious;
     bool hasNext;
-    std::pair<double,double> leftTan, rightTan;
-    
+    std::pair<double, double> leftTan, rightTan;
+
     SelectedKey()
-    : hasPrevious(false)
-    , hasNext(false)
+        : hasPrevious(false)
+        , hasNext(false)
     {
     }
-    
+
     SelectedKey(const boost::shared_ptr<CurveGui>& c,
                 const KeyFrame & k,
                 const bool hasPrevious,
                 const KeyFrame & previous,
                 const bool hasNext,
                 const KeyFrame & next)
-    : curve(c)
-    , key(k)
-    , prevKey(previous)
-    , nextKey(next)
-    , hasPrevious(hasPrevious)
-    , hasNext(hasNext)
+        : curve(c)
+        , key(k)
+        , prevKey(previous)
+        , nextKey(next)
+        , hasPrevious(hasPrevious)
+        , hasNext(hasNext)
     {
-
     }
-    
+
     SelectedKey(const SelectedKey & o)
-    : curve(o.curve)
-    , key(o.key)
-    , prevKey(o.prevKey)
-    , nextKey(o.nextKey)
-    , hasPrevious(o.hasPrevious)
-    , hasNext(o.hasNext)
-    , leftTan(o.leftTan)
-    , rightTan(o.rightTan)
+        : curve(o.curve)
+        , key(o.key)
+        , prevKey(o.prevKey)
+        , nextKey(o.nextKey)
+        , hasPrevious(o.hasPrevious)
+        , hasNext(o.hasNext)
+        , leftTan(o.leftTan)
+        , rightTan(o.rightTan)
     {
-       
     }
 };
 
@@ -103,7 +101,6 @@ struct SelectedKey_compare_time
 };
 
 typedef boost::shared_ptr<SelectedKey> KeyPtr;
-
 typedef std::map<boost::shared_ptr<CurveGui>, std::list<KeyPtr> > SelectedKeys;
 
 
@@ -113,7 +110,7 @@ class AddKeysCommand
     : public QUndoCommand
 {
 public:
-    
+
     struct KeyToAdd
     {
         boost::shared_ptr<CurveGui> curveUI;
@@ -136,16 +133,14 @@ public:
     virtual ~AddKeysCommand() OVERRIDE
     {
     }
-    
 
 protected:
-    
+
     void addOrRemoveKeyframe(bool isSetKeyCommand, bool add);
 
-    
+
     virtual void undo() OVERRIDE;
     virtual void redo() OVERRIDE;
-
 
 private:
     KeysToAddList _keys;
@@ -153,30 +148,29 @@ private:
 };
 
 
-
 class SetKeysCommand
-: public AddKeysCommand
+    : public AddKeysCommand
 {
 public:
-    
-    
+
+
     SetKeysCommand(CurveWidget *editor,
                    const AddKeysCommand::KeysToAddList & keys,
                    QUndoCommand *parent = 0);
-    
+
     SetKeysCommand(CurveWidget *editor,
                    const boost::shared_ptr<CurveGui>& curve,
                    const std::vector<KeyFrame> & keys,
                    QUndoCommand *parent = 0);
-    
+
     virtual ~SetKeysCommand() OVERRIDE
     {
     }
-    
+
 private:
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
-    
+
 private:
     boost::shared_ptr<CurveGui> _guiCurve;
     boost::shared_ptr<Curve> _oldCurve;
@@ -189,7 +183,7 @@ class RemoveKeysCommand
 {
 public:
     RemoveKeysCommand(CurveWidget* editor,
-                      const std::map<boost::shared_ptr<CurveGui> ,std::vector<KeyFrame> > & curveEditorElement
+                      const std::map<boost::shared_ptr<CurveGui>, std::vector<KeyFrame> > & curveEditorElement
                       ,
                       QUndoCommand *parent = 0);
     virtual ~RemoveKeysCommand() OVERRIDE
@@ -203,7 +197,7 @@ private:
     void addOrRemoveKeyframe(bool add);
 
 private:
-    std::map<boost::shared_ptr<CurveGui> ,std::vector<KeyFrame> > _keys;
+    std::map<boost::shared_ptr<CurveGui>, std::vector<KeyFrame> > _keys;
     CurveWidget* _curveWidget;
 };
 
@@ -213,15 +207,15 @@ class MoveKeysCommand
     : public QUndoCommand
 {
 public:
-    
+
     struct KeyToMove
     {
         KeyPtr key;
-        bool prevIsSelected,nextIsSelected;
+        bool prevIsSelected, nextIsSelected;
     };
 
     MoveKeysCommand(CurveWidget* widget,
-                    const std::map<boost::shared_ptr<CurveGui>,std::vector<MoveKeysCommand::KeyToMove> > & keys,
+                    const std::map<boost::shared_ptr<CurveGui>, std::vector<MoveKeysCommand::KeyToMove> > & keys,
                     double dt,
                     double dv,
                     bool updateOnFirstRedo,
@@ -243,7 +237,7 @@ private:
     bool _updateOnFirstRedo;
     double _dt;
     double _dv;
-    std::map<boost::shared_ptr<CurveGui>,std::vector<MoveKeysCommand::KeyToMove> > _keys;
+    std::map<boost::shared_ptr<CurveGui>, std::vector<MoveKeysCommand::KeyToMove> > _keys;
     CurveWidget* _widget;
 };
 
@@ -261,8 +255,8 @@ struct KeyInterpolationChange
                            KeyframeTypeEnum newType,
                            const KeyPtr & k)
         : oldInterp(oldType)
-          , newInterp(newType)
-          , key(k)
+        , newInterp(newType)
+        , key(k)
     {
     }
 };
@@ -293,60 +287,60 @@ private:
 };
 
 class MoveTangentCommand
-: public QUndoCommand
+    : public QUndoCommand
 {
 public:
-    
+
     enum SelectedTangentEnum
     {
         eSelectedTangentLeft = 0,
         eSelectedTangentRight
     };
 
-    
+
     MoveTangentCommand(CurveWidget* widget,
                        SelectedTangentEnum deriv,
                        const KeyPtr& key,
-                       double dx,double dy,
+                       double dx, double dy,
                        bool updateOnFirstRedo,
                        QUndoCommand *parent = 0);
-    
+
     MoveTangentCommand(CurveWidget* widget,
                        SelectedTangentEnum deriv,
                        const KeyPtr& key,
                        double derivative,
                        QUndoCommand *parent = 0);
-    
+
     virtual ~MoveTangentCommand() OVERRIDE
     {
     }
-    
+
 private:
-    
+
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
     virtual int id() const OVERRIDE FINAL;
     virtual bool mergeWith(const QUndoCommand * command) OVERRIDE FINAL;
-    
+
     void setNewDerivatives(bool undo);
-    
+
 private:
-    
+
     CurveWidget* _widget;
     KeyPtr _key;
     SelectedTangentEnum _deriv;
-    KeyframeTypeEnum _oldInterp,_newInterp;
-    double _oldLeft,_oldRight,_newLeft,_newRight;
+    KeyframeTypeEnum _oldInterp, _newInterp;
+    double _oldLeft, _oldRight, _newLeft, _newRight;
     bool _setBoth;
     bool _updateOnFirstRedo;
     bool _firstRedoCalled;
 };
 
 class TransformKeysCommand
-: public QUndoCommand
+    : public QUndoCommand
 {
 public:
-    
+
     TransformKeysCommand(CurveWidget* widget,
                          const SelectedKeys & keys,
                          double centerX,
@@ -358,24 +352,22 @@ public:
                          bool updateOnFirstRedo,
                          QUndoCommand *parent = 0);
     virtual ~TransformKeysCommand();
-    
+
 private:
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
     virtual int id() const OVERRIDE FINAL;
     virtual bool mergeWith(const QUndoCommand * command) OVERRIDE FINAL;
-    
-    
+
+
     void transformKeys(const Transform::Matrix3x3& matrix);
-    
+
 private:
     bool _firstRedoCalled;
     bool _updateOnFirstRedo;
     SelectedKeys _keys;
     CurveWidget* _widget;
-   
-    
-    Transform::Matrix3x3 _matrix,_invMatrix;
+    Transform::Matrix3x3 _matrix, _invMatrix;
 };
 
 NATRON_NAMESPACE_EXIT;

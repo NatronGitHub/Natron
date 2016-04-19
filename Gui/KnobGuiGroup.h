@@ -68,31 +68,29 @@ public:
     }
 
     KnobGuiGroup(KnobPtr knob,
-                  DockablePanel *container);
+                 DockablePanel *container);
 
     virtual ~KnobGuiGroup() OVERRIDE;
 
     virtual void removeSpecificGui() OVERRIDE FINAL;
-    
+
     void addKnob(const KnobGuiPtr& child);
-    
+
     const std::list<KnobGuiWPtr>& getChildren() const { return _children; }
 
     bool isChecked() const;
-
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
-    
     TabGroup* getOrCreateTabWidget();
-    
+
     void removeTabWidget();
 
 public Q_SLOTS:
     void onCheckboxChecked(bool b);
 
 private:
-    
+
     void setCheckedInternal(bool checked, bool userRequested);
-    
+
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
@@ -112,7 +110,7 @@ private:
     bool _checked;
     GroupBoxLabel *_button;
     std::list<KnobGuiWPtr> _children;
-    std::vector< std::pair<KnobGuiWPtr,std::vector<int> > > _childrenToEnable; //< when re-enabling a group, what are the children that we should set
+    std::vector< std::pair<KnobGuiWPtr, std::vector<int> > > _childrenToEnable; //< when re-enabling a group, what are the children that we should set
     TabGroup* _tabGroup;
     //enabled too
     boost::weak_ptr<KnobGroup> _knob;

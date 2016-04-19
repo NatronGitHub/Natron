@@ -24,7 +24,6 @@
 // ***** END PYTHON BLOCK *****
 
 
-
 #include "OneViewNode.h"
 
 #include "Engine/AppManager.h"
@@ -38,30 +37,27 @@ NATRON_NAMESPACE_ENTER;
 struct OneViewNodePrivate
 {
     boost::weak_ptr<KnobChoice> viewKnob;
-    
+
     OneViewNodePrivate()
-    : viewKnob()
+        : viewKnob()
     {
-        
     }
 };
 
 OneViewNode::OneViewNode(NodePtr n)
-: EffectInstance(n)
-, _imp(new OneViewNodePrivate())
+    : EffectInstance(n)
+    , _imp( new OneViewNodePrivate() )
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
     if (n) {
         boost::shared_ptr<Project> project = n->getApp()->getProject();
-        QObject::connect(project.get(), SIGNAL(projectViewsChanged()), this, SLOT(onProjectViewsChanged()));
+        QObject::connect( project.get(), SIGNAL(projectViewsChanged()), this, SLOT(onProjectViewsChanged()) );
     }
 }
 
 OneViewNode::~OneViewNode()
 {
-    
 }
-
 
 std::string
 OneViewNode::getPluginID() const
@@ -94,11 +90,12 @@ OneViewNode::getInputLabel (int /*inputNb*/) const
 }
 
 void
-OneViewNode::addAcceptedComponents(int /*inputNb*/,std::list<ImageComponents>* comps)
+OneViewNode::addAcceptedComponents(int /*inputNb*/,
+                                   std::list<ImageComponents>* comps)
 {
-    comps->push_back(ImageComponents::getRGBAComponents());
-    comps->push_back(ImageComponents::getAlphaComponents());
-    comps->push_back(ImageComponents::getRGBComponents());
+    comps->push_back( ImageComponents::getRGBAComponents() );
+    comps->push_back( ImageComponents::getAlphaComponents() );
+    comps->push_back( ImageComponents::getRGBComponents() );
 }
 
 void
@@ -113,21 +110,21 @@ void
 OneViewNode::initializeKnobs()
 {
     boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>(this, "Controls");
+
     page->setName("controls");
-    
+
     boost::shared_ptr<KnobChoice> viewKnob = AppManager::createKnob<KnobChoice>(this, "View");
     viewKnob->setName("view");
     viewKnob->setHintToolTip("View to take from the input");
     page->addKnob(viewKnob);
-    
+
     const std::vector<std::string>& views = getApp()->getProject()->getProjectViewNames();
     std::string currentView = viewKnob->getActiveEntryText_mt_safe();
     viewKnob->populateChoices(views);
 
-    
+
     _imp->viewKnob = viewKnob;
 }
-
 
 bool
 OneViewNode::isIdentity(double time,
@@ -140,24 +137,27 @@ OneViewNode::isIdentity(double time,
 {
     boost::shared_ptr<KnobChoice> viewKnob = _imp->viewKnob.lock();
     int view_i = viewKnob->getValue();
+
     *inputView = ViewIdx(view_i);
     *inputNb = 0;
     *inputTime = time;
+
     return true;
 }
 
 FramesNeededMap
-OneViewNode::getFramesNeeded(double time, ViewIdx /*view*/)
+OneViewNode::getFramesNeeded(double time,
+                             ViewIdx /*view*/)
 {
     FramesNeededMap ret;
     FrameRangesMap& rangeMap = ret[0];
-    
     boost::shared_ptr<KnobChoice> viewKnob = _imp->viewKnob.lock();
     int view_i = viewKnob->getValue();
-    
     std::vector<RangeD>& ranges = rangeMap[ViewIdx(view_i)];
+
     ranges.resize(1);
     ranges[0].min = ranges[0].max = time;
+
     return ret;
 }
 
@@ -167,8 +167,9 @@ OneViewNode::onProjectViewsChanged()
     const std::vector<std::string>& views = getApp()->getProject()->getProjectViewNames();
     boost::shared_ptr<KnobChoice> viewKnob = _imp->viewKnob.lock();
     std::string currentView = viewKnob->getActiveEntryText_mt_safe();
+
     viewKnob->populateChoices(views);
-    
+
     bool foundView = false;
     for (std::size_t i = 0; i < views.size(); ++i) {
         if (views[i] == currentView) {

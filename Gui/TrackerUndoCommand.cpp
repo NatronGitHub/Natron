@@ -32,23 +32,25 @@
 
 NATRON_NAMESPACE_ENTER;
 
-AddTrackCommand::AddTrackCommand(const TrackMarkerPtr &marker, const boost::shared_ptr<TrackerContext>& context)
-: QUndoCommand()
-, _markers()
-, _context(context)
+AddTrackCommand::AddTrackCommand(const TrackMarkerPtr &marker,
+                                 const boost::shared_ptr<TrackerContext>& context)
+    : QUndoCommand()
+    , _markers()
+    , _context(context)
 {
     _markers.push_back(marker);
-    setText(QObject::tr("Add Track(s)"));
+    setText( QObject::tr("Add Track(s)") );
 }
 
 void
 AddTrackCommand::undo()
 {
     boost::shared_ptr<TrackerContext> context = _context.lock();
+
     if (!context) {
         return;
     }
-    
+
     context->beginEditSelection();
     for (std::list<TrackMarkerPtr >::const_iterator it = _markers.begin(); it != _markers.end(); ++it) {
         context->removeMarker(*it);
@@ -61,12 +63,13 @@ void
 AddTrackCommand::redo()
 {
     boost::shared_ptr<TrackerContext> context = _context.lock();
+
     if (!context) {
         return;
     }
     context->beginEditSelection();
     context->clearSelection(TrackerContext::eTrackSelectionInternal);
-    
+
     for (std::list<TrackMarkerPtr >::const_iterator it = _markers.begin(); it != _markers.end(); ++it) {
         context->addTrackToSelection(*it, TrackerContext::eTrackSelectionInternal);
     }
@@ -74,32 +77,34 @@ AddTrackCommand::redo()
     context->getNode()->getApp()->triggerAutoSave();
 }
 
-RemoveTracksCommand::RemoveTracksCommand(const std::list<TrackMarkerPtr > &markers, const boost::shared_ptr<TrackerContext>& context)
-: QUndoCommand()
-, _markers()
-, _context(context)
+RemoveTracksCommand::RemoveTracksCommand(const std::list<TrackMarkerPtr > &markers,
+                                         const boost::shared_ptr<TrackerContext>& context)
+    : QUndoCommand()
+    , _markers()
+    , _context(context)
 {
-    assert(!markers.empty());
-    for (std::list<TrackMarkerPtr >::const_iterator it = markers.begin(); it!=markers.end(); ++it) {
+    assert( !markers.empty() );
+    for (std::list<TrackMarkerPtr >::const_iterator it = markers.begin(); it != markers.end(); ++it) {
         TrackToRemove t;
         t.track = *it;
         t.prevTrack = context->getPrevMarker(t.track, false);
         _markers.push_back(t);
     }
-    setText(QObject::tr("Remove Track(s)"));
+    setText( QObject::tr("Remove Track(s)") );
 }
 
 void
 RemoveTracksCommand::undo()
 {
     boost::shared_ptr<TrackerContext> context = _context.lock();
+
     if (!context) {
         return;
     }
     context->beginEditSelection();
     context->clearSelection(TrackerContext::eTrackSelectionInternal);
     for (std::list<TrackToRemove>::const_iterator it = _markers.begin(); it != _markers.end(); ++it) {
-        int prevIndex = -1 ;
+        int prevIndex = -1;
         TrackMarkerPtr prevMarker = it->prevTrack.lock();
         if (prevMarker) {
             prevIndex = context->getMarkerIndex(prevMarker);
@@ -119,12 +124,13 @@ void
 RemoveTracksCommand::redo()
 {
     boost::shared_ptr<TrackerContext> context = _context.lock();
+
     if (!context) {
         return;
     }
-    
+
     TrackMarkerPtr nextMarker = context->getNextMarker(_markers.back().track, true);
-    
+
     context->beginEditSelection();
     for (std::list<TrackToRemove>::const_iterator it = _markers.begin(); it != _markers.end(); ++it) {
         context->removeMarker(it->track);

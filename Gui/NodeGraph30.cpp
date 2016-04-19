@@ -59,41 +59,38 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/QtCompat.h"
 
 NATRON_NAMESPACE_ENTER;
-
-
 void
 NodeGraph::connectCurrentViewerToSelection(int inputNB)
 {
     ViewerTab* lastUsedViewer =  getLastSelectedViewer();
-    
+
     if (lastUsedViewer) {
         boost::shared_ptr<NodeCollection> collection = lastUsedViewer->getInternalNode()->getNode()->getGroup();
-        if (collection && collection->getNodeGraph() != this) {
+        if ( collection && (collection->getNodeGraph() != this) ) {
             //somehow the group doesn't belong to this nodegraph , pick another one
             const std::list<ViewerTab*>& tabs = getGui()->getViewersList();
             lastUsedViewer = 0;
-            for (std::list<ViewerTab*>::const_iterator it = tabs.begin(); it!=tabs.end(); ++it) {
-                
+            for (std::list<ViewerTab*>::const_iterator it = tabs.begin(); it != tabs.end(); ++it) {
                 boost::shared_ptr<NodeCollection> otherCollection = (*it)->getInternalNode()->getNode()->getGroup();
-                if (otherCollection && otherCollection->getNodeGraph() == this) {
+                if ( otherCollection && (otherCollection->getNodeGraph() == this) ) {
                     lastUsedViewer = *it;
                     break;
                 }
             }
         }
     }
-    
-    
+
+
     boost::shared_ptr<InspectorNode> v;
-    if ( lastUsedViewer ) {
+    if (lastUsedViewer) {
         v = boost::dynamic_pointer_cast<InspectorNode>( lastUsedViewer->
-                                                       getInternalNode()->getNode() );
+                                                        getInternalNode()->getNode() );
     } else {
-        CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_VIEWER),
-                       eCreateNodeReasonUserCreate,
-                       getGroup());
+        CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_VIEWER),
+                             eCreateNodeReasonUserCreate,
+                             getGroup() );
         NodePtr viewerNode = getGui()->getApp()->createNode(args);
-        
+
         if (!viewerNode) {
             return;
         }
@@ -103,7 +100,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
     if (!v) {
         return;
     }
-    
+
     ///if the node is no longer active (i.e: it was deleted by the user), don't do anything.
     if ( !v->isActivated() ) {
         return;
@@ -115,7 +112,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
     assert(gui);
 
     ///if there's no selected node or the viewer is selected, then try refreshing that input nb if it is connected.
-    bool viewerAlreadySelected = std::find(_imp->_selection.begin(),_imp->_selection.end(),gui) != _imp->_selection.end();
+    bool viewerAlreadySelected = std::find(_imp->_selection.begin(), _imp->_selection.end(), gui) != _imp->_selection.end();
     if (_imp->_selection.empty() || (_imp->_selection.size() > 1) || viewerAlreadySelected) {
         v->setActiveInputAndRefresh(inputNB, false);
         gui->refreshEdges();
@@ -134,12 +131,12 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
     ///so it can be created.
     Edge* foundInput = gui->getInputArrow(inputNB);
     assert(foundInput);
-  
+
     ///and push a connect command to the selected node.
-    pushUndoCommand( new ConnectCommand(this,foundInput,foundInput->getSource(),selected) );
+    pushUndoCommand( new ConnectCommand(this, foundInput, foundInput->getSource(), selected) );
 
     ///Set the viewer as the selected node (also wipe the current selection)
-    selectNode(gui,false);
+    selectNode(gui, false);
 } // connectCurrentViewerToSelection
 
 void
@@ -148,7 +145,6 @@ NodeGraph::enterEvent(QEvent* e)
     enterEventBase();
     QGraphicsView::enterEvent(e);
     _imp->_nodeCreationShortcutEnabled = true;
-   
 }
 
 void
@@ -158,23 +154,22 @@ NodeGraph::leaveEvent(QEvent* e)
     QGraphicsView::leaveEvent(e);
 
     _imp->_nodeCreationShortcutEnabled = false;
-   // setFocus();
+    // setFocus();
 }
 
-
-
 void
-NodeGraph::wheelEventInternal(bool ctrlDown,double delta)
+NodeGraph::wheelEventInternal(bool ctrlDown,
+                              double delta)
 {
     double scaleFactor = pow( NATRON_WHEEL_ZOOM_PER_DELTA, delta);
     QTransform transfo = transform();
-    
     double currentZoomFactor = transfo.mapRect( QRectF(0, 0, 1, 1) ).width();
     double newZoomfactor = currentZoomFactor * scaleFactor;
-    if ((newZoomfactor < 0.01 && scaleFactor < 1.) || (newZoomfactor > 50 && scaleFactor > 1.)) {
+
+    if ( ( (newZoomfactor < 0.01) && (scaleFactor < 1.) ) || ( (newZoomfactor > 50) && (scaleFactor > 1.) ) ) {
         return;
     }
-    
+
     if (ctrlDown && _imp->_magnifiedNode) {
         if (!_imp->_magnifOn) {
             _imp->_magnifOn = true;
@@ -182,18 +177,15 @@ NodeGraph::wheelEventInternal(bool ctrlDown,double delta)
         }
         _imp->_magnifiedNode->setScale_natron(_imp->_magnifiedNode->scale() * scaleFactor);
     } else {
-
         _imp->_accumDelta += delta;
         if (std::abs(_imp->_accumDelta) > 60) {
             scaleFactor = pow( NATRON_WHEEL_ZOOM_PER_DELTA, _imp->_accumDelta );
-           // setSceneRect(NATRON_SCENE_MIN,NATRON_SCENE_MIN,NATRON_SCENE_MAX,NATRON_SCENE_MAX);
-            scale(scaleFactor,scaleFactor);
+            // setSceneRect(NATRON_SCENE_MIN,NATRON_SCENE_MIN,NATRON_SCENE_MAX,NATRON_SCENE_MAX);
+            scale(scaleFactor, scaleFactor);
             _imp->_accumDelta = 0;
         }
         _imp->_refreshOverlays = true;
-        
     }
-
 }
 
 void
@@ -202,7 +194,7 @@ NodeGraph::wheelEvent(QWheelEvent* e)
     if (e->orientation() != Qt::Vertical) {
         return;
     }
-    wheelEventInternal(modCASIsControl(e), e->delta());
+    wheelEventInternal( modCASIsControl(e), e->delta() );
     _imp->_lastMousePos = e->pos();
     update();
 }
@@ -219,7 +211,7 @@ NodeGraph::keyReleaseEvent(QKeyEvent* e)
             _imp->setNodesBendPointsVisible(false);
         }
     }
-    
+
     handleUnCaughtKeyUpEvent(e);
     QGraphicsView::keyReleaseEvent(e);
 }
@@ -227,11 +219,10 @@ NodeGraph::keyReleaseEvent(QKeyEvent* e)
 void
 NodeGraph::removeNode(const NodeGuiPtr & node)
 {
- 
     NodeGroup* isGrp = node->getNode()->isEffectGroup();
     const KnobsVec & knobs = node->getNode()->getKnobs();
 
-    
+
     for (U32 i = 0; i < knobs.size(); ++i) {
         KnobI::ListenerDimsMap listeners;
         knobs[i]->getListeners(listeners);
@@ -242,14 +233,14 @@ NodeGraph::removeNode(const NodeGuiPtr & node)
             if (!listener) {
                 continue;
             }
-            EffectInstance* isEffect = dynamic_cast<EffectInstance*>(listener->getHolder());
+            EffectInstance* isEffect = dynamic_cast<EffectInstance*>( listener->getHolder() );
             if (!isEffect) {
                 continue;
             }
-            if (isGrp && isEffect->getNode()->getGroup().get() == isGrp) {
+            if ( isGrp && (isEffect->getNode()->getGroup().get() == isGrp) ) {
                 continue;
             }
-            
+
             if ( isEffect && ( isEffect != node->getNode()->getEffectInstance().get() ) ) {
                 foundEffect = true;
                 break;
@@ -257,13 +248,13 @@ NodeGraph::removeNode(const NodeGuiPtr & node)
         }
         if (foundEffect) {
             StandardButtonEnum reply = Dialogs::questionDialog( tr("Delete").toStdString(), tr("This node has one or several "
-                                                                                                  "parameters from which other parameters "
-                                                                                                  "of the project rely on through expressions "
-                                                                                                  "or links. Deleting this node will "
-                                                                                                  "remove these expressions  "
-                                                                                                  "and undoing the action will not recover "
-                                                                                                  "them. Do you wish to continue ?")
-                                                                   .toStdString(), false );
+                                                                                               "parameters from which other parameters "
+                                                                                               "of the project rely on through expressions "
+                                                                                               "or links. Deleting this node will "
+                                                                                               "remove these expressions  "
+                                                                                               "and undoing the action will not recover "
+                                                                                               "them. Do you wish to continue ?")
+                                                                .toStdString(), false );
             if (reply == eStandardButtonNo) {
                 return;
             }
@@ -274,22 +265,22 @@ NodeGraph::removeNode(const NodeGuiPtr & node)
     node->setUserSelected(false);
     NodesGuiList nodesToRemove;
     nodesToRemove.push_back(node);
-    pushUndoCommand( new RemoveMultipleNodesCommand(this,nodesToRemove) );
-}
+    pushUndoCommand( new RemoveMultipleNodesCommand(this, nodesToRemove) );
+} // NodeGraph::removeNode
 
 void
 NodeGraph::deleteSelection()
 {
-    if ( !_imp->_selection.empty()) {
+    if ( !_imp->_selection.empty() ) {
         NodesGuiList nodesToRemove = _imp->_selection;
 
-        
+
         ///For all backdrops also move all the nodes contained within it
         for (NodesGuiList::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
             NodesGuiList nodesWithinBD = getNodesWithinBackdrop(*it);
             for (NodesGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
-                NodesGuiList::iterator found = std::find(nodesToRemove.begin(),nodesToRemove.end(),*it2);
-                if ( found == nodesToRemove.end()) {
+                NodesGuiList::iterator found = std::find(nodesToRemove.begin(), nodesToRemove.end(), *it2);
+                if ( found == nodesToRemove.end() ) {
                     nodesToRemove.push_back(*it2);
                 }
             }
@@ -297,12 +288,10 @@ NodeGraph::deleteSelection()
 
 
         for (NodesGuiList::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
-            
             const KnobsVec & knobs = (*it)->getNode()->getKnobs();
             bool mustBreak = false;
-            
             NodeGroup* isGrp = (*it)->getNode()->isEffectGroup();
-            
+
             for (U32 i = 0; i < knobs.size(); ++i) {
                 KnobI::ListenerDimsMap listeners;
                 knobs[i]->getListeners(listeners);
@@ -314,19 +303,19 @@ NodeGraph::deleteSelection()
                     if (!listener) {
                         continue;
                     }
-                    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(listener->getHolder() );
-                    
+                    EffectInstance* isEffect = dynamic_cast<EffectInstance*>( listener->getHolder() );
+
                     if (!isEffect) {
                         continue;
                     }
-                    if (isGrp && isEffect->getNode()->getGroup().get() == isGrp) {
+                    if ( isGrp && (isEffect->getNode()->getGroup().get() == isGrp) ) {
                         continue;
                     }
-                    
-                    if (!isEffect->getNode()->getGroup()) {
+
+                    if ( !isEffect->getNode()->getGroup() ) {
                         continue;
                     }
-                    
+
                     if ( isEffect && ( isEffect != (*it)->getNode()->getEffectInstance().get() ) ) {
                         foundEffect = true;
                         break;
@@ -334,13 +323,13 @@ NodeGraph::deleteSelection()
                 }
                 if (foundEffect) {
                     StandardButtonEnum reply = Dialogs::questionDialog( tr("Delete").toStdString(),
-                                                                           tr("This node has one or several "
-                                                                              "parameters from which other parameters "
-                                                                              "of the project rely on through expressions "
-                                                                              "or links. Deleting this node will "
-                                                                              "may break these expressions."
-                                                                              "\nContinue anyway ?")
-                                                                           .toStdString(), false );
+                                                                        tr("This node has one or several "
+                                                                           "parameters from which other parameters "
+                                                                           "of the project rely on through expressions "
+                                                                           "or links. Deleting this node will "
+                                                                           "may break these expressions."
+                                                                           "\nContinue anyway ?")
+                                                                        .toStdString(), false );
                     if (reply == eStandardButtonNo) {
                         return;
                     }
@@ -359,7 +348,7 @@ NodeGraph::deleteSelection()
         }
 
 
-        pushUndoCommand( new RemoveMultipleNodesCommand(this,nodesToRemove) );
+        pushUndoCommand( new RemoveMultipleNodesCommand(this, nodesToRemove) );
         _imp->_selection.clear();
     }
 } // deleteSelection
@@ -367,23 +356,20 @@ NodeGraph::deleteSelection()
 void
 NodeGraph::deselectNode(const NodeGuiPtr& n)
 {
-    
-    
     {
         QMutexLocker k(&_imp->_nodesMutex);
         NodesGuiList::iterator it = std::find(_imp->_selection.begin(), _imp->_selection.end(), n);
-        if (it != _imp->_selection.end()) {
+        if ( it != _imp->_selection.end() ) {
             _imp->_selection.erase(it);
         }
     }
     n->setUserSelected(false);
-    
+
     //Stop magnification if active
-    if (_imp->_magnifiedNode == n && _imp->_magnifOn) {
+    if ( (_imp->_magnifiedNode == n) && _imp->_magnifOn ) {
         _imp->_magnifOn = false;
         _imp->_magnifiedNode->setScale_natron(_imp->_nodeSelectedScaleBeforeMagnif);
     }
-    
 }
 
 void
@@ -393,7 +379,7 @@ NodeGraph::selectNode(const NodeGuiPtr & n,
     if ( !n->isVisible() ) {
         return;
     }
-    bool alreadyInSelection = std::find(_imp->_selection.begin(),_imp->_selection.end(),n) != _imp->_selection.end();
+    bool alreadyInSelection = std::find(_imp->_selection.begin(), _imp->_selection.end(), n) != _imp->_selection.end();
 
 
     assert(n);
@@ -419,7 +405,7 @@ NodeGraph::selectNode(const NodeGuiPtr & n,
 
     bool magnifiedNodeSelected = false;
     if (_imp->_magnifiedNode) {
-        magnifiedNodeSelected = std::find(_imp->_selection.begin(),_imp->_selection.end(),_imp->_magnifiedNode)
+        magnifiedNodeSelected = std::find(_imp->_selection.begin(), _imp->_selection.end(), _imp->_magnifiedNode)
                                 != _imp->_selection.end();
     }
     if (magnifiedNodeSelected && _imp->_magnifOn) {
@@ -460,7 +446,6 @@ NodeGraph::clearSelection()
     }
 
     _imp->_selection.clear();
-
 }
 
 void
@@ -487,6 +472,7 @@ NodeGraph::areAllNodesVisible()
             }
         }
     }
+
     return true;
 }
 

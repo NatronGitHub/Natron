@@ -41,13 +41,16 @@
 
 NATRON_NAMESPACE_ENTER;
 
-NodeGraphTextItem::NodeGraphTextItem(NodeGraph* graph,QGraphicsItem* parent,bool alwaysDrawText)
-: QGraphicsTextItem(parent)
-, _graph(graph)
-, _alwaysDrawText(alwaysDrawText)
+NodeGraphTextItem::NodeGraphTextItem(NodeGraph* graph,
+                                     QGraphicsItem* parent,
+                                     bool alwaysDrawText)
+    : QGraphicsTextItem(parent)
+    , _graph(graph)
+    , _alwaysDrawText(alwaysDrawText)
 {
     QFont f = font();
     bool antialias = appPTR->getCurrentSettings()->isNodeGraphAntiAliasingEnabled();
+
     if (!antialias) {
         f.setStyleStrategy(QFont::NoAntialias);
     }
@@ -56,22 +59,23 @@ NodeGraphTextItem::NodeGraphTextItem(NodeGraph* graph,QGraphicsItem* parent,bool
 
 NodeGraphTextItem::~NodeGraphTextItem()
 {
-    
 }
 
 void
-NodeGraphTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+NodeGraphTextItem::paint(QPainter *painter,
+                         const QStyleOptionGraphicsItem *option,
+                         QWidget *widget)
 {
     bool isTooSmall = false;
+
     if (!_alwaysDrawText) {
-        if (_graph->isDoingNavigatorRender()) {
+        if ( _graph->isDoingNavigatorRender() ) {
             isTooSmall = true;
         } else {
-            QFontMetrics fm(font());
-            QPoint topLeft = _graph->mapFromScene(mapToScene(QPointF(0,0)));
-            QPoint btmLeft = _graph->mapFromScene(mapToScene(QPointF(0, fm.height())));
-
-            int height = std::abs(btmLeft.y() - topLeft.y());
+            QFontMetrics fm( font() );
+            QPoint topLeft = _graph->mapFromScene( mapToScene( QPointF(0, 0) ) );
+            QPoint btmLeft = _graph->mapFromScene( mapToScene( QPointF( 0, fm.height() ) ) );
+            int height = std::abs( btmLeft.y() - topLeft.y() );
             isTooSmall = height < NODEGRAPH_TEXT_ITEM_MIN_HEIGHT_PX;
         }
     }
@@ -81,14 +85,16 @@ NodeGraphTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *opti
     QGraphicsTextItem::paint(painter, option, widget);
 }
 
-
-NodeGraphSimpleTextItem::NodeGraphSimpleTextItem(NodeGraph* graph,QGraphicsItem* parent,bool alwaysDrawText)
-: QGraphicsSimpleTextItem(parent)
-, _graph(graph)
-, _alwaysDrawText(alwaysDrawText)
+NodeGraphSimpleTextItem::NodeGraphSimpleTextItem(NodeGraph* graph,
+                                                 QGraphicsItem* parent,
+                                                 bool alwaysDrawText)
+    : QGraphicsSimpleTextItem(parent)
+    , _graph(graph)
+    , _alwaysDrawText(alwaysDrawText)
 {
     QFont f = font();
     bool antialias = appPTR->getCurrentSettings()->isNodeGraphAntiAliasingEnabled();
+
     if (!antialias) {
         f.setStyleStrategy(QFont::NoAntialias);
     }
@@ -100,18 +106,20 @@ NodeGraphSimpleTextItem::~NodeGraphSimpleTextItem()
 }
 
 void
-NodeGraphSimpleTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+NodeGraphSimpleTextItem::paint(QPainter *painter,
+                               const QStyleOptionGraphicsItem *option,
+                               QWidget *widget)
 {
     bool isTooSmall = false;
+
     if (!_alwaysDrawText) {
-        if (_graph->isDoingNavigatorRender()) {
+        if ( _graph->isDoingNavigatorRender() ) {
             isTooSmall = true;
         } else {
-            QFontMetrics fm(font());
-            QPoint topLeft = _graph->mapFromScene(mapToScene(QPointF(0,0)));
-            QPoint btmLeft = _graph->mapFromScene(mapToScene(QPointF(0, fm.height())));
-            
-            int height = std::abs(btmLeft.y() - topLeft.y());
+            QFontMetrics fm( font() );
+            QPoint topLeft = _graph->mapFromScene( mapToScene( QPointF(0, 0) ) );
+            QPoint btmLeft = _graph->mapFromScene( mapToScene( QPointF( 0, fm.height() ) ) );
+            int height = std::abs( btmLeft.y() - topLeft.y() );
             isTooSmall = height < NODEGRAPH_SIMPLE_TEXT_ITEM_MIN_HEIGHT_PX;
         }
     }
@@ -121,10 +129,10 @@ NodeGraphSimpleTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem
     QGraphicsSimpleTextItem::paint(painter, option, widget);
 }
 
-
-NodeGraphPixmapItem::NodeGraphPixmapItem(NodeGraph* graph,QGraphicsItem* parent)
-: QGraphicsPixmapItem(parent)
-, _graph(graph)
+NodeGraphPixmapItem::NodeGraphPixmapItem(NodeGraph* graph,
+                                         QGraphicsItem* parent)
+    : QGraphicsPixmapItem(parent)
+    , _graph(graph)
 {
 }
 
@@ -133,12 +141,14 @@ NodeGraphPixmapItem::~NodeGraphPixmapItem()
 }
 
 void
-NodeGraphPixmapItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+NodeGraphPixmapItem::paint(QPainter *painter,
+                           const QStyleOptionGraphicsItem *option,
+                           QWidget *widget)
 {
-    if (_graph->isDoingNavigatorRender()) {
+    if ( _graph->isDoingNavigatorRender() ) {
         return;
     }
-    QRect br = _graph->mapFromScene(mapToScene(boundingRect()).boundingRect()).boundingRect();
+    QRect br = _graph->mapFromScene( mapToScene( boundingRect() ).boundingRect() ).boundingRect();
     int height = br.height();
     if (height < NODEGRAPH_PIXMAP_ITEM_MIN_HEIGHT_PX) {
         return;

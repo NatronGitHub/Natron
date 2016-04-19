@@ -50,7 +50,7 @@ class LibraryBinary
 #ifdef __NATRON_WIN32__
     typedef HINSTANCE value_type;
 #elif defined(__NATRON_UNIX__)
-    typedef void(*value_type)();
+    typedef void (*value_type)();
 #endif
 
 public:
@@ -63,7 +63,7 @@ public:
 
     LibraryBinary(LibraryBinary::LibraryTypeEnum type);
 
-    LibraryBinary(const std::map<std::string,void(*)()> & functions);
+    LibraryBinary(const std::map<std::string, void(*)()> & functions);
 
     LibraryBinary(const std::string & binaryPath);
 
@@ -86,18 +86,18 @@ public:
     /*Returns a pointer to the function with name functionName. The return value
        is a pair whose first member indicates whether it could find the function or not.s*/
     template <typename T>
-    std::pair<bool,T> findFunction(const std::string & functionName) const
+    std::pair<bool, T> findFunction(const std::string & functionName) const
     {
-        std::map<std::string,value_type>::const_iterator it = _functions.find(functionName);
+        std::map<std::string, value_type>::const_iterator it = _functions.find(functionName);
 
         if ( it == _functions.end() ) {
-            return std::make_pair(false,(T)0);
+            return std::make_pair(false, (T)0);
         } else {
-            return std::make_pair(true,(T)it->second);
+            return std::make_pair(true, (T)it->second);
         }
     }
 
-    const std::map<std::string,value_type> & getAllFunctions() const
+    const std::map<std::string, value_type> & getAllFunctions() const
     {
         return _functions;
     }
@@ -112,7 +112,8 @@ private:
 #endif
     std::string _binaryPath;
     bool _valid;
-    std::map<std::string,value_type> _functions; // <function name, pointer>
+    std::map<std::string, value_type> _functions; // <function name, pointer>
 };
+
 NATRON_NAMESPACE_EXIT;
 #endif // ifndef NATRON_GLOBAL_LIBRARYBINARY_H

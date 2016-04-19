@@ -37,50 +37,49 @@ struct HostOverlayKnobDescription
     std::string typeName;
     bool isOptional;
     int nDims;
-    
-    HostOverlayKnobDescription(int enumID, const std::string& t, int nDims, bool optional = false)
-    : enumID(enumID)
-    , typeName(t)
-    , isOptional(optional)
-    , nDims(nDims)
+
+    HostOverlayKnobDescription(int enumID,
+                               const std::string& t,
+                               int nDims,
+                               bool optional = false)
+        : enumID(enumID)
+        , typeName(t)
+        , isOptional(optional)
+        , nDims(nDims)
     {
-        
     }
 };
-
 
 struct HostOverlayKnobsPrivate
 {
     std::map<int, KnobPtr> knobs;
     std::vector<HostOverlayKnobDescription> knobsDescription;
     bool describeCall;
-    
+
     HostOverlayKnobsPrivate()
-    : knobs()
-    , knobsDescription()
-    , describeCall(false)
+        : knobs()
+        , knobsDescription()
+        , describeCall(false)
     {
-        
     }
 };
 
 HostOverlayKnobs::HostOverlayKnobs()
-: _imp(new HostOverlayKnobsPrivate())
+    : _imp( new HostOverlayKnobsPrivate() )
 {
-    
 }
 
 HostOverlayKnobs::~HostOverlayKnobs()
 {
-    
 }
 
 KnobPtr
 HostOverlayKnobs::getFirstKnob() const
 {
-    if (_imp->knobs.empty()) {
+    if ( _imp->knobs.empty() ) {
         return KnobPtr();
     }
+
     return _imp->knobs.begin()->second;
 }
 
@@ -90,42 +89,49 @@ HostOverlayKnobs::getFirstKnob() const
  * otherwise it is expected to match the name filled in the descriveOverlayKnobs function
  **/
 void
-HostOverlayKnobs::addKnob(const KnobPtr& knob, int enumID) {
-    
+HostOverlayKnobs::addKnob(const KnobPtr& knob,
+                          int enumID)
+{
     std::map<int, KnobPtr>::const_iterator found = _imp->knobs.find(enumID);
-    assert(found == _imp->knobs.end());
-    if (found != _imp->knobs.end()) {
+
+    assert( found == _imp->knobs.end() );
+    if ( found != _imp->knobs.end() ) {
         return;
     }
-    _imp->knobs.insert(std::make_pair(enumID, knob));
+    _imp->knobs.insert( std::make_pair(enumID, knob) );
 }
 
 KnobPtr
 HostOverlayKnobs::getKnob(int enumID) const
 {
     std::map<int, KnobPtr>::const_iterator found = _imp->knobs.find(enumID);
-    if (found == _imp->knobs.end()) {
+
+    if ( found == _imp->knobs.end() ) {
         return KnobPtr();
     }
+
     return found->second;
 }
 
 void
-HostOverlayKnobs::describeKnob(int enumID, const std::string& type, int nDims,  bool optional) {
-    _imp->knobsDescription.push_back(HostOverlayKnobDescription(enumID, type, nDims, optional));
+HostOverlayKnobs::describeKnob(int enumID,
+                               const std::string& type,
+                               int nDims,
+                               bool optional)
+{
+    _imp->knobsDescription.push_back( HostOverlayKnobDescription(enumID, type, nDims, optional) );
 }
 
 bool
 HostOverlayKnobs::checkHostOverlayValid()
 {
-    
     if (!_imp->describeCall) {
         describeOverlayKnobs();
         _imp->describeCall = true;
     }
     for (std::size_t i = 0; i < _imp->knobsDescription.size(); ++i) {
         KnobPtr knob = getKnob(_imp->knobsDescription[i].enumID);
-        
+
         // Mandatory knob is not present
         if (!knob) {
             if (!_imp->knobsDescription[i].isOptional) {
@@ -134,17 +140,18 @@ HostOverlayKnobs::checkHostOverlayValid()
                 continue;
             }
         }
-        
+
         // Type mismatch
         if (knob->typeName() != _imp->knobsDescription[i].typeName) {
             return false;
         }
-        
+
         // Dimension mismatch
         if (knob->getDimension() != _imp->knobsDescription[i].nDims) {
             return false;
         }
     }
+
     return true;
 }
 
@@ -161,7 +168,6 @@ TransformOverlayKnobs::describeOverlayKnobs()
     describeKnob(eKnobsEnumerationCenter, KnobDouble::typeNameStatic(), 2);
     describeKnob(eKnobsEnumerationInvert, KnobBool::typeNameStatic(), 1, true);
     describeKnob(eKnobsEnumerationInteractive, KnobBool::typeNameStatic(), 1, true);
-    
 }
 
 void
@@ -182,7 +188,6 @@ CornerPinOverlayKnobs::describeOverlayKnobs()
     describeKnob(eKnobsEnumerationOverlayPoints, KnobChoice::typeNameStatic(), 1);
     describeKnob(eKnobsEnumerationInvert, KnobBool::typeNameStatic(), 1, true);
     describeKnob(eKnobsEnumerationInteractive, KnobBool::typeNameStatic(), 1, true);
-    
 }
 
 void
@@ -190,9 +195,6 @@ PositionOverlayKnobs::describeOverlayKnobs()
 {
     describeKnob(eKnobsEnumerationPosition, KnobDouble::typeNameStatic(), 2);
     describeKnob(eKnobsEnumerationInteractive, KnobBool::typeNameStatic(), 1, true);
-
-    
 }
-
 
 NATRON_NAMESPACE_EXIT;

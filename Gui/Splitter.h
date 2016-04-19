@@ -71,16 +71,15 @@ public:
 
     QString objectName_mt_safe() const;
 
-    void insertChild_mt_safe(int i,QWidget* w);
+    void insertChild_mt_safe(int i, QWidget* w);
 
     void removeChild_mt_safe(QWidget* w);
 
     void getChildren_mt_safe(std::list<QWidget*> & children) const;
 
 private:
-    
-    virtual bool event(QEvent* e) OVERRIDE FINAL;
 
+    virtual bool event(QEvent* e) OVERRIDE FINAL;
     mutable QMutex _lock;
 };
 

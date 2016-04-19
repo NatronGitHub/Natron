@@ -37,65 +37,65 @@ NATRON_NAMESPACE_ENTER;
  **/
 class TimeLineKeyFrames
 {
-    
 public:
-    
+
     TimeLineKeyFrames()
     {
-        
     }
-    
+
     /*
      * @brief Clear all indicators
      */
     virtual void removeAllKeyframesIndicators() {}
-    
+
     /*
-     * @brief Add the indicator at the given time. If it already existed it will be duplicated so that we can keep 
+     * @brief Add the indicator at the given time. If it already existed it will be duplicated so that we can keep
      * track of multiple keyframes at a given time.
      */
     virtual void addKeyframeIndicator(SequenceTime /*time*/) {}
-    
+
     /*
      * @brief Same as addKeyframeIndicator() but for multiple keyframes
      * @param emitSignal If true, a signal should be emitted to refresh all GUI representing the timeline keyframes
      */
-    virtual void addMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime> & /*keys*/,bool /*emitSignal*/) {}
-    
+    virtual void addMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime> & /*keys*/,
+                                                    bool /*emitSignal*/) {}
+
     /*
      * @brief Remove the indicator at the given time if the number of keyframes at this time is equal to 1 otherwise
      * the count of keyframes at this time is decreased by 1.
      */
     virtual void removeKeyFrameIndicator(SequenceTime /*time*/) {}
-    
+
     /*
      * @brief Same as removeKeyFrameIndicator() but for multiple keyframes
      * @param emitSignal If true, a signal should be emitted to refresh all GUI representing the timeline keyframes
      */
-    virtual void removeMultipleKeyframeIndicator(const std::list<SequenceTime> & /*keys*/,bool /*emitSignal*/) {}
-    
+    virtual void removeMultipleKeyframeIndicator(const std::list<SequenceTime> & /*keys*/,
+                                                 bool /*emitSignal*/) {}
+
     /**
      * @brief Show keyframe markers for the given nodes on the timeline. The signal to refresh the gui
      * will be emitted only once.
      **/
     virtual void addNodesKeyframesToTimeline(const std::list<Node*> & /*nodes*/) {}
-    
+
     /**
      * @brief Provided for convenience for a single node
      **/
     virtual void addNodeKeyframesToTimeline(Node* /*node*/) {}
-    
+
     /**
      * @brief Hide keyframe markers for the given nodes on the timeline. The signal to refresh the gui
      * will be emitted only once.
      **/
     virtual void removeNodesKeyframesFromTimeline(const std::list<Node*> & /*nodes*/) {}
-    
+
     /**
      * @brief Provided for convenience for a single node
      **/
     virtual void removeNodeKeyframesFromTimeline(Node* /*node*/) {}
-    
+
     /**
      * @brief Get all keyframes, there may be duplicates.
      **/
@@ -105,22 +105,29 @@ public:
      * @brief Go to the nearest keyframe before the application's timeline's current time.
      **/
     virtual void goToPreviousKeyframe() {}
-    
+
     /**
      * @brief Go to the nearest keyframe after the application's timeline's current time.
      **/
     virtual void goToNextKeyframe() {}
 
-    
+
     /*
-     * @brief Same as normal keyframes except that these are keyframes generally associated to a more global state, 
+     * @brief Same as normal keyframes except that these are keyframes generally associated to a more global state,
      * such as track user keyframes.
      */
     virtual void removeAllUserKeyframesIndicators() {}
+
     virtual void addUserKeyframeIndicator(SequenceTime /*time*/) {}
-    virtual void addUserMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime> & /*keys*/,bool /*emitSignal*/) {}
+
+    virtual void addUserMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime> & /*keys*/,
+                                                        bool /*emitSignal*/) {}
+
     virtual void removeUserKeyFrameIndicator(SequenceTime /*time*/) {}
-    virtual void removeUserMultipleKeyframeIndicator(const std::list<SequenceTime> & /*keys*/,bool /*emitSignal*/) {}
+
+    virtual void removeUserMultipleKeyframeIndicator(const std::list<SequenceTime> & /*keys*/,
+                                                     bool /*emitSignal*/) {}
+
     virtual void getUserKeyframes(std::list<SequenceTime>* /*keys*/) const { }
 };
 

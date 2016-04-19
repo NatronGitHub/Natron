@@ -65,13 +65,13 @@ struct MemoryFilePrivate
 
     MemoryFilePrivate(const std::string & filepath)
         : path(filepath)
-          , data(0)
-          , size(0)
+        , data(0)
+        , size(0)
 #if defined(__NATRON_UNIX__)
-          , file_handle(-1)
+        , file_handle(-1)
 #elif defined(__NATRON_WIN32__)
-          , file_handle(INVALID_HANDLE_VALUE)
-          , file_mapping_handle(INVALID_HANDLE_VALUE)
+        , file_handle(INVALID_HANDLE_VALUE)
+        , file_mapping_handle(INVALID_HANDLE_VALUE)
 #endif
     {
     }
@@ -118,11 +118,11 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
 {
 #if defined(__NATRON_UNIX__)
     /*********************************************************
-    ********************************************************
+     ********************************************************
 
        CHOOSING FILE OPEN MODE
-    ********************************************************
-    *********************************************************/
+     ********************************************************
+     *********************************************************/
     int posix_open_mode = O_RDWR;
     switch (open_mode) {
     case MemoryFile::eFileOpenModeEnumIfExistsFailElseCreate:
@@ -145,40 +145,40 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
     }
 
     /*********************************************************
-    ********************************************************
+     ********************************************************
 
        OPENING THE FILE WITH RIGHT PERMISSIONS:
        - R/W user
        - R Group
        - R Other
-    ********************************************************
-    *********************************************************/
+     ********************************************************
+     *********************************************************/
     file_handle = ::open(path.c_str(), posix_open_mode, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (file_handle == -1) {
         std::stringstream ss;
         ss << "MemoryFile EXC : Failed to open \"" << path << "\": " << std::strerror(errno) << " (" << errno << ")";
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error( ss.str() );
     }
 
     /*********************************************************
-    ********************************************************
+     ********************************************************
 
        GET FILE SIZE
-    ********************************************************
-    *********************************************************/
+     ********************************************************
+     *********************************************************/
     struct stat sbuf;
     if (::fstat(file_handle, &sbuf) == -1) {
         std::stringstream ss;
         ss << "MemoryFile EXC : Failed to get file info \"" << path << "\": " << std::strerror(errno) << " (" << errno << ")";
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error( ss.str() );
     }
 
     /*********************************************************
-    ********************************************************
+     ********************************************************
 
        IF FILE IS NOT EMPTY,  MMAP IT
-    ********************************************************
-    *********************************************************/
+     ********************************************************
+     *********************************************************/
     if (sbuf.st_size > 0) {
         data = static_cast<char*>( ::mmap(
                                        0, sbuf.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, file_handle, 0) );
@@ -186,7 +186,7 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
             data = 0;
             std::stringstream ss;
             ss << "MemoryFile EXC : Failed to create mapping for \"" << path << "\": " << std::strerror(errno) << " (" << errno << ")";
-            throw std::runtime_error(ss.str());
+            throw std::runtime_error( ss.str() );
         } else {
             size = sbuf.st_size;
         }
@@ -194,11 +194,11 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
 #elif defined(__NATRON_WIN32__)
 
     /*********************************************************
-    ********************************************************
+     ********************************************************
 
        CHOOSING FILE OPEN MODE
-    ********************************************************
-    *********************************************************/
+     ********************************************************
+     *********************************************************/
     int windows_open_mode;
     switch (open_mode) {
     case MemoryFile::eFileOpenModeEnumIfExistsFailElseCreate:
@@ -225,39 +225,39 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
     }
 
     /*********************************************************
-    ********************************************************
+     ********************************************************
 
        OPENING THE FILE WITH RIGHT PERMISSIONS:
        - R/W
-    ********************************************************
-    *********************************************************/
+     ********************************************************
+     *********************************************************/
     std::wstring wpath = Global::utf8_to_utf16(path);
     file_handle = ::CreateFileW(wpath.c_str(), GENERIC_READ | GENERIC_WRITE,
-                               0, 0, windows_open_mode, FILE_ATTRIBUTE_NORMAL, 0);
+                                0, 0, windows_open_mode, FILE_ATTRIBUTE_NORMAL, 0);
 
-    
+
     if (file_handle == INVALID_HANDLE_VALUE) {
-		std::string winError = Global::GetLastErrorAsString();
+        std::string winError = Global::GetLastErrorAsString();
         std::string str("MemoryFile EXC : Failed to open file ");
         str.append(path);
-		str.append(winError);
+        str.append(winError);
         throw std::runtime_error(str);
     }
 
     /*********************************************************
-    ********************************************************
+     ********************************************************
 
        GET FILE SIZE
-    ********************************************************
-    *********************************************************/
+     ********************************************************
+     *********************************************************/
     size_t fileSize = ::GetFileSize(file_handle, 0);
 
     /*********************************************************
-    ********************************************************
+     ********************************************************
 
        IF FILE IS NOT EMPTY,  MMAP IT
-    ********************************************************
-    *********************************************************/
+     ********************************************************
+     *********************************************************/
     if (fileSize > 0) {
         file_mapping_handle = ::CreateFileMapping(file_handle, 0, PAGE_READWRITE, 0, 0, 0);
         data = static_cast<char*>( ::MapViewOfFile(file_mapping_handle, FILE_MAP_WRITE, 0, 0, 0) );
@@ -297,13 +297,13 @@ MemoryFile::resize(size_t new_size)
         if (::munmap(_imp->data, _imp->size) < 0) {
             std::stringstream ss;
             ss << "MemoryFile EXC : Failed to unmap \"" << _imp->path << "\": " << std::strerror(errno) << " (" << errno << ")";
-            throw std::runtime_error(ss.str());
+            throw std::runtime_error( ss.str() );
         }
     }
     if (::ftruncate(_imp->file_handle, new_size) < 0) {
         std::stringstream ss;
         ss << "MemoryFile EXC : Failed to truncate the file \"" << _imp->path << "\": " << std::strerror(errno) << " (" << errno << ")";
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error( ss.str() );
     }
     _imp->data = static_cast<char*>( ::mmap(
                                          0, new_size, PROT_READ | PROT_WRITE, MAP_SHARED, _imp->file_handle, 0) );
@@ -311,7 +311,7 @@ MemoryFile::resize(size_t new_size)
         _imp->data = 0;
         std::stringstream ss;
         ss << "MemoryFile EXC : Failed to create mapping of \"" << _imp->path << "\": " << std::strerror(errno) << " (" << errno << ")";
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error( ss.str() );
     }
 
 #elif defined(__NATRON_WIN32__)
@@ -333,10 +333,10 @@ void
 MemoryFilePrivate::closeMapping()
 {
 #if defined(__NATRON_UNIX__)
-    if (::munmap(data,size) != 0) {
+    if (::munmap(data, size) != 0) {
         std::stringstream ss;
         ss << "MemoryFile EXC : Failed to unmap \"" << path << "\": " << std::strerror(errno) << " (" << errno << ")";
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error( ss.str() );
     }
     ::close(file_handle);
 #elif defined(__NATRON_WIN32__)
@@ -379,7 +379,7 @@ MemoryFile::remove()
         if (_imp->data) {
             _imp->closeMapping();
         }
-        int ok = ::remove(_imp->path.c_str());
+        int ok = ::remove( _imp->path.c_str() );
         (void)ok;
         _imp->path.clear();
         _imp->data = 0;

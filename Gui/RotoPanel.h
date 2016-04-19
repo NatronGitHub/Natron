@@ -76,13 +76,13 @@ public:
 
     void pushUndoCommand(QUndoCommand* cmd);
 
-    void showItemMenu(QTreeWidgetItem* item,const QPoint & globalPos);
+    void showItemMenu(QTreeWidgetItem* item, const QPoint & globalPos);
 
     void setLastRightClickedItem(QTreeWidgetItem* item);
 
     void makeCustomWidgetsForItem(const boost::shared_ptr<RotoDrawableItem>& item,
                                   QTreeWidgetItem* treeItem = NULL);
-    
+
     NodeGuiPtr getNode() const;
 
 public Q_SLOTS:
@@ -94,7 +94,7 @@ public Q_SLOTS:
     void onAddKeyframeButtonClicked();
 
     void onRemoveKeyframeButtonClicked();
-    
+
     void onRemoveAnimationButtonClicked();
 
     void onAddLayerButtonClicked();
@@ -114,13 +114,13 @@ public Q_SLOTS:
 
     void onSelectedBezierCloned();
 
-    void onTimeChanged(SequenceTime time,int reason);
+    void onTimeChanged(SequenceTime time, int reason);
 
     ///A new item has been created internally
-    void onItemInserted(int index,int reason);
+    void onItemInserted(int index, int reason);
 
     ///An item was removed by the user
-    void onItemRemoved(const boost::shared_ptr<RotoItem>& item,int reason);
+    void onItemRemoved(const boost::shared_ptr<RotoItem>& item, int reason);
 
     ///An item had its inverted state changed
     void onRotoItemInvertedStateChanged();
@@ -129,7 +129,7 @@ public Q_SLOTS:
     void onRotoItemShapeColorChanged();
 
     ///An item had its compositing operator changed
-    void onRotoItemCompOperatorChanged(ViewSpec /*view*/,int dim,int reason);
+    void onRotoItemCompOperatorChanged(ViewSpec /*view*/, int dim, int reason);
 
     void onCurrentItemCompOperatorChanged(int index);
 
@@ -143,7 +143,7 @@ public Q_SLOTS:
     void onItemClicked(QTreeWidgetItem* item, int column);
 
     ///An item was double clicked
-    void onItemDoubleClicked(QTreeWidgetItem* item,int column);
+    void onItemDoubleClicked(QTreeWidgetItem* item, int column);
 
     ///Connected to QApplication::focusChanged to deal with an issue of the QTreeWidget
     void onFocusChanged(QWidget* old, QWidget*);
@@ -170,12 +170,12 @@ public Q_SLOTS:
     void onSettingsPanelClosed(bool closed);
 
     void onItemColorDialogEdited(const QColor & color);
-    
+
     void onItemLabelChanged(const boost::shared_ptr<RotoItem>& item);
     void onItemScriptNameChanged(const boost::shared_ptr<RotoItem>& item);
-    
+
     void onItemLockChanged(int reason);
-    
+
     void onOperatorColMinimumSizeChanged(const QSize& size);
 
 private:
@@ -198,10 +198,10 @@ public:
 
     DroppedTreeItem()
         : newParentLayer()
-          , insertIndex(-1)
-          , newParentItem(0)
-          , dropped(0)
-          , droppedRotoItem()
+        , insertIndex(-1)
+        , newParentItem(0)
+        , dropped(0)
+        , droppedRotoItem()
     {
     }
 };

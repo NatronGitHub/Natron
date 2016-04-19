@@ -30,98 +30,99 @@
 NATRON_NAMESPACE_ENTER;
 
 struct TrackerNodePrivate;
-class TrackerNode : public NodeGroup
+class TrackerNode
+    : public NodeGroup
 {
 public:
-    
+
     static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
     {
         return new TrackerNode(n);
     }
-    
+
     TrackerNode(boost::shared_ptr<Node> node);
-    
+
     virtual ~TrackerNode();
-    
-    virtual bool isBuiltinTrackerNode() const OVERRIDE FINAL WARN_UNUSED_RETURN {
+
+    virtual bool isBuiltinTrackerNode() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
         return true;
     }
-    
+
     virtual int getMajorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return 1;
     }
-    
+
     virtual int getMinorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return 0;
     }
-    
-    
+
     virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
-    
+
     virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
     virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
     virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL
     {
         grouping->push_back(PLUGIN_GROUP_TRANSFORM);
     }
 
     virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
-    
     virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return eRenderSafetyFullySafeFrame;
     }
-    
+
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
     }
-    
+
     virtual bool supportsMultiResolution() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
     }
-    
+
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return false;
     }
-    
+
     virtual void initializeKnobs() OVERRIDE FINAL;
-    
     virtual bool isHostMaskingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
+
     virtual bool isHostMixingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN  { return false; }
-    
-    
-    virtual bool isHostChannelSelectorSupported(bool* /*defaultR*/,bool* /*defaultG*/, bool* /*defaultB*/, bool* /*defaultA*/) const OVERRIDE WARN_UNUSED_RETURN {
+
+
+    virtual bool isHostChannelSelectorSupported(bool* /*defaultR*/,
+                                                bool* /*defaultG*/,
+                                                bool* /*defaultB*/,
+                                                bool* /*defaultA*/) const OVERRIDE WARN_UNUSED_RETURN
+    {
         return false;
     }
-    
-    virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN {
+
+    virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
         return false;
     }
-    
+
     virtual bool hasOverlay() const OVERRIDE FINAL
     {
         return true;
     }
-    
+
     virtual bool isSubGraphUserVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return false;
     }
 
-
     virtual void onKnobsLoaded() OVERRIDE FINAL;
-    
+
 private:
-    
+
     /*virtual bool isIdentity(double time,
                             const RenderScale & scale,
                             const RectI & roi,
@@ -129,15 +130,15 @@ private:
                             double* inputTime,
                             ViewIdx* inputView,
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;*/
-    
+
     virtual void knobChanged(KnobI* k,
                              ValueChangedReasonEnum reason,
                              ViewSpec view,
                              double time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
-    
+
 private:
-    
+
     boost::scoped_ptr<TrackerNodePrivate> _imp;
 };
 

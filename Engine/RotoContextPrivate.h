@@ -127,9 +127,9 @@
 #define kRotoBrushSourceColor "sourceType"
 #define kRotoBrushSourceColorLabel "Source"
 #define kRotoBrushSourceColorHint "Source color used for painting the stroke when the Reveal/Clone tools are used:\n" \
-"- foreground: the painted result at this point in the hierarchy\n" \
-"- background: the original image unpainted connected to bg\n" \
-"- backgroundN: the original image unpainted connected to bgN\n"
+    "- foreground: the painted result at this point in the hierarchy\n" \
+    "- background: the original image unpainted connected to bg\n" \
+    "- backgroundN: the original image unpainted connected to bgN\n"
 
 #define kRotoBrushSizeParam "brushSize"
 #define kRotoBrushSizeParamLabel "Brush Size"
@@ -174,7 +174,7 @@
 #define kRotoBrushTimeOffsetParam "timeOffset"
 #define kRotoBrushTimeOffsetParamLabel "Clone time offset"
 #define kRotoBrushTimeOffsetParamHint "When the Clone tool is used, this determines depending on the time offset mode the source frame to " \
-"clone. When in absolute mode, this is the frame number of the source, when in relative mode, this is an offset relative to the current frame."
+    "clone. When in absolute mode, this is the frame number of the source, when in relative mode, this is an offset relative to the current frame."
 
 #define kRotoBrushTimeOffsetModeParam "timeOffsetMode"
 #define kRotoBrushTimeOffsetModeParamLabel "Mode"
@@ -314,10 +314,10 @@
 #define kRotoMotionBlurModeParam "motionBlurMode"
 #define kRotoMotionBlurModeParamLabel "Mode"
 #define kRotoMotionBlurModeParamHint "Per-shape motion blurs applies motion blur independently to each shape and then blends them together." \
-" This may produce artifacts when shapes blur over the same portion of the image, but might be more efficient than global motion-blur." \
-" Global motion-blur takes into account the interaction between shapes and will not create artifacts at the expense of being slightly " \
-"more expensive than the per-shape motion blur. Note that when using the global motion-blur, all shapes will have the same motion-blur " \
-"settings applied to them."
+    " This may produce artifacts when shapes blur over the same portion of the image, but might be more efficient than global motion-blur." \
+    " Global motion-blur takes into account the interaction between shapes and will not create artifacts at the expense of being slightly " \
+    "more expensive than the per-shape motion blur. Note that when using the global motion-blur, all shapes will have the same motion-blur " \
+    "settings applied to them."
 
 #define kRotoPerShapeMotionBlurParam "motionBlur"
 #define kRotoGlobalMotionBlurParam "globalMotionBlur"
@@ -335,7 +335,7 @@
 #define kRotoShutterOffsetTypeParamHint "This controls how the shutter operates in respect to the current frame value."
 
 #define kRotoShutterOffsetCenteredHint "Centers the shutter around the current frame, that is the shutter will be opened from f - shutter/2 to " \
-"f + shutter/2"
+    "f + shutter/2"
 #define kRotoShutterOffsetStartHint "The shutter will open at the current frame and stay open until f + shutter"
 #define kRotoShutterOffsetEndHint "The shutter will open at f - shutter until the current frame"
 #define kRotoShutterOffsetCustomHint "The shutter will open at the time indicated by the shutter offset parameter"
@@ -344,7 +344,7 @@
 #define kRotoGlobalShutterCustomOffsetParam "globalMotionBlurCustomShutterOffset"
 #define kRotoShutterCustomOffsetParamLabel "Custom Offset"
 #define kRotoShutterCustomOffsetParamHint "If the Shutter Offset parameter is set to Custom then this parameter controls the frame at " \
-"which the shutter opens. The value is an offset in frames to the current frame, e.g: -1  would open the shutter 1 frame before the current frame."
+    "which the shutter opens. The value is an offset in frames to the current frame, e.g: -1  would open the shutter 1 frame before the current frame."
 
 
 NATRON_NAMESPACE_ENTER;
@@ -353,46 +353,43 @@ struct BezierPrivate
 {
     BezierCPs points; //< the control points of the curve
     BezierCPs featherPoints; //< the feather points, the number of feather points must equal the number of cp.
-    
+
     //updated whenever the Bezier is edited, this is used to determine if a point lies inside the bezier or not
     //it has a value for each keyframe
-    mutable std::map<double,bool> isClockwiseOriented;
+    mutable std::map<double, bool> isClockwiseOriented;
     mutable bool isClockwiseOrientedStatic; //< used when the bezier has no keyframes
-    
-    mutable std::map<double,bool> guiIsClockwiseOriented;
+    mutable std::map<double, bool> guiIsClockwiseOriented;
     mutable bool guiIsClockwiseOrientedStatic; //< used when the bezier has no keyframes
-    
     bool autoRecomputeOrientation; // when true, orientation will be computed automatically on editing
-    
     bool finished; //< when finished is true, the last point of the list is connected to the first point of the list.
-
     bool isOpenBezier;
-    
     mutable QMutex guiCopyMutex;
     bool mustCopyGui;
-    
+
     BezierPrivate(bool isOpenBezier)
-    : points()
-    , featherPoints()
-    , isClockwiseOriented()
-    , isClockwiseOrientedStatic(false)
-    , guiIsClockwiseOriented()
-    , guiIsClockwiseOrientedStatic(false)
-    , autoRecomputeOrientation(true)
-    , finished(false)
-    , isOpenBezier(isOpenBezier)
-    , guiCopyMutex()
-    , mustCopyGui(false)
+        : points()
+        , featherPoints()
+        , isClockwiseOriented()
+        , isClockwiseOrientedStatic(false)
+        , guiIsClockwiseOriented()
+        , guiIsClockwiseOrientedStatic(false)
+        , autoRecomputeOrientation(true)
+        , finished(false)
+        , isOpenBezier(isOpenBezier)
+        , guiCopyMutex()
+        , mustCopyGui(false)
     {
     }
-    
+
     void setMustCopyGuiBezier(bool copy)
     {
         QMutexLocker k(&guiCopyMutex);
+
         mustCopyGui = copy;
     }
 
-    bool hasKeyframeAtTime(bool useGuiCurves, double time) const
+    bool hasKeyframeAtTime(bool useGuiCurves,
+                           double time) const
     {
         // PRIVATE - should not lock
 
@@ -405,7 +402,8 @@ struct BezierPrivate
         }
     }
 
-    void getKeyframeTimes(bool useGuiCurves, std::set<double>* times) const
+    void getKeyframeTimes(bool useGuiCurves,
+                          std::set<double>* times) const
     {
         // PRIVATE - should not lock
 
@@ -479,7 +477,7 @@ struct BezierPrivate
     {
         // PRIVATE - should not lock
         int i = 0;
-        
+
         for (BezierCPs::const_iterator it = featherPoints.begin(); it != featherPoints.end(); ++it, ++i) {
             Transform::Point3D p;
             p.z = 1;
@@ -500,7 +498,7 @@ class RotoLayer;
 struct RotoItemPrivate
 {
     boost::weak_ptr<RotoContext> context;
-    std::string scriptName,label;
+    std::string scriptName, label;
     boost::weak_ptr<RotoLayer> parentLayer;
 
     ////This controls whether the item (and all its children if it is a layer)
@@ -515,12 +513,12 @@ struct RotoItemPrivate
     RotoItemPrivate(const boost::shared_ptr<RotoContext> context,
                     const std::string & n,
                     const boost::shared_ptr<RotoLayer>& parent)
-    : context(context)
-    , scriptName(n)
-    , label(n)
-    , parentLayer(parent)
-    , globallyActivated(true)
-    , locked(false)
+        : context(context)
+        , scriptName(n)
+        , label(n)
+        , parentLayer(parent)
+        , globallyActivated(true)
+        , locked(false)
     {
     }
 };
@@ -538,12 +536,11 @@ struct RotoLayerPrivate
 };
 
 
-
 ///Keep this in synch with the cairo_operator_t enum !
 ///We are not going to create a similar enum just to represent the same thing
 inline void
 getCairoCompositingOperators(std::vector<std::string>* operators,
-                        std::vector<std::string>* toolTips)
+                             std::vector<std::string>* toolTips)
 {
     assert(operators->size() == CAIRO_OPERATOR_CLEAR);
     operators->push_back("clear");
@@ -669,7 +666,6 @@ getCairoCompositingOperators(std::vector<std::string>* operators,
 
 struct RotoDrawableItemPrivate
 {
-    
     /*
      * The effect node corresponds to the following given the selected tool:
      * Stroke= RotoOFX
@@ -686,12 +682,11 @@ struct RotoDrawableItemPrivate
     NodePtr effectNode;
     NodePtr mergeNode;
     NodePtr timeOffsetNode, frameHoldNode;
-    
     double overlayColor[4]; //< the color the shape overlay should be drawn with, defaults to smooth red
     boost::shared_ptr<KnobDouble> opacity; //< opacity of the rendered shape between 0 and 1
     boost::shared_ptr<KnobDouble> feather; //< number of pixels to add to the feather distance (from the feather point), between -100 and 100
     boost::shared_ptr<KnobDouble> featherFallOff; //< the rate of fall-off for the feather, between 0 and 1,  0.5 meaning the
-                                                   //alpha value is half the original value when at half distance from the feather distance
+                                                  //alpha value is half the original value when at half distance from the feather distance
     boost::shared_ptr<KnobChoice> lifeTime;
     boost::shared_ptr<KnobBool> activated; //< should the curve be visible/rendered ? (animable)
     boost::shared_ptr<KnobInt> lifeTimeFrame;
@@ -700,7 +695,6 @@ struct RotoDrawableItemPrivate
 #endif
     boost::shared_ptr<KnobColor> color;
     boost::shared_ptr<KnobChoice> compOperator;
-    
     boost::shared_ptr<KnobDouble> translate;
     boost::shared_ptr<KnobDouble> rotate;
     boost::shared_ptr<KnobDouble> scale;
@@ -709,14 +703,12 @@ struct RotoDrawableItemPrivate
     boost::shared_ptr<KnobDouble> skewY;
     boost::shared_ptr<KnobChoice> skewOrder;
     boost::shared_ptr<KnobDouble> center;
-    
     boost::shared_ptr<KnobDouble> brushSize;
     boost::shared_ptr<KnobDouble> brushSpacing;
     boost::shared_ptr<KnobDouble> brushHardness;
     boost::shared_ptr<KnobDouble> effectStrength;
-    boost::shared_ptr<KnobBool> pressureOpacity,pressureSize,pressureHardness,buildUp;
+    boost::shared_ptr<KnobBool> pressureOpacity, pressureSize, pressureHardness, buildUp;
     boost::shared_ptr<KnobDouble> visiblePortion; // [0,1] by default
-    
     boost::shared_ptr<KnobDouble> cloneTranslate;
     boost::shared_ptr<KnobDouble> cloneRotate;
     boost::shared_ptr<KnobDouble> cloneScale;
@@ -727,11 +719,10 @@ struct RotoDrawableItemPrivate
     boost::shared_ptr<KnobDouble> cloneCenter;
     boost::shared_ptr<KnobChoice> cloneFilter;
     boost::shared_ptr<KnobBool> cloneBlackOutside;
-    
     boost::shared_ptr<KnobChoice> sourceColor;
     boost::shared_ptr<KnobInt> timeOffset;
     boost::shared_ptr<KnobChoice> timeOffsetMode;
-    
+
 #ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
     boost::shared_ptr<KnobDouble> motionBlur;
     boost::shared_ptr<KnobDouble> shutter;
@@ -739,60 +730,60 @@ struct RotoDrawableItemPrivate
     boost::shared_ptr<KnobDouble> customOffset;
 #endif
     std::list<KnobPtr > knobs; //< list for easy access to all knobs
-    
+
     //Used to prevent 2 threads from writing the same image in the rotocontext
     mutable QMutex cacheAccessMutex;
 
     RotoDrawableItemPrivate(bool isPaintingNode)
-    : effectNode()
-    , mergeNode()
-    , timeOffsetNode()
-    , frameHoldNode()
-    , opacity()
-    , feather()
-    , featherFallOff()
-    , lifeTime()
-    , activated()
-    , lifeTimeFrame()
+        : effectNode()
+        , mergeNode()
+        , timeOffsetNode()
+        , frameHoldNode()
+        , opacity()
+        , feather()
+        , featherFallOff()
+        , lifeTime()
+        , activated()
+        , lifeTimeFrame()
 #ifdef NATRON_ROTO_INVERTIBLE
-    , inverted()
+        , inverted()
 #endif
-    , color()
-    , compOperator()
-    , translate()
-    , rotate()
-    , scale()
-    , scaleUniform()
-    , skewX()
-    , skewY()
-    , skewOrder()
-    , center()
-    , brushSize(new KnobDouble(NULL, kRotoBrushSizeParamLabel, 1, false))
-    , brushSpacing(new KnobDouble(NULL, kRotoBrushSpacingParamLabel, 1, false))
-    , brushHardness(new KnobDouble(NULL, kRotoBrushHardnessParamLabel, 1, false))
-    , effectStrength(new KnobDouble(NULL, kRotoBrushEffectParamLabel, 1, false))
-    , pressureOpacity(new KnobBool(NULL, kRotoBrushPressureOpacityParamLabel, 1, false))
-    , pressureSize(new KnobBool(NULL, kRotoBrushPressureSizeParamLabel, 1, false))
-    , pressureHardness(new KnobBool(NULL, kRotoBrushPressureHardnessParamLabel, 1, false))
-    , buildUp(new KnobBool(NULL, kRotoBrushBuildupParamLabel, 1, false))
-    , visiblePortion(new KnobDouble(NULL, kRotoBrushVisiblePortionParamLabel, 2, false))
-    , cloneTranslate(new KnobDouble(NULL, kRotoBrushTranslateParamLabel, 2, false))
-    , cloneRotate(new KnobDouble(NULL, kRotoBrushRotateParamLabel, 1, false))
-    , cloneScale(new KnobDouble(NULL, kRotoBrushScaleParamLabel, 2, false))
-    , cloneScaleUniform(new KnobBool(NULL, kRotoBrushScaleUniformParamLabel, 1, false))
-    , cloneSkewX(new KnobDouble(NULL, kRotoBrushSkewXParamLabel, 1, false))
-    , cloneSkewY(new KnobDouble(NULL, kRotoBrushSkewYParamLabel, 1, false))
-    , cloneSkewOrder(new KnobChoice(NULL, kRotoBrushSkewOrderParamLabel, 1, false))
-    , cloneCenter(new KnobDouble(NULL, kRotoBrushCenterParamLabel, 2, false))
-    , cloneFilter(new KnobChoice(NULL, kRotoBrushFilterParamLabel, 1, false))
-    , cloneBlackOutside(new KnobBool(NULL, kRotoBrushBlackOutsideParamLabel, 1, false))
-    , sourceColor(new KnobChoice(NULL, kRotoBrushSourceColorLabel, 1, false))
-    , timeOffset(new KnobInt(NULL, kRotoBrushTimeOffsetParamLabel, 1, false))
-    , timeOffsetMode(new KnobChoice(NULL, kRotoBrushTimeOffsetModeParamLabel, 1, false))
-    , knobs()
-    , cacheAccessMutex()
+        , color()
+        , compOperator()
+        , translate()
+        , rotate()
+        , scale()
+        , scaleUniform()
+        , skewX()
+        , skewY()
+        , skewOrder()
+        , center()
+        , brushSize( new KnobDouble(NULL, kRotoBrushSizeParamLabel, 1, false) )
+        , brushSpacing( new KnobDouble(NULL, kRotoBrushSpacingParamLabel, 1, false) )
+        , brushHardness( new KnobDouble(NULL, kRotoBrushHardnessParamLabel, 1, false) )
+        , effectStrength( new KnobDouble(NULL, kRotoBrushEffectParamLabel, 1, false) )
+        , pressureOpacity( new KnobBool(NULL, kRotoBrushPressureOpacityParamLabel, 1, false) )
+        , pressureSize( new KnobBool(NULL, kRotoBrushPressureSizeParamLabel, 1, false) )
+        , pressureHardness( new KnobBool(NULL, kRotoBrushPressureHardnessParamLabel, 1, false) )
+        , buildUp( new KnobBool(NULL, kRotoBrushBuildupParamLabel, 1, false) )
+        , visiblePortion( new KnobDouble(NULL, kRotoBrushVisiblePortionParamLabel, 2, false) )
+        , cloneTranslate( new KnobDouble(NULL, kRotoBrushTranslateParamLabel, 2, false) )
+        , cloneRotate( new KnobDouble(NULL, kRotoBrushRotateParamLabel, 1, false) )
+        , cloneScale( new KnobDouble(NULL, kRotoBrushScaleParamLabel, 2, false) )
+        , cloneScaleUniform( new KnobBool(NULL, kRotoBrushScaleUniformParamLabel, 1, false) )
+        , cloneSkewX( new KnobDouble(NULL, kRotoBrushSkewXParamLabel, 1, false) )
+        , cloneSkewY( new KnobDouble(NULL, kRotoBrushSkewYParamLabel, 1, false) )
+        , cloneSkewOrder( new KnobChoice(NULL, kRotoBrushSkewOrderParamLabel, 1, false) )
+        , cloneCenter( new KnobDouble(NULL, kRotoBrushCenterParamLabel, 2, false) )
+        , cloneFilter( new KnobChoice(NULL, kRotoBrushFilterParamLabel, 1, false) )
+        , cloneBlackOutside( new KnobBool(NULL, kRotoBrushBlackOutsideParamLabel, 1, false) )
+        , sourceColor( new KnobChoice(NULL, kRotoBrushSourceColorLabel, 1, false) )
+        , timeOffset( new KnobInt(NULL, kRotoBrushTimeOffsetParamLabel, 1, false) )
+        , timeOffsetMode( new KnobChoice(NULL, kRotoBrushTimeOffsetModeParamLabel, 1, false) )
+        , knobs()
+        , cacheAccessMutex()
     {
-        opacity.reset(new KnobDouble(NULL, kRotoOpacityParamLabel, 1, false));
+        opacity.reset( new KnobDouble(NULL, kRotoOpacityParamLabel, 1, false) );
         opacity->setHintToolTip(kRotoOpacityHint);
         opacity->setName(kRotoOpacityParam);
         opacity->populate();
@@ -802,8 +793,8 @@ struct RotoDrawableItemPrivate
         opacity->setDisplayMaximum(1.);
         opacity->setDefaultValue(ROTO_DEFAULT_OPACITY);
         knobs.push_back(opacity);
-        
-        feather.reset(new KnobDouble(NULL, kRotoFeatherParamLabel, 1, false));
+
+        feather.reset( new KnobDouble(NULL, kRotoFeatherParamLabel, 1, false) );
         feather->setHintToolTip(kRotoFeatherHint);
         feather->setName(kRotoFeatherParam);
         feather->populate();
@@ -812,8 +803,8 @@ struct RotoDrawableItemPrivate
         feather->setDisplayMaximum(500);
         feather->setDefaultValue(ROTO_DEFAULT_FEATHER);
         knobs.push_back(feather);
-        
-        featherFallOff.reset(new KnobDouble(NULL, kRotoFeatherFallOffParamLabel, 1, false));
+
+        featherFallOff.reset( new KnobDouble(NULL, kRotoFeatherFallOffParamLabel, 1, false) );
         featherFallOff->setHintToolTip(kRotoFeatherFallOffHint);
         featherFallOff->setName(kRotoFeatherFallOffParam);
         featherFallOff->populate();
@@ -823,9 +814,9 @@ struct RotoDrawableItemPrivate
         featherFallOff->setDisplayMaximum(5.);
         featherFallOff->setDefaultValue(ROTO_DEFAULT_FEATHERFALLOFF);
         knobs.push_back(featherFallOff);
-        
-        
-        lifeTime.reset(new KnobChoice(NULL, kRotoDrawableItemLifeTimeParamLabel, 1 , false));
+
+
+        lifeTime.reset( new KnobChoice(NULL, kRotoDrawableItemLifeTimeParamLabel, 1, false) );
         lifeTime->setHintToolTip(kRotoDrawableItemLifeTimeParamHint);
         lifeTime->populate();
         lifeTime->setName(kRotoDrawableItemLifeTimeParam);
@@ -839,14 +830,14 @@ struct RotoDrawableItemPrivate
         }
         lifeTime->setDefaultValue(isPaintingNode ? 0 : 3);
         knobs.push_back(lifeTime);
-        
-        lifeTimeFrame.reset(new KnobInt(NULL , kRotoDrawableItemLifeTimeFrameParamLabel, 1, false));
+
+        lifeTimeFrame.reset( new KnobInt(NULL, kRotoDrawableItemLifeTimeFrameParamLabel, 1, false) );
         lifeTimeFrame->setHintToolTip(kRotoDrawableItemLifeTimeFrameParamHint);
         lifeTimeFrame->setName(kRotoDrawableItemLifeTimeFrameParam);
         lifeTimeFrame->populate();
         knobs.push_back(lifeTimeFrame);
-        
-        activated.reset(new KnobBool(NULL, kRotoActivatedParamLabel, 1, false));
+
+        activated.reset( new KnobBool(NULL, kRotoActivatedParamLabel, 1, false) );
         activated->setHintToolTip(kRotoActivatedHint);
         activated->setName(kRotoActivatedParam);
         activated->populate();
@@ -854,14 +845,14 @@ struct RotoDrawableItemPrivate
         knobs.push_back(activated);
 
 #ifdef NATRON_ROTO_INVERTIBLE
-        inverted.reset(new KnobBool(NULL, kRotoInvertedParamLabel, 1, false));
+        inverted.reset( new KnobBool(NULL, kRotoInvertedParamLabel, 1, false) );
         inverted->setHintToolTip(kRotoInvertedHint);
         inverted->setName(kRotoInvertedParam);
         inverted->populate();
         inverted->setDefaultValue(false);
         knobs.push_back(inverted);
 #endif
-        color.reset(new KnobColor(NULL, kRotoColorParamLabel, 3, false));
+        color.reset( new KnobColor(NULL, kRotoColorParamLabel, 3, false) );
         color->setHintToolTip(kRotoColorHint);
         color->setName(kRotoColorParam);
         color->populate();
@@ -870,54 +861,53 @@ struct RotoDrawableItemPrivate
         color->setDefaultValue(ROTO_DEFAULT_COLOR_B, 2);
         knobs.push_back(color);
 
-        compOperator.reset(new KnobChoice(NULL, kRotoCompOperatorParamLabel, 1, false));
+        compOperator.reset( new KnobChoice(NULL, kRotoCompOperatorParamLabel, 1, false) );
         compOperator->setHintToolTip(kRotoCompOperatorHint);
         compOperator->setName(kRotoCompOperatorParam);
         compOperator->populate();
         knobs.push_back(compOperator);
-        
-        
-        
-        translate.reset(new KnobDouble(NULL, kRotoDrawableItemTranslateParamLabel, 2, false));
+
+
+        translate.reset( new KnobDouble(NULL, kRotoDrawableItemTranslateParamLabel, 2, false) );
         translate->setName(kRotoDrawableItemTranslateParam);
         translate->setHintToolTip(kRotoDrawableItemTranslateParamHint);
         translate->populate();
         knobs.push_back(translate);
-        
-        rotate.reset(new KnobDouble(NULL, kRotoDrawableItemRotateParamLabel, 1, false));
+
+        rotate.reset( new KnobDouble(NULL, kRotoDrawableItemRotateParamLabel, 1, false) );
         rotate->setName(kRotoDrawableItemRotateParam);
         rotate->setHintToolTip(kRotoDrawableItemRotateParamHint);
         rotate->populate();
         knobs.push_back(rotate);
-        
-        scale.reset(new KnobDouble(NULL, kRotoDrawableItemScaleParamLabel, 2, false));
+
+        scale.reset( new KnobDouble(NULL, kRotoDrawableItemScaleParamLabel, 2, false) );
         scale->setName(kRotoDrawableItemScaleParam);
         scale->setHintToolTip(kRotoDrawableItemScaleParamHint);
         scale->populate();
-        scale->setDefaultValue(1,0);
-        scale->setDefaultValue(1,1);
+        scale->setDefaultValue(1, 0);
+        scale->setDefaultValue(1, 1);
         knobs.push_back(scale);
-        
-        scaleUniform.reset(new KnobBool(NULL, kRotoDrawableItemScaleUniformParamLabel, 1, false));
+
+        scaleUniform.reset( new KnobBool(NULL, kRotoDrawableItemScaleUniformParamLabel, 1, false) );
         scaleUniform->setName(kRotoDrawableItemScaleUniformParam);
         scaleUniform->setHintToolTip(kRotoDrawableItemScaleUniformParamHint);
         scaleUniform->populate();
         scaleUniform->setDefaultValue(true);
         knobs.push_back(scaleUniform);
-        
-        skewX.reset(new KnobDouble(NULL, kRotoDrawableItemSkewXParamLabel, 1, false));
+
+        skewX.reset( new KnobDouble(NULL, kRotoDrawableItemSkewXParamLabel, 1, false) );
         skewX->setName(kRotoDrawableItemSkewXParam);
         skewX->setHintToolTip(kRotoDrawableItemSkewXParamHint);
         skewX->populate();
         knobs.push_back(skewX);
-        
-        skewY.reset(new KnobDouble(NULL, kRotoDrawableItemSkewYParamLabel, 1, false));
+
+        skewY.reset( new KnobDouble(NULL, kRotoDrawableItemSkewYParamLabel, 1, false) );
         skewY->setName(kRotoDrawableItemSkewYParam);
         skewY->setHintToolTip(kRotoDrawableItemSkewYParamHint);
         skewY->populate();
         knobs.push_back(skewY);
-        
-        skewOrder.reset(new KnobChoice(NULL, kRotoDrawableItemSkewOrderParamLabel, 1, false));
+
+        skewOrder.reset( new KnobChoice(NULL, kRotoDrawableItemSkewOrderParamLabel, 1, false) );
         skewOrder->setName(kRotoDrawableItemSkewOrderParam);
         skewOrder->setHintToolTip(kRotoDrawableItemSkewOrderParamHint);
         skewOrder->populate();
@@ -928,13 +918,13 @@ struct RotoDrawableItemPrivate
             choices.push_back("YX");
             skewOrder->populateChoices(choices);
         }
-        
-        center.reset(new KnobDouble(NULL, kRotoDrawableItemCenterParamLabel, 2, false));
+
+        center.reset( new KnobDouble(NULL, kRotoDrawableItemCenterParamLabel, 2, false) );
         center->setName(kRotoDrawableItemCenterParam);
         center->setHintToolTip(kRotoDrawableItemCenterParamHint);
         center->populate();
         knobs.push_back(center);
-        
+
         brushSize->setName(kRotoBrushSizeParam);
         brushSize->setHintToolTip(kRotoBrushSizeParamHint);
         brushSize->populate();
@@ -942,7 +932,7 @@ struct RotoDrawableItemPrivate
         brushSize->setMinimum(1);
         brushSize->setMaximum(1000);
         knobs.push_back(brushSize);
-        
+
         brushSpacing->setName(kRotoBrushSpacingParam);
         brushSpacing->setHintToolTip(kRotoBrushSpacingParamHint);
         brushSpacing->populate();
@@ -950,7 +940,7 @@ struct RotoDrawableItemPrivate
         brushSpacing->setMinimum(0);
         brushSpacing->setMaximum(1);
         knobs.push_back(brushSpacing);
-        
+
         brushHardness->setName(kRotoBrushHardnessParam);
         brushHardness->setHintToolTip(kRotoBrushHardnessParamHint);
         brushHardness->populate();
@@ -958,7 +948,7 @@ struct RotoDrawableItemPrivate
         brushHardness->setMinimum(0);
         brushHardness->setMaximum(1);
         knobs.push_back(brushHardness);
-        
+
         effectStrength->setName(kRotoBrushEffectParam);
         effectStrength->setHintToolTip(kRotoBrushEffectParamHint);
         effectStrength->populate();
@@ -966,29 +956,29 @@ struct RotoDrawableItemPrivate
         effectStrength->setMinimum(0);
         effectStrength->setMaximum(100);
         knobs.push_back(effectStrength);
-        
+
         pressureOpacity->setName(kRotoBrushPressureOpacityParam);
         pressureOpacity->setHintToolTip(kRotoBrushPressureOpacityParamHint);
         pressureOpacity->populate();
         pressureOpacity->setAnimationEnabled(false);
         pressureOpacity->setDefaultValue(true);
         knobs.push_back(pressureOpacity);
-        
+
         pressureSize->setName(kRotoBrushPressureSizeParam);
         pressureSize->populate();
         pressureSize->setHintToolTip(kRotoBrushPressureSizeParamHint);
         pressureSize->setAnimationEnabled(false);
         pressureSize->setDefaultValue(false);
         knobs.push_back(pressureSize);
-        
-        
+
+
         pressureHardness->setName(kRotoBrushPressureHardnessParam);
         pressureHardness->populate();
         pressureHardness->setHintToolTip(kRotoBrushPressureHardnessParamHint);
         pressureHardness->setAnimationEnabled(false);
         pressureHardness->setDefaultValue(false);
         knobs.push_back(pressureHardness);
-        
+
         buildUp->setName(kRotoBrushBuildupParam);
         buildUp->populate();
         buildUp->setHintToolTip(kRotoBrushBuildupParamHint);
@@ -996,54 +986,54 @@ struct RotoDrawableItemPrivate
         buildUp->setAnimationEnabled(false);
         buildUp->setDefaultValue(true);
         knobs.push_back(buildUp);
-        
-        
+
+
         visiblePortion->setName(kRotoBrushVisiblePortionParam);
         visiblePortion->setHintToolTip(kRotoBrushVisiblePortionParamHint);
         visiblePortion->populate();
-        visiblePortion->setDefaultValue(0,0);
-        visiblePortion->setDefaultValue(1,1);
-        std::vector<double> mins,maxs;
+        visiblePortion->setDefaultValue(0, 0);
+        visiblePortion->setDefaultValue(1, 1);
+        std::vector<double> mins, maxs;
         mins.push_back(0);
         mins.push_back(0);
         maxs.push_back(1);
         maxs.push_back(1);
         visiblePortion->setMinimumsAndMaximums(mins, maxs);
         knobs.push_back(visiblePortion);
-        
+
         cloneTranslate->setName(kRotoBrushTranslateParam);
         cloneTranslate->setHintToolTip(kRotoBrushTranslateParamHint);
         cloneTranslate->populate();
         knobs.push_back(cloneTranslate);
-        
+
         cloneRotate->setName(kRotoBrushRotateParam);
         cloneRotate->setHintToolTip(kRotoBrushRotateParamHint);
         cloneRotate->populate();
         knobs.push_back(cloneRotate);
-        
+
         cloneScale->setName(kRotoBrushScaleParam);
         cloneScale->setHintToolTip(kRotoBrushScaleParamHint);
         cloneScale->populate();
-        cloneScale->setDefaultValue(1,0);
-        cloneScale->setDefaultValue(1,1);
+        cloneScale->setDefaultValue(1, 0);
+        cloneScale->setDefaultValue(1, 1);
         knobs.push_back(cloneScale);
-        
+
         cloneScaleUniform->setName(kRotoBrushScaleUniformParam);
         cloneScaleUniform->setHintToolTip(kRotoBrushScaleUniformParamHint);
         cloneScaleUniform->populate();
         cloneScaleUniform->setDefaultValue(true);
         knobs.push_back(cloneScaleUniform);
-        
+
         cloneSkewX->setName(kRotoBrushSkewXParam);
         cloneSkewX->setHintToolTip(kRotoBrushSkewXParamHint);
         cloneSkewX->populate();
         knobs.push_back(cloneSkewX);
-        
+
         cloneSkewY->setName(kRotoBrushSkewYParam);
         cloneSkewY->setHintToolTip(kRotoBrushSkewYParamHint);
         cloneSkewY->populate();
         knobs.push_back(cloneSkewY);
-        
+
         cloneSkewOrder->setName(kRotoBrushSkewOrderParam);
         cloneSkewOrder->setHintToolTip(kRotoBrushSkewOrderParamHint);
         cloneSkewOrder->populate();
@@ -1054,19 +1044,19 @@ struct RotoDrawableItemPrivate
             choices.push_back("YX");
             cloneSkewOrder->populateChoices(choices);
         }
-        
+
         cloneCenter->setName(kRotoBrushCenterParam);
         cloneCenter->setHintToolTip(kRotoBrushCenterParamHint);
         cloneCenter->populate();
         knobs.push_back(cloneCenter);
-        
-        
+
+
         cloneFilter->setName(kRotoBrushFilterParam);
         cloneFilter->setHintToolTip(kRotoBrushFilterParamHint);
         cloneFilter->populate();
         {
-            std::vector<std::string> choices,helps;
-            
+            std::vector<std::string> choices, helps;
+
             choices.push_back(kFilterImpulse);
             helps.push_back(kFilterImpulseHint);
             choices.push_back(kFilterBilinear);
@@ -1089,14 +1079,14 @@ struct RotoDrawableItemPrivate
         }
         cloneFilter->setDefaultValue(2);
         knobs.push_back(cloneFilter);
-        
-        
+
+
         cloneBlackOutside->setName(kRotoBrushBlackOutsideParam);
         cloneBlackOutside->setHintToolTip(kRotoBrushBlackOutsideParamHint);
         cloneBlackOutside->populate();
         cloneBlackOutside->setDefaultValue(true);
         knobs.push_back(cloneBlackOutside);
-        
+
         sourceColor->setName(kRotoBrushSourceColor);
         sourceColor->setHintToolTip(kRotoBrushSizeParamHint);
         sourceColor->populate();
@@ -1108,19 +1098,19 @@ struct RotoDrawableItemPrivate
             for (int i = 1; i < 10; ++i) {
                 std::stringstream ss;
                 ss << "background " << i + 1;
-                choices.push_back(ss.str());
+                choices.push_back( ss.str() );
             }
             sourceColor->populateChoices(choices);
         }
         knobs.push_back(sourceColor);
-        
+
         timeOffset->setName(kRotoBrushTimeOffsetParam);
         timeOffset->setHintToolTip(kRotoBrushTimeOffsetParamHint);
         timeOffset->populate();
         timeOffset->setDisplayMinimum(-100);
         timeOffset->setDisplayMaximum(100);
         knobs.push_back(timeOffset);
-        
+
         timeOffsetMode->setName(kRotoBrushTimeOffsetModeParam);
         timeOffsetMode->setHintToolTip(kRotoBrushTimeOffsetModeParamHint);
         timeOffsetMode->populate();
@@ -1133,7 +1123,7 @@ struct RotoDrawableItemPrivate
         knobs.push_back(timeOffsetMode);
 
 #ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
-        motionBlur.reset(new KnobDouble(NULL, kRotoMotionBlurParamLabel, 1, false));
+        motionBlur.reset( new KnobDouble(NULL, kRotoMotionBlurParamLabel, 1, false) );
         motionBlur->setName(kRotoPerShapeMotionBlurParam);
         motionBlur->setHintToolTip(kRotoMotionBlurParamHint);
         motionBlur->populate();
@@ -1143,8 +1133,8 @@ struct RotoDrawableItemPrivate
         motionBlur->setDisplayMaximum(4);
         motionBlur->setMaximum(4);
         knobs.push_back(motionBlur);
-        
-        shutter.reset(new KnobDouble(NULL, kRotoShutterParamLabel, 1, false));
+
+        shutter.reset( new KnobDouble(NULL, kRotoShutterParamLabel, 1, false) );
         shutter->setName(kRotoPerShapeShutterParam);
         shutter->setHintToolTip(kRotoShutterParamHint);
         shutter->populate();
@@ -1154,14 +1144,14 @@ struct RotoDrawableItemPrivate
         shutter->setDisplayMaximum(2);
         shutter->setMaximum(2);
         knobs.push_back(shutter);
-        
-        shutterType.reset(new KnobChoice(NULL, kRotoShutterOffsetTypeParamLabel, 1, false));
+
+        shutterType.reset( new KnobChoice(NULL, kRotoShutterOffsetTypeParamLabel, 1, false) );
         shutterType->setName(kRotoPerShapeShutterOffsetTypeParam);
         shutterType->setHintToolTip(kRotoShutterOffsetTypeParamHint);
         shutterType->populate();
         shutterType->setDefaultValue(0);
         {
-            std::vector<std::string> options,helps;
+            std::vector<std::string> options, helps;
             options.push_back("Centered");
             helps.push_back(kRotoShutterOffsetCenteredHint);
             options.push_back("Start");
@@ -1170,24 +1160,22 @@ struct RotoDrawableItemPrivate
             helps.push_back(kRotoShutterOffsetEndHint);
             options.push_back("Custom");
             helps.push_back(kRotoShutterOffsetCustomHint);
-            shutterType->populateChoices(options,helps);
+            shutterType->populateChoices(options, helps);
         }
         knobs.push_back(shutterType);
 
-        customOffset.reset(new KnobDouble(NULL, kRotoShutterCustomOffsetParamLabel, 1, false));
+        customOffset.reset( new KnobDouble(NULL, kRotoShutterCustomOffsetParamLabel, 1, false) );
         customOffset->setName(kRotoPerShapeShutterCustomOffsetParam);
         customOffset->setHintToolTip(kRotoShutterCustomOffsetParamHint);
         customOffset->populate();
         customOffset->setDefaultValue(0);
         knobs.push_back(customOffset);
 #endif
-        
+
         overlayColor[0] = 0.85164;
         overlayColor[1] = 0.196936;
         overlayColor[2] = 0.196936;
         overlayColor[3] = 1.;
-        
-        
     }
 
     ~RotoDrawableItemPrivate()
@@ -1199,12 +1187,11 @@ struct RotoStrokeItemPrivate
 {
     RotoStrokeType type;
     bool finished;
-    
     struct StrokeCurves
     {
-        boost::shared_ptr<Curve> xCurve,yCurve,pressureCurve;
+        boost::shared_ptr<Curve> xCurve, yCurve, pressureCurve;
     };
-    
+
     /**
      * @brief A list of all storkes contained in this item. Basically each time penUp() is called it makes a new stroke
      **/
@@ -1212,44 +1199,38 @@ struct RotoStrokeItemPrivate
     double curveT0; // timestamp of the first point in curve
     double lastTimestamp;
     RectD bbox;
-    
     RectD wholeStrokeBboxWhilePainting;
-    
-    
     mutable QMutex strokeDotPatternsMutex;
     std::vector<cairo_pattern_t*> strokeDotPatterns;
-    
+
     RotoStrokeItemPrivate(RotoStrokeType type)
-    : type(type)
-    , finished(false)
-    , strokes()
-    , curveT0(0)
-    , lastTimestamp(0)
-    , bbox()
-    , wholeStrokeBboxWhilePainting()
-    , strokeDotPatternsMutex()
-    , strokeDotPatterns()
+        : type(type)
+        , finished(false)
+        , strokes()
+        , curveT0(0)
+        , lastTimestamp(0)
+        , bbox()
+        , wholeStrokeBboxWhilePainting()
+        , strokeDotPatternsMutex()
+        , strokeDotPatterns()
     {
-        
         bbox.x1 = std::numeric_limits<double>::infinity();
         bbox.x2 = -std::numeric_limits<double>::infinity();
         bbox.y1 = std::numeric_limits<double>::infinity();
         bbox.y2 = -std::numeric_limits<double>::infinity();
-                
     }
 };
 
 struct RotoContextPrivate
 {
     mutable QMutex rotoContextMutex;
-    
+
     /*
      * We have chosen to disable rotopainting and roto shapes from the same RotoContext because the rendering techniques are
      * very much differents. The rotopainting systems requires an entire compositing tree held inside whereas the rotoshapes
      * are rendered and optimized by Cairo internally.
      */
     bool isPaintNode;
-    
     std::list< boost::shared_ptr<RotoLayer> > layers;
     bool autoKeying;
     bool rippleEdit;
@@ -1266,12 +1247,11 @@ struct RotoContextPrivate
     boost::weak_ptr<KnobChoice> lifeTime;
     boost::weak_ptr<KnobBool> activated; //<allows to disable a shape on a specific frame range
     boost::weak_ptr<KnobInt> lifeTimeFrame;
-    
+
 #ifdef NATRON_ROTO_INVERTIBLE
     boost::weak_ptr<KnobBool> inverted;
 #endif
     boost::weak_ptr<KnobColor> colorKnob;
-    
     boost::weak_ptr<KnobDouble> brushSizeKnob;
     boost::weak_ptr<KnobDouble> brushSpacingKnob;
     boost::weak_ptr<KnobDouble> brushHardnessKnob;
@@ -1282,7 +1262,6 @@ struct RotoContextPrivate
     boost::weak_ptr<KnobBool> pressureHardnessKnob;
     boost::weak_ptr<KnobBool> buildUpKnob;
     boost::weak_ptr<KnobDouble> brushVisiblePortionKnob;
-    
     boost::weak_ptr<KnobDouble> cloneTranslateKnob;
     boost::weak_ptr<KnobDouble> cloneRotateKnob;
     boost::weak_ptr<KnobDouble> cloneScaleKnob;
@@ -1295,7 +1274,6 @@ struct RotoContextPrivate
     boost::weak_ptr<KnobChoice> cloneFilterKnob;
     boost::weak_ptr<KnobBool> cloneBlackOutsideKnob;
     boost::weak_ptr<KnobButton> resetCloneTransformKnob;
-    
     boost::weak_ptr<KnobDouble> translateKnob;
     boost::weak_ptr<KnobDouble> rotateKnob;
     boost::weak_ptr<KnobDouble> scaleKnob;
@@ -1306,17 +1284,16 @@ struct RotoContextPrivate
     boost::weak_ptr<KnobDouble> centerKnob;
     boost::weak_ptr<KnobButton> resetCenterKnob;
     boost::weak_ptr<KnobButton> resetTransformKnob;
-    
     boost::weak_ptr<KnobChoice> sourceTypeKnob;
     boost::weak_ptr<KnobInt> timeOffsetKnob;
     boost::weak_ptr<KnobChoice> timeOffsetModeKnob;
-    
+
 #ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
     boost::weak_ptr<KnobChoice> motionBlurTypeKnob;
-    boost::weak_ptr<KnobDouble> motionBlurKnob,globalMotionBlurKnob;
-    boost::weak_ptr<KnobDouble> shutterKnob,globalShutterKnob;
-    boost::weak_ptr<KnobChoice> shutterTypeKnob,globalShutterTypeKnob;
-    boost::weak_ptr<KnobDouble> customOffsetKnob,globalCustomOffsetKnob;
+    boost::weak_ptr<KnobDouble> motionBlurKnob, globalMotionBlurKnob;
+    boost::weak_ptr<KnobDouble> shutterKnob, globalShutterKnob;
+    boost::weak_ptr<KnobChoice> shutterTypeKnob, globalShutterTypeKnob;
+    boost::weak_ptr<KnobDouble> customOffsetKnob, globalCustomOffsetKnob;
 #endif
 
     std::list<boost::weak_ptr<KnobI> > knobs; //< list for easy access to all knobs
@@ -1328,51 +1305,49 @@ struct RotoContextPrivate
     std::list<boost::shared_ptr<RotoItem> > selectedItems;
     boost::shared_ptr<RotoItem> lastInsertedItem;
     boost::shared_ptr<RotoItem> lastLockedItem;
-    
-
-    
     mutable QMutex doingNeatRenderMutex;
     QWaitCondition doingNeatRenderCond;
     bool doingNeatRender;
     bool mustDoNeatRender;
-    
+
     /*
      * A merge node (or more if there are more than 64 items) used when all items share the same compositing operator to make the rotopaint tree shallow
      */
     NodesList globalMergeNodes;
 
     RotoContextPrivate(const NodePtr& n )
-    : rotoContextMutex()
-    , isPaintNode(false)
-    , layers()
-    , autoKeying(true)
-    , rippleEdit(false)
-    , featherLink(true)
-    , isCurrentlyLoading(false)
-    , node(n)
-    , age(0)
-    , doingNeatRender(false)
-    , mustDoNeatRender(false)
-    , globalMergeNodes()
+        : rotoContextMutex()
+        , isPaintNode(false)
+        , layers()
+        , autoKeying(true)
+        , rippleEdit(false)
+        , featherLink(true)
+        , isCurrentlyLoading(false)
+        , node(n)
+        , age(0)
+        , doingNeatRender(false)
+        , mustDoNeatRender(false)
+        , globalMergeNodes()
     {
         EffectInstPtr effect = n->getEffectInstance();
-        RotoPaint* isRotoNode = dynamic_cast<RotoPaint*>(effect.get());
+        RotoPaint* isRotoNode = dynamic_cast<RotoPaint*>( effect.get() );
+
         if (isRotoNode) {
             isPaintNode = isRotoNode->isDefaultBehaviourPaintContext();
         } else {
             isPaintNode = false;
         }
-        
+
         assert( n && n->getEffectInstance() );
-        
-        boost::shared_ptr<KnobPage> shapePage,strokePage,generalPage,clonePage,transformPage;
-        
+
+        boost::shared_ptr<KnobPage> shapePage, strokePage, generalPage, clonePage, transformPage;
+
         generalPage = AppManager::createKnob<KnobPage>(effect.get(), "General", 1, false);
         shapePage = AppManager::createKnob<KnobPage>(effect.get(), "Shape", 1, false);
         strokePage = AppManager::createKnob<KnobPage>(effect.get(), "Stroke", 1, false);
         clonePage = AppManager::createKnob<KnobPage>(effect.get(), "Clone", 1, false);
         transformPage = AppManager::createKnob<KnobPage>(effect.get(), "Transform", 1, false);
-        
+
         boost::shared_ptr<KnobDouble> opacityKnob = AppManager::createKnob<KnobDouble>(effect.get(), kRotoOpacityParamLabel, 1, false);
         opacityKnob->setHintToolTip(kRotoOpacityHint);
         opacityKnob->setName(kRotoOpacityParam);
@@ -1386,7 +1361,7 @@ struct RotoContextPrivate
         generalPage->addKnob(opacityKnob);
         knobs.push_back(opacityKnob);
         opacity = opacityKnob;
-        
+
         boost::shared_ptr<KnobColor> ck = AppManager::createKnob<KnobColor>(effect.get(), kRotoColorParamLabel, 3, false);
         ck->setHintToolTip(kRotoColorHint);
         ck->setName(kRotoColorParam);
@@ -1398,7 +1373,7 @@ struct RotoContextPrivate
         ck->setIsPersistant(false);
         knobs.push_back(ck);
         colorKnob = ck;
-        
+
         boost::shared_ptr<KnobChoice> lifeTimeKnob = AppManager::createKnob<KnobChoice>(effect.get(), kRotoDrawableItemLifeTimeParamLabel, 1, false);
         lifeTimeKnob->setHintToolTip(kRotoDrawableItemLifeTimeParamHint);
         lifeTimeKnob->setName(kRotoDrawableItemLifeTimeParam);
@@ -1407,7 +1382,7 @@ struct RotoContextPrivate
         lifeTimeKnob->setDefaultAllDimensionsEnabled(false);
         lifeTimeKnob->setAnimationEnabled(false);
         {
-            std::vector<std::string> choices,helps;
+            std::vector<std::string> choices, helps;
             choices.push_back(kRotoDrawableItemLifeTimeSingle);
             helps.push_back(kRotoDrawableItemLifeTimeSingleHelp);
             choices.push_back(kRotoDrawableItemLifeTimeFromStart);
@@ -1416,13 +1391,13 @@ struct RotoContextPrivate
             helps.push_back(kRotoDrawableItemLifeTimeToEndHelp);
             choices.push_back(kRotoDrawableItemLifeTimeCustom);
             helps.push_back(kRotoDrawableItemLifeTimeCustomHelp);
-            lifeTimeKnob->populateChoices(choices,helps);
+            lifeTimeKnob->populateChoices(choices, helps);
         }
         lifeTimeKnob->setDefaultValue(isPaintNode ? 0 : 3);
         generalPage->addKnob(lifeTimeKnob);
         knobs.push_back(lifeTimeKnob);
         lifeTime = lifeTimeKnob;
-        
+
         boost::shared_ptr<KnobInt> lifeTimeFrameKnob = AppManager::createKnob<KnobInt>(effect.get(), kRotoDrawableItemLifeTimeFrameParamLabel, 1, false);
         lifeTimeFrameKnob->setHintToolTip(kRotoDrawableItemLifeTimeFrameParamHint);
         lifeTimeFrameKnob->setName(kRotoDrawableItemLifeTimeFrameParam);
@@ -1433,7 +1408,7 @@ struct RotoContextPrivate
         generalPage->addKnob(lifeTimeFrameKnob);
         knobs.push_back(lifeTimeFrameKnob);
         lifeTimeFrame = lifeTimeFrameKnob;
-        
+
         boost::shared_ptr<KnobBool> activatedKnob = AppManager::createKnob<KnobBool>(effect.get(), kRotoActivatedParamLabel, 1, false);
         activatedKnob->setHintToolTip(kRotoActivatedHint);
         activatedKnob->setName(kRotoActivatedParam);
@@ -1445,7 +1420,7 @@ struct RotoContextPrivate
         activatedKnob->setIsPersistant(false);
         knobs.push_back(activatedKnob);
         activated = activatedKnob;
-        
+
 #ifdef NATRON_ROTO_INVERTIBLE
         boost::shared_ptr<KnobBool> invertedKnob = AppManager::createKnob<KnobBool>(effect.get(), kRotoInvertedParamLabel, 1, false);
         invertedKnob->setHintToolTip(kRotoInvertedHint);
@@ -1457,7 +1432,7 @@ struct RotoContextPrivate
         knobs.push_back(invertedKnob);
         inverted = invertedKnob;
 #endif
-        
+
         boost::shared_ptr<KnobDouble> featherKnob = AppManager::createKnob<KnobDouble>(effect.get(), kRotoFeatherParamLabel, 1, false);
         featherKnob->setHintToolTip(kRotoFeatherHint);
         featherKnob->setName(kRotoFeatherParam);
@@ -1471,7 +1446,7 @@ struct RotoContextPrivate
         knobs.push_back(featherKnob);
         shapeKnobs.push_back(featherKnob);
         feather = featherKnob;
-        
+
         boost::shared_ptr<KnobDouble> featherFallOffKnob = AppManager::createKnob<KnobDouble>(effect.get(), kRotoFeatherFallOffParamLabel, 1, false);
         featherFallOffKnob->setHintToolTip(kRotoFeatherFallOffHint);
         featherFallOffKnob->setName(kRotoFeatherFallOffParam);
@@ -1486,9 +1461,9 @@ struct RotoContextPrivate
         knobs.push_back(featherFallOffKnob);
         shapeKnobs.push_back(featherFallOffKnob);
         featherFallOff = featherFallOffKnob;
-        
+
         {
-            boost::shared_ptr<KnobChoice> sourceType = AppManager::createKnob<KnobChoice>(effect.get(),kRotoBrushSourceColorLabel,1,false);
+            boost::shared_ptr<KnobChoice> sourceType = AppManager::createKnob<KnobChoice>(effect.get(), kRotoBrushSourceColorLabel, 1, false);
             sourceType->setName(kRotoBrushSourceColor);
             sourceType->setHintToolTip(kRotoBrushSourceColorHint);
             sourceType->setDefaultValue(1);
@@ -1499,7 +1474,7 @@ struct RotoContextPrivate
                 for (int i = 1; i < 10; ++i) {
                     std::stringstream ss;
                     ss << "background " << i + 1;
-                    choices.push_back(ss.str());
+                    choices.push_back( ss.str() );
                 }
                 sourceType->populateChoices(choices);
             }
@@ -1508,7 +1483,7 @@ struct RotoContextPrivate
             knobs.push_back(sourceType);
             cloneKnobs.push_back(sourceType);
             sourceTypeKnob = sourceType;
-            
+
             boost::shared_ptr<KnobDouble> translate = AppManager::createKnob<KnobDouble>(effect.get(), kRotoBrushTranslateParamLabel, 2, false);
             translate->setName(kRotoBrushTranslateParam);
             translate->setHintToolTip(kRotoBrushTranslateParamHint);
@@ -1518,7 +1493,7 @@ struct RotoContextPrivate
             knobs.push_back(translate);
             cloneKnobs.push_back(translate);
             cloneTranslateKnob = translate;
-            
+
             boost::shared_ptr<KnobDouble> rotate = AppManager::createKnob<KnobDouble>(effect.get(), kRotoBrushRotateParamLabel, 1, false);
             rotate->setName(kRotoBrushRotateParam);
             rotate->setHintToolTip(kRotoBrushRotateParamHint);
@@ -1529,23 +1504,23 @@ struct RotoContextPrivate
             knobs.push_back(rotate);
             cloneKnobs.push_back(rotate);
             cloneRotateKnob = rotate;
-            
+
             boost::shared_ptr<KnobDouble> scale = AppManager::createKnob<KnobDouble>(effect.get(), kRotoBrushScaleParamLabel, 2, false);
             scale->setName(kRotoBrushScaleParam);
             scale->setHintToolTip(kRotoBrushScaleParamHint);
-            scale->setDefaultValue(1,0);
-            scale->setDefaultValue(1,1);
-            scale->setDisplayMinimum(0.1,0);
-            scale->setDisplayMinimum(0.1,1);
-            scale->setDisplayMaximum(10,0);
-            scale->setDisplayMaximum(10,1);
+            scale->setDefaultValue(1, 0);
+            scale->setDefaultValue(1, 1);
+            scale->setDisplayMinimum(0.1, 0);
+            scale->setDisplayMinimum(0.1, 1);
+            scale->setDisplayMaximum(10, 0);
+            scale->setDisplayMaximum(10, 1);
             scale->setAddNewLine(false);
             scale->setDefaultAllDimensionsEnabled(false);
             clonePage->addKnob(scale);
             cloneKnobs.push_back(scale);
             knobs.push_back(scale);
             cloneScaleKnob = scale;
-            
+
             boost::shared_ptr<KnobBool> scaleUniform = AppManager::createKnob<KnobBool>(effect.get(), kRotoBrushScaleUniformParamLabel, 1, false);
             scaleUniform->setName(kRotoBrushScaleUniformParam);
             scaleUniform->setHintToolTip(kRotoBrushScaleUniformParamHint);
@@ -1556,30 +1531,30 @@ struct RotoContextPrivate
             cloneKnobs.push_back(scaleUniform);
             knobs.push_back(scaleUniform);
             cloneUniformKnob = scaleUniform;
-            
+
             boost::shared_ptr<KnobDouble> skewX = AppManager::createKnob<KnobDouble>(effect.get(), kRotoBrushSkewXParamLabel, 1, false);
             skewX->setName(kRotoBrushSkewXParam);
             skewX->setHintToolTip(kRotoBrushSkewXParamHint);
             skewX->setDefaultAllDimensionsEnabled(false);
-            skewX->setDisplayMinimum(-1,0);
-            skewX->setDisplayMaximum(1,0);
+            skewX->setDisplayMinimum(-1, 0);
+            skewX->setDisplayMaximum(1, 0);
             cloneKnobs.push_back(skewX);
             clonePage->addKnob(skewX);
             knobs.push_back(skewX);
             cloneSkewXKnob = skewX;
-            
+
             boost::shared_ptr<KnobDouble> skewY = AppManager::createKnob<KnobDouble>(effect.get(), kRotoBrushSkewYParamLabel, 1, false);
             skewY->setName(kRotoBrushSkewYParam);
             skewY->setHintToolTip(kRotoBrushSkewYParamHint);
             skewY->setDefaultAllDimensionsEnabled(false);
-            skewY->setDisplayMinimum(-1,0);
-            skewY->setDisplayMaximum(1,0);
+            skewY->setDisplayMinimum(-1, 0);
+            skewY->setDisplayMaximum(1, 0);
             clonePage->addKnob(skewY);
             cloneKnobs.push_back(skewY);
             knobs.push_back(skewY);
             cloneSkewYKnob = skewY;
 
-            boost::shared_ptr<KnobChoice> skewOrder = AppManager::createKnob<KnobChoice>(effect.get(),kRotoBrushSkewOrderParamLabel,1,false);
+            boost::shared_ptr<KnobChoice> skewOrder = AppManager::createKnob<KnobChoice>(effect.get(), kRotoBrushSkewOrderParamLabel, 1, false);
             skewOrder->setName(kRotoBrushSkewOrderParam);
             skewOrder->setHintToolTip(kRotoBrushSkewOrderParamHint);
             skewOrder->setDefaultValue(0);
@@ -1595,7 +1570,7 @@ struct RotoContextPrivate
             cloneKnobs.push_back(skewOrder);
             knobs.push_back(skewOrder);
             cloneSkewOrderKnob = skewOrder;
-            
+
             boost::shared_ptr<KnobDouble> center = AppManager::createKnob<KnobDouble>(effect.get(), kRotoBrushCenterParamLabel, 2, false);
             center->setName(kRotoBrushCenterParam);
             center->setHintToolTip(kRotoBrushCenterParamHint);
@@ -1608,8 +1583,8 @@ struct RotoContextPrivate
             cloneKnobs.push_back(center);
             knobs.push_back(center);
             cloneCenterKnob = center;
-            
-            boost::shared_ptr<KnobButton> resetCloneCenter = AppManager::createKnob<KnobButton>(effect.get(), kRotoResetCloneCenterParamLabel, 1 , true);
+
+            boost::shared_ptr<KnobButton> resetCloneCenter = AppManager::createKnob<KnobButton>(effect.get(), kRotoResetCloneCenterParamLabel, 1, true);
             resetCloneCenter->setName(kRotoResetCloneCenterParam);
             resetCloneCenter->setHintToolTip(kRotoResetCloneCenterParamHint);
             resetCloneCenter->setAllDimensionsEnabled(false);
@@ -1617,8 +1592,8 @@ struct RotoContextPrivate
             cloneKnobs.push_back(resetCloneCenter);
             knobs.push_back(resetCloneCenter);
             resetCloneCenterKnob = resetCloneCenter;
-            
-            boost::shared_ptr<KnobButton> resetCloneTransform = AppManager::createKnob<KnobButton>(effect.get(), kRotoResetCloneTransformParamLabel, 1 , true);
+
+            boost::shared_ptr<KnobButton> resetCloneTransform = AppManager::createKnob<KnobButton>(effect.get(), kRotoResetCloneTransformParamLabel, 1, true);
             resetCloneTransform->setName(kRotoResetCloneTransformParam);
             resetCloneTransform->setHintToolTip(kRotoResetCloneTransformParamHint);
             resetCloneTransform->setAllDimensionsEnabled(false);
@@ -1626,17 +1601,17 @@ struct RotoContextPrivate
             cloneKnobs.push_back(resetCloneTransform);
             knobs.push_back(resetCloneTransform);
             resetCloneTransformKnob = resetCloneTransform;
-            
+
             node.lock()->addTransformInteract(translate, scale, scaleUniform, rotate, skewX, skewY, skewOrder, center,
                                               boost::shared_ptr<KnobBool>() /*invert*/,
                                               boost::shared_ptr<KnobBool>() /*interactive*/);
-            
-            boost::shared_ptr<KnobChoice> filter = AppManager::createKnob<KnobChoice>(effect.get(),kRotoBrushFilterParamLabel,1,false);
+
+            boost::shared_ptr<KnobChoice> filter = AppManager::createKnob<KnobChoice>(effect.get(), kRotoBrushFilterParamLabel, 1, false);
             filter->setName(kRotoBrushFilterParam);
             filter->setHintToolTip(kRotoBrushFilterParamHint);
             {
-                std::vector<std::string> choices,helps;
-                
+                std::vector<std::string> choices, helps;
+
                 choices.push_back(kFilterImpulse);
                 helps.push_back(kFilterImpulseHint);
                 choices.push_back(kFilterBilinear);
@@ -1674,7 +1649,7 @@ struct RotoContextPrivate
             knobs.push_back(blackOutside);
             cloneKnobs.push_back(blackOutside);
             cloneBlackOutsideKnob = blackOutside;
-            
+
             boost::shared_ptr<KnobInt> timeOffset = AppManager::createKnob<KnobInt>(effect.get(), kRotoBrushTimeOffsetParamLabel, 1, false);
             timeOffset->setName(kRotoBrushTimeOffsetParam);
             timeOffset->setHintToolTip(kRotoBrushTimeOffsetParamHint);
@@ -1687,7 +1662,7 @@ struct RotoContextPrivate
             cloneKnobs.push_back(timeOffset);
             knobs.push_back(timeOffset);
             timeOffsetKnob = timeOffset;
-            
+
             boost::shared_ptr<KnobChoice> timeOffsetMode = AppManager::createKnob<KnobChoice>(effect.get(), kRotoBrushTimeOffsetModeParamLabel, 1, false);
             timeOffsetMode->setName(kRotoBrushTimeOffsetModeParam);
             timeOffsetMode->setHintToolTip(kRotoBrushTimeOffsetModeParamHint);
@@ -1703,7 +1678,7 @@ struct RotoContextPrivate
             knobs.push_back(timeOffsetMode);
             cloneKnobs.push_back(timeOffsetMode);
             timeOffsetModeKnob = timeOffsetMode;
-            
+
             boost::shared_ptr<KnobDouble> brushSize = AppManager::createKnob<KnobDouble>(effect.get(), kRotoBrushSizeParamLabel, 1, false);
             brushSize->setName(kRotoBrushSizeParam);
             brushSize->setHintToolTip(kRotoBrushSizeParamHint);
@@ -1716,7 +1691,7 @@ struct RotoContextPrivate
             knobs.push_back(brushSize);
             strokeKnobs.push_back(brushSize);
             brushSizeKnob = brushSize;
-            
+
             boost::shared_ptr<KnobDouble> brushSpacing = AppManager::createKnob<KnobDouble>(effect.get(), kRotoBrushSpacingParamLabel, 1, false);
             brushSpacing->setName(kRotoBrushSpacingParam);
             brushSpacing->setHintToolTip(kRotoBrushSpacingParamHint);
@@ -1729,7 +1704,7 @@ struct RotoContextPrivate
             knobs.push_back(brushSpacing);
             strokeKnobs.push_back(brushSpacing);
             brushSpacingKnob = brushSpacing;
-            
+
             boost::shared_ptr<KnobDouble> brushHardness = AppManager::createKnob<KnobDouble>(effect.get(), kRotoBrushHardnessParamLabel, 1, false);
             brushHardness->setName(kRotoBrushHardnessParam);
             brushHardness->setHintToolTip(kRotoBrushHardnessParamHint);
@@ -1742,7 +1717,7 @@ struct RotoContextPrivate
             knobs.push_back(brushHardness);
             strokeKnobs.push_back(brushHardness);
             brushHardnessKnob = brushHardness;
-            
+
             boost::shared_ptr<KnobDouble> effectStrength = AppManager::createKnob<KnobDouble>(effect.get(), kRotoBrushEffectParamLabel, 1, false);
             effectStrength->setName(kRotoBrushEffectParam);
             effectStrength->setHintToolTip(kRotoBrushEffectParamHint);
@@ -1755,7 +1730,7 @@ struct RotoContextPrivate
             knobs.push_back(effectStrength);
             strokeKnobs.push_back(effectStrength);
             brushEffectKnob = effectStrength;
-            
+
             boost::shared_ptr<KnobSeparator> pressureLabel = AppManager::createKnob<KnobSeparator>(effect.get(), kRotoBrushPressureLabelParamLabel);
             pressureLabel->setName(kRotoBrushPressureLabelParam);
             pressureLabel->setHintToolTip(kRotoBrushPressureLabelParamHint);
@@ -1763,7 +1738,7 @@ struct RotoContextPrivate
             knobs.push_back(pressureLabel);
             strokeKnobs.push_back(pressureLabel);
             pressureLabelKnob = pressureLabel;
-            
+
             boost::shared_ptr<KnobBool> pressureOpacity = AppManager::createKnob<KnobBool>(effect.get(), kRotoBrushPressureOpacityParamLabel);
             pressureOpacity->setName(kRotoBrushPressureOpacityParam);
             pressureOpacity->setHintToolTip(kRotoBrushPressureOpacityParamHint);
@@ -1776,7 +1751,7 @@ struct RotoContextPrivate
             knobs.push_back(pressureOpacity);
             strokeKnobs.push_back(pressureOpacity);
             pressureOpacityKnob = pressureOpacity;
-            
+
             boost::shared_ptr<KnobBool> pressureSize = AppManager::createKnob<KnobBool>(effect.get(), kRotoBrushPressureSizeParamLabel);
             pressureSize->setName(kRotoBrushPressureSizeParam);
             pressureSize->setHintToolTip(kRotoBrushPressureSizeParamHint);
@@ -1789,7 +1764,7 @@ struct RotoContextPrivate
             strokeKnobs.push_back(pressureSize);
             strokePage->addKnob(pressureSize);
             pressureSizeKnob = pressureSize;
-            
+
             boost::shared_ptr<KnobBool> pressureHardness = AppManager::createKnob<KnobBool>(effect.get(), kRotoBrushPressureHardnessParamLabel);
             pressureHardness->setName(kRotoBrushPressureHardnessParam);
             pressureHardness->setHintToolTip(kRotoBrushPressureHardnessParamHint);
@@ -1802,7 +1777,7 @@ struct RotoContextPrivate
             strokeKnobs.push_back(pressureHardness);
             strokePage->addKnob(pressureHardness);
             pressureHardnessKnob = pressureHardness;
-            
+
             boost::shared_ptr<KnobBool> buildUp = AppManager::createKnob<KnobBool>(effect.get(), kRotoBrushBuildupParamLabel);
             buildUp->setName(kRotoBrushBuildupParam);
             buildUp->setHintToolTip(kRotoBrushBuildupParamHint);
@@ -1815,13 +1790,13 @@ struct RotoContextPrivate
             strokeKnobs.push_back(buildUp);
             strokePage->addKnob(buildUp);
             buildUpKnob = buildUp;
-            
+
             boost::shared_ptr<KnobDouble> visiblePortion = AppManager::createKnob<KnobDouble>(effect.get(), kRotoBrushVisiblePortionParamLabel, 2, false);
             visiblePortion->setName(kRotoBrushVisiblePortionParam);
             visiblePortion->setHintToolTip(kRotoBrushVisiblePortionParamHint);
             visiblePortion->setDefaultValue(0, 0);
             visiblePortion->setDefaultValue(1, 1);
-            std::vector<double> mins,maxs;
+            std::vector<double> mins, maxs;
             mins.push_back(0);
             mins.push_back(0);
             maxs.push_back(1);
@@ -1835,8 +1810,8 @@ struct RotoContextPrivate
             knobs.push_back(visiblePortion);
             strokeKnobs.push_back(visiblePortion);
             brushVisiblePortionKnob = visiblePortion;
-    }
-    
+        }
+
         boost::shared_ptr<KnobDouble> translate = AppManager::createKnob<KnobDouble>(effect.get(), kRotoDrawableItemTranslateParamLabel, 2, false);
         translate->setName(kRotoDrawableItemTranslateParam);
         translate->setHintToolTip(kRotoDrawableItemTranslateParamHint);
@@ -1845,7 +1820,7 @@ struct RotoContextPrivate
         transformPage->addKnob(translate);
         knobs.push_back(translate);
         translateKnob = translate;
-        
+
         boost::shared_ptr<KnobDouble> rotate = AppManager::createKnob<KnobDouble>(effect.get(), kRotoDrawableItemRotateParamLabel, 1, false);
         rotate->setName(kRotoDrawableItemRotateParam);
         rotate->setHintToolTip(kRotoDrawableItemRotateParamHint);
@@ -1855,22 +1830,22 @@ struct RotoContextPrivate
         transformPage->addKnob(rotate);
         knobs.push_back(rotate);
         rotateKnob = rotate;
-        
+
         boost::shared_ptr<KnobDouble> scale = AppManager::createKnob<KnobDouble>(effect.get(), kRotoDrawableItemScaleParamLabel, 2, false);
         scale->setName(kRotoDrawableItemScaleParam);
         scale->setHintToolTip(kRotoDrawableItemScaleParamHint);
-        scale->setDefaultValue(1,0);
-        scale->setDefaultValue(1,1);
-        scale->setDisplayMinimum(0.1,0);
-        scale->setDisplayMinimum(0.1,1);
-        scale->setDisplayMaximum(10,0);
-        scale->setDisplayMaximum(10,1);
+        scale->setDefaultValue(1, 0);
+        scale->setDefaultValue(1, 1);
+        scale->setDisplayMinimum(0.1, 0);
+        scale->setDisplayMinimum(0.1, 1);
+        scale->setDisplayMaximum(10, 0);
+        scale->setDisplayMaximum(10, 1);
         scale->setAddNewLine(false);
         scale->setDefaultAllDimensionsEnabled(false);
         transformPage->addKnob(scale);
         knobs.push_back(scale);
         scaleKnob = scale;
-        
+
         boost::shared_ptr<KnobBool> scaleUniform = AppManager::createKnob<KnobBool>(effect.get(), kRotoDrawableItemScaleUniformParamLabel, 1, false);
         scaleUniform->setName(kRotoDrawableItemScaleUniformParam);
         scaleUniform->setHintToolTip(kRotoDrawableItemScaleUniformParamHint);
@@ -1880,28 +1855,28 @@ struct RotoContextPrivate
         transformPage->addKnob(scaleUniform);
         knobs.push_back(scaleUniform);
         scaleUniformKnob = scaleUniform;
-        
+
         boost::shared_ptr<KnobDouble> skewX = AppManager::createKnob<KnobDouble>(effect.get(), kRotoDrawableItemSkewXParamLabel, 1, false);
         skewX->setName(kRotoDrawableItemSkewXParam);
         skewX->setHintToolTip(kRotoDrawableItemSkewXParamHint);
         skewX->setDefaultAllDimensionsEnabled(false);
-        skewX->setDisplayMinimum(-1,0);
-        skewX->setDisplayMaximum(1,0);
+        skewX->setDisplayMinimum(-1, 0);
+        skewX->setDisplayMaximum(1, 0);
         transformPage->addKnob(skewX);
         knobs.push_back(skewX);
         skewXKnob = skewX;
-        
+
         boost::shared_ptr<KnobDouble> skewY = AppManager::createKnob<KnobDouble>(effect.get(), kRotoDrawableItemSkewYParamLabel, 1, false);
         skewY->setName(kRotoDrawableItemSkewYParam);
         skewY->setHintToolTip(kRotoDrawableItemSkewYParamHint);
         skewY->setDefaultAllDimensionsEnabled(false);
-        skewY->setDisplayMinimum(-1,0);
-        skewY->setDisplayMaximum(1,0);
+        skewY->setDisplayMinimum(-1, 0);
+        skewY->setDisplayMaximum(1, 0);
         transformPage->addKnob(skewY);
         knobs.push_back(skewY);
         skewYKnob = skewY;
-        
-        boost::shared_ptr<KnobChoice> skewOrder = AppManager::createKnob<KnobChoice>(effect.get(),kRotoDrawableItemSkewOrderParamLabel,1,false);
+
+        boost::shared_ptr<KnobChoice> skewOrder = AppManager::createKnob<KnobChoice>(effect.get(), kRotoDrawableItemSkewOrderParamLabel, 1, false);
         skewOrder->setName(kRotoDrawableItemSkewOrderParam);
         skewOrder->setHintToolTip(kRotoDrawableItemSkewOrderParamHint);
         skewOrder->setDefaultValue(0);
@@ -1916,7 +1891,7 @@ struct RotoContextPrivate
         transformPage->addKnob(skewOrder);
         knobs.push_back(skewOrder);
         skewOrderKnob = skewOrder;
-        
+
         boost::shared_ptr<KnobDouble> center = AppManager::createKnob<KnobDouble>(effect.get(), kRotoDrawableItemCenterParamLabel, 2, false);
         center->setName(kRotoDrawableItemCenterParam);
         center->setHintToolTip(kRotoDrawableItemCenterParamHint);
@@ -1928,28 +1903,28 @@ struct RotoContextPrivate
         transformPage->addKnob(center);
         knobs.push_back(center);
         centerKnob = center;
-        
-        boost::shared_ptr<KnobButton> resetCenter = AppManager::createKnob<KnobButton>(effect.get(), kRotoResetCenterParamLabel, 1 , true);
+
+        boost::shared_ptr<KnobButton> resetCenter = AppManager::createKnob<KnobButton>(effect.get(), kRotoResetCenterParamLabel, 1, true);
         resetCenter->setName(kRotoResetCenterParam);
         resetCenter->setHintToolTip(kRotoResetCenterParamHint);
         resetCenter->setAllDimensionsEnabled(false);
         transformPage->addKnob(resetCenter);
         knobs.push_back(resetCenter);
         resetCenterKnob = resetCenter;
-        
-        boost::shared_ptr<KnobButton> resetTransform = AppManager::createKnob<KnobButton>(effect.get(), kRotoResetTransformParamLabel, 1 , true);
+
+        boost::shared_ptr<KnobButton> resetTransform = AppManager::createKnob<KnobButton>(effect.get(), kRotoResetTransformParamLabel, 1, true);
         resetTransform->setName(kRotoResetTransformParam);
         resetTransform->setHintToolTip(kRotoResetTransformParamHint);
         resetTransform->setAllDimensionsEnabled(false);
         transformPage->addKnob(resetTransform);
         knobs.push_back(resetTransform);
         resetTransformKnob = resetTransform;
-        
+
         node.lock()->addTransformInteract(translate, scale, scaleUniform, rotate, skewX, skewY, skewOrder, center,
                                           boost::shared_ptr<KnobBool>() /*invert*/,
                                           boost::shared_ptr<KnobBool>() /*interactive*/);
-        
-        
+
+
 #ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
         boost::shared_ptr<KnobPage> mbPage = AppManager::createKnob<KnobPage>(effect.get(), "Motion Blur", 1, false);
         boost::shared_ptr<KnobChoice> motionBlurType = AppManager::createKnob<KnobChoice>(effect.get(), kRotoMotionBlurModeParamLabel, 1, true);
@@ -1965,8 +1940,8 @@ struct RotoContextPrivate
         mbPage->addKnob(motionBlurType);
         motionBlurTypeKnob = motionBlurType;
         knobs.push_back(motionBlurType);
-        
-        
+
+
         //////Per shape motion blur parameters
         boost::shared_ptr<KnobDouble> motionBlur = AppManager::createKnob<KnobDouble>(effect.get(), kRotoMotionBlurParamLabel, 1, false);
         motionBlur->setName(kRotoPerShapeMotionBlurParam);
@@ -1982,7 +1957,7 @@ struct RotoContextPrivate
         mbPage->addKnob(motionBlur);
         motionBlurKnob = motionBlur;
         knobs.push_back(motionBlur);
-        
+
         boost::shared_ptr<KnobDouble> shutter = AppManager::createKnob<KnobDouble>(effect.get(), kRotoShutterParamLabel, 1, false);
         shutter->setName(kRotoPerShapeShutterParam);
         shutter->setHintToolTip(kRotoShutterParamHint);
@@ -1997,13 +1972,13 @@ struct RotoContextPrivate
         mbPage->addKnob(shutter);
         shutterKnob = shutter;
         knobs.push_back(shutter);
-        
+
         boost::shared_ptr<KnobChoice> shutterType = AppManager::createKnob<KnobChoice>(effect.get(), kRotoShutterOffsetTypeParamLabel, 1, false);
         shutterType->setName(kRotoPerShapeShutterOffsetTypeParam);
         shutterType->setHintToolTip(kRotoShutterOffsetTypeParamHint);
         shutterType->setDefaultValue(0);
         {
-            std::vector<std::string> options,helps;
+            std::vector<std::string> options, helps;
             options.push_back("Centered");
             helps.push_back(kRotoShutterOffsetCenteredHint);
             options.push_back("Start");
@@ -2012,7 +1987,7 @@ struct RotoContextPrivate
             helps.push_back(kRotoShutterOffsetEndHint);
             options.push_back("Custom");
             helps.push_back(kRotoShutterOffsetCustomHint);
-            shutterType->populateChoices(options,helps);
+            shutterType->populateChoices(options, helps);
         }
         shutterType->setAllDimensionsEnabled(false);
         shutterType->setAddNewLine(false);
@@ -2021,7 +1996,7 @@ struct RotoContextPrivate
         shutterTypeKnob = shutterType;
         shapeKnobs.push_back(shutterType);
         knobs.push_back(shutterType);
-        
+
         boost::shared_ptr<KnobDouble> customOffset = AppManager::createKnob<KnobDouble>(effect.get(), kRotoShutterCustomOffsetParamLabel, 1, false);
         customOffset->setName(kRotoPerShapeShutterCustomOffsetParam);
         customOffset->setHintToolTip(kRotoShutterCustomOffsetParamHint);
@@ -2032,7 +2007,7 @@ struct RotoContextPrivate
         customOffsetKnob = customOffset;
         shapeKnobs.push_back(customOffset);
         knobs.push_back(customOffset);
-        
+
         //////Global motion blur parameters
         boost::shared_ptr<KnobDouble> globalMotionBlur = AppManager::createKnob<KnobDouble>(effect.get(), kRotoMotionBlurParamLabel, 1, false);
         globalMotionBlur->setName(kRotoGlobalMotionBlurParam);
@@ -2046,7 +2021,7 @@ struct RotoContextPrivate
         mbPage->addKnob(globalMotionBlur);
         globalMotionBlurKnob = globalMotionBlur;
         knobs.push_back(globalMotionBlur);
-        
+
         boost::shared_ptr<KnobDouble> globalShutter = AppManager::createKnob<KnobDouble>(effect.get(), kRotoShutterParamLabel, 1, false);
         globalShutter->setName(kRotoGlobalShutterParam);
         globalShutter->setHintToolTip(kRotoShutterParamHint);
@@ -2059,13 +2034,13 @@ struct RotoContextPrivate
         mbPage->addKnob(globalShutter);
         globalShutterKnob = globalShutter;
         knobs.push_back(globalShutter);
-        
+
         boost::shared_ptr<KnobChoice> globalShutterType = AppManager::createKnob<KnobChoice>(effect.get(), kRotoShutterOffsetTypeParamLabel, 1, false);
         globalShutterType->setName(kRotoGlobalShutterOffsetTypeParam);
         globalShutterType->setHintToolTip(kRotoShutterOffsetTypeParamHint);
         globalShutterType->setDefaultValue(0);
         {
-            std::vector<std::string> options,helps;
+            std::vector<std::string> options, helps;
             options.push_back("Centered");
             helps.push_back(kRotoShutterOffsetCenteredHint);
             options.push_back("Start");
@@ -2074,14 +2049,14 @@ struct RotoContextPrivate
             helps.push_back(kRotoShutterOffsetEndHint);
             options.push_back("Custom");
             helps.push_back(kRotoShutterOffsetCustomHint);
-            globalShutterType->populateChoices(options,helps);
+            globalShutterType->populateChoices(options, helps);
         }
         globalShutterType->setAddNewLine(false);
         globalShutterType->setSecretByDefault(true);
         mbPage->addKnob(globalShutterType);
         globalShutterTypeKnob = globalShutterType;
         knobs.push_back(globalShutterType);
-        
+
         boost::shared_ptr<KnobDouble> globalCustomOffset = AppManager::createKnob<KnobDouble>(effect.get(), kRotoShutterCustomOffsetParamLabel, 1, false);
         globalCustomOffset->setName(kRotoPerShapeShutterCustomOffsetParam);
         globalCustomOffset->setHintToolTip(kRotoShutterCustomOffsetParamHint);
@@ -2090,9 +2065,8 @@ struct RotoContextPrivate
         mbPage->addKnob(globalCustomOffset);
         globalCustomOffsetKnob = globalCustomOffset;
         knobs.push_back(globalCustomOffset);
-        
-#endif
-    
+
+#endif // ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
     }
 
     /**
@@ -2106,12 +2080,11 @@ struct RotoContextPrivate
         QMutexLocker l(&rotoContextMutex);
         ++age;
     }
-    
-    boost::shared_ptr<RotoLayer>
-    findDeepestSelectedLayer() const
+
+    boost::shared_ptr<RotoLayer>findDeepestSelectedLayer() const
     {
         assert( !rotoContextMutex.tryLock() );
-        
+
         int minLevel = -1;
         boost::shared_ptr<RotoLayer> minLayer;
         for (std::list< boost::shared_ptr<RotoItem> >::const_iterator it = selectedItems.begin();
@@ -2127,41 +2100,33 @@ struct RotoContextPrivate
                 minLevel = lvl;
             }
         }
-        
+
         return minLayer;
     }
-    
-    
+
     static void renderDot(cairo_t* cr,
-                   std::vector<cairo_pattern_t*>* dotPatterns,
-                   const Point &center,
-                   double internalDotRadius,
-                   double externalDotRadius,
-                   double pressure,
-                   bool doBuildUp,
-                   const std::vector<std::pair<double, double> >& opacityStops,
-                   double opacity);
-
-    
+                          std::vector<cairo_pattern_t*>* dotPatterns,
+                          const Point &center,
+                          double internalDotRadius,
+                          double externalDotRadius,
+                          double pressure,
+                          bool doBuildUp,
+                          const std::vector<std::pair<double, double> >& opacityStops,
+                          double opacity);
     static double renderStroke(cairo_t* cr,
-                        std::vector<cairo_pattern_t*>& dotPatterns,
-                        const std::list<std::list<std::pair<Point,double> > >& strokes,
-                        double distToNext,
-                        const RotoDrawableItem* stroke,
-                        bool doBuildup,
-                        double opacity, 
-                        double time,
-                        unsigned int mipmapLevel);
-    
-    static void renderBezier(cairo_t* cr,const Bezier* bezier, double opacity, double time, unsigned int mipmapLevel);
-    
-    static void renderFeather(const Bezier* bezier,double time, unsigned int mipmapLevel, double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t* mesh);
-
-    static void renderInternalShape(double time,unsigned int mipmapLevel,double shapeColor[3], double opacity,const Transform::Matrix3x3& transform, cairo_t* cr, cairo_pattern_t* mesh, const BezierCPs & cps);
-    
-    static void bezulate(double time,const BezierCPs& cps,std::list<BezierCPs>* patches);
-
-    static void applyAndDestroyMask(cairo_t* cr,cairo_pattern_t* mesh);
+                               std::vector<cairo_pattern_t*>& dotPatterns,
+                               const std::list<std::list<std::pair<Point, double> > >& strokes,
+                               double distToNext,
+                               const RotoDrawableItem* stroke,
+                               bool doBuildup,
+                               double opacity,
+                               double time,
+                               unsigned int mipmapLevel);
+    static void renderBezier(cairo_t* cr, const Bezier* bezier, double opacity, double time, unsigned int mipmapLevel);
+    static void renderFeather(const Bezier * bezier, double time, unsigned int mipmapLevel, double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t * mesh);
+    static void renderInternalShape(double time, unsigned int mipmapLevel, double shapeColor[3], double opacity, const Transform::Matrix3x3 & transform, cairo_t * cr, cairo_pattern_t * mesh, const BezierCPs &cps);
+    static void bezulate(double time, const BezierCPs& cps, std::list<BezierCPs>* patches);
+    static void applyAndDestroyMask(cairo_t* cr, cairo_pattern_t* mesh);
 };
 
 NATRON_NAMESPACE_EXIT;

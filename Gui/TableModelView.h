@@ -82,12 +82,12 @@ public:
 
     TableItem()
         : values(), view(0), id(-1),
-          itemFlags(Qt::ItemIsEditable
-                    | Qt::ItemIsSelectable
-                    | Qt::ItemIsUserCheckable
-                    | Qt::ItemIsEnabled
-                    | Qt::ItemIsDragEnabled
-                    | Qt::ItemIsDropEnabled)
+        itemFlags(Qt::ItemIsEditable
+                  | Qt::ItemIsSelectable
+                  | Qt::ItemIsUserCheckable
+                  | Qt::ItemIsEnabled
+                  | Qt::ItemIsDragEnabled
+                  | Qt::ItemIsDropEnabled)
     {
     }
 
@@ -248,7 +248,6 @@ TableItem::setFont(const QFont &afont)
     setData(Qt::FontRole, afont);
 }
 
-
 struct TableViewPrivate;
 class TableView
     : public QTreeView
@@ -295,9 +294,8 @@ public:
     TableItem * itemAt(const QPoint &p) const;
     TableItem * itemAt(int x, int y) const;
     QRect visualItemRect(const TableItem *item) const;
-    
+
     TableItem* editedItem() const;
-    
     TableItem* currentItem() const;
 
 Q_SIGNALS:
@@ -321,7 +319,7 @@ private:
     virtual bool edit(const QModelIndex & index, QAbstractItemView::EditTrigger trigger, QEvent * event) OVERRIDE FINAL;
 
     void rebuildDraggedItemsFromSelection();
-    
+
     boost::scoped_ptr<TableViewPrivate> _imp;
 };
 
@@ -385,14 +383,14 @@ public:
     virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const OVERRIDE FINAL;
     virtual bool setHeaderData(int section, Qt::Orientation orientation, const QVariant &value, int role) OVERRIDE FINAL;
     inline long tableIndex(int row, int column) const;
-    
+
     /**
      * @brief Override to implement sorting
      **/
-    virtual void sort(int /*column*/, Qt::SortOrder order = Qt::AscendingOrder) OVERRIDE { Q_UNUSED(order); }
+    virtual void sort(int /*column*/,
+                      Qt::SortOrder order = Qt::AscendingOrder) OVERRIDE { Q_UNUSED(order); }
 
     void itemChanged(TableItem *item);
-
     TableItem * createItem() const;
 
     void clear();

@@ -78,9 +78,9 @@ class DopeSheetEditorPrivate;
  *
  * These two views query the model to display and modify data.
  */
-class DopeSheetEditor : public QWidget, public PanelWidget
+class DopeSheetEditor
+    : public QWidget, public PanelWidget
 {
-
 public:
     DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline, QWidget *parent = 0);
     ~DopeSheetEditor();
@@ -104,27 +104,26 @@ public:
      * ['xMin', 'xMax'].
      */
     void centerOn(double xMin, double xMax);
-    
+
     void refreshSelectionBboxAndRedrawView();
-    
+
     int getTimelineCurrentTime() const;
-    
+
     DopeSheetView* getDopesheetView() const;
-    
+
     void setTreeWidgetWidth(int width);
-    
+
     int getTreeWidgetWidth() const;
-    
+
     void onInputEventCalled();
 
 private:
-    
+
     virtual void enterEvent(QEvent *e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent *e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual QUndoStack* getUndoStack() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
     boost::scoped_ptr<DopeSheetEditorPrivate> _imp;
 };
 

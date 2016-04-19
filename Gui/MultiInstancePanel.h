@@ -74,17 +74,17 @@ public:
 
     int getNodeIndex(const NodePtr & node) const;
 
-    const std::list< std::pair<NodeWPtr,bool > > & getInstances() const;
+    const std::list< std::pair<NodeWPtr, bool > > & getInstances() const;
     virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL;
     NodePtr getMainInstance() const;
-    
+
     NodeGuiPtr getMainInstanceGui() const;
 
     void getSelectedInstances(std::list<Node*>* instances) const;
 
     void resetAllInstances();
 
-    KnobPtr getKnobForItem(TableItem* item,int* dimension) const;
+    KnobPtr getKnobForItem(TableItem* item, int* dimension) const;
     Gui* getGui() const;
     virtual void setIconForButton(KnobButton* /*knob*/)
     {
@@ -92,23 +92,23 @@ public:
 
     NodePtr createNewInstance(bool useUndoRedoStack);
 
-    void selectNode(const NodePtr & node,bool addToSelection);
+    void selectNode(const NodePtr & node, bool addToSelection);
 
-    void selectNodes(const std::list<Node*> & nodes,bool addToSelection);
+    void selectNodes(const std::list<Node*> & nodes, bool addToSelection);
 
     void removeNodeFromSelection(const NodePtr & node);
 
     void clearSelection();
 
     bool isSettingsPanelVisible() const;
-        
+
     void removeInstances(const NodesList& instances);
     void addInstances(const NodesList& instances);
 
     void onChildCreated(const NodePtr& node);
-    
+
     void setRedrawOnSelectionChanged(bool redraw);
-    
+
 public Q_SLOTS:
 
     void onAddButtonClicked();
@@ -117,7 +117,7 @@ public Q_SLOTS:
 
     void onSelectAllButtonClicked();
 
-    void onSelectionChanged(const QItemSelection & oldSelection,const QItemSelection & newSelection);
+    void onSelectionChanged(const QItemSelection & oldSelection, const QItemSelection & newSelection);
 
     void onItemDataChanged(TableItem* item);
 
@@ -125,7 +125,7 @@ public Q_SLOTS:
 
     void onDeleteKeyPressed();
 
-    void onInstanceKnobValueChanged(ViewSpec view,int dim,int reason);
+    void onInstanceKnobValueChanged(ViewSpec view, int dim, int reason);
 
     void resetSelectedInstances();
 
@@ -171,18 +171,18 @@ private:
 
 struct TrackerPanelPrivateV1;
 class TrackerPanelV1
-: public MultiInstancePanel, public TrackerParamsProvider
+    : public MultiInstancePanel, public TrackerParamsProvider
 {
-    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-    GCC_DIAG_SUGGEST_OVERRIDE_ON
-    
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
-    
+
     TrackerPanelV1(const boost::shared_ptr<NodeGui> & node);
-    
+
     virtual ~TrackerPanelV1();
-    
+
     ///Each function below returns true if there is a selection, false otherwise
     bool trackBackward(ViewerInstance* viewer);
     bool trackForward(ViewerInstance* viewer);
@@ -190,34 +190,34 @@ public:
     bool trackNext(ViewerInstance* viewer);
     void stopTracking();
     bool isTracking() const;
-    
+
     void clearAllAnimationForSelection();
-    
+
     void clearBackwardAnimationForSelection();
-    
+
     void clearForwardAnimationForSelection();
+
 public Q_SLOTS:
-    
+
     void onAverageTracksButtonClicked();
     void onExportButtonClicked();
-    
+
     void onTrackingStarted(int step);
-    
+
     void onTrackingFinished();
-    
+
 Q_SIGNALS:
-    
+
     void trackingEnded();
-    
+
 private:
-    
+
     virtual void initializeExtraKnobs() OVERRIDE FINAL;
     virtual void appendExtraGui(QVBoxLayout* layout) OVERRIDE FINAL;
     virtual void appendButtons(QHBoxLayout* buttonLayout) OVERRIDE FINAL;
     virtual void setIconForButton(KnobButton* knob) OVERRIDE FINAL;
     virtual void onButtonTriggered(KnobButton* button) OVERRIDE FINAL;
     virtual void showMenuForInstance(Node* item) OVERRIDE FINAL;
-    
     boost::scoped_ptr<TrackerPanelPrivateV1> _imp;
 };
 

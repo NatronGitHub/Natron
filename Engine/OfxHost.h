@@ -45,11 +45,11 @@ CLANG_DIAG_ON(unknown-pragmas)
 //#define MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
 
 NATRON_NAMESPACE_ENTER;
-    
+
 struct OfxHostPrivate;
 class OfxHost
     : public OFX::Host::ImageEffect::Host
-    , private OFX::Host::Property::GetHook
+      , private OFX::Host::Property::GetHook
 {
 public:
 
@@ -58,7 +58,7 @@ public:
     virtual ~OfxHost();
 
     void setProperties();
-    
+
     void setOfxHostOSHandle(void* handle);
 
     /// Create a new instance of an image effect plug-in.
@@ -106,7 +106,7 @@ public:
     virtual const void* fetchSuite(const char *suiteName, int suiteVersion) OVERRIDE;
 
 #ifdef OFX_SUPPORTS_MULTITHREAD
-    virtual OfxStatus multiThread(OfxThreadFunctionV1 func,unsigned int nThreads, void *customArg) OVERRIDE;
+    virtual OfxStatus multiThread(OfxThreadFunctionV1 func, unsigned int nThreads, void *customArg) OVERRIDE;
     virtual OfxStatus multiThreadNumCPUS(unsigned int *nCPUs) const OVERRIDE;
     virtual OfxStatus multiThreadIndex(unsigned int *threadIndex) const OVERRIDE;
     virtual int multiThreadIsSpawnedThread() const OVERRIDE;
@@ -133,31 +133,30 @@ public:
 #endif
 
     virtual OFX::Host::Memory::Instance* newMemoryInstance(size_t nBytes) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
     boost::shared_ptr<AbstractOfxEffectInstance> createOfxEffect(NodePtr node,
                                                                  const NodeSerialization* serialization,
                                                                  const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                                                  bool disableRenderScaleSupport
 #ifndef NATRON_ENABLE_IO_META_NODES
-                                                                 ,bool allowFileDialogs,
+                                                                 , bool allowFileDialogs,
                                                                  bool *hasUsedFileDialog
 #endif
-    );
-    
+                                                                 );
+
 
     /*Reads OFX plugin cache and scan plugins directories
        to load them all.*/
-    void loadOFXPlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
-                        std::map<std::string,std::vector< std::pair<std::string,double> > >* writersMap);
+    void loadOFXPlugins(std::map<std::string, std::vector< std::pair<std::string, double> > >* readersMap,
+                        std::map<std::string, std::vector< std::pair<std::string, double> > >* writersMap);
 
     void clearPluginsLoadedCache();
 
     void setThreadAsActionCaller(OfxImageEffectInstance* instance, bool actionCaller);
-    
+
     OFX::Host::ImageEffect::Descriptor* getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                                     ContextEnum* ctx);
-    
-    
+
+
     /**
      * @brief A application-wide TLS struct containing all stuff needed to workaround OFX poor specs:
      * missing image effect handles etc...
@@ -165,32 +164,32 @@ public:
     struct OfxHostTLSData
     {
         OfxImageEffectInstance* lastEffectCallingMainEntry;
-        
+
         ///Stored as int, because we need -1; list because we need it recursive for the multiThread func
         std::list<int> threadIndexes;
-        
+
         OfxHostTLSData()
-        : lastEffectCallingMainEntry(0)
-        , threadIndexes()
+            : lastEffectCallingMainEntry(0)
+            , threadIndexes()
         {
-            
         }
     };
+
     typedef boost::shared_ptr<OfxHostTLSData> OfxHostDataTLSPtr;
-    
+
     OfxHostDataTLSPtr getTLSData() const;
-    
+
 private:
-    
+
     /*Writes all plugins loaded and their descriptors to
-     the OFX plugin cache. (called by the destructor) */
+       the OFX plugin cache. (called by the destructor) */
     void writeOFXCache();
 
     // get the virutals for viewport size, pixel scale, background colour
     const std::string &getStringProperty(const std::string &name, int n) const OFX_EXCEPTION_SPEC OVERRIDE;
-
     boost::scoped_ptr<OfxHostPrivate> _imp;
 };
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // ifndef NATRON_ENGINE_OFXHOST_H

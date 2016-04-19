@@ -38,26 +38,23 @@ struct AbortableThreadPrivate
     AbortableRenderInfoPtr abortInfo;
     EffectInstWPtr treeRoot;
     bool abortInfoValid;
-    
+
     AbortableThreadPrivate()
-    : isRenderResponseToUserInteraction(false)
-    , abortInfo()
-    , treeRoot()
-    , abortInfoValid(false)
+        : isRenderResponseToUserInteraction(false)
+        , abortInfo()
+        , treeRoot()
+        , abortInfoValid(false)
     {
-        
     }
 };
 
 AbortableThread::AbortableThread()
-: _imp(new AbortableThreadPrivate())
+    : _imp( new AbortableThreadPrivate() )
 {
-    
 }
 
 AbortableThread::~AbortableThread()
 {
-    
 }
 
 void
@@ -90,42 +87,49 @@ AbortableThread::getAbortInfo(bool* isRenderResponseToUserInteraction,
     *isRenderResponseToUserInteraction = _imp->isRenderResponseToUserInteraction;
     *abortInfo = _imp->abortInfo;
     *treeRoot = _imp->treeRoot.lock();
+
     return true;
 }
 
-namespace {
-    class ThreadPoolThread : public QThreadPoolThread, public AbortableThread
-    {
-    public:
-        
-        ThreadPoolThread()
+
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
+class ThreadPoolThread
+    : public QThreadPoolThread, public AbortableThread
+{
+public:
+
+    ThreadPoolThread()
         : QThreadPoolThread()
-        {
-        }
-        
-        virtual ~ThreadPoolThread() {}
-    };
-} // anon
+    {
+    }
+
+    virtual ~ThreadPoolThread() {}
+};
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
 
 ThreadPool::ThreadPool()
-: QThreadPool()
+    : QThreadPool()
 {
 }
 
 ThreadPool::~ThreadPool()
 {
-    
 }
 
 QThreadPoolThread*
 ThreadPool::createThreadPoolThread() const
 {
     ThreadPoolThread* ret = new ThreadPoolThread();
-    ret->setObjectName(QLatin1String("Global Thread (Pooled)"));
+
+    ret->setObjectName( QLatin1String("Global Thread (Pooled)") );
+
     return ret;
 }
 
-#endif
+#endif // ifdef QT_CUSTOM_THREADPOOL
 
 NATRON_NAMESPACE_EXIT;
 

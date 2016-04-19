@@ -83,7 +83,7 @@ public:
                                              const RenderScale & scale,
                                              ViewIdx view,
                                              RectD* rod) OVERRIDE; //!< rod is in canonical coordinates
-    virtual void getFrameRange(double *first,double *last) OVERRIDE;
+    virtual void getFrameRange(double *first, double *last) OVERRIDE;
     virtual int getMaxInputCount() const OVERRIDE
     {
         return 0;
@@ -115,17 +115,17 @@ public:
         return eRenderSafetyInstanceSafe;
     }
 
-    virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
-
     virtual bool isFrameVarying() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
+
 private:
 
     virtual void initializeKnobs() OVERRIDE;
 
-    void getSequenceTimeDomain(SequenceTime & first,SequenceTime & last);
+    void getSequenceTimeDomain(SequenceTime & first, SequenceTime & last);
 
-    void timeDomainFromSequenceTimeDomain(SequenceTime & first,SequenceTime & last,bool mustSetFrameRange);
+    void timeDomainFromSequenceTimeDomain(SequenceTime & first, SequenceTime & last, bool mustSetFrameRange);
 
     SequenceTime getSequenceTime(SequenceTime t);
 

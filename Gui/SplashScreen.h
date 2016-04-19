@@ -63,24 +63,24 @@ private:
 
 
 class LoadProjectSplashScreen
-: public QWidget
+    : public QWidget
 {
     QPixmap _pixmap;
     QString _text;
     QString _projectName;
-    
+
 public:
-    
+
     LoadProjectSplashScreen(const QString & filePath);
-    
+
     virtual ~LoadProjectSplashScreen()
     {
     }
-    
+
     void updateText(const QString & text);
 
 private:
-    
+
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
 };
 

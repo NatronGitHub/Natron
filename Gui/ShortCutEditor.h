@@ -63,7 +63,7 @@ public:
     virtual ~ShortCutEditor();
 
     void addShortcut(BoundAction* action);
-    
+
 public Q_SLOTS:
 
     void onSelectionChanged();

@@ -37,36 +37,30 @@
 
 NATRON_NAMESPACE_ENTER;
 
-class EditExpressionDialog : public EditScriptDialog
+class EditExpressionDialog
+    : public EditScriptDialog
 {
-    
     int _dimension;
     KnobGuiPtr _knob;
-    
+
 public:
-    
+
     EditExpressionDialog(Gui* gui, int dimension, const KnobGuiPtr& knob, QWidget* parent);
-    
+
     virtual ~EditExpressionDialog()
     {
     }
-    
+
     int getDimension() const;
 
 private:
-    
+
     virtual void getImportedModules(QStringList& modules) const OVERRIDE FINAL;
-    
-    virtual void getDeclaredVariables(std::list<std::pair<QString,QString> >& variables) const OVERRIDE FINAL;
-    
+    virtual void getDeclaredVariables(std::list<std::pair<QString, QString> >& variables) const OVERRIDE FINAL;
     virtual bool hasRetVariable() const OVERRIDE FINAL;
-    
     virtual void setTitle() OVERRIDE FINAL;
-    
     virtual QString compileExpression(const QString& expr) OVERRIDE FINAL;
-
     virtual QString getCustomHelp() OVERRIDE FINAL;
-
 };
 
 NATRON_NAMESPACE_EXIT;

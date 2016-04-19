@@ -48,74 +48,70 @@ class TrackSerialization
 {
     friend class boost::serialization::access;
     friend class TrackMarker;
-    
-public:
-  
-    TrackSerialization()
-    : _enabled(true)
-    , _label()
-    , _scriptName()
-    , _knobs()
-    , _userKeys()
-    {
-        
-    }
-    
 
-    
+public:
+
+    TrackSerialization()
+        : _enabled(true)
+        , _label()
+        , _scriptName()
+        , _knobs()
+        , _userKeys()
+    {
+    }
+
 private:
-    
+
     template<class Archive>
     void save(Archive & ar,
               const unsigned int version) const
     {
         (void)version;
-        ar & boost::serialization::make_nvp("Enabled",_enabled);
-        ar & boost::serialization::make_nvp("ScriptName",_scriptName);
-        ar & boost::serialization::make_nvp("Label",_label);
+        ar & boost::serialization::make_nvp("Enabled", _enabled);
+        ar & boost::serialization::make_nvp("ScriptName", _scriptName);
+        ar & boost::serialization::make_nvp("Label", _label);
         int nbItems = (int)_knobs.size();
-        ar & boost::serialization::make_nvp("NbItems",nbItems);
-        for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = _knobs.begin(); it!=_knobs.end(); ++it) {
-            ar & boost::serialization::make_nvp("Item",**it);
+        ar & boost::serialization::make_nvp("NbItems", nbItems);
+        for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
+            ar & boost::serialization::make_nvp("Item", **it);
         }
-        
+
         int nbUserKeys = (int)_userKeys.size();
-        ar & boost::serialization::make_nvp("NbUserKeys",nbUserKeys);
-        for (std::list<int>::const_iterator it = _userKeys.begin(); it!=_userKeys.end();++it) {
-            ar & boost::serialization::make_nvp("UserKeys",*it);
+        ar & boost::serialization::make_nvp("NbUserKeys", nbUserKeys);
+        for (std::list<int>::const_iterator it = _userKeys.begin(); it != _userKeys.end(); ++it) {
+            ar & boost::serialization::make_nvp("UserKeys", *it);
         }
-        
     }
-    
+
     template<class Archive>
     void load(Archive & ar,
               const unsigned int version)
     {
         (void)version;
-        ar & boost::serialization::make_nvp("Enabled",_enabled);
-        ar & boost::serialization::make_nvp("ScriptName",_scriptName);
-        ar & boost::serialization::make_nvp("Label",_label);
+        ar & boost::serialization::make_nvp("Enabled", _enabled);
+        ar & boost::serialization::make_nvp("ScriptName", _scriptName);
+        ar & boost::serialization::make_nvp("Label", _label);
         int nbItems;
-        ar & boost::serialization::make_nvp("NbItems",nbItems);
-        for (int i = 0;i < nbItems; ++i) {
-            boost::shared_ptr<KnobSerialization> s(new KnobSerialization());
-            ar & boost::serialization::make_nvp("Item",*s);
+        ar & boost::serialization::make_nvp("NbItems", nbItems);
+        for (int i = 0; i < nbItems; ++i) {
+            boost::shared_ptr<KnobSerialization> s( new KnobSerialization() );
+            ar & boost::serialization::make_nvp("Item", *s);
             _knobs.push_back(s);
         }
         int nbUserKeys;
-        ar & boost::serialization::make_nvp("NbUserKeys",nbUserKeys);
+        ar & boost::serialization::make_nvp("NbUserKeys", nbUserKeys);
         for (int i = 0; i < nbUserKeys; ++i) {
             int key;
-            ar & boost::serialization::make_nvp("UserKeys",key);
+            ar & boost::serialization::make_nvp("UserKeys", key);
             _userKeys.push_back(key);
         }
     }
-    
+
     BOOST_SERIALIZATION_SPLIT_MEMBER()
-    
-    
+
+
     bool _enabled;
-    std::string _label,_scriptName;
+    std::string _label, _scriptName;
     std::list<boost::shared_ptr<KnobSerialization> > _knobs;
     std::list<int> _userKeys;
 };
@@ -123,54 +119,53 @@ private:
 
 class TrackerContextSerialization
 {
-    
     friend class boost::serialization::access;
     friend class TrackerContext;
-    
+
 public:
-    
+
     TrackerContextSerialization()
-    : _tracks()
+        : _tracks()
     {
-        
     }
 
 private:
-    
+
     template<class Archive>
     void save(Archive & ar,
               const unsigned int version) const
     {
         (void)version;
         int nbItems = _tracks.size();
-        ar & boost::serialization::make_nvp("NbItems",nbItems);
-        for (std::list<TrackSerialization>::const_iterator it = _tracks.begin(); it!=_tracks.end(); ++it) {
-            ar & boost::serialization::make_nvp("Item",*it);
+        ar & boost::serialization::make_nvp("NbItems", nbItems);
+        for (std::list<TrackSerialization>::const_iterator it = _tracks.begin(); it != _tracks.end(); ++it) {
+            ar & boost::serialization::make_nvp("Item", *it);
         }
     }
-    
+
     template<class Archive>
     void load(Archive & ar,
               const unsigned int version)
     {
         (void)version;
         int nbItems;
-        ar & boost::serialization::make_nvp("NbItems",nbItems);
-        for (int i = 0;i < nbItems; ++i) {
+        ar & boost::serialization::make_nvp("NbItems", nbItems);
+        for (int i = 0; i < nbItems; ++i) {
             TrackSerialization s;
-            ar & boost::serialization::make_nvp("Item",s);
+            ar & boost::serialization::make_nvp("Item", s);
             _tracks.push_back(s);
         }
     }
-    
+
     BOOST_SERIALIZATION_SPLIT_MEMBER()
-    
+
     std::list<TrackSerialization> _tracks;
 };
+
 NATRON_NAMESPACE_EXIT;
 
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::TrackSerialization,TRACK_SERIALIZATION_VERSION)
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::TrackerContextSerialization,TRACKER_CONTEXT_SERIALIZATION_VERSION)
+BOOST_CLASS_VERSION(NATRON_NAMESPACE::TrackSerialization, TRACK_SERIALIZATION_VERSION)
+BOOST_CLASS_VERSION(NATRON_NAMESPACE::TrackerContextSerialization, TRACKER_CONTEXT_SERIALIZATION_VERSION)
 
 
 #endif // TRACKERSERIALIZATION_H

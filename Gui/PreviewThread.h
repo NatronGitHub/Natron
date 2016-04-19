@@ -43,28 +43,25 @@ NATRON_NAMESPACE_ENTER;
 
 struct PreviewThreadPrivate;
 class PreviewThread
-: public QThread
+    : public QThread
 #ifdef QT_CUSTOM_THREADPOOL
-, public AbortableThread
+      , public AbortableThread
 #endif
 {
-    
-    
 public:
     PreviewThread();
-    
+
     virtual ~PreviewThread();
-    
+
     void appendToQueue(const NodeGuiPtr& node, double time);
-    
+
     void quitThread();
-    
+
     bool isWorking() const;
-    
+
 private:
-    
+
     virtual void run() OVERRIDE FINAL;
-    
     boost::scoped_ptr<PreviewThreadPrivate> _imp;
 };
 

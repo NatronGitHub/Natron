@@ -36,12 +36,14 @@ class QHBoxLayout;
 class QFrame;
 class PlaceHolderTextEdit;
 
-class CrashDialog : public QDialog
-{    
+class CrashDialog
+    : public QDialog
+{
     Q_OBJECT
-    
+
 public:
-    enum UserChoice {
+    enum UserChoice
+    {
         eUserChoiceUpload,
         eUserChoiceSave,
         eUserChoiceIgnore
@@ -54,24 +56,23 @@ public:
     QString getDescription() const;
 
     UserChoice getUserChoice() const;
-    
+
     const QString& getOriginalDumpFilePath() const
     {
         return _filePath;
     }
-    
+
 public Q_SLOTS:
-    
+
     void onSendClicked();
-    
+
     void onDontSendClicked();
-    
+
     void onSaveClicked();
-    
+
 private:
-    
+
     QString _filePath;
-    
     QVBoxLayout* _mainLayout;
     QFrame* _mainFrame;
     QGridLayout* _gridLayout;

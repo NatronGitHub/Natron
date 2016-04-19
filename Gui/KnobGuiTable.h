@@ -32,119 +32,113 @@
 NATRON_NAMESPACE_ENTER;
 
 struct KnobGuiTablePrivate;
-class KnobGuiTable : public KnobGui
+class KnobGuiTable
+    : public KnobGui
 {
-    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-    GCC_DIAG_SUGGEST_OVERRIDE_ON
-    
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
-    
+
     KnobGuiTable(KnobPtr knob,
                  DockablePanel *container);
-    
+
     virtual ~KnobGuiTable() OVERRIDE;
-    
+
     virtual void removeSpecificGui() OVERRIDE;
-    
+
     int rowCount() const;
-    
+
 public Q_SLOTS:
-    
-    
+
+
     void onAddButtonClicked();
-    
+
     void onRemoveButtonClicked();
-    
+
     void onEditButtonClicked();
-    
+
     void onItemDataChanged(TableItem* item);
-    
+
     void onItemAboutToDrop();
-    
+
     void onItemDropped();
-    
+
     void onItemDoubleClicked(TableItem* item);
-    
+
 protected:
-    
-    virtual void setDirty(bool /*dirty*/) OVERRIDE 
+
+    virtual void setDirty(bool /*dirty*/) OVERRIDE
     {
-        
     }
-    
+
     virtual void createWidget(QHBoxLayout *layout) OVERRIDE;
     virtual void _hide() OVERRIDE;
     virtual void _show() OVERRIDE;
     virtual void setEnabled() OVERRIDE;
-    virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE;
+    virtual void setReadOnly(bool readOnly, int dimension) OVERRIDE;
     virtual void updateGUI(int dimension) OVERRIDE;
-    virtual void reflectAnimationLevel(int /*dimension*/,AnimationLevelEnum /*level*/) OVERRIDE
+    virtual void reflectAnimationLevel(int /*dimension*/,
+                                       AnimationLevelEnum /*level*/) OVERRIDE
     {
-        
     }
-    virtual void reflectExpressionState(int /*dimension*/,bool /*hasExpr*/) OVERRIDE
+
+    virtual void reflectExpressionState(int /*dimension*/,
+                                        bool /*hasExpr*/) OVERRIDE
     {
-        
     }
+
     virtual void updateToolTip() OVERRIDE;
-    
     virtual bool addNewUserEntry(QStringList& row) = 0;
-    
+
     // row has been set-up with old value
     virtual bool editUserEntry(QStringList& row) = 0;
-    
     virtual void entryRemoved(const QStringList& /*row*/)  {}
-    
-    virtual void tableChanged(int /*row*/, int /*col*/,  std::string* /*newEncodedValue*/)
+
+    virtual void tableChanged(int /*row*/,
+                              int /*col*/,
+                              std::string* /*newEncodedValue*/)
     {
-        
     }
-    
+
 private:
-    
+
     virtual bool shouldAddStretch() const OVERRIDE FINAL { return false; }
 
     boost::scoped_ptr<KnobGuiTablePrivate> _imp;
-    
 };
 
 class KnobGuiLayers
-: public KnobGuiTable
+    : public KnobGuiTable
 {
-
 public:
-    
+
     static KnobGui * BuildKnobGui(KnobPtr knob,
                                   DockablePanel *container)
     {
         return new KnobGuiLayers(knob, container);
     }
-    
+
     KnobGuiLayers(KnobPtr knob,
-                DockablePanel *container);
-    
+                  DockablePanel *container);
+
     virtual ~KnobGuiLayers() OVERRIDE;
-    
-    
+
+
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
-    
-    
+
 private:
-    
-    
+
+
     virtual bool addNewUserEntry(QStringList& row) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
+
     // row has been set-up with old value
     virtual bool editUserEntry(QStringList& row) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
     virtual void entryRemoved(const QStringList& /*row*/)  OVERRIDE {}
-    
+
     virtual void tableChanged(int row, int col, std::string* newEncodedValue) OVERRIDE FINAL;
-    
-    
     boost::weak_ptr<KnobLayers> _knob;
-    
 };
 
 NATRON_NAMESPACE_EXIT;

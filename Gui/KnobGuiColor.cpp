@@ -85,9 +85,10 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER;
 
 
-ColorPickerLabel::ColorPickerLabel(KnobGuiColor* knob,QWidget* parent)
+ColorPickerLabel::ColorPickerLabel(KnobGuiColor* knob,
+                                   QWidget* parent)
     : Label(parent)
-      , _pickingEnabled(false)
+    , _pickingEnabled(false)
     , _knob(knob)
 {
     setMouseTracking(true);
@@ -119,7 +120,7 @@ ColorPickerLabel::leaveEvent(QEvent*)
 void
 ColorPickerLabel::setPickingEnabled(bool enabled)
 {
-    if (!isEnabled()) {
+    if ( !isEnabled() ) {
         return;
     }
     _pickingEnabled = enabled;
@@ -134,7 +135,7 @@ ColorPickerLabel::setEnabledMode(bool enabled)
         _pickingEnabled = false;
         setColor(_currentColor);
         if (_knob) {
-            _knob->getGui()->removeColorPicker(boost::dynamic_pointer_cast<KnobColor>(_knob->getKnob()));
+            _knob->getGui()->removeColorPicker( boost::dynamic_pointer_cast<KnobColor>( _knob->getKnob() ) );
         }
     }
 }
@@ -151,20 +152,20 @@ ColorPickerLabel::setColor(const QColor & color)
         QImage pickerImg = pickerIcon.toImage();
         QImage img(pickerIcon.width(), pickerIcon.height(), QImage::Format_ARGB32);
         img.fill( color.rgb() );
-        
-        
+
+
         int h = pickerIcon.height();
         int w = pickerIcon.width();
         for (int i = 0; i < h; ++i) {
             const QRgb* data = (QRgb*)pickerImg.scanLine(i);
-            if ((i == 0) || (i == h -1)) {
+            if ( (i == 0) || (i == h - 1) ) {
                 for (int j = 0; j < w; ++j) {
-                    img.setPixel(j, i, qRgb(0, 0, 0));
+                    img.setPixel( j, i, qRgb(0, 0, 0) );
                 }
             } else {
                 for (int j = 0; j < w; ++j) {
-                    if ((j == 0) || (j == w -1)) {
-                        img.setPixel(j, i, qRgb(0,0,0));
+                    if ( (j == 0) || (j == w - 1) ) {
+                        img.setPixel( j, i, qRgb(0, 0, 0) );
                     } else {
                         int alpha = qAlpha(data[j]);
                         if (alpha > 0) {
@@ -182,14 +183,14 @@ ColorPickerLabel::setColor(const QColor & color)
         int w = img.width();
         QRgb c = color.rgb();
         for (int i = 0; i < h; ++i) {
-            if ((i == 0) || (i == h -1)) {
+            if ( (i == 0) || (i == h - 1) ) {
                 for (int j = 0; j < w; ++j) {
-                    img.setPixel(j, i, qRgb(0, 0, 0));
+                    img.setPixel( j, i, qRgb(0, 0, 0) );
                 }
             } else {
                 for (int j = 0; j < w; ++j) {
-                    if ((j == 0) || (j == w -1)) {
-                        img.setPixel(j, i, qRgb(0,0,0));
+                    if ( (j == 0) || (j == w - 1) ) {
+                        img.setPixel( j, i, qRgb(0, 0, 0) );
                     } else {
                         img.setPixel(j, i, c);
                     }
@@ -199,18 +200,16 @@ ColorPickerLabel::setColor(const QColor & color)
         QPixmap pix = QPixmap::fromImage(img);
         setPixmap(pix);
     }
-}
-
+} // ColorPickerLabel::setColor
 
 KnobGuiColor::KnobGuiColor(KnobPtr knob,
-             DockablePanel *container)
-: KnobGuiValue(knob, container)
-, _knob(boost::dynamic_pointer_cast<KnobColor>(knob))
-, _colorLabel(0)
-, _colorDialogButton(0)
-, _lastColor(knob->getDimension())
+                           DockablePanel *container)
+    : KnobGuiValue(knob, container)
+    , _knob( boost::dynamic_pointer_cast<KnobColor>(knob) )
+    , _colorLabel(0)
+    , _colorDialogButton(0)
+    , _lastColor( knob->getDimension() )
 {
-    
 }
 
 void
@@ -218,14 +217,15 @@ KnobGuiColor::connectKnobSignalSlots()
 {
     boost::shared_ptr<KnobColor> knob = _knob.lock();
     QObject::connect( this, SIGNAL(dimensionSwitchToggled(bool)), knob.get(), SLOT(onDimensionSwitchToggled(bool)) );
-    QObject::connect( knob.get(), SIGNAL(mustActivateAllDimensions()),this, SLOT(onMustShowAllDimension()) );
-    QObject::connect( knob.get(), SIGNAL(pickingEnabled(bool)),this, SLOT(setPickingEnabled(bool)) );
+    QObject::connect( knob.get(), SIGNAL(mustActivateAllDimensions()), this, SLOT(onMustShowAllDimension()) );
+    QObject::connect( knob.get(), SIGNAL(pickingEnabled(bool)), this, SLOT(setPickingEnabled(bool)) );
 }
 
 void
 KnobGuiColor::getIncrements(std::vector<double>* increments) const
 {
     int nDims = _knob.lock()->getDimension();
+
     increments->resize(nDims);
     for (int i = 0; i < nDims; ++i) {
         (*increments)[i] = 0.001;
@@ -236,6 +236,7 @@ void
 KnobGuiColor::getDecimals(std::vector<int>* decimals) const
 {
     int nDims = _knob.lock()->getDimension();
+
     decimals->resize(nDims);
     for (int i = 0; i < nDims; ++i) {
         (*decimals)[i] = 6;
@@ -245,42 +246,42 @@ KnobGuiColor::getDecimals(std::vector<int>* decimals) const
 void
 KnobGuiColor::addExtraWidgets(QHBoxLayout* containerLayout)
 {
-    containerLayout->addSpacing(TO_DPIX(10));
+    containerLayout->addSpacing( TO_DPIX(10) );
     boost::shared_ptr<KnobColor> knob = _knob.lock();
-    _colorLabel = new ColorPickerLabel(knob->isSimplified() ? NULL : this, containerLayout->widget());
-    if (!knob->isSimplified()) {
-        _colorLabel->setToolTip(GuiUtils::convertFromPlainText(tr("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
-                                                                  "You can also pick the average color of a given rectangle by holding control + shift + left click\n. "
-                                                                  "To deselect the picker left click anywhere."
-                                                                  "Note that by default %1 converts to linear the color picked\n"
-                                                                  "because all the processing pipeline is linear, but you can turn this off in the\n"
-                                                                  "preferences panel.").arg(QString::fromUtf8(NATRON_APPLICATION_NAME)), Qt::WhiteSpaceNormal) );
+    _colorLabel = new ColorPickerLabel( knob->isSimplified() ? NULL : this, containerLayout->widget() );
+    if ( !knob->isSimplified() ) {
+        _colorLabel->setToolTip( GuiUtils::convertFromPlainText(tr("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
+                                                                   "You can also pick the average color of a given rectangle by holding control + shift + left click\n. "
+                                                                   "To deselect the picker left click anywhere."
+                                                                   "Note that by default %1 converts to linear the color picked\n"
+                                                                   "because all the processing pipeline is linear, but you can turn this off in the\n"
+                                                                   "preferences panel.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ), Qt::WhiteSpaceNormal) );
     }
-    
-    QSize medSize(TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
-    QSize medIconSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
-    
+
+    QSize medSize( TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
+    QSize medIconSize( TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE) );
+
     _colorLabel->setFixedSize(medSize);
-    QObject::connect( _colorLabel,SIGNAL(pickingEnabled(bool)),this,SLOT(onPickingEnabled(bool)) );
+    QObject::connect( _colorLabel, SIGNAL(pickingEnabled(bool)), this, SLOT(onPickingEnabled(bool)) );
     containerLayout->addWidget(_colorLabel);
-    
-    if (knob->isSimplified()) {
-        containerLayout->addSpacing(TO_DPIX(5));
+
+    if ( knob->isSimplified() ) {
+        containerLayout->addSpacing( TO_DPIX(5) );
     }
-    
+
     QPixmap buttonPix;
     appPTR->getIcon(NATRON_PIXMAP_COLORWHEEL, NATRON_MEDIUM_BUTTON_ICON_SIZE, &buttonPix);
-    _colorDialogButton = new Button(QIcon(buttonPix), QString(), containerLayout->widget());
+    _colorDialogButton = new Button( QIcon(buttonPix), QString(), containerLayout->widget() );
     _colorDialogButton->setFixedSize(medSize);
     _colorDialogButton->setIconSize(medIconSize);
-    _colorDialogButton->setToolTip(GuiUtils::convertFromPlainText(tr("Open the color dialog."), Qt::WhiteSpaceNormal));
+    _colorDialogButton->setToolTip( GuiUtils::convertFromPlainText(tr("Open the color dialog."), Qt::WhiteSpaceNormal) );
     _colorDialogButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _colorDialogButton, SIGNAL(clicked()), this, SLOT(showColorDialog()) );
     containerLayout->addWidget(_colorDialogButton);
-    
-    if (knob->isSimplified()) {
+
+    if ( knob->isSimplified() ) {
         KnobGuiValue::_hide();
-        enableRightClickMenu(_colorLabel,-1);
+        enableRightClickMenu(_colorLabel, -1);
     }
 }
 
@@ -290,17 +291,20 @@ KnobGuiColor::onMustShowAllDimension()
     onDimensionSwitchClicked(true);
 }
 
-
 void
-KnobGuiColor::updateLabel(double r, double g, double b, double a)
+KnobGuiColor::updateLabel(double r,
+                          double g,
+                          double b,
+                          double a)
 {
     QColor color;
     boost::shared_ptr<KnobColor> knob = _knob.lock();
     bool simple = knob->isSimplified();
-    color.setRgbF(Image::clamp<qreal>(simple ? r : Color::to_func_srgb(r), 0., 1.),
-                  Image::clamp<qreal>(simple ? g : Color::to_func_srgb(g), 0., 1.),
-                  Image::clamp<qreal>(simple ? b : Color::to_func_srgb(b), 0., 1.),
-                  Image::clamp<qreal>(a, 0., 1.));
+
+    color.setRgbF( Image::clamp<qreal>(simple ? r : Color::to_func_srgb(r), 0., 1.),
+                   Image::clamp<qreal>(simple ? g : Color::to_func_srgb(g), 0., 1.),
+                   Image::clamp<qreal>(simple ? b : Color::to_func_srgb(b), 0., 1.),
+                   Image::clamp<qreal>(a, 0., 1.) );
     _colorLabel->setColor(color);
 }
 
@@ -319,18 +323,17 @@ KnobGuiColor::onPickingEnabled(bool enabled)
 {
     if ( getKnob()->getHolder()->getApp() ) {
         if (enabled) {
-            getGui()->registerNewColorPicker(_knob.lock());
+            getGui()->registerNewColorPicker( _knob.lock() );
         } else {
-            getGui()->removeColorPicker(_knob.lock());
+            getGui()->removeColorPicker( _knob.lock() );
         }
     }
 }
 
-
 void
 KnobGuiColor::_hide()
 {
-    if (!_knob.lock()->isSimplified()) {
+    if ( !_knob.lock()->isSimplified() ) {
         KnobGuiValue::_hide();
     }
     _colorLabel->hide();
@@ -340,13 +343,12 @@ KnobGuiColor::_hide()
 void
 KnobGuiColor::_show()
 {
-    if (!_knob.lock()->isSimplified()) {
+    if ( !_knob.lock()->isSimplified() ) {
         KnobGuiValue::_show();
     }
     _colorLabel->show();
     _colorDialogButton->show();
 }
-
 
 void
 KnobGuiColor::updateExtraGui(const std::vector<double>& values)
@@ -368,12 +370,12 @@ KnobGuiColor::updateExtraGui(const std::vector<double>& values)
     updateLabel(r, g, b, a);
 }
 
-
 void
 KnobGuiColor::onDimensionsFolded()
 {
     boost::shared_ptr<KnobColor> knob = _knob.lock();
     int nDims = knob->getDimension();
+
     for (int i = 0; i < nDims; ++i) {
         SpinBox* sb = 0;
         getSpinBox(i, &sb);
@@ -381,18 +383,18 @@ KnobGuiColor::onDimensionsFolded()
         sb->setUseLineColor(false, Qt::red);
     }
     Q_EMIT dimensionSwitchToggled(false);
-    
 }
 
 void
 KnobGuiColor::onDimensionsExpanded()
 {
     QColor colors[4];
-    colors[0].setRgbF(0.851643,0.196936,0.196936);
-    colors[1].setRgbF(0,0.654707,0);
-    colors[2].setRgbF(0.345293,0.345293,1);
-    colors[3].setRgbF(0.398979,0.398979,0.398979);
-    
+
+    colors[0].setRgbF(0.851643, 0.196936, 0.196936);
+    colors[1].setRgbF(0, 0.654707, 0);
+    colors[2].setRgbF(0.345293, 0.345293, 1);
+    colors[3].setRgbF(0.398979, 0.398979, 0.398979);
+
     boost::shared_ptr<KnobColor> knob = _knob.lock();
     int nDims = knob->getDimension();
     for (int i = 0; i < nDims; ++i) {
@@ -405,13 +407,11 @@ KnobGuiColor::onDimensionsExpanded()
     Q_EMIT dimensionSwitchToggled(true);
 }
 
-
 void
 KnobGuiColor::setEnabledExtraGui(bool enabled)
 {
     _colorDialogButton->setEnabled(enabled);
     _colorLabel->setEnabledMode(enabled);
-    
 }
 
 void
@@ -420,37 +420,37 @@ KnobGuiColor::onDialogCurrentColorChanged(const QColor & color)
     boost::shared_ptr<KnobColor> knob = _knob.lock();
     bool isSimple = knob->isSimplified();
     int nDims = knob->getDimension();
+
     if (nDims == 1) {
         knob->setValue(color.redF(), ViewSpec::all(), 0);
     } else if (nDims == 3) {
         ///Don't set alpha since the color dialog can only handle RGB
-        knob->setValues(isSimple ? color.redF() : Color::from_func_srgb(color.redF()),
-                        isSimple ? color.greenF() : Color::from_func_srgb(color.greenF()),
-                        isSimple ? color.blueF() : Color::from_func_srgb(color.blueF()),
+        knob->setValues(isSimple ? color.redF() : Color::from_func_srgb( color.redF() ),
+                        isSimple ? color.greenF() : Color::from_func_srgb( color.greenF() ),
+                        isSimple ? color.blueF() : Color::from_func_srgb( color.blueF() ),
                         ViewSpec::all(),
                         eValueChangedReasonNatronInternalEdited);
     } else if (nDims == 4) {
-        knob->setValues(isSimple ? color.redF() : Color::from_func_srgb(color.redF()),
-                        isSimple ? color.greenF() : Color::from_func_srgb(color.greenF()),
-                        isSimple ? color.blueF() : Color::from_func_srgb(color.blueF()),
+        knob->setValues(isSimple ? color.redF() : Color::from_func_srgb( color.redF() ),
+                        isSimple ? color.greenF() : Color::from_func_srgb( color.greenF() ),
+                        isSimple ? color.blueF() : Color::from_func_srgb( color.blueF() ),
                         1.,
                         ViewSpec::all(),
                         eValueChangedReasonNatronInternalEdited);
     }
-    if (getGui()) {
+    if ( getGui() ) {
         getGui()->setDraftRenderEnabled(true);
     }
 }
 
-
 void
 KnobGuiColor::showColorDialog()
 {
-    QColorDialog dialog(_colorLabel->parentWidget());
-    
+    QColorDialog dialog( _colorLabel->parentWidget() );
     boost::shared_ptr<KnobColor> knob = _knob.lock();
     const int nDims = knob->getDimension();
     double curR = knob->getValue(0);
+
     _lastColor[0] = curR;
     double curG = curR;
     double curB = curR;
@@ -465,18 +465,16 @@ KnobGuiColor::showColorDialog()
         curA = knob->getValue(3);
         _lastColor[3] = curA;
     }
-    
+
     bool isSimple = knob->isSimplified();
-    
     QColor curColor;
-    curColor.setRgbF(Image::clamp<qreal>(isSimple ? curR : Color::to_func_srgb(curR), 0., 1.),
-                     Image::clamp<qreal>(isSimple ? curG : Color::to_func_srgb(curG), 0., 1.),
-                     Image::clamp<qreal>(isSimple ? curB : Color::to_func_srgb(curB), 0., 1.),
-                     Image::clamp<qreal>(curA, 0., 1.));
+    curColor.setRgbF( Image::clamp<qreal>(isSimple ? curR : Color::to_func_srgb(curR), 0., 1.),
+                      Image::clamp<qreal>(isSimple ? curG : Color::to_func_srgb(curG), 0., 1.),
+                      Image::clamp<qreal>(isSimple ? curB : Color::to_func_srgb(curB), 0., 1.),
+                      Image::clamp<qreal>(curA, 0., 1.) );
     dialog.setCurrentColor(curColor);
-    QObject::connect( &dialog,SIGNAL(currentColorChanged(QColor)),this,SLOT(onDialogCurrentColorChanged(QColor)) );
-    if (!dialog.exec()) {
-        
+    QObject::connect( &dialog, SIGNAL(currentColorChanged(QColor)), this, SLOT(onDialogCurrentColorChanged(QColor)) );
+    if ( !dialog.exec() ) {
         if (nDims == 3) {
             knob->setValues(_lastColor[0], _lastColor[1], _lastColor[2], ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
         } else if (nDims == 4) {
@@ -484,14 +482,12 @@ KnobGuiColor::showColorDialog()
         } else if (nDims == 1) {
             knob->setValue(_lastColor[0], ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited);
         }
-        
     } else {
-        
         QColor userColor = dialog.currentColor();
         std::vector<double> color(4);
-        color[0] = isSimple ? userColor.redF() : Color::from_func_srgb(userColor.redF());
-        color[1] = isSimple ? userColor.greenF() : Color::from_func_srgb(userColor.greenF());
-        color[2] = isSimple ? userColor.blueF() : Color::from_func_srgb(userColor.blueF());
+        color[0] = isSimple ? userColor.redF() : Color::from_func_srgb( userColor.redF() );
+        color[1] = isSimple ? userColor.greenF() : Color::from_func_srgb( userColor.greenF() );
+        color[2] = isSimple ? userColor.blueF() : Color::from_func_srgb( userColor.blueF() );
         color[3] = 1.;
 
         for (int i = 0; i < 3; ++i) {
@@ -500,7 +496,7 @@ KnobGuiColor::showColorDialog()
             assert(sb);
             sb->setValue(color[i]);
         }
-        
+
         // Refresh the last value so that the undo command retrieves the value that was prior to opening the dialog
         if (nDims == 3) {
             knob->setValues(_lastColor[0], _lastColor[1], _lastColor[2], ViewSpec::all(), eValueChangedReasonUserEdited);
@@ -509,18 +505,17 @@ KnobGuiColor::showColorDialog()
         } else if (nDims == 1) {
             knob->setValue(_lastColor[0], ViewSpec::all(), 0, eValueChangedReasonUserEdited);
         }
-        
+
         onSpinBoxValueChanged();
-        
+
         updateExtraGui(color);
     }
-    
-    if (getGui()) {
+
+    if ( getGui() ) {
         getGui()->setDraftRenderEnabled(false);
     }
     //knob->evaluateValueChange(0, knob->getCurrentTime(), ViewIdx(0), eValueChangedReasonNatronGuiEdited);
 } // showColorDialog
-
 
 NATRON_NAMESPACE_EXIT;
 

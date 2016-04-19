@@ -145,8 +145,8 @@ LutManager::getLut(const std::string & name,
     if ( found != LutManager::m_instance.luts.end() ) {
         return found->second;
     } else {
-        std::pair<LutsMap::iterator,bool> ret =
-            LutManager::m_instance.luts.insert( std::make_pair( name,new Lut(name,fromFunc,toFunc) ) );
+        std::pair<LutsMap::iterator, bool> ret =
+            LutManager::m_instance.luts.insert( std::make_pair( name, new Lut(name, fromFunc, toFunc) ) );
         assert(ret.second);
 
         return ret.first->second;
@@ -180,6 +180,7 @@ intersects(const RectI & what,
 {
     return what.intersects(other);
 }
+
 #endif // DEAD_CODE
 
 static void
@@ -241,6 +242,7 @@ Lut::toColorSpaceFloatFromLinearFloatFast(float v) const
 
     return Color::intToFloat<0xff01>(toFunc_hipart_to_uint8xx[hipart(v)]);
 }
+
 #endif // DEAD_CODE
 
 unsigned char
@@ -393,6 +395,7 @@ Lut::to_byte_planar(unsigned char* to,
         }
     }
 }
+
 #endif // DEAD_CODE
 
 #ifdef DEAD_CODE
@@ -406,6 +409,7 @@ Lut::to_short_planar(unsigned short* /*to*/,
 {
     throw std::runtime_error("Lut::to_short_planar not implemented yet.");
 }
+
 #endif // DEAD_CODE
 
 void
@@ -418,11 +422,11 @@ Lut::to_float_planar(float* to,
 {
     validate();
     if (!alpha) {
-        for (int f = 0,t = 0; f < W; f += inDelta, t += outDelta) {
+        for (int f = 0, t = 0; f < W; f += inDelta, t += outDelta) {
             to[t] = toColorSpaceFloatFromLinearFloat(from[f]);
         }
     } else {
-        for (int f = 0,t = 0; f < W; f += inDelta, t += outDelta) {
+        for (int f = 0, t = 0; f < W; f += inDelta, t += outDelta) {
             to[t] = toColorSpaceFloatFromLinearFloat(from[f] * alpha[f]);
         }
     }
@@ -442,7 +446,7 @@ Lut::to_byte_packed(unsigned char* to,
     ///clip the conversion rect to srcBounds and dstBounds
     RectI rect = conversionRect;
 
-    if ( !clip(&rect,srcBounds) || !clip(&rect,dstBounds) ) {
+    if ( !clip(&rect, srcBounds) || !clip(&rect, dstBounds) ) {
         return;
     }
 
@@ -454,7 +458,7 @@ Lut::to_byte_packed(unsigned char* to,
     getOffsetsForPacking(inputPacking, &inROffset, &inGOffset, &inBOffset, &inAOffset);
     getOffsetsForPacking(outputPacking, &outROffset, &outGOffset, &outBOffset, &outAOffset);
 
-    int inPackingSize,outPackingSize;
+    int inPackingSize, outPackingSize;
     inPackingSize = inputHasAlpha ? 4 : 3;
     outPackingSize = outputHasAlpha ? 4 : 3;
 
@@ -526,6 +530,7 @@ Lut::to_short_packed(unsigned short* /*to*/,
 {
     throw std::runtime_error("Lut::to_short_packed not implemented yet.");
 }
+
 #endif // DEAD_CODE
 
 void
@@ -542,7 +547,7 @@ Lut::to_float_packed(float* to,
     ///clip the conversion rect to srcBounds and dstBounds
     RectI rect = conversionRect;
 
-    if ( !clip(&rect,srcBounds) || !clip(&rect,dstBounds) ) {
+    if ( !clip(&rect, srcBounds) || !clip(&rect, dstBounds) ) {
         return;
     }
 
@@ -553,7 +558,7 @@ Lut::to_float_packed(float* to,
     getOffsetsForPacking(inputPacking, &inROffset, &inGOffset, &inBOffset, &inAOffset);
     getOffsetsForPacking(outputPacking, &outROffset, &outGOffset, &outBOffset, &outAOffset);
 
-    int inPackingSize,outPackingSize;
+    int inPackingSize, outPackingSize;
     inPackingSize = inputHasAlpha ? 4 : 3;
     outPackingSize = outputHasAlpha ? 4 : 3;
 
@@ -594,11 +599,11 @@ Lut::from_byte_planar(float* to,
 {
     validate();
     if (!alpha) {
-        for (int f = 0,t = 0; f < W; f += inDelta, t += outDelta) {
+        for (int f = 0, t = 0; f < W; f += inDelta, t += outDelta) {
             to[f] = fromFunc_uint8_to_float[(int)from[f]];
         }
     } else {
-        for (int f = 0,t = 0; f < W; f += inDelta, t += outDelta) {
+        for (int f = 0, t = 0; f < W; f += inDelta, t += outDelta) {
             to[t] = alpha[f] <= 0 ? 0 : Color::intToFloat<256>(fromFunc_uint8_to_float[(from[f] * 255 + 128) / alpha[f]] * alpha[f]);
         }
     }
@@ -625,11 +630,11 @@ Lut::from_float_planar(float* to,
 {
     validate();
     if (!alpha) {
-        for (int f = 0,t = 0; f < W; f += inDelta, t += outDelta) {
+        for (int f = 0, t = 0; f < W; f += inDelta, t += outDelta) {
             to[t] = fromColorSpaceFloatToLinearFloat(from[f]);
         }
     } else {
-        for (int f = 0,t = 0; f < W; f += inDelta, t += outDelta) {
+        for (int f = 0, t = 0; f < W; f += inDelta, t += outDelta) {
             float a = alpha[f];
             to[t] = a <= 0. ? 0. : fromColorSpaceFloatToLinearFloat(from[f] / a) * a;
         }
@@ -653,7 +658,7 @@ Lut::from_byte_packed(float* to,
 
     ///clip the conversion rect to srcBounds and dstBounds
     RectI rect = conversionRect;
-    if ( !clip(&rect,srcBounds) || !clip(&rect,dstBounds) ) {
+    if ( !clip(&rect, srcBounds) || !clip(&rect, dstBounds) ) {
         return;
     }
 
@@ -665,7 +670,7 @@ Lut::from_byte_packed(float* to,
     getOffsetsForPacking(inputPacking, &inROffset, &inGOffset, &inBOffset, &inAOffset);
     getOffsetsForPacking(outputPacking, &outROffset, &outGOffset, &outBOffset, &outAOffset);
 
-    int inPackingSize,outPackingSize;
+    int inPackingSize, outPackingSize;
     inPackingSize = inputHasAlpha ? 4 : 3;
     outPackingSize = outputHasAlpha ? 4 : 3;
 
@@ -747,7 +752,7 @@ Lut::from_float_packed(float* to,
 
     ///clip the conversion rect to srcBounds and dstBounds
     RectI rect = conversionRect;
-    if ( !clip(&rect,srcBounds) || !clip(&rect,dstBounds) ) {
+    if ( !clip(&rect, srcBounds) || !clip(&rect, dstBounds) ) {
         return;
     }
 
@@ -759,7 +764,7 @@ Lut::from_float_packed(float* to,
     getOffsetsForPacking(inputPacking, &inROffset, &inGOffset, &inBOffset, &inAOffset);
     getOffsetsForPacking(outputPacking, &outROffset, &outGOffset, &outBOffset, &outAOffset);
 
-    int inPackingSize,outPackingSize;
+    int inPackingSize, outPackingSize;
     inPackingSize = inputHasAlpha ? 4 : 3;
     outPackingSize = outputHasAlpha ? 4 : 3;
 
@@ -820,7 +825,7 @@ from_short_planar(float *to,
                   int inDelta,
                   int outDelta)
 {
-    for (int f = 0,t = 0; f < W; f += inDelta, t += outDelta) {
+    for (int f = 0, t = 0; f < W; f += inDelta, t += outDelta) {
         to[t] = intToFloat<65536>(from[f]);
     }
 }
@@ -835,7 +840,7 @@ from_float_planar(float *to,
     if ( ( inDelta == 1) && ( outDelta == 1) ) {
         memcpy( to, from, W * sizeof(float) );
     } else {
-        for (int f = 0,t = 0; f < W; f += inDelta, t += outDelta) {
+        for (int f = 0, t = 0; f < W; f += inDelta, t += outDelta) {
             to[t] = from[f];
         }
     }
@@ -858,7 +863,7 @@ from_byte_packed(float *to,
 
     ///clip the conversion rect to srcBounds and dstBounds
     RectI rect = conversionRect;
-    if ( !clip(&rect,srcBounds) || !clip(&rect,dstBounds) ) {
+    if ( !clip(&rect, srcBounds) || !clip(&rect, dstBounds) ) {
         return;
     }
 
@@ -871,7 +876,7 @@ from_byte_packed(float *to,
     getOffsetsForPacking(outputPacking, &outROffset, &outGOffset, &outBOffset, &outAOffset);
 
 
-    int inPackingSize,outPackingSize;
+    int inPackingSize, outPackingSize;
     inPackingSize = inputHasAlpha ? 4 : 3;
     outPackingSize = outputHasAlpha ? 4 : 3;
 
@@ -928,7 +933,7 @@ from_float_packed(float *to,
 
     ///clip the conversion rect to srcBounds and dstBounds
     RectI rect = conversionRect;
-    if ( !clip(&rect,srcBounds) || !clip(&rect,dstBounds) ) {
+    if ( !clip(&rect, srcBounds) || !clip(&rect, dstBounds) ) {
         return;
     }
 
@@ -944,7 +949,7 @@ from_float_packed(float *to,
     getOffsetsForPacking(inputPacking, &inROffset, &inGOffset, &inBOffset, &inAOffset);
     getOffsetsForPacking(outputPacking, &outROffset, &outGOffset, &outBOffset, &outAOffset);
 
-    int inPackingSize,outPackingSize;
+    int inPackingSize, outPackingSize;
     inPackingSize = inputHasAlpha ? 4 : 3;
     outPackingSize = outputHasAlpha ? 4 : 3;
 
@@ -956,7 +961,7 @@ from_float_packed(float *to,
         const float *src_pixels = from + (srcY * (srcBounds.x2 - srcBounds.x1) * inPackingSize);
         float *dst_pixels = to + (y * (dstBounds.x2 - dstBounds.x1) * outPackingSize);
         if (inputPacking == outputPacking) {
-            memcpy( dst_pixels, src_pixels,(rect.x2 - rect.x1) * sizeof(float) );
+            memcpy( dst_pixels, src_pixels, (rect.x2 - rect.x1) * sizeof(float) );
         } else {
             for (int x = rect.x1; x < rect.x2; ++x) {
                 int inCol = x * inPackingSize;
@@ -1060,6 +1065,7 @@ to_byte_planar(unsigned char *to,
         }
     }
 } // to_byte_planar
+
 #endif // DEAD_CODE
 
 #ifdef DEAD_CODE
@@ -1079,6 +1085,7 @@ to_short_planar(unsigned short *to,
     Q_UNUSED(outDelta);
     throw std::runtime_error("Linear::to_short_planar not yet implemented.");
 }
+
 #endif // DEAD_CODE
 
 #ifdef DEAD_CODE
@@ -1094,16 +1101,17 @@ to_float_planar(float *to,
         if ( ( inDelta == 1) && ( outDelta == 1) ) {
             memcpy( to, from, W * sizeof(float) );
         } else {
-            for (int f = 0,t = 0; f < W; f += inDelta, t += outDelta) {
+            for (int f = 0, t = 0; f < W; f += inDelta, t += outDelta) {
                 to[t] = from[f];
             }
         }
     } else {
-        for (int f = 0,t = 0; f < W; f += inDelta, t += outDelta) {
+        for (int f = 0, t = 0; f < W; f += inDelta, t += outDelta) {
             to[t] = from[f] * alpha[f];
         }
     }
 }
+
 #endif // DEAD_CODE
 
 #ifdef DEAD_CODE
@@ -1124,7 +1132,7 @@ to_byte_packed(unsigned char* to,
 
     ///clip the conversion rect to srcBounds and dstBounds
     RectI rect = conversionRect;
-    if ( !clip(&rect,srcBounds) || !clip(&rect,dstBounds) ) {
+    if ( !clip(&rect, srcBounds) || !clip(&rect, dstBounds) ) {
         return;
     }
 
@@ -1136,7 +1144,7 @@ to_byte_packed(unsigned char* to,
     getOffsetsForPacking(inputPacking, &inROffset, &inGOffset, &inBOffset, &inAOffset);
     getOffsetsForPacking(outputPacking, &outROffset, &outGOffset, &outBOffset, &outAOffset);
 
-    int inPackingSize,outPackingSize;
+    int inPackingSize, outPackingSize;
     inPackingSize = inputHasAlpha ? 4 : 3;
     outPackingSize = outputHasAlpha ? 4 : 3;
 
@@ -1187,6 +1195,7 @@ to_byte_packed(unsigned char* to,
         }
     }
 } // to_byte_packed
+
 #endif // DEAD_CODE
 
 #ifdef DEAD_CODE
@@ -1212,6 +1221,7 @@ to_short_packed(unsigned short* to,
     Q_UNUSED(outputPacking);
     throw std::runtime_error("Linear::to_short_packed not yet implemented.");
 }
+
 #endif // DEAD_CODE
 
 void
@@ -1231,7 +1241,7 @@ to_float_packed(float* to,
 
     ///clip the conversion rect to srcBounds and dstBounds
     RectI rect = conversionRect;
-    if ( !clip(&rect,srcBounds) || !clip(&rect,dstBounds) ) {
+    if ( !clip(&rect, srcBounds) || !clip(&rect, dstBounds) ) {
         return;
     }
 
@@ -1244,7 +1254,7 @@ to_float_packed(float* to,
     getOffsetsForPacking(outputPacking, &outROffset, &outGOffset, &outBOffset, &outAOffset);
 
 
-    int inPackingSize,outPackingSize;
+    int inPackingSize, outPackingSize;
     inPackingSize = inputHasAlpha ? 4 : 3;
     outPackingSize = outputHasAlpha ? 4 : 3;
 
@@ -1279,7 +1289,7 @@ to_float_packed(float* to,
 const Lut*
 LutManager::sRGBLut()
 {
-    return LutManager::m_instance.getLut("sRGB",from_func_srgb,to_func_srgb);
+    return LutManager::m_instance.getLut("sRGB", from_func_srgb, to_func_srgb);
 }
 
 static
@@ -1307,7 +1317,7 @@ to_func_Rec709(float v)
 const Lut*
 LutManager::Rec709Lut()
 {
-    return LutManager::m_instance.getLut("Rec709",from_func_Rec709,to_func_Rec709);
+    return LutManager::m_instance.getLut("Rec709", from_func_Rec709, to_func_Rec709);
 }
 
 /*
@@ -1324,14 +1334,14 @@ static
 float
 from_func_Cineon(float v)
 {
-    return ( 1.f / ( 1.f - std::pow(10.f,1.97f) ) ) * std::pow(10.f,( (1023.f * v) - 685.f ) * 0.002f / 0.6f);
+    return ( 1.f / ( 1.f - std::pow(10.f, 1.97f) ) ) * std::pow(10.f, ( (1023.f * v) - 685.f ) * 0.002f / 0.6f);
 }
 
 static
 float
 to_func_Cineon(float v)
 {
-    float offset = std::pow(10.f,1.97f);
+    float offset = std::pow(10.f, 1.97f);
 
     return (std::log10( (v + offset) / ( 1.f / (1.f - offset) ) ) / 0.0033f + 685.0f) / 1023.f;
 }
@@ -1339,7 +1349,7 @@ to_func_Cineon(float v)
 const Lut*
 LutManager::CineonLut()
 {
-    return LutManager::m_instance.getLut("Cineon",from_func_Cineon,to_func_Cineon);
+    return LutManager::m_instance.getLut("Cineon", from_func_Cineon, to_func_Cineon);
 }
 
 static
@@ -1359,7 +1369,7 @@ to_func_Gamma1_8(float v)
 const Lut*
 LutManager::Gamma1_8Lut()
 {
-    return LutManager::m_instance.getLut("Gamma1_8",from_func_Gamma1_8,to_func_Gamma1_8);
+    return LutManager::m_instance.getLut("Gamma1_8", from_func_Gamma1_8, to_func_Gamma1_8);
 }
 
 static
@@ -1379,14 +1389,14 @@ to_func_Gamma2_2(float v)
 const Lut*
 LutManager::Gamma2_2Lut()
 {
-    return LutManager::m_instance.getLut("Gamma2_2",from_func_Gamma2_2,to_func_Gamma2_2);
+    return LutManager::m_instance.getLut("Gamma2_2", from_func_Gamma2_2, to_func_Gamma2_2);
 }
 
 static
 float
 from_func_Panalog(float v)
 {
-    return (std::pow(10.f,(1023.f * v - 681.f) / 444.f) - 0.0408) / 0.96f;
+    return (std::pow(10.f, (1023.f * v - 681.f) / 444.f) - 0.0408) / 0.96f;
 }
 
 static
@@ -1399,14 +1409,14 @@ to_func_Panalog(float v)
 const Lut*
 LutManager::PanaLogLut()
 {
-    return LutManager::m_instance.getLut("PanaLog",from_func_Panalog,to_func_Panalog);
+    return LutManager::m_instance.getLut("PanaLog", from_func_Panalog, to_func_Panalog);
 }
 
 static
 float
 from_func_ViperLog(float v)
 {
-    return std::pow(10.f,(1023.f * v - 1023.f) / 500.f);
+    return std::pow(10.f, (1023.f * v - 1023.f) / 500.f);
 }
 
 static
@@ -1419,14 +1429,14 @@ to_func_ViperLog(float v)
 const Lut*
 LutManager::ViperLogLut()
 {
-    return LutManager::m_instance.getLut("ViperLog",from_func_ViperLog,to_func_ViperLog);
+    return LutManager::m_instance.getLut("ViperLog", from_func_ViperLog, to_func_ViperLog);
 }
 
 static
 float
 from_func_RedLog(float v)
 {
-    return (std::pow(10.f,( 1023.f * v - 1023.f ) / 511.f) - 0.01f) / 0.99f;
+    return (std::pow(10.f, ( 1023.f * v - 1023.f ) / 511.f) - 0.01f) / 0.99f;
 }
 
 static
@@ -1439,14 +1449,14 @@ to_func_RedLog(float v)
 const Lut*
 LutManager::RedLogLut()
 {
-    return LutManager::m_instance.getLut("RedLog",from_func_RedLog,to_func_RedLog);
+    return LutManager::m_instance.getLut("RedLog", from_func_RedLog, to_func_RedLog);
 }
 
 static
 float
 from_func_AlexaV3LogC(float v)
 {
-    return v > 0.1496582f ? std::pow(10.f,(v - 0.385537f) / 0.2471896f) * 0.18f - 0.00937677f
+    return v > 0.1496582f ? std::pow(10.f, (v - 0.385537f) / 0.2471896f) * 0.18f - 0.00937677f
            : ( v / 0.9661776f - 0.04378604) * 0.18f - 0.00937677f;
 }
 
@@ -1461,7 +1471,7 @@ to_func_AlexaV3LogC(float v)
 const Lut*
 LutManager::AlexaV3LogCLut()
 {
-    return LutManager::m_instance.getLut("AlexaV3LogC",from_func_AlexaV3LogC,to_func_AlexaV3LogC);
+    return LutManager::m_instance.getLut("AlexaV3LogC", from_func_AlexaV3LogC, to_func_AlexaV3LogC);
 }
 
 // r,g,b values are from 0 to 1

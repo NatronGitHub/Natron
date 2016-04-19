@@ -48,11 +48,9 @@ NATRON_NAMESPACE_ENTER;
 class CurveGui
     : public QObject
 {
-
-
 public:
 
-  
+
     CurveGui(CurveWidget *curveWidget,
              boost::shared_ptr<Curve>  curve,
              const QString & name,
@@ -113,34 +111,30 @@ public:
         _selected = s;
     }
 
-
     /**
      * @brief Evaluates the curve and returns the y position corresponding to the given x.
      * The coordinates are those of the curve, not of the widget.
      **/
     virtual double evaluate(bool useExpr, double x) const = 0;
-    
     virtual boost::shared_ptr<Curve>  getInternalCurve() const;
 
-    void drawCurve(int curveIndex,int curvesCount);
+    void drawCurve(int curveIndex, int curvesCount);
 
-    virtual std::pair<double,double> getCurveYRange() const;
-
+    virtual std::pair<double, double> getCurveYRange() const;
     virtual bool areKeyFramesTimeClampedToIntegers() const;
     virtual bool areKeyFramesValuesClampedToBooleans() const;
     virtual bool areKeyFramesValuesClampedToIntegers() const;
     virtual bool isYComponentMovable() const;
     virtual KeyFrameSet getKeyFrames() const;
     virtual int getKeyFrameIndex(double time) const = 0;
-    virtual KeyFrame setKeyFrameInterpolation(KeyframeTypeEnum interp,int index) = 0;
-
+    virtual KeyFrame setKeyFrameInterpolation(KeyframeTypeEnum interp, int index) = 0;
 
 private:
-    
+
     void nextPointForSegment(const double x1,
                              const KeyFrameSet & keyframes,
                              const std::list<double>& keysWidgetCoords,
-                             const std::pair<double,double>& curveYRange,
+                             const std::pair<double, double>& curveYRange,
                              const double xminCurveWidgetCoord,
                              const double xmaxCurveWidgetCoord,
                              KeyFrameSet::const_iterator* lastUpperIt,
@@ -148,42 +142,42 @@ private:
                              double* x2,
                              KeyFrame* key,
                              bool* isKey );
-    
+
 protected:
-    
+
     boost::shared_ptr<Curve> _internalCurve; ///ptr to the internal curve
     CurveWidget* _curveWidget;
 
 private:
-    
+
     QString _name; /// the name of the curve
     QColor _color; /// the color that must be used to draw the curve
     int _thickness; /// its thickness
     bool _visible; /// should we draw this curve ?
     bool _selected; /// is this curve selected
-   
 };
 
 typedef std::list<boost::shared_ptr<CurveGui> > Curves;
 
-class KnobCurveGui : public CurveGui
+class KnobCurveGui
+    : public CurveGui
 {
-    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-    GCC_DIAG_SUGGEST_OVERRIDE_ON
-    
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
-    
-    
+
+
     KnobCurveGui(CurveWidget *curveWidget,
-             boost::shared_ptr<Curve>  curve,
-             const KnobGuiPtr& knob,
-             int dimension,
-             const QString & name,
-             const QColor & color,
-             int thickness = 1);
-    
-    
+                 boost::shared_ptr<Curve>  curve,
+                 const KnobGuiPtr& knob,
+                 int dimension,
+                 const QString & name,
+                 const QColor & color,
+                 int thickness = 1);
+
+
     KnobCurveGui(CurveWidget *curveWidget,
                  boost::shared_ptr<Curve>  curve,
                  const KnobPtr& knob,
@@ -192,75 +186,76 @@ public:
                  const QString & name,
                  const QColor & color,
                  int thickness = 1);
-    
+
     virtual ~KnobCurveGui();
-    
+
     virtual boost::shared_ptr<Curve>  getInternalCurve() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
+
     KnobGuiPtr getKnobGui() const
     {
         return _knob.lock();
     }
-    
-    virtual double evaluate(bool useExpr,double x) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
+
+    virtual double evaluate(bool useExpr, double x) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     boost::shared_ptr<RotoContext> getRotoContext() const { return _roto; }
-    
+
     KnobPtr getInternalKnob() const;
-    
+
     int getDimension() const
     {
         return _dimension;
     }
-    
+
     virtual int getKeyFrameIndex(double time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual KeyFrame setKeyFrameInterpolation(KeyframeTypeEnum interp,int index) OVERRIDE FINAL;
-    
+    virtual KeyFrame setKeyFrameInterpolation(KeyframeTypeEnum interp, int index) OVERRIDE FINAL;
+
 public Q_SLOTS:
 
     void onKnobInternalCurveChanged();
     void onKnobInterpolationChanged();
-    
+
 private:
-    
+
     boost::shared_ptr<RotoContext> _roto;
     KnobPtr _internalKnob;
     KnobGuiWPtr _knob; //< ptr to the knob holding this curve
     int _dimension; //< which dimension is this curve representing
 };
 
-class BezierCPCurveGui : public CurveGui
+class BezierCPCurveGui
+    : public CurveGui
 {
 public:
-    
-    BezierCPCurveGui(CurveWidget *curveWidget,
-                 const boost::shared_ptr<Bezier>& bezier,
-                 const boost::shared_ptr<RotoContext>& roto,
-                 const QString & name,
-                 const QColor & color,
-                 int thickness = 1);
-    
-    virtual ~BezierCPCurveGui();
-    
-    boost::shared_ptr<RotoContext> getRotoContext() const { return _rotoContext; }
-    
-    boost::shared_ptr<Bezier> getBezier() const ;
-    
-    virtual double evaluate(bool useExpr,double x) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::pair<double,double> getCurveYRange() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    BezierCPCurveGui(CurveWidget *curveWidget,
+                     const boost::shared_ptr<Bezier>& bezier,
+                     const boost::shared_ptr<RotoContext>& roto,
+                     const QString & name,
+                     const QColor & color,
+                     int thickness = 1);
+
+    virtual ~BezierCPCurveGui();
+
+    boost::shared_ptr<RotoContext> getRotoContext() const { return _rotoContext; }
+
+    boost::shared_ptr<Bezier> getBezier() const;
+    virtual double evaluate(bool useExpr, double x) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual std::pair<double, double> getCurveYRange() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool areKeyFramesTimeClampedToIntegers() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
+
     virtual bool areKeyFramesValuesClampedToBooleans() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
+
     virtual bool areKeyFramesValuesClampedToIntegers() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
+
     virtual bool isYComponentMovable() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
+
     virtual KeyFrameSet getKeyFrames() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
     virtual int getKeyFrameIndex(double time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual KeyFrame setKeyFrameInterpolation(KeyframeTypeEnum interp,int index) OVERRIDE FINAL;
+    virtual KeyFrame setKeyFrameInterpolation(KeyframeTypeEnum interp, int index) OVERRIDE FINAL;
 
 private:
-    
-    
+
+
     boost::shared_ptr<Bezier> _bezier;
     boost::shared_ptr<RotoContext> _rotoContext;
 };

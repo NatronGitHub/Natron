@@ -66,10 +66,10 @@ public:
                     OFX::Host::ImageEffect::ClipDescriptor* desc);
 
     virtual ~OfxClipInstance();
-    
+
     bool getIsOptional() const;
     bool getIsMask() const;
-    
+
     /// Get the Raw Unmapped Pixel Depth from the host
     ///
     /// \returns
@@ -101,12 +101,12 @@ public:
     virtual double getAspectRatio() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     void setAspectRatio(double par);
-    
+
     // Frame Rate -
     //
     //  The frame rate of a clip or instance's project.
     virtual double getFrameRate() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
+
     // Frame Range (startFrame, endFrame) -
     //
     //  The frame range over which a clip has images.
@@ -139,17 +139,15 @@ public:
     //  0 if the images can only be sampled at discreet times (eg: the clip is a sequence of frames),
     //  1 if the images can only be sampled continuously (eg: the clip is infact an animating roto spline and can be rendered anywhen).
     virtual bool getContinuousSamples() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
+
     /// Returns the components present on the effect. Much like getComponents() it can also
     /// return components from other planes.
     /// Returns a vector since the function getStringPropertyN does not exist. Only getStringProperty
     /// with an index exists.
     virtual const std::vector<std::string>& getComponentsPresent() const OFX_EXCEPTION_SPEC OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
-    
     virtual int getDimension(const std::string &name) const OFX_EXCEPTION_SPEC OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
-    
+
+
     /// override this to fill in the image at the given time.
     /// The bounds of the image on the image plane should be
     /// 'appropriate', typically the value returned in getRegionsOfInterest
@@ -180,15 +178,14 @@ public:
     virtual OFX::Host::ImageEffect::Texture* loadTexture(OfxTime time, const char *format, const OfxRectD *optionalBounds) OVERRIDE FINAL;
 #     endif
 
-    virtual OFX::Host::ImageEffect::Image* getImagePlane(OfxTime time, int view, const std::string& plane,const OfxRectD *optionalBounds) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
+    virtual OFX::Host::ImageEffect::Image* getImagePlane(OfxTime time, int view, const std::string& plane, const OfxRectD *optionalBounds) OVERRIDE FINAL WARN_UNUSED_RETURN;
+
     /// override this to return the rod on the clip for the given view
     virtual OfxRectD getRegionOfDefinition(OfxTime time, int view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /// given the colour component, find the nearest set of supported colour components
     /// override this for extra wierd custom component depths
     virtual const std::string &findSupportedComp(const std::string &s) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
     virtual const std::string &getComponents() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /// override this to set the view to be returned by getImage()
@@ -213,9 +210,9 @@ public:
     EffectInstPtr getAssociatedNode() const WARN_UNUSED_RETURN;
 
 
-   /**
-    * @brief Used to convert plane argument as passed to the clipGetImage() function to Natron plane.
-    **/
+    /**
+     * @brief Used to convert plane argument as passed to the clipGetImage() function to Natron plane.
+     **/
     ImageComponents ofxPlaneToNatronPlane(const std::string& plane);
 
     /**
@@ -224,36 +221,30 @@ public:
     static void natronsPlaneToOfxPlane(const ImageComponents& plane, std::list<std::string>* ofxPlanes);
 
     /**
-     * @brief Converts Natron components to OpenFX components. 
+     * @brief Converts Natron components to OpenFX components.
      **/
     static std::string natronsComponentsToOfxComponents(const ImageComponents& comp);
     static ImageComponents ofxComponentsToNatronComponents(const std::string & comp);
-
-
     static ImageBitDepthEnum ofxDepthToNatronDepth(const std::string & depth);
     static const std::string& natronsDepthToOfxDepth(ImageBitDepthEnum depth);
     static ImagePremultiplicationEnum ofxPremultToNatronPremult(const std::string& premult);
     static const std::string& natronsPremultToOfxPremult(ImagePremultiplicationEnum premult);
     static ImageFieldingOrderEnum ofxFieldingToNatronFielding(const std::string& fielding);
     static const std::string& natronsFieldingToOfxFielding(ImageFieldingOrderEnum fielding);
-
-
     struct RenderActionData
     {
-    //We keep track of the images being rendered (on the output clip) so that we return the same pointer
+        //We keep track of the images being rendered (on the output clip) so that we return the same pointer
         //if this is the same image
         std::list<OfxImage*> imagesBeingRendered;
-        
+
         //Used to determine the plane to render in a call to getOutputImageInternal()
         ImageComponents clipComponents;
-        
+
         RenderActionData()
-        : imagesBeingRendered()
-        , clipComponents()
+            : imagesBeingRendered()
+            , clipComponents()
         {
-            
         }
-    
     };
 
     //These are per-clip thread-local data
@@ -262,44 +253,44 @@ public:
         //////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////
         ///////These data are valid only throughout a recursive action
-        
+
         //View may be involved in a recursive action
         std::list<ViewIdx> view;
         //mipmaplevel may be involved in a recursive action
         std::list<unsigned int> mipMapLevel;
-        
+
         //////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////
         /// Valid only throughought a render action
         std::list< boost::shared_ptr<RenderActionData> > renderData;
         //////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////
-        
-        
+
+
         //////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////
         //The following data are always valid and do not necessitate a valid flag
         std::vector<std::string> componentsPresent;
         std::string unmappedComponents;
-        
+
         ClipTLSData()
-        : view()
-        , mipMapLevel()
-        , componentsPresent()
-        , unmappedComponents()
+            : view()
+            , mipMapLevel()
+            , componentsPresent()
+            , unmappedComponents()
         {
         }
-        
+
         ClipTLSData(const ClipTLSData& other)
-        : view(other.view)
-        , mipMapLevel(other.mipMapLevel)
-        , renderData()
-        , componentsPresent(other.componentsPresent)
-        , unmappedComponents(other.unmappedComponents)
+            : view(other.view)
+            , mipMapLevel(other.mipMapLevel)
+            , renderData()
+            , componentsPresent(other.componentsPresent)
+            , unmappedComponents(other.unmappedComponents)
         {
             for (std::list< boost::shared_ptr<RenderActionData> >::const_iterator it = other.renderData.begin();
-                 it!= other.renderData.end(); ++it) {
-                boost::shared_ptr<RenderActionData> d(new RenderActionData(**it));
+                 it != other.renderData.end(); ++it) {
+                boost::shared_ptr<RenderActionData> d( new RenderActionData(**it) );
                 renderData.push_back(d);
             }
         }
@@ -313,20 +304,14 @@ private:
     EffectInstPtr getEffectHolder() const;
 
 
-    void getRegionOfDefinitionInternal(OfxTime time, ViewIdx view, unsigned int mipmapLevel,EffectInstance* associatedNode,
+    void getRegionOfDefinitionInternal(OfxTime time, ViewIdx view, unsigned int mipmapLevel, EffectInstance* associatedNode,
                                        OfxRectD* rod) const;
-    
-    OFX::Host::ImageEffect::Image* getInputImageInternal(const OfxTime time, const  ViewSpec view, const OfxRectD *optionalBounds,
-                                                    const std::string* ofxPlane);
 
+    OFX::Host::ImageEffect::Image* getInputImageInternal(const OfxTime time, const ViewSpec view, const OfxRectD *optionalBounds,
+                                                         const std::string* ofxPlane);
     OFX::Host::ImageEffect::Image* getOutputImageInternal(const std::string* ofxPlane);
-
     OFX::Host::ImageEffect::Image* getImagePlaneInternal(OfxTime time, ViewSpec view, const OfxRectD *optionalBounds, const std::string* ofxPlane);
-
-
-
     boost::scoped_ptr<OfxClipInstancePrivate> _imp;
-    
 };
 
 
@@ -350,9 +335,8 @@ public:
     boost::shared_ptr<NATRON_NAMESPACE::Image> getInternalImage() const;
 
 private:
-    
-    boost::scoped_ptr<OfxImagePrivate> _imp;
 
+    boost::scoped_ptr<OfxImagePrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT;

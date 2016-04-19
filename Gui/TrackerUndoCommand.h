@@ -17,7 +17,6 @@
  * ***** END LICENSE BLOCK ***** */
 
 
-
 #ifndef TRACKERUNDOCOMMAND_H
 #define TRACKERUNDOCOMMAND_H
 
@@ -43,51 +42,45 @@
 NATRON_NAMESPACE_ENTER;
 
 class AddTrackCommand
-: public QUndoCommand
+    : public QUndoCommand
 {
-    
 public:
-    
+
     AddTrackCommand(const TrackMarkerPtr &marker, const boost::shared_ptr<TrackerContext>& context);
-    
+
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
-    
-    
+
 private:
-    
+
     //Hold shared_ptrs otherwise no one is holding a shared_ptr while items are removed from the context
-   
+
     std::list<TrackMarkerPtr > _markers;
     boost::weak_ptr<TrackerContext> _context;
-    
 };
 
 
 class RemoveTracksCommand
-: public QUndoCommand
+    : public QUndoCommand
 {
-
 public:
-    
+
     RemoveTracksCommand(const std::list<TrackMarkerPtr > &markers, const boost::shared_ptr<TrackerContext>& context);
-    
+
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
-    
 
 private:
-    
+
     //Hold shared_ptrs otherwise no one is holding a shared_ptr while items are removed from the context
     struct TrackToRemove
     {
         TrackMarkerPtr track;
         boost::weak_ptr<TrackMarker> prevTrack;
     };
-    
+
     std::list<TrackToRemove> _markers;
     boost::weak_ptr<TrackerContext> _context;
-    
 };
 
 NATRON_NAMESPACE_EXIT;

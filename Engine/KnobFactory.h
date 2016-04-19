@@ -63,7 +63,6 @@ private:
                                              const std::string &label,
                                              int dimension = 1,
                                              bool declaredByPlugin = true) const WARN_UNUSED_RETURN;
-
     const std::map<std::string, LibraryBinary *> &getLoadedKnobs() const
     {
         return _loadedKnobs;

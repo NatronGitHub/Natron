@@ -54,7 +54,7 @@ class MoveControlPointsUndoCommand
 public:
 
     MoveControlPointsUndoCommand(RotoGui* roto,
-                                 const std::list< std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > & toDrag
+                                 const std::list< std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & toDrag
                                  ,
                                  double dx,
                                  double dy,
@@ -71,14 +71,14 @@ private:
 
     bool _firstRedoCalled; //< false by default
     RotoGui* _roto;
-    double _dx,_dy;
+    double _dx, _dy;
     bool _featherLinkEnabled;
     bool _rippleEditEnabled;
     int _selectedTool; //< corresponds to the RotoGui::RotoToolEnum enum
     double _time; //< the time at which the change was made
     std::list<boost::shared_ptr<RotoDrawableItem> > _selectedCurves;
     std::list<int> _indexesToMove; //< indexes of the control points
-    std::list< std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > _originalPoints,_selectedPoints,_pointsToDrag;
+    std::list< std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > _originalPoints, _selectedPoints, _pointsToDrag;
 };
 
 
@@ -86,7 +86,7 @@ class TransformUndoCommand
     : public QUndoCommand
 {
 public:
-    
+
     enum TransformPointsSelectionEnum
     {
         eTransformAllPoints = 0,
@@ -126,7 +126,7 @@ private:
     boost::shared_ptr<Transform::Matrix3x3> _matrix;
     double _time; //< the time at which the change was made
     std::list<boost::shared_ptr<RotoDrawableItem> > _selectedCurves;
-    std::list< std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > _originalPoints,_selectedPoints;
+    std::list< std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > _originalPoints, _selectedPoints;
 };
 
 class AddPointUndoCommand
@@ -159,7 +159,7 @@ class RemovePointUndoCommand
 {
     struct CurveDesc
     {
-        boost::shared_ptr<RotoDrawableItem> oldCurve,curve;
+        boost::shared_ptr<RotoDrawableItem> oldCurve, curve;
         std::list<int> points;
         boost::shared_ptr<RotoLayer> parentLayer;
         bool curveRemoved;
@@ -173,7 +173,7 @@ public:
                            const boost::shared_ptr<BezierCP> & cp);
 
     RemovePointUndoCommand(RotoGui* roto,
-                           const std::list< std::pair < boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > & points);
+                           const std::list< std::pair < boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & points);
 
     virtual ~RemovePointUndoCommand();
 
@@ -223,18 +223,19 @@ private:
     std::list<RemovedCurve> _curves;
 };
 
-class AddStrokeUndoCommand : public QUndoCommand
+class AddStrokeUndoCommand
+    : public QUndoCommand
 {
 public:
-    
-    AddStrokeUndoCommand(RotoGui* roto,const boost::shared_ptr<RotoStrokeItem>& item);
-    
+
+    AddStrokeUndoCommand(RotoGui* roto, const boost::shared_ptr<RotoStrokeItem>& item);
+
     virtual ~AddStrokeUndoCommand();
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
-    
+
 private:
-    
+
     RotoGui* _roto;
     bool _firstRedoCalled;
     boost::shared_ptr<RotoStrokeItem> _item;
@@ -242,24 +243,25 @@ private:
     int _indexInLayer;
 };
 
-class AddMultiStrokeUndoCommand : public QUndoCommand
+class AddMultiStrokeUndoCommand
+    : public QUndoCommand
 {
 public:
-    
-    AddMultiStrokeUndoCommand(RotoGui* roto,const boost::shared_ptr<RotoStrokeItem>& item);
-    
+
+    AddMultiStrokeUndoCommand(RotoGui* roto, const boost::shared_ptr<RotoStrokeItem>& item);
+
     virtual ~AddMultiStrokeUndoCommand();
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
-    
+
 private:
-    
+
     RotoGui* _roto;
     bool _firstRedoCalled;
     boost::shared_ptr<RotoStrokeItem> _item;
     boost::shared_ptr<RotoLayer> _layer;
     int _indexInLayer;
-    boost::shared_ptr<Curve> _xCurve,_yCurve,_pCurve;
+    boost::shared_ptr<Curve> _xCurve, _yCurve, _pCurve;
     bool isRemoved;
 };
 
@@ -288,13 +290,13 @@ private:
 
     bool _firstRedoCalled; //< false by default
     RotoGui* _roto;
-    double _dx,_dy;
+    double _dx, _dy;
     bool _featherLinkEnabled;
     bool _rippleEditEnabled;
     double _time; //< the time at which the change was made
     std::list<boost::shared_ptr<RotoDrawableItem> > _selectedCurves;
-    std::list< std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > _selectedPoints;
-    boost::shared_ptr<BezierCP> _tangentBeingDragged,_oldCp,_oldFp;
+    std::list< std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > _selectedPoints;
+    boost::shared_ptr<BezierCP> _tangentBeingDragged, _oldCp, _oldFp;
     bool _left;
     bool _breakTangents;
 };
@@ -308,7 +310,7 @@ public:
     MoveFeatherBarUndoCommand(RotoGui* roto,
                               double dx,
                               double dy,
-                              const std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > & point,
+                              const std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > & point,
                               double time);
 
     virtual ~MoveFeatherBarUndoCommand();
@@ -322,11 +324,11 @@ private:
 
     RotoGui* _roto;
     bool _firstRedoCalled;
-    double _dx,_dy;
+    double _dx, _dy;
     bool _rippleEditEnabled;
     double _time; //< the time at which the change was made
     boost::shared_ptr<Bezier> _curve;
-    std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > _oldPoint,_newPoint;
+    std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > _oldPoint, _newPoint;
 };
 
 
@@ -338,7 +340,7 @@ public:
     struct RemoveFeatherData
     {
         boost::shared_ptr<Bezier> curve;
-        std::list<boost::shared_ptr<BezierCP> > oldPoints,newPoints;
+        std::list<boost::shared_ptr<BezierCP> > oldPoints, newPoints;
     };
 
 
@@ -384,11 +386,11 @@ class SmoothCuspUndoCommand
 {
 public:
 
-    typedef std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > SelectedPointList;
+    typedef std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > SelectedPointList;
     struct SmoothCuspCurveData
     {
         boost::shared_ptr<Bezier> curve;
-        SelectedPointList newPoints,oldPoints;
+        SelectedPointList newPoints, oldPoints;
     };
 
     SmoothCuspUndoCommand(RotoGui* roto,
@@ -444,11 +446,11 @@ private:
     RotoGui* _roto;
     boost::shared_ptr<RotoLayer> _parentLayer;
     int _indexInLayer;
-    boost::shared_ptr<Bezier> _oldCurve,_newCurve;
+    boost::shared_ptr<Bezier> _oldCurve, _newCurve;
     bool _curveNonExistant;
     bool _createdPoint;
-    double _x,_y;
-    double _dx,_dy;
+    double _x, _y;
+    double _dx, _dy;
     double _time;
     int _lastPointAdded;
     bool _isOpenBezier;
@@ -486,7 +488,7 @@ private:
     bool _create;
     bool _fromCenter;
     bool _constrained;
-    double _fromx,_fromy;
+    double _fromx, _fromy;
     double _tox, _toy;
     double _time;
 };
@@ -523,7 +525,7 @@ private:
     bool _create;
     bool _fromCenter;
     bool _constrained;
-    double _fromx,_fromy;
+    double _fromx, _fromy;
     double _tox, _toy;
     double _time;
 };
@@ -542,10 +544,10 @@ class RemoveItemsUndoCommand
 
         RemovedItem()
             : treeItem(0)
-              , parentTreeItem(0)
-              , parentLayer()
-              , indexInLayer(-1)
-              , item()
+            , parentTreeItem(0)
+            , parentLayer()
+            , indexInLayer(-1)
+            , item()
         {
         }
     };
@@ -703,7 +705,7 @@ public:
 
 
     LinkToTrackUndoCommand(RotoGui* roto,
-                           const std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > & points,
+                           const std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & points,
                            const boost::shared_ptr<KnobDouble> & track);
 
     virtual ~LinkToTrackUndoCommand();
@@ -714,7 +716,7 @@ public:
 private:
 
     RotoGui* _roto;
-    std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > _points;
+    std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > _points;
     boost::shared_ptr<KnobDouble> _track;
 };
 
@@ -732,7 +734,7 @@ public:
 
 
     UnLinkFromTrackUndoCommand(RotoGui* roto,
-                               const std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > & points);
+                               const std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & points);
 
     virtual ~UnLinkFromTrackUndoCommand();
 

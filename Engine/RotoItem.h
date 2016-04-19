@@ -67,10 +67,10 @@ NATRON_NAMESPACE_ENTER;
 
 struct RotoItemPrivate;
 class RotoItem
-: public QObject, public boost::enable_shared_from_this<RotoItem>
+    : public QObject, public boost::enable_shared_from_this<RotoItem>
 {
 public:
-    
+
     enum SelectionReasonEnum
     {
         eSelectionReasonOverlayInteract = 0, ///when the user presses an interact
@@ -79,9 +79,9 @@ public:
     };
 
 
-    RotoItem(const boost::shared_ptr<RotoContext>& context,
-             const std::string & name,
-             boost::shared_ptr<RotoLayer> parent = boost::shared_ptr<RotoLayer>());
+    RotoItem( const boost::shared_ptr<RotoContext>& context,
+              const std::string & name,
+              boost::shared_ptr<RotoLayer> parent = boost::shared_ptr<RotoLayer>() );
 
     virtual ~RotoItem();
 
@@ -91,11 +91,9 @@ public:
     bool setScriptName(const std::string & name);
 
     std::string getScriptName() const;
-    
     std::string getFullyQualifiedName() const;
-    
     std::string getLabel() const;
-    
+
     void setLabel(const std::string& label);
 
     ///only callable on the main-thread
@@ -112,7 +110,7 @@ public:
 
     bool isDeactivatedRecursive() const;
 
-    void setLocked(bool l,bool lockChildren,RotoItem::SelectionReasonEnum reason);
+    void setLocked(bool l, bool lockChildren, RotoItem::SelectionReasonEnum reason);
     bool getLocked() const;
 
     bool isLockedRecursive() const;
@@ -143,9 +141,7 @@ public:
      * @brief Returns the name of the node holding this item
      **/
     std::string getRotoNodeName() const;
-
     boost::shared_ptr<RotoContext> getContext() const;
-    
     boost::shared_ptr<RotoItem> getPreviousItemInLayer() const;
 
 protected:
@@ -176,7 +172,7 @@ protected:
 private:
 
     void setGloballyActivated_recursive(bool a);
-    void setLocked_recursive(bool locked,RotoItem::SelectionReasonEnum reason);
+    void setLocked_recursive(bool locked, RotoItem::SelectionReasonEnum reason);
 
     boost::scoped_ptr<RotoItemPrivate> _imp;
 };

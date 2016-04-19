@@ -82,7 +82,7 @@ public:
      * If a lut with the same name didn't already exist, then it will create one.
      * WARNING : NOT THREAD-SAFE
      **/
-    static const Lut * getLut(const std::string & name,fromColorSpaceFunctionV1 fromFunc,toColorSpaceFunctionV1 toFunc);
+    static const Lut * getLut(const std::string & name, fromColorSpaceFunctionV1 fromFunc, toColorSpaceFunctionV1 toFunc);
 
     ///buit-ins color-spaces
     static const Lut* sRGBLut();
@@ -115,7 +115,7 @@ private:
     ~LutManager();
 
     //each lut with a ref count mapped against their name
-    typedef std::map<std::string,const Lut * > LutsMap;
+    typedef std::map<std::string, const Lut * > LutsMap;
     LutsMap luts;
 };
 
@@ -143,10 +143,10 @@ class Lut
         fromColorSpaceFunctionV1 fromFunc,
         toColorSpaceFunctionV1 toFunc)
         : _name(name)
-          , _fromFunc(fromFunc)
-          , _toFunc(toFunc)
-          , init_(false)
-          , _lock()
+        , _fromFunc(fromFunc)
+        , _toFunc(toFunc)
+        , init_(false)
+        , _lock()
     {
     }
 
@@ -247,7 +247,7 @@ public:
     //                    int inDelta = 1, int outDelta = 1) const;
     //void to_short_planar(unsigned short* to, const float* from,int W,const float* alpha = NULL,
     //                     int inDelta = 1, int outDelta = 1) const;
-    void to_float_planar(float* to, const float* from,int W,const float* alpha = NULL,
+    void to_float_planar(float* to, const float* from, int W, const float* alpha = NULL,
                          int inDelta = 1, int outDelta = 1) const;
 
 
@@ -276,15 +276,15 @@ public:
        input buffer.
 
      **/
-    void to_byte_packed(unsigned char* to, const float* from,const RectI & conversionRect,
-                        const RectI & srcRoD,const RectI & dstRoD,
-                        PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY,bool premult) const; // used by QtWriter
+    void to_byte_packed(unsigned char* to, const float* from, const RectI & conversionRect,
+                        const RectI & srcRoD, const RectI & dstRoD,
+                        PixelPackingEnum inputPacking, PixelPackingEnum outputPacking, bool invertY, bool premult) const; // used by QtWriter
     //void to_short_packed(unsigned short* to, const float* from,const RectI & conversionRect,
     //                     const RectI & srcRoD,const RectI & dstRoD,
     //                     PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY,bool premult) const;
-    void to_float_packed(float* to, const float* from,const RectI & conversionRect,
-                         const RectI & srcRoD,const RectI & dstRoD,
-                         PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY,bool premult) const;
+    void to_float_packed(float* to, const float* from, const RectI & conversionRect,
+                         const RectI & srcRoD, const RectI & dstRoD,
+                         PixelPackingEnum inputPacking, PixelPackingEnum outputPacking, bool invertY, bool premult) const;
 
 
     /////@TODO the following functions expects a float output buffer, one could extend it to cover all bitdepths.
@@ -304,12 +304,12 @@ public:
      * before doing the color-space conversion, and the multiply back by alpha.
      * The input and output buffers must not overlap in memory.
      **/
-    void from_byte_planar(float* to,const unsigned char* from,
-                          int W,const unsigned char* alpha = NULL,int inDelta = 1, int outDelta = 1) const;
-    void from_short_planar(float* to,const unsigned short* from,
-                           int W,const unsigned short* alpha = NULL,int inDelta = 1, int outDelta = 1) const;
-    void from_float_planar(float* to,const float* from,
-                           int W,const float* alpha = NULL,int inDelta = 1, int outDelta = 1) const;
+    void from_byte_planar(float* to, const unsigned char* from,
+                          int W, const unsigned char* alpha = NULL, int inDelta = 1, int outDelta = 1) const;
+    void from_short_planar(float* to, const unsigned short* from,
+                           int W, const unsigned short* alpha = NULL, int inDelta = 1, int outDelta = 1) const;
+    void from_float_planar(float* to, const float* from,
+                           int W, const float* alpha = NULL, int inDelta = 1, int outDelta = 1) const;
 
 
     /**
@@ -337,17 +337,17 @@ public:
        input buffer.
 
      **/
-    void from_byte_packed(float* to, const unsigned char* from,const RectI & conversionRect,
-                          const RectI & srcRoD,const RectI & dstRoD,
-                          PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY,bool premult) const;
+    void from_byte_packed(float* to, const unsigned char* from, const RectI & conversionRect,
+                          const RectI & srcRoD, const RectI & dstRoD,
+                          PixelPackingEnum inputPacking, PixelPackingEnum outputPacking, bool invertY, bool premult) const;
 
-    void from_short_packed(float* to, const unsigned short* from,const RectI & conversionRect,
-                           const RectI & srcRoD,const RectI & dstRoD,
-                           PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY,bool premult) const;
+    void from_short_packed(float* to, const unsigned short* from, const RectI & conversionRect,
+                           const RectI & srcRoD, const RectI & dstRoD,
+                           PixelPackingEnum inputPacking, PixelPackingEnum outputPacking, bool invertY, bool premult) const;
 
-    void from_float_packed(float* to, const float* from,const RectI & conversionRect,
-                           const RectI & srcRoD,const RectI & dstRoD,
-                           PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY,bool premult) const;
+    void from_float_packed(float* to, const float* from, const RectI & conversionRect,
+                           const RectI & srcRoD, const RectI & dstRoD,
+                           PixelPackingEnum inputPacking, PixelPackingEnum outputPacking, bool invertY, bool premult) const;
 };
 
 
@@ -403,9 +403,9 @@ namespace Linear {
 //void to_short_packed(unsigned short* to, const float* from,const RectI & conversionRect,
 //                     const RectI & srcRoD,const RectI & dstRoD,
 //                     PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY,bool premult);
-void to_float_packed(float* to, const float* from,const RectI & conversionRect,
-                     const RectI & srcRoD,const RectI & dstRoD,
-                     PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY,bool premult);
+void to_float_packed(float* to, const float* from, const RectI & conversionRect,
+                     const RectI & srcRoD, const RectI & dstRoD,
+                     PixelPackingEnum inputPacking, PixelPackingEnum outputPacking, bool invertY, bool premult);
 
 
 /////the following functions expects a float output buffer, one could extend it to cover all bitdepths.
@@ -426,9 +426,9 @@ void to_float_packed(float* to, const float* from,const RectI & conversionRect,
  * The input and output buffers must not overlap in memory.
  **/
 
-void from_byte_planar(float* to,const unsigned char* from, int W,int inDelta = 1, int outDelta = 1);
-void from_short_planar(float* to,const unsigned short* from,int W,int inDelta = 1, int outDelta = 1);
-void from_float_planar(float* to,const float* from,int W,int inDelta = 1, int outDelta = 1);
+void from_byte_planar(float* to, const unsigned char* from, int W, int inDelta = 1, int outDelta = 1);
+void from_short_planar(float* to, const unsigned short* from, int W, int inDelta = 1, int outDelta = 1);
+void from_float_planar(float* to, const float* from, int W, int inDelta = 1, int outDelta = 1);
 
 
 /**
@@ -452,17 +452,17 @@ void from_float_planar(float* to,const float* from,int W,int inDelta = 1, int ou
    should be converted with the scan-line (srcRoD.y2 - y - 1) of the
    input buffer.
  **/
-void from_byte_packed(float* to, const unsigned char* from,const RectI & conversionRect,
-                      const RectI & srcRoD,const RectI & dstRoD,
-                      PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY);
+void from_byte_packed(float* to, const unsigned char* from, const RectI & conversionRect,
+                      const RectI & srcRoD, const RectI & dstRoD,
+                      PixelPackingEnum inputPacking, PixelPackingEnum outputPacking, bool invertY);
 
-void from_short_packed(float* to, const unsigned short* from,const RectI & conversionRect,
-                       const RectI & srcRoD,const RectI & dstRoD,
-                       PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY);
+void from_short_packed(float* to, const unsigned short* from, const RectI & conversionRect,
+                       const RectI & srcRoD, const RectI & dstRoD,
+                       PixelPackingEnum inputPacking, PixelPackingEnum outputPacking, bool invertY);
 
-void from_float_packed(float* to, const float* from,const RectI & conversionRect,
-                       const RectI & srcRoD,const RectI & dstRoD,
-                       PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY);
+void from_float_packed(float* to, const float* from, const RectI & conversionRect,
+                       const RectI & srcRoD, const RectI & dstRoD,
+                       PixelPackingEnum inputPacking, PixelPackingEnum outputPacking, bool invertY);
 }        //namespace Linear
 
 

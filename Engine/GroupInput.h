@@ -35,60 +35,55 @@
 NATRON_NAMESPACE_ENTER;
 
 class GroupInput
-: public NoOpBase
+    : public NoOpBase
 {
     boost::weak_ptr<KnobBool> optional;
     boost::weak_ptr<KnobBool> mask;
-    
+
 public:
-    
+
     static EffectInstance* BuildEffect(NodePtr n)
     {
         return new GroupInput(n);
     }
-    
+
     GroupInput(NodePtr n)
-    : NoOpBase(n)
+        : NoOpBase(n)
     {
     }
-    
+
     virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return PLUGINID_NATRON_INPUT;
     }
-    
+
     virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return "Input";
     }
-    
+
     virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
     virtual std::string getInputLabel(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return "";
     }
-    
-    virtual int getMaxInputCount() const OVERRIDE FINAL  WARN_UNUSED_RETURN
+
+    virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return 0;
     }
-    
+
     virtual bool isGenerator() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
     }
 
     virtual void initializeKnobs() OVERRIDE FINAL;
-    
-    virtual void knobChanged(KnobI* k,
+    virtual void knobChanged(KnobI * k,
                              ValueChangedReasonEnum /*reason*/,
                              ViewSpec /*view*/,
                              double /*time*/,
                              bool /*originatedFromMainThread*/) OVERRIDE FINAL;
-    
-    
-    
 };
 
 NATRON_NAMESPACE_EXIT;

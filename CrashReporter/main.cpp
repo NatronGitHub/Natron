@@ -24,19 +24,23 @@
 
 
 int
-main(int argc,char *argv[])
+main(int argc,
+     char *argv[])
 {
-
     CallbacksManager manager;
+
     try {
         manager.init(argc, argv);
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
-        return 1;
-        
-    }
-    if (!manager.hasInit()) {
+
         return 1;
     }
+
+    if ( !manager.hasInit() ) {
+        return 1;
+    }
+
     return manager.exec();
 }
+

@@ -51,7 +51,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     bool dirty;
     bool altered;
     bool checked;
-    
+
 public:
 
     AnimatedCheckBox(QWidget *parent = NULL);
@@ -59,11 +59,12 @@ public:
     virtual ~AnimatedCheckBox() OVERRIDE
     {
     }
-    
-    bool isChecked() const {
+
+    bool isChecked() const
+    {
         return checked;
     }
-    
+
     void setChecked(bool c);
 
     void setAnimation(int i);
@@ -88,22 +89,19 @@ public:
     void setDirty(bool b);
 
     virtual QSize minimumSizeHint() const OVERRIDE FINAL;
-
     virtual QSize sizeHint() const OVERRIDE FINAL;
-    
-    virtual void getBackgroundColor(double *r,double *g,double *b) const;
-    
+    virtual void getBackgroundColor(double *r, double *g, double *b) const;
+
 Q_SIGNALS:
-    
+
     void toggled(bool);
-    
+
     void clicked(bool);
-    
+
 protected:
-    
+
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
-
 
 private:
 

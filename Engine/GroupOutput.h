@@ -36,47 +36,45 @@
 NATRON_NAMESPACE_ENTER;
 
 class GroupOutput
-: public NoOpBase
+    : public NoOpBase
 {
 public:
-    
+
     static EffectInstance* BuildEffect(NodePtr n)
     {
         return new GroupOutput(n);
     }
-    
+
     GroupOutput(NodePtr n)
-    : NoOpBase(n)
+        : NoOpBase(n)
     {
     }
-    
+
     virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return PLUGINID_NATRON_OUTPUT;
     }
-    
+
     virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return "Output";
     }
-    
+
     virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
     virtual std::string getInputLabel(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return "Source";
     }
-    
+
     virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return 1;
     }
-    
+
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
     }
-    
 };
 
 NATRON_NAMESPACE_EXIT;

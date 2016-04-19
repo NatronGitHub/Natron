@@ -36,49 +36,49 @@ NATRON_NAMESPACE_ENTER;
 
 struct NumericKnobValidatorPrivate
 {
-    
     const SpinBox* spinbox;
     KnobGuiWPtr knobUi;
-    
+
     ///Only these knobs have spinboxes
     KnobGuiDouble* isDoubleGui;
     KnobGuiColor* isColorGui;
     KnobGuiInt* isIntGui;
-    
-    
     boost::weak_ptr<Knob<double> > isDouble;
     boost::weak_ptr<Knob<int> > isInt;
-    
-    NumericKnobValidatorPrivate(const SpinBox* spinbox,const KnobGuiPtr& knob)
-    : spinbox(spinbox)
-    , knobUi(knob)
-    , isDoubleGui(dynamic_cast<KnobGuiDouble*>(knob.get()))
-    , isColorGui(dynamic_cast<KnobGuiColor*>(knob.get()))
-    , isIntGui(dynamic_cast<KnobGuiInt*>(knob.get()))
+
+    NumericKnobValidatorPrivate(const SpinBox* spinbox,
+                                const KnobGuiPtr& knob)
+        : spinbox(spinbox)
+        , knobUi(knob)
+        , isDoubleGui( dynamic_cast<KnobGuiDouble*>( knob.get() ) )
+        , isColorGui( dynamic_cast<KnobGuiColor*>( knob.get() ) )
+        , isIntGui( dynamic_cast<KnobGuiInt*>( knob.get() ) )
     {
         KnobPtr internalKnob = knob->getKnob();
+
         isDouble = boost::dynamic_pointer_cast<Knob<double> >(internalKnob);
         isInt = boost::dynamic_pointer_cast<Knob<int> >(internalKnob);
-        assert(isDouble.lock() || isInt.lock());
+        assert( isDouble.lock() || isInt.lock() );
     }
 };
 
-NumericKnobValidator::NumericKnobValidator(const SpinBox* spinbox,const KnobGuiPtr& knob)
-: _imp(new NumericKnobValidatorPrivate(spinbox,knob))
+NumericKnobValidator::NumericKnobValidator(const SpinBox* spinbox,
+                                           const KnobGuiPtr& knob)
+    : _imp( new NumericKnobValidatorPrivate(spinbox, knob) )
 {
-    
 }
 
 NumericKnobValidator::~NumericKnobValidator()
 {
-    
 }
 
 bool
-NumericKnobValidator::validateInput(const QString& userText, double* valueToDisplay) const
+NumericKnobValidator::validateInput(const QString& userText,
+                                    double* valueToDisplay) const
 {
     int dimension;
     bool allDimsVisible = true;
+
     if (_imp->isDoubleGui) {
         allDimsVisible = _imp->isDoubleGui->getAllDimensionsVisible();
     } else if (_imp->isIntGui) {
@@ -101,12 +101,11 @@ NumericKnobValidator::validateInput(const QString& userText, double* valueToDisp
             dimension = 0;
         }
     }
-    
+
     *valueToDisplay = 0;
     std::string ret;
     QString simplifiedUserText = userText.simplified();
-    
-    bool isPersistentExpression = simplifiedUserText.startsWith(QLatin1Char('='));
+    bool isPersistentExpression = simplifiedUserText.startsWith( QLatin1Char('=') );
     if (isPersistentExpression) {
         simplifiedUserText.remove(0, 1);
     }
@@ -119,19 +118,20 @@ NumericKnobValidator::validateInput(const QString& userText, double* valueToDisp
         } catch (...) {
             return false;
         }
+
         if (isPersistentExpression) {
             //Only set the expression if it starts with '='
-            knob->pushUndoCommand(new SetExpressionCommand(knob->getKnob(),
-                                                           false,
-                                                           dimension,
-                                                           expr));
+            knob->pushUndoCommand( new SetExpressionCommand(knob->getKnob(),
+                                                            false,
+                                                            dimension,
+                                                            expr) );
         }
-        
-        
+
+
         bool ok = false;
-        *valueToDisplay = QString::fromUtf8(ret.c_str()).toDouble(&ok);
+        *valueToDisplay = QString::fromUtf8( ret.c_str() ).toDouble(&ok);
         if (!ok) {
-            *valueToDisplay = QString::fromUtf8(ret.c_str()).toInt(&ok);
+            *valueToDisplay = QString::fromUtf8( ret.c_str() ).toInt(&ok);
         }
         assert(ok);
     } else {
@@ -139,6 +139,6 @@ NumericKnobValidator::validateInput(const QString& userText, double* valueToDisp
     }
 
     return true;
-}
+} // NumericKnobValidator::validateInput
 
 NATRON_NAMESPACE_EXIT;

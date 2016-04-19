@@ -44,31 +44,31 @@ NATRON_NAMESPACE_ENTER;
  * @brief Used when group are using the kFnOfxParamPropGroupIsTab extension
  **/
 struct TabGroupPrivate;
-class TabGroup : public QFrame
+class TabGroup
+    : public QFrame
 {
-    
     Q_OBJECT
-    
+
 public:
-    
+
     TabGroup(QWidget* parent);
-    
+
     virtual ~TabGroup();
-    
+
     QGridLayout* addTab(const boost::shared_ptr<KnobGroup>& group, const QString &label);
-    
+
     void removeTab(KnobGroup* group);
-    
+
     bool isEmpty() const;
-    
+
     void refreshTabSecretNess(KnobGroup* group);
-    
+
 public Q_SLOTS:
-    
+
     void onGroupKnobSecretChanged();
-    
+
 private:
-    
+
     boost::scoped_ptr<TabGroupPrivate> _imp;
 };
 

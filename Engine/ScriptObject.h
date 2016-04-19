@@ -41,21 +41,21 @@ struct ScriptObjectPrivate;
 class ScriptObject
 {
 public:
-    
+
     ScriptObject();
-    
+
     virtual ~ScriptObject();
-    
+
     void setLabel(const std::string& label);
-    
+
     std::string getLabel() const;
-    
+
     void setScriptName(const std::string& name);
-    
+
     std::string getScriptName() const;
-    
+
 private:
-    
+
     boost::scoped_ptr<ScriptObjectPrivate> _imp;
 };
 

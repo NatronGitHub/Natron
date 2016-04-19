@@ -45,160 +45,154 @@ NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
 
 struct DialogParamHolderPrivate;
-class DialogParamHolder : public NamedKnobHolder
+class DialogParamHolder
+    : public NamedKnobHolder
 {
-    
 public:
-    
-    DialogParamHolder(const QString& uniqueID,AppInstance* app);
-    
+
+    DialogParamHolder(const QString& uniqueID, AppInstance* app);
+
     virtual ~DialogParamHolder();
-    
+
     virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL;
-    
+
     void setParamChangedCallback(const QString& callback);
-    
-    
+
 private:
-    
+
     virtual void initializeKnobs() OVERRIDE FINAL {}
-        
+
     virtual void onKnobValueChanged(KnobI* k,
                                     ValueChangedReasonEnum reason,
                                     double time,
                                     ViewSpec view,
                                     bool originatedFromMainThread) OVERRIDE FINAL;
-
     boost::scoped_ptr<DialogParamHolderPrivate> _imp;
 };
 
 
-
-
 struct PyModalDialogPrivate;
-class PyModalDialog : public QDialog, public UserParamHolder
+class PyModalDialog
+    : public QDialog, public UserParamHolder
 {
     Q_OBJECT
-    
-public:
-    
-    PyModalDialog(Gui* gui);
-    
-    virtual ~PyModalDialog();
-    
-    Param* getParam(const QString& scriptName) const;
-        
-    void setParamChangedCallback(const QString& callback);
-    
-    void insertWidget(int index, QWidget* widget);
-    
-    void addWidget(QWidget* widget);
-    
-private:
-    
-    boost::scoped_ptr<PyModalDialogPrivate> _imp;
 
-    
+public:
+
+    PyModalDialog(Gui* gui);
+
+    virtual ~PyModalDialog();
+
+    Param* getParam(const QString& scriptName) const;
+
+    void setParamChangedCallback(const QString& callback);
+
+    void insertWidget(int index, QWidget* widget);
+
+    void addWidget(QWidget* widget);
+
+private:
+
+    boost::scoped_ptr<PyModalDialogPrivate> _imp;
 };
 
 
 struct PyPanelPrivate;
-class PyPanel : public QWidget, public UserParamHolder, public PanelWidget
+class PyPanel
+    : public QWidget, public UserParamHolder, public PanelWidget
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
-    
+
 public:
-    
-    PyPanel(const QString& scriptName,const QString& label,bool useUserParameters,GuiApp* app);
-    
+
+    PyPanel(const QString& scriptName, const QString& label, bool useUserParameters, GuiApp* app);
+
     virtual ~PyPanel();
-        
+
     QString save_serialization_thread() const;
-    
+
     virtual void restore(const QString& /*data*/) {}
-    
+
     QString getPanelScriptName() const;
-    
+
     void setPanelLabel(const QString& label);
-    
+
     QString getPanelLabel() const;
-    
+
     Param* getParam(const QString& scriptName) const;
-    
     std::list<Param*> getParams() const;
-    
+
     void setParamChangedCallback(const QString& callback);
-    
+
     void insertWidget(int index, QWidget* widget);
-    
+
     void addWidget(QWidget* widget);
-    
+
 protected:
-    
+
     virtual QString save() { return QString(); }
-    
+
     void onUserDataChanged();
-    
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE;
-    virtual void enterEvent(QEvent* e) OVERRIDE ;
-    virtual void leaveEvent(QEvent* e) OVERRIDE ;
-    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE ;
+    virtual void enterEvent(QEvent* e) OVERRIDE;
+    virtual void leaveEvent(QEvent* e) OVERRIDE;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
+
 private:
     boost::scoped_ptr<PyPanelPrivate> _imp;
-    
 };
 
 
-class PyTabWidget {
-
+class PyTabWidget
+{
     TabWidget* _tab;
-    
-public :
-    
+
+public:
+
     PyTabWidget(TabWidget* pane);
-    
+
     ~PyTabWidget();
-    
-    TabWidget* getInternalTabWidget() const {
+
+    TabWidget* getInternalTabWidget() const
+    {
         return _tab;
     }
-    
+
     bool appendTab(PyPanel* tab);
-    
-    void insertTab(int index,PyPanel* tab);
-    
+
+    void insertTab(int index, PyPanel* tab);
+
     void removeTab(QWidget* tab);
-    
+
     void removeTab(int index);
-    
+
     void closeTab(int index);
-    
+
     QString getTabLabel(int index) const;
-    
+
     int count();
-    
+
     QWidget* currentWidget();
-    
+
     void setCurrentIndex(int index);
-    
+
     int getCurrentIndex() const;
-    
+
     PyTabWidget* splitHorizontally();
-    
     PyTabWidget* splitVertically();
-    
+
     void closePane();
-    
+
     void floatPane();
-    
+
     void setNextTabCurrent();
-    
+
     void floatCurrentTab();
-    
+
     void closeCurrentTab();
-    
+
     QString getScriptName() const;
 };
 

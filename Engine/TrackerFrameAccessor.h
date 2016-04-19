@@ -33,24 +33,21 @@
 NATRON_NAMESPACE_ENTER;
 
 struct TrackerFrameAccessorPrivate;
-class TrackerFrameAccessor : public mv::FrameAccessor
+class TrackerFrameAccessor
+    : public mv::FrameAccessor
 {
-
-    
 public:
-    
+
     TrackerFrameAccessor(const TrackerContext* context,
-                      bool enabledChannels[3],
-                      int formatHeight);
-    
+                         bool enabledChannels[3],
+                         int formatHeight);
+
     virtual ~TrackerFrameAccessor();
-    
-        
-    
-    
+
+
     void getEnabledChannels(bool* r, bool* g, bool* b) const;
-    
-    
+
+
     // Get a possibly-filtered version of a frame of a video. Downscale will
     // cause the input image to get downscaled by 2^downscale for pyramid access.
     // Region is always in original-image coordinates, and describes the
@@ -65,22 +62,18 @@ public:
                                             const mv::Region* region,        // Get full image if NULL.
                                             const mv::FrameAccessor::Transform* transform,  // May be NULL.
                                             mv::FloatImage* destination) OVERRIDE FINAL;
-    
+
     // Releases an image from the frame accessor. Non-caching implementations may
     // free the image immediately; others may hold onto the image.
     virtual void ReleaseImage(Key) OVERRIDE FINAL;
-    
     virtual bool GetClipDimensions(int clip, int* width, int* height) OVERRIDE FINAL;
     virtual int NumClips() OVERRIDE FINAL;
     virtual int NumFrames(int clip) OVERRIDE FINAL;
-    
     static double invertYCoordinate(double yIn, double formatHeight);
-    
     static void convertLibMVRegionToRectI(const mv::Region& region, int formatHeight, RectI* roi);
 
-    
 private:
-    
+
     boost::scoped_ptr<TrackerFrameAccessorPrivate> _imp;
 };
 

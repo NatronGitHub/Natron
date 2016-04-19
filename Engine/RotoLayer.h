@@ -94,11 +94,11 @@ public:
     ///only callable on the main-thread
     ///No check is done to figure out if the item already exists in this layer
     ///this is up to the caller responsability
-    void addItem(const boost::shared_ptr<RotoItem>& item,bool declareToPython = true);
+    void addItem(const boost::shared_ptr<RotoItem>& item, bool declareToPython = true);
 
     ///Inserts the item into the layer before the indicated index.
     ///The same restrictions as addItem are applied.
-    void insertItem(const boost::shared_ptr<RotoItem>& item,int index);
+    void insertItem(const boost::shared_ptr<RotoItem>& item, int index);
 
     ///only callable on the main-thread
     void removeItem(const boost::shared_ptr<RotoItem>& item);
@@ -112,7 +112,6 @@ public:
     ///MT-safe
     std::list< boost::shared_ptr<RotoItem> > getItems_mt_safe() const;
 
-    
 private:
 
     boost::scoped_ptr<RotoLayerPrivate> _imp;

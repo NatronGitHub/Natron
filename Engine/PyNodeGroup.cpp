@@ -35,9 +35,8 @@ NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
 
 Group::Group()
-: _collection()
+    : _collection()
 {
-    
 }
 
 void
@@ -48,17 +47,16 @@ Group::init(const boost::shared_ptr<NodeCollection>& collection)
 
 Group::~Group()
 {
-    
 }
 
 Effect*
 Group::getNode(const QString& fullySpecifiedName) const
 {
-    if (!_collection.lock()) {
+    if ( !_collection.lock() ) {
         return 0;
     }
-    NodePtr node = _collection.lock()->getNodeByFullySpecifiedName(fullySpecifiedName.toStdString());
-    if (node && node->isActivated()) {
+    NodePtr node = _collection.lock()->getNodeByFullySpecifiedName( fullySpecifiedName.toStdString() );
+    if ( node && node->isActivated() ) {
         return new Effect(node);
     } else {
         return NULL;
@@ -69,17 +67,19 @@ std::list<Effect*>
 Group::getChildren() const
 {
     std::list<Effect*> ret;
-    if (!_collection.lock()) {
+
+    if ( !_collection.lock() ) {
         return ret;
     }
 
     NodesList nodes = _collection.lock()->getNodes();
-    
+
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ((*it)->isActivated() && (*it)->getParentMultiInstanceName().empty()) {
-            ret.push_back(new Effect(*it));
+        if ( (*it)->isActivated() && (*it)->getParentMultiInstanceName().empty() ) {
+            ret.push_back( new Effect(*it) );
         }
     }
+
     return ret;
 }
 

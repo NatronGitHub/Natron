@@ -104,8 +104,6 @@ public:
     void setClipToDisplayWindow(bool b);
 
     virtual bool isClippingImageToProjectWindow() const OVERRIDE FINAL;
-
-
     virtual ImageBitDepthEnum getBitDepth() const OVERRIDE FINAL;
 
     /**
@@ -132,14 +130,14 @@ public:
     /**
      * @brief Returns the rectangle of the image displayed by the viewer
      **/
-    virtual RectI getImageRectangleDisplayed(const RectI & imageRoD,const double par,unsigned int mipMapLevel) OVERRIDE FINAL;
-    virtual RectI getExactImageRectangleDisplayed(const RectD & rod,const double par,unsigned int mipMapLevel) OVERRIDE FINAL;
-    virtual RectI getImageRectangleDisplayedRoundedToTileSize(const RectD & rod,const double par,unsigned int mipMapLevel) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual RectI getImageRectangleDisplayed(const RectI & imageRoD, const double par, unsigned int mipMapLevel) OVERRIDE FINAL;
+    virtual RectI getExactImageRectangleDisplayed(const RectD & rod, const double par, unsigned int mipMapLevel) OVERRIDE FINAL;
+    virtual RectI getImageRectangleDisplayedRoundedToTileSize(const RectD & rod, const double par, unsigned int mipMapLevel) OVERRIDE FINAL WARN_UNUSED_RETURN;
     /**
      *@brief Set the pointer to the InfoViewerWidget. This is called once after creation
      * of the ViewerGL.
      **/
-    void setInfoViewer(InfoViewerWidget* i,int textureIndex);
+    void setInfoViewer(InfoViewerWidget* i, int textureIndex);
 
     /**
      *@brief Handy function that zoom automatically the viewer so it fit
@@ -148,7 +146,7 @@ public:
     virtual void fitImageToFormat() OVERRIDE FINAL;
 
     void fitImageToFormat(bool useProjectFormat);
-    
+
     /**
      *@brief Turns on the overlays on the viewer.
      **/
@@ -160,7 +158,7 @@ public:
     void turnOffOverlay();
 
     virtual void clearPartialUpdateTextures() OVERRIDE FINAL;
-    
+
     /**
      *@brief Copies the data stored in the  RAM buffer into the currently
      * used texture.
@@ -177,14 +175,12 @@ public:
                                             const RectD& rod,
                                             size_t bytesCount, const TextureRect & region,
                                             double gain, double gamma, double offset, int lut, int pboIndex,
-                                            unsigned int mipMapLevel,ImagePremultiplicationEnum premult,
+                                            unsigned int mipMapLevel, ImagePremultiplicationEnum premult,
                                             int textureIndex,
                                             bool isPartialRect,
                                             bool recenterViewer,
                                             const Point& viewportCenter) OVERRIDE FINAL;
-    
     virtual void clearLastRenderedImage() OVERRIDE FINAL;
-    
     virtual void disconnectInputTexture(int textureIndex) OVERRIDE FINAL;
     /**
      *@returns Returns true if the graphic card supports GLSL.
@@ -200,10 +196,10 @@ public:
 
     void updatePersistentMessage();
     void updatePersistentMessageToWidth(int w);
-    
 
-    virtual void getViewerFrameRange(int* first,int* last) const OVERRIDE FINAL;
-    
+
+    virtual void getViewerFrameRange(int* first, int* last) const OVERRIDE FINAL;
+
 public Q_SLOTS:
 
 
@@ -221,42 +217,41 @@ public Q_SLOTS:
 
     void setRegionOfDefinition(const RectD & rod, double par, int textureIndex);
 
-    virtual void updateColorPicker(int textureIndex,int x = INT_MAX,int y = INT_MAX) OVERRIDE FINAL;
+    virtual void updateColorPicker(int textureIndex, int x = INT_MAX, int y = INT_MAX) OVERRIDE FINAL;
 
-    void clearColorBuffer(double r = 0.,double g = 0.,double b = 0.,double a = 1.);
+    void clearColorBuffer(double r = 0., double g = 0., double b = 0., double a = 1.);
 
     void toggleOverlays();
-    
+
     void toggleWipe();
-    
+
     void centerWipe();
 
     void onProjectFormatChanged(const Format & format);
-    
+
     void onCheckerboardSettingsChanged();
 
-    
+
     /**
      * @brief Reset the wipe position so it is in the center of the B input.
      * If B input is disconnected it goes in the middle of the A input.
      * Otherwise it goes in the middle of the project window
      **/
     void resetWipeControls();
-    
+
     void clearLastRenderedTexture();
-    
+
 private:
-    
-    void onProjectFormatChangedInternal(const Format & format,bool triggerRender);
+
+    void onProjectFormatChangedInternal(const Format & format, bool triggerRender);
+
 public:
-    
+
 
     virtual void makeOpenGLcontextCurrent() OVERRIDE FINAL;
     virtual void removeGUI() OVERRIDE FINAL;
     virtual ViewIdx getCurrentView() const OVERRIDE FINAL;
-    
     virtual boost::shared_ptr<TimeLine> getTimeline() const OVERRIDE FINAL;
-
 
 public:
 
@@ -265,14 +260,14 @@ public:
     void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const;
 
     void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio);
-    
+
     /**
      * @brief Returns whether the given rectangle is visible in the viewport, in zoom (OpenGL) coordinates.
      **/
     bool isVisibleInViewport(const RectD& rectangle) const;
 
     void setUserRoIEnabled(bool b);
-    
+
     void setBuildNewUserRoI(bool b);
 
     virtual bool isUserRegionOfInterestEnabled() const OVERRIDE FINAL;
@@ -289,7 +284,7 @@ public:
      * @brief update()
      **/
     virtual void redraw() OVERRIDE FINAL;
-    
+
     /**
      * @brief updateGL();
      **/
@@ -309,7 +304,7 @@ public:
      * @brief Returns the colour of the background (i.e: clear color) of the viewport.
      **/
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
-    virtual void getTextureColorAt(int x,int y,double* r,double *g,double *b,double *a) OVERRIDE FINAL;
+    virtual void getTextureColorAt(int x, int y, double* r, double *g, double *b, double *a) OVERRIDE FINAL;
     ViewerInstance* getInternalNode() const;
     ViewerTab* getViewerTab() const;
 
@@ -317,7 +312,7 @@ public:
      * @brief can only be called on the main-thread
      **/
     void setGain(double d);
-    
+
     void setGamma(double g);
 
     void setLut(int lut);
@@ -332,25 +327,25 @@ public:
     virtual void setCompositingOperator(ViewerCompositingOperatorEnum op) OVERRIDE FINAL;
 
     ///Not MT-Safe
-    void getSelectionRectangle(double &left,double &right,double &bottom,double &top) const;
+    void getSelectionRectangle(double &left, double &right, double &bottom, double &top) const;
 
     /**
      * @brief Must save all relevant OpenGL bits so that they can be restored as-is after the draw action of a plugin.
      **/
     virtual void saveOpenGLContext() OVERRIDE FINAL;
-    
+
     /**
      * @brief Must restore all OpenGL bits saved in saveOpenGLContext()
      **/
     virtual void restoreOpenGLContext() OVERRIDE FINAL;
-    
+
     /**
      * @brief Called by the Histogram when it wants to refresh. It returns a pointer to the last
      * rendered image by the viewer. It doesn't re-render the image if it is not present.
      **/
     void getLastRenderedImage(int textureIndex, std::list<boost::shared_ptr<Image> >* ret) const;
-    
-    void getLastRenderedImageByMipMapLevel(int textureIndex,unsigned int mipMapLevel, std::list<boost::shared_ptr<Image> >* ret) const;
+
+    void getLastRenderedImageByMipMapLevel(int textureIndex, unsigned int mipMapLevel, std::list<boost::shared_ptr<Image> >* ret) const;
 
     /**
      * @brief Get the color of the currently displayed image at position x,y.
@@ -361,27 +356,27 @@ public:
      * @return true if the point is inside the image and colors were set
      **/
     bool getColorAt(double x, double y, bool forceLinear, int textureIndex, float* r,
-                    float* g, float* b, float* a,unsigned int* mipMapLevel) WARN_UNUSED_RETURN;
-    
+                    float* g, float* b, float* a, unsigned int* mipMapLevel) WARN_UNUSED_RETURN;
+
     // same as getColor, but computes the mean over a given rectangle
     bool getColorAtRect(const RectD &rect, // rectangle in canonical coordinates
                         bool forceLinear, int textureIndex, float* r, float* g, float* b, float* a, unsigned int* mipMapLevel);
-    
-    
+
+
     virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL;
-    
+
     ///same as getMipMapLevel but with the zoomFactor taken into account
     int getMipMapLevelCombinedToZoomFactor() const WARN_UNUSED_RETURN;
-    
+
     virtual int getCurrentlyDisplayedTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
+
     QPointF toZoomCoordinates(const QPointF& position) const;
-    
+
     QPointF toWidgetCoordinates(const QPointF& position) const;
-    
+
     void getTopLeftAndBottomRightInZoomCoords(QPointF* topLeft, QPointF* bottomRight) const;
 
-    
+
 Q_SIGNALS:
 
     /**
@@ -392,7 +387,7 @@ Q_SIGNALS:
     /**
      * @brief Emitted when the image texture changes.
      **/
-    void imageChanged(int texIndex,bool hasImageBackEnd);
+    void imageChanged(int texIndex, bool hasImageBackEnd);
 
     /**
      * @brief Emitted when the selection rectangle has changed.
@@ -403,15 +398,13 @@ Q_SIGNALS:
     void selectionRectangleChanged(bool onRelease);
 
     void selectionCleared();
-    
-
 
 private:
     /**
      *@brief The paint function. That's where all the drawing is done.
      **/
     virtual void paintGL() OVERRIDE FINAL;
-    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;    
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseDoubleClickEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
@@ -420,7 +413,7 @@ private:
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual void tabletEvent(QTabletEvent* e) OVERRIDE FINAL;
-    
+
     /**
      *@brief initiliazes OpenGL context related stuff. This is called once after widget creation.
      **/
@@ -429,10 +422,10 @@ private:
     /**
      *@brief Handles the resizing of the viewer
      **/
-    virtual void resizeGL(int width,int height) OVERRIDE FINAL;
+    virtual void resizeGL(int width, int height) OVERRIDE FINAL;
 
 private:
-    
+
     bool penMotionInternal(int x, int y, double pressure, double timestamp, QInputEvent* event);
 
     /**
@@ -449,7 +442,7 @@ private:
      * where will be printed to indicate a function. If silent is off,
      * this function will report even when the frame buffer is complete.
      **/
-    void checkFrameBufferCompleteness(const char where[],bool silent = true);
+    void checkFrameBufferCompleteness(const char where[], bool silent = true);
 
     /**
      *@brief Initialises shaders. If they were initialized ,returns instantly.
@@ -475,7 +468,7 @@ private:
     int isExtensionSupported(const char* extension);
 
     /**
-     *@brief Called inside paintGL(). It will draw all the overlays. 
+     *@brief Called inside paintGL(). It will draw all the overlays.
      **/
     void drawOverlay(unsigned int mipMapLevel);
 
@@ -521,30 +514,29 @@ private:
                          const QPointF & zoomPos,
                          double zoomScreenPixelWidth,
                          double zoomScreenPixelHeight);
-    
+
     void updateInfoWidgetColorPicker(const QPointF & imgPos,
                                      const QPoint & widgetPos);
 
     void updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
-                                     const QPoint & widgetPos,
-                                     int width,
-                                     int height,
-                                     const RectD & rod, // in canonical coordinates
-                                     const RectD & dispW, // in canonical coordinates
-                                     int texIndex);
+                                             const QPoint & widgetPos,
+                                             int width,
+                                             int height,
+                                             const RectD & rod, // in canonical coordinates
+                                             const RectD & dispW, // in canonical coordinates
+                                             int texIndex);
     void updateRectangleColorPicker();
     void updateRectangleColorPickerInternal();
-    
-    
+
+
     /**
      * @brief X and Y are in widget coords!
      **/
-    bool pickColor(double x,double y);
+    bool pickColor(double x, double y);
     bool pickColorInternal(double x, double y);
-    
+
 
     static double currentTimeForEvent(QInputEvent* e);
-
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
 };

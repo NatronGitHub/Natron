@@ -73,7 +73,8 @@ class DopeSheetViewPrivate;
  *
  * /!\ This class should depends less of the hierarchy view.
  */
-class DopeSheetView : public QGLWidget, public OverlaySupport
+class DopeSheetView
+    : public QGLWidget, public OverlaySupport
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -106,7 +107,7 @@ public:
                            Gui *gui,
                            const boost::shared_ptr<TimeLine> &timeline,
                            QWidget *parent = 0);
-    
+
     virtual ~DopeSheetView() OVERRIDE;
 
     /**
@@ -139,7 +140,6 @@ public:
 
     void refreshSelectionBboxAndRedraw();
 
-    
 public Q_SLOTS:
     void redraw() OVERRIDE FINAL;
 
@@ -297,7 +297,6 @@ public Q_SLOTS:
      * or presses Ctrl + V.
      */
     void pasteKeyframes();
-    
 
 private: /* attributes */
     boost::scoped_ptr<DopeSheetViewPrivate> _imp;

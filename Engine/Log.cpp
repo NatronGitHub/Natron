@@ -45,28 +45,32 @@ NATRON_NAMESPACE_ENTER;
 // see second answer of http://stackoverflow.com/questions/2342162/stdstring-formatting-like-sprintf
 static
 std::string
-string_format(const std::string fmt, ...)
+string_format(const std::string fmt,
+              ...)
 {
-    int size = ((int)fmt.size()) * 2 + 50;   // Use a rubric appropriate for your code
+    int size = ( (int)fmt.size() ) * 2 + 50;   // Use a rubric appropriate for your code
     std::string str;
     va_list ap;
+
     while (1) {     // Maximum two passes on a POSIX system...
         str.resize(size);
         va_start(ap, fmt);
-        int n = vsnprintf((char *)str.data(), size, fmt.c_str(), ap);
+        int n = vsnprintf( (char *)str.data(), size, fmt.c_str(), ap );
         va_end(ap);
-        if (n > -1 && n < size) {  // Everything worked
+        if ( (n > -1) && (n < size) ) {  // Everything worked
             str.resize(n);
+
             return str;
         }
-        if (n > -1)  // Needed size returned
+        if (n > -1) { // Needed size returned
             size = n + 1;   // For null char
-        else
+        } else                                               {
             size *= 2;      // Guess at a larger size (OS specific)
+        }
     }
+
     return str;
 }
-
 
 class LogPrivate
 {
@@ -79,9 +83,9 @@ public:
 
     LogPrivate()
         : _lock()
-          , _file(NULL)
-          , _stream(NULL)
-          , _beginsCount(0)
+        , _file(NULL)
+        , _stream(NULL)
+        , _beginsCount(0)
     {
     }
 
@@ -175,7 +179,7 @@ public:
 };
 
 Log::Log()
-    : Singleton<Log>(),_imp( new LogPrivate() )
+    : Singleton<Log>(), _imp( new LogPrivate() )
 {
 }
 
@@ -194,7 +198,7 @@ void
 Log::beginFunction(const std::string & callerName,
                    const std::string & function)
 {
-    Log::instance()->_imp->beginFunction(callerName,function);
+    Log::instance()->_imp->beginFunction(callerName, function);
 }
 
 void
@@ -219,7 +223,7 @@ void
 Log::endFunction(const std::string & callerName,
                  const std::string & function)
 {
-    Log::instance()->_imp->endFunction(callerName,function);
+    Log::instance()->_imp->endFunction(callerName, function);
 }
 
 NATRON_NAMESPACE_EXIT;

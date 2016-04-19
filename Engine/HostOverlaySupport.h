@@ -33,57 +33,58 @@ NATRON_NAMESPACE_ENTER;
 struct HostOverlayKnobsPrivate;
 class HostOverlayKnobs
 {
-    
 public:
-    
+
     HostOverlayKnobs();
-    
+
     virtual ~HostOverlayKnobs();
-    
-    
+
+
     KnobPtr getFirstKnob() const;
-    
+
     /**
      * @brief Add an overlay interact slave knob. The role name is the key that will be used to determine
      * if the knob is present when calling checkHostOverlayValid(). If empty, the roleName is the name of the knob
      * otherwise it is expected to match the name filled in the descriveOverlayKnobs function
      **/
     void addKnob(const KnobPtr& knob, int enumID);
-    
+
     KnobPtr getKnob(int enumID) const;
-    
+
     template <typename T>
     boost::shared_ptr<T> getKnob(int enumID) const
     {
         KnobPtr knob = getKnob(enumID);
+
         if (!knob) {
             return boost::shared_ptr<T>();
         }
+
         return boost::dynamic_pointer_cast<T>(knob);
     }
-    
-    
+
     /**
      * @brief Must check if all necessary knobs are present for the interact
      **/
     bool checkHostOverlayValid();
-    
+
 protected:
-    
+
     virtual void describeOverlayKnobs() = 0;
-    
+
     void describeKnob(int enumID, const std::string& type, int nDims, bool optional = false);
-    
+
 private:
-    
-    
+
+
     boost::scoped_ptr<HostOverlayKnobsPrivate> _imp;
 };
 
-class TransformOverlayKnobs : public HostOverlayKnobs
+class TransformOverlayKnobs
+    : public HostOverlayKnobs
 {
 public:
-    
+
     enum KnobsEnumeration
     {
         eKnobsEnumerationTranslate,
@@ -97,20 +98,21 @@ public:
         eKnobsEnumerationInvert,
         eKnobsEnumerationInteractive
     };
-    
+
     TransformOverlayKnobs() : HostOverlayKnobs() {}
-    
+
     virtual ~TransformOverlayKnobs() {}
-    
+
 private:
-    
+
     virtual void describeOverlayKnobs() OVERRIDE FINAL;
 };
 
-class CornerPinOverlayKnobs : public HostOverlayKnobs
+class CornerPinOverlayKnobs
+    : public HostOverlayKnobs
 {
 public:
-    
+
     enum KnobsEnumeration
     {
         eKnobsEnumerationFrom1,
@@ -129,33 +131,34 @@ public:
         eKnobsEnumerationInvert,
         eKnobsEnumerationInteractive
     };
-    
+
     CornerPinOverlayKnobs() : HostOverlayKnobs() {}
-    
+
     virtual ~CornerPinOverlayKnobs() {}
-    
+
 private:
-    
+
     virtual void describeOverlayKnobs() OVERRIDE FINAL;
 };
 
 
-class PositionOverlayKnobs : public HostOverlayKnobs
+class PositionOverlayKnobs
+    : public HostOverlayKnobs
 {
 public:
-    
+
     enum KnobsEnumeration
     {
         eKnobsEnumerationPosition,
         eKnobsEnumerationInteractive
     };
-    
+
     PositionOverlayKnobs() : HostOverlayKnobs() {}
-    
+
     virtual ~PositionOverlayKnobs() {}
-    
+
 private:
-    
+
     virtual void describeOverlayKnobs() OVERRIDE FINAL;
 };
 

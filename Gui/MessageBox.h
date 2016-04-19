@@ -45,14 +45,15 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER;
 
 struct MessageBoxPrivate;
-class MessageBox : public QDialog
+class MessageBox
+    : public QDialog
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
-    
+
 public:
-    
+
     enum MessageBoxTypeEnum
     {
         eMessageBoxTypeInformation,
@@ -60,37 +61,36 @@ public:
         eMessageBoxTypeError,
         eMessageBoxTypeQuestion
     };
-    
+
     MessageBox(const QString & title,
                const QString & message,
                MessageBoxTypeEnum type,
                const StandardButtons& buttons,
                StandardButtonEnum defaultButton,
                QWidget* parent);
-    
+
     virtual ~MessageBox();
-    
+
     StandardButtonEnum getReply() const;
-    
+
     void setCheckBox(QCheckBox* checkbox);
-    
+
     bool isCheckBoxChecked() const;
-    
+
 public Q_SLOTS:
-    
+
     void onButtonClicked(QAbstractButton* button);
-    
+
 private:
-    
+
     void updateSize();
-    
+
     void init(const QString & title,
               const QString & message,
               const StandardButtons& buttons,
               StandardButtonEnum defaultButton);
-    
+
     virtual bool event(QEvent* e) OVERRIDE FINAL;
-    
     boost::scoped_ptr<MessageBoxPrivate> _imp;
 };
 

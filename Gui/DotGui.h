@@ -69,13 +69,11 @@ private:
     {
         return false;
     }
-    
+
     virtual void refreshStateIndicator() OVERRIDE FINAL;
-    
     virtual void applyBrush(const QBrush & brush) OVERRIDE FINAL;
-    
     virtual bool canResize() OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
-    
+
     virtual QRectF boundingRect() const OVERRIDE FINAL;
     virtual QPainterPath shape() const OVERRIDE FINAL;
     QGraphicsEllipseItem* diskShape;

@@ -69,10 +69,10 @@ public:
                                               OFX::Host::ImageEffect::Descriptor* desc,
                                               ContextEnum context,
                                               const NodeSerialization* serialization,
-                                               const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
+                                              const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                               bool disableRenderScaleSupport
 #ifndef NATRON_ENABLE_IO_META_NODES
-                                              ,bool allowFileDialogs,
+                                              , bool allowFileDialogs,
                                               bool *hasUsedFileDialog
 #endif
                                               ) = 0;
@@ -83,7 +83,6 @@ public:
     static std::string makePluginLabel(const std::string & shortLabel,
                                        const std::string & label,
                                        const std::string & longLabel) WARN_UNUSED_RETURN;
-    
 };
 
 struct OfxEffectInstancePrivate;
@@ -106,15 +105,13 @@ public:
                                       const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                       bool disableRenderScaleSupport
 #ifndef NATRON_ENABLE_IO_META_NODES
-                                      ,bool allowFileDialogs,
+                                      , bool allowFileDialogs,
                                       bool *hasUsedFileDialog
 #endif
                                       ) OVERRIDE FINAL;
 
     OfxImageEffectInstance* effectInstance() WARN_UNUSED_RETURN;
-    
     const OfxImageEffectInstance* effectInstance() const WARN_UNUSED_RETURN;
-    
     const std::string & getShortLabel() const WARN_UNUSED_RETURN;
 
     typedef std::vector<OFX::Host::ImageEffect::ClipDescriptor*> MappedInputV;
@@ -130,7 +127,6 @@ public:
      * call of the action will take place in the main-thread.
      **/
     void syncPrivateData_other_thread();
-    
 
 public:
     /********OVERRIDEN FROM EFFECT INSTANCE*************/
@@ -139,7 +135,7 @@ public:
     virtual bool isGenerator() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isReader() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isWriter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isVideoWriter() const OVERRIDE FINAL WARN_UNUSED_RETURN ;
+    virtual bool isVideoWriter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isGeneratorAndFilter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isTrackerNodePlugin() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -147,6 +143,7 @@ public:
     {
         return true;
     }
+
     virtual void onScriptNameChanged(const std::string& fullyQualifiedName) OVERRIDE FINAL;
     virtual bool isEffectCreated() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -169,7 +166,6 @@ public:
                                       const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                       ViewIdx view,
                                       RoIMap* ret) OVERRIDE FINAL;
-
     virtual FramesNeededMap getFramesNeeded(double time, ViewIdx view) OVERRIDE WARN_UNUSED_RETURN;
     virtual void getFrameRange(double *first, double *last) OVERRIDE;
     virtual void initializeOverlayInteract() OVERRIDE FINAL;
@@ -190,13 +186,11 @@ public:
     virtual void setCurrentViewportForOverlays(OverlaySupport* viewport) OVERRIDE FINAL;
     virtual void beginKnobsValuesChanged(ValueChangedReasonEnum reason) OVERRIDE;
     virtual void endKnobsValuesChanged(ValueChangedReasonEnum reason) OVERRIDE;
-
     virtual void knobChanged(KnobI* k,
                              ValueChangedReasonEnum reason,
                              ViewSpec view,
                              double time,
                              bool originatedFromMainThread) OVERRIDE;
-
     virtual void beginEditKnobs() OVERRIDE;
     virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
     virtual bool isIdentity(double time,
@@ -230,71 +224,62 @@ public:
     virtual bool supportsMultiResolution() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool supportsMultipleClipsPAR() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool supportsMultipleClipsBitDepth() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onInputChanged(int inputNo) OVERRIDE FINAL;
     virtual StatusEnum beginSequenceRender(double first,
-                                                   double last,
-                                                   double step,
-                                                   bool interactive,
-                                                   const RenderScale & scale,
-                                                   bool isSequentialRender,
-                                                   bool isRenderResponseToUserInteraction,
-                                                   bool draftMode,
-                                                   ViewIdx view) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                           double last,
+                                           double step,
+                                           bool interactive,
+                                           const RenderScale & scale,
+                                           bool isSequentialRender,
+                                           bool isRenderResponseToUserInteraction,
+                                           bool draftMode,
+                                           ViewIdx view) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum endSequenceRender(double first,
-                                                 double last,
-                                                 double step,
-                                                 bool interactive,
-                                                 const RenderScale & scale,
-                                                 bool isSequentialRender,
-                                                 bool isRenderResponseToUserInteraction,
-                                                 bool draftMode,
-                                                 ViewIdx view) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                         double last,
+                                         double step,
+                                         bool interactive,
+                                         const RenderScale & scale,
+                                         bool isSequentialRender,
+                                         bool isRenderResponseToUserInteraction,
+                                         bool draftMode,
+                                         ViewIdx view) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     virtual SequentialPreferenceEnum getSequentialPreference() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum getPreferredMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
     virtual void onMetaDatasRefreshed(const NodeMetadata& metadata) OVERRIDE FINAL;
     virtual void getComponentsNeededAndProduced(double time, ViewIdx view,
-                                               EffectInstance::ComponentsNeededMap* comps,
+                                                EffectInstance::ComponentsNeededMap* comps,
                                                 SequenceTime* passThroughTime,
                                                 int* passThroughView,
                                                 NodePtr* passThroughInput) OVERRIDE;
-
-
     virtual bool isMultiPlanar() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual EffectInstance::PassThroughEnum isPassThroughForNonRenderedPlanes() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isViewAware() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual EffectInstance::ViewInvarianceLevel isViewInvariant() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    
 public:
 
     virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getInputsHoldingTransform(std::list<int>* inputs) const  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool getInputsHoldingTransform(std::list<int>* inputs) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum getTransform(double time,
                                     const RenderScale & renderScale,
                                     ViewIdx view,
                                     EffectInstPtr* inputToTransform,
                                     Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-    
     virtual bool isHostMaskingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isHostMixingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 
     /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
-
     OfxClipInstance* getClipCorrespondingToInput(int inputNo) const;
-
-    
     static ContextEnum mapToContextEnum(const std::string &s);
     static std::string mapContextToString(ContextEnum ctx);
-    
     static std::string natronValueChangedReasonToOfxValueChangedReason(ValueChangedReasonEnum reason);
 
     int getClipInputNumber(const OfxClipInstance* clip) const;
-    
+
 public Q_SLOTS:
 
     void onSyncPrivateDataRequested();
@@ -305,14 +290,10 @@ Q_SIGNALS:
     void syncPrivateDataRequested();
 
 private:
- 
 
 
     void tryInitializeOverlayInteracts();
 
-
-
-    
 private:
 
     boost::scoped_ptr<OfxEffectInstancePrivate> _imp;

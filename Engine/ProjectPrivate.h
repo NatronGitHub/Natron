@@ -59,11 +59,10 @@ struct ProjectPrivate
     QDateTime ageSinceLastSave; //< the last time the user saved
     QDateTime lastAutoSave; //< the last time since autosave
     QDateTime projectCreationTime; //< the project creation time
-    
     std::list<Format> builtinFormats;
     std::list<Format> additionalFormats; //< added by the user
     mutable QMutex formatMutex; //< protects builtinFormats & additionalFormats
-    
+
 
     ///Project parameters (settings)
     boost::shared_ptr<KnobPath> envVars;
@@ -81,21 +80,17 @@ struct ProjectPrivate
     boost::shared_ptr<KnobDouble> frameRate;
     boost::shared_ptr<KnobInt> frameRange;
     boost::shared_ptr<KnobBool> lockFrameRange;
-    
     boost::shared_ptr<KnobString> natronVersion;
-    boost::shared_ptr<KnobString> originalAuthorName,lastAuthorName;
+    boost::shared_ptr<KnobString> originalAuthorName, lastAuthorName;
     boost::shared_ptr<KnobString> projectCreationDate;
     boost::shared_ptr<KnobString> saveDate;
-    
     boost::shared_ptr<KnobString> onProjectLoadCB;
     boost::shared_ptr<KnobString> onProjectSaveCB;
     boost::shared_ptr<KnobString> onProjectCloseCB;
     boost::shared_ptr<KnobString> onNodeCreated;
     boost::shared_ptr<KnobString> onNodeDeleted;
-    
     boost::shared_ptr<TimeLine> timeline; // global timeline
     bool autoSetProjectFormat;
-
     mutable QMutex isLoadingProjectMutex;
     bool isLoadingProject; //< true when the project is loading
     bool isLoadingProjectInternal; //< true when loading the internal project (not gui)
@@ -103,121 +98,117 @@ struct ProjectPrivate
     bool isSavingProject; //< true when the project is saving
     boost::shared_ptr<QTimer> autoSaveTimer;
     std::list<boost::shared_ptr<QFutureWatcher<void> > > autoSaveFutures;
-    
     mutable QMutex projectClosingMutex;
     bool projectClosing;
-    
     boost::shared_ptr<TLSHolder<Project::ProjectTLSData> > tlsData;
-    
+
     ProjectPrivate(Project* project);
 
-    bool restoreFromSerialization(const ProjectSerialization & obj,const QString& name,const QString& path, bool* mustSave);
+    bool restoreFromSerialization(const ProjectSerialization & obj, const QString& name, const QString& path, bool* mustSave);
 
-    bool findFormat(int index,Format* format) const;
-    bool findFormat(const std::string& formatSpec,Format* format) const;
+    bool findFormat(int index, Format* format) const;
+    bool findFormat(const std::string& formatSpec, Format* format) const;
     /**
      * @brief Auto fills the project directory parameter given the project file path
      **/
     void autoSetProjectDirectory(const QString& path);
-    
-    std::string runOnProjectSaveCallback(const std::string& filename,bool autoSave);
-    
+
+    std::string runOnProjectSaveCallback(const std::string& filename, bool autoSave);
+
     void runOnProjectCloseCallback();
-    
+
     void runOnProjectLoadCallback();
-    
+
     void setProjectFilename(const std::string& filename);
     std::string getProjectFilename() const;
-    
+
     void setProjectPath(const std::string& path);
     std::string getProjectPath() const;
-
-    static QString
-    generateStringFromFormat(const Format & f)
+    static QString generateStringFromFormat(const Format & f)
     {
         QString formatStr;
 
-        formatStr.append(QString::fromUtf8(f.getName().c_str()));
-        formatStr.append(QLatin1Char(' '));
-        formatStr.append(QString::number(f.width()));
-        formatStr.append(QLatin1Char('x'));
-        formatStr.append(QString::number(f.height()));
+        formatStr.append( QString::fromUtf8( f.getName().c_str() ) );
+        formatStr.append( QLatin1Char(' ') );
+        formatStr.append( QString::number( f.width() ) );
+        formatStr.append( QLatin1Char('x') );
+        formatStr.append( QString::number( f.height() ) );
         double par = f.getPixelAspectRatio();
         if (par != 1.) {
-            formatStr.append(QLatin1Char(' '));
-            formatStr.append(QString::number(f.getPixelAspectRatio()));
+            formatStr.append( QLatin1Char(' ') );
+            formatStr.append( QString::number( f.getPixelAspectRatio() ) );
         }
+
         return formatStr;
     }
 
-
-    static bool
-    generateFormatFromString(const QString& spec, Format* f)
+    static bool generateFormatFromString(const QString& spec,
+                                         Format* f)
     {
         QString str = spec.trimmed();
-        
+
         // Some old specs were like this: ' 960 x 540 1" meaning we have to remove spaces before 'x' and after
-        int foundX = str.lastIndexOf(QLatin1Char('x'));
+        int foundX = str.lastIndexOf( QLatin1Char('x') );
+
         if (foundX == -1) {
             return false;
         }
-        
-        QString widthStr,heightStr, formatName, parStr;
+
+        QString widthStr, heightStr, formatName, parStr;
         int i = foundX - 1;
-        
+
         // Iterate backward to get width string, then forward
         // ignore initial spaces
-        while (i >= 0 && str[i] == QLatin1Char(' ')) {
+        while ( i >= 0 && str[i] == QLatin1Char(' ') ) {
             --i;
         }
-        
-        while (i >= 0 && str[i] != QLatin1Char(' ')) {
+
+        while ( i >= 0 && str[i] != QLatin1Char(' ') ) {
             widthStr.push_front(str[i]);
             --i;
         }
-        
-        while (i >= 0 && str[i] == QLatin1Char(' ')) {
+
+        while ( i >= 0 && str[i] == QLatin1Char(' ') ) {
             --i;
         }
-        
-        while (i >= 0 && str[i] != QLatin1Char(' ')) {
+
+        while ( i >= 0 && str[i] != QLatin1Char(' ') ) {
             formatName.push_front(str[i]);
             --i;
         }
-        
+
         i = foundX + 1;
-        while (i < str.size() && str[i] == QLatin1Char(' ')) {
+        while ( i < str.size() && str[i] == QLatin1Char(' ') ) {
             ++i;
         }
-        
-        while (i < str.size() && str[i] != QLatin1Char(' ')) {
+
+        while ( i < str.size() && str[i] != QLatin1Char(' ') ) {
             heightStr.push_back(str[i]);
             ++i;
         }
-        
-        while (i < str.size() && str[i] == QLatin1Char(' ')) {
+
+        while ( i < str.size() && str[i] == QLatin1Char(' ') ) {
             ++i;
         }
-        
-        while (i < str.size() && str[i] != QLatin1Char(' ')) {
+
+        while ( i < str.size() && str[i] != QLatin1Char(' ') ) {
             parStr.push_back(str[i]);
             ++i;
         }
-        
-        
-        f->setName(formatName.toStdString());
+
+
+        f->setName( formatName.toStdString() );
         f->x1 = 0;
         f->y1 = 0;
         f->x2 = widthStr.toInt();
         f->y2 = heightStr.toInt();
 
-        if (!parStr.isEmpty()) {
-            f->setPixelAspectRatio(parStr.toDouble());
+        if ( !parStr.isEmpty() ) {
+            f->setPixelAspectRatio( parStr.toDouble() );
         }
-        return true;
-    }
-    
 
+        return true;
+    } // generateFormatFromString
 };
 
 NATRON_NAMESPACE_EXIT;

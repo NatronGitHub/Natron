@@ -85,11 +85,13 @@ using std::make_pair;
 
 //==========================KnobBool_GUI======================================
 
-Bool_CheckBox::Bool_CheckBox(const KnobGuiPtr& knob, int dimension, QWidget* parent)
-: AnimatedCheckBox(parent)
-, useCustomColor(false)
-, customColor()
-, _dnd(new KnobWidgetDnD(knob, dimension, this))
+Bool_CheckBox::Bool_CheckBox(const KnobGuiPtr& knob,
+                             int dimension,
+                             QWidget* parent)
+    : AnimatedCheckBox(parent)
+    , useCustomColor(false)
+    , customColor()
+    , _dnd( new KnobWidgetDnD(knob, dimension, this) )
 {
 }
 
@@ -98,14 +100,15 @@ Bool_CheckBox::~Bool_CheckBox()
 }
 
 void
-Bool_CheckBox::getBackgroundColor(double *r,double *g,double *b) const
+Bool_CheckBox::getBackgroundColor(double *r,
+                                  double *g,
+                                  double *b) const
 {
     if (useCustomColor) {
         *r = customColor.redF();
         *g = customColor.greenF();
         *b = customColor.blueF();
     } else {
-        
         AnimatedCheckBox::getBackgroundColor(r, g, b);
     }
 }
@@ -141,7 +144,7 @@ Bool_CheckBox::keyReleaseEvent(QKeyEvent* e)
 void
 Bool_CheckBox::mousePressEvent(QMouseEvent* e)
 {
-    if (!_dnd->mousePress(e)) {
+    if ( !_dnd->mousePress(e) ) {
         AnimatedCheckBox::mousePressEvent(e);
     }
 }
@@ -149,7 +152,7 @@ Bool_CheckBox::mousePressEvent(QMouseEvent* e)
 void
 Bool_CheckBox::mouseMoveEvent(QMouseEvent* e)
 {
-    if (!_dnd->mouseMove(e)) {
+    if ( !_dnd->mouseMove(e) ) {
         AnimatedCheckBox::mouseMoveEvent(e);
     }
 }
@@ -159,13 +162,12 @@ Bool_CheckBox::mouseReleaseEvent(QMouseEvent* e)
 {
     _dnd->mouseRelease(e);
     AnimatedCheckBox::mouseReleaseEvent(e);
-    
 }
 
 void
 Bool_CheckBox::dragEnterEvent(QDragEnterEvent* e)
 {
-    if (!_dnd->dragEnter(e)) {
+    if ( !_dnd->dragEnter(e) ) {
         AnimatedCheckBox::dragEnterEvent(e);
     }
 }
@@ -173,14 +175,15 @@ Bool_CheckBox::dragEnterEvent(QDragEnterEvent* e)
 void
 Bool_CheckBox::dragMoveEvent(QDragMoveEvent* e)
 {
-    if (!_dnd->dragMove(e)) {
+    if ( !_dnd->dragMove(e) ) {
         AnimatedCheckBox::dragMoveEvent(e);
     }
 }
+
 void
 Bool_CheckBox::dropEvent(QDropEvent* e)
 {
-    if (!_dnd->drop(e)) {
+    if ( !_dnd->drop(e) ) {
         AnimatedCheckBox::dropEvent(e);
     }
 }
@@ -200,7 +203,7 @@ Bool_CheckBox::focusOutEvent(QFocusEvent* e)
 }
 
 KnobGuiBool::KnobGuiBool(KnobPtr knob,
-                           DockablePanel *container)
+                         DockablePanel *container)
     : KnobGui(knob, container)
     , _checkBox(0)
 {
@@ -210,29 +213,28 @@ KnobGuiBool::KnobGuiBool(KnobPtr knob,
 void
 KnobGuiBool::createWidget(QHBoxLayout* layout)
 {
-    _checkBox = new Bool_CheckBox(shared_from_this(), 0,layout->parentWidget() );
+    _checkBox = new Bool_CheckBox( shared_from_this(), 0, layout->parentWidget() );
     onLabelChangedInternal();
     //_checkBox->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect( _checkBox, SIGNAL(clicked(bool)), this, SLOT(onCheckBoxStateChanged(bool)) );
     QObject::connect( this, SIGNAL(labelClicked(bool)), this, SLOT(onLabelClicked(bool)) );
 
     ///set the copy/link actions in the right click menu
-    enableRightClickMenu(_checkBox,0);
+    enableRightClickMenu(_checkBox, 0);
 
     layout->addWidget(_checkBox);
 }
 
 KnobGuiBool::~KnobGuiBool()
 {
-
 }
 
-void KnobGuiBool::removeSpecificGui()
+void
+KnobGuiBool::removeSpecificGui()
 {
     _checkBox->hide();
     _checkBox->deleteLater();
     _checkBox = 0;
-    
 }
 
 void
@@ -243,24 +245,25 @@ KnobGuiBool::updateGUI(int /*dimension*/)
 
 void
 KnobGuiBool::reflectAnimationLevel(int /*dimension*/,
-                                    AnimationLevelEnum level)
+                                   AnimationLevelEnum level)
 {
     int value;
+
     switch (level) {
-        case eAnimationLevelNone:
-            value = 0;
-            break;
-        case eAnimationLevelInterpolatedValue:
-            value = 1;
-            break;
-        case eAnimationLevelOnKeyframe:
-            value = 2;
-            break;
-        default:
-            value = 0;
-            break;
+    case eAnimationLevelNone:
+        value = 0;
+        break;
+    case eAnimationLevelInterpolatedValue:
+        value = 1;
+        break;
+    case eAnimationLevelOnKeyframe:
+        value = 2;
+        break;
+    default:
+        value = 0;
+        break;
     }
-    if (value != _checkBox->getAnimation()) {
+    if ( value != _checkBox->getAnimation() ) {
         _checkBox->setAnimation(value);
     }
 }
@@ -269,21 +272,22 @@ void
 KnobGuiBool::onLabelChangedInternal()
 {
     const std::string& label = _knob.lock()->getLabel();
-    if (label == "R" || label == "r" || label == "red") {
+
+    if ( (label == "R") || (label == "r") || (label == "red") ) {
         QColor color;
-        color.setRgbF(0.851643,0.196936,0.196936);
+        color.setRgbF(0.851643, 0.196936, 0.196936);
         _checkBox->setCustomColor(color, true);
-    } else if (label == "G" || label == "g" || label == "green") {
+    } else if ( (label == "G") || (label == "g") || (label == "green") ) {
         QColor color;
-        color.setRgbF(0,0.654707,0);
+        color.setRgbF(0, 0.654707, 0);
         _checkBox->setCustomColor(color, true);
-    } else if (label == "B" || label == "b" || label == "blue") {
+    } else if ( (label == "B") || (label == "b") || (label == "blue") ) {
         QColor color;
-        color.setRgbF(0.345293,0.345293,1);
+        color.setRgbF(0.345293, 0.345293, 1);
         _checkBox->setCustomColor(color, true);
-    } else if (label == "A" || label == "a" || label == "alpha") {
+    } else if ( (label == "A") || (label == "a") || (label == "alpha") ) {
         QColor color;
-        color.setRgbF(0.398979,0.398979,0.398979);
+        color.setRgbF(0.398979, 0.398979, 0.398979);
         _checkBox->setCustomColor(color, true);
     } else {
         _checkBox->setCustomColor(Qt::black, false);
@@ -293,17 +297,17 @@ KnobGuiBool::onLabelChangedInternal()
 void
 KnobGuiBool::onLabelClicked(bool b)
 {
-    if (_checkBox->getReadOnly()) {
+    if ( _checkBox->getReadOnly() ) {
         return;
     }
     _checkBox->setChecked(b);
-    pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(),_knob.lock()->getValue(0),b, 0, false) );
+    pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(), _knob.lock()->getValue(0), b, 0, false) );
 }
 
 void
 KnobGuiBool::onCheckBoxStateChanged(bool b)
 {
-    pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(),_knob.lock()->getValue(0),b, 0, false) );
+    pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(), _knob.lock()->getValue(0), b, 0, false) );
 }
 
 void
@@ -322,7 +326,6 @@ void
 KnobGuiBool::setEnabled()
 {
     boost::shared_ptr<KnobBool> knob = _knob.lock();
-
     bool b = knob->isEnabled(0)  && knob->getExpression(0).empty();
 
     _checkBox->setReadOnly(!b);
@@ -330,7 +333,7 @@ KnobGuiBool::setEnabled()
 
 void
 KnobGuiBool::setReadOnly(bool readOnly,
-                          int /*dimension*/)
+                         int /*dimension*/)
 {
     _checkBox->setReadOnly(readOnly);
 }
@@ -349,9 +352,10 @@ KnobGuiBool::getKnob() const
 
 void
 KnobGuiBool::reflectExpressionState(int /*dimension*/,
-                                     bool hasExpr)
+                                    bool hasExpr)
 {
     bool isEnabled = _knob.lock()->isEnabled(0);
+
     _checkBox->setAnimation(3);
     _checkBox->setReadOnly(hasExpr || !isEnabled);
 }

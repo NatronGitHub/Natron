@@ -60,18 +60,18 @@ NATRON_NAMESPACE_ENTER;
  * Qt MDI Example (http://doc.qt.nokia.com/4.7/mainwindows-mdi.html)
  *
  * @code
- MainWindow::MainWindow(QWidget* parent, Qt::WindowFlags flags) :
- DocumentWindow(parent, flags)
- {
- …
- 
- registerFileType("GiMdi.Document", "MDI Text Editor Document", ".gidoc", 0, true);
- enableShellOpen();
- 
- setWindowTitle(tr("MDI"));
- setUnifiedTitleAndToolBarOnMac(true);
- }
- 
+   MainWindow::MainWindow(QWidget* parent, Qt::WindowFlags flags) :
+   DocumentWindow(parent, flags)
+   {
+   …
+
+   registerFileType("GiMdi.Document", "MDI Text Editor Document", ".gidoc", 0, true);
+   enableShellOpen();
+
+   setWindowTitle(tr("MDI"));
+   setUnifiedTitleAndToolBarOnMac(true);
+   }
+
  *
  * Aditionally, the actions must be performed by overwriting one or more of:
  * @li ddeOpenFile
@@ -80,38 +80,40 @@ NATRON_NAMESPACE_ENTER;
  * @li executeUnknownDdeCommand
  *
  *
- 
- void MainWindow::ddeOpenFile(const QString& filePath)
- {
- MdiChild *child = createMdiChild();
- if (child->loadFile(filePath))
- {
- statusBar()->showMessage(tr("File loaded"), 2000);
- child->show();
- }
- else
- {
- child->close();
- }
- }
- 
+
+   void MainWindow::ddeOpenFile(const QString& filePath)
+   {
+   MdiChild *child = createMdiChild();
+   if (child->loadFile(filePath))
+   {
+   statusBar()->showMessage(tr("File loaded"), 2000);
+   child->show();
+   }
+   else
+   {
+   child->close();
+   }
+   }
+
  *
  */
-class DocumentWindow : public QMainWindow
+class DocumentWindow
+    : public QMainWindow
 {
-    
 public:
     // —— enums ———————————————————————————
     /**
      * Known DDE command. These commands are typically used
      */
-    enum DdeCommand {
+    enum DdeCommand
+    {
         DDEOpen = 0x0001, /**< open a file via explorer*/
         DDENew = 0x0002, /**< create a new file via explorer*/
         DDEPrint = 0x0004, /**< print a file via explorer*/
     };
+
     Q_DECLARE_FLAGS(DdeCommands, DdeCommand)
-    
+
     // —— construction —————————————————————————
     /**
      * Constructor.
@@ -119,24 +121,24 @@ public:
      * Creates a DocumentWindow with a given @arg parent and @arg flags.
      */
     explicit DocumentWindow(QWidget* parent = 0, Qt::WindowFlags flags = 0);
-    
+
     /**
      * Destructor
      */
     virtual ~DocumentWindow();
-    
+
     // —— operators ——————————————————————————
     // —— methods ——————————————————————————-
     // —— accessors ——————————————————————————
     // —— members ——————————————————————————-
-    
+
 protected:
     // —— events ———————————————————————————
     /**
      * reimpl as DDE events come as windows events and are not translated by Qt.
      */
     virtual bool winEvent(MSG *message, long *result);
-    
+
     // —— helpers for the file registration ——————————————————
     /**
      * virtual function that must be implemented by the derived class to react to the open command
@@ -145,7 +147,7 @@ protected:
      * @param filePath file that was selected in the explorer
      */
     virtual void ddeOpenFile(const QString& filePath);
-    
+
     /**
      * virtual function that must be implemented by the derived class to react to the new command
      * from Windows.
@@ -153,7 +155,7 @@ protected:
      * @param filePath file that was selected in the explorer
      */
     virtual void ddeNewFile(const QString& filePath);
-    
+
     /**
      * virtual function that must be implemented by the derived class to react to the print command
      * from Windows.
@@ -161,7 +163,7 @@ protected:
      * @param filePath file that was selected in the explorer
      */
     virtual void ddePrintFile(const QString& filePath);
-    
+
     /**
      * virtual function that must be implemented by get custom dde commands from the explorer. If, e.g.
      * a printo or copy command should be available in explorer and they are registered via registerCommand,
@@ -171,11 +173,11 @@ protected:
      * @param params parameter string, containing the hole stuff, also " and commas.
      *
      * @note a command like this [compare("%1")] will result in the parameters:
-     command = "compare";
-     params = "quot;<filepath>quot;";
+       command = "compare";
+       params = "quot;<filepath>quot;";
      */
     virtual void executeUnknownDdeCommand(const QString& command, const QString& params);
-    
+
     /**
      * Call this method to register the file type in Windows. It creates the default command
      * which means the app is started with the file to open as parameter. If @arg registerForDDE
@@ -192,8 +194,8 @@ protected:
      * @note If more then the default commands are needed, then subsequent calls of registerCommand are needed.
      *
      * @note DDEOpen leads to the DDE command: [open("%1)]
-     DDENew leads to the DDE command: [new("%1)]
-     DDEPrint leads to the DDE command: [print("%1)]
+       DDENew leads to the DDE command: [new("%1)]
+       DDEPrint leads to the DDE command: [print("%1)]
      */
     void registerFileType(const QString& documentId,
                           const QString& fileTypeName,
@@ -201,31 +203,31 @@ protected:
                           qint32 appIconIndex = 0,
                           bool registerForDDE = false,
                           DdeCommands commands = DDEOpen);
-    
+
     /**
      * registeres one command for a given file type. It is called for the pre defined DDE command
      * types from registerFileType. if more then the normal commands are needed, it can be called
      * in addition to registerFileType.
      *
      * @code
-     MainWindow::MainWindow(QWidget* parent, Qt::WindowFlags flags) :
-     DocumentWindow(parent, flags)
-     {
-     …
-     
-     registerFileType("GiMdi.Document", "MDI Text Editor Document", ".gidoc", 0, true);
-     registerCommand("fancyCommand", "GiMdi.Document", "-fancy %1", "[fancy(quot;%1quot;)]");
-     enableShellOpen();
-     
-     …
-     }
-     @endcode
+       MainWindow::MainWindow(QWidget* parent, Qt::WindowFlags flags) :
+       DocumentWindow(parent, flags)
+       {
+       …
+
+       registerFileType("GiMdi.Document", "MDI Text Editor Document", ".gidoc", 0, true);
+       registerCommand("fancyCommand", "GiMdi.Document", "-fancy %1", "[fancy(quot;%1quot;)]");
+       enableShellOpen();
+
+       …
+       }
+       @endcode
      */
     void registerCommand(const QString& command,
                          const QString& documentId,
                          const QString cmdLineArg = QString::null,
                          const QString ddeCommand = QString::null);
-    
+
     /**
      * Call this method to enable the user to open data files associated with your application
      * by double-clicking the files in the windows file manager.
@@ -234,39 +236,38 @@ protected:
      * registry file (*.reg) which does this.
      */
     void enableShellOpen();
-    
-    
+
 private:
     // —— privat helpers ————————————————————————
     /**
      * implementation of the WM_DDE_INITIATE windows message
      */
     bool ddeInitiate(MSG* message, long* result);
-    
+
     /**
      * implementation of the WM_DDE_EXECUTE windows message
      */
     bool ddeExecute(MSG* message, long* result);
-    
+
     /**
      * implementation of the WM_DDE_TERMINATE windows message
      */
     bool ddeTerminate(MSG* message, long* result);
-    
+
     /**
      * Sets specified value in the registry under HKCU\Software\Classes, which is mapped to HKCR then.
      */
     bool SetHkcrUserRegKey(QString key, const QString& value, const QString& valueName = QString::null);
-    
+
     /**
      * this method is called to do the DDE command handling. It does argument splitting and then calls
      * ddeOpenFile, ddeNewFile, ddePrintFile or executeUnknownDdeCommand.
      */
     void executeDdeCommand(const QString& command, const QString& params);
-    
+
     // —— members —————————a
     bool m_registerForDDE; /**< used to identfy, if the dde commands should be written to the registry*/
-        QString m_appAtomName; /**< the name of the application, without file extension*/
+    QString m_appAtomName;     /**< the name of the application, without file extension*/
     QString m_systemTopicAtomName; /**< the name of the system topic atom, typically "System"*/
     ATOM m_appAtom; /**< The windows atom needed for DDE communication*/
     ATOM m_systemTopicAtom; /**< The windows system topic atom needed for DDE communication*/

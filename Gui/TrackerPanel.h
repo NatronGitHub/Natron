@@ -17,8 +17,6 @@
  * ***** END LICENSE BLOCK ***** */
 
 
-
-
 #ifndef TRACKERPANEL_H
 #define TRACKERPANEL_H
 
@@ -50,115 +48,114 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER;
 
 /**
-* @brief This is the new tracker panel, the previous version TrackerPanelV1 (used for TrackerPM) can be found in MultiInstancePanel.h
-**/
+ * @brief This is the new tracker panel, the previous version TrackerPanelV1 (used for TrackerPM) can be found in MultiInstancePanel.h
+ **/
 struct TrackerPanelPrivate;
 class TrackerPanel
-: public QWidget
+    : public QWidget
 {
-        Q_OBJECT
+    Q_OBJECT
 
 public:
-    
+
     TrackerPanel(const NodeGuiPtr& n,
                  QWidget* parent);
-    
+
     virtual ~TrackerPanel();
-    
+
     void addTableRow(const TrackMarkerPtr & marker);
-    
+
     void insertTableRow(const TrackMarkerPtr & marker, int index);
-    
+
     void removeRow(int row);
-    
+
     void removeMarker(const TrackMarkerPtr & marker);
-    
+
     TableItem* getItemAt(int row, int column) const;
-    
+
     int getMarkerRow(const TrackMarkerPtr & marker) const;
-    
+
     TableItem* getItemAt(const TrackMarkerPtr & marker, int column) const;
-    
+
     TrackMarkerPtr getRowMarker(int row) const;
-    
+
     boost::shared_ptr<KnobI> getKnobAt(int row, int column, int* dimension) const;
-    
     boost::shared_ptr<TrackerContext> getContext() const;
-    
+
     NodeGuiPtr getNode() const;
-    
+
     void getSelectedRows(std::set<int>* rows) const;
-    
+
     void blockSelection();
     void unblockSelection();
-    
+
     void pushUndoCommand(QUndoCommand* command);
-    
+
     void clearAndSelectTracks(const std::list<TrackMarkerPtr >& markers, int reason);
-    
+
 public Q_SLOTS:
-    
+
     void onAddButtonClicked();
     void onRemoveButtonClicked();
     void onSelectAllButtonClicked();
     void onResetButtonClicked();
     void onAverageButtonClicked();
-    
+
     void onGoToPrevKeyframeButtonClicked();
     void onGoToNextKeyframeButtonClicked();
     void onAddKeyframeButtonClicked();
     void onRemoveKeyframeButtonClicked();
     void onRemoveAnimationButtonClicked();
-    
-    void onModelSelectionChanged(const QItemSelection & oldSelection,const QItemSelection & newSelection);
+
+    void onModelSelectionChanged(const QItemSelection & oldSelection, const QItemSelection & newSelection);
     void onItemDataChanged(TableItem* item);
     void onItemEnabledCheckBoxChecked(bool checked);
     void onItemMotionModelChanged(int index);
     void onItemRightClicked(TableItem* item);
-    
+
     void onContextSelectionAboutToChange(int reason);
     void onContextSelectionChanged(int reason);
-    
+
     void onTrackKeyframeSet(const TrackMarkerPtr& marker, int key);
     void onTrackKeyframeRemoved(const TrackMarkerPtr& marker, int key);
     void onTrackAllKeyframesRemoved(const TrackMarkerPtr& marker);
-    
+
     void onKeyframeSetOnTrackCenter(const TrackMarkerPtr &marker, int key);
     void onKeyframeRemovedOnTrackCenter(const TrackMarkerPtr &marker, int key);
     void onAllKeyframesRemovedOnTrackCenter(const TrackMarkerPtr &marker);
     void onMultipleKeyframesSetOnTrackCenter(const TrackMarkerPtr &marker, const std::list<double>& keys);
-    
+
     void onSettingsPanelClosed(bool closed);
     void onTrackAboutToClone(const TrackMarkerPtr& marker);
     void onTrackCloned(const TrackMarkerPtr& marker);
-    
+
     void onTrackInserted(const TrackMarkerPtr& marker, int index);
     void onTrackRemoved(const TrackMarkerPtr& marker);
-    
-    void onEnabledChanged(const TrackMarkerPtr& marker,int reason);
-    
-    void onCenterKnobValueChanged(const TrackMarkerPtr& marker,int,int);
-    void onOffsetKnobValueChanged(const TrackMarkerPtr& marker,int,int);
-    void onErrorKnobValueChanged(const TrackMarkerPtr &marker,int,int);
-    void onMotionModelKnobValueChanged(const TrackMarkerPtr &marker,int,int);
-    
+
+    void onEnabledChanged(const TrackMarkerPtr& marker, int reason);
+
+    void onCenterKnobValueChanged(const TrackMarkerPtr& marker, int, int);
+    void onOffsetKnobValueChanged(const TrackMarkerPtr& marker, int, int);
+    void onErrorKnobValueChanged(const TrackMarkerPtr &marker, int, int);
+    void onMotionModelKnobValueChanged(const TrackMarkerPtr &marker, int, int);
+
     /*void onPatternTopLeftKnobValueChanged(const TrackMarkerPtr &marker,int,int);
-    void onPatternTopRightKnobValueChanged(const TrackMarkerPtr &marker,int,int);
-    void onPatternBtmRightKnobValueChanged(const TrackMarkerPtr &marker,int,int);
-    void onPatternBtmLeftKnobValueChanged(const TrackMarkerPtr &marker,int,int);
-    
-    void onSearchBtmLeftKnobValueChanged(const TrackMarkerPtr &marker,int,int);
-    void onSearchTopRightKnobValueChanged(const TrackMarkerPtr &marker,int,int);*/
-    
-    
+       void onPatternTopRightKnobValueChanged(const TrackMarkerPtr &marker,int,int);
+       void onPatternBtmRightKnobValueChanged(const TrackMarkerPtr &marker,int,int);
+       void onPatternBtmLeftKnobValueChanged(const TrackMarkerPtr &marker,int,int);
+
+       void onSearchBtmLeftKnobValueChanged(const TrackMarkerPtr &marker,int,int);
+       void onSearchTopRightKnobValueChanged(const TrackMarkerPtr &marker,int,int);*/
+
+
     void onTimeChanged(SequenceTime time, int reason);
-    
+
 private:
-    
+
     void onSelectionAboutToChangeInternal(const std::list<TrackMarkerPtr >& markers);
     void selectInternal(const std::list<TrackMarkerPtr >& markers, int reason);
     TrackMarkerPtr makeTrackInternal();
-    
+
     boost::scoped_ptr<TrackerPanelPrivate> _imp;
 };
 

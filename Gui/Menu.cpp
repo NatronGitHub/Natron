@@ -40,24 +40,22 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
-
-Menu::Menu(const QString &title, QWidget *parent)
-: QMenu(title,parent)
+Menu::Menu(const QString &title,
+           QWidget *parent)
+    : QMenu(title, parent)
 {
-    setFont(QApplication::font()); // necessary, or the labels will get the default font size
+    setFont( QApplication::font() ); // necessary, or the labels will get the default font size
 }
 
 Menu::Menu(QWidget* parent)
-: QMenu(parent)
+    : QMenu(parent)
 {
-    setFont(QApplication::font()); // necessary, or the labels will get the default font size
+    setFont( QApplication::font() ); // necessary, or the labels will get the default font size
 }
-
 
 MenuWithToolTips::MenuWithToolTips(QWidget* parent)
     : Menu(parent)
 {
-    
 }
 
 bool

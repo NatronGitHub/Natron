@@ -42,45 +42,46 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER;
 
 struct ManageUserParamsDialogPrivate;
-class ManageUserParamsDialog : public QDialog
+class ManageUserParamsDialog
+    : public QDialog
 {
-    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-    GCC_DIAG_SUGGEST_OVERRIDE_ON
-    
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
-    
-    
+
+
     ManageUserParamsDialog(DockablePanel* panel, QWidget* parent);
-    
+
     virtual ~ManageUserParamsDialog();
-    
+
 public Q_SLOTS:
-    
+
     void onAddClicked();
-    
+
     void onPickClicked();
-    
+
     void onDeleteClicked();
-    
+
     void onEditClicked();
-    
+
     void onUpClicked();
-    
+
     void onDownClicked();
-    
+
     void onCloseClicked();
-    
+
     void onSelectionChanged();
-    
+
     void onItemDoubleClicked(QTreeWidgetItem *item, int column);
-    
+
 private:
-    
+
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-    
+
     void onEditClickedInternal(const QList<QTreeWidgetItem*> &selection);
-    
+
     boost::scoped_ptr<ManageUserParamsDialogPrivate> _imp;
 };
 

@@ -62,7 +62,7 @@ public Q_SLOTS:
     void cancelChanges();
 
     void saveChangesAndClose();
-    
+
     void onSettingChanged(KnobI* knob);
 
 private:

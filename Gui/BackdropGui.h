@@ -33,7 +33,8 @@
 NATRON_NAMESPACE_ENTER;
 
 struct BackdropGuiPrivate;
-class BackdropGui : public NodeGui
+class BackdropGui
+    : public NodeGui
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -42,46 +43,41 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
     BackdropGui(QGraphicsItem* parent = 0);
-    
+
     virtual ~BackdropGui();
-    
+
     void refreshTextLabelFromKnob();
 
 public Q_SLOTS:
-    
+
     void onLabelChanged(const QString& label);
-        
+
 private:
-    
+
     virtual int getBaseDepth() const OVERRIDE FINAL { return 10; }
-    
+
     virtual void createGui() OVERRIDE FINAL;
-    
     virtual bool canMakePreview() OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return false;
     }
-    
-    virtual void resizeExtraContent(int w,int h,bool forceResize) OVERRIDE FINAL;
-    
+
+    virtual void resizeExtraContent(int w, int h, bool forceResize) OVERRIDE FINAL;
     virtual bool mustFrameName() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
     }
-    
+
     virtual bool mustAddResizeHandle() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
     }
-    
-    virtual void adjustSizeToContent(int *w,int *h,bool adjustToTextSize) OVERRIDE FINAL;
-        
-    virtual void getInitialSize(int *w, int *h) const OVERRIDE FINAL;
-    
 
-    
+    virtual void adjustSizeToContent(int *w, int *h, bool adjustToTextSize) OVERRIDE FINAL;
+    virtual void getInitialSize(int *w, int *h) const OVERRIDE FINAL;
+
 private:
-    
+
 
     boost::scoped_ptr<BackdropGuiPrivate> _imp;
 };

@@ -56,8 +56,8 @@ public:
 
     GenericAccess() {}
 
-    virtual ~GenericAccess() {
-
+    virtual ~GenericAccess()
+    {
     }
 };
 
@@ -65,10 +65,10 @@ class Bitmap
 {
 public:
     Bitmap(const RectI & bounds)
-    : _bounds(bounds)
-    , _map( bounds.area() )
-    , _dirtyZone()
-    , _dirtyZoneSet(false)
+        : _bounds(bounds)
+        , _map( bounds.area() )
+        , _dirtyZone()
+        , _dirtyZoneSet(false)
     {
         //Do not assert !rod.isNull() : An empty image can be created for entries that correspond to
         // "identities" images (i.e: images that are just a link to another image). See EffectInstance :
@@ -78,10 +78,10 @@ public:
     }
 
     Bitmap()
-    : _bounds()
-    , _map()
-    , _dirtyZone()
-    , _dirtyZoneSet(false)
+        : _bounds()
+        , _map()
+        , _dirtyZone()
+        , _dirtyZoneSet(false)
     {
     }
 
@@ -97,10 +97,9 @@ public:
     {
     }
 
-
     void setTo1()
     {
-        std::fill(_map.begin(),_map.end(),1);
+        std::fill(_map.begin(), _map.end(), 1);
     }
 
     const RectI & getBounds() const
@@ -109,11 +108,11 @@ public:
     }
 
 #if NATRON_ENABLE_TRIMAP
-    void minimalNonMarkedRects_trimap(const RectI & roi,std::list<RectI>& ret,bool* isBeingRenderedElsewhere) const;
-    RectI minimalNonMarkedBbox_trimap(const RectI & roi,bool* isBeingRenderedElsewhere) const;
+    void minimalNonMarkedRects_trimap(const RectI & roi, std::list<RectI>& ret, bool* isBeingRenderedElsewhere) const;
+    RectI minimalNonMarkedBbox_trimap(const RectI & roi, bool* isBeingRenderedElsewhere) const;
 #endif
 
-    void minimalNonMarkedRects(const RectI & roi,std::list<RectI>& ret) const;
+    void minimalNonMarkedRects(const RectI & roi, std::list<RectI>& ret) const;
     RectI minimalNonMarkedBbox(const RectI & roi) const;
 
 
@@ -139,14 +138,15 @@ public:
         return &_map.front();
     }
 
-    const char* getBitmapAt(int x,int y) const;
-    char* getBitmapAt(int x,int y);
+    const char* getBitmapAt(int x, int y) const;
+    char* getBitmapAt(int x, int y);
 
-    void copyRowPortion(int x1,int x2,int y,const Bitmap& other);
+    void copyRowPortion(int x1, int x2, int y, const Bitmap& other);
 
     void copyBitmapPortion(const RectI& roi, const Bitmap& other);
 
-    void setDirtyZone(const RectI& zone) {
+    void setDirtyZone(const RectI& zone)
+    {
         _dirtyZone = zone;
         _dirtyZoneSet = true;
     }
@@ -166,7 +166,7 @@ private:
 };
 
 class Image
-: public CacheEntryHelper<unsigned char,ImageKey,ImageParams> , public BufferableObject
+    : public CacheEntryHelper<unsigned char, ImageKey, ImageParams>, public BufferableObject
 {
 public:
 
@@ -177,10 +177,9 @@ public:
           const std::string & path);
 
 
-
     /*This constructor can be used to allocate a local Image. The deallocation should
-     then be handled by the user. Note that no view number is passed in parameter
-     as it is not needed.*/
+       then be handled by the user. Note that no view number is passed in parameter
+       as it is not needed.*/
     Image(const ImageComponents& components,
           const RectD & regionOfDefinition,    //!< rod in canonical coordinates
           const RectI & bounds,    //!< bounds in pixel coordinates
@@ -201,7 +200,6 @@ public:
     bool usesBitMap() const { return _useBitmap; }
 
     virtual void onMemoryAllocated(bool diskRestoration) OVERRIDE FINAL;
-
     static ImageKey makeKey(const CacheEntryHolder* holder,
                             U64 nodeHashKey,
                             bool frameVaryingOrAnimated,
@@ -218,7 +216,6 @@ public:
                                                      ImageBitDepthEnum bitdepth,
                                                      ImagePremultiplicationEnum premult,
                                                      ImageFieldingOrderEnum fielding);
-
     static boost::shared_ptr<ImageParams> makeParams(int cost,
                                                      const RectD & rod,    // the image rod in canonical coordinates
                                                      const RectI& bounds,
@@ -254,7 +251,6 @@ private:
                                bool createInCache,
                                boost::shared_ptr<Image>* outputImage);
 
-
 public:
 
     /**
@@ -281,20 +277,21 @@ public:
     RectI getBounds() const
     {
         QReadLocker k(&_entryLock);
+
         return _bounds;
     };
     virtual size_t size() const OVERRIDE FINAL
     {
         std::size_t dt = dataSize();
-
         bool got = _entryLock.tryLockForRead();
+
         dt += _bitmap.getBounds().area();
         if (got) {
             _entryLock.unlock();
         }
+
         return dt;
     }
-
 
     ///Overriden from BufferableObject
     virtual std::size_t sizeInRAM() const OVERRIDE FINAL
@@ -309,11 +306,10 @@ public:
 
     double getScale() const
     {
-        return getScaleFromMipMapLevel(getMipMapLevel());
+        return getScaleFromMipMapLevel( getMipMapLevel() );
     }
 
     unsigned int getComponentsCount() const;
-
     const ImageComponents& getComponents() const
     {
         return this->_params->getComponents();
@@ -334,9 +330,9 @@ public:
     {
         return this->_bitDepth;
     }
-    
+
     ImageFieldingOrderEnum getFieldingOrder() const;
-    
+
     ImagePremultiplicationEnum getPremultiplication() const;
 
     double getPixelAspectRatio() const;
@@ -348,20 +344,21 @@ public:
     unsigned int getRowElements() const;
 
 
-
     /**
      * @brief Lock the image for reading, while this object is living, the image buffer can't be written to.
      * You must ensure that the image will live as long as this object lives otherwise the pointer will be invalidated.
      * You may no longer use the pointer returned by pixelAt once this object dies.
      **/
-    class ReadAccess : public GenericAccess
+    class ReadAccess
+        : public GenericAccess
     {
         const Image* img;
-    public:
+
+public:
 
         ReadAccess(const Image* img)
-        : GenericAccess()
-        , img(img)
+            : GenericAccess()
+            , img(img)
         {
             if (img) {
                 img->lockForRead();
@@ -369,8 +366,8 @@ public:
         }
 
         ReadAccess(const ReadAccess& other)
-        : GenericAccess()
-        , img(other.img)
+            : GenericAccess()
+            , img(other.img)
         {
             //This is a recursive lock so it doesn't matter if we take it twice
             if (img) {
@@ -388,15 +385,19 @@ public:
         /**
          * @brief Access pixels. The pointer must be cast to the appropriate type afterwards.
          **/
-        const unsigned char* pixelAt(int x,int y) const
+        const unsigned char* pixelAt(int x,
+                                     int y) const
         {
             assert(img);
+
             return img->pixelAt(x, y);
         }
 
-        const char* bitmapAt(int x, int y) const
+        const char* bitmapAt(int x,
+                             int y) const
         {
             assert(img);
+
             return img->getBitmapAt(x, y);
         }
     };
@@ -406,21 +407,23 @@ public:
      * You must ensure that the image will live as long as this object lives otherwise the pointer will be invalidated.
      * You may no longer use the pointer returned by pixelAt once this object dies.
      **/
-    class WriteAccess : public GenericAccess
+    class WriteAccess
+        : public GenericAccess
     {
         Image* img;
-    public:
+
+public:
 
         WriteAccess(Image* img)
-        : GenericAccess()
-        , img(img)
+            : GenericAccess()
+            , img(img)
         {
             img->lockForWrite();
         }
 
         WriteAccess(const WriteAccess& other)
-        : GenericAccess()
-        , img(other.img)
+            : GenericAccess()
+            , img(other.img)
         {
             //This is a recursive lock so it doesn't matter if we take it twice
             img->lockForWrite();
@@ -434,14 +437,17 @@ public:
         /**
          * @brief Access pixels. The pointer must be cast to the appropriate type afterwards.
          **/
-        unsigned char* pixelAt(int x,int y)
+        unsigned char* pixelAt(int x,
+                               int y)
         {
             return img->pixelAt(x, y);
         }
 
-        char* bitmapAt(int x, int y) const
+        char* bitmapAt(int x,
+                       int y) const
         {
             assert(img);
+
             return img->getBitmapAt(x, y);
         }
     };
@@ -469,20 +475,20 @@ private:
     const char* getBitmapAt(int x,
                             int y) const
     {
-        return this->_bitmap.getBitmapAt(x,y);
+        return this->_bitmap.getBitmapAt(x, y);
     }
 
     char* getBitmapAt(int x,
                       int y)
     {
-        return this->_bitmap.getBitmapAt(x,y);
+        return this->_bitmap.getBitmapAt(x, y);
     }
 
     /**
      * @brief Access pixels. The pointer must be cast to the appropriate type afterwards.
      **/
-    unsigned char* pixelAt(int x,int y);
-    const unsigned char* pixelAt(int x,int y) const;
+    unsigned char* pixelAt(int x, int y);
+    const unsigned char* pixelAt(int x, int y) const;
 
     /**
      * @brief Locks the image for read/write access.
@@ -505,6 +511,7 @@ private:
     {
         _entryLock.lockForRead();
     }
+
     void lockForWrite() const
     {
         _entryLock.lockForWrite();
@@ -515,32 +522,28 @@ private:
         _entryLock.unlock();
     }
 
+    template <typename SRCPIX, typename DSTPIX, int srcMaxValue, int dstMaxValue>
+    static void convertToFormatInternal_sameComps(const RectI & renderWindow,
+                                                  const Image & srcImg,
+                                                  Image & dstImg,
+                                                  ViewerColorSpaceEnum srcColorSpace,
+                                                  ViewerColorSpaceEnum dstColorSpace,
+                                                  bool copyBitmap);
 
-    template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue>
-    static void
-    convertToFormatInternal_sameComps(const RectI & renderWindow,
-                                      const Image & srcImg,
-                                      Image & dstImg,
-                                      ViewerColorSpaceEnum srcColorSpace,
-                                      ViewerColorSpaceEnum dstColorSpace,
-                                      bool copyBitmap);
-
-    template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue,int srcNComps,int dstNComps>
-    static void
-    convertToFormatInternal(const RectI & renderWindow,
-                            const Image & srcImg,
-                            Image & dstImg,
-                            ViewerColorSpaceEnum srcColorSpace,
-                            ViewerColorSpaceEnum dstColorSpace,
-                            int channelForAlpha,
-                            bool useAlpha0,
-                            bool copyBitmap,
-                            bool requiresUnpremult);
+    template <typename SRCPIX, typename DSTPIX, int srcMaxValue, int dstMaxValue, int srcNComps, int dstNComps>
+    static void convertToFormatInternal(const RectI & renderWindow,
+                                        const Image & srcImg,
+                                        Image & dstImg,
+                                        ViewerColorSpaceEnum srcColorSpace,
+                                        ViewerColorSpaceEnum dstColorSpace,
+                                        int channelForAlpha,
+                                        bool useAlpha0,
+                                        bool copyBitmap,
+                                        bool requiresUnpremult);
 
 
-
-    template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue,int srcNComps,int dstNComps,
-    bool requiresUnpremult>
+    template <typename SRCPIX, typename DSTPIX, int srcMaxValue, int dstMaxValue, int srcNComps, int dstNComps,
+              bool requiresUnpremult>
     static void convertToFormatInternalForUnpremult(const RectI & renderWindow,
                                                     const Image & srcImg,
                                                     Image & dstImg,
@@ -551,8 +554,8 @@ private:
                                                     int channelForAlpha);
 
 
-    template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue,int srcNComps,int dstNComps,
-    bool requiresUnpremult, bool useColorspaces>
+    template <typename SRCPIX, typename DSTPIX, int srcMaxValue, int dstMaxValue, int srcNComps, int dstNComps,
+              bool requiresUnpremult, bool useColorspaces>
     static void convertToFormatInternalForColorSpace(const RectI & renderWindow,
                                                      const Image & srcImg,
                                                      Image & dstImg,
@@ -563,19 +566,17 @@ private:
                                                      int channelForAlpha);
 
 
+    template <typename SRCPIX, typename DSTPIX, int srcMaxValue, int dstMaxValue>
+    static void convertToFormatInternalForDepth(const RectI & renderWindow,
+                                                const Image & srcImg,
+                                                Image & dstImg,
+                                                ViewerColorSpaceEnum srcColorSpace,
+                                                ViewerColorSpaceEnum dstColorSpace,
+                                                int channelForAlpha,
+                                                bool useAlpha0,
+                                                bool copyBitmap,
+                                                bool requiresUnpremult);
 
-
-    template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue>
-    static void
-    convertToFormatInternalForDepth(const RectI & renderWindow,
-                                    const Image & srcImg,
-                                    Image & dstImg,
-                                    ViewerColorSpaceEnum srcColorSpace,
-                                    ViewerColorSpaceEnum dstColorSpace,
-                                    int channelForAlpha,
-                                    bool useAlpha0,
-                                    bool copyBitmap,
-                                    bool requiresUnpremult);
 public:
 
 
@@ -600,25 +601,30 @@ public:
         QReadLocker locker(&_entryLock);
         _bitmap.minimalNonMarkedRects_trimap(regionOfInterest, ret, isBeingRenderedElsewhere);
     }
+
 #endif
-    void getRestToRender(const RectI & regionOfInterest,std::list<RectI>& ret) const
+    void getRestToRender(const RectI & regionOfInterest,
+                         std::list<RectI>& ret) const
     {
         if (!_useBitmap) {
-            return ;
+            return;
         }
         QReadLocker locker(&_entryLock);
-        _bitmap.minimalNonMarkedRects(regionOfInterest,ret);
+        _bitmap.minimalNonMarkedRects(regionOfInterest, ret);
     }
 
 #if NATRON_ENABLE_TRIMAP
-    RectI getMinimalRect_trimap(const RectI & regionOfInterest,bool* isBeingRenderedElsewhere) const
+    RectI getMinimalRect_trimap(const RectI & regionOfInterest,
+                                bool* isBeingRenderedElsewhere) const
     {
         if (!_useBitmap) {
             return regionOfInterest;
         }
         QReadLocker locker(&_entryLock);
-        return _bitmap.minimalNonMarkedBbox_trimap(regionOfInterest,isBeingRenderedElsewhere);
+
+        return _bitmap.minimalNonMarkedBbox_trimap(regionOfInterest, isBeingRenderedElsewhere);
     }
+
 #endif
     RectI getMinimalRect(const RectI & regionOfInterest) const
     {
@@ -626,11 +632,13 @@ public:
             return regionOfInterest;
         }
         QReadLocker locker(&_entryLock);
+
         return _bitmap.minimalNonMarkedBbox(regionOfInterest);
     }
 
 #if NATRON_ENABLE_TRIMAP
-    RectI getMinimalRectAndMarkForRendering_trimap(const RectI & regionOfInterest,bool* isBeingRenderedElsewhere)
+    RectI getMinimalRectAndMarkForRendering_trimap(const RectI & regionOfInterest,
+                                                   bool* isBeingRenderedElsewhere)
     {
         if (!_useBitmap) {
             return regionOfInterest;
@@ -638,11 +646,13 @@ public:
         RectI ret;
         {
             QReadLocker locker(&_entryLock);
-            ret = _bitmap.minimalNonMarkedBbox_trimap(regionOfInterest,isBeingRenderedElsewhere);
+            ret = _bitmap.minimalNonMarkedBbox_trimap(regionOfInterest, isBeingRenderedElsewhere);
         }
         markForRendering(ret);
+
         return ret;
     }
+
 #endif
 
     void markForRendered(const RectI & roi)
@@ -668,6 +678,7 @@ public:
         _bounds.intersect(roi, &intersection);
         _bitmap.markForRendering(intersection);
     }
+
 #endif
 
     void clearBitmap(const RectI& roi)
@@ -691,7 +702,7 @@ public:
      * For example if the image comps is eImageComponentAlpha, then only the alpha value 'a' will
      * be used.
      **/
-    void fill(const RectI & roi,float r,float g,float b,float a);
+    void fill(const RectI & roi, float r, float g, float b, float a);
 
     void fillZero(const RectI& roi);
 
@@ -705,7 +716,7 @@ public:
               float colorValue = 0.f,
               float alphaValue = 1.f)
     {
-        fill(rect,colorValue,colorValue,colorValue,alphaValue);
+        fill(rect, colorValue, colorValue, colorValue, alphaValue);
     }
 
     /**
@@ -809,7 +820,6 @@ private:
     template <bool doPremult>
     void premultForDepth(const RectI& roi);
 
-
 public:
 
 
@@ -837,7 +847,7 @@ public:
      */
     bool checkForNaNs(const RectI& roi) WARN_UNUSED_RETURN;
 
-    void copyBitmapRowPortion(int x1, int x2,int y, const Image& other);
+    void copyBitmapRowPortion(int x1, int x2, int y, const Image& other);
 
     void copyBitmapPortion(const RectI& roi, const Image& other);
 
@@ -848,7 +858,7 @@ public:
     template<typename PIX>
     static PIX clampIfInt(float v);
 
-    template <typename SRCPIX,typename DSTPIX>
+    template <typename SRCPIX, typename DSTPIX>
     static DSTPIX convertPixelDepth(SRCPIX pix);
 
 private:
@@ -874,7 +884,6 @@ private:
                               bool masked,
                               bool maskInvert,
                               float mix);
-
 
 
     template<int srcNComps, int dstNComps>
@@ -921,8 +930,7 @@ private:
                                             const bool ignorePremult);
 
 
-
-    template <typename PIX, int maxValue,int srcNComps, int dstNComps>
+    template <typename PIX, int maxValue, int srcNComps, int dstNComps>
     void copyUnProcessedChannelsForComponents(bool premult,
                                               const RectI& roi,
                                               const std::bitset<4> processChannels,
@@ -939,13 +947,12 @@ private:
                                          bool ignorePremult);
 
 
-
     /**
      * @brief Given the output buffer,the region of interest and the mip map level, this
      * function computes the mip map of this image in the given roi.
      * If roi is NOT a power of 2, then it will be rounded to the closest power of 2.
      **/
-    void buildMipMapLevel(const RectD& dstRoD,const RectI & roiCanonical, unsigned int level, bool copyBitMap,
+    void buildMipMapLevel(const RectD& dstRoD, const RectI & roiCanonical, unsigned int level, bool copyBitMap,
                           Image* output) const;
 
 
@@ -970,17 +977,17 @@ private:
     template <typename PIX, int maxValue>
     void halve1DImageForDepth(const RectI & roi, Image* output) const;
 
-    template <typename PIX,int maxValue>
+    template <typename PIX, int maxValue>
     void upscaleMipMapForDepth(const RectI & roi, unsigned int fromLevel, unsigned int toLevel, Image* output) const;
 
     template<typename PIX>
     void pasteFromForDepth(const Image & src, const RectI & srcRoi, bool copyBitmap = true, bool takeSrcLock = true);
 
     template <typename PIX, int maxValue>
-    void fillForDepth(const RectI & roi,float r,float g,float b,float a);
+    void fillForDepth(const RectI & roi, float r, float g, float b, float a);
 
-    template <typename PIX,int maxValue, int nComps>
-    void fillForDepthForComponents(const RectI & roi_,  float r,float g, float b, float a);
+    template <typename PIX, int maxValue, int nComps>
+    void fillForDepthForComponents(const RectI & roi_,  float r, float g, float b, float a);
 
     template<typename PIX>
     void scaleBoxForDepth(const RectI & roi, Image* output) const;
@@ -1002,21 +1009,33 @@ private:
 //template <> inline unsigned short clamp(unsigned short v) { return v; }
 template <>
 inline float
-Image::clamp(float x, float minval, float maxval)
+Image::clamp(float x,
+             float minval,
+             float maxval)
 {
     return std::min(std::max(x, minval), maxval);
 }
 
 template <>
 inline double
-Image::clamp(double x, double minval, double maxval)
+Image::clamp(double x,
+             double minval,
+             double maxval)
 {
     return std::min(std::max(x, minval), maxval);
 }
 
-template<> inline unsigned char Image::clampIfInt(float v) { return (unsigned char)clamp<float>(v, 0, 255); }
-template<> inline unsigned short Image::clampIfInt(float v) { return (unsigned short)clamp<float>(v, 0, 65535); }
-template<> inline float Image::clampIfInt(float v) { return v; }
+template<>
+inline unsigned char
+Image::clampIfInt(float v) { return (unsigned char)clamp<float>(v, 0, 255); }
+
+template<>
+inline unsigned short
+Image::clampIfInt(float v) { return (unsigned short)clamp<float>(v, 0, 65535); }
+
+template<>
+inline float
+Image::clampIfInt(float v) { return v; }
 
 NATRON_NAMESPACE_EXIT;
 

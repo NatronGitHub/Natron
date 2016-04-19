@@ -61,33 +61,33 @@ public:
 
     void setDataWindow(const RectI & r); // in canonical coordinates
 
-    void setImageFormat(const ImageComponents& comp,ImageBitDepthEnum depth);
+    void setImageFormat(const ImageComponents& comp, ImageBitDepthEnum depth);
 
-    void setColor(float r,float g,float b,float a);
+    void setColor(float r, float g, float b, float a);
 
     void setMousePos(QPoint p);
 
     static void removeTrailingZeroes(QString& str);
-    
+
 public Q_SLOTS:
 
-    
+
     void setColorValid(bool valid);
-    
+
     void setColorApproximated(bool approx);
 
     void hideColorAndMouseInfo();
     void showColorAndMouseInfo();
-    void setFps(double actualFps,double desiredFps);
+    void setFps(double actualFps, double desiredFps);
     void hideFps();
 
 private:
-    
+
     virtual QSize sizeHint() const OVERRIDE FINAL;
     virtual QSize minimumSizeHint() const OVERRIDE FINAL;
-    
+
 private:
-    
+
 
     QHBoxLayout* layout;
     Label* descriptionLabel;

@@ -51,51 +51,48 @@
 NATRON_NAMESPACE_ENTER;
 
 
-
 class TrackArgsV1
 {
-    int _start,_end;
+    int _start, _end;
     bool _forward;
     boost::shared_ptr<TimeLine> _timeline;
     ViewerInstance* _viewer;
     std::vector<KnobButton*> _buttonInstances;
-    
+
 public:
-    
+
     TrackArgsV1()
-    : _start(0)
-    , _end(0)
-    , _forward(false)
-    , _timeline()
-    , _viewer(0)
-    , _buttonInstances()
+        : _start(0)
+        , _end(0)
+        , _forward(false)
+        , _timeline()
+        , _viewer(0)
+        , _buttonInstances()
     {
-        
     }
-    
+
     TrackArgsV1(const TrackArgsV1& other)
     {
         *this = other;
     }
-    
+
     TrackArgsV1(int start,
                 int end,
                 bool forward,
                 const boost::shared_ptr<TimeLine>& timeline,
                 ViewerInstance* viewer,
                 const std::vector<KnobButton*>& instances)
-    : _start(start)
-    , _end(end)
-    , _forward(forward)
-    , _timeline(timeline)
-    , _viewer(viewer)
-    , _buttonInstances(instances)
+        : _start(start)
+        , _end(end)
+        , _forward(forward)
+        , _timeline(timeline)
+        , _viewer(viewer)
+        , _buttonInstances(instances)
     {
-        
     }
-    
+
     ~TrackArgsV1() {}
-    
+
     void operator=(const TrackArgsV1& other)
     {
         _start = other._start;
@@ -105,44 +102,43 @@ public:
         _viewer = other._viewer;
         _buttonInstances = other._buttonInstances;
     }
-    
+
     int getStart() const
     {
         return _start;
     }
-    
+
     int getEnd() const
     {
         return _end;
     }
-    
+
     bool getForward() const
     {
         return _forward;
     }
-    
+
     boost::shared_ptr<TimeLine> getTimeLine() const
     {
         return _timeline;
     }
-    
+
     ViewerInstance* getViewer() const
     {
         return _viewer;
     }
-    
+
     const std::vector<KnobButton*>& getInstances() const
     {
         return _buttonInstances;
     }
-    
+
     int getNumTracks() const
     {
         return (int)_buttonInstances.size();
     }
-    
+
     void getRedrawAreasNeeded(int time, std::list<RectD>* canonicalRects) const;
-    
 };
 
 class TrackerParamsProvider
@@ -150,92 +146,96 @@ class TrackerParamsProvider
     mutable QMutex _trackParamsMutex;
     bool _centerTrack;
     bool _updateViewer;
+
 public:
-    
+
     TrackerParamsProvider()
-    : _trackParamsMutex()
-    , _centerTrack(false)
-    , _updateViewer(false)
+        : _trackParamsMutex()
+        , _centerTrack(false)
+        , _updateViewer(false)
     {
-        
     }
-    
-    virtual ~TrackerParamsProvider() {
-        
+
+    virtual ~TrackerParamsProvider()
+    {
     }
-    
+
     void setCenterOnTrack(bool centerTrack)
     {
         QMutexLocker k(&_trackParamsMutex);
+
         _centerTrack = centerTrack;
     }
-    
+
     void setUpdateViewer(bool updateViewer)
     {
         QMutexLocker k(&_trackParamsMutex);
+
         _updateViewer =  updateViewer;
     }
-    
+
     bool getCenterOnTrack() const
     {
         QMutexLocker k(&_trackParamsMutex);
+
         return _centerTrack;
     }
-    
+
     bool getUpdateViewer() const
     {
         QMutexLocker k(&_trackParamsMutex);
+
         return _updateViewer;
     }
-
 };
 
 struct TrackerContextPrivate;
-class TrackerContext : public QObject, public boost::enable_shared_from_this<TrackerContext>, public TrackerParamsProvider
+class TrackerContext
+    : public QObject, public boost::enable_shared_from_this<TrackerContext>, public TrackerParamsProvider
 {
     Q_OBJECT
-    
+
 public:
-    
+
     enum TrackSelectionReason
     {
         eTrackSelectionSettingsPanel,
         eTrackSelectionViewer,
         eTrackSelectionInternal,
     };
-  
-    
+
+
     TrackerContext(const boost::shared_ptr<Node> &node);
-    
+
     virtual ~TrackerContext();
-    
+
     void load(const TrackerContextSerialization& serialization);
-    
+
     void save(TrackerContextSerialization* serialization) const;
 
-    
+
     boost::shared_ptr<Node> getNode() const;
-    
+
     TrackMarkerPtr createMarker();
-    
+
     int getMarkerIndex(const TrackMarkerPtr& marker) const;
-    
+
     TrackMarkerPtr getPrevMarker(const TrackMarkerPtr& marker, bool loop) const;
     TrackMarkerPtr getNextMarker(const TrackMarkerPtr& marker, bool loop) const;
-    
+
     void appendMarker(const TrackMarkerPtr& marker);
-    
+
     void insertMarker(const TrackMarkerPtr& marker, int index);
-    
+
     void removeMarker(const TrackMarkerPtr& marker);
-    
+
     TrackMarkerPtr getMarkerByName(const std::string & name) const;
-    
+
     std::string generateUniqueTrackName(const std::string& baseName);
-    
+
     int getTimeLineFirstFrame() const;
     int getTimeLineLastFrame() const;
-    
+
     /**
      * @brief Tracks the selected markers over the range defined by [start,end[ (end pointing to the frame
      * after the last one, a la STL).
@@ -246,47 +246,47 @@ public:
                       int end,
                       bool forward,
                       ViewerInstance* viewer);
-    
-    
+
+
     void abortTracking();
-    
+
     bool isCurrentlyTracking() const;
-    
+
     void beginEditSelection();
-    
+
     void endEditSelection(TrackSelectionReason reason);
-    
+
     void addTracksToSelection(const std::list<TrackMarkerPtr >& marks, TrackSelectionReason reason);
     void addTrackToSelection(const TrackMarkerPtr& mark, TrackSelectionReason reason);
-    
+
     void removeTracksFromSelection(const std::list<TrackMarkerPtr >& marks, TrackSelectionReason reason);
     void removeTrackFromSelection(const TrackMarkerPtr& mark, TrackSelectionReason reason);
-    
+
     void clearSelection(TrackSelectionReason reason);
-    
+
     void selectAll(TrackSelectionReason reason);
-    
+
     void getAllMarkers(std::vector<TrackMarkerPtr >* markers) const;
-    
+
     void getSelectedMarkers(std::list<TrackMarkerPtr >* markers) const;
-    
+
     void getAllEnabledMarkers(std::vector<TrackMarkerPtr >* markers) const;
-    
+
     bool isMarkerSelected(const TrackMarkerPtr& marker) const;
-    
+
     static void getMotionModelsAndHelps(bool addPerspective,
                                         std::vector<std::string>* models,
                                         std::vector<std::string>* tooltips);
-    
+
     int getTransformReferenceFrame() const;
-    
+
     void goToPreviousKeyFrame(int time);
     void goToNextKeyFrame(int time);
-    
+
     void resetTransformCenter();
-    
+
     void resetTransformParams();
-    
+
     struct TransformData
     {
         Point translation;
@@ -294,62 +294,62 @@ public:
         double scale;
         bool hasRotationAndScale;
     };
-    
+
     struct CornerPinData
     {
         Transform::Matrix3x3 h;
         int nbEnabledPoints;
     };
-    
+
     NodePtr getCurrentlySelectedTransformNode() const;
-    
+
     void drawInternalNodesOverlay(double time,
                                   const RenderScale& scale,
                                   ViewIdx view,
                                   OverlaySupport* viewer);
-    
+
     bool onOverlayPenDownInternalNodes(double time,
                                        const RenderScale & renderScale,
                                        ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, OverlaySupport* viewer) WARN_UNUSED_RETURN;
-    
+
     bool onOverlayPenMotionInternalNodes(double time,
                                          const RenderScale & renderScale,
                                          ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, OverlaySupport* viewer) WARN_UNUSED_RETURN;
-    
+
     bool onOverlayPenUpInternalNodes(double time,
                                      const RenderScale & renderScale,
                                      ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, OverlaySupport* viewer) WARN_UNUSED_RETURN;
-    
+
     bool onOverlayKeyDownInternalNodes(double time,
                                        const RenderScale & renderScale,
                                        ViewIdx view, Key key, KeyboardModifiers modifiers, OverlaySupport* viewer) WARN_UNUSED_RETURN;
-    
+
     bool onOverlayKeyUpInternalNodes(double time,
                                      const RenderScale & renderScale,
                                      ViewIdx view, Key key, KeyboardModifiers modifiers, OverlaySupport* viewer) WARN_UNUSED_RETURN;
-    
+
     bool onOverlayKeyRepeatInternalNodes(double time,
                                          const RenderScale & renderScale,
                                          ViewIdx view, Key key, KeyboardModifiers modifiers, OverlaySupport* viewer) WARN_UNUSED_RETURN;
-    
+
     bool onOverlayFocusGainedInternalNodes(double time,
                                            const RenderScale & renderScale,
                                            ViewIdx view, OverlaySupport* viewer) WARN_UNUSED_RETURN;
-    
+
     bool onOverlayFocusLostInternalNodes(double time,
                                          const RenderScale & renderScale,
                                          ViewIdx view, OverlaySupport* viewer) WARN_UNUSED_RETURN;
-    
+
 private:
-    
+
     /**
      * @brief Extracts the values of the center point of the given markers at x1Time and x2Time.
      * @param jitterPeriod If jitterPeriod > 1 this is the amount of frames that will be averaged together to add
      * jitter or remove jitter.
-     * @param jitterAdd If jitterPeriod > 1 this parameter is disregarded. Otherwise, if jitterAdd is false, then 
+     * @param jitterAdd If jitterPeriod > 1 this parameter is disregarded. Otherwise, if jitterAdd is false, then
      * the values of the center points are smoothed with high frequencies removed (using average over jitterPeriod)
      * If jitterAdd is true, then we compute the smoothed points (using average over jitterPeriod), and substract it
-     * from the original points to get the high frequencies. We then add those high frequencies back to the original 
+     * from the original points to get the high frequencies. We then add those high frequencies back to the original
      * points to increase shaking/motion
      **/
     static void extractSortedPointsFromMarkers(double x1Time, double x2Time,
@@ -358,14 +358,14 @@ private:
                                                bool jitterAdd,
                                                std::vector<Point>* x1,
                                                std::vector<Point>* x2);
-    
+
     void computeTransformParamsFromTracksAtTime(double refTime,
                                                 double time,
                                                 int jitterPeriod,
                                                 bool jitterAdd,
                                                 const std::vector<TrackMarkerPtr>& markers,
                                                 TransformData* data);
-    
+
     void computeCornerPinParamsFromTracksAtTime(double refTime,
                                                 double time,
                                                 int jitterPeriod,
@@ -373,28 +373,29 @@ private:
                                                 const std::vector<TrackMarkerPtr>& markers,
                                                 CornerPinData* data);
 
-    
+
     void computeTransformParamsFromTracks(double refTime,
                                           const std::set<double>& keyframes,
                                           int jitterPeriod,
                                           bool jitterAdd,
                                           const std::vector<TrackMarkerPtr>& allMarkers);
-    
+
     void computeCornerParamsFromTracks(double refTime,
                                        const std::set<double>& keyframes,
                                        int jitterPeriod,
                                        bool jitterAdd,
                                        const std::vector<TrackMarkerPtr>& allMarkers);
+
 public:
-    
-    
+
+
     void solveTransformParams();
 
 
     void exportTrackDataFromExportOptions();
-    
+
     RectD getInputRoDAtTime(double time) const;
-    
+
     /**
      * @brief Computes the translation that best fit the set of correspondences x1 and x2.
      * Requires at least 1 point. x1 and x2 must have the same size.
@@ -404,18 +405,18 @@ public:
                                               const std::vector<Point>& x2,
                                               int w1, int h1, int w2, int h2,
                                               Point* translation);
-    
+
     /**
      * @brief Computes the translation, rotation and scale that best fit the set of correspondences x1 and x2.
      * Requires at least 2 point. x1 and x2 must have the same size.
      * This function throws an exception with an error message upon failure.
      **/
     static void computeSimilarityFromNPoints(const std::vector<Point>& x1,
-                                      const std::vector<Point>& x2,
-                                      int w1, int h1, int w2, int h2,
-                                      Point* translation,
-                                      double* rotate,
-                                      double* scale);
+                                             const std::vector<Point>& x2,
+                                             int w1, int h1, int w2, int h2,
+                                             Point* translation,
+                                             double* rotate,
+                                             double* scale);
     /**
      * @brief Computes the homography that best fit the set of correspondences x1 and x2.
      * Requires at least 4 point. x1 and x2 must have the same size.
@@ -425,166 +426,194 @@ public:
                                              const std::vector<Point>& x2,
                                              int w1, int h1, int w2, int h2,
                                              Transform::Matrix3x3* homog);
-    
+
     /**
      * @brief Computes the fundamental matrix that best fit the set of correspondences x1 and x2.
      * Requires at least 7 point. x1 and x2 must have the same size.
      * This function throws an exception with an error message upon failure.
      **/
     static void computeFundamentalFromNPoints(const std::vector<Point>& x1,
-                                             const std::vector<Point>& x2,
+                                              const std::vector<Point>& x2,
                                               int w1, int h1, int w2, int h2,
-                                             Transform::Matrix3x3* fundamental);
-    
+                                              Transform::Matrix3x3* fundamental);
+
     void onKnobsLoaded();
-    
+
     void knobChanged(KnobI* k,
                      ValueChangedReasonEnum reason,
                      ViewSpec view,
                      double time,
                      bool originatedFromMainThread);
-    
+
     static bool trackStepV1(int trackIndex, const TrackArgsV1& args, int time);
 
     void declarePythonFields();
 
-    
+
     /*boost::shared_ptr<KnobDouble> getSearchWindowBottomLeftKnob() const;
-    boost::shared_ptr<KnobDouble> getSearchWindowTopRightKnob() const;
-    boost::shared_ptr<KnobDouble> getPatternTopLeftKnob() const;
-    boost::shared_ptr<KnobDouble> getPatternTopRightKnob() const;
-    boost::shared_ptr<KnobDouble> getPatternBtmRightKnob() const;
-    boost::shared_ptr<KnobDouble> getPatternBtmLeftKnob() const;
-    boost::shared_ptr<KnobDouble> getWeightKnob() const;
-    boost::shared_ptr<KnobDouble> getCenterKnob() const;
-    boost::shared_ptr<KnobDouble> getOffsetKnob() const;
-    boost::shared_ptr<KnobDouble> getCorrelationKnob() const;
-    boost::shared_ptr<KnobChoice> getMotionModelKnob() const;*/
-    
-    void s_keyframeSetOnTrack(const TrackMarkerPtr& marker,int key) { Q_EMIT keyframeSetOnTrack(marker,key); }
-    void s_keyframeRemovedOnTrack(const TrackMarkerPtr& marker,int key) { Q_EMIT keyframeRemovedOnTrack(marker,key); }
+       boost::shared_ptr<KnobDouble> getSearchWindowTopRightKnob() const;
+       boost::shared_ptr<KnobDouble> getPatternTopLeftKnob() const;
+       boost::shared_ptr<KnobDouble> getPatternTopRightKnob() const;
+       boost::shared_ptr<KnobDouble> getPatternBtmRightKnob() const;
+       boost::shared_ptr<KnobDouble> getPatternBtmLeftKnob() const;
+       boost::shared_ptr<KnobDouble> getWeightKnob() const;
+       boost::shared_ptr<KnobDouble> getCenterKnob() const;
+       boost::shared_ptr<KnobDouble> getOffsetKnob() const;
+       boost::shared_ptr<KnobDouble> getCorrelationKnob() const;
+       boost::shared_ptr<KnobChoice> getMotionModelKnob() const;*/
+
+    void s_keyframeSetOnTrack(const TrackMarkerPtr& marker,
+                              int key) { Q_EMIT keyframeSetOnTrack(marker, key); }
+
+    void s_keyframeRemovedOnTrack(const TrackMarkerPtr& marker,
+                                  int key) { Q_EMIT keyframeRemovedOnTrack(marker, key); }
+
     void s_allKeyframesRemovedOnTrack(const TrackMarkerPtr& marker) { Q_EMIT allKeyframesRemovedOnTrack(marker); }
-    
-    void s_keyframeSetOnTrackCenter(const TrackMarkerPtr& marker,int key) { Q_EMIT keyframeSetOnTrackCenter(marker,key); }
-    void s_keyframeRemovedOnTrackCenter(const TrackMarkerPtr& marker,int key) { Q_EMIT keyframeRemovedOnTrackCenter(marker,key); }
+
+    void s_keyframeSetOnTrackCenter(const TrackMarkerPtr& marker,
+                                    int key) { Q_EMIT keyframeSetOnTrackCenter(marker, key); }
+
+    void s_keyframeRemovedOnTrackCenter(const TrackMarkerPtr& marker,
+                                        int key) { Q_EMIT keyframeRemovedOnTrackCenter(marker, key); }
+
     void s_allKeyframesRemovedOnTrackCenter(const TrackMarkerPtr& marker) { Q_EMIT allKeyframesRemovedOnTrackCenter(marker); }
-    void s_multipleKeyframesSetOnTrackCenter(const TrackMarkerPtr& marker, const std::list<double>& keys) { Q_EMIT multipleKeyframesSetOnTrackCenter(marker,keys); }
-    
+
+    void s_multipleKeyframesSetOnTrackCenter(const TrackMarkerPtr& marker,
+                                             const std::list<double>& keys) { Q_EMIT multipleKeyframesSetOnTrackCenter(marker, keys); }
+
     void s_trackAboutToClone(const TrackMarkerPtr& marker) { Q_EMIT trackAboutToClone(marker); }
+
     void s_trackCloned(const TrackMarkerPtr& marker) { Q_EMIT trackCloned(marker); }
-        
-    void s_centerKnobValueChanged(const TrackMarkerPtr& marker,int dimension,int reason) { Q_EMIT centerKnobValueChanged(marker,dimension,reason); }
-    void s_offsetKnobValueChanged(const TrackMarkerPtr& marker,int dimension,int reason) { Q_EMIT offsetKnobValueChanged(marker,dimension,reason); }
-    void s_errorKnobValueChanged(const TrackMarkerPtr& marker,int dimension,int reason) { Q_EMIT errorKnobValueChanged(marker,dimension,reason); }
-    void s_weightKnobValueChanged(const TrackMarkerPtr& marker,int dimension,int reason) { Q_EMIT weightKnobValueChanged(marker,dimension,reason); }
-    void s_motionModelKnobValueChanged(const TrackMarkerPtr& marker,int dimension,int reason) { Q_EMIT motionModelKnobValueChanged(marker,dimension,reason); }
-    
-   /* void s_patternTopLeftKnobValueChanged(const TrackMarkerPtr& marker,int dimension,int reason) { Q_EMIT patternTopLeftKnobValueChanged(marker,dimension,reason); }
-    void s_patternTopRightKnobValueChanged(const TrackMarkerPtr& marker,int dimension,int reason) { Q_EMIT patternTopRightKnobValueChanged(marker,dimension, reason); }
-    void s_patternBtmRightKnobValueChanged(const TrackMarkerPtr& marker,int dimension,int reason) { Q_EMIT patternBtmRightKnobValueChanged(marker,dimension, reason); }
-    void s_patternBtmLeftKnobValueChanged(const TrackMarkerPtr& marker,int dimension,int reason) { Q_EMIT patternBtmLeftKnobValueChanged(marker,dimension, reason); }*/
-    
-    void s_searchBtmLeftKnobValueChanged(const TrackMarkerPtr& marker,int dimension,int reason) { Q_EMIT searchBtmLeftKnobValueChanged(marker,dimension,reason); }
-    void s_searchTopRightKnobValueChanged(const TrackMarkerPtr& marker,int dimension,int reason) { Q_EMIT searchTopRightKnobValueChanged(marker, dimension, reason); }
-    
+
+    void s_centerKnobValueChanged(const TrackMarkerPtr& marker,
+                                  int dimension,
+                                  int reason) { Q_EMIT centerKnobValueChanged(marker, dimension, reason); }
+
+    void s_offsetKnobValueChanged(const TrackMarkerPtr& marker,
+                                  int dimension,
+                                  int reason) { Q_EMIT offsetKnobValueChanged(marker, dimension, reason); }
+
+    void s_errorKnobValueChanged(const TrackMarkerPtr& marker,
+                                 int dimension,
+                                 int reason) { Q_EMIT errorKnobValueChanged(marker, dimension, reason); }
+
+    void s_weightKnobValueChanged(const TrackMarkerPtr& marker,
+                                  int dimension,
+                                  int reason) { Q_EMIT weightKnobValueChanged(marker, dimension, reason); }
+
+    void s_motionModelKnobValueChanged(const TrackMarkerPtr& marker,
+                                       int dimension,
+                                       int reason) { Q_EMIT motionModelKnobValueChanged(marker, dimension, reason); }
+
+    /* void s_patternTopLeftKnobValueChanged(const TrackMarkerPtr& marker,int dimension,int reason) { Q_EMIT patternTopLeftKnobValueChanged(marker,dimension,reason); }
+       void s_patternTopRightKnobValueChanged(const TrackMarkerPtr& marker,int dimension,int reason) { Q_EMIT patternTopRightKnobValueChanged(marker,dimension, reason); }
+       void s_patternBtmRightKnobValueChanged(const TrackMarkerPtr& marker,int dimension,int reason) { Q_EMIT patternBtmRightKnobValueChanged(marker,dimension, reason); }
+       void s_patternBtmLeftKnobValueChanged(const TrackMarkerPtr& marker,int dimension,int reason) { Q_EMIT patternBtmLeftKnobValueChanged(marker,dimension, reason); }*/
+
+    void s_searchBtmLeftKnobValueChanged(const TrackMarkerPtr& marker,
+                                         int dimension,
+                                         int reason) { Q_EMIT searchBtmLeftKnobValueChanged(marker, dimension, reason); }
+
+    void s_searchTopRightKnobValueChanged(const TrackMarkerPtr& marker,
+                                          int dimension,
+                                          int reason) { Q_EMIT searchTopRightKnobValueChanged(marker, dimension, reason); }
+
     void s_onNodeInputChanged(int inputNb) { Q_EMIT onNodeInputChanged(inputNb); }
-    
+
 public Q_SLOTS:
-    
+
     void onSelectedKnobCurveChanged();
-    
+
     void onMarkerEnabledChanged(int reason);
 
 Q_SIGNALS:
-    
+
     void keyframeSetOnTrack(TrackMarkerPtr marker, int);
     void keyframeRemovedOnTrack(TrackMarkerPtr marker, int);
     void allKeyframesRemovedOnTrack(TrackMarkerPtr marker);
-    
+
     void keyframeSetOnTrackCenter(TrackMarkerPtr marker, int);
     void keyframeRemovedOnTrackCenter(TrackMarkerPtr marker, int);
     void allKeyframesRemovedOnTrackCenter(TrackMarkerPtr marker);
     void multipleKeyframesSetOnTrackCenter(TrackMarkerPtr marker, std::list<double>);
-    
+
     void trackAboutToClone(TrackMarkerPtr marker);
     void trackCloned(TrackMarkerPtr marker);
-    
+
     //reason is of type TrackSelectionReason
     void selectionChanged(int reason);
     void selectionAboutToChange(int reason);
-    
-    void trackInserted(TrackMarkerPtr marker,int index);
+
+    void trackInserted(TrackMarkerPtr marker, int index);
     void trackRemoved(TrackMarkerPtr marker);
-    
-    void enabledChanged(TrackMarkerPtr marker,int reason);
-    
-    void centerKnobValueChanged(TrackMarkerPtr marker,int,int);
-    void offsetKnobValueChanged(TrackMarkerPtr marker,int,int);
-    void errorKnobValueChanged(TrackMarkerPtr marker,int,int);
-    void weightKnobValueChanged(TrackMarkerPtr marker,int,int);
-    void motionModelKnobValueChanged(TrackMarkerPtr marker,int,int);
-    
+
+    void enabledChanged(TrackMarkerPtr marker, int reason);
+
+    void centerKnobValueChanged(TrackMarkerPtr marker, int, int);
+    void offsetKnobValueChanged(TrackMarkerPtr marker, int, int);
+    void errorKnobValueChanged(TrackMarkerPtr marker, int, int);
+    void weightKnobValueChanged(TrackMarkerPtr marker, int, int);
+    void motionModelKnobValueChanged(TrackMarkerPtr marker, int, int);
+
     /*void patternTopLeftKnobValueChanged(TrackMarkerPtr marker,int,int);
-    void patternTopRightKnobValueChanged(TrackMarkerPtr marker,int,int);
-    void patternBtmRightKnobValueChanged(TrackMarkerPtr marker,int,int);
-    void patternBtmLeftKnobValueChanged(TrackMarkerPtr marker,int,int);*/
-    
-    void searchBtmLeftKnobValueChanged(TrackMarkerPtr marker,int,int);
-    void searchTopRightKnobValueChanged(TrackMarkerPtr marker,int,int);
-    
+       void patternTopRightKnobValueChanged(TrackMarkerPtr marker,int,int);
+       void patternBtmRightKnobValueChanged(TrackMarkerPtr marker,int,int);
+       void patternBtmLeftKnobValueChanged(TrackMarkerPtr marker,int,int);*/
+
+    void searchBtmLeftKnobValueChanged(TrackMarkerPtr marker, int, int);
+    void searchTopRightKnobValueChanged(TrackMarkerPtr marker, int, int);
+
     void trackingStarted(int);
     void trackingFinished();
-    
-    void onNodeInputChanged(int inputNb);
-    
 
-    
+    void onNodeInputChanged(int inputNb);
+
 private:
-    
+
     void removeItemAsPythonField(const TrackMarkerPtr& item);
-    
+
     void declareItemAsPythonField(const TrackMarkerPtr& item);
-    
+
     void endSelection(TrackSelectionReason reason);
-    
+
     boost::scoped_ptr<TrackerContextPrivate> _imp;
 };
 
 class TrackSchedulerBase
-: public QThread
+    : public QThread
 #ifdef QT_CUSTOM_THREADPOOL
-, public AbortableThread
+      , public AbortableThread
 #endif
 {
     Q_OBJECT
-    
+
 public:
-    
+
     TrackSchedulerBase();
-    
+
     virtual ~TrackSchedulerBase() {}
-    
+
     void emit_trackingStarted(int step)
     {
         Q_EMIT trackingStarted(step);
     }
-    
+
     void emit_trackingFinished()
     {
         Q_EMIT trackingFinished();
     }
-    
+
 private Q_SLOTS:
 
     void doRenderCurrentFrameForViewer(ViewerInstance* viewer);
-  
-    
+
+
 Q_SIGNALS:
-    
+
     void trackingStarted(int step);
-    
+
     void trackingFinished();
-    
+
 
     void renderCurrentFrameForViewer(ViewerInstance* viewer);
 };
@@ -592,22 +621,22 @@ Q_SIGNALS:
 
 struct TrackSchedulerPrivate;
 template <class TrackArgsType>
-class TrackScheduler : public TrackSchedulerBase
+class TrackScheduler
+    : public TrackSchedulerBase
 {
-    
 public:
-    
+
     /*
      * @brief A pointer to a function that will be called concurrently for each Track marker to track.
      * @param index Identifies the track in args, which is supposed to hold the tracks vector.
      * @param time The time at which to track. The reference frame is held in the args and can be different for each track
      */
     typedef bool (*TrackStepFunctor)(int trackIndex, const TrackArgsType& args, int time);
-    
+
     TrackScheduler(TrackerParamsProvider* paramsProvider, const NodeWPtr& node, TrackStepFunctor functor);
-    
+
     virtual ~TrackScheduler();
-    
+
     /**
      * @brief Track the selectedInstances, calling the instance change action on each button (either the previous or
      * next button) in a separate thread.
@@ -615,21 +644,19 @@ public:
      * @param end the next frame after the last frame to track (a la STL iterators), if forward is true then end > start
      **/
     void track(const TrackArgsType& args);
-    
+
     void abortTracking();
-    
+
     void quitThread();
-    
+
     bool isWorking() const;
-    
+
 private:
-    
+
     virtual void run() OVERRIDE FINAL;
-    
     boost::scoped_ptr<TrackSchedulerPrivate> _imp;
-    
     QMutex argsMutex;
-    TrackArgsType curArgs,requestedArgs;
+    TrackArgsType curArgs, requestedArgs;
     TrackStepFunctor _functor;
 };
 

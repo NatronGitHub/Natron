@@ -28,7 +28,8 @@
 #include <iostream>
 
 // put a breakpoint in glError to halt the debugger
-inline void glError() {}
+inline void
+glError() {}
 
 #define glCheckError()                                                  \
     {                                                                   \
@@ -66,34 +67,44 @@ inline void glError() {}
             if (error == GL_FRAMEBUFFER_UNDEFINED) {                    \
                 std::cout << "Framebuffer undefined" << std::endl;      \
                 glError();                                              \
-            } else if (error == GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT) { \
+            } \
+            else if (error == GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT) { \
                 std::cout << "Framebuffer incomplete attachment " << std::endl; \
                 glError();                                              \
-            } else if (error == GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT) { \
+            } \
+            else if (error == GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT) { \
                 std::cout << "Framebuffer incomplete missing attachment" << std::endl; \
                 glError();                                              \
-            } else if (error == GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER) { \
+            } \
+            else if (error == GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER) { \
                 std::cout << "Framebuffer incomplete draw buffer" << std::endl; \
                 glError();                                              \
-            } else if (error == GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER) { \
+            } \
+            else if (error == GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER) { \
                 std::cout << "Framebuffer incomplete read buffer" << std::endl; \
                 glError();                                              \
-            } else if (error == GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE) { \
+            } \
+            else if (error == GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE) { \
                 std::cout << "Framebuffer incomplete read buffer" << std::endl; \
                 glError();                                              \
-            } else if (error == GL_FRAMEBUFFER_UNSUPPORTED) {           \
+            } \
+            else if (error == GL_FRAMEBUFFER_UNSUPPORTED) {           \
                 std::cout << "Framebuffer unsupported" << std::endl;    \
                 glError();                                              \
-            } else if (error == GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE) { \
+            } \
+            else if (error == GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE) { \
                 std::cout << "Framebuffer incomplete multisample" << std::endl; \
                 glError();                                              \
-            } else if (error == GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS_EXT) { \
+            } \
+            else if (error == GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS_EXT) { \
                 std::cout << "Framebuffer incomplete layer targets" << std::endl; \
                 glError();                                              \
-            } else if (error == 0) {                                    \
+            } \
+            else if (error == 0) {                                    \
                 std::cout << "an error occured determining the status of the framebuffer" <<  std::endl; \
                 glError();                                              \
-            } else {                                                    \
+            } \
+            else {                                                    \
                 std::cout << "undefined framebuffer status (" << error << ")" << std::endl; \
                 glError();                                              \
             }                                                           \
@@ -134,7 +145,7 @@ inline void glError() {}
         if (d >= 32) {                                                  \
             std::cout << "GL_PROJECTION_STACK_DEPTH:" << __FILE__ << " " << __LINE__ << " stack may overflow on a basic OpenGL system (depth is " << d << " >= 32)\n"; \
             glError();                                                  \
-       }                                                                \
+        }                                                                \
     }
 #else // !DEBUG
 #define glCheckErrorIgnoreOSXBug() ( (void)0 )
@@ -172,9 +183,13 @@ public:
     }
 
     ~GLProtectAttrib() { glPopAttrib(); }
+
 private:
 #ifdef DEBUG
-    void overflow(GLint d, GLint m0, GLint m) {
+    void overflow(GLint d,
+                  GLint m0,
+                  GLint m)
+    {
         if (d >= m) {
             std::cout << "GLProtectAttrib: stack overflow (max depth is " << m << ")";
         } else {
@@ -182,6 +197,7 @@ private:
         }
         std::cout << " Add breakpoint in GLProtectAttrib::overflow()." << std::endl;
     }
+
 #endif
 };
 
@@ -213,18 +229,23 @@ public:
     }
 
     ~GLProtectMatrix() { glMatrixMode(_mode); glPopMatrix(); }
+
 private:
     GLenum _mode;
 
 #ifdef DEBUG
-    void overflow(GLint d, GLint m0, GLint m) {
+    void overflow(GLint d,
+                  GLint m0,
+                  GLint m)
+    {
         if (d >= m) {
-            std::cout << "GLProtectMatrix(GL_" << (_mode == GL_PROJECTION ? "PROJECTION": "MODELVIEW") << "): stack overflow (max depth is " << m << ")";
+            std::cout << "GLProtectMatrix(GL_" << (_mode == GL_PROJECTION ? "PROJECTION" : "MODELVIEW") << "): stack overflow (max depth is " << m << ")";
         } else {
-            std::cout << "GLProtectMatrix(GL_" << (_mode == GL_PROJECTION ? "PROJECTION": "MODELVIEW") << "): stack may overflow on a minimal OpenGL system (depth is " << d << ", max depth is " << m << " - but at least " << m0 << ")";
+            std::cout << "GLProtectMatrix(GL_" << (_mode == GL_PROJECTION ? "PROJECTION" : "MODELVIEW") << "): stack may overflow on a minimal OpenGL system (depth is " << d << ", max depth is " << m << " - but at least " << m0 << ")";
         }
         std::cout << " Add breakpoint in GLProtectMatrix::overflow()." << std::endl;
     }
+
 #endif
 };
 

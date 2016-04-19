@@ -41,17 +41,14 @@ template<typename EntryType>
 class LockManagerI
 {
 public:
-    
+
     LockManagerI() {}
-    
+
     virtual ~LockManagerI() {}
-    
+
     virtual void lock(const boost::shared_ptr<EntryType>& entry) = 0;
-    
     virtual bool tryLock(const boost::shared_ptr<EntryType>& entry) = 0;
-    
-    virtual void unlock(const boost::shared_ptr<EntryType>& entry) =0 ;
-    
+    virtual void unlock(const boost::shared_ptr<EntryType>& entry) = 0;
 };
 
 /**
@@ -63,48 +60,50 @@ public:
 template<typename EntryType>
 class ImageLockerHelper
 {
-    
     LockManagerI<EntryType>* _manager;
     boost::shared_ptr<EntryType> _entry;
-    
+
 public:
-    
-    
+
+
     ImageLockerHelper(LockManagerI<EntryType>* manager) : _manager(manager), _entry() {}
-    
+
     ImageLockerHelper(LockManagerI<EntryType>* manager,
-                      const boost::shared_ptr<EntryType>& entry) : _manager(manager), _entry(entry) {
-    
+                      const boost::shared_ptr<EntryType>& entry) : _manager(manager), _entry(entry)
+    {
         if (_entry && _manager) {
             _manager->lock(_entry);
         }
     }
-    
+
     ~ImageLockerHelper()
     {
         unlock();
     }
-    
-    void lock(const boost::shared_ptr<EntryType>& entry) {
+
+    void lock(const boost::shared_ptr<EntryType>& entry)
+    {
         assert(!_entry);
         _entry = entry;
         if (_manager) {
             _manager->lock(_entry);
         }
     }
-    
+
     bool tryLock(const boost::shared_ptr<EntryType>& entry)
     {
         assert(!_entry);
         if (_manager) {
-            if (_manager->tryLock(entry)) {
+            if ( _manager->tryLock(entry) ) {
                 _entry = entry;
+
                 return true;
             }
         }
+
         return false;
     }
-    
+
     void unlock()
     {
         if (_entry && _manager) {
@@ -112,7 +111,6 @@ public:
             _entry.reset();
         }
     }
-
 };
 
 typedef ImageLockerHelper<Image> ImageLocker;

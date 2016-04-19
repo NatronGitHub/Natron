@@ -44,7 +44,7 @@
 NATRON_NAMESPACE_ENTER;
 
 class FrameEntry
-    : public CacheEntryHelper<U8,FrameKey,FrameParams>
+    : public CacheEntryHelper<U8, FrameKey, FrameParams>
 {
 public:
     FrameEntry(const FrameKey & key,
@@ -52,7 +52,7 @@ public:
                const CacheAPI* cache,
                StorageModeEnum storage,
                const std::string & path)
-        : CacheEntryHelper<U8,FrameKey,FrameParams>(key,params,cache,storage,path)
+        : CacheEntryHelper<U8, FrameKey, FrameParams>(key, params, cache, storage, path)
         , _abortedMutex()
         , _aborted(false)
     {
@@ -62,7 +62,6 @@ public:
     {
     }
 
-    
     static boost::shared_ptr<FrameParams> makeParams(const RectI & rod,
                                                      int bitDepth,
                                                      int texW,
@@ -82,25 +81,31 @@ public:
 
     void copy(const FrameEntry& other);
 
-    void setAborted(bool aborted) {
+    void setAborted(bool aborted)
+    {
         QMutexLocker k(&_abortedMutex);
+
         _aborted = aborted;
     }
 
-    bool getAborted() const {
+    bool getAborted() const
+    {
         QMutexLocker k(&_abortedMutex);
+
         return _aborted;
     }
 
     void getOriginalTiles(std::list<boost::shared_ptr<Image> >* ret) const
     {
         QReadLocker k(&_entryLock);
+
         _params->getOriginalTiles(ret);
     }
 
     void addOriginalTile(const boost::shared_ptr<Image>& image)
     {
         QWriteLocker k(&_entryLock);
+
         _params->addOriginalTile(image);
     }
 

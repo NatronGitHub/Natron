@@ -95,32 +95,32 @@
 NATRON_NAMESPACE_ENTER;
 
 struct TrackMarkerPrivate;
-class TrackMarker : public NamedKnobHolder, public boost::enable_shared_from_this<TrackMarker>
+class TrackMarker
+    : public NamedKnobHolder, public boost::enable_shared_from_this<TrackMarker>
 {
-    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-    GCC_DIAG_SUGGEST_OVERRIDE_ON
-    
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
-    
+
     TrackMarker(const boost::shared_ptr<TrackerContext>& context);
-    
+
     ~TrackMarker();
-    
+
     void clone(const TrackMarker& other);
-    
+
     void load(const TrackSerialization& serialization);
-    
+
     void save(TrackSerialization* serialization) const;
-    
+
     boost::shared_ptr<TrackerContext> getContext() const;
-    
+
     bool setScriptName(const std::string& name);
     virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
+
     void setLabel(const std::string& label);
     std::string getLabel() const;
-    
     boost::shared_ptr<KnobDouble> getSearchWindowBottomLeftKnob() const;
     boost::shared_ptr<KnobDouble> getSearchWindowTopRightKnob() const;
     boost::shared_ptr<KnobDouble> getPatternTopLeftKnob() const;
@@ -134,81 +134,79 @@ public:
     boost::shared_ptr<KnobDouble> getOffsetKnob() const;
     boost::shared_ptr<KnobDouble> getErrorKnob() const;
     boost::shared_ptr<KnobChoice> getMotionModelKnob() const;
-        
+
     int getReferenceFrame(int time, bool forward) const;
-    
+
     bool isUserKeyframe(int time) const;
-    
+
     int getPreviousKeyframe(int time) const;
-    
+
     int getNextKeyframe( int time) const;
-    
+
     void getUserKeyframes(std::set<int>* keyframes) const;
-    
+
     void getCenterKeyframes(std::set<double>* keyframes) const;
-    
+
     bool isEnabled(double time) const;
-    
+
     AnimationLevelEnum getEnabledNessAnimationLevel() const;
-    
+
     void setEnabledFromGui(double time, bool enabled);
-    
+
     void resetCenter();
-    
+
     void resetOffset();
-    
+
     void resetTrack();
-    
+
     void setUserKeyframe(int time);
-    
+
     void removeUserKeyframe(int time);
-    
+
     void removeAllKeyframes();
-    
-    std::pair<boost::shared_ptr<Image>,RectI> getMarkerImage(int time,const RectI& roi) const;
-    
+
+    std::pair<boost::shared_ptr<Image>, RectI> getMarkerImage(int time, const RectI& roi) const;
+
     RectI getMarkerImageRoI(int time) const;
-    
-    virtual void onKnobSlaved(const KnobPtr& slave,const KnobPtr& master,
+
+    virtual void onKnobSlaved(const KnobPtr& slave, const KnobPtr& master,
                               int dimension,
                               bool isSlave) OVERRIDE FINAL;
-    
+
 public Q_SLOTS:
-    
-    void onCenterKeyframeSet(double time,ViewSpec view,int dimension,int reason,bool added);
-    void onCenterKeyframeRemoved(double time,ViewSpec view,int dimension,int reason);
-    void onCenterKeyframeMoved(ViewSpec view, int dimension,double oldTime,double newTime);
-    void onCenterKeyframesSet(const std::list<double>& keys, ViewSpec view,int dimension, int reason);
-    void onCenterAnimationRemoved(ViewSpec view,int dimension);
-    
-    void onCenterKnobValueChanged(ViewSpec,int dimension,int reason);
-    void onOffsetKnobValueChanged(ViewSpec,int dimension,int reason);
-    void onErrorKnobValueChanged(ViewSpec,int dimension,int reason);
-    void onWeightKnobValueChanged(ViewSpec,int dimension,int reason);
-    void onMotionModelKnobValueChanged(ViewSpec,int dimension,int reason);
-    
+
+    void onCenterKeyframeSet(double time, ViewSpec view, int dimension, int reason, bool added);
+    void onCenterKeyframeRemoved(double time, ViewSpec view, int dimension, int reason);
+    void onCenterKeyframeMoved(ViewSpec view, int dimension, double oldTime, double newTime);
+    void onCenterKeyframesSet(const std::list<double>& keys, ViewSpec view, int dimension, int reason);
+    void onCenterAnimationRemoved(ViewSpec view, int dimension);
+
+    void onCenterKnobValueChanged(ViewSpec, int dimension, int reason);
+    void onOffsetKnobValueChanged(ViewSpec, int dimension, int reason);
+    void onErrorKnobValueChanged(ViewSpec, int dimension, int reason);
+    void onWeightKnobValueChanged(ViewSpec, int dimension, int reason);
+    void onMotionModelKnobValueChanged(ViewSpec, int dimension, int reason);
+
     /*void onPatternTopLeftKnobValueChanged(int dimension,int reason);
-     void onPatternTopRightKnobValueChanged(int dimension,int reason);
-     void onPatternBtmRightKnobValueChanged(int dimension,int reason);
-     void onPatternBtmLeftKnobValueChanged(int dimension,int reason);*/
-    
-    void onSearchBtmLeftKnobValueChanged(ViewSpec, int dimension,int reason);
-    void onSearchTopRightKnobValueChanged(ViewSpec, int dimension,int reason);
-    
+       void onPatternTopRightKnobValueChanged(int dimension,int reason);
+       void onPatternBtmRightKnobValueChanged(int dimension,int reason);
+       void onPatternBtmLeftKnobValueChanged(int dimension,int reason);*/
+    void onSearchBtmLeftKnobValueChanged(ViewSpec, int dimension, int reason);
+    void onSearchTopRightKnobValueChanged(ViewSpec, int dimension, int reason);
+
 public Q_SLOTS:
-    
-    void onEnabledValueChanged(ViewSpec, int dimension,int reason);
-    
+
+    void onEnabledValueChanged(ViewSpec, int dimension, int reason);
+
 Q_SIGNALS:
-    
+
     void enabledChanged(int reason);
-    
+
 private:
-    
+
     virtual void initializeKnobs() OVERRIDE FINAL {}
-    
+
     boost::scoped_ptr<TrackMarkerPrivate> _imp;
-    
 };
 
 NATRON_NAMESPACE_EXIT;

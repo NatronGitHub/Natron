@@ -37,9 +37,9 @@ struct KnobWidgetDnDPrivate;
 class KnobWidgetDnD
 {
 public:
-    
+
     KnobWidgetDnD(const KnobGuiPtr& knob, int dimension, QWidget* widget);
-    
+
     ~KnobWidgetDnD();
 
     void keyPress(QKeyEvent* e);
@@ -55,7 +55,7 @@ public:
     void mouseLeave(QEvent* e);
     void focusOut();
     void focusIn();
-    
+
 private:
     void startDrag();
 

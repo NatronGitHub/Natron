@@ -53,31 +53,31 @@ class CrashGenerationServer;
 
 
 #ifndef REPORTER_CLI_ONLY
-class NetworkErrorDialog : public QDialog
+class NetworkErrorDialog
+    : public QDialog
 {
-    
     QVBoxLayout* mainLayout;
     QTextEdit* textArea;
     QDialogButtonBox* buttons;
-    
-public:
-    
-    NetworkErrorDialog(const QString& errorMessage, QWidget* parent);
-    
-    virtual ~NetworkErrorDialog();
-    
 
+public:
+
+    NetworkErrorDialog(const QString& errorMessage, QWidget* parent);
+
+    virtual ~NetworkErrorDialog();
 };
+
 #endif
 
-class CallbacksManager : public QObject
+class CallbacksManager
+    : public QObject
 {
     Q_OBJECT
 
 public:
 
     CallbacksManager();
-    
+
     virtual ~CallbacksManager();
 
 
@@ -85,7 +85,7 @@ public:
     {
         return _instance;
     }
-    
+
     /**
      * @brief Creates the crash generation server and spawns the actual Natron proces.
      * This function throws an exception in case of error.
@@ -95,10 +95,10 @@ public:
     bool hasReceivedDump() const;
 
     bool hasInit() const;
-    
+
     void s_emitDoDumpCallBackOnMainThread(const QString& filePath);
     void s_emitDoExitCallBackOnMainThread(int exitCode, bool exitEvenIfDumpedReceived);
-    
+
     int exec();
 
 public Q_SLOTS:
@@ -106,35 +106,35 @@ public Q_SLOTS:
     void replyFinished(QNetworkReply* reply);
 
     void onDoDumpOnMainThread(const QString& filePath);
-    
+
     void onDoExitOnMainThread(int exitCode, bool exitEvenIfDumpedReceived);
 
     void onCrashDialogFinished();
-        
+
     void onUploadProgress(qint64 bytesSent, qint64 bytesTotal);
-    
+
     void onProgressDialogCanceled();
-        
+
     void onNatronProcessStdOutWrittenTo();
     void onNatronProcessStdErrWrittenTo();
-    
+
     void onComPipeConnectionPending();
 
     void onComPipeDataWrittenTo();
-    
+
     void onSpawnedProcessFinished(int exitCode, QProcess::ExitStatus status);
     void onSpawnedProcessError(QProcess::ProcessError error);
-    
+
 Q_SIGNALS:
 
     void doExitCallbackOnMainThread(int exitCode, bool exitEvenIfDumpedReceived);
-    
+
     void doDumpCallBackOnMainThread(QString);
 
 private:
-    
+
     void processCrashReport();
-    
+
     /**
      * @brief To be called to start breakpad generation server right away
      * after the constructor
@@ -145,30 +145,29 @@ private:
     void createCrashGenerationServer();
 
     void initQApplication(int& argc, char** argv);
-    
+
     void uploadFileToRepository(const QString& filepath, const QString& comments);
 
     static CallbacksManager *_instance;
 
-    
+
 #ifndef NATRON_CRASH_REPORTER_USE_FORK
     //The Natron process has no way to print to stdout/stderr, so connect signals
     //owned by us
     QProcess* _natronProcess;
 #endif
-    
+
     /*
-     Pipe between the 2 applications to check one another if they are still alive
-     Owned by us
+       Pipe between the 2 applications to check one another if they are still alive
+       Owned by us
      */
     QLocalServer* _comServer;
-    
+
     //owned by _comServer
     QLocalSocket* _comPipeConnection;
 
     //Referenc
     QNetworkReply* _uploadReply;
-    
     bool _dumpReceived;
     bool _mustInitQAppAfterDump;
 #ifndef REPORTER_CLI_ONLY
@@ -177,11 +176,11 @@ private:
 #endif
     QString _dumpFilePath;
     QString _dumpDirPath;
-    QString _pipePath,_comPipePath;
-    
+    QString _pipePath, _comPipePath;
+
     //owned by us
     google_breakpad::CrashGenerationServer* _crashServer;
-    
+
 #ifdef Q_OS_LINUX
     //On Linux this is the pipe FD of crash generation server on the server side
     int _serverFD;
@@ -189,10 +188,8 @@ private:
 #endif
 
     bool _initErr;
-    
     int _argc;
     char** _argv;
-    
 };
 
 #endif // CALLBACKSMANAGER_H

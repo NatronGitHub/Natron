@@ -51,7 +51,8 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-class RightClickableWidget : public QWidget
+class RightClickableWidget
+    : public QWidget
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     // coverity[self_assign]
@@ -59,34 +60,34 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     DockablePanel* panel;
-    
+
 public:
-    
-    
-    RightClickableWidget(DockablePanel* panel,QWidget* parent)
-    : QWidget(parent)
-    , panel(panel)
+
+
+    RightClickableWidget(DockablePanel* panel,
+                         QWidget* parent)
+        : QWidget(parent)
+        , panel(panel)
     {
-        setObjectName(QString::fromUtf8("SettingsPanel"));
+        setObjectName( QString::fromUtf8("SettingsPanel") );
     }
-    
+
     virtual ~RightClickableWidget() {}
-    
+
     DockablePanel* getPanel() const { return panel; }
-    
+
     static RightClickableWidget* isParentSettingsPanelRecursive(QWidget* w);
-    
+
 Q_SIGNALS:
-    
+
     void rightClicked(const QPoint& p);
     void escapePressed();
-    
+
 private:
-    
+
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
-    
 };
 
 NATRON_NAMESPACE_EXIT;

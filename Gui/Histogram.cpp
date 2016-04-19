@@ -71,107 +71,110 @@ GCC_DIAG_OFF(deprecated-declarations)
 
 NATRON_NAMESPACE_ENTER;
 
-namespace { // protext local classes in anonymous namespace
+
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
 enum EventStateEnum
 {
     eEventStateDraggingView = 0,
     eEventStateZoomingView,
     eEventStateNone
 };
-}
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 struct HistogramPrivate
 {
     HistogramPrivate(Histogram* widget)
-    : mainLayout(NULL)
-    , rightClickMenu(NULL)
-    , histogramSelectionMenu(NULL)
-    , histogramSelectionGroup(NULL)
-    , viewerCurrentInputMenu(NULL)
-    , viewerCurrentInputGroup(NULL)
-    , modeActions(0)
-    , modeMenu(NULL)
-    , fullImage(NULL)
-    , filterActions(0)
-    , filterMenu(NULL)
-    , widget(widget)
-    , mode(Histogram::eDisplayModeRGB)
-    , oldClick()
-    , zoomCtx()
-    , supportsGLSL(true)
-    , hasOpenGLVAOSupport(true)
-    , state(eEventStateNone)
-    , hasBeenModifiedSinceResize(false)
-    , _baseAxisColor(118,215,90,255)
-    , _scaleColor(67,123,52,255)
-    , _font(appFont,appFontSize)
-    , textRenderer()
-    , drawCoordinates(false)
-    , xCoordinateStr()
-    , rValueStr()
-    , gValueStr()
-    , bValueStr()
-    , filterSize(0)
+        : mainLayout(NULL)
+        , rightClickMenu(NULL)
+        , histogramSelectionMenu(NULL)
+        , histogramSelectionGroup(NULL)
+        , viewerCurrentInputMenu(NULL)
+        , viewerCurrentInputGroup(NULL)
+        , modeActions(0)
+        , modeMenu(NULL)
+        , fullImage(NULL)
+        , filterActions(0)
+        , filterMenu(NULL)
+        , widget(widget)
+        , mode(Histogram::eDisplayModeRGB)
+        , oldClick()
+        , zoomCtx()
+        , supportsGLSL(true)
+        , hasOpenGLVAOSupport(true)
+        , state(eEventStateNone)
+        , hasBeenModifiedSinceResize(false)
+        , _baseAxisColor(118, 215, 90, 255)
+        , _scaleColor(67, 123, 52, 255)
+        , _font(appFont, appFontSize)
+        , textRenderer()
+        , drawCoordinates(false)
+        , xCoordinateStr()
+        , rValueStr()
+        , gValueStr()
+        , bValueStr()
+        , filterSize(0)
 #ifdef NATRON_HISTOGRAM_USING_OPENGL
-    , histogramComputingShader()
-    , histogramMaximumShader()
-    , histogramRenderingShader()
+        , histogramComputingShader()
+        , histogramMaximumShader()
+        , histogramRenderingShader()
 #else
-    , histogramThread()
-    , histogram1()
-    , histogram2()
-    , histogram3()
-    , pixelsCount(0)
-    , vmin(0)
-    , vmax(0)
-    , binsCount(0)
-    , mipMapLevel(0)
-    , hasImage(false)
+        , histogramThread()
+        , histogram1()
+        , histogram2()
+        , histogram3()
+        , pixelsCount(0)
+        , vmin(0)
+        , vmax(0)
+        , binsCount(0)
+        , mipMapLevel(0)
+        , hasImage(false)
 #endif
-    , sizeH()
-    , showViewerPicker(false)
-    , viewerPickerColor()
+        , sizeH()
+        , showViewerPicker(false)
+        , viewerPickerColor()
     {
     }
-    
+
     boost::shared_ptr<Image> getHistogramImage(RectI* imagePortion) const;
-    
-    
+
+
     void showMenu(const QPoint & globalPos);
-    
+
     void drawScale();
-    
+
     void drawPicker();
-    
+
     void drawWarnings();
-    
+
     void drawMissingImage();
-    
+
     void updatePicker(double x);
-    
+
     void drawViewerPicker();
-    
+
 #ifdef NATRON_HISTOGRAM_USING_OPENGL
-    
-    void resizeComputingVBO(int w,int h);
-    
-    
+
+    void resizeComputingVBO(int w, int h);
+
+
     ///For all these functions, mode refers to either R,G,B,A or Y
     void computeHistogram(Histogram::DisplayModeEnum mode);
     void renderHistogram(Histogram::DisplayModeEnum mode);
     void activateHistogramComputingShader(Histogram::DisplayModeEnum mode);
     void activateHistogramRenderingShader(Histogram::DisplayModeEnum mode);
-    
+
 #else
     void drawHistogramCPU();
 #endif
-    
+
     //////////////////////////////////
     // data members
-    
+
     QVBoxLayout* mainLayout;
-    
+
     ///////// OPTIONS
     Menu* rightClickMenu;
     QMenu* histogramSelectionMenu;
@@ -197,12 +200,12 @@ struct HistogramPrivate
     TextRenderer textRenderer;
     bool drawCoordinates;
     QString xCoordinateStr;
-    QString rValueStr,gValueStr,bValueStr;
+    QString rValueStr, gValueStr, bValueStr;
     int filterSize;
 
 #ifdef NATRON_HISTOGRAM_USING_OPENGL
     /*texture ID of the input images*/
-    boost::shared_ptr<Texture> leftImageTexture,rightImageTexture;
+    boost::shared_ptr<Texture> leftImageTexture, rightImageTexture;
 
 
     /*The shader that computes the histogram:
@@ -266,12 +269,12 @@ struct HistogramPrivate
     std::vector<float> histogram2;
     std::vector<float> histogram3;
     unsigned int pixelsCount;
-    double vmin,vmax; //< the x range of the histogram
+    double vmin, vmax; //< the x range of the histogram
     unsigned int binsCount;
     unsigned int mipMapLevel;
     bool hasImage;
 #endif // !NATRON_HISTOGRAM_USING_OPENGL
-    
+
     QSize sizeH;
     bool showViewerPicker;
     std::vector<double> viewerPickerColor;
@@ -279,14 +282,14 @@ struct HistogramPrivate
 
 Histogram::Histogram(Gui* gui,
                      const QGLWidget* shareWidget)
-: QGLWidget(gui,shareWidget)
-, PanelWidget(this,gui)
-, _imp( new HistogramPrivate(this) )
+    : QGLWidget(gui, shareWidget)
+    , PanelWidget(this, gui)
+    , _imp( new HistogramPrivate(this) )
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Expanding);
+    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     setMouseTracking(true);
 #ifndef NATRON_HISTOGRAM_USING_OPENGL
     QObject::connect( &_imp->histogramThread, SIGNAL(histogramProduced()), this, SLOT(onCPUHistogramComputed()) );
@@ -294,18 +297,18 @@ Histogram::Histogram(Gui* gui,
 
 //    QDesktopWidget* desktop = QApplication::desktop();
 //    _imp->sizeH = desktop->screenGeometry().size();
-    _imp->sizeH = QSize(10000,10000);
-    
+    _imp->sizeH = QSize(10000, 10000);
+
     _imp->rightClickMenu = new Menu(this);
     //_imp->rightClickMenu->setFont( QFont(appFont,appFontSize) );
 
-    _imp->histogramSelectionMenu = new Menu(tr("Viewer target"),_imp->rightClickMenu);
+    _imp->histogramSelectionMenu = new Menu(tr("Viewer target"), _imp->rightClickMenu);
     //_imp->histogramSelectionMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->histogramSelectionMenu->menuAction() );
 
     _imp->histogramSelectionGroup = new QActionGroup(_imp->histogramSelectionMenu);
 
-    _imp->viewerCurrentInputMenu = new Menu(tr("Viewer input"),_imp->rightClickMenu);
+    _imp->viewerCurrentInputMenu = new Menu(tr("Viewer input"), _imp->rightClickMenu);
     //_imp->viewerCurrentInputMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->viewerCurrentInputMenu->menuAction() );
 
@@ -329,18 +332,18 @@ Histogram::Histogram(Gui* gui,
     _imp->viewerCurrentInputGroup->addAction(inputBAction);
     _imp->viewerCurrentInputMenu->addAction(inputBAction);
 
-    _imp->modeMenu = new Menu(tr("Display mode"),_imp->rightClickMenu);
+    _imp->modeMenu = new Menu(tr("Display mode"), _imp->rightClickMenu);
     //_imp->modeMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->modeMenu->menuAction() );
 
     _imp->fullImage = new QAction(_imp->rightClickMenu);
-    _imp->fullImage->setText(tr("Full image"));
+    _imp->fullImage->setText( tr("Full image") );
     _imp->fullImage->setCheckable(true);
     _imp->fullImage->setChecked(false);
     QObject::connect( _imp->fullImage, SIGNAL(triggered()), this, SLOT(computeHistogramAndRefresh()) );
     _imp->rightClickMenu->addAction(_imp->fullImage);
 
-    _imp->filterMenu = new Menu(tr("Smoothing"),_imp->rightClickMenu);
+    _imp->filterMenu = new Menu(tr("Smoothing"), _imp->rightClickMenu);
     //_imp->filterMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->filterMenu->menuAction() );
 
@@ -379,7 +382,7 @@ Histogram::Histogram(Gui* gui,
         _imp->modeMenu->addAction( actions.at(i) );
     }
 
-    QObject::connect( _imp->modeActions,SIGNAL(triggered(QAction*)),this,SLOT(onDisplayModeChanged(QAction*)) );
+    QObject::connect( _imp->modeActions, SIGNAL(triggered(QAction*)), this, SLOT(onDisplayModeChanged(QAction*)) );
 
 
     _imp->filterActions = new QActionGroup(_imp->filterMenu);
@@ -421,19 +424,19 @@ Histogram::~Histogram()
     makeCurrent();
 
 #ifdef NATRON_HISTOGRAM_USING_OPENGL
-    glDeleteTextures(3,&_imp->histogramTexture[0]);
-    glDeleteTextures(3,&_imp->histogramReductionsTexture[0]);
-    glDeleteTextures(3,&_imp->histogramRenderTexture[0]);
-    glDeleteTextures(3,&_imp->histogramMaximumTexture[0]);
+    glDeleteTextures(3, &_imp->histogramTexture[0]);
+    glDeleteTextures(3, &_imp->histogramReductionsTexture[0]);
+    glDeleteTextures(3, &_imp->histogramRenderTexture[0]);
+    glDeleteTextures(3, &_imp->histogramMaximumTexture[0]);
 
-    glDeleteFramebuffers(3,&_imp->fboReductions[0]);
-    glDeleteFramebuffers(1,&_imp->fboMaximum);
-    glDeleteFramebuffers(1,&_imp->fbohistogram);
-    glDeleteFramebuffers(1,&_imp->fboRendering);
+    glDeleteFramebuffers(3, &_imp->fboReductions[0]);
+    glDeleteFramebuffers(1, &_imp->fboMaximum);
+    glDeleteFramebuffers(1, &_imp->fbohistogram);
+    glDeleteFramebuffers(1, &_imp->fboRendering);
 
-    glDeleteVertexArrays(1,&_imp->vaoID);
-    glDeleteBuffers(1,&_imp->vboID);
-    glDeleteBuffers(1,&_imp->vboHistogramRendering);
+    glDeleteVertexArrays(1, &_imp->vaoID);
+    glDeleteBuffers(1, &_imp->vboID);
+    glDeleteBuffers(1, &_imp->vboHistogramRendering);
 
 #endif
 }
@@ -442,12 +445,14 @@ int
 Histogram::getViewerTextureInputDisplayed() const
 {
     int textureIndex = 0;
+
     if (_imp->viewerCurrentInputGroup) {
         QAction* selectedInputAction = _imp->viewerCurrentInputGroup->checkedAction();
         if (selectedInputAction) {
             textureIndex = selectedInputAction->data().toInt();
         }
     }
+
     return textureIndex;
 }
 
@@ -470,16 +475,16 @@ boost::shared_ptr<Image> HistogramPrivate::getHistogramImage(RectI* imagePortion
     if (selectedInputAction) {
         textureIndex = selectedInputAction->data().toInt();
     }
-    
+
     ViewerTab* viewer = 0;
     if (index == 0) {
         //no viewer selected
         imagePortion->clear();
+
         return boost::shared_ptr<Image>();
     } else if (index == 1) {
         //current viewer
         viewer = widget->getGui()->getActiveViewer();
-        
     } else {
         boost::shared_ptr<Image> ret;
         const std::list<ViewerTab*> & viewerTabs = widget->getGui()->getViewersList();
@@ -489,18 +494,17 @@ boost::shared_ptr<Image> HistogramPrivate::getHistogramImage(RectI* imagePortion
                 break;
             }
         }
-
     }
-    
+
     std::list<boost::shared_ptr<Image> > tiles;
     if (viewer) {
-        viewer->getViewer()->getLastRenderedImageByMipMapLevel(textureIndex,viewer->getInternalNode()->getMipMapLevelFromZoomFactor(),&tiles);
+        viewer->getViewer()->getLastRenderedImageByMipMapLevel(textureIndex, viewer->getInternalNode()->getMipMapLevelFromZoomFactor(), &tiles);
     }
-    
+
     ///We must copy all tiles into an image of the whole size
     boost::shared_ptr<Image> ret;
-    if (!tiles.empty()) {
-        const    boost::shared_ptr<Image>& firstTile = tiles.front();
+    if ( !tiles.empty() ) {
+        const boost::shared_ptr<Image>& firstTile = tiles.front();
         RectI bounds;
         unsigned int mipMapLevel = 0;
         double par = 1.;
@@ -508,8 +512,8 @@ boost::shared_ptr<Image> HistogramPrivate::getHistogramImage(RectI* imagePortion
         ImageComponents comps;
         ImagePremultiplicationEnum premult = eImagePremultiplicationPremultiplied;
         ImageFieldingOrderEnum fielding = eImageFieldingOrderNone;
-        for (std::list<boost::shared_ptr<Image> >::const_iterator it = tiles.begin(); it!=tiles.end(); ++it) {
-            if (bounds.isNull()) {
+        for (std::list<boost::shared_ptr<Image> >::const_iterator it = tiles.begin(); it != tiles.end(); ++it) {
+            if ( bounds.isNull() ) {
                 bounds = (*it)->getBounds();
                 mipMapLevel = (*it)->getMipMapLevel();
                 par = (*it)->getPixelAspectRatio();
@@ -518,41 +522,41 @@ boost::shared_ptr<Image> HistogramPrivate::getHistogramImage(RectI* imagePortion
                 fielding = (*it)->getFieldingOrder();
                 premult = (*it)->getPremultiplication();
             } else {
-                bounds.merge((*it)->getBounds());
-                assert(mipMapLevel == (*it)->getMipMapLevel());
-                assert(depth == (*it)->getBitDepth());
-                assert(comps == (*it)->getComponents());
-                assert(par == (*it)->getPixelAspectRatio());
-                assert(fielding == (*it)->getFieldingOrder());
-                assert(premult == (*it)->getPremultiplication());
+                bounds.merge( (*it)->getBounds() );
+                assert( mipMapLevel == (*it)->getMipMapLevel() );
+                assert( depth == (*it)->getBitDepth() );
+                assert( comps == (*it)->getComponents() );
+                assert( par == (*it)->getPixelAspectRatio() );
+                assert( fielding == (*it)->getFieldingOrder() );
+                assert( premult == (*it)->getPremultiplication() );
             }
         }
-        if (bounds.isNull()) {
+        if ( bounds.isNull() ) {
             return ret;
         }
-        
-        ret.reset(new Image(comps,
-                            firstTile->getRoD(),
-                            bounds,
-                            mipMapLevel,
-                            par,
-                            depth,
-                            premult,
-                            fielding,
-                            false));
-        for (std::list<boost::shared_ptr<Image> >::const_iterator it = tiles.begin(); it!=tiles.end(); ++it) {
+
+        ret.reset( new Image(comps,
+                             firstTile->getRoD(),
+                             bounds,
+                             mipMapLevel,
+                             par,
+                             depth,
+                             premult,
+                             fielding,
+                             false) );
+        for (std::list<boost::shared_ptr<Image> >::const_iterator it = tiles.begin(); it != tiles.end(); ++it) {
             ret->pasteFrom(**it, (*it)->getBounds(), false);
         }
-        
+
         if (!useImageRoD) {
             if (viewer) {
-                *imagePortion = viewer->getViewer()->getImageRectangleDisplayed(bounds,par, mipMapLevel);
+                *imagePortion = viewer->getViewer()->getImageRectangleDisplayed(bounds, par, mipMapLevel);
             }
         } else {
             *imagePortion = ret->getBounds();
         }
     }
-    
+
     return ret;
 } // getHistogramImage
 
@@ -583,7 +587,7 @@ Histogram::populateViewersChoices()
     _imp->histogramSelectionMenu->clear();
 
     QAction* noneAction = new QAction(_imp->histogramSelectionGroup);
-    noneAction->setText(QString::fromUtf8("-"));
+    noneAction->setText( QString::fromUtf8("-") );
     noneAction->setData(0);
     noneAction->setCheckable(true);
     noneAction->setChecked(false);
@@ -604,7 +608,7 @@ Histogram::populateViewersChoices()
     for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
         if ( (*it)->getInternalNode()->getNode()->isActivated() ) {
             QAction* ac = new QAction(_imp->histogramSelectionGroup);
-            ac->setText( QString::fromUtf8((*it)->getInternalNode()->getScriptName_mt_safe().c_str()) );
+            ac->setText( QString::fromUtf8( (*it)->getInternalNode()->getScriptName_mt_safe().c_str() ) );
             ac->setCheckable(true);
             ac->setChecked(false);
             ac->setData(c);
@@ -627,7 +631,7 @@ Histogram::populateViewersChoices()
     }
     _imp->histogramSelectionGroup->blockSignals(false);
 
-    QObject::connect( _imp->histogramSelectionGroup,SIGNAL(triggered(QAction*)),this,SLOT(onCurrentViewerChanged(QAction*)) );
+    QObject::connect( _imp->histogramSelectionGroup, SIGNAL(triggered(QAction*)), this, SLOT(onCurrentViewerChanged(QAction*)) );
 } // populateViewersChoices
 
 void
@@ -648,11 +652,11 @@ Histogram::onViewerImageChanged(ViewerGL* viewer,
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     if (viewer && hasImageBackend) {
-        QString viewerName = QString::fromUtf8(viewer->getInternalNode()->getScriptName_mt_safe().c_str());
+        QString viewerName = QString::fromUtf8( viewer->getInternalNode()->getScriptName_mt_safe().c_str() );
         ViewerTab* lastSelectedViewer = getGui()->getNodeGraph()->getLastSelectedViewer();
         QString currentViewerName;
         if (lastSelectedViewer) {
-            currentViewerName = QString::fromUtf8(lastSelectedViewer->getInternalNode()->getScriptName_mt_safe().c_str());
+            currentViewerName = QString::fromUtf8( lastSelectedViewer->getInternalNode()->getScriptName_mt_safe().c_str() );
         }
 
         QAction* selectedHistAction = _imp->histogramSelectionGroup->checkedAction();
@@ -664,6 +668,7 @@ Histogram::onViewerImageChanged(ViewerGL* viewer,
                 QAction* currentInput = _imp->viewerCurrentInputGroup->checkedAction();
                 if ( currentInput && (currentInput->data().toInt() == texIndex) ) {
                     computeHistogramAndRefresh();
+
                     return;
                 } else {
                     return;
@@ -671,10 +676,9 @@ Histogram::onViewerImageChanged(ViewerGL* viewer,
             }
         }
     }
-    
-    _imp->hasImage =false;
+
+    _imp->hasImage = false;
     update();
-    
 }
 
 QSize
@@ -717,7 +721,7 @@ Histogram::initializeGL()
     if (GLEW_OK != err) {
         /* Problem: glewInit failed, something is seriously wrong. */
         Dialogs::errorDialog( tr("OpenGL/GLEW error").toStdString(),
-                             (const char*)glewGetErrorString(err) );
+                              (const char*)glewGetErrorString(err) );
     }
 
     if ( !QGLShaderProgram::hasOpenGLShaderPrograms( context() ) ) {
@@ -725,10 +729,10 @@ Histogram::initializeGL()
     } else {
 #ifdef NATRON_HISTOGRAM_USING_OPENGL
         _imp->histogramComputingShader.reset( new QGLShaderProgram( context() ) );
-        if ( !_imp->histogramComputingShader->addShaderFromSourceCode(QGLShader::Vertex,histogramComputationVertex_vert) ) {
+        if ( !_imp->histogramComputingShader->addShaderFromSourceCode(QGLShader::Vertex, histogramComputationVertex_vert) ) {
             qDebug() << _imp->histogramComputingShader->log();
         }
-        if ( !_imp->histogramComputingShader->addShaderFromSourceCode(QGLShader::Fragment,histogramComputation_frag) ) {
+        if ( !_imp->histogramComputingShader->addShaderFromSourceCode(QGLShader::Fragment, histogramComputation_frag) ) {
             qDebug() << _imp->histogramComputingShader->log();
         }
         if ( !_imp->histogramComputingShader->link() ) {
@@ -736,7 +740,7 @@ Histogram::initializeGL()
         }
 
         _imp->histogramMaximumShader.reset( new QGLShaderProgram( context() ) );
-        if ( !_imp->histogramMaximumShader->addShaderFromSourceCode(QGLShader::Fragment,histogramMaximum_frag) ) {
+        if ( !_imp->histogramMaximumShader->addShaderFromSourceCode(QGLShader::Fragment, histogramMaximum_frag) ) {
             qDebug() << _imp->histogramMaximumShader->log();
         }
         if ( !_imp->histogramMaximumShader->link() ) {
@@ -744,10 +748,10 @@ Histogram::initializeGL()
         }
 
         _imp->histogramRenderingShader.reset( new QGLShaderProgram( context() ) );
-        if ( !_imp->histogramRenderingShader->addShaderFromSourceCode(QGLShader::Vertex,histogramRenderingVertex_vert) ) {
+        if ( !_imp->histogramRenderingShader->addShaderFromSourceCode(QGLShader::Vertex, histogramRenderingVertex_vert) ) {
             qDebug() << _imp->histogramRenderingShader->log();
         }
-        if ( !_imp->histogramRenderingShader->addShaderFromSourceCode(QGLShader::Fragment,histogramRendering_frag) ) {
+        if ( !_imp->histogramRenderingShader->addShaderFromSourceCode(QGLShader::Fragment, histogramRendering_frag) ) {
             qDebug() << _imp->histogramRenderingShader->log();
         }
         if ( !_imp->histogramRenderingShader->link() ) {
@@ -767,80 +771,80 @@ Histogram::initializeGL()
     glEnable(GL_TEXTURE_RECTANGLE_ARB);
 
 
-    glGenTextures(3,&_imp->histogramTexture[0]);
-    glGenTextures(3,&_imp->histogramReductionsTexture[0]);
-    glGenTextures(3,&_imp->histogramRenderTexture[0]);
-    glGenTextures(3,&_imp->histogramMaximumTexture[0]);
+    glGenTextures(3, &_imp->histogramTexture[0]);
+    glGenTextures(3, &_imp->histogramReductionsTexture[0]);
+    glGenTextures(3, &_imp->histogramRenderTexture[0]);
+    glGenTextures(3, &_imp->histogramMaximumTexture[0]);
 
-    _imp->leftImageTexture.reset( new Texture(GL_TEXTURE_RECTANGLE_ARB,GL_NEAREST,GL_NEAREST) );
-    _imp->rightImageTexture.reset( new Texture(GL_TEXTURE_RECTANGLE_ARB,GL_NEAREST,GL_NEAREST) );
+    _imp->leftImageTexture.reset( new Texture(GL_TEXTURE_RECTANGLE_ARB, GL_NEAREST, GL_NEAREST) );
+    _imp->rightImageTexture.reset( new Texture(GL_TEXTURE_RECTANGLE_ARB, GL_NEAREST, GL_NEAREST) );
 
-    glGenFramebuffers(3,&_imp->fboReductions[0]);
-    glGenFramebuffers(1,&_imp->fboMaximum);
-    glGenFramebuffers(1,&_imp->fbohistogram);
-    glGenFramebuffers(1,&_imp->fboRendering);
+    glGenFramebuffers(3, &_imp->fboReductions[0]);
+    glGenFramebuffers(1, &_imp->fboMaximum);
+    glGenFramebuffers(1, &_imp->fbohistogram);
+    glGenFramebuffers(1, &_imp->fboRendering);
 
-    glGenVertexArrays(1,&_imp->vaoID);
-    glGenBuffers(1,&_imp->vboID);
-    glGenBuffers(1,&_imp->vboHistogramRendering);
+    glGenVertexArrays(1, &_imp->vaoID);
+    glGenBuffers(1, &_imp->vboID);
+    glGenBuffers(1, &_imp->vboHistogramRendering);
 
     /*initializing histogram fbo and attaching the 3 textures */
-    glBindFramebuffer(GL_FRAMEBUFFER,_imp->fbohistogram);
+    glBindFramebuffer(GL_FRAMEBUFFER, _imp->fbohistogram);
     GLenum attachments[3] = {
-        GL_COLOR_ATTACHMENT0,GL_COLOR_ATTACHMENT1,GL_COLOR_ATTACHMENT2
+        GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2
     };
     for (unsigned int i = 0; i < 3; ++i) {
-        glBindTexture(GL_TEXTURE_RECTANGLE_ARB,_imp->histogramTexture[i]);
-        glTexImage2D(GL_TEXTURE_RECTANGLE_ARB,0,GL_R32F,256,1,0,GL_RED,GL_FLOAT,0);
+        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _imp->histogramTexture[i]);
+        glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_R32F, 256, 1, 0, GL_RED, GL_FLOAT, 0);
         glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glFramebufferTexture2D(GL_FRAMEBUFFER,attachments[i],GL_TEXTURE_RECTANGLE_ARB,_imp->histogramTexture[i],0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, attachments[i], GL_TEXTURE_RECTANGLE_ARB, _imp->histogramTexture[i], 0);
     }
-    glBindFramebuffer(GL_FRAMEBUFFER,0);
-    glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 
     /*initializing fbo for parallel reductions and textures*/
     for (unsigned int i = 0; i < 3; ++i) {
-        glBindTexture(GL_TEXTURE_RECTANGLE_ARB,_imp->histogramReductionsTexture[i]);
-        glTexImage2D(GL_TEXTURE_RECTANGLE_ARB,0,GL_R32F,256.f / pow( 4.f,(float)(i + 1) ),1,0,GL_RED,GL_FLOAT,0);
+        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _imp->histogramReductionsTexture[i]);
+        glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_R32F, 256.f / pow( 4.f, (float)(i + 1) ), 1, 0, GL_RED, GL_FLOAT, 0);
         glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glBindFramebuffer(GL_FRAMEBUFFER,_imp->fboReductions[i]);
-        glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_RECTANGLE_ARB,_imp->histogramReductionsTexture[i],0);
-        glBindFramebuffer(GL_FRAMEBUFFER,0);
-        glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
+        glBindFramebuffer(GL_FRAMEBUFFER, _imp->fboReductions[i]);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, _imp->histogramReductionsTexture[i], 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
     }
 
     /*initializing fbo holding maximums and textures*/
-    glBindFramebuffer(GL_FRAMEBUFFER,_imp->fboMaximum);
+    glBindFramebuffer(GL_FRAMEBUFFER, _imp->fboMaximum);
     for (unsigned int i = 0; i < 3; ++i) {
-        glBindTexture(GL_TEXTURE_RECTANGLE_ARB,_imp->histogramMaximumTexture[i]);
-        glTexImage2D(GL_TEXTURE_RECTANGLE_ARB,0,GL_R32F,1,1,0,GL_RED,GL_FLOAT,0);
+        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _imp->histogramMaximumTexture[i]);
+        glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_R32F, 1, 1, 0, GL_RED, GL_FLOAT, 0);
         glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glFramebufferTexture2D(GL_FRAMEBUFFER,attachments[i],GL_TEXTURE_RECTANGLE_ARB,_imp->histogramMaximumTexture[i],0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, attachments[i], GL_TEXTURE_RECTANGLE_ARB, _imp->histogramMaximumTexture[i], 0);
     }
-    glBindFramebuffer(GL_FRAMEBUFFER,0);
-    glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 
     /*initializing fbo holding rendering textures for the histogram*/
-    glBindFramebuffer(GL_FRAMEBUFFER,_imp->fboRendering);
+    glBindFramebuffer(GL_FRAMEBUFFER, _imp->fboRendering);
     for (unsigned int i = 0; i < 3; ++i) {
-        glBindTexture(GL_TEXTURE_RECTANGLE_ARB,_imp->histogramRenderTexture[i]);
-        glTexImage2D(GL_TEXTURE_RECTANGLE_ARB,0,GL_RGBA8,256,256,0,GL_RGBA,GL_UNSIGNED_BYTE,0);
+        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _imp->histogramRenderTexture[i]);
+        glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA8, 256, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
         glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glFramebufferTexture2D(GL_FRAMEBUFFER,attachments[i],GL_TEXTURE_RECTANGLE_ARB,_imp->histogramRenderTexture[i],0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, attachments[i], GL_TEXTURE_RECTANGLE_ARB, _imp->histogramRenderTexture[i], 0);
     }
-    glBindFramebuffer(GL_FRAMEBUFFER,0);
-    glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 
 
     /*initializing the vbo used to render the histogram*/
-    glBindBuffer(GL_ARRAY_BUFFER,_imp->vboHistogramRendering);
+    glBindBuffer(GL_ARRAY_BUFFER, _imp->vboHistogramRendering);
     int vertexCount = 512; // we draw the bins as lines (2 vertex) hence 512 vertices
-    glBufferData(GL_ARRAY_BUFFER,vertexCount * 3 * sizeof(float),NULL,GL_DYNAMIC_DRAW);
-    float *gpuVertexBuffer = reinterpret_cast<float*>( glMapBuffer(GL_ARRAY_BUFFER,GL_WRITE_ONLY) );
+    glBufferData(GL_ARRAY_BUFFER, vertexCount * 3 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
+    float *gpuVertexBuffer = reinterpret_cast<float*>( glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY) );
     int j = 0;
     int x = 0;
     while (j < vertexCount * 3) {
@@ -854,7 +858,7 @@ Histogram::initializeGL()
         j += 6;
     }
     glUnmapBuffer(GL_ARRAY_BUFFER);
-    glBindBuffer(GL_ARRAY_BUFFER,0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 #endif // ifdef NATRON_HISTOGRAM_USING_OPENGL
 } // initializeGL
@@ -868,10 +872,10 @@ HistogramPrivate::resizeComputingVBO(int w,
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
 
-    glBindBuffer(GL_ARRAY_BUFFER,vboID);
+    glBindBuffer(GL_ARRAY_BUFFER, vboID);
     int vertexCount = w * h;
-    glBufferData(GL_ARRAY_BUFFER,vertexCount * 2 * sizeof(float),NULL,GL_DYNAMIC_DRAW);
-    float* gpuVertexBuffer = reinterpret_cast<float*>( glMapBuffer(GL_ARRAY_BUFFER,GL_WRITE_ONLY) );
+    glBufferData(GL_ARRAY_BUFFER, vertexCount * 2 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
+    float* gpuVertexBuffer = reinterpret_cast<float*>( glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY) );
     int i = 0;
     float x = 0;
     float y = 0;
@@ -886,7 +890,7 @@ HistogramPrivate::resizeComputingVBO(int w,
         i += 2;
     }
     glUnmapBuffer(GL_ARRAY_BUFFER);
-    glBindBuffer(GL_ARRAY_BUFFER,0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 static void
@@ -900,10 +904,10 @@ textureMap_Polygon(int fromX,
                    int h)
 {
     glBegin(GL_POLYGON);
-    glTexCoord2i (fromX, fromH); glVertex2i (x,h);
-    glTexCoord2i (fromW, fromH); glVertex2i (w,h);
-    glTexCoord2i (fromW, fromY); glVertex2i (w,y);
-    glTexCoord2i (fromX, fromY); glVertex2i (x,y);
+    glTexCoord2i (fromX, fromH); glVertex2i (x, h);
+    glTexCoord2i (fromW, fromH); glVertex2i (w, h);
+    glTexCoord2i (fromW, fromY); glVertex2i (w, y);
+    glTexCoord2i (fromX, fromY); glVertex2i (x, y);
     glEnd ();
 }
 
@@ -913,9 +917,9 @@ startRenderingTo(GLuint fboId,
                  int w,
                  int h)
 {
-    glBindFramebuffer(GL_FRAMEBUFFER,fboId);
+    glBindFramebuffer(GL_FRAMEBUFFER, fboId);
     glDrawBuffer(attachment);
-    glViewport(0,0,w,h);
+    glViewport(0, 0, w, h);
     glMatrixMode(GL_PROJECTION);
     glCheckProjectionStack();
     glPushMatrix();
@@ -934,7 +938,7 @@ stopRenderingTo()
     glPopMatrix();
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
-    glBindFramebuffer(GL_FRAMEBUFFER,0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 static int
@@ -975,10 +979,10 @@ HistogramPrivate::activateHistogramComputingShader(Histogram::DisplayModeEnum ch
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     histogramComputingShader->bind();
-    histogramComputingShader->setUniformValue("Tex",0);
+    histogramComputingShader->setUniformValue("Tex", 0);
     glCheckError();
-    histogramComputingShader->setUniformValue( "channel",shaderChannelFromDisplayMode(channel) );
-    glBindAttribLocation(histogramComputingShader->programId(),0,"TexCoord");
+    histogramComputingShader->setUniformValue( "channel", shaderChannelFromDisplayMode(channel) );
+    glBindAttribLocation(histogramComputingShader->programId(), 0, "TexCoord");
 }
 
 void
@@ -990,19 +994,19 @@ HistogramPrivate::activateHistogramRenderingShader(Histogram::DisplayModeEnum ch
 
     histogramRenderingShader->bind();
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_RECTANGLE_ARB,histogramTexture[channel]);
-    histogramRenderingShader->setUniformValue("HistogramTex",0);
+    glBindTexture(GL_TEXTURE_RECTANGLE_ARB, histogramTexture[channel]);
+    histogramRenderingShader->setUniformValue("HistogramTex", 0);
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_RECTANGLE_ARB,histogramMaximumTexture[0]);
-    histogramRenderingShader->setUniformValue("MaximumRedTex",1);
+    glBindTexture(GL_TEXTURE_RECTANGLE_ARB, histogramMaximumTexture[0]);
+    histogramRenderingShader->setUniformValue("MaximumRedTex", 1);
     glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_RECTANGLE_ARB,histogramMaximumTexture[1]);
-    histogramRenderingShader->setUniformValue("MaximumGreenTex",2);
+    glBindTexture(GL_TEXTURE_RECTANGLE_ARB, histogramMaximumTexture[1]);
+    histogramRenderingShader->setUniformValue("MaximumGreenTex", 2);
     glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_RECTANGLE_ARB,histogramMaximumTexture[2]);
-    histogramRenderingShader->setUniformValue("MaximumBlueTex",3);
-    histogramRenderingShader->setUniformValue( "channel",shaderChannelFromDisplayMode(channel) );
-    glBindAttribLocation(histogramRenderingShader->programId(),0,"TexCoord");
+    glBindTexture(GL_TEXTURE_RECTANGLE_ARB, histogramMaximumTexture[2]);
+    histogramRenderingShader->setUniformValue("MaximumBlueTex", 3);
+    histogramRenderingShader->setUniformValue( "channel", shaderChannelFromDisplayMode(channel) );
+    glBindAttribLocation(histogramRenderingShader->programId(), 0, "TexCoord");
 }
 
 static GLenum
@@ -1052,9 +1056,9 @@ HistogramPrivate::computeHistogram(Histogram::DisplayModeEnum channel)
     /*binding the VAO holding managing the VBO*/
     glBindVertexArray(vaoID);
     /*binding the VBO sending vertices to the vertex shader*/
-    glBindBuffer(GL_ARRAY_BUFFER,vboID);
+    glBindBuffer(GL_ARRAY_BUFFER, vboID);
     /*each attribute will be a vec2f*/
-    glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE,0,0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
     /*enabling the VBO 0 of the VAO*/
     glEnableVertexAttribArray(0);
 
@@ -1064,26 +1068,26 @@ HistogramPrivate::computeHistogram(Histogram::DisplayModeEnum channel)
         GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT | GL_TRANSFORM_BIT | GL_VIEWPORT_BIT);
 
         /*start rendering to the histogram texture held by the _fboHistogram*/
-        startRenderingTo(fbohistogram,attachment,256,1); // modifies GL_TRANSFORM & GL_VIEWPORT
+        startRenderingTo(fbohistogram, attachment, 256, 1); // modifies GL_TRANSFORM & GL_VIEWPORT
 
         /*clearing out the texture from previous computations*/
-        glClearColor(0.f,0.f,0.f,0.f);
+        glClearColor(0.f, 0.f, 0.f, 0.f);
         glClear(GL_COLOR_BUFFER_BIT);
         /*enabling blending to add up the colors in texels :
-         this results in pixels suming up */
+           this results in pixels suming up */
         glEnable(GL_BLEND);
-        glBlendEquationSeparate(GL_FUNC_ADD,GL_FUNC_ADD);
-        glBlendFuncSeparate(GL_ONE,GL_ONE,GL_ONE,GL_ONE);
+        glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+        glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ONE, GL_ONE);
         /*binding the input image*/
         glActiveTexture(GL_TEXTURE0);
 
-        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, leftImageTexture->getTexID());
+        glBindTexture( GL_TEXTURE_RECTANGLE_ARB, leftImageTexture->getTexID() );
         /*making current the shader computing the histogram*/
         activateHistogramComputingShader(channel);
         /*the number of vertices in the VBO*/
         int vertexCount = leftImageTexture->w() * leftImageTexture->h();
         /*sending vertices to the GPU, they're handled by the vertex shader*/
-        glDrawArrays(GL_POINTS,0,vertexCount);
+        glDrawArrays(GL_POINTS, 0, vertexCount);
         /*stop computing*/
         histogramComputingShader->release();
         /*reset our context state*/
@@ -1092,37 +1096,37 @@ HistogramPrivate::computeHistogram(Histogram::DisplayModeEnum channel)
         stopRenderingTo();
 
         /*At this point we have the Histogram filled. From now on we can compute the maximum
-         of the histogram with parallel reductions. 4 passes are needed : 256 -> 64 ,
-         64 -> 16 , 16 -> 4, 4 -> 1
-         The last pass is done after the loop as it is done in a separate FBO.
-         ---------------------------------------------------------------------
+           of the histogram with parallel reductions. 4 passes are needed : 256 -> 64 ,
+           64 -> 16 , 16 -> 4, 4 -> 1
+           The last pass is done after the loop as it is done in a separate FBO.
+           ---------------------------------------------------------------------
          ** One pass does the following :
-         - binds the fbo holding the I'th reduction.`
-         - activates the shader with in input the I-1'th texture, the one resulting
-         from the previous reduction.
-         - does the rendering to the I'th reduced texture.*/
+           - binds the fbo holding the I'th reduction.`
+           - activates the shader with in input the I-1'th texture, the one resulting
+           from the previous reduction.
+           - does the rendering to the I'th reduced texture.*/
         GLuint inputTex = histogramTexture[channel];
         for (unsigned int i = 0; i < 3; i++) {
-            int wTarget = (int)( 256.f / pow( 4.f,(float)(i + 1) ) );
-            startRenderingTo(fboReductions[i],GL_COLOR_ATTACHMENT0,wTarget,1);
+            int wTarget = (int)( 256.f / pow( 4.f, (float)(i + 1) ) );
+            startRenderingTo(fboReductions[i], GL_COLOR_ATTACHMENT0, wTarget, 1);
             histogramMaximumShader->bind();
             glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_RECTANGLE_ARB,inputTex);
-            histogramMaximumShader->setUniformValue("Tex",0);
-            textureMap_Polygon(0,0,wTarget,1,0,0,wTarget,1);
+            glBindTexture(GL_TEXTURE_RECTANGLE_ARB, inputTex);
+            histogramMaximumShader->setUniformValue("Tex", 0);
+            textureMap_Polygon(0, 0, wTarget, 1, 0, 0, wTarget, 1);
             histogramMaximumShader->release();
             stopRenderingTo();
             inputTex = histogramReductionsTexture[i];
         }
         /*This part is similar to the loop above, but it is a special case since
-         we do not render in a fboReductions but in the fboMaximum.
-         The color attachment might change if we need to compute 3 histograms
-         In this case only the red histogram is computed.*/
+           we do not render in a fboReductions but in the fboMaximum.
+           The color attachment might change if we need to compute 3 histograms
+           In this case only the red histogram is computed.*/
         glBindTexture(GL_TEXTURE_RECTANGLE_ARB, histogramReductionsTexture[2]);
         histogramMaximumShader->bind();
-        histogramMaximumShader->setUniformValue("Tex",0);
-        startRenderingTo(fboMaximum,attachment,1,1);
-        textureMap_Polygon(0,0,1,1,0,0,1,1);
+        histogramMaximumShader->setUniformValue("Tex", 0);
+        startRenderingTo(fboMaximum, attachment, 1, 1);
+        textureMap_Polygon(0, 0, 1, 1, 0, 0, 1, 1);
         histogramMaximumShader->release();
         stopRenderingTo(); // modifies GL_TRANSFORM
         glCheckError();
@@ -1143,36 +1147,36 @@ HistogramPrivate::renderHistogram(Histogram::DisplayModeEnum channel)
 
     /*start rendering the histogram(256x1) to the rendering texture(256x256) that is attached
        to the rendering fbo.*/
-    startRenderingTo(fboRendering,attachment,256,256);
+    startRenderingTo(fboRendering, attachment, 256, 256);
     /*clearing out the texture from previous rendering*/
     /*binding the VAO holding the VBO*/
     glBindVertexArray(vaoID);
     /*binding the VBO holding the vertices that will be send to
        the GPU*/
-    glBindBuffer(GL_ARRAY_BUFFER,vboHistogramRendering);
+    glBindBuffer(GL_ARRAY_BUFFER, vboHistogramRendering);
     /*each attribute in the VBO is a vec3f*/
-    glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
     /*enabling the VBO 0 of the VAO*/
     glEnableVertexAttribArray(0);
     /*activating the rendering shader*/
     activateHistogramRenderingShader(channel);
-    glClearColor(0.0,0.0,0.0,0.0);
+    glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT);
     /*sending vertices to the GPU so the vertex
        shader start computing. Note that there're 512
        vertices because we render lines: 1 vertex for the
        bottom, another for the top of the bin.*/
-    glDrawArrays(GL_LINES,0,512);
+    glDrawArrays(GL_LINES, 0, 512);
     histogramRenderingShader->release();
     /*reseting opengl context*/
     glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
+    glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
     glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
+    glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
+    glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
+    glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
     glBindVertexArray(0);
     stopRenderingTo();
     glCheckError();
@@ -1203,7 +1207,7 @@ Histogram::paintGL()
     double zoomBottom = _imp->zoomCtx.bottom();
     double zoomTop = _imp->zoomCtx.top();
     if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
-        glClearColor(0,0,0,1);
+        glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT);
         glCheckErrorIgnoreOSXBug();
 
@@ -1218,13 +1222,13 @@ Histogram::paintGL()
         GLProtectMatrix m(GL_MODELVIEW);
         glLoadIdentity();
         glCheckError();
-        
-        glClearColor(0,0,0,1);
+
+        glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT);
         glCheckErrorIgnoreOSXBug();
-        
+
         _imp->drawScale();
-        
+
         if (_imp->hasImage) {
 #ifndef NATRON_HISTOGRAM_USING_OPENGL
             _imp->drawHistogramCPU();
@@ -1232,17 +1236,17 @@ Histogram::paintGL()
             if (_imp->drawCoordinates) {
                 _imp->drawPicker();
             }
-            
+
             _imp->drawWarnings();
-            
+
             if (_imp->showViewerPicker) {
                 _imp->drawViewerPicker();
             }
         } else {
             _imp->drawMissingImage();
         }
-        
-        
+
+
         glCheckError();
     } // GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
 } // paintGL
@@ -1273,7 +1277,7 @@ Histogram::mousePressEvent(QMouseEvent* e)
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     takeClickFocus();
-    
+
     ////
     // middle button: scroll view
     if ( buttonDownIsMiddle(e) ) {
@@ -1281,13 +1285,14 @@ Histogram::mousePressEvent(QMouseEvent* e)
         _imp->oldClick = e->pos();
     } else if ( buttonDownIsRight(e) ) {
         _imp->showMenu( e->globalPos() );
-    } else if (((e->buttons() & Qt::MiddleButton) &&
-                (buttonMetaAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton))) ||
-               ((e->buttons() & Qt::LeftButton) &&
-                (buttonMetaAlt(e) == (Qt::AltModifier|Qt::MetaModifier)))) {
+    } else if ( ( (e->buttons() & Qt::MiddleButton) &&
+                  ( ( buttonMetaAlt(e) == Qt::AltModifier) || (e->buttons() & Qt::LeftButton) ) ) ||
+                ( (e->buttons() & Qt::LeftButton) &&
+                  ( buttonMetaAlt(e) == (Qt::AltModifier | Qt::MetaModifier) ) ) ) {
         // Alt + middle or left + middle or Meta + Alt + left = zoom
         _imp->state = eEventStateZoomingView;
         _imp->oldClick = e->pos();
+
         return;
     }
 }
@@ -1298,8 +1303,8 @@ Histogram::mouseMoveEvent(QMouseEvent* e)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    QPointF newClick_opengl = _imp->zoomCtx.toZoomCoordinates( e->x(),e->y() );
-    QPointF oldClick_opengl = _imp->zoomCtx.toZoomCoordinates( _imp->oldClick.x(),_imp->oldClick.y() );
+    QPointF newClick_opengl = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
+    QPointF oldClick_opengl = _imp->zoomCtx.toZoomCoordinates( _imp->oldClick.x(), _imp->oldClick.y() );
 
 
     _imp->oldClick = e->pos();
@@ -1312,42 +1317,40 @@ Histogram::mouseMoveEvent(QMouseEvent* e)
     case eEventStateDraggingView:
         _imp->zoomCtx.translate(dx, dy);
         _imp->hasBeenModifiedSinceResize = true;
-            computeHistogramAndRefresh();
-            break;
-        case eEventStateZoomingView: {
-            
-            int delta = 2*((e->x() - _imp->oldClick.x()) - (e->y() - _imp->oldClick.y()));
-            
-            const double zoomFactor_min = 0.000001;
-            const double zoomFactor_max = 1000000.;
-            double zoomFactor;
-            double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, delta);
-            QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
-            
-            
-            
-            // Wheel: zoom values and time, keep point under mouse
-            zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
-            if (zoomFactor <= zoomFactor_min) {
-                zoomFactor = zoomFactor_min;
-                scaleFactor = zoomFactor / _imp->zoomCtx.factor();
-            } else if (zoomFactor > zoomFactor_max) {
-                zoomFactor = zoomFactor_max;
-                scaleFactor = zoomFactor / _imp->zoomCtx.factor();
-            }
-            _imp->zoomCtx.zoom(zoomCenter.x(), zoomCenter.y(), scaleFactor);
-            
-            _imp->hasBeenModifiedSinceResize = true;
-            
-            computeHistogramAndRefresh();
-    } break;
+        computeHistogramAndRefresh();
+        break;
+    case eEventStateZoomingView: {
+        int delta = 2 * ( ( e->x() - _imp->oldClick.x() ) - ( e->y() - _imp->oldClick.y() ) );
+        const double zoomFactor_min = 0.000001;
+        const double zoomFactor_max = 1000000.;
+        double zoomFactor;
+        double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, delta);
+        QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
+
+
+        // Wheel: zoom values and time, keep point under mouse
+        zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
+        if (zoomFactor <= zoomFactor_min) {
+            zoomFactor = zoomFactor_min;
+            scaleFactor = zoomFactor / _imp->zoomCtx.factor();
+        } else if (zoomFactor > zoomFactor_max) {
+            zoomFactor = zoomFactor_max;
+            scaleFactor = zoomFactor / _imp->zoomCtx.factor();
+        }
+        _imp->zoomCtx.zoom(zoomCenter.x(), zoomCenter.y(), scaleFactor);
+
+        _imp->hasBeenModifiedSinceResize = true;
+
+        computeHistogramAndRefresh();
+    }
+    break;
     case eEventStateNone:
         _imp->updatePicker( newClick_opengl.x() );
         update();
         break;
     }
     QGLWidget::mouseMoveEvent(e);
-}
+} // Histogram::mouseMoveEvent
 
 void
 HistogramPrivate::updatePicker(double x)
@@ -1355,7 +1358,7 @@ HistogramPrivate::updatePicker(double x)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    xCoordinateStr = QString::fromUtf8("x=") + QString::number(x,'f',6);
+    xCoordinateStr = QString::fromUtf8("x=") + QString::number(x, 'f', 6);
     double binSize = (vmax - vmin) / binsCount;
     int index = (int)( (x - vmin) / binSize );
     rValueStr.clear();
@@ -1469,13 +1472,12 @@ Histogram::keyPressEvent(QKeyEvent* e)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    
+
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)e->key();
-    
     bool accept = true;
-    
-    if (isKeybind(kShortcutGroupViewer, kShortcutIDActionFitViewer, modifiers, key)) {
+
+    if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionFitViewer, modifiers, key) ) {
         _imp->hasBeenModifiedSinceResize = false;
         _imp->zoomCtx.fill(0., 1., 0., 10.);
         computeHistogramAndRefresh();
@@ -1499,7 +1501,8 @@ Histogram::keyReleaseEvent(QKeyEvent* e)
 }
 
 void
-Histogram::enterEvent(QEvent* e) {
+Histogram::enterEvent(QEvent* e)
+{
     enterEventBase();
     QGLWidget::enterEvent(e);
 }
@@ -1536,7 +1539,7 @@ Histogram::computeHistogramAndRefresh(bool forceEvenIfNotVisible)
         return;
     }
 
-    QPointF btmLeft = _imp->zoomCtx.toZoomCoordinates(0,height() - 1);
+    QPointF btmLeft = _imp->zoomCtx.toZoomCoordinates(0, height() - 1);
     QPointF topRight = _imp->zoomCtx.toZoomCoordinates(width() - 1, 0);
     double vmin = btmLeft.x();
     double vmax = topRight.x();
@@ -1546,14 +1549,14 @@ Histogram::computeHistogramAndRefresh(bool forceEvenIfNotVisible)
     RectI rect;
     boost::shared_ptr<Image> image = _imp->getHistogramImage(&rect);
     if (image) {
-        _imp->histogramThread.computeHistogram(_imp->mode, image, rect, width(),vmin,vmax,_imp->filterSize);
+        _imp->histogramThread.computeHistogram(_imp->mode, image, rect, width(), vmin, vmax, _imp->filterSize);
     } else {
         _imp->hasImage = false;
     }
 
 #endif
 
-    QPointF oldClick_opengl = _imp->zoomCtx.toZoomCoordinates( _imp->oldClick.x(),_imp->oldClick.y() );
+    QPointF oldClick_opengl = _imp->zoomCtx.toZoomCoordinates( _imp->oldClick.x(), _imp->oldClick.y() );
     _imp->updatePicker( oldClick_opengl.x() );
 
     update();
@@ -1568,7 +1571,7 @@ Histogram::onCPUHistogramComputed()
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     int mode;
-    bool success = _imp->histogramThread.getMostRecentlyProducedHistogram(&_imp->histogram1, &_imp->histogram2, &_imp->histogram3, &_imp->binsCount, &_imp->pixelsCount, &mode,&_imp->vmin,&_imp->vmax,&_imp->mipMapLevel);
+    bool success = _imp->histogramThread.getMostRecentlyProducedHistogram(&_imp->histogram1, &_imp->histogram2, &_imp->histogram3, &_imp->binsCount, &_imp->pixelsCount, &mode, &_imp->vmin, &_imp->vmax, &_imp->mipMapLevel);
     assert(success);
     if (success) {
         _imp->hasImage = true;
@@ -1593,7 +1596,7 @@ HistogramPrivate::drawScale()
     }
 
     glCheckError();
-    QPointF btmLeft = zoomCtx.toZoomCoordinates(0,widget->height() - 1);
+    QPointF btmLeft = zoomCtx.toZoomCoordinates(0, widget->height() - 1);
     QPointF topRight = zoomCtx.toZoomCoordinates(widget->width() - 1, 0);
 
     ///don't attempt to draw a scale on a widget with an invalid height
@@ -1684,125 +1687,121 @@ HistogramPrivate::drawWarnings()
     assert( QGLContext::currentContext() == widget->context() );
     if (mipMapLevel > 0) {
         QFontMetrics m(_font);
-        QString str(QObject::tr("Image downscaled"));
+        QString str( QObject::tr("Image downscaled") );
         int strWidth = m.width(str);
-        QPointF pos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10,5 * m.height() + 30);
+        QPointF pos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10, 5 * m.height() + 30);
         glCheckError();
-        widget->renderText(pos.x(), pos.y(), str,QColor(220,220,0), _font);
+        widget->renderText(pos.x(), pos.y(), str, QColor(220, 220, 0), _font);
         glCheckError();
     }
-
 }
 
 void
 HistogramPrivate::drawMissingImage()
 {
     QPointF topLeft = zoomCtx.toZoomCoordinates(0, 0);
-    QPointF btmRight = zoomCtx.toZoomCoordinates(widget->width(), widget->height());
-    QPointF topRight(btmRight.x(),topLeft.y());
-    QPointF btmLeft(topLeft.x(),btmRight.y());
+    QPointF btmRight = zoomCtx.toZoomCoordinates( widget->width(), widget->height() );
+    QPointF topRight( btmRight.x(), topLeft.y() );
+    QPointF btmLeft( topLeft.x(), btmRight.y() );
     {
         GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
-        
-        glColor4f(0.9,0.9,0,1);
+
+        glColor4f(0.9, 0.9, 0, 1);
         glLineWidth(1.5);
         glBegin(GL_LINES);
-        glVertex2f(topLeft.x(),topLeft.y());
-        glVertex2f(btmRight.x(),btmRight.y());
-        glVertex2f(btmLeft.x(),btmLeft.y());
-        glVertex2f(topRight.x(),topRight.y());
+        glVertex2f( topLeft.x(), topLeft.y() );
+        glVertex2f( btmRight.x(), btmRight.y() );
+        glVertex2f( btmLeft.x(), btmLeft.y() );
+        glVertex2f( topRight.x(), topRight.y() );
         glEnd();
         glLineWidth(1.);
     }
-    
-    QString txt(QObject::tr("Missing image"));
+    QString txt( QObject::tr("Missing image") );
     QFontMetrics m(_font);
     int strWidth = m.width(txt);
     QPointF pos = zoomCtx.toZoomCoordinates(widget->width() / 2. - strWidth / 2., m.height() + 10);
+
     glCheckError();
-    widget->renderText(pos.x(), pos.y(), txt,QColor(220,0,0), _font);
+    widget->renderText(pos.x(), pos.y(), txt, QColor(220, 0, 0), _font);
     glCheckError();
 }
-
 
 void
 HistogramPrivate::drawViewerPicker()
 {
     // always running in the main thread
-    
+
     glLineWidth(2.);
-    
+
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == widget->context() );
-    
+
     double wHeight = widget->height();
     QPointF topLeft = zoomCtx.toZoomCoordinates(0, 0);
     QPointF btmRight = zoomCtx.toZoomCoordinates(widget->width(), wHeight);
-    
+
     //QFontMetrics m(_font, 0);
     //double yPos = zoomCtx.toZoomCoordinates(0,wHeight - m.height() * 2.).y();
-    
     QColor color;
     double imgColor[4] = {0., 0., 0., 0.};
-    for (std::size_t i = 0; i < (std::size_t)std::min((int)viewerPickerColor.size(), 3); ++i) {
+    for (std::size_t i = 0; i < (std::size_t)std::min( (int)viewerPickerColor.size(), 3 ); ++i) {
         imgColor[i] = viewerPickerColor[i];
     }
-    
+
     if (mode == Histogram::eDisplayModeY) {
-        glColor3f(0.398979,0.398979,0.398979);
+        glColor3f(0.398979, 0.398979, 0.398979);
         double luminance = 0.299 * imgColor[0] + 0.587 * imgColor[1] + 0.114 * imgColor[2];
         glBegin(GL_LINES);
-        glVertex2d(luminance, topLeft.y());
-        glVertex2d(luminance, btmRight.y());
+        glVertex2d( luminance, topLeft.y() );
+        glVertex2d( luminance, btmRight.y() );
         glEnd();
-
     } else if (mode == Histogram::eDisplayModeR) {
-        glColor3f(0.398979,0.398979,0.398979);
+        glColor3f(0.398979, 0.398979, 0.398979);
         glBegin(GL_LINES);
-        glVertex2d(imgColor[0], topLeft.y());
-        glVertex2d(imgColor[0], btmRight.y());
+        glVertex2d( imgColor[0], topLeft.y() );
+        glVertex2d( imgColor[0], btmRight.y() );
         glEnd();
     } else if (mode == Histogram::eDisplayModeG) {
-        glColor3f(0.398979,0.398979,0.398979);
+        glColor3f(0.398979, 0.398979, 0.398979);
         glBegin(GL_LINES);
-        glVertex2d(imgColor[1], topLeft.y());
-        glVertex2d(imgColor[1], btmRight.y());
+        glVertex2d( imgColor[1], topLeft.y() );
+        glVertex2d( imgColor[1], btmRight.y() );
         glEnd();
     } else if (mode == Histogram::eDisplayModeB) {
-        glColor3f(0.398979,0.398979,0.398979);
+        glColor3f(0.398979, 0.398979, 0.398979);
         glBegin(GL_LINES);
-        glVertex2d(imgColor[2], topLeft.y());
-        glVertex2d(imgColor[2], btmRight.y());
+        glVertex2d( imgColor[2], topLeft.y() );
+        glVertex2d( imgColor[2], btmRight.y() );
         glEnd();
     } else if (mode == Histogram::eDisplayModeA) {
-        glColor3f(0.398979,0.398979,0.398979);
+        glColor3f(0.398979, 0.398979, 0.398979);
         glBegin(GL_LINES);
-        glVertex2d(imgColor[3], topLeft.y());
-        glVertex2d(imgColor[3], btmRight.y());
+        glVertex2d( imgColor[3], topLeft.y() );
+        glVertex2d( imgColor[3], btmRight.y() );
         glEnd();
     } else if (mode == Histogram::eDisplayModeRGB) {
-        glColor3f(0.851643,0.196936,0.196936);
+        glColor3f(0.851643, 0.196936, 0.196936);
         glBegin(GL_LINES);
-        glVertex2d(imgColor[0], topLeft.y());
-        glVertex2d(imgColor[0], btmRight.y());
-        
-        glColor3f(0,0.654707,0);
-        glVertex2d(imgColor[1], topLeft.y());
-        glVertex2d(imgColor[1], btmRight.y());
-        
-        glColor3f(0.345293,0.345293,1);
-        glVertex2d(imgColor[2], topLeft.y());
-        glVertex2d(imgColor[2], btmRight.y());
+        glVertex2d( imgColor[0], topLeft.y() );
+        glVertex2d( imgColor[0], btmRight.y() );
+
+        glColor3f(0, 0.654707, 0);
+        glVertex2d( imgColor[1], topLeft.y() );
+        glVertex2d( imgColor[1], btmRight.y() );
+
+        glColor3f(0.345293, 0.345293, 1);
+        glVertex2d( imgColor[2], topLeft.y() );
+        glVertex2d( imgColor[2], btmRight.y() );
         glEnd();
-        
-        glColor3f(0.398979,0.398979,0.398979);
-        glVertex2d(imgColor[3], topLeft.y());
-        glVertex2d(imgColor[3], btmRight.y());
+
+        glColor3f(0.398979, 0.398979, 0.398979);
+        glVertex2d( imgColor[3], topLeft.y() );
+        glVertex2d( imgColor[3], btmRight.y() );
         glEnd();
     }
 
     glLineWidth(1.);
-}
+} // HistogramPrivate::drawViewerPicker
 
 void
 HistogramPrivate::drawPicker()
@@ -1813,20 +1812,20 @@ HistogramPrivate::drawPicker()
 
     glCheckError();
     QFontMetrics m(_font, 0);
-    int strWidth = std::max( std::max( std::max( m.width(rValueStr),m.width(gValueStr) ),m.width(bValueStr) ),m.width(xCoordinateStr) );
-    QPointF xPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10,m.height() + 10);
-    QPointF rPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10,2 * m.height() + 15);
-    QPointF gPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10,3 * m.height() + 20);
-    QPointF bPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10,4 * m.height() + 25);
-    QColor xColor, rColor,gColor,bColor;
+    int strWidth = std::max( std::max( std::max( m.width(rValueStr), m.width(gValueStr) ), m.width(bValueStr) ), m.width(xCoordinateStr) );
+    QPointF xPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10, m.height() + 10);
+    QPointF rPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10, 2 * m.height() + 15);
+    QPointF gPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10, 3 * m.height() + 20);
+    QPointF bPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10, 4 * m.height() + 25);
+    QColor xColor, rColor, gColor, bColor;
 
     // Text-aware Magic colors (see recipe below):
     // - they all have the same luminance
     // - red, green and blue are complementary, but they sum up to more than 1
-    xColor.setRgbF(0.398979,0.398979,0.398979);
+    xColor.setRgbF(0.398979, 0.398979, 0.398979);
     switch (mode) {
     case Histogram::eDisplayModeRGB:
-        rColor.setRgbF(0.851643,0.196936,0.196936);
+        rColor.setRgbF(0.851643, 0.196936, 0.196936);
         break;
     case Histogram::eDisplayModeY:
     case Histogram::eDisplayModeA:
@@ -1838,12 +1837,12 @@ HistogramPrivate::drawPicker()
         break;
     }
 
-    gColor.setRgbF(0,0.654707,0);
+    gColor.setRgbF(0, 0.654707, 0);
 
-    bColor.setRgbF(0.345293,0.345293,1);
+    bColor.setRgbF(0.345293, 0.345293, 1);
 
     glCheckError();
-    widget->renderText(xPos.x(), xPos.y(), xCoordinateStr,xColor, _font);
+    widget->renderText(xPos.x(), xPos.y(), xCoordinateStr, xColor, _font);
     widget->renderText(rPos.x(), rPos.y(), rValueStr, rColor, _font);
     widget->renderText(gPos.x(), gPos.y(), gValueStr, gColor, _font);
     widget->renderText(bPos.x(), bPos.y(), bValueStr, bColor, _font);
@@ -1996,29 +1995,29 @@ HistogramPrivate::drawHistogramCPU()
 
                 // all the following colors have the same luminance (~0.4)
                 switch (mode) {
-                    case Histogram::eDisplayModeR:
-                        //glColor3f(1, 0, 0);
-                        glColor3f(0.851643,0.196936,0.196936);
-                        break;
-                    case Histogram::eDisplayModeG:
-                        //glColor3f(0, 1, 0);
-                        glColor3f(0,0.654707,0);
-                        break;
-                    case Histogram::eDisplayModeB:
-                        //glColor3f(0, 0, 1);
-                        glColor3f(0.345293,0.345293,1);
-                        break;
-                    case Histogram::eDisplayModeA:
-                        //glColor3f(1, 1, 1);
-                        glColor3f(0.398979,0.398979,0.398979);
-                        break;
-                    case Histogram::eDisplayModeY:
-                        //glColor3f(0.7, 0.7, 0.7);
-                        glColor3f(0.398979,0.398979,0.398979);
-                        break;
-                    default:
-                        assert(false);
-                        break;
+                case Histogram::eDisplayModeR:
+                    //glColor3f(1, 0, 0);
+                    glColor3f(0.851643, 0.196936, 0.196936);
+                    break;
+                case Histogram::eDisplayModeG:
+                    //glColor3f(0, 1, 0);
+                    glColor3f(0, 0.654707, 0);
+                    break;
+                case Histogram::eDisplayModeB:
+                    //glColor3f(0, 0, 1);
+                    glColor3f(0.345293, 0.345293, 1);
+                    break;
+                case Histogram::eDisplayModeA:
+                    //glColor3f(1, 1, 1);
+                    glColor3f(0.398979, 0.398979, 0.398979);
+                    break;
+                case Histogram::eDisplayModeY:
+                    //glColor3f(0.7, 0.7, 0.7);
+                    glColor3f(0.398979, 0.398979, 0.398979);
+                    break;
+                default:
+                    assert(false);
+                    break;
                 }
                 glVertex2f(binMinX, 0);
                 glVertex2f(binMinX,  vTotNormalized);
@@ -2053,11 +2052,11 @@ Histogram::renderText(double x,
     double left = _imp->zoomCtx.left();
     double top =  _imp->zoomCtx.top();
     double right = _imp->zoomCtx.right();
-    if (w <= 0 || h <= 0 || right <= left || top <= bottom) {
+    if ( (w <= 0) || (h <= 0) || (right <= left) || (top <= bottom) ) {
         return;
     }
-    double scalex = (right-left) / w;
-    double scaley = (top-bottom) / h;
+    double scalex = (right - left) / w;
+    double scaley = (top - bottom) / h;
     _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font);
     glCheckError();
 }
@@ -2069,7 +2068,6 @@ Histogram::setViewerCursor(const std::vector<double>& pickerColor)
     _imp->viewerPickerColor = pickerColor;
     update();
 }
-
 
 void
 Histogram::hideViewerCursor()

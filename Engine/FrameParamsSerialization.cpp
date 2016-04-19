@@ -32,7 +32,7 @@
 NATRON_NAMESPACE_ENTER;
 
 template void NATRON_NAMESPACE::FrameParams::serialize<boost::archive::binary_iarchive>(boost::archive::binary_iarchive & ar,
-                                                                              const unsigned int file_version);
+                                                                                        const unsigned int file_version);
 template void NATRON_NAMESPACE::FrameParams::serialize<boost::archive::binary_oarchive>(boost::archive::binary_oarchive & ar,
-                                                                              const unsigned int file_version);
+                                                                                        const unsigned int file_version);
 NATRON_NAMESPACE_EXIT;

@@ -53,14 +53,14 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    
+
     /// map<weight, pair<ID,Label> >
-    typedef std::multimap<int,std::pair<QString,QString> > PluginsNamesMap;
+    typedef std::multimap<int, std::pair<QString, QString> > PluginsNamesMap;
 
     CompleterLineEdit(const PluginsNamesMap& plugins,
                       bool quickExit,
                       QDialog* parent);
-    
+
     CompleterLineEdit(const QStringList & displayWords,
                       const QStringList & internalIds,
                       bool quickExit,
@@ -97,7 +97,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    explicit NodeCreationDialog(const QString& initialFilter,QWidget* parent);
+    explicit NodeCreationDialog(const QString& initialFilter, QWidget* parent);
 
     virtual ~NodeCreationDialog() OVERRIDE;
 

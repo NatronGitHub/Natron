@@ -32,109 +32,101 @@
 NATRON_NAMESPACE_ENTER;
 
 struct OneViewNodePrivate;
-class OneViewNode : public EffectInstance
+class OneViewNode
+    : public EffectInstance
 {
-    
-    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-    GCC_DIAG_SUGGEST_OVERRIDE_ON
-    
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
-    
+
     static EffectInstance* BuildEffect(NodePtr n)
     {
         return new OneViewNode(n);
     }
-    
+
     OneViewNode(NodePtr n);
-    
+
     virtual ~OneViewNode();
-    
+
     virtual int getMajorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return 1;
     }
-    
+
     virtual int getMinorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return 0;
     }
-    
+
     virtual int getMaxInputCount() const OVERRIDE WARN_UNUSED_RETURN
     {
         return 1;
     }
 
-    
     virtual std::string getPluginID() const OVERRIDE WARN_UNUSED_RETURN;
-    
     virtual std::string getPluginLabel() const OVERRIDE WARN_UNUSED_RETURN;
-    
     virtual std::string getPluginDescription() const OVERRIDE WARN_UNUSED_RETURN;
-    
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
-    
     virtual std::string getInputLabel (int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
     virtual bool isInputMask(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return false;
     }
-    
+
     virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return false;
     }
 
-    virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
-    
+
     ///Doesn't really matter here since it won't be used (this effect is always an identity)
     virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return eRenderSafetyFullySafeFrame;
     }
-    
+
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
     }
-    
+
     virtual bool supportsMultiResolution() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
     }
-    
-    
+
     virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
-    
-    virtual bool isHostChannelSelectorSupported(bool* /*defaultR*/,bool* /*defaultG*/, bool* /*defaultB*/, bool* /*defaultA*/) const OVERRIDE WARN_UNUSED_RETURN
+
+    virtual bool isHostChannelSelectorSupported(bool* /*defaultR*/,
+                                                bool* /*defaultG*/,
+                                                bool* /*defaultB*/,
+                                                bool* /*defaultA*/) const OVERRIDE WARN_UNUSED_RETURN
     {
         return false;
     }
-    
+
     virtual bool isViewAware() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
     }
-    
+
     virtual ViewInvarianceLevel isViewInvariant() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return eViewInvarianceAllViewsVariant;
     }
-    
-    
-public Q_SLOTS:
-    
-    void onProjectViewsChanged();
-    
-    
-private:
-    
-    virtual void initializeKnobs() OVERRIDE FINAL;
 
+public Q_SLOTS:
+
+    void onProjectViewsChanged();
+
+private:
+
+    virtual void initializeKnobs() OVERRIDE FINAL;
     virtual FramesNeededMap getFramesNeeded(double time, ViewIdx view) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
     virtual bool isIdentity(double time,
                             const RenderScale & scale,
                             const RectI & roi,
@@ -142,9 +134,7 @@ private:
                             double* inputTime,
                             ViewIdx* inputView,
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
-
     boost::scoped_ptr<OneViewNodePrivate> _imp;
-
 };
 
 NATRON_NAMESPACE_EXIT;

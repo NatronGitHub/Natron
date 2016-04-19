@@ -46,94 +46,86 @@ struct CLArgsPrivate;
 class CLArgs //: boost::noncopyable // GCC 4.2 requires the copy constructor
 {
 public:
-    
+
     struct WriterArg
     {
         QString name;
         QString filename;
         bool mustCreate;
-        
+
         WriterArg()
-        : name(), filename(), mustCreate(false)
+            : name(), filename(), mustCreate(false)
         {
-            
         }
     };
-    
+
     struct ReaderArg
     {
         QString name;
         QString filename;
     };
-    
+
     CLArgs();
-    
-    CLArgs(int& argc,char* argv[],bool forceBackground);
+
+    CLArgs(int& argc, char* argv[], bool forceBackground);
 
     CLArgs(const QStringList& arguments, bool forceBackground);
-    
+
     CLArgs(const CLArgs& other); // GCC 4.2 requires the copy constructor
-    
+
     ~CLArgs();
 
     void operator=(const CLArgs& other);
-    
+
     bool isEmpty() const;
-    
+
     static void printBackGroundWelcomeMessage();
-    
     static void printUsage(const std::string& programName);
-    
+
     int getError() const;
-    
+
     const std::list<CLArgs::WriterArg>& getWriterArgs() const;
-    
     const std::list<CLArgs::ReaderArg>& getReaderArgs() const;
-    
     const std::list<std::string>& getPythonCommands() const;
-    
+
     bool hasFrameRange() const;
-    
-    const std::list<std::pair<int,std::pair<int,int> > >& getFrameRanges() const;
-        
+
+    const std::list<std::pair<int, std::pair<int, int> > >& getFrameRanges() const;
+
     bool isBackgroundMode() const;
-    
+
     bool isInterpreterMode() const;
-    
+
     /*
      * @brief Has a Natron project or Python script been passed to the command line ?
      */
     const QString& getScriptFilename() const;
-    
+
     /*
      * @brief Has a regular image/video file been passed to the command line ?
      * Warning: This may only be called once that all the plug-ins have been loaded in Natron
      * otherwise it will always return an empty string.
      */
     const QString& getImageFilename() const;
-    
     const QString& getDefaultOnProjectLoadedScript() const;
-    
     const QString& getIPCPipeName() const;
-    
-    bool isPythonScript() const;
-    
-    bool areRenderStatsEnabled() const;
-    
-    const QString& getBreakpadProcessExecutableFilePath() const;
-    
-    qint64 getBreakpadProcessPID() const;
-    
-    int getBreakpadClientFD() const;
-    
-    const QString& getBreakpadPipeFilePath() const;
-    
-    const QString& getBreakpadComPipeFilePath() const;
 
+    bool isPythonScript() const;
+
+    bool areRenderStatsEnabled() const;
+
+    const QString& getBreakpadProcessExecutableFilePath() const;
+
+    qint64 getBreakpadProcessPID() const;
+
+    int getBreakpadClientFD() const;
+
+    const QString& getBreakpadPipeFilePath() const;
+    const QString& getBreakpadComPipeFilePath() const;
     const QString& getExportDocsPath() const;
-    
+
 private:
-    
+
     boost::scoped_ptr<CLArgsPrivate> _imp;
 };
 

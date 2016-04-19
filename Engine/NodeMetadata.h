@@ -46,60 +46,58 @@ NATRON_NAMESPACE_ENTER;
 struct NodeMetadataPrivate;
 class NodeMetadata
 {
-    
 public:
-    
-    
+
+
     NodeMetadata();
-    
+
     NodeMetadata(const NodeMetadata& other);
-    
+
     ~NodeMetadata();
-    
+
     void clearAndResize(int inputCount);
-    
+
     void operator=(const NodeMetadata& other);
     bool operator==(const NodeMetadata& other) const;
     bool operator!=(const NodeMetadata& other) const
     {
         return !(*this == other);
     }
-    
+
     void setOutputPremult(ImagePremultiplicationEnum premult);
-    
+
     ImagePremultiplicationEnum getOutputPremult() const;
-    
+
     void setOutputFrameRate(double fps);
-    
+
     double getOutputFrameRate() const;
-    
+
     void setOutputFielding(ImageFieldingOrderEnum fielding);
-    
+
     ImageFieldingOrderEnum getOutputFielding() const;
-    
+
     void setIsContinuous(bool continuous);
-    
+
     bool getIsContinuous() const;
-    
+
     void setIsFrameVarying(bool varying);
-    
+
     bool getIsFrameVarying() const;
-    
+
     void setPixelAspectRatio(int inputNb, double par);
-    
+
     double getPixelAspectRatio(int inputNb) const;
-    
+
     void setBitDepth(int inputNb, ImageBitDepthEnum depth);
-    
+
     ImageBitDepthEnum getBitDepth(int inputNb) const;
-    
+
     void setImageComponents(int inputNb, const ImageComponents& components);
-    
+
     const ImageComponents& getImageComponents(int inputNb) const;
-    
-    
+
 private:
-    
+
     boost::scoped_ptr<NodeMetadataPrivate> _imp;
 };
 

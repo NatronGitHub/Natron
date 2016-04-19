@@ -60,7 +60,7 @@ struct ScaleSliderQWidgetPrivate
     Gui* gui;
     ZoomContext zoomCtx;
     QPointF oldClick;
-    double minimum,maximum;
+    double minimum, maximum;
     ScaleTypeEnum type;
     double value;
     bool dragging;
@@ -74,11 +74,10 @@ struct ScaleSliderQWidgetPrivate
     double currentZoom;
     ScaleSliderQWidget::DataTypeEnum dataType;
     bool altered;
-    
     bool useLineColor;
     QColor lineColor;
     bool allowDraftModeSetting;
-    
+
     ScaleSliderQWidgetPrivate(QWidget* parent,
                               double min,
                               double max,
@@ -87,29 +86,29 @@ struct ScaleSliderQWidgetPrivate
                               Gui* gui,
                               ScaleSliderQWidget::DataTypeEnum dataType,
                               ScaleTypeEnum type)
-    : gui(gui)
-    , zoomCtx()
-    , oldClick()
-    , minimum(min)
-    , maximum(max)
-    , type(type)
-    , value(initialPos)
-    , dragging(false)
-    , font(parent->font())
-    , sliderColor(85,116,114)
-    , initialized(false)
-    , mustInitializeSliderPosition(true)
-    , readOnly(false)
-    , ctrlDown(false)
-    , shiftDown(false)
-    , currentZoom(1.)
-    , dataType(dataType)
-    , altered(false)
-    , useLineColor(false)
-    , lineColor(Qt::black)
-    , allowDraftModeSetting(allowDraftModeSetting)
+        : gui(gui)
+        , zoomCtx()
+        , oldClick()
+        , minimum(min)
+        , maximum(max)
+        , type(type)
+        , value(initialPos)
+        , dragging(false)
+        , font( parent->font() )
+        , sliderColor(85, 116, 114)
+        , initialized(false)
+        , mustInitializeSliderPosition(true)
+        , readOnly(false)
+        , ctrlDown(false)
+        , shiftDown(false)
+        , currentZoom(1.)
+        , dataType(dataType)
+        , altered(false)
+        , useLineColor(false)
+        , lineColor(Qt::black)
+        , allowDraftModeSetting(allowDraftModeSetting)
     {
-        font.setPointSize((font.pointSize() * NATRON_FONT_SIZE_8) / NATRON_FONT_SIZE_12);
+        font.setPointSize( (font.pointSize() * NATRON_FONT_SIZE_8) / NATRON_FONT_SIZE_12 );
     }
 };
 
@@ -122,11 +121,11 @@ ScaleSliderQWidget::ScaleSliderQWidget(double min,
                                        ScaleTypeEnum type,
                                        QWidget* parent)
     : QWidget(parent)
-    , _imp(new ScaleSliderQWidgetPrivate(parent,min,max,initialPos,allowDraftModeSetting,gui,dataType,type))
+    , _imp( new ScaleSliderQWidgetPrivate(parent, min, max, initialPos, allowDraftModeSetting, gui, dataType, type) )
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     QSize sizeh = sizeHint();
-    _imp->zoomCtx.setScreenSize(sizeh.width(), sizeh.height());
+    _imp->zoomCtx.setScreenSize( sizeh.width(), sizeh.height() );
     setFocusPolicy(Qt::ClickFocus);
 }
 
@@ -134,13 +133,12 @@ QSize
 ScaleSliderQWidget::sizeHint() const
 {
     return QWidget::sizeHint();
-   
 }
 
 QSize
 ScaleSliderQWidget::minimumSizeHint() const
 {
-   return QSize(TO_DPIX(150),TO_DPIY(20));
+    return QSize( TO_DPIX(150), TO_DPIY(20) );
 }
 
 ScaleSliderQWidget::~ScaleSliderQWidget()
@@ -177,7 +175,6 @@ ScaleSliderQWidget::isReadOnly() const
     return _imp->readOnly;
 }
 
-
 void
 ScaleSliderQWidget::mousePressEvent(QMouseEvent* e)
 {
@@ -185,7 +182,7 @@ ScaleSliderQWidget::mousePressEvent(QMouseEvent* e)
         QPoint newClick =  e->pos();
 
         _imp->oldClick = newClick;
-        QPointF newClick_opengl = _imp->zoomCtx.toZoomCoordinates( newClick.x(),newClick.y() );
+        QPointF newClick_opengl = _imp->zoomCtx.toZoomCoordinates( newClick.x(), newClick.y() );
         double v = _imp->dataType == eDataTypeInt ? std::floor(newClick_opengl.x() + 0.5) : newClick_opengl.x();
         seekInternal(v);
     }
@@ -197,7 +194,7 @@ ScaleSliderQWidget::mouseMoveEvent(QMouseEvent* e)
 {
     if (!_imp->readOnly) {
         QPoint newClick =  e->pos();
-        QPointF newClick_opengl = _imp->zoomCtx.toZoomCoordinates( newClick.x(),newClick.y() );
+        QPointF newClick_opengl = _imp->zoomCtx.toZoomCoordinates( newClick.x(), newClick.y() );
         double v = _imp->dataType == eDataTypeInt ? std::floor(newClick_opengl.x() + 0.5) : newClick_opengl.x();
         if (_imp->gui && _imp->allowDraftModeSetting) {
             _imp->gui->setDraftRenderEnabled(true);
@@ -224,10 +221,11 @@ void
 ScaleSliderQWidget::focusInEvent(QFocusEvent* e)
 {
     Qt::KeyboardModifiers mod = qApp->keyboardModifiers();
-    if (mod.testFlag(Qt::ControlModifier)) {
+
+    if ( mod.testFlag(Qt::ControlModifier) ) {
         _imp->ctrlDown = true;
     }
-    if (mod.testFlag(Qt::ShiftModifier)) {
+    if ( mod.testFlag(Qt::ShiftModifier) ) {
         _imp->shiftDown = true;
     }
     zoomRange();
@@ -263,7 +261,7 @@ ScaleSliderQWidget::zoomRange()
 void
 ScaleSliderQWidget::enterEvent(QEvent* e)
 {
-    if (Gui::isFocusStealingPossible()) {
+    if ( Gui::isFocusStealingPossible() ) {
         setFocus();
     }
     QWidget::enterEvent(e);
@@ -272,7 +270,7 @@ ScaleSliderQWidget::enterEvent(QEvent* e)
 void
 ScaleSliderQWidget::leaveEvent(QEvent* e)
 {
-    if (hasFocus()) {
+    if ( hasFocus() ) {
         clearFocus();
     }
     QWidget::leaveEvent(e);
@@ -281,8 +279,8 @@ ScaleSliderQWidget::leaveEvent(QEvent* e)
 void
 ScaleSliderQWidget::keyPressEvent(QKeyEvent* e)
 {
-    
     bool accepted = true;
+
     if (e->key() == Qt::Key_Control) {
         _imp->ctrlDown = true;
         zoomRange();
@@ -297,13 +295,12 @@ ScaleSliderQWidget::keyPressEvent(QKeyEvent* e)
     if (!accepted) {
         QWidget::keyPressEvent(e);
     }
-
 }
 
 double
 ScaleSliderQWidget::increment()
 {
-    return (_imp->zoomCtx.right() - _imp->zoomCtx.left()) / width();
+    return ( _imp->zoomCtx.right() - _imp->zoomCtx.left() ) / width();
 }
 
 void
@@ -323,6 +320,7 @@ void
 ScaleSliderQWidget::keyReleaseEvent(QKeyEvent* e)
 {
     bool accepted = true;
+
     if (e->key() == Qt::Key_Control) {
         _imp->ctrlDown = false;
         zoomRange();
@@ -339,7 +337,6 @@ ScaleSliderQWidget::keyReleaseEvent(QKeyEvent* e)
     }
 }
 
-
 void
 ScaleSliderQWidget::seekScalePosition(double v)
 {
@@ -355,7 +352,7 @@ ScaleSliderQWidget::seekScalePosition(double v)
         return;
     }
     _imp->value = v;
-    if (_imp->initialized && isVisible()) {
+    if ( _imp->initialized && isVisible() ) {
         update();
     }
 }
@@ -379,8 +376,6 @@ ScaleSliderQWidget::seekInternal(double v)
     Q_EMIT positionChanged(v);
 }
 
-
-
 void
 ScaleSliderQWidget::setMinimumAndMaximum(double min,
                                          double max)
@@ -394,12 +389,11 @@ void
 ScaleSliderQWidget::centerOn(double left,
                              double right)
 {
-
-    if (_imp->zoomCtx.screenHeight() == 0 || _imp->zoomCtx.screenWidth() == 0) {
+    if ( (_imp->zoomCtx.screenHeight() == 0) || (_imp->zoomCtx.screenWidth() == 0) ) {
         return;
     }
     double w = right - left;
-    _imp->zoomCtx.fill(left - w * 0.05, right + w * 0.05, _imp->zoomCtx.bottom(), _imp->zoomCtx.top());
+    _imp->zoomCtx.fill( left - w * 0.05, right + w * 0.05, _imp->zoomCtx.bottom(), _imp->zoomCtx.top() );
 
     update();
 }
@@ -407,7 +401,7 @@ ScaleSliderQWidget::centerOn(double left,
 void
 ScaleSliderQWidget::resizeEvent(QResizeEvent* e)
 {
-    _imp->zoomCtx.setScreenSize(e->size().width(), e->size().height());
+    _imp->zoomCtx.setScreenSize( e->size().width(), e->size().height() );
     if (!_imp->mustInitializeSliderPosition) {
         centerOn(_imp->minimum, _imp->maximum);
     }
@@ -431,30 +425,30 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     p.setOpacity(1);
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 
-    double txtR,txtG,txtB;
+    double txtR, txtG, txtB;
     if (_imp->altered) {
         appPTR->getCurrentSettings()->getAltTextColor(&txtR, &txtG, &txtB);
     } else {
         appPTR->getCurrentSettings()->getTextColor(&txtR, &txtG, &txtB);
     }
-    
+
     QColor textColor;
-    textColor.setRgbF(Image::clamp<qreal>(txtR, 0., 1.),
-                      Image::clamp<qreal>(txtG, 0., 1.),
-                      Image::clamp<qreal>(txtB, 0., 1.));
-    
+    textColor.setRgbF( Image::clamp<qreal>(txtR, 0., 1.),
+                       Image::clamp<qreal>(txtG, 0., 1.),
+                       Image::clamp<qreal>(txtB, 0., 1.) );
+
     QColor scaleColor;
     scaleColor.setRgbF(textColor.redF() / 2., textColor.greenF() / 2., textColor.blueF() / 2.);
-    
+
     QFontMetrics fontM(_imp->font, 0);
-    
+
     if (!_imp->useLineColor) {
         p.setPen(scaleColor);
     } else {
         p.setPen(_imp->lineColor);
     }
 
-    QPointF btmLeft = _imp->zoomCtx.toZoomCoordinates(0,height() - 1);
+    QPointF btmLeft = _imp->zoomCtx.toZoomCoordinates(0, height() - 1);
     QPointF topRight = _imp->zoomCtx.toZoomCoordinates(width() - 1, 0);
 
     if ( btmLeft.x() == topRight.x() ) {
@@ -465,11 +459,10 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     double lineYpos = height() - 1 - fontM.height()  - TO_DPIY(TICK_HEIGHT) / 2;
     p.drawLine(0, lineYpos, width() - 1, lineYpos);
 
-    double tickBottom = _imp->zoomCtx.toZoomCoordinates( 0,height() - 1 - fontM.height() ).y();
-    double tickTop = _imp->zoomCtx.toZoomCoordinates(0,height() - 1 - fontM.height()  - TO_DPIY(TICK_HEIGHT)).y();
+    double tickBottom = _imp->zoomCtx.toZoomCoordinates( 0, height() - 1 - fontM.height() ).y();
+    double tickTop = _imp->zoomCtx.toZoomCoordinates( 0, height() - 1 - fontM.height()  - TO_DPIY(TICK_HEIGHT) ).y();
     const double smallestTickSizePixel = 10.; // tick size (in pixels) for alpha = 0.
     const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
-
     const double rangePixel =  width();
     const double range_min = btmLeft.x();
     const double range_max =  topRight.x();
@@ -477,7 +470,7 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     double smallTickSize;
     bool half_tick;
     ticks_size(range_min, range_max, rangePixel, smallestTickSizePixel, &smallTickSize, &half_tick);
-    if (_imp->dataType == eDataTypeInt && smallTickSize < 1.) {
+    if ( (_imp->dataType == eDataTypeInt) && (smallTickSize < 1.) ) {
         smallTickSize = 1.;
         half_tick = false;
     }
@@ -503,17 +496,17 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
 
         // for Int slider, because smallTickSize is at least 1, isFloating can never be true
         bool isFloating = std::abs(std::floor(0.5 + value) - value) != 0.;
-        assert(!(_imp->dataType == eDataTypeInt && isFloating));
+        assert( !(_imp->dataType == eDataTypeInt && isFloating) );
         bool renderFloating = _imp->dataType == eDataTypeDouble || !isFloating;
 
         if (renderFloating) {
             QPointF tickBottomPos = _imp->zoomCtx.toWidgetCoordinates(value, tickBottom);
             QPointF tickTopPos = _imp->zoomCtx.toWidgetCoordinates(value, tickTop);
 
-            p.drawLine(tickBottomPos,tickTopPos);
+            p.drawLine(tickBottomPos, tickTopPos);
         }
 
-        if (renderFloating && tickSize > minTickSizeText) {
+        if ( renderFloating && (tickSize > minTickSizeText) ) {
             const int tickSizePixel = rangePixel * tickSize / range;
             const QString s = QString::number(value);
             const int sSizePixel =  fontM.width(s);
@@ -536,32 +529,32 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
             }
         }
     }
-    double positionValue = _imp->zoomCtx.toWidgetCoordinates(_imp->value,0).x();
-    QPointF sliderBottomLeft(positionValue - TO_DPIX(SLIDER_WIDTH) / 2,height() - 1 - fontM.height() / 2);
-    QPointF sliderTopRight(positionValue + TO_DPIX(SLIDER_WIDTH) / 2,height() - 1 - fontM.height() / 2 - TO_DPIY(SLIDER_HEIGHT));
+    double positionValue = _imp->zoomCtx.toWidgetCoordinates(_imp->value, 0).x();
+    QPointF sliderBottomLeft(positionValue - TO_DPIX(SLIDER_WIDTH) / 2, height() - 1 - fontM.height() / 2);
+    QPointF sliderTopRight( positionValue + TO_DPIX(SLIDER_WIDTH) / 2, height() - 1 - fontM.height() / 2 - TO_DPIY(SLIDER_HEIGHT) );
 
     /*draw the slider*/
     p.setPen(_imp->sliderColor);
-    p.fillRect(sliderBottomLeft.x(), sliderBottomLeft.y(), sliderTopRight.x() - sliderBottomLeft.x(), sliderTopRight.y() - sliderBottomLeft.y(),_imp->sliderColor);
+    p.fillRect(sliderBottomLeft.x(), sliderBottomLeft.y(), sliderTopRight.x() - sliderBottomLeft.x(), sliderTopRight.y() - sliderBottomLeft.y(), _imp->sliderColor);
 
     /*draw a black rect around the slider for contrast or orange when focused*/
-	if (!hasFocus()) {
-		p.setPen(Qt::black);
-	} else {
+    if ( !hasFocus() ) {
+        p.setPen(Qt::black);
+    } else {
         QPen pen = p.pen();
-        pen.setColor(QColor(243,137,0));
+        pen.setColor( QColor(243, 137, 0) );
         QVector<qreal> dashStyle;
         qreal space = 2;
         dashStyle << 1 << space;
         pen.setDashPattern(dashStyle);
         p.setOpacity(0.8);
         p.setPen(pen);
-	}
+    }
 
-    p.drawLine( sliderBottomLeft.x(),sliderBottomLeft.y(),sliderBottomLeft.x(),sliderTopRight.y() );
-    p.drawLine( sliderBottomLeft.x(),sliderTopRight.y(),sliderTopRight.x(),sliderTopRight.y() );
-    p.drawLine( sliderTopRight.x(),sliderTopRight.y(),sliderTopRight.x(),sliderBottomLeft.y() );
-    p.drawLine( sliderTopRight.x(),sliderBottomLeft.y(),sliderBottomLeft.x(),sliderBottomLeft.y() );
+    p.drawLine( sliderBottomLeft.x(), sliderBottomLeft.y(), sliderBottomLeft.x(), sliderTopRight.y() );
+    p.drawLine( sliderBottomLeft.x(), sliderTopRight.y(), sliderTopRight.x(), sliderTopRight.y() );
+    p.drawLine( sliderTopRight.x(), sliderTopRight.y(), sliderTopRight.x(), sliderBottomLeft.y() );
+    p.drawLine( sliderTopRight.x(), sliderBottomLeft.y(), sliderBottomLeft.x(), sliderBottomLeft.y() );
 } // paintEvent
 
 void
@@ -572,7 +565,8 @@ ScaleSliderQWidget::setReadOnly(bool ro)
 }
 
 void
-ScaleSliderQWidget::setUseLineColor(bool use, const QColor& color)
+ScaleSliderQWidget::setUseLineColor(bool use,
+                                    const QColor& color)
 {
     _imp->useLineColor = use;
     _imp->lineColor = color;

@@ -57,7 +57,7 @@ NATRON_NAMESPACE_ENTER;
 struct DockablePanelPrivate;
 class DockablePanel
     : public QFrame
-    , public DockablePanelI
+      , public DockablePanelI
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -88,7 +88,7 @@ public:
 
     bool isMinimized() const;
 
-    const std::list<std::pair<boost::weak_ptr<KnobI>,KnobGuiPtr> > & getKnobs() const;
+    const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > & getKnobs() const;
     QVBoxLayout* getContainer() const;
     boost::shared_ptr<QUndoStack> getUndoStack() const;
 
@@ -110,7 +110,7 @@ public:
     const QUndoCommand* getLastUndoCommand() const;
     Gui* getGui() const;
 
-    void insertHeaderWidget(int index,QWidget* widget);
+    void insertHeaderWidget(int index, QWidget* widget);
 
     void appendHeaderWidget(QWidget* widget);
 
@@ -118,19 +118,20 @@ public:
     KnobGuiPtr getKnobGui(const KnobPtr & knob) const;
 
     ///MT-safe
-    virtual QColor getCurrentColor() const {
+    virtual QColor getCurrentColor() const
+    {
         return Qt::black;
     }
 
     ///MT-safe
     void setCurrentColor(const QColor & c);
-    
+
     void setOverlayColor(const QColor& c);
-    
+
     QColor getOverlayColor() const;
-    
+
     bool hasOverlayColor() const;
-    
+
     void resetHostOverlayColor();
 
     virtual boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const
@@ -139,50 +140,49 @@ public:
     }
 
     KnobHolder* getHolder() const;
-    
     TrackerPanel* getTrackerPanel() const;
 
     void onGuiClosing();
 
     virtual void recreateUserKnobs(bool restorePageIndex) OVERRIDE FINAL;
     virtual void refreshGuiForKnobsChanges(bool restorePageIndex) OVERRIDE FINAL;
-    
+
 private:
-    
-    void recreateKnobs(const QString& curTabName,bool restorePageIndex);
-    
+
+    void recreateKnobs(const QString& curTabName, bool restorePageIndex);
+
 public:
-    
+
     void setUserPageActiveIndex();
-    
+
     void setPageActiveIndex(const boost::shared_ptr<KnobPage>& page);
-    
+
     boost::shared_ptr<KnobPage> getOrCreateUserPageKnob() const;
     boost::shared_ptr<KnobPage> getUserPageKnob() const;
-    
+
     void getUserPages(std::list<KnobPage*>& userPages) const;
-    
+
     virtual void deleteKnobGui(const KnobPtr& knob) OVERRIDE FINAL;
-    
+
     int getPagesCount() const;
-        
+
     /**
      * @brief When called, all knobs will go into the same page which will appear as a plain Widget and not as a tab
      **/
     void turnOffPages();
-    
-    void setPluginIcon(const QPixmap& pix) ;
-    
-    void setPluginDescription(const std::string& description) ;
 
-    void setPluginIDAndVersion(const std::string& pluginLabel,const std::string& pluginID,unsigned int version);
-    
+    void setPluginIcon(const QPixmap& pix);
+
+    void setPluginDescription(const std::string& description);
+
+    void setPluginIDAndVersion(const std::string& pluginLabel, const std::string& pluginID, unsigned int version);
+
     void refreshTabWidgetMaxHeight();
-    
+
 public Q_SLOTS:
-    
+
     void onPageLabelChangedInternally();
-    
+
     void onPageIndexChanged(int index);
 
     /*Internal slot, not meant to be called externally.*/
@@ -196,7 +196,7 @@ public Q_SLOTS:
 
     ///Set the name on the line-edit/label header
     void setName(const QString & str);
-    
+
     /*initializes the knobs GUI and also the roto context if any*/
     void initializeKnobs();
 
@@ -213,34 +213,34 @@ public Q_SLOTS:
     void floatPanel();
 
     void onColorButtonClicked();
-    
+
     void onOverlayButtonClicked();
 
     void onColorDialogColorChanged(const QColor & color);
-    
+
     void onOverlayColorDialogColorChanged(const QColor& color);
 
     void setClosed(bool closed);
 
     void onRightClickMenuRequested(const QPoint & pos);
-    
+
     void setKeyOnAllParameters();
     void removeAnimationOnAllParameters();
 
     void onCenterButtonClicked();
 
     void onHideUnmodifiedButtonClicked(bool checked);
-    
+
     void onManageUserParametersActionTriggered();
-    
+
     void onNodeScriptChanged(const QString& label);
-    
+
     void onEnterInGroupClicked();
-    
+
     void onSubGraphEditionChanged(bool editable);
-    
+
     void onDeleteCurCmdLater();
-    
+
 Q_SIGNALS:
 
     /*emitted when the panel is clicked*/
@@ -264,11 +264,11 @@ Q_SIGNALS:
     void closeChanged(bool closed);
 
     void colorChanged(QColor);
-    
+
     void deleteCurCmdLater();
 
 protected:
-    
+
     /**
      * @brief Called when the "center on..." button is clicked
      **/
@@ -278,7 +278,7 @@ protected:
     {
         return NULL;
     }
-    
+
     virtual TrackerPanel* initializeTrackerPanel()
     {
         return NULL;

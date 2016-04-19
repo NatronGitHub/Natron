@@ -35,15 +35,18 @@ NATRON_NAMESPACE_ENTER;
 // see http://www.qtcentre.org/threads/24888-Resizing-a-QMessageBox#post135851
 // and http://stackoverflow.com/questions/2655354/how-to-allow-resizing-of-qmessagebox-in-pyqt4
 ResizableMessageBox::ResizableMessageBox(QWidget *parent)
-: QMessageBox(parent)
+    : QMessageBox(parent)
 {
     setSizeGripEnabled(true);
 }
 
-ResizableMessageBox::ResizableMessageBox(Icon icon, const QString &title, const QString &text,
-                           StandardButtons buttons, QWidget *parent,
-                           Qt::WindowFlags flags)
-: QMessageBox(icon, title, text, buttons, parent, flags)
+ResizableMessageBox::ResizableMessageBox(Icon icon,
+                                         const QString &title,
+                                         const QString &text,
+                                         StandardButtons buttons,
+                                         QWidget *parent,
+                                         Qt::WindowFlags flags)
+    : QMessageBox(icon, title, text, buttons, parent, flags)
 {
     setSizeGripEnabled(true);
 }
@@ -54,7 +57,7 @@ ResizableMessageBox::event(QEvent *e)
     bool result = QMessageBox::event(e);
 
     //QMessageBox::event in this case will call setFixedSize on the dialog frame, making it not resizable by the user
-    if (e->type() == QEvent::LayoutRequest || e->type() == QEvent::Resize) {
+    if ( (e->type() == QEvent::LayoutRequest) || (e->type() == QEvent::Resize) ) {
         setMinimumHeight(0);
         setMaximumHeight(QWIDGETSIZE_MAX);
         setMinimumWidth(0);
@@ -71,9 +74,8 @@ ResizableMessageBox::event(QEvent *e)
             textEdit->setMaximumWidth(QWIDGETSIZE_MAX);
             textEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         }
-
-
     }
+
     return result;
 }
 
