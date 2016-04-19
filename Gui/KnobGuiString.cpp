@@ -551,7 +551,7 @@ KnobGuiString::onTextChanged()
 {
     QString txt = _textEdit->toPlainText();
 
-    txt = stripWhitespaces(txt);
+    //txt = stripWhitespaces(txt);
     if ( _knob.lock()->usesRichText() ) {
         txt = addHtmlTags(txt);
     }
