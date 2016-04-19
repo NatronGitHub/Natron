@@ -28,6 +28,9 @@
 #include <QFileInfo>
 #include <QVector>
 
+#include <iostream>
+#include <exception>
+
 #include "qhttpserver.h"
 #include "qhttprequest.h"
 #include "qhttpresponse.h"
@@ -109,7 +112,12 @@ DocumentationManager::handler(QHttpRequest *req,
                     QString pluginID = split.takeLast();
                     if ( !pluginID.isEmpty() ) {
                         Plugin* plugin = 0;
-                        plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
+                        try {
+                            plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
+                        }
+                        catch (const std::exception& e) {
+                            std::cerr << e.what() << std::endl;
+                        }
                         if (plugin) {
                             QString isPyPlug = plugin->getPythonModule();
                             if ( !isPyPlug.isEmpty() ) { // loading pyplugs crash, so redirect to group
@@ -175,7 +183,12 @@ DocumentationManager::handler(QHttpRequest *req,
             for (std::list<std::string>::iterator it = pluginIDs.begin(); it != pluginIDs.end(); ++it) {
                 Plugin* plugin = 0;
                 QString pluginID = QString::fromUtf8( it->c_str() );
-                plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
+                try {
+                    plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
+                }
+                catch (const std::exception& e) {
+                    std::cerr << e.what() << std::endl;
+                }
                 if (plugin) {
                     QStringList groupList = plugin->getGrouping();
                     if (groupList.at(0) == group) {
@@ -219,7 +232,12 @@ DocumentationManager::handler(QHttpRequest *req,
             for (std::list<std::string>::iterator it = pluginIDs.begin(); it != pluginIDs.end(); ++it) {
                 Plugin* plugin = 0;
                 QString pluginID = QString::fromUtf8( it->c_str() );
-                plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
+                try {
+                    plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
+                }
+                catch (const std::exception& e) {
+                    std::cerr << e.what() << std::endl;
+                }
                 if (plugin) {
                     QStringList groupList = plugin->getGrouping();
                     groups << groupList.at(0);
@@ -343,7 +361,12 @@ DocumentationManager::parser(QString html,
        for (std::list<std::string>::iterator it=pluginIDs.begin(); it != pluginIDs.end(); ++it) {
         Plugin* plugin = 0;
         QString pluginID = QString::fromUtf8(it->c_str());
-        plugin = appPTR->getPluginBinary(pluginID,-1,-1,false);
+        try {
+            plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
+        }
+        catch (const std::exception& e) {
+            std::cerr << e.what() << std::endl;
+        }
         if (plugin) {
             QStringList groupList = plugin->getGrouping();
             groups << groupList.at(0);
