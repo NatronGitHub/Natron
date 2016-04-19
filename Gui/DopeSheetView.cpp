@@ -3550,7 +3550,7 @@ DopeSheetView::wheelEvent(QWheelEvent *e)
     }
     else if (par > par_max) {
         par = par_max;
-        scaleFactor = 1;
+        scaleFactor = par / _imp->zoomContext.aspectRatio();
     }
 
 
