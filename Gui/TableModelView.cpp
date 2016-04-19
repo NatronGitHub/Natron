@@ -438,11 +438,11 @@ TableModel::setItem(int row,
     int i = tableIndex(row, column);
 
     if ( (i < 0) || ( i >= (int)_imp->tableItems.size() ) ) {
-        return;
+        throw std::domain_error("TableModel::setItem: index out of range");
     }
     TableItem *oldItem = _imp->tableItems.at(i);
     if (item == oldItem) {
-        return;
+        throw std::domain_error("TableModel::setItem: item already in table");
     }
 
     // remove old
@@ -962,6 +962,7 @@ TableView::setItem(int row,
     if (item) {
         if (item->view != 0) {
             qWarning("TableView: cannot insert an item that is already owned by another TableView");
+            throw std::logic_error("TableView::setItem: cannot insert an item that is already owned by another TableView");
         } else {
             item->view = this;
             _imp->model->setItem(row, column, item);
