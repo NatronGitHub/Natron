@@ -664,7 +664,7 @@ TrackerGui::createGui()
     if (_imp->panelv1) {
         _imp->panelv1->setUpdateViewer(_imp->updateViewerButton->isDown());
         _imp->panelv1->setCenterOnTrack(_imp->centerViewerButton->isDown());
-    } else {
+    } else if (_imp->panel) {
         _imp->panel->getContext()->setUpdateViewer(_imp->updateViewerButton->isDown());
         _imp->panel->getContext()->setCenterOnTrack(_imp->centerViewerButton->isDown());
     }
