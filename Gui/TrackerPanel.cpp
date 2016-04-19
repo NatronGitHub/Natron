@@ -148,11 +148,11 @@ TrackerTableItemDelegate::paint(QPainter * painter,
     QStyle *style = QApplication::style();
     QRect geom = style->subElementRect(QStyle::SE_ItemViewItemText, &option);
     
-    int dim;
+    int dim = -1;
     AnimationLevelEnum level = eAnimationLevelNone;
     boost::shared_ptr<KnobI> knob = _panel->getKnobAt(index.row(), index.column(), &dim);
     assert(knob);
-    if (knob) {
+    if (knob && dim != -1) {
         level = knob->getAnimationLevel(dim);
     }
     
