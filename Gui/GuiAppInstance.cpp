@@ -404,8 +404,8 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
         return false;
     }
 
-    QString text = tr("An auto-save was restored successfully. It didn't belong to any project\n"
-                      "Would you like to restore it ? Clicking No will remove this auto-save.");
+    QString text = tr("An auto-saved project was found with no associated project file.\n"
+                      "Would you like to restore it? Clicking No will remove this auto-save.");
 
 
     appPTR->hideSplashScreen();
