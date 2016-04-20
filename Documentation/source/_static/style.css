@@ -146,3 +146,8 @@ div.related {
 div.related li a {
   color: #7c7c7c;
 }
+
+div#search {
+  padding-top:5px;
+  float:right;
+}

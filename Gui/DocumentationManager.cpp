@@ -350,6 +350,10 @@ DocumentationManager::parser(QString html,
     } else   {
         menuHTML.append( QString::fromUtf8("</ul></div></div>") );
     }
+
+    // add search
+    menuHTML.append(QString::fromUtf8("<div id=\"search\"><form id=\"rtd-search-form\" class=\"wy-form\" action=\"/search.html\" method=\"get\"><input type=\"text\" name=\"q\" placeholder=\"Search docs\" /><input type=\"hidden\" name=\"check_keywords\" value=\"yes\" /><input type=\"hidden\" name=\"area\" value=\"default\" /></form></div>"));
+
     // preferences
     /*boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
        QString prefsHTML = settings->makeHTMLDocumentation(true, false);
