@@ -1026,25 +1026,30 @@ TrackerContextPrivate::linkMarkerKnobsToGuiKnobs(const std::list<TrackMarkerPtr 
 }
 
 
-
+static
+boost::shared_ptr<KnobDouble>
+getCornerPinPoint(Node* node,
+                  bool isFrom,
+                  int index)
+{
+    assert(0 <= index && index < 4);
+    QString name = isFrom ? QString::fromUtf8("from%1").arg(index + 1) : QString::fromUtf8("to%1").arg(index + 1);
+    boost::shared_ptr<KnobI> knob = node->getKnobByName( name.toStdString() );
+    assert(knob);
+    boost::shared_ptr<KnobDouble>  ret = boost::dynamic_pointer_cast<KnobDouble>(knob);
+    assert(ret);
+    return ret;
+}
 
 
 void
-TrackerContextPrivate::createCornerPinFromSelection(const std::list<TrackMarkerPtr > & selection,
-                                                    bool linked)
+TrackerContextPrivate::createCornerPinFromSelection(bool linked)
 {
         if (selection.size() > 4 || selection.empty()) {
         Dialogs::errorDialog(QObject::tr("Export").toStdString(),
                              QObject::tr("Export to corner pin needs between 1 and 4 selected tracks.").toStdString());
         
         return;
-    }
-    
-    boost::shared_ptr<KnobDouble> centers[4];
-    int i = 0;
-    for (std::list<TrackMarkerPtr >::const_iterator it = selection.begin(); it != selection.end(); ++it, ++i) {
-        centers[i] = (*it)->getCenterKnob();
-        assert(centers[i]);
     }
     
     NodePtr thisNode = node.lock();
@@ -1065,67 +1070,50 @@ TrackerContextPrivate::createCornerPinFromSelection(const std::list<TrackMarkerP
     cornerPin->setPosition(thisNodePos[0] + thisNodeSize[0] * 2., thisNodePos[1]);
     
     
-    /*boost::shared_ptr<KnobDouble> toPoints[4];
-    boost::shared_ptr<KnobDouble> fromPoints[4];
+    boost::shared_ptr<KnobDouble> cornerPinToPoints[4];
+    boost::shared_ptr<KnobDouble> cornerPinFromPoints[4];
     
-    int timeForFromPoints = useTransformRefFrame ? _publicInterface->getTransformReferenceFrame() : app->getTimeLine()->currentFrame();
+    int timeForFromPoints = _publicInterface->getTransformReferenceFrame();
     
-    for (unsigned int i = 0; i < selection.size(); ++i) {
+    for (unsigned int i = 0; i < 4; ++i) {
         fromPoints[i] = getCornerPinPoint(cornerPin.get(), true, i);
-        assert(fromPoints[i] && centers[i]);
-        for (int j = 0; j < fromPoints[i]->getDimension(); ++j) {
-            fromPoints[i]->setValue(centers[i]->getValueAtTime(timeForFromPoints,j), ViewSpec(0), j);
+        assert(cornerPinFromPoints[i]);
+        for (int j = 0; j < cornerPinFromPoints[i]->getDimension(); ++j) {
+            cornerPinFromPoints[i]->setValue(fromPoints[i].lock()->getValueAtTime(timeForFromPoints,j), ViewSpec(0), j);
         }
         
         toPoints[i] = getCornerPinPoint(cornerPin.get(), false, i);
-        assert(toPoints[i]);
+        assert(cornerPinToPoints[i]);
         if (!linked) {
-            toPoints[i]->cloneAndUpdateGui(centers[i].get());
+            cornerPinToPoints[i]->cloneAndUpdateGui(toPoints[i].lock().get());
         } else {
             bool ok = false;
-            for (int d = 0; d < toPoints[i]->getDimension() ; ++d) {
-                ok = dynamic_cast<KnobI*>(toPoints[i].get())->slaveTo(d, centers[i], d);
+            for (int d = 0; d < cornerPinToPoints[i]->getDimension() ; ++d) {
+                ok = dynamic_cast<KnobI*>(cornerPinToPoints[i].get())->slaveTo(d, toPoints[i].lock(), d);
             }
             (void)ok;
             assert(ok);
         }
     }
     
-    ///Disable all non used points
-    for (unsigned int i = selection.size(); i < 4; ++i) {
-        QString enableName = QString::fromUtf8("enable%1").arg(i + 1);
-        KnobPtr knob = cornerPin->getKnobByName( enableName.toStdString() );
-        assert(knob);
-        KnobBool* enableKnob = dynamic_cast<KnobBool*>( knob.get() );
-        assert(enableKnob);
-        enableKnob->setValue(false, ViewSpec(0), 0);
+    KnobPtr cpInvertKnob = cornerPin->getKnobByName(kTransformParamInvert);
+    if (cpInvertKnob) {
+        KnobBool* isBool = dynamic_cast<KnobBool*>(cpInvertKnob.get());
+        if (isBool) {
+            if (!linked) {
+                isBool->cloneAndUpdateGui(invertTransform.lock().get());
+            } else {
+                dynamic_cast<KnobI*>(isBool)->slaveTo(0, invertTransform.lock(), 0);
+            }
+        }
     }
     
-    if (motionType == eTrackerMotionTypeStabilize) {
-        KnobPtr invertKnob = cornerPin->getKnobByName(kCornerPinInvertParamName);
-        assert(invertKnob);
-        KnobBool* isBool = dynamic_cast<KnobBool*>(invertKnob.get());
-        assert(isBool);
-        isBool->setValue(true, ViewSpec(0), 0);
-    }
-    */
 }
 
 void
-TrackerContextPrivate::createTransformFromSelection(const std::list<TrackMarkerPtr > & selection,
-                                                    bool linked)
+TrackerContextPrivate::createTransformFromSelection(bool linked)
 {
-    boost::shared_ptr<KnobChoice> motionTypeKnob = motionType.lock();
-    if (!motionTypeKnob) {
-        return;
-    }
-    int motionType_i = motionTypeKnob->getValue();
-    TrackerMotionTypeEnum mt = (TrackerMotionTypeEnum)motionType_i;
-
-    if (mt == eTrackerMotionTypeNone) {
-        Dialogs::errorDialog(QObject::tr("Tracker Export").toStdString(), QObject::tr("Please select the export mode with the Transform Type parameter").toStdString());
-        return;
-    }
+    
 
     NodePtr thisNode = node.lock();
     
@@ -1144,7 +1132,54 @@ TrackerContextPrivate::createTransformFromSelection(const std::list<TrackMarkerP
     
     transformNode->setPosition(thisNodePos[0] + thisNodeSize[0] * 2., thisNodePos[1]);
     
-#pragma message WARN("TODO")
+    KnobPtr translateKnob = transformNode->getKnobByName(kTransformParamTranslate);
+    if (translateKnob) {
+        KnobDouble* isDbl = dynamic_cast<KnobDouble*>(translateKnob.get());
+        if (isDbl) {
+            if (!linked) {
+                isDbl->cloneAndUpdateGui(translate.lock().get());
+            } else {
+                dynamic_cast<KnobI*>(isDbl)->slaveTo(0, invertTransform.lock(), 0);
+            }
+        }
+    }
+    
+    KnobPtr scaleKnob = transformNode->getKnobByName(kTransformParamScale);
+    if (scaleKnob) {
+        KnobDouble* isDbl = dynamic_cast<KnobDouble*>(scaleKnob.get());
+        if (isDbl) {
+            if (!linked) {
+                isDbl->cloneAndUpdateGui(scale.lock().get());
+            } else {
+                dynamic_cast<KnobI*>(isDbl)->slaveTo(0, invertTransform.lock(), 0);
+            }
+        }
+    }
+    
+    KnobPtr rotateKnob = transformNode->getKnobByName(kTransformParamRotate);
+    if (rotateKnob) {
+        KnobDouble* isDbl = dynamic_cast<KnobDouble*>(rotateKnob.get());
+        if (isDbl) {
+            if (!linked) {
+                isDbl->cloneAndUpdateGui(rotate.lock().get());
+            } else {
+                dynamic_cast<KnobI*>(isDbl)->slaveTo(0, invertTransform.lock(), 0);
+            }
+        }
+    }
+    
+    KnobPtr invertKnob = transformNode->getKnobByName(kTransformParamInvert);
+    if (invertKnob) {
+        KnobBool* isBool = dynamic_cast<KnobBool*>(invertKnob.get());
+        if (isBool) {
+            if (!linked) {
+                isBool->cloneAndUpdateGui(invertTransform.lock().get());
+            } else {
+                dynamic_cast<KnobI*>(isBool)->slaveTo(0, invertTransform.lock(), 0);
+            }
+        }
+    }
+    
 }
 
 void

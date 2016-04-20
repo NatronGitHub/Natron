@@ -473,11 +473,9 @@ struct TrackerContextPrivate
                                    bool multipleTrackSelected,
                                    bool slave);
     
-    void createCornerPinFromSelection(const std::list<TrackMarkerPtr > & selection,
-                                      bool linked);
+    void createCornerPinFromSelection(bool linked);
     
-    void createTransformFromSelection(const std::list<TrackMarkerPtr > & selection,
-                                      bool linked);
+    void createTransformFromSelection(bool linked);
     
     void refreshVisibilityFromTransformType();
     void refreshVisibilityFromTransformTypeInternal(TrackerTransformNodeEnum transformType);
