@@ -42,19 +42,23 @@ NATRON_NAMESPACE_ENTER;
 
 BlockingBackgroundRender::BlockingBackgroundRender(OutputEffectInstance* writer)
     : _running(false)
-      ,_writer(writer)
+    , _writer(writer)
 {
 }
 
 void
-BlockingBackgroundRender::blockingRender(bool enableRenderStats,int first,int last,int frameStep)
+BlockingBackgroundRender::blockingRender(bool enableRenderStats,
+                                         int first,
+                                         int last,
+                                         int frameStep)
 {
     // avoid race condition: the code must work even if renderFullSequence() calls notifyFinished()
     // immediately.
     QMutexLocker locker(&_runningMutex);
+
     assert(_running == false);
     _running = true;
-    _writer->renderFullSequence(true, enableRenderStats,this,first,last, frameStep);
+    _writer->renderFullSequence(true, enableRenderStats, this, first, last, frameStep);
     if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
         _running = false;
     } else {
@@ -68,6 +72,7 @@ void
 BlockingBackgroundRender::notifyFinished()
 {
     QMutexLocker locker(&_runningMutex);
+
     assert(_running == true);
     _running = false;
     _runningCond.wakeOne();

@@ -96,52 +96,56 @@ static std::string namedGroupsOrdered[NAMED_PLUGIN_GROUP_NO] = {
     PLUGIN_GROUP_DEFAULT
 };
 
-namespace {
+
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
 static void
 getPixmapForGrouping(QPixmap* pixmap,
                      int size,
                      const QString & grouping)
 {
     PixmapEnum e = NATRON_PIXMAP_OTHER_PLUGINS;
-    if (grouping == QString::fromUtf8(PLUGIN_GROUP_COLOR)) {
+
+    if ( grouping == QString::fromUtf8(PLUGIN_GROUP_COLOR) ) {
         e = NATRON_PIXMAP_COLOR_GROUPING;
-    } else if (grouping == QString::fromUtf8(PLUGIN_GROUP_FILTER)) {
+    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_FILTER) ) {
         e = NATRON_PIXMAP_FILTER_GROUPING;
-    } else if (grouping == QString::fromUtf8(PLUGIN_GROUP_IMAGE)) {
+    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_IMAGE) ) {
         e = NATRON_PIXMAP_IO_GROUPING;
-    } else if (grouping == QString::fromUtf8(PLUGIN_GROUP_TRANSFORM)) {
+    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_TRANSFORM) ) {
         e = NATRON_PIXMAP_TRANSFORM_GROUPING;
-    } else if (grouping == QString::fromUtf8(PLUGIN_GROUP_DEEP)) {
+    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_DEEP) ) {
         e = NATRON_PIXMAP_DEEP_GROUPING;
-    } else if (grouping == QString::fromUtf8(PLUGIN_GROUP_MULTIVIEW)) {
+    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_MULTIVIEW) ) {
         e = NATRON_PIXMAP_MULTIVIEW_GROUPING;
-    } else if (grouping == QString::fromUtf8(PLUGIN_GROUP_TIME)) {
+    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_TIME) ) {
         e = NATRON_PIXMAP_TIME_GROUPING;
-    } else if (grouping == QString::fromUtf8(PLUGIN_GROUP_PAINT)) {
+    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_PAINT) ) {
         e = NATRON_PIXMAP_PAINT_GROUPING;
-    } else if (grouping == QString::fromUtf8(PLUGIN_GROUP_OTHER)) {
+    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_OTHER) ) {
         e = NATRON_PIXMAP_MISC_GROUPING;
-    } else if (grouping == QString::fromUtf8(PLUGIN_GROUP_KEYER)) {
+    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_KEYER) ) {
         e = NATRON_PIXMAP_KEYER_GROUPING;
-    } else if (grouping == QString::fromUtf8(PLUGIN_GROUP_TOOLSETS)) {
+    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_TOOLSETS) ) {
         e = NATRON_PIXMAP_TOOLSETS_GROUPING;
-    } else if (grouping == QString::fromUtf8(PLUGIN_GROUP_3D)) {
+    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_3D) ) {
         e = NATRON_PIXMAP_3D_GROUPING;
-    } else if (grouping == QString::fromUtf8(PLUGIN_GROUP_CHANNEL)) {
+    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_CHANNEL) ) {
         e = NATRON_PIXMAP_CHANNEL_GROUPING;
-    } else if (grouping == QString::fromUtf8(PLUGIN_GROUP_MERGE)) {
+    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_MERGE) ) {
         e = NATRON_PIXMAP_MERGE_GROUPING;
     }
     appPTR->getIcon(e, size, pixmap);
 }
-}
 
+NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 void
 Gui::reloadStylesheet()
 {
     Gui::loadStyleSheet();
+
     if (_imp->_scriptEditor) {
         _imp->_scriptEditor->reloadHighlighter();
     }
@@ -151,21 +155,22 @@ static
 QString
 qcolor_to_qstring(const QColor& col)
 {
-    return QString::fromUtf8("rgb(%1,%2,%3)").arg(col.red()).arg(col.green()).arg(col.blue());
+    return QString::fromUtf8("rgb(%1,%2,%3)").arg( col.red() ).arg( col.green() ).arg( col.blue() );
 }
 
 static inline
 QColor
-to_qcolor(double r, double g, double b)
+to_qcolor(double r,
+          double g,
+          double b)
 {
-    return QColor(Color::floatToInt<256>(r), Color::floatToInt<256>(g), Color::floatToInt<256>(b));
+    return QColor( Color::floatToInt<256>(r), Color::floatToInt<256>(g), Color::floatToInt<256>(b) );
 }
 
 void
 Gui::loadStyleSheet()
 {
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
-
     QColor selCol, sunkCol, baseCol, raisedCol, txtCol, intCol, kfCol, disCol, eCol, altCol, lightSelCol;
 
     //settings->
@@ -230,6 +235,7 @@ Gui::loadStyleSheet()
     // First, set the global palette colors
     // Note: the following colors may be wrong, please test and fix these on Linux with an empty mainstyle.css
     QPalette p = qApp->palette();
+
     p.setBrush( QPalette::Window, sunkCol );
     p.setBrush( QPalette::WindowText, txtCol );
     p.setBrush( QPalette::Base, baseCol );
@@ -249,10 +255,10 @@ Gui::loadStyleSheet()
 
     QFile qss;
     std::string userQss = settings->getUserStyleSheetFilePath();
-    if (!userQss.empty()) {
-        qss.setFileName(QString::fromUtf8(userQss.c_str()));
+    if ( !userQss.empty() ) {
+        qss.setFileName( QString::fromUtf8( userQss.c_str() ) );
     } else {
-        qss.setFileName(QString::fromUtf8(":/Resources/Stylesheets/mainstyle.qss"));
+        qss.setFileName( QString::fromUtf8(":/Resources/Stylesheets/mainstyle.qss") );
     }
 
     if ( qss.open(QIODevice::ReadOnly
@@ -260,19 +266,19 @@ Gui::loadStyleSheet()
         QTextStream in(&qss);
         QString content( in.readAll() );
         qApp->setStyleSheet( content
-                       .arg(qcolor_to_qstring(selCol)) // %1: selection-color
-                       .arg(qcolor_to_qstring(baseCol)) // %2: medium background
-                       .arg(qcolor_to_qstring(raisedCol)) // %3: soft background
-                       .arg(qcolor_to_qstring(sunkCol)) // %4: strong background
-                       .arg(qcolor_to_qstring(txtCol)) // %5: text colour
-                       .arg(qcolor_to_qstring(intCol)) // %6: interpolated value color
-                       .arg(qcolor_to_qstring(kfCol)) // %7: keyframe value color
-                       .arg(qcolor_to_qstring(disCol)) // %8: disabled editable text
-                       .arg(qcolor_to_qstring(eCol)) // %9: expression background color
-                       .arg(qcolor_to_qstring(altCol))  // %10 = altered text color
-                       .arg(qcolor_to_qstring(lightSelCol))); // %11 = mouse over selection color
+                             .arg( qcolor_to_qstring(selCol) ) // %1: selection-color
+                             .arg( qcolor_to_qstring(baseCol) ) // %2: medium background
+                             .arg( qcolor_to_qstring(raisedCol) ) // %3: soft background
+                             .arg( qcolor_to_qstring(sunkCol) ) // %4: strong background
+                             .arg( qcolor_to_qstring(txtCol) ) // %5: text colour
+                             .arg( qcolor_to_qstring(intCol) ) // %6: interpolated value color
+                             .arg( qcolor_to_qstring(kfCol) ) // %7: keyframe value color
+                             .arg( qcolor_to_qstring(disCol) ) // %8: disabled editable text
+                             .arg( qcolor_to_qstring(eCol) ) // %9: expression background color
+                             .arg( qcolor_to_qstring(altCol) ) // %10 = altered text color
+                             .arg( qcolor_to_qstring(lightSelCol) ) ); // %11 = mouse over selection color
     } else {
-        Dialogs::errorDialog(tr("Stylesheet").toStdString(), tr("Failure to load stylesheet file ").toStdString() + qss.fileName().toStdString());
+        Dialogs::errorDialog( tr("Stylesheet").toStdString(), tr("Failure to load stylesheet file ").toStdString() + qss.fileName().toStdString() );
     }
 } // Gui::loadStyleSheet
 
@@ -293,7 +299,7 @@ Gui::maximize(TabWidget* what)
             bool hasProperties = false;
             for (int i = 0; i < (*it)->count(); ++i) {
                 QString tabName = (*it)->tabAt(i)->getWidget()->objectName();
-                if (tabName == QString::fromUtf8(kPropertiesBinName)) {
+                if ( tabName == QString::fromUtf8(kPropertiesBinName) ) {
                     hasProperties = true;
                     break;
                 }
@@ -339,11 +345,11 @@ Gui::addNewViewerTab(ViewerInstance* viewer,
     std::map<NodeGui*, TrackerGui*> trackerNodes;
     std::list<NodeGui*> trackerNodesList;
     std::pair<NodeGui*, TrackerGui*> currentTracker;
-    
+
     if (!viewer) {
         return 0;
     }
-    
+
     //Don't create tracker & roto interface for file dialog preview viewer
     if (viewer->getNode()->getScriptName() != NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME) {
         if ( !_imp->_viewerTabs.empty() ) {
@@ -384,7 +390,7 @@ Gui::addNewViewerTab(ViewerInstance* viewer,
     Q_EMIT viewersChanged();
 
     return tab;
-}
+} // Gui::addNewViewerTab
 
 void
 Gui::onViewerImageChanged(int texIndex,
@@ -485,7 +491,7 @@ Gui::removeViewerTab(ViewerTab* tab,
     if (tab == _imp->_activeViewer) {
         _imp->_activeViewer = 0;
     }
-    
+
     NodeGraph* graph = 0;
     NodeGroup* isGrp = 0;
     boost::shared_ptr<NodeCollection> collection;
@@ -566,7 +572,6 @@ Gui::removeViewerTab(ViewerTab* tab,
         }
 
         if (deleteData) {
-            
             QMutexLocker l(&_imp->_viewerTabsMutex);
             std::list<ViewerTab*>::iterator it = std::find(_imp->_viewerTabs.begin(), _imp->_viewerTabs.end(), tab);
             if ( it != _imp->_viewerTabs.end() ) {
@@ -623,7 +628,6 @@ Gui::getHistograms_mt_safe() const
 
     return _imp->_histograms;
 }
-
 
 void
 Gui::unregisterPane(TabWidget* pane)
@@ -799,7 +803,7 @@ Gui::sortAllPluginsToolButtons()
 ToolButton*
 Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
 {
-    if (!plugin->getIsUserCreatable() && plugin->getChildren().empty()) {
+    if ( !plugin->getIsUserCreatable() && plugin->getChildren().empty() ) {
         return 0;
     }
 
@@ -818,17 +822,16 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
         }
     }
 
-    QIcon toolButtonIcon,menuIcon;
+    QIcon toolButtonIcon, menuIcon;
     if ( !plugin->getIconPath().isEmpty() && QFile::exists( plugin->getIconPath() ) ) {
-        QPixmap pix(plugin->getIconPath());
+        QPixmap pix( plugin->getIconPath() );
         int menuSize = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
         int toolButtonSize = !plugin->hasParent() ? TO_DPIX(NATRON_TOOL_BUTTON_ICON_SIZE) : TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
-        
-        QPixmap menuPix = pix,toolbuttonPix = pix;
-        if (std::max(menuPix.width(), menuPix.height()) != menuSize) {
+        QPixmap menuPix = pix, toolbuttonPix = pix;
+        if (std::max( menuPix.width(), menuPix.height() ) != menuSize) {
             menuPix = menuPix.scaled(menuSize, menuSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         }
-        if (std::max(toolbuttonPix.width(), toolbuttonPix.height()) != toolButtonSize) {
+        if (std::max( toolbuttonPix.width(), toolbuttonPix.height() ) != toolButtonSize) {
             toolbuttonPix = toolbuttonPix.scaled(toolButtonSize, toolButtonSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         }
         menuIcon.addPixmap(menuPix);
@@ -836,12 +839,11 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
     } else {
         //add the default group icon only if it has no parent
         if ( !plugin->hasParent() ) {
-            QPixmap toolbuttonPix,menuPix;
+            QPixmap toolbuttonPix, menuPix;
             getPixmapForGrouping( &toolbuttonPix, TO_DPIX(NATRON_TOOL_BUTTON_ICON_SIZE), plugin->getLabel() );
             toolButtonIcon.addPixmap(toolbuttonPix);
             getPixmapForGrouping( &menuPix, TO_DPIX(NATRON_TOOL_BUTTON_ICON_SIZE), plugin->getLabel() );
             menuIcon.addPixmap(menuPix);
-
         }
     }
     //if the tool-button has no children, this is a leaf, we must create an action
@@ -850,9 +852,9 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
         isLeaf = true;
         //if the plugin has no children and no parent, put it in the "others" group
         if ( !plugin->hasParent() ) {
-            ToolButton* othersGroup = findExistingToolButton(QString::fromUtf8(PLUGIN_GROUP_DEFAULT));
-            QStringList grouping(QString::fromUtf8(PLUGIN_GROUP_DEFAULT));
-            QStringList iconGrouping(QString::fromUtf8(PLUGIN_GROUP_DEFAULT_ICON_PATH));
+            ToolButton* othersGroup = findExistingToolButton( QString::fromUtf8(PLUGIN_GROUP_DEFAULT) );
+            QStringList grouping( QString::fromUtf8(PLUGIN_GROUP_DEFAULT) );
+            QStringList iconGrouping( QString::fromUtf8(PLUGIN_GROUP_DEFAULT_ICON_PATH) );
             boost::shared_ptr<PluginGroupNode> othersToolButton =
                 appPTR->findPluginToolButtonOrCreate(grouping,
                                                      QString::fromUtf8(PLUGIN_GROUP_DEFAULT),
@@ -890,9 +892,9 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
         pluginsToolButton->setMenu(menu);
         pluginsToolButton->setAction( menu->menuAction() );
     }
-    
+
 #ifndef NATRON_ENABLE_IO_META_NODES
-    if (!plugin->getParent() && pluginsToolButton->getLabel() == QString::fromUtf8(PLUGIN_GROUP_IMAGE)) {
+    if ( !plugin->getParent() && ( pluginsToolButton->getLabel() == QString::fromUtf8(PLUGIN_GROUP_IMAGE) ) ) {
         ///create 2 special actions to create a reader and a writer so the user doesn't have to guess what
         ///plugin to choose for reading/writing images, let Natron deal with it. THe user can still change
         ///the behavior of Natron via the Preferences Readers/Writers tabs.
@@ -907,7 +909,7 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
         createReaderAction->setShortcutContext(Qt::WidgetShortcut);
         createReaderAction->setShortcut( QKeySequence(Qt::Key_R) );
         imageMenu->addAction(createReaderAction);
-        
+
         QAction* createWriterAction = new QAction(this);
         QObject::connect( createWriterAction, SIGNAL(triggered()), this, SLOT(createWriter()) );
         createWriterAction->setText( tr("Write") );
@@ -994,8 +996,9 @@ Gui::createNewProject()
 {
     CLArgs cl;
     AppInstance* app = appPTR->newAppInstance(cl, false);
-    
+
     app->execOnProjectCreatedCallback();
+
     return app;
 }
 
@@ -1014,10 +1017,9 @@ Gui::openProject()
     std::string selectedFile =  popOpenFileDialog( false, filters, _imp->_lastLoadProjectOpenedDir.toStdString(), false );
 
     if ( !selectedFile.empty() ) {
-        
         std::string patternCpy = selectedFile;
         std::string path = SequenceParsing::removePath(patternCpy);
-        _imp->_lastLoadProjectOpenedDir = QString::fromUtf8(path.c_str());
+        _imp->_lastLoadProjectOpenedDir = QString::fromUtf8( path.c_str() );
         AppInstance* app = openProjectInternal(selectedFile, true);
         Q_UNUSED(app);
     }
@@ -1030,10 +1032,12 @@ Gui::openProject(const std::string & filename)
 }
 
 AppInstance*
-Gui::openProjectInternal(const std::string & absoluteFileName, bool attemptToLoadAutosave)
+Gui::openProjectInternal(const std::string & absoluteFileName,
+                         bool attemptToLoadAutosave)
 {
-    QFileInfo file(QString::fromUtf8(absoluteFileName.c_str()));
-    if (!file.exists()) {
+    QFileInfo file( QString::fromUtf8( absoluteFileName.c_str() ) );
+
+    if ( !file.exists() ) {
         return 0;
     }
     QString fileUnPathed = file.fileName();
@@ -1046,6 +1050,7 @@ Gui::openProjectInternal(const std::string & absoluteFileName, bool attemptToLoa
             GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(instance);
             if (guiApp) {
                 guiApp->getGui()->activateWindow();
+
                 return instance;
             }
         }
@@ -1054,7 +1059,7 @@ Gui::openProjectInternal(const std::string & absoluteFileName, bool attemptToLoa
     AppInstance* ret = 0;
     ///if the current graph has no value, just load the project in the same window
     if ( _imp->_appInstance->getProject()->isGraphWorthLess() ) {
-      bool ok = _imp->_appInstance->getProject()->loadProject( path, fileUnPathed, false, attemptToLoadAutosave);
+        bool ok = _imp->_appInstance->getProject()->loadProject( path, fileUnPathed, false, attemptToLoadAutosave);
         if (ok) {
             ret = _imp->_appInstance;
         }
@@ -1068,23 +1073,24 @@ Gui::openProjectInternal(const std::string & absoluteFileName, bool attemptToLoa
     }
 
     QSettings settings;
-    QStringList recentFiles = settings.value(QString::fromUtf8("recentFileList")).toStringList();
-    recentFiles.removeAll( QString::fromUtf8(absoluteFileName.c_str() ));
-    recentFiles.prepend( QString::fromUtf8(absoluteFileName.c_str() ));
+    QStringList recentFiles = settings.value( QString::fromUtf8("recentFileList") ).toStringList();
+    recentFiles.removeAll( QString::fromUtf8( absoluteFileName.c_str() ) );
+    recentFiles.prepend( QString::fromUtf8( absoluteFileName.c_str() ) );
     while (recentFiles.size() > NATRON_MAX_RECENT_FILES) {
         recentFiles.removeLast();
     }
 
     settings.setValue(QString::fromUtf8("recentFileList"), recentFiles);
     appPTR->updateAllRecentFileMenus();
+
     return ret;
-}
+} // Gui::openProjectInternal
 
 static void
 updateRecentFiles(const QString & filename)
 {
     QSettings settings;
-    QStringList recentFiles = settings.value(QString::fromUtf8("recentFileList")).toStringList();
+    QStringList recentFiles = settings.value( QString::fromUtf8("recentFileList") ).toStringList();
 
     recentFiles.removeAll(filename);
     recentFiles.prepend(filename);
@@ -1099,29 +1105,28 @@ updateRecentFiles(const QString & filename)
 bool
 Gui::saveProject()
 {
-    boost::shared_ptr<Project> project= _imp->_appInstance->getProject();
-    if (project->hasProjectBeenSavedByUser()) {
-        
-        
+    boost::shared_ptr<Project> project = _imp->_appInstance->getProject();
+
+    if ( project->hasProjectBeenSavedByUser() ) {
         QString projectFilename = project->getProjectFilename();
         QString projectPath = project->getProjectPath();
-        
-        if (!_imp->checkProjectLockAndWarn(projectPath, projectFilename)) {
+
+        if ( !_imp->checkProjectLockAndWarn(projectPath, projectFilename) ) {
             return false;
         }
 
         bool ret = project->saveProject(projectPath, projectFilename, 0);
 
         ///update the open recents
-        if (!projectPath.endsWith(QLatin1Char('/'))) {
-            projectPath.append(QLatin1Char('/'));
+        if ( !projectPath.endsWith( QLatin1Char('/') ) ) {
+            projectPath.append( QLatin1Char('/') );
         }
         if (ret) {
             QString file = projectPath + projectFilename;
             updateRecentFiles(file);
         }
+
         return ret;
-        
     } else {
         return saveProjectAs();
     }
@@ -1131,23 +1136,24 @@ bool
 Gui::saveProjectAs(const std::string& filename)
 {
     std::string fileCopy = filename;
+
     if (fileCopy.find("." NATRON_PROJECT_FILE_EXT) == std::string::npos) {
         fileCopy.append("." NATRON_PROJECT_FILE_EXT);
     }
     std::string path = SequenceParsing::removePath(fileCopy);
-    
-    if (!_imp->checkProjectLockAndWarn(QString::fromUtf8(path.c_str()),QString::fromUtf8(fileCopy.c_str()))) {
+
+    if ( !_imp->checkProjectLockAndWarn( QString::fromUtf8( path.c_str() ), QString::fromUtf8( fileCopy.c_str() ) ) ) {
         return false;
     }
-    _imp->_lastSaveProjectOpenedDir = QString::fromUtf8(path.c_str());
-    
-    bool ret = _imp->_appInstance->getProject()->saveProject(QString::fromUtf8(path.c_str()), QString::fromUtf8(fileCopy.c_str()), 0);
-    
+    _imp->_lastSaveProjectOpenedDir = QString::fromUtf8( path.c_str() );
+
+    bool ret = _imp->_appInstance->getProject()->saveProject(QString::fromUtf8( path.c_str() ), QString::fromUtf8( fileCopy.c_str() ), 0);
+
     if (ret) {
         QString filePath = QString::fromUtf8( path.c_str() ) + QString::fromUtf8( fileCopy.c_str() );
         updateRecentFiles(filePath);
     }
-    
+
     return ret;
 }
 
@@ -1175,7 +1181,7 @@ Gui::saveAndIncrVersion()
     bool mustAppendFileExtension = false;
 
     // extension is everything after the last '.'
-    int lastDotPos = name.lastIndexOf(QLatin1Char('.'));
+    int lastDotPos = name.lastIndexOf( QLatin1Char('.') );
 
     if (lastDotPos == -1) {
         positionToInsertVersion = name.size();
@@ -1212,13 +1218,13 @@ Gui::saveAndIncrVersion()
     int nb0s = 3 - newVersionStr.size();
     nb0s = std::max(0, nb0s);
 
-    QString toInsert(QLatin1Char('_'));
+    QString toInsert( QLatin1Char('_') );
     for (int c = 0; c < nb0s; ++c) {
-        toInsert.append(QLatin1Char('0'));
+        toInsert.append( QLatin1Char('0') );
     }
     toInsert.append(newVersionStr);
     if (mustAppendFileExtension) {
-        toInsert.append(QString::fromUtf8("." NATRON_PROJECT_FILE_EXT));
+        toInsert.append( QString::fromUtf8("." NATRON_PROJECT_FILE_EXT) );
     }
 
     if ( positionToInsertVersion >= name.size() ) {
@@ -1242,18 +1248,16 @@ Gui::createNewViewer()
     if (!graph) {
         throw std::logic_error("");
     }
-    CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonUserCreate, graph->getGroup());
-    ignore_result(_imp->_appInstance->createNode(args));
+    CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonUserCreate, graph->getGroup() );
+    ignore_result( _imp->_appInstance->createNode(args) );
 }
-
-
 
 NodePtr
 Gui::createReader()
 {
     NodePtr ret;
     std::map<std::string, std::string> readersForFormat;
-    
+
     appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
     std::vector<std::string> filters;
     for (std::map<std::string, std::string>::const_iterator it = readersForFormat.begin(); it != readersForFormat.end(); ++it) {
@@ -1261,7 +1265,6 @@ Gui::createReader()
     }
     std::string pattern = popOpenFileDialog( true, filters, _imp->_lastLoadSequenceOpenedDir.toStdString(), true );
     if ( !pattern.empty() ) {
-        
         NodeGraph* graph = 0;
         if (_imp->_lastFocusedGraph) {
             graph = _imp->_lastFocusedGraph;
@@ -1270,34 +1273,32 @@ Gui::createReader()
         }
         boost::shared_ptr<NodeCollection> group = graph->getGroup();
         assert(group);
-        
+
 #ifdef NATRON_ENABLE_IO_META_NODES
-        ret = getApp()->createReader(pattern,eCreateNodeReasonUserCreate, group);
+        ret = getApp()->createReader(pattern, eCreateNodeReasonUserCreate, group);
 #else
- 
+
         QString qpattern = QString::fromUtf8( pattern.c_str() );
-        
         std::string patternCpy = pattern;
         std::string path = SequenceParsing::removePath(patternCpy);
-        _imp->_lastLoadSequenceOpenedDir = QString::fromUtf8(path.c_str());
-        
+        _imp->_lastLoadSequenceOpenedDir = QString::fromUtf8( path.c_str() );
+
         std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
         std::map<std::string, std::string>::iterator found = readersForFormat.find(ext);
         if ( found == readersForFormat.end() ) {
             errorDialog( tr("Reader").toStdString(), tr("No plugin capable of decoding ").toStdString() + ext + tr(" was found.").toStdString(), false);
         } else {
-            
-            
-            CreateNodeArgs args(QString::fromUtf8(found->second.c_str()), eCreateNodeReasonUserCreate, group);
-            args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern));
+            CreateNodeArgs args(QString::fromUtf8( found->second.c_str() ), eCreateNodeReasonUserCreate, group);
+            args.paramValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern) );
             ret = _imp->_appInstance->createNode(args);
-            
+
             if (!ret) {
                 return ret;
             }
         }
 #endif
     }
+
     return ret;
 }
 
@@ -1306,14 +1307,14 @@ Gui::createWriter()
 {
     NodePtr ret;
     std::map<std::string, std::string> writersForFormat;
-    
+
     appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
     std::vector<std::string> filters;
     for (std::map<std::string, std::string>::const_iterator it = writersForFormat.begin(); it != writersForFormat.end(); ++it) {
         filters.push_back(it->first);
     }
-    
-    
+
+
     std::string file;
 #ifdef NATRON_ENABLE_IO_META_NODES
     bool useDialogForWriters = appPTR->getCurrentSettings()->isFileDialogEnabledForNewWriters();
@@ -1322,18 +1323,18 @@ Gui::createWriter()
 #endif
     if (useDialogForWriters) {
         file = popSaveFileDialog( true, filters, _imp->_lastSaveSequenceOpenedDir.toStdString(), true );
-        if (file.empty()) {
+        if ( file.empty() ) {
             return NodePtr();
         }
     }
 
-    
-    if (!file.empty()) {
+
+    if ( !file.empty() ) {
         std::string patternCpy = file;
         std::string path = SequenceParsing::removePath(patternCpy);
-        _imp->_lastSaveSequenceOpenedDir = QString::fromUtf8(path.c_str());
+        _imp->_lastSaveSequenceOpenedDir = QString::fromUtf8( path.c_str() );
     }
-    
+
     NodeGraph* graph = 0;
     if (_imp->_lastFocusedGraph) {
         graph = _imp->_lastFocusedGraph;
@@ -1342,10 +1343,10 @@ Gui::createWriter()
     }
     boost::shared_ptr<NodeCollection> group = graph->getGroup();
     assert(group);
-    
+
     ret =  getApp()->createWriter(file, eCreateNodeReasonUserCreate, group);
-    
-    
+
+
     return ret;
 }
 
@@ -1418,9 +1419,9 @@ Gui::saveWarning()
 {
     if ( !_imp->_appInstance->getProject()->isSaveUpToDate() ) {
         StandardButtonEnum ret =  Dialogs::questionDialog(NATRON_APPLICATION_NAME, tr("Save changes to ").toStdString() +
-                                                                 _imp->_appInstance->getProject()->getProjectFilename().toStdString() + " ?",
-                                                                 false,
-                                                                 StandardButtons(eStandardButtonSave | eStandardButtonDiscard | eStandardButtonCancel), eStandardButtonSave);
+                                                          _imp->_appInstance->getProject()->getProjectFilename().toStdString() + " ?",
+                                                          false,
+                                                          StandardButtons(eStandardButtonSave | eStandardButtonDiscard | eStandardButtonCancel), eStandardButtonSave);
         if ( (ret == eStandardButtonEscape) || (ret == eStandardButtonCancel) ) {
             return 2;
         } else if (ret == eStandardButtonDiscard) {
@@ -1437,20 +1438,21 @@ void
 Gui::loadProjectGui(boost::archive::xml_iarchive & obj) const
 {
     assert(_imp->_projectGui);
-    _imp->_projectGui->load(obj/*, version*/);
+    _imp->_projectGui->load(obj /*, version*/);
 }
 
 void
 Gui::saveProjectGui(boost::archive::xml_oarchive & archive)
 {
     assert(_imp->_projectGui);
-    _imp->_projectGui->save(archive/*, version*/);
+    _imp->_projectGui->save(archive /*, version*/);
 }
 
 bool
 Gui::isAboutToClose() const
 {
     QMutexLocker l(&_imp->aboutToCloseMutex);
+
     return _imp->_aboutToClose;
 }
 

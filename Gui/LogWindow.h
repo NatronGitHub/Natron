@@ -46,13 +46,14 @@ class LogWindow
     QTextBrowser* textBrowser;
     Button* okButton;
     Button* clearButton;
+
 public:
 
     LogWindow(const QString & log,
               QWidget* parent = 0);
-    
+
 public Q_SLOTS:
-    
+
     void onClearButtonClicked();
 };
 

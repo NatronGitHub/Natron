@@ -34,65 +34,67 @@
 NATRON_NAMESPACE_ENTER;
 
 struct RotoSmearPrivate;
-class RotoSmear : public EffectInstance
+class RotoSmear
+    : public EffectInstance
 {
 public:
-    
+
     static EffectInstance* BuildEffect(NodePtr n)
     {
         return new RotoSmear(n);
     }
-    
+
     RotoSmear(NodePtr node);
-    
+
     virtual ~RotoSmear();
-        
+
     virtual int getMajorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return 1;
     }
-    
+
     virtual int getMinorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return 0;
     }
-    
+
     virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return 1;
     }
-    
+
     virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
-    
+
     virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return PLUGINID_NATRON_ROTOSMEAR;
     }
-    
+
     virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return "Smear";
     }
-    
+
     virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN { return std::string(); }
 
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL
     {
         grouping->push_back(PLUGIN_GROUP_PAINT);
     }
-    
-    virtual std::string getInputLabel (int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN {
+
+    virtual std::string getInputLabel (int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
         return "Source";
     }
-    
+
     virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return false;
     }
-    
-    virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;
+
+    virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
-    
+
     ///Doesn't really matter here since it won't be used (this effect is always an identity)
     virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -104,12 +106,12 @@ public:
     {
         return false;
     }
-    
+
     virtual bool supportsMultiResolution() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
     }
-    
+
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return false;
@@ -119,24 +121,18 @@ public:
     {
         return true;
     }
-    
-    
 
 private:
 
-    virtual StatusEnum
-    getRegionOfDefinition(U64 hash,double time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
-
+    virtual StatusEnum getRegionOfDefinition(U64 hash, double time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
     virtual bool isIdentity(double time,
-                        const RenderScale & scale,
-                        const RectI & roi,
-                        ViewIdx view,
-                        double* inputTime,
+                            const RenderScale & scale,
+                            const RectI & roi,
+                            ViewIdx view,
+                            double* inputTime,
                             ViewIdx* inputView,
-                        int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
-
+                            int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
-
     boost::scoped_ptr<RotoSmearPrivate> _imp;
 };
 

@@ -37,7 +37,8 @@
 
 NATRON_NAMESPACE_ENTER;
 
-NodeSerialization::NodeSerialization(const NodePtr & n,bool serializeInputs)
+NodeSerialization::NodeSerialization(const NodePtr & n,
+                                     bool serializeInputs)
     : _isNull(true)
     , _nbKnobs(0)
     , _knobsValues()
@@ -69,50 +70,48 @@ NodeSerialization::NodeSerialization(const NodePtr & n,bool serializeInputs)
         }
 
         std::vector< KnobPtr >  knobs = n->getEffectInstance()->getKnobs_mt_safe();
-
         std::list<KnobPtr > userPages;
         for (U32 i  = 0; i < knobs.size(); ++i) {
             KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knobs[i].get() );
             KnobPage* isPage = dynamic_cast<KnobPage*>( knobs[i].get() );
-            
+
             if (isPage) {
-                _pagesIndexes.push_back(knobs[i]->getName());
-                if (knobs[i]->isUserKnob()) {
+                _pagesIndexes.push_back( knobs[i]->getName() );
+                if ( knobs[i]->isUserKnob() ) {
                     userPages.push_back(knobs[i]);
                 }
             }
-            
-            if (!knobs[i]->isUserKnob() &&
-                knobs[i]->getIsPersistant() &&
-                !isGroup && !isPage
-                && knobs[i]->hasModificationsForSerialization()) {
-                
+
+            if ( !knobs[i]->isUserKnob() &&
+                 knobs[i]->getIsPersistant() &&
+                 !isGroup && !isPage
+                 && knobs[i]->hasModificationsForSerialization() ) {
                 ///For choice do a deepclone because we need entries
                 //bool doCopyKnobs = isChoice ? true : copyKnobs;
-                
+
                 boost::shared_ptr<KnobSerialization> newKnobSer( new KnobSerialization(knobs[i]) );
                 _knobsValues.push_back(newKnobSer);
             }
         }
-        
+
         _nbKnobs = (int)_knobsValues.size();
-        
+
         for (std::list<KnobPtr >::const_iterator it = userPages.begin(); it != userPages.end(); ++it) {
-            boost::shared_ptr<GroupKnobSerialization> s(new GroupKnobSerialization(*it));
+            boost::shared_ptr<GroupKnobSerialization> s( new GroupKnobSerialization(*it) );
             _userPages.push_back(s);
         }
 
         _knobsAge = n->getKnobsAge();
 
         _nodeLabel = n->getLabel_mt_safe();
-        
+
         _nodeScriptName = n->getScriptName_mt_safe();
-        
+
         _cacheID = n->getCacheID();
 
         _pluginID = n->getPluginID();
-        
-        if(!n->hasPyPlugBeenEdited()) {
+
+        if ( !n->hasPyPlugBeenEdited() ) {
             _pythonModule = n->getPluginPythonModule();
             _pythonModuleVersion = n->getMajorVersion();
         }
@@ -120,7 +119,7 @@ NodeSerialization::NodeSerialization(const NodePtr & n,bool serializeInputs)
         _pluginMajorVersion = n->getMajorVersion();
 
         _pluginMinorVersion = n->getMinorVersion();
-        
+
         if (serializeInputs) {
             n->getInputNames(_inputs);
         }
@@ -137,7 +136,7 @@ NodeSerialization::NodeSerialization(const NodePtr & n,bool serializeInputs)
         } else {
             _hasRotoContext = false;
         }
-        
+
         boost::shared_ptr<TrackerContext> tracker = n->getTrackerContext();
         if (tracker) {
             _hasTrackerContext = true;
@@ -146,40 +145,39 @@ NodeSerialization::NodeSerialization(const NodePtr & n,bool serializeInputs)
             _hasTrackerContext = false;
         }
 
-        
+
         NodeGroup* isGrp = n->isEffectGroup();
         if (isGrp) {
             NodesList nodes;
             isGrp->getActiveNodes(&nodes);
-            
+
             _children.clear();
-            
-            for (NodesList::iterator it = nodes.begin(); it != nodes.end() ; ++it) {
-                if ((*it)->isPartOfProject()) {
-                    boost::shared_ptr<NodeSerialization> state(new NodeSerialization(*it));
+
+            for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+                if ( (*it)->isPartOfProject() ) {
+                    boost::shared_ptr<NodeSerialization> state( new NodeSerialization(*it) );
                     _children.push_back(state);
                 }
             }
-
         }
 
-         _multiInstanceParentName = n->getParentMultiInstanceName();
-        
+        _multiInstanceParentName = n->getParentMultiInstanceName();
+
         NodesList childrenMultiInstance;
         _node->getChildrenMultiInstance(&childrenMultiInstance);
-        if (!childrenMultiInstance.empty()) {
+        if ( !childrenMultiInstance.empty() ) {
             assert(!isGrp);
-            for (NodesList::iterator it = childrenMultiInstance.begin(); it != childrenMultiInstance.end() ; ++it) {
-                assert((*it)->getParentMultiInstance());
-                if ((*it)->isActivated()) {
-                    boost::shared_ptr<NodeSerialization> state(new NodeSerialization(*it));
+            for (NodesList::iterator it = childrenMultiInstance.begin(); it != childrenMultiInstance.end(); ++it) {
+                assert( (*it)->getParentMultiInstance() );
+                if ( (*it)->isActivated() ) {
+                    boost::shared_ptr<NodeSerialization> state( new NodeSerialization(*it) );
                     _children.push_back(state);
                 }
             }
         }
-        
+
         n->getUserCreatedComponents(&_userComponents);
-        
+
         _isNull = false;
     }
 }

@@ -32,8 +32,9 @@
 
 NATRON_NAMESPACE_ENTER;
 
-bool TextureRect::intersect(const RectI & r,
-                            RectI* intersection) const
+bool
+TextureRect::intersect(const RectI & r,
+                       RectI* intersection) const
 {
     if ( isNull() || r.isNull() ) {
         return false;
@@ -43,10 +44,10 @@ bool TextureRect::intersect(const RectI & r,
         return false;
     }
 
-    intersection->x1 = std::max(x1,r.x1);
-    intersection->x2 = std::min(x2,r.x2);
-    intersection->y1 = std::max(y1,r.y1);
-    intersection->y2 = std::min(y2,r.y2);
+    intersection->x1 = std::max(x1, r.x1);
+    intersection->x2 = std::min(x2, r.x2);
+    intersection->y1 = std::max(y1, r.y1);
+    intersection->y2 = std::min(y2, r.y2);
 
     return true;
 }

@@ -85,9 +85,9 @@ using std::make_pair;
 //=============================BUTTON_KNOB_GUI===================================
 
 KnobGuiButton::KnobGuiButton(KnobPtr knob,
-                               DockablePanel *container)
+                             DockablePanel *container)
     : KnobGui(knob, container)
-      , _button(0)
+    , _button(0)
 {
     _knob = boost::dynamic_pointer_cast<KnobButton>(knob);
 }
@@ -98,31 +98,31 @@ KnobGuiButton::createWidget(QHBoxLayout* layout)
     boost::shared_ptr<KnobButton> knob = _knob.lock();
     QString label = QString::fromUtf8( knob->getLabel().c_str() );
     const std::string & iconFilePath = knob->getIconLabel();
-    
-    QString filePath = QString::fromUtf8(iconFilePath.c_str());
-    if (!iconFilePath.empty() && !QFile::exists(filePath)) {
+    QString filePath = QString::fromUtf8( iconFilePath.c_str() );
+
+    if ( !iconFilePath.empty() && !QFile::exists(filePath) ) {
         ///Search all natron paths for a file
-        
+
         QStringList paths = appPTR->getAllNonOFXPluginsPaths();
         for (int i = 0; i < paths.size(); ++i) {
             QString tmp = paths[i] + QLatin1Char('/') + filePath;
-            if (QFile::exists(tmp)) {
+            if ( QFile::exists(tmp) ) {
                 filePath = tmp;
                 break;
             }
         }
     }
-    
+
     QPixmap pix;
 
-    if (pix.load(filePath)) {
-        _button = new Button( QIcon(pix),QString(),layout->parentWidget() );
+    if ( pix.load(filePath) ) {
+        _button = new Button( QIcon(pix), QString(), layout->parentWidget() );
         _button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-        _button->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+        _button->setIconSize( QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE) );
     } else {
-        _button = new Button( label,layout->parentWidget() );
+        _button = new Button( label, layout->parentWidget() );
     }
-    QObject::connect( _button, SIGNAL(clicked()), this, SLOT(emitValueChanged()));
+    QObject::connect( _button, SIGNAL(clicked()), this, SLOT(emitValueChanged()) );
     if ( hasToolTip() ) {
         _button->setToolTip( toolTip() );
     }
@@ -133,7 +133,8 @@ KnobGuiButton::~KnobGuiButton()
 {
 }
 
-void KnobGuiButton::removeSpecificGui()
+void
+KnobGuiButton::removeSpecificGui()
 {
     delete _button;
 }
@@ -142,6 +143,7 @@ void
 KnobGuiButton::emitValueChanged()
 {
     boost::shared_ptr<KnobButton> k = _knob.lock();
+
     assert(k);
     k->trigger();
 }
@@ -169,12 +171,13 @@ KnobGuiButton::setEnabled()
 
 void
 KnobGuiButton::setReadOnly(bool readOnly,
-                            int /*dimension*/)
+                           int /*dimension*/)
 {
     _button->setEnabled(!readOnly);
 }
 
-KnobPtr KnobGuiButton::getKnob() const
+KnobPtr
+KnobGuiButton::getKnob() const
 {
     return _knob.lock();
 }

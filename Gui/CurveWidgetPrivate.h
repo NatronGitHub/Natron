@@ -73,7 +73,6 @@ enum EventStateEnum
 // (in fact, many members could probably be made private)
 class CurveWidgetPrivate
 {
-
 public:
     CurveWidgetPrivate(Gui* gui,
                        CurveSelection* selection,
@@ -98,13 +97,13 @@ public:
      * If so then the value x and y will be set to the position on the curve
      * if they are not NULL.
      **/
-    Curves::const_iterator isNearbyCurve(const QPoint &pt,double* x = NULL,double *y = NULL) const;
+    Curves::const_iterator isNearbyCurve(const QPoint &pt, double* x = NULL, double *y = NULL) const;
     bool isNearbyKeyFrame(const QPoint & pt, boost::shared_ptr<CurveGui>* curve, KeyFrame* key, bool* hasPrev, KeyFrame* prev, bool* hasNext, KeyFrame* next) const;
     std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr> isNearbyTangent(const QPoint & pt) const;
     std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr> isNearbySelectedTangentText(const QPoint & pt) const;
 
     bool isNearbySelectedKeyFramesCrossWidget(const QPoint & pt) const;
-    
+
     bool isNearbyBboxTopLeft(const QPoint& pt) const;
     bool isNearbyBboxMidLeft(const QPoint& pt) const;
     bool isNearbyBboxBtmLeft(const QPoint& pt) const;
@@ -125,15 +124,15 @@ public:
      **/
     void selectCurve(const boost::shared_ptr<CurveGui>& curve);
 
-    void moveSelectedKeyFrames(const QPointF & oldClick_opengl,const QPointF & newClick_opengl);
-    
-    void transformSelectedKeyFrames(const QPointF & oldClick_opengl,const QPointF & newClick_opengl, bool shiftHeld);
+    void moveSelectedKeyFrames(const QPointF & oldClick_opengl, const QPointF & newClick_opengl);
+
+    void transformSelectedKeyFrames(const QPointF & oldClick_opengl, const QPointF & newClick_opengl, bool shiftHeld);
 
     void moveSelectedTangent(const QPointF & pos);
 
     void refreshKeyTangents(KeyPtr & key);
 
-    void refreshSelectionRectangle(double x,double y);
+    void refreshSelectionRectangle(double x, double y);
 
     void setSelectedKeysInterpolation(KeyframeTypeEnum type);
 
@@ -146,7 +145,7 @@ public:
 private:
 
 
-    void keyFramesWithinRect(const QRectF & rect,SelectedKeys* keys) const;
+    void keyFramesWithinRect(const QRectF & rect, SelectedKeys* keys) const;
 
 public:
 
@@ -173,24 +172,23 @@ public:
     QLineF _selectedKeyFramesCrossHorizLine;
     boost::shared_ptr<TimeLine> _timeline;
     bool _timelineEnabled;
-    std::pair<MoveTangentCommand::SelectedTangentEnum,KeyPtr> _selectedDerivative;
+    std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr> _selectedDerivative;
     bool _evaluateOnPenUp; //< true if we must re-evaluate the nodes associated to the selected keyframes on penup
     QPointF _keyDragLastMovement;
     boost::scoped_ptr<QUndoStack> _undoStack;
     Gui* _gui;
-
     GLuint savedTexture;
     QSize sizeH;
     bool zoomOrPannedSinceLastFit;
-    
+
 private:
 
     QPolygonF _timelineTopPoly;
     QPolygonF _timelineBtmPoly;
     CurveWidget* _widget;
-    
+
 public:
-    
+
     CurveSelection* _selectionModel;
 };
 

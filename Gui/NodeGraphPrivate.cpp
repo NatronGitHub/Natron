@@ -48,51 +48,51 @@ NATRON_NAMESPACE_ENTER;
 
 NodeGraphPrivate::NodeGraphPrivate(NodeGraph* p,
                                    const boost::shared_ptr<NodeCollection>& group)
-: _publicInterface(p)
-, group(group)
-, _lastMousePos()
-, _lastSelectionStartPointScene()
-, _evtState(eEventStateNone)
-, _magnifiedNode()
-, _nodeSelectedScaleBeforeMagnif(1.)
-, _magnifOn(false)
-, _arrowSelected(NULL)
-, _nodesMutex()
-, _nodes()
-, _nodesTrash()
-, _nodeCreationShortcutEnabled(false)
-, _lastNodeCreatedName()
-, _root(NULL)
-, _nodeRoot(NULL)
-, _cacheSizeText(NULL)
-, cacheSizeHidden(true)
-, _refreshCacheTextTimer()
-, _navigator(NULL)
-, _undoStack(NULL)
-, _menu(NULL)
-, _tL(NULL)
-, _tR(NULL)
-, _bR(NULL)
-, _bL(NULL)
-, _refreshOverlays(false)
-, _highLightedEdge(NULL)
-, _mergeHintNode()
-, _hintInputEdge(NULL)
-, _hintOutputEdge(NULL)
-, _backdropResized()
-, _selection()
-, cursorSet(false)
-, _nodesWithinBDAtPenDown()
-, _selectionRect()
-, _bendPointsVisible(false)
-, _knobLinksVisible(true)
-, _accumDelta(0)
-, _detailsVisible(false)
-, _deltaSinceMousePress(0,0)
-, _hasMovedOnce(false)
-, lastSelectedViewer(0)
-, isDoingPreviewRender(false)
-, autoScrollTimer()
+    : _publicInterface(p)
+    , group(group)
+    , _lastMousePos()
+    , _lastSelectionStartPointScene()
+    , _evtState(eEventStateNone)
+    , _magnifiedNode()
+    , _nodeSelectedScaleBeforeMagnif(1.)
+    , _magnifOn(false)
+    , _arrowSelected(NULL)
+    , _nodesMutex()
+    , _nodes()
+    , _nodesTrash()
+    , _nodeCreationShortcutEnabled(false)
+    , _lastNodeCreatedName()
+    , _root(NULL)
+    , _nodeRoot(NULL)
+    , _cacheSizeText(NULL)
+    , cacheSizeHidden(true)
+    , _refreshCacheTextTimer()
+    , _navigator(NULL)
+    , _undoStack(NULL)
+    , _menu(NULL)
+    , _tL(NULL)
+    , _tR(NULL)
+    , _bR(NULL)
+    , _bL(NULL)
+    , _refreshOverlays(false)
+    , _highLightedEdge(NULL)
+    , _mergeHintNode()
+    , _hintInputEdge(NULL)
+    , _hintOutputEdge(NULL)
+    , _backdropResized()
+    , _selection()
+    , cursorSet(false)
+    , _nodesWithinBDAtPenDown()
+    , _selectionRect()
+    , _bendPointsVisible(false)
+    , _knobLinksVisible(true)
+    , _accumDelta(0)
+    , _detailsVisible(false)
+    , _deltaSinceMousePress(0, 0)
+    , _hasMovedOnce(false)
+    , lastSelectedViewer(0)
+    , isDoingPreviewRender(false)
+    , autoScrollTimer()
 {
     appPTR->getIcon(NATRON_PIXMAP_LOCKED, &unlockIcon);
 }
@@ -125,12 +125,11 @@ NodeGraphPrivate::editSelectionFromSelectionRectangle(bool addToSelection)
     for (NodesGuiList::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
         if ( selection.contains(bbox) ) {
-            
-            NodesGuiList::iterator foundInSel = std::find(_selection.begin(),_selection.end(),*it);
-            if (foundInSel != _selection.end()) {
+            NodesGuiList::iterator foundInSel = std::find(_selection.begin(), _selection.end(), *it);
+            if ( foundInSel != _selection.end() ) {
                 continue;
             }
-            
+
             _selection.push_back(*it);
             (*it)->setUserSelected(true);
         }
@@ -154,7 +153,7 @@ NodeGraphPrivate::setNodesBendPointsVisible(bool visible)
         const std::vector<Edge*> & edges = (*it)->getInputsArrows();
         for (std::vector<Edge*>::const_iterator it2 = edges.begin(); it2 != edges.end(); ++it2) {
             if (visible) {
-                if ( !(*it2)->isOutputEdge() && (*it2)->hasSource() && ((*it2)->line().length() > 50) ) {
+                if ( !(*it2)->isOutputEdge() && (*it2)->hasSource() && ( (*it2)->line().length() > 50 ) ) {
                     (*it2)->setBendPointVisible(visible);
                 }
             } else {
@@ -165,7 +164,6 @@ NodeGraphPrivate::setNodesBendPointsVisible(bool visible)
         }
     }
 }
-
 
 QRectF
 NodeGraphPrivate::calcNodesBoundingRect()
@@ -178,10 +176,9 @@ NodeGraphPrivate::calcNodesBoundingRect()
             ret = ret.united( (*it)->boundingRectWithEdges() );
         }
     }
- 
+
     return ret;
 }
-
 
 void
 NodeGraphPrivate::resetAllClipboards()
@@ -189,9 +186,9 @@ NodeGraphPrivate::resetAllClipboards()
     appPTR->clearNodeClipBoard();
 }
 
-
 void
-NodeGraphPrivate::copyNodesInternal(const NodesGuiList& selection,NodeClipBoard & clipboard)
+NodeGraphPrivate::copyNodesInternal(const NodesGuiList& selection,
+                                    NodeClipBoard & clipboard)
 {
     ///Clear clipboard
     clipboard.nodes.clear();
@@ -202,15 +199,15 @@ NodeGraphPrivate::copyNodesInternal(const NodesGuiList& selection,NodeClipBoard 
         ///Also copy all nodes within the backdrop
         NodesGuiList nodesWithinBD = _publicInterface->getNodesWithinBackdrop(*it);
         for (NodesGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
-            NodesGuiList::iterator found = std::find(nodesToCopy.begin(),nodesToCopy.end(),*it2);
+            NodesGuiList::iterator found = std::find(nodesToCopy.begin(), nodesToCopy.end(), *it2);
             if ( found == nodesToCopy.end() ) {
                 nodesToCopy.push_back(*it2);
             }
         }
     }
-    
+
     for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
-        if ((*it)->isVisible()) {
+        if ( (*it)->isVisible() ) {
             boost::shared_ptr<NodeSerialization> ns( new NodeSerialization( (*it)->getNode(), true ) );
             boost::shared_ptr<NodeGuiSerialization> nGuiS(new NodeGuiSerialization);
             (*it)->serialize( nGuiS.get() );

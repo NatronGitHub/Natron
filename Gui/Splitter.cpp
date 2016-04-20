@@ -31,15 +31,15 @@ NATRON_NAMESPACE_ENTER;
 
 Splitter::Splitter(QWidget* parent)
     : QSplitter(parent)
-      , _lock()
+    , _lock()
 {
     setMouseTracking(true);
 }
 
 Splitter::Splitter(Qt::Orientation orientation,
                    QWidget * parent)
-    : QSplitter(orientation,parent)
-      , _lock()
+    : QSplitter(orientation, parent)
+    , _lock()
 {
     setMouseTracking(true);
 }
@@ -75,7 +75,7 @@ Splitter::restoreNatron(const QString & serialization)
     assert(list.size() == 2);
     QList<int> s;
     s << list[0].toInt() << list[1].toInt();
-    if (s[0] == 0 || s[1] == 0) {
+    if ( (s[0] == 0) || (s[1] == 0) ) {
         int mean = (s[0] + s[1]) / 2;
         s[0] = s[1] = mean;
     }

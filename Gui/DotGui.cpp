@@ -112,9 +112,9 @@ using std::make_pair;
 
 //////////Dot node gui
 DotGui::DotGui(QGraphicsItem* parent)
-: NodeGui(parent)
-, diskShape(NULL)
-, ellipseIndicator(NULL)
+    : NodeGui(parent)
+    , diskShape(NULL)
+    , ellipseIndicator(NULL)
 {
 }
 
@@ -122,22 +122,22 @@ void
 DotGui::createGui()
 {
     double depth = getBaseDepth();
+
     setZValue(depth);
 
     diskShape = new QGraphicsEllipseItem(this);
     diskShape->setZValue(depth);
     QPointF topLeft = mapFromParent( pos() );
-
     int diam = TO_DPIX(DOT_GUI_DIAMETER);
     int stateOffset = TO_DPIX(NATRON_STATE_INDICATOR_OFFSET);
 
-    diskShape->setRect( QRectF(topLeft.x(),topLeft.y(),diam,diam) );
+    diskShape->setRect( QRectF(topLeft.x(), topLeft.y(), diam, diam) );
 
     ellipseIndicator = new QGraphicsEllipseItem(this);
-    ellipseIndicator->setRect(QRectF(topLeft.x() - stateOffset,
-                                     topLeft.y() - stateOffset,
-                                     diam + stateOffset * 2,
-                                     diam + stateOffset * 2));
+    ellipseIndicator->setRect( QRectF(topLeft.x() - stateOffset,
+                                      topLeft.y() - stateOffset,
+                                      diam + stateOffset * 2,
+                                      diam + stateOffset * 2) );
     ellipseIndicator->hide();
 }
 
@@ -145,20 +145,20 @@ void
 DotGui::refreshStateIndicator()
 {
     bool showIndicator = true;
-    if (getIsSelected()) {
-        ellipseIndicator->setBrush(QColor(255,255,255,128));
+
+    if ( getIsSelected() ) {
+        ellipseIndicator->setBrush( QColor(255, 255, 255, 128) );
     } else {
         showIndicator = false;
     }
 
-    if (showIndicator && !ellipseIndicator->isVisible()) {
+    if ( showIndicator && !ellipseIndicator->isVisible() ) {
         ellipseIndicator->show();
-    } else if (!showIndicator && ellipseIndicator->isVisible()) {
+    } else if ( !showIndicator && ellipseIndicator->isVisible() ) {
         ellipseIndicator->hide();
     } else {
         update();
     }
-
 }
 
 void
@@ -171,15 +171,15 @@ NodeSettingsPanel*
 DotGui::createPanel(QVBoxLayout* /*container*/,
                     const NodeGuiPtr & /*thisAsShared*/)
 {
-   /* NodeSettingsPanel* panel = new NodeSettingsPanel( boost::shared_ptr<MultiInstancePanel>(),
-                                                      getDagGui()->getGui(),
-                                                      thisAsShared,
-                                                      container,container->parentWidget() );
+    /* NodeSettingsPanel* panel = new NodeSettingsPanel( boost::shared_ptr<MultiInstancePanel>(),
+                                                       getDagGui()->getGui(),
+                                                       thisAsShared,
+                                                       container,container->parentWidget() );
 
-    ///Always close the panel by default for Dots
-    panel->setClosed(true);
+       ///Always close the panel by default for Dots
+       panel->setClosed(true);
 
-    return panel;*/
+       return panel;*/
     return 0;
 }
 

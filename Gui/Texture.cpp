@@ -40,10 +40,10 @@ Texture::Texture(U32 target,
                  int magFilter,
                  int clamp)
     : _target(target)
-      , _minFilter(minFilter)
-      , _magFilter(magFilter)
-      , _clamp(clamp)
-      , _type(eDataTypeNone)
+    , _minFilter(minFilter)
+    , _magFilter(magFilter)
+    , _clamp(clamp)
+    , _type(eDataTypeNone)
 {
     glGenTextures(1, &_texID);
 }
@@ -64,12 +64,11 @@ Texture::fillOrAllocateTexture(const TextureRect & texRect,
     //glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
     {
         GLProtectAttrib a(GL_ENABLE_BIT);
-
         int width = updateOnlyRoi ? roi.width() : w();
         int height = updateOnlyRoi ? roi.height() : h();
         int x1 = updateOnlyRoi ? roi.x1 - texRect.x1 : 0;
         int y1 = updateOnlyRoi ? roi.y1 - texRect.y1 : 0;
-        
+
         glEnable(_target);
         glBindTexture (_target, _texID);
         if ( (texRect == _textureRect) && (_type == type) ) {
@@ -120,7 +119,7 @@ Texture::fillOrAllocateTexture(const TextureRect & texRect,
                               GL_FLOAT, // type
                               0);           // pixels
             }
-            
+
             glCheckError();
         }
     } // GLProtectAttrib a(GL_ENABLE_BIT);

@@ -59,23 +59,25 @@ NATRON_NAMESPACE_ENTER;
 
 //================================
 
-class Bool_CheckBox: public AnimatedCheckBox
+class Bool_CheckBox
+    : public AnimatedCheckBox
 {
 public:
     Bool_CheckBox(const KnobGuiPtr& knob, int dimension, QWidget* parent = 0);
-    
+
     virtual ~Bool_CheckBox();
-    
-    void setCustomColor(const QColor& color, bool useCustom)
+
+    void setCustomColor(const QColor& color,
+                        bool useCustom)
     {
         useCustomColor = useCustom;
         customColor = color;
     }
-    
-    virtual void getBackgroundColor(double *r,double *g,double *b) const OVERRIDE FINAL;
-    
+
+    virtual void getBackgroundColor(double *r, double *g, double *b) const OVERRIDE FINAL;
+
 private:
-    
+
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
@@ -111,32 +113,33 @@ public:
     }
 
     KnobGuiBool(KnobPtr knob,
-                 DockablePanel *container);
+                DockablePanel *container);
 
     virtual ~KnobGuiBool() OVERRIDE;
-    
-    virtual void removeSpecificGui() OVERRIDE FINAL;
 
+    virtual void removeSpecificGui() OVERRIDE FINAL;
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
 
 public Q_SLOTS:
 
     void onCheckBoxStateChanged(bool);
     void onLabelClicked(bool);
+
 private:
 
-    
+
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
     virtual void setEnabled() OVERRIDE FINAL;
-    virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
+    virtual void setReadOnly(bool readOnly, int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension,AnimationLevelEnum level) OVERRIDE FINAL;
-    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(int dimension, AnimationLevelEnum level) OVERRIDE FINAL;
+    virtual void reflectExpressionState(int dimension, bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
     virtual void onLabelChangedInternal() OVERRIDE FINAL;
+
 private:
 
     Bool_CheckBox *_checkBox;

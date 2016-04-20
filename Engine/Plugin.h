@@ -46,12 +46,12 @@ class PluginGroupNode
     QString _id;
     QString _label;
     QString _iconPath;
-    int _major,_minor;
+    int _major, _minor;
     std::list<boost::shared_ptr<PluginGroupNode> > _children;
     boost::weak_ptr<PluginGroupNode> _parent;
     bool _notHighestMajorVersion;
     bool _isUserCreatable;
-    
+
 public:
     PluginGroupNode(const QString & pluginID,
                     const QString & pluginLabel,
@@ -59,22 +59,23 @@ public:
                     int major,
                     int minor,
                     bool isUserCreatable)
-    : _id(pluginID)
-    , _label(pluginLabel)
-    , _iconPath(iconPath)
-    , _major(major)
-    , _minor(minor)
-    , _children()
-    , _parent()
-    , _notHighestMajorVersion(false)
-    , _isUserCreatable(isUserCreatable)
+        : _id(pluginID)
+        , _label(pluginLabel)
+        , _iconPath(iconPath)
+        , _major(major)
+        , _minor(minor)
+        , _children()
+        , _parent()
+        , _notHighestMajorVersion(false)
+        , _isUserCreatable(isUserCreatable)
     {
     }
 
-    bool getIsUserCreatable() const {
+    bool getIsUserCreatable() const
+    {
         return _isUserCreatable;
     }
-    
+
     const QString & getID() const
     {
         return _id;
@@ -84,7 +85,7 @@ public:
     {
         return _label;
     }
-    
+
     const QString getLabelVersionMajorEncoded() const
     {
         return _label + QString::fromUtf8(" ") + QString::number(_major);
@@ -112,7 +113,7 @@ public:
 
     void tryAddChild(const boost::shared_ptr<PluginGroupNode>& plugin);
     void tryRemoveChild(PluginGroupNode* plugin);
-    
+
     boost::shared_ptr<PluginGroupNode> getParent() const
     {
         return _parent.lock();
@@ -127,22 +128,22 @@ public:
     {
         return _parent.lock().get() != NULL;
     }
-    
+
     int getMajorVersion() const
     {
         return _major;
     }
-    
+
     int getMinorVersion() const
     {
         return _minor;
     }
-    
+
     bool getNotHighestMajorVersion() const
     {
         return _notHighestMajorVersion;
     }
-    
+
     void setNotHighestMajorVersion(bool v)
     {
         _notHighestMajorVersion = v;
@@ -166,45 +167,44 @@ class Plugin
     int _minorVersion;
     ContextEnum _ofxContext;
     mutable bool _hasShortcutSet; //< to speed up the keypress event of Nodegraph, this is used to find out quickly whether it has a shortcut or not.
-    bool _isReader,_isWriter;
+    bool _isReader, _isWriter;
 
     //Deprecated are by default Disabled in the Preferences.
     bool _isDeprecated;
-    
+
     //Is not visible by the user, just for internal use
     bool _isInternalOnly;
-    
+
     //When the plug-in is a PyPlug, if this is set to true, the script will not be embedded into a group
     bool _toolSetScript;
-    
-    mutable  bool _activatedSet;
-    mutable  bool _activated;
-    
+    mutable bool _activatedSet;
+    mutable bool _activated;
+
 public:
 
     Plugin()
-    : _binary(NULL)
-    , _id()
-    , _label()
-    , _iconFilePath()
-    , _groupIconFilePath()
-    , _grouping()
-    , _labelWithoutSuffix()
-    , _pythonModule()
-    , _ofxPlugin(0)
-    , _ofxDescriptor(0)
-    , _lock()
-    , _majorVersion(0)
-    , _minorVersion(0)
-    , _ofxContext(eContextNone)
-    , _hasShortcutSet(false)
-    , _isReader(false)
-    , _isWriter(false)
-    , _isDeprecated(false)
-    , _isInternalOnly(false)
-    , _toolSetScript(false)
-    , _activatedSet(false)
-    , _activated(true)
+        : _binary(NULL)
+        , _id()
+        , _label()
+        , _iconFilePath()
+        , _groupIconFilePath()
+        , _grouping()
+        , _labelWithoutSuffix()
+        , _pythonModule()
+        , _ofxPlugin(0)
+        , _ofxDescriptor(0)
+        , _lock()
+        , _majorVersion(0)
+        , _minorVersion(0)
+        , _ofxContext(eContextNone)
+        , _hasShortcutSet(false)
+        , _isReader(false)
+        , _isWriter(false)
+        , _isDeprecated(false)
+        , _isInternalOnly(false)
+        , _toolSetScript(false)
+        , _activatedSet(false)
+        , _activated(true)
     {
     }
 
@@ -220,81 +220,76 @@ public:
            bool isReader,
            bool isWriter,
            bool isDeprecated)
-    : _binary(binary)
-    , _id(id)
-    , _label(label)
-    , _iconFilePath(iconFilePath)
-    , _groupIconFilePath(groupIconFilePath)
-    , _grouping(grouping)
-    , _labelWithoutSuffix()
-    , _pythonModule()
-    , _ofxPlugin(0)
-    , _ofxDescriptor(0)
-    , _lock(lock)
-    , _majorVersion(majorVersion)
-    , _minorVersion(minorVersion)
-    , _ofxContext(eContextNone)
-    , _hasShortcutSet(false)
-    , _isReader(isReader)
-    , _isWriter(isWriter)
-    , _isDeprecated(isDeprecated)
-    , _isInternalOnly(false)
-    , _toolSetScript(false)
-    , _activatedSet(false)
-    , _activated(true)
+        : _binary(binary)
+        , _id(id)
+        , _label(label)
+        , _iconFilePath(iconFilePath)
+        , _groupIconFilePath(groupIconFilePath)
+        , _grouping(grouping)
+        , _labelWithoutSuffix()
+        , _pythonModule()
+        , _ofxPlugin(0)
+        , _ofxDescriptor(0)
+        , _lock(lock)
+        , _majorVersion(majorVersion)
+        , _minorVersion(minorVersion)
+        , _ofxContext(eContextNone)
+        , _hasShortcutSet(false)
+        , _isReader(isReader)
+        , _isWriter(isWriter)
+        , _isDeprecated(isDeprecated)
+        , _isInternalOnly(false)
+        , _toolSetScript(false)
+        , _activatedSet(false)
+        , _activated(true)
     {
     }
-    
+
     ~Plugin();
-    
+
     bool getIsForInternalUseOnly() const { return _isInternalOnly; }
-    
+
     void setForInternalUseOnly(bool b) { _isInternalOnly = b; }
 
     bool getIsDeprecated() const { return _isDeprecated; }
-    
+
     bool getIsUserCreatable() const;
-    
+
     void setPluginID(const QString & id);
-    
+
 
     const QString & getPluginID() const;
-    
-    bool isReader() const ;
-    
-    bool isWriter() const ;
+
+    bool isReader() const;
+
+    bool isWriter() const;
 
     void setPluginLabel(const QString & label);
 
     const QString & getPluginLabel() const;
-    
     const QString getLabelVersionMajorMinorEncoded() const;
-    
     static QString makeLabelWithoutSuffix(const QString& label);
-    
     const QString& getLabelWithoutSuffix() const;
     void setLabelWithoutSuffix(const QString& label);
-    
+
     const QString getLabelVersionMajorEncoded() const;
-    
+
     QString generateUserFriendlyPluginID() const;
-    
+
     QString generateUserFriendlyPluginIDMajorEncoded() const;
 
     const QString & getIconFilePath() const;
-    
+
     void setIconFilePath(const QString& filePath);
 
     const QStringList & getGroupIconFilePath() const;
-
     const QStringList & getGrouping() const;
-    
-    void setToolsetScript(bool isToolset);
-    
-    bool getToolsetScript() const;
-    
-    QMutex* getPluginLock() const;
 
+    void setToolsetScript(bool isToolset);
+
+    bool getToolsetScript() const;
+
+    QMutex* getPluginLock() const;
     LibraryBinary* getLibraryBinary() const;
 
     int getMajorVersion() const;
@@ -304,23 +299,21 @@ public:
     void setHasShortcut(bool has) const;
 
     bool getHasShortcut() const;
-    
+
     void setPythonModule(const QString& module);
-    
-    const QString& getPythonModule() const ;
-    
+
+    const QString& getPythonModule() const;
+
     void getPythonModuleNameAndPath(QString* moduleName, QString* modulePath) const;
-    
+
     void setOfxPlugin(OFX::Host::ImageEffect::ImageEffectPlugin* p);
-    
+
     OFX::Host::ImageEffect::ImageEffectPlugin* getOfxPlugin() const;
-    
     OFX::Host::ImageEffect::Descriptor* getOfxDesc(ContextEnum* ctx) const;
-    
-    void setOfxDesc(OFX::Host::ImageEffect::Descriptor* desc,ContextEnum ctx);
-    
+
+    void setOfxDesc(OFX::Host::ImageEffect::Descriptor* desc, ContextEnum ctx);
 };
-    
+
 struct Plugin_compare_major
 {
     bool operator() (const Plugin* const lhs,
@@ -329,9 +322,9 @@ struct Plugin_compare_major
         return lhs->getMajorVersion() < rhs->getMajorVersion();
     }
 };
-    
-typedef std::set<Plugin*,Plugin_compare_major> PluginMajorsOrdered;
-typedef std::map<std::string,PluginMajorsOrdered> PluginsMap;
+
+typedef std::set<Plugin*, Plugin_compare_major> PluginMajorsOrdered;
+typedef std::map<std::string, PluginMajorsOrdered> PluginsMap;
 
 NATRON_NAMESPACE_EXIT;
 

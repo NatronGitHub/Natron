@@ -54,27 +54,27 @@ public:
 
     bool hasCustomInterp() const;
 
-    void setCustomInterpolation(customParamInterpolationV1Entry_t func,void* ofxParamHandle);
+    void setCustomInterpolation(customParamInterpolationV1Entry_t func, void* ofxParamHandle);
 
-    bool customInterpolation(double time,std::string* ret) const;
+    bool customInterpolation(double time, std::string* ret) const;
 
-    void insertKeyFrame(double time,const std::string & v,double* index);
+    void insertKeyFrame(double time, const std::string & v, double* index);
 
     void removeKeyFrame(double time);
 
     void clearKeyFrames();
 
-    void stringFromInterpolatedIndex(double interpolated,std::string* returnValue) const;
+    void stringFromInterpolatedIndex(double interpolated, std::string* returnValue) const;
 
     void clone(const StringAnimationManager & other);
-    
+
     bool cloneAndCheckIfChanged(const StringAnimationManager & other);
 
     void clone(const StringAnimationManager & other, SequenceTime offset, const RangeD* range);
 
-    void load(const std::map<int,std::string> & keyframes);
+    void load(const std::map<int, std::string> & keyframes);
 
-    void save(std::map<int,std::string>* keyframes) const;
+    void save(std::map<int, std::string>* keyframes) const;
 
 private:
 

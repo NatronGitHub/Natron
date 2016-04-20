@@ -112,12 +112,12 @@ cubicDerive(double /*c0*/,
 #define EQN_EPS 1e-9
 
 /********************************************************
-*							*
-* This function determines if a double is small enough	*
-* to be zero. The purpose of the subroutine is to try	*
-* to overcome precision problems in math routines.	*
-*							*
-********************************************************/
+ *							*
+ * This function determines if a double is small enough	*
+ * to be zero. The purpose of the subroutine is to try	*
+ * to overcome precision problems in math routines.	*
+ *							*
+ ********************************************************/
 static int
 isZero(double x)
 {
@@ -129,11 +129,11 @@ isZero(double x)
 /// solutions an and their order are put in s and o
 int
 Interpolation::solveLinear(double c0,
-                    double c1,
-                    double s[1],
-                    int o[1])
+                           double c1,
+                           double s[1],
+                           int o[1])
 {
-    if ( c1 == 0. || isZero(c1) ) {
+    if ( (c1 == 0.) || isZero(c1) ) {
         // it's a constant equation
 
         // there may be an infinity of solutions (if b=0) , but we always return none
@@ -154,12 +154,12 @@ Interpolation::solveLinear(double c0,
 /// solutions an and their order are put in s and o
 int
 Interpolation::solveQuadric(double c0,
-                     double c1,
-                     double c2,
-                     double s[2],
-                     int o[2])
+                            double c1,
+                            double c2,
+                            double s[2],
+                            int o[2])
 {
-    if ( c2 == 0. || isZero(c2) ) {
+    if ( (c2 == 0.) || isZero(c2) ) {
         // it's at most a linear equation
         return Interpolation::solveLinear(c0, c1, s, o);
     }
@@ -170,7 +170,7 @@ Interpolation::solveQuadric(double c0,
     double q = c0 / c2;
     double D = p * p - q;
 
-    if ( D == 0. || isZero(D) ) {
+    if ( (D == 0.) || isZero(D) ) {
         // one double root
         s[0] = -p;
         o[0] = 2;
@@ -196,13 +196,13 @@ Interpolation::solveQuadric(double c0,
 /// solutions an and their order are put in s and o
 int
 Interpolation::solveCubic(double c0,
-                   double c1,
-                   double c2,
-                   double c3,
-                   double s[3],
-                   int o[3])
+                          double c1,
+                          double c2,
+                          double c3,
+                          double s[3],
+                          int o[3])
 {
-    if ( c3 == 0. || isZero(c3) ) {
+    if ( (c3 == 0.) || isZero(c3) ) {
         // it's at most a second-degree polynomial
         return Interpolation::solveQuadric(c0, c1, c2, s, o);
     }
@@ -221,8 +221,8 @@ Interpolation::solveCubic(double c0,
     double cb_p = p * p * p;
     double D = q * q + cb_p;
     int num;
-    if ( D == 0. || isZero(D) ) {
-        if ( q == 0. || isZero(q) ) {
+    if ( (D == 0.) || isZero(D) ) {
+        if ( (q == 0.) || isZero(q) ) {
             // one triple solution
             s[0] = 0.;
             o[0] = 3;
@@ -287,14 +287,13 @@ getOneCubicRoot(double c0,
     double sq_A = A * A;
     double p = 1.0 / 3.0 * (-1.0 / 3.0 * sq_A + B);
     double q = 1.0 / 2.0 * (2.0 / 27.0 * A * sq_A - 1.0 / 3.0 * A * B + C);
-
     double s;
 
     // use Cardano's formula
     double cb_p = p * p * p;
     double D = q * q + cb_p;
-    if ( D == 0. || isZero(D) ) {
-        if ( q == 0. || isZero(q) ) {
+    if ( (D == 0.) || isZero(D) ) {
+        if ( (q == 0.) || isZero(q) ) {
             // one triple solution
             s = 0.;
         } else {
@@ -317,6 +316,7 @@ getOneCubicRoot(double c0,
             s = u - p / u;
         }
     }
+
     // resubstitute
     return s - 1.0 / 3.0 * A;
 }
@@ -326,14 +326,14 @@ getOneCubicRoot(double c0,
 /// solutions an and their order are put in s and o
 int
 Interpolation::solveQuartic(double c0,
-                     double c1,
-                     double c2,
-                     double c3,
-                     double c4,
-                     double s[4],
-                     int o[4])
+                            double c1,
+                            double c2,
+                            double c3,
+                            double c4,
+                            double s[4],
+                            int o[4])
 {
-    if ( c4 == 0. || isZero(c4) ) {
+    if ( (c4 == 0.) || isZero(c4) ) {
         // it's at most a third-degree polynomial
         return Interpolation::solveCubic(c0, c1, c2, c3, s, o);
     }
@@ -352,7 +352,7 @@ Interpolation::solveQuartic(double c0,
     double r = -3.0 / 256.0 * sq_A * sq_A + 1.0 / 16.0 * sq_A * B - 1.0 / 4.0 * A * C + D;
     int num;
 
-    if ( r == 0. || isZero(r) ) {
+    if ( (r == 0.) || isZero(r) ) {
         // no absolute term:y(y ^ 3 + py + q) = 0
         num = Interpolation::solveCubic(q, p, 0., 1., s, o);
         // if q = 0, this should be within the previously computed solutions,
@@ -369,7 +369,7 @@ Interpolation::solveQuartic(double c0,
         double u = z * z - r;
         double v = 2.0 * z - p;
 
-        if ( u == 0. || isZero(u) ) {
+        if ( (u == 0.) || isZero(u) ) {
             u = 0.0;
         } else if (u > 0.0) {
             u = sqrt(u);
@@ -409,14 +409,14 @@ Interpolation::solveQuartic(double c0,
  **/
 double
 Interpolation::interpolate(double tcur,
-                    const double vcur,                     //start control point
-                    const double vcurDerivRight,        //being the derivative dv/dt at tcur
-                    const double vnextDerivLeft,        //being the derivative dv/dt at tnext
-                    double tnext,
-                    const double vnext,                      //end control point
-                    double currentTime,
-                    KeyframeTypeEnum interp,
-                    KeyframeTypeEnum interpNext)
+                           const double vcur,              //start control point
+                           const double vcurDerivRight, //being the derivative dv/dt at tcur
+                           const double vnextDerivLeft, //being the derivative dv/dt at tnext
+                           double tnext,
+                           const double vnext,               //end control point
+                           double currentTime,
+                           KeyframeTypeEnum interp,
+                           KeyframeTypeEnum interpNext)
 {
     double P0 = vcur;
     double P3 = vnext;
@@ -458,14 +458,14 @@ Interpolation::interpolate(double tcur,
 /// derive at currentTime. The derivative is with respect to currentTime
 double
 Interpolation::derive(double tcur,
-               const double vcur,                     //start control point
-               const double vcurDerivRight,             //being the derivative dv/dt at tcur
-               const double vnextDerivLeft,             //being the derivative dv/dt at tnext
-               double tnext,
-               const double vnext,                           //end control point
-               double currentTime,
-               KeyframeTypeEnum interp,
-               KeyframeTypeEnum interpNext)
+                      const double vcur,              //start control point
+                      const double vcurDerivRight,      //being the derivative dv/dt at tcur
+                      const double vnextDerivLeft,      //being the derivative dv/dt at tnext
+                      double tnext,
+                      const double vnext,                    //end control point
+                      double currentTime,
+                      KeyframeTypeEnum interp,
+                      KeyframeTypeEnum interpNext)
 {
     double P0 = vcur;
     double P3 = vnext;
@@ -507,16 +507,16 @@ Interpolation::derive(double tcur,
 /// interpolate and derive at currentTime. The derivative is with respect to currentTime
 double
 Interpolation::derive_clamp(double tcur,
-                     const double vcur,                     //start control point
-                     const double vcurDerivRight,        //being the derivative dv/dt at tcur
-                     const double vnextDerivLeft,        //being the derivative dv/dt at tnext
-                     double tnext,
-                     const double vnext,                      //end control point
-                     double currentTime,
-                     double vmin,
-                     double vmax,
-                     KeyframeTypeEnum interp,
-                     KeyframeTypeEnum interpNext)
+                            const double vcur,              //start control point
+                            const double vcurDerivRight, //being the derivative dv/dt at tcur
+                            const double vnextDerivLeft, //being the derivative dv/dt at tnext
+                            double tnext,
+                            const double vnext,               //end control point
+                            double currentTime,
+                            double vmin,
+                            double vmax,
+                            KeyframeTypeEnum interp,
+                            KeyframeTypeEnum interpNext)
 {
     double P0 = vcur;
     double P3 = vnext;
@@ -560,15 +560,15 @@ Interpolation::derive_clamp(double tcur,
 // integrate from time1 to time2
 double
 Interpolation::integrate(double tcur,
-                  const double vcur,                     //start control point
-                  const double vcurDerivRight,        //being the derivative dv/dt at tcur
-                  const double vnextDerivLeft,        //being the derivative dv/dt at tnext
-                  double tnext,
-                  const double vnext,                      //end control point
-                  double time1,
-                  double time2,
-                  KeyframeTypeEnum interp,
-                  KeyframeTypeEnum interpNext)
+                         const double vcur,              //start control point
+                         const double vcurDerivRight, //being the derivative dv/dt at tcur
+                         const double vnextDerivLeft, //being the derivative dv/dt at tnext
+                         double tnext,
+                         const double vnext,               //end control point
+                         double time1,
+                         double time2,
+                         KeyframeTypeEnum interp,
+                         KeyframeTypeEnum interpNext)
 {
     double P0 = vcur;
     double P3 = vnext;
@@ -610,7 +610,9 @@ Interpolation::integrate(double tcur,
     return ret * (tnext - tcur);
 }
 
-namespace {
+
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
 enum SolTypeEnum
 {
     eSolTypeMin,
@@ -648,7 +650,9 @@ struct Sol_less_than_t
         return struct1.t < struct2.t;
     }
 };
-}
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
 
 // comptute the function type after sol, from the function type before sol
 static FuncTypeEnum
@@ -697,17 +701,17 @@ statusUpdate(FuncTypeEnum status,
 // integrate from time1 to time2 with clamping of the function values in [vmin,vmax]
 double
 Interpolation::integrate_clamp(double tcur,
-                        const double vcur,                     //start control point
-                        const double vcurDerivRight,        //being the derivative dv/dt at tcur
-                        const double vnextDerivLeft,        //being the derivative dv/dt at tnext
-                        double tnext,
-                        const double vnext,                      //end control point
-                        double time1,
-                        double time2,
-                        double vmin,
-                        double vmax,
-                        KeyframeTypeEnum interp,
-                        KeyframeTypeEnum interpNext)
+                               const double vcur,              //start control point
+                               const double vcurDerivRight, //being the derivative dv/dt at tcur
+                               const double vnextDerivLeft, //being the derivative dv/dt at tnext
+                               double tnext,
+                               const double vnext,               //end control point
+                               double time1,
+                               double time2,
+                               double vmin,
+                               double vmax,
+                               KeyframeTypeEnum interp,
+                               KeyframeTypeEnum interpNext)
 {
     double P0 = vcur;
     double P3 = vnext;
@@ -751,10 +755,10 @@ Interpolation::integrate_clamp(double tcur,
     // algorithm: order the solutions, sort them wrt time. The cubic sections are where there are transitions bewteen min and max solutions.
     std::vector<Sol> sols;
     for (int i = 0; i < nmax; ++i) {
-        sols.push_back( Sol( eSolTypeMax,tmax[i],omax[i],cubicDerive(c0, c1, c2, c3, tmax[i]) ) );
+        sols.push_back( Sol( eSolTypeMax, tmax[i], omax[i], cubicDerive(c0, c1, c2, c3, tmax[i]) ) );
     }
     for (int i = 0; i < nmin; ++i) {
-        sols.push_back( Sol( eSolTypeMin,tmin[i],omin[i],cubicDerive(c0, c1, c2, c3, tmin[i]) ) );
+        sols.push_back( Sol( eSolTypeMin, tmin[i], omin[i], cubicDerive(c0, c1, c2, c3, tmin[i]) ) );
     }
 
     const double t2 = (time2 - tcur) / (tnext - tcur);
@@ -915,18 +919,18 @@ Interpolation::integrate_clamp(double tcur,
  */
 void
 Interpolation::autoComputeDerivatives(KeyframeTypeEnum interpPrev,
-                               KeyframeTypeEnum interp,
-                               KeyframeTypeEnum interpNext,
-                               double tprev,
-                               const double vprev,                    // vprev = Q0
-                               double tcur,
-                               const double vcur,                   // vcur = Q3 = P0
-                               double tnext,
-                               const double vnext,                    // vnext = P3
-                               const double vprevDerivRight,      // Q0'_r
-                               const double vnextDerivLeft,      // P3'_l
-                               double *vcurDerivLeft,      // Q3'_l
-                               double *vcurDerivRight)       // P0'_r
+                                      KeyframeTypeEnum interp,
+                                      KeyframeTypeEnum interpNext,
+                                      double tprev,
+                                      const double vprev,             // vprev = Q0
+                                      double tcur,
+                                      const double vcur,            // vcur = Q3 = P0
+                                      double tnext,
+                                      const double vnext,             // vnext = P3
+                                      const double vprevDerivRight, // Q0'_r
+                                      const double vnextDerivLeft, // P3'_l
+                                      double *vcurDerivLeft, // Q3'_l
+                                      double *vcurDerivRight) // P0'_r
 {
     const double Q0 = vprev;
     const double Q3 = vcur;
@@ -955,7 +959,7 @@ Interpolation::autoComputeDerivatives(KeyframeTypeEnum interpPrev,
     bool keyframe_none_same_derivative = false;
 
     // if there is no next/previous keyframe, use LINEAR interpolation (except for horizontal, see bug #1050), and set keyframe_none_same_derivative
-    if ( interp != eKeyframeTypeHorizontal && ((interpPrev == eKeyframeTypeNone) || (interpNext == eKeyframeTypeNone)) ) {
+    if ( (interp != eKeyframeTypeHorizontal) && ( (interpPrev == eKeyframeTypeNone) || (interpNext == eKeyframeTypeNone) ) ) {
         // Do this before modifying interp (next line)
         keyframe_none_same_derivative = (interp == eKeyframeTypeCatmullRom || interp == eKeyframeTypeCubic);
         interp = eKeyframeTypeLinear;

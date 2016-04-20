@@ -34,24 +34,24 @@ NATRON_NAMESPACE_ENTER;
  **/
 class BufferableObject
 {
-    
     int uniqueID; //< used to differentiate frames which may belong to the same time/view (e.g when wipe is enabled)
+
 public:
-    
+
     int getUniqueID() const
     {
         return uniqueID;
     }
-    
+
     BufferableObject() : uniqueID(0) {}
-    
+
     virtual ~BufferableObject() {}
-    
+
     void setUniqueID(int aid)
     {
         uniqueID = aid;
     }
-    
+
     virtual std::size_t sizeInRAM() const = 0;
 };
 

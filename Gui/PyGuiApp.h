@@ -40,122 +40,115 @@ NATRON_PYTHON_NAMESPACE_ENTER;
 
 class PyViewer
 {
-    
     NodePtr _node;
     ViewerTab* _viewer;
-    
+
 public:
-    
+
     PyViewer(const NodePtr& node);
-    
+
     ~PyViewer();
-    
+
     void seek(int frame);
-    
+
     int getCurrentFrame();
-    
+
     void startForward();
-    
+
     void startBackward();
-    
+
     void pause();
-    
+
     void redraw();
-    
+
     void renderCurrentFrame(bool useCache = true);
-    
-    void setFrameRange(int firstFrame,int lastFrame);
-    
-    void getFrameRange(int* firstFrame,int* lastFrame) const;
-    
+
+    void setFrameRange(int firstFrame, int lastFrame);
+
+    void getFrameRange(int* firstFrame, int* lastFrame) const;
+
     void setPlaybackMode(PlaybackModeEnum mode);
-    
+
     PlaybackModeEnum getPlaybackMode() const;
-    
+
     ViewerCompositingOperatorEnum getCompositingOperator() const;
-    
+
     void setCompositingOperator(ViewerCompositingOperatorEnum op);
-    
+
     int getAInput() const;
 
     void setAInput(int index);
-    
+
     int getBInput() const;
-    
+
     void setBInput(int index);
-    
+
     void setChannels(DisplayChannelsEnum channels);
-    
+
     DisplayChannelsEnum getChannels() const;
-    
+
     void setProxyModeEnabled(bool enabled);
-    
+
     bool isProxyModeEnabled() const;
-    
+
     void setProxyIndex(int index);
-    
+
     int getProxyIndex() const;
-    
-     /* Python API: do not use ViewIdx */
+
+    /* Python API: do not use ViewIdx */
     void setCurrentView(int index);
-    
-     /* Python API: do not use ViewIdx */
+
+    /* Python API: do not use ViewIdx */
     int getCurrentView() const;
-    
 };
 
-class GuiApp : public App
+class GuiApp
+    : public App
 {
     GuiAppInstance* _app;
-    
+
 public:
-    
+
     GuiApp(AppInstance* app);
-    
+
     virtual ~GuiApp();
-    
+
     Gui* getGui() const;
-    
     PyModalDialog* createModalDialog();
-        
     PyTabWidget* getTabWidget(const QString& name) const;
-    
     PyTabWidget* getActiveTabWidget() const;
-    
-    bool moveTab(const QString& scriptName,PyTabWidget* pane);
-    
-    void registerPythonPanel(PyPanel* panel,const QString& pythonFunction);
+
+    bool moveTab(const QString& scriptName, PyTabWidget* pane);
+
+    void registerPythonPanel(PyPanel* panel, const QString& pythonFunction);
     void unregisterPythonPanel(PyPanel* panel);
-    
-    QString getFilenameDialog(const QStringList& filters,const QString& location = QString()) const;
-    
-    QString getSequenceDialog(const QStringList& filters,const QString& location = QString()) const;
-    
-    QString getDirectoryDialog(const QString& location = QString()) const;
-    
-    QString saveFilenameDialog(const QStringList& filters,const QString& location = QString()) const;
-    
-    QString saveSequenceDialog(const QStringList& filters,const QString& location = QString()) const;
+
+    QString getFilenameDialog( const QStringList& filters, const QString& location = QString() ) const;
+
+    QString getSequenceDialog( const QStringList& filters, const QString& location = QString() ) const;
+
+    QString getDirectoryDialog( const QString& location = QString() ) const;
+
+    QString saveFilenameDialog( const QStringList& filters, const QString& location = QString() ) const;
+
+    QString saveSequenceDialog( const QStringList& filters, const QString& location = QString() ) const;
 
     ColorTuple getRGBColorDialog() const;
-    
+
     std::list<Effect*> getSelectedNodes(Group* group = 0) const;
-    
+
     void selectNode(Effect* effect, bool clearPreviousSelection);
     void setSelection(const std::list<Effect*>& nodes);
     void selectAllNodes(Group* group = 0);
     void deselectNode(Effect* effect);
     void clearSelection(Group* group = 0);
-    
-    PyViewer* getViewer(const QString& scriptName) const;
-    
-    PyViewer* getActiveViewer() const;
-    
-    PyPanel* getUserPanel(const QString& scriptName) const;
-    
-    void renderBlocking(Effect* writeNode,int firstFrame, int lastFrame,int frameStep = 1);
-    void renderBlocking(const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames,const std::list<int>& frameSteps);
 
+    PyViewer* getViewer(const QString& scriptName) const;
+    PyViewer* getActiveViewer() const;
+    PyPanel* getUserPanel(const QString& scriptName) const;
+
+    void renderBlocking(Effect* writeNode, int firstFrame, int lastFrame, int frameStep = 1);
+    void renderBlocking(const std::list<Effect*>& effects, const std::list<int>& firstFrames, const std::list<int>& lastFrames, const std::list<int>& frameSteps);
 };
 
 NATRON_PYTHON_NAMESPACE_EXIT;

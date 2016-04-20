@@ -52,9 +52,9 @@ KnobGui::onInternalValueChanged(ViewSpec /*view*/,
     if (_imp->guiRemoved) {
         return;
     }
-    if (_imp->widgetCreated && (ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited) {
+    if ( _imp->widgetCreated && ( (ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited ) ) {
         updateGuiInternal(dimension);
-        if (!getKnob()->getExpression(dimension).empty()) {
+        if ( !getKnob()->getExpression(dimension).empty() ) {
             Q_EMIT refreshCurveEditor();
         }
     }
@@ -67,22 +67,23 @@ KnobGui::updateCurveEditorKeyframes()
 }
 
 void
-KnobGui::onMultipleKeySet(const std::list<double>& keys, ViewSpec /*view*/,int /*dimension*/, int reason)
+KnobGui::onMultipleKeySet(const std::list<double>& keys,
+                          ViewSpec /*view*/,
+                          int /*dimension*/,
+                          int reason)
 {
-    
-    if ((ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited) {
+    if ( (ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited ) {
         KnobPtr knob = getKnob();
-        if ( !knob->getIsSecret() && (knob->isDeclaredByPlugin()  || knob->isUserKnob())) {
+        if ( !knob->getIsSecret() && ( knob->isDeclaredByPlugin()  || knob->isUserKnob() ) ) {
             std::list<SequenceTime> intKeys;
-            for (std::list<double>::const_iterator it = keys.begin() ; it != keys.end(); ++it) {
+            for (std::list<double>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
                 intKeys.push_back(*it);
             }
             knob->getHolder()->getApp()->addMultipleKeyframeIndicatorsAdded(intKeys, true);
         }
     }
-    
-    updateCurveEditorKeyframes();
 
+    updateCurveEditorKeyframes();
 }
 
 void
@@ -92,16 +93,15 @@ KnobGui::onInternalKeySet(double time,
                           int reason,
                           bool added )
 {
-    if ((ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited) {
+    if ( (ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited ) {
         if (added) {
             KnobPtr knob = getKnob();
-            if ( !knob->getIsSecret() && (knob->isDeclaredByPlugin() || knob->isUserKnob())) {
+            if ( !knob->getIsSecret() && ( knob->isDeclaredByPlugin() || knob->isUserKnob() ) ) {
                 knob->getHolder()->getApp()->addKeyframeIndicator(time);
             }
         }
-
     }
-    
+
     updateCurveEditorKeyframes();
 }
 
@@ -112,7 +112,8 @@ KnobGui::onInternalKeyRemoved(double time,
                               int /*reason*/)
 {
     KnobPtr knob = getKnob();
-    if ( !knob->getIsSecret() && (knob->isDeclaredByPlugin() || knob->isUserKnob())) {
+
+    if ( !knob->getIsSecret() && ( knob->isDeclaredByPlugin() || knob->isUserKnob() ) ) {
         knob->getHolder()->getApp()->removeKeyFrameIndicator(time);
     }
     Q_EMIT keyFrameRemoved();
@@ -124,11 +125,11 @@ KnobGui::copyAnimationToClipboard(int dimension) const
     copyToClipBoard(eKnobClipBoardTypeCopyAnim, dimension);
 }
 
-
 void
 KnobGui::onCopyAnimationActionTriggered()
 {
-    QAction* act = qobject_cast<QAction*>(sender());
+    QAction* act = qobject_cast<QAction*>( sender() );
+
     if (!act) {
         return;
     }
@@ -136,25 +137,23 @@ KnobGui::onCopyAnimationActionTriggered()
     copyAnimationToClipboard(dim);
 }
 
-
 void
 KnobGui::copyValuesToClipboard(int dimension ) const
 {
     copyToClipBoard(eKnobClipBoardTypeCopyValue, dimension);
-
 }
 
 void
 KnobGui::onCopyValuesActionTriggered()
 {
-    QAction* act = qobject_cast<QAction*>(sender());
+    QAction* act = qobject_cast<QAction*>( sender() );
+
     if (!act) {
         return;
     }
     int dim = act->data().toInt();
     copyValuesToClipboard(dim);
 }
-
 
 void
 KnobGui::copyLinkToClipboard(int dimension) const
@@ -165,7 +164,8 @@ KnobGui::copyLinkToClipboard(int dimension) const
 void
 KnobGui::onCopyLinksActionTriggered()
 {
-    QAction* act = qobject_cast<QAction*>(sender());
+    QAction* act = qobject_cast<QAction*>( sender() );
+
     if (!act) {
         return;
     }
@@ -174,10 +174,11 @@ KnobGui::onCopyLinksActionTriggered()
 }
 
 void
-KnobGui::copyToClipBoard(KnobClipBoardType type, int dimension) const
+KnobGui::copyToClipBoard(KnobClipBoardType type,
+                         int dimension) const
 {
-   
     KnobPtr knob = getKnob();
+
     if (!knob) {
         return;
     }
@@ -189,10 +190,11 @@ void
 KnobGui::pasteClipBoard(int targetDimension)
 {
     KnobPtr knob = getKnob();
+
     if (!knob) {
         return;
     }
-    
+
     //the dimension from which it was copied from
     int cbDim;
     KnobClipBoardType type;
@@ -201,44 +203,48 @@ KnobGui::pasteClipBoard(int targetDimension)
     if (!fromKnob) {
         return;
     }
-    
-    if (targetDimension == 0 && !getAllDimensionsVisible()) {
+
+    if ( (targetDimension == 0) && !getAllDimensionsVisible() ) {
         targetDimension = -1;
     }
-    
-    if (!knob->isAnimationEnabled() && type == eKnobClipBoardTypeCopyAnim) {
-        Dialogs::errorDialog(tr("Paste").toStdString(), tr("This parameter does not support animation").toStdString());
+
+    if ( !knob->isAnimationEnabled() && (type == eKnobClipBoardTypeCopyAnim) ) {
+        Dialogs::errorDialog( tr("Paste").toStdString(), tr("This parameter does not support animation").toStdString() );
+
         return;
     }
 
-    if (!KnobI::areTypesCompatibleForSlave(fromKnob.get(),knob.get())) {
-        Dialogs::errorDialog(tr("Paste").toStdString(), tr("You can only copy/paste between parameters of the same type. To overcome this, use an expression instead.").toStdString());
-        return;
-    }
-    
-    if (cbDim != -1 && targetDimension == -1) {
-        Dialogs::errorDialog(tr("Paste").toStdString(), tr("When copy/pasting on all dimensions, original and target parameters must have the same dimension.").toStdString());
-        return;
-    }
-    
-    if ((targetDimension == -1 || cbDim == -1) && fromKnob->getDimension() != knob->getDimension()) {
-        Dialogs::errorDialog(tr("Paste").toStdString(), tr("When copy/pasting on all dimensions, original and target parameters must have the same dimension.").toStdString());
+    if ( !KnobI::areTypesCompatibleForSlave( fromKnob.get(), knob.get() ) ) {
+        Dialogs::errorDialog( tr("Paste").toStdString(), tr("You can only copy/paste between parameters of the same type. To overcome this, use an expression instead.").toStdString() );
+
         return;
     }
 
-    pushUndoCommand(new PasteUndoCommand(shared_from_this(),type, cbDim, targetDimension, fromKnob));
+    if ( (cbDim != -1) && (targetDimension == -1) ) {
+        Dialogs::errorDialog( tr("Paste").toStdString(), tr("When copy/pasting on all dimensions, original and target parameters must have the same dimension.").toStdString() );
+
+        return;
+    }
+
+    if ( ( (targetDimension == -1) || (cbDim == -1) ) && ( fromKnob->getDimension() != knob->getDimension() ) ) {
+        Dialogs::errorDialog( tr("Paste").toStdString(), tr("When copy/pasting on all dimensions, original and target parameters must have the same dimension.").toStdString() );
+
+        return;
+    }
+
+    pushUndoCommand( new PasteUndoCommand(shared_from_this(), type, cbDim, targetDimension, fromKnob) );
 } // pasteClipBoard
-
 
 void
 KnobGui::onPasteActionTriggered()
 {
-    QAction* act = qobject_cast<QAction*>(sender());
+    QAction* act = qobject_cast<QAction*>( sender() );
+
     if (!act) {
         return;
     }
-    
-    pasteClipBoard(act->data().toInt());
+
+    pasteClipBoard( act->data().toInt() );
 }
 
 void
@@ -255,41 +261,40 @@ KnobGui::onKnobSlavedChanged(int /*dimension*/,
 void
 KnobGui::linkTo(int dimension)
 {
-    
     KnobPtr thisKnob = getKnob();
+
     assert(thisKnob);
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(thisKnob->getHolder());
+    EffectInstance* isEffect = dynamic_cast<EffectInstance*>( thisKnob->getHolder() );
     if (!isEffect) {
         return;
     }
-    
-    
+
+
     for (int i = 0; i < thisKnob->getDimension(); ++i) {
-        
-        if (i == dimension || dimension == -1) {
+        if ( (i == dimension) || (dimension == -1) ) {
             std::string expr = thisKnob->getExpression(dimension);
-            if (!expr.empty()) {
-                Dialogs::errorDialog(tr("Param Link").toStdString(),tr("This parameter already has an expression set, edit or clear it.").toStdString());
+            if ( !expr.empty() ) {
+                Dialogs::errorDialog( tr("Param Link").toStdString(), tr("This parameter already has an expression set, edit or clear it.").toStdString() );
+
                 return;
             }
         }
     }
-    
-    LinkToKnobDialog dialog( shared_from_this(),_imp->copyRightClickMenu->parentWidget() );
+
+    LinkToKnobDialog dialog( shared_from_this(), _imp->copyRightClickMenu->parentWidget() );
 
     if ( dialog.exec() ) {
-        KnobPtr  otherKnob = dialog.getSelectedKnobs();
+        KnobPtr otherKnob = dialog.getSelectedKnobs();
         if (otherKnob) {
             if ( !thisKnob->isTypeCompatible(otherKnob) ) {
                 Dialogs::errorDialog( tr("Param Link").toStdString(), tr("Types incompatibles!").toStdString() );
 
                 return;
             }
-            
-            
+
 
             for (int i = 0; i < thisKnob->getDimension(); ++i) {
-                std::pair<int,KnobPtr > existingLink = thisKnob->getMaster(i);
+                std::pair<int, KnobPtr > existingLink = thisKnob->getMaster(i);
                 if (existingLink.second) {
                     std::string err( tr("Cannot link ").toStdString() );
                     err.append( thisKnob->getLabel() );
@@ -299,18 +304,17 @@ KnobGui::linkTo(int dimension)
 
                     return;
                 }
-                
             }
-            
-            EffectInstance* otherEffect = dynamic_cast<EffectInstance*>(otherKnob->getHolder());
+
+            EffectInstance* otherEffect = dynamic_cast<EffectInstance*>( otherKnob->getHolder() );
             if (!otherEffect) {
                 return;
             }
-            
+
             std::stringstream expr;
             boost::shared_ptr<NodeCollection> thisCollection = isEffect->getNode()->getGroup();
             NodeGroup* otherIsGroup = dynamic_cast<NodeGroup*>(otherEffect);
-            if (otherIsGroup == thisCollection.get()) {
+            if ( otherIsGroup == thisCollection.get() ) {
                 expr << "thisGroup"; // make expression generic if possible
             } else {
                 expr << otherEffect->getNode()->getFullyQualifiedName();
@@ -319,10 +323,10 @@ KnobGui::linkTo(int dimension)
             if (otherKnob->getDimension() > 1) {
                 expr << "[dimension]";
             }
-            
+
             thisKnob->beginChanges();
             for (int i = 0; i < thisKnob->getDimension(); ++i) {
-                if (i == dimension || dimension == -1) {
+                if ( (i == dimension) || (dimension == -1) ) {
                     thisKnob->setExpression(i, expr.str(), false, false);
                 }
             }
@@ -332,17 +336,17 @@ KnobGui::linkTo(int dimension)
             thisKnob->getHolder()->getApp()->triggerAutoSave();
         }
     }
-}
+} // KnobGui::linkTo
 
 void
 KnobGui::onLinkToActionTriggered()
 {
-    QAction* action = qobject_cast<QAction*>(sender());
-    assert(action);
-    
-    linkTo(action->data().toInt());
-}
+    QAction* action = qobject_cast<QAction*>( sender() );
 
+    assert(action);
+
+    linkTo( action->data().toInt() );
+}
 
 void
 KnobGui::onResetDefaultValuesActionTriggered()
@@ -380,7 +384,7 @@ KnobGui::setReadOnly_(bool readOnly,
     ///This code doesn't work since the knob dimensions are still enabled even if readonly
     bool hasDimensionEnabled = false;
     for (int i = 0; i < getKnob()->getDimension(); ++i) {
-        if (getKnob()->isEnabled(i)) {
+        if ( getKnob()->isEnabled(i) ) {
             hasDimensionEnabled = true;
         }
     }
@@ -433,13 +437,13 @@ KnobGui::onSetValueUsingUndoStack(const Variant & v,
     Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
 
     if (isInt) {
-        pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(),isInt->getValue(dim),v.toInt(),dim) );
+        pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(), isInt->getValue(dim), v.toInt(), dim) );
     } else if (isBool) {
-        pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(),isBool->getValue(dim),v.toBool(),dim) );
+        pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(), isBool->getValue(dim), v.toBool(), dim) );
     } else if (isDouble) {
-        pushUndoCommand( new KnobUndoCommand<double>(shared_from_this(),isDouble->getValue(dim),v.toDouble(),dim) );
+        pushUndoCommand( new KnobUndoCommand<double>(shared_from_this(), isDouble->getValue(dim), v.toDouble(), dim) );
     } else if (isString) {
-        pushUndoCommand( new KnobUndoCommand<std::string>(shared_from_this(),isString->getValue(dim),v.toString().toStdString(),dim) );
+        pushUndoCommand( new KnobUndoCommand<std::string>(shared_from_this(), isString->getValue(dim), v.toString().toStdString(), dim) );
     }
 }
 
@@ -515,7 +519,7 @@ KnobGui::restoreOpenGLContext()
 void
 KnobGui::setKnobGuiPointer()
 {
-    getKnob()->setKnobGuiPointer(shared_from_this());
+    getKnob()->setKnobGuiPointer( shared_from_this() );
 }
 
 void
@@ -535,7 +539,8 @@ void
 KnobGui::removeAllKeyframeMarkersOnTimeline(int dimension)
 {
     KnobPtr knob = getKnob();
-    if ( knob->getHolder() && knob->getHolder()->getApp() && !knob->getIsSecret() && (knob->isDeclaredByPlugin() || knob->isUserKnob())) {
+
+    if ( knob->getHolder() && knob->getHolder()->getApp() && !knob->getIsSecret() && ( knob->isDeclaredByPlugin() || knob->isUserKnob() ) ) {
         AppInstance* app = knob->getHolder()->getApp();
         assert(app);
         std::list<SequenceTime> times;
@@ -543,7 +548,7 @@ KnobGui::removeAllKeyframeMarkersOnTimeline(int dimension)
         if (dimension == -1) {
             int dim = knob->getDimension();
             for (int i = 0; i < dim; ++i) {
-                boost::shared_ptr<Curve> curve = knob->getCurve(ViewIdx(0),i);
+                boost::shared_ptr<Curve> curve = knob->getCurve(ViewIdx(0), i);
                 if (curve) {
                     KeyFrameSet kfs = curve->getKeyFrames_mt_safe();
                     for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
@@ -551,11 +556,11 @@ KnobGui::removeAllKeyframeMarkersOnTimeline(int dimension)
                     }
                 }
             }
-            for (std::set<SequenceTime>::iterator it=tmpTimes.begin(); it!=tmpTimes.end(); ++it) {
+            for (std::set<SequenceTime>::iterator it = tmpTimes.begin(); it != tmpTimes.end(); ++it) {
                 times.push_back(*it);
             }
         } else {
-            boost::shared_ptr<Curve> curve = knob->getCurve(ViewIdx(0),dimension);
+            boost::shared_ptr<Curve> curve = knob->getCurve(ViewIdx(0), dimension);
             if (curve) {
                 KeyFrameSet kfs = curve->getKeyFrames_mt_safe();
                 for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
@@ -563,8 +568,8 @@ KnobGui::removeAllKeyframeMarkersOnTimeline(int dimension)
                 }
             }
         }
-        if (!times.empty()) {
-            app->removeMultipleKeyframeIndicator(times,true);
+        if ( !times.empty() ) {
+            app->removeMultipleKeyframeIndicator(times, true);
         }
     }
 }
@@ -574,31 +579,33 @@ KnobGui::setAllKeyframeMarkersOnTimeline(int dimension)
 {
     KnobPtr knob = getKnob();
     AppInstance* app = knob->getHolder()->getApp();
+
     assert(app);
     std::list<SequenceTime> times;
 
     if (dimension == -1) {
         int dim = knob->getDimension();
         for (int i = 0; i < dim; ++i) {
-            KeyFrameSet kfs = knob->getCurve(ViewIdx(0),i)->getKeyFrames_mt_safe();
+            KeyFrameSet kfs = knob->getCurve(ViewIdx(0), i)->getKeyFrames_mt_safe();
             for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
                 times.push_back( it->getTime() );
             }
         }
     } else {
-        KeyFrameSet kfs = knob->getCurve(ViewIdx(0),dimension)->getKeyFrames_mt_safe();
+        KeyFrameSet kfs = knob->getCurve(ViewIdx(0), dimension)->getKeyFrames_mt_safe();
         for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
             times.push_back( it->getTime() );
         }
     }
-    app->addMultipleKeyframeIndicatorsAdded(times,true);
+    app->addMultipleKeyframeIndicatorsAdded(times, true);
 }
 
 void
 KnobGui::setKeyframeMarkerOnTimeline(double time)
 {
     KnobPtr knob = getKnob();
-    if (knob->isDeclaredByPlugin() || knob->isUserKnob()) {
+
+    if ( knob->isDeclaredByPlugin() || knob->isUserKnob() ) {
         knob->getHolder()->getApp()->addKeyframeIndicator(time);
     }
 }
@@ -614,7 +621,7 @@ KnobGui::onKeyFrameMoved(ViewSpec /*view*/,
     if ( !knob->isAnimationEnabled() || !knob->canAnimate() ) {
         return;
     }
-    if (knob->isDeclaredByPlugin() || knob->isUserKnob()) {
+    if ( knob->isDeclaredByPlugin() || knob->isUserKnob() ) {
         AppInstance* app = knob->getHolder()->getApp();
         assert(app);
         app->removeKeyFrameIndicator(oldTime);
@@ -630,12 +637,10 @@ KnobGui::onAnimationLevelChanged(ViewSpec /*idx*/,
         KnobPtr knob = getKnob();
         int dim = knob->getDimension();
         for (int i = 0; i < dim; ++i) {
-            if (i == dimension || dimension == -1) {
-                reflectAnimationLevel(i, knob->getAnimationLevel(i));
+            if ( (i == dimension) || (dimension == -1) ) {
+                reflectAnimationLevel( i, knob->getAnimationLevel(i) );
             }
         }
-        
-        
     }
 }
 
@@ -648,15 +653,16 @@ KnobGui::onAppendParamEditChanged(int reason,
                                   bool createNewCommand,
                                   bool setKeyFrame)
 {
-    pushUndoCommand( new MultipleKnobEditsUndoCommand(shared_from_this(),(ValueChangedReasonEnum)reason, createNewCommand, setKeyFrame, v, dimension, time) );
+    pushUndoCommand( new MultipleKnobEditsUndoCommand(shared_from_this(), (ValueChangedReasonEnum)reason, createNewCommand, setKeyFrame, v, dimension, time) );
 }
 
 void
 KnobGui::onFrozenChanged(bool frozen)
 {
     KnobPtr knob = getKnob();
-    KnobButton* isBtn = dynamic_cast<KnobButton*>(knob.get());
-    if (isBtn && !isBtn->isRenderButton()) {
+    KnobButton* isBtn = dynamic_cast<KnobButton*>( knob.get() );
+
+    if ( isBtn && !isBtn->isRenderButton() ) {
         return;
     }
     int dims = knob->getDimension();
@@ -666,7 +672,7 @@ KnobGui::onFrozenChanged(bool frozen)
         if ( !frozen && knob->isSlave(i) ) {
             continue;
         }
-        if (knob->isEnabled(i)) {
+        if ( knob->isEnabled(i) ) {
             setReadOnly_(frozen, i);
         }
     }
@@ -691,25 +697,27 @@ KnobGui::onRedrawGuiCurve(int reason,
                           int /*dimension*/)
 {
     CurveChangeReason curveChangeReason = (CurveChangeReason)reason;
+
     switch (curveChangeReason) {
-        case eCurveChangeReasonCurveEditor:
-            Q_EMIT refreshDopeSheet();
-            break;
-        case eCurveChangeReasonDopeSheet:
-            Q_EMIT refreshCurveEditor();
-            break;
-        case eCurveChangeReasonInternal:
-            Q_EMIT refreshDopeSheet();
-            Q_EMIT refreshCurveEditor();
-            break;
+    case eCurveChangeReasonCurveEditor:
+        Q_EMIT refreshDopeSheet();
+        break;
+    case eCurveChangeReasonDopeSheet:
+        Q_EMIT refreshCurveEditor();
+        break;
+    case eCurveChangeReasonInternal:
+        Q_EMIT refreshDopeSheet();
+        Q_EMIT refreshCurveEditor();
+        break;
     }
-    
 }
 
 void
-KnobGui::setWarningValue(KnobWarningEnum warn,const QString& value)
+KnobGui::setWarningValue(KnobWarningEnum warn,
+                         const QString& value)
 {
     QString& warning = _imp->warningsMapping[warn];
+
     if (warning != value) {
         warning = value;
         refreshKnobWarningIndicatorVisibility();
@@ -724,20 +732,18 @@ KnobGui::refreshKnobWarningIndicatorVisibility()
     }
     QString fullTooltip;
     bool hasWarning = false;
-    for (std::map<KnobGui::KnobWarningEnum, QString>::iterator it = _imp->warningsMapping.begin(); it!=_imp->warningsMapping.end(); ++it) {
-        if (!it->second.isEmpty()) {
+    for (std::map<KnobGui::KnobWarningEnum, QString>::iterator it = _imp->warningsMapping.begin(); it != _imp->warningsMapping.end(); ++it) {
+        if ( !it->second.isEmpty() ) {
             hasWarning = true;
             fullTooltip += QString::fromUtf8("<p>");
             fullTooltip += it->second;
             fullTooltip += QString::fromUtf8("</p>");
-
         }
     }
     if (hasWarning) {
         _imp->warningIndicator->setToolTip(fullTooltip);
     }
     _imp->warningIndicator->setVisible(hasWarning);
-    
 }
 
 void
@@ -748,11 +754,10 @@ KnobGui::onExprChanged(int dimension)
     }
     KnobPtr knob = getKnob();
     std::string exp = knob->getExpression(dimension);
-    reflectExpressionState(dimension,!exp.empty());
-    if (exp.empty()) {
-        reflectAnimationLevel(dimension, knob->getAnimationLevel(dimension));
+    reflectExpressionState( dimension, !exp.empty() );
+    if ( exp.empty() ) {
+        reflectAnimationLevel( dimension, knob->getAnimationLevel(dimension) );
     } else {
-        
         NodeSettingsPanel* isNodeSettings = dynamic_cast<NodeSettingsPanel*>(_imp->container);
         if (isNodeSettings) {
             NodeGuiPtr node = isNodeSettings->getNode();
@@ -760,23 +765,23 @@ KnobGui::onExprChanged(int dimension)
                 node->onKnobExpressionChanged(this);
             }
         }
-        
+
         if (_imp->warningIndicator) {
             bool invalid = false;
             QString fullErrTooltip;
             int dims = knob->getDimension();
             for (int i = 0; i < dims; ++i) {
                 std::string err;
-                if (!knob->isExpressionValid(i, &err)) {
+                if ( !knob->isExpressionValid(i, &err) ) {
                     invalid = true;
                 }
-                if (dims > 1 && invalid) {
+                if ( (dims > 1) && invalid ) {
                     fullErrTooltip += QString::fromUtf8("<p><b>");
-                    fullErrTooltip += QString::fromUtf8(knob->getDimensionName(i).c_str());
+                    fullErrTooltip += QString::fromUtf8( knob->getDimensionName(i).c_str() );
                     fullErrTooltip += QString::fromUtf8("</b></p>");
                 }
-                if (!err.empty()) {
-                    fullErrTooltip += QString::fromUtf8(err.c_str());
+                if ( !err.empty() ) {
+                    fullErrTooltip += QString::fromUtf8( err.c_str() );
                 }
             }
             if (invalid) {
@@ -785,19 +790,17 @@ KnobGui::onExprChanged(int dimension)
                 toPrepend += QObject::tr("Invalid expression(s), value returned is the underlying curve:");
                 toPrepend += QString::fromUtf8("</p>");
                 fullErrTooltip.prepend(toPrepend);
-                
+
                 setWarningValue(eKnobWarningExpressionInvalid, fullErrTooltip);
             } else {
-                setWarningValue(eKnobWarningExpressionInvalid, QString());
+                setWarningValue( eKnobWarningExpressionInvalid, QString() );
             }
         }
         onHelpChanged();
         Q_EMIT expressionChanged();
-        
     }
     updateGUI(dimension);
-    
-}
+} // KnobGui::onExprChanged
 
 void
 KnobGui::onHelpChanged()
@@ -807,7 +810,6 @@ KnobGui::onHelpChanged()
     }
     updateToolTip();
 }
-
 
 void
 KnobGui::onHasModificationsChanged()
@@ -831,19 +833,19 @@ KnobGui::onLabelChanged()
             return;
         }
         const std::string& iconLabel = knob->getIconLabel();
-        if (!iconLabel.empty()) {
+        if ( !iconLabel.empty() ) {
             return;
         }
         std::string descriptionLabel;
-        KnobString* isStringKnob = dynamic_cast<KnobString*>(knob.get());
+        KnobString* isStringKnob = dynamic_cast<KnobString*>( knob.get() );
         bool isLabelKnob = isStringKnob && isStringKnob->isLabel();
         if (isLabelKnob) {
             descriptionLabel = isStringKnob->getValue();
         } else {
             descriptionLabel = knob->getLabel();
         }
-        
-        _imp->descriptionLabel->setText_overload(QString::fromUtf8(descriptionLabel.c_str()));
+
+        _imp->descriptionLabel->setText_overload( QString::fromUtf8( descriptionLabel.c_str() ) );
         onLabelChangedInternal();
     }
 }

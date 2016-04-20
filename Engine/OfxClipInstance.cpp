@@ -63,33 +63,32 @@ struct OfxClipInstancePrivate
     boost::weak_ptr<OfxEffectInstance> nodeInstance;
     OfxImageEffectInstance* const effect;
     double aspectRatio;
-    
     bool optional;
     bool mask;
-    
     boost::shared_ptr<TLSHolder<OfxClipInstance::ClipTLSData> > tlsData;
-    
-    OfxClipInstancePrivate(OfxClipInstance* publicInterface, const boost::shared_ptr<OfxEffectInstance>& nodeInstance, OfxImageEffectInstance* effect)
-    : _publicInterface(publicInterface)
-    , nodeInstance(nodeInstance)
-    , effect(effect)
-    , aspectRatio(1.)
-    , optional(false)
-    , mask(false)
-    , tlsData(new TLSHolder<OfxClipInstance::ClipTLSData>())
+
+    OfxClipInstancePrivate(OfxClipInstance* publicInterface,
+                           const boost::shared_ptr<OfxEffectInstance>& nodeInstance,
+                           OfxImageEffectInstance* effect)
+        : _publicInterface(publicInterface)
+        , nodeInstance(nodeInstance)
+        , effect(effect)
+        , aspectRatio(1.)
+        , optional(false)
+        , mask(false)
+        , tlsData( new TLSHolder<OfxClipInstance::ClipTLSData>() )
     {
-        
     }
-    
+
     const std::vector<std::string>& getComponentsPresentInternal(const OfxClipInstance::ClipDataTLSPtr& tls) const;
 };
 
 OfxClipInstance::OfxClipInstance(const boost::shared_ptr<OfxEffectInstance>& nodeInstance,
                                  OfxImageEffectInstance* effect,
-                                 int  /*index*/,
+                                 int /*index*/,
                                  OFX::Host::ImageEffect::ClipDescriptor* desc)
     : OFX::Host::ImageEffect::ClipInstance(effect, *desc)
-    , _imp(new OfxClipInstancePrivate(this,nodeInstance,effect))
+    , _imp( new OfxClipInstancePrivate(this, nodeInstance, effect) )
 {
     assert(nodeInstance && effect);
     _imp->optional = isOptional();
@@ -98,7 +97,6 @@ OfxClipInstance::OfxClipInstance(const boost::shared_ptr<OfxEffectInstance>& nod
 
 OfxClipInstance::~OfxClipInstance()
 {
-    
 }
 
 bool
@@ -116,40 +114,43 @@ OfxClipInstance::getIsMask() const
 const std::string &
 OfxClipInstance::getUnmappedBitDepth() const
 {
-    
     static const std::string byteStr(kOfxBitDepthByte);
     static const std::string shortStr(kOfxBitDepthShort);
     static const std::string halfStr(kOfxBitDepthHalf);
     static const std::string floatStr(kOfxBitDepthFloat);
     static const std::string noneStr(kOfxBitDepthNone);
     EffectInstPtr inputNode = getAssociatedNode();
-  
+
     if (inputNode) {
         ///Get the input node's output preferred bit depth
         ImageBitDepthEnum depth = inputNode->getBitDepth(-1);
-        
+
         switch (depth) {
-            case eImageBitDepthByte:
-                return byteStr;
-                break;
-            case eImageBitDepthShort:
-                return shortStr;
-                break;
-            case eImageBitDepthHalf:
-                return halfStr;
-                break;
-            case eImageBitDepthFloat:
-                return floatStr;
-                break;
-            default:
-                break;
+        case eImageBitDepthByte:
+
+            return byteStr;
+            break;
+        case eImageBitDepthShort:
+
+            return shortStr;
+            break;
+        case eImageBitDepthHalf:
+
+            return halfStr;
+            break;
+        case eImageBitDepthFloat:
+
+            return floatStr;
+            break;
+        default:
+            break;
         }
     }
-    
+
     ///Return the hightest bit depth supported by the plugin
     EffectInstPtr effect = getEffectHolder();
     if (effect) {
-        const std::string& ret = natronsDepthToOfxDepth(effect->getNode()->getClosestSupportedBitDepth(eImageBitDepthFloat));
+        const std::string& ret = natronsDepthToOfxDepth( effect->getNode()->getClosestSupportedBitDepth(eImageBitDepthFloat) );
         if (ret == floatStr) {
             return floatStr;
         } else if (ret == shortStr) {
@@ -158,36 +159,32 @@ OfxClipInstance::getUnmappedBitDepth() const
             return byteStr;
         }
     }
-    return noneStr;
 
-}
+    return noneStr;
+} // OfxClipInstance::getUnmappedBitDepth
 
 const std::string &
 OfxClipInstance::getUnmappedComponents() const
 {
-
     static const std::string rgbStr(kOfxImageComponentRGB);
     static const std::string noneStr(kOfxImageComponentNone);
     static const std::string rgbaStr(kOfxImageComponentRGBA);
     static const std::string alphaStr(kOfxImageComponentAlpha);
-
     EffectInstPtr inputNode = getAssociatedNode();
 
     if (inputNode) {
         ///Get the input node's output preferred bit depth and componentns
         ClipDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-
-        
         ImageComponents comp = inputNode->getComponents(-1);
-      
-        
+
+
         //default to RGBA
         if (comp.getNumComponents() == 0) {
             comp = ImageComponents::getRGBAComponents();
         }
         tls->unmappedComponents = natronsComponentsToOfxComponents(comp);
+
         return tls->unmappedComponents;
-        
     } else {
         ///The node is not connected but optional, return the closest supported components
         ///of the first connected non optional input.
@@ -195,15 +192,15 @@ OfxClipInstance::getUnmappedComponents() const
             boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
             assert(effect);
             int nInputs = effect->getMaxInputCount();
-            for (int i  = 0 ; i < nInputs ; ++i) {
+            for (int i  = 0; i < nInputs; ++i) {
                 OfxClipInstance* clip = effect->getClipCorrespondingToInput(i);
-                if (clip && !clip->getIsOptional() && clip->getConnected() && clip->getComponents() != noneStr) {
+                if ( clip && !clip->getIsOptional() && clip->getConnected() && (clip->getComponents() != noneStr) ) {
                     return clip->getComponents();
                 }
             }
         }
-        
-        
+
+
         ///last-resort: black and transparant image means RGBA.
         return rgbaStr;
     }
@@ -218,38 +215,38 @@ const std::string &
 OfxClipInstance::getPremult() const
 {
     EffectInstPtr effect = getEffectHolder();
+
     if (!effect) {
         return natronsPremultToOfxPremult(eImagePremultiplicationPremultiplied);
     }
-    if (isOutput()) {
-        return natronsPremultToOfxPremult(effect->getPremult());
+    if ( isOutput() ) {
+        return natronsPremultToOfxPremult( effect->getPremult() );
     } else {
         EffectInstPtr associatedNode = getAssociatedNode();
-        return associatedNode ? natronsPremultToOfxPremult(associatedNode->getPremult()) : natronsPremultToOfxPremult(eImagePremultiplicationPremultiplied);
-    }
-   
-}
 
+        return associatedNode ? natronsPremultToOfxPremult( associatedNode->getPremult() ) : natronsPremultToOfxPremult(eImagePremultiplicationPremultiplied);
+    }
+}
 
 const std::vector<std::string>&
 OfxClipInstancePrivate::getComponentsPresentInternal(const OfxClipInstance::ClipDataTLSPtr& tls) const
 {
     tls->componentsPresent.clear();
-    
+
     EffectInstance::ComponentsAvailableMap compsAvailable;
     EffectInstPtr effect = _publicInterface->getAssociatedNode();
     if (!effect) {
         return tls->componentsPresent;
     }
     double time = effect->getCurrentTime();
-    
+
     effect->getComponentsAvailable(true, !_publicInterface->isOutput(), time, &compsAvailable);
     //   } // if (isOutput())
-    
+
     for (EffectInstance::ComponentsAvailableMap::iterator it = compsAvailable.begin(); it != compsAvailable.end(); ++it) {
-        tls->componentsPresent.push_back(OfxClipInstance::natronsComponentsToOfxComponents(it->first));
+        tls->componentsPresent.push_back( OfxClipInstance::natronsComponentsToOfxComponents(it->first) );
     }
-    
+
     return tls->componentsPresent;
 }
 
@@ -266,6 +263,7 @@ OfxClipInstance::getComponentsPresent() const OFX_EXCEPTION_SPEC
         //The components present have just been computed in the previous call to getDimension()
         //so we are fine here
         ClipDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+
         return tls->componentsPresent;
     } catch (...) {
         throw OFX::Host::Property::Exception(kOfxStatErrUnknown);
@@ -282,6 +280,7 @@ OfxClipInstance::getDimension(const std::string &name) const OFX_EXCEPTION_SPEC
     try {
         ClipDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
         const std::vector<std::string>& components = _imp->getComponentsPresentInternal(tls);
+
         return (int)components.size();
     } catch (...) {
         throw OFX::Host::Property::Exception(kOfxStatErrUnknown);
@@ -292,11 +291,10 @@ const std::string &
 OfxClipInstance::getComponents() const
 {
     /*
-     The property returned by the clip might differ from the one held on the image if the associated effect
-     is identity or if the effect is multi-planar
+       The property returned by the clip might differ from the one held on the image if the associated effect
+       is identity or if the effect is multi-planar
      */
     return _components;
-    
 }
 
 // overridden from OFX::Host::ImageEffect::ClipInstance
@@ -307,8 +305,8 @@ double
 OfxClipInstance::getAspectRatio() const
 {
     /*
-     The property returned by the clip might differ from the one held on the image if the associated effect 
-     is identity
+       The property returned by the clip might differ from the one held on the image if the associated effect
+       is identity
      */
     return _imp->aspectRatio;
 }
@@ -325,18 +323,18 @@ double
 OfxClipInstance::getFrameRate() const
 {
     /*
-     The frame rate property cannot be held onto images, hence return the "actual" frame rate,
-     taking into account the node from which the image came from wrt the identity state
+       The frame rate property cannot be held onto images, hence return the "actual" frame rate,
+       taking into account the node from which the image came from wrt the identity state
      */
     EffectInstPtr effect = getEffectHolder();
 
-    if (isOutput() || getName() == CLIP_OFX_ROTO) {
+    if ( isOutput() || (getName() == CLIP_OFX_ROTO) ) {
         return effect->getFrameRate();
     }
-    
+
     EffectInstPtr inputNode = getAssociatedNode();
     if (inputNode) {
-        inputNode = inputNode->getNearestNonIdentity(effect->getCurrentTime());
+        inputNode = inputNode->getNearestNonIdentity( effect->getCurrentTime() );
     }
     if (!inputNode) {
         return effect->getApp()->getProjectFrameRate();
@@ -344,7 +342,6 @@ OfxClipInstance::getFrameRate() const
         return inputNode->getFrameRate();
     }
 }
-
 
 // overridden from OFX::Host::ImageEffect::ClipInstance
 // Frame Range (startFrame, endFrame) -
@@ -355,13 +352,13 @@ OfxClipInstance::getFrameRange(double &startFrame,
                                double &endFrame) const
 {
     EffectInstPtr n = getAssociatedNode();
+
     if (n) {
         U64 hash = n->getRenderHash();
-        n->getFrameRange_public(hash,&startFrame, &endFrame);
-        
+        n->getFrameRange_public(hash, &startFrame, &endFrame);
     } else {
         n = getEffectHolder();
-        double first,last;
+        double first, last;
         n->getApp()->getFrameRange(&first, &last);
         startFrame = first;
         endFrame = last;
@@ -378,14 +375,16 @@ const std::string &
 OfxClipInstance::getFieldOrder() const
 {
     EffectInstPtr effect = getEffectHolder();
+
     if (!effect) {
         return natronsFieldingToOfxFielding(eImageFieldingOrderNone);
     }
-    if (isOutput()) {
-        return natronsFieldingToOfxFielding(effect->getFieldingOrder());
+    if ( isOutput() ) {
+        return natronsFieldingToOfxFielding( effect->getFieldingOrder() );
     } else {
         EffectInstPtr associatedNode = getAssociatedNode();
-        return associatedNode ? natronsFieldingToOfxFielding(associatedNode->getFieldingOrder()) : natronsFieldingToOfxFielding(eImageFieldingOrderNone);
+
+        return associatedNode ? natronsFieldingToOfxFielding( associatedNode->getFieldingOrder() ) : natronsFieldingToOfxFielding(eImageFieldingOrderNone);
     }
 }
 
@@ -398,6 +397,7 @@ OfxClipInstance::getConnected() const
 {
     ///a roto brush is always connected
     EffectInstPtr effect = getEffectHolder();
+
     assert(effect);
     if ( (getName() == CLIP_OFX_ROTO) && effect->getNode()->isRotoNode() ) {
         return true;
@@ -406,10 +406,9 @@ OfxClipInstance::getConnected() const
             return effect->hasOutputConnected();
         } else {
             int inputNb = getInputNb();
-            
             EffectInstPtr input;
-            
-            if (!effect->getNode()->isMaskEnabled(inputNb)) {
+
+            if ( !effect->getNode()->isMaskEnabled(inputNb) ) {
                 return false;
             }
             ImageComponents comps;
@@ -418,11 +417,11 @@ OfxClipInstance::getConnected() const
             if (maskInput) {
                 input = maskInput->getEffectInstance();
             }
-            
+
             if (!input) {
                 input = effect->getInput(inputNb);
             }
-            
+
             return input != NULL;
         }
     }
@@ -436,6 +435,7 @@ double
 OfxClipInstance::getUnmappedFrameRate() const
 {
 #pragma message WARN("OfxClipInstance::getUnmappedFrameRate() Unimplemented")
+
     return 25;
 }
 
@@ -461,16 +461,17 @@ bool
 OfxClipInstance::getContinuousSamples() const
 {
     EffectInstPtr effect = getEffectHolder();
+
     if (!effect) {
         return false;
     }
-    if (isOutput()) {
+    if ( isOutput() ) {
         return effect->canRenderContinuously();
     } else {
         EffectInstPtr associatedNode = getAssociatedNode();
+
         return associatedNode ? associatedNode->canRenderContinuously() : false;
     }
-    
 }
 
 void
@@ -480,42 +481,42 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,
                                                EffectInstance* associatedNode,
                                                OfxRectD* ret) const
 {
-    
     boost::shared_ptr<RotoDrawableItem> attachedStroke;
     EffectInstPtr effect = getEffectHolder();
+
     if (effect) {
-        assert(effect->getNode());
+        assert( effect->getNode() );
         attachedStroke = effect->getNode()->getAttachedRotoItem();
     }
-    
+
     bool inputIsMask = _imp->mask;
-    
     RectD rod;
-    if (attachedStroke && (inputIsMask || getName() == CLIP_OFX_ROTO)) {
+    if ( attachedStroke && ( inputIsMask || (getName() == CLIP_OFX_ROTO) ) ) {
         effect->getNode()->getPaintStrokeRoD(time, &rod);
         ret->x1 = rod.x1;
         ret->x2 = rod.x2;
         ret->y1 = rod.y1;
         ret->y2 = rod.y2;
+
         return;
     } else if (effect) {
         boost::shared_ptr<RotoContext> rotoCtx = effect->getNode()->getRotoContext();
-        if (rotoCtx && getName() == CLIP_OFX_ROTO) {
+        if ( rotoCtx && (getName() == CLIP_OFX_ROTO) ) {
             rotoCtx->getMaskRegionOfDefinition(time, view, &rod);
             ret->x1 = rod.x1;
             ret->x2 = rod.x2;
             ret->y1 = rod.y1;
             ret->y2 = rod.y2;
+
             return;
         }
     }
 
     if (associatedNode) {
         bool isProjectFormat;
-        
         U64 nodeHash = associatedNode->getRenderHash();
         RectD rod;
-        RenderScale scale(Image::getScaleFromMipMapLevel(mipmapLevel));
+        RenderScale scale( Image::getScaleFromMipMapLevel(mipmapLevel) );
         StatusEnum st = associatedNode->getRegionOfDefinition_public(nodeHash, time, scale, view, &rod, &isProjectFormat);
         if (st == eStatusFailed) {
             ret->x1 = 0.;
@@ -528,49 +529,45 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,
             ret->y1 = rod.bottom();
             ret->y2 = rod.top();
         }
-        
     } else {
         ret->x1 = 0.;
         ret->x2 = 0.;
         ret->y1 = 0.;
         ret->y2 = 0.;
     }
-
-}
+} // OfxClipInstance::getRegionOfDefinitionInternal
 
 // overridden from OFX::Host::ImageEffect::ClipInstance
 OfxRectD
-OfxClipInstance::getRegionOfDefinition(OfxTime time, int view) const
+OfxClipInstance::getRegionOfDefinition(OfxTime time,
+                                       int view) const
 {
     OfxRectD rod;
     unsigned int mipmapLevel;
     EffectInstPtr associatedNode = getAssociatedNode();
-    
+
     /// The node might be disabled, hence we navigate upstream to find the first non disabled node.
     if (associatedNode) {
         associatedNode = associatedNode->getNearestNonDisabled();
     }
     ///We don't have to do the same kind of navigation if the effect is identity because the effect is supposed to have
     ///the same RoD as the input if it is identity.
-    
+
     if (!associatedNode) {
         ///Doesn't matter, input is not connected
         mipmapLevel = 0;
     } else {
-        
         ClipDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-        if (!tls->mipMapLevel.empty()) {
+        if ( !tls->mipMapLevel.empty() ) {
             mipmapLevel = tls->mipMapLevel.back();
         } else {
             mipmapLevel = 0;
         }
-        
-        
     }
     getRegionOfDefinitionInternal(time, ViewIdx(view), mipmapLevel, associatedNode.get(), &rod);
+
     return rod;
 }
-
 
 // overridden from OFX::Host::ImageEffect::ClipInstance
 /// override this to return the rod on the clip canonical coords!
@@ -594,22 +591,19 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         mipmapLevel = 0;
     } else {
         ClipDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-        if (!tls->view.empty()) {
+        if ( !tls->view.empty() ) {
             view = tls->view.back();
         }
-        if (!tls->mipMapLevel.empty()) {
+        if ( !tls->mipMapLevel.empty() ) {
             mipmapLevel = tls->mipMapLevel.back();
         } else {
             mipmapLevel = 0;
         }
-        
     }
     getRegionOfDefinitionInternal(time, view, mipmapLevel, associatedNode.get(), &ret);
+
     return ret;
 } // getRegionOfDefinition
-
-
-
 
 // overridden from OFX::Host::ImageEffect::ClipInstance
 /// override this to fill in the image at the given time.
@@ -646,7 +640,7 @@ OfxClipInstance::getImagePlane(OfxTime time,
 
         return NULL;
     }
-    
+
     ViewSpec spec;
     // The Foundry Furnace plug-ins pass -1 to the view parameter, we need to deal with it.
     if (view == -1) {
@@ -654,6 +648,7 @@ OfxClipInstance::getImagePlane(OfxTime time,
     } else {
         spec = ViewIdx(view);
     }
+
     return getImagePlaneInternal(time, spec, optionalBounds, &plane);
 }
 
@@ -669,13 +664,12 @@ OfxClipInstance::getImagePlaneInternal(OfxTime time,
         return NULL;
     }
 
-    if (isOutput()) {
+    if ( isOutput() ) {
         return getOutputImageInternal(ofxPlane);
     } else {
         return getInputImageInternal(time, view, optionalBounds, ofxPlane);
     }
 }
-
 
 OFX::Host::ImageEffect::Image*
 OfxClipInstance::getInputImageInternal(const OfxTime time,
@@ -683,55 +677,49 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
                                        const OfxRectD *optionalBounds,
                                        const std::string* ofxPlane)
 {
-    
-    assert(!isOutput());
+    assert( !isOutput() );
 
     EffectInstPtr effect = getEffectHolder();
     assert(effect);
     int inputnb = getInputNb();
     //If components param is not set (i.e: the plug-in uses regular clipGetImage call) then figure out the plane from the TLS set in OfxEffectInstance::render
     //otherwise use the param sent by the plug-in call of clipGetImagePlane
-    
-    bool isMultiplanar = effect->isMultiPlanar();
-    
+
+    //bool isMultiplanar = effect->isMultiPlanar();
     ImageComponents comp;
     if (!ofxPlane) {
-        
         boost::shared_ptr<EffectInstance::ComponentsNeededMap> neededComps;
         effect->getThreadLocalNeededComponents(&neededComps);
         bool foundCompsInTLS = false;
         if (neededComps) {
-           EffectInstance::ComponentsNeededMap::iterator found = neededComps->find(inputnb);
-            if (found != neededComps->end()) {
-                if (found->second.empty()) {
-                    
+            EffectInstance::ComponentsNeededMap::iterator found = neededComps->find(inputnb);
+            if ( found != neededComps->end() ) {
+                if ( found->second.empty() ) {
                     ///We are in the case of a multi-plane effect who did not specify correctly the needed components for an input
                     //fallback on the basic components indicated on the clip
                     //This could be the case for example for the Mask Input
-                    comp = ofxComponentsToNatronComponents(getComponents());
-                    assert(!comp.isPairedComponents());
+                    comp = ofxComponentsToNatronComponents( getComponents() );
+                    assert( !comp.isPairedComponents() );
                     foundCompsInTLS = true;
                     //qDebug() << _imp->nodeInstance->getScriptName_mt_safe().c_str() << " didn't specify any needed components via getClipComponents for clip " << getName().c_str();
-                    
                 } else {
                     comp = found->second.front();
                     foundCompsInTLS = true;
                 }
             }
         }
-        
-       if (!foundCompsInTLS) {
+
+        if (!foundCompsInTLS) {
             ///We are in analysis or the effect does not have any input
             std::bitset<4> processChannels;
             bool isAll;
-            bool hasUserComps = effect->getNode()->getSelectedLayer(inputnb, &processChannels, &isAll,&comp);
+            bool hasUserComps = effect->getNode()->getSelectedLayer(inputnb, &processChannels, &isAll, &comp);
             if (!hasUserComps) {
                 //There's no selector...fallback on the basic components indicated on the clip
-                comp = ofxComponentsToNatronComponents(getComponents());
-                assert(!comp.isPairedComponents());
-            } 
+                comp = ofxComponentsToNatronComponents( getComponents() );
+                assert( !comp.isPairedComponents() );
+            }
         }
-
     } else {
         comp = ofxPlaneToNatronPlane(*ofxPlane);
     }
@@ -749,39 +737,37 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     // Get mipmaplevel and view from the TLS
     ClipDataTLSPtr tls = _imp->tlsData->getTLSData();
 #ifdef DEBUG
-    if (!tls || tls->view.empty()) {
-        if (QThread::currentThread() != qApp->thread()) {
+    if ( !tls || tls->view.empty() ) {
+        if ( QThread::currentThread() != qApp->thread() ) {
             qDebug() << effect->getNode()->getScriptName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
-            "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
-            "fix it. Natron is now going to try to recover from that mistake but doing so can yield unpredictable results.";
+                "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
+                "fix it. Natron is now going to try to recover from that mistake but doing so can yield unpredictable results.";
         }
     }
 #endif
     ViewIdx view;
     if (tls) {
-        if (viewParam.isCurrent()) {
-            if (tls->view.empty()) {
+        if ( viewParam.isCurrent() ) {
+            if ( tls->view.empty() ) {
                 view = ViewIdx(0);
             } else {
                 view = tls->view.back();
             }
-            
         } else {
-            view = ViewIdx(viewParam.value());
+            view = ViewIdx( viewParam.value() );
         }
 
-        if (tls->mipMapLevel.empty()) {
+        if ( tls->mipMapLevel.empty() ) {
             mipMapLevel = 0;
         } else {
             mipMapLevel = tls->mipMapLevel.back();
         }
     } else {
-        view = ViewIdx(viewParam.value());
+        view = ViewIdx( viewParam.value() );
     }
-    
-    
-    RenderScale renderScale(Image::getScaleFromMipMapLevel(mipMapLevel));
-    
+
+
+    RenderScale renderScale( Image::getScaleFromMipMapLevel(mipMapLevel) );
     RectD bounds;
     if (optionalBounds) {
         bounds.x1 = optionalBounds->x1;
@@ -789,15 +775,14 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
         bounds.x2 = optionalBounds->x2;
         bounds.y2 = optionalBounds->y2;
     }
-    
+
     bool multiPlanar = effect->isMultiPlanar();
-    
     RectI renderWindow;
     boost::shared_ptr<Transform::Matrix3x3> transform;
 
     //If the plug-in used fetchImage and not fetchImagePlane it is expected that we return
     //an image mapped to the clip components
-    const bool mapImageToClipPref = !isMultiplanar;
+    const bool mapImageToClipPref = !ofxPlane || *ofxPlane == kFnOfxImagePlaneColour;
     ImagePtr image = effect->getImage(inputnb, time, renderScale, view,
                                       optionalBounds ? &bounds : NULL,
                                       &comp,
@@ -805,17 +790,17 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
                                       false,
                                       &renderWindow,
                                       &transform);
-    
-    
-    if (!image || renderWindow.isNull()) {
+
+
+    if ( !image || renderWindow.isNull() ) {
         return 0;
     }
-    
-    
+
+
     std::string components;
     int nComps;
     if (multiPlanar) {
-        components = OfxClipInstance::natronsComponentsToOfxComponents(image->getComponents());
+        components = OfxClipInstance::natronsComponentsToOfxComponents( image->getComponents() );
         nComps = image->getComponents().getNumComponents();
     } else {
         components = getComponents();
@@ -824,138 +809,133 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
         //assert(nComps == image->getComponents().getNumComponents());
     }
 
-    
-     // this will dump the image as seen from the plug-in
-     /*QString filename;
-     QTextStream ts(&filename);
-     QDateTime now = QDateTime::currentDateTime();
-     ts << "img_" << time << "_"  << now.toMSecsSinceEpoch() << ".png";
-     appPTR->debugImage(image.get(), renderWindow, filename);*/
 
-    return new OfxImage(boost::shared_ptr<OfxClipInstance::RenderActionData>(), image,true,renderWindow,transform, components, nComps);
-}
+    // this will dump the image as seen from the plug-in
+    /*QString filename;
+       QTextStream ts(&filename);
+       QDateTime now = QDateTime::currentDateTime();
+       ts << "img_" << time << "_"  << now.toMSecsSinceEpoch() << ".png";
+       appPTR->debugImage(image.get(), renderWindow, filename);*/
 
-
+    return new OfxImage(boost::shared_ptr<OfxClipInstance::RenderActionData>(), image, true, renderWindow, transform, components, nComps);
+} // OfxClipInstance::getInputImageInternal
 
 OFX::Host::ImageEffect::Image*
 OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane)
 {
-    
     ClipDataTLSPtr tls = _imp->tlsData->getTLSData();
-    
     boost::shared_ptr<RenderActionData> renderData;
+
     //If components param is not set (i.e: the plug-in uses regular clipGetImage call) then figure out the plane from the TLS set in OfxEffectInstance::render
     //otherwise use the param sent by the plug-in call of clipGetImagePlane
     if (tls) {
-        if (!tls->renderData.empty()) {
+        if ( !tls->renderData.empty() ) {
             renderData = tls->renderData.back();
             assert(renderData);
         }
     }
 
     EffectInstPtr effect = getEffectHolder();
-    
     bool isMultiplanar = effect->isMultiPlanar();
-
     ImageComponents natronPlane;
     if (!ofxPlane) {
-    
         if (renderData) {
             natronPlane = renderData->clipComponents;
         }
-        
+
         /*
-         If the plugin is multi-planar, we are in the situation where it called the regular clipGetImage without a plane in argument
-         so the components will not have been set on the TLS hence just use regular components.
+           If the plugin is multi-planar, we are in the situation where it called the regular clipGetImage without a plane in argument
+           so the components will not have been set on the TLS hence just use regular components.
          */
-        if (natronPlane.getNumComponents() == 0 && effect->isMultiPlanar()) {
-            natronPlane = ofxComponentsToNatronComponents(getComponents());
-            assert(!natronPlane.isPairedComponents());
+        if ( (natronPlane.getNumComponents() == 0) && effect->isMultiPlanar() ) {
+            natronPlane = ofxComponentsToNatronComponents( getComponents() );
+            assert( !natronPlane.isPairedComponents() );
         }
         assert(natronPlane.getNumComponents() > 0);
-        
     } else {
         natronPlane = ofxPlaneToNatronPlane(*ofxPlane);
     }
-    
+
     if (natronPlane.getNumComponents() == 0) {
         return 0;
     }
-    
-    
+
+
     //Look into TLS what planes are being rendered in the render action currently and the render window
-    std::map<ImageComponents,EffectInstance::PlaneToRender> outputPlanes;
+    std::map<ImageComponents, EffectInstance::PlaneToRender> outputPlanes;
     RectI renderWindow;
     ImageComponents planeBeingRendered;
-    bool ok = effect->getThreadLocalRenderedPlanes(&outputPlanes,&planeBeingRendered,&renderWindow);
+    bool ok = effect->getThreadLocalRenderedPlanes(&outputPlanes, &planeBeingRendered, &renderWindow);
     if (!ok) {
         return NULL;
     }
-    
+
     ImagePtr outputImage;
-    
+
     /*
-     If the plugin is multiplanar return exactly what it requested.
-     Otherwise, hack the clipGetImage and return the plane requested by the user via the interface instead of the colour plane.
+       If the plugin is multiplanar return exactly what it requested.
+       Otherwise, hack the clipGetImage and return the plane requested by the user via the interface instead of the colour plane.
      */
     const std::string& layerName = /*multiPlanar ?*/ natronPlane.getLayerName();// : planeBeingRendered.getLayerName();
-    
-    for (std::map<ImageComponents,EffectInstance::PlaneToRender>::iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
+
+    for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
         if (it->first.getLayerName() == layerName) {
             outputImage = it->second.tmpImage;
             break;
         }
     }
-    
+
     //The output image MAY not exist in the TLS in some cases:
     //e.g: Natron requested Motion.Forward but plug-ins only knows how to render Motion.Forward + Motion.Backward
     //We then just allocate on the fly the plane and cache it.
     if (!outputImage) {
         outputImage = effect->allocateImagePlaneAndSetInThreadLocalStorage(natronPlane);
     }
-    
+
     //If we don't have it by now then something is really wrong either in TLS or in the plug-in.
     assert(outputImage);
     if (!outputImage) {
         return 0;
     }
-    
-    
+
+
     //Check if the plug-in already called clipGetImage on this image, in which case we may already have an OfxImage laying around
     //so we try to re-use it.
     if (renderData) {
         for (std::list<OfxImage*>::const_iterator it = renderData->imagesBeingRendered.begin(); it != renderData->imagesBeingRendered.end(); ++it) {
-            if ((*it)->getInternalImage() == outputImage) {
+            if ( (*it)->getInternalImage() == outputImage ) {
                 (*it)->addReference();
+
                 return *it;
             }
         }
     }
-    
+
     //This is the firs time the plug-ins asks for this OfxImage, just allocate it and register it in the TLS
     std::string ofxComponents;
     int nComps;
     if (isMultiplanar) {
-        ofxComponents = OfxClipInstance::natronsComponentsToOfxComponents(outputImage->getComponents());
+        ofxComponents = OfxClipInstance::natronsComponentsToOfxComponents( outputImage->getComponents() );
         nComps = outputImage->getComponents().getNumComponents();
     } else {
         ofxComponents = getComponents();
         ImageComponents natronComps = OfxClipInstance::ofxComponentsToNatronComponents(ofxComponents);
-        assert(!natronPlane.isPairedComponents());
+        assert( !natronPlane.isPairedComponents() );
         nComps = natronComps.getNumComponents();
-        assert(nComps == (int)outputImage->getComponentsCount());
-        if (nComps != (int)outputImage->getComponentsCount()) {
+        assert( nComps == (int)outputImage->getComponentsCount() );
+        if ( nComps != (int)outputImage->getComponentsCount() ) {
             return 0;
         }
     }
-    
+
     //The output clip doesn't have any transform matrix
-    OfxImage* ret =  new OfxImage(renderData,outputImage,false,renderWindow,boost::shared_ptr<Transform::Matrix3x3>(), ofxComponents, nComps);
+    OfxImage* ret =  new OfxImage(renderData, outputImage, false, renderWindow, boost::shared_ptr<Transform::Matrix3x3>(), ofxComponents, nComps);
     if (renderData) {
         renderData->imagesBeingRendered.push_back(ret);
     }
+
     return ret;
-}
+} // OfxClipInstance::getOutputImageInternal
 
 #ifdef OFX_SUPPORTS_OPENGLRENDER
 // overridden from OFX::Host::ImageEffect::ClipInstance
@@ -966,84 +946,87 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane)
 /// be 'appropriate' for the.
 /// If bounds is not null, fetch the indicated section of the canonical image plane.
 OFX::Host::ImageEffect::Texture*
-OfxClipInstance::loadTexture(OfxTime time, const char *format, const OfxRectD *optionalBounds)
+OfxClipInstance::loadTexture(OfxTime time,
+                             const char *format,
+                             const OfxRectD *optionalBounds)
 {
     Q_UNUSED(time);
     Q_UNUSED(format);
     Q_UNUSED(optionalBounds);
+
     return NULL;
 }
+
 #endif
 
 
-
-static std::string natronCustomCompToOfxComp(const ImageComponents &comp) {
+static std::string
+natronCustomCompToOfxComp(const ImageComponents &comp)
+{
     std::stringstream ss;
     const std::vector<std::string>& channels = comp.getComponentsNames();
+
     ss << kNatronOfxImageComponentsPlane << comp.getLayerName();
     for (U32 i = 0; i < channels.size(); ++i) {
         ss << kNatronOfxImageComponentsPlaneChannel << channels[i];
     }
+
     return ss.str();
 }
 
-static ImageComponents ofxCustomCompToNatronComp(const std::string& comp)
+static ImageComponents
+ofxCustomCompToNatronComp(const std::string& comp)
 {
     std::string layerName;
     std::string compsName;
     std::vector<std::string> channelNames;
     static std::string foundPlaneStr(kNatronOfxImageComponentsPlane);
     static std::string foundChannelStr(kNatronOfxImageComponentsPlaneChannel);
-    
     std::size_t foundPlane = comp.find(foundPlaneStr);
+
     if (foundPlane == std::string::npos) {
         throw std::runtime_error("Unsupported components type: " + comp);
     }
-    
-    std::size_t foundChannel = comp.find(foundChannelStr,foundPlane + foundPlaneStr.size());
+
+    std::size_t foundChannel = comp.find( foundChannelStr, foundPlane + foundPlaneStr.size() );
     if (foundChannel == std::string::npos) {
         throw std::runtime_error("Unsupported components type: " + comp);
     }
-    
-    
+
+
     for (std::size_t i = foundPlane + foundPlaneStr.size(); i < foundChannel; ++i) {
         layerName.push_back(comp[i]);
     }
-    
+
     while (foundChannel != std::string::npos) {
-        
-        std::size_t nextChannel = comp.find(foundChannelStr,foundChannel + foundChannelStr.size());
-        
+        std::size_t nextChannel = comp.find( foundChannelStr, foundChannel + foundChannelStr.size() );
         std::size_t end = nextChannel == std::string::npos ? comp.size() : nextChannel;
-        
         std::string chan;
         for (std::size_t i = foundChannel + foundChannelStr.size(); i < end; ++i) {
             chan.push_back(comp[i]);
         }
         channelNames.push_back(chan);
         compsName.append(chan);
-        
+
         foundChannel = nextChannel;
     }
-    
-    
-    
-    return ImageComponents(layerName,compsName,channelNames);
+
+
+    return ImageComponents(layerName, compsName, channelNames);
 }
 
 ImageComponents
 OfxClipInstance::ofxPlaneToNatronPlane(const std::string& plane)
 {
-    
     if (plane == kFnOfxImagePlaneColour) {
-        return ofxComponentsToNatronComponents(getComponents());
-    } else if (plane == kFnOfxImagePlaneBackwardMotionVector || plane == kNatronBackwardMotionVectorsPlaneName) {
+        return ofxComponentsToNatronComponents( getComponents() );
+    } else if ( (plane == kFnOfxImagePlaneBackwardMotionVector) || (plane == kNatronBackwardMotionVectorsPlaneName) ) {
         return ImageComponents::getBackwardMotionComponents();
-    } else if (plane == kFnOfxImagePlaneForwardMotionVector || plane == kNatronForwardMotionVectorsPlaneName) {
+    } else if ( (plane == kFnOfxImagePlaneForwardMotionVector) || (plane == kNatronForwardMotionVectorsPlaneName) ) {
         return ImageComponents::getForwardMotionComponents();
-    } else if (plane == kFnOfxImagePlaneStereoDisparityLeft || plane == kNatronDisparityLeftPlaneName) {
+    } else if ( (plane == kFnOfxImagePlaneStereoDisparityLeft) || (plane == kNatronDisparityLeftPlaneName) ) {
         return ImageComponents::getDisparityLeftComponents();
-    } else if (plane == kFnOfxImagePlaneStereoDisparityRight || plane == kNatronDisparityRightPlaneName) {
+    } else if ( (plane == kFnOfxImagePlaneStereoDisparityRight) || (plane == kNatronDisparityRightPlaneName) ) {
         return ImageComponents::getDisparityRightComponents();
     } else {
         try {
@@ -1055,43 +1038,43 @@ OfxClipInstance::ofxPlaneToNatronPlane(const std::string& plane)
 }
 
 void
-OfxClipInstance::natronsPlaneToOfxPlane(const ImageComponents& plane, std::list<std::string>* ofxPlanes)
+OfxClipInstance::natronsPlaneToOfxPlane(const ImageComponents& plane,
+                                        std::list<std::string>* ofxPlanes)
 {
     if (plane.getLayerName() == kNatronColorPlaneName) {
         ofxPlanes->push_back(kFnOfxImagePlaneColour);
-    } else if (plane == ImageComponents::getPairedMotionVectors()) {
+    } else if ( plane == ImageComponents::getPairedMotionVectors() ) {
         ofxPlanes->push_back(kFnOfxImagePlaneBackwardMotionVector);
         ofxPlanes->push_back(kFnOfxImagePlaneForwardMotionVector);
-    } else if (plane == ImageComponents::getPairedStereoDisparity()) {
+    } else if ( plane == ImageComponents::getPairedStereoDisparity() ) {
         ofxPlanes->push_back(kFnOfxImagePlaneStereoDisparityLeft);
         ofxPlanes->push_back(kFnOfxImagePlaneStereoDisparityRight);
     } else {
-        ofxPlanes->push_back(natronCustomCompToOfxComp(plane));
+        ofxPlanes->push_back( natronCustomCompToOfxComp(plane) );
     }
 }
-
 
 std::string
 OfxClipInstance::natronsComponentsToOfxComponents(const ImageComponents& comp)
 {
-    if (comp == ImageComponents::getNoneComponents()) {
+    if ( comp == ImageComponents::getNoneComponents() ) {
         return kOfxImageComponentNone;
-    } else if (comp == ImageComponents::getAlphaComponents()) {
+    } else if ( comp == ImageComponents::getAlphaComponents() ) {
         return kOfxImageComponentAlpha;
-    } else if (comp == ImageComponents::getRGBComponents()) {
+    } else if ( comp == ImageComponents::getRGBComponents() ) {
         return kOfxImageComponentRGB;
-    } else if (comp == ImageComponents::getRGBAComponents()) {
+    } else if ( comp == ImageComponents::getRGBAComponents() ) {
         return kOfxImageComponentRGBA;
-   /* }
-    else if (QString::fromUtf8(comp.getComponentsGlobalName().c_str()).compare(QString::fromUtf8("UV"), Qt::CaseInsensitive) == 0) {
-        return kFnOfxImageComponentMotionVectors;
-    } else if (QString::fromUtf8(comp.getComponentsGlobalName().c_str()).compare(QString::fromUtf8("XY"), Qt::CaseInsensitive) == 0) {
-        return kFnOfxImageComponentStereoDisparity;*/
-    } else if (comp == ImageComponents::getXYComponents()) {
+        /* }
+           else if (QString::fromUtf8(comp.getComponentsGlobalName().c_str()).compare(QString::fromUtf8("UV"), Qt::CaseInsensitive) == 0) {
+             return kFnOfxImageComponentMotionVectors;
+           } else if (QString::fromUtf8(comp.getComponentsGlobalName().c_str()).compare(QString::fromUtf8("XY"), Qt::CaseInsensitive) == 0) {
+             return kFnOfxImageComponentStereoDisparity;*/
+    } else if ( comp == ImageComponents::getXYComponents() ) {
         return kNatronOfxImageComponentXY;
-    } else if (comp == ImageComponents::getPairedMotionVectors()) {
+    } else if ( comp == ImageComponents::getPairedMotionVectors() ) {
         return kFnOfxImageComponentMotionVectors;
-    } else if (comp == ImageComponents::getPairedStereoDisparity()) {
+    } else if ( comp == ImageComponents::getPairedStereoDisparity() ) {
         return kFnOfxImageComponentStereoDisparity;
     } else {
         return natronCustomCompToOfxComp(comp);
@@ -1119,9 +1102,9 @@ OfxClipInstance::ofxComponentsToNatronComponents(const std::string & comp)
         try {
             return ofxCustomCompToNatronComp(comp);
         } catch (...) {
-            
         }
     }
+
     return ImageComponents::getNoneComponents();
 }
 
@@ -1151,6 +1134,7 @@ OfxClipInstance::natronsDepthToOfxDepth(ImageBitDepthEnum depth)
     static const std::string flt(kOfxBitDepthFloat);
     static const std::string hlf(kOfxBitDepthHalf);
     static const std::string none(kOfxBitDepthNone);
+
     switch (depth) {
     case eImageBitDepthByte:
 
@@ -1168,13 +1152,13 @@ OfxClipInstance::natronsDepthToOfxDepth(ImageBitDepthEnum depth)
 
         return none;
     }
+
     return none;
 }
 
 ImagePremultiplicationEnum
 OfxClipInstance::ofxPremultToNatronPremult(const std::string& str)
 {
-   
     if (str == kOfxImagePreMultiplied) {
         return eImagePremultiplicationPremultiplied;
     } else if (str == kOfxImageUnPreMultiplied) {
@@ -1183,6 +1167,7 @@ OfxClipInstance::ofxPremultToNatronPremult(const std::string& str)
         return eImagePremultiplicationOpaque;
     } else {
         assert(false);
+
         return eImagePremultiplicationPremultiplied;
     }
 }
@@ -1193,14 +1178,19 @@ OfxClipInstance::natronsPremultToOfxPremult(ImagePremultiplicationEnum premult)
     static const std::string prem(kOfxImagePreMultiplied);
     static const std::string unprem(kOfxImageUnPreMultiplied);
     static const std::string opq(kOfxImageOpaque);
+
     switch (premult) {
-        case eImagePremultiplicationPremultiplied:
-            return prem;
-        case eImagePremultiplicationUnPremultiplied:
-            return unprem;
-        case eImagePremultiplicationOpaque:
-            return opq;
+    case eImagePremultiplicationPremultiplied:
+
+        return prem;
+    case eImagePremultiplicationUnPremultiplied:
+
+        return unprem;
+    case eImagePremultiplicationOpaque:
+
+        return opq;
     }
+
     return prem;
 }
 
@@ -1225,14 +1215,19 @@ OfxClipInstance::natronsFieldingToOfxFielding(ImageFieldingOrderEnum fielding)
     static const std::string noFielding(kOfxImageFieldNone);
     static const std::string upperFielding(kOfxImageFieldUpper);
     static const std::string lowerFielding(kOfxImageFieldLower);
+
     switch (fielding) {
-        case eImageFieldingOrderNone:
-            return noFielding;
-        case eImageFieldingOrderUpper:
-            return upperFielding;
-        case eImageFieldingOrderLower:
-            return lowerFielding;
+    case eImageFieldingOrderNone:
+
+        return noFielding;
+    case eImageFieldingOrderUpper:
+
+        return upperFielding;
+    case eImageFieldingOrderLower:
+
+        return lowerFielding;
     }
+
     return noFielding;
 }
 
@@ -1241,14 +1236,13 @@ struct OfxImagePrivate
     ImagePtr natronImage;
     boost::shared_ptr<GenericAccess> access;
     boost::shared_ptr<OfxClipInstance::RenderActionData> tls;
-    
+
     OfxImagePrivate(const ImagePtr& image,
                     const boost::shared_ptr<OfxClipInstance::RenderActionData>& tls)
-    : natronImage(image)
-    , access()
-    , tls(tls)
+        : natronImage(image)
+        , access()
+        , tls(tls)
     {
-        
     }
 };
 
@@ -1265,44 +1259,42 @@ OfxImage::OfxImage(const boost::shared_ptr<OfxClipInstance::RenderActionData>& r
                    const boost::shared_ptr<Transform::Matrix3x3>& mat,
                    const std::string& components,
                    int nComps)
-: OFX::Host::ImageEffect::Image()
-, _imp(new OfxImagePrivate(internalImage, renderData))
+    : OFX::Host::ImageEffect::Image()
+    , _imp( new OfxImagePrivate(internalImage, renderData) )
 {
-    
     assert(internalImage);
-    
+
     unsigned int mipMapLevel = internalImage->getMipMapLevel();
-    RenderScale scale(NATRON_NAMESPACE::Image::getScaleFromMipMapLevel(mipMapLevel));
+    RenderScale scale( NATRON_NAMESPACE::Image::getScaleFromMipMapLevel(mipMapLevel) );
     setDoubleProperty(kOfxImageEffectPropRenderScale, scale.x, 0);
     setDoubleProperty(kOfxImageEffectPropRenderScale, scale.y, 1);
-    
-   
-    
+
+
     // data ptr
     RectI bounds = internalImage->getBounds();
-    
+
     ///Do not activate this assert! The render window passed to renderRoI can be bigger than the actual RoD of the effect
     ///in which case it is just clipped to the RoD.
     //assert(bounds.contains(renderWindow));
     RectI pluginsSeenBounds;
     renderWindow.intersect(bounds, &pluginsSeenBounds);
-    
+
     const RectD & rod = internalImage->getRoD(); // Not the OFX RoD!!! Image::getRoD() is in *CANONICAL* coordinates
 
     if (isSrcImage) {
-        boost::shared_ptr<NATRON_NAMESPACE::Image::ReadAccess> access(new NATRON_NAMESPACE::Image::ReadAccess(internalImage.get()));
+        boost::shared_ptr<NATRON_NAMESPACE::Image::ReadAccess> access( new NATRON_NAMESPACE::Image::ReadAccess( internalImage.get() ) );
         const unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
         assert(ptr);
-        setPointerProperty( kOfxImagePropData, const_cast<unsigned char*>(ptr));
+        setPointerProperty( kOfxImagePropData, const_cast<unsigned char*>(ptr) );
         _imp->access = access;
     } else {
-        boost::shared_ptr<NATRON_NAMESPACE::Image::WriteAccess> access(new NATRON_NAMESPACE::Image::WriteAccess(internalImage.get()));
+        boost::shared_ptr<NATRON_NAMESPACE::Image::WriteAccess> access( new NATRON_NAMESPACE::Image::WriteAccess( internalImage.get() ) );
         unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
         assert(ptr);
         setPointerProperty( kOfxImagePropData, ptr);
         _imp->access = access;
     }
-    
+
     ///We set the render window that was given to the render thread instead of the actual bounds of the image
     ///so we're sure the plug-in doesn't attempt to access outside pixels.
     setIntProperty(kOfxImagePropBounds, pluginsSeenBounds.left(), 0);
@@ -1320,31 +1312,31 @@ OfxImage::OfxImage(const boost::shared_ptr<OfxClipInstance::RenderActionData>& r
     setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.bottom(), 1);
     setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.right(), 2);
     setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.top(), 3);
-    
+
     //pluginsSeenBounds must be contained in pixelRod
-    assert(pluginsSeenBounds.left() >= pixelRod.left() && pluginsSeenBounds.right() <= pixelRod.right() &&
-           pluginsSeenBounds.bottom() >= pixelRod.bottom() && pluginsSeenBounds.top() <= pixelRod.top());
-    
+    assert( pluginsSeenBounds.left() >= pixelRod.left() && pluginsSeenBounds.right() <= pixelRod.right() &&
+            pluginsSeenBounds.bottom() >= pixelRod.bottom() && pluginsSeenBounds.top() <= pixelRod.top() );
+
     // row bytes
     setIntProperty( kOfxImagePropRowBytes, bounds.width() * nComps *
                     getSizeOfForBitDepth( internalImage->getBitDepth() ) );
-    setStringProperty( kOfxImageEffectPropComponents,components);
-    setStringProperty( kOfxImageEffectPropPixelDepth, OfxClipInstance::natronsDepthToOfxDepth(internalImage->getBitDepth()));
-    setStringProperty( kOfxImageEffectPropPreMultiplication, OfxClipInstance::natronsPremultToOfxPremult(internalImage->getPremultiplication()));
-    setStringProperty(kOfxImagePropField, OfxClipInstance::natronsFieldingToOfxFielding(internalImage->getFieldingOrder()));
-    setStringProperty( kOfxImagePropUniqueIdentifier,QString::number(internalImage->getHashKey(), 16).toStdString() );
+    setStringProperty( kOfxImageEffectPropComponents, components);
+    setStringProperty( kOfxImageEffectPropPixelDepth, OfxClipInstance::natronsDepthToOfxDepth( internalImage->getBitDepth() ) );
+    setStringProperty( kOfxImageEffectPropPreMultiplication, OfxClipInstance::natronsPremultToOfxPremult( internalImage->getPremultiplication() ) );
+    setStringProperty( kOfxImagePropField, OfxClipInstance::natronsFieldingToOfxFielding( internalImage->getFieldingOrder() ) );
+    setStringProperty( kOfxImagePropUniqueIdentifier, QString::number(internalImage->getHashKey(), 16).toStdString() );
     setDoubleProperty( kOfxImagePropPixelAspectRatio, internalImage->getPixelAspectRatio() );
-    
+
     //Attach the transform matrix if any
     if (mat) {
         setDoubleProperty(kFnOfxPropMatrix2D, mat->a, 0);
         setDoubleProperty(kFnOfxPropMatrix2D, mat->b, 1);
         setDoubleProperty(kFnOfxPropMatrix2D, mat->c, 2);
-        
+
         setDoubleProperty(kFnOfxPropMatrix2D, mat->d, 3);
         setDoubleProperty(kFnOfxPropMatrix2D, mat->e, 4);
         setDoubleProperty(kFnOfxPropMatrix2D, mat->f, 5);
-        
+
         setDoubleProperty(kFnOfxPropMatrix2D, mat->g, 6);
         setDoubleProperty(kFnOfxPropMatrix2D, mat->h, 7);
         setDoubleProperty(kFnOfxPropMatrix2D, mat->i, 8);
@@ -1353,14 +1345,13 @@ OfxImage::OfxImage(const boost::shared_ptr<OfxClipInstance::RenderActionData>& r
             setDoubleProperty(kFnOfxPropMatrix2D, 0., i);
         }
     }
-    
 }
 
 OfxImage::~OfxImage()
 {
     if (_imp->tls) {
         std::list<OfxImage*>::iterator found = std::find(_imp->tls->imagesBeingRendered.begin(), _imp->tls->imagesBeingRendered.end(), this);
-        if (found != _imp->tls->imagesBeingRendered.end()) {
+        if ( found != _imp->tls->imagesBeingRendered.end() ) {
             _imp->tls->imagesBeingRendered.erase(found);
         }
     }
@@ -1372,6 +1363,7 @@ OfxClipInstance::getInputNb() const
     if (_isOutput) {
         return -1;
     }
+
     return _imp->nodeInstance.lock()->getClipInputNumber(this);
 }
 
@@ -1379,6 +1371,7 @@ EffectInstPtr
 OfxClipInstance::getEffectHolder() const
 {
     boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
+
     if (!effect) {
         return effect;
     }
@@ -1388,6 +1381,7 @@ OfxClipInstance::getEffectHolder() const
         return ioContainer->getEffectInstance();
     }
 #endif
+
     return effect;
 }
 
@@ -1395,6 +1389,7 @@ EffectInstPtr
 OfxClipInstance::getAssociatedNode() const
 {
     EffectInstPtr effect = getEffectHolder();
+
     assert(effect);
     if ( (getName() == CLIP_OFX_ROTO) && effect->getNode()->isRotoNode() ) {
         return effect;
@@ -1409,13 +1404,12 @@ OfxClipInstance::getAssociatedNode() const
         if (maskInput) {
             return maskInput->getEffectInstance();
         }
-        
+
         if (!maskInput) {
-            return  effect->getInput(getInputNb());
+            return effect->getInput( getInputNb() );
         } else {
             return maskInput->getEffectInstance();
         }
-
     }
 }
 
@@ -1425,10 +1419,11 @@ OfxClipInstance::setClipTLS(ViewIdx view,
                             const ImageComponents& components)
 {
     ClipDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+
     assert(tls);
     tls->view.push_back(view);
     tls->mipMapLevel.push_back(mipmapLevel);
-    boost::shared_ptr<RenderActionData> d(new RenderActionData());
+    boost::shared_ptr<RenderActionData> d( new RenderActionData() );
     d->clipComponents = components;
     tls->renderData.push_back(d);
 }
@@ -1437,16 +1432,15 @@ void
 OfxClipInstance::invalidateClipTLS()
 {
     ClipDataTLSPtr tls = _imp->tlsData->getTLSData();
+
     assert(tls);
-    assert(!tls->view.empty());
+    assert( !tls->view.empty() );
     tls->view.pop_back();
-    assert(!tls->mipMapLevel.empty());
+    assert( !tls->mipMapLevel.empty() );
     tls->mipMapLevel.pop_back();
-    assert(!tls->renderData.empty());
+    assert( !tls->renderData.empty() );
     tls->renderData.pop_back();
 }
-
-
 
 const std::string &
 OfxClipInstance::findSupportedComp(const std::string &s) const
@@ -1458,80 +1452,80 @@ OfxClipInstance::findSupportedComp(const std::string &s) const
     static const std::string motion(kFnOfxImageComponentMotionVectors);
     static const std::string disparity(kFnOfxImageComponentStereoDisparity);
     static const std::string xy(kNatronOfxImageComponentXY);
-    
+
     /// is it there
-    if(isSupportedComponent(s))
+    if ( isSupportedComponent(s) ) {
         return s;
-    
+    }
+
     if (s == xy) {
-        if (isSupportedComponent(motion)) {
+        if ( isSupportedComponent(motion) ) {
             return motion;
-        } else if (isSupportedComponent(disparity)) {
+        } else if ( isSupportedComponent(disparity) ) {
             return disparity;
-        } else if (isSupportedComponent(rgb)) {
+        } else if ( isSupportedComponent(rgb) ) {
             return rgb;
-        } else if (isSupportedComponent(rgba)) {
+        } else if ( isSupportedComponent(rgba) ) {
             return rgba;
-        } else if (isSupportedComponent(alpha)) {
+        } else if ( isSupportedComponent(alpha) ) {
             return alpha;
         }
-    } else if(s == rgba) {
-        if (isSupportedComponent(rgb)) {
+    } else if (s == rgba) {
+        if ( isSupportedComponent(rgb) ) {
             return rgb;
         }
-        if (isSupportedComponent(alpha)) {
+        if ( isSupportedComponent(alpha) ) {
             return alpha;
         }
-    } else if(s == alpha) {
-        if (isSupportedComponent(rgba)) {
+    } else if (s == alpha) {
+        if ( isSupportedComponent(rgba) ) {
             return rgba;
         }
-        if (isSupportedComponent(rgb)) {
+        if ( isSupportedComponent(rgb) ) {
             return rgb;
         }
     } else if (s == rgb) {
-        if (isSupportedComponent(rgba)) {
+        if ( isSupportedComponent(rgba) ) {
             return rgba;
         }
-        if (isSupportedComponent(alpha)) {
+        if ( isSupportedComponent(alpha) ) {
             return alpha;
         }
     } else if (s == motion) {
-        
-        if (isSupportedComponent(xy)) {
+        if ( isSupportedComponent(xy) ) {
             return xy;
-        } else if (isSupportedComponent(disparity)) {
+        } else if ( isSupportedComponent(disparity) ) {
             return disparity;
-        } else if (isSupportedComponent(rgb)) {
+        } else if ( isSupportedComponent(rgb) ) {
             return rgb;
-        } else if (isSupportedComponent(rgba)) {
+        } else if ( isSupportedComponent(rgba) ) {
             return rgba;
-        } else if (isSupportedComponent(alpha)) {
+        } else if ( isSupportedComponent(alpha) ) {
             return alpha;
         }
     } else if (s == disparity) {
-        if (isSupportedComponent(xy)) {
+        if ( isSupportedComponent(xy) ) {
             return xy;
-        } else if (isSupportedComponent(disparity)) {
+        } else if ( isSupportedComponent(disparity) ) {
             return disparity;
-        } else if (isSupportedComponent(rgb)) {
+        } else if ( isSupportedComponent(rgb) ) {
             return rgb;
-        } else if (isSupportedComponent(rgba)) {
+        } else if ( isSupportedComponent(rgba) ) {
             return rgba;
-        } else if (isSupportedComponent(alpha)) {
+        } else if ( isSupportedComponent(alpha) ) {
             return alpha;
         }
     }
-    
+
     /// wierd, must be some custom bit , if only one, choose that, otherwise no idea
     /// how to map, you need to derive to do so.
     const std::vector<std::string> &supportedComps = getSupportedComponents();
-    if(supportedComps.size() == 1)
+    if (supportedComps.size() == 1) {
         return supportedComps[0];
-    
-    return none;
+    }
 
-}
+    return none;
+} // OfxClipInstance::findSupportedComp
 
 NATRON_NAMESPACE_EXIT;
 

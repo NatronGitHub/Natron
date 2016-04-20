@@ -84,7 +84,7 @@ public:
         EnabledRole = Qt::UserRole + 2
     };
 
-    explicit UrlModel(const std::map<std::string,std::string>& envVars, QObject *parent = 0);
+    explicit UrlModel(const std::map<std::string, std::string>& envVars, QObject *parent = 0);
 
     QStringList mimeTypes() const OVERRIDE;
     virtual QMimeData * mimeData(const QModelIndexList &indexes) const OVERRIDE;
@@ -96,7 +96,7 @@ public:
 
 
     void setUrls(const std::vector<QUrl> &urls);
-    void addUrls(const std::vector<QUrl> &urls, int row = -1,bool removeExisting = false);
+    void addUrls(const std::vector<QUrl> &urls, int row = -1, bool removeExisting = false);
     std::vector<QUrl> urls() const;
     void setFileSystemModel(QFileSystemModel *model);
     QFileSystemModel* getFileSystemModel() const
@@ -106,10 +106,11 @@ public:
 
     void setUrl(const QModelIndex &index, const QUrl &url, const QModelIndex &dirIndex);
 
-    int getNUrls() const {
+    int getNUrls() const
+    {
         return watching.size();
     }
-    
+
     void removeRowIndex(const QModelIndex& index);
 
 public Q_SLOTS:
@@ -119,27 +120,23 @@ public Q_SLOTS:
 private:
     void changed(const QString &path);
     void addIndexToWatch(const QString &path, const QModelIndex &index);
-    
+
     QString mapUrlToDisplayName(const QString& originalName);
 
     QFileSystemModel *fileSystemModel;
     std::vector<std::pair<QModelIndex, QString> > watching;
     std::vector<QUrl> invalidUrls;
-	std::map<std::string,std::string> envVars;
+    std::map<std::string, std::string> envVars;
 };
 
 class FavoriteItemDelegate
     : public QStyledItemDelegate
 {
-    
-
 public:
     FavoriteItemDelegate();
 
 private:
     virtual void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const;
-
-	
 };
 
 /**
@@ -156,7 +153,7 @@ Q_SIGNALS:
     void urlRequested(const QUrl &url);
 
 public:
-    explicit FavoriteView(Gui* gui,QWidget *parent = 0);
+    explicit FavoriteView(Gui* gui, QWidget *parent = 0);
     void setModelAndUrls(QFileSystemModel *model, const std::vector<QUrl> &newUrls);
     ~FavoriteView();
 
@@ -172,8 +169,9 @@ public:
     {
         urlModel->addUrls(list, row);
     }
-    
-    int getNUrls() const {
+
+    int getNUrls() const
+    {
         return urlModel->getNUrls();
     }
 
@@ -184,9 +182,8 @@ public:
 
     void selectUrl(const QUrl &url);
 
-    void rename(const QModelIndex & index,const QString & name);
+    void rename(const QModelIndex & index, const QString & name);
 
-    
 public Q_SLOTS:
     void clicked(const QModelIndex &index);
     void showMenu(const QPoint &position);
@@ -222,7 +219,7 @@ class SequenceDialogView
 public:
     explicit SequenceDialogView(SequenceFileDialog* fd);
 
-    void updateNameMapping(const std::vector<std::pair<QString,std::pair<qint64,QString> > > & nameMapping);
+    void updateNameMapping(const std::vector<std::pair<QString, std::pair<qint64, QString> > > & nameMapping);
 
     void expandColumnsToFullWidth(int w);
 
@@ -245,10 +242,10 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    
-    
-    FileDialogComboBox(SequenceFileDialog *p,QWidget *parent = 0);
-    
+
+
+    FileDialogComboBox(SequenceFileDialog *p, QWidget *parent = 0);
+
     void showPopup() OVERRIDE;
     void setHistory(const QStringList &paths);
     QStringList history() const
@@ -256,16 +253,14 @@ public:
         return m_history;
     }
 
-    
-    
 public Q_SLOTS:
-    
+
     void onCurrentIndexChanged(int index);
+
 private:
-    
+
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
     UrlModel *urlModel;
     SequenceFileDialog *dialog;
     QStringList m_history;
@@ -273,21 +268,20 @@ private:
 };
 
 //Same as LineEdit but we do not process keyPresses for Key_Up and Key_Down
-class FileDialogLineEdit : public LineEdit
+class FileDialogLineEdit
+    : public LineEdit
 {
 public:
-    
+
     FileDialogLineEdit(QWidget* parent)
-    : LineEdit(parent)
+        : LineEdit(parent)
     {
-        
     }
-    
+
     virtual ~FileDialogLineEdit()
     {
-        
     }
-    
+
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
 };
 
@@ -295,7 +289,7 @@ public:
  * @brief The SequenceFileDialog class is the main dialog, containing the GUI and with whom the end user can interact.
  */
 class SequenceFileDialog
-: public QDialog, public SortableViewI
+    : public QDialog, public SortableViewI
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -309,9 +303,7 @@ public:
         eFileDialogModeDir,
     };
 
-
 public:
-    
 
 
     SequenceFileDialog(QWidget* parent, // necessary to transmit the stylesheet to the dialog
@@ -339,23 +331,20 @@ public:
     ///Returns the path of the directory returned by currentDirectory() but whose path has been made
     ///relative to the selected user project path.
     std::string selectedDirectory() const;
-    
+
     ///Returns the current directory of the dialog.
     ///This can be used for a eFileDialogModeDir to retrieve the value selected by the user.
     QDir currentDirectory() const;
 
-    void addFavorite(const QString & name,const QString & path);
+    void addFavorite(const QString & name, const QString & path);
 
     bool sequenceModeEnabled() const;
 
     bool isDirectory(const QString & name) const;
 
     inline QString rootPath() const;
-    
     QFileSystemModel* getFavoriteSystemModel() const;
-    
     QFileSystemModel* getLookingFileSystemModel() const;
-
     FileSystemModel* getFileSystemModel() const
     {
         return _model.get();
@@ -366,12 +355,11 @@ public:
         return _view;
     }
 
-
     static inline QString toInternal(const QString &path)
     {
 #if defined(Q_OS_WIN)
         QString n(path);
-        n.replace( QLatin1Char('\\'),QLatin1Char('/') );
+        n.replace( QLatin1Char('\\'), QLatin1Char('/') );
 #if defined(Q_OS_WINCE)
         if ( (n.size() > 1) && n.startsWith( QLatin1String("//") ) ) {
             n = n.mid(1);
@@ -385,8 +373,6 @@ public:
 #endif
     }
 
-
-    
     void setHistory(const QStringList &paths);
     QStringList history() const;
 
@@ -399,38 +385,35 @@ public:
         return _dialogMode;
     }
 
-
     /**
      * @brief Append all files in the current directory and all its sub-directories recursively.
      **/
-    static void appendFilesFromDirRecursively(QDir* currentDir,QStringList* files);
-
-    static std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> >
-    fileSequencesFromFilesList(const QStringList & files,const QStringList & supportedFileTypes);
+    static void appendFilesFromDirRecursively(QDir* currentDir, QStringList* files);
+    static std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> >fileSequencesFromFilesList(const QStringList & files, const QStringList & supportedFileTypes);
 
     /**
      * @brief Get the user preference regarding how the file should be fetched.
      * @returns False if the file path should be absolute. When true the varName and varValue
      * will be set to the project path desired.
      **/
-    bool getRelativeChoiceProjectPath(std::string& varName,std::string& varValue) const;
-    
+    bool getRelativeChoiceProjectPath(std::string& varName, std::string& varValue) const;
+
     /**
      * @brief Returns the order for the sort indicator. If no section has a sort indicator the return value of this function is undefined.
      **/
     virtual Qt::SortOrder sortIndicatorOrder() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
+
     /**
      * @brief Returns the logical index of the section that has a sort indicator. By default this is section 0.
      **/
-    virtual int	sortIndicatorSection() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
+    virtual int sortIndicatorSection() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
     /**
      * @brief Called when the section containing the sort indicator or the order indicated is changed.
      * The section's logical index is specified by logicalIndex and the sort order is specified by order.
      **/
-    virtual void onSortIndicatorChanged(int logicalIndex,Qt::SortOrder order) OVERRIDE FINAL;
-    
+    virtual void onSortIndicatorChanged(int logicalIndex, Qt::SortOrder order) OVERRIDE FINAL;
+
 public Q_SLOTS:
 
     ///same as setDirectory but with a QModelIndex
@@ -447,7 +430,7 @@ public Q_SLOTS:
 
     ///slot called when the selected directory changed, it updates the view with the (not yet fetched) directory.
     void updateView(const QString & currentDirectory);
-    
+
     ////////
     ///////// Buttons slots
     void previousFolder();
@@ -479,8 +462,8 @@ public Q_SLOTS:
 
     ///combobox slot, it calls enableSequenceMode
     void sequenceComboBoxSlot(int index);
-    
-    
+
+
     void onRelativeChoiceChanged(int index);
 
     ///slot called when the filter  is clicked
@@ -514,12 +497,13 @@ public Q_SLOTS:
 
     ///called by onFileExtensionComboChanged
     void setFileExtensionOnLineEdit(const QString &);
-    
+
     void onTogglePreviewButtonClicked(bool toggled);
 
-    void onHeaderViewSortIndicatorChanged(int logicalIndex,Qt::SortOrder order);
-    
+    void onHeaderViewSortIndicatorChanged(int logicalIndex, Qt::SortOrder order);
+
     virtual void done(int r) OVERRIDE FINAL;
+
 private:
 
     /**
@@ -527,33 +511,32 @@ private:
      * The line edit text will be set to the resulting text
      **/
     void proxyAndSetLineEditText(const QString& text);
-    
+
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
     virtual void closeEvent(QCloseEvent* e) OVERRIDE FINAL;
-    
+
     void createMenuActions();
 
     QModelIndex select(const QModelIndex & index);
 
     QByteArray saveState() const;
 
-    bool restoreState(const QByteArray & state, bool restoreDirectory,bool* directoryRestored);
+    bool restoreState(const QByteArray & state, bool restoreDirectory, bool* directoryRestored);
 
     void createViewerPreviewNode();
-    
+
     void teardownPreview();
-    
+
     NodePtr findOrCreatePreviewReader(const std::string& filetype);
-    
+
     void refreshPreviewAfterSelectionChange();
-    
-    
-    QString getUserFriendlyFileSequencePatternForFile(const QString & filename,quint64* sequenceSize) const;
-    
-    void getSequenceFromFilesForFole(const QString & file,SequenceParsing::SequenceFromFiles* sequence) const;
-    
-    
+
+
+    QString getUserFriendlyFileSequencePatternForFile(const QString & filename, quint64* sequenceSize) const;
+
+    void getSequenceFromFilesForFole(const QString & file, SequenceParsing::SequenceFromFiles* sequence) const;
+
 private:
     // FIXME: PIMPL
 
@@ -561,7 +544,7 @@ private:
     SequenceDialogView* _view;
     boost::scoped_ptr<SequenceItemDelegate> _itemDelegate;
     boost::shared_ptr<FileSystemModel> _model;
-    
+
     ///The favorite view and the dialog view don't share the same model as they don't have
     ///the same icon provider
     boost::scoped_ptr<QFileSystemModel> _favoriteViewModel;
@@ -609,18 +592,12 @@ private:
     QWidget* _centerArea;
     QHBoxLayout* _centerAreaLayout;
     Button* _togglePreviewButton;
-    
-   
-    
     boost::shared_ptr<FileDialogPreviewProvider> _preview;
-    
+
     ///Remember  autoSetProjectFormat  state before opening the dialog
     bool _wasAutosetProjectFormatEnabled;
-    
     Gui* _gui;
-    
     bool _relativePathsAllowed;
-    
 };
 
 /**

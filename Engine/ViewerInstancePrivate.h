@@ -79,18 +79,18 @@ struct RenderViewerArgs
                      const Color::Lut* srcColorSpace_,
                      const Color::Lut* colorSpace_,
                      int alphaChannelIndex_)
-    : inputImage(inputImage_)
-    , matteImage(matteImage_)
-    , texRect(texRect_)
-    , channels(channels_)
-    , srcPremult(srcPremult_)
-    , bitDepth(bitDepth_)
-    , gain(gain_)
-    , gamma(gamma_)
-    , offset(offset_)
-    , srcColorSpace(srcColorSpace_)
-    , colorSpace(colorSpace_)
-    , alphaChannelIndex(alphaChannelIndex_)
+        : inputImage(inputImage_)
+        , matteImage(matteImage_)
+        , texRect(texRect_)
+        , channels(channels_)
+        , srcPremult(srcPremult_)
+        , bitDepth(bitDepth_)
+        , gain(gain_)
+        , gamma(gamma_)
+        , offset(offset_)
+        , srcColorSpace(srcColorSpace_)
+        , colorSpace(colorSpace_)
+        , alphaChannelIndex(alphaChannelIndex_)
     {
     }
 
@@ -108,52 +108,50 @@ struct RenderViewerArgs
     int alphaChannelIndex;
 };
 
-
 struct ViewerInstance::ViewerInstancePrivate
-: public QObject, public LockManagerI<FrameEntry>
+    : public QObject, public LockManagerI<FrameEntry>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    
-    ViewerInstancePrivate(const ViewerInstance* parent)
-    : instance(parent)
-    , uiContext(NULL)
-    , forceRenderMutex()
-    , forceRender()
-    , isViewerPausedMutex()
-    , isViewerPaused()
-    , updateViewerPboIndex(0)
-    , viewerParamsMutex()
-    , viewerParamsGain(1.)
-    , viewerParamsGamma(1.)
-    , viewerParamsLut(eViewerColorSpaceSRGB)
-    , viewerParamsAutoContrast(false)
-    , viewerParamsChannels()
-    , viewerParamsLayer(ImageComponents::getRGBAComponents())
-    , viewerParamsAlphaLayer(ImageComponents::getRGBAComponents())
-    , viewerParamsAlphaChannelName("a")
-    , viewerMipMapLevel(0)
-    , activeInputsMutex(QMutex::Recursive)
-    , activeInputs()
-    , activateInputChangedFromViewer(false)
-    , gammaLookupMutex()
-    , gammaLookup()
-    , lastRenderParamsMutex()
-    , lastRenderParams()
-    , currentlyUpdatingOpenGLViewerMutex()
-    , currentlyUpdatingOpenGLViewer(false)
-    , partialUpdateRects()
-    , viewportCenter()
-    , viewportCenterSet(false)
-    , isDoingPartialUpdates(false)
-    , renderAgeMutex()
-    , renderAge()
-    , displayAge()
-    {
 
+    ViewerInstancePrivate(const ViewerInstance* parent)
+        : instance(parent)
+        , uiContext(NULL)
+        , forceRenderMutex()
+        , forceRender()
+        , isViewerPausedMutex()
+        , isViewerPaused()
+        , updateViewerPboIndex(0)
+        , viewerParamsMutex()
+        , viewerParamsGain(1.)
+        , viewerParamsGamma(1.)
+        , viewerParamsLut(eViewerColorSpaceSRGB)
+        , viewerParamsAutoContrast(false)
+        , viewerParamsChannels()
+        , viewerParamsLayer( ImageComponents::getRGBAComponents() )
+        , viewerParamsAlphaLayer( ImageComponents::getRGBAComponents() )
+        , viewerParamsAlphaChannelName("a")
+        , viewerMipMapLevel(0)
+        , activeInputsMutex(QMutex::Recursive)
+        , activeInputs()
+        , activateInputChangedFromViewer(false)
+        , gammaLookupMutex()
+        , gammaLookup()
+        , lastRenderParamsMutex()
+        , lastRenderParams()
+        , currentlyUpdatingOpenGLViewerMutex()
+        , currentlyUpdatingOpenGLViewer(false)
+        , partialUpdateRects()
+        , viewportCenter()
+        , viewportCenterSet(false)
+        , isDoingPartialUpdates(false)
+        , renderAgeMutex()
+        , renderAge()
+        , displayAge()
+    {
         for (int i = 0; i < 2; ++i) {
             forceRender[i] = false;
             activeInputs[i] = -1;
@@ -162,25 +160,21 @@ public:
             isViewerPaused[i] = false;
             viewerParamsChannels[i] = eDisplayChannelsRGB;
         }
-        
     }
-    
-    
 
     void redrawViewer()
     {
         Q_EMIT mustRedrawViewer();
     }
-    
+
 public:
-    
+
     virtual void lock(const boost::shared_ptr<FrameEntry>& entry) OVERRIDE FINAL
     {
-
-
         QMutexLocker l(&textureBeingRenderedMutex);
         std::list<boost::shared_ptr<FrameEntry> >::iterator it =
-                std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
+            std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
+
         while ( it != textureBeingRendered.end() ) {
             textureBeingRenderedCond.wait(&textureBeingRenderedMutex);
             it = std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
@@ -189,27 +183,29 @@ public:
         assert( it == textureBeingRendered.end() );
         textureBeingRendered.push_back(entry);
     }
-    
+
     virtual bool tryLock(const boost::shared_ptr<FrameEntry>& entry) OVERRIDE FINAL
     {
         QMutexLocker l(&textureBeingRenderedMutex);
         std::list<boost::shared_ptr<FrameEntry> >::iterator it =
-        std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
+            std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
+
         if ( it != textureBeingRendered.end() ) {
             return false;
         }
         ///Okay the image is not used by any other thread, claim that we want to use it
         assert( it == textureBeingRendered.end() );
         textureBeingRendered.push_back(entry);
+
         return true;
     }
-    
+
     virtual void unlock(const boost::shared_ptr<FrameEntry>& entry) OVERRIDE FINAL
     {
-
         QMutexLocker l(&textureBeingRenderedMutex);
         std::list<boost::shared_ptr<FrameEntry> >::iterator it =
-                std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
+            std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
+
         ///The image must exist, otherwise this is a bug
         assert( it != textureBeingRendered.end() );
         textureBeingRendered.erase(it);
@@ -221,40 +217,44 @@ public:
      * @brief Returns the current render age of the viewer (a simple counter incrementing at each request).
      * The age is then incremented so the next call to getRenderAge will return the current value plus one.
      **/
-    AbortableRenderInfoPtr createNewRenderRequest(int texIndex, bool canAbort)
+    AbortableRenderInfoPtr createNewRenderRequest(int texIndex,
+                                                  bool canAbort)
     {
         QMutexLocker k(&renderAgeMutex);
-        
         U64 ret = renderAge[texIndex];
-        if (renderAge[texIndex] == std::numeric_limits<U64>::max()) {
+
+        if ( renderAge[texIndex] == std::numeric_limits<U64>::max() ) {
             renderAge[texIndex] = 0;
         } else {
             ++renderAge[texIndex];
         }
-        
-        AbortableRenderInfoPtr info(new AbortableRenderInfo(canAbort, ret));
+
+        AbortableRenderInfoPtr info( new AbortableRenderInfo(canAbort, ret) );
+
         return info;
-        
     }
-    
+
     /**
-     * @brief We keep track of ongoing renders internally. This function is called only by non 
+     * @brief We keep track of ongoing renders internally. This function is called only by non
      * abortable renders to determine if we should abort anyway because the render is no longer interesting.
      **/
-    bool isLatestRender(int texIndex,U64 age) const
+    bool isLatestRender(int texIndex,
+                        U64 age) const
     {
         QMutexLocker k(&renderAgeMutex);
-        return !currentRenderAges[texIndex].empty() && (*currentRenderAges[texIndex].rbegin())->age == age;
+
+        return !currentRenderAges[texIndex].empty() && ( *currentRenderAges[texIndex].rbegin() )->age == age;
     }
-    
-    
+
     /**
      * @brief To be called to check if there we are the last requested render (true) or if there were
      * more recent requests (false).
      **/
-    bool checkAgeNoUpdate(int texIndex,U64 age)
+    bool checkAgeNoUpdate(int texIndex,
+                          U64 age)
     {
         QMutexLocker k(&renderAgeMutex);
+
         assert(age <= renderAge[texIndex]);
         if (age >= displayAge[texIndex]) {
             return true;
@@ -262,7 +262,7 @@ public:
             return false;
         }
     }
-    
+
     /**
      * @brief To be called when a render is about to end (either because of a failure or of success).
      * If there was already a more recent render that had finished rendering, we return false meaning
@@ -270,32 +270,43 @@ public:
      * On the other hand, if we're the most recent render request, we return true and update the last
      * render age, meaning we should redraw the viewer.
      **/
-    bool checkAndUpdateDisplayAge(int texIndex,U64 age)
+    bool checkAndUpdateDisplayAge(int texIndex,
+                                  U64 age)
     {
         QMutexLocker k(&renderAgeMutex);
+
         assert(age <= renderAge[texIndex]);
         assert(age != displayAge[texIndex]);
         if (age <= displayAge[texIndex]) {
             return false;
         }
         displayAge[texIndex] = age;
+
         return true;
     }
-    
-    bool addOngoingRender(int texIndex, const AbortableRenderInfoPtr& abortInfo) {
+
+    bool addOngoingRender(int texIndex,
+                          const AbortableRenderInfoPtr& abortInfo)
+    {
         QMutexLocker k(&renderAgeMutex);
-        if (!currentRenderAges[texIndex].empty() && (*currentRenderAges[texIndex].rbegin())->age >= abortInfo->age) {
+
+        if ( !currentRenderAges[texIndex].empty() && ( ( *currentRenderAges[texIndex].rbegin() )->age >= abortInfo->age ) ) {
             return false;
         }
         currentRenderAges[texIndex].insert(abortInfo);
+
         return true;
     }
-    
-    bool removeOngoingRender(int texIndex, U64 age) {
+
+    bool removeOngoingRender(int texIndex,
+                             U64 age)
+    {
         QMutexLocker k(&renderAgeMutex);
-        for (OnGoingRenders::iterator it = currentRenderAges[texIndex].begin(); it!=currentRenderAges[texIndex].end();++it) {
-            if ((*it)->age == age) {
+
+        for (OnGoingRenders::iterator it = currentRenderAges[texIndex].begin(); it != currentRenderAges[texIndex].end(); ++it) {
+            if ( (*it)->age == age ) {
                 currentRenderAges[texIndex].erase(it);
+
                 return true;
             }
         }
@@ -303,18 +314,17 @@ public:
         return false;
     }
 
-    
-    void fillGammaLut(double gamma) {
+    void fillGammaLut(double gamma)
+    {
         gammaLookup.resize(GAMMA_LUT_NB_VALUES + 1);
         for (int position = 0; position <= GAMMA_LUT_NB_VALUES; ++position) {
-            
             double parametricPos = double(position) / GAMMA_LUT_NB_VALUES;
             double value = std::pow(parametricPos, gamma);
             // set that in the lut
-            gammaLookup[position] = (float)std::max(0.,std::min(1.,value));
+            gammaLookup[position] = (float)std::max( 0., std::min(1., value) );
         }
     }
-    
+
     float lookupGammaLut(float value) const
     {
         if (value < 0.) {
@@ -324,14 +334,13 @@ public:
         } else {
             int i = (int)(value * GAMMA_LUT_NB_VALUES);
             assert(0 <= i && i <= GAMMA_LUT_NB_VALUES);
-            float alpha = std::max(0.f,std::min(value * GAMMA_LUT_NB_VALUES - i, 1.f));
+            float alpha = std::max( 0.f, std::min(value * GAMMA_LUT_NB_VALUES - i, 1.f) );
             float a = gammaLookup[i];
             float b = (i  < GAMMA_LUT_NB_VALUES) ? gammaLookup[i + 1] : 0.f;
+
             return a * (1.f - alpha) + b * alpha;
         }
-
     }
-
 
 public Q_SLOTS:
 
@@ -342,7 +351,7 @@ public Q_SLOTS:
     void updateViewer(boost::shared_ptr<UpdateViewerParams> params);
 
 Q_SIGNALS:
-   
+
     void mustRedrawViewer();
 
 public:
@@ -350,7 +359,6 @@ public:
     OpenGLViewerI* uiContext; // written in the main thread before render thread creation, accessed from render thread
     mutable QMutex forceRenderMutex;
     bool forceRender[2]; /*!< true when we want to by-pass the cache*/
-
     mutable QMutex isViewerPausedMutex;
     bool isViewerPaused[2]; /*!< When true we should no longer refresh the viewer */
 
@@ -373,53 +381,45 @@ public:
     ImageComponents viewerParamsAlphaLayer;
     std::string viewerParamsAlphaChannelName;
     unsigned int viewerMipMapLevel; //< the mipmap level the viewer should render at (0 == no downscaling)
-
     mutable QMutex activeInputsMutex;
     int activeInputs[2]; //< indexes of the inputs used for the wipe
-    
+
     ///Only accessed from MT
     bool activateInputChangedFromViewer;
-    
     mutable QMutex textureBeingRenderedMutex;
     QWaitCondition textureBeingRenderedCond;
     std::list<boost::shared_ptr<FrameEntry> > textureBeingRendered; ///< a list of all the texture being rendered simultaneously
-    
     mutable QReadWriteLock gammaLookupMutex;
     std::vector<float> gammaLookup; // protected by gammaLookupMutex
-    
+
     //When painting, this is the last texture we've drawn onto so that we can update only the specific portion needed
     mutable QMutex lastRenderParamsMutex;
     boost::shared_ptr<UpdateViewerParams> lastRenderParams[2];
-    
     mutable QMutex currentlyUpdatingOpenGLViewerMutex;
     bool currentlyUpdatingOpenGLViewer;
-    
+
     /*
      * @brief If this list is not empty, this is the list of canonical rectangles we should update on the viewer, completly
      * disregarding the RoI. This is protected by viewerParamsMutex
      */
     std::list<RectD> partialUpdateRects;
-    
+
     /*
      * @brief If set, the viewport center will be updated to this point upon the next update of the texture, this is protected by
      * viewerParamsMutex
      */
     Point viewportCenter;
     bool viewportCenterSet;
-    
+
     //True if during tracking
     bool isDoingPartialUpdates;
-
-    
     mutable QMutex renderAgeMutex; // protects renderAge lastRenderAge currentRenderAges
     U64 renderAge[2];
     U64 displayAge[2];
-    
+
     //A priority list recording the ongoing renders. This is used for abortable renders (i.e: when moving a slider or scrubbing the timeline)
     //The purpose of this is to always at least keep 1 active render (non abortable) and abort more recent renders that do no longer make sense
-    
     OnGoingRenders currentRenderAges[2];
-    
 };
 
 NATRON_NAMESPACE_EXIT;

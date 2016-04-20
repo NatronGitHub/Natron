@@ -89,21 +89,19 @@ using std::make_pair;
 //=============================GROUP_KNOB_GUI===================================
 
 KnobGuiGroup::KnobGuiGroup(KnobPtr knob,
-                             DockablePanel *container)
-: KnobGui(knob, container)
-, _checked(false)
-, _button(0)
-, _children()
-, _childrenToEnable()
-, _tabGroup(0)
-, _knob( boost::dynamic_pointer_cast<KnobGroup>(knob))
+                           DockablePanel *container)
+    : KnobGui(knob, container)
+    , _checked(false)
+    , _button(0)
+    , _children()
+    , _childrenToEnable()
+    , _tabGroup(0)
+    , _knob( boost::dynamic_pointer_cast<KnobGroup>(knob) )
 {
-
 }
 
 KnobGuiGroup::~KnobGuiGroup()
 {
-    
 }
 
 TabGroup*
@@ -112,8 +110,9 @@ KnobGuiGroup::getOrCreateTabWidget()
     if (_tabGroup) {
         return _tabGroup;
     }
-    
-    _tabGroup = new TabGroup(getContainer());
+
+    _tabGroup = new TabGroup( getContainer() );
+
     return _tabGroup;
 }
 
@@ -124,7 +123,8 @@ KnobGuiGroup::removeTabWidget()
     _tabGroup = 0;
 }
 
-void KnobGuiGroup::removeSpecificGui()
+void
+KnobGuiGroup::removeSpecificGui()
 {
     _button->deleteLater();
 }
@@ -156,20 +156,21 @@ KnobGuiGroup::createWidget(QHBoxLayout* layout)
 }
 
 void
-KnobGuiGroup::setCheckedInternal(bool checked, bool userRequested)
+KnobGuiGroup::setCheckedInternal(bool checked,
+                                 bool userRequested)
 {
     if (checked == _checked) {
         return;
     }
     _checked = checked;
-    
+
     if (userRequested) {
         boost::shared_ptr<KnobGroup> knob = _knob.lock();
         if (knob) {
             knob->setValue(checked, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
         }
     }
-    
+
     ///get the current index of the group knob in the layout, and reinsert
     ///the children back with an offset relative to the group.
     int realIndexInLayout = getActualIndexInLayout();
@@ -200,7 +201,7 @@ KnobGuiGroup::onCheckboxChecked(bool b)
 
 bool
 KnobGuiGroup::eventFilter(QObject */*target*/,
-                           QEvent* /*event*/)
+                          QEvent* /*event*/)
 {
     //if(e->type() == QEvent::Paint){
 
@@ -215,7 +216,7 @@ KnobGuiGroup::updateGUI(int /*dimension*/)
 {
     bool b = _knob.lock()->getValue(0);
 
-    setCheckedInternal(b,false);
+    setCheckedInternal(b, false);
     if (_button) {
         _button->setChecked(b);
     }
@@ -295,7 +296,8 @@ KnobGuiGroup::setEnabled()
     }
 }
 
-KnobPtr KnobGuiGroup::getKnob() const
+KnobPtr
+KnobGuiGroup::getKnob() const
 {
     return _knob.lock();
 }

@@ -41,7 +41,7 @@ class AboutWindow
     : public QDialog
 {
     Q_OBJECT
-    
+
     QVBoxLayout* _mainLayout;
     Label* _iconLabel;
     QTabWidget* _tabWidget;
@@ -68,9 +68,9 @@ public:
     virtual ~AboutWindow()
     {
     }
-    
+
 public Q_SLOTS:
-    
+
     void onSelectionChanged(const QItemSelection & newSelection,
                             const QItemSelection & oldSelection);
 };

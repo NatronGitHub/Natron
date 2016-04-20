@@ -62,15 +62,15 @@ class BezierSerialization
 {
     friend class ::boost::serialization::access;
     friend class Bezier;
-    
+
 public:
-    
+
     BezierSerialization()
-    : RotoDrawableItemSerialization()
-    , _controlPoints()
-    , _featherPoints()
-    , _closed(false)
-    , _isOpenBezier(false)
+        : RotoDrawableItemSerialization()
+        , _controlPoints()
+        , _featherPoints()
+        , _closed(false)
+        , _isOpenBezier(false)
     {
     }
 
@@ -86,22 +86,21 @@ private:
               const unsigned int version) const
     {
         Q_UNUSED(version);
-        ::boost::serialization::void_cast_register<BezierSerialization,RotoDrawableItemSerialization>(
+        ::boost::serialization::void_cast_register<BezierSerialization, RotoDrawableItemSerialization>(
             static_cast<BezierSerialization *>(NULL),
             static_cast<RotoDrawableItemSerialization *>(NULL)
             );
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoDrawableItemSerialization);
         int numPoints = (int)_controlPoints.size();
-        ar & ::boost::serialization::make_nvp("NumPoints",numPoints);
+        ar & ::boost::serialization::make_nvp("NumPoints", numPoints);
         std::list< BezierCP >::const_iterator itF = _featherPoints.begin();
         for (std::list< BezierCP >::const_iterator it = _controlPoints.begin(); it != _controlPoints.end(); ++it) {
-            ar & ::boost::serialization::make_nvp("CP",*it);
-            ar & ::boost::serialization::make_nvp("FP",*itF);
+            ar & ::boost::serialization::make_nvp("CP", *it);
+            ar & ::boost::serialization::make_nvp("FP", *itF);
             ++itF;
-            
         }
-        ar & ::boost::serialization::make_nvp("Closed",_closed);
-        ar & ::boost::serialization::make_nvp("OpenBezier",_isOpenBezier);
+        ar & ::boost::serialization::make_nvp("Closed", _closed);
+        ar & ::boost::serialization::make_nvp("OpenBezier", _isOpenBezier);
     }
 
     template<class Archive>
@@ -109,30 +108,29 @@ private:
               const unsigned int version)
     {
         Q_UNUSED(version);
-        boost::serialization::void_cast_register<BezierSerialization,RotoDrawableItemSerialization>(
+        boost::serialization::void_cast_register<BezierSerialization, RotoDrawableItemSerialization>(
             static_cast<BezierSerialization *>(NULL),
             static_cast<RotoDrawableItemSerialization *>(NULL)
             );
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoDrawableItemSerialization);
         int numPoints;
-        ar & ::boost::serialization::make_nvp("NumPoints",numPoints);
-        if (version >= BEZIER_SERIALIZATION_INTRODUCES_ROTO_STROKE && version < BEZIER_SERIALIZATION_REMOVES_IS_ROTO_STROKE) {
+        ar & ::boost::serialization::make_nvp("NumPoints", numPoints);
+        if ( (version >= BEZIER_SERIALIZATION_INTRODUCES_ROTO_STROKE) && (version < BEZIER_SERIALIZATION_REMOVES_IS_ROTO_STROKE) ) {
             bool isStroke;
-            ar & ::boost::serialization::make_nvp("IsStroke",isStroke);
+            ar & ::boost::serialization::make_nvp("IsStroke", isStroke);
         }
         for (int i = 0; i < numPoints; ++i) {
             BezierCP cp;
-            ar & ::boost::serialization::make_nvp("CP",cp);
+            ar & ::boost::serialization::make_nvp("CP", cp);
             _controlPoints.push_back(cp);
-            
+
             BezierCP fp;
-            ar & ::boost::serialization::make_nvp("FP",fp);
+            ar & ::boost::serialization::make_nvp("FP", fp);
             _featherPoints.push_back(fp);
-            
         }
-        ar & ::boost::serialization::make_nvp("Closed",_closed);
+        ar & ::boost::serialization::make_nvp("Closed", _closed);
         if (version >= BEZIER_SERIALIZATION_INTRODUCES_OPEN_BEZIER) {
-            ar & ::boost::serialization::make_nvp("OpenBezier",_isOpenBezier);
+            ar & ::boost::serialization::make_nvp("OpenBezier", _isOpenBezier);
         } else {
             _isOpenBezier = false;
         }
@@ -140,7 +138,7 @@ private:
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
-    std::list< BezierCP > _controlPoints,_featherPoints;
+    std::list< BezierCP > _controlPoints, _featherPoints;
     bool _closed;
     bool _isOpenBezier;
 };
@@ -148,6 +146,6 @@ private:
 
 NATRON_NAMESPACE_EXIT;
 
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::BezierSerialization,BEZIER_SERIALIZATION_VERSION)
+BOOST_CLASS_VERSION(NATRON_NAMESPACE::BezierSerialization, BEZIER_SERIALIZATION_VERSION)
 
 #endif // Engine_BezierSerialization_h

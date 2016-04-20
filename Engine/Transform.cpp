@@ -25,7 +25,7 @@
 /*
  * This file was taken from https://github.com/devernay/openfx-misc
  * Maybe we should make this a git submodule instead.
-*/
+ */
 #include "Transform.h"
 
 #include <cassert>
@@ -39,8 +39,6 @@
 
 NATRON_NAMESPACE_ENTER;
 namespace Transform {
-
-
 Point3D::Point3D()
     : x(0), y(0), z(0)
 {
@@ -49,12 +47,12 @@ Point3D::Point3D()
 Point3D::Point3D(double x,
                  double y,
                  double z)
-    : x(x),y(y),z(z)
+    : x(x), y(y), z(z)
 {
 }
 
 Point3D::Point3D(const Point3D & p)
-    : x(p.x),y(p.y),z(p.z)
+    : x(p.x), y(p.y), z(p.z)
 {
 }
 
@@ -148,13 +146,135 @@ Matrix3x3::Matrix3x3(double a_,
                      double g_,
                      double h_,
                      double i_)
-    : a(a_),b(b_),c(c_),d(d_),e(e_),f(f_),g(g_),h(h_),i(i_)
+    : a(a_), b(b_), c(c_), d(d_), e(e_), f(f_), g(g_), h(h_), i(i_)
 {
 }
 
 Matrix3x3::Matrix3x3(const Matrix3x3 & mat)
     : a(mat.a), b(mat.b), c(mat.c), d(mat.d), e(mat.e), f(mat.f), g(mat.g), h(mat.h), i(mat.i)
 {
+}
+
+bool
+Matrix3x3::setHomographyFromFourPoints(const Point3D &p1,
+                                       const Point3D &p2,
+                                       const Point3D &p3,
+                                       const Point3D &p4,
+                                       const Point3D &q1,
+                                       const Point3D &q2,
+                                       const Point3D &q3,
+                                       const Point3D &q4)
+{
+    Matrix3x3 invHp;
+    Matrix3x3 Hp( crossprod( crossprod(p1, p2), crossprod(p3, p4) ),
+                  crossprod( crossprod(p1, p3), crossprod(p2, p4) ),
+                  crossprod( crossprod(p1, p4), crossprod(p2, p3) ) );
+    double detHp = matDeterminant(Hp);
+
+    if (detHp == 0.) {
+        return false;
+    }
+    Matrix3x3 Hq( crossprod( crossprod(q1, q2), crossprod(q3, q4) ),
+                  crossprod( crossprod(q1, q3), crossprod(q2, q4) ),
+                  crossprod( crossprod(q1, q4), crossprod(q2, q3) ) );
+    double detHq = matDeterminant(Hq);
+    if (detHq == 0.) {
+        return false;
+    }
+    invHp = matInverse(Hp, detHp);
+    *this = matMul(Hq, invHp);
+
+    return true;
+}
+
+bool
+Matrix3x3::setAffineFromThreePoints(const Point3D &p1,
+                                    const Point3D &p2,
+                                    const Point3D &p3,
+                                    const Point3D &q1,
+                                    const Point3D &q2,
+                                    const Point3D &q3)
+{
+    Matrix3x3 invHp;
+    Matrix3x3 Hp(p1, p2, p3);
+    double detHp = matDeterminant(Hp);
+
+    if (detHp == 0.) {
+        return false;
+    }
+    Matrix3x3 Hq(q1, q2, q3);
+    double detHq = matDeterminant(Hq);
+    if (detHq == 0.) {
+        return false;
+    }
+    invHp = matInverse(Hp, detHp);
+    *this = matMul(Hq, invHp);
+
+    return true;
+}
+
+bool
+Matrix3x3::setSimilarityFromTwoPoints(const Point3D &p1,
+                                      const Point3D &p2,
+                                      const Point3D &q1,
+                                      const Point3D &q2)
+{
+    // Generate a third point so that p1p3 is orthogonal to p1p2, and compute the affine transform
+    Point3D p3, q3;
+
+    p3.x = p1.x - (p2.y - p1.y);
+    p3.y = p1.y + (p2.x - p1.x);
+    p3.z = 1.;
+    q3.x = q1.x - (q2.y - q1.y);
+    q3.y = q1.y + (q2.x - q1.x);
+    q3.z = 1.;
+
+    return setAffineFromThreePoints(p1, p2, p3, q1, q2, q3);
+    /*
+       there is probably a better solution.
+       we have to solve for H in
+       [x1 x2]
+       [ h1 -h2 h3] [y1 y2]   [x1' x2']
+       [ h2  h1 h4] [ 1  1] = [y1' y2']
+
+       which is equivalent to
+       [x1 -y1 1 0] [h1]   [x1']
+       [x2 -y2 1 0] [h2]   [x2']
+       [y1  x1 0 1] [h3] = [y1']
+       [y2  x2 0 1] [h4]   [y2']
+       The 4x4 matrix should be easily invertible
+
+       with(linalg);
+       M := Matrix([[x1, -y1, 1, 0], [x2, -y2, 1, 0], [y1, x1, 0, 1], [y2, x2, 0, 1]]);
+       inverse(M);
+     */
+    /*
+       double det = p1.x*p1.x - 2*p2.x*p1.x + p2.x*p2.x +p1.y*p1.y -2*p1.y*p2.y +p2.y*p2.y;
+       if (det == 0.) {
+       return false;
+       }
+       double h1 = (p1.x-p2.x)*(q1.x-q2.x) + (p1.y-p2.y)*(q1.y-q2.y);
+       double h2 = (p1.x-p2.x)*(q1.y-q2.y) - (p1.y-p2.y)*(q1.x-q2.x);
+       double h3 =
+       todo...
+     */
+}
+
+bool
+Matrix3x3::setTranslationFromOnePoint(const Point3D &p1,
+                                      const Point3D &q1)
+{
+    a = 1.;
+    b = 0.;
+    c = q1.x - p1.x;
+    d = 0.;
+    e = 1.;
+    f = q1.y - p1.y;
+    g = 0.;
+    h = 0.;
+    i = 1.;
+
+    return true;
 }
 
 Matrix3x3 &
@@ -169,6 +289,7 @@ Matrix3x3::operator=(const Matrix3x3 & m)
     g = m.g;
     h = m.h;
     i = m.i;
+
     return *this;
 }
 
@@ -213,14 +334,19 @@ matApply(const Matrix3x3 & m,
 
     return ret;
 }
-    
-void matApply(const Matrix3x3 & m,double* x, double *y, double *z)
+
+void
+matApply(const Matrix3x3 & m,
+         double* x,
+         double *y,
+         double *z)
 {
-    double tmpX,tmpY,tmpZ;
+    double tmpX, tmpY, tmpZ;
+
     tmpX = m.a * *x + m.b * *y + m.c * *z;
     tmpY = m.d * *x + m.e * *y + m.f * *z;
     tmpZ = m.g * *x + m.h * *y + m.i * *z;
-    
+
     *x = tmpX;
     *y = tmpY;
     *z = tmpZ;
@@ -233,12 +359,12 @@ Matrix4x4::Matrix4x4()
 
 Matrix4x4::Matrix4x4(const double d[16])
 {
-    std::copy(d,d + 16,data);
+    std::copy(d, d + 16, data);
 }
 
 Matrix4x4::Matrix4x4(const Matrix4x4 & o)
 {
-    std::copy(o.data,o.data + 16,data);
+    std::copy(o.data, o.data + 16, data);
 }
 
 double &
@@ -268,7 +394,7 @@ matMul(const Matrix4x4 & m1,
     for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < 4; ++j) {
             for (int x = 0; x < 4; ++x) {
-                ret(i,j) += m1(i,x) * m2(x,j);
+                ret(i, j) += m1(i, x) * m2(x, j);
             }
         }
     }
@@ -285,13 +411,12 @@ matApply(const Matrix4x4 & m,
     for (int i = 0; i < 4; ++i) {
         ret(i) = 0.;
         for (int j = 0; j < 4; ++j) {
-            ret(i) += m(i,j) * p(j);
+            ret(i) += m(i, j) * p(j);
         }
     }
 
     return ret;
 }
-
 
 //static
 //Matrix4x4
@@ -320,7 +445,6 @@ matDeterminant(const Matrix3x3 & M)
            + M.c * (M.d * M.h - M.g * M.e);
 }
 
-
 Matrix3x3
 matScaleAdjoint(const Matrix3x3 & M,
                 double s)
@@ -342,13 +466,11 @@ matScaleAdjoint(const Matrix3x3 & M,
     return ret;
 }
 
-
 Matrix3x3
 matInverse(const Matrix3x3 & M)
 {
     return matScaleAdjoint( M, 1. / matDeterminant(M) );
 }
-
 
 Matrix3x3
 matInverse(const Matrix3x3 & M,
@@ -357,17 +479,14 @@ matInverse(const Matrix3x3 & M,
     return matScaleAdjoint(M, 1. / det);
 }
 
-
-
 Matrix3x3
 matRotation(double rads)
 {
     double c = std::cos(rads);
     double s = std::sin(rads);
 
-    return Matrix3x3(c,s,0,-s,c,0,0,0,1);
+    return Matrix3x3(c, s, 0, -s, c, 0, 0, 0, 1);
 }
-
 
 Matrix3x3
 matTranslation(double x,
@@ -414,7 +533,7 @@ matScaleAroundPoint(double scaleX,
                     double px,
                     double py)
 {
-    return matMul( matTranslation(px,py), matMul( matScale(scaleX,scaleY), matTranslation(-px, -py) ) );
+    return matMul( matTranslation(px, py), matMul( matScale(scaleX, scaleY), matTranslation(-px, -py) ) );
 }
 
 #endif
@@ -455,10 +574,9 @@ matInverseTransformCanonical(double translateX,
                                                    matScale(1. / scaleX, 1. / scaleY) ),
                                            matSkewXY(-skewX, -skewY, !skewOrderYX) ),
                                    matRotation(rads) ),
-                           matTranslation(-translateX,-translateY) ),
-                   matTranslation(-centerX,-centerY) );
+                           matTranslation(-translateX, -translateY) ),
+                   matTranslation(-centerX, -centerY) );
 }
-
 
 // matrix transform from source to destination
 Matrix3x3
@@ -485,7 +603,7 @@ matTransformCanonical(double translateX,
                                            matRotation(-rads) ),
                                    matSkewXY(skewX, skewY, skewOrderYX) ),
                            matScale(scaleX, scaleY) ),
-                   matTranslation(-centerX,-centerY) );
+                   matTranslation(-centerX, -centerY) );
 }
 
 // The transforms between pixel and canonical coordinated
@@ -510,7 +628,6 @@ matPixelToCanonical(double pixelaspectratio, //!< 1.067 for PAL, where 720x576 p
     return matScale( pixelaspectratio / renderscaleX, 1. / ( renderscaleY * (fielded ? 0.5 : 1.0) ) );
 }
 
-
 /// transform from canonical coordinates to pixel coordinates
 Matrix3x3
 matCanonicalToPixel(double pixelaspectratio, //!< 1.067 for PAL, where 720x576 pixels occupy 768x576 in canonical coords
@@ -529,7 +646,6 @@ matCanonicalToPixel(double pixelaspectratio, //!< 1.067 for PAL, where 720x576 p
     return matScale( renderscaleX / pixelaspectratio, renderscaleY * (fielded ? 0.5 : 1.0) );
 }
 
-    
  #if 0
 // matrix transform from destination to source
 static
@@ -586,23 +702,25 @@ matTransformPixel(double pixelaspectratio, //!< 1.067 for PAL, where 720x576 pix
 }
 
 #endif // if 0
-    
-    
+
+
 // compute the bounding box of the transform of four points
 static void
-transformRegionFromPoints(const Point3D p[4], RectD &rod)
+transformRegionFromPoints(const Point3D p[4],
+                          RectD &rod)
 {
     // extract the x/y bounds
     double x1, y1, x2, y2;
-    
+
     // if all z's have the same sign, we can compute a reasonable ROI, else we give the whole image (the line at infinity crosses the rectangle)
     bool allpositive = true;
     bool allnegative = true;
+
     for (int i = 0; i < 4; ++i) {
         allnegative = allnegative && (p[i].z < 0.);
         allpositive = allpositive && (p[i].z > 0.);
     }
-    
+
     if (!allpositive && !allnegative) {
         // the line at infinity crosses the source RoD
         x1 = kOfxFlagInfiniteMin;
@@ -615,7 +733,7 @@ transformRegionFromPoints(const Point3D p[4], RectD &rod)
             q[i].x = p[i].x / p[i].z;
             q[i].y = p[i].y / p[i].z;
         }
-        
+
         x1 = x2 = q[0].x;
         y1 = y2 = q[0].y;
         for (int i = 1; i < 4; ++i) {
@@ -631,34 +749,33 @@ transformRegionFromPoints(const Point3D p[4], RectD &rod)
             }
         }
     }
-    
+
     // GENERIC
     rod.x1 = x1;
     rod.x2 = x2;
     rod.y1 = y1;
     rod.y2 = y2;
     assert(rod.x1 <= rod.x2 && rod.y1 <= rod.y2);
-}
-    
+} // transformRegionFromPoints
+
 // compute the bounding box of the transform of a rectangle
 void
-transformRegionFromRoD(const RectD &srcRect, const Matrix3x3 &transform, RectD &dstRect)
+transformRegionFromRoD(const RectD &srcRect,
+                       const Matrix3x3 &transform,
+                       RectD &dstRect)
 {
     /// now transform the 4 corners of the source clip to the output image
     Point3D p[4];
-    p[0] = matApply(transform, Point3D(srcRect.x1,srcRect.y1,1));
-    p[1] = matApply(transform, Point3D(srcRect.x1,srcRect.y2,1));
-    p[2] = matApply(transform, Point3D(srcRect.x2,srcRect.y2,1));
-    p[3] = matApply(transform, Point3D(srcRect.x2,srcRect.y1,1));
-    
-    
+
+    p[0] = matApply( transform, Point3D(srcRect.x1, srcRect.y1, 1) );
+    p[1] = matApply( transform, Point3D(srcRect.x1, srcRect.y2, 1) );
+    p[2] = matApply( transform, Point3D(srcRect.x2, srcRect.y2, 1) );
+    p[3] = matApply( transform, Point3D(srcRect.x2, srcRect.y1, 1) );
+
+
     transformRegionFromPoints(p, dstRect);
 }
-
-    
-    
 } //namespace Transform
 NATRON_NAMESPACE_EXIT;
-
 
 

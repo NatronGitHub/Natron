@@ -34,40 +34,37 @@ NATRON_NAMESPACE_ENTER;
 
 struct BackdropPrivate
 {
-    
     boost::weak_ptr<KnobString> knobLabel;
-    
+
     BackdropPrivate()
-    : knobLabel()
+        : knobLabel()
     {
     }
-    
 };
 
 Backdrop::Backdrop(NodePtr node)
-: NoOpBase(node)
-, _imp(new BackdropPrivate())
+    : NoOpBase(node)
+    , _imp( new BackdropPrivate() )
 {
 }
 
 Backdrop::~Backdrop()
 {
-    
 }
 
 std::string
 Backdrop::getPluginDescription() const
 {
     return QObject::tr("The node backdrop is useful to group nodes and identify them in the node graph. You can also "
-              "move all the nodes inside the backdrop.").toStdString() ;
+                       "move all the nodes inside the backdrop.").toStdString();
 }
 
 void
 Backdrop::initializeKnobs()
 {
     boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>(this, "Controls");
-    
     boost::shared_ptr<KnobString> knobLabel = AppManager::createKnob<KnobString>( this, "Label");
+
     knobLabel->setAnimationEnabled(false);
     knobLabel->setAsMultiLine();
     knobLabel->setUsesRichText(true);
@@ -75,10 +72,7 @@ Backdrop::initializeKnobs()
     knobLabel->setEvaluateOnChange(false);
     page->addKnob(knobLabel);
     _imp->knobLabel = knobLabel;
- 
-
 }
-
 
 void
 Backdrop::knobChanged(KnobI* k,
@@ -88,9 +82,9 @@ Backdrop::knobChanged(KnobI* k,
                       bool /*originatedFromMainThread*/)
 {
     if ( k == _imp->knobLabel.lock().get() ) {
-        QString text = QString::fromUtf8(_imp->knobLabel.lock()->getValue().c_str());
+        QString text = QString::fromUtf8( _imp->knobLabel.lock()->getValue().c_str() );
         Q_EMIT labelChanged(text);
-    } 
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

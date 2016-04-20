@@ -45,84 +45,82 @@
 NATRON_NAMESPACE_ENTER;
 
 struct AppInstancePrivate;
-
 struct CreateNodeArgs
 {
     typedef std::list< boost::shared_ptr<KnobSerialization> > DefaultValuesList;
 
     ///The pluginID corresponds to Plugin::getPluginID()
     QString pluginID;
-    
+
     //The version of the plug-in we want to instanciate
-    int majorV,minorV;
-    
+    int majorV, minorV;
+
     //If the node is a multi-instance child, this is the script-name of the parent
     std::string multiInstanceParentName;
-    
+
     //A hint for the initial x,y position in the NodeGraph
     double xPosHint, yPosHint;
-    
+
     //If we do not want the name of the node to be generated automatically, we can set this
     //to force the node to have this name
     QString fixedName;
 
     //A list of parameter values that will be set prior to calling createInstanceAction
     DefaultValuesList paramValues;
-    
+
     //The group into which the node should be. All "user" nodes should at least be in the Project
     //or in a NodeGroup
     boost::shared_ptr<NodeCollection> group;
-    
+
     //How was this node created
     CreateNodeReason reason;
-    
+
     //Should we create the NodeGui or keep the node internal only
     bool createGui;
-    
+
     //If false the node will not be serialized, indicating it's just used by Natron internals
     bool addToProject;
-    
+
     //When copy/pasting or loading from a project, this is a pointer to this node serialization to load
     //data from
     boost::shared_ptr<NodeSerialization> serialization;
-    
+
     //When creating a Reader or Writer node, this is a pointer to the "bundle" node that the user actually see.
     NodePtr ioContainer;
-    
-    explicit CreateNodeArgs(const QString& pluginID, CreateNodeReason reason, const boost::shared_ptr<NodeCollection>& group)
-    : pluginID(pluginID)
-    , majorV(-1)
-    , minorV(-1)
-    , multiInstanceParentName()
-    , xPosHint(INT_MIN)
-    , yPosHint(INT_MIN)
-    , fixedName()
-    , paramValues()
-    , group(group)
-    , reason(reason)
-    , createGui(true)
-    , addToProject(true)
-    , serialization()
-    , ioContainer()
-    {
 
+    explicit CreateNodeArgs(const QString& pluginID,
+                            CreateNodeReason reason,
+                            const boost::shared_ptr<NodeCollection>& group)
+        : pluginID(pluginID)
+        , majorV(-1)
+        , minorV(-1)
+        , multiInstanceParentName()
+        , xPosHint(INT_MIN)
+        , yPosHint(INT_MIN)
+        , fixedName()
+        , paramValues()
+        , group(group)
+        , reason(reason)
+        , createGui(true)
+        , addToProject(true)
+        , serialization()
+        , ioContainer()
+    {
     }
-    
 };
 
 
-
-class FlagSetter {
-    
+class FlagSetter
+{
     bool* p;
     QMutex* lock;
-    
+
 public:
-    
-    FlagSetter(bool initialValue,bool* p);
-    
-    FlagSetter(bool initialValue,bool* p, QMutex* mutex);
-    
+
+    FlagSetter(bool initialValue, bool* p);
+
+    FlagSetter(bool initialValue, bool* p, QMutex* mutex);
+
     ~FlagSetter();
 };
 
@@ -139,64 +137,64 @@ public:
     virtual ~AppInstance();
 
     virtual void aboutToQuit();
-    
     virtual bool isBackground() const { return true; }
-    
-    
-    struct RenderWork {
+
+
+    struct RenderWork
+    {
         OutputEffectInstance* writer;
         int firstFrame;
         int lastFrame;
         int frameStep;
         bool useRenderStats;
         bool isRestart;
-        
+
         RenderWork()
-        : writer(0)
-        , firstFrame(0)
-        , lastFrame(0)
-        , frameStep(0)
-        , useRenderStats(false)
-        , isRestart(false)
+            : writer(0)
+            , firstFrame(0)
+            , lastFrame(0)
+            , frameStep(0)
+            , useRenderStats(false)
+            , isRestart(false)
         {
-            
         }
-        
+
         RenderWork(OutputEffectInstance* writer,
                    int firstFrame,
                    int lastFrame,
                    int frameStep,
                    bool useRenderStats)
-        : writer(writer)
-        , firstFrame(firstFrame)
-        , lastFrame(lastFrame)
-        , frameStep(frameStep)
-        , useRenderStats(useRenderStats)
-        , isRestart(false)
+            : writer(writer)
+            , firstFrame(firstFrame)
+            , lastFrame(lastFrame)
+            , frameStep(frameStep)
+            , useRenderStats(useRenderStats)
+            , isRestart(false)
         {
-            
         }
     };
-    
-    virtual void load(const CLArgs& cl,bool makeEmptyInstance);
+
+    virtual void load(const CLArgs& cl, bool makeEmptyInstance);
 
     int getAppID() const;
 
+    void exportHTMLDocs(const QString path);
+    QString parseHTMLDoc(const QString html, const QString path, bool replaceNewline) const;
+
     /** @brief Create a new node  in the node graph.
-     **/
+    **/
     NodePtr createNode(CreateNodeArgs & args);
     NodePtr createReader(const std::string& filename, CreateNodeReason reason, const boost::shared_ptr<NodeCollection>& group);
-    
-    
+
+
     NodePtr createWriter(const std::string& filename,
                          CreateNodeReason reason,
                          const boost::shared_ptr<NodeCollection>& collection,
                          int firstFrame = INT_MIN, int lastFrame = INT_MAX);
-  
+
     NodePtr getNodeByFullySpecifiedName(const std::string & name) const;
-    
+
     boost::shared_ptr<Project> getProject() const;
-    
     boost::shared_ptr<TimeLine> getTimeLine() const;
 
     /*true if the user is NOT scrubbing the timeline*/
@@ -213,35 +211,33 @@ public:
     {
     }
 
-    virtual void errorDialog(const std::string & title,const std::string & message,bool useHtml) const;
-    virtual void errorDialog(const std::string & title,const std::string & message,bool* stopAsking,bool useHtml) const;
-    virtual void warningDialog(const std::string & title,const std::string & message,bool useHtml) const;
-    virtual void warningDialog(const std::string & title,const std::string & message,bool* stopAsking,bool useHtml) const;
-    virtual void informationDialog(const std::string & title,const std::string & message,bool useHtml) const;
-    virtual void informationDialog(const std::string & title,const std::string & message,bool* stopAsking,bool useHtml) const;
-    
+    virtual void errorDialog(const std::string & title, const std::string & message, bool useHtml) const;
+    virtual void errorDialog(const std::string & title, const std::string & message, bool* stopAsking, bool useHtml) const;
+    virtual void warningDialog(const std::string & title, const std::string & message, bool useHtml) const;
+    virtual void warningDialog(const std::string & title, const std::string & message, bool* stopAsking, bool useHtml) const;
+    virtual void informationDialog(const std::string & title, const std::string & message, bool useHtml) const;
+    virtual void informationDialog(const std::string & title, const std::string & message, bool* stopAsking, bool useHtml) const;
     virtual StandardButtonEnum questionDialog(const std::string & title,
-                                                      const std::string & message,
-                                                      bool useHtml,
-                                                      StandardButtons buttons =
-                                                      StandardButtons(eStandardButtonYes | eStandardButtonNo),
-                                                  StandardButtonEnum defaultButton = eStandardButtonNoButton) const WARN_UNUSED_RETURN;
-    
+                                              const std::string & message,
+                                              bool useHtml,
+                                              StandardButtons buttons =
+                                                  StandardButtons(eStandardButtonYes | eStandardButtonNo),
+                                              StandardButtonEnum defaultButton = eStandardButtonNoButton) const WARN_UNUSED_RETURN;
+
     /**
      * @brief Asks a question to the user and returns the reply.
      * @param stopAsking Set to true if the user do not want Natron to ask the question again.
      **/
     virtual StandardButtonEnum questionDialog(const std::string & /*title*/,
-                                                      const std::string & /*message*/,
-                                                      bool /*useHtml*/,
-                                                      StandardButtons /*buttons*/,
-                                                      StandardButtonEnum /*defaultButton*/,
-                                                      bool* /*stopAsking*/)
+                                              const std::string & /*message*/,
+                                              bool /*useHtml*/,
+                                              StandardButtons /*buttons*/,
+                                              StandardButtonEnum /*defaultButton*/,
+                                              bool* /*stopAsking*/)
     {
         return eStandardButtonYes;
     }
 
-    
     virtual void loadProjectGui(boost::archive::xml_iarchive & /*archive*/) const
     {
     }
@@ -263,19 +259,17 @@ public:
                                      const boost::shared_ptr<ProcessHandler> & /*process*/)
     {
     }
-    
+
     virtual void notifyRenderRestarted( OutputEffectInstance* /*writer*/,
-                                     const boost::shared_ptr<ProcessHandler> & /*process*/)
+                                        const boost::shared_ptr<ProcessHandler> & /*process*/)
     {
     }
-    
-    
 
     virtual bool isShowingDialog() const
     {
         return false;
     }
-    
+
     virtual bool isGuiFrozen() const { return false; }
 
     virtual void progressStart(const NodePtr& node,
@@ -306,40 +300,39 @@ public:
     virtual void onMaxPanelsOpenedChanged(int /*maxPanels*/)
     {
     }
-    
+
     virtual void onRenderQueuingChanged(bool /*queueingEnabled*/)
     {
     }
 
     ViewerColorSpaceEnum getDefaultColorSpaceForBitDepth(ImageBitDepthEnum bitdepth) const;
-    
+
     double getProjectFrameRate() const;
 
     virtual std::string openImageFileDialog() { return std::string(); }
+
     virtual std::string saveImageFileDialog() { return std::string(); }
 
-    
+
     void onOCIOConfigPathChanged(const std::string& path);
-    
-  
+
+
     /**
      * @brief Given writer names, start rendering the given RenderRequest. If empty all Writers in the project
      * will be rendered using the frame ranges.
      **/
     void startWritersRenderingFromNames(bool enableRenderStats,
-                               bool doBlockingRender,
-                               const std::list<std::string>& writers,
-                               const std::list<std::pair<int,std::pair<int,int> > >& frameRanges);
+                                        bool doBlockingRender,
+                                        const std::list<std::string>& writers,
+                                        const std::list<std::pair<int, std::pair<int, int> > >& frameRanges);
     void startWritersRendering(bool doBlockingRender, const std::list<RenderWork>& writers);
 
-    
-
 public:
-    
+
     void addInvalidExpressionKnob(const KnobPtr& knob);
     void removeInvalidExpressionKnob(const KnobI* knob);
     void recheckInvalidExpressions();
-    
+
     virtual void clearViewersLastRenderedTexture() {}
 
     virtual void toggleAutoHideGraphInputs() {}
@@ -351,104 +344,105 @@ public:
      **/
     void setProjectWasCreatedWithLowerCaseIDs(bool b);
     bool wasProjectCreatedWithLowerCaseIDs() const;
-    
+
     bool isCreatingPythonGroup() const;
-    
+
     bool isCreatingNodeTree() const;
-    
+
     void setIsCreatingNodeTree(bool b);
-    
+
     virtual void appendToScriptEditor(const std::string& str);
-    
     virtual void printAutoDeclaredVariable(const std::string& str);
-    
-    void getFrameRange(double* first,double* last) const;
-    
+
+    void getFrameRange(double* first, double* last) const;
+
     virtual void setLastViewerUsingTimeline(const NodePtr& /*node*/) {}
-    
+
     virtual ViewerInstance* getLastViewerUsingTimeline() const { return 0; }
-    
+
     bool loadPythonScript(const QFileInfo& file);
-    
     virtual void queueRedrawForAllViewers() {}
-    
+
     virtual void renderAllViewers(bool /* canAbort*/) {}
-    
+
     virtual void abortAllViewers() {}
-    
+
     virtual void refreshAllPreviews() {}
-    
+
     virtual void declareCurrentAppVariable_Python();
 
     void execOnProjectCreatedCallback();
-    
+
     virtual void createLoadProjectSplashScreen(const QString& /*projectFile*/) {}
-    
+
     virtual void updateProjectLoadStatus(const QString& /*str*/) {}
-    
+
     virtual void closeLoadPRojectSplashScreen() {}
-    
+
     std::string getAppIDString() const;
-    
+
     void setCreatingNode(bool b);
     bool isCreatingNode() const;
-    
+
     virtual bool isDraftRenderEnabled() const { return false; }
-    
+
     virtual void setUserIsPainting(const NodePtr& /*rotopaintNode*/,
                                    const boost::shared_ptr<RotoStrokeItem>& /*stroke*/,
-                                  bool /*isPainting*/) {}
-    
+                                   bool /*isPainting*/) {}
+
     virtual void getActiveRotoDrawingStroke(NodePtr* /*node*/,
                                             boost::shared_ptr<RotoStrokeItem>* /*stroke*/,
                                             bool* /*isPainting*/) const { }
-    
+
     virtual bool isRenderStatsActionChecked() const { return false; }
-    
+
     bool saveTemp(const std::string& filename);
     virtual bool save(const std::string& filename);
     virtual bool saveAs(const std::string& filename);
     virtual AppInstance* loadProject(const std::string& filename);
-    
+
     ///Close the current project but keep the window
     virtual bool resetProject();
-    
+
     ///Reset + close window, quit if last window
     virtual bool closeProject();
-    
+
     ///Opens a new window
     virtual AppInstance* newProject();
-    
     virtual void* getOfxHostOSHandle() const { return NULL; }
-    
+
     virtual void updateLastPaintStrokeData(int /*newAge*/,
-                                           const std::list<std::pair<Point,double> >& /*points*/,
+                                           const std::list<std::pair<Point, double> >& /*points*/,
                                            const RectD& /*lastPointsBbox*/,
                                            int /*strokeIndex*/) {}
-    
-    virtual void getLastPaintStrokePoints(std::list<std::list<std::pair<Point,double> > >* /*strokes*/, int* /*strokeIndex*/) const {}
+
+    virtual void getLastPaintStrokePoints(std::list<std::list<std::pair<Point, double> > >* /*strokes*/,
+                                          int* /*strokeIndex*/) const {}
 
     virtual int getStrokeLastIndex() const { return -1; }
-    
-    virtual void getStrokeAndMultiStrokeIndex(boost::shared_ptr<RotoStrokeItem>* /*stroke*/, int* /*strokeIndex*/) const {}
-    
-    virtual void getRenderStrokeData(RectD* /*lastStrokeMovementBbox*/, std::list<std::pair<Point,double> >* /*lastStrokeMovementPoints*/,
-                                     double */*distNextIn*/, boost::shared_ptr<Image>* /*strokeImage*/) const {}
-    
-    virtual void updateStrokeImage(const boost::shared_ptr<Image>& /*image*/, double /*distNextOut*/, bool /*setDistNextOut*/) {}
-    
-    virtual RectD getLastPaintStrokeBbox() const { return RectD(); }
-    
-    virtual RectD getPaintStrokeWholeBbox() const { return RectD(); }
-    
-    void removeRenderFromQueue(OutputEffectInstance* writer);
-    
-    virtual void reloadScriptEditorFonts() {}
-    
-public Q_SLOTS:
-    
-    void quit();
 
+    virtual void getStrokeAndMultiStrokeIndex(boost::shared_ptr<RotoStrokeItem>* /*stroke*/,
+                                              int* /*strokeIndex*/) const {}
+
+    virtual void getRenderStrokeData(RectD* /*lastStrokeMovementBbox*/,
+                                     std::list<std::pair<Point, double> >* /*lastStrokeMovementPoints*/,
+                                     double */*distNextIn*/,
+                                     boost::shared_ptr<Image>* /*strokeImage*/) const {}
+
+    virtual void updateStrokeImage(const boost::shared_ptr<Image>& /*image*/,
+                                   double /*distNextOut*/,
+                                   bool /*setDistNextOut*/) {}
+
+    virtual RectD getLastPaintStrokeBbox() const { return RectD(); }
+
+    virtual RectD getPaintStrokeWholeBbox() const { return RectD(); }
+
+    void removeRenderFromQueue(OutputEffectInstance* writer);
+    virtual void reloadScriptEditorFonts() {}
+
+public Q_SLOTS:
+
+    void quit();
     virtual void redrawAllViewers() {}
 
     void triggerAutoSave();
@@ -464,54 +458,54 @@ public Q_SLOTS:
     void onBackgroundRenderProcessFinished();
 
     void onQueuedRenderFinished(int retCode);
-    
+
 Q_SIGNALS:
 
     void pluginsPopulated();
 
 protected:
-    
-    virtual void onGroupCreationFinished(const NodePtr& node, CreateNodeReason reason);
 
+    virtual void onGroupCreationFinished(const NodePtr& node, CreateNodeReason reason);
     virtual void createNodeGui(const NodePtr& /*node*/,
-                               const NodePtr&  /*parentmultiinstance*/,
+                               const NodePtr& /*parentmultiinstance*/,
                                const CreateNodeArgs& /*args*/)
     {
     }
-    
+
 private:
-    
+
     void startNextQueuedRender(OutputEffectInstance* finishedWriter);
-        
-    
-    void getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderWork>& requests);
+
+
+    void getWritersWorkForCL(const CLArgs& cl, std::list<AppInstance::RenderWork>& requests);
 
 
     NodePtr createNodeInternal(CreateNodeArgs& args);
-    
+
     void setGroupLabelIDAndVersion(const NodePtr& node,
                                    const QString& pythonModulePath,
                                    const QString &pythonModule);
-    
+
     NodePtr createNodeFromPythonModule(Plugin* plugin,
-                                                       const boost::shared_ptr<NodeCollection>& group,
-                                                       CreateNodeReason reason,
-                                                       const boost::shared_ptr<NodeSerialization>& serialization);
-    
+                                       const boost::shared_ptr<NodeCollection>& group,
+                                       CreateNodeReason reason,
+                                       const boost::shared_ptr<NodeSerialization>& serialization);
+
     boost::scoped_ptr<AppInstancePrivate> _imp;
 };
 
 class CreatingNodeTreeFlag_RAII
 {
     AppInstance* _app;
+
 public:
-    
+
     CreatingNodeTreeFlag_RAII(AppInstance* app)
-    : _app(app)
+        : _app(app)
     {
         app->setIsCreatingNodeTree(true);
     }
-    
+
     ~CreatingNodeTreeFlag_RAII()
     {
         _app->setIsCreatingNodeTree(false);

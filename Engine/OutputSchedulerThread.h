@@ -52,16 +52,16 @@ struct BufferedFrame
     double time;
     RenderStatsPtr stats;
     boost::shared_ptr<BufferableObject> frame;
-    
+
     BufferedFrame()
-    : view(0)
-    , time(0)
-    , stats()
-    , frame()
+        : view(0)
+        , time(0)
+        , stats()
+        , frame()
     {
-        
     }
 };
+
 typedef std::list<BufferedFrame> BufferedFrames;
 
 class OutputSchedulerThread;
@@ -69,17 +69,17 @@ class OutputSchedulerThread;
 struct RenderThreadTaskPrivate;
 
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-class RenderThreadTask :  public QThread
+class RenderThreadTask
+    :  public QThread
 #else
-class RenderThreadTask :  public QRunnable
+class RenderThreadTask
+    :  public QRunnable
 #endif
 {
-    
-    
 public:
 
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-    RenderThreadTask(const boost::shared_ptr<OutputEffectInstance>& output,OutputSchedulerThread* scheduler);
+    RenderThreadTask(const boost::shared_ptr<OutputEffectInstance>& output, OutputSchedulerThread* scheduler);
 #else
     RenderThreadTask(const boost::shared_ptr<OutputEffectInstance>& output,
                      OutputSchedulerThread* scheduler,
@@ -87,34 +87,32 @@ public:
                      const bool useRenderStats,
                      const std::vector<ViewIdx>& viewsToRender);
 #endif
-    
+
     virtual ~RenderThreadTask();
-    
+
     virtual void run() OVERRIDE FINAL;
-    
+
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     /**
      * @brief Call this to quit the thread whenever it will return to the pickFrameToRender function
      **/
     void scheduleForRemoval();
-    
+
     bool mustQuit() const;
 
     bool hasQuit() const;
-    
+
     void notifyIsRunning(bool running);
 #endif
-    
+
 protected:
-    
+
     /**
      * @brief Must render the frame
      **/
     virtual void renderFrame(int time, const std::vector<ViewIdx>& viewsToRender, bool enableRenderStats) = 0;
-        
     boost::scoped_ptr<RenderThreadTaskPrivate> _imp;
 };
-
 
 
 /**
@@ -122,9 +120,9 @@ protected:
  **/
 struct OutputSchedulerThreadPrivate;
 class OutputSchedulerThread
-: public QThread
+    : public QThread
 #ifdef QT_CUSTOM_THREADPOOL
-, public AbortableThread
+      , public AbortableThread
 #endif
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -132,31 +130,31 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    
+
     friend class RenderThreadTask;
-    
-    enum RenderDirectionEnum {
+    enum RenderDirectionEnum
+    {
         eRenderDirectionForward = 0,
         eRenderDirectionBackward
     };
-    
+
     enum ProcessFrameModeEnum
     {
         eProcessFrameBySchedulerThread = 0, //< the processFrame function will be called by the OutputSchedulerThread thread.
         eProcessFrameByMainThread //< the processFrame function will be called by the application's main-thread.
     };
-    
+
     OutputSchedulerThread(RenderEngine* engine,
                           const boost::shared_ptr<OutputEffectInstance>& effect,
                           ProcessFrameModeEnum mode);
-    
+
     virtual ~OutputSchedulerThread();
-    
+
     /**
      * @brief When a render thread has finished rendering a frame, it must
      * append it here for buffering to make sure the output device (Viewer, Writer, etc...) will proceed the frames
      * in respect to the time parameter.
-     * This wakes up the scheduler thread waiting on the bufCondition. If you need to append several frames 
+     * This wakes up the scheduler thread waiting on the bufCondition. If you need to append several frames
      * use the other version of this function.
      **/
     void appendToBuffer(double time,
@@ -167,28 +165,28 @@ public:
                         ViewIdx view,
                         const RenderStatsPtr& stats,
                         const BufferableObjectList& frames);
-    
+
 private:
-    
+
     void appendToBuffer_internal(double time,
                                  ViewIdx view,
                                  const RenderStatsPtr& stats,
                                  const boost::shared_ptr<BufferableObject>& frame,
                                  bool wakeThread);
-    
+
 public:
-    
-    
+
+
     /**
      * @brief Once returned from that function, the object's thread will be finished and the object unusable.
      **/
     void quitThread();
-    
+
     /**
      * @brief True if quitThread() was called
      **/
     bool mustQuitThread() const;
-    
+
     /**
      * @brief Call this to render from firstFrame to lastFrame included.
      **/
@@ -208,13 +206,13 @@ public:
     void renderFromCurrentFrame(bool enableRenderStats,
                                 const std::vector<ViewIdx>& viewsToRender,
                                 RenderDirectionEnum forward);
-    
+
     /**
      * @brief Whether the playback can be automatically restarted by a single render request
      **/
     bool isPlaybackAutoRestartEnabled() const;
 
-    
+
     /**
      * @brief Called when a frame has been rendered completetly
      * @param policy If eSchedulingPolicyFFA the render thread is not using the appendToBuffer API
@@ -231,42 +229,41 @@ public:
      * @brief To be called by concurrent worker threads in case of failure, all renders will be aborted
      **/
     void notifyRenderFailure(const std::string& errorMessage);
-    
-    
+
+
     /**
      * @brief Returns true if the scheduler is active and some render threads are doing work.
      **/
     bool isWorking() const;
 
-    
+
     void doAbortRenderingOnMainThread (bool blocking)
     {
-        Q_EMIT s_abortRenderingOnMainThread(false,blocking);
+        Q_EMIT s_abortRenderingOnMainThread(false, blocking);
     }
-    
-    
+
     /**
      * @brief Returns the render direction as set in the livingRunArgs, @see startRender()
      * This can only be called on the scheduler thread (this)
      **/
     RenderDirectionEnum getDirectionRequestedToRender() const;
-    
+
     /**
      * @brief Returns the views as set in the livingRunArgs, @see startRender()
      * This can only be called on the scheduler thread (this)
      **/
     std::vector<ViewIdx> getViewsRequestedToRender() const;
-    
+
     /**
      * @brief Returns the current number of render threads
      **/
     int getNRenderThreads() const;
-    
+
     /**
      * @brief Returns the current number of render threads doing work
      **/
     int getNActiveRenderThreads() const;
-    
+
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     /**
      * @brief Called by render-threads to pick some work to do or to get asleep if theres nothing to do
@@ -278,31 +275,31 @@ public:
      * @brief Called by the render-threads when mustQuit() is true on the thread
      **/
     void notifyThreadAboutToQuit(RenderThreadTask* thread);
-    
+
     /**
      *@brief The slot called by the GUI to set the requested fps.
      **/
     void setDesiredFPS(double d);
-    
-    
+
+
     /**
      * @brief Returns the desired user FPS that the internal scheduler should stick to
      **/
     double getDesiredFPS() const;
-    
+
     void runCallbackWithVariables(const QString& callback);
-    
+
     /**
      * @brief Returns true if a render is being aborted
      **/
     bool isBeingAborted() const;
 
 public Q_SLOTS:
-    
+
     void doProcessFrameMainThread(const BufferedFrames& frames);
-    
+
     /**
-     @brief Aborts all computations. This turns on the flag abortRequested and will inform the engine that it needs to stop.
+       @brief Aborts all computations. This turns on the flag abortRequested and will inform the engine that it needs to stop.
      * This function is blocking and once returned you can assume the rendering is completly aborted.
      *
      * Note: In the case we want to abort rendering because the user changed the layout of the graph, we should
@@ -316,22 +313,22 @@ public Q_SLOTS:
      * If you want to abortRendering() from one of those threads, call doAbortRenderingOnMainThreadInstead
      **/
     void abortRendering(bool autoRestart, bool blocking);
-    
+
 private Q_SLOTS:
-    
+
     void onThreadSpawnsTimerTriggered();
-    
+
 Q_SIGNALS:
-    
+
     void s_doProcessOnMainThread(const BufferedFrames& frames);
-    
-    void s_abortRenderingOnMainThread(bool userRequested,bool blocking);
-    
+
+    void s_abortRenderingOnMainThread(bool userRequested, bool blocking);
+
     void s_executeCallbackOnMainThread(QString);
-    
+
 protected:
-    
-    
+
+
     /**
      * @brief Called whenever there are images available to process in the buffer.
      * Once processed, the frame will be removed from the buffer.
@@ -340,43 +337,42 @@ protected:
      * or by the application's main-thread (typically to do OpenGL rendering).
      **/
     virtual void processFrame(const BufferedFrames& frames) = 0;
-    
+
     /**
      * @brief Must be implemented to increment/decrement the timeline by one frame.
      * @param forward If true, must increment otherwise must decrement
      **/
     virtual void timelineStepOne(RenderDirectionEnum direction) = 0;
-    
+
     /**
      * @brief Set the timeline to the next frame to be rendered, this is used by startSchedulerAtFrame() when starting rendering
      * then timelineStepOne() is used instead.
      **/
     virtual void timelineGoTo(int time) = 0;
-    
+
     /**
      * @brief Should we try to maintain a constant FPS ?
      **/
     virtual bool isFPSRegulationNeeded() const { return false; }
-    
+
     /**
      * @brief Must return the frame range to render. For the viewer this is what is indicated on the global timeline,
      * for writers this is its internal timeline.
      **/
-    virtual void getFrameRangeToRender(int& first,int& last)  const = 0;
-    
+    virtual void getFrameRangeToRender(int& first, int& last)  const = 0;
+
     /**
      * @brief Returns the frame range requested as set in the livingRunArgs, @see startRender()
      * This can only be called on the scheduler thread (this)
      **/
-    void getFrameRangeRequestedToRender(int &first,int& last) const;
-    
+    void getFrameRangeRequestedToRender(int &first, int& last) const;
 
 
     /**
      * @brief Return the frame expected to be rendered
      **/
     virtual int timelineGetTime() const = 0;
-    
+
     /**
      * @brief Must create a runnable task that will render 1 frame in a separate thread.
      * The internal thread pool will take care of the thread
@@ -387,60 +383,58 @@ protected:
 #else
     virtual RenderThreadTask* createRunnable(int frame, bool useRenderStarts, const std::vector<ViewIdx>& viewsToRender) = 0;
 #endif
-    
+
     /**
      * @brief Called upon failure of a thread to render an image
      **/
     virtual void handleRenderFailure(const std::string& errorMessage) = 0;
-    
+
     /**
      * @brief Must return the scheduling policy that the output device will have
      **/
     virtual SchedulingPolicyEnum getSchedulingPolicy() const = 0;
-    
+
     /**
      * @brief Returns the last successful render time.
      * This makes sense only for Viewers to keep the timeline in sync with what is displayed.
      **/
     virtual int getLastRenderedTime() const { return timelineGetTime(); }
-    
+
     /**
      * @brief Callback when startRender() is called
      **/
     virtual void aboutToStartRender() {}
-    
+
     /**
      * @brief Callback when stopRender() is called
      **/
     virtual void onRenderStopped(bool /*aborted*/) {}
-    
+
     RenderEngine* getEngine() const;
-    
-    
 
 private:
-    
+
     virtual void run() OVERRIDE FINAL;
-    
+
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     /**
      * @brief Called by the scheduler threads to wake-up render threads and make them do some work
      * It calls pushFramesToRenderInternal. It starts pushing frames from lastFramePushedIndex
      **/
     void pushFramesToRender(int nThreads);
-   
+
     /**
      *@brief Called in startRender() when we need to start pushing frames to render
      **/
-    void pushFramesToRender(int startingFrame,int nThreads);
-    
-    
-    void pushFramesToRenderInternal(int startingFrame,int nThreads);
-    
+    void pushFramesToRender(int startingFrame, int nThreads);
+
+
+    void pushFramesToRenderInternal(int startingFrame, int nThreads);
+
     void pushAllFrameRange();
-    
+
     /**
-     * @brief Starts/stops more threads according to CPU activity and user preferences 
+     * @brief Starts/stops more threads according to CPU activity and user preferences
      * @param optimalNThreads[out] Will be set to the new number of threads
      **/
     void adjustNumberOfThreads(int* newNThreads, int *lastNThreads);
@@ -448,103 +442,84 @@ private:
     void startTasksFromLastStartedFrame();
     void startTasks(int startingFrame);
 #endif
-    
+
     /**
      * @brief Make nThreadsToStop quit running. If 0 then all threads will be destroyed.
      **/
     void stopRenderThreads(int nThreadsToStop);
-    
+
     void startRender();
 
     void stopRender();
-    
+
     void renderInternal();
-    
+
     boost::scoped_ptr<OutputSchedulerThreadPrivate> _imp;
-    
 };
 
 
-class DefaultScheduler : public OutputSchedulerThread
+class DefaultScheduler
+    : public OutputSchedulerThread
 {
 public:
-    
-    DefaultScheduler(RenderEngine* engine,const boost::shared_ptr<OutputEffectInstance>& effect);
-    
+
+    DefaultScheduler(RenderEngine* engine, const boost::shared_ptr<OutputEffectInstance>& effect);
+
     virtual ~DefaultScheduler();
-    
 
 private:
-    
+
     virtual void processFrame(const BufferedFrames& frames) OVERRIDE FINAL;
-    
     virtual void timelineStepOne(RenderDirectionEnum direction) OVERRIDE FINAL;
-    
     virtual void timelineGoTo(int time) OVERRIDE FINAL;
-    
-    virtual void getFrameRangeToRender(int& first,int& last) const OVERRIDE FINAL;
-    
+    virtual void getFrameRangeToRender(int& first, int& last) const OVERRIDE FINAL;
     virtual int timelineGetTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
+
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     virtual RenderThreadTask* createRunnable() OVERRIDE FINAL WARN_UNUSED_RETURN;
 #else
     virtual RenderThreadTask* createRunnable(int frame, bool useRenderStarts, const std::vector<ViewIdx>& viewsToRender) OVERRIDE FINAL WARN_UNUSED_RETURN;
 #endif
-    
-    virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
-    
-    virtual SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL;
-    
-    virtual void aboutToStartRender() OVERRIDE FINAL;
-    
-    virtual void onRenderStopped(bool aborted) OVERRIDE FINAL;
-    
 
-    
+    virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
+    virtual SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL;
+    virtual void aboutToStartRender() OVERRIDE FINAL;
+    virtual void onRenderStopped(bool aborted) OVERRIDE FINAL;
     boost::weak_ptr<OutputEffectInstance> _effect;
 };
 
 
 class ViewerInstance;
-class ViewerDisplayScheduler : public OutputSchedulerThread
+class ViewerDisplayScheduler
+    : public OutputSchedulerThread
 {
-    
 public:
-    
+
     ViewerDisplayScheduler(RenderEngine* engine, const boost::shared_ptr<ViewerInstance>& viewer);
-    
+
     virtual ~ViewerDisplayScheduler();
-    
-    
+
 private:
 
     virtual void processFrame(const BufferedFrames& frames) OVERRIDE FINAL;
-    
     virtual void timelineStepOne(RenderDirectionEnum direction) OVERRIDE FINAL;
-    
     virtual void timelineGoTo(int time) OVERRIDE FINAL;
-    
     virtual int timelineGetTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-        
     virtual bool isFPSRegulationNeeded() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
-    
-    virtual void getFrameRangeToRender(int& first,int& last) const OVERRIDE FINAL;
-    
+
+    virtual void getFrameRangeToRender(int& first, int& last) const OVERRIDE FINAL;
+
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     virtual RenderThreadTask* createRunnable() OVERRIDE FINAL WARN_UNUSED_RETURN;
 #else
     virtual RenderThreadTask* createRunnable(int frame, bool useRenderStarts, const std::vector<ViewIdx>& viewsToRender) OVERRIDE FINAL WARN_UNUSED_RETURN;
 #endif
-    
+
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
-    
     virtual SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL { return eSchedulingPolicyOrdered; }
-    
+
     virtual int getLastRenderedTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
     virtual void onRenderStopped(bool aborted) OVERRIDE FINAL;
-    
     boost::weak_ptr<ViewerInstance> _viewer;
 };
 
@@ -559,9 +534,9 @@ private:
 
 struct ViewerCurrentFrameRequestSchedulerPrivate;
 class ViewerCurrentFrameRequestScheduler
-: public QThread
+    : public QThread
 #ifdef QT_CUSTOM_THREADPOOL
-, public AbortableThread
+      , public AbortableThread
 #endif
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -569,35 +544,33 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    
+
     ViewerCurrentFrameRequestScheduler(ViewerInstance* viewer);
-    
+
     virtual ~ViewerCurrentFrameRequestScheduler();
-    
-    void renderCurrentFrame(bool enableRenderStats,bool canAbort);
-    
+
+    void renderCurrentFrame(bool enableRenderStats, bool canAbort);
+
     void quitThread();
-    
+
     void abortRendering(bool blocking);
-    
+
     bool hasThreadsWorking() const;
-    
-    void notifyFrameProduced(const BufferableObjectList& frames,const RenderStatsPtr& stats, const boost::shared_ptr<RequestedFrame>& request);
-    
+
+    void notifyFrameProduced(const BufferableObjectList& frames, const RenderStatsPtr& stats, const boost::shared_ptr<RequestedFrame>& request);
+
 public Q_SLOTS:
-    
-    void doProcessProducedFrameOnMainThread(const RenderStatsPtr& stats,const BufferableObjectList& frames);
-    
+
+    void doProcessProducedFrameOnMainThread(const RenderStatsPtr& stats, const BufferableObjectList& frames);
+
 Q_SIGNALS:
-    
-    void s_processProducedFrameOnMainThread(const RenderStatsPtr& stats,const BufferableObjectList& frames);
-    
+
+    void s_processProducedFrameOnMainThread(const RenderStatsPtr& stats, const BufferableObjectList& frames);
+
 private:
-    
+
     virtual void run() OVERRIDE FINAL;
-    
     boost::scoped_ptr<ViewerCurrentFrameRequestSchedulerPrivate> _imp;
-    
 };
 
 struct ViewerArgs;
@@ -605,29 +578,28 @@ struct CurrentFrameFunctorArgs;
 
 /**
  * @brief Single thread used by the ViewerCurrentFrameRequestScheduler when the global thread pool has reached its maximum
- * activity to keep the renders responsive even if the thread pool is choking. 
+ * activity to keep the renders responsive even if the thread pool is choking.
  **/
 struct ViewerCurrentFrameRequestRendererBackupPrivate;
 class ViewerCurrentFrameRequestRendererBackup
-: public QThread
+    : public QThread
 #ifdef QT_CUSTOM_THREADPOOL
-, public AbortableThread
+      , public AbortableThread
 #endif
 {
 public:
-    
+
     ViewerCurrentFrameRequestRendererBackup();
-    
+
     virtual ~ViewerCurrentFrameRequestRendererBackup();
-    
+
     void renderCurrentFrame(const boost::shared_ptr<CurrentFrameFunctorArgs>& args);
-    
+
     void quitThread();
-    
+
 private:
-    
+
     virtual void run() OVERRIDE FINAL;
-    
     boost::scoped_ptr<ViewerCurrentFrameRequestRendererBackupPrivate> _imp;
 };
 
@@ -636,23 +608,23 @@ private:
  * @brief This class manages multiple OutputThreadScheduler so that each render request gets processed as soon as possible.
  **/
 struct RenderEnginePrivate;
-class RenderEngine : public QObject
+class RenderEngine
+    : public QObject
 {
-    
     Q_OBJECT
-    
-    
+
+
     friend class OutputSchedulerThread;
     friend class ViewerDisplayScheduler;
-    
+
 public:
-    
+
     RenderEngine(const boost::shared_ptr<OutputEffectInstance>& output);
-    
+
     virtual ~RenderEngine();
-   
+
     boost::shared_ptr<OutputEffectInstance> getOutput() const;
-    
+
     /**
      * @brief Call this to render from firstFrame to lastFrame included.
      **/
@@ -663,7 +635,7 @@ public:
                           int frameStep,
                           const std::vector<ViewIdx>& viewsToRender,
                           OutputSchedulerThread::RenderDirectionEnum forward);
-    
+
     /**
      * @brief Same as renderFrameRange except that the frame range will be computed automatically and it will
      * start from the current frame.
@@ -672,95 +644,94 @@ public:
     void renderFromCurrentFrame(bool enableRenderStats,
                                 const std::vector<ViewIdx>& viewsToRender,
                                 OutputSchedulerThread::RenderDirectionEnum forward);
-    
-    
+
+
     /**
      * @brief Basically it just renders with the current frame on the timeline.
      * @param abortPrevious If true then it will stop any ongoing render and render the current frame
      * in a separate thread
      **/
-    void renderCurrentFrame(bool enableRenderStats,bool canAbort);
+    void renderCurrentFrame(bool enableRenderStats, bool canAbort);
 
     /**
      * @brief Whether the playback can be automatically restarted by a single render request
      **/
     bool isPlaybackAutoRestartEnabled() const;
-    
+
     /**
      * @brief Returns the playback mode of the internal scheduler
      **/
     PlaybackModeEnum getPlaybackMode() const;
-    
+
     /**
      * @brief Returns the desired user FPS that the internal scheduler should stick to
      **/
     double getDesiredFPS() const;
-    
+
     /**
      * @brief Quit all processing, making sure all threads are finished.
      **/
     void quitEngine();
-    
+
     /**
      * @brief Returns true if threads owned by the engine are still alive
      **/
     bool hasThreadsAlive() const;
-    
+
     /**
      * @brief Returns true if the scheduler is active and some render threads are doing work.
      **/
     bool hasThreadsWorking() const;
-    
+
     /**
      * @brief Returns true if a sequential render is being aborted
      **/
     bool isSequentialRenderBeingAborted() const;
-    
+
     /**
      * @brief Returns true if playback is active
      **/
     bool isDoingSequentialRender() const;
-    
-    
+
 public Q_SLOTS:
 
-    
+
     /**
      * @brief Set the playback mode
      * @param mode Corresponds to the PlaybackModeEnum enum
      **/
     void setPlaybackMode(int mode);
-    
-    
+
+
     /**
      *@brief The slot called by the GUI to set the requested fps.
      **/
     void setDesiredFPS(double d);
-    
-    
+
+
     /**
      * @brief Aborts the internal scheduler and returns true if it was working.
      **/
     bool abortRendering(bool enableAutoRestartPlayback, bool blocking);
-    void abortRendering_Blocking() { abortRendering(true,true); }
+    void abortRendering_Blocking() { abortRendering(true, true); }
 
-    
+
     void onCurrentFrameRenderRequestPosted();
-    
+
 Q_SIGNALS:
-    
+
     /**
      * @brief Emitted when the fps has changed
      * This will not be emitted after calling renderCurrentFrame
      **/
-    void fpsChanged(double actualFps,double desiredFps);
-    
+    void fpsChanged(double actualFps, double desiredFps);
+
     /**
      * @brief Emitted after a frame is rendered.
      * This will not be emitted after calling renderCurrentFrame
      **/
-    void frameRendered(int time,double progress);
-    
+    void frameRendered(int time, double progress);
+
 
     /**
      * @brief Emitted when the stopRender() function is called
@@ -768,60 +739,65 @@ Q_SIGNALS:
      * This will not be emitted after calling renderCurrentFrame
      **/
     void renderFinished(int retCode);
-    
-    
+
+
     void renderStarted(bool forward);
 
     /**
-    * @brief Emitted when gui is frozen and rendering is finished to update all knobs
+     * @brief Emitted when gui is frozen and rendering is finished to update all knobs
      **/
     void refreshAllKnobs();
-    
+
     void currentFrameRenderRequestPosted();
 
 protected:
-    
-    
+
+
     /**
      * @brief Must create the main-scheduler that will be used for scheduling playback/writing on disk.
      **/
-    virtual OutputSchedulerThread* createScheduler(const boost::shared_ptr<OutputEffectInstance>& effect) ;
-    
-private:
-    
-    void renderCurrentFrameInternal(bool enableRenderStats,bool canAbort);
+    virtual OutputSchedulerThread* createScheduler(const boost::shared_ptr<OutputEffectInstance>& effect);
 
-    
+private:
+
+    void renderCurrentFrameInternal(bool enableRenderStats, bool canAbort);
+
+
     /**
      * The following functions are called by the OutputThreadScheduler to Q_EMIT the corresponding signals
      **/
-    void s_fpsChanged(double actual,double desired) { Q_EMIT fpsChanged(actual, desired); }
-    void s_frameRendered(int time, double progress) { Q_EMIT frameRendered(time,progress); }
-   
-    void s_renderStarted(bool forward) { Q_EMIT renderStarted(forward); }
-    void s_renderFinished(int retCode) { Q_EMIT renderFinished(retCode); }
-    void s_refreshAllKnobs() { Q_EMIT refreshAllKnobs(); }
-    
-    friend class ViewerInstance;
-    void notifyFrameProduced(const BufferableObjectList& frames, const RenderStatsPtr& stats ,const boost::shared_ptr<RequestedFrame>& request);
+    void s_fpsChanged(double actual,
+                      double desired) { Q_EMIT fpsChanged(actual, desired); }
 
-    
+    void s_frameRendered(int time,
+                         double progress) { Q_EMIT frameRendered(time, progress); }
+
+    void s_renderStarted(bool forward) { Q_EMIT renderStarted(forward); }
+
+    void s_renderFinished(int retCode) { Q_EMIT renderFinished(retCode); }
+
+    void s_refreshAllKnobs() { Q_EMIT refreshAllKnobs(); }
+
+    friend class ViewerInstance;
+    void notifyFrameProduced(const BufferableObjectList& frames, const RenderStatsPtr& stats, const boost::shared_ptr<RequestedFrame>& request);
+
+
     boost::scoped_ptr<RenderEnginePrivate> _imp;
 };
 
-class ViewerRenderEngine : public RenderEngine
+class ViewerRenderEngine
+    : public RenderEngine
 {
-    
 public:
-    
+
     ViewerRenderEngine(const boost::shared_ptr<OutputEffectInstance>& output)
-    : RenderEngine(output)
+        : RenderEngine(output)
     {}
-    
+
     virtual ~ViewerRenderEngine() {}
-    
+
 private:
-    
+
     virtual OutputSchedulerThread* createScheduler(const boost::shared_ptr<OutputEffectInstance>& effect) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
 

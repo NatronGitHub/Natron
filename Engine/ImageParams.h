@@ -43,9 +43,9 @@
 #define IMAGE_SERIALIZATION_VERSION IMAGE_SERIALIZATION_REMOVE_FRAMESNEEDED
 
 NATRON_NAMESPACE_ENTER;
-    
+
 inline int
-        getElementsCountForComponents(ImageComponentsEnum comp)
+getElementsCountForComponents(ImageComponentsEnum comp)
 {
     switch (comp) {
     case eImageComponentNone:
@@ -61,39 +61,41 @@ inline int
 
         return 4;
     case eImageComponentXY:
-            return 2;
+
+        return 2;
     }
     assert(false);
 
     return 0;
 }
-    
-inline bool isColorComponents(ImageComponentsEnum comp)
+
+inline bool
+isColorComponents(ImageComponentsEnum comp)
 {
     switch (comp) {
-        case eImageComponentNone:
-            
-            return false;
-        case eImageComponentAlpha:
-            
-            return true;
-        case eImageComponentRGB:
-            
-            return true;
-        case eImageComponentRGBA:
-            
-            return true;
-        case eImageComponentXY:
-            return false;
+    case eImageComponentNone:
+
+        return false;
+    case eImageComponentAlpha:
+
+        return true;
+    case eImageComponentRGB:
+
+        return true;
+    case eImageComponentRGBA:
+
+        return true;
+    case eImageComponentXY:
+
+        return false;
     }
     assert(false);
-    
+
     return 0;
-  
 }
 
 inline int
-        getSizeOfForBitDepth(ImageBitDepthEnum bitdepth)
+getSizeOfForBitDepth(ImageBitDepthEnum bitdepth)
 {
     switch (bitdepth) {
     case eImageBitDepthByte: {
@@ -111,11 +113,12 @@ inline int
     case eImageBitDepthNone:
         break;
     }
+
     return 0;
 }
 
 class ImageParams
-        : public NonKeyParams
+    : public NonKeyParams
 {
 public:
 
@@ -124,7 +127,7 @@ public:
         , _rod()
         , _bounds()
         , _par(1.)
-        , _components(ImageComponents::getRGBAComponents())
+        , _components( ImageComponents::getRGBAComponents() )
         , _bitdepth(eImageBitDepthFloat)
         , _fielding(eImageFieldingOrderNone)
         , _premult(eImagePremultiplicationPremultiplied)
@@ -157,7 +160,7 @@ public:
                 ImagePremultiplicationEnum premult,
                 bool isRoDProjectFormat,
                 const ImageComponents& components)
-        : NonKeyParams( cost,bounds.area() * components.getNumComponents() * getSizeOfForBitDepth(bitdepth) )
+        : NonKeyParams( cost, bounds.area() * components.getNumComponents() * getSizeOfForBitDepth(bitdepth) )
         , _rod(rod)
         , _bounds(bounds)
         , _par(par)
@@ -179,8 +182,9 @@ public:
     {
         return _rod;
     }
-    
-    void setRoD(const RectD& rod) {
+
+    void setRoD(const RectD& rod)
+    {
         _rod = rod;
     }
 
@@ -188,11 +192,11 @@ public:
     {
         return _bounds;
     }
-    
+
     void setBounds(const RectI& bounds)
     {
         _bounds = bounds;
-        setElementsCount(bounds.area() * _components.getNumComponents() * getSizeOfForBitDepth(_bitdepth));
+        setElementsCount( bounds.area() * _components.getNumComponents() * getSizeOfForBitDepth(_bitdepth) );
     }
 
     bool isRodProjectFormat() const
@@ -204,12 +208,12 @@ public:
     {
         return _bitdepth;
     }
-    
+
     void setBitDepth(ImageBitDepthEnum bitdepth)
     {
         _bitdepth = bitdepth;
     }
-    
+
     const ImageComponents& getComponents() const
     {
         return _components;
@@ -219,27 +223,29 @@ public:
     {
         return _fielding;
     }
-    
+
     ImagePremultiplicationEnum getPremultiplication() const
     {
         return _premult;
     }
-    
+
     void setPremultiplication(ImagePremultiplicationEnum premult)
     {
         _premult = premult;
     }
-    
-    double getPixelAspectRatio() const  {
+
+    double getPixelAspectRatio() const
+    {
         return _par;
     }
-    
+
     void setPixelAspectRatio(double par)
     {
         _par = par;
     }
 
-    unsigned int getMipMapLevel() const {
+    unsigned int getMipMapLevel() const
+    {
         return _mipMapLevel;
     }
 
@@ -247,33 +253,33 @@ public:
     {
         _mipMapLevel = mmlvl;
     }
-    
+
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
 
     bool operator==(const ImageParams & other) const
     {
-        if (NonKeyParams::operator!=(other)) {
+        if ( NonKeyParams::operator!=(other) ) {
             return false;
         }
+
         return _rod == other._rod
-        && _components == other._components
-        && _bitdepth == other._bitdepth
-        && _mipMapLevel == other._mipMapLevel
-        && _premult == other._premult
-        && _fielding == other._fielding;
+               && _components == other._components
+               && _bitdepth == other._bitdepth
+               && _mipMapLevel == other._mipMapLevel
+               && _premult == other._premult
+               && _fielding == other._fielding;
     }
-    
+
     bool operator!=(const ImageParams & other) const
     {
         return !(*this == other);
     }
-    
+
 private:
 
     RectD _rod;
     RectI _bounds;
-
     double _par;
     ImageComponents _components;
     ImageBitDepthEnum _bitdepth;

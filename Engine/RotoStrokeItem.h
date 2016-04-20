@@ -59,44 +59,45 @@ NATRON_NAMESPACE_ENTER;
  * @class Base class for all strokes
  **/
 struct RotoStrokeItemPrivate;
-class RotoStrokeItem : public RotoDrawableItem
+class RotoStrokeItem
+    : public RotoDrawableItem
 {
 public:
-    
+
     RotoStrokeItem(RotoStrokeType type,
                    const boost::shared_ptr<RotoContext>& context,
                    const std::string & name,
                    const boost::shared_ptr<RotoLayer>& parent);
-    
+
     virtual ~RotoStrokeItem();
-    
-    
+
+
     RotoStrokeType getBrushType() const;
-    
+
     bool isEmpty() const;
-    
+
     /**
      * @brief Appends to the paint stroke the raw points list.
      * @returns True if the number of points is > 1
      **/
     bool appendPoint(bool newStroke, const RotoPoint& p);
-    
+
     void addStroke(const boost::shared_ptr<Curve>& xCurve,
-                  const boost::shared_ptr<Curve>& yCurve,
-                  const boost::shared_ptr<Curve>& pCurve);
-    
+                   const boost::shared_ptr<Curve>& yCurve,
+                   const boost::shared_ptr<Curve>& pCurve);
+
     /**
      * @brief Returns true if the stroke should be removed
      **/
     bool removeLastStroke(boost::shared_ptr<Curve>* xCurve,
                           boost::shared_ptr<Curve>* yCurve,
                           boost::shared_ptr<Curve>* pCurve);
-    
+
     std::vector<cairo_pattern_t*> getPatternCache() const;
     void updatePatternCache(const std::vector<cairo_pattern_t*>& cache);
-    
+
     double renderSingleStroke(const RectD& rod,
-                              const std::list<std::pair<Point,double> >& points,
+                              const std::list<std::pair<Point, double> >& points,
                               unsigned int mipmapLevel,
                               double par,
                               const ImageComponents& components,
@@ -104,54 +105,53 @@ public:
                               double distToNext,
                               boost::shared_ptr<Image> *wholeStrokeImage);
 
-    
-    
+
     bool getMostRecentStrokeChangesSinceAge(double time,
                                             int lastAge,
                                             int lastMultiStrokeIndex,
-                                            std::list<std::pair<Point,double> >* points,
+                                            std::list<std::pair<Point, double> >* points,
                                             RectD* pointsBbox,
                                             RectD* wholeStrokeBbox,
                                             int* newAge,
                                             int* strokeIndex);
-    
+
     RectD getWholeStrokeRoDWhilePainting() const;
-    
+
     void setStrokeFinished();
-    
-    
+
+
     virtual void clone(const RotoItem* other) OVERRIDE FINAL;
-    
+
     /**
      * @brief Must be implemented by the derived class to save the state into
      * the serialization object.
      * Derived implementations must call the parent class implementation.
      **/
     virtual void save(RotoItemSerialization* obj) const OVERRIDE FINAL;
-    
+
     /**
      * @brief Must be implemented by the derived class to load the state from
      * the serialization object.
      * Derived implementations must call the parent class implementation.
      **/
     virtual void load(const RotoItemSerialization & obj) OVERRIDE FINAL;
-    
     virtual RectD getBoundingBox(double time) const OVERRIDE FINAL;
-    
-    
+
+
     ///bbox is in canonical coords
     void evaluateStroke(unsigned int mipMapLevel, double time,
-                        std::list<std::list<std::pair<Point,double> > >* strokes,
+                        std::list<std::list<std::pair<Point, double> > >* strokes,
                         RectD* bbox = 0) const;
-    
+
     std::list<boost::shared_ptr<Curve> > getXControlPoints() const;
-    std::list<boost::shared_ptr<Curve> > getYControlPoints() const;    
+    std::list<boost::shared_ptr<Curve> > getYControlPoints() const;
+
 private:
-    
+
     RectD computeBoundingBox(double time) const;
-    
+
     RectD computeBoundingBoxInternal(double time) const;
-    
+
     boost::scoped_ptr<RotoStrokeItemPrivate> _imp;
 };
 

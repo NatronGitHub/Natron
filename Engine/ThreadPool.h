@@ -43,37 +43,37 @@ struct AbortableThreadPrivate;
 class AbortableThread
 {
 public:
-    
+
     AbortableThread();
-    
+
     virtual ~AbortableThread();
-    
+
     void setAbortInfo(bool isRenderResponseToUserInteraction,
                       const AbortableRenderInfoPtr& abortInfo,
                       const EffectInstPtr& treeRoot);
-    
+
     void clearAbortInfo();
-    
+
     bool getAbortInfo(bool* isRenderResponseToUserInteraction,
                       AbortableRenderInfoPtr* abortInfo,
                       EffectInstPtr* treeRoot) const;
-    
+
 private:
-    
+
     boost::scoped_ptr<AbortableThreadPrivate> _imp;
-    
 };
 
-class ThreadPool : public QThreadPool
+class ThreadPool
+    : public QThreadPool
 {
 public:
-    
+
     ThreadPool();
-    
+
     virtual ~ThreadPool();
-    
+
 private:
-    
+
     virtual QThreadPoolThread* createThreadPoolThread() const OVERRIDE FINAL;
 };
 

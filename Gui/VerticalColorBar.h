@@ -39,7 +39,8 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-class VerticalColorBar : public QWidget
+class VerticalColorBar
+    : public QWidget
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -47,17 +48,17 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 private:
     QColor _color;
-    
+
 public:
-    
+
     VerticalColorBar(QWidget* parent);
-    
+
 public Q_SLOTS:
-    
+
     void setColor(const QColor& color);
-    
+
 private:
-    
+
     virtual QSize sizeHint() const OVERRIDE FINAL;
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
 };

@@ -47,122 +47,118 @@ NATRON_NAMESPACE_ENTER;
 
 struct PySyntaxHighlighterPrivate;
 
-class PySyntaxHighlighter : public QSyntaxHighlighter
+class PySyntaxHighlighter
+    : public QSyntaxHighlighter
 {
-
 public:
-    
+
     PySyntaxHighlighter(QTextDocument *parent = 0);
-    
+
     virtual ~PySyntaxHighlighter();
-    
+
     void reload();
-    
+
 private:
-    
+
     virtual void highlightBlock(const QString &text) OVERRIDE FINAL;
     bool matchMultiline(const QString &text, const QRegExp &delimiter, const int inState, const QTextCharFormat &style);
 
     boost::scoped_ptr<PySyntaxHighlighterPrivate> _imp;
-    
 };
 
 class LineNumberWidget;
-class InputScriptTextEdit : public QPlainTextEdit
+class InputScriptTextEdit
+    : public QPlainTextEdit
 {
-    
-    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-    GCC_DIAG_SUGGEST_OVERRIDE_ON
-    
-    
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
+
     friend class LineNumberWidget;
-    
+
 public:
-    
+
     InputScriptTextEdit(Gui* gui, QWidget* parent);
-    
+
     virtual ~InputScriptTextEdit();
 
     int getLineNumberAreaWidth();
-    
+
     void reloadHighlighter();
-    
+
 private Q_SLOTS:
-    
+
     void updateLineNumberAreaWidth(int newBlockCount);
     void highlightCurrentLine();
     void updateLineNumberArea(const QRect &, int);
-    
+
 private:
-    
+
     void lineNumberAreaPaintEvent(QPaintEvent *event);
-        
+
     virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE FINAL;
-    
     virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
-    
     virtual void resizeEvent(QResizeEvent *event) OVERRIDE FINAL;
-    
     virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
-    
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
-    
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
-  
-    
+
 private:
-    
+
     LineNumberWidget* _lineNumber;
     PySyntaxHighlighter* _highlighter;
     Gui* _gui;
 };
 
-class LineNumberWidget : public QWidget
+class LineNumberWidget
+    : public QWidget
 {
 public:
-    
+
     LineNumberWidget(InputScriptTextEdit *editor)
-    : QWidget(editor)
-    , codeEditor(editor)
+        : QWidget(editor)
+        , codeEditor(editor)
     {
         codeEditor = editor;
     }
-    
-    virtual QSize sizeHint() const OVERRIDE FINAL {
+
+    virtual QSize sizeHint() const OVERRIDE FINAL
+    {
         return QSize(codeEditor->getLineNumberAreaWidth(), 0);
     }
-    
+
 protected:
-    
-    virtual void paintEvent(QPaintEvent *event) OVERRIDE FINAL {
+
+    virtual void paintEvent(QPaintEvent *event) OVERRIDE FINAL
+    {
         codeEditor->lineNumberAreaPaintEvent(event);
     }
-    
+
 private:
     InputScriptTextEdit *codeEditor;
 };
 
-class OutputScriptTextEdit : public QTextEdit
+class OutputScriptTextEdit
+    : public QTextEdit
 {
-    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-    GCC_DIAG_SUGGEST_OVERRIDE_ON
-    
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
-    
+
     OutputScriptTextEdit(QWidget* parent);
-    
+
     virtual ~OutputScriptTextEdit();
-    
+
 Q_SIGNALS:
-    
+
     void userScrollChanged(bool atBottom);
-    
+
 private:
-    
+
     virtual void showEvent(QShowEvent* e) OVERRIDE FINAL;
-    
     virtual void scrollContentsBy(int dx, int dy) OVERRIDE FINAL;
 };
 

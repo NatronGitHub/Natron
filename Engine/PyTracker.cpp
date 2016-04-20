@@ -33,36 +33,36 @@ NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
 
 Track::Track(const boost::shared_ptr<TrackMarker>& marker)
-: _marker(marker)
+    : _marker(marker)
 {
-    
 }
 
 Track::~Track()
 {
-    
 }
 
 void
 Track::setScriptName(const QString& scriptName)
 {
-    _marker->setScriptName(scriptName.toStdString());
+    _marker->setScriptName( scriptName.toStdString() );
 }
 
 QString
 Track::getScriptName() const
 {
-    return QString::fromUtf8(_marker->getScriptName_mt_safe().c_str());
+    return QString::fromUtf8( _marker->getScriptName_mt_safe().c_str() );
 }
 
 Param*
 Track::getParam(const QString& scriptName) const
 {
-    KnobPtr knob = _marker->getKnobByName(scriptName.toStdString());
+    KnobPtr knob = _marker->getKnobByName( scriptName.toStdString() );
+
     if (!knob) {
         return 0;
     }
     Param* ret = Effect::createParamWrapperForKnob(knob);
+
     return ret;
 }
 
@@ -73,20 +73,19 @@ Track::reset()
 }
 
 Tracker::Tracker(const boost::shared_ptr<TrackerContext>& ctx)
-: _ctx(ctx)
+    : _ctx(ctx)
 {
-    
 }
 
 Tracker::~Tracker()
 {
-    
 }
 
 Track*
 Tracker::getTrackByName(const QString& name) const
 {
-    TrackMarkerPtr t = _ctx->getMarkerByName(name.toStdString());
+    TrackMarkerPtr t = _ctx->getMarkerByName( name.toStdString() );
+
     if (t) {
         return new Track(t);
     } else {
@@ -101,8 +100,9 @@ Tracker::startTracking(const std::list<Track*>& marks,
                        bool forward)
 {
     std::list<TrackMarkerPtr> markers;
-    for (std::list<Track*>::const_iterator it = marks.begin(); it!= marks.end(); ++it) {
-        markers.push_back((*it)->getInternalMarker());
+
+    for (std::list<Track*>::const_iterator it = marks.begin(); it != marks.end(); ++it) {
+        markers.push_back( (*it)->getInternalMarker() );
     }
     _ctx->trackMarkers(markers, start, end, forward, 0);
 }
@@ -117,9 +117,10 @@ void
 Tracker::getAllTracks(std::list<Track*>* tracks) const
 {
     std::vector<TrackMarkerPtr> markers;
+
     _ctx->getAllMarkers(&markers);
-    for (std::vector<TrackMarkerPtr>::const_iterator it = markers.begin(); it!=markers.end(); ++it) {
-        tracks->push_back(new Track(*it));
+    for (std::vector<TrackMarkerPtr>::const_iterator it = markers.begin(); it != markers.end(); ++it) {
+        tracks->push_back( new Track(*it) );
     }
 }
 
@@ -127,9 +128,10 @@ void
 Tracker::getSelectedTracks(std::list<Track*>* tracks) const
 {
     std::list<TrackMarkerPtr> markers;
+
     _ctx->getSelectedMarkers(&markers);
-    for (std::list<TrackMarkerPtr>::const_iterator it = markers.begin(); it!=markers.end(); ++it) {
-        tracks->push_back(new Track(*it));
+    for (std::list<TrackMarkerPtr>::const_iterator it = markers.begin(); it != markers.end(); ++it) {
+        tracks->push_back( new Track(*it) );
     }
 }
 

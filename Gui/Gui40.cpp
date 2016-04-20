@@ -164,7 +164,7 @@ void
 Gui::updateRecentFileActions()
 {
     QSettings settings;
-    QStringList files = settings.value(QString::fromUtf8("recentFileList")).toStringList();
+    QStringList files = settings.value( QString::fromUtf8("recentFileList") ).toStringList();
     int numRecentFiles = std::min(files.size(), (int)NATRON_MAX_RECENT_FILES);
 
     for (int i = 0; i < numRecentFiles; ++i) {
@@ -182,7 +182,7 @@ QPixmap
 Gui::screenShot(QWidget* w)
 {
 #if QT_VERSION < 0x050000
-    if (w->objectName() == QString::fromUtf8("CurveEditor")) {
+    if ( w->objectName() == QString::fromUtf8("CurveEditor") ) {
         return QPixmap::grabWidget(w);
     }
 
@@ -194,7 +194,8 @@ Gui::screenShot(QWidget* w)
 }
 
 void
-Gui::onProjectNameChanged(const QString & filePath, bool modified)
+Gui::onProjectNameChanged(const QString & filePath,
+                          bool modified)
 {
     // handles window title and appearance formatting
     // http://doc.qt.io/qt-4.8/qwidget.html#windowModified-prop
@@ -204,10 +205,13 @@ Gui::onProjectNameChanged(const QString & filePath, bool modified)
 }
 
 void
-Gui::setColorPickersColor(double r,double g, double b,double a)
+Gui::setColorPickersColor(double r,
+                          double g,
+                          double b,
+                          double a)
 {
     assert(_imp->_projectGui);
-    _imp->_projectGui->setPickersColor(r,g,b,a);
+    _imp->_projectGui->setPickersColor(r, g, b, a);
 }
 
 void
@@ -215,8 +219,8 @@ Gui::registerNewColorPicker(boost::shared_ptr<KnobColor> knob)
 {
     assert(_imp->_projectGui);
     const std::list<ViewerTab*> &viewers = getViewersList();
-    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it!=viewers.end(); ++it) {
-        if (!(*it)->isPickerEnabled()) {
+    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        if ( !(*it)->isPickerEnabled() ) {
             (*it)->setPickerEnabled(true);
         }
     }
@@ -283,6 +287,7 @@ void
 Gui::setMasterSyncViewer(ViewerTab* master)
 {
     QMutexLocker l(&_imp->_viewerTabsMutex);
+
     _imp->_masterSyncViewer = master;
 }
 
@@ -290,6 +295,7 @@ ViewerTab*
 Gui::getMasterSyncViewer() const
 {
     QMutexLocker l(&_imp->_viewerTabsMutex);
+
     return _imp->_masterSyncViewer;
 }
 
@@ -325,8 +331,8 @@ Gui::deactivateViewerTab(ViewerInstance* viewer)
                 break;
             }
         }
-        
-        if (v && v == _imp->_masterSyncViewer) {
+
+        if ( v && (v == _imp->_masterSyncViewer) ) {
             _imp->_masterSyncViewer = 0;
         }
     }
@@ -367,7 +373,6 @@ Gui::deselectAllNodes() const
 {
     _imp->_nodeGraphArea->deselect();
 }
-
 
 void
 Gui::setNextViewerAnchor(TabWidget* where)
@@ -417,7 +422,7 @@ Gui::getAvailablePaneName(const QString & baseName) const
     int baseNumber = _imp->_panes.size();
 
     if ( name.isEmpty() ) {
-        name.append(QString::fromUtf8("pane"));
+        name.append( QString::fromUtf8("pane") );
         name.append( QString::number(baseNumber) );
     }
 
@@ -444,6 +449,7 @@ void
 Gui::setDraftRenderEnabled(bool b)
 {
     QMutexLocker k(&_imp->_isInDraftModeMutex);
+
     _imp->_isInDraftMode = b;
 }
 
@@ -451,6 +457,7 @@ bool
 Gui::isDraftRenderEnabled() const
 {
     QMutexLocker k(&_imp->_isInDraftModeMutex);
+
     return _imp->_isInDraftMode;
 }
 
@@ -472,7 +479,8 @@ Gui::getCurveEditor() const
     return _imp->_curveEditor;
 }
 
-DopeSheetEditor *Gui::getDopeSheetEditor() const
+DopeSheetEditor *
+Gui::getDopeSheetEditor() const
 {
     return _imp->_dopeSheetEditor;
 }
@@ -545,15 +553,17 @@ Gui::debugImage(const Image* image,
 {
     if (image->getBitDepth() != eImageBitDepthFloat) {
         qDebug() << "Debug image only works on float images.";
+
         return;
     }
     RectI renderWindow;
     RectI bounds = image->getBounds();
-    if (roi.isNull()) {
+    if ( roi.isNull() ) {
         renderWindow = bounds;
     } else {
-        if (!roi.intersect(bounds,&renderWindow)) {
+        if ( !roi.intersect(bounds, &renderWindow) ) {
             qDebug() << "The RoI does not interesect the bounds of the image.";
+
             return;
         }
     }
@@ -565,66 +575,66 @@ Gui::debugImage(const Image* image,
     assert(from);
     int srcNComps = (int)image->getComponentsCount();
     int srcRowElements = srcNComps * bounds.width();
-    
-    for (int y = renderWindow.height() - 1; y >= 0; --y,
-         from += (srcRowElements - srcNComps * renderWindow.width())) {
-        
+
+    for ( int y = renderWindow.height() - 1; y >= 0; --y,
+          from += ( srcRowElements - srcNComps * renderWindow.width() ) ) {
         QRgb* dstPixels = (QRgb*)output.scanLine(y);
         assert(dstPixels);
-        
+
         unsigned error_r = 0x80;
         unsigned error_g = 0x80;
         unsigned error_b = 0x80;
-        
+
         for (int x = 0; x < renderWindow.width(); ++x, from += srcNComps, ++dstPixels) {
-            float r,g,b,a;
+            float r, g, b, a;
             switch (srcNComps) {
-                case 1:
-                    r = g = b = *from;
-                    a = 1;
-                    break;
-                case 2:
-                    r = *from;
-                    g = *(from + 1);
-                    b = 0;
-                    a = 1;
-                    break;
-                case 3:
-                    r = *from;
-                    g = *(from + 1);
-                    b = *(from + 2);
-                    a = 1;
-                    break;
-                case 4:
-                    r = *from;
-                    g = *(from + 1);
-                    b = *(from + 2);
-                    a = *(from + 3);
-                    break;
-                default:
-                    assert(false);
-                    return;
+            case 1:
+                r = g = b = *from;
+                a = 1;
+                break;
+            case 2:
+                r = *from;
+                g = *(from + 1);
+                b = 0;
+                a = 1;
+                break;
+            case 3:
+                r = *from;
+                g = *(from + 1);
+                b = *(from + 2);
+                a = 1;
+                break;
+            case 4:
+                r = *from;
+                g = *(from + 1);
+                b = *(from + 2);
+                a = *(from + 3);
+                break;
+            default:
+                assert(false);
+
+                return;
             }
             error_r = (error_r & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(r);
             error_g = (error_g & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(g);
             error_b = (error_b & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(b);
             assert(error_r < 0x10000 && error_g < 0x10000 && error_b < 0x10000);
-            *dstPixels = qRgba(U8(error_r >> 8),
-                              U8(error_g >> 8),
-                              U8(error_b >> 8),
-                              U8(a * 255));
+            *dstPixels = qRgba( U8(error_r >> 8),
+                                U8(error_g >> 8),
+                                U8(error_b >> 8),
+                                U8(a * 255) );
         }
     }
-    
+
     U64 hashKey = image->getHashKey();
     QString hashKeyStr = QString::number(hashKey);
-    QString realFileName = filename.isEmpty() ? QString(hashKeyStr + QString::fromUtf8(".png")) : filename;
+    QString realFileName = filename.isEmpty() ? QString( hashKeyStr + QString::fromUtf8(".png") ) : filename;
 #ifdef DEBUG
     qDebug() << "Writing image: " << realFileName;
     renderWindow.debug();
 #endif
     output.save(realFileName);
-}
+} // Gui::debugImage
 
 void
 Gui::updateLastSequenceOpenedPath(const QString & path)
@@ -652,7 +662,9 @@ Gui::updateLastOpenedProjectPath(const QString & project)
 
 void
 Gui::onRenderStarted(const QString & sequenceName,
-                     int firstFrame,int lastFrame,int frameStep,
+                     int firstFrame,
+                     int lastFrame,
+                     int frameStep,
                      bool canPause,
                      OutputEffectInstance* writer,
                      const boost::shared_ptr<ProcessHandler> & process)
@@ -674,6 +686,7 @@ Gui::ensureScriptEditorVisible()
 {
     // Ensure that the script editor is visible
     TabWidget* pane = _imp->_scriptEditor->getParentPane();
+
     if (pane != 0) {
         pane->setCurrentWidget(_imp->_scriptEditor);
     } else {
@@ -684,7 +697,7 @@ Gui::ensureScriptEditorVisible()
                 QMutexLocker k(&_imp->_panesMutex);
                 tabs = _imp->_panes;
             }
-            if (tabs.empty()) {
+            if ( tabs.empty() ) {
                 return;
             }
             pane = tabs.front();
@@ -692,14 +705,13 @@ Gui::ensureScriptEditorVisible()
         assert(pane);
         pane->moveScriptEditorHere();
     }
-    
 }
 
 void
 Gui::ensureProgressPanelVisible()
 {
-    
     TabWidget* pane = _imp->_progressPanel->getParentPane();
+
     if (pane != 0) {
         pane->setCurrentWidget(_imp->_progressPanel);
     } else {
@@ -710,7 +722,7 @@ Gui::ensureProgressPanelVisible()
                 QMutexLocker k(&_imp->_panesMutex);
                 tabs = _imp->_panes;
             }
-            if (tabs.empty()) {
+            if ( tabs.empty() ) {
                 return;
             }
             pane = tabs.front();
@@ -718,7 +730,6 @@ Gui::ensureProgressPanelVisible()
         assert(pane);
         pane->moveProgressPanelHere();
     }
-
 }
 
 void
@@ -756,7 +767,7 @@ Gui::getBoostVersion() const
 QString
 Gui::getQtVersion() const
 {
-    return QString::fromUtf8(QT_VERSION_STR) + QString::fromUtf8(" / ") + QString::fromUtf8(qVersion());
+    return QString::fromUtf8(QT_VERSION_STR) + QString::fromUtf8(" / ") + QString::fromUtf8( qVersion() );
 }
 
 QString
@@ -783,9 +794,9 @@ void
 Gui::renderAllWriters()
 {
     try {
-    _imp->_appInstance->startWritersRenderingFromNames(areRenderStatsEnabled(), false, std::list<std::string>(), std::list<std::pair<int,std::pair<int,int> > >() );
+        _imp->_appInstance->startWritersRenderingFromNames( areRenderStatsEnabled(), false, std::list<std::string>(), std::list<std::pair<int, std::pair<int, int> > >() );
     } catch (const std::exception& e) {
-        Dialogs::warningDialog(tr("Render").toStdString(), e.what());
+        Dialogs::warningDialog( tr("Render").toStdString(), e.what() );
     }
 }
 
@@ -793,22 +804,22 @@ void
 Gui::renderSelectedNode()
 {
     NodeGraph* graph = getLastSelectedGraph();
+
     if (!graph) {
         return;
     }
-    
-    NodesGuiList  selectedNodes = graph->getSelectedNodes();
+
+    NodesGuiList selectedNodes = graph->getSelectedNodes();
 
     if ( selectedNodes.empty() ) {
         Dialogs::warningDialog( tr("Render").toStdString(), tr("You must select a node to render first!").toStdString() );
+
         return;
     }
     std::list<AppInstance::RenderWork> workList;
-    
     bool useStats = getApp()->isRenderStatsActionChecked();
     for (NodesGuiList::const_iterator it = selectedNodes.begin();
          it != selectedNodes.end(); ++it) {
-        
         NodePtr internalNode = (*it)->getNode();
         if (!internalNode) {
             continue;
@@ -817,12 +828,12 @@ Gui::renderSelectedNode()
         if (!effect) {
             continue;
         }
-        if (effect->isWriter()) {
-            if (!effect->areKnobsFrozen()) {
+        if ( effect->isWriter() ) {
+            if ( !effect->areKnobsFrozen() ) {
                 //if ((*it)->getNode()->is)
                 ///if the node is a writer, just use it to render!
                 AppInstance::RenderWork w;
-                w.writer = dynamic_cast<OutputEffectInstance*>(effect.get());
+                w.writer = dynamic_cast<OutputEffectInstance*>( effect.get() );
                 assert(w.writer);
                 w.firstFrame = INT_MIN;
                 w.lastFrame = INT_MAX;
@@ -837,7 +848,7 @@ Gui::renderSelectedNode()
                 NodePtr writer = createWriter();
 #else
                 NodeGraph* graph = selectedNodes.front()->getDagGui();
-                NodePtr writer = getApp()->createWriter("", eCreateNodeReasonInternal, graph->getGroup());
+                NodePtr writer = getApp()->createWriter( "", eCreateNodeReasonInternal, graph->getGroup() );
 #endif
                 if (writer) {
                     AppInstance::RenderWork w;
@@ -853,8 +864,7 @@ Gui::renderSelectedNode()
         }
     }
     _imp->_appInstance->startWritersRendering(false, workList);
-    
-}
+} // Gui::renderSelectedNode
 
 void
 Gui::setRenderStatsEnabled(bool enabled)
@@ -870,6 +880,7 @@ bool
 Gui::areRenderStatsEnabled() const
 {
     QMutexLocker k(&_imp->areRenderStatsEnabledMutex);
+
     return _imp->areRenderStatsEnabled;
 }
 
@@ -886,14 +897,15 @@ Gui::getOrCreateRenderStatsDialog()
         return _imp->statsDialog;
     }
     _imp->statsDialog = new RenderStatsDialog(this);
+
     return _imp->statsDialog;
 }
 
 void
 Gui::onEnableRenderStatsActionTriggered()
 {
-    assert(QThread::currentThread() == qApp->thread());
-    
+    assert( QThread::currentThread() == qApp->thread() );
+
     bool checked = _imp->enableRenderStats->isChecked();
     setRenderStatsEnabled(checked);
     if (!checked) {
@@ -908,74 +920,70 @@ Gui::onEnableRenderStatsActionTriggered()
     }
 }
 
-
 void
 Gui::onTimelineTimeAboutToChange()
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     const std::list<ViewerTab*>& viewers = getViewersList();
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
         RenderEngine* engine = (*it)->getInternalNode()->getRenderEngine();
-        engine->abortRendering(true,false);
+        engine->abortRendering(true, false);
     }
 }
 
 void
 Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,
-                         int reason)
+                                                         int reason)
 {
-    TimeLine* timeline = qobject_cast<TimeLine*>(sender());
-    if (timeline != getApp()->getTimeLine().get()) {
+    TimeLine* timeline = qobject_cast<TimeLine*>( sender() );
+
+    if ( timeline != getApp()->getTimeLine().get() ) {
         return;
     }
-    
-    assert(QThread::currentThread() == qApp->thread());
-    if (reason == eTimelineChangeReasonUserSeek ||
-        reason == eTimelineChangeReasonDopeSheetEditorSeek ||
-        reason == eTimelineChangeReasonCurveEditorSeek) {
-        if (getApp()->checkAllReadersModificationDate(true)) {
+
+    assert( QThread::currentThread() == qApp->thread() );
+    if ( (reason == eTimelineChangeReasonUserSeek) ||
+         ( reason == eTimelineChangeReasonDopeSheetEditorSeek) ||
+         ( reason == eTimelineChangeReasonCurveEditorSeek) ) {
+        if ( getApp()->checkAllReadersModificationDate(true) ) {
             return;
         }
     }
-    
+
     boost::shared_ptr<Project> project = getApp()->getProject();
     bool isPlayback = reason == eTimelineChangeReasonPlaybackSeek;
 
     ///Refresh all visible knobs at the current time
-    if (!getApp()->isGuiFrozen()) {
-        for (std::list<DockablePanel*>::const_iterator it = _imp->openedPanels.begin(); it!=_imp->openedPanels.end(); ++it) {
+    if ( !getApp()->isGuiFrozen() ) {
+        for (std::list<DockablePanel*>::const_iterator it = _imp->openedPanels.begin(); it != _imp->openedPanels.end(); ++it) {
             NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(*it);
             if (nodePanel) {
                 NodePtr node = nodePanel->getNode()->getNode();
                 node->getEffectInstance()->refreshAfterTimeChange(isPlayback, time);
-                
+
                 NodesList children;
                 node->getChildrenMultiInstance(&children);
-                for (NodesList::iterator it2 = children.begin(); it2!=children.end(); ++it2) {
+                for (NodesList::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
                     (*it2)->getEffectInstance()->refreshAfterTimeChange(isPlayback, time);
                 }
             }
         }
     }
 
-    
-    ViewerInstance* leadViewer = getApp()->getLastViewerUsingTimeline();
-    
-    
-    
 
+    ViewerInstance* leadViewer = getApp()->getLastViewerUsingTimeline();
     const std::list<ViewerTab*>& viewers = getViewersList();
     ///Syncrhronize viewers
-    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it!=viewers.end();++it) {
-        if ((*it)->getInternalNode() == leadViewer && isPlayback) {
+    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        if ( ( (*it)->getInternalNode() == leadViewer ) && isPlayback ) {
             continue;
         }
-        if ((*it)->getInternalNode()->isDoingPartialUpdates()) {
+        if ( (*it)->getInternalNode()->isDoingPartialUpdates() ) {
             //When tracking, we handle rendering separatly
             continue;
         }
-         (*it)->getInternalNode()->renderCurrentFrame(!isPlayback);
+        (*it)->getInternalNode()->renderCurrentFrame(!isPlayback);
     }
-}
+} // Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange
 
 NATRON_NAMESPACE_EXIT;

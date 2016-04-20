@@ -29,8 +29,9 @@ NATRON_NAMESPACE_ENTER;
 
 
 void
-FStreamsSupport::open (FStreamsSupport::ifstream *stream, const std::string& path,
-                  std::ios_base::openmode mode)
+FStreamsSupport::open (FStreamsSupport::ifstream *stream,
+                       const std::string& path,
+                       std::ios_base::openmode mode)
 {
 #ifdef __NATRON_WIN32__
     // Windows std::ifstream accepts non-standard wchar_t*
@@ -43,11 +44,10 @@ FStreamsSupport::open (FStreamsSupport::ifstream *stream, const std::string& pat
 #endif
 }
 
-
-
 void
-FStreamsSupport::open (FStreamsSupport::ofstream *stream, const std::string& path,
-                  std::ios_base::openmode mode)
+FStreamsSupport::open (FStreamsSupport::ofstream *stream,
+                       const std::string& path,
+                       std::ios_base::openmode mode)
 {
 #ifdef __NATRON_WIN32__
     // Windows std::ofstream accepts non-standard wchar_t*
@@ -58,8 +58,5 @@ FStreamsSupport::open (FStreamsSupport::ofstream *stream, const std::string& pat
     stream->open (path.c_str(), mode);
 #endif
 }
-
-
-    
 
 NATRON_NAMESPACE_EXIT;

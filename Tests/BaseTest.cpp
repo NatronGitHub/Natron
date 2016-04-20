@@ -41,10 +41,9 @@
 NATRON_NAMESPACE_USING
 
 static AppManager* g_manager = 0;
-
 BaseTest::BaseTest()
     : testing::Test()
-      , _app(0)
+    , _app(0)
 {
 }
 
@@ -74,7 +73,6 @@ BaseTest::registerTestPlugins()
             if (p) {
                 bin = p->getLibraryBinary();
             }
-            
         } catch (const std::exception & e) {
             std::cout << e.what() << std::endl;
         }
@@ -95,27 +93,27 @@ BaseTest::SetUp()
 
     _app = g_manager->getTopLevelInstance();
     registerTestPlugins();
-
 }
 
 void
 BaseTest::TearDown()
 {
     appPTR->setNumberOfThreads(0);
- 
 }
 
-NodePtr BaseTest::createNode(const QString & pluginID,
-                                                     int majorVersion,
-                                                     int minorVersion)
+NodePtr
+BaseTest::createNode(const QString & pluginID,
+                     int majorVersion,
+                     int minorVersion)
 {
-    CreateNodeArgs args(pluginID, eCreateNodeReasonInternal, _app->getProject());
+    CreateNodeArgs args( pluginID, eCreateNodeReasonInternal, _app->getProject() );
+
     args.majorV = majorVersion;
     args.minorV = minorVersion;
     NodePtr ret =  _app->createNode(args);
-                                                    
 
-    EXPECT_NE(ret.get(),(Node*)NULL);
+
+    EXPECT_NE(ret.get(), (Node*)NULL);
 
     return ret;
 }
@@ -129,7 +127,7 @@ BaseTest::connectNodes(NodePtr input,
     if (expectedReturnValue) {
         ///check that the connections are internally all set as "expected"
 
-        EXPECT_EQ( (Node*)NULL,output->getInput(inputNumber).get() );
+        EXPECT_EQ( (Node*)NULL, output->getInput(inputNumber).get() );
         EXPECT_FALSE( output->isInputConnected(inputNumber) );
     } else {
         ///the call can only fail for those 2 reasons
@@ -138,12 +136,12 @@ BaseTest::connectNodes(NodePtr input,
     }
 
 
-    bool ret = _app->getProject()->connectNodes(inputNumber,input,output);
-    EXPECT_EQ(expectedReturnValue,ret);
+    bool ret = _app->getProject()->connectNodes(inputNumber, input, output);
+    EXPECT_EQ(expectedReturnValue, ret);
 
     if (expectedReturnValue) {
         EXPECT_TRUE( input->hasOutputConnected() );
-        EXPECT_EQ(output->getInput(inputNumber),input);
+        EXPECT_EQ(output->getInput(inputNumber), input);
         EXPECT_TRUE( output->isInputConnected(inputNumber) );
     }
 }
@@ -161,7 +159,7 @@ BaseTest::disconnectNodes(NodePtr input,
         const NodesWList & outputs = input->getGuiOutputs();
         bool foundOutput = false;
         for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-            if ( it->lock() == output) {
+            if (it->lock() == output) {
                 foundOutput = true;
                 break;
             }
@@ -181,13 +179,13 @@ BaseTest::disconnectNodes(NodePtr input,
 
         EXPECT_TRUE(foundInput);
         EXPECT_TRUE(foundOutput);
-        EXPECT_EQ(output->getInput(inputIndex),input);
+        EXPECT_EQ(output->getInput(inputIndex), input);
         EXPECT_TRUE( output->isInputConnected(inputIndex) );
     }
 
     ///call disconnect
-    bool ret = _app->getProject()->disconnectNodes(input,output);
-    EXPECT_EQ(expectedReturnvalue,ret);
+    bool ret = _app->getProject()->disconnectNodes(input, output);
+    EXPECT_EQ(expectedReturnvalue, ret);
 
     if (expectedReturnvalue) {
         ///check that the disconnection went OK
@@ -215,31 +213,32 @@ BaseTest::disconnectNodes(NodePtr input,
 
         EXPECT_FALSE(foundOutput);
         EXPECT_FALSE(foundInput);
-        EXPECT_EQ( (Node*)NULL,output->getInput(inputIndex).get() );
+        EXPECT_EQ( (Node*)NULL, output->getInput(inputIndex).get() );
         EXPECT_FALSE( output->isInputConnected(inputIndex) );
     }
 } // disconnectNodes
 
 ///High level test: render 1 frame of dot generator
-TEST_F(BaseTest,GenerateDot)
+TEST_F(BaseTest, GenerateDot)
 {
     ///create the generator
     NodePtr generator = createNode(_dotGeneratorPluginID);
-    
+
     ///create the writer and set its output filename
     NodePtr writer = createNode(_writeOIIOPluginID);
+
     ASSERT_TRUE(generator && writer);
-    
+
     KnobPtr frameRange = generator->getApp()->getProject()->getKnobByName("frameRange");
     ASSERT_TRUE(frameRange);
-    KnobInt* knob = dynamic_cast<KnobInt*>(frameRange.get());
+    KnobInt* knob = dynamic_cast<KnobInt*>( frameRange.get() );
     ASSERT_TRUE(knob);
     knob->setValue(1, ViewSpec::all(), 0);
     knob->setValue(1, ViewSpec::all(), 1);
-    
+
     const QString& binPath = appPTR->getApplicationBinaryPath();
     QString filePath = binPath + QString::fromUtf8("/test_dot_generator.jpg");
-    writer->setOutputFilesForWriter(filePath.toStdString());
+    writer->setOutputFilesForWriter( filePath.toStdString() );
 
     ///attempt to connect the 2 nodes together
     connectNodes(generator, writer, 0, true);
@@ -247,7 +246,7 @@ TEST_F(BaseTest,GenerateDot)
     ///and start rendering. This call is blocking.
     std::list<AppInstance::RenderWork> works;
     AppInstance::RenderWork w;
-    w.writer = dynamic_cast<OutputEffectInstance*>(writer->getEffectInstance().get());
+    w.writer = dynamic_cast<OutputEffectInstance*>( writer->getEffectInstance().get() );
     assert(w.writer);
     w.firstFrame = INT_MIN;
     w.lastFrame = INT_MAX;
@@ -255,43 +254,44 @@ TEST_F(BaseTest,GenerateDot)
     w.useRenderStats = false;
     works.push_back(w);
     _app->startWritersRendering(false, works);
-    
-    EXPECT_TRUE(QFile::exists(filePath));
+
+    EXPECT_TRUE( QFile::exists(filePath) );
     QFile::remove(filePath);
 }
 
-TEST_F(BaseTest,SetValues)
+TEST_F(BaseTest, SetValues)
 {
     NodePtr generator = createNode(_dotGeneratorPluginID);
+
     assert(generator);
     KnobPtr knob = generator->getKnobByName("radius");
-    KnobDouble* radius = dynamic_cast<KnobDouble*>(knob.get());
+    KnobDouble* radius = dynamic_cast<KnobDouble*>( knob.get() );
     EXPECT_TRUE(radius != 0);
     if (!radius) {
         return;
     }
     radius->setValue(100);
     EXPECT_TRUE(radius->getValue() == 100);
-    
+
     //Check that linear interpolation is working as intended
     KeyFrame kf;
     radius->setInterpolationAtTime(eCurveChangeReasonInternal, ViewSpec::all(),  0, 0, eKeyframeTypeLinear, &kf);
     radius->setValueAtTime(0, 0, ViewSpec::all(), 0);
     radius->setValueAtTime(100, 100, ViewSpec::all(), 0);
     for (int i = 0; i <= 100; ++i) {
-        double v = radius->getValueAtTime(i) ;
+        double v = radius->getValueAtTime(i);
         EXPECT_TRUE(std::abs(v - i) < 1e-6);
     }
-    
 }
 
 ///High level test: simple node connections test
-TEST_F(BaseTest,SimpleNodeConnections) {
+TEST_F(BaseTest, SimpleNodeConnections) {
     ///create the generator
     NodePtr generator = createNode(_dotGeneratorPluginID);
 
     ///create the writer and set its output filename
     NodePtr writer = createNode(_writeOIIOPluginID);
+
     ASSERT_TRUE(writer && generator);
     connectNodes(generator, writer, 0, true);
     connectNodes(generator, writer, 0, false); //< expect it to fail

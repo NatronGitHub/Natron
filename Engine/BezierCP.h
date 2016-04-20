@@ -54,7 +54,7 @@ NATRON_NAMESPACE_ENTER;
  * Note on multi-thread:
  * All getters or const functions can be called in any thread, that is:
  * - The GUI thread (main-thread)
- * - The render thread 
+ * - The render thread
  * - The serialization thread (when saving)
  *
  * Setters or non-const functions can exclusively be called in the main-thread (Gui thread) to ensure there is no
@@ -79,7 +79,7 @@ public:
     BezierCP(const boost::shared_ptr<Bezier>& curve);
 
     virtual ~BezierCP();
-    
+
     boost::shared_ptr<Curve> getXCurve() const;
     boost::shared_ptr<Curve> getYCurve() const;
     boost::shared_ptr<Curve> getLeftXCurve() const;
@@ -89,27 +89,27 @@ public:
 
     void clone(const BezierCP & other);
 
-    void setPositionAtTime(bool useGuiCurves,double time,double x,double y);
+    void setPositionAtTime(bool useGuiCurves, double time, double x, double y);
 
-    void setLeftBezierPointAtTime(bool useGuiCurves,double time,double x,double y);
+    void setLeftBezierPointAtTime(bool useGuiCurves, double time, double x, double y);
 
-    void setRightBezierPointAtTime(bool useGuiCurves,double time,double x,double y);
+    void setRightBezierPointAtTime(bool useGuiCurves, double time, double x, double y);
 
-    void setStaticPosition(bool useGuiCurves,double x,double y);
+    void setStaticPosition(bool useGuiCurves, double x, double y);
 
-    void setLeftBezierStaticPosition(bool useGuiCurves,double x,double y);
+    void setLeftBezierStaticPosition(bool useGuiCurves, double x, double y);
 
-    void setRightBezierStaticPosition(bool useGuiCurves,double x,double y);
+    void setRightBezierStaticPosition(bool useGuiCurves, double x, double y);
 
-    void removeKeyframe(bool useGuiCurves,double time);
-    
-    void removeAnimation(bool useGuiCurves,double currentTime);
+    void removeKeyframe(bool useGuiCurves, double time);
 
-    ///returns true if a keyframe was set
-    bool cuspPoint(bool useGuiCurves, double time, ViewIdx view, bool autoKeying, bool rippleEdit, const std::pair<double,double>& pixelScale);
+    void removeAnimation(bool useGuiCurves, double currentTime);
 
     ///returns true if a keyframe was set
-    bool smoothPoint(bool useGuiCurves, double time, ViewIdx view, bool autoKeying, bool rippleEdit, const std::pair<double,double>& pixelScale);
+    bool cuspPoint(bool useGuiCurves, double time, ViewIdx view, bool autoKeying, bool rippleEdit, const std::pair<double, double>& pixelScale);
+
+    ///returns true if a keyframe was set
+    bool smoothPoint(bool useGuiCurves, double time, ViewIdx view, bool autoKeying, bool rippleEdit, const std::pair<double, double>& pixelScale);
 
 
     virtual bool isFeatherPoint() const
@@ -117,25 +117,25 @@ public:
         return false;
     }
 
-    bool equalsAtTime(bool useGuiCurves, double time, ViewIdx view,const BezierCP & other) const;
+    bool equalsAtTime(bool useGuiCurves, double time, ViewIdx view, const BezierCP & other) const;
 
-    bool getPositionAtTime(bool useGuiCurves, double time, ViewIdx view,double* x,double* y,bool skipMasterOrRelative = false) const;
+    bool getPositionAtTime(bool useGuiCurves, double time, ViewIdx view, double* x, double* y, bool skipMasterOrRelative = false) const;
 
-    bool getLeftBezierPointAtTime(bool useGuiCurves,double time, ViewIdx view,double* x,double* y,bool skipMasterOrRelative = false) const;
+    bool getLeftBezierPointAtTime(bool useGuiCurves, double time, ViewIdx view, double* x, double* y, bool skipMasterOrRelative = false) const;
 
-    bool getRightBezierPointAtTime(bool useGuiCurves,double time, ViewIdx view,double *x,double *y,bool skipMasterOrRelative = false) const;
+    bool getRightBezierPointAtTime(bool useGuiCurves, double time, ViewIdx view, double *x, double *y, bool skipMasterOrRelative = false) const;
 
-    bool hasKeyFrameAtTime(bool useGuiCurves,double time) const;
+    bool hasKeyFrameAtTime(bool useGuiCurves, double time) const;
 
-    void getKeyframeTimes(bool useGuiCurves,std::set<double>* times) const;
-    
-    void getKeyFrames(bool useGuiCurves,std::list<std::pair<double,KeyframeTypeEnum> >* keys) const;
-    
-    int getKeyFrameIndex(bool useGuiCurves,double time) const;
-    
-    void setKeyFrameInterpolation(bool useGuiCurves,KeyframeTypeEnum interp,int index);
+    void getKeyframeTimes(bool useGuiCurves, std::set<double>* times) const;
 
-    double getKeyframeTime(bool useGuiCurves,int index) const;
+    void getKeyFrames(bool useGuiCurves, std::list<std::pair<double, KeyframeTypeEnum> >* keys) const;
+
+    int getKeyFrameIndex(bool useGuiCurves, double time) const;
+
+    void setKeyFrameInterpolation(bool useGuiCurves, KeyframeTypeEnum interp, int index);
+
+    double getKeyframeTime(bool useGuiCurves, int index) const;
 
     int getKeyframesCount(bool useGuiCurves) const;
 
@@ -155,19 +155,19 @@ public:
      * This function can also return the tangent of a feather point, to find out if the point is a feather point call
      * isFeatherPoint() on the returned control point.
      **/
-    int isNearbyTangent(bool useGuiCurves,double time, ViewIdx view,double x,double y,double acceptance) const;
+    int isNearbyTangent(bool useGuiCurves, double time, ViewIdx view, double x, double y, double acceptance) const;
 
     /**
      * The functions below are to slave/unslave a control point to a track
      **/
-    void slaveTo(SequenceTime offsetTime,const boost::shared_ptr<KnobDouble> & track);
+    void slaveTo(SequenceTime offsetTime, const boost::shared_ptr<KnobDouble> & track);
     boost::shared_ptr<KnobDouble> isSlaved() const;
     void unslave();
 
     SequenceTime getOffsetTime() const;
-    
+
     void cloneInternalCurvesToGuiCurves();
-    
+
     void cloneGuiCurvesToInternalCurves();
 
     template<class Archive>
@@ -175,10 +175,10 @@ public:
 
     template<class Archive>
     void load(Archive & ar, const unsigned int version);
-    
+
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
-    
+
 private:
 
     boost::scoped_ptr<BezierCPPrivate> _imp;

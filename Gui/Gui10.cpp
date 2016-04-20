@@ -75,7 +75,7 @@ Gui::createDefaultLayout1()
         _imp->_panes.push_back(mainPane);
     }
 
-    mainPane->setObjectName_mt_safe(QString::fromUtf8("pane1"));
+    mainPane->setObjectName_mt_safe( QString::fromUtf8("pane1") );
     mainPane->setAsAnchor(true);
 
     _imp->_leftRightSplitter->addWidget(mainPane);
@@ -121,7 +121,7 @@ restoreTabWidget(TabWidget* pane,
                  const PaneLayout & serialization)
 {
     ///Find out if the name is already used
-    QString availableName = pane->getGui()->getAvailablePaneName( QString::fromUtf8(serialization.name.c_str() ));
+    QString availableName = pane->getGui()->getAvailablePaneName( QString::fromUtf8( serialization.name.c_str() ) );
 
     pane->setObjectName_mt_safe(availableName);
     pane->setAsAnchor(serialization.isAnchor);
@@ -177,7 +177,7 @@ restoreSplitterRecursive(Gui* gui,
         }
     }
 
-    splitter->restoreNatron( QString::fromUtf8(serialization.sizes.c_str() ));
+    splitter->restoreNatron( QString::fromUtf8( serialization.sizes.c_str() ) );
 }
 
 void
@@ -195,10 +195,9 @@ Gui::restoreLayout(bool wipePrevious,
         createDefaultLayout1();
     } else {
         std::list<ApplicationWindowSerialization*> floatingDockablePanels;
-
         QDesktopWidget* desktop = QApplication::desktop();
         QRect screen = desktop->screenGeometry();
-        
+
         ///now restore the gui layout
         for (std::list<ApplicationWindowSerialization*>::const_iterator it = layoutSerialization._windows.begin();
              it != layoutSerialization._windows.end(); ++it) {
@@ -241,12 +240,12 @@ Gui::restoreLayout(bool wipePrevious,
             }
 
             ///Restore geometry
-            int w = std::min((*it)->w,screen.width());
-            int h = std::min((*it)->h,screen.height());
+            int w = std::min( (*it)->w, screen.width() );
+            int h = std::min( (*it)->h, screen.height() );
             window->resize(w, h);
-            int x = std::min(std::max((*it)->x,screen.x()),screen.right() - 50);
-            int y = std::min(std::max((*it)->y,screen.y() + 50),screen.bottom());
-            window->move(QPoint(x,y));
+            int x = std::min(std::max( (*it)->x, screen.x() ), screen.right() - 50);
+            int y = std::min( std::max( (*it)->y, screen.y() + 50 ), screen.bottom() );
+            window->move( QPoint(x, y) );
         }
 
         for (std::list<ApplicationWindowSerialization*>::iterator it = floatingDockablePanels.begin();
@@ -277,10 +276,10 @@ Gui::restoreLayout(bool wipePrevious,
                         fWindow = dynamic_cast<FloatingWidget*>(w);
                         w = w->parentWidget();
                     }
-                    
+
                     assert(fWindow);
                     fWindow->move( QPoint( (*it)->x, (*it)->y ) );
-                    fWindow->resize(std::min((*it)->w,screen.width()), std::min((*it)->h,screen.height()));
+                    fWindow->resize( std::min( (*it)->w, screen.width() ), std::min( (*it)->h, screen.height() ) );
                 }
             }
         }
@@ -296,19 +295,19 @@ Gui::exportLayout()
     SequenceFileDialog dialog( this, filters, false, SequenceFileDialog::eFileDialogModeSave, _imp->_lastSaveProjectOpenedDir.toStdString(), this, false );
     if ( dialog.exec() ) {
         std::string filename = dialog.filesToSave();
-        QString filenameCpy( QString::fromUtf8(filename.c_str() ));
+        QString filenameCpy( QString::fromUtf8( filename.c_str() ) );
         QString ext = QtCompat::removeFileExtension(filenameCpy);
-        if (ext != QString::fromUtf8(NATRON_LAYOUT_FILE_EXT)) {
+        if ( ext != QString::fromUtf8(NATRON_LAYOUT_FILE_EXT) ) {
             filename.append("." NATRON_LAYOUT_FILE_EXT);
         }
 
 
-        
         FStreamsSupport::ofstream ofile;
         FStreamsSupport::open(&ofile, filename);
         if (!ofile) {
             Dialogs::errorDialog( tr("Error").toStdString()
-                                 , tr("Failed to open file ").toStdString() + filename, false );
+                                  , tr("Failed to open file ").toStdString() + filename, false );
+
             return;
         }
 
@@ -319,10 +318,10 @@ Gui::exportLayout()
             oArchive << boost::serialization::make_nvp("Layout", s);
         }catch (...) {
             Dialogs::errorDialog( tr("Error").toStdString()
-                                 , tr("Failed to save the layout").toStdString(), false );
+                                  , tr("Failed to save the layout").toStdString(), false );
+
             return;
         }
-
     }
 }
 
@@ -350,11 +349,9 @@ Gui::updateLastPluginDirectory(const QString & str)
     _imp->_lastPluginDir = str;
 }
 
-
 void
 Gui::onShowApplicationConsoleActionTriggered()
 {
-
     setApplicationConsoleActionVisible(!_imp->applicationConsoleVisible);
 }
 
@@ -368,12 +365,11 @@ Gui::setApplicationConsoleActionVisible(bool visible)
     _imp->applicationConsoleVisible = visible;
     HWND hWnd = GetConsoleWindow();
     if (hWnd) {
-		if (_imp->applicationConsoleVisible) {
-			ShowWindow(hWnd, SW_HIDE);
-		} else {
-			ShowWindow(hWnd, SW_SHOWNORMAL);
-		}
-        
+        if (_imp->applicationConsoleVisible) {
+            ShowWindow(hWnd, SW_HIDE);
+        } else {
+            ShowWindow(hWnd, SW_SHOWNORMAL);
+        }
     }
 #else
     Q_UNUSED(visible)

@@ -52,53 +52,53 @@ struct NodeRenderStatsPrivate;
 class NodeRenderStats
 {
 public:
-    
+
     NodeRenderStats();
-    
+
     NodeRenderStats(const NodeRenderStats& other);
-    
+
     ~NodeRenderStats();
-    
+
     void operator=(const NodeRenderStats& other);
-    
+
     void addTimeSpentRendering(double time);
     double getTotalTimeSpentRendering() const;
-    
+
     const RectD& getRoD() const;
     void setRoD(const RectD& rod);
-    
+
     void setInputImageIdentity(const NodePtr& identity);
     NodePtr getInputImageIdentity() const;
-    
+
     void addRenderedRectangle(const RectI& rectangle);
     const std::list<RectI>& getRenderedRectangles() const;
-    
+
     void addIdentityRectangle(const NodePtr& identity, const RectI& rectangle);
-    std::list<std::pair<RectI,NodePtr > > getIdentityRectangles() const;
-    
+    std::list<std::pair<RectI, NodePtr > > getIdentityRectangles() const;
+
     void addMipMapLevelRendered(unsigned int level);
     const std::set<unsigned int>& getMipMapLevelsRendered() const;
-    
+
     void addPlaneRendered(const std::string& plane);
     const std::set<std::string>& getPlanesRendered() const;
-    
+
     void addCacheAccessInfo(bool isCacheMiss, bool hasDownscaled);
     void getCacheAccessInfos(int* nbCacheMisses, int* nbCacheHits, int* nbCacheHitButDownscaledImages) const;
-    
+
     void setTilesSupported(bool tilesSupported);
     bool isTilesSupportEnabled() const;
-    
+
     void setRenderScaleSupported(bool rsSupported);
     bool isRenderScaleSupportEnabled() const;
-    
+
     void setChannelsRendered(std::bitset<4> channelsRendered);
     std::bitset<4> getChannelsRendered() const;
-    
+
     void setOutputPremult(ImagePremultiplicationEnum premult);
     ImagePremultiplicationEnum getOutputPremult() const;
-    
+
 private:
-    
+
     boost::scoped_ptr<NodeRenderStatsPrivate> _imp;
 };
 
@@ -109,19 +109,19 @@ struct RenderStatsPrivate;
 class RenderStats
 {
 public:
-    
+
     /**
      * @brief If enableInDepthProfiling is true, a detailed breakdown for each node will be available in getStats()
      * otherwise just the totalTimeSpent for the frame will be computed.
      **/
     RenderStats(bool enableInDepthProfiling);
-    
+
     ~RenderStats();
-    
+
     bool isInDepthProfilingEnabled() const;
-    
+
     void setNodeIdentity(const NodePtr& node, const NodePtr& identity);
-    
+
     void setGlobalRenderInfosForNode(const NodePtr& node,
                                      const RectD& rod,
                                      ImagePremultiplicationEnum outputPremult,
@@ -129,21 +129,21 @@ public:
                                      bool tilesSupported,
                                      bool renderScaleSupported,
                                      unsigned int mipmapLevel);
-    
+
     void addCacheInfosForNode(const NodePtr& node,
                               bool isCacheMiss,
                               bool hasDownscaled);
-    
+
     void addRenderInfosForNode(const NodePtr& node,
-                        const NodePtr& identity,
-                        const std::string& plane,
-                        const RectI& rectangle,
-                        double timeSpent);
-    
-    std::map<NodePtr,NodeRenderStats > getStats(double *totalTimeSpent) const;
-    
+                               const NodePtr& identity,
+                               const std::string& plane,
+                               const RectI& rectangle,
+                               double timeSpent);
+
+    std::map<NodePtr, NodeRenderStats > getStats(double *totalTimeSpent) const;
+
 private:
-    
+
     boost::scoped_ptr<RenderStatsPrivate> _imp;
 };
 

@@ -30,13 +30,16 @@
 
 NATRON_NAMESPACE_USING
 
-TEST(BitmapTest,SimpleRect) {
-    RectI rod(0,0,100,100);
+TEST(BitmapTest,
+     SimpleRect)
+{
+    RectI rod(0, 0, 100, 100);
     Bitmap bm(rod);
 
     ///assert that the union of all the non rendered rects is the rod
     std::list<RectI> nonRenderedRects;
-    bm.minimalNonMarkedRects(rod,nonRenderedRects);
+
+    bm.minimalNonMarkedRects(rod, nonRenderedRects);
     RectI nonRenderedRectsUnion;
 
     for (std::list<RectI>::iterator it = nonRenderedRects.begin(); it != nonRenderedRects.end(); ++it) {
@@ -47,14 +50,14 @@ TEST(BitmapTest,SimpleRect) {
 
     ///assert that the "underlying" bitmap is clean
     const char* map = bm.getBitmap();
-    ASSERT_TRUE( !memchr( map,1,rod.area() ) );
+    ASSERT_TRUE( !memchr( map, 1, rod.area() ) );
 
-    RectI halfRoD(0,0,100,50);
+    RectI halfRoD(0, 0, 100, 50);
     bm.markForRendered(halfRoD);
 
     ///assert that non of the rendered rects interesect the non rendered half
-    RectI nonRenderedHalf(0,50,100,100);
-    bm.minimalNonMarkedRects(rod,nonRenderedRects);
+    RectI nonRenderedHalf(0, 50, 100, 100);
+    bm.minimalNonMarkedRects(rod, nonRenderedRects);
     for (std::list<RectI>::iterator it = nonRenderedRects.begin(); it != nonRenderedRects.end(); ++it) {
         ASSERT_TRUE( (*it).intersects(nonRenderedHalf) );
     }
@@ -64,11 +67,11 @@ TEST(BitmapTest,SimpleRect) {
     const char* start = map;
 
     ///check that there are only ones in the rendered half
-    ASSERT_TRUE( !memchr( start,0,halfRoD.area() ) );
+    ASSERT_TRUE( !memchr( start, 0, halfRoD.area() ) );
 
     ///check that there are only 0s in the non rendered half
     start = map + halfRoD.area();
-    ASSERT_TRUE( !memchr( start,1,halfRoD.area() ) );
+    ASSERT_TRUE( !memchr( start, 1, halfRoD.area() ) );
 
     ///mark for renderer the other half of the rod
     bm.markForRendered(nonRenderedHalf);
@@ -77,8 +80,8 @@ TEST(BitmapTest,SimpleRect) {
     nonRenderedRects.clear();
     bm.minimalNonMarkedRects(rod, nonRenderedRects);
     ASSERT_TRUE( nonRenderedRects.empty() );
-    ASSERT_TRUE( !memchr( map,0,rod.area() ) );
-    
+    ASSERT_TRUE( !memchr( map, 0, rod.area() ) );
+
     ///More complex example where A,B,C,D are not rendered check that both trimap & bitmap yield the same result
     // BBBBBBBBBBBBBB
     // BBBBBBBBBBBBBB
@@ -88,8 +91,8 @@ TEST(BitmapTest,SimpleRect) {
     // CXXXXXXXXXXDDD
     // AAAAAAAAAAAAAA
     bm.clear(rod);
-    
-    RectI xBox(20,20,80,80);
+
+    RectI xBox(20, 20, 80, 80);
     bm.markForRendered(xBox);
     nonRenderedRects.clear();
     bm.minimalNonMarkedRects(rod, nonRenderedRects);
@@ -99,24 +102,24 @@ TEST(BitmapTest,SimpleRect) {
     bm.minimalNonMarkedRects_trimap(rod, nonRenderedRects, &beingRenderedElseWhere);
     EXPECT_TRUE(nonRenderedRects.size() == 4);
     ASSERT_TRUE(beingRenderedElseWhere == false);
-    
+
     nonRenderedRects.clear();
     //Mark the A rectangle as being rendered
-    RectI aBox(0,0,20,20);
+    RectI aBox(0, 0, 20, 20);
     bm.markForRendering(aBox);
     bm.minimalNonMarkedRects_trimap(rod, nonRenderedRects, &beingRenderedElseWhere);
     ASSERT_TRUE(beingRenderedElseWhere == true);
     EXPECT_TRUE(nonRenderedRects.size() == 3);
-}
+} // TEST
 
-TEST(ImageKeyTest,Equality) {
+TEST(ImageKeyTest, Equality) {
     srand(2000);
     // coverity[dont_call]
     int randomHashKey1 = rand();
     SequenceTime time1 = 0;
     ViewIdx view1(0);
     double pa1 = 1.;
-    ImageKey key1(0,randomHashKey1, false, time1,view1,pa1, false, false);
+    ImageKey key1(0, randomHashKey1, false, time1, view1, pa1, false, false);
     U64 keyHash1 = key1.getHash();
 
 
@@ -125,19 +128,19 @@ TEST(ImageKeyTest,Equality) {
     SequenceTime time2 = time1;
     ViewIdx view2(view1);
     double pa2 = pa1;
-    ImageKey key2(0,randomHashKey2, false, time2,view2,pa2, false, false);
+    ImageKey key2(0, randomHashKey2, false, time2, view2, pa2, false, false);
     U64 keyHash2 = key2.getHash();
     ASSERT_TRUE(keyHash1 == keyHash2);
 }
 
-TEST(ImageKeyTest,Difference) {
+TEST(ImageKeyTest, Difference) {
     srand(2000);
     // coverity[dont_call]
     int randomHashKey1 = rand() % 100;
     SequenceTime time1 = 0;
     ViewIdx view1(0);
     double pa1 = 1.;
-    ImageKey key1(0,randomHashKey1,false, time1,view1,pa1, false, false);
+    ImageKey key1(0, randomHashKey1, false, time1, view1, pa1, false, false);
     U64 keyHash1 = key1.getHash();
 
 
@@ -147,7 +150,7 @@ TEST(ImageKeyTest,Difference) {
     SequenceTime time2 = time1;
     ViewIdx view2(view1);
     double pa2 = pa1;
-    ImageKey key2(0,randomHashKey2,false, time2,view2,pa2, false, false);
+    ImageKey key2(0, randomHashKey2, false, time2, view2, pa2, false, false);
     U64 keyHash2 = key2.getHash();
     ASSERT_TRUE(keyHash1 != keyHash2);
 }

@@ -63,7 +63,7 @@ NATRON_NAMESPACE_ENTER;
 struct RotoDrawableItemPrivate;
 class RotoDrawableItem
     : public RotoItem
-    , public CacheEntryHolder
+      , public CacheEntryHolder
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -78,13 +78,13 @@ public:
                      bool isStroke);
 
     virtual ~RotoDrawableItem();
-    
+
     void createNodes(bool connectNodes = true);
-    
+
     void setNodesThreadSafetyForRotopainting();
-    
+
     void incrementNodesAge();
-    
+
     void refreshNodesConnections();
 
     virtual void clone(const RotoItem*  other) OVERRIDE;
@@ -114,21 +114,21 @@ public:
      * @brief The opacity of the curve
      **/
     double getOpacity(double time) const;
-    void setOpacity(double o,double time);
+    void setOpacity(double o, double time);
 
     /**
      * @brief The distance of the feather is the distance from the control point to the feather point plus
      * the feather distance returned by this function.
      **/
     double getFeatherDistance(double time) const;
-    void setFeatherDistance(double d,double time);
+    void setFeatherDistance(double d, double time);
     int getNumKeyframesFeatherDistance() const;
 
     /**
      * @brief The fall-off rate: 0.5 means half color is faded at half distance.
      **/
     double getFeatherFallOff(double time) const;
-    void setFeatherFallOff(double f,double time);
+    void setFeatherFallOff(double f, double time);
 
     /**
      * @brief The color that the GUI should use to draw the overlay of the shape
@@ -136,11 +136,11 @@ public:
     void getOverlayColor(double* color) const;
     void setOverlayColor(const double* color);
     bool getInverted(double time) const;
-    void getColor(double time,double* color) const;
-    void setColor(double time,double r,double g,double b);
-    
+    void getColor(double time, double* color) const;
+    void setColor(double time, double r, double g, double b);
+
     int getCompositingOperator() const;
-    
+
     void setCompositingOperator(int op);
 
     std::string getCompositingOperatorToolTip() const;
@@ -170,34 +170,34 @@ public:
     boost::shared_ptr<KnobDouble> getShutterOffsetKnob() const;
     boost::shared_ptr<KnobDouble> getShutterKnob() const;
     boost::shared_ptr<KnobChoice> getShutterTypeKnob() const;
-    
+
     void setKeyframeOnAllTransformParameters(double time);
 
     const std::list<KnobPtr >& getKnobs() const;
-    
+
     KnobPtr getKnobByName(const std::string& name) const;
-    
+
     virtual RectD getBoundingBox(double time) const = 0;
 
-    void getTransformAtTime(double time,Transform::Matrix3x3* matrix) const;
-    
+    void getTransformAtTime(double time, Transform::Matrix3x3* matrix) const;
+
     /**
      * @brief Set the transform at the given time
      **/
     void setTransform(double time, double tx, double ty, double sx, double sy, double centerX, double centerY, double rot, double skewX, double skewY);
-    
+
     NodePtr getEffectNode() const;
     NodePtr getMergeNode() const;
     NodePtr getTimeOffsetNode() const;
     NodePtr getFrameHoldNode() const;
-    
+
     void resetNodesThreadSafety();
     void deactivateNodes();
     void activateNodes();
     void disconnectNodes();
 
     virtual std::string getCacheID() const OVERRIDE FINAL;
-    
+
     void resetTransformCenter();
 
     boost::shared_ptr<Image> renderMaskFromStroke(const ImageComponents& components,
@@ -207,9 +207,8 @@ public:
                                                   const unsigned int mipmapLevel,
                                                   const RectD& rotoNodeSrcRod);
 
-    
 private:
-    
+
     boost::shared_ptr<Image> renderMaskInternal(const RectI & roi,
                                                 const ImageComponents& components,
                                                 const double startTime,
@@ -219,38 +218,36 @@ private:
                                                 const bool inverted,
                                                 const ImageBitDepthEnum depth,
                                                 const unsigned int mipmapLevel,
-                                                const std::list<std::list<std::pair<Point,double> > >& strokes,
+                                                const std::list<std::list<std::pair<Point, double> > >& strokes,
                                                 const boost::shared_ptr<Image> &image);
-    
+
 Q_SIGNALS:
 
     void invertedStateChanged();
-    
+
     void overlayColorChanged();
 
     void shapeColorChanged();
 
-    void compositingOperatorChanged(ViewSpec,int,int);
+    void compositingOperatorChanged(ViewSpec, int, int);
 
 public Q_SLOTS:
-    
-    
-    void onRotoKnobChanged(ViewSpec, int,int);
-    
+
+
+    void onRotoKnobChanged(ViewSpec, int, int);
+
 protected:
-    
+
     void rotoKnobChanged(const KnobPtr& knob, ValueChangedReasonEnum reason);
-    
+
     virtual void onTransformSet(double /*time*/) {}
-    
+
     void addKnob(const KnobPtr& knob);
 
 private:
-    
-        
+
+
     RotoDrawableItem* findPreviousInHierarchy();
-
-
     boost::scoped_ptr<RotoDrawableItemPrivate> _imp;
 };
 

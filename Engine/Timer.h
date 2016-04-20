@@ -57,11 +57,11 @@ enum PlayStateEnum
     ePlayStatePause,
 };
 
-class Timer : public QObject
+class Timer
+    : public QObject
 {
-    
     Q_OBJECT
-    
+
 public:
 
     //------------
@@ -101,12 +101,11 @@ public:
     //-------------------
 
     PlayStateEnum playState;
-    
     static QString printAsTime(double timeInSeconds, bool clampToSecondsToInt);
-    
+
 Q_SIGNALS:
-    
-    void fpsChanged(double actualfps,double desiredfps);
+
+    void fpsChanged(double actualfps, double desiredfps);
 
 private:
 
@@ -118,7 +117,6 @@ private:
     timeval _lastFpsFrameTime;      // state to keep track of the
     int _framesSinceLastFpsFrame;       // actual frame rate, averaged
     double _actualFrameRate;         // over several frames
-    
     QMutex* _mutex; //< protects _spf and _actualFrameRate
 };
 
@@ -127,24 +125,25 @@ class TimeLapse
 {
     timeval prev;
     timeval constructorTime;
+
 public:
-    
+
     TimeLapse();
-    
+
     /**
      * @brief Returns the time elapsed in seconds since getTimeElapsedReset was last called. If getTimeElapsedReset has never been called
      * this will return the time since the object was instantiated.
      **/
     double getTimeElapsedReset();
-    
-    
+
+
     void reset();
-    
+
     /**
      * @brief Returns the time elapsed since this object was created.
      **/
     double getTimeSinceCreation() const;
-    
+
     ~TimeLapse();
 };
 
@@ -155,11 +154,11 @@ class TimeLapseReporter
 {
     timeval prev;
     std::string message;
-    
+
 public:
-    
+
     TimeLapseReporter(const std::string& message);
-    
+
     ~TimeLapseReporter();
 };
 

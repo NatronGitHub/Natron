@@ -72,9 +72,9 @@ public:
      * @brief Given the region of definition of an image, must return the portion of that image which is
      * actually displayed on the viewport. (It cannot be bigger than the rod)
      **/
-    virtual RectI getImageRectangleDisplayed(const RectI & pixelRod,const double par,unsigned int mipMapLevel) = 0;
-    virtual RectI getImageRectangleDisplayedRoundedToTileSize(const RectD & rod,const double par,unsigned int mipMapLevel) = 0;
-    virtual RectI getExactImageRectangleDisplayed(const RectD & rod,const double par,unsigned int mipMapLevel) = 0;
+    virtual RectI getImageRectangleDisplayed(const RectI & pixelRod, const double par, unsigned int mipMapLevel) = 0;
+    virtual RectI getImageRectangleDisplayedRoundedToTileSize(const RectD & rod, const double par, unsigned int mipMapLevel) = 0;
+    virtual RectI getExactImageRectangleDisplayed(const RectD & rod, const double par, unsigned int mipMapLevel) = 0;
 
     /**
      * @brief Must return the bit depth of the texture used to render. (Byte, half or float)
@@ -95,7 +95,7 @@ public:
      * @brief Should clear any partial texture overlayed previously transferred with transferBufferFromRAMtoGPU
      **/
     virtual void clearPartialUpdateTextures()  = 0;
-    
+
     /**
      * @brief This function must do the following:
      * 1) glMapBuffer to map a GPU buffer to the RAM
@@ -128,13 +128,13 @@ public:
      * @brief This function should update the color picker values (as a label or numbers) right away.
      * If x and y are INT_MAX then the viewer should just use the current position of the cursor.
      **/
-    virtual void updateColorPicker(int textureIndex,int x = INT_MAX,int y = INT_MAX) = 0;
+    virtual void updateColorPicker(int textureIndex, int x = INT_MAX, int y = INT_MAX) = 0;
 
     /**
      * @brief Must use OpenGL to query the texture color at the given image coordinates
      * X and Y are in canonical coordinates
      **/
-    virtual void getTextureColorAt(int x,int y,double* r,double *g,double *b,double *a) = 0;
+    virtual void getTextureColorAt(int x, int y, double* r, double *g, double *b, double *a) = 0;
 
     /**
      * @brief Make the OpenGL context current to the thread.
@@ -157,16 +157,16 @@ public:
      * @brief Must return the current view displayed if multi-view is enabled, 0 otherwise.
      **/
     virtual ViewIdx getCurrentView() const = 0;
-    
+
     /**
      * @brief Must return the time currently displayed
      **/
     virtual int getCurrentlyDisplayedTime() const = 0;
-    
+
     /**
      * @brief Get the viewer's timeline's range
      **/
-    virtual void getViewerFrameRange(int* first,int* last) const = 0;
+    virtual void getViewerFrameRange(int* first, int* last) const = 0;
 
     /**
      * @brief Must return the current compositing operator applied to the viewer input A and B.
@@ -177,32 +177,31 @@ public:
      * @brief Set the current compositing operator
      **/
     virtual void setCompositingOperator(ViewerCompositingOperatorEnum op) = 0;
-    
+
     /**
      * @brief Must return a pointer to the current timeline used by the Viewer
      **/
     virtual boost::shared_ptr<TimeLine> getTimeline() const = 0;
-    
+
     /**
      * @brief Must save all relevant OpenGL bits so that they can be restored as-is after the draw action of a plugin.
      **/
     virtual void saveOpenGLContext() = 0;
-    
+
     /**
      * @brief Must restore all OpenGL bits saved in saveOpenGLContext()
      **/
     virtual void restoreOpenGLContext() = 0;
-    
+
     /**
      * @brief Clears pointers to images that may be left
      **/
     virtual void clearLastRenderedImage() = 0;
-    
+
     /**
      *@brief To be called if redraw needs to  be called now without waiting the end of the event loop
      **/
     virtual void redrawNow() = 0;
-    
 };
 
 NATRON_NAMESPACE_EXIT;

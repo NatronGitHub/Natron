@@ -28,123 +28,156 @@
 
 NATRON_NAMESPACE_ENTER;
 
-namespace {
+
+NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 #ifdef __NATRON_OSX__
 
 /*
- Copied from Qt qcore_mac_p.h
- Helper class that automates refernce counting for CFtypes.
- After constructing the QCFType object, it can be copied like a
- value-based type.
+   Copied from Qt qcore_mac_p.h
+   Helper class that automates refernce counting for CFtypes.
+   After constructing the QCFType object, it can be copied like a
+   value-based type.
 
- Note that you must own the object you are wrapping.
- This is typically the case if you get the object from a Core
- Foundation function with the word "Create" or "Copy" in it. If
- you got the object from a "Get" function, either retain it or use
- constructFromGet(). One exception to this rule is the
- HIThemeGet*Shape functions, which in reality are "Copy" functions.
-*/
+   Note that you must own the object you are wrapping.
+   This is typically the case if you get the object from a Core
+   Foundation function with the word "Create" or "Copy" in it. If
+   you got the object from a "Get" function, either retain it or use
+   constructFromGet(). One exception to this rule is the
+   HIThemeGet*Shape functions, which in reality are "Copy" functions.
+ */
 template <typename T>
 class NatronCFType
 {
 public:
     inline NatronCFType(const T &t = 0) : type(t) {}
-    inline NatronCFType(const NatronCFType &helper) : type(helper.type) { if (type) CFRetain(type); }
-    inline ~NatronCFType() { if (type) CFRelease(type); }
+
+    inline NatronCFType(const NatronCFType &helper) : type(helper.type) { if (type) {CFRetain(type); }
+    }
+
+    inline ~NatronCFType() { if (type) {CFRelease(type); }
+    }
+
     inline operator T() { return type; }
+
     inline NatronCFType operator =(const NatronCFType &helper)
     {
-        if (helper.type)
+        if (helper.type) {
             CFRetain(helper.type);
+        }
         CFTypeRef type2 = type;
         type = helper.type;
-        if (type2)
+        if (type2) {
             CFRelease(type2);
+        }
+
         return *this;
     }
+
     inline T *operator&() { return &type; }
-    template <typename X> X as() const { return reinterpret_cast<X>(type); }
+
+    template <typename X>
+    X as() const { return reinterpret_cast<X>(type); }
+
     static NatronCFType constructFromGet(const T &t)
     {
         CFRetain(t);
+
         return NatronCFType<T>(t);
     }
+
 protected:
     T type;
 };
 
 
-class NatronCFString : public NatronCFType<CFStringRef>
+class NatronCFString
+    : public NatronCFType<CFStringRef>
 {
 public:
     inline NatronCFString(const QString &str) : NatronCFType<CFStringRef>(0), string(str) {}
+
     inline NatronCFString(const CFStringRef cfstr = 0) : NatronCFType<CFStringRef>(cfstr) {}
+
     inline NatronCFString(const NatronCFType<CFStringRef> &other) : NatronCFType<CFStringRef>(other) {}
+
     operator QString() const;
     operator CFStringRef() const;
     static QString toQString(CFStringRef cfstr);
     static CFStringRef toCFStringRef(const QString &str);
+
 private:
     QString string;
 };
 
-QString NatronCFString::toQString(CFStringRef str)
+QString
+NatronCFString::toQString(CFStringRef str)
 {
-    if (!str)
+    if (!str) {
         return QString();
+    }
 
     CFIndex length = CFStringGetLength(str);
-    if (length == 0)
+    if (length == 0) {
         return QString();
+    }
 
     QString string(length, Qt::Uninitialized);
-    CFStringGetCharacters(str, CFRangeMake(0, length), reinterpret_cast<UniChar *>(const_cast<QChar *>(string.unicode())));
+    CFStringGetCharacters( str, CFRangeMake(0, length), reinterpret_cast<UniChar *>( const_cast<QChar *>( string.unicode() ) ) );
 
     return string;
 } // toQString
 
 NatronCFString::operator QString() const
 {
-    if (string.isEmpty() && type)
+    if (string.isEmpty() && type) {
         const_cast<NatronCFString*>(this)->string = toQString(type);
+    }
+
     return string;
 }
 
-CFStringRef NatronCFString::toCFStringRef(const QString &string)
+CFStringRef
+NatronCFString::toCFStringRef(const QString &string)
 {
-    return CFStringCreateWithCharacters(0, reinterpret_cast<const UniChar *>(string.unicode()),
-                                        string.length());
+    return CFStringCreateWithCharacters( 0, reinterpret_cast<const UniChar *>( string.unicode() ),
+                                         string.length() );
 }
 
 NatronCFString::operator CFStringRef() const
 {
     if (!type) {
         const_cast<NatronCFString*>(this)->type =
-        CFStringCreateWithCharactersNoCopy(0,
-                                           reinterpret_cast<const UniChar *>(string.unicode()),
-                                           string.length(),
-                                           kCFAllocatorNull);
+            CFStringCreateWithCharactersNoCopy(0,
+                                               reinterpret_cast<const UniChar *>( string.unicode() ),
+                                               string.length(),
+                                               kCFAllocatorNull);
     }
+
     return type;
 }
 
-static QString applicationFileName()
+static QString
+applicationFileName()
 {
     static QString appFileName;
-    if (appFileName.isEmpty()) {
-        NatronCFType<CFURLRef> bundleURL(CFBundleCopyExecutableURL(CFBundleGetMainBundle()));
+
+    if ( appFileName.isEmpty() ) {
+        NatronCFType<CFURLRef> bundleURL( CFBundleCopyExecutableURL( CFBundleGetMainBundle() ) );
         if (bundleURL) {
-            NatronCFString cfPath(CFURLCopyFileSystemPath(bundleURL, kCFURLPOSIXPathStyle));
+            NatronCFString cfPath( CFURLCopyFileSystemPath(bundleURL, kCFURLPOSIXPathStyle) );
             if (cfPath) {
                 appFileName = cfPath;
             }
         }
     }
+
     return appFileName;
 }
+
 #elif defined(Q_OS_WIN)
-static QString applicationFileName()
+static QString
+applicationFileName()
 {
     // We do MAX_PATH + 2 here, and request with MAX_PATH + 1, so we can handle all paths
     // up to, and including MAX_PATH size perfectly fine with string termination, as well
@@ -158,12 +191,14 @@ static QString applicationFileName()
     // heap (even if the result _might_ be exactly MAX_PATH + 1, but that's ok).
     wchar_t buffer[MAX_PATH + 2];
     DWORD v = GetModuleFileNameW(0, buffer, MAX_PATH + 1);
+
     buffer[MAX_PATH + 1] = 0;
 
-    if (v == 0)
+    if (v == 0) {
         return QString();
-    else if (v <= MAX_PATH)
+    } else if (v <= MAX_PATH) {
         return QString::fromWCharArray(buffer);
+    }
 
     // MAX_PATH sized buffer wasn't large enough to contain the full path, use heap
     wchar_t *b = 0;
@@ -172,25 +207,30 @@ static QString applicationFileName()
     do {
         ++i;
         size = MAX_PATH * i;
-        b = reinterpret_cast<wchar_t *>(realloc(b, (size + 1) * sizeof(wchar_t)));
-        if (b)
+        b = reinterpret_cast<wchar_t *>( realloc( b, (size + 1) * sizeof(wchar_t) ) );
+        if (b) {
             v = GetModuleFileNameW(NULL, b, size);
+        }
     } while (b && v == size);
 
-    if (b)
+    if (b) {
         *(b + size) = 0;
+    }
     QString res = QString::fromWCharArray(b);
     free(b);
 
     return res;
 }
-#endif
+
+#endif // ifdef __NATRON_OSX__
 
 #ifdef Q_OS_UNIX
-static QString currentPath()
+static QString
+currentPath()
 {
     struct stat st;
     int statFailed = stat(".", &st);
+
     assert(!statFailed);
     if (!statFailed) {
 #if defined(__GLIBC__) && !defined(PATH_MAX)
@@ -198,51 +238,56 @@ static QString currentPath()
         if (currentName) {
             QString ret = QString::fromUtf8(currentName);
             ::free(currentName);
-            return ret;
 
+            return ret;
         }
 #else
-        char currentName[PATH_MAX+1];
-        if (::getcwd(currentName, PATH_MAX)) {
+        char currentName[PATH_MAX + 1];
+        if ( ::getcwd(currentName, PATH_MAX) ) {
             QString ret = QString::fromUtf8(currentName);
+
             return ret;
         }
 #endif
     }
+
     return QString();
 } // currentPath
+
 #endif
 
-static QString applicationFilePath_fromArgv(const char* argv0Param)
+static QString
+applicationFilePath_fromArgv(const char* argv0Param)
 {
 #if defined( Q_OS_UNIX )
     QString argv0 = QString::fromUtf8(argv0Param);
     QString absPath;
 
-    if (!argv0.isEmpty() && argv0.at(0) == QLatin1Char('/')) {
+    if ( !argv0.isEmpty() && ( argv0.at(0) == QLatin1Char('/') ) ) {
         /*
-         If argv0 starts with a slash, it is already an absolute
-         file path.
+           If argv0 starts with a slash, it is already an absolute
+           file path.
          */
         absPath = argv0;
-    } else if (argv0.contains(QLatin1Char('/'))) {
+    } else if ( argv0.contains( QLatin1Char('/') ) ) {
         /*
-         If argv0 contains one or more slashes, it is a file path
-         relative to the current directory.
+           If argv0 contains one or more slashes, it is a file path
+           relative to the current directory.
          */
         absPath = currentPath();
         absPath.append(argv0);
     } else {
         /*
-         Otherwise, the file path has to be determined using the
-         PATH environment variable.
+           Otherwise, the file path has to be determined using the
+           PATH environment variable.
          */
         QByteArray pEnv = qgetenv("PATH");
         QString currentDirPath = currentPath();
-        QStringList paths = QString::fromLocal8Bit(pEnv.constData()).split(QLatin1Char(':'));
+        QStringList paths = QString::fromLocal8Bit( pEnv.constData() ).split( QLatin1Char(':') );
         for (QStringList::const_iterator p = paths.constBegin(); p != paths.constEnd(); ++p) {
-            if ((*p).isEmpty())
+            if ( (*p).isEmpty() ) {
                 continue;
+            }
             QString candidate = currentDirPath;
             candidate.append(*p + QLatin1Char('/') + argv0);
 
@@ -250,7 +295,7 @@ static QString applicationFilePath_fromArgv(const char* argv0Param)
             if (stat(candidate.toStdString().c_str(), &_s) == -1) {
                 continue;
             }
-            if (S_ISDIR(_s.st_mode)) {
+            if ( S_ISDIR(_s.st_mode) ) {
                 continue;
             }
 
@@ -260,23 +305,25 @@ static QString applicationFilePath_fromArgv(const char* argv0Param)
     }
 
     absPath = QDir::cleanPath(absPath);
+
     return absPath;
 #endif
-
 } // applicationFilePath_fromArgv
 
-} // anon namespace
+NATRON_NAMESPACE_ANONYMOUS_EXIT
 
-QString ProcInfo::applicationFilePath(const char* argv0Param)
+
+QString
+ProcInfo::applicationFilePath(const char* argv0Param)
 {
-
 #if defined(Q_WS_WIN)
+
     //The only viable solution
     return applicationFileName();
 #elif defined(Q_WS_MAC)
     //First guess this way, then use the fallback solution
     QString appFile = applicationFileName();
-    if (!appFile.isEmpty()) {
+    if ( !appFile.isEmpty() ) {
         return appFile;
     } else {
         return applicationFilePath_fromArgv(argv0Param);
@@ -287,30 +334,34 @@ QString ProcInfo::applicationFilePath(const char* argv0Param)
     std::stringstream ss;
     ss << "/proc/" << getpid() << "/exe";
     std::string filename = ss.str();
-
     char buf[2048] = {0};
     ssize_t sizeofbuf = sizeof(char) * 2048;
     ssize_t size = readlink(filename.c_str(), buf, sizeofbuf);
-    if (size != 0 && size != sizeofbuf) {
+    if ( (size != 0) && (size != sizeofbuf) ) {
         //detected symlink
-        return QString::fromUtf8(QByteArray(buf));
+        return QString::fromUtf8( QByteArray(buf) );
     } else {
         return applicationFilePath_fromArgv(argv0Param);
     }
 #endif
 }
 
-QString ProcInfo::applicationDirPath(const char* argv0Param)
+QString
+ProcInfo::applicationDirPath(const char* argv0Param)
 {
     QString filePath = ProcInfo::applicationFilePath(argv0Param);
-    int foundSlash = filePath.lastIndexOf(QLatin1Char('/'));
+    int foundSlash = filePath.lastIndexOf( QLatin1Char('/') );
+
     if (foundSlash == -1) {
         return QString();
     }
+
     return filePath.mid(0, foundSlash);
 }
-    
-bool ProcInfo::checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/, Q_PID /*pid*/)
+
+bool
+ProcInfo::checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/,
+                                  Q_PID /*pid*/)
 {
     //Not working yet
     return true;
@@ -318,20 +369,21 @@ bool ProcInfo::checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/, 
 #ifdef __NATRON_WIN32__
     DWORD dwExitCode = 9999;
     //See https://login.live.com/login.srf?wa=wsignin1.0&rpsnv=12&checkda=1&ct=1451385015&rver=6.0.5276.0&wp=MCMBI&wlcxt=msdn%24msdn%24msdn&wreply=https%3a%2f%2fmsdn.microsoft.com%2fen-us%2flibrary%2fwindows%2fdesktop%2fms683189%2528v%3dvs.85%2529.aspx&lc=1033&id=254354&mkt=en-US
-    if (GetExitCodeProcess(pid, &dwExitCode)) {
+    if ( GetExitCodeProcess(pid, &dwExitCode) ) {
         if (dwExitCode == STILL_ACTIVE) {
             return true;
         }
+
         return false;
     } else {
         qDebug() << "Call to GetExitCodeProcess failed.";
+
         return false;
     }
 #elif defined(__NATRON_LINUX__)
     std::stringstream ss;
     ss << "/proc/" << (long)pid << "/stat";
     std::string procFile = ss.str();
-
     char buf[2048];
     std::size_t bufSize = sizeof(char) * 2048;
     if (readlink(procFile.c_str(), buf, bufSize) != -1) {
@@ -352,45 +404,46 @@ bool ProcInfo::checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/, 
         return false;
     }
 
-    char pname[512] = {0,};
+    char pname[512] = {0, };
     char state;
     //See http://man7.org/linux/man-pages/man5/proc.5.html
-    if ( (fscanf(fp, "%ld (%[^)]) %c", &pid, pname, &state)) != 3 ){
+    if ( ( fscanf(fp, "%ld (%[^)]) %c", &pid, pname, &state) ) != 3 ) {
         qDebug() << "ProcInfo::checkIfProcessIsRunning(): fscanf call on" << procFile << "failed";
         fclose(fp);
+
         return false;
     }
     //If the process is running, return true
     bool ret = state == 'R';
     fclose(fp);
+
     return ret;
 #elif defined(__NATRON_OSX__)
     //See https://developer.apple.com/legacy/library/qa/qa2001/qa1123.html
-    static const int    name[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, (int)pid };
+    static const int name[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, (int)pid };
     // Declaring name as const requires us to cast it when passing it to
     // sysctl because the prototype doesn't include the const modifier.
-
     struct kinfo_proc process;
     size_t procBufferSize = sizeof(process);
-    int err = sysctl( (int *)name, 4,NULL, &procBufferSize, NULL, 0);
-    if (err == 0 && procBufferSize != 0) {
- 
+    int err = sysctl( (int *)name, 4, NULL, &procBufferSize, NULL, 0 );
+    if ( (err == 0) && (procBufferSize != 0) ) {
         //Process exist and is running, now check that it's actual path is the given one
         char pathbuf[PROC_PIDPATHINFO_MAXSIZE];
-        if (proc_pidpath (pid, pathbuf, sizeof(pathbuf) > 0)) {
+        if ( proc_pidpath ( pid, pathbuf, (sizeof(pathbuf) > 0) ) ) {
             return !strcmp(pathbuf, processAbsoluteFilePath);
         }
-        
-        if (process.kp_proc.p_stat != SRUN && process.kp_proc.p_stat != SIDL) {
+
+        if ( (process.kp_proc.p_stat != SRUN) && (process.kp_proc.p_stat != SIDL) ) {
             //Process is not running
             return false;
         }
+
         return true;
-        
     }
+
     return false;
-#endif
-#endif
+#endif // ifdef __NATRON_WIN32__
+#endif // if 0
 } // ProcInfo::checkIfProcessIsRunning
 
 NATRON_NAMESPACE_EXIT;

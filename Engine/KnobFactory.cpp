@@ -60,17 +60,15 @@ KnobFactory::~KnobFactory()
     _loadedKnobs.clear();
 }
 
-
-
 template<typename K>
-static std::pair<std::string,LibraryBinary *>
+static std::pair<std::string, LibraryBinary *>
 knobFactoryEntry()
 {
     std::string stub;
     //boost::shared_ptr<KnobHelper> knob( K::BuildKnob(NULL, stub, 1) );
-    std::map<std::string, void(*)()> functions;
+    std::map<std::string, void (*)()> functions;
 
-    functions.insert( std::make_pair("BuildKnob", (void(*)())&K::BuildKnob) );
+    functions.insert( std::make_pair("BuildKnob", ( void (*)() ) & K::BuildKnob) );
     LibraryBinary *knobPlugin = new LibraryBinary(functions);
 
     return make_pair(K::typeNameStatic(), knobPlugin);

@@ -53,7 +53,6 @@ serialize(Archive & ar,
           NATRON_NAMESPACE::TextureRect &t,
           const unsigned int /*version*/)
 {
-
     ar & t.x1 & t.x2 & t.y1 & t.y2 & t.w & t.h & t.closestPo2;
     //if (version >= TEXTURE_RECT_SERIALIZATION_INTRODUCES_PAR) {
     ar & t.par;

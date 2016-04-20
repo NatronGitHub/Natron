@@ -63,27 +63,26 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER;
 
 
+NATRON_NAMESPACE_ANONYMOUS_ENTER
 
-namespace {
-    class MetaTypesRegistration
+class MetaTypesRegistration
+{
+public:
+    inline MetaTypesRegistration()
     {
-    public:
-        inline MetaTypesRegistration()
-        {
-            qRegisterMetaType<ProgressTaskInfoPtr>("ProgressTaskInfoPtr");
-        }
-    };
-}
-static MetaTypesRegistration registration;
+        qRegisterMetaType<ProgressTaskInfoPtr>("ProgressTaskInfoPtr");
+    }
+};
 
-struct ProgressTaskInfoPrivate {
-    
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
+
+static MetaTypesRegistration registration;
+struct ProgressTaskInfoPrivate
+{
     ProgressPanel* panel;
-    
     NodeWPtr node;
-    
     ProgressTaskInfo* _publicInterface;
-    
     TableItem* nameItem;
     TableItem* progressItem;
     TableItem* statusItem;
@@ -91,120 +90,101 @@ struct ProgressTaskInfoPrivate {
     TableItem* timeRemainingItem;
     TableItem* taskInfoItem;
     TableItem* frameRangeItem;
-    
     ProgressTaskInfo::ProgressTaskStatusEnum status;
-    
     QProgressBar* progressBar;
     double progressPercent;
     QWidget* controlsButtonsContainer;
     Button* restartTasksButton;
     Button* pauseTasksButton;
     Button* cancelTasksButton;
-    
     double timeRemaining;
-    
     bool canBePaused;
-    
     mutable QMutex canceledMutex;
     bool canceled;
-    
     bool canCancel;
-    
     bool updatedProgressOnce;
-    
-    int firstFrame,lastFrame,frameStep, lastRenderedFrame, nFramesRendered;
-    
+    int firstFrame, lastFrame, frameStep, lastRenderedFrame, nFramesRendered;
     boost::scoped_ptr<TimeLapse> timer;
-    
     boost::scoped_ptr<QTimer> refreshLabelTimer;
-    
     QString message;
-    
     boost::shared_ptr<ProcessHandler> process;
-    
+
     ProgressTaskInfoPrivate(ProgressPanel* panel,
-                    const NodePtr& node,
-                    ProgressTaskInfo* publicInterface,
-                    const int firstFrame,
-                    const int lastFrame,
-                    const int frameStep,
-                    const bool canPause,
-                    const bool canCancel,
-                    const QString& message,
-                    const boost::shared_ptr<ProcessHandler>& process)
-    : panel(panel)
-    , node(node)
-    , _publicInterface(publicInterface)
-    , nameItem(0)
-    , progressItem(0)
-    , statusItem(0)
-    , controlsItem(0)
-    , timeRemainingItem(0)
-    , taskInfoItem(0)
-    , frameRangeItem(0)
-    , status(ProgressTaskInfo::eProgressTaskStatusQueued)
-    , progressBar(0)
-    , progressPercent(0)
-    , controlsButtonsContainer(0)
-    , restartTasksButton(0)
-    , pauseTasksButton(0)
-    , cancelTasksButton(0)
-    , timeRemaining(-1)
-    , canBePaused(canPause)
-    , canceledMutex()
-    , canceled(false)
-    , canCancel(canCancel)
-    , updatedProgressOnce(false)
-    , firstFrame(firstFrame)
-    , lastFrame(lastFrame)
-    , frameStep(frameStep)
-    , lastRenderedFrame(-1)
-    , nFramesRendered(0)
-    , timer()
-    , refreshLabelTimer()
-    , message(message)
-    , process(process)
+                            const NodePtr& node,
+                            ProgressTaskInfo* publicInterface,
+                            const int firstFrame,
+                            const int lastFrame,
+                            const int frameStep,
+                            const bool canPause,
+                            const bool canCancel,
+                            const QString& message,
+                            const boost::shared_ptr<ProcessHandler>& process)
+        : panel(panel)
+        , node(node)
+        , _publicInterface(publicInterface)
+        , nameItem(0)
+        , progressItem(0)
+        , statusItem(0)
+        , controlsItem(0)
+        , timeRemainingItem(0)
+        , taskInfoItem(0)
+        , frameRangeItem(0)
+        , status(ProgressTaskInfo::eProgressTaskStatusQueued)
+        , progressBar(0)
+        , progressPercent(0)
+        , controlsButtonsContainer(0)
+        , restartTasksButton(0)
+        , pauseTasksButton(0)
+        , cancelTasksButton(0)
+        , timeRemaining(-1)
+        , canBePaused(canPause)
+        , canceledMutex()
+        , canceled(false)
+        , canCancel(canCancel)
+        , updatedProgressOnce(false)
+        , firstFrame(firstFrame)
+        , lastFrame(lastFrame)
+        , frameStep(frameStep)
+        , lastRenderedFrame(-1)
+        , nFramesRendered(0)
+        , timer()
+        , refreshLabelTimer()
+        , message(message)
+        , process(process)
     {
-        
     }
-    
+
     NodePtr getNode() const
     {
         return node.lock();
     }
-    
+
     void createItems();
-    
+
     void refreshButtons();
-    
 };
 
 ProgressTaskInfo::ProgressTaskInfo(ProgressPanel* panel,
-                   const NodePtr& node,
-                   const int firstFrame,
-                   const int lastFrame,
-                   const int frameStep,
-                   const bool canPause,
-                   const bool canCancel,
-                   const QString& message,
-                   const boost::shared_ptr<ProcessHandler>& process)
-: QObject()
-, _imp(new ProgressTaskInfoPrivate(panel,node, this, firstFrame, lastFrame, frameStep, canPause, canCancel, message, process))
+                                   const NodePtr& node,
+                                   const int firstFrame,
+                                   const int lastFrame,
+                                   const int frameStep,
+                                   const bool canPause,
+                                   const bool canCancel,
+                                   const QString& message,
+                                   const boost::shared_ptr<ProcessHandler>& process)
+    : QObject()
+    , _imp( new ProgressTaskInfoPrivate(panel, node, this, firstFrame, lastFrame, frameStep, canPause, canCancel, message, process) )
 {
-    
-    
     //We compute the time remaining automatically based on a timer if this is not a render but a general progress dialog
     _imp->timer.reset(new TimeLapse);
     _imp->refreshLabelTimer.reset(new QTimer);
-    QObject::connect(_imp->refreshLabelTimer.get(), SIGNAL(timeout()), this, SLOT(onRefreshLabelTimeout()));
+    QObject::connect( _imp->refreshLabelTimer.get(), SIGNAL(timeout()), this, SLOT(onRefreshLabelTimeout()) );
     _imp->refreshLabelTimer->start(NATRON_PROGRESS_DIALOG_ETA_REFRESH_MS);
-
-    
 }
 
 ProgressTaskInfo::~ProgressTaskInfo()
 {
-    
 }
 
 ProgressTaskInfo::ProgressTaskStatusEnum
@@ -214,17 +194,18 @@ ProgressTaskInfo::getStatus() const
 }
 
 void
-ProgressTaskInfo::cancelTask(bool calledFromRenderEngine, int retCode)
+ProgressTaskInfo::cancelTask(bool calledFromRenderEngine,
+                             int retCode)
 {
     if (_imp->refreshLabelTimer) {
         _imp->refreshLabelTimer->stop();
     }
-    
+
     if (calledFromRenderEngine) {
         _imp->panel->getGui()->ensureProgressPanelVisible();
         _imp->panel->onLastTaskAddedFinished(this);
     }
-    
+
     {
         QMutexLocker k(&_imp->canceledMutex);
         if (_imp->canceled) {
@@ -233,50 +214,48 @@ ProgressTaskInfo::cancelTask(bool calledFromRenderEngine, int retCode)
         _imp->canceled = true;
     }
     if (_imp->timeRemainingItem) {
-        _imp->timeRemainingItem->setText(tr("N/A"));
+        _imp->timeRemainingItem->setText( tr("N/A") );
     }
     if (_imp->statusItem) {
         if (!calledFromRenderEngine) {
-            _imp->statusItem->setTextColor(QColor(243,147,0));
+            _imp->statusItem->setTextColor( QColor(243, 147, 0) );
             if (_imp->canBePaused) {
-                _imp->statusItem->setText(tr("Paused"));
+                _imp->statusItem->setText( tr("Paused") );
                 _imp->status = eProgressTaskStatusPaused;
             } else {
-                _imp->statusItem->setText(tr("Canceled"));
+                _imp->statusItem->setText( tr("Canceled") );
                 _imp->status = eProgressTaskStatusCanceled;
             }
         } else {
             if (retCode == 0) {
                 _imp->statusItem->setTextColor(Qt::black);
-                _imp->statusItem->setText(tr("Finished"));
+                _imp->statusItem->setText( tr("Finished") );
                 _imp->status = eProgressTaskStatusFinished;
                 if (_imp->progressBar) {
                     _imp->progressBar->setValue(100);
                 }
             } else {
                 _imp->statusItem->setTextColor(Qt::red);
-                _imp->statusItem->setText(tr("Failed"));
+                _imp->statusItem->setText( tr("Failed") );
                 _imp->status = eProgressTaskStatusFinished;
             }
-            
         }
         _imp->refreshButtons();
     }
     NodePtr node = getNode();
-    OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>(node->getEffectInstance().get());
+    OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>( node->getEffectInstance().get() );
     node->getApp()->removeRenderFromQueue(effect);
-    if ((_imp->panel->isRemoveTasksAfterFinishChecked() && retCode == 0) || (!_imp->canBePaused && !calledFromRenderEngine)) {
-        _imp->panel->removeTaskFromTable(shared_from_this());
+    if ( ( _imp->panel->isRemoveTasksAfterFinishChecked() && (retCode == 0) ) || (!_imp->canBePaused && !calledFromRenderEngine) ) {
+        _imp->panel->removeTaskFromTable( shared_from_this() );
     }
     if (!calledFromRenderEngine) {
         Q_EMIT taskCanceled();
     }
-}
+} // ProgressTaskInfo::cancelTask
 
 void
 ProgressTaskInfo::restartTask()
 {
-   
     {
         QMutexLocker k(&_imp->canceledMutex);
         _imp->canceled = false;
@@ -284,43 +263,43 @@ ProgressTaskInfo::restartTask()
     _imp->updatedProgressOnce = false;
     _imp->timer.reset(new TimeLapse);
     _imp->refreshLabelTimer->start(NATRON_PROGRESS_DIALOG_ETA_REFRESH_MS);
-    
+
     _imp->pauseTasksButton->setEnabled(true);
     _imp->restartTasksButton->setEnabled(false);
-    
-    
+
+
     NodePtr node = _imp->getNode();
-    if (node->getEffectInstance()->isOutput()) {
+    if ( node->getEffectInstance()->isOutput() ) {
         int firstFrame;
-        if (_imp->lastRenderedFrame == _imp->lastFrame || _imp->lastRenderedFrame == -1) {
+        if ( (_imp->lastRenderedFrame == _imp->lastFrame) || (_imp->lastRenderedFrame == -1) ) {
             firstFrame = _imp->firstFrame;
             _imp->nFramesRendered = 0;
         } else {
             firstFrame =  _imp->lastRenderedFrame;
         }
-        AppInstance::RenderWork w(dynamic_cast<OutputEffectInstance*>(node->getEffectInstance().get()),
-                                  firstFrame,
-                                  _imp->lastFrame,
-                                  _imp->frameStep,
-                                  node->getApp()->isRenderStatsActionChecked());
+        AppInstance::RenderWork w( dynamic_cast<OutputEffectInstance*>( node->getEffectInstance().get() ),
+                                   firstFrame,
+                                   _imp->lastFrame,
+                                   _imp->frameStep,
+                                   node->getApp()->isRenderStatsActionChecked() );
         w.isRestart = true;
         _imp->statusItem->setTextColor(Qt::yellow);
         _imp->status = eProgressTaskStatusQueued;
-        _imp->statusItem->setText(tr("Queued"));
+        _imp->statusItem->setText( tr("Queued") );
         _imp->refreshButtons();
         std::list<AppInstance::RenderWork> works;
         works.push_back(w);
         node->getApp()->startWritersRendering(false, works);
-        
     }
 }
 
-
 void
-ProgressTaskInfo::onRenderEngineFrameComputed(int frame,  double progress)
+ProgressTaskInfo::onRenderEngineFrameComputed(int frame,
+                                              double progress)
 {
-    RenderEngine* r = qobject_cast<RenderEngine*>(sender());
-    ProcessHandler* process = qobject_cast<ProcessHandler*>(sender());
+    RenderEngine* r = qobject_cast<RenderEngine*>( sender() );
+    ProcessHandler* process = qobject_cast<ProcessHandler*>( sender() );
+
     if (!r && !process) {
         return;
     }
@@ -329,14 +308,14 @@ ProgressTaskInfo::onRenderEngineFrameComputed(int frame,  double progress)
         return;
     }
     updateProgress(frame, progress);
-    
 }
 
 void
 ProgressTaskInfo::onRenderEngineStopped(int retCode)
 {
-    RenderEngine* r = qobject_cast<RenderEngine*>(sender());
-    ProcessHandler* process = qobject_cast<ProcessHandler*>(sender());
+    RenderEngine* r = qobject_cast<RenderEngine*>( sender() );
+    ProcessHandler* process = qobject_cast<ProcessHandler*>( sender() );
+
     if (!r && !process) {
         return;
     }
@@ -344,12 +323,11 @@ ProgressTaskInfo::onRenderEngineStopped(int retCode)
     if (!output) {
         return;
     }
-    
+
     //Hold a shared ptr because removeTasksFromTable would remove the last ref otherwise
     ProgressTaskInfoPtr thisShared = shared_from_this();
 
     cancelTask(true, retCode);
-    
 }
 
 void
@@ -371,8 +349,6 @@ ProgressTaskInfo::clearItems()
     _imp->frameRangeItem = 0;
 }
 
-
-
 NodePtr
 ProgressTaskInfo::getNode() const
 {
@@ -389,6 +365,7 @@ bool
 ProgressTaskInfo::wasCanceled() const
 {
     QMutexLocker k(&_imp->canceledMutex);
+
     return _imp->canceled;
 }
 
@@ -402,12 +379,13 @@ void
 ProgressTaskInfo::onRefreshLabelTimeout()
 {
     if (!_imp->timeRemainingItem) {
-        if (!_imp->canBePaused && wasCanceled()) {
+        if ( !_imp->canBePaused && wasCanceled() ) {
             return;
         }
+
         /*if ((_imp->timer->getTimeSinceCreation() * 1000) > NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS) {
             _imp->createItems();
-        }*/
+           }*/
         return;
     }
     QString timeStr;
@@ -433,13 +411,12 @@ ProgressTaskInfoPrivate::createItems()
     }
     NodePtr node = getNode();
     boost::shared_ptr<NodeGuiI> gui_i = node->getNodeGui();
-    NodeGui* nodeUI = dynamic_cast<NodeGui*>(gui_i.get());
-    
+    NodeGui* nodeUI = dynamic_cast<NodeGui*>( gui_i.get() );
     QColor color;
     if (nodeUI) {
-        double r,g,b;
+        double r, g, b;
         nodeUI->getColor(&r, &g, &b);
-        color.setRgbF(Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.));
+        color.setRgbF( Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.) );
     }
     _publicInterface->createCellWidgets();
     {
@@ -450,7 +427,7 @@ ProgressTaskInfoPrivate::createItems()
             item->setTextColor(Qt::black);
             item->setBackgroundColor(color);
         }
-        item->setText(QString::fromUtf8(node->getLabel().c_str()));
+        item->setText( QString::fromUtf8( node->getLabel().c_str() ) );
         nameItem = item;
     }
     {
@@ -464,7 +441,7 @@ ProgressTaskInfoPrivate::createItems()
         item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         assert(item);
         item->setTextColor(Qt::yellow);
-        item->setText(QObject::tr("Queued"));
+        item->setText( QObject::tr("Queued") );
         statusItem = item;
     }
     {
@@ -472,30 +449,30 @@ ProgressTaskInfoPrivate::createItems()
         item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         assert(item);
         if (nodeUI) {
-            item->setIcon(QIcon());
+            item->setIcon( QIcon() );
         }
-        item->setText(canBePaused ? QObject::tr("Yes"):QObject::tr("No"));
+        item->setText( canBePaused ? QObject::tr("Yes") : QObject::tr("No") );
         controlsItem = item;
     }
     {
         TableItem* item = new TableItem;
         item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         assert(item);
-        item->setText(QObject::tr("N/A"));
+        item->setText( QObject::tr("N/A") );
         timeRemainingItem = item;
     }
     {
         TableItem* item = new TableItem;
         item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         assert(item);
-        if (getNode()->getEffectInstance()->isOutput()) {
+        if ( getNode()->getEffectInstance()->isOutput() ) {
             QString frames;
-            frames.append(QString::number(firstFrame));
-            frames.append(QObject::tr("-"));
-            frames.append(QString::number(lastFrame));
+            frames.append( QString::number(firstFrame) );
+            frames.append( QObject::tr("-") );
+            frames.append( QString::number(lastFrame) );
             item->setText(frames);
         } else {
-            item->setText(QObject::tr("N/A"));
+            item->setText( QObject::tr("N/A") );
         }
         frameRangeItem = item;
     }
@@ -506,52 +483,52 @@ ProgressTaskInfoPrivate::createItems()
         item->setText(message);
         taskInfoItem = item;
     }
-    panel->addTaskToTable(_publicInterface->shared_from_this());
-}
+    panel->addTaskToTable( _publicInterface->shared_from_this() );
+} // ProgressTaskInfoPrivate::createItems
 
 void
-ProgressTaskInfo::updateProgressBar(double totalProgress,double subTaskProgress)
+ProgressTaskInfo::updateProgressBar(double totalProgress,
+                                    double subTaskProgress)
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     totalProgress = std::max(std::min(totalProgress, 1.), 0.);
     subTaskProgress = std::max(std::min(subTaskProgress, 1.), 0.);
-    
+
     _imp->progressPercent = totalProgress * 100.;
     if (_imp->progressBar) {
         _imp->progressBar->setValue(_imp->progressPercent);
     }
-    
-    
+
+
     double timeElapsedSecs = _imp->timer->getTimeSinceCreation();
     _imp->timeRemaining = subTaskProgress == 0 ? 0 : timeElapsedSecs * (1. - subTaskProgress) / subTaskProgress;
-    
-    if (!_imp->nameItem && !wasCanceled()) {
-        
+
+    if ( !_imp->nameItem && !wasCanceled() ) {
         ///Show the item if the total estimated time is gt NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS
         //double totalTime = subTaskProgress == 0 ? 0 : timeElapsedSecs * 1. / subTaskProgress;
-        
+
         // If we estimate that the task will be longer than NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS and it has been
         // NATRON_PROGRESS_DIALOG_ETA_REFRESH_MS elapsed, show it
-        if (_imp->timeRemaining * 1000 > NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS &&
-            timeElapsedSecs * 1000 > NATRON_PROGRESS_DIALOG_ETA_REFRESH_MS) {
+        if ( (_imp->timeRemaining * 1000 > NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS) &&
+             ( timeElapsedSecs * 1000 > NATRON_PROGRESS_DIALOG_ETA_REFRESH_MS) ) {
             _imp->createItems();
             _imp->panel->onShowProgressPanelTimerTriggered();
         }
     }
-    
+
     if (!_imp->updatedProgressOnce && _imp->statusItem) {
         _imp->updatedProgressOnce = true;
         _imp->statusItem->setTextColor(Qt::green);
         _imp->status = eProgressTaskStatusRunning;
-        _imp->statusItem->setText(tr("Running"));
+        _imp->statusItem->setText( tr("Running") );
         _imp->refreshButtons();
     }
 }
 
 void
-ProgressTaskInfo::updateProgress(const int frame, double progress)
+ProgressTaskInfo::updateProgress(const int frame,
+                                 double progress)
 {
-    
     ++_imp->nFramesRendered;
     U64 totalFrames = (double)(_imp->lastFrame - _imp->firstFrame + 1) / _imp->frameStep;
     double percent = 0;
@@ -560,7 +537,6 @@ ProgressTaskInfo::updateProgress(const int frame, double progress)
     }
     _imp->lastRenderedFrame = frame;
     updateProgressBar(percent, progress);
-    
 }
 
 void
@@ -576,14 +552,16 @@ ProgressTaskInfo::getTableItems(std::vector<TableItem*>* items) const
 }
 
 void
-ProgressTaskInfo::setCellWidgets(int row, TableView* view)
+ProgressTaskInfo::setCellWidgets(int row,
+                                 TableView* view)
 {
     view->setCellWidget(row, COL_PROGRESS, _imp->progressBar);
     view->setCellWidget(row, COL_CONTROLS, _imp->controlsButtonsContainer);
 }
 
 void
-ProgressTaskInfo::removeCellWidgets(int row, TableView* view)
+ProgressTaskInfo::removeCellWidgets(int row,
+                                    TableView* view)
 {
     view->removeCellWidget(row, COL_PROGRESS);
     view->removeCellWidget(row, COL_CONTROLS);
@@ -605,50 +583,47 @@ ProgressTaskInfo::createCellWidgets()
     layout->setSpacing(0);
 
     int medSizeIcon = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
-    
-    QPixmap restartPix,pauseOnPix, pauseOffPix, clearTasksPix;
+    QPixmap restartPix, pauseOnPix, pauseOffPix, clearTasksPix;
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_DISABLED, medSizeIcon, &restartPix);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_STOP_DISABLED, medSizeIcon, &clearTasksPix);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_PAUSE_ENABLED, medSizeIcon, &pauseOnPix);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_PAUSE_DISABLED, medSizeIcon, &pauseOffPix);
-    
-    const QSize medButtonIconSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE),TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
-    const QSize medButtonSize(TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE),TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
-    
+
+    const QSize medButtonIconSize( TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE) );
+    const QSize medButtonSize( TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
     QIcon pauseIc;
     pauseIc.addPixmap(pauseOnPix, QIcon::Normal, QIcon::On);
     pauseIc.addPixmap(pauseOffPix, QIcon::Normal, QIcon::Off);
-    _imp->pauseTasksButton = new Button(pauseIc,QString(),_imp->controlsButtonsContainer);
+    _imp->pauseTasksButton = new Button(pauseIc, QString(), _imp->controlsButtonsContainer);
     _imp->pauseTasksButton->setFixedSize(medButtonSize);
     _imp->pauseTasksButton->setIconSize(medButtonIconSize);
     _imp->pauseTasksButton->setFocusPolicy(Qt::NoFocus);
-    _imp->pauseTasksButton->setToolTip(GuiUtils::convertFromPlainText(tr("Pause the task. Tasks that can be paused "
-                                                                         "may be restarted with the restart button."), Qt::WhiteSpaceNormal));
-    QObject::connect(_imp->pauseTasksButton, SIGNAL(clicked(bool)), this, SLOT(onPauseTriggered()));
+    _imp->pauseTasksButton->setToolTip( GuiUtils::convertFromPlainText(tr("Pause the task. Tasks that can be paused "
+                                                                          "may be restarted with the restart button."), Qt::WhiteSpaceNormal) );
+    QObject::connect( _imp->pauseTasksButton, SIGNAL(clicked(bool)), this, SLOT(onPauseTriggered()) );
     _imp->pauseTasksButton->setEnabled(_imp->canBePaused);
     layout->addWidget(_imp->pauseTasksButton);
-    
-    _imp->restartTasksButton = new Button(QIcon(restartPix),QString(),_imp->controlsButtonsContainer);
+
+    _imp->restartTasksButton = new Button(QIcon(restartPix), QString(), _imp->controlsButtonsContainer);
     _imp->restartTasksButton->setFixedSize(medButtonSize);
     _imp->restartTasksButton->setIconSize(medButtonIconSize);
     _imp->restartTasksButton->setFocusPolicy(Qt::NoFocus);
-    _imp->restartTasksButton->setToolTip(GuiUtils::convertFromPlainText(tr("Restart task"), Qt::WhiteSpaceNormal));
-    QObject::connect(_imp->restartTasksButton, SIGNAL(clicked(bool)), this, SLOT(onRestartTriggered()));
+    _imp->restartTasksButton->setToolTip( GuiUtils::convertFromPlainText(tr("Restart task"), Qt::WhiteSpaceNormal) );
+    QObject::connect( _imp->restartTasksButton, SIGNAL(clicked(bool)), this, SLOT(onRestartTriggered()) );
     _imp->restartTasksButton->setEnabled(false);
     layout->addWidget(_imp->restartTasksButton);
-    
-    
-    
-    _imp->cancelTasksButton = new Button(QIcon(clearTasksPix),QString(),_imp->controlsButtonsContainer);
+
+
+    _imp->cancelTasksButton = new Button(QIcon(clearTasksPix), QString(), _imp->controlsButtonsContainer);
     _imp->cancelTasksButton->setFixedSize(medButtonSize);
     _imp->cancelTasksButton->setIconSize(medButtonIconSize);
     _imp->cancelTasksButton->setFocusPolicy(Qt::NoFocus);
-    _imp->cancelTasksButton->setToolTip(GuiUtils::convertFromPlainText(tr("Cancel and remove the task from the list"), Qt::WhiteSpaceNormal));
-    QObject::connect(_imp->cancelTasksButton, SIGNAL(clicked(bool)), this, SLOT(onCancelTriggered()));
+    _imp->cancelTasksButton->setToolTip( GuiUtils::convertFromPlainText(tr("Cancel and remove the task from the list"), Qt::WhiteSpaceNormal) );
+    QObject::connect( _imp->cancelTasksButton, SIGNAL(clicked(bool)), this, SLOT(onCancelTriggered()) );
     layout->addWidget(_imp->cancelTasksButton);
 
     _imp->refreshButtons();
-}
+} // ProgressTaskInfo::createCellWidgets
 
 void
 ProgressTaskInfo::setProcesshandler(const boost::shared_ptr<ProcessHandler>& process)
@@ -669,6 +644,7 @@ void
 ProgressTaskInfo::onCancelTriggered()
 {
     boost::shared_ptr<ProgressTaskInfo> thisShared = shared_from_this();
+
     cancelTask(false, 0);
     _imp->panel->removeTaskFromTable(thisShared);
 }
@@ -676,46 +652,45 @@ ProgressTaskInfo::onCancelTriggered()
 void
 ProgressTaskInfo::onRestartTriggered()
 {
-  
-    if (wasCanceled()) {
+    if ( wasCanceled() ) {
         restartTask();
     }
-
 }
 
 void
 ProgressTaskInfoPrivate::refreshButtons()
 {
     switch (status) {
-        case ProgressTaskInfo::eProgressTaskStatusRunning:
-            pauseTasksButton->setEnabled(canBePaused);
-            restartTasksButton->setEnabled(false);
-            break;
-        case ProgressTaskInfo::eProgressTaskStatusQueued:
-            pauseTasksButton->setEnabled(false);
-            restartTasksButton->setEnabled(false);
-            break;
-        case ProgressTaskInfo::eProgressTaskStatusFinished: {
-            pauseTasksButton->setEnabled(false);
-            NodePtr node = getNode();
-            EffectInstPtr effect;
-            if (node) {
-                effect = node->getEffectInstance();
-            }
-            if (effect) {
-                restartTasksButton->setEnabled(effect->isOutput());
-            }
-        }   break;
-        case ProgressTaskInfo::eProgressTaskStatusCanceled:
-            pauseTasksButton->setEnabled(false);
-            restartTasksButton->setEnabled(false);
-            break;
-        case ProgressTaskInfo::eProgressTaskStatusPaused:
-            pauseTasksButton->setEnabled(false);
-            restartTasksButton->setEnabled(canBePaused);
-            break;
-        default:
-            break;
+    case ProgressTaskInfo::eProgressTaskStatusRunning:
+        pauseTasksButton->setEnabled(canBePaused);
+        restartTasksButton->setEnabled(false);
+        break;
+    case ProgressTaskInfo::eProgressTaskStatusQueued:
+        pauseTasksButton->setEnabled(false);
+        restartTasksButton->setEnabled(false);
+        break;
+    case ProgressTaskInfo::eProgressTaskStatusFinished: {
+        pauseTasksButton->setEnabled(false);
+        NodePtr node = getNode();
+        EffectInstPtr effect;
+        if (node) {
+            effect = node->getEffectInstance();
+        }
+        if (effect) {
+            restartTasksButton->setEnabled( effect->isOutput() );
+        }
+    }
+    break;
+    case ProgressTaskInfo::eProgressTaskStatusCanceled:
+        pauseTasksButton->setEnabled(false);
+        restartTasksButton->setEnabled(false);
+        break;
+    case ProgressTaskInfo::eProgressTaskStatusPaused:
+        pauseTasksButton->setEnabled(false);
+        restartTasksButton->setEnabled(canBePaused);
+        break;
+    default:
+        break;
     }
 }
 

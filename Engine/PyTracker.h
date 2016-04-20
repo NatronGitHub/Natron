@@ -43,51 +43,51 @@ NATRON_PYTHON_NAMESPACE_ENTER;
 class Track
 {
 public:
-    
+
     Track(const boost::shared_ptr<TrackMarker>& marker);
-    
+
     ~Track();
-    
+
     boost::shared_ptr<TrackMarker> getInternalMarker() const
     {
         return _marker;
     }
-    
+
     void setScriptName(const QString& scriptName);
     QString getScriptName() const;
-    
+
     Param* getParam(const QString& scriptName) const;
-    
+
     void reset();
-    
+
 private:
-    
+
     boost::shared_ptr<TrackMarker> _marker;
 };
 
 class Tracker
 {
 public:
-    
+
     Tracker(const boost::shared_ptr<TrackerContext>& ctx);
-    
+
     ~Tracker();
-    
+
     Track* getTrackByName(const QString& name) const;
-    
+
     void getAllTracks(std::list<Track*>* markers) const;
-    
+
     void getSelectedTracks(std::list<Track*>* markers) const;
 
     void startTracking(const std::list<Track*>& marks,
                        int start,
                        int end,
                        bool forward);
-    
+
     void stopTracking();
-    
+
 private:
-    
+
     boost::shared_ptr<TrackerContext> _ctx;
 };
 

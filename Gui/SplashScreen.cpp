@@ -38,28 +38,28 @@ CLANG_DIAG_ON(deprecated)
 NATRON_NAMESPACE_ENTER;
 
 SplashScreen::SplashScreen(const QString & filePath)
-    : QWidget(0,Qt::ToolTip | Qt::FramelessWindowHint | Qt::X11BypassWindowManagerHint)
-      , _pixmap()
-      , _text()
-      , _versionString()
+    : QWidget(0, Qt::ToolTip | Qt::FramelessWindowHint | Qt::X11BypassWindowManagerHint)
+    , _pixmap()
+    , _text()
+    , _versionString()
 {
     QString customBuildString = QString::fromUtf8(NATRON_CUSTOM_BUILD_USER_NAME);
-    
-    if (customBuildString.isEmpty()) {
+
+    if ( customBuildString.isEmpty() ) {
         QString buildNo;
-        if (QString::fromUtf8(NATRON_DEVELOPMENT_STATUS) == QString::fromUtf8(NATRON_DEVELOPMENT_RELEASE_CANDIDATE)) {
+        if ( QString::fromUtf8(NATRON_DEVELOPMENT_STATUS) == QString::fromUtf8(NATRON_DEVELOPMENT_RELEASE_CANDIDATE) ) {
             buildNo = QString::number(NATRON_BUILD_NUMBER);
         }
-        _versionString = QString(QString::fromUtf8("v" NATRON_VERSION_STRING " - " NATRON_DEVELOPMENT_STATUS) + buildNo
-                                 + QObject::tr(" - built on ") + QString::fromUtf8(__DATE__) );
+        _versionString = QString( QString::fromUtf8("v" NATRON_VERSION_STRING " - " NATRON_DEVELOPMENT_STATUS) + buildNo
+                                  + QObject::tr(" - built on ") + QString::fromUtf8(__DATE__) );
     } else {
-        _versionString = QString (QString::fromUtf8(NATRON_APPLICATION_NAME) +
-                                  QObject::tr(" for ") +
-                                  customBuildString +
-                                  QObject::tr(" - built on ") +
-                                  QString::fromUtf8(__DATE__) );
+        _versionString = QString ( QString::fromUtf8(NATRON_APPLICATION_NAME) +
+                                   QObject::tr(" for ") +
+                                   customBuildString +
+                                   QObject::tr(" - built on ") +
+                                   QString::fromUtf8(__DATE__) );
     }
-    
+
     setAttribute( Qt::WA_TransparentForMouseEvents );
     setAttribute(Qt::WA_TranslucentBackground, true);
 
@@ -91,32 +91,30 @@ SplashScreen::paintEvent(QPaintEvent*)
 
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 
-    p.drawPixmap(0,0,_pixmap);
+    p.drawPixmap(0, 0, _pixmap);
     p.setPen(Qt::white);
-    p.drawText(QPointF(120,100), _text);
-    p.drawText(QPointF(20, 450),_versionString);
+    p.drawText(QPointF(120, 100), _text);
+    p.drawText(QPointF(20, 450), _versionString);
 }
 
-
 LoadProjectSplashScreen::LoadProjectSplashScreen(const QString & filePath)
-: QWidget(0,Qt::SplashScreen)
-, _pixmap()
-, _text()
-, _projectName(filePath)
+    : QWidget(0, Qt::SplashScreen)
+    , _pixmap()
+    , _text()
+    , _projectName(filePath)
 {
     setAttribute( Qt::WA_TransparentForMouseEvents );
     setAttribute(Qt::WA_TranslucentBackground, true);
-    
-    _pixmap.load(QString::fromUtf8(":Resources/Images/loadProjectSplashscreen.png"));
-    
+
+    _pixmap.load( QString::fromUtf8(":Resources/Images/loadProjectSplashscreen.png") );
+
     resize( _pixmap.width(), _pixmap.height() );
     show();
-    
+
     QDesktopWidget* desktop = QApplication::desktop();
     QRect screen = desktop->screenGeometry();
     move(screen.width() / 2 - width() / 2, screen.height() / 2 - height() / 2);
 }
-
 
 void
 LoadProjectSplashScreen::updateText(const QString & text)
@@ -130,22 +128,21 @@ void
 LoadProjectSplashScreen::paintEvent(QPaintEvent* /*e*/)
 {
     QStyleOption opt;
-    
+
     opt.init(this);
     QPainter p(this);
-    
+
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
-    
-    p.drawPixmap(0,0,_pixmap);
+
+    p.drawPixmap(0, 0, _pixmap);
     p.setPen(Qt::white);
-    p.drawText(QPointF(250,250), _text);
-    
-    QString loadString(tr("Loading "));
+    p.drawText(QPointF(250, 250), _text);
+
+    QString loadString( tr("Loading ") );
     QFontMetrics fm = p.fontMetrics();
-    
-    QPointF loadStrPos(300,150);
-    p.drawText(QPointF(loadStrPos.x() + fm.width(loadString) + 5, 150),_projectName);
-    p.setPen(QColor(243,137,0));
+    QPointF loadStrPos(300, 150);
+    p.drawText(QPointF(loadStrPos.x() + fm.width(loadString) + 5, 150), _projectName);
+    p.setPen( QColor(243, 137, 0) );
     p.drawText(loadStrPos, loadString);
 }
 

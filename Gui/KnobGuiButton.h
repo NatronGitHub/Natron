@@ -69,12 +69,11 @@ public:
     }
 
     KnobGuiButton(KnobPtr knob,
-                   DockablePanel *container);
+                  DockablePanel *container);
 
     virtual ~KnobGuiButton() OVERRIDE;
 
     virtual void removeSpecificGui() OVERRIDE FINAL;
-    
     virtual bool isLabelVisible() const OVERRIDE
     {
         return false;
@@ -92,7 +91,7 @@ private:
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
     virtual void setEnabled() OVERRIDE FINAL;
-    virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
+    virtual void setReadOnly(bool readOnly, int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool /*dirty*/) OVERRIDE FINAL
     {
     }

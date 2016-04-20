@@ -57,11 +57,9 @@ serialize(Archive & ar,
           OfxRangeD & r,
           const unsigned int /*version*/)
 {
-    ar &  boost::serialization::make_nvp("Min",r.min);
-    ar &  boost::serialization::make_nvp("Max",r.max);
+    ar &  boost::serialization::make_nvp("Min", r.min);
+    ar &  boost::serialization::make_nvp("Max", r.max);
 }
-    
-
 }
 }
 
@@ -70,11 +68,11 @@ NATRON_NAMESPACE_ENTER;
 template<class Archive>
 void
 ImageComponents::serialize(Archive & ar,
-          const unsigned int /*version*/)
+                           const unsigned int /*version*/)
 {
-    ar &  boost::serialization::make_nvp("Layer",_layerName);
-    ar &  boost::serialization::make_nvp("Components",_componentNames);
-    ar &  boost::serialization::make_nvp("CompName",_globalComponentsName);
+    ar &  boost::serialization::make_nvp("Layer", _layerName);
+    ar &  boost::serialization::make_nvp("Components", _componentNames);
+    ar &  boost::serialization::make_nvp("CompName", _globalComponentsName);
 }
 
 template<class Archive>
@@ -83,18 +81,18 @@ ImageParams::serialize(Archive & ar,
                        const unsigned int /*version*/)
 {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(NonKeyParams);
-    ar & ::boost::serialization::make_nvp("RoD",_rod);
-    ar & ::boost::serialization::make_nvp("Bounds",_bounds);
-    ar & ::boost::serialization::make_nvp("IsProjectFormat",_isRoDProjectFormat);
+    ar & ::boost::serialization::make_nvp("RoD", _rod);
+    ar & ::boost::serialization::make_nvp("Bounds", _bounds);
+    ar & ::boost::serialization::make_nvp("IsProjectFormat", _isRoDProjectFormat);
     // backward compatibility is not necessary
     //if (version < IMAGE_SERIALIZATION_REMOVE_FRAMESNEEDED) {
     //    std::map<int, std::map<int,std::vector<RangeD> > > f;
     //    ar & ::boost::serialization::make_nvp("FramesNeeded",f);
     //}
-    ar & ::boost::serialization::make_nvp("Components",_components);
-    ar & ::boost::serialization::make_nvp("MMLevel",_mipMapLevel);
-    ar & ::boost::serialization::make_nvp("Premult",_premult);
-    ar & ::boost::serialization::make_nvp("Fielding",_fielding);
+    ar & ::boost::serialization::make_nvp("Components", _components);
+    ar & ::boost::serialization::make_nvp("MMLevel", _mipMapLevel);
+    ar & ::boost::serialization::make_nvp("Premult", _premult);
+    ar & ::boost::serialization::make_nvp("Fielding", _fielding);
 }
 
 NATRON_NAMESPACE_EXIT;

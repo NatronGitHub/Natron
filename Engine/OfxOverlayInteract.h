@@ -33,15 +33,14 @@ CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
 CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/EngineFwd.h"
-
+#include "Engine/OverlaySupport.h"
 
 NATRON_NAMESPACE_ENTER;
 
 class NatronOverlayInteractSupport
 {
-    
 protected:
-    
+
     OverlaySupport* _viewport;
 
 public:
@@ -50,7 +49,7 @@ public:
     virtual ~NatronOverlayInteractSupport();
 
     void setCallingViewport(OverlaySupport* viewport);
-    
+
     OverlaySupport* getLastCallingViewport() const;
 
     /*Swaps the buffer of the attached viewer*/
@@ -69,15 +68,16 @@ public:
 
     // hooks to kOfxInteractPropSuggestedColour and kOfxPropOverlayColour in the property set
     bool n_getSuggestedColour(double &r, double &g, double &b) const;
-    
+
     // an RAII class to save OpenGL context
-    class OGLContextSaver {
-    public:
+    class OGLContextSaver
+    {
+public:
         OGLContextSaver(OverlaySupport* viewport);
-        
+
         ~OGLContextSaver();
-        
-    private:
+
+private:
         OverlaySupport* const _viewport;
     };
 };
@@ -176,7 +176,7 @@ public:
                                   int view,
                                   const OfxPointD &penPos,
                                   const OfxPointI &penPosViewport,
-                                  double  pressure) OVERRIDE FINAL;
+                                  double pressure) OVERRIDE FINAL;
 
     // interact action - kOfxInteractActionPenDown
     //
@@ -192,7 +192,7 @@ public:
                                     int view,
                                     const OfxPointD &penPos,
                                     const OfxPointI &penPosViewport,
-                                    double  pressure) OVERRIDE FINAL;
+                                    double pressure) OVERRIDE FINAL;
 
     // interact action - kOfxInteractActionkeyDown
     //
@@ -205,7 +205,7 @@ public:
     virtual OfxStatus keyDownAction(OfxTime time,
                                     const OfxPointD &renderScale,
                                     int view,
-                                    int     key,
+                                    int key,
                                     char*   keyString) OVERRIDE FINAL;
 
     // interact action - kOfxInteractActionkeyUp
@@ -219,7 +219,7 @@ public:
     virtual OfxStatus keyUpAction(OfxTime time,
                                   const OfxPointD &renderScale,
                                   int view,
-                                  int     key,
+                                  int key,
                                   char*   keyString) OVERRIDE FINAL;
 
     // interact action - kOfxInteractActionkeyRepeat
@@ -233,7 +233,7 @@ public:
     virtual OfxStatus keyRepeatAction(OfxTime time,
                                       const OfxPointD &renderScale,
                                       int view,
-                                      int     key,
+                                      int key,
                                       char*   keyString) OVERRIDE FINAL;
 
     // interact action - kOfxInteractActionLoseFocus
@@ -252,10 +252,9 @@ public:
     //
     //    time              - the effect time at which changed occured
     //    renderScale       - the render scale
-    virtual OfxStatus loseFocusAction(OfxTime  time,
+    virtual OfxStatus loseFocusAction(OfxTime time,
                                       const OfxPointD &renderScale,
                                       int view) OVERRIDE FINAL;
-
 };
 
 class OfxParamOverlayInteract
@@ -317,12 +316,13 @@ public:
 
     void getPreferredSize(int & pW, int & pH) const;
 
-    void getSize(int &w,int &h) const;
+    void getSize(int &w, int &h) const;
 
-    void setSize(int w,int h);
+    void setSize(int w, int h);
 
     void getPixelAspectRatio(double & par) const;
 };
+
 
 NATRON_NAMESPACE_EXIT;
 

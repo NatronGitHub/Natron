@@ -57,10 +57,10 @@ struct ViewerTabPrivate
         NodeWPtr input;
     };
 
-    typedef std::map<int,InputName> InputNamesMap;
+    typedef std::map<int, InputName> InputNamesMap;
 
     ViewerTab* publicInterface;
-    
+
     /*OpenGL viewer*/
     ViewerGL* viewer;
     QWidget* viewerContainer;
@@ -78,7 +78,7 @@ struct ViewerTabPrivate
     ComboBox* layerChoice;
     ComboBox* alphaChannelChoice;
     mutable QMutex currentLayerMutex;
-    QString currentLayerChoice,currentAlphaLayerChoice;
+    QString currentLayerChoice, currentAlphaLayerChoice;
     ChannelsComboBox* viewerChannels;
     bool viewerChannelsAutoswitchedToAlpha;
     ComboBox* zoomCombobox;
@@ -90,7 +90,6 @@ struct ViewerTabPrivate
     Button* pauseButton;
     QIcon iconRefreshOff, iconRefreshOn;
     int ongoingRenderCount;
-    
     Button* activateRenderScale;
     bool renderScaleActive;
     ComboBox* renderScaleCombo;
@@ -141,12 +140,9 @@ struct ViewerTabPrivate
     SpinBox* playBackInputSpinbox;
     Button* playBackOutputButton;
     SpinBox* playBackOutputSpinbox;
-    
     mutable QMutex playbackModeMutex;
     PlaybackModeEnum playbackMode;
-    
     Button* tripleSyncButton;
-    
     QCheckBox* canEditFpsBox;
     ClickableLabel* canEditFpsLabel;
     mutable QMutex fpsLockedMutex;
@@ -157,15 +153,14 @@ struct ViewerTabPrivate
 
     /*frame seeker*/
     TimeLineGui* timeLineGui;
-    std::map<NodeGui*,RotoGui*> rotoNodes;
-    std::pair<NodeGui*,RotoGui*> currentRoto;
-    std::map<NodeGui*,TrackerGui*> trackerNodes;
-    std::pair<NodeGui*,TrackerGui*> currentTracker;
+    std::map<NodeGui*, RotoGui*> rotoNodes;
+    std::pair<NodeGui*, RotoGui*> currentRoto;
+    std::map<NodeGui*, TrackerGui*> trackerNodes;
+    std::pair<NodeGui*, TrackerGui*> currentTracker;
     InputNamesMap inputNamesMap;
     mutable QMutex compOperatorMutex;
     ViewerCompositingOperatorEnum compOperator;
     ViewerInstance* viewerNode; // < pointer to the internal node
-    
     mutable QMutex visibleToolbarsMutex; //< protects the 4 bool below
     bool infobarVisible;
     bool playerVisible;
@@ -173,21 +168,18 @@ struct ViewerTabPrivate
     bool leftToolbarVisible;
     bool rightToolbarVisible;
     bool topToolbarVisible;
-    
     bool isFileDialogViewer;
-    
     mutable QMutex checkerboardMutex;
     bool checkerboardEnabled;
-
     mutable QMutex fpsMutex;
     double fps;
-    
+
     //The last node that took the penDown/motion/keyDown/keyRelease etc...
     NodeWPtr lastOverlayNode;
     bool hasPenDown;
     bool hasCaughtPenMotionWhileDragging;
-    
-    ViewerTabPrivate(ViewerTab* publicInterface,ViewerInstance* node);
+
+    ViewerTabPrivate(ViewerTab* publicInterface, ViewerInstance* node);
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     // return the tronsform to apply to the overlay as a 3x3 homography in canonical coordinates
@@ -206,7 +198,6 @@ struct ViewerTabPrivate
 #endif
 
     void getComponentsAvailabel(std::set<ImageComponents>* comps) const;
-
 };
 
 NATRON_NAMESPACE_EXIT;

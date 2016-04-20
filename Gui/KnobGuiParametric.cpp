@@ -87,24 +87,24 @@ using std::make_pair;
 //=============================KnobGuiParametric===================================
 
 KnobGuiParametric::KnobGuiParametric(KnobPtr knob,
-                                       DockablePanel *container)
-: KnobGui(knob, container)
-, treeColumn(NULL)
-, _curveWidget(NULL)
-, _tree(NULL)
-, _resetButton(NULL)
-, _curves()
+                                     DockablePanel *container)
+    : KnobGui(knob, container)
+    , treeColumn(NULL)
+    , _curveWidget(NULL)
+    , _tree(NULL)
+    , _resetButton(NULL)
+    , _curves()
 {
     _knob = boost::dynamic_pointer_cast<KnobParametric>(knob);
-    QObject::connect(_knob.lock().get(), SIGNAL(curveColorChanged(int)), this, SLOT(onColorChanged(int)));
+    QObject::connect( _knob.lock().get(), SIGNAL(curveColorChanged(int)), this, SLOT(onColorChanged(int)) );
 }
 
 KnobGuiParametric::~KnobGuiParametric()
 {
-    
 }
 
-void KnobGuiParametric::removeSpecificGui()
+void
+KnobGuiParametric::removeSpecificGui()
 {
     delete _curveWidget;
     delete treeColumn;
@@ -130,14 +130,14 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
     }
     treeColumnLayout->addWidget(_tree);
 
-    _resetButton = new Button(QString::fromUtf8("Reset"),treeColumn);
+    _resetButton = new Button(QString::fromUtf8("Reset"), treeColumn);
     _resetButton->setToolTip( GuiUtils::convertFromPlainText(tr("Reset the selected curves in the tree to their default shape."), Qt::WhiteSpaceNormal) );
     QObject::connect( _resetButton, SIGNAL(clicked()), this, SLOT(resetSelectedCurves()) );
     treeColumnLayout->addWidget(_resetButton);
 
     layout->addWidget(treeColumn);
 
-    _curveWidget = new CurveWidget( getGui(),this, boost::shared_ptr<TimeLine>(),layout->parentWidget() );
+    _curveWidget = new CurveWidget( getGui(), this, boost::shared_ptr<TimeLine>(), layout->parentWidget() );
     _curveWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     if ( hasToolTip() ) {
         _curveWidget->setToolTip( toolTip() );
@@ -145,14 +145,13 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
     layout->addWidget(_curveWidget);
 
     KnobGuiPtr thisShared = shared_from_this();
-
     std::vector<boost::shared_ptr<CurveGui> > visibleCurves;
     for (int i = 0; i < knob->getDimension(); ++i) {
-        QString curveName = QString::fromUtf8(knob->getDimensionName(i).c_str());
-        boost::shared_ptr<KnobCurveGui> curve(new KnobCurveGui(_curveWidget,knob->getParametricCurve(i),thisShared,i,curveName,QColor(255,255,255),1.));
+        QString curveName = QString::fromUtf8( knob->getDimensionName(i).c_str() );
+        boost::shared_ptr<KnobCurveGui> curve( new KnobCurveGui(_curveWidget, knob->getParametricCurve(i), thisShared, i, curveName, QColor(255, 255, 255), 1.) );
         _curveWidget->addCurveAndSetColor(curve);
         QColor color;
-        double r,g,b;
+        double r, g, b;
         knob->getCurveColor(i, &r, &g, &b);
         color.setRedF(r);
         color.setGreenF(g);
@@ -171,23 +170,23 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
     }
 
     _curveWidget->centerOn(visibleCurves);
-    QObject::connect( _tree, SIGNAL(itemSelectionChanged()),this,SLOT(onItemsSelectionChanged()) );
+    QObject::connect( _tree, SIGNAL(itemSelectionChanged()), this, SLOT(onItemsSelectionChanged()) );
 } // createWidget
 
 void
 KnobGuiParametric::onColorChanged(int dimension)
 {
-    if (dimension < 0 || dimension >= (int)_curves.size()) {
+    if ( (dimension < 0) || ( dimension >= (int)_curves.size() ) ) {
         return;
     }
     double r, g, b;
     _knob.lock()->getCurveColor(dimension, &r, &g, &b);
-    
+
     CurveDescriptor& found = _curves[dimension];
     QColor c;
     c.setRgbF(r, g, b);
     found.curve->setColor(c);
-    
+
     _curveWidget->update();
 }
 
@@ -225,13 +224,13 @@ KnobGuiParametric::updateGUI(int /*dimension*/)
 void
 KnobGuiParametric::onCurveChanged(int dimension)
 {
-    if (dimension < 0 || dimension >= (int)_curves.size()) {
+    if ( (dimension < 0) || ( dimension >= (int)_curves.size() ) ) {
         return;
     }
     CurveDescriptor& found = _curves[dimension];
 
     // even when there is only one keyframe, there may be tangents!
-    if ((found.curve->getInternalCurve()->getKeyFramesCount() > 0) && found.treeItem->isSelected()) {
+    if ( (found.curve->getInternalCurve()->getKeyFramesCount() > 0) && found.treeItem->isSelected() ) {
         found.curve->setVisible(true);
     } else {
         found.curve->setVisible(false);
@@ -247,7 +246,7 @@ KnobGuiParametric::onItemsSelectionChanged()
     QList<QTreeWidgetItem*> selectedItems = _tree->selectedItems();
     for (int i = 0; i < selectedItems.size(); ++i) {
         for (CurveGuis::iterator it = _curves.begin(); it != _curves.end(); ++it) {
-            if (it->treeItem == selectedItems.at(i) ) {
+            if ( it->treeItem == selectedItems.at(i) ) {
                 if ( it->curve->getInternalCurve()->isAnimated() ) {
                     curves.push_back(it->curve);
                 }
@@ -285,7 +284,7 @@ KnobGuiParametric::resetSelectedCurves()
         //find the items in the curves
         for (CurveGuis::iterator it = _curves.begin(); it != _curves.end(); ++it) {
             if ( it->treeItem == selected.at(i) ) {
-                k->resetToDefaultValue(it->curve->getDimension());
+                k->resetToDefaultValue( it->curve->getDimension() );
                 break;
             }
         }
@@ -293,26 +292,25 @@ KnobGuiParametric::resetSelectedCurves()
     k->evaluateValueChange(0, k->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
 }
 
-KnobPtr KnobGuiParametric::getKnob() const
+KnobPtr
+KnobGuiParametric::getKnob() const
 {
     return _knob.lock();
 }
 
-
 void
 KnobGuiParametric::refreshDimensionName(int dim)
 {
-    if (dim < 0 || dim >= (int)_curves.size()) {
+    if ( (dim < 0) || ( dim >= (int)_curves.size() ) ) {
         return;
     }
     boost::shared_ptr<KnobParametric> knob = _knob.lock();
     CurveDescriptor& found = _curves[dim];
-    QString name = QString::fromUtf8(knob->getDimensionName(dim).c_str());
+    QString name = QString::fromUtf8( knob->getDimensionName(dim).c_str() );
     found.curve->setName(name);
     found.treeItem->setText(0, name);
     _curveWidget->update();
 }
-
 
 NATRON_NAMESPACE_EXIT;
 

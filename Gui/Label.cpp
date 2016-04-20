@@ -34,21 +34,20 @@ NATRON_NAMESPACE_ENTER;
 Label::Label(const QString &text,
              QWidget *parent,
              Qt::WindowFlags f)
-: QLabel(text, parent, f)
-, altered(false)
+    : QLabel(text, parent, f)
+    , altered(false)
 
 {
-    setFont(QApplication::font()); // necessary, or the labels will get the default font size
+    setFont( QApplication::font() ); // necessary, or the labels will get the default font size
 }
 
 Label::Label(QWidget *parent,
              Qt::WindowFlags f)
-: QLabel(parent, f)
-, altered(false)
+    : QLabel(parent, f)
+    , altered(false)
 {
-    setFont(QApplication::font()); // necessary, or the labels will get the default font size
+    setFont( QApplication::font() ); // necessary, or the labels will get the default font size
 }
-
 
 bool
 Label::getAltered() const
@@ -67,7 +66,7 @@ Label::refreshStyle()
 void
 Label::setAltered(bool a)
 {
-    if (!canAlter()) {
+    if ( !canAlter() ) {
         return;
     }
     if (this->altered != a) {

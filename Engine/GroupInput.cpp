@@ -45,36 +45,36 @@ void
 GroupInput::initializeKnobs()
 {
     boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>(this, "Controls");
+
     page->setName("controls");
-    
+
     boost::shared_ptr<KnobBool> optKnob = AppManager::createKnob<KnobBool>(this, "Optional");
     optKnob->setHintToolTip("When checked, this input of the group will be optional, i.e it will not be required that it is connected "
-                             "for the render to work. ");
+                            "for the render to work. ");
     optKnob->setAnimationEnabled(false);
     optKnob->setName(kNatronGroupInputIsOptionalParamName);
     page->addKnob(optKnob);
     optional = optKnob;
-    
+
     boost::shared_ptr<KnobBool> maskKnob = AppManager::createKnob<KnobBool>(this, "Mask");
     maskKnob->setHintToolTip("When checked, this input of the group will be considered as a mask. A mask is always optional.");
     maskKnob->setAnimationEnabled(false);
     maskKnob->setName(kNatronGroupInputIsMaskParamName);
     page->addKnob(maskKnob);
     mask = maskKnob;
-
 }
 
 void
 GroupInput::knobChanged(KnobI* k,
-                 ValueChangedReasonEnum /*reason*/,
-                 ViewSpec /*view*/,
-                 double /*time*/,
-                 bool /*originatedFromMainThread*/)
+                        ValueChangedReasonEnum /*reason*/,
+                        ViewSpec /*view*/,
+                        double /*time*/,
+                        bool /*originatedFromMainThread*/)
 {
-    if (k == optional.lock().get()) {
+    if ( k == optional.lock().get() ) {
         boost::shared_ptr<NodeCollection> group = getNode()->getGroup();
-        group->notifyInputOptionalStateChanged(getNode());
-    } else if (k == mask.lock().get()) {
+        group->notifyInputOptionalStateChanged( getNode() );
+    } else if ( k == mask.lock().get() ) {
         bool isMask = mask.lock()->getValue();
         if (isMask) {
             optional.lock()->setValue(true);
@@ -82,10 +82,8 @@ GroupInput::knobChanged(KnobI* k,
             optional.lock()->setValue(false);
         }
         boost::shared_ptr<NodeCollection> group = getNode()->getGroup();
-        group->notifyInputMaskStateChanged(getNode());
-        
+        group->notifyInputMaskStateChanged( getNode() );
     }
 }
-
 
 NATRON_NAMESPACE_EXIT;

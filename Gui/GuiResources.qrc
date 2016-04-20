@@ -21,7 +21,8 @@
         <file alias="LICENSE-JasPer.txt">../tools/license/components/LICENSE-JasPer.txt</file>
         <file alias="LICENSE-LGPL-2.1.txt">../tools/license/components/LICENSE-LGPL-2.1.txt</file>
         <file alias="LICENSE-Little-CMS.txt">../tools/license/components/LICENSE-Little-CMS.txt</file>
-        <file alias="LICENSE-Little-MPL-2.0.txt">../tools/license/components/LICENSE-MPL-2.0.txt</file>
+        <file alias="LICENSE-MPL-2.0.txt">../tools/license/components/LICENSE-MPL-2.0.txt</file>
+        <file alias="LICENSE-Mesa.txt">../tools/license/components/LICENSE-Mesa.txt</file>
         <file alias="LICENSE-OpenColorIO.txt">../tools/license/components/LICENSE-OpenColorIO.txt</file>
         <file alias="LICENSE-OpenEXR.txt">../tools/license/components/LICENSE-OpenEXR.txt</file>
         <file alias="LICENSE-OpenImageIO.txt">../tools/license/components/LICENSE-OpenImageIO.txt</file>
@@ -55,6 +56,7 @@
         <file alias="LICENSE-openh264.txt">../tools/license/components/LICENSE-openh264.txt</file>
         <file alias="LICENSE-openjpeg.txt">../tools/license/components/LICENSE-openjpeg.txt</file>
         <file alias="LICENSE-orc.txt">../tools/license/components/LICENSE-orc.txt</file>
+        <file alias="LICENSE-qhttpserver.txt">../tools/license/components/LICENSE-qhttpserver.txt</file>
         <file alias="LICENSE-webp.txt">../tools/license/components/LICENSE-webp.txt</file>
         <file alias="LICENSE-zlib.txt">../tools/license/components/LICENSE-zlib.txt</file>
         <file>Resources/Fonts/DroidSans-Bold.ttf</file>

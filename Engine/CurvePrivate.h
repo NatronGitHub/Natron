@@ -51,15 +51,15 @@ struct CurvePrivate
         eCurveTypeIntConstantInterp, //< same as eCurveTypeInt but interpolation is restricted to eKeyframeTypeConstant
         eCurveTypeBool, //< the values held by the keyframes can be either 0 or 1
         eCurveTypeString //< the values held by the keyframes can only be integers and keyframes are ordered by increasing values
-                     // and times
+        // and times
     };
 
     KeyFrameSet keyFrames;
-    
+
 #ifdef NATRON_CURVE_USE_CACHE
-    std::map<double,double> resultCache; //< a cache for interpolations
+    std::map<double, double> resultCache; //< a cache for interpolations
 #endif
-    
+
     KnobI* owner;
     int dimensionInOwner;
     CurveTypeEnum type;
@@ -71,20 +71,20 @@ struct CurvePrivate
 
 
     CurvePrivate()
-    : keyFrames()
+        : keyFrames()
 #ifdef NATRON_CURVE_USE_CACHE
-    , resultCache()
+        , resultCache()
 #endif
-    , owner(NULL)
-    , dimensionInOwner(-1)
-    , type(eCurveTypeDouble)
-    , xMin(INT_MIN)
-    , xMax(INT_MAX)
-    , yMin(INT_MIN)
-    , yMax(INT_MAX)
-    , _lock(QMutex::Recursive)
-    , isParametric(false)
-    , hasYRange(false)
+        , owner(NULL)
+        , dimensionInOwner(-1)
+        , type(eCurveTypeDouble)
+        , xMin(INT_MIN)
+        , xMax(INT_MAX)
+        , yMin(INT_MIN)
+        , yMax(INT_MAX)
+        , _lock(QMutex::Recursive)
+        , isParametric(false)
+        , hasYRange(false)
     {
     }
 
@@ -107,7 +107,6 @@ struct CurvePrivate
         yMax = other.yMax;
         hasYRange = other.hasYRange;
     }
-    
 };
 
 NATRON_NAMESPACE_EXIT;

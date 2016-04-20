@@ -42,15 +42,13 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
- 
+
 class ClickableLabel
     : public Label
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
-
-    Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
+GCC_DIAG_SUGGEST_OVERRIDE_ON Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
     Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
     Q_PROPERTY( bool readOnly READ isReadOnly WRITE setReadOnly)
     Q_PROPERTY( bool sunkenStyle READ isSunken WRITE setSunken)
@@ -60,7 +58,7 @@ public:
     ClickableLabel(const QPixmap &icon,
                    QWidget *parent);
 
-    
+
     ClickableLabel(const QString &text,
                    QWidget *parent);
 
@@ -103,20 +101,20 @@ public:
     }
 
     void setSunken(bool s);
-    
+
     void setBold(bool b);
-    
+
     virtual bool canAlter() const OVERRIDE FINAL;
 
 Q_SIGNALS:
     void clicked(bool);
 
 protected:
-    
+
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE;
-    
+
 private:
-    
+
     virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
 
 private:
@@ -129,19 +127,19 @@ private:
 };
 
 
-class KnobClickableLabel : public ClickableLabel
+class KnobClickableLabel
+    : public ClickableLabel
 {
-  
 public:
-    
+
     KnobClickableLabel(const QPixmap& icon, const KnobGuiPtr& knob, QWidget* parent = 0);
-    
+
     KnobClickableLabel(const QString& text, const KnobGuiPtr& knob, QWidget* parent = 0);
-    
+
     virtual ~KnobClickableLabel();
-    
+
 private:
-    
+
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
@@ -154,7 +152,6 @@ private:
     virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
-
     boost::scoped_ptr<KnobWidgetDnD> _dnd;
 };
 

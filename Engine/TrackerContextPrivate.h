@@ -64,13 +64,13 @@ GCC_DIAG_ON(unused-parameter)
 #define kTrackerParamMaxError "maxError"
 #define kTrackerParamMaxErrorLabel "Max. Error"
 #define kTrackerParamMaxErrorHint "This is the minimum necessary error between the final tracked " \
-"position of the patch on the destination image and the reference patch needed to declare tracking success." \
-"The error is 1 minus the normalized cross-correlation score."
+    "position of the patch on the destination image and the reference patch needed to declare tracking success." \
+    "The error is 1 minus the normalized cross-correlation score."
 
 #define kTrackerParamMaximumIteration "maxIterations"
 #define kTrackerParamMaximumIterationLabel "Maximum iterations"
 #define kTrackerParamMaximumIterationHint "Maximum number of iterations the algorithm will run for the inner minimization " \
-"before it gives up."
+    "before it gives up."
 
 #define kTrackerParamBruteForcePreTrack "bruteForcePretTrack"
 #define kTrackerParamBruteForcePreTrackLabel "Use brute-force pre-track"
@@ -79,7 +79,7 @@ GCC_DIAG_ON(unused-parameter)
 #define kTrackerParamNormalizeIntensities "normalizeIntensities"
 #define kTrackerParamNormalizeIntensitiesLabel "Normalize Intensities"
 #define kTrackerParamNormalizeIntensitiesHint "Normalize the image patches by their mean before doing the sum of squared" \
-" error calculation. Slower."
+    " error calculation. Slower."
 
 #define kTrackerParamPreBlurSigma "preBlurSigma"
 #define kTrackerParamPreBlurSigmaLabel "Pre-blur sigma"
@@ -108,14 +108,14 @@ GCC_DIAG_ON(unused-parameter)
 
 #define kTrackerParamTransformTypeTransform "Transform"
 #define kTrackerParamTransformTypeTransformHelp "The tracks motion will be used to compute the translation, scale and rotation parameter " \
-"of a Transform node. At least 1 track is required to compute the translation and 2 for scale and rotation. The more tracks you use, " \
-"the more stable and precise the resulting transform will be."
+    "of a Transform node. At least 1 track is required to compute the translation and 2 for scale and rotation. The more tracks you use, " \
+    "the more stable and precise the resulting transform will be."
 
 #define kTrackerParamTransformTypeCornerPin "CornerPin"
 #define kTrackerParamTransformTypeCornerPinHelp "The tracks motion will be used to compute a CornerPin. " \
-"A CornerPin is useful if you are tracking an image portion that has a perspective distortion, such as a rectangular window moving in the scene. " \
-"At least 4 tracks are required to compute the homography transforming the \"From\" points to the \"To\" points. " \
-"The more points you add, the more stable and precise the resulting CornerPin will be."
+    "A CornerPin is useful if you are tracking an image portion that has a perspective distortion, such as a rectangular window moving in the scene. " \
+    "At least 4 tracks are required to compute the homography transforming the \"From\" points to the \"To\" points. " \
+    "The more points you add, the more stable and precise the resulting CornerPin will be."
 
 #define kTrackerParamMotionType "motionType"
 #define kTrackerParamMotionTypeLabel "Motion Type"
@@ -151,6 +151,11 @@ GCC_DIAG_ON(unused-parameter)
 #define kTrackerParamSmooth "smooth"
 #define kTrackerParamSmoothLabel "Smooth"
 #define kTrackerParamSmoothHint "Smooth the translation/rotation/scale by averaging this number of frames together"
+
+#define kTrackerParamSmoothCornerPin "smoothCornerPin"
+#define kTrackerParamSmoothCornerPinLabel "Smooth"
+#define kTrackerParamSmoothCornerPinHint "Smooth the Corner Pin by averaging this number of frames together"
+
 
 #define kTransformParamTranslate "translate"
 #define kTransformParamRotate "rotate"
@@ -210,15 +215,12 @@ enum TrackerTransformNodeEnum
     eTrackerTransformNodeCornerPin
 };
 
-enum libmv_MarkerChannelEnum {
+enum libmv_MarkerChannelEnum
+{
     LIBMV_MARKER_CHANNEL_R = (1 << 0),
     LIBMV_MARKER_CHANNEL_G = (1 << 1),
     LIBMV_MARKER_CHANNEL_B = (1 << 2),
 };
-
-
-
-
 
 struct TrackMarkerAndOptions
 {
@@ -226,8 +228,6 @@ struct TrackMarkerAndOptions
     mv::Marker mvMarker;
     mv::TrackRegionOptions mvOptions;
 };
-
-
 
 
 class TrackArgsLibMV
@@ -239,28 +239,27 @@ class TrackArgsLibMV
     boost::shared_ptr<mv::AutoTrack> _libmvAutotrack;
     boost::shared_ptr<TrackerFrameAccessor> _fa;
     std::vector<boost::shared_ptr<TrackMarkerAndOptions> > _tracks;
-    
+
     //Store the format size because LibMV internally has a top-down Y axis
-    double _formatWidth,_formatHeight;
+    double _formatWidth, _formatHeight;
     mutable QMutex _autoTrackMutex;
-    
+
 public:
-    
+
     TrackArgsLibMV()
-    : _start(0)
-    , _end(0)
-    , _isForward(false)
-    , _timeline()
-    , _viewer(0)
-    , _libmvAutotrack()
-    , _fa()
-    , _tracks()
-    , _formatWidth(0)
-    , _formatHeight(0)
+        : _start(0)
+        , _end(0)
+        , _isForward(false)
+        , _timeline()
+        , _viewer(0)
+        , _libmvAutotrack()
+        , _fa()
+        , _tracks()
+        , _formatWidth(0)
+        , _formatHeight(0)
     {
-        
     }
-    
+
     TrackArgsLibMV(int start,
                    int end,
                    bool isForward,
@@ -271,25 +270,24 @@ public:
                    const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks,
                    double formatWidth,
                    double formatHeight)
-    : _start(start)
-    , _end(end)
-    , _isForward(isForward)
-    , _timeline(timeline)
-    , _viewer(viewer)
-    , _libmvAutotrack(autoTrack)
-    , _fa(fa)
-    , _tracks(tracks)
-    , _formatWidth(formatWidth)
-    , _formatHeight(formatHeight)
+        : _start(start)
+        , _end(end)
+        , _isForward(isForward)
+        , _timeline(timeline)
+        , _viewer(viewer)
+        , _libmvAutotrack(autoTrack)
+        , _fa(fa)
+        , _tracks(tracks)
+        , _formatWidth(formatWidth)
+        , _formatHeight(formatHeight)
     {
-        
     }
-    
+
     TrackArgsLibMV(const TrackArgsLibMV& other)
     {
         *this = other;
     }
-    
+
     void operator=(const TrackArgsLibMV& other)
     {
         _start = other._start;
@@ -303,98 +301,91 @@ public:
         _formatWidth = other._formatWidth;
         _formatHeight = other._formatHeight;
     }
-    
+
     double getFormatHeight() const
     {
         return _formatHeight;
     }
-    
+
     double getFormatWidth() const
     {
         return _formatWidth;
     }
-    
+
     QMutex* getAutoTrackMutex() const
     {
         return &_autoTrackMutex;
     }
-    
+
     int getStart() const
     {
         return _start;
     }
-    
+
     int getEnd() const
     {
         return _end;
     }
-    
+
     bool getForward() const
     {
         return _isForward;
     }
-    
+
     boost::shared_ptr<TimeLine> getTimeLine() const
     {
         return _timeline;
     }
-    
+
     ViewerInstance* getViewer() const
     {
         return _viewer;
     }
-    
+
     int getNumTracks() const
     {
         return (int)_tracks.size();
     }
-    
+
     const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& getTracks() const
     {
         return _tracks;
     }
-    
+
     boost::shared_ptr<mv::AutoTrack> getLibMVAutoTrack() const
     {
         return _libmvAutotrack;
     }
-    
+
     void getEnabledChannels(bool* r, bool* g, bool* b) const;
-    
+
     void getRedrawAreasNeeded(int time, std::list<RectD>* canonicalRects) const;
 };
 
 
-
 struct TrackerContextPrivate
 {
-    
     TrackerContext* _publicInterface;
     boost::weak_ptr<Node> node;
-    
     std::list<boost::weak_ptr<KnobI> > perTrackKnobs;
-    boost::weak_ptr<KnobBool> enableTrackRed,enableTrackGreen,enableTrackBlue;
+    boost::weak_ptr<KnobBool> enableTrackRed, enableTrackGreen, enableTrackBlue;
     boost::weak_ptr<KnobDouble> maxError;
     boost::weak_ptr<KnobInt> maxIterations;
-    boost::weak_ptr<KnobBool> bruteForcePreTrack,useNormalizedIntensities;
+    boost::weak_ptr<KnobBool> bruteForcePreTrack, useNormalizedIntensities;
     boost::weak_ptr<KnobDouble> preBlurSigma;
-    
     boost::weak_ptr<KnobBool> activateTrack;
-    
     boost::weak_ptr<KnobSeparator> exportDataSep;
     boost::weak_ptr<KnobBool> exportLink;
     boost::weak_ptr<KnobButton> exportButton;
-    
     NodeWPtr transformNode, cornerPinNode;
-    
     boost::weak_ptr<KnobPage> transformPageKnob;
     boost::weak_ptr<KnobSeparator> transformGenerationSeparator;
-    boost::weak_ptr<KnobChoice> transformType,motionType;
+    boost::weak_ptr<KnobChoice> transformType, motionType;
     boost::weak_ptr<KnobInt> referenceFrame;
     boost::weak_ptr<KnobButton> setCurrentFrameButton;
     boost::weak_ptr<KnobInt> jitterPeriod;
     boost::weak_ptr<KnobInt> smoothTransform;
-    
+    boost::weak_ptr<KnobInt> smoothCornerPin;
     boost::weak_ptr<KnobSeparator> transformControlsSeparator;
     boost::weak_ptr<KnobDouble> translate;
     boost::weak_ptr<KnobDouble> rotate;
@@ -412,96 +403,86 @@ struct TrackerContextPrivate
     boost::weak_ptr<KnobDouble> shutter;
     boost::weak_ptr<KnobChoice> shutterOffset;
     boost::weak_ptr<KnobDouble> customShutterOffset;
-    
-    boost::weak_ptr<KnobGroup> fromGroup,toGroup;
-    boost::weak_ptr<KnobDouble> fromPoints[4],toPoints[4];
+    boost::weak_ptr<KnobGroup> fromGroup, toGroup;
+    boost::weak_ptr<KnobDouble> fromPoints[4], toPoints[4];
     boost::weak_ptr<KnobBool> enableToPoint[4];
     boost::weak_ptr<KnobDouble> cornerPinMatrix;
     boost::weak_ptr<KnobChoice> cornerPinOverlayPoints;
-    
     mutable QMutex trackerContextMutex;
     std::vector<TrackMarkerPtr > markers;
-    std::list<TrackMarkerPtr > selectedMarkers,markersToSlave,markersToUnslave;
+    std::list<TrackMarkerPtr > selectedMarkers, markersToSlave, markersToUnslave;
     int beginSelectionCounter;
     int selectionRecursion;
-    
+
     TrackScheduler<TrackArgsLibMV> scheduler;
-    
-    
+
+
     TrackerContextPrivate(TrackerContext* publicInterface, const boost::shared_ptr<Node> &node);
-    
-    
+
+
     /// Make all calls to getValue() that are global to the tracker context in here
     void beginLibMVOptionsForTrack(mv::TrackRegionOptions* options) const;
-    
+
     /// Make all calls to getValue() that are local to the track in here
     void endLibMVOptionsForTrack(const TrackMarker& marker,
                                  mv::TrackRegionOptions* options) const;
-    
+
     void addToSelectionList(const TrackMarkerPtr& marker)
     {
-        if (std::find(selectedMarkers.begin(), selectedMarkers.end(), marker) != selectedMarkers.end()) {
+        if ( std::find(selectedMarkers.begin(), selectedMarkers.end(), marker) != selectedMarkers.end() ) {
             return;
         }
         selectedMarkers.push_back(marker);
         markersToSlave.push_back(marker);
     }
-    
+
     void removeFromSelectionList(const TrackMarkerPtr& marker)
     {
         std::list<TrackMarkerPtr >::iterator found = std::find(selectedMarkers.begin(), selectedMarkers.end(), marker);
-        if (found == selectedMarkers.end()) {
+
+        if ( found == selectedMarkers.end() ) {
             return;
         }
         selectedMarkers.erase(found);
         markersToUnslave.push_back(marker);
     }
-    
+
     void incrementSelectionCounter()
     {
         ++beginSelectionCounter;
     }
-    
+
     void decrementSelectionCounter()
     {
         if (beginSelectionCounter > 0) {
             --beginSelectionCounter;
         }
     }
-    
+
     void linkMarkerKnobsToGuiKnobs(const std::list<TrackMarkerPtr >& markers,
                                    bool multipleTrackSelected,
                                    bool slave);
     
-    void createCornerPinFromSelection(bool linked);
-    
     void createTransformFromSelection(bool linked);
     
+
     void refreshVisibilityFromTransformType();
     void refreshVisibilityFromTransformTypeInternal(TrackerTransformNodeEnum transformType);
-    
-    void refreshTransformKnobs();
-    
-        
+
+
     static void natronTrackerToLibMVTracker(bool useRefFrameForSearchWindow,
                                             bool trackChannels[3],
-                                            const TrackMarker& marker,
+                                            const TrackMarker &marker,
                                             int trackIndex,
                                             int time,
                                             bool forward,
                                             double formatHeight,
-                                            mv::Marker* mvMarker);
-    
+                                            mv::Marker * mvMarker);
     static void setKnobKeyframesFromMarker(const mv::Marker& mvMarker,
                                            int formatHeight,
                                            const libmv::TrackRegionResult* result,
                                            const TrackMarkerPtr& natronMarker);
-    
-    
-    static bool
-    trackStepLibMV(int trackIndex, const TrackArgsLibMV& args, int time);
-    
-    
+    static bool trackStepLibMV(int trackIndex, const TrackArgsLibMV& args, int time);
 };
 
 NATRON_NAMESPACE_EXIT;

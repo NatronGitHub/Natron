@@ -50,15 +50,14 @@ public:
 
     ///the number of elements the associated cache entry should allocate the first time (relative to the datatype of the entry)
     U64 getElementsCount() const;
-    
+
     void setElementsCount(U64 count);
 
     int getCost() const;
 
-    
 
     template<class Archive>
-    void serialize(Archive & ar,const unsigned int /*version*/);
+    void serialize(Archive & ar, const unsigned int /*version*/);
 
 protected:
 
@@ -67,12 +66,11 @@ protected:
         return (_cost == other._cost &&
                 _elementsCount == other._elementsCount);
     }
-    
+
     bool operator!=(const NonKeyParams & other) const
     {
         return !(*this == other);
     }
-
 
 private:
 

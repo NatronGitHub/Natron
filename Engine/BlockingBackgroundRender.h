@@ -56,7 +56,7 @@ public:
 
     void notifyFinished();
 
-    void blockingRender(bool enableRenderStats,int first,int last, int frameStep);
+    void blockingRender(bool enableRenderStats, int first, int last, int frameStep);
 };
 
 NATRON_NAMESPACE_EXIT;

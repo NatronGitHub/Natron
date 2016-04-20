@@ -50,10 +50,9 @@ void
 NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
                                      const QPointF& scenePos,
                                      bool useUndoCommand,
-                                     std::list<std::pair<std::string,NodeGuiPtr > > *newNodes)
+                                     std::list<std::pair<std::string, NodeGuiPtr > > *newNodes)
 {
     if ( !clipboard.isEmpty() ) {
-
         double xmax = INT_MIN;
         double xmin = INT_MAX;
         double ymin = INT_MAX;
@@ -63,15 +62,15 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
              it != clipboard.nodesUI.end(); ++it) {
             double x = (*it)->getX();
             double y = (*it)->getY();
-            double w,h;
-            (*it)->getSize(&w,&h);
-            if ((x + w) > xmax) {
+            double w, h;
+            (*it)->getSize(&w, &h);
+            if ( (x + w) > xmax ) {
                 xmax = x;
             }
             if (x < xmin) {
                 xmin = x;
             }
-            if ((y + h)> ymax) {
+            if ( (y + h) > ymax ) {
                 ymax = y;
             }
             if (y < ymin) {
@@ -79,64 +78,59 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
             }
         }
 
-        
-        QPointF offset(scenePos.x() - ((xmin + xmax) / 2.), scenePos.y() - ((ymin + ymax) / 2.));
-        
-        assert( clipboard.nodes.size() == clipboard.nodesUI.size() );
-        
-        NodesGuiList newNodesList;
 
+        QPointF offset( scenePos.x() - ( (xmin + xmax) / 2. ), scenePos.y() - ( (ymin + ymax) / 2. ) );
+
+        assert( clipboard.nodes.size() == clipboard.nodesUI.size() );
+
+        NodesGuiList newNodesList;
         std::list<std::pair<boost::shared_ptr<NodeSerialization>, NodePtr > > newNodesMap;
-        
+
         ///The script-name of the copy node is different than the one of the original one
         ///We store the mapping so we can restore node links correctly
-        std::map<std::string,std::string> oldNewScriptNamesMap;
+        std::map<std::string, std::string> oldNewScriptNamesMap;
         {
-            CreatingNodeTreeFlag_RAII createNodeTree(_publicInterface->getGui()->getApp());
-            
+            CreatingNodeTreeFlag_RAII createNodeTree( _publicInterface->getGui()->getApp() );
             const std::list<boost::shared_ptr<NodeSerialization> >& internalNodesClipBoard = clipboard.nodes;
             std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itOther = internalNodesClipBoard.begin();
             for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
                  it != clipboard.nodesUI.end(); ++it, ++itOther) {
-                
                 const std::string& oldScriptName = (*itOther)->getNodeScriptName();
-                
-                NodeGuiPtr node = pasteNode( *itOther,*it,offset,group.lock(),std::string(), false, &oldNewScriptNamesMap);
-                
+                NodeGuiPtr node = pasteNode( *itOther, *it, offset, group.lock(), std::string(), false, &oldNewScriptNamesMap);
+
                 if (!node) {
                     continue;
                 }
-                newNodes->push_back(std::make_pair(oldScriptName,node));
+                newNodes->push_back( std::make_pair(oldScriptName, node) );
                 newNodesList.push_back(node);
-                newNodesMap.push_back(std::make_pair(*itOther, node->getNode()));
-                
+                newNodesMap.push_back( std::make_pair( *itOther, node->getNode() ) );
+
                 const std::string& newScriptName = node->getNode()->getScriptName();
                 oldNewScriptNamesMap[oldScriptName] = newScriptName;
             }
             assert( internalNodesClipBoard.size() == newNodes->size() );
-            
+
             ///Now that all nodes have been duplicated, try to restore nodes connections
             restoreConnections(internalNodesClipBoard, *newNodes, oldNewScriptNamesMap);
-            
+
             NodesList allNodes;
             _publicInterface->getGui()->getApp()->getProject()->getActiveNodes(&allNodes);
-                    
-            
-            //Restore links once all children are created for alias knobs/expressions
-            for (std::list<std::pair<boost::shared_ptr<NodeSerialization>, NodePtr > > ::iterator it = newNodesMap.begin(); it!=newNodesMap.end(); ++it) {
-                it->second->restoreKnobsLinks(*(it->first),allNodes, oldNewScriptNamesMap);
-            }
 
+
+            //Restore links once all children are created for alias knobs/expressions
+            for (std::list<std::pair<boost::shared_ptr<NodeSerialization>, NodePtr > > ::iterator it = newNodesMap.begin(); it != newNodesMap.end(); ++it) {
+                it->second->restoreKnobsLinks(*(it->first), allNodes, oldNewScriptNamesMap);
+            }
         }
-        
-        
+
+
         if (clipboard.nodes.size() > 1) {
             ///Only compute datas if we're pasting more than 1 node
             _publicInterface->getGui()->getApp()->getProject()->forceComputeInputDependentDataOnAllTrees();
         }
-        
+
         if (useUndoCommand) {
-            _publicInterface->pushUndoCommand( new AddMultipleNodesCommand(_publicInterface,newNodesList) );
+            _publicInterface->pushUndoCommand( new AddMultipleNodesCommand(_publicInterface, newNodesList) );
         }
     }
 } // pasteNodesInternal
@@ -148,10 +142,10 @@ NodeGraphPrivate::pasteNode(const boost::shared_ptr<NodeSerialization> & interna
                             const boost::shared_ptr<NodeCollection>& grp,
                             const std::string& parentName,
                             bool clone,
-                            std::map<std::string,std::string>* oldNewScriptNameMapping)
+                            std::map<std::string, std::string>* oldNewScriptNameMapping)
 {
-    
-    CreateNodeArgs args(QString::fromUtf8(internalSerialization->getPluginID().c_str()), eCreateNodeReasonCopyPaste, grp);
+    CreateNodeArgs args(QString::fromUtf8( internalSerialization->getPluginID().c_str() ), eCreateNodeReasonCopyPaste, grp);
+
     args.multiInstanceParentName = parentName;
     args.majorV = internalSerialization->getPluginMajorVersion();
     args.minorV = internalSerialization->getPluginMinorVersion();
@@ -166,7 +160,7 @@ NodeGraphPrivate::pasteNode(const boost::shared_ptr<NodeSerialization> & interna
     assert(gui);
 
     std::string name;
-    if (grp == group.lock() && (!internalSerialization->getNode() || internalSerialization->getNode()->getGroup() == group.lock())) {
+    if ( ( grp == group.lock() ) && ( !internalSerialization->getNode() || ( internalSerialization->getNode()->getGroup() == group.lock() ) ) ) {
         //We pasted the node in the same group, give it another label
         int no = 1;
         std::string label = internalSerialization->getNodeLabel();
@@ -179,10 +173,9 @@ NodeGraphPrivate::pasteNode(const boost::shared_ptr<NodeSerialization> & interna
                 label = ss.str();
             }
             ++no;
-        } while (grp->checkIfNodeLabelExists(label, n.get()));
+        } while ( grp->checkIfNodeLabelExists( label, n.get() ) );
 
         n->setLabel(label);
-        
     } else {
         //If we paste the node in a different graph, it can keep its scriptname/label
     }
@@ -190,7 +183,6 @@ NodeGraphPrivate::pasteNode(const boost::shared_ptr<NodeSerialization> & interna
 
     const std::string & masterNodeName = internalSerialization->getMasterNodeName();
     if ( !masterNodeName.empty() ) {
-
         NodePtr masterNode = _publicInterface->getGui()->getApp()->getProject()->getNodeByName(masterNodeName);
 
         ///the node could not exist any longer if the user deleted it in the meantime
@@ -198,19 +190,19 @@ NodeGraphPrivate::pasteNode(const boost::shared_ptr<NodeSerialization> & interna
             n->getEffectInstance()->slaveAllKnobs( masterNode->getEffectInstance().get(), true );
         }
     }
-    
+
     //All nodes that are reachable via expressions
     NodesList allNodes;
     n->getGroup()->getActiveNodes(&allNodes);
-    
+
     ///Add the node group itself
     {
-        NodeGroup* isContainerGroup = dynamic_cast<NodeGroup*>(n->getGroup().get());
+        NodeGroup* isContainerGroup = dynamic_cast<NodeGroup*>( n->getGroup().get() );
         if (isContainerGroup) {
-            allNodes.push_back(isContainerGroup->getNode());
+            allNodes.push_back( isContainerGroup->getNode() );
         }
     }
-    
+
     //We don't want the clone to have the same hash as the original
     n->incrementKnobsAge();
     if (guiSerialization) {
@@ -221,7 +213,7 @@ NodeGraphPrivate::pasteNode(const boost::shared_ptr<NodeSerialization> & interna
     gui->forceComputePreview( _publicInterface->getGui()->getApp()->getProject()->currentFrame() );
 
     if (clone) {
-        assert(internalSerialization->getNode());
+        assert( internalSerialization->getNode() );
         DotGui* isDot = dynamic_cast<DotGui*>( gui.get() );
         ///Dots cannot be cloned, just copy them
         if (!isDot) {
@@ -231,80 +223,74 @@ NodeGraphPrivate::pasteNode(const boost::shared_ptr<NodeSerialization> & interna
 
     ///Recurse if this is a group or multi-instance
     boost::shared_ptr<NodeGroup> isGrp =
-    boost::dynamic_pointer_cast<NodeGroup>(n->getEffectInstance()->shared_from_this());
-
+        boost::dynamic_pointer_cast<NodeGroup>( n->getEffectInstance()->shared_from_this() );
     const std::list<boost::shared_ptr<NodeSerialization> >& nodes = internalSerialization->getNodesCollection();
-    
     std::list<boost::shared_ptr<NodeGuiSerialization> >  nodesUi;
     if (guiSerialization) {
         nodesUi = guiSerialization->getChildren();
     }
-    assert(nodes.size() == nodesUi.size() || nodesUi.empty());
-    
-    if (internalSerialization->getNodeScriptName() != n->getScriptName()) {
+    assert( nodes.size() == nodesUi.size() || nodesUi.empty() );
+
+    if ( internalSerialization->getNodeScriptName() != n->getScriptName() ) {
         (*oldNewScriptNameMapping)[internalSerialization->getNodeScriptName()] = n->getScriptName();
     }
-    
-    if (!nodes.empty()) {
 
+    if ( !nodes.empty() ) {
         std::string parentName;
         boost::shared_ptr<NodeCollection> collection;
         if (isGrp) {
             collection = isGrp;
         } else {
-            assert(n->isMultiInstance());
+            assert( n->isMultiInstance() );
             collection = n->getGroup();
             parentName = n->getScriptName_mt_safe();
         }
-        std::list<std::pair<std::string,NodeGuiPtr > > newNodes;
-        
+        std::list<std::pair<std::string, NodeGuiPtr > > newNodes;
         std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator itUi = nodesUi.begin();
         for (std::list<boost::shared_ptr<NodeSerialization> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            
             boost::shared_ptr<NodeGuiSerialization> guiS = nodesUi.empty() ?  boost::shared_ptr<NodeGuiSerialization>() : *itUi;
-            NodeGuiPtr newChild = pasteNode(*it, guiS, QPointF(0,0),collection,parentName,clone, oldNewScriptNameMapping);
+            NodeGuiPtr newChild = pasteNode(*it, guiS, QPointF(0, 0), collection, parentName, clone, oldNewScriptNameMapping);
             if (newChild) {
-                newNodes.push_back(std::make_pair((*it)->getNodeScriptName(),newChild));
-                if ((*it)->getNodeScriptName() != newChild->getNode()->getScriptName()) {
+                newNodes.push_back( std::make_pair( (*it)->getNodeScriptName(), newChild ) );
+                if ( (*it)->getNodeScriptName() != newChild->getNode()->getScriptName() ) {
                     (*oldNewScriptNameMapping)[(*it)->getNodeScriptName()] = newChild->getNode()->getScriptName();
                 }
-                allNodes.push_back(newChild->getNode());
+                allNodes.push_back( newChild->getNode() );
             }
-            if (!nodesUi.empty()) {
+            if ( !nodesUi.empty() ) {
                 ++itUi;
             }
         }
         restoreConnections(nodes, newNodes, *oldNewScriptNameMapping);
     }
-    
-    
+
+
     //Restore links once all children are created for alias knobs/expressions
-    n->restoreKnobsLinks(*internalSerialization,allNodes, *oldNewScriptNameMapping);
-    
+    n->restoreKnobsLinks(*internalSerialization, allNodes, *oldNewScriptNameMapping);
+
     return gui;
-}
+} // NodeGraphPrivate::pasteNode
 
 void
 NodeGraphPrivate::restoreConnections(const std::list<boost::shared_ptr<NodeSerialization> > & serializations,
-                                     const std::list<std::pair<std::string,NodeGuiPtr > > & newNodes,
-                                     const std::map<std::string,std::string> &oldNewScriptNamesMap)
+                                     const std::list<std::pair<std::string, NodeGuiPtr > > & newNodes,
+                                     const std::map<std::string, std::string> &oldNewScriptNamesMap)
 {
     ///For all nodes restore its connections
     std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itSer = serializations.begin();
-    assert(serializations.size() == newNodes.size());
-    for (std::list<std::pair<std::string,NodeGuiPtr > >::const_iterator it = newNodes.begin();
+
+    assert( serializations.size() == newNodes.size() );
+    for (std::list<std::pair<std::string, NodeGuiPtr > >::const_iterator it = newNodes.begin();
          it != newNodes.end(); ++it, ++itSer) {
-        const std::map<std::string,std::string> & inputNames = (*itSer)->getInputs();
+        const std::map<std::string, std::string> & inputNames = (*itSer)->getInputs();
         ///Restore each input
-        for (std::map<std::string,std::string>::const_iterator it2 = inputNames.begin(); it2 != inputNames.end(); ++it2) {
-            
+        for (std::map<std::string, std::string>::const_iterator it2 = inputNames.begin(); it2 != inputNames.end(); ++it2) {
             std::string inputScriptName = it2->second;
-            
-            std::map<std::string,std::string>::const_iterator foundMapping = oldNewScriptNamesMap.find(it2->second);
-            if (foundMapping != oldNewScriptNamesMap.end()) {
+            std::map<std::string, std::string>::const_iterator foundMapping = oldNewScriptNamesMap.find(it2->second);
+            if ( foundMapping != oldNewScriptNamesMap.end() ) {
                 inputScriptName = foundMapping->second;
             }
-            
+
             if ( inputScriptName.empty() ) {
                 continue;
             }
@@ -318,10 +304,10 @@ NodeGraphPrivate::restoreConnections(const std::list<boost::shared_ptr<NodeSeria
 
             ///find a node  containing the same name. It should not match exactly because there's already
             /// the "-copy" that was added to its name
-            for (std::list<std::pair<std::string,NodeGuiPtr > >::const_iterator it3 = newNodes.begin();
+            for (std::list<std::pair<std::string, NodeGuiPtr > >::const_iterator it3 = newNodes.begin();
                  it3 != newNodes.end(); ++it3) {
-                if ( it3->second->getNode()->getScriptName() == inputScriptName ) {
-                    NodeCollection::connectNodes( index,it3->second->getNode(),it->second->getNode());
+                if (it3->second->getNode()->getScriptName() == inputScriptName) {
+                    NodeCollection::connectNodes( index, it3->second->getNode(), it->second->getNode() );
                     break;
                 }
             }

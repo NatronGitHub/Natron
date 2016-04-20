@@ -128,10 +128,11 @@ nocase_equal_string (const std::string &s1,
                      const std::string &s2)
 {
     return s1.size() == s2.size() &&        // ensure same sizes
-           std::equal (s1.begin(),s1.end(), // first source string
+           std::equal (s1.begin(), s1.end(), // first source string
                        s2.begin(),        // second source string
                        nocase_equal_char);
 }
+
 #endif
 
 static inline bool
@@ -186,81 +187,79 @@ public:
 #endif // 0
 
 
-
 ///////////////////////// SequenceFileDialog
 
 SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmit the stylesheet to the dialog
-                                       const std::vector<std::string> & filters, // the user accepted file types
-                                       bool isSequenceDialog, // true if this dialog can display sequences
-                                       FileDialogModeEnum mode, // if it is an open or save dialog
-                                       const std::string & currentDirectory,// the directory to show first
-                                       Gui* gui,
-                                       bool allowRelativePaths)
+                                        const std::vector<std::string> & filters, // the user accepted file types
+                                        bool isSequenceDialog, // true if this dialog can display sequences
+                                        FileDialogModeEnum mode, // if it is an open or save dialog
+                                        const std::string & currentDirectory,// the directory to show first
+                                        Gui* gui,
+                                        bool allowRelativePaths)
     : QDialog(parent)
-      , _filters()
-      , _view(0)
-      , _itemDelegate( new SequenceItemDelegate(this) )
-      , _model()
-      , _favoriteViewModel( new QFileSystemModel() )
-      , _lookinViewModel( new QFileSystemModel() )
-      , _mainLayout(0)
-      , _requestedDir()
-      , _lookInLabel(0)
-      , _lookInCombobox(0)
-      , _previousButton(0)
-      , _nextButton(0)
-      , _upButton(0)
-      , _createDirButton(0)
-      , _openButton(0)
-      , _cancelButton(0)
-      , _addFavoriteButton(0)
-      , _removeFavoriteButton(0)
-      , _selectionLineEdit(0)
-      , _relativeLabel(0)
-      , _relativeChoice(0)
-      , _sequenceButton(0)
-      , _filterLabel(0)
-      , _filterLineEdit(0)
-      , _filterDropDown(0)
-      , _fileExtensionCombo(0)
-      , _buttonsLayout(0)
-      , _centerLayout(0)
-      , _favoriteLayout(0)
-      , _favoriteButtonsLayout(0)
-      , _selectionLayout(0)
-      , _filterLineLayout(0)
-      , _filterLayout(0)
-      , _buttonsWidget(0)
-      , _favoriteWidget(0)
-      , _favoriteButtonsWidget(0)
-      , _selectionWidget(0)
-      , _filterLineWidget(0)
-      , _filterWidget(0)
-      , _favoriteView(0)
-      , _centerSplitter(0)
-      , _history()
-      , _currentHistoryLocation(-1)
-      , _showHiddenAction(0)
-      , _newFolderAction(0)
-      , _dialogMode(mode)
-      , _centerArea(0)
-      , _centerAreaLayout(0)
-      , _togglePreviewButton(0)
-      , _preview()
-      , _wasAutosetProjectFormatEnabled(false)
-      , _gui(gui)
-      , _relativePathsAllowed(allowRelativePaths)
+    , _filters()
+    , _view(0)
+    , _itemDelegate( new SequenceItemDelegate(this) )
+    , _model()
+    , _favoriteViewModel( new QFileSystemModel() )
+    , _lookinViewModel( new QFileSystemModel() )
+    , _mainLayout(0)
+    , _requestedDir()
+    , _lookInLabel(0)
+    , _lookInCombobox(0)
+    , _previousButton(0)
+    , _nextButton(0)
+    , _upButton(0)
+    , _createDirButton(0)
+    , _openButton(0)
+    , _cancelButton(0)
+    , _addFavoriteButton(0)
+    , _removeFavoriteButton(0)
+    , _selectionLineEdit(0)
+    , _relativeLabel(0)
+    , _relativeChoice(0)
+    , _sequenceButton(0)
+    , _filterLabel(0)
+    , _filterLineEdit(0)
+    , _filterDropDown(0)
+    , _fileExtensionCombo(0)
+    , _buttonsLayout(0)
+    , _centerLayout(0)
+    , _favoriteLayout(0)
+    , _favoriteButtonsLayout(0)
+    , _selectionLayout(0)
+    , _filterLineLayout(0)
+    , _filterLayout(0)
+    , _buttonsWidget(0)
+    , _favoriteWidget(0)
+    , _favoriteButtonsWidget(0)
+    , _selectionWidget(0)
+    , _filterLineWidget(0)
+    , _filterWidget(0)
+    , _favoriteView(0)
+    , _centerSplitter(0)
+    , _history()
+    , _currentHistoryLocation(-1)
+    , _showHiddenAction(0)
+    , _newFolderAction(0)
+    , _dialogMode(mode)
+    , _centerArea(0)
+    , _centerAreaLayout(0)
+    , _togglePreviewButton(0)
+    , _preview()
+    , _wasAutosetProjectFormatEnabled(false)
+    , _gui(gui)
+    , _relativePathsAllowed(allowRelativePaths)
 {
-    
     for (U32 i = 0; i < filters.size(); ++i) {
-        _filters.push_back(QString::fromUtf8(filters[i].c_str()));
+        _filters.push_back( QString::fromUtf8( filters[i].c_str() ) );
     }
-    
+
     std::string directoryArgs = currentDirectory;
-    if (!directoryArgs.empty()) {
+    if ( !directoryArgs.empty() ) {
         gui->getApp()->getProject()->canonicalizePath(directoryArgs);
     }
-    
+
     setWindowFlags(Qt::Window);
     _mainLayout = new QVBoxLayout(this);
     setLayout(_mainLayout);
@@ -269,13 +268,13 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _buttonsLayout = new QHBoxLayout(_buttonsWidget);
     _buttonsWidget->setLayout(_buttonsLayout);
     if (mode == eFileDialogModeOpen) {
-        _lookInLabel = new Label(tr("Look in:"),_buttonsWidget);
+        _lookInLabel = new Label(tr("Look in:"), _buttonsWidget);
     } else {
-        _lookInLabel = new Label(tr("Save in:"),_buttonsWidget);
+        _lookInLabel = new Label(tr("Save in:"), _buttonsWidget);
     }
     _buttonsLayout->addWidget(_lookInLabel);
 
-    _lookInCombobox = new FileDialogComboBox(this,_buttonsWidget);
+    _lookInCombobox = new FileDialogComboBox(this, _buttonsWidget);
     _lookInCombobox->setMinimumWidth(200);
     _buttonsLayout->addWidget(_lookInCombobox);
     QObject::connect( _lookInCombobox, SIGNAL(activated(QString)), this, SLOT(onLookingComboboxChanged(QString)) );
@@ -285,28 +284,28 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _buttonsLayout->addStretch();
 
 
-    QSize buttonSize(TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
-    QSize buttonIconSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    QSize buttonSize( TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
+    QSize buttonIconSize( TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE) );
 
-    _previousButton = new Button(style()->standardIcon(QStyle::SP_ArrowBack),QString(),_buttonsWidget);
+    _previousButton = new Button(style()->standardIcon(QStyle::SP_ArrowBack), QString(), _buttonsWidget);
     _previousButton->setFixedSize(buttonSize);
     _previousButton->setIconSize(buttonIconSize);
     _buttonsLayout->addWidget(_previousButton);
     QObject::connect( _previousButton, SIGNAL(clicked()), this, SLOT(previousFolder()) );
 
-    _nextButton = new Button(style()->standardIcon(QStyle::SP_ArrowForward),QString(),_buttonsWidget);
+    _nextButton = new Button(style()->standardIcon(QStyle::SP_ArrowForward), QString(), _buttonsWidget);
     _nextButton->setFixedSize(buttonSize);
     _nextButton->setIconSize(buttonIconSize);
     _buttonsLayout->addWidget(_nextButton);
     QObject::connect( _nextButton, SIGNAL(clicked()), this, SLOT(nextFolder()) );
 
-    _upButton = new Button(style()->standardIcon(QStyle::SP_ArrowUp),QString(),_buttonsWidget);
+    _upButton = new Button(style()->standardIcon(QStyle::SP_ArrowUp), QString(), _buttonsWidget);
     _upButton->setIconSize(buttonIconSize);
     _upButton->setFixedSize(buttonSize);
     _buttonsLayout->addWidget(_upButton);
     QObject::connect( _upButton, SIGNAL(clicked()), this, SLOT(parentFolder()) );
 
-    _createDirButton = new Button(style()->standardIcon(QStyle::SP_FileDialogNewFolder),QString(),_buttonsWidget);
+    _createDirButton = new Button(style()->standardIcon(QStyle::SP_FileDialogNewFolder), QString(), _buttonsWidget);
     _createDirButton->setIconSize(buttonIconSize);
     _createDirButton->setFixedSize(buttonSize);
     _buttonsLayout->addWidget(_createDirButton);
@@ -317,32 +316,32 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _centerArea = new QWidget(this);
     _centerAreaLayout = new QHBoxLayout(_centerArea);
     _centerAreaLayout->setContentsMargins(0, 0, 0, 0);
-    
+
     _centerSplitter = new QSplitter(_centerArea);
-    _centerSplitter->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
+    _centerSplitter->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     _favoriteWidget = new QWidget(this);
     _favoriteLayout = new QVBoxLayout(_favoriteWidget);
     _favoriteWidget->setLayout(_favoriteLayout);
-    _favoriteView = new FavoriteView(_gui,this);
+    _favoriteView = new FavoriteView(_gui, this);
     _favoriteView->setFocusPolicy(Qt::NoFocus);
-    QObject::connect( _favoriteView,SIGNAL(urlRequested(QUrl)),this,SLOT(seekUrl(QUrl)) );
+    QObject::connect( _favoriteView, SIGNAL(urlRequested(QUrl)), this, SLOT(seekUrl(QUrl)) );
     _favoriteLayout->setSpacing(0);
     _favoriteLayout->setContentsMargins(0, 0, 0, 0);
     _favoriteLayout->addWidget(_favoriteView);
 
     _favoriteButtonsWidget = new QWidget(_favoriteView);
     _favoriteButtonsLayout = new QHBoxLayout(_favoriteButtonsWidget);
-    _favoriteButtonsLayout->setContentsMargins(0,0,0,0);
+    _favoriteButtonsLayout->setContentsMargins(0, 0, 0, 0);
     _favoriteButtonsWidget->setLayout(_favoriteButtonsLayout);
 
-    _addFavoriteButton = new Button(QString::fromUtf8("+"),this);
-    _addFavoriteButton->setMaximumSize(20,20);
+    _addFavoriteButton = new Button(QString::fromUtf8("+"), this);
+    _addFavoriteButton->setMaximumSize(20, 20);
     _favoriteButtonsLayout->addWidget(_addFavoriteButton);
     QObject::connect( _addFavoriteButton, SIGNAL(clicked()), this, SLOT(addFavorite()) );
 
-    _removeFavoriteButton = new Button(QString::fromUtf8("-"),this);
-    _removeFavoriteButton->setMaximumSize(20,20);
+    _removeFavoriteButton = new Button(QString::fromUtf8("-"), this);
+    _removeFavoriteButton->setMaximumSize(20, 20);
     _favoriteButtonsLayout->addWidget(_removeFavoriteButton);
     QObject::connect( _removeFavoriteButton, SIGNAL(clicked()), _favoriteView, SLOT(removeEntry()) );
 
@@ -352,86 +351,86 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
 
 
     _centerSplitter->addWidget(_favoriteWidget);
-    
-    
+
+
     _selectionWidget = new QWidget(this);
     _selectionLayout = new QHBoxLayout(_selectionWidget);
     _selectionLayout->setContentsMargins(0, 0, 0, 0);
     _selectionWidget->setLayout(_selectionLayout);
-    
-    _relativeLabel = new Label(tr("Relative to:"),_selectionWidget);
+
+    _relativeLabel = new Label(tr("Relative to:"), _selectionWidget);
     _selectionLayout->addWidget(_relativeLabel);
-    
+
     _relativeChoice = new ComboBox(_selectionWidget);
-    QObject::connect(_relativeChoice,SIGNAL(currentIndexChanged(int)),this,SLOT(onRelativeChoiceChanged(int)));
-    _relativeChoice->setToolTip(GuiUtils::convertFromPlainText(tr("This controls how the file-path (absolute/relative) that you choose will be fetched once you have ""chosen a file. The path will be made relative to the selected project path only when OK will be pressed."), Qt::WhiteSpaceNormal));
+    QObject::connect( _relativeChoice, SIGNAL(currentIndexChanged(int)), this, SLOT(onRelativeChoiceChanged(int)) );
+    _relativeChoice->setToolTip( GuiUtils::convertFromPlainText(tr("This controls how the file-path (absolute/relative) that you choose will be fetched once you have " "chosen a file. The path will be made relative to the selected project path only when OK will be pressed."), Qt::WhiteSpaceNormal) );
     _selectionLayout->addWidget(_relativeChoice);
     _relativeChoice->addItem( tr("Absolute") );
-    std::map<std::string,std::string> projectPaths;
+    std::map<std::string, std::string> projectPaths;
     gui->getApp()->getProject()->getEnvironmentVariables(projectPaths);
-    for (std::map<std::string,std::string>::iterator it = projectPaths.begin(); it != projectPaths.end(); ++it) {
+    for (std::map<std::string, std::string>::iterator it = projectPaths.begin(); it != projectPaths.end(); ++it) {
         QString varName;
-        varName.append(QLatin1Char('['));
-        varName.append(QString::fromUtf8(it->first.c_str()));
-        varName.append(QLatin1Char(']'));
+        varName.append( QLatin1Char('[') );
+        varName.append( QString::fromUtf8( it->first.c_str() ) );
+        varName.append( QLatin1Char(']') );
         _relativeChoice->addItem(varName);
     }
     if (!allowRelativePaths) {
         _relativeLabel->hide();
         _relativeChoice->hide();
     }
-    
+
     _sequenceButton = new ComboBox(_selectionWidget);
     _sequenceButton->addItem( tr("Sequence:") );
     _sequenceButton->addItem( tr("File:") );
-    
-    
+
+
     if (isSequenceDialog) {
         _sequenceButton->setCurrentIndex(0);
     } else {
         _sequenceButton->setCurrentIndex(1);
     }
-    QObject::connect( _sequenceButton,SIGNAL(currentIndexChanged(int)),this,SLOT(sequenceComboBoxSlot(int)) );
+    QObject::connect( _sequenceButton, SIGNAL(currentIndexChanged(int)), this, SLOT(sequenceComboBoxSlot(int)) );
     _selectionLayout->addWidget(_sequenceButton);
-    
+
     if ( !isSequenceDialog || (_dialogMode == eFileDialogModeDir) ) {
         _sequenceButton->setVisible(false);
     }
-    
+
     _view =  new SequenceDialogView(this);
-    
-    _model.reset(new FileSystemModel());
+
+    _model.reset( new FileSystemModel() );
     _model->initialize(this);
-    
+
     _view->setSortingEnabled( isCaseSensitiveFileSystem( rootPath() ) );
 #ifdef FILE_DIALOG_DISABLE_ICONS
     //EmptyIconProvider* iconProvider = new EmptyIconProvider;
     //_model->setIconProvider(iconProvider);
 #endif
-    
+
     _model->setSequenceModeEnabled(isSequenceDialog ? true : false);
-    
+
     _view->setModel( _model.get() );
     _view->setItemDelegate( _itemDelegate.get() );
-    
-    QObject::connect( _model.get(),SIGNAL(directoryLoaded(QString)),this,SLOT(updateView(QString)) );
+
+    QObject::connect( _model.get(), SIGNAL(directoryLoaded(QString)), this, SLOT(updateView(QString)) );
     QObject::connect( _view, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(doubleClickOpen(QModelIndex)) );
-    
+
     _centerSplitter->addWidget(_view);
-    
+
     _centerAreaLayout->addWidget(_centerSplitter);
-    
-    if (mode == eFileDialogModeOpen && isSequenceDialog) {
-        QPixmap pixPreviewButtonEnabled,pixPreviewButtonDisabled;
+
+    if ( (mode == eFileDialogModeOpen) && isSequenceDialog ) {
+        QPixmap pixPreviewButtonEnabled, pixPreviewButtonDisabled;
         appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_ENABLED, &pixPreviewButtonEnabled);
         appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_DISABLED, &pixPreviewButtonDisabled);
         QIcon icPreview;
-        icPreview.addPixmap(pixPreviewButtonEnabled,QIcon::Normal,QIcon::On);
-        icPreview.addPixmap(pixPreviewButtonDisabled,QIcon::Normal,QIcon::Off);
-        _togglePreviewButton = new Button(icPreview,QString(),_centerArea);
+        icPreview.addPixmap(pixPreviewButtonEnabled, QIcon::Normal, QIcon::On);
+        icPreview.addPixmap(pixPreviewButtonDisabled, QIcon::Normal, QIcon::Off);
+        _togglePreviewButton = new Button(icPreview, QString(), _centerArea);
         _togglePreviewButton->setIconSize(buttonIconSize);
-        QObject::connect(_togglePreviewButton, SIGNAL(clicked(bool)), this, SLOT(onTogglePreviewButtonClicked(bool)) );
-        _togglePreviewButton->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Expanding);
+        QObject::connect( _togglePreviewButton, SIGNAL(clicked(bool)), this, SLOT(onTogglePreviewButtonClicked(bool)) );
+        _togglePreviewButton->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
         _togglePreviewButton->setCheckable(true);
         _togglePreviewButton->setChecked(false);
         _centerAreaLayout->addWidget(_togglePreviewButton);
@@ -439,17 +438,17 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
         _preview = gui->getApp()->getPreviewProvider();
         _wasAutosetProjectFormatEnabled = gui->getApp()->getProject()->isAutoSetProjectFormatEnabled();
     }
-    
+
     _mainLayout->addWidget(_centerArea);
-    
-    
+
+
     _selectionLineEdit = new FileDialogLineEdit(_selectionWidget);
     _selectionLayout->addWidget(_selectionLineEdit);
 
     if ( (mode == SequenceFileDialog::eFileDialogModeOpen) || (mode == SequenceFileDialog::eFileDialogModeDir) ) {
-        _openButton = new Button(tr("Open"),_selectionWidget);
+        _openButton = new Button(tr("Open"), _selectionWidget);
     } else {
-        _openButton = new Button(tr("Save"),_selectionWidget);
+        _openButton = new Button(tr("Save"), _selectionWidget);
     }
     _openButton->setFocusPolicy(Qt::TabFocus);
     _selectionLayout->addWidget(_openButton);
@@ -457,7 +456,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     if (_dialogMode != eFileDialogModeDir) {
         QObject::connect( _openButton, SIGNAL(clicked()), this, SLOT(openSelectedFiles()) );
     } else {
-        QObject::connect( _openButton,SIGNAL(clicked()),this,SLOT(selectDirectory()) );
+        QObject::connect( _openButton, SIGNAL(clicked()), this, SLOT(selectDirectory()) );
     }
     _mainLayout->addWidget(_selectionWidget);
 
@@ -468,17 +467,17 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _filterLineWidget->setLayout(_filterLineLayout);
 
     if (_dialogMode == eFileDialogModeOpen) {
-        _filterLabel = new Label(tr("Filter:"),_filterLineWidget);
+        _filterLabel = new Label(tr("Filter:"), _filterLineWidget);
         _filterLineLayout->addWidget(_filterLabel);
     } else if (_dialogMode == eFileDialogModeSave) {
-        _filterLabel = new Label(tr("File type:"),_filterLineWidget);
+        _filterLabel = new Label(tr("File type:"), _filterLineWidget);
         _filterLineLayout->addWidget(_filterLabel);
     }
 
     _filterWidget = new QWidget(_filterLineWidget);
     _filterLayout = new QHBoxLayout(_filterWidget);
     _filterWidget->setLayout(_filterLayout);
-    _filterLayout->setContentsMargins(0,0,0,0);
+    _filterLayout->setContentsMargins(0, 0, 0, 0);
     _filterLayout->setSpacing(0);
 
 
@@ -490,7 +489,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
         _filterLineLayout->addWidget(_fileExtensionCombo);
         QObject::connect( _fileExtensionCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(onFileExtensionComboChanged(int)) );
         if (isSequenceDialog) {
-            int idx = _fileExtensionCombo->itemIndex(QString::fromUtf8("jpg"));
+            int idx = _fileExtensionCombo->itemIndex( QString::fromUtf8("jpg") );
             if (idx >= 0) {
                 _fileExtensionCombo->setCurrentIndex(idx);
             }
@@ -500,27 +499,27 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     if (_dialogMode != eFileDialogModeDir) {
         _filterLineEdit = new FileDialogLineEdit(_filterWidget);
         _filterLayout->addWidget(_filterLineEdit);
-        QSize buttonSize( 15,_filterLineEdit->sizeHint().height() );
+        QSize buttonSize( 15, _filterLineEdit->sizeHint().height() );
         QPixmap pixDropDown;
         appPTR->getIcon(NATRON_PIXMAP_COMBOBOX, &pixDropDown);
-        _filterDropDown = new Button(QIcon(pixDropDown),QString(),_filterWidget);
+        _filterDropDown = new Button(QIcon(pixDropDown), QString(), _filterWidget);
         _filterDropDown->setFixedSize(buttonSize);
         _filterLayout->addWidget(_filterDropDown);
-        QObject::connect( _filterDropDown,SIGNAL(clicked()),this,SLOT(showFilterMenu()) );
-        QObject::connect( _filterLineEdit,SIGNAL(textEdited(QString)),this,SLOT(applyFilter(QString)) );
+        QObject::connect( _filterDropDown, SIGNAL(clicked()), this, SLOT(showFilterMenu()) );
+        QObject::connect( _filterLineEdit, SIGNAL(textEdited(QString)), this, SLOT(applyFilter(QString)) );
     } else {
         _filterLineLayout->addStretch();
     }
-    
+
 
     _filterLineLayout->addWidget(_filterWidget);
-    _cancelButton = new Button(tr("Cancel"),_filterLineWidget);
+    _cancelButton = new Button(tr("Cancel"), _filterLineWidget);
     _filterLineLayout->addWidget(_cancelButton);
     QObject::connect( _cancelButton, SIGNAL(clicked()), this, SLOT(cancelSlot()) );
 
     _mainLayout->addWidget(_filterLineWidget);
 
-    resize(TO_DPIX(900), TO_DPIY(400));
+    resize( TO_DPIX(900), TO_DPIY(400) );
 
     std::vector<QUrl> initialBookmarks;
     initialBookmarks.push_back( QUrl::fromLocalFile( QDir::homePath() ) );
@@ -529,23 +528,23 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
 #else
     initialBookmarks.push_back( QUrl::fromLocalFile( QLatin1String("") ) );
 #endif
-    
+
     _favoriteView->setModelAndUrls(_favoriteViewModel.get(), initialBookmarks);
 
 
     QItemSelectionModel *selectionModel = _view->selectionModel();
-    QObject::connect( selectionModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),this, SLOT(onSelectionChanged()) );
-    QObject::connect( _selectionLineEdit, SIGNAL(textChanged(QString)),this, SLOT(autoCompleteFileName(QString)) );
+    QObject::connect( selectionModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)), this, SLOT(onSelectionChanged()) );
+    QObject::connect( _selectionLineEdit, SIGNAL(textChanged(QString)), this, SLOT(autoCompleteFileName(QString)) );
     if (_dialogMode == eFileDialogModeSave) {
-        QObject::connect( _selectionLineEdit,SIGNAL(textEdited(QString)),this,SLOT(onSelectionLineEditing(QString)) );
+        QObject::connect( _selectionLineEdit, SIGNAL(textEdited(QString)), this, SLOT(onSelectionLineEditing(QString)) );
     }
     QObject::connect( _view, SIGNAL(customContextMenuRequested(QPoint)),
                       this, SLOT(showContextMenu(QPoint)) );
     QObject::connect( _model.get(), SIGNAL(rootPathChanged(QString)),
                       this, SLOT(pathChanged(QString)) );
     QObject::connect( _view->header(), SIGNAL(sortIndicatorChanged(int,Qt::SortOrder)), this,
-                     SLOT(onHeaderViewSortIndicatorChanged(int,Qt::SortOrder)));
-    
+                      SLOT(onHeaderViewSortIndicatorChanged(int,Qt::SortOrder)) );
+
     createMenuActions();
 
     if (_dialogMode == eFileDialogModeOpen) {
@@ -563,24 +562,23 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     } else {
         setWindowTitle( tr("Select Directory") );
     }
-    
-    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
-	
-	bool hasRestoredDir;
-    restoreState( settings.value( QLatin1String("FileDialog") ).toByteArray(),directoryArgs.empty(), &hasRestoredDir );
+
+    QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
+    bool hasRestoredDir;
+    restoreState( settings.value( QLatin1String("FileDialog") ).toByteArray(), directoryArgs.empty(), &hasRestoredDir );
 
     if (!hasRestoredDir) {
-        hasRestoredDir = setDirectory( QString::fromUtf8(directoryArgs.c_str()) );
+        hasRestoredDir = setDirectory( QString::fromUtf8( directoryArgs.c_str() ) );
     }
 
-	if (!hasRestoredDir) {
-		//Both calls to setDirectory failed, default to something that can always succeed: the root
+    if (!hasRestoredDir) {
+        //Both calls to setDirectory failed, default to something that can always succeed: the root
 #ifndef __NATRON_WIN32__
-		setDirectory(QString::fromUtf8("/"));
+        setDirectory( QString::fromUtf8("/") );
 #else
-		setDirectory(QString());
+        setDirectory( QString() );
 #endif
-	}
+    }
 
     if (!isSequenceDialog) {
         enableSequenceMode(false);
@@ -591,8 +589,8 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
 SequenceFileDialog::~SequenceFileDialog()
 {
     _model->resetCompletly(false);
-    
-    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
+
+    QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
     settings.setValue( QLatin1String("FileDialog"), saveState() );
 }
@@ -601,7 +599,7 @@ void
 FileDialogLineEdit::keyPressEvent(QKeyEvent* e)
 {
     ///Ignore these keypress so that the view gets the key_up/down
-    if (e->key() == Qt::Key_Down || e->key() == Qt::Key_Up) {
+    if ( (e->key() == Qt::Key_Down) || (e->key() == Qt::Key_Up) ) {
         e->ignore();
     } else {
         LineEdit::keyPressEvent(e);
@@ -630,19 +628,21 @@ SequenceFileDialog::saveState() const
     stream << history();
     stream << currentDirectory().path();
     stream << _view->header()->saveState();
-    stream << _relativeChoice->itemText(_relativeChoice->activeIndex());
+    stream << _relativeChoice->itemText( _relativeChoice->activeIndex() );
     stream << _sequenceButton->activeIndex();
+
     return data;
 }
 
-
-
 bool
-SequenceFileDialog::restoreState(const QByteArray & state, bool restoreDirectory, bool* directoryRestored)
+SequenceFileDialog::restoreState(const QByteArray & state,
+                                 bool restoreDirectory,
+                                 bool* directoryRestored)
 {
     QByteArray sd = state;
     QDataStream stream(&sd, QIODevice::ReadOnly);
-	*directoryRestored = false;
+
+    *directoryRestored = false;
     if ( stream.atEnd() ) {
         return false;
     }
@@ -670,64 +670,61 @@ SequenceFileDialog::restoreState(const QByteArray & state, bool restoreDirectory
         }
         _centerSplitter->setSizes(list);
     }
-    
-    
+
+
     for (int i = 0; i < _relativeChoice->count(); ++i) {
         if (_relativeChoice->itemText(i) == relativeChoice) {
             _relativeChoice->setCurrentIndex(i);
             break;
         }
     }
-    
+
     _sequenceButton->setCurrentIndex(sequenceMode_i);
-    
-    std::map<std::string,std::string> envVar;
+
+    std::map<std::string, std::string> envVar;
     _gui->getApp()->getProject()->getEnvironmentVariables(envVar);
-    
+
     std::vector<QUrl> stdBookMarks;
-    
-    
     QStringList expandedVars;
-    for (std::map<std::string,std::string>::iterator it = envVar.begin(); it != envVar.end(); ++it) {
-        QString var(QString::fromUtf8(it->second.c_str()));
-        if (it->first != NATRON_OCIO_ENV_VAR_NAME && !var.isEmpty()) {
+    for (std::map<std::string, std::string>::iterator it = envVar.begin(); it != envVar.end(); ++it) {
+        QString var( QString::fromUtf8( it->second.c_str() ) );
+        if ( (it->first != NATRON_OCIO_ENV_VAR_NAME) && !var.isEmpty() ) {
             ///The variable may be nested
             Project::expandVariable(envVar, it->second);
             expandedVars.push_back(var);
             QUrl url = QUrl::fromLocalFile(var);
-            
             QDir dir(var);
-            if (dir.exists()) {
+            if ( dir.exists() ) {
                 stdBookMarks.push_back(url);
             }
         }
     }
-    
+
     for (int i = 0; i < bookmarks.count(); ++i) {
         QString urlPath = bookmarks[i].path();
-        
-		// On windows url.path() will return something starting with a /
+
+        // On windows url.path() will return something starting with a /
 #ifdef __NATRON_WIN32__
-		if (urlPath.startsWith(QLatin1Char('/'))) {
-			urlPath.remove(0,1);
-		}
+        if ( urlPath.startsWith( QLatin1Char('/') ) ) {
+            urlPath.remove(0, 1);
+        }
 #endif
-        if (!urlPath.isEmpty()) {
-            if (urlPath.size() > 1 && (urlPath.endsWith(QLatin1Char('/')) || urlPath.endsWith(QLatin1Char('\\')))) {
+        if ( !urlPath.isEmpty() ) {
+            if ( (urlPath.size() > 1) && ( urlPath.endsWith( QLatin1Char('/') ) || urlPath.endsWith( QLatin1Char('\\') ) ) ) {
                 urlPath = urlPath.remove(urlPath.size() - 1, 1);
             }
             bool alreadyFound = false;
-            
+
             for (U32 j = 0; j < stdBookMarks.size(); ++j) {
                 QString otherUrl = stdBookMarks[j].path();
                 // On windows url.path() will return something starting with a /
 #ifdef __NATRON_WIN32__
-                if (otherUrl.startsWith(QLatin1Char('/'))) {
-                    otherUrl.remove(0,1);
+                if ( otherUrl.startsWith( QLatin1Char('/') ) ) {
+                    otherUrl.remove(0, 1);
                 }
 #endif
-                
-                if (otherUrl.size() > 1 && (otherUrl.endsWith(QLatin1Char('/')) || otherUrl.endsWith(QLatin1Char('\\')))) {
+
+                if ( (otherUrl.size() > 1) && ( otherUrl.endsWith( QLatin1Char('/') ) || otherUrl.endsWith( QLatin1Char('\\') ) ) ) {
                     otherUrl = otherUrl.remove(otherUrl.size() - 1, 1);
                 }
                 if (otherUrl == urlPath) {
@@ -735,17 +732,17 @@ SequenceFileDialog::restoreState(const QByteArray & state, bool restoreDirectory
                     break;
                 }
             }
-            
+
             QDir dir(urlPath);
-            if (!alreadyFound && dir.exists()) {
+            if ( !alreadyFound && dir.exists() ) {
                 stdBookMarks.push_back( bookmarks[i] );
             }
         }
     }
-    
 
-    if (!stdBookMarks.empty()) {
-        _favoriteView->addUrls(stdBookMarks,_favoriteView->getNUrls());
+
+    if ( !stdBookMarks.empty() ) {
+        _favoriteView->addUrls( stdBookMarks, _favoriteView->getNUrls() );
     }
     while (history.count() > 5) {
         history.pop_front();
@@ -782,7 +779,7 @@ SequenceFileDialog::setFileExtensionOnLineEdit(const QString & ext)
     if ( isDirectory(str) ) {
         QString text = _selectionLineEdit->text() + tr("Untitled");
         if ( sequenceModeEnabled() ) {
-            text.append(QLatin1Char('#'));
+            text.append( QLatin1Char('#') );
         }
         _selectionLineEdit->setText(text + QLatin1Char('.') + ext);
 
@@ -801,10 +798,10 @@ SequenceFileDialog::setFileExtensionOnLineEdit(const QString & ext)
             SequenceParsing::removePath(unpathed);
             pos = unpathed.find_first_of('#');
             if ( (size_t)pos == std::string::npos ) {
-                str.append(QLatin1Char('#'));
+                str.append( QLatin1Char('#') );
             }
         }
-        str.append(QLatin1Char('.'));
+        str.append( QLatin1Char('.') );
         str.append(ext);
         _selectionLineEdit->setText(str);
     }
@@ -865,20 +862,23 @@ SequenceFileDialog::enableSequenceMode(bool b)
 }
 
 bool
-SequenceFileDialog::getRelativeChoiceProjectPath(std::string& varName,std::string& varValue) const
+SequenceFileDialog::getRelativeChoiceProjectPath(std::string& varName,
+                                                 std::string& varValue) const
 {
     int choice = _relativeChoice->activeIndex();
+
     if (choice == 0) {
         return false; //< absolute
     } else {
         --choice; //we skip the absolute choice
-        std::map<std::string,std::string> projectPaths;
+        std::map<std::string, std::string> projectPaths;
         _gui->getApp()->getProject()->getEnvironmentVariables(projectPaths);
-        std::map<std::string,std::string>::iterator it = projectPaths.begin();
-        assert(choice < (int)projectPaths.size());
+        std::map<std::string, std::string>::iterator it = projectPaths.begin();
+        assert( choice < (int)projectPaths.size() );
         std::advance(it, choice);
         varName = it->first;
         varValue = it->second;
+
         return true;
     }
 }
@@ -896,13 +896,15 @@ SequenceFileDialog::sortIndicatorSection() const
 }
 
 void
-SequenceFileDialog::onHeaderViewSortIndicatorChanged(int logicalIndex,Qt::SortOrder order)
+SequenceFileDialog::onHeaderViewSortIndicatorChanged(int logicalIndex,
+                                                     Qt::SortOrder order)
 {
-    onSortIndicatorChanged(logicalIndex,order);
+    onSortIndicatorChanged(logicalIndex, order);
 }
 
 void
-SequenceFileDialog::onSortIndicatorChanged(int logicalIndex,Qt::SortOrder order)
+SequenceFileDialog::onSortIndicatorChanged(int logicalIndex,
+                                           Qt::SortOrder order)
 {
     _model->onSortIndicatorChanged(logicalIndex, order);
 }
@@ -912,11 +914,12 @@ SequenceFileDialog::onRelativeChoiceChanged(int /*index*/)
 {
     ///Update the line edit text
     std::string text = _selectionLineEdit->text().toStdString();
-    std::map<std::string,std::string> env;
+    std::map<std::string, std::string> env;
+
     _gui->getApp()->getProject()->getEnvironmentVariables(env);
     Project::expandVariable(env, text);
-    
-    proxyAndSetLineEditText(QString::fromUtf8(text.c_str()));
+
+    proxyAndSetLineEditText( QString::fromUtf8( text.c_str() ) );
 }
 
 void
@@ -930,34 +933,32 @@ SequenceFileDialog::onSelectionChanged()
     if ( indexes.empty() ) {
         return;
     }
-    
+
     QModelIndex mappedIndex = indexes[0];
-    
     FileSystemItem* item = _model->getFileSystemItem(mappedIndex);
     assert(item);
-    
+
     ///if the selected item is a directory, just set the line edit accordingly
     QString absolutePath = item->absoluteFilePath();
 
     proxyAndSetLineEditText(absolutePath);
 
-    if (!item->isDir()) {
+    if ( !item->isDir() ) {
         if (_dialogMode == eFileDialogModeSave) {
             QString extension = item->fileExtension();
             for (int i = 0; i < _fileExtensionCombo->count(); ++i) {
-                if ( _fileExtensionCombo->itemText(i) == extension ) {
+                if (_fileExtensionCombo->itemText(i) == extension) {
                     _fileExtensionCombo->setCurrentIndex_no_emit(i);
                     break;
                 }
             }
         }
     }
-    
+
     ///refrsh preview if any
-    if (_preview && _preview->viewerUI && _preview->viewerUI->isVisible()) {
+    if ( _preview && _preview->viewerUI && _preview->viewerUI->isVisible() ) {
         refreshPreviewAfterSelectionChange();
     }
-    
 } // onSelectionChanged
 
 void
@@ -973,19 +974,17 @@ SequenceFileDialog::enterDirectory(const QModelIndex & index)
 bool
 SequenceFileDialog::setDirectory(const QString &directory)
 {
-
     QString newDirectory = directory;
 
    #ifdef __NATRON_WIN32__
-	newDirectory = appPTR->mapUNCPathToPathWithDriveLetter(newDirectory);
+    newDirectory = appPTR->mapUNCPathToPathWithDriveLetter(newDirectory);
 #endif
-	
+
     QDir dir(newDirectory);
 
-    if (!newDirectory.isEmpty() && !dir.exists()) {
+    if ( !newDirectory.isEmpty() && !dir.exists() ) {
         return false;
     }
-   
 
 
     _view->selectionModel()->clear();
@@ -1000,20 +999,20 @@ SequenceFileDialog::setDirectory(const QString &directory)
     }
 
 #ifdef __NATRON_WIN32__
-	newDirectory = appPTR->mapUNCPathToPathWithDriveLetter(newDirectory);
+    newDirectory = appPTR->mapUNCPathToPathWithDriveLetter(newDirectory);
 #endif
-	
-    if (!newDirectory.isEmpty() && !FileSystemModel::startsWithDriveName(newDirectory)) {
+
+    if ( !newDirectory.isEmpty() && !FileSystemModel::startsWithDriveName(newDirectory) ) {
         return false;
     }
 
     _requestedDir = newDirectory;
-    if (!_model->setRootPath(newDirectory)) {
-		return false;
-	}
+    if ( !_model->setRootPath(newDirectory) ) {
+        return false;
+    }
     _createDirButton->setEnabled(_dialogMode != eFileDialogModeOpen);
-    if ( !newDirectory.isEmpty() && newDirectory.at(newDirectory.size() - 1) != QLatin1Char('/') ) {
-        newDirectory.append(QLatin1Char('/'));
+    if ( !newDirectory.isEmpty() && ( newDirectory.at(newDirectory.size() - 1) != QLatin1Char('/') ) ) {
+        newDirectory.append( QLatin1Char('/') );
     }
 
     _selectionLineEdit->blockSignals(true);
@@ -1025,28 +1024,29 @@ SequenceFileDialog::setDirectory(const QString &directory)
         ///and append it to the new path
         std::string unpathed = _selectionLineEdit->text().toStdString();
         SequenceParsing::removePath(unpathed);
-        proxyAndSetLineEditText( newDirectory + QString::fromUtf8(unpathed.c_str()) );
+        proxyAndSetLineEditText( newDirectory + QString::fromUtf8( unpathed.c_str() ) );
     }
 
     _selectionLineEdit->blockSignals(false);
-    
-    updateView(newDirectory);
-	return true;
-}
 
+    updateView(newDirectory);
+
+    return true;
+} // SequenceFileDialog::setDirectory
 
 void
 SequenceFileDialog::proxyAndSetLineEditText(const QString& text)
 {
     std::string stdText = text.toStdString();
+
     if (_relativePathsAllowed) {
-        std::string varName,varPath;
+        std::string varName, varPath;
         bool relative = getRelativeChoiceProjectPath(varName, varPath);
         if (relative) {
             Project::makeRelativeToVariable(varName, varPath, stdText);
         }
     }
-    _selectionLineEdit->setText(QString::fromUtf8(stdText.c_str()));
+    _selectionLineEdit->setText( QString::fromUtf8( stdText.c_str() ) );
 }
 
 /*This function is called when a directory has successfully been loaded (i.e
@@ -1054,15 +1054,14 @@ SequenceFileDialog::proxyAndSetLineEditText(const QString& text)
 void
 SequenceFileDialog::updateView(const QString &directory)
 {
-   
-
     boost::shared_ptr<FileSystemItem> directoryItem = _model->getFileSystemItem(directory);
+
     assert(directoryItem);
-    
-    QModelIndex index = _model->index(directoryItem.get());
+
+    QModelIndex index = _model->index( directoryItem.get() );
     /*update the view to show the newly loaded directory*/
     setRootIndex(index);
-    
+
     /*clearselection*/
     _view->selectionModel()->clear();
 }
@@ -1073,7 +1072,6 @@ SequenceFileDialog::sequenceModeEnabled() const
     return _model->isSequenceModeEnabled();
 }
 
-
 void
 SequenceFileDialog::setRootIndex(const QModelIndex & index)
 {
@@ -1082,7 +1080,7 @@ SequenceFileDialog::setRootIndex(const QModelIndex & index)
 }
 
 SequenceDialogView::SequenceDialogView(SequenceFileDialog* fd)
-    : QTreeView(fd),_fd(fd)
+    : QTreeView(fd), _fd(fd)
 {
     setSelectionBehavior(QAbstractItemView::SelectRows);
     setRootIsDecorated(false);
@@ -1110,8 +1108,10 @@ SequenceDialogView::keyPressEvent(QKeyEvent* e)
 {
     //Since the SequenceFileDialog will send us the events, make sure we do not send it back if it does not gets processed
     QTreeView::keyPressEvent(e);
-    if (e->key() == Qt::Key_Up || e->key() == Qt::Key_Down) {
+
+    if ( (e->key() == Qt::Key_Up) || (e->key() == Qt::Key_Down) ) {
         e->accept();
+
         return;
     }
 }
@@ -1127,7 +1127,7 @@ SequenceDialogView::dropEvent(QDropEvent* e)
     QList<QUrl> urls = e->mimeData()->urls();
     QString path;
     if (urls.size() > 0) {
-        path = QtCompat::toLocalFileUrlFixed(urls.at(0)).path();
+        path = QtCompat::toLocalFileUrlFixed( urls.at(0) ).path();
     }
     if ( !path.isEmpty() ) {
         _fd->setDirectory(path);
@@ -1163,15 +1163,15 @@ SequenceDialogView::resizeEvent(QResizeEvent* e)
 void
 SequenceDialogView::expandColumnsToFullWidth(int w)
 {
-    setColumnWidth(0,w * 0.65);
-    setColumnWidth(1,w * 0.1);
+    setColumnWidth(0, w * 0.65);
+    setColumnWidth(1, w * 0.1);
     setColumnWidth(2, w * 0.1);
     setColumnWidth(3, w * 0.15);
 }
 
 SequenceItemDelegate::SequenceItemDelegate(SequenceFileDialog* fd)
     : QStyledItemDelegate()
-      , _fd(fd)
+    , _fd(fd)
 {
 }
 
@@ -1181,59 +1181,54 @@ SequenceItemDelegate::paint(QPainter * painter,
                             const QModelIndex & index) const
 {
     assert( index.isValid() );
-    
-    
+
+
     // get the proper subrect from the style
     QStyle *style = QApplication::style();
     QRect geom = style->subElementRect(QStyle::SE_ItemViewItemText, &option);
-    
-    
-    
     FileSystemModel* model = _fd->getFileSystemModel();
-    
     QModelIndex nameColumnIndex;
     if (index.column() == FileSystemModel::Name) {
         nameColumnIndex = index;
     } else {
         ///To get the file-path, first retrieve the item in the column 0
-        nameColumnIndex = model->index( index.row(),0,index.parent() );
+        nameColumnIndex = model->index( index.row(), 0, index.parent() );
+    }
 
-    }
-    
     if ( !index.isValid() ) {
-        return QStyledItemDelegate::paint(painter,option,index);
+        return QStyledItemDelegate::paint(painter, option, index);
     }
-    
+
     FileSystemItem* item = model->getFileSystemItem(nameColumnIndex);
-    if (!item ) {
-        return QStyledItemDelegate::paint(painter,option,index);
+    if (!item) {
+        return QStyledItemDelegate::paint(painter, option, index);
     }
-    
+
     QString filename = item->getUserFriendlyFilename();
     //QFont f(appFont,appFontSize);
     //painter->setFont(f);
     if (option.state & QStyle::State_Selected) {
         painter->fillRect( geom, option.palette.highlight() );
     }
-    
-    QRect r;
-    QRect textRect( geom.x() + 5,geom.y(),geom.width() - 5,geom.height() );
 
-    
-    if (index.column() == FileSystemModel::Type || index.column() == FileSystemModel::DateModified) {
+    QRect r;
+    QRect textRect( geom.x() + 5, geom.y(), geom.width() - 5, geom.height() );
+
+
+    if ( (index.column() == FileSystemModel::Type) || (index.column() == FileSystemModel::DateModified) ) {
         ///Draw the item name column
         QString data = index.data().toString();
-        if (data.isEmpty()) {
+        if ( data.isEmpty() ) {
             data = QString::fromUtf8("--");
         }
-        painter->drawText(textRect,Qt::TextSingleLine,data,&r);
+        painter->drawText(textRect, Qt::TextSingleLine, data, &r);
+
         return;
     }
-    
-    bool isDir = item->isDir();
-    
-    if (index.column() == FileSystemModel::Size) {
 
+    bool isDir = item->isDir();
+
+    if (index.column() == FileSystemModel::Size) {
         quint64 size = index.data().toULongLong();
         QString itemSizeText;
         if (!isDir) {
@@ -1241,19 +1236,18 @@ SequenceItemDelegate::paint(QPainter * painter,
         } else {
             itemSizeText = QString::fromUtf8("--");
         }
-        painter->drawText(geom,Qt::TextSingleLine | Qt::AlignRight,itemSizeText,&r);
+        painter->drawText(geom, Qt::TextSingleLine | Qt::AlignRight, itemSizeText, &r);
     } else {
 #ifdef FILE_DIALOG_DISABLE_ICONS
-        if (isDir && !filename.endsWith(QLatin1Char('/'))) {
-            filename.append(QLatin1Char('/'));
-
+        if ( isDir && !filename.endsWith( QLatin1Char('/') ) ) {
+            filename.append( QLatin1Char('/') );
         }
 #endif
         // FIXME: with the default delegate (QStyledItemDelegate), there is a margin
         // of a few more pixels between border and icon, and between icon and text, not with this one
-        
+
 #ifdef FILE_DIALOG_DISABLE_ICONS
-        QRect textRect( geom.x() + 5,geom.y(),geom.width() - 5,geom.height() );
+        QRect textRect( geom.x() + 5, geom.y(), geom.width() - 5, geom.height() );
         QFont f = painter->font();
         if (isDir) {
             //change the font to bold
@@ -1267,28 +1261,24 @@ SequenceItemDelegate::paint(QPainter * painter,
         int textSize = totalSize - iconWidth;
         QFileInfo fileInfo( index.data(FileSystemModel::FilePathRole).toString() );
         QIcon icon = _fd->getFileSystemModel()->iconProvider()->icon(fileInfo);
-        QRect iconRect( geom.x(),geom.y(),iconWidth,geom.height() );
-        QSize iconSize = icon.actualSize( QSize( iconRect.width(),iconRect.height() ) );
-        QRect textRect( geom.x() + iconWidth,geom.y(),textSize,geom.height() );
+        QRect iconRect( geom.x(), geom.y(), iconWidth, geom.height() );
+        QSize iconSize = icon.actualSize( QSize( iconRect.width(), iconRect.height() ) );
+        QRect textRect( geom.x() + iconWidth, geom.y(), textSize, geom.height() );
         painter->drawPixmap(iconRect,
                             icon.pixmap(iconSize),
                             r);
 
 #endif
-        painter->drawText(textRect,Qt::TextSingleLine,filename,&r);
-
+        painter->drawText(textRect, Qt::TextSingleLine, filename, &r);
     }
-
-
-  
 } // paint
-
 
 bool
 SequenceFileDialog::isDirectory(const QString & name) const
 {
     QDir dir(name);
-	return dir.exists();
+
+    return dir.exists();
 }
 
 QString
@@ -1314,14 +1304,13 @@ SequenceItemDelegate::sizeHint(const QStyleOptionViewItem & option,
                                const QModelIndex & index) const
 {
     if (index.column() != 0) {
-        return QStyledItemDelegate::sizeHint(option,index);
+        return QStyledItemDelegate::sizeHint(option, index);
     }
     QString str =  index.data(FileSystemModel::FilePathRole).toString();
     QFontMetrics metric(option.font);
 
-    return QSize( metric.width(str),metric.height() );
+    return QSize( metric.width(str), metric.height() );
 }
-
 
 void
 SequenceFileDialog::previousFolder()
@@ -1346,36 +1335,35 @@ SequenceFileDialog::nextFolder()
 void
 SequenceFileDialog::parentFolder()
 {
-    
-    QString newDir ;
-
+    QString newDir;
     QString rootPath = _model->rootPath();
 
-	if (FileSystemModel::isDriveName(rootPath)) {
-		newDir = QString();
-	} else {
-		QDir dir(rootPath);
-		dir.cdUp();
-		newDir = dir.absolutePath();
-	}
+    if ( FileSystemModel::isDriveName(rootPath) ) {
+        newDir = QString();
+    } else {
+        QDir dir(rootPath);
+        dir.cdUp();
+        newDir = dir.absolutePath();
+    }
 
-	
+
 #ifdef __NATRON_WIN32__
-    if (FileSystemModel::isDriveName(newDir)) {
+    if ( FileSystemModel::isDriveName(newDir) ) {
         _upButton->setEnabled(false);
     } else {
         _upButton->setEnabled(true);
     }
 #else
-    if (FileSystemModel::isDriveName(newDir) || newDir.isEmpty()) {
+    if ( FileSystemModel::isDriveName(newDir) || newDir.isEmpty() ) {
         _upButton->setEnabled(false);
+
         return;
     } else {
         _upButton->setEnabled(true);
     }
-    
+
 #endif
-	
+
 
     setDirectory(newDir);
 }
@@ -1413,7 +1401,6 @@ SequenceFileDialog::createDir()
         newFolderString = dialog.textValue();
         if ( !newFolderString.isEmpty() ) {
             QString folderName = newFolderString;
-			
             QString prefix  = currentDirectory().absolutePath();
             Global::ensureLastPathSeparator(prefix);
             if ( QFile::exists(prefix + folderName) ) {
@@ -1435,7 +1422,7 @@ SequenceFileDialog::createDir()
 AddFavoriteDialog::AddFavoriteDialog(SequenceFileDialog* fd,
                                      QWidget* parent)
     : QDialog(parent)
-      , _fd(fd)
+    , _fd(fd)
 {
     _mainLayout = new QVBoxLayout(this);
     _mainLayout->setSpacing(0);
@@ -1443,7 +1430,7 @@ AddFavoriteDialog::AddFavoriteDialog(SequenceFileDialog* fd,
     setLayout(_mainLayout);
     setWindowTitle( tr("New Favorite") );
 
-    _descriptionLabel = new Label(QString(),this);
+    _descriptionLabel = new Label(QString(), this);
     _mainLayout->addWidget(_descriptionLabel);
 
     _secondLine = new QWidget(this);
@@ -1455,7 +1442,7 @@ AddFavoriteDialog::AddFavoriteDialog(SequenceFileDialog* fd,
 
 
     QPixmap pix;
-    appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE,&pix);
+    appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
 
     _openDirButton = new Button(_secondLine);
     _openDirButton->setIcon( QIcon(pix) );
@@ -1468,11 +1455,11 @@ AddFavoriteDialog::AddFavoriteDialog(SequenceFileDialog* fd,
     _thirdLineLayout = new QHBoxLayout(_thirdLine);
     _thirdLine->setLayout(_thirdLineLayout);
 
-    _cancelButton = new Button(tr("Cancel"),_thirdLine);
+    _cancelButton = new Button(tr("Cancel"), _thirdLine);
     QObject::connect( _cancelButton, SIGNAL(clicked()), this, SLOT(reject()) );
     _thirdLineLayout->addWidget(_cancelButton);
 
-    _okButton = new Button(tr("Ok"),_thirdLine);
+    _okButton = new Button(tr("Ok"), _thirdLine);
     QObject::connect( _okButton, SIGNAL(clicked()), this, SLOT(accept()) );
     _thirdLineLayout->addWidget(_okButton);
 
@@ -1488,7 +1475,7 @@ AddFavoriteDialog::setLabelText(const QString & text)
 void
 AddFavoriteDialog::openDir()
 {
-    QString str = QFileDialog::getExistingDirectory( this,tr("Select a directory"),_fd->currentDirectory().path() );
+    QString str = QFileDialog::getExistingDirectory( this, tr("Select a directory"), _fd->currentDirectory().path() );
 
     _pathLineEdit->setText(str);
 }
@@ -1502,14 +1489,14 @@ AddFavoriteDialog::textValue() const
 void
 SequenceFileDialog::addFavorite()
 {
-    AddFavoriteDialog dialog(this,this);
+    AddFavoriteDialog dialog(this, this);
 
     dialog.setLabelText( tr("Folder path:") );
-    QString newFavName,newFavPath;
+    QString newFavName, newFavPath;
     if ( dialog.exec() ) {
         newFavName = dialog.textValue();
         newFavPath = dialog.textValue();
-        addFavorite(newFavName,newFavPath);
+        addFavorite(newFavName, newFavPath);
     }
 }
 
@@ -1517,7 +1504,6 @@ void
 SequenceFileDialog::addFavorite(const QString & name,
                                 const QString & path)
 {
-
     QDir d(path);
 
     if ( !d.exists() ) {
@@ -1528,7 +1514,7 @@ SequenceFileDialog::addFavorite(const QString & name,
     if ( !name.isEmpty() && !path.isEmpty() ) {
         std::vector<QUrl> list;
         list.push_back( QUrl::fromLocalFile(path) );
-        _favoriteView->addUrls(list,-1);
+        _favoriteView->addUrls(list, -1);
     }
 }
 
@@ -1560,12 +1546,12 @@ SequenceFileDialog::openSelectedFiles()
                 ///check if str contains already the selected file extension, otherwise append it
                 {
                     QString ext = _fileExtensionCombo->getCurrentIndexText();
-                    if (ext != QString::fromUtf8("*")) {
-                        int lastSepPos = str.lastIndexOf(QLatin1Char('/'));
+                    if ( ext != QString::fromUtf8("*") ) {
+                        int lastSepPos = str.lastIndexOf( QLatin1Char('/') );
                         if (lastSepPos == -1) {
-                            lastSepPos = str.lastIndexOf(QString::fromUtf8("//"));
+                            lastSepPos = str.lastIndexOf( QString::fromUtf8("//") );
                         }
-                        int lastDotPos = str.lastIndexOf(QLatin1Char('.'));
+                        int lastDotPos = str.lastIndexOf( QLatin1Char('.') );
                         if (lastDotPos < lastSepPos) {
                             str.append( QLatin1Char('.') +  ext);
                             _selectionLineEdit->blockSignals(true);
@@ -1580,11 +1566,11 @@ SequenceFileDialog::openSelectedFiles()
                 if (sequence.size() > 0) {
                     QString text;
                     if (sequence.size() == 1) {
-                        std::map<int,std::string> & views = sequence.begin()->second;
+                        std::map<int, std::string> & views = sequence.begin()->second;
                         assert( !views.empty() );
 
                         text = tr("The file ");
-                        text.append( QString::fromUtf8(views.begin()->second.c_str() ));
+                        text.append( QString::fromUtf8( views.begin()->second.c_str() ) );
                         text.append( tr(" already exists.\n Would you like to replace it ?") );
                     } else {
                         text = tr("The sequence ");
@@ -1628,17 +1614,16 @@ SequenceFileDialog::keyPressEvent(QKeyEvent* e)
             } else {
                 QDialog::accept();
             }
-
-            
         } else {
             setDirectory(str);
         }
 
         return;
-    } else if (e->key() == Qt::Key_Up || e->key() == Qt::Key_Down) {
-        QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress, e->key(), e->modifiers());
-        qApp->notify(_view,ev);
+    } else if ( (e->key() == Qt::Key_Up) || (e->key() == Qt::Key_Down) ) {
+        QKeyEvent* ev = new QKeyEvent( QEvent::KeyPress, e->key(), e->modifiers() );
+        qApp->notify(_view, ev);
         e->accept();
+
         return;
     }
     QDialog::keyPressEvent(e);
@@ -1717,7 +1702,7 @@ SequenceFileDialog::autoCompleteFileName(const QString & text)
 
         if ( _selectionLineEdit->hasFocus() ) {
             for (int i = 0; i < oldFiles.count(); ++i) {
-                _view->selectionModel()->select(oldFiles.at(i),QItemSelectionModel::Toggle | QItemSelectionModel::Rows);
+                _view->selectionModel()->select(oldFiles.at(i), QItemSelectionModel::Toggle | QItemSelectionModel::Rows);
             }
         }
 
@@ -1738,19 +1723,19 @@ SequenceFileDialog::onLookingComboboxChanged(const QString & /*path*/)
     if ( !index.isValid() ) {
         return;
     }
-    
+
     QUrl url = index.data(UrlModel::UrlRole).toUrl();
     url = QtCompat::toLocalFileUrlFixed(url);
 
-	QString urlPath = url.path();
-	// On windows url.path() will return something starting with a /
+    QString urlPath = url.path();
+    // On windows url.path() will return something starting with a /
 #ifdef __NATRON_WIN32__
-		if (urlPath.startsWith(QLatin1Char('/'))) {
-			urlPath.remove(0,1);
-		}
+    if ( urlPath.startsWith( QLatin1Char('/') ) ) {
+        urlPath.remove(0, 1);
+    }
 #endif
-	
-	setDirectory(urlPath);
+
+    setDirectory(urlPath);
 }
 
 QString
@@ -1772,13 +1757,12 @@ SequenceFileDialog::getEnvironmentVariable(const QString &string)
 void
 SequenceFileDialog::pathChanged(const QString &newPath)
 {
-    
-    if (newPath.isEmpty()) {
+    if ( newPath.isEmpty() ) {
         _upButton->setEnabled(false);
     } else {
         _upButton->setEnabled(true);
     }
-    
+
     _favoriteView->selectUrl( QUrl::fromLocalFile(newPath) );
     setHistory( _lookInCombobox->history() );
 
@@ -1817,21 +1801,18 @@ std::string
 SequenceFileDialog::selectedFiles()
 {
     QModelIndexList indexes = _view->selectionModel()->selectedRows();
+
     if (indexes.count() > 1) {
         return std::string();
     }
 
-    
+
     std::string selection;
-    
-   
-    
     bool remapSelection = false;
-    
+
     if (indexes.count() == 1) {
-        
         FileSystemItem* item = _model->getFileSystemItem(indexes[0]);
-        
+
         if (!item) {
             return selection;
         }
@@ -1846,10 +1827,10 @@ SequenceFileDialog::selectedFiles()
         //if nothing is selected, pick whatever the line edit tells us
         selection =  _selectionLineEdit->text().toStdString();
     }
-    
-    
+
+
     if (remapSelection && _relativePathsAllowed) {
-        std::string varName,varPath;
+        std::string varName, varPath;
         bool relative = getRelativeChoiceProjectPath(varName, varPath);
         if (relative) {
             Project::makeRelativeToVariable(varName, varPath, selection);
@@ -1857,9 +1838,10 @@ SequenceFileDialog::selectedFiles()
     }
 
 #ifdef __NATRON_WIN32__
-	QString ret = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(QString::fromUtf8(selection.c_str()));
-	selection = ret.toStdString();
+    QString ret = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName( QString::fromUtf8( selection.c_str() ) );
+    selection = ret.toStdString();
 #endif
+
     return selection;
 }
 
@@ -1869,16 +1851,14 @@ SequenceFileDialog::filesToSave()
     assert(_dialogMode == eFileDialogModeSave);
     QString text = _selectionLineEdit->text();
     ///Find last dot position and remove everything after the extension which we might added on the line edit
-    int lastDotPos = text.lastIndexOf(QLatin1Char('.'));
-
-	QString ret;
+    int lastDotPos = text.lastIndexOf( QLatin1Char('.') );
+    QString ret;
     if (lastDotPos != -1) {
         int i = lastDotPos + 1;
-        while (i < text.size() && text.at(i) != QLatin1Char(' ')) {
+        while ( i < text.size() && text.at(i) != QLatin1Char(' ') ) {
             ++i;
         }
-        ret =  text.mid(0,i);
-        
+        ret =  text.mid(0, i);
     } else {
         ret = text;
     }
@@ -1887,7 +1867,7 @@ SequenceFileDialog::filesToSave()
     ret = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(ret);
 #endif
 
-	return ret.toStdString();
+    return ret.toStdString();
 }
 
 QDir
@@ -1900,9 +1880,9 @@ std::string
 SequenceFileDialog::selectedDirectory() const
 {
     std::string path = _requestedDir.toStdString();
-    
+
     if (_relativePathsAllowed) {
-        std::string pathName,pathValue;
+        std::string pathName, pathValue;
         bool relative = getRelativeChoiceProjectPath(pathName, pathValue);
         if (relative) {
             Project::makeRelativeToVariable(pathName, pathValue, path);
@@ -1911,17 +1891,16 @@ SequenceFileDialog::selectedDirectory() const
 
 
 #ifdef __NATRON_WIN32__
-	QString ret = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(QString::fromUtf8(path.c_str()));
-	path = ret.toStdString();
+    QString ret = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName( QString::fromUtf8( path.c_str() ) );
+    path = ret.toStdString();
 #endif
-	
-	return path;
+
+    return path;
 }
 
 QModelIndex
 SequenceFileDialog::select(const QModelIndex & index)
 {
-
     if ( index.isValid() && !_view->selectionModel()->isSelected(index) ) {
         _view->selectionModel()->select(index, QItemSelectionModel::Select | QItemSelectionModel::Rows);
     }
@@ -1937,7 +1916,7 @@ SequenceFileDialog::doubleClickOpen(const QModelIndex & /*index*/)
     for (int i = 0; i < indexes.count(); ++i) {
         QModelIndex sourceIndex = indexes[i];
         if ( _model->isDir(  sourceIndex ) ) {
-            _selectionLineEdit->setText(sourceIndex.data(FileSystemModel::FilePathRole).toString() + QLatin1Char('/'));
+            _selectionLineEdit->setText( sourceIndex.data(FileSystemModel::FilePathRole).toString() + QLatin1Char('/') );
             break;
         }
     }
@@ -1947,13 +1926,14 @@ SequenceFileDialog::doubleClickOpen(const QModelIndex & /*index*/)
 
 void
 SequenceFileDialog::seekUrl(const QUrl & url)
-{	
-	QString urlPath =  url.toLocalFile() ;
-	// On windows url.path() will return something starting with a /
+{
+    QString urlPath =  url.toLocalFile();
+
+    // On windows url.path() will return something starting with a /
 #ifdef __NATRON_WIN32__
-	if (urlPath.startsWith(QLatin1Char('/'))) {
-		urlPath.remove(0,1);
-	}
+    if ( urlPath.startsWith( QLatin1Char('/') ) ) {
+        urlPath.remove(0, 1);
+    }
 #endif
     setDirectory(urlPath);
 }
@@ -1961,16 +1941,14 @@ SequenceFileDialog::seekUrl(const QUrl & url)
 void
 SequenceFileDialog::showFilterMenu()
 {
-    assert(_filterLineEdit->parentWidget());
-    QPoint position( _filterLineEdit->parentWidget()->mapToGlobal(_filterLineEdit->pos()));
+    assert( _filterLineEdit->parentWidget() );
+    QPoint position( _filterLineEdit->parentWidget()->mapToGlobal( _filterLineEdit->pos() ) );
 
     position.ry() += _filterLineEdit->height();
     QList<QAction *> actions;
 
     //QFont font(appFont,appFontSize);
-    QFontMetrics fm(font());
-  
-
+    QFontMetrics fm( font() );
     QAction *startSlash = new QAction(QString::fromUtf8("*/"), this);
     QObject::connect( startSlash, SIGNAL(triggered()), this, SLOT(starSlashFilterSlot()) );
     actions.append(startSlash);
@@ -1988,16 +1966,15 @@ SequenceFileDialog::showFilterMenu()
         Menu menu(_filterLineEdit);
         //menu.setFont(font);
         menu.addActions(actions);
-      //  menu.setFixedSize( _filterLineEdit->width(),menu.sizeHint().height() );
+        //  menu.setFixedSize( _filterLineEdit->width(),menu.sizeHint().height() );
         menu.exec(position);
     }
 }
 
-
 void
 SequenceFileDialog::dotStarFilterSlot()
 {
-    QString filter(QString::fromUtf8(".*"));
+    QString filter( QString::fromUtf8(".*") );
 
     _filterLineEdit->setText(filter);
     applyFilter(filter);
@@ -2029,10 +2006,11 @@ SequenceFileDialog::applyFilter(QString filter)
     setDirectory(currentDir);
 }
 
-UrlModel::UrlModel(const std::map<std::string,std::string>& vars, QObject *parent)
+UrlModel::UrlModel(const std::map<std::string, std::string>& vars,
+                   QObject *parent)
     : QStandardItemModel(parent)
-      , fileSystemModel(0)
-	  , envVars(vars)
+    , fileSystemModel(0)
+    , envVars(vars)
 {
 }
 
@@ -2047,7 +2025,7 @@ UrlModel::setData(const QModelIndex &index,
         QStandardItemModel::setData(index, QDir::toNativeSeparators( fileSystemModel->data(dirIndex, QFileSystemModel::FilePathRole).toString() ), Qt::ToolTipRole);
         //  QStandardItemModel::setData(index, fileSystemModel->data(dirIndex).toString());
         QVariant deco = fileSystemModel->data(dirIndex, Qt::DecorationRole);
-        QStandardItemModel::setData(index, deco ,Qt::DecorationRole);
+        QStandardItemModel::setData(index, deco, Qt::DecorationRole);
         QStandardItemModel::setData(index, url, UrlRole);
 
         return true;
@@ -2063,14 +2041,13 @@ UrlModel::setUrl(const QModelIndex &index,
 {
     setData(index, url, UrlRole);
     if ( url.path().isEmpty() ) {
-        setData(index, /*fileSystemModel->myComputer()*/tr("Computer") );
+        setData( index, /*fileSystemModel->myComputer()*/ tr("Computer") );
         setData(index, fileSystemModel->myComputer(Qt::DecorationRole), Qt::DecorationRole);
     } else {
         QString newName;
         newName = QDir::toNativeSeparators( dirIndex.data(QFileSystemModel::FilePathRole).toString() ); //dirIndex.data().toString();
         QIcon newIcon;
         if ( !dirIndex.isValid() ) {
-
             newIcon = fileSystemModel->iconProvider()->icon(QFileIconProvider::Folder);
             newName = QFileInfo( url.toLocalFile() ).fileName();
             bool invalidUrlFound = false;
@@ -2086,18 +2063,18 @@ UrlModel::setUrl(const QModelIndex &index,
             //The bookmark is invalid then we set to false the EnabledRole
             setData(index, false, EnabledRole);
         } else {
-			newIcon = qvariant_cast<QIcon>( dirIndex.data(Qt::DecorationRole) );
+            newIcon = qvariant_cast<QIcon>( dirIndex.data(Qt::DecorationRole) );
             //The bookmark is valid then we set to true the EnabledRole
             setData(index, true, EnabledRole);
         }
 
         // Make sure that we have at least 32x32 images
-        const QSize size = newIcon.actualSize( QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE,NATRON_MEDIUM_BUTTON_ICON_SIZE) );
+        const QSize size = newIcon.actualSize( QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE) );
         if (size.width() != NATRON_MEDIUM_BUTTON_ICON_SIZE) {
             QPixmap smallPixmap = newIcon.pixmap( QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE) );
             newIcon.addPixmap( smallPixmap.scaledToWidth(NATRON_MEDIUM_BUTTON_ICON_SIZE, Qt::SmoothTransformation) );
         }
-		newName = mapUrlToDisplayName(newName);
+        newName = mapUrlToDisplayName(newName);
 
         if (index.data().toString() != newName) {
             setData(index, newName);
@@ -2120,34 +2097,32 @@ UrlModel::setUrls(const std::vector<QUrl> &urls)
 
 void
 UrlModel::addUrls(const std::vector<QUrl> &list,
-                  int startRow,bool removeExisting)
+                  int startRow,
+                  bool removeExisting)
 {
     if (startRow == -1) {
         startRow = rowCount();
     }
-    startRow = qMin( startRow,rowCount() );
+    startRow = qMin( startRow, rowCount() );
 
     ///Remove already existant URLS
     ///Result is a pair new Url, clean url path
-    std::vector<std::pair<QUrl,QString> > realList;
+    std::vector<std::pair<QUrl, QString> > realList;
     for (U32 i = 0; i < list.size(); ++i) {
-        
         QUrl url = list[i];
         if ( !url.isValid() || ( url.scheme() != QLatin1String("file") ) ) {
             continue;
         }
-        
+
         const QString cleanUrl = QDir::cleanPath( url.toLocalFile() );
-        
         QModelIndex idx = fileSystemModel->index(cleanUrl);
-        if (!cleanUrl.isEmpty() && !fileSystemModel->isDir(idx) ) {
+        if ( !cleanUrl.isEmpty() && !fileSystemModel->isDir(idx) ) {
             continue;
         }
-        
+
         bool found = false;
-        
         int rc = rowCount();
-        for (int j = 0; j < rc ; ++j) {
+        for (int j = 0; j < rc; ++j) {
             if (index(j, 0).data(UrlRole).toUrl().toLocalFile() == cleanUrl) {
                 if (removeExisting) {
                     if (j < startRow) {
@@ -2168,30 +2143,30 @@ UrlModel::addUrls(const std::vector<QUrl> &list,
             }
         }
         if (!found) {
-			// If not found, make sure it is not already in the realList 
-			for (std::size_t k = 0; k < realList.size(); ++k) {
-				if (realList[k].second == cleanUrl) {
-					found = true;
-					break;
-				}
-			}
-			if (!found) {
-				realList.push_back(std::make_pair(QUrl::fromLocalFile(cleanUrl),cleanUrl));
-			}
+            // If not found, make sure it is not already in the realList
+            for (std::size_t k = 0; k < realList.size(); ++k) {
+                if (realList[k].second == cleanUrl) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                realList.push_back( std::make_pair(QUrl::fromLocalFile(cleanUrl), cleanUrl) );
+            }
         }
     }
-    if (realList.empty()) {
+    if ( realList.empty() ) {
         return;
     }
-    
+
     int rc = rowCount();
-    if (startRow < (rc + (int)realList.size())) {
-        insertRows(startRow,realList.size());
+    if ( startRow < ( rc + (int)realList.size() ) ) {
+        insertRows( startRow, realList.size() );
     }
-    
+
     int row = startRow;
     for (int i = 0; i < (int)realList.size(); ++i) {
-        if (row >= rowCount()) {
+        if ( row >= rowCount() ) {
             insertRow(row);
         }
         QModelIndex idx = fileSystemModel->index(realList[i].second);
@@ -2199,9 +2174,8 @@ UrlModel::addUrls(const std::vector<QUrl> &list,
         setUrl(index(row, 0), realList[i].first, idx);
         watching.push_back( make_pair(idx, realList[i].second) );
         ++row;
-
     }
-}
+} // UrlModel::addUrls
 
 std::vector<QUrl>
 UrlModel::urls() const
@@ -2290,12 +2264,12 @@ UrlModel::changed(const QString &path)
     }
 }
 
-
 void
 UrlModel::removeRowIndex(const QModelIndex& index)
 {
     QString urlPath = index.data(UrlRole).toUrl().path();
-    if (!urlPath.isEmpty()) {
+
+    if ( !urlPath.isEmpty() ) {
         removeRow( index.row() );
         for (U32 j = 0; j < watching.size(); ++j) {
             if (watching[j].second == urlPath) {
@@ -2306,56 +2280,54 @@ UrlModel::removeRowIndex(const QModelIndex& index)
     }
 }
 
-
 FavoriteItemDelegate::FavoriteItemDelegate()
-: QStyledItemDelegate()
+    : QStyledItemDelegate()
 {
-    
-
 }
 
 QString
 UrlModel::mapUrlToDisplayName(const QString& originalName)
 {
-	QString str = originalName;
+    QString str = originalName;
 
 #ifdef __NATRON_WIN32__
-	//On Windows strings are stored with backslashes
-	str.replace(QLatin1Char('\\'),QLatin1Char('/'));
+    //On Windows strings are stored with backslashes
+    str.replace( QLatin1Char('\\'), QLatin1Char('/') );
 #endif
 
-	///if str ends with '/' remove it
-	if (str.size() > 1 && (str.endsWith(QLatin1Char('/')) || str.endsWith(QLatin1Char('\\')))) {
-		str = str.remove(str.size() - 1, 1);
-	}
+    ///if str ends with '/' remove it
+    if ( (str.size() > 1) && ( str.endsWith( QLatin1Char('/') ) || str.endsWith( QLatin1Char('\\') ) ) ) {
+        str = str.remove(str.size() - 1, 1);
+    }
 
-	std::map<std::string,std::string>::const_iterator isEnvVar = envVars.end();
-	for (std::map<std::string,std::string>::const_iterator it = envVars.begin(); it != envVars.end(); ++it) {
-		///if it->second ends with '/' remove it
-		std::string stdVar = it->second;
-		Project::expandVariable(envVars, stdVar);
-		QString var = QString::fromUtf8(stdVar.c_str());
-		if (var.size() > 1 && (var.endsWith(QLatin1Char('/')) || var.endsWith(QLatin1Char('\\')))) {
-			var = var.remove(var.size() - 1, 1);
-		}
-		if (var == str) {
-			isEnvVar = it;
-			break;
-		}
-	} 
-	if (isEnvVar == envVars.end()) {
-		QModelIndex modelIndex = fileSystemModel->index(str);
-		if ( !modelIndex.isValid() ) {
-			return originalName;
-		}
-		str = modelIndex.data().toString();
-	} else {
-		str.clear();
-		str.append(QLatin1Char('['));
-		str.append(QString::fromUtf8(isEnvVar->first.c_str()));
-		str.append(QLatin1Char(']'));
-	}
-	return str;
+    std::map<std::string, std::string>::const_iterator isEnvVar = envVars.end();
+    for (std::map<std::string, std::string>::const_iterator it = envVars.begin(); it != envVars.end(); ++it) {
+        ///if it->second ends with '/' remove it
+        std::string stdVar = it->second;
+        Project::expandVariable(envVars, stdVar);
+        QString var = QString::fromUtf8( stdVar.c_str() );
+        if ( (var.size() > 1) && ( var.endsWith( QLatin1Char('/') ) || var.endsWith( QLatin1Char('\\') ) ) ) {
+            var = var.remove(var.size() - 1, 1);
+        }
+        if (var == str) {
+            isEnvVar = it;
+            break;
+        }
+    }
+    if ( isEnvVar == envVars.end() ) {
+        QModelIndex modelIndex = fileSystemModel->index(str);
+        if ( !modelIndex.isValid() ) {
+            return originalName;
+        }
+        str = modelIndex.data().toString();
+    } else {
+        str.clear();
+        str.append( QLatin1Char('[') );
+        str.append( QString::fromUtf8( isEnvVar->first.c_str() ) );
+        str.append( QLatin1Char(']') );
+    }
+
+    return str;
 }
 
 void
@@ -2363,50 +2335,51 @@ FavoriteItemDelegate::paint(QPainter * painter,
                             const QStyleOptionViewItem & option,
                             const QModelIndex & index) const
 {
-	assert(index.isValid());
-	return QStyledItemDelegate::paint(painter,option,index);
-	
-	/*
-	The code below is deactivated because it crashes on Windows when trying to call drawPixmap and drawText
-	if the QModelIndex is internally pointing to a UNC path. The only viable solution found was to use the 
-	default implementation.
-	
-	if (index.column() == 0) {
+    assert( index.isValid() );
+
+    return QStyledItemDelegate::paint(painter, option, index);
+
+    /*
+       The code below is deactivated because it crashes on Windows when trying to call drawPixmap and drawText
+       if the QModelIndex is internally pointing to a UNC path. The only viable solution found was to use the
+       default implementation.
+
+       if (index.column() == 0) {
         QString str = index.data().toString();
 
-		QFileInfo fileInfo(str);
-		QIcon icon = _model->iconProvider()->icon(fileInfo);
-		int totalSize = option.rect.width();
-		int iconSize = 0;
-		QRect r;
-		if (!icon.isNull()) {
-			
-		    iconSize = option.decorationSize.width();
-			QRect iconRect( option.rect.x(),option.rect.y(),iconSize,option.rect.height() );
-			
-			if (option.state & QStyle::State_Selected) {
-				painter->fillRect( option.rect, option.palette.highlight() );
-			}
+        QFileInfo fileInfo(str);
+        QIcon icon = _model->iconProvider()->icon(fileInfo);
+        int totalSize = option.rect.width();
+        int iconSize = 0;
+        QRect r;
+        if (!icon.isNull()) {
 
-			QPixmap pix = icon.pixmap(icon.actualSize(QSize(iconRect.width(),iconRect.height())));
-			if (!pix.isNull()) {
-				painter->drawPixmap(iconRect,pix);
-			}
-		}
-		int textSize = totalSize - iconSize;
-		QRect textRect( option.rect.x() + iconSize,option.rect.y(),textSize,option.rect.height() );
-		painter->drawText(textRect,Qt::TextSingleLine,str,&r);
-    } else {
+            iconSize = option.decorationSize.width();
+            QRect iconRect( option.rect.x(),option.rect.y(),iconSize,option.rect.height() );
+
+            if (option.state & QStyle::State_Selected) {
+                painter->fillRect( option.rect, option.palette.highlight() );
+            }
+
+            QPixmap pix = icon.pixmap(icon.actualSize(QSize(iconRect.width(),iconRect.height())));
+            if (!pix.isNull()) {
+                painter->drawPixmap(iconRect,pix);
+            }
+        }
+        int textSize = totalSize - iconSize;
+        QRect textRect( option.rect.x() + iconSize,option.rect.y(),textSize,option.rect.height() );
+        painter->drawText(textRect,Qt::TextSingleLine,str,&r);
+       } else {
         QStyledItemDelegate::paint(painter,option,index);
-    }*/
+       }*/
 }
 
-
-FavoriteView::FavoriteView(Gui* gui,QWidget *parent)
+FavoriteView::FavoriteView(Gui* gui,
+                           QWidget *parent)
     : QListView(parent)
-      , _gui(gui)
-      , urlModel(0)
-      , _itemDelegate(0)
+    , _gui(gui)
+    , urlModel(0)
+    , _itemDelegate(0)
 {
     // setAttribute(Qt::WA_MacShowFocusRect,0);
 }
@@ -2415,14 +2388,14 @@ void
 FavoriteView::setModelAndUrls(QFileSystemModel *model,
                               const std::vector<QUrl> &newUrls)
 {
-    setIconSize( QSize(24,24) );
+    setIconSize( QSize(24, 24) );
     setUniformItemSizes(true);
     assert(!urlModel);
 
-	std::map<std::string,std::string> envVars;
-	_gui->getApp()->getProject()->getEnvironmentVariables(envVars);
+    std::map<std::string, std::string> envVars;
+    _gui->getApp()->getProject()->getEnvironmentVariables(envVars);
 
-    urlModel = new UrlModel(envVars,this);
+    urlModel = new UrlModel(envVars, this);
     urlModel->setFileSystemModel(model);
     assert(!_itemDelegate);
     _itemDelegate = new FavoriteItemDelegate();
@@ -2435,7 +2408,7 @@ FavoriteView::setModelAndUrls(QFileSystemModel *model,
     connect( this, SIGNAL(customContextMenuRequested(QPoint)),
              this, SLOT(showMenu(QPoint)) );
     urlModel->setUrls(newUrls);
-    setCurrentIndex( this->model()->index(0,0) );
+    setCurrentIndex( this->model()->index(0, 0) );
     connect( selectionModel(), SIGNAL(currentChanged(QModelIndex,QModelIndex)),
              this, SLOT(clicked(QModelIndex)) );
 }
@@ -2449,7 +2422,7 @@ FavoriteView::~FavoriteView()
 QSize
 FavoriteView::sizeHint() const
 {
-    return QSize( 150,QListView::sizeHint().height() ); //QListView::sizeHint();
+    return QSize( 150, QListView::sizeHint().height() ); //QListView::sizeHint();
 }
 
 void
@@ -2459,25 +2432,24 @@ FavoriteView::selectUrl(const QUrl &url)
                 this, SLOT(clicked(QModelIndex)) );
 
     selectionModel()->clear();
-	
-	QString urlPath = url.toLocalFile();
-	// On windows url.path() will return something starting with a /
+
+    QString urlPath = url.toLocalFile();
+    // On windows url.path() will return something starting with a /
 #ifdef __NATRON_WIN32__
-	if (urlPath.startsWith(QLatin1Char('/'))) {
-		urlPath.remove(0,1);
-	}
+    if ( urlPath.startsWith( QLatin1Char('/') ) ) {
+        urlPath.remove(0, 1);
+    }
 #endif
 
     for (int i = 0; i < model()->rowCount(); ++i) {
-	
-		QString otherUrlPath =  model()->index(i, 0).data(UrlModel::UrlRole).toUrl().toLocalFile();
-		// On windows url.path() will return something starting with a /
+        QString otherUrlPath =  model()->index(i, 0).data(UrlModel::UrlRole).toUrl().toLocalFile();
+        // On windows url.path() will return something starting with a /
 #ifdef __NATRON_WIN32__
-		if (otherUrlPath.startsWith(QLatin1Char('/'))) {
-			otherUrlPath.remove(0,1);
-		}
+        if ( otherUrlPath.startsWith( QLatin1Char('/') ) ) {
+            otherUrlPath.remove(0, 1);
+        }
 #endif
-		
+
         if (otherUrlPath == urlPath) {
             selectionModel()->select(model()->index(i, 0), QItemSelectionModel::Select);
             break;
@@ -2525,14 +2497,14 @@ FavoriteView::rename()
     if ( dialog.exec() ) {
         newName = dialog.textValue();
     }
-    rename(index,newName);
+    rename(index, newName);
 }
 
 void
 FavoriteView::rename(const QModelIndex & index,
                      const QString & name)
 {
-    model()->setData(index,name,Qt::EditRole);
+    model()->setData(index, name, Qt::EditRole);
 }
 
 void
@@ -2667,7 +2639,7 @@ UrlModel::canDrop(QDragEnterEvent* e)
 
     const QList<QUrl> list = e->mimeData()->urls();
     for (int i = 0; i < list.count(); ++i) {
-        QModelIndex idx = fileSystemModel->index( QtCompat::toLocalFileUrlFixed(list.at(i)).toLocalFile() );
+        QModelIndex idx = fileSystemModel->index( QtCompat::toLocalFileUrlFixed( list.at(i) ).toLocalFile() );
         if ( !fileSystemModel->isDir(idx) ) {
             return false;
         }
@@ -2690,12 +2662,10 @@ UrlModel::dropMimeData(const QMimeData *data,
     for (int i = 0; i < data->urls().count(); ++i) {
         urls.push_back( data->urls().at(i) );
     }
-    addUrls(urls, row,true);
+    addUrls(urls, row, true);
 
     return true;
 }
-
-
 
 void
 FavoriteView::dragEnterEvent(QDragEnterEvent* e)
@@ -2705,21 +2675,22 @@ FavoriteView::dragEnterEvent(QDragEnterEvent* e)
     }
 }
 
-FileDialogComboBox::FileDialogComboBox(SequenceFileDialog *p,QWidget *parent)
-: QComboBox(parent)
-, urlModel(new UrlModel(std::map<std::string,std::string>(),this))
-, dialog(p)
-, doResize(false)
+FileDialogComboBox::FileDialogComboBox(SequenceFileDialog *p,
+                                       QWidget *parent)
+    : QComboBox(parent)
+    , urlModel( new UrlModel(std::map<std::string, std::string>(), this) )
+    , dialog(p)
+    , doResize(false)
 {
     urlModel->setFileSystemModel( p->getLookingFileSystemModel() );
     setModel(urlModel);
-    QObject::connect(this, SIGNAL(currentIndexChanged(int)), this , SLOT(onCurrentIndexChanged(int)));
+    QObject::connect( this, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)) );
 }
 
 void
 FileDialogComboBox::onCurrentIndexChanged(int index)
 {
-    if (doResize && index >= 0 && index < count()) {
+    if ( doResize && (index >= 0) && ( index < count() ) ) {
         updateGeometry();
         doResize = false;
     }
@@ -2729,12 +2700,15 @@ QSize
 FileDialogComboBox::sizeHint() const
 {
     int index = currentIndex();
-    if (index >= 0 && index < count()) {
+
+    if ( (index >= 0) && ( index < count() ) ) {
         QFontMetrics fm = fontMetrics();
         QString txt = itemText(index);
         int w = fm.width(txt);
+
         return QSize(w + 10, fm.height() * 1.5);
     }
+
     return QComboBox::sizeHint();
 }
 
@@ -2771,7 +2745,7 @@ FileDialogComboBox::showPopup()
         model()->insertRow( model()->rowCount() );
         idx = model()->index(model()->rowCount() - 1, 0);
         // ### TODO maybe add a horizontal line before this
-        model()->setData( idx,QObject::tr("Recent Places") );
+        model()->setData( idx, QObject::tr("Recent Places") );
         QStandardItemModel *m = qobject_cast<QStandardItemModel*>( model() );
         if (m) {
             Qt::ItemFlags flags = m->flags(idx);
@@ -2785,7 +2759,7 @@ FileDialogComboBox::showPopup()
         urlModel->addUrls(stdUrls, -1);
     }
     setCurrentIndex(0);
-    
+
     doResize = true;
     QComboBox::showPopup();
 } // showPopup
@@ -2809,7 +2783,7 @@ void
 FileDialogComboBox::paintEvent(QPaintEvent* /*e*/)
 {
     QStylePainter painter(this);
-    QColor c(255,255,255,255);
+    QColor c(255, 255, 255, 255);
 
     painter.setPen(c);
     // draw the combobox frame, focusrect and selected etc.
@@ -2835,7 +2809,7 @@ SequenceFileDialog::fileSequencesFromFilesList(const QStringList & files,
     for (int i = 0; i < files.size(); ++i) {
         SequenceParsing::FileNameContent fileContent( files.at(i).toStdString() );
 
-        if ( !supportedFileTypes.contains(QString::fromUtf8(fileContent.getExtension().c_str()),Qt::CaseInsensitive) ) {
+        if ( !supportedFileTypes.contains(QString::fromUtf8( fileContent.getExtension().c_str() ), Qt::CaseInsensitive) ) {
             continue;
         }
 
@@ -2848,7 +2822,7 @@ SequenceFileDialog::fileSequencesFromFilesList(const QStringList & files,
             }
         }
         if (!found) {
-            boost::shared_ptr<SequenceParsing::SequenceFromFiles> seq( new SequenceParsing::SequenceFromFiles(fileContent,false) );
+            boost::shared_ptr<SequenceParsing::SequenceFromFiles> seq( new SequenceParsing::SequenceFromFiles(fileContent, false) );
             sequences.push_back(seq);
         }
     }
@@ -2866,7 +2840,7 @@ SequenceFileDialog::appendFilesFromDirRecursively(QDir* currentDir,
         const QString & e = entries.at(i);
 
         //ignore dot and dotdot
-        if ( (e == QString::fromUtf8(".")) || (e == QString::fromUtf8("..")) ) {
+        if ( ( e == QString::fromUtf8(".") ) || ( e == QString::fromUtf8("..") ) ) {
             continue;
         }
 
@@ -2911,15 +2885,15 @@ SequenceFileDialog::onTogglePreviewButtonClicked(bool toggled)
         createViewerPreviewNode();
     }
     if (toggled) {
-        if (!_preview->viewerUI->parentWidget()) {
+        if ( !_preview->viewerUI->parentWidget() ) {
             _centerAreaLayout->addWidget(_preview->viewerUI);
         }
-        if (!_preview->viewerUI->isVisible()) {
+        if ( !_preview->viewerUI->isVisible() ) {
             _preview->viewerUI->setVisible(true);
         }
         refreshPreviewAfterSelectionChange();
     } else {
-        if (_preview->viewerUI->isVisible()) {
+        if ( _preview->viewerUI->isVisible() ) {
             _preview->viewerUI->setVisible(false);
         }
     }
@@ -2928,24 +2902,25 @@ SequenceFileDialog::onTogglePreviewButtonClicked(bool toggled)
 void
 SequenceFileDialog::createViewerPreviewNode()
 {
-    CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
+    CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>() );
+
     args.fixedName = QString::fromUtf8(NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME);
     args.addToProject = false;
-    
+
     _preview->viewerNodeInternal = _gui->getApp()->createNode(args);
     assert(_preview->viewerNodeInternal);
     boost::shared_ptr<NodeGuiI> viewerNodeGui = _preview->viewerNodeInternal->getNodeGui();
     _preview->viewerNode = boost::dynamic_pointer_cast<NodeGui>(viewerNodeGui);
     assert(_preview->viewerNode);
     _preview->viewerNode->hideGui();
-    
+
     ViewerInstance* viewerInstance = _preview->viewerNodeInternal->isEffectViewer();
     assert(viewerInstance);
     if (!viewerInstance) {
         // coverity[dead_error_line]
         return;
     }
-    ViewerGL* viewerGL = dynamic_cast<ViewerGL*>(viewerInstance->getUiContext());
+    ViewerGL* viewerGL = dynamic_cast<ViewerGL*>( viewerInstance->getUiContext() );
     assert(viewerGL);
     if (!viewerGL) {
         // coverity[dead_error_line]
@@ -2957,9 +2932,9 @@ SequenceFileDialog::createViewerPreviewNode()
         return;
     }
     _preview->viewerUI->setAsFileDialogViewer();
-    
+
     ///Set a custom timeline so that it is not in synced with the rest of the viewers of the app
-    boost::shared_ptr<TimeLine> newTimeline(new TimeLine(NULL));
+    boost::shared_ptr<TimeLine> newTimeline( new TimeLine(NULL) );
     _preview->viewerUI->setCustomTimeline(newTimeline);
     _preview->viewerUI->setClipToProject(false);
     _preview->viewerUI->setLeftToolbarVisible(false);
@@ -2967,9 +2942,9 @@ SequenceFileDialog::createViewerPreviewNode()
     _preview->viewerUI->setTopToolbarVisible(false);
     _preview->viewerUI->setInfobarVisible(false);
     _preview->viewerUI->setPlayerVisible(false);
-    TabWidget* parent = dynamic_cast<TabWidget*>(_preview->viewerUI->parentWidget());
+    TabWidget* parent = dynamic_cast<TabWidget*>( _preview->viewerUI->parentWidget() );
     if (parent) {
-        parent->removeTab(_preview->viewerUI,true);
+        parent->removeTab(_preview->viewerUI, true);
     }
     _preview->viewerUI->setParent(NULL);
 }
@@ -2977,38 +2952,38 @@ SequenceFileDialog::createViewerPreviewNode()
 NodePtr
 SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
 {
-    
 #ifndef NATRON_ENABLE_IO_META_NODES
-    std::map<std::string,std::string> readersForFormat;
+    std::map<std::string, std::string> readersForFormat;
     appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
     if ( !filetype.empty() ) {
-        std::map<std::string,std::string>::iterator found = readersForFormat.find(filetype);
+        std::map<std::string, std::string>::iterator found = readersForFormat.find(filetype);
         if ( found == readersForFormat.end() ) {
             return NodePtr();
         }
-        std::map<std::string,NodePtr>::iterator foundReader = _preview->readerNodes.find(found->second);
-        if (foundReader == _preview->readerNodes.end()) {
-            
-            CreateNodeArgs args(QString::fromUtf8(found->second.c_str()), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
-            args.fixedName = QString::fromUtf8(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) +  QString::fromUtf8(found->first.c_str());
+        std::map<std::string, NodePtr>::iterator foundReader = _preview->readerNodes.find(found->second);
+        if ( foundReader == _preview->readerNodes.end() ) {
+            CreateNodeArgs args( QString::fromUtf8( found->second.c_str() ), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>() );
+            args.fixedName = QString::fromUtf8(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) +  QString::fromUtf8( found->first.c_str() );
             args.createGui = false;
             args.addToProject = false;
             NodePtr reader = _gui->getApp()->createNode(args);
             if (reader) {
-                _preview->readerNodes.insert(std::make_pair(found->second,reader));
+                _preview->readerNodes.insert( std::make_pair(found->second, reader) );
             }
+
             return reader;
         } else {
             return foundReader->second;
         }
     }
-    return  NodePtr();
+
+    return NodePtr();
 #else
     if (_preview->readerNode) {
         return _preview->readerNode;
     }
     (void)filetype;
-    CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_READ), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
+    CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_READ), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>() );
     args.fixedName = QString::fromUtf8(NATRON_FILE_DIALOG_PREVIEW_READER_NAME);
     args.createGui = false;
     args.addToProject = false;
@@ -3016,6 +2991,7 @@ SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
     if (reader) {
         _preview->readerNode = reader;
     }
+
     return _preview->readerNode;
 #endif
 }
@@ -3023,36 +2999,35 @@ SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
 void
 SequenceFileDialog::refreshPreviewAfterSelectionChange()
 {
-    if (!_preview->viewerUI->isVisible()) {
+    if ( !_preview->viewerUI->isVisible() ) {
         return;
     }
-    
+
     std::string pattern = selectedFiles();
     QString qpattern = QString::fromUtf8( pattern.c_str() );
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
     assert(_preview->viewerNode);
-    
+
     NodePtr currentInput = _preview->viewerNode->getNode()->getInput(0);
     if (currentInput) {
         _preview->viewerNode->getNode()->disconnectInput(0);
     }
-    
+
     _gui->getApp()->getProject()->setAutoSetProjectFormatEnabled(false);
 
     NodePtr reader = findOrCreatePreviewReader(ext);
     if (reader) {
         KnobPtr foundFileKnob = reader->getKnobByName(kOfxImageEffectFileParamName);
-        KnobFile* fileKnob = dynamic_cast<KnobFile*>(foundFileKnob.get());
+        KnobFile* fileKnob = dynamic_cast<KnobFile*>( foundFileKnob.get() );
         if (fileKnob) {
             fileKnob->setValue(pattern);
         }
         _preview->viewerNode->getNode()->connectInput(reader, 0);
-        
-        double firstFrame,lastFrame;
+
+        double firstFrame, lastFrame;
         reader->getEffectInstance()->getFrameRange_public(reader->getHashValue(), &firstFrame, &lastFrame);
         _preview->viewerUI->setTimelineBounds(firstFrame, lastFrame);
-        _preview->viewerUI->centerOn(firstFrame,lastFrame);
-
+        _preview->viewerUI->centerOn(firstFrame, lastFrame);
     }
     _preview->viewerUI->getInternalNode()->renderCurrentFrame(true);
 }

@@ -55,7 +55,6 @@ NATRON_NAMESPACE_ENTER;
 
 struct PickKnobDialogPrivate
 {
-    
     DockablePanel* panel;
     QGridLayout* mainLayout;
     Label* selectNodeLabel;
@@ -71,39 +70,38 @@ struct PickKnobDialogPrivate
     std::vector<boost::shared_ptr<KnobGroup> > groups;
     QDialogButtonBox* buttons;
     NodesList allNodes;
-    std::map<QString,boost::shared_ptr<KnobI > > allKnobs;
+    std::map<QString, boost::shared_ptr<KnobI > > allKnobs;
     KnobGuiPtr selectedKnob;
-    
+
     PickKnobDialogPrivate(DockablePanel* panel)
-    : panel(panel)
-    , mainLayout(0)
-    , selectNodeLabel(0)
-    , nodeSelectionCombo(0)
-    , knobSelectionCombo(0)
-    , useAliasLabel(0)
-    , useAliasCheckBox(0)
-    , destPageLabel(0)
-    , destPageCombo(0)
-    , groupLabel(0)
-    , groupCombo(0)
-    , pages()
-    , groups()
-    , buttons(0)
-    , allNodes()
-    , allKnobs()
-    , selectedKnob()
+        : panel(panel)
+        , mainLayout(0)
+        , selectNodeLabel(0)
+        , nodeSelectionCombo(0)
+        , knobSelectionCombo(0)
+        , useAliasLabel(0)
+        , useAliasCheckBox(0)
+        , destPageLabel(0)
+        , destPageCombo(0)
+        , groupLabel(0)
+        , groupCombo(0)
+        , pages()
+        , groups()
+        , buttons(0)
+        , allNodes()
+        , allKnobs()
+        , selectedKnob()
     {
-        
     }
-    
+
     boost::shared_ptr<KnobGroup> getSelectedGroup() const;
-    
+
     void onSelectedKnobChanged()
     {
         if (!selectedKnob) {
             return;
         }
-        KnobParametric* isParametric = dynamic_cast<KnobParametric*>(selectedKnob->getKnob().get());
+        KnobParametric* isParametric = dynamic_cast<KnobParametric*>( selectedKnob->getKnob().get() );
         if (isParametric) {
             useAliasCheckBox->setChecked(true);
         }
@@ -115,27 +113,28 @@ struct PickKnobDialogPrivate
 boost::shared_ptr<KnobGroup>
 PickKnobDialogPrivate::getSelectedGroup() const
 {
-    if (pages.empty()) {
+    if ( pages.empty() ) {
         return boost::shared_ptr<KnobGroup>();
     }
     std::string selectedItem = groupCombo->getCurrentIndexText().toStdString();
     if (selectedItem != "-") {
         for (std::vector<boost::shared_ptr<KnobGroup> >::const_iterator it = groups.begin(); it != groups.end(); ++it) {
-            if ((*it)->getName() == selectedItem) {
+            if ( (*it)->getName() == selectedItem ) {
                 return *it;
             }
         }
     }
-    
+
     return boost::shared_ptr<KnobGroup>();
 }
 
-
-PickKnobDialog::PickKnobDialog(DockablePanel* panel, QWidget* parent)
-: QDialog(parent)
-, _imp(new PickKnobDialogPrivate(panel))
+PickKnobDialog::PickKnobDialog(DockablePanel* panel,
+                               QWidget* parent)
+    : QDialog(parent)
+    , _imp( new PickKnobDialogPrivate(panel) )
 {
     NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(panel);
+
     assert(nodePanel);
     if (!nodePanel) {
         throw std::logic_error("PickKnobDialog::PickKnobDialog()");
@@ -144,20 +143,20 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel, QWidget* parent)
     NodePtr node = nodeGui->getNode();
     NodeGroup* isGroup = node->isEffectGroup();
     boost::shared_ptr<NodeCollection> collec = node->getGroup();
-    NodeGroup* isCollecGroup = dynamic_cast<NodeGroup*>(collec.get());
+    NodeGroup* isCollecGroup = dynamic_cast<NodeGroup*>( collec.get() );
     NodesList collectNodes = collec->getNodes();
     for (NodesList::iterator it = collectNodes.begin(); it != collectNodes.end(); ++it) {
-        if (!(*it)->getParentMultiInstance() && (*it)->isActivated() && (*it)->getKnobs().size() > 0) {
+        if ( !(*it)->getParentMultiInstance() && (*it)->isActivated() && ( (*it)->getKnobs().size() > 0 ) ) {
             _imp->allNodes.push_back(*it);
         }
     }
     if (isCollecGroup) {
-        _imp->allNodes.push_back(isCollecGroup->getNode());
+        _imp->allNodes.push_back( isCollecGroup->getNode() );
     }
     if (isGroup) {
         NodesList groupnodes = isGroup->getNodes();
         for (NodesList::iterator it = groupnodes.begin(); it != groupnodes.end(); ++it) {
-            if (!(*it)->getParentMultiInstance() && (*it)->isActivated() && (*it)->getKnobs().size() > 0) {
+            if ( !(*it)->getParentMultiInstance() && (*it)->isActivated() && ( (*it)->getKnobs().size() > 0 ) ) {
                 _imp->allNodes.push_back(*it);
             }
         }
@@ -170,41 +169,39 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel, QWidget* parent)
     nodeNames.sort();
 
     _imp->mainLayout = new QGridLayout(this);
-    _imp->selectNodeLabel = new Label(tr("Node:"));
-    _imp->nodeSelectionCombo = new CompleterLineEdit(nodeNames,nodeNames,false,this);
-    _imp->nodeSelectionCombo->setToolTip(GuiUtils::convertFromPlainText(tr("Input the name of a node in the current project."), Qt::WhiteSpaceNormal));
+    _imp->selectNodeLabel = new Label( tr("Node:") );
+    _imp->nodeSelectionCombo = new CompleterLineEdit(nodeNames, nodeNames, false, this);
+    _imp->nodeSelectionCombo->setToolTip( GuiUtils::convertFromPlainText(tr("Input the name of a node in the current project."), Qt::WhiteSpaceNormal) );
     _imp->nodeSelectionCombo->setFocus(Qt::PopupFocusReason);
-    
+
     _imp->knobSelectionCombo = new ComboBox(this);
-    QObject::connect(_imp->knobSelectionCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(onKnobComboIndexChanged(int)));
-    
+    QObject::connect( _imp->knobSelectionCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(onKnobComboIndexChanged(int)) );
     QString useAliasTt = GuiUtils::convertFromPlainText(QObject::tr("If checked, an alias of the selected parameter will be created, coyping entirely its state. "
-                                     "Only the script-name, label and tooltip will be editable. For choice parameters this will also "
-                                     "dynamically refresh the menu entries when the original parameter's menu is changed.\n"
-                                     "When unchecked a simple expression will be set linking the 2 parameters but things such as  dynamic menus "
-                                                                  "will not be enabled."),Qt::WhiteSpaceNormal);
-    _imp->useAliasLabel = new Label(tr("Make Alias:"),this);
+                                                                    "Only the script-name, label and tooltip will be editable. For choice parameters this will also "
+                                                                    "dynamically refresh the menu entries when the original parameter's menu is changed.\n"
+                                                                    "When unchecked a simple expression will be set linking the 2 parameters but things such as  dynamic menus "
+                                                                    "will not be enabled."), Qt::WhiteSpaceNormal);
+    _imp->useAliasLabel = new Label(tr("Make Alias:"), this);
     _imp->useAliasLabel->setToolTip(useAliasTt);
     _imp->useAliasCheckBox = new QCheckBox(this);
     _imp->useAliasCheckBox->setToolTip(useAliasTt);
     _imp->useAliasCheckBox->setChecked(true);
-    
-    QObject::connect( _imp->nodeSelectionCombo,SIGNAL(itemCompletionChosen()),this,SLOT(onNodeComboEditingFinished()) );
-    
-    _imp->destPageLabel = new Label(tr("Page:"),this);
+
+    QObject::connect( _imp->nodeSelectionCombo, SIGNAL(itemCompletionChosen()), this, SLOT(onNodeComboEditingFinished()) );
+
+    _imp->destPageLabel = new Label(tr("Page:"), this);
     QString pagett = GuiUtils::convertFromPlainText(QObject::tr("Select the page into which the parameter will be created"), Qt::WhiteSpaceNormal);
     _imp->destPageLabel->setToolTip(pagett);
     _imp->destPageCombo = new ComboBox(this);
     _imp->destPageCombo->setToolTip(pagett);
-    QObject::connect(_imp->destPageCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(onPageComboIndexChanged(int)));
-    
+    QObject::connect( _imp->destPageCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(onPageComboIndexChanged(int)) );
     const KnobsVec& knobs = node->getKnobs();
     for (std::size_t i = 0; i < knobs.size(); ++i) {
-        if (knobs[i]->isUserKnob()) {
+        if ( knobs[i]->isUserKnob() ) {
             boost::shared_ptr<KnobPage> isPage = boost::dynamic_pointer_cast<KnobPage>(knobs[i]);
             if (isPage) {
                 _imp->pages.push_back(isPage);
-                _imp->destPageCombo->addItem(QString::fromUtf8(isPage->getName().c_str()));
+                _imp->destPageCombo->addItem( QString::fromUtf8( isPage->getName().c_str() ) );
             } else {
                 boost::shared_ptr<KnobGroup> isGrp = boost::dynamic_pointer_cast<KnobGroup>(knobs[i]);
                 if (isGrp) {
@@ -217,48 +214,49 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel, QWidget* parent)
         _imp->destPageLabel->hide();
         _imp->destPageCombo->hide();
     }
-    
-    
+
+
     _imp->groupLabel = new Label(tr("Group:"), this);
     QString grouptt = GuiUtils::convertFromPlainText(QObject::tr("Select the group into which the parameter will be created"), Qt::WhiteSpaceNormal);
     _imp->groupCombo = new ComboBox(this);
     _imp->groupLabel->setToolTip(grouptt);
     _imp->groupCombo->setToolTip(grouptt);
     onPageComboIndexChanged(0);
-    
+
     _imp->buttons = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel),
-                                         Qt::Horizontal,this);
+                                         Qt::Horizontal, this);
     QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(accept()) );
     QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(reject()) );
-    
+
     _imp->mainLayout->addWidget(_imp->selectNodeLabel, 0, 0, 1, 1);
     _imp->mainLayout->addWidget(_imp->nodeSelectionCombo, 0, 1, 1, 1);
     _imp->mainLayout->addWidget(_imp->knobSelectionCombo, 0, 2, 1, 1);
     _imp->mainLayout->addWidget(_imp->useAliasLabel, 1, 0, 1, 1);
     _imp->mainLayout->addWidget(_imp->useAliasCheckBox, 1, 1, 1, 1);
-    _imp->mainLayout->addWidget(_imp->destPageLabel, 2, 0 , 1, 1);
-    _imp->mainLayout->addWidget(_imp->destPageCombo, 2, 1 , 1, 1);
-    _imp->mainLayout->addWidget(_imp->groupLabel, 2, 2 , 1, 1);
-    _imp->mainLayout->addWidget(_imp->groupCombo, 2, 3 , 1, 1);
+    _imp->mainLayout->addWidget(_imp->destPageLabel, 2, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->destPageCombo, 2, 1, 1, 1);
+    _imp->mainLayout->addWidget(_imp->groupLabel, 2, 2, 1, 1);
+    _imp->mainLayout->addWidget(_imp->groupCombo, 2, 3, 1, 1);
     _imp->mainLayout->addWidget(_imp->buttons, 3, 0, 1, 3);
-    
-    QTimer::singleShot( 25, _imp->nodeSelectionCombo, SLOT(showCompleter()) );
 
+    QTimer::singleShot( 25, _imp->nodeSelectionCombo, SLOT(showCompleter()) );
 }
 
 PickKnobDialog::~PickKnobDialog()
 {
-    
 }
 
-static KnobGuiPtr getKnobGuiForKnob(const NodePtr& selectedNode, const KnobPtr& knob)
+static KnobGuiPtr
+getKnobGuiForKnob(const NodePtr& selectedNode,
+                  const KnobPtr& knob)
 {
     boost::shared_ptr<NodeGuiI> selectedNodeGuiI = selectedNode->getNodeGui();
+
     assert(selectedNodeGuiI);
     if (!selectedNodeGuiI) {
         return KnobGuiPtr();
     }
-    NodeGui* selectedNodeGui = dynamic_cast<NodeGui*>(selectedNodeGuiI.get());
+    NodeGui* selectedNodeGui = dynamic_cast<NodeGui*>( selectedNodeGuiI.get() );
     assert(selectedNodeGui);
     if (!selectedNodeGui) {
         return KnobGuiPtr();
@@ -276,16 +274,16 @@ static KnobGuiPtr getKnobGuiForKnob(const NodePtr& selectedNode, const KnobPtr& 
     if (!hadPanelVisible && selectedPanel) {
         selectedPanel->setClosed(true);
     }
-    
-    
-    const std::list<std::pair<boost::weak_ptr<KnobI>,KnobGuiPtr> >& knobsMap = selectedPanel->getKnobs();
-    for (std::list<std::pair<boost::weak_ptr<KnobI>,KnobGuiPtr> >::const_iterator it = knobsMap.begin(); it!=knobsMap.end(); ++it) {
+
+
+    const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> >& knobsMap = selectedPanel->getKnobs();
+    for (std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> >::const_iterator it = knobsMap.begin(); it != knobsMap.end(); ++it) {
         if (it->first.lock() == knob) {
             return it->second;
         }
     }
-    return KnobGuiPtr();
 
+    return KnobGuiPtr();
 }
 
 void
@@ -294,18 +292,17 @@ PickKnobDialog::onKnobComboIndexChanged(int /*idx*/)
     QString selectedNodeName = _imp->nodeSelectionCombo->text();
     NodePtr selectedNode;
     std::string currentNodeName = selectedNodeName.toStdString();
+
     for (NodesList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
-        if ((*it)->getLabel() == currentNodeName) {
+        if ( (*it)->getLabel() == currentNodeName ) {
             selectedNode = *it;
             break;
         }
     }
     _imp->selectedKnob.reset();
     if (selectedNode) {
-        
         QString str = _imp->knobSelectionCombo->itemText( _imp->knobSelectionCombo->activeIndex() );
-        std::map<QString,KnobPtr >::const_iterator it = _imp->allKnobs.find(str);
-        
+        std::map<QString, KnobPtr >::const_iterator it = _imp->allKnobs.find(str);
         KnobPtr selectedKnob;
         if ( it != _imp->allKnobs.end() ) {
             selectedKnob = it->second;
@@ -319,33 +316,33 @@ void
 PickKnobDialog::onNodeComboEditingFinished()
 {
     QString index = _imp->nodeSelectionCombo->text();
+
     _imp->knobSelectionCombo->clear();
     _imp->allKnobs.clear();
     _imp->selectedKnob.reset();
     NodePtr selectedNode;
     std::string currentNodeName = index.toStdString();
     for (NodesList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
-        if ((*it)->getLabel() == currentNodeName) {
+        if ( (*it)->getLabel() == currentNodeName ) {
             selectedNode = *it;
             break;
         }
     }
-    
-    
+
+
     if (!selectedNode) {
         return;
     }
     const std::vector< KnobPtr > & knobs = selectedNode->getKnobs();
     for (U32 j = 0; j < knobs.size(); ++j) {
-        if (!knobs[j]->getIsSecret()) {
+        if ( !knobs[j]->getIsSecret() ) {
             KnobPage* isPage = dynamic_cast<KnobPage*>( knobs[j].get() );
             KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knobs[j].get() );
             if (!isPage && !isGroup) {
                 QString name = QString::fromUtf8( knobs[j]->getName().c_str() );
-                
                 bool canInsertKnob = true;
                 for (int k = 0; k < knobs[j]->getDimension(); ++k) {
-                    if (name.isEmpty()) {
+                    if ( name.isEmpty() ) {
                         canInsertKnob = false;
                     }
                 }
@@ -353,14 +350,13 @@ PickKnobDialog::onNodeComboEditingFinished()
                     if (!_imp->selectedKnob) {
                         _imp->selectedKnob = getKnobGuiForKnob(selectedNode, knobs[j]);
                     }
-                    _imp->allKnobs.insert(std::make_pair( name, knobs[j]));
+                    _imp->allKnobs.insert( std::make_pair( name, knobs[j]) );
                     _imp->knobSelectionCombo->addItem(name);
                 }
             }
-            
         }
     }
-    
+
     _imp->onSelectedKnobChanged();
     _imp->knobSelectionCombo->setCurrentIndex_no_emit(0);
 }
@@ -368,51 +364,52 @@ PickKnobDialog::onNodeComboEditingFinished()
 void
 PickKnobDialog::onPageComboIndexChanged(int index)
 {
-    if (_imp->pages.empty()) {
+    if ( _imp->pages.empty() ) {
         _imp->groupLabel->hide();
         _imp->groupCombo->hide();
     }
     _imp->groupCombo->clear();
-    _imp->groupCombo->addItem(QString::fromUtf8("-"));
-    
+    _imp->groupCombo->addItem( QString::fromUtf8("-") );
+
     std::string selectedPage = _imp->destPageCombo->itemText(index).toStdString();
-    boost::shared_ptr<KnobPage> parentPage ;
-    
+    boost::shared_ptr<KnobPage> parentPage;
+
     if (selectedPage == NATRON_USER_MANAGED_KNOBS_PAGE) {
         parentPage = _imp->panel->getUserPageKnob();
     } else {
         for (std::vector<boost::shared_ptr<KnobPage> >::iterator it = _imp->pages.begin(); it != _imp->pages.end(); ++it) {
-            if ((*it)->getName() == selectedPage) {
+            if ( (*it)->getName() == selectedPage ) {
                 parentPage = *it;
                 break;
             }
         }
     }
-    
+
     for (std::vector<boost::shared_ptr<KnobGroup> >::iterator it = _imp->groups.begin(); it != _imp->groups.end(); ++it) {
         boost::shared_ptr<KnobPage> page = (*it)->getTopLevelPage();
         assert(page);
-        
+
         ///add only grps whose parent page is the selected page
         if (page == parentPage) {
-            _imp->groupCombo->addItem(QString::fromUtf8((*it)->getName().c_str()));
+            _imp->groupCombo->addItem( QString::fromUtf8( (*it)->getName().c_str() ) );
         }
-        
     }
 }
 
 KnobGuiPtr
-PickKnobDialog::getSelectedKnob(bool* makeAlias,boost::shared_ptr<KnobPage>* page,boost::shared_ptr<KnobGroup>* group) const
+PickKnobDialog::getSelectedKnob(bool* makeAlias,
+                                boost::shared_ptr<KnobPage>* page,
+                                boost::shared_ptr<KnobGroup>* group) const
 {
-    
     int page_i = _imp->destPageCombo->activeIndex();
-    if (page_i >= 0 && page_i < (int)_imp->pages.size()) {
+
+    if ( (page_i >= 0) && ( page_i < (int)_imp->pages.size() ) ) {
         *page = _imp->pages[page_i];
     }
-    
+
     *group = _imp->getSelectedGroup();
     *makeAlias = _imp->useAliasCheckBox->isChecked();
-   
+
     return _imp->selectedKnob;
 }
 

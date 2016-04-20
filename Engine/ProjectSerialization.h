@@ -74,7 +74,7 @@ class ProjectSerialization
     qint64 _creationDate;
     AppInstance* _app;
     unsigned int _version;
-    
+
 public:
 
     ProjectSerialization(AppInstance* app)
@@ -87,14 +87,13 @@ public:
 
     ~ProjectSerialization()
     {
-        
     }
 
     unsigned int getVersion() const
     {
         return _version;
     }
-    
+
     void initialize(const Project* project);
 
     SequenceTime getCurrentTime() const
@@ -122,14 +121,13 @@ public:
         return _creationDate;
     }
 
-
     friend class ::boost::serialization::access;
     template<class Archive>
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
-        
         std::string natronVersion(NATRON_APPLICATION_NAME);
+
         natronVersion.append(" v" NATRON_VERSION_STRING);
         natronVersion.append(" from git branch " GIT_BRANCH);
         natronVersion.append(" commit " GIT_COMMIT);
@@ -142,16 +140,14 @@ public:
         natronVersion.append("  Linux ");
 #endif
         natronVersion.append(isApplication32Bits() ? "32bit" : "64bit");
-        ar & ::boost::serialization::make_nvp("NatronVersion",natronVersion);
-        
-        ar & ::boost::serialization::make_nvp("NodesCollection",_nodes);
-        
+        ar & ::boost::serialization::make_nvp("NatronVersion", natronVersion);
+        ar & ::boost::serialization::make_nvp("NodesCollection", _nodes);
         int knobsCount = _projectKnobs.size();
-        ar & ::boost::serialization::make_nvp("ProjectKnobsCount",knobsCount);
+        ar & ::boost::serialization::make_nvp("ProjectKnobsCount", knobsCount);
         for (std::list< boost::shared_ptr<KnobSerialization> >::const_iterator it = _projectKnobs.begin();
              it != _projectKnobs.end();
              ++it) {
-            ar & ::boost::serialization::make_nvp( "item",*(*it) );
+            ar & ::boost::serialization::make_nvp( "item", *(*it) );
         }
         ar & ::boost::serialization::make_nvp("AdditionalFormats", _additionalFormats);
         ar & ::boost::serialization::make_nvp("Timeline_current_time", _timelineCurrent);
@@ -165,7 +161,7 @@ public:
         _version = version;
         if (version >= PROJECT_SERIALIZATION_INTRODUCES_NATRON_VERSION) {
             std::string natronVersion;
-            ar & ::boost::serialization::make_nvp("NatronVersion",natronVersion);
+            ar & ::boost::serialization::make_nvp("NatronVersion", natronVersion);
             std::string toFind(NATRON_APPLICATION_NAME " v");
             std::size_t foundV = natronVersion.find(toFind);
             if (foundV != std::string::npos) {
@@ -177,9 +173,9 @@ public:
                     for (std::size_t i = foundV; i < foundFrom; ++i) {
                         vStr.push_back(natronVersion[i]);
                     }
-                    QStringList splits = QString::fromUtf8(vStr.c_str()).split(QLatin1Char('.'));
+                    QStringList splits = QString::fromUtf8( vStr.c_str() ).split( QLatin1Char('.') );
                     if (splits.size() == 3) {
-                        int major,minor,rev;
+                        int major, minor, rev;
                         major = splits[0].toInt();
                         minor = splits[1].toInt();
                         rev = splits[2].toInt();
@@ -187,54 +183,52 @@ public:
                             throw std::invalid_argument("The given project was produced with a more recent and incompatible version of Natron.");
                         }
                     }
-                    
                 }
             }
-            
         }
         assert(_app);
         Q_UNUSED(_app);
-        
+
         if (version < PROJECT_SERIALIZATION_INTRODUCES_GROUPS) {
             int nodesCount;
-            ar & ::boost::serialization::make_nvp("NodesCount",nodesCount);
+            ar & ::boost::serialization::make_nvp("NodesCount", nodesCount);
             for (int i = 0; i < nodesCount; ++i) {
                 boost::shared_ptr<NodeSerialization> ns(new NodeSerialization);
-                ar & ::boost::serialization::make_nvp("item",*ns);
+                ar & ::boost::serialization::make_nvp("item", *ns);
                 _nodes.addNodeSerialization(ns);
             }
         } else {
-            ar & ::boost::serialization::make_nvp("NodesCollection",_nodes);
+            ar & ::boost::serialization::make_nvp("NodesCollection", _nodes);
         }
-        
+
         int knobsCount;
-        ar & ::boost::serialization::make_nvp("ProjectKnobsCount",knobsCount);
-        
+        ar & ::boost::serialization::make_nvp("ProjectKnobsCount", knobsCount);
+
         for (int i = 0; i < knobsCount; ++i) {
             boost::shared_ptr<KnobSerialization> ks(new KnobSerialization);
-            ar & ::boost::serialization::make_nvp("item",*ks);
+            ar & ::boost::serialization::make_nvp("item", *ks);
             _projectKnobs.push_back(ks);
         }
 
         ar & ::boost::serialization::make_nvp("AdditionalFormats", _additionalFormats);
         ar & ::boost::serialization::make_nvp("Timeline_current_time", _timelineCurrent);
         if (version < PROJECT_SERIALIZATION_REMOVES_TIMELINE_BOUNDS) {
-            SequenceTime left,right;
+            SequenceTime left, right;
             ar & ::boost::serialization::make_nvp("Timeline_left_bound", left);
             ar & ::boost::serialization::make_nvp("Timeline_right_bound", right);
         }
         if (version < PROJECT_SERIALIZATION_REMOVES_NODE_COUNTERS) {
-            std::map<std::string,int> _nodeCounters;
+            std::map<std::string, int> _nodeCounters;
             ar & ::boost::serialization::make_nvp("NodeCounters", _nodeCounters);
         }
         ar & ::boost::serialization::make_nvp("CreationDate", _creationDate);
-    }
+    } // load
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 
 NATRON_NAMESPACE_EXIT;
 
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::ProjectSerialization,PROJECT_SERIALIZATION_VERSION)
+BOOST_CLASS_VERSION(NATRON_NAMESPACE::ProjectSerialization, PROJECT_SERIALIZATION_VERSION)
 
 #endif // PROJECTSERIALIZATION_H

@@ -38,7 +38,7 @@ NATRON_NAMESPACE_ENTER;
 
 OfxMemory::OfxMemory(const EffectInstPtr& effect)
     : OFX::Host::Memory::Instance()
-      , _memory( new PluginMemory(effect) )
+    , _memory( new PluginMemory(effect) )
 {
 }
 

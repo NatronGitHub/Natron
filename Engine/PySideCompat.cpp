@@ -67,47 +67,51 @@ CLANG_DIAG_ON(uninitialized)
 typedef char any_t;
 Q_DECLARE_METATYPE(QSharedPointer<any_t>);
 
-namespace PySide
+namespace PySide {
+static void
+invalidatePtr(any_t* object)
 {
+    Shiboken::GilState state;
+    SbkObject* wrapper = Shiboken::BindingManager::instance().retrieveWrapper(object);
 
-    static void invalidatePtr(any_t* object)
-    {
-        Shiboken::GilState state;
-
-        SbkObject* wrapper = Shiboken::BindingManager::instance().retrieveWrapper(object);
-        if (wrapper != NULL)
-            Shiboken::BindingManager::instance().releaseWrapper(wrapper);
+    if (wrapper != NULL) {
+        Shiboken::BindingManager::instance().releaseWrapper(wrapper);
     }
+}
 
-    static const char invalidatePropertyName[] = "_PySideInvalidatePtr";
+static const char invalidatePropertyName[] = "_PySideInvalidatePtr";
+PyObject*
+getWrapperForQObject(QObject* cppSelf,
+                     SbkObjectType* sbk_type)
+{
+    PyObject* pyOut = (PyObject*)Shiboken::BindingManager::instance().retrieveWrapper(cppSelf);
 
-    PyObject* getWrapperForQObject(QObject* cppSelf, SbkObjectType* sbk_type)
-    {
-        PyObject* pyOut = (PyObject*)Shiboken::BindingManager::instance().retrieveWrapper(cppSelf);
-        if (pyOut) {
-            Py_INCREF(pyOut);
-            return pyOut;
-        }
+    if (pyOut) {
+        Py_INCREF(pyOut);
 
-        // Setting the property will trigger an QEvent notification, which may call into
-        // code that creates the wrapper so only set the property if it isn't already
-        // set and check if it's created after the set call
-        QVariant existing = cppSelf->property(invalidatePropertyName);
-        if (!existing.isValid()) {
-            QSharedPointer<any_t> shared_with_del((any_t*)cppSelf, invalidatePtr);
-            cppSelf->setProperty(invalidatePropertyName, QVariant::fromValue(shared_with_del));
-            pyOut = (PyObject*)Shiboken::BindingManager::instance().retrieveWrapper(cppSelf);
-            if (pyOut) {
-                Py_INCREF(pyOut);
-                return pyOut;
-            }
-        }
-        
-        const char* typeName = typeid(*cppSelf).name();
-        pyOut = Shiboken::Object::newObject(sbk_type, cppSelf, false, false, typeName);
-        
         return pyOut;
     }
+
+    // Setting the property will trigger an QEvent notification, which may call into
+    // code that creates the wrapper so only set the property if it isn't already
+    // set and check if it's created after the set call
+    QVariant existing = cppSelf->property(invalidatePropertyName);
+    if ( !existing.isValid() ) {
+        QSharedPointer<any_t> shared_with_del( (any_t*)cppSelf, invalidatePtr );
+        cppSelf->setProperty( invalidatePropertyName, QVariant::fromValue(shared_with_del) );
+        pyOut = (PyObject*)Shiboken::BindingManager::instance().retrieveWrapper(cppSelf);
+        if (pyOut) {
+            Py_INCREF(pyOut);
+
+            return pyOut;
+        }
+    }
+
+    const char* typeName = typeid(*cppSelf).name();
+    pyOut = Shiboken::Object::newObject(sbk_type, cppSelf, false, false, typeName);
+
+    return pyOut;
+}
 } //namespace PySide
 
-#endif
+#endif // ifdef PYSIDE_OLD

@@ -52,7 +52,6 @@
 #include "Engine/ViewerInstance.h"
 
 
-
 NATRON_NAMESPACE_ENTER;
 
 void
@@ -76,32 +75,32 @@ TrackerContext::getMotionModelsAndHelps(bool addPerspective,
     }
 }
 
-
 void
-TrackArgsV1::getRedrawAreasNeeded(int time, std::list<RectD>* canonicalRects) const
+TrackArgsV1::getRedrawAreasNeeded(int time,
+                                  std::list<RectD>* canonicalRects) const
 {
-    for (std::vector<KnobButton*>::const_iterator it = _buttonInstances.begin(); it!=_buttonInstances.end(); ++it) {
-        EffectInstance* effect = dynamic_cast<EffectInstance*>((*it)->getHolder());
+    for (std::vector<KnobButton*>::const_iterator it = _buttonInstances.begin(); it != _buttonInstances.end(); ++it) {
+        EffectInstance* effect = dynamic_cast<EffectInstance*>( (*it)->getHolder() );
         assert(effect);
-    
-        boost::shared_ptr<KnobDouble> searchBtmLeft = boost::dynamic_pointer_cast<KnobDouble>(effect->getKnobByName("searchBoxBtmLeft"));
-        boost::shared_ptr<KnobDouble> searchTopRight = boost::dynamic_pointer_cast<KnobDouble>(effect->getKnobByName("searchBoxTopRight"));
-        boost::shared_ptr<KnobDouble> centerKnob = boost::dynamic_pointer_cast<KnobDouble>(effect->getKnobByName("center"));
-        boost::shared_ptr<KnobDouble> offsetKnob = boost::dynamic_pointer_cast<KnobDouble>(effect->getKnobByName("offset"));
+
+        boost::shared_ptr<KnobDouble> searchBtmLeft = boost::dynamic_pointer_cast<KnobDouble>( effect->getKnobByName("searchBoxBtmLeft") );
+        boost::shared_ptr<KnobDouble> searchTopRight = boost::dynamic_pointer_cast<KnobDouble>( effect->getKnobByName("searchBoxTopRight") );
+        boost::shared_ptr<KnobDouble> centerKnob = boost::dynamic_pointer_cast<KnobDouble>( effect->getKnobByName("center") );
+        boost::shared_ptr<KnobDouble> offsetKnob = boost::dynamic_pointer_cast<KnobDouble>( effect->getKnobByName("offset") );
         assert(searchBtmLeft  && searchTopRight && centerKnob && offsetKnob);
-        Point offset,center,btmLeft,topRight;
+        Point offset, center, btmLeft, topRight;
         offset.x = offsetKnob->getValueAtTime(time, 0);
         offset.y = offsetKnob->getValueAtTime(time, 1);
-        
+
         center.x = centerKnob->getValueAtTime(time, 0);
         center.y = centerKnob->getValueAtTime(time, 1);
-        
+
         btmLeft.x = searchBtmLeft->getValueAtTime(time, 0) + center.x + offset.x;
         btmLeft.y = searchBtmLeft->getValueAtTime(time, 1) + center.y + offset.y;
-        
+
         topRight.x = searchTopRight->getValueAtTime(time, 0) + center.x + offset.x;
         topRight.y = searchTopRight->getValueAtTime(time, 1) + center.y + offset.y;
-        
+
         RectD rect;
         rect.x1 = btmLeft.x;
         rect.y1 = btmLeft.y;
@@ -111,40 +110,38 @@ TrackArgsV1::getRedrawAreasNeeded(int time, std::list<RectD>* canonicalRects) co
     }
 }
 
-
 bool
-TrackerContext::trackStepV1(int trackIndex, const TrackArgsV1& args, int time)
+TrackerContext::trackStepV1(int trackIndex,
+                            const TrackArgsV1& args,
+                            int time)
 {
-    assert(trackIndex >= 0 && trackIndex < (int)args.getInstances().size());
+    assert( trackIndex >= 0 && trackIndex < (int)args.getInstances().size() );
     KnobButton* selectedInstance = args.getInstances()[trackIndex];
-    selectedInstance->getHolder()->onKnobValueChanged_public(selectedInstance,eValueChangedReasonNatronInternalEdited,time, ViewIdx(0),
+    selectedInstance->getHolder()->onKnobValueChanged_public(selectedInstance, eValueChangedReasonNatronInternalEdited, time, ViewIdx(0),
                                                              true);
     appPTR->getAppTLS()->cleanupTLSForThread();
+
     return true;
 }
 
-
 TrackerContext::TrackerContext(const boost::shared_ptr<Node> &node)
-: boost::enable_shared_from_this<TrackerContext>()
-, _imp(new TrackerContextPrivate(this, node))
+    : boost::enable_shared_from_this<TrackerContext>()
+    , _imp( new TrackerContextPrivate(this, node) )
 {
-    
 }
 
 TrackerContext::~TrackerContext()
 {
-    
 }
 
 void
 TrackerContext::load(const TrackerContextSerialization& serialization)
 {
-    
     boost::shared_ptr<TrackerContext> thisShared = shared_from_this();
     QMutexLocker k(&_imp->trackerContextMutex);
 
     for (std::list<TrackSerialization>::const_iterator it = serialization._tracks.begin(); it != serialization._tracks.end(); ++it) {
-        TrackMarkerPtr marker(new TrackMarker(thisShared));
+        TrackMarkerPtr marker( new TrackMarker(thisShared) );
         marker->load(*it);
         _imp->markers.push_back(marker);
     }
@@ -154,6 +151,7 @@ void
 TrackerContext::save(TrackerContextSerialization* serialization) const
 {
     QMutexLocker k(&_imp->trackerContextMutex);
+
     for (std::size_t i = 0; i < _imp->markers.size(); ++i) {
         TrackSerialization s;
         _imp->markers[i]->save(&s);
@@ -167,13 +165,13 @@ TrackerContext::getTransformReferenceFrame() const
     return _imp->referenceFrame.lock()->getValue();
 }
 
-
 void
 TrackerContext::goToPreviousKeyFrame(int time)
 {
     std::list<TrackMarkerPtr > markers;
+
     getSelectedMarkers(&markers);
-    
+
     int minimum = INT_MIN;
     for (std::list<TrackMarkerPtr > ::iterator it = markers.begin(); it != markers.end(); ++it) {
         int t = (*it)->getPreviousKeyframe(time);
@@ -182,7 +180,7 @@ TrackerContext::goToPreviousKeyFrame(int time)
         }
     }
     if (minimum != INT_MIN) {
-        getNode()->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Node>());
+        getNode()->getApp()->setLastViewerUsingTimeline( boost::shared_ptr<Node>() );
         getNode()->getApp()->getTimeLine()->seekFrame(minimum, false,  NULL, eTimelineChangeReasonPlaybackSeek);
     }
 }
@@ -191,8 +189,9 @@ void
 TrackerContext::goToNextKeyFrame(int time)
 {
     std::list<TrackMarkerPtr > markers;
+
     getSelectedMarkers(&markers);
-    
+
     int maximum = INT_MAX;
     for (std::list<TrackMarkerPtr > ::iterator it = markers.begin(); it != markers.end(); ++it) {
         int t = (*it)->getNextKeyframe(time);
@@ -201,7 +200,7 @@ TrackerContext::goToNextKeyFrame(int time)
         }
     }
     if (maximum != INT_MAX) {
-        getNode()->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Node>());
+        getNode()->getApp()->setLastViewerUsingTimeline( boost::shared_ptr<Node>() );
         getNode()->getApp()->getTimeLine()->seekFrame(maximum, false,  NULL, eTimelineChangeReasonPlaybackSeek);
     }
 }
@@ -210,11 +209,13 @@ TrackMarkerPtr
 TrackerContext::getMarkerByName(const std::string & name) const
 {
     QMutexLocker k(&_imp->trackerContextMutex);
+
     for (std::vector<TrackMarkerPtr >::const_iterator it = _imp->markers.begin(); it != _imp->markers.end(); ++it) {
-        if ((*it)->getScriptName_mt_safe() == name) {
+        if ( (*it)->getScriptName_mt_safe() == name ) {
             return *it;
         }
     }
+
     return TrackMarkerPtr();
 }
 
@@ -222,29 +223,31 @@ std::string
 TrackerContext::generateUniqueTrackName(const std::string& baseName)
 {
     int no = 1;
-    
     bool foundItem;
     std::string name;
+
     do {
         std::stringstream ss;
         ss << baseName;
         ss << no;
         name = ss.str();
-        if (getMarkerByName(name)) {
+        if ( getMarkerByName(name) ) {
             foundItem = true;
         } else {
             foundItem = false;
         }
         ++no;
     } while (foundItem);
+
     return name;
 }
 
 TrackMarkerPtr
 TrackerContext::createMarker()
 {
-    TrackMarkerPtr track(new TrackMarker(shared_from_this()));
+    TrackMarkerPtr track( new TrackMarker( shared_from_this() ) );
     std::string name = generateUniqueTrackName(kTrackBaseName);
+
     track->setScriptName(name);
     track->setLabel(name);
     track->resetCenter();
@@ -256,26 +259,30 @@ TrackerContext::createMarker()
     }
     declareItemAsPythonField(track);
     Q_EMIT trackInserted(track, index);
+
     return track;
-    
 }
 
 int
 TrackerContext::getMarkerIndex(const TrackMarkerPtr& marker) const
 {
     QMutexLocker k(&_imp->trackerContextMutex);
+
     for (std::size_t i = 0; i < _imp->markers.size(); ++i) {
         if (_imp->markers[i] == marker) {
             return (int)i;
         }
     }
+
     return -1;
 }
 
 TrackMarkerPtr
-TrackerContext::getPrevMarker(const TrackMarkerPtr& marker, bool loop) const
+TrackerContext::getPrevMarker(const TrackMarkerPtr& marker,
+                              bool loop) const
 {
     QMutexLocker k(&_imp->trackerContextMutex);
+
     for (std::size_t i = 0; i < _imp->markers.size(); ++i) {
         if (_imp->markers[i] == marker) {
             if (i > 0) {
@@ -283,22 +290,26 @@ TrackerContext::getPrevMarker(const TrackMarkerPtr& marker, bool loop) const
             }
         }
     }
+
     return (_imp->markers.size() == 0 || !loop) ? TrackMarkerPtr() : _imp->markers[_imp->markers.size() - 1];
 }
 
 TrackMarkerPtr
-TrackerContext::getNextMarker(const TrackMarkerPtr& marker, bool loop) const
+TrackerContext::getNextMarker(const TrackMarkerPtr& marker,
+                              bool loop) const
 {
     QMutexLocker k(&_imp->trackerContextMutex);
+
     for (std::size_t i = 0; i < _imp->markers.size(); ++i) {
         if (_imp->markers[i] == marker) {
-            if (i < (_imp->markers.size() - 1)) {
+            if ( i < (_imp->markers.size() - 1) ) {
                 return _imp->markers[i + 1];
             } else if (!loop) {
                 return TrackMarkerPtr();
             }
         }
     }
+
     return (_imp->markers.size() == 0 || !loop || _imp->markers[0] == marker) ? TrackMarkerPtr() : _imp->markers[0];
 }
 
@@ -311,17 +322,19 @@ TrackerContext::appendMarker(const TrackMarkerPtr& marker)
         index = _imp->markers.size();
         _imp->markers.push_back(marker);
     }
+
     declareItemAsPythonField(marker);
     Q_EMIT trackInserted(marker, index);
 }
 
 void
-TrackerContext::insertMarker(const TrackMarkerPtr& marker, int index)
+TrackerContext::insertMarker(const TrackMarkerPtr& marker,
+                             int index)
 {
     {
         QMutexLocker k(&_imp->trackerContextMutex);
         assert(index >= 0);
-        if (index >= (int)_imp->markers.size()) {
+        if ( index >= (int)_imp->markers.size() ) {
             _imp->markers.push_back(marker);
         } else {
             std::vector<TrackMarkerPtr >::iterator it = _imp->markers.begin();
@@ -330,8 +343,7 @@ TrackerContext::insertMarker(const TrackMarkerPtr& marker, int index)
         }
     }
     declareItemAsPythonField(marker);
-    Q_EMIT trackInserted(marker,index);
-    
+    Q_EMIT trackInserted(marker, index);
 }
 
 void
@@ -363,11 +375,13 @@ int
 TrackerContext::getTimeLineFirstFrame() const
 {
     boost::shared_ptr<Node> node = getNode();
+
     if (!node) {
         return -1;
     }
-    double first,last;
+    double first, last;
     node->getApp()->getProject()->getFrameRange(&first, &last);
+
     return (int)first;
 }
 
@@ -375,30 +389,34 @@ int
 TrackerContext::getTimeLineLastFrame() const
 {
     boost::shared_ptr<Node> node = getNode();
+
     if (!node) {
         return -1;
     }
-    double first,last;
+    double first, last;
     node->getApp()->getProject()->getFrameRange(&first, &last);
+
     return (int)last;
 }
 
-
-
 void
-TrackerContext::trackSelectedMarkers(int start, int end, bool forward, ViewerInstance* viewer)
+TrackerContext::trackSelectedMarkers(int start,
+                                     int end,
+                                     bool forward,
+                                     ViewerInstance* viewer)
 {
     std::list<TrackMarkerPtr > markers;
     {
         QMutexLocker k(&_imp->trackerContextMutex);
         for (std::list<TrackMarkerPtr >::iterator it = _imp->selectedMarkers.begin();
              it != _imp->selectedMarkers.end(); ++it) {
-            if ((*it)->isEnabled((*it)->getCurrentTime())) {
+            if ( (*it)->isEnabled( (*it)->getCurrentTime() ) ) {
                 markers.push_back(*it);
             }
         }
     }
-    trackMarkers(markers,start,end,forward, viewer);
+
+    trackMarkers(markers, start, end, forward, viewer);
 }
 
 bool
@@ -417,6 +435,7 @@ void
 TrackerContext::beginEditSelection()
 {
     QMutexLocker k(&_imp->trackerContextMutex);
+
     _imp->incrementSelectionCounter();
 }
 
@@ -427,86 +446,93 @@ TrackerContext::endEditSelection(TrackSelectionReason reason)
     {
         QMutexLocker k(&_imp->trackerContextMutex);
         _imp->decrementSelectionCounter();
-        
+
         if (_imp->beginSelectionCounter == 0) {
             doEnd = true;
-            
         }
     }
+
     if (doEnd) {
         endSelection(reason);
     }
 }
 
 void
-TrackerContext::addTrackToSelection(const TrackMarkerPtr& mark, TrackSelectionReason reason)
+TrackerContext::addTrackToSelection(const TrackMarkerPtr& mark,
+                                    TrackSelectionReason reason)
 {
     std::list<TrackMarkerPtr > marks;
+
     marks.push_back(mark);
     addTracksToSelection(marks, reason);
 }
 
 void
-TrackerContext::addTracksToSelection(const std::list<TrackMarkerPtr >& marks, TrackSelectionReason reason)
+TrackerContext::addTracksToSelection(const std::list<TrackMarkerPtr >& marks,
+                                     TrackSelectionReason reason)
 {
     bool hasCalledBegin = false;
     {
         QMutexLocker k(&_imp->trackerContextMutex);
-        
+
         if (!_imp->beginSelectionCounter) {
             k.unlock();
-            Q_EMIT selectionAboutToChange((int)reason);
+            Q_EMIT selectionAboutToChange( (int)reason );
             k.relock();
             _imp->incrementSelectionCounter();
             hasCalledBegin = true;
         }
-        
-        for (std::list<TrackMarkerPtr >::const_iterator it = marks.begin() ; it!=marks.end(); ++it) {
+
+        for (std::list<TrackMarkerPtr >::const_iterator it = marks.begin(); it != marks.end(); ++it) {
             _imp->addToSelectionList(*it);
         }
-        
+
         if (hasCalledBegin) {
             _imp->decrementSelectionCounter();
         }
     }
+
     if (hasCalledBegin) {
         endSelection(reason);
-        
     }
 }
 
 void
-TrackerContext::removeTrackFromSelection(const TrackMarkerPtr& mark, TrackSelectionReason reason)
+TrackerContext::removeTrackFromSelection(const TrackMarkerPtr& mark,
+                                         TrackSelectionReason reason)
 {
     std::list<TrackMarkerPtr > marks;
+
     marks.push_back(mark);
     removeTracksFromSelection(marks, reason);
 }
 
 void
-TrackerContext::removeTracksFromSelection(const std::list<TrackMarkerPtr >& marks, TrackSelectionReason reason)
+TrackerContext::removeTracksFromSelection(const std::list<TrackMarkerPtr >& marks,
+                                          TrackSelectionReason reason)
 {
     bool hasCalledBegin = false;
-    
+
     {
         QMutexLocker k(&_imp->trackerContextMutex);
-        
+
         if (!_imp->beginSelectionCounter) {
             k.unlock();
-            Q_EMIT selectionAboutToChange((int)reason);
+            Q_EMIT selectionAboutToChange( (int)reason );
             k.relock();
             _imp->incrementSelectionCounter();
             hasCalledBegin = true;
         }
-        
-        for (std::list<TrackMarkerPtr >::const_iterator it = marks.begin() ; it!=marks.end(); ++it) {
+
+        for (std::list<TrackMarkerPtr >::const_iterator it = marks.begin(); it != marks.end(); ++it) {
             _imp->removeFromSelectionList(*it);
         }
-        
+
         if (hasCalledBegin) {
             _imp->decrementSelectionCounter();
         }
     }
+
     if (hasCalledBegin) {
         endSelection(reason);
     }
@@ -516,8 +542,9 @@ void
 TrackerContext::clearSelection(TrackSelectionReason reason)
 {
     std::list<TrackMarkerPtr > markers;
+
     getSelectedMarkers(&markers);
-    if (markers.empty()) {
+    if ( markers.empty() ) {
         return;
     }
     removeTracksFromSelection(markers, reason);
@@ -532,17 +559,17 @@ TrackerContext::selectAll(TrackSelectionReason reason)
         QMutexLocker k(&_imp->trackerContextMutex);
         markers = _imp->markers;
     }
-    for (std::vector<TrackMarkerPtr >::iterator it = markers.begin(); it!= markers.end(); ++it) {
+    for (std::vector<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
         addTrackToSelection(*it, reason);
     }
     endEditSelection(reason);
-    
 }
 
 void
 TrackerContext::getAllMarkers(std::vector<TrackMarkerPtr >* markers) const
 {
     QMutexLocker k(&_imp->trackerContextMutex);
+
     *markers = _imp->markers;
 }
 
@@ -550,8 +577,9 @@ void
 TrackerContext::getAllEnabledMarkers(std::vector<TrackMarkerPtr >* markers) const
 {
     QMutexLocker k(&_imp->trackerContextMutex);
+
     for (std::size_t i = 0; i < _imp->markers.size(); ++i) {
-        if (_imp->markers[i]->isEnabled(_imp->markers[i]->getCurrentTime())) {
+        if ( _imp->markers[i]->isEnabled( _imp->markers[i]->getCurrentTime() ) ) {
             markers->push_back(_imp->markers[i]);
         }
     }
@@ -561,6 +589,7 @@ void
 TrackerContext::getSelectedMarkers(std::list<TrackMarkerPtr >* markers) const
 {
     QMutexLocker k(&_imp->trackerContextMutex);
+
     *markers = _imp->selectedMarkers;
 }
 
@@ -568,55 +597,52 @@ bool
 TrackerContext::isMarkerSelected(const TrackMarkerPtr& marker) const
 {
     QMutexLocker k(&_imp->trackerContextMutex);
-    for (std::list<TrackMarkerPtr >::const_iterator it = _imp->selectedMarkers.begin(); it!=_imp->selectedMarkers.end(); ++it) {
+
+    for (std::list<TrackMarkerPtr >::const_iterator it = _imp->selectedMarkers.begin(); it != _imp->selectedMarkers.end(); ++it) {
         if (*it == marker) {
             return true;
         }
     }
+
     return false;
 }
-
-
 
 void
 TrackerContext::endSelection(TrackSelectionReason reason)
 {
-    assert(QThread::currentThread() == qApp->thread());
-    
+    assert( QThread::currentThread() == qApp->thread() );
+
     {
         QMutexLocker k(&_imp->trackerContextMutex);
         if (_imp->selectionRecursion > 0) {
             _imp->markersToSlave.clear();
             _imp->markersToUnslave.clear();
-            return;
-        }
-        if (_imp->markersToSlave.empty() && _imp->markersToUnslave.empty()) {
-            return;
-        }
 
+            return;
+        }
+        if ( _imp->markersToSlave.empty() && _imp->markersToUnslave.empty() ) {
+            return;
+        }
     }
     ++_imp->selectionRecursion;
-    
-    
+
+
     {
         QMutexLocker k(&_imp->trackerContextMutex);
-        
+
         // Slave newly selected knobs
         bool selectionIsDirty = _imp->selectedMarkers.size() > 1;
         bool selectionEmpty = _imp->selectedMarkers.empty();
-        
-        
-        //_imp->linkMarkerKnobsToGuiKnobs(_imp->markersToUnslave, selectionIsDirty, false);
+
+
+        _imp->linkMarkerKnobsToGuiKnobs(_imp->markersToUnslave, selectionIsDirty, false);
         _imp->markersToUnslave.clear();
-        
-        
-        
-        //_imp->linkMarkerKnobsToGuiKnobs(_imp->markersToSlave, selectionIsDirty, true);
+
+
+        _imp->linkMarkerKnobsToGuiKnobs(_imp->markersToSlave, selectionIsDirty, true);
         _imp->markersToSlave.clear();
-        
-        
-        
-        
+
+
         for (std::list<boost::weak_ptr<KnobI> >::iterator it = _imp->perTrackKnobs.begin(); it != _imp->perTrackKnobs.end(); ++it) {
             boost::shared_ptr<KnobI> k = it->lock();
             if (!k) {
@@ -626,10 +652,29 @@ TrackerContext::endSelection(TrackSelectionReason reason)
             k->setDirty(selectionIsDirty);
         }
     } //  QMutexLocker k(&_imp->trackerContextMutex);
-    Q_EMIT selectionChanged((int)reason);
-    
+    Q_EMIT selectionChanged( (int)reason );
+
     --_imp->selectionRecursion;
 }
+
+#if 0
+static
+boost::shared_ptr<KnobDouble>
+getCornerPinPoint(Node* node,
+                  bool isFrom,
+                  int index)
+{
+    assert(0 <= index && index < 4);
+    QString name = isFrom ? QString::fromUtf8("from%1").arg(index + 1) : QString::fromUtf8("to%1").arg(index + 1);
+    boost::shared_ptr<KnobI> knob = node->getKnobByName( name.toStdString() );
+    assert(knob);
+    boost::shared_ptr<KnobDouble>  ret = boost::dynamic_pointer_cast<KnobDouble>(knob);
+    assert(ret);
+
+    return ret;
+}
+
+#endif
 
 static
 boost::shared_ptr<KnobDouble>
@@ -650,122 +695,149 @@ getCornerPinPoint(Node* node,
 void
 TrackerContext::exportTrackDataFromExportOptions()
 {
-
-    bool transformLink = _imp->exportLink.lock()->getValue();
-    
+    //bool transformLink = _imp->exportLink.lock()->getValue();
     boost::shared_ptr<KnobChoice> transformTypeKnob = _imp->transformType.lock();
+
     assert(transformTypeKnob);
     int transformType_i = transformTypeKnob->getValue();
     TrackerTransformNodeEnum transformType = (TrackerTransformNodeEnum)transformType_i;
-    
     boost::shared_ptr<KnobChoice> motionTypeKnob = _imp->motionType.lock();
     if (!motionTypeKnob) {
         return;
     }
     int motionType_i = motionTypeKnob->getValue();
     TrackerMotionTypeEnum mt = (TrackerMotionTypeEnum)motionType_i;
-    
+
     if (mt == eTrackerMotionTypeNone) {
-        Dialogs::errorDialog(QObject::tr("Tracker Export").toStdString(), QObject::tr("Please select the export mode with the Motion Type parameter").toStdString());
+        Dialogs::errorDialog( QObject::tr("Tracker Export").toStdString(), QObject::tr("Please select the export mode with the Motion Type parameter").toStdString() );
+
         return;
     }
 
+    bool linked = _imp->exportLink.lock()->getValue();
+    
     QString pluginID;
     switch (transformType) {
-        case eTrackerTransformNodeCornerPin:
-            pluginID = QString::fromUtf8(PLUGINID_OFX_CORNERPIN);
-            break;
-        case eTrackerTransformNodeTransform:
-            pluginID = QString::fromUtf8(PLUGINID_OFX_TRANSFORM);
-            break;
+    case eTrackerTransformNodeCornerPin:
+        pluginID = QString::fromUtf8(PLUGINID_OFX_CORNERPIN);
+        break;
+    case eTrackerTransformNodeTransform:
+        pluginID = QString::fromUtf8(PLUGINID_OFX_TRANSFORM);
+        break;
     }
-    
-    
+
     NodePtr thisNode = getNode();
-    
     AppInstance* app = thisNode->getApp();
-    CreateNodeArgs args(pluginID, eCreateNodeReasonInternal, thisNode->getGroup());
+    CreateNodeArgs args( pluginID, eCreateNodeReasonInternal, thisNode->getGroup() );
     NodePtr createdNode = app->createNode(args);
     if (!createdNode) {
         return;
     }
-    
+
     // Move the new node
     double thisNodePos[2];
     double thisNodeSize[2];
     thisNode->getPosition(&thisNodePos[0], &thisNodePos[1]);
     thisNode->getSize(&thisNodeSize[0], &thisNodeSize[1]);
     createdNode->setPosition(thisNodePos[0] + thisNodeSize[0] * 2., thisNodePos[1]);
-    
-    int refFrame = getTransformReferenceFrame();
-    
+
+    int timeForFromPoints = getTransformReferenceFrame();
+
     
     switch (transformType) {
-        case eTrackerTransformNodeCornerPin:
-        {
-            boost::shared_ptr<KnobDouble> createdToPoints[4];
-            boost::shared_ptr<KnobDouble> createdFromPoints[4];
+    case eTrackerTransformNodeCornerPin: {
+        boost::shared_ptr<KnobDouble> cornerPinToPoints[4];
+        boost::shared_ptr<KnobDouble> cornerPinFromPoints[4];
+        
+        
+        for (unsigned int i = 0; i < 4; ++i) {
             
-            /*for (int int i = 0; i < 4; ++i) {
-                createdFromPoints[i] = getCornerPinPoint(createdNode.get(), true, i);
-                assert(fromPoints[i] && centers[i]);
-                for (int j = 0; j < fromPoints[i]->getDimension(); ++j) {
-                    fromPoints[i]->setValue(centers[i]->getValueAtTime(timeForFromPoints,j), ViewSpec(0), j);
+            _imp->fromPoints[i] = getCornerPinPoint(createdNode.get(), true, i);
+            assert(cornerPinFromPoints[i]);
+            for (int j = 0; j < cornerPinFromPoints[i]->getDimension(); ++j) {
+                cornerPinFromPoints[i]->setValue(_imp->fromPoints[i].lock()->getValueAtTime(timeForFromPoints,j), ViewSpec(0), j);
+            }
+            
+            _imp->toPoints[i] = getCornerPinPoint(createdNode.get(), false, i);
+            assert(cornerPinToPoints[i]);
+            if (!linked) {
+                cornerPinToPoints[i]->cloneAndUpdateGui(_imp->toPoints[i].lock().get());
+            } else {
+                bool ok = false;
+                for (int d = 0; d < cornerPinToPoints[i]->getDimension() ; ++d) {
+                    ok = dynamic_cast<KnobI*>(cornerPinToPoints[i].get())->slaveTo(d, _imp->toPoints[i].lock(), d);
                 }
-                
-                toPoints[i] = getCornerPinPoint(cornerPin.get(), false, i);
-                assert(toPoints[i]);
+                (void)ok;
+                assert(ok);
+            }
+        }
+    }
+    break;
+    case eTrackerTransformNodeTransform: {
+        KnobPtr translateKnob = createdNode->getKnobByName(kTransformParamTranslate);
+        if (translateKnob) {
+            KnobDouble* isDbl = dynamic_cast<KnobDouble*>(translateKnob.get());
+            if (isDbl) {
                 if (!linked) {
-                    toPoints[i]->cloneAndUpdateGui(centers[i].get());
+                    isDbl->cloneAndUpdateGui(_imp->translate.lock().get());
                 } else {
-                    bool ok = false;
-                    for (int d = 0; d < toPoints[i]->getDimension() ; ++d) {
-                        ok = dynamic_cast<KnobI*>(toPoints[i].get())->slaveTo(d, centers[i], d);
-                    }
-                    (void)ok;
-                    assert(ok);
+                    dynamic_cast<KnobI*>(isDbl)->slaveTo(0, _imp->translate.lock(), 0);
                 }
             }
-            
-            ///Disable all non used points
-            for (unsigned int i = selection.size(); i < 4; ++i) {
-                QString enableName = QString::fromUtf8("enable%1").arg(i + 1);
-                KnobPtr knob = cornerPin->getKnobByName( enableName.toStdString() );
-                assert(knob);
-                KnobBool* enableKnob = dynamic_cast<KnobBool*>( knob.get() );
-                assert(enableKnob);
-                enableKnob->setValue(false, ViewSpec(0), 0);
+        }
+        
+        KnobPtr scaleKnob = createdNode->getKnobByName(kTransformParamScale);
+        if (scaleKnob) {
+            KnobDouble* isDbl = dynamic_cast<KnobDouble*>(scaleKnob.get());
+            if (isDbl) {
+                if (!linked) {
+                    isDbl->cloneAndUpdateGui(_imp->scale.lock().get());
+                } else {
+                    dynamic_cast<KnobI*>(isDbl)->slaveTo(0, _imp->scale.lock(), 0);
+                }
             }
-            
-            if (motionType == eTrackerMotionTypeStabilize) {
-                KnobPtr invertKnob = cornerPin->getKnobByName(kCornerPinInvertParamName);
-                assert(invertKnob);
-                KnobBool* isBool = dynamic_cast<KnobBool*>(invertKnob.get());
-                assert(isBool);
-                isBool->setValue(true, ViewSpec(0), 0);
-            }*/
+        }
+        
+        KnobPtr rotateKnob = createdNode->getKnobByName(kTransformParamRotate);
+        if (rotateKnob) {
+            KnobDouble* isDbl = dynamic_cast<KnobDouble*>(rotateKnob.get());
+            if (isDbl) {
+                if (!linked) {
+                    isDbl->cloneAndUpdateGui(_imp->rotate.lock().get());
+                } else {
+                    dynamic_cast<KnobI*>(isDbl)->slaveTo(0, _imp->rotate.lock(), 0);
+                }
+            }
+        }
 
-        }   break;
-        case eTrackerTransformNodeTransform:
-        {
-            
-        }   break;
+    }
+    break;
     }
     
-}
-
-
+    KnobPtr cpInvertKnob = createdNode->getKnobByName(kTransformParamInvert);
+    if (cpInvertKnob) {
+        KnobBool* isBool = dynamic_cast<KnobBool*>(cpInvertKnob.get());
+        if (isBool) {
+            if (!linked) {
+                isBool->cloneAndUpdateGui(_imp->invertTransform.lock().get());
+            } else {
+                dynamic_cast<KnobI*>(isBool)->slaveTo(0, _imp->invertTransform.lock(), 0);
+            }
+        }
+    }
+} // TrackerContext::exportTrackDataFromExportOptions
 
 void
 TrackerContext::onSelectedKnobCurveChanged()
 {
-    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>(sender());
+    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
+
     if (handler) {
         boost::shared_ptr<KnobI> knob = handler->getKnob();
         for (std::list<boost::weak_ptr<KnobI> >::const_iterator it = _imp->perTrackKnobs.begin(); it != _imp->perTrackKnobs.end(); ++it) {
             boost::shared_ptr<KnobI> k = it->lock();
-            if (k->getName() == knob->getName()) {
-                k->clone(knob.get());
+            if ( k->getName() == knob->getName() ) {
+                k->clone( knob.get() );
                 break;
             }
         }
@@ -775,7 +847,8 @@ TrackerContext::onSelectedKnobCurveChanged()
 void
 TrackerContext::onMarkerEnabledChanged(int reason)
 {
-    TrackMarker* m = qobject_cast<TrackMarker*>(sender());
+    TrackMarker* m = qobject_cast<TrackMarker*>( sender() );
+
     if (!m) {
         return;
     }
@@ -790,42 +863,48 @@ TrackerContext::onKnobsLoaded()
 
 void
 TrackerContext::knobChanged(KnobI* k,
-                 ValueChangedReasonEnum /*reason*/,
-                 ViewSpec /*view*/,
-                 double /*time*/,
-                 bool /*originatedFromMainThread*/)
+                            ValueChangedReasonEnum /*reason*/,
+                            ViewSpec /*view*/,
+                            double /*time*/,
+                            bool /*originatedFromMainThread*/)
 {
-    if (k == _imp->exportButton.lock().get()) {
+    if ( k == _imp->exportButton.lock().get() ) {
         exportTrackDataFromExportOptions();
-    } else if (k == _imp->setCurrentFrameButton.lock().get()) {
+    } else if ( k == _imp->setCurrentFrameButton.lock().get() ) {
         boost::shared_ptr<KnobInt> refFrame = _imp->referenceFrame.lock();
-        refFrame->setValue(_imp->node.lock()->getApp()->getTimeLine()->currentFrame());
-    } else if (k == _imp->transformType.lock().get()) {
-        _imp->refreshTransformKnobs();
+        refFrame->setValue( _imp->node.lock()->getApp()->getTimeLine()->currentFrame() );
+    } else if ( k == _imp->transformType.lock().get() ) {
+        solveTransformParams();
         _imp->refreshVisibilityFromTransformType();
-    } else if (k == _imp->motionType.lock().get()) {
-        _imp->refreshTransformKnobs();
+    } else if ( k == _imp->motionType.lock().get() ) {
+        solveTransformParams();
         _imp->refreshVisibilityFromTransformType();
+    } else if ( k == _imp->jitterPeriod.lock().get() ) {
+        solveTransformParams();
+    } else if ( k == _imp->smoothCornerPin.lock().get() ) {
+        solveTransformParams();
+    } else if ( k == _imp->smoothTransform.lock().get() ) {
+        solveTransformParams();
+    } else if ( k == _imp->referenceFrame.lock().get() ) {
+        solveTransformParams();
     }
 }
-
 
 void
 TrackerContext::removeItemAsPythonField(const TrackMarkerPtr& item)
 {
-    
     std::string appID = getNode()->getApp()->getAppIDString();
     std::string nodeName = getNode()->getFullyQualifiedName();
     std::string nodeFullName = appID + "." + nodeName;
     std::string err;
     std::string script = "del " + nodeFullName + ".tracker." + item->getScriptName_mt_safe() + "\n";
-    if (!appPTR->isBackground()) {
+
+    if ( !appPTR->isBackground() ) {
         getNode()->getApp()->printAutoDeclaredVariable(script);
     }
-    if (!NATRON_PYTHON_NAMESPACE::interpretPythonScript(script , &err, 0)) {
+    if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0) ) {
         getNode()->getApp()->appendToScriptEditor(err);
     }
-    
 }
 
 void
@@ -834,23 +913,23 @@ TrackerContext::declareItemAsPythonField(const TrackMarkerPtr& item)
     std::string appID = getNode()->getApp()->getAppIDString();
     std::string nodeName = getNode()->getFullyQualifiedName();
     std::string nodeFullName = appID + "." + nodeName;
-    
     std::string err;
     std::string script = (nodeFullName + ".tracker." + item->getScriptName_mt_safe() + " = " +
                           nodeFullName + ".tracker.getTrackByName(\"" + item->getScriptName_mt_safe() + "\")\n");
-    if (!appPTR->isBackground()) {
+
+    if ( !appPTR->isBackground() ) {
         getNode()->getApp()->printAutoDeclaredVariable(script);
     }
-    if(!NATRON_PYTHON_NAMESPACE::interpretPythonScript(script , &err, 0)) {
+    if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0) ) {
         getNode()->getApp()->appendToScriptEditor(err);
     }
-    
 }
 
 void
 TrackerContext::declarePythonFields()
 {
     std::vector<TrackMarkerPtr > markers;
+
     getAllMarkers(&markers);
     for (std::vector< TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
         declareItemAsPythonField(*it);
@@ -858,53 +937,58 @@ TrackerContext::declarePythonFields()
 }
 
 using namespace openMVG::robust;
-
-static void throwProsacError(ProsacReturnCodeEnum c, int nMinSamples) {
+static void
+throwProsacError(ProsacReturnCodeEnum c,
+                 int nMinSamples)
+{
     switch (c) {
-        case openMVG::robust::eProsacReturnCodeFoundModel:
-            break;
-        case openMVG::robust::eProsacReturnCodeInliersIsMinSamples:
-            break;
-        case openMVG::robust::eProsacReturnCodeNoModelFound:
-            throw std::runtime_error("Could not find a model for the given correspondences.");
-            break;
-        case openMVG::robust::eProsacReturnCodeNotEnoughPoints:
-        {
-            std::stringstream ss;
-            ss << "This model requires a minimum of ";
-            ss << nMinSamples;
-            ss << " correspondences.";
-            throw std::runtime_error(ss.str());
-        }   break;
-        case openMVG::robust::eProsacReturnCodeMaxIterationsFromProportionParamReached:
-            throw std::runtime_error("Maximum iterations computed from outliers proportion reached");
-            break;
-        case openMVG::robust::eProsacReturnCodeMaxIterationsParamReached:
-            throw std::runtime_error("Maximum solver iterations reached");
-            break;
+    case openMVG::robust::eProsacReturnCodeFoundModel:
+        break;
+    case openMVG::robust::eProsacReturnCodeInliersIsMinSamples:
+        break;
+    case openMVG::robust::eProsacReturnCodeNoModelFound:
+        throw std::runtime_error("Could not find a model for the given correspondences.");
+        break;
+    case openMVG::robust::eProsacReturnCodeNotEnoughPoints: {
+        std::stringstream ss;
+        ss << "This model requires a minimum of ";
+        ss << nMinSamples;
+        ss << " correspondences.";
+        throw std::runtime_error( ss.str() );
+    }
+    break;
+    case openMVG::robust::eProsacReturnCodeMaxIterationsFromProportionParamReached:
+        throw std::runtime_error("Maximum iterations computed from outliers proportion reached");
+        break;
+    case openMVG::robust::eProsacReturnCodeMaxIterationsParamReached:
+        throw std::runtime_error("Maximum solver iterations reached");
+        break;
     }
 }
 
 template <typename MODELTYPE>
-void runProsacForModel(const std::vector<Point>& x1,
-                       const std::vector<Point>& x2,
-                       int w1, int h1, int w2, int h2,
-                       typename MODELTYPE::Model* foundModel)
+void
+runProsacForModel(const std::vector<Point>& x1,
+                  const std::vector<Point>& x2,
+                  int w1,
+                  int h1,
+                  int w2,
+                  int h2,
+                  typename MODELTYPE::Model* foundModel)
 {
     typedef ProsacKernelAdaptor<MODELTYPE> KernelType;
-    
-    assert(x1.size() == x2.size());
-    openMVG::Mat M1(2, x1.size()),M2(2, x2.size());
+
+    assert( x1.size() == x2.size() );
+    openMVG::Mat M1( 2, x1.size() ), M2( 2, x2.size() );
     for (std::size_t i = 0; i < x1.size(); ++i) {
         M1(0, i) = x1[i].x;
         M1(1, i) = x1[i].y;
-        
+
         M2(0, i) = x2[i].x;
         M2(1, i) = x2[i].y;
     }
-    
+
     ProsacReturnCodeEnum ret;
-    
     const std::size_t minSamples = (std::size_t)MODELTYPE::MinimumSamples();
     if (x1.size() > minSamples) {
         KernelType kernel(M1, w1, h1, M2, w2, h2);
@@ -912,7 +996,7 @@ void runProsacForModel(const std::vector<Point>& x1,
     } else if (x1.size() == minSamples) {
         std::vector<typename MODELTYPE::Model> models;
         MODELTYPE::Solve(M1, M2, &models);
-        if (!models.empty()) {
+        if ( !models.empty() ) {
             *foundModel = models[0];
             ret = eProsacReturnCodeFoundModel;
         } else {
@@ -921,64 +1005,77 @@ void runProsacForModel(const std::vector<Point>& x1,
     } else {
         ret = eProsacReturnCodeNotEnoughPoints;
     }
-    throwProsacError(ret, KernelType::MinimumSamples());
+    throwProsacError( ret, KernelType::MinimumSamples() );
 }
 
 void
 TrackerContext::computeTranslationFromNPoints(const std::vector<Point>& x1,
                                               const std::vector<Point>& x2,
-                                              int w1, int h1, int w2, int h2,
+                                              int w1,
+                                              int h1,
+                                              int w2,
+                                              int h2,
                                               Point* translation)
 {
     openMVG::Vec2 model;
+
     runProsacForModel<openMVG::robust::Translation2DSolver>(x1, x2, w1, h1, w2, h2, &model);
     translation->x = model(0);
     translation->y = model(1);
 }
 
-
 void
 TrackerContext::computeSimilarityFromNPoints(const std::vector<Point>& x1,
-                                      const std::vector<Point>& x2,
-                                      int w1, int h1, int w2, int h2,
-                                      Point* translation,
-                                      double* rotate,
-                                      double* scale)
+                                             const std::vector<Point>& x2,
+                                             int w1,
+                                             int h1,
+                                             int w2,
+                                             int h2,
+                                             Point* translation,
+                                             double* rotate,
+                                             double* scale)
 {
     openMVG::Vec4 model;
+
     runProsacForModel<openMVG::robust::Similarity2DSolver>(x1, x2, w1, h1, w2, h2, &model);
     openMVG::robust::Similarity2DSolver::rtsFromVec4(model, &translation->x, &translation->y, scale, rotate);
     *rotate = Transform::toDegrees(*rotate);
-
 }
-
 
 void
 TrackerContext::computeHomographyFromNPoints(const std::vector<Point>& x1,
                                              const std::vector<Point>& x2,
-                                             int w1, int h1, int w2, int h2,
+                                             int w1,
+                                             int h1,
+                                             int w2,
+                                             int h2,
                                              Transform::Matrix3x3* homog)
 {
     openMVG::Mat3 model;
+
     runProsacForModel<openMVG::robust::Homography2DSolver>(x1, x2, w1, h1, w2, h2, &model);
-    
-    *homog = Transform::Matrix3x3(model(0,0),model(0,1),model(0,2),
-                                  model(1,0),model(1,1),model(1,2),
-                                  model(2,0),model(2,1),model(2,2));
+
+    *homog = Transform::Matrix3x3( model(0, 0), model(0, 1), model(0, 2),
+                                   model(1, 0), model(1, 1), model(1, 2),
+                                   model(2, 0), model(2, 1), model(2, 2) );
 }
 
 void
 TrackerContext::computeFundamentalFromNPoints(const std::vector<Point>& x1,
                                               const std::vector<Point>& x2,
-                                              int w1, int h1, int w2, int h2,
+                                              int w1,
+                                              int h1,
+                                              int w2,
+                                              int h2,
                                               Transform::Matrix3x3* fundamental)
 {
     openMVG::Mat3 model;
+
     runProsacForModel<openMVG::robust::FundamentalSolver>(x1, x2, w1, h1, w2, h2, &model);
-    
-    *fundamental = Transform::Matrix3x3(model(0,0),model(0,1),model(0,2),
-                                  model(1,0),model(1,1),model(1,2),
-                                  model(2,0),model(2,1),model(2,2));
+
+    *fundamental = Transform::Matrix3x3( model(0, 0), model(0, 1), model(0, 2),
+                                         model(1, 0), model(1, 1), model(1, 2),
+                                         model(2, 0), model(2, 1), model(2, 2) );
 }
 
 RectD
@@ -987,6 +1084,7 @@ TrackerContext::getInputRoDAtTime(double time) const
     NodePtr input = getNode()->getInput(0);
     bool useProjFormat = false;
     RectD ret;
+
     if (!input) {
         useProjFormat = true;
     } else {
@@ -1005,6 +1103,7 @@ TrackerContext::getInputRoDAtTime(double time) const
         ret.y1 = f.y1;
         ret.y2 = f.y2;
     }
+
     return ret;
 }
 
@@ -1012,27 +1111,26 @@ void
 TrackerContext::resetTransformCenter()
 {
     std::vector<TrackMarkerPtr> tracks;
+
     getAllEnabledMarkers(&tracks);
-    
+
     double time = (double)getTransformReferenceFrame();
-    
     Point center;
-    if (tracks.empty()) {
+    if ( tracks.empty() ) {
         RectD rod = getInputRoDAtTime(time);
         center.x = (rod.x1 + rod.x2) / 2.;
         center.y = (rod.y1 + rod.y2) / 2.;
-
     } else {
+        center.x = center.y = 0.;
         for (std::size_t i = 0; i < tracks.size(); ++i) {
             boost::shared_ptr<KnobDouble> centerKnob = tracks[i]->getCenterKnob();
             center.x += centerKnob->getValueAtTime(time, 0);
             center.y += centerKnob->getValueAtTime(time, 1);
-            
         }
         center.x /= tracks.size();
         center.y /= tracks.size();
     }
-    
+
     boost::shared_ptr<KnobDouble> centerKnob = _imp->center.lock();
     centerKnob->resetToDefaultValue(0);
     centerKnob->resetToDefaultValue(1);
@@ -1043,32 +1141,35 @@ void
 TrackerContext::resetTransformParams()
 {
     boost::shared_ptr<KnobDouble> translate = _imp->translate.lock();
+
     translate->resetToDefaultValue(0);
     translate->resetToDefaultValue(1);
-    
+
     boost::shared_ptr<KnobDouble> rotate = _imp->rotate.lock();
     rotate->resetToDefaultValue(0);
-    
+
     boost::shared_ptr<KnobDouble> scale = _imp->scale.lock();
     scale->resetToDefaultValue(0);
     scale->resetToDefaultValue(1);
-    
+
     boost::shared_ptr<KnobDouble> skewX = _imp->skewX.lock();
     skewX->resetToDefaultValue(0);
-    
+
     boost::shared_ptr<KnobDouble> skewY = _imp->skewY.lock();
     skewY->resetToDefaultValue(0);
-    
+
     resetTransformCenter();
 }
 
 struct PointWithError
 {
-    Point p1,p2;
+    Point p1, p2;
     double error;
 };
 
-static bool PointWithErrorCompareLess(const PointWithError& lhs, const PointWithError& rhs)
+static bool
+PointWithErrorCompareLess(const PointWithError& lhs,
+                          const PointWithError& rhs)
 {
     return lhs.error < rhs.error;
 }
@@ -1082,22 +1183,21 @@ TrackerContext::extractSortedPointsFromMarkers(double refTime,
                                                std::vector<Point>* x1,
                                                std::vector<Point>* x2)
 {
-    assert(!markers.empty());
+    assert( !markers.empty() );
 
     std::vector<PointWithError> pointsWithErrors;
-    
-    bool useJitter = jitterPeriod > 1;
-    int halfJitter = jitterPeriod / 2;
+    bool useJitter = (jitterPeriod > 1);
+    int halfJitter = std::max(0, jitterPeriod / 2);
     // Prosac expects the points to be sorted by decreasing correlation score (increasing error)
     for (std::size_t i = 0; i < markers.size(); ++i) {
         boost::shared_ptr<KnobDouble> centerKnob = markers[i]->getCenterKnob();
         boost::shared_ptr<KnobDouble> errorKnob = markers[i]->getErrorKnob();
-        
+
         if (centerKnob->getKeyFrameIndex(ViewSpec::current(), 0, time) < 0) {
             continue;
         }
         pointsWithErrors.resize(pointsWithErrors.size() + 1);
-        
+
         if (!useJitter) {
             pointsWithErrors[i].p1.x = centerKnob->getValueAtTime(refTime, 0);
             pointsWithErrors[i].p1.y = centerKnob->getValueAtTime(refTime, 1);
@@ -1105,33 +1205,35 @@ TrackerContext::extractSortedPointsFromMarkers(double refTime,
             pointsWithErrors[i].p2.y = centerKnob->getValueAtTime(time, 1);
         } else {
             // Average halfJitter frames before and after refTime and time together to smooth the center
-            std::vector<Point> x1PointJitter,x2PointJitter;
-            Point x1AtTime,x2AtTime;
+            std::vector<Point> x1PointJitter, x2PointJitter;
             for (double t = refTime - halfJitter; t <= refTime + halfJitter; t += 1.) {
                 Point p;
                 p.x = centerKnob->getValueAtTime(t, 0);
                 p.y = centerKnob->getValueAtTime(t, 1);
-                if (t == refTime) {
-                    x1AtTime = p;
-                }
                 x1PointJitter.push_back(p);
             }
             for (double t = time - halfJitter; t <= time + halfJitter; t += 1.) {
                 Point p;
                 p.x = centerKnob->getValueAtTime(t, 0);
                 p.y = centerKnob->getValueAtTime(t, 1);
-                if (t == time) {
-                    x2AtTime = p;
-                }
                 x2PointJitter.push_back(p);
             }
-            assert(x1PointJitter.size() == x2PointJitter.size());
-            Point x1avg = {0,0},x2avg = {0,0};
+            assert( x1PointJitter.size() == x2PointJitter.size() );
+            Point x1AtTime = x1PointJitter[(x1PointJitter.size() - 1) / 2];
+            Point x2AtTime = x2PointJitter[(x2PointJitter.size() - 1) / 2];
+            Point x1avg = {0, 0}, x2avg = {0, 0};
             for (std::size_t i = 0; i < x1PointJitter.size(); ++i) {
                 x1avg.x += x1PointJitter[i].x;
                 x1avg.y += x1PointJitter[i].y;
                 x2avg.x += x2PointJitter[i].x;
                 x2avg.y += x2PointJitter[i].y;
+            }
+            if ( !x1PointJitter.empty() ) {
+                x1avg.x /= x1PointJitter.size();
+                x1avg.y /= x1PointJitter.size();
+
+                x2avg.x /= x1PointJitter.size();
+                x2avg.y /= x1PointJitter.size();
             }
             if (!jitterAdd) {
                 pointsWithErrors[i].p1.x = x1avg.x;
@@ -1139,35 +1241,33 @@ TrackerContext::extractSortedPointsFromMarkers(double refTime,
                 pointsWithErrors[i].p2.x = x2avg.x;
                 pointsWithErrors[i].p2.y = x2avg.y;
             } else {
-                Point highFreqX1,highFreqX2;
+                Point highFreqX1, highFreqX2;
                 highFreqX1.x = x1AtTime.x - x1avg.x;
                 highFreqX1.y = x1AtTime.y - x1avg.y;
-                
+
                 highFreqX2.x = x2AtTime.x - x2avg.x;
                 highFreqX2.y = x2AtTime.y - x2avg.y;
-                
+
                 pointsWithErrors[i].p1.x = x1AtTime.x + highFreqX1.x;
                 pointsWithErrors[i].p1.y = x1AtTime.y + highFreqX1.y;
                 pointsWithErrors[i].p2.x = x2AtTime.x + highFreqX2.x;
                 pointsWithErrors[i].p2.y = x2AtTime.y + highFreqX2.y;
-                
             }
         }
-        
+
         pointsWithErrors[i].error = errorKnob->getValueAtTime(time, 0);
     }
-    
+
     std::sort(pointsWithErrors.begin(), pointsWithErrors.end(), PointWithErrorCompareLess);
-    
-    x1->resize(pointsWithErrors.size());
-    x2->resize(pointsWithErrors.size());
+
+    x1->resize( pointsWithErrors.size() );
+    x2->resize( pointsWithErrors.size() );
     int r = 0;
     for (int i = (int)pointsWithErrors.size() - 1; i >= 0; --i, ++r) {
         (*x1)[r] = pointsWithErrors[i].p1;
         (*x2)[r] = pointsWithErrors[i].p2;
     }
-
-}
+} // TrackerContext::extractSortedPointsFromMarkers
 
 void
 TrackerContext::computeTransformParamsFromTracksAtTime(double refTime,
@@ -1177,27 +1277,28 @@ TrackerContext::computeTransformParamsFromTracksAtTime(double refTime,
                                                        const std::vector<TrackMarkerPtr>& markers,
                                                        TransformData* data)
 {
-    
-    assert(!markers.empty());
+    assert( !markers.empty() );
     std::vector<Point> x1, x2;
     extractSortedPointsFromMarkers(refTime, time, markers, jitterPeriod, jitterAdd, &x1, &x2);
-    
+    assert( x1.size() == x2.size() );
+    if ( x1.empty() ) {
+        throw std::runtime_error("Empty points");
+    }
     if (refTime == time) {
         data->hasRotationAndScale = x1.size() > 1;
         data->translation.x = data->translation.y = data->rotation = 0;
         data->scale = 1.;
+
         return;
     }
-    
+
     RectD rodRef = getInputRoDAtTime(refTime);
     RectD rodTime = getInputRoDAtTime(time);
-    
     int w1 = rodRef.width();
     int h1 = rodRef.height();
-    
     int w2 = rodTime.width();
     int h2 = rodTime.height();
-    
+
     if (x1.size() == 1) {
         data->hasRotationAndScale = false;
         computeTranslationFromNPoints(x1, x2, w1, h1, w2, h2, &data->translation);
@@ -1207,6 +1308,253 @@ TrackerContext::computeTransformParamsFromTracksAtTime(double refTime,
     }
 }
 
+static Transform::Point3D
+euclideanToHomogenous(const Point& p)
+{
+    Transform::Point3D r;
+
+    r.x = p.x;
+    r.y = p.y;
+    r.z = 1;
+
+    return r;
+}
+
+void
+TrackerContext::computeCornerPinParamsFromTracksAtTime(double refTime,
+                                                       double time,
+                                                       int jitterPeriod,
+                                                       bool jitterAdd,
+                                                       const std::vector<TrackMarkerPtr>& markers,
+                                                       CornerPinData* data)
+{
+    assert( !markers.empty() );
+    std::vector<Point> x1, x2;
+    extractSortedPointsFromMarkers(refTime, time, markers, jitterPeriod, jitterAdd, &x1, &x2);
+    assert( x1.size() == x2.size() );
+    if ( x1.empty() ) {
+        throw std::runtime_error("Empty points");
+    }
+    if (refTime == time) {
+        data->h.setIdentity();
+        data->nbEnabledPoints = 4;
+
+        return;
+    }
+
+    RectD rodRef = getInputRoDAtTime(refTime);
+    RectD rodTime = getInputRoDAtTime(time);
+    int w1 = rodRef.width();
+    int h1 = rodRef.height();
+    int w2 = rodTime.width();
+    int h2 = rodTime.height();
+
+    if (x1.size() == 1) {
+        data->h.setTranslationFromOnePoint( euclideanToHomogenous(x1[0]), euclideanToHomogenous(x2[0]) );
+        data->nbEnabledPoints = 1;
+    } else if (x1.size() == 2) {
+        data->h.setSimilarityFromTwoPoints( euclideanToHomogenous(x1[0]), euclideanToHomogenous(x1[1]), euclideanToHomogenous(x2[0]), euclideanToHomogenous(x2[1]) );
+        data->nbEnabledPoints = 2;
+    } else if (x1.size() == 3) {
+        data->h.setAffineFromThreePoints( euclideanToHomogenous(x1[0]), euclideanToHomogenous(x1[1]), euclideanToHomogenous(x1[2]), euclideanToHomogenous(x2[0]), euclideanToHomogenous(x2[1]), euclideanToHomogenous(x2[2]) );
+        data->nbEnabledPoints = 3;
+    } else {
+        computeHomographyFromNPoints(x1, x2, w1, h1, w2, h2, &data->h);
+        data->nbEnabledPoints = 4;
+    }
+}
+
+struct CornerPinDataWithTime
+{
+    TrackerContext::CornerPinData data;
+    double time;
+};
+
+static Point
+applyHomography(const Point& p,
+                Transform::Matrix3x3& h)
+{
+    Transform::Point3D a = euclideanToHomogenous(p);
+
+    a = Transform::matApply(h, a);
+    Point ret;
+    ret.x = a.x / a.z;
+    ret.y = a.y / a.z;
+
+    return ret;
+}
+
+void
+TrackerContext::computeCornerParamsFromTracks(double refTime,
+                                              const std::set<double>& keyframes,
+                                              int jitterPeriod,
+                                              bool jitterAdd,
+                                              const std::vector<TrackMarkerPtr>& allMarkers)
+{
+    boost::shared_ptr<KnobInt> smoothCornerPinKnob = _imp->smoothCornerPin.lock();
+    int smoothJitter = smoothCornerPinKnob->getValue();
+    std::vector<CornerPinDataWithTime> dataAtTime;
+
+    for (std::set<double>::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
+        CornerPinDataWithTime t;
+        t.time = *it;
+
+        std::vector<TrackMarkerPtr> enabledMarkersAtTime;
+        for (std::size_t i = 0; i < allMarkers.size(); ++i) {
+            if ( allMarkers[i]->isEnabled(*it) ) {
+                enabledMarkersAtTime.push_back(allMarkers[i]);
+            }
+        }
+        try {
+            computeCornerPinParamsFromTracksAtTime(refTime, t.time, jitterPeriod, jitterAdd, enabledMarkersAtTime, &t.data);
+        } catch (const std::exception& /*e*/) {
+            continue;
+        }
+
+        dataAtTime.push_back(t);
+    }
+
+
+    NodePtr node = getNode();
+    node->getEffectInstance()->beginChanges();
+
+    RectD rodRef = getInputRoDAtTime(refTime);
+    boost::shared_ptr<KnobDouble> fromPoints[4];
+    boost::shared_ptr<KnobDouble> toPoints[4];
+    boost::shared_ptr<KnobBool> enabledPoints[4];
+    for (int i = 0; i < 4; ++i) {
+        fromPoints[i] = _imp->fromPoints[i].lock();
+        toPoints[i] = _imp->toPoints[i].lock();
+        enabledPoints[i] = _imp->enableToPoint[i].lock();
+    }
+    //boost::shared_ptr<KnobDouble> matrixKnob = _imp->cornerPinMatrix.lock();
+    boost::shared_ptr<KnobDouble> centerKnob = _imp->center.lock();
+
+    /*for (int i = 0; i < matrixKnob->getDimension(); ++i) {
+        matrixKnob->resetToDefaultValue(i);
+       }*/
+    std::list<KnobPtr> animatedKnobsChanged;
+
+
+    for (int i = 0; i < 4; ++i) {
+        fromPoints[i]->removeAnimation(ViewSpec::all(), 0);
+        fromPoints[i]->removeAnimation(ViewSpec::all(), 1);
+        toPoints[i]->blockValueChanges();
+        toPoints[i]->resetToDefaultValue(0);
+        toPoints[i]->resetToDefaultValue(1);
+        animatedKnobsChanged.push_back(toPoints[i]);
+
+        enabledPoints[i]->resetToDefaultValue(0);
+    }
+    centerKnob->resetToDefaultValue(0);
+    centerKnob->resetToDefaultValue(1);
+
+    Point refFrom[4];
+    refFrom[0].x = rodRef.x1;
+    refFrom[0].y = rodRef.y1;
+
+    refFrom[1].x = rodRef.x2;
+    refFrom[1].y = rodRef.y1;
+
+    refFrom[2].x = rodRef.x2;
+    refFrom[2].y = rodRef.y2;
+
+    refFrom[3].x = rodRef.x1;
+    refFrom[3].y = rodRef.y2;
+
+    // Set the center at the reference frame
+    Point centerValue = {0, 0};
+    int nSamplesAtRefTime = 0;
+    for (std::size_t i = 0; i < allMarkers.size(); ++i) {
+        if ( !allMarkers[i]->isEnabled(refTime) ) {
+            continue;
+        }
+        boost::shared_ptr<KnobDouble> markerCenterKnob = allMarkers[i]->getCenterKnob();
+
+        centerValue.x += markerCenterKnob->getValueAtTime(refTime, 0);
+        centerValue.y += markerCenterKnob->getValueAtTime(refTime, 1);
+        ++nSamplesAtRefTime;
+    }
+    if (nSamplesAtRefTime) {
+        centerValue.x /= nSamplesAtRefTime;
+        centerValue.y /= nSamplesAtRefTime;
+        centerKnob->setValues(centerValue.x, centerValue.y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+    }
+
+    for (int c = 0; c < 4; ++c) {
+        fromPoints[c]->setValues(refFrom[c].x, refFrom[c].y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+    }
+
+    for (std::size_t i = 0; i < dataAtTime.size(); ++i) {
+        if (smoothJitter > 1) {
+            int halfJitter = smoothJitter / 2;
+            Point avgTos[4] = {
+                {0, 0}, {0, 0}, {0, 0}, {0, 0}
+            };
+            int nSamples = 0;
+            for (int t = std::max(0, (int)i - halfJitter); t < ( (int)i + halfJitter ) && t < (int)dataAtTime.size(); ++t, ++nSamples) {
+                Point to[4];
+                for (int c = 0; c < 4; ++c) {
+                    to[c] = applyHomography(refFrom[c], dataAtTime[i].data.h);
+                    avgTos[c].x += to[c].x;
+                    avgTos[c].y += to[c].y;
+                }
+            }
+            if (nSamples > 0) {
+                for (int c = 0; c < 4; ++c) {
+                    avgTos[c].x /= nSamples;
+                    avgTos[c].y /= nSamples;
+                }
+
+                for (int c = 0; c < 4; ++c) {
+                    toPoints[c]->setValues(avgTos[c].x, avgTos[c].y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+                }
+
+
+                /*Transform::Matrix3x3 h;
+                   h.setHomographyFromFourPoints(euclideanToHomogenous(avgFroms[0]), euclideanToHomogenous(avgFroms[1]), euclideanToHomogenous(avgFroms[2]), euclideanToHomogenous(avgFroms[3]), euclideanToHomogenous(avgTos[0]), euclideanToHomogenous(avgTos[1]), euclideanToHomogenous(avgTos[2]), euclideanToHomogenous(avgTos[3]));
+                   matrixKnob->blockValueChanges();
+                   matrixKnob->setValueAtTime(dataAtTime[i].time, h.a, ViewSpec::all(), 0);
+                   matrixKnob->setValueAtTime(dataAtTime[i].time, h.b, ViewSpec::all(), 1);
+                   matrixKnob->setValueAtTime(dataAtTime[i].time, h.c, ViewSpec::all(), 2);
+                   matrixKnob->setValueAtTime(dataAtTime[i].time, h.d, ViewSpec::all(), 3);
+                   matrixKnob->setValueAtTime(dataAtTime[i].time, h.e, ViewSpec::all(), 4);
+                   matrixKnob->setValueAtTime(dataAtTime[i].time, h.f, ViewSpec::all(), 5);
+                   matrixKnob->setValueAtTime(dataAtTime[i].time, h.g, ViewSpec::all(), 6);
+                   matrixKnob->setValueAtTime(dataAtTime[i].time, h.h, ViewSpec::all(), 7);
+                   matrixKnob->unblockValueChanges();
+                   matrixKnob->setValueAtTime(dataAtTime[i].time, h.i, ViewSpec::all(), 8);*/
+            }
+        } else {
+            for (int c = 0; c < 4; ++c) {
+                Point toPoint;
+                toPoint = applyHomography(refFrom[c], dataAtTime[i].data.h);
+                toPoints[c]->setValuesAtTime(dataAtTime[i].time, toPoint.x, toPoint.y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+            }
+
+            /*matrixKnob->blockValueChanges();
+               matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.a, ViewSpec::all(), 0);
+               matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.b, ViewSpec::all(), 1);
+               matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.c, ViewSpec::all(), 2);
+               matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.d, ViewSpec::all(), 3);
+               matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.e, ViewSpec::all(), 4);
+               matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.f, ViewSpec::all(), 5);
+               matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.g, ViewSpec::all(), 6);
+               matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.h, ViewSpec::all(), 7);
+               matrixKnob->unblockValueChanges();
+               matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.i, ViewSpec::all(), 8);*/
+        }
+    } // for (std::size_t i = 0; i < dataAtTime.size(); ++i)
+    for (std::list<KnobPtr>::iterator it = animatedKnobsChanged.begin(); it != animatedKnobsChanged.end(); ++it) {
+        (*it)->unblockValueChanges();
+        int nDims = (*it)->getDimension();
+        for (int i = 0; i < nDims; ++i) {
+            (*it)->evaluateValueChange(i, refTime, ViewIdx(0), eValueChangedReasonNatronInternalEdited);
+        }
+    }
+    node->getEffectInstance()->endChanges();
+} // TrackerContext::computeCornerParamsFromTracks
+
 struct TransformDataWithTime
 {
     TrackerContext::TransformData data;
@@ -1214,115 +1562,105 @@ struct TransformDataWithTime
 };
 
 void
-TrackerContext::computeTransformParamsFromTracks(const std::vector<TrackMarkerPtr>& markers)
+TrackerContext::computeTransformParamsFromTracks(double refTime,
+                                                 const std::set<double>& keyframes,
+                                                 int jitterPeriod,
+                                                 bool jitterAdd,
+                                                 const std::vector<TrackMarkerPtr>& allMarkers)
 {
-    if (markers.empty()) {
-        return;
-    }
-    int transformType_i = _imp->transformType.lock()->getValue();
-    TrackerMotionTypeEnum type =  (TrackerMotionTypeEnum)transformType_i;
-    
-    double refTime = (double)getTransformReferenceFrame();
-
-    int jitterPeriod = 0;
-    bool jitterAdd = false;
-    switch (type) {
-        case eTrackerMotionTypeNone:
-        case eTrackerMotionTypeMatchMove:
-        case eTrackerMotionTypeStabilize:
-            break;
-        case eTrackerMotionTypeAddJitter:
-        case eTrackerMotionTypeRemoveJitter:
-        {
-            jitterPeriod = _imp->jitterPeriod.lock()->getValue();
-            jitterAdd = type == eTrackerMotionTypeAddJitter;
-        } break;
-            
-    }
-    
-    std::set<double> keyframes;
-    {
-        for (std::size_t i = 0; i < markers.size(); ++i) {
-            std::set<double> keys;
-            markers[i]->getCenterKeyframes(&keys);
-            for (std::set<double>::iterator it = keys.begin(); it!= keys.end(); ++it) {
-                keyframes.insert(*it);
-            }
-            
-        }
-    }
-
     boost::shared_ptr<KnobInt> smoothKnob = _imp->smoothTransform.lock();
-    int smoothTJitter,smoothRJitter, smoothSJitter;
+    int smoothTJitter, smoothRJitter, smoothSJitter;
+
     smoothTJitter = smoothKnob->getValue(0);
     smoothRJitter = smoothKnob->getValue(1);
     smoothSJitter = smoothKnob->getValue(2);
-    
-    
-    
+
+
     std::vector<TransformDataWithTime> dataAtTime;
-    for (std::set<double>::iterator it = keyframes.begin(); it!=keyframes.end(); ++it) {
+    for (std::set<double>::iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
         TransformDataWithTime t;
         t.time = *it;
+
+        std::vector<TrackMarkerPtr> enabledMarkersAtTime;
+        for (std::size_t i = 0; i < allMarkers.size(); ++i) {
+            if ( allMarkers[i]->isEnabled(*it) ) {
+                enabledMarkersAtTime.push_back(allMarkers[i]);
+            }
+        }
         try {
-            computeTransformParamsFromTracksAtTime(refTime, t.time, jitterPeriod, jitterAdd, markers, &t.data);
-        } catch (const std::exception& e) {
+            computeTransformParamsFromTracksAtTime(refTime, t.time, jitterPeriod, jitterAdd, enabledMarkersAtTime, &t.data);
+        } catch (const std::exception& /*e*/) {
             continue;
         }
+
         dataAtTime.push_back(t);
     }
-    
+
     NodePtr node = getNode();
     node->getEffectInstance()->beginChanges();
-    
+
     boost::shared_ptr<KnobDouble> translationKnob = _imp->translate.lock();
     boost::shared_ptr<KnobDouble> centerKnob = _imp->center.lock();
     boost::shared_ptr<KnobDouble> scaleKnob = _imp->scale.lock();
     boost::shared_ptr<KnobDouble> rotationKnob = _imp->rotate.lock();
-    
+
+    translationKnob->blockValueChanges();
     translationKnob->resetToDefaultValue(0);
     translationKnob->resetToDefaultValue(1);
-    
+
     centerKnob->resetToDefaultValue(0);
     centerKnob->resetToDefaultValue(1);
-    
+
+    scaleKnob->blockValueChanges();
     scaleKnob->resetToDefaultValue(0);
+
+    rotationKnob->blockValueChanges();
     rotationKnob->resetToDefaultValue(0);
-    
+
+    std::list<KnobPtr> animatedKnobsChanged;
+    animatedKnobsChanged.push_back(translationKnob);
+    animatedKnobsChanged.push_back(scaleKnob);
+    animatedKnobsChanged.push_back(rotationKnob);
+
     // Set the center at the reference frame
-    Point centerValue = {0,0};
-    for (std::size_t i = 0; i < markers.size(); ++i) {
-        
-        boost::shared_ptr<KnobDouble> markerCenterKnob = markers[i]->getCenterKnob();
-        
+    Point centerValue = {0, 0};
+    int nSamplesAtRefTime = 0;
+    for (std::size_t i = 0; i < allMarkers.size(); ++i) {
+        if ( !allMarkers[i]->isEnabled(refTime) ) {
+            continue;
+        }
+        boost::shared_ptr<KnobDouble> markerCenterKnob = allMarkers[i]->getCenterKnob();
+
         centerValue.x += markerCenterKnob->getValueAtTime(refTime, 0);
         centerValue.y += markerCenterKnob->getValueAtTime(refTime, 1);
+        ++nSamplesAtRefTime;
     }
-    centerValue.x /= markers.size();
-    centerValue.y /= markers.size();
-    
-    centerKnob->setValues(centerValue.x, centerValue.y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
-    
+    if (nSamplesAtRefTime) {
+        centerValue.x /= nSamplesAtRefTime;
+        centerValue.y /= nSamplesAtRefTime;
+        centerKnob->setValues(centerValue.x, centerValue.y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+    }
+
+
     for (std::size_t i = 0; i < dataAtTime.size(); ++i) {
         if (smoothTJitter > 1) {
             int halfJitter = smoothTJitter / 2;
-            Point avgT = {0,0};
-            
+            Point avgT = {0, 0};
             int nSamples = 0;
-            for (int t = std::max(0, (int)i - halfJitter); t < ((int)i + halfJitter) && t < (int)dataAtTime.size(); ++t, ++nSamples) {
+            for (int t = std::max(0, (int)i - halfJitter); t < ( (int)i + halfJitter ) && t < (int)dataAtTime.size(); ++t, ++nSamples) {
                 avgT.x += dataAtTime[t].data.translation.x;
                 avgT.y += dataAtTime[t].data.translation.y;
             }
             avgT.x /= nSamples;
             avgT.y /= nSamples;
-            
+
             translationKnob->setValueAtTime(dataAtTime[i].time, avgT.x, ViewSpec::all(), 0);
             translationKnob->setValueAtTime(dataAtTime[i].time, avgT.y, ViewSpec::all(), 1);
         } else {
             translationKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.translation.x, ViewSpec::all(), 0);
             translationKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.translation.y, ViewSpec::all(), 1);
         }
-        
+
         if (smoothRJitter > 1) {
             int halfJitter = smoothRJitter / 2;
             double avg = dataAtTime[i].data.rotation;
@@ -1352,14 +1690,14 @@ TrackerContext::computeTransformParamsFromTracks(const std::vector<TrackMarkerPt
             if (nSamples) {
                 avg /= nSamples;
             }
-            
+
             rotationKnob->setValueAtTime(dataAtTime[i].time, avg, ViewSpec::all(), 0);
         } else {
             if (dataAtTime[i].data.hasRotationAndScale) {
                 rotationKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.rotation, ViewSpec::all(), 0);
             }
         }
-        
+
         if (smoothSJitter > 1) {
             int halfJitter = smoothSJitter / 2;
             double avg = dataAtTime[i].data.scale;
@@ -1390,30 +1728,101 @@ TrackerContext::computeTransformParamsFromTracks(const std::vector<TrackMarkerPt
                 avg /= nSamples;
                 scaleKnob->setValueAtTime(dataAtTime[i].time, avg, ViewSpec::all(), 0);
             }
-            
         } else {
             if (dataAtTime[i].data.hasRotationAndScale) {
                 scaleKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.scale, ViewSpec::all(), 0);
             }
         }
     } // for (std::size_t i = 0; i < dataAtTime.size(); ++i)
-    
+
+
+    for (std::list<KnobPtr>::iterator it = animatedKnobsChanged.begin(); it != animatedKnobsChanged.end(); ++it) {
+        (*it)->unblockValueChanges();
+        int nDims = (*it)->getDimension();
+        for (int i = 0; i < nDims; ++i) {
+            (*it)->evaluateValueChange(i, refTime, ViewIdx(0), eValueChangedReasonNatronInternalEdited);
+        }
+    }
     node->getEffectInstance()->endChanges();
-}
+} // TrackerContext::computeTransformParamsFromTracks
+
+void
+TrackerContext::solveTransformParams()
+{
+    std::vector<TrackMarkerPtr> markers;
+
+    getAllMarkers(&markers);
+    if ( markers.empty() ) {
+        return;
+    }
+    int motionType_i = _imp->motionType.lock()->getValue();
+    TrackerMotionTypeEnum type =  (TrackerMotionTypeEnum)motionType_i;
+    double refTime = (double)getTransformReferenceFrame();
+    int jitterPeriod = 0;
+    bool jitterAdd = false;
+    switch (type) {
+    case eTrackerMotionTypeNone:
+
+        return;
+    case eTrackerMotionTypeMatchMove:
+    case eTrackerMotionTypeStabilize:
+        break;
+    case eTrackerMotionTypeAddJitter:
+    case eTrackerMotionTypeRemoveJitter: {
+        jitterPeriod = _imp->jitterPeriod.lock()->getValue();
+        jitterAdd = type == eTrackerMotionTypeAddJitter;
+    }
+    break;
+    }
+
+    std::set<double> keyframes;
+    {
+        for (std::size_t i = 0; i < markers.size(); ++i) {
+            std::set<double> keys;
+            markers[i]->getCenterKeyframes(&keys);
+            for (std::set<double>::iterator it = keys.begin(); it != keys.end(); ++it) {
+                keyframes.insert(*it);
+            }
+        }
+    }
+    boost::shared_ptr<KnobChoice> transformTypeKnob = _imp->transformType.lock();
+    assert(transformTypeKnob);
+    int transformType_i = transformTypeKnob->getValue();
+    TrackerTransformNodeEnum transformType = (TrackerTransformNodeEnum)transformType_i;
+
+    if (type == eTrackerMotionTypeStabilize) {
+        _imp->invertTransform.lock()->setValue(true);
+    } else {
+        _imp->invertTransform.lock()->setValue(false);
+    }
+
+    switch (transformType) {
+    case eTrackerTransformNodeTransform:
+        computeTransformParamsFromTracks(refTime, keyframes, jitterPeriod, jitterAdd, markers);
+        break;
+    case eTrackerTransformNodeCornerPin:
+        computeCornerParamsFromTracks(refTime, keyframes, jitterPeriod, jitterAdd, markers);
+        break;
+    }
+} // TrackerContext::solveTransformParams
 
 NodePtr
 TrackerContext::getCurrentlySelectedTransformNode() const
 {
     boost::shared_ptr<KnobChoice> transformTypeKnob = _imp->transformType.lock();
+
     assert(transformTypeKnob);
     int transformType_i = transformTypeKnob->getValue();
     TrackerTransformNodeEnum transformType = (TrackerTransformNodeEnum)transformType_i;
     switch (transformType) {
-        case eTrackerTransformNodeTransform:
-            return _imp->transformNode.lock();
-        case eTrackerTransformNodeCornerPin:
-            return _imp->cornerPinNode.lock();
+    case eTrackerTransformNodeTransform:
+
+        return _imp->transformNode.lock();
+    case eTrackerTransformNodeCornerPin:
+
+        return _imp->cornerPinNode.lock();
     }
+
     return NodePtr();
 }
 
@@ -1423,121 +1832,155 @@ TrackerContext::drawInternalNodesOverlay(double time,
                                          ViewIdx view,
                                          OverlaySupport* viewer)
 {
-    if (_imp->transformPageKnob.lock()->getIsSecret()) {
+    if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
         return;
     }
     NodePtr node = getCurrentlySelectedTransformNode();
     if (node) {
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        node->getEffectInstance()->drawOverlay_public(time, renderScale, view);
+        NodePtr thisNode = getNode();
+        thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        thisNode->drawHostOverlay(time, renderScale, view);
     }
 }
 
 bool
 TrackerContext::onOverlayPenDownInternalNodes(double time,
                                               const RenderScale & renderScale,
-                                              ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, OverlaySupport* viewer)
+                                              ViewIdx view,
+                                              const QPointF & viewportPos,
+                                              const QPointF & pos,
+                                              double pressure,
+                                              OverlaySupport* viewer)
 {
-    if (_imp->transformPageKnob.lock()->getIsSecret()) {
+    if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
         return false;
     }
     NodePtr node = getCurrentlySelectedTransformNode();
     if (node) {
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if (node->getEffectInstance()->onOverlayPenDown_public(time, renderScale, view, viewportPos, pos, pressure)) {
+        NodePtr thisNode = getNode();
+        thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if ( thisNode->onOverlayPenDownDefault(time, renderScale, view, viewportPos, pos, pressure) ) {
             return true;
         }
     }
+
     return false;
 }
 
 bool
 TrackerContext::onOverlayPenMotionInternalNodes(double time,
                                                 const RenderScale & renderScale,
-                                                ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, OverlaySupport* viewer)
+                                                ViewIdx view,
+                                                const QPointF & viewportPos,
+                                                const QPointF & pos,
+                                                double pressure,
+                                                OverlaySupport* viewer)
 {
-    if (_imp->transformPageKnob.lock()->getIsSecret()) {
+    if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
         return false;
     }
     NodePtr node = getCurrentlySelectedTransformNode();
     if (node) {
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if (node->getEffectInstance()->onOverlayPenMotion_public(time, renderScale, view,  viewportPos, pos, pressure)) {
+        NodePtr thisNode = getNode();
+        thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if ( thisNode->onOverlayPenMotionDefault(time, renderScale, view, viewportPos, pos, pressure) ) {
             return true;
         }
     }
+
     return false;
 }
 
 bool
 TrackerContext::onOverlayPenUpInternalNodes(double time,
                                             const RenderScale & renderScale,
-                                            ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, OverlaySupport* viewer)
+                                            ViewIdx view,
+                                            const QPointF & viewportPos,
+                                            const QPointF & pos,
+                                            double pressure,
+                                            OverlaySupport* viewer)
 {
-    if (_imp->transformPageKnob.lock()->getIsSecret()) {
+    if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
         return false;
     }
     NodePtr node = getCurrentlySelectedTransformNode();
     if (node) {
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if (node->getEffectInstance()->onOverlayPenUp_public(time, renderScale, view, viewportPos, pos, pressure)) {
+        NodePtr thisNode = getNode();
+        thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if ( thisNode->onOverlayPenUpDefault(time, renderScale, view, viewportPos, pos, pressure) ) {
             return true;
         }
     }
+
     return false;
 }
 
 bool
 TrackerContext::onOverlayKeyDownInternalNodes(double time,
                                               const RenderScale & renderScale,
-                                              ViewIdx view, Key key,KeyboardModifiers modifiers, OverlaySupport* viewer)
+                                              ViewIdx view,
+                                              Key key,
+                                              KeyboardModifiers modifiers,
+                                              OverlaySupport* viewer)
 {
-    if (_imp->transformPageKnob.lock()->getIsSecret()) {
+    if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
         return false;
     }
     NodePtr node = getCurrentlySelectedTransformNode();
     if (node) {
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if (node->getEffectInstance()->onOverlayKeyDown_public(time, renderScale, view, key, modifiers)) {
+        NodePtr thisNode = getNode();
+        thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if ( thisNode->onOverlayKeyDownDefault(time, renderScale, view, key, modifiers) ) {
             return true;
         }
     }
+
     return false;
 }
 
 bool
 TrackerContext::onOverlayKeyUpInternalNodes(double time,
                                             const RenderScale & renderScale,
-                                            ViewIdx view, Key key,KeyboardModifiers modifiers, OverlaySupport* viewer)
+                                            ViewIdx view,
+                                            Key key,
+                                            KeyboardModifiers modifiers,
+                                            OverlaySupport* viewer)
 {
-    if (_imp->transformPageKnob.lock()->getIsSecret()) {
+    if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
         return false;
     }
     NodePtr node = getCurrentlySelectedTransformNode();
     if (node) {
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if (node->getEffectInstance()->onOverlayKeyUp_public(time, renderScale, view, key, modifiers)) {
+        NodePtr thisNode = getNode();
+        thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if ( thisNode->onOverlayKeyUpDefault(time, renderScale, view, key, modifiers) ) {
             return true;
         }
     }
+
     return false;
 }
 
 bool
 TrackerContext::onOverlayKeyRepeatInternalNodes(double time,
                                                 const RenderScale & renderScale,
-                                                ViewIdx view, Key key,KeyboardModifiers modifiers, OverlaySupport* viewer)
+                                                ViewIdx view,
+                                                Key key,
+                                                KeyboardModifiers modifiers,
+                                                OverlaySupport* viewer)
 {
-    if (_imp->transformPageKnob.lock()->getIsSecret()) {
+    if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
         return false;
     }
     NodePtr node = getCurrentlySelectedTransformNode();
     if (node) {
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if (node->getEffectInstance()->onOverlayKeyRepeat_public(time, renderScale, view, key, modifiers)) {
+        NodePtr thisNode = getNode();
+        thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if ( thisNode->onOverlayKeyRepeatDefault(time, renderScale, view, key, modifiers) ) {
             return true;
         }
     }
+
     return false;
 }
 
@@ -1547,16 +1990,18 @@ TrackerContext::onOverlayFocusGainedInternalNodes(double time,
                                                   ViewIdx view,
                                                   OverlaySupport* viewer)
 {
-    if (_imp->transformPageKnob.lock()->getIsSecret()) {
+    if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
         return false;
     }
     NodePtr node = getCurrentlySelectedTransformNode();
     if (node) {
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if (node->getEffectInstance()->onOverlayFocusGained_public(time, renderScale, view)) {
+        NodePtr thisNode = getNode();
+        thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if ( thisNode->onOverlayFocusGainedDefault(time, renderScale, view) ) {
             return true;
         }
     }
+
     return false;
 }
 
@@ -1566,26 +2011,19 @@ TrackerContext::onOverlayFocusLostInternalNodes(double time,
                                                 ViewIdx view,
                                                 OverlaySupport* viewer)
 {
-    if (_imp->transformPageKnob.lock()->getIsSecret()) {
+    if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
         return false;
     }
     NodePtr node = getCurrentlySelectedTransformNode();
     if (node) {
-        node->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if (node->getEffectInstance()->onOverlayFocusLost_public(time, renderScale, view)) {
+        NodePtr thisNode = getNode();
+        thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
+        if ( thisNode->onOverlayFocusLostDefault(time, renderScale, view) ) {
             return true;
         }
     }
+
     return false;
-}
-
-
-void
-TrackerContext::computeTransformParamsFromEnabledTracks()
-{
-    std::vector<TrackMarkerPtr> tracks;
-    getAllEnabledMarkers(&tracks);
-    computeTransformParamsFromTracks(tracks);
 }
 
 //////////////////////// TrackScheduler
@@ -1597,77 +2035,77 @@ struct TrackSchedulerPrivate
     mutable QMutex mustQuitMutex;
     bool mustQuit;
     QWaitCondition mustQuitCond;
-    
     mutable QMutex abortRequestedMutex;
     int abortRequested;
     QWaitCondition abortRequestedCond;
-    
     QMutex startRequesstMutex;
     int startRequests;
     QWaitCondition startRequestsCond;
-    
     mutable QMutex isWorkingMutex;
     bool isWorking;
-    
-    
-    TrackSchedulerPrivate(TrackerParamsProvider* paramsProvider, const NodeWPtr& node)
-    : paramsProvider(paramsProvider)
-    , node(node)
-    , mustQuitMutex()
-    , mustQuit(false)
-    , mustQuitCond()
-    , abortRequestedMutex()
-    , abortRequested(0)
-    , abortRequestedCond()
-    , startRequesstMutex()
-    , startRequests(0)
-    , startRequestsCond()
-    , isWorkingMutex()
-    , isWorking(false)
+
+
+    TrackSchedulerPrivate(TrackerParamsProvider* paramsProvider,
+                          const NodeWPtr& node)
+        : paramsProvider(paramsProvider)
+        , node(node)
+        , mustQuitMutex()
+        , mustQuit(false)
+        , mustQuitCond()
+        , abortRequestedMutex()
+        , abortRequested(0)
+        , abortRequestedCond()
+        , startRequesstMutex()
+        , startRequests(0)
+        , startRequestsCond()
+        , isWorkingMutex()
+        , isWorking(false)
     {
-        
     }
-    
+
     NodePtr getNode() const
     {
         return node.lock();
     }
-    
+
     bool checkForExit()
     {
         QMutexLocker k(&mustQuitMutex);
+
         if (mustQuit) {
             mustQuit = false;
             mustQuitCond.wakeAll();
+
             return true;
         }
+
         return false;
     }
-    
 };
 
 TrackSchedulerBase::TrackSchedulerBase()
-: QThread()
+    : QThread()
 {
-    QObject::connect(this, SIGNAL(renderCurrentFrameForViewer(ViewerInstance*)), this, SLOT(doRenderCurrentFrameForViewer(ViewerInstance*)));
+    QObject::connect( this, SIGNAL(renderCurrentFrameForViewer(ViewerInstance*)), this, SLOT(doRenderCurrentFrameForViewer(ViewerInstance*)) );
 }
 
 template <class TrackArgsType>
-TrackScheduler<TrackArgsType>::TrackScheduler(TrackerParamsProvider* paramsProvider, const NodeWPtr& node, TrackStepFunctor functor)
-: TrackSchedulerBase()
-, _imp(new TrackSchedulerPrivate(paramsProvider, node))
-, argsMutex()
-, curArgs()
-, requestedArgs()
-, _functor(functor)
+TrackScheduler<TrackArgsType>::TrackScheduler(TrackerParamsProvider* paramsProvider,
+                                              const NodeWPtr& node,
+                                              TrackStepFunctor functor)
+    : TrackSchedulerBase()
+    , _imp( new TrackSchedulerPrivate(paramsProvider, node) )
+    , argsMutex()
+    , curArgs()
+    , requestedArgs()
+    , _functor(functor)
 {
-    setObjectName(QString::fromUtf8("TrackScheduler"));
+    setObjectName( QString::fromUtf8("TrackScheduler") );
 }
 
 template <class TrackArgsType>
 TrackScheduler<TrackArgsType>::~TrackScheduler()
 {
-    
 }
 
 template <class TrackArgsType>
@@ -1675,6 +2113,7 @@ bool
 TrackScheduler<TrackArgsType>::isWorking() const
 {
     QMutexLocker k(&_imp->isWorkingMutex);
+
     return _imp->isWorking;
 }
 
@@ -1684,14 +2123,18 @@ class IsTrackingFlagSetter_RAII
     EffectInstPtr _effect;
     TrackSchedulerBase* _base;
     bool _reportProgress;
-    
+
 public:
-    
-    IsTrackingFlagSetter_RAII(const EffectInstPtr& effect, TrackSchedulerBase* base, int step, bool reportProgress, ViewerInstance* viewer)
-    : _v(viewer)
-    , _effect(effect)
-    , _base(base)
-    , _reportProgress(reportProgress)
+
+    IsTrackingFlagSetter_RAII(const EffectInstPtr& effect,
+                              TrackSchedulerBase* base,
+                              int step,
+                              bool reportProgress,
+                              ViewerInstance* viewer)
+        : _v(viewer)
+        , _effect(effect)
+        , _base(base)
+        , _reportProgress(reportProgress)
     {
         if (_effect && _reportProgress) {
             _effect->getApp()->progressStart(_effect->getNode(), QObject::tr("Tracking...").toStdString(), "");
@@ -1702,17 +2145,16 @@ public:
             viewer->setDoingPartialUpdates(true);
         }
     }
-    
+
     ~IsTrackingFlagSetter_RAII()
     {
         if (_v) {
             _v->setDoingPartialUpdates(false);
         }
         if (_effect && _reportProgress) {
-            _effect->getApp()->progressEnd(_effect->getNode());
+            _effect->getApp()->progressEnd( _effect->getNode() );
             _base->emit_trackingFinished();
         }
-
     }
 };
 
@@ -1720,73 +2162,63 @@ template <class TrackArgsType>
 void
 TrackScheduler<TrackArgsType>::run()
 {
-    for (;;) {
-        
+    for (;; ) {
         ///Check for exit of the thread
-        if (_imp->checkForExit()) {
+        if ( _imp->checkForExit() ) {
             return;
         }
-        
+
         ///Flag that we're working
         {
             QMutexLocker k(&_imp->isWorkingMutex);
             _imp->isWorking = true;
         }
-        
+
         ///Copy the requested args to the args used for processing
         {
             QMutexLocker k(&argsMutex);
             curArgs = requestedArgs;
         }
-        
-        
+
+
         boost::shared_ptr<TimeLine> timeline = curArgs.getTimeLine();
-        
         ViewerInstance* viewer =  curArgs.getViewer();
-        
-        
         int end = curArgs.getEnd();
         int start = curArgs.getStart();
         int cur = start;
         bool isForward = curArgs.getForward();
         int framesCount = isForward ? (end - start) : (start - end);
         int numTracks = curArgs.getNumTracks();
-        
-        
         std::vector<int> trackIndexes;
         for (std::size_t i = 0; i < (std::size_t)numTracks; ++i) {
             trackIndexes.push_back(i);
         }
-        
+
         int lastValidFrame = isForward ? start - 1 : start + 1;
         bool reportProgress = numTracks > 1 || framesCount > 1;
-
         EffectInstPtr effect = _imp->getNode()->getEffectInstance();
         {
             ///Use RAII style for setting the isDoingPartialUpdates flag so we're sure it gets removed
             IsTrackingFlagSetter_RAII __istrackingflag__(effect, this, isForward ? 1 : -1, reportProgress, viewer);
 
-            
-            if ((isForward && start >= end) || (!isForward && start <= end)) {
+
+            if ( ( isForward && (start >= end) ) || ( !isForward && (start <= end) ) ) {
                 // Invalid range
                 cur = end;
             }
-            
+
             while (cur != end) {
-                
-                
-                
                 ///Launch parallel thread for each track using the global thread pool
-                QFuture<bool> future = QtConcurrent::mapped(trackIndexes,
-                                                            boost::bind(_functor,
-                                                                        _1,
-                                                                        curArgs,
-                                                                        cur));
+                QFuture<bool> future = QtConcurrent::mapped( trackIndexes,
+                                                             boost::bind(_functor,
+                                                                         _1,
+                                                                         curArgs,
+                                                                         cur) );
                 future.waitForFinished();
-                
+
                 bool failure = false;
                 for (QFuture<bool>::const_iterator it = future.begin(); it != future.end(); ++it) {
-                    if (!(*it)) {
+                    if ( !(*it) ) {
                         failure = true;
                         break;
                     }
@@ -1794,10 +2226,10 @@ TrackScheduler<TrackArgsType>::run()
                 if (failure) {
                     break;
                 }
-                
+
                 lastValidFrame = cur;
-                
-                
+
+
                 double progress;
                 if (isForward) {
                     ++cur;
@@ -1806,18 +2238,17 @@ TrackScheduler<TrackArgsType>::run()
                     --cur;
                     progress = (double)(start - cur) / framesCount;
                 }
-                
+
                 bool isUpdateViewerOnTrackingEnabled = _imp->paramsProvider->getUpdateViewer();
                 bool isCenterViewerEnabled = _imp->paramsProvider->getCenterOnTrack();
 
-                
+
                 ///Ok all tracks are finished now for this frame, refresh viewer if needed
                 if (isUpdateViewerOnTrackingEnabled && viewer) {
-                    
                     //This will not refresh the viewer since when tracking, renderCurrentFrame()
                     //is not called on viewers, see Gui::onTimeChanged
                     timeline->seekFrame(cur, true, 0, eTimelineChangeReasonOtherSeek);
-                    
+
                     ///Beyond TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE it becomes more expensive to render all partial rectangles
                     ///than just render the whole viewer RoI
                     if (numTracks < TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE) {
@@ -1829,15 +2260,15 @@ TrackScheduler<TrackArgsType>::run()
                     }
                     Q_EMIT renderCurrentFrameForViewer(viewer);
                 }
-                
+
                 if (reportProgress && effect) {
                     ///Notify we progressed of 1 frame
-                    if (!effect->getApp()->progressUpdate(effect->getNode(), progress)) {
+                    if ( !effect->getApp()->progressUpdate(effect->getNode(), progress) ) {
                         QMutexLocker k(&_imp->abortRequestedMutex);
                         ++_imp->abortRequested;
                     }
                 }
-                
+
                 ///Check for abortion
                 {
                     QMutexLocker k(&_imp->abortRequestedMutex);
@@ -1847,42 +2278,37 @@ TrackScheduler<TrackArgsType>::run()
                         break;
                     }
                 }
-                
             } // while (cur != end) {
-            
-        
         } // IsTrackingFlagSetter_RAII
-        
         TrackerContext* isContext = dynamic_cast<TrackerContext*>(_imp->paramsProvider);
         if (isContext) {
-            isContext->computeTransformParamsFromEnabledTracks();
+            isContext->solveTransformParams();
         }
-        
+
         appPTR->getAppTLS()->cleanupTLSForThread();
-        
+
         //Now that tracking is done update viewer once to refresh the whole visible portion
-        
-        if (_imp->paramsProvider->getUpdateViewer()) {
+
+        if ( _imp->paramsProvider->getUpdateViewer() ) {
             //Refresh all viewers to the current frame
             timeline->seekFrame(lastValidFrame, true, 0, eTimelineChangeReasonOtherSeek);
         }
-        
+
         ///Flag that we're no longer working
         {
             QMutexLocker k(&_imp->isWorkingMutex);
             _imp->isWorking = false;
         }
-        
+
         ///Make sure we really reset the abort flag
         {
             QMutexLocker k(&_imp->abortRequestedMutex);
             if (_imp->abortRequested > 0) {
                 _imp->abortRequested = 0;
                 _imp->abortRequestedCond.wakeAll();
-                
             }
         }
-        
+
         ///Sleep or restart if we've got requests in the queue
         {
             QMutexLocker k(&_imp->startRequesstMutex);
@@ -1891,14 +2317,13 @@ TrackScheduler<TrackArgsType>::run()
             }
             _imp->startRequests = 0;
         }
-        
     } // for (;;) {
-}
+} // >::run
 
 void
 TrackSchedulerBase::doRenderCurrentFrameForViewer(ViewerInstance* viewer)
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     viewer->renderCurrentFrame(true);
 }
 
@@ -1906,12 +2331,11 @@ template <class TrackArgsType>
 void
 TrackScheduler<TrackArgsType>::track(const TrackArgsType& args)
 {
-    
     {
         QMutexLocker k(&argsMutex);
         requestedArgs = args;
     }
-    if (isRunning()) {
+    if ( isRunning() ) {
         QMutexLocker k(&_imp->startRequesstMutex);
         ++_imp->startRequests;
         _imp->startRequestsCond.wakeAll();
@@ -1920,56 +2344,51 @@ TrackScheduler<TrackArgsType>::track(const TrackArgsType& args)
     }
 }
 
-
 template <class TrackArgsType>
 void
 TrackScheduler<TrackArgsType>::abortTracking()
 {
-    if (!isRunning() || !isWorking()) {
+    if ( !isRunning() || !isWorking() ) {
         return;
     }
-    
-    
+
+
     {
         QMutexLocker k(&_imp->abortRequestedMutex);
         ++_imp->abortRequested;
         while (_imp->abortRequested) {
             _imp->abortRequestedCond.wait(&_imp->abortRequestedMutex);
         }
-        
     }
-    
 }
 
 template <class TrackArgsType>
 void
 TrackScheduler<TrackArgsType>::quitThread()
 {
-    if (!isRunning()) {
+    if ( !isRunning() ) {
         return;
     }
-    
+
     abortTracking();
-    
+
     {
         QMutexLocker k(&_imp->mustQuitMutex);
         _imp->mustQuit = true;
-        
+
         {
             QMutexLocker k(&_imp->startRequesstMutex);
             ++_imp->startRequests;
             _imp->startRequestsCond.wakeAll();
         }
-        
+
         while (_imp->mustQuit) {
             _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
         }
-        
     }
-    
-    
+
+
     wait();
-    
 }
 
 ///Explicit template instantiation for TrackScheduler

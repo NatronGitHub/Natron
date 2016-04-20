@@ -65,13 +65,12 @@ public:
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
     // overridden for ImageEffect::Instance
-    
+
     /// call the effect entry point
     virtual OfxStatus mainEntry(const char *action,
                                 const void *handle,
                                 OFX::Host::Property::Set *inArgs,
                                 OFX::Host::Property::Set *outArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
-
     virtual OFX::Host::Memory::Instance* newMemoryInstance(size_t nBytes) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /// get default output fielding. This is passed into the clip prefs action
@@ -128,36 +127,32 @@ public:
     /// This is called whenever a param is changed by the plugin so that
     /// the recursive instanceChangedAction will be fed the correct frame
     virtual double getFrameRecursive() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
     virtual void paramChangedByPlugin(OFX::Host::Param::Instance *param) OVERRIDE FINAL;
 
     /// This is called whenever a param is changed by the plugin so that
     /// the recursive instanceChangedAction will be fed the correct
     /// renderScale
     virtual void getRenderScaleRecursive(double &x, double &y) const OVERRIDE FINAL;
-    
-    
     virtual OfxStatus getViewCount(int *nViews) const OVERRIDE FINAL;
-
     virtual OfxStatus getViewName(int viewIndex, const char** name) const OVERRIDE FINAL;
- 
+
     void setupClipPreferencesArgsFromMetadata(NodeMetadata& metadata,
                                               OFX::Host::Property::Set &outArgs,
-                                              std::map<OfxClipInstance*,int>& clipsMapping);
-    
+                                              std::map<OfxClipInstance*, int>& clipsMapping);
+
     /**
      * We add some output parameters to the function so that we can delay the actual setting of the clip preferences
      **/
     StatusEnum getClipPreferences_safe(NodeMetadata& defaultPrefs);
-    
+
     virtual OfxStatus createInstanceAction() OVERRIDE FINAL;
 
     /**
      * @brief To be called once no action is currently being run after getClipPreferences_safe was called.
      * Caller maintains a lock around this call to prevent race conditions.
      **/
-    bool updatePreferences_safe(double frameRate,const std::string& fielding,const std::string& premult,
-                                bool continuous,bool frameVarying);
+    bool updatePreferences_safe(double frameRate, const std::string& fielding, const std::string& premult,
+                                bool continuous, bool frameVarying);
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
@@ -235,34 +230,34 @@ public:
     bool isInAnalysis() const;
 #endif
 
-  
+
     bool getInputsHoldingTransform(std::list<int>* inputs) const;
-    
-    const std::map<std::string,OFX::Host::ImageEffect::ClipInstance*>& getClips() const;
-    
+
+    const std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>& getClips() const;
+
 private:
     boost::weak_ptr<OfxEffectInstance> _ofxEffectInstance; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //
-                                              Not easy since every Knob need a valid pointer to a node when
-                                              AppManager::createKnob() is called. That's why we need to pass a pointer
-                                              to an OfxParamInstance. Without this pointer we would be unable
-                                              to track the knobs that have been created for 1 Node since OfxParamInstance
-                                              is totally dissociated from Node.*/
+                                                              Not easy since every Knob need a valid pointer to a node when
+                                                              AppManager::createKnob() is called. That's why we need to pass a pointer
+                                                              to an OfxParamInstance. Without this pointer we would be unable
+                                                              to track the knobs that have been created for 1 Node since OfxParamInstance
+                                                              is totally dissociated from Node.*/
 };
 
-class OfxImageEffectDescriptor : public OFX::Host::ImageEffect::Descriptor
+class OfxImageEffectDescriptor
+    : public OFX::Host::ImageEffect::Descriptor
 {
 public:
-    
+
     OfxImageEffectDescriptor(OFX::Host::Plugin *plug);
-    
+
     OfxImageEffectDescriptor(const std::string &bundlePath, OFX::Host::Plugin *plug);
-    
+
     OfxImageEffectDescriptor(const OFX::Host::ImageEffect::Descriptor &rootContext,
                              OFX::Host::Plugin *plugin);
-    
-    virtual OFX::Host::Param::Descriptor *paramDefine(const char *paramType,
-                                    const char *name) OVERRIDE FINAL;
-    
+
+    virtual OFX::Host::Param::Descriptor * paramDefine(const char *paramType,
+                                                       const char *name) OVERRIDE FINAL;
 };
 
 NATRON_NAMESPACE_EXIT;

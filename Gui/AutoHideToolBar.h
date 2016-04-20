@@ -38,13 +38,14 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER;
 
 class AutoHideToolBar
-: public QToolBar
+    : public QToolBar
 {
     Gui* _gui;
 
 public:
     AutoHideToolBar(Gui* gui,
                     QWidget* parent);
+
 private:
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
 };

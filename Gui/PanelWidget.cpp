@@ -38,16 +38,15 @@ NATRON_NAMESPACE_ENTER;
 
 PanelWidget::PanelWidget(QWidget* thisWidget,
                          Gui* gui)
-: ScriptObject()
-, _thisWidget(thisWidget)
-, _gui(gui)
+    : ScriptObject()
+    , _thisWidget(thisWidget)
+    , _gui(gui)
 {
     assert(_gui && _thisWidget);
 }
 
 PanelWidget::~PanelWidget()
 {
-    
 }
 
 Gui*
@@ -63,7 +62,8 @@ PanelWidget::notifyGuiClosingPublic()
     notifyGuiClosing();
 }
 
-static TabWidget* getParentPaneRecursive(QWidget* w)
+static TabWidget*
+getParentPaneRecursive(QWidget* w)
 {
     if (!w) {
         return 0;
@@ -72,7 +72,7 @@ static TabWidget* getParentPaneRecursive(QWidget* w)
     if (tw) {
         return tw;
     } else {
-        return getParentPaneRecursive(w->parentWidget());
+        return getParentPaneRecursive( w->parentWidget() );
     }
 }
 
@@ -85,27 +85,27 @@ PanelWidget::getParentPane() const
 void
 PanelWidget::enterEventBase()
 {
-    
     TabWidget* parentPane = getParentPane();
+
     if (parentPane) {
         parentPane->setWidgetMouseOverFocus(this, true);
     }
-    if (_gui && _gui->isFocusStealingPossible()) {
+    if ( _gui && _gui->isFocusStealingPossible() ) {
         _thisWidget->setFocus();
-        
+
         //Make this stack the active one
         QUndoStack* stack = getUndoStack();
         if (stack) {
             stack->setActive();
         }
     }
-
 }
 
 void
 PanelWidget::pushUndoCommand(QUndoCommand* command)
 {
     QUndoStack* stack = getUndoStack();
+
     if (stack) {
         stack->setActive();
         stack->push(command);
@@ -121,6 +121,7 @@ PanelWidget::isClickFocusPanel() const
     if (!_gui) {
         return false;
     }
+
     return _gui->getCurrentPanelFocus() == this;
 }
 
@@ -128,12 +129,13 @@ void
 PanelWidget::takeClickFocus()
 {
     TabWidget* parentPane = getParentPane();
+
     if (parentPane) {
         parentPane->setWidgetClickFocus(this, true);
     }
     if (_gui) {
         const RegisteredTabs& tabs = _gui->getRegisteredTabs();
-        for (RegisteredTabs::const_iterator it = tabs.begin(); it!=tabs.end(); ++it) {
+        for (RegisteredTabs::const_iterator it = tabs.begin(); it != tabs.end(); ++it) {
             if (it->second.first != this) {
                 it->second.first->removeClickFocus();
             }
@@ -146,6 +148,7 @@ void
 PanelWidget::removeClickFocus()
 {
     TabWidget* parentPane = getParentPane();
+
     if (parentPane) {
         parentPane->setWidgetClickFocus(this, false);
     }
@@ -154,11 +157,11 @@ PanelWidget::removeClickFocus()
     }
 }
 
-
 void
 PanelWidget::leaveEventBase()
 {
     TabWidget* parentPane = getParentPane();
+
     if (parentPane) {
         parentPane->setWidgetMouseOverFocus(this, false);
     }
@@ -172,7 +175,7 @@ PanelWidget::handleUnCaughtKeyUpEvent(QKeyEvent* e)
     }
     _gui->setLastKeyUpVisitedClickFocus(_gui->getCurrentPanelFocus() == this);
     TabWidget* parentPane = getParentPane();
-    if (parentPane && parentPane->isFloatingWindowChild()) {
+    if ( parentPane && parentPane->isFloatingWindowChild() ) {
         //We have to send the event to the Gui object, because it won't receive it as they are part from different windows
         qApp->sendEvent(_gui, e);
     }
@@ -186,7 +189,7 @@ PanelWidget::handleUnCaughtKeyPressEvent(QKeyEvent* e)
     }
     _gui->setLastKeyPressVisitedClickFocus(_gui->getCurrentPanelFocus() == this);
     TabWidget* parentPane = getParentPane();
-    if (parentPane && parentPane->isFloatingWindowChild()) {
+    if ( parentPane && parentPane->isFloatingWindowChild() ) {
         //We have to send the event to the Gui object, because it won't receive it as they are part from different windows
         qApp->sendEvent(_gui, e);
     }

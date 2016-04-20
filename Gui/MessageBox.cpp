@@ -50,38 +50,34 @@ NATRON_NAMESPACE_ENTER;
 struct MessageBoxPrivate
 {
     MessageBox::MessageBoxTypeEnum type;
-    
     QHBoxLayout* mainLayout;
     QVBoxLayout* vLayout;
-    
     Label* infoLabel;
-    
     QWidget* vContainer;
     Label* questionLabel;
     QTextEdit* infoEdit; //< used if the text is too long so the user can scroll
     QCheckBox* checkbox;
-    
     QDialogButtonBox* buttons;
     QAbstractButton* clickedButton;
-    
+
     MessageBoxPrivate(MessageBox::MessageBoxTypeEnum type)
-    : type(type)
-    , mainLayout(0)
-    , vLayout(0)
-    , infoLabel(0)
-    , vContainer(0)
-    , questionLabel(0)
-    , infoEdit(0)
-    , checkbox(0)
-    , buttons(0)
-    , clickedButton(0)
+        : type(type)
+        , mainLayout(0)
+        , vLayout(0)
+        , infoLabel(0)
+        , vContainer(0)
+        , questionLabel(0)
+        , infoEdit(0)
+        , checkbox(0)
+        , buttons(0)
+        , clickedButton(0)
     {
-        
     }
-    
+
     int layoutMinimumWidth()
     {
         mainLayout->activate();
+
         return mainLayout->totalMinimumSize().width();
     }
 };
@@ -92,8 +88,8 @@ MessageBox::MessageBox(const QString & title,
                        const StandardButtons& buttons,
                        StandardButtonEnum defaultButton,
                        QWidget* parent)
-: QDialog(parent,Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint)
-, _imp(new MessageBoxPrivate(type))
+    : QDialog(parent, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint)
+    , _imp( new MessageBoxPrivate(type) )
 {
     init(title, message, buttons, defaultButton);
 }
@@ -105,36 +101,36 @@ MessageBox::init(const QString & title,
                  StandardButtonEnum defaultButton)
 {
     _imp->mainLayout = new QHBoxLayout(this);
-    
+
     _imp->infoLabel = new Label(this);
     _imp->infoLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    
+
     QStyle::StandardPixmap pixType = QStyle::SP_MessageBoxCritical;
     switch (_imp->type) {
-        case eMessageBoxTypeError:
-            pixType = QStyle::SP_MessageBoxCritical;
-            break;
-        case eMessageBoxTypeWarning:
-            pixType = QStyle::SP_MessageBoxWarning;
-            break;
-        case eMessageBoxTypeInformation:
-            pixType = QStyle::SP_MessageBoxWarning;
-            break;
-        case eMessageBoxTypeQuestion:
-            pixType = QStyle::SP_MessageBoxQuestion;
-            break;
+    case eMessageBoxTypeError:
+        pixType = QStyle::SP_MessageBoxCritical;
+        break;
+    case eMessageBoxTypeWarning:
+        pixType = QStyle::SP_MessageBoxWarning;
+        break;
+    case eMessageBoxTypeInformation:
+        pixType = QStyle::SP_MessageBoxWarning;
+        break;
+    case eMessageBoxTypeQuestion:
+        pixType = QStyle::SP_MessageBoxQuestion;
+        break;
     }
-    
+
     QIcon icon = style()->standardIcon(pixType, 0, this);
     int iconSize = style()->pixelMetric(QStyle::PM_MessageBoxIconSize, 0, this);
-    _imp->infoLabel->setPixmap(icon.pixmap(iconSize, iconSize));
-    
+    _imp->infoLabel->setPixmap( icon.pixmap(iconSize, iconSize) );
+
     _imp->vContainer = new QWidget(this);
     _imp->vLayout = new QVBoxLayout(_imp->vContainer);
-    
+
     if (message.size() < 1000) {
-        _imp->questionLabel = new Label(message,_imp->vContainer);
-        _imp->questionLabel->setTextInteractionFlags(Qt::TextInteractionFlags(style()->styleHint(QStyle::SH_MessageBox_TextInteractionFlags, 0, this)));
+        _imp->questionLabel = new Label(message, _imp->vContainer);
+        _imp->questionLabel->setTextInteractionFlags( Qt::TextInteractionFlags( style()->styleHint(QStyle::SH_MessageBox_TextInteractionFlags, 0, this) ) );
         _imp->questionLabel->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
         _imp->questionLabel->setOpenExternalLinks(true);
         _imp->questionLabel->setContentsMargins(16, 0, 0, 0);
@@ -142,7 +138,7 @@ MessageBox::init(const QString & title,
         //_imp->questionLabel->setFont(f);
         _imp->vLayout->addWidget(_imp->questionLabel);
     } else {
-        _imp->infoEdit = new QTextEdit(message,_imp->vContainer);
+        _imp->infoEdit = new QTextEdit(message, _imp->vContainer);
         _imp->infoEdit->setReadOnly(true);
         _imp->infoEdit->setContentsMargins(16, 0, 0, 0);
         _imp->infoEdit->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
@@ -150,47 +146,44 @@ MessageBox::init(const QString & title,
         //_imp->infoEdit->setFont(f);
         _imp->vLayout->addWidget(_imp->infoEdit);
     }
-    
-    
+
+
     _imp->buttons = new QDialogButtonBox(_imp->vContainer);
-    _imp->buttons->setStandardButtons(QDialogButtonBox::StandardButtons(int(QtEnumConvert::toQtStandarButtons(buttons))));
-    QPushButton* defaultB = _imp->buttons->button(QDialogButtonBox::StandardButton(
-                                                                                   (QDialogButtonBox::StandardButton)QtEnumConvert::toQtStandardButton(defaultButton)));
-    if (_imp->buttons->buttons().contains(defaultB)) {
+    _imp->buttons->setStandardButtons( QDialogButtonBox::StandardButtons( int( QtEnumConvert::toQtStandarButtons(buttons) ) ) );
+    QPushButton* defaultB = _imp->buttons->button( QDialogButtonBox::StandardButton(
+                                                       (QDialogButtonBox::StandardButton)QtEnumConvert::toQtStandardButton(defaultButton) ) );
+    if ( _imp->buttons->buttons().contains(defaultB) ) {
         defaultB->setDefault(true);
         defaultB->setFocus();
     }
-    _imp->buttons->setCenterButtons(style()->styleHint(QStyle::SH_MessageBox_CenterButtons, 0, this));
-    QObject::connect(_imp->buttons, SIGNAL(clicked(QAbstractButton*)),
-                     this, SLOT(onButtonClicked(QAbstractButton*)));
+    _imp->buttons->setCenterButtons( style()->styleHint(QStyle::SH_MessageBox_CenterButtons, 0, this) );
+    QObject::connect( _imp->buttons, SIGNAL(clicked(QAbstractButton*)),
+                      this, SLOT(onButtonClicked(QAbstractButton*)) );
     _imp->vLayout->addWidget(_imp->buttons);
-    
+
     _imp->mainLayout->addWidget(_imp->infoLabel);
     _imp->mainLayout->addWidget(_imp->vContainer);
-    
+
     setWindowTitle(title);
-    
-
-}
-
+} // MessageBox::init
 
 MessageBox::~MessageBox()
 {
-    
 }
 
-void MessageBox::updateSize()
+void
+MessageBox::updateSize()
 {
     if (_imp->questionLabel) {
         _imp->questionLabel->setWordWrap(true);
     } else {
         _imp->infoEdit->setWordWrapMode(QTextOption::WordWrap);
     }
-    
-    setFixedSize(400,150);
+
+    setFixedSize(400, 150);
 //    if (!isVisible())
 //        return;
-//    
+//
 //    QSize screenSize = QApplication::desktop()->availableGeometry(QCursor::pos()).size();
 //#if defined(Q_WS_QWS) || defined(Q_WS_WINCE) || defined(Q_OS_SYMBIAN)
 //    // the width of the screen, less the window border.
@@ -213,7 +206,7 @@ void MessageBox::updateSize()
 //    int softLimit = qMin(screenSize.width() * 3 / 4, 500);
 //#endif //Q_WS_WINCE
 //#endif
-//    
+//
 //
 //    _imp->questionLabel->setWordWrap(false); // makes the label return min size
 //    int width = _imp->layoutMinimumWidth();
@@ -221,7 +214,7 @@ void MessageBox::updateSize()
 //
 //    if (width > softLimit) {
 //        width = qMax(softLimit, _imp->layoutMinimumWidth());
-//        
+//
 ////        if (width > hardLimit) {
 ////            _imp->questionLabel->d_func()->ensureTextControl();
 ////            if (QTextControl *control = label->d_func()->control) {
@@ -232,28 +225,28 @@ void MessageBox::updateSize()
 ////            width = hardLimit;
 ////        }
 //    }
-//    
+//
 //    QFontMetrics fm(QApplication::font("QWorkspaceTitleBar"));
 //    int windowTitleWidth = qMin(fm.width(windowTitle()) + 50, hardLimit);
 //    if (windowTitleWidth > width)
 //        width = windowTitleWidth;
-//    
+//
 //    _imp->mainLayout->activate();
 //    int height = (_imp->mainLayout->hasHeightForWidth())
 //    ? _imp->mainLayout->totalHeightForWidth(width)
 //    : _imp->mainLayout->totalMinimumSize().height();
-//    
+//
 //
 //    setFixedSize(width, height);
 //    QCoreApplication::removePostedEvents(this, QEvent::LayoutRequest);
-}
+} // MessageBox::updateSize
 
 StandardButtonEnum
 MessageBox::getReply() const
 {
     return _imp->clickedButton ?
-    QtEnumConvert::fromQtStandardButton((QMessageBox::StandardButton)_imp->buttons->standardButton(_imp->clickedButton)) :
-    eStandardButtonEscape;
+           QtEnumConvert::fromQtStandardButton( (QMessageBox::StandardButton)_imp->buttons->standardButton(_imp->clickedButton) ) :
+           eStandardButtonEscape;
 }
 
 void
@@ -284,13 +277,15 @@ bool
 MessageBox::event(QEvent* e)
 {
     bool result = QDialog::event(e);
-    switch (e->type()) {
-        case QEvent::LayoutRequest:
-            updateSize();
-            break;
-        default:
-            break;
+
+    switch ( e->type() ) {
+    case QEvent::LayoutRequest:
+        updateSize();
+        break;
+    default:
+        break;
     }
+
     return result;
 }
 

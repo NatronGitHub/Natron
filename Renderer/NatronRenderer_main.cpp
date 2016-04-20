@@ -37,7 +37,8 @@ int
 main(int argc,
      char *argv[])
 {
-    CLArgs args(argc,argv,true);
+    CLArgs args(argc, argv, true);
+
     if (args.getError() > 0) {
         return 1;
     }
@@ -45,7 +46,7 @@ main(int argc,
     AppManager manager;
 
     // coverity[tainted_data]
-    if (!manager.load(argc,argv,args)) {
+    if ( !manager.load(argc, argv, args) ) {
         return 1;
     } else {
         return 0;
@@ -53,6 +54,4 @@ main(int argc,
 
     return 0;
 } //main
-
-
 

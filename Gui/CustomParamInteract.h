@@ -74,7 +74,7 @@ public:
      * @brief Returns the width and height of the viewport in window coordinates.
      **/
     virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
-    
+
     /**
      * @brief Returns the pixel scale of the viewport.
      **/
@@ -84,17 +84,15 @@ public:
      * @brief Returns the colour of the background (i.e: clear color) of the viewport.
      **/
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
-
     virtual void saveOpenGLContext() OVERRIDE FINAL;
     virtual void restoreOpenGLContext() OVERRIDE FINAL;
-    
     virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL { return 0; }
-    
+
 private:
 
     virtual void paintGL() OVERRIDE FINAL;
     virtual void initializeGL() OVERRIDE FINAL;
-    virtual void resizeGL(int w,int h) OVERRIDE FINAL;
+    virtual void resizeGL(int w, int h) OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL;
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;

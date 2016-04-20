@@ -42,57 +42,57 @@ struct NodeRenderStatsPrivate
 {
     //The accumulated time spent in the EffectInstance::renderHandler function
     double totalTimeSpentRendering;
-    
+
     //The region of definition of the node for this frame
     RectD rod;
-    
+
     //Is identity
     NodeWPtr isWholeImageIdentity;
-    
+
     //The list of all tiles rendered
     std::list<RectI> rectanglesRendered;
-    
+
     //The list of rectangles for which isIdentity returned true
-    std::list<std::pair<RectI,NodeWPtr > > identityRectangles;
-    
+    std::list<std::pair<RectI, NodeWPtr > > identityRectangles;
+
     //The different mipmaplevels rendered
     std::set<unsigned int> mipmapLevelsAccessed;
-    
+
     //The different planes rendered
     std::set<std::string> planesRendered;
-    
+
     //Cache access infos
     int nbCacheMisses;
     int nbCacheHit;
     int nbCacheHitButDownscaledImages;
-    
+
     //Is tile support enabled for this render
     bool tileSupportEnabled;
-    
+
     //Is render scale support enabled for this render
     bool renderScaleSupportEnabled;
-    
+
     //Channels rendered
     std::bitset<4> channelsEnabled;
-    
+
     //Premultiplication of the output imge
     ImagePremultiplicationEnum outputPremult;
-    
+
     NodeRenderStatsPrivate()
-    : totalTimeSpentRendering(0)
-    , rod()
-    , isWholeImageIdentity()
-    , rectanglesRendered()
-    , identityRectangles()
-    , mipmapLevelsAccessed()
-    , planesRendered()
-    , nbCacheMisses(0)
-    , nbCacheHit(0)
-    , nbCacheHitButDownscaledImages(0)
-    , tileSupportEnabled(false)
-    , renderScaleSupportEnabled(false)
-    , channelsEnabled()
-    , outputPremult(eImagePremultiplicationOpaque)
+        : totalTimeSpentRendering(0)
+        , rod()
+        , isWholeImageIdentity()
+        , rectanglesRendered()
+        , identityRectangles()
+        , mipmapLevelsAccessed()
+        , planesRendered()
+        , nbCacheMisses(0)
+        , nbCacheHit(0)
+        , nbCacheHitButDownscaledImages(0)
+        , tileSupportEnabled(false)
+        , renderScaleSupportEnabled(false)
+        , channelsEnabled()
+        , outputPremult(eImagePremultiplicationOpaque)
     {
         for (int i = 0; i < 4; ++i) {
             channelsEnabled[i] = false;
@@ -101,18 +101,16 @@ struct NodeRenderStatsPrivate
 };
 
 NodeRenderStats::NodeRenderStats()
-: _imp(new NodeRenderStatsPrivate())
+    : _imp( new NodeRenderStatsPrivate() )
 {
-    
 }
 
 NodeRenderStats::~NodeRenderStats()
 {
-    
 }
 
 NodeRenderStats::NodeRenderStats(const NodeRenderStats& other)
-: _imp(new NodeRenderStatsPrivate())
+    : _imp( new NodeRenderStatsPrivate() )
 {
     *this = other;
 }
@@ -187,21 +185,24 @@ NodeRenderStats::getRenderedRectangles() const
 }
 
 void
-NodeRenderStats::addIdentityRectangle(const NodePtr& identity, const RectI& rectangle)
+NodeRenderStats::addIdentityRectangle(const NodePtr& identity,
+                                      const RectI& rectangle)
 {
-    _imp->identityRectangles.push_back(std::make_pair(rectangle,identity));
+    _imp->identityRectangles.push_back( std::make_pair(rectangle, identity) );
 }
 
-std::list<std::pair<RectI,NodePtr > >
+std::list<std::pair<RectI, NodePtr > >
 NodeRenderStats::getIdentityRectangles() const
 {
-    std::list<std::pair<RectI,NodePtr > > ret;
-    for (std::list<std::pair<RectI,NodeWPtr > >::const_iterator it = _imp->identityRectangles.begin(); it!=_imp->identityRectangles.end(); ++it) {
+    std::list<std::pair<RectI, NodePtr > > ret;
+
+    for (std::list<std::pair<RectI, NodeWPtr > >::const_iterator it = _imp->identityRectangles.begin(); it != _imp->identityRectangles.end(); ++it) {
         NodePtr n = it->second.lock();
         if (n) {
-            ret.push_back(std::make_pair(it->first, n));
+            ret.push_back( std::make_pair(it->first, n) );
         }
     }
+
     return ret;
 }
 
@@ -230,7 +231,8 @@ NodeRenderStats::getPlanesRendered() const
 }
 
 void
-NodeRenderStats::addCacheAccessInfo(bool isCacheMiss, bool hasDownscaled)
+NodeRenderStats::addCacheAccessInfo(bool isCacheMiss,
+                                    bool hasDownscaled)
 {
     if (isCacheMiss) {
         ++_imp->nbCacheMisses;
@@ -240,11 +242,12 @@ NodeRenderStats::addCacheAccessInfo(bool isCacheMiss, bool hasDownscaled)
             ++_imp->nbCacheHitButDownscaledImages;
         }
     }
-    
 }
 
 void
-NodeRenderStats::getCacheAccessInfos(int* nbCacheMisses, int* nbCacheHits, int* nbCacheHitButDownscaledImages) const
+NodeRenderStats::getCacheAccessInfos(int* nbCacheMisses,
+                                     int* nbCacheHits,
+                                     int* nbCacheHitButDownscaledImages) const
 {
     *nbCacheMisses = _imp->nbCacheMisses;
     *nbCacheHits = _imp->nbCacheHit;
@@ -302,64 +305,61 @@ NodeRenderStats::getOutputPremult() const
 struct RenderStatsPrivate
 {
     mutable QMutex lock;
-    
+
     //Timer recording time spent for the whole frame
     TimeLapse totalTimeSpentForFrameTimer;
-    
+
     //When true in-depth profiling will be enabled for all Nodes with detailed infos
     bool doNodesProfiling;
-    
-    typedef std::map<NodeWPtr,NodeRenderStats > NodeInfosMap;
+
+    typedef std::map<NodeWPtr, NodeRenderStats > NodeInfosMap;
     NodeInfosMap nodeInfos;
-    
-    
-    
+
+
     RenderStatsPrivate()
-    : lock()
-    , totalTimeSpentForFrameTimer()
-    , doNodesProfiling(false)
-    , nodeInfos()
+        : lock()
+        , totalTimeSpentForFrameTimer()
+        , doNodesProfiling(false)
+        , nodeInfos()
     {
-        
     }
-    
+
     NodeInfosMap::iterator findNode(const NodePtr& node)
     {
         //Private, shouldn't lock
-        assert(!lock.tryLock());
-        
-        for (NodeInfosMap::iterator it = nodeInfos.begin(); it!=nodeInfos.end(); ++it) {
+        assert( !lock.tryLock() );
+
+        for (NodeInfosMap::iterator it = nodeInfos.begin(); it != nodeInfos.end(); ++it) {
             if (it->first.lock() == node) {
                 return it;
             }
         }
+
         return nodeInfos.end();
     }
-    
+
     NodeRenderStats& findOrCreateNodeStats(const NodePtr& node)
     {
-      
         NodeInfosMap::iterator found = findNode(node);
-        if (found != nodeInfos.end()) {
+
+        if ( found != nodeInfos.end() ) {
             return found->second;
         }
-        std::pair<NodeInfosMap::iterator,bool> ret = nodeInfos.insert(std::make_pair(node, NodeRenderStats()));
+        std::pair<NodeInfosMap::iterator, bool> ret = nodeInfos.insert( std::make_pair( node, NodeRenderStats() ) );
         assert(ret.second);
+
         return ret.first->second;
     }
-    
 };
 
 RenderStats::RenderStats(bool enableInDepthProfiling)
-: _imp(new RenderStatsPrivate())
+    : _imp( new RenderStatsPrivate() )
 {
     _imp->doNodesProfiling = enableInDepthProfiling;
 }
 
-
 RenderStats::~RenderStats()
 {
-    
 }
 
 bool
@@ -369,11 +369,13 @@ RenderStats::isInDepthProfilingEnabled() const
 }
 
 void
-RenderStats::setNodeIdentity(const NodePtr& node, const NodePtr& identity)
+RenderStats::setNodeIdentity(const NodePtr& node,
+                             const NodePtr& identity)
 {
     QMutexLocker k(&_imp->lock);
+
     assert(_imp->doNodesProfiling);
-    
+
     NodeRenderStats& stats = _imp->findOrCreateNodeStats(node);
     stats.setInputImageIdentity(identity);
 }
@@ -388,8 +390,9 @@ RenderStats::setGlobalRenderInfosForNode(const NodePtr& node,
                                          unsigned int mipmapLevel)
 {
     QMutexLocker k(&_imp->lock);
+
     assert(_imp->doNodesProfiling);
-    
+
     NodeRenderStats& stats = _imp->findOrCreateNodeStats(node);
     stats.setOutputPremult(outputPremult);
     stats.setTilesSupported(tilesSupported);
@@ -401,26 +404,28 @@ RenderStats::setGlobalRenderInfosForNode(const NodePtr& node,
 
 void
 RenderStats::addCacheInfosForNode(const NodePtr& node,
-                          bool isCacheMiss,
-                          bool hasDownscaled)
+                                  bool isCacheMiss,
+                                  bool hasDownscaled)
 {
     QMutexLocker k(&_imp->lock);
+
     assert(_imp->doNodesProfiling);
-    
+
     NodeRenderStats& stats = _imp->findOrCreateNodeStats(node);
     stats.addCacheAccessInfo(isCacheMiss, hasDownscaled);
 }
 
 void
 RenderStats::addRenderInfosForNode(const NodePtr& node,
-                           const NodePtr& identity,
-                           const std::string& plane,
-                           const RectI& rectangle,
-                           double timeSpent)
+                                   const NodePtr& identity,
+                                   const std::string& plane,
+                                   const RectI& rectangle,
+                                   double timeSpent)
 {
     QMutexLocker k(&_imp->lock);
+
     assert(_imp->doNodesProfiling);
-    
+
     NodeRenderStats& stats = _imp->findOrCreateNodeStats(node);
     if (identity) {
         stats.addIdentityRectangle(identity, rectangle);
@@ -431,21 +436,21 @@ RenderStats::addRenderInfosForNode(const NodePtr& node,
     stats.addPlaneRendered(plane);
 }
 
-std::map<NodePtr,NodeRenderStats >
+std::map<NodePtr, NodeRenderStats >
 RenderStats::getStats(double *totalTimeSpent) const
 {
     QMutexLocker k(&_imp->lock);
-    
-    std::map<NodePtr,NodeRenderStats > ret;
-    for (RenderStatsPrivate::NodeInfosMap::const_iterator it = _imp->nodeInfos.begin(); it!=_imp->nodeInfos.end(); ++it) {
+    std::map<NodePtr, NodeRenderStats > ret;
+
+    for (RenderStatsPrivate::NodeInfosMap::const_iterator it = _imp->nodeInfos.begin(); it != _imp->nodeInfos.end(); ++it) {
         NodePtr node = it->first.lock();
         if (node) {
-            ret.insert(std::make_pair(node, it->second));
+            ret.insert( std::make_pair(node, it->second) );
         }
     }
-    
+
     *totalTimeSpent = _imp->totalTimeSpentForFrameTimer.getTimeSinceCreation();
-    
+
     return ret;
 }
 

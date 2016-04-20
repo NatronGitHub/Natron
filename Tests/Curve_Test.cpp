@@ -31,34 +31,35 @@
 
 NATRON_NAMESPACE_USING
 
-TEST(KeyFrame,Basic)
+TEST(KeyFrame,
+     Basic)
 {
     KeyFrame k;
 
     k.setValue(10.);
-    EXPECT_EQ( 10.,k.getValue() );
+    EXPECT_EQ( 10., k.getValue() );
     k.setTime(50.);
-    EXPECT_EQ( 50.,k.getTime() );
+    EXPECT_EQ( 50., k.getTime() );
     k.setLeftDerivative(-1.);
-    EXPECT_EQ( -1.,k.getLeftDerivative() );
+    EXPECT_EQ( -1., k.getLeftDerivative() );
     k.setRightDerivative(-2.);
-    EXPECT_EQ( -2.,k.getRightDerivative() );
+    EXPECT_EQ( -2., k.getRightDerivative() );
     k.setInterpolation(eKeyframeTypeCatmullRom);
     EXPECT_EQ( eKeyframeTypeCatmullRom, k.getInterpolation() );
 
-    KeyFrame k1(10.,20.);
-    EXPECT_NE(k,k1);
-    EXPECT_TRUE( KeyFrame_compare_time() (k1,k) );
+    KeyFrame k1(10., 20.);
+    EXPECT_NE(k, k1);
+    EXPECT_TRUE( KeyFrame_compare_time() (k1, k) );
     EXPECT_TRUE( k1.getTime() < k.getTime() );
     k1.setValue(10.);
     k1.setTime(50.);
     k1.setLeftDerivative(-1.);
     k1.setRightDerivative(-2.);
     k1.setInterpolation(eKeyframeTypeCatmullRom);
-    EXPECT_EQ(k,k1);
+    EXPECT_EQ(k, k1);
 }
 
-TEST(Curve,Basic)
+TEST(Curve, Basic)
 {
     Curve c;
 
@@ -66,15 +67,15 @@ TEST(Curve,Basic)
     EXPECT_FALSE( c.isAnimated() );
 
     // one keyframe
-    EXPECT_TRUE( c.addKeyFrame( KeyFrame(0.,5.) ) );
+    EXPECT_TRUE( c.addKeyFrame( KeyFrame(0., 5.) ) );
     EXPECT_EQ( 5., c.getValueAt(0.) );
     EXPECT_EQ( 5., c.getValueAt(10.) );
     EXPECT_EQ( 5., c.getValueAt(-10.) );
     EXPECT_TRUE( c.isAnimated() );
 
     // two keyframes
-    EXPECT_FALSE( c.addKeyFrame( KeyFrame(0.,10.) ) ); // keyframe already exists, replacing it
-    EXPECT_TRUE( c.addKeyFrame( KeyFrame(1.,20.) ) );
+    EXPECT_FALSE( c.addKeyFrame( KeyFrame(0., 10.) ) ); // keyframe already exists, replacing it
+    EXPECT_TRUE( c.addKeyFrame( KeyFrame(1., 20.) ) );
     EXPECT_EQ( 10., c.getValueAt(0.) );
     EXPECT_EQ( 20., c.getValueAt(1.) );
     EXPECT_EQ( 10., c.getValueAt(-10.) ); // before first keyframe
@@ -99,8 +100,8 @@ TEST(Curve,Basic)
     EXPECT_FALSE( c.isAnimated() );
 
     // two keyframes, constant interpolation
-    EXPECT_TRUE( c.addKeyFrame( KeyFrame(0.,10.,0.,0.,eKeyframeTypeConstant) ) ); // keyframe already exists, replacing it
-    EXPECT_TRUE( c.addKeyFrame( KeyFrame(1.,20.,0.,0.,eKeyframeTypeConstant) ) );
+    EXPECT_TRUE( c.addKeyFrame( KeyFrame(0., 10., 0., 0., eKeyframeTypeConstant) ) ); // keyframe already exists, replacing it
+    EXPECT_TRUE( c.addKeyFrame( KeyFrame(1., 20., 0., 0., eKeyframeTypeConstant) ) );
     EXPECT_EQ( 10., c.getValueAt(0.) );
     EXPECT_EQ( 20., c.getValueAt(1.) );
     EXPECT_EQ( 10., c.getValueAt(-10.) ); // before first keyframe

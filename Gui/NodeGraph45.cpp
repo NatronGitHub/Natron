@@ -66,8 +66,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/QtCompat.h"
 
 NATRON_NAMESPACE_ENTER;
-
-
 void
 NodeGraph::toggleConnectionHints()
 {
@@ -93,27 +91,30 @@ void
 NodeGraph::toggleHideInputs()
 {
     const NodesGuiList& selectedNodes = getSelectedNodes();
-    if (selectedNodes.empty()) {
-        Dialogs::warningDialog(tr("Hide Inptus").toStdString(), tr("You must select a node first").toStdString());
+
+    if ( selectedNodes.empty() ) {
+        Dialogs::warningDialog( tr("Hide Inptus").toStdString(), tr("You must select a node first").toStdString() );
+
         return;
     }
 
     bool hidden = !selectedNodes.front()->getNode()->getHideInputsKnobValue();
-    
+
     for (NodesGuiList::const_iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
         (*it)->getNode()->setHideInputsKnobValue(hidden);
         //(*it)->refreshEdgesVisility();
     }
-
 }
 
-NodesGuiList NodeGraph::getNodesWithinBackdrop(const NodeGuiPtr& bd) const
+NodesGuiList
+NodeGraph::getNodesWithinBackdrop(const NodeGuiPtr& bd) const
 {
-    BackdropGui* isBd = dynamic_cast<BackdropGui*>(bd.get());
+    BackdropGui* isBd = dynamic_cast<BackdropGui*>( bd.get() );
+
     if (!isBd) {
         return NodesGuiList();
     }
-    
+
     QRectF bbox = bd->mapToScene( bd->boundingRect() ).boundingRect();
     NodesGuiList ret;
     QMutexLocker l(&_imp->_nodesMutex);
@@ -129,7 +130,8 @@ NodesGuiList NodeGraph::getNodesWithinBackdrop(const NodeGuiPtr& bd) const
 }
 
 void
-NodeGraph::refreshNodesKnobsAtTime(bool onlyTimeEvaluationKnobs, SequenceTime time)
+NodeGraph::refreshNodesKnobsAtTime(bool onlyTimeEvaluationKnobs,
+                                   SequenceTime time)
 {
     ///Refresh all knobs at the current time
     for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
@@ -141,14 +143,14 @@ void
 NodeGraph::refreshAllKnobsGui()
 {
     for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
-        if ((*it)->isSettingsPanelVisible()) {
-            const std::list<std::pair<boost::weak_ptr<KnobI>,KnobGuiPtr> > & knobs = (*it)->getKnobs();
-            
-            for (std::list<std::pair<boost::weak_ptr<KnobI>,KnobGuiPtr> >::const_iterator it2 = knobs.begin(); it2!=knobs.end(); ++it2) {
+        if ( (*it)->isSettingsPanelVisible() ) {
+            const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > & knobs = (*it)->getKnobs();
+
+            for (std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
                 KnobPtr knob = it2->first.lock();
-                if (!knob->getIsSecret()) {
+                if ( !knob->getIsSecret() ) {
                     for (int i = 0; i < knob->getDimension(); ++i) {
-                        if (knob->isAnimated(i)) {
+                        if ( knob->isAnimated(i) ) {
                             it2->second->onInternalValueChanged(ViewSpec::all(), i, eValueChangedReasonPluginEdited);
                             it2->second->onAnimationLevelChanged(ViewSpec::all(), i);
                         }
@@ -163,7 +165,8 @@ void
 NodeGraph::focusInEvent(QFocusEvent* e)
 {
     QGraphicsView::focusInEvent(e);
-    if (getGui()) {
+
+    if ( getGui() ) {
         getGui()->setLastSelectedGraph(this);
     }
 }
@@ -183,7 +186,6 @@ NodeGraph::toggleSelectedNodesEnabled()
     _imp->toggleSelectedNodesEnabled();
 }
 
-
 bool
 NodeGraph::areKnobLinksVisible() const
 {
@@ -194,65 +196,60 @@ void
 NodeGraph::popFindDialog(const QPoint& p)
 {
     QPoint realPos = p;
+    FindNodeDialog* dialog = new FindNodeDialog(this, this);
 
-    FindNodeDialog* dialog = new FindNodeDialog(this,this);
-    
-    if (realPos.x() == 0 && realPos.y() == 0) {
+    if ( (realPos.x() == 0) && (realPos.y() == 0) ) {
         QPoint global = QCursor::pos();
         QSize sizeH = dialog->sizeHint();
         global.rx() -= sizeH.width() / 2;
         global.ry() -= sizeH.height() / 2;
         realPos = global;
-        
     }
-    
-    QObject::connect(dialog ,SIGNAL(rejected()), this, SLOT(onFindNodeDialogFinished()));
-    QObject::connect(dialog ,SIGNAL(accepted()), this, SLOT(onFindNodeDialogFinished()));
+
+    QObject::connect( dialog, SIGNAL(rejected()), this, SLOT(onFindNodeDialogFinished()) );
+    QObject::connect( dialog, SIGNAL(accepted()), this, SLOT(onFindNodeDialogFinished()) );
     dialog->move( realPos.x(), realPos.y() );
     dialog->raise();
     dialog->show();
-    
 }
 
 void
 NodeGraph::popRenameDialog(const QPoint& pos)
 {
     NodeGuiPtr node;
-    if (_imp->_selection.size() == 1 ) {
+
+    if (_imp->_selection.size() == 1) {
         node = _imp->_selection.front();
     } else {
         return;
     }
-    
+
     assert(node);
 
-    
+
     QPoint realPos = pos;
-    
-    EditNodeNameDialog* dialog = new EditNodeNameDialog(node,this);
-    
-    if (realPos.x() == 0 && realPos.y() == 0) {
+    EditNodeNameDialog* dialog = new EditNodeNameDialog(node, this);
+
+    if ( (realPos.x() == 0) && (realPos.y() == 0) ) {
         QPoint global = QCursor::pos();
         QSize sizeH = dialog->sizeHint();
         global.rx() -= sizeH.width() / 2;
         global.ry() -= sizeH.height() / 2;
         realPos = global;
-        
     }
-    
-    QObject::connect(dialog ,SIGNAL(rejected()), this, SLOT(onNodeNameEditDialogFinished()));
-    QObject::connect(dialog ,SIGNAL(accepted()), this, SLOT(onNodeNameEditDialogFinished()));
+
+    QObject::connect( dialog, SIGNAL(rejected()), this, SLOT(onNodeNameEditDialogFinished()) );
+    QObject::connect( dialog, SIGNAL(accepted()), this, SLOT(onNodeNameEditDialogFinished()) );
     dialog->move( realPos.x(), realPos.y() );
     dialog->raise();
     dialog->show();
-  
 }
 
 void
 NodeGraph::onFindNodeDialogFinished()
 {
     FindNodeDialog* dialog = qobject_cast<FindNodeDialog*>( sender() );
-    
+
     if (dialog) {
         dialog->deleteLater();
     }
@@ -261,86 +258,80 @@ NodeGraph::onFindNodeDialogFinished()
 struct FindNodeDialogPrivate
 {
     NodeGraph* graph;
-    
     QString currentFilter;
     NodesGuiList nodeResults;
     int currentFindIndex;
-    
     QVBoxLayout* mainLayout;
     Label* label;
-    
-
     QCheckBox* unixWildcards;
     QCheckBox* caseSensitivity;
-
     Label* resultLabel;
     LineEdit* filter;
     QDialogButtonBox* buttons;
-    
-    
+
+
     FindNodeDialogPrivate(NodeGraph* graph)
-    : graph(graph)
-    , currentFilter()
-    , nodeResults()
-    , currentFindIndex(-1)
-    , mainLayout(0)
-    , label(0)
-    , unixWildcards(0)
-    , caseSensitivity(0)
-    , resultLabel(0)
-    , filter(0)
-    , buttons(0)
+        : graph(graph)
+        , currentFilter()
+        , nodeResults()
+        , currentFindIndex(-1)
+        , mainLayout(0)
+        , label(0)
+        , unixWildcards(0)
+        , caseSensitivity(0)
+        , resultLabel(0)
+        , filter(0)
+        , buttons(0)
     {
-        
     }
 };
 
-FindNodeDialog::FindNodeDialog(NodeGraph* graph,QWidget* parent)
-: QDialog(parent)
-, _imp(new FindNodeDialogPrivate(graph))
+FindNodeDialog::FindNodeDialog(NodeGraph* graph,
+                               QWidget* parent)
+    : QDialog(parent)
+    , _imp( new FindNodeDialogPrivate(graph) )
 {
     setWindowFlags(Qt::Window | Qt::CustomizeWindowHint);
-    
+
     _imp->mainLayout = new QVBoxLayout(this);
     _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
-    
-    _imp->label = new Label(tr("Select all nodes containing this text:"),this);
+
+    _imp->label = new Label(tr("Select all nodes containing this text:"), this);
     //_imp->label->setFont(QFont(appFont,appFontSize));
     _imp->mainLayout->addWidget(_imp->label);
 
     _imp->filter = new LineEdit(this);
-    QObject::connect(_imp->filter, SIGNAL(editingFinished()), this, SLOT(updateFindResultsWithCurrentFilter()));
-    QObject::connect(_imp->filter, SIGNAL(textEdited(QString)), this, SLOT(updateFindResults(QString)));
-    
+    QObject::connect( _imp->filter, SIGNAL(editingFinished()), this, SLOT(updateFindResultsWithCurrentFilter()) );
+    QObject::connect( _imp->filter, SIGNAL(textEdited(QString)), this, SLOT(updateFindResults(QString)) );
+
     _imp->mainLayout->addWidget(_imp->filter);
-    
-    
-    _imp->unixWildcards = new QCheckBox(tr("Use Unix wildcards (*, ?, etc..)"),this);
+
+
+    _imp->unixWildcards = new QCheckBox(tr("Use Unix wildcards (*, ?, etc..)"), this);
     _imp->unixWildcards->setChecked(false);
-    QObject::connect(_imp->unixWildcards, SIGNAL(toggled(bool)), this, SLOT(forceUpdateFindResults()));
+    QObject::connect( _imp->unixWildcards, SIGNAL(toggled(bool)), this, SLOT(forceUpdateFindResults()) );
     _imp->mainLayout->addWidget(_imp->unixWildcards);
-    
-    _imp->caseSensitivity = new QCheckBox(tr("Case sensitive"),this);
+
+    _imp->caseSensitivity = new QCheckBox(tr("Case sensitive"), this);
     _imp->caseSensitivity->setChecked(false);
-    QObject::connect(_imp->caseSensitivity, SIGNAL(toggled(bool)), this, SLOT(forceUpdateFindResults()));
+    QObject::connect( _imp->caseSensitivity, SIGNAL(toggled(bool)), this, SLOT(forceUpdateFindResults()) );
     _imp->mainLayout->addWidget(_imp->caseSensitivity);
-    
-    
+
+
     _imp->resultLabel = new Label(this);
     _imp->mainLayout->addWidget(_imp->resultLabel);
     //_imp->resultLabel->setFont(QFont(appFont,appFontSize));
-    
-    _imp->buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,Qt::Horizontal,this);
-    QObject::connect(_imp->buttons, SIGNAL(accepted()), this, SLOT(onOkClicked()));
-    QObject::connect(_imp->buttons, SIGNAL(rejected()), this, SLOT(onCancelClicked()));
-    
+
+    _imp->buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, this);
+    QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(onOkClicked()) );
+    QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(onCancelClicked()) );
+
     _imp->mainLayout->addWidget(_imp->buttons);
     _imp->filter->setFocus();
 }
 
 FindNodeDialog::~FindNodeDialog()
 {
-    
 }
 
 void
@@ -353,80 +344,74 @@ FindNodeDialog::updateFindResults(const QString& filter)
     _imp->currentFilter = filter;
     _imp->currentFindIndex = 0;
     _imp->nodeResults.clear();
-    
+
     _imp->graph->deselect();
-    
-    if (_imp->currentFilter.isEmpty()) {
-        _imp->resultLabel->setText(QString());
+
+    if ( _imp->currentFilter.isEmpty() ) {
+        _imp->resultLabel->setText( QString() );
+
         return;
     }
     Qt::CaseSensitivity sensitivity = _imp->caseSensitivity->isChecked() ? Qt::CaseSensitive : Qt::CaseInsensitive;
-    
     const NodesGuiList& activeNodes = _imp->graph->getAllActiveNodes();
-    
-    if (_imp->unixWildcards->isChecked()) {
-        QRegExp exp(filter,sensitivity,QRegExp::Wildcard);
-        if (!exp.isValid()) {
+
+    if ( _imp->unixWildcards->isChecked() ) {
+        QRegExp exp(filter, sensitivity, QRegExp::Wildcard);
+        if ( !exp.isValid() ) {
             return;
         }
-        
-        
-        
+
+
         for (NodesGuiList::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-            if ((*it)->isVisible() && exp.exactMatch(QString::fromUtf8((*it)->getNode()->getLabel().c_str()))) {
+            if ( (*it)->isVisible() && exp.exactMatch( QString::fromUtf8( (*it)->getNode()->getLabel().c_str() ) ) ) {
                 _imp->nodeResults.push_back(*it);
             }
         }
     } else {
         for (NodesGuiList::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-            if ((*it)->isVisible() && QString::fromUtf8((*it)->getNode()->getLabel().c_str()).contains(filter,sensitivity)) {
+            if ( (*it)->isVisible() && QString::fromUtf8( (*it)->getNode()->getLabel().c_str() ).contains(filter, sensitivity) ) {
                 _imp->nodeResults.push_back(*it);
             }
         }
-
-    }
-    
-    if ((_imp->nodeResults.size()) == 0) {
-        _imp->resultLabel->setText(QString());
     }
 
-    
+    if ( ( _imp->nodeResults.size() ) == 0 ) {
+        _imp->resultLabel->setText( QString() );
+    }
+
+
     selectNextResult();
 }
 
 void
 FindNodeDialog::selectNextResult()
 {
-    if (_imp->currentFindIndex >= (int)(_imp->nodeResults.size())) {
+    if ( _imp->currentFindIndex >= (int)( _imp->nodeResults.size() ) ) {
         _imp->currentFindIndex = 0;
     }
-    
-    if (_imp->nodeResults.empty()) {
+
+    if ( _imp->nodeResults.empty() ) {
         return;
     }
-    
+
     NodesGuiList::iterator it = _imp->nodeResults.begin();
-    std::advance(it,_imp->currentFindIndex);
-    
+    std::advance(it, _imp->currentFindIndex);
+
     _imp->graph->selectNode(*it, false);
-    _imp->graph->centerOnItem(it->get());
-    
-    
-    QString text = QString::fromUtf8("Selecting result %1 of %2").arg(_imp->currentFindIndex + 1).arg(_imp->nodeResults.size());
+    _imp->graph->centerOnItem( it->get() );
+
+
+    QString text = QString::fromUtf8("Selecting result %1 of %2").arg(_imp->currentFindIndex + 1).arg( _imp->nodeResults.size() );
     _imp->resultLabel->setText(text);
 
-    
+
     ++_imp->currentFindIndex;
-    
 }
-
-
 
 void
 FindNodeDialog::updateFindResultsWithCurrentFilter()
 {
-    updateFindResults(_imp->filter->text());
-    
+    updateFindResults( _imp->filter->text() );
 }
 
 void
@@ -436,11 +421,11 @@ FindNodeDialog::forceUpdateFindResults()
     updateFindResultsWithCurrentFilter();
 }
 
-
 void
 FindNodeDialog::onOkClicked()
 {
     QString filterText = _imp->filter->text();
+
     if (_imp->currentFilter != filterText) {
         updateFindResults(filterText);
     } else {
@@ -473,45 +458,42 @@ FindNodeDialog::changeEvent(QEvent* e)
     if (e->type() == QEvent::ActivationChange) {
         if ( !isActiveWindow() ) {
             reject();
-            
+
             return;
         }
     }
     QDialog::changeEvent(e);
 }
 
-
 struct EditNodeNameDialogPrivate
 {
-    
     LineEdit* field;
     NodeGuiPtr node;
-    
+
     EditNodeNameDialogPrivate(const NodeGuiPtr& node)
-    : field(0)
-    , node(node)
+        : field(0)
+        , node(node)
     {
-        
     }
 };
 
-EditNodeNameDialog::EditNodeNameDialog(const NodeGuiPtr& node,QWidget* parent)
-: QDialog(parent)
-, _imp(new EditNodeNameDialogPrivate(node))
+EditNodeNameDialog::EditNodeNameDialog(const NodeGuiPtr& node,
+                                       QWidget* parent)
+    : QDialog(parent)
+    , _imp( new EditNodeNameDialogPrivate(node) )
 {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
+
     mainLayout->setContentsMargins(0, 0, 0, 0);
     setWindowFlags(Qt::Window | Qt::CustomizeWindowHint);
     _imp->field = new LineEdit(this);
-    _imp->field->setText(QString::fromUtf8(node->getNode()->getLabel().c_str()));
+    _imp->field->setText( QString::fromUtf8( node->getNode()->getLabel().c_str() ) );
     mainLayout->addWidget(_imp->field);
 }
 
 EditNodeNameDialog::~EditNodeNameDialog()
 {
-    
 }
-
 
 void
 EditNodeNameDialog::changeEvent(QEvent* e)
@@ -519,7 +501,7 @@ EditNodeNameDialog::changeEvent(QEvent* e)
     if (e->type() == QEvent::ActivationChange) {
         if ( !isActiveWindow() ) {
             reject();
-            
+
             return;
         }
     }
@@ -553,14 +535,14 @@ EditNodeNameDialog::getNode() const
 void
 NodeGraph::onNodeNameEditDialogFinished()
 {
-    EditNodeNameDialog* dialog = qobject_cast<EditNodeNameDialog*>(sender());
+    EditNodeNameDialog* dialog = qobject_cast<EditNodeNameDialog*>( sender() );
+
     if (dialog) {
         QDialog::DialogCode code =  (QDialog::DialogCode)dialog->result();
         if (code == QDialog::Accepted) {
             QString newName = dialog->getTypedName();
-            QString oldName = QString::fromUtf8(dialog->getNode()->getNode()->getLabel().c_str());
-            pushUndoCommand(new RenameNodeUndoRedoCommand(dialog->getNode(),oldName,newName));
-            
+            QString oldName = QString::fromUtf8( dialog->getNode()->getNode()->getLabel().c_str() );
+            pushUndoCommand( new RenameNodeUndoRedoCommand(dialog->getNode(), oldName, newName) );
         }
         dialog->deleteLater();
     }
@@ -569,44 +551,46 @@ NodeGraph::onNodeNameEditDialogFinished()
 void
 NodeGraph::extractSelectedNode()
 {
-    pushUndoCommand(new ExtractNodeUndoRedoCommand(this,_imp->_selection));
+    pushUndoCommand( new ExtractNodeUndoRedoCommand(this, _imp->_selection) );
 }
 
 void
 NodeGraph::createGroupFromSelection()
 {
-    pushUndoCommand(new GroupFromSelectionCommand(this,_imp->_selection));
+    pushUndoCommand( new GroupFromSelectionCommand(this, _imp->_selection) );
 }
 
 void
 NodeGraph::expandSelectedGroups()
 {
     NodesGuiList nodes;
+
     for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
         NodeGroup* isGroup = (*it)->getNode()->isEffectGroup();
         if (isGroup) {
             nodes.push_back(*it);
         }
     }
-    if (!nodes.empty()) {
-        pushUndoCommand(new InlineGroupCommand(this,nodes));
+    if ( !nodes.empty() ) {
+        pushUndoCommand( new InlineGroupCommand(this, nodes) );
     } else {
-        Dialogs::warningDialog(tr("Expand group").toStdString(), tr("You must select a group to expand first").toStdString());
+        Dialogs::warningDialog( tr("Expand group").toStdString(), tr("You must select a group to expand first").toStdString() );
     }
 }
 
 void
 NodeGraph::onGroupNameChanged(const QString& /*name*/)
 {
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(getGroup().get());
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>( getGroup().get() );
+
     assert(isGrp);
     if (isGrp) {
         std::string label;
-        makeFullyQualifiedLabel(isGrp->getNode().get(),&label);
+        makeFullyQualifiedLabel(isGrp->getNode().get(), &label);
         setLabel(label);
-        TabWidget* parent = dynamic_cast<TabWidget*>(parentWidget() );
+        TabWidget* parent = dynamic_cast<TabWidget*>( parentWidget() );
         if (parent) {
-            parent->setTabLabel(this, QString::fromUtf8(label.c_str()));
+            parent->setTabLabel( this, QString::fromUtf8( label.c_str() ) );
         }
     }
 }
@@ -615,12 +599,12 @@ void
 NodeGraph::onGroupScriptNameChanged(const QString& /*name*/)
 {
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    
+
     boost::shared_ptr<NodeCollection> group = getGroup();
     if (!group) {
         return;
     }
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(group.get());
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>( group.get() );
     if (!isGrp) {
         return;
     }
@@ -638,48 +622,44 @@ NodeGraph::onGroupScriptNameChanged(const QString& /*name*/)
     }
     getGui()->unregisterTab(this);
     setScriptName(newName);
-    getGui()->registerTab(this,this);
-    TabWidget* parent = dynamic_cast<TabWidget*>(parentWidget() );
+    getGui()->registerTab(this, this);
+    TabWidget* parent = dynamic_cast<TabWidget*>( parentWidget() );
     if (parent) {
         parent->onTabScriptNameChanged(this, oldName, newName);
     }
-
 }
 
 void
 NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
                                      const boost::shared_ptr<NodeCollection>& group,
-                                     std::list<std::pair<std::string,NodeGuiPtr > >& createdNodes)
+                                     std::list<std::pair<std::string, NodeGuiPtr > >& createdNodes)
 {
     {
-        CreatingNodeTreeFlag_RAII createNodeTree(getGui()->getApp());
-        
+        CreatingNodeTreeFlag_RAII createNodeTree( getGui()->getApp() );
         NodeClipBoard clipboard;
-        _imp->copyNodesInternal(nodes,clipboard);
-        
-        std::map<std::string,std::string> oldNewScriptNamesMapping;
+        _imp->copyNodesInternal(nodes, clipboard);
+
+        std::map<std::string, std::string> oldNewScriptNamesMapping;
         std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itOther = clipboard.nodes.begin();
         for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
              it != clipboard.nodesUI.end(); ++it, ++itOther) {
-            NodeGuiPtr node = _imp->pasteNode( *itOther,*it,QPointF(0,0),group,std::string(), false,&oldNewScriptNamesMapping);
+            NodeGuiPtr node = _imp->pasteNode( *itOther, *it, QPointF(0, 0), group, std::string(), false, &oldNewScriptNamesMapping);
             assert(node);
             if (node) {
                 oldNewScriptNamesMapping[(*itOther)->getNodeScriptName()] = node->getNode()->getScriptName();
-                createdNodes.push_back(std::make_pair((*itOther)->getNodeScriptName(),node));
+                createdNodes.push_back( std::make_pair( (*itOther)->getNodeScriptName(), node ) );
             }
-            
         }
         assert( clipboard.nodes.size() == createdNodes.size() );
-        if (clipboard.nodes.size() != createdNodes.size()) {
+        if ( clipboard.nodes.size() != createdNodes.size() ) {
             return;
         }
-        
+
         ///Now that all nodes have been duplicated, try to restore nodes connections
         _imp->restoreConnections(clipboard.nodes, createdNodes, oldNewScriptNamesMapping);
     }
-    
+
     getGui()->getApp()->getProject()->forceComputeInputDependentDataOnAllTrees();
-    
 }
 
 QPointF

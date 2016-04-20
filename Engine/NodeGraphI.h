@@ -33,13 +33,12 @@ NATRON_NAMESPACE_ENTER;
 class NodeGraphI
 {
 public:
-    
+
     NodeGraphI() {}
-    
+
     virtual ~NodeGraphI() {}
-    
+
     virtual void onNodesCleared() = 0;
-    
 };
 
 NATRON_NAMESPACE_EXIT;

@@ -66,14 +66,13 @@ public:
     }
 
     KeyHelper(const CacheEntryHolder* holder)
-    : _holderID(), _hash(), _hashComputed(false)
+        : _holderID(), _hash(), _hashComputed(false)
     {
         if (holder) {
             _holderID = holder->getCacheID();
         }
     }
 
-    
     /**
      * @brief Constructs a key from an already existing hash key.
      **/
@@ -108,12 +107,11 @@ public:
     {
         _hashComputed = false;
     }
-    
+
     const std::string& getCacheHolderID() const
     {
         return _holderID;
     }
-
 
 protected:
     /*for now HashType can only be 64 bits...the implementation should

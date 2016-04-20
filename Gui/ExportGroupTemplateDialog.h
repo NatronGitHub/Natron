@@ -44,26 +44,27 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER;
 
 struct ExportGroupTemplateDialogPrivate;
-class ExportGroupTemplateDialog : public QDialog
+class ExportGroupTemplateDialog
+    : public QDialog
 {
     Q_OBJECT
-    
+
 public:
-    
+
     ExportGroupTemplateDialog(NodeCollection* group, Gui* gui, QWidget* parent);
-    
+
     virtual ~ExportGroupTemplateDialog();
-    
+
 public Q_SLOTS:
 
     void onButtonClicked();
-    
+
     void onOkClicked();
-    
+
     void onLabelEditingFinished();
-    
+
 private:
-    
+
     boost::scoped_ptr<ExportGroupTemplateDialogPrivate> _imp;
 };
 

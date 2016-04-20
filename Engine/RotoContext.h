@@ -60,25 +60,23 @@ NATRON_NAMESPACE_ENTER;
 //Small RAII class that properly destroys the cairo image upon destruction
 class CairoImageWrapper
 {
-    
 public:
-    
+
     CairoImageWrapper()
-    : cairoImg(0)
-    , ctx(0)
+        : cairoImg(0)
+        , ctx(0)
     {
-        
     }
-    
-    CairoImageWrapper(cairo_surface_t* img, cairo_t* context)
-    : cairoImg(img)
-    , ctx(context)
+
+    CairoImageWrapper(cairo_surface_t* img,
+                      cairo_t* context)
+        : cairoImg(img)
+        , ctx(context)
     {
-        
     }
-    
+
     ~CairoImageWrapper();
-    
+
     cairo_surface_t* cairoImg;
     cairo_t* ctx;
 };
@@ -91,27 +89,27 @@ public:
 class RotoContextSerialization;
 struct RotoContextPrivate;
 class RotoContext
-: public QObject, public boost::enable_shared_from_this<RotoContext>
+    : public QObject, public boost::enable_shared_from_this<RotoContext>
 {
     Q_OBJECT
 
 public:
 
-    
+
     RotoContext(const NodePtr& node);
 
     virtual ~RotoContext();
-    
+
     /**
      * @brief We have chosen to disable rotopainting and roto shapes from the same RotoContext because the rendering techniques are
      * very much differents. The rotopainting systems requires an entire compositing tree held inside whereas the rotoshapes
      * are rendered and optimized by Cairo internally.
      **/
     bool isRotoPaint() const;
-    
+
     void createBaseLayer();
-    
-    boost::shared_ptr<RotoLayer> getOrCreateBaseLayer() ;
+
+    boost::shared_ptr<RotoLayer> getOrCreateBaseLayer();
 
     /**
      * @brief Returns true when the context is empty (it has no shapes)
@@ -144,33 +142,32 @@ public:
      * @brief Create a new layer to the currently selected layer.
      **/
     boost::shared_ptr<RotoLayer> addLayer();
+
 private:
-    
+
     boost::shared_ptr<RotoLayer> addLayerInternal(bool declarePython);
+
 public:
-    
-    
+
+
     /**
      * @brief Add an existing layer to the layers
      **/
     void addLayer(const boost::shared_ptr<RotoLayer> & layer);
-    
+
 
     /**
      * @brief Make a new bezier curve and append it into the currently selected layer.
      * @param baseName A hint to name the item. It can be something like "Bezier", "Ellipse", "Rectangle" , etc...
      **/
-    boost::shared_ptr<Bezier> makeBezier(double x,double y,const std::string & baseName,double time, bool isOpenBezier);
-    boost::shared_ptr<Bezier> makeEllipse(double x,double y,double diameter,bool fromCenter,double time);
-    boost::shared_ptr<Bezier> makeSquare(double x,double y,double initialSize,double time);
-    
-    
+    boost::shared_ptr<Bezier> makeBezier(double x, double y, const std::string & baseName, double time, bool isOpenBezier);
+    boost::shared_ptr<Bezier> makeEllipse(double x, double y, double diameter, bool fromCenter, double time);
+    boost::shared_ptr<Bezier> makeSquare(double x, double y, double initialSize, double time);
     boost::shared_ptr<RotoStrokeItem> makeStroke(RotoStrokeType type,
                                                  const std::string& baseName,
                                                  bool clearSel);
-    
     std::string generateUniqueName(const std::string& baseName);
-    
+
     /**
      * @brief Removes the given item from the context. This also removes the item from the selection
      * if it was selected. If the item has children, this will also remove all the children.
@@ -189,7 +186,7 @@ public:
      * @brief Returns a bezier curves nearby the point (x,y) and the parametric value
      * which would be used to find the exact bezier point lying on the curve.
      **/
-    boost::shared_ptr<Bezier> isNearbyBezier(double x,double y,double acceptance,int* index,double* t,bool *feather) const;
+    boost::shared_ptr<Bezier> isNearbyBezier(double x, double y, double acceptance, int* index, double* t, bool *feather) const;
 
 
     /**
@@ -199,29 +196,26 @@ public:
     void getMaskRegionOfDefinition(double time,
                                    ViewIdx view,
                                    RectD* rod) const; //!< rod in canonical coordinates
-    
+
     /**
      * @brief Returns true if  all items have the same compositing operator and there are only strokes or bezier (because they
      * are not masked)
      **/
     bool isRotoPaintTreeConcatenatable() const;
-    
+
     static bool isRotoPaintTreeConcatenatableInternal(const std::list<boost::shared_ptr<RotoDrawableItem> >& items, int* blendingMode);
-    
+
     void getGlobalMotionBlurSettings(const double time,
                                      double* startTime,
                                      double* endTime,
                                      double* timeStep) const;
 
-
 private:
-    
-    
+
+
     void getItemsRegionOfDefinition(const std::list<boost::shared_ptr<RotoItem> >& items, double time, ViewIdx view, RectD* rod) const;
-    
-    
+
 public:
-    
 
 
     /**
@@ -229,9 +223,9 @@ public:
      **/
     void evaluateChange();
     void evaluateChange_noIncrement();
-    
+
     void incrementAge();
-    
+
     void clearViewersLastRenderedStrokes();
 
     /**
@@ -264,8 +258,8 @@ public:
     void deselect(const std::list<boost::shared_ptr<Bezier> > & beziers, RotoItem::SelectionReasonEnum reason);
     void deselect(const std::list<boost::shared_ptr<RotoItem> > & items, RotoItem::SelectionReasonEnum reason);
 
-    void clearAndSelectPreviousItem(const boost::shared_ptr<RotoItem>& item,RotoItem::SelectionReasonEnum reason);
-    
+    void clearAndSelectPreviousItem(const boost::shared_ptr<RotoItem>& item, RotoItem::SelectionReasonEnum reason);
+
     void clearSelection(RotoItem::SelectionReasonEnum reason);
 
     ///only callable on main-thread
@@ -273,7 +267,7 @@ public:
 
     ///only callable on main-thread
     void removeKeyframeOnSelectedCurves();
-    
+
     void removeAnimationOnSelectedCurves();
 
     ///only callable on main-thread
@@ -299,11 +293,11 @@ public:
      * MT-safe
      **/
     std::list< boost::shared_ptr<RotoDrawableItem> > getCurvesByRenderOrder(bool onlyActivated = true) const;
-    
+
     int getNCurves() const;
-    
+
     NodePtr getNode() const;
-    
+
     boost::shared_ptr<RotoLayer> getLayerByName(const std::string & n) const;
     boost::shared_ptr<RotoItem> getItemByName(const std::string & n) const;
     boost::shared_ptr<RotoItem> getLastInsertedItem() const;
@@ -311,21 +305,21 @@ public:
 #ifdef NATRON_ROTO_INVERTIBLE
     boost::shared_ptr<KnobBool> getInvertedKnob() const;
 #endif
-    
+
     boost::shared_ptr<KnobColor> getColorKnob() const;
 
     void resetTransformCenter();
-    
+
     void resetCloneTransformCenter();
-    
+
     void resetTransformsCenter(bool doClone, bool doTransform);
-    
+
     void resetTransform();
-    
+
     void resetCloneTransform();
-    
+
 private:
-    
+
     void resetTransformInternal(const boost::shared_ptr<KnobDouble>& translate,
                                 const boost::shared_ptr<KnobDouble>& scale,
                                 const boost::shared_ptr<KnobDouble>& center,
@@ -334,16 +328,14 @@ private:
                                 const boost::shared_ptr<KnobDouble>& skewY,
                                 const boost::shared_ptr<KnobBool>& scaleUniform,
                                 const boost::shared_ptr<KnobChoice>& skewOrder);
-    
-public:
-    
-    boost::shared_ptr<KnobChoice> getMotionBlurTypeKnob() const;
-    
 
+public:
+
+    boost::shared_ptr<KnobChoice> getMotionBlurTypeKnob() const;
     boost::shared_ptr<RotoItem> getLastItemLocked() const;
     boost::shared_ptr<RotoLayer> getDeepestSelectedLayer() const;
 
-    void onItemLockedChanged(const boost::shared_ptr<RotoItem>& item,RotoItem::SelectionReasonEnum reason);
+    void onItemLockedChanged(const boost::shared_ptr<RotoItem>& item, RotoItem::SelectionReasonEnum reason);
 
     void emitRefreshViewerOverlays();
 
@@ -353,73 +345,73 @@ public:
      * @brief Returns the name of the node holding this item
      **/
     std::string getRotoNodeName() const;
-    
+
     void onItemScriptNameChanged(const boost::shared_ptr<RotoItem>& item);
     void onItemLabelChanged(const boost::shared_ptr<RotoItem>& item);
-    
+
     void onItemKnobChanged();
 
     void declarePythonFields();
-    
-    void changeItemScriptName(const std::string& oldFullyQualifiedName,const std::string& newFullyQUalifiedName);
-    
+
+    void changeItemScriptName(const std::string& oldFullyQualifiedName, const std::string& newFullyQUalifiedName);
+
     void declareItemAsPythonField(const boost::shared_ptr<RotoItem>& item);
     void removeItemAsPythonField(const boost::shared_ptr<RotoItem>& item);
-    
+
     /**
      * @brief Rebuilds the connection between nodes used internally by the rotopaint tree
      * To be called whenever changes position in the hierarchy or when one gets removed/inserted
      **/
     void refreshRotoPaintTree();
-    
+
     void onRotoPaintInputChanged(const NodePtr& node);
-        
+
     void getRotoPaintTreeNodes(NodesList* nodes) const;
-    
+
     NodePtr getRotoPaintBottomMergeNode() const;
-        
+
     void setWhileCreatingPaintStrokeOnMergeNodes(bool b);
-    
+
     /**
      * @brief First searches through the selected layer which one is the deepest in the hierarchy.
      * If nothing is found, it searches through the selected items and find the deepest selected item's layer
      **/
     boost::shared_ptr<RotoLayer> findDeepestSelectedLayer() const;
-    
+
     void dequeueGuiActions();
-    
+
     /**
      * @brief When finishing a stroke with the paint brush, we need to re-render it because the interpolation of the curve
      * will be much smoother with more points than what it was during painting.
-     * We explicitly freeze the UI while waiting for the image to be drawn, otherwise the user might attempt to do a 
+     * We explicitly freeze the UI while waiting for the image to be drawn, otherwise the user might attempt to do a
      * multiple stroke on top of it which could make some artifacts.
      **/
     void evaluateNeatStrokeRender();
-    
-    
+
+
     bool mustDoNeatRender() const;
-    
+
     void setIsDoingNeatRender(bool doing);
-    
+
     bool isDoingNeatRender() const;
-    
+
     void s_breakMultiStroke() { Q_EMIT breakMultiStroke(); }
-    
+
     void knobChanged(KnobI* k,
                      ValueChangedReasonEnum reason,
                      ViewSpec view,
                      double time,
                      bool originatedFromMainThread);
-    
+
     static bool allocateAndRenderSingleDotStroke(int brushSizePixel, double brushHardness, double alpha, CairoImageWrapper& wrapper);
-    
+
 Q_SIGNALS:
 
     /**
      * @brief Signalled when the gui should force a new stroke to be added
      **/
     void breakMultiStroke();
-    
+
     /**
      * Emitted when the selection is changed. The integer corresponds to the
      * RotoItem::SelectionReasonEnum enum.
@@ -428,14 +420,14 @@ Q_SIGNALS:
 
     void restorationComplete();
 
-    void itemInserted(int,int);
+    void itemInserted(int, int);
 
-    void itemRemoved(const boost::shared_ptr<RotoItem>&,int);
+    void itemRemoved(const boost::shared_ptr<RotoItem>&, int);
 
     void refreshViewerOverlays();
 
     void itemLockedChanged(int reason);
-    
+
     void itemScriptNameChanged(const boost::shared_ptr<RotoItem>&);
     void itemLabelChanged(const boost::shared_ptr<RotoItem>&);
 
@@ -446,22 +438,22 @@ public Q_SLOTS:
     void onFeatherLinkChanged(bool enabled);
 
     void onRippleEditChanged(bool enabled);
-    
+
     void onSelectedKnobCurveChanged();
-    
+
     void onLifeTimeKnobValueChanged(ViewSpec, int, int);
 
 private:
-    
-    
+
+
     NodePtr getOrCreateGlobalMergeNode(int *availableInputIndex);
-    
+
     void selectInternal(const boost::shared_ptr<RotoItem>& b);
     void deselectInternal(boost::shared_ptr<RotoItem> b);
 
-    void removeItemRecursively(const boost::shared_ptr<RotoItem>& item,RotoItem::SelectionReasonEnum reason);
+    void removeItemRecursively(const boost::shared_ptr<RotoItem>& item, RotoItem::SelectionReasonEnum reason);
 
-   
+
     boost::scoped_ptr<RotoContextPrivate> _imp;
 };
 

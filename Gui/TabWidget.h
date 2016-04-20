@@ -73,11 +73,9 @@ class TabBar
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
-    
-    Q_PROPERTY(bool mouseOverFocus READ hasMouseOverFocus WRITE setMouseOverFocus)
+GCC_DIAG_SUGGEST_OVERRIDE_ON Q_PROPERTY(bool mouseOverFocus READ hasMouseOverFocus WRITE setMouseOverFocus)
     Q_PROPERTY(bool clickFocus READ hasClickFocus WRITE setClickFocus)
-    
+
 public:
 
     explicit TabBar(TabWidget* tabWidget,
@@ -91,19 +89,19 @@ public:
     {
         return mouseOverFocus;
     }
-    
+
     bool hasClickFocus() const
     {
         return clickFocus;
     }
-    
+
     void setMouseOverFocus(bool focus);
     void setClickFocus(bool focus);
-    
+
 Q_SIGNALS:
-    
+
     void mouseLeftTabBar();
-    
+
 private:
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
@@ -115,34 +113,34 @@ private:
     DragPixmap* _dragPix;
     TabWidget* _tabWidget; // ptr to the tabWidget
     bool _processingLeaveEvent; // to avoid recursions in leaveEvent
-    
     bool mouseOverFocus;
     bool clickFocus;
 };
 
-class TabWidgetHeader : public QWidget
+class TabWidgetHeader
+    : public QWidget
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    
+
     TabWidgetHeader(QWidget* parent)
-    : QWidget(parent)
+        : QWidget(parent)
     {}
-    
+
 Q_SIGNALS:
-    
+
     void mouseLeftTabBar();
+
 private:
-    
+
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL
     {
         Q_EMIT mouseLeftTabBar();
         QWidget::leaveEvent(e);
     }
-    
 };
 
 
@@ -156,7 +154,8 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    enum DropRectType {
+    enum DropRectType
+    {
         eDropRectNone,
         eDropRectAll,
         eDropRectLeftSplit,
@@ -184,16 +183,16 @@ public:
 
     /*Appends a new tab to the tab widget. The name of the tab will be the QWidget's object's name.
        Returns false if the title is empty but the TabWidget needs a decoration*/
-    bool appendTab(const QIcon & icon,PanelWidget* widget,  ScriptObject* object);
+    bool appendTab(const QIcon & icon, PanelWidget* widget,  ScriptObject* object);
 
     /*Inserts before the element at index.*/
-    void insertTab(int index,const QIcon & icon,PanelWidget* widget, ScriptObject* object);
+    void insertTab(int index, const QIcon & icon, PanelWidget* widget, ScriptObject* object);
 
-    void insertTab(int index,PanelWidget* widget, ScriptObject* object);
+    void insertTab(int index, PanelWidget* widget, ScriptObject* object);
 
     /*Removes from the TabWidget, but does not delete the widget.
        Returns NULL if the index is not in a good range.*/
-    PanelWidget* removeTab(int index,bool userAction);
+    PanelWidget* removeTab(int index, bool userAction);
 
     /*Get the header name of the tab at index "index".*/
     QString getTabLabel(int index) const;
@@ -201,33 +200,33 @@ public:
     /*Convenience function*/
     QString getTabLabel(PanelWidget* tab) const;
 
-    void setTabLabel(PanelWidget* tab,const QString & name);
+    void setTabLabel(PanelWidget* tab, const QString & name);
 
     /*Removes from the TabWidget, but does not delete the widget.*/
-    void removeTab(PanelWidget* widget,bool userAction);
+    void removeTab(PanelWidget* widget, bool userAction);
 
     int count() const;
-    
+
     PanelWidget* tabAt(int index) const;
-    
+
     void tabAt(int index, PanelWidget** w, ScriptObject** obj) const;
 
     QStringList getTabScriptNames() const;
 
     PanelWidget* currentWidget() const;
-    
-    void currentWidget(PanelWidget** w,ScriptObject** obj) const;
-    
+
+    void currentWidget(PanelWidget** w, ScriptObject** obj) const;
+
     void setWidgetMouseOverFocus(PanelWidget* w, bool hoverFocus);
     void setWidgetClickFocus(PanelWidget* w, bool clickFocus);
-    
+
     /**
      * @brief Set w as the current widget of the tab
      **/
     void setCurrentWidget(PanelWidget* w);
 
     void dettachTabs();
-    static bool moveTab(PanelWidget* what, ScriptObject* obj,TabWidget* where);
+    static bool moveTab(PanelWidget* what, ScriptObject* obj, TabWidget* where);
 
     /**
      * @brief Starts dragging the selected panel. The following actions are performed:
@@ -257,7 +256,7 @@ public:
 
     ///MT-Safe
     bool isFullScreen() const;
-    
+
     void togglePaneFullScreen();
 
     ///MT-Safe
@@ -271,8 +270,8 @@ public:
     bool isFloatingWindowChild() const;
 
     void discardGuiPointer();
-    
-    void onTabScriptNameChanged(PanelWidget* tab,const std::string& oldName,const std::string& newName);
+
+    void onTabScriptNameChanged(PanelWidget* tab, const std::string& oldName, const std::string& newName);
 
 public Q_SLOTS:
     /*Makes current the tab at index "index". Passing an
@@ -292,9 +291,9 @@ public Q_SLOTS:
     void newHistogramHere();
 
     void movePropertiesBinHere();
-    
+
     void moveScriptEditorHere();
-    
+
     void moveProgressPanelHere();
 
     void onSplitHorizontally()
@@ -328,20 +327,21 @@ public Q_SLOTS:
     void closeTab(int index);
 
     void onSetAsAnchorActionTriggered();
-    
+
     void onShowHideTabBarActionTriggered();
 
     void onTabBarMouseLeft();
-    
+
     void onHideLeftToolBarActionTriggered();
-    
+
     void moveToNextTab();
-    
+
     void moveToPreviousTab();
-    
+
     void onCurrentTabDeleted();
-    
+
     void onUserPanelActionTriggered();
+
 private:
 
 
@@ -351,11 +351,10 @@ private:
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
-    
 
 private:
 
-    TabWidget* splitInternal(bool autoSave,Qt::Orientation orientation);
+    TabWidget* splitInternal(bool autoSave, Qt::Orientation orientation);
 
     /**
      * @brief Deletes container and move the other split (the one that is not this) to the parent of container.
@@ -364,7 +363,7 @@ private:
      **/
     void closeSplitterAndMoveOtherSplitToParent(Splitter* container);
 
-    
+
     boost::scoped_ptr<TabWidgetPrivate> _imp;
 };
 

@@ -45,80 +45,80 @@ NATRON_NAMESPACE_ENTER;
 
 struct ScriptEditorPrivate;
 
-class ScriptEditor : public QWidget, public PanelWidget
+class ScriptEditor
+    : public QWidget, public PanelWidget
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    
+
     ScriptEditor(Gui* gui);
-    
+
     virtual ~ScriptEditor();
-    
+
     void setInputScript(const QString& script);
-    
+
     QString getInputScript() const;
-    
+
     QString getAutoSavedScript() const;
-    
+
     void appendToScriptEditor(const QString& str);
-    
+
     void printAutoDeclaredVariable(const QString& str);
-    
+
     void reloadHighlighter();
-    
+
     void reloadFont();
-    
+
     void sourceScript(const QString& filename);
-    
+
 public Q_SLOTS:
-    
+
     void doAppendToScriptEditorOnMainThread(const QString& str);
-    
+
     void onUserScrollChanged(bool atBottom);
 
     void onShowHideOutputClicked(bool clicked);
-    
+
     void onClearOutputClicked();
-    
+
     void onClearHistoryClicked();
-    
+
     void onUndoClicked();
-    
+
     void onRedoClicked();
-    
+
     void onSourceScriptClicked();
-    
+
     void onLoadScriptClicked();
-    
+
     void onSaveScriptClicked();
-    
+
     void onExecScriptClicked();
-    
+
     void onHistoryCanUndoChanged(bool canUndo);
     void onHistoryCanRedoChanged(bool canRedo);
-    
+
     void onInputScriptTextChanged();
-    
+
     void onAutoSaveTimerTimedOut();
-    
+
     void onShowAutoDeclVarsClicked(bool clicked);
 
 Q_SIGNALS:
-    
+
     void appendToScriptEditorOnMainThread(QString);
-    
+
 private:
-    
+
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void enterEvent(QEvent *e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent *e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
-    
     boost::scoped_ptr<ScriptEditorPrivate> _imp;
 };
 

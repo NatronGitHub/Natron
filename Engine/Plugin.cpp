@@ -41,13 +41,11 @@ Plugin::~Plugin()
     delete _binary;
 }
 
-
 void
 Plugin::setPluginID(const QString & id)
 {
     _id = id;
 }
-
 
 const QString &
 Plugin::getPluginID() const
@@ -56,12 +54,14 @@ Plugin::getPluginID() const
 }
 
 bool
-Plugin::isReader() const {
+Plugin::isReader() const
+{
     return _isReader;
 }
 
 bool
-Plugin::isWriter() const {
+Plugin::isWriter() const
+{
     return _isWriter;
 }
 
@@ -86,15 +86,16 @@ Plugin::getLabelVersionMajorMinorEncoded() const
 QString
 Plugin::makeLabelWithoutSuffix(const QString& label)
 {
-    if (label.startsWith(QString::fromUtf8("Read")) || label.startsWith(QString::fromUtf8("Write"))) {
+    if ( label.startsWith( QString::fromUtf8("Read") ) || label.startsWith( QString::fromUtf8("Write") ) ) {
         return label;
-    } else if (label.endsWith(QString::fromUtf8("OFX"))) {
-        return label.mid(0,label.size() - 3);
-    } else if (label.endsWith(QString::fromUtf8("CImg"))) {
-        return label.mid(0,label.size() - 4);
-    } else if (label.endsWith(QString::fromUtf8("OIIO"))) {
-        return label.mid(0,label.size() - 4);
+    } else if ( label.endsWith( QString::fromUtf8("OFX") ) ) {
+        return label.mid(0, label.size() - 3);
+    } else if ( label.endsWith( QString::fromUtf8("CImg") ) ) {
+        return label.mid(0, label.size() - 4);
+    } else if ( label.endsWith( QString::fromUtf8("OIIO") ) ) {
+        return label.mid(0, label.size() - 4);
     }
+
     return label;
 }
 
@@ -120,6 +121,7 @@ QString
 Plugin::generateUserFriendlyPluginID() const
 {
     QString grouping = _grouping.size() > 0 ? _grouping[0] : QString();
+
     return getLabelWithoutSuffix() + QString::fromUtf8("  [") + grouping + QLatin1Char(']');
 }
 
@@ -127,6 +129,7 @@ QString
 Plugin::generateUserFriendlyPluginIDMajorEncoded() const
 {
     QString grouping = _grouping.size() > 0 ? _grouping[0] : QString();
+
     return getLabelVersionMajorEncoded() + QString::fromUtf8("  [") + grouping + QLatin1Char(']');
 }
 
@@ -209,16 +212,19 @@ Plugin::setPythonModule(const QString& module)
 }
 
 const QString&
-Plugin::getPythonModule() const {
+Plugin::getPythonModule() const
+{
     return _pythonModule; // < does not end with .py
 }
 
 void
-Plugin::getPythonModuleNameAndPath(QString* moduleName, QString* modulePath) const
+Plugin::getPythonModuleNameAndPath(QString* moduleName,
+                                   QString* modulePath) const
 {
-    int foundLastSlash = _pythonModule.lastIndexOf(QLatin1Char('/'));
+    int foundLastSlash = _pythonModule.lastIndexOf( QLatin1Char('/') );
+
     if (foundLastSlash != -1) {
-        *modulePath = _pythonModule.mid(0,foundLastSlash + 1);
+        *modulePath = _pythonModule.mid(0, foundLastSlash + 1);
         *moduleName = _pythonModule.mid(foundLastSlash + 1);
     } else {
         *moduleName = _pythonModule;
@@ -241,6 +247,7 @@ OFX::Host::ImageEffect::Descriptor*
 Plugin::getOfxDesc(ContextEnum* ctx) const
 {
     *ctx = _ofxContext;
+
     return _ofxDescriptor;
 }
 
@@ -251,11 +258,13 @@ Plugin::getIsUserCreatable() const
         _activated = !appPTR->getCurrentSettings()->isPluginDeactivated(this);
         _activatedSet = true;
     }
+
     return !_isInternalOnly && _activated;
 }
 
 void
-Plugin::setOfxDesc(OFX::Host::ImageEffect::Descriptor* desc,ContextEnum ctx)
+Plugin::setOfxDesc(OFX::Host::ImageEffect::Descriptor* desc,
+                   ContextEnum ctx)
 {
     assert(ctx != eContextNone);
     _ofxDescriptor = desc;
@@ -279,6 +288,7 @@ PluginGroupNode::tryRemoveChild(PluginGroupNode* plugin)
     for (std::list<boost::shared_ptr<PluginGroupNode> >::iterator it = _children.begin(); it != _children.end(); ++it) {
         if (it->get() == plugin) {
             _children.erase(it);
+
             return;
         }
     }

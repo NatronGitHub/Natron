@@ -53,123 +53,116 @@ GCC_DIAG_ON(unused-parameter)
 #define ROTO_STROKE_SERIALIZATION_VERSION ROTO_STROKE_INTRODUCES_MULTIPLE_STROKES
 
 NATRON_NAMESPACE_ENTER;
+struct StrokePoint
+{
+    double x, y, pressure;
 
-struct StrokePoint {
-    
-    double x,y,pressure;
-    
     template<class Archive>
     void serialize(Archive & ar,
-              const unsigned int /*version*/)
+                   const unsigned int /*version*/)
     {
-        ar & ::boost::serialization::make_nvp("X",x);
-        ar & ::boost::serialization::make_nvp("Y",y);
-        ar & ::boost::serialization::make_nvp("Press",pressure);
+        ar & ::boost::serialization::make_nvp("X", x);
+        ar & ::boost::serialization::make_nvp("Y", y);
+        ar & ::boost::serialization::make_nvp("Press", pressure);
     }
 };
 
 
-
-class RotoStrokeItemSerialization : public RotoDrawableItemSerialization
+class RotoStrokeItemSerialization
+    : public RotoDrawableItemSerialization
 {
     friend class ::boost::serialization::access;
     friend class RotoStrokeItem;
-    
+
 public:
-    
-    
+
+
     RotoStrokeItemSerialization()
-    : RotoDrawableItemSerialization()
-    , _brushType()
-    , _xCurves()
-    , _yCurves()
-    , _pressureCurves()
+        : RotoDrawableItemSerialization()
+        , _brushType()
+        , _xCurves()
+        , _yCurves()
+        , _pressureCurves()
     {
-        
     }
-    
+
     virtual ~RotoStrokeItemSerialization()
     {
-        
     }
-    
+
     int getType() const
     {
         return _brushType;
     }
-    
+
 private:
-    
-    
+
+
     template<class Archive>
     void save(Archive & ar,
               const unsigned int version) const
     {
         Q_UNUSED(version);
-        boost::serialization::void_cast_register<RotoStrokeItemSerialization,RotoDrawableItemSerialization>(
-                                                                                                        static_cast<RotoStrokeItemSerialization *>(NULL),
-                                                                                                        static_cast<RotoDrawableItemSerialization *>(NULL)
-                                                                                                        );
+        boost::serialization::void_cast_register<RotoStrokeItemSerialization, RotoDrawableItemSerialization>(
+            static_cast<RotoStrokeItemSerialization *>(NULL),
+            static_cast<RotoDrawableItemSerialization *>(NULL)
+            );
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoDrawableItemSerialization);
 
-        assert(_xCurves.size() == _yCurves.size() && _xCurves.size() == _pressureCurves.size());
+        assert( _xCurves.size() == _yCurves.size() && _xCurves.size() == _pressureCurves.size() );
         std::list<boost::shared_ptr<Curve> >::const_iterator itY = _yCurves.begin();
         std::list<boost::shared_ptr<Curve> >::const_iterator itP = _pressureCurves.begin();
         int nb = (int)_xCurves.size();
-        ar & ::boost::serialization::make_nvp("BrushType",_brushType);
-        ar & ::boost::serialization::make_nvp("NbItems",nb);
-        for (std::list<boost::shared_ptr<Curve> >::const_iterator it = _xCurves.begin(); it!= _xCurves.end(); ++it, ++itY, ++itP) {
-            ar & ::boost::serialization::make_nvp("CurveX",**it);
-            ar & ::boost::serialization::make_nvp("CurveY",**itY);
-            ar & ::boost::serialization::make_nvp("CurveP",**itP);
+        ar & ::boost::serialization::make_nvp("BrushType", _brushType);
+        ar & ::boost::serialization::make_nvp("NbItems", nb);
+        for (std::list<boost::shared_ptr<Curve> >::const_iterator it = _xCurves.begin(); it != _xCurves.end(); ++it, ++itY, ++itP) {
+            ar & ::boost::serialization::make_nvp("CurveX", **it);
+            ar & ::boost::serialization::make_nvp("CurveY", **itY);
+            ar & ::boost::serialization::make_nvp("CurveP", **itP);
         }
-        
-        
     }
-    
+
     template<class Archive>
     void load(Archive & ar,
               const unsigned int version)
     {
         Q_UNUSED(version);
-        boost::serialization::void_cast_register<RotoStrokeItemSerialization,RotoDrawableItemSerialization>(
-                                                                                                        static_cast<RotoStrokeItemSerialization *>(NULL),
-                                                                                                        static_cast<RotoDrawableItemSerialization *>(NULL)
-                                                                                                        );
+        boost::serialization::void_cast_register<RotoStrokeItemSerialization, RotoDrawableItemSerialization>(
+            static_cast<RotoStrokeItemSerialization *>(NULL),
+            static_cast<RotoDrawableItemSerialization *>(NULL)
+            );
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoDrawableItemSerialization);
         if (version < ROTO_STROKE_INTRODUCES_MULTIPLE_STROKES) {
-            ar & ::boost::serialization::make_nvp("BrushType",_brushType);
-            
-            boost::shared_ptr<Curve> x(new Curve),y(new Curve),p(new Curve);
-            ar & ::boost::serialization::make_nvp("CurveX",*x);
-            ar & ::boost::serialization::make_nvp("CurveY",*y);
-            ar & ::boost::serialization::make_nvp("CurveP",*p);
+            ar & ::boost::serialization::make_nvp("BrushType", _brushType);
+            boost::shared_ptr<Curve> x(new Curve), y(new Curve), p(new Curve);
+            ar & ::boost::serialization::make_nvp("CurveX", *x);
+            ar & ::boost::serialization::make_nvp("CurveY", *y);
+            ar & ::boost::serialization::make_nvp("CurveP", *p);
             _xCurves.push_back(x);
             _yCurves.push_back(y);
             _pressureCurves.push_back(p);
-            
         } else {
             int nb;
-            ar & ::boost::serialization::make_nvp("BrushType",_brushType);
-            ar & ::boost::serialization::make_nvp("NbItems",nb);
-            for (int i = 0; i < nb ;++i) {
-                boost::shared_ptr<Curve> x(new Curve),y(new Curve),p(new Curve);
-                ar & ::boost::serialization::make_nvp("CurveX",*x);
-                ar & ::boost::serialization::make_nvp("CurveY",*y);
-                ar & ::boost::serialization::make_nvp("CurveP",*p);
+            ar & ::boost::serialization::make_nvp("BrushType", _brushType);
+            ar & ::boost::serialization::make_nvp("NbItems", nb);
+            for (int i = 0; i < nb; ++i) {
+                boost::shared_ptr<Curve> x(new Curve), y(new Curve), p(new Curve);
+                ar & ::boost::serialization::make_nvp("CurveX", *x);
+                ar & ::boost::serialization::make_nvp("CurveY", *y);
+                ar & ::boost::serialization::make_nvp("CurveP", *p);
                 _xCurves.push_back(x);
                 _yCurves.push_back(y);
                 _pressureCurves.push_back(p);
-
             }
         }
     }
-    
+
     BOOST_SERIALIZATION_SPLIT_MEMBER()
-    
+
     int _brushType;
-    std::list<boost::shared_ptr<Curve> > _xCurves,_yCurves,_pressureCurves;
+    std::list<boost::shared_ptr<Curve> > _xCurves, _yCurves, _pressureCurves;
 };
+
 NATRON_NAMESPACE_EXIT;
 
 BOOST_CLASS_VERSION(NATRON_NAMESPACE::RotoStrokeItemSerialization, ROTO_STROKE_SERIALIZATION_VERSION)

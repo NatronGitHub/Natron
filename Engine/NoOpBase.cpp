@@ -38,16 +38,14 @@ NoOpBase::NoOpBase(NodePtr n)
     setSupportsRenderScaleMaybe(eSupportsYes);
 }
 
-
 void
 NoOpBase::addAcceptedComponents(int /*inputNb*/,
                                 std::list<ImageComponents>* comps)
 {
-    comps->push_back(ImageComponents::getRGBComponents());
-    comps->push_back(ImageComponents::getRGBAComponents());
-    comps->push_back(ImageComponents::getAlphaComponents());
+    comps->push_back( ImageComponents::getRGBComponents() );
+    comps->push_back( ImageComponents::getRGBAComponents() );
+    comps->push_back( ImageComponents::getAlphaComponents() );
 }
-
 
 void
 NoOpBase::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
@@ -56,7 +54,6 @@ NoOpBase::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
     depths->push_back(eImageBitDepthShort);
     depths->push_back(eImageBitDepthFloat);
 }
-
 
 bool
 NoOpBase::isIdentity(double time,
@@ -70,16 +67,18 @@ NoOpBase::isIdentity(double time,
     *inputTime = time;
     *inputNb = 0;
     *inputView = view;
+
     return true;
 }
 
-
 bool
-NoOpBase::isHostChannelSelectorSupported(bool* /*defaultR*/,bool* /*defaultG*/, bool* /*defaultB*/, bool* /*defaultA*/) const
+NoOpBase::isHostChannelSelectorSupported(bool* /*defaultR*/,
+                                         bool* /*defaultG*/,
+                                         bool* /*defaultB*/,
+                                         bool* /*defaultA*/) const
 {
     return false;
 }
-
 
 StatusEnum
 NoOpBase::getTransform(double /*time*/,
@@ -95,14 +94,15 @@ NoOpBase::getTransform(double /*time*/,
     transform->a = 1.; transform->b = 0.; transform->c = 0.;
     transform->d = 0.; transform->e = 1.; transform->f = 0.;
     transform->g = 0.; transform->h = 0.; transform->i = 1.;
+
     return eStatusOK;
 }
-
 
 bool
 NoOpBase::getInputsHoldingTransform(std::list<int>* inputs) const
 {
     inputs->push_back(0);
+
     return true;
 }
 

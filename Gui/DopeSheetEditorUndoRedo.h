@@ -117,15 +117,16 @@ typedef std::list<DSKeyPtr> DSKeyPtrList;
  * @brief The DSMoveKeysAndNodesCommand class describes an action that moves
  * the current selected keyframes on the dope sheet timeline.
  */
-class DSMoveKeysAndNodesCommand : public QUndoCommand
+class DSMoveKeysAndNodesCommand
+    : public QUndoCommand
 {
 public:
     DSMoveKeysAndNodesCommand(const DSKeyPtrList &keys,
-                                const std::vector<boost::shared_ptr<DSNode> >& nodes,
-                                double dt,
-                                DopeSheetEditor *model,
-                                QUndoCommand *parent = 0);
-    
+                              const std::vector<boost::shared_ptr<DSNode> >& nodes,
+                              double dt,
+                              DopeSheetEditor *model,
+                              QUndoCommand *parent = 0);
+
     void undo() OVERRIDE FINAL;
     void redo() OVERRIDE FINAL;
 
@@ -141,44 +142,45 @@ private:
 private:
     DSKeyPtrList _keys;
     std::vector<boost::shared_ptr<DSNode> > _nodes;
-    NodesWList  _allDifferentNodes;
+    NodesWList _allDifferentNodes;
     double _dt;
     DopeSheetEditor *_model;
 };
 
 
-class DSTransformKeysCommand : public QUndoCommand
+class DSTransformKeysCommand
+    : public QUndoCommand
 {
 public:
     DSTransformKeysCommand(const DSKeyPtrList &keys,
                            const Transform::Matrix3x3& transform,
                            DopeSheetEditor *model,
                            QUndoCommand *parent = 0);
-    
+
     void undo() OVERRIDE FINAL;
     void redo() OVERRIDE FINAL;
-    
+
     int id() const OVERRIDE FINAL;
     bool mergeWith(const QUndoCommand *other) OVERRIDE FINAL;
-    
+
 private:
     /**
      * @brief Move the selected keyframes by 'dt' on the dope sheet timeline.
      */
     void transformKey(const DSKeyPtr& key);
-    
+
 private:
-    
-    
+
+
     struct TransformKeyData
     {
         DSKeyPtrList keys;
         boost::shared_ptr<Curve> oldCurve;
         boost::shared_ptr<Curve> newCurve;
     };
-    
-    typedef std::map<boost::shared_ptr<DSKnob>,TransformKeyData> TransformKeys;
-    
+
+    typedef std::map<boost::shared_ptr<DSKnob>, TransformKeyData> TransformKeys;
+
     bool _firstRedoCalled;
     Transform::Matrix3x3 _transform;
     TransformKeys _keys;
@@ -186,12 +188,12 @@ private:
 };
 
 
-
 /**
  * @brief The DSLeftTrimReaderCommand class class describes an undoable action
  * that trim a reader by changing the value of its first frame.
  */
-class DSLeftTrimReaderCommand : public QUndoCommand
+class DSLeftTrimReaderCommand
+    : public QUndoCommand
 {
 public:
     DSLeftTrimReaderCommand(const boost::shared_ptr<DSNode> &reader,
@@ -222,7 +224,8 @@ private:
  * @brief The DSRightTrimReaderCommand class describes an undoable action that
  * trim a reader by changing the value of its last frame.
  */
-class DSRightTrimReaderCommand : public QUndoCommand
+class DSRightTrimReaderCommand
+    : public QUndoCommand
 {
 public:
     DSRightTrimReaderCommand(const boost::shared_ptr<DSNode> &reader,
@@ -253,7 +256,8 @@ private:
  * @brief The DSSlipReaderCommand class describes an undoable action that trim
  * a reader by changing both its first and last frames.
  */
-class DSSlipReaderCommand : public QUndoCommand
+class DSSlipReaderCommand
+    : public QUndoCommand
 {
 public:
     DSSlipReaderCommand(const boost::shared_ptr<DSNode> &reader,
@@ -280,14 +284,14 @@ private:
 };
 
 
-
 /**
  * @brief The DSRemoveKeysCommand class describes an undoable action that
  * remove the keyframes selected in the dope sheet.
  *
  * A undo gets the keyframes back.
  */
-class DSRemoveKeysCommand : public QUndoCommand
+class DSRemoveKeysCommand
+    : public QUndoCommand
 {
 public:
     DSRemoveKeysCommand(const std::vector<DopeSheetKey> &keys,
@@ -306,7 +310,6 @@ private:
 };
 
 
-
 /**
  * @brief The DSKeyInterpolationChange struct descrbes a interpolation
  * change of a keyframe.
@@ -317,8 +320,8 @@ struct DSKeyInterpolationChange
                              KeyframeTypeEnum newInterpType,
                              const DSKeyPtr & key)
         : _oldInterpType(oldInterpType),
-          _newInterpType(newInterpType),
-          _key(key)
+        _newInterpType(newInterpType),
+        _key(key)
     {}
 
     KeyframeTypeEnum _oldInterpType;
@@ -332,7 +335,8 @@ struct DSKeyInterpolationChange
  * action that change the interpolation of the keyframes selected in the dope
  * sheet.
  */
-class DSSetSelectedKeysInterpolationCommand : public QUndoCommand
+class DSSetSelectedKeysInterpolationCommand
+    : public QUndoCommand
 {
 public:
     DSSetSelectedKeysInterpolationCommand(const std::list<DSKeyInterpolationChange> &changes,
@@ -357,10 +361,9 @@ private:
  *
  * A undo removes the pasted keyframes.
  */
-class DSPasteKeysCommand : public QUndoCommand
+class DSPasteKeysCommand
+    : public QUndoCommand
 {
-
-    
 public:
     DSPasteKeysCommand(const std::vector<DopeSheetKey> &keys,
                        DopeSheetEditor *model,
@@ -379,7 +382,7 @@ private:
     void addOrRemoveKeyframe(bool add);
 
 private:
-    
+
     int _refTime;
     int _refKeyindex;
     std::vector<DopeSheetKey> _keys;

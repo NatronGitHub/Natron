@@ -54,7 +54,9 @@ NATRON_NAMESPACE_ENTER;
 
 #define NATRON_TEXT_RENDERER_USE_CACHE
 
-namespace {
+
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
 struct CharBitmap
 {
     GLuint texID;
@@ -93,13 +95,15 @@ struct TextRendererPrivate
 };
 
 typedef std::map<QFont, boost::shared_ptr<TextRendererPrivate> > FontRenderers;
-}
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
 
 TextRendererPrivate::TextRendererPrivate(const QFont &font)
     : _font(font)
-      , _fontMetrics(font)
-      , _xOffset(0)
-      , _yOffset(0)
+    , _fontMetrics(font)
+    , _xOffset(0)
+    , _yOffset(0)
 {
 }
 
@@ -136,6 +140,7 @@ void
 TextRendererPrivate::newTransparentTexture()
 {
     GLuint savedTexture;
+
     glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
     GLuint texture;
 

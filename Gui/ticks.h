@@ -76,4 +76,4 @@ void ticks_fill(bool half_tick, int tick_max, int m1, int m2, std::vector<int>* 
 // compute alpha value for drawing the ticks
 double ticks_alpha(double min, double max, double val);
 
-#endif
+#endif // ifndef NATRON_GUI_TICKS_H

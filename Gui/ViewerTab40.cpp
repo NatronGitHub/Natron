@@ -72,10 +72,11 @@ ViewerTab::onInputChanged(int inputNb)
     ///rebuild the name maps
     NodePtr inp;
     const std::vector<NodeWPtr > &inputs  = _imp->viewerNode->getNode()->getGuiInputs();
-    if (inputNb >= 0 && inputNb < (int)inputs.size()) {
+
+    if ( (inputNb >= 0) && ( inputNb < (int)inputs.size() ) ) {
         inp = inputs[inputNb].lock();
     }
-    
+
 
     if (inp) {
         ViewerTabPrivate::InputNamesMap::iterator found = _imp->inputNamesMap.find(inputNb);
@@ -86,17 +87,17 @@ ViewerTab::onInputChanged(int inputNb)
             }
             const std::string & curInputName = input->getLabel();
             found->second.input = inp;
-            int indexInA = _imp->firstInputImage->itemIndex( QString::fromUtf8(curInputName.c_str() ));
-            int indexInB = _imp->secondInputImage->itemIndex( QString::fromUtf8(curInputName.c_str() ));
+            int indexInA = _imp->firstInputImage->itemIndex( QString::fromUtf8( curInputName.c_str() ) );
+            int indexInB = _imp->secondInputImage->itemIndex( QString::fromUtf8( curInputName.c_str() ) );
             assert(indexInA != -1 && indexInB != -1);
-            found->second.name = QString::fromUtf8(inp->getLabel().c_str());
+            found->second.name = QString::fromUtf8( inp->getLabel().c_str() );
             _imp->firstInputImage->setItemText(indexInA, found->second.name);
             _imp->secondInputImage->setItemText(indexInB, found->second.name);
         } else {
             ViewerTabPrivate::InputName inpName;
             inpName.input = inp;
-            inpName.name = QString::fromUtf8(inp->getLabel().c_str());
-            _imp->inputNamesMap.insert( std::make_pair(inputNb,inpName) );
+            inpName.name = QString::fromUtf8( inp->getLabel().c_str() );
+            _imp->inputNamesMap.insert( std::make_pair(inputNb, inpName) );
             _imp->firstInputImage->addItem(inpName.name);
             _imp->secondInputImage->addItem(inpName.name);
         }
@@ -105,7 +106,6 @@ ViewerTab::onInputChanged(int inputNb)
 
         ///The input has been disconnected
         if ( found != _imp->inputNamesMap.end() ) {
-            
             NodePtr input = found->second.input.lock();
             if (!input) {
                 return;
@@ -113,16 +113,16 @@ ViewerTab::onInputChanged(int inputNb)
             const std::string & curInputName = input->getLabel();
             _imp->firstInputImage->blockSignals(true);
             _imp->secondInputImage->blockSignals(true);
-            _imp->firstInputImage->removeItem( QString::fromUtf8(curInputName.c_str() ));
-            _imp->secondInputImage->removeItem( QString::fromUtf8(curInputName.c_str() ));
+            _imp->firstInputImage->removeItem( QString::fromUtf8( curInputName.c_str() ) );
+            _imp->secondInputImage->removeItem( QString::fromUtf8( curInputName.c_str() ) );
             _imp->firstInputImage->blockSignals(false);
             _imp->secondInputImage->blockSignals(false);
             _imp->inputNamesMap.erase(found);
         }
     }
-    
+
     //refreshLayerAndAlphaChannelComboBox();
-}
+} // ViewerTab::onInputChanged
 
 void
 ViewerTab::onInputNameChanged(int inputNb,
@@ -144,35 +144,39 @@ ViewerTab::manageSlotsForInfoWidget(int textureIndex,
                                     bool connect)
 {
     RenderEngine* engine = _imp->viewerNode->getRenderEngine();
+
     assert(engine);
     if (connect) {
         QObject::connect( engine, SIGNAL(fpsChanged(double,double)), _imp->infoWidget[textureIndex], SLOT(setFps(double,double)) );
-        QObject::connect( engine,SIGNAL(renderFinished(int)),_imp->infoWidget[textureIndex],SLOT(hideFps()) );
+        QObject::connect( engine, SIGNAL(renderFinished(int)), _imp->infoWidget[textureIndex], SLOT(hideFps()) );
     } else {
         QObject::disconnect( engine, SIGNAL(fpsChanged(double,double)), _imp->infoWidget[textureIndex],
-                            SLOT(setFps(double,double)) );
-        QObject::disconnect( engine,SIGNAL(renderFinished(int)),_imp->infoWidget[textureIndex],SLOT(hideFps()) );
+                             SLOT(setFps(double,double)) );
+        QObject::disconnect( engine, SIGNAL(renderFinished(int)), _imp->infoWidget[textureIndex], SLOT(hideFps()) );
     }
 }
 
 void
-ViewerTab::setImageFormat(int textureIndex,const ImageComponents& components,ImageBitDepthEnum depth)
+ViewerTab::setImageFormat(int textureIndex,
+                          const ImageComponents& components,
+                          ImageBitDepthEnum depth)
 {
-    _imp->infoWidget[textureIndex]->setImageFormat(components,depth);
+    _imp->infoWidget[textureIndex]->setImageFormat(components, depth);
 }
 
 void
-ViewerTab::setViewerPaused(bool paused, bool allInputs)
+ViewerTab::setViewerPaused(bool paused,
+                           bool allInputs)
 {
     _imp->pauseButton->setChecked(paused);
     _imp->pauseButton->setDown(paused);
     _imp->viewerNode->setViewerPaused(paused, allInputs);
     abortRendering();
-    if (!_imp->viewerNode->getApp()->getProject()->isLoadingProject()) {
+    if ( !_imp->viewerNode->getApp()->getProject()->isLoadingProject() ) {
         if (!paused) {
             // Refresh the viewer
             _imp->viewerNode->renderCurrentFrame(true);
-        } 
+        }
     }
 }
 
@@ -182,12 +186,11 @@ ViewerTab::isViewerPaused(int texIndex) const
     return _imp->viewerNode->isViewerPaused(texIndex);
 }
 
-
-
 void
 ViewerTab::toggleViewerPauseMode(bool allInputs)
 {
     bool isPaused = _imp->pauseButton->isDown();
+
     setViewerPaused(!isPaused, allInputs);
 }
 
@@ -195,13 +198,15 @@ void
 ViewerTab::onPauseViewerButtonClicked(bool clicked)
 {
     bool allInputs = qApp->keyboardModifiers().testFlag(Qt::ShiftModifier);
+
     setViewerPaused(clicked, allInputs);
 }
 
 void
 ViewerTab::onPlaybackInButtonClicked()
 {
-    SequenceTime curIn,curOut;
+    SequenceTime curIn, curOut;
+
     _imp->timeLineGui->getBounds(&curIn, &curOut);
     curIn = (SequenceTime)_imp->timeLineGui->getTimeline()->currentFrame();
     curIn = std::min(curIn, curOut);
@@ -213,33 +218,34 @@ ViewerTab::onPlaybackInButtonClicked()
 void
 ViewerTab::onPlaybackOutButtonClicked()
 {
-    SequenceTime curIn,curOut;
+    SequenceTime curIn, curOut;
+
     _imp->timeLineGui->getBounds(&curIn, &curOut);
     curOut = (SequenceTime)_imp->timeLineGui->getTimeline()->currentFrame();
     curOut = std::max(curIn, curOut);
     setTimelineBounds(curIn, curOut);
     _imp->timeLineGui->recenterOnBounds();
     onTimelineBoundariesChanged(curIn, curOut);
-
 }
 
 void
 ViewerTab::onPlaybackInSpinboxValueChanged(double value)
 {
-    SequenceTime curIn,curOut;
+    SequenceTime curIn, curOut;
+
     _imp->timeLineGui->getBounds(&curIn, &curOut);
     curIn = (SequenceTime)value;
     curIn = std::min(curIn, curOut);
     setTimelineBounds(curIn, curOut);
     _imp->timeLineGui->recenterOnBounds();
     onTimelineBoundariesChanged(curIn, curOut);
-
 }
 
 void
 ViewerTab::onPlaybackOutSpinboxValueChanged(double value)
 {
-    SequenceTime curIn,curOut;
+    SequenceTime curIn, curOut;
+
     _imp->timeLineGui->getBounds(&curIn, &curOut);
     curOut = (SequenceTime)value;
     curOut = std::max(curIn, curOut);
@@ -248,17 +254,14 @@ ViewerTab::onPlaybackOutSpinboxValueChanged(double value)
     onTimelineBoundariesChanged(curIn, curOut);
 }
 
-
-
 void
-ViewerTab::setFrameRange(int left,int right)
+ViewerTab::setFrameRange(int left,
+                         int right)
 {
     setTimelineBounds(left, right);
     onTimelineBoundariesChanged(left, right);
     _imp->timeLineGui->recenterOnBounds();
 }
-
-
 
 void
 ViewerTab::onTimelineBoundariesChanged(SequenceTime first,
@@ -267,23 +270,21 @@ ViewerTab::onTimelineBoundariesChanged(SequenceTime first,
     _imp->playBackInputSpinbox->setValue(first);
     _imp->playBackOutputSpinbox->setValue(second);
 
-    
-    if (getGui() ) {
+
+    if ( getGui() ) {
         const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
             ViewerInstance* viewer = (*it)->getInternalNode();
             if (viewer) {
                 RenderEngine* engine = viewer->getRenderEngine();
-                if (engine && engine->hasThreadsWorking()) {
-                    engine->abortRendering(true,false);
+                if ( engine && engine->hasThreadsWorking() ) {
+                    engine->abortRendering(true, false);
                     engine->renderCurrentFrame(false, true);
                 }
             }
         }
     }
 }
-
-
 
 void
 ViewerTab::onCanSetFPSLabelClicked(bool toggled)
@@ -300,13 +301,12 @@ ViewerTab::onCanSetFPSClicked(bool toggled)
         QMutexLocker l(&_imp->fpsLockedMutex);
         _imp->fpsLocked = !toggled;
     }
-    
+
     if (toggled) {
         onSpinboxFpsChangedInternal(_imp->userFps);
     } else {
         refreshFPSBoxFromClipPreferences();
     }
-
 }
 
 void
@@ -320,7 +320,7 @@ bool
 ViewerTab::isFPSLocked() const
 {
     QMutexLocker k(&_imp->fpsLockedMutex);
-    
+
     return _imp->fpsLocked;
 }
 
@@ -352,6 +352,7 @@ ViewerTab::toggleInfobarVisbility()
         QMutexLocker l(&_imp->visibleToolbarsMutex);
         visible = !_imp->infobarVisible;
     }
+
     setInfobarVisible(visible);
 }
 
@@ -363,6 +364,7 @@ ViewerTab::togglePlayerVisibility()
         QMutexLocker l(&_imp->visibleToolbarsMutex);
         visible = !_imp->playerVisible;
     }
+
     setPlayerVisible(visible);
 }
 
@@ -374,6 +376,7 @@ ViewerTab::toggleTimelineVisibility()
         QMutexLocker l(&_imp->visibleToolbarsMutex);
         visible = !_imp->timelineVisible;
     }
+
     setTimelineVisible(visible);
 }
 
@@ -385,6 +388,7 @@ ViewerTab::toggleLeftToolbarVisiblity()
         QMutexLocker l(&_imp->visibleToolbarsMutex);
         visible = !_imp->leftToolbarVisible;
     }
+
     setLeftToolbarVisible(visible);
 }
 
@@ -396,6 +400,7 @@ ViewerTab::toggleRightToolbarVisibility()
         QMutexLocker l(&_imp->visibleToolbarsMutex);
         visible =  !_imp->rightToolbarVisible;
     }
+
     setRightToolbarVisible(visible);
 }
 
@@ -407,6 +412,7 @@ ViewerTab::toggleTopToolbarVisibility()
         QMutexLocker l(&_imp->visibleToolbarsMutex);
         visible = !_imp->topToolbarVisible;
     }
+
     setTopToolbarVisible(visible);
 }
 
@@ -414,6 +420,7 @@ void
 ViewerTab::setLeftToolbarVisible(bool visible)
 {
     QMutexLocker l(&_imp->visibleToolbarsMutex);
+
     _imp->leftToolbarVisible = visible;
     if (_imp->currentRoto.second) {
         _imp->currentRoto.second->getToolBar()->setVisible(_imp->leftToolbarVisible);
@@ -424,6 +431,7 @@ void
 ViewerTab::setRightToolbarVisible(bool visible)
 {
     QMutexLocker l(&_imp->visibleToolbarsMutex);
+
     _imp->rightToolbarVisible = visible;
 }
 
@@ -431,6 +439,7 @@ void
 ViewerTab::setTopToolbarVisible(bool visible)
 {
     QMutexLocker l(&_imp->visibleToolbarsMutex);
+
     _imp->topToolbarVisible = visible;
     _imp->firstSettingsRow->setVisible(_imp->topToolbarVisible);
     _imp->secondSettingsRow->setVisible(_imp->topToolbarVisible);
@@ -450,64 +459,64 @@ void
 ViewerTab::setPlayerVisible(bool visible)
 {
     QMutexLocker l(&_imp->visibleToolbarsMutex);
+
     _imp->playerVisible = visible;
     _imp->playerButtonsContainer->setVisible(_imp->playerVisible);
-
 }
 
 void
 ViewerTab::setTimelineVisible(bool visible)
 {
     QMutexLocker l(&_imp->visibleToolbarsMutex);
+
     _imp->timelineVisible = visible;
     _imp->timeLineGui->setVisible(_imp->timelineVisible);
-
 }
 
 void
 ViewerTab::setInfobarVisible(bool visible)
 {
     QMutexLocker l(&_imp->visibleToolbarsMutex);
+
     _imp->infobarVisible = visible;
     for (int i = 0; i < 2; ++i) {
         if (i == 1) {
             int inputIndex = -1;
-            
+
             for (ViewerTabPrivate::InputNamesMap::iterator it = _imp->inputNamesMap.begin(); it != _imp->inputNamesMap.end(); ++it) {
-                if (it->second.name == _imp->secondInputImage->getCurrentIndexText()) {
+                if ( it->second.name == _imp->secondInputImage->getCurrentIndexText() ) {
                     inputIndex = it->first;
                     break;
                 }
             }
-            if (getCompositingOperator() == eViewerCompositingOperatorNone || inputIndex == -1) {
+            if ( (getCompositingOperator() == eViewerCompositingOperatorNone) || (inputIndex == -1) ) {
                 continue;
             }
         }
-        
+
         _imp->infoWidget[i]->setVisible(_imp->infobarVisible);
     }
-
 }
 
 void
 ViewerTab::showAllToolbars()
 {
-    if (!isTopToolbarVisible()) {
+    if ( !isTopToolbarVisible() ) {
         toggleTopToolbarVisibility();
     }
-    if (!isRightToolbarVisible()) {
+    if ( !isRightToolbarVisible() ) {
         toggleRightToolbarVisibility();
     }
-    if (!isLeftToolbarVisible()) {
+    if ( !isLeftToolbarVisible() ) {
         toggleLeftToolbarVisiblity();
     }
-    if (!isInfobarVisible()) {
+    if ( !isInfobarVisible() ) {
         toggleInfobarVisbility();
     }
-    if (!isPlayerVisible()) {
+    if ( !isPlayerVisible() ) {
         togglePlayerVisibility();
     }
-    if (!isTimelineVisible()) {
+    if ( !isTimelineVisible() ) {
         toggleTimelineVisibility();
     }
 }
@@ -515,22 +524,22 @@ ViewerTab::showAllToolbars()
 void
 ViewerTab::hideAllToolbars()
 {
-    if (isTopToolbarVisible()) {
+    if ( isTopToolbarVisible() ) {
         toggleTopToolbarVisibility();
     }
-    if (isRightToolbarVisible()) {
+    if ( isRightToolbarVisible() ) {
         toggleRightToolbarVisibility();
     }
-    if (isLeftToolbarVisible()) {
+    if ( isLeftToolbarVisible() ) {
         toggleLeftToolbarVisiblity();
     }
-    if (isInfobarVisible()) {
+    if ( isInfobarVisible() ) {
         toggleInfobarVisbility();
     }
-    if (isPlayerVisible()) {
+    if ( isPlayerVisible() ) {
         togglePlayerVisibility();
     }
-    if (isTimelineVisible()) {
+    if ( isTimelineVisible() ) {
         toggleTimelineVisibility();
     }
 }
@@ -539,6 +548,7 @@ bool
 ViewerTab::isInfobarVisible() const
 {
     QMutexLocker l(&_imp->visibleToolbarsMutex);
+
     return _imp->infobarVisible;
 }
 
@@ -546,6 +556,7 @@ bool
 ViewerTab::isTopToolbarVisible() const
 {
     QMutexLocker l(&_imp->visibleToolbarsMutex);
+
     return _imp->topToolbarVisible;
 }
 
@@ -553,6 +564,7 @@ bool
 ViewerTab::isPlayerVisible() const
 {
     QMutexLocker l(&_imp->visibleToolbarsMutex);
+
     return _imp->playerVisible;
 }
 
@@ -560,6 +572,7 @@ bool
 ViewerTab::isTimelineVisible() const
 {
     QMutexLocker l(&_imp->visibleToolbarsMutex);
+
     return _imp->timelineVisible;
 }
 
@@ -567,6 +580,7 @@ bool
 ViewerTab::isLeftToolbarVisible() const
 {
     QMutexLocker l(&_imp->visibleToolbarsMutex);
+
     return _imp->leftToolbarVisible;
 }
 
@@ -574,6 +588,7 @@ bool
 ViewerTab::isRightToolbarVisible() const
 {
     QMutexLocker l(&_imp->visibleToolbarsMutex);
+
     return _imp->rightToolbarVisible;
 }
 
@@ -597,20 +612,17 @@ ViewerTab::setCustomTimeline(const boost::shared_ptr<TimeLine>& timeline)
 }
 
 void
-ViewerTab::manageTimelineSlot(bool disconnectPrevious,const boost::shared_ptr<TimeLine>& timeline)
+ViewerTab::manageTimelineSlot(bool disconnectPrevious,
+                              const boost::shared_ptr<TimeLine>& timeline)
 {
     if (disconnectPrevious) {
         boost::shared_ptr<TimeLine> previous = _imp->timeLineGui->getTimeline();
-        QObject::disconnect( previous.get(),SIGNAL(frameChanged(SequenceTime,int)),
-                         this, SLOT(onTimeLineTimeChanged(SequenceTime,int)) );
-        
-
+        QObject::disconnect( previous.get(), SIGNAL(frameChanged(SequenceTime,int)),
+                             this, SLOT(onTimeLineTimeChanged(SequenceTime,int)) );
     }
-    
-    QObject::connect( timeline.get(),SIGNAL(frameChanged(SequenceTime,int)),
-                     this, SLOT(onTimeLineTimeChanged(SequenceTime,int)) );
 
-
+    QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)),
+                      this, SLOT(onTimeLineTimeChanged(SequenceTime,int)) );
 }
 
 boost::shared_ptr<TimeLine>
@@ -622,7 +634,8 @@ ViewerTab::getTimeLine() const
 bool
 ViewerTab::isPickerEnabled() const
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
+
     return _imp->pickerButton->isChecked();
 }
 
@@ -638,25 +651,26 @@ void
 ViewerTab::onMousePressCalledInViewer()
 {
     takeClickFocus();
-    if (getGui()) {
+    if ( getGui() ) {
         getGui()->setActiveViewer(this);
     }
 }
 
 void
-ViewerTab::onPickerButtonClickedInternal(ViewerTab* caller,bool clicked)
+ViewerTab::onPickerButtonClickedInternal(ViewerTab* caller,
+                                         bool clicked)
 {
     if (this == caller) {
         const std::list<ViewerTab*> &viewers = getGui()->getViewersList();
-        for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it!=viewers.end(); ++it) {
-            if ((*it) != caller) {
-                (*it)->onPickerButtonClickedInternal(caller,clicked);
+        for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+            if ( (*it) != caller ) {
+                (*it)->onPickerButtonClickedInternal(caller, clicked);
             }
         }
     }
-    
+
     _imp->pickerButton->setDown(clicked);
-    
+
     setInfobarVisible(clicked);
     getGui()->clearColorPickers();
 }
@@ -678,13 +692,16 @@ ViewerTab::onCheckerboardButtonClicked()
     _imp->viewer->redraw();
 }
 
-bool ViewerTab::isCheckerboardEnabled() const
+bool
+ViewerTab::isCheckerboardEnabled() const
 {
     QMutexLocker l(&_imp->checkerboardMutex);
+
     return _imp->checkerboardEnabled;
 }
 
-void ViewerTab::setCheckerboardEnabled(bool enabled)
+void
+ViewerTab::setCheckerboardEnabled(bool enabled)
 {
     {
         QMutexLocker l(&_imp->checkerboardMutex);
@@ -692,13 +709,12 @@ void ViewerTab::setCheckerboardEnabled(bool enabled)
     }
     _imp->checkerboardButton->setDown(enabled);
     _imp->checkerboardButton->setChecked(enabled);
-
 }
 
 void
 ViewerTab::onSpinboxFpsChangedInternal(double fps)
 {
-    if (!getGui()) {
+    if ( !getGui() ) {
         //might be caled from a focus out event when leaving gui
         return;
     }
@@ -724,6 +740,7 @@ double
 ViewerTab::getDesiredFps() const
 {
     QMutexLocker l(&_imp->fpsMutex);
+
     return _imp->fps;
 }
 
@@ -740,21 +757,22 @@ ViewerTab::setDesiredFps(double fps)
 }
 
 void
-ViewerTab::setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio)
+ViewerTab::setProjection(double zoomLeft,
+                         double zoomBottom,
+                         double zoomFactor,
+                         double zoomAspectRatio)
 {
-    
     _imp->viewer->setProjection(zoomLeft, zoomBottom, zoomFactor, zoomAspectRatio);
-    QString str = QString::number(std::floor(zoomFactor * 100 + 0.5));
+    QString str = QString::number( std::floor(zoomFactor * 100 + 0.5) );
     str.append( QLatin1Char('%') );
-    str.prepend(QString::fromUtf8("  "));
-    str.append(QString::fromUtf8("  "));
+    str.prepend( QString::fromUtf8("  ") );
+    str.append( QString::fromUtf8("  ") );
     _imp->zoomCombobox->setCurrentText_no_emit(str);
 }
 
 void
 ViewerTab::onViewerRenderingStarted()
 {
-    
     if (!_imp->ongoingRenderCount) {
         _imp->refreshButton->setIcon(_imp->iconRefreshOn);
     }
@@ -777,32 +795,37 @@ ViewerTab::setTurboButtonDown(bool down)
     _imp->turboButton->setChecked(down);
 }
 
-void 
+void
 ViewerTab::redrawGLWidgets()
 {
-	_imp->viewer->update();
-	_imp->timeLineGui->update();
+    _imp->viewer->update();
+    _imp->timeLineGui->update();
 }
 
 void
-ViewerTab::getTimelineBounds(int* left,int* right) const
+ViewerTab::getTimelineBounds(int* left,
+                             int* right) const
 {
     return _imp->timeLineGui->getBounds(left, right);
 }
 
 void
-ViewerTab::setTimelineBounds(int left,int right)
+ViewerTab::setTimelineBounds(int left,
+                             int right)
 {
     _imp->timeLineGui->setBoundaries(left, right);
-    
 }
 
-void ViewerTab::centerOn(SequenceTime left, SequenceTime right)
+void
+ViewerTab::centerOn(SequenceTime left,
+                    SequenceTime right)
 {
     _imp->timeLineGui->centerOn(left, right);
 }
 
-void ViewerTab::centerOn_tripleSync(SequenceTime left, SequenceTime right)
+void
+ViewerTab::centerOn_tripleSync(SequenceTime left,
+                               SequenceTime right)
 {
     _imp->timeLineGui->centerOn_tripleSync(left, right);
 }
@@ -813,13 +836,13 @@ ViewerTab::setFrameRangeEdited(bool edited)
     _imp->timeLineGui->setFrameRangeEdited(edited);
 }
 
-
 void
 ViewerTab::onInternalNodeLabelChanged(const QString& name)
 {
-    TabWidget* parent = dynamic_cast<TabWidget*>(parentWidget() );
+    TabWidget* parent = dynamic_cast<TabWidget*>( parentWidget() );
+
     if (parent) {
-        setLabel(name.toStdString());
+        setLabel( name.toStdString() );
         parent->setTabLabel(this, name);
     }
 }
@@ -830,19 +853,19 @@ ViewerTab::onInternalNodeScriptNameChanged(const QString& /*name*/)
     // always running in the main thread
     std::string newName = _imp->viewerNode->getNode()->getFullyQualifiedName();
     std::string oldName = getScriptName();
-    
+
     for (std::size_t i = 0; i < newName.size(); ++i) {
         if (newName[i] == '.') {
             newName[i] = '_';
         }
     }
 
-    
+
     assert( qApp && qApp->thread() == QThread::currentThread() );
     getGui()->unregisterTab(this);
     setScriptName(newName);
-    getGui()->registerTab(this,this);
-    TabWidget* parent = dynamic_cast<TabWidget*>(parentWidget() );
+    getGui()->registerTab(this, this);
+    TabWidget* parent = dynamic_cast<TabWidget*>( parentWidget() );
     if (parent) {
         parent->onTabScriptNameChanged(this, oldName, newName);
     }
@@ -854,51 +877,50 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
     if (!_imp->viewerNode) {
         return;
     }
-    
+
     QString layerCurChoice = _imp->layerChoice->getCurrentIndexText();
     QString alphaCurChoice = _imp->alphaChannelChoice->getCurrentIndexText();
-    
     std::set<ImageComponents> components;
     _imp->getComponentsAvailabel(&components);
-    
+
     _imp->layerChoice->clear();
     _imp->alphaChannelChoice->clear();
-    
-    _imp->layerChoice->addItem(QString::fromUtf8("-"));
-    _imp->alphaChannelChoice->addItem(QString::fromUtf8("-"));
-    
+
+    _imp->layerChoice->addItem( QString::fromUtf8("-") );
+    _imp->alphaChannelChoice->addItem( QString::fromUtf8("-") );
+
     std::set<ImageComponents>::iterator foundColorIt = components.end();
     std::set<ImageComponents>::iterator foundOtherIt = components.end();
     std::set<ImageComponents>::iterator foundCurIt = components.end();
     std::set<ImageComponents>::iterator foundCurAlphaIt = components.end();
     std::string foundAlphaChannel;
-    
+
     for (std::set<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
-        QString layerName = QString::fromUtf8(it->getLayerName().c_str());
-        QString itemName = layerName + QLatin1Char('.') + QString::fromUtf8(it->getComponentsGlobalName().c_str());
+        QString layerName = QString::fromUtf8( it->getLayerName().c_str() );
+        QString itemName = layerName + QLatin1Char('.') + QString::fromUtf8( it->getComponentsGlobalName().c_str() );
         _imp->layerChoice->addItem(itemName);
-        
+
         if (itemName == layerCurChoice) {
             foundCurIt = it;
         }
-        
-        if (layerName == QString::fromUtf8(kNatronColorPlaneName)) {
+
+        if ( layerName == QString::fromUtf8(kNatronColorPlaneName) ) {
             foundColorIt = it;
         } else {
             foundOtherIt = it;
         }
-        
+
         const std::vector<std::string>& channels = it->getComponentsNames();
         for (U32 i = 0; i < channels.size(); ++i) {
-            QString itemName = layerName + QLatin1Char('.') + QString::fromUtf8(channels[i].c_str());
+            QString itemName = layerName + QLatin1Char('.') + QString::fromUtf8( channels[i].c_str() );
             if (itemName == alphaCurChoice) {
                 foundCurAlphaIt = it;
                 foundAlphaChannel = channels[i];
             }
             _imp->alphaChannelChoice->addItem(itemName);
         }
-        
-        if (layerName == QString::fromUtf8(kNatronColorPlaneName)) {
+
+        if ( layerName == QString::fromUtf8(kNatronColorPlaneName) ) {
             //There's RGBA or alpha, set it to A
             std::string alphaChoice;
             if (channels.size() == 4) {
@@ -906,44 +928,37 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
             } else if (channels.size() == 1) {
                 alphaChoice = channels[0];
             }
-            if (!alphaChoice.empty()) {
+            if ( !alphaChoice.empty() ) {
                 _imp->alphaChannelChoice->setCurrentIndex_no_emit(_imp->alphaChannelChoice->count() - 1);
             } else {
                 alphaCurChoice = _imp->alphaChannelChoice->itemText(0);
             }
-            
+
             _imp->viewerNode->setAlphaChannel(*it, alphaChoice, false);
         }
-        
-        
     }
-    
-    if (layerCurChoice == QString::fromUtf8("-") || layerCurChoice.isEmpty() || foundCurIt == components.end()) {
-        
+
+    if ( ( layerCurChoice == QString::fromUtf8("-") ) || layerCurChoice.isEmpty() || ( foundCurIt == components.end() ) ) {
         // Try to find color plane, otherwise fallback on any other layer
-        if (foundColorIt != components.end()) {
-            layerCurChoice = QString::fromUtf8(foundColorIt->getLayerName().c_str())
-            + QLatin1Char('.') + QString::fromUtf8(foundColorIt->getComponentsGlobalName().c_str());
+        if ( foundColorIt != components.end() ) {
+            layerCurChoice = QString::fromUtf8( foundColorIt->getLayerName().c_str() )
+                             + QLatin1Char('.') + QString::fromUtf8( foundColorIt->getComponentsGlobalName().c_str() );
             foundCurIt = foundColorIt;
-            
-        } else if (foundOtherIt != components.end()) {
-            layerCurChoice = QString::fromUtf8(foundOtherIt->getLayerName().c_str())
-            + QLatin1Char('.') + QString::fromUtf8(foundOtherIt->getComponentsGlobalName().c_str());
+        } else if ( foundOtherIt != components.end() ) {
+            layerCurChoice = QString::fromUtf8( foundOtherIt->getLayerName().c_str() )
+                             + QLatin1Char('.') + QString::fromUtf8( foundOtherIt->getComponentsGlobalName().c_str() );
             foundCurIt = foundOtherIt;
         } else {
             layerCurChoice = QString::fromUtf8("-");
             foundCurIt = components.end();
         }
-        
-        
     }
-    
-    
-    if (foundCurIt == components.end()) {
+
+
+    if ( foundCurIt == components.end() ) {
         _imp->layerChoice->setCurrentText_no_emit(layerCurChoice);
         _imp->viewerNode->setActiveLayer(ImageComponents::getNoneComponents(), false);
     } else {
-        
         int layerIdx = _imp->layerChoice->itemIndex(layerCurChoice);
         assert(layerIdx != -1);
         _imp->layerChoice->setCurrentIndex_no_emit(layerIdx);
@@ -954,37 +969,31 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
             _imp->viewerChannelsAutoswitchedToAlpha = true;
         } else {
             //Switch back to RGB if we auto-switched to alpha
-            if (_imp->viewerChannelsAutoswitchedToAlpha && foundCurIt->getNumComponents() > 1 && _imp->viewerChannels->activeIndex() == 5) {
+            if ( _imp->viewerChannelsAutoswitchedToAlpha && (foundCurIt->getNumComponents() > 1) && (_imp->viewerChannels->activeIndex() == 5) ) {
                 _imp->viewerChannels->setCurrentIndex_no_emit(1);
                 setDisplayChannels(1, true);
             }
         }
         _imp->viewerNode->setActiveLayer(*foundCurIt, false);
     }
-    
-    if (alphaCurChoice == QString::fromUtf8("-") || alphaCurChoice.isEmpty() || foundCurAlphaIt == components.end()) {
-        
+
+    if ( ( alphaCurChoice == QString::fromUtf8("-") ) || alphaCurChoice.isEmpty() || ( foundCurAlphaIt == components.end() ) ) {
         ///Try to find color plane, otherwise fallback on any other layer
-        if (foundColorIt != components.end() &&
-            (foundColorIt->getComponentsNames().size() == 4 || foundColorIt->getComponentsNames().size() == 1)) {
-            
-            std::size_t lastComp = foundColorIt->getComponentsNames().size() -1;
-            
-            alphaCurChoice = QString::fromUtf8(foundColorIt->getLayerName().c_str())
-            + QLatin1Char('.') + QString::fromUtf8(foundColorIt->getComponentsNames()[lastComp].c_str());
+        if ( ( foundColorIt != components.end() ) &&
+             ( ( foundColorIt->getComponentsNames().size() == 4) || ( foundColorIt->getComponentsNames().size() == 1) ) ) {
+            std::size_t lastComp = foundColorIt->getComponentsNames().size() - 1;
+
+            alphaCurChoice = QString::fromUtf8( foundColorIt->getLayerName().c_str() )
+                             + QLatin1Char('.') + QString::fromUtf8( foundColorIt->getComponentsNames()[lastComp].c_str() );
             foundAlphaChannel = foundColorIt->getComponentsNames()[lastComp];
             foundCurAlphaIt = foundColorIt;
-            
-            
         } else {
             alphaCurChoice = QString::fromUtf8("-");
             foundCurAlphaIt = components.end();
         }
-        
-        
     }
-    
-    if (foundCurAlphaIt == components.end() || foundAlphaChannel.empty()) {
+
+    if ( ( foundCurAlphaIt == components.end() ) || foundAlphaChannel.empty() ) {
         _imp->alphaChannelChoice->setCurrentText_no_emit(alphaCurChoice);
         _imp->viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string(), false);
     } else {
@@ -993,87 +1002,86 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
         _imp->alphaChannelChoice->setCurrentIndex_no_emit(layerIdx);
 
         _imp->viewerNode->setAlphaChannel(*foundCurAlphaIt, foundAlphaChannel, false);
-
     }
-    
+
     {
         QMutexLocker k(&_imp->currentLayerMutex);
         _imp->currentLayerChoice = layerCurChoice;
         _imp->currentAlphaLayerChoice = alphaCurChoice;
     }
-
-}
+} // ViewerTab::refreshLayerAndAlphaChannelComboBox
 
 void
 ViewerTab::onAlphaChannelComboChanged(int index)
 {
     std::set<ImageComponents> components;
+
     _imp->getComponentsAvailabel(&components);
-    
+
     {
         QMutexLocker k(&_imp->currentLayerMutex);
         _imp->currentAlphaLayerChoice = _imp->alphaChannelChoice->getCurrentIndexText();
     }
     int i = 1; // because of the "-" choice
     for (std::set<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
-        
         const std::vector<std::string>& channels = it->getComponentsNames();
-        if (index >= ((int)channels.size() + i)) {
+        if ( index >= ( (int)channels.size() + i ) ) {
             i += channels.size();
         } else {
             for (U32 j = 0; j < channels.size(); ++j, ++i) {
                 if (i == index) {
                     _imp->viewerNode->setAlphaChannel(*it, channels[j], true);
+
                     return;
                 }
             }
-            
         }
     }
     _imp->viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string(), true);
-    
 }
 
 void
 ViewerTab::onLayerComboChanged(int index)
 {
     std::set<ImageComponents> components;
+
     _imp->getComponentsAvailabel(&components);
     {
         QMutexLocker k(&_imp->currentLayerMutex);
         _imp->currentLayerChoice = _imp->layerChoice->getCurrentIndexText();
     }
-    if (index >= (int)(components.size() + 1) || index < 0) {
+    if ( ( index >= (int)(components.size() + 1) ) || (index < 0) ) {
         qDebug() << "ViewerTab::onLayerComboChanged: invalid index";
+
         return;
     }
     int i = 1; // because of the "-" choice
     int chanCount = 1; // because of the "-" choice
     for (std::set<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it, ++i) {
-        
         chanCount += it->getComponentsNames().size();
         if (i == index) {
             _imp->viewerNode->setActiveLayer(*it, true);
-            
+
             ///If it has an alpha channel, set it
             if (it->getComponentsNames().size() == 4) {
                 _imp->alphaChannelChoice->setCurrentIndex_no_emit(chanCount - 1);
                 _imp->viewerNode->setAlphaChannel(*it, it->getComponentsNames()[3], true);
             }
+
             return;
         }
     }
-    
+
     _imp->alphaChannelChoice->setCurrentIndex_no_emit(0);
     _imp->viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string(), false);
     _imp->viewerNode->setActiveLayer(ImageComponents::getNoneComponents(), true);
-    
 }
 
 QString
 ViewerTab::getCurrentLayerName() const
 {
     QMutexLocker k(&_imp->currentLayerMutex);
+
     return _imp->currentLayerChoice;
 }
 
@@ -1081,11 +1089,13 @@ QString
 ViewerTab::getCurrentAlphaLayerName() const
 {
     QMutexLocker k(&_imp->currentLayerMutex);
+
     return _imp->currentAlphaLayerChoice;
 }
 
 void
-ViewerTab::setCurrentLayers(const QString& layer, const QString& alphaLayer)
+ViewerTab::setCurrentLayers(const QString& layer,
+                            const QString& alphaLayer)
 {
     _imp->layerChoice->setCurrentText_no_emit(layer);
     _imp->alphaChannelChoice->setCurrentText_no_emit(alphaLayer);
@@ -1096,6 +1106,7 @@ void
 ViewerTab::onGainToggled(bool clicked)
 {
     double value;
+
     if (clicked) {
         value = _imp->lastFstopValue;
     } else {
@@ -1104,22 +1115,21 @@ ViewerTab::onGainToggled(bool clicked)
     _imp->toggleGainButton->setDown(clicked);
     _imp->gainBox->setValue(value);
     _imp->gainSlider->seekScalePosition(value);
-    
-    double gain = std::pow(2,value);
+
+    double gain = std::pow(2, value);
     _imp->viewer->setGain(gain);
     _imp->viewerNode->onGainChanged(gain);
 }
 
-
 void
 ViewerTab::onGainSliderChanged(double v)
 {
-    if (!_imp->toggleGainButton->isChecked()) {
+    if ( !_imp->toggleGainButton->isChecked() ) {
         _imp->toggleGainButton->setChecked(true);
         _imp->toggleGainButton->setDown(true);
     }
     _imp->gainBox->setValue(v);
-    double gain = std::pow(2,v);
+    double gain = std::pow(2, v);
     _imp->viewer->setGain(gain);
     _imp->viewerNode->onGainChanged(gain);
     _imp->lastFstopValue = v;
@@ -1128,12 +1138,12 @@ ViewerTab::onGainSliderChanged(double v)
 void
 ViewerTab::onGainSpinBoxValueChanged(double v)
 {
-    if (!_imp->toggleGainButton->isChecked()) {
+    if ( !_imp->toggleGainButton->isChecked() ) {
         _imp->toggleGainButton->setChecked(true);
         _imp->toggleGainButton->setDown(true);
     }
     _imp->gainSlider->seekScalePosition(v);
-    double gain = std::pow(2,v);
+    double gain = std::pow(2, v);
     _imp->viewer->setGain(gain);
     _imp->viewerNode->onGainChanged(gain);
     _imp->lastFstopValue = v;
@@ -1143,6 +1153,7 @@ void
 ViewerTab::onGammaToggled(bool clicked)
 {
     double value;
+
     if (clicked) {
         value = _imp->lastGammaValue;
     } else {
@@ -1158,7 +1169,7 @@ ViewerTab::onGammaToggled(bool clicked)
 void
 ViewerTab::onGammaSliderValueChanged(double value)
 {
-    if (!_imp->toggleGammaButton->isChecked()) {
+    if ( !_imp->toggleGammaButton->isChecked() ) {
         _imp->toggleGammaButton->setChecked(true);
         _imp->toggleGammaButton->setDown(true);
     }
@@ -1171,7 +1182,7 @@ ViewerTab::onGammaSliderValueChanged(double value)
 void
 ViewerTab::onGammaSpinBoxValueChanged(double value)
 {
-    if (!_imp->toggleGammaButton->isChecked()) {
+    if ( !_imp->toggleGammaButton->isChecked() ) {
         _imp->toggleGammaButton->setChecked(true);
         _imp->toggleGammaButton->setDown(true);
     }
@@ -1185,6 +1196,7 @@ void
 ViewerTab::onGammaSliderEditingFinished(bool hasMovedOnce)
 {
     bool autoProxyEnabled = appPTR->getCurrentSettings()->isAutoProxyEnabled();
+
     if (autoProxyEnabled && hasMovedOnce) {
         getGui()->renderAllViewers(true);
     }
@@ -1194,6 +1206,7 @@ void
 ViewerTab::onGainSliderEditingFinished(bool hasMovedOnce)
 {
     bool autoProxyEnabled = appPTR->getCurrentSettings()->isAutoProxyEnabled();
+
     if (autoProxyEnabled && hasMovedOnce) {
         getGui()->renderAllViewers(true);
     }
@@ -1208,26 +1221,24 @@ ViewerTab::isViewersSynchroEnabled() const
 void
 ViewerTab::synchronizeOtherViewersProjection()
 {
-    assert(getGui());
+    assert( getGui() );
     getGui()->setMasterSyncViewer(this);
-    double left,bottom,factor,par;
+    double left, bottom, factor, par;
     _imp->viewer->getProjection(&left, &bottom, &factor, &par);
     const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        if ((*it) != this) {
+        if ( (*it) != this ) {
             (*it)->getViewer()->setProjection(left, bottom, factor, par);
             (*it)->getInternalNode()->renderCurrentFrame(true);
-            
         }
     }
-    
 }
 
 void
 ViewerTab::onSyncViewersButtonPressed(bool clicked)
 {
-
     const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
+
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
         (*it)->_imp->syncViewerButton->setDown(clicked);
         (*it)->_imp->syncViewerButton->setChecked(clicked);
@@ -1241,10 +1252,11 @@ void
 ViewerTab::zoomIn()
 {
     double factor = _imp->viewer->getZoomFactor();
+
     factor *= 1.1;
     factor *= 100;
     _imp->viewer->zoomSlot(factor);
-    QString text = QString::number(std::floor(factor + 0.5)) + QLatin1Char('%');
+    QString text = QString::number( std::floor(factor + 0.5) ) + QLatin1Char('%');
     _imp->zoomCombobox->setCurrentText_no_emit(text);
 }
 
@@ -1252,10 +1264,11 @@ void
 ViewerTab::zoomOut()
 {
     double factor = _imp->viewer->getZoomFactor();
+
     factor *= 0.9;
     factor *= 100;
     _imp->viewer->zoomSlot(factor);
-    QString text = QString::number(std::floor(factor + 0.5)) + QLatin1Char('%');
+    QString text = QString::number( std::floor(factor + 0.5) ) + QLatin1Char('%');
     _imp->zoomCombobox->setCurrentText_no_emit(text);
 }
 
@@ -1263,11 +1276,12 @@ void
 ViewerTab::onZoomComboboxCurrentIndexChanged(int /*index*/)
 {
     QString text = _imp->zoomCombobox->getCurrentIndexText();
-    if (text == QString::fromUtf8("+")) {
+
+    if ( text == QString::fromUtf8("+") ) {
         zoomIn();
-    } else if (text == QString::fromUtf8("-")) {
+    } else if ( text == QString::fromUtf8("-") ) {
         zoomOut();
-    } else if (text == QString::fromUtf8("Fit")) {
+    } else if ( text == QString::fromUtf8("Fit") ) {
         centerViewer();
     } else {
         text.remove( QLatin1Char('%') );
@@ -1278,9 +1292,12 @@ ViewerTab::onZoomComboboxCurrentIndexChanged(int /*index*/)
 }
 
 void
-ViewerTab::onRenderStatsAvailable(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats)
+ViewerTab::onRenderStatsAvailable(int time,
+                                  ViewIdx view,
+                                  double wallTime,
+                                  const RenderStatsMap& stats)
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     RenderStatsDialog* dialog = getGui()->getRenderStatsDialog();
     if (dialog) {
         dialog->addStats(time, view, wallTime, stats);
@@ -1290,22 +1307,20 @@ ViewerTab::onRenderStatsAvailable(int time, ViewIdx view, double wallTime, const
 void
 ViewerTab::toggleTripleSync(bool toggled)
 {
-    
     _imp->tripleSyncButton->setDown(toggled);
     getGui()->setTripleSyncEnabled(toggled);
     if (toggled) {
         DopeSheetEditor* deditor = getGui()->getDopeSheetEditor();
         CurveEditor* cEditor = getGui()->getCurveEditor();
         //Sync curve editor and dopesheet tree width
-        cEditor->setTreeWidgetWidth(deditor->getTreeWidgetWidth());
-        
-        SequenceTime left,right;
+        cEditor->setTreeWidgetWidth( deditor->getTreeWidgetWidth() );
+
+        SequenceTime left, right;
         _imp->timeLineGui->getVisibleRange(&left, &right);
         getGui()->centerOpenedViewersOn(left, right);
         deditor->centerOn(left, right);
         cEditor->getCurveWidget()->centerOn(left, right);
     }
-
 }
 
 NATRON_NAMESPACE_EXIT;

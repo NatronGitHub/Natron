@@ -197,7 +197,7 @@ template<>
 inline void
 Variant::setValue(const std::string & str)
 {
-    QVariant::setValue( QString::fromUtf8(str.c_str()));
+    QVariant::setValue( QString::fromUtf8( str.c_str() ) );
 }
 
 template<>

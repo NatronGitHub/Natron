@@ -66,7 +66,8 @@ NATRON_NAMESPACE_ENTER;
 /*Saves cache to disk as a settings file.
  */
 template<typename EntryType>
-void Cache<EntryType>::save(CacheTOC* tableOfContents)
+void
+Cache<EntryType>::save(CacheTOC* tableOfContents)
 {
     clearInMemoryPortion(false);
     QMutexLocker l(&_lock);     // must be locked
@@ -83,7 +84,7 @@ void Cache<EntryType>::save(CacheTOC* tableOfContents)
                 serialization.filePath = (*it2)->getFilePath();
                 tableOfContents->push_back(serialization);
 #ifdef DEBUG
-                if (!CacheAPI::checkFileNameMatchesHash(serialization.filePath, serialization.hash)) {
+                if ( !CacheAPI::checkFileNameMatchesHash(serialization.filePath, serialization.hash) ) {
                     qDebug() << "WARNING: Cache entry filename is not the same as the serialized hash key";
                 }
 #endif
@@ -92,18 +93,17 @@ void Cache<EntryType>::save(CacheTOC* tableOfContents)
     }
 }
 
-
 /*Restores the cache from disk.*/
 template<typename EntryType>
-void Cache<EntryType>::restore(const CacheTOC & tableOfContents)
+void
+Cache<EntryType>::restore(const CacheTOC & tableOfContents)
 {
-
     ///Make sure the shared_ptrs live in this list and are destroyed not while under the lock
     ///so that the memory freeing (which might be expensive for large images) doesn't happen while under the lock
     std::list<EntryTypePtr> entriesToBeDeleted;
 
     for (typename CacheTOC::const_iterator it =
-         tableOfContents.begin(); it != tableOfContents.end(); ++it) {
+             tableOfContents.begin(); it != tableOfContents.end(); ++it) {
         if ( it->hash != it->key.getHash() ) {
             /*
              * If this warning is printed this means that the value computed by it->key()
@@ -118,17 +118,16 @@ void Cache<EntryType>::restore(const CacheTOC & tableOfContents)
         }
 
 #ifdef DEBUG
-        if (!checkFileNameMatchesHash(it->filePath, it->hash)) {
+        if ( !checkFileNameMatchesHash(it->filePath, it->hash) ) {
             qDebug() << "WARNING: Cache entry filename is not the same as the serialized hash key";
         }
 #endif
 
         EntryType* value = NULL;
-
         StorageModeEnum storage = eStorageModeDisk;
 
         try {
-            value = new EntryType(it->key,it->params,this,storage,it->filePath);
+            value = new EntryType(it->key, it->params, this, storage, it->filePath);
 
             ///This will not put the entry back into RAM, instead we just insert back the entry into the disk cache
             value->restoreMetaDataFromFile(it->size);
@@ -154,24 +153,23 @@ struct Cache<EntryType>::SerializedEntry
     std::string filePath; //< we need to serialize it as several entries can have the same hash, hence we index them
 
     SerializedEntry()
-    : hash(0)
-    , key()
-    , params()
-    , size(0)
-    , filePath()
+        : hash(0)
+          , key()
+          , params()
+          , size(0)
+          , filePath()
     {
-
     }
 
     template<class Archive>
     void serialize(Archive & ar,
-              const unsigned int /*version*/)
+                   const unsigned int /*version*/)
     {
-        ar & ::boost::serialization::make_nvp("Hash",hash);
-        ar & ::boost::serialization::make_nvp("Key",key);
-        ar & ::boost::serialization::make_nvp("Params",params);
-        ar & ::boost::serialization::make_nvp("Size",size);
-        ar & ::boost::serialization::make_nvp("Filename",filePath);
+        ar & ::boost::serialization::make_nvp("Hash", hash);
+        ar & ::boost::serialization::make_nvp("Key", key);
+        ar & ::boost::serialization::make_nvp("Params", params);
+        ar & ::boost::serialization::make_nvp("Size", size);
+        ar & ::boost::serialization::make_nvp("Filename", filePath);
     }
 };
 

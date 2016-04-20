@@ -55,13 +55,10 @@ NATRON_NAMESPACE_ENTER;
 
 struct AppManagerPrivate
 {
-  
     AppTLS globalTLS;
-
     AppManager::AppTypeEnum _appType; //< the type of app
-    
     mutable QMutex _appInstancesMutex;
-    std::map<int,AppInstanceRef> _appInstances; //< the instances mapped against their ID
+    std::map<int, AppInstanceRef> _appInstances; //< the instances mapped against their ID
     int _availableID; //< the ID for the next instance
     int _topLevelInstanceID; //< the top level app ID
     boost::shared_ptr<Settings> _settings; //< app settings
@@ -72,10 +69,8 @@ struct AppManagerPrivate
     boost::shared_ptr<Cache<Image> >  _nodeCache; //< Images cache
     boost::shared_ptr<Cache<Image> >  _diskCache; //< Images disk cache (used by DiskCache nodes)
     boost::shared_ptr<Cache<FrameEntry> > _viewerCache; //< Viewer textures cache
-    
     mutable QMutex diskCachesLocationMutex;
     QString diskCachesLocation;
-    
     ProcessInputChannel* _backgroundIPC; //< object used to communicate with the main app
     //if this app is background, see the ProcessInputChannel def
     bool _loaded; //< true when the first instance is completly loaded.
@@ -86,17 +81,13 @@ struct AppManagerPrivate
     size_t maxCacheFiles; //< the maximum number of files the application can open for caching. This is the hard limit * 0.9
     size_t currentCacheFilesCount; //< the number of cache files currently opened in the application
     mutable QMutex currentCacheFilesCountMutex; //< protects currentCacheFilesCount
-    
-
     std::string currentOCIOConfigPath; //< the currentOCIO config path
-    
     int idealThreadCount; // return value of QThread::idealThreadCount() cached here
-    
     int nThreadsToRender; // the value held by the corresponding Knob in the Settings, stored here for faster access (3 RW lock vs 1 mutex here)
     int nThreadsPerEffect;  // the value held by the corresponding Knob in the Settings, stored here for faster access (3 RW lock vs 1 mutex here)
     bool useThreadPool; // whether the multi-thread suite should use the global thread pool (of QtConcurrent) or not
     mutable QMutex nThreadsMutex; // protects nThreadsToRender & nThreadsPerEffect & useThreadPool
-    
+
     //The idea here is to keep track of the number of threads launched by Natron (except the ones of the global thread pool of QtConcurrent)
     //So that we can properly have an estimation of how much the cores of the CPU are used.
     //This method has advantages and drawbacks:
@@ -109,37 +100,37 @@ struct AppManagerPrivate
     // - We might count a thread that is actually waiting in a mutex as a running thread
     // Another method could be to analyse all cores running, but this is way more expensive and would impair performances.
     QAtomicInt runningThreadsCount;
-    
-     //To by-pass a bug introduced in RC2 / RC3 with the serialization of bezier curves
+
+    //To by-pass a bug introduced in RC2 / RC3 with the serialization of bezier curves
     bool lastProjectLoadedCreatedDuringRC2Or3;
-    
+
     ///Python needs wide strings as from Python 3.x onwards everything is unicode based
 #ifndef IS_PYTHON_2
     std::vector<wchar_t*> args;
 #else
     std::vector<char*> args;
 #endif
-    
+
     PyObject* mainModule;
     PyThreadState* mainThreadState;
-    
+
 #ifdef NATRON_USE_BREAKPAD
     QString breakpadProcessExecutableFilePath;
     Q_PID breakpadProcessPID;
     boost::shared_ptr<google_breakpad::ExceptionHandler> breakpadHandler;
     boost::shared_ptr<ExistenceCheckerThread> breakpadAliveThread;
 #endif
-    
+
     QMutex natronPythonGIL;
 
 #ifdef Q_OS_WIN32
-	//On Windows only, track the UNC path we came across because the WIN32 API does not provide any function to map
-	//from UNC path to path with drive letter.
-	std::map<QChar,QString> uncPathMapping;
+    //On Windows only, track the UNC path we came across because the WIN32 API does not provide any function to map
+    //from UNC path to path with drive letter.
+    std::map<QChar, QString> uncPathMapping;
 #endif
-    
+
     AppManagerPrivate();
-    
+
     ~AppManagerPrivate();
 
     void initProcessInputChannel(const QString & mainProcessServerName);
@@ -158,11 +149,11 @@ struct AppManagerPrivate
      * @brief Called on startup to initialize the max opened files
      **/
     void setMaxCacheFiles();
-    
-    Plugin* findPluginById(const QString& oldId,int major, int minor) const;
-    
+
+    Plugin* findPluginById(const QString& oldId, int major, int minor) const;
+
     void declareSettingsToPython();
-    
+
 #ifdef NATRON_USE_BREAKPAD
     void initBreakpad(const QString& breakpadPipePath, const QString& breakpadComPipePath, int breakpad_client_fd);
 

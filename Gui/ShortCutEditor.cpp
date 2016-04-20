@@ -108,7 +108,7 @@ public:
     QModelIndex indexFromItem_natron(QTreeWidgetItem * item,
                                      int column = 0) const
     {
-        return indexFromItem(item,column);
+        return indexFromItem(item, column);
     }
 
     QTreeWidgetItem* itemFromIndex_natron(const QModelIndex & index) const
@@ -125,12 +125,10 @@ struct ShortCutEditorPrivate
     QHBoxLayout* shortcutGroupLayout;
     Label* shortcutLabel;
     KeybindRecorder* shortcutEditor;
-    
     QWidget* altShortcutGroup;
     QHBoxLayout* altShortcutGroupLayout;
     Label* altShortcutLabel;
     KeybindRecorder* altShortcutEditor;
-    
     Button* validateButton;
     Button* clearButton;
     Button* resetButton;
@@ -143,26 +141,26 @@ struct ShortCutEditorPrivate
     GuiAppShorcuts appShortcuts;
 
     ShortCutEditorPrivate()
-    : mainLayout(0)
-    , tree(0)
-    , shortcutGroup(0)
-    , shortcutGroupLayout(0)
-    , shortcutLabel(0)
-    , shortcutEditor(0)
-    , altShortcutGroup(0)
-    , altShortcutGroupLayout(0)
-    , altShortcutLabel(0)
-    , altShortcutEditor(0)
-    , validateButton(0)
-    , clearButton(0)
-    , resetButton(0)
-    , buttonsContainer(0)
-    , buttonsLayout(0)
-    , restoreDefaultsButton(0)
-    , applyButton(0)
-    , cancelButton(0)
-    , okButton(0)
-    , appShortcuts()
+        : mainLayout(0)
+        , tree(0)
+        , shortcutGroup(0)
+        , shortcutGroupLayout(0)
+        , shortcutLabel(0)
+        , shortcutEditor(0)
+        , altShortcutGroup(0)
+        , altShortcutGroupLayout(0)
+        , altShortcutLabel(0)
+        , altShortcutEditor(0)
+        , validateButton(0)
+        , clearButton(0)
+        , resetButton(0)
+        , buttonsContainer(0)
+        , buttonsLayout(0)
+        , restoreDefaultsButton(0)
+        , applyButton(0)
+        , cancelButton(0)
+        , okButton(0)
+        , appShortcuts()
     {
     }
 
@@ -181,10 +179,10 @@ struct ShortCutEditorPrivate
 
         return (BoundAction*)NULL;
     }
-    
+
     GuiAppShorcuts::iterator buildGroupHierarchy(QString grouping);
-    
-    void makeGuiActionForShortcut(GuiAppShorcuts::iterator guiGroupIterator,BoundAction* action);
+
+    void makeGuiActionForShortcut(GuiAppShorcuts::iterator guiGroupIterator, BoundAction* action);
 };
 
 static void
@@ -198,8 +196,8 @@ makeItemShortCutText(const BoundAction* action,
 
     if (ka) {
         if (useDefault) {
-            if (!ka->defaultModifiers.empty()) {
-                assert(ka->defaultModifiers.size() == ka->defaultShortcut.size());
+            if ( !ka->defaultModifiers.empty() ) {
+                assert( ka->defaultModifiers.size() == ka->defaultShortcut.size() );
                 std::list<Qt::KeyboardModifiers>::const_iterator mit = ka->defaultModifiers.begin();
                 std::list<Qt::Key>::const_iterator sit = ka->defaultShortcut.begin();
                 *shortcutStr = keybindToString(*mit, *sit);
@@ -210,8 +208,8 @@ makeItemShortCutText(const BoundAction* action,
                 }
             }
         } else {
-            if (!ka->modifiers.empty()) {
-                assert(ka->modifiers.size() == ka->currentShortcut.size());
+            if ( !ka->modifiers.empty() ) {
+                assert( ka->modifiers.size() == ka->currentShortcut.size() );
                 std::list<Qt::KeyboardModifiers>::const_iterator mit = ka->modifiers.begin();
                 std::list<Qt::Key>::const_iterator sit = ka->currentShortcut.begin();
                 *shortcutStr = keybindToString(*mit, *sit);
@@ -224,7 +222,7 @@ makeItemShortCutText(const BoundAction* action,
         }
     } else if (ma) {
         if (useDefault) {
-            if (!ma->defaultModifiers.empty()) {
+            if ( !ma->defaultModifiers.empty() ) {
                 std::list<Qt::KeyboardModifiers>::const_iterator mit = ma->defaultModifiers.begin();
                 *shortcutStr = mouseShortcutToString(*mit, ma->button);
                 if (ma->defaultModifiers.size() > 1) {
@@ -233,7 +231,7 @@ makeItemShortCutText(const BoundAction* action,
                 }
             }
         } else {
-            if (!ma->modifiers.empty()) {
+            if ( !ma->modifiers.empty() ) {
                 std::list<Qt::KeyboardModifiers>::const_iterator mit = ma->modifiers.begin();
                 *shortcutStr = mouseShortcutToString(*mit, ma->button);
                 if (ma->modifiers.size() > 1) {
@@ -245,16 +243,16 @@ makeItemShortCutText(const BoundAction* action,
     } else {
         assert(false);
     }
-
-}
+} // makeItemShortCutText
 
 static void
 setItemShortCutText(QTreeWidgetItem* item,
                     const BoundAction* action,
                     bool useDefault)
 {
-    QString sc,altSc;
-    makeItemShortCutText(action,useDefault,&sc,&altSc);
+    QString sc, altSc;
+
+    makeItemShortCutText(action, useDefault, &sc, &altSc);
     item->setText( 1,  sc);
     item->setText( 2,  altSc);
 }
@@ -268,7 +266,7 @@ public:
 
     ShortcutDelegate(HackedTreeWidget* parent)
         : QStyledItemDelegate(parent)
-          , tree(parent)
+        , tree(parent)
     {
     }
 
@@ -279,7 +277,7 @@ private:
 
 ShortCutEditor::ShortCutEditor(QWidget* parent)
     : QWidget(parent)
-      , _imp( new ShortCutEditorPrivate() )
+    , _imp( new ShortCutEditorPrivate() )
 {
     _imp->mainLayout = new QVBoxLayout(this);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
@@ -291,7 +289,7 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     headers << tr("Command") << tr("Shortcut") << tr("Alt. Shortcut");
     _imp->tree->setHeaderLabels(headers);
     _imp->tree->setSelectionMode(QAbstractItemView::SingleSelection);
-    _imp->tree->setAttribute(Qt::WA_MacShowFocusRect,0);
+    _imp->tree->setAttribute(Qt::WA_MacShowFocusRect, 0);
     _imp->tree->setSortingEnabled(false);
     _imp->tree->setToolTip( GuiUtils::convertFromPlainText(
                                 tr("In this table is represented each action of the application that can have a possible keybind/mouse shortcut."
@@ -302,19 +300,18 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
                                    "---> Middle mouse button is emulated by holding down Options (alt) coupled with a left click.\n "
                                    "---> Right mouse button is emulated by holding down Command (cmd) coupled with a left click."), Qt::WhiteSpaceNormal) );
     _imp->tree->setItemDelegate( new ShortcutDelegate(_imp->tree) );
-    
+
     const AppShortcuts & appShortcuts = appPTR->getAllShortcuts();
-    
+
     for (AppShortcuts::const_iterator it = appShortcuts.begin(); it != appShortcuts.end(); ++it) {
-      
         GuiAppShorcuts::iterator foundGuiGroup = _imp->buildGroupHierarchy(it->first);
-        assert(foundGuiGroup != _imp->appShortcuts.end());
-        
+        assert( foundGuiGroup != _imp->appShortcuts.end() );
+
         for (GroupShortcuts::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             _imp->makeGuiActionForShortcut(foundGuiGroup, it2->second);
         }
     }
-    
+
     _imp->tree->resizeColumnToContents(0);
     QObject::connect( _imp->tree, SIGNAL(itemSelectionChanged()), this, SLOT(onSelectionChanged()) );
 
@@ -331,36 +328,36 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     _imp->shortcutGroupLayout->addWidget(_imp->shortcutLabel);
 
     _imp->shortcutEditor = new KeybindRecorder(_imp->shortcutGroup);
-    _imp->shortcutEditor->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Preferred);
+    _imp->shortcutEditor->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     _imp->shortcutEditor->setPlaceholderText( tr("Type to set shortcut") );
     _imp->shortcutGroupLayout->addWidget(_imp->shortcutEditor);
-    
+
     _imp->altShortcutGroup = new QWidget(this);
     _imp->mainLayout->addWidget(_imp->altShortcutGroup);
-    
+
     _imp->altShortcutGroupLayout = new QHBoxLayout(_imp->altShortcutGroup);
     _imp->altShortcutGroupLayout->setContentsMargins(0, 0, 0, 0);
-    
+
     _imp->altShortcutLabel = new Label(_imp->altShortcutGroup);
     _imp->altShortcutLabel->setText( tr("Alternative Sequence:") );
     _imp->altShortcutGroupLayout->addWidget(_imp->altShortcutLabel);
-    
+
     _imp->altShortcutEditor = new KeybindRecorder(_imp->altShortcutGroup);
-    _imp->altShortcutEditor->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Preferred);
+    _imp->altShortcutEditor->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     _imp->altShortcutEditor->setPlaceholderText( tr("Type to set an alternative shortcut") );
     _imp->altShortcutGroupLayout->addWidget(_imp->altShortcutEditor);
-    
 
-    _imp->validateButton = new Button(tr("Validate"),_imp->shortcutGroup);
-    _imp->validateButton->setToolTip(GuiUtils::convertFromPlainText(tr("Validates the shortcut on the field editor and set the selected shortcut."), Qt::WhiteSpaceNormal));
+
+    _imp->validateButton = new Button(tr("Validate"), _imp->shortcutGroup);
+    _imp->validateButton->setToolTip( GuiUtils::convertFromPlainText(tr("Validates the shortcut on the field editor and set the selected shortcut."), Qt::WhiteSpaceNormal) );
     _imp->shortcutGroupLayout->addWidget(_imp->validateButton);
     QObject::connect( _imp->validateButton, SIGNAL(clicked(bool)), this, SLOT(onValidateButtonClicked()) );
 
-    _imp->clearButton = new Button(tr("Clear"),_imp->shortcutGroup);
+    _imp->clearButton = new Button(tr("Clear"), _imp->shortcutGroup);
     QObject::connect( _imp->clearButton, SIGNAL(clicked(bool)), this, SLOT(onClearButtonClicked()) );
     _imp->shortcutGroupLayout->addWidget(_imp->clearButton);
 
-    _imp->resetButton = new Button(tr("Reset"),_imp->shortcutGroup);
+    _imp->resetButton = new Button(tr("Reset"), _imp->shortcutGroup);
     QObject::connect( _imp->resetButton, SIGNAL(clicked(bool)), this, SLOT(onResetButtonClicked()) );
     _imp->shortcutGroupLayout->addWidget(_imp->resetButton);
 
@@ -369,27 +366,27 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
 
     _imp->mainLayout->QLayout::addWidget(_imp->buttonsContainer);
 
-    _imp->restoreDefaultsButton = new Button(tr("Restore defaults"),_imp->buttonsContainer);
+    _imp->restoreDefaultsButton = new Button(tr("Restore defaults"), _imp->buttonsContainer);
     QObject::connect( _imp->restoreDefaultsButton, SIGNAL(clicked(bool)), this, SLOT(onRestoreDefaultsButtonClicked()) );
     _imp->buttonsLayout->addWidget(_imp->restoreDefaultsButton);
 
-    _imp->applyButton = new Button(tr("Apply"),_imp->buttonsContainer);
+    _imp->applyButton = new Button(tr("Apply"), _imp->buttonsContainer);
     QObject::connect( _imp->applyButton, SIGNAL(clicked(bool)), this, SLOT(onApplyButtonClicked()) );
     _imp->buttonsLayout->addWidget(_imp->applyButton);
 
     _imp->buttonsLayout->addStretch();
 
-    _imp->cancelButton = new Button(tr("Cancel"),_imp->buttonsContainer);
+    _imp->cancelButton = new Button(tr("Cancel"), _imp->buttonsContainer);
     QObject::connect( _imp->cancelButton, SIGNAL(clicked(bool)), this, SLOT(onCancelButtonClicked()) );
     _imp->buttonsLayout->addWidget(_imp->cancelButton);
 
-    _imp->okButton = new Button(tr("Ok"),_imp->buttonsContainer);
+    _imp->okButton = new Button(tr("Ok"), _imp->buttonsContainer);
     QObject::connect( _imp->okButton, SIGNAL(clicked(bool)), this, SLOT(onOkButtonClicked()) );
     _imp->buttonsLayout->addWidget(_imp->okButton);
 
     _imp->buttonsLayout->addStretch();
 
-    resize(700,400);
+    resize(700, 400);
 }
 
 ShortCutEditor::~ShortCutEditor()
@@ -403,12 +400,12 @@ ShortCutEditorPrivate::buildGroupHierarchy(QString grouping)
     if ( grouping.isEmpty() ) {
         grouping = QString::fromUtf8(kShortcutGroupGlobal);
     }
-    
+
     ///Groups are separated by a '/'
     QStringList groupingSplit = grouping.split( QLatin1Char('/') );
     assert(groupingSplit.size() > 0);
     const QString & lastGroupName = groupingSplit.back();
-    
+
     ///Find out whether the deepest parent group of the action already exist
     GuiAppShorcuts::iterator foundGuiGroup = appShortcuts.end();
     for (GuiAppShorcuts::iterator it2 = appShortcuts.begin(); it2 != appShortcuts.end(); ++it2) {
@@ -417,7 +414,7 @@ ShortCutEditorPrivate::buildGroupHierarchy(QString grouping)
             break;
         }
     }
-    
+
     QTreeWidgetItem* groupParent;
     if ( foundGuiGroup != appShortcuts.end() ) {
         groupParent = foundGuiGroup->item;
@@ -467,20 +464,22 @@ ShortCutEditorPrivate::buildGroupHierarchy(QString grouping)
     foundGuiGroup = appShortcuts.insert(appShortcuts.end(), group);
 
     return foundGuiGroup;
-}
+} // ShortCutEditorPrivate::buildGroupHierarchy
 
 void
-ShortCutEditorPrivate::makeGuiActionForShortcut(GuiAppShorcuts::iterator guiGroupIterator,BoundAction* action)
+ShortCutEditorPrivate::makeGuiActionForShortcut(GuiAppShorcuts::iterator guiGroupIterator,
+                                                BoundAction* action)
 {
     GuiBoundAction guiAction;
+
     guiAction.action = action;
     guiAction.item = new QTreeWidgetItem(guiGroupIterator->item);
     guiAction.item->setText(0, guiAction.action->description);
     const KeyBoundAction* ka = dynamic_cast<const KeyBoundAction*>(action);
     const MouseAction* ma = dynamic_cast<const MouseAction*>(action);
-    QString shortcutStr,altShortcutStr;
+    QString shortcutStr, altShortcutStr;
     if (ka) {
-        if (!ka->modifiers.empty()) {
+        if ( !ka->modifiers.empty() ) {
             std::list<Qt::KeyboardModifiers>::const_iterator mit = ka->modifiers.begin();
             std::list<Qt::Key>::const_iterator sit = ka->currentShortcut.begin();
             shortcutStr = keybindToString(*mit, *sit);
@@ -491,7 +490,7 @@ ShortCutEditorPrivate::makeGuiActionForShortcut(GuiAppShorcuts::iterator guiGrou
             }
         }
     } else if (ma) {
-        if (!ma->modifiers.empty()) {
+        if ( !ma->modifiers.empty() ) {
             std::list<Qt::KeyboardModifiers>::const_iterator mit = ma->modifiers.begin();
             shortcutStr = mouseShortcutToString(*mit, ma->button);
             if (ma->modifiers.size() > 1) {
@@ -512,17 +511,16 @@ ShortCutEditorPrivate::makeGuiActionForShortcut(GuiAppShorcuts::iterator guiGrou
     guiAction.item->setText(2, altShortcutStr);
     guiGroupIterator->actions.push_back(guiAction);
     guiGroupIterator->item->addChild(guiAction.item);
-
 }
 
 void
 ShortCutEditor::addShortcut(BoundAction* action)
 {
     GuiAppShorcuts::iterator foundGuiGroup = _imp->buildGroupHierarchy(action->grouping);
-    assert(foundGuiGroup != _imp->appShortcuts.end());
-    
-    _imp->makeGuiActionForShortcut(foundGuiGroup, action);
 
+    assert( foundGuiGroup != _imp->appShortcuts.end() );
+
+    _imp->makeGuiActionForShortcut(foundGuiGroup, action);
 }
 
 void
@@ -535,7 +533,7 @@ ShortCutEditor::onSelectionChanged()
     }
 
     if ( items.empty() ) {
-        _imp->shortcutEditor->setText(QString());
+        _imp->shortcutEditor->setText( QString() );
         _imp->shortcutEditor->setPlaceholderText( tr("Type to set shortcut") );
         _imp->shortcutEditor->setReadOnly_NoFocusRect(true);
 
@@ -554,8 +552,8 @@ ShortCutEditor::onSelectionChanged()
 
     BoundAction* action = _imp->getActionForTreeItem(selection);
     assert(action);
-    QString sc,altSc;
-    makeItemShortCutText(action, false,&sc,&altSc);
+    QString sc, altSc;
+    makeItemShortCutText(action, false, &sc, &altSc);
     _imp->shortcutEditor->setText(sc);
     _imp->altShortcutEditor->setText(altSc);
 }
@@ -572,11 +570,9 @@ ShortCutEditor::onValidateButtonClicked()
     }
 
     QTreeWidgetItem* selection = items.front();
-    QKeySequence seq(text,QKeySequence::NativeText);
-    QKeySequence altseq(altText,QKeySequence::NativeText);
-    
+    QKeySequence seq(text, QKeySequence::NativeText);
+    QKeySequence altseq(altText, QKeySequence::NativeText);
     BoundAction* action = _imp->getActionForTreeItem(selection);
-
     QTreeWidgetItem* parent = selection->parent();
     while (parent) {
         QTreeWidgetItem* parentUp = parent->parent();
@@ -585,33 +581,33 @@ ShortCutEditor::onValidateButtonClicked()
         }
         parent = parentUp;
     }
-    assert(parent); 
-    
+    assert(parent);
+
     //only keybinds can be edited...
     KeyBoundAction* ka = dynamic_cast<KeyBoundAction*>(action);
     assert(ka);
     if (!ka) {
         return;
     }
-    Qt::KeyboardModifiers modifiers,altmodifiers;
-    Qt::Key symbol,altsymbmol;
+    Qt::KeyboardModifiers modifiers, altmodifiers;
+    Qt::Key symbol, altsymbmol;
     extractKeySequence(seq, modifiers, symbol);
     extractKeySequence(altseq, altmodifiers, altsymbmol);
-    
+
     for (GuiAppShorcuts::iterator it = _imp->appShortcuts.begin(); it != _imp->appShortcuts.end(); ++it) {
         for (std::list<GuiBoundAction>::iterator it2 = it->actions.begin(); it2 != it->actions.end(); ++it2) {
-            if (it2->action != action && it->item->text(0) == parent->text(0)) {
+            if ( (it2->action != action) && ( it->item->text(0) == parent->text(0) ) ) {
                 KeyBoundAction* keyAction = dynamic_cast<KeyBoundAction*>(it2->action);
                 if (keyAction) {
-                    assert(keyAction->modifiers.size() == keyAction->currentShortcut.size());
+                    assert( keyAction->modifiers.size() == keyAction->currentShortcut.size() );
                     std::list<Qt::KeyboardModifiers>::const_iterator mit = keyAction->modifiers.begin();
-                    for (std::list<Qt::Key>::const_iterator it3 = keyAction->currentShortcut.begin(); it3 != keyAction->currentShortcut.end(); ++it3,++mit) {
-                        if (*mit == modifiers && *it3 == symbol) {
+                    for (std::list<Qt::Key>::const_iterator it3 = keyAction->currentShortcut.begin(); it3 != keyAction->currentShortcut.end(); ++it3, ++mit) {
+                        if ( (*mit == modifiers) && (*it3 == symbol) ) {
                             QString err = QString::fromUtf8("Cannot bind this shortcut because the following action is already using it: %1")
-                            .arg( it2->item->text(0) );
+                                          .arg( it2->item->text(0) );
                             _imp->shortcutEditor->clear();
                             Dialogs::errorDialog( tr("Shortcuts Editor").toStdString(), tr( err.toStdString().c_str() ).toStdString() );
-                            
+
                             return;
                         }
                     }
@@ -620,19 +616,19 @@ ShortCutEditor::onValidateButtonClicked()
         }
     }
 
-    selection->setText(1,text);
+    selection->setText(1, text);
     action->modifiers.clear();
-    if (!text.isEmpty()) {
+    if ( !text.isEmpty() ) {
         action->modifiers.push_back(modifiers);
         ka->currentShortcut.push_back(symbol);
     }
-    if (!altText.isEmpty()) {
+    if ( !altText.isEmpty() ) {
         action->modifiers.push_back(altmodifiers);
         ka->currentShortcut.push_back(altsymbmol);
     }
-    
+
     appPTR->notifyShortcutChanged(ka);
-}
+} // ShortCutEditor::onValidateButtonClicked
 
 void
 ShortCutEditor::onClearButtonClicked()
@@ -644,10 +640,11 @@ ShortCutEditor::onClearButtonClicked()
     }
 
     if ( items.empty() ) {
-        _imp->shortcutEditor->setText(QString());
+        _imp->shortcutEditor->setText( QString() );
         _imp->shortcutEditor->setPlaceholderText( tr("Type to set shortcut") );
-        _imp->altShortcutEditor->setText(QString());
+        _imp->altShortcutEditor->setText( QString() );
         _imp->altShortcutEditor->setPlaceholderText( tr("Type to set an alternative shortcut") );
+
         return;
     }
 
@@ -663,8 +660,8 @@ ShortCutEditor::onClearButtonClicked()
         ka->currentShortcut.clear();
     }
 
-    selection->setText(1, QString());
-    _imp->shortcutEditor->setText(QString());
+    selection->setText( 1, QString() );
+    _imp->shortcutEditor->setText( QString() );
     _imp->shortcutEditor->setFocus();
 }
 
@@ -678,7 +675,7 @@ ShortCutEditor::onResetButtonClicked()
     }
 
     if ( items.empty() ) {
-        _imp->shortcutEditor->setText(QString());
+        _imp->shortcutEditor->setText( QString() );
         _imp->shortcutEditor->setPlaceholderText( tr("Type to set shortcut") );
 
         return;
@@ -694,9 +691,9 @@ ShortCutEditor::onResetButtonClicked()
         appPTR->notifyShortcutChanged(ka);
     }
     setItemShortCutText(selection, action, true);
-    
-    QString sc,altsc;
-    makeItemShortCutText(action, true,&sc,&altsc);
+
+    QString sc, altsc;
+    makeItemShortCutText(action, true, &sc, &altsc);
     _imp->shortcutEditor->setText(sc);
     _imp->altShortcutEditor->setText(altsc);
 }
@@ -705,8 +702,8 @@ void
 ShortCutEditor::onRestoreDefaultsButtonClicked()
 {
     StandardButtonEnum reply = Dialogs::questionDialog( tr("Restore defaults").toStdString(), tr("Restoring default shortcuts "
-                                                                                                    "will wipe all the current configuration "
-                                                                                                    "are you sure you want to do this?").toStdString(), false );
+                                                                                                 "will wipe all the current configuration "
+                                                                                                 "are you sure you want to do this?").toStdString(), false );
 
     if (reply == eStandardButtonYes) {
         appPTR->restoreDefaultShortcuts();
@@ -784,7 +781,7 @@ ShortcutDelegate::paint(QPainter * painter,
         if ( item->isDisabled() ) {
             pen.setColor(Qt::black);
         } else {
-            pen.setColor( QColor(200,200,200) );
+            pen.setColor( QColor(200, 200, 200) );
         }
     }
     painter->setFont(font);
@@ -799,7 +796,7 @@ ShortcutDelegate::paint(QPainter * painter,
         painter->fillRect( geom, option.palette.highlight() );
     }
     QRect r;
-    painter->drawText(geom,Qt::TextSingleLine,item->data(index.column(), Qt::DisplayRole).toString(),&r);
+    painter->drawText(geom, Qt::TextSingleLine, item->data(index.column(), Qt::DisplayRole).toString(), &r);
 } // paint
 
 KeybindRecorder::KeybindRecorder(QWidget* parent)

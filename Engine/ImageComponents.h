@@ -58,88 +58,87 @@ NATRON_NAMESPACE_ENTER;
 class ImageComponents
 {
 public:
-    
+
     /**
      * @brief The default components registered in Natron, you can iterate until {0,0}
      **/
     static const char* defaultComponents[][2];
-    
     static std::string mapUserFriendlyPlaneNameToNatronInternalPlaneName(const std::string& userfriendlyPlaneName);
     static std::string mapNatronInternalPlaneNameToUserFriendlyPlaneName(const std::string& planeName);
-    
     static const ImageComponents& getDefaultComponent(const std::string& planeName);
-    
+
     ImageComponents();
-    
+
     ImageComponents(const std::string& layerName,
                     const std::string& globalCompName,
                     const std::vector<std::string>& componentsName);
-    
+
     ImageComponents(const std::string& layerName,
                     const std::string& globalCompName,
                     const char** componentsName,
                     int count);
-    
+
     ImageComponents(const std::string& layerName,
                     const std::string& pairedLayer,
                     const std::string& globalCompName,
                     const char** componentsName,
                     int count);
-    
+
     ~ImageComponents();
-    
+
     // Is it Alpha, RGB or RGBA
     bool isColorPlane() const;
-    
+
     static bool isColorPlane(const std::string& layerName);
-    
+
     // Only color plane (isColorPlane()) can be convertible
     bool isConvertibleTo(const ImageComponents& other) const;
-    
+
     int getNumComponents() const;
-    
+
     ///E.g color
     const std::string& getLayerName() const;
-    
+
     //True if stereo disparity or motion vectors as per Nuke ofx multi-plane extension
     bool isPairedComponents() const;
-    
+
     //if isPairedComponents() returns true, return the other layer that is paired to this layer.
     const std::string& getPairedLayerName() const;
-    
+
     ///E.g ["r","g","b","a"]
     const std::vector<std::string>& getComponentsNames() const;
-    
+
     ///E.g "rgba"
     const std::string& getComponentsGlobalName() const;
-    
+
     /**
      * @brief If this layer is paired (i.e: isPairedComponents()) then returns true
-     * and set the pairedLayer 
+     * and set the pairedLayer
      **/
     bool isEqualToPairedPlane(const ImageComponents& other, ImageComponents* pairedLayer) const;
-    
+
     bool getPlanesPair(ImageComponents* first, ImageComponents* second) const;
-    
+
     bool operator==(const ImageComponents& other) const;
-    
-    bool operator!=(const ImageComponents& other) const {
+
+    bool operator!=(const ImageComponents& other) const
+    {
         return !(*this == other);
     }
-    
+
     //For std::map
     bool operator<(const ImageComponents& other) const;
-    
+
     operator bool() const
     {
         return getNumComponents() > 0;
     }
-    
+
     bool operator!() const
     {
         return getNumComponents() == 0;
     }
-    
+
     /*
      * These are default presets image components
      */
@@ -152,19 +151,18 @@ public:
     static const ImageComponents& getDisparityLeftComponents();
     static const ImageComponents& getDisparityRightComponents();
     static const ImageComponents& getXYComponents();
-    
+
     //These are to be compatible with Nuke multi-plane extension and the Furnace plug-ins
     static const ImageComponents& getPairedMotionVectors();
     static const ImageComponents& getPairedStereoDisparity();
-    
+
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
-    
+
 private:
-    
-    
-    
-    std::string _layerName,_pairedLayer;
+
+
+    std::string _layerName, _pairedLayer;
     std::vector<std::string> _componentNames;
     std::string _globalComponentsName;
 };

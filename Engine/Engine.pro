@@ -96,6 +96,7 @@ SOURCES += \
     GroupOutput.cpp \
     Hash64.cpp \
     HistogramCPU.cpp \
+    HostOverlaySupport.cpp \
     Image.cpp \
     ImageConvert.cpp \
     ImageCopyChannels.cpp \
@@ -266,6 +267,7 @@ HEADERS += \
     GroupOutput.h \
     Hash64.h \
     HistogramCPU.h \
+    HostOverlaySupport.h \
     ImageInfo.h \
     Image.h \
     ImageComponents.h \

@@ -67,130 +67,125 @@ BOOST_CLASS_EXPORT(NATRON_NAMESPACE::FrameParams)
 BOOST_CLASS_EXPORT(NATRON_NAMESPACE::ImageParams)
 
 NATRON_NAMESPACE_ENTER;
-
-
-
-
-
 AppManagerPrivate::AppManagerPrivate()
-: globalTLS()
-, _appType(AppManager::eAppTypeBackground)
-, _appInstancesMutex()
-, _appInstances()
-, _availableID(0)
-, _topLevelInstanceID(0)
-, _settings()
-, _formats()
-, _plugins()
-, ofxHost( new OfxHost() )
-, _knobFactory( new KnobFactory() )
-, _nodeCache()
-, _diskCache()
-, _viewerCache()
-, diskCachesLocationMutex()
-, diskCachesLocation()
-,_backgroundIPC(0)
-,_loaded(false)
-,_binaryPath()
-,_nodesGlobalMemoryUse(0)
-,errorLogMutex()
-,errorLog()
-,maxCacheFiles(0)
-,currentCacheFilesCount(0)
-,currentCacheFilesCountMutex()
-,idealThreadCount(0)
-,nThreadsToRender(0)
-,nThreadsPerEffect(0)
-,useThreadPool(true)
-,nThreadsMutex()
-,runningThreadsCount()
-,lastProjectLoadedCreatedDuringRC2Or3(false)
-,args()
-,mainModule(0)
-,mainThreadState(0)
+    : globalTLS()
+    , _appType(AppManager::eAppTypeBackground)
+    , _appInstancesMutex()
+    , _appInstances()
+    , _availableID(0)
+    , _topLevelInstanceID(0)
+    , _settings()
+    , _formats()
+    , _plugins()
+    , ofxHost( new OfxHost() )
+    , _knobFactory( new KnobFactory() )
+    , _nodeCache()
+    , _diskCache()
+    , _viewerCache()
+    , diskCachesLocationMutex()
+    , diskCachesLocation()
+    , _backgroundIPC(0)
+    , _loaded(false)
+    , _binaryPath()
+    , _nodesGlobalMemoryUse(0)
+    , errorLogMutex()
+    , errorLog()
+    , maxCacheFiles(0)
+    , currentCacheFilesCount(0)
+    , currentCacheFilesCountMutex()
+    , idealThreadCount(0)
+    , nThreadsToRender(0)
+    , nThreadsPerEffect(0)
+    , useThreadPool(true)
+    , nThreadsMutex()
+    , runningThreadsCount()
+    , lastProjectLoadedCreatedDuringRC2Or3(false)
+    , args()
+    , mainModule(0)
+    , mainThreadState(0)
 #ifdef NATRON_USE_BREAKPAD
-,breakpadProcessExecutableFilePath()
-,breakpadProcessPID(0)
-,breakpadHandler()
-,breakpadAliveThread()
+    , breakpadProcessExecutableFilePath()
+    , breakpadProcessPID(0)
+    , breakpadHandler()
+    , breakpadAliveThread()
 #endif
-,natronPythonGIL(QMutex::Recursive)
+    , natronPythonGIL(QMutex::Recursive)
 {
     setMaxCacheFiles();
-    
+
     runningThreadsCount = 0;
 }
 
-
 AppManagerPrivate::~AppManagerPrivate()
 {
-    for (U32 i = 0; i < args.size() ; ++i) {
+    for (U32 i = 0; i < args.size(); ++i) {
         free(args[i]);
     }
     args.clear();
 }
 
-
 #ifdef NATRON_USE_BREAKPAD
 void
-AppManagerPrivate::initBreakpad(const QString& breakpadPipePath, const QString& breakpadComPipePath, int breakpad_client_fd)
+AppManagerPrivate::initBreakpad(const QString& breakpadPipePath,
+                                const QString& breakpadComPipePath,
+                                int breakpad_client_fd)
 {
- 
     assert(!breakpadHandler);
     createBreakpadHandler(breakpadPipePath, breakpad_client_fd);
 
     /*
-     We check periodically that the crash reporter process is still alive. If the user killed it somehow, then we want
-     the Natron process to terminate
+       We check periodically that the crash reporter process is still alive. If the user killed it somehow, then we want
+       the Natron process to terminate
      */
-    breakpadAliveThread.reset(new ExistenceCheckerThread(QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK),
-                                                         QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK_ACK),
-                                                         breakpadComPipePath));
-    QObject::connect(breakpadAliveThread.get(), SIGNAL(otherProcessUnreachable()), appPTR, SLOT(onCrashReporterNoLongerResponding()));
+    breakpadAliveThread.reset( new ExistenceCheckerThread(QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK),
+                                                          QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK_ACK),
+                                                          breakpadComPipePath) );
+    QObject::connect( breakpadAliveThread.get(), SIGNAL(otherProcessUnreachable()), appPTR, SLOT(onCrashReporterNoLongerResponding()) );
     breakpadAliveThread->start();
-
-    
 }
 
 void
-AppManagerPrivate::createBreakpadHandler(const QString& breakpadPipePath, int breakpad_client_fd)
+AppManagerPrivate::createBreakpadHandler(const QString& breakpadPipePath,
+                                         int breakpad_client_fd)
 {
     QString dumpPath = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
+
     Q_UNUSED(breakpad_client_fd);
     try {
 #if defined(Q_OS_MAC)
         Q_UNUSED(breakpad_client_fd);
-        breakpadHandler.reset(new google_breakpad::ExceptionHandler( dumpPath.toStdString(),
-                                                                     0,
-                                                                     0/*dmpcb*/,
-                                                                     0,
-                                                                     true,
-                                                                     breakpadPipePath.toStdString().c_str()));
+        breakpadHandler.reset( new google_breakpad::ExceptionHandler( dumpPath.toStdString(),
+                                                                      0,
+                                                                      0 /*dmpcb*/,
+                                                                      0,
+                                                                      true,
+                                                                      breakpadPipePath.toStdString().c_str() ) );
 #elif defined(Q_OS_LINUX)
         Q_UNUSED(breakpadPipePath);
-        breakpadHandler.reset(new google_breakpad::ExceptionHandler( google_breakpad::MinidumpDescriptor(dumpPath.toStdString()),
-                                                                     0,
-                                                                     0/*dmpCb*/,
-                                                                     0,
-                                                                     true,
-                                                                     breakpad_client_fd));
+        breakpadHandler.reset( new google_breakpad::ExceptionHandler( google_breakpad::MinidumpDescriptor( dumpPath.toStdString() ),
+                                                                      0,
+                                                                      0 /*dmpCb*/,
+                                                                      0,
+                                                                      true,
+                                                                      breakpad_client_fd) );
 #elif defined(Q_OS_WIN32)
         Q_UNUSED(breakpad_client_fd);
-        breakpadHandler.reset(new google_breakpad::ExceptionHandler( dumpPath.toStdWString(),
-                                                                     0, //filter callback
-                                                                     0/*dmpcb*/,
-																	 0, //context
-                                                                     google_breakpad::ExceptionHandler::HANDLER_ALL,
-                                                                     MiniDumpNormal,
-                                                                     breakpadPipePath.toStdWString().c_str(),
-                                                                     0));
+        breakpadHandler.reset( new google_breakpad::ExceptionHandler( dumpPath.toStdWString(),
+                                                                      0, //filter callback
+                                                                      0 /*dmpcb*/,
+                                                                      0, //context
+                                                                      google_breakpad::ExceptionHandler::HANDLER_ALL,
+                                                                      MiniDumpNormal,
+                                                                      breakpadPipePath.toStdWString().c_str(),
+                                                                      0) );
 #endif
     } catch (const std::exception& e) {
         qDebug() << e.what();
+
         return;
     }
-    
 }
+
 #endif // NATRON_USE_BREAKPAD
 
 
@@ -200,15 +195,13 @@ AppManagerPrivate::initProcessInputChannel(const QString & mainProcessServerName
     _backgroundIPC = new ProcessInputChannel(mainProcessServerName);
 }
 
-
-
 void
 AppManagerPrivate::loadBuiltinFormats()
 {
     /*initializing list of all Formats available*/
     std::vector<std::string> formatNames;
-
-    struct BuiltinFormat {
+    struct BuiltinFormat
+    {
         const char *name;
         int w;
         int h;
@@ -243,16 +236,18 @@ AppManagerPrivate::loadBuiltinFormats()
 } // loadBuiltinFormats
 
 Plugin*
-AppManagerPrivate::findPluginById(const QString& newId,int major, int minor) const
+AppManagerPrivate::findPluginById(const QString& newId,
+                                  int major,
+                                  int minor) const
 {
     for (PluginsMap::const_iterator it = _plugins.begin(); it != _plugins.end(); ++it) {
         for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            if ((*it2)->getPluginID() == newId && (*it2)->getMajorVersion() == major && (*it2)->getMinorVersion() == minor) {
+            if ( ( (*it2)->getPluginID() == newId ) && ( (*it2)->getMajorVersion() == major ) && ( (*it2)->getMinorVersion() == minor ) ) {
                 return (*it2);
             }
         }
-        
     }
+
     return 0;
 }
 
@@ -260,6 +255,7 @@ void
 AppManagerPrivate::declareSettingsToPython()
 {
     std::stringstream ss;
+
     ss <<  NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.settings = " << NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.getSettings()\n";
     const KnobsVec& knobs = _settings->getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
@@ -268,20 +264,21 @@ AppManagerPrivate::declareSettingsToPython()
     }
 }
 
-
 template <typename T>
-void saveCache(Cache<T>* cache)
+void
+saveCache(Cache<T>* cache)
 {
-    
     std::string cacheRestoreFilePath = cache->getRestoreFilePath();
     FStreamsSupport::ofstream ofile;
     FStreamsSupport::open(&ofile, cacheRestoreFilePath);
+
     if (!ofile) {
         std::cerr << "Failed to save cache to " << cacheRestoreFilePath.c_str() << std::endl;
+
         return;
     }
 
-    
+
     typename Cache<T>::CacheTOC toc;
     cache->save(&toc);
     unsigned int version = cache->cacheVersion();
@@ -292,18 +289,19 @@ void saveCache(Cache<T>* cache)
     } catch (const std::exception & e) {
         qDebug() << "Failed to serialize the cache table of contents:" << e.what();
     }
-    
 }
 
 void
 AppManagerPrivate::saveCaches()
 {
-    saveCache<FrameEntry>(_viewerCache.get());
-    saveCache<Image>(_diskCache.get());
+    saveCache<FrameEntry>( _viewerCache.get() );
+    saveCache<Image>( _diskCache.get() );
 } // saveCaches
 
 template <typename T>
-void restoreCache(AppManagerPrivate* p, Cache<T>* cache)
+void
+restoreCache(AppManagerPrivate* p,
+             Cache<T>* cache)
 {
     if ( p->checkForCacheDiskStructure( cache->getCachePath() ) ) {
         std::string settingsFilePath = cache->getRestoreFilePath();
@@ -311,6 +309,7 @@ void restoreCache(AppManagerPrivate* p, Cache<T>* cache)
         FStreamsSupport::open(&ifile, settingsFilePath);
         if (!ifile) {
             std::cerr << "Failure to open cache restore file at: " << settingsFilePath << std::endl;
+
             return;
         }
         typename Cache<T>::CacheTOC tableOfContents;
@@ -321,20 +320,20 @@ void restoreCache(AppManagerPrivate* p, Cache<T>* cache)
                 iArchive >> cacheVersion;
             }
             //Only load caches with same version, otherwise wipe it!
-            if (cacheVersion == cache->cacheVersion()) {
+            if ( cacheVersion == cache->cacheVersion() ) {
                 iArchive >> tableOfContents;
             } else {
-                p->cleanUpCacheDiskStructure(cache->getCachePath());
+                p->cleanUpCacheDiskStructure( cache->getCachePath() );
             }
         } catch (const std::exception & e) {
             qDebug() << "Exception when reading disk cache TOC:" << e.what();
+
             return;
         }
-        
-        
-        QFile restoreFile(QString::fromUtf8(settingsFilePath.c_str()));
+
+        QFile restoreFile( QString::fromUtf8( settingsFilePath.c_str() ) );
         restoreFile.remove();
-        
+
         cache->restore(tableOfContents);
     }
 }
@@ -342,22 +341,22 @@ void restoreCache(AppManagerPrivate* p, Cache<T>* cache)
 void
 AppManagerPrivate::restoreCaches()
 {
-    
-    if (!appPTR->isBackground()) {
-        restoreCache<FrameEntry>(this, _viewerCache.get());
-        restoreCache<Image>(this, _diskCache.get());
+    if ( !appPTR->isBackground() ) {
+        restoreCache<FrameEntry>( this, _viewerCache.get() );
+        restoreCache<Image>( this, _diskCache.get() );
     }
 } // restoreCaches
 
 bool
 AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath)
 {
-	QString settingsFilePath = cachePath;
-    if (!settingsFilePath.endsWith(QChar::fromLatin1('/'))) {
+    QString settingsFilePath = cachePath;
+
+    if ( !settingsFilePath.endsWith( QChar::fromLatin1('/') ) ) {
         settingsFilePath += QChar::fromLatin1('/');
-	}
-	settingsFilePath += QString::fromUtf8("restoreFile.");
-	settingsFilePath += QString::fromUtf8(NATRON_CACHE_FILE_EXT);
+    }
+    settingsFilePath += QString::fromUtf8("restoreFile.");
+    settingsFilePath += QString::fromUtf8(NATRON_CACHE_FILE_EXT);
 
     if ( !QFile::exists(settingsFilePath) ) {
         cleanUpCacheDiskStructure(cachePath);
@@ -398,7 +397,7 @@ AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath)
     }
 
     return true;
-}
+} // AppManagerPrivate::checkForCacheDiskStructure
 
 void
 AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath)
@@ -414,7 +413,7 @@ AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath)
         cacheFolder.removeRecursively();
     }
 #endif
-    cacheFolder.mkpath(QChar::fromLatin1('.'));
+    cacheFolder.mkpath( QChar::fromLatin1('.') );
 
     QStringList etr = cacheFolder.entryList(QDir::NoDotAndDotDot);
     // if not 256 subdirs, we re-create the cache
@@ -429,7 +428,7 @@ AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath)
             oss << std::hex <<  i;
             oss << std::hex << j;
             std::string str = oss.str();
-            cacheFolder.mkdir(QString::fromUtf8(str.c_str()));
+            cacheFolder.mkdir( QString::fromUtf8( str.c_str() ) );
         }
     }
 }

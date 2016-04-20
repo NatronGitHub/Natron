@@ -59,31 +59,27 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/QtCompat.h"
 
 NATRON_NAMESPACE_ENTER;
-
-
-
 void
 NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
 {
-    
     NodeGui* nearbyNode;
     Edge* nearbyEdge;
     NearbyItemEnum nearbyItemCode = hasItemNearbyMouse(e->pos(), &nearbyNode, &nearbyEdge);
 
     if (nearbyItemCode == eNearbyItemNode) {
-        if (modCASIsControl(e)) {
+        if ( modCASIsControl(e) ) {
             nearbyNode->ensurePanelCreated();
-            if (nearbyNode->getSettingPanel()) {
+            if ( nearbyNode->getSettingPanel() ) {
                 nearbyNode->getSettingPanel()->floatPanel();
             }
         } else {
             nearbyNode->setVisibleSettingsPanel(true);
-            if (nearbyNode->getSettingPanel()) {
-                getGui()->putSettingsPanelFirst(nearbyNode->getSettingPanel());
+            if ( nearbyNode->getSettingPanel() ) {
+                getGui()->putSettingsPanelFirst( nearbyNode->getSettingPanel() );
             } else {
                 ViewerInstance* isViewer = nearbyNode->getNode()->isEffectViewer();
                 if (isViewer) {
-                    ViewerGL* viewer = dynamic_cast<ViewerGL*>(isViewer->getUiContext());
+                    ViewerGL* viewer = dynamic_cast<ViewerGL*>( isViewer->getUiContext() );
                     assert(viewer);
                     if (viewer) {
                         ViewerTab* tab = viewer->getViewerTab();
@@ -101,7 +97,6 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
                         if (foundTab) {
                             foundTab->setCurrentWidget(tab);
                         } else {
-
                             //try to find a floating window
                             FloatingWidget* floating = 0;
                             parent = tab->parentWidget();
@@ -120,57 +115,56 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
                 }
             }
         }
-        if (!nearbyNode->wasBeginEditCalled()) {
+        if ( !nearbyNode->wasBeginEditCalled() ) {
             nearbyNode->beginEditKnobs();
         }
-        
-        if (modCASIsShift(e)) {
+
+        if ( modCASIsShift(e) ) {
             NodeGroup* isGrp = nearbyNode->getNode()->isEffectGroup();
-            if (isGrp && isGrp->isSubGraphUserVisible()) {
+            if ( isGrp && isGrp->isSubGraphUserVisible() ) {
                 NodeGraphI* graph_i = isGrp->getNodeGraph();
                 assert(graph_i);
                 NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
                 if (graph) {
-                    TabWidget* isParentTab = dynamic_cast<TabWidget*>(graph->parentWidget());
+                    TabWidget* isParentTab = dynamic_cast<TabWidget*>( graph->parentWidget() );
                     if (isParentTab) {
                         isParentTab->setCurrentWidget(graph);
                     } else {
                         NodeGraph* lastSelectedGraph = getGui()->getLastSelectedGraph();
                         ///We're in the double click event, it should've entered the focus in event beforehand!
                         assert(lastSelectedGraph == this);
-                        
-                        isParentTab = dynamic_cast<TabWidget*>(lastSelectedGraph->parentWidget());
+
+                        isParentTab = dynamic_cast<TabWidget*>( lastSelectedGraph->parentWidget() );
                         assert(isParentTab);
                         if (isParentTab) {
-                            isParentTab->appendTab(graph,graph);
+                            isParentTab->appendTab(graph, graph);
                         }
                     }
-                    QTimer::singleShot(25, graph, SLOT(centerOnAllNodes()));
+                    QTimer::singleShot( 25, graph, SLOT(centerOnAllNodes()) );
                 }
             }
         }
-        
+
         getGui()->getApp()->redrawAllViewers();
     }
-
-}
+} // NodeGraph::mouseDoubleClickEvent
 
 bool
 NodeGraph::event(QEvent* e)
 {
-    if (!getGui()) {
+    if ( !getGui() ) {
         return false;
     }
     if (e->type() == QEvent::KeyPress) {
         QKeyEvent* ke = dynamic_cast<QKeyEvent*>(e);
         assert(ke);
         if (ke && (ke->key() == Qt::Key_Tab) && _imp->_nodeCreationShortcutEnabled) {
-            NodeCreationDialog* nodeCreation = new NodeCreationDialog(_imp->_lastNodeCreatedName,this);
+            NodeCreationDialog* nodeCreation = new NodeCreationDialog(_imp->_lastNodeCreatedName, this);
 
             ///This allows us to have a non-modal dialog: when the user clicks outside of the dialog,
             ///it closes it.
-            QObject::connect( nodeCreation,SIGNAL(accepted()),this,SLOT(onNodeCreationDialogFinished()) );
-            QObject::connect( nodeCreation,SIGNAL(rejected()),this,SLOT(onNodeCreationDialogFinished()) );
+            QObject::connect( nodeCreation, SIGNAL(accepted()), this, SLOT(onNodeCreationDialogFinished()) );
+            QObject::connect( nodeCreation, SIGNAL(rejected()), this, SLOT(onNodeCreationDialogFinished()) );
             nodeCreation->show();
 
             takeClickFocus();
@@ -192,18 +186,17 @@ NodeGraph::onNodeCreationDialogFinished()
         QDialog::DialogCode ret = (QDialog::DialogCode)dialog->result();
         int major;
         QString res = dialog->getNodeName(&major);
-        
+
         dialog->deleteLater();
 
         switch (ret) {
         case QDialog::Accepted: {
             _imp->_lastNodeCreatedName = res;
             const PluginsMap & allPlugins = appPTR->getPluginsList();
-            PluginsMap::const_iterator found = allPlugins.find(res.toStdString());
-            if (found != allPlugins.end()) {
+            PluginsMap::const_iterator found = allPlugins.find( res.toStdString() );
+            if ( found != allPlugins.end() ) {
                 QPointF posHint = mapToScene( mapFromGlobal( QCursor::pos() ) );
-                
-                CreateNodeArgs args(res, eCreateNodeReasonUserCreate, getGroup());
+                CreateNodeArgs args( res, eCreateNodeReasonUserCreate, getGroup() );
                 args.xPosHint = posHint.x();
                 args.yPosHint = posHint.y();
                 args.majorV = major;
@@ -222,21 +215,21 @@ void
 NodeGraph::keyPressEvent(QKeyEvent* e)
 {
     boost::shared_ptr<NodeCollection> collection = getGroup();
-    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(collection.get());
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collection.get() );
     bool groupEdited = true;
+
     if (isGroup) {
         groupEdited = isGroup->getNode()->hasPyPlugBeenEdited();
     }
-    
+
     if (!groupEdited) {
         return;
     }
-    
+
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)e->key();
-
     bool accept = true;
-    
+
 #ifndef NATRON_ENABLE_IO_META_NODES
     if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateReader, modifiers, key) ) {
         getGui()->createReader();
@@ -251,7 +244,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCopy, modifiers, key) ) {
         copySelectedNodes();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphPaste, modifiers, key) ) {
-        if (!pasteNodeClipBoards()) {
+        if ( !pasteNodeClipBoards() ) {
             accept = false;
         }
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCut, modifiers, key) ) {
@@ -277,7 +270,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         createGroupFromSelection();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphExpandGroup, modifiers, key) ) {
         expandSelectedGroups();
-    } else if (key == Qt::Key_Control && e->modifiers() == Qt::ControlModifier) {
+    } else if ( (key == Qt::Key_Control) && (e->modifiers() == Qt::ControlModifier) ) {
         _imp->setNodesBendPointsVisible(true);
         accept = false;
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSelectUp, modifiers, key) ||
@@ -287,12 +280,12 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         if ( !_imp->_selection.empty() ) {
             NodeGuiPtr lastSelected = ( *_imp->_selection.rbegin() );
             const std::vector<Edge*> & inputs = lastSelected->getInputsArrows();
-            for (U32 i = 0; i < inputs.size() ; ++i) {
+            for (U32 i = 0; i < inputs.size(); ++i) {
                 if ( inputs[i]->hasSource() ) {
                     NodeGuiPtr input = inputs[i]->getSource();
                     if ( input->getIsSelected() && modCASIsShift(e) ) {
                         NodesGuiList::iterator found = std::find(_imp->_selection.begin(),
-                                                                                           _imp->_selection.end(),lastSelected);
+                                                                 _imp->_selection.end(), lastSelected);
                         if ( found != _imp->_selection.end() ) {
                             lastSelected->setUserSelected(false);
                             _imp->_selection.erase(found);
@@ -311,8 +304,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         if ( !_imp->_selection.empty() ) {
             NodeGuiPtr lastSelected = ( *_imp->_selection.rbegin() );
             const NodesWList & outputs = lastSelected->getNode()->getGuiOutputs();
-            if (!outputs.empty()) {
-                
+            if ( !outputs.empty() ) {
                 NodePtr firstOutput = outputs.front().lock();
                 if (firstOutput) {
                     boost::shared_ptr<NodeGuiI> output_i = firstOutput->getNodeGui();
@@ -320,7 +312,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                     if (output) {
                         if ( output->getIsSelected() && modCASIsShift(e) ) {
                             NodesGuiList::iterator found = std::find(_imp->_selection.begin(),
-                                                                     _imp->_selection.end(),lastSelected);
+                                                                     _imp->_selection.end(), lastSelected);
                             if ( found != _imp->_selection.end() ) {
                                 lastSelected->setUserSelected(false);
                                 _imp->_selection.erase(found);
@@ -330,7 +322,6 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                         }
                     }
                 } // firstOutput
-
             }
         }
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst, modifiers, key) ) {
@@ -349,7 +340,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         if ( getLastSelectedViewer() ) {
             getLastSelectedViewer()->nextIncrement();
         }
-    }else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) )  {
         if ( getLastSelectedViewer() ) {
             getLastSelectedViewer()->nextFrame();
         }
@@ -374,58 +365,56 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphAutoHideInputs, modifiers, key) ) {
         toggleAutoHideInputs(true);
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, modifiers, key) ) {
-        popFindDialog(QCursor::pos());
+        popFindDialog( QCursor::pos() );
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode, modifiers, key) ) {
-        popRenameDialog(QCursor::pos());
+        popRenameDialog( QCursor::pos() );
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphExtractNode, modifiers, key) ) {
-        pushUndoCommand(new ExtractNodeUndoRedoCommand(this,_imp->_selection));
+        pushUndoCommand( new ExtractNodeUndoRedoCommand(this, _imp->_selection) );
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphTogglePreview, modifiers, key) ) {
         togglePreviewsForSelectedNodes();
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomIn, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
-        QWheelEvent e(mapFromGlobal(QCursor::pos()), 120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
+        QWheelEvent e(mapFromGlobal( QCursor::pos() ), 120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
         wheelEvent(&e);
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomOut, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
-        QWheelEvent e(mapFromGlobal(QCursor::pos()), -120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
+        QWheelEvent e(mapFromGlobal( QCursor::pos() ), -120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
         wheelEvent(&e);
     } else {
         bool intercepted = false;
-        
-        if ( modifiers.testFlag(Qt::ControlModifier) && (key == Qt::Key_Up || key == Qt::Key_Down)) {
+
+        if ( modifiers.testFlag(Qt::ControlModifier) && ( (key == Qt::Key_Up) || (key == Qt::Key_Down) ) ) {
             ///These shortcuts pans the graphics view but we don't want it
             intercepted = true;
         }
-        
+
         if (!intercepted) {
             /// Search for a node which has a shortcut bound
             const PluginsMap & allPlugins = appPTR->getPluginsList();
-            for (PluginsMap::const_iterator it = allPlugins.begin() ; it != allPlugins.end() ; ++it) {
-                
-                assert(!it->second.empty());
+            for (PluginsMap::const_iterator it = allPlugins.begin(); it != allPlugins.end(); ++it) {
+                assert( !it->second.empty() );
                 Plugin* plugin = *it->second.rbegin();
-                
+
                 if ( plugin->getHasShortcut() ) {
                     QString group = QString::fromUtf8(kShortcutGroupNodes);
                     QStringList groupingSplit = plugin->getGrouping();
                     for (int j = 0; j < groupingSplit.size(); ++j) {
-                        group.push_back(QLatin1Char('/'));
+                        group.push_back( QLatin1Char('/') );
                         group.push_back(groupingSplit[j]);
                     }
                     if ( isKeybind(group.toStdString(), plugin->getPluginID().toStdString(), modifiers, key) ) {
                         QPointF hint = mapToScene( mapFromGlobal( QCursor::pos() ) );
-                        
-                        CreateNodeArgs args(plugin->getPluginID(), eCreateNodeReasonUserCreate, getGroup());
+                        CreateNodeArgs args( plugin->getPluginID(), eCreateNodeReasonUserCreate, getGroup() );
                         args.xPosHint = hint.x();
                         args.yPosHint = hint.y();
                         getGui()->getApp()->createNode(args);
-                        
+
                         intercepted = true;
                         break;
                     }
                 }
             }
         }
-        
-        
+
+
         if (!intercepted) {
             accept = false;
         }
@@ -442,9 +431,8 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
 void
 NodeGraph::toggleAutoTurbo()
 {
-    appPTR->getCurrentSettings()->setAutoTurboModeEnabled(!appPTR->getCurrentSettings()->isAutoTurboEnabled());
+    appPTR->getCurrentSettings()->setAutoTurboModeEnabled( !appPTR->getCurrentSettings()->isAutoTurboEnabled() );
 }
-
 
 void
 NodeGraph::selectAllNodes(bool onlyInVisiblePortion)
@@ -459,7 +447,6 @@ NodeGraph::selectAllNodes(bool onlyInVisiblePortion)
                 _imp->_selection.push_back(*it);
             }
         }
-  
     } else {
         for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
             if ( (*it)->isActive() && (*it)->isVisible() ) {

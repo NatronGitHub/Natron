@@ -107,7 +107,7 @@ public:
      * WARNING: Calling this function whilst the mapping is already opened has no effect
      * This function might throw an exception upon failure to open the file.
      **/
-    void open(const std::string & filepath,FileOpenModeEnum open_mode);
+    void open(const std::string & filepath, FileOpenModeEnum open_mode);
 
     /**
      * @brief Returns a pointer to the beginning of the file,

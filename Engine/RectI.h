@@ -77,7 +77,7 @@ public:
     }
 
     RectI(const RectI &b)
-        : x1(b.x1),y1(b.y1),x2(b.x2),y2(b.y2)
+        : x1(b.x1), y1(b.y1), x2(b.x2), y2(b.y2)
     {
         assert( (x2 >= x1) && (y2 >= y1) );
     }
@@ -152,7 +152,6 @@ public:
     {
         *this = b;
     }
-    
 
     /**
      * @brief Upscales the bounds assuming this rectangle is the Nth level of mipmap
@@ -327,7 +326,6 @@ public:
         x2 = std::max(x2, r);
         y1 = std::min(y1, b);
         y2 = std::max(y2, t);
-
     }
 
     /*intersection of two boxes*/
@@ -338,15 +336,15 @@ public:
             return false;
         }
 
-        intersection->x1 = std::max(x1,r.x1);
+        intersection->x1 = std::max(x1, r.x1);
         // the region must be *at least* empty, thus the maximin.
-        intersection->x2 = std::max(intersection->x1,std::min(x2,r.x2));
-        intersection->y1 = std::max(y1,r.y1);
+        intersection->x2 = std::max( intersection->x1, std::min(x2, r.x2) );
+        intersection->y1 = std::max(y1, r.y1);
         // the region must be *at least* empty, thus the maximin.
-        intersection->y2 = std::max(intersection->y1,std::min(y2,r.y2));
+        intersection->y2 = std::max( intersection->y1, std::min(y2, r.y2) );
 
-        assert(!intersection->isNull());
-        
+        assert( !intersection->isNull() );
+
         return true;
     }
 
@@ -356,7 +354,7 @@ public:
                    int t,
                    RectI* intersection) const
     {
-        return intersect(RectI(l,b,r,t),intersection);
+        return intersect(RectI(l, b, r, t), intersection);
     }
 
     /// returns true if the rect passed as parameter  intersects this one
@@ -377,7 +375,7 @@ public:
                     int r,
                     int t) const
     {
-        return intersects( RectI(l,b,r,t) );
+        return intersects( RectI(l, b, r, t) );
     }
 
     /*the area : w*h*/
@@ -428,14 +426,14 @@ public:
 #ifdef DEBUG
     void debug() const
     {
-        std::cout << "x1 = "<<x1<<" y1 = "<<y1<<" x2 = "<<x2<<" y2 = "<<y2<< std::endl;
+        std::cout << "x1 = " << x1 << " y1 = " << y1 << " x2 = " << x2 << " y2 = " << y2 << std::endl;
     }
+
 #endif
     std::vector<RectI> splitIntoSmallerRects(int splitsCount) const;
-
     static RectI fromOfxRectI(const OfxRectI & r)
     {
-        RectI ret(r.x1,r.y1,r.x2,r.y2);
+        RectI ret(r.x1, r.y1, r.x2, r.y2);
 
         return ret;
     }

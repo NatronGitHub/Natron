@@ -52,7 +52,6 @@ NATRON_NAMESPACE_ENTER;
    Everything related to OpenGL will (almost always) be in this class */
 
 
-
 /**
  *@enum MouseStateEnum
  *@brief basic state switching for mouse events
@@ -96,16 +95,14 @@ enum PickerStateEnum
 
 struct ViewerGL::Implementation
 {
-
     Implementation(ViewerGL* this_, ViewerTab* parent);
 
     ~Implementation();
-    
+
     ViewerGL* _this; // link to parent, for access to public methods
 
     /////////////////////////////////////////////////////////
     // The following are only accessed from the main thread:
-
     std::vector<GLuint> pboIds; //!< PBO's id's used by the OpenGL context
     //   GLuint vaoId; //!< VAO holding the rendering VBOs for texture mapping.
     GLuint vboVerticesId; //!< VBO holding the vertices for the texture mapping.
@@ -147,15 +144,12 @@ struct ViewerGL::Implementation
     int persistentMessageType;
     bool displayPersistentMessage;
     TextRenderer textRenderer;
-    
-    
     QPoint lastMousePosition; //< in widget coordinates
     QPointF lastDragStartPos; //< in zoom coordinates
     bool hasMovedSincePress;
 
     /////// currentViewerInfo
     ImageInfo currentViewerInfo[2]; /*!< Pointer to the ViewerInfo  used for rendering*/
-    
     mutable QMutex projectFormatMutex;
     Format projectFormat;
     QString currentViewerInfo_btmLeftBBOXoverlay[2]; /*!< The string holding the bottom left corner coordinates of the dataWindow*/
@@ -177,7 +171,6 @@ struct ViewerGL::Implementation
     RectD userRoI; //< in canonical coords
     bool buildUserRoIOnNextPress;
     RectD draggedUserRoI;
-    
     ZoomContext zoomCtx; /*!< All zoom related variables are packed into this object. */
     mutable QMutex zoomCtxMutex; /// protectx zoomCtx*
     QMutex clipToDisplayWindowMutex;
@@ -187,27 +180,19 @@ struct ViewerGL::Implementation
     double wipeAngle; /// the angle to the X axis
     QPointF wipeCenter; /// the center of the wipe control
     QRectF selectionRectangle;
-    
     GLuint checkerboardTextureID;
     int checkerboardTileSize; // to avoid a call to getValue() of the settings at each draw
-
     GLuint savedTexture; // @see saveOpenGLContext/restoreOpenGLContext
     GLuint prevBoundTexture; // @see bindTextureAndActivateShader/unbindTextureAndReleaseShader
-
     mutable QMutex lastRenderedImageMutex; //protects lastRenderedImage & memoryHeldByLastRenderedImages
     std::vector<ImageList> lastRenderedTiles[2]; //<  last image passed to transferRAMBuffer
     U64 memoryHeldByLastRenderedImages[2];
-    
     QSize sizeH;
-
     PenType pointerTypeOnPress;
     bool subsequentMousePressIsTablet;
     double pressureOnPress, pressureOnRelease;
-
     int wheelDeltaSeekFrame; // accumulated wheel delta for frame seeking (crtl+wheel)
-    
     bool isUpdatingTexture;
-    
     bool renderOnPenUp;
 
 public:
@@ -216,15 +201,15 @@ public:
      *@brief Fill the rendering VAO with vertices and texture coordinates
      * that depends upon the currently displayed texture.
      **/
-    void drawRenderingVAO(unsigned int mipMapLevel,int textureIndex,DrawPolygonModeEnum polygonMode);
+    void drawRenderingVAO(unsigned int mipMapLevel, int textureIndex, DrawPolygonModeEnum polygonMode);
 
     void initializeGL();
 
-    bool isNearbyWipeCenter(const QPointF & pos,double zoomScreenPixelWidth, double zoomScreenPixelHeight ) const;
-    bool isNearbyWipeRotateBar(const QPointF & pos,double zoomScreenPixelWidth, double zoomScreenPixelHeight) const;
-    bool isNearbyWipeMixHandle(const QPointF & pos,double zoomScreenPixelWidth, double zoomScreenPixelHeight) const;
+    bool isNearbyWipeCenter(const QPointF & pos, double zoomScreenPixelWidth, double zoomScreenPixelHeight ) const;
+    bool isNearbyWipeRotateBar(const QPointF & pos, double zoomScreenPixelWidth, double zoomScreenPixelHeight) const;
+    bool isNearbyWipeMixHandle(const QPointF & pos, double zoomScreenPixelWidth, double zoomScreenPixelHeight) const;
 
-    void drawArcOfCircle(const QPointF & center,double radiusX,double radiusY,double startAngle,double endAngle);
+    void drawArcOfCircle(const QPointF & center, double radiusX, double radiusY, double startAngle, double endAngle);
 
     void bindTextureAndActivateShader(int i,
                                       bool useShader);
@@ -247,8 +232,8 @@ public:
                                    QPolygonF & polygonPoints,
                                    bool rightPlane) const;
 
-    static void getBaseTextureCoordinates(const RectI & texRect,int closestPo2,int texW,int texH,
-                                          GLfloat & bottom,GLfloat & top,GLfloat & left,GLfloat & right);
+    static void getBaseTextureCoordinates(const RectI & texRect, int closestPo2, int texW, int texH,
+                                          GLfloat & bottom, GLfloat & top, GLfloat & left, GLfloat & right);
     static void getPolygonTextureCoordinates(const QPolygonF & polygonPoints,
                                              const RectD & texRect, //!< in canonical coordinates
                                              QPolygonF & texCoords);
@@ -256,14 +241,15 @@ public:
     void refreshSelectionRectangle(const QPointF & pos);
 
     void drawSelectionRectangle();
-    
+
     void initializeCheckerboardTexture(bool mustCreateTexture);
-    
+
     void drawCheckerboardTexture(const RectD& rod);
-    
+
     void getProjectFormatCanonical(RectD& canonicalProjectFormat) const
     {
         QMutexLocker k(&projectFormatMutex);
+
         canonicalProjectFormat = projectFormat.toCanonicalFormat();
     }
 

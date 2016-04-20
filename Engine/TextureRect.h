@@ -43,8 +43,8 @@ class TextureRect
 {
 public:
     double par; // the par of the associated image
-    int x1,y1,x2,y2; // the edges of the texture. These are coordinates in the full size image
-    int w,h; // the width and height of the texture. This has nothing to do with x,y,r,t
+    int x1, y1, x2, y2; // the edges of the texture. These are coordinates in the full size image
+    int w, h; // the width and height of the texture. This has nothing to do with x,y,r,t
     int closestPo2; //< the closest power of 2 of the original region of interest of the image
 
     TextureRect()
@@ -109,19 +109,18 @@ public:
 
     bool intersect(const RectI & r,
                    RectI* intersection) const;
-    
+
     bool contains(const TextureRect& other) const
     {
         return other.x1 >= x1 &&
-        other.y1 >= y1 &&
-        other.x2 <= x2 &&
-        other.y2 <= y2;
+               other.y1 >= y1 &&
+               other.x2 <= x2 &&
+               other.y2 <= y2;
     }
-    
-    void
-    toCanonical_noClipping(unsigned int thisLevel,
-                           double par,
-                           RectD *rect) const;
+
+    void toCanonical_noClipping(unsigned int thisLevel,
+                                double par,
+                                RectD *rect) const;
 };
 
 inline bool

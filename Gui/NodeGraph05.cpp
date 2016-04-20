@@ -54,11 +54,12 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
                                      const NodeGuiPtr &selected,
                                      bool autoConnect)
 {
-    BackdropGui* isBd = dynamic_cast<BackdropGui*>(node.get());
+    BackdropGui* isBd = dynamic_cast<BackdropGui*>( node.get() );
+
     if (isBd) {
         return;
     }
-    
+
     QRectF viewPos = visibleSceneRect();
 
     ///3 possible values:
@@ -103,8 +104,8 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
                 behavior = 2;
             }
             ///case b)
-            else if (node->getNode()->isInputNode()) {
-                if (selected->getNode()->getEffectInstance()->isReader()) {
+            else if ( node->getNode()->isInputNode() ) {
+                if ( selected->getNode()->getEffectInstance()->isReader() ) {
                     ///case 2-b) just do default we don't know what else to do
                     behavior = 0;
                 } else {
@@ -118,11 +119,11 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
             }
         }
     }
-    
+
     NodePtr createdNodeInternal = node->getNode();
     NodePtr selectedNodeInternal;
     if (selected) {
-       selectedNodeInternal = selected->getNode();
+        selectedNodeInternal = selected->getNode();
     }
 
 
@@ -132,7 +133,7 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
         const std::vector<NodeWPtr > & inputs = selected->getNode()->getGuiInputs();
         bool oneInputEmpty = false;
         for (std::size_t i = 0; i < inputs.size(); ++i) {
-            if (!inputs[i].lock()) {
+            if ( !inputs[i].lock() ) {
                 oneInputEmpty = true;
                 break;
             }
@@ -141,8 +142,8 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
             behavior = 0;
         }
     }
-    
-   
+
+
     boost::shared_ptr<Project> proj = getGui()->getApp()->getProject();
 
 
@@ -151,15 +152,13 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
     if (behavior == 0) {
         position.setX( ( viewPos.bottomRight().x() + viewPos.topLeft().x() ) / 2. );
         position.setY( ( viewPos.topLeft().y() + viewPos.bottomRight().y() ) / 2. );
-
     } else if (behavior == 1) {
         ///pop it above the selected node
 
         ///If this is the first connected input, insert it in a "linear" way so the tree remains vertical
         int nbConnectedInput = 0;
-        
         const std::vector<Edge*> & selectedNodeInputs = selected->getInputsArrows();
-        for (std::vector<Edge*>::const_iterator it = selectedNodeInputs.begin() ; it != selectedNodeInputs.end() ; ++it) {
+        for (std::vector<Edge*>::const_iterator it = selectedNodeInputs.begin(); it != selectedNodeInputs.end(); ++it) {
             NodeGuiPtr input;
             if (*it) {
                 input = (*it)->getSource();
@@ -168,82 +167,74 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
                 ++nbConnectedInput;
             }
         }
-        
+
         ///connect it to the first input
         QSize selectedNodeSize = selected->getSize();
         QSize createdNodeSize = node->getSize();
 
-        
+
         if (nbConnectedInput == 0) {
-            
             QPointF selectedNodeMiddlePos = selected->scenePos() +
-            QPointF(selectedNodeSize.width() / 2, selectedNodeSize.height() / 2);
-            
-            
+                                            QPointF(selectedNodeSize.width() / 2, selectedNodeSize.height() / 2);
+
+
             position.setX(selectedNodeMiddlePos.x() - createdNodeSize.width() / 2);
             position.setY( selectedNodeMiddlePos.y() - selectedNodeSize.height() / 2 - NodeGui::DEFAULT_OFFSET_BETWEEN_NODES
-                          - createdNodeSize.height() );
-            
-            QRectF createdNodeRect( position.x(),position.y(),createdNodeSize.width(),createdNodeSize.height() );
-            
+                           - createdNodeSize.height() );
+
+            QRectF createdNodeRect( position.x(), position.y(), createdNodeSize.width(), createdNodeSize.height() );
+
             ///now that we have the position of the node, move the inputs of the selected node to make some space for this node
-            
+
             for (std::vector<Edge*>::const_iterator it = selectedNodeInputs.begin(); it != selectedNodeInputs.end(); ++it) {
                 if ( (*it)->hasSource() ) {
                     (*it)->getSource()->moveAbovePositionRecursively(createdNodeRect);
                 }
             }
-            
+
             int selectedInput = selectedNodeInternal->getPreferredInputForConnection();
             if (selectedInput != -1) {
-                (void)proj->connectNodes(selectedInput, createdNodeInternal, selectedNodeInternal,true);
+                (void)proj->connectNodes(selectedInput, createdNodeInternal, selectedNodeInternal, true);
             }
-            
         } else {
-            
             //ViewerInstance* isSelectedViewer = selectedNodeInternal->isEffectViewer();
-                //Don't pop a dot, it will most likely annoy the user, just fallback on behavior 0
+            //Don't pop a dot, it will most likely annoy the user, just fallback on behavior 0
             /*    position.setX( ( viewPos.bottomRight().x() + viewPos.topLeft().x() ) / 2. );
                 position.setY( ( viewPos.topLeft().y() + viewPos.bottomRight().y() ) / 2. );
+               }
+               else {
+             */
+            QRectF selectedBbox = selected->mapToScene( selected->boundingRect() ).boundingRect();
+            QPointF selectedCenter = selectedBbox.center();
+            double y = selectedCenter.y() - selectedNodeSize.height() / 2.
+                       - NodeGui::DEFAULT_OFFSET_BETWEEN_NODES - createdNodeSize.height();
+            double x = selectedCenter.x() + nbConnectedInput * 150;
+
+            position.setX(x  - createdNodeSize.width() / 2.);
+            position.setY(y);
+
+            int index = selectedNodeInternal->getPreferredInputForConnection();
+            if (index != -1) {
+                (void)proj->connectNodes(index, createdNodeInternal, selectedNodeInternal, true);
             }
-            else {
-              */
-                QRectF selectedBbox = selected->mapToScene(selected->boundingRect()).boundingRect();
-                QPointF selectedCenter = selectedBbox.center();
-                
-                double y = selectedCenter.y() - selectedNodeSize.height() / 2.
-                - NodeGui::DEFAULT_OFFSET_BETWEEN_NODES - createdNodeSize.height();
-                double x = selectedCenter.x() + nbConnectedInput * 150;
-                
-                position.setX(x  - createdNodeSize.width() / 2.);
-                position.setY(y);
-                
-                int index = selectedNodeInternal->getPreferredInputForConnection();
-                if (index != -1) {
-                                        
-                    (void)proj->connectNodes(index, createdNodeInternal, selectedNodeInternal, true);
-               
-                    
-                }
             //} // if (isSelectedViewer) {*/
         } // if (nbConnectedInput == 0) {
-
     } else {
         ///pop it below the selected node
 
         const NodesWList& outputs = selectedNodeInternal->getGuiOutputs();
-        if (!createdNodeInternal->isOutputNode() || outputs.empty()) {
+        if ( !createdNodeInternal->isOutputNode() || outputs.empty() ) {
             QSize selectedNodeSize = selected->getSize();
             QSize createdNodeSize = node->getSize();
             QPointF selectedNodeMiddlePos = selected->scenePos() +
-            QPointF(selectedNodeSize.width() / 2, selectedNodeSize.height() / 2);
-            
+                                            QPointF(selectedNodeSize.width() / 2, selectedNodeSize.height() / 2);
+
             ///actually move the created node where the selected node is
             position.setX(selectedNodeMiddlePos.x() - createdNodeSize.width() / 2);
             position.setY(selectedNodeMiddlePos.y() + (selectedNodeSize.height() / 2) + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
-            
-            QRectF createdNodeRect( position.x(),position.y(),createdNodeSize.width(),createdNodeSize.height() );
-            
+
+            QRectF createdNodeRect( position.x(), position.y(), createdNodeSize.width(), createdNodeSize.height() );
+
             ///and move the selected node below recusively
             for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
                 NodePtr output = it->lock();
@@ -254,40 +245,39 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
                 if (!output_i) {
                     continue;
                 }
-                NodeGui* outputGui = dynamic_cast<NodeGui*>(output_i.get());
+                NodeGui* outputGui = dynamic_cast<NodeGui*>( output_i.get() );
                 assert(outputGui);
                 if (outputGui) {
                     outputGui->moveBelowPositionRecursively(createdNodeRect);
                 }
             }
-            
+
             ///Connect the created node to the selected node
             ///finally we connect the created node to the selected node
             int createdInput = createdNodeInternal->getPreferredInputForConnection();
             if (createdInput != -1) {
-                ignore_result(createdNodeInternal->connectInput(selectedNodeInternal, createdInput));
+                ignore_result( createdNodeInternal->connectInput(selectedNodeInternal, createdInput) );
             }
-            
+
             if ( !createdNodeInternal->isOutputNode() ) {
                 ///we find all the nodes that were previously connected to the selected node,
                 ///and connect them to the created node instead.
-                std::map<NodePtr,int> outputsConnectedToSelectedNode;
+                std::map<NodePtr, int> outputsConnectedToSelectedNode;
                 selectedNodeInternal->getOutputsConnectedToThisNode(&outputsConnectedToSelectedNode);
-                
-                for (std::map<NodePtr,int>::iterator it = outputsConnectedToSelectedNode.begin();
+
+                for (std::map<NodePtr, int>::iterator it = outputsConnectedToSelectedNode.begin();
                      it != outputsConnectedToSelectedNode.end(); ++it) {
-                    if (it->first->getParentMultiInstanceName().empty() && it->first != createdNodeInternal) {
-                    
+                    if ( it->first->getParentMultiInstanceName().empty() && (it->first != createdNodeInternal) ) {
                         /*
-                         Internal rotopaint nodes are connecting to the Rotopaint itself... make sure not to connect
-                         internal nodes of the tree 
+                           Internal rotopaint nodes are connecting to the Rotopaint itself... make sure not to connect
+                           internal nodes of the tree
                          */
                         boost::shared_ptr<RotoDrawableItem> stroke = it->first->getAttachedRotoItem();
-                        if (stroke && stroke->getContext()->getNode() == selectedNodeInternal) {
+                        if ( stroke && (stroke->getContext()->getNode() == selectedNodeInternal) ) {
                             continue;
                         }
-                        
-                        ignore_result(it->first->replaceInput(createdNodeInternal, it->second));
+
+                        ignore_result( it->first->replaceInput(createdNodeInternal, it->second) );
 //                        bool ok = proj->disconnectNodes(selectedNodeInternal.get(), it->first);
 //                        if (ok) {
 //                            ignore_result(proj->connectNodes(it->second, createdNodeInternal, it->first));
@@ -296,27 +286,23 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
                     }
                 }
             }
-
         } else {
             ///the created node is an output node and the selected node already has several outputs, create it aside
             QSize createdNodeSize = node->getSize();
-            QRectF selectedBbox = selected->mapToScene(selected->boundingRect()).boundingRect();
+            QRectF selectedBbox = selected->mapToScene( selected->boundingRect() ).boundingRect();
             QPointF selectedCenter = selectedBbox.center();
-            
             double y = selectedCenter.y() + selectedBbox.height() / 2.
-            + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES;
+                       + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES;
             double x = selectedCenter.x() + (int)outputs.size() * 150;
-            
+
             position.setX(x  - createdNodeSize.width() / 2.);
             position.setY(y);
 
-            
-            
+
             //Don't pop a dot, it will most likely annoy the user, just fallback on behavior 0
- 
+
             int index = createdNodeInternal->getPreferredInputForConnection();
             (void)proj->connectNodes(index, selectedNodeInternal, createdNodeInternal, true);
-
         }
     }
     position = node->mapFromScene(position);

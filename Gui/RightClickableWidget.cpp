@@ -46,10 +46,10 @@ NATRON_NAMESPACE_ENTER;
 void
 RightClickableWidget::mousePressEvent(QMouseEvent* e)
 {
-    if (buttonDownIsRight(e)) {
-        QWidget* underMouse = qApp->widgetAt(e->globalPos());
+    if ( buttonDownIsRight(e) ) {
+        QWidget* underMouse = qApp->widgetAt( e->globalPos() );
         if (underMouse == this) {
-            Q_EMIT rightClicked(e->pos());
+            Q_EMIT rightClicked( e->pos() );
             e->accept();
         }
     } else {
@@ -71,23 +71,21 @@ RightClickableWidget::enterEvent(QEvent* e)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    
+
     QWidget* currentFocus = qApp->focusWidget();
-    
     bool canSetFocus = !currentFocus ||
-    dynamic_cast<ViewerGL*>(currentFocus) ||
-    dynamic_cast<CurveWidget*>(currentFocus) ||
-    dynamic_cast<Histogram*>(currentFocus) ||
-    dynamic_cast<NodeGraph*>(currentFocus) ||
-    dynamic_cast<QToolButton*>(currentFocus) ||
-    currentFocus->objectName() == QString::fromUtf8("Properties");
-    
+                       dynamic_cast<ViewerGL*>(currentFocus) ||
+                       dynamic_cast<CurveWidget*>(currentFocus) ||
+                       dynamic_cast<Histogram*>(currentFocus) ||
+                       dynamic_cast<NodeGraph*>(currentFocus) ||
+                       dynamic_cast<QToolButton*>(currentFocus) ||
+                       currentFocus->objectName() == QString::fromUtf8("Properties");
+
     if (canSetFocus) {
         setFocus();
     }
     QWidget::enterEvent(e);
 }
-
 
 RightClickableWidget*
 RightClickableWidget::isParentSettingsPanelRecursive(QWidget* w)
@@ -99,10 +97,9 @@ RightClickableWidget::isParentSettingsPanelRecursive(QWidget* w)
     if (panel) {
         return panel;
     } else {
-        return isParentSettingsPanelRecursive(w->parentWidget());
+        return isParentSettingsPanelRecursive( w->parentWidget() );
     }
 }
-
 
 NATRON_NAMESPACE_EXIT;
 

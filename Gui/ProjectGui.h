@@ -57,7 +57,7 @@ public:
     ProjectGui(Gui* gui);
     virtual ~ProjectGui() OVERRIDE;
 
-    void create(boost::shared_ptr<Project> projectInternal,QVBoxLayout* container,QWidget* parent = NULL);
+    void create(boost::shared_ptr<Project> projectInternal, QVBoxLayout* container, QWidget* parent = NULL);
 
 
     bool isVisible() const;
@@ -74,16 +74,16 @@ public:
 
     template<class Archive>
     void save(Archive & ar/*,
-              const unsigned int version*/) const;
+                             const unsigned int version*/) const;
 
     template<class Archive>
     void load(Archive & ar/*,
-              const unsigned int version*/);
+                             const unsigned int version*/);
 
     void registerNewColorPicker(boost::shared_ptr<KnobColor> knob);
 
     void removeColorPicker(boost::shared_ptr<KnobColor> knob);
-    
+
     void clearColorPickers();
 
     bool hasPickers() const
@@ -91,7 +91,7 @@ public:
         return !_colorPickersEnabled.empty();
     }
 
-    void setPickersColor(double r,double g, double b,double a);
+    void setPickersColor(double r, double g, double b, double a);
 
     /**
      * @brief Retur
@@ -111,7 +111,6 @@ public Q_SLOTS:
     void initializeKnobsGui();
 
 private:
-    
 
 
     Gui* _gui;
@@ -145,9 +144,7 @@ public Q_SLOTS:
 private:
 
     Gui* _gui;
-    
     std::list<ViewerInstance*> _viewers;
-    
     QVBoxLayout* _mainLayout;
     QWidget* _fromViewerLine;
     QHBoxLayout* _fromViewerLineLayout;

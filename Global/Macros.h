@@ -60,6 +60,9 @@ namespace NATRON_NAMESPACE { }
 namespace NATRON_PYTHON_NAMESPACE { }
 #endif
 
+#define NATRON_NAMESPACE_ANONYMOUS_ENTER namespace {
+#define NATRON_NAMESPACE_ANONYMOUS_EXIT }
+
 #define NATRON_APPLICATION_DESCRIPTION "Open-source, cross-platform, nodal compositing software."
 #define NATRON_COPYRIGHT "Copyright (C) 2016 the Natron developers."
 #define NATRON_ORGANIZATION_NAME "INRIA"
@@ -69,9 +72,8 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_APPLICATION_NAME "Natron"
 #define NATRON_WEBSITE_URL "http://www.natron.fr"
 #define NATRON_FORUM_URL "https://forum.natron.fr"
-#define NATRON_PYTHON_URL "https://natron.readthedocs.org/en/master/"
-#define NATRON_WIKI_URL "https://github.com/MrKepzie/Natron/wiki"
 #define NATRON_ISSUE_TRACKER_URL "https://github.com/MrKepzie/Natron/issues"
+#define NATRON_DOCUMENTATION_ONLINE "http://help.natron.fr"
 // The MIME types for Natron documents are:
 // *.ntp: application/vnd.natron.project
 // *.nps: application/vnd.natron.nodepresets

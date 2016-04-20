@@ -50,23 +50,23 @@ struct CustomParamInteractPrivate
     QSize preferredSize;
     double par;
     GLuint savedTexture;
-    
+
     CustomParamInteractPrivate(const KnobGuiPtr& knob,
                                void* ofxParamHandle,
                                const boost::shared_ptr<OfxParamOverlayInteract> & entryPoint)
         : knob(knob)
-          , ofxParam(0)
-          , entryPoint(entryPoint)
-          , preferredSize()
-          , par(0)
-          , savedTexture(0)
+        , ofxParam(0)
+        , entryPoint(entryPoint)
+        , preferredSize()
+        , par(0)
+        , savedTexture(0)
     {
         assert(entryPoint && ofxParamHandle);
         ofxParam = reinterpret_cast<OFX::Host::Param::Instance*>(ofxParamHandle);
         assert( ofxParam->verifyMagic() );
 
         par = entryPoint->getProperties().getIntProperty(kOfxParamPropInteractSizeAspect);
-        int pW,pH;
+        int pW, pH;
         entryPoint->getPreferredSize(pW, pH);
         preferredSize.setWidth(pW);
         preferredSize.setHeight(pH);
@@ -78,9 +78,9 @@ CustomParamInteract::CustomParamInteract(const KnobGuiPtr& knob,
                                          const boost::shared_ptr<OfxParamOverlayInteract> & entryPoint,
                                          QWidget* parent)
     : QGLWidget(parent)
-      , _imp( new CustomParamInteractPrivate(knob,ofxParamHandle,entryPoint) )
+    , _imp( new CustomParamInteractPrivate(knob, ofxParamHandle, entryPoint) )
 {
-    double minW,minH;
+    double minW, minH;
 
     entryPoint->getMinimumSize(minW, minH);
     setMinimumSize(minW, minH);
@@ -99,10 +99,10 @@ CustomParamInteract::paintGL()
     glCheckError();
 
     /*
-     http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ParametersInteracts
-     The GL_PROJECTION matrix will be an orthographic 2D view with -0.5,-0.5 at the bottom left and viewport width-0.5, viewport height-0.5 at the top right.
+       http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ParametersInteracts
+       The GL_PROJECTION matrix will be an orthographic 2D view with -0.5,-0.5 at the bottom left and viewport width-0.5, viewport height-0.5 at the top right.
 
-     The GL_MODELVIEW matrix will be the identity matrix.
+       The GL_MODELVIEW matrix will be the identity matrix.
      */
     {
         GLProtectAttrib a(GL_TRANSFORM_BIT);
@@ -116,7 +116,7 @@ CustomParamInteract::paintGL()
         OfxPointD scale;
         scale.x = scale.y = 1.;
         double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
-        _imp->entryPoint->drawAction(time, scale, /*view=*/0);
+        _imp->entryPoint->drawAction(time, scale, /*view=*/ 0);
         glCheckError();
     } // GLProtectAttrib a(GL_TRANSFORM_BIT);
 }
@@ -189,7 +189,7 @@ CustomParamInteract::getBackgroundColour(double &r,
 void
 CustomParamInteract::saveOpenGLContext()
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
 
     glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&_imp->savedTexture);
     //glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&_imp->activeTexture);
@@ -215,7 +215,7 @@ CustomParamInteract::saveOpenGLContext()
 void
 CustomParamInteract::restoreOpenGLContext()
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
 
     glBindTexture(GL_TEXTURE_2D, _imp->savedTexture);
     //glActiveTexture(_imp->activeTexture);
@@ -240,7 +240,7 @@ CustomParamInteract::mousePressEvent(QMouseEvent* e)
     pos.y = e->y();
     viewportPos.y = e->x();
     viewportPos.y = e->y();
-    OfxStatus stat = _imp->entryPoint->penDownAction(time, scale, /*view=*/0, pos, viewportPos, /*pressure=*/1.);
+    OfxStatus stat = _imp->entryPoint->penDownAction(time, scale, /*view=*/ 0, pos, viewportPos, /*pressure=*/ 1.);
     if (stat == kOfxStatOK) {
         update();
     }
@@ -259,7 +259,7 @@ CustomParamInteract::mouseMoveEvent(QMouseEvent* e)
     pos.y = e->y();
     viewportPos.y = e->x();
     viewportPos.y = e->y();
-    OfxStatus stat = _imp->entryPoint->penMotionAction(time, scale, /*view=*/0, pos, viewportPos, /*pressure=*/1.);
+    OfxStatus stat = _imp->entryPoint->penMotionAction(time, scale, /*view=*/ 0, pos, viewportPos, /*pressure=*/ 1.);
     if (stat == kOfxStatOK) {
         update();
     }
@@ -278,7 +278,7 @@ CustomParamInteract::mouseReleaseEvent(QMouseEvent* e)
     pos.y = e->y();
     viewportPos.y = e->x();
     viewportPos.y = e->y();
-    OfxStatus stat = _imp->entryPoint->penUpAction(time, scale, /*view=*/0, pos, viewportPos, /*pressure=*/1.);
+    OfxStatus stat = _imp->entryPoint->penUpAction(time, scale, /*view=*/ 0, pos, viewportPos, /*pressure=*/ 1.);
     if (stat == kOfxStatOK) {
         update();
     }
@@ -291,7 +291,7 @@ CustomParamInteract::focusInEvent(QFocusEvent* /*e*/)
 
     scale.x = scale.y = 1.;
     double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
-    OfxStatus stat = _imp->entryPoint->gainFocusAction(time, scale, /*view=*/0);
+    OfxStatus stat = _imp->entryPoint->gainFocusAction(time, scale, /*view=*/ 0);
     if (stat == kOfxStatOK) {
         update();
     }
@@ -304,7 +304,7 @@ CustomParamInteract::focusOutEvent(QFocusEvent* /*e*/)
 
     scale.x = scale.y = 1.;
     double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
-    OfxStatus stat = _imp->entryPoint->loseFocusAction(time, scale, /*view=*/0);
+    OfxStatus stat = _imp->entryPoint->loseFocusAction(time, scale, /*view=*/ 0);
     if (stat == kOfxStatOK) {
         update();
     }
@@ -320,9 +320,9 @@ CustomParamInteract::keyPressEvent(QKeyEvent* e)
     QByteArray keyStr;
     OfxStatus stat;
     if ( e->isAutoRepeat() ) {
-        stat = _imp->entryPoint->keyRepeatAction( time, scale, /*view=*/0,(int)QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), keyStr.data() );
+        stat = _imp->entryPoint->keyRepeatAction( time, scale, /*view=*/ 0, (int)QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), keyStr.data() );
     } else {
-        stat = _imp->entryPoint->keyDownAction( time, scale, /*view=*/0, (int)QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), keyStr.data() );
+        stat = _imp->entryPoint->keyDownAction( time, scale, /*view=*/ 0, (int)QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), keyStr.data() );
     }
     if (stat == kOfxStatOK) {
         update();
@@ -337,7 +337,7 @@ CustomParamInteract::keyReleaseEvent(QKeyEvent* e)
     scale.x = scale.y = 1.;
     double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     QByteArray keyStr;
-    OfxStatus stat = _imp->entryPoint->keyUpAction( time, scale, /*view=*/0, (int)QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), keyStr.data() );
+    OfxStatus stat = _imp->entryPoint->keyUpAction( time, scale, /*view=*/ 0, (int)QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), keyStr.data() );
     if (stat == kOfxStatOK) {
         update();
     }

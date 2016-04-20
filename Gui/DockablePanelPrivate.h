@@ -59,20 +59,20 @@ struct Page
     int currentRow;
     TabGroup* groupAsTab; //< to gather group knobs that are set as a tab
     boost::weak_ptr<KnobPage> pageKnob;
-    
+
     Page()
-    : tab(0), currentRow(0),groupAsTab(0), pageKnob()
+        : tab(0), currentRow(0), groupAsTab(0), pageKnob()
     {
     }
 
     Page(const Page & other)
-    : tab(other.tab), currentRow(other.currentRow), groupAsTab(other.groupAsTab), pageKnob(other.pageKnob)
+        : tab(other.tab), currentRow(other.currentRow), groupAsTab(other.groupAsTab), pageKnob(other.pageKnob)
     {
     }
 };
 
-typedef std::map<QString,Page> PageMap;
-typedef std::list<std::pair<boost::weak_ptr<KnobI>,KnobGuiPtr> > KnobsGuiMapping;
+typedef std::map<QString, Page> PageMap;
+typedef std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > KnobsGuiMapping;
 
 struct DockablePanelPrivate
 {
@@ -88,7 +88,6 @@ struct DockablePanelPrivate
     QHBoxLayout *_headerLayout;
     LineEdit* _nameLineEdit; /*!< if the name is editable*/
     Label* _nameLabel; /*!< if the name is read-only*/
-
     QHBoxLayout* _horizLayout;
     QWidget* _horizContainer;
     VerticalColorBar* _verticalColorBar;
@@ -96,7 +95,6 @@ struct DockablePanelPrivate
     /*Tab related*/
     QWidget* _rightContainer;
     QVBoxLayout* _rightContainerLayout;
-    
     QTabWidget* _tabWidget;
     Button* _centerNodeButton;
     Button* _enterInGroupButton;
@@ -125,7 +123,7 @@ struct DockablePanelPrivate
 
     ///THe visibility of the knobs before the hide/show unmodified button is clicked
     ///to show only the knobs that need to afterwards
-    std::map<KnobGuiWPtr,bool> _knobsVisibilityBeforeHideModif;
+    std::map<KnobGuiWPtr, bool> _knobsVisibilityBeforeHideModif;
     KnobHolder* _holder;
 
     /* map<tab name, pair<tab , row count> >*/
@@ -135,14 +133,10 @@ struct DockablePanelPrivate
     DockablePanel::HeaderModeEnum _mode;
     mutable QMutex _isClosedMutex;
     bool _isClosed; //< accessed by serialization thread too
-
     QString _helpToolTip;
     QString _pluginID;
-    unsigned _pluginVersionMajor,_pluginVersionMinor;
-
-
+    unsigned _pluginVersionMajor, _pluginVersionMinor;
     bool _pagesEnabled;
-
     TrackerPanel* _trackerPanel;
     Label* _iconLabel;
 
@@ -155,15 +149,14 @@ struct DockablePanelPrivate
                          const QString & defaultPageName,
                          const QString& helpToolTip,
                          const boost::shared_ptr<QUndoStack>& stack);
-    
+
     /*inserts a new page to the dockable panel.*/
     PageMap::iterator getOrCreatePage(const boost::shared_ptr<KnobPage>& page);
-    
-    KnobsGuiMapping::iterator findKnobGui(const KnobPtr& knob) ;
-    
+    KnobsGuiMapping::iterator findKnobGui(const KnobPtr& knob);
+
     void refreshPagesOrder(const QString& curTabName, bool restorePageIndex);
 
-    boost::shared_ptr<KnobPage> ensureDefaultPageKnobCreated() ;
+    boost::shared_ptr<KnobPage> ensureDefaultPageKnobCreated();
 
 
     void initializeKnobVector(const std::vector< boost::shared_ptr< KnobI> > & knobs,
@@ -172,14 +165,14 @@ struct DockablePanelPrivate
     KnobGuiPtr createKnobGui(const KnobPtr &knob);
 
     /*Search an existing knob GUI in the map, otherwise creates
-     the gui for the knob.*/
+       the gui for the knob.*/
     KnobGuiPtr findKnobGuiOrCreate( const KnobPtr &knob,
-                                 bool makeNewLine,
-                                 QWidget* lastRowWidget,
-                                 const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine = std::vector< boost::shared_ptr< KnobI > >() );
+                                    bool makeNewLine,
+                                    QWidget* lastRowWidget,
+                                    const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine = std::vector< boost::shared_ptr< KnobI > >() );
 
     PageMap::iterator getDefaultPage(const KnobPtr &knob);
-    
+
     void refreshPagesSecretness();
 };
 

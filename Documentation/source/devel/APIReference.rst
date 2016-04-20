@@ -1,7 +1,7 @@
 .. _apiReference:
 
-Natron Python API reference
-===========================
+Python API
+==========
 
 All Python modules of the Natron API are referenced here. 
 

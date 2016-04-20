@@ -59,7 +59,7 @@ public:
 
     TrackerGui(const boost::shared_ptr<TrackerPanelV1> & panel,
                ViewerTab* parent);
-    
+
     TrackerGui(TrackerPanel* panel,
                ViewerTab* parent);
 
@@ -86,13 +86,13 @@ public:
     bool keyUp(double time, const RenderScale & renderScale, ViewIdx view, QKeyEvent* e);
 
     bool loseFocus(double time, const RenderScale & renderScale, ViewIdx view);
-    
+
     bool gainFocus(double time, const RenderScale & renderScale, ViewIdx view);
 
 public Q_SLOTS:
 
     void onTimelineTimeChanged(SequenceTime time, int reason);
-    
+
     void onAddTrackClicked(bool clicked);
 
     void onTrackBwClicked();
@@ -116,40 +116,40 @@ public Q_SLOTS:
     void updateSelectionFromSelectionRectangle(bool onRelease);
 
     void onSelectionCleared();
-    
+
     void onTrackingStarted(int step);
-        
+
     void onTrackingEnded();
-    
+
     void onCreateKeyOnMoveButtonClicked(bool clicked);
-    
+
     void onShowCorrelationButtonClicked(bool clicked);
-    
+
     void onCenterViewerButtonClicked(bool clicked);
-    
+
     void onSetKeyframeButtonClicked();
     void onRemoveKeyframeButtonClicked();
     void onResetOffsetButtonClicked();
     void onResetTrackButtonClicked();
-    
+
     void onContextSelectionChanged(int reason);
     void onKeyframeSetOnTrack(const TrackMarkerPtr &marker, int key);
     void onKeyframeRemovedOnTrack(const TrackMarkerPtr &marker, int key);
     void onAllKeyframesRemovedOnTrack(const TrackMarkerPtr& marker);
- 
+
     void updateSelectedMarkerTexture();
-    
+
 private Q_SLOTS:
-    
+
     void rebuildMarkerTextures();
-    
+
     void onTrackerInputChanged(int inputNb);
     void onTrackImageRenderingFinished();
     void onKeyFrameImageRenderingFinished();
-    
+
 private:
 
-    
+
     void createGui();
 
     boost::scoped_ptr<TrackerGuiPrivate> _imp;
