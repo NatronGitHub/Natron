@@ -90,6 +90,8 @@ struct GuiApplicationManagerPrivate
     PreviewThread previewRenderThread;
     int dpiX, dpiY;
 
+    boost::scoped_ptr<DocumentationManager> documentation;
+
 
     GuiApplicationManagerPrivate(GuiApplicationManager* publicInterface);
 

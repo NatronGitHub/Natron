@@ -39,6 +39,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Gui.h"
 #include "Gui/KnobGuiFactory.h"
 #include "Gui/GuiAppInstance.h"
+#include "Gui/DocumentationManager.h"
+
 
 NATRON_NAMESPACE_ENTER;
 

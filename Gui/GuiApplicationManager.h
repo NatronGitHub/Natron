@@ -243,7 +243,6 @@ private:
     void populateShortcuts();
 
     boost::scoped_ptr<GuiApplicationManagerPrivate> _imp;
-    DocumentationManager* documentation;
 };
 
 NATRON_NAMESPACE_EXIT;

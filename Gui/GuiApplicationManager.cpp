@@ -901,8 +901,8 @@ GuiApplicationManager::initGui(const CLArgs& args)
     Gui::loadStyleSheet();
 
     // Init documentation manager
-    documentation = new DocumentationManager;
-    documentation->startServer();
+    _imp->documentation.reset(new DocumentationManager);
+    _imp->documentation->startServer();
 
     return exec();
 } // GuiApplicationManager::initGui
