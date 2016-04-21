@@ -60,6 +60,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/QtEncoder.h"
 #include "Gui/SplashScreen.h"
 
+// removed in qt5, just revert the commit (1b58d9acc493111390b31f0bffd6b2a76baca91b)
 Q_INIT_RESOURCE_EXTERN(GuiResources);
 
 /**

@@ -31,9 +31,17 @@
 
 #include "Global/Macros.h"
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
+
+#if QT_VERSION >= 0x050000
+#include <QtWidgets/QMenu>
+#include <QtWidgets/QToolButton>
+#include <QtWidgets/QApplication> // qApp
+#else
 #include <QtGui/QMenu>
 #include <QtGui/QToolButton>
 #include <QtGui/QApplication> // qApp
+#endif
+
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QtGui/QKeyEvent>

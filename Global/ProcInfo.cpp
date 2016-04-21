@@ -316,11 +316,11 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 QString
 ProcInfo::applicationFilePath(const char* argv0Param)
 {
-#if defined(Q_WS_WIN)
+#if defined(Q_OS_WIN)
 
     //The only viable solution
     return applicationFileName();
-#elif defined(Q_WS_MAC)
+#elif defined(Q_OS_MAC)
     //First guess this way, then use the fallback solution
     QString appFile = applicationFileName();
     if ( !appFile.isEmpty() ) {

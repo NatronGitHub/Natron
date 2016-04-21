@@ -37,6 +37,10 @@
 #include <QtCore/QSettings>
 #include <QtCore/QFileInfo>
 
+#if QT_VERSION >= 0x050000
+#include <QtGui/QScreen>
+#endif
+
 #include <QAction>
 #include <QApplication> // qApp
 

@@ -31,7 +31,11 @@
 #include <fstream>
 #include <stdexcept>
 
+#if QT_VERSION >= 0x050000
+#include <QtWidgets/QStyle>
+#else
 #include <QtGui/QStyle>
+#endif
 
 #include "Engine/EffectInstance.h"
 #include "Engine/Knob.h" // KnobHolder
