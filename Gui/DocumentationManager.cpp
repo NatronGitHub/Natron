@@ -144,7 +144,7 @@ DocumentationManager::handler(QHttpRequest *req,
                                    }*/
                                 html.replace( QString::fromUtf8("\n"), QString::fromUtf8("</p><p>") );
                                 html = parser(html, docDir);
-                                body = html.toAscii();
+                                body = html.toLatin1();
                             }
                         }
                     }
@@ -153,13 +153,13 @@ DocumentationManager::handler(QHttpRequest *req,
         }
         if ( body.isEmpty() ) {
             QString notFound = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\"><html><head><title>Plugin not found</title><link rel=\"stylesheet\" href=\"/_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"/_static/pygments.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"/_static/style.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"/_static/jquery.js\"></script><script type=\"text/javascript\" src=\"/_static/dropdown.js\"></script></head><body><div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\"><h1>Plugin not found</h1></div></div></div></body></html>");
-            body = parser(notFound, docDir).toAscii();
+            body = parser(notFound, docDir).toLatin1();
         }
     } else if ( page == QString::fromUtf8("_prefs.html") )   {
         boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
         QString html = settings->makeHTMLDocumentation(false, false);
         html = parser(html, docDir);
-        body = html.toAscii();
+        body = html.toLatin1();
     } else if ( page == QString::fromUtf8("_group.html") )   {
         QString html;
         QString group;
@@ -251,7 +251,7 @@ DocumentationManager::handler(QHttpRequest *req,
             html.append(groupFooter);
         }
         html = parser(html, docDir);
-        body = html.toAscii();
+        body = html.toLatin1();
     }
 
     // get static file
@@ -269,9 +269,9 @@ DocumentationManager::handler(QHttpRequest *req,
             if ( page.endsWith( QString::fromUtf8(".html") ) || page.endsWith( QString::fromUtf8(".htm") ) ) {
                 QString input = QString::fromUtf8( staticFile.readAll() );
                 if ( input.contains( QString::fromUtf8("http://sphinx.pocoo.org/") ) && !input.contains( QString::fromUtf8("mainMenu") ) ) {
-                    body = parser(input, docDir).toAscii();
+                    body = parser(input, docDir).toLatin1();
                 } else   {
-                    body = input.toAscii();
+                    body = input.toLatin1();
                 }
             } else   {
                 body = staticFile.readAll();
@@ -283,7 +283,7 @@ DocumentationManager::handler(QHttpRequest *req,
     // page not found
     if ( body.isEmpty() ) {
         QString notFound = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\"><html><head><title>Page not found</title><link rel=\"stylesheet\" href=\"/_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"/_static/pygments.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"/_static/style.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"/_static/jquery.js\"></script><script type=\"text/javascript\" src=\"/_static/dropdown.js\"></script></head><body><div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\"><h1>Page not found</h1></div></div></div></body></html>");
-        body = parser(notFound, docDir).toAscii();
+        body = parser(notFound, docDir).toLatin1();
     }
 
     // set header(s)
@@ -325,7 +325,7 @@ DocumentationManager::parser(QString html,
             QStringList menuResult;
             bool getMenu = false;
             while ( !indexFile.atEnd() ) {
-                QString line = QString::fromAscii( indexFile.readLine() );
+                QString line = QString::fromLatin1( indexFile.readLine() );
                 if ( line == QString::fromUtf8("<div class=\"toctree-wrapper compound\">\n") ) {
                     getMenu = true;
                 }

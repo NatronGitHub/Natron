@@ -50,7 +50,12 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
 
+#if QT_VERSION >= 0x050000
+#include <QtConcurrent/QtConcurrentRun>
+#else
 #include <QtCore/QtConcurrentRun>
+#endif
+
 #include <QtCore/QCoreApplication>
 #include <QtCore/QTimer>
 #include <QtCore/QThreadPool>

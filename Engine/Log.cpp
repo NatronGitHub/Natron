@@ -141,12 +141,12 @@ public:
         }
         QString str( log.c_str() );
         for (int i = 0; i < str.size(); ++i) {
-            _stream->operator <<( str.at(i).toAscii() );
+            _stream->operator <<( str.at(i).toLatin1() );
             if ( (i % 80 == 0) && (i != 0) ) { // format to 80 columns
                 /*Find closest word end and insert a new line*/
                 ++i;
                 while ( i < str.size() && str.at(i) != QChar(' ') ) {
-                    _stream->operator <<( str.at(i).toAscii() );
+                    _stream->operator <<( str.at(i).toLatin1() );
                     ++i;
                 }
                 _stream->operator <<('\n');

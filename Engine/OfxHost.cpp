@@ -948,7 +948,12 @@ OfxHost::clearPluginsLoadedCache()
     if ( QFile::exists(oldOfxCache) ) {
         QFile::remove(oldOfxCache);
     }
+#if QT_VERSION < 0x050000
     QtCompat::removeRecursively( getOFXCacheDirPath() );
+#else
+    QDir OFXCacheDir( getOFXCacheDirPath() );
+    OFXCacheDir.removeRecursively();
+#endif
 }
 
 void

@@ -1361,7 +1361,7 @@ AppInstance::parseHTMLDoc(const QString html,
             QStringList menuResult;
             bool getMenu = false;
             while ( !indexFile.atEnd() ) {
-                QString line = QString::fromAscii( indexFile.readLine() );
+                QString line = QString::fromLatin1( indexFile.readLine() );
                 if ( line == QString::fromUtf8("<div class=\"toctree-wrapper compound\">\n") ) {
                     getMenu = true;
                 }
