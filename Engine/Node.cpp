@@ -10357,9 +10357,11 @@ Node::refreshChannelSelectors()
 
 
         std::vector<std::pair<ImageComponents, NodeWPtr > > compsOrdered;
+        bool gotColor = false;
         for (EffectInstance::ComponentsAvailableMap::iterator comp = compsAvailable.begin(); comp != compsAvailable.end(); ++comp) {
             if ( comp->first.isColorPlane() ) {
                 compsOrdered.insert( compsOrdered.begin(), std::make_pair(comp->first, comp->second) );
+                gotColor = true;
             } else {
                 compsOrdered.push_back(*comp);
             }
@@ -10394,6 +10396,20 @@ Node::refreshChannelSelectors()
                 option += channels[i];
                 choices.push_back(option);
             }
+        }
+        if (!gotColor) {
+            std::vector<std::string>::iterator pos = choices.begin();
+            ++pos;
+            
+            const ImageComponents& rgba = ImageComponents::getRGBAComponents();
+            const std::string& rgbaCompname = rgba.getComponentsGlobalName();
+            const std::vector<std::string>& rgbaChannels = rgba.getComponentsNames();
+            std::vector<std::string> rgbaOptions;
+            for (std::size_t i = 0; i < rgbaChannels.size(); ++i) {
+                std::string option = rgbaCompname + '.' + rgbaChannels[i];
+                rgbaOptions.push_back(option);
+            }
+            choices.insert(pos, rgbaOptions.begin(), rgbaOptions.end());
         }
 
         boost::shared_ptr<KnobChoice> channelKnob = it->second.channel.lock();
