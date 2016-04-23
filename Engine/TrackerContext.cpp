@@ -1386,10 +1386,10 @@ applyHomography(const Point& p,
 {
     Transform::Point3D a = euclideanToHomogenous(p);
 
-    a = Transform::matApply(h, a);
+    Transform::Point3D r = Transform::matApply(h, a);
     Point ret;
-    ret.x = a.x / a.z;
-    ret.y = a.y / a.z;
+    ret.x = r.x / r.z;
+    ret.y = r.y / r.z;
 
     return ret;
 }

@@ -106,7 +106,12 @@ namespace openMVG {
             Hp.col(1) = crossprod(crossprod(p1,p3),crossprod(p2,p4));
             Hp.col(2) = crossprod(crossprod(p1,p4),crossprod(p2,p3));
             
-            double detHp = Hp.determinant();
+            double detHp;
+            bool invertible;
+            Hp.computeInverseAndDetWithCheck(invHp, detHp,invertible);
+            if (!invertible) {
+                return false;
+            }
             if (detHp == 0.) {
                 return false;
             }
@@ -114,13 +119,10 @@ namespace openMVG {
             Hq.col(0) = crossprod(crossprod(q1,q2),crossprod(q3,q4));
             Hq.col(1) = crossprod(crossprod(q1,q3),crossprod(q2,q4));
             Hq.col(2) = crossprod(crossprod(q1,q4),crossprod(q2,q3));
-            
-            double detHq;
-            bool invertible;
-            Hp.computeInverseAndDetWithCheck(invHp, detHq,invertible);
-            if (!invertible) {
+            if (Hq.determinant() == 0) {
                 return false;
             }
+            
             *H = Hq * invHp;
             return true;
         }
