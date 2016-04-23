@@ -109,27 +109,8 @@ runProsacForModel(const std::vector<Point>& x1,
         M2(0, i) = x2[i].x;
         M2(1, i) = x2[i].y;
     }
-    ProsacReturnCodeEnum ret;
-    const std::size_t minSamples = (std::size_t)MODELTYPE::MinimumSamples();
-    if (x1.size() > minSamples) {
-        KernelType kernel(M1, w1, h1, M2, w2, h2);
-        ret = prosac(kernel, foundModel, inliers);
-    } else if (x1.size() == minSamples) {
-        std::vector<typename MODELTYPE::Model> models;
-        MODELTYPE::Solve(M1, M2, &models);
-        if (inliers) {
-            inliers->resize(minSamples, true);
-        }
-        if ( !models.empty() ) {
-            *foundModel = models[0];
-            ret = eProsacReturnCodeFoundModel;
-        } else {
-            ret = eProsacReturnCodeNoModelFound;
-        }
-    } else {
-        ret = eProsacReturnCodeNotEnoughPoints;
-    }
-
+    KernelType kernel(M1, w1, h1, M2, w2, h2);
+    ProsacReturnCodeEnum ret = prosac(kernel, foundModel, inliers);
     throwProsacError( ret, KernelType::MinimumSamples() );
 }
 

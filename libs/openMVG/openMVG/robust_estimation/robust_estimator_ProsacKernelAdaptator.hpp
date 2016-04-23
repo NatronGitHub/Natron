@@ -207,8 +207,19 @@ namespace openMVG {
                                                -0.5, -0.5, width-0.5, height-0.5, rect_cimg);
             }
             
+            static void RectificationNormalizedToNuke(const Mat3 &rect_norm,
+                                                      double aspectRatio,
+                                                      double width, double height,
+                                                      Mat3 *rect_nuke)
+            {
+                RectificationChangeBoundingBox(rect_norm, -1, 1./aspectRatio, 1, -1./aspectRatio,
+                                               0., height, width, 0, rect_nuke);
+            }
+
+            
             static void Unnormalize(Mat3* model, int w1, int h1) {
-                RectificationNormalizedToCImg(*model, (double)w1 / (double)h1, w1, h1, model);
+                Mat3 m = *model;
+                RectificationNormalizedToCImg(m, (double)w1 / (double)h1, w1, h1, model);
                 // Unnormalize model from the computed conditioning.
                 //*model = t2inv * (*model) * t1;
                 
@@ -851,6 +862,11 @@ namespace openMVG {
                 const Mat x1 = ExtractColumns(_x1, samples);
                 const Mat x2 = ExtractColumns(_x2, samples);
                 Solver::Solve(x1, x2, models);
+            }
+            
+            void FitAllSamples(std::vector<Model> *models) const
+            {
+                Solver::Solve(_x1, _x2, models);
             }
             
             /**

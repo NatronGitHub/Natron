@@ -235,6 +235,9 @@ KnobGuiGroup::_hide()
         }
         k->hide();
     }
+    if (_tabGroup) {
+        _tabGroup->hide();
+    }
 }
 
 void
@@ -256,6 +259,9 @@ KnobGuiGroup::_show()
             k->show();
         }
     }
+    if (_tabGroup) {
+        _tabGroup->show();
+    }
 }
 
 void
@@ -267,6 +273,9 @@ KnobGuiGroup::setEnabled()
     if (_button) {
         _button->setEnabled(enabled);
     }
+    if (_tabGroup) {
+        _tabGroup->setEnabled(enabled);
+    }
     if (enabled) {
         for (U32 i = 0; i < _childrenToEnable.size(); ++i) {
             for (U32 j = 0; j < _childrenToEnable[i].second.size(); ++j) {
@@ -277,6 +286,7 @@ KnobGuiGroup::setEnabled()
                 k->getKnob()->setEnabled(_childrenToEnable[i].second[j], true);
             }
         }
+        
     } else {
         _childrenToEnable.clear();
         for (std::list<KnobGuiWPtr>::iterator it = _children.begin(); it != _children.end(); ++it) {

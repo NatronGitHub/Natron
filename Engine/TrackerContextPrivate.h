@@ -113,8 +113,9 @@ GCC_DIAG_ON(unused-parameter)
 
 #define kTrackerParamTransformTypeCornerPin "CornerPin"
 #define kTrackerParamTransformTypeCornerPinHelp "The tracks motion will be used to compute a CornerPin. " \
-    "A CornerPin is useful if you are tracking an image portion that has a perspective distortion, such as a rectangular window moving in the scene. " \
-    "At least 4 tracks are required to compute the homography transforming the \"From\" points to the \"To\" points. " \
+    "A CornerPin is useful if you are tracking an image portion that has a perspective distortion. " \
+    "At least 1 track is required to compute the homography transforming the \"From\" points to the \"To\" points, and 4 required to " \
+    "track a perspective transformation." \
     "The more points you add, the more stable and precise the resulting CornerPin will be."
 
 #define kTrackerParamMotionType "motionType"

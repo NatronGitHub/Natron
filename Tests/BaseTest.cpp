@@ -56,8 +56,8 @@ BaseTest::registerTestPlugins()
 {
     _allTestPluginIDs.clear();
 
-    _dotGeneratorPluginID = QString::fromUtf8(PLUGINID_OFX_DOTEXAMPLE);
-    _allTestPluginIDs.push_back(_dotGeneratorPluginID);
+    _generatorPluginID = QString::fromUtf8(PLUGINID_OFX_SENOISE);
+    _allTestPluginIDs.push_back(_generatorPluginID);
 
     _readOIIOPluginID = QString::fromUtf8(PLUGINID_OFX_READOIIO);
     _allTestPluginIDs.push_back(_readOIIOPluginID);
@@ -222,7 +222,7 @@ BaseTest::disconnectNodes(NodePtr input,
 TEST_F(BaseTest, GenerateDot)
 {
     ///create the generator
-    NodePtr generator = createNode(_dotGeneratorPluginID);
+    NodePtr generator = createNode(_generatorPluginID);
 
     ///create the writer and set its output filename
     NodePtr writer = createNode(_writeOIIOPluginID);
@@ -235,6 +235,9 @@ TEST_F(BaseTest, GenerateDot)
     ASSERT_TRUE(knob);
     knob->setValue(1, ViewSpec::all(), 0);
     knob->setValue(1, ViewSpec::all(), 1);
+    
+    Format f(0,0,200,200,"toto",1.);
+    generator->getApp()->getProject()->setOrAddProjectFormat(f);
 
     const QString& binPath = appPTR->getApplicationBinaryPath();
     QString filePath = binPath + QString::fromUtf8("/test_dot_generator.jpg");
@@ -261,33 +264,33 @@ TEST_F(BaseTest, GenerateDot)
 
 TEST_F(BaseTest, SetValues)
 {
-    NodePtr generator = createNode(_dotGeneratorPluginID);
+    NodePtr generator = createNode(_generatorPluginID);
 
     assert(generator);
-    KnobPtr knob = generator->getKnobByName("radius");
+    KnobPtr knob = generator->getKnobByName("noiseZSlope");
     KnobDouble* radius = dynamic_cast<KnobDouble*>( knob.get() );
     EXPECT_TRUE(radius != 0);
     if (!radius) {
         return;
     }
-    radius->setValue(100);
-    EXPECT_TRUE(radius->getValue() == 100);
+    radius->setValue(0.5);
+    EXPECT_TRUE(radius->getValue() == 0.5);
 
     //Check that linear interpolation is working as intended
     KeyFrame kf;
     radius->setInterpolationAtTime(eCurveChangeReasonInternal, ViewSpec::all(),  0, 0, eKeyframeTypeLinear, &kf);
-    radius->setValueAtTime(0, 0, ViewSpec::all(), 0);
-    radius->setValueAtTime(100, 100, ViewSpec::all(), 0);
+    radius->setValueAtTime(0, 0., ViewSpec::all(), 0);
+    radius->setValueAtTime(100, 1., ViewSpec::all(), 0);
     for (int i = 0; i <= 100; ++i) {
         double v = radius->getValueAtTime(i);
-        EXPECT_TRUE(std::abs(v - i) < 1e-6);
+        EXPECT_TRUE(std::abs(v - i / 100.) < 1e-6);
     }
 }
 
 ///High level test: simple node connections test
 TEST_F(BaseTest, SimpleNodeConnections) {
     ///create the generator
-    NodePtr generator = createNode(_dotGeneratorPluginID);
+    NodePtr generator = createNode(_generatorPluginID);
 
     ///create the writer and set its output filename
     NodePtr writer = createNode(_writeOIIOPluginID);

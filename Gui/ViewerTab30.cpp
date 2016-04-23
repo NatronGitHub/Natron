@@ -298,7 +298,6 @@ ViewerTab::onAutoContrastChanged(bool b)
     _imp->gainSlider->setEnabled(!b);
     _imp->gainBox->setEnabled(!b);
     _imp->toggleGainButton->setEnabled(!b);
-    _imp->viewerNode->onAutoContrastChanged(b, b);
     _imp->gammaBox->setEnabled(!b);
     _imp->gammaSlider->setEnabled(!b);
     _imp->toggleGammaButton->setEnabled(!b);
@@ -306,6 +305,7 @@ ViewerTab::onAutoContrastChanged(bool b)
         _imp->viewerNode->onGainChanged( std::pow( 2, _imp->gainBox->value() ) );
         _imp->viewerNode->onGammaChanged( _imp->gammaBox->value() );
     }
+    _imp->viewerNode->onAutoContrastChanged(b, true);
 }
 
 void

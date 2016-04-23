@@ -2676,7 +2676,10 @@ Node::getFullyQualifiedNameInternal(const std::string& scriptName) const
         boost::shared_ptr<NodeCollection> hasParentGroup = getGroup();
         NodeGroup* isGrp = dynamic_cast<NodeGroup*>( hasParentGroup.get() );
         if (isGrp) {
-            prependGroupNameRecursive(isGrp->getNode(), ret);
+            NodePtr grpNode = isGrp->getNode();
+            if (grpNode) {
+                prependGroupNameRecursive(grpNode, ret);
+            }
         }
     }
 
@@ -4222,7 +4225,10 @@ applyNodeRedirectionsDownstream(int recurseCounter,
             if (useGuiOutputs) {
                 groupOutputs = isGrp->getNode()->getGuiOutputs();
             } else {
-                isGrp->getNode()->getOutputs_mt_safe(groupOutputs);
+                NodePtr grpNode = isGrp->getNode();
+                if (grpNode) {
+                    grpNode->getOutputs_mt_safe(groupOutputs);
+                }
             }
             for (NodesWList::iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
                 //Call recursively on them
@@ -9717,7 +9723,10 @@ Node::Implementation::runOnNodeDeleteCB()
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>( group.get() );
     boost::shared_ptr<KnobString> nodeDeletedKnob = nodeRemovalCallback.lock();
     if (!nodeDeletedKnob && isGroup) {
-        cb = isGroup->getNode()->getBeforeNodeRemovalCallback();
+        NodePtr grpNode = isGroup->getNode();
+        if (grpNode) {
+            cb = grpNode->getBeforeNodeRemovalCallback();
+        }
     } else if (nodeDeletedKnob) {
         cb = nodeDeletedKnob->getValue();
     }

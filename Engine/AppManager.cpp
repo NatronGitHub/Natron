@@ -1964,6 +1964,7 @@ AppManager::registerEngineMetaTypes() const
     qRegisterMetaType<ViewIdx>("ViewIdx");
     qRegisterMetaType<ViewSpec>("ViewSpec");
     qRegisterMetaType<boost::shared_ptr<Node> >("boost::shared_ptr<Node>");
+    qRegisterMetaType<std::list<double> >("std::list<double>");
 #if QT_VERSION < 0x050000
     qRegisterMetaType<QAbstractSocket::SocketState>("SocketState");
 #endif
