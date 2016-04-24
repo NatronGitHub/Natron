@@ -284,17 +284,22 @@ ViewerTab::onEngineStarted(bool forward)
         return;
     }
 
-    if (_imp->play_Forward_Button) {
-        _imp->play_Forward_Button->setDown(forward);
-        _imp->play_Forward_Button->setChecked(forward);
-    }
+    
+    const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        if ((*it)->_imp->play_Forward_Button) {
+            (*it)->_imp->play_Forward_Button->setDown(forward);
+            (*it)->_imp->play_Forward_Button->setChecked(forward);
+        }
+        
+        if ((*it)->_imp->play_Backward_Button) {
+            (*it)->_imp->play_Backward_Button->setDown(!forward);
+            (*it)->_imp->play_Backward_Button->setChecked(!forward);
+        }
 
-    if (_imp->play_Backward_Button) {
-        _imp->play_Backward_Button->setDown(!forward);
-        _imp->play_Backward_Button->setChecked(!forward);
     }
-
-    if ( getGui() && !getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
+    
+    if (getGui() && !getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
         getGui()->onFreezeUIButtonClicked(true);
     }
 }
@@ -306,16 +311,22 @@ ViewerTab::onEngineStopped()
         return;
     }
 
-    if ( !_imp->viewerNode->getRenderEngine()->isPlaybackAutoRestartEnabled() ) {
-        if ( _imp->play_Forward_Button && _imp->play_Forward_Button->isDown() ) {
-            _imp->play_Forward_Button->setDown(false);
-            _imp->play_Forward_Button->setChecked(false);
+    if (!_imp->viewerNode->getRenderEngine()->isPlaybackAutoRestartEnabled()) {
+        
+        const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
+        for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+            if ((*it)->_imp->play_Forward_Button) {
+                (*it)->_imp->play_Forward_Button->setDown(false);
+                (*it)->_imp->play_Forward_Button->setChecked(false);
+            }
+            
+            if ((*it)->_imp->play_Backward_Button) {
+                (*it)->_imp->play_Backward_Button->setDown(false);
+                (*it)->_imp->play_Backward_Button->setChecked(false);
+            }
+            
         }
 
-        if ( _imp->play_Backward_Button && _imp->play_Backward_Button->isDown() ) {
-            _imp->play_Backward_Button->setDown(false);
-            _imp->play_Backward_Button->setChecked(false);
-        }
     }
     _imp->currentFrameBox->setValue( _imp->viewerNode->getTimeline()->currentFrame() );
 
