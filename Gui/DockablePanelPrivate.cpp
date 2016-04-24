@@ -617,7 +617,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
         const std::string& labelIconFilePath = knob->getIconLabel();
         QWidget *labelContainer = 0;
 
-        const bool hasLabel = ret->isLabelVisible() && (isLabelKnob || !descriptionLabel.empty() || !labelIconFilePath.empty());
+        const bool hasLabel = ret->isLabelVisible() || isLabelKnob;
         if (hasLabel) {
             
             QHBoxLayout *labelLayout = 0;
