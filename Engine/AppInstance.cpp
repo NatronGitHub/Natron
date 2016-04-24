@@ -97,6 +97,33 @@ FlagSetter::~FlagSetter()
     }
 }
 
+FlagIncrementer::FlagIncrementer(int* p)
+: p(p)
+, lock(0)
+{
+    *p = *p + 1;
+}
+
+FlagIncrementer::FlagIncrementer(int* p, QMutex* mutex)
+: p(p)
+, lock(mutex)
+{
+    lock->lock();
+    *p = *p + 1;
+    lock->unlock();
+}
+
+FlagIncrementer::~FlagIncrementer()
+{
+    if (lock) {
+        lock->lock();
+    }
+    *p = *p - 1;
+    if (lock) {
+        lock->unlock();
+    }
+}
+
 struct RenderQueueItem
 {
     AppInstance::RenderWork work;
@@ -114,8 +141,8 @@ struct AppInstancePrivate
     mutable QMutex creatingGroupMutex;
 
     //When a pyplug is created
-    bool _creatingGroup;
-
+    int _creatingGroup;
+    
     //When a node is created
     bool _creatingNode;
 
@@ -128,19 +155,20 @@ struct AppInstancePrivate
 
     AppInstancePrivate(int appID,
                        AppInstance* app)
-        : _publicInterface(app)
-        , _currentProject( new Project(app) )
-        , _appID(appID)
-        , _projectCreatedWithLowerCaseIDs(false)
-        , creatingGroupMutex()
-        , _creatingGroup(false)
-        , _creatingNode(false)
-        , _creatingTree(0)
-        , renderQueueMutex()
-        , renderQueue()
-        , activeRenders()
-        , invalidExprKnobsMutex()
-        , invalidExprKnobs()
+
+    : _publicInterface(app)
+    , _currentProject( new Project(app) )
+    , _appID(appID)
+    , _projectCreatedWithLowerCaseIDs(false)
+    , creatingGroupMutex()
+    , _creatingGroup(0)
+    , _creatingNode(false)
+    , _creatingTree(0)
+    , renderQueueMutex()
+    , renderQueue()
+    , activeRenders()
+    , invalidExprKnobsMutex()
+    , invalidExprKnobs()
     {
     }
 
@@ -694,7 +722,7 @@ AppInstance::loadPythonScript(const QFileInfo& file)
         ss << moduleName.toStdString() << ".createInstance(app,app)";
 
         std::string output;
-        FlagSetter flag(true, &_imp->_creatingGroup, &_imp->creatingGroupMutex);
+        FlagIncrementer flag(&_imp->_creatingGroup, &_imp->creatingGroupMutex);
         CreatingNodeTreeFlag_RAII createNodeTree(this);
         if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &err, &output) ) {
             if ( !err.empty() ) {
@@ -763,7 +791,8 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
     NodePtr node;
 
     {
-        FlagSetter fs(true, &_imp->_creatingGroup, &_imp->creatingGroupMutex);
+
+        FlagIncrementer fs(&_imp->_creatingGroup,&_imp->creatingGroupMutex);
         CreatingNodeTreeFlag_RAII createNodeTree(this);
         NodePtr containerNode;
         if (!istoolsetScript) {

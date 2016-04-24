@@ -58,7 +58,7 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
-#define NATRON_PYPLUG_EXPORTER_VERSION 8
+#define NATRON_PYPLUG_EXPORTER_VERSION 9
 
 NATRON_NAMESPACE_ENTER;
 
@@ -2498,9 +2498,9 @@ exportKnobLinks(int indentLevel,
                 aliasName = groupName + QString::fromUtf8( aliasHolder->getNode()->getScriptName_mt_safe().c_str() );
             }
             aliasName += QChar::fromLatin1('.');
-            aliasName += QString::fromUtf8( alias->getName().c_str() );
-
-            WRITE_INDENT(indentLevel); WRITE_STRING( aliasName + QString::fromUtf8(".setAsAlias(") + paramName + QString::fromUtf8(")") );
+            aliasName += QString::fromUtf8(alias->getName().c_str());
+            
+            WRITE_INDENT(indentLevel); WRITE_STRING(aliasName + QString::fromUtf8(".setAsAlias(param)"))	;
         } else {
             for (int i = 0; i < (*it2)->getDimension(); ++i) {
                 std::string expr = (*it2)->getExpression(i);
@@ -2551,15 +2551,29 @@ exportKnobLinks(int indentLevel,
     return hasExportedLink;
 } // exportKnobLinks
 
-static void
-exportGroupInternal(int indentLevel,
-                    const NodeCollection* collection,
-                    const QString& groupName,
-                    QTextStream& ts)
+
+static void exportGroupInternal(int indentLevel,const NodeCollection* collection, const NodePtr& upperLevelGroupNode,const QString& upperLevelGroupName, QTextStream& ts)
 {
     WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Create all nodes in the group");
     WRITE_STATIC_LINE("");
 
+    const NodeGroup* isGroup = dynamic_cast<const NodeGroup*>(collection);
+    NodePtr groupNode;
+    if (isGroup) {
+        groupNode = isGroup->getNode();
+    }
+    
+    QString groupName = upperLevelGroupName + QString::fromUtf8("group");
+    
+    if (isGroup) {
+        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Create the parameters of the group node the same way we did for all internal nodes");
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("lastNode = ") + groupName);
+        exportAllNodeKnobs(indentLevel,isGroup->getNode(),ts);
+        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del lastNode");
+        WRITE_STATIC_LINE("");
+    }
+    
+    
     NodesList nodes = collection->getNodes();
     NodesList exportedNodes;
 
@@ -2656,23 +2670,11 @@ exportGroupInternal(int indentLevel,
         NodeGroup* isGrp = (*it)->isEffectGroup();
         if (isGrp) {
             WRITE_INDENT(indentLevel); WRITE_STRING(groupName + QString::fromUtf8("group = ") + nodeNameInScript);
-            exportGroupInternal(indentLevel, isGrp, groupName + QString::fromUtf8("group"), ts);
+            exportGroupInternal(indentLevel, isGrp, groupNode, groupName, ts);
             WRITE_STATIC_LINE("");
         }
     }
 
-    const NodeGroup* isGroup = dynamic_cast<const NodeGroup*>(collection);
-    NodePtr groupNode;
-    if (isGroup) {
-        groupNode = isGroup->getNode();
-    }
-    if (isGroup) {
-        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Create the parameters of the group node the same way we did for all internal nodes");
-        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("lastNode = ") + groupName);
-        exportAllNodeKnobs(indentLevel, isGroup->getNode(), ts);
-        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del lastNode");
-        WRITE_STATIC_LINE("");
-    }
 
     WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Now that all nodes are created we can connect them together, restore expressions");
     bool hasConnected = false;
@@ -2707,7 +2709,8 @@ exportGroupInternal(int indentLevel,
         WRITE_STATIC_LINE("");
     }
     if (isGroup) {
-        exportKnobLinks(indentLevel, groupNode, groupNode, groupName, groupName, ts);
+        exportKnobLinks(indentLevel, upperLevelGroupNode ? upperLevelGroupNode : groupNode, groupNode,
+                        upperLevelGroupNode ? upperLevelGroupName : groupName, groupName, ts);
     }
 } // exportGroupInternal
 
@@ -2777,8 +2780,9 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
 
 
     WRITE_STATIC_LINE("def createInstance(app,group):");
-    exportGroupInternal(1, this, QString::fromUtf8("group"), ts);
 
+    exportGroupInternal(1, this, NodePtr(), QString(), ts);
+    
     ///Import user hand-written code
     WRITE_INDENT(1); WRITE_STATIC_LINE("try:");
     WRITE_INDENT(2); WRITE_STRING( QString::fromUtf8("extModule = sys.modules[") + ESC(extModule) + QString::fromUtf8("]") );
