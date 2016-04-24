@@ -485,7 +485,7 @@ Gui::removeViewerTab(ViewerTab* tab,
     if (tab == _imp->_activeViewer) {
         _imp->_activeViewer = 0;
     }
-    
+    tab->abortRendering();
     NodeGraph* graph = 0;
     NodeGroup* isGrp = 0;
     boost::shared_ptr<NodeCollection> collection;
@@ -506,7 +506,7 @@ Gui::removeViewerTab(ViewerTab* tab,
     if (!graph) {
         throw std::logic_error("");
     }
-
+    
     ViewerTab* lastSelectedViewer = graph->getLastSelectedViewer();
 
     if (lastSelectedViewer == tab) {
