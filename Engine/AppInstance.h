@@ -126,6 +126,21 @@ public:
     ~FlagSetter();
 };
 
+class FlagIncrementer {
+    
+    int* p;
+    QMutex* lock;
+    
+public:
+    
+    FlagIncrementer(int* p);
+    
+    FlagIncrementer(int* p, QMutex* mutex);
+    
+    ~FlagIncrementer();
+};
+
+
 class AppInstance
     : public QObject, public boost::noncopyable, public TimeLineKeyFrames
 {
