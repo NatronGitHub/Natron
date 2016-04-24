@@ -137,10 +137,7 @@ public:
         if ( label.empty() ) {
             label = param->getLongLabel();
         }
-        if ( label.empty() ) {
-            label = param->getName();
-        }
-        
+ 
         return label;
     }
     
