@@ -272,9 +272,8 @@ bool
 KnobGui::isLabelVisible() const
 {
     KnobPtr knob = getKnob();
-    KnobString* isStringKnob = dynamic_cast<KnobString*>( knob.get() );
-
-    return isStringKnob ||  knob->isLabelVisible();
+    KnobString* isStringKnob = dynamic_cast<KnobString*>(knob.get());
+    return isStringKnob || knob->isLabelVisible();
 }
 
 bool
