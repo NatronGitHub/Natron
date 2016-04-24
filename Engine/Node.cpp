@@ -10355,7 +10355,6 @@ Node::refreshChannelSelectors()
             }
         } // if (prefInputNode)
 
-
         std::vector<std::pair<ImageComponents, NodeWPtr > > compsOrdered;
         bool gotColor = false;
         for (EffectInstance::ComponentsAvailableMap::iterator comp = compsAvailable.begin(); comp != compsAvailable.end(); ++comp) {
