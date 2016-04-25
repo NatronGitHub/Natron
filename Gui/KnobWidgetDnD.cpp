@@ -426,7 +426,13 @@ KnobWidgetDnD::mouseWheel(QWheelEvent* /*e*/)
 void
 KnobWidgetDnD::mouseEnter(QEvent* /*e*/)
 {
-    if ( Gui::isFocusStealingPossible() && _imp->widget->isEnabled() ) {
+    KnobGuiPtr knob = _imp->knob.lock();
+    if (!knob) {
+        return;
+    }
+    bool enabled = _imp->dimension == -1 ? knob->getKnob()->isEnabled(0) : knob->getKnob()->isEnabled(_imp->dimension);
+
+    if (Gui::isFocusStealingPossible() && _imp->widget->isEnabled() && enabled ) {
         _imp->widget->setFocus();
     }
 }

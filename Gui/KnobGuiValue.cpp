@@ -88,7 +88,7 @@ struct KnobGuiValuePrivate
     KnobWPtr knob;
     boost::weak_ptr<Knob<int> > intKnob;
     boost::weak_ptr<Knob<double> > doubleKnob;
-    std::vector<std::pair<SpinBox *, Label *> > spinBoxes;
+    std::vector<std::pair<SpinBox *, ClickableLabel *> > spinBoxes;
     QWidget *container;
     ScaleSliderQWidget *slider;
     Button* rectangleFormatButton;
@@ -326,9 +326,9 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
         boxContainerLayout->setSpacing(3);
 
 
-        Label *subDesc = 0;
+        ClickableLabel *subDesc = 0;
         if ( (nDims != 1) && (nbRows == 1) ) {
-            subDesc = new Label(QString::fromUtf8( dimensionLabels[i].c_str() ), boxContainer);
+            subDesc = new ClickableLabel(QString::fromUtf8( dimensionLabels[i].c_str() ), boxContainer);
             boxContainerLayout->addWidget(subDesc);
         }
 
@@ -1048,7 +1048,7 @@ KnobGuiValue::setEnabled()
         bool b = knob->isEnabled(i) && !knob->isSlave(i);
         _imp->spinBoxes[i].first->setReadOnly_NoFocusRect(!b);
         if (_imp->spinBoxes[i].second) {
-            _imp->spinBoxes[i].second->setEnabled(b);
+            _imp->spinBoxes[i].second->setReadOnly(!b);
         }
     }
     if (_imp->slider) {

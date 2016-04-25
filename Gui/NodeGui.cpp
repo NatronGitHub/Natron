@@ -2504,7 +2504,7 @@ NodeGui::onKnobsLinksChanged()
         }
     }
 
-    if (links.size() > 0) {
+    if (_knobsLinks.size() > 0) {
         if ( !_expressionIndicator->isActive() ) {
             _expressionIndicator->setActive(true);
         }

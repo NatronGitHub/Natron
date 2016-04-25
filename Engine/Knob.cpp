@@ -4801,32 +4801,32 @@ KnobHolder::endChanges(bool discardRendering)
         return;
     }
 
-    bool significant = false;
-    bool hasHadChangeDuringBeingEndBracket = false;
-    bool mustRefreshMetadatas = false;
+    
+    bool thisChangeSignificant = false;
+    bool thisBracketHadChange = false;
     KnobChanges knobChanged;
-    int evaluationBlocked = 0;
     {
         QMutexLocker l(&_imp->evaluationBlockedMutex);
 
         knobChanged = _imp->knobChanged;
+        for (KnobChanges::iterator it = knobChanged.begin(); it!=knobChanged.end(); ++it) {
+            if (it->knob->getEvaluateOnChange()) {
+                thisChangeSignificant = true;
+            }
+            
+            if (!it->valueChangeBlocked && it->knob->getIsMetadataSlave()) {
+                ++_imp->nbChangesRequiringMetadataRefresh;
+            }
+            
+        }
+        if (thisChangeSignificant) {
+            ++_imp->nbSignificantChangesDuringEvaluationBlock;
+        }
+        if (!knobChanged.empty()) {
+            ++_imp->nbChangesDuringEvaluationBlock;
+            thisBracketHadChange = true;
+        }
 
-        if (_imp->nbSignificantChangesDuringEvaluationBlock) {
-            significant = true;
-        }
-        if (_imp->nbChangesDuringEvaluationBlock) {
-            hasHadChangeDuringBeingEndBracket = true;
-        }
-        if (_imp->nbChangesRequiringMetadataRefresh) {
-            mustRefreshMetadatas = true;
-        }
-
-        if (_imp->evaluationBlocked <= 1) {
-            _imp->nbSignificantChangesDuringEvaluationBlock = 0;
-            _imp->nbChangesDuringEvaluationBlock = 0;
-            _imp->nbChangesRequiringMetadataRefresh = 0;
-        }
-        evaluationBlocked = _imp->evaluationBlocked;
         _imp->knobChanged.clear();
     }
     KnobPtr firstKnobChanged;
@@ -4835,33 +4835,29 @@ KnobHolder::endChanges(bool discardRendering)
         firstKnobChanged = knobChanged.begin()->knob;
         firstKnobReason = knobChanged.begin()->reason;
     }
+    bool isChangeDueToTimeChange = firstKnobReason == eValueChangedReasonTimeChanged;
 
     bool isLoadingProject = false;
     if ( getApp() ) {
         isLoadingProject = getApp()->getProject()->isLoadingProject();
     }
 
-    bool ignoreHashChangeAndRender = !hasHadChangeDuringBeingEndBracket || isLoadingProject;
-
-    if (firstKnobReason == eValueChangedReasonTimeChanged) {
-        ignoreHashChangeAndRender = true;
-    }
-
     // If the node is currently modifying its input, do not ask for a render
     // because at then end of the inputChanged handler, it will ask for a refresh
     // and a rebuild of the inputs tree.
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
+    bool duringInputChangeAction = false;
     if (isEffect) {
         NodePtr node = isEffect->getNode();
-        if ( isMT && node->duringInputChangedAction() ) {
-            ignoreHashChangeAndRender = true;
+        if (isMT && node->duringInputChangedAction()) {
+            duringInputChangeAction = true;
         }
     }
 
 
     // Increment hash only if significant
-    if (significant && !ignoreHashChangeAndRender) {
-        onSignificantEvaluateAboutToBeCalled( firstKnobChanged.get() );
+    if (thisChangeSignificant && thisBracketHadChange && !isLoadingProject && !duringInputChangeAction && !isChangeDueToTimeChange) {
+        onSignificantEvaluateAboutToBeCalled(firstKnobChanged.get());
     }
 
     bool guiFrozen = firstKnobChanged ? getApp() && firstKnobChanged->getKnobGuiPointer() && firstKnobChanged->getKnobGuiPointer()->isGuiFrozenForPlayback() : false;
@@ -4894,23 +4890,47 @@ KnobHolder::endChanges(bool discardRendering)
             it->knob->refreshListenersAfterValueChange(it->view, it->originalReason, dimension);
         }
     }
+    
+    int evaluationBlocked;
+    bool hasHadSignificantChange = false;
+    bool hasHadAnyChange = false;
+    bool mustRefreshMetadatas = false;
 
-
-    // Call getClipPreferences & render
-    if ( !discardRendering && !ignoreHashChangeAndRender && (evaluationBlocked == 1) ) {
-        if (!isMT) {
-            Q_EMIT doEvaluateOnMainThread(significant, mustRefreshMetadatas);
-        } else {
-            evaluate(significant, mustRefreshMetadatas);
-        }
-    }
     {
         QMutexLocker l(&_imp->evaluationBlockedMutex);
         if (_imp->evaluationBlocked > 0) {
             --_imp->evaluationBlocked;
         }
+        evaluationBlocked = _imp->evaluationBlocked;
+        if (evaluationBlocked == 0) {
+            if (_imp->nbSignificantChangesDuringEvaluationBlock) {
+                hasHadSignificantChange = true;
+            }
+            if (_imp->nbChangesRequiringMetadataRefresh) {
+                mustRefreshMetadatas = true;
+            }
+            if (_imp->nbChangesDuringEvaluationBlock) {
+                hasHadAnyChange = true;
+            }
+            _imp->nbSignificantChangesDuringEvaluationBlock = 0;
+            _imp->nbChangesDuringEvaluationBlock = 0;
+            _imp->nbChangesRequiringMetadataRefresh = 0;
+        }
+        
     }
-} // KnobHolder::endChanges
+
+    
+    // Call getClipPreferences & render
+    if (hasHadAnyChange && !discardRendering && !isLoadingProject && !duringInputChangeAction && !isChangeDueToTimeChange && evaluationBlocked == 0) {
+        if (!isMT) {
+            Q_EMIT doEvaluateOnMainThread(hasHadSignificantChange, mustRefreshMetadatas);
+        } else {
+            evaluate(hasHadSignificantChange, mustRefreshMetadatas);
+        }
+    }
+   
+}
+
 
 void
 KnobHolder::onDoValueChangeOnMainThread(KnobI* knob,

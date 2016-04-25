@@ -293,12 +293,16 @@ public:
         double rotation;
         double scale;
         bool hasRotationAndScale;
+        double time;
+        bool valid;
     };
 
     struct CornerPinData
     {
         Transform::Matrix3x3 h;
         int nbEnabledPoints;
+        double time;
+        bool valid;
     };
 
     NodePtr getCurrentlySelectedTransformNode() const;
@@ -359,19 +363,17 @@ private:
                                                std::vector<Point>* x1,
                                                std::vector<Point>* x2);
 
-    void computeTransformParamsFromTracksAtTime(double refTime,
+    TransformData computeTransformParamsFromTracksAtTime(double refTime,
                                                 double time,
                                                 int jitterPeriod,
                                                 bool jitterAdd,
-                                                const std::vector<TrackMarkerPtr>& markers,
-                                                TransformData* data);
+                                                const std::vector<TrackMarkerPtr>& allMarkers);
 
-    void computeCornerPinParamsFromTracksAtTime(double refTime,
+    CornerPinData computeCornerPinParamsFromTracksAtTime(double refTime,
                                                 double time,
                                                 int jitterPeriod,
                                                 bool jitterAdd,
-                                                const std::vector<TrackMarkerPtr>& markers,
-                                                CornerPinData* data);
+                                                const std::vector<TrackMarkerPtr>& allMarkers);
 
 
     void computeTransformParamsFromTracks(double refTime,

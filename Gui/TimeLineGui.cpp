@@ -716,7 +716,7 @@ TimeLineGui::paintGL()
                               Image::clamp<qreal>(userkfG, 0., 1.),
                               Image::clamp<qreal>(userkfB, 0., 1.) );
         for (std::list<SequenceTime>::iterator it = remainingUserKeys.begin(); it != remainingUserKeys.end(); ++it) {
-            if ( (*it == currentTime) ||
+            if (/* (*it == currentTime) ||*/
                  ( *it == leftBound) ||
                  ( *it == rightBound) ) {
                 continue;
@@ -727,10 +727,20 @@ TimeLineGui::paintGL()
                                                       kfBtmWidgetCoord.y() - cursorHeight);
             QPointF kfTopRight = toTimeLineCoordinates(kfBtmWidgetCoord.x() + cursorWidth / 2.,
                                                        kfBtmWidgetCoord.y() - cursorHeight);
+            
+            QPointF kfBtmLeft = toTimeLineCoordinates(kfBtmWidgetCoord.x() - cursorWidth / 2.,
+                                                      kfBtmWidgetCoord.y() + cursorHeight);
+            QPointF kfBtmRight = toTimeLineCoordinates(kfBtmWidgetCoord.x() + cursorWidth / 2.,
+                                                       kfBtmWidgetCoord.y() + cursorHeight);
             glBegin(GL_POLYGON);
             glVertex2f( kfBtm.x(), cursorBtm.y() );
             glVertex2f( kfTopLeft.x(), kfTopLeft.y() );
             glVertex2f( kfTopRight.x(), kfTopRight.y() );
+            glEnd();
+            glBegin(GL_POLYGON);
+            glVertex2f( kfBtm.x(), cursorBtm.y() );
+            glVertex2f( kfBtmLeft.x(), kfBtmLeft.y() );
+            glVertex2f( kfBtmRight.x(), kfBtmRight.y() );
             glEnd();
 
             /*QString kfStr = QString::number(*it);

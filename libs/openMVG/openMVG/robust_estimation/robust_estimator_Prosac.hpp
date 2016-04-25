@@ -137,6 +137,27 @@ ProsacReturnCodeEnum prosac(const Kernel &kernel,
     // Test if we have sufficient points for the kernel.
     if (N < m) {
         return eProsacReturnCodeNotEnoughPoints;
+    } else if (N == m) {
+        int best_score = 0;
+        bool bestModelFound = false;
+        std::vector<typename Kernel::Model> possibleModels;
+        kernel.FitAllSamples(&possibleModels);
+        for (std::size_t i = 0; i < possibleModels.size(); ++i) {
+            int model_score = kernel.Score(possibleModels[i], &isInlier);
+            if (model_score > best_score) {
+                best_score = model_score;
+                *bestModel = possibleModels[i];
+                bestModelFound = true;
+            }
+        }
+        if (!bestModelFound) {
+            return eProsacReturnCodeNoModelFound;
+        }
+        if (bestInliers) {
+            *bestInliers = isInlier;
+        }
+        kernel.Unnormalize(bestModel);
+        return eProsacReturnCodeFoundModel;
     }
     
     

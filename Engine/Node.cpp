@@ -2676,7 +2676,10 @@ Node::getFullyQualifiedNameInternal(const std::string& scriptName) const
         boost::shared_ptr<NodeCollection> hasParentGroup = getGroup();
         NodeGroup* isGrp = dynamic_cast<NodeGroup*>( hasParentGroup.get() );
         if (isGrp) {
-            prependGroupNameRecursive(isGrp->getNode(), ret);
+            NodePtr grpNode = isGrp->getNode();
+            if (grpNode) {
+                prependGroupNameRecursive(grpNode, ret);
+            }
         }
     }
 
@@ -4222,7 +4225,10 @@ applyNodeRedirectionsDownstream(int recurseCounter,
             if (useGuiOutputs) {
                 groupOutputs = isGrp->getNode()->getGuiOutputs();
             } else {
-                isGrp->getNode()->getOutputs_mt_safe(groupOutputs);
+                NodePtr grpNode = isGrp->getNode();
+                if (grpNode) {
+                    grpNode->getOutputs_mt_safe(groupOutputs);
+                }
             }
             for (NodesWList::iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
                 //Call recursively on them
@@ -9717,7 +9723,10 @@ Node::Implementation::runOnNodeDeleteCB()
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>( group.get() );
     boost::shared_ptr<KnobString> nodeDeletedKnob = nodeRemovalCallback.lock();
     if (!nodeDeletedKnob && isGroup) {
-        cb = isGroup->getNode()->getBeforeNodeRemovalCallback();
+        NodePtr grpNode = isGroup->getNode();
+        if (grpNode) {
+            cb = grpNode->getBeforeNodeRemovalCallback();
+        }
     } else if (nodeDeletedKnob) {
         cb = nodeDeletedKnob->getValue();
     }
@@ -10346,11 +10355,12 @@ Node::refreshChannelSelectors()
             }
         } // if (prefInputNode)
 
-
         std::vector<std::pair<ImageComponents, NodeWPtr > > compsOrdered;
+        bool gotColor = false;
         for (EffectInstance::ComponentsAvailableMap::iterator comp = compsAvailable.begin(); comp != compsAvailable.end(); ++comp) {
             if ( comp->first.isColorPlane() ) {
                 compsOrdered.insert( compsOrdered.begin(), std::make_pair(comp->first, comp->second) );
+                gotColor = true;
             } else {
                 compsOrdered.push_back(*comp);
             }
@@ -10385,6 +10395,20 @@ Node::refreshChannelSelectors()
                 option += channels[i];
                 choices.push_back(option);
             }
+        }
+        if (!gotColor) {
+            std::vector<std::string>::iterator pos = choices.begin();
+            ++pos;
+            
+            const ImageComponents& rgba = ImageComponents::getRGBAComponents();
+            const std::string& rgbaCompname = rgba.getComponentsGlobalName();
+            const std::vector<std::string>& rgbaChannels = rgba.getComponentsNames();
+            std::vector<std::string> rgbaOptions;
+            for (std::size_t i = 0; i < rgbaChannels.size(); ++i) {
+                std::string option = rgbaCompname + '.' + rgbaChannels[i];
+                rgbaOptions.push_back(option);
+            }
+            choices.insert(pos, rgbaOptions.begin(), rgbaOptions.end());
         }
 
         boost::shared_ptr<KnobChoice> channelKnob = it->second.channel.lock();

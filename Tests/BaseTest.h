@@ -79,7 +79,7 @@ protected:
     ///////////////Adding a plugin here means that the user running the test MUST have the plugin
     ///////////////installed in order to the test to run, so don't add fancy plug-ins, you should
     ///////////////stick to the default plug-ins that are pre-compiled in the shell-script.
-    QString _dotGeneratorPluginID;
+    QString _generatorPluginID;
     QString _readOIIOPluginID;
     QString _writeOIIOPluginID;
     std::vector<QString> _allTestPluginIDs;

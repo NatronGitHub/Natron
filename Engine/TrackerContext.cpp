@@ -51,6 +51,9 @@
 #include "Engine/TrackerSerialization.h"
 #include "Engine/ViewerInstance.h"
 
+#ifdef DEBUG
+#define TRACKER_GENERATE_DATA_SEQUENTIALLY
+#endif
 
 NATRON_NAMESPACE_ENTER;
 
@@ -987,24 +990,9 @@ runProsacForModel(const std::vector<Point>& x1,
         M2(0, i) = x2[i].x;
         M2(1, i) = x2[i].y;
     }
-
-    ProsacReturnCodeEnum ret;
-    const std::size_t minSamples = (std::size_t)MODELTYPE::MinimumSamples();
-    if (x1.size() > minSamples) {
-        KernelType kernel(M1, w1, h1, M2, w2, h2);
-        ret = prosac(kernel, foundModel);
-    } else if (x1.size() == minSamples) {
-        std::vector<typename MODELTYPE::Model> models;
-        MODELTYPE::Solve(M1, M2, &models);
-        if ( !models.empty() ) {
-            *foundModel = models[0];
-            ret = eProsacReturnCodeFoundModel;
-        } else {
-            ret = eProsacReturnCodeNoModelFound;
-        }
-    } else {
-        ret = eProsacReturnCodeNotEnoughPoints;
-    }
+    
+    KernelType kernel(M1, w1, h1, M2, w2, h2);
+    ProsacReturnCodeEnum ret = prosac(kernel, foundModel);
     throwProsacError( ret, KernelType::MinimumSamples() );
 }
 
@@ -1269,27 +1257,36 @@ TrackerContext::extractSortedPointsFromMarkers(double refTime,
     }
 } // TrackerContext::extractSortedPointsFromMarkers
 
-void
+TrackerContext::TransformData
 TrackerContext::computeTransformParamsFromTracksAtTime(double refTime,
                                                        double time,
                                                        int jitterPeriod,
                                                        bool jitterAdd,
-                                                       const std::vector<TrackMarkerPtr>& markers,
-                                                       TransformData* data)
+                                                       const std::vector<TrackMarkerPtr>& allMarkers)
 {
+    std::vector<TrackMarkerPtr> markers;
+    for (std::size_t i = 0; i < allMarkers.size(); ++i) {
+        if ( allMarkers[i]->isEnabled(time) ) {
+            markers.push_back(allMarkers[i]);
+        }
+    }
+    TrackerContext::TransformData data;
+    data.time = time;
+    data.valid = true;
     assert( !markers.empty() );
     std::vector<Point> x1, x2;
     extractSortedPointsFromMarkers(refTime, time, markers, jitterPeriod, jitterAdd, &x1, &x2);
     assert( x1.size() == x2.size() );
     if ( x1.empty() ) {
-        throw std::runtime_error("Empty points");
+        data.valid = false;
+        return data;
     }
     if (refTime == time) {
-        data->hasRotationAndScale = x1.size() > 1;
-        data->translation.x = data->translation.y = data->rotation = 0;
-        data->scale = 1.;
+        data.hasRotationAndScale = x1.size() > 1;
+        data.translation.x = data.translation.y = data.rotation = 0;
+        data.scale = 1.;
 
-        return;
+        return data;
     }
 
     RectD rodRef = getInputRoDAtTime(refTime);
@@ -1298,14 +1295,19 @@ TrackerContext::computeTransformParamsFromTracksAtTime(double refTime,
     int h1 = rodRef.height();
     int w2 = rodTime.width();
     int h2 = rodTime.height();
-
-    if (x1.size() == 1) {
-        data->hasRotationAndScale = false;
-        computeTranslationFromNPoints(x1, x2, w1, h1, w2, h2, &data->translation);
-    } else {
-        data->hasRotationAndScale = true;
-        computeSimilarityFromNPoints(x1, x2, w1, h1, w2, h2, &data->translation, &data->rotation, &data->scale);
+    
+    try {
+        if (x1.size() == 1) {
+            data.hasRotationAndScale = false;
+            computeTranslationFromNPoints(x1, x2, w1, h1, w2, h2, &data.translation);
+        } else {
+            data.hasRotationAndScale = true;
+            computeSimilarityFromNPoints(x1, x2, w1, h1, w2, h2, &data.translation, &data.rotation, &data.scale);
+        }
+    } catch (...) {
+        data.valid = false;
     }
+    return data;
 }
 
 static Transform::Point3D
@@ -1320,26 +1322,35 @@ euclideanToHomogenous(const Point& p)
     return r;
 }
 
-void
+TrackerContext::CornerPinData
 TrackerContext::computeCornerPinParamsFromTracksAtTime(double refTime,
                                                        double time,
                                                        int jitterPeriod,
                                                        bool jitterAdd,
-                                                       const std::vector<TrackMarkerPtr>& markers,
-                                                       CornerPinData* data)
+                                                       const std::vector<TrackMarkerPtr>& allMarkers)
 {
+    std::vector<TrackMarkerPtr> markers;
+    for (std::size_t i = 0; i < allMarkers.size(); ++i) {
+        if ( allMarkers[i]->isEnabled(time) ) {
+            markers.push_back(allMarkers[i]);
+        }
+    }
+    TrackerContext::CornerPinData data;
+    data.time = time;
+    data.valid = true;
     assert( !markers.empty() );
     std::vector<Point> x1, x2;
     extractSortedPointsFromMarkers(refTime, time, markers, jitterPeriod, jitterAdd, &x1, &x2);
     assert( x1.size() == x2.size() );
-    if ( x1.empty() ) {
-        throw std::runtime_error("Empty points");
+    if (x1.empty()) {
+        data.valid = false;
+        return data;
     }
     if (refTime == time) {
-        data->h.setIdentity();
-        data->nbEnabledPoints = 4;
-
-        return;
+        data.h.setIdentity();
+        data.nbEnabledPoints = 4;
+        
+        return data;
     }
 
     RectD rodRef = getInputRoDAtTime(refTime);
@@ -1350,36 +1361,35 @@ TrackerContext::computeCornerPinParamsFromTracksAtTime(double refTime,
     int h2 = rodTime.height();
 
     if (x1.size() == 1) {
-        data->h.setTranslationFromOnePoint( euclideanToHomogenous(x1[0]), euclideanToHomogenous(x2[0]) );
-        data->nbEnabledPoints = 1;
+        data.h.setTranslationFromOnePoint( euclideanToHomogenous(x1[0]), euclideanToHomogenous(x2[0]) );
+        data.nbEnabledPoints = 1;
     } else if (x1.size() == 2) {
-        data->h.setSimilarityFromTwoPoints( euclideanToHomogenous(x1[0]), euclideanToHomogenous(x1[1]), euclideanToHomogenous(x2[0]), euclideanToHomogenous(x2[1]) );
-        data->nbEnabledPoints = 2;
+        data.h.setSimilarityFromTwoPoints( euclideanToHomogenous(x1[0]), euclideanToHomogenous(x1[1]), euclideanToHomogenous(x2[0]), euclideanToHomogenous(x2[1]) );
+        data.nbEnabledPoints = 2;
     } else if (x1.size() == 3) {
-        data->h.setAffineFromThreePoints( euclideanToHomogenous(x1[0]), euclideanToHomogenous(x1[1]), euclideanToHomogenous(x1[2]), euclideanToHomogenous(x2[0]), euclideanToHomogenous(x2[1]), euclideanToHomogenous(x2[2]) );
-        data->nbEnabledPoints = 3;
+        data.h.setAffineFromThreePoints( euclideanToHomogenous(x1[0]), euclideanToHomogenous(x1[1]), euclideanToHomogenous(x1[2]), euclideanToHomogenous(x2[0]), euclideanToHomogenous(x2[1]), euclideanToHomogenous(x2[2]) );
+        data.nbEnabledPoints = 3;
     } else {
-        computeHomographyFromNPoints(x1, x2, w1, h1, w2, h2, &data->h);
-        data->nbEnabledPoints = 4;
+        try {
+            computeHomographyFromNPoints(x1, x2, w1, h1, w2, h2, &data.h);
+            data.nbEnabledPoints = 4;
+        } catch (...) {
+            data.valid = false;
+        }
     }
+    return data;
 }
-
-struct CornerPinDataWithTime
-{
-    TrackerContext::CornerPinData data;
-    double time;
-};
 
 static Point
 applyHomography(const Point& p,
-                Transform::Matrix3x3& h)
+                const Transform::Matrix3x3& h)
 {
     Transform::Point3D a = euclideanToHomogenous(p);
 
-    a = Transform::matApply(h, a);
+    Transform::Point3D r = Transform::matApply(h, a);
     Point ret;
-    ret.x = a.x / a.z;
-    ret.y = a.y / a.z;
+    ret.x = r.x / r.z;
+    ret.y = r.y / r.z;
 
     return ret;
 }
@@ -1393,26 +1403,27 @@ TrackerContext::computeCornerParamsFromTracks(double refTime,
 {
     boost::shared_ptr<KnobInt> smoothCornerPinKnob = _imp->smoothCornerPin.lock();
     int smoothJitter = smoothCornerPinKnob->getValue();
-    std::vector<CornerPinDataWithTime> dataAtTime;
+    
+#ifndef TRACKER_GENERATE_DATA_SEQUENTIALLY
+    QFuture<CornerPinData> future = QtConcurrent::mapped(keyframes, boost::bind(&TrackerContext::computeCornerPinParamsFromTracksAtTime, this, refTime, _1, jitterPeriod, jitterAdd, allMarkers));
+    future.waitForFinished();
 
-    for (std::set<double>::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
-        CornerPinDataWithTime t;
-        t.time = *it;
-
-        std::vector<TrackMarkerPtr> enabledMarkersAtTime;
-        for (std::size_t i = 0; i < allMarkers.size(); ++i) {
-            if ( allMarkers[i]->isEnabled(*it) ) {
-                enabledMarkersAtTime.push_back(allMarkers[i]);
-            }
+    QList<CornerPinData> results = future.results();
+    QList<CornerPinData> validResults;
+    for (QList<CornerPinData>::iterator it = results.begin(); it!=results.end(); ++it) {
+        if (it->valid) {
+            validResults.push_back(*it);
         }
-        try {
-            computeCornerPinParamsFromTracksAtTime(refTime, t.time, jitterPeriod, jitterAdd, enabledMarkersAtTime, &t.data);
-        } catch (const std::exception& /*e*/) {
-            continue;
-        }
-
-        dataAtTime.push_back(t);
     }
+#else
+    QList<CornerPinData> validResults;
+    for (std::set<double>::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
+        CornerPinData data = computeCornerPinParamsFromTracksAtTime(refTime, *it, jitterPeriod, jitterAdd, allMarkers);
+        if (data.valid) {
+            validResults.push_back(data);
+        }
+    }
+#endif
 
 
     NodePtr node = getNode();
@@ -1485,21 +1496,82 @@ TrackerContext::computeCornerParamsFromTracks(double refTime,
         fromPoints[c]->setValues(refFrom[c].x, refFrom[c].y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
     }
 
-    for (std::size_t i = 0; i < dataAtTime.size(); ++i) {
+    // Create temporary curves and clone the toPoint internal curves at once because setValueAtTime will be slow since it emits
+    // signals to create keyframes in keyframeSet
+    Curve tmpToPointsCurveX[4],tmpToPointsCurveY[4];
+    
+    for (QList<CornerPinData>::const_iterator itResults = validResults.begin(); itResults != validResults.end(); ++itResults) {
+        
+        const CornerPinData& dataAtTime = *itResults;
+        
         if (smoothJitter > 1) {
             int halfJitter = smoothJitter / 2;
             Point avgTos[4] = {
                 {0, 0}, {0, 0}, {0, 0}, {0, 0}
             };
-            int nSamples = 0;
-            for (int t = std::max(0, (int)i - halfJitter); t < ( (int)i + halfJitter ) && t < (int)dataAtTime.size(); ++t, ++nSamples) {
+            
+            // Get halfJitter samples before the given time
+            QList<CornerPinData>::const_iterator prevHalfIt = itResults;
+            int nSamplesBefore = 0;
+            const CornerPinData* lastCornerPinData = 0;
+            while (prevHalfIt != validResults.begin() && nSamplesBefore <= halfJitter) {
                 Point to[4];
                 for (int c = 0; c < 4; ++c) {
-                    to[c] = applyHomography(refFrom[c], dataAtTime[i].data.h);
+                    to[c] = applyHomography(refFrom[c], prevHalfIt->h);
                     avgTos[c].x += to[c].x;
                     avgTos[c].y += to[c].y;
                 }
+                if (!lastCornerPinData) {
+                    lastCornerPinData = &(*prevHalfIt);
+                }
+                ++nSamplesBefore;
+                --prevHalfIt;
             }
+            
+            while (nSamplesBefore <= halfJitter && lastCornerPinData) {
+                assert(prevHalfIt == validResults.begin());
+                Point to[4];
+                for (int c = 0; c < 4; ++c) {
+                    to[c] = applyHomography(refFrom[c], lastCornerPinData->h);
+                    avgTos[c].x += to[c].x;
+                    avgTos[c].y += to[c].y;
+                }
+                ++nSamplesBefore;
+            }
+            
+            // Get halfJitter samples after the given time
+            QList<CornerPinData>::const_iterator nextHalfIt = itResults;
+            int nSamplesAfter = 0;
+            ++nextHalfIt;
+            lastCornerPinData = 0;
+            while (nextHalfIt != validResults.end() && nSamplesAfter < halfJitter) {
+                Point to[4];
+                for (int c = 0; c < 4; ++c) {
+                    to[c] = applyHomography(refFrom[c], nextHalfIt->h);
+                    avgTos[c].x += to[c].x;
+                    avgTos[c].y += to[c].y;
+                }
+                if (!lastCornerPinData) {
+                    lastCornerPinData = &(*nextHalfIt);
+                }
+                ++nSamplesAfter;
+                ++nextHalfIt;
+            }
+            
+            while (nSamplesAfter < halfJitter && lastCornerPinData) {
+                assert(nextHalfIt == validResults.end());
+                Point to[4];
+                for (int c = 0; c < 4; ++c) {
+                    to[c] = applyHomography(refFrom[c], lastCornerPinData->h);
+                    avgTos[c].x += to[c].x;
+                    avgTos[c].y += to[c].y;
+                }
+                ++nSamplesAfter;
+            }
+            
+            const int nSamples = nSamplesAfter + nSamplesBefore;
+
+      
             if (nSamples > 0) {
                 for (int c = 0; c < 4; ++c) {
                     avgTos[c].x /= nSamples;
@@ -1507,7 +1579,11 @@ TrackerContext::computeCornerParamsFromTracks(double refTime,
                 }
 
                 for (int c = 0; c < 4; ++c) {
-                    toPoints[c]->setValues(avgTos[c].x, avgTos[c].y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+                    KeyFrame kx(dataAtTime.time,avgTos[c].x);
+                    KeyFrame ky(dataAtTime.time,avgTos[c].y);
+                    tmpToPointsCurveX[c].addKeyFrame(kx);
+                    tmpToPointsCurveY[c].addKeyFrame(ky);
+                    //toPoints[c]->setValuesAtTime(dataAtTime[i].time, avgTos[c].x, avgTos[c].y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
                 }
 
 
@@ -1528,8 +1604,12 @@ TrackerContext::computeCornerParamsFromTracks(double refTime,
         } else {
             for (int c = 0; c < 4; ++c) {
                 Point toPoint;
-                toPoint = applyHomography(refFrom[c], dataAtTime[i].data.h);
-                toPoints[c]->setValuesAtTime(dataAtTime[i].time, toPoint.x, toPoint.y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+                toPoint = applyHomography(refFrom[c], dataAtTime.h);
+                KeyFrame kx(dataAtTime.time,toPoint.x);
+                KeyFrame ky(dataAtTime.time,toPoint.y);
+                tmpToPointsCurveX[c].addKeyFrame(kx);
+                tmpToPointsCurveY[c].addKeyFrame(ky);
+                //toPoints[c]->setValuesAtTime(dataAtTime[i].time, toPoint.x, toPoint.y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
             }
 
             /*matrixKnob->blockValueChanges();
@@ -1545,6 +1625,11 @@ TrackerContext::computeCornerParamsFromTracks(double refTime,
                matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.i, ViewSpec::all(), 8);*/
         }
     } // for (std::size_t i = 0; i < dataAtTime.size(); ++i)
+    
+    for (int c = 0; c < 4; ++c) {
+        toPoints[c]->cloneCurve(ViewSpec::all(), 0, tmpToPointsCurveX[c]);
+        toPoints[c]->cloneCurve(ViewSpec::all(), 1, tmpToPointsCurveY[c]);
+    }
     for (std::list<KnobPtr>::iterator it = animatedKnobsChanged.begin(); it != animatedKnobsChanged.end(); ++it) {
         (*it)->unblockValueChanges();
         int nDims = (*it)->getDimension();
@@ -1554,12 +1639,6 @@ TrackerContext::computeCornerParamsFromTracks(double refTime,
     }
     node->getEffectInstance()->endChanges();
 } // TrackerContext::computeCornerParamsFromTracks
-
-struct TransformDataWithTime
-{
-    TrackerContext::TransformData data;
-    double time;
-};
 
 void
 TrackerContext::computeTransformParamsFromTracks(double refTime,
@@ -1575,26 +1654,28 @@ TrackerContext::computeTransformParamsFromTracks(double refTime,
     smoothRJitter = smoothKnob->getValue(1);
     smoothSJitter = smoothKnob->getValue(2);
 
-
-    std::vector<TransformDataWithTime> dataAtTime;
-    for (std::set<double>::iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
-        TransformDataWithTime t;
-        t.time = *it;
-
-        std::vector<TrackMarkerPtr> enabledMarkersAtTime;
-        for (std::size_t i = 0; i < allMarkers.size(); ++i) {
-            if ( allMarkers[i]->isEnabled(*it) ) {
-                enabledMarkersAtTime.push_back(allMarkers[i]);
-            }
+#ifndef TRACKER_GENERATE_DATA_SEQUENTIALLY
+    QFuture<TransformData> future = QtConcurrent::mapped(keyframes, boost::bind(&TrackerContext::computeTransformParamsFromTracksAtTime, this, refTime, _1, jitterPeriod, jitterAdd, allMarkers));
+    future.waitForFinished();
+    
+    QList<TransformData> results = future.results();
+    QList<TransformData> validResults;
+    for (QList<TransformData>::iterator it = results.begin(); it!=results.end(); ++it) {
+        if (it->valid) {
+            validResults.push_back(*it);
         }
-        try {
-            computeTransformParamsFromTracksAtTime(refTime, t.time, jitterPeriod, jitterAdd, enabledMarkersAtTime, &t.data);
-        } catch (const std::exception& /*e*/) {
-            continue;
-        }
-
-        dataAtTime.push_back(t);
     }
+#else
+    QList<TransformData> validResults;
+    for (std::set<double>::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
+        TransformData data = computeTransformParamsFromTracksAtTime(refTime, *it, jitterPeriod, jitterAdd, allMarkers);
+        if (data.valid) {
+            validResults.push_back(data);
+        }
+    }
+    
+#endif
+    
 
     NodePtr node = getNode();
     node->getEffectInstance()->beginChanges();
@@ -1641,100 +1722,210 @@ TrackerContext::computeTransformParamsFromTracks(double refTime,
         centerKnob->setValues(centerValue.x, centerValue.y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
     }
 
-
-    for (std::size_t i = 0; i < dataAtTime.size(); ++i) {
+    Curve tmpTXCurve,tmpTYCurve,tmpRotateCurve,tmpScaleCurve;
+    for (QList<TransformData>::const_iterator itResults = validResults.begin(); itResults != validResults.end(); ++itResults) {
+        
+        const TransformData& dataAtTime = *itResults;
         if (smoothTJitter > 1) {
             int halfJitter = smoothTJitter / 2;
             Point avgT = {0, 0};
-            int nSamples = 0;
-            for (int t = std::max(0, (int)i - halfJitter); t < ( (int)i + halfJitter ) && t < (int)dataAtTime.size(); ++t, ++nSamples) {
-                avgT.x += dataAtTime[t].data.translation.x;
-                avgT.y += dataAtTime[t].data.translation.y;
-            }
-            avgT.x /= nSamples;
-            avgT.y /= nSamples;
 
-            translationKnob->setValueAtTime(dataAtTime[i].time, avgT.x, ViewSpec::all(), 0);
-            translationKnob->setValueAtTime(dataAtTime[i].time, avgT.y, ViewSpec::all(), 1);
+            // Get halfJitter samples before the given time
+            QList<TransformData>::const_iterator prevHalfIt = itResults;
+            int nSamplesBefore = 0;
+            Point lastSampleWithTranslation = {0, 0};
+            if (itResults == validResults.begin()) {
+                lastSampleWithTranslation = itResults->translation;
+            }
+            while (prevHalfIt != validResults.begin() && nSamplesBefore <= halfJitter) {
+                avgT.x += prevHalfIt->translation.x;
+                avgT.y += prevHalfIt->translation.y;
+                lastSampleWithTranslation = prevHalfIt->translation;
+                ++nSamplesBefore;
+                --prevHalfIt;
+            }
+            
+            while (nSamplesBefore <= halfJitter) {
+                assert(prevHalfIt == validResults.begin());
+                avgT.x += lastSampleWithTranslation.x;
+                avgT.y += lastSampleWithTranslation.y;
+                ++nSamplesBefore;
+            }
+            
+            // Get halfJitter samples after the given time
+            QList<TransformData>::const_iterator nextHalfIt = itResults;
+            int nSamplesAfter = 0;
+            ++nextHalfIt;
+            lastSampleWithTranslation.x = lastSampleWithTranslation.y = 0.;
+            while (nextHalfIt != validResults.end() && nSamplesAfter < halfJitter) {
+                avgT.x += nextHalfIt->translation.x;
+                avgT.y += nextHalfIt->translation.y;
+                lastSampleWithTranslation = nextHalfIt->translation;
+                ++nSamplesAfter;
+                ++nextHalfIt;
+            }
+            
+            while (nSamplesAfter < halfJitter) {
+                assert(nextHalfIt == validResults.end());
+                avgT.x += lastSampleWithTranslation.x;
+                avgT.y += lastSampleWithTranslation.y;
+                ++nSamplesAfter;
+            }
+            
+            
+            const int nSamples = nSamplesBefore + nSamplesAfter;
+            if (nSamples) {
+                avgT.x /= nSamples;
+                avgT.y /= nSamples;
+            }
+            KeyFrame kx(dataAtTime.time, avgT.x);
+            KeyFrame ky(dataAtTime.time, avgT.y);
+            tmpTXCurve.addKeyFrame(kx);
+            tmpTYCurve.addKeyFrame(ky);
+            //translationKnob->setValueAtTime(dataAtTime[i].time, avgT.x, ViewSpec::all(), 0);
+            //translationKnob->setValueAtTime(dataAtTime[i].time, avgT.y, ViewSpec::all(), 1);
         } else {
-            translationKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.translation.x, ViewSpec::all(), 0);
-            translationKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.translation.y, ViewSpec::all(), 1);
+            KeyFrame kx(dataAtTime.time, dataAtTime.translation.x);
+            KeyFrame ky(dataAtTime.time, dataAtTime.translation.y);
+            tmpTXCurve.addKeyFrame(kx);
+            tmpTYCurve.addKeyFrame(ky);
+            //translationKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.translation.x, ViewSpec::all(), 0);
+            //translationKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.translation.y, ViewSpec::all(), 1);
         }
 
         if (smoothRJitter > 1) {
             int halfJitter = smoothRJitter / 2;
-            double avg = dataAtTime[i].data.rotation;
-            int nSamples = dataAtTime[i].data.hasRotationAndScale ? 1 : 0;
-            int offset = 1;
-            while (nSamples < halfJitter) {
-                bool canMoveForward = i + offset < dataAtTime.size();
-                if (canMoveForward) {
-                    if (dataAtTime[i + offset].data.hasRotationAndScale) {
-                        avg += dataAtTime[i + offset].data.rotation;
-                        ++nSamples;
-                    }
-                }
-                bool canMoveBackward = (int)i - offset >= 0;
-                if (canMoveForward) {
-                    if (dataAtTime[i - offset].data.hasRotationAndScale) {
-                        avg += dataAtTime[i - offset].data.rotation;
-                        ++nSamples;
-                    }
-                }
-                if (canMoveForward || canMoveBackward) {
-                    ++nSamples;
-                } else if (!canMoveBackward && !canMoveForward) {
-                    break;
-                }
+            
+            double avg = 0;
+            double lastSampleWithRotation = 0;
+            if (itResults == validResults.begin() && itResults->hasRotationAndScale) {
+                lastSampleWithRotation = itResults->scale;
             }
+            // Get halfJitter samples before the given time
+            QList<TransformData>::const_iterator prevHalfIt = itResults;
+            int nSamplesBefore = 0;
+            while (prevHalfIt != validResults.begin() && nSamplesBefore <= halfJitter) {
+                if (prevHalfIt->hasRotationAndScale) {
+                    avg += prevHalfIt->rotation;
+                    lastSampleWithRotation = prevHalfIt->rotation;
+                    ++nSamplesBefore;
+                }
+                --prevHalfIt;
+            }
+            
+            while (nSamplesBefore <= halfJitter && lastSampleWithRotation != 0. && prevHalfIt->hasRotationAndScale) {
+                assert(prevHalfIt == validResults.begin());
+                avg += prevHalfIt->rotation;
+                ++nSamplesBefore;
+            }
+            
+            // Get halfJitter samples after the given time
+            lastSampleWithRotation = 0.;
+            QList<TransformData>::const_iterator nextHalfIt = itResults;
+            int nSamplesAfter = 0;
+            ++nextHalfIt;
+            
+            while (nextHalfIt != validResults.end() && nSamplesAfter < halfJitter) {
+                if (prevHalfIt->hasRotationAndScale) {
+                    avg += nextHalfIt->rotation;
+                    lastSampleWithRotation = nextHalfIt->rotation;
+                    ++nSamplesAfter;
+                }
+                ++nextHalfIt;
+            }
+            
+            while (nSamplesAfter < halfJitter && lastSampleWithRotation != 0.) {
+                assert(nextHalfIt == validResults.end());
+                avg += lastSampleWithRotation;
+                ++nSamplesAfter;
+            }
+            
+            const int nSamples = nSamplesBefore + nSamplesAfter;
+
             if (nSamples) {
                 avg /= nSamples;
+                KeyFrame k(dataAtTime.time, avg);
+                tmpRotateCurve.addKeyFrame(k);
             }
 
-            rotationKnob->setValueAtTime(dataAtTime[i].time, avg, ViewSpec::all(), 0);
+            
+            //rotationKnob->setValueAtTime(dataAtTime[i].time, avg, ViewSpec::all(), 0);
         } else {
-            if (dataAtTime[i].data.hasRotationAndScale) {
-                rotationKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.rotation, ViewSpec::all(), 0);
+            if (dataAtTime.hasRotationAndScale) {
+                KeyFrame k(dataAtTime.time, dataAtTime.rotation);
+                tmpRotateCurve.addKeyFrame(k);
+
+              //  rotationKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.rotation, ViewSpec::all(), 0);
             }
         }
 
         if (smoothSJitter > 1) {
             int halfJitter = smoothSJitter / 2;
-            double avg = dataAtTime[i].data.scale;
-            int nSamples = dataAtTime[i].data.hasRotationAndScale ? 1 : 0;
-            int offset = 1;
-            while (nSamples < halfJitter) {
-                bool canMoveForward = i + offset < dataAtTime.size();
-                if (canMoveForward) {
-                    if (dataAtTime[i + offset].data.hasRotationAndScale) {
-                        avg += dataAtTime[i + offset].data.scale;
-                        ++nSamples;
-                    }
-                }
-                bool canMoveBackward = (int)i - offset >= 0;
-                if (canMoveForward) {
-                    if (dataAtTime[i - offset].data.hasRotationAndScale) {
-                        avg += dataAtTime[i - offset].data.scale;
-                        ++nSamples;
-                    }
-                }
-                if (canMoveForward || canMoveBackward) {
-                    ++nSamples;
-                } else if (!canMoveBackward && !canMoveForward) {
-                    break;
-                }
+            double avg = 0;
+            double lastSampleWithScale = 0;
+            if (itResults == validResults.begin() && itResults->hasRotationAndScale) {
+                lastSampleWithScale = itResults->scale;
             }
+            // Get halfJitter samples before the given time
+            QList<TransformData>::const_iterator prevHalfIt = itResults;
+            int nSamplesBefore = 0;
+            while (prevHalfIt != validResults.begin() && nSamplesBefore <= halfJitter) {
+                if (prevHalfIt->hasRotationAndScale) {
+                    avg += prevHalfIt->scale;
+                    lastSampleWithScale = prevHalfIt->scale;
+                    ++nSamplesBefore;
+                }
+                --prevHalfIt;
+            }
+            
+            while (nSamplesBefore <= halfJitter && lastSampleWithScale != 0.) {
+                assert(prevHalfIt == validResults.begin());
+                avg += lastSampleWithScale;
+                ++nSamplesBefore;
+            }
+            
+            // Get halfJitter samples after the given time
+            lastSampleWithScale = 0.;
+            QList<TransformData>::const_iterator nextHalfIt = itResults;
+            int nSamplesAfter = 0;
+            ++nextHalfIt;
+            
+            while (nextHalfIt != validResults.end() && nSamplesAfter < halfJitter) {
+                if (prevHalfIt->hasRotationAndScale) {
+                    avg += nextHalfIt->scale;
+                    lastSampleWithScale = nextHalfIt->scale;
+                    ++nSamplesAfter;
+                }
+                ++nextHalfIt;
+            }
+            
+            while (nSamplesAfter < halfJitter && lastSampleWithScale != 0.) {
+                assert(nextHalfIt == validResults.end());
+                avg += lastSampleWithScale;
+                ++nSamplesAfter;
+            }
+            
+            const int nSamples = nSamplesBefore + nSamplesAfter;
             if (nSamples) {
                 avg /= nSamples;
-                scaleKnob->setValueAtTime(dataAtTime[i].time, avg, ViewSpec::all(), 0);
+                
+                KeyFrame k(dataAtTime.time, avg);
+                tmpScaleCurve.addKeyFrame(k);
+                //scaleKnob->setValueAtTime(dataAtTime[i].time, avg, ViewSpec::all(), 0);
             }
         } else {
-            if (dataAtTime[i].data.hasRotationAndScale) {
-                scaleKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.scale, ViewSpec::all(), 0);
+            if (dataAtTime.hasRotationAndScale) {
+                KeyFrame k(dataAtTime.time, dataAtTime.scale);
+                tmpScaleCurve.addKeyFrame(k);
+                //scaleKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.scale, ViewSpec::all(), 0);
             }
         }
     } // for (std::size_t i = 0; i < dataAtTime.size(); ++i)
-
+    translationKnob->cloneCurve(ViewSpec::all(), 0, tmpTXCurve);
+    translationKnob->cloneCurve(ViewSpec::all(), 1, tmpTYCurve);
+    rotationKnob->cloneCurve(ViewSpec::all(), 0, tmpRotateCurve);
+    scaleKnob->cloneCurve(ViewSpec::all(), 0, tmpScaleCurve);
+    scaleKnob->cloneCurve(ViewSpec::all(), 1, tmpScaleCurve);
 
     for (std::list<KnobPtr>::iterator it = animatedKnobsChanged.begin(); it != animatedKnobsChanged.end(); ++it) {
         (*it)->unblockValueChanges();

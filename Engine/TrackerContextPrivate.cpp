@@ -52,7 +52,9 @@ createDuplicateKnob( const std::string& knobName,
                      const NodePtr& otherNode = NodePtr() )
 {
     KnobPtr internalNodeKnob = internalNode->getKnobByName(knobName);
-
+    if (!internalNodeKnob) {
+        return boost::shared_ptr<KNOBTYPE>();
+    }
     assert(internalNodeKnob);
     KnobPtr duplicateKnob = internalNodeKnob->createDuplicateOnNode(effect.get(), page, group, -1, true, internalNodeKnob->getName(), internalNodeKnob->getLabel(), internalNodeKnob->getHintToolTip(), false, false);
 
@@ -418,8 +420,11 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
         cornerPinOverlayPoints = createDuplicateKnob<KnobChoice>(kCornerPinParamOverlayPoints, cNode, effect, transformPage);
         cornerPinOverlayPoints.lock()->setSecret(true);
 
-        cornerPinMatrix = createDuplicateKnob<KnobDouble>(kCornerPinParamMatrix, cNode, effect, transformPage);
-        cornerPinMatrix.lock()->setSecret(true);
+        boost::shared_ptr<KnobDouble> matrix = createDuplicateKnob<KnobDouble>(kCornerPinParamMatrix, cNode, effect, transformPage);
+        if (matrix) {
+            cornerPinMatrix = matrix;
+            matrix->setSecret(true);
+        }
     } // cNode
 
     // Add filtering & motion blur knobs
@@ -1052,7 +1057,10 @@ TrackerContextPrivate::refreshVisibilityFromTransformTypeInternal(TrackerTransfo
     toGroup.lock()->setSecret(transformType == eTrackerTransformNodeTransform);
     fromGroup.lock()->setSecret(transformType == eTrackerTransformNodeTransform);
     cornerPinOverlayPoints.lock()->setSecret(transformType == eTrackerTransformNodeTransform);
-    cornerPinMatrix.lock()->setSecret(transformType == eTrackerTransformNodeTransform);
+    boost::shared_ptr<KnobDouble> matrix = cornerPinMatrix.lock();
+    if (matrix) {
+        matrix->setSecret(transformType == eTrackerTransformNodeTransform);
+    }
 
     translate.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin);
     scale.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin);

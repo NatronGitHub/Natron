@@ -225,7 +225,10 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             mustShowErrorsLog = true;
             continue;
         } else {
-            if ( !usingPythonModule && n->getPlugin() && (n->getPlugin()->getMajorVersion() != (int)majorVersion) ) {
+            if ( !usingPythonModule && n->getPlugin() &&
+                (n->getPlugin()->getMajorVersion() != (int)majorVersion) && !n->getIOContainer()) {
+                // If the node has a IOContainer don't do this check: when loading older projects that had a
+                // ReadOIIO node for example in version 2, we would now create a new Read meta-node with version 1 instead
                 QString text( QObject::tr("WARNING: The node ") );
                 text.append( QString::fromUtf8( (*it)->getNodeScriptName().c_str() ) );
                 text.append( QString::fromUtf8(" (") );
