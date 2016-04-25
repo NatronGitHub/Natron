@@ -24,8 +24,8 @@ set -e
 
 sed -e '/<destroylistener.h>/d' -i'.bak' Engine/NatronEngine/*.cpp
 sed -e '/<destroylistener.h>/d' -i'.bak' Gui/NatronGui/*.cpp
-sed -e '/SbkPySide_QtCoreTypes;/d' -i'.bak' Gui/NatronGui/natrongui_module_wrapper.cpp
-sed -e '/SbkPySide_QtCoreTypeConverters;/d' -i'.bak' Gui/NatronGui/natrongui_module_wrapper.cpp
+sed -e '/SbkPySide2_QtCoreTypes;/d' -i'.bak' Gui/NatronGui/natrongui_module_wrapper.cpp
+sed -e '/SbkPySide2_QtCoreTypeConverters;/d' -i'.bak' Gui/NatronGui/natrongui_module_wrapper.cpp
 sed -e '/SbkNatronEngineTypes;/d' -i'.bak' Gui/NatronGui/natrongui_module_wrapper.cpp
 sed -e '/SbkNatronEngineTypeConverters;/d' -i'.bak' Gui/NatronGui/natrongui_module_wrapper.cpp
 sed -e 's/cleanTypesAttributes/cleanGuiTypesAttributes/g' -i'.bak' Gui/NatronGui/natrongui_module_wrapper.cpp
