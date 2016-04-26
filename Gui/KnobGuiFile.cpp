@@ -151,13 +151,9 @@ KnobGuiFile::onReloadClicked()
 {
     if (_reloadButton) {
         boost::shared_ptr<KnobFile> knob = _knob.lock();
-        assert( knob->getHolder() );
-        EffectInstance* effect = dynamic_cast<EffectInstance*>( knob->getHolder() );
-        if (effect) {
-            effect->purgeCaches();
-            effect->clearPersistentMessage(false);
+        if (knob) {
+            knob->reloadFile();
         }
-        knob->evaluateValueChange(0, knob->getCurrentTime(), ViewIdx(0), eValueChangedReasonNatronInternalEdited);
     }
 }
 

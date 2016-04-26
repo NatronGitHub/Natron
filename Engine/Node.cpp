@@ -2459,19 +2459,23 @@ Node::getPreferredInputInternal(bool connected) const
     }
     std::vector<NodePtr> inputs(nInputs);
     std::vector<std::string> inputLabels(nInputs);
-    for (int i = 0; i < nInputs; ++i) {
-        inputLabels[i] = getInputLabel(i);
-    }
-
+    int inputA = -1;
+    int inputB = -1;
     {
-        ///Find an input named Source
-        std::string inputNameToFind(kOfxImageEffectSimpleSourceClipName);
+        // fill input labels, and if one is called "Source", return it
+        // if it's "A" or "B", keep the index.
         for (int i = 0; i < nInputs; ++i) {
-            if (inputLabels[i] == inputNameToFind) {
+            std::string inputLabel = getInputLabel(i);
+            //printf("%d->%s\n", i, inputLabel.c_str());
+            if (inputLabel == kOfxImageEffectSimpleSourceClipName) {
                 inputs[i] = getInput(i);
                 if ( (connected && inputs[i]) || (!connected && !inputs[i]) ) {
                     return i;
                 }
+            } else if (inputLabel == "A") {
+                inputA = i;
+            } else if (inputLabel == "B") {
+                inputB = i;
             }
         }
     }
@@ -2479,23 +2483,18 @@ Node::getPreferredInputInternal(bool connected) const
     bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
 
     ///Find an input named A
-    std::string inputNameToFind, otherName;
+    int inputToFind = -1, foundOther = -1;
     if ( useInputA || (getPluginID() == PLUGINID_OFX_SHUFFLE) ) {
-        inputNameToFind = "A";
-        otherName = "B";
+        inputToFind = inputA;
+        foundOther= inputB;
     } else {
-        inputNameToFind = "B";
-        otherName = "A";
+        inputToFind = inputB;
+        foundOther= inputA;
     }
-    int foundOther = -1;
-    for (int i = 0; i < nInputs; ++i) {
-        if (inputLabels[i] == inputNameToFind) {
-            inputs[i] = getInput(i);
-            if ( (connected && inputs[i]) || (!connected && !inputs[i]) ) {
-                return i;
-            }
-        } else if (inputLabels[i] == otherName) {
-            foundOther = i;
+    if (inputToFind != -1) {
+        inputs[inputToFind] = getInput(inputToFind);
+        if ( (connected && inputs[inputToFind]) || (!connected && !inputs[inputToFind]) ) {
+            return inputToFind;
         }
     }
     if (foundOther != -1) {
@@ -2543,7 +2542,19 @@ Node::getPreferredInputInternal(bool connected) const
     if (firstNonOptionalEmptyInput != -1) {
         return firstNonOptionalEmptyInput;
     }  else {
+#if 1
         if ( !optionalEmptyInputs.empty() ) {
+            //We return the first optional empty input
+            std::list<int>::iterator first = optionalEmptyInputs.begin();
+            while ( first != optionalEmptyInputs.end() && _imp->effect->isInputRotoBrush(*first) ) {
+                ++first;
+            }
+            if ( first == optionalEmptyInputs.end() ) {
+                return -1;
+            } else {
+                return *first;
+            }
+#else // previous version, not consistent with Node::getPreferredInputInternal()
             //We return the last optional empty input
             std::list<int>::reverse_iterator first = optionalEmptyInputs.rbegin();
             while ( first != optionalEmptyInputs.rend() && _imp->effect->isInputRotoBrush(*first) ) {
@@ -2554,6 +2565,7 @@ Node::getPreferredInputInternal(bool connected) const
             } else {
                 return *first;
             }
+#endif
         } else if ( !optionalEmptyMasks.empty() ) {
             return optionalEmptyMasks.front();
         } else {

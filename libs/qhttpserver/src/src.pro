@@ -9,6 +9,10 @@ TARGET = qhttpserver
 QT += network
 QT -= gui
 
+include(../../../global.pri)
+include(../../../libs.pri)
+include(../../../config.pri)
+
 DEFINES += QHTTPSERVER_EXPORT
 INCLUDEPATH += $$QHTTPSERVER_BASE/http-parser
 PRIVATE_HEADERS += $$QHTTPSERVER_BASE/http-parser/http_parser.h qhttpconnection.h

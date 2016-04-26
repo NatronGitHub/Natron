@@ -60,6 +60,29 @@ static PyObject* Sbk_FileParamFunc_openFile(PyObject* self)
     Py_RETURN_NONE;
 }
 
+static PyObject* Sbk_FileParamFunc_reloadFile(PyObject* self)
+{
+    FileParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (FileParamWrapper*)((::FileParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_FILEPARAM_IDX], (SbkObject*)self));
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // reloadFile()
+            cppSelf->reloadFile();
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+}
+
 static PyObject* Sbk_FileParamFunc_setSequenceEnabled(PyObject* self, PyObject* pyArg)
 {
     FileParamWrapper* cppSelf = 0;
@@ -104,6 +127,7 @@ static PyObject* Sbk_FileParamFunc_setSequenceEnabled(PyObject* self, PyObject* 
 
 static PyMethodDef Sbk_FileParam_methods[] = {
     {"openFile", (PyCFunction)Sbk_FileParamFunc_openFile, METH_NOARGS},
+    {"reloadFile", (PyCFunction)Sbk_FileParamFunc_reloadFile, METH_NOARGS},
     {"setSequenceEnabled", (PyCFunction)Sbk_FileParamFunc_setSequenceEnabled, METH_O},
 
     {0} // Sentinel
