@@ -683,6 +683,79 @@ KnobHelper::setSignalSlotHandler(const boost::shared_ptr<KnobSignalSlotHandler> 
 }
 
 void
+KnobHelper::deleteValuesAtTime(CurveChangeReason curveChangeReason, const std::list<double>& times, ViewSpec view, int dimension)
+{
+    if ( ( dimension > (int)_imp->curves.size() ) || (dimension < 0) ) {
+        throw std::invalid_argument("KnobHelper::deleteValueAtTime(): Dimension out of range");
+    }
+    
+    if (times.empty()) {
+        return;
+    }
+    
+    if ( !canAnimate() || !isAnimated(dimension, view) ) {
+        return;
+    }
+    boost::shared_ptr<Curve> curve;
+    bool useGuiCurve = _imp->shouldUseGuiCurve();
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    
+    if (!useGuiCurve) {
+        curve = _imp->curves[dimension];
+    } else {
+        curve = hasGui->getCurve(view, dimension);
+        setGuiCurveHasChanged(view, dimension, true);
+    }
+    
+    assert(curve);
+    
+    try {
+        for (std::list<double>::const_iterator it = times.begin(); it!=times.end(); ++it) {
+            curve->removeKeyFrameWithTime(*it);
+        }
+        
+    } catch (const std::exception & e) {
+        //qDebug() << e.what();
+    }
+    
+    if (!useGuiCurve && hasGui) {
+        boost::shared_ptr<Curve> guiCurve = hasGui->getCurve(view, dimension);
+        assert(guiCurve);
+        for (std::list<double>::const_iterator it = times.begin(); it!=times.end(); ++it) {
+            guiCurve->removeKeyFrameWithTime(*it);
+        }
+    }
+    
+    
+    //virtual portion
+    for (std::list<double>::const_iterator it = times.begin(); it!=times.end(); ++it) {
+        keyframeRemoved_virtual(dimension, *it);
+    }
+    
+    
+    if (_imp->holder) {
+        _imp->holder->updateHasAnimation();
+    }
+    
+    
+    ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited;
+    
+    if (!useGuiCurve) {
+        checkAnimationLevel(view, dimension);
+        evaluateValueChange(dimension, *times.begin(), view, reason);
+    }
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_redrawGuiCurve(curveChangeReason, view, dimension);
+    }
+    
+    
+    if (_signalSlotHandler /* && reason != eValueChangedReasonUserEdited*/) {
+        _signalSlotHandler->s_multipleKeyFramesRemoved(times, view, dimension, (int)reason);
+    }
+
+}
+
+void
 KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
                               double time,
                               ViewSpec view,

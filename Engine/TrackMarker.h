@@ -135,7 +135,7 @@ public:
     boost::shared_ptr<KnobDouble> getErrorKnob() const;
     boost::shared_ptr<KnobChoice> getMotionModelKnob() const;
 
-    int getReferenceFrame(int time, bool forward) const;
+    int getReferenceFrame(int time, int frameStep) const;
 
     bool isUserKeyframe(int time) const;
 
@@ -162,8 +162,15 @@ public:
     void setUserKeyframe(int time);
 
     void removeUserKeyframe(int time);
-
-    void removeAllKeyframes();
+    
+    /*
+     Controls animation of the center & offset not the pattern
+     */
+    void clearAnimation();
+    void clearAnimationBeforeTime(int time);
+    void clearAnimationAfterTime(int time);
+    
+    void removeAllUserKeyframes();
 
     std::pair<boost::shared_ptr<Image>, RectI> getMarkerImage(int time, const RectI& roi) const;
 
@@ -177,6 +184,7 @@ public Q_SLOTS:
 
     void onCenterKeyframeSet(double time, ViewSpec view, int dimension, int reason, bool added);
     void onCenterKeyframeRemoved(double time, ViewSpec view, int dimension, int reason);
+    void onCenterMultipleKeysRemoved(const std::list<double>& times, ViewSpec view, int dimension, int reason);
     void onCenterKeyframeMoved(ViewSpec view, int dimension, double oldTime, double newTime);
     void onCenterKeyframesSet(const std::list<double>& keys, ViewSpec view, int dimension, int reason);
     void onCenterAnimationRemoved(ViewSpec view, int dimension);

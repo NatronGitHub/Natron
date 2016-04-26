@@ -80,6 +80,8 @@ KnobGui::initialize()
         QObject::connect( handler, SIGNAL(keyFrameMoved(ViewSpec,int,double,double)), this, SLOT(onKeyFrameMoved(ViewSpec,int,double,double)) );
         QObject::connect( handler, SIGNAL(multipleKeyFramesSet(std::list<double>,ViewSpec,int,int)), this,
                           SLOT(onMultipleKeySet(std::list<double>,ViewSpec,int,int)) );
+        QObject::connect( handler, SIGNAL(multipleKeyFramesRemoved(std::list<double>,ViewSpec,int,int)), this,
+                         SLOT(onMultipleKeyRemoved(std::list<double>,ViewSpec,int,int)) );
         QObject::connect( handler, SIGNAL(secretChanged()), this, SLOT(setSecret()) );
         QObject::connect( handler, SIGNAL(enabledChanged()), this, SLOT(setEnabledSlot()) );
         QObject::connect( handler, SIGNAL(knobSlaved(int,bool)), this, SLOT(onKnobSlavedChanged(int,bool)) );

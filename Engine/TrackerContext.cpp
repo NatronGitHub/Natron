@@ -31,10 +31,7 @@
 #include <QWaitCondition>
 #include <QThread>
 #include <QCoreApplication>
-#include <QtConcurrentMap>
 
-
-#include <boost/bind.hpp>
 
 #include "Engine/AppInstance.h"
 #include "Engine/EffectInstance.h"
@@ -52,7 +49,7 @@
 #include "Engine/ViewerInstance.h"
 
 #ifdef DEBUG
-#define TRACKER_GENERATE_DATA_SEQUENTIALLY
+//#define TRACKER_GENERATE_DATA_SEQUENTIALLY
 #endif
 
 NATRON_NAMESPACE_ENTER;
@@ -405,7 +402,7 @@ TrackerContext::getTimeLineLastFrame() const
 void
 TrackerContext::trackSelectedMarkers(int start,
                                      int end,
-                                     bool forward,
+                                     int frameStep,
                                      ViewerInstance* viewer)
 {
     std::list<TrackMarkerPtr > markers;
@@ -419,7 +416,7 @@ TrackerContext::trackSelectedMarkers(int start,
         }
     }
 
-    trackMarkers(markers, start, end, forward, viewer);
+    trackMarkers(markers, start, end, frameStep, viewer);
 }
 
 bool
@@ -939,161 +936,7 @@ TrackerContext::declarePythonFields()
     }
 }
 
-using namespace openMVG::robust;
-static void
-throwProsacError(ProsacReturnCodeEnum c,
-                 int nMinSamples)
-{
-    switch (c) {
-    case openMVG::robust::eProsacReturnCodeFoundModel:
-        break;
-    case openMVG::robust::eProsacReturnCodeInliersIsMinSamples:
-        break;
-    case openMVG::robust::eProsacReturnCodeNoModelFound:
-        throw std::runtime_error("Could not find a model for the given correspondences.");
-        break;
-    case openMVG::robust::eProsacReturnCodeNotEnoughPoints: {
-        std::stringstream ss;
-        ss << "This model requires a minimum of ";
-        ss << nMinSamples;
-        ss << " correspondences.";
-        throw std::runtime_error( ss.str() );
-    }
-    break;
-    case openMVG::robust::eProsacReturnCodeMaxIterationsFromProportionParamReached:
-        throw std::runtime_error("Maximum iterations computed from outliers proportion reached");
-        break;
-    case openMVG::robust::eProsacReturnCodeMaxIterationsParamReached:
-        throw std::runtime_error("Maximum solver iterations reached");
-        break;
-    }
-}
 
-template <typename MODELTYPE>
-void
-runProsacForModel(const std::vector<Point>& x1,
-                  const std::vector<Point>& x2,
-                  int w1,
-                  int h1,
-                  int w2,
-                  int h2,
-                  typename MODELTYPE::Model* foundModel)
-{
-    typedef ProsacKernelAdaptor<MODELTYPE> KernelType;
-
-    assert( x1.size() == x2.size() );
-    openMVG::Mat M1( 2, x1.size() ), M2( 2, x2.size() );
-    for (std::size_t i = 0; i < x1.size(); ++i) {
-        M1(0, i) = x1[i].x;
-        M1(1, i) = x1[i].y;
-
-        M2(0, i) = x2[i].x;
-        M2(1, i) = x2[i].y;
-    }
-    
-    KernelType kernel(M1, w1, h1, M2, w2, h2);
-    ProsacReturnCodeEnum ret = prosac(kernel, foundModel);
-    throwProsacError( ret, KernelType::MinimumSamples() );
-}
-
-void
-TrackerContext::computeTranslationFromNPoints(const std::vector<Point>& x1,
-                                              const std::vector<Point>& x2,
-                                              int w1,
-                                              int h1,
-                                              int w2,
-                                              int h2,
-                                              Point* translation)
-{
-    openMVG::Vec2 model;
-
-    runProsacForModel<openMVG::robust::Translation2DSolver>(x1, x2, w1, h1, w2, h2, &model);
-    translation->x = model(0);
-    translation->y = model(1);
-}
-
-void
-TrackerContext::computeSimilarityFromNPoints(const std::vector<Point>& x1,
-                                             const std::vector<Point>& x2,
-                                             int w1,
-                                             int h1,
-                                             int w2,
-                                             int h2,
-                                             Point* translation,
-                                             double* rotate,
-                                             double* scale)
-{
-    openMVG::Vec4 model;
-
-    runProsacForModel<openMVG::robust::Similarity2DSolver>(x1, x2, w1, h1, w2, h2, &model);
-    openMVG::robust::Similarity2DSolver::rtsFromVec4(model, &translation->x, &translation->y, scale, rotate);
-    *rotate = Transform::toDegrees(*rotate);
-}
-
-void
-TrackerContext::computeHomographyFromNPoints(const std::vector<Point>& x1,
-                                             const std::vector<Point>& x2,
-                                             int w1,
-                                             int h1,
-                                             int w2,
-                                             int h2,
-                                             Transform::Matrix3x3* homog)
-{
-    openMVG::Mat3 model;
-
-    runProsacForModel<openMVG::robust::Homography2DSolver>(x1, x2, w1, h1, w2, h2, &model);
-
-    *homog = Transform::Matrix3x3( model(0, 0), model(0, 1), model(0, 2),
-                                   model(1, 0), model(1, 1), model(1, 2),
-                                   model(2, 0), model(2, 1), model(2, 2) );
-}
-
-void
-TrackerContext::computeFundamentalFromNPoints(const std::vector<Point>& x1,
-                                              const std::vector<Point>& x2,
-                                              int w1,
-                                              int h1,
-                                              int w2,
-                                              int h2,
-                                              Transform::Matrix3x3* fundamental)
-{
-    openMVG::Mat3 model;
-
-    runProsacForModel<openMVG::robust::FundamentalSolver>(x1, x2, w1, h1, w2, h2, &model);
-
-    *fundamental = Transform::Matrix3x3( model(0, 0), model(0, 1), model(0, 2),
-                                         model(1, 0), model(1, 1), model(1, 2),
-                                         model(2, 0), model(2, 1), model(2, 2) );
-}
-
-RectD
-TrackerContext::getInputRoDAtTime(double time) const
-{
-    NodePtr input = getNode()->getInput(0);
-    bool useProjFormat = false;
-    RectD ret;
-
-    if (!input) {
-        useProjFormat = true;
-    } else {
-        StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getHashValue(), time, RenderScale(1.), ViewIdx(0), &ret, 0);
-        if (stat == eStatusFailed) {
-            useProjFormat = true;
-        } else {
-            return ret;
-        }
-    }
-    if (useProjFormat) {
-        Format f;
-        getNode()->getApp()->getProject()->getProjectDefaultFormat(&f);
-        ret.x1 = f.x1;
-        ret.x2 = f.x2;
-        ret.y1 = f.y1;
-        ret.y2 = f.y2;
-    }
-
-    return ret;
-}
 
 void
 TrackerContext::resetTransformCenter()
@@ -1105,7 +948,7 @@ TrackerContext::resetTransformCenter()
     double time = (double)getTransformReferenceFrame();
     Point center;
     if ( tracks.empty() ) {
-        RectD rod = getInputRoDAtTime(time);
+        RectD rod = _imp->getInputRoDAtTime(time);
         center.x = (rod.x1 + rod.x2) / 2.;
         center.y = (rod.y1 + rod.y2) / 2.;
     } else {
@@ -1149,811 +992,26 @@ TrackerContext::resetTransformParams()
     resetTransformCenter();
 }
 
-struct PointWithError
-{
-    Point p1, p2;
-    double error;
-};
-
-static bool
-PointWithErrorCompareLess(const PointWithError& lhs,
-                          const PointWithError& rhs)
-{
-    return lhs.error < rhs.error;
-}
-
-void
-TrackerContext::extractSortedPointsFromMarkers(double refTime,
-                                               double time,
-                                               const std::vector<TrackMarkerPtr>& markers,
-                                               int jitterPeriod,
-                                               bool jitterAdd,
-                                               std::vector<Point>* x1,
-                                               std::vector<Point>* x2)
-{
-    assert( !markers.empty() );
-
-    std::vector<PointWithError> pointsWithErrors;
-    bool useJitter = (jitterPeriod > 1);
-    int halfJitter = std::max(0, jitterPeriod / 2);
-    // Prosac expects the points to be sorted by decreasing correlation score (increasing error)
-    for (std::size_t i = 0; i < markers.size(); ++i) {
-        boost::shared_ptr<KnobDouble> centerKnob = markers[i]->getCenterKnob();
-        boost::shared_ptr<KnobDouble> errorKnob = markers[i]->getErrorKnob();
-
-        if (centerKnob->getKeyFrameIndex(ViewSpec::current(), 0, time) < 0) {
-            continue;
-        }
-        pointsWithErrors.resize(pointsWithErrors.size() + 1);
-
-        if (!useJitter) {
-            pointsWithErrors[i].p1.x = centerKnob->getValueAtTime(refTime, 0);
-            pointsWithErrors[i].p1.y = centerKnob->getValueAtTime(refTime, 1);
-            pointsWithErrors[i].p2.x = centerKnob->getValueAtTime(time, 0);
-            pointsWithErrors[i].p2.y = centerKnob->getValueAtTime(time, 1);
-        } else {
-            // Average halfJitter frames before and after refTime and time together to smooth the center
-            std::vector<Point> x1PointJitter, x2PointJitter;
-            for (double t = refTime - halfJitter; t <= refTime + halfJitter; t += 1.) {
-                Point p;
-                p.x = centerKnob->getValueAtTime(t, 0);
-                p.y = centerKnob->getValueAtTime(t, 1);
-                x1PointJitter.push_back(p);
-            }
-            for (double t = time - halfJitter; t <= time + halfJitter; t += 1.) {
-                Point p;
-                p.x = centerKnob->getValueAtTime(t, 0);
-                p.y = centerKnob->getValueAtTime(t, 1);
-                x2PointJitter.push_back(p);
-            }
-            assert( x1PointJitter.size() == x2PointJitter.size() );
-            Point x1AtTime = x1PointJitter[(x1PointJitter.size() - 1) / 2];
-            Point x2AtTime = x2PointJitter[(x2PointJitter.size() - 1) / 2];
-            Point x1avg = {0, 0}, x2avg = {0, 0};
-            for (std::size_t i = 0; i < x1PointJitter.size(); ++i) {
-                x1avg.x += x1PointJitter[i].x;
-                x1avg.y += x1PointJitter[i].y;
-                x2avg.x += x2PointJitter[i].x;
-                x2avg.y += x2PointJitter[i].y;
-            }
-            if ( !x1PointJitter.empty() ) {
-                x1avg.x /= x1PointJitter.size();
-                x1avg.y /= x1PointJitter.size();
-
-                x2avg.x /= x1PointJitter.size();
-                x2avg.y /= x1PointJitter.size();
-            }
-            if (!jitterAdd) {
-                pointsWithErrors[i].p1.x = x1avg.x;
-                pointsWithErrors[i].p1.y = x1avg.y;
-                pointsWithErrors[i].p2.x = x2avg.x;
-                pointsWithErrors[i].p2.y = x2avg.y;
-            } else {
-                Point highFreqX1, highFreqX2;
-                highFreqX1.x = x1AtTime.x - x1avg.x;
-                highFreqX1.y = x1AtTime.y - x1avg.y;
-
-                highFreqX2.x = x2AtTime.x - x2avg.x;
-                highFreqX2.y = x2AtTime.y - x2avg.y;
-
-                pointsWithErrors[i].p1.x = x1AtTime.x + highFreqX1.x;
-                pointsWithErrors[i].p1.y = x1AtTime.y + highFreqX1.y;
-                pointsWithErrors[i].p2.x = x2AtTime.x + highFreqX2.x;
-                pointsWithErrors[i].p2.y = x2AtTime.y + highFreqX2.y;
-            }
-        }
-
-        pointsWithErrors[i].error = errorKnob->getValueAtTime(time, 0);
-    }
-
-    std::sort(pointsWithErrors.begin(), pointsWithErrors.end(), PointWithErrorCompareLess);
-
-    x1->resize( pointsWithErrors.size() );
-    x2->resize( pointsWithErrors.size() );
-    int r = 0;
-    for (int i = (int)pointsWithErrors.size() - 1; i >= 0; --i, ++r) {
-        (*x1)[r] = pointsWithErrors[i].p1;
-        (*x2)[r] = pointsWithErrors[i].p2;
-    }
-} // TrackerContext::extractSortedPointsFromMarkers
-
-TrackerContext::TransformData
-TrackerContext::computeTransformParamsFromTracksAtTime(double refTime,
-                                                       double time,
-                                                       int jitterPeriod,
-                                                       bool jitterAdd,
-                                                       const std::vector<TrackMarkerPtr>& allMarkers)
-{
-    std::vector<TrackMarkerPtr> markers;
-    for (std::size_t i = 0; i < allMarkers.size(); ++i) {
-        if ( allMarkers[i]->isEnabled(time) ) {
-            markers.push_back(allMarkers[i]);
-        }
-    }
-    TrackerContext::TransformData data;
-    data.time = time;
-    data.valid = true;
-    assert( !markers.empty() );
-    std::vector<Point> x1, x2;
-    extractSortedPointsFromMarkers(refTime, time, markers, jitterPeriod, jitterAdd, &x1, &x2);
-    assert( x1.size() == x2.size() );
-    if ( x1.empty() ) {
-        data.valid = false;
-        return data;
-    }
-    if (refTime == time) {
-        data.hasRotationAndScale = x1.size() > 1;
-        data.translation.x = data.translation.y = data.rotation = 0;
-        data.scale = 1.;
-
-        return data;
-    }
-
-    RectD rodRef = getInputRoDAtTime(refTime);
-    RectD rodTime = getInputRoDAtTime(time);
-    int w1 = rodRef.width();
-    int h1 = rodRef.height();
-    int w2 = rodTime.width();
-    int h2 = rodTime.height();
-    
-    try {
-        if (x1.size() == 1) {
-            data.hasRotationAndScale = false;
-            computeTranslationFromNPoints(x1, x2, w1, h1, w2, h2, &data.translation);
-        } else {
-            data.hasRotationAndScale = true;
-            computeSimilarityFromNPoints(x1, x2, w1, h1, w2, h2, &data.translation, &data.rotation, &data.scale);
-        }
-    } catch (...) {
-        data.valid = false;
-    }
-    return data;
-}
-
-static Transform::Point3D
-euclideanToHomogenous(const Point& p)
-{
-    Transform::Point3D r;
-
-    r.x = p.x;
-    r.y = p.y;
-    r.z = 1;
-
-    return r;
-}
-
-TrackerContext::CornerPinData
-TrackerContext::computeCornerPinParamsFromTracksAtTime(double refTime,
-                                                       double time,
-                                                       int jitterPeriod,
-                                                       bool jitterAdd,
-                                                       const std::vector<TrackMarkerPtr>& allMarkers)
-{
-    std::vector<TrackMarkerPtr> markers;
-    for (std::size_t i = 0; i < allMarkers.size(); ++i) {
-        if ( allMarkers[i]->isEnabled(time) ) {
-            markers.push_back(allMarkers[i]);
-        }
-    }
-    TrackerContext::CornerPinData data;
-    data.time = time;
-    data.valid = true;
-    assert( !markers.empty() );
-    std::vector<Point> x1, x2;
-    extractSortedPointsFromMarkers(refTime, time, markers, jitterPeriod, jitterAdd, &x1, &x2);
-    assert( x1.size() == x2.size() );
-    if (x1.empty()) {
-        data.valid = false;
-        return data;
-    }
-    if (refTime == time) {
-        data.h.setIdentity();
-        data.nbEnabledPoints = 4;
-        
-        return data;
-    }
-
-    RectD rodRef = getInputRoDAtTime(refTime);
-    RectD rodTime = getInputRoDAtTime(time);
-    int w1 = rodRef.width();
-    int h1 = rodRef.height();
-    int w2 = rodTime.width();
-    int h2 = rodTime.height();
-
-    if (x1.size() == 1) {
-        data.h.setTranslationFromOnePoint( euclideanToHomogenous(x1[0]), euclideanToHomogenous(x2[0]) );
-        data.nbEnabledPoints = 1;
-    } else if (x1.size() == 2) {
-        data.h.setSimilarityFromTwoPoints( euclideanToHomogenous(x1[0]), euclideanToHomogenous(x1[1]), euclideanToHomogenous(x2[0]), euclideanToHomogenous(x2[1]) );
-        data.nbEnabledPoints = 2;
-    } else if (x1.size() == 3) {
-        data.h.setAffineFromThreePoints( euclideanToHomogenous(x1[0]), euclideanToHomogenous(x1[1]), euclideanToHomogenous(x1[2]), euclideanToHomogenous(x2[0]), euclideanToHomogenous(x2[1]), euclideanToHomogenous(x2[2]) );
-        data.nbEnabledPoints = 3;
-    } else {
-        try {
-            computeHomographyFromNPoints(x1, x2, w1, h1, w2, h2, &data.h);
-            data.nbEnabledPoints = 4;
-        } catch (...) {
-            data.valid = false;
-        }
-    }
-    return data;
-}
-
-static Point
-applyHomography(const Point& p,
-                const Transform::Matrix3x3& h)
-{
-    Transform::Point3D a = euclideanToHomogenous(p);
-
-    Transform::Point3D r = Transform::matApply(h, a);
-    Point ret;
-    ret.x = r.x / r.z;
-    ret.y = r.y / r.z;
-
-    return ret;
-}
-
-void
-TrackerContext::computeCornerParamsFromTracks(double refTime,
-                                              const std::set<double>& keyframes,
-                                              int jitterPeriod,
-                                              bool jitterAdd,
-                                              const std::vector<TrackMarkerPtr>& allMarkers)
-{
-    boost::shared_ptr<KnobInt> smoothCornerPinKnob = _imp->smoothCornerPin.lock();
-    int smoothJitter = smoothCornerPinKnob->getValue();
-    
-#ifndef TRACKER_GENERATE_DATA_SEQUENTIALLY
-    QFuture<CornerPinData> future = QtConcurrent::mapped(keyframes, boost::bind(&TrackerContext::computeCornerPinParamsFromTracksAtTime, this, refTime, _1, jitterPeriod, jitterAdd, allMarkers));
-    future.waitForFinished();
-
-    QList<CornerPinData> results = future.results();
-    QList<CornerPinData> validResults;
-    for (QList<CornerPinData>::iterator it = results.begin(); it!=results.end(); ++it) {
-        if (it->valid) {
-            validResults.push_back(*it);
-        }
-    }
-#else
-    QList<CornerPinData> validResults;
-    for (std::set<double>::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
-        CornerPinData data = computeCornerPinParamsFromTracksAtTime(refTime, *it, jitterPeriod, jitterAdd, allMarkers);
-        if (data.valid) {
-            validResults.push_back(data);
-        }
-    }
-#endif
-
-
-    NodePtr node = getNode();
-    node->getEffectInstance()->beginChanges();
-
-    RectD rodRef = getInputRoDAtTime(refTime);
-    boost::shared_ptr<KnobDouble> fromPoints[4];
-    boost::shared_ptr<KnobDouble> toPoints[4];
-    boost::shared_ptr<KnobBool> enabledPoints[4];
-    for (int i = 0; i < 4; ++i) {
-        fromPoints[i] = _imp->fromPoints[i].lock();
-        toPoints[i] = _imp->toPoints[i].lock();
-        enabledPoints[i] = _imp->enableToPoint[i].lock();
-    }
-    //boost::shared_ptr<KnobDouble> matrixKnob = _imp->cornerPinMatrix.lock();
-    boost::shared_ptr<KnobDouble> centerKnob = _imp->center.lock();
-
-    /*for (int i = 0; i < matrixKnob->getDimension(); ++i) {
-        matrixKnob->resetToDefaultValue(i);
-       }*/
-    std::list<KnobPtr> animatedKnobsChanged;
-
-
-    for (int i = 0; i < 4; ++i) {
-        fromPoints[i]->removeAnimation(ViewSpec::all(), 0);
-        fromPoints[i]->removeAnimation(ViewSpec::all(), 1);
-        toPoints[i]->blockValueChanges();
-        toPoints[i]->resetToDefaultValue(0);
-        toPoints[i]->resetToDefaultValue(1);
-        animatedKnobsChanged.push_back(toPoints[i]);
-
-        enabledPoints[i]->resetToDefaultValue(0);
-    }
-    centerKnob->resetToDefaultValue(0);
-    centerKnob->resetToDefaultValue(1);
-
-    Point refFrom[4];
-    refFrom[0].x = rodRef.x1;
-    refFrom[0].y = rodRef.y1;
-
-    refFrom[1].x = rodRef.x2;
-    refFrom[1].y = rodRef.y1;
-
-    refFrom[2].x = rodRef.x2;
-    refFrom[2].y = rodRef.y2;
-
-    refFrom[3].x = rodRef.x1;
-    refFrom[3].y = rodRef.y2;
-
-    // Set the center at the reference frame
-    Point centerValue = {0, 0};
-    int nSamplesAtRefTime = 0;
-    for (std::size_t i = 0; i < allMarkers.size(); ++i) {
-        if ( !allMarkers[i]->isEnabled(refTime) ) {
-            continue;
-        }
-        boost::shared_ptr<KnobDouble> markerCenterKnob = allMarkers[i]->getCenterKnob();
-
-        centerValue.x += markerCenterKnob->getValueAtTime(refTime, 0);
-        centerValue.y += markerCenterKnob->getValueAtTime(refTime, 1);
-        ++nSamplesAtRefTime;
-    }
-    if (nSamplesAtRefTime) {
-        centerValue.x /= nSamplesAtRefTime;
-        centerValue.y /= nSamplesAtRefTime;
-        centerKnob->setValues(centerValue.x, centerValue.y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
-    }
-
-    for (int c = 0; c < 4; ++c) {
-        fromPoints[c]->setValues(refFrom[c].x, refFrom[c].y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
-    }
-
-    // Create temporary curves and clone the toPoint internal curves at once because setValueAtTime will be slow since it emits
-    // signals to create keyframes in keyframeSet
-    Curve tmpToPointsCurveX[4],tmpToPointsCurveY[4];
-    
-    for (QList<CornerPinData>::const_iterator itResults = validResults.begin(); itResults != validResults.end(); ++itResults) {
-        
-        const CornerPinData& dataAtTime = *itResults;
-        
-        if (smoothJitter > 1) {
-            int halfJitter = smoothJitter / 2;
-            Point avgTos[4] = {
-                {0, 0}, {0, 0}, {0, 0}, {0, 0}
-            };
-            
-            // Get halfJitter samples before the given time
-            QList<CornerPinData>::const_iterator prevHalfIt = itResults;
-            int nSamplesBefore = 0;
-            const CornerPinData* lastCornerPinData = 0;
-            while (prevHalfIt != validResults.begin() && nSamplesBefore <= halfJitter) {
-                Point to[4];
-                for (int c = 0; c < 4; ++c) {
-                    to[c] = applyHomography(refFrom[c], prevHalfIt->h);
-                    avgTos[c].x += to[c].x;
-                    avgTos[c].y += to[c].y;
-                }
-                if (!lastCornerPinData) {
-                    lastCornerPinData = &(*prevHalfIt);
-                }
-                ++nSamplesBefore;
-                --prevHalfIt;
-            }
-            
-            while (nSamplesBefore <= halfJitter && lastCornerPinData) {
-                assert(prevHalfIt == validResults.begin());
-                Point to[4];
-                for (int c = 0; c < 4; ++c) {
-                    to[c] = applyHomography(refFrom[c], lastCornerPinData->h);
-                    avgTos[c].x += to[c].x;
-                    avgTos[c].y += to[c].y;
-                }
-                ++nSamplesBefore;
-            }
-            
-            // Get halfJitter samples after the given time
-            QList<CornerPinData>::const_iterator nextHalfIt = itResults;
-            int nSamplesAfter = 0;
-            ++nextHalfIt;
-            lastCornerPinData = 0;
-            while (nextHalfIt != validResults.end() && nSamplesAfter < halfJitter) {
-                Point to[4];
-                for (int c = 0; c < 4; ++c) {
-                    to[c] = applyHomography(refFrom[c], nextHalfIt->h);
-                    avgTos[c].x += to[c].x;
-                    avgTos[c].y += to[c].y;
-                }
-                if (!lastCornerPinData) {
-                    lastCornerPinData = &(*nextHalfIt);
-                }
-                ++nSamplesAfter;
-                ++nextHalfIt;
-            }
-            
-            while (nSamplesAfter < halfJitter && lastCornerPinData) {
-                assert(nextHalfIt == validResults.end());
-                Point to[4];
-                for (int c = 0; c < 4; ++c) {
-                    to[c] = applyHomography(refFrom[c], lastCornerPinData->h);
-                    avgTos[c].x += to[c].x;
-                    avgTos[c].y += to[c].y;
-                }
-                ++nSamplesAfter;
-            }
-            
-            const int nSamples = nSamplesAfter + nSamplesBefore;
-
-      
-            if (nSamples > 0) {
-                for (int c = 0; c < 4; ++c) {
-                    avgTos[c].x /= nSamples;
-                    avgTos[c].y /= nSamples;
-                }
-
-                for (int c = 0; c < 4; ++c) {
-                    KeyFrame kx(dataAtTime.time,avgTos[c].x);
-                    KeyFrame ky(dataAtTime.time,avgTos[c].y);
-                    tmpToPointsCurveX[c].addKeyFrame(kx);
-                    tmpToPointsCurveY[c].addKeyFrame(ky);
-                    //toPoints[c]->setValuesAtTime(dataAtTime[i].time, avgTos[c].x, avgTos[c].y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
-                }
-
-
-                /*Transform::Matrix3x3 h;
-                   h.setHomographyFromFourPoints(euclideanToHomogenous(avgFroms[0]), euclideanToHomogenous(avgFroms[1]), euclideanToHomogenous(avgFroms[2]), euclideanToHomogenous(avgFroms[3]), euclideanToHomogenous(avgTos[0]), euclideanToHomogenous(avgTos[1]), euclideanToHomogenous(avgTos[2]), euclideanToHomogenous(avgTos[3]));
-                   matrixKnob->blockValueChanges();
-                   matrixKnob->setValueAtTime(dataAtTime[i].time, h.a, ViewSpec::all(), 0);
-                   matrixKnob->setValueAtTime(dataAtTime[i].time, h.b, ViewSpec::all(), 1);
-                   matrixKnob->setValueAtTime(dataAtTime[i].time, h.c, ViewSpec::all(), 2);
-                   matrixKnob->setValueAtTime(dataAtTime[i].time, h.d, ViewSpec::all(), 3);
-                   matrixKnob->setValueAtTime(dataAtTime[i].time, h.e, ViewSpec::all(), 4);
-                   matrixKnob->setValueAtTime(dataAtTime[i].time, h.f, ViewSpec::all(), 5);
-                   matrixKnob->setValueAtTime(dataAtTime[i].time, h.g, ViewSpec::all(), 6);
-                   matrixKnob->setValueAtTime(dataAtTime[i].time, h.h, ViewSpec::all(), 7);
-                   matrixKnob->unblockValueChanges();
-                   matrixKnob->setValueAtTime(dataAtTime[i].time, h.i, ViewSpec::all(), 8);*/
-            }
-        } else {
-            for (int c = 0; c < 4; ++c) {
-                Point toPoint;
-                toPoint = applyHomography(refFrom[c], dataAtTime.h);
-                KeyFrame kx(dataAtTime.time,toPoint.x);
-                KeyFrame ky(dataAtTime.time,toPoint.y);
-                tmpToPointsCurveX[c].addKeyFrame(kx);
-                tmpToPointsCurveY[c].addKeyFrame(ky);
-                //toPoints[c]->setValuesAtTime(dataAtTime[i].time, toPoint.x, toPoint.y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
-            }
-
-            /*matrixKnob->blockValueChanges();
-               matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.a, ViewSpec::all(), 0);
-               matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.b, ViewSpec::all(), 1);
-               matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.c, ViewSpec::all(), 2);
-               matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.d, ViewSpec::all(), 3);
-               matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.e, ViewSpec::all(), 4);
-               matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.f, ViewSpec::all(), 5);
-               matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.g, ViewSpec::all(), 6);
-               matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.h, ViewSpec::all(), 7);
-               matrixKnob->unblockValueChanges();
-               matrixKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.h.i, ViewSpec::all(), 8);*/
-        }
-    } // for (std::size_t i = 0; i < dataAtTime.size(); ++i)
-    
-    for (int c = 0; c < 4; ++c) {
-        toPoints[c]->cloneCurve(ViewSpec::all(), 0, tmpToPointsCurveX[c]);
-        toPoints[c]->cloneCurve(ViewSpec::all(), 1, tmpToPointsCurveY[c]);
-    }
-    for (std::list<KnobPtr>::iterator it = animatedKnobsChanged.begin(); it != animatedKnobsChanged.end(); ++it) {
-        (*it)->unblockValueChanges();
-        int nDims = (*it)->getDimension();
-        for (int i = 0; i < nDims; ++i) {
-            (*it)->evaluateValueChange(i, refTime, ViewIdx(0), eValueChangedReasonNatronInternalEdited);
-        }
-    }
-    node->getEffectInstance()->endChanges();
-} // TrackerContext::computeCornerParamsFromTracks
-
-void
-TrackerContext::computeTransformParamsFromTracks(double refTime,
-                                                 const std::set<double>& keyframes,
-                                                 int jitterPeriod,
-                                                 bool jitterAdd,
-                                                 const std::vector<TrackMarkerPtr>& allMarkers)
-{
-    boost::shared_ptr<KnobInt> smoothKnob = _imp->smoothTransform.lock();
-    int smoothTJitter, smoothRJitter, smoothSJitter;
-
-    smoothTJitter = smoothKnob->getValue(0);
-    smoothRJitter = smoothKnob->getValue(1);
-    smoothSJitter = smoothKnob->getValue(2);
-
-#ifndef TRACKER_GENERATE_DATA_SEQUENTIALLY
-    QFuture<TransformData> future = QtConcurrent::mapped(keyframes, boost::bind(&TrackerContext::computeTransformParamsFromTracksAtTime, this, refTime, _1, jitterPeriod, jitterAdd, allMarkers));
-    future.waitForFinished();
-    
-    QList<TransformData> results = future.results();
-    QList<TransformData> validResults;
-    for (QList<TransformData>::iterator it = results.begin(); it!=results.end(); ++it) {
-        if (it->valid) {
-            validResults.push_back(*it);
-        }
-    }
-#else
-    QList<TransformData> validResults;
-    for (std::set<double>::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
-        TransformData data = computeTransformParamsFromTracksAtTime(refTime, *it, jitterPeriod, jitterAdd, allMarkers);
-        if (data.valid) {
-            validResults.push_back(data);
-        }
-    }
-    
-#endif
-    
-
-    NodePtr node = getNode();
-    node->getEffectInstance()->beginChanges();
-
-    boost::shared_ptr<KnobDouble> translationKnob = _imp->translate.lock();
-    boost::shared_ptr<KnobDouble> centerKnob = _imp->center.lock();
-    boost::shared_ptr<KnobDouble> scaleKnob = _imp->scale.lock();
-    boost::shared_ptr<KnobDouble> rotationKnob = _imp->rotate.lock();
-
-    translationKnob->blockValueChanges();
-    translationKnob->resetToDefaultValue(0);
-    translationKnob->resetToDefaultValue(1);
-
-    centerKnob->resetToDefaultValue(0);
-    centerKnob->resetToDefaultValue(1);
-
-    scaleKnob->blockValueChanges();
-    scaleKnob->resetToDefaultValue(0);
-
-    rotationKnob->blockValueChanges();
-    rotationKnob->resetToDefaultValue(0);
-
-    std::list<KnobPtr> animatedKnobsChanged;
-    animatedKnobsChanged.push_back(translationKnob);
-    animatedKnobsChanged.push_back(scaleKnob);
-    animatedKnobsChanged.push_back(rotationKnob);
-
-    // Set the center at the reference frame
-    Point centerValue = {0, 0};
-    int nSamplesAtRefTime = 0;
-    for (std::size_t i = 0; i < allMarkers.size(); ++i) {
-        if ( !allMarkers[i]->isEnabled(refTime) ) {
-            continue;
-        }
-        boost::shared_ptr<KnobDouble> markerCenterKnob = allMarkers[i]->getCenterKnob();
-
-        centerValue.x += markerCenterKnob->getValueAtTime(refTime, 0);
-        centerValue.y += markerCenterKnob->getValueAtTime(refTime, 1);
-        ++nSamplesAtRefTime;
-    }
-    if (nSamplesAtRefTime) {
-        centerValue.x /= nSamplesAtRefTime;
-        centerValue.y /= nSamplesAtRefTime;
-        centerKnob->setValues(centerValue.x, centerValue.y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
-    }
-
-    Curve tmpTXCurve,tmpTYCurve,tmpRotateCurve,tmpScaleCurve;
-    for (QList<TransformData>::const_iterator itResults = validResults.begin(); itResults != validResults.end(); ++itResults) {
-        
-        const TransformData& dataAtTime = *itResults;
-        if (smoothTJitter > 1) {
-            int halfJitter = smoothTJitter / 2;
-            Point avgT = {0, 0};
-
-            // Get halfJitter samples before the given time
-            QList<TransformData>::const_iterator prevHalfIt = itResults;
-            int nSamplesBefore = 0;
-            Point lastSampleWithTranslation = {0, 0};
-            if (itResults == validResults.begin()) {
-                lastSampleWithTranslation = itResults->translation;
-            }
-            while (prevHalfIt != validResults.begin() && nSamplesBefore <= halfJitter) {
-                avgT.x += prevHalfIt->translation.x;
-                avgT.y += prevHalfIt->translation.y;
-                lastSampleWithTranslation = prevHalfIt->translation;
-                ++nSamplesBefore;
-                --prevHalfIt;
-            }
-            
-            while (nSamplesBefore <= halfJitter) {
-                assert(prevHalfIt == validResults.begin());
-                avgT.x += lastSampleWithTranslation.x;
-                avgT.y += lastSampleWithTranslation.y;
-                ++nSamplesBefore;
-            }
-            
-            // Get halfJitter samples after the given time
-            QList<TransformData>::const_iterator nextHalfIt = itResults;
-            int nSamplesAfter = 0;
-            ++nextHalfIt;
-            lastSampleWithTranslation.x = lastSampleWithTranslation.y = 0.;
-            while (nextHalfIt != validResults.end() && nSamplesAfter < halfJitter) {
-                avgT.x += nextHalfIt->translation.x;
-                avgT.y += nextHalfIt->translation.y;
-                lastSampleWithTranslation = nextHalfIt->translation;
-                ++nSamplesAfter;
-                ++nextHalfIt;
-            }
-            
-            while (nSamplesAfter < halfJitter) {
-                assert(nextHalfIt == validResults.end());
-                avgT.x += lastSampleWithTranslation.x;
-                avgT.y += lastSampleWithTranslation.y;
-                ++nSamplesAfter;
-            }
-            
-            
-            const int nSamples = nSamplesBefore + nSamplesAfter;
-            if (nSamples) {
-                avgT.x /= nSamples;
-                avgT.y /= nSamples;
-            }
-            KeyFrame kx(dataAtTime.time, avgT.x);
-            KeyFrame ky(dataAtTime.time, avgT.y);
-            tmpTXCurve.addKeyFrame(kx);
-            tmpTYCurve.addKeyFrame(ky);
-            //translationKnob->setValueAtTime(dataAtTime[i].time, avgT.x, ViewSpec::all(), 0);
-            //translationKnob->setValueAtTime(dataAtTime[i].time, avgT.y, ViewSpec::all(), 1);
-        } else {
-            KeyFrame kx(dataAtTime.time, dataAtTime.translation.x);
-            KeyFrame ky(dataAtTime.time, dataAtTime.translation.y);
-            tmpTXCurve.addKeyFrame(kx);
-            tmpTYCurve.addKeyFrame(ky);
-            //translationKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.translation.x, ViewSpec::all(), 0);
-            //translationKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.translation.y, ViewSpec::all(), 1);
-        }
-
-        if (smoothRJitter > 1) {
-            int halfJitter = smoothRJitter / 2;
-            
-            double avg = 0;
-            double lastSampleWithRotation = 0;
-            if (itResults == validResults.begin() && itResults->hasRotationAndScale) {
-                lastSampleWithRotation = itResults->scale;
-            }
-            // Get halfJitter samples before the given time
-            QList<TransformData>::const_iterator prevHalfIt = itResults;
-            int nSamplesBefore = 0;
-            while (prevHalfIt != validResults.begin() && nSamplesBefore <= halfJitter) {
-                if (prevHalfIt->hasRotationAndScale) {
-                    avg += prevHalfIt->rotation;
-                    lastSampleWithRotation = prevHalfIt->rotation;
-                    ++nSamplesBefore;
-                }
-                --prevHalfIt;
-            }
-            
-            while (nSamplesBefore <= halfJitter && lastSampleWithRotation != 0. && prevHalfIt->hasRotationAndScale) {
-                assert(prevHalfIt == validResults.begin());
-                avg += prevHalfIt->rotation;
-                ++nSamplesBefore;
-            }
-            
-            // Get halfJitter samples after the given time
-            lastSampleWithRotation = 0.;
-            QList<TransformData>::const_iterator nextHalfIt = itResults;
-            int nSamplesAfter = 0;
-            ++nextHalfIt;
-            
-            while (nextHalfIt != validResults.end() && nSamplesAfter < halfJitter) {
-                if (prevHalfIt->hasRotationAndScale) {
-                    avg += nextHalfIt->rotation;
-                    lastSampleWithRotation = nextHalfIt->rotation;
-                    ++nSamplesAfter;
-                }
-                ++nextHalfIt;
-            }
-            
-            while (nSamplesAfter < halfJitter && lastSampleWithRotation != 0.) {
-                assert(nextHalfIt == validResults.end());
-                avg += lastSampleWithRotation;
-                ++nSamplesAfter;
-            }
-            
-            const int nSamples = nSamplesBefore + nSamplesAfter;
-
-            if (nSamples) {
-                avg /= nSamples;
-                KeyFrame k(dataAtTime.time, avg);
-                tmpRotateCurve.addKeyFrame(k);
-            }
-
-            
-            //rotationKnob->setValueAtTime(dataAtTime[i].time, avg, ViewSpec::all(), 0);
-        } else {
-            if (dataAtTime.hasRotationAndScale) {
-                KeyFrame k(dataAtTime.time, dataAtTime.rotation);
-                tmpRotateCurve.addKeyFrame(k);
-
-              //  rotationKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.rotation, ViewSpec::all(), 0);
-            }
-        }
-
-        if (smoothSJitter > 1) {
-            int halfJitter = smoothSJitter / 2;
-            double avg = 0;
-            double lastSampleWithScale = 0;
-            if (itResults == validResults.begin() && itResults->hasRotationAndScale) {
-                lastSampleWithScale = itResults->scale;
-            }
-            // Get halfJitter samples before the given time
-            QList<TransformData>::const_iterator prevHalfIt = itResults;
-            int nSamplesBefore = 0;
-            while (prevHalfIt != validResults.begin() && nSamplesBefore <= halfJitter) {
-                if (prevHalfIt->hasRotationAndScale) {
-                    avg += prevHalfIt->scale;
-                    lastSampleWithScale = prevHalfIt->scale;
-                    ++nSamplesBefore;
-                }
-                --prevHalfIt;
-            }
-            
-            while (nSamplesBefore <= halfJitter && lastSampleWithScale != 0.) {
-                assert(prevHalfIt == validResults.begin());
-                avg += lastSampleWithScale;
-                ++nSamplesBefore;
-            }
-            
-            // Get halfJitter samples after the given time
-            lastSampleWithScale = 0.;
-            QList<TransformData>::const_iterator nextHalfIt = itResults;
-            int nSamplesAfter = 0;
-            ++nextHalfIt;
-            
-            while (nextHalfIt != validResults.end() && nSamplesAfter < halfJitter) {
-                if (prevHalfIt->hasRotationAndScale) {
-                    avg += nextHalfIt->scale;
-                    lastSampleWithScale = nextHalfIt->scale;
-                    ++nSamplesAfter;
-                }
-                ++nextHalfIt;
-            }
-            
-            while (nSamplesAfter < halfJitter && lastSampleWithScale != 0.) {
-                assert(nextHalfIt == validResults.end());
-                avg += lastSampleWithScale;
-                ++nSamplesAfter;
-            }
-            
-            const int nSamples = nSamplesBefore + nSamplesAfter;
-            if (nSamples) {
-                avg /= nSamples;
-                
-                KeyFrame k(dataAtTime.time, avg);
-                tmpScaleCurve.addKeyFrame(k);
-                //scaleKnob->setValueAtTime(dataAtTime[i].time, avg, ViewSpec::all(), 0);
-            }
-        } else {
-            if (dataAtTime.hasRotationAndScale) {
-                KeyFrame k(dataAtTime.time, dataAtTime.scale);
-                tmpScaleCurve.addKeyFrame(k);
-                //scaleKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.scale, ViewSpec::all(), 0);
-            }
-        }
-    } // for (std::size_t i = 0; i < dataAtTime.size(); ++i)
-    translationKnob->cloneCurve(ViewSpec::all(), 0, tmpTXCurve);
-    translationKnob->cloneCurve(ViewSpec::all(), 1, tmpTYCurve);
-    rotationKnob->cloneCurve(ViewSpec::all(), 0, tmpRotateCurve);
-    scaleKnob->cloneCurve(ViewSpec::all(), 0, tmpScaleCurve);
-    scaleKnob->cloneCurve(ViewSpec::all(), 1, tmpScaleCurve);
-
-    for (std::list<KnobPtr>::iterator it = animatedKnobsChanged.begin(); it != animatedKnobsChanged.end(); ++it) {
-        (*it)->unblockValueChanges();
-        int nDims = (*it)->getDimension();
-        for (int i = 0; i < nDims; ++i) {
-            (*it)->evaluateValueChange(i, refTime, ViewIdx(0), eValueChangedReasonNatronInternalEdited);
-        }
-    }
-    node->getEffectInstance()->endChanges();
-} // TrackerContext::computeTransformParamsFromTracks
-
 void
 TrackerContext::solveTransformParams()
 {
     std::vector<TrackMarkerPtr> markers;
 
     getAllMarkers(&markers);
-    if ( markers.empty() ) {
+    if (markers.empty()) {
         return;
     }
-    int motionType_i = _imp->motionType.lock()->getValue();
+    
+    boost::shared_ptr<KnobChoice> motionTypeKnob = _imp->motionType.lock();
+    
+    int motionType_i = motionTypeKnob->getValue();
     TrackerMotionTypeEnum type =  (TrackerMotionTypeEnum)motionType_i;
     double refTime = (double)getTransformReferenceFrame();
     int jitterPeriod = 0;
     bool jitterAdd = false;
     switch (type) {
     case eTrackerMotionTypeNone:
-
+        _imp->resetTransformParamsAnimation();
         return;
     case eTrackerMotionTypeMatchMove:
     case eTrackerMotionTypeStabilize:
@@ -1966,6 +1024,8 @@ TrackerContext::solveTransformParams()
     break;
     }
 
+    _imp->setSolverParamsEnabled(false);
+    
     std::set<double> keyframes;
     {
         for (std::size_t i = 0; i < markers.size(); ++i) {
@@ -1981,20 +1041,56 @@ TrackerContext::solveTransformParams()
     int transformType_i = transformTypeKnob->getValue();
     TrackerTransformNodeEnum transformType = (TrackerTransformNodeEnum)transformType_i;
 
+    NodePtr node = getNode();
+    node->getEffectInstance()->beginChanges();
+
+    
     if (type == eTrackerMotionTypeStabilize) {
         _imp->invertTransform.lock()->setValue(true);
     } else {
         _imp->invertTransform.lock()->setValue(false);
     }
+    
+    boost::shared_ptr<KnobDouble> centerKnob = _imp->center.lock();
 
+    // Set the center at the reference frame
+    Point centerValue = {0, 0};
+    int nSamplesAtRefTime = 0;
+    for (std::size_t i = 0; i < markers.size(); ++i) {
+        if ( !markers[i]->isEnabled(refTime) ) {
+            continue;
+        }
+        boost::shared_ptr<KnobDouble> markerCenterKnob = markers[i]->getCenterKnob();
+        
+        centerValue.x += markerCenterKnob->getValueAtTime(refTime, 0);
+        centerValue.y += markerCenterKnob->getValueAtTime(refTime, 1);
+        ++nSamplesAtRefTime;
+    }
+    if (nSamplesAtRefTime) {
+        centerValue.x /= nSamplesAtRefTime;
+        centerValue.y /= nSamplesAtRefTime;
+        centerKnob->setValues(centerValue.x, centerValue.y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+    }
+    
+    
+    node->getApp()->progressStart(node, QObject::tr("Solving transform parameters...").toStdString(), std::string());
+
+    _imp->lastSolveRequest.refTime = refTime;
+    _imp->lastSolveRequest.jitterPeriod = jitterPeriod;
+    _imp->lastSolveRequest.jitterAdd = jitterAdd;
+    _imp->lastSolveRequest.allMarkers = markers;
+    _imp->lastSolveRequest.keyframes = keyframes;
+    
     switch (transformType) {
     case eTrackerTransformNodeTransform:
-        computeTransformParamsFromTracks(refTime, keyframes, jitterPeriod, jitterAdd, markers);
-        break;
+            _imp->computeTransformParamsFromTracks();
+            break;
     case eTrackerTransformNodeCornerPin:
-        computeCornerParamsFromTracks(refTime, keyframes, jitterPeriod, jitterAdd, markers);
-        break;
+            _imp->computeCornerParamsFromTracks();
+            break;
     }
+
+
 } // TrackerContext::solveTransformParams
 
 NodePtr
@@ -2314,32 +1410,34 @@ class IsTrackingFlagSetter_RAII
     EffectInstPtr _effect;
     TrackSchedulerBase* _base;
     bool _reportProgress;
-
+    bool _doPartialUpdates;
 public:
 
     IsTrackingFlagSetter_RAII(const EffectInstPtr& effect,
                               TrackSchedulerBase* base,
                               int step,
                               bool reportProgress,
-                              ViewerInstance* viewer)
+                              ViewerInstance* viewer,
+                              bool doPartialUpdates)
         : _v(viewer)
         , _effect(effect)
         , _base(base)
         , _reportProgress(reportProgress)
+        , _doPartialUpdates(doPartialUpdates)
     {
         if (_effect && _reportProgress) {
             _effect->getApp()->progressStart(_effect->getNode(), QObject::tr("Tracking...").toStdString(), "");
             _base->emit_trackingStarted(step);
         }
 
-        if (viewer) {
-            viewer->setDoingPartialUpdates(true);
+        if (viewer && doPartialUpdates) {
+            viewer->setDoingPartialUpdates(doPartialUpdates);
         }
     }
 
     ~IsTrackingFlagSetter_RAII()
     {
-        if (_v) {
+        if (_v && _doPartialUpdates) {
             _v->setDoingPartialUpdates(false);
         }
         if (_effect && _reportProgress) {
@@ -2353,7 +1451,7 @@ template <class TrackArgsType>
 void
 TrackScheduler<TrackArgsType>::run()
 {
-    for (;; ) {
+    for (;;) {
         ///Check for exit of the thread
         if ( _imp->checkForExit() ) {
             return;
@@ -2377,23 +1475,30 @@ TrackScheduler<TrackArgsType>::run()
         int end = curArgs.getEnd();
         int start = curArgs.getStart();
         int cur = start;
-        bool isForward = curArgs.getForward();
-        int framesCount = isForward ? (end - start) : (start - end);
-        int numTracks = curArgs.getNumTracks();
+        int frameStep = curArgs.getStep();
+        int framesCount = 0;
+        if (frameStep != 0) {
+            framesCount = frameStep > 0 ? (end - start) / frameStep : (start - end) / std::abs(frameStep);
+        }
+        const int numTracks = curArgs.getNumTracks();
         std::vector<int> trackIndexes;
         for (std::size_t i = 0; i < (std::size_t)numTracks; ++i) {
             trackIndexes.push_back(i);
         }
+        
+        // Beyond TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE it becomes more expensive to render all partial rectangles
+        // than just render the whole viewer RoI
+        const bool doPartialUpdates = numTracks < TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE;
 
-        int lastValidFrame = isForward ? start - 1 : start + 1;
+        int lastValidFrame = frameStep > 0 ? start - 1 : start + 1;
         bool reportProgress = numTracks > 1 || framesCount > 1;
         EffectInstPtr effect = _imp->getNode()->getEffectInstance();
         {
             ///Use RAII style for setting the isDoingPartialUpdates flag so we're sure it gets removed
-            IsTrackingFlagSetter_RAII __istrackingflag__(effect, this, isForward ? 1 : -1, reportProgress, viewer);
+            IsTrackingFlagSetter_RAII __istrackingflag__(effect, this, frameStep, reportProgress, viewer, doPartialUpdates);
 
 
-            if ( ( isForward && (start >= end) ) || ( !isForward && (start <= end) ) ) {
+            if (frameStep == 0 || (frameStep > 0 && (start >= end)) || (frameStep < 0 && (start <= end))) {
                 // Invalid range
                 cur = end;
             }
@@ -2420,13 +1525,12 @@ TrackScheduler<TrackArgsType>::run()
 
                 lastValidFrame = cur;
 
-
+                cur += frameStep;
+                
                 double progress;
-                if (isForward) {
-                    ++cur;
+                if (frameStep > 0) {
                     progress = (double)(cur - start) / framesCount;
                 } else {
-                    --cur;
                     progress = (double)(start - cur) / framesCount;
                 }
 
@@ -2440,9 +1544,8 @@ TrackScheduler<TrackArgsType>::run()
                     //is not called on viewers, see Gui::onTimeChanged
                     timeline->seekFrame(cur, true, 0, eTimelineChangeReasonOtherSeek);
 
-                    ///Beyond TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE it becomes more expensive to render all partial rectangles
-                    ///than just render the whole viewer RoI
-                    if (numTracks < TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE) {
+                    
+                    if (doPartialUpdates) {
                         std::list<RectD> updateRects;
                         curArgs.getRedrawAreasNeeded(cur, &updateRects);
                         viewer->setPartialUpdateParams(updateRects, isCenterViewerEnabled);

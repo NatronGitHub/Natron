@@ -268,7 +268,6 @@ HEADERS += \
     Hash64.h \
     HistogramCPU.h \
     HostOverlaySupport.h \
-    ImageInfo.h \
     Image.h \
     ImageComponents.h \
     ImageKey.h \

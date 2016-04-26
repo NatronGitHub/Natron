@@ -73,19 +73,13 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , activeTextures()
     , displayTextures()
     , partialUpdateTextures()
-    , shaderRGB(0)
-    , shaderBlack(0)
+    , shaderRGB()
+    , shaderBlack()
     , shaderLoaded(false)
     , infoViewer()
     , viewerTab(parent)
     , zoomOrPannedSinceLastFit(false)
     , oldClick()
-    , blankViewerInfo()
-    , displayingImageGain()
-    , displayingImageGamma()
-    , displayingImageOffset()
-    , displayingImageMipMapLevel()
-    , displayingImagePremult()
     , displayingImageLut(eViewerColorSpaceSRGB)
     , ms(eMouseStateUndefined)
     , hs(eHoverStateNothing)
@@ -106,7 +100,6 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , lastMousePosition()
     , lastDragStartPos()
     , hasMovedSincePress(false)
-    , currentViewerInfo()
     , projectFormatMutex()
     , projectFormat()
     , currentViewerInfo_btmLeftBBOXoverlay()
@@ -130,8 +123,6 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , savedTexture(0)
     , prevBoundTexture(0)
     , lastRenderedImageMutex()
-    , lastRenderedTiles()
-    , memoryHeldByLastRenderedImages()
     , sizeH()
     , pointerTypeOnPress(ePenTypePen)
     , subsequentMousePressIsTablet(false)
@@ -143,14 +134,16 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
 {
     infoViewer[0] = 0;
     infoViewer[1] = 0;
-    memoryHeldByLastRenderedImages[0] = memoryHeldByLastRenderedImages[1] = 0;
-    displayingImageGain[0] = displayingImageGain[1] = 1.;
-    displayingImageGamma[0] = displayingImageGamma[1] = 1.;
-    displayingImageOffset[0] = displayingImageOffset[1] = 0.;
+    
     for (int i = 0; i < 2; ++i) {
-        displayingImageTime[i] = 0;
-        displayingImageMipMapLevel[i] = 0;
-        lastRenderedTiles[i].resize(MAX_MIP_MAP_LEVELS);
+        displayTextures[i].isPartialImage = false;
+        displayTextures[i].gain = 1.;
+        displayTextures[i].gamma = 1.;
+        displayTextures[i].offset = 0.;
+        displayTextures[i].memoryHeldByLastRenderedImages = 0;
+        displayTextures[i].time = 0;
+        displayTextures[i].mipMapLevel = 0;
+        displayTextures[i].lastRenderedTiles.resize(MAX_MIP_MAP_LEVELS);
     }
     assert( qApp && qApp->thread() == QThread::currentThread() );
     //menu->setFont( QFont(appFont,appFontSize) );
@@ -168,16 +161,17 @@ ViewerGL::Implementation::~Implementation()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     _this->makeCurrent();
 
-    if (this->shaderRGB) {
-        this->shaderRGB->removeAllShaders();
-        delete this->shaderRGB;
+    if (shaderRGB) {
+        shaderRGB->removeAllShaders();
+        shaderRGB.reset();
     }
-    if (this->shaderBlack) {
-        this->shaderBlack->removeAllShaders();
-        delete this->shaderBlack;
+    if (shaderBlack) {
+        shaderBlack->removeAllShaders();
+        shaderBlack.reset();
     }
-    displayTextures[0].reset();
-    displayTextures[1].reset();
+    for (int i = 0; i < 2; ++i) {
+        displayTextures[i].texture.reset();
+    }
     partialUpdateTextures.clear();
     glCheckError();
     for (U32 i = 0; i < this->pboIds.size(); ++i) {
@@ -437,8 +431,8 @@ ViewerGL::Implementation::initializeGL()
     if (!supportsOpenGL) {
         return;
     }
-    displayTextures[0].reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
-    displayTextures[1].reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
+    displayTextures[0].texture.reset(new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE));
+    displayTextures[1].texture.reset(new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE));
 
 
     // glGenVertexArrays(1, &_vaoId);
@@ -990,10 +984,10 @@ ViewerGL::Implementation::activateShaderRGB(int texIndex)
     }
 
     shaderRGB->setUniformValue("Tex", 0);
-    shaderRGB->setUniformValue("gain", (float)displayingImageGain[texIndex]);
-    shaderRGB->setUniformValue("offset", (float)displayingImageOffset[texIndex]);
+    shaderRGB->setUniformValue("gain", (float)displayTextures[texIndex].gain);
+    shaderRGB->setUniformValue("offset", (float)displayTextures[texIndex].offset);
     shaderRGB->setUniformValue("lut", (GLint)displayingImageLut);
-    float gamma = (displayingImageGamma[texIndex] == 0.) ? 0.f : 1.f / (float)displayingImageGamma[texIndex];
+    float gamma = (displayTextures[texIndex].gamma == 0.) ? 0.f : 1.f / (float)displayTextures[texIndex].gamma;
     shaderRGB->setUniformValue("gamma", gamma);
 }
 

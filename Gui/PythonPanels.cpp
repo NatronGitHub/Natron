@@ -212,6 +212,7 @@ PyModalDialog::PyModalDialog(Gui* gui)
     _imp->mainLayout->addWidget(_imp->centerContainer);
 
     _imp->buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, this);
+    _imp->buttons->setFocusPolicy(Qt::TabFocus);
     QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(accept()) );
     QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(reject()) );
     _imp->mainLayout->addWidget(_imp->buttons);

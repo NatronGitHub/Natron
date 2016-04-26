@@ -30,6 +30,7 @@ GCC_DIAG_OFF(unused-function)
 GCC_DIAG_OFF(unused-parameter)
 #include <libmv/image/array_nd.h>
 #include <libmv/autotrack/region.h>
+#include <libmv/logging/logging.h>
 GCC_DIAG_ON(unused-function)
 GCC_DIAG_ON(unused-parameter)
 
