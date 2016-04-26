@@ -1389,10 +1389,10 @@ AppManager::loadPythonGroups()
 
     ///Also import Pyside.QtCore and Pyside.QtGui (the later only in non background mode)
     {
-        std::string s = "import PySide\nimport PySide.QtCore as QtCore";
+        std::string s = "import PySide\nimport PySide2.QtCore as QtCore";
         bool ok  = NATRON_PYTHON_NAMESPACE::interpretPythonScript(s, &err, 0);
         if (!ok) {
-            std::string message = QObject::tr("Failed to import PySide.QtCore, make sure it is bundled with your Natron installation "
+            std::string message = QObject::tr("Failed to import PySide2.QtCore, make sure it is bundled with your Natron installation "
                                               "or reachable through the Python path. (Note that Natron disables usage "
                                               "of site-packages ").toStdString();
             std::cerr << message << std::endl;
@@ -1401,10 +1401,10 @@ AppManager::loadPythonGroups()
     }
 
     if ( !isBackground() ) {
-        std::string s = "import PySide.QtGui as QtGui";
+        std::string s = "import PySide2.QtGui as QtGui";
         bool ok  = NATRON_PYTHON_NAMESPACE::interpretPythonScript(s, &err, 0);
         if (!ok) {
-            std::string message = QObject::tr("Failed to import PySide.QtGui").toStdString();
+            std::string message = QObject::tr("Failed to import PySide2.QtGui").toStdString();
             std::cerr << message << std::endl;
             appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( message.c_str() ) );
         }
