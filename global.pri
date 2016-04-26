@@ -205,7 +205,9 @@ win32 {
   #DEFINES += _MBCS
   DEFINES += WINDOWS COMPILED_FROM_DSP XML_STATIC  NOMINMAX
   DEFINES -= _UNICODE UNICODE
-  
+ 
+  DEFINES += QHTTP_SERVER_STATIC 
+
   #System library is required on windows to map network share names from drive letters
   LIBS += -lmpr
 

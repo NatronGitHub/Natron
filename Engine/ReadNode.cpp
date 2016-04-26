@@ -36,6 +36,7 @@
 #include "Engine/Node.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
+#include "Engine/Project.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/KnobSerialization.h" // createDefaultValueForParam
 #include "Engine/Plugin.h"
@@ -57,7 +58,7 @@ NATRON_NAMESPACE_ENTER;
 #define kParamFrameMode "frameMode"
 #define kParamTimeOffset "timeOffset"
 #define kParamStartingTime "startingTime"
-#define kParamOriginalFrameRange "originalFrameRange"
+#define kParamOriginalFrameRange kReaderParamNameOriginalFrameRange
 #define kParamFirstFrame "firstFrame"
 #define kParamLastFrame "lastFrame"
 #define kParamBefore "before"
@@ -511,6 +512,13 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         //Set a pre-value for the inputfile knob only if it did not exist
         if (!filename.empty() && !serialization) {
             args.paramValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filename) );
+            
+            std::string canonicalFilename = filename;
+            _publicInterface->getApp()->getProject()->canonicalizePath(canonicalFilename);
+            
+            int firstFrame,lastFrame;
+            Node::getOriginalFrameRangeForReader(readerPluginID, canonicalFilename, &firstFrame, &lastFrame);
+            args.paramValues.push_back(createDefaultValueForParam(kReaderParamNameOriginalFrameRange, firstFrame, lastFrame));
         }
         embeddedPlugin = _publicInterface->getApp()->createNode(args);
         if (pluginIDKnob) {

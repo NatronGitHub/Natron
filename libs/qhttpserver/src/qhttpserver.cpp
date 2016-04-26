@@ -33,7 +33,7 @@ QHash<int, QString> STATUS_CODES;
 
 QHttpServer::QHttpServer(QObject *parent) : QObject(parent), m_tcpServer(0)
 {
-#define STATUS_CODE(num, reason) STATUS_CODES.insert(num, reason);
+#define STATUS_CODE(num, reason) STATUS_CODES.insert(num, QString::fromUtf8(reason));
     // {{{
     STATUS_CODE(100, "Continue")
     STATUS_CODE(101, "Switching Protocols")
@@ -114,7 +114,7 @@ bool QHttpServer::listen(const QHostAddress &address, quint16 port)
     bool couldBindToPort = m_tcpServer->listen(address, port);
     if (couldBindToPort) {
         connect(m_tcpServer, SIGNAL(newConnection()), this, SLOT(newConnection()));
-        emit newPort(m_tcpServer->serverPort());
+        Q_EMIT newPort(m_tcpServer->serverPort());
     } else {
         delete m_tcpServer;
         m_tcpServer = NULL;

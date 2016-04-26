@@ -2562,7 +2562,7 @@ NodeGui::destroyGui()
     }
 
     //Remove tracker
-    if ( internalNode->isPointTrackerNode() ) {
+    if ( internalNode->isTrackerNodePlugin() || internalNode->getEffectInstance()->isBuiltinTrackerNode() ) {
         guiObj->removeTrackerInterface(this, true);
     }
 

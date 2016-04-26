@@ -51,7 +51,7 @@ If compiling on Mac OS X 10.6 with Xcode 4, you should also revert to the defaul
 And finally install the required packages:
 
 	sudo port install qt4-mac boost glew cairo expat
-	sudo port install py27-pyside
+	sudo port install py27-pyside py27-sphinx
 	sudo ln -s python2.7-config /opt/local/bin/python2-config
 
 create the file /opt/local/lib/pkgconfig/glu.pc containing GLU
@@ -107,7 +107,7 @@ Install libraries:
     brew tap homebrew/science
     brew install --build-from-source qt --with-mysql
     brew install expat cairo glew
-    brew install pyside
+    brew install pyside sphinx-doc
 
 The last command above should tell you do do that if the `homebrew.pth` file does not exist:
 

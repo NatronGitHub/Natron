@@ -122,6 +122,7 @@ public Q_SLOTS:
 
     void onKeyframeSetOnTrackCenter(const TrackMarkerPtr &marker, int key);
     void onKeyframeRemovedOnTrackCenter(const TrackMarkerPtr &marker, int key);
+    void onMultipleKeysRemovedOnTrackCenter(const TrackMarkerPtr& marker, const std::list<double>& keys);
     void onAllKeyframesRemovedOnTrackCenter(const TrackMarkerPtr &marker);
     void onMultipleKeyframesSetOnTrackCenter(const TrackMarkerPtr &marker, const std::list<double>& keys);
 

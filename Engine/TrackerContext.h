@@ -54,7 +54,7 @@ NATRON_NAMESPACE_ENTER;
 class TrackArgsV1
 {
     int _start, _end;
-    bool _forward;
+    int _step;
     boost::shared_ptr<TimeLine> _timeline;
     ViewerInstance* _viewer;
     std::vector<KnobButton*> _buttonInstances;
@@ -64,7 +64,7 @@ public:
     TrackArgsV1()
         : _start(0)
         , _end(0)
-        , _forward(false)
+        , _step(1)
         , _timeline()
         , _viewer(0)
         , _buttonInstances()
@@ -78,13 +78,13 @@ public:
 
     TrackArgsV1(int start,
                 int end,
-                bool forward,
+                int step,
                 const boost::shared_ptr<TimeLine>& timeline,
                 ViewerInstance* viewer,
                 const std::vector<KnobButton*>& instances)
         : _start(start)
         , _end(end)
-        , _forward(forward)
+        , _step(step)
         , _timeline(timeline)
         , _viewer(viewer)
         , _buttonInstances(instances)
@@ -97,7 +97,7 @@ public:
     {
         _start = other._start;
         _end = other._end;
-        _forward = other._forward;
+        _step = other._step;
         _timeline = other._timeline;
         _viewer = other._viewer;
         _buttonInstances = other._buttonInstances;
@@ -113,9 +113,9 @@ public:
         return _end;
     }
 
-    bool getForward() const
+    int getStep() const
     {
-        return _forward;
+        return _step;
     }
 
     boost::shared_ptr<TimeLine> getTimeLine() const
@@ -240,11 +240,11 @@ public:
      * @brief Tracks the selected markers over the range defined by [start,end[ (end pointing to the frame
      * after the last one, a la STL).
      **/
-    void trackSelectedMarkers(int start, int end, bool forward, ViewerInstance* viewer);
+    void trackSelectedMarkers(int start, int end, int frameStep, ViewerInstance* viewer);
     void trackMarkers(const std::list<TrackMarkerPtr >& marks,
                       int start,
                       int end,
-                      bool forward,
+                      int frameStep,
                       ViewerInstance* viewer);
 
 
@@ -287,24 +287,6 @@ public:
 
     void resetTransformParams();
 
-    struct TransformData
-    {
-        Point translation;
-        double rotation;
-        double scale;
-        bool hasRotationAndScale;
-        double time;
-        bool valid;
-    };
-
-    struct CornerPinData
-    {
-        Transform::Matrix3x3 h;
-        int nbEnabledPoints;
-        double time;
-        bool valid;
-    };
-
     NodePtr getCurrentlySelectedTransformNode() const;
 
     void drawInternalNodesOverlay(double time,
@@ -344,51 +326,7 @@ public:
                                          const RenderScale & renderScale,
                                          ViewIdx view, OverlaySupport* viewer) WARN_UNUSED_RETURN;
 
-private:
 
-    /**
-     * @brief Extracts the values of the center point of the given markers at x1Time and x2Time.
-     * @param jitterPeriod If jitterPeriod > 1 this is the amount of frames that will be averaged together to add
-     * jitter or remove jitter.
-     * @param jitterAdd If jitterPeriod > 1 this parameter is disregarded. Otherwise, if jitterAdd is false, then
-     * the values of the center points are smoothed with high frequencies removed (using average over jitterPeriod)
-     * If jitterAdd is true, then we compute the smoothed points (using average over jitterPeriod), and substract it
-     * from the original points to get the high frequencies. We then add those high frequencies back to the original
-     * points to increase shaking/motion
-     **/
-    static void extractSortedPointsFromMarkers(double x1Time, double x2Time,
-                                               const std::vector<TrackMarkerPtr>& markers,
-                                               int jitterPeriod,
-                                               bool jitterAdd,
-                                               std::vector<Point>* x1,
-                                               std::vector<Point>* x2);
-
-    TransformData computeTransformParamsFromTracksAtTime(double refTime,
-                                                double time,
-                                                int jitterPeriod,
-                                                bool jitterAdd,
-                                                const std::vector<TrackMarkerPtr>& allMarkers);
-
-    CornerPinData computeCornerPinParamsFromTracksAtTime(double refTime,
-                                                double time,
-                                                int jitterPeriod,
-                                                bool jitterAdd,
-                                                const std::vector<TrackMarkerPtr>& allMarkers);
-
-
-    void computeTransformParamsFromTracks(double refTime,
-                                          const std::set<double>& keyframes,
-                                          int jitterPeriod,
-                                          bool jitterAdd,
-                                          const std::vector<TrackMarkerPtr>& allMarkers);
-
-    void computeCornerParamsFromTracks(double refTime,
-                                       const std::set<double>& keyframes,
-                                       int jitterPeriod,
-                                       bool jitterAdd,
-                                       const std::vector<TrackMarkerPtr>& allMarkers);
-
-public:
 
 
     void solveTransformParams();
@@ -396,48 +334,7 @@ public:
 
     void exportTrackDataFromExportOptions();
 
-    RectD getInputRoDAtTime(double time) const;
 
-    /**
-     * @brief Computes the translation that best fit the set of correspondences x1 and x2.
-     * Requires at least 1 point. x1 and x2 must have the same size.
-     * This function throws an exception with an error message upon failure.
-     **/
-    static void computeTranslationFromNPoints(const std::vector<Point>& x1,
-                                              const std::vector<Point>& x2,
-                                              int w1, int h1, int w2, int h2,
-                                              Point* translation);
-
-    /**
-     * @brief Computes the translation, rotation and scale that best fit the set of correspondences x1 and x2.
-     * Requires at least 2 point. x1 and x2 must have the same size.
-     * This function throws an exception with an error message upon failure.
-     **/
-    static void computeSimilarityFromNPoints(const std::vector<Point>& x1,
-                                             const std::vector<Point>& x2,
-                                             int w1, int h1, int w2, int h2,
-                                             Point* translation,
-                                             double* rotate,
-                                             double* scale);
-    /**
-     * @brief Computes the homography that best fit the set of correspondences x1 and x2.
-     * Requires at least 4 point. x1 and x2 must have the same size.
-     * This function throws an exception with an error message upon failure.
-     **/
-    static void computeHomographyFromNPoints(const std::vector<Point>& x1,
-                                             const std::vector<Point>& x2,
-                                             int w1, int h1, int w2, int h2,
-                                             Transform::Matrix3x3* homog);
-
-    /**
-     * @brief Computes the fundamental matrix that best fit the set of correspondences x1 and x2.
-     * Requires at least 7 point. x1 and x2 must have the same size.
-     * This function throws an exception with an error message upon failure.
-     **/
-    static void computeFundamentalFromNPoints(const std::vector<Point>& x1,
-                                              const std::vector<Point>& x2,
-                                              int w1, int h1, int w2, int h2,
-                                              Transform::Matrix3x3* fundamental);
 
     void onKnobsLoaded();
 
@@ -477,6 +374,9 @@ public:
 
     void s_keyframeRemovedOnTrackCenter(const TrackMarkerPtr& marker,
                                         int key) { Q_EMIT keyframeRemovedOnTrackCenter(marker, key); }
+    
+    void s_multipleKeyframesRemovedOnTrackCenter(const TrackMarkerPtr& marker,
+                                                 const std::list<double>& keys) { Q_EMIT multipleKeyframesRemovedOnTrackCenter(marker, keys); }
 
     void s_allKeyframesRemovedOnTrackCenter(const TrackMarkerPtr& marker) { Q_EMIT allKeyframesRemovedOnTrackCenter(marker); }
 
@@ -536,6 +436,7 @@ Q_SIGNALS:
 
     void keyframeSetOnTrackCenter(TrackMarkerPtr marker, int);
     void keyframeRemovedOnTrackCenter(TrackMarkerPtr marker, int);
+    void multipleKeyframesRemovedOnTrackCenter(TrackMarkerPtr marker, std::list<double>);
     void allKeyframesRemovedOnTrackCenter(TrackMarkerPtr marker);
     void multipleKeyframesSetOnTrackCenter(TrackMarkerPtr marker, std::list<double>);
 

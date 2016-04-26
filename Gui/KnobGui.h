@@ -298,6 +298,8 @@ public Q_SLOTS:
 
     void onMultipleKeySet(const std::list<double>& keys, ViewSpec view, int dimension, int reason);
 
+    void onMultipleKeyRemoved(const std::list<double>& keys, ViewSpec view, int dimension, int reason);
+
     void onInternalAnimationAboutToBeRemoved(ViewSpec view, int dimension);
 
     void onInternalAnimationRemoved();

@@ -114,6 +114,14 @@ public:
         Q_EMIT multipleKeyFramesSet(keys, view,  dimension, reason);
     }
 
+    void s_multipleKeyFramesRemoved(const std::list<double>& keys,
+                                ViewSpec view,
+                                int dimension,
+                                int reason)
+    {
+        Q_EMIT multipleKeyFramesRemoved(keys, view,  dimension, reason);
+    }
+    
     void s_animationAboutToBeRemoved(ViewSpec view,
                                      int dimension)
     {
@@ -276,8 +284,9 @@ Q_SIGNALS:
     ///@param added True if this is the first time that the keyframe was set
     void keyFrameSet(double time, ViewSpec view, int dimension, int reason, bool added);
 
-    /// Called when a curve is cloned
     void multipleKeyFramesSet(std::list<double>, ViewSpec view, int dimension, int reason);
+    
+    void multipleKeyFramesRemoved(std::list<double>, ViewSpec view, int dimension, int reason);
 
     ///Emitted whenever a keyframe is removed with a reason different of eValueChangedReasonUserEdited
     void keyFrameRemoved(double time,  ViewSpec view, int dimension, int reason);
@@ -533,6 +542,8 @@ public:
      * @brief Removes the keyframe at the given time and dimension if it matches any.
      **/
     virtual void deleteValueAtTime(CurveChangeReason curveChangeReason, double time, ViewSpec view, int dimension) = 0;
+    
+    virtual void deleteValuesAtTime(CurveChangeReason curveChangeReason, const std::list<double>& times, ViewSpec view, int dimension) = 0;
 
 
     /**
@@ -1249,6 +1260,7 @@ private:
 
     virtual void removeAnimationWithReason(ViewSpec view, int dimension, ValueChangedReasonEnum reason) OVERRIDE FINAL;
     virtual void deleteValueAtTime(CurveChangeReason curveChangeReason, double time, ViewSpec view,  int dimension) OVERRIDE FINAL;
+    virtual void deleteValuesAtTime(CurveChangeReason curveChangeReason, const std::list<double>& times, ViewSpec view, int dimension) OVERRIDE FINAL;
 
 public:
 

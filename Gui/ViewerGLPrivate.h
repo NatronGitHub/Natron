@@ -34,7 +34,6 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Image.h"
-#include "Engine/ImageInfo.h"
 
 #include "Gui/TextRenderer.h"
 #include "Gui/ViewerGL.h"
@@ -93,6 +92,26 @@ enum PickerStateEnum
     ePickerStateRectangle
 };
 
+struct TextureInfo
+{
+    GLTexturePtr texture;
+    double gain;
+    double gamma;
+    double offset;
+    unsigned int mipMapLevel;
+    ImagePremultiplicationEnum premult;
+    SequenceTime time;
+    RectD rod;
+    
+    // For now we always use the project format, but we store the pixel aspect ratio of the upstream image 
+    Format format;
+    
+    std::vector<ImageList> lastRenderedTiles;
+    U64 memoryHeldByLastRenderedImages;
+    
+    bool isPartialImage;
+};
+
 struct ViewerGL::Implementation
 {
     Implementation(ViewerGL* this_, ViewerTab* parent);
@@ -109,22 +128,15 @@ struct ViewerGL::Implementation
     GLuint vboTexturesId; //!< VBO holding texture coordinates.
     GLuint iboTriangleStripId; /*!< IBOs holding vertices indexes for triangle strip sets*/
     GLTexturePtr activeTextures[2]; /*!< A pointer to the current textures used to display. One for A and B. May point to blackTex */
-    GLTexturePtr displayTextures[2]; /*!< A pointer to the textures that would be used if A and B are displayed*/
-    std::vector<GLTexturePtr> partialUpdateTextures; /*!< Pointer to the partial rectangle textures overlayed onto the displayed texture when tracking*/
-    QGLShaderProgram* shaderRGB; /*!< The shader program used to render RGB data*/
-    QGLShaderProgram* shaderBlack; /*!< The shader program used when the viewer is disconnected.*/
+    TextureInfo displayTextures[2]; /*!< A pointer to the textures that would be used if A and B are displayed*/
+    std::vector<TextureInfo> partialUpdateTextures; /*!< Pointer to the partial rectangle textures overlayed onto the displayed texture when tracking*/
+    boost::scoped_ptr<QGLShaderProgram> shaderRGB; /*!< The shader program used to render RGB data*/
+    boost::scoped_ptr<QGLShaderProgram> shaderBlack; /*!< The shader program used when the viewer is disconnected.*/
     bool shaderLoaded; /*!< Flag to check whether the shaders have already been loaded.*/
     InfoViewerWidget* infoViewer[2]; /*!< Pointer to the info bar below the viewer holding pixel/mouse/format related info*/
     ViewerTab* const viewerTab; /*!< Pointer to the viewer tab GUI*/
     bool zoomOrPannedSinceLastFit; //< true if the user zoomed or panned the image since the last call to fitToRoD
     QPoint oldClick;
-    ImageInfo blankViewerInfo; /*!< Pointer to the info used when the viewer is disconnected.*/
-    double displayingImageGain[2];
-    double displayingImageGamma[2];
-    double displayingImageOffset[2];
-    unsigned int displayingImageMipMapLevel[2];
-    ImagePremultiplicationEnum displayingImagePremult[2];
-    int displayingImageTime[2];
     ViewerColorSpaceEnum displayingImageLut;
     MouseStateEnum ms; /*!< Holds the mouse state*/
     HoverStateEnum hs;
@@ -149,7 +161,6 @@ struct ViewerGL::Implementation
     bool hasMovedSincePress;
 
     /////// currentViewerInfo
-    ImageInfo currentViewerInfo[2]; /*!< Pointer to the ViewerInfo  used for rendering*/
     mutable QMutex projectFormatMutex;
     Format projectFormat;
     QString currentViewerInfo_btmLeftBBOXoverlay[2]; /*!< The string holding the bottom left corner coordinates of the dataWindow*/
@@ -185,8 +196,6 @@ struct ViewerGL::Implementation
     GLuint savedTexture; // @see saveOpenGLContext/restoreOpenGLContext
     GLuint prevBoundTexture; // @see bindTextureAndActivateShader/unbindTextureAndReleaseShader
     mutable QMutex lastRenderedImageMutex; //protects lastRenderedImage & memoryHeldByLastRenderedImages
-    std::vector<ImageList> lastRenderedTiles[2]; //<  last image passed to transferRAMBuffer
-    U64 memoryHeldByLastRenderedImages[2];
     QSize sizeH;
     PenType pointerTypeOnPress;
     bool subsequentMousePressIsTablet;

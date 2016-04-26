@@ -202,7 +202,7 @@ int QHttpConnection::HeadersComplete(http_parser *parser)
 
     /** set version **/
     theConnection->m_request->setVersion(
-        QString("%1.%2").arg(parser->http_major).arg(parser->http_minor));
+        QString::fromUtf8("%1.%2").arg(parser->http_major).arg(parser->http_minor));
 
     /** get parsed url **/
     struct http_parser_url urlInfo;

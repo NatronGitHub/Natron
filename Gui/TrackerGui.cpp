@@ -44,6 +44,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Curve.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/PyParameter.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/Image.h"
@@ -67,6 +68,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Texture.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/NodeGui.h"
+#include "Gui/PythonPanels.h"
 #include "Gui/TrackerPanel.h"
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/QtEnumConvert.h"
@@ -201,10 +203,13 @@ struct TrackerGuiPrivate
     QWidget* buttonsBar;
     QHBoxLayout* buttonsLayout;
     Button* addTrackButton;
+    Button* trackRangeButton;
     Button* trackBwButton;
     Button* trackPrevButton;
     Button* trackNextButton;
     Button* trackFwButton;
+    Button* trackAllKeyframesButton;
+    Button* trackCurrentKeyframeButton;
     Button* clearAllAnimationButton;
     Button* clearBwAnimationButton;
     Button* clearFwAnimationButton;
@@ -240,6 +245,8 @@ struct TrackerGuiPrivate
     RenderScale selectedMarkerScale;
     boost::weak_ptr<Image> selectedMarkerImg;
     bool isTracking;
+    
+    int lastTrackRangeFirstFrame,lastTrackRangeLastFrame,lastTrackRangeStep;
 
     TrackerGuiPrivate(TrackerGui* publicInterface,
                       const boost::shared_ptr<TrackerPanelV1> & panelv1,
@@ -252,10 +259,13 @@ struct TrackerGuiPrivate
         , buttonsBar(NULL)
         , buttonsLayout(NULL)
         , addTrackButton(NULL)
+        , trackRangeButton(0)
         , trackBwButton(NULL)
         , trackPrevButton(NULL)
         , trackNextButton(NULL)
         , trackFwButton(NULL)
+        , trackAllKeyframesButton(0)
+        , trackCurrentKeyframeButton(0)
         , clearAllAnimationButton(NULL)
         , clearBwAnimationButton(NULL)
         , clearFwAnimationButton(NULL)
@@ -287,6 +297,9 @@ struct TrackerGuiPrivate
         , selectedMarkerScale()
         , selectedMarkerImg()
         , isTracking(false)
+        , lastTrackRangeFirstFrame(INT_MIN)
+        , lastTrackRangeLastFrame(INT_MIN)
+        , lastTrackRangeStep(INT_MIN)
     {
         glGenBuffers(1, &pboID);
         selectedMarkerScale.x = selectedMarkerScale.y = 1.;
@@ -437,13 +450,14 @@ TrackerGui::createGui()
     QHBoxLayout* trackPlayerLayout = new QHBoxLayout(trackPlayer);
     trackPlayerLayout->setContentsMargins(0, 0, 0, 0);
     trackPlayerLayout->setSpacing(0);
+    
+   
 
     _imp->trackBwButton = new Button(bwIcon, QString(), _imp->buttonsBar);
     _imp->trackBwButton->setFixedSize(medButtonSize);
     _imp->trackBwButton->setIconSize(medButtonIconSize);
-
-    _imp->trackBwButton->setToolTip( QString::fromUtf8("<p>") + tr("Track selected tracks backward until left bound of the timeline.") +
-                                     QString::fromUtf8("</p><p><b>") + tr("Keyboard shortcut:") + QString::fromUtf8(" Z</b></p>") );
+    setTooltipWithShortcut(kShortcutGroupTracking, kShortcutIDActionTrackingBackward, "<p>" + tr("Track selected tracks backward until left bound of the timeline").toStdString() + "</p>" +
+                           "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->trackBwButton);
     _imp->trackBwButton->setCheckable(true);
     _imp->trackBwButton->setChecked(false);
     QObject::connect( _imp->trackBwButton, SIGNAL(clicked(bool)), this, SLOT(onTrackBwClicked()) );
@@ -452,8 +466,8 @@ TrackerGui::createGui()
     _imp->trackPrevButton = new Button(QIcon(pixPrev), QString(), _imp->buttonsBar);
     _imp->trackPrevButton->setFixedSize(medButtonSize);
     _imp->trackPrevButton->setIconSize(medButtonIconSize);
-    _imp->trackPrevButton->setToolTip( QString::fromUtf8("<p>") + tr("Track selected tracks on the previous frame.") +
-                                       QString::fromUtf8("</p><p><b>") + tr("Keyboard shortcut:") + QString::fromUtf8(" X</b></p>") );
+    setTooltipWithShortcut(kShortcutGroupTracking, kShortcutIDActionTrackingPrevious, "<p>" + tr("Track selected tracks on the previous frame").toStdString() + "</p>" +
+                           "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->trackPrevButton);
     QObject::connect( _imp->trackPrevButton, SIGNAL(clicked(bool)), this, SLOT(onTrackPrevClicked()) );
     trackPlayerLayout->addWidget(_imp->trackPrevButton);
 
@@ -461,8 +475,8 @@ TrackerGui::createGui()
     _imp->trackNextButton = new Button(QIcon(pixNext), QString(), _imp->buttonsBar);
     _imp->trackNextButton->setFixedSize(medButtonSize);
     _imp->trackNextButton->setIconSize(medButtonIconSize);
-    _imp->trackNextButton->setToolTip( QString::fromUtf8("<p>") + tr("Track selected tracks on the next frame.") +
-                                       QString::fromUtf8("</p><p><b>") + tr("Keyboard shortcut:") + QString::fromUtf8(" C</b></p>") );
+    setTooltipWithShortcut(kShortcutGroupTracking, kShortcutIDActionTrackingNext, "<p>" + tr("Track selected tracks on the next frame").toStdString() + "</p>" +
+                           "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->trackNextButton);
     QObject::connect( _imp->trackNextButton, SIGNAL(clicked(bool)), this, SLOT(onTrackNextClicked()) );
     trackPlayerLayout->addWidget(_imp->trackNextButton);
 
@@ -473,18 +487,51 @@ TrackerGui::createGui()
     _imp->trackFwButton = new Button(fwIcon, QString(), _imp->buttonsBar);
     _imp->trackFwButton->setFixedSize(medButtonSize);
     _imp->trackFwButton->setIconSize(medButtonIconSize);
-
-    _imp->trackFwButton->setToolTip( QString::fromUtf8("<p>") + tr("Track selected tracks forward until right bound of the timeline.") +
-                                     QString::fromUtf8("</p><p><b>") + tr("Keyboard shortcut:") + QString::fromUtf8(" V</b></p>") );
+    setTooltipWithShortcut(kShortcutGroupTracking, kShortcutIDActionTrackingForward, "<p>" + tr("Track selected tracks forward until right bound of the timeline").toStdString() + "</p>" +
+                           "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->trackFwButton);
     _imp->trackFwButton->setCheckable(true);
     _imp->trackFwButton->setChecked(false);
     QObject::connect( _imp->trackFwButton, SIGNAL(clicked(bool)), this, SLOT(onTrackFwClicked()) );
     trackPlayerLayout->addWidget(_imp->trackFwButton);
+    
+    trackPlayerLayout->addSpacing(TO_DPIX(5));
+    
+    _imp->trackRangeButton = new Button(QIcon(), QString::fromUtf8("Range"), _imp->buttonsBar);
+    _imp->trackRangeButton->setFixedSize(medButtonSize);
+    _imp->trackRangeButton->setIconSize(medButtonIconSize);
+    setTooltipWithShortcut(kShortcutGroupTracking, kShortcutIDActionTrackingRange, "<p>" + tr("Track selected tracks over the range and with the step input by a dialog").toStdString() + "</p>" +
+                           "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->trackRangeButton);
+    _imp->trackRangeButton->setCheckable(true);
+    _imp->trackRangeButton->setChecked(false);
+    QObject::connect( _imp->trackRangeButton, SIGNAL(clicked(bool)), this, SLOT(onTrackRangeClicked()) );
+    trackPlayerLayout->addWidget(_imp->trackRangeButton);
+    
+    trackPlayerLayout->addSpacing(TO_DPIX(5));
+    
+    _imp->trackAllKeyframesButton = new Button(QIcon(), QString::fromUtf8("AllK"), _imp->buttonsBar);
+    _imp->trackAllKeyframesButton->setFixedSize(medButtonSize);
+    _imp->trackAllKeyframesButton->setIconSize(medButtonIconSize);
+    setTooltipWithShortcut(kShortcutGroupTracking, kShortcutIDActionTrackingAllKeyframes, "<p>" + tr("Track selected tracks across all pattern keyframes").toStdString() + "</p>" +
+                           "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->trackAllKeyframesButton);
+    _imp->trackAllKeyframesButton->setCheckable(true);
+    _imp->trackAllKeyframesButton->setChecked(false);
+    QObject::connect( _imp->trackAllKeyframesButton, SIGNAL(clicked(bool)), this, SLOT(onTrackAllKeyframesClicked()) );
+    trackPlayerLayout->addWidget(_imp->trackAllKeyframesButton);
 
     _imp->buttonsLayout->addWidget(trackPlayer);
+    
+    _imp->trackCurrentKeyframeButton = new Button(QIcon(), QString::fromUtf8("CurK"), _imp->buttonsBar);
+    _imp->trackCurrentKeyframeButton->setFixedSize(medButtonSize);
+    _imp->trackCurrentKeyframeButton->setIconSize(medButtonIconSize);
+    setTooltipWithShortcut(kShortcutGroupTracking, kShortcutIDActionTrackingCurrentKeyframes, "<p>" + tr("Track selected tracks over only the pattern keyframes related to the current track").toStdString() + "</p>" +
+                           "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->trackCurrentKeyframeButton);
+    _imp->trackCurrentKeyframeButton->setCheckable(true);
+    _imp->trackCurrentKeyframeButton->setChecked(false);
+    QObject::connect( _imp->trackCurrentKeyframeButton, SIGNAL(clicked(bool)), this, SLOT(onTrackCurrentKeyframeClicked()) );
+    trackPlayerLayout->addWidget(_imp->trackCurrentKeyframeButton);
+    
+    _imp->buttonsLayout->addWidget(trackPlayer);
 
-
-#pragma message WARN("Add a button to track between keyframes surrounding the current frame")
 
     QWidget* clearAnimationContainer = new QWidget(_imp->buttonsBar);
     QHBoxLayout* clearAnimationLayout = new QHBoxLayout(clearAnimationContainer);
@@ -494,21 +541,21 @@ TrackerGui::createGui()
     _imp->clearAllAnimationButton = new Button(QIcon(pixClearAll), QString(), _imp->buttonsBar);
     _imp->clearAllAnimationButton->setFixedSize(medButtonSize);
     _imp->clearAllAnimationButton->setIconSize(medButtonIconSize);
-    _imp->clearAllAnimationButton->setToolTip( GuiUtils::convertFromPlainText(tr("Reset animation on the center and pattern for selected tracks."), Qt::WhiteSpaceNormal) );
+    _imp->clearAllAnimationButton->setToolTip( GuiUtils::convertFromPlainText(tr("Reset animation on the selected tracks."), Qt::WhiteSpaceNormal) );
     QObject::connect( _imp->clearAllAnimationButton, SIGNAL(clicked(bool)), this, SLOT(onClearAllAnimationClicked()) );
     clearAnimationLayout->addWidget(_imp->clearAllAnimationButton);
 
     _imp->clearBwAnimationButton = new Button(QIcon(pixClearBw), QString(), _imp->buttonsBar);
     _imp->clearBwAnimationButton->setFixedSize(medButtonSize);
     _imp->clearBwAnimationButton->setIconSize(medButtonIconSize);
-    _imp->clearBwAnimationButton->setToolTip( GuiUtils::convertFromPlainText(tr("Reset animation on the center and pattern backward from the current frame."), Qt::WhiteSpaceNormal) );
+    _imp->clearBwAnimationButton->setToolTip( GuiUtils::convertFromPlainText(tr("Reset animation on the selected tracks backward from the current frame."), Qt::WhiteSpaceNormal) );
     QObject::connect( _imp->clearBwAnimationButton, SIGNAL(clicked(bool)), this, SLOT(onClearBwAnimationClicked()) );
     clearAnimationLayout->addWidget(_imp->clearBwAnimationButton);
 
     _imp->clearFwAnimationButton = new Button(QIcon(pixClearFw), QString(), _imp->buttonsBar);
     _imp->clearFwAnimationButton->setFixedSize(medButtonSize);
     _imp->clearFwAnimationButton->setIconSize(medButtonIconSize);
-    _imp->clearFwAnimationButton->setToolTip( GuiUtils::convertFromPlainText(tr("Reset animation on the center and pattern forward from the current frame."), Qt::WhiteSpaceNormal) );
+    _imp->clearFwAnimationButton->setToolTip( GuiUtils::convertFromPlainText(tr("Reset animation on the semected tracks forward from the current frame."), Qt::WhiteSpaceNormal) );
     QObject::connect( _imp->clearFwAnimationButton, SIGNAL(clicked(bool)), this, SLOT(onClearFwAnimationClicked()) );
     clearAnimationLayout->addWidget(_imp->clearFwAnimationButton);
 
@@ -3246,7 +3293,19 @@ TrackerGui::keyDown(double time,
     } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingStop, modifiers, key) ) {
         onStopButtonClicked();
         didSomething = true;
+    } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingRange, modifiers, key) ) {
+        onTrackRangeClicked();
+        didSomething = true;
+    } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingAllKeyframes, modifiers, key) ) {
+        onTrackAllKeyframesClicked();
+        didSomething = true;
+    } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingCurrentKeyframes, modifiers, key) ) {
+        onTrackCurrentKeyframeClicked();
+        didSomething = true;
     }
+
+
+
 
     return didSomething;
 } // keyDown
@@ -3424,6 +3483,115 @@ TrackerGui::onSelectionCleared()
 }
 
 void
+TrackerGui::onTrackRangeClicked()
+{
+    
+    SequenceTime timelineFirst, timelineLast;
+    _imp->viewer->getTimelineBounds(&timelineFirst, &timelineLast);
+    
+    NATRON_PYTHON_NAMESPACE::PyModalDialog dialog(_imp->viewer->getGui());
+    boost::shared_ptr<NATRON_PYTHON_NAMESPACE::IntParam> firstFrame( dialog.createIntParam( QString::fromUtf8("firstFrame"), QString::fromUtf8("First frame") ) );
+    firstFrame->set(_imp->lastTrackRangeFirstFrame != INT_MIN ? _imp->lastTrackRangeFirstFrame : timelineFirst);
+    firstFrame->setAnimationEnabled(false);
+    boost::shared_ptr<NATRON_PYTHON_NAMESPACE::IntParam> lastFrame( dialog.createIntParam( QString::fromUtf8("lastFrame"), QString::fromUtf8("Last frame") ) );
+    lastFrame->set(_imp->lastTrackRangeLastFrame != INT_MIN ? _imp->lastTrackRangeLastFrame : timelineLast);
+    lastFrame->setAnimationEnabled(false);
+    boost::shared_ptr<NATRON_PYTHON_NAMESPACE::IntParam> stepFrame( dialog.createIntParam( QString::fromUtf8("step"), QString::fromUtf8("Step") ) );
+    stepFrame->setAnimationEnabled(false);
+    stepFrame->set(_imp->lastTrackRangeStep != INT_MIN ? _imp->lastTrackRangeStep : 1);
+    dialog.refreshUserParamsGUI();
+    if (dialog.exec()) {
+        int first = firstFrame->getValue();
+        int last = lastFrame->getValue();
+        int step = stepFrame->getValue();
+        
+        boost::shared_ptr<TrackerContext> ctx = _imp->panel->getContext();
+        if (ctx->isCurrentlyTracking()) {
+            ctx->abortTracking();
+        }
+        
+        if (step == 0) {
+            Dialogs::errorDialog(tr("Track Range").toStdString(), tr("The Step cannot be 0").toStdString());
+            return;
+        }
+        
+        int startFrame = step > 0 ? first : last;
+        int lastFrame = step > 0 ? last + 1 : first - 1;
+        
+        if ((step > 0 && (startFrame >= lastFrame)) || (step < 0 && (startFrame <= lastFrame))) {
+            return;
+        }
+        
+        _imp->lastTrackRangeStep = step;
+        _imp->lastTrackRangeFirstFrame = first;
+        _imp->lastTrackRangeLastFrame = last;
+        
+        ctx->trackSelectedMarkers(startFrame, lastFrame, step,  _imp->viewer->getInternalNode());
+        
+    }
+
+}
+
+void
+TrackerGui::onTrackAllKeyframesClicked()
+{
+    boost::shared_ptr<TrackerContext> ctx = _imp->panel->getContext();
+    std::list<TrackMarkerPtr> selectedMarkers;
+    ctx->getSelectedMarkers(&selectedMarkers);
+    
+    std::set<int> userKeys;
+    
+    for (std::list<TrackMarkerPtr>::iterator it = selectedMarkers.begin(); it != selectedMarkers.end(); ++it) {
+        std::set<int> trackUserKeys;
+        (*it)->getUserKeyframes(&trackUserKeys);
+        userKeys.insert(trackUserKeys.begin(), trackUserKeys.end());
+    }
+    if (userKeys.empty()) {
+        return;
+    }
+    
+    int first = *userKeys.begin();
+    int last = *userKeys.rbegin() + 1;
+    ctx->trackSelectedMarkers(first, last, 1,  _imp->viewer->getInternalNode());
+}
+
+void
+TrackerGui::onTrackCurrentKeyframeClicked()
+{
+    boost::shared_ptr<TrackerContext> ctx = _imp->panel->getContext();
+    SequenceTime currentFrame = _imp->viewer->getTimeLine()->currentFrame();
+    std::list<TrackMarkerPtr> selectedMarkers;
+    ctx->getSelectedMarkers(&selectedMarkers);
+    
+    std::set<int> userKeys;
+    
+    for (std::list<TrackMarkerPtr>::iterator it = selectedMarkers.begin(); it != selectedMarkers.end(); ++it) {
+        std::set<int> trackUserKeys;
+        (*it)->getUserKeyframes(&trackUserKeys);
+        userKeys.insert(trackUserKeys.begin(), trackUserKeys.end());
+    }
+    if (userKeys.empty()) {
+        return;
+    }
+    
+    std::set<int>::iterator it = userKeys.lower_bound(currentFrame);
+    if (it == userKeys.end()) {
+        return;
+    }
+    
+    int last = *it + 1;
+    int first;
+    if (it == userKeys.begin()) {
+        first = *it;
+    } else {
+        --it;
+        first = *it;
+    }
+        
+    ctx->trackSelectedMarkers(first, last, 1,  _imp->viewer->getInternalNode());
+}
+
+void
 TrackerGui::onTrackBwClicked()
 {
     _imp->trackBwButton->setDown(false);
@@ -3441,8 +3609,8 @@ TrackerGui::onTrackBwClicked()
     } else {
         boost::shared_ptr<TimeLine> timeline = _imp->viewer->getGui()->getApp()->getTimeLine();
         int startFrame = timeline->currentFrame() - 1;
-        double first, last;
-        _imp->viewer->getGui()->getApp()->getProject()->getFrameRange(&first, &last);
+        SequenceTime first, last;
+        _imp->viewer->getTimelineBounds(&first, &last);
         boost::shared_ptr<TrackerContext> ctx = _imp->panel->getContext();
         if ( ctx->isCurrentlyTracking() ) {
             ctx->abortTracking();
@@ -3507,8 +3675,8 @@ TrackerGui::onTrackFwClicked()
     } else {
         boost::shared_ptr<TimeLine> timeline = _imp->viewer->getGui()->getApp()->getTimeLine();
         int startFrame = timeline->currentFrame() + 1;
-        double first, last;
-        _imp->viewer->getGui()->getApp()->getProject()->getFrameRange(&first, &last);
+        SequenceTime first, last;
+        _imp->viewer->getTimelineBounds(&first, &last);
         boost::shared_ptr<TrackerContext> ctx = _imp->panel->getContext();
         if ( ctx->isCurrentlyTracking() ) {
             ctx->abortTracking();
@@ -3563,17 +3731,7 @@ TrackerGui::onClearAllAnimationClicked()
         std::list<TrackMarkerPtr > markers;
         _imp->panel->getContext()->getSelectedMarkers(&markers);
         for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
-            boost::shared_ptr<KnobDouble> offsetKnob = (*it)->getOffsetKnob();
-            assert(offsetKnob);
-            for (int i = 0; i < offsetKnob->getDimension(); ++i) {
-                offsetKnob->resetToDefaultValue(i);
-            }
-
-            boost::shared_ptr<KnobDouble> centerKnob = (*it)->getCenterKnob();
-            assert(centerKnob);
-            for (int i = 0; i < centerKnob->getDimension(); ++i) {
-                centerKnob->resetToDefaultValue(i);
-            }
+            (*it)->clearAnimation();
         }
     }
 }
@@ -3588,17 +3746,7 @@ TrackerGui::onClearBwAnimationClicked()
         std::list<TrackMarkerPtr > markers;
         _imp->panel->getContext()->getSelectedMarkers(&markers);
         for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
-            boost::shared_ptr<KnobDouble> offsetKnob = (*it)->getOffsetKnob();
-            assert(offsetKnob);
-            for (int i = 0; i < offsetKnob->getDimension(); ++i) {
-                offsetKnob->deleteAnimationBeforeTime(time, ViewSpec::all(), i, eValueChangedReasonNatronGuiEdited);
-            }
-
-            boost::shared_ptr<KnobDouble> centerKnob = (*it)->getCenterKnob();
-            assert(centerKnob);
-            for (int i = 0; i < centerKnob->getDimension(); ++i) {
-                centerKnob->deleteAnimationBeforeTime(time, ViewSpec::all(), i, eValueChangedReasonNatronGuiEdited);
-            }
+            (*it)->clearAnimationBeforeTime(time);
         }
     }
 }
@@ -3613,17 +3761,7 @@ TrackerGui::onClearFwAnimationClicked()
         std::list<TrackMarkerPtr > markers;
         _imp->panel->getContext()->getSelectedMarkers(&markers);
         for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
-            boost::shared_ptr<KnobDouble> offsetKnob = (*it)->getOffsetKnob();
-            assert(offsetKnob);
-            for (int i = 0; i < offsetKnob->getDimension(); ++i) {
-                offsetKnob->deleteAnimationAfterTime(time, ViewSpec::all(), i, eValueChangedReasonNatronGuiEdited);
-            }
-
-            boost::shared_ptr<KnobDouble> centerKnob = (*it)->getCenterKnob();
-            assert(centerKnob);
-            for (int i = 0; i < centerKnob->getDimension(); ++i) {
-                centerKnob->deleteAnimationAfterTime(time, ViewSpec::all(), i, eValueChangedReasonNatronGuiEdited);
-            }
+            (*it)->clearAnimationAfterTime(time);
         }
     }
 }

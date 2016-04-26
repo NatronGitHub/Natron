@@ -13,6 +13,7 @@ include(../../../global.pri)
 include(../../../libs.pri)
 include(../../../config.pri)
 
+DEFINES += QHTTP_SERVER_STATIC
 DEFINES += QHTTPSERVER_EXPORT
 INCLUDEPATH += $$QHTTPSERVER_BASE/http-parser
 PRIVATE_HEADERS += $$QHTTPSERVER_BASE/http-parser/http_parser.h qhttpconnection.h

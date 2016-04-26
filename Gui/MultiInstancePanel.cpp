@@ -2072,7 +2072,7 @@ TrackerPanelV1::trackBackward(ViewerInstance* viewer)
     int end = leftBound - 1;
     int start = getApp()->getTimeLine()->currentFrame();
 
-    _imp->scheduler.track( TrackArgsV1(start, end, false, getApp()->getTimeLine(), viewer, instanceButtons) );
+    _imp->scheduler.track( TrackArgsV1(start, end, -1, getApp()->getTimeLine(), viewer, instanceButtons) );
 
     return true;
 } // trackBackward
@@ -2094,7 +2094,7 @@ TrackerPanelV1::trackForward(ViewerInstance* viewer)
     int end = rightBound + 1;
     int start = timeline->currentFrame();
 
-    _imp->scheduler.track( TrackArgsV1(start, end, true, getApp()->getTimeLine(), viewer, instanceButtons) );
+    _imp->scheduler.track( TrackArgsV1(start, end, 1, getApp()->getTimeLine(), viewer, instanceButtons) );
 
     return true;
 } // trackForward
@@ -2131,7 +2131,7 @@ TrackerPanelV1::trackPrevious(ViewerInstance* viewer)
     int start = timeline->currentFrame();
     int end = start - 1;
 
-    _imp->scheduler.track( TrackArgsV1(start, end, false, getApp()->getTimeLine(), viewer, instanceButtons) );
+    _imp->scheduler.track( TrackArgsV1(start, end, -1, getApp()->getTimeLine(), viewer, instanceButtons) );
 
     return true;
 }
@@ -2156,7 +2156,7 @@ TrackerPanelV1::trackNext(ViewerInstance* viewer)
     int start = timeline->currentFrame();
     int end = start + 1;
 
-    _imp->scheduler.track( TrackArgsV1(start, end, true, getApp()->getTimeLine(), viewer, instanceButtons) );
+    _imp->scheduler.track( TrackArgsV1(start, end, 1, getApp()->getTimeLine(), viewer, instanceButtons) );
 
     return true;
 }
