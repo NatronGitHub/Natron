@@ -1451,11 +1451,12 @@ FileParam::~FileParam()
 void
 FileParam::setSequenceEnabled(bool enabled)
 {
-    if (!_sKnob->isUserKnob()) {
+    boost::shared_ptr<KnobFile> k = _sKnob.lock();
+    if (!k->isUserKnob()) {
         return;
     }
     if (enabled) {
-        _sKnob->setAsInputImage();
+        k->setAsInputImage();
     }
     
 }
@@ -1463,7 +1464,19 @@ FileParam::setSequenceEnabled(bool enabled)
 void
 FileParam::openFile()
 {
-    _sKnob->open_file();
+    boost::shared_ptr<KnobFile> k = _sKnob.lock();
+    if (k) {
+        k->open_file();
+    }
+}
+
+void
+FileParam::reloadFile()
+{
+    boost::shared_ptr<KnobFile> k = _sKnob.lock();
+    if (k) {
+        k->reloadFile();
+    }
 }
 
 /////////////////////OutputFileParam

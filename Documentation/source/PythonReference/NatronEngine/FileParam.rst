@@ -17,6 +17,7 @@ Functions
 
 
 *    def :meth:`openFile<NatronEngine.FileParam.openFile>` ()
+*    def :meth:`reloadFile<NatronEngine.FileParam.reloadFile>` ()
 *    def :meth:`setSequenceEnabled<NatronEngine.FileParam.setSequenceEnabled>` (enabled)
 
 
@@ -31,6 +32,12 @@ Member functions description
 When called in GUI mode, this will open a file dialog for the user. Does nothing in 
 background mode.
 
+
+.. method:: NatronEngine.FileParam.reloadFile()
+
+
+Force a refresh of the data read from the file. Any cached data associated to the file will be 
+discarded. 
 
 
 

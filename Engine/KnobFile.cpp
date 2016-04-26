@@ -32,6 +32,7 @@
 #include <QtCore/QMutexLocker>
 #include <QDebug>
 
+#include "Engine/EffectInstance.h"
 #include "Engine/Transform.h"
 #include "Engine/StringAnimationManager.h"
 #include "Engine/KnobTypes.h"
@@ -61,6 +62,18 @@ KnobFile::KnobFile(KnobHolder* holder,
 
 KnobFile::~KnobFile()
 {
+}
+
+void
+KnobFile::reloadFile()
+{
+    assert(getHolder());
+    EffectInstance* effect = dynamic_cast<EffectInstance*>(getHolder());
+    if (effect) {
+        effect->purgeCaches();
+        effect->clearPersistentMessage(false);
+    }
+    evaluateValueChange(0, getCurrentTime(), ViewIdx(0), eValueChangedReasonNatronInternalEdited);
 }
 
 bool
