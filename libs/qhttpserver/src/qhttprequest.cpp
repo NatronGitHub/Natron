@@ -25,7 +25,7 @@
 #include "qhttpconnection.h"
 
 QHttpRequest::QHttpRequest(QHttpConnection *connection, QObject *parent)
-    : QObject(parent), m_connection(connection), m_url("http://localhost/"), m_success(false)
+    : QObject(parent), m_connection(connection), m_url(QString::fromUtf8("http://localhost/")), m_success(false)
 {
 }
 
@@ -35,7 +35,7 @@ QHttpRequest::~QHttpRequest()
 
 QString QHttpRequest::header(const QString &field)
 {
-    return m_headers.value(field.toLower(), "");
+    return m_headers.value(field.toLower(), QString());
 }
 
 const HeaderHash &QHttpRequest::headers() const
@@ -87,7 +87,7 @@ void QHttpRequest::storeBody()
 QString QHttpRequest::MethodToString(HttpMethod method)
 {
     int index = staticMetaObject.indexOfEnumerator("HttpMethod");
-    return staticMetaObject.enumerator(index).valueToKey(method);
+    return QString::fromUtf8(staticMetaObject.enumerator(index).valueToKey(method));
 }
 
 void QHttpRequest::appendBody(const QByteArray &body)
