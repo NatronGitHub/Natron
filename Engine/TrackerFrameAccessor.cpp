@@ -281,7 +281,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
                                int downscale,            // Downscale by 2^downscale.
                                const mv::Region* region,     // Get full image if NULL.
                                const mv::FrameAccessor::Transform* /*transform*/, // May be NULL.
-                               mv::FloatImage* destination)
+                               mv::FloatImage** destination)
 {
     // Since libmv only uses MONO images for now we have only optimized for this case, remove and handle properly
     // other case(s) when they get integrated into libmv.
@@ -305,13 +305,16 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
         for (FrameAccessorCache::iterator it = range.first; it != range.second; ++it) {
             if ( (roi.x1 >= it->second.bounds.x1) && (roi.x2 <= it->second.bounds.x2) &&
                  ( roi.y1 >= it->second.bounds.y1) && ( roi.y2 <= it->second.bounds.y2) ) {
-                // LibMV is kinda dumb on this we must necessarily copy the data either via CopyFrom or the
-                // assignment constructor
+               
 #ifdef TRACE_LIB_MV
                 qDebug() << QThread::currentThread() << "FrameAccessor::GetImage():" << "Found cached image at frame" << frame << "with RoI x1="
                          << region->min(0) << "y1=" << region->max(1) << "x2=" << region->max(0) << "y2=" << region->min(1);
 #endif
-                destination->CopyFrom<float>(*it->second.image);
+                // LibMV is kinda dumb on this we must necessarily copy the data either via CopyFrom or the
+                // assignment constructor:
+                // EDIT: fixed libmv
+                *destination = it->second.image.get();
+                //destination->CopyFrom<float>(*it->second.image);
                 ++it->second.referenceCount;
 
                 return (mv::FrameAccessor::Key)it->second.image.get();
@@ -406,8 +409,8 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
                                  *entry.image);
     // we ignore the transform parameter and do it in natronImageToLibMvFloatImage instead
 
-    // LibMV is kinda dumb on this we must necessarily copy the data...
-    destination->CopyFrom<float>(*entry.image);
+    *destination = entry.image.get();
+    //destination->CopyFrom<float>(*entry.image);
 
     //insert into the cache
     {
