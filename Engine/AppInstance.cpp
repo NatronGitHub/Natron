@@ -945,6 +945,13 @@ AppInstance::createReader(const std::string& filename, CreateNodeReason reason, 
     CreateNodeArgs args(QString::fromUtf8(found->second.c_str()), reason, group);
 #endif
     args.paramValues.push_back(createDefaultValueForParam(kOfxImageEffectFileParamName, filename));
+    std::string canonicalFilename = filename;
+    getProject()->canonicalizePath(canonicalFilename);
+    
+    int firstFrame,lastFrame;
+    Node::getOriginalFrameRangeForReader(found->second, canonicalFilename, &firstFrame, &lastFrame);
+    args.paramValues.push_back(createDefaultValueForParam(kReaderParamNameOriginalFrameRange, firstFrame, lastFrame));
+    
     return createNode(args);
 }
 

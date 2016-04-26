@@ -57,7 +57,7 @@ NATRON_NAMESPACE_ENTER;
 #define kParamFrameMode "frameMode"
 #define kParamTimeOffset "timeOffset"
 #define kParamStartingTime "startingTime"
-#define kParamOriginalFrameRange "originalFrameRange"
+#define kParamOriginalFrameRange kReaderParamNameOriginalFrameRange
 #define kParamFirstFrame "firstFrame"
 #define kParamLastFrame "lastFrame"
 #define kParamBefore "before"

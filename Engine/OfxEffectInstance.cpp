@@ -450,7 +450,14 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                 boost::shared_ptr<KnobSerialization> defaultFile = createDefaultValueForParam(kOfxImageEffectFileParamName, images);
                 CreateNodeArgs::DefaultValuesList list;
                 list.push_back(defaultFile);
+                
+                std::string canonicalFilename = images;
+                getApp()->getProject()->canonicalizePath(canonicalFilename);
+                int firstFrame,lastFrame;
+                Node::getOriginalFrameRangeForReader(getPluginID(), canonicalFilename, &firstFrame, &lastFrame);
+                list.push_back(createDefaultValueForParam(kReaderParamNameOriginalFrameRange, firstFrame, lastFrame));
                 getNode()->setValuesFromSerialization(list);
+                
             }
             //////////////////////////////////////////////////////
 #endif

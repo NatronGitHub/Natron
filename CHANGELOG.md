@@ -1,5 +1,12 @@
 # History
 
+## Version 2.0.3
+
+- Fixed a bug where image sequences without a frame 1 would fail to read
+- Fixed a bug where a PyPlug containing another PyPlug would fail to load in some cases
+- Fixed a bug where the play button would not be pressed on all viewers during playback
+- Python: add a function to File parameters to reload the file 
+
 ## Version 2.0.2
 
 - Expressions are now persistant: it can become invalid if a condition is not met currently to successfully run the expression, but can become valid again automatically.

@@ -99,7 +99,7 @@
 #define PLUGINID_NATRON_ONEVIEW    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.OneView")
 
 
-#define kNatronTLSEffectPointerProperty "NatronTLSEffectPointerProperty"
+#define kReaderParamNameOriginalFrameRange "originalFrameRange"
 
 NATRON_NAMESPACE_ENTER;
 
