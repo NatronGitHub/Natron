@@ -526,6 +526,8 @@ win32-msvc*{
 # qhttpserver
 
 static-qhttpserver {
+
+DEFINES += QHTTP_SERVER_STATIC
 INCLUDEPATH += $$PWD/libs/qhttpserver/src
 DEPENDPATH += $$OUT_PWD/../libs/qhttpserver/src
 
