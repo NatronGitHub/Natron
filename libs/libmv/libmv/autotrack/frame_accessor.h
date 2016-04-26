@@ -70,7 +70,7 @@ struct FrameAccessor {
                        int downscale,               // Downscale by 2^downscale.
                        const Region* region,        // Get full image if NULL.
                        const Transform* transform,  // May be NULL.
-                       FloatImage* destination) = 0;
+                       FloatImage** destination) = 0;
 
   // Releases an image from the frame accessor. Non-caching implementations may
   // free the image immediately; others may hold onto the image.
