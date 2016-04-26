@@ -44,6 +44,8 @@ Functions
 *    def :meth:`getSize<NatronEngine.Effect.getSize>` ()
 *    def :meth:`getUserPageParam<NatronEngine.Effect.getUserPageParam>` ()
 *    def :meth:`isUserSelected<NatronEngine.Effect.isUserSelected>` ()
+*    def :meth:`isReaderNode<NatronEngine.Effect.isReaderNode>` ()
+*    def :meth:`isWriterNode<NatronEngine.Effect.isWriterNode>` ()
 *    def :meth:`setColor<NatronEngine.Effect.setColor>` (r, g, b)
 *    def :meth:`setLabel<NatronEngine.Effect.setLabel>` (name)
 *    def :meth:`setPosition<NatronEngine.Effect.setPosition>` (x, y)
@@ -426,7 +428,21 @@ Convenience function to return the user page parameter if this Effect has one.
 	Returns true if this node is selected in its containing nodegraph.
 
 
+.. method:: NatronEngine.Effect.isReaderNode()
 
+	:rtype: :class:`bool<PySide.QtCore.bool>`
+
+
+	Returns True if this node is a reader node
+	
+	
+	
+.. method:: NatronEngine.Effect.isWriterNode()
+
+	:rtype: :class:`bool<PySide.QtCore.bool>`
+
+
+	Returns True if this node is a writer node
 
 .. method:: NatronEngine.Effect.setColor(r, g, b)
 

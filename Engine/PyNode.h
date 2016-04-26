@@ -212,8 +212,11 @@ public:
     ~Effect();
 
     NodePtr getInternalNode() const;
-
-
+    
+    bool isReaderNode();
+    
+    bool isWriterNode();
+    
     /**
      * @brief Removes the node from the project. It will no longer be possible to use it.
      * @param autoReconnect If set to true, outputs connected to this node will try to connect to the input of this node automatically.
