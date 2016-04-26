@@ -812,6 +812,7 @@ TrackerPanel::getRowMarker(int row) const
         }
     }
     assert(false);
+    return TrackMarkerPtr();
 }
 
 void
