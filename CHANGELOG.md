@@ -2,7 +2,7 @@
 
 ## Version 2.0.3
 
-- Fixed a bug where image sequences without a frame 1 would fail to read
+- Fixed a bug where some image sequences would fail to read when a first frame would be missing
 - Fixed a bug where a PyPlug containing another PyPlug would fail to load in some cases
 - Fixed a bug where the play button would not be pressed on all viewers during playback
 - Python: add a function to File parameters to reload the file 
