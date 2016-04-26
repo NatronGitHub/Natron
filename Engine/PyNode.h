@@ -225,6 +225,9 @@ public:
     
     NodePtr getInternalNode() const;
     
+    bool isReaderNode();
+    
+    bool isWriterNode();
     
     /**
      * @brief Removes the node from the project. It will no longer be possible to use it.
