@@ -989,8 +989,7 @@ public:
 class FileParam
     : public StringParamBase
 {
-    boost::shared_ptr<KnobFile> _sKnob;
-
+    boost::weak_ptr<KnobFile> _sKnob;
 public:
 
 
@@ -1008,6 +1007,11 @@ public:
      * @brief Forces the GUI to pop-up the dialog
      **/
     void openFile();
+    
+    /**
+     * @brief Force a refresh of the file
+     **/
+    void reloadFile();
 };
 
 class OutputFileParam

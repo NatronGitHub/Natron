@@ -85,6 +85,8 @@ public:
     {
         Q_EMIT openFile();
     }
+    
+    void reloadFile();
 
     /**
      * @brief getRandomFrameName
