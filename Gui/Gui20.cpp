@@ -1288,8 +1288,16 @@ Gui::createReader()
         if ( found == readersForFormat.end() ) {
             errorDialog( tr("Reader").toStdString(), tr("No plugin capable of decoding ").toStdString() + ext + tr(" was found.").toStdString(), false);
         } else {
-            CreateNodeArgs args(QString::fromUtf8( found->second.c_str() ), eCreateNodeReasonUserCreate, group);
-            args.paramValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern) );
+
+            CreateNodeArgs args(QString::fromUtf8(found->second.c_str()), eCreateNodeReasonUserCreate, group);
+            args.paramValues.push_back(createDefaultValueForParam(kOfxImageEffectFileParamName, pattern));
+            std::string canonicalFilename = pattern;
+            getApp()->getProject()->canonicalizePath(canonicalFilename);
+            int firstFrame,lastFrame;
+            Node::getOriginalFrameRangeForReader(found->second, canonicalFilename, &firstFrame, &lastFrame);
+            args.paramValues.push_back(createDefaultValueForParam(kReaderParamNameOriginalFrameRange, firstFrame, lastFrame));
+
+            
             ret = _imp->_appInstance->createNode(args);
 
             if (!ret) {

@@ -900,9 +900,10 @@ AppInstance::createReader(const std::string& filename,
                           CreateNodeReason reason,
                           const boost::shared_ptr<NodeCollection>& group)
 {
+    std::string pluginID;
 #ifdef NATRON_ENABLE_IO_META_NODES
-
-    CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_READ),
+    pluginID = PLUGINID_NATRON_READ;
+    CreateNodeArgs args(QString::fromUtf8(pluginID.c_str()),
                         reason,
                         group);
 #else
@@ -918,10 +919,18 @@ AppInstance::createReader(const std::string& filename,
 
         return NodePtr();
     }
+    pluginID = found->second;
     CreateNodeArgs args(QString::fromUtf8( found->second.c_str() ), reason, group);
 #endif
-    args.paramValues.push_back( createDefaultValueForParam(kOfxImageEffectFileParamName, filename) );
 
+    args.paramValues.push_back(createDefaultValueForParam(kOfxImageEffectFileParamName, filename));
+    std::string canonicalFilename = filename;
+    getProject()->canonicalizePath(canonicalFilename);
+    
+    int firstFrame,lastFrame;
+    Node::getOriginalFrameRangeForReader(pluginID, canonicalFilename, &firstFrame, &lastFrame);
+    args.paramValues.push_back(createDefaultValueForParam(kReaderParamNameOriginalFrameRange, firstFrame, lastFrame));
+    
     return createNode(args);
 }
 
