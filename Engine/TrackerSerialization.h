@@ -26,13 +26,18 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+GCC_DIAG_OFF(unused-parameter)
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/export.hpp>
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/version.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+GCC_DIAG_ON(unused-parameter)
 #endif
 
 #include "Engine/KnobSerialization.h"
