@@ -1106,7 +1106,7 @@ RotoDrawableItem::getInverted(double time) const
 
     return _imp->inverted->getValueAtTime(time);
 #else
-
+    Q_UNUSED(time);
     return false;
 #endif
 }
