@@ -4707,16 +4707,16 @@ checkCanConnectNoMultiRes(const Node* output,
         return Node::eCanConnectInput_multiResNotSupported;
     }
 
-    RectD outputRod;
+    // Commented-out: Some Furnace plug-ins from The Foundry (e.g F_Steadiness) are not supporting multi-resolution but actually produce an output
+    // with a RoD different from the input
+    
+    /*RectD outputRod;
     stat = output->getEffectInstance()->getRegionOfDefinition_public(output->getHashValue(), output->getApp()->getTimeLine()->currentFrame(), scale, ViewIdx(0), &outputRod, &isProjectFormat);
     Q_UNUSED(stat);
-    /*if (stat == eStatusFailed && !outputRod.isNull()) {
-        return Node::eCanConnectInput_givenNodeNotConnectable;
-       }*/
 
     if ( !outputRod.isNull() && (rod != outputRod) ) {
         return Node::eCanConnectInput_multiResNotSupported;
-    }
+    }*/
 
     for (int i = 0; i < output->getMaxInputCount(); ++i) {
         NodePtr inputNode = output->getInput(i);

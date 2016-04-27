@@ -1806,8 +1806,10 @@ OfxEffectInstance::render(const RenderActionArgs& args)
             //   Multiple resolution images mean...
             //    input and output images can be of any size
             //    input and output images can be offset from the origin
-            assert(dstRod.x1 == 0);
-            assert(dstRod.y1 == 0);
+            // Commented-out: Some Furnace plug-ins from The Foundry (e.g F_Steadiness) are not supporting multi-resolution but actually produce an output
+            // with a RoD different from the input
+           /* assert(dstRod.x1 == 0);
+            assert(dstRod.y1 == 0);*/
         }
     }
 # endif // DEBUG

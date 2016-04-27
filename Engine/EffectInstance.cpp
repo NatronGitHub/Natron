@@ -2087,12 +2087,14 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
                 //   Multiple resolution images mean...
                 //    input and output images can be of any size
                 //    input and output images can be offset from the origin
-                assert(srcBounds.x1 == 0);
+                // Commented-out: Some Furnace plug-ins from The Foundry (e.g F_Steadiness) are not supporting multi-resolution but actually produce an output
+                // with a RoD different from the input
+                /*/assert(srcBounds.x1 == 0);
                 assert(srcBounds.y1 == 0);
                 assert(srcBounds.x1 == dstBounds.x1);
                 assert(srcBounds.x2 == dstBounds.x2);
                 assert(srcBounds.y1 == dstBounds.y1);
-                assert(srcBounds.y2 == dstBounds.y2);
+                assert(srcBounds.y2 == dstBounds.y2);*/
             }
         } // end for
     } //end for

@@ -827,7 +827,8 @@ namespace openMVG {
                 Solver::Normalize(&_x1, &_x2, w1, h1, w2, h2);
                 
                 assert(w1 != 0 && h1 != 0 && w2 != 0 && h2 != 0);
-                double normalizedSigma = sigma / (double)(w1 * h1);
+                
+                double normalizedSigma = sigma * 2 / (double)(w1);
                 
                 inlierThreshold = InlierThreshold<Solver::CODIMENSION>(normalizedSigma);
                 beta = Solver::Beta(inlierThreshold, w1, h1);

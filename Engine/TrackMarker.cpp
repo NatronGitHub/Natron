@@ -500,7 +500,15 @@ TrackMarker::setEnabledFromGui(double /*time*/,
         return;
     }
     KeyFrame k;
+    std::pair<int,KnobPtr> master = knob->getMaster(0);
+    if (master.second) {
+        knob->unSlave(0, false);
+    }
     knob->onValueChanged(enabled, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, &k);
+    if (master.second) {
+        master.second->clone(knob.get());
+        knob->slaveTo(0, master.second, master.first);
+    }
 }
 
 void

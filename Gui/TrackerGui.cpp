@@ -867,6 +867,11 @@ TrackerGui::drawOverlays(double time,
                 if ( !(*it)->isEnabled( (*it)->getCurrentTime() ) ) {
                     continue;
                 }
+                
+                bool isHoverMarker = *it == _imp->hoverMarker;
+                bool isDraggedMarker = *it == _imp->interactMarker;
+                bool isHoverOrDraggedMarker = isHoverMarker || isDraggedMarker;
+                
                 std::list<TrackMarkerPtr >::iterator foundSelected = std::find(selectedMarkers.begin(), selectedMarkers.end(), *it);
                 bool isSelected = foundSelected != selectedMarkers.end();
                 boost::shared_ptr<KnobDouble> centerKnob = (*it)->getCenterKnob();
@@ -1083,7 +1088,7 @@ TrackerGui::drawOverlays(double time,
                         glBegin(GL_POINTS);
 
                         ///draw center
-                        if ( (_imp->hoverState == eDrawStateHoveringCenter) || (_imp->eventState == eMouseStateDraggingCenter) ) {
+                        if ( isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringCenter) || (_imp->eventState == eMouseStateDraggingCenter))) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                         } else {
                             glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
@@ -1095,37 +1100,37 @@ TrackerGui::drawOverlays(double time,
                         }
 
                         //////DRAWING INNER POINTS
-                        if ( (_imp->hoverState == eDrawStateHoveringInnerBtmLeft) || (_imp->eventState == eMouseStateDraggingInnerBtmLeft) ) {
+                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringInnerBtmLeft) || (_imp->eventState == eMouseStateDraggingInnerBtmLeft))) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( btmLeft.x(), btmLeft.y() );
                         }
-                        if ( (_imp->hoverState == eDrawStateHoveringInnerBtmMid) || (_imp->eventState == eMouseStateDraggingInnerBtmMid) ) {
+                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringInnerBtmMid) || (_imp->eventState == eMouseStateDraggingInnerBtmMid))) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( innerMidBtm.x(), innerMidBtm.y() );
                         }
-                        if ( (_imp->hoverState == eDrawStateHoveringInnerBtmRight) || (_imp->eventState == eMouseStateDraggingInnerBtmRight) ) {
+                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringInnerBtmRight) || (_imp->eventState == eMouseStateDraggingInnerBtmRight))) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( btmRight.x(), btmRight.y() );
                         }
-                        if ( (_imp->hoverState == eDrawStateHoveringInnerMidLeft) || (_imp->eventState == eMouseStateDraggingInnerMidLeft) ) {
+                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringInnerMidLeft) || (_imp->eventState == eMouseStateDraggingInnerMidLeft))) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( innerMidLeft.x(), innerMidLeft.y() );
                         }
-                        if ( (_imp->hoverState == eDrawStateHoveringInnerMidRight) || (_imp->eventState == eMouseStateDraggingInnerMidRight) ) {
+                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringInnerMidRight) || (_imp->eventState == eMouseStateDraggingInnerMidRight))) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( innerMidRight.x(), innerMidRight.y() );
                         }
-                        if ( (_imp->hoverState == eDrawStateHoveringInnerTopLeft) || (_imp->eventState == eMouseStateDraggingInnerTopLeft) ) {
+                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringInnerTopLeft) || (_imp->eventState == eMouseStateDraggingInnerTopLeft))) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( topLeft.x(), topLeft.y() );
                         }
 
-                        if ( (_imp->hoverState == eDrawStateHoveringInnerTopMid) || (_imp->eventState == eMouseStateDraggingInnerTopMid) ) {
+                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringInnerTopMid) || (_imp->eventState == eMouseStateDraggingInnerTopMid))) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( innerMidTop.x(), innerMidTop.y() );
                         }
 
-                        if ( (_imp->hoverState == eDrawStateHoveringInnerTopRight) || (_imp->eventState == eMouseStateDraggingInnerTopRight) ) {
+                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringInnerTopRight) || (_imp->eventState == eMouseStateDraggingInnerTopRight))) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( topRight.x(), topRight.y() );
                         }
@@ -1133,36 +1138,36 @@ TrackerGui::drawOverlays(double time,
 
                         //////DRAWING OUTTER POINTS
 
-                        if ( (_imp->hoverState == eDrawStateHoveringOuterBtmLeft) || (_imp->eventState == eMouseStateDraggingOuterBtmLeft) ) {
+                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringOuterBtmLeft) || (_imp->eventState == eMouseStateDraggingOuterBtmLeft))) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( searchBtmLeft.x(), searchBtmLeft.y() );
                         }
-                        if ( (_imp->hoverState == eDrawStateHoveringOuterBtmMid) || (_imp->eventState == eMouseStateDraggingOuterBtmMid) ) {
+                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringOuterBtmMid) || (_imp->eventState == eMouseStateDraggingOuterBtmMid))) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( outterMidBtm.x(), outterMidBtm.y() );
                         }
-                        if ( (_imp->hoverState == eDrawStateHoveringOuterBtmRight) || (_imp->eventState == eMouseStateDraggingOuterBtmRight) ) {
+                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringOuterBtmRight) || (_imp->eventState == eMouseStateDraggingOuterBtmRight))) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( searchBtmRight.x(), searchBtmRight.y() );
                         }
-                        if ( (_imp->hoverState == eDrawStateHoveringOuterMidLeft) || (_imp->eventState == eMouseStateDraggingOuterMidLeft) ) {
+                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringOuterMidLeft) || (_imp->eventState == eMouseStateDraggingOuterMidLeft))) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( outterMidLeft.x(), outterMidLeft.y() );
                         }
-                        if ( (_imp->hoverState == eDrawStateHoveringOuterMidRight) || (_imp->eventState == eMouseStateDraggingOuterMidRight) ) {
+                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringOuterMidRight) || (_imp->eventState == eMouseStateDraggingOuterMidRight))) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( outterMidRight.x(), outterMidRight.y() );
                         }
 
-                        if ( (_imp->hoverState == eDrawStateHoveringOuterTopLeft) || (_imp->eventState == eMouseStateDraggingOuterTopLeft) ) {
+                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringOuterTopLeft) || (_imp->eventState == eMouseStateDraggingOuterTopLeft))) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( searchTopLeft.x(), searchTopLeft.y() );
                         }
-                        if ( (_imp->hoverState == eDrawStateHoveringOuterTopMid) || (_imp->eventState == eMouseStateDraggingOuterTopMid) ) {
+                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringOuterTopMid) || (_imp->eventState == eMouseStateDraggingOuterTopMid))) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( outterMidTop.x(), outterMidTop.y() );
                         }
-                        if ( (_imp->hoverState == eDrawStateHoveringOuterTopRight) || (_imp->eventState == eMouseStateDraggingOuterTopRight) ) {
+                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringOuterTopRight) || (_imp->eventState == eMouseStateDraggingOuterTopRight))) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( searchTopRight.x(), searchTopRight.y() );
                         }
@@ -1180,7 +1185,7 @@ TrackerGui::drawOverlays(double time,
                         ///now show small lines at handle positions
                         glBegin(GL_LINES);
 
-                        if ( (_imp->hoverState == eDrawStateHoveringInnerMidLeft) || (_imp->eventState == eMouseStateDraggingInnerMidLeft) ) {
+                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringInnerMidLeft) || (_imp->eventState == eMouseStateDraggingInnerMidLeft))) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                         } else {
                             glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
@@ -1188,7 +1193,7 @@ TrackerGui::drawOverlays(double time,
                         glVertex2d( innerMidLeft.x(), innerMidLeft.y() );
                         glVertex2d( innerMidLeftExt.x(), innerMidLeftExt.y() );
 
-                        if ( (_imp->hoverState == eDrawStateHoveringInnerTopMid) || (_imp->eventState == eMouseStateDraggingInnerTopMid) ) {
+                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringInnerTopMid) || (_imp->eventState == eMouseStateDraggingInnerTopMid))) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                         } else {
                             glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
@@ -1196,7 +1201,7 @@ TrackerGui::drawOverlays(double time,
                         glVertex2d( innerMidTop.x(), innerMidTop.y() );
                         glVertex2d( innerMidTopExt.x(), innerMidTopExt.y() );
 
-                        if ( (_imp->hoverState == eDrawStateHoveringInnerMidRight) || (_imp->eventState == eMouseStateDraggingInnerMidRight) ) {
+                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringInnerMidRight) || (_imp->eventState == eMouseStateDraggingInnerMidRight))) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                         } else {
                             glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
@@ -1204,7 +1209,7 @@ TrackerGui::drawOverlays(double time,
                         glVertex2d( innerMidRight.x(), innerMidRight.y() );
                         glVertex2d( innerMidRightExt.x(), innerMidRightExt.y() );
 
-                        if ( (_imp->hoverState == eDrawStateHoveringInnerBtmMid) || (_imp->eventState == eMouseStateDraggingInnerBtmMid) ) {
+                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringInnerBtmMid) || (_imp->eventState == eMouseStateDraggingInnerBtmMid))) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                         } else {
                             glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
@@ -1214,7 +1219,7 @@ TrackerGui::drawOverlays(double time,
 
                         //////DRAWING OUTTER HANDLES
 
-                        if ( (_imp->hoverState == eDrawStateHoveringOuterMidLeft) || (_imp->eventState == eMouseStateDraggingOuterMidLeft) ) {
+                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringOuterMidLeft) || (_imp->eventState == eMouseStateDraggingOuterMidLeft))) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                         } else {
                             glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
@@ -1222,7 +1227,7 @@ TrackerGui::drawOverlays(double time,
                         glVertex2d( outterMidLeft.x(), outterMidLeft.y() );
                         glVertex2d( outterMidLeftExt.x(), outterMidLeftExt.y() );
 
-                        if ( (_imp->hoverState == eDrawStateHoveringOuterTopMid) || (_imp->eventState == eMouseStateDraggingOuterTopMid) ) {
+                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringOuterTopMid) || (_imp->eventState == eMouseStateDraggingOuterTopMid))) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                         } else {
                             glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
@@ -1230,7 +1235,7 @@ TrackerGui::drawOverlays(double time,
                         glVertex2d( outterMidTop.x(), outterMidTop.y() );
                         glVertex2d( outterMidTopExt.x(), outterMidTopExt.y() );
 
-                        if ( (_imp->hoverState == eDrawStateHoveringOuterMidRight) || (_imp->eventState == eMouseStateDraggingOuterMidRight) ) {
+                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringOuterMidRight) || (_imp->eventState == eMouseStateDraggingOuterMidRight))) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                         } else {
                             glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
@@ -1238,7 +1243,7 @@ TrackerGui::drawOverlays(double time,
                         glVertex2d( outterMidRight.x(), outterMidRight.y() );
                         glVertex2d( outterMidRightExt.x(), outterMidRightExt.y() );
 
-                        if ( (_imp->hoverState == eDrawStateHoveringOuterBtmMid) || (_imp->eventState == eMouseStateDraggingOuterBtmMid) ) {
+                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringOuterBtmMid) || (_imp->eventState == eMouseStateDraggingOuterBtmMid))) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                         } else {
                             glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );

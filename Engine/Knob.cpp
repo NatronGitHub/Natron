@@ -141,7 +141,7 @@ KnobI::slaveTo(int dimension,
                int otherDimension,
                bool ignoreMasterPersistence)
 {
-    return slaveTo(dimension, other, otherDimension, eValueChangedReasonNatronInternalEdited, ignoreMasterPersistence);
+    return slaveToInternal(dimension, other, otherDimension, eValueChangedReasonNatronInternalEdited, ignoreMasterPersistence);
 }
 
 void
@@ -149,20 +149,20 @@ KnobI::onKnobSlavedTo(int dimension,
                       const KnobPtr &  other,
                       int otherDimension)
 {
-    slaveTo(dimension, other, otherDimension, eValueChangedReasonUserEdited);
+    slaveToInternal(dimension, other, otherDimension, eValueChangedReasonUserEdited, false);
 }
 
 void
 KnobI::unSlave(int dimension,
                bool copyState)
 {
-    unSlave(dimension, eValueChangedReasonNatronInternalEdited, copyState);
+    unSlaveInternal(dimension, eValueChangedReasonNatronInternalEdited, copyState);
 }
 
 void
 KnobI::onKnobUnSlaved(int dimension)
 {
-    unSlave(dimension, eValueChangedReasonUserEdited, true);
+    unSlaveInternal(dimension, eValueChangedReasonUserEdited, true);
 }
 
 void
@@ -3114,7 +3114,7 @@ KnobHelper::copyAnimationToClipboard() const
 }
 
 bool
-KnobHelper::slaveTo(int dimension,
+KnobHelper::slaveToInternal(int dimension,
                     const KnobPtr & other,
                     int otherDimension,
                     ValueChangedReasonEnum reason,
@@ -4032,7 +4032,7 @@ KnobHelper::setKnobAsAliasOfThis(const KnobPtr& master,
         }
         if (doAlias) {
             master->clone(this, i);
-            bool ok = slaveTo(i, master, i, eValueChangedReasonNatronInternalEdited, false);
+            bool ok = slaveToInternal(i, master, i, eValueChangedReasonNatronInternalEdited, false);
             assert(ok);
             Q_UNUSED(ok);
         }

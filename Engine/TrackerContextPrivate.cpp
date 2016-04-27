@@ -36,6 +36,12 @@
 #include "Engine/TrackerNode.h"
 #include "Engine/TrackerContext.h"
 
+
+#ifdef DEBUG
+//#define TRACKER_GENERATE_DATA_SEQUENTIALLY
+#endif
+
+
 NATRON_NAMESPACE_ENTER;
 
 /**
@@ -1169,6 +1175,33 @@ TrackerContextPrivate::getInputRoDAtTime(double time) const
     return ret;
 }
 
+
+static Transform::Point3D
+euclideanToHomogenous(const Point& p)
+{
+    Transform::Point3D r;
+    
+    r.x = p.x;
+    r.y = p.y;
+    r.z = 1;
+    
+    return r;
+}
+
+static Point
+applyHomography(const Point& p,
+                const Transform::Matrix3x3& h)
+{
+    Transform::Point3D a = euclideanToHomogenous(p);
+    
+    Transform::Point3D r = Transform::matApply(h, a);
+    Point ret;
+    ret.x = r.x / r.z;
+    ret.y = r.y / r.z;
+    
+    return ret;
+}
+
 using namespace openMVG::robust;
 static void
 throwProsacError(ProsacReturnCodeEnum c,
@@ -1207,7 +1240,11 @@ runProsacForModel(const std::vector<Point>& x1,
                   int h1,
                   int w2,
                   int h2,
-                  typename MODELTYPE::Model* foundModel)
+                  typename MODELTYPE::Model* foundModel
+#ifdef DEBUG
+                  ,std::vector<bool>* inliers = 0
+#endif
+                  )
 {
     typedef ProsacKernelAdaptor<MODELTYPE> KernelType;
     
@@ -1222,7 +1259,11 @@ runProsacForModel(const std::vector<Point>& x1,
     }
     
     KernelType kernel(M1, w1, h1, M2, w2, h2);
-    ProsacReturnCodeEnum ret = prosac(kernel, foundModel);
+    ProsacReturnCodeEnum ret = prosac(kernel, foundModel
+#ifdef DEBUG
+                                      , inliers
+#endif
+                                      );
     throwProsacError( ret, KernelType::MinimumSamples() );
 }
 
@@ -1271,11 +1312,36 @@ TrackerContextPrivate::computeHomographyFromNPoints(const std::vector<Point>& x1
 {
     openMVG::Mat3 model;
     
-    runProsacForModel<openMVG::robust::Homography2DSolver>(x1, x2, w1, h1, w2, h2, &model);
+#ifdef DEBUG
+    std::vector<bool> inliers;
+#endif
+    
+    runProsacForModel<openMVG::robust::Homography2DSolver>(x1, x2, w1, h1, w2, h2, &model
+#ifdef DEBUG
+                                                           , &inliers
+#endif
+                                                           );
     
     *homog = Transform::Matrix3x3( model(0, 0), model(0, 1), model(0, 2),
                                   model(1, 0), model(1, 1), model(1, 2),
                                   model(2, 0), model(2, 1), model(2, 2) );
+    
+#ifdef DEBUG
+    // Check that the warped x1 points match x2
+    qDebug() << homog->a<<homog->b<<homog->c<<'\n'<<homog->d<<homog->e<<homog->f<<'\n'<<homog->g<<homog->h<<homog->i;
+    
+    assert(x1.size() == x2.size());
+    for (std::size_t i = 0; i < x1.size(); ++i) {
+        if (inliers[i]) {
+            Point p2 = applyHomography(x1[i], *homog);
+            qDebug() << "X1 ("<<x1[i].x<<','<<x1[i].y<<')' << "X2 ("<<x2[i].x<<','<<x2[i].y<<')'  << "P2 ("<<p2.x<<','<<p2.y<<')';
+            if (std::abs(p2.x - x2[i].x) >  0.02 ||
+                std::abs(p2.y - x2[i].y) > 0.02) {
+                qDebug() << "[BUG]: Inlier for Homography2DSolver failed to fit the found model";
+            }
+        }
+    }
+#endif
 }
 
 void
@@ -1402,10 +1468,15 @@ TrackerContextPrivate::extractSortedPointsFromMarkers(double refTime,
     
     x1->resize( pointsWithErrors.size() );
     x2->resize( pointsWithErrors.size() );
-    int r = 0;
+    /*int r = 0;
     for (int i = (int)pointsWithErrors.size() - 1; i >= 0; --i, ++r) {
         (*x1)[r] = pointsWithErrors[i].p1;
         (*x2)[r] = pointsWithErrors[i].p2;
+    }*/
+    for (std::size_t i =  0; i < pointsWithErrors.size(); ++i) {
+        assert(i == 0 || pointsWithErrors[i].error >= pointsWithErrors[i - 1].error);
+        (*x1)[i] = pointsWithErrors[i].p1;
+        (*x2)[i] = pointsWithErrors[i].p2;
     }
 } // TrackerContext::extractSortedPointsFromMarkers
 
@@ -1462,17 +1533,6 @@ TrackerContextPrivate::computeTransformParamsFromTracksAtTime(double refTime,
     return data;
 }
 
-static Transform::Point3D
-euclideanToHomogenous(const Point& p)
-{
-    Transform::Point3D r;
-    
-    r.x = p.x;
-    r.y = p.y;
-    r.z = 1;
-    
-    return r;
-}
 
 TrackerContextPrivate::CornerPinData
 TrackerContextPrivate::computeCornerPinParamsFromTracksAtTime(double refTime,
@@ -1532,19 +1592,7 @@ TrackerContextPrivate::computeCornerPinParamsFromTracksAtTime(double refTime,
     return data;
 }
 
-static Point
-applyHomography(const Point& p,
-                const Transform::Matrix3x3& h)
-{
-    Transform::Point3D a = euclideanToHomogenous(p);
-    
-    Transform::Point3D r = Transform::matApply(h, a);
-    Point ret;
-    ret.x = r.x / r.z;
-    ret.y = r.y / r.z;
-    
-    return ret;
-}
+
 
 void
 TrackerContextPrivate::computeCornerParamsFromTracksEnd(double refTime,
@@ -1734,18 +1782,18 @@ TrackerContextPrivate::computeCornerParamsFromTracks()
     NodePtr thisNode = node.lock();
     QList<CornerPinData> validResults;
     {
-        int nKeys = (int)keyframes.size();
+        int nKeys = (int)lastSolveRequest.keyframes.size();
         int keyIndex = 0;
-        for (std::set<double>::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it, ++keyIndex) {
-            CornerPinData data = computeCornerPinParamsFromTracksAtTime(refTime, *it, jitterPeriod, jitterAdd, allMarkers);
+        for (std::set<double>::const_iterator it = lastSolveRequest.keyframes.begin(); it != lastSolveRequest.keyframes.end(); ++it, ++keyIndex) {
+            CornerPinData data = computeCornerPinParamsFromTracksAtTime(lastSolveRequest.refTime, *it, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.allMarkers);
             if (data.valid) {
                 validResults.push_back(data);
             }
             double progress = (keyIndex + 1) / (double)nKeys;
-            thisNode->getApp()->progressUpdate(node, progress);
+            thisNode->getApp()->progressUpdate(thisNode, progress);
         }
     }
-    computeCornerParamsFromTracksEnd(refTime, validResults);
+    computeCornerParamsFromTracksEnd(lastSolveRequest.refTime, validResults);
 #endif
     
 } // TrackerContext::computeCornerParamsFromTracks
@@ -2059,18 +2107,18 @@ TrackerContextPrivate::computeTransformParamsFromTracks()
     NodePtr thisNode = node.lock();
     QList<TransformData> validResults;
     {
-        int nKeys = keyframes.size();
+        int nKeys = lastSolveRequest.keyframes.size();
         int keyIndex = 0;
-        for (std::set<double>::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it, ++keyIndex) {
-            TransformData data = computeTransformParamsFromTracksAtTime(refTime, *it, jitterPeriod, jitterAdd, allMarkers);
+        for (std::set<double>::const_iterator it = lastSolveRequest.keyframes.begin(); it != lastSolveRequest.keyframes.end(); ++it, ++keyIndex) {
+            TransformData data = computeTransformParamsFromTracksAtTime(lastSolveRequest.refTime, *it, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.allMarkers);
             if (data.valid) {
                 validResults.push_back(data);
             }
             double progress = (keyIndex + 1) / (double)nKeys;
-            thisNode->getApp()->progressUpdate(node, progress);
+            thisNode->getApp()->progressUpdate(thisNode, progress);
         }
     }
-    computeCornerParamsFromTracksEnd(refTime, validResults);
+    computeTransformParamsFromTracksEnd(lastSolveRequest.refTime, validResults);
 #endif
     
     

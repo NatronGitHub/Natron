@@ -48,10 +48,6 @@
 #include "Engine/TrackerSerialization.h"
 #include "Engine/ViewerInstance.h"
 
-#ifdef DEBUG
-//#define TRACKER_GENERATE_DATA_SEQUENTIALLY
-#endif
-
 NATRON_NAMESPACE_ENTER;
 
 void
@@ -858,6 +854,8 @@ TrackerContext::onMarkerEnabledChanged(int reason)
 void
 TrackerContext::onKnobsLoaded()
 {
+    _imp->setSolverParamsEnabled(true);
+    
     _imp->refreshVisibilityFromTransformType();
 }
 
