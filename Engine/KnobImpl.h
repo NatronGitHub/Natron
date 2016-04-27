@@ -1677,7 +1677,7 @@ Knob<T>::setValuesAtTime(double time,
 
 template<typename T>
 void
-Knob<T>::unSlave(int dimension,
+Knob<T>::unSlaveInternal(int dimension,
                  ValueChangedReasonEnum reason,
                  bool copyState)
 {

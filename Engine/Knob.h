@@ -1046,14 +1046,14 @@ protected:
      * at the same dimension for the knob 'other'.
      * In case of success, this function returns true, otherwise false.
      **/
-    virtual bool slaveTo(int dimension, const KnobPtr &  other, int otherDimension, ValueChangedReasonEnum reason,
+    virtual bool slaveToInternal(int dimension, const KnobPtr &  other, int otherDimension, ValueChangedReasonEnum reason,
                          bool ignoreMasterPersistence) = 0;
 
     /**
      * @brief Unslaves a previously slaved dimension. The implementation should assert that
      * the dimension was really slaved.
      **/
-    virtual void unSlave(int dimension, ValueChangedReasonEnum reason, bool copyState) = 0;
+    virtual void unSlaveInternal(int dimension, ValueChangedReasonEnum reason, bool copyState) = 0;
 
 public:
 
@@ -1417,7 +1417,7 @@ public:
 private:
 
 
-    virtual bool slaveTo(int dimension, const KnobPtr &  other, int otherDimension, ValueChangedReasonEnum reason
+    virtual bool slaveToInternal(int dimension, const KnobPtr &  other, int otherDimension, ValueChangedReasonEnum reason
                          , bool ignoreMasterPersistence) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 protected:
@@ -1625,7 +1625,7 @@ public:
 private:
 
 
-    virtual void unSlave(int dimension,
+    virtual void unSlaveInternal(int dimension,
                          ValueChangedReasonEnum reason,
                          bool copyState) OVERRIDE FINAL;
 

@@ -591,7 +591,7 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker,
         checkbox->setFixedSize( TO_DPIX(NATRON_SMALL_BUTTON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_SIZE) );
         checkbox->setChecked( marker.isEnabled( marker.getCurrentTime() ) );
         checkbox->setAnimation( (int)marker.getEnabledNessAnimationLevel() );
-        QObject::connect( checkbox, SIGNAL(toggled(bool)), _publicInterface, SLOT(onItemEnabledCheckBoxChecked(bool)) );
+        QObject::connect( checkbox, SIGNAL(clicked(bool)), _publicInterface, SLOT(onItemEnabledCheckBoxChecked(bool)) );
         TableItem* newItem = new TableItem;
         newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable | Qt::ItemIsUserCheckable);
         newItem->setToolTip( GuiUtils::convertFromPlainText(QObject::tr("When unchecked, this track will no longer be tracked even if selected. Also the transform parameters in the Transform tab will not take this track into account"), Qt::WhiteSpaceNormal) );
@@ -1389,11 +1389,12 @@ void
 TrackerPanel::onItemEnabledCheckBoxChecked(bool checked)
 {
     AnimatedCheckBox* widget = qobject_cast<AnimatedCheckBox*>( sender() );
-
+    QWidget* widgetContainer = widget->parentWidget();
+    
     assert(widget);
     for (std::size_t i = 0; i < _imp->items.size(); ++i) {
         QWidget* cellW = _imp->view->cellWidget(i, COL_ENABLED);
-        if (widget == cellW) {
+        if (widgetContainer == cellW) {
             TrackMarkerPtr marker = _imp->items[i].marker.lock();
             marker->setEnabledFromGui(marker->getCurrentTime(), checked);
             break;
