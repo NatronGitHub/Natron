@@ -61,7 +61,7 @@ public:
                                             int downscale,               // Downscale by 2^downscale.
                                             const mv::Region* region,        // Get full image if NULL.
                                             const mv::FrameAccessor::Transform* transform,  // May be NULL.
-                                            mv::FloatImage* destination) OVERRIDE FINAL;
+                                            mv::FloatImage** destination) OVERRIDE FINAL;
 
     // Releases an image from the frame accessor. Non-caching implementations may
     // free the image immediately; others may hold onto the image.

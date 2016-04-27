@@ -338,6 +338,8 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
                       this, SLOT(onAllKeyframesRemovedOnTrackCenter(TrackMarkerPtr)) );
     QObject::connect( context.get(), SIGNAL(multipleKeyframesSetOnTrackCenter(TrackMarkerPtr,std::list<double>)),
                       this, SLOT(onMultipleKeyframesSetOnTrackCenter(TrackMarkerPtr,std::list<double>)) );
+    QObject::connect( context.get(), SIGNAL(multipleKeyframesRemovedOnTrackCenter(TrackMarkerPtr,std::list<double>)),
+                     this, SLOT(onMultipleKeysRemovedOnTrackCenter(TrackMarkerPtr,std::list<double>)));
     QObject::connect( context.get(), SIGNAL(enabledChanged(TrackMarkerPtr,int)), this,
                       SLOT(onEnabledChanged(TrackMarkerPtr,int)) );
     QObject::connect( context.get(), SIGNAL(centerKnobValueChanged(TrackMarkerPtr,int,int)), this,
@@ -366,7 +368,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     _imp->currentKeyframe = new SpinBox(trackContainer, SpinBox::eSpinBoxTypeDouble);
     _imp->currentKeyframe->setEnabled(false);
     _imp->currentKeyframe->setReadOnly(true);
-    _imp->currentKeyframe->setToolTip( GuiUtils::convertFromPlainText(tr("The current keyframe for the selected track(s)."), Qt::WhiteSpaceNormal) );
+    _imp->currentKeyframe->setToolTip( GuiUtils::convertFromPlainText(tr("The current keyframe of the pattern for the selected track(s)."), Qt::WhiteSpaceNormal) );
     trackLayout->addWidget(_imp->currentKeyframe);
 
     _imp->ofLabel = new ClickableLabel(tr("of"), trackContainer);
@@ -375,7 +377,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     _imp->totalKeyframes = new SpinBox(trackContainer, SpinBox::eSpinBoxTypeInt);
     _imp->totalKeyframes->setEnabled(false);
     _imp->totalKeyframes->setReadOnly(true);
-    _imp->totalKeyframes->setToolTip( GuiUtils::convertFromPlainText(tr("The keyframe count for all the selected tracks."), Qt::WhiteSpaceNormal) );
+    _imp->totalKeyframes->setToolTip( GuiUtils::convertFromPlainText(tr("The pattern keyframe count for all the selected tracks."), Qt::WhiteSpaceNormal) );
     trackLayout->addWidget(_imp->totalKeyframes);
 
     int medIconSize = TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE);
@@ -810,6 +812,7 @@ TrackerPanel::getRowMarker(int row) const
         }
     }
     assert(false);
+    return TrackMarkerPtr();
 }
 
 void
@@ -946,12 +949,13 @@ TrackerPanel::onResetButtonClicked()
     assert(context);
     std::list<TrackMarkerPtr > markers;
     context->getSelectedMarkers(&markers);
-
+    context->beginEditSelection();
     context->clearSelection(TrackerContext::eTrackSelectionInternal);
     for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->resetTrack();
     }
     context->addTracksToSelection(markers, TrackerContext::eTrackSelectionInternal);
+    context->endEditSelection(TrackerContext::eTrackSelectionInternal);
 }
 
 TrackMarkerPtr
@@ -1216,10 +1220,10 @@ TrackerPanel::onSelectionAboutToChangeInternal(const std::list<TrackMarkerPtr >&
         }
     }
     if ( !toRemove.empty() ) {
-        _imp->node.lock()->getNode()->getApp()->removeMultipleKeyframeIndicator(toRemove, false);
+        _imp->node.lock()->getNode()->getApp()->removeMultipleKeyframeIndicator(toRemove, true);
     }
     if ( !toRemoveUser.empty() ) {
-        _imp->node.lock()->getNode()->getApp()->removeUserMultipleKeyframeIndicator(toRemoveUser, false);
+        _imp->node.lock()->getNode()->getApp()->removeUserMultipleKeyframeIndicator(toRemoveUser, true);
     }
 }
 
@@ -1536,6 +1540,30 @@ TrackerPanel::onAllKeyframesRemovedOnTrackCenter(const TrackMarkerPtr &marker)
 }
 
 void
+TrackerPanel::onMultipleKeysRemovedOnTrackCenter(const TrackMarkerPtr &marker, const std::list<double> &keys)
+{
+    TrackKeysMap::iterator found = _imp->keys.find(marker);
+    
+    if ( found == _imp->keys.end() ) {
+        return;
+    }
+    std::list<SequenceTime> toRemove;
+    
+    for (std::list<double>::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
+        std::set<double>::iterator it2 = found->second.centerKeys.find(*it);
+        if ( it2 != found->second.centerKeys.end() ) {
+            found->second.centerKeys.erase(it2);
+        }
+        toRemove.push_back(*it);
+    }
+    
+    
+    if (found->second.visible) {
+        _imp->node.lock()->getNode()->getApp()->removeMultipleKeyframeIndicator(toRemove, true);
+    }
+}
+
+void
 TrackerPanel::onMultipleKeyframesSetOnTrackCenter(const TrackMarkerPtr& marker,
                                                   const std::list<double>& keys)
 {
@@ -1808,7 +1836,7 @@ TrackerPanel::onRemoveAnimationButtonClicked()
 
     getContext()->getSelectedMarkers(&markers);
     for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
-        (*it)->removeAllKeyframes();
+        (*it)->removeAllUserKeyframes();
     }
 }
 

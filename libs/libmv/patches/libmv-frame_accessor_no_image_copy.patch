@@ -1,0 +1,55 @@
+diff --git a/libs/libmv/libmv/autotrack/autotrack.cc b/libs/libmv/libmv/autotrack/autotrack.cc
+index 4c7bdf1..1ac73ac 100644
+--- a/libs/libmv/libmv/autotrack/autotrack.cc
++++ b/libs/libmv/libmv/autotrack/autotrack.cc
+@@ -92,7 +92,7 @@ void MarkerToArrays(const Marker& marker, double* x, double* y) {
+ 
+ FrameAccessor::Key GetImageForMarker(const Marker& marker,
+                                      FrameAccessor* frame_accessor,
+-                                     FloatImage* image) {
++                                     FloatImage** image) {
+   // TODO(sergey): Currently we pass float region to the accessor,
+   // but we don't want the accessor to decide the rounding, so we
+   // do rounding here.
+@@ -140,7 +140,7 @@ bool AutoTrack::TrackMarker(Marker* tracked_marker,
+ 
+   // TODO(keir): Technically this could take a smaller slice from the source
+   // image instead of taking one the size of the search window.
+-  FloatImage reference_image;
++  FloatImage* reference_image;
+   FrameAccessor::Key reference_key = GetImageForMarker(reference_marker,
+                                                        frame_accessor_,
+                                                        &reference_image);
+@@ -149,7 +149,7 @@ bool AutoTrack::TrackMarker(Marker* tracked_marker,
+     return false;
+   }
+ 
+-  FloatImage tracked_image;
++  FloatImage* tracked_image;
+   FrameAccessor::Key tracked_key = GetImageForMarker(*tracked_marker,
+                                                      frame_accessor_,
+                                                      &tracked_image);
+@@ -169,8 +169,8 @@ bool AutoTrack::TrackMarker(Marker* tracked_marker,
+   }
+   local_track_region_options.num_extra_points = 1;  // For center point.
+   local_track_region_options.attempt_refine_before_brute = predicted_position;
+-  TrackRegion(reference_image,
+-              tracked_image,
++  TrackRegion(*reference_image,
++              *tracked_image,
+               x1, y1,
+               local_track_region_options,
+               x2, y2,
+diff --git a/libs/libmv/libmv/autotrack/frame_accessor.h b/libs/libmv/libmv/autotrack/frame_accessor.h
+index 8de5d86..5fcb5d2 100644
+--- a/libs/libmv/libmv/autotrack/frame_accessor.h
++++ b/libs/libmv/libmv/autotrack/frame_accessor.h
+@@ -70,7 +70,7 @@ struct FrameAccessor {
+                        int downscale,               // Downscale by 2^downscale.
+                        const Region* region,        // Get full image if NULL.
+                        const Transform* transform,  // May be NULL.
+-                       FloatImage* destination) = 0;
++                       FloatImage** destination) = 0;
+ 
+   // Releases an image from the frame accessor. Non-caching implementations may
+   // free the image immediately; others may hold onto the image.

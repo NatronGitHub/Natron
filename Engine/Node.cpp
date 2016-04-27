@@ -748,6 +748,12 @@ Node::load(const CreateNodeArgs& args)
             boost::shared_ptr<KnobSerialization> defaultFile = createDefaultValueForParam(kOfxImageEffectFileParamName, images);
             CreateNodeArgs::DefaultValuesList list;
             list.push_back(defaultFile);
+            
+            std::string canonicalFilename = images;
+            getApp()->getProject()->canonicalizePath(canonicalFilename);
+            int firstFrame,lastFrame;
+            Node::getOriginalFrameRangeForReader(getPluginID(), canonicalFilename, &firstFrame, &lastFrame);
+            list.push_back(createDefaultValueForParam(kReaderParamNameOriginalFrameRange, firstFrame, lastFrame));
             setValuesFromSerialization(list);
         }
 #endif
@@ -7154,6 +7160,27 @@ Node::onFileNameParameterChanged(KnobI* fileKnob)
 } // Node::onFileNameParameterChanged
 
 void
+Node::getOriginalFrameRangeForReader(const std::string& pluginID, const std::string& canonicalFileName, int* firstFrame, int* lastFrame)
+{
+    if (pluginID == PLUGINID_OFX_READFFMPEG) {
+        ///If the plug-in is a video, only ffmpeg may know how many frames there are
+        *firstFrame = INT_MIN;
+        *lastFrame = INT_MAX;
+    } else {
+        
+        SequenceParsing::SequenceFromPattern seq;
+        SequenceParsing::filesListFromPattern(canonicalFileName, &seq);
+        if (seq.empty() || seq.size() == 1) {
+            *firstFrame = 1;
+            *lastFrame = 1;
+        } else if (seq.size() > 1) {
+            *firstFrame = seq.begin()->first;
+            *lastFrame = seq.rbegin()->first;
+        }
+    }
+}
+
+void
 Node::computeFrameRangeForReader(KnobI* fileKnob)
 {
     /*
@@ -7177,7 +7204,7 @@ Node::computeFrameRangeForReader(KnobI* fileKnob)
     int leftBound = INT_MIN;
     int rightBound = INT_MAX;
     ///Set the originalFrameRange parameter of the reader if it has one.
-    KnobPtr knob = getKnobByName("originalFrameRange");
+    KnobPtr knob = getKnobByName(kReaderParamNameOriginalFrameRange);
     if (knob) {
         KnobInt* originalFrameRange = dynamic_cast<KnobInt*>( knob.get() );
         if ( originalFrameRange && (originalFrameRange->getDimension() == 2) ) {

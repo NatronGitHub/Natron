@@ -447,6 +447,15 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionTrackingStop "stop"
 #define kShortcutDescActionTrackingStop "Stop Tracking"
 
+#define kShortcutIDActionTrackingAllKeyframes "allKeys"
+#define kShortcutDescActionTrackingAllKeyframes "Track All Keyframes"
+
+#define kShortcutIDActionTrackingCurrentKeyframes "curKeys"
+#define kShortcutDescActionTrackingCurrentKeyframes "Track Current Keyframe"
+
+#define kShortcutIDActionTrackingRange "trackRange"
+#define kShortcutDescActionTrackingRange "Track range"
+
 ///////////NODEGRAPH SHORTCUTS
 #ifndef NATRON_ENABLE_IO_META_NODES
 

@@ -1063,7 +1063,9 @@ public:
     std::string getBeforeNodeRemovalCallback() const;
 
     void onFileNameParameterChanged(KnobI* fileKnob);
-
+    
+    static void getOriginalFrameRangeForReader(const std::string& pluginID, const std::string& canonicalFileName, int* firstFrame, int* lastFrame);
+    
     void computeFrameRangeForReader(KnobI* fileKnob);
 
     bool getOverlayColor(double* r, double* g, double* b) const;

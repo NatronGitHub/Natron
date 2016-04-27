@@ -49,7 +49,6 @@ CLANG_DIAG_ON(uninitialized)
 
 #define kReaderParamNameFirstFrame "firstFrame"
 #define kReaderParamNameLastFrame "lastFrame"
-#define kReaderParamNameOriginalFrameRange "originalFrameRange"
 #define kReaderParamNameStartingTime "startingTime"
 #define kReaderParamNameTimeOffset "timeOffset"
 
