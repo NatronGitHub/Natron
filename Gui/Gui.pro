@@ -407,6 +407,7 @@ Resources/Images/natronIcon.svg \
 Resources/Images/natronIcon256_osx.icns \
 Resources/Images/natronIcon256_windows.ico \
 Resources/Images/splashscreen.svg \
+    Resources/Images/prevUserKey.png
 
 
 macx {

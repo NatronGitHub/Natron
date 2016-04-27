@@ -382,8 +382,8 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
 
     int medIconSize = TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE);
     QPixmap prevPix, nextPix, addPix, removePix, clearAnimPix;
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PREVIOUS_KEY, medIconSize, &prevPix);
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_NEXT_KEY, medIconSize, &nextPix);
+    appPTR->getIcon(NATRON_PIXMAP_PREV_USER_KEY, medIconSize, &prevPix);
+    appPTR->getIcon(NATRON_PIXMAP_NEXT_USER_KEY, medIconSize, &nextPix);
     appPTR->getIcon(NATRON_PIXMAP_ADD_USER_KEY, medIconSize, &addPix);
     appPTR->getIcon(NATRON_PIXMAP_REMOVE_USER_KEY, medIconSize, &removePix);
     appPTR->getIcon(NATRON_PIXMAP_CLEAR_ALL_ANIMATION, medIconSize, &clearAnimPix);

@@ -427,19 +427,23 @@ TrackerGui::createGui()
     QObject::connect( _imp->addTrackButton, SIGNAL(clicked(bool)), this, SLOT(onAddTrackClicked(bool)) );
     QPixmap pixPrev, pixNext, pixClearAll, pixClearBw, pixClearFw, pixUpdateViewerEnabled, pixUpdateViewerDisabled, pixStop;
     QPixmap bwEnabled, bwDisabled, fwEnabled, fwDisabled;
+    QPixmap pixTrackRange,pixTrackKeyframes,pixTrackCurrentKey;
 
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_REWIND_DISABLED, iconSizeX, &bwDisabled);
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_REWIND_ENABLED, iconSizeX, &bwEnabled);
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PREVIOUS, iconSizeX, &pixPrev);
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_NEXT, iconSizeX, &pixNext);
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_DISABLED, iconSizeX, &fwDisabled);
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_ENABLED, iconSizeX, &fwEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_TRACK_BACKWARD_OFF, iconSizeX, &bwDisabled);
+    appPTR->getIcon(NATRON_PIXMAP_TRACK_BACKWARD_ON, iconSizeX, &bwEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_TRACK_PREVIOUS, iconSizeX, &pixPrev);
+    appPTR->getIcon(NATRON_PIXMAP_TRACK_NEXT, iconSizeX, &pixNext);
+    appPTR->getIcon(NATRON_PIXMAP_TRACK_FORWARD_OFF, iconSizeX, &fwDisabled);
+    appPTR->getIcon(NATRON_PIXMAP_TRACK_FORWARD_ON, iconSizeX, &fwEnabled);
     appPTR->getIcon(NATRON_PIXMAP_CLEAR_ALL_ANIMATION, iconSizeX, &pixClearAll);
     appPTR->getIcon(NATRON_PIXMAP_CLEAR_BACKWARD_ANIMATION, iconSizeX, &pixClearBw);
     appPTR->getIcon(NATRON_PIXMAP_CLEAR_FORWARD_ANIMATION, iconSizeX, &pixClearFw);
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH_ACTIVE, iconSizeX, &pixUpdateViewerEnabled);
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH, iconSizeX, &pixUpdateViewerDisabled);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_STOP_ENABLED, iconSizeX, &pixStop);
+    appPTR->getIcon(NATRON_PIXMAP_TRACK_RANGE, iconSizeX, &pixTrackRange);
+    appPTR->getIcon(NATRON_PIXMAP_TRACK_ALL_KEYS, iconSizeX, &pixTrackKeyframes);
+    appPTR->getIcon(NATRON_PIXMAP_TRACK_CURRENT_KEY, iconSizeX, &pixTrackCurrentKey);
 
 
     QIcon bwIcon;
@@ -496,37 +500,31 @@ TrackerGui::createGui()
     
     trackPlayerLayout->addSpacing(TO_DPIX(5));
     
-    _imp->trackRangeButton = new Button(QIcon(), QString::fromUtf8("Range"), _imp->buttonsBar);
+    _imp->trackRangeButton = new Button(QIcon(pixTrackRange), QString(), _imp->buttonsBar);
     _imp->trackRangeButton->setFixedSize(medButtonSize);
     _imp->trackRangeButton->setIconSize(medButtonIconSize);
     setTooltipWithShortcut(kShortcutGroupTracking, kShortcutIDActionTrackingRange, "<p>" + tr("Track selected tracks over the range and with the step input by a dialog").toStdString() + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->trackRangeButton);
-    _imp->trackRangeButton->setCheckable(true);
-    _imp->trackRangeButton->setChecked(false);
     QObject::connect( _imp->trackRangeButton, SIGNAL(clicked(bool)), this, SLOT(onTrackRangeClicked()) );
     trackPlayerLayout->addWidget(_imp->trackRangeButton);
     
     trackPlayerLayout->addSpacing(TO_DPIX(5));
     
-    _imp->trackAllKeyframesButton = new Button(QIcon(), QString::fromUtf8("AllK"), _imp->buttonsBar);
+    _imp->trackAllKeyframesButton = new Button(QIcon(pixTrackKeyframes), QString(), _imp->buttonsBar);
     _imp->trackAllKeyframesButton->setFixedSize(medButtonSize);
     _imp->trackAllKeyframesButton->setIconSize(medButtonIconSize);
     setTooltipWithShortcut(kShortcutGroupTracking, kShortcutIDActionTrackingAllKeyframes, "<p>" + tr("Track selected tracks across all pattern keyframes").toStdString() + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->trackAllKeyframesButton);
-    _imp->trackAllKeyframesButton->setCheckable(true);
-    _imp->trackAllKeyframesButton->setChecked(false);
     QObject::connect( _imp->trackAllKeyframesButton, SIGNAL(clicked(bool)), this, SLOT(onTrackAllKeyframesClicked()) );
     trackPlayerLayout->addWidget(_imp->trackAllKeyframesButton);
 
     _imp->buttonsLayout->addWidget(trackPlayer);
     
-    _imp->trackCurrentKeyframeButton = new Button(QIcon(), QString::fromUtf8("CurK"), _imp->buttonsBar);
+    _imp->trackCurrentKeyframeButton = new Button(QIcon(pixTrackCurrentKey), QString(), _imp->buttonsBar);
     _imp->trackCurrentKeyframeButton->setFixedSize(medButtonSize);
     _imp->trackCurrentKeyframeButton->setIconSize(medButtonIconSize);
     setTooltipWithShortcut(kShortcutGroupTracking, kShortcutIDActionTrackingCurrentKeyframes, "<p>" + tr("Track selected tracks over only the pattern keyframes related to the current track").toStdString() + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->trackCurrentKeyframeButton);
-    _imp->trackCurrentKeyframeButton->setCheckable(true);
-    _imp->trackCurrentKeyframeButton->setChecked(false);
     QObject::connect( _imp->trackCurrentKeyframeButton, SIGNAL(clicked(bool)), this, SLOT(onTrackCurrentKeyframeClicked()) );
     trackPlayerLayout->addWidget(_imp->trackCurrentKeyframeButton);
     
