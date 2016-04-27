@@ -266,7 +266,7 @@ KnobGui::enableRightClickMenu(QWidget* widget,
 }
 
 bool
-KnobGui::isLabelVisible() const
+KnobGui::shouldCreateLabel() const
 {
     KnobPtr knob = getKnob();
     KnobString* isStringKnob = dynamic_cast<KnobString*>(knob.get());
@@ -283,6 +283,12 @@ bool
 KnobGui::isLabelBold() const
 {
     return false;
+}
+
+std::string
+KnobGui::getDescriptionLabel() const
+{
+    return getKnob()->getLabel();
 }
 
 void

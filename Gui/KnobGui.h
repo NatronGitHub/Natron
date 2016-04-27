@@ -152,12 +152,14 @@ public:
 
     void enableRightClickMenu(QWidget* widget,int dimension);
 
-    virtual bool isLabelVisible() const;
+    virtual bool shouldCreateLabel() const;
     
     virtual bool isLabelOnSameColumn() const;
     
     virtual bool isLabelBold() const;
 
+    virtual std::string getDescriptionLabel() const;
+    
     QWidget* getFieldContainer() const;
 
     /**

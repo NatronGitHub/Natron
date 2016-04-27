@@ -176,6 +176,8 @@ public:
     virtual void removeSpecificGui() OVERRIDE FINAL;
 
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    
+    virtual std::string getDescriptionLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 public Q_SLOTS:
 

@@ -129,6 +129,12 @@ KnobGuiButton::createWidget(QHBoxLayout* layout)
     layout->addWidget(_button);
 }
 
+std::string
+KnobGuiButton::getDescriptionLabel() const
+{
+    return std::string();
+}
+
 KnobGuiButton::~KnobGuiButton()
 {
 }
