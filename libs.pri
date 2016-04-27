@@ -26,9 +26,11 @@ INCLUDEPATH += $$PWD/libs/libmv
 }
 
 openmvg-flags {
-CONFIG += ceres-flags
+CONFIG += ceres-flags boost
 # Make openMVG use openmp
 #DEFINES += OPENMVG_USE_OPENMP
+
+DEFINES += OPENMVG_HAVE_BOOST
 
 # Do not use any serialization in openmvg (cereal, ply, stlplus ...)
 DEFINES += OPENMVG_NO_SERIALIZATION

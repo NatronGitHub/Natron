@@ -49,7 +49,7 @@
 // Uncomment out to disable n_star optimization (i.e. draw the same # of samples as RANSAC)
 //#define PROSAC_DISABLE_N_STAR_OPTIMIZATION
 
-#define PROSAC_DISABLE_LO_RANSAC
+//#define PROSAC_DISABLE_LO_RANSAC
 
 
 namespace openMVG {
@@ -141,9 +141,9 @@ ProsacReturnCodeEnum prosac(const Kernel &kernel,
         int best_score = 0;
         bool bestModelFound = false;
         std::vector<typename Kernel::Model> possibleModels;
-        kernel.FitAllSamples(&possibleModels);
+        kernel.ComputeModelFromAllSamples(&possibleModels);
         for (std::size_t i = 0; i < possibleModels.size(); ++i) {
-            int model_score = kernel.Score(possibleModels[i], &isInlier);
+            int model_score = kernel.ComputeInliersForModel(possibleModels[i], &isInlier);
             if (model_score > best_score) {
                 best_score = model_score;
                 *bestModel = possibleModels[i];
@@ -239,14 +239,14 @@ ProsacReturnCodeEnum prosac(const Kernel &kernel,
         
         // INSERT Compute model parameters p_t from the sample M_t
         std::vector<typename Kernel::Model> possibleModels;
-        kernel.Fit(sample, &possibleModels);
+        kernel.ComputeModelFromMinimumSamples(sample, &possibleModels);
         
         for (std::size_t modelNb = 0; modelNb < possibleModels.size(); ++modelNb) {
             
             
             // Find support of the model with parameters p_t
             // From first paragraph of section 2: "The hypotheses are veriﬁed against all data"
-            I_N = kernel.Score(possibleModels[modelNb], &isInlier);
+            I_N = kernel.ComputeInliersForModel(possibleModels[modelNb], &isInlier);
             
             
             if (I_N > I_N_best) {
@@ -282,7 +282,7 @@ ProsacReturnCodeEnum prosac(const Kernel &kernel,
                         
                         if (modelOptimized) {
                             // IN = findSupport(/* model, sample, */ N, isInlier);
-                            int I_N_LOkernel.Score(modelLO, &isInliersLO);
+                            int I_N_LO = kernel.ComputeInliersForModel(modelLO, &isInlierLO);
                             if (I_N_LO > I_N_best) {
                                 isInlier = isInlierLO;
                                 *bestModel = modelLO;
