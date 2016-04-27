@@ -9880,6 +9880,8 @@ static bool layerEqualityFunctor(const std::string& a, const std::string& b, Kno
 int
 Node::getMaskChannel(int inputNb,ImageComponents* comps,NodePtr* maskInput) const
 {
+    *comps = ImageComponents::getNoneComponents();
+    maskInput->reset();
     std::map<int, MaskSelector >::const_iterator it = _imp->maskSelectors.find(inputNb);
     if ( it != _imp->maskSelectors.end() ) {
         std::string maskEncoded =  it->second.channel.lock()->getActiveEntryText_mt_safe();
@@ -9887,8 +9889,6 @@ Node::getMaskChannel(int inputNb,ImageComponents* comps,NodePtr* maskInput) cons
         bool isColor;
         bool ok = parseMaskChannelString(maskEncoded, &nodeName, &layerName, &channelName, &isColor);
         if (!ok || layerName == "None") {
-            *comps = ImageComponents::getNoneComponents();
-            maskInput->reset();
             return -1;
         } else {
             QMutexLocker locker(&it->second.compsMutex);
@@ -10119,19 +10119,29 @@ Node::refreshChannelSelectors()
         
         
         std::vector<std::pair<ImageComponents,NodeWPtr > > compsOrdered;
-        bool gotColor = false;
+        ImageComponents gotColor;
+        NodePtr nodeGotColor;
         for (EffectInstance::ComponentsAvailableMap::iterator comp = compsAvailable.begin(); comp != compsAvailable.end(); ++comp) {
             if (comp->first.isColorPlane()) {
-                compsOrdered.insert(compsOrdered.begin(), std::make_pair(comp->first,comp->second));
-                gotColor = true;
+                //compsOrdered.insert(compsOrdered.begin(), std::make_pair(comp->first,comp->second));
+                gotColor = comp->first;
+                nodeGotColor = comp->second.lock();
             } else {
                 compsOrdered.push_back(*comp);
             }
         }
+        
+        
         {
             
             QMutexLocker k(&it->second.compsMutex);
             it->second.compsAvailable = compsOrdered;
+            
+            // Add the components available for the color plane, but only retain RGBA in the channel selector.
+            // We do this because by default the channel selector has RGBA but when input is RGB it will complain that Alpha is not available.
+            if (gotColor) {
+                it->second.compsAvailable.push_back(std::make_pair(gotColor,nodeGotColor));
+            }
         }
         
         for (std::vector<std::pair<ImageComponents,NodeWPtr > >::iterator it2 = compsOrdered.begin(); it2!= compsOrdered.end(); ++it2) {
@@ -10167,7 +10177,7 @@ Node::refreshChannelSelectors()
             
         }
 
-        if (!gotColor) {
+        {
             std::vector<std::string>::iterator pos = choices.begin();
             ++pos;
             
