@@ -309,12 +309,16 @@ OfxParamToKnob::getKnobHolder() const
     }
 
 #ifdef NATRON_ENABLE_IO_META_NODES
-    std::string pluginID = effect->getNode()->getPluginID();
+    NodePtr node = effect->getNode();
+    assert(node);
+    std::string pluginID = node->getPluginID();
     /*
        For readers and writers
      */
     if ( ReadNode::isBundledReader(pluginID) || WriteNode::isBundledWriter(pluginID) ) {
-        return effect->getNode()->getIOContainer()->getEffectInstance();
+        NodePtr iocontainer = node->getIOContainer();
+        assert(iocontainer);
+        return iocontainer->getEffectInstance();
     }
 #endif
 
