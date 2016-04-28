@@ -305,7 +305,6 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
         for (FrameAccessorCache::iterator it = range.first; it != range.second; ++it) {
             if ( (roi.x1 >= it->second.bounds.x1) && (roi.x2 <= it->second.bounds.x2) &&
                  ( roi.y1 >= it->second.bounds.y1) && ( roi.y2 <= it->second.bounds.y2) ) {
-               
 #ifdef TRACE_LIB_MV
                 qDebug() << QThread::currentThread() << "FrameAccessor::GetImage():" << "Found cached image at frame" << frame << "with RoI x1="
                          << region->min(0) << "y1=" << region->max(1) << "x2=" << region->max(0) << "y2=" << region->min(1);

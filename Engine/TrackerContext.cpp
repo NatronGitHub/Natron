@@ -684,9 +684,9 @@ getCornerPinPoint(Node* node,
     assert(knob);
     boost::shared_ptr<KnobDouble>  ret = boost::dynamic_pointer_cast<KnobDouble>(knob);
     assert(ret);
+
     return ret;
 }
-
 
 void
 TrackerContext::exportTrackDataFromExportOptions()
@@ -711,7 +711,6 @@ TrackerContext::exportTrackDataFromExportOptions()
     }
 
     bool linked = _imp->exportLink.lock()->getValue();
-    
     QString pluginID;
     switch (transformType) {
     case eTrackerTransformNodeCornerPin:
@@ -739,83 +738,82 @@ TrackerContext::exportTrackDataFromExportOptions()
 
     int timeForFromPoints = getTransformReferenceFrame();
 
-    
+
     switch (transformType) {
     case eTrackerTransformNodeCornerPin: {
         boost::shared_ptr<KnobDouble> cornerPinToPoints[4];
         boost::shared_ptr<KnobDouble> cornerPinFromPoints[4];
-        
-        
+
+
         for (unsigned int i = 0; i < 4; ++i) {
-            
             cornerPinFromPoints[i] = getCornerPinPoint(createdNode.get(), true, i);
             assert(cornerPinFromPoints[i]);
             for (int j = 0; j < cornerPinFromPoints[i]->getDimension(); ++j) {
-                cornerPinFromPoints[i]->setValue(_imp->fromPoints[i].lock()->getValueAtTime(timeForFromPoints,j), ViewSpec(0), j);
+                cornerPinFromPoints[i]->setValue(_imp->fromPoints[i].lock()->getValueAtTime(timeForFromPoints, j), ViewSpec(0), j);
             }
-            
+
             cornerPinToPoints[i] = getCornerPinPoint(createdNode.get(), false, i);
             assert(cornerPinToPoints[i]);
             if (!linked) {
-                cornerPinToPoints[i]->cloneAndUpdateGui(_imp->toPoints[i].lock().get());
+                cornerPinToPoints[i]->cloneAndUpdateGui( _imp->toPoints[i].lock().get() );
             } else {
                 bool ok = false;
-                for (int d = 0; d < cornerPinToPoints[i]->getDimension() ; ++d) {
-                    ok = dynamic_cast<KnobI*>(cornerPinToPoints[i].get())->slaveTo(d, _imp->toPoints[i].lock(), d);
+                for (int d = 0; d < cornerPinToPoints[i]->getDimension(); ++d) {
+                    ok = dynamic_cast<KnobI*>( cornerPinToPoints[i].get() )->slaveTo(d, _imp->toPoints[i].lock(), d);
                 }
                 (void)ok;
                 assert(ok);
             }
         }
+        break;
     }
-    break;
     case eTrackerTransformNodeTransform: {
         KnobPtr translateKnob = createdNode->getKnobByName(kTransformParamTranslate);
         if (translateKnob) {
-            KnobDouble* isDbl = dynamic_cast<KnobDouble*>(translateKnob.get());
+            KnobDouble* isDbl = dynamic_cast<KnobDouble*>( translateKnob.get() );
             if (isDbl) {
                 if (!linked) {
-                    isDbl->cloneAndUpdateGui(_imp->translate.lock().get());
+                    isDbl->cloneAndUpdateGui( _imp->translate.lock().get() );
                 } else {
                     dynamic_cast<KnobI*>(isDbl)->slaveTo(0, _imp->translate.lock(), 0);
                 }
             }
         }
-        
+
         KnobPtr scaleKnob = createdNode->getKnobByName(kTransformParamScale);
         if (scaleKnob) {
-            KnobDouble* isDbl = dynamic_cast<KnobDouble*>(scaleKnob.get());
+            KnobDouble* isDbl = dynamic_cast<KnobDouble*>( scaleKnob.get() );
             if (isDbl) {
                 if (!linked) {
-                    isDbl->cloneAndUpdateGui(_imp->scale.lock().get());
+                    isDbl->cloneAndUpdateGui( _imp->scale.lock().get() );
                 } else {
                     dynamic_cast<KnobI*>(isDbl)->slaveTo(0, _imp->scale.lock(), 0);
                 }
             }
         }
-        
+
         KnobPtr rotateKnob = createdNode->getKnobByName(kTransformParamRotate);
         if (rotateKnob) {
-            KnobDouble* isDbl = dynamic_cast<KnobDouble*>(rotateKnob.get());
+            KnobDouble* isDbl = dynamic_cast<KnobDouble*>( rotateKnob.get() );
             if (isDbl) {
                 if (!linked) {
-                    isDbl->cloneAndUpdateGui(_imp->rotate.lock().get());
+                    isDbl->cloneAndUpdateGui( _imp->rotate.lock().get() );
                 } else {
                     dynamic_cast<KnobI*>(isDbl)->slaveTo(0, _imp->rotate.lock(), 0);
                 }
             }
         }
 
+        break;
     }
-    break;
-    }
-    
+    } // switch
+
     KnobPtr cpInvertKnob = createdNode->getKnobByName(kTransformParamInvert);
     if (cpInvertKnob) {
-        KnobBool* isBool = dynamic_cast<KnobBool*>(cpInvertKnob.get());
+        KnobBool* isBool = dynamic_cast<KnobBool*>( cpInvertKnob.get() );
         if (isBool) {
             if (!linked) {
-                isBool->cloneAndUpdateGui(_imp->invertTransform.lock().get());
+                isBool->cloneAndUpdateGui( _imp->invertTransform.lock().get() );
             } else {
                 dynamic_cast<KnobI*>(isBool)->slaveTo(0, _imp->invertTransform.lock(), 0);
             }
@@ -855,7 +853,7 @@ void
 TrackerContext::onKnobsLoaded()
 {
     _imp->setSolverParamsEnabled(true);
-    
+
     _imp->refreshVisibilityFromTransformType();
 }
 
@@ -934,8 +932,6 @@ TrackerContext::declarePythonFields()
     }
 }
 
-
-
 void
 TrackerContext::resetTransformCenter()
 {
@@ -996,12 +992,11 @@ TrackerContext::solveTransformParams()
     std::vector<TrackMarkerPtr> markers;
 
     getAllMarkers(&markers);
-    if (markers.empty()) {
+    if ( markers.empty() ) {
         return;
     }
-    
+
     boost::shared_ptr<KnobChoice> motionTypeKnob = _imp->motionType.lock();
-    
     int motionType_i = motionTypeKnob->getValue();
     TrackerMotionTypeEnum type =  (TrackerMotionTypeEnum)motionType_i;
     double refTime = (double)getTransformReferenceFrame();
@@ -1010,6 +1005,7 @@ TrackerContext::solveTransformParams()
     switch (type) {
     case eTrackerMotionTypeNone:
         _imp->resetTransformParamsAnimation();
+
         return;
     case eTrackerMotionTypeMatchMove:
     case eTrackerMotionTypeStabilize:
@@ -1018,12 +1014,12 @@ TrackerContext::solveTransformParams()
     case eTrackerMotionTypeRemoveJitter: {
         jitterPeriod = _imp->jitterPeriod.lock()->getValue();
         jitterAdd = type == eTrackerMotionTypeAddJitter;
+        break;
     }
-    break;
     }
 
     _imp->setSolverParamsEnabled(false);
-    
+
     std::set<double> keyframes;
     {
         for (std::size_t i = 0; i < markers.size(); ++i) {
@@ -1038,17 +1034,16 @@ TrackerContext::solveTransformParams()
     assert(transformTypeKnob);
     int transformType_i = transformTypeKnob->getValue();
     TrackerTransformNodeEnum transformType = (TrackerTransformNodeEnum)transformType_i;
-
     NodePtr node = getNode();
     node->getEffectInstance()->beginChanges();
 
-    
+
     if (type == eTrackerMotionTypeStabilize) {
         _imp->invertTransform.lock()->setValue(true);
     } else {
         _imp->invertTransform.lock()->setValue(false);
     }
-    
+
     boost::shared_ptr<KnobDouble> centerKnob = _imp->center.lock();
 
     // Set the center at the reference frame
@@ -1059,7 +1054,7 @@ TrackerContext::solveTransformParams()
             continue;
         }
         boost::shared_ptr<KnobDouble> markerCenterKnob = markers[i]->getCenterKnob();
-        
+
         centerValue.x += markerCenterKnob->getValueAtTime(refTime, 0);
         centerValue.y += markerCenterKnob->getValueAtTime(refTime, 1);
         ++nSamplesAtRefTime;
@@ -1069,26 +1064,24 @@ TrackerContext::solveTransformParams()
         centerValue.y /= nSamplesAtRefTime;
         centerKnob->setValues(centerValue.x, centerValue.y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
     }
-    
-    
-    node->getApp()->progressStart(node, QObject::tr("Solving transform parameters...").toStdString(), std::string());
+
+
+    node->getApp()->progressStart( node, QObject::tr("Solving transform parameters...").toStdString(), std::string() );
 
     _imp->lastSolveRequest.refTime = refTime;
     _imp->lastSolveRequest.jitterPeriod = jitterPeriod;
     _imp->lastSolveRequest.jitterAdd = jitterAdd;
     _imp->lastSolveRequest.allMarkers = markers;
     _imp->lastSolveRequest.keyframes = keyframes;
-    
+
     switch (transformType) {
     case eTrackerTransformNodeTransform:
-            _imp->computeTransformParamsFromTracks();
-            break;
+        _imp->computeTransformParamsFromTracks();
+        break;
     case eTrackerTransformNodeCornerPin:
-            _imp->computeCornerParamsFromTracks();
-            break;
+        _imp->computeCornerParamsFromTracks();
+        break;
     }
-
-
 } // TrackerContext::solveTransformParams
 
 NodePtr
@@ -1409,6 +1402,7 @@ class IsTrackingFlagSetter_RAII
     TrackSchedulerBase* _base;
     bool _reportProgress;
     bool _doPartialUpdates;
+
 public:
 
     IsTrackingFlagSetter_RAII(const EffectInstPtr& effect,
@@ -1449,7 +1443,7 @@ template <class TrackArgsType>
 void
 TrackScheduler<TrackArgsType>::run()
 {
-    for (;;) {
+    for (;; ) {
         ///Check for exit of the thread
         if ( _imp->checkForExit() ) {
             return;
@@ -1483,11 +1477,10 @@ TrackScheduler<TrackArgsType>::run()
         for (std::size_t i = 0; i < (std::size_t)numTracks; ++i) {
             trackIndexes.push_back(i);
         }
-        
+
         // Beyond TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE it becomes more expensive to render all partial rectangles
         // than just render the whole viewer RoI
         const bool doPartialUpdates = numTracks < TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE;
-
         int lastValidFrame = frameStep > 0 ? start - 1 : start + 1;
         bool reportProgress = numTracks > 1 || framesCount > 1;
         EffectInstPtr effect = _imp->getNode()->getEffectInstance();
@@ -1496,7 +1489,7 @@ TrackScheduler<TrackArgsType>::run()
             IsTrackingFlagSetter_RAII __istrackingflag__(effect, this, frameStep, reportProgress, viewer, doPartialUpdates);
 
 
-            if (frameStep == 0 || (frameStep > 0 && (start >= end)) || (frameStep < 0 && (start <= end))) {
+            if ( (frameStep == 0) || ( (frameStep > 0) && (start >= end) ) || ( (frameStep < 0) && (start <= end) ) ) {
                 // Invalid range
                 cur = end;
             }
@@ -1524,7 +1517,7 @@ TrackScheduler<TrackArgsType>::run()
                 lastValidFrame = cur;
 
                 cur += frameStep;
-                
+
                 double progress;
                 if (frameStep > 0) {
                     progress = (double)(cur - start) / framesCount;
@@ -1542,7 +1535,7 @@ TrackScheduler<TrackArgsType>::run()
                     //is not called on viewers, see Gui::onTimeChanged
                     timeline->seekFrame(cur, true, 0, eTimelineChangeReasonOtherSeek);
 
-                    
+
                     if (doPartialUpdates) {
                         std::list<RectD> updateRects;
                         curArgs.getRedrawAreasNeeded(cur, &updateRects);

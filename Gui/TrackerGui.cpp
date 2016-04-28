@@ -245,8 +245,7 @@ struct TrackerGuiPrivate
     RenderScale selectedMarkerScale;
     boost::weak_ptr<Image> selectedMarkerImg;
     bool isTracking;
-    
-    int lastTrackRangeFirstFrame,lastTrackRangeLastFrame,lastTrackRangeStep;
+    int lastTrackRangeFirstFrame, lastTrackRangeLastFrame, lastTrackRangeStep;
 
     TrackerGuiPrivate(TrackerGui* publicInterface,
                       const boost::shared_ptr<TrackerPanelV1> & panelv1,
@@ -427,7 +426,7 @@ TrackerGui::createGui()
     QObject::connect( _imp->addTrackButton, SIGNAL(clicked(bool)), this, SLOT(onAddTrackClicked(bool)) );
     QPixmap pixPrev, pixNext, pixClearAll, pixClearBw, pixClearFw, pixUpdateViewerEnabled, pixUpdateViewerDisabled, pixStop;
     QPixmap bwEnabled, bwDisabled, fwEnabled, fwDisabled;
-    QPixmap pixTrackRange,pixTrackKeyframes,pixTrackCurrentKey;
+    QPixmap pixTrackRange, pixTrackKeyframes, pixTrackCurrentKey;
 
     appPTR->getIcon(NATRON_PIXMAP_TRACK_BACKWARD_OFF, iconSizeX, &bwDisabled);
     appPTR->getIcon(NATRON_PIXMAP_TRACK_BACKWARD_ON, iconSizeX, &bwEnabled);
@@ -454,8 +453,7 @@ TrackerGui::createGui()
     QHBoxLayout* trackPlayerLayout = new QHBoxLayout(trackPlayer);
     trackPlayerLayout->setContentsMargins(0, 0, 0, 0);
     trackPlayerLayout->setSpacing(0);
-    
-   
+
 
     _imp->trackBwButton = new Button(bwIcon, QString(), _imp->buttonsBar);
     _imp->trackBwButton->setFixedSize(medButtonSize);
@@ -497,9 +495,9 @@ TrackerGui::createGui()
     _imp->trackFwButton->setChecked(false);
     QObject::connect( _imp->trackFwButton, SIGNAL(clicked(bool)), this, SLOT(onTrackFwClicked()) );
     trackPlayerLayout->addWidget(_imp->trackFwButton);
-    
-    trackPlayerLayout->addSpacing(TO_DPIX(5));
-    
+
+    trackPlayerLayout->addSpacing( TO_DPIX(5) );
+
     _imp->trackRangeButton = new Button(QIcon(pixTrackRange), QString(), _imp->buttonsBar);
     _imp->trackRangeButton->setFixedSize(medButtonSize);
     _imp->trackRangeButton->setIconSize(medButtonIconSize);
@@ -507,9 +505,9 @@ TrackerGui::createGui()
                            "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->trackRangeButton);
     QObject::connect( _imp->trackRangeButton, SIGNAL(clicked(bool)), this, SLOT(onTrackRangeClicked()) );
     trackPlayerLayout->addWidget(_imp->trackRangeButton);
-    
-    trackPlayerLayout->addSpacing(TO_DPIX(5));
-    
+
+    trackPlayerLayout->addSpacing( TO_DPIX(5) );
+
     _imp->trackAllKeyframesButton = new Button(QIcon(pixTrackKeyframes), QString(), _imp->buttonsBar);
     _imp->trackAllKeyframesButton->setFixedSize(medButtonSize);
     _imp->trackAllKeyframesButton->setIconSize(medButtonIconSize);
@@ -519,7 +517,7 @@ TrackerGui::createGui()
     trackPlayerLayout->addWidget(_imp->trackAllKeyframesButton);
 
     _imp->buttonsLayout->addWidget(trackPlayer);
-    
+
     _imp->trackCurrentKeyframeButton = new Button(QIcon(pixTrackCurrentKey), QString(), _imp->buttonsBar);
     _imp->trackCurrentKeyframeButton->setFixedSize(medButtonSize);
     _imp->trackCurrentKeyframeButton->setIconSize(medButtonIconSize);
@@ -527,7 +525,7 @@ TrackerGui::createGui()
                            "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->trackCurrentKeyframeButton);
     QObject::connect( _imp->trackCurrentKeyframeButton, SIGNAL(clicked(bool)), this, SLOT(onTrackCurrentKeyframeClicked()) );
     trackPlayerLayout->addWidget(_imp->trackCurrentKeyframeButton);
-    
+
     _imp->buttonsLayout->addWidget(trackPlayer);
 
 
@@ -865,11 +863,10 @@ TrackerGui::drawOverlays(double time,
                 if ( !(*it)->isEnabled( (*it)->getCurrentTime() ) ) {
                     continue;
                 }
-                
+
                 bool isHoverMarker = *it == _imp->hoverMarker;
                 bool isDraggedMarker = *it == _imp->interactMarker;
                 bool isHoverOrDraggedMarker = isHoverMarker || isDraggedMarker;
-                
                 std::list<TrackMarkerPtr >::iterator foundSelected = std::find(selectedMarkers.begin(), selectedMarkers.end(), *it);
                 bool isSelected = foundSelected != selectedMarkers.end();
                 boost::shared_ptr<KnobDouble> centerKnob = (*it)->getCenterKnob();
@@ -1086,7 +1083,7 @@ TrackerGui::drawOverlays(double time,
                         glBegin(GL_POINTS);
 
                         ///draw center
-                        if ( isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringCenter) || (_imp->eventState == eMouseStateDraggingCenter))) {
+                        if ( isHoverOrDraggedMarker && ( (_imp->hoverState == eDrawStateHoveringCenter) || (_imp->eventState == eMouseStateDraggingCenter) ) ) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                         } else {
                             glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
@@ -1098,37 +1095,37 @@ TrackerGui::drawOverlays(double time,
                         }
 
                         //////DRAWING INNER POINTS
-                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringInnerBtmLeft) || (_imp->eventState == eMouseStateDraggingInnerBtmLeft))) {
+                        if ( isHoverOrDraggedMarker && ( (_imp->hoverState == eDrawStateHoveringInnerBtmLeft) || (_imp->eventState == eMouseStateDraggingInnerBtmLeft) ) ) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( btmLeft.x(), btmLeft.y() );
                         }
-                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringInnerBtmMid) || (_imp->eventState == eMouseStateDraggingInnerBtmMid))) {
+                        if ( isHoverOrDraggedMarker && ( (_imp->hoverState == eDrawStateHoveringInnerBtmMid) || (_imp->eventState == eMouseStateDraggingInnerBtmMid) ) ) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( innerMidBtm.x(), innerMidBtm.y() );
                         }
-                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringInnerBtmRight) || (_imp->eventState == eMouseStateDraggingInnerBtmRight))) {
+                        if ( isHoverOrDraggedMarker && ( (_imp->hoverState == eDrawStateHoveringInnerBtmRight) || (_imp->eventState == eMouseStateDraggingInnerBtmRight) ) ) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( btmRight.x(), btmRight.y() );
                         }
-                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringInnerMidLeft) || (_imp->eventState == eMouseStateDraggingInnerMidLeft))) {
+                        if ( isHoverOrDraggedMarker && ( (_imp->hoverState == eDrawStateHoveringInnerMidLeft) || (_imp->eventState == eMouseStateDraggingInnerMidLeft) ) ) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( innerMidLeft.x(), innerMidLeft.y() );
                         }
-                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringInnerMidRight) || (_imp->eventState == eMouseStateDraggingInnerMidRight))) {
+                        if ( isHoverOrDraggedMarker && ( (_imp->hoverState == eDrawStateHoveringInnerMidRight) || (_imp->eventState == eMouseStateDraggingInnerMidRight) ) ) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( innerMidRight.x(), innerMidRight.y() );
                         }
-                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringInnerTopLeft) || (_imp->eventState == eMouseStateDraggingInnerTopLeft))) {
+                        if ( isHoverOrDraggedMarker && ( (_imp->hoverState == eDrawStateHoveringInnerTopLeft) || (_imp->eventState == eMouseStateDraggingInnerTopLeft) ) ) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( topLeft.x(), topLeft.y() );
                         }
 
-                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringInnerTopMid) || (_imp->eventState == eMouseStateDraggingInnerTopMid))) {
+                        if ( isHoverOrDraggedMarker && ( (_imp->hoverState == eDrawStateHoveringInnerTopMid) || (_imp->eventState == eMouseStateDraggingInnerTopMid) ) ) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( innerMidTop.x(), innerMidTop.y() );
                         }
 
-                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringInnerTopRight) || (_imp->eventState == eMouseStateDraggingInnerTopRight))) {
+                        if ( isHoverOrDraggedMarker && ( (_imp->hoverState == eDrawStateHoveringInnerTopRight) || (_imp->eventState == eMouseStateDraggingInnerTopRight) ) ) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( topRight.x(), topRight.y() );
                         }
@@ -1136,36 +1133,36 @@ TrackerGui::drawOverlays(double time,
 
                         //////DRAWING OUTTER POINTS
 
-                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringOuterBtmLeft) || (_imp->eventState == eMouseStateDraggingOuterBtmLeft))) {
+                        if ( isHoverOrDraggedMarker && ( (_imp->hoverState == eDrawStateHoveringOuterBtmLeft) || (_imp->eventState == eMouseStateDraggingOuterBtmLeft) ) ) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( searchBtmLeft.x(), searchBtmLeft.y() );
                         }
-                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringOuterBtmMid) || (_imp->eventState == eMouseStateDraggingOuterBtmMid))) {
+                        if ( isHoverOrDraggedMarker && ( (_imp->hoverState == eDrawStateHoveringOuterBtmMid) || (_imp->eventState == eMouseStateDraggingOuterBtmMid) ) ) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( outterMidBtm.x(), outterMidBtm.y() );
                         }
-                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringOuterBtmRight) || (_imp->eventState == eMouseStateDraggingOuterBtmRight))) {
+                        if ( isHoverOrDraggedMarker && ( (_imp->hoverState == eDrawStateHoveringOuterBtmRight) || (_imp->eventState == eMouseStateDraggingOuterBtmRight) ) ) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( searchBtmRight.x(), searchBtmRight.y() );
                         }
-                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringOuterMidLeft) || (_imp->eventState == eMouseStateDraggingOuterMidLeft))) {
+                        if ( isHoverOrDraggedMarker && ( (_imp->hoverState == eDrawStateHoveringOuterMidLeft) || (_imp->eventState == eMouseStateDraggingOuterMidLeft) ) ) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( outterMidLeft.x(), outterMidLeft.y() );
                         }
-                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringOuterMidRight) || (_imp->eventState == eMouseStateDraggingOuterMidRight))) {
+                        if ( isHoverOrDraggedMarker && ( (_imp->hoverState == eDrawStateHoveringOuterMidRight) || (_imp->eventState == eMouseStateDraggingOuterMidRight) ) ) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( outterMidRight.x(), outterMidRight.y() );
                         }
 
-                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringOuterTopLeft) || (_imp->eventState == eMouseStateDraggingOuterTopLeft))) {
+                        if ( isHoverOrDraggedMarker && ( (_imp->hoverState == eDrawStateHoveringOuterTopLeft) || (_imp->eventState == eMouseStateDraggingOuterTopLeft) ) ) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( searchTopLeft.x(), searchTopLeft.y() );
                         }
-                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringOuterTopMid) || (_imp->eventState == eMouseStateDraggingOuterTopMid))) {
+                        if ( isHoverOrDraggedMarker && ( (_imp->hoverState == eDrawStateHoveringOuterTopMid) || (_imp->eventState == eMouseStateDraggingOuterTopMid) ) ) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( outterMidTop.x(), outterMidTop.y() );
                         }
-                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringOuterTopRight) || (_imp->eventState == eMouseStateDraggingOuterTopRight))) {
+                        if ( isHoverOrDraggedMarker && ( (_imp->hoverState == eDrawStateHoveringOuterTopRight) || (_imp->eventState == eMouseStateDraggingOuterTopRight) ) ) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                             glVertex2d( searchTopRight.x(), searchTopRight.y() );
                         }
@@ -1183,7 +1180,7 @@ TrackerGui::drawOverlays(double time,
                         ///now show small lines at handle positions
                         glBegin(GL_LINES);
 
-                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringInnerMidLeft) || (_imp->eventState == eMouseStateDraggingInnerMidLeft))) {
+                        if ( isHoverOrDraggedMarker && ( (_imp->hoverState == eDrawStateHoveringInnerMidLeft) || (_imp->eventState == eMouseStateDraggingInnerMidLeft) ) ) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                         } else {
                             glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
@@ -1191,7 +1188,7 @@ TrackerGui::drawOverlays(double time,
                         glVertex2d( innerMidLeft.x(), innerMidLeft.y() );
                         glVertex2d( innerMidLeftExt.x(), innerMidLeftExt.y() );
 
-                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringInnerTopMid) || (_imp->eventState == eMouseStateDraggingInnerTopMid))) {
+                        if ( isHoverOrDraggedMarker && ( (_imp->hoverState == eDrawStateHoveringInnerTopMid) || (_imp->eventState == eMouseStateDraggingInnerTopMid) ) ) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                         } else {
                             glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
@@ -1199,7 +1196,7 @@ TrackerGui::drawOverlays(double time,
                         glVertex2d( innerMidTop.x(), innerMidTop.y() );
                         glVertex2d( innerMidTopExt.x(), innerMidTopExt.y() );
 
-                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringInnerMidRight) || (_imp->eventState == eMouseStateDraggingInnerMidRight))) {
+                        if ( isHoverOrDraggedMarker && ( (_imp->hoverState == eDrawStateHoveringInnerMidRight) || (_imp->eventState == eMouseStateDraggingInnerMidRight) ) ) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                         } else {
                             glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
@@ -1207,7 +1204,7 @@ TrackerGui::drawOverlays(double time,
                         glVertex2d( innerMidRight.x(), innerMidRight.y() );
                         glVertex2d( innerMidRightExt.x(), innerMidRightExt.y() );
 
-                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringInnerBtmMid) || (_imp->eventState == eMouseStateDraggingInnerBtmMid))) {
+                        if ( isHoverOrDraggedMarker && ( (_imp->hoverState == eDrawStateHoveringInnerBtmMid) || (_imp->eventState == eMouseStateDraggingInnerBtmMid) ) ) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                         } else {
                             glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
@@ -1217,7 +1214,7 @@ TrackerGui::drawOverlays(double time,
 
                         //////DRAWING OUTTER HANDLES
 
-                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringOuterMidLeft) || (_imp->eventState == eMouseStateDraggingOuterMidLeft))) {
+                        if ( isHoverOrDraggedMarker && ( (_imp->hoverState == eDrawStateHoveringOuterMidLeft) || (_imp->eventState == eMouseStateDraggingOuterMidLeft) ) ) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                         } else {
                             glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
@@ -1225,7 +1222,7 @@ TrackerGui::drawOverlays(double time,
                         glVertex2d( outterMidLeft.x(), outterMidLeft.y() );
                         glVertex2d( outterMidLeftExt.x(), outterMidLeftExt.y() );
 
-                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringOuterTopMid) || (_imp->eventState == eMouseStateDraggingOuterTopMid))) {
+                        if ( isHoverOrDraggedMarker && ( (_imp->hoverState == eDrawStateHoveringOuterTopMid) || (_imp->eventState == eMouseStateDraggingOuterTopMid) ) ) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                         } else {
                             glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
@@ -1233,7 +1230,7 @@ TrackerGui::drawOverlays(double time,
                         glVertex2d( outterMidTop.x(), outterMidTop.y() );
                         glVertex2d( outterMidTopExt.x(), outterMidTopExt.y() );
 
-                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringOuterMidRight) || (_imp->eventState == eMouseStateDraggingOuterMidRight))) {
+                        if ( isHoverOrDraggedMarker && ( (_imp->hoverState == eDrawStateHoveringOuterMidRight) || (_imp->eventState == eMouseStateDraggingOuterMidRight) ) ) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                         } else {
                             glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
@@ -1241,7 +1238,7 @@ TrackerGui::drawOverlays(double time,
                         glVertex2d( outterMidRight.x(), outterMidRight.y() );
                         glVertex2d( outterMidRightExt.x(), outterMidRightExt.y() );
 
-                        if (isHoverOrDraggedMarker && ((_imp->hoverState == eDrawStateHoveringOuterBtmMid) || (_imp->eventState == eMouseStateDraggingOuterBtmMid))) {
+                        if ( isHoverOrDraggedMarker && ( (_imp->hoverState == eDrawStateHoveringOuterBtmMid) || (_imp->eventState == eMouseStateDraggingOuterBtmMid) ) ) {
                             glColor3f(0.f * l, 1.f * l, 0.f * l);
                         } else {
                             glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
@@ -2765,8 +2762,8 @@ TrackerGui::penMotion(double time,
                 _imp->interactMarker->setUserKeyframe(time);
             }
             didSomething = true;
+            break;
         }
-        break;
         case eMouseStateDraggingInnerBtmLeft:
         case eMouseStateDraggingInnerTopRight:
         case eMouseStateDraggingInnerTopLeft:
@@ -2860,8 +2857,8 @@ TrackerGui::penMotion(double time,
                 _imp->interactMarker->setUserKeyframe(time);
             }
             didSomething = true;
+            break;
         }
-        break;
         case eMouseStateDraggingOuterBtmLeft: {
             if (_imp->controlDown == 0) {
                 _imp->transformPattern(time, _imp->eventState, delta);
@@ -2913,8 +2910,8 @@ TrackerGui::penMotion(double time,
 
             updateSelectedMarkerTexture();
             didSomething = true;
+            break;
         }
-        break;
         case eMouseStateDraggingOuterBtmRight: {
             if (_imp->controlDown == 0) {
                 _imp->transformPattern(time, _imp->eventState, delta);
@@ -2971,8 +2968,8 @@ TrackerGui::penMotion(double time,
 
             updateSelectedMarkerTexture();
             didSomething = true;
+            break;
         }
-        break;
         case eMouseStateDraggingOuterTopRight: {
             if (_imp->controlDown == 0) {
                 _imp->transformPattern(time, _imp->eventState, delta);
@@ -3024,8 +3021,8 @@ TrackerGui::penMotion(double time,
 
             updateSelectedMarkerTexture();
             didSomething = true;
+            break;
         }
-        break;
         case eMouseStateDraggingOuterTopLeft: {
             if (_imp->controlDown == 0) {
                 _imp->transformPattern(time, _imp->eventState, delta);
@@ -3082,8 +3079,8 @@ TrackerGui::penMotion(double time,
 
             updateSelectedMarkerTexture();
             didSomething = true;
+            break;
         }
-        break;
         case eMouseStateDraggingInnerBtmMid:
         case eMouseStateDraggingInnerTopMid:
         case eMouseStateDraggingInnerMidLeft:
@@ -3094,16 +3091,16 @@ TrackerGui::penMotion(double time,
         case eMouseStateDraggingOuterMidRight: {
             _imp->transformPattern(time, _imp->eventState, delta);
             didSomething = true;
+            break;
         }
-        break;
         case eMouseStateDraggingSelectedMarkerResizeAnchor: {
             QPointF lastPosWidget = viewer->toWidgetCoordinates(_imp->lastMousePos);
             double dx = viewportPos.x() - lastPosWidget.x();
             _imp->selectedMarkerWidth += dx;
             _imp->selectedMarkerWidth = std::max(_imp->selectedMarkerWidth, 10);
             didSomething = true;
+            break;
         }
-        break;
         case eMouseStateScalingSelectedMarker: {
             TrackMarkerPtr marker = _imp->selectedMarker.lock();
             assert(marker);
@@ -3139,8 +3136,8 @@ TrackerGui::penMotion(double time,
                 _imp->selectedMarkerScale.y = _imp->selectedMarkerScale.x;
                 didSomething = true;
             }
+            break;
         }
-        break;
         case eMouseStateDraggingSelectedMarker: {
             double x = centerKnob->getValueAtTime(time, 0);
             double y = centerKnob->getValueAtTime(time, 1);
@@ -3153,8 +3150,8 @@ TrackerGui::penMotion(double time,
             }
             updateSelectedMarkerTexture();
             didSomething = true;
+            break;
         }
-        break;
         default:
             break;
         } // switch
@@ -3306,8 +3303,6 @@ TrackerGui::keyDown(double time,
         onTrackCurrentKeyframeClicked();
         didSomething = true;
     }
-
-
 
 
     return didSomething;
@@ -3488,11 +3483,11 @@ TrackerGui::onSelectionCleared()
 void
 TrackerGui::onTrackRangeClicked()
 {
-    
     SequenceTime timelineFirst, timelineLast;
+
     _imp->viewer->getTimelineBounds(&timelineFirst, &timelineLast);
-    
-    NATRON_PYTHON_NAMESPACE::PyModalDialog dialog(_imp->viewer->getGui());
+
+    NATRON_PYTHON_NAMESPACE::PyModalDialog dialog( _imp->viewer->getGui() );
     boost::shared_ptr<NATRON_PYTHON_NAMESPACE::IntParam> firstFrame( dialog.createIntParam( QString::fromUtf8("firstFrame"), QString::fromUtf8("First frame") ) );
     firstFrame->set(_imp->lastTrackRangeFirstFrame != INT_MIN ? _imp->lastTrackRangeFirstFrame : timelineFirst);
     firstFrame->setAnimationEnabled(false);
@@ -3503,36 +3498,34 @@ TrackerGui::onTrackRangeClicked()
     stepFrame->setAnimationEnabled(false);
     stepFrame->set(_imp->lastTrackRangeStep != INT_MIN ? _imp->lastTrackRangeStep : 1);
     dialog.refreshUserParamsGUI();
-    if (dialog.exec()) {
+    if ( dialog.exec() ) {
         int first = firstFrame->getValue();
         int last = lastFrame->getValue();
         int step = stepFrame->getValue();
-        
         boost::shared_ptr<TrackerContext> ctx = _imp->panel->getContext();
-        if (ctx->isCurrentlyTracking()) {
+        if ( ctx->isCurrentlyTracking() ) {
             ctx->abortTracking();
         }
-        
+
         if (step == 0) {
-            Dialogs::errorDialog(tr("Track Range").toStdString(), tr("The Step cannot be 0").toStdString());
+            Dialogs::errorDialog( tr("Track Range").toStdString(), tr("The Step cannot be 0").toStdString() );
+
             return;
         }
-        
+
         int startFrame = step > 0 ? first : last;
         int lastFrame = step > 0 ? last + 1 : first - 1;
-        
-        if ((step > 0 && (startFrame >= lastFrame)) || (step < 0 && (startFrame <= lastFrame))) {
+
+        if ( ( (step > 0) && (startFrame >= lastFrame) ) || ( (step < 0) && (startFrame <= lastFrame) ) ) {
             return;
         }
-        
+
         _imp->lastTrackRangeStep = step;
         _imp->lastTrackRangeFirstFrame = first;
         _imp->lastTrackRangeLastFrame = last;
-        
-        ctx->trackSelectedMarkers(startFrame, lastFrame, step,  _imp->viewer->getInternalNode());
-        
-    }
 
+        ctx->trackSelectedMarkers( startFrame, lastFrame, step,  _imp->viewer->getInternalNode() );
+    }
 }
 
 void
@@ -3540,22 +3533,23 @@ TrackerGui::onTrackAllKeyframesClicked()
 {
     boost::shared_ptr<TrackerContext> ctx = _imp->panel->getContext();
     std::list<TrackMarkerPtr> selectedMarkers;
+
     ctx->getSelectedMarkers(&selectedMarkers);
-    
+
     std::set<int> userKeys;
-    
+
     for (std::list<TrackMarkerPtr>::iterator it = selectedMarkers.begin(); it != selectedMarkers.end(); ++it) {
         std::set<int> trackUserKeys;
         (*it)->getUserKeyframes(&trackUserKeys);
-        userKeys.insert(trackUserKeys.begin(), trackUserKeys.end());
+        userKeys.insert( trackUserKeys.begin(), trackUserKeys.end() );
     }
-    if (userKeys.empty()) {
+    if ( userKeys.empty() ) {
         return;
     }
-    
+
     int first = *userKeys.begin();
     int last = *userKeys.rbegin() + 1;
-    ctx->trackSelectedMarkers(first, last, 1,  _imp->viewer->getInternalNode());
+    ctx->trackSelectedMarkers( first, last, 1,  _imp->viewer->getInternalNode() );
 }
 
 void
@@ -3564,34 +3558,35 @@ TrackerGui::onTrackCurrentKeyframeClicked()
     boost::shared_ptr<TrackerContext> ctx = _imp->panel->getContext();
     SequenceTime currentFrame = _imp->viewer->getTimeLine()->currentFrame();
     std::list<TrackMarkerPtr> selectedMarkers;
+
     ctx->getSelectedMarkers(&selectedMarkers);
-    
+
     std::set<int> userKeys;
-    
+
     for (std::list<TrackMarkerPtr>::iterator it = selectedMarkers.begin(); it != selectedMarkers.end(); ++it) {
         std::set<int> trackUserKeys;
         (*it)->getUserKeyframes(&trackUserKeys);
-        userKeys.insert(trackUserKeys.begin(), trackUserKeys.end());
+        userKeys.insert( trackUserKeys.begin(), trackUserKeys.end() );
     }
-    if (userKeys.empty()) {
+    if ( userKeys.empty() ) {
         return;
     }
-    
+
     std::set<int>::iterator it = userKeys.lower_bound(currentFrame);
-    if (it == userKeys.end()) {
+    if ( it == userKeys.end() ) {
         return;
     }
-    
+
     int last = *it + 1;
     int first;
-    if (it == userKeys.begin()) {
+    if ( it == userKeys.begin() ) {
         first = *it;
     } else {
         --it;
         first = *it;
     }
-        
-    ctx->trackSelectedMarkers(first, last, 1,  _imp->viewer->getInternalNode());
+
+    ctx->trackSelectedMarkers( first, last, 1,  _imp->viewer->getInternalNode() );
 }
 
 void

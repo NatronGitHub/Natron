@@ -339,7 +339,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     QObject::connect( context.get(), SIGNAL(multipleKeyframesSetOnTrackCenter(TrackMarkerPtr,std::list<double>)),
                       this, SLOT(onMultipleKeyframesSetOnTrackCenter(TrackMarkerPtr,std::list<double>)) );
     QObject::connect( context.get(), SIGNAL(multipleKeyframesRemovedOnTrackCenter(TrackMarkerPtr,std::list<double>)),
-                     this, SLOT(onMultipleKeysRemovedOnTrackCenter(TrackMarkerPtr,std::list<double>)));
+                      this, SLOT(onMultipleKeysRemovedOnTrackCenter(TrackMarkerPtr,std::list<double>)) );
     QObject::connect( context.get(), SIGNAL(enabledChanged(TrackMarkerPtr,int)), this,
                       SLOT(onEnabledChanged(TrackMarkerPtr,int)) );
     QObject::connect( context.get(), SIGNAL(centerKnobValueChanged(TrackMarkerPtr,int,int)), this,
@@ -812,6 +812,7 @@ TrackerPanel::getRowMarker(int row) const
         }
     }
     assert(false);
+
     return TrackMarkerPtr();
 }
 
@@ -1360,8 +1361,8 @@ TrackerPanel::onItemDataChanged(TableItem* item)
                     if (node) {
                         node->getApp()->redrawAllViewers();
                     }
+                    break;
                 }
-                break;
                 case COL_CENTER_X:
                 case COL_CENTER_Y:
                 case COL_OFFSET_X:
@@ -1377,8 +1378,8 @@ TrackerPanel::onItemDataChanged(TableItem* item)
                     } else {
                         knob->setValue(value, ViewSpec(0), dim, eValueChangedReasonNatronGuiEdited, 0);
                     }
+                    break;
                 }
-                break;
                 }
             }
         }
@@ -1390,7 +1391,7 @@ TrackerPanel::onItemEnabledCheckBoxChecked(bool checked)
 {
     AnimatedCheckBox* widget = qobject_cast<AnimatedCheckBox*>( sender() );
     QWidget* widgetContainer = widget->parentWidget();
-    
+
     assert(widget);
     for (std::size_t i = 0; i < _imp->items.size(); ++i) {
         QWidget* cellW = _imp->view->cellWidget(i, COL_ENABLED);
@@ -1541,24 +1542,25 @@ TrackerPanel::onAllKeyframesRemovedOnTrackCenter(const TrackMarkerPtr &marker)
 }
 
 void
-TrackerPanel::onMultipleKeysRemovedOnTrackCenter(const TrackMarkerPtr &marker, const std::list<double> &keys)
+TrackerPanel::onMultipleKeysRemovedOnTrackCenter(const TrackMarkerPtr &marker,
+                                                 const std::list<double> &keys)
 {
     TrackKeysMap::iterator found = _imp->keys.find(marker);
-    
+
     if ( found == _imp->keys.end() ) {
         return;
     }
     std::list<SequenceTime> toRemove;
-    
-    for (std::list<double>::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
+
+    for (std::list<double>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
         std::set<double>::iterator it2 = found->second.centerKeys.find(*it);
         if ( it2 != found->second.centerKeys.end() ) {
             found->second.centerKeys.erase(it2);
         }
         toRemove.push_back(*it);
     }
-    
-    
+
+
     if (found->second.visible) {
         _imp->node.lock()->getNode()->getApp()->removeMultipleKeyframeIndicator(toRemove, true);
     }
