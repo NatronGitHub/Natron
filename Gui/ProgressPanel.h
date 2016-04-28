@@ -47,88 +47,87 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER;
 
 struct ProgressPanelPrivate;
-
 struct ProgressPanelPrivate;
-class ProgressPanel: public QWidget, public PanelWidget
+class ProgressPanel
+    : public QWidget, public PanelWidget
 {
-    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-    GCC_DIAG_SUGGEST_OVERRIDE_ON
-    
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
     friend struct ProgressTaskInfoPrivate;
 
 public:
-    
+
     ProgressPanel(Gui* gui);
-    
+
     virtual ~ProgressPanel();
-    
+
     /**
      * @brief Add a new task to the tasks list.
      * The frame range/step passed are used to compute the progress
      * value if the task uses the progressUpdate(const int frame) function.
      **/
-    void startTask(const NodePtr& node,
-                   const int firstFrame,
-                   const int lastFrame,
-                   const int frameStep,
-                   const bool canPause,
-                   const bool canCancel,
-                   const QString& message,
-                   const boost::shared_ptr<ProcessHandler>& process = boost::shared_ptr<ProcessHandler>());
-    
-    void onTaskRestarted(const NodePtr& node,
-                         const boost::shared_ptr<ProcessHandler>& process = boost::shared_ptr<ProcessHandler>());
-    
+    void startTask( const NodePtr& node,
+                    const int firstFrame,
+                    const int lastFrame,
+                    const int frameStep,
+                    const bool canPause,
+                    const bool canCancel,
+                    const QString& message,
+                    const boost::shared_ptr<ProcessHandler>& process = boost::shared_ptr<ProcessHandler>() );
+
+    void onTaskRestarted( const NodePtr& node,
+                          const boost::shared_ptr<ProcessHandler>& process = boost::shared_ptr<ProcessHandler>() );
+
     /**
      * @brief Increase progress to the specified value in the range [0., 1.], the time remaining
      * will be computed automatically.
      * @returns false if the task should be aborted, true otherwise.
      **/
     bool updateTask(const NodePtr& node, const double progress);
-    
+
     /**
      * @brief Called to remove the task from the list
      **/
     void endTask(const NodePtr& node);
-    
+
     void onRenderQueuingSettingChanged(bool queueingEnabled);
-    
+
     void removeTaskFromTable(const ProgressTaskInfoPtr& task);
     void removeTasksFromTable(const std::list<ProgressTaskInfoPtr>& task);
 
     bool isRemoveTasksAfterFinishChecked() const;
-    
+
     void getSelectedTask(std::list<ProgressTaskInfoPtr>& selection) const;
 
     void onLastTaskAddedFinished(const ProgressTaskInfo* task);
-    
+
 public Q_SLOTS:
-    
+
     void onCancelTasksTriggered();
-    
+
     void doProgressOnMainThread(const ProgressTaskInfoPtr& task, double progress);
-    
+
     void doProgressEndOnMainThread(const NodePtr& node);
-    
+
     void onSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
-    
+
     void onQueueRendersCheckboxChecked();
-    
+
     void onShowProgressPanelTimerTriggered();
-    
+
     void onItemRightClicked(TableItem* item);
-    
+
 Q_SIGNALS:
-    
+
     void s_doProgressUpdateOnMainThread(const ProgressTaskInfoPtr& task, double progress);
-    
+
     void s_doProgressEndOnMainThread(const NodePtr& node);
-    
-    
+
 private:
     void getSelectedTaskInternal(const QItemSelection& selected, std::list<ProgressTaskInfoPtr>& selection) const;
-    
+
     void addTaskToTable(const ProgressTaskInfoPtr& task);
 
 private:
@@ -137,7 +136,6 @@ private:
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
-    
     boost::scoped_ptr<ProgressPanelPrivate> _imp;
 };
 

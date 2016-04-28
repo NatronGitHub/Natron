@@ -47,32 +47,31 @@ GCC_DIAG_ON(unused-parameter)
 NATRON_NAMESPACE_ENTER;
 
 template<class Archive>
-void Format::serialize(Archive & ar,
-                       const unsigned int version)
+void
+Format::serialize(Archive & ar,
+                  const unsigned int version)
 {
     if (version < FORMAT_SERIALIZATION_CHANGES_TO_RECTD) {
         RectI r;
-        ar & ::boost::serialization::make_nvp("RectI",r);
+        ar & ::boost::serialization::make_nvp("RectI", r);
         x1 = r.x1;
         x2 = r.x2;
         y1 = r.y1;
         y2 = r.y2;
     } else if (version < FORMAT_SERIALIZATION_CHANGES_TO_RECTI) {
-
         RectD r;
-        ar & ::boost::serialization::make_nvp("RectD",r);
+        ar & ::boost::serialization::make_nvp("RectD", r);
         x1 = r.x1;
         x2 = r.x2;
         y1 = r.y1;
         y2 = r.y2;
-
     } else {
-        boost::serialization::void_cast_register<Format,RectI>( static_cast<Format *>(NULL),
-                                                               static_cast<RectI *>(NULL) );
+        boost::serialization::void_cast_register<Format, RectI>( static_cast<Format *>(NULL),
+                                                                 static_cast<RectI *>(NULL) );
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RectI);
     }
-    ar & ::boost::serialization::make_nvp("Pixel_aspect_ratio",_par);
-    ar & ::boost::serialization::make_nvp("Name",_name);
+    ar & ::boost::serialization::make_nvp("Pixel_aspect_ratio", _par);
+    ar & ::boost::serialization::make_nvp("Name", _name);
 }
 
 NATRON_NAMESPACE_EXIT;

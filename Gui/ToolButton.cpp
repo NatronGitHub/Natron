@@ -43,9 +43,9 @@ struct ToolButtonPrivate
 {
     GuiAppInstance* _app;
     QString _id;
-    int _major,_minor;
+    int _major, _minor;
     QString _label;
-    QIcon _toolbuttonIcon,_menuIcon;
+    QIcon _toolbuttonIcon, _menuIcon;
     QMenu* _menu;
     std::vector<ToolButton*> _children;
     QAction* _action;
@@ -60,20 +60,19 @@ struct ToolButtonPrivate
                       const QIcon& toolbuttonIcon,
                       const QIcon& menuIcon)
         : _app(app)
-          , _id(pluginID)
-          , _major(major)
-          , _minor(minor)
-          , _label(label)
-          , _toolbuttonIcon(toolbuttonIcon)
-          , _menuIcon(menuIcon)
-          , _menu(NULL)
-          , _children()
-          , _action(NULL)
-          , _pluginToolButton(pluginToolButton)
+        , _id(pluginID)
+        , _major(major)
+        , _minor(minor)
+        , _label(label)
+        , _toolbuttonIcon(toolbuttonIcon)
+        , _menuIcon(menuIcon)
+        , _menu(NULL)
+        , _children()
+        , _action(NULL)
+        , _pluginToolButton(pluginToolButton)
     {
     }
 };
-
 
 ToolButton::ToolButton(GuiAppInstance* app,
                        const boost::shared_ptr<PluginGroupNode>& pluginToolButton,
@@ -83,7 +82,7 @@ ToolButton::ToolButton(GuiAppInstance* app,
                        const QString & label,
                        QIcon toolbuttonIcon,
                        QIcon menuIcon)
-    : _imp( new ToolButtonPrivate(app,pluginToolButton,pluginID,major,minor,label,toolbuttonIcon, menuIcon) )
+    : _imp( new ToolButtonPrivate(app, pluginToolButton, pluginID, major, minor, label, toolbuttonIcon, menuIcon) )
 {
 }
 
@@ -119,7 +118,6 @@ ToolButton::getToolButtonIcon() const
 {
     return _imp->_toolbuttonIcon;
 };
-
 const QIcon &
 ToolButton::getMenuIcon() const
 {
@@ -136,6 +134,7 @@ QMenu*
 ToolButton::getMenu() const
 {
     assert(_imp->_menu);
+
     return _imp->_menu;
 }
 
@@ -151,7 +150,7 @@ ToolButton::tryAddChild(ToolButton* child)
     assert(_imp->_menu);
     // insert if not present
     std::vector<ToolButton*> &children = _imp->_children;
-    if (std::find(children.begin(), children.end(), child) == children.end()) {
+    if ( std::find(children.begin(), children.end(), child) == children.end() ) {
         children.push_back(child);
         _imp->_menu->addAction( child->getAction() );
     }
@@ -185,6 +184,7 @@ void
 ToolButton::onTriggered()
 {
     boost::shared_ptr<NodeCollection> group = _imp->_app->getGui()->getLastSelectedNodeCollection();
+
     assert(group);
     CreateNodeArgs args(_imp->_id, eCreateNodeReasonUserCreate, group);
     args.majorV = _imp->_major;
@@ -194,7 +194,9 @@ ToolButton::onTriggered()
 
 struct ToolButtonChildrenSortFunctor
 {
-    bool operator() (const QAction* lhs,const QAction* rhs) {
+    bool operator() (const QAction* lhs,
+                     const QAction* rhs)
+    {
         return lhs->text() < rhs->text();
     }
 };
@@ -202,16 +204,16 @@ struct ToolButtonChildrenSortFunctor
 void
 ToolButton::sortChildren()
 {
-    if (_imp->_children.empty()) {
+    if ( _imp->_children.empty() ) {
         return;
     }
     assert(_imp->_menu);
     QList<QAction*> actions = _imp->_menu->actions();
-    qSort(actions.begin(), actions.end(), ToolButtonChildrenSortFunctor());
+    qSort( actions.begin(), actions.end(), ToolButtonChildrenSortFunctor() );
     _imp->_menu->clear();
-    
+
     std::vector<ToolButton*> sortedChildren;
-    for (QList<QAction*>::Iterator it = actions.begin(); it!=actions.end(); ++it) {
+    for (QList<QAction*>::Iterator it = actions.begin(); it != actions.end(); ++it) {
         /// find toolbutton if possible
         for (U32 i = 0; i < _imp->_children.size(); ++i) {
             if (_imp->_children[i]->getAction() == *it) {
@@ -222,7 +224,6 @@ ToolButton::sortChildren()
         _imp->_menu->addAction(*it);
     }
     _imp->_children = sortedChildren;
-
 }
 
 NATRON_NAMESPACE_EXIT;

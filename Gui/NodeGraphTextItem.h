@@ -37,41 +37,46 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-class NodeGraphTextItem : public QGraphicsTextItem
+class NodeGraphTextItem
+    : public QGraphicsTextItem
 {
     NodeGraph* _graph;
     bool _alwaysDrawText;
+
 public:
-    
-    NodeGraphTextItem(NodeGraph* graph,QGraphicsItem *parent, bool alwaysDrawText);
-    
+
+    NodeGraphTextItem(NodeGraph* graph, QGraphicsItem *parent, bool alwaysDrawText);
+
     virtual ~NodeGraphTextItem();
-    
+
     virtual void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) OVERRIDE FINAL;
 };
 
-class NodeGraphSimpleTextItem : public QGraphicsSimpleTextItem
+class NodeGraphSimpleTextItem
+    : public QGraphicsSimpleTextItem
 {
     NodeGraph* _graph;
     bool _alwaysDrawText;
-public:
-    
-    NodeGraphSimpleTextItem(NodeGraph* graph,QGraphicsItem *parent, bool alwaysDrawText);
-    
-    virtual ~NodeGraphSimpleTextItem();
-    
-    virtual void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) OVERRIDE FINAL;
 
+public:
+
+    NodeGraphSimpleTextItem(NodeGraph* graph, QGraphicsItem *parent, bool alwaysDrawText);
+
+    virtual ~NodeGraphSimpleTextItem();
+
+    virtual void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) OVERRIDE FINAL;
 };
 
-class NodeGraphPixmapItem: public QGraphicsPixmapItem
+class NodeGraphPixmapItem
+    : public QGraphicsPixmapItem
 {
     NodeGraph* _graph;
+
 public:
-    NodeGraphPixmapItem(NodeGraph* graph,QGraphicsItem *parent);
-    
+    NodeGraphPixmapItem(NodeGraph* graph, QGraphicsItem *parent);
+
     virtual ~NodeGraphPixmapItem();
-    
+
     virtual void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) OVERRIDE FINAL;
 };
 

@@ -97,9 +97,9 @@ typedef std::map<QFont, boost::shared_ptr<TextRendererPrivate> > FontRenderers;
 
 TextRendererPrivate::TextRendererPrivate(const QFont &font)
     : _font(font)
-      , _fontMetrics(font)
-      , _xOffset(0)
-      , _yOffset(0)
+    , _fontMetrics(font)
+    , _xOffset(0)
+    , _yOffset(0)
 {
 }
 
@@ -136,6 +136,7 @@ void
 TextRendererPrivate::newTransparentTexture()
 {
     GLuint savedTexture;
+
     glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
     GLuint texture;
 

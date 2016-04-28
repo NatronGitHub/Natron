@@ -97,7 +97,7 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     //////File
     _fileContainer = new QWidget(this);
     _fileLayout = new QHBoxLayout(_fileContainer);
-    _fileLabel = new Label(tr("File:"),_fileContainer);
+    _fileLabel = new Label(tr("File:"), _fileContainer);
     _fileLayout->addWidget(_fileLabel);
     _fileLineEdit = new LineEdit(_fileContainer);
     _fileLineEdit->setPlaceholderText( tr("File path...") );
@@ -114,9 +114,9 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     //////x start value
     _startContainer = new QWidget(this);
     _startLayout = new QHBoxLayout(_startContainer);
-    _startLabel = new Label(tr("X start value:"),_startContainer);
+    _startLabel = new Label(tr("X start value:"), _startContainer);
     _startLayout->addWidget(_startLabel);
-    _startSpinBox = new SpinBox(_startContainer,SpinBox::eSpinBoxTypeDouble);
+    _startSpinBox = new SpinBox(_startContainer, SpinBox::eSpinBoxTypeDouble);
     _startSpinBox->setValue(0);
     _startLayout->addWidget(_startSpinBox);
     _mainLayout->addWidget(_startContainer);
@@ -124,9 +124,9 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     //////x increment
     _incrContainer = new QWidget(this);
     _incrLayout = new QHBoxLayout(_incrContainer);
-    _incrLabel = new Label(tr("X increment:"),_incrContainer);
+    _incrLabel = new Label(tr("X increment:"), _incrContainer);
     _incrLayout->addWidget(_incrLabel);
-    _incrSpinBox = new SpinBox(_incrContainer,SpinBox::eSpinBoxTypeDouble);
+    _incrSpinBox = new SpinBox(_incrContainer, SpinBox::eSpinBoxTypeDouble);
     _incrSpinBox->setValue(0.01);
     _incrLayout->addWidget(_incrSpinBox);
     _mainLayout->addWidget(_incrContainer);
@@ -135,17 +135,17 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     if (isExportDialog) {
         _endContainer = new QWidget(this);
         _endLayout = new QHBoxLayout(_endContainer);
-        _endLabel = new Label(tr("X end value:"),_endContainer);
-        _endLabel->setFont(QApplication::font()); // necessary, or the labels will get the default font size
+        _endLabel = new Label(tr("X end value:"), _endContainer);
+        _endLabel->setFont( QApplication::font() ); // necessary, or the labels will get the default font size
         _endLayout->addWidget(_endLabel);
-        _endSpinBox = new SpinBox(_endContainer,SpinBox::eSpinBoxTypeDouble);
+        _endSpinBox = new SpinBox(_endContainer, SpinBox::eSpinBoxTypeDouble);
         _endSpinBox->setValue(1);
         _endLayout->addWidget(_endSpinBox);
         _mainLayout->addWidget(_endContainer);
     }
 
     ////curves columns
-    double min = 0,max = 0;
+    double min = 0, max = 0;
     bool curveIsClampedToIntegers = false;
     for (U32 i = 0; i < curves.size(); ++i) {
         CurveColumn column;
@@ -164,9 +164,9 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
         column._curveContainer = new QWidget(this);
         column._curveLayout = new QHBoxLayout(column._curveContainer);
         column._curveLabel = new Label( curves[i]->getName() + tr(" column:") );
-        column._curveLabel->setFont(QApplication::font()); // necessary, or the labels will get the default font size
+        column._curveLabel->setFont( QApplication::font() ); // necessary, or the labels will get the default font size
         column._curveLayout->addWidget(column._curveLabel);
-        column._curveSpinBox = new SpinBox(column._curveContainer,SpinBox::eSpinBoxTypeInt);
+        column._curveSpinBox = new SpinBox(column._curveContainer, SpinBox::eSpinBoxTypeInt);
         column._curveSpinBox->setValue( (double)i + 1. );
         column._curveLayout->addWidget(column._curveSpinBox);
         _curveColumns.push_back(column);
@@ -182,30 +182,30 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     /////buttons
     _buttonsContainer = new QWidget(this);
     _buttonsLayout = new QHBoxLayout(_buttonsContainer);
-    _okButton = new Button(tr("Ok"),_buttonsContainer);
+    _okButton = new Button(tr("Ok"), _buttonsContainer);
     QObject::connect( _okButton, SIGNAL(clicked()), this, SLOT(accept()) );
     _buttonsLayout->addWidget(_okButton);
-    _cancelButton = new Button(tr("Cancel"),_buttonsContainer);
+    _cancelButton = new Button(tr("Cancel"), _buttonsContainer);
     QObject::connect( _cancelButton, SIGNAL(clicked()), this, SLOT(reject()) );
     _buttonsLayout->addWidget(_cancelButton);
     _mainLayout->addWidget(_buttonsContainer);
-    
-    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
-    
+
+    QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
     QByteArray state;
     if (isExportDialog) {
-        state = settings.value(QLatin1String("CurveWidgetExportDialog") ).toByteArray();
+        state = settings.value( QLatin1String("CurveWidgetExportDialog") ).toByteArray();
     } else {
-        state = settings.value(QLatin1String("CurveWidgetImportDialog") ).toByteArray();
+        state = settings.value( QLatin1String("CurveWidgetImportDialog") ).toByteArray();
     }
-    if (!state.isEmpty()) {
+    if ( !state.isEmpty() ) {
         restoreState(state);
     }
 }
 
 ImportExportCurveDialog::~ImportExportCurveDialog()
 {
-    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
+    QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
+
     if (_isExportDialog) {
         settings.setValue( QLatin1String("CurveWidgetExportDialog"), saveState() );
     } else {
@@ -213,18 +213,19 @@ ImportExportCurveDialog::~ImportExportCurveDialog()
     }
 }
 
-
 QByteArray
 ImportExportCurveDialog::saveState()
 {
     QByteArray data;
     QDataStream stream(&data, QIODevice::WriteOnly);
+
     stream << _fileLineEdit->text();
     stream << _startSpinBox->value();
     stream << _incrSpinBox->value();
     if (_isExportDialog) {
         stream << _endSpinBox->value();
     }
+
     return data;
 }
 
@@ -233,13 +234,13 @@ ImportExportCurveDialog::restoreState(const QByteArray& state)
 {
     QByteArray sd = state;
     QDataStream stream(&sd, QIODevice::ReadOnly);
-    
+
     if ( stream.atEnd() ) {
         return;
     }
-    
+
     QString file;
-    double start,incr,end;
+    double start, incr, end;
     stream >> file;
     stream >> start;
     stream >> incr;
@@ -250,7 +251,6 @@ ImportExportCurveDialog::restoreState(const QByteArray& state)
         stream >> end;
         _endSpinBox->setValue(end);
     }
-
 }
 
 void
@@ -262,17 +262,17 @@ ImportExportCurveDialog::open_file()
     std::vector<std::string> filters;
     filters.push_back("*");
     if (_isExportDialog) {
-        SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::eFileDialogModeSave,"",_gui,false);
+        SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::eFileDialogModeSave, "", _gui, false);
         if ( dialog.exec() ) {
             std::string file = dialog.filesToSave();
-            _fileLineEdit->setText( QString::fromUtf8(file.c_str()) );
+            _fileLineEdit->setText( QString::fromUtf8( file.c_str() ) );
         }
     } else {
-        SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::eFileDialogModeOpen,"",_gui,false);
+        SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::eFileDialogModeOpen, "", _gui, false);
         if ( dialog.exec() ) {
             std::string files = dialog.selectedFiles();
             if ( !files.empty() ) {
-                _fileLineEdit->setText( QString::fromUtf8(files.c_str()) );
+                _fileLineEdit->setText( QString::fromUtf8( files.c_str() ) );
             }
         }
     }
@@ -318,41 +318,38 @@ ImportExportCurveDialog::getXEnd() const
 }
 
 void
-ImportExportCurveDialog::getCurveColumns(std::map<int,boost::shared_ptr<CurveGui> >* columns) const
+ImportExportCurveDialog::getCurveColumns(std::map<int, boost::shared_ptr<CurveGui> >* columns) const
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     for (U32 i = 0; i < _curveColumns.size(); ++i) {
-        columns->insert( std::make_pair( (int)(_curveColumns[i]._curveSpinBox->value() - 1),_curveColumns[i]._curve ) );
+        columns->insert( std::make_pair( (int)(_curveColumns[i]._curveSpinBox->value() - 1), _curveColumns[i]._curve ) );
     }
 }
 
 struct EditKeyFrameDialogPrivate
 {
-    
     CurveWidget* curveWidget;
     KeyPtr key;
-    double originalX,originalY;
-    
+    double originalX, originalY;
     QVBoxLayout* mainLayout;
-    
     QWidget* boxContainer;
     QHBoxLayout* boxLayout;
     Label* xLabel;
     SpinBox* xSpinbox;
     Label* yLabel;
     SpinBox* ySpinbox;
-    
     bool wasAccepted;
-    
     EditKeyFrameDialog::EditModeEnum mode;
-    
-    EditKeyFrameDialogPrivate(EditKeyFrameDialog::EditModeEnum mode,CurveWidget* curveWidget,const KeyPtr& key)
+
+    EditKeyFrameDialogPrivate(EditKeyFrameDialog::EditModeEnum mode,
+                              CurveWidget* curveWidget,
+                              const KeyPtr& key)
         : curveWidget(curveWidget)
         , key(key)
-        , originalX(key->key.getTime())
-        , originalY(key->key.getValue())
+        , originalX( key->key.getTime() )
+        , originalY( key->key.getValue() )
         , mainLayout(0)
         , boxContainer(0)
         , boxLayout(0)
@@ -368,104 +365,102 @@ struct EditKeyFrameDialogPrivate
         } else if (mode == EditKeyFrameDialog::eEditModeRightDerivative) {
             originalX = key->key.getRightDerivative();
         }
-        
-
     }
 };
 
-EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,CurveWidget* curveWidget,const KeyPtr& key,QWidget* parent)
+EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,
+                                       CurveWidget* curveWidget,
+                                       const KeyPtr& key,
+                                       QWidget* parent)
     : QDialog(parent)
-    , _imp(new EditKeyFrameDialogPrivate(mode,curveWidget,key))
+    , _imp( new EditKeyFrameDialogPrivate(mode, curveWidget, key) )
 {
     setWindowFlags(Qt::Window | Qt::CustomizeWindowHint);
-    
+
     _imp->mainLayout = new QVBoxLayout(this);
     _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
-    
+
     _imp->boxContainer = new QWidget(this);
     _imp->boxLayout = new QHBoxLayout(_imp->boxContainer);
     _imp->boxLayout->setContentsMargins(0, 0, 0, 0);
-    
+
     QString xLabel;
     switch (mode) {
     case eEditModeKeyframePosition:
         xLabel = QString::fromUtf8("x: ");
         break;
     case eEditModeLeftDerivative:
-        xLabel = QString(tr("Left slope: "));
+        xLabel = QString( tr("Left slope: ") );
         break;
     case eEditModeRightDerivative:
-        xLabel = QString(tr("Right slope: "));
+        xLabel = QString( tr("Right slope: ") );
         break;
     }
-    _imp->xLabel = new Label(xLabel,_imp->boxContainer);
-    _imp->xLabel->setFont(QApplication::font()); // necessary, or the labels will get the default font size
+    _imp->xLabel = new Label(xLabel, _imp->boxContainer);
+    _imp->xLabel->setFont( QApplication::font() ); // necessary, or the labels will get the default font size
     _imp->boxLayout->addWidget(_imp->xLabel);
-    
+
     SpinBox::SpinBoxTypeEnum xType;
-    
+
 //    if (mode == eEditModeKeyframePosition) {
 //        xType = key->curve->areKeyFramesTimeClampedToIntegers() ? SpinBox::eSpinBoxTypeInt : SpinBox::eSpinBoxTypeDouble;
 //    } else {
-        xType = SpinBox::eSpinBoxTypeDouble;
+    xType = SpinBox::eSpinBoxTypeDouble;
 //    }
-    
-    _imp->xSpinbox = new SpinBox(_imp->boxContainer,xType);
-    _imp->xSpinbox->setValue(_imp->originalX);
-    QObject::connect(_imp->xSpinbox, SIGNAL(valueChanged(double)), this, SLOT(onXSpinBoxValueChanged(double)));
-    QObject::connect(_imp->xSpinbox, SIGNAL(editingFinished()), this, SLOT(onEditingFinished()));
-    _imp->boxLayout->addWidget(_imp->xSpinbox);
-    
-    if (mode == eEditModeKeyframePosition) {
-        
 
-        _imp->yLabel = new Label(QString::fromUtf8("y: "),_imp->boxContainer);
-        _imp->yLabel->setFont(QApplication::font()); // necessary, or the labels will get the default font size
+    _imp->xSpinbox = new SpinBox(_imp->boxContainer, xType);
+    _imp->xSpinbox->setValue(_imp->originalX);
+    QObject::connect( _imp->xSpinbox, SIGNAL(valueChanged(double)), this, SLOT(onXSpinBoxValueChanged(double)) );
+    QObject::connect( _imp->xSpinbox, SIGNAL(editingFinished()), this, SLOT(onEditingFinished()) );
+    _imp->boxLayout->addWidget(_imp->xSpinbox);
+
+    if (mode == eEditModeKeyframePosition) {
+        _imp->yLabel = new Label(QString::fromUtf8("y: "), _imp->boxContainer);
+        _imp->yLabel->setFont( QApplication::font() ); // necessary, or the labels will get the default font size
         _imp->boxLayout->addWidget(_imp->yLabel);
-        
-        bool clampedToInt = key->curve->areKeyFramesValuesClampedToIntegers() ;
+
+        bool clampedToInt = key->curve->areKeyFramesValuesClampedToIntegers();
         bool clampedToBool = key->curve->areKeyFramesValuesClampedToBooleans();
         SpinBox::SpinBoxTypeEnum yType = (clampedToBool || clampedToInt) ? SpinBox::eSpinBoxTypeInt : SpinBox::eSpinBoxTypeDouble;
-        
-        _imp->ySpinbox = new SpinBox(_imp->boxContainer,yType);
-        
+
+        _imp->ySpinbox = new SpinBox(_imp->boxContainer, yType);
+
         if (clampedToBool) {
             _imp->ySpinbox->setMinimum(0);
             _imp->ySpinbox->setMaximum(1);
         } else {
-            std::pair<double,double> range = key->curve->getCurveYRange();
+            std::pair<double, double> range = key->curve->getCurveYRange();
             _imp->ySpinbox->setMinimum(range.first);
             _imp->ySpinbox->setMaximum(range.second);
         }
-        
+
         _imp->ySpinbox->setValue(_imp->originalY);
-        QObject::connect(_imp->ySpinbox, SIGNAL(valueChanged(double)), this, SLOT(onYSpinBoxValueChanged(double)));
-        QObject::connect(_imp->ySpinbox, SIGNAL(editingFinished()), this, SLOT(onEditingFinished()));
+        QObject::connect( _imp->ySpinbox, SIGNAL(valueChanged(double)), this, SLOT(onYSpinBoxValueChanged(double)) );
+        QObject::connect( _imp->ySpinbox, SIGNAL(editingFinished()), this, SLOT(onEditingFinished()) );
         _imp->boxLayout->addWidget(_imp->ySpinbox);
     }
-    
-    _imp->mainLayout->addWidget(_imp->boxContainer);
 
+    _imp->mainLayout->addWidget(_imp->boxContainer);
 }
 
 EditKeyFrameDialog::~EditKeyFrameDialog()
 {
-    
 }
 
 void
-EditKeyFrameDialog::moveKeyTo(double newX,double newY)
+EditKeyFrameDialog::moveKeyTo(double newX,
+                              double newY)
 {
-    
-    std::map<boost::shared_ptr<CurveGui>,std::vector<MoveKeysCommand::KeyToMove> > keysToMove;
+    std::map<boost::shared_ptr<CurveGui>, std::vector<MoveKeysCommand::KeyToMove> > keysToMove;
     std::vector<MoveKeysCommand::KeyToMove> &keys = keysToMove[_imp->key->curve];
+
     keys.resize(1);
     keys[0].key = _imp->key;
     keys[0].prevIsSelected = false;
     keys[0].nextIsSelected = false;
     double curY = _imp->key->key.getValue();
     double curX = _imp->key->key.getTime();
-    
+
     if (_imp->mode == eEditModeKeyframePosition) {
         ///Check that another keyframe doesn't have this time
 
@@ -473,11 +468,10 @@ EditKeyFrameDialog::moveKeyTo(double newX,double newY)
         if (newX == curX) {
             expectedEqualKeys = 1;
         }
-        
+
         int curEqualKeys = 0;
         KeyFrameSet set = _imp->key->curve->getKeyFrames();
         for (KeyFrameSet::iterator it = set.begin(); it != set.end(); ++it) {
-            
             if (std::abs(it->getTime() - newX) <= NATRON_CURVE_X_SPACING_EPSILON) {
                 _imp->xSpinbox->setValue(curX);
                 if (curEqualKeys >= expectedEqualKeys) {
@@ -487,29 +481,28 @@ EditKeyFrameDialog::moveKeyTo(double newX,double newY)
             }
         }
     }
-    
-    _imp->curveWidget->pushUndoCommand(new MoveKeysCommand(_imp->curveWidget,keysToMove,newX - curX, newY - curY,true));
 
+    _imp->curveWidget->pushUndoCommand( new MoveKeysCommand(_imp->curveWidget, keysToMove, newX - curX, newY - curY, true) );
 }
 
 void
 EditKeyFrameDialog::moveDerivativeTo(double d)
 {
     MoveTangentCommand::SelectedTangentEnum deriv;
+
     if (_imp->mode == eEditModeLeftDerivative) {
         deriv = MoveTangentCommand::eSelectedTangentLeft;
     } else {
         deriv = MoveTangentCommand::eSelectedTangentRight;
     }
-    _imp->curveWidget->pushUndoCommand(new MoveTangentCommand(_imp->curveWidget,deriv,_imp->key,d));
-
+    _imp->curveWidget->pushUndoCommand( new MoveTangentCommand(_imp->curveWidget, deriv, _imp->key, d) );
 }
 
 void
 EditKeyFrameDialog::onXSpinBoxValueChanged(double d)
 {
     if (_imp->mode == eEditModeKeyframePosition) {
-        moveKeyTo(d, _imp->key->key.getValue());
+        moveKeyTo( d, _imp->key->key.getValue() );
     } else {
         moveDerivativeTo(d);
     }
@@ -519,9 +512,8 @@ void
 EditKeyFrameDialog::onYSpinBoxValueChanged(double d)
 {
     moveKeyTo(_imp->key->key.getTime(), d);
-
 }
-                     
+
 void
 EditKeyFrameDialog::onEditingFinished()
 {
@@ -554,7 +546,7 @@ EditKeyFrameDialog::keyPressEvent(QKeyEvent* e)
 void
 EditKeyFrameDialog::changeEvent(QEvent* e)
 {
-    if (e->type() == QEvent::ActivationChange && !_imp->wasAccepted) {
+    if ( (e->type() == QEvent::ActivationChange) && !_imp->wasAccepted ) {
         if ( !isActiveWindow() ) {
             if (_imp->mode == eEditModeKeyframePosition) {
                 moveKeyTo(_imp->originalX, _imp->originalY);
@@ -566,7 +558,7 @@ EditKeyFrameDialog::changeEvent(QEvent* e)
                 _imp->ySpinbox->blockSignals(true);
             }
             reject();
-            
+
             return;
         }
     }

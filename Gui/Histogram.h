@@ -51,7 +51,7 @@ NATRON_NAMESPACE_ENTER;
 struct HistogramPrivate;
 class Histogram
     : public QGLWidget
-    , public PanelWidget
+      , public PanelWidget
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -74,13 +74,13 @@ public:
 
     virtual ~Histogram();
 
-    void renderText(double x,double y,const QString & text,const QColor & color,const QFont & font) const;
+    void renderText(double x, double y, const QString & text, const QColor & color, const QFont & font) const;
 
     void setViewerCursor(const std::vector<double>& pickerColor);
     void hideViewerCursor();
-    
+
     int getViewerTextureInputDisplayed() const;
-    
+
 public Q_SLOTS:
 
 #ifndef NATRON_HISTOGRAM_USING_OPENGL
@@ -99,13 +99,13 @@ public Q_SLOTS:
 
     void onCurrentViewerChanged(QAction*);
 
-    void onViewerImageChanged(ViewerGL* viewer,int texIndex,bool hasImageBackend);
+    void onViewerImageChanged(ViewerGL* viewer, int texIndex, bool hasImageBackend);
 
 private:
 
     virtual void initializeGL() OVERRIDE FINAL;
     virtual void paintGL() OVERRIDE FINAL;
-    virtual void resizeGL(int w,int h) OVERRIDE FINAL;
+    virtual void resizeGL(int w, int h) OVERRIDE FINAL;
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;

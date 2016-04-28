@@ -51,7 +51,7 @@ NATRON_NAMESPACE_ENTER;
 
 QtWriter::QtWriter(NodePtr node)
     : OutputEffectInstance(node)
-      , _lut( Color::LutManager::sRGBLut() )
+    , _lut( Color::LutManager::sRGBLut() )
 {
 }
 
@@ -116,7 +116,7 @@ QtWriter::getFrameRange(double *first,
     if (index == 0) {
         EffectInstance* inp = getInput(0);
         if (inp) {
-            inp->getFrameRange_public(inp->getRenderHash(),first, last);
+            inp->getFrameRange_public(inp->getRenderHash(), first, last);
         } else {
             *first = 0;
             *last = 0;
@@ -133,12 +133,12 @@ void
 QtWriter::initializeKnobs()
 {
     Dialogs::warningDialog( getScriptName_mt_safe(), QObject::tr("This plugin exists only to help the developpers team to test %1"
-                                                  ". You cannot use it to render a project.").arg(NATRON_APPLICATION_NAME).toStdString() );
+                                                                 ". You cannot use it to render a project.").arg(NATRON_APPLICATION_NAME).toStdString() );
 
 
     _premultKnob = getNode()->createKnob<KnobBool>( QObject::tr("Premultiply by alpha").toStdString() );
     _premultKnob->setAnimationEnabled(false);
-    _premultKnob->setDefaultValue(false,0);
+    _premultKnob->setDefaultValue(false, 0);
 
     _fileKnob = getNode()->createKnob<KnobOutputFile>("File");
     _fileKnob->setAsOutputImageFile();
@@ -150,7 +150,7 @@ QtWriter::initializeKnobs()
     frameRangeChoosalEntries.push_back( QObject::tr("Timeline bounds").toStdString() );
     frameRangeChoosalEntries.push_back( QObject::tr("Manual").toStdString() );
     _frameRangeChoosal->populateChoices(frameRangeChoosalEntries);
-    _frameRangeChoosal->setDefaultValue(1,0);
+    _frameRangeChoosal->setDefaultValue(1, 0);
 
     _firstFrameKnob = getNode()->createKnob<KnobInt>( QObject::tr("First frame").toStdString() );
     _firstFrameKnob->setAnimationEnabled(false);
@@ -169,7 +169,7 @@ QtWriter::knobChanged(KnobI* k,
                       ValueChangedReasonEnum /*reason*/,
                       ViewSpec /*view*/,
                       double /*time*/,
-                      bool/* originatedFromMainThread*/)
+                      bool /* originatedFromMainThread*/)
 {
     if ( k == _frameRangeChoosal.get() ) {
         int index = _frameRangeChoosal->getValue();
@@ -177,18 +177,17 @@ QtWriter::knobChanged(KnobI* k,
             _firstFrameKnob->setSecret(true);
             _lastFrameKnob->setSecret(true);
         } else {
-            double first,last;
+            double first, last;
             getApp()->getFrameRange(&first, &last);
-            _firstFrameKnob->setValue(first,0);
+            _firstFrameKnob->setValue(first, 0);
             _firstFrameKnob->setDisplayMinimum(first);
             _firstFrameKnob->setDisplayMaximum(last);
             _firstFrameKnob->setSecret(false);
 
-            _lastFrameKnob->setValue(last,0);
+            _lastFrameKnob->setValue(last, 0);
             _lastFrameKnob->setDisplayMinimum(first);
             _lastFrameKnob->setDisplayMaximum(last);
             _lastFrameKnob->setSecret(false);
-
         }
     }
 }
@@ -228,14 +227,14 @@ filenameFromPattern(const std::string & pattern,
     int prepending0s = nSharpChar > (int)frameIndexStr.size() ? nSharpChar - frameIndexStr.size() : 0;
 
     //remove all ocurrences of the # char
-    ret.erase( std::remove(ret.begin(), ret.end(), '#'),ret.end() );
+    ret.erase( std::remove(ret.begin(), ret.end(), '#'), ret.end() );
 
     //insert prepending zeroes
     std::string zeroesStr;
     for (int j = 0; j < prepending0s; ++j) {
         zeroesStr.push_back('0');
     }
-    frameIndexStr.insert(0,zeroesStr);
+    frameIndexStr.insert(0, zeroesStr);
 
     //refresh the last '.' position
     lastDot = ret.find_last_of('.');
@@ -249,16 +248,15 @@ StatusEnum
 QtWriter::render(const RenderActionArgs& args)
 {
     assert(args.outputPlanes.size() == 1);
-    const std::pair<ImageComponents,ImagePtr>& output = args.outputPlanes.front();
-    
-    boost::shared_ptr<Image> src = getImage(0, args.time, args.mappedScale, args.view, 0, 0, true,NULL);
+    const std::pair<ImageComponents, ImagePtr>& output = args.outputPlanes.front();
+    boost::shared_ptr<Image> src = getImage(0, args.time, args.mappedScale, args.view, 0, 0, true, NULL);
 
     if ( hasOutputConnected() ) {
         output.second->pasteFrom( *src, src->getBounds() );
     }
 
     ////initializes to black
-    unsigned char* buf = (unsigned char*)calloc(args.roi.area() * 4,1);
+    unsigned char* buf = (unsigned char*)calloc(args.roi.area() * 4, 1);
     QImage::Format type;
     bool premult = _premultKnob->getValue();
     if (premult) {
@@ -266,15 +264,15 @@ QtWriter::render(const RenderActionArgs& args)
     } else {
         type = QImage::Format_ARGB32;
     }
-    
+
     Image::WriteAccess acc = output.second->getWriteRights();
 
     _lut->to_byte_packed(buf, (const float*)acc.pixelAt(0, 0), args.roi, src->getBounds(), args.roi,
                          Color::ePixelPackingRGBA, Color::ePixelPackingBGRA, true, premult);
 
-    QImage img(buf,args.roi.width(),args.roi.height(),type);
+    QImage img(buf, args.roi.width(), args.roi.height(), type);
     std::string filename = _fileKnob->getValue();
-    filename = filenameFromPattern( filename,std::floor(args.time + 0.5) );
+    filename = filenameFromPattern( filename, std::floor(args.time + 0.5) );
 
     img.save( filename.c_str() );
     free(buf);
@@ -287,7 +285,7 @@ QtWriter::addAcceptedComponents(int /*inputNb*/,
                                 std::list<ImageComponents>* comps)
 {
     ///QtWriter only supports RGBA for now.
-    comps->push_back(ImageComponents::getRGBAComponents());
+    comps->push_back( ImageComponents::getRGBAComponents() );
 }
 
 void

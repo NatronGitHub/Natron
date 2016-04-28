@@ -37,7 +37,7 @@ NATRON_NAMESPACE_ENTER;
 
 class UpdateViewerParams; // ViewerInstancePrivate
 
-typedef std::map<NodePtr,NodeRenderStats > RenderStatsMap;
+typedef std::map<NodePtr, NodeRenderStats > RenderStatsMap;
 
 struct ViewerArgs
 {
@@ -49,7 +49,7 @@ struct ViewerArgs
     boost::shared_ptr<UpdateViewerParams> params;
     boost::shared_ptr<RenderingFlagSetter> isRenderingFlag;
     bool draftModeEnabled;
-    unsigned int mipMapLevelWithDraft,mipmapLevelWithoutDraft;
+    unsigned int mipMapLevelWithDraft, mipmapLevelWithoutDraft;
     bool autoContrast;
     DisplayChannelsEnum channels;
     bool userRoIEnabled;
@@ -57,21 +57,21 @@ struct ViewerArgs
 };
 
 class ViewerInstance
-: public OutputEffectInstance
+    : public OutputEffectInstance
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
-    
+
     friend class ViewerCurrentFrameRequestScheduler;
-    
+
 public:
     static EffectInstance* BuildEffect(NodePtr n) WARN_UNUSED_RETURN;
 
     ViewerInstance(NodePtr node);
 
     virtual ~ViewerInstance();
-    
+
     OpenGLViewerI* getUiContext() const WARN_UNUSED_RETURN;
 
     ///Called upon node creation and then never changed
@@ -87,46 +87,44 @@ public:
     {
         //The render failed and should clear to black the viewer and stop any ongoing playback
         eViewerRenderRetCodeFail = 0,
-        
+
         //The render did nothing requiring updating the current texture
         //but just requires a redraw (something like aborted generally)
         eViewerRenderRetCodeRedraw,
-        
+
         //The viewer needs to be cleared out to black but should not interrupt playback
         eViewerRenderRetCodeBlack,
-        
+
         //The viewer did update or requires and update to the texture displayed
         eViewerRenderRetCodeRender,
     };
-    
-    
-    ViewerRenderRetCode getRenderViewerArgsAndCheckCache_public(SequenceTime time,
-                                                        bool isSequential,
-                                                        ViewIdx view,
-                                                        int textureIndex,
-                                                        U64 viewerHash,
-                                                        bool canAbort,
-                                                        const NodePtr& rotoPaintNode,
-                                                        const boost::shared_ptr<RenderStats>& stats,
-                                                        ViewerArgs* outArgs);
 
-    
+
+    ViewerRenderRetCode getRenderViewerArgsAndCheckCache_public(SequenceTime time,
+                                                                bool isSequential,
+                                                                ViewIdx view,
+                                                                int textureIndex,
+                                                                U64 viewerHash,
+                                                                bool canAbort,
+                                                                const NodePtr& rotoPaintNode,
+                                                                const boost::shared_ptr<RenderStats>& stats,
+                                                                ViewerArgs* outArgs);
+
 private:
     /**
      * @brief Look-up the cache and try to find a matching texture for the portion to render.
      **/
     ViewerRenderRetCode getRenderViewerArgsAndCheckCache(SequenceTime time,
-                                                        bool isSequential,
-                                                        ViewIdx view,
-                                                        int textureIndex,
-                                                        U64 viewerHash,
-                                                        const NodePtr& rotoPaintNode,
-                                                        const AbortableRenderInfoPtr& abortInfo,
-                                                        const boost::shared_ptr<RenderStats>& stats,
-                                                        ViewerArgs* outArgs);
-    
-    
-    
+                                                         bool isSequential,
+                                                         ViewIdx view,
+                                                         int textureIndex,
+                                                         U64 viewerHash,
+                                                         const NodePtr& rotoPaintNode,
+                                                         const AbortableRenderInfoPtr& abortInfo,
+                                                         const boost::shared_ptr<RenderStats>& stats,
+                                                         ViewerArgs* outArgs);
+
+
     /**
      * @brief Setup the ViewerArgs struct with the info requested by the user from the Viewer UI
      **/
@@ -136,14 +134,14 @@ private:
                                         const AbortableRenderInfoPtr& abortInfo,
                                         const bool isSequential,
                                         ViewerArgs* outArgs);
-    
-    
+
+
     /**
      * @brief Get the RoI from the Viewer and lookup the cache for a texture at the given mipMapLevel.
      * setupMinimalUpdateViewerParams(...) MUST have been called before.
      * When returning this function, the UpdateViewerParams will have been filled entirely
      * and if the texture was found in the cache, the shared pointer outArgs->params->cachedFrame will be valid.
-     * This function may fail or ask to just redraw or ask to clear the viewer to black depending on it's return 
+     * This function may fail or ask to just redraw or ask to clear the viewer to black depending on it's return
      * code.
      **/
     ViewerRenderRetCode getViewerRoIAndTexture(const RectD& rod,
@@ -169,8 +167,8 @@ private:
                                              ViewerArgs* outArgs);
 
 public:
-    
-    
+
+
     /**
      * @brief This function renders the image at time 'time' on the viewer.
      * It first get the region of definition of the image at the given time
@@ -191,7 +189,7 @@ public:
                                      boost::shared_ptr<ViewerArgs> args[2],
                                      const boost::shared_ptr<RequestedFrame>& request,
                                      const boost::shared_ptr<RenderStats>& stats) WARN_UNUSED_RETURN;
-    
+
     ViewerRenderRetCode getViewerArgsAndRenderViewer(SequenceTime time,
                                                      bool canAbort,
                                                      ViewIdx view,
@@ -204,18 +202,17 @@ public:
 
 
     void updateViewer(boost::shared_ptr<UpdateViewerParams> & frame);
-    
+
     virtual bool getMakeSettingsPanel() const OVERRIDE FINAL { return false; }
-    
+
     /**
      *@brief Bypasses the cache so the next frame will be rendered fully
      **/
     void forceFullComputationOnNextFrame();
-    
     virtual void clearLastRenderedImage() OVERRIDE FINAL;
 
     void disconnectViewer();
-    
+
     void disconnectTexture(int index);
 
     int getLutType() const WARN_UNUSED_RETURN;
@@ -234,24 +231,24 @@ public:
      * it returns false, true otherwise. @see Settings::onKnobValueChanged
      **/
     bool supportsGLSL() const WARN_UNUSED_RETURN;
-    
+
     virtual bool supportsMultipleClipsPAR() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
     }
-    
+
     bool isLatestRender(int textureIndex, U64 renderAge) const;
 
 
     void setDisplayChannels(DisplayChannelsEnum channels, bool bothInputs);
-    
+
     void setActiveLayer(const ImageComponents& layer, bool doRender);
-    
+
     void setAlphaChannel(const ImageComponents& layer, const std::string& channelName, bool doRender);
 
     bool isAutoContrastEnabled() const WARN_UNUSED_RETURN;
 
-    void onAutoContrastChanged(bool autoContrast,bool refresh);
+    void onAutoContrastChanged(bool autoContrast, bool refresh);
 
     /**
      * @brief Returns the current view, MT-safe
@@ -259,62 +256,58 @@ public:
     ViewIdx getViewerCurrentView() const;
 
     void onGainChanged(double exp);
-    
+
     void onGammaChanged(double value);
-    
+
     double getGamma() const WARN_UNUSED_RETURN;
 
     void onColorSpaceChanged(ViewerColorSpaceEnum colorspace);
 
     virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
-    
+
     void refreshActiveInputs(int inputNbChanged);
-    
+
     void setInputA(int inputNb);
 
     void setInputB(int inputNb);
 
-    void getActiveInputs(int & a,int &b) const;
-    
-    int getLastRenderedTime() const;
-    
-    virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
-    
-    virtual ViewIdx getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
+    void getActiveInputs(int & a, int &b) const;
 
+    int getLastRenderedTime() const;
+
+    virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
+    virtual ViewIdx getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
     boost::shared_ptr<TimeLine> getTimeline() const;
-    
-    void getTimelineBounds(int* first,int* last) const;
-    
+
+    void getTimelineBounds(int* first, int* last) const;
+
     static const Color::Lut* lutFromColorspace(ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
-    
     virtual void onMetaDatasRefreshed(const NodeMetadata& metadata) OVERRIDE FINAL;
-    
     virtual void onChannelsSelectorRefreshed() OVERRIDE FINAL;
-    
+
     void callRedrawOnMainThread() { Q_EMIT s_callRedrawOnMainThread(); }
-    
+
     struct ViewerInstancePrivate;
-    
+
     float interpolateGammaLut(float value);
-    
+
     void markAllOnGoingRendersAsAborted();
-    
+
     virtual void reportStats(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats) OVERRIDE FINAL;
-    
+
     ///Only callable on MT
     void setActivateInputChangeRequestedFromViewer(bool fromViewer);
-    
+
     bool isInputChangeRequestedFromViewer() const;
-    
+
     void setViewerPaused(bool paused, bool allInputs);
-    
+
     bool isViewerPaused(int texIndex) const;
-    
+
 public Q_SLOTS:
-    
+
     void s_viewerRenderingStarted() { Q_EMIT viewerRenderingStarted(); }
-    
+
     void s_viewerRenderingEnded() { Q_EMIT viewerRenderingEnded(); }
 
 
@@ -325,38 +318,38 @@ public Q_SLOTS:
      * @brief Redraws the OpenGL viewer. Can only be called on the main-thread.
      **/
     void redrawViewer();
-    
+
     void redrawViewerNow();
 
-  
+
     void executeDisconnectTextureRequestOnMainThread(int index);
 
 
 Q_SIGNALS:
-    
+
     void renderStatsAvailable(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats);
-    
+
     void s_callRedrawOnMainThread();
 
     void viewerDisconnected();
-    
+
     void refreshOptionalState();
 
     void activeInputsChanged();
-    
+
     void clipPreferencesChanged();
-    
+
     void availableComponentsChanged();
 
     void disconnectTextureRequest(int index);
-    
+
     void viewerRenderingStarted();
     void viewerRenderingEnded();
 
 private:
     /*******************************************
-      *******OVERRIDEN FROM EFFECT INSTANCE******
-    *******************************************/
+       *******OVERRIDEN FROM EFFECT INSTANCE******
+     *******************************************/
 
     virtual bool isOutput() const OVERRIDE FINAL
     {
@@ -391,7 +384,7 @@ private:
         return "The Viewer node can display the output of a node graph.";
     }
 
-    virtual void getFrameRange(double *first,double *last) OVERRIDE FINAL;
+    virtual void getFrameRange(double *first, double *last) OVERRIDE FINAL;
     virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL
     {
         return QString::number(inputNb + 1).toStdString();
@@ -402,11 +395,11 @@ private:
         return eRenderSafetyFullySafe;
     }
 
-    virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     /*******************************************/
-    
-    
+
+
     ViewerRenderRetCode renderViewer_internal(ViewIdx view,
                                               bool singleThreaded,
                                               bool isSequentialRender,
@@ -417,15 +410,16 @@ private:
                                               const boost::shared_ptr<RequestedFrame>& request,
                                               const boost::shared_ptr<RenderStats>& stats,
                                               ViewerArgs& inArgs) WARN_UNUSED_RETURN;
-    
-    
+
+
     virtual RenderEngine* createRenderEngine() OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
-    
+
+
     void setCurrentlyUpdatingOpenGLViewer(bool updating);
     bool isCurrentlyUpdatingOpenGLViewer() const;
+
 private:
-    
+
     boost::scoped_ptr<ViewerInstancePrivate> _imp;
 };
 

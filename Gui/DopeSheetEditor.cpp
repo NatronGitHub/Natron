@@ -55,15 +55,11 @@ public:
 
     /* attributes */
     DopeSheetEditor *q_ptr;
-
     QVBoxLayout *mainLayout;
-
     DopeSheet *model;
-
     QSplitter *splitter;
     HierarchyView *hierarchyView;
     DopeSheetView *dopeSheetView;
-
 };
 
 DopeSheetEditorPrivate::DopeSheetEditorPrivate(DopeSheetEditor *qq)  :
@@ -80,10 +76,12 @@ DopeSheetEditorPrivate::DopeSheetEditorPrivate(DopeSheetEditor *qq)  :
  *
  * Creates a DopeSheetEditor.
  */
-DopeSheetEditor::DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline, QWidget *parent) :
+DopeSheetEditor::DopeSheetEditor(Gui *gui,
+                                 boost::shared_ptr<TimeLine> timeline,
+                                 QWidget *parent) :
     QWidget(parent),
-    PanelWidget(this,gui),
-    _imp(new DopeSheetEditorPrivate(this))
+    PanelWidget(this, gui),
+    _imp( new DopeSheetEditorPrivate(this) )
 {
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
@@ -109,56 +107,60 @@ DopeSheetEditor::DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline,
     _imp->mainLayout->addWidget(_imp->splitter);
 
     // Main model -> HierarchyView connections
-    connect(_imp->model, SIGNAL(nodeAdded(DSNode*)),
-            _imp->hierarchyView, SLOT(onNodeAdded(DSNode*)));
+    connect( _imp->model, SIGNAL(nodeAdded(DSNode*)),
+             _imp->hierarchyView, SLOT(onNodeAdded(DSNode*)) );
 
-    connect(_imp->model, SIGNAL(nodeAboutToBeRemoved(DSNode*)),
-            _imp->hierarchyView, SLOT(onNodeAboutToBeRemoved(DSNode*)));
+    connect( _imp->model, SIGNAL(nodeAboutToBeRemoved(DSNode*)),
+             _imp->hierarchyView, SLOT(onNodeAboutToBeRemoved(DSNode*)) );
 
-    connect(_imp->model, SIGNAL(keyframeSetOrRemoved(DSKnob*)),
-            _imp->hierarchyView, SLOT(onKeyframeSetOrRemoved(DSKnob*)));
+    connect( _imp->model, SIGNAL(keyframeSetOrRemoved(DSKnob*)),
+             _imp->hierarchyView, SLOT(onKeyframeSetOrRemoved(DSKnob*)) );
 
-    connect(_imp->model->getSelectionModel(), SIGNAL(keyframeSelectionChangedFromModel(bool)),
-            _imp->hierarchyView, SLOT(onKeyframeSelectionChanged(bool)));
+    connect( _imp->model->getSelectionModel(), SIGNAL(keyframeSelectionChangedFromModel(bool)),
+             _imp->hierarchyView, SLOT(onKeyframeSelectionChanged(bool)) );
 
     // Main model -> DopeSheetView connections
-    connect(_imp->model, SIGNAL(nodeAdded(DSNode*)),
-            _imp->dopeSheetView, SLOT(onNodeAdded(DSNode*)));
+    connect( _imp->model, SIGNAL(nodeAdded(DSNode*)),
+             _imp->dopeSheetView, SLOT(onNodeAdded(DSNode*)) );
 
-    connect(_imp->model, SIGNAL(nodeAboutToBeRemoved(DSNode*)),
-            _imp->dopeSheetView, SLOT(onNodeAboutToBeRemoved(DSNode*)));
+    connect( _imp->model, SIGNAL(nodeAboutToBeRemoved(DSNode*)),
+             _imp->dopeSheetView, SLOT(onNodeAboutToBeRemoved(DSNode*)) );
 
-    connect(_imp->model, SIGNAL(modelChanged()),
-            _imp->dopeSheetView, SLOT(redraw()));
+    connect( _imp->model, SIGNAL(modelChanged()),
+             _imp->dopeSheetView, SLOT(redraw()) );
 
-    connect(_imp->model->getSelectionModel(), SIGNAL(keyframeSelectionChangedFromModel(bool)),
-            _imp->dopeSheetView, SLOT(onKeyframeSelectionChanged()));
+    connect( _imp->model->getSelectionModel(), SIGNAL(keyframeSelectionChangedFromModel(bool)),
+             _imp->dopeSheetView, SLOT(onKeyframeSelectionChanged()) );
 
     // HierarchyView -> DopeSheetView connections
-    connect(_imp->hierarchyView->verticalScrollBar(), SIGNAL(valueChanged(int)),
-            _imp->dopeSheetView, SLOT(onHierarchyViewScrollbarMoved(int)));
+    connect( _imp->hierarchyView->verticalScrollBar(), SIGNAL(valueChanged(int)),
+             _imp->dopeSheetView, SLOT(onHierarchyViewScrollbarMoved(int)) );
 
-    connect(_imp->hierarchyView, SIGNAL(itemExpanded(QTreeWidgetItem*)),
-            _imp->dopeSheetView, SLOT(onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem*)));
+    connect( _imp->hierarchyView, SIGNAL(itemExpanded(QTreeWidgetItem*)),
+             _imp->dopeSheetView, SLOT(onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem*)) );
 
-    connect(_imp->hierarchyView, SIGNAL(itemCollapsed(QTreeWidgetItem*)),
-            _imp->dopeSheetView, SLOT(onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem*)));
+    connect( _imp->hierarchyView, SIGNAL(itemCollapsed(QTreeWidgetItem*)),
+             _imp->dopeSheetView, SLOT(onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem*)) );
 }
 
 DopeSheetEditor::~DopeSheetEditor()
 {}
 
-void DopeSheetEditor::addNode(NodeGuiPtr nodeGui)
+void
+DopeSheetEditor::addNode(NodeGuiPtr nodeGui)
 {
     _imp->model->addNode(nodeGui);
 }
 
-void DopeSheetEditor::removeNode(NodeGui *node)
+void
+DopeSheetEditor::removeNode(NodeGui *node)
 {
     _imp->model->removeNode(node);
 }
 
-void DopeSheetEditor::centerOn(double xMin, double xMax)
+void
+DopeSheetEditor::centerOn(double xMin,
+                          double xMax)
 {
     _imp->dopeSheetView->centerOn(xMin, xMax);
 }
@@ -196,6 +198,7 @@ DopeSheetEditor::getTreeWidgetWidth() const
 {
     QList<int> sizes = _imp->splitter->sizes();
     assert(sizes.size() > 0);
+
     return sizes.front();
 }
 
@@ -204,33 +207,33 @@ DopeSheetEditor::keyPressEvent(QKeyEvent* e)
 {
     Qt::Key key = (Qt::Key)e->key();
     Qt::KeyboardModifiers modifiers = e->modifiers();
- 
     bool accept = true;
-    if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode, modifiers, key)) {
+
+    if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode, modifiers, key) ) {
         _imp->model->renameSelectedNode();
-    } else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorDeleteKeys, modifiers, key)) {
+    } else if ( isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorDeleteKeys, modifiers, key) ) {
         _imp->dopeSheetView->deleteSelectedKeyframes();
-    } else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorFrameSelection, modifiers, key)) {
+    } else if ( isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorFrameSelection, modifiers, key) ) {
         _imp->dopeSheetView->centerOnSelection();
-    } else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorSelectAllKeyframes, modifiers, key)) {
+    } else if ( isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorSelectAllKeyframes, modifiers, key) ) {
         _imp->dopeSheetView->onSelectedAllTriggered();
-    } else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorConstant, modifiers, key)) {
+    } else if ( isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorConstant, modifiers, key) ) {
         _imp->dopeSheetView->constantInterpSelectedKeyframes();
-    } else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorLinear, modifiers, key)) {
+    } else if ( isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorLinear, modifiers, key) ) {
         _imp->dopeSheetView->linearInterpSelectedKeyframes();
-    } else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorSmooth, modifiers, key)) {
+    } else if ( isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorSmooth, modifiers, key) ) {
         _imp->dopeSheetView->smoothInterpSelectedKeyframes();
-    } else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorCatmullrom, modifiers, key)) {
+    } else if ( isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorCatmullrom, modifiers, key) ) {
         _imp->dopeSheetView->catmullRomInterpSelectedKeyframes();
-    } else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorCubic, modifiers, key)) {
+    } else if ( isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorCubic, modifiers, key) ) {
         _imp->dopeSheetView->cubicInterpSelectedKeyframes();
-    } else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorHorizontal, modifiers, key)) {
+    } else if ( isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorHorizontal, modifiers, key) ) {
         _imp->dopeSheetView->horizontalInterpSelectedKeyframes();
-    } else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorBreak, modifiers, key)) {
+    } else if ( isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorBreak, modifiers, key) ) {
         _imp->dopeSheetView->breakInterpSelectedKeyframes();
-    } else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorCopySelectedKeyframes, modifiers, key)) {
+    } else if ( isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorCopySelectedKeyframes, modifiers, key) ) {
         _imp->dopeSheetView->copySelectedKeyframes();
-    } else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorPasteKeyframes, modifiers, key)) {
+    } else if ( isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorPasteKeyframes, modifiers, key) ) {
         _imp->dopeSheetView->pasteKeyframes();
     } else {
         accept = false;
@@ -251,13 +254,15 @@ DopeSheetEditor::keyReleaseEvent(QKeyEvent* e)
     QWidget::keyReleaseEvent(e);
 }
 
-void DopeSheetEditor::enterEvent(QEvent *e)
+void
+DopeSheetEditor::enterEvent(QEvent *e)
 {
     enterEventBase();
     QWidget::enterEvent(e);
 }
 
-void DopeSheetEditor::leaveEvent(QEvent *e)
+void
+DopeSheetEditor::leaveEvent(QEvent *e)
 {
     leaveEventBase();
     QWidget::leaveEvent(e);

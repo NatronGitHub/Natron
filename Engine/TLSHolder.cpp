@@ -42,15 +42,14 @@ NATRON_NAMESPACE_ENTER;
 
 
 AppTLS::AppTLS()
-: _objectMutex()
-, _object(new GLobalTLSObject())
-, _spawns()
+    : _objectMutex()
+    , _object( new GLobalTLSObject() )
+    , _spawns()
 {
 }
 
 AppTLS::~AppTLS()
 {
-    
 }
 
 void
@@ -63,30 +62,30 @@ AppTLS::registerTLSHolder(const boost::shared_ptr<const TLSHolderBase>& holder)
         //The insert call might not succeed because another thread inserted this holder in the set already, that's fine
         _object->objects.insert(holder);
     }
-    
 }
 
 void
-AppTLS::copyTLS(const QThread* fromThread,const QThread* toThread)
+AppTLS::copyTLS(const QThread* fromThread,
+                const QThread* toThread)
 {
-    if (fromThread == toThread || !fromThread || !toThread) {
+    if ( (fromThread == toThread) || !fromThread || !toThread ) {
         return;
     }
     QReadLocker k(&_objectMutex);
     for (TLSObjects::iterator it = _object->objects.begin();
-         it!=_object->objects.end(); ++it) {
+         it != _object->objects.end(); ++it) {
         boost::shared_ptr<const TLSHolderBase> p = (*it).lock();
         if (p) {
             p->copyTLS(fromThread, toThread);
         }
-    
     }
 }
 
 void
-AppTLS::softCopy(const QThread* fromThread,const QThread* toThread)
+AppTLS::softCopy(const QThread* fromThread,
+                 const QThread* toThread)
 {
-    if (fromThread == toThread || !fromThread || !toThread) {
+    if ( (fromThread == toThread) || !fromThread || !toThread ) {
         return;
     }
     QWriteLocker k(&_objectMutex);
@@ -96,7 +95,6 @@ AppTLS::softCopy(const QThread* fromThread,const QThread* toThread)
 void
 AppTLS::cleanupTLSForThread()
 {
-    
     QThread* curThread = QThread::currentThread();
 
 #ifdef QT_CUSTOM_THREADPOOL
@@ -105,24 +103,25 @@ AppTLS::cleanupTLSForThread()
         isAbortableThread->clearAbortInfo();
     }
 #endif
-    
+
     //Cleanup any cached data on the TLSHolder
     {
         QWriteLocker k(&_objectMutex);
-        
+
         //This thread was spawned, but TLS not used, do not bother to clean-up
         ThreadSpawnMap::iterator foundSpawned = _spawns.find(curThread);
-        if (foundSpawned != _spawns.end()) {
+        if ( foundSpawned != _spawns.end() ) {
             _spawns.erase(foundSpawned);
+
             return;
         }
-        
+
         TLSObjects newObjects;
         for (TLSObjects::iterator it = _object->objects.begin();
-             it!=_object->objects.end(); ++it) {
+             it != _object->objects.end(); ++it) {
             boost::shared_ptr<const TLSHolderBase> p = (*it).lock();
             if (p) {
-                if (!p->cleanupPerThreadData(curThread)) {
+                if ( !p->cleanupPerThreadData(curThread) ) {
                     //The TLSHolder still has TLS on it for another thread and is still alive,
                     //then leave it in the set
                     newObjects.insert(p);

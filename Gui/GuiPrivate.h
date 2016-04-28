@@ -78,9 +78,7 @@ struct GuiPrivate
     std::list<Splitter*> _splitters;
     mutable QMutex _pyPanelsMutex;
     std::map<PyPanel*, std::string> _userPanels;
-
     bool _isTripleSyncEnabled;
-    
     mutable QMutex areRenderStatsEnabledMutex;
     bool areRenderStatsEnabled;
 
@@ -120,7 +118,6 @@ struct GuiPrivate
     ActionWithShortcut* actionNextTab;
     ActionWithShortcut* actionPrevTab;
     ActionWithShortcut* actionCloseTab;
-
     QAction* actionHelpWebsite;
     QAction* actionHelpForum;
     QAction* actionHelpIssues;
@@ -167,7 +164,6 @@ struct GuiPrivate
 
     ///The curve editor.
     CurveEditor *_curveEditor;
-    
     ProgressPanel* _progressPanel;
 
     // The dope sheet
@@ -244,18 +240,15 @@ struct GuiPrivate
 
     ///Menu entries added by the user
     std::map<ActionWithShortcut*, std::string> pythonCommands;
-    
     RenderStatsDialog* statsDialog;
-    
     PanelWidget* currentPanelFocus;
-    
+
     //To prevent recursion when we forward an uncaught event to the click focus widget
     int currentPanelFocusEventRecursion;
     bool keyPressEventHasVisitedFocusWidget;
     bool keyUpEventHasVisitedFocusWidget;
-        
     bool applicationConsoleVisible;
-    
+
     GuiPrivate(GuiAppInstance* app,
                Gui* gui);
 
@@ -280,7 +273,7 @@ struct GuiPrivate
     void createDopeSheetGui();
 
     void createScriptEditorGui();
-    
+
     void createProgressPanelGui();
 
     ///If there's only 1 non-floating pane in the main window, return it, otherwise returns NULL
@@ -289,9 +282,9 @@ struct GuiPrivate
     void refreshLeftToolBarVisibility(const QPoint & p);
 
     QAction* findActionRecursive(int i, QWidget* widget, const QStringList & grouping);
-    
+
     ///True= yes overwrite
-    bool checkProjectLockAndWarn(const QString& projectPath,const QString& projectName);
+    bool checkProjectLockAndWarn(const QString& projectPath, const QString& projectName);
 };
 
 NATRON_NAMESPACE_EXIT;

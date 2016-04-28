@@ -85,7 +85,7 @@ public Q_SLOTS:
     void fileDownloaded(QNetworkReply* pReply);
     void onDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
     void onTimerTimeout();
-    
+
 private:
 
     QNetworkReply* m_reply;

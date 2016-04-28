@@ -52,31 +52,28 @@ class RotoToolButton
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
+GCC_DIAG_SUGGEST_OVERRIDE_ON Q_PROPERTY(bool isSelected READ getIsSelected WRITE setIsSelected)
 
-    Q_PROPERTY(bool isSelected READ getIsSelected WRITE setIsSelected)
-    
 public:
 
     RotoToolButton(QWidget* parent);
 
     virtual ~RotoToolButton();
-    
+
 
     void handleSelection();
 
     bool getIsSelected() const;
     void setIsSelected(bool s);
-    
+
 public Q_SLOTS:
-    
+
     void handleLongPress();
-    
+
 private:
 
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
-    
     bool isSelected;
     bool wasMouseReleased;
 };
@@ -123,21 +120,20 @@ public:
         eRotoToolDrawBSpline,
         eRotoToolDrawEllipse,
         eRotoToolDrawRectangle,
-        
+
         eRotoToolSolidBrush,
         eRotoToolOpenBezier,
         eRotoToolEraserBrush,
-        
+
         eRotoToolClone,
         eRotoToolReveal,
-        
+
         eRotoToolBlur,
         eRotoToolSharpen,
         eRotoToolSmear,
-        
+
         eRotoToolDodge,
         eRotoToolBurn
-        
     };
 
     RotoGui(NodeGui* node,
@@ -164,7 +160,7 @@ public:
      **/
     RotoGui::RotoToolEnum getSelectedTool() const;
 
-    void setCurrentTool(RotoGui::RotoToolEnum tool,bool emitSignal);
+    void setCurrentTool(RotoGui::RotoToolEnum tool, bool emitSignal);
 
     QToolBar* getToolBar() const;
 
@@ -188,7 +184,7 @@ public:
     bool keyUp(double time, const RenderScale & renderScale, QKeyEvent* e);
 
     bool keyRepeat(double time, const RenderScale & renderScale, QKeyEvent* e);
-    
+
     void focusOut(double time);
 
     bool isStickySelectionEnabled() const;
@@ -198,12 +194,12 @@ public:
      * This can only be called on the main-thread.
      **/
     void setSelection(const std::list<boost::shared_ptr<RotoDrawableItem> > & selectedBeziers,
-                      const std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > & selectedCps);
+                      const std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & selectedCps);
     void setSelection(const boost::shared_ptr<Bezier> & curve,
-                      const std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > & point);
+                      const std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > & point);
 
     void getSelection(std::list<boost::shared_ptr<RotoDrawableItem> >* selectedBeziers,
-                      std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > >* selectedCps);
+                      std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > >* selectedCps);
 
     void refreshSelectionBBox();
 
@@ -239,16 +235,16 @@ public:
 
     bool isFeatherVisible() const;
 
-    void linkPointTo(const std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > & cp);
+    void linkPointTo(const std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & cp);
 
     void notifyGuiClosing();
-    
+
 Q_SIGNALS:
 
     /**
      * @brief Emitted when the selected role changes
      **/
-    void roleChanged(int previousRole,int newRole);
+    void roleChanged(int previousRole, int newRole);
 
     void selectedToolChanged(int);
 
@@ -269,14 +265,14 @@ public Q_SLOTS:
     void onRippleEditButtonClicked(bool);
 
     void onStickySelectionButtonClicked(bool);
-    
+
     void onBboxClickButtonClicked(bool);
 
     void onAddKeyFrameClicked();
 
     void onRemoveKeyFrameClicked();
 
-    void onCurrentFrameChanged(SequenceTime,int);
+    void onCurrentFrameChanged(SequenceTime, int);
 
     void restoreSelectionFromContext();
 
@@ -287,7 +283,7 @@ public Q_SLOTS:
     void onSelectionChanged(int reason);
 
     void onDisplayFeatherButtonClicked(bool toggled);
-    
+
     void onTimelineTimeChanged();
 
     void onBreakMultiStrokeTriggered();
@@ -296,34 +292,33 @@ public Q_SLOTS:
     void cuspSelectedCurve();
     void removeFeatherForSelectedCurve();
     void lockSelectedCurves();
-    
+
     void onColorWheelButtonClicked();
     void onDialogCurrentColorChanged(const QColor& color);
-    
+
     void onPressureOpacityClicked(bool isDown);
     void onPressureSizeClicked(bool isDown);
     void onPressureHardnessClicked(bool isDown);
     void onBuildupClicked(bool isDown);
-    
+
     void onResetCloneTransformClicked();
-    
-    
+
 private:
-    
+
 
     void showMenuForCurve(const boost::shared_ptr<Bezier> & curve);
 
     void showMenuForControlPoint(const boost::shared_ptr<Bezier> & curve,
-                                 const std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > & cp);
+                                 const std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > & cp);
 
 
     /**
      *@brief Moves of the given pixel the selected control points.
      * This takes into account the zoom factor.
      **/
-    void moveSelectedCpsWithKeyArrows(int x,int y);
+    void moveSelectedCpsWithKeyArrows(int x, int y);
 
-    void onToolActionTriggeredInternal(QAction* action,bool emitSignal);
+    void onToolActionTriggeredInternal(QAction* action, bool emitSignal);
 
 
     QAction* createToolAction(QToolButton* toolGroup,

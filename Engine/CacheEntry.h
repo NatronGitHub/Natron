@@ -66,37 +66,36 @@ class RamBuffer
 {
     T* data;
     U64 count;
-    
+
 public:
-    
+
     RamBuffer()
-    : data(0)
-    , count(0)
+        : data(0)
+        , count(0)
     {
-        
     }
-    
+
     T* getData()
     {
         return data;
     }
-    
+
     const T* getData() const
     {
         return data;
     }
-    
+
     void swap(RamBuffer& other)
     {
         std::swap(data, other.data);
         std::swap(count, other.count);
     }
-    
+
     U64 size() const
     {
         return count;
     }
-    
+
     void resize(U64 size)
     {
         if (size == 0) {
@@ -110,12 +109,12 @@ public:
         if (count == 0) {
             return;
         }
-        data = (T*)malloc(size * sizeof(T));
+        data = (T*)malloc( size * sizeof(T) );
         if (!data) {
             throw std::bad_alloc();
         }
     }
-    
+
     void clear()
     {
         count = 0;
@@ -124,7 +123,7 @@ public:
             data = 0;
         }
     }
-    
+
     ~RamBuffer()
     {
         if (data) {
@@ -155,13 +154,13 @@ public:
 
 
     Buffer()
-    : _path()
-    , _buffer()
-    , _backingFile()
-    , _storageMode(eStorageModeRAM)
+        : _path()
+        , _buffer()
+        , _backingFile()
+        , _storageMode(eStorageModeRAM)
     {
     }
-    
+
     ~Buffer()
     {
         deallocate();
@@ -183,14 +182,14 @@ public:
             _storageMode = eStorageModeDisk;
             _path = path;
             try {
-                _backingFile.reset( new MemoryFile(_path,MemoryFile::eFileOpenModeEnumIfExistsKeepElseCreate) );
+                _backingFile.reset( new MemoryFile(_path, MemoryFile::eFileOpenModeEnumIfExistsKeepElseCreate) );
             } catch (const std::runtime_error & r) {
                 std::cout << r.what() << std::endl;
 
                 ///if opening the file mapping failed, just call allocate again, but this time on RA%!
                 _backingFile.reset();
                 _path.clear();
-                allocate(count,eStorageModeRAM, path);
+                allocate(count, eStorageModeRAM, path);
 
                 return;
             }
@@ -221,7 +220,7 @@ public:
             _backingFile->resize( count * sizeof(DataType) );
         }
     }
-    
+
     /**
      * @brief Beware this is not really a "swap" as other do not get the infos from this Buffer.
      **/
@@ -231,10 +230,10 @@ public:
             if (other._storageMode == eStorageModeRAM) {
                 _buffer.swap(other._buffer);
             } else {
-                _buffer.resize(other._backingFile->size() / sizeof(DataType));
+                _buffer.resize( other._backingFile->size() / sizeof(DataType) );
                 const char* src = other._backingFile->data();
                 char* dst = (char*)_buffer.getData();
-                memcpy(dst,src,other._backingFile->size());
+                memcpy( dst, src, other._backingFile->size() );
             }
         } else if (_storageMode == eStorageModeDisk) {
             if (other._storageMode == eStorageModeDisk) {
@@ -242,17 +241,17 @@ public:
                 _backingFile.swap(other._backingFile);
                 _path = other._path;
             } else {
-                _backingFile->resize(other._buffer.size() * sizeof(DataType));
-				assert(_backingFile->data());
+                _backingFile->resize( other._buffer.size() * sizeof(DataType) );
+                assert( _backingFile->data() );
                 const char* src = (const char*)other._buffer.getData();
                 char* dst = (char*)_backingFile->data();
-                memcpy(dst,src,other._buffer.size() * sizeof(DataType));
+                memcpy( dst, src, other._buffer.size() * sizeof(DataType) );
             }
         }
-        
     }
-    
-    const std::string& getFilePath() const {
+
+    const std::string& getFilePath() const
+    {
         return _path;
     }
 
@@ -260,7 +259,7 @@ public:
     {
         assert(!_backingFile && _storageMode == eStorageModeDisk);
         try{
-            _backingFile.reset( new MemoryFile(_path,MemoryFile::eFileOpenModeEnumIfExistsKeepElseCreate) );
+            _backingFile.reset( new MemoryFile(_path, MemoryFile::eFileOpenModeEnumIfExistsKeepElseCreate) );
         } catch (const std::exception & e) {
             _backingFile.reset();
             throw std::bad_alloc();
@@ -294,13 +293,16 @@ public:
             if (_backingFile) {
                 _backingFile->remove();
                 _backingFile.reset();
+
                 return true;
             } else {
                 int ret_code = std::remove( _path.c_str() );
                 Q_UNUSED(ret_code);
+
                 return false;
             }
         }
+
         return false;
     }
 
@@ -373,7 +375,7 @@ public:
      * @brief To be called by a CacheEntry whenever it's size is changed.
      * This way the cache can keep track of the real memory footprint.
      **/
-    virtual void notifyEntrySizeChanged(size_t oldSize,size_t newSize) const = 0;
+    virtual void notifyEntrySizeChanged(size_t oldSize, size_t newSize) const = 0;
 
     /**
      * @brief To be called by a CacheEntry on allocation.
@@ -384,7 +386,7 @@ public:
      * @brief To be called by a CacheEntry on destruction.
      **/
     virtual void notifyEntryDestroyed(double time, size_t size, StorageModeEnum storage) const = 0;
-    
+
     /**
      * @brief Called by the Cache deleter thread to wake up sleeping threads that were attempting to create a new iamge
      **/
@@ -399,20 +401,20 @@ public:
      * @brief To be called whenever an entry is deallocated from memory and put back on disk or whenever
      * it is reallocated in the RAM.
      **/
-    virtual void notifyEntryStorageChanged(StorageModeEnum oldStorage,StorageModeEnum newStorage,
-                                           double time,size_t size) const = 0;
-    
+    virtual void notifyEntryStorageChanged(StorageModeEnum oldStorage, StorageModeEnum newStorage,
+                                           double time, size_t size) const = 0;
+
     /**
      * @brief Remove from the cache all entries that matches the holderID and have a different nodeHash than the given one.
      * @param removeAll If true, remove even entries that match the nodeHash
      **/
     virtual void removeAllEntriesWithDifferentNodeHashForHolderPrivate(const std::string& holderID, U64 nodeHash, bool removeAll) = 0;
-    
-    
+
+
 #ifdef DEBUG
-    static bool checkFileNameMatchesHash(const std::string &originalFileName,U64 hash)
+    static bool checkFileNameMatchesHash(const std::string &originalFileName,
+                                         U64 hash)
     {
-        
         std::string filename = originalFileName;
         std::string path = SequenceParsing::removePath(filename);
         //remove extension from filename
@@ -422,7 +424,7 @@ public:
                 filename.erase(lastdot, std::string::npos);
             }
         }
-        
+
         //remove index if it has one
         {
             std::size_t foundSep = filename.find_last_of('_');
@@ -430,37 +432,34 @@ public:
                 filename.erase(foundSep, std::string::npos);
             }
         }
-        
-        QString hashKeyStr = QString::fromUtf8(filename.c_str());
-        
+        QString hashKeyStr = QString::fromUtf8( filename.c_str() );
+
         //prepend the 2 digits of the containing directory
         {
             if (path.size() > 0) {
-                if (path[path.size() - 1] == '\\' || path[path.size() -1] == '/') {
+                if ( (path[path.size() - 1] == '\\') || (path[path.size() - 1] == '/') ) {
                     path.erase(path.size() - 1, 1);
                 }
-                
+
                 std::size_t foundSep = path.find_last_of('/');
                 if (foundSep == std::string::npos) {
                     foundSep = path.find_last_of('\\');
                 }
                 assert(foundSep != std::string::npos);
                 std::string enclosingDirName = path.substr(foundSep + 1, std::string::npos);
-                hashKeyStr.prepend(QString::fromUtf8(enclosingDirName.c_str()));
+                hashKeyStr.prepend( QString::fromUtf8( enclosingDirName.c_str() ) );
             }
         }
-        
-        
-        U64 hashKey = hashKeyStr.toULongLong(0,16); //< to hex (base 16)
+        U64 hashKey = hashKeyStr.toULongLong(0, 16); //< to hex (base 16)
+
         if (hashKey == hash) {
             return true;
         } else {
             return false;
         }
-        
     }
+
 #endif
-    
 };
 
 
@@ -489,7 +488,7 @@ public:
     virtual size_t size() const = 0;
     virtual double getTime() const = 0;
 };
-    
+
 
 /** @brief Implements AbstractCacheEntry. This class represents a combinaison of
  * a set of metadatas called 'Key' and a buffer.
@@ -500,26 +499,25 @@ template <typename DataType, typename KeyType, typename ParamsType>
 class CacheEntryHelper
     : public AbstractCacheEntry<KeyType>
 {
-    
 public:
-    
+
     typedef DataType data_t;
     typedef KeyType key_t;
     typedef ParamsType param_t;
-    
+
     /**
      * @brief Ctor
      * the cache entry needs to be set afterwards using setCacheEntry()
      **/
     CacheEntryHelper()
-    : _key()
-    , _params()
-    , _data()
-    , _cache()
-    , _requestedPath()
-    , _entryLock(QReadWriteLock::Recursive)
-    , _requestedStorage(eStorageModeNone)
-    , _removeBackingFileBeforeDestruction(false)
+        : _key()
+        , _params()
+        , _data()
+        , _cache()
+        , _requestedPath()
+        , _entryLock(QReadWriteLock::Recursive)
+        , _requestedStorage(eStorageModeNone)
+        , _removeBackingFileBeforeDestruction(false)
     {
     }
 
@@ -534,14 +532,14 @@ public:
                      const CacheAPI* cache,
                      StorageModeEnum storage,
                      const std::string & path)
-    : _key(key)
-    , _params(params)
-    , _data()
-    , _cache(cache)
-    , _requestedPath(path)
-    , _entryLock(QReadWriteLock::Recursive)
-    , _requestedStorage(storage)
-    , _removeBackingFileBeforeDestruction(false)
+        : _key(key)
+        , _params(params)
+        , _data()
+        , _cache(cache)
+        , _requestedPath(path)
+        , _entryLock(QReadWriteLock::Recursive)
+        , _requestedStorage(storage)
+        , _removeBackingFileBeforeDestruction(false)
     {
     }
 
@@ -552,7 +550,7 @@ public:
         }
         deallocate();
     }
-    
+
     const CacheAPI* getCacheAPI() const
     {
         return _cache;
@@ -582,48 +580,47 @@ public:
         if (_requestedStorage == eStorageModeNone) {
             return;
         }
-        
-        
+
+
         {
             {
                 QReadLocker k(&_entryLock);
-                if (_data.isAllocated()) {
+                if ( _data.isAllocated() ) {
                     return;
                 }
             }
             QWriteLocker k(&_entryLock);
-            allocate(_params->getElementsCount(),_requestedStorage,_requestedPath);
+            allocate(_params->getElementsCount(), _requestedStorage, _requestedPath);
             onMemoryAllocated(false);
         }
-        
+
         if (_cache) {
-            _cache->notifyEntryAllocated( getTime(),size(),_data.getStorageMode() );
+            _cache->notifyEntryAllocated( getTime(), size(), _data.getStorageMode() );
         }
     }
-    
+
     /**
      * @brief To be called for disk-cached entries when restoring them from a file.
      * The file-path will be the one passed to the constructor
      **/
     void restoreMetaDataFromFile(std::size_t size)
     {
-        if (!_cache || _requestedStorage != eStorageModeDisk) {
+        if ( !_cache || (_requestedStorage != eStorageModeDisk) ) {
             return;
         }
-        
-        assert(!_requestedPath.empty());
-        
+
+        assert( !_requestedPath.empty() );
+
         {
             QWriteLocker k(&_entryLock);
-            
-            restoreBufferFromFile(_requestedPath);
-            
-            onMemoryAllocated(true);
 
+            restoreBufferFromFile(_requestedPath);
+
+            onMemoryAllocated(true);
         }
-        
+
         if (_cache) {
-            _cache->notifyEntryStorageChanged(eStorageModeNone, eStorageModeDisk, getTime(),size);
+            _cache->notifyEntryStorageChanged(eStorageModeNone, eStorageModeDisk, getTime(), size);
         }
     }
 
@@ -636,13 +633,13 @@ public:
     {
     }
 
-
     const KeyType & getKey() const OVERRIDE FINAL
     {
         return _key;
     }
-    
-    const std::string& getFilePath() const {
+
+    const std::string& getFilePath() const
+    {
         return _data.getFilePath();
     }
 
@@ -651,32 +648,33 @@ public:
         return _key.getHash();
     }
 
-    std::string generateStringFromHash(const std::string & path,U64 hashKey) const
+    std::string generateStringFromHash(const std::string & path,
+                                       U64 hashKey) const
     {
         std::string name(path);
 
         if ( path.empty() ) {
-            QDir subfolder(QString::fromUtf8(path.c_str()));
+            QDir subfolder( QString::fromUtf8( path.c_str() ) );
             if ( !subfolder.exists() ) {
                 std::cout << "(" << std::hex <<
                     this << ") " <<   "Something is wrong in cache... couldn't find : " << path << std::endl;
                 throw std::invalid_argument(path);
             }
         }
-        QString hashKeyStr = QString::number(hashKey,16); //< hex is base 16
+        QString hashKeyStr = QString::number(hashKey, 16); //< hex is base 16
         for (int i = 0; i < 2; ++i) {
-            if (i >= hashKeyStr.size()) {
+            if ( i >= hashKeyStr.size() ) {
                 break;
             }
-            name.push_back(hashKeyStr[i].toLatin1());
+            name.push_back( hashKeyStr[i].toLatin1() );
         }
         name.append("/");
         int i = 2;
-        while (i < hashKeyStr.size()) {
-            name.push_back(hashKeyStr[i].toLatin1());
+        while ( i < hashKeyStr.size() ) {
+            name.push_back( hashKeyStr[i].toLatin1() );
             ++i;
         }
-        
+
         name.append("." NATRON_CACHE_FILE_EXT);
 
         return name;
@@ -693,7 +691,7 @@ public:
             _data.reOpenFileMapping();
         }
         if (_cache) {
-            _cache->notifyEntryStorageChanged( eStorageModeDisk, eStorageModeRAM,getTime(), size() );
+            _cache->notifyEntryStorageChanged( eStorageModeDisk, eStorageModeRAM, getTime(), size() );
         }
     }
 
@@ -707,9 +705,10 @@ public:
         double time = getTime();
         {
             QWriteLocker k(&_entryLock);
-            
+
             _data.deallocate();
         }
+
         if (_cache) {
             if ( isStoredOnDisk() ) {
                 if (dataAllocated) {
@@ -742,9 +741,11 @@ public:
     {
         bool got = _entryLock.tryLockForRead();
         std::size_t r = _data.size();
+
         if (got) {
             _entryLock.unlock();
         }
+
         return r;
     }
 
@@ -752,10 +753,11 @@ public:
     {
         return _data.getStorageMode() == eStorageModeDisk;
     }
-    
+
     bool isAllocated() const
     {
         QReadLocker k(&_entryLock);
+
         return _data.isAllocated();
     }
 
@@ -764,33 +766,35 @@ public:
      **/
     void removeAnyBackingFile() const
     {
-        if (!isStoredOnDisk()) {
+        if ( !isStoredOnDisk() ) {
             return;
         }
-        
+
         bool isAlloc = _data.isAllocated();
         bool hasRemovedFile;
         {
             QWriteLocker k(&_entryLock);
             hasRemovedFile = _data.removeAnyBackingFile();
         }
-        
+
         if (hasRemovedFile) {
             _cache->backingFileClosed();
         }
-        if ( isAlloc ) {
-            _cache->notifyEntryDestroyed(getTime(), _params->getElementsCount() * sizeof(DataType),eStorageModeRAM);
+        if (isAlloc) {
+            _cache->notifyEntryDestroyed(getTime(), _params->getElementsCount() * sizeof(DataType), eStorageModeRAM);
         } else {
             ///size() will return 0 at this point, we have to recompute it
-            _cache->notifyEntryDestroyed(getTime(), _params->getElementsCount() * sizeof(DataType),eStorageModeDisk);
+            _cache->notifyEntryDestroyed(getTime(), _params->getElementsCount() * sizeof(DataType), eStorageModeDisk);
         }
     }
-    
+
     /**
      * @brief To be called when an entry is going to be removed from the cache entirely.
      **/
-    void scheduleForDestruction() {
+    void scheduleForDestruction()
+    {
         QWriteLocker k(&_entryLock);
+
         _removeBackingFileBeforeDestruction = true;
     }
 
@@ -813,16 +817,17 @@ protected:
         size_t oldSize = size();
         _data.reallocate(elemCount);
         if (_cache) {
-            _cache->notifyEntrySizeChanged( oldSize,size());
+            _cache->notifyEntrySizeChanged( oldSize, size() );
         }
     }
 
-    void swapBuffer(CacheEntryHelper<DataType,KeyType,ParamsType>& other) {
-        
+    void swapBuffer(CacheEntryHelper<DataType, KeyType, ParamsType>& other)
+    {
         size_t oldSize = size();
+
         _data.swap(other._data);
         if (_cache) {
-            _cache->notifyEntrySizeChanged( oldSize,size());
+            _cache->notifyEntrySizeChanged( oldSize, size() );
         }
     }
 
@@ -833,15 +838,18 @@ private:
 #ifdef _WIN32
         WIN32_FIND_DATAW FindFileData;
         std::wstring wpath = Global::utf8_to_utf16 (filename);
-        HANDLE handle = FindFirstFileW(wpath.c_str(), &FindFileData) ;
+        HANDLE handle = FindFirstFileW(wpath.c_str(), &FindFileData);
         if (handle != INVALID_HANDLE_VALUE) {
             FindClose(handle);
+
             return true;
         }
+
         return false;
 #else
         // on Unix platforms passing in UTF-8 works
-        std::ifstream fs(filename.c_str());
+        std::ifstream fs( filename.c_str() );
+
         return fs.is_open() && fs.good();
 #endif
     }
@@ -856,32 +864,32 @@ private:
                    std::string path = std::string() )
     {
         std::string fileName;
-        
+
         if (storage == eStorageModeDisk) {
-            
             typename AbstractCacheEntry<KeyType>::hash_type hashKey = getHashKey();
             try {
-                fileName = generateStringFromHash(path,hashKey);
+                fileName = generateStringFromHash(path, hashKey);
             } catch (const std::invalid_argument & e) {
                 std::cout << "Path is empty but required for disk caching: " << e.what() << std::endl;
+
                 return;
             }
-            
-            assert(!fileName.empty());
+
+            assert( !fileName.empty() );
             //Check if the filename already exists, if so append a 0-based index after the hash (separated by a '_')
             //and try again
             int index = 0;
-            if (fileExists(fileName)) {
-                fileName.insert(fileName.size() - 4,"_0");
+            if ( fileExists(fileName) ) {
+                fileName.insert(fileName.size() - 4, "_0");
             }
-            while (fileExists(fileName)) {
+            while ( fileExists(fileName) ) {
                 ++index;
                 std::stringstream ss;
                 ss << index;
-                fileName.replace(fileName.size() - 1,std::string::npos,ss.str());
+                fileName.replace( fileName.size() - 1, std::string::npos, ss.str() );
             }
 #ifdef DEBUG
-            if (!CacheAPI::checkFileNameMatchesHash(fileName, hashKey)) {
+            if ( !CacheAPI::checkFileNameMatchesHash(fileName, hashKey) ) {
                 qDebug() << "WARNING: Cache entry filename is not the same as the serialized hash key";
             }
 #endif
@@ -896,12 +904,10 @@ private:
      **/
     void restoreBufferFromFile(const std::string & path)
     {
-        
-        if (!fileExists(path)) {
+        if ( !fileExists(path) ) {
             throw std::runtime_error("Cache restore, no such file: " + path);
         }
         _data.restoreBufferFromFile(path);
-       
     }
 
 protected:

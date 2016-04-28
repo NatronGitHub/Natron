@@ -17,9 +17,9 @@
  * ***** END LICENSE BLOCK ***** */
 
 /**
-* @brief Simple wrap for the AppInstance class that is the API we want to expose to the Python
-* Engine module.
-**/
+ * @brief Simple wrap for the AppInstance class that is the API we want to expose to the Python
+ * Engine module.
+ **/
 
 #ifndef Engine_AppInstanceWrapper_h
 #define Engine_AppInstanceWrapper_h
@@ -39,40 +39,39 @@ NATRON_NAMESPACE_ENTER;
 
 class AppSettings
 {
-    
 public:
-    
+
     AppSettings(const boost::shared_ptr<Settings>& settings);
-    
+
     Param* getParam(const QString& scriptName) const;
-    
     std::list<Param*> getParams() const;
-    
+
     void saveSettings();
-    
+
     void restoreDefaultSettings();
-    
+
 private:
-    
+
     boost::shared_ptr<Settings> _settings;
 };
 
 
-class App : public Group
+class App
+    : public Group
 {
     AppInstance* _instance;
-    
+
 public:
-    
-    
+
+
     App(AppInstance* instance);
-    
+
     virtual ~App() {}
-    
+
     int getAppID() const;
-    
+
     AppInstance* getInternalApp() const;
-    
+
     /**
      * @brief Creates a new instance of the plugin identified by the given pluginID.
      * @param majorVersion If different than -1, it will try to load a specific major version
@@ -83,54 +82,50 @@ public:
     Effect* createNode(const QString& pluginID,
                        int majorVersion = -1,
                        Group* group = 0) const;
-    
     Effect* createReader(const QString& filename,
                          Group* group = 0) const;
-    
     Effect* createWriter(const QString& filename,
                          Group* group = 0) const;
-    
+
     int timelineGetTime() const;
-    
+
     int timelineGetLeftBound() const;
-    
+
     int timelineGetRightBound() const;
-    
+
     void addFormat(const QString& formatSpec);
-    
-    void render(Effect* writeNode,int firstFrame, int lastFrame, int frameStep = 1);
-    void render(const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames, const std::list<int>& frameSteps);
-    
+
+    void render(Effect* writeNode, int firstFrame, int lastFrame, int frameStep = 1);
+    void render(const std::list<Effect*>& effects, const std::list<int>& firstFrames, const std::list<int>& lastFrames, const std::list<int>& frameSteps);
+
     Param* getProjectParam(const QString& name) const;
-    
+
     void writeToScriptEditor(const QString& message);
-    
+
     bool saveProject(const QString& filename);
     bool saveProjectAs(const QString& filename);
     bool saveTempProject(const QString& filename);
     App* loadProject(const QString& filename);
-    
+
     ///Close the current project but keep the window
     bool resetProject();
-    
+
     ///Reset + close window, quit if last window
     bool closeProject();
-    
+
     ///Opens a new window
     App* newProject();
-    
     std::list<QString> getViewNames() const;
-    
+
     void addProjectLayer(const ImageLayer& layer);
-    
+
 protected:
-    
-    void renderInternal(bool forceBlocking,Effect* writeNode,int firstFrame, int lastFrame, int frameStep);
-    void renderInternal(bool forceBlocking,const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames,
+
+    void renderInternal(bool forceBlocking, Effect* writeNode, int firstFrame, int lastFrame, int frameStep);
+    void renderInternal(bool forceBlocking, const std::list<Effect*>& effects, const std::list<int>& firstFrames, const std::list<int>& lastFrames,
                         const std::list<int>& frameSteps);
-    
+
     boost::shared_ptr<NodeCollection> getCollectionFromGroup(Group* group) const;
-    
 };
 
 NATRON_NAMESPACE_EXIT;

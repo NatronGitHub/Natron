@@ -42,7 +42,6 @@
 #include "Engine/EngineFwd.h"
 
 
-
 //This controls how many frames a plug-in can pre-fetch (per view and per input)
 //This is to avoid cases where the user would for example use the FrameBlend node with a huge amount of frames so that they
 //do not all stick altogether in memory
@@ -50,7 +49,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-typedef std::map<EffectInstPtr ,RectD> RoIMap; // RoIs are in canonical coordinates
+typedef std::map<EffectInstPtr, RectD> RoIMap; // RoIs are in canonical coordinates
 typedef std::map<ViewIdx, std::vector<RangeD> > FrameRangesMap;
 typedef std::map<int, FrameRangesMap> FramesNeededMap;
 
@@ -61,23 +60,23 @@ struct InputMatrix
     int newInputNbToFetchFrom;
 };
 
-typedef std::map<int,InputMatrix> InputMatrixMap;
+typedef std::map<int, InputMatrix> InputMatrixMap;
 
 struct AbortableRenderInfo
 {
     bool canAbort;
     QAtomicInt aborted;
     U64 age;
-    
-    AbortableRenderInfo(bool canAbort, U64 age)
-    : canAbort(canAbort)
-    , aborted()
-    , age(age)
+
+    AbortableRenderInfo(bool canAbort,
+                        U64 age)
+        : canAbort(canAbort)
+        , aborted()
+        , age(age)
     {
         aborted.fetchAndStoreAcquire(0);
     }
 };
-
 
 struct NodeFrameRequest;
 
@@ -96,13 +95,13 @@ struct ParallelRenderArgs
     ///which are local to a renderRoI call whilst this is local
     ///to a frame being rendered by the tree.
     double time;
-    
+
     ///To check the current time on the timeline
     const TimeLine* timeline;
 
     ///The hash of the node at the time we started rendering
     U64 nodeHash;
-    
+
     ///If set, contains data for all frame/view pair that are going to be computed
     ///for this frame/view pair with the overall RoI to avoid rendering several times with this node.
     boost::shared_ptr<NodeFrameRequest> request;
@@ -115,7 +114,7 @@ struct ParallelRenderArgs
 
     ///A number identifying the current frame render to determine if we can really abort for abortable renders
     AbortableRenderInfoPtr abortInfo;
-    
+
     ///A pointer to the node that requested the current render.
     NodePtr treeRoot;
 
@@ -134,63 +133,61 @@ struct ParallelRenderArgs
 
     /// is this a render due to user interaction ? Generally this is true when rendering because
     /// of a user parameter tweek or timeline seek, or more generally by calling RenderEngine::renderCurrentFrame
-    bool isRenderResponseToUserInteraction:1;
+    bool isRenderResponseToUserInteraction : 1;
 
     /// Is this render sequential ? True for Viewer playback or a sequential writer such as WriteFFMPEG
-    bool isSequentialRender:1;
+    bool isSequentialRender : 1;
 
     ///Was the render started in the instanceChangedAction (knobChanged)
-    bool isAnalysis:1;
-    
+    bool isAnalysis : 1;
+
     ///If true, the attached paint stroke is being drawn currently
-    bool isDuringPaintStrokeCreation:1;
+    bool isDuringPaintStrokeCreation : 1;
 
     ///When true, all NaNs will be converted to 1
-    bool doNansHandling:1;
-    
-    ///When true, this is a hint for plug-ins that the render will be used for draft such as previewing while scrubbing the timeline
-    bool draftMode:1;
-    
-    ///The support for tiles is local to a render and may change depending on GPU usage or other parameters
-    bool tilesSupported:1;
-    
-    ///True when the preference in Natron is set and the renderRequester is a Viewer
-    bool viewerProgressReportEnabled:1;
+    bool doNansHandling : 1;
 
-    
+    ///When true, this is a hint for plug-ins that the render will be used for draft such as previewing while scrubbing the timeline
+    bool draftMode : 1;
+
+    ///The support for tiles is local to a render and may change depending on GPU usage or other parameters
+    bool tilesSupported : 1;
+
+    ///True when the preference in Natron is set and the renderRequester is a Viewer
+    bool viewerProgressReportEnabled : 1;
+
+
     ParallelRenderArgs()
-    : time(0)
-    , timeline(0)
-    , nodeHash(0)
-    , request()
-    , view(0)
-    , abortInfo()
-    , treeRoot()
-    , rotoPaintNodes()
-    , stats()
-    , textureIndex(0)
-    , currentThreadSafety(eRenderSafetyInstanceSafe)
-    , isRenderResponseToUserInteraction(false)
-    , isSequentialRender(false)
-    , isAnalysis(false)
-    , isDuringPaintStrokeCreation(false)
-    , doNansHandling(true)
-    , draftMode(false)
-    , tilesSupported(false)
-    , viewerProgressReportEnabled(false)
+        : time(0)
+        , timeline(0)
+        , nodeHash(0)
+        , request()
+        , view(0)
+        , abortInfo()
+        , treeRoot()
+        , rotoPaintNodes()
+        , stats()
+        , textureIndex(0)
+        , currentThreadSafety(eRenderSafetyInstanceSafe)
+        , isRenderResponseToUserInteraction(false)
+        , isSequentialRender(false)
+        , isAnalysis(false)
+        , isDuringPaintStrokeCreation(false)
+        , doNansHandling(true)
+        , draftMode(false)
+        , tilesSupported(false)
+        , viewerProgressReportEnabled(false)
     {
-        
     }
-    
-    bool isCurrentFrameRenderNotAbortable() const {
+
+    bool isCurrentFrameRenderNotAbortable() const
+    {
         return isRenderResponseToUserInteraction && (!abortInfo || !abortInfo->canAbort);
     }
 };
 
-
-
-
-struct FrameViewPair {
+struct FrameViewPair
+{
     double time;
     ViewIdx view;
 };
@@ -200,10 +197,10 @@ struct FrameViewRequestGlobalData
     ///The transforms associated to each input branch, set on first request
     boost::shared_ptr<InputMatrixMap> transforms;
     boost::shared_ptr<std::map<int, EffectInstPtr> > reroutesMap;
-    
+
     ///The required frame/views in input, set on first request
     FramesNeededMap frameViewsNeeded;
-    
+
     ///Set when the first request is made, set on first request
     RectD rod;
     bool isProjectFormat;
@@ -228,14 +225,13 @@ struct FrameViewPerRequestData
 struct FrameViewRequest
 {
     ///All different requests led by different branchs in the tree
-    std::list<std::pair<RectD,FrameViewPerRequestData> > requests;
-    
+    std::list<std::pair<RectD, FrameViewPerRequestData> > requests;
+
     ///Final datas that are computed once the whole tree has been cycled through
     FrameViewRequestFinalData finalData;
-    
+
     ///Global datas for this frame/view set upon first request
     FrameViewRequestGlobalData globalData;
-    
 };
 
 struct FrameView_compare_less
@@ -259,34 +255,33 @@ struct FrameView_compare_less
     }
 };
 
-typedef std::map<FrameViewPair,FrameViewRequest,FrameView_compare_less> NodeFrameViewRequestData;
+typedef std::map<FrameViewPair, FrameViewRequest, FrameView_compare_less> NodeFrameViewRequestData;
 
 struct NodeFrameRequest
 {
     NodeFrameViewRequestData frames;
-    
+
     ///Set on first request
     U64 nodeHash;
     RenderScale mappedScale;
-    
-    bool getFrameViewCanonicalRoI(double time, ViewIdx view, RectD* roi) const;
-    
-    const FrameViewRequest* getFrameViewRequest(double time, ViewIdx view) const;
 
+    bool getFrameViewCanonicalRoI(double time, ViewIdx view, RectD* roi) const;
+
+    const FrameViewRequest* getFrameViewRequest(double time, ViewIdx view) const;
 };
 
-typedef std::map<NodePtr,boost::shared_ptr<NodeFrameRequest> > FrameRequestMap;
+typedef std::map<NodePtr, boost::shared_ptr<NodeFrameRequest> > FrameRequestMap;
 
 
 class ParallelRenderArgsSetter
 {
-    boost::shared_ptr<std::map<NodePtr,boost::shared_ptr<ParallelRenderArgs> > > argsMap;
+    boost::shared_ptr<std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> > > argsMap;
     NodesList nodes;
-    
+
 public:
-    
+
     /**
-     * @brief Set the TLS for rendering a frame on the tree upstream of treeRoot (including it) and all nodes that 
+     * @brief Set the TLS for rendering a frame on the tree upstream of treeRoot (including it) and all nodes that
      * can be reached through expressions.
      * We do this because TLS is needed to know the correct frame, view at which the frame is evaluated (i.e rendered)
      * even in nodes that do not belong in the tree. The reason why is because the nodes in the tree may have parameters
@@ -305,11 +300,11 @@ public:
                              bool draftMode,
                              bool viewerProgressReportEnabled,
                              const boost::shared_ptr<RenderStats>& stats);
-    
+
     ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> > >& args);
-    
+
     void updateNodesRequest(const FrameRequestMap& request);
-    
+
     virtual ~ParallelRenderArgsSetter();
 };
 

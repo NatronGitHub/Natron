@@ -66,47 +66,43 @@ NATRON_NAMESPACE_ENTER;
 struct RotoPaintData
 {
     NodePtr rotoPaintNode;
-    
     boost::shared_ptr<RotoStrokeItem> stroke;
-    
     bool isPainting;
-    
     bool turboAlreadyActiveBeforePainting;
-    
+
     ///The last mouse event tick bounding box, to render the least possible
     RectD lastStrokeMovementBbox;
-    
+
     ///The index of the points/stroke we have rendered
-    int lastStrokeIndex,multiStrokeIndex;
-    
+    int lastStrokeIndex, multiStrokeIndex;
+
     ///The last points of the mouse event
-    std::list<std::pair<Point,double> > lastStrokePoints;
-    
+    std::list<std::pair<Point, double> > lastStrokePoints;
+
     ///Used for the rendering algorithm to know where we stopped along the path
-    double distToNextIn,distToNextOut;
-    
+    double distToNextIn, distToNextOut;
+
     //The image used to render the currently drawn stroke mask
     boost::shared_ptr<Image> strokeImage;
-    
+
     RotoPaintData()
-    : rotoPaintNode()
-    , stroke()
-    , isPainting(false)
-    , turboAlreadyActiveBeforePainting(false)
-    , lastStrokeMovementBbox()
-    , lastStrokeIndex(-1)
-    , multiStrokeIndex(0)
-    , lastStrokePoints()
-    , distToNextIn(0)
-    , distToNextOut(0)
-    , strokeImage()
+        : rotoPaintNode()
+        , stroke()
+        , isPainting(false)
+        , turboAlreadyActiveBeforePainting(false)
+        , lastStrokeMovementBbox()
+        , lastStrokeIndex(-1)
+        , multiStrokeIndex(0)
+        , lastStrokePoints()
+        , distToNextIn(0)
+        , distToNextOut(0)
+        , strokeImage()
     {
-        
     }
-    
 };
 
-struct KnobDnDData {
+struct KnobDnDData
+{
     boost::weak_ptr<KnobI> source;
     int sourceDimension;
     QDrag* drag;
@@ -115,7 +111,6 @@ struct KnobDnDData {
 struct GuiAppInstancePrivate
 {
     Gui* _gui; //< ptr to the Gui interface
-
     bool _isClosing;
 
     //////////////
@@ -128,39 +123,32 @@ struct GuiAppInstancePrivate
     ////as the main "action" thread.
     bool _showingDialog;
     mutable QMutex _showingDialogMutex;
-
     boost::shared_ptr<FileDialogPreviewProvider> _previewProvider;
-
     mutable QMutex lastTimelineViewerMutex;
     NodePtr lastTimelineViewer;
-
     LoadProjectSplashScreen* loadProjectSplash;
-
     std::string declareAppAndParamsString;
     int overlayRedrawRequests;
-    
     mutable QMutex rotoDataMutex;
     RotoPaintData rotoData;
-    
     std::list<SequenceTime> timelineKeyframes;
-    
     KnobDnDData knobDnd;
-    
+
     GuiAppInstancePrivate()
-    : _gui(NULL)
-    , _isClosing(false)
-    , _showingDialog(false)
-    , _showingDialogMutex()
-    , _previewProvider(new FileDialogPreviewProvider)
-    , lastTimelineViewerMutex()
-    , lastTimelineViewer()
-    , loadProjectSplash(0)
-    , declareAppAndParamsString()
-    , overlayRedrawRequests(0)
-    , rotoDataMutex()
-    , rotoData()
-    , timelineKeyframes()
-    , knobDnd()
+        : _gui(NULL)
+        , _isClosing(false)
+        , _showingDialog(false)
+        , _showingDialogMutex()
+        , _previewProvider(new FileDialogPreviewProvider)
+        , lastTimelineViewerMutex()
+        , lastTimelineViewer()
+        , loadProjectSplash(0)
+        , declareAppAndParamsString()
+        , overlayRedrawRequests(0)
+        , rotoDataMutex()
+        , rotoData()
+        , timelineKeyframes()
+        , knobDnd()
     {
         rotoData.turboAlreadyActiveBeforePainting = false;
     }
@@ -170,7 +158,7 @@ struct GuiAppInstancePrivate
 
 GuiAppInstance::GuiAppInstance(int appID)
     : AppInstance(appID)
-      , _imp(new GuiAppInstancePrivate)
+    , _imp(new GuiAppInstancePrivate)
 
 {
 }
@@ -186,7 +174,7 @@ void
 GuiAppInstance::deletePreviewProvider()
 {
     /**
-     Kill the nodes used to make the previews in the file dialogs
+       Kill the nodes used to make the previews in the file dialogs
      **/
     if (_imp->_previewProvider) {
         if (_imp->_previewProvider->viewerNode) {
@@ -196,8 +184,8 @@ GuiAppInstance::deletePreviewProvider()
         }
 
 #ifndef NATRON_ENABLE_IO_META_NODES
-        for (std::map<std::string,NodePtr>::iterator it =
-             _imp->_previewProvider->readerNodes.begin();
+        for (std::map<std::string, NodePtr>::iterator it =
+                 _imp->_previewProvider->readerNodes.begin();
              it != _imp->_previewProvider->readerNodes.end(); ++it) {
             it->second->destroyNode(false);
         }
@@ -217,14 +205,14 @@ void
 GuiAppInstance::aboutToQuit()
 {
     deletePreviewProvider();
-    
+
     ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
     _imp->_gui->setGuiAboutToClose(true);
-    
+
     _imp->_gui->notifyGuiClosing();
-    
+
     AppInstance::aboutToQuit();
-    
+
     _imp->_isClosing = true;
     _imp->_gui->close();
     _imp->_gui->deleteLater();
@@ -233,7 +221,6 @@ GuiAppInstance::aboutToQuit()
 
 GuiAppInstance::~GuiAppInstance()
 {
-
 }
 
 bool
@@ -253,19 +240,19 @@ GuiAppInstancePrivate::findOrCreateToolButtonRecursive(const boost::shared_ptr<P
 }
 
 void
-GuiAppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
+GuiAppInstance::load(const CLArgs& cl,
+                     bool makeEmptyInstance)
 {
-
     if (getAppID() == 0) {
         appPTR->setLoadingStatus( QObject::tr("Creating user interface...") );
     }
-    
+
     try {
         declareCurrentAppVariable_Python();
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
     }
-    
+
     _imp->_gui = new Gui(this);
     _imp->_gui->createGui();
 
@@ -277,37 +264,36 @@ GuiAppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
         _imp->findOrCreateToolButtonRecursive(*it);
     }
     _imp->_gui->sortAllPluginsToolButtons();
-    
+
     Q_EMIT pluginsPopulated();
 
     ///show the gui
     _imp->_gui->show();
 
-    
-    boost::shared_ptr<Settings> nSettings = appPTR->getCurrentSettings();
 
-    QObject::connect(getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(projectFormatChanged(Format)));
+    boost::shared_ptr<Settings> nSettings = appPTR->getCurrentSettings();
+    QObject::connect( getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(projectFormatChanged(Format)) );
 
     {
-        QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
-        if ( !settings.contains(QString::fromUtf8("checkForUpdates")) ) {
+        QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
+        if ( !settings.contains( QString::fromUtf8("checkForUpdates") ) ) {
             StandardButtonEnum reply = Dialogs::questionDialog(tr("Updates").toStdString(),
-                                                                      tr("Do you want " NATRON_APPLICATION_NAME " to check for updates "
-                                                                      "on launch of the application ?").toStdString(), false);
+                                                               tr("Do you want " NATRON_APPLICATION_NAME " to check for updates "
+                                                                  "on launch of the application ?").toStdString(), false);
             bool checkForUpdates = reply == eStandardButtonYes;
             nSettings->setCheckUpdatesEnabled(checkForUpdates);
         }
 
-        if (nSettings->isCheckForUpdatesEnabled()) {
+        if ( nSettings->isCheckForUpdatesEnabled() ) {
             appPTR->setLoadingStatus( tr("Checking if updates are available...") );
             checkForNewVersion();
         }
     }
-    
-    if (nSettings->isDefaultAppearanceOutdated()) {
+
+    if ( nSettings->isDefaultAppearanceOutdated() ) {
         StandardButtonEnum reply = Dialogs::questionDialog(tr("Appearance").toStdString(),
-                                                                  tr(NATRON_APPLICATION_NAME " default appearance changed since last version.\n"
-                                                                     "Would you like to set the new default appearance?").toStdString(), false);
+                                                           tr(NATRON_APPLICATION_NAME " default appearance changed since last version.\n"
+                                                              "Would you like to set the new default appearance?").toStdString(), false);
         if (reply == eStandardButtonYes) {
             nSettings->restoreDefaultAppearance();
         }
@@ -315,165 +301,148 @@ GuiAppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
 
     /// Create auto-save dir if it does not exists
     QDir dir = Project::autoSavesDir();
-    dir.mkpath(QString::fromUtf8("."));
+    dir.mkpath( QString::fromUtf8(".") );
 
 
     if (getAppID() == 0) {
         appPTR->getCurrentSettings()->doOCIOStartupCheckIfNeeded();
 
-        if (!appPTR->isShorcutVersionUpToDate()) {
+        if ( !appPTR->isShorcutVersionUpToDate() ) {
             StandardButtonEnum reply = questionDialog(tr("Shortcuts").toStdString(),
-                                                              tr("Default shortcuts for " NATRON_APPLICATION_NAME " have changed, "
-                                                                 "would you like to set them to their defaults ? "
-                                                                 "Clicking no will keep the old shortcuts hence if a new shortcut has been "
-                                                                 "set to something else than an empty shortcut you won't benefit of it.").toStdString(),
-                                                              false,
-                                                              StandardButtons(eStandardButtonYes | eStandardButtonNo),
-                                                              eStandardButtonNo);
+                                                      tr("Default shortcuts for " NATRON_APPLICATION_NAME " have changed, "
+                                                         "would you like to set them to their defaults ? "
+                                                         "Clicking no will keep the old shortcuts hence if a new shortcut has been "
+                                                         "set to something else than an empty shortcut you won't benefit of it.").toStdString(),
+                                                      false,
+                                                      StandardButtons(eStandardButtonYes | eStandardButtonNo),
+                                                      eStandardButtonNo);
             if (reply == eStandardButtonYes) {
                 appPTR->restoreDefaultShortcuts();
             }
         }
     }
-    
+
     if (makeEmptyInstance) {
         return;
     }
 
     /// If this is the first instance of the software, try to load an autosave
     if ( (getAppID() == 0) && cl.getScriptFilename().isEmpty() ) {
-        if (findAndTryLoadUntitledAutoSave()) {
+        if ( findAndTryLoadUntitledAutoSave() ) {
             ///if we successfully loaded an autosave ignore the specified project in the launch args.
             return;
         }
     }
 
-    
-    
 
-    QFileInfo info(cl.getScriptFilename());
+    QFileInfo info( cl.getScriptFilename() );
 
-    if (cl.getScriptFilename().isEmpty() || !info.exists()) {
-        
+    if ( cl.getScriptFilename().isEmpty() || !info.exists() ) {
         getProject()->createViewer();
         execOnProjectCreatedCallback();
-        
+
         const QString& imageFile = cl.getImageFilename();
-        if (!imageFile.isEmpty()) {
-            handleFileOpenEvent(imageFile.toStdString());
+        if ( !imageFile.isEmpty() ) {
+            handleFileOpenEvent( imageFile.toStdString() );
         }
-
     } else {
-
-
-        if (info.suffix() == QString::fromUtf8("py")) {
-
-            appPTR->setLoadingStatus(tr("Loading script: ") + cl.getScriptFilename());
+        if ( info.suffix() == QString::fromUtf8("py") ) {
+            appPTR->setLoadingStatus( tr("Loading script: ") + cl.getScriptFilename() );
 
             ///If this is a Python script, execute it
             loadPythonScript(info);
             execOnProjectCreatedCallback();
-
-        } else if (info.suffix() == QString::fromUtf8(NATRON_PROJECT_FILE_EXT)) {
-
+        } else if ( info.suffix() == QString::fromUtf8(NATRON_PROJECT_FILE_EXT) ) {
             ///Otherwise just load the project specified.
             QString name = info.fileName();
             QString path = info.path();
             Global::ensureLastPathSeparator(path);
             appPTR->setLoadingStatus(tr("Loading project: ") + path + name);
-            getProject()->loadProject(path,name);
+            getProject()->loadProject(path, name);
             ///remove any file open event that might have occured
-            appPTR->setFileToOpen(QString());
+            appPTR->setFileToOpen( QString() );
         } else {
-            Dialogs::errorDialog(tr("Invalid file").toStdString(),
-                                tr(NATRON_APPLICATION_NAME " only accepts python scripts or .ntp project files").toStdString());
+            Dialogs::errorDialog( tr("Invalid file").toStdString(),
+                                  tr(NATRON_APPLICATION_NAME " only accepts python scripts or .ntp project files").toStdString() );
             execOnProjectCreatedCallback();
         }
     }
-    
+
     const QString& extraOnProjectCreatedScript = cl.getDefaultOnProjectLoadedScript();
-    if (!extraOnProjectCreatedScript.isEmpty()) {
+    if ( !extraOnProjectCreatedScript.isEmpty() ) {
         QFileInfo cbInfo(extraOnProjectCreatedScript);
-        if (cbInfo.exists()) {
+        if ( cbInfo.exists() ) {
             loadPythonScript(cbInfo);
         }
     }
-
-    
 } // load
-
 
 bool
 GuiAppInstance::findAndTryLoadUntitledAutoSave()
 {
-    
-    if (!appPTR->getCurrentSettings()->isAutoSaveEnabledForUnsavedProjects()) {
+    if ( !appPTR->getCurrentSettings()->isAutoSaveEnabledForUnsavedProjects() ) {
         return false;
     }
-    
-    QDir savesDir(Project::autoSavesDir());
+
+    QDir savesDir( Project::autoSavesDir() );
     QStringList entries = savesDir.entryList(QDir::Files | QDir::NoDotAndDotDot);
-    
     QStringList foundAutosaves;
     for (int i = 0; i < entries.size(); ++i) {
         const QString & entry = entries.at(i);
-        QString searchStr(QLatin1Char('.'));
-        searchStr.append(QString::fromUtf8(NATRON_PROJECT_FILE_EXT));
-        searchStr.append(QString::fromUtf8(".autosave"));
+        QString searchStr( QLatin1Char('.') );
+        searchStr.append( QString::fromUtf8(NATRON_PROJECT_FILE_EXT) );
+        searchStr.append( QString::fromUtf8(".autosave") );
         int suffixPos = entry.indexOf(searchStr);
-        if (suffixPos == -1 || entry.contains(QString::fromUtf8("RENDER_SAVE"))) {
+        if ( (suffixPos == -1) || entry.contains( QString::fromUtf8("RENDER_SAVE") ) ) {
             continue;
         }
-        
+
         foundAutosaves << entry;
     }
-    if (foundAutosaves.empty()) {
+    if ( foundAutosaves.empty() ) {
         return false;
     }
-    
+
     QString text = tr("An auto-save was restored successfully. It didn't belong to any project\n"
                       "Would you like to restore it ? Clicking No will remove this auto-save.");
-    
-    
+
+
     appPTR->hideSplashScreen();
-    
+
     StandardButtonEnum ret = Dialogs::questionDialog(tr("Auto-save").toStdString(),
-                                                            text.toStdString(),false, StandardButtons(eStandardButtonYes | eStandardButtonNo),
-                                                            eStandardButtonYes);
+                                                     text.toStdString(), false, StandardButtons(eStandardButtonYes | eStandardButtonNo),
+                                                     eStandardButtonYes);
     if ( (ret == eStandardButtonNo) || (ret == eStandardButtonEscape) ) {
         Project::clearAutoSavesDir();
+
         return false;
     }
-    
+
     for (int i = 0; i < foundAutosaves.size(); ++i) {
         const QString& autoSaveFileName = foundAutosaves[i];
         if (i == 0) {
             //Load the first one into the current instance of Natron, then open-up new instances
-            if (!getProject()->loadProject(savesDir.path() + QLatin1Char('/'), autoSaveFileName, true)) {
+            if ( !getProject()->loadProject(savesDir.path() + QLatin1Char('/'), autoSaveFileName, true) ) {
                 return false;
             }
         } else {
             CLArgs cl;
             AppInstance* newApp = appPTR->newAppInstance(cl, false);
-            if (!newApp->getProject()->loadProject(savesDir.path() + QLatin1Char('/'), autoSaveFileName, true)) {
+            if ( !newApp->getProject()->loadProject(savesDir.path() + QLatin1Char('/'), autoSaveFileName, true) ) {
                 return false;
             }
         }
     }
-    
-    return true;
-  
-} // findAndTryLoadAutoSave
 
+    return true;
+} // findAndTryLoadAutoSave
 
 void
 GuiAppInstance::createNodeGui(const NodePtr &node,
                               const NodePtr& parentMultiInstance,
                               const CreateNodeArgs& args)
 {
-
     boost::shared_ptr<NodeCollection> group = node->getGroup();
-
     NodeGraph* graph;
 
     if (group) {
@@ -488,18 +457,17 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
         throw std::logic_error("");
     }
 
-    NodesGuiList  selectedNodes = graph->getSelectedNodes();
-
-    NodeGuiPtr nodegui = _imp->_gui->createNodeGUI(node,args);
+    NodesGuiList selectedNodes = graph->getSelectedNodes();
+    NodeGuiPtr nodegui = _imp->_gui->createNodeGUI(node, args);
 
     assert(nodegui);
-    if ( parentMultiInstance && nodegui) {
+    if (parentMultiInstance && nodegui) {
         nodegui->hideGui();
 
 
         boost::shared_ptr<NodeGuiI> parentNodeGui_i = parentMultiInstance->getNodeGui();
         assert(parentNodeGui_i);
-        nodegui->setParentMultiInstance(boost::dynamic_pointer_cast<NodeGui>(parentNodeGui_i));
+        nodegui->setParentMultiInstance( boost::dynamic_pointer_cast<NodeGui>(parentNodeGui_i) );
     }
 
     ///It needs to be here because we rely on the _nodeMapping member
@@ -509,11 +477,11 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
     }
 
     ///must be done after the viewer gui has been created
-    if (node->isRotoPaintingNode()) {
+    if ( node->isRotoPaintingNode() ) {
         _imp->_gui->createNewRotoInterface( nodegui.get() );
     }
 
-    if ( node->isPointTrackerNode() && !parentMultiInstance ) {
+    if (node->isPointTrackerNode() && !parentMultiInstance) {
         _imp->_gui->createNewTrackerInterface( nodegui.get() );
     }
 
@@ -523,44 +491,42 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
     }
 
     ///Don't initialize inputs if it is a multi-instance child since it is not part of  the graph
-    if ( !parentMultiInstance) {
+    if (!parentMultiInstance) {
         nodegui->initializeInputs();
     }
 
-    if (args.reason == eCreateNodeReasonUserCreate && !isViewer) {
+    if ( (args.reason == eCreateNodeReasonUserCreate) && !isViewer ) {
         ///we make sure we can have a clean preview.
-        node->computePreviewImage(getTimeLine()->currentFrame());
+        node->computePreviewImage( getTimeLine()->currentFrame() );
         triggerAutoSave();
     }
-    
-    
+
+
     ///only move main instances
-    if (node->getParentMultiInstanceName().empty()) {
-        
+    if ( node->getParentMultiInstanceName().empty() ) {
         bool autoConnect = args.reason == eCreateNodeReasonUserCreate;
-        
-        if (selectedNodes.empty()) {
+
+        if ( selectedNodes.empty() ) {
             autoConnect = false;
         }
         if ( (args.xPosHint != INT_MIN) && (args.yPosHint != INT_MIN) && !autoConnect ) {
-            QPointF pos = nodegui->mapToParent( nodegui->mapFromScene(QPointF(args.xPosHint,args.yPosHint)));
-            nodegui->refreshPosition( pos.x(),pos.y(), true );
+            QPointF pos = nodegui->mapToParent( nodegui->mapFromScene( QPointF(args.xPosHint, args.yPosHint) ) );
+            nodegui->refreshPosition( pos.x(), pos.y(), true );
         } else {
-            BackdropGui* isBd = dynamic_cast<BackdropGui*>(nodegui.get());
+            BackdropGui* isBd = dynamic_cast<BackdropGui*>( nodegui.get() );
             if (!isBd && !isGroup) {
                 NodeGuiPtr selectedNode;
-                if (args.reason == eCreateNodeReasonUserCreate && selectedNodes.size() == 1) {
+                if ( (args.reason == eCreateNodeReasonUserCreate) && (selectedNodes.size() == 1) ) {
                     selectedNode = selectedNodes.front();
-                    BackdropGui* isBackdropGui = dynamic_cast<BackdropGui*>(selectedNode.get());
+                    BackdropGui* isBackdropGui = dynamic_cast<BackdropGui*>( selectedNode.get() );
                     if (isBackdropGui) {
                         selectedNode.reset();
                     }
                 }
-                nodegui->getDagGui()->moveNodesForIdealPosition(nodegui,selectedNode,autoConnect);
+                nodegui->getDagGui()->moveNodesForIdealPosition(nodegui, selectedNode, autoConnect);
             }
         }
     }
-    
 } // createNodeGui
 
 std::string
@@ -575,6 +541,7 @@ GuiAppInstance::openImageFileDialog()
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = false;
     }
+
     return ret;
 }
 
@@ -590,6 +557,7 @@ GuiAppInstance::saveImageFileDialog()
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = false;
     }
+
     return ret;
 }
 
@@ -605,14 +573,12 @@ GuiAppInstance::shouldRefreshPreview() const
     return !_imp->_gui->isDraftRenderEnabled();
 }
 
-
-
 void
 GuiAppInstance::errorDialog(const std::string & title,
                             const std::string & message,
                             bool useHtml) const
 {
-    if (appPTR->isSplashcreenVisible()) {
+    if ( appPTR->isSplashcreenVisible() ) {
         appPTR->hideSplashScreen();
     }
     {
@@ -630,9 +596,12 @@ GuiAppInstance::errorDialog(const std::string & title,
 }
 
 void
-GuiAppInstance::errorDialog(const std::string & title,const std::string & message,bool* stopAsking, bool useHtml) const
+GuiAppInstance::errorDialog(const std::string & title,
+                            const std::string & message,
+                            bool* stopAsking,
+                            bool useHtml) const
 {
-    if (appPTR->isSplashcreenVisible()) {
+    if ( appPTR->isSplashcreenVisible() ) {
         appPTR->hideSplashScreen();
     }
     {
@@ -654,7 +623,7 @@ GuiAppInstance::warningDialog(const std::string & title,
                               const std::string & message,
                               bool useHtml) const
 {
-    if (appPTR->isSplashcreenVisible()) {
+    if ( appPTR->isSplashcreenVisible() ) {
         appPTR->hideSplashScreen();
     }
     {
@@ -677,7 +646,7 @@ GuiAppInstance::warningDialog(const std::string & title,
                               bool* stopAsking,
                               bool useHtml) const
 {
-    if (appPTR->isSplashcreenVisible()) {
+    if ( appPTR->isSplashcreenVisible() ) {
         appPTR->hideSplashScreen();
     }
     {
@@ -699,7 +668,7 @@ GuiAppInstance::informationDialog(const std::string & title,
                                   const std::string & message,
                                   bool useHtml) const
 {
-    if (appPTR->isSplashcreenVisible()) {
+    if ( appPTR->isSplashcreenVisible() ) {
         appPTR->hideSplashScreen();
     }
     {
@@ -722,7 +691,7 @@ GuiAppInstance::informationDialog(const std::string & title,
                                   bool* stopAsking,
                                   bool useHtml) const
 {
-    if (appPTR->isSplashcreenVisible()) {
+    if ( appPTR->isSplashcreenVisible() ) {
         appPTR->hideSplashScreen();
     }
     {
@@ -746,7 +715,7 @@ GuiAppInstance::questionDialog(const std::string & title,
                                StandardButtons buttons,
                                StandardButtonEnum defaultButton) const
 {
-    if (appPTR->isSplashcreenVisible()) {
+    if ( appPTR->isSplashcreenVisible() ) {
         appPTR->hideSplashScreen();
     }
     {
@@ -756,7 +725,7 @@ GuiAppInstance::questionDialog(const std::string & title,
     if (!_imp->_gui) {
         return eStandardButtonIgnore;
     }
-    StandardButtonEnum ret =  _imp->_gui->questionDialog(title, message,useHtml, buttons,defaultButton);
+    StandardButtonEnum ret =  _imp->_gui->questionDialog(title, message, useHtml, buttons, defaultButton);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = false;
@@ -773,7 +742,7 @@ GuiAppInstance::questionDialog(const std::string & title,
                                StandardButtonEnum defaultButton,
                                bool* stopAsking)
 {
-    if (appPTR->isSplashcreenVisible()) {
+    if ( appPTR->isSplashcreenVisible() ) {
         appPTR->hideSplashScreen();
     }
     {
@@ -783,7 +752,7 @@ GuiAppInstance::questionDialog(const std::string & title,
     if (!_imp->_gui) {
         return eStandardButtonIgnore;
     }
-    StandardButtonEnum ret =  _imp->_gui->questionDialog(title, message,useHtml, buttons,defaultButton,stopAsking);
+    StandardButtonEnum ret =  _imp->_gui->questionDialog(title, message, useHtml, buttons, defaultButton, stopAsking);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = false;
@@ -838,7 +807,7 @@ GuiAppInstance::notifyRenderStarted(const QString & sequenceName,
 
 void
 GuiAppInstance::notifyRenderRestarted( OutputEffectInstance* writer,
-                           const boost::shared_ptr<ProcessHandler> & process)
+                                       const boost::shared_ptr<ProcessHandler> & process)
 {
     _imp->_gui->onRenderRestarted(writer, process);
 }
@@ -862,7 +831,6 @@ void
 GuiAppInstance::progressEnd(const NodePtr& node)
 {
     _imp->_gui->progressEnd(node);
-
 }
 
 bool
@@ -870,6 +838,7 @@ GuiAppInstance::progressUpdate(const NodePtr& node,
                                double t)
 {
     bool ret =  _imp->_gui->progressUpdate(node, t);
+
     return ret;
 }
 
@@ -897,7 +866,6 @@ GuiAppInstance::disconnectViewersFromViewerCache()
     _imp->_gui->disconnectViewersFromViewerCache();
 }
 
-
 boost::shared_ptr<FileDialogPreviewProvider>
 GuiAppInstance::getPreviewProvider() const
 {
@@ -918,11 +886,11 @@ GuiAppInstance::isGuiFrozen() const
     return _imp->_gui->isGUIFrozen();
 }
 
-
 void
 GuiAppInstance::clearViewersLastRenderedTexture()
 {
     std::list<ViewerTab*> tabs = _imp->_gui->getViewersList_mt_safe();
+
     for (std::list<ViewerTab*>::const_iterator it = tabs.begin(); it != tabs.end(); ++it) {
         (*it)->getViewer()->clearLastRenderedTexture();
     }
@@ -958,9 +926,10 @@ GuiAppInstance::setLastViewerUsingTimeline(const NodePtr& node)
     if (!node) {
         QMutexLocker k(&_imp->lastTimelineViewerMutex);
         _imp->lastTimelineViewer.reset();
+
         return;
     }
-    if (node->isEffectViewer()) {
+    if ( node->isEffectViewer() ) {
         QMutexLocker k(&_imp->lastTimelineViewerMutex);
         _imp->lastTimelineViewer = node;
     }
@@ -970,17 +939,19 @@ ViewerInstance*
 GuiAppInstance::getLastViewerUsingTimeline() const
 {
     QMutexLocker k(&_imp->lastTimelineViewerMutex);
+
     if (!_imp->lastTimelineViewer) {
         return 0;
     }
+
     return _imp->lastTimelineViewer->isEffectViewer();
 }
 
 void
 GuiAppInstance::discardLastViewerUsingTimeline()
 {
-
     QMutexLocker k(&_imp->lastTimelineViewerMutex);
+
     _imp->lastTimelineViewer.reset();
 }
 
@@ -990,6 +961,7 @@ GuiAppInstance::declareCurrentAppVariable_Python()
     std::string appIDStr = getAppIDString();
     /// define the app variable
     std::stringstream ss;
+
     ss << appIDStr << " = " << NATRON_GUI_PYTHON_MODULE_NAME << ".natron.getGuiInstance(" << getAppID() << ") \n";
     const KnobsVec& knobs = getProject()->getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
@@ -1013,7 +985,7 @@ GuiAppInstance::createLoadProjectSplashScreen(const QString& projectFile)
         return;
     }
     _imp->loadProjectSplash = new LoadProjectSplashScreen(projectFile);
-    _imp->loadProjectSplash->setAttribute(Qt::WA_DeleteOnClose,0);
+    _imp->loadProjectSplash->setAttribute(Qt::WA_DeleteOnClose, 0);
 }
 
 void
@@ -1064,32 +1036,34 @@ GuiAppInstance::reloadStylesheet()
 void
 GuiAppInstance::queueRedrawForAllViewers()
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     ++_imp->overlayRedrawRequests;
 }
 
 int
 GuiAppInstance::getOverlayRedrawRequestsCount() const
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
+
     return _imp->overlayRedrawRequests;
 }
 
 void
 GuiAppInstance::clearOverlayRedrawRequests()
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     _imp->overlayRedrawRequests = 0;
 }
 
 void
-GuiAppInstance::onGroupCreationFinished(const NodePtr& node, CreateNodeReason reason)
+GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
+                                        CreateNodeReason reason)
 {
     if (reason == eCreateNodeReasonUserCreate) {
         NodeGraph* graph = 0;
         boost::shared_ptr<NodeCollection> collection = node->getGroup();
         assert(collection);
-        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(collection.get());
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>( collection.get() );
         if (isGrp) {
             NodeGraphI* graph_i = isGrp->getNodeGraph();
             assert(graph_i);
@@ -1103,9 +1077,9 @@ GuiAppInstance::onGroupCreationFinished(const NodePtr& node, CreateNodeReason re
         }
         NodesGuiList selectedNodes = graph->getSelectedNodes();
         NodeGuiPtr selectedNode;
-        if (!selectedNodes.empty()) {
+        if ( !selectedNodes.empty() ) {
             selectedNode = selectedNodes.front();
-            if (dynamic_cast<BackdropGui*>(selectedNode.get())) {
+            if ( dynamic_cast<BackdropGui*>( selectedNode.get() ) ) {
                 selectedNode.reset();
             }
         }
@@ -1114,14 +1088,14 @@ GuiAppInstance::onGroupCreationFinished(const NodePtr& node, CreateNodeReason re
         NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>(node_gui_i);
         graph->moveNodesForIdealPosition(nodeGui, selectedNode, true);
     }
-   
+
     AppInstance::onGroupCreationFinished(node, reason);
-    
+
     /*std::list<ViewerInstance* > viewers;
-    node->hasViewersConnected(&viewers);
-    for (std::list<ViewerInstance* >::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
+       node->hasViewersConnected(&viewers);
+       for (std::list<ViewerInstance* >::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
         (*it2)->renderCurrentFrame(false);
-    }*/
+       }*/
 }
 
 bool
@@ -1137,18 +1111,17 @@ GuiAppInstance::setUserIsPainting(const NodePtr& rotopaintNode,
 {
     {
         QMutexLocker k(&_imp->rotoDataMutex);
-        
         bool newStroke = stroke != _imp->rotoData.stroke;
-        if (isPainting && (rotopaintNode != _imp->rotoData.rotoPaintNode || newStroke)) {
+        if ( isPainting && ( (rotopaintNode != _imp->rotoData.rotoPaintNode) || newStroke ) ) {
             _imp->rotoData.strokeImage.reset();
         }
-        
+
         _imp->rotoData.isPainting = isPainting;
         if (isPainting) {
             _imp->rotoData.rotoPaintNode = rotopaintNode;
             _imp->rotoData.stroke = stroke;
         }
-        
+
         //Reset the index if the stroke is different
         if (newStroke) {
             _imp->rotoData.lastStrokeIndex = -1;
@@ -1163,10 +1136,11 @@ GuiAppInstance::setUserIsPainting(const NodePtr& rotopaintNode,
 
 void
 GuiAppInstance::getActiveRotoDrawingStroke(NodePtr* node,
-                                boost::shared_ptr<RotoStrokeItem>* stroke,
+                                           boost::shared_ptr<RotoStrokeItem>* stroke,
                                            bool *isPainting) const
 {
     QMutexLocker k(&_imp->rotoDataMutex);
+
     *node = _imp->rotoData.rotoPaintNode;
     *stroke = _imp->rotoData.stroke;
     *isPainting = _imp->rotoData.isPainting;
@@ -1178,13 +1152,12 @@ GuiAppInstance::isRenderStatsActionChecked() const
     return _imp->_gui->areRenderStatsEnabled();
 }
 
-
 bool
 GuiAppInstance::save(const std::string& filename)
 {
-    if (filename.empty()) {
-        boost::shared_ptr<Project> project= getProject();
-        if (project->hasProjectBeenSavedByUser()) {
+    if ( filename.empty() ) {
+        boost::shared_ptr<Project> project = getProject();
+        if ( project->hasProjectBeenSavedByUser() ) {
             return _imp->_gui->saveProject();
         } else {
             return _imp->_gui->saveProjectAs();
@@ -1230,10 +1203,11 @@ GuiAppInstance::newProject()
 void
 GuiAppInstance::handleFileOpenEvent(const std::string &filename)
 {
-    QString fileCopy(QString::fromUtf8(filename.c_str()));
-    fileCopy.replace(QLatin1Char('\\'), QLatin1Char('/'));
+    QString fileCopy( QString::fromUtf8( filename.c_str() ) );
+
+    fileCopy.replace( QLatin1Char('\\'), QLatin1Char('/') );
     QString ext = QtCompat::removeFileExtension(fileCopy);
-    if (ext == QString::fromUtf8(NATRON_PROJECT_FILE_EXT)) {
+    if ( ext == QString::fromUtf8(NATRON_PROJECT_FILE_EXT) ) {
         AppInstance* app = getGui()->openProject(filename);
         if (!app) {
             Dialogs::errorDialog(tr("Project").toStdString(), tr("Failed to open project").toStdString() + ' ' + filename);
@@ -1250,17 +1224,16 @@ GuiAppInstance::getOfxHostOSHandle() const
         return (void*)0;
     }
     WId ret = _imp->_gui->winId();
+
     return (void*)ret;
 }
 
-
-
 void
-GuiAppInstance::updateLastPaintStrokeData(int newAge,const std::list<std::pair<Point,double> >& points,
-                                const RectD& lastPointsBbox,
-                                int strokeIndex)
+GuiAppInstance::updateLastPaintStrokeData(int newAge,
+                                          const std::list<std::pair<Point, double> >& points,
+                                          const RectD& lastPointsBbox,
+                                          int strokeIndex)
 {
-    
     {
         QMutexLocker k(&_imp->rotoDataMutex);
         _imp->rotoData.lastStrokePoints = points;
@@ -1272,9 +1245,11 @@ GuiAppInstance::updateLastPaintStrokeData(int newAge,const std::list<std::pair<P
 }
 
 void
-GuiAppInstance::getLastPaintStrokePoints(std::list<std::list<std::pair<Point,double> > >* strokes, int* strokeIndex) const
+GuiAppInstance::getLastPaintStrokePoints(std::list<std::list<std::pair<Point, double> > >* strokes,
+                                         int* strokeIndex) const
 {
     QMutexLocker k(&_imp->rotoDataMutex);
+
     strokes->push_back(_imp->rotoData.lastStrokePoints);
     *strokeIndex = _imp->rotoData.multiStrokeIndex;
 }
@@ -1283,33 +1258,41 @@ int
 GuiAppInstance::getStrokeLastIndex() const
 {
     QMutexLocker k(&_imp->rotoDataMutex);
+
     return _imp->rotoData.lastStrokeIndex;
 }
 
 void
-GuiAppInstance::getStrokeAndMultiStrokeIndex(boost::shared_ptr<RotoStrokeItem>* stroke, int* strokeIndex) const
+GuiAppInstance::getStrokeAndMultiStrokeIndex(boost::shared_ptr<RotoStrokeItem>* stroke,
+                                             int* strokeIndex) const
 {
     QMutexLocker k(&_imp->rotoDataMutex);
+
     *stroke = _imp->rotoData.stroke;
     *strokeIndex = _imp->rotoData.multiStrokeIndex;
 }
 
 void
-GuiAppInstance::getRenderStrokeData(RectD* lastStrokeMovementBbox, std::list<std::pair<Point,double> >* lastStrokeMovementPoints,
-                         double *distNextIn, boost::shared_ptr<Image>* strokeImage) const
+GuiAppInstance::getRenderStrokeData(RectD* lastStrokeMovementBbox,
+                                    std::list<std::pair<Point, double> >* lastStrokeMovementPoints,
+                                    double *distNextIn,
+                                    boost::shared_ptr<Image>* strokeImage) const
 {
     QMutexLocker k(&_imp->rotoDataMutex);
+
     *lastStrokeMovementBbox = _imp->rotoData.lastStrokeMovementBbox;
     *lastStrokeMovementPoints = _imp->rotoData.lastStrokePoints;
     *distNextIn = _imp->rotoData.distToNextIn;
     *strokeImage = _imp->rotoData.strokeImage;
 }
 
-
 void
-GuiAppInstance::updateStrokeImage(const boost::shared_ptr<Image>& image, double distNextOut, bool setDistNextOut)
+GuiAppInstance::updateStrokeImage(const boost::shared_ptr<Image>& image,
+                                  double distNextOut,
+                                  bool setDistNextOut)
 {
     QMutexLocker k(&_imp->rotoDataMutex);
+
     _imp->rotoData.strokeImage = image;
     if (setDistNextOut) {
         _imp->rotoData.distToNextOut = distNextOut;
@@ -1320,6 +1303,7 @@ RectD
 GuiAppInstance::getLastPaintStrokeBbox() const
 {
     QMutexLocker k(&_imp->rotoDataMutex);
+
     return _imp->rotoData.lastStrokeMovementBbox;
 }
 
@@ -1327,20 +1311,20 @@ RectD
 GuiAppInstance::getPaintStrokeWholeBbox() const
 {
     QMutexLocker k(&_imp->rotoDataMutex);
+
     if (!_imp->rotoData.stroke) {
         return RectD();
     }
+
     return _imp->rotoData.stroke->getWholeStrokeRoDWhilePainting();
 }
-
-
 
 void
 GuiAppInstance::removeAllKeyframesIndicators()
 {
     ///runs only in the main thread
     assert( QThread::currentThread() == qApp->thread() );
-    
+
     bool wasEmpty = _imp->timelineKeyframes.empty();
     _imp->timelineKeyframes.clear();
     if (!wasEmpty) {
@@ -1353,19 +1337,19 @@ GuiAppInstance::addKeyframeIndicator(SequenceTime time)
 {
     ///runs only in the main thread
     assert( QThread::currentThread() == qApp->thread() );
-    
+
     _imp->timelineKeyframes.push_back(time);
     Q_EMIT keyframeIndicatorsChanged();
 }
 
 void
 GuiAppInstance::addMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime> & keys,
-                                             bool emitSignal)
+                                                   bool emitSignal)
 {
     ///runs only in the main thread
     assert( QThread::currentThread() == qApp->thread() );
-    
-    _imp->timelineKeyframes.insert( _imp->timelineKeyframes.begin(),keys.begin(),keys.end() );
+
+    _imp->timelineKeyframes.insert( _imp->timelineKeyframes.begin(), keys.begin(), keys.end() );
     if (!keys.empty() && emitSignal) {
         Q_EMIT keyframeIndicatorsChanged();
     }
@@ -1376,7 +1360,7 @@ GuiAppInstance::removeKeyFrameIndicator(SequenceTime time)
 {
     ///runs only in the main thread
     assert( QThread::currentThread() == qApp->thread() );
-    
+
     std::list<SequenceTime>::iterator it = std::find(_imp->timelineKeyframes.begin(), _imp->timelineKeyframes.end(), time);
     if ( it != _imp->timelineKeyframes.end() ) {
         _imp->timelineKeyframes.erase(it);
@@ -1386,11 +1370,11 @@ GuiAppInstance::removeKeyFrameIndicator(SequenceTime time)
 
 void
 GuiAppInstance::removeMultipleKeyframeIndicator(const std::list<SequenceTime> & keys,
-                                          bool emitSignal)
+                                                bool emitSignal)
 {
     ///runs only in the main thread
     assert( QThread::currentThread() == qApp->thread() );
-    
+
     for (std::list<SequenceTime>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
         std::list<SequenceTime>::iterator it2 = std::find(_imp->timelineKeyframes.begin(), _imp->timelineKeyframes.end(), *it);
         if ( it2 != _imp->timelineKeyframes.end() ) {
@@ -1407,16 +1391,16 @@ GuiAppInstance::addNodesKeyframesToTimeline(const std::list<Node*> & nodes)
 {
     ///runs only in the main thread
     assert( QThread::currentThread() == qApp->thread() );
-    
+
     std::list<Node*>::const_iterator next = nodes.begin();
-    if (next != nodes.end()) {
+    if ( next != nodes.end() ) {
         ++next;
     }
     for (std::list<Node*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         (*it)->showKeyframesOnTimeline( next == nodes.end() );
-        
+
         // increment for next iteration
-        if (next != nodes.end()) {
+        if ( next != nodes.end() ) {
             ++next;
         }
     } // for()
@@ -1427,7 +1411,7 @@ GuiAppInstance::addNodeKeyframesToTimeline(Node* node)
 {
     ///runs only in the main thread
     assert( QThread::currentThread() == qApp->thread() );
-    
+
     node->showKeyframesOnTimeline(true);
 }
 
@@ -1436,16 +1420,16 @@ GuiAppInstance::removeNodesKeyframesFromTimeline(const std::list<Node*> & nodes)
 {
     ///runs only in the main thread
     assert( QThread::currentThread() == qApp->thread() );
-    
+
     std::list<Node*>::const_iterator next = nodes.begin();
-    if (next != nodes.end()) {
+    if ( next != nodes.end() ) {
         ++next;
     }
     for (std::list<Node*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         (*it)->hideKeyframesFromTimeline( next == nodes.end() );
-        
+
         // increment for next iteration
-        if (next != nodes.end()) {
+        if ( next != nodes.end() ) {
             ++next;
         }
     } // for(it)
@@ -1456,7 +1440,7 @@ GuiAppInstance::removeNodeKeyframesFromTimeline(Node* node)
 {
     ///runs only in the main thread
     assert( QThread::currentThread() == qApp->thread() );
-    
+
     node->hideKeyframesFromTimeline(true);
 }
 
@@ -1465,7 +1449,7 @@ GuiAppInstance::getKeyframes(std::list<SequenceTime>* keys) const
 {
     ///runs only in the main thread
     assert( QThread::currentThread() == qApp->thread() );
-    
+
     *keys = _imp->timelineKeyframes;
 }
 
@@ -1474,7 +1458,7 @@ GuiAppInstance::goToPreviousKeyframe()
 {
     ///runs only in the main thread
     assert( QThread::currentThread() == qApp->thread() );
-    
+
     _imp->timelineKeyframes.sort();
     boost::shared_ptr<TimeLine> timeline = getProject()->getTimeLine();
     SequenceTime currentFrame = timeline->currentFrame();
@@ -1490,7 +1474,7 @@ GuiAppInstance::goToNextKeyframe()
 {
     ///runs only in the main thread
     assert( QThread::currentThread() == qApp->thread() );
-    
+
     _imp->timelineKeyframes.sort();
     boost::shared_ptr<TimeLine> timeline = getProject()->getTimeLine();
     SequenceTime currentFrame = timeline->currentFrame();
@@ -1501,18 +1485,22 @@ GuiAppInstance::goToNextKeyframe()
 }
 
 void
-GuiAppInstance::setKnobDnDData(QDrag* drag, const KnobPtr& knob, int dimension)
+GuiAppInstance::setKnobDnDData(QDrag* drag,
+                               const KnobPtr& knob,
+                               int dimension)
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     _imp->knobDnd.source = knob;
     _imp->knobDnd.sourceDimension = dimension;
     _imp->knobDnd.drag = drag;
 }
 
 void
-GuiAppInstance::getKnobDnDData(QDrag** drag, KnobPtr* knob, int* dimension) const
+GuiAppInstance::getKnobDnDData(QDrag** drag,
+                               KnobPtr* knob,
+                               int* dimension) const
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     *knob = _imp->knobDnd.source.lock();
     *dimension = _imp->knobDnd.sourceDimension;
     *drag = _imp->knobDnd.drag;
@@ -1523,23 +1511,25 @@ GuiAppInstance::checkAllReadersModificationDate(bool errorAndWarn)
 {
     NodesList allNodes;
     SequenceTime time = getProject()->getCurrentTime();
+
     getProject()->getNodes_recursive(allNodes, true);
     bool changed =  false;
-    for (NodesList::iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
-        if ((*it)->getEffectInstance()->isReader()) {
+    for (NodesList::iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
+        if ( (*it)->getEffectInstance()->isReader() ) {
             KnobPtr fileKnobI = (*it)->getKnobByName(kOfxImageEffectFileParamName);
             if (!fileKnobI) {
                 continue;
             }
             boost::shared_ptr<KnobGuiI> knobUi_i = fileKnobI->getKnobGuiPointer();
-            KnobGuiFile* isFileKnob = dynamic_cast<KnobGuiFile*>(knobUi_i.get());
-            
+            KnobGuiFile* isFileKnob = dynamic_cast<KnobGuiFile*>( knobUi_i.get() );
+
             if (!isFileKnob) {
                 continue;
             }
             changed |= isFileKnob->checkFileModificationAndWarn(time, errorAndWarn);
         }
     }
+
     return changed;
 }
 

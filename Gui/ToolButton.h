@@ -61,17 +61,17 @@ public:
                 int major,
                 int minor,
                 const QString & label,
-               QIcon toolbuttonIcon = QIcon(),
-               QIcon menuIcon = QIcon());
+                QIcon toolbuttonIcon = QIcon(),
+                QIcon menuIcon = QIcon() );
 
     virtual ~ToolButton();
 
     const QString & getID() const;
-    
+
     int getPluginMajor() const;
-    
+
     int getPluginMinor() const;
-    
+
     const QString & getLabel() const;
     const QIcon & getToolButtonIcon() const;
     const QIcon & getMenuIcon() const;
@@ -83,7 +83,7 @@ public:
     void setMenu(QMenu* menu );
 
     void tryAddChild(ToolButton* child);
-    
+
     void sortChildren();
 
     const std::vector<ToolButton*> & getChildren() const;

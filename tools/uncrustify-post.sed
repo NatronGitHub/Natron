@@ -22,9 +22,15 @@
 #  uncrustify -c tools/uncrustify.cfg --replace */*.cpp */*.h
 # - fix the output of uncrustify using this script
 #  sed -f tools/uncrustify-post.sed -i .bak */*.cpp */*.h
+# - run Qt's normalize utility to fix signals/slots
+#  for d in Gui Engine App CrashReporter Global Renderer Tests; do tools/normalize/normalize --modify $d; done
 
 # arguments to CLANG_DIAG_ON, CLANG_DIAG_OFF, GCC_DIAG_ON, GCC_DIAG_OFF should have no spaces around "-"
 /CLANG_DIAG_ON/ s/ - /-/g
 /CLANG_DIAG_OFF/ s/ - /-/g
 /GCC_DIAG_ON/ s/ - /-/g
 /GCC_DIAG_OFF/ s/ - /-/g
+/DIAG_O/ s/c\+\+ 11-extensions/c++11-extensions/g
+
+s/^ *CLANG_DIAG/CLANG_DIAG/g
+s/^ *GCC_DIAG/GCC_DIAG/g

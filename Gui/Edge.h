@@ -66,8 +66,8 @@ public:
     bool contains(const QPointF &point) const OVERRIDE WARN_UNUSED_RETURN;
 
     void setSource(const NodeGuiPtr & src);
-    
-    void setSourceAndDestination(const NodeGuiPtr & src,const NodeGuiPtr & dst);
+
+    void setSourceAndDestination(const NodeGuiPtr & src, const NodeGuiPtr & dst);
 
     int getInputNumber() const;
 
@@ -95,37 +95,34 @@ public:
     bool isOutputEdge() const;
 
     void setDefaultColor(const QColor & color);
-    
+
     bool isBendPointVisible() const;
-    
+
     bool areOptionalInputsAutoHidden() const;
-    
+
     void setOptional(bool optional);
-    
+
     void setDashed(bool dashed);
 
     void setBendPointVisible(bool visible);
-    
+
     bool isRotoEdge() const;
-    
+
     bool isMask() const;
 
     bool isNearbyBendPoint(const QPointF & scenePoint);
-    
+
     /**
      * @brief Refresh the Edge properties such as dashed state, optional state, visibility etc...
      * @param hovered True if the mouse is hovering the dst node (the node holding this edge)
      **/
     void refreshState(bool hovered);
-    
+
     bool computeVisibility(bool hovered) const;
 
-    
 private:
 
-    virtual void paint(QPainter *painter, const QStyleOptionGraphicsItem *options,QWidget *parent = 0) OVERRIDE FINAL;
-    
-        
+    virtual void paint(QPainter *painter, const QStyleOptionGraphicsItem *options, QWidget *parent = 0) OVERRIDE FINAL;
     boost::scoped_ptr<EdgePrivate> _imp;
 };
 
@@ -162,8 +159,8 @@ public Q_SLOTS:
 
 private:
 
-    virtual void paint(QPainter *painter, const QStyleOptionGraphicsItem *options,QWidget *parent = 0) OVERRIDE FINAL;
-    NodeGuiWPtr _master,_slave;
+    virtual void paint(QPainter *painter, const QStyleOptionGraphicsItem *options, QWidget *parent = 0) OVERRIDE FINAL;
+    NodeGuiWPtr _master, _slave;
     QPolygonF _arrowHead;
     QColor _renderColor;
     QColor _headColor;

@@ -153,7 +153,7 @@ Gui::onRotoSelectedToolChanged(int tool)
     if (!roto) {
         return;
     }
-    
+
     std::list<ViewerTab*> viewers;
     {
         QMutexLocker l(&_imp->_viewerTabsMutex);
@@ -207,15 +207,13 @@ Gui::onViewerRotoEvaluated(ViewerTab* viewer)
     }
 }
 
-
 void
 Gui::progressStart(const NodePtr& node,
                    const std::string &message,
-                   const std::string &/*messageid*/,
+                   const std::string & /*messageid*/,
                    bool canCancel)
 {
-    _imp->_progressPanel->startTask(node, INT_MIN, INT_MAX, 1, false, canCancel, QString::fromUtf8(message.c_str()));
-
+    _imp->_progressPanel->startTask( node, INT_MIN, INT_MAX, 1, false, canCancel, QString::fromUtf8( message.c_str() ) );
 }
 
 void
@@ -230,7 +228,6 @@ Gui::progressUpdate(const NodePtr& node,
 {
     return _imp->_progressPanel->updateTask(node, t);
 }
-
 
 void
 Gui::onMaxVisibleDockablePanelChanged(int maxPanels)
@@ -322,49 +319,50 @@ Gui::moveEvent(QMoveEvent* e)
     setMtSafePosition( p.x(), p.y() );
 }
 
-
 #if 0
 bool
 Gui::event(QEvent* e)
 {
-    switch (e->type()) {
-        case QEvent::TabletEnterProximity:
-        case QEvent::TabletLeaveProximity:
-        case QEvent::TabletMove:
-        case QEvent::TabletPress:
-        case QEvent::TabletRelease:
-        {
-            QTabletEvent *tEvent = dynamic_cast<QTabletEvent *>(e);
-            const std::list<ViewerTab*>& viewers = getViewersList();
-            for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it!=viewers.end(); ++it) {
-                QPoint widgetPos = (*it)->mapToGlobal((*it)->mapFromParent((*it)->pos()));
-                QRect r(widgetPos.x(),widgetPos.y(),(*it)->width(),(*it)->height());
-                if (r.contains(tEvent->globalPos())) {
-                    QTabletEvent te(tEvent->type()
-                                    , mapFromGlobal(tEvent->pos())
-                                    , tEvent->globalPos()
-                                    , tEvent->hiResGlobalPos()
-                                    , tEvent->device()
-                                    , tEvent->pointerType()
-                                    , tEvent->pressure()
-                                    , tEvent->xTilt()
-                                    , tEvent->yTilt()
-                                    , tEvent->tangentialPressure()
-                                    , tEvent->rotation()
-                                    , tEvent->z()
-                                    , tEvent->modifiers()
-                                    , tEvent->uniqueId());
-                    qApp->sendEvent((*it)->getViewer(), &te);
-                    return true;
-                }
+    switch ( e->type() ) {
+    case QEvent::TabletEnterProximity:
+    case QEvent::TabletLeaveProximity:
+    case QEvent::TabletMove:
+    case QEvent::TabletPress:
+    case QEvent::TabletRelease: {
+        QTabletEvent *tEvent = dynamic_cast<QTabletEvent *>(e);
+        const std::list<ViewerTab*>& viewers = getViewersList();
+        for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+            QPoint widgetPos = (*it)->mapToGlobal( (*it)->mapFromParent( (*it)->pos() ) );
+            QRect r( widgetPos.x(), widgetPos.y(), (*it)->width(), (*it)->height() );
+            if ( r.contains( tEvent->globalPos() ) ) {
+                QTabletEvent te( tEvent->type()
+                                 , mapFromGlobal( tEvent->pos() )
+                                 , tEvent->globalPos()
+                                 , tEvent->hiResGlobalPos()
+                                 , tEvent->device()
+                                 , tEvent->pointerType()
+                                 , tEvent->pressure()
+                                 , tEvent->xTilt()
+                                 , tEvent->yTilt()
+                                 , tEvent->tangentialPressure()
+                                 , tEvent->rotation()
+                                 , tEvent->z()
+                                 , tEvent->modifiers()
+                                 , tEvent->uniqueId() );
+                qApp->sendEvent( (*it)->getViewer(), &te );
+
+                return true;
             }
-            break;
         }
-        default:
-            break;
+        break;
     }
+    default:
+        break;
+    }
+
     return QMainWindow::event(e);
 }
+
 #endif
 void
 Gui::resizeEvent(QResizeEvent* e)
@@ -392,47 +390,41 @@ Gui::keyPressEvent(QKeyEvent* e)
     if (_imp->currentPanelFocusEventRecursion > 0) {
         return;
     }
-    
-    QWidget* w = qApp->widgetAt( QCursor::pos() );
 
-    
+    QWidget* w = qApp->widgetAt( QCursor::pos() );
     Qt::Key key = (Qt::Key)e->key();
     Qt::KeyboardModifiers modifiers = e->modifiers();
 
     if (key == Qt::Key_Escape) {
-        
         RightClickableWidget* panel = RightClickableWidget::isParentSettingsPanelRecursive(w);
         if (panel) {
             panel->getPanel()->closePanel();
         }
-    } else if (key == Qt::Key_V && modCASIsControl(e)) {
+    } else if ( (key == Qt::Key_V) && modCASIsControl(e) ) {
         // CTRL +V should have been caught by the Nodegraph if it contained a valid Natron graph.
         // We still try to check if it is a readable Python script
         QClipboard* clipboard = QApplication::clipboard();
         const QMimeData* mimedata = clipboard->mimeData();
-        if (mimedata->hasFormat(QLatin1String("text/plain"))) {
-            
-            QByteArray data = mimedata->data(QLatin1String("text/plain"));
+        if ( mimedata->hasFormat( QLatin1String("text/plain") ) ) {
+            QByteArray data = mimedata->data( QLatin1String("text/plain") );
             QString str = QString::fromUtf8(data);
-            if (QFile::exists(str)) {
+            if ( QFile::exists(str) ) {
                 QList<QUrl> urls;
-                urls.push_back(QUrl::fromLocalFile(str));
-                handleOpenFilesFromUrls(urls, QCursor::pos());
+                urls.push_back( QUrl::fromLocalFile(str) );
+                handleOpenFilesFromUrls( urls, QCursor::pos() );
             } else {
                 std::string error, output;
-                if (!Python::interpretPythonScript(str.toStdString(), &error, &output)) {
-                    _imp->_scriptEditor->appendToScriptEditor(QString::fromUtf8(error.c_str()));
+                if ( !Python::interpretPythonScript(str.toStdString(), &error, &output) ) {
+                    _imp->_scriptEditor->appendToScriptEditor( QString::fromUtf8( error.c_str() ) );
                     ensureScriptEditorVisible();
-                } else if (!output.empty()) {
-                    _imp->_scriptEditor->appendToScriptEditor(QString::fromUtf8(output.c_str()));
+                } else if ( !output.empty() ) {
+                    _imp->_scriptEditor->appendToScriptEditor( QString::fromUtf8( output.c_str() ) );
                 }
             }
-            
-        } else if (mimedata->hasUrls()) {
+        } else if ( mimedata->hasUrls() ) {
             QList<QUrl> urls = mimedata->urls();
-            handleOpenFilesFromUrls(urls, QCursor::pos());
+            handleOpenFilesFromUrls( urls, QCursor::pos() );
         }
-        
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
         if ( getNodeGraph()->getLastSelectedViewer() ) {
             getNodeGraph()->getLastSelectedViewer()->previousFrame();
@@ -477,28 +469,27 @@ Gui::keyPressEvent(QKeyEvent* e)
         _imp->_nodeGraphArea->toggleSelectedNodesEnabled();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, modifiers, key) ) {
         _imp->_nodeGraphArea->popFindDialog();
-    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput1, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput1, modifiers, key) ) {
         connectInput(0);
-    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput2, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput2, modifiers, key) ) {
         connectInput(1);
-    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput3, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput3, modifiers, key) ) {
         connectInput(2);
-    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput4, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput4, modifiers, key) ) {
         connectInput(3);
-    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput5, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput5, modifiers, key) ) {
         connectInput(4);
-    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput6, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput6, modifiers, key) ) {
         connectInput(5);
-    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput7, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput7, modifiers, key) ) {
         connectInput(6);
-    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput8, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput8, modifiers, key) ) {
         connectInput(7);
-    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput9, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput9, modifiers, key) ) {
         connectInput(8);
-    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput10, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput10, modifiers, key) ) {
         connectInput(9);
     } else {
-        
         /*
          * Modifiers are always uncaught by child implementations so that we can forward them to 1 ViewerTab so that
          * plug-ins overlay interacts always get the keyDown/keyUp events to track modifiers state.
@@ -508,7 +499,7 @@ Gui::keyPressEvent(QKeyEvent* e)
             const std::list<ViewerTab*>& viewers = getViewersList();
             bool viewerTabHasFocus = false;
             for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-                if ((*it)->hasFocus() || (_imp->currentPanelFocus == *it && !_imp->keyPressEventHasVisitedFocusWidget)) {
+                if ( (*it)->hasFocus() || ( (_imp->currentPanelFocus == *it) && !_imp->keyPressEventHasVisitedFocusWidget ) ) {
                     viewerTabHasFocus = true;
                     break;
                 }
@@ -519,26 +510,25 @@ Gui::keyPressEvent(QKeyEvent* e)
                 ++_imp->currentPanelFocusEventRecursion;
                 //If a panel as the click focus, try to send the event to it
                 QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress, key, modifiers);
-                qApp->notify(viewers.front(),ev);
+                qApp->notify(viewers.front(), ev);
                 --_imp->currentPanelFocusEventRecursion;
             }
         }
-        
+
         if (_imp->currentPanelFocus && !_imp->keyPressEventHasVisitedFocusWidget) {
-            
             //Increment a recursion counter because the handler of the focus widget might toss it back to us
             ++_imp->currentPanelFocusEventRecursion;
             //If a panel as the click focus, try to send the event to it
             QWidget* curFocusWidget = _imp->currentPanelFocus->getWidget();
             assert(curFocusWidget);
             QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress, key, modifiers);
-            qApp->notify(curFocusWidget,ev);
+            qApp->notify(curFocusWidget, ev);
             --_imp->currentPanelFocusEventRecursion;
         } else {
             QMainWindow::keyPressEvent(e);
         }
     }
-}
+} // Gui::keyPressEvent
 
 void
 Gui::keyReleaseEvent(QKeyEvent* e)
@@ -546,7 +536,7 @@ Gui::keyReleaseEvent(QKeyEvent* e)
     if (_imp->currentPanelFocusEventRecursion > 0) {
         return;
     }
-    
+
     Qt::Key key = (Qt::Key)e->key();
     Qt::KeyboardModifiers modifiers = e->modifiers();
 
@@ -559,7 +549,7 @@ Gui::keyReleaseEvent(QKeyEvent* e)
         const std::list<ViewerTab*>& viewers = getViewersList();
         bool viewerTabHasFocus = false;
         for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-            if ((*it)->hasFocus() || (_imp->currentPanelFocus == *it && !_imp->keyUpEventHasVisitedFocusWidget)) {
+            if ( (*it)->hasFocus() || ( (_imp->currentPanelFocus == *it) && !_imp->keyUpEventHasVisitedFocusWidget ) ) {
                 viewerTabHasFocus = true;
                 break;
             }
@@ -570,20 +560,19 @@ Gui::keyReleaseEvent(QKeyEvent* e)
             ++_imp->currentPanelFocusEventRecursion;
             //If a panel as the click focus, try to send the event to it
             QKeyEvent* ev = new QKeyEvent(QEvent::KeyRelease, key, modifiers);
-            qApp->notify(viewers.front(),ev);
+            qApp->notify(viewers.front(), ev);
             --_imp->currentPanelFocusEventRecursion;
         }
     }
-    
+
     if (_imp->currentPanelFocus && !_imp->keyUpEventHasVisitedFocusWidget) {
-        
         //Increment a recursion counter because the handler of the focus widget might toss it back to us
         ++_imp->currentPanelFocusEventRecursion;
         //If a panel as the click focus, try to send the event to it
         QWidget* curFocusWidget = _imp->currentPanelFocus->getWidget();
         assert(curFocusWidget);
         QKeyEvent* ev = new QKeyEvent(QEvent::KeyRelease, key, modifiers);
-        qApp->notify(curFocusWidget,ev);
+        qApp->notify(curFocusWidget, ev);
         --_imp->currentPanelFocusEventRecursion;
     } else {
         QMainWindow::keyPressEvent(e);
@@ -616,7 +605,8 @@ void
 Gui::refreshAllTimeEvaluationParams()
 {
     int time = getApp()->getProject()->getCurrentTime();
-    for (std::list<NodeGraph*>::iterator it = _imp->_groups.begin(); it!= _imp->_groups.end(); ++it) {
+
+    for (std::list<NodeGraph*>::iterator it = _imp->_groups.begin(); it != _imp->_groups.end(); ++it) {
         (*it)->refreshNodesKnobsAtTime(true, time);
     }
     getNodeGraph()->refreshNodesKnobsAtTime(true, time);
@@ -642,15 +632,14 @@ Gui::onFreezeUIButtonClicked(bool clicked)
         }
     }
     _imp->_propertiesBin->setEnabled(!clicked);
-    
+
     if (!clicked) {
         int time = getApp()->getProject()->getCurrentTime();
-        for (std::list<NodeGraph*>::iterator it = _imp->_groups.begin(); it!= _imp->_groups.end(); ++it) {
+        for (std::list<NodeGraph*>::iterator it = _imp->_groups.begin(); it != _imp->_groups.end(); ++it) {
             (*it)->refreshNodesKnobsAtTime(false, time);
         }
         getNodeGraph()->refreshNodesKnobsAtTime(false, time);
     }
-    
 }
 
 bool
@@ -674,7 +663,7 @@ Gui::getNodesEntitledForOverlays(NodesList & nodes) const
         QMutexLocker k(&_imp->openedPanelsMutex);
         panels = _imp->openedPanels;
     }
-    
+
     for (std::list<DockablePanel*>::const_iterator it = panels.begin();
          it != panels.end(); ++it) {
         NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>(*it);
@@ -687,23 +676,22 @@ Gui::getNodesEntitledForOverlays(NodesList & nodes) const
             boost::shared_ptr<MultiInstancePanel> multiInstance = node->getMultiInstancePanel();
             if (multiInstance) {
                 if ( internalNode->hasOverlay() &&
-                    !internalNode->isNodeDisabled() &&
-                    node->isSettingsPanelVisible() &&
-                    !node->isSettingsPanelMinimized() ) {
+                     !internalNode->isNodeDisabled() &&
+                     node->isSettingsPanelVisible() &&
+                     !node->isSettingsPanelMinimized() ) {
                     nodes.push_back( node->getNode() );
                 }
             } else {
                 if ( ( internalNode->hasOverlay() || internalNode->getRotoContext() ) &&
-                    !internalNode->isNodeDisabled() &&
-                    !internalNode->getParentMultiInstance() &&
-                    internalNode->isActivated() &&
-                    node->isSettingsPanelVisible() &&
-                    !node->isSettingsPanelMinimized() ) {
+                     !internalNode->isNodeDisabled() &&
+                     !internalNode->getParentMultiInstance() &&
+                     internalNode->isActivated() &&
+                     node->isSettingsPanelVisible() &&
+                     !node->isSettingsPanelMinimized() ) {
                     nodes.push_back( node->getNode() );
                 }
             }
         }
-        
     }
 }
 
@@ -722,7 +710,7 @@ Gui::redrawAllViewers()
 void
 Gui::renderAllViewers(bool canAbort)
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
         if ( (*it)->isVisible() ) {
             (*it)->getInternalNode()->renderCurrentFrame(canAbort);
@@ -733,7 +721,7 @@ Gui::renderAllViewers(bool canAbort)
 void
 Gui::abortAllViewers()
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
         if ( (*it)->isVisible() ) {
             (*it)->getInternalNode()->getNode()->abortAnyProcessing();
@@ -773,7 +761,7 @@ void
 Gui::onPrevTabTriggered()
 {
     TabWidget* t = getLastEnteredTabWidget();
-    
+
     if (t) {
         t->moveToPreviousTab();
         PanelWidget* pw = t->currentWidget();
@@ -781,8 +769,6 @@ Gui::onPrevTabTriggered()
             pw->takeClickFocus();
         }
     }
-    
-
 }
 
 void
@@ -816,13 +802,13 @@ Gui::onCloseTabTriggered()
 void
 Gui::appendToScriptEditor(const std::string & str)
 {
-    _imp->_scriptEditor->appendToScriptEditor( QString::fromUtf8(str.c_str()) );
+    _imp->_scriptEditor->appendToScriptEditor( QString::fromUtf8( str.c_str() ) );
 }
 
 void
 Gui::printAutoDeclaredVariable(const std::string & str)
 {
-    _imp->_scriptEditor->printAutoDeclaredVariable( QString::fromUtf8(str.c_str()) );
+    _imp->_scriptEditor->printAutoDeclaredVariable( QString::fromUtf8( str.c_str() ) );
 }
 
 void
@@ -852,7 +838,6 @@ Gui::exportProjectAsGroup()
 {
     exportGroupAsPythonScript( getApp()->getProject().get() );
 }
-
 
 void
 Gui::onUserCommandTriggered()
@@ -884,12 +869,12 @@ Gui::addMenuEntry(const QString & menuGrouping,
                   Qt::Key key,
                   const Qt::KeyboardModifiers & modifiers)
 {
-    QStringList grouping = menuGrouping.split(QLatin1Char('/'));
+    QStringList grouping = menuGrouping.split( QLatin1Char('/') );
 
     if ( grouping.isEmpty() ) {
         getApp()->appendToScriptEditor( tr("Failed to add menu entry for ").toStdString() +
-                                       menuGrouping.toStdString() +
-                                       tr(": incorrect menu grouping").toStdString() );
+                                        menuGrouping.toStdString() +
+                                        tr(": incorrect menu grouping").toStdString() );
 
         return;
     }
@@ -921,19 +906,23 @@ Gui::setCurveEditorTreeWidth(int width)
     _imp->_curveEditor->setTreeWidgetWidth(width);
 }
 
-void Gui::setTripleSyncEnabled(bool enabled)
+void
+Gui::setTripleSyncEnabled(bool enabled)
 {
     if (_imp->_isTripleSyncEnabled != enabled) {
         _imp->_isTripleSyncEnabled = enabled;
     }
 }
 
-bool Gui::isTripleSyncEnabled() const
+bool
+Gui::isTripleSyncEnabled() const
 {
     return _imp->_isTripleSyncEnabled;
 }
 
-void Gui::centerOpenedViewersOn(SequenceTime left, SequenceTime right)
+void
+Gui::centerOpenedViewersOn(SequenceTime left,
+                           SequenceTime right)
 {
     const std::list<ViewerTab *> &viewers = getViewersList();
 
@@ -948,8 +937,9 @@ void Gui::centerOpenedViewersOn(SequenceTime left, SequenceTime right)
 void
 Gui::ddeOpenFile(const QString& filePath)
 {
-    _imp->_appInstance->handleFileOpenEvent(filePath.toStdString());
+    _imp->_appInstance->handleFileOpenEvent( filePath.toStdString() );
 }
+
 #endif
 
 
@@ -958,108 +948,112 @@ Gui::isFocusStealingPossible()
 {
     assert( qApp && qApp->thread() == QThread::currentThread() );
     QWidget* currentFocus = qApp->focusWidget();
-    
-    bool focusStealingNotPossible = (dynamic_cast<QLineEdit*>(currentFocus) ||
-                                     dynamic_cast<QTextEdit*>(currentFocus) ||
-                                     dynamic_cast<QCheckBox*>(currentFocus) ||
-                                     dynamic_cast<ComboBox*>(currentFocus) ||
-                                     dynamic_cast<QComboBox*>(currentFocus));
+    bool focusStealingNotPossible = ( dynamic_cast<QLineEdit*>(currentFocus) ||
+                                      dynamic_cast<QTextEdit*>(currentFocus) ||
+                                      dynamic_cast<QCheckBox*>(currentFocus) ||
+                                      dynamic_cast<ComboBox*>(currentFocus) ||
+                                      dynamic_cast<QComboBox*>(currentFocus) );
 
     return !focusStealingNotPossible;
-
 }
 
 void
 Gui::setCurrentPanelFocus(PanelWidget* widget)
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     _imp->currentPanelFocus = widget;
 }
 
 PanelWidget*
 Gui::getCurrentPanelFocus() const
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
+
     return _imp->currentPanelFocus;
 }
 
-static PanelWidget* isPaneChild(QWidget* w, int recursionLevel)
+static PanelWidget*
+isPaneChild(QWidget* w,
+            int recursionLevel)
 {
     if (!w) {
         return 0;
     }
     PanelWidget* pw = dynamic_cast<PanelWidget*>(w);
-    if (pw && recursionLevel > 0) {
+    if ( pw && (recursionLevel > 0) ) {
         /*
-         Do not return it if recursion is 0, otherwise the focus stealing of the mouse over will actually take click focus
+           Do not return it if recursion is 0, otherwise the focus stealing of the mouse over will actually take click focus
          */
         return pw;
     }
+
     return isPaneChild(w->parentWidget(), recursionLevel + 1);
 }
 
 void
-Gui::onFocusChanged(QWidget* /*old*/, QWidget* newFocus)
+Gui::onFocusChanged(QWidget* /*old*/,
+                    QWidget* newFocus)
 {
-    PanelWidget* pw = isPaneChild(newFocus,0);
+    PanelWidget* pw = isPaneChild(newFocus, 0);
+
     if (pw) {
         pw->takeClickFocus();
     }
 }
 
 void
-Gui::fileSequencesFromUrls(const QList<QUrl>& urls, std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> >* sequences)
+Gui::fileSequencesFromUrls(const QList<QUrl>& urls,
+                           std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> >* sequences)
 {
     QStringList filesList;
+
     for (int i = 0; i < urls.size(); ++i) {
-        const QUrl rl = QtCompat::toLocalFileUrlFixed(urls.at(i));
+        const QUrl rl = QtCompat::toLocalFileUrlFixed( urls.at(i) );
         QString path = rl.toLocalFile();
-        
+
 #ifdef __NATRON_WIN32__
-        if ( !path.isEmpty() && ( path.at(0) == QLatin1Char('/')  || path.at(0) == QLatin1Char('\\') ) ) {
-            path = path.remove(0,1);
+        if ( !path.isEmpty() && ( ( path.at(0) == QLatin1Char('/') ) || ( path.at(0) == QLatin1Char('\\') ) ) ) {
+            path = path.remove(0, 1);
         }
         path = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(path);
-        
+
 #endif
         QDir dir(path);
-        
+
         //if the path dropped is not a directory append it
-        if (!dir.exists()) {
+        if ( !dir.exists() ) {
             filesList << path;
         } else {
             //otherwise append everything inside the dir recursively
-            SequenceFileDialog::appendFilesFromDirRecursively(&dir,&filesList);
+            SequenceFileDialog::appendFilesFromDirRecursively(&dir, &filesList);
         }
     }
-    
+
     QStringList supportedExtensions;
-    supportedExtensions.push_back(QString::fromLatin1(NATRON_PROJECT_FILE_EXT));
-    supportedExtensions.push_back(QString::fromLatin1("py"));
+    supportedExtensions.push_back( QString::fromLatin1(NATRON_PROJECT_FILE_EXT) );
+    supportedExtensions.push_back( QString::fromLatin1("py") );
     ///get all the decoders
-    std::map<std::string,std::string> readersForFormat;
+    std::map<std::string, std::string> readersForFormat;
     appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
-    for (std::map<std::string,std::string>::const_iterator it = readersForFormat.begin(); it != readersForFormat.end(); ++it) {
-        supportedExtensions.push_back( QString::fromUtf8(it->first.c_str()) );
+    for (std::map<std::string, std::string>::const_iterator it = readersForFormat.begin(); it != readersForFormat.end(); ++it) {
+        supportedExtensions.push_back( QString::fromUtf8( it->first.c_str() ) );
     }
-    *sequences = SequenceFileDialog::fileSequencesFromFilesList(filesList,supportedExtensions);
-
-
+    *sequences = SequenceFileDialog::fileSequencesFromFilesList(filesList, supportedExtensions);
 }
 
 void
 Gui::dragEnterEvent(QDragEnterEvent* e)
 {
-    if (!e->mimeData()->hasUrls()) {
+    if ( !e->mimeData()->hasUrls() ) {
         return;
     }
-    
+
     QList<QUrl> urls = e->mimeData()->urls();
-    
+
     std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > sequences;
     fileSequencesFromUrls(urls, &sequences);
-    
-    if (!sequences.empty()) {
+
+    if ( !sequences.empty() ) {
         e->accept();
     }
 }
@@ -1067,16 +1061,16 @@ Gui::dragEnterEvent(QDragEnterEvent* e)
 void
 Gui::dragMoveEvent(QDragMoveEvent* e)
 {
-    if (!e->mimeData()->hasUrls()) {
+    if ( !e->mimeData()->hasUrls() ) {
         return;
     }
-    
+
     QList<QUrl> urls = e->mimeData()->urls();
-    
+
     std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > sequences;
     fileSequencesFromUrls(urls, &sequences);
-    
-    if (!sequences.empty()) {
+
+    if ( !sequences.empty() ) {
         e->accept();
     }
 }
@@ -1087,8 +1081,11 @@ Gui::dragLeaveEvent(QDragLeaveEvent* e)
     e->accept();
 }
 
-static NodeGraph* isNodeGraphChild(QWidget* w) {
+static NodeGraph*
+isNodeGraphChild(QWidget* w)
+{
     NodeGraph* n = dynamic_cast<NodeGraph*>(w);
+
     if (n) {
         return n;
     } else {
@@ -1102,14 +1099,16 @@ static NodeGraph* isNodeGraphChild(QWidget* w) {
 }
 
 void
-Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls, const QPoint& globalPos)
+Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
+                             const QPoint& globalPos)
 {
     std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > sequences;
+
     fileSequencesFromUrls(urls, &sequences);
-    
+
     QWidget* widgetUnderMouse = QApplication::widgetAt(globalPos);
     NodeGraph* graph = isNodeGraphChild(widgetUnderMouse);
-    
+
     if (!graph) {
         // No grpah under mouse, use top level one
         graph = _imp->_nodeGraphArea;
@@ -1118,58 +1117,51 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls, const QPoint& globalPos)
     if (!graph) {
         return;
     }
-    
-    QPointF graphScenePos = graph->mapToScene(graph->mapFromGlobal(globalPos));
-    
+
+    QPointF graphScenePos = graph->mapToScene( graph->mapFromGlobal(globalPos) );
     std::locale local;
     for (U32 i = 0; i < sequences.size(); ++i) {
-        
-        
         boost::shared_ptr<SequenceParsing::SequenceFromFiles> & sequence = sequences[i];
         if (sequence->count() < 1) {
             continue;
         }
-        
+
         ///find a decoder for this file type
         //std::string ext = sequence->fileExtension();
         std::string extLower = sequence->fileExtension();
         boost::to_lower(extLower);
         if (extLower == NATRON_PROJECT_FILE_EXT) {
             const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();
-            assert(!content.empty());
-            (void)openProject(content.begin()->second.absoluteFileName());
+            assert( !content.empty() );
+            (void)openProject( content.begin()->second.absoluteFileName() );
         } else if (extLower == "py") {
             const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();
-            assert(!content.empty());
-            _imp->_scriptEditor->sourceScript(QString::fromUtf8(content.begin()->second.absoluteFileName().c_str()));
+            assert( !content.empty() );
+            _imp->_scriptEditor->sourceScript( QString::fromUtf8( content.begin()->second.absoluteFileName().c_str() ) );
             ensureScriptEditorVisible();
-           
         } else {
-            
-            std::map<std::string,std::string> readersForFormat;
+            std::map<std::string, std::string> readersForFormat;
             appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
-            std::map<std::string,std::string>::iterator found = readersForFormat.find(extLower);
+            std::map<std::string, std::string>::iterator found = readersForFormat.find(extLower);
             if ( found == readersForFormat.end() ) {
                 Dialogs::errorDialog("Reader", "No plugin capable of decoding " + extLower + " was found.");
             } else {
-                
                 std::string pattern = sequence->generateValidSequencePattern();
-                
-                CreateNodeArgs args(QString::fromUtf8(found->second.c_str()), eCreateNodeReasonUserCreate, graph->getGroup());
+                CreateNodeArgs args( QString::fromUtf8( found->second.c_str() ), eCreateNodeReasonUserCreate, graph->getGroup() );
                 args.xPosHint = graphScenePos.x();
                 args.yPosHint = graphScenePos.y();
-                args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern));
-                
+                args.paramValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern) );
+
                 NodePtr n = getApp()->createNode(args);
-                
+
                 //And offset scenePos by the Width of the previous node created if several nodes are created
-                double w,h;
+                double w, h;
                 n->getSize(&w, &h);
                 graphScenePos.rx() += (w + 10);
             }
         }
     }
-}
+} // Gui::handleOpenFilesFromUrls
 
 void
 Gui::dropEvent(QDropEvent* e)
@@ -1177,15 +1169,12 @@ Gui::dropEvent(QDropEvent* e)
     if ( !e->mimeData()->hasUrls() ) {
         return;
     }
-    
+
     e->accept();
-    
+
     QList<QUrl> urls = e->mimeData()->urls();
-    
-    handleOpenFilesFromUrls(urls, mapToGlobal(e->pos()));
+
+    handleOpenFilesFromUrls( urls, mapToGlobal( e->pos() ) );
 } // dropEvent
-
-
-
 
 NATRON_NAMESPACE_EXIT;

@@ -63,8 +63,6 @@ struct KnobsClipBoard
     KnobPtr serialization;
 };
 
-
-
 struct GuiApplicationManagerPrivate
 {
     GuiApplicationManager* _publicInterface;
@@ -78,68 +76,62 @@ struct GuiApplicationManagerPrivate
     ///we couldn't handle at that time
     QString _openFileRequest;
     AppShortcuts _actionShortcuts;
-
     bool _shortcutsChangedVersion;
-    
     QString _fontFamily;
     int _fontSize;
-    
     NodeClipBoard _nodeCB;
-    
     std::list<PythonUserCommand> pythonCommands;
-    
+
     ///Used temporarily to store startup args while we load fonts
     CLArgs startupArgs;
     boost::shared_ptr<QFutureWatcher<void> > fontconfigUpdateWatcher;
     QTimer updateSplashscreenTimer;
     int fontconfigMessageDots;
-        
     PreviewThread previewRenderThread;
-    
-    int dpiX,dpiY;
+    int dpiX, dpiY;
 
 
     GuiApplicationManagerPrivate(GuiApplicationManager* publicInterface);
 
     void createColorPickerCursor();
-    
+
     void createLinkToCursor();
-    
+
     void createLinkMultCursor();
-    
-    void removePluginToolButtonInternal(const boost::shared_ptr<PluginGroupNode>& n,const QStringList& grouping);
+
+    void removePluginToolButtonInternal(const boost::shared_ptr<PluginGroupNode>& n, const QStringList& grouping);
     void removePluginToolButton(const QStringList& grouping);
 
-    void addStandardKeybind(const std::string & grouping,const std::string & id,
-                            const std::string & description,QKeySequence::StandardKey key,
-                            const Qt::KeyboardModifiers & fallbackmodifiers,Qt::Key fallbacksymbol);
+    void addStandardKeybind(const std::string & grouping, const std::string & id,
+                            const std::string & description, QKeySequence::StandardKey key,
+                            const Qt::KeyboardModifiers & fallbackmodifiers, Qt::Key fallbacksymbol);
 
-    void addKeybind(const std::string & grouping,const std::string & id,
+    void addKeybind(const std::string & grouping, const std::string & id,
                     const std::string & description,
-                    const Qt::KeyboardModifiers & modifiers,Qt::Key symbol);
-    
-    void addKeybind(const std::string & grouping,const std::string & id,
+                    const Qt::KeyboardModifiers & modifiers, Qt::Key symbol);
+
+    void addKeybind(const std::string & grouping, const std::string & id,
                     const std::string & description,
-                    const Qt::KeyboardModifiers & modifiers,Qt::Key symbol,
+                    const Qt::KeyboardModifiers & modifiers, Qt::Key symbol,
                     const Qt::KeyboardModifiers & modifiersMask);
-    
-    void addKeybind(const std::string & grouping,const std::string & id,
+
+    void addKeybind(const std::string & grouping, const std::string & id,
                     const std::string & description,
-                    const Qt::KeyboardModifiers & modifiers1,Qt::Key symbol1,
-                    const Qt::KeyboardModifiers & modifiers2,Qt::Key symbol2);
-    
-    void addKeybindInternal(const QString & grouping,const QString & id,
+                    const Qt::KeyboardModifiers & modifiers1, Qt::Key symbol1,
+                    const Qt::KeyboardModifiers & modifiers2, Qt::Key symbol2);
+
+    void addKeybindInternal(const QString & grouping, const QString & id,
                             const QString & description,
                             const std::list<Qt::KeyboardModifiers>& modifiersList,
                             const std::list<Qt::Key>& symbolsList,
                             const Qt::KeyboardModifiers& modifiersMask);
-    
-    void removeKeybind(const QString& grouping,const QString& id);
 
-    void addMouseShortcut(const std::string & grouping,const std::string & id,
+    void removeKeybind(const QString& grouping, const QString& id);
+
+    void addMouseShortcut(const std::string & grouping, const std::string & id,
                           const std::string & description,
-                          const Qt::KeyboardModifiers & modifiers,Qt::MouseButton button);
-    
+                          const Qt::KeyboardModifiers & modifiers, Qt::MouseButton button);
+
     boost::shared_ptr<PluginGroupNode>  findPluginToolButtonInternal(const std::list<boost::shared_ptr<PluginGroupNode> >& children,
                                                                      const boost::shared_ptr<PluginGroupNode>& parent,
                                                                      const QStringList & grouping,
@@ -149,10 +141,10 @@ struct GuiApplicationManagerPrivate
                                                                      int major,
                                                                      int minor,
                                                                      bool isUserCreatable);
-    
+
     void updateFontConfigCache();
 };
 
 NATRON_NAMESPACE_EXIT;
 
-#endif
+#endif // ifndef Gui_ApplicationManagerPrivate_h

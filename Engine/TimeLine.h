@@ -70,7 +70,6 @@ public:
 
     void decrementCurrentFrame();
 
-
 public Q_SLOTS:
 
 
@@ -78,14 +77,14 @@ public Q_SLOTS:
 
 
 Q_SIGNALS:
-    
+
     void frameAboutToChange();
 
     //reason being a TimelineChangeReasonEnum
-    void frameChanged(SequenceTime,int reason);
+    void frameChanged(SequenceTime, int reason);
 
 private:
-    
+
     mutable QMutex _lock; // protects the following SequenceTime members
     Project* _project;
     SequenceTime _currentFrame;

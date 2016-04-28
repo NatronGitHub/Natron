@@ -687,7 +687,7 @@ extractKeySequence(const QKeySequence & seq,
     }
 
     ///The nativeSeqStr now contains only the symbol
-    QKeySequence newSeq(nativeSeqStr,QKeySequence::NativeText);
+    QKeySequence newSeq(nativeSeqStr, QKeySequence::NativeText);
     if (newSeq.count() > 0) {
         symbol = (Qt::Key)newSeq[0];
     } else {
@@ -703,15 +703,15 @@ public:
     QString grouping; //< the grouping of the action, such as CurveEditor/
     QString actionID; //< the unique ID within the grouping
     QString description; //< the description that will be in the shortcut editor
-    
+
     //There might be multiple combinations
     std::list<Qt::KeyboardModifiers> modifiers; //< the keyboard modifiers that must be held down during the action
     std::list<Qt::KeyboardModifiers> defaultModifiers; //< the default keyboard modifiers
     Qt::KeyboardModifiers ignoreMask; ///Mask of modifiers to ignore for this shortcut
-    
+
     BoundAction()
-    : editable(true)
-    , ignoreMask(Qt::NoModifier)
+        : editable(true)
+        , ignoreMask(Qt::NoModifier)
     {
     }
 
@@ -722,47 +722,44 @@ public:
 
 
 class ActionWithShortcut
-: public QAction
+    : public QAction
 {
-        
     QString _group;
-    
+
 protected:
-    
-    std::vector<std::pair<QString,QKeySequence> > _shortcuts;
-    
+
+    std::vector<std::pair<QString, QKeySequence> > _shortcuts;
+
 public:
-    
+
     ActionWithShortcut(const std::string & group,
                        const std::string & actionID,
                        const std::string & actionDescription,
                        QObject* parent,
                        bool setShortcutOnAction = true);
 
-    
+
     ActionWithShortcut(const std::string & group,
                        const std::list<std::string> & actionIDs,
                        const std::string & actionDescription,
                        QObject* parent,
                        bool setShortcutOnAction = true);
 
-    
-    virtual ~ActionWithShortcut();
-    
-    virtual void setShortcutWrapper(const QString& actionID, const QKeySequence& shortcut);
 
-    
+    virtual ~ActionWithShortcut();
+
+    virtual void setShortcutWrapper(const QString& actionID, const QKeySequence& shortcut);
 };
 
 /**
  * @brief Set the widget's tooltip and append in the tooltip the shortcut associated to the action.
  * This will be dynamically changed when the user edits the shortcuts from the editor.
  **/
-#define setTooltipWithShortcut(group,actionID,tooltip,widget) ( widget->addAction(new TooltipActionShortcut(group,actionID,tooltip,widget)) )
-#define setTooltipWithShortcut2(group,actionIDs,tooltip,widget) ( widget->addAction(new TooltipActionShortcut(group,actionIDs,tooltip,widget)) )
+#define setTooltipWithShortcut(group, actionID, tooltip, widget) ( widget->addAction( new TooltipActionShortcut(group, actionID, tooltip, widget) ) )
+#define setTooltipWithShortcut2(group, actionIDs, tooltip, widget) ( widget->addAction( new TooltipActionShortcut(group, actionIDs, tooltip, widget) ) )
 
 class TooltipActionShortcut
-: public ActionWithShortcut
+    : public ActionWithShortcut
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -771,9 +768,9 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     QWidget* _widget;
     QString _originalTooltip;
     bool _tooltipSetInternally;
-    
+
 public:
-    
+
     /**
      * @brief Set a dynamic shortcut in the tooltip. Reference it with %1 where you want to place the shortcut.
      **/
@@ -781,7 +778,7 @@ public:
                           const std::string & actionID,
                           const std::string & toolip,
                           QWidget* parent);
-    
+
     /**
      * @brief Same as above except that the tooltip can contain multiple shortcuts.
      * In that case the tooltip should reference shortcuts by doing so %1, %2 etc... where
@@ -791,20 +788,19 @@ public:
                           const std::list<std::string> & actionIDs,
                           const std::string & toolip,
                           QWidget* parent);
-    
-    virtual ~TooltipActionShortcut() {
-        
+
+    virtual ~TooltipActionShortcut()
+    {
     }
-    
+
     virtual void setShortcutWrapper(const QString& actionID, const QKeySequence& shortcut) OVERRIDE FINAL;
-    
+
 private:
-    
+
     virtual bool eventFilter(QObject* watched, QEvent* event) OVERRIDE FINAL;
-    
-    
+
+
     void setTooltipFromOriginalTooltip();
-    
 };
 
 class KeyBoundAction
@@ -815,8 +811,6 @@ public:
     //There might be multiple shortcuts
     std::list<Qt::Key> currentShortcut; //< the actual shortcut for the keybind
     std::list<Qt::Key> defaultShortcut; //< the default shortcut proposed by the dev team
-    
-    
     std::list<ActionWithShortcut*> actions; //< list of actions using this shortcut
 
     KeyBoundAction()
@@ -833,8 +827,8 @@ public:
     void updateActionsShortcut()
     {
         for (std::list<ActionWithShortcut*>::iterator it = actions.begin(); it != actions.end(); ++it) {
-            if (!modifiers.empty()) {
-                (*it)->setShortcutWrapper( actionID, makeKeySequence(modifiers.front(), currentShortcut.front()) );
+            if ( !modifiers.empty() ) {
+                (*it)->setShortcutWrapper( actionID, makeKeySequence( modifiers.front(), currentShortcut.front() ) );
             }
         }
     }
@@ -861,10 +855,10 @@ public:
 
 ///All the shortcuts of a group matched against their
 ///internal id to find and match the action in the event handlers
-typedef std::map<QString,BoundAction*> GroupShortcuts;
+typedef std::map<QString, BoundAction*> GroupShortcuts;
 
 ///All groups shortcuts mapped against the name of the group
-typedef std::map<QString,GroupShortcuts> AppShortcuts;
+typedef std::map<QString, GroupShortcuts> AppShortcuts;
 
 NATRON_NAMESPACE_EXIT;
 

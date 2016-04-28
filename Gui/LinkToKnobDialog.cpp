@@ -106,7 +106,7 @@ struct LinkToKnobDialogPrivate
     ComboBox* knobSelectionCombo;
     QDialogButtonBox* buttons;
     NodesList allNodes;
-    std::map<QString,boost::shared_ptr<KnobI > > allKnobs;
+    std::map<QString, boost::shared_ptr<KnobI > > allKnobs;
 
     LinkToKnobDialogPrivate(const KnobGuiPtr& from)
         : fromKnob(from)
@@ -126,7 +126,7 @@ struct LinkToKnobDialogPrivate
 LinkToKnobDialog::LinkToKnobDialog(const KnobGuiPtr& from,
                                    QWidget* parent)
     : QDialog(parent)
-      , _imp( new LinkToKnobDialogPrivate(from) )
+    , _imp( new LinkToKnobDialogPrivate(from) )
 {
     _imp->mainLayout = new QVBoxLayout(this);
 
@@ -136,25 +136,25 @@ LinkToKnobDialog::LinkToKnobDialog(const KnobGuiPtr& from,
     _imp->mainLayout->addWidget(_imp->firstLine);
 
     _imp->buttons = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel),
-                                         Qt::Horizontal,this);
+                                         Qt::Horizontal, this);
     QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(accept()) );
     QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(reject()) );
     _imp->mainLayout->addWidget(_imp->buttons);
 
-    _imp->selectNodeLabel = new Label(tr("Parent:"),_imp->firstLine);
+    _imp->selectNodeLabel = new Label(tr("Parent:"), _imp->firstLine);
     _imp->firstLineLayout->addWidget(_imp->selectNodeLabel);
 
 
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(from->getKnob()->getHolder());
+    EffectInstance* isEffect = dynamic_cast<EffectInstance*>( from->getKnob()->getHolder() );
     assert(isEffect);
     if (!isEffect) {
         throw std::logic_error("");
     }
     boost::shared_ptr<NodeCollection> group = isEffect->getNode()->getGroup();
     group->getActiveNodes(&_imp->allNodes);
-    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(group.get());
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>( group.get() );
     if (isGroup) {
-        _imp->allNodes.push_back(isGroup->getNode());
+        _imp->allNodes.push_back( isGroup->getNode() );
     }
     QStringList nodeNames;
     for (NodesList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
@@ -163,8 +163,8 @@ LinkToKnobDialog::LinkToKnobDialog(const KnobGuiPtr& from,
         //_imp->nodeSelectionCombo->addItem(name);
     }
     nodeNames.sort();
-    _imp->nodeSelectionCombo = new CompleterLineEdit(nodeNames,nodeNames,false,this);
-    _imp->nodeSelectionCombo->setToolTip(GuiUtils::convertFromPlainText(tr("Input the name of a node in the current project."), Qt::WhiteSpaceNormal));
+    _imp->nodeSelectionCombo = new CompleterLineEdit(nodeNames, nodeNames, false, this);
+    _imp->nodeSelectionCombo->setToolTip( GuiUtils::convertFromPlainText(tr("Input the name of a node in the current project."), Qt::WhiteSpaceNormal) );
     _imp->firstLineLayout->addWidget(_imp->nodeSelectionCombo);
 
 
@@ -174,7 +174,7 @@ LinkToKnobDialog::LinkToKnobDialog(const KnobGuiPtr& from,
     _imp->knobSelectionCombo = new ComboBox(_imp->firstLine);
     _imp->firstLineLayout->addWidget(_imp->knobSelectionCombo);
 
-    QObject::connect( _imp->nodeSelectionCombo,SIGNAL(itemCompletionChosen()),this,SLOT(onNodeComboEditingFinished()) );
+    QObject::connect( _imp->nodeSelectionCombo, SIGNAL(itemCompletionChosen()), this, SLOT(onNodeComboEditingFinished()) );
 
     _imp->firstLineLayout->addStretch();
 }
@@ -192,7 +192,7 @@ LinkToKnobDialog::onNodeComboEditingFinished()
     NodePtr selectedNode;
     std::string currentNodeName = index.toStdString();
     for (NodesList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
-        if ((*it)->getLabel() == currentNodeName) {
+        if ( (*it)->getLabel() == currentNodeName ) {
             selectedNode = *it;
             break;
         }
@@ -210,7 +210,6 @@ LinkToKnobDialog::onNodeComboEditingFinished()
             KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knobs[j].get() );
             if (from->isTypeCompatible(knobs[j]) && !isButton && !isPage && !isGroup) {
                 QString name = QString::fromUtf8( knobs[j]->getName().c_str() );
-
                 bool canInsertKnob = true;
                 for (int k = 0; k < knobs[j]->getDimension(); ++k) {
                     if ( knobs[j]->isSlave(k) || !knobs[j]->isEnabled(k) || name.isEmpty() ) {
@@ -226,10 +225,11 @@ LinkToKnobDialog::onNodeComboEditingFinished()
     }
 }
 
-KnobPtr LinkToKnobDialog::getSelectedKnobs() const
+KnobPtr
+LinkToKnobDialog::getSelectedKnobs() const
 {
     QString str = _imp->knobSelectionCombo->itemText( _imp->knobSelectionCombo->activeIndex() );
-    std::map<QString,KnobPtr >::const_iterator it = _imp->allKnobs.find(str);
+    std::map<QString, KnobPtr >::const_iterator it = _imp->allKnobs.find(str);
 
     if ( it != _imp->allKnobs.end() ) {
         return it->second;

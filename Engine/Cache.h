@@ -96,7 +96,7 @@ public:
         , mustQuitCond()
         , mustQuit(false)
     {
-        setObjectName(QString::fromUtf8("CacheDeleter"));
+        setObjectName( QString::fromUtf8("CacheDeleter") );
     }
 
     virtual ~DeleterThread()
@@ -223,7 +223,7 @@ public:
         , mustQuitCond()
         , mustQuit(false)
     {
-        setObjectName(QString::fromUtf8("CacheCleaner"));
+        setObjectName( QString::fromUtf8("CacheCleaner") );
     }
 
     virtual ~CacheCleanerThread()
@@ -609,7 +609,7 @@ private:
                     maximumInMemorySize = std::max( (std::size_t)1, _maximumInMemorySize );
                 }
 
-                
+
                 for (typename std::list<EntryTypePtr>::iterator it = deleted.begin(); it != deleted.end(); ++it) {
                     entriesToBeDeleted.push_back(*it);
                 }
@@ -670,20 +670,20 @@ private:
     } // createInternal
 
 public:
-    
+
     void swapOrInsert(const EntryTypePtr& entryToBeEvicted,
                       const EntryTypePtr& newEntry)
     {
         QMutexLocker locker(&_lock);
-        
+
         const typename EntryType::key_type& key = entryToBeEvicted->getKey();
         typename EntryType::hash_type hash = entryToBeEvicted->getHashKey();
         ///find a matching value in the internal memory container
         CacheIterator memoryCached = _memoryCache(hash);
-        if (memoryCached != _memoryCache.end()) {
+        if ( memoryCached != _memoryCache.end() ) {
             std::list<EntryTypePtr> & ret = getValueFromIterator(memoryCached);
             for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
-                if ( (*it)->getKey() == key && (*it)->getParams() == entryToBeEvicted->getParams()) {
+                if ( ( (*it)->getKey() == key ) && ( (*it)->getParams() == entryToBeEvicted->getParams() ) ) {
                     ret.erase(it);
                     break;
                 }
@@ -693,22 +693,20 @@ public:
         } else {
             ///Look in disk cache
             CacheIterator diskCached = _diskCache(hash);
-            if (diskCached != _diskCache.end()) {
+            if ( diskCached != _diskCache.end() ) {
                 ///Remove the old entry
                 std::list<EntryTypePtr> & ret = getValueFromIterator(diskCached);
                 for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
-                    if ( (*it)->getKey() == key && (*it)->getParams() == entryToBeEvicted->getParams()) {
+                    if ( ( (*it)->getKey() == key ) && ( (*it)->getParams() == entryToBeEvicted->getParams() ) ) {
                         ret.erase(it);
                         break;
                     }
                 }
-
             }
             ///Insert in mem cache
             _memoryCache.insert(hash, newEntry);
         }
     }
-
 
     /**
      * @brief Look-up the cache for an entry whose key matches the 'key' and 'params'.
@@ -1127,7 +1125,8 @@ public:
     {
         QString cacheFolderName( appPTR->getDiskCacheLocation() );
         Global::ensureLastPathSeparator(cacheFolderName);
-        cacheFolderName.append( QString::fromUtf8(cacheName().c_str()));
+
+        cacheFolderName.append( QString::fromUtf8( cacheName().c_str() ) );
 
         return cacheFolderName;
     }
@@ -1136,7 +1135,8 @@ public:
     {
         QString newCachePath( getCachePath() );
         Global::ensureLastPathSeparator(newCachePath);
-        newCachePath.append(QString::fromUtf8("restoreFile." NATRON_CACHE_FILE_EXT));
+
+        newCachePath.append( QString::fromUtf8("restoreFile." NATRON_CACHE_FILE_EXT) );
 
         return newCachePath.toStdString();
     }
@@ -1158,24 +1158,28 @@ public:
     std::size_t getMaximumSize() const
     {
         QMutexLocker k(&_sizeLock);
+
         return _maximumCacheSize;
     }
 
     std::size_t getMaximumMemorySize() const
     {
         QMutexLocker k(&_sizeLock);
+
         return _maximumInMemorySize;
     }
 
     std::size_t getMemoryCacheSize() const
     {
         QMutexLocker k(&_sizeLock);
+
         return _memoryCacheSize;
     }
 
     std::size_t getDiskCacheSize() const
     {
         QMutexLocker k(&_sizeLock);
+
         return _diskCacheSize;
     }
 
@@ -1283,7 +1287,8 @@ public:
         _cleanerThread.appendToQueue(holder->getCacheID(), nodeHash, false);
     }
 
-    void removeAllEntriesForHolderPublic(const CacheEntryHolder* holder, bool blocking)
+    void removeAllEntriesForHolderPublic(const CacheEntryHolder* holder,
+                                         bool blocking)
     {
         if (blocking) {
             removeAllEntriesWithDifferentNodeHashForHolderPrivate(holder->getCacheID(), 0, true);
@@ -1291,24 +1296,22 @@ public:
             _cleanerThread.appendToQueue(holder->getCacheID(), 0, true);
         }
     }
-    
+
     void getMemoryStatsForCacheEntryHolder(const CacheEntryHolder* holder,
-                                      std::size_t* ramOccupied,
-                                      std::size_t* diskOccupied) const
+                                           std::size_t* ramOccupied,
+                                           std::size_t* diskOccupied) const
     {
         *ramOccupied = 0;
-        *diskOccupied= 0;
-        
+        *diskOccupied = 0;
+
         std::string holderID = holder->getCacheID();
-        
         QMutexLocker locker(&_lock);
-        
+
         for (CacheIterator memIt = _memoryCache.begin(); memIt != _memoryCache.end(); ++memIt) {
             std::list<EntryTypePtr> & entries = getValueFromIterator(memIt);
             if ( !entries.empty() ) {
-                
                 const EntryTypePtr & front = entries.front();
-                
+
                 if (front->getKey().getCacheHolderID() == holderID) {
                     for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
                         *ramOccupied += (*it)->size();
@@ -1316,13 +1319,12 @@ public:
                 }
             }
         }
-        
+
         for (CacheIterator memIt = _diskCache.begin(); memIt != _diskCache.end(); ++memIt) {
             std::list<EntryTypePtr> & entries = getValueFromIterator(memIt);
             if ( !entries.empty() ) {
-                
                 const EntryTypePtr & front = entries.front();
-                
+
                 if (front->getKey().getCacheHolderID() == holderID) {
                     for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
                         *diskOccupied += (*it)->size();
@@ -1451,7 +1453,7 @@ private:
 
                         //put it back into the RAM
                         _memoryCache.insert( (*it)->getHashKey(), *it );
-                        
+
 
                         U64 memoryCacheSize, maximumInMemorySize;
                         {
@@ -1481,10 +1483,10 @@ private:
                         if (_signalEmitter) {
                             _signalEmitter->emitAddedEntry( key.getTime() );
                         }
-                        
+
                         ///Remove it from the disk cache
                         _diskCache.erase(diskCached);
-                        
+
                         return true;
                     }
                 }
@@ -1536,7 +1538,7 @@ private:
         }
         /*if it is stored on disk, remove it from memory*/
 
-        if (!evicted.second->isStoredOnDisk()) {
+        if ( !evicted.second->isStoredOnDisk() ) {
             entriesToBeDeleted.push_back(evicted.second);
         } else {
             assert( evicted.second.unique() );
@@ -1556,7 +1558,6 @@ private:
 
             /*before that we need to clear the disk cache if it exceeds the maximum size allowed*/
             while ( ( diskCacheSize  + evicted.second->size() ) >= (maximumCacheSize - maximumInMemorySize) ) {
-
                 std::pair<hash_type, EntryTypePtr> evictedFromDisk = _diskCache.evict();
                 //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
                 //we'll let the user of these entries purge the extra entries left in the cache later on
@@ -1588,7 +1589,7 @@ private:
             } else {   /*append to the existing list*/
                 getValueFromIterator(existingDiskCacheEntry).push_back(evicted.second);
             }
-        } // if (!evicted.second->isStoredOnDisk()) 
+        } // if (!evicted.second->isStoredOnDisk())
 
         return true;
     } // tryEvictEntry

@@ -72,9 +72,9 @@ public:
     }
 
     KnobInt(KnobHolder* holder,
-             const std::string &label,
-             int dimension,
-             bool declaredByPlugin);
+            const std::string &label,
+            int dimension,
+            bool declaredByPlugin);
 
     void disableSlider();
 
@@ -125,9 +125,9 @@ public:
     }
 
     KnobBool(KnobHolder* holder,
-              const std::string &label,
-              int dimension,
-              bool declaredByPlugin);
+             const std::string &label,
+             int dimension,
+             bool declaredByPlugin);
 
     /// Can this type be animated?
     /// BooleanParam animation may not be quite perfect yet,
@@ -151,7 +151,7 @@ private:
 /******************************KnobDouble**************************************/
 
 class KnobDouble
-    :  public QObject,public Knob<double>
+    :  public QObject, public Knob<double>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -175,9 +175,9 @@ public:
     }
 
     KnobDouble(KnobHolder* holder,
-                const std::string &label,
-                int dimension,
-                bool declaredByPlugin );
+               const std::string &label,
+               int dimension,
+               bool declaredByPlugin );
 
     virtual ~KnobDouble();
 
@@ -198,20 +198,24 @@ public:
 
     static const std::string & typeNameStatic();
 
-    ValueIsNormalizedEnum getValueIsNormalized(int dimension) const {
+    ValueIsNormalizedEnum getValueIsNormalized(int dimension) const
+    {
         return _valueIsNormalized[dimension];
     }
 
     void setValueIsNormalized(int dimension,
-                              ValueIsNormalizedEnum state) {
+                              ValueIsNormalizedEnum state)
+    {
         _valueIsNormalized[dimension] = state;
     }
-    
-    void setSpatial(bool spatial) {
+
+    void setSpatial(bool spatial)
+    {
         _spatial = spatial;
     }
-    
-    bool getIsSpatial() const {
+
+    bool getIsSpatial() const
+    {
         return _spatial;
     }
 
@@ -242,14 +246,16 @@ public:
      * see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamPropDefaultCoordinateSystem
      * and http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#APIChanges_1_2_SpatialParameters
      **/
-    void setDefaultValuesAreNormalized(bool normalized) {
+    void setDefaultValuesAreNormalized(bool normalized)
+    {
         _defaultValuesAreNormalized = normalized;
     }
 
     /**
      * @brief Returns whether the default values are stored normalized or not.
      **/
-    bool getDefaultValuesAreNormalized() const {
+    bool getDefaultValuesAreNormalized() const
+    {
         return _defaultValuesAreNormalized;
     }
 
@@ -257,13 +263,13 @@ public:
      * @brief Denormalize the given value according to the RoD of the attached effect's input's RoD.
      * WARNING: Can only be called once setValueIsNormalized has been called!
      **/
-    void denormalize(int dimension,double time,double* value) const;
+    void denormalize(int dimension, double time, double* value) const;
 
     /**
      * @brief Normalize the given value according to the RoD of the attached effect's input's RoD.
      * WARNING: Can only be called once setValueIsNormalized has been called!
      **/
-    void normalize(int dimension,double time,double* value) const;
+    void normalize(int dimension, double time, double* value) const;
 
     void addSlavedTrack(const boost::shared_ptr<BezierCP> & cp)
     {
@@ -288,14 +294,14 @@ public:
 
     void serializeTracks(std::list<SerializedTrack>* tracks);
 
-    void restoreTracks(const std::list <SerializedTrack> & tracks,const NodesList & activeNodes);
+    void restoreTracks(const std::list <SerializedTrack> & tracks, const NodesList & activeNodes);
 
     void setHasHostOverlayHandle(bool handle);
-    
+
     bool getHasHostOverlayHandle() const;
-    
+
     virtual bool useHostOverlayHandle() const OVERRIDE { return getHasHostOverlayHandle(); }
-    
+
 public Q_SLOTS:
 
     void onNodeDeactivated();
@@ -310,15 +316,13 @@ Q_SIGNALS:
 private:
 
     virtual bool computeValuesHaveModifications(int dimension,
-                                            const double& value,
-                                            const double& defaultValue) const OVERRIDE FINAL;
-
-
+                                                const double& value,
+                                                const double& defaultValue) const OVERRIDE FINAL;
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
 
 private:
-    
+
     bool _spatial;
     std::vector<double>  _increments;
     std::vector<int> _decimals;
@@ -361,9 +365,9 @@ public:
     }
 
     KnobButton(KnobHolder* holder,
-                const std::string &label,
-                int dimension,
-                bool declaredByPlugin);
+               const std::string &label,
+               int dimension,
+               bool declaredByPlugin);
     static const std::string & typeNameStatic();
 
     void setAsRenderButton()
@@ -376,7 +380,6 @@ public:
         return _renderButton;
     }
 
-    
     void trigger();
 
 private:
@@ -394,35 +397,33 @@ private:
 class KnobChoiceMergeEntriesData
 {
 public:
-    
+
     KnobChoiceMergeEntriesData()
     {
-        
     }
-    
+
     virtual void clear() = 0;
-    
-    virtual ~KnobChoiceMergeEntriesData() {
-        
+
+    virtual ~KnobChoiceMergeEntriesData()
+    {
     }
 };
 
 class KnobChoice
-    : public QObject,public Knob<int>
+    : public QObject, public Knob<int>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    
+
     // Used in populateChoices() to add new entries in the menu. If not passed the entries will be completly replaced.
     // It should return wether a equals b. The userData are the one passed to populateChoice and can be used to store temporary
     // potentially costly operations.
     // The clear() function will be called right before attempting to compare the first member of the entries to merge to b.
     // Then throughout the cycling of the internal entries, b will remain at the same value and temporary data can be used.
     typedef bool (*MergeMenuEqualityFunctor)(const std::string& a, const std::string& b, KnobChoiceMergeEntriesData* userData);
-
     static KnobHelper * BuildKnob(KnobHolder* holder,
                                   const std::string &label,
                                   int dimension,
@@ -432,9 +433,9 @@ public:
     }
 
     KnobChoice(KnobHolder* holder,
-                const std::string &label,
-                int dimension,
-                bool declaredByPlugin);
+               const std::string &label,
+               int dimension,
+               bool declaredByPlugin);
 
     virtual ~KnobChoice();
 
@@ -443,7 +444,7 @@ public:
      * @param entriesHelp Can either be empty, meaning no-tooltip or must be of the size of the entries.
      * @param mergingFunctor If not set, the internal menu will be completely reset and replaced with the given entries.
      * Otherwise the internal menu entries will be merged with the given entries according to this equality functor.
-     * @param mergingData Can be passed when mergingFunctor is not null to speed up the comparisons. 
+     * @param mergingData Can be passed when mergingFunctor is not null to speed up the comparisons.
      *
      * @returns true if something changed, false otherwise.
      **/
@@ -452,20 +453,20 @@ public:
                          MergeMenuEqualityFunctor mergingFunctor = 0,
                          KnobChoiceMergeEntriesData* mergingData = 0,
                          bool restoreOldChoice = true);
-    
+
     void resetChoices();
-    
-    void appendChoice(const std::string& entry, const std::string& help = std::string());
-    
+
+    void appendChoice( const std::string& entry, const std::string& help = std::string() );
+
     void refreshMenu();
-    
+
     bool isActiveEntryPresentInEntries() const;
-    
+
     std::vector<std::string> getEntries_mt_safe() const;
     const std::string& getEntry(int v) const;
     std::vector<std::string> getEntriesHelp_mt_safe() const;
-    std::string getActiveEntryText_mt_safe() ;
-    
+    std::string getActiveEntryText_mt_safe();
+
     int getNumEntries() const;
 
     /// Can this type be animated?
@@ -478,21 +479,21 @@ public:
 
     static const std::string & typeNameStatic();
     std::string getHintToolTipFull() const;
-    
-    void choiceRestoration(KnobChoice* knob,const ChoiceExtraData* data);
-    
+
+    void choiceRestoration(KnobChoice* knob, const ChoiceExtraData* data);
+
     /**
      * @brief When set the menu will have a "New" entry which the user can select to create a new entry on its own.
      **/
     void setHostCanAddOptions(bool add);
-    
+
     bool getHostCanAddOptions() const;
 
     void setCascading(bool cascading)
     {
         _isCascading = cascading;
     }
-    
+
     bool isCascading() const
     {
         return _isCascading;
@@ -502,46 +503,43 @@ public:
     ValueChangedReturnCodeEnum setValueFromLabel(const std::string & value,
                                                  int dimension,
                                                  bool turnOffAutoKeying = false);
-    
+
     /// set the KnobChoice default value from the label
-    void setDefaultValueFromLabel(const std::string & value,int dimension = 0);
-    void setDefaultValueFromLabelWithoutApplying(const std::string & value,int dimension = 0);
+    void setDefaultValueFromLabel(const std::string & value, int dimension = 0);
+    void setDefaultValueFromLabelWithoutApplying(const std::string & value, int dimension = 0);
 
 public Q_SLOTS:
-    
+
     void onOriginalKnobPopulated();
     void onOriginalKnobEntriesReset();
-    void onOriginalKnobEntryAppend(const QString& text,const QString& help);
-    
+    void onOriginalKnobEntryAppend(const QString& text, const QString& help);
+
 Q_SIGNALS:
 
     void populated();
     void entriesReset();
-    void entryAppended(QString,QString);
+    void entryAppended(QString, QString);
 
 private:
-    
+
     virtual void onKnobAboutToAlias(const KnobPtr& slave) OVERRIDE FINAL;
 
     void findAndSetOldChoice(MergeMenuEqualityFunctor mergingFunctor = 0,
                              KnobChoiceMergeEntriesData* mergingData = 0);
-    
+
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
-    virtual void handleSignalSlotsForAliasLink(const KnobPtr& alias,bool connect) OVERRIDE FINAL;
+    virtual void handleSignalSlotsForAliasLink(const KnobPtr& alias, bool connect) OVERRIDE FINAL;
     virtual void onInternalValueChanged(int dimension, double time, ViewSpec view) OVERRIDE FINAL;
-    
-    virtual void cloneExtraData(KnobI* other,int dimension = -1) OVERRIDE FINAL;
-    virtual bool cloneExtraDataAndCheckIfChanged(KnobI* other,int dimension = -1) OVERRIDE FINAL;
-    virtual void cloneExtraData(KnobI* other, double offset, const RangeD* range,int dimension = -1) OVERRIDE FINAL;
+    virtual void cloneExtraData(KnobI* other, int dimension = -1) OVERRIDE FINAL;
+    virtual bool cloneExtraDataAndCheckIfChanged(KnobI* other, int dimension = -1) OVERRIDE FINAL;
+    virtual void cloneExtraData(KnobI* other, double offset, const RangeD* range, int dimension = -1) OVERRIDE FINAL;
+
 private:
-    
+
     mutable QMutex _entriesMutex;
-    std::vector<std::string> _newEntries,_mergedEntries;
-    
-    
-    std::vector<std::string> _newEntriesHelp,_mergedEntriesHelp;
-    
+    std::vector<std::string> _newEntries, _mergedEntries;
+    std::vector<std::string> _newEntriesHelp, _mergedEntriesHelp;
     std::string _currentEntryLabel; // protected by _entriesMutex
     bool _addNewChoice;
     static const std::string _typeNameStr;
@@ -564,9 +562,9 @@ public:
     }
 
     KnobSeparator(KnobHolder* holder,
-                   const std::string &label,
-                   int dimension,
-                   bool declaredByPlugin);
+                  const std::string &label,
+                  int dimension,
+                  bool declaredByPlugin);
     static const std::string & typeNameStatic();
 
 private:
@@ -605,10 +603,9 @@ public:
     }
 
     KnobColor(KnobHolder* holder,
-               const std::string &label,
-               int dimension,
-               bool declaredByPlugin);
-    
+              const std::string &label,
+              int dimension,
+              bool declaredByPlugin);
     static const std::string & typeNameStatic();
 
     bool areAllDimensionsEnabled() const;
@@ -623,13 +620,11 @@ public:
         Q_EMIT pickingEnabled(enabled);
     }
 
-    
     /**
      * @brief When simplified, the GUI of the knob should not have any spinbox and sliders but just a label to click and openup a color dialog
      **/
     void setSimplified(bool simp);
     bool isSimplified() const;
-    
 
 public Q_SLOTS:
 
@@ -641,7 +636,7 @@ Q_SIGNALS:
 
     void minMaxChanged(double mini, double maxi, int index = 0);
 
-    void displayMinMaxChanged(double mini,double maxi,int index = 0);
+    void displayMinMaxChanged(double mini, double maxi, int index = 0);
 
     void mustActivateAllDimensions();
 
@@ -675,9 +670,9 @@ public:
     }
 
     KnobString(KnobHolder* holder,
-                const std::string &label,
-                int dimension,
-                bool declaredByPlugin);
+               const std::string &label,
+               int dimension,
+               bool declaredByPlugin);
 
     virtual ~KnobString();
 
@@ -711,18 +706,19 @@ public:
     {
         return _richText;
     }
-    
-    void setAsCustomHTMLText(bool custom) {
+
+    void setAsCustomHTMLText(bool custom)
+    {
         _customHtmlText = custom;
     }
-    
+
     bool isCustomHTMLText() const
     {
         return _customHtmlText;
     }
 
     void setAsLabel();
-    
+
     bool isLabel() const
     {
         return _isLabel;
@@ -737,12 +733,12 @@ public:
     {
         return _isCustom;
     }
-    
+
     /**
      * @brief Relevant for multi-lines with rich text enables. It tells if
      * the string has content without the html tags
      **/
-    bool hasContentWithoutHtmlTags() ;
+    bool hasContentWithoutHtmlTags();
 
 private:
 
@@ -780,16 +776,16 @@ public:
     }
 
     KnobGroup(KnobHolder* holder,
-               const std::string &label,
-               int dimension,
-               bool declaredByPlugin);
+              const std::string &label,
+              int dimension,
+              bool declaredByPlugin);
 
     void addKnob(const KnobPtr& k);
     void removeKnob(KnobI* k);
-    
+
     bool moveOneStepUp(KnobI* k);
     bool moveOneStepDown(KnobI* k);
-    
+
     void insertKnob(int index, const KnobPtr& k);
 
     std::vector< KnobPtr > getChildren() const;
@@ -813,7 +809,7 @@ private:
 /******************************PAGE_KNOB**************************************/
 
 class KnobPage
-    :  public QObject,public Knob<bool>
+    :  public QObject, public Knob<bool>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -830,22 +826,21 @@ public:
     }
 
     KnobPage(KnobHolder* holder,
-              const std::string &label,
-              int dimension,
-              bool declaredByPlugin);
+             const std::string &label,
+             int dimension,
+             bool declaredByPlugin);
 
     void addKnob(const KnobPtr& k);
-    
+
 
     bool moveOneStepUp(KnobI* k);
     bool moveOneStepDown(KnobI* k);
-    
+
     void removeKnob(KnobI* k);
-    
+
     void insertKnob(int index, const KnobPtr& k);
 
     std::vector< KnobPtr >  getChildren() const;
-
     static const std::string & typeNameStatic();
 
 private:
@@ -883,53 +878,53 @@ public:
     }
 
     KnobParametric(KnobHolder* holder,
-                    const std::string &label,
-                    int dimension,
-                    bool declaredByPlugin );
+                   const std::string &label,
+                   int dimension,
+                   bool declaredByPlugin );
 
-    void setCurveColor(int dimension,double r,double g,double b);
+    void setCurveColor(int dimension, double r, double g, double b);
 
-    void getCurveColor(int dimension,double* r,double* g,double* b);
+    void getCurveColor(int dimension, double* r, double* g, double* b);
 
-    void setParametricRange(double min,double max);
-    
+    void setParametricRange(double min, double max);
+
     void setDefaultCurvesFromCurves();
 
-    std::pair<double,double> getParametricRange() const WARN_UNUSED_RETURN;
+    std::pair<double, double> getParametricRange() const WARN_UNUSED_RETURN;
     boost::shared_ptr<Curve> getParametricCurve(int dimension) const;
     boost::shared_ptr<Curve> getDefaultParametricCurve(int dimension) const;
     StatusEnum addControlPoint(int dimension, double key, double value, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
-    StatusEnum addControlPoint(int dimension,double key,double value, double leftDerivative, double rightDerivative, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
-    StatusEnum getValue(int dimension,double parametricPosition,double *returnValue) const WARN_UNUSED_RETURN;
-    StatusEnum getNControlPoints(int dimension,int *returnValue) const WARN_UNUSED_RETURN;
+    StatusEnum addControlPoint(int dimension, double key, double value, double leftDerivative, double rightDerivative, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
+    StatusEnum getValue(int dimension, double parametricPosition, double *returnValue) const WARN_UNUSED_RETURN;
+    StatusEnum getNControlPoints(int dimension, int *returnValue) const WARN_UNUSED_RETURN;
     StatusEnum getNthControlPoint(int dimension,
-                                      int nthCtl,
-                                      double *key,
-                                      double *value) const WARN_UNUSED_RETURN;
+                                  int nthCtl,
+                                  double *key,
+                                  double *value) const WARN_UNUSED_RETURN;
     StatusEnum getNthControlPoint(int dimension,
-                                          int nthCtl,
-                                          double *key,
-                                          double *value,
-                                          double *leftDerivative,
-                                          double *rightDerivative) const WARN_UNUSED_RETURN;
-    
+                                  int nthCtl,
+                                  double *key,
+                                  double *value,
+                                  double *leftDerivative,
+                                  double *rightDerivative) const WARN_UNUSED_RETURN;
+
     StatusEnum setNthControlPointInterpolation(int dimension,
                                                int nThCtl,
                                                KeyframeTypeEnum interpolation) WARN_UNUSED_RETURN;
-    
-    StatusEnum setNthControlPoint(int dimension,
-                                      int nthCtl,
-                                      double key,
-                                      double value) WARN_UNUSED_RETURN;
-    
-    StatusEnum setNthControlPoint(int dimension,
-                                          int nthCtl,
-                                          double key,
-                                          double value,
-                                          double leftDerivative,
-                                          double rightDerivative) WARN_UNUSED_RETURN;
 
-    
+    StatusEnum setNthControlPoint(int dimension,
+                                  int nthCtl,
+                                  double key,
+                                  double value) WARN_UNUSED_RETURN;
+
+    StatusEnum setNthControlPoint(int dimension,
+                                  int nthCtl,
+                                  double key,
+                                  double value,
+                                  double leftDerivative,
+                                  double rightDerivative) WARN_UNUSED_RETURN;
+
+
     StatusEnum deleteControlPoint(int dimension, int nthCtl) WARN_UNUSED_RETURN;
     StatusEnum deleteAllControlPoints(int dimension) WARN_UNUSED_RETURN;
     static const std::string & typeNameStatic() WARN_UNUSED_RETURN;
@@ -950,7 +945,6 @@ public Q_SLOTS:
         Q_EMIT mustInitializeOverlayInteract(widget);
     }
 
-    
 Q_SIGNALS:
 
     //emitted by drawCustomBackground()
@@ -963,17 +957,17 @@ Q_SIGNALS:
     void curveChanged(int);
 
     void curveColorChanged(int);
-private:
-    
-    virtual void onKnobAboutToAlias(const KnobPtr& slave) OVERRIDE FINAL;
 
+private:
+
+    virtual void onKnobAboutToAlias(const KnobPtr& slave) OVERRIDE FINAL;
     virtual void resetExtraToDefaultValue(int dimension) OVERRIDE FINAL;
     virtual bool hasModificationsVirtual(int dimension) const OVERRIDE FINAL;
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
-    virtual void cloneExtraData(KnobI* other,int dimension = -1) OVERRIDE FINAL;
-    virtual bool cloneExtraDataAndCheckIfChanged(KnobI* other,int dimension = -1) OVERRIDE FINAL;
-    virtual void cloneExtraData(KnobI* other, double offset, const RangeD* range,int dimension = -1) OVERRIDE FINAL;
+    virtual void cloneExtraData(KnobI* other, int dimension = -1) OVERRIDE FINAL;
+    virtual bool cloneExtraDataAndCheckIfChanged(KnobI* other, int dimension = -1) OVERRIDE FINAL;
+    virtual void cloneExtraData(KnobI* other, double offset, const RangeD* range, int dimension = -1) OVERRIDE FINAL;
     static const std::string _typeNameStr;
 };
 
@@ -981,26 +975,25 @@ private:
  * @brief A Table containing strings. The number of columns is static.
  **/
 class KnobTable
-: public Knob<std::string>
+    : public Knob<std::string>
 {
-    
 public:
-    
-    
+
+
     KnobTable(KnobHolder* holder,
-             const std::string &description,
-             int dimension,
-             bool declaredByPlugin);
-    
+              const std::string &description,
+              int dimension,
+              bool declaredByPlugin);
+
     virtual ~KnobTable();
 
     void getTable(std::list<std::vector<std::string> >* table);
     void getTableSingleCol(std::list<std::string>* table);
-   
+
     void decodeFromKnobTableFormat(const std::string& value, std::list<std::vector<std::string> >* table);
     std::string encodeToKnobTableFormat(const std::list<std::vector<std::string> >& table);
     std::string encodeToKnobTableFormatSingleCol(const std::list<std::string>& table);
-    
+
     void setTable(const std::list<std::vector<std::string> >& table);
     void setTableSingleCol(const std::list<std::string>& table);
     void appendRow(const std::vector<std::string>& row);
@@ -1008,41 +1001,40 @@ public:
     void insertRow(int index, const std::vector<std::string>& row);
     void insertRowSingleCol(int index, const std::string& row);
     void removeRow(int index);
-        
+
     virtual int getColumnsCount() const = 0;
-    
     virtual std::string getColumnLabel(int col) const = 0;
-    
     virtual bool isCellEnabled(int row, int col, const QStringList& values) const = 0;
-    
-    virtual bool isCellBracketDecorated(int /*row*/, int /*col*/) const {
+    virtual bool isCellBracketDecorated(int /*row*/,
+                                        int /*col*/) const
+    {
         return false;
     }
-    
-    virtual bool isColumnEditable(int /*col*/) {
+
+    virtual bool isColumnEditable(int /*col*/)
+    {
         return true;
     }
-    
+
     virtual bool useEditButton() const
     {
         return true;
     }
-    
+
 private:
-    
-    
-    virtual bool canAnimate() const OVERRIDE FINAL {
+
+
+    virtual bool canAnimate() const OVERRIDE FINAL
+    {
         return false;
     }
-
 };
 
 class KnobLayers
-: public KnobTable
+    : public KnobTable
 {
-    
 public:
-    
+
     static KnobHelper * BuildKnob(KnobHolder* holder,
                                   const std::string &label,
                                   int dimension,
@@ -1050,26 +1042,24 @@ public:
     {
         return new KnobLayers(holder, label, dimension, declaredByPlugin);
     }
-    
+
     KnobLayers(KnobHolder* holder,
-              const std::string &description,
-              int dimension,
-              bool declaredByPlugin)
-    : KnobTable(holder, description, dimension, declaredByPlugin)
+               const std::string &description,
+               int dimension,
+               bool declaredByPlugin)
+        : KnobTable(holder, description, dimension, declaredByPlugin)
     {
-        
     }
-    
+
     virtual ~KnobLayers()
     {
-        
     }
-    
+
     virtual int getColumnsCount() const OVERRIDE FINAL
     {
         return 2;
     }
-    
+
     virtual std::string getColumnLabel(int col) const OVERRIDE FINAL
     {
         if (col == 0) {
@@ -1080,26 +1070,32 @@ public:
             return "";
         }
     }
-    
-    virtual bool isCellEnabled(int /*row*/, int /*col*/, const QStringList& /*values*/) const OVERRIDE FINAL WARN_UNUSED_RETURN {
+
+    virtual bool isCellEnabled(int /*row*/,
+                               int /*col*/,
+                               const QStringList& /*values*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
         return true;
     }
-    
-    virtual bool isColumnEditable(int col) OVERRIDE FINAL WARN_UNUSED_RETURN {
+
+    virtual bool isColumnEditable(int col) OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
         if (col == 1) {
             return false;
         }
+
         return true;
     }
-    
+
     static const std::string & typeNameStatic() WARN_UNUSED_RETURN;
-    
+
 private:
-    
+
     virtual const std::string & typeName() const OVERRIDE FINAL
     {
         return typeNameStatic();
     }
+
     static const std::string _typeNameStr;
 };
 

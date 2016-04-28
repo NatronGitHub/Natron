@@ -37,31 +37,31 @@ NATRON_NAMESPACE_ENTER;
 
 LibraryBinary::LibraryBinary(LibraryBinary::LibraryTypeEnum type)
     : _type(type)
-      , _library(0)
-      , _valid(false)
+    , _library(0)
+    , _valid(false)
 {
 }
 
 LibraryBinary::LibraryBinary(const std::map<std::string, void(*)()> &functions)
     : _type(LibraryBinary::eLibraryTypeBuiltin)
-      , _library(0)
-      , _valid(false)
+    , _library(0)
+    , _valid(false)
 {
 #ifdef __NATRON_UNIX__
     _functions = functions;
 #else
-    for (std::map<std::string, void(*)()>::const_iterator it = functions.begin();
+    for (std::map<std::string, void (*)()>::const_iterator it = functions.begin();
          it != functions.end();
          ++it) {
-        _functions.insert( std::make_pair(it->first,(HINSTANCE)it->second) );
+        _functions.insert( std::make_pair(it->first, (HINSTANCE)it->second) );
     }
 #endif
 }
 
 LibraryBinary::LibraryBinary(const std::string & binaryPath)
     : _type(LibraryBinary::eLibraryTypeExternal)
-      , _library(0)
-      , _valid(false)
+    , _library(0)
+    , _valid(false)
 {
     loadBinary(binaryPath);
 }
@@ -69,8 +69,8 @@ LibraryBinary::LibraryBinary(const std::string & binaryPath)
 LibraryBinary::LibraryBinary(const std::string & binaryPath,
                              const std::vector<std::string> & funcNames)
     : _type(LibraryBinary::eLibraryTypeExternal)
-      , _library(0)
-      , _valid(false)
+    , _library(0)
+    , _valid(false)
 {
     if ( !loadBinary(binaryPath) ) {
         return;
@@ -92,13 +92,13 @@ LibraryBinary::loadBinary(const std::string & binaryPath)
 #ifdef __NATRON_WIN32__
 #ifdef UNICODE
     std::wstring ws = Global::utf8_to_utf16(binaryPath);
-    _library = LoadLibrary(ws.c_str());
+    _library = LoadLibrary( ws.c_str() );
 #else
     _library = LoadLibrary( binaryPath.c_str() );
 #endif
-    
+
 #elif defined(__NATRON_UNIX__)
-    _library = dlopen(binaryPath.c_str(), RTLD_LAZY|RTLD_LOCAL);
+    _library = dlopen(binaryPath.c_str(), RTLD_LAZY | RTLD_LOCAL);
 #endif
     if (!_library) {
 #ifdef __NATRON_UNIX__
@@ -123,7 +123,7 @@ LibraryBinary::loadBinary(const std::string & binaryPath)
 // 5.2.10 Reinterpret cast [expr.reinterpret.cast]
 // 8 Converting a function pointer to an object pointer type or vice versa is conditionally-supported. The meaning of such a conversion is implementation-defined, except that if an implementation supports conversions in both directions, converting a prvalue of one type to the other type and back, possibly with different cvqualification, shall yield the original pointer value.
 namespace {
-typedef void(*value_type)();
+typedef void (*value_type)();
 typedef value_type (*value_dlsym_t)(void *, const char *);
 }
 #endif
@@ -136,16 +136,16 @@ LibraryBinary::loadFunctions(const std::vector<std::string> & funcNames)
     assert(_valid);
     for (U32 i = 0; i < funcNames.size(); ++i) {
 #ifdef __NATRON_WIN32__
-        value_type v = (value_type)GetProcAddress( _library,funcNames[i].c_str() );
+        value_type v = (value_type)GetProcAddress( _library, funcNames[i].c_str() );
 #elif defined(__NATRON_UNIX__)
-        value_type v = ((value_dlsym_t)(dlsym))( _library, funcNames[i].c_str() );
+        value_type v = ( (value_dlsym_t)(dlsym) )( _library, funcNames[i].c_str() );
 #endif
         if (!v) {
             std::cout << "Couldn't find function " << funcNames[i] << " in binary " << _binaryPath  << std::endl;
             ret = false;
             continue;
         }
-        _functions.insert( make_pair(funcNames[i],v) );
+        _functions.insert( make_pair(funcNames[i], v) );
     }
 
     return ret;

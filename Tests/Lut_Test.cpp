@@ -29,7 +29,7 @@
 NATRON_NAMESPACE_USING
 using namespace NATRON_NAMESPACE::Color;
 
-TEST(Lut,IntConversions) {
+TEST(Lut, IntConversions) {
     for (int i = 0; i < 0x10000; ++i) {
         //printf("%x -> %x,%x\n", i, uint16ToChar(i), floatToInt<256>(intToFloat<65536>(i)));
         EXPECT_EQ ( uint16ToChar(i), floatToInt<256>( intToFloat<65536>(i) ) );

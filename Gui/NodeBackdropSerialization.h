@@ -53,8 +53,8 @@ GCC_DIAG_ON(unused-parameter)
 NATRON_NAMESPACE_ENTER;
 
 /**
-  This class is completly deprecated do not use it.
-  We keep it for backward compatibility with old projects prior to Natron v1.1
+   This class is completly deprecated do not use it.
+   We keep it for backward compatibility with old projects prior to Natron v1.1
  **/
 
 class NodeBackdropSerialization
@@ -110,10 +110,10 @@ private:
 
     double posX;
     double posY;
-    int width,height;
+    int width, height;
     std::string name;
     boost::shared_ptr<KnobSerialization> label;
-    float r,g,b;
+    float r, g, b;
     std::string masterBackdropName;
     bool selected;
     bool _isNull;
@@ -123,37 +123,37 @@ private:
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
-        ar & ::boost::serialization::make_nvp("X_position",posX);
-        ar & ::boost::serialization::make_nvp("Y_position",posY);
-        ar & ::boost::serialization::make_nvp("Width",width);
-        ar & ::boost::serialization::make_nvp("Height",height);
-        ar & ::boost::serialization::make_nvp("Name",name);
-        ar & ::boost::serialization::make_nvp("MasterName",masterBackdropName);
-        ar & ::boost::serialization::make_nvp("Label",*label);
-        ar & ::boost::serialization::make_nvp("r",r);
-        ar & ::boost::serialization::make_nvp("g",g);
-        ar & ::boost::serialization::make_nvp("b",b);
-        ar & ::boost::serialization::make_nvp("Selected",selected);
+        ar & ::boost::serialization::make_nvp("X_position", posX);
+        ar & ::boost::serialization::make_nvp("Y_position", posY);
+        ar & ::boost::serialization::make_nvp("Width", width);
+        ar & ::boost::serialization::make_nvp("Height", height);
+        ar & ::boost::serialization::make_nvp("Name", name);
+        ar & ::boost::serialization::make_nvp("MasterName", masterBackdropName);
+        ar & ::boost::serialization::make_nvp("Label", *label);
+        ar & ::boost::serialization::make_nvp("r", r);
+        ar & ::boost::serialization::make_nvp("g", g);
+        ar & ::boost::serialization::make_nvp("b", b);
+        ar & ::boost::serialization::make_nvp("Selected", selected);
     }
 
     template<class Archive>
     void load(Archive & ar,
               const unsigned int version)
     {
-        ar & ::boost::serialization::make_nvp("X_position",posX);
-        ar & ::boost::serialization::make_nvp("Y_position",posY);
-        ar & ::boost::serialization::make_nvp("Width",width);
-        ar & ::boost::serialization::make_nvp("Height",height);
-        ar & ::boost::serialization::make_nvp("Name",name);
-        ar & ::boost::serialization::make_nvp("MasterName",masterBackdropName);
+        ar & ::boost::serialization::make_nvp("X_position", posX);
+        ar & ::boost::serialization::make_nvp("Y_position", posY);
+        ar & ::boost::serialization::make_nvp("Width", width);
+        ar & ::boost::serialization::make_nvp("Height", height);
+        ar & ::boost::serialization::make_nvp("Name", name);
+        ar & ::boost::serialization::make_nvp("MasterName", masterBackdropName);
 
         label.reset(new KnobSerialization);
-        ar & ::boost::serialization::make_nvp("Label",*label);
-        ar & ::boost::serialization::make_nvp("r",r);
-        ar & ::boost::serialization::make_nvp("g",g);
-        ar & ::boost::serialization::make_nvp("b",b);
+        ar & ::boost::serialization::make_nvp("Label", *label);
+        ar & ::boost::serialization::make_nvp("r", r);
+        ar & ::boost::serialization::make_nvp("g", g);
+        ar & ::boost::serialization::make_nvp("b", b);
         if (version >= NODE_BACKDROP_INTRODUCES_SELECTED) {
-            ar & ::boost::serialization::make_nvp("Selected",selected);
+            ar & ::boost::serialization::make_nvp("Selected", selected);
         }
         _isNull = false;
     }

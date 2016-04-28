@@ -49,20 +49,20 @@ NATRON_NAMESPACE_ENTER;
 PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,
                                    Gui *parent)
     : QWidget(parent)
-      , _gui(parent)
-      , _settings(settings)
-      , _changedKnobs()
-      , _closeIsOK(false)
+    , _gui(parent)
+    , _settings(settings)
+    , _changedKnobs()
+    , _closeIsOK(false)
 {
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
     setWindowFlags(Qt::Window);
     setWindowTitle( tr("Preferences") );
     _mainLayout = new QVBoxLayout(this);
-    _mainLayout->setContentsMargins(0,0,0,0);
+    _mainLayout->setContentsMargins(0, 0, 0, 0);
     _mainLayout->setSpacing(0);
 
-    _panel = new DockablePanel(_gui,_settings.get(), _mainLayout, DockablePanel::eHeaderModeNoHeader,true, boost::shared_ptr<QUndoStack>(),QString(), QString(), false,QString(), this);
+    _panel = new DockablePanel(_gui, _settings.get(), _mainLayout, DockablePanel::eHeaderModeNoHeader, true, boost::shared_ptr<QUndoStack>(), QString(), QString(), false, QString(), this);
     _panel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     _mainLayout->addWidget(_panel);
 
@@ -77,17 +77,17 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,
     _buttonBox->addButton(_cancelB, QDialogButtonBox::RejectRole);
     _buttonBox->addButton(_okB, QDialogButtonBox::AcceptRole);
 
-   // _mainLayout->addStretch();
+    // _mainLayout->addStretch();
     _mainLayout->addWidget(_buttonBox);
 
     QObject::connect( _restoreDefaultsB, SIGNAL(clicked()), this, SLOT(restoreDefaults()) );
     QObject::connect( _buttonBox, SIGNAL(rejected()), this, SLOT(cancelChanges()) );
     QObject::connect( _buttonBox, SIGNAL(accepted()), this, SLOT(saveChangesAndClose()) );
-    QObject::connect(_settings.get(), SIGNAL(settingChanged(KnobI*)), this,SLOT(onSettingChanged(KnobI*)));
+    QObject::connect( _settings.get(), SIGNAL(settingChanged(KnobI*)), this, SLOT(onSettingChanged(KnobI*)) );
 
     _panel->initializeKnobs();
 
-    resize(TO_DPIX(900), TO_DPIY(600));
+    resize( TO_DPIX(900), TO_DPIY(600) );
 }
 
 void
@@ -105,7 +105,7 @@ void
 PreferencesPanel::restoreDefaults()
 {
     StandardButtonEnum reply = Dialogs::questionDialog( tr("Preferences").toStdString(),
-                                                           tr("Restoring the settings will delete any custom configuration, are you sure you want to do this?").toStdString(), false );
+                                                        tr("Restoring the settings will delete any custom configuration, are you sure you want to do this?").toStdString(), false );
 
     if (reply == eStandardButtonYes) {
         _settings->restoreDefault();
@@ -125,7 +125,7 @@ PreferencesPanel::saveChangesAndClose()
     ///Steal focus from other widgets so that we are sure all LineEdits and Spinboxes get the focusOut event and their editingFinished
     ///signal is emitted.
     _okB->setFocus();
-    _settings->saveSettings(_changedKnobs,true);
+    _settings->saveSettings(_changedKnobs, true);
     _closeIsOK = true;
     close();
 }
@@ -133,12 +133,11 @@ PreferencesPanel::saveChangesAndClose()
 void
 PreferencesPanel::showEvent(QShowEvent* /*e*/)
 {
-    
     QDesktopWidget* desktop = QApplication::desktop();
     const QRect rect = desktop->screenGeometry();
 
-    move( QPoint(rect.width() / 2 - width() / 2,rect.height() / 2 - height() / 2) );
-    
+    move( QPoint(rect.width() / 2 - width() / 2, rect.height() / 2 - height() / 2) );
+
     _changedKnobs.clear();
 }
 

@@ -42,33 +42,32 @@ struct DiskCacheNodePrivate
     boost::weak_ptr<KnobInt> firstFrame;
     boost::weak_ptr<KnobInt> lastFrame;
     boost::weak_ptr<KnobButton> preRender;
-    
+
     DiskCacheNodePrivate()
     {
-        
     }
 };
 
 DiskCacheNode::DiskCacheNode(NodePtr node)
-: OutputEffectInstance(node)
-, _imp(new DiskCacheNodePrivate())
+    : OutputEffectInstance(node)
+    , _imp( new DiskCacheNodePrivate() )
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
 }
 
 DiskCacheNode::~DiskCacheNode()
 {
-    
 }
-
 
 void
-DiskCacheNode::addAcceptedComponents(int /*inputNb*/,std::list<ImageComponents>* comps)
+DiskCacheNode::addAcceptedComponents(int /*inputNb*/,
+                                     std::list<ImageComponents>* comps)
 {
-    comps->push_back(ImageComponents::getRGBAComponents());
-    comps->push_back(ImageComponents::getRGBComponents());
-    comps->push_back(ImageComponents::getAlphaComponents());
+    comps->push_back( ImageComponents::getRGBAComponents() );
+    comps->push_back( ImageComponents::getRGBComponents() );
+    comps->push_back( ImageComponents::getAlphaComponents() );
 }
+
 void
 DiskCacheNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 {
@@ -76,7 +75,9 @@ DiskCacheNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 }
 
 bool
-DiskCacheNode::shouldCacheOutput(bool /*isFrameVaryingOrAnimated*/,double /*time*/, ViewIdx /*view*/) const
+DiskCacheNode::shouldCacheOutput(bool /*isFrameVaryingOrAnimated*/,
+                                 double /*time*/,
+                                 ViewIdx /*view*/) const
 {
     return true;
 }
@@ -85,8 +86,8 @@ void
 DiskCacheNode::initializeKnobs()
 {
     boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>(this, "Controls");
-    
     boost::shared_ptr<KnobChoice> frameRange = AppManager::createKnob<KnobChoice>(this, "Frame range");
+
     frameRange->setName("frameRange");
     frameRange->setAnimationEnabled(false);
     std::vector<std::string> choices;
@@ -98,7 +99,7 @@ DiskCacheNode::initializeKnobs()
     frameRange->setDefaultValue(0);
     page->addKnob(frameRange);
     _imp->frameRange = frameRange;
-    
+
     boost::shared_ptr<KnobInt> firstFrame = AppManager::createKnob<KnobInt>(this, "First frame");
     firstFrame->setAnimationEnabled(false);
     firstFrame->setName("firstFrame");
@@ -109,7 +110,7 @@ DiskCacheNode::initializeKnobs()
     firstFrame->setSecretByDefault(true);
     page->addKnob(firstFrame);
     _imp->firstFrame = firstFrame;
-    
+
     boost::shared_ptr<KnobInt> lastFrame = AppManager::createKnob<KnobInt>(this, "Last frame");
     lastFrame->setAnimationEnabled(false);
     lastFrame->setName("LastFrame");
@@ -119,15 +120,13 @@ DiskCacheNode::initializeKnobs()
     lastFrame->setSecretByDefault(true);
     page->addKnob(lastFrame);
     _imp->lastFrame = lastFrame;
-    
+
     boost::shared_ptr<KnobButton> preRender = AppManager::createKnob<KnobButton>(this, "Pre-cache");
     preRender->setName("preRender");
     preRender->setEvaluateOnChange(false);
     preRender->setHintToolTip("Cache the frame range specified by rendering images at zoom-level 100% only.");
     page->addKnob(preRender);
     _imp->preRender = preRender;
-    
-    
 }
 
 void
@@ -140,17 +139,17 @@ DiskCacheNode::knobChanged(KnobI* k,
     if (_imp->frameRange.lock().get() == k) {
         int idx = _imp->frameRange.lock()->getValue(0);
         switch (idx) {
-            case 0:
-            case 1:
-                _imp->firstFrame.lock()->setSecret(true);
-                _imp->lastFrame.lock()->setSecret(true);
-                break;
-            case 2:
-                _imp->firstFrame.lock()->setSecret(false);
-                _imp->lastFrame.lock()->setSecret(false);
-                break;
-            default:
-                break;
+        case 0:
+        case 1:
+            _imp->firstFrame.lock()->setSecret(true);
+            _imp->lastFrame.lock()->setSecret(true);
+            break;
+        case 2:
+            _imp->firstFrame.lock()->setSecret(false);
+            _imp->lastFrame.lock()->setSecret(false);
+            break;
+        default:
+            break;
         }
     } else if (_imp->preRender.lock().get() == k) {
         AppInstance::RenderWork w;
@@ -166,73 +165,72 @@ DiskCacheNode::knobChanged(KnobI* k,
 }
 
 void
-DiskCacheNode::getFrameRange(double *first,double *last)
+DiskCacheNode::getFrameRange(double *first,
+                             double *last)
 {
     int idx = _imp->frameRange.lock()->getValue();
+
     switch (idx) {
-        case 0: {
-            EffectInstPtr input = getInput(0);
-            if (input) {
-                input->getFrameRange_public(input->getHash(), first, last);
-            }
-        } break;
-        case 1: {
-            getApp()->getFrameRange(first, last);
-        } break;
-        case 2: {
-            *first = _imp->firstFrame.lock()->getValue();
-            *last = _imp->lastFrame.lock()->getValue();
-        };
-        default:
-            break;
+    case 0: {
+        EffectInstPtr input = getInput(0);
+        if (input) {
+            input->getFrameRange_public(input->getHash(), first, last);
+        }
+    }
+    break;
+    case 1: {
+        getApp()->getFrameRange(first, last);
+    }
+    break;
+    case 2: {
+        *first = _imp->firstFrame.lock()->getValue();
+        *last = _imp->lastFrame.lock()->getValue();
+    };
+    default:
+        break;
     }
 }
-
 
 StatusEnum
 DiskCacheNode::render(const RenderActionArgs& args)
 {
-    
     assert(args.outputPlanes.size() == 1);
-    
+
     EffectInstPtr input = getInput(0);
     if (!input) {
         return eStatusFailed;
     }
-    
 
-    
-    const std::pair<ImageComponents,ImagePtr>& output = args.outputPlanes.front();
-    
-    for (std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > >::const_iterator it =args.outputPlanes.begin(); it != args.outputPlanes.end(); ++it) {
+
+    const std::pair<ImageComponents, ImagePtr>& output = args.outputPlanes.front();
+
+    for (std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > >::const_iterator it = args.outputPlanes.begin(); it != args.outputPlanes.end(); ++it) {
         RectI roiPixel;
-        
-        ImagePtr srcImg = getImage(0, args.time, args.originalScale, args.view, NULL, &it->first, false, true,&roiPixel);
+        ImagePtr srcImg = getImage(0, args.time, args.originalScale, args.view, NULL, &it->first, false, true, &roiPixel);
         if (!srcImg) {
             return eStatusFailed;
         }
-        if (srcImg->getMipMapLevel() != output.second->getMipMapLevel()) {
+        if ( srcImg->getMipMapLevel() != output.second->getMipMapLevel() ) {
             throw std::runtime_error("Host gave image with wrong scale");
         }
-        if (srcImg->getComponents() != output.second->getComponents() || srcImg->getBitDepth() != output.second->getBitDepth()) {
-            
-            
-            srcImg->convertToFormat(args.roi, getApp()->getDefaultColorSpaceForBitDepth( srcImg->getBitDepth() ),
-                                    getApp()->getDefaultColorSpaceForBitDepth(output.second->getBitDepth()), 3, true, false, output.second.get());
+        if ( ( srcImg->getComponents() != output.second->getComponents() ) || ( srcImg->getBitDepth() != output.second->getBitDepth() ) ) {
+            srcImg->convertToFormat( args.roi, getApp()->getDefaultColorSpaceForBitDepth( srcImg->getBitDepth() ),
+                                     getApp()->getDefaultColorSpaceForBitDepth( output.second->getBitDepth() ), 3, true, false, output.second.get() );
         } else {
-            output.second->pasteFrom(*srcImg, args.roi, output.second->usesBitMap() && srcImg->usesBitMap());
+            output.second->pasteFrom( *srcImg, args.roi, output.second->usesBitMap() && srcImg->usesBitMap() );
         }
-
     }
-    
+
     return eStatusOK;
 }
 
 bool
-DiskCacheNode::isHostChannelSelectorSupported(bool* /*defaultR*/,bool* /*defaultG*/, bool* /*defaultB*/, bool* /*defaultA*/) const
+DiskCacheNode::isHostChannelSelectorSupported(bool* /*defaultR*/,
+                                              bool* /*defaultG*/,
+                                              bool* /*defaultB*/,
+                                              bool* /*defaultA*/) const
 {
     return false;
 }
-
 
 NATRON_NAMESPACE_EXIT;

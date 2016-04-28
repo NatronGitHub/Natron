@@ -39,42 +39,45 @@
 NATRON_NAMESPACE_ENTER;
 
 ImageLayer::ImageLayer(const QString& layerName,
-           const QString& componentsPrettyName,
-           const QStringList& componentsName)
-: _layerName(layerName)
-, _componentsPrettyName(componentsPrettyName)
-, _componentsName(componentsName)
-, _comps()
+                       const QString& componentsPrettyName,
+                       const QStringList& componentsName)
+    : _layerName(layerName)
+    , _componentsPrettyName(componentsPrettyName)
+    , _componentsName(componentsName)
+    , _comps()
 {
-    
-    std::vector<std::string> channels(componentsName.size());
+    std::vector<std::string> channels( componentsName.size() );
     int i = 0;
-    for (QStringList::const_iterator it = componentsName.begin(); it!=componentsName.end(); ++it,++i) {
+
+    for (QStringList::const_iterator it = componentsName.begin(); it != componentsName.end(); ++it, ++i) {
         channels[i] = it->toStdString();
     }
-    _comps.reset(new ImageComponents(layerName.toStdString(), componentsPrettyName.toStdString(), channels));
+    _comps.reset( new ImageComponents(layerName.toStdString(), componentsPrettyName.toStdString(), channels) );
 }
 
 ImageLayer::ImageLayer(const ImageComponents& comps)
-: _layerName(QString::fromUtf8(comps.getLayerName().c_str()))
-, _componentsPrettyName(QString::fromUtf8(comps.getComponentsGlobalName().c_str()))
+    : _layerName( QString::fromUtf8( comps.getLayerName().c_str() ) )
+    , _componentsPrettyName( QString::fromUtf8( comps.getComponentsGlobalName().c_str() ) )
 {
     const std::vector<std::string>& channels = comps.getComponentsNames();
+
     for (std::size_t i = 0; i < channels.size(); ++i) {
-        _componentsName.push_back(QString::fromUtf8(channels[i].c_str()));
+        _componentsName.push_back( QString::fromUtf8( channels[i].c_str() ) );
     }
-    _comps.reset(new ImageComponents(comps));
+    _comps.reset( new ImageComponents(comps) );
 }
 
 int
 ImageLayer::getHash(const ImageLayer& layer)
 {
     Hash64 h;
-    Hash64_appendQString(&h, QString::fromUtf8(layer._comps->getLayerName().c_str()));
+
+    Hash64_appendQString( &h, QString::fromUtf8( layer._comps->getLayerName().c_str() ) );
     const std::vector<std::string>& comps = layer._comps->getComponentsNames();
     for (std::size_t i = 0; i < comps.size(); ++i) {
-        Hash64_appendQString(&h, QString::fromUtf8(comps[i].c_str()));
+        Hash64_appendQString( &h, QString::fromUtf8( comps[i].c_str() ) );
     }
+
     return (int)h.value();
 }
 
@@ -108,11 +111,11 @@ ImageLayer::getComponentsPrettyName() const
     return _componentsPrettyName;
 }
 
-bool ImageLayer::operator==(const ImageLayer& other) const
+bool
+ImageLayer::operator==(const ImageLayer& other) const
 {
     return _comps == other._comps;
 }
-
 
 bool
 ImageLayer::operator<(const ImageLayer& other) const
@@ -123,56 +126,62 @@ ImageLayer::operator<(const ImageLayer& other) const
 /*
  * These are default presets image components
  */
-ImageLayer ImageLayer::getNoneComponents()
+ImageLayer
+ImageLayer::getNoneComponents()
 {
-    return ImageLayer(ImageComponents::getNoneComponents());
+    return ImageLayer( ImageComponents::getNoneComponents() );
 }
 
-ImageLayer ImageLayer::getRGBAComponents()
+ImageLayer
+ImageLayer::getRGBAComponents()
 {
-    return ImageLayer(ImageComponents::getRGBAComponents());
+    return ImageLayer( ImageComponents::getRGBAComponents() );
 }
 
-ImageLayer ImageLayer::getRGBComponents()
+ImageLayer
+ImageLayer::getRGBComponents()
 {
-    return ImageLayer(ImageComponents::getRGBComponents());
+    return ImageLayer( ImageComponents::getRGBComponents() );
 }
 
-ImageLayer ImageLayer::getAlphaComponents()
+ImageLayer
+ImageLayer::getAlphaComponents()
 {
-    return ImageLayer(ImageComponents::getAlphaComponents());
+    return ImageLayer( ImageComponents::getAlphaComponents() );
 }
 
-ImageLayer ImageLayer::getBackwardMotionComponents()
+ImageLayer
+ImageLayer::getBackwardMotionComponents()
 {
-    return ImageLayer(ImageComponents::getBackwardMotionComponents());
+    return ImageLayer( ImageComponents::getBackwardMotionComponents() );
 }
 
-ImageLayer ImageLayer::getForwardMotionComponents()
+ImageLayer
+ImageLayer::getForwardMotionComponents()
 {
-    return ImageLayer(ImageComponents::getForwardMotionComponents());
+    return ImageLayer( ImageComponents::getForwardMotionComponents() );
 }
 
-ImageLayer ImageLayer::getDisparityLeftComponents()
+ImageLayer
+ImageLayer::getDisparityLeftComponents()
 {
-    return ImageLayer(ImageComponents::getDisparityLeftComponents());
+    return ImageLayer( ImageComponents::getDisparityLeftComponents() );
 }
 
-ImageLayer ImageLayer::getDisparityRightComponents()
+ImageLayer
+ImageLayer::getDisparityRightComponents()
 {
-    return ImageLayer(ImageComponents::getDisparityRightComponents());
+    return ImageLayer( ImageComponents::getDisparityRightComponents() );
 }
 
 UserParamHolder::UserParamHolder()
-: _holder(0)
+    : _holder(0)
 {
-    
 }
 
 UserParamHolder::UserParamHolder(KnobHolder* holder)
-: _holder(holder)
+    : _holder(holder)
 {
-    
 }
 
 void
@@ -183,23 +192,21 @@ UserParamHolder::setHolder(KnobHolder* holder)
 }
 
 Effect::Effect(const NodePtr& node)
-: Group()
-, UserParamHolder(node ? node->getEffectInstance().get() : 0)
-, _node(node)
+    : Group()
+    , UserParamHolder(node ? node->getEffectInstance().get() : 0)
+    , _node(node)
 {
     if (node) {
         boost::shared_ptr<NodeGroup> grp;
-        if (node->getEffectInstance()) {
-            grp = boost::dynamic_pointer_cast<NodeGroup>(node->getEffectInstance()->shared_from_this());
-            init(boost::dynamic_pointer_cast<NodeCollection>(grp));
+        if ( node->getEffectInstance() ) {
+            grp = boost::dynamic_pointer_cast<NodeGroup>( node->getEffectInstance()->shared_from_this() );
+            init( boost::dynamic_pointer_cast<NodeCollection>(grp) );
         }
-        
     }
 }
 
 Effect::~Effect()
 {
-    
 }
 
 NodePtr
@@ -212,9 +219,11 @@ bool
 Effect::isReaderNode()
 {
     NodePtr n = getInternalNode();
+
     if (!n) {
         return false;
     }
+
     return n->getEffectInstance()->isReader();
 }
 
@@ -222,9 +231,11 @@ bool
 Effect::isWriterNode()
 {
     NodePtr n = getInternalNode();
+
     if (!n) {
         return false;
     }
+
     return n->getEffectInstance()->isWriter();
 }
 
@@ -241,26 +252,28 @@ Effect::getMaxInputCount() const
 }
 
 bool
-Effect::canConnectInput(int inputNumber,const Effect* node) const
+Effect::canConnectInput(int inputNumber,
+                        const Effect* node) const
 {
-
     if (!node) {
         return false;
     }
-    
-    if (!node->getInternalNode()) {
+
+    if ( !node->getInternalNode() ) {
         return false;
     }
-    Node::CanConnectInputReturnValue ret = getInternalNode()->canConnectInput(node->getInternalNode(),inputNumber);
+    Node::CanConnectInputReturnValue ret = getInternalNode()->canConnectInput(node->getInternalNode(), inputNumber);
+
     return ret == Node::eCanConnectInput_ok ||
-    ret == Node::eCanConnectInput_differentFPS ||
-    ret == Node::eCanConnectInput_differentPars;
+           ret == Node::eCanConnectInput_differentFPS ||
+           ret == Node::eCanConnectInput_differentPars;
 }
 
 bool
-Effect::connectInput(int inputNumber,const Effect* input)
+Effect::connectInput(int inputNumber,
+                     const Effect* input)
 {
-    if (canConnectInput(inputNumber, input)) {
+    if ( canConnectInput(inputNumber, input) ) {
         return getInternalNode()->connectInput(input->getInternalNode(), inputNumber);
     } else {
         return false;
@@ -277,57 +290,60 @@ Effect*
 Effect::getInput(int inputNumber) const
 {
     NodePtr node = getInternalNode()->getRealInput(inputNumber);
+
     if (node) {
         return new Effect(node);
     }
+
     return NULL;
 }
 
 QString
 Effect::getScriptName() const
 {
-    return QString::fromUtf8(getInternalNode()->getScriptName_mt_safe().c_str());
+    return QString::fromUtf8( getInternalNode()->getScriptName_mt_safe().c_str() );
 }
 
 bool
 Effect::setScriptName(const QString& scriptName)
 {
     try {
-        getInternalNode()->setScriptName(scriptName.toStdString());
+        getInternalNode()->setScriptName( scriptName.toStdString() );
     } catch (...) {
         return false;
     }
+
     return true;
 }
 
 QString
 Effect::getLabel() const
 {
-    return QString::fromUtf8(getInternalNode()->getLabel_mt_safe().c_str());
+    return QString::fromUtf8( getInternalNode()->getLabel_mt_safe().c_str() );
 }
-
 
 void
 Effect::setLabel(const QString& name)
 {
-    return getInternalNode()->setLabel(name.toStdString());
+    return getInternalNode()->setLabel( name.toStdString() );
 }
 
 QString
 Effect::getInputLabel(int inputNumber)
 {
     try {
-        return QString::fromUtf8(getInternalNode()->getInputLabel(inputNumber).c_str());
+        return QString::fromUtf8( getInternalNode()->getInputLabel(inputNumber).c_str() );
     } catch (const std::exception& e) {
-        getInternalNode()->getApp()->appendToScriptEditor(e.what());
+        getInternalNode()->getApp()->appendToScriptEditor( e.what() );
     }
+
     return QString();
 }
 
 QString
 Effect::getPluginID() const
 {
-    return QString::fromUtf8(getInternalNode()->getPluginID().c_str());
+    return QString::fromUtf8( getInternalNode()->getPluginID().c_str() );
 }
 
 Param*
@@ -348,28 +364,34 @@ Effect::createParamWrapperForKnob(const KnobPtr& knob)
     boost::shared_ptr<KnobPage> isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
     boost::shared_ptr<KnobParametric> isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
     boost::shared_ptr<KnobSeparator> isSep = boost::dynamic_pointer_cast<KnobSeparator>(knob);
-    
+
     if (isInt) {
         switch (dims) {
-            case 1:
-                return new IntParam(isInt);
-            case 2:
-                return new Int2DParam(isInt);
-            case 3:
-                return new Int3DParam(isInt);
-            default:
-                break;
+        case 1:
+
+            return new IntParam(isInt);
+        case 2:
+
+            return new Int2DParam(isInt);
+        case 3:
+
+            return new Int3DParam(isInt);
+        default:
+            break;
         }
     } else if (isDouble) {
         switch (dims) {
-            case 1:
-                return new DoubleParam(isDouble);
-            case 2:
-                return new Double2DParam(isDouble);
-            case 3:
-                return new Double3DParam(isDouble);
-            default:
-                break;
+        case 1:
+
+            return new DoubleParam(isDouble);
+        case 2:
+
+            return new Double2DParam(isDouble);
+        case 3:
+
+            return new Double3DParam(isDouble);
+        default:
+            break;
         }
     } else if (isBool) {
         return new BooleanParam(isBool);
@@ -396,27 +418,31 @@ Effect::createParamWrapperForKnob(const KnobPtr& knob)
     } else if (isSep) {
         return new SeparatorParam(isSep);
     }
+
     return NULL;
-}
+} // Effect::createParamWrapperForKnob
 
 std::list<Param*>
 Effect::getParams() const
 {
     std::list<Param*> ret;
     const KnobsVec& knobs = getInternalNode()->getKnobs();
+
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         Param* p = createParamWrapperForKnob(*it);
         if (p) {
             ret.push_back(p);
         }
     }
+
     return ret;
 }
 
 Param*
 Effect::getParam(const QString& name) const
 {
-    KnobPtr knob = getInternalNode()->getKnobByName(name.toStdString());
+    KnobPtr knob = getInternalNode()->getKnobByName( name.toStdString() );
+
     if (knob) {
         return createParamWrapperForKnob(knob);
     } else {
@@ -431,37 +457,45 @@ Effect::getCurrentTime() const
 }
 
 void
-Effect::setPosition(double x,double y)
+Effect::setPosition(double x,
+                    double y)
 {
     getInternalNode()->setPosition(x, y);
 }
 
 void
-Effect::getPosition(double* x, double* y) const
+Effect::getPosition(double* x,
+                    double* y) const
 {
     getInternalNode()->getPosition(x, y);
 }
 
 void
-Effect::setSize(double w,double h)
+Effect::setSize(double w,
+                double h)
 {
     getInternalNode()->setSize(w, h);
 }
 
 void
-Effect::getSize(double* w, double* h) const
+Effect::getSize(double* w,
+                double* h) const
 {
     getInternalNode()->getSize(w, h);
 }
 
 void
-Effect::getColor(double* r,double *g, double* b) const
+Effect::getColor(double* r,
+                 double *g,
+                 double* b) const
 {
     getInternalNode()->getColor(r, g, b);
 }
 
 void
-Effect::setColor(double r, double g, double b)
+Effect::setColor(double r,
+                 double g,
+                 double b)
 {
     getInternalNode()->setColor(r, g, b);
 }
@@ -487,9 +521,11 @@ Effect::endChanges()
 }
 
 IntParam*
-UserParamHolder::createIntParam(const QString& name, const QString& label)
+UserParamHolder::createIntParam(const QString& name,
+                                const QString& label)
 {
     boost::shared_ptr<KnobInt> knob = _holder->createIntKnob(name.toStdString(), label.toStdString(), 1);
+
     if (knob) {
         return new IntParam(knob);
     } else {
@@ -498,45 +534,50 @@ UserParamHolder::createIntParam(const QString& name, const QString& label)
 }
 
 Int2DParam*
-UserParamHolder::createInt2DParam(const QString& name, const QString& label)
+UserParamHolder::createInt2DParam(const QString& name,
+                                  const QString& label)
 {
     boost::shared_ptr<KnobInt> knob = _holder->createIntKnob(name.toStdString(), label.toStdString(), 2);
+
     if (knob) {
         return new Int2DParam(knob);
     } else {
         return 0;
     }
-
 }
 
 Int3DParam*
-UserParamHolder::createInt3DParam(const QString& name, const QString& label)
+UserParamHolder::createInt3DParam(const QString& name,
+                                  const QString& label)
 {
     boost::shared_ptr<KnobInt> knob = _holder->createIntKnob(name.toStdString(), label.toStdString(), 3);
+
     if (knob) {
         return new Int3DParam(knob);
     } else {
         return 0;
     }
-
 }
 
 DoubleParam*
-UserParamHolder::createDoubleParam(const QString& name, const QString& label)
+UserParamHolder::createDoubleParam(const QString& name,
+                                   const QString& label)
 {
     boost::shared_ptr<KnobDouble> knob = _holder->createDoubleKnob(name.toStdString(), label.toStdString(), 1);
+
     if (knob) {
         return new DoubleParam(knob);
     } else {
         return 0;
     }
-   
 }
 
 Double2DParam*
-UserParamHolder::createDouble2DParam(const QString& name, const QString& label)
+UserParamHolder::createDouble2DParam(const QString& name,
+                                     const QString& label)
 {
     boost::shared_ptr<KnobDouble> knob = _holder->createDoubleKnob(name.toStdString(), label.toStdString(), 2);
+
     if (knob) {
         return new Double2DParam(knob);
     } else {
@@ -545,9 +586,11 @@ UserParamHolder::createDouble2DParam(const QString& name, const QString& label)
 }
 
 Double3DParam*
-UserParamHolder::createDouble3DParam(const QString& name, const QString& label)
+UserParamHolder::createDouble3DParam(const QString& name,
+                                     const QString& label)
 {
     boost::shared_ptr<KnobDouble> knob = _holder->createDoubleKnob(name.toStdString(), label.toStdString(), 3);
+
     if (knob) {
         return new Double3DParam(knob);
     } else {
@@ -556,9 +599,11 @@ UserParamHolder::createDouble3DParam(const QString& name, const QString& label)
 }
 
 BooleanParam*
-UserParamHolder::createBooleanParam(const QString& name, const QString& label)
+UserParamHolder::createBooleanParam(const QString& name,
+                                    const QString& label)
 {
-    boost::shared_ptr<KnobBool> knob = _holder->createBoolKnob(name.toStdString(), label.toStdString());
+    boost::shared_ptr<KnobBool> knob = _holder->createBoolKnob( name.toStdString(), label.toStdString() );
+
     if (knob) {
         return new BooleanParam(knob);
     } else {
@@ -567,9 +612,11 @@ UserParamHolder::createBooleanParam(const QString& name, const QString& label)
 }
 
 ChoiceParam*
-UserParamHolder::createChoiceParam(const QString& name, const QString& label)
+UserParamHolder::createChoiceParam(const QString& name,
+                                   const QString& label)
 {
-    boost::shared_ptr<KnobChoice> knob = _holder->createChoiceKnob(name.toStdString(), label.toStdString());
+    boost::shared_ptr<KnobChoice> knob = _holder->createChoiceKnob( name.toStdString(), label.toStdString() );
+
     if (knob) {
         return new ChoiceParam(knob);
     } else {
@@ -578,9 +625,12 @@ UserParamHolder::createChoiceParam(const QString& name, const QString& label)
 }
 
 ColorParam*
-UserParamHolder::createColorParam(const QString& name, const QString& label, bool useAlpha)
+UserParamHolder::createColorParam(const QString& name,
+                                  const QString& label,
+                                  bool useAlpha)
 {
     boost::shared_ptr<KnobColor> knob = _holder->createColorKnob(name.toStdString(), label.toStdString(), useAlpha ? 4 : 3);
+
     if (knob) {
         return new ColorParam(knob);
     } else {
@@ -589,9 +639,11 @@ UserParamHolder::createColorParam(const QString& name, const QString& label, boo
 }
 
 StringParam*
-UserParamHolder::createStringParam(const QString& name, const QString& label)
+UserParamHolder::createStringParam(const QString& name,
+                                   const QString& label)
 {
-    boost::shared_ptr<KnobString> knob = _holder->createStringKnob(name.toStdString(), label.toStdString());
+    boost::shared_ptr<KnobString> knob = _holder->createStringKnob( name.toStdString(), label.toStdString() );
+
     if (knob) {
         return new StringParam(knob);
     } else {
@@ -600,9 +652,11 @@ UserParamHolder::createStringParam(const QString& name, const QString& label)
 }
 
 FileParam*
-UserParamHolder::createFileParam(const QString& name, const QString& label)
+UserParamHolder::createFileParam(const QString& name,
+                                 const QString& label)
 {
-    boost::shared_ptr<KnobFile> knob = _holder->createFileKnob(name.toStdString(), label.toStdString());
+    boost::shared_ptr<KnobFile> knob = _holder->createFileKnob( name.toStdString(), label.toStdString() );
+
     if (knob) {
         return new FileParam(knob);
     } else {
@@ -611,9 +665,11 @@ UserParamHolder::createFileParam(const QString& name, const QString& label)
 }
 
 OutputFileParam*
-UserParamHolder::createOutputFileParam(const QString& name, const QString& label)
+UserParamHolder::createOutputFileParam(const QString& name,
+                                       const QString& label)
 {
-    boost::shared_ptr<KnobOutputFile> knob = _holder->createOuptutFileKnob(name.toStdString(), label.toStdString());
+    boost::shared_ptr<KnobOutputFile> knob = _holder->createOuptutFileKnob( name.toStdString(), label.toStdString() );
+
     if (knob) {
         return new OutputFileParam(knob);
     } else {
@@ -622,9 +678,11 @@ UserParamHolder::createOutputFileParam(const QString& name, const QString& label
 }
 
 PathParam*
-UserParamHolder::createPathParam(const QString& name, const QString& label)
+UserParamHolder::createPathParam(const QString& name,
+                                 const QString& label)
 {
-    boost::shared_ptr<KnobPath> knob = _holder->createPathKnob(name.toStdString(), label.toStdString());
+    boost::shared_ptr<KnobPath> knob = _holder->createPathKnob( name.toStdString(), label.toStdString() );
+
     if (knob) {
         return new PathParam(knob);
     } else {
@@ -633,9 +691,11 @@ UserParamHolder::createPathParam(const QString& name, const QString& label)
 }
 
 ButtonParam*
-UserParamHolder::createButtonParam(const QString& name, const QString& label)
+UserParamHolder::createButtonParam(const QString& name,
+                                   const QString& label)
 {
-    boost::shared_ptr<KnobButton> knob = _holder->createButtonKnob(name.toStdString(), label.toStdString());
+    boost::shared_ptr<KnobButton> knob = _holder->createButtonKnob( name.toStdString(), label.toStdString() );
+
     if (knob) {
         return new ButtonParam(knob);
     } else {
@@ -644,9 +704,11 @@ UserParamHolder::createButtonParam(const QString& name, const QString& label)
 }
 
 SeparatorParam*
-UserParamHolder::createSeparatorParam(const QString& name, const QString& label)
+UserParamHolder::createSeparatorParam(const QString& name,
+                                      const QString& label)
 {
-    boost::shared_ptr<KnobSeparator> knob = _holder->createSeparatorKnob(name.toStdString(), label.toStdString());
+    boost::shared_ptr<KnobSeparator> knob = _holder->createSeparatorKnob( name.toStdString(), label.toStdString() );
+
     if (knob) {
         return new SeparatorParam(knob);
     } else {
@@ -655,9 +717,11 @@ UserParamHolder::createSeparatorParam(const QString& name, const QString& label)
 }
 
 GroupParam*
-UserParamHolder::createGroupParam(const QString& name, const QString& label)
+UserParamHolder::createGroupParam(const QString& name,
+                                  const QString& label)
 {
-    boost::shared_ptr<KnobGroup> knob = _holder->createGroupKnob(name.toStdString(), label.toStdString());
+    boost::shared_ptr<KnobGroup> knob = _holder->createGroupKnob( name.toStdString(), label.toStdString() );
+
     if (knob) {
         return new GroupParam(knob);
     } else {
@@ -666,13 +730,15 @@ UserParamHolder::createGroupParam(const QString& name, const QString& label)
 }
 
 PageParam*
-UserParamHolder::createPageParam(const QString& name, const QString& label)
+UserParamHolder::createPageParam(const QString& name,
+                                 const QString& label)
 {
     if (!_holder) {
         assert(false);
+
         return 0;
     }
-    boost::shared_ptr<KnobPage> knob = _holder->createPageKnob(name.toStdString(), label.toStdString());
+    boost::shared_ptr<KnobPage> knob = _holder->createPageKnob( name.toStdString(), label.toStdString() );
     if (knob) {
         return new PageParam(knob);
     } else {
@@ -681,9 +747,12 @@ UserParamHolder::createPageParam(const QString& name, const QString& label)
 }
 
 ParametricParam*
-UserParamHolder::createParametricParam(const QString& name, const QString& label, int nbCurves)
+UserParamHolder::createParametricParam(const QString& name,
+                                       const QString& label,
+                                       int nbCurves)
 {
     boost::shared_ptr<KnobParametric> knob = _holder->createParametricKnob(name.toStdString(), label.toStdString(), nbCurves);
+
     if (knob) {
         return new ParametricParam(knob);
     } else {
@@ -697,15 +766,15 @@ UserParamHolder::removeParam(Param* param)
     if (!param) {
         return false;
     }
-    if (!param->getInternalKnob()) {
+    if ( !param->getInternalKnob() ) {
         return false;
     }
-    if (!param->getInternalKnob()->isUserKnob()) {
+    if ( !param->getInternalKnob()->isUserKnob() ) {
         return false;
     }
-    
+
     _holder->deleteKnob(param->getInternalKnob().get(), true);
-    
+
     return true;
 }
 
@@ -713,7 +782,9 @@ PageParam*
 Effect::getUserPageParam() const
 {
     boost::shared_ptr<KnobPage> page = getInternalNode()->getEffectInstance()->getOrCreateUserPageKnob();
+
     assert(page);
+
     return new PageParam(page);
 }
 
@@ -726,16 +797,17 @@ UserParamHolder::refreshUserParamsGUI()
 Effect*
 Effect::createChild()
 {
-    if (!getInternalNode()->isMultiInstance()) {
+    if ( !getInternalNode()->isMultiInstance() ) {
         return 0;
     }
-    
-    CreateNodeArgs args(QString::fromUtf8(getInternalNode()->getPluginID().c_str()), eCreateNodeReasonInternal, getInternalNode()->getGroup());
+
+    CreateNodeArgs args( QString::fromUtf8( getInternalNode()->getPluginID().c_str() ), eCreateNodeReasonInternal, getInternalNode()->getGroup() );
     args.multiInstanceParentName = getInternalNode()->getScriptName();
     NodePtr child = getInternalNode()->getApp()->createNode(args);
     if (child) {
         return new Effect(child);
     }
+
     return 0;
 }
 
@@ -743,9 +815,11 @@ Roto*
 Effect::getRotoContext() const
 {
     boost::shared_ptr<RotoContext> roto = getInternalNode()->getRotoContext();
+
     if (roto) {
         return new Roto(roto);
     }
+
     return 0;
 }
 
@@ -754,7 +828,8 @@ Effect::getRegionOfDefinition(double time,
                               int view) const
 {
     RectD rod;
-    if (!getInternalNode() || !getInternalNode()->getEffectInstance()) {
+
+    if ( !getInternalNode() || !getInternalNode()->getEffectInstance() ) {
         return rod;
     }
     U64 hash = getInternalNode()->getHashValue();
@@ -764,13 +839,14 @@ Effect::getRegionOfDefinition(double time,
     if (stat != eStatusOK) {
         return RectD();
     }
+
     return rod;
 }
 
 void
 Effect::setSubGraphEditable(bool editable)
 {
-    if (!getInternalNode()) {
+    if ( !getInternalNode() ) {
         return;
     }
     NodeGroup* isGroup = getInternalNode()->isEffectGroup();
@@ -780,31 +856,33 @@ Effect::setSubGraphEditable(bool editable)
 }
 
 bool
-Effect::addUserPlane(const QString& planeName, const QStringList& channels)
+Effect::addUserPlane(const QString& planeName,
+                     const QStringList& channels)
 {
-    if (planeName.isEmpty() ||
-        channels.size() < 1 ||
-        channels.size() > 4) {
+    if ( planeName.isEmpty() ||
+         ( channels.size() < 1) ||
+         ( channels.size() > 4) ) {
         return false;
     }
     std::string compsGlobal;
-    std::vector<std::string> chans(channels.size());
+    std::vector<std::string> chans( channels.size() );
     int i = 0;
-    for (QStringList::const_iterator it = channels.begin(); it != channels.end(); ++it,++i) {
+    for (QStringList::const_iterator it = channels.begin(); it != channels.end(); ++it, ++i) {
         std::string c = it->toStdString();
         compsGlobal.append(c);
         chans[i] = c;
-        
     }
-    ImageComponents comp(planeName.toStdString(),compsGlobal,chans);
+    ImageComponents comp(planeName.toStdString(), compsGlobal, chans);
+
     return getInternalNode()->addUserComponents(comp);
 }
 
-std::map<ImageLayer,Effect*>
+std::map<ImageLayer, Effect*>
 Effect::getAvailableLayers() const
 {
-    std::map<ImageLayer,Effect*> ret;
-    if (!getInternalNode()) {
+    std::map<ImageLayer, Effect*> ret;
+
+    if ( !getInternalNode() ) {
         return ret;
     }
     EffectInstance::ComponentsAvailableMap availComps;
@@ -814,9 +892,10 @@ Effect::getAvailableLayers() const
         if (node) {
             Effect* effect = new Effect(node);
             ImageLayer layer(it->first);
-            ret.insert(std::make_pair(layer, effect));
+            ret.insert( std::make_pair(layer, effect) );
         }
     }
+
     return ret;
 }
 
@@ -824,9 +903,11 @@ double
 Effect::getFrameRate() const
 {
     NodePtr node = getInternalNode();
+
     if (!node) {
         return 24.;
     }
+
     return node->getEffectInstance()->getFrameRate();
 }
 
@@ -834,9 +915,11 @@ double
 Effect::getPixelAspectRatio() const
 {
     NodePtr node = getInternalNode();
+
     if (!node) {
         return 1.;
     }
+
     return node->getEffectInstance()->getAspectRatio(-1);
 }
 
@@ -844,9 +927,11 @@ ImageBitDepthEnum
 Effect::getBitDepth() const
 {
     NodePtr node = getInternalNode();
+
     if (!node) {
         return eImageBitDepthFloat;
     }
+
     return node->getEffectInstance()->getBitDepth(-1);
 }
 
@@ -854,23 +939,24 @@ ImagePremultiplicationEnum
 Effect::getPremult() const
 {
     NodePtr node = getInternalNode();
+
     if (!node) {
         return eImagePremultiplicationPremultiplied;
     }
+
     return node->getEffectInstance()->getPremult();
 }
-
 
 void
 Effect::setPagesOrder(const QStringList& pages)
 {
-    if (!getInternalNode()) {
+    if ( !getInternalNode() ) {
         return;
     }
-    
+
     std::list<std::string> order;
-    for (QStringList::const_iterator it= pages.begin() ; it!=pages.end(); ++it) {
-        order.push_back(it->toStdString());
+    for (QStringList::const_iterator it = pages.begin(); it != pages.end(); ++it) {
+        order.push_back( it->toStdString() );
     }
     getInternalNode()->setPagesOrder(order);
 }

@@ -55,41 +55,38 @@ struct ExistenceCheckerThreadPrivate
     mutable QMutex mustQuitMutex;
     bool mustQuit;
     QWaitCondition mustQuitCond;
-    
+
     ExistenceCheckerThreadPrivate(const QString& checkMessage,
                                   const QString& acknowledgementMessage,
                                   const QString &comServerPipePath)
-    : socket()
-    , comServerPipePath(comServerPipePath)
-    , checkMessage(checkMessage)
-    , acknowledgementMessage(acknowledgementMessage)
-    , mustQuitMutex()
-    , mustQuit(false)
-    , mustQuitCond()
+        : socket()
+        , comServerPipePath(comServerPipePath)
+        , checkMessage(checkMessage)
+        , acknowledgementMessage(acknowledgementMessage)
+        , mustQuitMutex()
+        , mustQuit(false)
+        , mustQuitCond()
     {
-
     }
 };
 
 ExistenceCheckerThread::ExistenceCheckerThread(const QString& checkMessage,
                                                const QString& acknowledgementMessage,
                                                const QString &comServerPipePath)
-: QThread()
-, _imp(new ExistenceCheckerThreadPrivate(checkMessage, acknowledgementMessage,comServerPipePath))
+    : QThread()
+    , _imp( new ExistenceCheckerThreadPrivate(checkMessage, acknowledgementMessage, comServerPipePath) )
 {
-    setObjectName(QString::fromUtf8("CrashReporterAliveThread"));
+    setObjectName( QString::fromUtf8("CrashReporterAliveThread") );
 }
 
 ExistenceCheckerThread::~ExistenceCheckerThread()
 {
-    
 }
-
 
 void
 ExistenceCheckerThread::quitThread()
 {
-    if (!isRunning()) {
+    if ( !isRunning() ) {
         return;
     }
     {
@@ -103,48 +100,48 @@ ExistenceCheckerThread::quitThread()
     wait();
 }
 
-
 void
-ExistenceCheckerThread::run() 
+ExistenceCheckerThread::run()
 {
-    _imp->socket.reset(new QLocalSocket());
+    _imp->socket.reset( new QLocalSocket() );
     _imp->socket->connectToServer(_imp->comServerPipePath, QLocalSocket::ReadWrite);
 
-    if (!_imp->socket->waitForConnected()) {
+    if ( !_imp->socket->waitForConnected() ) {
         std::cerr << "Failed to connect local socket to " << _imp->comServerPipePath.toStdString() << std::endl;
+
         return;
     }
 
-    for (;;) {
+    for (;; ) {
         {
             QMutexLocker k(&_imp->mustQuitMutex);
             if (_imp->mustQuit) {
                 _imp->mustQuit = false;
                 _imp->mustQuitCond.wakeOne();
+
                 return;
             }
         }
 
-        
+
         //Sleep until we need to check again
         msleep(NATRON_BREAKPAD_CHECK_FOR_CRASH_REPORTER_EXISTENCE_MS);
-        
-        
+
+
         qint64 writeOK;
         {
             QString tosend(_imp->checkMessage);
-            tosend.push_back(QChar::fromLatin1('\n'));
-            writeOK = _imp->socket->write(tosend.toStdString().c_str());
+            tosend.push_back( QChar::fromLatin1('\n') );
+            writeOK = _imp->socket->write( tosend.toStdString().c_str() );
         }
         if (writeOK >= 0) {
             _imp->socket->flush();
-            
+
             bool receivedAcknowledgement = false;
-            while (_imp->socket->waitForReadyRead(NATRON_BREAKPAD_WAIT_FOR_CRASH_REPORTER_ACK_MS)) {
-                
+            while ( _imp->socket->waitForReadyRead(NATRON_BREAKPAD_WAIT_FOR_CRASH_REPORTER_ACK_MS) ) {
                 //we received something, if it's not the ackknowledgement packet, recheck
-                QString str = QString::fromUtf8(_imp->socket->readLine());
-                while (str.endsWith(QChar::fromLatin1('\n'))) {
+                QString str = QString::fromUtf8( _imp->socket->readLine() );
+                while ( str.endsWith( QChar::fromLatin1('\n') ) ) {
                     str.chop(1);
                 }
                 if (str == _imp->acknowledgementMessage) {
@@ -152,21 +149,20 @@ ExistenceCheckerThread::run()
                     break;
                 }
             }
-            
+
             if (!receivedAcknowledgement) {
                 std::cerr << "Crash reporter process does not seem to be responding anymore...exiting" << std::endl;
                 /*
-                 We did not receive te acknowledgement, hence quit
+                   We did not receive te acknowledgement, hence quit
                  */
                 appPTR->abortAnyProcessing();
                 Q_EMIT otherProcessUnreachable();
+
                 return;
             }
         }
-        
-        
     } // for(;;)
-}
+} // ExistenceCheckerThread::run
 
 NATRON_NAMESPACE_EXIT;
 

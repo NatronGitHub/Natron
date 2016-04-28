@@ -86,8 +86,9 @@ public:
     {
         return _posY;
     }
-    
-    void getSize(double* w,double *h) const
+
+    void getSize(double* w,
+                 double *h) const
     {
         *w = _width;
         *h = _height;
@@ -122,125 +123,122 @@ public:
         return _selected;
     }
 
-    bool getOverlayColor(double* r,double* g,double* b) const {
+    bool getOverlayColor(double* r,
+                         double* g,
+                         double* b) const
+    {
         if (!_hasOverlayColor) {
             return false;
         }
         *r = _overlayR;
         *g = _overlayG;
         *b = _overlayB;
+
         return true;
     }
-    
+
     const std::list< boost::shared_ptr<NodeGuiSerialization> >& getChildren() const
     {
         return _children;
     }
-    
+
 private:
 
     std::string _nodeName;
-    double _posX,_posY;
-    double _width,_height;
+    double _posX, _posY;
+    double _width, _height;
     bool _previewEnabled;
-    float _r,_g,_b; //< color
+    float _r, _g, _b; //< color
     bool _colorWasFound;
     bool _selected;
-
-    double _overlayR,_overlayG,_overlayB;
+    double _overlayR, _overlayG, _overlayB;
     bool _hasOverlayColor;
-    
+
     ///If this node is a group, this is the children
     std::list< boost::shared_ptr<NodeGuiSerialization> > _children;
-    
+
     friend class ::boost::serialization::access;
     template<class Archive>
     void save(Archive & ar,
-                   const unsigned int /*version*/) const
+              const unsigned int /*version*/) const
     {
-        ar & ::boost::serialization::make_nvp("Name",_nodeName);
-        ar & ::boost::serialization::make_nvp("X_position",_posX);
-        ar & ::boost::serialization::make_nvp("Y_position",_posY);
-        ar & ::boost::serialization::make_nvp("Preview_enabled",_previewEnabled);
-        
-        ar & ::boost::serialization::make_nvp("r",_r);
-        ar & ::boost::serialization::make_nvp("g",_g);
-        ar & ::boost::serialization::make_nvp("b",_b);
-        
-        ar & ::boost::serialization::make_nvp("Selected",_selected);
-        
-        
-        ar & ::boost::serialization::make_nvp("Width",_width);
-        ar & ::boost::serialization::make_nvp("Height",_height);
-        
-        ar & ::boost::serialization::make_nvp("HasOverlayColor",_hasOverlayColor);
+        ar & ::boost::serialization::make_nvp("Name", _nodeName);
+        ar & ::boost::serialization::make_nvp("X_position", _posX);
+        ar & ::boost::serialization::make_nvp("Y_position", _posY);
+        ar & ::boost::serialization::make_nvp("Preview_enabled", _previewEnabled);
+        ar & ::boost::serialization::make_nvp("r", _r);
+        ar & ::boost::serialization::make_nvp("g", _g);
+        ar & ::boost::serialization::make_nvp("b", _b);
+        ar & ::boost::serialization::make_nvp("Selected", _selected);
+        ar & ::boost::serialization::make_nvp("Width", _width);
+        ar & ::boost::serialization::make_nvp("Height", _height);
+        ar & ::boost::serialization::make_nvp("HasOverlayColor", _hasOverlayColor);
+
         if (_hasOverlayColor) {
-            ar & ::boost::serialization::make_nvp("oR",_overlayR);
-            ar & ::boost::serialization::make_nvp("oG",_overlayG);
-            ar & ::boost::serialization::make_nvp("oB",_overlayB);
+            ar & ::boost::serialization::make_nvp("oR", _overlayR);
+            ar & ::boost::serialization::make_nvp("oG", _overlayG);
+            ar & ::boost::serialization::make_nvp("oB", _overlayB);
         }
-        
+
         int nodesCount = (int)_children.size();
-        ar & ::boost::serialization::make_nvp("Children",nodesCount);
-        
+        ar & ::boost::serialization::make_nvp("Children", nodesCount);
+
         for (std::list< boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = _children.begin();
              it != _children.end();
              ++it) {
-            ar & ::boost::serialization::make_nvp("item",**it);
+            ar & ::boost::serialization::make_nvp("item", **it);
         }
-
     }
-    
+
     template<class Archive>
     void load(Archive & ar,
               const unsigned int version)
     {
-        ar & ::boost::serialization::make_nvp("Name",_nodeName);
-        ar & ::boost::serialization::make_nvp("X_position",_posX);
-        ar & ::boost::serialization::make_nvp("Y_position",_posY);
-        ar & ::boost::serialization::make_nvp("Preview_enabled",_previewEnabled);
-        
+        ar & ::boost::serialization::make_nvp("Name", _nodeName);
+        ar & ::boost::serialization::make_nvp("X_position", _posX);
+        ar & ::boost::serialization::make_nvp("Y_position", _posY);
+        ar & ::boost::serialization::make_nvp("Preview_enabled", _previewEnabled);
+
         if (version >= NODE_GUI_INTRODUCES_COLOR) {
-            ar & ::boost::serialization::make_nvp("r",_r);
-            ar & ::boost::serialization::make_nvp("g",_g);
-            ar & ::boost::serialization::make_nvp("b",_b);
+            ar & ::boost::serialization::make_nvp("r", _r);
+            ar & ::boost::serialization::make_nvp("g", _g);
+            ar & ::boost::serialization::make_nvp("b", _b);
             _colorWasFound = true;
         }
         if (version >= NODE_GUI_INTRODUCES_SELECTED) {
-            ar & ::boost::serialization::make_nvp("Selected",_selected);
+            ar & ::boost::serialization::make_nvp("Selected", _selected);
         }
-        
+
         if (version >= NODE_GUI_MERGE_BACKDROP) {
-            ar & ::boost::serialization::make_nvp("Width",_width);
-            ar & ::boost::serialization::make_nvp("Height",_height);
+            ar & ::boost::serialization::make_nvp("Width", _width);
+            ar & ::boost::serialization::make_nvp("Height", _height);
         } else {
             _nodeName = Python::makeNameScriptFriendly(_nodeName);
         }
-        
+
         if (version >= NODE_GUI_INTRODUCES_OVERLAY_COLOR) {
-            ar & ::boost::serialization::make_nvp("HasOverlayColor",_hasOverlayColor);
+            ar & ::boost::serialization::make_nvp("HasOverlayColor", _hasOverlayColor);
             if (_hasOverlayColor) {
-                ar & ::boost::serialization::make_nvp("oR",_overlayR);
-                ar & ::boost::serialization::make_nvp("oG",_overlayG);
-                ar & ::boost::serialization::make_nvp("oB",_overlayB);
+                ar & ::boost::serialization::make_nvp("oR", _overlayR);
+                ar & ::boost::serialization::make_nvp("oG", _overlayG);
+                ar & ::boost::serialization::make_nvp("oB", _overlayB);
             }
         } else {
             _hasOverlayColor = false;
         }
-        
+
         if (version >= NODE_GUI_INTRODUCES_CHILDREN) {
-            int nodesCount ;
-            ar & ::boost::serialization::make_nvp("Children",nodesCount);
-            
+            int nodesCount;
+            ar & ::boost::serialization::make_nvp("Children", nodesCount);
+
             for (int i = 0; i < nodesCount; ++i) {
                 boost::shared_ptr<NodeGuiSerialization> s(new NodeGuiSerialization);
-                ar & ::boost::serialization::make_nvp("item",*s);
+                ar & ::boost::serialization::make_nvp("item", *s);
                 _children.push_back(s);
             }
         }
     }
 
-    
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 

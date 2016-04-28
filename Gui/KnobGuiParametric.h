@@ -55,7 +55,7 @@ NATRON_NAMESPACE_ENTER;
 
 class KnobGuiParametric
     : public KnobGui
-    , public CurveSelection
+      , public CurveSelection
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -69,10 +69,8 @@ public:
     }
 
     KnobGuiParametric(KnobPtr knob,
-                       DockablePanel *container);
-    
+                      DockablePanel *container);
     virtual void removeSpecificGui() OVERRIDE FINAL;
-    
     virtual bool shouldCreateLabel() const OVERRIDE
     {
         return false;
@@ -80,10 +78,8 @@ public:
 
     virtual ~KnobGuiParametric() OVERRIDE;
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
-
     virtual void getSelectedCurves(std::vector<boost::shared_ptr<CurveGui> >* selection) OVERRIDE FINAL;
 
-    
 public Q_SLOTS:
 
 

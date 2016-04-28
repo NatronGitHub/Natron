@@ -64,45 +64,42 @@ NATRON_NAMESPACE_ENTER;
 static QIcon
 get_icon(const std::string &name)
 {
-    QString str = QString::fromUtf8(name.c_str());
+    QString str = QString::fromUtf8( name.c_str() );
+
     return QIcon::fromTheme( str, QIcon(QString::fromUtf8(":icons/") + str) );
 }
 
 Gui::Gui(GuiAppInstance* app,
          QWidget* parent)
 #ifndef __NATRON_WIN32__
-: QMainWindow(parent)
+    : QMainWindow(parent)
 #else
-: DocumentWindow(parent)
+    : DocumentWindow(parent)
 #endif
-, SerializableWindow()
-, _imp( new GuiPrivate(app, this) )
+    , SerializableWindow()
+    , _imp( new GuiPrivate(app, this) )
 
 {
-    
-    
 #ifdef __NATRON_WIN32
     //Register file types
     registerFileType(NATRON_PROJECT_FILE_MIME_TYPE, "Natron Project file", "." NATRON_PROJECT_FILE_EXT, 0, true);
-    std::map<std::string,std::string> formats;
+    std::map<std::string, std::string> formats;
     appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&formats);
-    for (std::map<std::string,std::string>::iterator it = formats.begin(); it!=formats.end(); ++it) {
-        registerFileType(QString("image/") + QString(it->first.c_str()), it->first.c_str(), QString(".") + QString(it->first.c_str()), 0, true);
+    for (std::map<std::string, std::string>::iterator it = formats.begin(); it != formats.end(); ++it) {
+        registerFileType(QString("image/") + QString( it->first.c_str() ), it->first.c_str(), QString(".") + QString( it->first.c_str() ), 0, true);
     }
     enableShellOpen();
 #endif
-    
+
     QObject::connect( this, SIGNAL(doDialog(int,QString,QString,bool,StandardButtons,int)), this,
-                     SLOT(onDoDialog(int,QString,QString,bool,StandardButtons,int)) );
+                      SLOT(onDoDialog(int,QString,QString,bool,StandardButtons,int)) );
     QObject::connect( this, SIGNAL(doDialogWithStopAskingCheckbox(int,QString,QString,bool,StandardButtons,int)), this,
                       SLOT(onDoDialogWithStopAskingCheckbox(int,QString,QString,bool,StandardButtons,int)) );
     QObject::connect( app, SIGNAL(pluginsPopulated()), this, SLOT(addToolButttonsToToolBar()) );
-    
-    QObject::connect(qApp, SIGNAL(focusChanged(QWidget*,QWidget*)), this, SLOT(onFocusChanged(QWidget*,QWidget*)));
-    
+    QObject::connect( qApp, SIGNAL(focusChanged(QWidget*,QWidget*)), this, SLOT(onFocusChanged(QWidget*,QWidget*)) );
+
 
     setAcceptDrops(true);
-
 }
 
 Gui::~Gui()
@@ -147,7 +144,6 @@ Gui::setLeftToolBarVisible(bool visible)
     _imp->_toolBox->setVisible(visible);
 }
 
-
 bool
 Gui::closeInstance(bool warnUserIfSaveNeeded)
 {
@@ -169,22 +165,23 @@ Gui::closeProject()
 void
 Gui::reloadProject()
 {
-    
     boost::shared_ptr<Project> proj = getApp()->getProject();
-    if (!proj->hasProjectBeenSavedByUser()) {
-        Dialogs::errorDialog(tr("Reload project").toStdString(), tr("This project has not been saved yet").toStdString());
+
+    if ( !proj->hasProjectBeenSavedByUser() ) {
+        Dialogs::errorDialog( tr("Reload project").toStdString(), tr("This project has not been saved yet").toStdString() );
+
         return;
     }
     QString filename = proj->getProjectFilename();
     QString projectPath = proj->getProjectPath();
     Global::ensureLastPathSeparator(projectPath);
-    
+
     projectPath.append(filename);
-    
-    if (!abortProject(false, true)) {
+
+    if ( !abortProject(false, true) ) {
         return;
     }
-   
+
     (void)openProjectInternal(projectPath.toStdString(), false);
 }
 
@@ -196,7 +193,6 @@ Gui::setGuiAboutToClose(bool about)
         QMutexLocker l(&_imp->aboutToCloseMutex);
         _imp->_aboutToClose = about;
     }
-
 }
 
 void
@@ -207,7 +203,8 @@ Gui::notifyGuiClosing()
 }
 
 bool
-Gui::abortProject(bool quitApp, bool warnUserIfSaveNeeded)
+Gui::abortProject(bool quitApp,
+                  bool warnUserIfSaveNeeded)
 {
     if (getApp()->getProject()->hasNodes() && warnUserIfSaveNeeded) {
         int ret = saveWarning();
@@ -220,8 +217,8 @@ Gui::abortProject(bool quitApp, bool warnUserIfSaveNeeded)
         }
     }
     _imp->saveGuiGeometry();
-    
-    _imp->setUndoRedoActions(0,0);
+
+    _imp->setUndoRedoActions(0, 0);
     if (quitApp) {
         assert(_imp->_appInstance);
         _imp->_appInstance->quit();
@@ -237,6 +234,7 @@ Gui::abortProject(bool quitApp, bool warnUserIfSaveNeeded)
     ///Reset current undo/reso actions
     _imp->_currentUndoAction = 0;
     _imp->_currentRedoAction = 0;
+
     return true;
 }
 
@@ -278,7 +276,7 @@ Gui::createNodeGUI(NodePtr node,
                    const CreateNodeArgs& args)
 {
     assert(_imp->_nodeGraphArea);
-    
+
     boost::shared_ptr<NodeCollection> group = node->getGroup();
     NodeGraph* graph;
     if (group) {
@@ -308,7 +306,7 @@ Gui::addNodeGuiToCurveEditor(const NodeGuiPtr &node)
 void
 Gui::removeNodeGuiFromCurveEditor(const NodeGuiPtr& node)
 {
-    _imp->_curveEditor->removeNode(node.get());
+    _imp->_curveEditor->removeNode( node.get() );
 }
 
 void
@@ -320,7 +318,7 @@ Gui::addNodeGuiToDopeSheetEditor(const NodeGuiPtr &node)
 void
 Gui::removeNodeGuiFromDopeSheetEditor(const NodeGuiPtr &node)
 {
-    _imp->_dopeSheetEditor->removeNode(node.get());
+    _imp->_dopeSheetEditor->removeNode( node.get() );
 }
 
 void
@@ -339,7 +337,6 @@ Gui::createViewerGui(NodePtr viewer)
     assert(v);
 
     ViewerTab* tab = addNewViewerTab(v, where);
-    
     NodeGraph* graph = 0;
     boost::shared_ptr<NodeCollection> collection = viewer->getGroup();
     if (!collection) {
@@ -382,7 +379,6 @@ bool
 Gui::eventFilter(QObject *target,
                  QEvent* e)
 {
-
     if (_imp->_aboutToClose) {
         return true;
     }
@@ -430,7 +426,7 @@ Gui::createMenuActions()
     _imp->actionReload_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionReloadProject, kShortcutDescActionReloadProject, this);
     _imp->actionReload_project->setIcon( get_icon("document-open") );
     QObject::connect( _imp->actionReload_project, SIGNAL(triggered()), this, SLOT(reloadProject()) );
-    
+
     _imp->actionSave_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionSaveProject, kShortcutDescActionSaveProject, this);
     _imp->actionSave_project->setIcon( get_icon("document-save") );
     QObject::connect( _imp->actionSave_project, SIGNAL(triggered()), this, SLOT(saveProject()) );
@@ -474,7 +470,7 @@ Gui::createMenuActions()
     _imp->actionShowWindowsConsole->setShortcutContext(Qt::ApplicationShortcut);
     QObject::connect( _imp->actionShowWindowsConsole, SIGNAL(triggered()), this, SLOT(onShowApplicationConsoleActionTriggered()) );
 #endif
-    
+
     _imp->actionFullScreen = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionFullscreen, kShortcutDescActionFullscreen, this);
     _imp->actionFullScreen->setIcon( get_icon("view-fullscreen") );
     _imp->actionFullScreen->setShortcutContext(Qt::ApplicationShortcut);
@@ -506,7 +502,7 @@ Gui::createMenuActions()
     _imp->renderSelectedNode = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionRenderSelected, kShortcutDescActionRenderSelected, this);
     QObject::connect( _imp->renderSelectedNode, SIGNAL(triggered()), this, SLOT(renderSelectedNode()) );
 
-    _imp->enableRenderStats = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionEnableRenderStats, kShortcutDescActionEnableRenderStats,this);
+    _imp->enableRenderStats = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionEnableRenderStats, kShortcutDescActionEnableRenderStats, this);
     _imp->enableRenderStats->setCheckable(true);
     _imp->enableRenderStats->setChecked(false);
     QObject::connect( _imp->enableRenderStats, SIGNAL(triggered()), this, SLOT(onEnableRenderStatsActionTriggered()) );
@@ -529,7 +525,6 @@ Gui::createMenuActions()
         kShortcutDescActionConnectViewerToInput9,
         kShortcutDescActionConnectViewerToInput10
     };
-    
     const char* ids[10] = {
         kShortcutIDActionConnectViewerToInput1,
         kShortcutIDActionConnectViewerToInput2,
@@ -542,8 +537,8 @@ Gui::createMenuActions()
         kShortcutIDActionConnectViewerToInput9,
         kShortcutIDActionConnectViewerToInput10
     };
-    
-    
+
+
     for (int i = 0; i < 10; ++i) {
         _imp->actionConnectInput[i] = new ActionWithShortcut(kShortcutGroupGlobal, ids[i], descs[i], this);
         _imp->actionConnectInput[i]->setData(i);
@@ -613,7 +608,7 @@ Gui::createMenuActions()
     for (int i = 0; i < 10; ++i) {
         _imp->viewerInputsMenu->addAction(_imp->actionConnectInput[i]);
     }
-    
+
     _imp->menuDisplay->addAction(_imp->actionProject_settings);
     _imp->menuDisplay->addAction(_imp->actionShowErrorLog);
     _imp->menuDisplay->addAction(_imp->actionShortcutEditor);
@@ -637,27 +632,27 @@ Gui::createMenuActions()
 
     // Help menu
     _imp->actionHelpWebsite = new QAction(this);
-    _imp->actionHelpWebsite->setText(QObject::tr("Website"));
+    _imp->actionHelpWebsite->setText( QObject::tr("Website") );
     _imp->menuHelp->addAction(_imp->actionHelpWebsite);
     QObject::connect( _imp->actionHelpWebsite, SIGNAL(triggered()), this, SLOT(openHelpWebsite()) );
 
     _imp->actionHelpForum = new QAction(this);
-    _imp->actionHelpForum->setText(QObject::tr("Forum"));
+    _imp->actionHelpForum->setText( QObject::tr("Forum") );
     _imp->menuHelp->addAction(_imp->actionHelpForum);
     QObject::connect( _imp->actionHelpForum, SIGNAL(triggered()), this, SLOT(openHelpForum()) );
 
     _imp->actionHelpIssues = new QAction(this);
-    _imp->actionHelpIssues->setText(QObject::tr("Issues"));
+    _imp->actionHelpIssues->setText( QObject::tr("Issues") );
     _imp->menuHelp->addAction(_imp->actionHelpIssues);
     QObject::connect( _imp->actionHelpIssues, SIGNAL(triggered()), this, SLOT(openHelpIssues()) );
 
     _imp->actionHelpWiki = new QAction(this);
-    _imp->actionHelpWiki->setText(QObject::tr("Wiki"));
+    _imp->actionHelpWiki->setText( QObject::tr("Wiki") );
     _imp->menuHelp->addAction(_imp->actionHelpWiki);
     QObject::connect( _imp->actionHelpWiki, SIGNAL(triggered()), this, SLOT(openHelpWiki()) );
 
     _imp->actionHelpPython = new QAction(this);
-    _imp->actionHelpPython->setText(QObject::tr("Python API"));
+    _imp->actionHelpPython->setText( QObject::tr("Python API") );
     _imp->menuHelp->addAction(_imp->actionHelpPython);
     QObject::connect( _imp->actionHelpPython, SIGNAL(triggered()), this, SLOT(openHelpPython()) );
 
@@ -676,31 +671,31 @@ Gui::createMenuActions()
 void
 Gui::openHelpWebsite()
 {
-    QDesktopServices::openUrl(QUrl(QString::fromUtf8(NATRON_WEBSITE_URL)));
+    QDesktopServices::openUrl( QUrl( QString::fromUtf8(NATRON_WEBSITE_URL) ) );
 }
 
 void
 Gui::openHelpForum()
 {
-    QDesktopServices::openUrl(QUrl(QString::fromUtf8(NATRON_FORUM_URL)));
+    QDesktopServices::openUrl( QUrl( QString::fromUtf8(NATRON_FORUM_URL) ) );
 }
 
 void
 Gui::openHelpIssues()
 {
-    QDesktopServices::openUrl(QUrl(QString::fromUtf8(NATRON_ISSUE_TRACKER_URL)));
+    QDesktopServices::openUrl( QUrl( QString::fromUtf8(NATRON_ISSUE_TRACKER_URL) ) );
 }
 
 void
 Gui::openHelpWiki()
 {
-    QDesktopServices::openUrl(QUrl(QString::fromUtf8(NATRON_WIKI_URL)));
+    QDesktopServices::openUrl( QUrl( QString::fromUtf8(NATRON_WIKI_URL) ) );
 }
 
 void
 Gui::openHelpPython()
 {
-    QDesktopServices::openUrl(QUrl(QString::fromUtf8(NATRON_PYTHON_URL)));
+    QDesktopServices::openUrl( QUrl( QString::fromUtf8(NATRON_PYTHON_URL) ) );
 }
 
 NATRON_NAMESPACE_EXIT;

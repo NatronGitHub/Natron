@@ -51,8 +51,8 @@ void
 NonKeyParams::serialize(Archive & ar,
                         const unsigned int /*version*/)
 {
-    ar & ::boost::serialization::make_nvp("Cost",_cost);
-    ar & ::boost::serialization::make_nvp("ElementsCount",_elementsCount);
+    ar & ::boost::serialization::make_nvp("Cost", _cost);
+    ar & ::boost::serialization::make_nvp("ElementsCount", _elementsCount);
 }
 
 NATRON_NAMESPACE_EXIT;

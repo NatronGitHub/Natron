@@ -30,27 +30,28 @@ NATRON_NAMESPACE_ENTER;
 
 
 KnobGuiPrivate::KnobGuiPrivate(DockablePanel* container)
-: triggerNewLine(true)
-, spacingBetweenItems(0)
-, widgetCreated(false)
-, container(container)
-, copyRightClickMenu(new MenuWithToolTips(container))
-, fieldLayout(NULL)
-, knobsOnSameLine()
-, containerLayout(NULL)
-, field(NULL)
-, labelContainer(NULL)
-, descriptionLabel(NULL)
-, warningIndicator(NULL)
-, isOnNewLine(false)
-, customInteract(NULL)
-, guiCurves()
-, guiRemoved(false)
+    : triggerNewLine(true)
+    , spacingBetweenItems(0)
+    , widgetCreated(false)
+    , container(container)
+    , copyRightClickMenu( new MenuWithToolTips(container) )
+    , fieldLayout(NULL)
+    , knobsOnSameLine()
+    , containerLayout(NULL)
+    , field(NULL)
+    , labelContainer(NULL)
+    , descriptionLabel(NULL)
+    , warningIndicator(NULL)
+    , isOnNewLine(false)
+    , customInteract(NULL)
+    , guiCurves()
+    , guiRemoved(false)
 {
     //copyRightClickMenu->setFont( QFont(appFont,appFontSize) );
 }
 
-void KnobGuiPrivate::removeFromKnobsOnSameLineVector(const KnobPtr& knob)
+void
+KnobGuiPrivate::removeFromKnobsOnSameLineVector(const KnobPtr& knob)
 {
     for (std::vector< boost::weak_ptr< KnobI > >::iterator it = knobsOnSameLine.begin(); it != knobsOnSameLine.end(); ++it) {
         if (it->lock() == knob) {

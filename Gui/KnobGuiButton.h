@@ -69,16 +69,14 @@ public:
     }
 
     KnobGuiButton(KnobPtr knob,
-                   DockablePanel *container);
+                  DockablePanel *container);
 
     virtual ~KnobGuiButton() OVERRIDE;
 
     virtual void removeSpecificGui() OVERRIDE FINAL;
-    
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
-
     virtual std::string getDescriptionLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
+
 public Q_SLOTS:
 
     void emitValueChanged();
@@ -89,7 +87,7 @@ private:
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
     virtual void setEnabled() OVERRIDE FINAL;
-    virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
+    virtual void setReadOnly(bool readOnly, int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool /*dirty*/) OVERRIDE FINAL
     {
     }

@@ -41,11 +41,11 @@
 NATRON_NAMESPACE_ENTER;
 
 App::App(AppInstance* instance)
-: Group()
-, _instance(instance)
+    : Group()
+    , _instance(instance)
 {
-    if (instance->getProject()) {
-        init(instance->getProject());
+    if ( instance->getProject() ) {
+        init( instance->getProject() );
     }
 }
 
@@ -65,28 +65,29 @@ boost::shared_ptr<NodeCollection>
 App::getCollectionFromGroup(Group* group) const
 {
     boost::shared_ptr<NodeCollection> collection;
+
     if (group) {
         App* isApp = dynamic_cast<App*>(group);
         Effect* isEffect = dynamic_cast<Effect*>(group);
         if (isApp) {
-            collection = boost::dynamic_pointer_cast<NodeCollection>(isApp->getInternalApp()->getProject());
+            collection = boost::dynamic_pointer_cast<NodeCollection>( isApp->getInternalApp()->getProject() );
         } else if (isEffect) {
             NodePtr node = isEffect->getInternalNode();
             assert(node);
-            boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(node->getEffectInstance()->shared_from_this());
+            boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>( node->getEffectInstance()->shared_from_this() );
             if (!isGrp) {
                 qDebug() << "The group passed to createNode() is not a group, defaulting to the project root.";
             } else {
                 collection = boost::dynamic_pointer_cast<NodeCollection>(isGrp);
                 assert(collection);
             }
-            
         }
     }
-    
+
     if (!collection) {
-        collection = boost::dynamic_pointer_cast<NodeCollection>(_instance->getProject());
+        collection = boost::dynamic_pointer_cast<NodeCollection>( _instance->getProject() );
     }
+
     return collection;
 }
 
@@ -96,8 +97,9 @@ App::createNode(const QString& pluginID,
                 Group* group) const
 {
     boost::shared_ptr<NodeCollection> collection = getCollectionFromGroup(group);
+
     assert(collection);
-    
+
     CreateNodeArgs args(pluginID, eCreateNodeReasonInternal, collection);
     args.majorV = majorVersion;
 
@@ -111,9 +113,10 @@ App::createNode(const QString& pluginID,
 
 Effect*
 App::createReader(const QString& filename,
-                     Group* group) const
+                  Group* group) const
 {
     boost::shared_ptr<NodeCollection> collection = getCollectionFromGroup(group);
+
     assert(collection);
     NodePtr node = _instance->createReader(filename.toStdString(), eCreateNodeReasonInternal, collection);
     if (node) {
@@ -125,9 +128,10 @@ App::createReader(const QString& filename,
 
 Effect*
 App::createWriter(const QString& filename,
-                     Group* group) const
+                  Group* group) const
 {
     boost::shared_ptr<NodeCollection> collection = getCollectionFromGroup(group);
+
     assert(collection);
     NodePtr node = _instance->createWriter(filename.toStdString(), eCreateNodeReasonInternal, collection);
     if (node) {
@@ -146,33 +150,37 @@ App::timelineGetTime() const
 int
 App::timelineGetLeftBound() const
 {
-    double left,right;
+    double left, right;
+
     _instance->getFrameRange(&left, &right);
+
     return left;
 }
 
 int
 App::timelineGetRightBound() const
 {
-    double left,right;
+    double left, right;
+
     _instance->getFrameRange(&left, &right);
+
     return right;
 }
 
-
 AppSettings::AppSettings(const boost::shared_ptr<Settings>& settings)
-: _settings(settings)
+    : _settings(settings)
 {
-    
 }
 
 Param*
 AppSettings::getParam(const QString& scriptName) const
 {
-    KnobPtr knob = _settings->getKnobByName(scriptName.toStdString());
+    KnobPtr knob = _settings->getKnobByName( scriptName.toStdString() );
+
     if (!knob) {
         return 0;
     }
+
     return Effect::createParamWrapperForKnob(knob);
 }
 
@@ -181,12 +189,14 @@ AppSettings::getParams() const
 {
     std::list<Param*> ret;
     const KnobsVec& knobs = _settings->getKnobs();
+
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         Param* p = Effect::createParamWrapperForKnob(*it);
         if (p) {
             ret.push_back(p);
         }
     }
+
     return ret;
 }
 
@@ -196,58 +206,76 @@ AppSettings::saveSettings()
     _settings->saveAllSettings();
 }
 
-void AppSettings::restoreDefaultSettings()
+void
+AppSettings::restoreDefaultSettings()
 {
     _settings->restoreDefault();
 }
 
 void
-App::render(Effect* writeNode,int firstFrame,int lastFrame, int frameStep)
+App::render(Effect* writeNode,
+            int firstFrame,
+            int lastFrame,
+            int frameStep)
 {
     renderInternal(false, writeNode, firstFrame, lastFrame, frameStep);
 }
 
 void
-App::render(const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames, const std::list<int>& frameSteps)
+App::render(const std::list<Effect*>& effects,
+            const std::list<int>& firstFrames,
+            const std::list<int>& lastFrames,
+            const std::list<int>& frameSteps)
 {
     renderInternal(false, effects, firstFrames, lastFrames, frameSteps);
 }
 
 void
-App::renderInternal(bool forceBlocking,Effect* writeNode,int firstFrame,int lastFrame, int frameStep)
+App::renderInternal(bool forceBlocking,
+                    Effect* writeNode,
+                    int firstFrame,
+                    int lastFrame,
+                    int frameStep)
 {
     if (!writeNode) {
         std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
+
         return;
     }
     AppInstance::RenderWork w;
     NodePtr node =  writeNode->getInternalNode();
     if (!node) {
         std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
+
         return;
     }
-    w.writer = dynamic_cast<OutputEffectInstance*>(node->getEffectInstance().get());
+    w.writer = dynamic_cast<OutputEffectInstance*>( node->getEffectInstance().get() );
     if (!w.writer) {
         std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
+
         return;
     }
-    
+
     w.firstFrame = firstFrame;
     w.lastFrame = lastFrame;
     w.frameStep = frameStep;
     w.useRenderStats = false;
-    
+
     std::list<AppInstance::RenderWork> l;
     l.push_back(w);
     _instance->startWritersRendering(forceBlocking, l);
 }
 
 void
-App::renderInternal(bool forceBlocking,const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames, const std::list<int>& frameSteps)
+App::renderInternal(bool forceBlocking,
+                    const std::list<Effect*>& effects,
+                    const std::list<int>& firstFrames,
+                    const std::list<int>& lastFrames,
+                    const std::list<int>& frameSteps)
 {
     std::list<AppInstance::RenderWork> l;
-    
-    assert(effects.size() == firstFrames.size() && effects.size() == lastFrames.size() && frameSteps.size() == effects.size());
+
+    assert( effects.size() == firstFrames.size() && effects.size() == lastFrames.size() && frameSteps.size() == effects.size() );
     std::list<Effect*>::const_iterator itE = effects.begin();
     std::list<int>::const_iterator itF = firstFrames.begin();
     std::list<int>::const_iterator itL = lastFrames.begin();
@@ -255,27 +283,29 @@ App::renderInternal(bool forceBlocking,const std::list<Effect*>& effects,const s
     for (; itE != effects.end(); ++itE, ++itF, ++itL, ++itS) {
         if (!*itE) {
             std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
+
             return;
         }
         AppInstance::RenderWork w;
         NodePtr node =  (*itE)->getInternalNode();
         if (!node) {
             std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
+
             return;
         }
-        w.writer = dynamic_cast<OutputEffectInstance*>(node->getEffectInstance().get());
-        if (!w.writer || !w.writer->isOutput()) {
+        w.writer = dynamic_cast<OutputEffectInstance*>( node->getEffectInstance().get() );
+        if ( !w.writer || !w.writer->isOutput() ) {
             std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
+
             return;
         }
-        
+
         w.firstFrame = (*itF);
         w.lastFrame = (*itL);
         w.frameStep = (*itS);
         w.useRenderStats = false;
-        
+
         l.push_back(w);
-        
     }
     _instance->startWritersRendering(forceBlocking, l);
 }
@@ -283,53 +313,56 @@ App::renderInternal(bool forceBlocking,const std::list<Effect*>& effects,const s
 Param*
 App::getProjectParam(const QString& name) const
 {
-    KnobPtr knob =  _instance->getProject()->getKnobByName(name.toStdString());
+    KnobPtr knob =  _instance->getProject()->getKnobByName( name.toStdString() );
+
     if (!knob) {
         return 0;
     }
+
     return Effect::createParamWrapperForKnob(knob);
 }
 
 void
 App::writeToScriptEditor(const QString& message)
 {
-    _instance->appendToScriptEditor(message.toStdString());
+    _instance->appendToScriptEditor( message.toStdString() );
 }
 
 void
 App::addFormat(const QString& formatSpec)
 {
-    if (!_instance->getProject()->addFormat(formatSpec.toStdString())) {
-        _instance->appendToScriptEditor(formatSpec.toStdString());
+    if ( !_instance->getProject()->addFormat( formatSpec.toStdString() ) ) {
+        _instance->appendToScriptEditor( formatSpec.toStdString() );
     }
 }
 
 bool
 App::saveTempProject(const QString& filename)
 {
-    return _instance->saveTemp(filename.toStdString());
+    return _instance->saveTemp( filename.toStdString() );
 }
 
 bool
 App::saveProject(const QString& filename)
 {
-    return _instance->save(filename.toStdString());
+    return _instance->save( filename.toStdString() );
 }
-
 
 bool
 App::saveProjectAs(const QString& filename)
 {
-    return _instance->saveAs(filename.toStdString());
+    return _instance->saveAs( filename.toStdString() );
 }
 
 App*
 App::loadProject(const QString& filename)
 {
-    AppInstance* app  =_instance->loadProject(filename.toStdString());
+    AppInstance* app  = _instance->loadProject( filename.toStdString() );
+
     if (!app) {
         return 0;
     }
+
     return new App(app);
 }
 
@@ -351,12 +384,13 @@ App::closeProject()
 App*
 App::newProject()
 {
-    AppInstance* app  =_instance->newProject();
+    AppInstance* app  = _instance->newProject();
+
     if (!app) {
         return 0;
     }
-    return new App(app);
 
+    return new App(app);
 }
 
 std::list<QString>
@@ -364,16 +398,18 @@ App::getViewNames() const
 {
     std::list<QString> ret;
     const std::vector<std::string>& v = _instance->getProject()->getProjectViewNames();
+
     for (std::size_t i = 0; i < v.size(); ++i) {
-        ret.push_back(QString::fromUtf8(v[i].c_str()));
+        ret.push_back( QString::fromUtf8( v[i].c_str() ) );
     }
+
     return ret;
 }
 
 void
 App::addProjectLayer(const ImageLayer& layer)
 {
-    _instance->getProject()->addProjectDefaultLayer(layer.getInternalComps());
+    _instance->getProject()->addProjectDefaultLayer( layer.getInternalComps() );
 }
 
 NATRON_NAMESPACE_EXIT;

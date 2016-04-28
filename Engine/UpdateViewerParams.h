@@ -41,45 +41,47 @@
 NATRON_NAMESPACE_ENTER;
 
 /// parameters send from the scheduler thread to updateViewer() (which runs in the main thread)
-class UpdateViewerParams : public BufferableObject
+class UpdateViewerParams
+    : public BufferableObject
 {
 public:
     UpdateViewerParams()
-    : ramBuffer(NULL)
-    , mustFreeRamBuffer(false)
-    , textureIndex(0)
-    , time(0)
-    , view(0)
-    , textureRect()
-    , srcPremult(eImagePremultiplicationOpaque)
-    , bytesCount(0)
-    , depth()
-    , gain(1.)
-    , gamma(1.)
-    , offset(0.)
-    , mipMapLevel(0)
-    , premult(eImagePremultiplicationOpaque)
-    , lut(eViewerColorSpaceSRGB)
-    , layer()
-    , alphaLayer()
-    , alphaChannelName()
-    , cachedFrame()
-    , tiles()
-    , rod()
-    , abortInfo()
-    , isSequential(false)
-    , roi()
-    , updateOnlyRoi(false)
-    , isViewerPaused(false)
+        : ramBuffer(NULL)
+        , mustFreeRamBuffer(false)
+        , textureIndex(0)
+        , time(0)
+        , view(0)
+        , textureRect()
+        , srcPremult(eImagePremultiplicationOpaque)
+        , bytesCount(0)
+        , depth()
+        , gain(1.)
+        , gamma(1.)
+        , offset(0.)
+        , mipMapLevel(0)
+        , premult(eImagePremultiplicationOpaque)
+        , lut(eViewerColorSpaceSRGB)
+        , layer()
+        , alphaLayer()
+        , alphaChannelName()
+        , cachedFrame()
+        , tiles()
+        , rod()
+        , abortInfo()
+        , isSequential(false)
+        , roi()
+        , updateOnlyRoi(false)
+        , isViewerPaused(false)
     {
     }
-    
-    virtual ~UpdateViewerParams() {
+
+    virtual ~UpdateViewerParams()
+    {
         if (mustFreeRamBuffer) {
             free(ramBuffer);
         }
     }
-    
+
     virtual std::size_t sizeInRAM() const OVERRIDE FINAL
     {
         return bytesCount;
@@ -103,7 +105,7 @@ public:
     ImageComponents layer;
     ImageComponents alphaLayer;
     std::string alphaChannelName;
-    
+
     // put a shared_ptr here, so that the cache entry is never released before the end of updateViewer()
     boost::shared_ptr<FrameEntry> cachedFrame;
     std::list<boost::shared_ptr<Image> > tiles;

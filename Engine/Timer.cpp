@@ -62,19 +62,22 @@ gettimeofday (struct timeval *tv,
 
 
 // prints time value as seconds, minutes hours or days
-QString Timer::printAsTime(const double timeInSeconds, const bool clampToSecondsToInt)
+QString
+Timer::printAsTime(const double timeInSeconds,
+                   const bool clampToSecondsToInt)
 {
     const int min = 60;
     const int hour = 60 * min;
     const int day = 24 * hour;
     QString ret;
     double timeRemain = timeInSeconds;
+
     if (timeRemain >= day) {
         double daysRemaining = timeInSeconds / day;
         double floorDays = std::floor(daysRemaining);
         daysRemaining -= floorDays;
         if (daysRemaining > 0) {
-            ret.append((floorDays > 1 ? tr("%1 days") : tr("%1 day")).arg(QString::number(floorDays)));
+            ret.append( ( floorDays > 1 ? tr("%1 days") : tr("%1 day") ).arg( QString::number(floorDays) ) );
             timeRemain -= floorDays * day;
         }
         if (timeInSeconds >= 3 * day) {
@@ -83,13 +86,13 @@ QString Timer::printAsTime(const double timeInSeconds, const bool clampToSeconds
     }
     if (timeRemain >= hour) {
         if (timeInSeconds >= day) {
-            ret.append(QLatin1Char(' '));
+            ret.append( QLatin1Char(' ') );
         }
         double hourRemaining = timeInSeconds / hour;
         double floorHour = std::floor(hourRemaining);
         hourRemaining -= floorHour;
         if (hourRemaining > 0) {
-            ret.append(((floorHour > 1) ? tr("%1 hours") : tr("%1 hour")).arg(QString::number(floorHour)));
+            ret.append( ( (floorHour > 1) ? tr("%1 hours") : tr("%1 hour") ).arg( QString::number(floorHour) ) );
             timeRemain -= floorHour * hour;
         }
         if (timeInSeconds >= 3 * hour) {
@@ -98,13 +101,13 @@ QString Timer::printAsTime(const double timeInSeconds, const bool clampToSeconds
     }
     if (timeRemain >= min) {
         if (timeInSeconds >= hour) {
-            ret.append(QLatin1Char(' '));
+            ret.append( QLatin1Char(' ') );
         }
         double minRemaining = timeInSeconds / min;
         double floorMin = std::floor(minRemaining);
         minRemaining -= floorMin;
         if (minRemaining > 0) {
-            ret.append(((floorMin > 1) ? tr("%1 minutes") : tr("%1 minute")).arg(QString::number(floorMin)));
+            ret.append( ( (floorMin > 1) ? tr("%1 minutes") : tr("%1 minute") ).arg( QString::number(floorMin) ) );
             timeRemain -= floorMin * min;
         }
         if (timeInSeconds >= 3 * min) {
@@ -112,23 +115,24 @@ QString Timer::printAsTime(const double timeInSeconds, const bool clampToSeconds
         }
     }
     if (timeInSeconds >= min) {
-        ret.append(QLatin1Char(' '));
+        ret.append( QLatin1Char(' ') );
     }
     if (clampToSecondsToInt) {
-        ret.append((timeRemain > 1 ? tr("%1 seconds") : tr("%1 second")).arg(QString::number((int)timeRemain)));
+        ret.append( ( timeRemain > 1 ? tr("%1 seconds") : tr("%1 second") ).arg( QString::number( (int)timeRemain ) ) );
     } else {
-        ret.append((timeRemain > 1 ? tr("%1 seconds") : tr("%1 second")).arg(QString::number(timeRemain, 'f', 2)));
+        ret.append( ( timeRemain > 1 ? tr("%1 seconds") : tr("%1 second") ).arg( QString::number(timeRemain, 'f', 2) ) );
     }
+
     return ret;
-}
+} // Timer::printAsTime
 
 Timer::Timer ()
-: playState (ePlayStateRunning),
-_spf (1 / 24.0),
-_timingError (0),
-_framesSinceLastFpsFrame (0),
-_actualFrameRate (0),
-_mutex(new QMutex)
+    : playState (ePlayStateRunning),
+    _spf (1 / 24.0),
+    _timingError (0),
+    _framesSinceLastFpsFrame (0),
+    _actualFrameRate (0),
+    _mutex(new QMutex)
 {
     gettimeofday (&_lastFrameTime, 0);
     _lastFpsFrameTime = _lastFrameTime;
@@ -156,7 +160,7 @@ Timer::waitUntilNextFrameIsDue ()
         return;
     }
 
-    
+
     double spf;
     {
         QMutexLocker l(_mutex);
@@ -166,12 +170,11 @@ Timer::waitUntilNextFrameIsDue ()
     // If less than _spf seconds have passed since the last frame
     // was displayed, sleep until exactly _spf seconds have gone by.
     //
-
     timeval now;
     gettimeofday (&now, 0);
 
     double timeSinceLastFrame =  now.tv_sec  - _lastFrameTime.tv_sec +
-                               (now.tv_usec - _lastFrameTime.tv_usec) * 1e-6f;
+                                (now.tv_usec - _lastFrameTime.tv_usec) * 1e-6f;
     if (timeSinceLastFrame < 0) {
         timeSinceLastFrame = 0;
     }
@@ -222,10 +225,10 @@ Timer::waitUntilNextFrameIsDue ()
     //
     // Calculate our actual frame rate, averaged over several frames.
     //
-    
+
     double t =  now.tv_sec  - _lastFpsFrameTime.tv_sec +
-    (now.tv_usec - _lastFpsFrameTime.tv_usec) * 1e-6f;
-    
+               (now.tv_usec - _lastFpsFrameTime.tv_usec) * 1e-6f;
+
     if (t > NATRON_FPS_REFRESH_RATE_SECONDS) {
         double actualFrameRate = _framesSinceLastFpsFrame / t;
         double curActualFrameRate;
@@ -238,13 +241,11 @@ Timer::waitUntilNextFrameIsDue ()
             desiredFrameRate = 1.f / _spf;
             curActualFrameRate = _actualFrameRate;
         }
-        
-        
-        Q_EMIT fpsChanged(curActualFrameRate,desiredFrameRate);
-        
+        Q_EMIT fpsChanged(curActualFrameRate, desiredFrameRate);
+
         _framesSinceLastFpsFrame = 0;
     }
-    
+
 
     if (_framesSinceLastFpsFrame == 0) {
         _lastFpsFrameTime = now;
@@ -257,6 +258,7 @@ double
 Timer::getActualFrameRate() const
 {
     QMutexLocker l(_mutex);
+
     return _actualFrameRate;
 }
 
@@ -264,6 +266,7 @@ void
 Timer::setDesiredFrameRate (double fps)
 {
     QMutexLocker l(_mutex);
+
     _spf = 1 / fps;
 }
 
@@ -271,9 +274,9 @@ double
 Timer::getDesiredFrameRate() const
 {
     QMutexLocker l(_mutex);
+
     return 1.f / _spf;
 }
-
 
 TimeLapse::TimeLapse()
 {
@@ -283,20 +286,20 @@ TimeLapse::TimeLapse()
 
 TimeLapse::~TimeLapse()
 {
-    
-    
 }
 
 double
 TimeLapse::getTimeElapsedReset()
 {
     timeval now;
+
     gettimeofday(&now, 0);
-    
+
     double dt =  now.tv_sec  - prev.tv_sec +
-    (now.tv_usec - prev.tv_usec) * 1e-6f;
-    
+                (now.tv_usec - prev.tv_usec) * 1e-6f;
+
     prev = now;
+
     return dt;
 }
 
@@ -310,17 +313,17 @@ double
 TimeLapse::getTimeSinceCreation() const
 {
     timeval now;
-    gettimeofday(&now, 0);
-    
-    double dt =  now.tv_sec  - constructorTime.tv_sec +
-    (now.tv_usec - constructorTime.tv_usec) * 1e-6f;
-    
-    return dt;
 
+    gettimeofday(&now, 0);
+
+    double dt =  now.tv_sec  - constructorTime.tv_sec +
+                (now.tv_usec - constructorTime.tv_usec) * 1e-6f;
+
+    return dt;
 }
 
 TimeLapseReporter::TimeLapseReporter(const std::string& message)
-: message(message)
+    : message(message)
 {
     gettimeofday(&prev, 0);
 }
@@ -328,10 +331,11 @@ TimeLapseReporter::TimeLapseReporter(const std::string& message)
 TimeLapseReporter::~TimeLapseReporter()
 {
     timeval now;
+
     gettimeofday(&now, 0);
-    
+
     double dt =  now.tv_sec  - prev.tv_sec +
-    (now.tv_usec - prev.tv_usec) * 1e-6f;
+                (now.tv_usec - prev.tv_usec) * 1e-6f;
     std::cout << message << ' ' << dt << std::endl;
 }
 

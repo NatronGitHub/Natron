@@ -38,7 +38,8 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-class Menu : public QMenu
+class Menu
+    : public QMenu
 {
 public:
 
@@ -48,7 +49,8 @@ public:
     virtual ~Menu() {}
 };
 
-class MenuWithToolTips: public Menu
+class MenuWithToolTips
+    : public Menu
 
 {
 public:

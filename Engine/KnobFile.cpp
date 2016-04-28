@@ -52,11 +52,11 @@ NATRON_NAMESPACE_ENTER;
 /***********************************KnobFile*****************************************/
 
 KnobFile::KnobFile(KnobHolder* holder,
-                     const std::string &description,
-                     int dimension,
-                     bool declaredByPlugin)
-    : AnimatingKnobStringHelper(holder, description, dimension,declaredByPlugin)
-      , _isInputImage(false)
+                   const std::string &description,
+                   int dimension,
+                   bool declaredByPlugin)
+    : AnimatingKnobStringHelper(holder, description, dimension, declaredByPlugin)
+    , _isInputImage(false)
 {
 }
 
@@ -67,8 +67,8 @@ KnobFile::~KnobFile()
 void
 KnobFile::reloadFile()
 {
-    assert(getHolder());
-    EffectInstance* effect = dynamic_cast<EffectInstance*>(getHolder());
+    assert( getHolder() );
+    EffectInstance* effect = dynamic_cast<EffectInstance*>( getHolder() );
     if (effect) {
         effect->purgeCaches();
         effect->clearPersistentMessage(false);
@@ -95,34 +95,35 @@ KnobFile::typeName() const
     return typeNameStatic();
 }
 
-
 std::string
-KnobFile::getFileName(int time, ViewSpec view)
+KnobFile::getFileName(int time,
+                      ViewSpec view)
 {
     if (!_isInputImage) {
         return getValue(0, view);
     } else {
         ///try to interpret the pattern and generate a filename if indexes are found
         std::vector<std::string> views;
-        if (getHolder() && getHolder()->getApp()) {
+        if ( getHolder() && getHolder()->getApp() ) {
             views = getHolder()->getApp()->getProject()->getProjectViewNames();
         }
-        if (!view.isViewIdx()) {
+        if ( !view.isViewIdx() ) {
             view = ViewIdx(0);
         }
-        return SequenceParsing::generateFileNameFromPattern(getValue(0, ViewIdx(0)), views, time, view);
+
+        return SequenceParsing::generateFileNameFromPattern(getValue( 0, ViewIdx(0) ), views, time, view);
     }
 }
 
 /***********************************KnobOutputFile*****************************************/
 
 KnobOutputFile::KnobOutputFile(KnobHolder* holder,
-                                 const std::string &description,
-                                 int dimension,
-                                 bool declaredByPlugin)
-    : Knob<std::string>(holder, description, dimension,declaredByPlugin)
-      , _isOutputImage(false)
-      , _sequenceDialog(true)
+                               const std::string &description,
+                               int dimension,
+                               bool declaredByPlugin)
+    : Knob<std::string>(holder, description, dimension, declaredByPlugin)
+    , _isOutputImage(false)
+    , _sequenceDialog(true)
 {
 }
 
@@ -146,27 +147,30 @@ KnobOutputFile::typeName() const
 }
 
 QString
-KnobOutputFile::generateFileNameAtTime(SequenceTime time, ViewSpec view) 
+KnobOutputFile::generateFileNameAtTime(SequenceTime time,
+                                       ViewSpec view)
 {
     std::vector<std::string> views;
-    if (getHolder() && getHolder()->getApp()) {
+
+    if ( getHolder() && getHolder()->getApp() ) {
         views = getHolder()->getApp()->getProject()->getProjectViewNames();
     }
-    if (!view.isViewIdx()) {
+    if ( !view.isViewIdx() ) {
         view = ViewIdx(0);
     }
-    return QString::fromUtf8(SequenceParsing::generateFileNameFromPattern(getValue(0, ViewIdx(0)), views, time, view).c_str());
+
+    return QString::fromUtf8( SequenceParsing::generateFileNameFromPattern(getValue( 0, ViewIdx(0) ), views, time, view).c_str() );
 }
 
 /***********************************KnobPath*****************************************/
 
 KnobPath::KnobPath(KnobHolder* holder,
-                     const std::string &description,
-                     int dimension,
-                     bool declaredByPlugin)
-: KnobTable(holder,description,dimension,declaredByPlugin)
-, _isMultiPath(false)
-, _isStringList(false)
+                   const std::string &description,
+                   int dimension,
+                   bool declaredByPlugin)
+    : KnobTable(holder, description, dimension, declaredByPlugin)
+    , _isMultiPath(false)
+    , _isStringList(false)
 {
 }
 
@@ -208,51 +212,53 @@ KnobPath::getIsStringList() const
     return _isStringList;
 }
 
-
 std::string
 KnobPath::generateUniquePathID(const std::list<std::vector<std::string> >& paths)
 {
     std::string baseName("Path");
     int idx = 0;
-    
     bool found;
     std::string name;
+
     do {
-        
         std::stringstream ss;
         ss << baseName;
         ss << idx;
         name = ss.str();
         found = false;
         for (std::list<std::vector<std::string> >::const_iterator it = paths.begin(); it != paths.end(); ++it) {
-            if ((*it)[0] == name) {
+            if ( (*it)[0] == name ) {
                 found = true;
                 break;
             }
         }
         ++idx;
     } while (found);
+
     return name;
 }
 
 bool
-KnobPath::isCellEnabled(int /*row*/, int /*col*/, const QStringList& values) const
+KnobPath::isCellEnabled(int /*row*/,
+                        int /*col*/,
+                        const QStringList& values) const
 {
-    
-    if (values[0] == QString::fromUtf8(NATRON_PROJECT_ENV_VAR_NAME) ||
-        values[0] == QString::fromUtf8(NATRON_OCIO_ENV_VAR_NAME)) {
+    if ( ( values[0] == QString::fromUtf8(NATRON_PROJECT_ENV_VAR_NAME) ) ||
+         ( values[0] == QString::fromUtf8(NATRON_OCIO_ENV_VAR_NAME) ) ) {
         return false;
     }
-    
+
     return true;
 }
 
 bool
-KnobPath::isCellBracketDecorated(int /*row*/, int col) const
+KnobPath::isCellBracketDecorated(int /*row*/,
+                                 int col) const
 {
-    if (col == 0 && _isMultiPath && !_isStringList) {
+    if ( (col == 0) && _isMultiPath && !_isStringList ) {
         return true;
     }
+
     return false;
 }
 
@@ -260,10 +266,11 @@ void
 KnobPath::getPaths(std::list<std::string>* paths)
 {
     std::list<std::vector<std::string> > table;
+
     getTable(&table);
-    for (std::list<std::vector<std::string> >::iterator it = table.begin(); it!=table.end(); ++it) {
+    for (std::list<std::vector<std::string> >::iterator it = table.begin(); it != table.end(); ++it) {
         assert(it->size() == 2);
-        paths->push_back((*it)[1]);
+        paths->push_back( (*it)[1] );
     }
 }
 
@@ -292,8 +299,8 @@ KnobPath::appendPath(const std::string& path)
     } else {
         std::list<std::vector<std::string> > paths;
         getTable(&paths);
-        for (std::list<std::vector<std::string> >::iterator it = paths.begin(); it!=paths.end(); ++it) {
-            if ((*it)[1] == path) {
+        for (std::list<std::vector<std::string> >::iterator it = paths.begin(); it != paths.end(); ++it) {
+            if ( (*it)[1] == path ) {
                 return;
             }
         }

@@ -181,7 +181,7 @@ macLocation(StandardPaths::StandardLocationEnum type,
     if ( (type == StandardPaths::eStandardLocationData) || (type == StandardPaths::eStandardLocationCache) ) {
         appendOrganizationAndApp(path);
     }
-    
+
     return path;
 }
 
@@ -189,7 +189,6 @@ macLocation(StandardPaths::StandardLocationEnum type,
 static QString
 qSystemDirectory()
 {
-
     QVarLengthArray<TCHAR, MAX_PATH> fullPath;
     UINT retLen = ::GetSystemDirectory(fullPath.data(), MAX_PATH);
     if (retLen > MAX_PATH) {
@@ -197,13 +196,14 @@ qSystemDirectory()
         retLen = ::GetSystemDirectory(fullPath.data(), retLen);
     }
 #ifdef UNICODE
-	std::wstring ws(fullPath.constData(), retLen);
-	std::string str = OFX::wideStringToString(ws);
+    std::wstring ws(fullPath.constData(), retLen);
+    std::string str = OFX::wideStringToString(ws);
 #else
-	std::string str (fullPath.constData(), retLen);
+    std::string str (fullPath.constData(), retLen);
 #endif
+
     // in some rare cases retLen might be 0
-    return QString::fromUtf8(str.c_str());
+    return QString::fromUtf8( str.c_str() );
 }
 
 static HINSTANCE
@@ -233,9 +233,9 @@ load(const wchar_t *libraryName,
             fullPathAttempt.append( QLatin1Char('\\') );
         }
         fullPathAttempt.append(fileName);
-        
+
 #ifdef UNICODE
-        std::wstring ws = Global::utf8_to_utf16(fullPathAttempt.toStdString());
+        std::wstring ws = Global::utf8_to_utf16( fullPathAttempt.toStdString() );
         HINSTANCE inst = ::LoadLibrary( ws.c_str() );
 #else
         HINSTANCE inst = ::LoadLibrary( fullPathAttempt.toStdString().c_str() );
@@ -262,7 +262,7 @@ resolveGetSpecialFolderPath()
 #endif // Q_OS_WINCE
         HINSTANCE libHandle = load( (const wchar_t*)lib.utf16() );
         if (libHandle) {
-            gsfp = (GetSpecialFolderPath)(void*)GetProcAddress(libHandle,"SHGetSpecialFolderPathW");
+            gsfp = (GetSpecialFolderPath)(void*)GetProcAddress(libHandle, "SHGetSpecialFolderPathW");
         }
     }
 

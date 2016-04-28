@@ -37,35 +37,33 @@ NATRON_NAMESPACE_ENTER;
 
 class Group
 {
-    
     boost::weak_ptr<NodeCollection> _collection;
-    
+
 public:
-    
+
     Group();
-    
+
     void init(const boost::shared_ptr<NodeCollection>& collection);
-    
+
     virtual ~Group();
-    
+
     boost::shared_ptr<NodeCollection> getInternalCollection() const
     {
         return _collection.lock();
     }
-    
+
     /**
      * @brief Get a pointer to a node. The node is identified by its fully qualified name, e.g:
      * Group1.Blur1 if it belongs to the Group1, or just Blur1 if it belongs to the project's root.
-     * This function is called recursively on subgroups until a match is found. 
+     * This function is called recursively on subgroups until a match is found.
      * It is meant to be called only on the project's root.
      **/
     Effect* getNode(const QString& fullySpecifiedName) const;
-    
+
     /**
      * @brief Get all nodes in the project's root.
      **/
     std::list<Effect*> getChildren() const;
-
 };
 
 NATRON_NAMESPACE_EXIT;

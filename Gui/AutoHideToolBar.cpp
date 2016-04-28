@@ -32,18 +32,18 @@ NATRON_NAMESPACE_ENTER;
 
 AutoHideToolBar::AutoHideToolBar(Gui* gui,
                                  QWidget* parent)
-: QToolBar(parent)
-, _gui(gui)
+    : QToolBar(parent)
+    , _gui(gui)
 {
 }
 
-void AutoHideToolBar::leaveEvent(QEvent* e)
+void
+AutoHideToolBar::leaveEvent(QEvent* e)
 {
     if ( _gui->isLeftToolBarDisplayedOnMouseHoverOnly() ) {
         _gui->setLeftToolBarVisible(false);
     }
     QToolBar::leaveEvent(e);
 }
-
 
 NATRON_NAMESPACE_EXIT;

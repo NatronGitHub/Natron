@@ -33,20 +33,18 @@ NATRON_NAMESPACE_ENTER;
 
 class DockablePanelI
 {
-    
 public:
-    
+
     DockablePanelI() {}
-    
+
     virtual ~DockablePanelI() {}
-    
+
     /**
      * @brief Must scan for new knobs and rebuild the panel accordingly
      **/
     virtual void recreateUserKnobs(bool restorePageIndex) = 0;
     virtual void refreshGuiForKnobsChanges(bool restorePageIndex) = 0;
     virtual void deleteKnobGui(const KnobPtr& knob) = 0;
-
 };
 
 NATRON_NAMESPACE_EXIT;

@@ -44,35 +44,34 @@ void
 ChannelsComboBox::paintEvent(QPaintEvent* event)
 {
     ComboBox::paintEvent(event);
-
     int idx = activeIndex();
+
     if (idx != 1) {
         QColor color;
-
         QPainter p(this);
         QPen pen;
 
         switch (idx) {
-            case 0:
-                //luminance
-                color.setRgbF(0.5, 0.5, 0.5);
-                break;
-            case 2:
-                //r
-                color.setRgbF(1., 0, 0);
-                break;
-            case 3:
-                //g
-                color.setRgbF(0., 1., 0.);
-                break;
-            case 4:
-                //b
-                color.setRgbF(0., 0. , 1.);
-                break;
-            case 5:
-                //a
-                color.setRgbF(1.,1.,1.);
-                break;
+        case 0:
+            //luminance
+            color.setRgbF(0.5, 0.5, 0.5);
+            break;
+        case 2:
+            //r
+            color.setRgbF(1., 0, 0);
+            break;
+        case 3:
+            //g
+            color.setRgbF(0., 1., 0.);
+            break;
+        case 4:
+            //b
+            color.setRgbF(0., 0., 1.);
+            break;
+        case 5:
+            //a
+            color.setRgbF(1., 1., 1.);
+            break;
         }
 
         pen.setColor(color);
@@ -81,10 +80,7 @@ ChannelsComboBox::paintEvent(QPaintEvent* event)
 
         QRectF bRect = rect();
         QRectF roundedRect = bRect.adjusted(1., 1., -2., -2.);
-
         double roundPixels = 3;
-
-
         QPainterPath path;
         path.addRoundedRect(roundedRect, roundPixels, roundPixels);
         p.drawPath(path);

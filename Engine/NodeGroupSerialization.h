@@ -55,74 +55,72 @@ NATRON_NAMESPACE_ENTER;
 class NodeCollectionSerialization
 {
     std::list< boost::shared_ptr<NodeSerialization> > _serializedNodes;
-    
+
 public:
-    
+
     NodeCollectionSerialization()
     {
     }
-    
+
     virtual ~NodeCollectionSerialization()
     {
         _serializedNodes.clear();
     }
-    
+
     void initialize(const NodeCollection& group);
-    
+
     const std::list< boost::shared_ptr<NodeSerialization> > & getNodesSerialization() const
     {
         return _serializedNodes;
     }
-    
+
     void addNodeSerialization(const boost::shared_ptr<NodeSerialization>& s)
     {
         _serializedNodes.push_back(s);
     }
-    
+
     static bool restoreFromSerialization(const std::list< boost::shared_ptr<NodeSerialization> > & serializedNodes,
                                          const boost::shared_ptr<NodeCollection>& group,
                                          bool createNodes,
-                                         std::map<std::string,bool>* moduleUpdatesProcessed);
-    
+                                         std::map<std::string, bool>* moduleUpdatesProcessed);
+
 private:
-                                         
+
     friend class ::boost::serialization::access;
     template<class Archive>
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
         int nodesCount = (int)_serializedNodes.size();
-        ar & ::boost::serialization::make_nvp("NodesCount",nodesCount);
-        
+        ar & ::boost::serialization::make_nvp("NodesCount", nodesCount);
+
         for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = _serializedNodes.begin();
              it != _serializedNodes.end();
              ++it) {
-            ar & ::boost::serialization::make_nvp("item",**it);
+            ar & ::boost::serialization::make_nvp("item", **it);
         }
     }
-    
+
     template<class Archive>
     void load(Archive & ar,
               const unsigned int /*version*/)
     {
-        int nodesCount ;
-        ar & ::boost::serialization::make_nvp("NodesCount",nodesCount);
-        
+        int nodesCount;
+        ar & ::boost::serialization::make_nvp("NodesCount", nodesCount);
+
         for (int i = 0; i < nodesCount; ++i) {
             boost::shared_ptr<NodeSerialization> s(new NodeSerialization);
-            ar & ::boost::serialization::make_nvp("item",*s);
+            ar & ::boost::serialization::make_nvp("item", *s);
             _serializedNodes.push_back(s);
         }
-
     }
-    
+
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 
 NATRON_NAMESPACE_EXIT;
 
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::NodeCollectionSerialization,NODE_COLLECTION_SERIALIZATION_VERSION)
-
+BOOST_CLASS_VERSION(NATRON_NAMESPACE::NodeCollectionSerialization, NODE_COLLECTION_SERIALIZATION_VERSION)
 
 
 #endif // NODEGROUPSERIALIZATION_H

@@ -34,59 +34,57 @@ NATRON_NAMESPACE_ENTER;
 
 struct BackdropPrivate;
 
-class Backdrop : public NoOpBase
+class Backdrop
+    : public NoOpBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
-    
+
 public:
-    
+
     static EffectInstance* BuildEffect(NodePtr n)
     {
         return new Backdrop(n);
     }
-    
+
     Backdrop(NodePtr node);
-    
+
     virtual ~Backdrop();
-  
+
     virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return PLUGINID_NATRON_BACKDROP;
     }
-    
+
     virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return "Backdrop";
     }
-    
+
     virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
     virtual std::string getInputLabel(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return "";
     }
-    
-    virtual int getMaxInputCount() const OVERRIDE FINAL  WARN_UNUSED_RETURN
+
+    virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return 0;
     }
-    
+
 Q_SIGNALS:
-    
+
     void labelChanged(QString);
-    
+
 private:
-    
-    virtual void knobChanged(KnobI* k,
+
+    virtual void knobChanged(KnobI * k,
                              ValueChangedReasonEnum /*reason*/,
                              ViewSpec /*view*/,
                              double /*time*/,
                              bool /*originatedFromMainThread*/) OVERRIDE FINAL;
-
     virtual void initializeKnobs() OVERRIDE FINAL;
-    
     boost::scoped_ptr<BackdropPrivate> _imp;
 };
 

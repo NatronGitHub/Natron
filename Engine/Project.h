@@ -67,36 +67,37 @@ public:
     Project(AppInstance* appInstance);
 
     virtual ~Project();
-    
+
     //these are per project thread-local data
-    struct ProjectTLSData {
+    struct ProjectTLSData
+    {
         std::vector<std::string> viewNames;
     };
+
     typedef boost::shared_ptr<ProjectTLSData> ProjectDataTLSPtr;
 
     /**
      * @brief Loads the project with the given path and name corresponding to a file on disk.
      **/
-    bool loadProject(const QString & path,const QString & name, bool isUntitledAutosave = false, bool attemptToLoadAutosave = true);
+    bool loadProject(const QString & path, const QString & name, bool isUntitledAutosave = false, bool attemptToLoadAutosave = true);
 
-    
-    
+
     /**
      * @brief Saves the project with the given path and name corresponding to a file on disk.
      * @param autoSave If true then it will save the project in a temporary file instead (see autoSave()).
      * @returns The actual filepath of the file saved
      **/
-    bool saveProject(const QString & path,const QString & name, QString* newFilePath);
-    
-    
-    bool saveProject_imp(const QString & path,const QString & name,bool autoSave, bool updateProjectProperties, QString* newFilePath = 0);
-    
+    bool saveProject(const QString & path, const QString & name, QString* newFilePath);
+
+
+    bool saveProject_imp(const QString & path, const QString & name, bool autoSave, bool updateProjectProperties, QString* newFilePath = 0);
+
     /**
      * @brief Same as saveProject except that it will save the project in a temporary file
      * so it doesn't overwrite the project.
      **/
     void autoSave();
-    
+
 
     /**
      * @brief Same as autoSave() but the auto-save is run in a separate thread instead.
@@ -109,14 +110,13 @@ public:
     static QString autoSavesDir() WARN_UNUSED_RETURN;
 
 
-    
-    bool findAutoSaveForProject(const QString& projectPath,const QString& projectName,QString* autoSaveFileName);
+    bool findAutoSaveForProject(const QString& projectPath, const QString& projectName, QString* autoSaveFileName);
 
     /**
      * @brief Returns true if the project is currently loading.
      **/
     bool isLoadingProject() const;
-    
+
     bool isLoadingProjectInternal() const;
 
     QString getProjectFilename() const WARN_UNUSED_RETURN;
@@ -136,31 +136,30 @@ public:
     //QDateTime getProjectAgeSinceLastAutosave() const WARN_UNUSED_RETURN;
 
     void getProjectDefaultFormat(Format *f) const;
-    
+
     bool getProjectFormatAtIndex(int index, Format* f) const;
-    
+
     void getProjectFormatEntries(std::vector<std::string>* formatStrings, int* currentValue) const;
 
     void getAdditionalFormats(std::list<Format> *formats) const;
 
     void setupProjectForStereo();
-    
+
     void createProjectViews(const std::vector<std::string>& views);
-    
+
     const std::vector<std::string>& getProjectViewNames() const;
-    
+
     int getProjectViewsCount() const;
-    
+
     std::vector<std::string> getProjectDefaultLayerNames() const;
-    
     std::vector<ImageComponents> getProjectDefaultLayers() const;
-    
+
     void addProjectDefaultLayer(const ImageComponents& comps);
 
-    void setOrAddProjectFormat(const Format & frmt,bool skipAdd = false);
-    
+    void setOrAddProjectFormat(const Format & frmt, bool skipAdd = false);
+
     bool isAutoSetProjectFormatEnabled() const;
-    
+
     void setAutoSetProjectFormatEnabled(bool enabled);
 
     bool isAutoPreviewEnabled() const;
@@ -197,12 +196,12 @@ public:
      **/
     static void clearAutoSavesDir();
     void removeLastAutosave();
-    
+
     QString getLockAbsoluteFilePath() const;
     void createLockFile();
     void removeLockFile();
     bool getLockFileInfos(const QString& projectPath, const QString& projectName, QString* authorName, QString* lastSaveDate, QString* host, qint64* appPID) const;
-    
+
     virtual bool isProject() const OVERRIDE
     {
         return true;
@@ -211,112 +210,109 @@ public:
     /**
      * @brief Returns the user environment variables for the project
      **/
-    void getEnvironmentVariables(std::map<std::string,std::string>& env) const;
-   
+    void getEnvironmentVariables(std::map<std::string, std::string>& env) const;
+
     /**
      * @brief Expands the environment variables in the given string that are found in env
      **/
-    static void expandVariable(const std::map<std::string,std::string>& env,std::string& str);
-    static bool expandVariable(const std::string& varName,const std::string& varValue,std::string& str);
-    
+    static void expandVariable(const std::map<std::string, std::string>& env, std::string& str);
+    static bool expandVariable(const std::string& varName, const std::string& varValue, std::string& str);
+
     /**
      * @brief Try to find in str a variable from env. The longest match is replaced by the variable name.
      **/
-    static void findReplaceVariable(const std::map<std::string,std::string>& env,std::string& str);
-    
+    static void findReplaceVariable(const std::map<std::string, std::string>& env, std::string& str);
+
     /**
      * @brief Make the given string relative to the given variable.
      * If the path indicated by varValue doesn't exist then str will be unchanged.
      **/
-    static void makeRelativeToVariable(const std::string& varName,const std::string& varValue,std::string& str);
-    
+    static void makeRelativeToVariable(const std::string& varName, const std::string& varValue, std::string& str);
     static bool isRelative(const std::string& str);
 
-    
+
     /**
-     * @brief If str is relative it will canonicalize the path, i.e expand all variables and '.' and '..' that may 
+     * @brief If str is relative it will canonicalize the path, i.e expand all variables and '.' and '..' that may
      * be. When returning from this function str will be an absolute path.
      * It internally uses expandVariable
      **/
     void canonicalizePath(std::string& str);
-    
+
     /**
      * @brief Tries to find any variable that str could start with and simplify the given path with the longest
      * variable matching. It internally uses findReplaceVariable
      **/
     void simplifyPath(std::string& str);
-    
+
     /**
      * @brief Same as simplifyPath but will only try with the [Project] variable
      **/
     void makeRelativeToProject(std::string& str);
-    
-    bool fixFilePath(const std::string& projectPathName,const std::string& newProjectPath,
+
+    bool fixFilePath(const std::string& projectPathName, const std::string& newProjectPath,
                      std::string& filePath);
 
-    
-    void onOCIOConfigPathChanged(const std::string& path,bool blockevaluation);
+
+    void onOCIOConfigPathChanged(const std::string& path, bool blockevaluation);
 
 
     static std::string escapeXML(const std::string &input);
     static std::string unescapeXML(const std::string &input);
-    
+
     double getProjectFrameRate() const;
-    
+
     boost::shared_ptr<KnobPath> getEnvVarKnob() const;
-    
     std::string getOnProjectLoadCB() const;
     std::string getOnProjectSaveCB() const;
     std::string getOnProjectCloseCB() const;
-    
     std::string getOnNodeCreatedCB() const;
     std::string getOnNodeDeleteCB() const;
-    
+
     bool isProjectClosing() const;
 
     bool isFrameRangeLocked() const;
-    
-    void getFrameRange(double* first,double* last) const;
-    
-    void unionFrameRangeWith(int first,int last);
-    
+
+    void getFrameRange(double* first, double* last) const;
+
+    void unionFrameRangeWith(int first, int last);
+
     void recomputeFrameRangeFromReaders();
-    
+
     void createViewer();
-    
+
     void resetProject();
-    
-    
+
+
     struct TreeOutput
     {
         NodePtr node;
-        std::list<std::pair<int,NodeWPtr > > outputs;
+        std::list<std::pair<int, NodeWPtr > > outputs;
     };
-    
+
     struct TreeInput
     {
         NodePtr node;
         std::vector<NodePtr > inputs;
     };
-    
+
     struct NodesTree
     {
         TreeOutput output;
         std::list<TreeInput> inputs;
         NodesList inbetweenNodes;
     };
-    
-    static void extractTreesFromNodes(const NodesList& nodes,std::list<Project::NodesTree>& trees);
-    
+
+    static void extractTreesFromNodes(const NodesList& nodes, std::list<Project::NodesTree>& trees);
+
     void closeProject(bool aboutToQuit)
     {
         reset(aboutToQuit);
     }
-    
+
     bool addFormat(const std::string& formatSpec);
-    
+
     void setTimeLine(const boost::shared_ptr<TimeLine>& timeline);
-    
+
 public Q_SLOTS:
 
     void onAutoSaveTimerTriggered();
@@ -326,7 +322,7 @@ public Q_SLOTS:
     {
         closeProject(false);
     }
-    
+
     void onAutoSaveFutureFinished();
 
     void onProjectFormatPopulated();
@@ -336,8 +332,8 @@ Q_SIGNALS:
     void mustCreateFormat();
 
     void formatChanged(Format);
-    
-    void frameRangeChanged(int,int);
+
+    void frameRangeChanged(int, int);
 
     void autoPreviewChanged(bool);
 
@@ -354,13 +350,11 @@ private:
 
     void setProjectDefaultFormat(const Format & f);
 
-    bool loadProjectInternal(const QString & path,const QString & name,bool isAutoSave,
+    bool loadProjectInternal(const QString & path, const QString & name, bool isAutoSave,
                              bool isUntitledAutosave, bool* mustSave);
 
-    QString saveProjectInternal(const QString & path,const QString & name,bool autosave, bool updateProjectProperties);
+    QString saveProjectInternal(const QString & path, const QString & name, bool autosave, bool updateProjectProperties);
 
-    
-    
 
     /**
      * @brief Resets the project state clearing all nodes and the project name.
@@ -400,7 +394,7 @@ private:
 
     void save(ProjectSerialization* serializationObject) const;
 
-    bool load(const ProjectSerialization & obj,const QString& name,const QString& path, bool* mustSave);
+    bool load(const ProjectSerialization & obj, const QString& name, const QString& path, bool* mustSave);
 
 
     boost::scoped_ptr<ProjectPrivate> _imp;

@@ -69,18 +69,16 @@ public:
     }
 
     KnobGuiDouble(KnobPtr knob,
-                   DockablePanel *container);
+                  DockablePanel *container);
 
     virtual ~KnobGuiDouble() OVERRIDE;
-    
+
     virtual void removeSpecificGui() OVERRIDE FINAL;
-
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
-
     virtual bool getAllDimensionsVisible() const OVERRIDE FINAL;
-    
+
     int getDimensionForSpinBox(const SpinBox* spinbox) const;
-    
+
 public Q_SLOTS:
     void onSpinBoxValueChanged();
     void onSliderValueChanged(double);
@@ -88,7 +86,7 @@ public Q_SLOTS:
 #ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
     void onMinMaxChanged(double mini, double maxi, int index = 0);
 #endif
-    void onDisplayMinMaxChanged(double mini,double maxi,int index = 0);
+    void onDisplayMinMaxChanged(double mini, double maxi, int index = 0);
     void onIncrementChanged(double incr, int index = 0);
     void onDecimalsChanged(int deci, int index = 0);
 
@@ -106,7 +104,7 @@ private:
      * @param dimension Must be either 0 and 1
      * @note If the dimension of the knob is not 1 or 2 this function does nothing.
      **/
-    void valueAccordingToType(bool normalize,int dimension,double* value);
+    void valueAccordingToType(bool normalize, int dimension, double* value);
 
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
 
@@ -117,15 +115,15 @@ private:
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
     virtual void setEnabled() OVERRIDE FINAL;
-    virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
+    virtual void setReadOnly(bool readOnly, int dimension) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension,AnimationLevelEnum level) OVERRIDE FINAL;
-    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(int dimension, AnimationLevelEnum level) OVERRIDE FINAL;
+    virtual void reflectExpressionState(int dimension, bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
     virtual void reflectModificationsState() OVERRIDE FINAL;
     virtual void refreshDimensionName(int dim) OVERRIDE FINAL;
-    
+
 private:
     std::vector<std::pair<SpinBox *, Label *> > _spinBoxes;
     QWidget *_container;

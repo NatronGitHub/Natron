@@ -32,15 +32,15 @@
 
 NATRON_NAMESPACE_ENTER;
 
-class ChannelsComboBox : public ComboBox
+class ChannelsComboBox
+    : public ComboBox
 {
-    
 public:
-    
+
     ChannelsComboBox(QWidget* parent) : ComboBox(parent) {}
-    
+
 private:
-    
+
     virtual void paintEvent(QPaintEvent* event) OVERRIDE FINAL;
 };
 

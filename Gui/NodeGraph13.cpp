@@ -41,51 +41,48 @@ NATRON_NAMESPACE_ENTER;
 //using std::cout; using std::endl;
 
 
-
 bool
-NodeGraph::isNearbyNavigator(const QPoint& widgetPos,QPointF& scenePos) const
+NodeGraph::isNearbyNavigator(const QPoint& widgetPos,
+                             QPointF& scenePos) const
 {
-    if (!_imp->_navigator->isVisible()) {
+    if ( !_imp->_navigator->isVisible() ) {
         return false;
     }
-    
+
     QRect visibleWidget = visibleWidgetRect();
-    
     int navWidth = std::ceil(width() * NATRON_NAVIGATOR_BASE_WIDTH);
     int navHeight = std::ceil(height() * NATRON_NAVIGATOR_BASE_HEIGHT);
-
     QPoint btmRightWidget = visibleWidget.bottomRight();
-    QPoint navTopLeftWidget = btmRightWidget - QPoint(navWidth,navHeight );
-    
-    if (widgetPos.x() >= navTopLeftWidget.x() && widgetPos.x() < btmRightWidget.x() &&
-        widgetPos.y() >= navTopLeftWidget.y() && widgetPos.y() <= btmRightWidget.y()) {
-        
+    QPoint navTopLeftWidget = btmRightWidget - QPoint(navWidth, navHeight );
+
+    if ( ( widgetPos.x() >= navTopLeftWidget.x() ) && ( widgetPos.x() < btmRightWidget.x() ) &&
+         ( widgetPos.y() >= navTopLeftWidget.y() ) && ( widgetPos.y() <= btmRightWidget.y() ) ) {
         ///The bbox of all nodes in the nodegraph
         QRectF sceneR = _imp->calcNodesBoundingRect();
-        
+
         ///The visible portion of the nodegraph
         QRectF viewRect = visibleSceneRect();
         sceneR = sceneR.united(viewRect);
-        
+
         ///Make sceneR and viewRect keep the same aspect ratio as the navigator
         double xScale = navWidth / sceneR.width();
         double yScale =  navHeight / sceneR.height();
-        double scaleFactor = std::max(0.001,std::min(xScale,yScale));
+        double scaleFactor = std::max( 0.001, std::min(xScale, yScale) );
 
         ///Make the widgetPos relative to the navTopLeftWidget
-        QPoint clickNavPos(widgetPos.x() - navTopLeftWidget.x(), widgetPos.y() - navTopLeftWidget.y());
-        
+        QPoint clickNavPos( widgetPos.x() - navTopLeftWidget.x(), widgetPos.y() - navTopLeftWidget.y() );
+
         scenePos.rx() = clickNavPos.x() / scaleFactor;
         scenePos.ry() = clickNavPos.y() / scaleFactor;
-        
+
         ///Now scenePos is in scene coordinates, but relative to the sceneR top left
         scenePos.rx() += sceneR.x();
         scenePos.ry() += sceneR.y();
+
         return true;
     }
-    
+
     return false;
-    
 }
 
 bool
@@ -103,7 +100,7 @@ NodeGraph::deselect()
             (*it)->setUserSelected(false);
         }
     }
-  
+
     _imp->_selection.clear();
 
     if (_imp->_magnifiedNode && _imp->_magnifOn) {

@@ -40,11 +40,10 @@
 NATRON_NAMESPACE_ENTER;
 
 TimeLine::TimeLine(Project* project)
-: _project(project)
-, _currentFrame(1)
+    : _project(project)
+    , _currentFrame(1)
 {
 }
-
 
 SequenceTime
 TimeLine::currentFrame() const
@@ -53,7 +52,6 @@ TimeLine::currentFrame() const
 
     return _currentFrame;
 }
-
 
 void
 TimeLine::seekFrame(SequenceTime frame,
@@ -74,7 +72,7 @@ TimeLine::seekFrame(SequenceTime frame,
     }
 
     if (_project && updateLastCaller) {
-        _project->getApp()->setLastViewerUsingTimeline(caller ? caller->getNode() : NodePtr());
+        _project->getApp()->setLastViewerUsingTimeline( caller ? caller->getNode() : NodePtr() );
     }
     if (changed) {
         Q_EMIT frameChanged(frame, (int)reason);
@@ -90,7 +88,6 @@ TimeLine::incrementCurrentFrame()
         ++_currentFrame;
         frame = _currentFrame;
     }
-
     Q_EMIT frameChanged(frame, (int)eTimelineChangeReasonPlaybackSeek);
 }
 
@@ -103,16 +100,13 @@ TimeLine::decrementCurrentFrame()
         --_currentFrame;
         frame = _currentFrame;
     }
-
     Q_EMIT frameChanged(frame, (int)eTimelineChangeReasonPlaybackSeek);
 }
 
 void
 TimeLine::onFrameChanged(SequenceTime frame)
 {
-   
     Q_EMIT frameAboutToChange();
-    
     bool changed = false;
     {
         QMutexLocker l(&_lock);

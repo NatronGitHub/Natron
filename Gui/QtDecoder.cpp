@@ -50,18 +50,18 @@ using std::cout; using std::endl;
 
 QtReader::QtReader(NodePtr node)
     : EffectInstance(node)
-      , _lut( Color::LutManager::sRGBLut() )
-      , _img(0)
-      , _fileKnob()
-      , _firstFrame()
-      , _before()
-      , _lastFrame()
-      , _after()
-      , _missingFrameChoice()
-      , _frameMode()
-      , _startingFrame()
-      , _timeOffset()
-      , _settingFrameRange(false)
+    , _lut( Color::LutManager::sRGBLut() )
+    , _img(0)
+    , _fileKnob()
+    , _firstFrame()
+    , _before()
+    , _lastFrame()
+    , _after()
+    , _missingFrameChoice()
+    , _frameMode()
+    , _startingFrame()
+    , _timeOffset()
+    , _settingFrameRange(false)
 {
 }
 
@@ -98,7 +98,7 @@ void
 QtReader::initializeKnobs()
 {
     Dialogs::warningDialog( getScriptName_mt_safe(), QObject::tr("This plugin exists only to help the developers team to test %1"
-                                                  ". You cannot use it when rendering a project.").arg(NATRON_APPLICATION_NAME).toStdString() );
+                                                                 ". You cannot use it when rendering a project.").arg(NATRON_APPLICATION_NAME).toStdString() );
 
 
     _fileKnob = getNode()->createKnob<KnobFile>( QObject::tr("File").toStdString() );
@@ -106,7 +106,7 @@ QtReader::initializeKnobs()
 
     _firstFrame =  getNode()->createKnob<KnobInt>( QObject::tr("First frame").toStdString() );
     _firstFrame->setAnimationEnabled(false);
-    _firstFrame->setDefaultValue(0,0);
+    _firstFrame->setDefaultValue(0, 0);
 
 
     _before = getNode()->createKnob<KnobChoice>( QObject::tr("Before").toStdString() );
@@ -118,11 +118,11 @@ QtReader::initializeKnobs()
     beforeOptions.push_back( QObject::tr("error").toStdString() );
     _before->populateChoices(beforeOptions);
     _before->setAnimationEnabled(false);
-    _before->setDefaultValue(0,0);
+    _before->setDefaultValue(0, 0);
 
     _lastFrame =  getNode()->createKnob<KnobInt>( QObject::tr("Last frame").toStdString() );
     _lastFrame->setAnimationEnabled(false);
-    _lastFrame->setDefaultValue(0,0);
+    _lastFrame->setDefaultValue(0, 0);
 
 
     _after = getNode()->createKnob<KnobChoice>( QObject::tr("After").toStdString() );
@@ -134,7 +134,7 @@ QtReader::initializeKnobs()
     afterOptions.push_back( QObject::tr("error").toStdString() );
     _after->populateChoices(beforeOptions);
     _after->setAnimationEnabled(false);
-    _after->setDefaultValue(0,0);
+    _after->setDefaultValue(0, 0);
 
     _missingFrameChoice = getNode()->createKnob<KnobChoice>( QObject::tr("On missing frame").toStdString() );
     std::vector<std::string> missingFrameOptions;
@@ -142,7 +142,7 @@ QtReader::initializeKnobs()
     missingFrameOptions.push_back( QObject::tr("Error").toStdString() );
     missingFrameOptions.push_back( QObject::tr("Black image").toStdString() );
     _missingFrameChoice->populateChoices(missingFrameOptions);
-    _missingFrameChoice->setDefaultValue(0,0);
+    _missingFrameChoice->setDefaultValue(0, 0);
     _missingFrameChoice->setAnimationEnabled(false);
 
     _frameMode = getNode()->createKnob<KnobChoice>( QObject::tr("Frame mode").toStdString() );
@@ -151,15 +151,15 @@ QtReader::initializeKnobs()
     frameModeOptions.push_back( QObject::tr("Starting frame").toStdString() );
     frameModeOptions.push_back( QObject::tr("Time offset").toStdString() );
     _frameMode->populateChoices(frameModeOptions);
-    _frameMode->setDefaultValue(0,0);
+    _frameMode->setDefaultValue(0, 0);
 
     _startingFrame = getNode()->createKnob<KnobInt>( QObject::tr("Starting frame").toStdString() );
     _startingFrame->setAnimationEnabled(false);
-    _startingFrame->setDefaultValue(0,0);
+    _startingFrame->setDefaultValue(0, 0);
 
     _timeOffset = getNode()->createKnob<KnobInt>( QObject::tr("Time offset").toStdString() );
     _timeOffset->setAnimationEnabled(false);
-    _timeOffset->setDefaultValue(0,0);
+    _timeOffset->setDefaultValue(0, 0);
     _timeOffset->setSecretByDefault(true);
 } // initializeKnobs
 
@@ -171,17 +171,17 @@ QtReader::knobChanged(KnobI* k,
                       bool /*originatedFromMainThread*/)
 {
     if ( k == _fileKnob.get() ) {
-        SequenceTime first,last;
-        getSequenceTimeDomain(first,last);
-        timeDomainFromSequenceTimeDomain(first,last, true);
-        _startingFrame->setValue(first,0);
+        SequenceTime first, last;
+        getSequenceTimeDomain(first, last);
+        timeDomainFromSequenceTimeDomain(first, last, true);
+        _startingFrame->setValue(first, 0);
     } else if ( ( k == _firstFrame.get() ) && !_settingFrameRange ) {
         int first = _firstFrame->getValue();
         _lastFrame->setMinimum(first);
 
         int offset = _timeOffset->getValue();
         _settingFrameRange = true;
-        _startingFrame->setValue(first + offset,0);
+        _startingFrame->setValue(first + offset, 0);
         _settingFrameRange = false;
     } else if ( k == _lastFrame.get() ) {
         int last = _lastFrame->getValue();
@@ -210,7 +210,7 @@ QtReader::knobChanged(KnobI* k,
 
         ///prevent recursive calls of setValue(...)
         _settingFrameRange = true;
-        _timeOffset->setValue(startingFrame - firstFrame,0);
+        _timeOffset->setValue(startingFrame - firstFrame, 0);
         _settingFrameRange = false;
     } else if ( ( k == _timeOffset.get() ) && !_settingFrameRange ) {
         //also update the starting frame
@@ -220,7 +220,7 @@ QtReader::knobChanged(KnobI* k,
 
         ///prevent recursive calls of setValue(...)
         _settingFrameRange = true;
-        _startingFrame->setValue(offset + first,0);
+        _startingFrame->setValue(offset + first, 0);
         _settingFrameRange = false;
     }
 } // knobChanged
@@ -240,7 +240,7 @@ QtReader::timeDomainFromSequenceTimeDomain(SequenceTime & first,
                                            bool mustSetFrameRange)
 {
     ///the values held by GUI parameters
-    int frameRangeFirst,frameRangeLast;
+    int frameRangeFirst, frameRangeLast;
     int startingFrame;
 
     if (mustSetFrameRange) {
@@ -253,8 +253,8 @@ QtReader::timeDomainFromSequenceTimeDomain(SequenceTime & first,
         _lastFrame->setMinimum(first);
         _lastFrame->setMaximum(last);
 
-        _firstFrame->setValue(first,0);
-        _lastFrame->setValue(last,0);
+        _firstFrame->setValue(first, 0);
+        _lastFrame->setValue(last, 0);
         _settingFrameRange = false;
     } else {
         ///these are the value held by the "First frame" and "Last frame" param
@@ -271,7 +271,8 @@ void
 QtReader::getFrameRange(double *first,
                         double *last)
 {
-    int f,l;
+    int f, l;
+
     getSequenceTimeDomain(f, l);
     timeDomainFromSequenceTimeDomain(f, l, false);
     *first = f;
@@ -422,7 +423,8 @@ QtReader::getFilenameAtSequenceTime(SequenceTime time,
 }
 
 StatusEnum
-QtReader::getRegionOfDefinition(U64 /*hash*/,double time,
+QtReader::getRegionOfDefinition(U64 /*hash*/,
+                                double time,
                                 const RenderScale & /*scale*/,
                                 int /*view*/,
                                 RectD* rod )
@@ -467,9 +469,8 @@ StatusEnum
 QtReader::render(const RenderActionArgs& args)
 {
     assert(args.outputPlanes.size() == 1);
-    
-    const std::pair<ImageComponents,ImagePtr>& output = args.outputPlanes.front();
-    
+
+    const std::pair<ImageComponents, ImagePtr>& output = args.outputPlanes.front();
     int missingFrameChoice = _missingFrameChoice->getValue();
 
     if (!_img) {
@@ -481,19 +482,19 @@ QtReader::render(const RenderActionArgs& args)
     }
 
     Image::WriteAccess acc = output.second->getWriteRights();
-    
+
     assert(_img);
     switch ( _img->format() ) {
     case QImage::Format_RGB32:     // The image is stored using a 32-bit RGB format (0xffRRGGBB).
     case QImage::Format_ARGB32:     // The image is stored using a 32-bit ARGB format (0xAARRGGBB).
         //might have to invert y coordinates here
         _lut->from_byte_packed( (float*)acc.pixelAt(0, 0), _img->bits(), args.roi, output.second->getBounds(), output.second->getBounds(),
-                                Color::ePixelPackingBGRA,Color::ePixelPackingRGBA,true,false );
+                                Color::ePixelPackingBGRA, Color::ePixelPackingRGBA, true, false );
         break;
     case QImage::Format_ARGB32_Premultiplied:     // The image is stored using a premultiplied 32-bit ARGB format (0xAARRGGBB).
         //might have to invert y coordinates here
         _lut->from_byte_packed( (float*)acc.pixelAt(0, 0), _img->bits(), args.roi, output.second->getBounds(), output.second->getBounds(),
-                                Color::ePixelPackingBGRA,Color::ePixelPackingRGBA,true,true );
+                                Color::ePixelPackingBGRA, Color::ePixelPackingRGBA, true, true );
         break;
     case QImage::Format_Mono:     // The image is stored using 1-bit per pixel. Bytes are packed with the most significant bit (MSB) first.
     case QImage::Format_MonoLSB:     // The image is stored using 1-bit per pixel. Bytes are packed with the less significant bit (LSB) first.
@@ -521,7 +522,7 @@ QtReader::render(const RenderActionArgs& args)
     }
     case QImage::Format_Invalid:
     default:
-        output.second->fill(args.roi,0.f,1.f);
+        output.second->fill(args.roi, 0.f, 1.f);
         setPersistentMessage( eMessageTypeError, QObject::tr("Invalid image format.").toStdString() );
 
         return eStatusFailed;
@@ -535,7 +536,7 @@ QtReader::addAcceptedComponents(int /*inputNb*/,
                                 std::list<ImageComponents>* comps)
 {
     ///QtReader only supports RGBA for now.
-    comps->push_back(ImageComponents::getRGBAComponents());
+    comps->push_back( ImageComponents::getRGBAComponents() );
 }
 
 void

@@ -50,14 +50,14 @@ ClickableLabel::ClickableLabel(const QString &text,
 }
 
 ClickableLabel::ClickableLabel(const QPixmap &icon,
-               QWidget *parent)
-: Label(parent)
-, _toggled(false)
-, _bold(false)
-, _dirty(false)
-, _readOnly(false)
-, _animation(0)
-, _sunkenStyle(false)
+                               QWidget *parent)
+    : Label(parent)
+    , _toggled(false)
+    , _bold(false)
+    , _dirty(false)
+    , _readOnly(false)
+    , _animation(0)
+    , _sunkenStyle(false)
 {
     setPixmap(icon);
 }
@@ -78,13 +78,13 @@ ClickableLabel::changeEvent(QEvent* e)
     if (e->type() == QEvent::EnabledChange) {
         if ( !isEnabled() ) {
             QString paintTxt = text();
-            paintTxt.prepend(QString::fromUtf8("<font color=\"#000000\">"));
-            paintTxt.append(QString::fromUtf8("</font>"));
+            paintTxt.prepend( QString::fromUtf8("<font color=\"#000000\">") );
+            paintTxt.append( QString::fromUtf8("</font>") );
             setText(paintTxt);
         } else {
             QString str = text();
-            str = str.remove(QString::fromUtf8("<font color=\"#000000\">"));
-            str = str.remove(QString::fromUtf8("</font>"));
+            str = str.remove( QString::fromUtf8("<font color=\"#000000\">") );
+            str = str.remove( QString::fromUtf8("</font>") );
             setText(str);
         }
     }
@@ -94,13 +94,14 @@ void
 ClickableLabel::setText_overload(const QString & str)
 {
     QString paintTxt = str;
+
     if ( !isEnabled() ) {
-        paintTxt.prepend(QString::fromUtf8("<font color=\"#000000\">"));
-        paintTxt.append(QString::fromUtf8("</font>"));
+        paintTxt.prepend( QString::fromUtf8("<font color=\"#000000\">") );
+        paintTxt.append( QString::fromUtf8("</font>") );
     }
     if (_bold) {
-        paintTxt.prepend(QString::fromUtf8("<b>"));
-        paintTxt.append(QString::fromUtf8("</b>"));
+        paintTxt.prepend( QString::fromUtf8("<b>") );
+        paintTxt.append( QString::fromUtf8("</b>") );
     }
     setText(paintTxt);
 }
@@ -153,16 +154,20 @@ ClickableLabel::setSunken(bool s)
     }
 }
 
-KnobClickableLabel::KnobClickableLabel(const QPixmap& icon, const KnobGuiPtr& knob, QWidget* parent )
-: ClickableLabel(icon, parent)
-, _dnd(new KnobWidgetDnD(knob,-1, this))
+KnobClickableLabel::KnobClickableLabel(const QPixmap& icon,
+                                       const KnobGuiPtr& knob,
+                                       QWidget* parent )
+    : ClickableLabel(icon, parent)
+    , _dnd( new KnobWidgetDnD(knob, -1, this) )
 {
     knob->enableRightClickMenu(this, -1);
 }
 
-KnobClickableLabel::KnobClickableLabel(const QString& text, const KnobGuiPtr& knob, QWidget* parent)
-: ClickableLabel(text, parent)
-, _dnd(new KnobWidgetDnD(knob, -1, this))
+KnobClickableLabel::KnobClickableLabel(const QString& text,
+                                       const KnobGuiPtr& knob,
+                                       QWidget* parent)
+    : ClickableLabel(text, parent)
+    , _dnd( new KnobWidgetDnD(knob, -1, this) )
 {
     knob->enableRightClickMenu(this, -1);
 }
@@ -199,11 +204,10 @@ KnobClickableLabel::keyReleaseEvent(QKeyEvent* e)
     ClickableLabel::keyReleaseEvent(e);
 }
 
-
 void
 KnobClickableLabel::mousePressEvent(QMouseEvent* e)
 {
-    if (!_dnd->mousePress(e)) {
+    if ( !_dnd->mousePress(e) ) {
         ClickableLabel::mousePressEvent(e);
     }
 }
@@ -211,7 +215,7 @@ KnobClickableLabel::mousePressEvent(QMouseEvent* e)
 void
 KnobClickableLabel::mouseMoveEvent(QMouseEvent* e)
 {
-    if (!_dnd->mouseMove(e)) {
+    if ( !_dnd->mouseMove(e) ) {
         ClickableLabel::mouseMoveEvent(e);
     }
 }
@@ -221,13 +225,12 @@ KnobClickableLabel::mouseReleaseEvent(QMouseEvent* e)
 {
     _dnd->mouseRelease(e);
     ClickableLabel::mouseReleaseEvent(e);
-    
 }
 
 void
 KnobClickableLabel::dragEnterEvent(QDragEnterEvent* e)
 {
-    if (!_dnd->dragEnter(e)) {
+    if ( !_dnd->dragEnter(e) ) {
         ClickableLabel::dragEnterEvent(e);
     }
 }
@@ -235,14 +238,15 @@ KnobClickableLabel::dragEnterEvent(QDragEnterEvent* e)
 void
 KnobClickableLabel::dragMoveEvent(QDragMoveEvent* e)
 {
-    if (!_dnd->dragMove(e)) {
+    if ( !_dnd->dragMove(e) ) {
         ClickableLabel::dragMoveEvent(e);
     }
 }
+
 void
 KnobClickableLabel::dropEvent(QDropEvent* e)
 {
-    if (!_dnd->drop(e)) {
+    if ( !_dnd->drop(e) ) {
         ClickableLabel::dropEvent(e);
     }
 }
@@ -260,7 +264,6 @@ KnobClickableLabel::focusOutEvent(QFocusEvent* e)
     _dnd->focusOut();
     ClickableLabel::focusOutEvent(e);
 }
-
 
 NATRON_NAMESPACE_EXIT;
 

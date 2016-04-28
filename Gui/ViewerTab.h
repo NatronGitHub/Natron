@@ -44,10 +44,11 @@
 
 NATRON_NAMESPACE_ENTER;
 
-typedef std::map<NodePtr,NodeRenderStats > RenderStatsMap;
+typedef std::map<NodePtr, NodeRenderStats > RenderStatsMap;
 
 struct ViewerTabPrivate;
-class ViewerTab : public QWidget, public PanelWidget
+class ViewerTab
+    : public QWidget, public PanelWidget
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -67,7 +68,7 @@ public:
 
     ViewerInstance* getInternalNode() const;
     void discardInternalNodePointer();
-    
+
     ViewerGL* getViewer() const;
 
     void setCurrentView(ViewIdx view);
@@ -84,7 +85,7 @@ public:
     /*All the overlay methods are forwarding calls to the default node instance*/
     void drawOverlays(double time, const RenderScale & renderScale) const;
 
-    bool notifyOverlaysPenDown(const RenderScale & renderScale, PenType pen, bool isTabletEvent,const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
+    bool notifyOverlaysPenDown(const RenderScale & renderScale, PenType pen, bool isTabletEvent, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
 
     bool notifyOverlaysPenDoubleClick(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
 
@@ -101,18 +102,18 @@ public:
     bool notifyOverlaysFocusGained(const RenderScale & renderScale);
 
     bool notifyOverlaysFocusLost(const RenderScale & renderScale);
-    
+
 private:
-    
+
     bool notifyOverlaysPenDown_internal(const NodePtr& node, const RenderScale & renderScale, PenType pen, bool isTabletEvent, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
-    
+
     bool notifyOverlaysPenMotion_internal(const NodePtr& node, const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QInputEvent* e);
     bool notifyOverlaysKeyDown_internal(const NodePtr& node, const RenderScale & renderScale, QKeyEvent* e, Key k,
                                         KeyboardModifiers km);
     bool notifyOverlaysKeyRepeat_internal(const NodePtr& node, const RenderScale & renderScale, QKeyEvent* e, Key k,
                                           KeyboardModifiers km);
+
 public:
-    
 
 
     ////////
@@ -133,23 +134,22 @@ public:
     void setGain(double d);
 
     double getGain() const;
-    
-    void setGamma(double gamma);
-    
-    double getGamma() const;
-    
-    static std::string getChannelsString(DisplayChannelsEnum c);
 
+    void setGamma(double gamma);
+
+    double getGamma() const;
+
+    static std::string getChannelsString(DisplayChannelsEnum c);
     std::string getChannelsString() const;
-    
+
     DisplayChannelsEnum getChannels() const;
 
     void setChannels(const std::string & channelsStr);
-    
+
 private:
-    
+
     void setDisplayChannels(int index, bool setBothInputs);
-    
+
 public:
 
     bool isAutoContrastEnabled() const;
@@ -179,9 +179,9 @@ public:
 
     void removeRotoInterface(NodeGui* n, bool permanently, bool removeAndDontSetAnother);
 
-    void getRotoContext(std::map<NodeGui*,RotoGui*>* rotoNodes, std::pair<NodeGui*,RotoGui*>* currentRoto) const;
+    void getRotoContext(std::map<NodeGui*, RotoGui*>* rotoNodes, std::pair<NodeGui*, RotoGui*>* currentRoto) const;
 
-    void updateRotoSelectedTool(int tool,RotoGui* sender);
+    void updateRotoSelectedTool(int tool, RotoGui* sender);
 
     boost::shared_ptr<RotoGuiSharedData> getRotoGuiSharedData(NodeGui* node) const;
 
@@ -194,13 +194,13 @@ public:
 
     void removeTrackerInterface(NodeGui* n, bool permanently, bool removeAndDontSetAnother);
 
-    void getTrackerContext(std::map<NodeGui*,TrackerGui*>* trackerNodes, std::pair<NodeGui*,TrackerGui*>* currentTracker) const;
+    void getTrackerContext(std::map<NodeGui*, TrackerGui*>* trackerNodes, std::pair<NodeGui*, TrackerGui*>* currentTracker) const;
 
 
     ViewerCompositingOperatorEnum getCompositingOperator() const;
 
     void setCompositingOperator(ViewerCompositingOperatorEnum op);
-    
+
     bool isFPSLocked() const;
 
     void connectToViewerCache();
@@ -215,94 +215,93 @@ public:
     bool isTimelineVisible() const;
     bool isLeftToolbarVisible() const;
     bool isRightToolbarVisible() const;
-    
+
     ///Not MT-safe
     void setAsFileDialogViewer();
     bool isFileDialogViewer() const;
-    
+
     void setCustomTimeline(const boost::shared_ptr<TimeLine>& timeline);
     boost::shared_ptr<TimeLine> getTimeLine() const;
-    
+
     bool isCheckerboardEnabled() const;
     void setCheckerboardEnabled(bool enabled);
-    
+
     double getDesiredFps() const;
     void setDesiredFps(double fps);
 
     ///Called by ViewerGL when the image changes to refresh the info bar
-    void setImageFormat(int textureIndex,const ImageComponents& components,ImageBitDepthEnum depth);
-    
-	void redrawGLWidgets();
+    void setImageFormat(int textureIndex, const ImageComponents& components, ImageBitDepthEnum depth);
 
-    void getTimelineBounds(int* left,int* right) const;
-    
-    void setTimelineBounds(int left,int right);
+    void redrawGLWidgets();
+
+    void getTimelineBounds(int* left, int* right) const;
+
+    void setTimelineBounds(int left, int right);
 
     void centerOn(SequenceTime left, SequenceTime right);
-    
+
     ///Calls setTimelineBounds + set the frame range line edit
-    void setFrameRange(int left,int right);
-    
+    void setFrameRange(int left, int right);
+
     void setFrameRangeEdited(bool edited);
-    
+
     void setPlaybackMode(PlaybackModeEnum mode);
-    
+
     PlaybackModeEnum getPlaybackMode() const;
-    
+
 
     void refreshLayerAndAlphaChannelComboBox();
 
     void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio);
 
     bool isViewersSynchroEnabled() const;
-    
+
     void synchronizeOtherViewersProjection();
-    
+
     void centerOn_tripleSync(SequenceTime left, SequenceTime right);
-    
+
     void zoomIn();
     void zoomOut();
-    
+
     void refresh(bool enableRenderStats);
-    
+
     void connectToInput(int inputNb);
-    
+
     bool isPickerEnabled() const;
     void setPickerEnabled(bool enabled);
-    
+
     void onMousePressCalledInViewer();
-    
+
     void updateViewsMenu(const std::vector<std::string>& viewNames);
-    
+
     void getActiveInputs(int* a, int* b) const;
-    
+
     void setViewerPaused(bool paused, bool allInputs);
 
     void toggleViewerPauseMode(bool allInputs);
-    
+
     bool isViewerPaused(int texIndex) const;
-    
+
     QString getCurrentLayerName() const;
-    
+
     QString getCurrentAlphaLayerName() const;
-    
+
     void setCurrentLayers(const QString& layer, const QString& alphaLayer);
-    
-    
+
 public Q_SLOTS:
-    
+
     void onPauseViewerButtonClicked(bool clicked);
 
     void onPlaybackInButtonClicked();
     void onPlaybackOutButtonClicked();
     void onPlaybackInSpinboxValueChanged(double value);
     void onPlaybackOutSpinboxValueChanged(double value);
-    
+
     void onZoomComboboxCurrentIndexChanged(int index);
-    
+
     void toggleStartForward();
     void toggleStartBackward();
-    
+
     void startPause(bool);
     void abortRendering();
     void startBackward(bool);
@@ -316,7 +315,7 @@ public Q_SLOTS:
     void togglePlaybackMode();
     void onViewerChannelsChanged(int);
     void onClipToProjectButtonToggle(bool);
-    void onTimeLineTimeChanged(SequenceTime time,int);
+    void onTimeLineTimeChanged(SequenceTime time, int);
     void onCurrentTimeSpinBoxChanged(double);
     /*Updates the comboBox according to the real zoomFactor. Value is in % */
     void updateZoomComboBox(int value);
@@ -328,17 +327,17 @@ public Q_SLOTS:
 
     void refresh();
 
-    void onViewsComboboxChanged(int  index);
+    void onViewsComboboxChanged(int index);
 
     void onEnableViewerRoIButtonToggle(bool);
-    
+
     void onCreateNewRoIPressed();
 
     void onAutoContrastChanged(bool b);
 
     void onRenderScaleButtonClicked(bool checked);
 
-    void onRotoRoleChanged(int previousRole,int newRole);
+    void onRotoRoleChanged(int previousRole, int newRole);
 
     void onRotoNodeGuiSettingsPanelClosed(bool closed);
 
@@ -351,25 +350,25 @@ public Q_SLOTS:
     void onFirstInputNameChanged(const QString & text);
 
     void onSecondInputNameChanged(const QString & text);
-    
+
     void switchInputAAndB();
-    
+
     void setInputA(int index);
-    
+
     void setInputB(int index);
 
     void onActiveInputsChanged();
 
-    void onInputNameChanged(int inputNb,const QString & name);
+    void onInputNameChanged(int inputNb, const QString & name);
 
     void onInputChanged(int inputNb);
-    
+
     void onCanSetFPSClicked(bool toggled);
     void onCanSetFPSLabelClicked(bool toggled);
     void setFPSLocked(bool fpsLocked);
 
-    void onTimelineBoundariesChanged(SequenceTime,SequenceTime);
-    
+    void onTimelineBoundariesChanged(SequenceTime, SequenceTime);
+
     void setLeftToolbarVisible(bool visible);
     void setRightToolbarVisible(bool visible);
     void setTopToolbarVisible(bool visible);
@@ -377,7 +376,7 @@ public Q_SLOTS:
     void setTimelineVisible(bool visible);
     void setInfobarVisible(bool visible);
 
-    
+
     void toggleInfobarVisbility();
     void togglePlayerVisibility();
     void toggleTimelineVisibility();
@@ -385,75 +384,75 @@ public Q_SLOTS:
     void toggleRightToolbarVisibility();
     void toggleTopToolbarVisibility();
 
-    void showAllToolbars();    
+    void showAllToolbars();
     void hideAllToolbars();
-        
+
     void onCheckerboardButtonClicked();
-    
+
     void onPickerButtonClicked(bool);
-    
+
     void onSpinboxFpsChanged(double fps);
-    
+
     void onEngineStopped();
     void onEngineStarted(bool forward);
-    
+
     void onViewerRenderingStarted();
-    
+
     void onViewerRenderingStopped();
-    
+
     void setTurboButtonDown(bool down);
-    
+
     void onClipPreferencesChanged();
-    
+
     void onAvailableComponentsChanged();
-    
+
     void onInternalNodeLabelChanged(const QString& name);
     void onInternalNodeScriptNameChanged(const QString& name);
-    
+
     void onAlphaChannelComboChanged(int index);
     void onLayerComboChanged(int index);
-    
+
     void onGammaToggled(bool clicked);
-    
+
     void onGammaSliderValueChanged(double value);
-    
+
     void onGammaSpinBoxValueChanged(double value);
-    
+
     void onGainToggled(bool clicked);
-    
+
     void onGainSliderChanged(double v);
 
     void onGainSpinBoxValueChanged(double value);
-    
+
     void onGammaSliderEditingFinished(bool hasMovedOnce);
     void onGainSliderEditingFinished(bool hasMovedOnce);
-    
+
     void onSyncViewersButtonPressed(bool clicked);
-    
+
     void onRenderStatsAvailable(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats);
-    
+
     void nextLayer();
     void previousLayer();
-    
+
     void previousView();
     void nextView();
-    
+
     void toggleTripleSync(bool toggled);
-    
+
 private:
-    
+
     void refreshFPSBoxFromClipPreferences();
-    
+
     void onSpinboxFpsChangedInternal(double fps);
-    
-    void onPickerButtonClickedInternal(ViewerTab* caller,bool);
-    
-    void onCompositingOperatorChangedInternal(ViewerCompositingOperatorEnum oldOp,ViewerCompositingOperatorEnum newOp);
 
-    
-    void manageTimelineSlot(bool disconnectPrevious,const boost::shared_ptr<TimeLine>& timeline);
+    void onPickerButtonClickedInternal(ViewerTab* caller, bool);
 
-    void manageSlotsForInfoWidget(int textureIndex,bool connect);
+    void onCompositingOperatorChangedInternal(ViewerCompositingOperatorEnum oldOp, ViewerCompositingOperatorEnum newOp);
+
+
+    void manageTimelineSlot(bool disconnectPrevious, const boost::shared_ptr<TimeLine>& timeline);
+
+    void manageSlotsForInfoWidget(int textureIndex, bool connect);
 
     virtual bool eventFilter(QObject *target, QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;

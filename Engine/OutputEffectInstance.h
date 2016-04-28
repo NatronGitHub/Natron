@@ -48,7 +48,6 @@ NATRON_NAMESPACE_ENTER;
 class OutputEffectInstance
     : public EffectInstance
 {
-    
     struct RenderSequenceArgs
     {
         BlockingBackgroundRender* renderController;
@@ -60,15 +59,13 @@ class OutputEffectInstance
         bool blocking;
     };
 
-    
     mutable QMutex _outputEffectDataLock;
     std::list<RenderSequenceArgs> _renderSequenceRequests;
     RenderEngine* _engine;
     SequenceTime _writerCurrentFrame; /*!< for writers only: indicates the current frame
-                                       It avoids snchronizing all viewers in the app to the render*/
+                                         It avoids snchronizing all viewers in the app to the render*/
     SequenceTime _writerFirstFrame;
     SequenceTime _writerLastFrame;
-
 
 public:
 
@@ -132,15 +129,14 @@ public:
     void setLastFrame(int f);
 
     virtual void initializeData() OVERRIDE FINAL;
-
     virtual void reportStats(int time, ViewIdx view, double wallTime, const std::map<NodePtr, NodeRenderStats > & stats);
 
 protected:
-    
+
     void createWriterPath();
 
     void launchRenderSequence(const RenderSequenceArgs& args);
-    
+
     /**
      * @brief Creates the engine that will control the output rendering
      **/

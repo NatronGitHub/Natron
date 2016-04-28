@@ -42,8 +42,8 @@ public:
     explicit AnimationButton(const KnobGuiPtr& knob,
                              QWidget* parent = 0)
         : Button(parent)
-          , _dragging(false)
-          , _knob(knob)
+        , _dragging(false)
+        , _knob(knob)
     {
         setMouseTracking(true);
         setAcceptDrops(true);
@@ -53,9 +53,9 @@ public:
     explicit AnimationButton(const KnobGuiPtr& knob,
                              const QString & text,
                              QWidget * parent = 0)
-        : Button(text,parent)
-          , _dragging(false)
-          , _knob(knob)
+        : Button(text, parent)
+        , _dragging(false)
+        , _knob(knob)
     {
         setMouseTracking(true);
         setAcceptDrops(true);
@@ -66,9 +66,9 @@ public:
                     const QIcon & icon,
                     const QString & text,
                     QWidget * parent = 0)
-        : Button(icon,text,parent)
-          , _dragging(false)
-          , _knob(knob)
+        : Button(icon, text, parent)
+        , _dragging(false)
+        , _knob(knob)
     {
         setMouseTracking(true);
         setAcceptDrops(true);

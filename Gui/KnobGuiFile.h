@@ -60,52 +60,54 @@ public:
     }
 
     KnobGuiFile(KnobPtr knob,
-                 DockablePanel *container);
+                DockablePanel *container);
 
     virtual ~KnobGuiFile() OVERRIDE;
-    
-    virtual void removeSpecificGui() OVERRIDE FINAL;
 
+    virtual void removeSpecificGui() OVERRIDE FINAL;
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
-    
-    
+
+
     bool checkFileModificationAndWarn(SequenceTime time, bool errorAndAbortRender);
 
 public Q_SLOTS:
 
-    void onTextEdited() ;
-    
+    void onTextEdited();
+
     void onButtonClicked();
-    
+
     void onReloadClicked();
 
     void open_file();
 
-    void onTimelineFrameChanged(SequenceTime time,int reason);
-    
-    
+    void onTimelineFrameChanged(SequenceTime time, int reason);
+
+
     void onMakeAbsoluteTriggered();
-    
+
     void onMakeRelativeTriggered();
-    
+
     void onSimplifyTriggered();
+
 private:
-    
+
     bool checkFileModificationAndWarnInternal(bool doCheck, SequenceTime time, bool errorAndAbortRender);
 
-    
+
     virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
     virtual bool shouldAddStretch() const OVERRIDE FINAL { return false; }
+
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
     virtual void setEnabled() OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
+    virtual void setReadOnly(bool readOnly, int dimension) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension,AnimationLevelEnum level) OVERRIDE FINAL;
-    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(int dimension, AnimationLevelEnum level) OVERRIDE FINAL;
+    virtual void reflectExpressionState(int dimension, bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
+
 private:
 
     void updateLastOpened(const QString &str);
@@ -114,10 +116,10 @@ private:
     Button *_openFileButton;
     Button* _reloadButton;
     QString _lastOpened;
-    
+
     //Keep track for each files in the sequence (or video) the modification date
     //of the files
-    std::map<std::string,QDateTime> _lastModificationDates;
+    std::map<std::string, QDateTime> _lastModificationDates;
     boost::weak_ptr<KnobFile> _knob;
 };
 
@@ -139,41 +141,41 @@ public:
     }
 
     KnobGuiOutputFile(KnobPtr knob,
-                       DockablePanel *container);
+                      DockablePanel *container);
 
     virtual ~KnobGuiOutputFile() OVERRIDE;
 
     virtual void removeSpecificGui() OVERRIDE FINAL;
-    
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
 
 public Q_SLOTS:
 
-    void onTextEdited() ;
+    void onTextEdited();
 
     void onButtonClicked();
 
     void open_file(bool);
 
     void onMakeAbsoluteTriggered();
-    
+
     void onMakeRelativeTriggered();
-    
+
     void onSimplifyTriggered();
 
 private:
-    
+
     virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
     virtual bool shouldAddStretch() const OVERRIDE FINAL { return false; }
+
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
     virtual void setEnabled() OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
+    virtual void setReadOnly(bool readOnly, int dimension) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension,AnimationLevelEnum level) OVERRIDE FINAL;
-    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(int dimension, AnimationLevelEnum level) OVERRIDE FINAL;
+    virtual void reflectExpressionState(int dimension, bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
     void updateLastOpened(const QString &str);
 
@@ -203,26 +205,24 @@ public:
     }
 
     KnobGuiPath(KnobPtr knob,
-                 DockablePanel *container);
+                DockablePanel *container);
 
     virtual ~KnobGuiPath() OVERRIDE;
-    
-    virtual void removeSpecificGui() OVERRIDE FINAL;
 
+    virtual void removeSpecificGui() OVERRIDE FINAL;
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
 
 public Q_SLOTS:
-        
+
     void onOpenFileButtonClicked();
-    
+
     void onTextEdited();
 
     void onMakeAbsoluteTriggered();
-    
-    void onMakeRelativeTriggered();
-    
-    void onSimplifyTriggered();
 
+    void onMakeRelativeTriggered();
+
+    void onSimplifyTriggered();
 
 private:
     virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
@@ -231,10 +231,10 @@ private:
     virtual void _show() OVERRIDE FINAL;
     virtual void setEnabled() OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
+    virtual void setReadOnly(bool readOnly, int dimension) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension,AnimationLevelEnum level) OVERRIDE FINAL;
-    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(int dimension, AnimationLevelEnum level) OVERRIDE FINAL;
+    virtual void reflectExpressionState(int dimension, bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
     void updateLastOpened(const QString &str);
 
@@ -242,14 +242,10 @@ private:
     // row has been set-up with old value
     virtual bool editUserEntry(QStringList& row) OVERRIDE FINAL;
     virtual void entryRemoved(const QStringList& row) OVERRIDE FINAL;
-    virtual void tableChanged(int row, int col,std::string*  newEncodedValue) OVERRIDE FINAL;
- 
+    virtual void tableChanged(int row, int col, std::string*  newEncodedValue) OVERRIDE FINAL;
     QWidget* _mainContainer;
-    
     LineEdit* _lineEdit;
     Button* _openFileButton;
-    
-
     QString _lastOpened;
     boost::weak_ptr<KnobPath> _knob;
 };

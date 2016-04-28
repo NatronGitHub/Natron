@@ -57,7 +57,7 @@ struct ComboBoxMenuNode
     QString text;
     std::vector<boost::shared_ptr<ComboBoxMenuNode> > children;
     ComboBoxMenuNode* parent;
-    
+
     ComboBoxMenuNode() : isMenu(0), isLeaf(0), text(), children(), parent(0) {}
 };
 
@@ -67,7 +67,7 @@ class ComboBox
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
-    
+
 private:
     bool _readOnly;
     bool _enabled;
@@ -77,22 +77,19 @@ private:
     bool _altered;
     bool _cascading;
     int _cascadingIndex;
-    
     int _currentIndex;
     QString _currentText;
     std::vector<int> _separators;
     boost::shared_ptr<ComboBoxMenuNode> _rootNode;
-    
     mutable QSize _sh; ///size hint
     mutable QSize _msh; ///minmum size hint
     mutable QSizePolicy _sizePolicy;
     mutable bool _validHints;
     unsigned short _align;
-
     int _currentDelta; // accumulated wheel delta
-    
+
 protected:
-    
+
     bool ignoreWheelEvent;
 
 public:
@@ -102,31 +99,31 @@ public:
     virtual ~ComboBox() OVERRIDE
     {
     }
-    
+
     void setCascading(bool cascading)
     {
         _cascading = cascading;
     }
-    
+
     bool isCascading() const
     {
         return _cascading;
     }
 
     /*Insert a new item BEFORE the specified index.*/
-    void insertItem( int index,const QString &item,QIcon icon = QIcon(),QKeySequence = QKeySequence(),const QString & toolTip = QString() );
-    
+    void insertItem( int index, const QString &item, QIcon icon = QIcon(), QKeySequence = QKeySequence(), const QString & toolTip = QString() );
+
     void addAction(QAction* action);
-    
+
 private:
-    
+
     void addActionPrivate(QAction* action);
-    
+
 public:
-    
-    
-    void addItem( const QString &item,QIcon icon = QIcon(),QKeySequence = QKeySequence(),const QString & toolTip = QString() );
-    
+
+
+    void addItem( const QString &item, QIcon icon = QIcon(), QKeySequence = QKeySequence(), const QString & toolTip = QString() );
+
     void addItemNew();
 
     /*Appends a separator to the comboBox.*/
@@ -147,11 +144,11 @@ public:
 
     void enableItem(int index);
 
-    void setItemText(int index,const QString & item);
+    void setItemText(int index, const QString & item);
 
-    void setItemShortcut(int index,const QKeySequence & sequence);
+    void setItemShortcut(int index, const QKeySequence & sequence);
 
-    void setItemIcon(int index,const QIcon & icon);
+    void setItemIcon(int index, const QIcon & icon);
 
     void setMaximumWidthFromText(const QString & str);
 
@@ -166,9 +163,9 @@ public:
     int getAnimation() const;
     void setAnimation(int i);
     void setReadOnly(bool readOnly);
-    
+
     bool getEnabled_natron() const;
-    
+
     void setAltered(bool b);
     bool getAltered() const;
 
@@ -197,9 +194,9 @@ Q_SIGNALS:
     void currentIndexChanged(int index);
 
     void currentIndexChanged(QString);
-    
+
     void itemNewSelected();
-    
+
     void minimumSizeChanged(QSize);
 
 protected:
@@ -208,17 +205,16 @@ protected:
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
-    virtual void wheelEvent(QWheelEvent *e) OVERRIDE ;
+    virtual void wheelEvent(QWheelEvent *e) OVERRIDE;
+
 private:
-    
-    
-    
-    
+
+
     virtual QSize sizeHint() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
-    
-    
+
+
     void growMaximumWidthFromText(const QString & str);
     void createMenu();
 
@@ -227,11 +223,11 @@ private:
 
     ///changes the combobox text and returns an entry index if a matching one with the same name was found, -1 otherwise.
     int setCurrentText_internal(const QString & text);
-    
+
     QSize sizeForWidth(int w) const;
-    
+
     QRectF layoutRect() const;
-    
+
     void updateLabel();
 };
 

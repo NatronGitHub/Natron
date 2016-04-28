@@ -40,35 +40,33 @@ NATRON_NAMESPACE_ENTER;
 class SpinBoxValidator
 {
 public:
-    
+
     SpinBoxValidator()
     {
-        
     }
-    
+
     virtual ~SpinBoxValidator()
     {
-        
     }
-    
+
     virtual bool validateInput(const QString& userText, double* valueToDisplay) const = 0;
 };
 
 
 struct NumericKnobValidatorPrivate;
-class NumericKnobValidator : public SpinBoxValidator
+class NumericKnobValidator
+    : public SpinBoxValidator
 {
-    
 public:
-    
-    NumericKnobValidator(const SpinBox* spinbox,const KnobGuiPtr& knob);
-    
+
+    NumericKnobValidator(const SpinBox* spinbox, const KnobGuiPtr& knob);
+
     virtual ~NumericKnobValidator();
-    
+
     virtual bool validateInput(const QString& userText, double* valueToDisplay) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
+
 private:
-    
+
     boost::scoped_ptr<NumericKnobValidatorPrivate> _imp;
 };
 

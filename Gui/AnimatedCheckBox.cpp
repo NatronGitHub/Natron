@@ -41,12 +41,11 @@ CLANG_DIAG_ON(deprecated-register)
 #include "Engine/Settings.h"
 
 NATRON_NAMESPACE_ENTER;
-
 AnimatedCheckBox::AnimatedCheckBox(QWidget *parent)
-: QFrame(parent), animation(0), readOnly(false), dirty(false), altered(false) ,checked(false)
+    : QFrame(parent), animation(0), readOnly(false), dirty(false), altered(false), checked(false)
 {
     setFocusPolicy(Qt::StrongFocus);
-    setSizePolicy(QSizePolicy(QSizePolicy::Preferred,QSizePolicy::Fixed,QSizePolicy::Label));
+    setSizePolicy( QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed, QSizePolicy::Label) );
     setMouseTracking(true);
     setFrameShape(QFrame::Box);
 }
@@ -75,17 +74,18 @@ AnimatedCheckBox::setDirty(bool b)
 QSize
 AnimatedCheckBox::minimumSizeHint() const
 {
-    return QSize(TO_DPIX(15),TO_DPIY(15));
+    return QSize( TO_DPIX(15), TO_DPIY(15) );
 }
 
 QSize
 AnimatedCheckBox::sizeHint() const
 {
-    return QSize(TO_DPIX(15),TO_DPIY(15));
+    return QSize( TO_DPIX(15), TO_DPIY(15) );
 }
 
 void
-AnimatedCheckBox::setChecked(bool c) {
+AnimatedCheckBox::setChecked(bool c)
+{
     checked = c;
     Q_EMIT toggled(checked);
     update();
@@ -107,7 +107,7 @@ AnimatedCheckBox::keyPressEvent(QKeyEvent* e)
 void
 AnimatedCheckBox::mousePressEvent(QMouseEvent* e)
 {
-    if (buttonDownIsLeft(e)) {
+    if ( buttonDownIsLeft(e) ) {
         if (readOnly) {
             return;
         }
@@ -115,42 +115,38 @@ AnimatedCheckBox::mousePressEvent(QMouseEvent* e)
         update();
         Q_EMIT clicked(checked);
         Q_EMIT toggled(checked);
-        
     } else {
         QFrame::mousePressEvent(e);
     }
 }
 
 void
-AnimatedCheckBox::getBackgroundColor(double *r,double *g,double *b) const
+AnimatedCheckBox::getBackgroundColor(double *r,
+                                     double *g,
+                                     double *b) const
 {
-    appPTR->getCurrentSettings()->getRaisedColor(r,g,b);
+    appPTR->getCurrentSettings()->getRaisedColor(r, g, b);
 }
 
 void
 AnimatedCheckBox::paintEvent(QPaintEvent* e)
 {
     QFrame::paintEvent(e);
-    
     QStyleOption opt;
+
     opt.initFrom(this);
     QPainter p(this);
-    
     QRectF bRect = rect();
-    
     double fw = frameWidth();
-    
-    
     QPen pen = p.pen();
     QColor activeColor;
 
     ///Draw bg
     QRectF bgRect = bRect.adjusted(fw / 2., fw / 2., -fw, -fw);
     //bRect.adjust(fw, fw, -fw, -fw);
-    
-    double bgR = 0.,bgG = 0.,bgB = 0.;
+    double bgR = 0., bgG = 0., bgB = 0.;
     if (animation == 0) {
-        getBackgroundColor(&bgR,&bgG,&bgB);
+        getBackgroundColor(&bgR, &bgG, &bgB);
     } else if (animation == 1) {
         appPTR->getCurrentSettings()->getInterpolatedColor(&bgR, &bgG, &bgB);
     } else if (animation == 2) {
@@ -161,10 +157,10 @@ AnimatedCheckBox::paintEvent(QPaintEvent* e)
     activeColor.setRgbF(bgR, bgG, bgB);
     pen.setColor(activeColor);
     p.setPen(pen);
-    
+
     p.fillRect(bgRect, activeColor);
-    
-    
+
+
     ///Draw tick
     if (checked) {
         if (animation == 3) {
@@ -172,34 +168,33 @@ AnimatedCheckBox::paintEvent(QPaintEvent* e)
         } else if (readOnly) {
             activeColor.setRgbF(0.5, 0.5, 0.5);
         } else if (altered) {
-            double r,g,b;
+            double r, g, b;
             appPTR->getCurrentSettings()->getAltTextColor(&r, &g, &b);
             activeColor.setRgbF(r, g, b);
         } else if (dirty) {
             activeColor = Qt::black;
         } else {
-            double r,g,b;
+            double r, g, b;
             appPTR->getCurrentSettings()->getTextColor(&r, &g, &b);
             activeColor.setRgbF(r, g, b);
         }
-        
+
         pen.setColor(activeColor);
         p.setRenderHint(QPainter::Antialiasing);
         p.setPen(pen);
-        p.drawLine(bRect.topLeft(), bRect.bottomRight());
-        p.drawLine(bRect.bottomLeft(), bRect.topRight());
-        
+        p.drawLine( bRect.topLeft(), bRect.bottomRight() );
+        p.drawLine( bRect.bottomLeft(), bRect.topRight() );
     }
-    
-    
+
+
     ///Draw frame
     pen.setColor(Qt::black);
     p.setPen(pen);
     p.drawRect(bRect);
-    
+
     ///Draw focus highlight
-    if (hasFocus()) {
-        double selR,selG,selB;
+    if ( hasFocus() ) {
+        double selR, selG, selB;
         appPTR->getCurrentSettings()->getSelectionColor(&selR, &selG, &selB);
         QRectF focusRect = bRect.adjusted(fw, fw, -fw, -fw);
         activeColor.setRgbF(selR, selG, selB);
@@ -207,7 +202,7 @@ AnimatedCheckBox::paintEvent(QPaintEvent* e)
         p.setPen(pen);
         p.drawRect(focusRect);
     }
-}
+} // AnimatedCheckBox::paintEvent
 
 NATRON_NAMESPACE_EXIT;
 

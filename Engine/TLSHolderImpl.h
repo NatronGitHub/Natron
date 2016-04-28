@@ -44,55 +44,59 @@ NATRON_NAMESPACE_ENTER;
 
 template <>
 boost::shared_ptr<EffectInstance::EffectTLSData>
-TLSHolder<EffectInstance::EffectTLSData>::copyAndReturnNewTLS(const QThread* fromThread, const QThread* toThread) const
+TLSHolder<EffectInstance::EffectTLSData>::copyAndReturnNewTLS(const QThread* fromThread,
+                                                              const QThread* toThread) const
 {
     QWriteLocker k(&perThreadDataMutex);
     ThreadDataMap::iterator found = perThreadData.find(fromThread);
-    if (found == perThreadData.end()) {
+
+    if ( found == perThreadData.end() ) {
         ///No TLS for fromThread
         return boost::shared_ptr<EffectInstance::EffectTLSData>();
     }
-    
+
     ThreadData data;
     //Copy constructor
-    data.value.reset(new EffectInstance::EffectTLSData(*(found->second.value)));
+    data.value.reset( new EffectInstance::EffectTLSData( *(found->second.value) ) );
     perThreadData[toThread] = data;
+
     return data.value;
-    
 }
 
 template <>
 void
-TLSHolder<EffectInstance::EffectTLSData>::copyTLS(const QThread* fromThread, const QThread* toThread) const
+TLSHolder<EffectInstance::EffectTLSData>::copyTLS(const QThread* fromThread,
+                                                  const QThread* toThread) const
 {
     (void)copyAndReturnNewTLS(fromThread, toThread);
 }
 
 template <typename T>
 void
-TLSHolder<T>::copyTLS(const QThread* /*fromThread*/, const QThread* /*toThread*/) const
+TLSHolder<T>::copyTLS(const QThread* /*fromThread*/,
+                      const QThread* /*toThread*/) const
 {
-    
 }
 
 template <typename T>
 boost::shared_ptr<T>
-TLSHolder<T>::copyAndReturnNewTLS(const QThread* /*fromThread*/, const QThread* /*toThread*/) const
+TLSHolder<T>::copyAndReturnNewTLS(const QThread* /*fromThread*/,
+                                  const QThread* /*toThread*/) const
 {
     return boost::shared_ptr<T>();
 }
-
-
 
 template <typename T>
 bool
 TLSHolder<T>::cleanupPerThreadData(const QThread* curThread) const
 {
     QWriteLocker k(&perThreadDataMutex);
+
     typename ThreadDataMap::iterator found = perThreadData.find(curThread);
-    if (found != perThreadData.end()) {
+    if ( found != perThreadData.end() ) {
         perThreadData.erase(found);
     }
+
     return perThreadData.empty();
 }
 
@@ -101,23 +105,24 @@ boost::shared_ptr<T>
 TLSHolder<T>::getTLSData() const
 {
     QThread* curThread  = QThread::currentThread();
-    
+
     //This thread might be registered by a spawner thread, copy the TLS and attempt to find the TLS for this holder.
     boost::shared_ptr<T> ret = appPTR->getAppTLS()->copyTLSFromSpawnerThread<T>(this, curThread);
+
     if (ret) {
         return ret;
     }
-    
-    
+
+
     //Attempt to find an object in the map. It will be there if we already called getOrCreateTLSData() for this thread
     {
         QReadLocker k(&perThreadDataMutex);
         typename ThreadDataMap::iterator found = perThreadData.find(curThread);
-        if (found != perThreadData.end()) {
+        if ( found != perThreadData.end() ) {
             ret = found->second.value;
         }
     }
-    
+
     return ret;
 }
 
@@ -126,24 +131,26 @@ boost::shared_ptr<T>
 TLSHolder<T>::getOrCreateTLSData() const
 {
     QThread* curThread  = QThread::currentThread();
-    
+
     //This thread might be registered by a spawner thread, copy the TLS and attempt to find the TLS for this holder.
     boost::shared_ptr<T> ret = appPTR->getAppTLS()->copyTLSFromSpawnerThread<T>(this, curThread);
+
     if (ret) {
         return ret;
     }
-    
+
     //Attempt to find an object in the map. It will be there if we already called getOrCreateTLSData() for this thread
     //Note that if present, this call is extremely fast as we do not block other threads
     {
         QReadLocker k(&perThreadDataMutex);
         typename ThreadDataMap::iterator found = perThreadData.find(curThread);
-        if (found != perThreadData.end()) {
+        if ( found != perThreadData.end() ) {
             assert(found->second.value);
+
             return found->second.value;
         }
     }
-    
+
     //getOrCreateTLSData() has never been called on the thread, lookup the TLS
     ThreadData data;
     boost::shared_ptr<const TLSHolderBase> thisShared = shared_from_this();
@@ -151,12 +158,12 @@ TLSHolder<T>::getOrCreateTLSData() const
     data.value.reset(new T);
     {
         QWriteLocker k(&perThreadDataMutex);
-        perThreadData.insert(std::make_pair(curThread,data));
+        perThreadData.insert( std::make_pair(curThread, data) );
     }
     assert(data.value);
+
     return data.value;
 }
-
 
 template <typename T>
 boost::shared_ptr<T>
@@ -169,18 +176,19 @@ AppTLS::copyTLSFromSpawnerThread(const TLSHolderBase* holder,
     // 3) The spawner thread did not have TLS but was marked in the spawn map...
     // Either way: return a new object
 
-    
+
     ThreadSpawnMap::iterator foundSpawned;
     {
         QReadLocker k(&_objectMutex);
         foundSpawned = _spawns.find(curThread);
-        if (foundSpawned == _spawns.end()) {
+        if ( foundSpawned == _spawns.end() ) {
             //This is not a spawned thread and it did not have TLS already
             return boost::shared_ptr<T>();
         }
     }
     {
         QWriteLocker k(&_objectMutex);
+
         return copyTLSFromSpawnerThreadInternal<T>(holder, curThread, foundSpawned);
     }
 }
@@ -192,37 +200,37 @@ AppTLS::copyTLSFromSpawnerThreadInternal(const TLSHolderBase* holder,
                                          ThreadSpawnMap::iterator foundSpawned)
 {
     //Private - should be locked
-    assert(!_objectMutex.tryLockForWrite());
-    
+    assert( !_objectMutex.tryLockForWrite() );
+
     boost::shared_ptr<T> tls;
-    
+
     //This is a spawned thread and the first time we need the TLS for this thread, copy the whole TLS on all objects
     for (TLSObjects::iterator it = _object->objects.begin();
-         it!=_object->objects.end(); ++it) {
+         it != _object->objects.end(); ++it) {
         boost::shared_ptr<const TLSHolderBase> p = (*it).lock();
         if (p) {
             const TLSHolder<T>* foundHolder = 0;
             if (p.get() == holder) {
                 //This is the object from which it has been required to create the TLS data, copy
                 //the TLS data from the spawner thread and mark it to 'tls'.
-                foundHolder = dynamic_cast<const TLSHolder<T>*>(p.get());
+                foundHolder = dynamic_cast<const TLSHolder<T>*>( p.get() );
                 if (foundHolder) {
                     tls = foundHolder->copyAndReturnNewTLS(foundSpawned->second, curThread);
                 }
             }
-            
+
             if (!foundHolder) {
                 //Copy anyway
                 p->copyTLS(foundSpawned->second, curThread);
             }
         }
     }
-    
-    
+
+
     //Erase the thread from the spawn map
     _spawns.erase(foundSpawned);
-    return tls;
 
+    return tls;
 }
 
 NATRON_NAMESPACE_EXIT;

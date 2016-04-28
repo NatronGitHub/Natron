@@ -58,11 +58,16 @@ class RotoPoint
 public:
     RotoPoint() : _pos(), _pressure(0), _timestamp(0) {}
 
-    RotoPoint(const Point &pos_, double pressure_, double timestamp_)
-    : _pos(pos_), _pressure(pressure_), _timestamp(timestamp_) {}
+    RotoPoint(const Point &pos_,
+              double pressure_,
+              double timestamp_)
+        : _pos(pos_), _pressure(pressure_), _timestamp(timestamp_) {}
 
-    RotoPoint(double x, double y, double pressure_, double timestamp_)
-    : _pressure(pressure_), _timestamp(timestamp_) { _pos.x = x; _pos.y = y; }
+    RotoPoint(double x,
+              double y,
+              double pressure_,
+              double timestamp_)
+        : _pressure(pressure_), _timestamp(timestamp_) { _pos.x = x; _pos.y = y; }
 
     const Point& pos() const { return _pos; }
 

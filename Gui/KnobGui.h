@@ -64,7 +64,7 @@ NATRON_NAMESPACE_ENTER;
 struct KnobGuiPrivate;
 
 class KnobGui
-: public QObject,public KnobGuiI, public boost::enable_shared_from_this<KnobGui>
+    : public QObject, public KnobGuiI, public boost::enable_shared_from_this<KnobGui>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -83,22 +83,21 @@ public:
             DockablePanel* container);
 
     virtual ~KnobGui() OVERRIDE;
-    
+
     void initialize();
-    
+
     DockablePanel* getContainer();
-    
+
     void removeGui();
-    
+
     void setGuiRemoved();
-    
+
 protected:
     /**
      * @brief Override this to delete all user interface created for this knob
      **/
     virtual void removeSpecificGui() = 0;
-    
-    
+
 public:
 
     /**
@@ -131,14 +130,13 @@ public:
     virtual bool shouldAddStretch() const { return true; }
 
     void pushUndoCommand(QUndoCommand* cmd);
-
     const QUndoCommand* getLastUndoCommand() const;
 
 
     void setKeyframe(double time, int dimension, ViewSpec view);
-    void setKeyframe(double time,const KeyFrame& key,int dimension, ViewSpec view);
-    void removeKeyFrame(double time,int dimension, ViewSpec view);
-    
+    void setKeyframe(double time, const KeyFrame& key, int dimension, ViewSpec view);
+    void removeKeyFrame(double time, int dimension, ViewSpec view);
+
     void setKeyframes(const std::vector<KeyFrame>& keys, int dimension, ViewSpec view);
     void removeKeyframes(const std::vector<KeyFrame>& keys, int dimension, ViewSpec view);
 
@@ -150,16 +148,12 @@ public:
 
     Gui* getGui() const;
 
-    void enableRightClickMenu(QWidget* widget,int dimension);
+    void enableRightClickMenu(QWidget* widget, int dimension);
 
     virtual bool shouldCreateLabel() const;
-    
     virtual bool isLabelOnSameColumn() const;
-    
     virtual bool isLabelBold() const;
-
     virtual std::string getDescriptionLabel() const;
-    
     QWidget* getFieldContainer() const;
 
     /**
@@ -172,7 +166,7 @@ public:
     bool isOnNewLine() const;
 
     ////calls setReadOnly and also set the label black
-    void setReadOnly_(bool readOnly,int dimension);
+    void setReadOnly_(bool readOnly, int dimension);
 
     int getKnobsCountOnSameLine() const;
 
@@ -191,12 +185,13 @@ public:
                  ValueChangedReasonEnum reason)
     {
         KnobHelper::ValueChangedReturnCodeEnum ret = KnobHelper::eValueChangedReturnCodeNothingChanged;
+
         Knob<T>* knob = dynamic_cast<Knob<T>*>( getKnob().get() );
         assert(knob);
         if (knob) {
-            ret = knob->setValue(v, ViewSpec::current(), dimension,reason,newKey);
+            ret = knob->setValue(v, ViewSpec::current(), dimension, reason, newKey);
         }
-        if (ret > 0 && ret != KnobHelper::eValueChangedReturnCodeNothingChanged && reason == eValueChangedReasonUserEdited) {
+        if ( (ret > 0) && (ret != KnobHelper::eValueChangedReturnCodeNothingChanged) && (reason == eValueChangedReasonUserEdited) ) {
             assert(newKey);
             if (ret == KnobHelper::eValueChangedReturnCodeKeyframeAdded) {
                 setKeyframeMarkerOnTimeline( newKey->getTime() );
@@ -209,9 +204,9 @@ public:
 
         return (int)ret;
     }
-    
+
     /*This function is used by KnobUndoCommand. Calling this in a onInternalValueChanged/valueChanged
-     signal/slot sequence can cause an infinite loop.*/
+       signal/slot sequence can cause an infinite loop.*/
     template<typename T>
     bool setValueAtTime(int dimension,
                         const T & v,
@@ -221,22 +216,22 @@ public:
                         bool refreshGui,
                         ValueChangedReasonEnum reason)
     {
-        
         Knob<T>* knob = dynamic_cast<Knob<T>*>( getKnob().get() );
         assert(knob);
         KnobHelper::ValueChangedReturnCodeEnum addedKey = KnobHelper::eValueChangedReturnCodeNothingChanged;
         if (knob) {
             addedKey = knob->setValueAtTime(time, v, view, dimension, reason, newKey);
         }
-        if ((knob) && reason == eValueChangedReasonUserEdited) {
+        if ( (knob) && (reason == eValueChangedReasonUserEdited) ) {
             assert(newKey);
             setKeyframeMarkerOnTimeline( newKey->getTime() );
         }
         if (refreshGui) {
             updateGUI(dimension);
         }
-        return ((addedKey != KnobHelper::eValueChangedReturnCodeNoKeyframeAdded) &&
-                (addedKey != KnobHelper::eValueChangedReturnCodeNothingChanged));
+
+        return ( (addedKey != KnobHelper::eValueChangedReturnCodeNoKeyframeAdded) &&
+                 (addedKey != KnobHelper::eValueChangedReturnCodeNothingChanged) );
     }
 
     virtual void swapOpenGLBuffers() OVERRIDE FINAL;
@@ -246,50 +241,47 @@ public:
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
     virtual void saveOpenGLContext() OVERRIDE FINAL;
     virtual void restoreOpenGLContext() OVERRIDE FINAL;
-    
+
     ///Should set to the underlying knob the gui ptr
     virtual void setKnobGuiPointer() OVERRIDE FINAL;
-    
     virtual bool isGuiFrozenForPlayback() const OVERRIDE FINAL;
-
     virtual void copyAnimationToClipboard(int dimension = -1) const OVERRIDE FINAL;
-
     virtual void copyValuesToClipboard(int dimension = -1) const OVERRIDE FINAL;
-    
     virtual void copyLinkToClipboard(int dimension = -1) const OVERRIDE FINAL;
-    
     virtual boost::shared_ptr<Curve> getCurve(ViewSpec view, int dimension) const OVERRIDE FINAL;
 
     /**
      * @brief Check if the knob is secret by also checking the parent group visibility
      **/
     bool isSecretRecursive() const;
-    
+
     KnobPtr createDuplicateOnNode(EffectInstance* effect,
-                                                   bool makeAlias,
-                                                   const boost::shared_ptr<KnobPage>& page,
-                                                   const boost::shared_ptr<KnobGroup>& group,
-                                                   int indexInParent);
+                                  bool makeAlias,
+                                  const boost::shared_ptr<KnobPage>& page,
+                                  const boost::shared_ptr<KnobGroup>& group,
+                                  int indexInParent);
 
 
-    static bool shouldSliderBeVisible(int sliderMin, int sliderMax)
+    static bool shouldSliderBeVisible(int sliderMin,
+                                      int sliderMax)
     {
         return (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < INT_MAX) && (sliderMin > INT_MIN);
     }
 
-    static bool shouldSliderBeVisible(double sliderMin, double sliderMax)
+    static bool shouldSliderBeVisible(double sliderMin,
+                                      double sliderMax)
     {
         return (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < DBL_MAX) && (sliderMin > -DBL_MAX);
     }
-    
+
     virtual bool getAllDimensionsVisible() const OVERRIDE { return true; }
 
-    void setWarningValue(KnobWarningEnum warn,const QString& value);
+    void setWarningValue(KnobWarningEnum warn, const QString& value);
 
 public Q_SLOTS:
-    
+
     void onRemoveAliasLinkActionTriggered();
-    
+
     void onUnlinkActionTriggered();
 
     void onRedrawGuiCurve(int reason, ViewSpec view, int dimension);
@@ -299,26 +291,26 @@ public Q_SLOTS:
     /**
      * @brief Called when the internal value held by the knob is changed. It calls updateGUI().
      **/
-    void onInternalValueChanged(ViewSpec view, int dimension,int reason);
+    void onInternalValueChanged(ViewSpec view, int dimension, int reason);
 
-    void onInternalKeySet(double time, ViewSpec view,int dimension,int reason,bool added);
+    void onInternalKeySet(double time, ViewSpec view, int dimension, int reason, bool added);
 
-    void onInternalKeyRemoved(double time, ViewSpec view, int dimension,int reason);
-    
+    void onInternalKeyRemoved(double time, ViewSpec view, int dimension, int reason);
+
     void onMultipleKeySet(const std::list<double>& keys, ViewSpec view, int dimension, int reason);
 
     void onInternalAnimationAboutToBeRemoved(ViewSpec view, int dimension);
-    
+
     void onInternalAnimationRemoved();
-    
+
     ///Handler when a keyframe is moved in the curve editor/dope sheet
-    void onKeyFrameMoved(ViewSpec view, int dimension,double oldTime,double newTime);
+    void onKeyFrameMoved(ViewSpec view, int dimension, double oldTime, double newTime);
 
     void setSecret();
 
     void onRightClickClicked(const QPoint & pos);
 
-    void showRightClickMenuForDimension(const QPoint & pos,int dimension);
+    void showRightClickMenuForDimension(const QPoint & pos, int dimension);
 
     void setEnabledSlot();
 
@@ -346,13 +338,13 @@ public Q_SLOTS:
     void onCubicInterpActionTriggered();
 
     void onHorizontalInterpActionTriggered();
-    
+
     void onCopyValuesActionTriggered();
 
     void onCopyAnimationActionTriggered();
-    
+
     void onCopyLinksActionTriggered();
-    
+
     void onPasteActionTriggered();
 
     void onLinkToActionTriggered();
@@ -363,36 +355,36 @@ public Q_SLOTS:
     ///Actually restores all dimensions, the parameter is disregarded.
     void resetDefault(int dimension);
 
-    void onKnobSlavedChanged(int dimension,bool b);
+    void onKnobSlavedChanged(int dimension, bool b);
 
-    void onSetValueUsingUndoStack(const Variant & v, ViewSpec view,int dim);
+    void onSetValueUsingUndoStack(const Variant & v, ViewSpec view, int dim);
 
     void onSetDirty(bool d);
 
     void onAnimationLevelChanged(ViewSpec view, int dim);
 
-    void onAppendParamEditChanged(int reason,const Variant & v, ViewSpec view,int dim,double time,bool createNewCommand,bool setKeyFrame);
+    void onAppendParamEditChanged(int reason, const Variant & v, ViewSpec view, int dim, double time, bool createNewCommand, bool setKeyFrame);
 
     void onFrozenChanged(bool frozen);
 
     void updateCurveEditorKeyframes();
 
     void onSetExprActionTriggered();
-    
+
     void onClearExprActionTriggered();
-    
+
     void onEditExprDialogFinished();
-    
+
     void onExprChanged(int dimension);
-    
+
     void onHelpChanged();
-    
+
     void onHasModificationsChanged();
-    
+
     void onLabelChanged();
-    
+
     void onCreateAliasOnGroupActionTriggered();
-    
+
 Q_SIGNALS:
 
     void knobUndoneChange();
@@ -400,11 +392,11 @@ Q_SIGNALS:
     void knobRedoneChange();
 
     void refreshCurveEditor();
-    
+
     void refreshDopeSheet();
-    
+
     void expressionChanged();
-    
+
     /**
      *@brief Emitted whenever a keyframe is set by the user or by the plugin.
      **/
@@ -432,11 +424,10 @@ protected:
      * The dimension is either -1 indicating that all dimensions should be updated or the dimension index.
      **/
     virtual void updateGUI(int dimension) = 0;
-
     virtual void addRightClickMenuEntries(QMenu* /*menu*/) {}
-    
+
     virtual void reflectModificationsState() {}
-    
+
 private:
 
     void refreshKnobWarningIndicatorVisibility();
@@ -450,9 +441,8 @@ private:
     virtual void _hide() = 0;
     virtual void _show() = 0;
     virtual void setEnabled() = 0;
-    virtual void setReadOnly(bool readOnly,int dimension) = 0;
+    virtual void setReadOnly(bool readOnly, int dimension) = 0;
     virtual void setDirty(bool dirty) = 0;
-    
     virtual void onLabelChangedInternal() {}
 
     virtual void refreshDimensionName(int /*dim*/) {}
@@ -470,16 +460,16 @@ private:
                                        AnimationLevelEnum /*level*/)
     {
     }
-    
-    virtual void reflectExpressionState(int /*dimension*/,bool /*hasExpr*/) {}
+
+    virtual void reflectExpressionState(int /*dimension*/,
+                                        bool /*hasExpr*/) {}
 
     virtual void updateToolTip() {}
-    
-    void createAnimationMenu(QMenu* menu,int dimension);
-    
+
+    void createAnimationMenu(QMenu* menu, int dimension);
     Menu* createInterpolationMenu(QMenu* menu, int dimension, bool isEnabled);
 
-    void setInterpolationForDimensions(QAction* action,KeyframeTypeEnum interp);
+    void setInterpolationForDimensions(QAction* action, KeyframeTypeEnum interp);
 
 private:
 

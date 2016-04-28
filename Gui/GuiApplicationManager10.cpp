@@ -76,16 +76,16 @@ Q_INIT_RESOURCE_EXTERN(GuiResources);
  * on them later. If you don't register an action with that macro, its shortcut won't be editable.
  * To register an action without a keybind use Qt::NoModifier and (Qt::Key)0
  **/
-#define registerKeybind(group,id,description, modifiers,symbol) ( _imp->addKeybind(group,id,description, modifiers,symbol) )
-#define registerKeybind2(group,id,description, modifiers1,symbol1,modifiers2,symbol2) ( _imp->addKeybind(group,id,description, modifiers1,symbol1,modifiers2,symbol2) )
-#define registerKeybindWithMask(group,id,description,modifiers,symbol,modifiersMask) ( _imp->addKeybind(group,id,description, modifiers,symbol,modifiersMask) )
+#define registerKeybind(group, id, description, modifiers, symbol) ( _imp->addKeybind(group, id, description, modifiers, symbol) )
+#define registerKeybind2(group, id, description, modifiers1, symbol1, modifiers2, symbol2) ( _imp->addKeybind(group, id, description, modifiers1, symbol1, modifiers2, symbol2) )
+#define registerKeybindWithMask(group, id, description, modifiers, symbol, modifiersMask) ( _imp->addKeybind(group, id, description, modifiers, symbol, modifiersMask) )
 
 /**
  * @brief Performs the same that the registerKeybind macro, except that it takes a QKeySequence::StandardKey in parameter.
  * This way the keybind will be standard and will adapt bery well across all platforms supporting the standard.
  * If the standard parameter has no shortcut associated, the fallbackmodifiers and fallbacksymbol will be used instead.
  **/
-#define registerStandardKeybind(group,id,description,key, fallbackmodifiers, fallbacksymbol) ( _imp->addStandardKeybind(group,id,description,key,fallbackmodifiers, fallbacksymbol) )
+#define registerStandardKeybind(group, id, description, key, fallbackmodifiers, fallbacksymbol) ( _imp->addStandardKeybind(group, id, description, key, fallbackmodifiers, fallbacksymbol) )
 
 /**
  * @brief Performs the same that the registerKeybind macro, except that it works for shortcuts using mouse buttons instead of key symbols.
@@ -94,7 +94,7 @@ Q_INIT_RESOURCE_EXTERN(GuiResources);
  * In the end a mouse shortcut will be NON editable. The reason why you should call this is just to show the shortcut in the shortcut view
  * so that the user is aware it exists, but he/she will not be able to modify it.
  **/
-#define registerMouseShortcut(group,id,description, modifiers,button) ( _imp->addMouseShortcut(group,id,description, modifiers,button) )
+#define registerMouseShortcut(group, id, description, modifiers, button) ( _imp->addMouseShortcut(group, id, description, modifiers, button) )
 
 //Increment this when making change to default shortcuts or changes that would break expected default shortcuts
 //in a way. This way the user will get prompted to restore default shortcuts on next launch
@@ -106,9 +106,9 @@ NATRON_NAMESPACE_ENTER;
 void
 GuiApplicationManager::updateAllRecentFileMenus()
 {
-    const std::map<int,AppInstanceRef> & instances = getAppInstances();
-    
-    for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    const std::map<int, AppInstanceRef> & instances = getAppInstances();
+
+    for (std::map<int, AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         GuiAppInstance* appInstance = dynamic_cast<GuiAppInstance*>(it->second.app);
         if (appInstance) {
             Gui* gui = appInstance->getGui();
@@ -130,39 +130,40 @@ GuiApplicationManager::setLoadingStatus(const QString & str)
 }
 
 void
-GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
-                                              std::map<std::string,std::vector< std::pair<std::string,double> > >* writersMap)
+GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string, std::vector< std::pair<std::string, double> > >* readersMap,
+                                              std::map<std::string, std::vector< std::pair<std::string, double> > >* writersMap)
 {
     ////ReadQt and WriteQt are buggy and not maintained
     // these are built-in nodes
     QStringList grouping;
-    grouping.push_back(QString::fromUtf8(PLUGIN_GROUP_IMAGE));
+
+    grouping.push_back( QString::fromUtf8(PLUGIN_GROUP_IMAGE) );
 
 # ifdef NATRON_ENABLE_QT_IO_NODES
-   
-    
+
+
     {
         QStringList pgrp = grouping;
         pgrp.push_back("Readers");
         boost::scoped_ptr<QtReader> reader( dynamic_cast<QtReader*>( QtReader::BuildEffect( NodePtr() ) ) );
-        assert(reader.get());
-        std::map<std::string,void(*)()> readerFunctions;
-        readerFunctions.insert( std::make_pair("BuildEffect", (void(*)())&QtReader::BuildEffect) );
+        assert( reader.get() );
+        std::map<std::string, void (*)()> readerFunctions;
+        readerFunctions.insert( std::make_pair("BuildEffect", ( void (*)() ) & QtReader::BuildEffect) );
         LibraryBinary *readerPlugin = new LibraryBinary(readerFunctions);
         assert(readerPlugin);
-        
+
         registerPlugin(pgrp, reader->getPluginID().c_str(), reader->getPluginLabel().c_str(), "", QStringList(), false, false, readerPlugin, false, reader->getMajorVersion(), reader->getMinorVersion(), false);
- 
+
         std::vector<std::string> extensions = reader->supportedFileFormats();
         for (U32 k = 0; k < extensions.size(); ++k) {
-            std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it;
+            std::map<std::string, std::vector< std::pair<std::string, double> > >::iterator it;
             it = readersMap->find(extensions[k]);
 
             if ( it != readersMap->end() ) {
                 it->second.push_back( std::make_pair(reader->getPluginID(), -1) );
             } else {
-                std::vector<std::pair<std::string,double> > newVec(1);
-                newVec[0] = std::make_pair(reader->getPluginID(),-1);
+                std::vector<std::pair<std::string, double> > newVec(1);
+                newVec[0] = std::make_pair(reader->getPluginID(), -1);
                 readersMap->insert( std::make_pair(extensions[k], newVec) );
             }
         }
@@ -172,26 +173,25 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
         QStringList pgrp = grouping;
         pgrp.push_back("Writers");
         boost::scoped_ptr<QtWriter> writer( dynamic_cast<QtWriter*>( QtWriter::BuildEffect( NodePtr() ) ) );
-        assert(writer.get());
-        std::map<std::string,void(*)()> writerFunctions;
-        writerFunctions.insert( std::make_pair("BuildEffect", (void(*)())&QtWriter::BuildEffect) );
+        assert( writer.get() );
+        std::map<std::string, void (*)()> writerFunctions;
+        writerFunctions.insert( std::make_pair("BuildEffect", ( void (*)() ) & QtWriter::BuildEffect) );
         LibraryBinary *writerPlugin = new LibraryBinary(writerFunctions);
         assert(writerPlugin);
-        
-        registerPlugin(pgrp, writer->getPluginID().c_str(), writer->getPluginLabel().c_str(),"", QStringList(), false, false, writerPlugin, false, writer->getMajorVersion(), writer->getMinorVersion(), false);
-        
+
+        registerPlugin(pgrp, writer->getPluginID().c_str(), writer->getPluginLabel().c_str(), "", QStringList(), false, false, writerPlugin, false, writer->getMajorVersion(), writer->getMinorVersion(), false);
 
 
         std::vector<std::string> extensions = writer->supportedFileFormats();
         for (U32 k = 0; k < extensions.size(); ++k) {
-            std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it;
+            std::map<std::string, std::vector< std::pair<std::string, double> > >::iterator it;
             it = writersMap->find(extensions[k]);
 
             if ( it != writersMap->end() ) {
                 it->second.push_back( std::make_pair(writer->getPluginID(), -1) );
             } else {
-                std::vector<std::pair<std::string,double> > newVec(1);
-                newVec[0] = std::make_pair(writer->getPluginID(),-1);
+                std::vector<std::pair<std::string, double> > newVec(1);
+                newVec[0] = std::make_pair(writer->getPluginID(), -1);
                 writersMap->insert( std::make_pair(extensions[k], newVec) );
             }
         }
@@ -200,7 +200,7 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
     Q_UNUSED(readersMap);
     Q_UNUSED(writersMap);
 # endif // NATRON_ENABLE_QT_IO_NODES
-    
+
     ///Also load the plug-ins of the AppManager
     AppManager::loadBuiltinNodePlugins(readersMap, writersMap);
 } // loadBuiltinNodePlugins
@@ -215,7 +215,7 @@ KnobGui*
 GuiApplicationManager::createGuiForKnob(KnobPtr knob,
                                         DockablePanel *container) const
 {
-    return _imp->_knobGuiFactory->createGuiForKnob(knob,container);
+    return _imp->_knobGuiFactory->createGuiForKnob(knob, container);
 }
 
 void
@@ -234,8 +234,8 @@ public:
     Application(GuiApplicationManager* app,
                 int &argc,
                 char** argv)                                      ///< qapplication needs to be subclasses with reference otherwise lots of crashes will happen.
-        : QApplication(argc,argv)
-          , _app(app)
+        : QApplication(argc, argv)
+        , _app(app)
     {
         //setAttribute(Qt::AA_UseHighDpiPixmaps); // Qt 5
     }
@@ -272,18 +272,20 @@ Application::event(QEvent* e)
             if ( !file.isEmpty() ) {
                 file = AppManager::qt_tildeExpansion(file);
                 QFileInfo fi(file);
-                if (fi.exists()) {
+                if ( fi.exists() ) {
                     file = fi.canonicalFilePath();
                 }
             }
 #endif
             _app->setFileToOpen(file);
         }
+
         return true;
     }
 #endif
 
     default:
+
         return QApplication::event(e);
     }
 }
@@ -292,12 +294,12 @@ void
 GuiApplicationManager::initializeQApp(int &argc,
                                       char** argv)
 {
-    QApplication* app = new Application(this,argc, argv);
-
+    QApplication* app = new Application(this, argc, argv);
     QDesktopWidget* desktop = app->desktop();
     int dpiX = desktop->logicalDpiX();
     int dpiY = desktop->logicalDpiY();
-    setCurrentLogicalDPI(dpiX,dpiY);
+
+    setCurrentLogicalDPI(dpiX, dpiY);
 
     app->setQuitOnLastWindowClosed(true);
 
@@ -305,7 +307,7 @@ GuiApplicationManager::initializeQApp(int &argc,
     // Q_INIT_RESOURCES expanded, and fixed for use from inside a namespace:
     // (requires using Q_INIT_RESOURCES_EXTERN(GuiResources) before entering the namespace)
     ::qInitResources_GuiResources();
-        
+
     ///Register all the shortcuts.
     populateShortcuts();
 }
@@ -322,7 +324,6 @@ GuiApplicationManager::getAppFontSize() const
     return _imp->_fontSize;
 }
 
-
 void
 GuiApplicationManager::onAllPluginsLoaded()
 {
@@ -334,9 +335,9 @@ GuiApplicationManager::onAllPluginsLoaded()
 void
 GuiApplicationManager::setUndoRedoStackLimit(int limit)
 {
-    const std::map<int,AppInstanceRef> & apps = getAppInstances();
+    const std::map<int, AppInstanceRef> & apps = getAppInstances();
 
-    for (std::map<int,AppInstanceRef>::const_iterator it = apps.begin(); it != apps.end(); ++it) {
+    for (std::map<int, AppInstanceRef>::const_iterator it = apps.begin(); it != apps.end(); ++it) {
         GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(it->second.app);
         if (guiApp) {
             guiApp->setUndoRedoStackLimit(limit);
@@ -364,12 +365,13 @@ GuiApplicationManager::setFileToOpen(const QString & str)
 bool
 GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
 {
-    QString fileCopy(QString::fromUtf8(filename.c_str()));
+    QString fileCopy( QString::fromUtf8( filename.c_str() ) );
     QString ext = QtCompat::removeFileExtension(fileCopy);
-    std::string readerFileType = appPTR->isImageFileSupportedByNatron(ext.toStdString());
+    std::string readerFileType = appPTR->isImageFileSupportedByNatron( ext.toStdString() );
     AppInstance* mainInstance = appPTR->getTopLevelInstance();
     bool instanceCreated = false;
-    if (!mainInstance || !mainInstance->getProject()->isGraphWorthLess()) {
+
+    if ( !mainInstance || !mainInstance->getProject()->isGraphWorthLess() ) {
         CLArgs cl;
         mainInstance = appPTR->newAppInstance(cl, false);
         instanceCreated = true;
@@ -377,28 +379,29 @@ GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
     if (!mainInstance) {
         return false;
     }
-    
-    CreateNodeArgs args(QString::fromUtf8(readerFileType.c_str()), eCreateNodeReasonUserCreate, mainInstance->getProject());
+
+    CreateNodeArgs args( QString::fromUtf8( readerFileType.c_str() ), eCreateNodeReasonUserCreate, mainInstance->getProject() );
     args.paramValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filename) );
     NodePtr readerNode = mainInstance->createNode(args);
     if (!readerNode && instanceCreated) {
         mainInstance->quit();
+
         return false;
     }
-    
+
     ///Find and connect the viewer
     NodesList allNodes = mainInstance->getProject()->getNodes();
-    NodePtr viewerFound ;
-    for (NodesList::iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
-        if ((*it)->isEffectViewer()) {
+    NodePtr viewerFound;
+    for (NodesList::iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
+        if ( (*it)->isEffectViewer() ) {
             viewerFound = *it;
             break;
         }
     }
-    
+
     ///If no viewer is found, create it
     if (!viewerFound) {
-        CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonInternal, mainInstance->getProject());
+        CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonInternal, mainInstance->getProject() );
         viewerFound = mainInstance->createNode(args);
     }
     if (viewerFound) {
@@ -406,16 +409,16 @@ GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
     } else {
         return false;
     }
+
     return true;
 }
 
 void
 GuiApplicationManager::handleOpenFileRequest()
 {
-
-
     AppInstance* mainApp = getAppInstance(0);
     GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(mainApp);
+
     assert(guiApp);
     if (guiApp) {
         ///Called when double-clicking a file from desktop
@@ -437,36 +440,35 @@ void
 GuiApplicationManager::exitApp(bool warnUserForSave)
 {
     ///make a copy of the map because it will be modified when closing projects
-    std::map<int,AppInstanceRef> instances = getAppInstances();
-    
+    std::map<int, AppInstanceRef> instances = getAppInstances();
     std::list<GuiAppInstance*> guiApps;
-    for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+
+    for (std::map<int, AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         GuiAppInstance* app = dynamic_cast<GuiAppInstance*>(it->second.app);
         if (app) {
             guiApps.push_back(app);
         }
     }
-    
+
     std::set<GuiAppInstance*> triedInstances;
-    while (!guiApps.empty()) {
+    while ( !guiApps.empty() ) {
         GuiAppInstance* app = guiApps.front();
         if (app) {
             triedInstances.insert(app);
             app->getGui()->closeInstance(warnUserForSave);
         }
-        
+
         //refreshg ui instances
         instances = getAppInstances();
         guiApps.clear();
-        for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        for (std::map<int, AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
             GuiAppInstance* ga = dynamic_cast<GuiAppInstance*>(it->second.app);
-            if (ga && triedInstances.find(ga) == triedInstances.end()) {
+            if ( ga && ( triedInstances.find(ga) == triedInstances.end() ) ) {
                 guiApps.push_back(ga);
             }
         }
     }
 }
-
 
 static bool
 matchesModifers(const Qt::KeyboardModifiers & lhs,
@@ -474,9 +476,9 @@ matchesModifers(const Qt::KeyboardModifiers & lhs,
                 const Qt::KeyboardModifiers& ignoreMask)
 {
     bool hasMask = ignoreMask != Qt::NoModifier;
-    
+
     return (!hasMask && lhs == rhs) ||
-    (hasMask && (lhs & ~ignoreMask) == rhs);
+           (hasMask && (lhs & ~ignoreMask) == rhs);
 }
 
 static bool
@@ -506,9 +508,8 @@ GuiApplicationManager::matchesKeybind(const std::string & stdgroup,
                                       const Qt::KeyboardModifiers & modifiers,
                                       int symbol) const
 {
-    QString actionID = QString::fromUtf8(stdactionID.c_str());
-    QString group = QString::fromUtf8(stdgroup.c_str());
-    
+    QString actionID = QString::fromUtf8( stdactionID.c_str() );
+    QString group = QString::fromUtf8( stdgroup.c_str() );
     AppShortcuts::const_iterator it = _imp->_actionShortcuts.find(group);
 
     if ( it == _imp->_actionShortcuts.end() ) {
@@ -526,21 +527,21 @@ GuiApplicationManager::matchesKeybind(const std::string & stdgroup,
     if (!keybind) {
         return false;
     }
-    
+
     // the following macro only tests the Control, Alt, and Shift modifiers, and discards the others
     Qt::KeyboardModifiers onlyCAS = modifiers & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier);
-    
-    assert(keybind->modifiers.size() == keybind->currentShortcut.size());
+
+    assert( keybind->modifiers.size() == keybind->currentShortcut.size() );
     std::list<Qt::Key>::const_iterator kit = keybind->currentShortcut.begin();
 
-    
+
     for (std::list<Qt::KeyboardModifiers>::const_iterator it = keybind->modifiers.begin(); it != keybind->modifiers.end(); ++it, ++kit) {
-        if ( matchesModifers(onlyCAS,*it, keybind->ignoreMask) ) {
+        if ( matchesModifers(onlyCAS, *it, keybind->ignoreMask) ) {
             // modifiers are equal, now test symbol
             return matchesKey( (Qt::Key)symbol, *kit );
         }
     }
-    
+
     return false;
 }
 
@@ -550,9 +551,8 @@ GuiApplicationManager::matchesMouseShortcut(const std::string & stdgroup,
                                             const Qt::KeyboardModifiers & modifiers,
                                             int button) const
 {
-    QString actionID = QString::fromUtf8(stdactionID.c_str());
-    QString group = QString::fromUtf8(stdgroup.c_str());
-
+    QString actionID = QString::fromUtf8( stdactionID.c_str() );
+    QString group = QString::fromUtf8( stdgroup.c_str() );
     AppShortcuts::const_iterator it = _imp->_actionShortcuts.find(group);
 
     if ( it == _imp->_actionShortcuts.end() ) {
@@ -596,7 +596,7 @@ GuiApplicationManager::matchesMouseShortcut(const std::string & stdgroup,
             }
         }
     }
-    
+
 
     return false;
 }
@@ -604,28 +604,28 @@ GuiApplicationManager::matchesMouseShortcut(const std::string & stdgroup,
 void
 GuiApplicationManager::saveShortcuts() const
 {
-    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
-    
+    QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
+
     for (AppShortcuts::const_iterator it = _imp->_actionShortcuts.begin(); it != _imp->_actionShortcuts.end(); ++it) {
         settings.beginGroup(it->first);
         for (GroupShortcuts::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             const MouseAction* mAction = dynamic_cast<const MouseAction*>(it2->second);
             const KeyBoundAction* kAction = dynamic_cast<const KeyBoundAction*>(it2->second);
 
-            settings.setValue(it2->first+ QString::fromUtf8("_nbShortcuts"), QVariant((int)it2->second->modifiers.size()));
-            
+            settings.setValue( it2->first + QString::fromUtf8("_nbShortcuts"), QVariant( (int)it2->second->modifiers.size() ) );
+
             int c = 0;
             for (std::list<Qt::KeyboardModifiers>::const_iterator it3 = it2->second->modifiers.begin(); it3 != it2->second->modifiers.end(); ++it3, ++c) {
                 settings.setValue(it2->first + QString::fromUtf8("_Modifiers") + QString::number(c), (int)*it3);
             }
-            
+
             if (mAction) {
                 settings.setValue(it2->first + QString::fromUtf8("_Button"), (int)mAction->button);
             } else if (kAction) {
-                assert(it2->second->modifiers.size() == kAction->currentShortcut.size());
-                
+                assert( it2->second->modifiers.size() == kAction->currentShortcut.size() );
+
                 c = 0;
-                for (std::list<Qt::Key>::const_iterator it3 = kAction->currentShortcut.begin() ; it3 != kAction->currentShortcut.end(); ++it3, ++c) {
+                for (std::list<Qt::Key>::const_iterator it3 = kAction->currentShortcut.begin(); it3 != kAction->currentShortcut.end(); ++it3, ++c) {
                     settings.setValue(it2->first + QString::fromUtf8("_Symbol") + QString::number(c), (int)*it3);
                 }
             }
@@ -637,43 +637,39 @@ GuiApplicationManager::saveShortcuts() const
 void
 GuiApplicationManager::loadShortcuts()
 {
-    
     bool settingsExistd = getCurrentSettings()->didSettingsExistOnStartup();
-    
-    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME),QString::fromUtf8(NATRON_APPLICATION_NAME));
-
+    QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
     int settingsVersion = -1;
-    if (settings.contains(QString::fromUtf8("NATRON_SHORTCUTS_DEFAULT_VERSION"))) {
-        settingsVersion = settings.value(QString::fromUtf8("NATRON_SHORTCUTS_DEFAULT_VERSION")).toInt();
+
+    if ( settings.contains( QString::fromUtf8("NATRON_SHORTCUTS_DEFAULT_VERSION") ) ) {
+        settingsVersion = settings.value( QString::fromUtf8("NATRON_SHORTCUTS_DEFAULT_VERSION") ).toInt();
     }
-    
-    if (settingsExistd && settingsVersion < NATRON_SHORTCUTS_DEFAULT_VERSION) {
+
+    if ( settingsExistd && (settingsVersion < NATRON_SHORTCUTS_DEFAULT_VERSION) ) {
         _imp->_shortcutsChangedVersion = true;
     }
-    
+
     settings.setValue(QString::fromUtf8("NATRON_SHORTCUTS_DEFAULT_VERSION"), NATRON_SHORTCUTS_DEFAULT_VERSION);
 
-    
+
     for (AppShortcuts::iterator it = _imp->_actionShortcuts.begin(); it != _imp->_actionShortcuts.end(); ++it) {
         settings.beginGroup(it->first);
         for (GroupShortcuts::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             MouseAction* mAction = dynamic_cast<MouseAction*>(it2->second);
             KeyBoundAction* kAction = dynamic_cast<KeyBoundAction*>(it2->second);
-
             int nbShortcuts = 1;
             bool nbShortcutsSet = false;
-            if (settings.contains(it2->first + QString::fromUtf8("_nbShortcuts"))) {
-                nbShortcuts = settings.value(it2->first + QString::fromUtf8("_nbShortcuts")).toInt();
+            if ( settings.contains( it2->first + QString::fromUtf8("_nbShortcuts") ) ) {
+                nbShortcuts = settings.value( it2->first + QString::fromUtf8("_nbShortcuts") ).toInt();
                 nbShortcutsSet = true;
             }
-            
+
             bool hasNonNullKeybind = false;
-            
+
             if (!nbShortcutsSet) {
-                
                 if (kAction) {
-                    if (settings.contains(it2->first + QString::fromUtf8("_Symbol")) ) {
-                        Qt::Key key = (Qt::Key)settings.value(it2->first + QString::fromUtf8("_Symbol")).toInt();
+                    if ( settings.contains( it2->first + QString::fromUtf8("_Symbol") ) ) {
+                        Qt::Key key = (Qt::Key)settings.value( it2->first + QString::fromUtf8("_Symbol") ).toInt();
                         if (key != (Qt::Key)0) {
                             kAction->currentShortcut.clear();
                             kAction->currentShortcut.push_back(key);
@@ -681,20 +677,17 @@ GuiApplicationManager::loadShortcuts()
                         }
                     }
                 }
-                if ( hasNonNullKeybind && settings.contains(it2->first + QString::fromUtf8("_Modifiers")) ) {
+                if ( hasNonNullKeybind && settings.contains( it2->first + QString::fromUtf8("_Modifiers") ) ) {
                     it2->second->modifiers.clear();
-                    it2->second->modifiers.push_back(Qt::KeyboardModifiers( settings.value(it2->first + QString::fromUtf8("_Modifiers")).toInt() ));
+                    it2->second->modifiers.push_back( Qt::KeyboardModifiers( settings.value( it2->first + QString::fromUtf8("_Modifiers") ).toInt() ) );
                 }
             } else {
-                
-
                 for (int i = 0; i < nbShortcuts; ++i) {
                     QString idm = it2->first + QString::fromUtf8("_Modifiers") + QString::number(i);
-                    
+
                     if (kAction) {
-                        
                         QString ids = it2->first + QString::fromUtf8("_Symbol") + QString::number(i);
-                        if (settings.contains(ids) ) {
+                        if ( settings.contains(ids) ) {
                             Qt::Key key = (Qt::Key)settings.value(ids).toInt();
                             if (key != (Qt::Key)0) {
                                 if (i == 0) {
@@ -705,34 +698,32 @@ GuiApplicationManager::loadShortcuts()
                             } else {
                                 continue;
                             }
-                            
                         }
                     }
                     if ( settings.contains(idm) ) {
                         if (i == 0) {
                             it2->second->modifiers.clear();
                         }
-                        it2->second->modifiers.push_back(Qt::KeyboardModifiers(settings.value(idm).toInt()));
+                        it2->second->modifiers.push_back( Qt::KeyboardModifiers( settings.value(idm).toInt() ) );
                     }
                 }
             }
-            if ( mAction && settings.contains(it2->first + QString::fromUtf8("_Button")) ) {
-                mAction->button = (Qt::MouseButton)settings.value(it2->first + QString::fromUtf8("_Button")).toInt();
+            if ( mAction && settings.contains( it2->first + QString::fromUtf8("_Button") ) ) {
+                mAction->button = (Qt::MouseButton)settings.value( it2->first + QString::fromUtf8("_Button") ).toInt();
             }
             //If this is a node shortcut, notify the Plugin object that it has a shortcut.
-            if (hasNonNullKeybind && it->first.startsWith(QString::fromUtf8(kShortcutGroupNodes))) {
+            if ( hasNonNullKeybind && it->first.startsWith( QString::fromUtf8(kShortcutGroupNodes) ) ) {
                 const PluginsMap & allPlugins = getPluginsList();
-                PluginsMap::const_iterator found = allPlugins.find(it2->first.toStdString());
-                if (found != allPlugins.end()) {
+                PluginsMap::const_iterator found = allPlugins.find( it2->first.toStdString() );
+                if ( found != allPlugins.end() ) {
                     assert(found->second.size() > 0);
-                    (*found->second.rbegin())->setHasShortcut(true);
+                    ( *found->second.rbegin() )->setHasShortcut(true);
                 }
             }
-            
         }
         settings.endGroup();
     }
-}
+} // GuiApplicationManager::loadShortcuts
 
 bool
 GuiApplicationManager::isShorcutVersionUpToDate() const
@@ -760,13 +751,13 @@ void
 GuiApplicationManager::populateShortcuts()
 {
     ///General
-    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionNewProject, kShortcutDescActionNewProject,QKeySequence::New, Qt::ControlModifier, Qt::Key_N);
-    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionOpenProject, kShortcutDescActionOpenProject,QKeySequence::Open, Qt::ControlModifier, Qt::Key_O);
-    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionSaveProject, kShortcutDescActionSaveProject,QKeySequence::Save, Qt::ControlModifier, Qt::Key_S);
-    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionSaveAsProject, kShortcutDescActionSaveAsProject,QKeySequence::SaveAs, Qt::ControlModifier | Qt::ShiftModifier, Qt::Key_S);
-    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionCloseProject, kShortcutDescActionCloseProject,QKeySequence::Close, Qt::ControlModifier, Qt::Key_W);
-    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionPreferences, kShortcutDescActionPreferences,QKeySequence::Preferences, Qt::ShiftModifier, Qt::Key_S);
-    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionQuit, kShortcutDescActionQuit,QKeySequence::Quit, Qt::ControlModifier, Qt::Key_Q);
+    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionNewProject, kShortcutDescActionNewProject, QKeySequence::New, Qt::ControlModifier, Qt::Key_N);
+    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionOpenProject, kShortcutDescActionOpenProject, QKeySequence::Open, Qt::ControlModifier, Qt::Key_O);
+    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionSaveProject, kShortcutDescActionSaveProject, QKeySequence::Save, Qt::ControlModifier, Qt::Key_S);
+    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionSaveAsProject, kShortcutDescActionSaveAsProject, QKeySequence::SaveAs, Qt::ControlModifier | Qt::ShiftModifier, Qt::Key_S);
+    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionCloseProject, kShortcutDescActionCloseProject, QKeySequence::Close, Qt::ControlModifier, Qt::Key_W);
+    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionPreferences, kShortcutDescActionPreferences, QKeySequence::Preferences, Qt::ShiftModifier, Qt::Key_S);
+    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionQuit, kShortcutDescActionQuit, QKeySequence::Quit, Qt::ControlModifier, Qt::Key_Q);
 
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionSaveAndIncrVersion, kShortcutDescActionSaveAndIncrVersion, Qt::ControlModifier | Qt::ShiftModifier |
                     Qt::AltModifier, Qt::Key_S);
@@ -786,50 +777,50 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionFullscreen, kShortcutDescActionFullscreen, Qt::AltModifier, Qt::Key_S); // as in Nuke
     //registerKeybind(kShortcutGroupGlobal, kShortcutIDActionFullscreen, kShortcutDescActionFullscreen, Qt::ControlModifier | Qt::AltModifier, Qt::Key_F);
 
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionClearDiskCache, kShortcutDescActionClearDiskCache, Qt::NoModifier,(Qt::Key)0);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionClearPlaybackCache, kShortcutDescActionClearPlaybackCache, Qt::NoModifier,(Qt::Key)0);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionClearNodeCache, kShortcutDescActionClearNodeCache, Qt::NoModifier,(Qt::Key)0);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionClearPluginsLoadCache, kShortcutDescActionClearPluginsLoadCache, Qt::NoModifier,(Qt::Key)0);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionClearDiskCache, kShortcutDescActionClearDiskCache, Qt::NoModifier, (Qt::Key)0);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionClearPlaybackCache, kShortcutDescActionClearPlaybackCache, Qt::NoModifier, (Qt::Key)0);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionClearNodeCache, kShortcutDescActionClearNodeCache, Qt::NoModifier, (Qt::Key)0);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionClearPluginsLoadCache, kShortcutDescActionClearPluginsLoadCache, Qt::NoModifier, (Qt::Key)0);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionClearAllCaches, kShortcutDescActionClearAllCaches, Qt::ControlModifier | Qt::ShiftModifier, Qt::Key_K);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionRenderSelected, kShortcutDescActionRenderSelected, Qt::NoModifier, Qt::Key_F7);
 
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionRenderAll, kShortcutDescActionRenderAll, Qt::NoModifier, Qt::Key_F5);
-    
+
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionEnableRenderStats, kShortcutDescActionEnableRenderStats, Qt::NoModifier, Qt::Key_F2);
 
 
     registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput1, kShortcutDescActionConnectViewerToInput1, Qt::NoModifier, Qt::Key_1,
-                    Qt::ShiftModifier);
+                            Qt::ShiftModifier);
     registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput2, kShortcutDescActionConnectViewerToInput2, Qt::NoModifier, Qt::Key_2,
-                     Qt::ShiftModifier);
+                            Qt::ShiftModifier);
     registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput3, kShortcutDescActionConnectViewerToInput3, Qt::NoModifier, Qt::Key_3,
-                     Qt::ShiftModifier);
+                            Qt::ShiftModifier);
     registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput4, kShortcutDescActionConnectViewerToInput4, Qt::NoModifier, Qt::Key_4,
-                     Qt::ShiftModifier);
+                            Qt::ShiftModifier);
     registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput5, kShortcutDescActionConnectViewerToInput5, Qt::NoModifier, Qt::Key_5,
-                     Qt::ShiftModifier);
+                            Qt::ShiftModifier);
     registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput6, kShortcutDescActionConnectViewerToInput6, Qt::NoModifier, Qt::Key_6,
-                     Qt::ShiftModifier);
+                            Qt::ShiftModifier);
     registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput7, kShortcutDescActionConnectViewerToInput7, Qt::NoModifier, Qt::Key_7,
-                     Qt::ShiftModifier);
+                            Qt::ShiftModifier);
     registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput8, kShortcutDescActionConnectViewerToInput8, Qt::NoModifier, Qt::Key_8,
-                     Qt::ShiftModifier);
+                            Qt::ShiftModifier);
     registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput9, kShortcutDescActionConnectViewerToInput9, Qt::NoModifier, Qt::Key_9,
-                     Qt::ShiftModifier);
+                            Qt::ShiftModifier);
     registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput10, kShortcutDescActionConnectViewerToInput10, Qt::NoModifier, Qt::Key_0,
-                     Qt::ShiftModifier);
+                            Qt::ShiftModifier);
 
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionShowPaneFullScreen, kShortcutDescActionShowPaneFullScreen, Qt::NoModifier, Qt::Key_Space);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionNextTab, kShortcutDescActionNextTab, Qt::ControlModifier, Qt::Key_T);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionPrevTab, kShortcutDescActionPrevTab, Qt::ShiftModifier | Qt::ControlModifier, Qt::Key_T);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionCloseTab, kShortcutDescActionCloseTab, Qt::ShiftModifier, Qt::Key_Escape);
-    
-    
+
+
     ///Viewer
     registerKeybindWithMask(kShortcutGroupViewer, kShortcutIDActionZoomIn, kShortcutDescActionZoomIn, Qt::NoModifier, Qt::Key_Plus,
-                     Qt::ShiftModifier);
+                            Qt::ShiftModifier);
     registerKeybindWithMask(kShortcutGroupViewer, kShortcutIDActionZoomOut, kShortcutDescActionZoomOut, Qt::NoModifier, Qt::Key_Minus,
-                     Qt::ShiftModifier);
+                            Qt::ShiftModifier);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionFitViewer, kShortcutDescActionFitViewer, Qt::NoModifier, Qt::Key_F);
 
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, kShortcutDescActionLuminance, Qt::NoModifier, Qt::Key_Y);
@@ -838,13 +829,13 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionBlue, kShortcutDescActionBlue, Qt::NoModifier, Qt::Key_B);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionAlpha, kShortcutDescActionAlpha, Qt::NoModifier, Qt::Key_A);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionMatteOverlay, kShortcutDescActionMatteOverlay, Qt::NoModifier, Qt::Key_M);
-    
+
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionLuminanceA, kShortcutDescActionLuminanceA, Qt::ShiftModifier, Qt::Key_Y);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionRedA, kShortcutDescActionRedA, Qt::ShiftModifier, Qt::Key_R);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionGreenA, kShortcutDescActionGreenA, Qt::ShiftModifier, Qt::Key_G);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionBlueA, kShortcutDescActionBlueA, Qt::ShiftModifier, Qt::Key_B);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionAlphaA, kShortcutDescActionAlphaA, Qt::ShiftModifier, Qt::Key_A);
-    
+
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionClipEnabled, kShortcutDescActionClipEnabled, Qt::ShiftModifier, Qt::Key_C);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionRefresh, kShortcutDescActionRefresh, Qt::NoModifier, Qt::Key_U);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionRefreshWithStats, kShortcutDescActionRefreshWithStats, Qt::ShiftModifier | Qt::ControlModifier, Qt::Key_U);
@@ -852,18 +843,18 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionNewROI, kShortcutDescActionNewROI, Qt::AltModifier, Qt::Key_W);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionPauseViewer, kShortcutDescActionPauseViewer, Qt::ShiftModifier, Qt::Key_P);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionPauseViewerInputA, kShortcutDescActionPauseViewerInputA, Qt::NoModifier, Qt::Key_P);
-    
+
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionProxyEnabled, kShortcutDescActionProxyEnabled, Qt::ControlModifier, Qt::Key_P);
     registerKeybindWithMask(kShortcutGroupViewer, kShortcutIDActionProxyLevel2, kShortcutDescActionProxyLevel2, Qt::AltModifier, Qt::Key_1,
-                    Qt::ShiftModifier);
+                            Qt::ShiftModifier);
     registerKeybindWithMask(kShortcutGroupViewer, kShortcutIDActionProxyLevel4, kShortcutDescActionProxyLevel4, Qt::AltModifier, Qt::Key_2,
-                     Qt::ShiftModifier);
+                            Qt::ShiftModifier);
     registerKeybindWithMask(kShortcutGroupViewer, kShortcutIDActionProxyLevel8, kShortcutDescActionProxyLevel8, Qt::AltModifier, Qt::Key_3,
-                     Qt::ShiftModifier);
+                            Qt::ShiftModifier);
     registerKeybindWithMask(kShortcutGroupViewer, kShortcutIDActionProxyLevel16, kShortcutDescActionProxyLevel16, Qt::AltModifier, Qt::Key_4,
-                     Qt::ShiftModifier);
+                            Qt::ShiftModifier);
     registerKeybindWithMask(kShortcutGroupViewer, kShortcutIDActionProxyLevel32, kShortcutDescActionProxyLevel32, Qt::AltModifier, Qt::Key_5,
-                     Qt::ShiftModifier);
+                            Qt::ShiftModifier);
 
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionHideOverlays, kShortcutDescActionHideOverlays, Qt::NoModifier, Qt::Key_O);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionHidePlayer, kShortcutDescActionHidePlayer, Qt::NoModifier, (Qt::Key)0);
@@ -875,21 +866,20 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionHideAll, kShortcutDescActionHideAll, Qt::NoModifier, (Qt::Key)0);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionShowAll, kShortcutDescActionShowAll, Qt::NoModifier, (Qt::Key)0);
     registerKeybindWithMask(kShortcutGroupViewer, kShortcutIDActionZoomLevel100, kShortcutDescActionZoomLevel100, Qt::ControlModifier, Qt::Key_1,
-                    Qt::ShiftModifier);
+                            Qt::ShiftModifier);
     registerKeybind(kShortcutGroupViewer, kShortcutIDToggleWipe, kShortcutDescToggleWipe, Qt::NoModifier, Qt::Key_W);
     registerKeybind(kShortcutGroupViewer, kShortcutIDCenterWipe, kShortcutDescCenterWipe, Qt::ShiftModifier, Qt::Key_F);
-    
+
     registerKeybind(kShortcutGroupViewer, kShortcutIDNextLayer, kShortcutDescNextLayer, Qt::NoModifier, Qt::Key_PageDown);
     registerKeybind(kShortcutGroupViewer, kShortcutIDPrevLayer, kShortcutDescPrevLayer, Qt::NoModifier, Qt::Key_PageUp);
     registerKeybind(kShortcutGroupViewer, kShortcutIDSwitchInputAAndB, kShortcutDescSwitchInputAAndB, Qt::NoModifier, Qt::Key_Return);
-  
+
     registerKeybind(kShortcutGroupViewer, kShortcutIDPrevView, kShortcutDescPrevView, Qt::NoModifier, Qt::Key_Semicolon);
     registerKeybind(kShortcutGroupViewer, kShortcutIDNextView, kShortcutDescNextView, Qt::NoModifier, Qt::Key_Apostrophe);
-    
+
     registerMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, kShortcutDescMousePickColor, Qt::ControlModifier, Qt::LeftButton);
     registerMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, kShortcutDescMouseRectanglePick, Qt::ShiftModifier | Qt::ControlModifier, Qt::LeftButton);
-    
-    
+
 
     ///Player
     registerKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, kShortcutDescActionPlayerPrevious, Qt::NoModifier, Qt::Key_Left);
@@ -903,7 +893,7 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, kShortcutDescActionPlayerNextKF, Qt::ShiftModifier | Qt::ControlModifier, Qt::Key_Right);
     registerKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst, kShortcutDescActionPlayerFirst, Qt::ControlModifier, Qt::Key_Left);
     registerKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerLast, kShortcutDescActionPlayerLast, Qt::ControlModifier, Qt::Key_Right);
-    
+
     registerKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPlaybackIn, kShortcutDescActionPlayerPlaybackIn, Qt::AltModifier, Qt::Key_I);
     registerKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPlaybackOut, kShortcutDescActionPlayerPlaybackOut, Qt::AltModifier, Qt::Key_O);
 
@@ -946,7 +936,7 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateReader, kShortcutDescActionGraphCreateReader, Qt::NoModifier, Qt::Key_R);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateWriter, kShortcutDescActionGraphCreateWriter, Qt::NoModifier, Qt::Key_W);
 #endif
-    
+
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRearrangeNodes, kShortcutDescActionGraphRearrangeNodes, Qt::NoModifier, Qt::Key_L);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDisableNodes, kShortcutDescActionGraphDisableNodes, Qt::NoModifier, Qt::Key_D);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRemoveNodes, kShortcutDescActionGraphRemoveNodes, Qt::NoModifier, Qt::Key_Backspace);
@@ -981,9 +971,9 @@ GuiApplicationManager::populateShortcuts()
                     Qt::Key_G);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphExpandGroup, kShortcutDescActionGraphExpandGroup, Qt::ControlModifier | Qt::ShiftModifier,
                     Qt::Key_E);
-    
+
     ///CurveEditor
-    registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorRemoveKeys, kShortcutDescActionCurveEditorRemoveKeys, Qt::NoModifier,Qt::Key_Backspace);
+    registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorRemoveKeys, kShortcutDescActionCurveEditorRemoveKeys, Qt::NoModifier, Qt::Key_Backspace);
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorConstant, kShortcutDescActionCurveEditorConstant, Qt::NoModifier, Qt::Key_K);
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorSmooth, kShortcutDescActionCurveEditorSmooth, Qt::NoModifier, Qt::Key_Z);
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorLinear, kShortcutDescActionCurveEditorLinear, Qt::NoModifier, Qt::Key_L);
@@ -1012,7 +1002,7 @@ GuiApplicationManager::populateShortcuts()
 
     registerKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorCopySelectedKeyframes, kShortcutDescActionDopeSheetEditorCopySelectedKeyframes, Qt::ControlModifier, Qt::Key_C);
     registerKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorPasteKeyframes, kShortcutDescActionDopeSheetEditorPasteKeyframes, Qt::ControlModifier, Qt::Key_V);
-    
+
     //Script editor
     registerKeybindWithMask(kShortcutGroupScriptEditor, kShortcutIDActionScriptEditorPrevScript, kShortcutDescActionScriptEditorPrevScript, Qt::ControlModifier, Qt::Key_BracketLeft, Qt::ShiftModifier | Qt::AltModifier);
     registerKeybindWithMask(kShortcutGroupScriptEditor, kShortcutIDActionScriptEditorNextScript, kShortcutDescActionScriptEditorNextScript, Qt::ControlModifier, Qt::Key_BracketRight, Qt::ShiftModifier | Qt::AltModifier);
@@ -1020,10 +1010,7 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupScriptEditor, kShortcutIDActionScriptExecScript, kShortcutDescActionScriptExecScript, Qt::ControlModifier, Qt::Key_Return);
     registerKeybind(kShortcutGroupScriptEditor, kShortcutIDActionScriptClearOutput, kShortcutDescActionScriptClearOutput, Qt::ControlModifier, Qt::Key_Backspace);
     registerKeybind(kShortcutGroupScriptEditor, kShortcutIDActionScriptShowOutput, kShortcutDescActionScriptShowOutput, Qt::NoModifier, (Qt::Key)0);
-    
-    
 } // populateShortcuts
-
 
 std::list<QKeySequence>
 GuiApplicationManager::getKeySequenceForAction(const QString & group,
@@ -1037,11 +1024,11 @@ GuiApplicationManager::getKeySequenceForAction(const QString & group,
         if ( found != foundGroup->second.end() ) {
             const KeyBoundAction* ka = dynamic_cast<const KeyBoundAction*>(found->second);
             if (ka) {
-                assert(ka->modifiers.size() == ka->currentShortcut.size());
-                
+                assert( ka->modifiers.size() == ka->currentShortcut.size() );
+
                 std::list<Qt::Key>::const_iterator sit = ka->currentShortcut.begin();
-                for (std::list<Qt::KeyboardModifiers>::const_iterator it = ka->modifiers.begin(); it != ka->modifiers.end(); ++it,++sit) {
-                    ret.push_back(makeKeySequence(*it, *sit));
+                for (std::list<Qt::KeyboardModifiers>::const_iterator it = ka->modifiers.begin(); it != ka->modifiers.end(); ++it, ++sit) {
+                    ret.push_back( makeKeySequence(*it, *sit) );
                 }
             }
         }
@@ -1050,7 +1037,7 @@ GuiApplicationManager::getKeySequenceForAction(const QString & group,
     return ret;
 }
 
-const std::map<QString,std::map<QString,BoundAction*> > &
+const std::map<QString, std::map<QString, BoundAction*> > &
 GuiApplicationManager::getAllShortcuts() const
 {
     return _imp->_actionShortcuts;
@@ -1088,7 +1075,7 @@ GuiApplicationManager::removeShortcutAction(const QString & group,
         if ( found != foundGroup->second.end() ) {
             KeyBoundAction* ka = dynamic_cast<KeyBoundAction*>(found->second);
             if (ka) {
-                std::list<ActionWithShortcut*>::iterator foundAction = std::find(ka->actions.begin(),ka->actions.end(),action);
+                std::list<ActionWithShortcut*>::iterator foundAction = std::find(ka->actions.begin(), ka->actions.end(), action);
                 if ( foundAction != ka->actions.end() ) {
                     ka->actions.erase(foundAction);
 
@@ -1104,14 +1091,14 @@ GuiApplicationManager::notifyShortcutChanged(KeyBoundAction* action)
 {
     action->updateActionsShortcut();
     for (AppShortcuts::iterator it = _imp->_actionShortcuts.begin(); it != _imp->_actionShortcuts.end(); ++it) {
-        if ( it->first.startsWith(QString::fromUtf8(kShortcutGroupNodes)) ) {
+        if ( it->first.startsWith( QString::fromUtf8(kShortcutGroupNodes) ) ) {
             for (GroupShortcuts::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
                 if (it2->second == action) {
                     const PluginsMap & allPlugins = getPluginsList();
-                    PluginsMap::const_iterator found = allPlugins.find(it2->first.toStdString());
-                    if (found != allPlugins.end()) {
+                    PluginsMap::const_iterator found = allPlugins.find( it2->first.toStdString() );
+                    if ( found != allPlugins.end() ) {
                         assert(found->second.size() > 0);
-                        (*found->second.rbegin())->setHasShortcut(!action->currentShortcut.empty());
+                        ( *found->second.rbegin() )->setHasShortcut( !action->currentShortcut.empty() );
                     }
                     break;
                 }
@@ -1124,18 +1111,18 @@ void
 GuiApplicationManager::showErrorLog()
 {
     hideSplashScreen();
-    GuiAppInstance* app = dynamic_cast<GuiAppInstance*>(getTopLevelInstance());
+    GuiAppInstance* app = dynamic_cast<GuiAppInstance*>( getTopLevelInstance() );
     if (app) {
         app->getGui()->showErrorLog();
     }
-    
 }
 
 void
 GuiApplicationManager::clearLastRenderedTextures()
 {
-    const std::map<int,AppInstanceRef>& instances = getAppInstances();
-    for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    const std::map<int, AppInstanceRef>& instances = getAppInstances();
+
+    for (std::map<int, AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(it->second.app);
         if (guiApp) {
             guiApp->clearAllLastRenderedImages();
@@ -1162,14 +1149,13 @@ GuiApplicationManager::clearNodeClipBoard()
     _imp->_nodeCB.nodesUI.clear();
 }
 
-
 ///The symbol has been generated by Shiboken in  Engine/NatronEngine/natronengine_module_wrapper.cpp
 extern "C"
 {
 #ifndef IS_PYTHON_2
-    PyObject* PyInit_NatronGui();
+PyObject* PyInit_NatronGui();
 #else
-    void initNatronGui();
+void initNatronGui();
 #endif
 }
 
@@ -1178,24 +1164,26 @@ void
 GuiApplicationManager::initBuiltinPythonModules()
 {
     AppManager::initBuiltinPythonModules();
-    
+
 #ifndef IS_PYTHON_2
-    int ret = PyImport_AppendInittab(NATRON_GUI_PYTHON_MODULE_NAME,&PyInit_NatronGui);
+    int ret = PyImport_AppendInittab(NATRON_GUI_PYTHON_MODULE_NAME, &PyInit_NatronGui);
 #else
-    int ret = PyImport_AppendInittab(NATRON_GUI_PYTHON_MODULE_NAME,&initNatronGui);
+    int ret = PyImport_AppendInittab(NATRON_GUI_PYTHON_MODULE_NAME, &initNatronGui);
 #endif
     if (ret == -1) {
         throw std::runtime_error("Failed to initialize built-in Python module.");
     }
-    
 }
 
 void
-GuiApplicationManager::addCommand(const QString& grouping,const std::string& pythonFunction, Qt::Key key,const Qt::KeyboardModifiers& modifiers)
+GuiApplicationManager::addCommand(const QString& grouping,
+                                  const std::string& pythonFunction,
+                                  Qt::Key key,
+                                  const Qt::KeyboardModifiers& modifiers)
 {
-    
-    QStringList split = grouping.split(QLatin1Char('/'));
-    if (grouping.isEmpty() || split.isEmpty()) {
+    QStringList split = grouping.split( QLatin1Char('/') );
+
+    if ( grouping.isEmpty() || split.isEmpty() ) {
         return;
     }
     PythonUserCommand c;
@@ -1204,22 +1192,23 @@ GuiApplicationManager::addCommand(const QString& grouping,const std::string& pyt
     c.key = key;
     c.modifiers = modifiers;
     _imp->pythonCommands.push_back(c);
-    
-    
-    registerKeybind(kShortcutGroupGlobal, split[split.size() -1].toStdString(), split[split.size() - 1].toStdString(), modifiers, key);
-}
 
+
+    registerKeybind(kShortcutGroupGlobal, split[split.size() - 1].toStdString(), split[split.size() - 1].toStdString(), modifiers, key);
+}
 
 const std::list<PythonUserCommand>&
 GuiApplicationManager::getUserPythonCommands() const
 {
     return _imp->pythonCommands;
 }
+
 void
 GuiApplicationManager::reloadStylesheets()
 {
-    const std::map<int,AppInstanceRef>& instances = getAppInstances();
-    for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    const std::map<int, AppInstanceRef>& instances = getAppInstances();
+
+    for (std::map<int, AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(it->second.app);
         if (guiApp) {
             guiApp->reloadStylesheet();
@@ -1230,8 +1219,9 @@ GuiApplicationManager::reloadStylesheets()
 void
 GuiApplicationManager::reloadScriptEditorFonts()
 {
-    const std::map<int,AppInstanceRef>& instances = getAppInstances();
-    for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    const std::map<int, AppInstanceRef>& instances = getAppInstances();
+
+    for (std::map<int, AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(it->second.app);
         if (guiApp) {
             guiApp->reloadScriptEditorFonts();

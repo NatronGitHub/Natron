@@ -43,31 +43,33 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-class PyGuiApplication : public PyCoreApplication
+class PyGuiApplication
+    : public PyCoreApplication
 {
 public:
-    
+
     PyGuiApplication()
-    : PyCoreApplication()
+        : PyCoreApplication()
     {
-        
     }
-    
+
     virtual ~PyGuiApplication()
     {
-        
     }
-    
+
     QPixmap getIcon(PixmapEnum val) const
     {
         QPixmap ret;
-        appPTR->getIcon(val,&ret);
+
+        appPTR->getIcon(val, &ret);
+
         return ret;
     }
-    
+
     GuiApp* getGuiInstance(int idx) const
     {
         AppInstance* app = appPTR->getAppInstance(idx);
+
         if (!app) {
             return 0;
         }
@@ -75,41 +77,47 @@ public:
         if (!guiApp) {
             return 0;
         }
+
         return new GuiApp(app);
     }
-    
-    void informationDialog(const QString& title,const QString& message)
+
+    void informationDialog(const QString& title,
+                           const QString& message)
     {
-        Dialogs::informationDialog(title.toStdString(), message.toStdString());
+        Dialogs::informationDialog( title.toStdString(), message.toStdString() );
     }
-    
-    void warningDialog(const QString& title,const QString& message)
+
+    void warningDialog(const QString& title,
+                       const QString& message)
     {
-        Dialogs::warningDialog(title.toStdString(),message.toStdString());
+        Dialogs::warningDialog( title.toStdString(), message.toStdString() );
     }
-    
-    void errorDialog(const QString& title,const QString& message)
+
+    void errorDialog(const QString& title,
+                     const QString& message)
     {
-        Dialogs::errorDialog(title.toStdString(),message.toStdString());
+        Dialogs::errorDialog( title.toStdString(), message.toStdString() );
     }
-    
-    StandardButtonEnum questionDialog(const QString& title,const QString& message)
+
+    StandardButtonEnum questionDialog(const QString& title,
+                                      const QString& message)
     {
         return Dialogs::questionDialog(title.toStdString(), message.toStdString(), false);
     }
-    
-    void addMenuCommand(const QString& grouping,const QString& pythonFunctionName)
+
+    void addMenuCommand(const QString& grouping,
+                        const QString& pythonFunctionName)
     {
         appPTR->addCommand(grouping, pythonFunctionName.toStdString(), (Qt::Key)0, Qt::NoModifier);
     }
-    
-    
-    void addMenuCommand(const QString& grouping,const QString& pythonFunctionName,
-                        Qt::Key key, const Qt::KeyboardModifiers& modifiers)
+
+    void addMenuCommand(const QString& grouping,
+                        const QString& pythonFunctionName,
+                        Qt::Key key,
+                        const Qt::KeyboardModifiers& modifiers)
     {
         appPTR->addCommand(grouping, pythonFunctionName.toStdString(), key, modifiers);
     }
-    
 };
 
 NATRON_NAMESPACE_EXIT;

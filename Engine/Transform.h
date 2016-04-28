@@ -38,25 +38,25 @@
 
 NATRON_NAMESPACE_ENTER;
 namespace Transform {
-
-inline double toDegrees(double rad)
+inline double
+toDegrees(double rad)
 {
     rad = rad * 180.0 / M_PI;
-    
+
     return rad;
 }
-    
-inline double toRadians(double deg)
+
+inline double
+toRadians(double deg)
 {
-        
     deg = deg * M_PI / 180.0;
-    
+
     return deg;
 }
-    
+
 struct Point3D
 {
-    double x,y,z;
+    double x, y, z;
 
     Point3D();
 
@@ -71,7 +71,7 @@ struct Point3D
 
 struct Point4D
 {
-    double x,y,z,w;
+    double x, y, z, w;
 
     Point4D();
 
@@ -82,7 +82,6 @@ struct Point4D
 
     Point4D(const Point4D & o);
     double & operator() (int i);
-
     const double& operator() (int i) const;
 
     bool operator==(const Point4D & o) const;
@@ -97,7 +96,7 @@ struct Point4D
  **/
 struct Matrix3x3
 {
-    double a,b,c,d,e,f,g,h,i;
+    double a, b, c, d, e, f, g, h, i;
 
     Matrix3x3();
 
@@ -119,40 +118,40 @@ struct Matrix3x3
     void setIdentity();
 };
 
- double matDeterminant(const Matrix3x3& M);
+double matDeterminant(const Matrix3x3& M);
 
- Matrix3x3 matScaleAdjoint(const Matrix3x3& M, double s);
+Matrix3x3 matScaleAdjoint(const Matrix3x3& M, double s);
 
- Matrix3x3 matInverse(const Matrix3x3& M);
- Matrix3x3 matInverse(const Matrix3x3& M,double det);
+Matrix3x3 matInverse(const Matrix3x3& M);
+Matrix3x3 matInverse(const Matrix3x3& M, double det);
 
- Matrix3x3 matRotation(double rads);
+Matrix3x3 matRotation(double rads);
 // Matrix3x3 matRotationAroundPoint(double rads, double pointX, double pointY);
 
 // Matrix3x3 matTranslation(double translateX, double translateY);
 
- Matrix3x3 matScale(double scaleX, double scaleY);
+Matrix3x3 matScale(double scaleX, double scaleY);
 // Matrix3x3 matScale(double scale);
 // Matrix3x3 matScaleAroundPoint(double scaleX, double scaleY, double pointX, double pointY);
 
- Matrix3x3 matSkewXY(double skewX, double skewY, bool skewOrderYX);
+Matrix3x3 matSkewXY(double skewX, double skewY, bool skewOrderYX);
 
 // matrix transform from destination to source, in canonical coordinates
- Matrix3x3 matInverseTransformCanonical(double translateX, double translateY, double scaleX, double scaleY, double skewX, double skewY, bool skewOrderYX, double rads, double centerX, double centerY);
+Matrix3x3 matInverseTransformCanonical(double translateX, double translateY, double scaleX, double scaleY, double skewX, double skewY, bool skewOrderYX, double rads, double centerX, double centerY);
 
 // matrix transform from source to destination in canonical coordinates
 Matrix3x3 matTransformCanonical(double translateX, double translateY, double scaleX, double scaleY, double skewX, double skewY, bool skewOrderYX, double rads, double centerX, double centerY);
 
 /// transform from pixel coordinates to canonical coordinates
 Matrix3x3 matPixelToCanonical(double pixelaspectratio, //!< 1.067 for PAL, where 720x576 pixels occupy 768x576 in canonical coords
-                                         double renderscaleX, //!< 0.5 for a half-resolution image
-                                         double renderscaleY,
-                                         bool fielded); //!< true if the image property kOfxImagePropField is kOfxImageFieldLower or kOfxImageFieldUpper (apply 0.5 field scale in Y
+                              double renderscaleX,            //!< 0.5 for a half-resolution image
+                              double renderscaleY,
+                              bool fielded);            //!< true if the image property kOfxImagePropField is kOfxImageFieldLower or kOfxImageFieldUpper (apply 0.5 field scale in Y
 /// transform from canonical coordinates to pixel coordinates
 Matrix3x3 matCanonicalToPixel(double pixelaspectratio, //!< 1.067 for PAL, where 720x576 pixels occupy 768x576 in canonical coords
-                                double renderscaleX, //!< 0.5 for a half-resolution image
-                                double renderscaleY,
-                                bool fielded); //!< true if the image property kOfxImagePropField is kOfxImageFieldLower or kOfxImageFieldUpper (apply 0.5field scale in Y
+                              double renderscaleX,   //!< 0.5 for a half-resolution image
+                              double renderscaleY,
+                              bool fielded);   //!< true if the image property kOfxImagePropField is kOfxImageFieldLower or kOfxImageFieldUpper (apply 0.5field scale in Y
 
 // matrix transform from destination to source, in pixel coordinates
 //Matrix3x3 matInverseTransformPixel(double pixelaspectratio, //!< 1.067 for PAL, where 720x576 pixels occupy 768x576 in canonical coords
@@ -183,9 +182,9 @@ Matrix3x3 matCanonicalToPixel(double pixelaspectratio, //!< 1.067 for PAL, where
 
 Matrix3x3 matMul(const Matrix3x3 & m1, const Matrix3x3 & m2);
 
-Point3D matApply(const Matrix3x3 & m,const Point3D & p);
-    
-void matApply(const Matrix3x3 & m,double* x, double *y, double *z);
+Point3D matApply(const Matrix3x3 & m, const Point3D & p);
+
+void matApply(const Matrix3x3 & m, double* x, double *y, double *z);
 
 struct Matrix4x4
 {
@@ -196,20 +195,19 @@ struct Matrix4x4
     Matrix4x4(const double d[16]);
 
     Matrix4x4(const Matrix4x4 & o);
-    double & operator()(int row,int col);
+    double & operator()(int row, int col);
 
-    double operator()(int row,int col) const;
+    double operator()(int row, int col) const;
 };
 
 Matrix4x4 matMul(const Matrix4x4 & m1, const Matrix4x4 & m2);
 
-Point4D matApply(const Matrix4x4 & m,const Point4D & p);
+Point4D matApply(const Matrix4x4 & m, const Point4D & p);
 
 // compute the bounding box of the transform of a rectangle
 void transformRegionFromRoD(const RectD &srcRect, const Matrix3x3 &transform, RectD &dstRect);
-    
-// Matrix4x4 matrix4x4FromMatrix3x3(const Matrix3x3& m);
 
+// Matrix4x4 matrix4x4FromMatrix3x3(const Matrix3x3& m);
 } // namespace Transform
 NATRON_NAMESPACE_EXIT;
 

@@ -35,14 +35,13 @@
 NATRON_NAMESPACE_ENTER;
 
 PropertiesBinWrapper::PropertiesBinWrapper(Gui* parent)
-: QWidget(parent)
-, PanelWidget(this,parent)
+    : QWidget(parent)
+    , PanelWidget(this, parent)
 {
 }
 
 PropertiesBinWrapper::~PropertiesBinWrapper()
 {
-    
 }
 
 void
@@ -51,8 +50,6 @@ PropertiesBinWrapper::mousePressEvent(QMouseEvent* e)
     takeClickFocus();
     QWidget::mousePressEvent(e);
 }
-
-
 
 void
 PropertiesBinWrapper::enterEvent(QEvent* e)
@@ -86,12 +83,14 @@ QUndoStack*
 PropertiesBinWrapper::getUndoStack() const
 {
     QWidget* w = qApp->widgetAt( QCursor::pos() );
-    
     RightClickableWidget* panel = RightClickableWidget::isParentSettingsPanelRecursive(w);
+
     if (panel) {
         boost::shared_ptr<QUndoStack> stack = panel->getPanel()->getUndoStack();
+
         return stack.get();
     }
+
     return 0;
 }
 

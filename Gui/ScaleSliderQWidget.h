@@ -53,13 +53,13 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    
+
     enum DataTypeEnum
     {
         eDataTypeInt,
         eDataTypeDouble
     };
-    
+
     ScaleSliderQWidget(double bottom, // the minimum value
                        double top, // the maximum value
                        double initialPos, // the initial value
@@ -68,11 +68,11 @@ public:
                        Gui* gui,
                        ScaleTypeEnum type = eScaleTypeLinear, // the type of scale
                        QWidget* parent = 0);
-    
+
 
     virtual ~ScaleSliderQWidget() OVERRIDE;
 
-    void setMinimumAndMaximum(double min,double max);
+    void setMinimumAndMaximum(double min, double max);
 
 
     ScaleTypeEnum type() const;
@@ -84,17 +84,17 @@ public:
     double getPosition() const;
 
     bool isReadOnly() const;
-    
+
     void setReadOnly(bool ro);
 
     // the size of a pixel increment (used to round the value)
     double increment();
-    
+
     void setAltered(bool b);
     bool getAltered() const;
-    
+
     void setUseLineColor(bool use, const QColor& color);
-    
+
 Q_SIGNALS:
     void editingFinished(bool hasMovedOnce);
     void positionChanged(double);
@@ -104,13 +104,13 @@ public Q_SLOTS:
     void seekScalePosition(double v);
 
 private:
-    
+
     void zoomRange();
 
     void seekInternal(double v);
 
 
-    void centerOn(double left,double right);
+    void centerOn(double left, double right);
 
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
@@ -125,9 +125,7 @@ private:
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
-    
     boost::scoped_ptr<ScaleSliderQWidgetPrivate> _imp;
-    
 };
 
 NATRON_NAMESPACE_EXIT;

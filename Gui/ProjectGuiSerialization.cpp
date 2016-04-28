@@ -63,8 +63,9 @@ void
 ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
 {
     NodesList activeNodes;
+
     projectGui->getInternalProject()->getActiveNodesExpandGroups(&activeNodes);
-    
+
     _serializedNodes.clear();
     for (NodesList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
         boost::shared_ptr<NodeGuiI> nodegui_i = (*it)->getNodeGui();
@@ -72,11 +73,10 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
             continue;
         }
         NodeGuiPtr nodegui = boost::dynamic_pointer_cast<NodeGui>(nodegui_i);
-        
-        if (nodegui->isVisible()) {
-            
+
+        if ( nodegui->isVisible() ) {
             boost::shared_ptr<NodeCollection> isInCollection = (*it)->getGroup();
-            NodeGroup* isCollectionAGroup = dynamic_cast<NodeGroup*>(isInCollection.get());
+            NodeGroup* isCollectionAGroup = dynamic_cast<NodeGroup*>( isInCollection.get() );
             if (!isCollectionAGroup) {
                 ///Nodes within a group will be serialized recursively in the node group serialization
                 NodeGuiSerialization state;
@@ -118,7 +118,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
                 tab->getTimelineBounds(&viewerData.leftBound, &viewerData.rightBound);
                 tab->getActiveInputs(&viewerData.aChoice, &viewerData.bChoice);
                 viewerData.version = VIEWER_DATA_SERIALIZATION_VERSION;
-                _viewersData.insert( std::make_pair(viewer->getNode()->getScriptName_mt_safe(),viewerData) );
+                _viewersData.insert( std::make_pair(viewer->getNode()->getScriptName_mt_safe(), viewerData) );
             }
         }
     }
@@ -133,28 +133,28 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
     }
 
     ///save opened panels by order
-    
+
     std::list<DockablePanel*> panels = projectGui->getGui()->getVisiblePanels_mt_safe();
-    for (std::list<DockablePanel*>::iterator it = panels.begin(); it!=panels.end(); ++it) {
-        if ((*it)->isVisible() ) {
+    for (std::list<DockablePanel*>::iterator it = panels.begin(); it != panels.end(); ++it) {
+        if ( (*it)->isVisible() ) {
             KnobHolder* holder = (*it)->getHolder();
             assert(holder);
-            
+
             EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
             Project* isProject = dynamic_cast<Project*>(holder);
 
             if (isProject) {
                 _openedPanelsOrdered.push_back(kNatronProjectSettingsPanelSerializationName);
             } else if (isEffect) {
-                _openedPanelsOrdered.push_back(isEffect->getNode()->getFullyQualifiedName());
-            } 
+                _openedPanelsOrdered.push_back( isEffect->getNode()->getFullyQualifiedName() );
+            }
         }
     }
-    
+
     _scriptEditorInput = projectGui->getGui()->getScriptEditor()->getAutoSavedScript().toStdString();
-    
-    std::map<PyPanel*,std::string> pythonPanels = projectGui->getGui()->getPythonPanels();
-    for ( std::map<PyPanel*,std::string>::iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
+
+    std::map<PyPanel*, std::string> pythonPanels = projectGui->getGui()->getPythonPanels();
+    for (std::map<PyPanel*, std::string>::iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
         boost::shared_ptr<PythonPanelSerialization> s(new PythonPanelSerialization);
         s->initialize(it->first, it->second);
         _pythonPanels.push_back(s);
@@ -283,28 +283,27 @@ GuiLayoutSerialization::initialize(Gui* gui)
     }
 }
 
-
 void
-PythonPanelSerialization::initialize(PyPanel* tab,const std::string& func)
+PythonPanelSerialization::initialize(PyPanel* tab,
+                                     const std::string& func)
 {
     name = tab->getLabel();
     pythonFunction = func;
     std::list<Param*> parameters = tab->getParams();
     for (std::list<Param*>::iterator it = parameters.begin(); it != parameters.end(); ++it) {
-        
         KnobPtr knob = (*it)->getInternalKnob();
         KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knob.get() );
         KnobPage* isPage = dynamic_cast<KnobPage*>( knob.get() );
         KnobButton* isButton = dynamic_cast<KnobButton*>( knob.get() );
         //KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
-        
+
         if (!isGroup && !isPage && !isButton) {
-            boost::shared_ptr<KnobSerialization> k(new KnobSerialization(knob));
+            boost::shared_ptr<KnobSerialization> k( new KnobSerialization(knob) );
             knobs.push_back(k);
         }
         delete *it;
     }
-    
+
     userData = tab->save_serialization_thread().toStdString();
 }
 

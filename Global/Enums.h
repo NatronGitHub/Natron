@@ -141,7 +141,7 @@ enum PixmapEnum
     NATRON_PIXMAP_CLOSE_PANEL,
     NATRON_PIXMAP_HIDE_UNMODIFIED,
     NATRON_PIXMAP_UNHIDE_UNMODIFIED,
-    
+
     NATRON_PIXMAP_GROUPBOX_FOLDED,
     NATRON_PIXMAP_GROUPBOX_UNFOLDED,
 
@@ -247,7 +247,7 @@ enum PixmapEnum
     NATRON_PIXMAP_ROTOPAINT_SHARPEN,
     NATRON_PIXMAP_ROTOPAINT_SMEAR,
     NATRON_PIXMAP_ROTOPAINT_SOLID,
-    
+
     NATRON_PIXMAP_BOLD_CHECKED,
     NATRON_PIXMAP_BOLD_UNCHECKED,
     NATRON_PIXMAP_ITALIC_CHECKED,
@@ -259,9 +259,9 @@ enum PixmapEnum
     NATRON_PIXMAP_UPDATE_VIEWER_ENABLED,
     NATRON_PIXMAP_UPDATE_VIEWER_DISABLED,
     NATRON_PIXMAP_ADD_TRACK,
-    
+
     NATRON_PIXMAP_ENTER_GROUP,
-    
+
     NATRON_PIXMAP_SETTINGS,
     NATRON_PIXMAP_FREEZE_ENABLED,
     NATRON_PIXMAP_FREEZE_DISABLED,
@@ -275,7 +275,7 @@ enum PixmapEnum
     NATRON_PIXMAP_VIEWER_GAMMA_DISABLED,
     NATRON_PIXMAP_VIEWER_GAIN_ENABLED,
     NATRON_PIXMAP_VIEWER_GAIN_DISABLED,
-    
+
     NATRON_PIXMAP_SCRIPT_CLEAR_OUTPUT,
     NATRON_PIXMAP_SCRIPT_EXEC_SCRIPT,
     NATRON_PIXMAP_SCRIPT_LOAD_EXEC_SCRIPT,
@@ -285,7 +285,7 @@ enum PixmapEnum
     NATRON_PIXMAP_SCRIPT_OUTPUT_PANE_DEACTIVATED,
     NATRON_PIXMAP_SCRIPT_PREVIOUS_SCRIPT,
     NATRON_PIXMAP_SCRIPT_SAVE_SCRIPT,
-    
+
     NATRON_PIXMAP_MERGE_ATOP,
     NATRON_PIXMAP_MERGE_AVERAGE,
     NATRON_PIXMAP_MERGE_COLOR,
@@ -325,12 +325,12 @@ enum PixmapEnum
     NATRON_PIXMAP_MERGE_STENCIL,
     NATRON_PIXMAP_MERGE_UNDER,
     NATRON_PIXMAP_MERGE_XOR,
-    
+
     NATRON_PIXMAP_ROTO_NODE_ICON,
-    
+
     NATRON_PIXMAP_LINK_CURSOR,
     NATRON_PIXMAP_LINK_MULT_CURSOR,
-    
+
     NATRON_PIXMAP_APP_ICON,
 
     NATRON_PIXMAP_INTERP_LINEAR,
@@ -344,31 +344,30 @@ enum PixmapEnum
 };
 
 
-    
 ///This enum is used when dealing with parameters which have their value edited
 enum ValueChangedReasonEnum
 {
     //A user change to the knob triggered the call, gui will not be refreshed but instanceChangedAction called
     eValueChangedReasonUserEdited = 0,
-    
+
     //A plugin change triggered the call, gui will be refreshed and instanceChangedAction called. This is stricly reserved
     //to calls made directly from an OpenFX plug-in
-    eValueChangedReasonPluginEdited ,
-    
+    eValueChangedReasonPluginEdited,
+
     // Natron gui called setValue itself, instanceChangedAction will be called (with a reason of User edited) AND knob gui refreshed
     eValueChangedReasonNatronGuiEdited,
-    
+
     // Natron engine called setValue itself, instanceChangedAction will be called (with a reason of plugin edited) AND knob gui refreshed
     eValueChangedReasonNatronInternalEdited,
-    
+
     //A time-line seek changed the call, called when timeline time changes
-    eValueChangedReasonTimeChanged ,
-    
+    eValueChangedReasonTimeChanged,
+
     //A master parameter ordered the slave to refresh its value
-    eValueChangedReasonSlaveRefresh ,
-    
+    eValueChangedReasonSlaveRefresh,
+
     //The knob value has been restored to its defaults
-    eValueChangedReasonRestoreDefault ,
+    eValueChangedReasonRestoreDefault,
 };
 
 enum AnimationLevelEnum
@@ -393,13 +392,12 @@ enum ImagePremultiplicationEnum
     eImagePremultiplicationPremultiplied,
     eImagePremultiplicationUnPremultiplied,
 };
-    
+
 enum ImageFieldingOrderEnum
 {
     eImageFieldingOrderNone, // no fielding
     eImageFieldingOrderLower, // rows 0, 2 ...
     eImageFieldingOrderUpper, // rows 1, 3 ...
-    
 };
 
 enum ViewerCompositingOperatorEnum
@@ -446,20 +444,20 @@ enum OrientationEnum
     eOrientationHorizontal = 0x1,
     eOrientationVertical = 0x2
 };
-    
+
 enum PlaybackModeEnum
 {
     ePlaybackModeLoop = 0,
     ePlaybackModeBounce,
     ePlaybackModeOnce
 };
-    
+
 enum SchedulingPolicyEnum
 {
     eSchedulingPolicyFFA = 0, ///frames will be rendered concurrently without ordering (free for all)
     eSchedulingPolicyOrdered ///frames will be rendered in order
 };
-    
+
 enum DisplayChannelsEnum
 {
     eDisplayChannelsRGB = 0,
@@ -470,8 +468,8 @@ enum DisplayChannelsEnum
     eDisplayChannelsY,
     eDisplayChannelsMatte,
 };
-    
-    /** @brief Enumerates the contexts a plugin can be used in */
+
+/** @brief Enumerates the contexts a plugin can be used in */
 enum ContextEnum
 {
     eContextNone,
@@ -485,7 +483,7 @@ enum ContextEnum
     eContextWriter,
     eContextTracker
 };
-    
+
 enum RotoStrokeType
 {
     eRotoStrokeTypeSolid,
@@ -499,8 +497,6 @@ enum RotoStrokeType
     eRotoStrokeTypeBurn,
 };
 
-
-  
 enum RenderSafetyEnum
 {
     eRenderSafetyUnsafe = 0,
@@ -508,15 +504,16 @@ enum RenderSafetyEnum
     eRenderSafetyFullySafe = 2,
     eRenderSafetyFullySafeFrame = 3,
 };
-    
+
 enum PenType
 {
     ePenTypePen,
     ePenTypeCursor,
     ePenTypeEraser
 };
-    
-enum PluginOpenGLRenderSupport {
+
+enum PluginOpenGLRenderSupport
+{
     ePluginOpenGLRenderSupportNone, // None
     ePluginOpenGLRenderSupportYes, // Can do both CPU or GPU
     ePluginOpenGLRenderSupportNeeded // Can do only GPU
@@ -524,22 +521,22 @@ enum PluginOpenGLRenderSupport {
 
 enum CurveChangeReason
 {
-     eCurveChangeReasonCurveEditor,
-     eCurveChangeReasonDopeSheet,
-     eCurveChangeReasonInternal
+    eCurveChangeReasonCurveEditor,
+    eCurveChangeReasonDopeSheet,
+    eCurveChangeReasonInternal
 };
-    
+
 enum DopeSheetItemType
 {
     eDopeSheetItemTypeCommon = 1001,
-    
+
     // Range-based nodes
     eDopeSheetItemTypeReader,
     eDopeSheetItemTypeRetime,
     eDopeSheetItemTypeTimeOffset,
     eDopeSheetItemTypeFrameRange,
     eDopeSheetItemTypeGroup,
-    
+
     // Others
     eDopeSheetItemTypeKnobRoot,
     eDopeSheetItemTypeKnobDim
@@ -549,27 +546,27 @@ enum CreateNodeReason
 {
     //The user created the node via the GUI
     eCreateNodeReasonUserCreate,
-    
+
     //The user created the node via copy/paste
     eCreateNodeReasonCopyPaste,
-    
+
     //The node was created following a project load
     eCreateNodeReasonProjectLoad,
-    
+
     //The node was created by Natron internally
     eCreateNodeReasonInternal,
 };
-    
+
 enum KnobClipBoardType
 {
     eKnobClipBoardTypeCopyValue,
     eKnobClipBoardTypeCopyAnim,
     eKnobClipBoardTypeCopyLink
 };
-    
+
 //typedef QFlags<StandardButtonEnum> StandardButtons;
-Q_DECLARE_FLAGS(StandardButtons,StandardButtonEnum)
-    
+Q_DECLARE_FLAGS(StandardButtons, StandardButtonEnum)
+
 #ifdef SBK_RUN
 }
 NATRON_NAMESPACE_ENTER;

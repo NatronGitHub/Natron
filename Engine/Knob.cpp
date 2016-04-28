@@ -62,19 +62,17 @@ NATRON_NAMESPACE_ENTER;
 using std::make_pair; using std::pair;
 
 KnobSignalSlotHandler::KnobSignalSlotHandler(const KnobPtr& knob)
-: QObject()
-, k(knob)
+    : QObject()
+    , k(knob)
 {
-
 }
 
 void
 KnobSignalSlotHandler::onAnimationRemoved(ViewSpec view,
                                           int dimension)
 {
-    getKnob()->onAnimationRemoved(view,dimension);
+    getKnob()->onAnimationRemoved(view, dimension);
 }
-
 
 void
 KnobSignalSlotHandler::onMasterKeyFrameSet(double time,
@@ -84,9 +82,10 @@ KnobSignalSlotHandler::onMasterKeyFrameSet(double time,
                                            bool added)
 {
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
+
     assert(handler);
     KnobPtr master = handler->getKnob();
-    
+
     getKnob()->clone(master.get(), dimension);
     Q_EMIT keyFrameSet(time, view, dimension, reason, added);
 }
@@ -98,9 +97,10 @@ KnobSignalSlotHandler::onMasterKeyFrameRemoved(double time,
                                                int reason)
 {
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
+
     assert(handler);
     KnobPtr master = handler->getKnob();
-    
+
     getKnob()->clone(master.get(), dimension);
     Q_EMIT keyFrameRemoved(time, view, dimension, reason);
 }
@@ -112,9 +112,10 @@ KnobSignalSlotHandler::onMasterKeyFrameMoved(ViewSpec view,
                                              double newTime)
 {
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
+
     assert(handler);
     KnobPtr master = handler->getKnob();
-    
+
     getKnob()->clone(master.get(), dimension);
     Q_EMIT keyFrameMoved(view, dimension, oldTime, newTime);
 }
@@ -124,13 +125,13 @@ KnobSignalSlotHandler::onMasterAnimationRemoved(ViewSpec view,
                                                 int dimension)
 {
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
+
     assert(handler);
     KnobPtr master = handler->getKnob();
-    
-    getKnob()->clone(master.get(), dimension);
-    Q_EMIT animationRemoved(view,dimension);
-}
 
+    getKnob()->clone(master.get(), dimension);
+    Q_EMIT animationRemoved(view, dimension);
+}
 
 /***************** KNOBI**********************/
 
@@ -155,30 +156,29 @@ void
 KnobI::unSlave(int dimension,
                bool copyState)
 {
-    unSlave(dimension, eValueChangedReasonNatronInternalEdited,copyState);
+    unSlave(dimension, eValueChangedReasonNatronInternalEdited, copyState);
 }
 
 void
 KnobI::onKnobUnSlaved(int dimension)
 {
-    unSlave(dimension, eValueChangedReasonUserEdited,true);
+    unSlave(dimension, eValueChangedReasonUserEdited, true);
 }
 
 void
 KnobI::removeAnimation(ViewSpec view,
                        int dimension)
 {
-    if (canAnimate()) {
+    if ( canAnimate() ) {
         removeAnimation(view, dimension, eValueChangedReasonNatronInternalEdited);
     }
 }
-
 
 void
 KnobI::onAnimationRemoved(ViewSpec view,
                           int dimension)
 {
-    if (canAnimate()) {
+    if ( canAnimate() ) {
         removeAnimation(view, dimension, eValueChangedReasonUserEdited);
     }
 }
@@ -188,6 +188,7 @@ KnobI::getTopLevelPage()
 {
     KnobPtr parentKnob = getParentKnob();
     KnobPtr parentKnobTmp = parentKnob;
+
     while (parentKnobTmp) {
         KnobPtr parent = parentKnobTmp->getParentKnob();
         if (!parent) {
@@ -199,14 +200,14 @@ KnobI::getTopLevelPage()
 
     ////find in which page the knob should be
     boost::shared_ptr<KnobPage> isTopLevelParentAPage = boost::dynamic_pointer_cast<KnobPage>(parentKnobTmp);
+
     return isTopLevelParentAPage;
 }
-
 
 /***********************************KNOB HELPER******************************************/
 
 ///for each dimension, the dimension of the master this dimension is linked to, and a pointer to the master
-typedef std::vector< std::pair< int,KnobWPtr > > MastersMap;
+typedef std::vector< std::pair< int, KnobWPtr > > MastersMap;
 
 ///a curve for each dimension
 typedef std::vector< boost::shared_ptr<Curve> > CurvesMap;
@@ -217,15 +218,14 @@ struct Expr
     std::string originalExpression; //< the one input by the user
     std::string exprInvalid;
     bool hasRet;
-    
-    ///The list of pair<knob, dimension> dpendencies for an expression
-    std::list< std::pair<KnobWPtr,int> > dependencies;
-    
-    //PyObject* code;
-    
-    Expr() : expression(), originalExpression(), exprInvalid(), hasRet(false) /*, code(0)*/{}
-};
 
+    ///The list of pair<knob, dimension> dpendencies for an expression
+    std::list< std::pair<KnobWPtr, int> > dependencies;
+
+    //PyObject* code;
+
+    Expr() : expression(), originalExpression(), exprInvalid(), hasRet(false) /*, code(0)*/ {}
+};
 
 struct KnobHelperPrivate
 {
@@ -235,7 +235,6 @@ struct KnobHelperPrivate
 #pragma message WARN("This should be a weak_ptr")
 #endif
     KnobHolder* holder;
-    
     mutable QMutex labelMutex;
     std::string label; //< the text label that will be displayed  on the GUI
     bool labelVisible;
@@ -247,12 +246,10 @@ struct KnobHelperPrivate
     bool addSeparator;
     int itemSpacing;
     boost::weak_ptr<KnobI> parentKnob;
-    
     mutable QMutex stateMutex; // protects IsSecret defaultIsSecret enabled
-    bool IsSecret,defaultIsSecret;
-    std::vector<bool> enabled,defaultEnabled;
+    bool IsSecret, defaultIsSecret;
+    std::vector<bool> enabled, defaultEnabled;
     bool CanUndo;
-    
     QMutex evaluateOnChangeMutex;
     bool evaluateOnChange; //< if true, a value change will never trigger an evaluation
     bool IsPersistant; //will it be serialized?
@@ -261,124 +258,116 @@ struct KnobHelperPrivate
     int dimension;
     /* the keys for a specific dimension*/
     CurvesMap curves;
-    
+
     ////curve links
     ///A slave link CANNOT be master at the same time (i.e: if _slaveLinks[i] != NULL  then _masterLinks[i] == NULL )
     mutable QReadWriteLock mastersMutex; //< protects _masters & ignoreMasterPersistence & listeners
     MastersMap masters; //from what knob is slaved each curve if any
     bool ignoreMasterPersistence; //< when true masters will not be serialized
-    
+
     //Used when this knob is an alias of another knob. The other knob is set in "slaveForAlias"
     KnobPtr slaveForAlias;
-    
+
     ///This is a list of all the knobs that have expressions/links to this knob.
     KnobI::ListenerDimsMap listeners;
-    
     mutable QMutex animationLevelMutex;
     std::vector<AnimationLevelEnum> animationLevel; //< indicates for each dimension whether it is static/interpolated/onkeyframe
     bool declaredByPlugin; //< was the knob declared by a plug-in or added by Natron
     bool dynamicallyCreated; //< true if the knob was dynamically created by the user (either via python or via the gui)
     bool userKnob; //< true if it was created by the user and should be put into the "User" page
-    
+
     ///Pointer to the ofx param overlay interact
     boost::shared_ptr<OfxParamOverlayInteract> customInteract;
-    
+
     ///Pointer to the knobGui interface if it has any
     boost::weak_ptr<KnobGuiI> gui;
-    
     mutable QMutex mustCloneGuiCurvesMutex;
     /// Set to true if gui curves were modified by the user instead of the real internal curves.
     /// If true then when finished rendering, the knob should clone the guiCurves into the internal curves.
     std::vector<bool> mustCloneGuiCurves;
     std::vector<bool> mustCloneInternalCurves;
-    
+
     ///Used by deQueueValuesSet to know whether we should clear expressions results or not
     std::vector<bool> mustClearExprResults;
-    
+
     ///A blind handle to the ofx param, needed for custom overlay interacts
     void* ofxParamHandle;
-    
+
     ///This is to deal with multi-instance effects such as the Tracker: instance specifics knobs are
     ///not shared between instances whereas non instance specifics are shared.
     bool isInstanceSpecific;
-    
     std::vector<std::string> dimensionNames;
-    
     mutable QMutex expressionMutex;
     std::vector<Expr> expressions;
-    
     mutable QMutex lastRandomHashMutex;
     mutable U32 lastRandomHash;
-    
+
     ///Used to prevent recursive calls for expressions
     boost::shared_ptr<TLSHolder<KnobHelper::KnobTLSData> > tlsData;
-    
     mutable QMutex hasModificationsMutex;
     std::vector<bool> hasModifications;
-    
     mutable QMutex valueChangedBlockedMutex;
     int valueChangedBlocked;
-    
     bool isClipPreferenceSlave;
-    
+
     KnobHelperPrivate(KnobHelper* publicInterface_,
                       KnobHolder*  holder_,
                       int dimension_,
                       const std::string & label_,
                       bool declaredByPlugin_)
-    : publicInterface(publicInterface_)
-    , holder(holder_)
-    , labelMutex()
-    , label(label_)
-    , labelVisible(true)
-    , iconFilePath()
-    , name( label_.c_str() )
-    , originalName(label_.c_str())
-    , newLine(true)
-    , addSeparator(false)
-    , itemSpacing(0)
-    , parentKnob()
-    , stateMutex()
-    , IsSecret(false)
-    , defaultIsSecret(false)
-    , enabled(dimension_)
-    , defaultEnabled(dimension_)
-    , CanUndo(true)
-    , evaluateOnChangeMutex()
-    , evaluateOnChange(true)
-    , IsPersistant(true)
-    , tooltipHint()
-    , isAnimationEnabled(true)
-    , dimension(dimension_)
-    , curves(dimension_)
-    , mastersMutex()
-    , masters(dimension_)
-    , ignoreMasterPersistence(false)
-    , slaveForAlias()
-    , listeners()
-    , animationLevelMutex()
-    , animationLevel(dimension_)
-    , declaredByPlugin(declaredByPlugin_)
-    , dynamicallyCreated(false)
-    , userKnob(false)
-    , customInteract()
-    , gui()
-    , mustCloneGuiCurvesMutex()
-    , mustCloneGuiCurves()
-    , mustCloneInternalCurves()
-    , mustClearExprResults()
-    , ofxParamHandle(0)
-    , isInstanceSpecific(false)
-    , dimensionNames(dimension_)
-    , expressionMutex()
-    , expressions()
-    , lastRandomHash(0)
-    , tlsData(new TLSHolder<KnobHelper::KnobTLSData>())
-    , hasModificationsMutex()
-    , hasModifications()
-    , valueChangedBlockedMutex()
-    , valueChangedBlocked(0)
-    , isClipPreferenceSlave(false)
+        : publicInterface(publicInterface_)
+        , holder(holder_)
+        , labelMutex()
+        , label(label_)
+        , labelVisible(true)
+        , iconFilePath()
+        , name( label_.c_str() )
+        , originalName( label_.c_str() )
+        , newLine(true)
+        , addSeparator(false)
+        , itemSpacing(0)
+        , parentKnob()
+        , stateMutex()
+        , IsSecret(false)
+        , defaultIsSecret(false)
+        , enabled(dimension_)
+        , defaultEnabled(dimension_)
+        , CanUndo(true)
+        , evaluateOnChangeMutex()
+        , evaluateOnChange(true)
+        , IsPersistant(true)
+        , tooltipHint()
+        , isAnimationEnabled(true)
+        , dimension(dimension_)
+        , curves(dimension_)
+        , mastersMutex()
+        , masters(dimension_)
+        , ignoreMasterPersistence(false)
+        , slaveForAlias()
+        , listeners()
+        , animationLevelMutex()
+        , animationLevel(dimension_)
+        , declaredByPlugin(declaredByPlugin_)
+        , dynamicallyCreated(false)
+        , userKnob(false)
+        , customInteract()
+        , gui()
+        , mustCloneGuiCurvesMutex()
+        , mustCloneGuiCurves()
+        , mustCloneInternalCurves()
+        , mustClearExprResults()
+        , ofxParamHandle(0)
+        , isInstanceSpecific(false)
+        , dimensionNames(dimension_)
+        , expressionMutex()
+        , expressions()
+        , lastRandomHash(0)
+        , tlsData( new TLSHolder<KnobHelper::KnobTLSData>() )
+        , hasModificationsMutex()
+        , hasModifications()
+        , valueChangedBlockedMutex()
+        , valueChangedBlocked(0)
+        , isClipPreferenceSlave(false)
     {
         mustCloneGuiCurves.resize(dimension);
         mustCloneInternalCurves.resize(dimension);
@@ -393,34 +382,32 @@ struct KnobHelperPrivate
             hasModifications[i] = false;
         }
     }
-    
+
     void parseListenersFromExpression(int dimension);
-    
+
     std::string declarePythonVariables(bool addTab, int dimension);
-    
+
     bool shouldUseGuiCurve() const
     {
         if (!holder) {
             return false;
         }
+
         return !holder->isSetValueCurrentlyPossible() && gui.lock();
     }
 };
-
-
 
 KnobHelper::KnobHelper(KnobHolder* holder,
                        const std::string &label,
                        int dimension,
                        bool declaredByPlugin)
-: _signalSlotHandler()
-, _imp( new KnobHelperPrivate(this, holder, dimension, label, declaredByPlugin) )
+    : _signalSlotHandler()
+    , _imp( new KnobHelperPrivate(this, holder, dimension, label, declaredByPlugin) )
 {
 }
 
 KnobHelper::~KnobHelper()
 {
-    
 }
 
 void
@@ -433,6 +420,7 @@ void
 KnobHelper::incrementExpressionRecursionLevel() const
 {
     KnobDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+
     assert(tls);
     ++tls->expressionRecursionLevel;
 }
@@ -441,6 +429,7 @@ void
 KnobHelper::decrementExpressionRecursionLevel() const
 {
     KnobDataTLSPtr tls = _imp->tlsData->getTLSData();
+
     assert(tls);
     assert(tls->expressionRecursionLevel > 0);
     --tls->expressionRecursionLevel;
@@ -450,9 +439,11 @@ int
 KnobHelper::getExpressionRecursionLevel() const
 {
     KnobDataTLSPtr tls = _imp->tlsData->getTLSData();
+
     if (!tls) {
         return 0;
     }
+
     return tls->expressionRecursionLevel;
 }
 
@@ -460,6 +451,7 @@ void
 KnobHelper::deleteKnob()
 {
     KnobI::ListenerDimsMap listenersCpy = _imp->listeners;
+
     for (ListenerDimsMap::iterator it = listenersCpy.begin(); it != listenersCpy.end(); ++it) {
         KnobPtr knob = it->first.lock();
         if (!knob) {
@@ -470,20 +462,19 @@ KnobHelper::deleteKnob()
             knob->setKnobAsAliasOfThis(aliasKnob, false);
         }
         for (int i = 0; i < knob->getDimension(); ++i) {
-            knob->setExpressionInvalid(i, false, getName() + QObject::tr(": parameter does not exist").toStdString());
+            knob->setExpressionInvalid( i, false, getName() + QObject::tr(": parameter does not exist").toStdString() );
             knob->unSlave(i, false);
         }
-        
     }
-    
-    if (getHolder() && getHolder()->getApp()) {
+
+    if ( getHolder() && getHolder()->getApp() ) {
         getHolder()->getApp()->recheckInvalidExpressions();
     }
-    
+
     for (int i = 0; i < getDimension(); ++i) {
         clearExpression(i, true);
     }
-    
+
     resetParent();
 
     KnobGroup* isGrp =  dynamic_cast<KnobGroup*>(this);
@@ -499,19 +490,19 @@ KnobHelper::deleteKnob()
             _imp->holder->deleteKnob(it->get(), true);
         }
     }
-   
+
     KnobHolder* holder = getHolder();
     if (holder) {
         EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
         if (effect) {
-            if (useHostOverlayHandle()) {
+            if ( useHostOverlayHandle() ) {
                 effect->getNode()->removePositionHostOverlay(this);
             }
-            effect->getNode()->removeParameterFromPython(getName());
+            effect->getNode()->removeParameterFromPython( getName() );
         }
     }
     _signalSlotHandler.reset();
-}
+} // KnobHelper::deleteKnob
 
 void
 KnobHelper::setKnobGuiPointer(const boost::shared_ptr<KnobGuiI>& ptr)
@@ -529,9 +520,10 @@ KnobHelper::getKnobGuiPointer() const
 bool
 KnobHelper::getAllDimensionVisible() const
 {
-    if (getKnobGuiPointer()) {
+    if ( getKnobGuiPointer() ) {
         return getKnobGuiPointer()->getAllDimensionsVisible();
     }
+
     return true;
 }
 
@@ -541,6 +533,7 @@ KnobHelper::debugHook()
 {
     assert(true);
 }
+
 #endif
 
 bool
@@ -589,9 +582,9 @@ KnobHelper::isUserKnob() const
 void
 KnobHelper::populate()
 {
-    
     KnobPtr thisKnob = shared_from_this();
     boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(thisKnob) );
+
     setSignalSlotHandler(handler);
 
     KnobColor* isColor = dynamic_cast<KnobColor*>(this);
@@ -606,79 +599,80 @@ KnobHelper::populate()
     }
     for (int i = 0; i < _imp->dimension; ++i) {
         _imp->enabled[i] = true;
-        if (canAnimate()) {
-            _imp->curves[i] = boost::shared_ptr<Curve>( new Curve(this,i) );
+        if ( canAnimate() ) {
+            _imp->curves[i] = boost::shared_ptr<Curve>( new Curve(this, i) );
         }
         _imp->animationLevel[i] = eAnimationLevelNone;
-        
-        
+
+
         if (!isColor) {
             switch (i) {
-                case 0:
-                    _imp->dimensionNames[i] = "x";
-                    break;
-                case 1:
-                    _imp->dimensionNames[i] = "y";
-                    break;
-                case 2:
-                    _imp->dimensionNames[i] = "z";
-                    break;
-                case 3:
-                    _imp->dimensionNames[i] = "w";
-                    break;
-                default:
-                    break;
+            case 0:
+                _imp->dimensionNames[i] = "x";
+                break;
+            case 1:
+                _imp->dimensionNames[i] = "y";
+                break;
+            case 2:
+                _imp->dimensionNames[i] = "z";
+                break;
+            case 3:
+                _imp->dimensionNames[i] = "w";
+                break;
+            default:
+                break;
             }
-            
         } else {
             switch (i) {
-                case 0:
-                    _imp->dimensionNames[i] = "r";
-                    break;
-                case 1:
-                    _imp->dimensionNames[i] = "g";
-                    break;
-                case 2:
-                    _imp->dimensionNames[i] = "b";
-                    break;
-                case 3:
-                    _imp->dimensionNames[i] = "a";
-                    break;
-                default:
-                    break;
+            case 0:
+                _imp->dimensionNames[i] = "r";
+                break;
+            case 1:
+                _imp->dimensionNames[i] = "g";
+                break;
+            case 2:
+                _imp->dimensionNames[i] = "b";
+                break;
+            case 3:
+                _imp->dimensionNames[i] = "a";
+                break;
+            default:
+                break;
             }
         }
-        
     }
-    
-}
+} // KnobHelper::populate
 
 std::string
 KnobHelper::getDimensionName(int dimension) const
 {
     assert( dimension < (int)_imp->dimensionNames.size() && dimension >= 0);
+
     return _imp->dimensionNames[dimension];
-    
 }
 
 void
-KnobHelper::setDimensionName(int dim,const std::string & name)
+KnobHelper::setDimensionName(int dim,
+                             const std::string & name)
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     _imp->dimensionNames[dim] = name;
     _signalSlotHandler->s_dimensionNameChanged(dim);
 }
 
 template <typename T>
 const std::string &
-Knob<T>::typeName() const {
+Knob<T>::typeName() const
+{
     static std::string knobNoTypeName("NoType");
+
     return knobNoTypeName;
 }
 
 template <typename T>
 bool
-Knob<T>::canAnimate() const {
+Knob<T>::canAnimate() const
+{
     return false;
 }
 
@@ -694,25 +688,23 @@ KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
                               ViewSpec view,
                               int dimension)
 {
-    if ( dimension > (int)_imp->curves.size() || dimension < 0) {
+    if ( ( dimension > (int)_imp->curves.size() ) || (dimension < 0) ) {
         throw std::invalid_argument("KnobHelper::deleteValueAtTime(): Dimension out of range");
     }
 
-    if (!canAnimate() || !isAnimated(dimension, view)) {
+    if ( !canAnimate() || !isAnimated(dimension, view) ) {
         return;
     }
-    
+
     boost::shared_ptr<Curve> curve;
-    
     bool useGuiCurve = _imp->shouldUseGuiCurve();
-    
     boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
-    
+
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
     } else {
         curve = hasGui->getCurve(view, dimension);
-        setGuiCurveHasChanged(view, dimension,true);
+        setGuiCurveHasChanged(view, dimension, true);
     }
 
     assert(curve);
@@ -722,17 +714,17 @@ KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
     } catch (const std::exception & e) {
         //qDebug() << e.what();
     }
-    
+
     if (!useGuiCurve && hasGui) {
         boost::shared_ptr<Curve> guiCurve = hasGui->getCurve(view, dimension);
         assert(guiCurve);
         guiCurve->removeKeyFrameWithTime(time);
     }
 
-    
+
     //virtual portion
     keyframeRemoved_virtual(dimension, time);
-    
+
 
     if (_imp->holder) {
         _imp->holder->updateHasAnimation();
@@ -740,77 +732,85 @@ KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
 
 
     ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited;
-    
-    if (!useGuiCurve) {
-        
 
+    if (!useGuiCurve) {
         checkAnimationLevel(view, dimension);
-        evaluateValueChange(dimension, time,view, reason);
+        evaluateValueChange(dimension, time, view, reason);
     }
     if (_signalSlotHandler) {
         _signalSlotHandler->s_redrawGuiCurve(curveChangeReason, view, dimension);
     }
-    
-    
-    if (_signalSlotHandler/* && reason != eValueChangedReasonUserEdited*/) {
-        _signalSlotHandler->s_keyFrameRemoved(time,view, dimension,(int)reason);
+
+
+    if (_signalSlotHandler /* && reason != eValueChangedReasonUserEdited*/) {
+        _signalSlotHandler->s_keyFrameRemoved(time, view, dimension, (int)reason);
     }
-    
-}
+} // KnobHelper::deleteValueAtTime
 
 void
 KnobHelper::onKeyFrameRemoved(double time,
                               ViewSpec view,
                               int dimension)
 {
-    deleteValueAtTime(eCurveChangeReasonInternal, time,view,dimension);
+    deleteValueAtTime(eCurveChangeReasonInternal, time, view, dimension);
 }
 
 bool
-KnobHelper::moveValuesAtTime(CurveChangeReason reason, ViewSpec view,  int dimension,double dt,double dv,std::vector<KeyFrame>* keyframes)
+KnobHelper::moveValuesAtTime(CurveChangeReason reason,
+                             ViewSpec view,
+                             int dimension,
+                             double dt,
+                             double dv,
+                             std::vector<KeyFrame>* keyframes)
 {
     assert(keyframes);
-    assert(QThread::currentThread() == qApp->thread());
-    assert(dimension >= 0 && dimension < (int)_imp->curves.size());
-    
-    if (!canAnimate() || !isAnimated(dimension, view)) {
+    assert( QThread::currentThread() == qApp->thread() );
+    assert( dimension >= 0 && dimension < (int)_imp->curves.size() );
+
+    if ( !canAnimate() || !isAnimated(dimension, view) ) {
         return false;
     }
-    
+
     /*
-     We write on the "GUI" curve if the engine is either:
-     - using it
-     - is still marked as different from the "internal" curve
+       We write on the "GUI" curve if the engine is either:
+       - using it
+       - is still marked as different from the "internal" curve
      */
-    
+
     bool useGuiCurve = _imp->shouldUseGuiCurve();
-    
+
     for (std::size_t i = 0; i < keyframes->size(); ++i) {
-        if (!moveValueAtTimeInternal(useGuiCurve, (*keyframes)[i].getTime(), view, dimension, dt, dv, &(*keyframes)[i])) {
+        if ( !moveValueAtTimeInternal(useGuiCurve, (*keyframes)[i].getTime(), view, dimension, dt, dv, &(*keyframes)[i]) ) {
             return false;
         }
     }
-    
-    
+
+
     if (!useGuiCurve) {
         evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonNatronInternalEdited);
     } else {
-        setGuiCurveHasChanged(view, dimension,true);
+        setGuiCurveHasChanged(view, dimension, true);
     }
     //notify that the gui curve has changed to redraw it
     if (_signalSlotHandler) {
         _signalSlotHandler->s_redrawGuiCurve(reason, view, dimension);
     }
-    
-    return true;
 
+    return true;
 }
 
 bool
-KnobHelper::moveValueAtTimeInternal(bool useGuiCurve, double time, ViewSpec view, int dimension,double dt,double dv,KeyFrame* newKey)
+KnobHelper::moveValueAtTimeInternal(bool useGuiCurve,
+                                    double time,
+                                    ViewSpec view,
+                                    int dimension,
+                                    double dt,
+                                    double dv,
+                                    KeyFrame* newKey)
 {
     boost::shared_ptr<Curve> curve;
     boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
     } else {
@@ -818,18 +818,17 @@ KnobHelper::moveValueAtTimeInternal(bool useGuiCurve, double time, ViewSpec view
         curve = hasGui->getCurve(view, dimension);
     }
     assert(curve);
-    
-    if (!curve->moveKeyFrameValueAndTime(time, dt, dv, newKey)) {
+
+    if ( !curve->moveKeyFrameValueAndTime(time, dt, dv, newKey) ) {
         return false;
     }
     if (!useGuiCurve && hasGui) {
         boost::shared_ptr<Curve> guiCurve = hasGui->getCurve(view, dimension);
         assert(guiCurve);
         guiCurve->moveKeyFrameValueAndTime(time, dt, dv, 0);
-        
     }
-    
-    
+
+
     ///Make sure string animation follows up
     AnimatingKnobStringHelper* isString = dynamic_cast<AnimatingKnobStringHelper*>(this);
     std::string v;
@@ -841,11 +840,12 @@ KnobHelper::moveValueAtTimeInternal(bool useGuiCurve, double time, ViewSpec view
         double ret;
         isString->stringToKeyFrameValue(newKey->getTime(), view, v, &ret);
     }
-    
-    
+
+
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_keyFrameMoved(view, dimension, time,newKey->getTime());
+        _signalSlotHandler->s_keyFrameMoved( view, dimension, time, newKey->getTime() );
     }
+
     return true;
 }
 
@@ -858,52 +858,55 @@ KnobHelper::moveValueAtTime(CurveChangeReason reason,
                             double dv,
                             KeyFrame* newKey)
 {
-    assert(QThread::currentThread() == qApp->thread());
-    assert(dimension >= 0 && dimension < (int)_imp->curves.size());
+    assert( QThread::currentThread() == qApp->thread() );
+    assert( dimension >= 0 && dimension < (int)_imp->curves.size() );
 
-    if (!canAnimate() || !isAnimated(dimension, view)) {
+    if ( !canAnimate() || !isAnimated(dimension, view) ) {
         return false;
     }
-    
+
     /*
-     We write on the "GUI" curve if the engine is either:
-     - using it
-     - is still marked as different from the "internal" curve
+       We write on the "GUI" curve if the engine is either:
+       - using it
+       - is still marked as different from the "internal" curve
      */
     bool useGuiCurve = _imp->shouldUseGuiCurve();
-    
-    if (!moveValueAtTimeInternal(useGuiCurve, time, view, dimension, dt, dv, newKey)) {
+
+    if ( !moveValueAtTimeInternal(useGuiCurve, time, view, dimension, dt, dv, newKey) ) {
         return false;
     }
 
     if (!useGuiCurve) {
         evaluateValueChange(dimension, newKey->getTime(), view, eValueChangedReasonNatronInternalEdited);
     } else {
-        setGuiCurveHasChanged(view, dimension,true);
+        setGuiCurveHasChanged(view, dimension, true);
     }
     //notify that the gui curve has changed to redraw it
     if (_signalSlotHandler) {
         _signalSlotHandler->s_redrawGuiCurve(reason, view, dimension);
     }
-    
+
     return true;
-    
 }
 
 bool
-KnobHelper::transformValuesAtTime(CurveChangeReason curveChangeReason, ViewSpec view,  int dimension,const Transform::Matrix3x3& matrix,std::vector<KeyFrame>* keyframes)
+KnobHelper::transformValuesAtTime(CurveChangeReason curveChangeReason,
+                                  ViewSpec view,
+                                  int dimension,
+                                  const Transform::Matrix3x3& matrix,
+                                  std::vector<KeyFrame>* keyframes)
 {
-    assert(QThread::currentThread() == qApp->thread());
-    assert(dimension >= 0 && dimension < (int)_imp->curves.size());
-    
-    if (!canAnimate() || !isAnimated(dimension, view)) {
+    assert( QThread::currentThread() == qApp->thread() );
+    assert( dimension >= 0 && dimension < (int)_imp->curves.size() );
+
+    if ( !canAnimate() || !isAnimated(dimension, view) ) {
         return false;
     }
 
     bool useGuiCurve = _imp->shouldUseGuiCurve();
-    
+
     for (std::size_t i = 0; i < keyframes->size(); ++i) {
-        if (!transformValueAtTimeInternal(useGuiCurve, (*keyframes)[i].getTime(), view, dimension, matrix, &(*keyframes)[i])) {
+        if ( !transformValueAtTimeInternal(useGuiCurve, (*keyframes)[i].getTime(), view, dimension, matrix, &(*keyframes)[i]) ) {
             return false;
         }
     }
@@ -911,21 +914,27 @@ KnobHelper::transformValuesAtTime(CurveChangeReason curveChangeReason, ViewSpec 
     if (_signalSlotHandler) {
         _signalSlotHandler->s_redrawGuiCurve(curveChangeReason, view, dimension);
     }
-    
-    if (!useGuiCurve) {
-        evaluateValueChange(dimension,getCurrentTime(), view,  eValueChangedReasonNatronInternalEdited);
-    } else {
-        setGuiCurveHasChanged(view, dimension,true);
-    }
-    return true;
 
+    if (!useGuiCurve) {
+        evaluateValueChange(dimension, getCurrentTime(), view,  eValueChangedReasonNatronInternalEdited);
+    } else {
+        setGuiCurveHasChanged(view, dimension, true);
+    }
+
+    return true;
 }
 
 bool
-KnobHelper::transformValueAtTimeInternal(bool useGuiCurve, double time, ViewSpec view, int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey)
+KnobHelper::transformValueAtTimeInternal(bool useGuiCurve,
+                                         double time,
+                                         ViewSpec view,
+                                         int dimension,
+                                         const Transform::Matrix3x3& matrix,
+                                         KeyFrame* newKey)
 {
     boost::shared_ptr<Curve> curve;
     boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
     } else {
@@ -933,32 +942,32 @@ KnobHelper::transformValueAtTimeInternal(bool useGuiCurve, double time, ViewSpec
         curve = hasGui->getCurve(view, dimension);
     }
     assert(curve);
-    
+
     KeyFrame k;
     int keyindex = curve->keyFrameIndex(time);
     if (keyindex == -1) {
         return false;
     }
-    
+
     bool gotKey = curve->getKeyFrameWithIndex(keyindex, &k);
     if (!gotKey) {
         return false;
     }
-    
+
     Transform::Point3D p;
     p.x = k.getTime();
     p.y = k.getValue();
     p.z = 1;
-    
+
     p = Transform::matApply(matrix, p);
-    
-    
+
+
     if ( curve->areKeyFramesValuesClampedToIntegers() ) {
         p.y = std::floor(p.y + 0.5);
     } else if ( curve->areKeyFramesValuesClampedToBooleans() ) {
         p.y = p.y < 0.5 ? 0 : 1;
     }
-    
+
     ///Make sure string animation follows up
     AnimatingKnobStringHelper* isString = dynamic_cast<AnimatingKnobStringHelper*>(this);
     std::string v;
@@ -970,29 +979,30 @@ KnobHelper::transformValueAtTimeInternal(bool useGuiCurve, double time, ViewSpec
         double ret;
         isString->stringToKeyFrameValue(p.x, view, v, &ret);
     }
-    
-    
+
+
     try {
-        *newKey = curve->setKeyFrameValueAndTime(p.x,p.y, keyindex, NULL);
+        *newKey = curve->setKeyFrameValueAndTime(p.x, p.y, keyindex, NULL);
     } catch (...) {
         return false;
     }
-    
+
     if (!useGuiCurve && hasGui) {
         boost::shared_ptr<Curve> guiCurve = hasGui->getCurve(view, dimension);
         try {
-            guiCurve->setKeyFrameValueAndTime(p.x,p.y, keyindex, NULL);
+            guiCurve->setKeyFrameValueAndTime(p.x, p.y, keyindex, NULL);
         } catch (...) {
             return false;
         }
     }
-    
-    
+
+
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_keyFrameMoved(view, dimension, time,p.x);
+        _signalSlotHandler->s_keyFrameMoved(view, dimension, time, p.x);
     }
+
     return true;
-}
+} // KnobHelper::transformValueAtTimeInternal
 
 bool
 KnobHelper::transformValueAtTime(CurveChangeReason curveChangeReason,
@@ -1002,31 +1012,31 @@ KnobHelper::transformValueAtTime(CurveChangeReason curveChangeReason,
                                  const Transform::Matrix3x3& matrix,
                                  KeyFrame* newKey)
 {
-    assert(QThread::currentThread() == qApp->thread());
-    assert(dimension >= 0 && dimension < (int)_imp->curves.size());
-    
-    if (!canAnimate() || !isAnimated(dimension, view)) {
+    assert( QThread::currentThread() == qApp->thread() );
+    assert( dimension >= 0 && dimension < (int)_imp->curves.size() );
+
+    if ( !canAnimate() || !isAnimated(dimension, view) ) {
         return false;
     }
-    
+
 
     bool useGuiCurve = _imp->shouldUseGuiCurve();
-    
-    if (!transformValueAtTimeInternal(useGuiCurve, time, view, dimension, matrix, newKey)) {
+
+    if ( !transformValueAtTimeInternal(useGuiCurve, time, view, dimension, matrix, newKey) ) {
         return false;
     }
-    
+
     if (_signalSlotHandler) {
         _signalSlotHandler->s_redrawGuiCurve(curveChangeReason, view, dimension);
     }
-    
-    if (!useGuiCurve) {
-        evaluateValueChange(dimension,getCurrentTime(), view,  eValueChangedReasonNatronInternalEdited);
-    } else {
-        setGuiCurveHasChanged(view, dimension,true);
-    }
-    return true;
 
+    if (!useGuiCurve) {
+        evaluateValueChange(dimension, getCurrentTime(), view,  eValueChangedReasonNatronInternalEdited);
+    } else {
+        setGuiCurveHasChanged(view, dimension, true);
+    }
+
+    return true;
 }
 
 void
@@ -1034,7 +1044,7 @@ KnobHelper::cloneCurve(ViewSpec view,
                        int dimension,
                        const Curve& curve)
 {
-    assert(dimension >= 0 && dimension < (int)_imp->curves.size());
+    assert( dimension >= 0 && dimension < (int)_imp->curves.size() );
     boost::shared_ptr<Curve> thisCurve;
     boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
     bool useGuiCurve = _imp->shouldUseGuiCurve();
@@ -1043,10 +1053,10 @@ KnobHelper::cloneCurve(ViewSpec view,
     } else {
         assert(hasGui);
         thisCurve = hasGui->getCurve(view, dimension);
-        setGuiCurveHasChanged(view, dimension,true);
+        setGuiCurveHasChanged(view, dimension, true);
     }
     assert(thisCurve);
-    
+
     if (_signalSlotHandler) {
         _signalSlotHandler->s_animationAboutToBeRemoved(view, dimension);
         _signalSlotHandler->s_animationRemoved(view, dimension);
@@ -1054,17 +1064,17 @@ KnobHelper::cloneCurve(ViewSpec view,
     animationRemoved_virtual(dimension);
     thisCurve->clone(curve);
     if (!useGuiCurve) {
-        evaluateValueChange(dimension, getCurrentTime(),view,  eValueChangedReasonNatronInternalEdited);
+        evaluateValueChange(dimension, getCurrentTime(), view,  eValueChangedReasonNatronInternalEdited);
         guiCurveCloneInternalCurve(eCurveChangeReasonInternal, view, dimension, eValueChangedReasonNatronInternalEdited);
     }
-    
+
     if (_signalSlotHandler) {
         std::list<double> keysList;
         KeyFrameSet keys = thisCurve->getKeyFrames_mt_safe();
-        for (KeyFrameSet::iterator it = keys.begin(); it!=keys.end(); ++it) {
-            keysList.push_back(it->getTime());
+        for (KeyFrameSet::iterator it = keys.begin(); it != keys.end(); ++it) {
+            keysList.push_back( it->getTime() );
         }
-        if (!keysList.empty()) {
+        if ( !keysList.empty() ) {
             _signalSlotHandler->s_multipleKeyFramesSet(keysList, view, dimension, (int)eValueChangedReasonNatronInternalEdited);
         }
     }
@@ -1078,15 +1088,14 @@ KnobHelper::setInterpolationAtTime(CurveChangeReason reason,
                                    KeyframeTypeEnum interpolation,
                                    KeyFrame* newKey)
 {
-    assert(QThread::currentThread() == qApp->thread());
-    assert(dimension >= 0 && dimension < (int)_imp->curves.size());
+    assert( QThread::currentThread() == qApp->thread() );
+    assert( dimension >= 0 && dimension < (int)_imp->curves.size() );
 
-    if (!canAnimate() || !isAnimated(dimension, view)) {
+    if ( !canAnimate() || !isAnimated(dimension, view) ) {
         return false;
     }
 
     boost::shared_ptr<Curve> curve;
-    
     bool useGuiCurve = _imp->shouldUseGuiCurve();
     boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
     if (!useGuiCurve) {
@@ -1094,7 +1103,7 @@ KnobHelper::setInterpolationAtTime(CurveChangeReason reason,
     } else {
         assert(hasGui);
         curve = hasGui->getCurve(view, dimension);
-        setGuiCurveHasChanged(view, dimension,true);
+        setGuiCurveHasChanged(view, dimension, true);
     }
     assert(curve);
 
@@ -1102,25 +1111,26 @@ KnobHelper::setInterpolationAtTime(CurveChangeReason reason,
     if (keyIndex == -1) {
         return false;
     }
-    
+
     *newKey = curve->setKeyFrameInterpolation(interpolation, keyIndex);
-    
+
     if (!useGuiCurve && hasGui) {
         boost::shared_ptr<Curve> guiCurve = hasGui->getCurve(view, dimension);
         assert(guiCurve);
         guiCurve->setKeyFrameInterpolation(interpolation, keyIndex);
     }
-    
+
     if (!useGuiCurve) {
         evaluateValueChange(dimension, time, view, eValueChangedReasonNatronInternalEdited);
     }
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_redrawGuiCurve(reason,view, dimension);
+        _signalSlotHandler->s_redrawGuiCurve(reason, view, dimension);
     }
-    
+
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_keyFrameInterpolationChanged(time,view, dimension);
+        _signalSlotHandler->s_keyFrameInterpolationChanged(time, view, dimension);
     }
+
     return true;
 }
 
@@ -1132,25 +1142,25 @@ KnobHelper::moveDerivativesAtTime(CurveChangeReason reason,
                                   double left,
                                   double right)
 {
-    assert(QThread::currentThread() == qApp->thread());
-    if ( dimension > (int)_imp->curves.size() || dimension < 0) {
+    assert( QThread::currentThread() == qApp->thread() );
+    if ( ( dimension > (int)_imp->curves.size() ) || (dimension < 0) ) {
         throw std::invalid_argument("KnobHelper::setInterpolationAtTime(): Dimension out of range");
     }
-    
-    if (!canAnimate() || !isAnimated(dimension, view)) {
+
+    if ( !canAnimate() || !isAnimated(dimension, view) ) {
         return false;
     }
 
     boost::shared_ptr<Curve> curve;
     boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
     bool useGuiCurve = _imp->shouldUseGuiCurve();
-    
+
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
     } else {
         assert(hasGui);
         curve = hasGui->getCurve(view, dimension);
-        setGuiCurveHasChanged(view, dimension,true);
+        setGuiCurveHasChanged(view, dimension, true);
     }
 
     assert(curve);
@@ -1159,29 +1169,30 @@ KnobHelper::moveDerivativesAtTime(CurveChangeReason reason,
     if (keyIndex == -1) {
         return false;
     }
-    
+
     curve->setKeyFrameInterpolation(eKeyframeTypeFree, keyIndex);
     curve->setKeyFrameDerivatives(left, right, keyIndex);
-    
+
     if (!useGuiCurve && hasGui) {
         boost::shared_ptr<Curve> guiCurve = hasGui->getCurve(view, dimension);
         assert(guiCurve);
         guiCurve->setKeyFrameInterpolation(eKeyframeTypeFree, keyIndex);
         guiCurve->setKeyFrameDerivatives(left, right, keyIndex);
     }
-    
+
     if (!useGuiCurve) {
         evaluateValueChange(dimension, time, view, eValueChangedReasonNatronInternalEdited);
     }
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_redrawGuiCurve(reason,view, dimension);
+        _signalSlotHandler->s_redrawGuiCurve(reason, view, dimension);
     }
-    
+
     if (_signalSlotHandler) {
         _signalSlotHandler->s_derivativeMoved(time, view, dimension);
     }
+
     return true;
-}
+} // KnobHelper::moveDerivativesAtTime
 
 bool
 KnobHelper::moveDerivativeAtTime(CurveChangeReason reason,
@@ -1191,17 +1202,16 @@ KnobHelper::moveDerivativeAtTime(CurveChangeReason reason,
                                  double derivative,
                                  bool isLeft)
 {
-    assert(QThread::currentThread() == qApp->thread());
-    if ( dimension > (int)_imp->curves.size() || dimension < 0) {
+    assert( QThread::currentThread() == qApp->thread() );
+    if ( ( dimension > (int)_imp->curves.size() ) || (dimension < 0) ) {
         throw std::invalid_argument("KnobHelper::setInterpolationAtTime(): Dimension out of range");
     }
-    
-    if (!canAnimate() || !isAnimated(dimension, view)) {
+
+    if ( !canAnimate() || !isAnimated(dimension, view) ) {
         return false;
     }
 
     boost::shared_ptr<Curve> curve;
-    
     bool useGuiCurve = _imp->shouldUseGuiCurve();
     boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
     if (!useGuiCurve) {
@@ -1209,22 +1219,22 @@ KnobHelper::moveDerivativeAtTime(CurveChangeReason reason,
     } else {
         assert(hasGui);
         curve = hasGui->getCurve(view, dimension);
-        setGuiCurveHasChanged(view, dimension,true);
+        setGuiCurveHasChanged(view, dimension, true);
     }
     assert(curve);
-    
+
     int keyIndex = curve->keyFrameIndex(time);
     if (keyIndex == -1) {
         return false;
     }
-    
+
     curve->setKeyFrameInterpolation(eKeyframeTypeBroken, keyIndex);
     if (isLeft) {
         curve->setKeyFrameLeftDerivative(derivative, keyIndex);
     } else {
         curve->setKeyFrameRightDerivative(derivative, keyIndex);
     }
-    
+
     if (!useGuiCurve && hasGui) {
         boost::shared_ptr<Curve> guiCurve = hasGui->getCurve(view, dimension);
         assert(guiCurve);
@@ -1236,47 +1246,49 @@ KnobHelper::moveDerivativeAtTime(CurveChangeReason reason,
         }
     }
 
-    
+
     if (!useGuiCurve) {
         evaluateValueChange(dimension, time, view, eValueChangedReasonNatronInternalEdited);
     }
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_redrawGuiCurve(reason,view,dimension);
+        _signalSlotHandler->s_redrawGuiCurve(reason, view, dimension);
     }
-    
+
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_derivativeMoved(time,view, dimension);
+        _signalSlotHandler->s_derivativeMoved(time, view, dimension);
     }
+
     return true;
-}
+} // KnobHelper::moveDerivativeAtTime
 
 void
-KnobHelper::removeAnimation(ViewSpec view, int dimension,
+KnobHelper::removeAnimation(ViewSpec view,
+                            int dimension,
                             ValueChangedReasonEnum reason)
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     assert(0 <= dimension);
     if ( (dimension < 0) || ( (int)_imp->curves.size() <= dimension ) ) {
         throw std::invalid_argument("KnobHelper::removeAnimation(): Dimension out of range");
     }
 
 
-    if (!canAnimate() || !isAnimated(dimension, view)) {
-        return ;
+    if ( !canAnimate() || !isAnimated(dimension, view) ) {
+        return;
     }
-    
+
     boost::shared_ptr<Curve> curve;
     boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
     bool useGuiCurve = _imp->shouldUseGuiCurve();
-    
+
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
     } else {
         assert(hasGui);
         curve = hasGui->getCurve(view, dimension);
-        setGuiCurveHasChanged(view, dimension,true);
+        setGuiCurveHasChanged(view, dimension, true);
     }
-    
+
     if ( _signalSlotHandler && (reason != eValueChangedReasonUserEdited) ) {
         _signalSlotHandler->s_animationAboutToBeRemoved(view, dimension);
     }
@@ -1285,51 +1297,53 @@ KnobHelper::removeAnimation(ViewSpec view, int dimension,
     if (curve) {
         curve->clearKeyFrames();
     }
-    
+
     if ( _signalSlotHandler && (reason != eValueChangedReasonUserEdited) ) {
         _signalSlotHandler->s_animationRemoved(view, dimension);
     }
-    
+
     animationRemoved_virtual(dimension);
 
     if (_imp->holder) {
         _imp->holder->updateHasAnimation();
     }
-    
-    
+
+
     if (!useGuiCurve) {
         //virtual portion
         evaluateValueChange(dimension, getCurrentTime(), view, reason);
         guiCurveCloneInternalCurve(eCurveChangeReasonInternal, view, dimension, reason);
     } else {
         if (_signalSlotHandler) {
-            _signalSlotHandler->s_redrawGuiCurve(eCurveChangeReasonInternal,view, dimension);
+            _signalSlotHandler->s_redrawGuiCurve(eCurveChangeReasonInternal, view, dimension);
         }
     }
-}
+} // KnobHelper::removeAnimation
 
 void
-KnobHelper::clearExpressionsResultsIfNeeded(std::map<int,ValueChangedReasonEnum>& modifiedDimensions)
+KnobHelper::clearExpressionsResultsIfNeeded(std::map<int, ValueChangedReasonEnum>& modifiedDimensions)
 {
     QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
+
     for (int i = 0; i < getDimension(); ++i) {
         if (_imp->mustClearExprResults[i]) {
             clearExpressionsResults(i);
             _imp->mustClearExprResults[i] = false;
-            modifiedDimensions.insert(std::make_pair(i, eValueChangedReasonNatronInternalEdited));
+            modifiedDimensions.insert( std::make_pair(i, eValueChangedReasonNatronInternalEdited) );
         }
     }
 }
 
 void
-KnobHelper::cloneInternalCurvesIfNeeded(std::map<int,ValueChangedReasonEnum>& modifiedDimensions)
+KnobHelper::cloneInternalCurvesIfNeeded(std::map<int, ValueChangedReasonEnum>& modifiedDimensions)
 {
     QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
+
     for (int i = 0; i < getDimension(); ++i) {
         if (_imp->mustCloneInternalCurves[i]) {
             guiCurveCloneInternalCurve(eCurveChangeReasonInternal, ViewIdx(0), i, eValueChangedReasonNatronInternalEdited);
             _imp->mustCloneInternalCurves[i] = false;
-            modifiedDimensions.insert(std::make_pair(i,eValueChangedReasonNatronInternalEdited));
+            modifiedDimensions.insert( std::make_pair(i, eValueChangedReasonNatronInternalEdited) );
         }
     }
 }
@@ -1340,13 +1354,14 @@ KnobHelper::setInternalCurveHasChanged(ViewSpec /*view*/,
                                        bool changed)
 {
     QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
+
     _imp->mustCloneInternalCurves[dimension] = changed;
 }
 
 void
-KnobHelper::cloneGuiCurvesIfNeeded(std::map<int,ValueChangedReasonEnum>& modifiedDimensions)
+KnobHelper::cloneGuiCurvesIfNeeded(std::map<int, ValueChangedReasonEnum>& modifiedDimensions)
 {
-    if (!canAnimate()) {
+    if ( !canAnimate() ) {
         return;
     }
 
@@ -1360,14 +1375,14 @@ KnobHelper::cloneGuiCurvesIfNeeded(std::map<int,ValueChangedReasonEnum>& modifie
             boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
             boost::shared_ptr<Curve> guicurve;
             if (hasGui) {
-                guicurve = hasGui->getCurve(ViewIdx(0),i);
+                guicurve = hasGui->getCurve(ViewIdx(0), i);
                 assert(guicurve);
                 curve->clone(*guicurve);
             }
-            
+
             _imp->mustCloneGuiCurves[i] = false;
-            
-            modifiedDimensions.insert(std::make_pair(i,eValueChangedReasonUserEdited));
+
+            modifiedDimensions.insert( std::make_pair(i, eValueChangedReasonUserEdited) );
         }
     }
     if (hasChanged && _imp->holder) {
@@ -1378,18 +1393,19 @@ KnobHelper::cloneGuiCurvesIfNeeded(std::map<int,ValueChangedReasonEnum>& modifie
 void
 KnobHelper::guiCurveCloneInternalCurve(CurveChangeReason curveChangeReason,
                                        ViewSpec view,
-                                       int dimension,ValueChangedReasonEnum reason)
+                                       int dimension,
+                                       ValueChangedReasonEnum reason)
 {
-    if (!canAnimate()) {
+    if ( !canAnimate() ) {
         return;
     }
     boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
     if (hasGui) {
         boost::shared_ptr<Curve> guicurve = hasGui->getCurve(view, dimension);
         assert(guicurve);
-        guicurve->clone(*(_imp->curves[dimension]));
-        if (_signalSlotHandler && reason != eValueChangedReasonUserEdited) {
-            _signalSlotHandler->s_redrawGuiCurve(curveChangeReason,view, dimension);
+        guicurve->clone( *(_imp->curves[dimension]) );
+        if ( _signalSlotHandler && (reason != eValueChangedReasonUserEdited) ) {
+            _signalSlotHandler->s_redrawGuiCurve(curveChangeReason, view, dimension);
         }
     }
 }
@@ -1399,11 +1415,11 @@ KnobHelper::getGuiCurve(ViewSpec view,
                         int dimension,
                         bool byPassMaster) const
 {
-    if (!canAnimate()) {
+    if ( !canAnimate() ) {
         return boost::shared_ptr<Curve>();
     }
 
-    std::pair<int,KnobPtr > master = getMaster(dimension);
+    std::pair<int, KnobPtr > master = getMaster(dimension);
     if (!byPassMaster && master.second) {
         return master.second->getGuiCurve(view, master.first);
     }
@@ -1421,7 +1437,7 @@ KnobHelper::setGuiCurveHasChanged(ViewSpec /*view*/,
                                   int dimension,
                                   bool changed)
 {
-    assert(dimension < (int)_imp->mustCloneGuiCurves.size());
+    assert( dimension < (int)_imp->mustCloneGuiCurves.size() );
     QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
     _imp->mustCloneGuiCurves[dimension] = changed;
 }
@@ -1430,8 +1446,9 @@ bool
 KnobHelper::hasGuiCurveChanged(ViewSpec /*view*/,
                                int dimension) const
 {
-    assert(dimension < (int)_imp->mustCloneGuiCurves.size());
+    assert( dimension < (int)_imp->mustCloneGuiCurves.size() );
     QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
+
     return _imp->mustCloneGuiCurves[dimension];
 }
 
@@ -1439,16 +1456,15 @@ boost::shared_ptr<Curve> KnobHelper::getCurve(ViewSpec view,
                                               int dimension,
                                               bool byPassMaster) const
 {
-
-    if (dimension < 0 || dimension >= (int)_imp->curves.size() ) {
+    if ( (dimension < 0) || ( dimension >= (int)_imp->curves.size() ) ) {
         return boost::shared_ptr<Curve>();
     }
 
-    std::pair<int,KnobPtr > master = getMaster(dimension);
+    std::pair<int, KnobPtr > master = getMaster(dimension);
     if (!byPassMaster && master.second) {
         return master.second->getCurve(view, master.first);
     }
-    
+
     return _imp->curves[dimension];
 }
 
@@ -1456,11 +1472,12 @@ bool
 KnobHelper::isAnimated(int dimension,
                        ViewSpec view) const
 {
-    if (!canAnimate()) {
+    if ( !canAnimate() ) {
         return false;
     }
     boost::shared_ptr<Curve> curve = getCurve(view, dimension);
     assert(curve);
+
     return curve->isAnimated();
 }
 
@@ -1496,6 +1513,7 @@ void
 KnobHelper::blockValueChanges()
 {
     QMutexLocker k(&_imp->valueChangedBlockedMutex);
+
     ++_imp->valueChangedBlocked;
 }
 
@@ -1503,6 +1521,7 @@ void
 KnobHelper::unblockValueChanges()
 {
     QMutexLocker k(&_imp->valueChangedBlockedMutex);
+
     --_imp->valueChangedBlocked;
 }
 
@@ -1510,46 +1529,44 @@ bool
 KnobHelper::isValueChangesBlocked() const
 {
     QMutexLocker k(&_imp->valueChangedBlockedMutex);
+
     return _imp->valueChangedBlocked > 0;
 }
 
 void
 KnobHelper::evaluateValueChangeInternal(int dimension,
-                                 double time,
-                                 ViewSpec view,
-                                 ValueChangedReasonEnum reason,
-                                 ValueChangedReasonEnum originalReason)
+                                        double time,
+                                        ViewSpec view,
+                                        ValueChangedReasonEnum reason,
+                                        ValueChangedReasonEnum originalReason)
 {
     AppInstance* app = 0;
+
     if (_imp->holder) {
         app = _imp->holder->getApp();
     }
     boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
     bool refreshWidget = !app || hasAnimation() || time == app->getTimeLine()->currentFrame();
-    
+
     /// For eValueChangedReasonTimeChanged we never call the instanceChangedAction and evaluate otherwise it would just throttle
     /// the application responsiveness
     onInternalValueChanged(dimension, time, view);
 
-    if ((originalReason != eValueChangedReasonTimeChanged || evaluateValueChangeOnTimeChange()) && _imp->holder) {
-            
-            _imp->holder->beginChanges();
-            _imp->holder->appendValueChange(shared_from_this(), dimension, refreshWidget, time, view, originalReason, reason);
-            _imp->holder->endChanges();
-        
+    if ( ( (originalReason != eValueChangedReasonTimeChanged) || evaluateValueChangeOnTimeChange() ) && _imp->holder ) {
+        _imp->holder->beginChanges();
+        _imp->holder->appendValueChange(shared_from_this(), dimension, refreshWidget, time, view, originalReason, reason);
+        _imp->holder->endChanges();
     }
-    
-    
+
+
     if (!_imp->holder && _signalSlotHandler) {
         computeHasModifications();
         if (refreshWidget) {
-            _signalSlotHandler->s_valueChanged(view, dimension,(int)reason);
+            _signalSlotHandler->s_valueChanged(view, dimension, (int)reason);
         }
         refreshListenersAfterValueChange(view, originalReason, dimension);
         checkAnimationLevel(view, dimension);
-        
     }
-    
 }
 
 void
@@ -1605,7 +1622,8 @@ KnobHelper::setEnabled(int dimension,
 }
 
 void
-KnobHelper::setDefaultEnabled(int dimension,bool b)
+KnobHelper::setDefaultEnabled(int dimension,
+                              bool b)
 {
     {
         QMutexLocker k(&_imp->stateMutex);
@@ -1627,6 +1645,7 @@ KnobHelper::setAllDimensionsEnabled(bool b)
             }
         }
     }
+
     if (changed && _signalSlotHandler) {
         _signalSlotHandler->s_enabledChanged();
     }
@@ -1664,7 +1683,7 @@ KnobHelper::setSecret(bool b)
         }
         _imp->IsSecret = b;
     }
-    
+
     ///the knob was revealed , refresh its gui to the current time
     if ( !b && _imp->holder && _imp->holder->getApp() ) {
         onTimeChanged( false, _imp->holder->getApp()->getTimeLine()->currentFrame() );
@@ -1679,12 +1698,12 @@ KnobHelper::determineHierarchySize() const
 {
     int ret = 0;
     KnobPtr current = getParentKnob();
-    
+
     while (current) {
         ++ret;
         current = current->getParentKnob();
     }
-    
+
     return ret;
 }
 
@@ -1692,6 +1711,7 @@ std::string
 KnobHelper::getLabel() const
 {
     QMutexLocker k(&_imp->labelMutex);
+
     return _imp->label;
 }
 
@@ -1711,6 +1731,7 @@ void
 KnobHelper::setIconLabel(const std::string& iconFilePath)
 {
     QMutexLocker k(&_imp->labelMutex);
+
     _imp->iconFilePath = iconFilePath;
 }
 
@@ -1718,6 +1739,7 @@ const std::string&
 KnobHelper::getIconLabel() const
 {
     QMutexLocker k(&_imp->labelMutex);
+
     return _imp->iconFilePath;
 }
 
@@ -1725,6 +1747,7 @@ void
 KnobHelper::hideLabel()
 {
     QMutexLocker k(&_imp->labelMutex);
+
     _imp->labelVisible = false;
 }
 
@@ -1732,36 +1755,37 @@ bool
 KnobHelper::isLabelVisible() const
 {
     QMutexLocker k(&_imp->labelMutex);
+
     return _imp->labelVisible;
 }
 
 bool
 KnobHelper::hasAnimation() const
 {
-    
     for (int i = 0; i < getDimension(); ++i) {
-        if (getKeyFramesCount(ViewIdx(0),i) > 0) {
+        if (getKeyFramesCount(ViewIdx(0), i) > 0) {
             return true;
         }
-        if (!getExpression(i).empty()) {
+        if ( !getExpression(i).empty() ) {
             return true;
         }
     }
-    
+
     return false;
 }
 
-
-static std::size_t getMatchingParenthesisPosition(std::size_t openingParenthesisPos,
-                                                  char openingChar,
-                                                  char closingChar,
-                                                  const std::string& str) {
+static std::size_t
+getMatchingParenthesisPosition(std::size_t openingParenthesisPos,
+                               char openingChar,
+                               char closingChar,
+                               const std::string& str)
+{
     assert(openingParenthesisPos < str.size() && str.at(openingParenthesisPos) == openingChar);
-    
+
     int noOpeningParenthesisFound = 0;
     int i = openingParenthesisPos + 1;
-    
-    while (i < (int)str.size()) {
+
+    while ( i < (int)str.size() ) {
         if (str.at(i) == closingChar) {
             if (noOpeningParenthesisFound == 0) {
                 break;
@@ -1773,16 +1797,22 @@ static std::size_t getMatchingParenthesisPosition(std::size_t openingParenthesis
         }
         ++i;
     }
-    if (i >= (int)str.size()) {
+    if ( i >= (int)str.size() ) {
         return std::string::npos;
     }
+
     return i;
 }
 
-static void extractParameters(std::size_t startParenthesis, std::size_t endParenthesis, const std::string& str, std::vector<std::string>* params)
+static void
+extractParameters(std::size_t startParenthesis,
+                  std::size_t endParenthesis,
+                  const std::string& str,
+                  std::vector<std::string>* params)
 {
     std::size_t i = startParenthesis + 1;
     int insideParenthesis = 0;
+
     while (i < endParenthesis || insideParenthesis < 0) {
         std::string curParam;
         if (str.at(i) == '(') {
@@ -1790,8 +1820,8 @@ static void extractParameters(std::size_t startParenthesis, std::size_t endParen
         } else if (str.at(i) == ')') {
             --insideParenthesis;
         }
-        while (i < str.size() && (str.at(i) != ',' || insideParenthesis > 0)) {
-            curParam.push_back(str.at(i));
+        while ( i < str.size() && (str.at(i) != ',' || insideParenthesis > 0) ) {
+            curParam.push_back( str.at(i) );
             ++i;
             if (str.at(i) == '(') {
                 ++insideParenthesis;
@@ -1807,29 +1837,30 @@ static void extractParameters(std::size_t startParenthesis, std::size_t endParen
     }
 }
 
-static bool parseTokenFrom(int fromDim,
-                           int dimensionParamPos,
-                           bool returnsTuple,
-                           const std::string& str,
-                           const std::string& token,
-                           std::size_t inputPos,
-                            std::size_t *tokenStart,
-                           std::string* output)
+static bool
+parseTokenFrom(int fromDim,
+               int dimensionParamPos,
+               bool returnsTuple,
+               const std::string& str,
+               const std::string& token,
+               std::size_t inputPos,
+               std::size_t *tokenStart,
+               std::string* output)
 {
     std::size_t pos;
 
 //    std::size_t tokenSize;
     bool foundMatchingToken = false;
+
     while (!foundMatchingToken) {
-        
-        pos = str.find(token,inputPos);
+        pos = str.find(token, inputPos);
         if (pos == std::string::npos) {
             return false;
         }
-        
+
         *tokenStart = pos;
         pos += token.size();
-        
+
         ///Find nearest opening parenthesis
         for (; pos < str.size(); ++pos) {
             if (str.at(pos) == '(') {
@@ -1840,22 +1871,21 @@ static bool parseTokenFrom(int fromDim,
                 break;
             }
         }
-        
-        if (pos >= str.size()) {
+
+        if ( pos >= str.size() ) {
             throw std::invalid_argument("Invalid expr");
         }
-        
+
         if (!foundMatchingToken) {
             inputPos = pos;
         }
-
     }
-    
+
     std::size_t endingParenthesis = getMatchingParenthesisPosition(pos, '(', ')',  str);
     if (endingParenthesis == std::string::npos) {
         throw std::invalid_argument("Invalid expr");
     }
-    
+
     std::vector<std::string> params;
     ///If the function returns a tuple like get()[dimension], do not extract parameters
     if (!returnsTuple) {
@@ -1866,45 +1896,44 @@ static bool parseTokenFrom(int fromDim,
         while (it < str.size() && str.at(it) == ' ') {
             ++it;
         }
-        if (it < str.size() && str.at(it) == '[') {
+        if ( ( it < str.size() ) && (str.at(it) == '[') ) {
             ///we found a tuple
             std::size_t endingBracket = getMatchingParenthesisPosition(it, '[', ']',  str);
             if (endingBracket == std::string::npos) {
                 throw std::invalid_argument("Invalid expr");
             }
-            params.push_back(str.substr(it + 1, endingBracket - it - 1));
+            params.push_back( str.substr(it + 1, endingBracket - it - 1) );
         }
     }
-    
-    
-    
+
+
     //The get() function does not always returns a tuple
-    if (params.empty()) {
+    if ( params.empty() ) {
         params.push_back("-1");
     }
     if (dimensionParamPos == -1) {
         ++dimensionParamPos;
     }
-    
-    
-    if (dimensionParamPos < 0 || (int)params.size() <= dimensionParamPos) {
+
+
+    if ( (dimensionParamPos < 0) || ( (int)params.size() <= dimensionParamPos ) ) {
         throw std::invalid_argument("Invalid expr");
     }
-    
+
     std::stringstream ss;
     /*
-     When replacing the getValue() (or similar function) call by addAsDepdendencyOf
-     the parameter prefixing the addAsDepdendencyOf will register itself its dimension params[dimensionParamPos] as a dependency of the expression
-     at the "fromDim" dimension of thisParam
+       When replacing the getValue() (or similar function) call by addAsDepdendencyOf
+       the parameter prefixing the addAsDepdendencyOf will register itself its dimension params[dimensionParamPos] as a dependency of the expression
+       at the "fromDim" dimension of thisParam
      */
     ss << ".addAsDependencyOf(" << fromDim << ",thisParam," <<  params[dimensionParamPos] << ")\n";
     std::string toInsert = ss.str();
-    
-   // tokenSize = endingParenthesis - tokenStart + 1;
-    if (*tokenStart < 2 || str[*tokenStart - 1] != '.') {
+
+    // tokenSize = endingParenthesis - tokenStart + 1;
+    if ( (*tokenStart < 2) || (str[*tokenStart - 1] != '.') ) {
         throw std::invalid_argument("Invalid expr");
     }
-    
+
     std::locale loc;
     //Find the start of the symbol
     int i = (int)*tokenStart - 2;
@@ -1913,16 +1942,16 @@ static bool parseTokenFrom(int fromDim,
         if (str[i] == ')') {
             ++nClosingParenthesisMet;
         }
-        if (std::isspace(str[i],loc) ||
-            str[i] == '=' ||
-            str[i] == '\n' ||
-            str[i] == '\t' ||
-            str[i] == '+' ||
-            str[i] == '-' ||
-            str[i] == '*' ||
-            str[i] == '/' ||
-            str[i] == '%' ||
-            (str[i] == '(' && !nClosingParenthesisMet)) {
+        if ( std::isspace(str[i], loc) ||
+             ( str[i] == '=') ||
+             ( str[i] == '\n') ||
+             ( str[i] == '\t') ||
+             ( str[i] == '+') ||
+             ( str[i] == '-') ||
+             ( str[i] == '*') ||
+             ( str[i] == '/') ||
+             ( str[i] == '%') ||
+             ( ( str[i] == '(') && !nClosingParenthesisMet ) ) {
             break;
         }
         --i;
@@ -1930,21 +1959,28 @@ static bool parseTokenFrom(int fromDim,
     ++i;
     std::string varName = str.substr(i, *tokenStart - 1 - i);
     output->append(varName + toInsert);
+
     //assert(*tokenSize > 0);
     return true;
-}
+} // parseTokenFrom
 
-static bool extractAllOcurrences(const std::string& str,const std::string& token,bool returnsTuple,int dimensionParamPos,int fromDim,std::string *outputScript)
+static bool
+extractAllOcurrences(const std::string& str,
+                     const std::string& token,
+                     bool returnsTuple,
+                     int dimensionParamPos,
+                     int fromDim,
+                     std::string *outputScript)
 {
-    
     std::size_t tokenStart;
     bool couldFindToken;
+
     try {
         couldFindToken = parseTokenFrom(fromDim, dimensionParamPos, returnsTuple, str, token, 0, &tokenStart, outputScript);
     } catch (...) {
         return false;
     }
-    
+
     while (couldFindToken) {
         try {
             couldFindToken = parseTokenFrom(fromDim, dimensionParamPos, returnsTuple, str, token, tokenStart + 1, &tokenStart, outputScript);
@@ -1952,59 +1988,59 @@ static bool extractAllOcurrences(const std::string& str,const std::string& token
             return false;
         }
     }
+
     return true;
 }
 
 std::string
-KnobHelperPrivate::declarePythonVariables(bool addTab, int dim)
+KnobHelperPrivate::declarePythonVariables(bool addTab,
+                                          int dim)
 {
     if (!holder) {
         throw std::runtime_error("This parameter cannot have an expression");
     }
-    
+
     EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
     if (!effect) {
         throw std::runtime_error("This parameter cannot have an expression");
     }
-    
+
     NodePtr node = effect->getNode();
     assert(node);
-    
+
     boost::shared_ptr<NodeCollection> collection = node->getGroup();
     if (!collection) {
         throw std::runtime_error("This parameter cannot have an expression");
     }
-    NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>(collection.get());
+    NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>( collection.get() );
     std::string appID = node->getApp()->getAppIDString();
-
     std::string tabStr = addTab ? "    " : "";
     std::stringstream ss;
     if (appID != "app") {
         ss << tabStr << "app = " << appID << "\n";
     }
-    
-    
+
+
     //Define all nodes reachable through expressions in the scope
-    
-    
-    
+
+
     //Define all nodes in the same group reachable by their bare script-name
     NodesList siblings = collection->getNodes();
     for (NodesList::iterator it = siblings.begin(); it != siblings.end(); ++it) {
-        if ((*it)->isActivated() && !(*it)->getParentMultiInstance()) {
+        if ( (*it)->isActivated() && !(*it)->getParentMultiInstance() ) {
             std::string scriptName = (*it)->getScriptName_mt_safe();
             std::string fullName = (*it)->getFullyQualifiedName();
             ss << tabStr << scriptName << " = " << appID << "." << fullName << "\n";
         }
     }
-    
+
     if (isParentGrp) {
         ss << tabStr << "thisGroup = " << appID << "." << isParentGrp->getNode()->getFullyQualifiedName() << "\n";
     } else {
         ss << tabStr << "thisGroup = " << appID << "\n";
     }
     ss << tabStr << "thisNode = " << node->getScriptName_mt_safe() <<  "\n";
-    
+
     ///Now define the variables in the scope
     ss << tabStr << "thisParam = thisNode." << name << "\n";
     ss << tabStr << "random = thisParam.random\n";
@@ -2013,29 +2049,28 @@ KnobHelperPrivate::declarePythonVariables(bool addTab, int dim)
     if (dimension != -1) {
         ss << tabStr << "dimension = " << dim << "\n";
     }
-    
+
     //If this node is a group, also define all nodes inside the group, though they will be referencable via
     //thisNode.childname but also with <NodeName.childname>
     NodeGroup* isHolderGrp = dynamic_cast<NodeGroup*>(effect);
     if (isHolderGrp) {
         NodesList children = isHolderGrp->getNodes();
         for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
-            if ((*it)->isActivated() && !(*it)->getParentMultiInstance()) {
+            if ( (*it)->isActivated() && !(*it)->getParentMultiInstance() ) {
                 std::string scriptName = (*it)->getScriptName_mt_safe();
                 std::string fullName = (*it)->getFullyQualifiedName();
                 ss << tabStr << node->getScriptName_mt_safe() << "." << scriptName << " = " << appID << "." << fullName << "\n";
             }
         }
     }
-    
-    
+
+
     return ss.str();
-}
+} // KnobHelperPrivate::declarePythonVariables
 
 void
 KnobHelperPrivate::parseListenersFromExpression(int dimension)
 {
-    
     //Extract pointers to knobs referred to by the expression
     //Our heuristic is quite simple: we replace in the python code all calls to:
     // - getValue
@@ -2046,33 +2081,33 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
     // And replace them by addAsDependencyOf(thisParam) which will register the parameters as a dependency of this parameter
 
     std::string expressionCopy;
-    
+
     {
         QMutexLocker k(&expressionMutex);
         expressionCopy = expressions[dimension].originalExpression;
     }
-    
     std::string script;
-    if  (!extractAllOcurrences(expressionCopy, "getValue", false, 0, dimension,&script)) {
-        return ;
-    }
-    
-    if (!extractAllOcurrences(expressionCopy, "getValueAtTime", false, 1,  dimension,&script)) {
+
+    if  ( !extractAllOcurrences(expressionCopy, "getValue", false, 0, dimension, &script) ) {
         return;
     }
-    
-    if (!extractAllOcurrences(expressionCopy, "getDerivativeAtTime", false, 1,  dimension,&script)) {
+
+    if ( !extractAllOcurrences(expressionCopy, "getValueAtTime", false, 1,  dimension, &script) ) {
         return;
     }
-    
-    if (!extractAllOcurrences(expressionCopy, "getIntegrateFromTimeToTime", false, 2, dimension,&script)) {
+
+    if ( !extractAllOcurrences(expressionCopy, "getDerivativeAtTime", false, 1,  dimension, &script) ) {
         return;
     }
-    
-    if (!extractAllOcurrences(expressionCopy, "get", true, -1, dimension,&script)) {
+
+    if ( !extractAllOcurrences(expressionCopy, "getIntegrateFromTimeToTime", false, 2, dimension, &script) ) {
         return;
     }
-    
+
+    if ( !extractAllOcurrences(expressionCopy, "get", true, -1, dimension, &script) ) {
+        return;
+    }
+
     std::string declarations = declarePythonVariables(false, dimension);
     std::stringstream ss;
     ss << "frame=0\n";
@@ -2083,31 +2118,31 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
     script = ss.str();
     ///This will register the listeners
     std::string error;
-    bool ok = Python::interpretPythonScript(script, &error,NULL);
-    if (!error.empty()) {
+    bool ok = Python::interpretPythonScript(script, &error, NULL);
+    if ( !error.empty() ) {
         qDebug() << error.c_str();
     }
     assert(ok);
     if (!ok) {
-        throw std::runtime_error("KnobHelperPrivate::parseListenersFromExpression(): interpretPythonScript("+script+") failed!");
+        throw std::runtime_error("KnobHelperPrivate::parseListenersFromExpression(): interpretPythonScript(" + script + ") failed!");
     }
-}
-
-
+} // KnobHelperPrivate::parseListenersFromExpression
 
 std::string
-KnobHelper::validateExpression(const std::string& expression,int dimension,bool hasRetVariable,std::string* resultAsString)
+KnobHelper::validateExpression(const std::string& expression,
+                               int dimension,
+                               bool hasRetVariable,
+                               std::string* resultAsString)
 {
     PythonGILLocker pgl;
-    
-    if (expression.empty()) {
+
+    if ( expression.empty() ) {
         throw std::invalid_argument("empty expression");;
     }
-    
-    
-    
+
+
     std::string exprCpy = expression;
-    
+
     //if !hasRetVariable the expression is expected to be single-line
     if (!hasRetVariable) {
         std::size_t foundNewLine = expression.find("\n");
@@ -2124,19 +2159,18 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
             exprCpy.insert(foundNewLine + 1, "    ");
             foundNewLine = exprCpy.find("\n", foundNewLine + 1);
         }
-        
     }
-    
+
     KnobHolder* holder = getHolder();
     if (!holder) {
         throw std::runtime_error("This parameter cannot have an expression");
     }
-    
+
     EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
     if (!effect) {
         throw std::runtime_error("This parameter cannot have an expression");
     }
-    
+
     NodePtr node = effect->getNode();
     assert(node);
     std::string appID = getHolder()->getApp()->getAppIDString();
@@ -2149,16 +2183,16 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
         tmpSs << "expression" << dimension;
         exprFuncName = tmpSs.str();
     }
-    
+
     exprCpy.append("\n    return ret\n");
-    
+
     ///Now define the thisNode variable
 
     std::stringstream ss;
     ss << "def "  << exprFuncName << "(frame, view):\n";
     ss << _imp->declarePythonVariables(true, dimension);
 
-    
+
     std::string script = ss.str();
     script.append(exprCpy);
     script.append(exprFuncPrefix + exprFuncName + " = " + exprFuncName);
@@ -2170,26 +2204,26 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
 
     {
         EXPR_RECURSION_LEVEL();
-        
-        if (!Python::interpretPythonScript(script, &error, 0)) {
+
+        if ( !Python::interpretPythonScript(script, &error, 0) ) {
             throw std::runtime_error(error);
         }
-        
+
         std::stringstream ss;
-        ss << funcExecScript <<'(' << getCurrentTime()<<", " <<  getCurrentView() << ")\n";
-        if (!Python::interpretPythonScript(ss.str(), &error, 0)) {
+        ss << funcExecScript << '(' << getCurrentTime() << ", " <<  getCurrentView() << ")\n";
+        if ( !Python::interpretPythonScript(ss.str(), &error, 0) ) {
             throw std::runtime_error(error);
         }
-        
-        PyObject *ret = PyObject_GetAttrString(Python::getMainModule(),"ret"); //get our ret variable created above
-        
-        if (!ret || PyErr_Occurred()) {
+
+        PyObject *ret = PyObject_GetAttrString(Python::getMainModule(), "ret"); //get our ret variable created above
+
+        if ( !ret || PyErr_Occurred() ) {
 #ifdef DEBUG
             PyErr_Print();
 #endif
             throw std::runtime_error("return value must be assigned to the \"ret\" variable");
         }
-  
+
 
         Knob<double>* isDouble = dynamic_cast<Knob<double>*>(this);
         Knob<int>* isInt = dynamic_cast<Knob<int>*>(this);
@@ -2208,45 +2242,47 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
             assert(isString);
             *resultAsString = isString->pyObjectToType<std::string>(ret);
         }
-
-        
     }
- 
-    
+
+
     return funcExecScript;
-}
+} // KnobHelper::validateExpression
 
 bool
 KnobHelper::checkInvalidExpressions()
 {
     int ndims = getDimension();
-    std::vector<std::pair<std::string,bool> > exprToReapply(ndims);
+    std::vector<std::pair<std::string, bool> > exprToReapply(ndims);
     {
         QMutexLocker k(&_imp->expressionMutex);
         for (int i = 0; i < ndims; ++i) {
-            if (!_imp->expressions[i].exprInvalid.empty()) {
+            if ( !_imp->expressions[i].exprInvalid.empty() ) {
                 exprToReapply[i] = std::make_pair(_imp->expressions[i].originalExpression, _imp->expressions[i].hasRet);
             }
         }
     }
     bool isInvalid = false;
+
     for (int i = 0; i < ndims; ++i) {
-        if (!exprToReapply[i].first.empty()) {
+        if ( !exprToReapply[i].first.empty() ) {
             setExpressionInternal(i, exprToReapply[i].first, exprToReapply[i].second, true, false);
         }
         std::string err;
-        if (!isExpressionValid(i, &err)) {
+        if ( !isExpressionValid(i, &err) ) {
             isInvalid = true;
         }
     }
+
     return !isInvalid;
 }
 
 bool
-KnobHelper::isExpressionValid(int dimension, std::string* error) const
+KnobHelper::isExpressionValid(int dimension,
+                              std::string* error) const
 {
     int ndims = getDimension();
-    if (dimension < 0 || dimension >= ndims) {
+
+    if ( (dimension < 0) || (dimension >= ndims) ) {
         return false;
     }
     {
@@ -2254,15 +2290,19 @@ KnobHelper::isExpressionValid(int dimension, std::string* error) const
         if (error) {
             *error = _imp->expressions[dimension].exprInvalid;
         }
+
         return _imp->expressions[dimension].exprInvalid.empty();
     }
 }
 
 void
-KnobHelper::setExpressionInvalid(int dimension, bool valid,  const std::string& error)
+KnobHelper::setExpressionInvalid(int dimension,
+                                 bool valid,
+                                 const std::string& error)
 {
     int ndims = getDimension();
-    if (dimension < 0 || dimension >= ndims) {
+
+    if ( (dimension < 0) || (dimension >= ndims) ) {
         return;
     }
     bool wasValid;
@@ -2271,14 +2311,14 @@ KnobHelper::setExpressionInvalid(int dimension, bool valid,  const std::string& 
         wasValid = _imp->expressions[dimension].exprInvalid.empty();
         _imp->expressions[dimension].exprInvalid = error;
     }
-    if (getHolder() && getHolder()->getApp()) {
+    if ( getHolder() && getHolder()->getApp() ) {
         if (wasValid && !valid) {
             bool haveOtherExprInvalid = false;
             {
                 QMutexLocker k(&_imp->expressionMutex);
                 for (int i = 0; i < ndims; ++i) {
                     if (i != dimension) {
-                        if (!_imp->expressions[dimension].exprInvalid.empty()) {
+                        if ( !_imp->expressions[dimension].exprInvalid.empty() ) {
                             haveOtherExprInvalid = true;
                             break;
                         }
@@ -2286,7 +2326,7 @@ KnobHelper::setExpressionInvalid(int dimension, bool valid,  const std::string& 
                 }
             }
             if (!haveOtherExprInvalid) {
-                getHolder()->getApp()->addInvalidExpressionKnob(boost::const_pointer_cast<KnobI>(shared_from_this()));
+                getHolder()->getApp()->addInvalidExpressionKnob( boost::const_pointer_cast<KnobI>( shared_from_this() ) );
             }
             if (_signalSlotHandler) {
                 _signalSlotHandler->s_expressionChanged(dimension);
@@ -2297,7 +2337,7 @@ KnobHelper::setExpressionInvalid(int dimension, bool valid,  const std::string& 
                 QMutexLocker k(&_imp->expressionMutex);
                 for (int i = 0; i < ndims; ++i) {
                     if (i != dimension) {
-                        if (!_imp->expressions[dimension].exprInvalid.empty()) {
+                        if ( !_imp->expressions[dimension].exprInvalid.empty() ) {
                             haveOtherExprInvalid = true;
                             break;
                         }
@@ -2312,32 +2352,35 @@ KnobHelper::setExpressionInvalid(int dimension, bool valid,  const std::string& 
             }
         }
     }
-   
-}
+} // KnobHelper::setExpressionInvalid
 
 void
-KnobHelper::setExpressionInternal(int dimension,const std::string& expression,bool hasRetVariable,bool clearResults, bool failIfInvalid)
+KnobHelper::setExpressionInternal(int dimension,
+                                  const std::string& expression,
+                                  bool hasRetVariable,
+                                  bool clearResults,
+                                  bool failIfInvalid)
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
+
     return;
 #endif
-    assert(dimension >= 0 && dimension < getDimension());
-    
+    assert( dimension >= 0 && dimension < getDimension() );
+
     PythonGILLocker pgl;
-    
+
     ///Clear previous expr
-    clearExpression(dimension,clearResults);
-    
-    if (expression.empty()) {
-        return ;
+    clearExpression(dimension, clearResults);
+
+    if ( expression.empty() ) {
+        return;
     }
-    
+
     std::string exprResult;
     std::string exprCpy;
-    
     std::string exprInvalid;
     try {
-        exprCpy = validateExpression(expression, dimension, hasRetVariable,&exprResult);
+        exprCpy = validateExpression(expression, dimension, hasRetVariable, &exprResult);
     } catch (const std::exception &e) {
         exprInvalid = e.what();
         exprCpy = expression;
@@ -2345,7 +2388,7 @@ KnobHelper::setExpressionInternal(int dimension,const std::string& expression,bo
             throw e;
         }
     }
-    
+
     //Set internal fields
 
     {
@@ -2354,42 +2397,35 @@ KnobHelper::setExpressionInternal(int dimension,const std::string& expression,bo
         _imp->expressions[dimension].expression = exprCpy;
         _imp->expressions[dimension].originalExpression = expression;
         _imp->expressions[dimension].exprInvalid = exprInvalid;
-        
+
         ///This may throw an exception upon failure
         //Python::compilePyScript(exprCpy, &_imp->expressions[dimension].code);
     }
-  
-    if (getHolder()) {
-        
-        
-        
+
+    if ( getHolder() ) {
         //Parse listeners of the expression, to keep track of dependencies to indicate them to the user.
-        
-        if (exprInvalid.empty()) {
-            
+
+        if ( exprInvalid.empty() ) {
             EXPR_RECURSION_LEVEL();
             _imp->parseListenersFromExpression(dimension);
-            
         } else {
             AppInstance* app = getHolder()->getApp();
             if (app) {
-                app->addInvalidExpressionKnob(shared_from_this());
+                app->addInvalidExpressionKnob( shared_from_this() );
             }
         }
     }
 
-    
+
     //Notify the expr. has changed
     expressionChanged(dimension);
-}
-
+} // KnobHelper::setExpressionInternal
 
 void
 KnobHelper::replaceNodeNameInExpression(int dimension,
-                                         const std::string& oldName,
+                                        const std::string& oldName,
                                         const std::string& newName)
 {
-
     assert(dimension >= 0 && dimension < _imp->dimension);
     KnobHolder* holder = getHolder();
     if (!holder) {
@@ -2399,47 +2435,51 @@ KnobHelper::replaceNodeNameInExpression(int dimension,
     if (!isEffect) {
         return;
     }
-    
+
     isEffect->beginChanges();
     std::string hasExpr = getExpression(dimension);
-    if (hasExpr.empty()) {
+    if ( hasExpr.empty() ) {
         return;
     }
     bool hasRetVar = isExpressionUsingRetVariable(dimension);
     try {
         //Change in expressions the script-name
-        QString estr = QString::fromUtf8(hasExpr.c_str());
-        estr.replace(QString::fromUtf8(oldName.c_str()), QString::fromUtf8(newName.c_str()));
+        QString estr = QString::fromUtf8( hasExpr.c_str() );
+        estr.replace( QString::fromUtf8( oldName.c_str() ), QString::fromUtf8( newName.c_str() ) );
         hasExpr = estr.toStdString();
         setExpression(dimension, hasExpr, hasRetVar, false);
     } catch (...) {
-        
     }
-    
+
     isEffect->endChanges(true);
-    
 }
 
 bool
 KnobHelper::isExpressionUsingRetVariable(int dimension) const
 {
     QMutexLocker k(&_imp->expressionMutex);
+
     return _imp->expressions[dimension].hasRet;
 }
 
 bool
-KnobHelper::getExpressionDependencies(int dimension, std::list<std::pair<KnobWPtr,int> >& dependencies) const
+KnobHelper::getExpressionDependencies(int dimension,
+                                      std::list<std::pair<KnobWPtr, int> >& dependencies) const
 {
     QMutexLocker k(&_imp->expressionMutex);
-    if (!_imp->expressions[dimension].expression.empty()) {
+
+    if ( !_imp->expressions[dimension].expression.empty() ) {
         dependencies = _imp->expressions[dimension].dependencies;
+
         return true;
     }
+
     return false;
 }
 
 void
-KnobHelper::clearExpression(int dimension,bool clearResults)
+KnobHelper::clearExpression(int dimension,
+                            bool clearResults)
 {
     PythonGILLocker pgl;
     bool hadExpression;
@@ -2454,17 +2494,16 @@ KnobHelper::clearExpression(int dimension,bool clearResults)
     }
     KnobPtr thisShared = shared_from_this();
     {
-        std::list<std::pair<KnobWPtr,int> > dependencies;
+        std::list<std::pair<KnobWPtr, int> > dependencies;
         {
             QWriteLocker kk(&_imp->mastersMutex);
             dependencies = _imp->expressions[dimension].dependencies;
             _imp->expressions[dimension].dependencies.clear();
         }
-        for (std::list<std::pair<KnobWPtr,int> >::iterator it = dependencies.begin();
+        for (std::list<std::pair<KnobWPtr, int> >::iterator it = dependencies.begin();
              it != dependencies.end(); ++it) {
-            
             KnobPtr otherKnob = it->first.lock();
-            KnobHelper* other = dynamic_cast<KnobHelper*>(otherKnob.get());
+            KnobHelper* other = dynamic_cast<KnobHelper*>( otherKnob.get() );
             assert(other);
             if (!other) {
                 continue;
@@ -2474,15 +2513,14 @@ KnobHelper::clearExpression(int dimension,bool clearResults)
                 QReadLocker otherMastersLocker(&other->_imp->mastersMutex);
                 otherListeners = other->_imp->listeners;
             }
-            
+
             for (ListenerDimsMap::iterator it = otherListeners.begin(); it != otherListeners.end(); ++it) {
                 KnobPtr knob = it->first.lock();
                 if (knob.get() == this) {
-                    
                     //erase from the dimensions vector
-                    assert(dimension < (int)it->second.size());
+                    assert( dimension < (int)it->second.size() );
                     it->second[dimension].isListening = false;
-                    
+
                     //if it has no longer has a reference to this knob, erase it
                     bool hasReference = false;
                     for (std::size_t d = 0; d < it->second.size(); ++d) {
@@ -2494,22 +2532,23 @@ KnobHelper::clearExpression(int dimension,bool clearResults)
                     if (!hasReference) {
                         otherListeners.erase(it);
                     }
-                    
+
                     break;
                 }
             }
 
-            if (getHolder()) {
-                getHolder()->onKnobSlaved(thisShared, otherKnob,dimension,false );
+            if ( getHolder() ) {
+                getHolder()->onKnobSlaved(thisShared, otherKnob, dimension, false );
             }
 
-            
+
             {
                 QWriteLocker otherMastersLocker(&other->_imp->mastersMutex);
                 other->_imp->listeners = otherListeners;
             }
         }
     }
+
     if (clearResults) {
         clearExpressionsResults(dimension);
     }
@@ -2517,8 +2556,7 @@ KnobHelper::clearExpression(int dimension,bool clearResults)
     if (hadExpression) {
         expressionChanged(dimension);
     }
-    
-}
+} // KnobHelper::clearExpression
 
 void
 KnobHelper::expressionChanged(int dimension)
@@ -2533,16 +2571,18 @@ KnobHelper::expressionChanged(int dimension)
     computeHasModifications();
 }
 
-static bool catchErrors(PyObject* mainModule, std::string* error) {
-    if (PyErr_Occurred()) {
-        
+static bool
+catchErrors(PyObject* mainModule,
+            std::string* error)
+{
+    if ( PyErr_Occurred() ) {
         PyErr_Print();
         ///Gui session, do stdout, stderr redirection
-        if (PyObject_HasAttrString(mainModule, "catchErr")) {
-            PyObject* errCatcher = PyObject_GetAttrString(mainModule,"catchErr"); //get our catchOutErr created above, new ref
+        if ( PyObject_HasAttrString(mainModule, "catchErr") ) {
+            PyObject* errCatcher = PyObject_GetAttrString(mainModule, "catchErr"); //get our catchOutErr created above, new ref
             PyObject *errorObj = 0;
             if (errCatcher) {
-                errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
+                errorObj = PyObject_GetAttrString(errCatcher, "value"); //get the  stderr from our catchErr object, new ref
                 assert(errorObj);
                 *error = Python::PyStringToStdString(errorObj);
                 PyObject* unicode = PyUnicode_FromString("");
@@ -2550,10 +2590,11 @@ static bool catchErrors(PyObject* mainModule, std::string* error) {
                 Py_DECREF(errorObj);
                 Py_DECREF(errCatcher);
             }
-            
         }
+
         return false;
     }
+
     return true;
 }
 
@@ -2561,41 +2602,42 @@ bool
 KnobHelper::executeExpression(double time,
                               ViewIdx view,
                               int dimension,
-                              PyObject** ret, std::string* error) const
+                              PyObject** ret,
+                              std::string* error) const
 {
-    
     std::string expr;
     {
         QMutexLocker k(&_imp->expressionMutex);
         expr = _imp->expressions[dimension].expression;
     }
-    
+
     //returns a new ref, this function's documentation is not clear onto what it returns...
     //https://docs.python.org/2/c-api/veryhigh.html
     PyObject* mainModule = Python::getMainModule();
     PyObject* globalDict = PyModule_GetDict(mainModule);
-    
     std::stringstream ss;
+
     ss << expr << '(' << time << ", " <<  view << ")\n";
     std::string script = ss.str();
     PyObject* v = PyRun_String(script.c_str(), Py_file_input, globalDict, 0);
     Py_XDECREF(v);
-    
+
     *ret = 0;
-    
-    if (!catchErrors(mainModule, error)) {
+
+    if ( !catchErrors(mainModule, error) ) {
         return false;
     }
-    *ret = PyObject_GetAttrString(mainModule,"ret"); //get our ret variable created above
+    *ret = PyObject_GetAttrString(mainModule, "ret"); //get our ret variable created above
     if (!*ret) {
         *error = "Missing ret variable";
+
         return false;
     }
-    if (!catchErrors(mainModule, error)) {
+    if ( !catchErrors(mainModule, error) ) {
         return false;
     }
+
     return true;
-    
 }
 
 std::string
@@ -2605,6 +2647,7 @@ KnobHelper::getExpression(int dimension) const
         dimension = 0;
     }
     QMutexLocker k(&_imp->expressionMutex);
+
     return _imp->expressions[dimension].originalExpression;
 }
 
@@ -2617,7 +2660,7 @@ KnobHelper::getHolder() const
 void
 KnobHelper::setAnimationEnabled(bool val)
 {
-    if (!canAnimate()) {
+    if ( !canAnimate() ) {
         return;
     }
     _imp->isAnimationEnabled = val;
@@ -2630,18 +2673,17 @@ KnobHelper::isAnimationEnabled() const
 }
 
 void
-KnobHelper::setName(const std::string & name,bool throwExceptions)
+KnobHelper::setName(const std::string & name,
+                    bool throwExceptions)
 {
-    
     _imp->originalName = name;
     _imp->name = Python::makeNameScriptFriendly(name);
-    
-    if (!getHolder()) {
+
+    if ( !getHolder() ) {
         return;
     }
     //Try to find a duplicate
     int no = 1;
-    
     bool foundItem;
     std::string finalName;
     do {
@@ -2651,43 +2693,43 @@ KnobHelper::setName(const std::string & name,bool throwExceptions)
             ss << no;
         }
         finalName = ss.str();
-        if (getHolder()->getOtherKnobByName(finalName, this)) {
+        if ( getHolder()->getOtherKnobByName(finalName, this) ) {
             foundItem = true;
         } else {
             foundItem = false;
         }
         ++no;
     } while (foundItem);
-    
-    
+
+
     EffectInstance* effect = dynamic_cast<EffectInstance*>(_imp->holder);
     if (effect) {
         NodePtr node = effect->getNode();
         std::string effectScriptName = node->getScriptName_mt_safe();
-        if (!effectScriptName.empty()) {
+        if ( !effectScriptName.empty() ) {
             std::string newPotentialQualifiedName = node->getApp()->getAppIDString() +  node->getFullyQualifiedName();
             newPotentialQualifiedName += '.';
             newPotentialQualifiedName += finalName;
-            
+
             bool isAttrDefined = false;
             (void)Python::getAttrRecursive(newPotentialQualifiedName, appPTR->getMainModule(), &isAttrDefined);
             if (isAttrDefined) {
                 std::stringstream ss;
                 ss << "A Python attribute with the same name (" << newPotentialQualifiedName << ") already exists.";
                 if (throwExceptions) {
-                    throw std::runtime_error(ss.str());
+                    throw std::runtime_error( ss.str() );
                 } else {
                     std::string err = ss.str();
-                    appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(err.c_str()));
+                    appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( err.c_str() ) );
                     std::cerr << err << std::endl;
+
                     return;
                 }
             }
-            
         }
     }
     _imp->name = finalName;
-}
+} // KnobHelper::setName
 
 const std::string &
 KnobHelper::getName() const
@@ -2705,9 +2747,10 @@ void
 KnobHelper::resetParent()
 {
     KnobPtr parent = _imp->parentKnob.lock();
+
     if (parent) {
-        KnobGroup* isGrp =  dynamic_cast<KnobGroup*>(parent.get());
-        KnobPage* isPage = dynamic_cast<KnobPage*>(parent.get());
+        KnobGroup* isGrp =  dynamic_cast<KnobGroup*>( parent.get() );
+        KnobPage* isPage = dynamic_cast<KnobPage*>( parent.get() );
         if (isGrp) {
             isGrp->removeKnob(this);
         } else if (isPage) {
@@ -2725,7 +2768,8 @@ KnobHelper::setParentKnob(KnobPtr knob)
     _imp->parentKnob = knob;
 }
 
-KnobPtr KnobHelper::getParentKnob() const
+KnobPtr
+KnobHelper::getParentKnob() const
 {
     return _imp->parentKnob.lock();
 }
@@ -2734,19 +2778,21 @@ bool
 KnobHelper::getIsSecret() const
 {
     QMutexLocker k(&_imp->stateMutex);
+
     return _imp->IsSecret;
 }
 
 bool
 KnobHelper::getIsSecretRecursive() const
 {
-    if (getIsSecret()) {
+    if ( getIsSecret() ) {
         return true;
     }
     KnobPtr parent = getParentKnob();
     if (parent) {
         return parent->getIsSecretRecursive();
     }
+
     return false;
 }
 
@@ -2754,6 +2800,7 @@ bool
 KnobHelper::getDefaultIsSecret() const
 {
     QMutexLocker k(&_imp->stateMutex);
+
     return _imp->defaultIsSecret;
 }
 
@@ -2769,8 +2816,9 @@ bool
 KnobHelper::isEnabled(int dimension) const
 {
     assert( 0 <= dimension && dimension < getDimension() );
-    
+
     QMutexLocker k(&_imp->stateMutex);
+
     return _imp->enabled[dimension];
 }
 
@@ -2778,8 +2826,9 @@ bool
 KnobHelper::isDefaultEnabled(int dimension) const
 {
     assert( 0 <= dimension && dimension < getDimension() );
-    
+
     QMutexLocker k(&_imp->stateMutex);
+
     return _imp->defaultEnabled[dimension];
 }
 
@@ -2794,6 +2843,7 @@ KnobHelper::setEvaluateOnChange(bool b)
 {
     KnobPage* isPage = dynamic_cast<KnobPage*>(this);
     KnobGroup* isGrp = dynamic_cast<KnobGroup*>(this);
+
     if (isPage || isGrp) {
         b = false;
     }
@@ -2830,7 +2880,6 @@ KnobHelper::getCanUndo() const
     return _imp->CanUndo;
 }
 
-
 void
 KnobHelper::setIsMetadataSlave(bool slave)
 {
@@ -2847,6 +2896,7 @@ bool
 KnobHelper::getEvaluateOnChange() const
 {
     QMutexLocker k(&_imp->evaluateOnChangeMutex);
+
     return _imp->evaluateOnChange;
 }
 
@@ -2857,7 +2907,6 @@ KnobHelper::setHintToolTip(const std::string & hint)
     if (_signalSlotHandler) {
         _signalSlotHandler->s_helpChanged();
     }
-    
 }
 
 const std::string &
@@ -2876,7 +2925,7 @@ KnobHelper::setCustomInteract(const boost::shared_ptr<OfxParamOverlayInteract> &
 boost::shared_ptr<OfxParamOverlayInteract> KnobHelper::getCustomInteract() const
 {
     assert( QThread::currentThread() == qApp->thread() );
-    
+
     return _imp->customInteract;
 }
 
@@ -2889,6 +2938,7 @@ void
 KnobHelper::redraw()
 {
     boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+
     if (hasGui) {
         hasGui->redraw();
     }
@@ -2899,6 +2949,7 @@ KnobHelper::getViewportSize(double &width,
                             double &height) const
 {
     boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+
     if (hasGui) {
         hasGui->getViewportSize(width, height);
     } else {
@@ -2912,6 +2963,7 @@ KnobHelper::getPixelScale(double & xScale,
                           double & yScale) const
 {
     boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+
     if (hasGui) {
         hasGui->getPixelScale(xScale, yScale);
     } else {
@@ -2926,6 +2978,7 @@ KnobHelper::getBackgroundColour(double &r,
                                 double &b) const
 {
     boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+
     if (hasGui) {
         hasGui->getBackgroundColour(r, g, b);
     } else {
@@ -2939,6 +2992,7 @@ void
 KnobHelper::saveOpenGLContext()
 {
     boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+
     if (hasGui) {
         hasGui->saveOpenGLContext();
     }
@@ -2948,6 +3002,7 @@ void
 KnobHelper::restoreOpenGLContext()
 {
     boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+
     if (hasGui) {
         hasGui->restoreOpenGLContext();
     }
@@ -2964,7 +3019,7 @@ void*
 KnobHelper::getOfxParamHandle() const
 {
     assert( QThread::currentThread() == qApp->thread() );
-    
+
     return _imp->ofxParamHandle;
 }
 
@@ -2972,7 +3027,7 @@ bool
 KnobHelper::isMastersPersistenceIgnored() const
 {
     QReadLocker l(&_imp->mastersMutex);
-    
+
     return _imp->ignoreMasterPersistence;
 }
 
@@ -2980,6 +3035,7 @@ void
 KnobHelper::copyAnimationToClipboard() const
 {
     boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+
     if (hasGui) {
         hasGui->copyAnimationToClipboard(-1);
     }
@@ -3001,14 +3057,14 @@ KnobHelper::slaveTo(int dimension,
     }
     {
         QWriteLocker l(&_imp->mastersMutex);
-        if (_imp->masters[dimension].second.lock()) {
+        if ( _imp->masters[dimension].second.lock() ) {
             return false;
         }
         _imp->ignoreMasterPersistence = ignoreMasterPersistence;
         _imp->masters[dimension].second = other;
         _imp->masters[dimension].first = otherDimension;
     }
-    
+
     KnobHelper* masterKnob = dynamic_cast<KnobHelper*>( other.get() );
     assert(masterKnob);
     if (!masterKnob) {
@@ -3016,34 +3072,31 @@ KnobHelper::slaveTo(int dimension,
     }
 
     if (masterKnob->_signalSlotHandler && _signalSlotHandler) {
-
         QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL(keyFrameSet(double,ViewSpec,int,int,bool)),
-                         _signalSlotHandler.get(), SLOT(onMasterKeyFrameSet(double,ViewSpec,int,int,bool)), Qt::UniqueConnection );
+                          _signalSlotHandler.get(), SLOT(onMasterKeyFrameSet(double,ViewSpec,int,int,bool)), Qt::UniqueConnection );
         QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL(keyFrameRemoved(double,ViewSpec,int,int)),
-                         _signalSlotHandler.get(), SLOT(onMasterKeyFrameRemoved(double,ViewSpec,int,int)),Qt::UniqueConnection );
-        
+                          _signalSlotHandler.get(), SLOT(onMasterKeyFrameRemoved(double,ViewSpec,int,int)), Qt::UniqueConnection );
         QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL(keyFrameMoved(ViewSpec,int,double,double)),
-                         _signalSlotHandler.get(), SLOT(onMasterKeyFrameMoved(ViewSpec,int,double,double)),Qt::UniqueConnection );
+                          _signalSlotHandler.get(), SLOT(onMasterKeyFrameMoved(ViewSpec,int,double,double)), Qt::UniqueConnection );
         QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL(animationRemoved(ViewSpec,int)),
-                         _signalSlotHandler.get(), SLOT(onMasterAnimationRemoved(ViewSpec,int)),Qt::UniqueConnection );
-        
+                          _signalSlotHandler.get(), SLOT(onMasterAnimationRemoved(ViewSpec,int)), Qt::UniqueConnection );
     }
-    
-    bool hasChanged = cloneAndCheckIfChanged(other.get(),dimension);
-    
+
+    bool hasChanged = cloneAndCheckIfChanged(other.get(), dimension);
+
     //Do not disable buttons when they are slaved
     KnobButton* isBtn = dynamic_cast<KnobButton*>(this);
     if (!isBtn) {
         setEnabled(dimension, false);
     }
-    
+
     if (_signalSlotHandler) {
         ///Notify we want to refresh
         if (reason == eValueChangedReasonNatronInternalEdited) {
-            _signalSlotHandler->s_knobSlaved(dimension,true);
+            _signalSlotHandler->s_knobSlaved(dimension, true);
         }
     }
-    
+
     if (hasChanged) {
         evaluateValueChange(dimension, getCurrentTime(), ViewIdx(0), reason);
     } else if (isBtn) {
@@ -3056,17 +3109,18 @@ KnobHelper::slaveTo(int dimension,
 
     ///Register this as a listener of the master
     if (masterKnob) {
-        masterKnob->addListener(false,dimension, otherDimension, shared_from_this());
+        masterKnob->addListener( false, dimension, otherDimension, shared_from_this() );
     }
-    
-    return true;
-}
 
-std::pair<int,KnobPtr > KnobHelper::getMaster(int dimension) const
+    return true;
+} // KnobHelper::slaveTo
+
+std::pair<int, KnobPtr > KnobHelper::getMaster(int dimension) const
 {
-    assert(dimension >= 0 && dimension < (int)_imp->masters.size());
+    assert( dimension >= 0 && dimension < (int)_imp->masters.size() );
     QReadLocker l(&_imp->mastersMutex);
-    std::pair<int,KnobPtr > ret = std::make_pair(_imp->masters[dimension].first, _imp->masters[dimension].second.lock());
+    std::pair<int, KnobPtr > ret = std::make_pair( _imp->masters[dimension].first, _imp->masters[dimension].second.lock() );
+
     return ret;
 }
 
@@ -3084,33 +3138,30 @@ KnobHelper::isSlave(int dimension) const
 {
     assert(dimension >= 0);
     QReadLocker l(&_imp->mastersMutex);
-    
-    return bool(_imp->masters[dimension].second.lock());
-}
 
+    return bool( _imp->masters[dimension].second.lock() );
+}
 
 void
 KnobHelper::checkAnimationLevel(ViewSpec view,
                                 int dimension)
 {
     bool changed = false;
-    
-    for (int i = 0 ;i < _imp->dimension; ++i) {
-        
-        if (i == dimension || dimension == -1) {
+
+    for (int i = 0; i < _imp->dimension; ++i) {
+        if ( (i == dimension) || (dimension == -1) ) {
             AnimationLevelEnum level = eAnimationLevelNone;
-            
-            
-            if (canAnimate() &&
-                isAnimated(i, view) &&
-                getExpression(i).empty() &&
-                getHolder() && getHolder()->getApp() ) {
-                
+
+
+            if ( canAnimate() &&
+                 isAnimated(i, view) &&
+                 getExpression(i).empty() &&
+                 getHolder() && getHolder()->getApp() ) {
                 boost::shared_ptr<Curve> c = getCurve(view, i);
                 double time = getHolder()->getApp()->getTimeLine()->currentFrame();
                 if (c->getKeyFramesCount() > 0) {
                     KeyFrame kf;
-                    int nKeys = c->getNKeyFramesInRange(time, time +1);
+                    int nKeys = c->getNKeyFramesInRange(time, time + 1);
                     if (nKeys > 0) {
                         level = eAnimationLevelOnKeyframe;
                     } else {
@@ -3132,31 +3183,31 @@ KnobHelper::checkAnimationLevel(ViewSpec view,
             }
         }
     }
-    
+
     boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
     if ( changed && _signalSlotHandler && hasGui && !hasGui->isGuiFrozenForPlayback() ) {
         _signalSlotHandler->s_animationLevelChanged(view, dimension );
     }
 }
 
-
 AnimationLevelEnum
 KnobHelper::getAnimationLevel(int dimension) const
 {
     ///if the knob is slaved to another knob, returns the other knob value
-    std::pair<int,KnobPtr > master = getMaster(dimension);
-    
+    std::pair<int, KnobPtr > master = getMaster(dimension);
+
     if (master.second) {
         //Make sure it is refreshed
         master.second->checkAnimationLevel(ViewSpec(0), master.first);
+
         return master.second->getAnimationLevel(master.first);
     }
-    
+
     QMutexLocker l(&_imp->animationLevelMutex);
     if ( dimension > (int)_imp->animationLevel.size() ) {
         throw std::invalid_argument("Knob::getAnimationLevel(): Dimension out of range");
     }
-    
+
     return _imp->animationLevel[dimension];
 }
 
@@ -3171,41 +3222,39 @@ KnobHelper::deleteAnimationConditional(double time,
         return;
     }
     assert( 0 <= dimension && dimension < getDimension() );
-    
+
     boost::shared_ptr<Curve> curve;
     boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
     bool useGuiCurve = _imp->shouldUseGuiCurve();
-    
+
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
     } else {
         assert(hasGui);
         curve = hasGui->getCurve(view, dimension);
-        setGuiCurveHasChanged(view, dimension,true);
+        setGuiCurveHasChanged(view, dimension, true);
     }
-    
+
     std::list<int> keysRemoved;
     if (before) {
         curve->removeKeyFramesBeforeTime(time, &keysRemoved);
     } else {
         curve->removeKeyFramesAfterTime(time, &keysRemoved);
     }
-    
+
     if (!useGuiCurve) {
-        
         checkAnimationLevel(view, dimension);
-        guiCurveCloneInternalCurve(eCurveChangeReasonInternal,view, dimension, reason);
+        guiCurveCloneInternalCurve(eCurveChangeReasonInternal, view, dimension, reason);
         evaluateValueChange(dimension, time, view, reason);
     }
-    
+
     KnobHolder* holder = getHolder();
-    if (holder && holder->getApp()) {
+    if ( holder && holder->getApp() ) {
         holder->getApp()->removeMultipleKeyframeIndicator(keysRemoved, true);
     }
     if (_signalSlotHandler) {
         _signalSlotHandler->s_animationRemoved(view, dimension);
     }
-
 }
 
 void
@@ -3243,7 +3292,7 @@ KnobHelper::getKeyFrameTime(ViewSpec view,
     if (ret) {
         *time = kf.getTime();
     }
-    
+
     return ret;
 }
 
@@ -3256,11 +3305,11 @@ KnobHelper::getLastKeyFrameTime(ViewSpec view,
     if ( !canAnimate() || !isAnimated(dimension, view) ) {
         return false;
     }
-    
+
     boost::shared_ptr<Curve> curve = getCurve(view, dimension);  //< getCurve will return the master's curve if any
     assert(curve);
     *time = curve->getMaximumTimeCovered();
-    
+
     return true;
 }
 
@@ -3276,12 +3325,13 @@ int
 KnobHelper::getKeyFramesCount(ViewSpec view,
                               int dimension) const
 {
-    if (!canAnimate() || !isAnimated(dimension, view)) {
+    if ( !canAnimate() || !isAnimated(dimension, view) ) {
         return 0;
     }
 
     boost::shared_ptr<Curve> curve = getCurve(view, dimension);  //< getCurve will return the master's curve if any
     assert(curve);
+
     return curve->getKeyFramesCount();   //< getCurve will return the master's curve if any
 }
 
@@ -3295,7 +3345,7 @@ KnobHelper::getNearestKeyFrameTime(ViewSpec view,
     if ( !canAnimate() || !isAnimated(dimension, view) ) {
         return false;
     }
-    
+
     boost::shared_ptr<Curve> curve = getCurve(view, dimension);  //< getCurve will return the master's curve if any
     assert(curve);
     KeyFrame kf;
@@ -3303,7 +3353,7 @@ KnobHelper::getNearestKeyFrameTime(ViewSpec view,
     if (ret) {
         *nearestTime = kf.getTime();
     }
-    
+
     return ret;
 }
 
@@ -3316,13 +3366,12 @@ KnobHelper::getKeyFrameIndex(ViewSpec view,
     if ( !canAnimate() || !isAnimated(dimension, view) ) {
         return -1;
     }
-    
+
     boost::shared_ptr<Curve> curve = getCurve(view, dimension);  //< getCurve will return the master's curve if any
     assert(curve);
-    
+
     return curve->keyFrameIndex(time);
 }
-
 
 void
 KnobHelper::refreshListenersAfterValueChange(ViewSpec view,
@@ -3330,100 +3379,101 @@ KnobHelper::refreshListenersAfterValueChange(ViewSpec view,
                                              int dimension)
 {
     ListenerDimsMap listeners;
+
     getListeners(listeners);
-    
-    if (listeners.empty()) {
+
+    if ( listeners.empty() ) {
         return;
     }
 
     double time = getCurrentTime();
-    for (ListenerDimsMap::iterator it = listeners.begin(); it!=listeners.end(); ++it) {
-        
-        KnobHelper* slaveKnob = dynamic_cast<KnobHelper*>(it->first.lock().get());
+    for (ListenerDimsMap::iterator it = listeners.begin(); it != listeners.end(); ++it) {
+        KnobHelper* slaveKnob = dynamic_cast<KnobHelper*>( it->first.lock().get() );
         if (!slaveKnob) {
             continue;
         }
-        
-        
+
+
         std::set<int> dimensionsToEvaluate;
         bool mustClone = false;
         for (std::size_t i = 0; i < it->second.size(); ++i) {
-            if (it->second[i].isListening && (it->second[i].targetDim == dimension || it->second[i].targetDim == -1 || dimension == -1)) {
+            if ( it->second[i].isListening && ( (it->second[i].targetDim == dimension) || (it->second[i].targetDim == -1) || (dimension == -1) ) ) {
                 dimensionsToEvaluate.insert(i);
                 if (!it->second[i].isExpr) {
                     mustClone = true;
                 }
             }
         }
-        
-        if (dimensionsToEvaluate.empty()) {
+
+        if ( dimensionsToEvaluate.empty() ) {
             continue;
         }
-        
+
         int dimChanged;
         if (dimensionsToEvaluate.size() > 1) {
             dimChanged = -1;
         } else {
             dimChanged = *dimensionsToEvaluate.begin();
         }
-        
+
         if (mustClone) {
             ///We still want to clone the master's dimension because otherwise we couldn't edit the curve e.g in the curve editor
             ///For example we use it for roto knobs where selected beziers have their knobs slaved to the gui knobs
-            slaveKnob->clone(this,dimChanged);
+            slaveKnob->clone(this, dimChanged);
         }
-        
+
         slaveKnob->evaluateValueChangeInternal(dimChanged, time, view, eValueChangedReasonSlaveRefresh, reason);
-        
+
         //call recursively
         slaveKnob->refreshListenersAfterValueChange(view, reason, dimChanged);
-        
     } // for all listeners
-}
-
+} // KnobHelper::refreshListenersAfterValueChange
 
 void
-KnobHelper::cloneExpressions(KnobI* other,int dimension)
+KnobHelper::cloneExpressions(KnobI* other,
+                             int dimension)
 {
-    assert((int)_imp->expressions.size() == getDimension());
+    assert( (int)_imp->expressions.size() == getDimension() );
     try {
-        int dims = std::min(getDimension(),other->getDimension());
+        int dims = std::min( getDimension(), other->getDimension() );
         for (int i = 0; i < dims; ++i) {
-            if (i == dimension || dimension == -1) {
+            if ( (i == dimension) || (dimension == -1) ) {
                 std::string expr = other->getExpression(i);
                 bool hasRet = other->isExpressionUsingRetVariable(i);
-                if (!expr.empty()) {
-                    setExpression(i, expr,hasRet, false);
-                    cloneExpressionsResults(other,i);
+                if ( !expr.empty() ) {
+                    setExpression(i, expr, hasRet, false);
+                    cloneExpressionsResults(other, i);
                 }
             }
         }
-    } catch(...) {
+    } catch (...) {
         ///ignore errors
     }
 }
 
 bool
-KnobHelper::cloneExpressionsAndCheckIfChanged(KnobI* other,int dimension)
+KnobHelper::cloneExpressionsAndCheckIfChanged(KnobI* other,
+                                              int dimension)
 {
-    assert((int)_imp->expressions.size() == getDimension());
+    assert( (int)_imp->expressions.size() == getDimension() );
     bool ret = false;
     try {
-        int dims = std::min(getDimension(),other->getDimension());
+        int dims = std::min( getDimension(), other->getDimension() );
         for (int i = 0; i < dims; ++i) {
-            if (i == dimension || dimension == -1) {
+            if ( (i == dimension) || (dimension == -1) ) {
                 std::string expr = other->getExpression(i);
                 bool hasRet = other->isExpressionUsingRetVariable(i);
-                if (!expr.empty() && (expr != _imp->expressions[i].originalExpression || hasRet != _imp->expressions[i].hasRet)) {
-                    setExpression(i, expr,hasRet, false);
-                    cloneExpressionsResults(other,i);
+                if ( !expr.empty() && ( (expr != _imp->expressions[i].originalExpression) || (hasRet != _imp->expressions[i].hasRet) ) ) {
+                    setExpression(i, expr, hasRet, false);
+                    cloneExpressionsResults(other, i);
                     ret = true;
                 }
             }
         }
-    } catch(...) {
+    } catch (...) {
         ///ignore errors
     }
+
     return ret;
 }
 
@@ -3434,61 +3484,58 @@ KnobHelper::addListener(const bool isExpression,
                         const int listenedToDimension,
                         const KnobPtr& listener)
 {
-    assert(listenedToDimension == -1 || (listenedToDimension >= 0 && listenedToDimension < _imp->dimension));
-    KnobHelper* listenerIsHelper = dynamic_cast<KnobHelper*>(listener.get());
+    assert( listenedToDimension == -1 || (listenedToDimension >= 0 && listenedToDimension < _imp->dimension) );
+    KnobHelper* listenerIsHelper = dynamic_cast<KnobHelper*>( listener.get() );
     assert(listenerIsHelper);
     if (!listenerIsHelper) {
         return;
     }
     KnobPtr thisShared = shared_from_this();
     if (listenerIsHelper->_signalSlotHandler && _signalSlotHandler) {
-        
-        
         //Notify the holder one of its knob is now slaved
-        if (listenerIsHelper->getHolder()) {
-            listenerIsHelper->getHolder()->onKnobSlaved(listener, thisShared,listenerDimension,true );
+        if ( listenerIsHelper->getHolder() ) {
+            listenerIsHelper->getHolder()->onKnobSlaved(listener, thisShared, listenerDimension, true );
         }
-        
     }
-    
+
     // If this knob is already a dependency of the knob, add it to its dimension vector
     {
         QWriteLocker l(&_imp->mastersMutex);
         ListenerDimsMap::iterator foundListening = _imp->listeners.find(listener);
-        if (foundListening != _imp->listeners.end()) {
+        if ( foundListening != _imp->listeners.end() ) {
             foundListening->second[listenerDimension].isListening = true;
             foundListening->second[listenerDimension].isExpr = isExpression;
             foundListening->second[listenerDimension].targetDim = listenedToDimension;
         } else {
             std::vector<ListenerDim>& dims = _imp->listeners[listener];
-            dims.resize(listener->getDimension());
+            dims.resize( listener->getDimension() );
             dims[listenerDimension].isListening = true;
             dims[listenerDimension].isExpr = isExpression;
             dims[listenerDimension].targetDim = listenedToDimension;
         }
     }
-    
+
     if (isExpression) {
         QMutexLocker k(&listenerIsHelper->_imp->expressionMutex);
         assert(listenerDimension >= 0 && listenerDimension < listenerIsHelper->_imp->dimension);
-        listenerIsHelper->_imp->expressions[listenerDimension].dependencies.push_back(std::make_pair(thisShared,listenedToDimension));
+        listenerIsHelper->_imp->expressions[listenerDimension].dependencies.push_back( std::make_pair(thisShared, listenedToDimension) );
     }
-    
-    
 }
 
 void
-KnobHelper::removeListener(KnobI* listener, int listenerDimension)
+KnobHelper::removeListener(KnobI* listener,
+                           int listenerDimension)
 {
     KnobHelper* listenerHelper = dynamic_cast<KnobHelper*>(listener);
+
     assert(listenerHelper);
     Q_UNUSED(listenerHelper);
-    
+
     QWriteLocker l(&_imp->mastersMutex);
     for (ListenerDimsMap::iterator it = _imp->listeners.begin(); it != _imp->listeners.end(); ++it) {
         if (it->first.lock().get() == listener) {
             it->second[listenerDimension].isListening = false;
-            
+
             bool hasDimensionListening = false;
             for (std::size_t i = 0; i < it->second.size(); ++i) {
                 if (it->second[listenerDimension].isListening) {
@@ -3504,11 +3551,11 @@ KnobHelper::removeListener(KnobI* listener, int listenerDimension)
     }
 }
 
-
 void
 KnobHelper::getListeners(KnobI::ListenerDimsMap & listeners) const
 {
     QReadLocker l(&_imp->mastersMutex);
+
     listeners = _imp->listeners;
 }
 
@@ -3516,6 +3563,7 @@ double
 KnobHelper::getCurrentTime() const
 {
     KnobHolder* holder = getHolder();
+
     return holder && holder->getApp() ? holder->getCurrentTime() : 0;
 }
 
@@ -3523,46 +3571,53 @@ ViewIdx
 KnobHelper::getCurrentView() const
 {
     KnobHolder* holder = getHolder();
-    return (holder && holder->getApp()) ? holder->getCurrentView() : ViewIdx(0);
+
+    return ( holder && holder->getApp() ) ? holder->getCurrentView() : ViewIdx(0);
 }
 
-
-
 double
-KnobHelper::random(double time, unsigned int seed) const
+KnobHelper::random(double time,
+                   unsigned int seed) const
 {
     randomSeed(time, seed);
+
     return random();
 }
 
 double
-KnobHelper::random(double min,double max) const
+KnobHelper::random(double min,
+                   double max) const
 {
     QMutexLocker k(&_imp->lastRandomHashMutex);
+
     _imp->lastRandomHash = hashFunction(_imp->lastRandomHash);
-    return ((double)_imp->lastRandomHash / (double)0x100000000LL) * (max - min)  + min;
+
+    return ( (double)_imp->lastRandomHash / (double)0x100000000LL ) * (max - min)  + min;
 }
 
 int
-KnobHelper::randomInt(double time,unsigned int seed) const
+KnobHelper::randomInt(double time,
+                      unsigned int seed) const
 {
     randomSeed(time, seed);
+
     return randomInt();
 }
 
 int
-KnobHelper::randomInt(int min,int max) const
+KnobHelper::randomInt(int min,
+                      int max) const
 {
-    return (int)random((double)min,(double)max);
+    return (int)random( (double)min, (double)max );
 }
 
 struct alias_cast_float
 {
     alias_cast_float()
-    : raw(0)
+        : raw(0)
     {
     };                          // initialize to 0 in case sizeof(T) < 8
-    
+
     union
     {
         U32 raw;
@@ -3571,11 +3626,12 @@ struct alias_cast_float
 };
 
 void
-KnobHelper::randomSeed(double time, unsigned int seed) const
+KnobHelper::randomSeed(double time,
+                       unsigned int seed) const
 {
-    
     U64 hash = 0;
     KnobHolder* holder = getHolder();
+
     if (holder) {
         EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
         if (effect) {
@@ -3584,11 +3640,11 @@ KnobHelper::randomSeed(double time, unsigned int seed) const
     }
     U32 hash32 = (U32)hash;
     hash32 += seed;
-    
+
     alias_cast_float ac;
     ac.data = (float)time;
     hash32 += ac.raw;
-    
+
     QMutexLocker k(&_imp->lastRandomHashMutex);
     _imp->lastRandomHash = hash32;
 }
@@ -3597,11 +3653,13 @@ bool
 KnobHelper::hasModifications() const
 {
     QMutexLocker k(&_imp->hasModificationsMutex);
+
     for (int i = 0; i < _imp->dimension; ++i) {
         if (_imp->hasModifications[i]) {
             return true;
         }
     }
+
     return false;
 }
 
@@ -3609,27 +3667,32 @@ bool
 KnobHelper::hasModificationsForSerialization() const
 {
     bool enabledChanged = false;
+
     for (int i = 0; i < getDimension(); ++i) {
-        if (isEnabled(i) != isDefaultEnabled(i)) {
+        if ( isEnabled(i) != isDefaultEnabled(i) ) {
             enabledChanged = true;
         }
     }
+
     return hasModifications() ||
-    getIsSecret() != getDefaultIsSecret() || enabledChanged;
+           getIsSecret() != getDefaultIsSecret() || enabledChanged;
 }
 
 bool
 KnobHelper::hasModifications(int dimension) const
 {
-    if (dimension < 0 || dimension >= _imp->dimension) {
+    if ( (dimension < 0) || (dimension >= _imp->dimension) ) {
         throw std::invalid_argument("KnobHelper::hasModifications: Dimension out of range");
     }
     QMutexLocker k(&_imp->hasModificationsMutex);
+
     return _imp->hasModifications[dimension];
 }
 
 bool
-KnobHelper::setHasModifications(int dimension,bool value,bool lock)
+KnobHelper::setHasModifications(int dimension,
+                                bool value,
+                                bool lock)
 {
     assert(dimension >= 0 && dimension < _imp->dimension);
     bool ret;
@@ -3638,10 +3701,11 @@ KnobHelper::setHasModifications(int dimension,bool value,bool lock)
         ret = _imp->hasModifications[dimension] != value;
         _imp->hasModifications[dimension] = value;
     } else {
-        assert(!_imp->hasModificationsMutex.tryLock());
+        assert( !_imp->hasModificationsMutex.tryLock() );
         ret = _imp->hasModifications[dimension] != value;
         _imp->hasModifications[dimension] = value;
     }
+
     return ret;
 }
 
@@ -3657,17 +3721,17 @@ KnobHelper::createDuplicateOnNode(EffectInstance* effect,
                                   bool refreshParams)
 {
     ///find-out to which node that master knob belongs to
-    if (!getHolder()->getApp()) {
+    if ( !getHolder()->getApp() ) {
         return KnobPtr();
     }
-    
+
     KnobHolder* holder = getHolder();
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
     assert(isEffect);
     if (!isEffect) {
         return KnobPtr();
     }
-    
+
     KnobBool* isBool = dynamic_cast<KnobBool*>(this);
     KnobInt* isInt = dynamic_cast<KnobInt*>(this);
     KnobDouble* isDbl = dynamic_cast<KnobDouble*>(this);
@@ -3682,108 +3746,103 @@ KnobHelper::createDuplicateOnNode(EffectInstance* effect,
     KnobButton* isBtn = dynamic_cast<KnobButton*>(this);
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>(this);
 
-    
-    //Ensure the group user page is created
 
+    //Ensure the group user page is created
     boost::shared_ptr<KnobPage> destPage;
     if (page) {
         destPage = page;
     } else {
         destPage = effect->getOrCreateUserPageKnob();
     }
-    
+
     KnobPtr output;
     if (isBool) {
         boost::shared_ptr<KnobBool> newKnob = effect->createBoolKnob(newScriptName, newLabel);
         output = newKnob;
     } else if (isInt) {
-        boost::shared_ptr<KnobInt> newKnob = effect->createIntKnob(newScriptName, newLabel,getDimension());
-        newKnob->setMinimumsAndMaximums(isInt->getMinimums(), isInt->getMaximums());
-        newKnob->setDisplayMinimumsAndMaximums(isInt->getDisplayMinimums(),isInt->getDisplayMaximums());
+        boost::shared_ptr<KnobInt> newKnob = effect->createIntKnob( newScriptName, newLabel, getDimension() );
+        newKnob->setMinimumsAndMaximums( isInt->getMinimums(), isInt->getMaximums() );
+        newKnob->setDisplayMinimumsAndMaximums( isInt->getDisplayMinimums(), isInt->getDisplayMaximums() );
         output = newKnob;
     } else if (isDbl) {
-        boost::shared_ptr<KnobDouble> newKnob = effect->createDoubleKnob(newScriptName, newLabel,getDimension());
-        newKnob->setMinimumsAndMaximums(isDbl->getMinimums(), isDbl->getMaximums());
-        newKnob->setDisplayMinimumsAndMaximums(isDbl->getDisplayMinimums(),isDbl->getDisplayMaximums());
+        boost::shared_ptr<KnobDouble> newKnob = effect->createDoubleKnob( newScriptName, newLabel, getDimension() );
+        newKnob->setMinimumsAndMaximums( isDbl->getMinimums(), isDbl->getMaximums() );
+        newKnob->setDisplayMinimumsAndMaximums( isDbl->getDisplayMinimums(), isDbl->getDisplayMaximums() );
         output = newKnob;
     } else if (isChoice) {
         boost::shared_ptr<KnobChoice> newKnob = effect->createChoiceKnob(newScriptName, newLabel);
         if (!makeAlias) {
-            newKnob->populateChoices(isChoice->getEntries_mt_safe(),isChoice->getEntriesHelp_mt_safe());
+            newKnob->populateChoices( isChoice->getEntries_mt_safe(), isChoice->getEntriesHelp_mt_safe() );
         }
         output = newKnob;
     } else if (isColor) {
-        boost::shared_ptr<KnobColor> newKnob = effect->createColorKnob(newScriptName, newLabel,getDimension());
-        newKnob->setMinimumsAndMaximums(isColor->getMinimums(), isColor->getMaximums());
-        newKnob->setDisplayMinimumsAndMaximums(isColor->getDisplayMinimums(),isColor->getDisplayMaximums());
+        boost::shared_ptr<KnobColor> newKnob = effect->createColorKnob( newScriptName, newLabel, getDimension() );
+        newKnob->setMinimumsAndMaximums( isColor->getMinimums(), isColor->getMaximums() );
+        newKnob->setDisplayMinimumsAndMaximums( isColor->getDisplayMinimums(), isColor->getDisplayMaximums() );
         output = newKnob;
     } else if (isString) {
         boost::shared_ptr<KnobString> newKnob = effect->createStringKnob(newScriptName, newLabel);
-        if (isString->isLabel()) {
+        if ( isString->isLabel() ) {
             newKnob->setAsLabel();
         }
-        if (isString->isCustomKnob()) {
+        if ( isString->isCustomKnob() ) {
             newKnob->setAsCustom();
         }
-        if (isString->isMultiLine()) {
+        if ( isString->isMultiLine() ) {
             newKnob->setAsMultiLine();
         }
-        if (isString->usesRichText()) {
+        if ( isString->usesRichText() ) {
             newKnob->setUsesRichText(true);
         }
         output = newKnob;
     } else if (isFile) {
         boost::shared_ptr<KnobFile> newKnob = effect->createFileKnob(newScriptName, newLabel);
-        if (isFile->isInputImageFile()) {
+        if ( isFile->isInputImageFile() ) {
             newKnob->setAsInputImage();
         }
         output = newKnob;
     } else if (isOutputFile) {
         boost::shared_ptr<KnobOutputFile> newKnob = effect->createOuptutFileKnob(newScriptName, newLabel);
-        if (isOutputFile->isOutputImageFile()) {
+        if ( isOutputFile->isOutputImageFile() ) {
             newKnob->setAsOutputImageFile();
         }
         output = newKnob;
     } else if (isPath) {
         boost::shared_ptr<KnobPath> newKnob = effect->createPathKnob(newScriptName, newLabel);
-        if (isPath->isMultiPath()) {
+        if ( isPath->isMultiPath() ) {
             newKnob->setMultiPath(true);
         }
         output = newKnob;
-        
     } else if (isGrp) {
         boost::shared_ptr<KnobGroup> newKnob = effect->createGroupKnob(newScriptName, newLabel);
-        if (isGrp->isTab()) {
+        if ( isGrp->isTab() ) {
             newKnob->setAsTab();
         }
         output = newKnob;
-        
     } else if (isPage) {
         boost::shared_ptr<KnobPage> newKnob = effect->createPageKnob(newScriptName, newLabel);
         output = newKnob;
-        
     } else if (isBtn) {
         boost::shared_ptr<KnobButton> newKnob = effect->createButtonKnob(newScriptName, newLabel);
         output = newKnob;
-        
     } else if (isParametric) {
-        boost::shared_ptr<KnobParametric> newKnob = effect->createParametricKnob(newScriptName, newLabel, isParametric->getDimension());
+        boost::shared_ptr<KnobParametric> newKnob = effect->createParametricKnob( newScriptName, newLabel, isParametric->getDimension() );
         output = newKnob;
     }
     if (!output) {
         return KnobPtr();
     }
     for (int i = 0; i < getDimension(); ++i) {
-        output->setDimensionName(i, getDimensionName(i));
+        output->setDimensionName( i, getDimensionName(i) );
     }
     output->setName(newScriptName, true);
     output->setAsUserKnob();
     output->cloneDefaultValues(this);
     output->clone(this);
-    if (canAnimate()) {
-        output->setAnimationEnabled(isAnimationEnabled());
+    if ( canAnimate() ) {
+        output->setAnimationEnabled( isAnimationEnabled() );
     }
-    output->setEvaluateOnChange(getEvaluateOnChange());
+    output->setEvaluateOnChange( getEvaluateOnChange() );
     output->setHintToolTip(newToolTip);
     output->setAddNewLine(true);
     if (group) {
@@ -3802,12 +3861,10 @@ KnobHelper::createDuplicateOnNode(EffectInstance* effect,
     }
     effect->getNode()->declarePythonFields();
     if (!makeAlias) {
-        
         boost::shared_ptr<NodeCollection> collec;
         collec = isEffect->getNode()->getGroup();
-        
-        NodeGroup* isCollecGroup = dynamic_cast<NodeGroup*>(collec.get());
-        
+
+        NodeGroup* isCollecGroup = dynamic_cast<NodeGroup*>( collec.get() );
         std::stringstream ss;
         if (isCollecGroup) {
             ss << "thisGroup." << newScriptName;
@@ -3819,7 +3876,7 @@ KnobHelper::createDuplicateOnNode(EffectInstance* effect,
         } else {
             ss << ".get()";
         }
-        
+
         try {
             std::string script = ss.str();
             for (int i = 0; i < getDimension(); ++i) {
@@ -3827,7 +3884,6 @@ KnobHelper::createDuplicateOnNode(EffectInstance* effect,
                 setExpression(i, script, false, false);
             }
         } catch (...) {
-            
         }
     } else {
         setKnobAsAliasOfThis(output, true);
@@ -3835,16 +3891,18 @@ KnobHelper::createDuplicateOnNode(EffectInstance* effect,
     if (refreshParams) {
         effect->recreateUserKnobs(true);
     }
+
     return output;
-}
+} // KnobHelper::createDuplicateOnNode
 
 bool
-KnobI::areTypesCompatibleForSlave(KnobI* lhs, KnobI* rhs)
+KnobI::areTypesCompatibleForSlave(KnobI* lhs,
+                                  KnobI* rhs)
 {
-    if (lhs->typeName() == rhs->typeName()) {
+    if ( lhs->typeName() == rhs->typeName() ) {
         return true;
     }
-    
+
     //These are compatible types
     KnobInt* lhsIsInt = dynamic_cast<KnobInt*>(lhs);
     KnobInt* rhsIsInt = dynamic_cast<KnobInt*>(rhs);
@@ -3852,40 +3910,40 @@ KnobI::areTypesCompatibleForSlave(KnobI* lhs, KnobI* rhs)
     KnobColor* lhsIsColor = dynamic_cast<KnobColor*>(lhs);
     KnobDouble* rhsIsDouble = dynamic_cast<KnobDouble*>(rhs);
     KnobColor* rhsIsColor = dynamic_cast<KnobColor*>(rhs);
-    if ((lhsIsDouble || lhsIsColor || lhsIsInt) && (rhsIsColor || rhsIsDouble || rhsIsInt)) {
+    if ( (lhsIsDouble || lhsIsColor || lhsIsInt) && (rhsIsColor || rhsIsDouble || rhsIsInt) ) {
         return true;
     }
-    
-  /*  KnobChoice* lhsIsChoice = dynamic_cast<KnobChoice*>(lhs);
-    KnobChoice* rhsIsChoice = dynamic_cast<KnobChoice*>(rhs);
-    if (lhsIsChoice || rhsIsChoice) {
-        return false;
-    }
-    */
 
-    
+    /*  KnobChoice* lhsIsChoice = dynamic_cast<KnobChoice*>(lhs);
+       KnobChoice* rhsIsChoice = dynamic_cast<KnobChoice*>(rhs);
+       if (lhsIsChoice || rhsIsChoice) {
+          return false;
+       }
+     */
+
+
     return false;
 }
 
 bool
-KnobHelper::setKnobAsAliasOfThis(const KnobPtr& master, bool doAlias)
+KnobHelper::setKnobAsAliasOfThis(const KnobPtr& master,
+                                 bool doAlias)
 {
     //Sanity check
-    if (!master || master->getDimension() != getDimension() ||
-        master->typeName() != typeName()) {
+    if ( !master || ( master->getDimension() != getDimension() ) ||
+         ( master->typeName() != typeName() ) ) {
         return false;
     }
-    
+
     /*
-     For choices, copy exactly the menu entries because they have to be the same
+       For choices, copy exactly the menu entries because they have to be the same
      */
     if (doAlias) {
-        master->onKnobAboutToAlias(shared_from_this());
+        master->onKnobAboutToAlias( shared_from_this() );
     }
     beginChanges();
     for (int i = 0; i < getDimension(); ++i) {
-        
-        if (isSlave(i)) {
+        if ( isSlave(i) ) {
             unSlave(i, false);
         }
         if (doAlias) {
@@ -3896,18 +3954,19 @@ KnobHelper::setKnobAsAliasOfThis(const KnobPtr& master, bool doAlias)
         }
     }
     for (int i = 0; i < getDimension(); ++i) {
-        master->setDimensionName(i, getDimensionName(i));
+        master->setDimensionName( i, getDimensionName(i) );
     }
-    handleSignalSlotsForAliasLink(master,doAlias);
+    handleSignalSlotsForAliasLink(master, doAlias);
 
     endChanges();
-        
+
     QWriteLocker k(&_imp->mastersMutex);
     if (doAlias) {
         _imp->slaveForAlias = master;
     } else {
         _imp->slaveForAlias.reset();
     }
+
     return true;
 }
 
@@ -3915,6 +3974,7 @@ KnobPtr
 KnobHelper::getAliasMaster()  const
 {
     QReadLocker k(&_imp->mastersMutex);
+
     return _imp->slaveForAlias;
 }
 
@@ -3925,14 +3985,12 @@ KnobHelper::getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) con
     {
         QMutexLocker k(&_imp->expressionMutex);
         for (int i = 0; i < _imp->dimension; ++i) {
-            for (std::list< std::pair<KnobWPtr,int> >::const_iterator it = _imp->expressions[i].dependencies.begin();
+            for (std::list< std::pair<KnobWPtr, int> >::const_iterator it = _imp->expressions[i].dependencies.begin();
                  it != _imp->expressions[i].dependencies.end(); ++it) {
                 KnobPtr knob = it->first.lock();
                 if (knob) {
                     deps.insert(knob);
                 }
-                
-               
             }
         }
     }
@@ -3941,27 +3999,26 @@ KnobHelper::getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) con
         for (int i = 0; i < _imp->dimension; ++i) {
             KnobPtr master = _imp->masters[i].second.lock();
             if (master) {
-                if (std::find(deps.begin(), deps.end(), master) == deps.end()) {
+                if ( std::find(deps.begin(), deps.end(), master) == deps.end() ) {
                     deps.insert(master);
                 }
             }
         }
     }
-    
     std::list<KnobPtr> knobsToInspectRecursive;
-    for (std::set<KnobPtr>::iterator it = deps.begin(); it!=deps.end(); ++it) {
-        EffectInstance* effect  = dynamic_cast<EffectInstance*>((*it)->getHolder());
+
+    for (std::set<KnobPtr>::iterator it = deps.begin(); it != deps.end(); ++it) {
+        EffectInstance* effect  = dynamic_cast<EffectInstance*>( (*it)->getHolder() );
         if (effect) {
             NodePtr node = effect->getNode();
 
             nodes.insert(node);
             knobsToInspectRecursive.push_back(*it);
-
         }
     }
-    
-    
-    for (std::list<KnobPtr>::iterator it = knobsToInspectRecursive.begin(); it!=knobsToInspectRecursive.end(); ++it) {
+
+
+    for (std::list<KnobPtr>::iterator it = knobsToInspectRecursive.begin(); it != knobsToInspectRecursive.end(); ++it) {
         (*it)->getAllExpressionDependenciesRecursive(nodes);
     }
 }
@@ -3971,81 +4028,74 @@ KnobHelper::getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) con
 struct KnobHolder::KnobHolderPrivate
 {
     AppInstance* app;
-    
     QMutex knobsMutex;
     std::vector< KnobPtr > knobs;
     bool knobsInitialized;
     bool isInitializingKnobs;
     bool isSlave;
-    
+
 
     ///Count how many times an overlay needs to be redrawn for the instanceChanged/penMotion/penDown etc... actions
     ///to just redraw it once when the recursion level is back to 0
     QMutex overlayRedrawStackMutex;
     int overlayRedrawStack;
     bool isDequeingValuesSet;
-
     mutable QMutex paramsEditLevelMutex;
     KnobHolder::MultipleParamsEditEnum paramsEditLevel;
     int paramsEditRecursionLevel;
-    
     mutable QMutex evaluationBlockedMutex;
     int evaluationBlocked;
-    
+
     //Set in the begin/endChanges block
     bool canCurrentlySetValue;
     KnobChanges knobChanged;
     int nbSignificantChangesDuringEvaluationBlock;
     int nbChangesDuringEvaluationBlock;
     int nbChangesRequiringMetadataRefresh;
-    
     QMutex knobsFrozenMutex;
     bool knobsFrozen;
-    
     mutable QMutex hasAnimationMutex;
     bool hasAnimation;
-    
     DockablePanelI* settingsPanel;
-    
+
     KnobHolderPrivate(AppInstance* appInstance_)
-    : app(appInstance_)
-    , knobsMutex()
-    , knobs()
-    , knobsInitialized(false)
-    , isInitializingKnobs(false)
-    , isSlave(false)
-    , overlayRedrawStackMutex()
-    , overlayRedrawStack(0)
-    , isDequeingValuesSet(false)
-    , paramsEditLevel(eMultipleParamsEditOff)
-    , paramsEditRecursionLevel(0)
-    , evaluationBlockedMutex(QMutex::Recursive)
-    , evaluationBlocked(0)
-    , canCurrentlySetValue(true)
-    , knobChanged()
-    , nbSignificantChangesDuringEvaluationBlock(0)
-    , nbChangesDuringEvaluationBlock(0)
-    , nbChangesRequiringMetadataRefresh(0)
-    , knobsFrozenMutex()
-    , knobsFrozen(false)
-    , hasAnimationMutex()
-    , hasAnimation(false)
-    , settingsPanel(0)
+        : app(appInstance_)
+        , knobsMutex()
+        , knobs()
+        , knobsInitialized(false)
+        , isInitializingKnobs(false)
+        , isSlave(false)
+        , overlayRedrawStackMutex()
+        , overlayRedrawStack(0)
+        , isDequeingValuesSet(false)
+        , paramsEditLevel(eMultipleParamsEditOff)
+        , paramsEditRecursionLevel(0)
+        , evaluationBlockedMutex(QMutex::Recursive)
+        , evaluationBlocked(0)
+        , canCurrentlySetValue(true)
+        , knobChanged()
+        , nbSignificantChangesDuringEvaluationBlock(0)
+        , nbChangesDuringEvaluationBlock(0)
+        , nbChangesRequiringMetadataRefresh(0)
+        , knobsFrozenMutex()
+        , knobsFrozen(false)
+        , hasAnimationMutex()
+        , hasAnimation(false)
+        , settingsPanel(0)
 
     {
-
     }
 };
 
 KnobHolder::KnobHolder(AppInstance* appInstance)
-: QObject()
-, _imp( new KnobHolderPrivate(appInstance) )
+    : QObject()
+    , _imp( new KnobHolderPrivate(appInstance) )
 {
-    QObject::connect(this, SIGNAL(doEndChangesOnMainThread()), this, SLOT(onDoEndChangesOnMainThreadTriggered()));
-    QObject::connect(this, SIGNAL(doEvaluateOnMainThread(bool,bool)), this,
-                     SLOT(onDoEvaluateOnMainThread(bool,bool)));
-    QObject::connect(this, SIGNAL(doValueChangeOnMainThread(KnobI*,int,double,ViewSpec,bool)), this,
-                     SLOT(onDoValueChangeOnMainThread(KnobI*,int,double,ViewSpec,bool)));
+    QObject::connect( this, SIGNAL(doEndChangesOnMainThread()), this, SLOT(onDoEndChangesOnMainThreadTriggered()) );
+    QObject::connect( this, SIGNAL(doEvaluateOnMainThread(bool,bool)), this,
+                      SLOT(onDoEvaluateOnMainThread(bool,bool)) );
+    QObject::connect( this, SIGNAL(doValueChangeOnMainThread(KnobI*,int,double,ViewSpec,bool)), this,
+                      SLOT(onDoValueChangeOnMainThread(KnobI*,int,double,ViewSpec,bool)) );
 }
 
 KnobHolder::~KnobHolder()
@@ -4053,7 +4103,7 @@ KnobHolder::~KnobHolder()
     for (U32 i = 0; i < _imp->knobs.size(); ++i) {
         KnobHelper* helper = dynamic_cast<KnobHelper*>( _imp->knobs[i].get() );
         assert(helper);
-        if (helper && helper->_imp->holder == this) {
+        if ( helper && (helper->_imp->holder == this) ) {
             helper->_imp->holder = 0;
         }
     }
@@ -4063,6 +4113,7 @@ void
 KnobHolder::setIsInitializingKnobs(bool b)
 {
     QMutexLocker k(&_imp->knobsMutex);
+
     _imp->isInitializingKnobs = b;
 }
 
@@ -4070,15 +4121,16 @@ bool
 KnobHolder::isInitializingKnobs() const
 {
     QMutexLocker k(&_imp->knobsMutex);
+
     return _imp->isInitializingKnobs;
 }
 
 void
 KnobHolder::addKnob(const KnobPtr& k)
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     QMutexLocker kk(&_imp->knobsMutex);
-    for (KnobsVec::iterator it = _imp->knobs.begin(); it!=_imp->knobs.end(); ++it) {
+    for (KnobsVec::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
         if (*it == k) {
             return;
         }
@@ -4087,18 +4139,19 @@ KnobHolder::addKnob(const KnobPtr& k)
 }
 
 void
-KnobHolder::insertKnob(int index, const KnobPtr& k)
+KnobHolder::insertKnob(int index,
+                       const KnobPtr& k)
 {
     if (index < 0) {
         return;
     }
     QMutexLocker kk(&_imp->knobsMutex);
-    for (KnobsVec::iterator it = _imp->knobs.begin(); it!=_imp->knobs.end(); ++it) {
+    for (KnobsVec::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
         if (*it == k) {
             return;
         }
     }
-    if (index >= (int)_imp->knobs.size()) {
+    if ( index >= (int)_imp->knobs.size() ) {
         _imp->knobs.push_back(k);
     } else {
         KnobsVec::iterator it = _imp->knobs.begin();
@@ -4112,9 +4165,10 @@ KnobHolder::removeKnobFromList(const KnobI* knob)
 {
     QMutexLocker kk(&_imp->knobsMutex);
 
-    for (KnobsVec::iterator it = _imp->knobs.begin(); it!=_imp->knobs.end(); ++it) {
+    for (KnobsVec::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
         if (it->get() == knob) {
             _imp->knobs.erase(it);
+
             return;
         }
     }
@@ -4123,21 +4177,21 @@ KnobHolder::removeKnobFromList(const KnobI* knob)
 void
 KnobHolder::setPanelPointer(DockablePanelI* gui)
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     _imp->settingsPanel = gui;
 }
 
 void
 KnobHolder::discardPanelPointer()
 {
-     assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     _imp->settingsPanel = 0;
 }
 
 void
 KnobHolder::recreateUserKnobs(bool keepCurPageIndex)
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     if (_imp->settingsPanel) {
         _imp->settingsPanel->recreateUserKnobs(keepCurPageIndex);
         EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
@@ -4150,7 +4204,7 @@ KnobHolder::recreateUserKnobs(bool keepCurPageIndex)
 void
 KnobHolder::recreateKnobs(bool keepCurPageIndex)
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     if (_imp->settingsPanel) {
         _imp->settingsPanel->refreshGuiForKnobsChanges(keepCurPageIndex);
         EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
@@ -4161,16 +4215,16 @@ KnobHolder::recreateKnobs(bool keepCurPageIndex)
 }
 
 void
-KnobHolder::deleteKnob(KnobI* knob, bool alsoDeleteGui)
+KnobHolder::deleteKnob(KnobI* knob,
+                       bool alsoDeleteGui)
 {
-    assert(QThread::currentThread() == qApp->thread());
-    
+    assert( QThread::currentThread() == qApp->thread() );
+
     KnobsVec knobs;
     {
         QMutexLocker k(&_imp->knobsMutex);
         knobs = _imp->knobs;
     }
-    
     KnobPtr sharedKnob;
     for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
         if (it->get() == knob) {
@@ -4179,7 +4233,7 @@ KnobHolder::deleteKnob(KnobI* knob, bool alsoDeleteGui)
             break;
         }
     }
-    
+
     {
         QMutexLocker k(&_imp->knobsMutex);
         for (KnobsVec::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
@@ -4189,24 +4243,22 @@ KnobHolder::deleteKnob(KnobI* knob, bool alsoDeleteGui)
             }
         }
     }
-    
+
     if (alsoDeleteGui && _imp->settingsPanel) {
         _imp->settingsPanel->deleteKnobGui(sharedKnob);
     }
-    
-    
 }
 
 bool
 KnobHolder::moveKnobOneStepUp(KnobI* knob)
 {
-    if (!knob->isUserKnob() && !dynamic_cast<KnobPage*>(knob)) {
+    if ( !knob->isUserKnob() && !dynamic_cast<KnobPage*>(knob) ) {
         return false;
     }
     KnobPtr parent = knob->getParentKnob();
-    KnobGroup* parentIsGrp = dynamic_cast<KnobGroup*>(parent.get());
-    KnobPage* parentIsPage = dynamic_cast<KnobPage*>(parent.get());
-    
+    KnobGroup* parentIsGrp = dynamic_cast<KnobGroup*>( parent.get() );
+    KnobPage* parentIsPage = dynamic_cast<KnobPage*>( parent.get() );
+
     //the knob belongs to a group/page , change its index within the group instead
     bool moveOk = false;
     if (!parent) {
@@ -4221,9 +4273,10 @@ KnobHolder::moveKnobOneStepUp(KnobI* knob)
     } catch (const std::exception& e) {
         qDebug() << e.what();
         assert(false);
+
         return false;
     }
-    
+
     if (moveOk) {
         QMutexLocker k(&_imp->knobsMutex);
         int prevInPage = -1;
@@ -4237,7 +4290,7 @@ KnobHolder::moveKnobOneStepUp(KnobI* knob)
                     }
                     break;
                 } else {
-                    if (_imp->knobs[i]->isUserKnob() && (_imp->knobs[i]->getParentKnob() == parent)) {
+                    if ( _imp->knobs[i]->isUserKnob() && (_imp->knobs[i]->getParentKnob() == parent) ) {
                         prevInPage = i;
                     }
                 }
@@ -4254,7 +4307,7 @@ KnobHolder::moveKnobOneStepUp(KnobI* knob)
                     }
                     break;
                 } else {
-                    if (!_imp->knobs[i]->getParentKnob()) {
+                    if ( !_imp->knobs[i]->getParentKnob() ) {
                         prevInPage = i;
                     }
                 }
@@ -4264,21 +4317,20 @@ KnobHolder::moveKnobOneStepUp(KnobI* knob)
             }
         }
     }
+
     return moveOk;
-}
-
-
+} // KnobHolder::moveKnobOneStepUp
 
 bool
 KnobHolder::moveKnobOneStepDown(KnobI* knob)
 {
-    if (!knob->isUserKnob() && !dynamic_cast<KnobPage*>(knob)) {
+    if ( !knob->isUserKnob() && !dynamic_cast<KnobPage*>(knob) ) {
         return false;
     }
     KnobPtr parent = knob->getParentKnob();
-    KnobGroup* parentIsGrp = dynamic_cast<KnobGroup*>(parent.get());
-    KnobPage* parentIsPage = dynamic_cast<KnobPage*>(parent.get());
-    
+    KnobGroup* parentIsGrp = dynamic_cast<KnobGroup*>( parent.get() );
+    KnobPage* parentIsPage = dynamic_cast<KnobPage*>( parent.get() );
+
     //the knob belongs to a group/page , change its index within the group instead
     bool moveOk = false;
     if (!parent) {
@@ -4293,12 +4345,12 @@ KnobHolder::moveKnobOneStepDown(KnobI* knob)
     } catch (const std::exception& e) {
         qDebug() << e.what();
         assert(false);
+
         return false;
     }
-    
-    
+
     QMutexLocker k(&_imp->knobsMutex);
-    int foundIndex = - 1;
+    int foundIndex = -1;
     for (U32 i = 0; i < _imp->knobs.size(); ++i) {
         if (_imp->knobs[i].get() == knob) {
             foundIndex = i;
@@ -4313,7 +4365,7 @@ KnobHolder::moveKnobOneStepDown(KnobI* knob)
         //The knob (or page) could be moved inside the group/page, just move it down
         if (parent) {
             for (int i = foundIndex + 1; i < (int)_imp->knobs.size(); ++i) {
-                if (_imp->knobs[i]->isUserKnob() && (_imp->knobs[i]->getParentKnob() == parent)) {
+                if ( _imp->knobs[i]->isUserKnob() && (_imp->knobs[i]->getParentKnob() == parent) ) {
                     KnobPtr tmp = _imp->knobs[foundIndex];
                     _imp->knobs[foundIndex] = _imp->knobs[i];
                     _imp->knobs[i] = tmp;
@@ -4323,7 +4375,7 @@ KnobHolder::moveKnobOneStepDown(KnobI* knob)
         } else {
             bool foundNextPage = false;
             for (int i = foundIndex + 1; i < (int)_imp->knobs.size(); ++i) {
-                if (!_imp->knobs[i]->getParentKnob()) {
+                if ( !_imp->knobs[i]->getParentKnob() ) {
                     KnobPtr tmp = _imp->knobs[foundIndex];
                     _imp->knobs[foundIndex] = _imp->knobs[i];
                     _imp->knobs[i] = tmp;
@@ -4331,14 +4383,15 @@ KnobHolder::moveKnobOneStepDown(KnobI* knob)
                     break;
                 }
             }
-            
+
             if (!foundNextPage) {
                 moveOk = false;
             }
         }
     }
+
     return moveOk;
-}
+} // KnobHolder::moveKnobOneStepDown
 
 boost::shared_ptr<KnobPage>
 KnobHolder::getUserPageKnob() const
@@ -4346,317 +4399,360 @@ KnobHolder::getUserPageKnob() const
     {
         QMutexLocker k(&_imp->knobsMutex);
         for (KnobsVec::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-            if ((*it)->getName() == NATRON_USER_MANAGED_KNOBS_PAGE) {
+            if ( (*it)->getName() == NATRON_USER_MANAGED_KNOBS_PAGE ) {
                 return boost::dynamic_pointer_cast<KnobPage>(*it);
             }
         }
     }
+
     return boost::shared_ptr<KnobPage>();
 }
 
 boost::shared_ptr<KnobPage>
-KnobHolder::getOrCreateUserPageKnob() 
+KnobHolder::getOrCreateUserPageKnob()
 {
-    
     boost::shared_ptr<KnobPage> ret = getUserPageKnob();
+
     if (ret) {
         return ret;
     }
-    ret = AppManager::createKnob<KnobPage>(this,NATRON_USER_MANAGED_KNOBS_PAGE_LABEL,1,false);
+    ret = AppManager::createKnob<KnobPage>(this, NATRON_USER_MANAGED_KNOBS_PAGE_LABEL, 1, false);
     ret->setAsUserKnob();
     ret->setName(NATRON_USER_MANAGED_KNOBS_PAGE);
-    
-    
+
+
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
     }
+
     return ret;
 }
 
 boost::shared_ptr<KnobInt>
-KnobHolder::createIntKnob(const std::string& name, const std::string& label,int dimension)
+KnobHolder::createIntKnob(const std::string& name,
+                          const std::string& label,
+                          int dimension)
 {
     KnobPtr existingKnob = getKnobByName(name);
+
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobInt>(existingKnob);
     }
-    boost::shared_ptr<KnobInt> ret = AppManager::createKnob<KnobInt>(this,label, dimension, false);
+    boost::shared_ptr<KnobInt> ret = AppManager::createKnob<KnobInt>(this, label, dimension, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
-    Q_UNUSED(pageknob);*/
+       Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
     }
+
     return ret;
 }
 
 boost::shared_ptr<KnobDouble>
-KnobHolder::createDoubleKnob(const std::string& name, const std::string& label,int dimension)
+KnobHolder::createDoubleKnob(const std::string& name,
+                             const std::string& label,
+                             int dimension)
 {
     KnobPtr existingKnob = getKnobByName(name);
+
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobDouble>(existingKnob);
     }
-    boost::shared_ptr<KnobDouble> ret = AppManager::createKnob<KnobDouble>(this,label, dimension, false);
+    boost::shared_ptr<KnobDouble> ret = AppManager::createKnob<KnobDouble>(this, label, dimension, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
-    Q_UNUSED(pageknob);*/
+       Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
     }
+
     return ret;
 }
 
 boost::shared_ptr<KnobColor>
-KnobHolder::createColorKnob(const std::string& name, const std::string& label,int dimension)
+KnobHolder::createColorKnob(const std::string& name,
+                            const std::string& label,
+                            int dimension)
 {
     KnobPtr existingKnob = getKnobByName(name);
+
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobColor>(existingKnob);
     }
-    boost::shared_ptr<KnobColor> ret = AppManager::createKnob<KnobColor>(this,label, dimension, false);
+    boost::shared_ptr<KnobColor> ret = AppManager::createKnob<KnobColor>(this, label, dimension, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
-    Q_UNUSED(pageknob);*/
+       Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
     }
+
     return ret;
 }
 
 boost::shared_ptr<KnobBool>
-KnobHolder::createBoolKnob(const std::string& name, const std::string& label)
+KnobHolder::createBoolKnob(const std::string& name,
+                           const std::string& label)
 {
     KnobPtr existingKnob = getKnobByName(name);
+
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobBool>(existingKnob);
     }
-    boost::shared_ptr<KnobBool> ret = AppManager::createKnob<KnobBool>(this,label, 1, false);
+    boost::shared_ptr<KnobBool> ret = AppManager::createKnob<KnobBool>(this, label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
-    Q_UNUSED(pageknob);*/
+       Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
     }
+
     return ret;
 }
 
 boost::shared_ptr<KnobChoice>
-KnobHolder::createChoiceKnob(const std::string& name, const std::string& label)
+KnobHolder::createChoiceKnob(const std::string& name,
+                             const std::string& label)
 {
     KnobPtr existingKnob = getKnobByName(name);
+
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobChoice>(existingKnob);
     }
-    boost::shared_ptr<KnobChoice> ret = AppManager::createKnob<KnobChoice>(this,label, 1, false);
+    boost::shared_ptr<KnobChoice> ret = AppManager::createKnob<KnobChoice>(this, label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
-    Q_UNUSED(pageknob);*/
+       Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
     }
+
     return ret;
 }
 
 boost::shared_ptr<KnobButton>
-KnobHolder::createButtonKnob(const std::string& name, const std::string& label)
+KnobHolder::createButtonKnob(const std::string& name,
+                             const std::string& label)
 {
     KnobPtr existingKnob = getKnobByName(name);
+
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobButton>(existingKnob);
     }
-    boost::shared_ptr<KnobButton> ret = AppManager::createKnob<KnobButton>(this,label, 1, false);
+    boost::shared_ptr<KnobButton> ret = AppManager::createKnob<KnobButton>(this, label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
-    Q_UNUSED(pageknob);*/
+       Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
     }
+
     return ret;
 }
 
 boost::shared_ptr<KnobSeparator>
-KnobHolder::createSeparatorKnob(const std::string& name, const std::string& label)
+KnobHolder::createSeparatorKnob(const std::string& name,
+                                const std::string& label)
 {
     KnobPtr existingKnob = getKnobByName(name);
+
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobSeparator>(existingKnob);
     }
-    boost::shared_ptr<KnobSeparator> ret = AppManager::createKnob<KnobSeparator>(this,label, 1, false);
+    boost::shared_ptr<KnobSeparator> ret = AppManager::createKnob<KnobSeparator>(this, label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
-     Q_UNUSED(pageknob);*/
+       Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
     }
-    return ret;
 
+    return ret;
 }
 
 //Type corresponds to the Type enum defined in StringParamBase in Parameter.h
 boost::shared_ptr<KnobString>
-KnobHolder::createStringKnob(const std::string& name, const std::string& label)
+KnobHolder::createStringKnob(const std::string& name,
+                             const std::string& label)
 {
     KnobPtr existingKnob = getKnobByName(name);
+
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobString>(existingKnob);
     }
-    boost::shared_ptr<KnobString> ret = AppManager::createKnob<KnobString>(this,label, 1, false);
+    boost::shared_ptr<KnobString> ret = AppManager::createKnob<KnobString>(this, label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
-    Q_UNUSED(pageknob);*/
+       Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
     }
-    return ret;
 
+    return ret;
 }
 
 boost::shared_ptr<KnobFile>
-KnobHolder::createFileKnob(const std::string& name, const std::string& label)
+KnobHolder::createFileKnob(const std::string& name,
+                           const std::string& label)
 {
     KnobPtr existingKnob = getKnobByName(name);
+
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobFile>(existingKnob);
     }
-    boost::shared_ptr<KnobFile> ret = AppManager::createKnob<KnobFile>(this,label, 1, false);
+    boost::shared_ptr<KnobFile> ret = AppManager::createKnob<KnobFile>(this, label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
-    Q_UNUSED(pageknob);*/
+       Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
     }
+
     return ret;
 }
 
 boost::shared_ptr<KnobOutputFile>
-KnobHolder::createOuptutFileKnob(const std::string& name, const std::string& label)
+KnobHolder::createOuptutFileKnob(const std::string& name,
+                                 const std::string& label)
 {
     KnobPtr existingKnob = getKnobByName(name);
+
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobOutputFile>(existingKnob);
     }
-    boost::shared_ptr<KnobOutputFile> ret = AppManager::createKnob<KnobOutputFile>(this,label, 1, false);
+    boost::shared_ptr<KnobOutputFile> ret = AppManager::createKnob<KnobOutputFile>(this, label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
-    Q_UNUSED(pageknob);*/
+       Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
     }
-    return ret;
 
+    return ret;
 }
 
 boost::shared_ptr<KnobPath>
-KnobHolder::createPathKnob(const std::string& name, const std::string& label)
+KnobHolder::createPathKnob(const std::string& name,
+                           const std::string& label)
 {
     KnobPtr existingKnob = getKnobByName(name);
+
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobPath>(existingKnob);
     }
-    boost::shared_ptr<KnobPath> ret = AppManager::createKnob<KnobPath>(this,label, 1, false);
+    boost::shared_ptr<KnobPath> ret = AppManager::createKnob<KnobPath>(this, label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
-    Q_UNUSED(pageknob);*/
+       Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
     }
-    return ret;
 
+    return ret;
 }
 
 boost::shared_ptr<KnobGroup>
-KnobHolder::createGroupKnob(const std::string& name, const std::string& label)
+KnobHolder::createGroupKnob(const std::string& name,
+                            const std::string& label)
 {
     KnobPtr existingKnob = getKnobByName(name);
+
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobGroup>(existingKnob);
     }
-    boost::shared_ptr<KnobGroup> ret = AppManager::createKnob<KnobGroup>(this,label, 1, false);
+    boost::shared_ptr<KnobGroup> ret = AppManager::createKnob<KnobGroup>(this, label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
-    Q_UNUSED(pageknob);*/
+       Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
     }
-    return ret;
 
+    return ret;
 }
 
 boost::shared_ptr<KnobPage>
-KnobHolder::createPageKnob(const std::string& name, const std::string& label)
+KnobHolder::createPageKnob(const std::string& name,
+                           const std::string& label)
 {
     KnobPtr existingKnob = getKnobByName(name);
+
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobPage>(existingKnob);
     }
-    boost::shared_ptr<KnobPage> ret = AppManager::createKnob<KnobPage>(this,label, 1, false);
+    boost::shared_ptr<KnobPage> ret = AppManager::createKnob<KnobPage>(this, label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
-    Q_UNUSED(pageknob);*/
+       Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
     }
-    return ret;
 
+    return ret;
 }
 
 boost::shared_ptr<KnobParametric>
-KnobHolder::createParametricKnob(const std::string& name, const std::string& label,int nbCurves)
+KnobHolder::createParametricKnob(const std::string& name,
+                                 const std::string& label,
+                                 int nbCurves)
 {
     KnobPtr existingKnob = getKnobByName(name);
+
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobParametric>(existingKnob);
     }
-    boost::shared_ptr<KnobParametric> ret = AppManager::createKnob<KnobParametric>(this,label, nbCurves, false);
+    boost::shared_ptr<KnobParametric> ret = AppManager::createKnob<KnobParametric>(this, label, nbCurves, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
-    Q_UNUSED(pageknob);*/
+       Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
     }
-    return ret;
 
+    return ret;
 }
 
 void
-KnobHolder::onDoEvaluateOnMainThread(bool significant,bool refreshMetadata)
+KnobHolder::onDoEvaluateOnMainThread(bool significant,
+                                     bool refreshMetadata)
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     evaluate(significant, refreshMetadata);
 }
 
 void
-KnobHolder::incrHashAndEvaluate(bool isSignificant, bool refreshMetadatas)
+KnobHolder::incrHashAndEvaluate(bool isSignificant,
+                                bool refreshMetadatas)
 {
     onSignificantEvaluateAboutToBeCalled(0);
     evaluate(isSignificant, refreshMetadatas);
@@ -4665,7 +4761,7 @@ KnobHolder::incrHashAndEvaluate(bool isSignificant, bool refreshMetadatas)
 void
 KnobHolder::onDoEndChangesOnMainThreadTriggered()
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     endChanges();
 }
 
@@ -4673,55 +4769,51 @@ void
 KnobHolder::endChanges(bool discardRendering)
 {
     bool isMT = QThread::currentThread() == qApp->thread();
-    if (!isMT && !canHandleEvaluateOnChangeInOtherThread()) {
+
+    if ( !isMT && !canHandleEvaluateOnChangeInOtherThread() ) {
         Q_EMIT doEndChangesOnMainThread();
+
         return;
     }
-    
+
     bool thisChangeSignificant = false;
     bool thisBracketHadChange = false;
     KnobChanges knobChanged;
     {
         QMutexLocker l(&_imp->evaluationBlockedMutex);
-        
+
         knobChanged = _imp->knobChanged;
-        for (KnobChanges::iterator it = knobChanged.begin(); it!=knobChanged.end(); ++it) {
-            if (it->knob->getEvaluateOnChange()) {
+        for (KnobChanges::iterator it = knobChanged.begin(); it != knobChanged.end(); ++it) {
+            if ( it->knob->getEvaluateOnChange() ) {
                 thisChangeSignificant = true;
             }
-            
-            if (!it->valueChangeBlocked && it->knob->getIsMetadataSlave()) {
+
+            if ( !it->valueChangeBlocked && it->knob->getIsMetadataSlave() ) {
                 ++_imp->nbChangesRequiringMetadataRefresh;
             }
-            
         }
         if (thisChangeSignificant) {
             ++_imp->nbSignificantChangesDuringEvaluationBlock;
         }
-        if (!knobChanged.empty()) {
+        if ( !knobChanged.empty() ) {
             ++_imp->nbChangesDuringEvaluationBlock;
             thisBracketHadChange = true;
         }
 
         _imp->knobChanged.clear();
-        
     }
-    
-    
-    
     KnobPtr firstKnobChanged;
     ValueChangedReasonEnum firstKnobReason = eValueChangedReasonNatronGuiEdited;
-    if (!knobChanged.empty()) {
+    if ( !knobChanged.empty() ) {
         firstKnobChanged = knobChanged.begin()->knob;
         firstKnobReason = knobChanged.begin()->reason;
     }
     bool isChangeDueToTimeChange = firstKnobReason == eValueChangedReasonTimeChanged;
-
     bool isLoadingProject = false;
-    if (getApp()) {
+    if ( getApp() ) {
         isLoadingProject = getApp()->getProject()->isLoadingProject();
     }
-    
+
 
     // If the node is currently modifying its input, do not ask for a render
     // because at then end of the inputChanged handler, it will ask for a refresh
@@ -4730,48 +4822,46 @@ KnobHolder::endChanges(bool discardRendering)
     bool duringInputChangeAction = false;
     if (isEffect) {
         NodePtr node = isEffect->getNode();
-        if (isMT && node->duringInputChangedAction()) {
+        if ( isMT && node->duringInputChangedAction() ) {
             duringInputChangeAction = true;
         }
     }
-    
-    
+
+
     // Increment hash only if significant
     if (thisChangeSignificant && thisBracketHadChange && !isLoadingProject && !duringInputChangeAction && !isChangeDueToTimeChange) {
-        onSignificantEvaluateAboutToBeCalled(firstKnobChanged.get());
+        onSignificantEvaluateAboutToBeCalled( firstKnobChanged.get() );
     }
-    
+
     bool guiFrozen = firstKnobChanged ? getApp() && firstKnobChanged->getKnobGuiPointer() && firstKnobChanged->getKnobGuiPointer()->isGuiFrozenForPlayback() : false;
-    
+
     // Call instanceChanged on each knob
-    for (KnobChanges::iterator it = knobChanged.begin(); it!=knobChanged.end(); ++it) {
+    for (KnobChanges::iterator it = knobChanged.begin(); it != knobChanged.end(); ++it) {
         if (it->knob && !it->valueChangeBlocked && !isLoadingProject) {
-            if (!it->originatedFromMainThread && !canHandleEvaluateOnChangeInOtherThread()) {
+            if ( !it->originatedFromMainThread && !canHandleEvaluateOnChangeInOtherThread() ) {
                 Q_EMIT doValueChangeOnMainThread(it->knob.get(), it->originalReason, it->time, it->view, it->originatedFromMainThread);
             } else {
                 onKnobValueChanged_public(it->knob.get(), it->originalReason, it->time, it->view, it->originatedFromMainThread);
             }
         }
-       
+
         it->knob->computeHasModifications();
-        
+
         int dimension = -1;
         if (it->dimensionChanged.size() == 1) {
             dimension = *it->dimensionChanged.begin();
         }
         if (!guiFrozen) {
-            
             boost::shared_ptr<KnobSignalSlotHandler> handler = it->knob->getSignalSlotHandler();
             if (handler) {
                 handler->s_valueChanged(it->view, dimension, it->reason);
             }
             it->knob->checkAnimationLevel(it->view, dimension);
-
         }
-        
+
         it->knob->refreshListenersAfterValueChange(it->view, it->originalReason, dimension);
     }
-    
+
     int evaluationBlocked;
     bool hasHadSignificantChange = false;
     bool hasHadAnyChange = false;
@@ -4797,19 +4887,17 @@ KnobHolder::endChanges(bool discardRendering)
             _imp->nbChangesDuringEvaluationBlock = 0;
             _imp->nbChangesRequiringMetadataRefresh = 0;
         }
-        
     }
-    
+
     // Call getClipPreferences & render
-    if (hasHadAnyChange && !discardRendering && !isLoadingProject && !duringInputChangeAction && !isChangeDueToTimeChange && evaluationBlocked == 0) {
+    if ( hasHadAnyChange && !discardRendering && !isLoadingProject && !duringInputChangeAction && !isChangeDueToTimeChange && (evaluationBlocked == 0) ) {
         if (!isMT) {
             Q_EMIT doEvaluateOnMainThread(hasHadSignificantChange, mustRefreshMetadatas);
         } else {
             evaluate(hasHadSignificantChange, mustRefreshMetadatas);
         }
     }
-   
-}
+} // KnobHolder::endChanges
 
 void
 KnobHolder::onDoValueChangeOnMainThread(KnobI* knob,
@@ -4818,7 +4906,7 @@ KnobHolder::onDoValueChangeOnMainThread(KnobI* knob,
                                         ViewSpec view,
                                         bool originatedFromMT)
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     onKnobValueChanged_public(knob, (ValueChangedReasonEnum)reason, time, view, originatedFromMT);
 }
 
@@ -4831,14 +4919,13 @@ KnobHolder::appendValueChange(const KnobPtr& knob,
                               ValueChangedReasonEnum originalReason,
                               ValueChangedReasonEnum reason)
 {
-    if (isInitializingKnobs()) {
+    if ( isInitializingKnobs() ) {
         return;
     }
     {
         QMutexLocker l(&_imp->evaluationBlockedMutex);
-
         KnobChange* foundChange = 0;
-        for (KnobChanges::iterator it = _imp->knobChanged.begin(); it!=_imp->knobChanged.end(); ++it) {
+        for (KnobChanges::iterator it = _imp->knobChanged.begin(); it != _imp->knobChanged.end(); ++it) {
             if (it->knob == knob) {
                 foundChange = &*it;
                 break;
@@ -4850,7 +4937,7 @@ KnobHolder::appendValueChange(const KnobPtr& knob,
             foundChange = &_imp->knobChanged.back();
         }
         assert(foundChange);
-        
+
         foundChange->reason = reason;
         foundChange->originalReason = originalReason;
         foundChange->originatedFromMainThread = QThread::currentThread() == qApp->thread();
@@ -4866,14 +4953,13 @@ KnobHolder::appendValueChange(const KnobPtr& knob,
         } else {
             foundChange->dimensionChanged.insert(dimension);
         }
-        
+
         //We do not call instanceChanged now since the hash did not change!
         //Make sure to call it after
-        
+
         /*if (reason == eValueChangedReasonTimeChanged) {
             return;
-        }*/
-
+           }*/
     }
 }
 
@@ -4885,6 +4971,7 @@ KnobHolder::beginChanges()
      */
     bool canSet = canSetValue();
     QMutexLocker l(&_imp->evaluationBlockedMutex);
+
     ++_imp->evaluationBlocked;
     if (_imp->evaluationBlocked == 1) {
         _imp->canCurrentlySetValue = canSet;
@@ -4896,7 +4983,7 @@ bool
 KnobHolder::isEvaluationBlocked() const
 {
     QMutexLocker l(&_imp->evaluationBlockedMutex);
-    
+
     return _imp->evaluationBlocked > 0;
 }
 
@@ -4909,15 +4996,16 @@ KnobHolder::isSetValueCurrentlyPossible() const
             return _imp->canCurrentlySetValue;
         }
     }
+
     return canSetValue();
 }
-
 
 void
 KnobHolder::getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) const
 {
     QMutexLocker k(&_imp->knobsMutex);
-    for (KnobsVec::const_iterator it = _imp->knobs.begin(); it!=_imp->knobs.end(); ++it) {
+
+    for (KnobsVec::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
         (*it)->getAllExpressionDependenciesRecursive(nodes);
     }
 }
@@ -4926,16 +5014,16 @@ KnobHolder::MultipleParamsEditEnum
 KnobHolder::getMultipleParamsEditLevel() const
 {
     QMutexLocker l(&_imp->paramsEditLevelMutex);
-    
+
     return _imp->paramsEditLevel;
 }
-
 
 void
 KnobHolder::setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level)
 {
     QMutexLocker l(&_imp->paramsEditLevelMutex);
-    if (appPTR->isBackground()) {
+
+    if ( appPTR->isBackground() ) {
         _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOff;
     } else {
         if (level == KnobHolder::eMultipleParamsEditOff) {
@@ -4946,7 +5034,6 @@ KnobHolder::setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level)
                 _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOff;
             }
             endChanges();
-            
         } else if (level == KnobHolder::eMultipleParamsEditOn) {
             _imp->paramsEditLevel = level;
         } else {
@@ -4977,11 +5064,12 @@ KnobHolder::initializeKnobsPublic()
 }
 
 void
-KnobHolder::refreshAfterTimeChange(bool isPlayback, double time)
+KnobHolder::refreshAfterTimeChange(bool isPlayback,
+                                   double time)
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     AppInstance* app = getApp();
-    if (!app || app->isGuiFrozen()) {
+    if ( !app || app->isGuiFrozen() ) {
         return;
     }
     for (std::size_t i = 0; i < _imp->knobs.size(); ++i) {
@@ -4993,20 +5081,20 @@ KnobHolder::refreshAfterTimeChange(bool isPlayback, double time)
 void
 KnobHolder::refreshAfterTimeChangeOnlyKnobsWithTimeEvaluation(double time)
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     for (std::size_t i = 0; i < _imp->knobs.size(); ++i) {
-        if (_imp->knobs[i]->evaluateValueChangeOnTimeChange()) {
+        if ( _imp->knobs[i]->evaluateValueChangeOnTimeChange() ) {
             _imp->knobs[i]->onTimeChanged(false, time);
         }
     }
-
 }
 
 void
-KnobHolder::refreshInstanceSpecificKnobsOnly(bool isPlayback, double time)
+KnobHolder::refreshInstanceSpecificKnobsOnly(bool isPlayback,
+                                             double time)
 {
-    assert(QThread::currentThread() == qApp->thread());
-    if (!getApp() || getApp()->isGuiFrozen()) {
+    assert( QThread::currentThread() == qApp->thread() );
+    if ( !getApp() || getApp()->isGuiFrozen() ) {
         return;
     }
     for (U32 i = 0; i < _imp->knobs.size(); ++i) {
@@ -5016,15 +5104,17 @@ KnobHolder::refreshInstanceSpecificKnobsOnly(bool isPlayback, double time)
     }
 }
 
-KnobPtr KnobHolder::getKnobByName(const std::string & name) const
+KnobPtr
+KnobHolder::getKnobByName(const std::string & name) const
 {
     QMutexLocker k(&_imp->knobsMutex);
+
     for (U32 i = 0; i < _imp->knobs.size(); ++i) {
         if (_imp->knobs[i]->getName() == name) {
             return _imp->knobs[i];
         }
     }
-    
+
     return KnobPtr();
 }
 
@@ -5034,6 +5124,7 @@ KnobHolder::getOtherKnobByName(const std::string & name,
                                const KnobI* caller) const
 {
     QMutexLocker k(&_imp->knobsMutex);
+
     for (U32 i = 0; i < _imp->knobs.size(); ++i) {
         if (_imp->knobs[i].get() == caller) {
             continue;
@@ -5042,16 +5133,15 @@ KnobHolder::getOtherKnobByName(const std::string & name,
             return _imp->knobs[i];
         }
     }
-    
+
     return KnobPtr();
- 
 }
 
 const std::vector< KnobPtr > &
 KnobHolder::getKnobs() const
 {
-    
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
+
     return _imp->knobs;
 }
 
@@ -5059,6 +5149,7 @@ std::vector< KnobPtr >
 KnobHolder::getKnobs_mt_safe() const
 {
     QMutexLocker k(&_imp->knobsMutex);
+
     return _imp->knobs;
 }
 
@@ -5066,23 +5157,22 @@ void
 KnobHolder::slaveAllKnobs(KnobHolder* other,
                           bool restore)
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     if (_imp->isSlave) {
         return;
     }
     ///Call it prior to slaveTo: it will set the master pointer as pointing to other
-    onAllKnobsSlaved(true,other);
+    onAllKnobsSlaved(true, other);
 
     ///When loading a project, we don't need to slave all knobs here because the serialization of each knob separatly
     ///will reslave it correctly if needed
     if (!restore) {
         beginChanges();
-        
+
         const KnobsVec & otherKnobs = other->getKnobs();
         const KnobsVec & thisKnobs = getKnobs();
         for (U32 i = 0; i < otherKnobs.size(); ++i) {
-            
-            if (otherKnobs[i]->isDeclaredByPlugin() || otherKnobs[i]->isUserKnob()) {
+            if ( otherKnobs[i]->isDeclaredByPlugin() || otherKnobs[i]->isUserKnob() ) {
                 KnobPtr foundKnob;
                 for (U32 j = 0; j < thisKnobs.size(); ++j) {
                     if ( thisKnobs[j]->getName() == otherKnobs[i]->getName() ) {
@@ -5123,13 +5213,13 @@ KnobHolder::unslaveAllKnobs()
         int dims = thisKnobs[i]->getDimension();
         for (int j = 0; j < dims; ++j) {
             if ( thisKnobs[i]->isSlave(j) ) {
-                thisKnobs[i]->unSlave(j,true);
+                thisKnobs[i]->unSlave(j, true);
             }
         }
     }
     endChanges();
     _imp->isSlave = false;
-    onAllKnobsSlaved(false,(KnobHolder*)NULL);
+    onAllKnobsSlaved(false, (KnobHolder*)NULL);
 }
 
 void
@@ -5137,7 +5227,7 @@ KnobHolder::beginKnobsValuesChanged_public(ValueChangedReasonEnum reason)
 {
     ///cannot run in another thread.
     assert( QThread::currentThread() == qApp->thread() );
-    
+
     RECURSIVE_ACTION();
     beginKnobsValuesChanged(reason);
 }
@@ -5147,7 +5237,7 @@ KnobHolder::endKnobsValuesChanged_public(ValueChangedReasonEnum reason)
 {
     ///cannot run in another thread.
     assert( QThread::currentThread() == qApp->thread() );
-    
+
     RECURSIVE_ACTION();
     endKnobsValuesChanged(reason);
 }
@@ -5168,17 +5258,15 @@ KnobHolder::onKnobValueChanged_public(KnobI* k,
     onKnobValueChanged(k, reason, time, view, originatedFromMainThread);
 }
 
-
 void
 KnobHolder::checkIfRenderNeeded()
 {
     ///cannot run in another thread.
     assert( QThread::currentThread() == qApp->thread() );
-    if ( (getRecursionLevel() == 0)) {
+    if ( (getRecursionLevel() == 0) ) {
         endChanges();
     }
 }
-
 
 void
 KnobHolder::incrementRedrawNeededCounter()
@@ -5196,18 +5284,18 @@ KnobHolder::checkIfOverlayRedrawNeeded()
         QMutexLocker k(&_imp->overlayRedrawStackMutex);
         bool ret = _imp->overlayRedrawStack > 0;
         _imp->overlayRedrawStack = 0;
+
         return ret;
     }
 }
 
-
 void
 KnobHolder::restoreDefaultValues()
 {
-    assert(QThread::currentThread() == qApp->thread());
-    
+    assert( QThread::currentThread() == qApp->thread() );
+
     aboutToRestoreDefaultValues();
-    
+
     beginChanges();
 
     for (U32 i = 0; i < _imp->knobs.size(); ++i) {
@@ -5215,7 +5303,7 @@ KnobHolder::restoreDefaultValues()
         KnobPage* isPage = dynamic_cast<KnobPage*>( _imp->knobs[i].get() );
         KnobGroup* isGroup = dynamic_cast<KnobGroup*>( _imp->knobs[i].get() );
         KnobSeparator* isSeparator = dynamic_cast<KnobSeparator*>( _imp->knobs[i].get() );
-        
+
         ///Don't restore buttons and the node label
         if ( !isBtn && !isPage && !isGroup && !isSeparator && (_imp->knobs[i]->getName() != kUserLabelKnobName) ) {
             for (int d = 0; d < _imp->knobs[i]->getDimension(); ++d) {
@@ -5236,8 +5324,8 @@ KnobHolder::setKnobsFrozen(bool frozen)
         }
         _imp->knobsFrozen = frozen;
     }
-    KnobsVec  knobs = getKnobs_mt_safe();
-    
+    KnobsVec knobs = getKnobs_mt_safe();
+
     for (U32 i = 0; i < knobs.size(); ++i) {
         knobs[i]->setIsFrozen(frozen);
     }
@@ -5247,6 +5335,7 @@ bool
 KnobHolder::areKnobsFrozen() const
 {
     QMutexLocker l(&_imp->knobsFrozenMutex);
+
     return _imp->knobsFrozen;
 }
 
@@ -5255,6 +5344,7 @@ KnobHolder::isDequeueingValuesSet() const
 {
     {
         QMutexLocker k(&_imp->overlayRedrawStackMutex);
+
         return _imp->isDequeingValuesSet;
     }
 }
@@ -5262,7 +5352,7 @@ KnobHolder::isDequeueingValuesSet() const
 bool
 KnobHolder::dequeueValuesSet()
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     beginChanges();
     {
         QMutexLocker k(&_imp->overlayRedrawStackMutex);
@@ -5277,6 +5367,7 @@ KnobHolder::dequeueValuesSet()
         _imp->isDequeingValuesSet = false;
     }
     endChanges();
+
     return ret;
 }
 
@@ -5297,8 +5388,9 @@ KnobHolder::getPageIndex(const KnobPage* page) const
 {
     QMutexLocker k(&_imp->knobsMutex);
     int pageIndex = 0;
+
     for (std::size_t i = 0; i < _imp->knobs.size(); ++i) {
-        KnobPage* ispage = dynamic_cast<KnobPage*>(_imp->knobs[i].get());
+        KnobPage* ispage = dynamic_cast<KnobPage*>( _imp->knobs[i].get() );
         if (ispage) {
             if (page == ispage) {
                 return pageIndex;
@@ -5307,6 +5399,7 @@ KnobHolder::getPageIndex(const KnobPage* page) const
             }
         }
     }
+
     return -1;
 }
 
@@ -5314,78 +5407,81 @@ bool
 KnobHolder::getHasAnimation() const
 {
     QMutexLocker k(&_imp->hasAnimationMutex);
+
     return _imp->hasAnimation;
 }
-
 
 void
 KnobHolder::setHasAnimation(bool hasAnimation)
 {
     QMutexLocker k(&_imp->hasAnimationMutex);
+
     _imp->hasAnimation = hasAnimation;
 }
-
 
 void
 KnobHolder::updateHasAnimation()
 {
-    
     bool hasAnimation = false;
     {
         QMutexLocker l(&_imp->knobsMutex);
-        
+
         for (KnobsVec::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-            if ((*it)->hasAnimation()) {
+            if ( (*it)->hasAnimation() ) {
                 hasAnimation = true;
                 break;
             }
         }
     }
     QMutexLocker k(&_imp->hasAnimationMutex);
+
     _imp->hasAnimation = hasAnimation;
 }
 
 /***************************STRING ANIMATION******************************************/
 void
-AnimatingKnobStringHelper::cloneExtraData(KnobI* other,int /*dimension*/ )
+AnimatingKnobStringHelper::cloneExtraData(KnobI* other,
+                                          int /*dimension*/ )
 {
     AnimatingKnobStringHelper* isAnimatedString = dynamic_cast<AnimatingKnobStringHelper*>(other);
-    
+
     if (isAnimatedString) {
         _animation->clone( isAnimatedString->getAnimation() );
     }
 }
 
 bool
-AnimatingKnobStringHelper::cloneExtraDataAndCheckIfChanged(KnobI* other,int /*dimension*/)
+AnimatingKnobStringHelper::cloneExtraDataAndCheckIfChanged(KnobI* other,
+                                                           int /*dimension*/)
 {
     AnimatingKnobStringHelper* isAnimatedString = dynamic_cast<AnimatingKnobStringHelper*>(other);
-    
+
     if (isAnimatedString) {
-       return  _animation->cloneAndCheckIfChanged( isAnimatedString->getAnimation() );
+        return _animation->cloneAndCheckIfChanged( isAnimatedString->getAnimation() );
     }
+
     return false;
 }
 
 void
 AnimatingKnobStringHelper::cloneExtraData(KnobI* other,
-                                           double offset,
-                                           const RangeD* range,
-                                           int /*dimension*/)
+                                          double offset,
+                                          const RangeD* range,
+                                          int /*dimension*/)
 {
     AnimatingKnobStringHelper* isAnimatedString = dynamic_cast<AnimatingKnobStringHelper*>(other);
-    
+
     if (isAnimatedString) {
         _animation->clone(isAnimatedString->getAnimation(), offset, range);
     }
 }
 
 AnimatingKnobStringHelper::AnimatingKnobStringHelper(KnobHolder* holder,
-                                                       const std::string &description,
-                                                       int dimension,
-                                                       bool declaredByPlugin)
-: Knob<std::string>(holder,description,dimension,declaredByPlugin)
-, _animation( new StringAnimationManager(this) )
+                                                     const std::string &description,
+                                                     int dimension,
+                                                     bool declaredByPlugin)
+    : Knob<std::string>(holder, description, dimension, declaredByPlugin)
+    , _animation( new StringAnimationManager(this) )
 {
 }
 
@@ -5408,7 +5504,7 @@ AnimatingKnobStringHelper::stringFromInterpolatedValue(double interpolated,
                                                        ViewSpec view,
                                                        std::string* returnValue) const
 {
-    assert(!view.isAll());
+    assert( !view.isAll() );
     Q_UNUSED(view);
     _animation->stringFromInterpolatedIndex(interpolated, returnValue);
 }
@@ -5429,43 +5525,44 @@ AnimatingKnobStringHelper::keyframeRemoved_virtual(int /*dimension*/,
 std::string
 AnimatingKnobStringHelper::getStringAtTime(double time,
                                            ViewSpec view,
-                                           int dimension) 
+                                           int dimension)
 {
     std::string ret;
-   // assert(!view.isAll());
-   // assert(!view.isCurrent()); // not yet implemented
+
+    // assert(!view.isAll());
+    // assert(!view.isCurrent()); // not yet implemented
     if ( _animation->hasCustomInterp() ) {
         bool succeeded = false;
         try {
             succeeded = _animation->customInterpolation(time, &ret);
         } catch (...) {
-            
         }
+
         if (!succeeded) {
             return getValue(dimension, view);
         } else {
             return ret;
         }
     }
-    
+
     return ret;
 }
 
 void
 AnimatingKnobStringHelper::setCustomInterpolation(customParamInterpolationV1Entry_t func,
-                                                   void* ofxParamHandle)
+                                                  void* ofxParamHandle)
 {
     _animation->setCustomInterpolation(func, ofxParamHandle);
 }
 
 void
-AnimatingKnobStringHelper::loadAnimation(const std::map<int,std::string> & keyframes)
+AnimatingKnobStringHelper::loadAnimation(const std::map<int, std::string> & keyframes)
 {
     _animation->load(keyframes);
 }
 
 void
-AnimatingKnobStringHelper::saveAnimation(std::map<int,std::string>* keyframes) const
+AnimatingKnobStringHelper::saveAnimation(std::map<int, std::string>* keyframes) const
 {
     _animation->save(keyframes);
 }

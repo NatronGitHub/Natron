@@ -36,60 +36,54 @@ struct PerInputData
     double pixelAspectRatio;
     ImageComponents components;
     ImageBitDepthEnum bitdepth;
-    
+
     PerInputData()
-    : pixelAspectRatio(1.)
-    , components()
-    , bitdepth(eImageBitDepthFloat)
+        : pixelAspectRatio(1.)
+        , components()
+        , bitdepth(eImageBitDepthFloat)
     {
-        
     }
 };
 
 struct NodeMetadataPrivate
 {
-    
-    
     //The premult in output of the node
     ImagePremultiplicationEnum outputPremult;
-    
+
     //The image fielding in output
     ImageFieldingOrderEnum outputFielding;
-    
+
     //The fps in output
     double frameRate;
-    
-    
     PerInputData outputData;
-    
+
     //For each input specific datas
     std::vector<PerInputData> inputsData;
-    
+
     //True if the images can only be sampled continuously (eg: the clip is infact an animating roto spline and can be rendered anywhen).
     //False if the images can only be sampled at discreet times (eg: the clip is a sequence of frames),
     bool canRenderAtNonframes;
-    
+
     //True if the effect changes throughout the time
     bool isFrameVarying;
-    
-    
+
+
     NodeMetadataPrivate()
-    : outputPremult(eImagePremultiplicationPremultiplied)
-    , outputFielding(eImageFieldingOrderNone)
-    , frameRate(24.)
-    , outputData()
-    , inputsData()
-    , canRenderAtNonframes(true)
-    , isFrameVarying(false)
+        : outputPremult(eImagePremultiplicationPremultiplied)
+        , outputFielding(eImageFieldingOrderNone)
+        , frameRate(24.)
+        , outputData()
+        , inputsData()
+        , canRenderAtNonframes(true)
+        , isFrameVarying(false)
     {
-        
     }
-    
+
     NodeMetadataPrivate(const NodeMetadataPrivate& other)
     {
         *this = other;
     }
-    
+
     void operator=(const NodeMetadataPrivate& other)
     {
         outputPremult = other.outputPremult;
@@ -103,20 +97,17 @@ struct NodeMetadataPrivate
 };
 
 NodeMetadata::NodeMetadata()
-: _imp(new NodeMetadataPrivate())
+    : _imp( new NodeMetadataPrivate() )
 {
-    
 }
 
 NodeMetadata::NodeMetadata(const NodeMetadata& other)
-: _imp(new NodeMetadataPrivate(*other._imp))
+    : _imp( new NodeMetadataPrivate(*other._imp) )
 {
-    
 }
 
 NodeMetadata::~NodeMetadata()
 {
-    
 }
 
 void
@@ -158,7 +149,7 @@ NodeMetadata::operator==(const NodeMetadata& other) const
     if (_imp->outputData.components != other._imp->outputData.components) {
         return false;
     }
-    if (_imp->inputsData.size() != other._imp->inputsData.size()) {
+    if ( _imp->inputsData.size() != other._imp->inputsData.size() ) {
         return false;
     }
     for (std::size_t i = 0; i < _imp->inputsData.size(); ++i) {
@@ -172,9 +163,9 @@ NodeMetadata::operator==(const NodeMetadata& other) const
             return false;
         }
     }
+
     return true;
 }
-
 
 void
 NodeMetadata::setOutputPremult(ImagePremultiplicationEnum premult)
@@ -237,12 +228,13 @@ NodeMetadata::getIsFrameVarying() const
 }
 
 void
-NodeMetadata::setPixelAspectRatio(int inputNb, double par)
+NodeMetadata::setPixelAspectRatio(int inputNb,
+                                  double par)
 {
     if (inputNb == -1) {
         _imp->outputData.pixelAspectRatio = par;
     } else {
-        assert(inputNb < (int)_imp->inputsData.size());
+        assert( inputNb < (int)_imp->inputsData.size() );
         _imp->inputsData[inputNb].pixelAspectRatio = par;
     }
 }
@@ -253,18 +245,20 @@ NodeMetadata::getPixelAspectRatio(int inputNb) const
     if (inputNb == -1) {
         return _imp->outputData.pixelAspectRatio;
     } else {
-        assert(inputNb < (int)_imp->inputsData.size());
+        assert( inputNb < (int)_imp->inputsData.size() );
+
         return _imp->inputsData[inputNb].pixelAspectRatio;
     }
 }
 
 void
-NodeMetadata::setBitDepth(int inputNb, ImageBitDepthEnum depth)
+NodeMetadata::setBitDepth(int inputNb,
+                          ImageBitDepthEnum depth)
 {
     if (inputNb == -1) {
         _imp->outputData.bitdepth = depth;
     } else {
-        assert(inputNb < (int)_imp->inputsData.size());
+        assert( inputNb < (int)_imp->inputsData.size() );
         _imp->inputsData[inputNb].bitdepth = depth;
     }
 }
@@ -275,18 +269,20 @@ NodeMetadata::getBitDepth(int inputNb) const
     if (inputNb == -1) {
         return _imp->outputData.bitdepth;
     } else {
-        assert(inputNb < (int)_imp->inputsData.size());
+        assert( inputNb < (int)_imp->inputsData.size() );
+
         return _imp->inputsData[inputNb].bitdepth;
     }
 }
 
 void
-NodeMetadata::setImageComponents(int inputNb, const ImageComponents& components)
+NodeMetadata::setImageComponents(int inputNb,
+                                 const ImageComponents& components)
 {
     if (inputNb == -1) {
         _imp->outputData.components = components;
     } else {
-        assert(inputNb < (int)_imp->inputsData.size());
+        assert( inputNb < (int)_imp->inputsData.size() );
         _imp->inputsData[inputNb].components = components;
     }
 }
@@ -297,7 +293,8 @@ NodeMetadata::getImageComponents(int inputNb) const
     if (inputNb == -1) {
         return _imp->outputData.components;
     } else {
-        assert(inputNb < (int)_imp->inputsData.size());
+        assert( inputNb < (int)_imp->inputsData.size() );
+
         return _imp->inputsData[inputNb].components;
     }
 }

@@ -92,41 +92,49 @@ using std::cout; using std::endl;
 using std::make_pair;
 
 
-static std::string getUserName()
+static std::string
+getUserName()
 {
 #ifdef __NATRON_WIN32__
-    TCHAR user_name[UNLEN+1];
+    TCHAR user_name[UNLEN + 1];
     DWORD user_name_size = sizeof(user_name);
     GetUserName(user_name, &user_name_size);
 #ifdef UNICODE
     std::wstring wUserName(user_name);
     std::string sUserName = OFX::wideStringToString(wUserName);
+
     return sUserName;
 #else
+
     return std::string(user_name);
 #endif
 #elif defined(__NATRON_UNIX__)
     struct passwd *passwd;
     passwd = getpwuid( getuid() );
+
     return passwd->pw_name;
 #endif
 }
 
-static std::string generateGUIUserName()
+static std::string
+generateGUIUserName()
 {
     return getUserName() + '@' + QHostInfo::localHostName().toStdString();
 }
 
-static std::string generateUserFriendlyNatronVersionName()
+static std::string
+generateUserFriendlyNatronVersionName()
 {
     std::string ret(NATRON_APPLICATION_NAME);
+
     ret.append(" v");
     ret.append(NATRON_VERSION_STRING);
     const std::string status(NATRON_DEVELOPMENT_STATUS);
     ret.append(" " NATRON_DEVELOPMENT_STATUS);
     if (status == NATRON_DEVELOPMENT_RELEASE_CANDIDATE) {
-        ret.append(QString::number(NATRON_BUILD_NUMBER).toStdString());
+        ret.append( QString::number(NATRON_BUILD_NUMBER).toStdString() );
     }
+
     return ret;
 }
 
@@ -144,25 +152,27 @@ Project::~Project()
     for (std::list<boost::shared_ptr<QFutureWatcher<void> > >::iterator it = _imp->autoSaveFutures.begin(); it != _imp->autoSaveFutures.end(); ++it) {
         (*it)->waitForFinished();
     }
-    
+
     ///Don't clear autosaves if the program is shutting down by user request.
     ///Even if the user replied she/he didn't want to save the current work, we keep an autosave of it.
     //removeAutoSaves();
 }
-    
+
 class LoadProjectSplashScreen_RAII
 {
     AppInstance* app;
+
 public:
-    
-    LoadProjectSplashScreen_RAII(AppInstance* app,const QString& filename)
-    : app(app)
+
+    LoadProjectSplashScreen_RAII(AppInstance* app,
+                                 const QString& filename)
+        : app(app)
     {
         if (app) {
             app->createLoadProjectSplashScreen(filename);
         }
     }
-    
+
     ~LoadProjectSplashScreen_RAII()
     {
         if (app) {
@@ -171,36 +181,32 @@ public:
     }
 };
 
-  
 bool
 Project::loadProject(const QString & path,
                      const QString & name,
                      bool isUntitledAutosave,
                      bool attemptToLoadAutosave)
 {
-
     reset(false);
 
     try {
         QString realPath = path;
         Global::ensureLastPathSeparator(realPath);
         QString realName = name;
-        
         bool isAutoSave = isUntitledAutosave;
         if (!getApp()->isBackground() && !isUntitledAutosave) {
             // In Gui mode, attempt to load an auto-save for this project if there's one.
             QString autosaveFileName;
-            bool hasAutoSave = findAutoSaveForProject(realPath, name,&autosaveFileName);
+            bool hasAutoSave = findAutoSaveForProject(realPath, name, &autosaveFileName);
             if (hasAutoSave) {
-                
                 StandardButtonEnum ret = eStandardButtonNo;
                 if (attemptToLoadAutosave) {
                     QString text = tr("A recent auto-save of %1 was found.\n"
                                       "Would you like to use it instead? "
                                       "Clicking No will remove this auto-save.").arg(name);
                     ret = Dialogs::questionDialog(tr("Auto-save").toStdString(),
-                                                 text.toStdString(),false, StandardButtons(eStandardButtonYes | eStandardButtonNo),
-                                                 eStandardButtonYes);
+                                                  text.toStdString(), false, StandardButtons(eStandardButtonYes | eStandardButtonNo),
+                                                  eStandardButtonYes);
                 }
                 if ( (ret == eStandardButtonNo) || (ret == eStandardButtonEscape) ) {
                     QFile::remove(realPath + autosaveFileName);
@@ -214,10 +220,10 @@ Project::loadProject(const QString & path,
                 }
             }
         }
-        
+
         bool mustSave = false;
-        if (!loadProjectInternal(realPath,realName,isAutoSave,isUntitledAutosave,&mustSave)) {
-            if (!getApp()->isBackground()) {
+        if ( !loadProjectInternal(realPath, realName, isAutoSave, isUntitledAutosave, &mustSave) ) {
+            if ( !getApp()->isBackground() ) {
                 appPTR->showErrorLog();
             } else {
                 std::cerr << appPTR->getErrorLog_mt_safe().toStdString() << std::endl;
@@ -228,16 +234,15 @@ Project::loadProject(const QString & path,
     } catch (const std::exception & e) {
         Dialogs::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading project").toStdString() + ": " + e.what() );
         if ( !getApp()->isBackground() ) {
-            CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonInternal, shared_from_this());
+            CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonInternal, shared_from_this() );
             getApp()->createNode(args);
         }
 
         return false;
     } catch (...) {
-
         Dialogs::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Unkown error while loading project").toStdString() );
         if ( !getApp()->isBackground() ) {
-            CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonInternal, shared_from_this());
+            CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonInternal, shared_from_this() );
             getApp()->createNode(args);
         }
 
@@ -245,6 +250,7 @@ Project::loadProject(const QString & path,
     }
 
     refreshViewersAndPreviews();
+
     return true;
 } // loadProject
 
@@ -255,36 +261,32 @@ Project::loadProjectInternal(const QString & path,
                              bool isUntitledAutosave,
                              bool* mustSave)
 {
-    
-    FlagSetter loadingProjectRAII(true,&_imp->isLoadingProject,&_imp->isLoadingProjectMutex);
-    
+    FlagSetter loadingProjectRAII(true, &_imp->isLoadingProject, &_imp->isLoadingProjectMutex);
     QString filePath = path + name;
     std::cout << QObject::tr("Loading project").toStdString() << ": " << filePath.toStdString() << std::endl;
+
     if ( !QFile::exists(filePath) ) {
-        throw std::invalid_argument( QString(filePath + QString::fromUtf8(" : no such file.")).toStdString() );
-    }
-    
-    bool ret = false;
-    
-    FStreamsSupport::ifstream ifile;
-    FStreamsSupport::open(&ifile, filePath.toStdString());
-    if (!ifile) {
-        throw std::runtime_error(std::string("Failed to open ") + filePath.toStdString());
+        throw std::invalid_argument( QString( filePath + QString::fromUtf8(" : no such file.") ).toStdString() );
     }
 
-    if (NATRON_VERSION_MAJOR == 1 && NATRON_VERSION_MINOR == 0 && NATRON_VERSION_REVISION == 0) {
-        
+    bool ret = false;
+    FStreamsSupport::ifstream ifile;
+    FStreamsSupport::open( &ifile, filePath.toStdString() );
+    if (!ifile) {
+        throw std::runtime_error( std::string("Failed to open ") + filePath.toStdString() );
+    }
+
+    if ( (NATRON_VERSION_MAJOR == 1) && (NATRON_VERSION_MINOR == 0) && (NATRON_VERSION_REVISION == 0) ) {
         ///Try to determine if the project was made during Natron v1.0.0 - RC2 or RC3 to detect a bug we introduced at that time
         ///in the BezierCP class serialisation
         bool foundV = false;
         QFile f(filePath);
         f.open(QIODevice::ReadOnly);
         QTextStream fs(&f);
-        while (!fs.atEnd()) {
-            
+        while ( !fs.atEnd() ) {
             QString line = fs.readLine();
 
-            if (line.indexOf(QString::fromUtf8("Natron v1.0.0 RC2")) != -1 || line.indexOf(QString::fromUtf8("Natron v1.0.0 RC3")) != -1) {
+            if ( (line.indexOf( QString::fromUtf8("Natron v1.0.0 RC2") ) != -1) || (line.indexOf( QString::fromUtf8("Natron v1.0.0 RC3") ) != -1) ) {
                 appPTR->setProjectCreatedDuringRC2Or3(true);
                 foundV = true;
                 break;
@@ -294,41 +296,41 @@ Project::loadProjectInternal(const QString & path,
             appPTR->setProjectCreatedDuringRC2Or3(false);
         }
     }
-    
-    LoadProjectSplashScreen_RAII __raii_splashscreen__(getApp(),name);
-    
+
+    LoadProjectSplashScreen_RAII __raii_splashscreen__(getApp(), name);
+
     try {
         bool bgProject;
         boost::archive::xml_iarchive iArchive(ifile);
         {
-            FlagSetter __raii_loadingProjectInternal__(true,&_imp->isLoadingProjectInternal,&_imp->isLoadingProjectMutex);
-            
+            FlagSetter __raii_loadingProjectInternal__(true, &_imp->isLoadingProjectInternal, &_imp->isLoadingProjectMutex);
+
             iArchive >> boost::serialization::make_nvp("Background_project", bgProject);
             ProjectSerialization projectSerializationObj( getApp() );
             iArchive >> boost::serialization::make_nvp("Project", projectSerializationObj);
-            
-            ret = load(projectSerializationObj,name,path, mustSave);
+
+            ret = load(projectSerializationObj, name, path, mustSave);
         } // __raii_loadingProjectInternal__
-        
+
         if (!bgProject) {
             getApp()->loadProjectGui(iArchive);
         }
     } catch (...) {
-        throw std::runtime_error(tr("Unrecognized or damaged project file").toStdString());
+        throw std::runtime_error( tr("Unrecognized or damaged project file").toStdString() );
     }
-    
+
     Format f;
     getProjectDefaultFormat(&f);
     Q_EMIT formatChanged(f);
-    
-    _imp->natronVersion->setValue(generateUserFriendlyNatronVersionName());
+
+    _imp->natronVersion->setValue( generateUserFriendlyNatronVersionName() );
     if (isAutoSave) {
         _imp->autoSetProjectFormat = false;
         if (!isUntitledAutosave) {
-            QString projectFilename = QString::fromUtf8(_imp->getProjectFilename().c_str());
-            int found = projectFilename.lastIndexOf(QString::fromUtf8(".autosave"));
+            QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
+            int found = projectFilename.lastIndexOf( QString::fromUtf8(".autosave") );
             if (found != -1) {
-                _imp->setProjectFilename(projectFilename.left(found).toStdString());
+                _imp->setProjectFilename( projectFilename.left(found).toStdString() );
             }
             _imp->hasProjectBeenSavedByUser = true;
         } else {
@@ -339,44 +341,45 @@ Project::loadProjectInternal(const QString & path,
         _imp->lastAutoSave = QDateTime::currentDateTime();
         _imp->ageSinceLastSave = QDateTime();
         _imp->lastAutoSaveFilePath = filePath;
-        
-        QString projectPath = QString::fromUtf8(_imp->getProjectPath().c_str());
-        QString projectFilename = QString::fromUtf8(_imp->getProjectFilename().c_str());
-        Q_EMIT projectNameChanged(projectPath + projectFilename, true);
 
+        QString projectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
+        QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
+        Q_EMIT projectNameChanged(projectPath + projectFilename, true);
     } else {
         Q_EMIT projectNameChanged(path + name, false);
     }
-    
+
     ///Try to take the project lock by creating a lock file
     if (!isAutoSave) {
         QString lockFilePath = getLockAbsoluteFilePath();
-        if (!QFile::exists(lockFilePath)) {
+        if ( !QFile::exists(lockFilePath) ) {
             createLockFile();
         }
     }
-    
+
     _imp->runOnProjectLoadCallback();
 
     ///Process all events before flagging that we're no longer loading the project
     ///to avoid multiple renders being called because of reshape events of viewers
     QCoreApplication::processEvents();
-    
+
     return ret;
-}
-    
+} // Project::loadProjectInternal
+
 bool
-Project::saveProject(const QString & path,const QString & name, QString* newFilePath)
+Project::saveProject(const QString & path,
+                     const QString & name,
+                     QString* newFilePath)
 {
     return saveProject_imp(path, name, false, true, newFilePath);
 }
-    
+
 bool
 Project::saveProject_imp(const QString & path,
-                     const QString & name,
-                     bool autoS,
-                     bool updateProjectProperties,
-                     QString* newFilePath)
+                         const QString & name,
+                         bool autoS,
+                         bool updateProjectProperties,
+                         QString* newFilePath)
 {
     {
         QMutexLocker l(&_imp->isLoadingProjectMutex);
@@ -393,7 +396,7 @@ Project::saveProject_imp(const QString & path,
             _imp->isSavingProject = true;
         }
     }
-    
+
     QString ret;
 
     try {
@@ -401,21 +404,20 @@ Project::saveProject_imp(const QString & path,
             //if  (!isSaveUpToDate() || !QFile::exists(path+name)) {
             //We are saving, do not autosave.
             _imp->autoSaveTimer->stop();
-            
-            ret = saveProjectInternal(path,name, false, updateProjectProperties);
-            
+
+            ret = saveProjectInternal(path, name, false, updateProjectProperties);
+
             ///We just saved, remove the last auto-save which is now obsolete
             removeLastAutosave();
 
             //}
         } else {
-            
             if (updateProjectProperties) {
                 ///Replace the last auto-save with a more recent one
                 removeLastAutosave();
             }
-            
-            ret = saveProjectInternal(path,name,true, updateProjectProperties);
+
+            ret = saveProjectInternal(path, name, true, updateProjectProperties);
         }
     } catch (const std::exception & e) {
         if (!autoS) {
@@ -429,15 +431,16 @@ Project::saveProject_imp(const QString & path,
         QMutexLocker l(&_imp->isSavingProjectMutex);
         _imp->isSavingProject = false;
     }
-    
+
     ///Save caches ToC
     appPTR->saveCaches();
-    
+
     if (newFilePath) {
         *newFilePath = ret;
     }
+
     return true;
-}
+} // Project::saveProject_imp
 
 static bool
 fileCopy(const QString & source,
@@ -462,32 +465,31 @@ Project::saveProjectInternal(const QString & path,
                              bool autoSave,
                              bool updateProjectProperties)
 {
-    
-    bool isRenderSave = name.contains(QString::fromUtf8("RENDER_SAVE"));
+    bool isRenderSave = name.contains( QString::fromUtf8("RENDER_SAVE") );
     QDateTime time = QDateTime::currentDateTime();
     QString timeStr = time.toString();
-
     QString filePath;
+
     if (autoSave) {
         bool appendTimeHash = false;
-        if (path.isEmpty()) {
+        if ( path.isEmpty() ) {
             filePath = autoSavesDir();
-            
+
             //If the auto-save is saved in the AutoSaves directory, there will be other autosaves for other opened
             //projects. We uniquely identity it with the time hash of the current time
             appendTimeHash = true;
         } else {
             filePath = path;
         }
-        filePath.append(QLatin1Char('/'));
+        filePath.append( QLatin1Char('/') );
         filePath.append(name);
         if (!isRenderSave) {
-            filePath.append(QString::fromUtf8(".autosave"));
+            filePath.append( QString::fromUtf8(".autosave") );
         }
         if (!isRenderSave) {
             if (appendTimeHash) {
                 Hash64 timeHash;
-                
+
                 for (int i = 0; i < timeStr.size(); ++i) {
                     timeHash.append<unsigned short>( timeStr.at(i).unicode() );
                 }
@@ -495,9 +497,8 @@ Project::saveProjectInternal(const QString & path,
                 QString timeHashStr = QString::number( timeHash.value() );
                 filePath.append(QLatin1Char('.') + timeHashStr);
             }
-            
         }
-        
+
         if (updateProjectProperties) {
             QMutexLocker l(&_imp->projectLock);
             _imp->lastAutoSaveFilePath = filePath;
@@ -505,10 +506,10 @@ Project::saveProjectInternal(const QString & path,
     } else {
         filePath = path + name;
     }
-    
+
     std::string newFilePath = _imp->runOnProjectSaveCallback(filePath.toStdString(), autoSave);
-    filePath = QString::fromUtf8(newFilePath.c_str());
-    
+    filePath = QString::fromUtf8( newFilePath.c_str() );
+
     ///Use a temporary file to save, so if Natron crashes it doesn't corrupt the user save.
     QString tmpFilename = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
     Global::ensureLastPathSeparator(tmpFilename);
@@ -516,28 +517,28 @@ Project::saveProjectInternal(const QString & path,
 
     {
         FStreamsSupport::ofstream ofile;
-        FStreamsSupport::open(&ofile, tmpFilename.toStdString());
+        FStreamsSupport::open( &ofile, tmpFilename.toStdString() );
         if (!ofile) {
-            throw std::runtime_error(tr("Failed to open file ").toStdString() + tmpFilename.toStdString() );
+            throw std::runtime_error( tr("Failed to open file ").toStdString() + tmpFilename.toStdString() );
         }
-        
+
         ///Fix file paths before saving.
-        QString oldProjectPath = QString::fromUtf8(_imp->getProjectPath().c_str());
-        
+        QString oldProjectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
+
         if (!autoSave && updateProjectProperties) {
             _imp->autoSetProjectDirectory(path);
-            _imp->saveDate->setValue(timeStr.toStdString());
-            _imp->lastAuthorName->setValue(generateGUIUserName());
-            _imp->natronVersion->setValue(generateUserFriendlyNatronVersionName());
+            _imp->saveDate->setValue( timeStr.toStdString() );
+            _imp->lastAuthorName->setValue( generateGUIUserName() );
+            _imp->natronVersion->setValue( generateUserFriendlyNatronVersionName() );
         }
-        
+
         try {
             boost::archive::xml_oarchive oArchive(ofile);
             bool bgProject = getApp()->isBackground();
-            oArchive << boost::serialization::make_nvp("Background_project",bgProject);
+            oArchive << boost::serialization::make_nvp("Background_project", bgProject);
             ProjectSerialization projectSerializationObj( getApp() );
             save(&projectSerializationObj);
-            oArchive << boost::serialization::make_nvp("Project",projectSerializationObj);
+            oArchive << boost::serialization::make_nvp("Project", projectSerializationObj);
             if (!bgProject) {
                 getApp()->saveProjectGui(oArchive);
             }
@@ -549,30 +550,29 @@ Project::saveProjectInternal(const QString & path,
             throw;
         }
     } // ofile
-    
+
     QFile::remove(filePath);
     int nAttemps = 0;
 
     while ( nAttemps < 10 && !fileCopy(tmpFilename, filePath) ) {
         ++nAttemps;
     }
-    
+
     if (nAttemps >= 10) {
         throw std::runtime_error( "Failed to save to " + filePath.toStdString() );
     }
 
     QFile::remove(tmpFilename);
-    
+
     if (!autoSave && updateProjectProperties) {
-        
         QString lockFilePath = getLockAbsoluteFilePath();
-        if (QFile::exists(lockFilePath)) {
+        if ( QFile::exists(lockFilePath) ) {
             ///Remove the previous lock file if there was any
             removeLockFile();
         }
         {
-            _imp->setProjectFilename(name.toStdString());
-            _imp->setProjectPath(path.toStdString());
+            _imp->setProjectFilename( name.toStdString() );
+            _imp->setProjectPath( path.toStdString() );
             QMutexLocker l(&_imp->projectLock);
             _imp->hasProjectBeenSavedByUser = true;
             _imp->ageSinceLastSave = time;
@@ -583,9 +583,9 @@ Project::saveProjectInternal(const QString & path,
         createLockFile();
     } else if (updateProjectProperties) {
         if (!isRenderSave) {
-            QString projectPath = QString::fromUtf8(_imp->getProjectPath().c_str());
-            QString projectFilename= QString::fromUtf8(_imp->getProjectFilename().c_str());
-           Q_EMIT projectNameChanged(projectPath + projectFilename, true);
+            QString projectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
+            QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
+            Q_EMIT projectNameChanged(projectPath + projectFilename, true);
         }
     }
     if (updateProjectProperties) {
@@ -602,10 +602,10 @@ Project::autoSave()
     if ( getApp()->isBackground() ) {
         return;
     }
-    
-    QString path = QString::fromUtf8(_imp->getProjectPath().c_str());
-    QString name = QString::fromUtf8(_imp->getProjectFilename().c_str());
-    saveProject_imp(path,name, true, true, 0);
+
+    QString path = QString::fromUtf8( _imp->getProjectPath().c_str() );
+    QString name = QString::fromUtf8( _imp->getProjectFilename().c_str() );
+    saveProject_imp(path, name, true, true, 0);
 }
 
 void
@@ -613,22 +613,22 @@ Project::triggerAutoSave()
 {
     ///Should only be called in the main-thread, that is upon user interaction.
     assert( QThread::currentThread() == qApp->thread() );
-    
+
     if ( getApp()->isBackground() || !appPTR->isLoaded() || isProjectClosing() ) {
         return;
     }
-    
-    if (!hasProjectBeenSavedByUser() && !appPTR->getCurrentSettings()->isAutoSaveEnabledForUnsavedProjects()) {
+
+    if ( !hasProjectBeenSavedByUser() && !appPTR->getCurrentSettings()->isAutoSaveEnabledForUnsavedProjects() ) {
         return;
     }
-    
+
     {
         QMutexLocker l(&_imp->isLoadingProjectMutex);
         if (_imp->isLoadingProject) {
             return;
         }
     }
-    
+
     _imp->autoSaveTimer->start( appPTR->getCurrentSettings()->getAutoSaveDelayMS() );
 }
 
@@ -637,18 +637,18 @@ Project::onAutoSaveTimerTriggered()
 {
     assert( !getApp()->isBackground() );
 
-    if (!getApp()) {
+    if ( !getApp() ) {
         return;
     }
-    
+
     ///check that all schedulers are not working.
     ///If so launch an auto-save, otherwise, restart the timer.
     bool canAutoSave = !hasNodeRendering() && !getApp()->isShowingDialog();
 
     if (canAutoSave) {
         boost::shared_ptr<QFutureWatcher<void> > watcher(new QFutureWatcher<void>);
-        QObject::connect(watcher.get(), SIGNAL(finished()), this, SLOT(onAutoSaveFutureFinished()));
-        watcher->setFuture(QtConcurrent::run(this,&Project::autoSave));
+        QObject::connect( watcher.get(), SIGNAL(finished()), this, SLOT(onAutoSaveFutureFinished()) );
+        watcher->setFuture( QtConcurrent::run(this, &Project::autoSave) );
         _imp->autoSaveFutures.push_back(watcher);
     } else {
         ///If the auto-save failed because a render is in progress, try every 2 seconds to auto-save.
@@ -656,10 +656,12 @@ Project::onAutoSaveTimerTriggered()
         _imp->autoSaveTimer->start(2000);
     }
 }
-    
-void Project::onAutoSaveFutureFinished()
+
+void
+Project::onAutoSaveFutureFinished()
 {
-    QFutureWatcherBase* future = qobject_cast<QFutureWatcherBase*>(sender());
+    QFutureWatcherBase* future = qobject_cast<QFutureWatcherBase*>( sender() );
+
     assert(future);
     for (std::list<boost::shared_ptr<QFutureWatcher<void> > >::iterator it = _imp->autoSaveFutures.begin(); it != _imp->autoSaveFutures.end(); ++it) {
         if (it->get() == future) {
@@ -668,34 +670,38 @@ void Project::onAutoSaveFutureFinished()
         }
     }
 }
-    
-bool Project::findAutoSaveForProject(const QString& projectPath,const QString& projectName,QString* autoSaveFileName)
+
+bool
+Project::findAutoSaveForProject(const QString& projectPath,
+                                const QString& projectName,
+                                QString* autoSaveFileName)
 {
     QString projectAbsFilePath = projectPath + projectName;
     QDir savesDir(projectPath);
     QStringList entries = savesDir.entryList(QDir::Files | QDir::NoDotAndDotDot);
-    
+
     for (int i = 0; i < entries.size(); ++i) {
         const QString & entry = entries.at(i);
-        QString ntpExt(QLatin1Char('.'));
-        ntpExt.append(QString::fromUtf8(NATRON_PROJECT_FILE_EXT));
+        QString ntpExt( QLatin1Char('.') );
+        ntpExt.append( QString::fromUtf8(NATRON_PROJECT_FILE_EXT) );
         QString searchStr(ntpExt);
-        QString autosaveSuffix(QString::fromUtf8(".autosave"));
+        QString autosaveSuffix( QString::fromUtf8(".autosave") );
         searchStr.append(autosaveSuffix);
         int suffixPos = entry.indexOf(searchStr);
-        if (suffixPos == -1 || entry.contains(QString::fromUtf8("RENDER_SAVE"))) {
+        if ( (suffixPos == -1) || entry.contains( QString::fromUtf8("RENDER_SAVE") ) ) {
             continue;
         }
-        QString filename = projectPath + entry.left(suffixPos + ntpExt.size());
-        if (filename == projectAbsFilePath && QFile::exists(filename)) {
+        QString filename = projectPath + entry.left( suffixPos + ntpExt.size() );
+        if ( (filename == projectAbsFilePath) && QFile::exists(filename) ) {
             *autoSaveFileName = entry;
+
             return true;
         }
-        
     }
+
     return false;
 }
-    
+
 void
 Project::initializeKnobs()
 {
@@ -721,14 +727,13 @@ Project::initializeKnobs()
                                   " The [" NATRON_OCIO_ENV_VAR_NAME "] path will also be set automatically for better sharing of projects with reader nodes.");
     _imp->envVars->setSecret(false);
     _imp->envVars->setMultiPath(true);
-    
-    
-    
+
+
     ///Initialize the OCIO Config
-    onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),false);
-    
+    onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(), false);
+
     page->addKnob(_imp->envVars);
-    
+
     _imp->formatKnob = AppManager::createKnob<KnobChoice>(this, "Output Format");
     _imp->formatKnob->setHintToolTip("The project output format is what is used as canvas on the viewers.");
     _imp->formatKnob->setName("outputFormat");
@@ -739,7 +744,7 @@ Project::initializeKnobs()
         Format* f = appFormats[i];
         QString formatStr = ProjectPrivate::generateStringFromFormat(*f);
         if ( (f->width() == 1920) && (f->height() == 1080) && (f->getPixelAspectRatio() == 1) ) {
-            _imp->formatKnob->setDefaultValue(i,0);
+            _imp->formatKnob->setDefaultValue(i, 0);
         }
         entries.push_back( formatStr.toStdString() );
         _imp->builtinFormats.push_back(*f);
@@ -749,9 +754,9 @@ Project::initializeKnobs()
     _imp->formatKnob->populateChoices(entries);
     _imp->formatKnob->setAnimationEnabled(false);
     page->addKnob(_imp->formatKnob);
-    
-    QObject::connect(_imp->formatKnob.get(), SIGNAL(populated()), this, SLOT(onProjectFormatPopulated()));
-    
+
+    QObject::connect( _imp->formatKnob.get(), SIGNAL(populated()), this, SLOT(onProjectFormatPopulated()) );
+
     _imp->addFormatKnob = AppManager::createKnob<KnobButton>(this, "New Format...");
     _imp->addFormatKnob->setName("newFormat");
     page->addKnob(_imp->addFormatKnob);
@@ -764,12 +769,12 @@ Project::initializeKnobs()
     _imp->previewMode->setEvaluateOnChange(false);
     page->addKnob(_imp->previewMode);
     bool autoPreviewEnabled = appPTR->getCurrentSettings()->isAutoPreviewOnForNewProjects();
-    _imp->previewMode->setDefaultValue(autoPreviewEnabled,0);
+    _imp->previewMode->setDefaultValue(autoPreviewEnabled, 0);
 
-    
-    _imp->frameRange = AppManager::createKnob<KnobInt>(this, "Frame Range",2);
-    _imp->frameRange->setDefaultValue(1,0);
-    _imp->frameRange->setDefaultValue(250,1);
+
+    _imp->frameRange = AppManager::createKnob<KnobInt>(this, "Frame Range", 2);
+    _imp->frameRange->setDefaultValue(1, 0);
+    _imp->frameRange->setDefaultValue(250, 1);
     _imp->frameRange->setDimensionName(0, "first");
     _imp->frameRange->setDimensionName(1, "last");
     _imp->frameRange->setEvaluateOnChange(false);
@@ -781,7 +786,7 @@ Project::initializeKnobs()
     _imp->frameRange->setAnimationEnabled(false);
     _imp->frameRange->setAddNewLine(false);
     page->addKnob(_imp->frameRange);
-    
+
     _imp->lockFrameRange = AppManager::createKnob<KnobBool>(this, "Lock Range");
     _imp->lockFrameRange->setName("lockRange");
     _imp->lockFrameRange->setDefaultValue(false);
@@ -790,7 +795,7 @@ Project::initializeKnobs()
                                          "project frame-range, unless this parameter is checked.");
     _imp->lockFrameRange->setEvaluateOnChange(false);
     page->addKnob(_imp->lockFrameRange);
-    
+
     _imp->frameRate = AppManager::createKnob<KnobDouble>(this, "Frame Rate");
     _imp->frameRate->setName("frameRate");
     _imp->frameRate->setHintToolTip("The frame rate of the project. This will serve as a default value for all effects that don't produce "
@@ -800,10 +805,10 @@ Project::initializeKnobs()
     _imp->frameRate->setDisplayMinimum(0.);
     _imp->frameRate->setDisplayMaximum(50.);
     page->addKnob(_imp->frameRate);
-    
-    
+
+
     boost::shared_ptr<KnobPage> viewsPage = AppManager::createKnob<KnobPage>(this, "Views");
-    
+
     _imp->viewsList = AppManager::createKnob<KnobPath>(this, "Views List");
     _imp->viewsList->setName("viewsList");
     _imp->viewsList->setHintToolTip("The list of the views in the project");
@@ -815,16 +820,16 @@ Project::initializeKnobs()
     std::string encodedDefaultViews = _imp->viewsList->encodeToKnobTableFormatSingleCol(defaultViews);
     _imp->viewsList->setDefaultValue(encodedDefaultViews);
     viewsPage->addKnob(_imp->viewsList);
-    
+
     _imp->setupForStereoButton = AppManager::createKnob<KnobButton>(this, "Setup views for stereo");
     _imp->setupForStereoButton->setName("setupForStereo");
     _imp->setupForStereoButton->setHintToolTip("Quickly setup the views list for stereo");
     _imp->setupForStereoButton->setEvaluateOnChange(false);
     viewsPage->addKnob(_imp->setupForStereoButton);
 
-    
+
     boost::shared_ptr<KnobPage> LayersPage = AppManager::createKnob<KnobPage>(this, "Layers");
-    
+
     _imp->defaultLayersList = AppManager::createKnob<KnobLayers>(this, "Default Layers");
     _imp->defaultLayersList->setName("defaultLayers");
     _imp->defaultLayersList->setHintToolTip("The list of the default layers available in layers menus on nodes.");
@@ -842,7 +847,7 @@ Project::initializeKnobs()
             const std::vector<std::string>& channels = comps.getComponentsNames();
             for (std::size_t i = 0; i < channels.size(); ++i) {
                 channelsStr += channels[i];
-                if (i < (channels.size() - 1)) {
+                if ( i < (channels.size() - 1) ) {
                     channelsStr += ' ';
                 }
             }
@@ -855,10 +860,8 @@ Project::initializeKnobs()
     _imp->defaultLayersList->setDefaultValue(encodedDefaultLayers);
     LayersPage->addKnob(_imp->defaultLayersList);
 
-    
-    
+
     boost::shared_ptr<KnobPage> lutPages = AppManager::createKnob<KnobPage>(this, "LUT");
-    
     std::vector<std::string> colorSpaces;
     colorSpaces.push_back("sRGB");
     colorSpaces.push_back("Linear");
@@ -870,7 +873,7 @@ Project::initializeKnobs()
     _imp->colorSpace8u->populateChoices(colorSpaces);
     _imp->colorSpace8u->setDefaultValue(0);
     lutPages->addKnob(_imp->colorSpace8u);
-    
+
     _imp->colorSpace16u = AppManager::createKnob<KnobChoice>(this, "16-Bit Colorspace");
     _imp->colorSpace16u->setName("defaultColorSpace16u");
     _imp->colorSpace16u->setHintToolTip("Defines the color-space in which 16-bit integer images are assumed to be by default.");
@@ -878,7 +881,7 @@ Project::initializeKnobs()
     _imp->colorSpace16u->populateChoices(colorSpaces);
     _imp->colorSpace16u->setDefaultValue(2);
     lutPages->addKnob(_imp->colorSpace16u);
-    
+
     _imp->colorSpace32f = AppManager::createKnob<KnobChoice>(this, "32-Bit f.p Colorspace ");
     _imp->colorSpace32f->setName("defaultColorSpace32f");
     _imp->colorSpace32f->setHintToolTip("Defines the color-space in which 32-bit floating point images are assumed to be by default.");
@@ -886,37 +889,37 @@ Project::initializeKnobs()
     _imp->colorSpace32f->populateChoices(colorSpaces);
     _imp->colorSpace32f->setDefaultValue(1);
     lutPages->addKnob(_imp->colorSpace32f);
-    
-    boost::shared_ptr<KnobPage> infoPage = AppManager::createKnob<KnobPage>(this, tr("Info").toStdString());
-    
+
+    boost::shared_ptr<KnobPage> infoPage = AppManager::createKnob<KnobPage>( this, tr("Info").toStdString() );
+
     _imp->projectName = AppManager::createKnob<KnobString>(this, "Project Name");
     _imp->projectName->setName("projectName");
     _imp->projectName->setIsPersistant(false);
 //    _imp->projectName->setAsLabel();
-    _imp->projectName->setDefaultEnabled(0,false);
+    _imp->projectName->setDefaultEnabled(0, false);
     _imp->projectName->setAnimationEnabled(false);
     _imp->projectName->setDefaultValue(NATRON_PROJECT_UNTITLED);
     infoPage->addKnob(_imp->projectName);
-    
+
     _imp->projectPath = AppManager::createKnob<KnobString>(this, "Project path");
     _imp->projectPath->setName("projectPath");
     _imp->projectPath->setIsPersistant(false);
     _imp->projectPath->setAnimationEnabled(false);
-    _imp->projectPath->setDefaultEnabled(0,false);
-   // _imp->projectPath->setAsLabel();
+    _imp->projectPath->setDefaultEnabled(0, false);
+    // _imp->projectPath->setAsLabel();
     infoPage->addKnob(_imp->projectPath);
-    
+
     _imp->natronVersion = AppManager::createKnob<KnobString>(this, "Saved With");
     _imp->natronVersion->setName("softwareVersion");
     _imp->natronVersion->setHintToolTip("The version of " NATRON_APPLICATION_NAME " that saved this project for the last time.");
-   // _imp->natronVersion->setAsLabel();
+    // _imp->natronVersion->setAsLabel();
     _imp->natronVersion->setDefaultEnabled(0, false);
     _imp->natronVersion->setEvaluateOnChange(false);
     _imp->natronVersion->setAnimationEnabled(false);
-    
-    _imp->natronVersion->setDefaultValue(generateUserFriendlyNatronVersionName());
+
+    _imp->natronVersion->setDefaultValue( generateUserFriendlyNatronVersionName() );
     infoPage->addKnob(_imp->natronVersion);
-    
+
     _imp->originalAuthorName = AppManager::createKnob<KnobString>(this, "Original Author");
     _imp->originalAuthorName->setName("originalAuthor");
     _imp->originalAuthorName->setHintToolTip("The user name and host name of the original author of the project.");
@@ -927,11 +930,11 @@ Project::initializeKnobs()
     std::string authorName = generateGUIUserName();
     _imp->originalAuthorName->setDefaultValue(authorName);
     infoPage->addKnob(_imp->originalAuthorName);
-    
+
     _imp->lastAuthorName = AppManager::createKnob<KnobString>(this, "Last Author");
     _imp->lastAuthorName->setName("lastAuthor");
     _imp->lastAuthorName->setHintToolTip("The user name and host name of the last author of the project.");
-   // _imp->lastAuthorName->setAsLabel();
+    // _imp->lastAuthorName->setAsLabel();
     _imp->lastAuthorName->setDefaultEnabled(0, false);
     _imp->lastAuthorName->setEvaluateOnChange(false);
     _imp->lastAuthorName->setAnimationEnabled(false);
@@ -946,9 +949,9 @@ Project::initializeKnobs()
     _imp->projectCreationDate->setDefaultEnabled(0, false);
     _imp->projectCreationDate->setEvaluateOnChange(false);
     _imp->projectCreationDate->setAnimationEnabled(false);
-    _imp->projectCreationDate->setDefaultValue(QDateTime::currentDateTime().toString().toStdString());
+    _imp->projectCreationDate->setDefaultValue( QDateTime::currentDateTime().toString().toStdString() );
     infoPage->addKnob(_imp->projectCreationDate);
-    
+
     _imp->saveDate = AppManager::createKnob<KnobString>(this, "Last Saved On");
     _imp->saveDate->setName("lastSaveDate");
     _imp->saveDate->setHintToolTip("The date this project was last saved.");
@@ -957,7 +960,7 @@ Project::initializeKnobs()
     _imp->saveDate->setEvaluateOnChange(false);
     _imp->saveDate->setAnimationEnabled(false);
     infoPage->addKnob(_imp->saveDate);
-    
+
     boost::shared_ptr<KnobString> comments = AppManager::createKnob<KnobString>(this, "Comments");
     comments->setName("comments");
     comments->setHintToolTip("This area is a good place to write some informations about the project such as its authors, license "
@@ -965,7 +968,7 @@ Project::initializeKnobs()
     comments->setAsMultiLine();
     comments->setAnimationEnabled(false);
     infoPage->addKnob(comments);
-    
+
     boost::shared_ptr<KnobPage> pythonPage = AppManager::createKnob<KnobPage>(this, "Python");
     _imp->onProjectLoadCB = AppManager::createKnob<KnobString>(this, "After Project Loaded");
     _imp->onProjectLoadCB->setName("afterProjectLoad");
@@ -978,8 +981,8 @@ Project::initializeKnobs()
     std::string onProjectLoad = appPTR->getCurrentSettings()->getDefaultOnProjectLoadedCB();
     _imp->onProjectLoadCB->setDefaultValue(onProjectLoad);
     pythonPage->addKnob(_imp->onProjectLoadCB);
-    
-    
+
+
     _imp->onProjectSaveCB = AppManager::createKnob<KnobString>(this, "Before Project Save");
     _imp->onProjectSaveCB->setName("beforeProjectSave");
     _imp->onProjectSaveCB->setHintToolTip("Add here the name of a Python-defined function that will be called each time this project "
@@ -994,11 +997,11 @@ Project::initializeKnobs()
     std::string onProjectSave = appPTR->getCurrentSettings()->getDefaultOnProjectSaveCB();
     _imp->onProjectSaveCB->setDefaultValue(onProjectSave);
     pythonPage->addKnob(_imp->onProjectSaveCB);
-    
+
     _imp->onProjectCloseCB = AppManager::createKnob<KnobString>(this, "Before Project Close");
     _imp->onProjectCloseCB->setName("beforeProjectClose");
     _imp->onProjectCloseCB->setHintToolTip("Add here the name of a Python-defined function that will be called each time this project "
-                                          "is closed or if the user closes the application while this project is opened. This is called "
+                                           "is closed or if the user closes the application while this project is opened. This is called "
                                            "prior to removing anything from the project.\n"
                                            "The signature of the callback is: callback(app) where:\n"
                                            "- app: points to the current application instance\n");
@@ -1006,11 +1009,11 @@ Project::initializeKnobs()
     std::string onProjectClose = appPTR->getCurrentSettings()->getDefaultOnProjectCloseCB();
     _imp->onProjectCloseCB->setValue(onProjectClose);
     pythonPage->addKnob(_imp->onProjectCloseCB);
-    
+
     _imp->onNodeCreated = AppManager::createKnob<KnobString>(this, "After Node Created");
     _imp->onNodeCreated->setName("afterNodeCreated");
     _imp->onNodeCreated->setHintToolTip("Add here the name of a Python-defined function that will be called each time a node "
-                                           "is created. The boolean variable userEdited will be set to True if the node was created "
+                                        "is created. The boolean variable userEdited will be set to True if the node was created "
                                         "by the user or False otherwise (such as when loading a project, or pasting a node).\n"
                                         "The signature of the callback is: callback(thisNode, app, userEdited) where:\n"
                                         "- thisNode: the node which has just been created\n"
@@ -1021,7 +1024,7 @@ Project::initializeKnobs()
     std::string onNodeCreated = appPTR->getCurrentSettings()->getDefaultOnNodeCreatedCB();
     _imp->onNodeCreated->setDefaultValue(onNodeCreated);
     pythonPage->addKnob(_imp->onNodeCreated);
-    
+
     _imp->onNodeDeleted = AppManager::createKnob<KnobString>(this, "Before Node Removal");
     _imp->onNodeDeleted->setName("beforeNodeRemoval");
     _imp->onNodeDeleted->setHintToolTip("Add here the name of a Python-defined function that will be called each time a node "
@@ -1033,16 +1036,14 @@ Project::initializeKnobs()
     std::string onNodeDelete = appPTR->getCurrentSettings()->getDefaultOnNodeDeleteCB();
     _imp->onNodeDeleted->setDefaultValue(onNodeDelete);
     pythonPage->addKnob(_imp->onNodeDeleted);
-    
 
-    
+
     comments->setAsMultiLine();
     comments->setAnimationEnabled(false);
     infoPage->addKnob(comments);
-    
+
     Q_EMIT knobsInitialized();
 } // initializeKnobs
-
 
 // don't return a reference to a mutex-protected object!
 void
@@ -1051,28 +1052,28 @@ Project::getProjectDefaultFormat(Format *f) const
     assert(f);
     QMutexLocker l(&_imp->formatMutex);
     std::string formatSpec = _imp->formatKnob->getActiveEntryText_mt_safe();
-    if (!formatSpec.empty()) {
-        ProjectPrivate::generateFormatFromString(QString::fromUtf8(formatSpec.c_str()), f);
+    if ( !formatSpec.empty() ) {
+        ProjectPrivate::generateFormatFromString(QString::fromUtf8( formatSpec.c_str() ), f);
     } else {
         _imp->findFormat(_imp->formatKnob->getValue(), f);
     }
 }
 
 bool
-Project::getProjectFormatAtIndex(int index, Format* f) const
+Project::getProjectFormatAtIndex(int index,
+                                 Format* f) const
 {
     assert(f);
     QMutexLocker l(&_imp->formatMutex);
+
     return _imp->findFormat(index, f);
 }
-
 
 int
 Project::currentFrame() const
 {
     return _imp->timeline->currentFrame();
 }
-
 
 int
 Project::tryAddProjectFormat(const Format & f)
@@ -1084,11 +1085,11 @@ Project::tryAddProjectFormat(const Format & f)
 
     std::list<Format>::iterator foundFormat = std::find(_imp->builtinFormats.begin(), _imp->builtinFormats.end(), f);
     if ( foundFormat != _imp->builtinFormats.end() ) {
-        return std::distance(_imp->builtinFormats.begin(),foundFormat);
+        return std::distance(_imp->builtinFormats.begin(), foundFormat);
     } else {
         foundFormat = std::find(_imp->additionalFormats.begin(), _imp->additionalFormats.end(), f);
         if ( foundFormat != _imp->additionalFormats.end() ) {
-            return std::distance(_imp->additionalFormats.begin(),foundFormat) + _imp->builtinFormats.size();
+            return std::distance(_imp->additionalFormats.begin(), foundFormat) + _imp->builtinFormats.size();
         }
     }
 
@@ -1105,7 +1106,7 @@ Project::tryAddProjectFormat(const Format & f)
     }
     QString formatStr = ProjectPrivate::generateStringFromFormat(f);
     _imp->additionalFormats.push_back(f);
-    _imp->formatKnob->appendChoice(formatStr.toStdString());
+    _imp->formatKnob->appendChoice( formatStr.toStdString() );
 
     return ( _imp->builtinFormats.size() + _imp->additionalFormats.size() ) - 1;
 }
@@ -1115,13 +1116,15 @@ Project::setProjectDefaultFormat(const Format & f)
 {
     //assert( !_imp->formatMutex.tryLock() );
     int index = tryAddProjectFormat(f);
+
     _imp->formatKnob->setValue(index);
     ///if locked it will trigger a deadlock because some parameters
     ///might respond to this signal by checking the content of the project format.
 }
 
 void
-Project::getProjectFormatEntries(std::vector<std::string>* formatStrings, int* currentValue) const
+Project::getProjectFormatEntries(std::vector<std::string>* formatStrings,
+                                 int* currentValue) const
 {
     *formatStrings = _imp->formatKnob->getEntries_mt_safe();
     *currentValue = _imp->formatKnob->getValue();
@@ -1131,7 +1134,9 @@ int
 Project::getProjectViewsCount() const
 {
     std::list<std::vector<std::string> > pairs;
+
     _imp->viewsList->getTable(&pairs);
+
     return (int)pairs.size();
 }
 
@@ -1139,12 +1144,11 @@ std::vector<ImageComponents>
 Project::getProjectDefaultLayers() const
 {
     std::vector<ImageComponents> ret;
-    
     std::list<std::vector<std::string> > pairs;
+
     _imp->defaultLayersList->getTable(&pairs);
     for (std::list<std::vector<std::string> >::iterator it = pairs.begin();
          it != pairs.end(); ++it) {
-        
         bool found = false;
         for (std::size_t i = 0; i < ret.size(); ++i) {
             if (ret[i].getLayerName() == (*it)[0]) {
@@ -1154,18 +1158,18 @@ Project::getProjectDefaultLayers() const
         }
         if (!found) {
             std::vector<std::string> componentsName;
-            QString str = QString::fromUtf8((*it)[1].c_str());
-            QStringList channels = str.split(QLatin1Char(' '));
-            componentsName.resize(channels.size());
+            QString str = QString::fromUtf8( (*it)[1].c_str() );
+            QStringList channels = str.split( QLatin1Char(' ') );
+            componentsName.resize( channels.size() );
             for (int i = 0; i < channels.size(); ++i) {
                 componentsName[i] = channels[i].toStdString();
             }
-            ImageComponents c((*it)[0],std::string(),componentsName);
+            ImageComponents c( (*it)[0], std::string(), componentsName );
             ret.push_back(c);
         }
     }
-    return ret;
 
+    return ret;
 }
 
 void
@@ -1173,11 +1177,12 @@ Project::addProjectDefaultLayer(const ImageComponents& comps)
 {
     const std::vector<std::string>& channels = comps.getComponentsNames();
     std::vector<std::string> row(2);
+
     row[0] = comps.getLayerName();
     std::string channelsStr;
     for (std::size_t i = 0; i < channels.size(); ++i) {
         channelsStr += channels[i];
-        if (i < (channels.size() -1)) {
+        if ( i < (channels.size() - 1) ) {
             channelsStr += ' ';
         }
     }
@@ -1189,8 +1194,8 @@ std::vector<std::string>
 Project::getProjectDefaultLayerNames() const
 {
     std::vector<std::string> ret;
-    
     std::list<std::vector<std::string> > pairs;
+
     _imp->defaultLayersList->getTable(&pairs);
     for (std::list<std::vector<std::string> >::iterator it = pairs.begin();
          it != pairs.end(); ++it) {
@@ -1202,76 +1207,86 @@ Project::getProjectDefaultLayerNames() const
             }
         }
         if (!found) {
-            ret.push_back((*it)[0]);
+            ret.push_back( (*it)[0] );
         }
     }
+
     return ret;
 }
-    
+
 const std::vector<std::string>&
 Project::getProjectViewNames() const
 {
-
     ///Tls is needed to implement getViewName in the multi-plane suite
     std::vector<std::string>& tls = _imp->tlsData->getOrCreateTLSData()->viewNames;
+
     tls.clear();
-    
+
     std::list<std::vector<std::string> > pairs;
     _imp->viewsList->getTable(&pairs);
     for (std::list<std::vector<std::string> >::iterator it = pairs.begin();
          it != pairs.end(); ++it) {
-        tls.push_back((*it)[0]);
+        tls.push_back( (*it)[0] );
     }
+
     return tls;
 }
-    
+
 void
 Project::setupProjectForStereo()
 {
-    
     std::list<std::string> views;
+
     views.push_back("Left");
     views.push_back("Right");
     std::string encoded = _imp->viewsList->encodeToKnobTableFormatSingleCol(views);
     _imp->viewsList->setValue(encoded);
 }
-   
+
 #if 0 // dead code
 // replaced by boost::to_lower(str)
-static std::string toLowerString(const std::string& str)
+static std::string
+toLowerString(const std::string& str)
 {
     std::string ret;
     std::locale loc;
+
     for (std::size_t i = 0; i < str.size(); ++i) {
-        ret.push_back(std::tolower(str[i],loc));
+        ret.push_back( std::tolower(str[i], loc) );
     }
+
     return ret;
 }
-    
+
 // replaced by boost::iequals(lhs, rhs)
-static bool caseInsensitiveCompare(const std::string& lhs, const std::string& rhs)
+static bool
+caseInsensitiveCompare(const std::string& lhs,
+                       const std::string& rhs)
 {
     std::string lowerLhs = toLowerString(lhs);
     std::string lowerRhs = toLowerString(rhs);
+
     return lowerLhs == lowerRhs;
 }
+
 #endif
 
 void
 Project::createProjectViews(const std::vector<std::string>& views)
 {
     std::list<std::string> pairs;
+
     _imp->viewsList->getTableSingleCol(&pairs);
-    
+
     for (std::size_t i = 0; i < views.size(); ++i) {
         bool found = false;
         for (std::list<std::string>::iterator it = pairs.begin(); it != pairs.end(); ++it) {
-            if (boost::iequals(*it,views[i])) {
+            if ( boost::iequals(*it, views[i]) ) {
                 found = true;
                 break;
             }
         }
-        if (found || views[i].empty()) {
+        if ( found || views[i].empty() ) {
             continue;
         }
         std::string view = views[i];
@@ -1280,13 +1295,12 @@ Project::createProjectViews(const std::vector<std::string>& views)
     }
     std::string encoded = _imp->viewsList->encodeToKnobTableFormatSingleCol(pairs);
     _imp->viewsList->setValue(encoded);
-
 }
 
 QString
 Project::getProjectFilename() const
 {
-    return QString::fromUtf8(_imp->getProjectFilename().c_str());
+    return QString::fromUtf8( _imp->getProjectFilename().c_str() );
 }
 
 QString
@@ -1306,7 +1320,7 @@ Project::hasEverAutoSaved() const
 QString
 Project::getProjectPath() const
 {
-    return QString::fromUtf8(_imp->getProjectPath().c_str());
+    return QString::fromUtf8( _imp->getProjectPath().c_str() );
 }
 
 bool
@@ -1317,7 +1331,6 @@ Project::hasProjectBeenSavedByUser() const
     return _imp->hasProjectBeenSavedByUser;
 }
 
-
 bool
 Project::isAutoPreviewEnabled() const
 {
@@ -1327,7 +1340,7 @@ Project::isAutoPreviewEnabled() const
 void
 Project::toggleAutoPreview()
 {
-    _imp->previewMode->setValue(!_imp->previewMode->getValue());
+    _imp->previewMode->setValue( !_imp->previewMode->getValue() );
 }
 
 boost::shared_ptr<TimeLine> Project::getTimeLine() const
@@ -1342,7 +1355,6 @@ Project::getAdditionalFormats(std::list<Format> *formats) const
     QMutexLocker l(&_imp->formatMutex);
     *formats = _imp->additionalFormats;
 }
-
 
 bool
 Project::isSaveUpToDate() const
@@ -1359,9 +1371,12 @@ Project::save(ProjectSerialization* serializationObject) const
 }
 
 bool
-Project::load(const ProjectSerialization & obj,const QString& name,const QString& path, bool* mustSave)
+Project::load(const ProjectSerialization & obj,
+              const QString& name,
+              const QString& path,
+              bool* mustSave)
 {
-    return _imp->restoreFromSerialization(obj,name,path, mustSave);
+    return _imp->restoreFromSerialization(obj, name, path, mustSave);
 }
 
 void
@@ -1383,13 +1398,12 @@ Project::onKnobValueChanged(KnobI* knob,
                             bool /*originatedFromMainThread*/)
 {
     if ( knob == _imp->viewsList.get() ) {
-        
         /**
          * All cache entries are linked to a view index which may no longer be correct since the user changed the project settings.
          * The only way to overcome this is to wipe the cache.
          **/
         appPTR->clearAllCaches();
-        
+
         std::vector<std::string> viewNames = getProjectViewNames();
         getApp()->setupViewersForViews(viewNames);
         if (reason == eValueChangedReasonUserEdited) {
@@ -1397,19 +1411,19 @@ Project::onKnobValueChanged(KnobI* knob,
             forceComputeInputDependentDataOnAllTrees();
         }
         Q_EMIT projectViewsChanged();
-    } else if  (knob == _imp->defaultLayersList.get()) {
+    } else if  ( knob == _imp->defaultLayersList.get() ) {
         if (reason == eValueChangedReasonUserEdited) {
             ///default layers change, notify all nodes so they rebuild their layers menus
             forceComputeInputDependentDataOnAllTrees();
         }
-    } else if (knob == _imp->setupForStereoButton.get()) {
+    } else if ( knob == _imp->setupForStereoButton.get() ) {
         setupProjectForStereo();
     } else if ( knob == _imp->formatKnob.get() ) {
         int index = _imp->formatKnob->getValue();
         Format frmt;
         bool found = _imp->findFormat(index, &frmt);
         NodesList nodes;
-        getNodes_recursive(nodes,true);
+        getNodes_recursive(nodes, true);
 
         std::vector<std::string> entries = _imp->formatKnob->getEntries_mt_safe();
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -1421,7 +1435,7 @@ Project::onKnobValueChanged(KnobI* knob,
                 for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
                     (*it)->incrementKnobsAge();
                 }
-                
+
                 ///Format change, hence probably the PAR so run getClipPreferences again
                 forceComputeInputDependentDataOnAllTrees();
             }
@@ -1433,12 +1447,12 @@ Project::onKnobValueChanged(KnobI* knob,
         Q_EMIT autoPreviewChanged( _imp->previewMode->getValue() );
     }  else if ( knob == _imp->frameRate.get() ) {
         forceComputeInputDependentDataOnAllTrees();
-    } else if (knob == _imp->frameRange.get()) {
+    } else if ( knob == _imp->frameRange.get() ) {
         int first = _imp->frameRange->getValue(0);
         int last = _imp->frameRange->getValue(1);
         Q_EMIT frameRangeChanged(first, last);
     }
-}
+} // Project::onKnobValueChanged
 
 bool
 Project::isLoadingProject() const
@@ -1447,12 +1461,12 @@ Project::isLoadingProject() const
 
     return _imp->isLoadingProject;
 }
-    
+
 bool
 Project::isLoadingProjectInternal() const
 {
     QMutexLocker l(&_imp->isLoadingProjectMutex);
-    
+
     return _imp->isLoadingProjectInternal;
 }
 
@@ -1471,55 +1485,58 @@ Project::isGraphWorthLess() const
      */
 
     ///If it has never auto-saved, then the user didn't do anything, hence the project is worthless.
-    return (!hasEverAutoSaved() && !hasProjectBeenSavedByUser()) || !hasNodes();
+    return ( !hasEverAutoSaved() && !hasProjectBeenSavedByUser() ) || !hasNodes();
 }
-    
+
 QString
 Project::getLockAbsoluteFilePath() const
 {
-    QString projectPath = QString::fromUtf8(_imp->getProjectPath().c_str());
-    QString projectFilename = QString::fromUtf8(_imp->getProjectFilename().c_str());
-  
-    if (projectPath.isEmpty()) {
+    QString projectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
+    QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
+
+    if ( projectPath.isEmpty() ) {
         return QString();
     }
-    if (!projectPath.endsWith(QLatin1Char('/'))) {
-        projectPath.append(QLatin1Char('/'));
+    if ( !projectPath.endsWith( QLatin1Char('/') ) ) {
+        projectPath.append( QLatin1Char('/') );
     }
     QString lockFilePath = projectPath + projectFilename + QString::fromUtf8(".lock");
+
     return lockFilePath;
 }
-    
+
 void
 Project::createLockFile()
 {
-    QString lastAuthor = QString::fromUtf8(_imp->lastAuthorName->getValue().c_str());
+    QString lastAuthor = QString::fromUtf8( _imp->lastAuthorName->getValue().c_str() );
     QDateTime now = QDateTime::currentDateTime();
     QString lockFilePath = getLockAbsoluteFilePath();
-    if (lockFilePath.isEmpty()) {
+
+    if ( lockFilePath.isEmpty() ) {
         return;
     }
     QFile f(lockFilePath);
-    if (!f.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+    if ( !f.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate) ) {
         return;
     }
     QTextStream ts(&f);
     QString curDateStr = now.toString();
     ts << curDateStr << '\n'
-    << lastAuthor << '\n'
-    << (qint64)QCoreApplication::applicationPid() << '\n'
-    << QHostInfo::localHostName();
+       << lastAuthor << '\n'
+       << (qint64)QCoreApplication::applicationPid() << '\n'
+       << QHostInfo::localHostName();
 }
-    
+
 void
 Project::removeLockFile()
 {
     QString lockFilePath = getLockAbsoluteFilePath();
-    if (QFile::exists(lockFilePath)) {
+
+    if ( QFile::exists(lockFilePath) ) {
         QFile::remove(lockFilePath);
     }
 }
-    
+
 bool
 Project::getLockFileInfos(const QString& projectPath,
                           const QString& projectName,
@@ -1532,35 +1549,37 @@ Project::getLockFileInfos(const QString& projectPath,
     Global::ensureLastPathSeparator(realPath);
     QString lockFilePath = realPath + projectName + QString::fromUtf8(".lock");
     QFile f(lockFilePath);
-    if (!f.open(QIODevice::ReadOnly)) {
+
+    if ( !f.open(QIODevice::ReadOnly) ) {
         return false;
     }
     QTextStream ts(&f);
-    if (!ts.atEnd()) {
+    if ( !ts.atEnd() ) {
         *lastSaveDate = ts.readLine();
     } else {
         return false;
     }
-    if (!ts.atEnd()) {
+    if ( !ts.atEnd() ) {
         *authorName = ts.readLine();
     } else {
         return false;
     }
-    if (!ts.atEnd()) {
+    if ( !ts.atEnd() ) {
         QString pidstr = ts.readLine();
         *appPID = pidstr.toLongLong();
     } else {
         return false;
     }
     // host is optional and was added later
-    if (!ts.atEnd()) {
+    if ( !ts.atEnd() ) {
         *host = ts.readLine();
     } else {
         *host = tr("unknown host");
     }
+
     return true;
 }
-    
+
 void
 Project::removeLastAutosave()
 {
@@ -1568,21 +1587,20 @@ Project::removeLastAutosave()
      * First remove the last auto-save registered for this project.
      */
     QString filepath = getLastAutoSaveFilePath();
-    
-    if (!filepath.isEmpty()) {
+
+    if ( !filepath.isEmpty() ) {
         QFile::remove(filepath);
     }
-    
+
     /*
-     * Since we may have saved the project to an old project, overwritting the existing file, there might be 
+     * Since we may have saved the project to an old project, overwritting the existing file, there might be
      * a oldProject.ntp.autosave file next to it that belonged to the old project, make sure it gets removed too
      */
-    QString projectPath = QString::fromUtf8(_imp->getProjectPath().c_str());
-    QString projectFilename = QString::fromUtf8(_imp->getProjectFilename().c_str());
-    
+    QString projectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
+    QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
     Global::ensureLastPathSeparator(projectPath);
     QString autoSaveFilePath = projectPath + projectFilename + QString::fromUtf8(".autosave");
-    if (QFile::exists(autoSaveFilePath)) {
+    if ( QFile::exists(autoSaveFilePath) ) {
         QFile::remove(autoSaveFilePath);
     }
 }
@@ -1596,23 +1614,23 @@ Project::clearAutoSavesDir()
 
     for (int i = 0; i < entries.size(); ++i) {
         const QString & entry = entries.at(i);
-        
+
         ///Do not remove the RENDER_SAVE used by the background processes to render because otherwise they may fail to start rendering.
         /// @see AppInstance::startWritersRendering
-        if (entry.contains(QString::fromUtf8("RENDER_SAVE"))) {
+        if ( entry.contains( QString::fromUtf8("RENDER_SAVE") ) ) {
             continue;
         }
-        
-        QString searchStr(QLatin1Char('.'));
-        searchStr.append(QString::fromUtf8(NATRON_PROJECT_FILE_EXT));
-        searchStr.append(QLatin1Char('.'));
+
+        QString searchStr( QLatin1Char('.') );
+        searchStr.append( QString::fromUtf8(NATRON_PROJECT_FILE_EXT) );
+        searchStr.append( QLatin1Char('.') );
         int suffixPos = entry.indexOf(searchStr);
         if (suffixPos != -1) {
-			QString dirToRemove = savesDir.path();
-			if (!dirToRemove.endsWith(QLatin1Char('/'))) {
-				dirToRemove += QLatin1Char('/');
-			}
-			dirToRemove += entry;
+            QString dirToRemove = savesDir.path();
+            if ( !dirToRemove.endsWith( QLatin1Char('/') ) ) {
+                dirToRemove += QLatin1Char('/');
+            }
+            dirToRemove += entry;
             QFile::remove(dirToRemove);
         }
     }
@@ -1621,17 +1639,19 @@ Project::clearAutoSavesDir()
 QString
 Project::autoSavesDir()
 {
-	QString str = StandardPaths::writableLocation(StandardPaths::eStandardLocationData);
+    QString str = StandardPaths::writableLocation(StandardPaths::eStandardLocationData);
     Global::ensureLastPathSeparator(str);
-	str += QString::fromUtf8("Autosaves");
+
+    str += QString::fromUtf8("Autosaves");
+
     return str;
 }
-    
+
 void
 Project::resetProject()
 {
     reset(false);
-    if (!getApp()->isBackground()) {
+    if ( !getApp()->isBackground() ) {
         createViewer();
     }
 }
@@ -1639,33 +1659,32 @@ Project::resetProject()
 void
 Project::reset(bool aboutToQuit)
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     {
         QMutexLocker k(&_imp->projectClosingMutex);
         _imp->projectClosing = true;
     }
 
     _imp->runOnProjectCloseCallback();
-    
+
     QString lockFilePath = getLockAbsoluteFilePath();
-    QString projectPath = QString::fromUtf8(_imp->getProjectPath().c_str());
-    QString projectFilename = QString::fromUtf8(_imp->getProjectFilename().c_str());
+    QString projectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
+    QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
     ///Remove the lock file if we own it
-    if (QFile::exists(lockFilePath)) {
+    if ( QFile::exists(lockFilePath) ) {
         QString author;
         QString lastsave;
         QString host;
         qint64 pid;
-        if (getLockFileInfos(projectPath, projectFilename, &author, &lastsave, &host, &pid)) {
-            if (pid == QCoreApplication::applicationPid()) {
+        if ( getLockFileInfos(projectPath, projectFilename, &author, &lastsave, &host, &pid) ) {
+            if ( pid == QCoreApplication::applicationPid() ) {
                 QFile::remove(lockFilePath);
             }
         }
     }
     clearNodes(!aboutToQuit);
-    
+
     if (!aboutToQuit) {
-        
         {
             QMutexLocker l(&_imp->projectLock);
             _imp->autoSetProjectFormat = appPTR->getCurrentSettings()->isAutoProjectFormatEnabled();
@@ -1677,44 +1696,45 @@ Project::reset(bool aboutToQuit)
             _imp->additionalFormats.clear();
         }
         getApp()->removeAllKeyframesIndicators();
-        
+
         Q_EMIT projectNameChanged(QString::fromUtf8(NATRON_PROJECT_UNTITLED), false);
-        
         const KnobsVec & knobs = getKnobs();
-        
+
         beginChanges();
         for (U32 i = 0; i < knobs.size(); ++i) {
             for (int j = 0; j < knobs[i]->getDimension(); ++j) {
                 knobs[i]->resetToDefaultValue(j);
             }
         }
-        
-        
-        onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),true);
-        
+
+
+        onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(), true);
+
         endChanges(true);
     }
-    
+
     {
         QMutexLocker k(&_imp->projectClosingMutex);
         _imp->projectClosing = false;
     }
-}
-    
-    bool
-    Project::isAutoSetProjectFormatEnabled() const
-    {
-        QMutexLocker l(&_imp->formatMutex);
+} // Project::reset
+
+bool
+Project::isAutoSetProjectFormatEnabled() const
+{
+    QMutexLocker l(&_imp->formatMutex);
+
     return _imp->autoSetProjectFormat;
 }
-    
+
 void
 Project::setAutoSetProjectFormatEnabled(bool enabled)
 {
     QMutexLocker l(&_imp->formatMutex);
+
     _imp->autoSetProjectFormat = enabled;
 }
-    
+
 void
 Project::setOrAddProjectFormat(const Format & frmt,
                                bool skipAdd)
@@ -1731,9 +1751,9 @@ Project::setOrAddProjectFormat(const Format & frmt,
             _imp->autoSetProjectFormat = false;
             dispW = frmt;
 
-            Format* df = appPTR->findExistingFormat(dispW.width(), dispW.height(), dispW.getPixelAspectRatio());
+            Format* df = appPTR->findExistingFormat( dispW.width(), dispW.height(), dispW.getPixelAspectRatio() );
             if (df) {
-                dispW.setName(df->getName());
+                dispW.setName( df->getName() );
                 setProjectDefaultFormat(dispW);
             } else {
                 setProjectDefaultFormat(dispW);
@@ -1744,7 +1764,6 @@ Project::setOrAddProjectFormat(const Format & frmt,
         }
     }
 }
-
 
 bool
 Project::tryLock() const
@@ -1798,74 +1817,77 @@ std::string
 Project::escapeXML(const std::string &istr)
 {
     std::string str( istr );
+
     for (size_t i = 0; i < str.size(); ++i) {
         switch (str[i]) {
-            case '<':
-                str.replace(i, 1, "&lt;");
-                i += 3;
-                break;
+        case '<':
+            str.replace(i, 1, "&lt;");
+            i += 3;
+            break;
 
-            case '>':
-                str.replace(i, 1, "&gt;");
-                i += 3;
-                break;
-            case '&':
-                str.replace(i, 1, "&amp;");
-                i += 4;
-                break;
-            case '"':
-                str.replace(i, 1, "&quot;");
-                i += 5;
-                break;
-            case '\'':
-                str.replace(i, 1, "&apos;");
-                i += 5;
-                break;
-            default: {
-                unsigned char c = (unsigned char)(str[i]);
-                // Escape even the whitespace characters '\n' '\r' '\t', although they are valid
-                // XML, because they would be converted to space when re-read.
-                // See http://www.w3.org/TR/xml/#AVNormalize
-                if ((0x01 <= c && c <= 0x1f) || (0x7F <= c && c <= 0x9F)) {
-                    // these characters must be escaped in XML 1.1
-                    // http://www.w3.org/TR/xml/#sec-references
-                    std::string ns = "&#x";
-                    if (c > 0xf) {
-                        int d = c / 0x10;
-                        ns += ('0' + d); // d cannot be more than 9 (because c <= 0x9F)
-                    }
-                    int d = c & 0xf;
-                    ns += d < 10 ? ('0' + d) : ('A' + d - 10);
-                    ns += ';';
-                    str.replace(i, 1, ns);
-                    i += ns.size() + 1;
+        case '>':
+            str.replace(i, 1, "&gt;");
+            i += 3;
+            break;
+        case '&':
+            str.replace(i, 1, "&amp;");
+            i += 4;
+            break;
+        case '"':
+            str.replace(i, 1, "&quot;");
+            i += 5;
+            break;
+        case '\'':
+            str.replace(i, 1, "&apos;");
+            i += 5;
+            break;
+        default: {
+            unsigned char c = (unsigned char)(str[i]);
+            // Escape even the whitespace characters '\n' '\r' '\t', although they are valid
+            // XML, because they would be converted to space when re-read.
+            // See http://www.w3.org/TR/xml/#AVNormalize
+            if ( ( ( 0x01 <= c) && ( c <= 0x1f) ) || ( ( 0x7F <= c) && ( c <= 0x9F) ) ) {
+                // these characters must be escaped in XML 1.1
+                // http://www.w3.org/TR/xml/#sec-references
+                std::string ns = "&#x";
+                if (c > 0xf) {
+                    int d = c / 0x10;
+                    ns += ('0' + d);     // d cannot be more than 9 (because c <= 0x9F)
                 }
-            }   break;
+                int d = c & 0xf;
+                ns += d < 10 ? ('0' + d) : ('A' + d - 10);
+                ns += ';';
+                str.replace(i, 1, ns);
+                i += ns.size() + 1;
+            }
+        }
+        break;
         }
     }
-    assert(str == OFX::XML::escape(istr)); // check that this escaped string is consistent with the one in HostSupport
+    assert( str == OFX::XML::escape(istr) ); // check that this escaped string is consistent with the one in HostSupport
     return str;
-}
+} // Project::escapeXML
 
 std::string
 Project::unescapeXML(const std::string &istr)
 {
     size_t i;
     std::string str = istr;
+
     i = str.find_first_of("&");
     while (i != std::string::npos) {
         assert(str[i] == '&');
-        if (!str.compare(i + 1, 3, "lt;")) {
+        if ( !str.compare(i + 1, 3, "lt;") ) {
             str.replace(i, 4, 1, '<');
-        } else if (!str.compare(i + 1, 3, "gt;")) {
+        } else if ( !str.compare(i + 1, 3, "gt;") ) {
             str.replace(i, 4, 1, '>');
-        } else if (!str.compare(i + 1, 4, "amp;")) {
+        } else if ( !str.compare(i + 1, 4, "amp;") ) {
             str.replace(i, 5, 1, '&');
-        } else if (!str.compare(i + 1, 5, "apos;")) {
+        } else if ( !str.compare(i + 1, 5, "apos;") ) {
             str.replace(i, 6, 1, '\'');
-        } else if (!str.compare(i + 1, 5, "quot;")) {
+        } else if ( !str.compare(i + 1, 5, "quot;") ) {
             str.replace(i, 6, 1, '"');
-        } else if (!str.compare(i + 1, 1, "#")) {
+        } else if ( !str.compare(i + 1, 1, "#") ) {
             size_t end = str.find_first_of(";", i + 2);
             if (end == std::string::npos) {
                 // malformed XML
@@ -1873,14 +1895,13 @@ Project::unescapeXML(const std::string &istr)
             }
             char *tail = NULL;
             int errno_save = errno;
-            bool hex = str[i+2] == 'x' || str[i+2] == 'X';
+            bool hex = str[i + 2] == 'x' || str[i + 2] == 'X';
             int prefix = hex ? 3 : 2; // prefix length: "&#" or "&#x"
-            char *head = &str[i+ prefix];
+            char *head = &str[i + prefix];
 
             errno = 0;
             unsigned long cp = std::strtoul(head, &tail, hex ? 16 : 10);
-
-            bool fail = errno || (tail - &str[0])!= (long)end || cp > 0xff; // only handle 0x01-0xff
+            bool fail = errno || (tail - &str[0]) != (long)end || cp > 0xff; // only handle 0x01-0xff
             errno = errno_save;
             if (fail) {
                 return str;
@@ -1890,160 +1911,165 @@ Project::unescapeXML(const std::string &istr)
         }
         i = str.find_first_of("&", i + 1);
     }
+
     return str;
 }
 
-
-
 void
-Project::getEnvironmentVariables(std::map<std::string,std::string>& env) const
+Project::getEnvironmentVariables(std::map<std::string, std::string>& env) const
 {
     std::list<std::vector<std::string> > table;
+
     _imp->envVars->getTable(&table);
-    for (std::list<std::vector<std::string> >::iterator it = table.begin(); it!=table.end(); ++it) {
+    for (std::list<std::vector<std::string> >::iterator it = table.begin(); it != table.end(); ++it) {
         assert(it->size() == 2);
         env[(*it)[0]] = (*it)[1];
     }
 }
-    
+
 void
-Project::expandVariable(const std::map<std::string,std::string>& env,std::string& str)
+Project::expandVariable(const std::map<std::string, std::string>& env,
+                        std::string& str)
 {
     ///Loop while we can still expand variables, up to NATRON_PROJECT_ENV_VAR_MAX_RECURSION recursions
     for (int i = 0; i < NATRON_PROJECT_ENV_VAR_MAX_RECURSION; ++i) {
-        for (std::map<std::string,std::string>::const_iterator it = env.begin(); it != env.end(); ++it) {
-            if (expandVariable(it->first,it->second, str)) {
+        for (std::map<std::string, std::string>::const_iterator it = env.begin(); it != env.end(); ++it) {
+            if ( expandVariable(it->first, it->second, str) ) {
                 break;
             }
         }
     }
 }
-    
+
 bool
-Project::expandVariable(const std::string& varName,const std::string& varValue,std::string& str)
+Project::expandVariable(const std::string& varName,
+                        const std::string& varValue,
+                        std::string& str)
 {
-    if (str.size() > (varName.size() + 2) && ///can contain the environment variable name
-        str[0] == '[' && /// env var name is bracketed
-        str.substr(1,varName.size()) == varName && /// starts with the environment variable name
-        str[varName.size() + 1] == ']') { /// env var name is bracketed
-        
+    if ( ( str.size() > (varName.size() + 2) ) && ///can contain the environment variable name
+         ( str[0] == '[') && /// env var name is bracketed
+         ( str.substr( 1, varName.size() ) == varName) && /// starts with the environment variable name
+         ( str[varName.size() + 1] == ']') ) { /// env var name is bracketed
         str.erase(str.begin() + varName.size() + 1);
-        str.erase(str.begin());
-        str.replace(0,varName.size(),varValue);
+        str.erase( str.begin() );
+        str.replace(0, varName.size(), varValue);
+
         return true;
     }
-    return false;
 
+    return false;
 }
-   
+
 void
-Project::findReplaceVariable(const std::map<std::string,std::string>& env,std::string& str)
+Project::findReplaceVariable(const std::map<std::string, std::string>& env,
+                             std::string& str)
 {
     std::string longestName;
     std::string longestVar;
-    for (std::map<std::string,std::string>::const_iterator it = env.begin(); it != env.end(); ++it) {
-        if (str.size() >= it->second.size() &&
-            it->second.size() > longestVar.size() &&
-            str.substr(0,it->second.size()) == it->second) {
+
+    for (std::map<std::string, std::string>::const_iterator it = env.begin(); it != env.end(); ++it) {
+        if ( ( str.size() >= it->second.size() ) &&
+             ( it->second.size() > longestVar.size() ) &&
+             ( str.substr( 0, it->second.size() ) == it->second) ) {
             longestName = it->first;
             longestVar = it->second;
         }
     }
-    if (!longestName.empty() && !longestVar.empty()) {
+    if ( !longestName.empty() && !longestVar.empty() ) {
         std::string replaceStr;
         replaceStr += '[';
         replaceStr += longestName;
         replaceStr += ']';
-        str.replace(0, longestVar.size(),replaceStr);
+        str.replace(0, longestVar.size(), replaceStr);
     }
-    
 }
-    
+
 void
-Project::makeRelativeToVariable(const std::string& varName,const std::string& varValue,std::string& str)
+Project::makeRelativeToVariable(const std::string& varName,
+                                const std::string& varValue,
+                                std::string& str)
 {
-    
     bool hasTrailingSep = !varValue.empty() && (varValue[varValue.size() - 1] == '/' || varValue[varValue.size() - 1] == '\\');
-    if (str.size() > varValue.size() && str.substr(0,varValue.size()) == varValue) {
+
+    if ( ( str.size() > varValue.size() ) && (str.substr( 0, varValue.size() ) == varValue) ) {
         if (hasTrailingSep) {
-            str = '[' + varName + ']' + str.substr(varValue.size(),str.size());
+            str = '[' + varName + ']' + str.substr( varValue.size(), str.size() );
         } else {
-            str = '[' + varName + "]/" + str.substr(varValue.size() + 1,str.size());
+            str = '[' + varName + "]/" + str.substr( varValue.size() + 1, str.size() );
         }
     } else {
-        QDir dir(QString::fromUtf8(varValue.c_str()));
-        QString relative = dir.relativeFilePath(QString::fromUtf8(str.c_str()));
+        QDir dir( QString::fromUtf8( varValue.c_str() ) );
+        QString relative = dir.relativeFilePath( QString::fromUtf8( str.c_str() ) );
         if (hasTrailingSep) {
             str = '[' + varName + ']' + relative.toStdString();
         } else {
             str = '[' + varName + "]/" + relative.toStdString();
         }
     }
-
-    
-    
 }
-    
+
 bool
-Project::fixFilePath(const std::string& projectPathName,const std::string& newProjectPath,
-                    std::string& filePath)
+Project::fixFilePath(const std::string& projectPathName,
+                     const std::string& newProjectPath,
+                     std::string& filePath)
 {
-    if (filePath.size() < (projectPathName.size() + 2) //< filepath doesn't have enough space to  contain the variable
-        || filePath[0] != '['
-        || filePath[projectPathName.size() + 1] != ']'
-        || filePath.substr(1,projectPathName.size()) != projectPathName) {
+    if ( ( filePath.size() < (projectPathName.size() + 2) ) //< filepath doesn't have enough space to  contain the variable
+         || ( filePath[0] != '[')
+         || ( filePath[projectPathName.size() + 1] != ']')
+         || ( filePath.substr( 1, projectPathName.size() ) != projectPathName) ) {
         return false;
     }
-    
+
     canonicalizePath(filePath);
-    
-    if (newProjectPath.empty()) {
+
+    if ( newProjectPath.empty() ) {
         return true; //keep it absolute if the variables points to nothing
     } else {
-        QDir dir(QString::fromUtf8(newProjectPath.c_str()));
-        if (!dir.exists()) {
+        QDir dir( QString::fromUtf8( newProjectPath.c_str() ) );
+        if ( !dir.exists() ) {
             return false;
         }
-        
-        filePath = dir.relativeFilePath(QString::fromUtf8(filePath.c_str())).toStdString();
+
+        filePath = dir.relativeFilePath( QString::fromUtf8( filePath.c_str() ) ).toStdString();
         if (newProjectPath[newProjectPath.size() - 1] == '/') {
             filePath = '[' + projectPathName + ']' + filePath;
         } else {
             filePath = '[' + projectPathName + "]/" + filePath;
         }
+
         return true;
     }
 }
- bool
+
+bool
 Project::isRelative(const std::string& str)
 {
 #ifdef __NATRON_WIN32__
-    return (str.empty() || (!str.empty() && (str[0] != '/')
-                            && (!(str.size() >= 2 && str[1] == ':'))));
+
+    return ( str.empty() || ( !str.empty() && (str[0] != '/')
+                              && ( !(str.size() >= 2 && str[1] == ':') ) ) );
 #else  //Unix
-    return (str.empty() || (str[0] != '/'));
+    return ( str.empty() || (str[0] != '/') );
 #endif
 }
-    
-    
-    
+
 void
 Project::canonicalizePath(std::string& str)
 {
-    std::map<std::string,std::string> envvar;
+    std::map<std::string, std::string> envvar;
+
     getEnvironmentVariables(envvar);
-    
+
     expandVariable(envvar, str);
-    
+
     if ( !str.empty() ) {
-        
         ///Now check if the string is relative
-        
-        if (isRelative(str)) {
+
+        if ( isRelative(str) ) {
             ///If it doesn't start with an env var but is relative, prepend the project env var
-            std::map<std::string,std::string>::iterator foundProject = envvar.find(NATRON_PROJECT_ENV_VAR_NAME);
-            if (foundProject != envvar.end()) {
-                if (foundProject->second.empty()) {
+            std::map<std::string, std::string>::iterator foundProject = envvar.find(NATRON_PROJECT_ENV_VAR_NAME);
+            if ( foundProject != envvar.end() ) {
+                if ( foundProject->second.empty() ) {
                     return;
                 }
                 const char& c = foundProject->second[foundProject->second.size() - 1];
@@ -2056,59 +2082,56 @@ Project::canonicalizePath(std::string& str)
                 str = copy;
             }
         }
-        
+
         ///Canonicalize
-        QFileInfo info(QString::fromUtf8(str.c_str()));
+        QFileInfo info( QString::fromUtf8( str.c_str() ) );
         QString canonical =  info.canonicalFilePath();
-        if (canonical.isEmpty()) {
+        if ( canonical.isEmpty() ) {
             return;
         } else {
             str = canonical.toStdString();
         }
-        
     }
-
 }
-    
-    
+
 void
 Project::simplifyPath(std::string& str)
 {
-    std::map<std::string,std::string> envvar;
+    std::map<std::string, std::string> envvar;
+
     getEnvironmentVariables(envvar);
-    
-    Project::findReplaceVariable(envvar,str);
+
+    Project::findReplaceVariable(envvar, str);
 }
-    
-    
+
 void
 Project::makeRelativeToProject(std::string& str)
 {
-    std::map<std::string,std::string> envvar;
+    std::map<std::string, std::string> envvar;
+
     getEnvironmentVariables(envvar);
 
-    std::map<std::string,std::string>::iterator found = envvar.find(NATRON_PROJECT_ENV_VAR_NAME);
-    if (found != envvar.end() && !found->second.empty()) {
+    std::map<std::string, std::string>::iterator found = envvar.find(NATRON_PROJECT_ENV_VAR_NAME);
+    if ( ( found != envvar.end() ) && !found->second.empty() ) {
         makeRelativeToVariable(found->first, found->second, str);
     }
 }
 
-    
 void
-Project::onOCIOConfigPathChanged(const std::string& path,bool block)
+Project::onOCIOConfigPathChanged(const std::string& path,
+                                 bool block)
 {
     beginChanges();
-    
+
     try {
-        
         std::string oldEnv = _imp->envVars->getValue();
         std::list<std::vector<std::string> > table;
         _imp->envVars->decodeFromKnobTableFormat(oldEnv, &table);
 
         ///If there was already a OCIO variable, update it, otherwise create it
         bool found = false;
-        for (std::list<std::vector<std::string> >::iterator it = table.begin(); it!=table.end(); ++it) {
-            if ((*it)[0] == NATRON_OCIO_ENV_VAR_NAME) {
+        for (std::list<std::vector<std::string> >::iterator it = table.begin(); it != table.end(); ++it) {
+            if ( (*it)[0] == NATRON_OCIO_ENV_VAR_NAME ) {
                 (*it)[1] = path;
                 found = true;
                 break;
@@ -2120,17 +2143,16 @@ Project::onOCIOConfigPathChanged(const std::string& path,bool block)
             vec[1] = path;
             table.push_back(vec);
         }
-        
+
         std::string newEnv = _imp->envVars->encodeToKnobTableFormat(table);
 
         if (oldEnv != newEnv) {
-            if (appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
-                fixRelativeFilePaths(NATRON_OCIO_ENV_VAR_NAME, path,block);
+            if ( appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled() ) {
+                fixRelativeFilePaths(NATRON_OCIO_ENV_VAR_NAME, path, block);
             }
             _imp->envVars->setValue(newEnv);
         }
         endChanges(block);
-        
     } catch (std::logic_error) {
         // ignore
     }
@@ -2141,27 +2163,25 @@ Project::getProjectFrameRate() const
 {
     return _imp->frameRate->getValue();
 }
-    
+
 boost::shared_ptr<KnobPath>
 Project::getEnvVarKnob() const
 {
     return _imp->envVars;
 }
-    
-    
-    
+
 std::string
 Project::getOnProjectLoadCB() const
 {
     return _imp->onProjectLoadCB->getValue();
 }
-    
+
 std::string
 Project::getOnProjectSaveCB() const
 {
     return _imp->onProjectSaveCB->getValue();
 }
-    
+
 std::string
 Project::getOnProjectCloseCB() const
 {
@@ -2173,39 +2193,42 @@ Project::getOnNodeCreatedCB() const
 {
     return _imp->onNodeCreated->getValue();
 }
-    
+
 std::string
 Project::getOnNodeDeleteCB() const
 {
     return _imp->onNodeDeleted->getValue();
 }
-    
+
 bool
 Project::isProjectClosing() const
 {
     QMutexLocker k(&_imp->projectClosingMutex);
+
     return _imp->projectClosing;
 }
-    
+
 bool
 Project::isFrameRangeLocked() const
 {
     return _imp->lockFrameRange->getValue();
 }
-    
+
 void
-Project::getFrameRange(double* first,double* last) const
+Project::getFrameRange(double* first,
+                       double* last) const
 {
     *first = _imp->frameRange->getValue(0);
     *last = _imp->frameRange->getValue(1);
 }
-    
+
 void
-Project::unionFrameRangeWith(int first,int last)
+Project::unionFrameRangeWith(int first,
+                             int last)
 {
-    
-    int curFirst,curLast;
+    int curFirst, curLast;
     bool mustSet = !_imp->frameRange->hasModifications() && first != last;
+
     curFirst = _imp->frameRange->getValue(0);
     curLast = _imp->frameRange->getValue(1);
     curFirst = !mustSet ? std::min(first, curFirst) : first;
@@ -2214,42 +2237,42 @@ Project::unionFrameRangeWith(int first,int last)
     _imp->frameRange->setValue(curFirst, ViewSpec::all(), 0);
     _imp->frameRange->setValue(curLast, ViewSpec::all(), 1);
     endChanges();
-
 }
-    
+
 void
 Project::recomputeFrameRangeFromReaders()
 {
-    int first = 1,last = 1;
+    int first = 1, last = 1;
+
     recomputeFrameRangeForAllReaders(&first, &last);
-    
+
     beginChanges();
     _imp->frameRange->setValue(first, ViewSpec::all(), 0);
     _imp->frameRange->setValue(last,  ViewSpec::all(), 1);
     endChanges();
 }
-    
+
 void
 Project::createViewer()
 {
-    if (getApp()->isBackground()) {
+    if ( getApp()->isBackground() ) {
         return;
     }
-    
-    CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonInternal, shared_from_this());
-    getApp()->createNode(args);
 
+    CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonInternal, shared_from_this() );
+    getApp()->createNode(args);
 }
-    
-static bool hasNodeOutputsInList(const NodesList& nodes,const NodePtr& node)
+
+static bool
+hasNodeOutputsInList(const NodesList& nodes,
+                     const NodePtr& node)
 {
     const NodesWList& outputs = node->getGuiOutputs();
-    
     bool foundOutput = false;
+
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if (*it != node) {
-            
-            for (NodesWList::const_iterator it2 = outputs.begin(); it2!=outputs.end(); ++it2) {
+            for (NodesWList::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
                 if (it2->lock() == *it) {
                     foundOutput = true;
                     break;
@@ -2260,17 +2283,19 @@ static bool hasNodeOutputsInList(const NodesList& nodes,const NodePtr& node)
             }
         }
     }
+
     return foundOutput;
 }
-    
-static bool hasNodeInputsInList(const NodesList& nodes,const NodePtr& node)
+
+static bool
+hasNodeInputsInList(const NodesList& nodes,
+                    const NodePtr& node)
 {
     const std::vector<NodeWPtr >& inputs = node->getGuiInputs();
-    
     bool foundInput = false;
+
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if (*it != node) {
-            
             for (std::size_t i = 0; i < inputs.size(); ++i) {
                 NodePtr input = inputs[i].lock();
                 if (input == *it) {
@@ -2283,26 +2308,29 @@ static bool hasNodeInputsInList(const NodesList& nodes,const NodePtr& node)
             }
         }
     }
+
     return foundInput;
 }
-    
-static void addTreeInputs(const NodesList& nodes,const NodePtr& node,
-                              Project::NodesTree& tree,
-                              NodesList& markedNodes)
+
+static void
+addTreeInputs(const NodesList& nodes,
+              const NodePtr& node,
+              Project::NodesTree& tree,
+              NodesList& markedNodes)
 {
-    if (std::find(markedNodes.begin(), markedNodes.end(), node) != markedNodes.end()) {
+    if ( std::find(markedNodes.begin(), markedNodes.end(), node) != markedNodes.end() ) {
         return;
     }
-    
-    if (std::find(nodes.begin(), nodes.end(), node) == nodes.end()) {
+
+    if ( std::find(nodes.begin(), nodes.end(), node) == nodes.end() ) {
         return;
     }
-    
-    if (!hasNodeInputsInList(nodes,node)) {
+
+    if ( !hasNodeInputsInList(nodes, node) ) {
         Project::TreeInput input;
         input.node = node;
         const std::vector<NodeWPtr >& inputs = node->getGuiInputs();
-        input.inputs.resize(inputs.size());
+        input.inputs.resize( inputs.size() );
         for (std::size_t i = 0; i < inputs.size(); ++i) {
             input.inputs[i] = inputs[i].lock();
         }
@@ -2312,7 +2340,7 @@ static void addTreeInputs(const NodesList& nodes,const NodePtr& node,
         tree.inbetweenNodes.push_back(node);
         markedNodes.push_back(node);
         const std::vector<NodeWPtr >& inputs = node->getGuiInputs();
-        for (std::vector<NodeWPtr >::const_iterator it2 = inputs.begin() ; it2!=inputs.end(); ++it2) {
+        for (std::vector<NodeWPtr >::const_iterator it2 = inputs.begin(); it2 != inputs.end(); ++it2) {
             NodePtr input = it2->lock();
             if (input) {
                 addTreeInputs(nodes, input, tree, markedNodes);
@@ -2320,26 +2348,28 @@ static void addTreeInputs(const NodesList& nodes,const NodePtr& node,
         }
     }
 }
-    
-void Project::extractTreesFromNodes(const NodesList& nodes,std::list<Project::NodesTree>& trees)
+
+void
+Project::extractTreesFromNodes(const NodesList& nodes,
+                               std::list<Project::NodesTree>& trees)
 {
     NodesList markedNodes;
-    
+
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         bool isOutput = !hasNodeOutputsInList(nodes, *it);
         if (isOutput) {
             NodesTree tree;
             tree.output.node = *it;
             const NodesWList& outputs = (*it)->getGuiOutputs();
-            for (NodesWList::const_iterator it2 = outputs.begin(); it2!=outputs.end(); ++it2) {
+            for (NodesWList::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
                 NodePtr output = it2->lock();
                 if (!output) {
                     continue;
                 }
                 int idx = output->inputIndex(*it);
-                tree.output.outputs.push_back(std::make_pair(idx,*it2));
+                tree.output.outputs.push_back( std::make_pair(idx, *it2) );
             }
-            
+
             const std::vector<NodeWPtr >& inputs = (*it)->getGuiInputs();
             for (U32 i = 0; i < inputs.size(); ++i) {
                 NodePtr input = inputs[i].lock();
@@ -2347,31 +2377,33 @@ void Project::extractTreesFromNodes(const NodesList& nodes,std::list<Project::No
                     addTreeInputs(nodes, input, tree, markedNodes);
                 }
             }
-            
-            if (tree.inputs.empty()) {
+
+            if ( tree.inputs.empty() ) {
                 TreeInput input;
                 input.node = *it;
-                
+
                 const std::vector<NodeWPtr >& inputs = (*it)->getGuiInputs();
-                input.inputs.resize(inputs.size());
+                input.inputs.resize( inputs.size() );
                 for (std::size_t i = 0; i < inputs.size(); ++i) {
                     input.inputs[i] = inputs[i].lock();
                 }
                 tree.inputs.push_back(input);
             }
-            
+
             trees.push_back(tree);
         }
     }
-    
 }
-  
-bool Project::addFormat(const std::string& formatSpec)
+
+bool
+Project::addFormat(const std::string& formatSpec)
 {
     Format f;
-    if (ProjectPrivate::generateFormatFromString(QString::fromUtf8(formatSpec.c_str()), &f)) {
+
+    if ( ProjectPrivate::generateFormatFromString(QString::fromUtf8( formatSpec.c_str() ), &f) ) {
         QMutexLocker k(&_imp->formatMutex);
         tryAddProjectFormat(f);
+
         return true;
     } else {
         return false;
@@ -2383,7 +2415,8 @@ Project::onProjectFormatPopulated()
 {
     int index = _imp->formatKnob->getValue();
     NodesList nodes;
-    getNodes_recursive(nodes,true);
+
+    getNodes_recursive(nodes, true);
     std::vector<std::string> entries = _imp->formatKnob->getEntries_mt_safe();
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         (*it)->refreshFormatParamChoice(entries, index, false);

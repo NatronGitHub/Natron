@@ -136,9 +136,9 @@ namespace NATRON_NAMESPACE { }
 
 #if defined(__NATRON_LINUX__) || defined(__NATRON_OSX__)
 /*
- On Linux crash reporter MUST use fork() to spawn the Natron process because it needs to duplicate file descriptors for the pipe.
- On Windows, fork() doesn't exist so we use QProcess.
- OS X can use both because it doesn't require a file descriptor to be passed to Natron for the breakpad pipe.
+   On Linux crash reporter MUST use fork() to spawn the Natron process because it needs to duplicate file descriptors for the pipe.
+   On Windows, fork() doesn't exist so we use QProcess.
+   OS X can use both because it doesn't require a file descriptor to be passed to Natron for the breakpad pipe.
  */
 #define NATRON_CRASH_REPORTER_USE_FORK 1
 #endif
@@ -156,7 +156,7 @@ namespace NATRON_NAMESPACE { }
 ///If set the version of Natron will no longer be displayed in the splashscreen but the name of the user
 ///Set this from qmake
 
-#define STRINGIZE_CPP_NAME_(token) #token
+#define STRINGIZE_CPP_NAME_(token) # token
 #define STRINGIZE_CPP_NAME(token) STRINGIZE_CPP_NAME_(token)
 
 #ifdef NATRON_CUSTOM_BUILD_USER_TOKEN
@@ -165,26 +165,26 @@ namespace NATRON_NAMESPACE { }
 #define NATRON_CUSTOM_BUILD_USER_NAME ""
 #endif
 
-#define NATRON_VERSION_ENCODE(major,minor,revision) ( \
-( (major) * 10000 ) \
-+ ( (minor) * 100 )  \
-+ ( (revision) * 1 ) )
+#define NATRON_VERSION_ENCODE(major, minor, revision) ( \
+        ( (major) * 10000 ) \
+        + ( (minor) * 100 )  \
+        + ( (revision) * 1 ) )
 
 #define NATRON_VERSION_ENCODED NATRON_VERSION_ENCODE( \
-NATRON_VERSION_MAJOR, \
-NATRON_VERSION_MINOR, \
-NATRON_VERSION_REVISION)
+        NATRON_VERSION_MAJOR, \
+        NATRON_VERSION_MINOR, \
+        NATRON_VERSION_REVISION)
 
-#define NATRON_VERSION_STRINGIZE_(major,minor,revision) \
-# major "." # minor "." # revision
+#define NATRON_VERSION_STRINGIZE_(major, minor, revision) \
+    # major "." # minor "." # revision
 
-#define NATRON_VERSION_STRINGIZE(major,minor,revision) \
-NATRON_VERSION_STRINGIZE_(major,minor,revision)
+#define NATRON_VERSION_STRINGIZE(major, minor, revision) \
+    NATRON_VERSION_STRINGIZE_(major, minor, revision)
 
 #define NATRON_VERSION_STRING NATRON_VERSION_STRINGIZE( \
-NATRON_VERSION_MAJOR, \
-NATRON_VERSION_MINOR, \
-NATRON_VERSION_REVISION)
+        NATRON_VERSION_MAJOR, \
+        NATRON_VERSION_MINOR, \
+        NATRON_VERSION_REVISION)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define NATRON_PATH_ENV_VAR "NATRON_PLUGIN_PATH"
@@ -455,17 +455,21 @@ NATRON_VERSION_REVISION)
 #define WARN_UNUSED_RETURN __attribute__ ( (warn_unused_result) )
 // a very simple template function to actually ignore the return value of functions define with WARN_UNUSED_RETURN
 template<typename T>
-inline T ignore_result(T x __attribute__((unused)))
+inline T
+ignore_result( T x __attribute__( (unused) ) )
 {
     return x;
 }
+
 #else
 #define WARN_UNUSED_RETURN
 template<typename T>
-inline T ignore_result(T x)
+inline T
+ignore_result(T x)
 {
     return x;
 }
+
 #endif
 
 /* OVERRIDE and FINAL */
@@ -506,7 +510,7 @@ inline T ignore_result(T x)
 
 /* https://code.google.com/p/address-sanitizer/wiki/AddressSanitizer#Turning_off_instrumentation */
 #if defined(__clang__) || defined (__GNUC__)
-# define ATTRIBUTE_NO_SANITIZE_ADDRESS __attribute__((no_sanitize_address))
+# define ATTRIBUTE_NO_SANITIZE_ADDRESS __attribute__( (no_sanitize_address) )
 #else
 # define ATTRIBUTE_NO_SANITIZE_ADDRESS
 #endif
@@ -519,16 +523,16 @@ inline T ignore_result(T x)
 // Warning control from https://svn.boost.org/trac/boost/wiki/Guidelines/WarningsGuidelines
 #if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 402
 #define GCC_DIAG_STR(s) # s
-#define GCC_DIAG_JOINSTR(x,y) GCC_DIAG_STR(x ## y)
+#define GCC_DIAG_JOINSTR(x, y) GCC_DIAG_STR(x ## y)
 # define GCC_DIAG_DO_PRAGMA(x) _Pragma ( # x)
 # define GCC_DIAG_PRAGMA(x) GCC_DIAG_DO_PRAGMA(GCC diagnostic x)
 # if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 406
 #  define GCC_DIAG_OFF(x) GCC_DIAG_PRAGMA(push) \
-    GCC_DIAG_PRAGMA( ignored GCC_DIAG_JOINSTR(-W,x) )
+GCC_DIAG_PRAGMA( ignored GCC_DIAG_JOINSTR(-W, x) )
 #  define GCC_DIAG_ON(x) GCC_DIAG_PRAGMA(pop)
 # else
-#  define GCC_DIAG_OFF(x) GCC_DIAG_PRAGMA( ignored GCC_DIAG_JOINSTR(-W,x) )
-#  define GCC_DIAG_ON(x)  GCC_DIAG_PRAGMA( warning GCC_DIAG_JOINSTR(-W,x) )
+#  define GCC_DIAG_OFF(x) GCC_DIAG_PRAGMA( ignored GCC_DIAG_JOINSTR(-W, x) )
+#  define GCC_DIAG_ON(x)  GCC_DIAG_PRAGMA( warning GCC_DIAG_JOINSTR(-W, x) )
 # endif
 #else
 # define GCC_DIAG_OFF(x)
@@ -538,13 +542,13 @@ inline T ignore_result(T x)
 #ifdef __clang__
 #  define CLANG_DIAG_STR(s) # s
 // stringize s to "no-unused-variable"
-#  define CLANG_DIAG_JOINSTR(x,y) CLANG_DIAG_STR(x ## y)
+#  define CLANG_DIAG_JOINSTR(x, y) CLANG_DIAG_STR(x ## y)
 //  join -W with no-unused-variable to "-Wno-unused-variable"
 #  define CLANG_DIAG_DO_PRAGMA(x) _Pragma ( # x)
 // _Pragma is unary operator  #pragma ("")
 #  define CLANG_DIAG_PRAGMA(x) CLANG_DIAG_DO_PRAGMA(clang diagnostic x)
 #    define CLANG_DIAG_OFF(x) CLANG_DIAG_PRAGMA(push) \
-    CLANG_DIAG_PRAGMA( ignored CLANG_DIAG_JOINSTR(-W,x) )
+CLANG_DIAG_PRAGMA( ignored CLANG_DIAG_JOINSTR(-W, x) )
 // For example: #pragma clang diagnostic ignored "-Wno-unused-variable"
 #   define CLANG_DIAG_ON(x) CLANG_DIAG_PRAGMA(pop)
 // For example: #pragma clang diagnostic warning "-Wno-unused-variable"
@@ -556,9 +560,9 @@ inline T ignore_result(T x)
 
 
 /* Usage:
- CLANG_DIAG_OFF(unused-variable)
- CLANG_DIAG_OFF(unused-parameter)
- CLANG_DIAG_OFF(uninitialized)
+CLANG_DIAG_OFF(unused-variable)
+CLANG_DIAG_OFF(unused-parameter)
+CLANG_DIAG_OFF(uninitialized)
  */
 
 

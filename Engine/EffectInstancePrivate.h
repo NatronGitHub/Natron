@@ -143,8 +143,6 @@ private:
 };
 
 
-
-
 struct EffectInstance::Implementation
 {
     Implementation(EffectInstance* publicInterface);
@@ -153,7 +151,6 @@ struct EffectInstance::Implementation
 
     ///Thread-local storage living through the render_public action and used by getImage to retrieve all parameters
     boost::shared_ptr<TLSHolder<EffectInstance::EffectTLSData> > tlsData;
-
     mutable QReadWriteLock duringInteractActionMutex; //< protects duringInteractAction
     bool duringInteractAction; //< true when we're running inside an interact action
 
@@ -192,10 +189,8 @@ struct EffectInstance::Implementation
     mutable QMutex componentsAvailableMutex;
     bool componentsAvailableDirty; /// Set to true when getClipPreferences is called to indicate it must be set again
     EffectInstance::ComponentsAvailableMap outputComponentsAvailable;
-    
     mutable QMutex metadatasMutex;
     NodeMetadata metadatas;
-    
     bool runningClipPreferences; //only used on main thread
 
 
@@ -245,8 +240,8 @@ struct EffectInstance::Implementation
     class ScopedRenderArgs
     {
         EffectDataTLSPtr tlsData;
-        
-    public:
+
+public:
 
 
         ScopedRenderArgs(const EffectDataTLSPtr& tlsData,
@@ -268,14 +263,13 @@ struct EffectInstance::Implementation
                          const EffectDataTLSPtr& otherThreadData);
 
         ~ScopedRenderArgs();
-
     };
 
     void addInputImageTempPointer(int inputNb, const boost::shared_ptr<Image> & img);
 
     void clearInputImagePointers();
-    
-    
+
+
     struct TiledRenderingFunctorArgs
     {
         bool renderFullScaleThenDownscale;
@@ -297,10 +291,10 @@ struct EffectInstance::Implementation
         std::bitset<4> processChannels;
         boost::shared_ptr<ImagePlanesToRender> planes;
     };
-    
+
     RenderingFunctorRetEnum tiledRenderingFunctor(TiledRenderingFunctorArgs & args,  const RectToRender & specificData,
                                                   const QThread* callingThread);
-    
+
     RenderingFunctorRetEnum tiledRenderingFunctor(const RectToRender & rectToRender,
                                                   const bool renderFullScaleThenDownscale,
                                                   const bool isSequentialRender,
@@ -319,8 +313,8 @@ struct EffectInstance::Implementation
                                                   const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
                                                   const std::bitset<4>& processChannels,
                                                   const boost::shared_ptr<ImagePlanesToRender> & planes);
-    
-    
+
+
     ///These are the image passed to the plug-in to render
     /// - fullscaleMappedImage is the fullscale image remapped to what the plugin can support (components/bitdepth)
     /// - downscaledMappedImage is the downscaled image remapped to what the plugin can support (components/bitdepth wise)
@@ -358,14 +352,13 @@ struct EffectInstance::Implementation
                                           const boost::shared_ptr<Image> & maskImage,
                                           const ImagePremultiplicationEnum originalImagePremultiplication,
                                           ImagePlanesToRender & planes);
-    
+
     bool aborted(bool isRenderResponseToUserInteraction,
                  const AbortableRenderInfoPtr& abortInfo,
                  const EffectInstPtr& treeRoot) const WARN_UNUSED_RETURN;
-    
+
     void checkMetadata(NodeMetadata &metadata);
 };
-
 
 
 NATRON_NAMESPACE_EXIT;

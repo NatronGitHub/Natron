@@ -59,13 +59,13 @@ public:
                                   int dimension,
                                   bool declaredByPlugin = true)
     {
-        return new KnobFile(holder, description, dimension,declaredByPlugin);
+        return new KnobFile(holder, description, dimension, declaredByPlugin);
     }
 
     KnobFile(KnobHolder* holder,
-              const std::string &description,
-              int dimension,
-              bool declaredByPlugin);
+             const std::string &description,
+             int dimension,
+             bool declaredByPlugin);
 
     virtual ~KnobFile();
 
@@ -81,19 +81,18 @@ public:
         return _isInputImage;
     }
 
-
     void open_file()
     {
         Q_EMIT openFile();
     }
-    
+
     void reloadFile();
 
     /**
      * @brief getRandomFrameName
      * @param f The index of the frame.
      */
-    std::string getFileName(int time, ViewSpec view) ;
+    std::string getFileName(int time, ViewSpec view);
 
 Q_SIGNALS:
 
@@ -105,10 +104,9 @@ private:
      * @brief a KnobFile is never animated but it's value may change, indicate this to the plug-in
      **/
     virtual bool evaluateValueChangeOnTimeChange() const OVERRIDE FINAL { return true; }
-    
+
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
-
     static const std::string _typeNameStr;
     int _isInputImage;
 };
@@ -129,13 +127,13 @@ public:
                                   int dimension,
                                   bool declaredByPlugin = true)
     {
-        return new KnobOutputFile(holder, description, dimension,declaredByPlugin);
+        return new KnobOutputFile(holder, description, dimension, declaredByPlugin);
     }
 
     KnobOutputFile(KnobHolder* holder,
-                    const std::string &description,
-                    int dimension,
-                    bool declaredByPlugin);
+                   const std::string &description,
+                   int dimension,
+                   bool declaredByPlugin);
     static const std::string & typeNameStatic();
 
     void setAsOutputImageFile()
@@ -163,14 +161,14 @@ public:
         return _sequenceDialog;
     }
 
-    QString generateFileNameAtTime(SequenceTime time, ViewSpec view) ;
+    QString generateFileNameAtTime(SequenceTime time, ViewSpec view);
 
 Q_SIGNALS:
 
     void openFile(bool);
 
 private:
-    
+
     virtual bool evaluateValueChangeOnTimeChange() const OVERRIDE FINAL { return false; }
 
     virtual bool canAnimate() const OVERRIDE FINAL;
@@ -193,7 +191,6 @@ private:
 class KnobPath
     : public KnobTable
 {
-
 public:
 
     static KnobHelper * BuildKnob(KnobHolder* holder,
@@ -201,13 +198,13 @@ public:
                                   int dimension,
                                   bool declaredByPlugin = true)
     {
-        return new KnobPath(holder, description, dimension,declaredByPlugin);
+        return new KnobPath(holder, description, dimension, declaredByPlugin);
     }
 
     KnobPath(KnobHolder* holder,
-              const std::string &description,
-              int dimension,
-              bool declaredByPlugin);
+             const std::string &description,
+             int dimension,
+             bool declaredByPlugin);
     static const std::string & typeNameStatic();
 
     void setMultiPath(bool b);
@@ -215,44 +212,45 @@ public:
     bool isMultiPath() const;
 
     /*
-     @brief same as setMultiPath except that there will be only variable names, no values
+       @brief same as setMultiPath except that there will be only variable names, no values
      */
     void setAsStringList(bool b);
     bool getIsStringList() const;
-    
-    void getPaths(std::list<std::string>* paths) ;
-    void prependPath(const std::string& path) ;
-    void appendPath(const std::string& path) ;
 
-    
+    void getPaths(std::list<std::string>* paths);
+    void prependPath(const std::string& path);
+    void appendPath(const std::string& path);
+
+
     virtual int getColumnsCount() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return _isStringList ? 1 : 2;
     }
-    
+
     virtual std::string getColumnLabel(int col) const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         switch (col) {
-            case 0:
-                return "Name";
-            case 1:
-                return "Value";
-            default:
-                return "";
+        case 0:
+
+            return "Name";
+        case 1:
+
+            return "Value";
+        default:
+
+            return "";
         }
     }
-    
+
     virtual bool isCellEnabled(int row, int col, const QStringList& values) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
     virtual bool isCellBracketDecorated(int row, int col) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
     virtual bool useEditButton() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return _isMultiPath && !_isStringList;
     }
 
 private:
-    
+
     static std::string generateUniquePathID(const std::list<std::vector<std::string> >& paths);
     virtual const std::string & typeName() const OVERRIDE FINAL;
 

@@ -81,7 +81,7 @@ public:
     const QFont & getTextFont() const;
 
     void centerOn(double xmin, double xmax);
-    void centerOn(double xmin,double xmax,double ymin,double ymax);
+    void centerOn(double xmin, double xmax, double ymin, double ymax);
 
     void addCurveAndSetColor(const boost::shared_ptr<CurveGui>& curve);
 
@@ -94,7 +94,7 @@ public:
     void getVisibleCurves(std::vector<boost::shared_ptr<CurveGui> >* curves) const;
 
     void setSelectedKeys(const SelectedKeys & keys);
-    
+
     bool isSelectedKey(const boost::shared_ptr<CurveGui>& curve, double time) const;
 
     void refreshSelectedKeysAndUpdate();
@@ -129,16 +129,15 @@ public:
      * @brief Returns the colour of the background (i.e: clear color) of the viewport.
      **/
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
-
     virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL { return 0; }
-    
+
     virtual void saveOpenGLContext() OVERRIDE FINAL;
     virtual void restoreOpenGLContext() OVERRIDE FINAL;
-    
+
     void updateSelectionAfterCurveChange(CurveGui* curve);
-    
+
     void refreshCurveDisplayTangents(CurveGui* curve);
-    
+
     QUndoStack* getUndoStack() const;
     void pushUndoCommand(QUndoCommand* cmd);
 
@@ -173,26 +172,27 @@ public Q_SLOTS:
     void breakDerivativesForSelectedKeyFrames();
 
     void frameSelectedCurve();
-    
+
     void loopSelectedCurve();
-    
+
     void negateSelectedCurve();
-    
+
     void reverseSelectedCurve();
 
     void refreshSelectedKeysBbox();
 
     void onTimeLineFrameChanged(SequenceTime time, int reason);
 
-    void onTimeLineBoundariesChanged(int,int);
+    void onTimeLineBoundariesChanged(int, int);
 
     void onUpdateOnPenUpActionTriggered();
 
     void onEditKeyFrameDialogFinished();
+
 private:
 
     virtual void initializeGL() OVERRIDE FINAL;
-    virtual void resizeGL(int width,int height) OVERRIDE FINAL;
+    virtual void resizeGL(int width, int height) OVERRIDE FINAL;
     virtual void paintGL() OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL;
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
@@ -204,8 +204,8 @@ private:
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
 
-    
-    void renderText(double x,double y,const QString & text,const QColor & color,const QFont & font) const;
+
+    void renderText(double x, double y, const QString & text, const QColor & color, const QFont & font) const;
 
     /**
      *@brief See toZoomCoordinates in ViewerGL.h

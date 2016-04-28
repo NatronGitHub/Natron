@@ -39,14 +39,13 @@ class ViewSpec
 
 public:
     ViewSpec()
-    : i(0)
+        : i(0)
     {
-
     }
-    
+
     // cast from int must be explicit
     explicit ViewSpec(int index)
-    : i(index)
+        : i(index)
     {
         assert(index >= -2);
     }
@@ -55,6 +54,7 @@ public:
     operator int() const
     {
         assert(i >= 0);
+
         return i;
     }
 
@@ -64,24 +64,27 @@ public:
     }
 
     bool isAll() const { return i == -1; }
+
     bool isCurrent() const { return i == -2; }
+
     bool isViewIdx() const { return i >= 0; }
 
     static ViewSpec all() { return ViewSpec(-1); };
     static ViewSpec current() { return ViewSpec(-2); };
 };
 
-class ViewIdx : public ViewSpec
+class ViewIdx
+    : public ViewSpec
 {
 public:
     ViewIdx()
-    : ViewSpec(0)
+        : ViewSpec(0)
     {
     }
 
     // cast from int must be explicit
     explicit ViewIdx(int index)
-    : ViewSpec(index)
+        : ViewSpec(index)
     {
         assert(index >= 0);
     }
@@ -91,11 +94,13 @@ public:
     {
         int i = value();
         assert(i >= 0);
+
         return i;
     }
 
 private:
     bool isAll() const { return false; }
+
     bool isCurrent() const { return false; }
 
     static ViewIdx all(); // overload with no implementation

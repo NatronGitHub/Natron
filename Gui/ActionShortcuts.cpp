@@ -33,49 +33,49 @@
 NATRON_NAMESPACE_ENTER;
 
 ActionWithShortcut::ActionWithShortcut(const std::string & group,
-                   const std::string & actionID,
-                   const std::string & actionDescription,
-                   QObject* parent,
-                   bool setShortcutOnAction)
-: QAction(parent)
-, _group(QString::fromUtf8(group.c_str()))
-, _shortcuts()
+                                       const std::string & actionID,
+                                       const std::string & actionDescription,
+                                       QObject* parent,
+                                       bool setShortcutOnAction)
+    : QAction(parent)
+    , _group( QString::fromUtf8( group.c_str() ) )
+    , _shortcuts()
 {
-    QString actionIDStr = QString::fromUtf8(actionID.c_str());
+    QString actionIDStr = QString::fromUtf8( actionID.c_str() );
     std::list<QKeySequence> seq = getKeybind(_group, actionIDStr);
-    if (seq.empty()) {
-        seq.push_back(QKeySequence());
+
+    if ( seq.empty() ) {
+        seq.push_back( QKeySequence() );
     }
-    _shortcuts.push_back(std::make_pair(actionIDStr, seq.front()));
+    _shortcuts.push_back( std::make_pair( actionIDStr, seq.front() ) );
     assert ( !_group.isEmpty() && !actionIDStr.isEmpty() );
     if (setShortcutOnAction) {
-        setShortcut(seq.front());
+        setShortcut( seq.front() );
     }
     appPTR->addShortcutAction(_group, actionIDStr, this);
     setShortcutContext(Qt::WindowShortcut);
     setText( QObject::tr( actionDescription.c_str() ) );
 }
 
-
 ActionWithShortcut::ActionWithShortcut(const std::string & group,
                                        const std::list<std::string> & actionIDs,
                                        const std::string & actionDescription,
                                        QObject* parent,
                                        bool setShortcutOnAction)
-: QAction(parent)
-, _group(QString::fromUtf8(group.c_str()))
-, _shortcuts()
+    : QAction(parent)
+    , _group( QString::fromUtf8( group.c_str() ) )
+    , _shortcuts()
 {
     QKeySequence seq0;
-    for (std::list<std::string>::const_iterator it = actionIDs.begin(); it!=actionIDs.end();++it) {
-        
-        QString actionIDStr = QString::fromUtf8(it->c_str());
+
+    for (std::list<std::string>::const_iterator it = actionIDs.begin(); it != actionIDs.end(); ++it) {
+        QString actionIDStr = QString::fromUtf8( it->c_str() );
         std::list<QKeySequence> seq = getKeybind(_group, actionIDStr);
-        if (seq.empty()) {
-            seq.push_back(QKeySequence());
+        if ( seq.empty() ) {
+            seq.push_back( QKeySequence() );
         }
-        _shortcuts.push_back(std::make_pair(actionIDStr, seq.front()));
-        if (it == actionIDs.begin()) {
+        _shortcuts.push_back( std::make_pair( actionIDStr, seq.front() ) );
+        if ( it == actionIDs.begin() ) {
             seq0 = seq.front();
         }
         appPTR->addShortcutAction(_group, actionIDStr, this);
@@ -84,7 +84,7 @@ ActionWithShortcut::ActionWithShortcut(const std::string & group,
     if (setShortcutOnAction) {
         setShortcut(seq0);
     }
-    
+
     setShortcutContext(Qt::WindowShortcut);
     setText( QObject::tr( actionDescription.c_str() ) );
 }
@@ -98,7 +98,8 @@ ActionWithShortcut::~ActionWithShortcut()
 }
 
 void
-ActionWithShortcut::setShortcutWrapper(const QString& actionID, const QKeySequence& shortcut)
+ActionWithShortcut::setShortcutWrapper(const QString& actionID,
+                                       const QKeySequence& shortcut)
 {
     for (std::size_t i = 0; i < _shortcuts.size(); ++i) {
         if (_shortcuts[i].first == actionID) {
@@ -109,13 +110,13 @@ ActionWithShortcut::setShortcutWrapper(const QString& actionID, const QKeySequen
 }
 
 TooltipActionShortcut::TooltipActionShortcut(const std::string & group,
-                      const std::string & actionID,
-                      const std::string & toolip,
-                      QWidget* parent)
-: ActionWithShortcut(group,actionID,std::string(),parent, false)
-, _widget(parent)
-, _originalTooltip(QString::fromUtf8(toolip.c_str()))
-, _tooltipSetInternally(false)
+                                             const std::string & actionID,
+                                             const std::string & toolip,
+                                             QWidget* parent)
+    : ActionWithShortcut(group, actionID, std::string(), parent, false)
+    , _widget(parent)
+    , _originalTooltip( QString::fromUtf8( toolip.c_str() ) )
+    , _tooltipSetInternally(false)
 {
     assert(parent);
     setTooltipFromOriginalTooltip();
@@ -126,10 +127,10 @@ TooltipActionShortcut::TooltipActionShortcut(const std::string & group,
                                              const std::list<std::string> & actionIDs,
                                              const std::string & toolip,
                                              QWidget* parent)
-: ActionWithShortcut(group,actionIDs,std::string(),parent, false)
-, _widget(parent)
-, _originalTooltip(QString::fromUtf8(toolip.c_str()))
-, _tooltipSetInternally(false)
+    : ActionWithShortcut(group, actionIDs, std::string(), parent, false)
+    , _widget(parent)
+    , _originalTooltip( QString::fromUtf8( toolip.c_str() ) )
+    , _tooltipSetInternally(false)
 {
     assert(parent);
     setTooltipFromOriginalTooltip();
@@ -140,8 +141,9 @@ void
 TooltipActionShortcut::setTooltipFromOriginalTooltip()
 {
     QString finalToolTip = _originalTooltip;
+
     for (std::size_t i = 0; i < _shortcuts.size(); ++i) {
-        finalToolTip = finalToolTip.arg(_shortcuts[i].second.toString(QKeySequence::NativeText));
+        finalToolTip = finalToolTip.arg( _shortcuts[i].second.toString(QKeySequence::NativeText) );
     }
 
     _tooltipSetInternally = true;
@@ -150,7 +152,8 @@ TooltipActionShortcut::setTooltipFromOriginalTooltip()
 }
 
 bool
-TooltipActionShortcut::eventFilter(QObject* watched, QEvent* event)
+TooltipActionShortcut::eventFilter(QObject* watched,
+                                   QEvent* event)
 {
     if (watched != _widget) {
         return false;
@@ -162,11 +165,13 @@ TooltipActionShortcut::eventFilter(QObject* watched, QEvent* event)
         _originalTooltip = _widget->toolTip();
         setTooltipFromOriginalTooltip();
     }
+
     return false;
 }
 
 void
-TooltipActionShortcut::setShortcutWrapper(const QString& actionID, const QKeySequence& shortcut)
+TooltipActionShortcut::setShortcutWrapper(const QString& actionID,
+                                          const QKeySequence& shortcut)
 {
     for (std::size_t i = 0; i < _shortcuts.size(); ++i) {
         if (_shortcuts[i].first == actionID) {

@@ -13,8 +13,10 @@ build64
 sed*
 *latex*
 DerivedData
+tools/normalize/normalize
 libs/gflags/gflags.xcodeproj
 libs/glog/glog.xcodeproj
+libs/qhttpserver/qhttpserver.xcodeproj
 ceres.xcodeproj
 openMVG.xcodeproj
 Natron.xcodeproj

@@ -133,141 +133,139 @@ GCC_DIAG_ON(unused-parameter)
 
 
 NATRON_NAMESPACE_ENTER;
-
-
 GuiPrivate::GuiPrivate(GuiAppInstance* app,
                        Gui* gui)
-: _gui(gui)
-, _isInDraftModeMutex()
-, _isInDraftMode(false)
-, _appInstance(app)
-, _uiUsingMainThreadCond()
-, _uiUsingMainThread(false)
-, _uiUsingMainThreadMutex()
-, _lastQuestionDialogAnswer(eStandardButtonNo)
-, _lastStopAskingAnswer(false)
-, _currentUndoAction(0)
-, _currentRedoAction(0)
-, _undoStacksGroup(0)
-, _undoStacksActions()
-, _splittersMutex()
-, _splitters()
-, _pyPanelsMutex()
-, _userPanels()
-, _isTripleSyncEnabled(false)
-, areRenderStatsEnabledMutex()
-, areRenderStatsEnabled(false)
-, actionNew_project(0)
-, actionOpen_project(0)
-, actionClose_project(0)
-, actionReload_project(0)
-, actionSave_project(0)
-, actionSaveAs_project(0)
-, actionExportAsGroup(0)
-, actionSaveAndIncrementVersion(0)
-, actionPreferences(0)
-, actionExit(0)
-, actionProject_settings(0)
-, actionShowErrorLog(0)
-, actionShortcutEditor(0)
-, actionNewViewer(0)
-, actionFullScreen(0)
+    : _gui(gui)
+    , _isInDraftModeMutex()
+    , _isInDraftMode(false)
+    , _appInstance(app)
+    , _uiUsingMainThreadCond()
+    , _uiUsingMainThread(false)
+    , _uiUsingMainThreadMutex()
+    , _lastQuestionDialogAnswer(eStandardButtonNo)
+    , _lastStopAskingAnswer(false)
+    , _currentUndoAction(0)
+    , _currentRedoAction(0)
+    , _undoStacksGroup(0)
+    , _undoStacksActions()
+    , _splittersMutex()
+    , _splitters()
+    , _pyPanelsMutex()
+    , _userPanels()
+    , _isTripleSyncEnabled(false)
+    , areRenderStatsEnabledMutex()
+    , areRenderStatsEnabled(false)
+    , actionNew_project(0)
+    , actionOpen_project(0)
+    , actionClose_project(0)
+    , actionReload_project(0)
+    , actionSave_project(0)
+    , actionSaveAs_project(0)
+    , actionExportAsGroup(0)
+    , actionSaveAndIncrementVersion(0)
+    , actionPreferences(0)
+    , actionExit(0)
+    , actionProject_settings(0)
+    , actionShowErrorLog(0)
+    , actionShortcutEditor(0)
+    , actionNewViewer(0)
+    , actionFullScreen(0)
 #ifdef __NATRON_WIN32__
-, actionShowWindowsConsole(0)
+    , actionShowWindowsConsole(0)
 #endif
-, actionClearDiskCache(0)
-, actionClearPlayBackCache(0)
-, actionClearNodeCache(0)
-, actionClearPluginsLoadingCache(0)
-, actionClearAllCaches(0)
-, actionShowAboutWindow(0)
-, actionsOpenRecentFile()
-, renderAllWriters(0)
-, renderSelectedNode(0)
-, enableRenderStats(0)
-, actionConnectInput()
-, actionImportLayout(0)
-, actionExportLayout(0)
-, actionRestoreDefaultLayout(0)
-, actionNextTab(0)
-, actionPrevTab(0)
-, actionCloseTab(0)
-, actionHelpWebsite(0)
-, actionHelpForum(0)
-, actionHelpIssues(0)
-, actionHelpPython(0)
-, actionHelpWiki(0)
-, _centralWidget(0)
-, _mainLayout(0)
-, _lastLoadSequenceOpenedDir()
-, _lastLoadProjectOpenedDir()
-, _lastSaveSequenceOpenedDir()
-, _lastSaveProjectOpenedDir()
-, _lastPluginDir()
-, _nextViewerTabPlace(0)
-, _leftRightSplitter(0)
-, _viewerTabsMutex()
-, _viewerTabs()
-, _masterSyncViewer(0)
-, _activeViewer(0)
-, _histogramsMutex()
-, _histograms()
-, _nextHistogramIndex(1)
-, _nodeGraphArea(0)
-, _lastFocusedGraph(0)
-, _groups()
-, _curveEditor(0)
-, _progressPanel(0)
-, _dopeSheetEditor(0)
-, _toolBox(0)
-, _propertiesBin(0)
-, _propertiesScrollArea(0)
-, _propertiesContainer(0)
-, _layoutPropertiesBin(0)
-, _clearAllPanelsButton(0)
-, _minimizeAllPanelsButtons(0)
-, _maxPanelsOpenedSpinBox(0)
-, _isGUIFrozenMutex()
-, _isGUIFrozen(false)
-, menubar(0)
-, menuFile(0)
-, menuRecentFiles(0)
-, menuEdit(0)
-, menuLayout(0)
-, menuDisplay(0)
-, menuRender(0)
-, viewersMenu(0)
-, viewerInputsMenu(0)
-, viewersViewMenu(0)
-, cacheMenu(0)
-, menuHelp(0)
-, _panesMutex()
-, _panes()
-, _floatingWindowMutex()
-, _floatingWindows()
-, _settingsGui(0)
-, _projectGui(0)
-, _currentlyDraggedPanel(0)
-, _currentlyDraggedPanelInitialSize()
-, _aboutWindow(0)
-, openedPanelsMutex()
-, openedPanels()
-, _openGLVersion()
-, _glewVersion()
-, _toolButtonMenuOpened(NULL)
-, aboutToCloseMutex()
-, _aboutToClose(false)
-, shortcutEditor(0)
-, leftToolBarDisplayedOnHoverOnly(false)
-, _scriptEditor(0)
-, _lastEnteredTabWidget(0)
-, pythonCommands()
-, statsDialog(0)
-, currentPanelFocus(0)
-, currentPanelFocusEventRecursion(0)
-, keyPressEventHasVisitedFocusWidget(false)
-, keyUpEventHasVisitedFocusWidget(false)
-, applicationConsoleVisible(true)
+    , actionClearDiskCache(0)
+    , actionClearPlayBackCache(0)
+    , actionClearNodeCache(0)
+    , actionClearPluginsLoadingCache(0)
+    , actionClearAllCaches(0)
+    , actionShowAboutWindow(0)
+    , actionsOpenRecentFile()
+    , renderAllWriters(0)
+    , renderSelectedNode(0)
+    , enableRenderStats(0)
+    , actionConnectInput()
+    , actionImportLayout(0)
+    , actionExportLayout(0)
+    , actionRestoreDefaultLayout(0)
+    , actionNextTab(0)
+    , actionPrevTab(0)
+    , actionCloseTab(0)
+    , actionHelpWebsite(0)
+    , actionHelpForum(0)
+    , actionHelpIssues(0)
+    , actionHelpPython(0)
+    , actionHelpWiki(0)
+    , _centralWidget(0)
+    , _mainLayout(0)
+    , _lastLoadSequenceOpenedDir()
+    , _lastLoadProjectOpenedDir()
+    , _lastSaveSequenceOpenedDir()
+    , _lastSaveProjectOpenedDir()
+    , _lastPluginDir()
+    , _nextViewerTabPlace(0)
+    , _leftRightSplitter(0)
+    , _viewerTabsMutex()
+    , _viewerTabs()
+    , _masterSyncViewer(0)
+    , _activeViewer(0)
+    , _histogramsMutex()
+    , _histograms()
+    , _nextHistogramIndex(1)
+    , _nodeGraphArea(0)
+    , _lastFocusedGraph(0)
+    , _groups()
+    , _curveEditor(0)
+    , _progressPanel(0)
+    , _dopeSheetEditor(0)
+    , _toolBox(0)
+    , _propertiesBin(0)
+    , _propertiesScrollArea(0)
+    , _propertiesContainer(0)
+    , _layoutPropertiesBin(0)
+    , _clearAllPanelsButton(0)
+    , _minimizeAllPanelsButtons(0)
+    , _maxPanelsOpenedSpinBox(0)
+    , _isGUIFrozenMutex()
+    , _isGUIFrozen(false)
+    , menubar(0)
+    , menuFile(0)
+    , menuRecentFiles(0)
+    , menuEdit(0)
+    , menuLayout(0)
+    , menuDisplay(0)
+    , menuRender(0)
+    , viewersMenu(0)
+    , viewerInputsMenu(0)
+    , viewersViewMenu(0)
+    , cacheMenu(0)
+    , menuHelp(0)
+    , _panesMutex()
+    , _panes()
+    , _floatingWindowMutex()
+    , _floatingWindows()
+    , _settingsGui(0)
+    , _projectGui(0)
+    , _currentlyDraggedPanel(0)
+    , _currentlyDraggedPanelInitialSize()
+    , _aboutWindow(0)
+    , openedPanelsMutex()
+    , openedPanels()
+    , _openGLVersion()
+    , _glewVersion()
+    , _toolButtonMenuOpened(NULL)
+    , aboutToCloseMutex()
+    , _aboutToClose(false)
+    , shortcutEditor(0)
+    , leftToolBarDisplayedOnHoverOnly(false)
+    , _scriptEditor(0)
+    , _lastEnteredTabWidget(0)
+    , pythonCommands()
+    , statsDialog(0)
+    , currentPanelFocus(0)
+    , currentPanelFocusEventRecursion(0)
+    , keyPressEventHasVisitedFocusWidget(false)
+    , keyUpEventHasVisitedFocusWidget(false)
+    , applicationConsoleVisible(true)
 {
 }
 
@@ -293,11 +291,11 @@ GuiPrivate::notifyGuiClosing()
         QMutexLocker k(&_panesMutex);
         tabs = _panes;
     }
+
     for (std::list<TabWidget*>::iterator it = tabs.begin(); it != tabs.end(); ++it) {
         (*it)->discardGuiPointer();
         for (int i = 0; i < (*it)->count(); ++i) {
             (*it)->tabAt(i)->notifyGuiClosingPublic();
-            
         }
     }
 
@@ -310,7 +308,6 @@ GuiPrivate::notifyGuiClosing()
         }
     }
     _lastFocusedGraph = 0;
-
 }
 
 void
@@ -325,15 +322,15 @@ GuiPrivate::createPropertiesBinGui()
     mainPropertiesLayout->setSpacing(0);
 
     _propertiesScrollArea = new QScrollArea(_propertiesBin);
-    
+
     ///Remove wheel autofocus
     _propertiesScrollArea->setFocusPolicy(Qt::StrongFocus);
     QObject::connect( _propertiesScrollArea->verticalScrollBar(), SIGNAL(valueChanged(int)), _gui, SLOT(onPropertiesScrolled()) );
-    _propertiesScrollArea->setObjectName(QString::fromUtf8("Properties"));
+    _propertiesScrollArea->setObjectName( QString::fromUtf8("Properties") );
     assert(_nodeGraphArea);
 
     _propertiesContainer = new QWidget(_propertiesScrollArea);
-    _propertiesContainer->setObjectName(QString::fromUtf8("_propertiesContainer"));
+    _propertiesContainer->setObjectName( QString::fromUtf8("_propertiesContainer") );
     _layoutPropertiesBin = new QVBoxLayout(_propertiesContainer);
     _layoutPropertiesBin->setSpacing(0);
     _layoutPropertiesBin->setContentsMargins(0, 0, 0, 0);
@@ -346,18 +343,17 @@ GuiPrivate::createPropertiesBinGui()
     propertiesAreaButtonsLayout->setContentsMargins(0, 0, 0, 0);
     propertiesAreaButtonsLayout->setSpacing(5);
     QPixmap closePanelPix;
-
     int smallSizeIcon = TO_DPIX(NATRON_SMALL_BUTTON_ICON_SIZE);
     appPTR->getIcon(NATRON_PIXMAP_CLOSE_PANEL, smallSizeIcon, &closePanelPix);
     _clearAllPanelsButton = new Button(QIcon(closePanelPix), QString(), propertiesAreaButtonsContainer);
 
-    const QSize smallButtonSize(TO_DPIX(NATRON_SMALL_BUTTON_SIZE),TO_DPIY(NATRON_SMALL_BUTTON_SIZE));
-    const QSize smallButtonIconSize(TO_DPIX(NATRON_SMALL_BUTTON_ICON_SIZE),TO_DPIY(NATRON_SMALL_BUTTON_ICON_SIZE));
+    const QSize smallButtonSize( TO_DPIX(NATRON_SMALL_BUTTON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_SIZE) );
+    const QSize smallButtonIconSize( TO_DPIX(NATRON_SMALL_BUTTON_ICON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_ICON_SIZE) );
 
     _clearAllPanelsButton->setFixedSize(smallButtonSize);
     _clearAllPanelsButton->setIconSize(smallButtonIconSize);
     _clearAllPanelsButton->setToolTip( GuiUtils::convertFromPlainText(_gui->tr("Clears all the panels in the properties bin pane."),
-                                                                Qt::WhiteSpaceNormal) );
+                                                                      Qt::WhiteSpaceNormal) );
     _clearAllPanelsButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _clearAllPanelsButton, SIGNAL(clicked(bool)), _gui, SLOT(clearAllVisiblePanels()) );
     QPixmap minimizePix, maximizePix;
@@ -366,7 +362,7 @@ GuiPrivate::createPropertiesBinGui()
     QIcon mIc;
     mIc.addPixmap(minimizePix, QIcon::Normal, QIcon::On);
     mIc.addPixmap(maximizePix, QIcon::Normal, QIcon::Off);
-    _minimizeAllPanelsButtons = new Button(mIc,QString(), propertiesAreaButtonsContainer);
+    _minimizeAllPanelsButtons = new Button(mIc, QString(), propertiesAreaButtonsContainer);
     _minimizeAllPanelsButtons->setCheckable(true);
     _minimizeAllPanelsButtons->setChecked(false);
     _minimizeAllPanelsButtons->setFixedSize(smallButtonSize);
@@ -380,9 +376,9 @@ GuiPrivate::createPropertiesBinGui()
     _maxPanelsOpenedSpinBox->setMinimum(1);
     _maxPanelsOpenedSpinBox->setMaximum(100);
     _maxPanelsOpenedSpinBox->setToolTip( GuiUtils::convertFromPlainText(_gui->tr("Set the maximum of panels that can be opened at the same time "
-                                                                           "in the properties bin pane. The special value of 0 indicates "
-                                                                           "that an unlimited number of panels can be opened."),
-                                                                  Qt::WhiteSpaceNormal) );
+                                                                                 "in the properties bin pane. The special value of 0 indicates "
+                                                                                 "that an unlimited number of panels can be opened."),
+                                                                        Qt::WhiteSpaceNormal) );
     _maxPanelsOpenedSpinBox->setValue( appPTR->getCurrentSettings()->getMaxPanelsOpened() );
     QObject::connect( _maxPanelsOpenedSpinBox, SIGNAL(valueChanged(double)), _gui, SLOT(onMaxPanelsSpinBoxValueChanged(double)) );
 
@@ -424,9 +420,9 @@ GuiPrivate::createCurveEditorGui()
 void
 GuiPrivate::createDopeSheetGui()
 {
-    _dopeSheetEditor = new DopeSheetEditor(_gui,_appInstance->getTimeLine(), _gui);
+    _dopeSheetEditor = new DopeSheetEditor(_gui, _appInstance->getTimeLine(), _gui);
     _dopeSheetEditor->setScriptName(kDopeSheetEditorObjectName);
-    _dopeSheetEditor->setLabel(QObject::tr("Dope Sheet").toStdString());
+    _dopeSheetEditor->setLabel( QObject::tr("Dope Sheet").toStdString() );
     _dopeSheetEditor->setVisible(false);
     _gui->registerTab(_dopeSheetEditor, _dopeSheetEditor);
 }
@@ -557,12 +553,13 @@ void
 GuiPrivate::addToolButton(ToolButton* tool)
 {
     QToolButton* button = new AutoRaiseToolButton(_gui, _toolBox);
+
     //button->setArrowType(Qt::NoArrow); // has no effect (arrow is still displayed)
     //button->setToolButtonStyle(Qt::ToolButtonIconOnly); // has no effect (arrow is still displayed)
     button->setIcon( tool->getToolButtonIcon() );
     button->setMenu( tool->getMenu() );
 
-    const QSize toolButtonSize(TO_DPIX(NATRON_TOOL_BUTTON_SIZE), TO_DPIY(NATRON_TOOL_BUTTON_SIZE));
+    const QSize toolButtonSize( TO_DPIX(NATRON_TOOL_BUTTON_SIZE), TO_DPIY(NATRON_TOOL_BUTTON_SIZE) );
     button->setFixedSize(toolButtonSize);
     button->setPopupMode(QToolButton::InstantPopup);
     button->setToolTip( GuiUtils::convertFromPlainText(tool->getLabel().trimmed(), Qt::WhiteSpaceNormal) );
@@ -589,29 +586,30 @@ GuiPrivate::setUndoRedoActions(QAction* undoAction,
     }
 }
 
-
 bool
-GuiPrivate::checkProjectLockAndWarn(const QString& projectPath,const QString& projectName)
+GuiPrivate::checkProjectLockAndWarn(const QString& projectPath,
+                                    const QString& projectName)
 {
-    boost::shared_ptr<Project> project= _appInstance->getProject();
+    boost::shared_ptr<Project> project = _appInstance->getProject();
     QString author;
     QString lockCreationDate;
     QString lockHost;
     qint64 lockPID;
-    if (project->getLockFileInfos(projectPath, projectName, &author, &lockCreationDate, &lockHost, &lockPID)) {
+
+    if ( project->getLockFileInfos(projectPath, projectName, &author, &lockCreationDate, &lockHost, &lockPID) ) {
         qint64 curPid = (qint64)QCoreApplication::applicationPid();
         if (lockPID != curPid) {
             QString appFilePath = QCoreApplication::applicationFilePath();
-            if (ProcInfo::checkIfProcessIsRunning(appFilePath.toStdString().c_str(),(Q_PID)lockPID)) {
-                StandardButtonEnum rep = Dialogs::questionDialog(QObject::tr("Project").toStdString(),
-                                                                        QObject::tr("This project may be open in another instance of Natron "
-                                                                                    "running on %1 as process ID %2, "
-                                                                                    "and was opened by %3 on %4.\nContinue anyway?").arg(lockHost,
-                                                                                                                                         QString::number(lockPID),
-                                                                                                                                         author,
-                                                                                                                                         lockCreationDate).toStdString(),
-                                                                        false,
-                                                                        StandardButtons(eStandardButtonYes | eStandardButtonNo));
+            if ( ProcInfo::checkIfProcessIsRunning(appFilePath.toStdString().c_str(), (Q_PID)lockPID) ) {
+                StandardButtonEnum rep = Dialogs::questionDialog( QObject::tr("Project").toStdString(),
+                                                                  QObject::tr("This project may be open in another instance of Natron "
+                                                                              "running on %1 as process ID %2, "
+                                                                              "and was opened by %3 on %4.\nContinue anyway?").arg(lockHost,
+                                                                                                                                   QString::number(lockPID),
+                                                                                                                                   author,
+                                                                                                                                   lockCreationDate).toStdString(),
+                                                                  false,
+                                                                  StandardButtons(eStandardButtonYes | eStandardButtonNo) );
                 if (rep == eStandardButtonYes) {
                     return true;
                 } else {
@@ -620,23 +618,23 @@ GuiPrivate::checkProjectLockAndWarn(const QString& projectPath,const QString& pr
             }
         }
     }
+
     return true;
-    
 }
 
 void
 GuiPrivate::restoreGuiGeometry()
 {
-    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME));
+    QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
-    settings.beginGroup(QString::fromUtf8("MainWindow"));
+    settings.beginGroup( QString::fromUtf8("MainWindow") );
 
-    if ( settings.contains(QString::fromUtf8("pos")) ) {
-        QPoint pos = settings.value(QString::fromUtf8("pos")).toPoint();
+    if ( settings.contains( QString::fromUtf8("pos") ) ) {
+        QPoint pos = settings.value( QString::fromUtf8("pos") ).toPoint();
         _gui->move(pos);
     }
-    if ( settings.contains(QString::fromUtf8("size")) ) {
-        QSize size = settings.value(QString::fromUtf8("size")).toSize();
+    if ( settings.contains( QString::fromUtf8("size") ) ) {
+        QSize size = settings.value( QString::fromUtf8("size") ).toSize();
         _gui->resize(size);
     } else {
         ///No window size serialized, give some appriopriate default value according to the screen size
@@ -644,54 +642,54 @@ GuiPrivate::restoreGuiGeometry()
         QRect screen = desktop->screenGeometry();
         _gui->resize( (int)( 0.93 * screen.width() ), (int)( 0.93 * screen.height() ) ); // leave some space
     }
-    if ( settings.contains(QString::fromUtf8("fullScreen")) ) {
-        bool fs = settings.value(QString::fromUtf8("fullScreen")).toBool();
+    if ( settings.contains( QString::fromUtf8("fullScreen") ) ) {
+        bool fs = settings.value( QString::fromUtf8("fullScreen") ).toBool();
         if (fs) {
             _gui->toggleFullScreen();
         }
     }
 
-    if ( settings.contains(QString::fromUtf8("ToolbarHidden")) ) {
-        leftToolBarDisplayedOnHoverOnly = settings.value(QString::fromUtf8("ToolbarHidden")).toBool();
+    if ( settings.contains( QString::fromUtf8("ToolbarHidden") ) ) {
+        leftToolBarDisplayedOnHoverOnly = settings.value( QString::fromUtf8("ToolbarHidden") ).toBool();
     }
 
     settings.endGroup();
 
-    if ( settings.contains(QString::fromUtf8("LastOpenProjectDialogPath")) ) {
-        _lastLoadProjectOpenedDir = settings.value(QString::fromUtf8("LastOpenProjectDialogPath")).toString();
+    if ( settings.contains( QString::fromUtf8("LastOpenProjectDialogPath") ) ) {
+        _lastLoadProjectOpenedDir = settings.value( QString::fromUtf8("LastOpenProjectDialogPath") ).toString();
         QDir d(_lastLoadProjectOpenedDir);
         if ( !d.exists() ) {
             _lastLoadProjectOpenedDir.clear();
         }
     }
-    if ( settings.contains(QString::fromUtf8("LastSaveProjectDialogPath")) ) {
-        _lastSaveProjectOpenedDir = settings.value(QString::fromUtf8("LastSaveProjectDialogPath")).toString();
+    if ( settings.contains( QString::fromUtf8("LastSaveProjectDialogPath") ) ) {
+        _lastSaveProjectOpenedDir = settings.value( QString::fromUtf8("LastSaveProjectDialogPath") ).toString();
         QDir d(_lastSaveProjectOpenedDir);
         if ( !d.exists() ) {
             _lastSaveProjectOpenedDir.clear();
         }
     }
-    if ( settings.contains(QString::fromUtf8("LastLoadSequenceDialogPath")) ) {
-        _lastLoadSequenceOpenedDir = settings.value(QString::fromUtf8("LastLoadSequenceDialogPath")).toString();
+    if ( settings.contains( QString::fromUtf8("LastLoadSequenceDialogPath") ) ) {
+        _lastLoadSequenceOpenedDir = settings.value( QString::fromUtf8("LastLoadSequenceDialogPath") ).toString();
         QDir d(_lastLoadSequenceOpenedDir);
         if ( !d.exists() ) {
             _lastLoadSequenceOpenedDir.clear();
         }
     }
-    if ( settings.contains(QString::fromUtf8("LastSaveSequenceDialogPath")) ) {
-        _lastSaveSequenceOpenedDir = settings.value(QString::fromUtf8("LastSaveSequenceDialogPath")).toString();
+    if ( settings.contains( QString::fromUtf8("LastSaveSequenceDialogPath") ) ) {
+        _lastSaveSequenceOpenedDir = settings.value( QString::fromUtf8("LastSaveSequenceDialogPath") ).toString();
         QDir d(_lastSaveSequenceOpenedDir);
         if ( !d.exists() ) {
             _lastSaveSequenceOpenedDir.clear();
         }
     }
-    if ( settings.contains(QString::fromUtf8("LastPluginDir")) ) {
-        _lastPluginDir = settings.value(QString::fromUtf8("LastPluginDir")).toString();
+    if ( settings.contains( QString::fromUtf8("LastPluginDir") ) ) {
+        _lastPluginDir = settings.value( QString::fromUtf8("LastPluginDir") ).toString();
     }
-    
+
 #ifdef __NATRON_WIN32__
-    if (settings.contains(QString::fromUtf8("ApplicationConsoleVisible"))) {
-        bool visible = settings.value(QString::fromUtf8("ApplicationConsoleVisible")).toBool();
+    if ( settings.contains( QString::fromUtf8("ApplicationConsoleVisible") ) ) {
+        bool visible = settings.value( QString::fromUtf8("ApplicationConsoleVisible") ).toBool();
         _gui->setApplicationConsoleActionVisible(visible);
     } else {
         _gui->setApplicationConsoleActionVisible(false);
@@ -702,9 +700,9 @@ GuiPrivate::restoreGuiGeometry()
 void
 GuiPrivate::saveGuiGeometry()
 {
-    QSettings settings(QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME));
+    QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
-    settings.beginGroup(QString::fromUtf8("MainWindow"));
+    settings.beginGroup( QString::fromUtf8("MainWindow") );
     settings.setValue( QString::fromUtf8("pos"), _gui->pos() );
     settings.setValue( QString::fromUtf8("size"), _gui->size() );
     settings.setValue( QString::fromUtf8("fullScreen"), _gui->isFullScreen() );
@@ -717,10 +715,9 @@ GuiPrivate::saveGuiGeometry()
     settings.setValue(QString::fromUtf8("LastSaveSequenceDialogPath"), _lastSaveSequenceOpenedDir);
     settings.setValue(QString::fromUtf8("LastPluginDir"), _lastPluginDir);
 #ifdef __NATRON_WIN32__
-    settings.setValue(QString::fromUtf8("ApplicationConsoleVisible"),applicationConsoleVisible);
+    settings.setValue(QString::fromUtf8("ApplicationConsoleVisible"), applicationConsoleVisible);
 #endif
 }
-
 
 QAction*
 GuiPrivate::findActionRecursive(int i,

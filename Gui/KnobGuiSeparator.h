@@ -64,21 +64,18 @@ public:
     }
 
     KnobGuiSeparator(KnobPtr knob,
-                      DockablePanel *container);
+                     DockablePanel *container);
 
     virtual ~KnobGuiSeparator() OVERRIDE;
-    
+
     virtual void removeSpecificGui() OVERRIDE FINAL;
-
     virtual bool isLabelOnSameColumn() const OVERRIDE FINAL;
-    
     virtual bool isLabelBold() const OVERRIDE FINAL;
-
-    
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
 
 private:
     virtual bool shouldAddStretch() const OVERRIDE FINAL { return false; }
+
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;

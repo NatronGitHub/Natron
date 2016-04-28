@@ -35,5 +35,4 @@ Dot::getPluginDescription() const
     return "Doesn't do anything to the input image, this is used in the node graph to make bends in the links.";
 }
 
-
 NATRON_NAMESPACE_EXIT;

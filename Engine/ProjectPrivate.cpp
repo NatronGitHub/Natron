@@ -81,7 +81,7 @@ ProjectPrivate::ProjectPrivate(Project* project)
     , onNodeCreated()
     , onNodeDeleted()
     , timeline( new TimeLine(project) )
-    , autoSetProjectFormat(appPTR->getCurrentSettings()->isAutoProjectFormatEnabled())
+    , autoSetProjectFormat( appPTR->getCurrentSettings()->isAutoProjectFormatEnabled() )
     , isLoadingProjectMutex()
     , isLoadingProject(false)
     , isLoadingProjectInternal(false)
@@ -89,12 +89,10 @@ ProjectPrivate::ProjectPrivate(Project* project)
     , isSavingProject(false)
     , autoSaveTimer( new QTimer() )
     , projectClosing(false)
-    , tlsData(new TLSHolder<Project::ProjectTLSData>())
-    
-{
-    
-    autoSaveTimer->setSingleShot(true);
+    , tlsData( new TLSHolder<Project::ProjectTLSData>() )
 
+{
+    autoSaveTimer->setSingleShot(true);
 }
 
 bool
@@ -103,54 +101,51 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                                          const QString& path,
                                          bool* mustSave)
 {
-    
     /*1st OFF RESTORE THE PROJECT KNOBS*/
     bool ok;
     {
-        CreatingNodeTreeFlag_RAII creatingNodeTreeFlag(_publicInterface->getApp());
-        
+        CreatingNodeTreeFlag_RAII creatingNodeTreeFlag( _publicInterface->getApp() );
+
         projectCreationTime = QDateTime::fromMSecsSinceEpoch( obj.getCreationDate() );
-        
-        _publicInterface->getApp()->updateProjectLoadStatus(QObject::tr("Restoring project settings..."));
-        
+
+        _publicInterface->getApp()->updateProjectLoadStatus( QObject::tr("Restoring project settings...") );
+
         /*we must restore the entries in the combobox before restoring the value*/
         std::vector<std::string> entries;
-        
+
         for (std::list<Format>::const_iterator it = builtinFormats.begin(); it != builtinFormats.end(); ++it) {
             QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
             entries.push_back( formatStr.toStdString() );
         }
-        
+
         const std::list<Format> & objAdditionalFormats = obj.getAdditionalFormats();
         for (std::list<Format>::const_iterator it = objAdditionalFormats.begin(); it != objAdditionalFormats.end(); ++it) {
             QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
             entries.push_back( formatStr.toStdString() );
         }
         additionalFormats = objAdditionalFormats;
-        
+
         formatKnob->populateChoices(entries);
         autoSetProjectFormat = false;
-        
+
         const std::list< boost::shared_ptr<KnobSerialization> > & projectSerializedValues = obj.getProjectKnobsValues();
         const std::vector< KnobPtr > & projectKnobs = _publicInterface->getKnobs();
-        
+
         /// 1) restore project's knobs.
         for (U32 i = 0; i < projectKnobs.size(); ++i) {
             ///try to find a serialized value for this knob
             for (std::list< boost::shared_ptr<KnobSerialization> >::const_iterator it = projectSerializedValues.begin(); it != projectSerializedValues.end(); ++it) {
-                
                 if ( (*it)->getName() == projectKnobs[i]->getName() ) {
-                    
                     ///EDIT: Allow non persistent params to be loaded if we found a valid serialization for them
                     //if ( projectKnobs[i]->getIsPersistant() ) {
-                    
-                    KnobChoice* isChoice = dynamic_cast<KnobChoice*>(projectKnobs[i].get());
+
+                    KnobChoice* isChoice = dynamic_cast<KnobChoice*>( projectKnobs[i].get() );
                     if (isChoice) {
                         const TypeExtraData* extraData = (*it)->getExtraData();
                         const ChoiceExtraData* choiceData = dynamic_cast<const ChoiceExtraData*>(extraData);
                         assert(choiceData);
                         if (choiceData) {
-                            KnobChoice* serializedKnob = dynamic_cast<KnobChoice*>((*it)->getKnob().get());
+                            KnobChoice* serializedKnob = dynamic_cast<KnobChoice*>( (*it)->getKnob().get() );
                             assert(serializedKnob);
                             if (serializedKnob) {
                                 isChoice->choiceRestoration(serializedKnob, choiceData);
@@ -164,60 +159,56 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                 }
             }
             if (projectKnobs[i] == envVars) {
-                
                 ///For eAppTypeBackgroundAutoRunLaunchedFromGui don't change the project path since it is controlled
                 ///by the main GUI process
                 if (appPTR->getAppType() != AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui) {
                     autoSetProjectDirectory(path);
                 }
-                _publicInterface->onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),false);
+                _publicInterface->onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(), false);
             } else if (projectKnobs[i] == natronVersion) {
                 std::string v = natronVersion->getValue();
                 if (v == "Natron v1.0.0") {
                     _publicInterface->getApp()->setProjectWasCreatedWithLowerCaseIDs(true);
                 }
             }
-            
         }
-        
+
         /// 2) restore the timeline
         timeline->seekFrame(obj.getCurrentTime(), false, 0, eTimelineChangeReasonOtherSeek);
-        
-        
+
+
         /// 3) Restore the nodes
-                
-        std::map<std::string,bool> processedModules;
+
+        std::map<std::string, bool> processedModules;
         ok = NodeCollectionSerialization::restoreFromSerialization(obj.getNodesSerialization().getNodesSerialization(),
-                                                                        _publicInterface->shared_from_this(),true, &processedModules);
-        for (std::map<std::string,bool>::iterator it = processedModules.begin(); it!=processedModules.end(); ++it) {
+                                                                   _publicInterface->shared_from_this(), true, &processedModules);
+        for (std::map<std::string, bool>::iterator it = processedModules.begin(); it != processedModules.end(); ++it) {
             if (it->second) {
                 *mustSave = true;
                 break;
             }
         }
-        
-        
-        _publicInterface->getApp()->updateProjectLoadStatus(QObject::tr("Restoring graph stream preferences"));
-        
+
+
+        _publicInterface->getApp()->updateProjectLoadStatus( QObject::tr("Restoring graph stream preferences") );
     } // CreatingNodeTreeFlag_RAII creatingNodeTreeFlag(_publicInterface->getApp());
-    
+
     _publicInterface->forceComputeInputDependentDataOnAllTrees();
-    
+
     QDateTime time = QDateTime::currentDateTime();
     autoSetProjectFormat = false;
     hasProjectBeenSavedByUser = true;
-    projectName->setValue(name.toStdString());
-    projectPath->setValue(path.toStdString());
+    projectName->setValue( name.toStdString() );
+    projectPath->setValue( path.toStdString() );
     ageSinceLastSave = time;
     lastAutoSave = time;
     _publicInterface->getApp()->setProjectWasCreatedWithLowerCaseIDs(false);
-    
+
     if (obj.getVersion() < PROJECT_SERIALIZATION_REMOVES_TIMELINE_BOUNDS) {
         _publicInterface->recomputeFrameRangeFromReaders();
     }
-    
-    return ok;
 
+    return ok;
 } // restoreFromSerialization
 
 bool
@@ -257,22 +248,23 @@ ProjectPrivate::findFormat(int index,
 
     return false;
 }
-    
+
 void
 ProjectPrivate::autoSetProjectDirectory(const QString& path)
 {
     std::string pathCpy = path.toStdString();
-    if (!pathCpy.empty() && pathCpy[pathCpy.size() -1] == '/') {
+
+    if ( !pathCpy.empty() && (pathCpy[pathCpy.size() - 1] == '/') ) {
         pathCpy.erase(pathCpy.size() - 1, 1);
     }
     std::string env = envVars->getValue();
     std::list<std::vector<std::string> > table;
     envVars->decodeFromKnobTableFormat(env, &table);
-    
+
     ///If there was already a OCIO variable, update it, otherwise create it
     bool foundProject = false;
     for (std::list<std::vector<std::string> >::iterator it = table.begin(); it != table.end(); ++it) {
-        if ((*it)[0] == NATRON_PROJECT_ENV_VAR_NAME) {
+        if ( (*it)[0] == NATRON_PROJECT_ENV_VAR_NAME ) {
             (*it)[1] = pathCpy;
             foundProject = true;
             break;
@@ -284,52 +276,54 @@ ProjectPrivate::autoSetProjectDirectory(const QString& path)
         vec[1] = pathCpy;
         table.push_back(vec);
     }
-   
-    
-    
-    
+
+
     std::string newEnv = envVars->encodeToKnobTableFormat(table);
     if (env != newEnv) {
-        if (appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
-            _publicInterface->fixRelativeFilePaths(NATRON_PROJECT_ENV_VAR_NAME, pathCpy,false);
+        if ( appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled() ) {
+            _publicInterface->fixRelativeFilePaths(NATRON_PROJECT_ENV_VAR_NAME, pathCpy, false);
         }
         envVars->setValue(newEnv);
     }
 }
-    
+
 std::string
-ProjectPrivate::runOnProjectSaveCallback(const std::string& filename, bool autoSave)
+ProjectPrivate::runOnProjectSaveCallback(const std::string& filename,
+                                         bool autoSave)
 {
     std::string onProjectSave = _publicInterface->getOnProjectSaveCB();
-    if (!onProjectSave.empty()) {
-        
+
+    if ( !onProjectSave.empty() ) {
         std::vector<std::string> args;
         std::string error;
         try {
             Python::getFunctionArguments(onProjectSave, &error, &args);
         } catch (const std::exception& e) {
-            _publicInterface->getApp()->appendToScriptEditor(std::string("Failed to run onProjectSave callback: ")
-                                                             + e.what());
+            _publicInterface->getApp()->appendToScriptEditor( std::string("Failed to run onProjectSave callback: ")
+                                                              + e.what() );
+
             return filename;
         }
-        if (!error.empty()) {
+
+        if ( !error.empty() ) {
             _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectSave callback: " + error);
+
             return filename;
         } else {
-            
             std::string signatureError;
             signatureError.append("The on project save callback supports the following signature(s):\n");
             signatureError.append("- callback(filename,app,autoSave)");
             if (args.size() != 3) {
                 _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectSave callback: " + signatureError);
+
                 return filename;
             }
-            if (args[0] != "filename" || args[1] != "app" || args[2] != "autoSave") {
+            if ( (args[0] != "filename") || (args[1] != "app") || (args[2] != "autoSave") ) {
                 _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectSave callback: " + signatureError);
+
                 return filename;
             }
             std::string appID = _publicInterface->getApp()->getAppIDString();
-            
             std::stringstream ss;
             if (appID != "app") {
                 ss << "app = " << appID << "\n";
@@ -340,12 +334,13 @@ ProjectPrivate::runOnProjectSaveCallback(const std::string& filename, bool autoS
             } else {
                 ss << "False)\n";
             }
-            
+
             onProjectSave = ss.str();
             std::string err;
             std::string output;
-            if (!Python::interpretPythonScript(onProjectSave, &err, &output)) {
+            if ( !Python::interpretPythonScript(onProjectSave, &err, &output) ) {
                 _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectSave callback: " + err);
+
                 return filename;
             } else {
                 PyObject* mainModule = Python::getMainModule();
@@ -361,50 +356,55 @@ ProjectPrivate::runOnProjectSaveCallback(const std::string& filename, bool autoS
                     bool ok = Python::interpretPythonScript(script, &err, 0);
                     assert(ok);
                     if (!ok) {
-                        throw std::runtime_error("ProjectPrivate::runOnProjectSaveCallback(): interpretPythonScript("+script+") failed!");
+                        throw std::runtime_error("ProjectPrivate::runOnProjectSaveCallback(): interpretPythonScript(" + script + ") failed!");
                     }
                 }
-                if (!output.empty()) {
+                if ( !output.empty() ) {
                     _publicInterface->getApp()->appendToScriptEditor(output);
                 }
+
                 return filePath;
             }
-            
         }
-        
     }
+
     return filename;
-}
-    
+} // ProjectPrivate::runOnProjectSaveCallback
+
 void
 ProjectPrivate::runOnProjectCloseCallback()
 {
     std::string onProjectClose = _publicInterface->getOnProjectCloseCB();
-    if (!onProjectClose.empty()) {
-        
+
+    if ( !onProjectClose.empty() ) {
         std::vector<std::string> args;
         std::string error;
         try {
             Python::getFunctionArguments(onProjectClose, &error, &args);
         } catch (const std::exception& e) {
-            _publicInterface->getApp()->appendToScriptEditor(std::string("Failed to run onProjectClose callback: ")
-                                                             + e.what());
+            _publicInterface->getApp()->appendToScriptEditor( std::string("Failed to run onProjectClose callback: ")
+                                                              + e.what() );
+
             return;
         }
-        if (!error.empty()) {
+
+        if ( !error.empty() ) {
             _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectClose callback: " + error);
+
             return;
         }
-        
+
         std::string signatureError;
         signatureError.append("The on project close callback supports the following signature(s):\n");
         signatureError.append("- callback(app)");
         if (args.size() != 1) {
             _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectClose callback: " + signatureError);
+
             return;
         }
         if (args[0] != "app") {
             _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectClose callback: " + signatureError);
+
             return;
         }
         std::string appID = _publicInterface->getApp()->getAppIDString();
@@ -415,49 +415,53 @@ ProjectPrivate::runOnProjectCloseCallback()
         script = script + "\n" + onProjectClose + "(" + appID + ")\n";
         std::string err;
         std::string output;
-        if (!Python::interpretPythonScript(script, &err, &output)) {
+        if ( !Python::interpretPythonScript(script, &err, &output) ) {
             _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectClose callback: " + err);
         } else {
-            if (!output.empty()) {
+            if ( !output.empty() ) {
                 _publicInterface->getApp()->appendToScriptEditor(output);
             }
         }
-        
     }
-}
-    
+} // ProjectPrivate::runOnProjectCloseCallback
+
 void
 ProjectPrivate::runOnProjectLoadCallback()
 {
     std::string cb = _publicInterface->getOnProjectLoadCB();
-    if (!cb.empty()) {
-        
+
+    if ( !cb.empty() ) {
         std::vector<std::string> args;
         std::string error;
         try {
             Python::getFunctionArguments(cb, &error, &args);
         } catch (const std::exception& e) {
-            _publicInterface->getApp()->appendToScriptEditor(std::string("Failed to run onProjectLoaded callback: ")
-                                                             + e.what());
+            _publicInterface->getApp()->appendToScriptEditor( std::string("Failed to run onProjectLoaded callback: ")
+                                                              + e.what() );
+
             return;
         }
-        if (!error.empty()) {
+
+        if ( !error.empty() ) {
             _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectLoaded callback: " + error);
+
             return;
         }
-        
+
         std::string signatureError;
         signatureError.append("The on  project loaded callback supports the following signature(s):\n");
         signatureError.append("- callback(app)");
         if (args.size() != 1) {
             _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectLoaded callback: " + signatureError);
+
             return;
         }
         if (args[0] != "app") {
             _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectLoaded callback: " + signatureError);
+
             return;
         }
-        
+
         std::string appID = _publicInterface->getApp()->getAppIDString();
         std::string script;
         if (appID != "app") {
@@ -466,36 +470,34 @@ ProjectPrivate::runOnProjectLoadCallback()
         script =  script + "\n" + cb + "(" + appID + ")\n";
         std::string err;
         std::string output;
-        if (!Python::interpretPythonScript(script, &err, &output)) {
+        if ( !Python::interpretPythonScript(script, &err, &output) ) {
             _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectLoaded callback: " + err);
         } else {
-            if (!output.empty()) {
+            if ( !output.empty() ) {
                 _publicInterface->getApp()->appendToScriptEditor(output);
             }
         }
-        
     }
+} // ProjectPrivate::runOnProjectLoadCallback
 
-}
-    
 void
 ProjectPrivate::setProjectFilename(const std::string& filename)
 {
     projectName->setValue(filename);
 }
-    
+
 std::string
 ProjectPrivate::getProjectFilename() const
 {
     return projectName->getValue();
 }
-    
+
 void
 ProjectPrivate::setProjectPath(const std::string& path)
 {
     projectPath->setValue(path);
 }
-    
+
 std::string
 ProjectPrivate::getProjectPath() const
 {

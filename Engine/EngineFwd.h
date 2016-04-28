@@ -228,22 +228,15 @@ struct Matrix3x3;
 }
 
 typedef boost::shared_ptr<AbortableRenderInfo> AbortableRenderInfoPtr;
-
-
 typedef boost::shared_ptr<Node> NodePtr;
 typedef std::list<NodePtr> NodesList;
-
 typedef boost::weak_ptr<Node> NodeWPtr;
 typedef std::list<NodeWPtr> NodesWList;
-
 typedef boost::shared_ptr<KnobI> KnobPtr;
 typedef boost::weak_ptr<KnobI> KnobWPtr;
 typedef std::vector<KnobPtr> KnobsVec;
-
-
 typedef boost::shared_ptr<EffectInstance> EffectInstPtr;
 typedef boost::weak_ptr<EffectInstance> EffectInstWPtr;
-
 typedef boost::shared_ptr<Image> ImagePtr;
 typedef std::list<ImagePtr> ImageList;
 

@@ -41,7 +41,7 @@ Button::Button(QWidget* parent)
 
 Button::Button(const QString & text,
                QWidget * parent)
-    : QPushButton(text,parent)
+    : QPushButton(text, parent)
 {
     setAttribute(Qt::WA_LayoutUsesWidgetRect); // Don't use the layout rect calculated from QMacStyle.
     initInternal();
@@ -50,7 +50,7 @@ Button::Button(const QString & text,
 Button::Button(const QIcon & icon,
                const QString & text,
                QWidget * parent)
-    : QPushButton(icon,text,parent)
+    : QPushButton(icon, text, parent)
 {
     setAttribute(Qt::WA_LayoutUsesWidgetRect); // Don't use the layout rect calculated from QMacStyle.
     initInternal();
@@ -59,7 +59,7 @@ Button::Button(const QIcon & icon,
 void
 Button::initInternal()
 {
-    setFont(QApplication::font()); // necessary, or the buttons will get the default font size
+    setFont( QApplication::font() ); // necessary, or the buttons will get the default font size
     //setFont( QFont(appFont,appFontSize) );
 }
 

@@ -52,7 +52,7 @@ FloatingWidget::FloatingWidget(Gui* gui,
     setAttribute(Qt::WA_DeleteOnClose, true);
     if (gui) {
         boost::shared_ptr<Project> project = gui->getApp()->getProject();
-        QObject::connect(project.get(),SIGNAL(projectNameChanged(QString,bool)), this, SLOT(onProjectNameChanged(QString,bool)));
+        QObject::connect( project.get(), SIGNAL(projectNameChanged(QString,bool)), this, SLOT(onProjectNameChanged(QString,bool)) );
         onProjectNameChanged(project->getProjectPath(), false);
     }
     _layout = new QVBoxLayout(this);
@@ -63,9 +63,10 @@ FloatingWidget::FloatingWidget(Gui* gui,
 }
 
 void
-FloatingWidget::onProjectNameChanged(const QString& filePath, bool modified)
+FloatingWidget::onProjectNameChanged(const QString& filePath,
+                                     bool modified)
 {
-   // handles window title and appearance formatting
+    // handles window title and appearance formatting
     // http://doc.qt.io/qt-4.8/qwidget.html#windowModified-prop
     setWindowModified(modified);
     // http://doc.qt.io/qt-4.8/qwidget.html#windowFilePath-prop

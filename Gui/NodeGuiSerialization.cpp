@@ -44,8 +44,8 @@ NodeGuiSerialization::initialize(const NodeGui*  n)
 {
     ////All this code is MT-safe
     NodePtr node = n->getNode();
-    
-    
+
+
     _nodeName = node->getFullyQualifiedName();
     QPointF pos = n->getPos_mt_safe();
     _posX = pos.x();
@@ -57,32 +57,30 @@ NodeGuiSerialization::initialize(const NodeGui*  n)
     _g = color.greenF();
     _b = color.blueF();
     _selected = n->isSelected();
-    
+
     _hasOverlayColor = n->getOverlayColor(&_overlayR, &_overlayG, &_overlayB);
-    
+
     NodeGroup* isGrp = node->isEffectGroup();
     if (isGrp) {
         NodesList nodes;
         isGrp->getActiveNodes(&nodes);
-        
+
         _children.clear();
-        
-        for (NodesList::iterator it = nodes.begin(); it != nodes.end() ; ++it) {
+
+        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             boost::shared_ptr<NodeGuiI> gui_i = (*it)->getNodeGui();
             if (!gui_i) {
                 continue;
             }
-            NodeGui* childGui = dynamic_cast<NodeGui*>(gui_i.get());
+            NodeGui* childGui = dynamic_cast<NodeGui*>( gui_i.get() );
             if (!childGui) {
                 continue;
             }
-            boost::shared_ptr<NodeGuiSerialization> state(new NodeGuiSerialization());
+            boost::shared_ptr<NodeGuiSerialization> state( new NodeGuiSerialization() );
             state->initialize(childGui);
             _children.push_back(state);
         }
-        
     }
-    
 }
 
 NATRON_NAMESPACE_EXIT;

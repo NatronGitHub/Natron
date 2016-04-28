@@ -84,26 +84,26 @@ private:
     {
         Q_UNUSED(version);
 
-        ar & ::boost::serialization::make_nvp("BaseLayer",_baseLayer);
-        ar & ::boost::serialization::make_nvp("AutoKeying",_autoKeying);
-        ar & ::boost::serialization::make_nvp("RippleEdit",_rippleEdit);
-        ar & ::boost::serialization::make_nvp("FeatherLink",_featherLink);
-        ar & ::boost::serialization::make_nvp("Selection",_selectedItems);
+        ar & ::boost::serialization::make_nvp("BaseLayer", _baseLayer);
+        ar & ::boost::serialization::make_nvp("AutoKeying", _autoKeying);
+        ar & ::boost::serialization::make_nvp("RippleEdit", _rippleEdit);
+        ar & ::boost::serialization::make_nvp("FeatherLink", _featherLink);
+        ar & ::boost::serialization::make_nvp("Selection", _selectedItems);
     }
 
     template<class Archive>
     void load(Archive & ar,
               const unsigned int version)
     {
+        ar & ::boost::serialization::make_nvp("BaseLayer", _baseLayer);
+        ar & ::boost::serialization::make_nvp("AutoKeying", _autoKeying);
+        ar & ::boost::serialization::make_nvp("RippleEdit", _rippleEdit);
+        ar & ::boost::serialization::make_nvp("FeatherLink", _featherLink);
+        ar & ::boost::serialization::make_nvp("Selection", _selectedItems);
 
-        ar & ::boost::serialization::make_nvp("BaseLayer",_baseLayer);
-        ar & ::boost::serialization::make_nvp("AutoKeying",_autoKeying);
-        ar & ::boost::serialization::make_nvp("RippleEdit",_rippleEdit);
-        ar & ::boost::serialization::make_nvp("FeatherLink",_featherLink);
-        ar & ::boost::serialization::make_nvp("Selection",_selectedItems);
         if (version < ROTO_CTX_REMOVE_COUNTERS) {
-            std::map<std::string,int> _itemCounters;
-            ar & ::boost::serialization::make_nvp("Counters",_itemCounters);
+            std::map<std::string, int> _itemCounters;
+            ar & ::boost::serialization::make_nvp("Counters", _itemCounters);
         }
     }
 
@@ -118,7 +118,7 @@ private:
 
 NATRON_NAMESPACE_EXIT;
 
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::RotoContextSerialization,ROTO_CTX_VERSION)
+BOOST_CLASS_VERSION(NATRON_NAMESPACE::RotoContextSerialization, ROTO_CTX_VERSION)
 
 
 #endif // Engine_RotoContextSerialization_h

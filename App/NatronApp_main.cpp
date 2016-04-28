@@ -44,31 +44,28 @@ main(int argc,
      char *argv[])
 {
     CLArgs::printBackGroundWelcomeMessage();
+    CLArgs args(argc, argv, false);
 
-    CLArgs args(argc,argv,false);
     if (args.getError() > 0) {
         return 1;
     }
 
-    if (args.isBackgroundMode()) {
-        
+    if ( args.isBackgroundMode() ) {
         AppManager manager;
 
         // coverity[tainted_data]
-        if (!manager.load(argc,argv,args) ) {
+        if ( !manager.load(argc, argv, args) ) {
             return 1;
         } else {
             return 0;
         }
     } else {
-        
         GuiApplicationManager manager;
-        
+
         // coverity[tainted_data]
-        return manager.load(argc,argv,args);
-        
+        return manager.load(argc, argv, args);
+
         //exec() is called within the GuiApplicationManager
     }
 } // main
-
 

@@ -44,14 +44,15 @@ NATRON_NAMESPACE_ENTER;
 
 
 namespace {
-class NoWheelTabBar : public QTabBar
+class NoWheelTabBar
+    : public QTabBar
 {
 public:
-    
+
     NoWheelTabBar(QWidget* parent) : QTabBar(parent) {}
-    
+
 private:
-    
+
     virtual void wheelEvent(QWheelEvent* event) OVERRIDE FINAL
     {
         //ignore wheel events so it doesn't scroll the tabs
@@ -61,16 +62,17 @@ private:
 }
 
 
-DockablePanelTabWidget::DockablePanelTabWidget(Gui* gui,QWidget* parent)
+DockablePanelTabWidget::DockablePanelTabWidget(Gui* gui,
+                                               QWidget* parent)
     : QTabWidget(parent)
     , _gui(gui)
 {
     setFocusPolicy(Qt::ClickFocus);
     QTabBar* tabbar = new NoWheelTabBar(this);
-    tabbar->setObjectName(QString::fromUtf8("PanelTabBar"));
+    tabbar->setObjectName( QString::fromUtf8("PanelTabBar") );
     tabbar->setFocusPolicy(Qt::ClickFocus);
     setTabBar(tabbar);
-    setObjectName(QString::fromUtf8("PanelTabBar"));
+    setObjectName( QString::fromUtf8("PanelTabBar") );
 }
 
 void
@@ -78,12 +80,12 @@ DockablePanelTabWidget::keyPressEvent(QKeyEvent* event)
 {
     Qt::Key key = (Qt::Key)event->key();
     Qt::KeyboardModifiers modifiers = event->modifiers();
-    
-    if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key)) {
+
+    if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
         if ( _gui->getNodeGraph()->getLastSelectedViewer() ) {
             _gui->getNodeGraph()->getLastSelectedViewer()->previousFrame();
         }
-    } else if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
         if ( _gui->getNodeGraph()->getLastSelectedViewer() ) {
             _gui->getNodeGraph()->getLastSelectedViewer()->nextFrame();
         }
@@ -95,13 +97,13 @@ DockablePanelTabWidget::keyPressEvent(QKeyEvent* event)
 QSize
 DockablePanelTabWidget::sizeHint() const
 {
-    return currentWidget() ? currentWidget()->sizeHint() + QSize(0,20) : QSize(300,100);
+    return currentWidget() ? currentWidget()->sizeHint() + QSize(0, 20) : QSize(300, 100);
 }
 
 QSize
 DockablePanelTabWidget::minimumSizeHint() const
 {
-    return currentWidget() ? currentWidget()->minimumSizeHint() + QSize(0,20) : QSize(300,100);
+    return currentWidget() ? currentWidget()->minimumSizeHint() + QSize(0, 20) : QSize(300, 100);
 }
 
 NATRON_NAMESPACE_EXIT;

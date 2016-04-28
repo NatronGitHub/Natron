@@ -44,11 +44,9 @@ class SpinBox
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
-
-    Q_PROPERTY(int animation READ getAnimation WRITE setAnimation)
+GCC_DIAG_SUGGEST_OVERRIDE_ON Q_PROPERTY(int animation READ getAnimation WRITE setAnimation)
     Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
-    
+
 public:
 
     enum SpinBoxTypeEnum
@@ -61,7 +59,7 @@ public:
                      SpinBoxTypeEnum type = eSpinBoxTypeInt);
 
     virtual ~SpinBox() OVERRIDE;
-    
+
     void setType(SpinBoxTypeEnum type);
 
     ///Set the digits after the decimal point.
@@ -98,30 +96,29 @@ public:
     }
 
     void setUseLineColor(bool use, const QColor& color);
-    
+
     /**
      * @brief Set an optional validator that will validate numbers instead of the regular double/int validator.
      * The spinbox takes ownership of the validator and will destroy it.
      **/
     void setValidator(SpinBoxValidator* validator);
-    
+
     double getLastValidValueBeforeValidation() const;
-    
+
 protected:
 
     void increment(int delta, int shift);
 
-    virtual void wheelEvent(QWheelEvent* e) OVERRIDE ;
+    virtual void wheelEvent(QWheelEvent* e) OVERRIDE;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
-    
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE;
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
 
     bool validateText();
-    
+
     bool validateInternal();
-    
+
     bool validateWithCustomValidator(const QString& txt);
 
 Q_SIGNALS:
@@ -147,29 +144,30 @@ private:
     ///Used by the stylesheet , they are Q_PROPERTIES
     int animation; // 0 = no animation, 1 = interpolated, 2 = equals keyframe value
     bool dirty;
-    
+
 protected:
-    
+
     bool ignoreWheelEvent;
-    
+
 private:
-    
+
     boost::scoped_ptr<SpinBoxPrivate> _imp;
 };
 
-class KnobSpinBox : public SpinBox
+class KnobSpinBox
+    : public SpinBox
 {
 public:
-    
+
     KnobSpinBox(QWidget* parent,
                 SpinBoxTypeEnum type,
                 const KnobGuiPtr& knob,
                 int dimension);
 
     virtual ~KnobSpinBox();
-    
+
 private:
-    
+
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
@@ -181,7 +179,6 @@ private:
     virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE FINAL;
     virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
     virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
-    
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
 

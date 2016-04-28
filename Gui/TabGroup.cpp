@@ -38,7 +38,7 @@ NATRON_NAMESPACE_ENTER;
 
 
 TabGroup::TabGroup(QWidget* parent)
-: QFrame(parent)
+    : QFrame(parent)
 {
     setFrameShadow(QFrame::Raised);
     setFrameShape(QFrame::Box);
@@ -48,12 +48,13 @@ TabGroup::TabGroup(QWidget* parent)
 }
 
 QGridLayout*
-TabGroup::addTab(const boost::shared_ptr<KnobGroup>& group, const QString& label)
+TabGroup::addTab(const boost::shared_ptr<KnobGroup>& group,
+                 const QString& label)
 {
-    
     QWidget* tab = 0;
     QGridLayout* tabLayout = 0;
-    for (U32 i = 0 ; i < _tabs.size(); ++i) {
+
+    for (U32 i = 0; i < _tabs.size(); ++i) {
         if (_tabs[i].lock() == group) {
             tab = _tabWidget->widget(i);
             assert(tab);
@@ -61,7 +62,7 @@ TabGroup::addTab(const boost::shared_ptr<KnobGroup>& group, const QString& label
             assert(tabLayout);
         }
     }
-   
+
     if (!tab) {
         tab = new QWidget(_tabWidget);
         tabLayout = new QGridLayout(tab);
@@ -72,6 +73,7 @@ TabGroup::addTab(const boost::shared_ptr<KnobGroup>& group, const QString& label
         _tabs.push_back(group);
     }
     assert(tabLayout);
+
     return tabLayout;
 }
 
@@ -79,6 +81,7 @@ void
 TabGroup::removeTab(KnobGroup* group)
 {
     int i = 0;
+
     for (std::vector<boost::weak_ptr<KnobGroup> >::iterator it = _tabs.begin(); it != _tabs.end(); ++it, ++i) {
         if (it->lock().get() == group) {
             _tabWidget->removeTab(i);

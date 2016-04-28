@@ -48,25 +48,26 @@
 /**
  * @brief Returns true if the given modifiers and symbol should trigger the given action of the given group.
  **/
-#define isKeybind(group,action, modifiers,symbol) ( appPTR->matchesKeybind(group,action, modifiers, symbol) )
+#define isKeybind(group, action, modifiers, symbol) ( appPTR->matchesKeybind(group, action, modifiers, symbol) )
 
 /**
  * @brief Returns true if the given modifiers and button should trigger the given action of the given group.
  **/
-#define isMouseShortcut(group,action, modifiers,button) ( appPTR->matchesMouseShortcut(group,action, modifiers, button) )
+#define isMouseShortcut(group, action, modifiers, button) ( appPTR->matchesMouseShortcut(group, action, modifiers, button) )
 
 /**
  * @brief Returns the QKeySequence object for the given action of the given group.
  **/
-#define getKeybind(group,action) ( appPTR->getKeySequenceForAction(group,action) )
+#define getKeybind(group, action) ( appPTR->getKeySequenceForAction(group, action) )
 
-#define TO_DPI(x,y) ( appPTR->adjustSizeToDPI(x,y) )
+#define TO_DPI(x, y) ( appPTR->adjustSizeToDPI(x, y) )
 #define TO_DPIX(x) ( appPTR->adjustSizeToDPIX(x) )
 #define TO_DPIY(y) ( appPTR->adjustSizeToDPIY(y) )
 
 NATRON_NAMESPACE_ENTER;
 
-struct PythonUserCommand {
+struct PythonUserCommand
+{
     QString grouping;
     Qt::Key key;
     Qt::KeyboardModifiers modifiers;
@@ -116,13 +117,11 @@ public:
     void updateAllRecentFileMenus();
 
     bool isSplashcreenVisible() const;
-    
+
     virtual void hideSplashScreen() OVERRIDE FINAL;
-    
     const QCursor & getColorPickerCursor() const;
     const QCursor & getLinkToCursor() const;
     const QCursor & getLinkToMultCursor() const;
-    
     virtual void setLoadingStatus(const QString & str) OVERRIDE FINAL;
     KnobGui* createGuiForKnob(KnobPtr knob, DockablePanel *container) const;
     virtual void setUndoRedoStackLimit(int limit) OVERRIDE FINAL;
@@ -143,9 +142,9 @@ public:
      * @brief Returns true if the given keyboard modifiers and the given mouse button match the given action.
      * The button parameter is to be casted to the Qt::MouseButton enum
      **/
-    bool matchesMouseShortcut(const std::string & group,const std::string & actionID,const Qt::KeyboardModifiers & modifiers,int button) const;
+    bool matchesMouseShortcut(const std::string & group, const std::string & actionID, const Qt::KeyboardModifiers & modifiers, int button) const;
 
-    std::list<QKeySequence> getKeySequenceForAction(const QString & group,const QString & actionID) const;
+    std::list<QKeySequence> getKeySequenceForAction(const QString & group, const QString & actionID) const;
 
     /**
      * @brief Save shortcuts to QSettings
@@ -154,73 +153,72 @@ public:
 
     void restoreDefaultShortcuts();
 
-    const std::map<QString,std::map<QString,BoundAction*> > & getAllShortcuts() const;
+    const std::map<QString, std::map<QString, BoundAction*> > & getAllShortcuts() const;
 
     /**
      * @brief Register an action to the shortcut manager indicating it is using a shortcut.
      * This is used to update the action's shortcut when it gets modified by the user.
      **/
-    void addShortcutAction(const QString & group,const QString & actionID,ActionWithShortcut* action);
-    void removeShortcutAction(const QString & group,const QString & actionID,QAction* action);
+    void addShortcutAction(const QString & group, const QString & actionID, ActionWithShortcut* action);
+    void removeShortcutAction(const QString & group, const QString & actionID, QAction* action);
 
     void notifyShortcutChanged(KeyBoundAction* action);
-    
+
     bool isShorcutVersionUpToDate() const;
-    
+
     virtual void showErrorLog() OVERRIDE FINAL;
-    
     virtual QString getAppFont() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
     virtual int getAppFontSize() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
+
     ///Closes the application, asking the user to save each opened project that has unsaved changes
     virtual void exitApp(bool warnUserForSave) OVERRIDE FINAL;
-    
-    bool isNodeClipBoardEmpty() const;
-    
-    NodeClipBoard& getNodeClipBoard();
-    
-    virtual void reloadStylesheets() OVERRIDE FINAL;
-    
-    virtual void reloadScriptEditorFonts() OVERRIDE FINAL;
-    
-    void clearNodeClipBoard();
-    
-    virtual void addCommand(const QString& grouping,const std::string& pythonFunction, Qt::Key key,const Qt::KeyboardModifiers& modifiers) OVERRIDE;
-    
-    const std::list<PythonUserCommand>& getUserPythonCommands() const;
-    
-    bool handleImageFileOpenRequest(const std::string& imageFile);
-    
-    void appendTaskToPreviewThread(const NodeGuiPtr& node, double time);
-    
 
-    void setCurrentLogicalDPI(double dpiX,double dpiY);
+    bool isNodeClipBoardEmpty() const;
+
+    NodeClipBoard& getNodeClipBoard();
+    virtual void reloadStylesheets() OVERRIDE FINAL;
+    virtual void reloadScriptEditorFonts() OVERRIDE FINAL;
+
+    void clearNodeClipBoard();
+
+    virtual void addCommand(const QString& grouping, const std::string& pythonFunction, Qt::Key key, const Qt::KeyboardModifiers& modifiers) OVERRIDE;
+    const std::list<PythonUserCommand>& getUserPythonCommands() const;
+
+    bool handleImageFileOpenRequest(const std::string& imageFile);
+
+    void appendTaskToPreviewThread(const NodeGuiPtr& node, double time);
+
+
+    void setCurrentLogicalDPI(double dpiX, double dpiY);
     double getLogicalDPIXRATIO() const;
     double getLogicalDPIYRATIO() const;
 
     template <typename T>
-    void adjustSizeToDPI(T &x, T &y) const {
+    void adjustSizeToDPI(T &x,
+                         T &y) const
+    {
         x *= getLogicalDPIXRATIO();
         y *= getLogicalDPIYRATIO();
     }
 
     template <typename T>
-    T adjustSizeToDPIX(T x) const {
+    T adjustSizeToDPIX(T x) const
+    {
         return x * getLogicalDPIXRATIO();
     }
 
     template <typename T>
-    T adjustSizeToDPIY(T y) const {
+    T adjustSizeToDPIY(T y) const
+    {
         return y * getLogicalDPIYRATIO();
     }
 
 public Q_SLOTS:
-    
+
     void onFontconfigCacheUpdateFinished();
 
     void onFontconfigTimerTriggered();
-    
+
 private:
 
     virtual void initBuiltinPythonModules() OVERRIDE FINAL;
@@ -228,8 +226,8 @@ private:
     void onPluginLoaded(Plugin* plugin) OVERRIDE;
     virtual void ignorePlugin(Plugin* plugin) OVERRIDE FINAL;
     virtual void onAllPluginsLoaded() OVERRIDE FINAL;
-    virtual void loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
-                                        std::map<std::string,std::vector< std::pair<std::string,double> > >* writersMap) OVERRIDE;
+    virtual void loadBuiltinNodePlugins(std::map<std::string, std::vector< std::pair<std::string, double> > >* readersMap,
+                                        std::map<std::string, std::vector< std::pair<std::string, double> > >* writersMap) OVERRIDE;
     virtual bool initGui(const CLArgs& args) OVERRIDE FINAL;
     virtual AppInstance* makeNewInstance(int appID) const OVERRIDE FINAL;
     virtual void registerGuiMetaTypes() const OVERRIDE FINAL;
@@ -238,7 +236,6 @@ private:
     void handleOpenFileRequest();
 
     virtual void onLoadCompleted() OVERRIDE FINAL;
-
     virtual void clearLastRenderedTextures() OVERRIDE FINAL;
     /**
      * @brief Load shortcuts from QSettings

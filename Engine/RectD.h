@@ -72,7 +72,7 @@ public:
     }
 
     RectD(const RectD &b)
-        : x1(b.x1),y1(b.y1),x2(b.x2),y2(b.y2)
+        : x1(b.x1), y1(b.y1), x2(b.x2), y2(b.y2)
     {
         assert( (x2 >= x1) && (y2 >= y1) );
     }
@@ -142,7 +142,7 @@ public:
         y2 = t;
         /*assert((x2>= x1) && (y2>=y1));*/
     }
-    
+
     //Useful for bbox computations
     void setupInfinity()
     {
@@ -227,10 +227,10 @@ public:
             return false;
         }
 
-        intersection->x1 = std::max(x1,r.x1);
-        intersection->x2 = std::min(x2,r.x2);
-        intersection->y1 = std::max(y1,r.y1);
-        intersection->y2 = std::min(y2,r.y2);
+        intersection->x1 = std::max(x1, r.x1);
+        intersection->x2 = std::min(x2, r.x2);
+        intersection->y1 = std::max(y1, r.y1);
+        intersection->y2 = std::min(y2, r.y2);
 
         return true;
     }
@@ -241,7 +241,7 @@ public:
                    double t,
                    RectD* intersection) const
     {
-        return intersect(RectD(l,b,r,t),intersection);
+        return intersect(RectD(l, b, r, t), intersection);
     }
 
     /// returns true if the rect passed as parameter is intersects this one
@@ -262,7 +262,7 @@ public:
                     double r,
                     double t) const
     {
-        return intersects( RectD(l,b,r,t) );
+        return intersects( RectD(l, b, r, t) );
     }
 
     /*the area : w*h*/
@@ -298,10 +298,11 @@ public:
 #ifdef DEBUG
     void debug() const
     {
-        std::cout << "x1 = "<<x1<<" y1 = "<<y1<<" x2 = "<<x2<<" y2 = "<<y2<< std::endl;
+        std::cout << "x1 = " << x1 << " y1 = " << y1 << " x2 = " << x2 << " y2 = " << y2 << std::endl;
     }
+
 #endif
-    
+
     void toPixelEnclosing(const RenderScale & scale,
                           double par,
                           RectI *rect) const;
@@ -341,6 +342,7 @@ operator!=(const RectD & b1,
            b1.right() != b2.right() ||
            b1.top() != b2.top();
 }
+
 NATRON_NAMESPACE_EXIT;
 
 Q_DECLARE_METATYPE(NATRON_NAMESPACE::RectD)

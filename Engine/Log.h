@@ -57,7 +57,7 @@ public:
      * @brief Begins a new function in the log. It will print a new delimiter
      * and a START tag. This is used to bracket a call to print.
      **/
-    static void beginFunction(const std::string & callerName,const std::string & function);
+    static void beginFunction(const std::string & callerName, const std::string & function);
 
     /**
      * @brief Prints the content of 'log' into the log's file. If beginFunction was
@@ -76,7 +76,7 @@ public:
      * @brief Ends a function in the log. It will print a new delimiter
      * and a STOP tag. This is used to bracket a call to print.
      **/
-    static void endFunction(const std::string & callerName,const std::string & function);
+    static void endFunction(const std::string & callerName, const std::string & function);
     static bool enabled()
     {
         return true;

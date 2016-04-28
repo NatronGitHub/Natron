@@ -44,26 +44,27 @@ NATRON_NAMESPACE_ENTER;
 
 struct PickKnobDialogPrivate;
 
-class PickKnobDialog : public QDialog
+class PickKnobDialog
+    : public QDialog
 {
     Q_OBJECT
-    
+
 public:
-    
+
     PickKnobDialog(DockablePanel* panel, QWidget* parent);
-    
+
     virtual ~PickKnobDialog();
-    
-    KnobGuiPtr getSelectedKnob(bool* makeAlias,boost::shared_ptr<KnobPage>* page, boost::shared_ptr<KnobGroup>* group) const;
-    
+
+    KnobGuiPtr getSelectedKnob(bool* makeAlias, boost::shared_ptr<KnobPage>* page, boost::shared_ptr<KnobGroup>* group) const;
+
 public Q_SLOTS:
-    
+
     void onNodeComboEditingFinished();
     void onPageComboIndexChanged(int index);
     void onKnobComboIndexChanged(int index);
-    
+
 private:
-    
+
     boost::scoped_ptr<PickKnobDialogPrivate> _imp;
 };
 

@@ -40,13 +40,15 @@ NATRON_NAMESPACE_ENTER;
 // resizable message box,
 // see http://www.qtcentre.org/threads/24888-Resizing-a-QMessageBox#post135851
 // and http://stackoverflow.com/questions/2655354/how-to-allow-resizing-of-qmessagebox-in-pyqt4
-class ResizableMessageBox : public QMessageBox {
+class ResizableMessageBox
+    : public QMessageBox
+{
 public:
     explicit ResizableMessageBox(QWidget *parent = 0);
 
     ResizableMessageBox(Icon icon, const QString &title, const QString &text,
-                 StandardButtons buttons = NoButton, QWidget *parent = 0,
-                 Qt::WindowFlags flags = Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
+                        StandardButtons buttons = NoButton, QWidget *parent = 0,
+                        Qt::WindowFlags flags = Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
 
 private:
     bool event(QEvent *e) OVERRIDE FINAL;

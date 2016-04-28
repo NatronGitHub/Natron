@@ -62,7 +62,6 @@ CLANG_DIAG_ON(deprecated)
 #include "Global/Enums.h"
 
 
-
 // boost and C++11 also have a foreach. this breaks it. DON'T UNCOMMENT THIS.
 //#undef foreach
 //#define foreach Q_FOREACH
@@ -85,18 +84,21 @@ NATRON_NAMESPACE_ENTER;
 
 typedef int SequenceTime;
 
-struct RenderScale : public OfxPointD {
+struct RenderScale
+    : public OfxPointD
+{
     RenderScale() { x = y = 1.; }
+
     RenderScale(double scale) { x = y = scale; }
-    RenderScale(double scaleX, double scaleY) { x = scaleX; y = scaleY; }
+
+    RenderScale(double scaleX,
+                double scaleY) { x = scaleX; y = scaleY; }
 };
 
 typedef OfxPointD Point;
-
 typedef OfxRGBAColourF RGBAColourF;
 typedef OfxRGBAColourD RGBAColourD;
 typedef OfxRangeD RangeD;
-
 
 
 ///these are used between process to communicate via the pipes
@@ -143,39 +145,35 @@ typedef OfxRangeD RangeD;
 #define kDopeSheetEditorTransformKeysCommandCompressionID 21
 #define kDopeSheetEditorSlipReaderCommandCompressionID 23
 
-#define PY_VERSION_STRINGIZE_(major,minor) \
-# major "." # minor
+#define PY_VERSION_STRINGIZE_(major, minor) \
+    # major "." # minor
 
-#define PY_VERSION_STRINGIZE(major,minor) \
-PY_VERSION_STRINGIZE_(major,minor)
+#define PY_VERSION_STRINGIZE(major, minor) \
+    PY_VERSION_STRINGIZE_(major, minor)
 
 #if PY_MAJOR_VERSION == 2
 #define IS_PYTHON_2
 #endif
 
-#define NATRON_PY_VERSION_STRING PY_VERSION_STRINGIZE(PY_MAJOR_VERSION,PY_MINOR_VERSION)
+#define NATRON_PY_VERSION_STRING PY_VERSION_STRINGIZE(PY_MAJOR_VERSION, PY_MINOR_VERSION)
 
 
 namespace Global {
-
 /*Converts a std::string to wide string*/
 inline std::wstring
 utf8_to_utf16(const std::string & s)
 {
-
-
 #ifdef __NATRON_WIN32__
     std::wstring native;
-    
-    
-    native.resize(MultiByteToWideChar (CP_UTF8, 0, s.c_str(), -1, NULL, 0) -1);
-    MultiByteToWideChar (CP_UTF8, 0, s.c_str(), s.size(), &native[0], (int)native.size());
-    
+
+
+    native.resize(MultiByteToWideChar (CP_UTF8, 0, s.c_str(), -1, NULL, 0) - 1);
+    MultiByteToWideChar ( CP_UTF8, 0, s.c_str(), s.size(), &native[0], (int)native.size() );
+
     return native;
-    
+
 #else
     std::wstring dest;
-
     size_t max = s.size() * 4;
     mbtowc (NULL, NULL, max);  /* reset mbtowc */
 
@@ -183,7 +181,7 @@ utf8_to_utf16(const std::string & s)
 
     while (max > 0) {
         wchar_t w;
-        size_t length = mbtowc(&w,cstr,max);
+        size_t length = mbtowc(&w, cstr, max);
         if (length < 1) {
             break;
         }
@@ -191,29 +189,28 @@ utf8_to_utf16(const std::string & s)
         cstr += length;
         max -= length;
     }
+
     return dest;
 #endif
-
-    
 } // utf8_to_utf16
 
 #ifdef __NATRON_WIN32__
 
-    
 
 //Returns the last Win32 error, in string format. Returns an empty string if there is no error.
-inline 
-std::string GetLastErrorAsString()
+inline
+std::string
+GetLastErrorAsString()
 {
     //Get the error message, if any.
     DWORD errorMessageID = ::GetLastError();
-    if(errorMessageID == 0)
-        return std::string(); //No error message has been recorded
 
+    if (errorMessageID == 0) {
+        return std::string(); //No error message has been recorded
+    }
     LPSTR messageBuffer = 0;
     size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
                                  NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
-
     std::string message(messageBuffer, size);
 
     //Free the buffer.
@@ -227,14 +224,12 @@ std::string GetLastErrorAsString()
 inline void
 ensureLastPathSeparator(QString& path)
 {
-    static const QChar separator(QLatin1Char('/'));
-    if (!path.endsWith(separator)) {
+    static const QChar separator( QLatin1Char('/') );
+
+    if ( !path.endsWith(separator) ) {
         path += separator;
     }
 }
-    
-
-
 } // namespace Global
 
 NATRON_NAMESPACE_EXIT;

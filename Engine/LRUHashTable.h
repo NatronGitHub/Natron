@@ -114,7 +114,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 ///the current reference counting of the object. Typically a shared_ptr.
 
 
-template <typename K,typename V,template<typename ...> class MAP>
+template <typename K, typename V, template<typename ...> class MAP>
 class StlLRUHashTable
 {
 public:
@@ -123,7 +123,7 @@ public:
     // Key access history, most recent at back
     typedef std::list<key_type> key_tracker_type;
     // Key to value and key history iterator
-    typedef MAP<key_type,std::pair<value_type,typename key_tracker_type::iterator> > key_to_value_type;
+    typedef MAP<key_type, std::pair<value_type, typename key_tracker_type::iterator> > key_to_value_type;
 
     // Constuctor specifies the cached function and
     // the maximum number of records to be stored
@@ -140,7 +140,7 @@ public:
             // We do have it:
             // Update access record by moving
             // accessed key to back of list
-            _key_tracker.splice(_key_tracker.end(),_key_tracker,(*it).second.second);
+            _key_tracker.splice(_key_tracker.end(), _key_tracker, (*it).second.second);
         }
 
         return it;
@@ -161,12 +161,12 @@ public:
     {
         return _key_to_value.begin();
     }
-    
+
     void insert(const key_type & k,
                 const value_type& list)
     {
-        typename key_tracker_type::iterator it = _key_tracker.insert(_key_tracker.end(),k);
-        _key_to_value.insert( std::make_pair( k,std::make_pair(list,it) ) );
+        typename key_tracker_type::iterator it = _key_tracker.insert(_key_tracker.end(), k);
+        _key_to_value.insert( std::make_pair( k, std::make_pair(list, it) ) );
     }
 
     // Record a fresh key-value pair in the cache
@@ -181,8 +181,8 @@ public:
             list.push_back(v);
             // Create the key-value entry,
             // linked to the usage record.
-            typename key_tracker_type::iterator it = _key_tracker.insert(_key_tracker.end(),k);
-            _key_to_value.insert( std::make_pair( k,std::make_pair(list,it) ) );
+            typename key_tracker_type::iterator it = _key_tracker.insert(_key_tracker.end(), k);
+            _key_to_value.insert( std::make_pair( k, std::make_pair(list, it) ) );
         }
     }
 
@@ -193,7 +193,7 @@ public:
     }
 
     // Purge the least-recently-used element in the cache
-    std::pair<key_type,V> evict()
+    std::pair<key_type, V> evict()
     {
         // Assert method is never called when cache is empty
         assert( !_key_tracker.empty() );
@@ -203,7 +203,7 @@ public:
              it2 != it->second.first.end();
              ++it2) {
             if ( (*it2).use_count() == 1 ) {
-                std::pair<key_type,V> ret = std::make_pair(it->first,*it2);
+                std::pair<key_type, V> ret = std::make_pair(it->first, *it2);
                 if (it->second.first.size() == 1) {
                     // Erase both elements to completely purge record
                     _key_to_value.erase(it);
@@ -216,7 +216,7 @@ public:
             }
         }
 
-        return std::make_pair( key_type(),V() );
+        return std::make_pair( key_type(), V() );
     }
 
     unsigned int size()
@@ -238,13 +238,13 @@ private:
         // V f(K).
         // SET is expected to be one of boost::bimaps::set_of
         // or boost::bimaps::unordered_set_of
-template <typename K,typename V,template <typename ...> class SET>
+template <typename K, typename V, template <typename ...> class SET>
 class BoostLRUHashTable
 {
 public:
     typedef K key_type;
     typedef V value_type;
-    typedef boost::bimaps::bimap<SET<key_type>,boost::bimaps::list_of<value_type> > container_type;
+    typedef boost::bimaps::bimap<SET<key_type>, boost::bimaps::list_of<value_type> > container_type;
 
     BoostLRUHashTable()
     {
@@ -258,7 +258,7 @@ public:
         if ( it != _container.left.end() ) {
             // We do have it:
             // Update the access record view.
-            _container.right.relocate( _container.right.end(),_container.project_right(it) );
+            _container.right.relocate( _container.right.end(), _container.project_right(it) );
         }
 
         return it;
@@ -284,9 +284,9 @@ public:
     void insert(const key_type & k,
                 const value_type& list)
     {
-        _container.insert( typename container_type::value_type(k,list) );
+        _container.insert( typename container_type::value_type(k, list) );
     }
-    
+
     void insert(const key_type & k,
                 const V & v)
     {
@@ -299,7 +299,7 @@ public:
         } else {
             value_type list;
             list.push_back(v);
-            _container.insert( typename container_type::value_type(k,list) );
+            _container.insert( typename container_type::value_type(k, list) );
         }
     }
 
@@ -308,7 +308,7 @@ public:
         _container.clear();
     }
 
-    std::pair<key_type,V> evict()
+    std::pair<key_type, V> evict()
     {
         typename container_type::right_iterator it = _container.right.begin();
         while ( it != _container.right.end() ) {
@@ -316,7 +316,7 @@ public:
                  it2 != it->first.end();
                  ++it2) {
                 if ( (*it2).use_count() == 1 ) {
-                    std::pair<key_type,V> ret = std::make_pair(it->second,*it2);
+                    std::pair<key_type, V> ret = std::make_pair(it->second, *it2);
                     if (it->first.size() == 1) {
                         _container.right.erase(it);
                     } else {
@@ -329,7 +329,7 @@ public:
             ++it;
         }
 
-        return std::make_pair( key_type(),V() );
+        return std::make_pair( key_type(), V() );
     }
 
     unsigned int size()
@@ -348,7 +348,7 @@ private:
 // c++98 does not support stl unordered_map + variadic templates
 
 #  ifndef NATRON_CACHE_USE_BOOST
-template <typename K,typename V>
+template <typename K, typename V>
 class StlLRUHashTable
 {
 public:
@@ -357,7 +357,7 @@ public:
     // Key access history, most recent at back
     typedef std::list<key_type> key_tracker_type;
     // Key to value and key history iterator
-    typedef std::map<key_type,std::pair<value_type,typename key_tracker_type::iterator> > key_to_value_type;
+    typedef std::map<key_type, std::pair<value_type, typename key_tracker_type::iterator> > key_to_value_type;
 
     // Constuctor specifies the cached function and
     // the maximum number of records to be stored
@@ -374,7 +374,7 @@ public:
             // We do have it:
             // Update access record by moving
             // accessed key to back of list
-            _key_tracker.splice(_key_tracker.end(),_key_tracker,(*it).second.second);
+            _key_tracker.splice(_key_tracker.end(), _key_tracker, (*it).second.second);
         }
 
         return it;
@@ -395,12 +395,12 @@ public:
     {
         return _key_to_value.begin();
     }
-    
+
     void insert(const key_type & k,
                 const value_type& list)
     {
-        typename key_tracker_type::iterator it = _key_tracker.insert(_key_tracker.end(),k);
-        _key_to_value.insert( std::make_pair( k,std::make_pair(list,it) ) );
+        typename key_tracker_type::iterator it = _key_tracker.insert(_key_tracker.end(), k);
+        _key_to_value.insert( std::make_pair( k, std::make_pair(list, it) ) );
     }
 
     // Record a fresh key-value pair in the cache
@@ -415,8 +415,8 @@ public:
             list.push_back(v);
             // Create the key-value entry,
             // linked to the usage record.
-            typename key_tracker_type::iterator it = _key_tracker.insert(_key_tracker.end(),k);
-            _key_to_value.insert( std::make_pair( k,std::make_pair(list,it) ) );
+            typename key_tracker_type::iterator it = _key_tracker.insert(_key_tracker.end(), k);
+            _key_to_value.insert( std::make_pair( k, std::make_pair(list, it) ) );
         }
     }
 
@@ -427,7 +427,7 @@ public:
     }
 
     // Purge the least-recently-used element in the cache
-    std::pair<key_type,V> evict()
+    std::pair<key_type, V> evict()
     {
         // Assert method is never called when cache is empty
         assert( !_key_tracker.empty() );
@@ -437,7 +437,7 @@ public:
              it2 != it->second.first.end();
              ++it2) {
             if ( (*it2).use_count() == 1 ) {
-                std::pair<key_type,V> ret = std::make_pair(it->first,*it2);
+                std::pair<key_type, V> ret = std::make_pair(it->first, *it2);
                 if (it->second.first.size() == 1) {
                     // Erase both elements to completely purge record
                     _key_to_value.erase(it);
@@ -450,7 +450,7 @@ public:
             }
         }
 
-        return std::make_pair( key_type(),V() );
+        return std::make_pair( key_type(), V() );
     }
 
     unsigned int size()
@@ -469,13 +469,13 @@ private:
 #  else // NATRON_CACHE_USE_BOOST
 
 #    ifdef NATRON_CACHE_USE_HASH
-template <typename K,typename V>
+template <typename K, typename V>
 class BoostLRUHashTable
 {
 public:
     typedef K key_type;
     typedef std::list<V> value_type;
-    typedef boost::bimaps::bimap<boost::bimaps::unordered_set_of<key_type>,boost::bimaps::list_of<value_type> > container_type;
+    typedef boost::bimaps::bimap<boost::bimaps::unordered_set_of<key_type>, boost::bimaps::list_of<value_type> > container_type;
 
     BoostLRUHashTable()
     {
@@ -488,7 +488,7 @@ public:
         if ( it != _container.left.end() ) {
             // We do have it:
             // Update the access record view.
-            _container.right.relocate( _container.right.end(),_container.project_right(it) );
+            _container.right.relocate( _container.right.end(), _container.project_right(it) );
         }
 
         return it;
@@ -514,9 +514,9 @@ public:
     void insert(const key_type & k,
                 const value_type& list)
     {
-        _container.insert(typename container_type::value_type(k,list));
+        _container.insert( typename container_type::value_type(k, list) );
     }
-    
+
     void insert(const key_type & k,
                 const V & v)
     {
@@ -529,7 +529,7 @@ public:
         } else {
             value_type list;
             list.push_back(v);
-            _container.insert( typename container_type::value_type(k,list) );
+            _container.insert( typename container_type::value_type(k, list) );
         }
     }
 
@@ -538,13 +538,13 @@ public:
         _container.clear();
     }
 
-    std::pair<key_type,V> evict()
+    std::pair<key_type, V> evict()
     {
         typename container_type::right_iterator it = _container.right.begin();
         while ( it != _container.right.end() ) {
             for (typename std::list<V>::iterator it2 = it->first.begin(); it2 != it->first.end(); ++it2) {
                 if (it2->use_count() == 1) {
-                    std::pair<key_type,V> ret = std::make_pair(it->second,*it2);
+                    std::pair<key_type, V> ret = std::make_pair(it->second, *it2);
                     if (it->first.size() == 1) {
                         _container.right.erase(it);
                     } else {
@@ -557,7 +557,7 @@ public:
             ++it;
         }
 
-        return std::make_pair( key_type(),V() );
+        return std::make_pair( key_type(), V() );
     }
 
     unsigned int size()
@@ -571,13 +571,13 @@ private:
 
 #    else // !NATRON_CACHE_USE_HASH
 
-template <typename K,typename V>
+template <typename K, typename V>
 class BoostLRUHashTable
 {
 public:
     typedef K key_type;
     typedef V value_type;
-    typedef boost::bimaps::bimap<boost::bimaps::set_of<key_type>,boost::bimaps::list_of<value_type> > container_type;
+    typedef boost::bimaps::bimap<boost::bimaps::set_of<key_type>, boost::bimaps::list_of<value_type> > container_type;
 
     BoostLRUHashTable()
     {
@@ -590,7 +590,7 @@ public:
         if ( it != _container.left.end() ) {
             // We do have it:
             // Update the access record view.
-            _container.right.relocate( _container.right.end(),_container.project_right(it) );
+            _container.right.relocate( _container.right.end(), _container.project_right(it) );
         }
 
         return it;
@@ -612,13 +612,12 @@ public:
     {
         return _container.left.begin();
     }
-    
+
     void insert(const key_type & k,
                 const value_type& list)
     {
-        _container.insert(typename container_type::value_type(k,list));
+        _container.insert( typename container_type::value_type(k, list) );
     }
-    
 
     void insert(const key_type & k,
                 const V & v)
@@ -632,7 +631,7 @@ public:
         } else {
             value_type list;
             list.push_back(v);
-            _container.insert( typename container_type::value_type(k,list) );
+            _container.insert( typename container_type::value_type(k, list) );
         }
     }
 
@@ -641,13 +640,13 @@ public:
         _container.clear();
     }
 
-    std::pair<key_type,V> evict()
+    std::pair<key_type, V> evict()
     {
         typename container_type::right_iterator it = _container.right.begin();
         while ( it != _container.right.end() ) {
             for (typename std::list<V>::iterator it2 = it->first.begin(); it2 != it->first.end(); ++it2) {
                 if ( (*it2).use_count() == 1 ) {
-                    std::pair<key_type,V> ret = std::make_pair(it->second,*it2);
+                    std::pair<key_type, V> ret = std::make_pair(it->second, *it2);
                     if (it->first.size() == 1) {
                         _container.right.erase(it);
                     } else {
@@ -660,7 +659,7 @@ public:
             ++it;
         }
 
-        return std::make_pair( key_type(),V() );
+        return std::make_pair( key_type(), V() );
     }
 
     unsigned int size()

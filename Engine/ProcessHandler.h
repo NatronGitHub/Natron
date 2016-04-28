@@ -95,7 +95,7 @@ class ProcessHandler
     bool _earlyCancel; //< true if the user pressed cancel but the _bgProcessInput socket was not created yet
     QString _processLog; //< used to record the log of the process
     QStringList _processArgs;
-    
+
 public:
 
     /**
@@ -108,12 +108,11 @@ public:
     virtual ~ProcessHandler();
 
     const QString & getProcessLog() const;
-
     OutputEffectInstance* getWriter() const
     {
         return _writer;
     }
-    
+
 public Q_SLOTS:
 
     /**
@@ -153,13 +152,13 @@ public Q_SLOTS:
     /**
      * @brief Called when the process finishes.
      **/
-    void onProcessEnd(int exitCode,QProcess::ExitStatus stat);
+    void onProcessEnd(int exitCode, QProcess::ExitStatus stat);
 
     /**
      * @brief Called when the input pipe connection is successfully sealed.
      **/
     void onInputPipeConnectionMade();
-    
+
     /**
      * @brief Start the process execution
      **/

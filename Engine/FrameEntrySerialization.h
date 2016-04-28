@@ -53,11 +53,12 @@ NATRON_NAMESPACE_ENTER;
 template<class Archive>
 void
 FrameKey::serialize(Archive & ar,
-                            const unsigned int version)
+                    const unsigned int version)
 {
     ar & ::boost::serialization::make_nvp("Time", _time);
     ar & ::boost::serialization::make_nvp("TreeVersion", _treeVersion);
     ar & ::boost::serialization::make_nvp("Gain", _gain);
+
     if (version >= FRAME_KEY_INTRODUCES_GAMMA) {
         ar & ::boost::serialization::make_nvp("Gamma", _gamma);
     }
@@ -75,7 +76,7 @@ FrameKey::serialize(Archive & ar,
     if (version >= FRAME_KEY_VERSION) {
         ar & ::boost::serialization::make_nvp("InputName", _inputName);
     }
-    
+
     if (version >= FRAME_KEY_INTRODUCES_LAYERS) {
         ar & ::boost::serialization::make_nvp("Layer", _layer);
         ar & ::boost::serialization::make_nvp("Alpha", _alphaChannelFullName);
@@ -90,9 +91,9 @@ FrameKey::serialize(Archive & ar,
     } else {
         _draftMode = false;
     }
-    
+
     if (version >= FRAME_KEY_INTRODUCES_CACHE_HOLDER_ID) {
-        ar & ::boost::serialization::make_nvp("HolderID",_holderID);
+        ar & ::boost::serialization::make_nvp("HolderID", _holderID);
     }
 }
 

@@ -48,34 +48,34 @@ NATRON_NAMESPACE_ENTER;
 
 struct RenderStatsDialogPrivate;
 
-class RenderStatsDialog : public QWidget
+class RenderStatsDialog
+    : public QWidget
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    
+
     RenderStatsDialog(Gui* gui);
-    
+
     virtual ~RenderStatsDialog();
-    
-    void addStats(int time, ViewIdx view, double wallTime, const std::map<NodePtr,NodeRenderStats >& stats);
-    
+
+    void addStats(int time, ViewIdx view, double wallTime, const std::map<NodePtr, NodeRenderStats >& stats);
+
 public Q_SLOTS:
-    
+
     void resetStats();
     void refreshAdvancedColsVisibility();
     void onSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
-    
+
     void updateVisibleRows();
     void onNameLineEditChanged(const QString& filter);
     void onIDLineEditChanged(const QString& filter);
-    
+
 private:
-    
+
     virtual void closeEvent(QCloseEvent * event) OVERRIDE FINAL;
-    
     boost::scoped_ptr<RenderStatsDialogPrivate> _imp;
 };
 

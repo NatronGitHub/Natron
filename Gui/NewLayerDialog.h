@@ -42,22 +42,23 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER;
 
 struct NewLayerDialogPrivate;
-class NewLayerDialog : public QDialog
+class NewLayerDialog
+    : public QDialog
 {
     Q_OBJECT
-    
+
 public:
     NewLayerDialog(const ImageComponents& original, QWidget* parent);
-    
+
     virtual ~NewLayerDialog();
-    
+
     ImageComponents getComponents() const;
-    
+
 public Q_SLOTS:
     void onNumCompsChanged(double value);
-    
+
     void onRGBAButtonClicked();
-    
+
 private:
     boost::scoped_ptr<NewLayerDialogPrivate> _imp;
 };

@@ -57,9 +57,7 @@ class NodeSettingsPanel
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
-
-    Q_PROPERTY( bool _selected READ isSelected WRITE setSelected)
+GCC_DIAG_SUGGEST_OVERRIDE_ON Q_PROPERTY( bool _selected READ isSelected WRITE setSelected)
 
     /*Pointer to the node GUI*/
     boost::weak_ptr<NodeGui> _nodeGUI;
@@ -93,22 +91,22 @@ public:
     {
         return _multiPanel;
     }
-    
+
     virtual QColor getCurrentColor() const OVERRIDE FINAL;
 
 private:
 
-    
+
     virtual RotoPanel* initializeRotoPanel() OVERRIDE FINAL;
     virtual void initializeExtraGui(QVBoxLayout* layout) OVERRIDE FINAL;
     virtual void centerOnItem() OVERRIDE FINAL;
 
 public Q_SLOTS:
-    
+
     void onSettingsButtonClicked();
-    
+
     void onImportPresetsActionTriggered();
-    
+
     void onExportPresetsActionTriggered();
 };
 

@@ -54,19 +54,20 @@ NATRON_NAMESPACE_ENTER;
 /**
  * @brief Used when group are using the kFnOfxParamPropGroupIsTab extension
  **/
-class TabGroup : public QFrame
+class TabGroup
+    : public QFrame
 {
     QTabWidget* _tabWidget;
     std::vector<boost::weak_ptr<KnobGroup> > _tabs;
-    
+
 public:
-    
+
     TabGroup(QWidget* parent);
-    
+
     QGridLayout* addTab(const boost::shared_ptr<KnobGroup>& group, const QString &label);
-    
+
     void removeTab(KnobGroup* group);
-    
+
     bool isEmpty() const
     {
         return _tabs.empty();

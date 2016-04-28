@@ -36,28 +36,23 @@ NATRON_NAMESPACE_ENTER;
 /**
  * @brief Public interface for all elements that can own something in the cache
  **/
-class CacheEntryHolder {
-
-    
+class CacheEntryHolder
+{
 public:
 
     CacheEntryHolder()
     {
-    
     }
 
     virtual ~CacheEntryHolder()
     {
-
     }
-    
-    
+
     /**
      * @brief Should return a unique way of identifying an entity that can own entries in the cache.
      * E.g: projectName.nodeFullyQualifiedName
      **/
     virtual std::string getCacheID() const = 0;
-    
 };
 
 NATRON_NAMESPACE_EXIT;

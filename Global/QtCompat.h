@@ -27,7 +27,6 @@
 NATRON_NAMESPACE_ENTER;
 
 namespace QtCompat {
-
 inline bool
 removeRecursively(const QString & dirName)
 {
@@ -51,7 +50,6 @@ removeRecursively(const QString & dirName)
 
     return result;
 }
-
 } // namespace QtCompat
 
 NATRON_NAMESPACE_EXIT;
@@ -66,7 +64,6 @@ NATRON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_ENTER;
 
 namespace QtCompat {
-
 /*Removes the . and the extension from the filename and also
  * returns the extension as a string.*/
 inline QString
@@ -75,9 +72,11 @@ removeFileExtension(QString & filename)
     //qDebug() << "remove file ext from" << filename;
     QFileInfo fi(filename);
     QString extension = fi.suffix();
-    if (!extension.isEmpty()) {
+
+    if ( !extension.isEmpty() ) {
         filename.truncate(filename.size() - extension.size() - 1);
     }
+
     //qDebug() << "->" << filename << fi.suffix();
     return extension;
 }
@@ -88,9 +87,10 @@ removeFileExtension(QString & filename)
 //Implementation is in QUrlFix.mm
 QUrl toLocalFileUrlFixed(const QUrl& url);
 #else // #if defined(Q_OS_MAC) && QT_VERSION < 0x050000
-inline QUrl toLocalFileUrlFixed(const QUrl& url) { return url; }
-#endif // #if defined(Q_OS_MAC) && QT_VERSION < 0x050000
+inline QUrl
+toLocalFileUrlFixed(const QUrl& url) { return url; }
 
+#endif // #if defined(Q_OS_MAC) && QT_VERSION < 0x050000
 } // namespace QtCompat
 
 NATRON_NAMESPACE_EXIT;

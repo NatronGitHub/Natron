@@ -42,12 +42,10 @@ class LineEdit
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
-
-    Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
+GCC_DIAG_SUGGEST_OVERRIDE_ON Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
     Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
     Q_PROPERTY(bool altered READ getAltered WRITE setAltered)
-    
+
 public:
     explicit LineEdit(QWidget* parent = 0);
     virtual ~LineEdit() OVERRIDE;
@@ -65,7 +63,7 @@ public:
     }
 
     void setDirty(bool b);
-    
+
     void setAltered(bool b);
     bool getAltered() const
     {
@@ -75,40 +73,34 @@ public:
     void setReadOnly_NoFocusRect(bool readOnly)
     {
         setReadOnly(readOnly);
-        
+
         //setReadonly set the flag but we don't want it
         setAttribute(Qt::WA_MacShowFocusRect, 0);
     }
-    
+
 Q_SIGNALS:
-    
+
     void textDropped();
-    
+
     void textPasted();
-    
+
 public Q_SLOTS:
 
     void onEditingFinished();
 
 protected:
-    
-    
-    virtual void paintEvent(QPaintEvent* e) OVERRIDE;
 
+
+    virtual void paintEvent(QPaintEvent* e) OVERRIDE;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
-    
-    virtual void dropEvent(QDropEvent* e) OVERRIDE ;
-    
-    virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE ;
-    
-    virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE ;
-    
-    virtual void dragLeaveEvent(QDragLeaveEvent* e) OVERRIDE ;
+    virtual void dropEvent(QDropEvent* e) OVERRIDE;
+    virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE;
+    virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE;
+    virtual void dragLeaveEvent(QDragLeaveEvent* e) OVERRIDE;
+
 private:
-    
-    
-    
-    
+
+
     int animation;
     bool dirty;
     bool altered;

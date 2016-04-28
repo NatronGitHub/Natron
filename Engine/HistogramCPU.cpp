@@ -47,12 +47,12 @@ struct HistogramRequest
 
     HistogramRequest()
         : binsCount(0)
-          , mode(0)
-          , image()
-          , rect()
-          , vmin(0)
-          , vmax(0)
-          , smoothingKernelSize(0)
+        , mode(0)
+        , image()
+        , rect()
+        , vmin(0)
+        , vmax(0)
+        , smoothingKernelSize(0)
     {
     }
 
@@ -64,12 +64,12 @@ struct HistogramRequest
                      double vmax,
                      int smoothingKernelSize)
         : binsCount(binsCount)
-          , mode(mode)
-          , image(image)
-          , rect(rect)
-          , vmin(vmin)
-          , vmax(vmax)
-          , smoothingKernelSize(smoothingKernelSize)
+        , mode(mode)
+        , image(image)
+        , rect(rect)
+        , vmin(vmin)
+        , vmax(vmax)
+        , smoothingKernelSize(smoothingKernelSize)
     {
     }
 };
@@ -82,19 +82,19 @@ struct FinishedHistogram
     int mode;
     int binsCount;
     int pixelsCount;
-    double vmin,vmax;
+    double vmin, vmax;
     unsigned int mipMapLevel;
 
     FinishedHistogram()
         : histogram1()
-          , histogram2()
-          , histogram3()
-          , mode(0)
-          , binsCount(0)
-          , pixelsCount(0)
-          , vmin(0)
-          , vmax(0)
-          , mipMapLevel(0)
+        , histogram2()
+        , histogram3()
+        , mode(0)
+        , binsCount(0)
+        , pixelsCount(0)
+        , vmin(0)
+        , vmax(0)
+        , mipMapLevel(0)
     {
     }
 };
@@ -112,20 +112,20 @@ struct HistogramCPUPrivate
 
     HistogramCPUPrivate()
         : requestCond()
-          , requestMutex()
-          , requests()
-          , producedMutex()
-          , produced()
-          , mustQuitCond()
-          , mustQuitMutex()
-          , mustQuit(false)
+        , requestMutex()
+        , requests()
+        , producedMutex()
+        , produced()
+        , mustQuitCond()
+        , mustQuitMutex()
+        , mustQuit(false)
     {
     }
 };
 
 HistogramCPU::HistogramCPU()
     : QThread()
-      , _imp( new HistogramCPUPrivate() )
+    , _imp( new HistogramCPUPrivate() )
 {
 }
 
@@ -147,7 +147,7 @@ HistogramCPU::computeHistogram(int mode,      //< corresponds to the enum Histog
     QMutexLocker quitLocker(&_imp->mustQuitMutex);
     QMutexLocker locker(&_imp->requestMutex);
 
-    _imp->requests.push_back( HistogramRequest(binsCount,mode,image,rect,vmin,vmax,smoothingKernelSize) );
+    _imp->requests.push_back( HistogramRequest(binsCount, mode, image, rect, vmin, vmax, smoothingKernelSize) );
     if (!isRunning() && !_imp->mustQuit) {
         quitLocker.unlock();
         start(HighestPriority);
@@ -167,7 +167,7 @@ HistogramCPU::quitAnyComputation()
 
         ///post a fake request to wakeup the thread
         l.unlock();
-        computeHistogram(0, boost::shared_ptr<Image>(), RectI(), 0,0,0,0);
+        computeHistogram(0, boost::shared_ptr<Image>(), RectI(), 0, 0, 0, 0);
         l.relock();
         while (_imp->mustQuit) {
             _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
@@ -275,7 +275,7 @@ computeHisto(const HistogramRequest & request,
     assert(request.image->getBitDepth() == eImageBitDepthFloat);
 
     Image::ReadAccess acc = request.image->getReadRights();
-    
+
     for (int y = request.rect.bottom(); y < request.rect.top(); ++y) {
         for (int x = request.rect.left(); x < request.rect.right(); ++x) {
             const float *pix = (const float*)acc.pixelAt(x, y);
@@ -505,7 +505,7 @@ computeHistogramStatic(const HistogramRequest & request,
         *it_out = *it_in * upscale;
         ++it_out;
         if ( it_out != histo->end() ) {
-            std::advance (it_in,upscale);
+            std::advance (it_in, upscale);
         }
     }
 } // computeHistogramStatic

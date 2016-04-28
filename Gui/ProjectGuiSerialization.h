@@ -95,7 +95,6 @@ GCC_DIAG_ON(unused-parameter)
 #define kNatronProjectSettingsPanelSerializationName "Natron_Project_Settings_Panel"
 
 NATRON_NAMESPACE_ENTER;
-
 struct ViewerData
 {
     double zoomLeft;
@@ -111,88 +110,81 @@ struct ViewerData
     int mipMapLevel;
     std::string colorSpace;
     std::string channels;
-    std::string layerName,alphaLayerName;
+    std::string layerName, alphaLayerName;
     bool zoomOrPanSinceLastFit;
     int wipeCompositingOp;
-    
     bool leftToolbarVisible;
     bool rightToolbarVisible;
     bool topToolbarVisible;
     bool playerVisible;
     bool infobarVisible;
     bool timelineVisible;
-
     bool checkerboardEnabled;
-    
     bool isPauseEnabled[2];
-    
     double fps;
     bool fpsLocked;
-    
-    int leftBound,rightBound;
-    
-    int aChoice,bChoice;
-    
+    int leftBound, rightBound;
+    int aChoice, bChoice;
     unsigned int version;
-    
+
     friend class ::boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar,
                    const unsigned int version_)
     {
         version = version_;
-        
-        ar & ::boost::serialization::make_nvp("zoomLeft",zoomLeft);
-        ar & ::boost::serialization::make_nvp("zoomBottom",zoomBottom);
-        ar & ::boost::serialization::make_nvp("zoomFactor",zoomFactor);
+
+        ar & ::boost::serialization::make_nvp("zoomLeft", zoomLeft);
+        ar & ::boost::serialization::make_nvp("zoomBottom", zoomBottom);
+        ar & ::boost::serialization::make_nvp("zoomFactor", zoomFactor);
         if (version <  VIEWER_DATA_REMOVES_ASPECT_RATIO) {
             double zoomPar;
-            ar & ::boost::serialization::make_nvp("zoomPAR",zoomPar);
+            ar & ::boost::serialization::make_nvp("zoomPAR", zoomPar);
         }
-        ar & ::boost::serialization::make_nvp("UserRoIEnabled",userRoIenabled);
-        ar & ::boost::serialization::make_nvp("UserRoI",userRoI);
-        ar & ::boost::serialization::make_nvp("ClippedToProject",isClippedToProject);
-        ar & ::boost::serialization::make_nvp("AutoContrast",autoContrastEnabled);
-        ar & ::boost::serialization::make_nvp("Gain",gain);
+        ar & ::boost::serialization::make_nvp("UserRoIEnabled", userRoIenabled);
+        ar & ::boost::serialization::make_nvp("UserRoI", userRoI);
+        ar & ::boost::serialization::make_nvp("ClippedToProject", isClippedToProject);
+        ar & ::boost::serialization::make_nvp("AutoContrast", autoContrastEnabled);
+        ar & ::boost::serialization::make_nvp("Gain", gain);
         if (version >= VIEWER_DATA_INTRODUCES_GAMMA) {
-            ar & ::boost::serialization::make_nvp("Gain",gamma);
+            ar & ::boost::serialization::make_nvp("Gain", gamma);
         } else {
             gamma = 1.;
         }
-        ar & ::boost::serialization::make_nvp("ColorSpace",colorSpace);
+        ar & ::boost::serialization::make_nvp("ColorSpace", colorSpace);
         if (version >= VIEWER_DATA_INTRODUCES_LAYER) {
-            ar & ::boost::serialization::make_nvp("Layer",layerName);
-            ar & ::boost::serialization::make_nvp("AlphaLayer",alphaLayerName);
+            ar & ::boost::serialization::make_nvp("Layer", layerName);
+            ar & ::boost::serialization::make_nvp("AlphaLayer", alphaLayerName);
         }
-        ar & ::boost::serialization::make_nvp("Channels",channels);
-        ar & ::boost::serialization::make_nvp("RenderScaleActivated",renderScaleActivated);
-        ar & ::boost::serialization::make_nvp("MipMapLevel",mipMapLevel);
+        ar & ::boost::serialization::make_nvp("Channels", channels);
+        ar & ::boost::serialization::make_nvp("RenderScaleActivated", renderScaleActivated);
+        ar & ::boost::serialization::make_nvp("MipMapLevel", mipMapLevel);
 
         if (version >= VIEWER_DATA_INTRODUCES_WIPE_COMPOSITING) {
-            ar & ::boost::serialization::make_nvp("ZoomOrPanSinceFit",zoomOrPanSinceLastFit);
-            ar & ::boost::serialization::make_nvp("CompositingOP",wipeCompositingOp);
+            ar & ::boost::serialization::make_nvp("ZoomOrPanSinceFit", zoomOrPanSinceLastFit);
+            ar & ::boost::serialization::make_nvp("CompositingOP", wipeCompositingOp);
         } else {
             zoomOrPanSinceLastFit = false;
             wipeCompositingOp = 0;
         }
-        if (version >= VIEWER_DATA_INTRODUCES_FRAME_RANGE && version < VIEWER_DATA_REMOVES_FRAME_RANGE_LOCK) {
+        if ( (version >= VIEWER_DATA_INTRODUCES_FRAME_RANGE) && (version < VIEWER_DATA_REMOVES_FRAME_RANGE_LOCK) ) {
             bool frameRangeLocked;
-            ar & ::boost::serialization::make_nvp("FrameRangeLocked",frameRangeLocked);
+            ar & ::boost::serialization::make_nvp("FrameRangeLocked", frameRangeLocked);
         }
         if (version >=  VIEWER_DATA_REMOVES_FRAME_RANGE_LOCK) {
-            ar & ::boost::serialization::make_nvp("LeftBound",leftBound);
-            ar & ::boost::serialization::make_nvp("RightBound",rightBound);
+            ar & ::boost::serialization::make_nvp("LeftBound", leftBound);
+            ar & ::boost::serialization::make_nvp("RightBound", rightBound);
         } else {
             leftBound = rightBound = 1;
         }
-        
+
         if (version >= VIEWER_DATA_INTRODUCES_TOOLBARS_VISIBLITY) {
-            ar & ::boost::serialization::make_nvp("LeftToolbarVisible",leftToolbarVisible);
-            ar & ::boost::serialization::make_nvp("RightToolbarVisible",rightToolbarVisible);
-            ar & ::boost::serialization::make_nvp("TopToolbarVisible",topToolbarVisible);
-            ar & ::boost::serialization::make_nvp("PlayerVisible",playerVisible);
+            ar & ::boost::serialization::make_nvp("LeftToolbarVisible", leftToolbarVisible);
+            ar & ::boost::serialization::make_nvp("RightToolbarVisible", rightToolbarVisible);
+            ar & ::boost::serialization::make_nvp("TopToolbarVisible", topToolbarVisible);
+            ar & ::boost::serialization::make_nvp("PlayerVisible", playerVisible);
             ar & ::boost::serialization::make_nvp("TimelineVisible", timelineVisible);
-            ar & ::boost::serialization::make_nvp("InfobarVisible",infobarVisible);
+            ar & ::boost::serialization::make_nvp("InfobarVisible", infobarVisible);
         } else {
             leftToolbarVisible = true;
             rightToolbarVisible = true;
@@ -201,88 +193,85 @@ struct ViewerData
             timelineVisible = true;
             infobarVisible = true;
         }
-        
+
         if (version >= VIEWER_DATA_INTRODUCES_PAUSE_VIEWER) {
-            ar & ::boost::serialization::make_nvp("isInputAPaused",isPauseEnabled[0]);
-            ar & ::boost::serialization::make_nvp("isInputBPaused",isPauseEnabled[1]);
+            ar & ::boost::serialization::make_nvp("isInputAPaused", isPauseEnabled[0]);
+            ar & ::boost::serialization::make_nvp("isInputBPaused", isPauseEnabled[1]);
         } else {
             isPauseEnabled[0] = isPauseEnabled[1] = false;
         }
-        
+
         if (version >= VIEWER_DATA_INTRODUCES_CHECKERBOARD) {
-            ar & ::boost::serialization::make_nvp("CheckerboardEnabled",checkerboardEnabled);
+            ar & ::boost::serialization::make_nvp("CheckerboardEnabled", checkerboardEnabled);
         } else {
             checkerboardEnabled = false;
         }
-        
+
         if (version >= VIEWER_DATA_INTRODUCES_FPS) {
-            ar & ::boost::serialization::make_nvp("Fps",fps);
+            ar & ::boost::serialization::make_nvp("Fps", fps);
         } else {
             fps = 24.;
         }
-        
+
         if (version >= VIEWER_DATA_INTRODUCES_FPS_LOCK) {
-            ar & ::boost::serialization::make_nvp("FpsLocked",fpsLocked);
+            ar & ::boost::serialization::make_nvp("FpsLocked", fpsLocked);
         } else {
             fpsLocked = true;
         }
-        
+
         if (version >= VIEWER_DATA_INTRODUCES_ACTIVE_INPUTS) {
-            ar & ::boost::serialization::make_nvp("aInput",aChoice);
-            ar & ::boost::serialization::make_nvp("bInput",bChoice);
+            ar & ::boost::serialization::make_nvp("aInput", aChoice);
+            ar & ::boost::serialization::make_nvp("bInput", bChoice);
         } else {
             aChoice = -1;
             bChoice = -1;
         }
-        
-    }
+    } // serialize
 };
-
 
 struct PythonPanelSerialization
 {
-    
     std::list<boost::shared_ptr<KnobSerialization> > knobs;
     std::string name;
     std::string pythonFunction;
     std::string userData;
-    
-    void initialize(PyPanel* tab,const std::string& pythonFunction);
-    
+
+    void initialize(PyPanel* tab, const std::string& pythonFunction);
+
     template<class Archive>
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
-        ar & ::boost::serialization::make_nvp("Label",name);
-        ar & ::boost::serialization::make_nvp("PythonFunction",pythonFunction);
-        
+        ar & ::boost::serialization::make_nvp("Label", name);
+        ar & ::boost::serialization::make_nvp("PythonFunction", pythonFunction);
         int nKnobs = knobs.size();
-        ar & ::boost::serialization::make_nvp("NumParams",nKnobs);
-        for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = knobs.begin() ; it != knobs.end() ; ++it) {
-            ar & ::boost::serialization::make_nvp("item",**it);
+        ar & ::boost::serialization::make_nvp("NumParams", nKnobs);
+
+        for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+            ar & ::boost::serialization::make_nvp("item", **it);
         }
-        
-        ar & ::boost::serialization::make_nvp("UserData",userData);
+
+        ar & ::boost::serialization::make_nvp("UserData", userData);
     }
-    
+
     template<class Archive>
     void load(Archive & ar,
               const unsigned int /*version*/)
     {
-        ar & ::boost::serialization::make_nvp("Label",name);
-        ar & ::boost::serialization::make_nvp("PythonFunction",pythonFunction);
-        
+        ar & ::boost::serialization::make_nvp("Label", name);
+        ar & ::boost::serialization::make_nvp("PythonFunction", pythonFunction);
         int nKnobs;
-        ar & ::boost::serialization::make_nvp("NumParams",nKnobs);
+        ar & ::boost::serialization::make_nvp("NumParams", nKnobs);
+
         for (int i = 0; i < nKnobs; ++i) {
             boost::shared_ptr<KnobSerialization> k(new KnobSerialization);
-            ar & ::boost::serialization::make_nvp("item",*k);
+            ar & ::boost::serialization::make_nvp("item", *k);
             knobs.push_back(k);
         }
-        
-        ar & ::boost::serialization::make_nvp("UserData",userData);
+
+        ar & ::boost::serialization::make_nvp("UserData", userData);
     }
-    
+
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 
@@ -293,8 +282,8 @@ struct PythonPanelSerialization
 struct PaneLayoutCompat_PANE_SERIALIZATION_INTRODUCES_SIZE
 {
     bool floating;
-    int posx,posy;
-    int width,height;
+    int posx, posy;
+    int width, height;
     bool parentingCreated;
     std::list<bool> splits;
     std::string parentName;
@@ -302,11 +291,11 @@ struct PaneLayoutCompat_PANE_SERIALIZATION_INTRODUCES_SIZE
 
     PaneLayoutCompat_PANE_SERIALIZATION_INTRODUCES_SIZE()
         : floating(false)
-          , posx(0), posy(0), width(0), height(0)
-          , parentingCreated(false)
-          , splits()
-          , parentName()
-          , splitsNames()
+        , posx(0), posy(0), width(0), height(0)
+        , parentingCreated(false)
+        , splits()
+        , parentName()
+        , splitsNames()
     {
     }
 
@@ -324,14 +313,14 @@ struct PaneLayout
     ///Added in PANE_SERIALIZATION_MAJOR_OVERHAUL
     bool isAnchor;
     std::string name;
-    
+
     ///This is only used to restore compatibility with project saved prior to PANE_SERIALIZATION_MAJOR_OVERHAUL
 
     PaneLayout()
         : tabs()
-          , currentIndex(-1)
-          , isAnchor(false)
-          , name()
+        , currentIndex(-1)
+        , isAnchor(false)
+        , name()
     {
     }
 
@@ -345,44 +334,42 @@ struct PaneLayout
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
-        ar & ::boost::serialization::make_nvp("Tabs",tabs);
-        ar & ::boost::serialization::make_nvp("Index",currentIndex);
-        ar & ::boost::serialization::make_nvp("Name",name);
-        ar & ::boost::serialization::make_nvp("IsAnchor",isAnchor);
+        ar & ::boost::serialization::make_nvp("Tabs", tabs);
+        ar & ::boost::serialization::make_nvp("Index", currentIndex);
+        ar & ::boost::serialization::make_nvp("Name", name);
+        ar & ::boost::serialization::make_nvp("IsAnchor", isAnchor);
     }
 
     template<class Archive>
     void load(Archive & ar,
               const unsigned int version)
     {
-        
         if (version < PANE_SERIALIZATION_MAJOR_OVERHAUL) {
             PaneLayoutCompat_PANE_SERIALIZATION_INTRODUCES_SIZE compat1;
-            ar & ::boost::serialization::make_nvp("Floating",compat1.floating);
-            ar & ::boost::serialization::make_nvp("Splits",compat1.splits);
-            ar & ::boost::serialization::make_nvp("ParentName",compat1.parentName);
-            ar & ::boost::serialization::make_nvp("SplitsNames",compat1.splitsNames);
-            ar & ::boost::serialization::make_nvp("Tabs",tabs);
+            ar & ::boost::serialization::make_nvp("Floating", compat1.floating);
+            ar & ::boost::serialization::make_nvp("Splits", compat1.splits);
+            ar & ::boost::serialization::make_nvp("ParentName", compat1.parentName);
+            ar & ::boost::serialization::make_nvp("SplitsNames", compat1.splitsNames);
+            ar & ::boost::serialization::make_nvp("Tabs", tabs);
             if (version >= PANE_SERIALIZATION_INTRODUCES_CURRENT_TAB) {
-                ar & ::boost::serialization::make_nvp("Index",currentIndex);
+                ar & ::boost::serialization::make_nvp("Index", currentIndex);
             }
             if (version >= PANE_SERIALIZATION_INTRODUCES_SIZE) {
                 if (compat1.floating) {
-                    ar & ::boost::serialization::make_nvp("x",compat1.posx);
-                    ar & ::boost::serialization::make_nvp("y",compat1.posy);
-                    ar & ::boost::serialization::make_nvp("w",compat1.width);
-                    ar & ::boost::serialization::make_nvp("h",compat1.height);
+                    ar & ::boost::serialization::make_nvp("x", compat1.posx);
+                    ar & ::boost::serialization::make_nvp("y", compat1.posy);
+                    ar & ::boost::serialization::make_nvp("w", compat1.width);
+                    ar & ::boost::serialization::make_nvp("h", compat1.height);
                 }
             }
         } else {
-            ar & ::boost::serialization::make_nvp("Tabs",tabs);
-            ar & ::boost::serialization::make_nvp("Index",currentIndex);
-            ar & ::boost::serialization::make_nvp("Name",name);
-            ar & ::boost::serialization::make_nvp("IsAnchor",isAnchor);
+            ar & ::boost::serialization::make_nvp("Tabs", tabs);
+            ar & ::boost::serialization::make_nvp("Index", currentIndex);
+            ar & ::boost::serialization::make_nvp("Name", name);
+            ar & ::boost::serialization::make_nvp("IsAnchor", isAnchor);
         }
         if (version < PANE_SERIALIZATION_INTRODUCE_SCRIPT_NAME) {
-            
-            for (std::list<std::string>::iterator it = tabs.begin() ; it != tabs.end() ; ++it) {
+            for (std::list<std::string>::iterator it = tabs.begin(); it != tabs.end(); ++it) {
                 //Try to map the tab name to an old name
                 if (*it == "CurveEditor") {
                     *it = kCurveEditorObjectName;
@@ -394,10 +381,9 @@ struct PaneLayout
             }
         }
     }
-    
+
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
-
 
 struct SplitterSerialization
 {
@@ -425,8 +411,8 @@ struct SplitterSerialization
 
     SplitterSerialization()
         : sizes()
-          , orientation(0)
-          , children()
+        , orientation(0)
+        , children()
     {
     }
 
@@ -446,17 +432,17 @@ struct SplitterSerialization
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
-        ar & ::boost::serialization::make_nvp("Sizes",sizes);
-        ar & ::boost::serialization::make_nvp("Orientation",orientation);
+        ar & ::boost::serialization::make_nvp("Sizes", sizes);
+        ar & ::boost::serialization::make_nvp("Orientation", orientation);
 
         assert(children.size() == 2);
         for (int i = 0; i < 2; ++i) {
             bool isChildSplitter = children[i]->child_asSplitter != NULL;
-            ar & ::boost::serialization::make_nvp("ChildIsSplitter",isChildSplitter);
+            ar & ::boost::serialization::make_nvp("ChildIsSplitter", isChildSplitter);
             if (isChildSplitter) {
-                ar & ::boost::serialization::make_nvp("Child",*children[i]->child_asSplitter);
+                ar & ::boost::serialization::make_nvp("Child", *children[i]->child_asSplitter);
             } else {
-                ar & ::boost::serialization::make_nvp("Child",*children[i]->child_asPane);
+                ar & ::boost::serialization::make_nvp("Child", *children[i]->child_asPane);
             }
         }
     }
@@ -465,19 +451,19 @@ struct SplitterSerialization
     void load(Archive & ar,
               const unsigned int /*version*/)
     {
-        ar & ::boost::serialization::make_nvp("Sizes",sizes);
-        ar & ::boost::serialization::make_nvp("Orientation",orientation);
+        ar & ::boost::serialization::make_nvp("Sizes", sizes);
+        ar & ::boost::serialization::make_nvp("Orientation", orientation);
 
         for (int i = 0; i < 2; ++i) {
             Child* c = new Child;
             bool isChildSplitter;
-            ar & ::boost::serialization::make_nvp("ChildIsSplitter",isChildSplitter);
+            ar & ::boost::serialization::make_nvp("ChildIsSplitter", isChildSplitter);
             if (isChildSplitter) {
                 c->child_asSplitter = new SplitterSerialization;
-                ar & ::boost::serialization::make_nvp("Child",*c->child_asSplitter);
+                ar & ::boost::serialization::make_nvp("Child", *c->child_asSplitter);
             } else {
                 c->child_asPane = new PaneLayout;
-                ar & ::boost::serialization::make_nvp("Child",*c->child_asPane);
+                ar & ::boost::serialization::make_nvp("Child", *c->child_asPane);
             }
             children.push_back(c);
         }
@@ -501,17 +487,17 @@ struct ApplicationWindowSerialization
 
     //If true, then this is the main-window, otherwise it is considered as a floating window.
     bool isMainWindow;
-    int x,y; //< the position of the window.
-    int w,h; //< the size of the window
+    int x, y; //< the position of the window.
+    int w, h; //< the size of the window
 
     ApplicationWindowSerialization()
         : child_asSplitter(0)
-          , child_asPane(0)
-          , isMainWindow(false)
-          , x(0)
-          , y(0)
-          , w(0)
-          , h(0)
+        , child_asPane(0)
+        , isMainWindow(false)
+        , x(0)
+        , y(0)
+        , w(0)
+        , h(0)
     {
     }
 
@@ -522,7 +508,7 @@ struct ApplicationWindowSerialization
     }
 
     ///Used prior to save only
-    void initialize(bool isMainWindow,SerializableWindow* widget);
+    void initialize(bool isMainWindow, SerializableWindow* widget);
 
     template<class Archive>
     void save(Archive & ar,
@@ -537,19 +523,19 @@ struct ApplicationWindowSerialization
         } else {
             childrenChoice = 2;
         }
-        ar & ::boost::serialization::make_nvp("ChildType",childrenChoice);
+        ar & ::boost::serialization::make_nvp("ChildType", childrenChoice);
         if (childrenChoice == 0) {
-            ar & ::boost::serialization::make_nvp("Child",child_asSplitter);
+            ar & ::boost::serialization::make_nvp("Child", child_asSplitter);
         } else if (childrenChoice == 1) {
-            ar & ::boost::serialization::make_nvp("Child",child_asPane);
+            ar & ::boost::serialization::make_nvp("Child", child_asPane);
         } else if (childrenChoice == 2) {
-            ar & ::boost::serialization::make_nvp("Child",child_asDockablePanel);
+            ar & ::boost::serialization::make_nvp("Child", child_asDockablePanel);
         }
-        ar & ::boost::serialization::make_nvp("MainWindow",isMainWindow);
-        ar & ::boost::serialization::make_nvp("x",x);
-        ar & ::boost::serialization::make_nvp("y",y);
-        ar & ::boost::serialization::make_nvp("w",w);
-        ar & ::boost::serialization::make_nvp("h",h);
+        ar & ::boost::serialization::make_nvp("MainWindow", isMainWindow);
+        ar & ::boost::serialization::make_nvp("x", x);
+        ar & ::boost::serialization::make_nvp("y", y);
+        ar & ::boost::serialization::make_nvp("w", w);
+        ar & ::boost::serialization::make_nvp("h", h);
     }
 
     template<class Archive>
@@ -557,27 +543,26 @@ struct ApplicationWindowSerialization
               const unsigned int /*version*/)
     {
         int childType;
-        ar & ::boost::serialization::make_nvp("ChildType",childType);
+        ar & ::boost::serialization::make_nvp("ChildType", childType);
 
         if (childType == 0) {
             child_asSplitter = new SplitterSerialization;
-            ar & ::boost::serialization::make_nvp("Child",child_asSplitter);
+            ar & ::boost::serialization::make_nvp("Child", child_asSplitter);
         } else if (childType == 1) {
             child_asPane = new PaneLayout;
-            ar & ::boost::serialization::make_nvp("Child",child_asPane);
+            ar & ::boost::serialization::make_nvp("Child", child_asPane);
         }  else if (childType == 2) {
-            ar & ::boost::serialization::make_nvp("Child",child_asDockablePanel);
+            ar & ::boost::serialization::make_nvp("Child", child_asDockablePanel);
         }
-        ar & ::boost::serialization::make_nvp("MainWindow",isMainWindow);
-        ar & ::boost::serialization::make_nvp("x",x);
-        ar & ::boost::serialization::make_nvp("y",y);
-        ar & ::boost::serialization::make_nvp("w",w);
-        ar & ::boost::serialization::make_nvp("h",h);
+        ar & ::boost::serialization::make_nvp("MainWindow", isMainWindow);
+        ar & ::boost::serialization::make_nvp("x", x);
+        ar & ::boost::serialization::make_nvp("y", y);
+        ar & ::boost::serialization::make_nvp("w", w);
+        ar & ::boost::serialization::make_nvp("h", h);
     }
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
-
 
 
 /**
@@ -599,8 +584,8 @@ public:
     }
 
     ///Old members for compatibility up to PROJECT_GUI_EXERNALISE_GUI_LAYOUT
-    std::map<std::string,PaneLayout> _layout;
-    std::map<std::string,std::string> _splittersStates;
+    std::map<std::string, PaneLayout> _layout;
+    std::map<std::string, std::string> _splittersStates;
 
     ///New in GUI_LAYOUT_SERIALIZATION_MAJOR_OVERHAUL
     std::list<ApplicationWindowSerialization*> _windows;
@@ -613,10 +598,10 @@ public:
               const unsigned int /*version*/) const
     {
         int windowsCount = _windows.size();
-        ar & ::boost::serialization::make_nvp("NbWindows",windowsCount);
+        ar & ::boost::serialization::make_nvp("NbWindows", windowsCount);
 
         for (std::list<ApplicationWindowSerialization*>::const_iterator it = _windows.begin(); it != _windows.end(); ++it) {
-            ar & ::boost::serialization::make_nvp("Window",**it);
+            ar & ::boost::serialization::make_nvp("Window", **it);
         }
     }
 
@@ -625,14 +610,14 @@ public:
               const unsigned int version)
     {
         if (version < GUI_LAYOUT_SERIALIZATION_MAJOR_OVERHAUL) {
-            ar & ::boost::serialization::make_nvp("Gui_Layout",_layout);
-            ar & ::boost::serialization::make_nvp("Splitters_states",_splittersStates);
+            ar & ::boost::serialization::make_nvp("Gui_Layout", _layout);
+            ar & ::boost::serialization::make_nvp("Splitters_states", _splittersStates);
         } else {
             int windowsCount = _windows.size();
-            ar & ::boost::serialization::make_nvp("NbWindows",windowsCount);
+            ar & ::boost::serialization::make_nvp("NbWindows", windowsCount);
             for (int i = 0; i < windowsCount; ++i) {
                 ApplicationWindowSerialization* newWindow = new ApplicationWindowSerialization;
-                ar & ::boost::serialization::make_nvp("Window",*newWindow);
+                ar & ::boost::serialization::make_nvp("Window", *newWindow);
                 _windows.push_back(newWindow);
             }
         }
@@ -658,14 +643,12 @@ class ProjectGuiSerialization
 
     ///Active backdrops (kept here for bw compatibility with Natron < 1.1
     std::list<NodeBackdropSerialization> _backdrops;
-    
+
     ///All properties panels opened
     std::list<std::string> _openedPanelsOrdered;
-
     std::string _scriptEditorInput;
-    
     std::list<boost::shared_ptr<PythonPanelSerialization> > _pythonPanels;
-    
+
     ///The boost version passed to load(), this is not used on save
     unsigned int _version;
 
@@ -676,17 +659,16 @@ class ProjectGuiSerialization
               const unsigned int version) const
     {
         Q_UNUSED(version);
-        ar & ::boost::serialization::make_nvp("NodesGui",_serializedNodes);
-        ar & ::boost::serialization::make_nvp("Gui_Layout",_layoutSerialization);
-        ar & ::boost::serialization::make_nvp("ViewersData",_viewersData);
-        ar & ::boost::serialization::make_nvp("Histograms",_histograms);
-        ar & ::boost::serialization::make_nvp("OpenedPanels",_openedPanelsOrdered);
-        ar & ::boost::serialization::make_nvp("ScriptEditorInput",_scriptEditorInput);
-        
+        ar & ::boost::serialization::make_nvp("NodesGui", _serializedNodes);
+        ar & ::boost::serialization::make_nvp("Gui_Layout", _layoutSerialization);
+        ar & ::boost::serialization::make_nvp("ViewersData", _viewersData);
+        ar & ::boost::serialization::make_nvp("Histograms", _histograms);
+        ar & ::boost::serialization::make_nvp("OpenedPanels", _openedPanelsOrdered);
+        ar & ::boost::serialization::make_nvp("ScriptEditorInput", _scriptEditorInput);
         int numPyPanels = (int)_pythonPanels.size();
-        ar & ::boost::serialization::make_nvp("NumPyPanels",numPyPanels);
+        ar & ::boost::serialization::make_nvp("NumPyPanels", numPyPanels);
         for (std::list<boost::shared_ptr<PythonPanelSerialization> >::const_iterator it = _pythonPanels.begin(); it != _pythonPanels.end(); ++it) {
-            ar & ::boost::serialization::make_nvp("item",**it);
+            ar & ::boost::serialization::make_nvp("item", **it);
         }
     }
 
@@ -695,39 +677,39 @@ class ProjectGuiSerialization
               const unsigned int version)
     {
         Q_UNUSED(version);
-        ar & ::boost::serialization::make_nvp("NodesGui",_serializedNodes);
+        ar & ::boost::serialization::make_nvp("NodesGui", _serializedNodes);
         if (version < PROJECT_GUI_EXERNALISE_GUI_LAYOUT) {
-            ar & ::boost::serialization::make_nvp("Gui_Layout",_layoutSerialization._layout);
-            ar & ::boost::serialization::make_nvp("Splitters_states",_layoutSerialization._splittersStates);
+            ar & ::boost::serialization::make_nvp("Gui_Layout", _layoutSerialization._layout);
+            ar & ::boost::serialization::make_nvp("Splitters_states", _layoutSerialization._splittersStates);
             if (version < PROJECT_GUI_CHANGES_SPLITTERS) {
                 _layoutSerialization._splittersStates.clear();
             }
         } else {
-            ar & ::boost::serialization::make_nvp("Gui_Layout",_layoutSerialization);
+            ar & ::boost::serialization::make_nvp("Gui_Layout", _layoutSerialization);
         }
 
-        ar & ::boost::serialization::make_nvp("ViewersData",_viewersData);
+        ar & ::boost::serialization::make_nvp("ViewersData", _viewersData);
         if (version < PROJECT_GUI_REMOVES_ALL_NODE_PREVIEW_TOGGLED) {
             bool tmp = false;
-            ar & ::boost::serialization::make_nvp("PreviewsTurnedOffGlobaly",tmp);
+            ar & ::boost::serialization::make_nvp("PreviewsTurnedOffGlobaly", tmp);
         }
-        ar & ::boost::serialization::make_nvp("Histograms",_histograms);
-        if (version >= PROJECT_GUI_INTRODUCES_BACKDROPS && version < PROJECT_GUI_SERIALIZATION_MERGE_BACKDROP) {
-            ar & ::boost::serialization::make_nvp("Backdrops",_backdrops);
+        ar & ::boost::serialization::make_nvp("Histograms", _histograms);
+        if ( (version >= PROJECT_GUI_INTRODUCES_BACKDROPS) && (version < PROJECT_GUI_SERIALIZATION_MERGE_BACKDROP) ) {
+            ar & ::boost::serialization::make_nvp("Backdrops", _backdrops);
         }
         if (version >= PROJECT_GUI_INTRODUCES_PANELS) {
-            ar & ::boost::serialization::make_nvp("OpenedPanels",_openedPanelsOrdered);
+            ar & ::boost::serialization::make_nvp("OpenedPanels", _openedPanelsOrdered);
         }
         if (version >= PROJECT_GUI_SERIALIZATION_SCRIPT_EDITOR) {
-            ar & ::boost::serialization::make_nvp("ScriptEditorInput",_scriptEditorInput);
+            ar & ::boost::serialization::make_nvp("ScriptEditorInput", _scriptEditorInput);
         }
-        
+
         if (version >= PROJECT_GUI_SERIALIZATION_INTRODUCES_PYTHON_PANELS) {
             int numPyPanels;
-            ar & ::boost::serialization::make_nvp("NumPyPanels",numPyPanels);
+            ar & ::boost::serialization::make_nvp("NumPyPanels", numPyPanels);
             for (int i = 0; i < numPyPanels; ++i) {
                 boost::shared_ptr<PythonPanelSerialization> s(new PythonPanelSerialization);
-                ar & ::boost::serialization::make_nvp("item",*s);
+                ar & ::boost::serialization::make_nvp("item", *s);
                 _pythonPanels.push_back(s);
             }
         }
@@ -738,12 +720,12 @@ public:
 
     ProjectGuiSerialization()
         : _serializedNodes()
-          , _layoutSerialization()
-          , _viewersData()
-          , _histograms()
-          , _backdrops()
-          , _openedPanelsOrdered()
-          , _version(0)
+        , _layoutSerialization()
+        , _viewersData()
+        , _histograms()
+        , _backdrops()
+        , _openedPanelsOrdered()
+        , _version(0)
     {
     }
 
@@ -783,7 +765,7 @@ public:
     {
         return _openedPanelsOrdered;
     }
-    
+
     const std::string& getInputScript() const
     {
         return _scriptEditorInput;
@@ -793,7 +775,7 @@ public:
     {
         return _version;
     }
-    
+
     const std::list<boost::shared_ptr<PythonPanelSerialization> >& getPythonPanels() const
     {
         return _pythonPanels;

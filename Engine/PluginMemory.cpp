@@ -41,9 +41,9 @@ struct PluginMemory::Implementation
 {
     Implementation(const EffectInstPtr& effect_)
         : data()
-          , locked(0)
-          , mutex()
-          , effect(effect_)
+        , locked(0)
+        , mutex()
+        , effect(effect_)
     {
     }
 
@@ -54,7 +54,7 @@ struct PluginMemory::Implementation
 };
 
 PluginMemory::PluginMemory(const EffectInstPtr& effect)
-    : _imp(new Implementation(effect))
+    : _imp( new Implementation(effect) )
 {
     if (effect) {
         effect->addPluginMemoryPointer(this);
@@ -64,6 +64,7 @@ PluginMemory::PluginMemory(const EffectInstPtr& effect)
 PluginMemory::~PluginMemory()
 {
     EffectInstPtr e = _imp->effect.lock();
+
     if (e) {
         e->removePluginMemoryPointer(this);
     }
@@ -92,6 +93,7 @@ PluginMemory::freeMem()
 {
     QMutexLocker l(&_imp->mutex);
     EffectInstPtr e = _imp->effect.lock();
+
     if (e) {
         e->unregisterPluginMemory( _imp->data.size() );
     }
@@ -104,7 +106,7 @@ PluginMemory::getPtr()
 {
     QMutexLocker l(&_imp->mutex);
 
-    assert(_imp->data.size() == 0 || (_imp->data.size() > 0 && _imp->data.getData()));
+    assert( _imp->data.size() == 0 || ( _imp->data.size() > 0 && _imp->data.getData() ) );
 
     return (void*)( _imp->data.getData() );
 }

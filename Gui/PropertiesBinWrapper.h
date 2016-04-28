@@ -32,16 +32,15 @@
 
 NATRON_NAMESPACE_ENTER;
 
-class PropertiesBinWrapper : public QWidget, public PanelWidget
+class PropertiesBinWrapper
+    : public QWidget, public PanelWidget
 {
-    
 public:
-    
+
     PropertiesBinWrapper(Gui* parent);
-    
+
     virtual ~PropertiesBinWrapper();
 
-    
 private:
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;

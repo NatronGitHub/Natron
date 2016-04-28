@@ -73,17 +73,17 @@ public:
 
     int getNodeIndex(const NodePtr & node) const;
 
-    const std::list< std::pair<NodeWPtr,bool > > & getInstances() const;
+    const std::list< std::pair<NodeWPtr, bool > > & getInstances() const;
     virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL;
     NodePtr getMainInstance() const;
-    
+
     NodeGuiPtr getMainInstanceGui() const;
 
     void getSelectedInstances(std::list<Node*>* instances) const;
 
     void resetAllInstances();
 
-    KnobPtr getKnobForItem(TableItem* item,int* dimension) const;
+    KnobPtr getKnobForItem(TableItem* item, int* dimension) const;
     Gui* getGui() const;
     virtual void setIconForButton(KnobButton* /*knob*/)
     {
@@ -91,23 +91,23 @@ public:
 
     NodePtr createNewInstance(bool useUndoRedoStack);
 
-    void selectNode(const NodePtr & node,bool addToSelection);
+    void selectNode(const NodePtr & node, bool addToSelection);
 
-    void selectNodes(const std::list<Node*> & nodes,bool addToSelection);
+    void selectNodes(const std::list<Node*> & nodes, bool addToSelection);
 
     void removeNodeFromSelection(const NodePtr & node);
 
     void clearSelection();
 
     bool isSettingsPanelVisible() const;
-        
+
     void removeInstances(const NodesList& instances);
     void addInstances(const NodesList& instances);
 
     void onChildCreated(const NodePtr& node);
-    
+
     void setRedrawOnSelectionChanged(bool redraw);
-    
+
 public Q_SLOTS:
 
     void onAddButtonClicked();
@@ -116,7 +116,7 @@ public Q_SLOTS:
 
     void onSelectAllButtonClicked();
 
-    void onSelectionChanged(const QItemSelection & oldSelection,const QItemSelection & newSelection);
+    void onSelectionChanged(const QItemSelection & oldSelection, const QItemSelection & newSelection);
 
     void onItemDataChanged(TableItem* item);
 
@@ -124,7 +124,7 @@ public Q_SLOTS:
 
     void onDeleteKeyPressed();
 
-    void onInstanceKnobValueChanged(ViewSpec view,int dim,int reason);
+    void onInstanceKnobValueChanged(ViewSpec view, int dim, int reason);
 
     void resetSelectedInstances();
 
@@ -198,24 +198,24 @@ public:
     void setUpdateViewerOnTracking(bool update);
 
     bool isUpdateViewerOnTrackingEnabled() const;
-    
+
     bool isTracking() const;
-    
+
 public Q_SLOTS:
 
     void onAverageTracksButtonClicked();
     void onExportButtonClicked();
 
     void onTrackingStarted();
-    
+
     void onTrackingFinished();
-    
+
     void onTrackingProgressUpdate(double progress);
-    
+
 Q_SIGNALS:
-    
+
     void trackingEnded();
-    
+
 private:
 
     virtual void initializeExtraKnobs() OVERRIDE FINAL;
@@ -224,51 +224,49 @@ private:
     virtual void setIconForButton(KnobButton* knob) OVERRIDE FINAL;
     virtual void onButtonTriggered(KnobButton* button) OVERRIDE FINAL;
     virtual void showMenuForInstance(Node* item) OVERRIDE FINAL;
-
     boost::scoped_ptr<TrackerPanelPrivate> _imp;
 };
 
 struct TrackSchedulerPrivate;
-class TrackScheduler : public QThread
+class TrackScheduler
+    : public QThread
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
-    
+
 public:
-    
+
     TrackScheduler(const TrackerPanel* panel);
-    
+
     virtual ~TrackScheduler();
-    
+
     /**
      * @brief Track the selectedInstances, calling the instance change action on each button (either the previous or
-     * next button) in a separate thread. 
+     * next button) in a separate thread.
      * @param start the first frame to track, if forward is true then start < end
      * @param end the next frame after the last frame to track (a la STL iterators), if forward is true then end > start
      **/
-    void track(int start,int end,bool forward,const std::list<KnobButton*> & selectedInstances);
-    
+    void track(int start, int end, bool forward, const std::list<KnobButton*> & selectedInstances);
+
     void abortTracking();
-    
+
     void quitThread();
-    
+
     bool isWorking() const;
-    
+
 Q_SIGNALS:
-    
+
     void trackingStarted();
-    
+
     void trackingFinished();
-    
+
     void progressUpdate(double progress);
 
 private:
-    
+
     virtual void run() OVERRIDE FINAL;
-    
     boost::scoped_ptr<TrackSchedulerPrivate> _imp;
-    
 };
 
 NATRON_NAMESPACE_EXIT;

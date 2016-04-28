@@ -35,19 +35,19 @@ NATRON_NAMESPACE_ENTER;
  * Utility functions to fit a bezier curve to a set of points
  **/
 namespace FitCurve {
-    
-    struct SimpleBezierCP {
-        Point p;
-        Point leftTan,rightTan;
-    };
-    
-    /**
-     * @brief Fit a Bezier curve to a (sub)set of digitized points
-     * @param points Array of digitized points
-     * @param error User-defined error squared
-     * @param generatedBezier[out] The fitted bezier generated
-    **/
-    void fit_cubic(const std::vector<Point>& points, double error,std::vector<SimpleBezierCP>* generatedBezier);
+struct SimpleBezierCP
+{
+    Point p;
+    Point leftTan, rightTan;
+};
+
+/**
+ * @brief Fit a Bezier curve to a (sub)set of digitized points
+ * @param points Array of digitized points
+ * @param error User-defined error squared
+ * @param generatedBezier[out] The fitted bezier generated
+ **/
+void fit_cubic(const std::vector<Point>& points, double error, std::vector<SimpleBezierCP>* generatedBezier);
 }
 
 NATRON_NAMESPACE_EXIT;

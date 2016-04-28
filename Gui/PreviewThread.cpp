@@ -53,39 +53,35 @@ struct PreviewThreadPrivate
     QMutex mustQuitMutex;
     QWaitCondition mustQuitCond;
     bool mustQuit;
-    
     std::vector<unsigned int> data;
-    
+
     PreviewThreadPrivate()
-    : previewQueueMutex()
-    , previewQueue()
-    , previewQueueNotEmptyCond()
-    , mustQuitMutex()
-    , mustQuitCond()
-    , mustQuit(false)
-    , data(NATRON_PREVIEW_HEIGHT * NATRON_PREVIEW_WIDTH * sizeof(unsigned int))
+        : previewQueueMutex()
+        , previewQueue()
+        , previewQueueNotEmptyCond()
+        , mustQuitMutex()
+        , mustQuitCond()
+        , mustQuit(false)
+        , data( NATRON_PREVIEW_HEIGHT * NATRON_PREVIEW_WIDTH * sizeof(unsigned int) )
     {
-        
     }
-    
 };
 
 PreviewThread::PreviewThread()
-: QThread()
-, _imp(new PreviewThreadPrivate())
+    : QThread()
+    , _imp( new PreviewThreadPrivate() )
 {
-    setObjectName(QString::fromUtf8("PreviewThread"));
+    setObjectName( QString::fromUtf8("PreviewThread") );
 }
 
 PreviewThread::~PreviewThread()
 {
-    
 }
 
 void
-PreviewThread::appendToQueue(const NodeGuiPtr& node, double time)
+PreviewThread::appendToQueue(const NodeGuiPtr& node,
+                             double time)
 {
-
     {
         QMutexLocker k(&_imp->previewQueueMutex);
         ComputePreviewRequest r;
@@ -93,7 +89,7 @@ PreviewThread::appendToQueue(const NodeGuiPtr& node, double time)
         r.time = time;
         _imp->previewQueue.push_back(r);
     }
-    if (!isRunning()) {
+    if ( !isRunning() ) {
         start();
     } else {
         QMutexLocker k(&_imp->previewQueueMutex);
@@ -104,13 +100,13 @@ PreviewThread::appendToQueue(const NodeGuiPtr& node, double time)
 void
 PreviewThread::quitThread()
 {
-    if (!isRunning()) {
+    if ( !isRunning() ) {
         return;
     }
     QMutexLocker k(&_imp->mustQuitMutex);
     assert(!_imp->mustQuit);
     _imp->mustQuit = true;
-    
+
     {
         QMutexLocker k2(&_imp->previewQueueMutex);
         ComputePreviewRequest r;
@@ -122,7 +118,7 @@ PreviewThread::quitThread()
     while (_imp->mustQuit) {
         _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
     }
-    
+
     {
         QMutexLocker k2(&_imp->previewQueueMutex);
         _imp->previewQueue.clear();
@@ -133,69 +129,67 @@ bool
 PreviewThread::isWorking() const
 {
     QMutexLocker k(&_imp->previewQueueMutex);
+
     return !_imp->previewQueue.empty();
 }
 
 void
 PreviewThread::run()
 {
-    for (;;) {
-        
+    for (;; ) {
         //Check for exit
         {
             QMutexLocker k(&_imp->mustQuitMutex);
             if (_imp->mustQuit) {
                 _imp->mustQuit = false;
                 _imp->mustQuitCond.wakeOne();
+
                 return;
             }
         }
-        
-        
+
+
         ComputePreviewRequest front;
         {
             //Wait until we get a request
             QMutexLocker k(&_imp->previewQueueMutex);
-            while (_imp->previewQueue.empty()) {
+            while ( _imp->previewQueue.empty() ) {
                 _imp->previewQueueNotEmptyCond.wait(&_imp->previewQueueMutex);
             }
-            
-            assert(!_imp->previewQueue.empty());
+
+            assert( !_imp->previewQueue.empty() );
             front = _imp->previewQueue.front();
             _imp->previewQueue.pop_front();
         }
-        
-        
+
+
         if (front.node) {
-            
             ///Mark this thread as running
             appPTR->fetchAndAddNRunningThreads(1);
-            
+
             //process the request if valid
             int w = NATRON_PREVIEW_WIDTH;
             int h = NATRON_PREVIEW_HEIGHT;
-            
+
             //set buffer to 0
 #ifndef __NATRON_WIN32__
-            memset(&_imp->data.front(), 0, _imp->data.size() * sizeof(unsigned int));
+            memset( &_imp->data.front(), 0, _imp->data.size() * sizeof(unsigned int) );
 #else
             for (std::size_t i = 0; i < _imp->data.size(); ++i) {
-                _imp->data[i] = qRgba(0,0,0,255);
+                _imp->data[i] = qRgba(0, 0, 0, 255);
             }
 #endif
             NodePtr internalNode = front.node->getNode();
             if (internalNode) {
-                (void)internalNode->makePreviewImage(front.time, &w, &h, &_imp->data.front());
+                (void)internalNode->makePreviewImage( front.time, &w, &h, &_imp->data.front() );
                 front.node->copyPreviewImageBuffer(_imp->data, w, h);
             }
-            
+
             ///Unmark this thread as running
             appPTR->fetchAndAddNRunningThreads(-1);
         }
-        
-        
     } // for(;;)
-}
+} // PreviewThread::run
 
 NATRON_NAMESPACE_EXIT;
 

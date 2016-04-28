@@ -71,7 +71,7 @@ public Q_SLOTS:
     void onProcessDeleted();
 
     void onFrameRendered(int);
-    
+
     void onFrameRenderedWithTimer(int frame, double timeElapsedForFrame, double remainingTime);
 
     void onProcessCanceled();
@@ -79,7 +79,7 @@ public Q_SLOTS:
     void onProcessFinished(int);
 
     void onVideoEngineStopped(int);
-    
+
     void onCancelButtonClicked();
 
 Q_SIGNALS:
@@ -87,48 +87,43 @@ Q_SIGNALS:
     void canceled();
 
 private:
-    
-    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-    
-    virtual void closeEvent(QCloseEvent* e) OVERRIDE FINAL;
 
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void closeEvent(QCloseEvent* e) OVERRIDE FINAL;
     boost::scoped_ptr<RenderingProgressDialogPrivate> _imp;
 };
 
 
 struct GeneralProgressDialogPrivate;
-class GeneralProgressDialog : public QDialog
+class GeneralProgressDialog
+    : public QDialog
 {
-    
-    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-    GCC_DIAG_SUGGEST_OVERRIDE_ON
-    
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
-    
+
     GeneralProgressDialog(const QString& title, bool canCancel, QWidget* parent = 0);
-    
+
     virtual ~GeneralProgressDialog();
-    
+
     //May be called from another thread
     bool wasCanceled() const;
-    
+
     //Must be called on main thread
     void updateProgress(double p);
-    
-public Q_SLOTS:
-    
-    void onCancelRequested();
-    
-    void onRefreshLabelTimeout();
-    
-private:
-    
-    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-    
-    virtual void closeEvent(QCloseEvent* e) OVERRIDE FINAL;
 
-    
+public Q_SLOTS:
+
+    void onCancelRequested();
+
+    void onRefreshLabelTimeout();
+
+private:
+
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void closeEvent(QCloseEvent* e) OVERRIDE FINAL;
     boost::scoped_ptr<GeneralProgressDialogPrivate> _imp;
 };
 

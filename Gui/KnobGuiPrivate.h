@@ -122,13 +122,11 @@ struct KnobGuiPrivate
     std::map<KnobGui::KnobWarningEnum, QString> warningsMapping;
     bool isOnNewLine;
     CustomParamInteract* customInteract;
-
     std::vector< boost::shared_ptr<Curve> > guiCurves;
-    
     bool guiRemoved;
-    
+
     KnobGuiPrivate(DockablePanel* container);
-    
+
     void removeFromKnobsOnSameLineVector(const boost::shared_ptr<KnobI>& knob);
 };
 

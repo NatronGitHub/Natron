@@ -65,12 +65,12 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    ColorPickerLabel(KnobGuiColor* knob,QWidget* parent = NULL);
+    ColorPickerLabel(KnobGuiColor* knob, QWidget* parent = NULL);
 
     virtual ~ColorPickerLabel() OVERRIDE
     {
     }
-    
+
     bool isPickingEnabled() const
     {
         return _pickingEnabled;
@@ -84,7 +84,7 @@ public:
     }
 
     void setPickingEnabled(bool enabled);
-    
+
     void setEnabledMode(bool enabled);
 
 Q_SIGNALS:
@@ -120,20 +120,18 @@ public:
     }
 
     KnobGuiColor(KnobPtr knob,
-                  DockablePanel *container);
+                 DockablePanel *container);
 
     virtual ~KnobGuiColor() OVERRIDE;
-    
+
     virtual void removeSpecificGui() OVERRIDE FINAL;
-
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
-
     virtual bool getAllDimensionsVisible() const OVERRIDE FINAL;
 
     int getDimensionForSpinBox(const SpinBox* spinbox) const;
-    
+
 public Q_SLOTS:
-    
+
     void onSpinBoxValueChanged();
 
     void onMinMaxChanged(double mini, double maxi, int index);
@@ -149,7 +147,7 @@ public Q_SLOTS:
     void onDimensionSwitchClicked();
 
     void onSliderValueChanged(double v);
-    
+
     void onSliderEditingFinished(bool hasMovedOnce);
 
     void onMustShowAllDimension();
@@ -161,7 +159,7 @@ Q_SIGNALS:
     void dimensionSwitchToggled(bool b);
 
 private:
-    
+
     void onColorChangedInternal();
 
 
@@ -169,18 +167,19 @@ private:
     void foldAllDimensions();
 
     virtual bool shouldAddStretch() const OVERRIDE { return false; }
+
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
     virtual void setEnabled() OVERRIDE FINAL;
-    virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
+    virtual void setReadOnly(bool readOnly, int dimension) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension,AnimationLevelEnum level) OVERRIDE FINAL;
-    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(int dimension, AnimationLevelEnum level) OVERRIDE FINAL;
+    virtual void reflectExpressionState(int dimension, bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
     virtual void reflectModificationsState() OVERRIDE FINAL;
-    
+
     void updateLabel(double r, double g, double b, double a);
     virtual void refreshDimensionName(int dim) OVERRIDE FINAL;
 

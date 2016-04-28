@@ -53,11 +53,11 @@ void
 KeyFrame::serialize(Archive & ar,
                     const unsigned int /*version*/)
 {
-    ar & ::boost::serialization::make_nvp("Time",_time);
-    ar & ::boost::serialization::make_nvp("Value",_value);
-    ar & ::boost::serialization::make_nvp("InterpolationMethod",_interpolation);
-    ar & ::boost::serialization::make_nvp("LeftDerivative",_leftDerivative);
-    ar & ::boost::serialization::make_nvp("RightDerivative",_rightDerivative);
+    ar & ::boost::serialization::make_nvp("Time", _time);
+    ar & ::boost::serialization::make_nvp("Value", _value);
+    ar & ::boost::serialization::make_nvp("InterpolationMethod", _interpolation);
+    ar & ::boost::serialization::make_nvp("LeftDerivative", _leftDerivative);
+    ar & ::boost::serialization::make_nvp("RightDerivative", _rightDerivative);
 }
 
 template<class Archive>
@@ -66,7 +66,7 @@ Curve::serialize(Archive & ar,
                  const unsigned int /*version*/)
 {
     QMutexLocker l(&_imp->_lock);
-    ar & ::boost::serialization::make_nvp("KeyFrameSet",_imp->keyFrames);
+    ar & ::boost::serialization::make_nvp("KeyFrameSet", _imp->keyFrames);
 }
 
 NATRON_NAMESPACE_EXIT;

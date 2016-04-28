@@ -69,18 +69,18 @@ public:
 
     double getXEnd() const;
 
-    void getCurveColumns(std::map<int,boost::shared_ptr<CurveGui> >* columns) const;
+    void getCurveColumns(std::map<int, boost::shared_ptr<CurveGui> >* columns) const;
 
 public Q_SLOTS:
 
     void open_file();
 
 private:
-    
+
     QByteArray saveState();
-    
+
     void restoreState(const QByteArray& state);
-    
+
     Gui* _gui;
     bool _isExportDialog;
     QVBoxLayout* _mainLayout;
@@ -132,43 +132,43 @@ private:
 
 
 struct EditKeyFrameDialogPrivate;
-class EditKeyFrameDialog : public QDialog
+class EditKeyFrameDialog
+    : public QDialog
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
-    
+
 public:
-    
-    enum EditModeEnum {
+
+    enum EditModeEnum
+    {
         eEditModeKeyframePosition,
         eEditModeLeftDerivative,
         eEditModeRightDerivative
     };
-    
-    EditKeyFrameDialog(EditModeEnum mode,CurveWidget* curveWidget, const KeyPtr& key,QWidget* parent);
-    
+
+    EditKeyFrameDialog(EditModeEnum mode, CurveWidget* curveWidget, const KeyPtr& key, QWidget* parent);
+
     virtual ~EditKeyFrameDialog();
-    
+
 Q_SIGNALS:
-    
-    void valueChanged(int dimension,double value);
-    
-    
+
+    void valueChanged(int dimension, double value);
+
 public Q_SLOTS:
-    
+
     void onXSpinBoxValueChanged(double d);
     void onYSpinBoxValueChanged(double d);
     void onEditingFinished();
-    
+
 private:
-    
-    void moveKeyTo(double newX,double newY);
+
+    void moveKeyTo(double newX, double newY);
     void moveDerivativeTo(double d);
-    
+
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
-    
     boost::scoped_ptr<EditKeyFrameDialogPrivate> _imp;
 };
 

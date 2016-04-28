@@ -52,38 +52,38 @@ public:
            int t,
            const std::string & name,
            double par)
-        : RectI(l,b,r,t)
-          , _par(par)
-          , _name(name)
+        : RectI(l, b, r, t)
+        , _par(par)
+        , _name(name)
     {
     }
 
     Format(const RectI & rect)
         : RectI(rect)
-          , _par(1.)
-          , _name()
+        , _par(1.)
+        , _name()
     {
     }
-    
-    Format(const RectI& rect, const double par)
-    : RectI(rect)
-    , _par(par)
-    , _name()
+
+    Format(const RectI& rect,
+           const double par)
+        : RectI(rect)
+        , _par(par)
+        , _name()
     {
-        
     }
 
     Format(const Format & other)
-        : RectI(other.left(), other.bottom(), other.right(), other.top())
-          , _par(other.getPixelAspectRatio())
-          , _name(other.getName())
+        : RectI( other.left(), other.bottom(), other.right(), other.top() )
+        , _par( other.getPixelAspectRatio() )
+        , _name( other.getName() )
     {
     }
 
     Format()
         : RectI()
-          , _par(1.0)
-          , _name()
+        , _par(1.0)
+        , _name()
     {
     }
 
@@ -110,30 +110,32 @@ public:
     {
         _par = p;
     }
-    
+
     RectD toCanonicalFormat() const
     {
         RectD ret;
+
         toCanonical_noClipping(0, _par, &ret);
+
         return ret;
     }
 
     Format & operator=(const Format & other)
     {
-        set(other.left(), other.bottom(), other.right(), other.top());
-        setName(other.getName());
-        setPixelAspectRatio(other.getPixelAspectRatio());
+        set( other.left(), other.bottom(), other.right(), other.top() );
+        setName( other.getName() );
+        setPixelAspectRatio( other.getPixelAspectRatio() );
 
         return *this;
     }
 
     bool operator==(const Format & other) const
     {
-        return (_par == other.getPixelAspectRatio() &&
-                left() == other.left() &&
-                bottom() == other.bottom() &&
-                right() == other.right() &&
-                top() == other.top());
+        return ( _par == other.getPixelAspectRatio() &&
+                 left() == other.left() &&
+                 bottom() == other.bottom() &&
+                 right() == other.right() &&
+                 top() == other.top() );
     }
 
     template<class Archive>

@@ -47,64 +47,52 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER;
 
 struct EditScriptDialogPrivate;
-class EditScriptDialog : public QDialog
+class EditScriptDialog
+    : public QDialog
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    
+
     EditScriptDialog(Gui* gui, QWidget* parent);
-    
+
     virtual ~EditScriptDialog();
-    
-    void create(const QString& initialScript,bool makeUseRetButton);
-    
+
+    void create(const QString& initialScript, bool makeUseRetButton);
+
     QString getExpression(bool* hasRetVariable) const;
-    
+
     bool isUseRetButtonChecked() const;
-    
+
 public Q_SLOTS:
-    
+
     void onUseRetButtonClicked(bool useRet);
     void onTextEditChanged();
     void onHelpRequested();
-    
-    
-protected:
-    
-    virtual void setTitle() = 0;
-    
-    virtual bool hasRetVariable() const { return false; }
-    
-    virtual void getImportedModules(QStringList& modules) const = 0;
-    
-    virtual void getDeclaredVariables(std::list<std::pair<QString,QString> >& variables) const = 0;
-    
-    virtual QString compileExpression(const QString& expr) = 0;
 
+protected:
+
+    virtual void setTitle() = 0;
+    virtual bool hasRetVariable() const { return false; }
+
+    virtual void getImportedModules(QStringList& modules) const = 0;
+    virtual void getDeclaredVariables(std::list<std::pair<QString, QString> >& variables) const = 0;
+    virtual QString compileExpression(const QString& expr) = 0;
     static QString getHelpPart1();
-    
     static QString getHelpThisNodeVariable();
-    
     static QString getHelpThisGroupVariable();
-    
     static QString getHelpThisParamVariable();
-    
     static QString getHelpDimensionVariable();
-    
     static QString getHelpPart2();
-    
     virtual QString getCustomHelp() = 0;
 
 private:
-    
+
     void compileAndSetResult(const QString& script);
-    
+
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-    
-    
     boost::scoped_ptr<EditScriptDialogPrivate> _imp;
 };
 

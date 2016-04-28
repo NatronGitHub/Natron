@@ -115,7 +115,7 @@ ViewerTab::setAutoContrastEnabled(bool b)
     _imp->gammaSlider->setEnabled(!b);
     _imp->gammaBox->setEnabled(!b);
     _imp->toggleGammaButton->setEnabled(!b);
-    _imp->viewerNode->onAutoContrastChanged(b,true);
+    _imp->viewerNode->onAutoContrastChanged(b, true);
 }
 
 void
@@ -133,18 +133,18 @@ ViewerTab::setClipToProject(bool b)
 void
 ViewerTab::setColorSpace(const std::string & colorSpaceName)
 {
-    int index = _imp->viewerColorSpace->itemIndex( QString::fromUtf8(colorSpaceName.c_str()) );
+    int index = _imp->viewerColorSpace->itemIndex( QString::fromUtf8( colorSpaceName.c_str() ) );
 
     if (index != -1) {
         _imp->viewerColorSpace->setCurrentIndex(index);
     }
 }
 
-
 void
 ViewerTab::setGain(double d)
 {
     double fstop = std::log(d) / M_LN2;
+
     _imp->gainBox->setValue(fstop);
     _imp->gainSlider->seekScalePosition(fstop);
     _imp->viewer->setGain(d);
@@ -228,28 +228,28 @@ std::string
 ViewerTab::getChannelsString(DisplayChannelsEnum c)
 {
     switch (c) {
-        case eDisplayChannelsRGB:
-            
-            return "RGB";
-        case eDisplayChannelsR:
-            
-            return "R";
-        case eDisplayChannelsG:
-            
-            return "G";
-        case eDisplayChannelsB:
-            
-            return "B";
-        case eDisplayChannelsA:
-            
-            return "A";
-        case eDisplayChannelsY:
-            
-            return "Luminance";
-            break;
-        default:
-            
-            return "";
+    case eDisplayChannelsRGB:
+
+        return "RGB";
+    case eDisplayChannelsR:
+
+        return "R";
+    case eDisplayChannelsG:
+
+        return "G";
+    case eDisplayChannelsB:
+
+        return "B";
+    case eDisplayChannelsA:
+
+        return "A";
+    case eDisplayChannelsY:
+
+        return "Luminance";
+        break;
+    default:
+
+        return "";
     }
 }
 
@@ -257,13 +257,14 @@ std::string
 ViewerTab::getChannelsString() const
 {
     DisplayChannelsEnum c = _imp->viewerNode->getChannels(0);
+
     return getChannelsString(c);
 }
 
 void
 ViewerTab::setChannels(const std::string & channelsStr)
 {
-    int index = _imp->viewerChannels->itemIndex( QString::fromUtf8(channelsStr.c_str()) );
+    int index = _imp->viewerChannels->itemIndex( QString::fromUtf8( channelsStr.c_str() ) );
 
     if (index != -1) {
         _imp->viewerChannels->setCurrentIndex_no_emit(index);
@@ -289,7 +290,6 @@ ViewerTab::discardInternalNodePointer()
     _imp->viewerNode = 0;
 }
 
-
 void
 ViewerTab::onAutoContrastChanged(bool b)
 {
@@ -298,13 +298,13 @@ ViewerTab::onAutoContrastChanged(bool b)
     _imp->gainSlider->setEnabled(!b);
     _imp->gainBox->setEnabled(!b);
     _imp->toggleGainButton->setEnabled(!b);
-    _imp->viewerNode->onAutoContrastChanged(b,b);
+    _imp->viewerNode->onAutoContrastChanged(b, b);
     _imp->gammaBox->setEnabled(!b);
     _imp->gammaSlider->setEnabled(!b);
     _imp->toggleGammaButton->setEnabled(!b);
     if (!b) {
-        _imp->viewerNode->onGainChanged( std::pow(2,_imp->gainBox->value()) );
-        _imp->viewerNode->onGammaChanged(_imp->gammaBox->value());
+        _imp->viewerNode->onGainChanged( std::pow( 2, _imp->gainBox->value() ) );
+        _imp->viewerNode->onGammaChanged( _imp->gammaBox->value() );
     }
 }
 
@@ -343,19 +343,20 @@ void
 ViewerTab::createTrackerInterface(NodeGui* n)
 {
     boost::shared_ptr<MultiInstancePanel> multiPanel = n->getMultiInstancePanel();
+
     if (!multiPanel) {
         return;
     }
-    std::map<NodeGui*,TrackerGui*>::iterator found = _imp->trackerNodes.find(n);
-    if (found != _imp->trackerNodes.end()) {
+    std::map<NodeGui*, TrackerGui*>::iterator found = _imp->trackerNodes.find(n);
+    if ( found != _imp->trackerNodes.end() ) {
         return;
     }
-    
+
     boost::shared_ptr<TrackerPanel> trackPanel = boost::dynamic_pointer_cast<TrackerPanel>(multiPanel);
 
     assert(trackPanel);
-    TrackerGui* tracker = new TrackerGui(trackPanel,this);
-    std::pair<std::map<NodeGui*,TrackerGui*>::iterator,bool> ret = _imp->trackerNodes.insert( std::make_pair(n,tracker) );
+    TrackerGui* tracker = new TrackerGui(trackPanel, this);
+    std::pair<std::map<NodeGui*, TrackerGui*>::iterator, bool> ret = _imp->trackerNodes.insert( std::make_pair(n, tracker) );
     assert(ret.second);
     if (!ret.second) {
         qDebug() << "ViewerTab::createTrackerInterface() failed";
@@ -363,7 +364,7 @@ ViewerTab::createTrackerInterface(NodeGui* n)
 
         return;
     }
-    QObject::connect( n,SIGNAL(settingsPanelClosed(bool)),this,SLOT(onTrackerNodeGuiSettingsPanelClosed(bool)) );
+    QObject::connect( n, SIGNAL(settingsPanelClosed(bool)), this, SLOT(onTrackerNodeGuiSettingsPanelClosed(bool)) );
     if ( n->isSettingsPanelVisible() ) {
         setTrackerInterface(n);
     } else {
@@ -379,7 +380,7 @@ void
 ViewerTab::setTrackerInterface(NodeGui* n)
 {
     assert(n);
-    std::map<NodeGui*,TrackerGui*>::iterator it = _imp->trackerNodes.find(n);
+    std::map<NodeGui*, TrackerGui*>::iterator it = _imp->trackerNodes.find(n);
     if ( it != _imp->trackerNodes.end() ) {
         if (_imp->currentTracker.first == n) {
             return;
@@ -387,7 +388,7 @@ ViewerTab::setTrackerInterface(NodeGui* n)
 
         ///remove any existing tracker gui
         if (_imp->currentTracker.first != NULL) {
-            removeTrackerInterface(_imp->currentTracker.first, false,true);
+            removeTrackerInterface(_imp->currentTracker.first, false, true);
         }
 
         ///Add the widgets
@@ -405,7 +406,7 @@ ViewerTab::setTrackerInterface(NodeGui* n)
         QWidget* buttonsBar = it->second->getButtonsBar();
         assert(buttonsBar);
         if (buttonsBar) {
-            _imp->mainLayout->insertWidget(index,buttonsBar);
+            _imp->mainLayout->insertWidget(index, buttonsBar);
             {
                 QMutexLocker l(&_imp->visibleToolbarsMutex);
                 if (_imp->topToolbarVisible) {
@@ -425,10 +426,10 @@ ViewerTab::removeTrackerInterface(NodeGui* n,
                                   bool permanently,
                                   bool removeAndDontSetAnother)
 {
-    std::map<NodeGui*,TrackerGui*>::iterator it = _imp->trackerNodes.find(n);
+    std::map<NodeGui*, TrackerGui*>::iterator it = _imp->trackerNodes.find(n);
 
     if ( it != _imp->trackerNodes.end() ) {
-        if (!getGui()) {
+        if ( !getGui() ) {
             if (permanently) {
                 delete it->second;
             }
@@ -451,8 +452,8 @@ ViewerTab::removeTrackerInterface(NodeGui* n,
             }
             if (!removeAndDontSetAnother) {
                 ///If theres another tracker node, set it as the current tracker interface
-                std::map<NodeGui*,TrackerGui*>::iterator newTracker = _imp->trackerNodes.end();
-                for (std::map<NodeGui*,TrackerGui*>::iterator it2 = _imp->trackerNodes.begin(); it2 != _imp->trackerNodes.end(); ++it2) {
+                std::map<NodeGui*, TrackerGui*>::iterator newTracker = _imp->trackerNodes.end();
+                for (std::map<NodeGui*, TrackerGui*>::iterator it2 = _imp->trackerNodes.begin(); it2 != _imp->trackerNodes.end(); ++it2) {
                     if ( (it2->second != it->second) && it2->first->isSettingsPanelVisible() ) {
                         newTracker = it2;
                         break;
@@ -473,14 +474,14 @@ ViewerTab::removeTrackerInterface(NodeGui* n,
             _imp->trackerNodes.erase(it);
         }
     }
-}
+} // ViewerTab::removeTrackerInterface
 
 void
 ViewerTab::createRotoInterface(NodeGui* n)
 {
-    RotoGui* roto = new RotoGui( n,this,getRotoGuiSharedData(n) );
-    QObject::connect( roto,SIGNAL(selectedToolChanged(int)),getGui(),SLOT(onRotoSelectedToolChanged(int)) );
-    std::pair<std::map<NodeGui*,RotoGui*>::iterator,bool> ret = _imp->rotoNodes.insert( std::make_pair(n,roto) );
+    RotoGui* roto = new RotoGui( n, this, getRotoGuiSharedData(n) );
+    QObject::connect( roto, SIGNAL(selectedToolChanged(int)), getGui(), SLOT(onRotoSelectedToolChanged(int)) );
+    std::pair<std::map<NodeGui*, RotoGui*>::iterator, bool> ret = _imp->rotoNodes.insert( std::make_pair(n, roto) );
 
     assert(ret.second);
     if (!ret.second) {
@@ -489,7 +490,7 @@ ViewerTab::createRotoInterface(NodeGui* n)
 
         return;
     }
-    QObject::connect( n,SIGNAL(settingsPanelClosed(bool)),this,SLOT(onRotoNodeGuiSettingsPanelClosed(bool)) );
+    QObject::connect( n, SIGNAL(settingsPanelClosed(bool)), this, SLOT(onRotoNodeGuiSettingsPanelClosed(bool)) );
     if ( n->isSettingsPanelVisible() ) {
         setRotoInterface(n);
     } else {
@@ -502,7 +503,7 @@ void
 ViewerTab::setRotoInterface(NodeGui* n)
 {
     assert(n);
-    std::map<NodeGui*,RotoGui*>::iterator it = _imp->rotoNodes.find(n);
+    std::map<NodeGui*, RotoGui*>::iterator it = _imp->rotoNodes.find(n);
     if ( it != _imp->rotoNodes.end() ) {
         if (_imp->currentRoto.first == n) {
             return;
@@ -510,13 +511,13 @@ ViewerTab::setRotoInterface(NodeGui* n)
 
         ///remove any existing roto gui
         if (_imp->currentRoto.first != NULL) {
-            removeRotoInterface(_imp->currentRoto.first, false,true);
+            removeRotoInterface(_imp->currentRoto.first, false, true);
         }
 
         ///Add the widgets
         QToolBar* toolBar = it->second->getToolBar();
         _imp->viewerLayout->insertWidget(0, toolBar);
-        
+
         {
             QMutexLocker l(&_imp->visibleToolbarsMutex);
             if (_imp->leftToolbarVisible) {
@@ -540,7 +541,7 @@ ViewerTab::setRotoInterface(NodeGui* n)
             QWidget* buttonsBar = it->second->getCurrentButtonsBar();
             assert(buttonsBar);
             if (buttonsBar) {
-                _imp->mainLayout->insertWidget(index,buttonsBar);
+                _imp->mainLayout->insertWidget(index, buttonsBar);
                 {
                     QMutexLocker l(&_imp->visibleToolbarsMutex);
                     if (_imp->topToolbarVisible) {
@@ -549,23 +550,23 @@ ViewerTab::setRotoInterface(NodeGui* n)
                 }
             }
         }
-        QObject::connect( it->second,SIGNAL(roleChanged(int,int)),this,SLOT(onRotoRoleChanged(int,int)) );
+        QObject::connect( it->second, SIGNAL(roleChanged(int,int)), this, SLOT(onRotoRoleChanged(int,int)) );
         _imp->currentRoto.first = n;
         _imp->currentRoto.second = it->second;
         _imp->viewer->redraw();
     }
-}
+} // ViewerTab::setRotoInterface
 
 void
 ViewerTab::removeRotoInterface(NodeGui* n,
                                bool permanently,
                                bool removeAndDontSetAnother)
 {
-    std::map<NodeGui*,RotoGui*>::iterator it = _imp->rotoNodes.find(n);
+    std::map<NodeGui*, RotoGui*>::iterator it = _imp->rotoNodes.find(n);
 
     if ( it != _imp->rotoNodes.end() ) {
         if (_imp->currentRoto.first == n) {
-            QObject::disconnect( _imp->currentRoto.second,SIGNAL(roleChanged(int,int)),this,SLOT(onRotoRoleChanged(int,int)) );
+            QObject::disconnect( _imp->currentRoto.second, SIGNAL(roleChanged(int,int)), this, SLOT(onRotoRoleChanged(int,int)) );
             ///Remove the widgets of the current roto node
             assert(_imp->viewerLayout->count() > 1);
             QLayoutItem* currentToolBarItem = _imp->viewerLayout->itemAt(0);
@@ -582,8 +583,8 @@ ViewerTab::removeRotoInterface(NodeGui* n,
 
             if (!removeAndDontSetAnother) {
                 ///If theres another roto node, set it as the current roto interface
-                std::map<NodeGui*,RotoGui*>::iterator newRoto = _imp->rotoNodes.end();
-                for (std::map<NodeGui*,RotoGui*>::iterator it2 = _imp->rotoNodes.begin(); it2 != _imp->rotoNodes.end(); ++it2) {
+                std::map<NodeGui*, RotoGui*>::iterator newRoto = _imp->rotoNodes.end();
+                for (std::map<NodeGui*, RotoGui*>::iterator it2 = _imp->rotoNodes.begin(); it2 != _imp->rotoNodes.end(); ++it2) {
                     if ( (it2->second != it->second) && it2->first->isSettingsPanelVisible() ) {
                         newRoto = it2;
                         break;
@@ -607,16 +608,16 @@ ViewerTab::removeRotoInterface(NodeGui* n,
 }
 
 void
-ViewerTab::getRotoContext(std::map<NodeGui*,RotoGui*>* rotoNodes,
-                          std::pair<NodeGui*,RotoGui*>* currentRoto) const
+ViewerTab::getRotoContext(std::map<NodeGui*, RotoGui*>* rotoNodes,
+                          std::pair<NodeGui*, RotoGui*>* currentRoto) const
 {
     *rotoNodes = _imp->rotoNodes;
     *currentRoto = _imp->currentRoto;
 }
 
 void
-ViewerTab::getTrackerContext(std::map<NodeGui*,TrackerGui*>* trackerNodes,
-                             std::pair<NodeGui*,TrackerGui*>* currentTracker) const
+ViewerTab::getTrackerContext(std::map<NodeGui*, TrackerGui*>* trackerNodes,
+                             std::pair<NodeGui*, TrackerGui*>* currentTracker) const
 {
     *trackerNodes = _imp->trackerNodes;
     *currentTracker = _imp->currentTracker;
@@ -632,7 +633,7 @@ ViewerTab::onRotoRoleChanged(int previousRole,
         assert(roto == _imp->currentRoto.second);
 
         ///Remove the previous buttons bar
-        QWidget* previousBar = _imp->currentRoto.second->getButtonsBar( (RotoGui::RotoRoleEnum)previousRole ) ;
+        QWidget* previousBar = _imp->currentRoto.second->getButtonsBar( (RotoGui::RotoRoleEnum)previousRole );
         assert(previousBar);
         if (previousBar) {
             int buttonsBarIndex = _imp->mainLayout->indexOf(previousBar);
@@ -663,14 +664,14 @@ ViewerTab::updateRotoSelectedTool(int tool,
                                   RotoGui* sender)
 {
     if ( _imp->currentRoto.second && (_imp->currentRoto.second != sender) ) {
-        _imp->currentRoto.second->setCurrentTool( (RotoGui::RotoToolEnum)tool,false );
+        _imp->currentRoto.second->setCurrentTool( (RotoGui::RotoToolEnum)tool, false );
     }
 }
 
 boost::shared_ptr<RotoGuiSharedData>
 ViewerTab::getRotoGuiSharedData(NodeGui* node) const
 {
-    std::map<NodeGui*,RotoGui*>::const_iterator found = _imp->rotoNodes.find(node);
+    std::map<NodeGui*, RotoGui*>::const_iterator found = _imp->rotoNodes.find(node);
 
     if ( found == _imp->rotoNodes.end() ) {
         return boost::shared_ptr<RotoGuiSharedData>();
@@ -692,7 +693,7 @@ ViewerTab::onRotoNodeGuiSettingsPanelClosed(bool closed)
 
     if (n) {
         if (closed) {
-            removeRotoInterface(n, false,false);
+            removeRotoInterface(n, false, false);
         } else {
             if (n != _imp->currentRoto.first) {
                 setRotoInterface(n);
@@ -708,7 +709,7 @@ ViewerTab::onTrackerNodeGuiSettingsPanelClosed(bool closed)
 
     if (n) {
         if (closed) {
-            removeTrackerInterface(n, false,false);
+            removeTrackerInterface(n, false, false);
         } else {
             if (n != _imp->currentTracker.first) {
                 setTrackerInterface(n);
@@ -721,39 +722,40 @@ void
 ViewerTab::notifyGuiClosing()
 {
     _imp->timeLineGui->discardGuiPointer();
-    for (std::map<NodeGui*,RotoGui*>::iterator it = _imp->rotoNodes.begin() ; it!=_imp->rotoNodes.end(); ++it) {
+    for (std::map<NodeGui*, RotoGui*>::iterator it = _imp->rotoNodes.begin(); it != _imp->rotoNodes.end(); ++it) {
         it->second->notifyGuiClosing();
     }
 }
 
 void
-ViewerTab::onCompositingOperatorChangedInternal(ViewerCompositingOperatorEnum oldOp,ViewerCompositingOperatorEnum newOp)
+ViewerTab::onCompositingOperatorChangedInternal(ViewerCompositingOperatorEnum oldOp,
+                                                ViewerCompositingOperatorEnum newOp)
 {
     if ( (oldOp == eViewerCompositingOperatorNone) && (newOp != eViewerCompositingOperatorNone) ) {
         _imp->viewer->resetWipeControls();
     }
-    
+
     _imp->secondInputImage->setEnabled_natron(newOp != eViewerCompositingOperatorNone);
     if (newOp == eViewerCompositingOperatorNone) {
         _imp->secondInputImage->setCurrentIndex_no_emit(0);
         _imp->viewerNode->setInputB(-1);
     }
-    
-    if (newOp == eViewerCompositingOperatorNone || !_imp->secondInputImage->getEnabled_natron()  || _imp->secondInputImage->activeIndex() == 0) {
+
+    if ( (newOp == eViewerCompositingOperatorNone) || !_imp->secondInputImage->getEnabled_natron()  || (_imp->secondInputImage->activeIndex() == 0) ) {
         manageSlotsForInfoWidget(1, false);
         _imp->infoWidget[1]->hide();
     } else if (newOp != eViewerCompositingOperatorNone) {
         manageSlotsForInfoWidget(1, true);
         _imp->infoWidget[1]->show();
     }
-    
+
     _imp->viewer->update();
 }
 
 void
 ViewerTab::onCompositingOperatorIndexChanged(int index)
 {
-    ViewerCompositingOperatorEnum newOp,oldOp;
+    ViewerCompositingOperatorEnum newOp, oldOp;
     {
         QMutexLocker l(&_imp->compOperatorMutex);
         oldOp = _imp->compOperator;
@@ -815,13 +817,9 @@ ViewerTab::setCompositingOperator(ViewerCompositingOperatorEnum op)
         QMutexLocker l(&_imp->compOperatorMutex);
         oldOp = _imp->compOperator;
         _imp->compOperator = op;
-        
     }
     _imp->compositingOperator->setCurrentIndex_no_emit(comboIndex);
     onCompositingOperatorChangedInternal(oldOp, op);
-    
-    
-
 }
 
 ViewerCompositingOperatorEnum
@@ -836,10 +834,11 @@ void
 ViewerTab::setInputA(int index)
 {
     ViewerTabPrivate::InputNamesMap::iterator found = _imp->inputNamesMap.find(index);
-    if (found == _imp->inputNamesMap.end()) {
+
+    if ( found == _imp->inputNamesMap.end() ) {
         return;
     }
-    
+
     int comboboxIndex = _imp->firstInputImage->itemIndex(found->second.name);
     if (comboboxIndex == -1) {
         return;
@@ -852,37 +851,37 @@ ViewerTab::setInputA(int index)
         ViewerInstance* viewer = (*it)->getInternalNode();
         if (viewer) {
             RenderEngine* engine = viewer->getRenderEngine();
-            if (engine && engine->hasThreadsWorking()) {
-                engine->abortRendering(true,false);
+            if ( engine && engine->hasThreadsWorking() ) {
+                engine->abortRendering(true, false);
                 engine->renderCurrentFrame(false, true);
             }
         }
     }
-
 }
 
 void
 ViewerTab::setInputB(int index)
 {
     ViewerTabPrivate::InputNamesMap::iterator found = _imp->inputNamesMap.find(index);
-    if (found == _imp->inputNamesMap.end()) {
+
+    if ( found == _imp->inputNamesMap.end() ) {
         return;
     }
-    
+
     int comboboxIndex = _imp->secondInputImage->itemIndex(found->second.name);
     if (comboboxIndex == -1) {
         return;
     }
     _imp->secondInputImage->setCurrentIndex(comboboxIndex);
     _imp->viewerNode->setInputB(index);
-    
+
     const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
     for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
         ViewerInstance* viewer = (*it)->getInternalNode();
         if (viewer) {
             RenderEngine* engine = viewer->getRenderEngine();
-            if (engine && engine->hasThreadsWorking()) {
-                engine->abortRendering(true,false);
+            if ( engine && engine->hasThreadsWorking() ) {
+                engine->abortRendering(true, false);
                 engine->renderCurrentFrame(false, true);
             }
         }
@@ -890,21 +889,22 @@ ViewerTab::setInputB(int index)
 }
 
 void
-ViewerTab::getActiveInputs(int* a, int* b) const
+ViewerTab::getActiveInputs(int* a,
+                           int* b) const
 {
     _imp->viewerNode->getActiveInputs(*a, *b);
 }
-
 
 void
 ViewerTab::switchInputAAndB()
 {
     QString aIndex = _imp->firstInputImage->getCurrentIndexText();
     QString bIndex = _imp->secondInputImage->getCurrentIndexText();
+
     _imp->firstInputImage->setCurrentText_no_emit(bIndex);
     _imp->secondInputImage->setCurrentText_no_emit(aIndex);
-    
-    int inputAIndex = -1,inputBIndex = -1;
+
+    int inputAIndex = -1, inputBIndex = -1;
     for (ViewerTabPrivate::InputNamesMap::iterator it = _imp->inputNamesMap.begin(); it != _imp->inputNamesMap.end(); ++it) {
         if (it->second.name == aIndex) {
             inputAIndex = it->first;
@@ -914,14 +914,14 @@ ViewerTab::switchInputAAndB()
     }
     _imp->viewerNode->setInputA(inputBIndex);
     _imp->viewerNode->setInputB(inputAIndex);
-    
+
     const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
     for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
         ViewerInstance* viewer = (*it)->getInternalNode();
         if (viewer) {
             RenderEngine* engine = viewer->getRenderEngine();
-            if (engine && engine->hasThreadsWorking()) {
-                engine->abortRendering(true,false);
+            if ( engine && engine->hasThreadsWorking() ) {
+                engine->abortRendering(true, false);
                 engine->renderCurrentFrame(false, true);
             }
         }
@@ -941,14 +941,14 @@ ViewerTab::onFirstInputNameChanged(const QString & text)
         }
     }
     _imp->viewerNode->setInputA(inputIndex);
-    
+
     const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
     for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
         ViewerInstance* viewer = (*it)->getInternalNode();
         if (viewer) {
             RenderEngine* engine = viewer->getRenderEngine();
-            if (engine && engine->hasThreadsWorking()) {
-                engine->abortRendering(true,false);
+            if ( engine && engine->hasThreadsWorking() ) {
+                engine->abortRendering(true, false);
                 engine->renderCurrentFrame(false, true);
             }
         }
@@ -988,8 +988,8 @@ ViewerTab::onSecondInputNameChanged(const QString & text)
         ViewerInstance* viewer = (*it)->getInternalNode();
         if (viewer) {
             RenderEngine* engine = viewer->getRenderEngine();
-            if (engine && engine->hasThreadsWorking()) {
-                engine->abortRendering(true,false);
+            if ( engine && engine->hasThreadsWorking() ) {
+                engine->abortRendering(true, false);
                 engine->renderCurrentFrame(false, true);
             }
         }
@@ -1027,35 +1027,35 @@ ViewerTab::onActiveInputsChanged()
         _imp->secondInputImage->setCurrentIndex_no_emit(0);
     }
 
-    if (op == eViewerCompositingOperatorNone || !_imp->secondInputImage->getEnabled_natron()  || _imp->secondInputImage->activeIndex() == 0) {
+    if ( (op == eViewerCompositingOperatorNone) || !_imp->secondInputImage->getEnabled_natron()  || (_imp->secondInputImage->activeIndex() == 0) ) {
         manageSlotsForInfoWidget(1, false);
         _imp->infoWidget[1]->hide();
     } else if (op != eViewerCompositingOperatorNone) {
         manageSlotsForInfoWidget(1, true);
         _imp->infoWidget[1]->show();
     }
-    
+
     bool autoWipe = getInternalNode()->isInputChangeRequestedFromViewer();
-    
+
     /*if ( ( (activeInputs[0] == -1) || (activeInputs[1] == -1) ) //only 1 input is valid
          && ( op != eViewerCompositingOperatorNone) ) {
         //setCompositingOperator(eViewerCompositingOperatorNone);
         _imp->infoWidget[1]->hide();
         manageSlotsForInfoWidget(1, false);
         // _imp->secondInputImage->setEnabled_natron(false);
-    }
-    else*/ if ( autoWipe && (activeInputs[0] != -1) && (activeInputs[1] != -1) && (activeInputs[0] != activeInputs[1])
-                && (op == eViewerCompositingOperatorNone) ) {
+       }
+       else*/if ( autoWipe && (activeInputs[0] != -1) && (activeInputs[1] != -1) && (activeInputs[0] != activeInputs[1])
+         && (op == eViewerCompositingOperatorNone) ) {
         _imp->viewer->resetWipeControls();
         setCompositingOperator(eViewerCompositingOperatorWipe);
     }
-    
 }
 
 void
 ViewerTab::connectToInput(int inputNb)
 {
-    InspectorNode* node = dynamic_cast<InspectorNode*>(getInternalNode()->getNode().get());
+    InspectorNode* node = dynamic_cast<InspectorNode*>( getInternalNode()->getNode().get() );
+
     assert(node);
     if (!node) {
         throw std::logic_error("ViewerTab::connectToInput");
@@ -1074,27 +1074,26 @@ void
 ViewerTab::onAvailableComponentsChanged()
 {
     refreshLayerAndAlphaChannelComboBox();
-
 }
 
 void
 ViewerTab::refreshFPSBoxFromClipPreferences()
 {
     int activeInputs[2];
-    
+
     _imp->viewerNode->getActiveInputs(activeInputs[0], activeInputs[1]);
-    EffectInstPtr input0 = activeInputs[0] != - 1 ? _imp->viewerNode->getInput(activeInputs[0]) : EffectInstPtr();
+    EffectInstPtr input0 = activeInputs[0] != -1 ? _imp->viewerNode->getInput(activeInputs[0]) : EffectInstPtr();
     if (input0) {
-        _imp->fpsBox->setValue(input0->getFrameRate());
+        _imp->fpsBox->setValue( input0->getFrameRate() );
     } else {
-        EffectInstPtr input1 = activeInputs[1] != - 1 ? _imp->viewerNode->getInput(activeInputs[1]) : EffectInstPtr();
+        EffectInstPtr input1 = activeInputs[1] != -1 ? _imp->viewerNode->getInput(activeInputs[1]) : EffectInstPtr();
         if (input1) {
-            _imp->fpsBox->setValue(input1->getFrameRate());
+            _imp->fpsBox->setValue( input1->getFrameRate() );
         } else {
-            _imp->fpsBox->setValue(getGui()->getApp()->getProjectFrameRate());
+            _imp->fpsBox->setValue( getGui()->getApp()->getProjectFrameRate() );
         }
     }
-    onSpinboxFpsChangedInternal(_imp->fpsBox->value());
+    onSpinboxFpsChangedInternal( _imp->fpsBox->value() );
 }
 
 void

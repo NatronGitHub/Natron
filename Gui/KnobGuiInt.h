@@ -71,18 +71,16 @@ public:
     }
 
     KnobGuiInt(KnobPtr knob,
-                DockablePanel *container);
+               DockablePanel *container);
 
     virtual ~KnobGuiInt() OVERRIDE;
-    
+
     virtual void removeSpecificGui() OVERRIDE FINAL;
-
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
-
     virtual bool getAllDimensionsVisible() const OVERRIDE FINAL;
-    
+
     int getDimensionForSpinBox(const SpinBox* spinbox) const;
-    
+
 public Q_SLOTS:
 
     void onSpinBoxValueChanged();
@@ -93,17 +91,17 @@ public Q_SLOTS:
 #ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
     void onMinMaxChanged(double mini, double maxi, int index = 0);
 #endif
-    
-    void onDisplayMinMaxChanged(double mini,double maxi,int index = 0);
+
+    void onDisplayMinMaxChanged(double mini, double maxi, int index = 0);
 
     void onIncrementChanged(int incr, int index = 0);
-    
+
     void onDimensionSwitchClicked();
-    
+
 private:
     void expandAllDimensions();
     void foldAllDimensions();
-    
+
     void sliderEditingEnd(double d);
 
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
@@ -116,11 +114,11 @@ private:
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
     virtual void setEnabled() OVERRIDE FINAL;
-    virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
+    virtual void setReadOnly(bool readOnly, int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension,AnimationLevelEnum level) OVERRIDE FINAL;
-    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(int dimension, AnimationLevelEnum level) OVERRIDE FINAL;
+    virtual void reflectExpressionState(int dimension, bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
     virtual void reflectModificationsState() OVERRIDE FINAL;
     virtual void refreshDimensionName(int dim) OVERRIDE FINAL;

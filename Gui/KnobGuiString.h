@@ -64,18 +64,16 @@ class AnimatingTextEdit
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
-
-    Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
+GCC_DIAG_SUGGEST_OVERRIDE_ON Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
     Q_PROPERTY( bool readOnlyNatron READ isReadOnlyNatron WRITE setReadOnlyNatron)
     Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
 
 public:
 
     AnimatingTextEdit(const KnobGuiPtr& knob, int dimension, QWidget* parent = 0);
-    
+
     virtual ~AnimatingTextEdit();
-    
+
     int getAnimation() const
     {
         return animation;
@@ -105,11 +103,9 @@ private:
 
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
-
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE;
     virtual void paintEvent(QPaintEvent* e) OVERRIDE;
-    
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
@@ -127,15 +123,16 @@ private:
     boost::scoped_ptr<KnobWidgetDnD> _dnd;
 };
 
-class KnobLineEdit : public LineEdit
+class KnobLineEdit
+    : public LineEdit
 {
 public:
-    KnobLineEdit(const KnobGuiPtr& knob,int dimension, QWidget* parent = 0);
+    KnobLineEdit(const KnobGuiPtr& knob, int dimension, QWidget* parent = 0);
 
     virtual ~KnobLineEdit();
-    
+
 private:
-    
+
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
@@ -169,14 +166,12 @@ public:
     }
 
     KnobGuiString(KnobPtr knob,
-                   DockablePanel *container);
+                  DockablePanel *container);
 
     virtual ~KnobGuiString() OVERRIDE;
-    
-    virtual void removeSpecificGui() OVERRIDE FINAL;
 
+    virtual void removeSpecificGui() OVERRIDE FINAL;
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
-    
     virtual std::string getDescriptionLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 public Q_SLOTS:
@@ -206,38 +201,37 @@ public Q_SLOTS:
     ///this is a big hack: the html parser builtin QGraphicsTextItem should do this for us...but it doesn't seem to take care
     ///of the font size.
     static void parseFont(const QString & s, QFont* f, QColor* color);
-    static void findReplaceColorName(QString& text,const QColor& color);
-    static QString makeFontTag(const QString& family,int fontSize,const QColor& color);
-    static QString decorateTextWithFontTag(const QString& family,int fontSize,const QColor& color,const QString& text);
+    static void findReplaceColorName(QString& text, const QColor& color);
+    static QString makeFontTag(const QString& family, int fontSize, const QColor& color);
+    static QString decorateTextWithFontTag(const QString& family, int fontSize, const QColor& color, const QString& text);
     static QString removeNatronHtmlTag(QString text);
-
     static QString getNatronHtmlTagContent(QString text);
-    
+
     /**
      * @brief The goal here is to remove all the tags added automatically by Natron (like font color,size family etc...)
      * so the user does not see them in the user interface. Those tags are  present in the internal value held by the knob.
      **/
-    static QString removeAutoAddedHtmlTags(QString text,bool removeNatronTag = true) ;
-    
+    static QString removeAutoAddedHtmlTags(QString text, bool removeNatronTag = true);
+
 private:
 
     virtual bool shouldAddStretch() const OVERRIDE { return false; }
+
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
     virtual void setEnabled() OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension,AnimationLevelEnum level) OVERRIDE FINAL;
-    virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
-    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(int dimension, AnimationLevelEnum level) OVERRIDE FINAL;
+    virtual void setReadOnly(bool readOnly, int dimension) OVERRIDE FINAL;
+    virtual void reflectExpressionState(int dimension, bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
     virtual void reflectModificationsState() OVERRIDE FINAL;
-    
+
     void mergeFormat(const QTextCharFormat & fmt);
 
     void restoreTextInfoFromString();
-
 
 
     QString addHtmlTags(QString text) const;

@@ -68,23 +68,24 @@ NATRON_NAMESPACE_ENTER;
 
 
 bool
-CurveWidget::isSelectedKey(const boost::shared_ptr<CurveGui>& curve, double time) const
+CurveWidget::isSelectedKey(const boost::shared_ptr<CurveGui>& curve,
+                           double time) const
 {
     SelectedKeys::const_iterator it = _imp->_selectedKeyFrames.find(curve);
-    if (it == _imp->_selectedKeyFrames.end()) {
+
+    if ( it == _imp->_selectedKeyFrames.end() ) {
         return false;
     }
-    
-    for (std::list<KeyPtr>::const_iterator it2 = it->second.begin(); it2!=it->second.end(); ++it2) {
-        if (time >= ((*it2)->key.getTime() - 1e-6) && time <= ((*it2)->key.getTime() + 1e-6)) {
+
+    for (std::list<KeyPtr>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+        if ( ( time >= ( (*it2)->key.getTime() - 1e-6 ) ) && ( time <= ( (*it2)->key.getTime() + 1e-6 ) ) ) {
             return true;
         }
     }
-    
-    
+
+
     return false;
 }
-
 
 void
 CurveWidget::pushUndoCommand(QUndoCommand* cmd)
@@ -93,14 +94,11 @@ CurveWidget::pushUndoCommand(QUndoCommand* cmd)
     _imp->_undoStack->push(cmd);
 }
 
-
 QUndoStack*
 CurveWidget::getUndoStack() const
 {
     return _imp->_undoStack.get();
 }
-
-
 
 ///////////////////////////////////////////////////////////////////
 // CurveWidget
@@ -111,8 +109,8 @@ CurveWidget::CurveWidget(Gui* gui,
                          boost::shared_ptr<TimeLine> timeline,
                          QWidget* parent,
                          const QGLWidget* shareWidget)
-    : QGLWidget(parent,shareWidget)
-    , _imp( new CurveWidgetPrivate(gui,selection, timeline,this) )
+    : QGLWidget(parent, shareWidget)
+    , _imp( new CurveWidgetPrivate(gui, selection, timeline, this) )
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -123,27 +121,24 @@ CurveWidget::CurveWidget(Gui* gui,
     if (timeline) {
         boost::shared_ptr<Project> project = gui->getApp()->getProject();
         assert(project);
-        QObject::connect( timeline.get(),SIGNAL(frameChanged(SequenceTime,int)),this,SLOT(onTimeLineFrameChanged(SequenceTime,int)) );
-        QObject::connect( project.get(),SIGNAL(frameRangeChanged(int,int)),this,SLOT(onTimeLineBoundariesChanged(int,int)) );
+        QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onTimeLineFrameChanged(SequenceTime,int)) );
+        QObject::connect( project.get(), SIGNAL(frameRangeChanged(int,int)), this, SLOT(onTimeLineBoundariesChanged(int,int)) );
         onTimeLineFrameChanged(timeline->currentFrame(), eValueChangedReasonNatronGuiEdited);
-        
-        double left,right;
+
+        double left, right;
         project->getFrameRange(&left, &right);
         onTimeLineBoundariesChanged(left, right);
     }
-    
-    if (parent->objectName() == QString::fromUtf8("CurveEditorSplitter")) {
+
+    if ( parent->objectName() == QString::fromUtf8("CurveEditorSplitter") ) {
         ///if this is the curve widget associated to the CurveEditor
         //        QDesktopWidget* desktop = QApplication::desktop();
         //        _imp->sizeH = desktop->screenGeometry().size();
-        _imp->sizeH = QSize(10000,10000);
-
+        _imp->sizeH = QSize(10000, 10000);
     } else {
         ///a random parametric param curve editor
-        _imp->sizeH =  QSize(400,400);
+        _imp->sizeH =  QSize(400, 400);
     }
-    
-
 }
 
 CurveWidget::~CurveWidget()
@@ -175,8 +170,7 @@ CurveWidget::addCurveAndSetColor(const boost::shared_ptr<CurveGui>& curve)
     _imp->_curves.push_back(curve);
     curve->setColor(_imp->_nextCurveAddedColor);
     _imp->_nextCurveAddedColor.setHsv( _imp->_nextCurveAddedColor.hsvHue() + 60,
-                                       _imp->_nextCurveAddedColor.hsvSaturation(),_imp->_nextCurveAddedColor.value() );
-
+                                       _imp->_nextCurveAddedColor.hsvSaturation(), _imp->_nextCurveAddedColor.value() );
 }
 
 void
@@ -186,10 +180,10 @@ CurveWidget::removeCurve(CurveGui *curve)
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     for (Curves::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
-        if ( it->get() == curve ) {
+        if (it->get() == curve) {
             //remove all its keyframes from selected keys
             SelectedKeys::iterator found = _imp->_selectedKeyFrames.find(*it);
-            if (found != _imp->_selectedKeyFrames.end()) {
+            if ( found != _imp->_selectedKeyFrames.end() ) {
                 _imp->_selectedKeyFrames.erase(found);
             }
 
@@ -208,15 +202,14 @@ CurveWidget::centerOn(const std::vector<boost::shared_ptr<CurveGui> > & curves)
     if ( curves.empty() ) {
         return;
     }
-    
+
     bool doCenter = false;
     RectD ret;
     for (U32 i = 0; i < curves.size(); ++i) {
         const boost::shared_ptr<CurveGui>& c = curves[i];
-        
         KeyFrameSet keys = c->getKeyFrames();
 
-        if (keys.empty()) {
+        if ( keys.empty() ) {
             continue;
         }
         doCenter = true;
@@ -234,7 +227,7 @@ CurveWidget::centerOn(const std::vector<boost::shared_ptr<CurveGui> > & curves)
                 ymax = value;
             }
         }
-        ret.merge(xmin,ymin,xmax,ymax);
+        ret.merge(xmin, ymin, xmax, ymax);
     }
     ret.set_bottom(ret.bottom() - ret.height() / 10);
     ret.set_left(ret.left() - ret.width() / 10);
@@ -272,7 +265,7 @@ CurveWidget::updateSelectionAfterCurveChange(CurveGui* curve)
     ///check whether selected keyframes have changed
     ///we cannot use std::transform here because a keyframe might have disappeared from a curve
     ///hence the number of keyframes selected would decrease
-    
+
     SelectedKeys::iterator found = _imp->_selectedKeyFrames.end();
     for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
         if (it->first.get() == curve) {
@@ -280,36 +273,34 @@ CurveWidget::updateSelectionAfterCurveChange(CurveGui* curve)
             break;
         }
     }
-    if (found == _imp->_selectedKeyFrames.end()) {
+    if ( found == _imp->_selectedKeyFrames.end() ) {
         return;
     }
     KeyFrameSet set = found->first->getKeyFrames();
-    
-    
     std::list<KeyPtr> newSelection;
     for (std::list<KeyPtr>::iterator it2 = found->second.begin(); it2 != found->second.end(); ++it2) {
-        KeyFrameSet::const_iterator found = Curve::findWithTime(set, (*it2)->key.getTime());
-        if (found != set.end()) {
+        KeyFrameSet::const_iterator found = Curve::findWithTime( set, (*it2)->key.getTime() );
+        if ( found != set.end() ) {
             (*it2)->key = *found;
             KeyFrameSet::const_iterator next = found;
             ++next;
             (*it2)->hasNext = next != set.end();
-            if ((*it2)->hasNext) {
+            if ( (*it2)->hasNext ) {
                 (*it2)->nextKey = *next;
             }
             (*it2)->hasPrevious = found != set.begin();
-            if ((*it2)->hasPrevious) {
+            if ( (*it2)->hasPrevious ) {
                 KeyFrameSet::const_iterator prev = found;
                 --prev;
                 (*it2)->prevKey = *prev;
             }
-            
+
             newSelection.push_back(*it2);
         }
     }
-    
+
     found->second = newSelection;
-    
+
     refreshCurveDisplayTangents(curve);
     refreshSelectedKeysBbox();
 }
@@ -339,12 +330,10 @@ CurveWidget::centerOn(double xmin,
 
     _imp->zoomCtx.fit(xmin, xmax, ymin, ymax);
     _imp->zoomOrPannedSinceLastFit = false;
-    
+
 
     refreshDisplayedTangents();
     update();
-
-
 }
 
 /**
@@ -410,13 +399,12 @@ CurveWidget::getBackgroundColour(double &r,
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     appPTR->getCurrentSettings()->getCurveEditorBGColor(&r, &g, &b);
-
 }
 
 void
 CurveWidget::saveOpenGLContext()
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
 
     glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&_imp->savedTexture);
     //glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&_imp->activeTexture);
@@ -442,7 +430,7 @@ CurveWidget::saveOpenGLContext()
 void
 CurveWidget::restoreOpenGLContext()
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
 
     glBindTexture(GL_TEXTURE_2D, _imp->savedTexture);
     //glActiveTexture(_imp->activeTexture);
@@ -478,12 +466,11 @@ CurveWidget::resizeGL(int width,
         std::vector<boost::shared_ptr<CurveGui> > curves;
         getVisibleCurves(&curves);
         if ( curves.empty() ) {
-            centerOn(-10,500,-10,10);
+            centerOn(-10, 500, -10, 10);
         } else {
             centerOn(curves);
         }
     }
-    
 }
 
 void
@@ -501,12 +488,12 @@ CurveWidget::paintGL()
     zoomRight = _imp->zoomCtx.right();
     zoomBottom = _imp->zoomCtx.bottom();
     zoomTop = _imp->zoomCtx.top();
-    
-    double bgR,bgG,bgB;
+
+    double bgR, bgG, bgB;
     appPTR->getCurrentSettings()->getCurveEditorBGColor(&bgR, &bgG, &bgB);
-    
+
     if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
-        glClearColor(bgR,bgG,bgB,1.);
+        glClearColor(bgR, bgG, bgB, 1.);
         glClear(GL_COLOR_BUFFER_BIT);
         glCheckErrorIgnoreOSXBug();
 
@@ -522,7 +509,7 @@ CurveWidget::paintGL()
         glLoadIdentity();
         glCheckError();
 
-        glClearColor(bgR,bgG,bgB,1.);
+        glClearColor(bgR, bgG, bgB, 1.);
         glClear(GL_COLOR_BUFFER_BIT);
         glCheckErrorIgnoreOSXBug();
 
@@ -543,7 +530,7 @@ CurveWidget::paintGL()
         }
     } // GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
     glCheckError();
-}
+} // CurveWidget::paintGL
 
 void
 CurveWidget::renderText(double x,
@@ -566,11 +553,11 @@ CurveWidget::renderText(double x,
     double left = _imp->zoomCtx.left();
     double top =  _imp->zoomCtx.top();
     double right = _imp->zoomCtx.right();
-    if (w <= 0 || h <= 0 || right <= left || top <= bottom) {
+    if ( (w <= 0) || (h <= 0) || (right <= left) || (top <= bottom) ) {
         return;
     }
-    double scalex = (right-left) / w;
-    double scaley = (top-bottom) / h;
+    double scalex = (right - left) / w;
+    double scaley = (top - bottom) / h;
     _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font);
     glCheckError();
 }
@@ -580,43 +567,41 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    
+
     ///If the click is on a curve but not nearby a keyframe, add a keyframe
-    
-    
+
+
     boost::shared_ptr<CurveGui> selectedKeyCurve;
-    KeyFrame selectedKey,selectedKeyPrev,selectedKeyNext;
-    bool selectedKeyHasPrev,selectedKeyHasNext;
+    KeyFrame selectedKey, selectedKeyPrev, selectedKeyNext;
+    bool selectedKeyHasPrev, selectedKeyHasNext;
     bool hasSelectedKey = _imp->isNearbyKeyFrame(e->pos(), &selectedKeyCurve, &selectedKey, &selectedKeyHasPrev, &selectedKeyPrev,
                                                  &selectedKeyHasNext, &selectedKeyNext);
-    std::pair<MoveTangentCommand::SelectedTangentEnum,KeyPtr > selectedTan = _imp->isNearbyTangent( e->pos() );
+    std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr > selectedTan = _imp->isNearbyTangent( e->pos() );
     if (hasSelectedKey || selectedTan.second) {
         return;
     }
-    
-    
-    KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(selectedKeyCurve.get());
+
+
+    KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( selectedKeyCurve.get() );
     if (isKnobCurve) {
         KnobGuiPtr knobUI = isKnobCurve->getKnobGui();
         if (knobUI) {
-            
             int curveDim = isKnobCurve->getDimension();
             KnobPtr internalKnob = knobUI->getKnob();
-            if (internalKnob && (!internalKnob->isEnabled(curveDim) || internalKnob->isSlave(curveDim))) {
+            if ( internalKnob && ( !internalKnob->isEnabled(curveDim) || internalKnob->isSlave(curveDim) ) ) {
                 return;
             }
         }
     }
 
     EditKeyFrameDialog::EditModeEnum mode = EditKeyFrameDialog::eEditModeKeyframePosition;
-    
     KeyPtr selectedText;
     ///We're nearby a selected keyframe's text
-    KeyPtr keyText = _imp->isNearbyKeyFrameText(e->pos());
+    KeyPtr keyText = _imp->isNearbyKeyFrameText( e->pos() );
     if (keyText) {
         selectedText = keyText;
     } else {
-        std::pair<MoveTangentCommand::SelectedTangentEnum,KeyPtr> tangentText = _imp->isNearbySelectedTangentText(e->pos());
+        std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr> tangentText = _imp->isNearbySelectedTangentText( e->pos() );
         if (tangentText.second) {
             if (tangentText.first == MoveTangentCommand::eSelectedTangentLeft) {
                 mode = EditKeyFrameDialog::eEditModeLeftDerivative;
@@ -626,44 +611,42 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
             selectedText = tangentText.second;
         }
     }
-    
 
-    
-    
+
     if (selectedText) {
-        EditKeyFrameDialog* dialog = new EditKeyFrameDialog(mode,this,selectedText,this);
-        int  dialogW = dialog->sizeHint().width();
-        
+        EditKeyFrameDialog* dialog = new EditKeyFrameDialog(mode, this, selectedText, this);
+        int dialogW = dialog->sizeHint().width();
         QDesktopWidget* desktop = QApplication::desktop();
         QRect screen = desktop->screenGeometry();
-        
         QPoint gP = e->globalPos();
-        if (gP.x() > (screen.width() - dialogW)) {
+        if ( gP.x() > (screen.width() - dialogW) ) {
             gP.rx() -= dialogW;
         }
-        
+
         dialog->move(gP);
-        
+
         ///This allows us to have a non-modal dialog: when the user clicks outside of the dialog,
         ///it closes it.
-        QObject::connect( dialog,SIGNAL(accepted()),this,SLOT(onEditKeyFrameDialogFinished()) );
-        QObject::connect( dialog,SIGNAL(rejected()),this,SLOT(onEditKeyFrameDialogFinished()) );
+        QObject::connect( dialog, SIGNAL(accepted()), this, SLOT(onEditKeyFrameDialogFinished()) );
+        QObject::connect( dialog, SIGNAL(rejected()), this, SLOT(onEditKeyFrameDialogFinished()) );
         dialog->show();
 
         e->accept();
+
         return;
     }
-    
+
     ///We're nearby a curve
-    double xCurve,yCurve;
+    double xCurve, yCurve;
     Curves::const_iterator foundCurveNearby = _imp->isNearbyCurve( e->pos(), &xCurve, &yCurve );
     if ( foundCurveNearby != _imp->_curves.end() ) {
-        std::pair<double,double> yRange = (*foundCurveNearby)->getCurveYRange();
-        if (yCurve < yRange.first || yCurve > yRange.second) {
+        std::pair<double, double> yRange = (*foundCurveNearby)->getCurveYRange();
+        if ( (yCurve < yRange.first) || (yCurve > yRange.second) ) {
             QString err =  tr(" Out of curve y range ") +
-                    QString::fromUtf8("[%1 - %2]").arg(yRange.first).arg(yRange.second) ;
-            Dialogs::warningDialog("", err.toStdString());
+                          QString::fromUtf8("[%1 - %2]").arg(yRange.first).arg(yRange.second);
+            Dialogs::warningDialog( "", err.toStdString() );
             e->accept();
+
             return;
         }
         std::vector<KeyFrame> keys(1);
@@ -671,29 +654,27 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
         if (!curve) {
             return;
         }
-        if (curve->areKeyFramesTimeClampedToIntegers()) {
+        if ( curve->areKeyFramesTimeClampedToIntegers() ) {
             xCurve = std::floor(xCurve + 0.5);
-        } else if (curve->areKeyFramesValuesClampedToBooleans()) {
-            xCurve = double((bool)xCurve);
+        } else if ( curve->areKeyFramesValuesClampedToBooleans() ) {
+            xCurve = double( (bool)xCurve );
         }
-        keys[0] = KeyFrame(xCurve,yCurve);
-        
+        keys[0] = KeyFrame(xCurve, yCurve);
 
-        pushUndoCommand(new AddKeysCommand(this,*foundCurveNearby,keys));
-        
+
+        pushUndoCommand( new AddKeysCommand(this, *foundCurveNearby, keys) );
     }
-}
+} // CurveWidget::mouseDoubleClickEvent
 
 void
 CurveWidget::onEditKeyFrameDialogFinished()
 {
     EditKeyFrameDialog* dialog = qobject_cast<EditKeyFrameDialog*>( sender() );
-    
+
     if (dialog) {
         //QDialog::DialogCode ret = (QDialog::DialogCode)dialog->result();
         dialog->deleteLater();
     }
-
 }
 
 //
@@ -710,7 +691,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
     if ( parentWidget() ) {
         QWidget* parent  = parentWidget()->parentWidget();
         if (parent) {
-            if (parent->objectName() == QString::fromUtf8("CurveEditor")) {
+            if ( parent->objectName() == QString::fromUtf8("CurveEditor") ) {
                 ce = dynamic_cast<CurveEditor*>(parent);
             }
         }
@@ -718,7 +699,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
     if (ce) {
         ce->onInputEventCalled();
     }
-    
+
     setFocus();
     ////
     // right button: popup menu
@@ -731,43 +712,43 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
 
         // no need to update()
         e->accept();
+
         return;
     }
-    
+
     ////
     // is the click near a curve?
-    double xCurve,yCurve;
-    Curves::const_iterator foundCurveNearby = _imp->isNearbyCurve( e->pos(),&xCurve, &yCurve );
-    if (foundCurveNearby != _imp->_curves.end()) {
-        
-        if (modCASIsControlAlt(e)) {
-            
+    double xCurve, yCurve;
+    Curves::const_iterator foundCurveNearby = _imp->isNearbyCurve( e->pos(), &xCurve, &yCurve );
+    if ( foundCurveNearby != _imp->_curves.end() ) {
+        if ( modCASIsControlAlt(e) ) {
             _imp->selectCurve(*foundCurveNearby);
 
-            std::pair<double,double> yRange = (*foundCurveNearby)->getCurveYRange();
-            if (yCurve < yRange.first || yCurve > yRange.second) {
+            std::pair<double, double> yRange = (*foundCurveNearby)->getCurveYRange();
+            if ( (yCurve < yRange.first) || (yCurve > yRange.second) ) {
                 QString err =  tr(" Out of curve y range ") +
-                        QString::fromUtf8("[%1 - %2]").arg(yRange.first).arg(yRange.second) ;
-                Dialogs::warningDialog("", err.toStdString());
+                              QString::fromUtf8("[%1 - %2]").arg(yRange.first).arg(yRange.second);
+                Dialogs::warningDialog( "", err.toStdString() );
                 e->accept();
+
                 return;
             }
             std::vector<KeyFrame> keys(1);
-            keys[0] = KeyFrame(xCurve,yCurve);
-            pushUndoCommand(new AddKeysCommand(this,*foundCurveNearby,keys));
-            
+            keys[0] = KeyFrame(xCurve, yCurve);
+            pushUndoCommand( new AddKeysCommand(this, *foundCurveNearby, keys) );
+
             _imp->_drawSelectedKeyFramesBbox = false;
             _imp->_mustSetDragOrientation = true;
             _imp->_state = eEventStateDraggingKeys;
             setCursor( QCursor(Qt::CrossCursor) );
-            
+
             _imp->_selectedKeyFrames.clear();
-            
+
             KeyFrameSet keySet = (*foundCurveNearby)->getInternalCurve()->getKeyFrames_mt_safe();
             KeyFrameSet::const_iterator foundKey = Curve::findWithTime(keySet, xCurve);
-            assert(foundKey != keySet.end());
-            
-            KeyFrame prevKey,nextKey;
+            assert( foundKey != keySet.end() );
+
+            KeyFrame prevKey, nextKey;
             bool hasPrev = foundKey != keySet.begin();
             if (hasPrev) {
                 KeyFrameSet::const_iterator prevIt = foundKey;
@@ -780,22 +761,22 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
             if (hasNext) {
                 nextKey = *next;
             }
-            KeyPtr selected(new SelectedKey(*foundCurveNearby,keys[0], hasPrev, prevKey, hasNext, nextKey));
-            
+            KeyPtr selected( new SelectedKey(*foundCurveNearby, keys[0], hasPrev, prevKey, hasNext, nextKey) );
+
             _imp->refreshKeyTangents(selected);
-            
+
             //insert it into the _selectedKeyFrames
             _imp->insertSelectedKeyFrameConditionnaly(selected);
-            
+
             _imp->_keyDragLastMovement.rx() = 0.;
             _imp->_keyDragLastMovement.ry() = 0.;
             _imp->_dragStartPoint = e->pos();
             _imp->_lastMousePos = e->pos();
-            
+
             return;
         }
     }
-    
+
     ////
     // middle button: scroll view
     if ( buttonDownIsMiddle(e) ) {
@@ -806,38 +787,38 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
 
         // no need to update()
         return;
-    } else if (((e->buttons() & Qt::MiddleButton) &&
-                (buttonMetaAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton))) ||
-               ((e->buttons() & Qt::LeftButton) &&
-                (buttonMetaAlt(e) == (Qt::AltModifier|Qt::MetaModifier)))) {
+    } else if ( ( (e->buttons() & Qt::MiddleButton) &&
+                  ( ( buttonMetaAlt(e) == Qt::AltModifier) || (e->buttons() & Qt::LeftButton) ) ) ||
+                ( (e->buttons() & Qt::LeftButton) &&
+                  ( buttonMetaAlt(e) == (Qt::AltModifier | Qt::MetaModifier) ) ) ) {
         // Alt + middle or Left + middle or Crtl + Alt + Left = zoom
         _imp->_state = eEventStateZooming;
         _imp->_lastMousePos = e->pos();
         _imp->_dragStartPoint = e->pos();
+
         return;
     }
-    
+
     // is the click near the multiple-keyframes selection box center?
     if (_imp->_drawSelectedKeyFramesBbox) {
-        
         bool caughtBbox = true;
-        if (_imp->isNearbySelectedKeyFramesCrossWidget(e->pos())) {
+        if ( _imp->isNearbySelectedKeyFramesCrossWidget( e->pos() ) ) {
             _imp->_state = eEventStateDraggingKeys;
-        } else if (_imp->isNearbyBboxBtmLeft(e->pos())) {
+        } else if ( _imp->isNearbyBboxBtmLeft( e->pos() ) ) {
             _imp->_state = eEventStateDraggingBtmLeftBbox;
-        } else if (_imp->isNearbyBboxMidLeft(e->pos())) {
+        } else if ( _imp->isNearbyBboxMidLeft( e->pos() ) ) {
             _imp->_state = eEventStateDraggingMidLeftBbox;
-        } else if (_imp->isNearbyBboxTopLeft(e->pos())) {
+        } else if ( _imp->isNearbyBboxTopLeft( e->pos() ) ) {
             _imp->_state = eEventStateDraggingTopLeftBbox;
-        } else if (_imp->isNearbyBboxMidTop(e->pos())) {
+        } else if ( _imp->isNearbyBboxMidTop( e->pos() ) ) {
             _imp->_state = eEventStateDraggingMidTopBbox;
-        } else if (_imp->isNearbyBboxTopRight(e->pos())) {
+        } else if ( _imp->isNearbyBboxTopRight( e->pos() ) ) {
             _imp->_state = eEventStateDraggingTopRightBbox;
-        } else if (_imp->isNearbyBboxMidRight(e->pos())) {
+        } else if ( _imp->isNearbyBboxMidRight( e->pos() ) ) {
             _imp->_state = eEventStateDraggingMidRightBbox;
-        } else if (_imp->isNearbyBboxBtmRight(e->pos())) {
+        } else if ( _imp->isNearbyBboxBtmRight( e->pos() ) ) {
             _imp->_state = eEventStateDraggingBtmRightBbox;
-        } else if (_imp->isNearbyBboxMidBtm(e->pos())) {
+        } else if ( _imp->isNearbyBboxMidBtm( e->pos() ) ) {
             _imp->_state = eEventStateDraggingMidBtmBbox;
         } else {
             caughtBbox = false;
@@ -848,6 +829,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
             _imp->_keyDragLastMovement.ry() = 0.;
             _imp->_dragStartPoint = e->pos();
             _imp->_lastMousePos = e->pos();
+
             //no need to update()
             return;
         }
@@ -855,8 +837,8 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
     ////
     // is the click near a keyframe manipulator?
     boost::shared_ptr<CurveGui> selectedKeyCurve;
-    KeyFrame selectedKey,selectedKeyPrev,selectedKeyNext;
-    bool selectedKeyHasPrev,selectedKeyHasNext;
+    KeyFrame selectedKey, selectedKeyPrev, selectedKeyNext;
+    bool selectedKeyHasPrev, selectedKeyHasNext;
     bool hasSelectedKey = _imp->isNearbyKeyFrame(e->pos(), &selectedKeyCurve, &selectedKey, &selectedKeyHasPrev, &selectedKeyPrev,
                                                  &selectedKeyHasNext, &selectedKeyNext);
     if (hasSelectedKey) {
@@ -868,8 +850,8 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         if ( !modCASIsControl(e) ) {
             _imp->_selectedKeyFrames.clear();
         }
-        KeyPtr selected (new SelectedKey(selectedKeyCurve,selectedKey, selectedKeyHasPrev, selectedKeyPrev,
-                                          selectedKeyHasNext, selectedKeyNext));
+        KeyPtr selected ( new SelectedKey(selectedKeyCurve, selectedKey, selectedKeyHasPrev, selectedKeyPrev,
+                                          selectedKeyHasNext, selectedKeyNext) );
 
         _imp->refreshKeyTangents(selected);
 
@@ -883,13 +865,11 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         update(); // the keyframe changes color and the derivatives must be drawn
         return;
     }
-    
 
-    
-    
+
     ////
     // is the click near a derivative manipulator?
-    std::pair<MoveTangentCommand::SelectedTangentEnum,KeyPtr > selectedTan = _imp->isNearbyTangent( e->pos() );
+    std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr > selectedTan = _imp->isNearbyTangent( e->pos() );
 
     //select the derivative only if it is not a constant keyframe
     if ( selectedTan.second && (selectedTan.second->key.getInterpolation() != eKeyframeTypeConstant) ) {
@@ -902,18 +882,18 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
 
         return;
     }
-    
-    KeyPtr nearbyKeyText = _imp->isNearbyKeyFrameText(e->pos());
+
+    KeyPtr nearbyKeyText = _imp->isNearbyKeyFrameText( e->pos() );
     if (nearbyKeyText) {
         return;
     }
-    
-    std::pair<MoveTangentCommand::SelectedTangentEnum,KeyPtr> tangentText = _imp->isNearbySelectedTangentText(e->pos());
+
+    std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr> tangentText = _imp->isNearbySelectedTangentText( e->pos() );
     if (tangentText.second) {
         return;
     }
-    
-    
+
+
     ////
     // is the click near the vertical current time marker?
     if ( _imp->isNearbyTimelineBtmPoly( e->pos() ) || _imp->isNearbyTimelineTopPoly( e->pos() ) ) {
@@ -921,6 +901,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         _imp->_state = eEventStateDraggingTimeline;
         _imp->_lastMousePos = e->pos();
         // no need to set _imp->_dragStartPoint
+
         // no need to update()
         return;
     }
@@ -929,7 +910,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
     // like centering on it on the viewport or pasting previously copied keyframes.
     // This is kind of the last resort action before the default behaviour (which is to draw
     // a selection rectangle), because we'd rather select a keyframe than the nearby curve
-    if (foundCurveNearby != _imp->_curves.end()) {
+    if ( foundCurveNearby != _imp->_curves.end() ) {
         _imp->selectCurve(*foundCurveNearby);
     }
 
@@ -953,51 +934,48 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
 
     if (_imp->_evaluateOnPenUp) {
         _imp->_evaluateOnPenUp = false;
-        
-        if (_imp->_state == eEventStateDraggingKeys ||
-            _imp->_state == eEventStateDraggingBtmLeftBbox ||
-            _imp->_state == eEventStateDraggingMidBtmBbox ||
-            _imp->_state == eEventStateDraggingBtmRightBbox ||
-            _imp->_state == eEventStateDraggingMidRightBbox ||
-            _imp->_state == eEventStateDraggingTopRightBbox ||
-            _imp->_state == eEventStateDraggingMidTopBbox ||
-            _imp->_state == eEventStateDraggingTopLeftBbox ||
-            _imp->_state == eEventStateDraggingMidLeftBbox) {
-            
+
+        if ( (_imp->_state == eEventStateDraggingKeys) ||
+             ( _imp->_state == eEventStateDraggingBtmLeftBbox) ||
+             ( _imp->_state == eEventStateDraggingMidBtmBbox) ||
+             ( _imp->_state == eEventStateDraggingBtmRightBbox) ||
+             ( _imp->_state == eEventStateDraggingMidRightBbox) ||
+             ( _imp->_state == eEventStateDraggingTopRightBbox) ||
+             ( _imp->_state == eEventStateDraggingMidTopBbox) ||
+             ( _imp->_state == eEventStateDraggingTopLeftBbox) ||
+             ( _imp->_state == eEventStateDraggingMidLeftBbox) ) {
             if (_imp->_gui) {
                 _imp->_gui->setDraftRenderEnabled(false);
             }
-            
-            std::map<KnobHolder*,bool> toEvaluate;
+
+            std::map<KnobHolder*, bool> toEvaluate;
             std::list<boost::shared_ptr<RotoContext> > rotoToEvaluate;
             for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
-                KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->first.get());
-                BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(it->first.get());
+                KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( it->first.get() );
+                BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>( it->first.get() );
                 if (isKnobCurve) {
-                    
-                    if (!isKnobCurve->getKnobGui()) {
+                    if ( !isKnobCurve->getKnobGui() ) {
                         boost::shared_ptr<RotoContext> roto = isKnobCurve->getRotoContext();
                         assert(roto);
                         rotoToEvaluate.push_back(roto);
                     } else {
-                        
                         KnobPtr knob = isKnobCurve->getInternalKnob();
                         assert(knob);
                         KnobHolder* holder = knob->getHolder();
                         assert(holder);
-                        std::map<KnobHolder*,bool>::iterator found = toEvaluate.find(holder);
+                        std::map<KnobHolder*, bool>::iterator found = toEvaluate.find(holder);
                         bool evaluateOnChange = knob->getEvaluateOnChange();
                         if ( ( found != toEvaluate.end() ) && !found->second && evaluateOnChange ) {
                             found->second = true;
                         } else if ( found == toEvaluate.end() ) {
-                            toEvaluate.insert( std::make_pair(holder,evaluateOnChange) );
+                            toEvaluate.insert( std::make_pair(holder, evaluateOnChange) );
                         }
                     }
                 } else if (isBezierCurve) {
-                    rotoToEvaluate.push_back(isBezierCurve->getRotoContext());
+                    rotoToEvaluate.push_back( isBezierCurve->getRotoContext() );
                 }
             }
-            for (std::map<KnobHolder*,bool>::iterator it = toEvaluate.begin(); it != toEvaluate.end(); ++it) {
+            for (std::map<KnobHolder*, bool>::iterator it = toEvaluate.begin(); it != toEvaluate.end(); ++it) {
                 it->first->incrHashAndEvaluate(it->second, false);
             }
             for (std::list<boost::shared_ptr<RotoContext> >::iterator it = rotoToEvaluate.begin(); it != rotoToEvaluate.end(); ++it) {
@@ -1008,17 +986,17 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
                 _imp->_gui->setDraftRenderEnabled(false);
             }
 
-            KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(_imp->_selectedDerivative.second->curve.get());
-            BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(_imp->_selectedDerivative.second->curve.get());
+            KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( _imp->_selectedDerivative.second->curve.get() );
+            BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>( _imp->_selectedDerivative.second->curve.get() );
             if (isKnobCurve) {
-                if (!isKnobCurve->getKnobGui()) {
+                if ( !isKnobCurve->getKnobGui() ) {
                     boost::shared_ptr<RotoContext> roto = isKnobCurve->getRotoContext();
                     assert(roto);
                     roto->evaluateChange();
                 } else {
                     KnobPtr toEvaluate = isKnobCurve->getInternalKnob();
                     assert(toEvaluate);
-                    toEvaluate->getHolder()->incrHashAndEvaluate(true,false);
+                    toEvaluate->getHolder()->incrHashAndEvaluate(true, false);
                 }
             } else if (isBezierCurve) {
                 isBezierCurve->getRotoContext()->evaluateChange();
@@ -1028,13 +1006,13 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
 
     EventStateEnum prevState = _imp->_state;
     _imp->_state = eEventStateNone;
-    _imp->_selectionRectangle.setBottomRight( QPointF(0,0) );
+    _imp->_selectionRectangle.setBottomRight( QPointF(0, 0) );
     _imp->_selectionRectangle.setTopLeft( _imp->_selectionRectangle.bottomRight() );
-    if (!_imp->_selectedKeyFrames.empty() && (_imp->_selectedKeyFrames.size() > 1 || _imp->_selectedKeyFrames.begin()->second.size() > 1)) {
+    if ( !_imp->_selectedKeyFrames.empty() && ( (_imp->_selectedKeyFrames.size() > 1) || (_imp->_selectedKeyFrames.begin()->second.size() > 1) ) ) {
         _imp->_drawSelectedKeyFramesBbox = true;
     }
     if (prevState == eEventStateDraggingTimeline) {
-        if (_imp->_gui->isDraftRenderEnabled()) {
+        if ( _imp->_gui->isDraftRenderEnabled() ) {
             _imp->_gui->setDraftRenderEnabled(false);
             bool autoProxyEnabled = appPTR->getCurrentSettings()->isAutoProxyEnabled();
             if (autoProxyEnabled) {
@@ -1042,11 +1020,11 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
             }
         }
     }
-    
+
     if (prevState == eEventStateSelecting) { // should other cases be considered?
         update();
     }
-}
+} // CurveWidget::mouseReleaseEvent
 
 void
 CurveWidget::mouseMoveEvent(QMouseEvent* e)
@@ -1059,17 +1037,17 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
     //set cursor depending on the situation
 
     //find out if there is a nearby  derivative handle
-    std::pair<MoveTangentCommand::SelectedTangentEnum,KeyPtr > selectedTan = _imp->isNearbyTangent( e->pos() );
+    std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr > selectedTan = _imp->isNearbyTangent( e->pos() );
 
     //if the selected keyframes rectangle is drawn and we're nearby the cross
     if ( _imp->_drawSelectedKeyFramesBbox && _imp->isNearbySelectedKeyFramesCrossWidget( e->pos() ) ) {
         setCursor( QCursor(Qt::SizeAllCursor) );
     } else {
         //if there's a keyframe handle nearby
-        
+
         boost::shared_ptr<CurveGui> selectedKeyCurve;
-        KeyFrame selectedKey,selectedKeyPrev,selectedKeyNext;
-        bool selectedKeyHasPrev,selectedKeyHasNext;
+        KeyFrame selectedKey, selectedKeyPrev, selectedKeyNext;
+        bool selectedKeyHasPrev, selectedKeyHasNext;
         bool hasSelectedKey = _imp->isNearbyKeyFrame(e->pos(), &selectedKeyCurve, &selectedKey, &selectedKeyHasPrev, &selectedKeyPrev,
                                                      &selectedKeyHasNext, &selectedKeyNext);
 
@@ -1077,18 +1055,14 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
         if (hasSelectedKey || selectedTan.second) {
             setCursor( QCursor(Qt::CrossCursor) );
         } else {
-            
-            KeyPtr keyframeText = _imp->isNearbyKeyFrameText(e->pos());
+            KeyPtr keyframeText = _imp->isNearbyKeyFrameText( e->pos() );
             if (keyframeText) {
-                setCursor( QCursor(Qt::IBeamCursor));
+                setCursor( QCursor(Qt::IBeamCursor) );
             } else {
-                
-                
-                std::pair<MoveTangentCommand::SelectedTangentEnum,KeyPtr> tangentText = _imp->isNearbySelectedTangentText(e->pos());
+                std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr> tangentText = _imp->isNearbySelectedTangentText( e->pos() );
                 if (tangentText.second) {
-                    setCursor( QCursor(Qt::IBeamCursor));
+                    setCursor( QCursor(Qt::IBeamCursor) );
                 } else {
-                    
                     //if we're nearby a timeline polygon, set cursor to horizontal displacement
                     if ( _imp->isNearbyTimelineBtmPoly( e->pos() ) || _imp->isNearbyTimelineTopPoly( e->pos() ) ) {
                         setCursor( QCursor(Qt::SizeHorCursor) );
@@ -1104,11 +1078,12 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
     if (_imp->_state == eEventStateNone) {
         // nothing else to do
         QGLWidget::mouseMoveEvent(e);
+
         return;
     }
 
     bool mustUpdate = true;
-    
+
     // after this point , only mouse dragging situations are handled
     assert(_imp->_state != eEventStateNone);
 
@@ -1127,133 +1102,130 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
         }
     }
 
-    QPointF newClick_opengl = _imp->zoomCtx.toZoomCoordinates( e->x(),e->y() );
-    QPointF oldClick_opengl = _imp->zoomCtx.toZoomCoordinates( _imp->_lastMousePos.x(),_imp->_lastMousePos.y() );
+    QPointF newClick_opengl = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
+    QPointF oldClick_opengl = _imp->zoomCtx.toZoomCoordinates( _imp->_lastMousePos.x(), _imp->_lastMousePos.y() );
     double dx = ( oldClick_opengl.x() - newClick_opengl.x() );
     double dy = ( oldClick_opengl.y() - newClick_opengl.y() );
     switch (_imp->_state) {
-        case eEventStateDraggingView:
-            _imp->zoomOrPannedSinceLastFit = true;
-            _imp->zoomCtx.translate(dx, dy);
-            
-            // Synchronize the dope sheet editor and opened viewers
-            if (_imp->_gui->isTripleSyncEnabled()) {
-                _imp->updateDopeSheetViewFrameRange();
-                _imp->_gui->centerOpenedViewersOn(_imp->zoomCtx.left(), _imp->zoomCtx.right());
-            }
-            break;
-            
-        case eEventStateDraggingKeys:
-            if (!_imp->_mustSetDragOrientation) {
-                if ( !_imp->_selectedKeyFrames.empty() ) {
-                    if (_imp->_gui) {
-                        _imp->_gui->setDraftRenderEnabled(true);
-                    }
-                    _imp->moveSelectedKeyFrames(oldClick_opengl,newClick_opengl);
-                }
-            }
-            break;
-        case eEventStateDraggingBtmLeftBbox:
-        case eEventStateDraggingMidBtmBbox:
-        case eEventStateDraggingBtmRightBbox:
-        case eEventStateDraggingMidRightBbox:
-        case eEventStateDraggingTopRightBbox:
-        case eEventStateDraggingMidTopBbox:
-        case eEventStateDraggingTopLeftBbox:
-        case eEventStateDraggingMidLeftBbox:
+    case eEventStateDraggingView:
+        _imp->zoomOrPannedSinceLastFit = true;
+        _imp->zoomCtx.translate(dx, dy);
+
+        // Synchronize the dope sheet editor and opened viewers
+        if ( _imp->_gui->isTripleSyncEnabled() ) {
+            _imp->updateDopeSheetViewFrameRange();
+            _imp->_gui->centerOpenedViewersOn( _imp->zoomCtx.left(), _imp->zoomCtx.right() );
+        }
+        break;
+
+    case eEventStateDraggingKeys:
+        if (!_imp->_mustSetDragOrientation) {
             if ( !_imp->_selectedKeyFrames.empty() ) {
                 if (_imp->_gui) {
                     _imp->_gui->setDraftRenderEnabled(true);
                 }
-                _imp->transformSelectedKeyFrames(oldClick_opengl, newClick_opengl, modCASIsShift(e));
+                _imp->moveSelectedKeyFrames(oldClick_opengl, newClick_opengl);
             }
-            break;
-        case eEventStateSelecting:
-            _imp->refreshSelectionRectangle( (double)e->x(),(double)e->y() );
-            break;
-            
-        case eEventStateDraggingTangent:
+        }
+        break;
+    case eEventStateDraggingBtmLeftBbox:
+    case eEventStateDraggingMidBtmBbox:
+    case eEventStateDraggingBtmRightBbox:
+    case eEventStateDraggingMidRightBbox:
+    case eEventStateDraggingTopRightBbox:
+    case eEventStateDraggingMidTopBbox:
+    case eEventStateDraggingTopLeftBbox:
+    case eEventStateDraggingMidLeftBbox:
+        if ( !_imp->_selectedKeyFrames.empty() ) {
             if (_imp->_gui) {
                 _imp->_gui->setDraftRenderEnabled(true);
             }
-            _imp->moveSelectedTangent(newClick_opengl);
-            break;
-            
-        case eEventStateDraggingTimeline:
+            _imp->transformSelectedKeyFrames( oldClick_opengl, newClick_opengl, modCASIsShift(e) );
+        }
+        break;
+    case eEventStateSelecting:
+        _imp->refreshSelectionRectangle( (double)e->x(), (double)e->y() );
+        break;
+
+    case eEventStateDraggingTangent:
+        if (_imp->_gui) {
             _imp->_gui->setDraftRenderEnabled(true);
-            _imp->_gui->getApp()->setLastViewerUsingTimeline(NodePtr());
-            _imp->_timeline->seekFrame( (SequenceTime)newClick_opengl.x(), false, 0,  eTimelineChangeReasonCurveEditorSeek );
-            break;
-        case eEventStateZooming: {
-            
-            _imp->zoomOrPannedSinceLastFit = true;
-            
-            int deltaX = 2 * (e->x() - _imp->_lastMousePos.x());
-            int deltaY = - 2 * (e->y() - _imp->_lastMousePos.y());
-            // Wheel: zoom values and time, keep point under mouse
-            
-            
-            const double zoomFactor_min = 0.0001;
-            const double zoomFactor_max = 10000.;
-            const double par_min = 0.0001;
-            const double par_max = 10000.;
-            double zoomFactor;
-            double scaleFactorX = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, deltaX);
-            double scaleFactorY = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, deltaY);
-            QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( _imp->_dragStartPoint.x(), _imp->_dragStartPoint.y() );
-            
-            
-            // Alt + Shift + Wheel: zoom values only, keep point under mouse
-            zoomFactor = _imp->zoomCtx.factor() * scaleFactorY;
-            
-            if (zoomFactor <= zoomFactor_min) {
-                zoomFactor = zoomFactor_min;
-                scaleFactorY = zoomFactor / _imp->zoomCtx.factor();
-            } else if (zoomFactor > zoomFactor_max) {
-                zoomFactor = zoomFactor_max;
-                scaleFactorY = zoomFactor / _imp->zoomCtx.factor();
-            }
-            
-            double par = _imp->zoomCtx.aspectRatio() / scaleFactorY;
-            if (par <= par_min) {
-                par = par_min;
-                scaleFactorY = par / _imp->zoomCtx.aspectRatio();
-            } else if (par > par_max) {
-                par = par_max;
-                scaleFactorY = par / _imp->zoomCtx.factor();
-            }
-            _imp->zoomCtx.zoomy(zoomCenter.x(), zoomCenter.y(), scaleFactorY);
-            
-            // Alt + Wheel: zoom time only, keep point under mouse
-            par = _imp->zoomCtx.aspectRatio() * scaleFactorX;
-            if (par <= par_min) {
-                par = par_min;
-                scaleFactorX = par / _imp->zoomCtx.aspectRatio();
-            } else if (par > par_max) {
-                par = par_max;
-                scaleFactorX = par / _imp->zoomCtx.factor();
-            }
-            _imp->zoomCtx.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactorX);
-            
-            if (_imp->_drawSelectedKeyFramesBbox) {
-                refreshSelectedKeysBbox();
-            }
-            
-            // Synchronize the dope sheet editor and opened viewers
-            if (_imp->_gui->isTripleSyncEnabled()) {
-                _imp->updateDopeSheetViewFrameRange();
-                _imp->_gui->centerOpenedViewersOn(_imp->zoomCtx.left(), _imp->zoomCtx.right());
-            }
-            refreshDisplayedTangents();
-            
-        } break;
-        case eEventStateNone:
-            assert(0);
-            break;
+        }
+        _imp->moveSelectedTangent(newClick_opengl);
+        break;
+
+    case eEventStateDraggingTimeline:
+        _imp->_gui->setDraftRenderEnabled(true);
+        _imp->_gui->getApp()->setLastViewerUsingTimeline( NodePtr() );
+        _imp->_timeline->seekFrame( (SequenceTime)newClick_opengl.x(), false, 0,  eTimelineChangeReasonCurveEditorSeek );
+        break;
+    case eEventStateZooming: {
+        _imp->zoomOrPannedSinceLastFit = true;
+
+        int deltaX = 2 * ( e->x() - _imp->_lastMousePos.x() );
+        int deltaY = -2 * ( e->y() - _imp->_lastMousePos.y() );
+        // Wheel: zoom values and time, keep point under mouse
+        const double zoomFactor_min = 0.0001;
+        const double zoomFactor_max = 10000.;
+        const double par_min = 0.0001;
+        const double par_max = 10000.;
+        double zoomFactor;
+        double scaleFactorX = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, deltaX);
+        double scaleFactorY = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, deltaY);
+        QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( _imp->_dragStartPoint.x(), _imp->_dragStartPoint.y() );
+
+
+        // Alt + Shift + Wheel: zoom values only, keep point under mouse
+        zoomFactor = _imp->zoomCtx.factor() * scaleFactorY;
+
+        if (zoomFactor <= zoomFactor_min) {
+            zoomFactor = zoomFactor_min;
+            scaleFactorY = zoomFactor / _imp->zoomCtx.factor();
+        } else if (zoomFactor > zoomFactor_max) {
+            zoomFactor = zoomFactor_max;
+            scaleFactorY = zoomFactor / _imp->zoomCtx.factor();
+        }
+
+        double par = _imp->zoomCtx.aspectRatio() / scaleFactorY;
+        if (par <= par_min) {
+            par = par_min;
+            scaleFactorY = par / _imp->zoomCtx.aspectRatio();
+        } else if (par > par_max) {
+            par = par_max;
+            scaleFactorY = par / _imp->zoomCtx.factor();
+        }
+        _imp->zoomCtx.zoomy(zoomCenter.x(), zoomCenter.y(), scaleFactorY);
+
+        // Alt + Wheel: zoom time only, keep point under mouse
+        par = _imp->zoomCtx.aspectRatio() * scaleFactorX;
+        if (par <= par_min) {
+            par = par_min;
+            scaleFactorX = par / _imp->zoomCtx.aspectRatio();
+        } else if (par > par_max) {
+            par = par_max;
+            scaleFactorX = par / _imp->zoomCtx.factor();
+        }
+        _imp->zoomCtx.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactorX);
+
+        if (_imp->_drawSelectedKeyFramesBbox) {
+            refreshSelectedKeysBbox();
+        }
+
+        // Synchronize the dope sheet editor and opened viewers
+        if ( _imp->_gui->isTripleSyncEnabled() ) {
+            _imp->updateDopeSheetViewFrameRange();
+            _imp->_gui->centerOpenedViewersOn( _imp->zoomCtx.left(), _imp->zoomCtx.right() );
+        }
+        refreshDisplayedTangents();
     }
-    
+    break;
+    case eEventStateNone:
+        assert(0);
+        break;
+    } // switch
+
     _imp->_lastMousePos = e->pos();
-    
+
     if (mustUpdate) {
         update();
     }
@@ -1271,7 +1243,6 @@ CurveWidget::refreshSelectedKeysBbox()
     for (SelectedKeys::const_iterator it = _imp->_selectedKeyFrames.begin();
          it != _imp->_selectedKeyFrames.end();
          ++it) {
-        
         for (std::list<KeyPtr>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             double x = (*it2)->key.getTime();
             double y = (*it2)->key.getValue();
@@ -1296,24 +1267,22 @@ CurveWidget::refreshSelectedKeysBbox()
                 keyFramesBbox.set_bottom(y);
             }
         }
-        
-        
     }
-    QPointF topLeft( keyFramesBbox.left(),keyFramesBbox.top() );
-    QPointF btmRight( keyFramesBbox.right(),keyFramesBbox.bottom() );
+    QPointF topLeft( keyFramesBbox.left(), keyFramesBbox.top() );
+    QPointF btmRight( keyFramesBbox.right(), keyFramesBbox.bottom() );
     _imp->_selectedKeyFramesBbox.setTopLeft(topLeft);
     _imp->_selectedKeyFramesBbox.setBottomRight(btmRight);
 
     QPointF middle( ( topLeft.x() + btmRight.x() ) / 2., ( topLeft.y() + btmRight.y() ) / 2. );
-    QPointF middleWidgetCoord = toWidgetCoordinates( middle.x(),middle.y() );
-    QPointF middleLeft = _imp->zoomCtx.toZoomCoordinates( middleWidgetCoord.x() - 20,middleWidgetCoord.y() );
-    QPointF middleRight = _imp->zoomCtx.toZoomCoordinates( middleWidgetCoord.x() + 20,middleWidgetCoord.y() );
-    QPointF middleTop = _imp->zoomCtx.toZoomCoordinates(middleWidgetCoord.x(),middleWidgetCoord.y() - 20);
-    QPointF middleBottom = _imp->zoomCtx.toZoomCoordinates(middleWidgetCoord.x(),middleWidgetCoord.y() + 20);
+    QPointF middleWidgetCoord = toWidgetCoordinates( middle.x(), middle.y() );
+    QPointF middleLeft = _imp->zoomCtx.toZoomCoordinates( middleWidgetCoord.x() - 20, middleWidgetCoord.y() );
+    QPointF middleRight = _imp->zoomCtx.toZoomCoordinates( middleWidgetCoord.x() + 20, middleWidgetCoord.y() );
+    QPointF middleTop = _imp->zoomCtx.toZoomCoordinates(middleWidgetCoord.x(), middleWidgetCoord.y() - 20);
+    QPointF middleBottom = _imp->zoomCtx.toZoomCoordinates(middleWidgetCoord.x(), middleWidgetCoord.y() + 20);
 
-    _imp->_selectedKeyFramesCrossHorizLine.setPoints(middleLeft,middleRight);
-    _imp->_selectedKeyFramesCrossVertLine.setPoints(middleBottom,middleTop);
-}
+    _imp->_selectedKeyFramesCrossHorizLine.setPoints(middleLeft, middleRight);
+    _imp->_selectedKeyFramesCrossVertLine.setPoints(middleBottom, middleTop);
+} // CurveWidget::refreshSelectedKeysBbox
 
 void
 CurveWidget::wheelEvent(QWheelEvent* e)
@@ -1384,18 +1353,15 @@ CurveWidget::wheelEvent(QWheelEvent* e)
     if (_imp->_drawSelectedKeyFramesBbox) {
         refreshSelectedKeysBbox();
     }
-    
-    
+
+
     // Synchronize the dope sheet editor and opened viewers
-    if (_imp->_gui->isTripleSyncEnabled()) {
+    if ( _imp->_gui->isTripleSyncEnabled() ) {
         _imp->updateDopeSheetViewFrameRange();
-        _imp->_gui->centerOpenedViewersOn(_imp->zoomCtx.left(), _imp->zoomCtx.right());
+        _imp->_gui->centerOpenedViewersOn( _imp->zoomCtx.left(), _imp->zoomCtx.right() );
     }
     refreshDisplayedTangents();
     update();
-
-
-
 } // wheelEvent
 
 QPointF
@@ -1424,17 +1390,16 @@ CurveWidget::sizeHint() const
     return _imp->sizeH;
 }
 
-
 void
 CurveWidget::keyPressEvent(QKeyEvent* e)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    
+
     bool accept = true;
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)e->key();
-    
+
     if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorRemoveKeys, modifiers, key) ) {
         deleteSelectedKeyFrames();
     } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorConstant, modifiers, key) ) {
@@ -1460,20 +1425,20 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorPaste, modifiers, key) ) {
         pasteKeyFramesFromClipBoardToSelectedCurve();
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomIn, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
-        QWheelEvent e(mapFromGlobal(QCursor::pos()), 120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
+        QWheelEvent e(mapFromGlobal( QCursor::pos() ), 120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
         wheelEvent(&e);
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomOut, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
-        QWheelEvent e(mapFromGlobal(QCursor::pos()), -120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
+        QWheelEvent e(mapFromGlobal( QCursor::pos() ), -120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
         wheelEvent(&e);
     } else {
         accept = false;
     }
-    
+
     CurveEditor* ce = 0;
     if ( parentWidget() ) {
         QWidget* parent  = parentWidget()->parentWidget();
         if (parent) {
-            if (parent->objectName() == QString::fromUtf8("CurveEditor")) {
+            if ( parent->objectName() == QString::fromUtf8("CurveEditor") ) {
                 ce = dynamic_cast<CurveEditor*>(parent);
             }
         }
@@ -1483,26 +1448,22 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
         if (ce) {
             ce->onInputEventCalled();
         }
-        
+
         e->accept();
     } else {
         if (ce) {
             ce->handleUnCaughtKeyPressEvent(e);
         }
         QGLWidget::keyPressEvent(e);
-
     }
 } // keyPressEvent
-
 
 void
 CurveWidget::enterEvent(QEvent* e)
 {
     setFocus();
     QGLWidget::enterEvent(e);
-    
 }
-
 
 void
 CurveWidget::refreshDisplayedTangents()
@@ -1522,14 +1483,12 @@ CurveWidget::refreshCurveDisplayTangents(CurveGui* curve)
 {
     for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
         if (it->first.get() == curve) {
-            
             for (std::list<KeyPtr>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
                 _imp->refreshKeyTangents(*it2);
             }
-            
+
             break;
         }
-        
     }
 }
 
@@ -1550,10 +1509,9 @@ CurveWidget::refreshSelectedKeysAndUpdate()
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     refreshSelectedKeysBbox();
-    
+
     refreshDisplayedTangents();
     update();
-
 }
 
 void
@@ -1630,23 +1588,21 @@ CurveWidget::deleteSelectedKeyFrames()
     }
 
     _imp->_drawSelectedKeyFramesBbox = false;
-    _imp->_selectedKeyFramesBbox.setBottomRight( QPointF(0,0) );
+    _imp->_selectedKeyFramesBbox.setBottomRight( QPointF(0, 0) );
     _imp->_selectedKeyFramesBbox.setTopLeft( _imp->_selectedKeyFramesBbox.bottomRight() );
 
     //apply the same strategy than for moveSelectedKeyFrames()
 
-    std::map<boost::shared_ptr<CurveGui> ,std::vector<KeyFrame> >  toRemove;
+    std::map<boost::shared_ptr<CurveGui>, std::vector<KeyFrame> >  toRemove;
     for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
-        
         std::vector<KeyFrame>& vect = toRemove[it->first];
-        for (std::list<KeyPtr>::iterator it2 = it->second.begin(); it2!=it->second.end(); ++it2) {
+        for (std::list<KeyPtr>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             vect.push_back( (*it2)->key );
         }
-        
     }
 
-    pushUndoCommand( new RemoveKeysCommand(this,toRemove) );
-    
+    pushUndoCommand( new RemoveKeysCommand(this, toRemove) );
+
 
     _imp->_selectedKeyFrames.clear();
 
@@ -1661,10 +1617,9 @@ CurveWidget::copySelectedKeyFramesToClipBoard()
 
     _imp->_keyFramesClipBoard.clear();
     for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
-        for (std::list<KeyPtr>::iterator it2 = it->second.begin(); it2!=it->second.end(); ++it2) {
+        for (std::list<KeyPtr>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             _imp->_keyFramesClipBoard.push_back( (*it2)->key );
         }
-        
     }
 }
 
@@ -1682,14 +1637,13 @@ CurveWidget::pasteKeyFramesFromClipBoardToSelectedCurve()
         }
     }
     if (!curve) {
-        Dialogs::warningDialog( QObject::tr("Curve Editor").toStdString(),QObject::tr("You must select a curve first.").toStdString() );
+        Dialogs::warningDialog( QObject::tr("Curve Editor").toStdString(), QObject::tr("You must select a curve first.").toStdString() );
 
         return;
     }
     //this function will call update() for us
-    pushUndoCommand( new AddKeysCommand(this,curve, _imp->_keyFramesClipBoard) );
+    pushUndoCommand( new AddKeysCommand(this, curve, _imp->_keyFramesClipBoard) );
 }
-
 
 void
 CurveWidget::selectAllKeyFrames()
@@ -1703,55 +1657,50 @@ CurveWidget::selectAllKeyFrames()
         if ( (*it)->isVisible() ) {
             KeyFrameSet set = (*it)->getKeyFrames();
             std::list<KeyPtr>& selectedKeysForcurve = _imp->_selectedKeyFrames[*it];
-            
-            
             KeyFrameSet::const_iterator it2 = set.begin();
             KeyFrameSet::const_iterator prev = set.end();
             KeyFrameSet::const_iterator next = it2;
             ++next;
-            for (;it2 != set.end(); ++it2) {
-
+            for (; it2 != set.end(); ++it2) {
                 KeyFrame prevKey;
                 bool hasPrev = false;
-                if (prev != set.end()) {
+                if ( prev != set.end() ) {
                     prevKey = *prev;
                     hasPrev = true;
                 }
                 KeyFrame nextKey;
                 bool hasNext = false;
-                if (next != set.end()) {
+                if ( next != set.end() ) {
                     nextKey = *next;
                     hasNext = true;
                 }
-                KeyPtr newSelectedKey(new SelectedKey(*it, *it2, hasPrev, prevKey, hasNext, nextKey));
+                KeyPtr newSelectedKey( new SelectedKey(*it, *it2, hasPrev, prevKey, hasNext, nextKey) );
                 selectedKeysForcurve.push_back(newSelectedKey);
-                
-                if (prev != set.end()) {
+
+                if ( prev != set.end() ) {
                     ++prev;
                 } else {
                     prev = set.begin();
                 }
-                if (next != set.end()) {
+                if ( next != set.end() ) {
                     ++next;
                 }
             }
-
         }
     }
-    
+
     refreshSelectedKeysAndUpdate();
-
-
 }
 
 void
 CurveWidget::loopSelectedCurve()
 {
     CurveEditor* ce = 0;
+
     if ( parentWidget() ) {
         QWidget* parent  = parentWidget()->parentWidget();
         if (parent) {
-            if (parent->objectName() == QString::fromUtf8("CurveEditor")) {
+            if ( parent->objectName() == QString::fromUtf8("CurveEditor") ) {
                 ce = dynamic_cast<CurveEditor*>(parent);
             }
         }
@@ -1759,42 +1708,43 @@ CurveWidget::loopSelectedCurve()
     if (!ce) {
         return;
     }
-    
+
     boost::shared_ptr<CurveGui> curve = ce->getSelectedCurve();
     if (!curve) {
-        Dialogs::warningDialog( tr("Curve Editor").toStdString(),tr("You must select a curve first in the view.").toStdString() );
+        Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("You must select a curve first in the view.").toStdString() );
+
         return;
     }
-    KnobCurveGui* knobCurve = dynamic_cast<KnobCurveGui*>(curve.get());
+    KnobCurveGui* knobCurve = dynamic_cast<KnobCurveGui*>( curve.get() );
     assert(knobCurve);
     if (!knobCurve) {
         throw std::logic_error("CurveWidget::loopSelectedCurve");
     }
     PyModalDialog dialog(_imp->_gui);
-    boost::shared_ptr<IntParam> firstFrame(dialog.createIntParam(QString::fromUtf8("firstFrame"), QString::fromUtf8("First frame")));
+    boost::shared_ptr<IntParam> firstFrame( dialog.createIntParam( QString::fromUtf8("firstFrame"), QString::fromUtf8("First frame") ) );
     firstFrame->setAnimationEnabled(false);
-    boost::shared_ptr<IntParam> lastFrame(dialog.createIntParam(QString::fromUtf8("lastFrame"), QString::fromUtf8("Last frame")));
+    boost::shared_ptr<IntParam> lastFrame( dialog.createIntParam( QString::fromUtf8("lastFrame"), QString::fromUtf8("Last frame") ) );
     lastFrame->setAnimationEnabled(false);
     dialog.refreshUserParamsGUI();
-    if (dialog.exec()) {
+    if ( dialog.exec() ) {
         int first = firstFrame->getValue();
         int last = lastFrame->getValue();
         std::stringstream ss;
-        ss << "curve(((frame - " << first << ") % (" << last << " - " << first << " + 1)) + " << first << ", "<< knobCurve->getDimension() << ")";
+        ss << "curve(((frame - " << first << ") % (" << last << " - " << first << " + 1)) + " << first << ", " << knobCurve->getDimension() << ")";
         std::string script = ss.str();
-        ce->setSelectedCurveExpression(QString::fromUtf8(script.c_str()));
+        ce->setSelectedCurveExpression( QString::fromUtf8( script.c_str() ) );
     }
-
 }
 
 void
 CurveWidget::negateSelectedCurve()
 {
     CurveEditor* ce = 0;
+
     if ( parentWidget() ) {
         QWidget* parent  = parentWidget()->parentWidget();
         if (parent) {
-            if (parent->objectName() == QString::fromUtf8("CurveEditor")) {
+            if ( parent->objectName() == QString::fromUtf8("CurveEditor") ) {
                 ce = dynamic_cast<CurveEditor*>(parent);
             }
         }
@@ -1804,10 +1754,11 @@ CurveWidget::negateSelectedCurve()
     }
     boost::shared_ptr<CurveGui> curve = ce->getSelectedCurve();
     if (!curve) {
-        Dialogs::warningDialog( tr("Curve Editor").toStdString(),tr("You must select a curve first in the view.").toStdString() );
+        Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("You must select a curve first in the view.").toStdString() );
+
         return;
     }
-    KnobCurveGui* knobCurve = dynamic_cast<KnobCurveGui*>(curve.get());
+    KnobCurveGui* knobCurve = dynamic_cast<KnobCurveGui*>( curve.get() );
     assert(knobCurve);
     if (!knobCurve) {
         throw std::logic_error("CurveWidget::negateSelectedCurve");
@@ -1815,17 +1766,18 @@ CurveWidget::negateSelectedCurve()
     std::stringstream ss;
     ss << "-curve(frame, " << knobCurve->getDimension() << ")";
     std::string script = ss.str();
-    ce->setSelectedCurveExpression(QString::fromUtf8(script.c_str()));
+    ce->setSelectedCurveExpression( QString::fromUtf8( script.c_str() ) );
 }
 
 void
 CurveWidget::reverseSelectedCurve()
 {
     CurveEditor* ce = 0;
+
     if ( parentWidget() ) {
         QWidget* parent  = parentWidget()->parentWidget();
         if (parent) {
-            if (parent->objectName() == QString::fromUtf8("CurveEditor")) {
+            if ( parent->objectName() == QString::fromUtf8("CurveEditor") ) {
                 ce = dynamic_cast<CurveEditor*>(parent);
             }
         }
@@ -1835,10 +1787,11 @@ CurveWidget::reverseSelectedCurve()
     }
     boost::shared_ptr<CurveGui> curve = ce->getSelectedCurve();
     if (!curve) {
-        Dialogs::warningDialog( tr("Curve Editor").toStdString(),tr("You must select a curve first in the view.").toStdString() );
+        Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("You must select a curve first in the view.").toStdString() );
+
         return;
     }
-    KnobCurveGui* knobCurve = dynamic_cast<KnobCurveGui*>(curve.get());
+    KnobCurveGui* knobCurve = dynamic_cast<KnobCurveGui*>( curve.get() );
     assert(knobCurve);
     if (!knobCurve) {
         throw std::logic_error("CurveWidget::reverseSelectedCurve");
@@ -1846,7 +1799,7 @@ CurveWidget::reverseSelectedCurve()
     std::stringstream ss;
     ss << "curve(-frame, " << knobCurve->getDimension() << ")";
     std::string script = ss.str();
-    ce->setSelectedCurveExpression(QString::fromUtf8(script.c_str()));
+    ce->setSelectedCurveExpression( QString::fromUtf8( script.c_str() ) );
 }
 
 void
@@ -1854,12 +1807,12 @@ CurveWidget::frameSelectedCurve()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    
+
     std::vector<boost::shared_ptr<CurveGui> > selection;
     _imp->_selectionModel->getSelectedCurves(&selection);
     centerOn(selection);
-    if (selection.empty()) {
-        Dialogs::warningDialog( tr("Curve Editor").toStdString(),tr("You must select a curve first in the left pane.").toStdString() );
+    if ( selection.empty() ) {
+        Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("You must select a curve first in the left pane.").toStdString() );
     }
 }
 
@@ -1869,8 +1822,8 @@ CurveWidget::onTimeLineFrameChanged(SequenceTime,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    
-    if (!_imp->_gui || _imp->_gui->isGUIFrozen()) {
+
+    if ( !_imp->_gui || _imp->_gui->isGUIFrozen() ) {
         return;
     }
 
@@ -1878,13 +1831,14 @@ CurveWidget::onTimeLineFrameChanged(SequenceTime,
         _imp->_timelineEnabled = true;
     }
     _imp->refreshTimelinePositions();
-    if (isVisible()) {
+    if ( isVisible() ) {
         update();
     }
 }
 
 void
-CurveWidget::onTimeLineBoundariesChanged(int,int)
+CurveWidget::onTimeLineBoundariesChanged(int,
+                                         int)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -1938,12 +1892,13 @@ CurveWidget::getTextFont() const
 }
 
 void
-CurveWidget::centerOn(double xmin, double xmax)
+CurveWidget::centerOn(double xmin,
+                      double xmax)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    _imp->zoomCtx.fill(xmin, xmax, _imp->zoomCtx.bottom(), _imp->zoomCtx.top());
+    _imp->zoomCtx.fill( xmin, xmax, _imp->zoomCtx.bottom(), _imp->zoomCtx.top() );
 
     update();
 }
@@ -1997,29 +1952,30 @@ CurveWidget::exportCurveToAscii()
 
     std::vector<boost::shared_ptr<CurveGui> > curves;
     for (Curves::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
-        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->get());
-        if ( (*it)->isVisible() && isKnobCurve) {
+        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( it->get() );
+        if ( (*it)->isVisible() && isKnobCurve ) {
             KnobPtr knob = isKnobCurve->getInternalKnob();
-            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
+            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
             if (isString) {
-                Dialogs::warningDialog( tr("Curve Editor").toStdString(),tr("String curves cannot be imported/exported.").toStdString() );
+                Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("String curves cannot be imported/exported.").toStdString() );
+
                 return;
             }
             curves.push_back(*it);
         }
     }
     if ( curves.empty() ) {
-        Dialogs::warningDialog( tr("Curve Editor").toStdString(),tr("You must have a curve on the editor first.").toStdString() );
+        Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("You must have a curve on the editor first.").toStdString() );
 
         return;
     }
 
-    ImportExportCurveDialog dialog(true,curves,_imp->_gui,this);
+    ImportExportCurveDialog dialog(true, curves, _imp->_gui, this);
     if ( dialog.exec() ) {
         double x = dialog.getXStart();
         double end = dialog.getXEnd();
         double incr = dialog.getXIncrement();
-        std::map<int,boost::shared_ptr<CurveGui> > columns;
+        std::map<int, boost::shared_ptr<CurveGui> > columns;
         dialog.getCurveColumns(&columns);
 
         for (U32 i = 0; i < curves.size(); ++i) {
@@ -2029,7 +1985,7 @@ CurveWidget::exportCurveToAscii()
             double endInt = std::floor(end);
             if ( curves[i]->areKeyFramesTimeClampedToIntegers() &&
                  ( ( incrInt != incr) || ( xInt != x) || ( endInt != end) ) ) {
-                Dialogs::warningDialog( tr("Curve Export").toStdString(),curves[i]->getName().toStdString() + tr(" doesn't support X values that are not integers.").toStdString() );
+                Dialogs::warningDialog( tr("Curve Export").toStdString(), curves[i]->getName().toStdString() + tr(" doesn't support X values that are not integers.").toStdString() );
 
                 return;
             }
@@ -2046,9 +2002,9 @@ CurveWidget::exportCurveToAscii()
 
         for (double i = x; i <= end; i += incr) {
             for (int c = 0; c < columnsCount; ++c) {
-                std::map<int,boost::shared_ptr<CurveGui> >::const_iterator foundCurve = columns.find(c);
+                std::map<int, boost::shared_ptr<CurveGui> >::const_iterator foundCurve = columns.find(c);
                 if ( foundCurve != columns.end() ) {
-                    QString str = QString::number(foundCurve->second->evaluate(true,i),'f',10);
+                    QString str = QString::number(foundCurve->second->evaluate(true, i), 'f', 10);
                     ts << str;
                 } else {
                     ts <<  0;
@@ -2074,37 +2030,37 @@ CurveWidget::importCurveFromAscii()
 
     std::vector<boost::shared_ptr<CurveGui> > curves;
     for (Curves::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
-        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->get());
+        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( it->get() );
         if ( (*it)->isVisible() && isKnobCurve ) {
-            
             KnobPtr knob = isKnobCurve->getInternalKnob();
-            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
+            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
             if (isString) {
-                Dialogs::warningDialog( tr("Curve Editor").toStdString(),tr("String curves cannot be imported/exported.").toStdString() );
+                Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("String curves cannot be imported/exported.").toStdString() );
+
                 return;
             }
-            
+
             curves.push_back(*it);
         }
     }
     if ( curves.empty() ) {
-        Dialogs::warningDialog( tr("Curve Editor").toStdString(),tr("You must have a curve on the editor first.").toStdString() );
+        Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("You must have a curve on the editor first.").toStdString() );
 
         return;
     }
 
-    ImportExportCurveDialog dialog(false,curves,_imp->_gui,this);
+    ImportExportCurveDialog dialog(false, curves, _imp->_gui, this);
     if ( dialog.exec() ) {
         QString filePath = dialog.getFilePath();
         if ( !QFile::exists(filePath) ) {
-            Dialogs::warningDialog( tr("Curve Import").toStdString(),tr("File not found.").toStdString() );
+            Dialogs::warningDialog( tr("Curve Import").toStdString(), tr("File not found.").toStdString() );
 
             return;
         }
 
         double x = dialog.getXStart();
         double incr = dialog.getXIncrement();
-        std::map<int,boost::shared_ptr<CurveGui> > columns;
+        std::map<int, boost::shared_ptr<CurveGui> > columns;
         dialog.getCurveColumns(&columns);
         assert( !columns.empty() );
 
@@ -2114,7 +2070,7 @@ CurveWidget::importCurveFromAscii()
             double xInt = std::floor(x);
             if ( curves[i]->areKeyFramesTimeClampedToIntegers() &&
                  ( ( incrInt != incr) || ( xInt != x) ) ) {
-                Dialogs::warningDialog( tr("Curve Import").toStdString(),curves[i]->getName().toStdString() + tr(" doesn't support X values that are not integers.").toStdString() );
+                Dialogs::warningDialog( tr("Curve Import").toStdString(), curves[i]->getName().toStdString() + tr(" doesn't support X values that are not integers.").toStdString() );
 
                 return;
             }
@@ -2142,7 +2098,7 @@ CurveWidget::importCurveFromAscii()
                 }
                 if ( i < line.size() ) {
                     if ( line.at(i) != QLatin1Char('_') ) {
-                        Dialogs::errorDialog( tr("Curve Import").toStdString(),tr("The file could not be read.").toStdString() );
+                        Dialogs::errorDialog( tr("Curve Import").toStdString(), tr("The file could not be read.").toStdString() );
 
                         return;
                     }
@@ -2151,7 +2107,7 @@ CurveWidget::importCurveFromAscii()
                 bool ok;
                 double v = value.toDouble(&ok);
                 if (!ok) {
-                    Dialogs::errorDialog( tr("Curve Import").toStdString(),tr("The file could not be read.").toStdString() );
+                    Dialogs::errorDialog( tr("Curve Import").toStdString(), tr("The file could not be read.").toStdString() );
 
                     return;
                 }
@@ -2159,18 +2115,18 @@ CurveWidget::importCurveFromAscii()
             }
             ///assert that the values count is greater than the number of curves provided by the user
             if ( values.size() < columns.size() ) {
-                Dialogs::errorDialog( tr("Curve Import").toStdString(),tr("The file contains less curves than what you selected.").toStdString() );
+                Dialogs::errorDialog( tr("Curve Import").toStdString(), tr("The file contains less curves than what you selected.").toStdString() );
 
                 return;
             }
 
-            for (std::map<int,boost::shared_ptr<CurveGui> >::const_iterator col = columns.begin(); col != columns.end(); ++col) {
+            for (std::map<int, boost::shared_ptr<CurveGui> >::const_iterator col = columns.begin(); col != columns.end(); ++col) {
                 if ( col->first >= (int)values.size() ) {
-                    Dialogs::errorDialog( tr("Curve Import").toStdString(),tr("One of the curve column index is not a valid index for the given file.").toStdString() );
+                    Dialogs::errorDialog( tr("Curve Import").toStdString(), tr("One of the curve column index is not a valid index for the given file.").toStdString() );
 
                     return;
                 }
-                std::map<boost::shared_ptr<CurveGui> , std::vector<double> >::iterator foundCurve = curvesValues.find(col->second);
+                std::map<boost::shared_ptr<CurveGui>, std::vector<double> >::iterator foundCurve = curvesValues.find(col->second);
                 if ( foundCurve != curvesValues.end() ) {
                     foundCurve->second.push_back(values[col->first]);
                 } else {
@@ -2182,19 +2138,16 @@ CurveWidget::importCurveFromAscii()
         }
         ///now restore the curves since we know what we read is valid
         for (std::map<boost::shared_ptr<CurveGui>, std::vector<double> >::const_iterator it = curvesValues.begin(); it != curvesValues.end(); ++it) {
-            
             std::vector<KeyFrame> keys;
             const std::vector<double> & values = it->second;
             double xIndex = x;
             for (U32 i = 0; i < values.size(); ++i) {
-                KeyFrame k(xIndex,values[i], 0., 0., eKeyframeTypeLinear);
+                KeyFrame k(xIndex, values[i], 0., 0., eKeyframeTypeLinear);
                 keys.push_back(k);
                 xIndex += incr;
             }
-            
-            pushUndoCommand(new SetKeysCommand(this,it->first,keys));
 
-            
+            pushUndoCommand( new SetKeysCommand(this, it->first, keys) );
         }
         _imp->_selectedKeyFrames.clear();
         update();

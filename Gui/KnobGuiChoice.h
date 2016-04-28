@@ -58,15 +58,16 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-class KnobComboBox : public ComboBox
+class KnobComboBox
+    : public ComboBox
 {
 public:
-    KnobComboBox(const KnobGuiPtr& knob,int dimension, QWidget* parent = 0);
-    
+    KnobComboBox(const KnobGuiPtr& knob, int dimension, QWidget* parent = 0);
+
     virtual ~KnobComboBox();
-    
+
 private:
-    
+
     virtual void wheelEvent(QWheelEvent *e) OVERRIDE FINAL;
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
@@ -100,12 +101,11 @@ public:
     }
 
     KnobGuiChoice(KnobPtr knob,
-                   DockablePanel *container);
+                  DockablePanel *container);
 
     virtual ~KnobGuiChoice() OVERRIDE;
-    
-    virtual void removeSpecificGui() OVERRIDE FINAL;
 
+    virtual void removeSpecificGui() OVERRIDE FINAL;
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
 
 public Q_SLOTS:
@@ -113,30 +113,29 @@ public Q_SLOTS:
     void onCurrentIndexChanged(int i);
 
     void onEntriesPopulated();
-    
+
     void onEntryAppended(const QString& entry, const QString& help);
-    
+
     void onEntriesReset();
-    
+
     void onItemNewSelected();
 
     void onRefreshMenuActionTriggered();
-    
+
 private:
-    
+
     virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
     virtual void setEnabled() OVERRIDE FINAL;
-    virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
+    virtual void setReadOnly(bool readOnly, int dimension) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension,AnimationLevelEnum level) OVERRIDE FINAL;
-    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(int dimension, AnimationLevelEnum level) OVERRIDE FINAL;
+    virtual void reflectExpressionState(int dimension, bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
     virtual void reflectModificationsState() OVERRIDE FINAL;
-    
     KnobComboBox *_comboBox;
     boost::weak_ptr<KnobChoice> _knob;
 };

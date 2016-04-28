@@ -53,7 +53,6 @@ CLANG_DIAG_ON(uninitialized)
 #define NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS 1000
 
 
-
 #define NATRON_NODE_DUPLICATE_X_OFFSET 50
 
 ///These are percentages of the size of the NodeGraph in widget coordinates.
@@ -89,14 +88,14 @@ public:
 
     Navigator(QGraphicsItem* parent = 0)
         : QGraphicsPixmapItem(parent)
-          , _navLeftEdge(NULL)
-          , _navBottomEdge(NULL)
-          , _navRightEdge(NULL)
-          , _navTopEdge(NULL)
+        , _navLeftEdge(NULL)
+        , _navBottomEdge(NULL)
+        , _navRightEdge(NULL)
+        , _navTopEdge(NULL)
     {
         QPen p;
 
-        p.setBrush( QColor(200,200,200) );
+        p.setBrush( QColor(200, 200, 200) );
         p.setWidth(2);
 
         _navLeftEdge = new QGraphicsLineItem(this);
@@ -150,15 +149,11 @@ public:
 };
 
 
-
-
 class NodeGraphPrivate
 {
 public:
     NodeGraph* _publicInterface;
-    
     boost::weak_ptr<NodeCollection> group;
-    
     QPoint _lastMousePos;
     QPointF _lastSelectionStartPointScene;
     EventStateEnum _evtState;
@@ -182,25 +177,20 @@ public:
     Navigator* _navigator;
     QUndoStack* _undoStack;
     QMenu* _menu;
-    QGraphicsItem *_tL,*_tR,*_bR,*_bL;
+    QGraphicsItem *_tL, *_tR, *_bR, *_bL;
     bool _refreshOverlays;
-
     Edge* _highLightedEdge;
     NodeGuiPtr _mergeHintNode;
 
     ///This is a hint edge we show when _highLightedEdge is not NULL to display a possible connection.
     Edge* _hintInputEdge;
     Edge* _hintOutputEdge;
-    
     NodeGuiPtr _backdropResized; //< the backdrop being resized
-    
     NodesGuiList _selection;
-    
+
     //To avoid calling unsetCursor too much
     bool cursorSet;
-    
-    std::map<NodeGuiPtr,NodesGuiList> _nodesWithinBDAtPenDown;
-    
+    std::map<NodeGuiPtr, NodesGuiList> _nodesWithinBDAtPenDown;
     QRectF _selectionRect;
     bool _bendPointsVisible;
     bool _knobLinksVisible;
@@ -208,41 +198,38 @@ public:
     bool _detailsVisible;
     QPointF _deltaSinceMousePress; //< mouse delta since last press
     bool _hasMovedOnce;
-    
     ViewerTab* lastSelectedViewer;
-    
     QPixmap unlockIcon;
-    
+
     ///True when the graph is rendered from the getFullSceneScreenShot() function
     bool isDoingPreviewRender;
-    
     QTimer autoScrollTimer;
-    
+
     NodeGraphPrivate(NodeGraph* p,
                      const boost::shared_ptr<NodeCollection>& group);
-    
+
     QPoint getPyPlugUnlockPos() const;
-    
+
     void resetAllClipboards();
 
     QRectF calcNodesBoundingRect();
 
-    void copyNodesInternal(const NodesGuiList& selection,NodeClipBoard & clipboard);
-    void pasteNodesInternal(const NodeClipBoard & clipboard,const QPointF& scenPos,
+    void copyNodesInternal(const NodesGuiList& selection, NodeClipBoard & clipboard);
+    void pasteNodesInternal(const NodeClipBoard & clipboard, const QPointF& scenPos,
                             bool useUndoCommand,
-                            std::list<std::pair<std::string,NodeGuiPtr > > *newNodes);
+                            std::list<std::pair<std::string, NodeGuiPtr > > *newNodes);
 
     /**
      * @brief Create a new node given the serialization of another one
      * @param offset[in] The offset applied to the new node position relative to the serialized node's position.
      **/
     NodeGuiPtr pasteNode(const boost::shared_ptr<NodeSerialization> & internalSerialization,
-                                         const boost::shared_ptr<NodeGuiSerialization> & guiSerialization,
-                                         const QPointF & offset,
-                                         const boost::shared_ptr<NodeCollection>& group,
-                                         const std::string& parentName,
-                                         bool clone,
-                                         std::map<std::string,std::string>* oldNewScriptNameMapping);
+                         const boost::shared_ptr<NodeGuiSerialization> & guiSerialization,
+                         const QPointF & offset,
+                         const boost::shared_ptr<NodeCollection>& group,
+                         const std::string& parentName,
+                         bool clone,
+                         std::map<std::string, std::string>* oldNewScriptNameMapping);
 
 
     /**
@@ -251,8 +238,8 @@ public:
      * list. We're not using 2 lists to avoid a copy from the paste function.
      **/
     void restoreConnections(const std::list<boost::shared_ptr<NodeSerialization> > & serializations,
-                            const std::list<std::pair<std::string,NodeGuiPtr > > & newNodes,
-                            const std::map<std::string,std::string>& oldNewScriptNamesMap);
+                            const std::list<std::pair<std::string, NodeGuiPtr > > & newNodes,
+                            const std::map<std::string, std::string>& oldNewScriptNamesMap);
 
     void editSelectionFromSelectionRectangle(bool addToSelection);
 
@@ -263,7 +250,6 @@ public:
     void rearrangeSelectedNodes();
 
     void toggleSelectedNodesEnabled();
-    
 };
 
 NATRON_NAMESPACE_EXIT;

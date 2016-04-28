@@ -49,11 +49,11 @@ NATRON_NAMESPACE_ENTER;
 
 LineEdit::LineEdit(QWidget* parent)
     : QLineEdit(parent)
-      , animation(0)
-      , dirty(false)
-      , altered(false)
+    , animation(0)
+    , dirty(false)
+    , altered(false)
 {
-    setAttribute(Qt::WA_MacShowFocusRect,0);
+    setAttribute(Qt::WA_MacShowFocusRect, 0);
     connect( this, SIGNAL(editingFinished()), this, SLOT(onEditingFinished()) );
 }
 
@@ -65,11 +65,11 @@ void
 LineEdit::paintEvent(QPaintEvent* e)
 {
     /*QPalette p = this->palette();
-    QColor c(200,200,200,255);
+       QColor c(200,200,200,255);
 
-    p.setColor( QPalette::Highlight, c );
-    p.setColor( QPalette::HighlightedText, c );
-    this->setPalette( p );*/
+       p.setColor( QPalette::Highlight, c );
+       p.setColor( QPalette::HighlightedText, c );
+       this->setPalette( p );*/
     QLineEdit::paintEvent(e);
 }
 
@@ -83,7 +83,7 @@ LineEdit::dropEvent(QDropEvent* e)
     QList<QUrl> urls = e->mimeData()->urls();
     QString path;
     if (urls.size() > 0) {
-        path = QtCompat::toLocalFileUrlFixed(urls.at(0)).path();
+        path = QtCompat::toLocalFileUrlFixed( urls.at(0) ).path();
     }
     if ( !path.isEmpty() ) {
         setText(path);
@@ -152,7 +152,8 @@ void
 LineEdit::keyPressEvent(QKeyEvent* e)
 {
     QLineEdit::keyPressEvent(e);
-    if (e->matches(QKeySequence::Paste)) {
+
+    if ( e->matches(QKeySequence::Paste) ) {
         Q_EMIT textPasted();
     }
 }

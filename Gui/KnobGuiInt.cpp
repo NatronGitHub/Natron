@@ -88,20 +88,21 @@ using std::make_pair;
 
 //==========================INT_KNOB_GUI======================================
 KnobGuiInt::KnobGuiInt(KnobPtr knob,
-                         DockablePanel *container)
+                       DockablePanel *container)
     : KnobGui(knob, container)
-      , _container(0)
-      , _slider(0)
-      , _dimensionSwitchButton(0)
+    , _container(0)
+    , _slider(0)
+    , _dimensionSwitchButton(0)
 {
     boost::shared_ptr<KnobInt> iKnob = boost::dynamic_pointer_cast<KnobInt>(knob);
+
     assert(iKnob);
     boost::shared_ptr<KnobSignalSlotHandler> handler = iKnob->getSignalSlotHandler();
     if (handler) {
 #ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
         QObject::connect( handler.get(), SIGNAL(minMaxChanged(double,double,int)), this, SLOT(onMinMaxChanged(double,double,int)) );
 #endif
-        
+
         QObject::connect( handler.get(), SIGNAL(displayMinMaxChanged(double,double,int)), this, SLOT(onDisplayMinMaxChanged(double,double,int)) );
     }
     QObject::connect( iKnob.get(), SIGNAL(incrementChanged(int,int)), this, SLOT(onIncrementChanged(int,int)) );
@@ -123,9 +124,9 @@ KnobGuiInt::removeSpecificGui()
 void
 KnobGuiInt::createWidget(QHBoxLayout* layout)
 {
-    
     boost::shared_ptr<KnobInt> knob = _knob.lock();
     int dim = knob->getDimension();
+
     _container = new QWidget( layout->parentWidget() );
     QHBoxLayout *containerLayout = new QHBoxLayout(_container);
 
@@ -138,21 +139,19 @@ KnobGuiInt::createWidget(QHBoxLayout* layout)
         knob->disableSlider();
     }
 
-    if (!knob->isSliderDisabled()) {
+    if ( !knob->isSliderDisabled() ) {
         layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     }
-    
+
     //  const std::vector<int> &maximums = intKnob->getMaximums();
     //    const std::vector<int> &minimums = intKnob->getMinimums();
     const std::vector<int> &increments = knob->getIncrements();
     const std::vector<int> &displayMins = knob->getDisplayMinimums();
     const std::vector<int> &displayMaxs = knob->getDisplayMaximums();
-    
     const std::vector<int > &mins = knob->getMinimums();
     const std::vector<int > &maxs = knob->getMaximums();
     KnobGuiPtr thisShared = shared_from_this();
     for (int i = 0; i < dim; ++i) {
-
         QWidget *boxContainer = new QWidget( _container );
         boxContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         QHBoxLayout *boxContainerLayout = new QHBoxLayout(boxContainer);
@@ -164,18 +163,18 @@ KnobGuiInt::createWidget(QHBoxLayout* layout)
             std::string dimLabel = getKnob()->getDimensionName(i);
             /*if (!dimLabel.empty()) {
                 dimLabel.append(":");
-            }*/
-            subDesc = new Label(QString::fromUtf8(dimLabel.c_str()), boxContainer);
+               }*/
+            subDesc = new Label(QString::fromUtf8( dimLabel.c_str() ), boxContainer);
             //subDesc->setFont( QFont(appFont,appFontSize) );
             boxContainerLayout->addWidget(subDesc);
         }
         SpinBox *box = new KnobSpinBox(layout->parentWidget(), SpinBox::eSpinBoxTypeInt, thisShared, i);
-        NumericKnobValidator* validator = new NumericKnobValidator(box,thisShared);
+        NumericKnobValidator* validator = new NumericKnobValidator(box, thisShared);
         box->setValidator(validator);
         QObject::connect( box, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()) );
 
         ///set the copy/link actions in the right click menu
-        enableRightClickMenu(box,i);
+        enableRightClickMenu(box, i);
 
 #ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
         int min = mins[i];
@@ -183,16 +182,16 @@ KnobGuiInt::createWidget(QHBoxLayout* layout)
         box->setMaximum(max);
         box->setMinimum(min);
 #endif
-        
+
         box->setIncrement(increments[i]);
 
         boxContainerLayout->addWidget(box);
         containerLayout->addWidget(boxContainer);
         _spinBoxes.push_back( make_pair(box, subDesc) );
     }
-    
+
     bool sliderVisible = false;
-    if (!knob->isSliderDisabled()) {
+    if ( !knob->isSliderDisabled() ) {
         int dispmin = displayMins[0];
         int dispmax = displayMaxs[0];
         if (dispmin == -DBL_MAX) {
@@ -201,36 +200,36 @@ KnobGuiInt::createWidget(QHBoxLayout* layout)
         if (dispmax == DBL_MAX) {
             dispmax = maxs[0];
         }
-        
-        _slider = new ScaleSliderQWidget( dispmin, dispmax,knob->getValue(0),knob->getEvaluateOnChange(),
-                                         ScaleSliderQWidget::eDataTypeInt,getGui(),eScaleTypeLinear, layout->parentWidget() );
+
+        _slider = new ScaleSliderQWidget( dispmin, dispmax, knob->getValue(0), knob->getEvaluateOnChange(),
+                                          ScaleSliderQWidget::eDataTypeInt, getGui(), eScaleTypeLinear, layout->parentWidget() );
         _slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         if ( hasToolTip() ) {
             _slider->setToolTip( toolTip() );
         }
         QObject::connect( _slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)) );
         QObject::connect( _slider, SIGNAL(editingFinished(bool)), this, SLOT(onSliderEditingFinished(bool)) );
-        
+
         containerLayout->addWidget(_slider);
         onDisplayMinMaxChanged(dispmin, dispmax);
         sliderVisible = shouldSliderBeVisible(dispmin, dispmax);
     }
 
-    QSize medSize(TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
-    QSize medIconSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    QSize medSize( TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
+    QSize medIconSize( TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE) );
 
-    if (dim > 1 && !knob->isSliderDisabled() && sliderVisible) {
-        _dimensionSwitchButton = new Button(QIcon(),QString::number(dim),_container);
-        _dimensionSwitchButton->setToolTip(GuiUtils::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal));
+    if ( (dim > 1) && !knob->isSliderDisabled() && sliderVisible ) {
+        _dimensionSwitchButton = new Button(QIcon(), QString::number(dim), _container);
+        _dimensionSwitchButton->setToolTip( GuiUtils::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal) );
         _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
         _dimensionSwitchButton->setFixedSize(medSize);
         _dimensionSwitchButton->setIconSize(medIconSize);
         _dimensionSwitchButton->setCheckable(true);
         containerLayout->addWidget(_dimensionSwitchButton);
-        
+
         bool showSlider = true;
         double firstDimensionValue = knob->getValue(0);
-        for (int i = 0; i < dim ; ++i) {
+        for (int i = 0; i < dim; ++i) {
             if (knob->getValue(i) != firstDimensionValue) {
                 showSlider = false;
                 break;
@@ -242,30 +241,29 @@ KnobGuiInt::createWidget(QHBoxLayout* layout)
         } else {
             foldAllDimensions();
         }
-        
+
         QObject::connect( _dimensionSwitchButton, SIGNAL(clicked(bool)), this, SLOT(onDimensionSwitchClicked()) );
-        
     } else {
         if (_slider) {
             _slider->hide();
         }
     }
 
-    
+
     layout->addWidget(_container);
 } // createWidget
 
 #ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
 void
 KnobGuiInt::onMinMaxChanged(double mini,
-                             double maxi,
-                             int index)
+                            double maxi,
+                            int index)
 {
-    
     assert(_spinBoxes.size() > (U32)index);
     _spinBoxes[index].first->setMinimum(mini);
     _spinBoxes[index].first->setMaximum(maxi);
 }
+
 #endif
 
 void
@@ -274,14 +272,14 @@ KnobGuiInt::onDimensionSwitchClicked()
     if (!_dimensionSwitchButton) {
         return;
     }
-    if (_dimensionSwitchButton->isChecked() ) {
+    if ( _dimensionSwitchButton->isChecked() ) {
         expandAllDimensions();
     } else {
         foldAllDimensions();
         boost::shared_ptr<KnobInt> knob = _knob.lock();
         int dim = knob->getDimension();
         if (dim > 1) {
-            double value(_spinBoxes[0].first->value());
+            double value( _spinBoxes[0].first->value() );
             knob->beginChanges();
             for (int i = 1; i < dim; ++i) {
                 knob->setValue(value, ViewSpec::all(), i);
@@ -289,7 +287,6 @@ KnobGuiInt::onDimensionSwitchClicked()
             knob->endChanges();
         }
     }
-    
 }
 
 bool
@@ -312,6 +309,7 @@ KnobGuiInt::getDimensionForSpinBox(const SpinBox* spinbox) const
             return (int)i;
         }
     }
+
     return -1;
 }
 
@@ -358,20 +356,18 @@ KnobGuiInt::foldAllDimensions()
     }
 }
 
-
 void
 KnobGuiInt::onDisplayMinMaxChanged(double mini,
-                                    double maxi,
-                                    int index)
+                                   double maxi,
+                                   int index)
 {
     if (_slider) {
         double sliderMin = mini;
         double sliderMax = maxi;
         if ( (sliderMax - sliderMin) >= SLIDER_MAX_RANGE ) {
-            
             boost::shared_ptr<KnobInt> knob = _knob.lock();
             ///use min max for slider if dispmin/dispmax was not set
-            assert(index < (int)knob->getMinimums().size() && index < (int)knob->getMaximums().size());
+            assert( index < (int)knob->getMinimums().size() && index < (int)knob->getMaximums().size() );
             int max = knob->getMaximums()[index];
             int min = knob->getMinimums()[index];
             if ( (max - min) < SLIDER_MAX_RANGE ) {
@@ -379,19 +375,19 @@ KnobGuiInt::onDisplayMinMaxChanged(double mini,
                 sliderMax = max;
             }
         }
-        if (shouldSliderBeVisible(sliderMin,sliderMax)) {
+        if ( shouldSliderBeVisible(sliderMin, sliderMax) ) {
             _slider->show();
         } else {
             _slider->hide();
         }
-        
-        _slider->setMinimumAndMaximum(sliderMin ,sliderMax);
+
+        _slider->setMinimumAndMaximum(sliderMin, sliderMax);
     }
 }
 
 void
 KnobGuiInt::onIncrementChanged(int incr,
-                                int index)
+                               int index)
 {
     assert(_spinBoxes.size() > (U32)index);
     _spinBoxes[index].first->setIncrement(incr);
@@ -402,7 +398,8 @@ KnobGuiInt::updateGUI(int dimension)
 {
     boost::shared_ptr<KnobInt> knob = _knob.lock();
     const int knobDim =  knob->getDimension();
-    if (knobDim < 1 || dimension >= knobDim) {
+
+    if ( (knobDim < 1) || (dimension >= knobDim) ) {
         return;
     }
     int values[3];
@@ -410,7 +407,7 @@ KnobGuiInt::updateGUI(int dimension)
     std::string refExpresion;
 
     assert(1 <= knobDim && knobDim <= 3);
-    assert(dimension == -1 || (0 <= dimension && dimension < knobDim));
+    assert( dimension == -1 || (0 <= dimension && dimension < knobDim) );
     for (int i = 0; i < knobDim; ++i) {
         values[i] = knob->getValue(i);
         expressions[i] = knob->getExpression(i);
@@ -425,7 +422,7 @@ KnobGuiInt::updateGUI(int dimension)
     }
     bool allValuesNotEqual = false;
     for (int i = 0; i < knobDim; ++i) {
-        if (values[i] != refValue || expressions[i] != refExpresion) {
+        if ( (values[i] != refValue) || (expressions[i] != refExpresion) ) {
             allValuesNotEqual = true;
         }
     }
@@ -434,33 +431,32 @@ KnobGuiInt::updateGUI(int dimension)
     } else if (_dimensionSwitchButton && _dimensionSwitchButton->isChecked() && !allValuesNotEqual) {
         foldAllDimensions();
     }
-    
+
     if (_slider) {
         _slider->seekScalePosition(values[0]);
     }
-    
-    
+
+
     if (dimension != -1) {
         switch (dimension) {
-            case 0:
-                _spinBoxes[dimension].first->setValue(values[dimension]);
-                if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked()) {
-                    for (int i = 1; i < knobDim; ++i) {
-                        _spinBoxes[i].first->setValue(values[dimension]);
-                    }
+        case 0:
+            _spinBoxes[dimension].first->setValue(values[dimension]);
+            if ( _dimensionSwitchButton && !_dimensionSwitchButton->isChecked() ) {
+                for (int i = 1; i < knobDim; ++i) {
+                    _spinBoxes[i].first->setValue(values[dimension]);
                 }
-                break;
-            case 1:
-            case 2:
-                _spinBoxes[dimension].first->setValue(values[dimension]);
-                break;
-            default:
-                break;
+            }
+            break;
+        case 1:
+        case 2:
+            _spinBoxes[dimension].first->setValue(values[dimension]);
+            break;
+        default:
+            break;
         }
-        
     } else {
         _spinBoxes[0].first->setValue(values[0]);
-        if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked()) {
+        if ( _dimensionSwitchButton && !_dimensionSwitchButton->isChecked() ) {
             for (int i = 1; i < knobDim; ++i) {
                 _spinBoxes[i].first->setValue(values[0]);
             }
@@ -470,28 +466,29 @@ KnobGuiInt::updateGUI(int dimension)
             }
         }
     }
-}
+} // KnobGuiInt::updateGUI
 
 void
 KnobGuiInt::reflectAnimationLevel(int dimension,
-                                   AnimationLevelEnum level)
+                                  AnimationLevelEnum level)
 {
     int value;
+
     switch (level) {
-        case eAnimationLevelNone:
-            value = 0;
-            break;
-        case eAnimationLevelInterpolatedValue:
-            value = 1;
-            break;
-        case eAnimationLevelOnKeyframe:
-            value = 2;
-            break;
-        default:
-            value = 0;
-            break;
+    case eAnimationLevelNone:
+        value = 0;
+        break;
+    case eAnimationLevelInterpolatedValue:
+        value = 1;
+        break;
+    case eAnimationLevelOnKeyframe:
+        value = 2;
+        break;
+    default:
+        value = 0;
+        break;
     }
-    if (value != _spinBoxes[dimension].first->getAnimation()) {
+    if ( value != _spinBoxes[dimension].first->getAnimation() ) {
         _spinBoxes[dimension].first->setAnimation(value);
     }
 }
@@ -499,7 +496,7 @@ KnobGuiInt::reflectAnimationLevel(int dimension,
 void
 KnobGuiInt::onSliderValueChanged(double d)
 {
-    assert(_knob.lock()->isEnabled(0));
+    assert( _knob.lock()->isEnabled(0) );
     bool penUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
 
     if (penUpOnly) {
@@ -511,7 +508,7 @@ KnobGuiInt::onSliderValueChanged(double d)
 void
 KnobGuiInt::onSliderEditingFinished(bool hasMovedOnce)
 {
-    assert(_knob.lock()->isEnabled(0));
+    assert( _knob.lock()->isEnabled(0) );
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
     bool onEditingFinishedOnly = settings->getRenderOnEditingFinishedOnly();
     bool autoProxyEnabled = settings->isAutoProxyEnabled();
@@ -533,33 +530,32 @@ KnobGuiInt::sliderEditingEnd(double d)
         for (int i = 0; i < dims; ++i) {
             _spinBoxes[i].first->setValue(d);
         }
-        std::list<int> oldValues,newValues;
+        std::list<int> oldValues, newValues;
         for (int i = 0; i < dims; ++i) {
-            oldValues.push_back(knob->getValue(i));
+            oldValues.push_back( knob->getValue(i) );
             newValues.push_back(d);
         }
-        pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(),oldValues,newValues,false) );
+        pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(), oldValues, newValues, false) );
     } else {
         _spinBoxes[0].first->setValue(d);
-        pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(),knob->getValue(0),d,0,false) );
+        pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(), knob->getValue(0), d, 0, false) );
     }
-    
 }
 
 void
 KnobGuiInt::onSpinBoxValueChanged()
 {
-    
-    SpinBox* box = qobject_cast<SpinBox*>(sender());
+    SpinBox* box = qobject_cast<SpinBox*>( sender() );
+
     if (!box) {
         return;
     }
-    
+
     int spinBoxDim = -1;
     int newValue = 0;
 
-    
-    if (!_dimensionSwitchButton || _dimensionSwitchButton->isChecked() ) {
+
+    if ( !_dimensionSwitchButton || _dimensionSwitchButton->isChecked() ) {
         int oldValue = 0;
         // each spinbox has a different value
         for (U32 i = 0; i < _spinBoxes.size(); ++i) {
@@ -569,7 +565,7 @@ KnobGuiInt::onSpinBoxValueChanged()
                 spinBoxDim = i;
             }
         }
-        pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(),oldValue, newValue, spinBoxDim ,false) );
+        pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(), oldValue, newValue, spinBoxDim, false) );
     } else {
         // use the value of the first dimension only, and set all spinboxes
         newValue = _spinBoxes[0].first->value();
@@ -584,13 +580,12 @@ KnobGuiInt::onSpinBoxValueChanged()
         for (std::size_t i = 0; i < _spinBoxes.size(); ++i) {
             newValues.push_back(newValue);
         }
-        pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(),oldValues, newValues ,false) );
+        pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(), oldValues, newValues, false) );
     }
-    
+
     if (_slider) {
         _slider->seekScalePosition(newValue);
     }
-    
 }
 
 void
@@ -614,20 +609,19 @@ void
 KnobGuiInt::_show()
 {
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
-        
-        if (!_dimensionSwitchButton || (i > 0 && _dimensionSwitchButton->isChecked()) || (i == 0)) {
+        if ( !_dimensionSwitchButton || ( (i > 0) && _dimensionSwitchButton->isChecked() ) || (i == 0) ) {
             _spinBoxes[i].first->show();
         }
-        if (!_dimensionSwitchButton || _dimensionSwitchButton->isChecked()) {
+        if ( !_dimensionSwitchButton || _dimensionSwitchButton->isChecked() ) {
             if (_spinBoxes[i].second) {
                 _spinBoxes[i].second->show();
             }
         }
     }
-    if (_slider && ((!_dimensionSwitchButton && _spinBoxes.size() == 1) || (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked()))) {
+    if ( _slider && ( ( !_dimensionSwitchButton && (_spinBoxes.size() == 1) ) || ( _dimensionSwitchButton && !_dimensionSwitchButton->isChecked() ) ) ) {
         double sliderMax = _slider->maximum();
         double sliderMin = _slider->minimum();
-        
+
         if ( (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < INT_MAX) && (sliderMin > INT_MIN) ) {
             _slider->show();
         }
@@ -635,16 +629,14 @@ KnobGuiInt::_show()
     if (_dimensionSwitchButton) {
         _dimensionSwitchButton->show();
     }
-
 }
 
 void
 KnobGuiInt::setEnabled()
 {
     boost::shared_ptr<KnobInt> knob = _knob.lock();
-
     bool enabled0 = knob->isEnabled(0) && !knob->isSlave(0) && knob->getExpression(0).empty();
-    
+
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         bool b = knob->isEnabled(i) && !knob->isSlave(i);
         //_spinBoxes[i].first->setEnabled(b);
@@ -660,7 +652,7 @@ KnobGuiInt::setEnabled()
 
 void
 KnobGuiInt::setReadOnly(bool readOnly,
-                         int dimension)
+                        int dimension)
 {
     assert( dimension < (int)_spinBoxes.size() );
     _spinBoxes[dimension].first->setReadOnly_NoFocusRect(readOnly);
@@ -677,14 +669,15 @@ KnobGuiInt::setDirty(bool dirty)
     }
 }
 
-KnobPtr KnobGuiInt::getKnob() const
+KnobPtr
+KnobGuiInt::getKnob() const
 {
     return _knob.lock();
 }
 
 void
 KnobGuiInt::reflectExpressionState(int dimension,
-                                    bool hasExpr)
+                                   bool hasExpr)
 {
     boost::shared_ptr<KnobInt> knob = _knob.lock();
 
@@ -696,7 +689,7 @@ KnobGuiInt::reflectExpressionState(int dimension,
         }
     } else {
         AnimationLevelEnum lvl = knob->getAnimationLevel(dimension);
-        _spinBoxes[dimension].first->setAnimation((int)lvl);
+        _spinBoxes[dimension].first->setAnimation( (int)lvl );
         bool isEnabled = knob->isEnabled(dimension);
         _spinBoxes[dimension].first->setReadOnly_NoFocusRect(!isEnabled);
         if (_slider) {
@@ -726,6 +719,7 @@ void
 KnobGuiInt::reflectModificationsState()
 {
     bool hasModif = _knob.lock()->hasModifications();
+
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         _spinBoxes[i].first->setAltered(!hasModif);
         if (_spinBoxes[i].second) {
@@ -740,12 +734,12 @@ KnobGuiInt::reflectModificationsState()
 void
 KnobGuiInt::refreshDimensionName(int dim)
 {
-    if (dim < 0 || dim >= (int)_spinBoxes.size()) {
+    if ( (dim < 0) || ( dim >= (int)_spinBoxes.size() ) ) {
         return;
     }
     boost::shared_ptr<KnobInt> knob = _knob.lock();
     if (_spinBoxes[dim].second) {
-        _spinBoxes[dim].second->setText(QString::fromUtf8(knob->getDimensionName(dim).c_str()));
+        _spinBoxes[dim].second->setText( QString::fromUtf8( knob->getDimensionName(dim).c_str() ) );
     }
 }
 

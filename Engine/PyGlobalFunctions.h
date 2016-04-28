@@ -17,9 +17,9 @@
  * ***** END LICENSE BLOCK ***** */
 
 /**
-* @brief Used to wrap all global functions that are in the Natron namespace so shiboken
-* doesn't generate the Natron namespace
-**/
+ * @brief Used to wrap all global functions that are in the Natron namespace so shiboken
+ * doesn't generate the Natron namespace
+ **/
 
 #ifndef GLOBALFUNCTIONSWRAPPER_H
 #define GLOBALFUNCTIONSWRAPPER_H
@@ -40,183 +40,188 @@ NATRON_NAMESPACE_ENTER;
 
 class PyCoreApplication
 {
-    
-    
 public:
-    
+
     PyCoreApplication() {}
-    
+
     virtual ~PyCoreApplication() {}
-    
-    inline QStringList
-    getPluginIDs() const
+
+    inline QStringList getPluginIDs() const
     {
         QStringList ret;
         std::list<std::string> list =  appPTR->getPluginIDs();
-        for (std::list<std::string>::iterator it = list.begin(); it!=list.end(); ++it) {
-            ret.push_back(QString::fromUtf8(it->c_str()));
+
+        for (std::list<std::string>::iterator it = list.begin(); it != list.end(); ++it) {
+            ret.push_back( QString::fromUtf8( it->c_str() ) );
         }
+
         return ret;
     }
-    
-    inline QStringList
-    getPluginIDs(const QString& filter) const
+
+    inline QStringList getPluginIDs(const QString& filter) const
     {
         QStringList ret;
-        std::list<std::string> list =  appPTR->getPluginIDs(filter.toStdString());
-        for (std::list<std::string>::iterator it = list.begin(); it!=list.end(); ++it) {
-            ret.push_back(QString::fromUtf8(it->c_str()));
+        std::list<std::string> list =  appPTR->getPluginIDs( filter.toStdString() );
+
+        for (std::list<std::string>::iterator it = list.begin(); it != list.end(); ++it) {
+            ret.push_back( QString::fromUtf8( it->c_str() ) );
         }
+
         return ret;
     }
-    
-    inline int
-    getNumInstances() const
+
+    inline int getNumInstances() const
     {
         return appPTR->getNumInstances();
     }
-    
-    inline QStringList
-    getNatronPath() const
+
+    inline QStringList getNatronPath() const
     {
         QStringList ret;
         std::list<std::string> list =  appPTR->getNatronPath();
-        for (std::list<std::string>::iterator it = list.begin(); it!=list.end(); ++it) {
-            ret.push_back(QString::fromUtf8(it->c_str()));
+
+        for (std::list<std::string>::iterator it = list.begin(); it != list.end(); ++it) {
+            ret.push_back( QString::fromUtf8( it->c_str() ) );
         }
+
         return ret;
     }
-    
-    inline void
-    appendToNatronPath(const QString& path)
+
+    inline void appendToNatronPath(const QString& path)
     {
-        appPTR->appendToNatronPath(path.toStdString());
+        appPTR->appendToNatronPath( path.toStdString() );
     }
-    
+
     inline bool isLinux() const
     {
 #ifdef __NATRON_LINUX__
+
         return true;
 #else
+
         return false;
 #endif
     }
-    
+
     inline bool isWindows() const
     {
 #ifdef __NATRON_WIN32__
+
         return true;
 #else
+
         return false;
 #endif
     }
-    
+
     inline bool isMacOSX() const
     {
 #ifdef __NATRON_OSX__
+
         return true;
 #else
+
         return false;
 #endif
     }
-    
+
     inline bool isUnix() const
     {
 #ifdef __NATRON_UNIX__
+
         return true;
 #else
+
         return false;
 #endif
     }
-    
+
     inline QString getNatronVersionString() const
     {
         return QString::fromUtf8(NATRON_VERSION_STRING);
     }
-    
+
     inline int getNatronVersionMajor() const
     {
         return NATRON_VERSION_MAJOR;
     }
-    
+
     inline int getNatronVersionMinor() const
     {
         return NATRON_VERSION_MINOR;
     }
-    
+
     inline int getNatronVersionRevision() const
     {
         return NATRON_VERSION_REVISION;
     }
-    
+
     inline int getNatronVersionEncoded() const
     {
         return NATRON_VERSION_ENCODED;
     }
-    
+
     inline QString getNatronDevelopmentStatus() const
     {
         return QString::fromUtf8(NATRON_DEVELOPMENT_STATUS);
     }
-    
+
     inline int getBuildNumber() const
     {
         return NATRON_BUILD_NUMBER;
     }
-    
+
     inline bool is64Bit() const
     {
         return !isApplication32Bits();
     }
-    
+
     bool isBackground() const
     {
         return appPTR->isBackground();
     }
-    
+
     inline int getNumCpus() const
     {
         return appPTR->getHardwareIdealThreadCount();
     }
-    
-    inline App*
-    getInstance(int idx) const
+
+    inline App* getInstance(int idx) const
     {
         AppInstance* app = appPTR->getAppInstance(idx);
+
         if (!app) {
             return 0;
         }
+
         return new App(app);
     }
-    
-    inline App*
-    getActiveInstance() const
+
+    inline App* getActiveInstance() const
     {
         AppInstance* app = appPTR->getTopLevelInstance();
+
         if (!app) {
             return 0;
         }
+
         return new App(app);
     }
-    
-    
+
     inline AppSettings* getSettings() const
     {
-        return new AppSettings(appPTR->getCurrentSettings());
+        return new AppSettings( appPTR->getCurrentSettings() );
     }
-    
+
     inline void setOnProjectCreatedCallback(const QString& pythonFunctionName)
     {
-        appPTR->setOnProjectCreatedCallback(pythonFunctionName.toStdString());
+        appPTR->setOnProjectCreatedCallback( pythonFunctionName.toStdString() );
     }
-    
+
     inline void setOnProjectLoadedCallback(const QString& pythonFunctionName)
     {
-        appPTR->setOnProjectLoadedCallback(pythonFunctionName.toStdString());
+        appPTR->setOnProjectLoadedCallback( pythonFunctionName.toStdString() );
     }
-    
-    
-
 };
 
 NATRON_NAMESPACE_EXIT;
@@ -226,7 +231,6 @@ namespace PySide {
 PYSIDE_API PyObject* getWrapperForQObject(QObject* cppSelf, SbkObjectType* sbk_type);
 }
 #endif
-
 
 
 #endif // GLOBALFUNCTIONSWRAPPER_H

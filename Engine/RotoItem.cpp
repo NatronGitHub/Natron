@@ -94,7 +94,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 NATRON_NAMESPACE_ENTER;
 
 
-
 ////////////////////////////////////RotoItem////////////////////////////////////
 namespace {
 class RotoMetaTypesRegistration
@@ -112,7 +111,7 @@ RotoItem::RotoItem(const boost::shared_ptr<RotoContext>& context,
                    const std::string & name,
                    boost::shared_ptr<RotoLayer> parent)
     : itemMutex()
-      , _imp( new RotoItemPrivate(context,name,parent) )
+    , _imp( new RotoItemPrivate(context, name, parent) )
 {
 }
 
@@ -146,7 +145,7 @@ RotoItem::setParentLayer(boost::shared_ptr<RotoLayer> layer)
             isStroke->activateNodes();
         }
     }
-    
+
     QMutexLocker l(&itemMutex);
     _imp->parentLayer = layer;
 }
@@ -155,6 +154,7 @@ boost::shared_ptr<RotoLayer>
 RotoItem::getParentLayer() const
 {
     QMutexLocker l(&itemMutex);
+
     return _imp->parentLayer.lock();
 }
 
@@ -215,6 +215,7 @@ isDeactivated_imp(const boost::shared_ptr<RotoLayer>& item)
             return isDeactivated_imp(parent);
         }
     }
+
     return false;
 }
 
@@ -233,23 +234,25 @@ RotoItem::isDeactivatedRecursive() const
     if (parent) {
         return isDeactivated_imp(parent);
     }
+
     return false;
 }
 
 void
-RotoItem::setLocked_recursive(bool locked,RotoItem::SelectionReasonEnum reason)
+RotoItem::setLocked_recursive(bool locked,
+                              RotoItem::SelectionReasonEnum reason)
 {
     {
         {
             QMutexLocker m(&itemMutex);
             _imp->locked = locked;
         }
-        getContext()->onItemLockedChanged(shared_from_this(),reason);
+        getContext()->onItemLockedChanged(shared_from_this(), reason);
         RotoLayer* layer = dynamic_cast<RotoLayer*>(this);
         if (layer) {
             const RotoItems & children = layer->getItems();
             for (RotoItems::const_iterator it = children.begin(); it != children.end(); ++it) {
-                (*it)->setLocked_recursive(locked,reason);
+                (*it)->setLocked_recursive(locked, reason);
             }
         }
     }
@@ -267,9 +270,9 @@ RotoItem::setLocked(bool l,
             QMutexLocker m(&itemMutex);
             _imp->locked = l;
         }
-        getContext()->onItemLockedChanged(shared_from_this(),reason);
+        getContext()->onItemLockedChanged(shared_from_this(), reason);
     } else {
-        setLocked_recursive(l,reason);
+        setLocked_recursive(l, reason);
     }
 }
 
@@ -293,6 +296,7 @@ isLocked_imp(const boost::shared_ptr<RotoLayer>& item)
             return isLocked_imp(parent);
         }
     }
+
     return false;
 }
 
@@ -345,23 +349,23 @@ RotoItem::setScriptName(const std::string & name)
 {
     ///called on the main-thread only
     assert( QThread::currentThread() == qApp->thread() );
-    
-    if (name.empty()) {
+
+    if ( name.empty() ) {
         return false;
     }
-    
-    
+
+
     std::string cpy = Python::makeNameScriptFriendly(name);
-    
-    if (cpy.empty()) {
+
+    if ( cpy.empty() ) {
         return false;
     }
-    
+
     boost::shared_ptr<RotoItem> existingItem = getContext()->getItemByName(name);
     if ( existingItem && (existingItem.get() != this) ) {
         return false;
     }
-    
+
     std::string oldFullName = getFullyQualifiedName();
     bool oldNameEmpty;
     {
@@ -370,7 +374,6 @@ RotoItem::setScriptName(const std::string & name)
         _imp->scriptName = cpy;
     }
     std::string newFullName = getFullyQualifiedName();
-    
     boost::shared_ptr<RotoContext> c = _imp->context.lock();
     if (c) {
         if (!oldNameEmpty) {
@@ -380,15 +383,18 @@ RotoItem::setScriptName(const std::string & name)
                 c->changeItemScriptName(oldFullName, newFullName);
             }
         }
-        c->onItemScriptNameChanged(shared_from_this());
+        c->onItemScriptNameChanged( shared_from_this() );
     }
+
     return true;
 }
 
-static void getScriptNameRecursive(RotoLayer* item,std::string* scriptName)
+static void
+getScriptNameRecursive(RotoLayer* item,
+                       std::string* scriptName)
 {
     scriptName->insert(0, ".");
-    scriptName->insert(0, item->getScriptName());
+    scriptName->insert( 0, item->getScriptName() );
     boost::shared_ptr<RotoLayer> parent = item->getParentLayer();
     if (parent) {
         getScriptNameRecursive(parent.get(), scriptName);
@@ -400,9 +406,11 @@ RotoItem::getFullyQualifiedName() const
 {
     std::string name = getScriptName();
     boost::shared_ptr<RotoLayer> parent = getParentLayer();
+
     if (parent) {
         getScriptNameRecursive(parent.get(), &name);
     }
+
     return name;
 }
 
@@ -418,6 +426,7 @@ std::string
 RotoItem::getLabel() const
 {
     QMutexLocker l(&itemMutex);
+
     return _imp->label;
 }
 
@@ -429,8 +438,9 @@ RotoItem::setLabel(const std::string& label)
         _imp->label = label;
     }
     boost::shared_ptr<RotoContext> c = _imp->context.lock();
+
     if (c) {
-        c->onItemLabelChanged(shared_from_this());
+        c->onItemLabelChanged( shared_from_this() );
     }
 }
 
@@ -460,7 +470,7 @@ RotoItem::load(const RotoItemSerialization &obj)
         _imp->globallyActivated = obj.activated;
         _imp->locked = obj.locked;
         _imp->scriptName = obj.name;
-        if (!obj.label.empty()) {
+        if ( !obj.label.empty() ) {
             _imp->label = obj.label;
         } else {
             _imp->label = _imp->scriptName;
@@ -468,23 +478,21 @@ RotoItem::load(const RotoItemSerialization &obj)
         std::locale loc;
         std::string cpy;
         for (std::size_t i = 0; i < _imp->scriptName.size(); ++i) {
-            
             ///Ignore starting digits
-            if (cpy.empty() && std::isdigit(_imp->scriptName[i],loc)) {
+            if ( cpy.empty() && std::isdigit(_imp->scriptName[i], loc) ) {
                 continue;
             }
-            
+
             ///Spaces becomes underscores
-            if (std::isspace(_imp->scriptName[i],loc)){
+            if ( std::isspace(_imp->scriptName[i], loc) ) {
                 cpy.push_back('_');
             }
-            
             ///Non alpha-numeric characters are not allowed in python
-            else if (_imp->scriptName[i] == '_' || std::isalnum(_imp->scriptName[i], loc)) {
+            else if ( (_imp->scriptName[i] == '_') || std::isalnum(_imp->scriptName[i], loc) ) {
                 cpy.push_back(_imp->scriptName[i]);
             }
         }
-        if (!cpy.empty()) {
+        if ( !cpy.empty() ) {
             _imp->scriptName = cpy;
         } else {
             l.unlock();
@@ -507,10 +515,13 @@ RotoItem::getRotoNodeName() const
     return getContext()->getRotoNodeName();
 }
 
-static boost::shared_ptr<RotoItem> getPreviousInLayer(const boost::shared_ptr<RotoLayer>& layer, const boost::shared_ptr<const RotoItem>& item)
+static boost::shared_ptr<RotoItem>
+getPreviousInLayer(const boost::shared_ptr<RotoLayer>& layer,
+                   const boost::shared_ptr<const RotoItem>& item)
 {
     RotoItems layerItems = layer->getItems_mt_safe();
-    if (layerItems.empty()) {
+
+    if ( layerItems.empty() ) {
         return boost::shared_ptr<RotoItem>();
     }
     RotoItems::iterator found = layerItems.end();
@@ -521,25 +532,25 @@ static boost::shared_ptr<RotoItem> getPreviousInLayer(const boost::shared_ptr<Ro
                 break;
             }
         }
-        assert(found != layerItems.end());
+        assert( found != layerItems.end() );
     } else {
         found = layerItems.end();
     }
-    
-    if (found != layerItems.end()) {
+
+    if ( found != layerItems.end() ) {
         ++found;
-        if (found != layerItems.end()) {
+        if ( found != layerItems.end() ) {
             return *found;
         }
     }
-    
+
     //Item was still not found, find in great parent layer
     boost::shared_ptr<RotoLayer> parentLayer = layer->getParentLayer();
     if (!parentLayer) {
         return boost::shared_ptr<RotoItem>();
     }
     RotoItems greatParentItems = parentLayer->getItems_mt_safe();
-    
+
     found = greatParentItems.end();
     for (RotoItems::iterator it = greatParentItems.begin(); it != greatParentItems.end(); ++it) {
         if (*it == layer) {
@@ -547,9 +558,10 @@ static boost::shared_ptr<RotoItem> getPreviousInLayer(const boost::shared_ptr<Ro
             break;
         }
     }
-    assert(found != greatParentItems.end());
+    assert( found != greatParentItems.end() );
     boost::shared_ptr<RotoItem> ret = getPreviousInLayer(parentLayer, layer);
     assert(ret != item);
+
     return ret;
 }
 
@@ -557,10 +569,12 @@ boost::shared_ptr<RotoItem>
 RotoItem::getPreviousItemInLayer() const
 {
     boost::shared_ptr<RotoLayer> layer = getParentLayer();
+
     if (!layer) {
         return boost::shared_ptr<RotoItem>();
     }
-    return getPreviousInLayer(layer, shared_from_this());
+
+    return getPreviousInLayer( layer, shared_from_this() );
 }
 
 NATRON_NAMESPACE_EXIT;
