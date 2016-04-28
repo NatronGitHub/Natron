@@ -94,13 +94,13 @@ public Q_SLOTS:
     void onTimelineTimeChanged(SequenceTime time, int reason);
 
     void onAddTrackClicked(bool clicked);
-    
+
     void onTrackRangeClicked();
-    
+
     void onTrackAllKeyframesClicked();
-    
+
     void onTrackCurrentKeyframeClicked();
-    
+
     void onTrackBwClicked();
 
     void onTrackPrevClicked();

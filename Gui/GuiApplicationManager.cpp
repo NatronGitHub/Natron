@@ -500,6 +500,39 @@ GuiApplicationManager::getIcon(PixmapEnum e,
         case NATRON_PIXMAP_REMOVE_USER_KEY:
             path = NATRON_IMAGES_PATH "removeUserKey.png";
             break;
+        case NATRON_PIXMAP_PREV_USER_KEY:
+            path = NATRON_IMAGES_PATH "prevUserKey.png";
+            break;
+        case NATRON_PIXMAP_NEXT_USER_KEY:
+            path = NATRON_IMAGES_PATH "nextUserKey.png";
+            break;
+        case NATRON_PIXMAP_TRACK_RANGE:
+            path = NATRON_IMAGES_PATH "trackRange.png";
+            break;
+        case NATRON_PIXMAP_TRACK_ALL_KEYS:
+            path = NATRON_IMAGES_PATH "trackAllKeyframes.png";
+            break;
+        case NATRON_PIXMAP_TRACK_CURRENT_KEY:
+            path = NATRON_IMAGES_PATH "trackCurrentKeyframe.png";
+            break;
+        case NATRON_PIXMAP_TRACK_BACKWARD_OFF:
+            path = NATRON_IMAGES_PATH "trackBackwardOff.png";
+            break;
+        case NATRON_PIXMAP_TRACK_BACKWARD_ON:
+            path = NATRON_IMAGES_PATH "trackBackwardOn.png";
+            break;
+        case NATRON_PIXMAP_TRACK_FORWARD_OFF:
+            path = NATRON_IMAGES_PATH "trackForwardOff.png";
+            break;
+        case NATRON_PIXMAP_TRACK_FORWARD_ON:
+            path = NATRON_IMAGES_PATH "trackForwardOn.png";
+            break;
+        case NATRON_PIXMAP_TRACK_PREVIOUS:
+            path = NATRON_IMAGES_PATH "trackPrev.png";
+            break;
+        case NATRON_PIXMAP_TRACK_NEXT:
+            path = NATRON_IMAGES_PATH "trackNext.png";
+            break;
         case NATRON_PIXMAP_RESET_TRACK_OFFSET:
             path = NATRON_IMAGES_PATH "resetTrackOffset.png";
             break;

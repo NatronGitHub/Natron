@@ -352,5 +352,16 @@
         <file>Resources/Images/pauseEnabled.png</file>
         <file>Resources/Images/pauseDisabled.png</file>
         <file>Resources/Images/trackerNodeIcon.png</file>
+        <file>Resources/Images/trackAllKeyframes.png</file>
+        <file>Resources/Images/trackBackwardOff.png</file>
+        <file>Resources/Images/trackBackwardOn.png</file>
+        <file>Resources/Images/trackCurrentKeyframe.png</file>
+        <file>Resources/Images/trackForwardOff.png</file>
+        <file>Resources/Images/trackForwardOn.png</file>
+        <file>Resources/Images/trackNext.png</file>
+        <file>Resources/Images/trackPrev.png</file>
+        <file>Resources/Images/trackRange.png</file>
+        <file>Resources/Images/prevUserKey.png</file>
+        <file>Resources/Images/nextUserKey.png</file>
     </qresource>
 </RCC>

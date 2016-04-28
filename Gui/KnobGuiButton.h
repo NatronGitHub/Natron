@@ -74,12 +74,8 @@ public:
     virtual ~KnobGuiButton() OVERRIDE;
 
     virtual void removeSpecificGui() OVERRIDE FINAL;
-    virtual bool isLabelVisible() const OVERRIDE
-    {
-        return false;
-    }
-
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual std::string getDescriptionLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 public Q_SLOTS:
 

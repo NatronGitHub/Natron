@@ -1749,6 +1749,7 @@ AppManager::getPluginBinary(const QString & pluginId,
                   .arg(majorVersion);
 
     throw std::invalid_argument( exc.toStdString() );
+
     return 0;
 }
 

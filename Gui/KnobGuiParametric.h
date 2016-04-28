@@ -71,7 +71,7 @@ public:
     KnobGuiParametric(KnobPtr knob,
                       DockablePanel *container);
     virtual void removeSpecificGui() OVERRIDE FINAL;
-    virtual bool isLabelVisible() const OVERRIDE
+    virtual bool shouldCreateLabel() const OVERRIDE
     {
         return false;
     }

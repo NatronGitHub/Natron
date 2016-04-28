@@ -91,7 +91,6 @@ AbortableThread::getAbortInfo(bool* isRenderResponseToUserInteraction,
     return true;
 }
 
-
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 class ThreadPoolThread

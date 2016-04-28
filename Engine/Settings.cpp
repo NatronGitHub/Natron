@@ -2111,7 +2111,7 @@ Settings::onKnobValueChanged(KnobI* k,
         appPTR->onQueueRendersChanged( _queueRenders->getValue() );
     } else if ( ( k == _checkerboardTileSize.get() ) || ( k == _checkerboardColor1.get() ) || ( k == _checkerboardColor2.get() ) ) {
         appPTR->onCheckerboardSettingsChanged();
-    }  else if ( ( k == _hideOptionalInputsAutomatically.get() ) && !_restoringSettings && (reason == eValueChangedReasonUserEdited) )       {
+    }  else if ( ( k == _hideOptionalInputsAutomatically.get() ) && !_restoringSettings && (reason == eValueChangedReasonUserEdited) ) {
         appPTR->toggleAutoHideGraphInputs();
     } else if ( k == _autoProxyWhenScrubbingTimeline.get() ) {
         _autoProxyLevel->setSecret( !_autoProxyWhenScrubbingTimeline->getValue() );
@@ -2611,7 +2611,7 @@ Settings::makeHTMLDocumentation(bool menu,
         ts << "</ul></div>";
         ts << "<div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\">";
         ts << "<h1>Preferences</h1>";
-    } else   {
+    } else {
         ts << "<li class=\"toctree-l1\"><a href='" << pageName << "'>Preferences</a>\n<ul>\n";
     }
 
@@ -2629,15 +2629,15 @@ Settings::makeHTMLDocumentation(bool menu,
         if (!menu) {
             if (isPage) {
                 ts << "<h2 id='" << knobScriptName << "'>" << knobLabel << "</h2>";
-            } else if (isSep)   {
+            } else if (isSep) {
                 ts << "<h3 id='" << knobScriptName << "'>" << knobLabel << "</h3>";
-            } else if ( !knobLabel.isEmpty() && !knobHint.isEmpty() )   {
+            } else if ( !knobLabel.isEmpty() && !knobHint.isEmpty() ) {
                 if ( ( knobLabel != QString::fromUtf8("Enabled") ) && ( knobLabel != QString::fromUtf8("Zoom support") ) ) {
                     ts << "<h4 id='" << knobScriptName << "'>" << knobLabel << "</h4>";
                     ts << "<p>" << knobHint << "</p>";
                 }
             }
-        } else   {
+        } else {
             if (isPage) {
                 ts << "<li class='toctree-l2'><a href='" << pageName << "#" << knobScriptName << "'>" << knobLabel << "</a></li>\n";
             }
@@ -2646,7 +2646,7 @@ Settings::makeHTMLDocumentation(bool menu,
 
     if (!menu) {
         ts << "</body></html>";
-    } else   {
+    } else {
         ts << "</ul></li>";
     }
 

@@ -88,9 +88,9 @@ KnobGui::onMultipleKeySet(const std::list<double>& keys,
 
 void
 KnobGui::onMultipleKeyRemoved(const std::list<double>& keys,
-                          ViewSpec /*view*/,
-                          int /*dimension*/,
-                          int reason)
+                              ViewSpec /*view*/,
+                              int /*dimension*/,
+                              int reason)
 {
     if ( (ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited ) {
         KnobPtr knob = getKnob();
@@ -102,7 +102,7 @@ KnobGui::onMultipleKeyRemoved(const std::list<double>& keys,
             knob->getHolder()->getApp()->removeMultipleKeyframeIndicator(intKeys, true);
         }
     }
-    
+
     Q_EMIT keyFrameRemoved();
 }
 
@@ -856,15 +856,8 @@ KnobGui::onLabelChanged()
         if ( !iconLabel.empty() ) {
             return;
         }
-        std::string descriptionLabel;
-        KnobString* isStringKnob = dynamic_cast<KnobString*>( knob.get() );
-        bool isLabelKnob = isStringKnob && isStringKnob->isLabel();
-        if (isLabelKnob) {
-            descriptionLabel = isStringKnob->getValue();
-        } else {
-            descriptionLabel = knob->getLabel();
-        }
 
+        std::string descriptionLabel = getDescriptionLabel();
         _imp->descriptionLabel->setText_overload( QString::fromUtf8( descriptionLabel.c_str() ) );
         onLabelChangedInternal();
     }

@@ -130,7 +130,7 @@ string_format(const std::string fmt,
         }
         if (n > -1) { // Needed size returned
             size = n + 1;   // For null char
-        } else                                               {
+        } else {
             size *= 2;      // Guess at a larger size (OS specific)
         }
     }
@@ -406,7 +406,7 @@ OfxHost::getStringProperty(const std::string &name,
 
         // kOfxPropName was set at host creation, let the value decided by the user
         return _properties.getStringPropertyRaw(kOfxPropName);
-    } else   {
+    } else {
         throw OFX::Host::Property::Exception(kOfxStatErrValue);
     }
 }
@@ -1028,7 +1028,6 @@ OfxHost::setThreadAsActionCaller(OfxImageEffectInstance* instance,
         tls->threadIndexes.pop_back();
     }
 }
-
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 

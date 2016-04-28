@@ -64,7 +64,7 @@ string_format(const std::string fmt,
         }
         if (n > -1) { // Needed size returned
             size = n + 1;   // For null char
-        } else                                               {
+        } else {
             size *= 2;      // Guess at a larger size (OS specific)
         }
     }

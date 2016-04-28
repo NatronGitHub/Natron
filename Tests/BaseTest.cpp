@@ -235,8 +235,8 @@ TEST_F(BaseTest, GenerateDot)
     ASSERT_TRUE(knob);
     knob->setValue(1, ViewSpec::all(), 0);
     knob->setValue(1, ViewSpec::all(), 1);
-    
-    Format f(0,0,200,200,"toto",1.);
+
+    Format f(0, 0, 200, 200, "toto", 1.);
     generator->getApp()->getProject()->setOrAddProjectFormat(f);
 
     const QString& binPath = appPTR->getApplicationBinaryPath();

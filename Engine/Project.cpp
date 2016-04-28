@@ -1867,8 +1867,8 @@ Project::escapeXML(const std::string &istr)
                 str.replace(i, 1, ns);
                 i += ns.size() + 1;
             }
+            break;
         }
-        break;
         }
     }
     assert( str == OFX::XML::escape(istr) ); // check that this escaped string is consistent with the one in HostSupport

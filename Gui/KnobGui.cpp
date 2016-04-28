@@ -81,7 +81,7 @@ KnobGui::initialize()
         QObject::connect( handler, SIGNAL(multipleKeyFramesSet(std::list<double>,ViewSpec,int,int)), this,
                           SLOT(onMultipleKeySet(std::list<double>,ViewSpec,int,int)) );
         QObject::connect( handler, SIGNAL(multipleKeyFramesRemoved(std::list<double>,ViewSpec,int,int)), this,
-                         SLOT(onMultipleKeyRemoved(std::list<double>,ViewSpec,int,int)) );
+                          SLOT(onMultipleKeyRemoved(std::list<double>,ViewSpec,int,int)) );
         QObject::connect( handler, SIGNAL(secretChanged()), this, SLOT(setSecret()) );
         QObject::connect( handler, SIGNAL(enabledChanged()), this, SLOT(setEnabledSlot()) );
         QObject::connect( handler, SIGNAL(knobSlaved(int,bool)), this, SLOT(onKnobSlavedChanged(int,bool)) );
@@ -271,10 +271,11 @@ KnobGui::enableRightClickMenu(QWidget* widget,
 }
 
 bool
-KnobGui::isLabelVisible() const
+KnobGui::shouldCreateLabel() const
 {
     KnobPtr knob = getKnob();
-    KnobString* isStringKnob = dynamic_cast<KnobString*>(knob.get());
+    KnobString* isStringKnob = dynamic_cast<KnobString*>( knob.get() );
+
     return isStringKnob || knob->isLabelVisible();
 }
 
@@ -288,6 +289,12 @@ bool
 KnobGui::isLabelBold() const
 {
     return false;
+}
+
+std::string
+KnobGui::getDescriptionLabel() const
+{
+    return getKnob()->getLabel();
 }
 
 void

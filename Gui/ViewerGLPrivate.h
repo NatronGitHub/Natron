@@ -102,13 +102,11 @@ struct TextureInfo
     ImagePremultiplicationEnum premult;
     SequenceTime time;
     RectD rod;
-    
-    // For now we always use the project format, but we store the pixel aspect ratio of the upstream image 
+
+    // For now we always use the project format, but we store the pixel aspect ratio of the upstream image
     Format format;
-    
     std::vector<ImageList> lastRenderedTiles;
     U64 memoryHeldByLastRenderedImages;
-    
     bool isPartialImage;
 };
 

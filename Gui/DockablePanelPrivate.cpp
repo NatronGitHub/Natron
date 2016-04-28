@@ -608,18 +608,11 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
         ///Create the label if needed
         KnobClickableLabel* label = 0;
         Label* warningLabel = 0;
-        std::string descriptionLabel;
-        KnobString* isStringKnob = dynamic_cast<KnobString*>( knob.get() );
-        bool isLabelKnob = isStringKnob && isStringKnob->isLabel();
-        if (isLabelKnob) {
-            descriptionLabel = isStringKnob->getValue();
-        } else {
-            descriptionLabel = knob->getLabel();
-        }
+        std::string descriptionLabel = ret->getDescriptionLabel();
         const std::string& labelIconFilePath = knob->getIconLabel();
         QWidget *labelContainer = 0;
         QHBoxLayout *labelLayout = 0;
-        const bool hasLabel = ret->isLabelVisible() || isLabelKnob;
+        const bool hasLabel = ret->shouldCreateLabel();
         if (hasLabel) {
             if (makeNewLine) {
                 labelContainer = new QWidget(page->second.tab);

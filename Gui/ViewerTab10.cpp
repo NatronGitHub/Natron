@@ -284,22 +284,21 @@ ViewerTab::onEngineStarted(bool forward)
         return;
     }
 
-    
+
     const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        if ((*it)->_imp->play_Forward_Button) {
+        if ( (*it)->_imp->play_Forward_Button ) {
             (*it)->_imp->play_Forward_Button->setDown(forward);
             (*it)->_imp->play_Forward_Button->setChecked(forward);
         }
-        
-        if ((*it)->_imp->play_Backward_Button) {
+
+        if ( (*it)->_imp->play_Backward_Button ) {
             (*it)->_imp->play_Backward_Button->setDown(!forward);
             (*it)->_imp->play_Backward_Button->setChecked(!forward);
         }
-
     }
-    
-    if (getGui() && !getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
+
+    if ( getGui() && !getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
         getGui()->onFreezeUIButtonClicked(true);
     }
 }
@@ -311,22 +310,19 @@ ViewerTab::onEngineStopped()
         return;
     }
 
-    if (!_imp->viewerNode->getRenderEngine()->isPlaybackAutoRestartEnabled()) {
-        
+    if ( !_imp->viewerNode->getRenderEngine()->isPlaybackAutoRestartEnabled() ) {
         const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-            if ((*it)->_imp->play_Forward_Button) {
+            if ( (*it)->_imp->play_Forward_Button ) {
                 (*it)->_imp->play_Forward_Button->setDown(false);
                 (*it)->_imp->play_Forward_Button->setChecked(false);
             }
-            
-            if ((*it)->_imp->play_Backward_Button) {
+
+            if ( (*it)->_imp->play_Backward_Button ) {
                 (*it)->_imp->play_Backward_Button->setDown(false);
                 (*it)->_imp->play_Backward_Button->setChecked(false);
             }
-            
         }
-
     }
     _imp->currentFrameBox->setValue( _imp->viewerNode->getTimeline()->currentFrame() );
 
@@ -704,7 +700,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         onEnableViewerRoIButtonToggle( !_imp->enableViewerRoI->isDown() );
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionNewROI, modifiers, key) ) {
         onCreateNewRoIPressed();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyEnabled, modifiers, key) )  {
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyEnabled, modifiers, key) ) {
         onRenderScaleButtonClicked(!_imp->renderScaleActive);
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel2, modifiers, key) ) {
         _imp->renderScaleCombo->setCurrentIndex(0);

@@ -340,7 +340,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         if ( getLastSelectedViewer() ) {
             getLastSelectedViewer()->nextIncrement();
         }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) )  {
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
         if ( getLastSelectedViewer() ) {
             getLastSelectedViewer()->nextFrame();
         }
