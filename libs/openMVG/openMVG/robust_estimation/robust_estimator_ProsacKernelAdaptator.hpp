@@ -1435,10 +1435,28 @@ namespace openMVG {
             
             // Convenience function to call when they are a number of samples equal to MinmumSamples()
             // Do not call if you have more samples
-            void ComputeModelFromAllSamples(std::vector<Model> *models) const
+            void ComputeModelFromMinimumSamples(std::vector<Model> *models) const
             {
                 assert(_x1.cols() == (int)MinimumSamples());
                 Solver::ComputeModelFromMinimumSamples(_x1, _x2, models);
+            }
+            
+            // Computes a model from N samples with input weights. This is to be called only when there are
+            // more samples than the minmum samples count
+            int ComputeModelFromNSamples(const Mat& x1, const Mat& x2, const Vec& weights, Model* model) const
+            {
+                assert(_x1.cols() > (int)MinimumSamples());
+                return Solver::ComputeModelFromNSamples(x1, x2, weights, model);
+            }
+            
+            // Computes a model from N samples. This is to be called only when there are
+            // more samples than the minmum samples count
+            int ComputeModelFromAllSamples(Model* model) const
+            {
+                Vec weights(_x1.cols(), 1);
+                weights.setOnes();
+                assert(_x1.cols() > (int)MinimumSamples());
+                return Solver::ComputeModelFromNSamples(_x1, _x2, weights, model);
             }
             
             /**
@@ -1460,6 +1478,7 @@ namespace openMVG {
                 }
                 return nbInliers;
             }
+            
             
             
             // LO-RANSAC
@@ -1495,6 +1514,56 @@ namespace openMVG {
             {
                 return MEstimatorIteration(model, inliers, optimizedModel);
             }
+            
+            /// full Mestimator
+            /// returns the number of successful iterations
+            int MEstimator(const Model &model, const InliersVec &inliers, int maxNbIterations, Model* optimizedModel, double *sigmaMAD_p = 0) const
+            {
+                const size_t n = inliers.size(); // the dataset size
+                Vec errors(n);
+                for (std::size_t i = 0; i < inliers.size(); ++i) {
+                    if (inliers[i]) {
+                        errors(i) = Solver::Error(model, _x1.col(i), _x2.col(i));
+                    } else {
+                        errors(i) = 0.;
+                    }
+                    
+                }
+                
+                double sigmaMAD = SigmaMAD(errors, inliers);
+                double sigmaMAD_old = 0.;
+                bool succeeded;
+                int i = 0;
+                *optimizedModel = model;
+                do {
+                    if (sigmaMAD > 0.) {
+                        succeeded = MEstimatorIterationFromErrors(*optimizedModel, errors, inliers, sigmaMAD, optimizedModel);
+                    } else {
+                        succeeded = false;
+                        ++i; // sigmaMAD is 0: mark the model as optimized, although we didn't compute anything
+                    }
+                    if (succeeded) {
+                        ++i;
+                        
+                        for (std::size_t i = 0; i < inliers.size(); ++i) {
+                            if (inliers[i]) {
+                                errors(i) = Solver::Error(*optimizedModel, _x1.col(i), _x2.col(i));
+                            } else {
+                                errors(i) = 0.;
+                            }
+                            
+                        }
+                        
+                        sigmaMAD = SigmaMAD(errors, inliers);
+                        sigmaMAD_old = sigmaMAD;
+                    }
+                } while (i < maxNbIterations && succeeded && sigmaMAD < sigmaMAD_old);
+                if (sigmaMAD_p) {
+                    *sigmaMAD_p = sigmaMAD;
+                }
+                return i;
+            }
+            
             
         private:
             
@@ -1586,55 +1655,7 @@ namespace openMVG {
                 return false;
             }
             
-            /// full Mestimator
-            /// returns the number of successful iterations
-            int MEstimator(const Model &model, const InliersVec &inliers, int maxNbIterations, Model* optimizedModel, double *sigmaMAD_p = 0) const
-            {
-                const size_t n = inliers.size(); // the dataset size
-                Vec errors(n);
-                for (std::size_t i = 0; i < inliers.size(); ++i) {
-                    if (inliers[i]) {
-                        errors(i) = Solver::Error(model, _x1.col(i), _x2.col(i));
-                    } else {
-                        errors(i) = 0.;
-                    }
-                    
-                }
-
-                double sigmaMAD = SigmaMAD(errors, inliers);
-                double sigmaMAD_old = 0.;
-                bool succeeded;
-                int i = 0;
-                *optimizedModel = model;
-                do {
-                    if (sigmaMAD > 0.) {
-                        succeeded = MEstimatorIterationFromErrors(*optimizedModel, errors, inliers, sigmaMAD, optimizedModel);
-                    } else {
-                        succeeded = false;
-                        ++i; // sigmaMAD is 0: mark the model as optimized, although we didn't compute anything
-                    }
-                    if (succeeded) {
-                        ++i;
-                        
-                        for (std::size_t i = 0; i < inliers.size(); ++i) {
-                            if (inliers[i]) {
-                                errors(i) = Solver::Error(optimizedModel, _x1.col(i), _x2.col(i));
-                            } else {
-                                errors(i) = 0.;
-                            }
-                            
-                        }
-
-                        sigmaMAD = SigmaMAD(errors, inliers);
-                        sigmaMAD_old = sigmaMAD;
-                    }
-                } while (i < maxNbIterations && succeeded && sigmaMAD < sigmaMAD_old);
-                if (sigmaMAD_p) {
-                    *sigmaMAD_p = sigmaMAD;
-                }
-                return i;
-            }
-            
+       
         private:
             
             Mat _x1, _x2;       // Normalized input data

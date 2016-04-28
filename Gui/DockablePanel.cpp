@@ -719,13 +719,26 @@ DockablePanel::initializeKnobsInternal()
 
     assert(!_imp->_trackerPanel);
     _imp->_trackerPanel = initializeTrackerPanel();
-    if (_imp->_trackerPanel) {
-        _imp->_rightContainerLayout->addWidget(_imp->_trackerPanel);
-    }
+   
 
     std::vector< KnobPtr > knobs = _imp->_holder->getKnobs();
     _imp->initializeKnobVector(knobs, NULL);
 
+    if (_imp->_trackerPanel) {
+        if (!_imp->_tabWidget->count()) {
+            // No page, add it to the bottom
+            _imp->_rightContainerLayout->addWidget(_imp->_trackerPanel);
+        } else {
+            // There is a page, add it to the first page
+            
+            QGridLayout* layout = dynamic_cast<QGridLayout*>(_imp->_tabWidget->widget(0)->layout());
+            assert(layout);
+            if (layout) {
+                layout->addWidget(_imp->_trackerPanel, layout->rowCount(), 0, 1, 2);
+            }
+        }
+    }
+    
     ///add all knobs left  to the default page
 
 

@@ -1259,12 +1259,22 @@ runProsacForModel(const std::vector<Point>& x1,
     }
     
     KernelType kernel(M1, w1, h1, M2, w2, h2);
-    ProsacReturnCodeEnum ret = prosac(kernel, foundModel
+    
+    //We are running prosac on user points which are likely to be inliers anyway
+   
+   /* ProsacReturnCodeEnum ret = prosac(kernel, foundModel
 #ifdef DEBUG
                                       , inliers
 #endif
                                       );
-    throwProsacError( ret, KernelType::MinimumSamples() );
+    throwProsacError( ret, KernelType::MinimumSamples() );*/
+    
+    double sigmaMAD;
+    if (!searchModelWithMEstimator(kernel, 3, foundModel, &sigmaMAD)) {
+        throw std::runtime_error("MEstimator failed");
+    }
+    inliers->resize(x1.size());
+    std::fill(inliers->begin(), inliers->end(), true);
 }
 
 void
@@ -1328,16 +1338,13 @@ TrackerContextPrivate::computeHomographyFromNPoints(const std::vector<Point>& x1
     
 #ifdef DEBUG
     // Check that the warped x1 points match x2
-    qDebug() << homog->a<<homog->b<<homog->c<<'\n'<<homog->d<<homog->e<<homog->f<<'\n'<<homog->g<<homog->h<<homog->i;
-    
     assert(x1.size() == x2.size());
     for (std::size_t i = 0; i < x1.size(); ++i) {
         if (inliers[i]) {
             Point p2 = applyHomography(x1[i], *homog);
-            qDebug() << "X1 ("<<x1[i].x<<','<<x1[i].y<<')' << "X2 ("<<x2[i].x<<','<<x2[i].y<<')'  << "P2 ("<<p2.x<<','<<p2.y<<')';
             if (std::abs(p2.x - x2[i].x) >  0.02 ||
                 std::abs(p2.y - x2[i].y) > 0.02) {
-                qDebug() << "[BUG]: Inlier for Homography2DSolver failed to fit the found model";
+                qDebug() << "[BUG]: Inlier for Homography2DSolver failed to fit the found model: X1 ("<<x1[i].x<<','<<x1[i].y<<')' << "X2 ("<<x2[i].x<<','<<x2[i].y<<')'  << "P2 ("<<p2.x<<','<<p2.y<<')';
             }
         }
     }

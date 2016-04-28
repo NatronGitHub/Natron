@@ -748,13 +748,13 @@ TrackerContext::exportTrackDataFromExportOptions()
         
         for (unsigned int i = 0; i < 4; ++i) {
             
-            _imp->fromPoints[i] = getCornerPinPoint(createdNode.get(), true, i);
+            cornerPinFromPoints[i] = getCornerPinPoint(createdNode.get(), true, i);
             assert(cornerPinFromPoints[i]);
             for (int j = 0; j < cornerPinFromPoints[i]->getDimension(); ++j) {
                 cornerPinFromPoints[i]->setValue(_imp->fromPoints[i].lock()->getValueAtTime(timeForFromPoints,j), ViewSpec(0), j);
             }
             
-            _imp->toPoints[i] = getCornerPinPoint(createdNode.get(), false, i);
+            cornerPinToPoints[i] = getCornerPinPoint(createdNode.get(), false, i);
             assert(cornerPinToPoints[i]);
             if (!linked) {
                 cornerPinToPoints[i]->cloneAndUpdateGui(_imp->toPoints[i].lock().get());
