@@ -56,7 +56,7 @@ DocumentationManager::startServer()
     server = new QHttpServer(this);
     connect( server, SIGNAL(newRequest(QHttpRequest*,QHttpResponse*)), this, SLOT(handler(QHttpRequest*,QHttpResponse*)) );
     connect( server, SIGNAL(newPort(int)), this, SLOT(setPort(int)) );
-    server->listen(QHostAddress::Any, 0);
+    server->listen(QHostAddress::LocalHost, 0);
 }
 
 void
