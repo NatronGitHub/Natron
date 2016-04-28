@@ -1190,6 +1190,7 @@ Knob<T>::setValues(const T& value0,
     KnobHolder* holder = getHolder();
     EffectInstance* effect = 0;
     bool doEditEnd = false;
+
     if (holder) {
         effect = dynamic_cast<EffectInstance*>(holder);
         if (effect) {
@@ -1252,6 +1253,7 @@ Knob<T>::setValues(const T& value0,
     KnobHolder* holder = getHolder();
     EffectInstance* effect = 0;
     bool doEditEnd = false;
+
     if (holder) {
         effect = dynamic_cast<EffectInstance*>(holder);
         if (effect) {
@@ -1537,6 +1539,7 @@ Knob<T>::setValuesAtTime(double time,
     KnobHolder* holder = getHolder();
     EffectInstance* effect = 0;
     bool doEditEnd = false;
+
     if (holder) {
         effect = dynamic_cast<EffectInstance*>(holder);
         if (effect) {
@@ -1589,6 +1592,7 @@ Knob<T>::setValuesAtTime(double time,
     KnobHolder* holder = getHolder();
     EffectInstance* effect = 0;
     bool doEditEnd = false;
+
     if (holder) {
         effect = dynamic_cast<EffectInstance*>(holder);
         if (effect) {

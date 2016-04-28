@@ -138,7 +138,6 @@ getPixmapForGrouping(QPixmap* pixmap,
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
-
 void
 Gui::reloadStylesheet()
 {

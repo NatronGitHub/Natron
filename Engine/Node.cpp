@@ -5892,7 +5892,7 @@ renderPreviewForDepth(const Image & srcImg,
     default:
         break;
     }
-}
+}     // renderPreviewForDepth
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 

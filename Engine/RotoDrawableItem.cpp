@@ -505,6 +505,7 @@ RotoDrawableItem::rotoKnobChanged(const KnobPtr& knob,
 
     RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
     RotoStrokeType type;
+
     if (isStroke) {
         type = isStroke->getBrushType();
     } else {
