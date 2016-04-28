@@ -1240,11 +1240,7 @@ runProsacForModel(const std::vector<Point>& x1,
                   int h1,
                   int w2,
                   int h2,
-                  typename MODELTYPE::Model* foundModel
-#ifdef DEBUG
-                  ,std::vector<bool>* inliers = 0
-#endif
-                  )
+                  typename MODELTYPE::Model* foundModel)
 {
     typedef ProsacKernelAdaptor<MODELTYPE> KernelType;
     
@@ -1273,8 +1269,6 @@ runProsacForModel(const std::vector<Point>& x1,
     if (!searchModelWithMEstimator(kernel, 3, foundModel, &sigmaMAD)) {
         throw std::runtime_error("MEstimator failed");
     }
-    inliers->resize(x1.size());
-    std::fill(inliers->begin(), inliers->end(), true);
 }
 
 void
@@ -1322,33 +1316,11 @@ TrackerContextPrivate::computeHomographyFromNPoints(const std::vector<Point>& x1
 {
     openMVG::Mat3 model;
     
-#ifdef DEBUG
-    std::vector<bool> inliers;
-#endif
-    
-    runProsacForModel<openMVG::robust::Homography2DSolver>(x1, x2, w1, h1, w2, h2, &model
-#ifdef DEBUG
-                                                           , &inliers
-#endif
-                                                           );
+    runProsacForModel<openMVG::robust::Homography2DSolver>(x1, x2, w1, h1, w2, h2, &model);
     
     *homog = Transform::Matrix3x3( model(0, 0), model(0, 1), model(0, 2),
                                   model(1, 0), model(1, 1), model(1, 2),
                                   model(2, 0), model(2, 1), model(2, 2) );
-    
-#ifdef DEBUG
-    // Check that the warped x1 points match x2
-    assert(x1.size() == x2.size());
-    for (std::size_t i = 0; i < x1.size(); ++i) {
-        if (inliers[i]) {
-            Point p2 = applyHomography(x1[i], *homog);
-            if (std::abs(p2.x - x2[i].x) >  0.02 ||
-                std::abs(p2.y - x2[i].y) > 0.02) {
-                qDebug() << "[BUG]: Inlier for Homography2DSolver failed to fit the found model: X1 ("<<x1[i].x<<','<<x1[i].y<<')' << "X2 ("<<x2[i].x<<','<<x2[i].y<<')'  << "P2 ("<<p2.x<<','<<p2.y<<')';
-            }
-        }
-    }
-#endif
 }
 
 void

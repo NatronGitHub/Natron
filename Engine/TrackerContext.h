@@ -189,7 +189,7 @@ public:
     }
 };
 
-struct TrackerContextPrivate;
+class TrackerContextPrivate;
 class TrackerContext
     : public QObject, public boost::enable_shared_from_this<TrackerContext>, public TrackerParamsProvider
 {
