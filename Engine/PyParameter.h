@@ -990,6 +990,7 @@ class FileParam
     : public StringParamBase
 {
     boost::weak_ptr<KnobFile> _sKnob;
+
 public:
 
 
@@ -1007,7 +1008,7 @@ public:
      * @brief Forces the GUI to pop-up the dialog
      **/
     void openFile();
-    
+
     /**
      * @brief Force a refresh of the file
      **/

@@ -89,7 +89,6 @@ struct GuiApplicationManagerPrivate
     int fontconfigMessageDots;
     PreviewThread previewRenderThread;
     int dpiX, dpiY;
-
     boost::scoped_ptr<DocumentationManager> documentation;
 
 

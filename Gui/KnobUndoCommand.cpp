@@ -169,8 +169,8 @@ PasteUndoCommand::copyFrom(const KnobPtr& serializedKnob,
             }
         }
         internalKnob->endChanges();
+        break;
     }
-    break;
     case eKnobClipBoardTypeCopyValue: {
         Knob<int>* isInt = dynamic_cast<Knob<int>*>( internalKnob.get() );
         Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( internalKnob.get() );
@@ -201,8 +201,8 @@ PasteUndoCommand::copyFrom(const KnobPtr& serializedKnob,
             }
         }
         internalKnob->endChanges();
+        break;
     }
-    break;
     case eKnobClipBoardTypeCopyLink: {
         //bool useExpression = !KnobI::areTypesCompatibleForSlave(internalKnob.get(), serializedKnob.get());
 
@@ -221,8 +221,8 @@ PasteUndoCommand::copyFrom(const KnobPtr& serializedKnob,
             }
         }
         internalKnob->endChanges();
+        break;
     }
-    break;
     } // switch
 } // redo
 

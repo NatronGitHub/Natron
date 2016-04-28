@@ -597,7 +597,7 @@ getLinuxVersionString()
             }
             os_release.close();
         }
-    } else if ( redhat_release.exists() )   {
+    } else if ( redhat_release.exists() ) {
         if ( redhat_release.open(QIODevice::ReadOnly | QIODevice::Text) ) {
             QString redhat_release_data = QString::fromUtf8( redhat_release.readAll() );
             if ( !redhat_release_data.isEmpty() ) {
@@ -605,7 +605,7 @@ getLinuxVersionString()
             }
             redhat_release.close();
         }
-    } else if ( debian_release.exists() )   {
+    } else if ( debian_release.exists() ) {
         if ( debian_release.open(QIODevice::ReadOnly | QIODevice::Text) ) {
             QString debian_release_data = QString::fromUtf8( debian_release.readAll() );
             if ( !debian_release_data.isEmpty() ) {

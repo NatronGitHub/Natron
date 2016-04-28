@@ -425,12 +425,11 @@ ViewerGL::paintGL()
             }
             for (std::size_t i = 0; i < _imp->partialUpdateTextures.size(); ++i) {
                 const TextureRect &r = _imp->partialUpdateTextures[i].texture->getTextureRect();
-                
                 RectI texRect(r.x1, r.y1, r.x2, r.y2);
                 const double par = r.par;
                 RectD canonicalTexRect;
                 texRect.toCanonical_noClipping(_imp->partialUpdateTextures[i].mipMapLevel, par /*, rod*/, &canonicalTexRect);
-                
+
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture( GL_TEXTURE_2D, _imp->partialUpdateTextures[i].texture->getTexID() );
                 glBegin(GL_POLYGON);
@@ -998,7 +997,6 @@ ViewerGL::drawPickerPixel()
     } // GLProtectAttrib a(GL_CURRENT_BIT | GL_ENABLE_BIT | GL_POINT_BIT | GL_COLOR_BUFFER_BIT);
 }
 
-
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 static QStringList
@@ -1335,7 +1333,7 @@ ViewerGL::initShaderGLSL()
     assert( QGLContext::currentContext() == context() );
 
     if (!_imp->shaderLoaded && _imp->supportsGLSL) {
-        _imp->shaderBlack.reset(new QGLShaderProgram(context()));
+        _imp->shaderBlack.reset( new QGLShaderProgram( context() ) );
         if ( !_imp->shaderBlack->addShaderFromSourceCode(QGLShader::Vertex, vertRGB) ) {
             qDebug() << qPrintable( _imp->shaderBlack->log() );
         }
@@ -1346,7 +1344,7 @@ ViewerGL::initShaderGLSL()
             qDebug() << qPrintable( _imp->shaderBlack->log() );
         }
 
-        _imp->shaderRGB.reset(new QGLShaderProgram(context()));
+        _imp->shaderRGB.reset( new QGLShaderProgram( context() ) );
         if ( !_imp->shaderRGB->addShaderFromSourceCode(QGLShader::Vertex, vertRGB) ) {
             qDebug() << qPrintable( _imp->shaderRGB->log() );
         }
@@ -1406,7 +1404,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
 
     GLTexturePtr tex;
     if (isPartialRect) {
-        tex.reset(new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE));
+        tex.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
     } else {
         tex = _imp->displayTextures[textureIndex].texture;
     }
@@ -1483,7 +1481,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
             firstTile->getRoD().toPixelEnclosing(0, firstTile->getPixelAspectRatio(), &pixelRoD);
             {
                 QMutexLocker k(&_imp->projectFormatMutex);
-                _imp->displayTextures[textureIndex].format = Format(_imp->projectFormat, firstTile->getPixelAspectRatio());
+                _imp->displayTextures[textureIndex].format = Format( _imp->projectFormat, firstTile->getPixelAspectRatio() );
             }
             {
                 QMutexLocker k(&_imp->lastRenderedImageMutex);
@@ -1552,7 +1550,7 @@ ViewerGL::setGamma(double g)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     _imp->displayTextures[0].gamma = g;
-    _imp->displayTextures[1].gamma= g;
+    _imp->displayTextures[1].gamma = g;
 }
 
 void
@@ -1927,21 +1925,21 @@ ViewerGL::tabletEvent(QTabletEvent* e)
         _imp->pressureOnPress = e->pressure();
         _imp->subsequentMousePressIsTablet = true;
         QGLWidget::tabletEvent(e);
+        break;
     }
-    break;
     case QEvent::TabletRelease: {
         _imp->pressureOnRelease = e->pressure();
         QGLWidget::tabletEvent(e);
+        break;
     }
-    break;
     case QEvent::TabletMove: {
         if ( !penMotionInternal(e->x(), e->y(), e->pressure(), currentTimeForEvent(e), e) ) {
             QGLWidget::tabletEvent(e);
         } else {
             e->accept();
         }
+        break;
     }
-    break;
     default:
         break;
     }
@@ -2728,7 +2726,6 @@ ViewerGL::disconnectViewer()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     if ( displayingImage() ) {
-        
         Format f;
         {
             QMutexLocker k(&_imp->projectFormatMutex);

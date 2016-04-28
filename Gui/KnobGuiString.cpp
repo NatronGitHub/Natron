@@ -511,6 +511,7 @@ KnobGuiString::getDescriptionLabel() const
 {
     boost::shared_ptr<KnobString> k = _knob.lock();
     bool isLabel = k->isLabel();
+
     if (isLabel) {
         return k->getValue();
     } else {

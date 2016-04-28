@@ -67,8 +67,8 @@ KnobFile::~KnobFile()
 void
 KnobFile::reloadFile()
 {
-    assert(getHolder());
-    EffectInstance* effect = dynamic_cast<EffectInstance*>(getHolder());
+    assert( getHolder() );
+    EffectInstance* effect = dynamic_cast<EffectInstance*>( getHolder() );
     if (effect) {
         effect->purgeCaches();
         effect->clearPersistentMessage(false);

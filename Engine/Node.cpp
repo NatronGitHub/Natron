@@ -748,12 +748,12 @@ Node::load(const CreateNodeArgs& args)
             boost::shared_ptr<KnobSerialization> defaultFile = createDefaultValueForParam(kOfxImageEffectFileParamName, images);
             CreateNodeArgs::DefaultValuesList list;
             list.push_back(defaultFile);
-            
+
             std::string canonicalFilename = images;
             getApp()->getProject()->canonicalizePath(canonicalFilename);
-            int firstFrame,lastFrame;
+            int firstFrame, lastFrame;
             Node::getOriginalFrameRangeForReader(getPluginID(), canonicalFilename, &firstFrame, &lastFrame);
-            list.push_back(createDefaultValueForParam(kReaderParamNameOriginalFrameRange, firstFrame, lastFrame));
+            list.push_back( createDefaultValueForParam(kReaderParamNameOriginalFrameRange, firstFrame, lastFrame) );
             setValuesFromSerialization(list);
         }
 #endif
@@ -2485,17 +2485,16 @@ Node::getPreferredInputInternal(bool connected) const
             }
         }
     }
-
     bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
 
     ///Find an input named A
     int inputToFind = -1, foundOther = -1;
     if ( useInputA || (getPluginID() == PLUGINID_OFX_SHUFFLE) ) {
         inputToFind = inputA;
-        foundOther= inputB;
+        foundOther = inputB;
     } else {
         inputToFind = inputB;
-        foundOther= inputA;
+        foundOther = inputA;
     }
     if (inputToFind != -1) {
         inputs[inputToFind] = getInput(inputToFind);
@@ -2561,16 +2560,16 @@ Node::getPreferredInputInternal(bool connected) const
                 return *first;
             }
 #else // previous version, not consistent with Node::getPreferredInputInternal()
-            //We return the last optional empty input
-            std::list<int>::reverse_iterator first = optionalEmptyInputs.rbegin();
-            while ( first != optionalEmptyInputs.rend() && _imp->effect->isInputRotoBrush(*first) ) {
-                ++first;
-            }
-            if ( first == optionalEmptyInputs.rend() ) {
-                return -1;
-            } else {
-                return *first;
-            }
+      //We return the last optional empty input
+        std::list<int>::reverse_iterator first = optionalEmptyInputs.rbegin();
+        while ( first != optionalEmptyInputs.rend() && _imp->effect->isInputRotoBrush(*first) ) {
+            ++first;
+        }
+        if ( first == optionalEmptyInputs.rend() ) {
+            return -1;
+        } else {
+            return *first;
+        }
 #endif
         } else if ( !optionalEmptyMasks.empty() ) {
             return optionalEmptyMasks.front();
@@ -3963,12 +3962,12 @@ Node::makeHTMLDocumentation(bool offline) const
 
     if (offline) {
         ts << "<li><a href=\"index.html\">Natron 2.0 documentation</a> &raquo;</li>";
-    } else   {
+    } else {
         ts << "<li><a href=\"/index.html\">Natron 2.0 documentation</a> &raquo;</li>";
     }
     if (offline) {
         ts << "<li><a href=\"_group.html\">Reference Guide</a> &raquo;</li>";
-    } else   {
+    } else {
         ts << "<li><a href=\"/_group.html\">Reference Guide</a> &raquo;</li>";
     }
 
@@ -3977,7 +3976,7 @@ Node::makeHTMLDocumentation(bool offline) const
         if ( !group.isEmpty() ) {
             if (offline) {
                 ts << "<li><a href=\"group" << group << ".html\">" << group << "</a> &raquo;</li>";
-            } else   {
+            } else {
                 ts << "<li><a href=\"/_group.html?id=" << group << "\">" << group << "</a> &raquo;</li>";
             }
         }
@@ -3995,7 +3994,7 @@ Node::makeHTMLDocumentation(bool offline) const
     }
 
     // replace urls with a href's
-    pluginDescription.replace(QRegExp(QString::fromUtf8("((?:https?|ftp)://\\S+)")), QString::fromUtf8("<a target=\"_blank\" href=\"\\1\">\\1</a>"));
+    pluginDescription.replace( QRegExp( QString::fromUtf8("((?:https?|ftp)://\\S+)") ), QString::fromUtf8("<a target=\"_blank\" href=\"\\1\">\\1</a>") );
 
     ts << "<p>" << pluginDescription << "</p>";
     ts << "<h3>" << "Inputs & Controls" << "</h3>";
@@ -4078,7 +4077,7 @@ Node::makeHTMLDocumentation(bool offline) const
         ts << "<td class=\"knobsTableValue\">" << defValuesStr << "</td>";
 
         // replace urls with a href's
-        knobHint.replace(QRegExp(QString::fromUtf8("((?:https?|ftp)://\\S+)")), QString::fromUtf8("<a target=\"_blank\" href=\"\\1\">\\1</a>"));
+        knobHint.replace( QRegExp( QString::fromUtf8("((?:https?|ftp)://\\S+)") ), QString::fromUtf8("<a target=\"_blank\" href=\"\\1\">\\1</a>") );
 
         ts << "<td class=\"knobsTableValue\">" << knobHint << "</td>";
         ts << "</tr>";
@@ -4709,14 +4708,14 @@ checkCanConnectNoMultiRes(const Node* output,
 
     // Commented-out: Some Furnace plug-ins from The Foundry (e.g F_Steadiness) are not supporting multi-resolution but actually produce an output
     // with a RoD different from the input
-    
-    /*RectD outputRod;
-    stat = output->getEffectInstance()->getRegionOfDefinition_public(output->getHashValue(), output->getApp()->getTimeLine()->currentFrame(), scale, ViewIdx(0), &outputRod, &isProjectFormat);
-    Q_UNUSED(stat);
 
-    if ( !outputRod.isNull() && (rod != outputRod) ) {
+    /*RectD outputRod;
+       stat = output->getEffectInstance()->getRegionOfDefinition_public(output->getHashValue(), output->getApp()->getTimeLine()->currentFrame(), scale, ViewIdx(0), &outputRod, &isProjectFormat);
+       Q_UNUSED(stat);
+
+       if ( !outputRod.isNull() && (rod != outputRod) ) {
         return Node::eCanConnectInput_multiResNotSupported;
-    }*/
+       }*/
 
     for (int i = 0; i < output->getMaxInputCount(); ++i) {
         NodePtr inputNode = output->getInput(i);
@@ -5792,7 +5791,6 @@ Node::getKnobByName(const std::string & name) const
 
     return _imp->effect->getKnobByName(name);
 }
-
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
@@ -7160,17 +7158,19 @@ Node::onFileNameParameterChanged(KnobI* fileKnob)
 } // Node::onFileNameParameterChanged
 
 void
-Node::getOriginalFrameRangeForReader(const std::string& pluginID, const std::string& canonicalFileName, int* firstFrame, int* lastFrame)
+Node::getOriginalFrameRangeForReader(const std::string& pluginID,
+                                     const std::string& canonicalFileName,
+                                     int* firstFrame,
+                                     int* lastFrame)
 {
     if (pluginID == PLUGINID_OFX_READFFMPEG) {
         ///If the plug-in is a video, only ffmpeg may know how many frames there are
         *firstFrame = INT_MIN;
         *lastFrame = INT_MAX;
     } else {
-        
         SequenceParsing::SequenceFromPattern seq;
         SequenceParsing::filesListFromPattern(canonicalFileName, &seq);
-        if (seq.empty() || seq.size() == 1) {
+        if ( seq.empty() || (seq.size() == 1) ) {
             *firstFrame = 1;
             *lastFrame = 1;
         } else if (seq.size() > 1) {
@@ -8080,8 +8080,8 @@ Node::refreshEnabledKnobsLabel(const ImageComponents& comp)
         boost::shared_ptr<KnobBool> alpha = _imp->enabledChan[3].lock();
         alpha->setSecret(false);
         alpha->setLabel(channels[0]);
+        break;
     }
-    break;
     case 2: {
         for (int i = 2; i < 4; ++i) {
             boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
@@ -8092,8 +8092,8 @@ Node::refreshEnabledKnobsLabel(const ImageComponents& comp)
             enabled->setSecret(false);
             enabled->setLabel(channels[i]);
         }
+        break;
     }
-    break;
     case 3: {
         for (int i = 3; i < 4; ++i) {
             boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
@@ -8104,16 +8104,16 @@ Node::refreshEnabledKnobsLabel(const ImageComponents& comp)
             enabled->setSecret(false);
             enabled->setLabel(channels[i]);
         }
+        break;
     }
-    break;
     case 4: {
         for (int i = 0; i < 4; ++i) {
             boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
             enabled->setSecret(false);
             enabled->setLabel(channels[i]);
         }
+        break;
     }
-    break;
 
     case 0:
     default: {
@@ -8121,8 +8121,8 @@ Node::refreshEnabledKnobsLabel(const ImageComponents& comp)
             boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
             enabled->setSecret(true);
         }
+        break;
     }
-    break;
     } // switch
 } // Node::refreshEnabledKnobsLabel
 
@@ -10174,7 +10174,7 @@ Node::getMaskChannel(int inputNb,
         bool isColor;
         bool ok = parseMaskChannelString(maskEncoded, &nodeName, &layerName, &channelName, &isColor);
 
-        if (!ok || layerName == "None") {
+        if ( !ok || (layerName == "None") ) {
             return -1;
         } else {
             QMutexLocker locker(&it->second.compsMutex);
@@ -10394,13 +10394,12 @@ Node::refreshChannelSelectors()
             }
         } // if (prefInputNode)
 
-        
-        
-        std::vector<std::pair<ImageComponents,NodeWPtr > > compsOrdered;
+
+        std::vector<std::pair<ImageComponents, NodeWPtr > > compsOrdered;
         ImageComponents gotColor;
         NodePtr nodeGotColor;
         for (EffectInstance::ComponentsAvailableMap::iterator comp = compsAvailable.begin(); comp != compsAvailable.end(); ++comp) {
-            if (comp->first.isColorPlane()) {
+            if ( comp->first.isColorPlane() ) {
                 //compsOrdered.insert(compsOrdered.begin(), std::make_pair(comp->first,comp->second));
                 gotColor = comp->first;
                 nodeGotColor = comp->second.lock();
@@ -10408,16 +10407,16 @@ Node::refreshChannelSelectors()
                 compsOrdered.push_back(*comp);
             }
         }
-        
-        
+
+
         {
             QMutexLocker k(&it->second.compsMutex);
             it->second.compsAvailable = compsOrdered;
-            
+
             // Add the components available for the color plane, but only retain RGBA in the channel selector.
             // We do this because by default the channel selector has RGBA but when input is RGB it will complain that Alpha is not available.
             if (gotColor) {
-                it->second.compsAvailable.push_back(std::make_pair(gotColor,nodeGotColor));
+                it->second.compsAvailable.push_back( std::make_pair(gotColor, nodeGotColor) );
             }
         }
 
@@ -10452,7 +10451,7 @@ Node::refreshChannelSelectors()
         {
             std::vector<std::string>::iterator pos = choices.begin();
             ++pos;
-            
+
             const ImageComponents& rgba = ImageComponents::getRGBAComponents();
             const std::string& rgbaCompname = rgba.getComponentsGlobalName();
             const std::vector<std::string>& rgbaChannels = rgba.getComponentsNames();
@@ -10461,7 +10460,7 @@ Node::refreshChannelSelectors()
                 std::string option = rgbaCompname + '.' + rgbaChannels[i];
                 rgbaOptions.push_back(option);
             }
-            choices.insert(pos, rgbaOptions.begin(), rgbaOptions.end());
+            choices.insert( pos, rgbaOptions.begin(), rgbaOptions.end() );
         }
 
         boost::shared_ptr<KnobChoice> channelKnob = it->second.channel.lock();

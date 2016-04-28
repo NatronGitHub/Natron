@@ -325,7 +325,7 @@ DocumentWindow::SetHkcrUserRegKey(QString key,
 
         QMessageBox::warning( 0, QString::fromUtf8("Error in setting Registry values"),
                               QString::fromUtf8("registration database update failed for key '%s'.").arg(key) );
-    } else   {
+    } else {
         wchar_t buffer[4096];
         ::FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM, 0, lRetVal, 0, buffer, 4096, 0);
         QString szText = QString::fromUtf16( (const ushort*)buffer );
@@ -344,11 +344,11 @@ DocumentWindow::executeDdeCommand(const QString& command,
 
     if ( ( 0 == command.compare(QString::fromUtf8("open"), Qt::CaseInsensitive) ) && singleCommand ) {
         ddeOpenFile( regCommand.cap(1) );
-    } else if ( ( 0 == command.compare(QString::fromUtf8("new"), Qt::CaseInsensitive) ) && singleCommand )    {
+    } else if ( ( 0 == command.compare(QString::fromUtf8("new"), Qt::CaseInsensitive) ) && singleCommand ) {
         ddeNewFile( regCommand.cap(1) );
-    } else if ( ( 0 == command.compare(QString::fromUtf8("print"), Qt::CaseInsensitive) ) && singleCommand )    {
+    } else if ( ( 0 == command.compare(QString::fromUtf8("print"), Qt::CaseInsensitive) ) && singleCommand ) {
         ddePrintFile( regCommand.cap(1) );
-    } else   {
+    } else {
         executeUnknownDdeCommand(command, params);
     }
 }

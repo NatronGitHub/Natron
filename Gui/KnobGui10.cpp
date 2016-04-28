@@ -151,8 +151,8 @@ KnobGui::onEditExprDialogFinished()
             if (existingExpr != stdExpr) {
                 pushUndoCommand( new SetExpressionCommand(getKnob(), hasRetVar, dim, stdExpr) );
             }
+            break;
         }
-        break;
         case QDialog::Rejected:
             break;
         }

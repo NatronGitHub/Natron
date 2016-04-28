@@ -512,13 +512,13 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         //Set a pre-value for the inputfile knob only if it did not exist
         if (!filename.empty() && !serialization) {
             args.paramValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filename) );
-            
+
             std::string canonicalFilename = filename;
             _publicInterface->getApp()->getProject()->canonicalizePath(canonicalFilename);
-            
-            int firstFrame,lastFrame;
+
+            int firstFrame, lastFrame;
             Node::getOriginalFrameRangeForReader(readerPluginID, canonicalFilename, &firstFrame, &lastFrame);
-            args.paramValues.push_back(createDefaultValueForParam(kReaderParamNameOriginalFrameRange, firstFrame, lastFrame));
+            args.paramValues.push_back( createDefaultValueForParam(kReaderParamNameOriginalFrameRange, firstFrame, lastFrame) );
         }
         embeddedPlugin = _publicInterface->getApp()->createNode(args);
         if (pluginIDKnob) {

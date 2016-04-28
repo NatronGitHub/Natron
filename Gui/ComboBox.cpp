@@ -279,20 +279,20 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
             case 0:
             default: {
                 appPTR->getCurrentSettings()->getRaisedColor(&r, &g, &b);
+                break;
             }
-            break;
             case 1: {
                 appPTR->getCurrentSettings()->getInterpolatedColor(&r, &g, &b);
+                break;
             }
-            break;
             case 2: {
                 appPTR->getCurrentSettings()->getKeyframeColor(&r, &g, &b);
+                break;
             }
-            break;
             case 3: {
                 appPTR->getCurrentSettings()->getExprColor(&r, &g, &b);
+                break;
             }
-            break;
             }
             fillColor.setRgb( Color::floatToInt<256>(r),
                               Color::floatToInt<256>(g),
