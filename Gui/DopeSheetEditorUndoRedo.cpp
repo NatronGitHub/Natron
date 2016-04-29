@@ -815,7 +815,7 @@ DSRemoveKeysCommand::addOrRemoveKeyframe(bool add)
         assert(knobGui);
         if (add) {
             knobGui->setKeyframe( selected.key.getTime(), selected.key, knobContext->getDimension(), ViewIdx(0) );
-        } else   {
+        } else {
             knobGui->removeKeyFrame( selected.key.getTime(), knobContext->getDimension(), ViewIdx(0) );
             knobContext->getTreeItem()->setSelected(false);
         }
@@ -951,7 +951,7 @@ DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
                     knob->setKeyFrame(k, ViewSpec::all(), j, eValueChangedReasonNatronGuiEdited);
                 }
             }
-        } else   {
+        } else {
             for (int j = 0; j < knob->getDimension(); ++j) {
                 if ( (dim == -1) || (j == dim) ) {
                     knob->deleteValueAtTime(eCurveChangeReasonDopeSheet, setTime, ViewSpec::all(), j);

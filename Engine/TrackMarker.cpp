@@ -184,7 +184,7 @@ TrackMarker::TrackMarker(const boost::shared_ptr<TrackerContext>& context)
     QObject::connect( handler.get(), SIGNAL(multipleKeyFramesSet(std::list<double>,ViewSpec,int,int)), this,
                       SLOT(onCenterKeyframesSet(std::list<double>,ViewSpec,int,int)) );
     QObject::connect( handler.get(), SIGNAL(multipleKeyFramesRemoved(std::list<double>,ViewSpec,int,int)), this,
-                     SLOT(onCenterMultipleKeysRemoved(std::list<double>,ViewSpec,int,int)) );
+                      SLOT(onCenterMultipleKeysRemoved(std::list<double>,ViewSpec,int,int)) );
     QObject::connect( handler.get(), SIGNAL(animationRemoved(ViewSpec,int)), this, SLOT(onCenterAnimationRemoved(ViewSpec,int)) );
     QObject::connect( handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onCenterKnobValueChanged(ViewSpec,int,int)) );
 
@@ -528,7 +528,7 @@ TrackMarker::setEnabledFromGui(double /*time*/,
     
     
     KeyFrame k;
-    std::pair<int,KnobPtr> master = knob->getMaster(0);
+    std::pair<int, KnobPtr> master = knob->getMaster(0);
     if (master.second) {
         knob->unSlave(0, true);
     }
@@ -620,47 +620,51 @@ enum DeleteKnobAnimationEnum
     eDeleteKnobAnimationAfterTime
 };
 
-static void deleteKnobAnimation(const std::set<int>& userKeyframes, const KnobPtr& knob, DeleteKnobAnimationEnum type, int currentTime) {
+static void
+deleteKnobAnimation(const std::set<int>& userKeyframes,
+                    const KnobPtr& knob,
+                    DeleteKnobAnimationEnum type,
+                    int currentTime)
+{
     for (int i = 0; i < knob->getDimension(); ++i) {
         boost::shared_ptr<Curve> curve = knob->getCurve(ViewSpec(0), i);
         assert(curve);
         KeyFrameSet keys = curve->getKeyFrames_mt_safe();
-        
         std::list<double> toRemove;
         switch (type) {
-            case eDeleteKnobAnimationAll: {
-                for (KeyFrameSet::iterator it = keys.begin(); it!=keys.end(); ++it) {
-                    std::set<int>::iterator found = userKeyframes.find((int)it->getTime());
-                    if (found == userKeyframes.end()) {
-                        toRemove.push_back(it->getTime());
-                    }
+        case eDeleteKnobAnimationAll: {
+            for (KeyFrameSet::iterator it = keys.begin(); it != keys.end(); ++it) {
+                std::set<int>::iterator found = userKeyframes.find( (int)it->getTime() );
+                if ( found == userKeyframes.end() ) {
+                    toRemove.push_back( it->getTime() );
                 }
-
-            }   break;
-            case eDeleteKnobAnimationBeforeTime: {
-                for (KeyFrameSet::iterator it = keys.begin(); it!=keys.end(); ++it) {
-                    if (it->getTime() >= currentTime) {
-                        break;
-                    }
-                    std::set<int>::iterator found = userKeyframes.find((int)it->getTime());
-                    if (found == userKeyframes.end()) {
-                        toRemove.push_back(it->getTime());
-                    }
+            }
+            break;
+        }
+        case eDeleteKnobAnimationBeforeTime: {
+            for (KeyFrameSet::iterator it = keys.begin(); it != keys.end(); ++it) {
+                if (it->getTime() >= currentTime) {
+                    break;
                 }
-                
-            }   break;
-            case eDeleteKnobAnimationAfterTime: {
-                for (KeyFrameSet::reverse_iterator it = keys.rbegin(); it!=keys.rend(); ++it) {
-                    if (it->getTime() <= currentTime) {
-                        break;
-                    }
-                    std::set<int>::iterator found = userKeyframes.find((int)it->getTime());
-                    if (found == userKeyframes.end()) {
-                        toRemove.push_back(it->getTime());
-                    }
+                std::set<int>::iterator found = userKeyframes.find( (int)it->getTime() );
+                if ( found == userKeyframes.end() ) {
+                    toRemove.push_back( it->getTime() );
                 }
-                
-            }   break;
+            }
+            break;
+        }
+        case eDeleteKnobAnimationAfterTime: {
+            for (KeyFrameSet::reverse_iterator it = keys.rbegin(); it != keys.rend(); ++it) {
+                if (it->getTime() <= currentTime) {
+                    break;
+                }
+                std::set<int>::iterator found = userKeyframes.find( (int)it->getTime() );
+                if ( found == userKeyframes.end() ) {
+                    toRemove.push_back( it->getTime() );
+                }
+            }
+            break;
+        }
         }
         knob->deleteValuesAtTime(eCurveChangeReasonInternal, toRemove, ViewSpec::all(), i);
     }
@@ -670,12 +674,13 @@ void
 TrackMarker::clearAnimation()
 {
     std::set<int> userKeyframes;
+
     getUserKeyframes(&userKeyframes);
-    
+
     KnobPtr offsetKnob = getOffsetKnob();
     assert(offsetKnob);
     deleteKnobAnimation(userKeyframes, offsetKnob, eDeleteKnobAnimationAll, 0);
- 
+
     KnobPtr centerKnob = getCenterKnob();
     assert(centerKnob);
     deleteKnobAnimation(userKeyframes, centerKnob, eDeleteKnobAnimationAll, 0);
@@ -689,12 +694,13 @@ void
 TrackMarker::clearAnimationBeforeTime(int time)
 {
     std::set<int> userKeyframes;
+
     getUserKeyframes(&userKeyframes);
-    
+
     KnobPtr offsetKnob = getOffsetKnob();
     assert(offsetKnob);
     deleteKnobAnimation(userKeyframes, offsetKnob, eDeleteKnobAnimationBeforeTime, time);
-    
+
     KnobPtr centerKnob = getCenterKnob();
     assert(centerKnob);
     deleteKnobAnimation(userKeyframes, centerKnob, eDeleteKnobAnimationBeforeTime, time);
@@ -708,12 +714,13 @@ void
 TrackMarker::clearAnimationAfterTime(int time)
 {
     std::set<int> userKeyframes;
+
     getUserKeyframes(&userKeyframes);
-    
+
     KnobPtr offsetKnob = getOffsetKnob();
     assert(offsetKnob);
     deleteKnobAnimation(userKeyframes, offsetKnob, eDeleteKnobAnimationAfterTime, time);
-    
+
     KnobPtr centerKnob = getCenterKnob();
     assert(centerKnob);
     deleteKnobAnimation(userKeyframes, centerKnob, eDeleteKnobAnimationAfterTime, time);
@@ -832,7 +839,6 @@ TrackMarker::onCenterKeyframeSet(double time,
     }
 }
 
-
 void
 TrackMarker::onCenterKeyframeRemoved(double time,
                                      ViewSpec /*view*/,
@@ -843,7 +849,10 @@ TrackMarker::onCenterKeyframeRemoved(double time,
 }
 
 void
-TrackMarker::onCenterMultipleKeysRemoved(const std::list<double>& times, ViewSpec /*view*/, int /*dimension*/, int /*reason*/)
+TrackMarker::onCenterMultipleKeysRemoved(const std::list<double>& times,
+                                         ViewSpec /*view*/,
+                                         int /*dimension*/,
+                                         int /*reason*/)
 {
     getContext()->s_multipleKeyframesRemovedOnTrackCenter(shared_from_this(), times);
 }

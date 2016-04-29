@@ -83,7 +83,6 @@ nodeHasAnimation(const NodeGuiPtr &nodeGui)
     return false;
 }
 
-
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 bool
@@ -204,7 +203,7 @@ DopeSheetPrivate::getNearestTimeFromOutputs_recursive(Node *node,
              || ( pluginID == PLUGINID_OFX_TIMEOFFSET)
              || ( pluginID == PLUGINID_OFX_FRAMERANGE) ) {
             return output.get();
-        } else   {
+        } else {
             Node* ret =  getNearestTimeFromOutputs_recursive(output.get(), markedNodes);
             if (ret) {
                 return ret;
@@ -323,13 +322,13 @@ DopeSheet::addNode(NodeGuiPtr nodeGui)
     if (pluginID == PLUGINID_NATRON_READ) {
 #endif
         nodeType = eDopeSheetItemTypeReader;
-    } else if ( dynamic_cast<NodeGroup *>( effectInstance.get() ) )   {
+    } else if ( dynamic_cast<NodeGroup *>( effectInstance.get() ) ) {
         nodeType = eDopeSheetItemTypeGroup;
-    } else if (pluginID == PLUGINID_OFX_RETIME)   {
+    } else if (pluginID == PLUGINID_OFX_RETIME) {
         nodeType = eDopeSheetItemTypeRetime;
-    } else if (pluginID == PLUGINID_OFX_TIMEOFFSET)   {
+    } else if (pluginID == PLUGINID_OFX_TIMEOFFSET) {
         nodeType = eDopeSheetItemTypeTimeOffset;
-    } else if (pluginID == PLUGINID_OFX_FRAMERANGE)   {
+    } else if (pluginID == PLUGINID_OFX_FRAMERANGE) {
         nodeType = eDopeSheetItemTypeFrameRange;
     }
 
@@ -414,7 +413,7 @@ boost::shared_ptr<DSKnob> DopeSheet::mapNameItemToDSKnob(QTreeWidgetItem *knobTr
 
     if ( clickedDSKnob == knobRows.end() ) {
         ret.reset();
-    } else   {
+    } else {
         ret = clickedDSKnob->second;
     }
 
@@ -528,7 +527,7 @@ std::vector<boost::shared_ptr<DSNode> > DopeSheet::getImportantNodes(DSNode *dsN
                 ret.push_back(isInDopeSheet);
             }
         }
-    } else if ( dsNode->isTimeNode() )   {
+    } else if ( dsNode->isTimeNode() ) {
         _imp->getInputsConnected_recursive(dsNode->getInternalNode().get(), &ret);
     }
 
@@ -584,7 +583,6 @@ DopeSheet::deleteSelectedKeyframes()
 
     _imp->pushUndoCommand( new DSRemoveKeysCommand(toRemove, _imp->editor) );
 }
-
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
@@ -1179,7 +1177,7 @@ DopeSheetSelectionModel::makeDopeSheetKeyframesForKnob(const boost::shared_ptr<D
         if (dim == -1) {
             QTreeWidgetItem *childItem = dsKnob->findDimTreeItem(i);
             context = _imp->dopeSheet->mapNameItemToDSKnob(childItem);
-        } else   {
+        } else {
             context = dsKnob;
         }
 
@@ -1227,7 +1225,7 @@ DopeSheetSelectionModel::makeSelection(const std::vector<DopeSheetKey> &keys,
             DSKeyPtr dsKey( new DopeSheetKey(key) );
             hasChanged = true;
             _imp->selectedKeyframes.push_back(dsKey);
-        } else if (selectionFlags & DopeSheetSelectionModel::SelectionTypeToggle)   {
+        } else if (selectionFlags & DopeSheetSelectionModel::SelectionTypeToggle) {
             _imp->selectedKeyframes.erase(isAlreadySelected);
             hasChanged = true;
         }
@@ -1480,7 +1478,7 @@ DSNode::DSNode(DopeSheet *model,
                                                             _imp->nameItem);
             DSKnob *dsKnob = new DSKnob(0, nameItem, knobGui);
             _imp->itemKnobMap.insert( TreeItemAndDSKnob(nameItem, dsKnob) );
-        } else   {
+        } else {
             QTreeWidgetItem *multiDimRootItem = createKnobNameItem(QString::fromUtf8( knob->getLabel().c_str() ),
                                                                    eDopeSheetItemTypeKnobRoot,
                                                                    -1,

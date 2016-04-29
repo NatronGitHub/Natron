@@ -147,7 +147,7 @@ minimalNonMarkedBbox_internal(const RectI& roi,
             if (!*pix) {
                 pix = 0;
                 break;
-            } else if (*pix == PIXEL_UNAVAILABLE)   {
+            } else if (*pix == PIXEL_UNAVAILABLE) {
                 if (trimap) {
                     metUnavailablePixel = true;
                 } else {
@@ -175,7 +175,7 @@ minimalNonMarkedBbox_internal(const RectI& roi,
             if (!*pix) {
                 pix = 0;
                 break;
-            } else if (*pix == PIXEL_UNAVAILABLE)   {
+            } else if (*pix == PIXEL_UNAVAILABLE) {
                 if (trimap) {
                     metUnavailablePixel = true;
                 } else {

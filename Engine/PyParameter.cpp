@@ -1574,7 +1574,8 @@ void
 FileParam::setSequenceEnabled(bool enabled)
 {
     boost::shared_ptr<KnobFile> k = _sKnob.lock();
-    if (!k->isUserKnob()) {
+
+    if ( !k->isUserKnob() ) {
         return;
     }
     if (enabled) {
@@ -1586,6 +1587,7 @@ void
 FileParam::openFile()
 {
     boost::shared_ptr<KnobFile> k = _sKnob.lock();
+
     if (k) {
         k->open_file();
     }
@@ -1595,6 +1597,7 @@ void
 FileParam::reloadFile()
 {
     boost::shared_ptr<KnobFile> k = _sKnob.lock();
+
     if (k) {
         k->reloadFile();
     }

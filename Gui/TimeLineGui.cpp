@@ -716,9 +716,9 @@ TimeLineGui::paintGL()
                               Image::clamp<qreal>(userkfG, 0., 1.),
                               Image::clamp<qreal>(userkfB, 0., 1.) );
         for (std::list<SequenceTime>::iterator it = remainingUserKeys.begin(); it != remainingUserKeys.end(); ++it) {
-            if (/* (*it == currentTime) ||*/
-                 ( *it == leftBound) ||
-                 ( *it == rightBound) ) {
+            if ( /* (*it == currentTime) ||*/
+                                             ( *it == leftBound) ||
+                                             ( *it == rightBound) ) {
                 continue;
             }
             QPointF kfBtm(*it, lineYpos);
@@ -727,7 +727,6 @@ TimeLineGui::paintGL()
                                                       kfBtmWidgetCoord.y() - cursorHeight);
             QPointF kfTopRight = toTimeLineCoordinates(kfBtmWidgetCoord.x() + cursorWidth / 2.,
                                                        kfBtmWidgetCoord.y() - cursorHeight);
-            
             QPointF kfBtmLeft = toTimeLineCoordinates(kfBtmWidgetCoord.x() - cursorWidth / 2.,
                                                       kfBtmWidgetCoord.y() + cursorHeight);
             QPointF kfBtmRight = toTimeLineCoordinates(kfBtmWidgetCoord.x() + cursorWidth / 2.,

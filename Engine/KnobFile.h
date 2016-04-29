@@ -85,7 +85,7 @@ public:
     {
         Q_EMIT openFile();
     }
-    
+
     void reloadFile();
 
     /**

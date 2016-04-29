@@ -469,7 +469,6 @@ GuiPrivate::getOnly1NonFloatingPane(int & count) const
     return firstNonFloating;
 }
 
-
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 class AutoRaiseToolButton

@@ -505,6 +505,7 @@ RotoDrawableItem::rotoKnobChanged(const KnobPtr& knob,
 
     RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
     RotoStrokeType type;
+
     if (isStroke) {
         type = isStroke->getBrushType();
     } else {
@@ -552,8 +553,8 @@ RotoDrawableItem::rotoKnobChanged(const KnobPtr& knob,
             if (isDbl) {
                 isDbl->setValues(strength, strength, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
             }
+            break;
         }
-        break;
         case eRotoStrokeTypeSharpen: {
             //todo
             break;
@@ -804,7 +805,7 @@ RotoDrawableItem::refreshNodesConnections()
                     _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
                 }
             }
-        }  else if ( (type == eRotoStrokeTypeDodge) || (type == eRotoStrokeTypeBurn) )       {
+        }  else if ( (type == eRotoStrokeTypeDodge) || (type == eRotoStrokeTypeBurn) ) {
             /*
                Tree for this effect goes like this:
                             Upstream Node
@@ -1107,6 +1108,7 @@ RotoDrawableItem::getInverted(double time) const
     return _imp->inverted->getValueAtTime(time);
 #else
     Q_UNUSED(time);
+
     return false;
 #endif
 }

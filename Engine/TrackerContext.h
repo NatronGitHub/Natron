@@ -325,15 +325,12 @@ public:
                                          ViewIdx view, OverlaySupport* viewer) WARN_UNUSED_RETURN;
 
 
-
-
     void solveTransformParams();
     
     void solveTransformParamsIfAutomatic();
 
 
     void exportTrackDataFromExportOptions();
-
 
 
     void onKnobsLoaded();
@@ -374,7 +371,7 @@ public:
 
     void s_keyframeRemovedOnTrackCenter(const TrackMarkerPtr& marker,
                                         int key) { Q_EMIT keyframeRemovedOnTrackCenter(marker, key); }
-    
+
     void s_multipleKeyframesRemovedOnTrackCenter(const TrackMarkerPtr& marker,
                                                  const std::list<double>& keys) { Q_EMIT multipleKeyframesRemovedOnTrackCenter(marker, keys); }
 

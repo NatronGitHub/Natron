@@ -610,7 +610,6 @@ Interpolation::integrate(double tcur,
     return ret * (tnext - tcur);
 }
 
-
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 enum SolTypeEnum

@@ -62,7 +62,7 @@ public:
     bool isEmpty() const;
 
     void refreshTabSecretNess(KnobGroup* group);
-    
+
     void refreshTabSecretNess(KnobGroup* group, bool secret);
 
 public Q_SLOTS:

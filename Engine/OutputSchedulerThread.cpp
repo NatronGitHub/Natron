@@ -3970,7 +3970,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
         if (hasTextureCached) {
             _imp->viewer->aboutToUpdateTextures();
         }
-        
+
         for (int i = 0; i < 2; ++i) {
             if (args[i]->params && args[i]->params->ramBuffer) {
                 /*

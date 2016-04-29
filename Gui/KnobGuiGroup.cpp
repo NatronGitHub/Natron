@@ -286,7 +286,6 @@ KnobGuiGroup::setEnabled()
                 k->getKnob()->setEnabled(_childrenToEnable[i].second[j], true);
             }
         }
-        
     } else {
         _childrenToEnable.clear();
         for (std::list<KnobGuiWPtr>::iterator it = _children.begin(); it != _children.end(); ++it) {

@@ -135,6 +135,7 @@ public:
         if ( label.empty() ) {
             label = param->getLongLabel();
         }
+
         return label;
     }
 

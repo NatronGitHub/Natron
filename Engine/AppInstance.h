@@ -124,17 +124,17 @@ public:
     ~FlagSetter();
 };
 
-class FlagIncrementer {
-    
+class FlagIncrementer
+{
     int* p;
     QMutex* lock;
-    
+
 public:
-    
+
     FlagIncrementer(int* p);
-    
+
     FlagIncrementer(int* p, QMutex* mutex);
-    
+
     ~FlagIncrementer();
 };
 

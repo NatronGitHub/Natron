@@ -222,7 +222,7 @@ RotoLayer::load(const RotoItemSerialization &obj)
                 }
                 QMutexLocker l(&itemMutex);
                 _imp->items.push_back(bezier);
-            } else if (s)   {
+            } else if (s) {
                 boost::shared_ptr<RotoStrokeItem> stroke( new RotoStrokeItem( (RotoStrokeType)s->getType(), getContext(), kRotoPaintBrushBaseName, boost::shared_ptr<RotoLayer>() ) );
                 stroke->createNodes(false);
                 stroke->load(*s);
@@ -233,7 +233,7 @@ RotoLayer::load(const RotoItemSerialization &obj)
 
                 QMutexLocker l(&itemMutex);
                 _imp->items.push_back(stroke);
-            } else if (l)   {
+            } else if (l) {
                 boost::shared_ptr<RotoLayer> layer( new RotoLayer(getContext(), kRotoLayerBaseName, this_layer) );
                 _imp->items.push_back(layer);
                 getContext()->addLayer(layer);

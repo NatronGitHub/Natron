@@ -203,7 +203,7 @@ HierarchyViewSelectionModel::checkParentsSelectedStates(const QModelIndex &index
         if ( (flags & QItemSelectionModel::Select && selectParent) ) {
             finalSelection->select(index, index);
             uuSelec.select(index, index);
-        } else if (flags & QItemSelectionModel::Deselect && !selectParent)   {
+        } else if (flags & QItemSelectionModel::Deselect && !selectParent) {
             finalSelection->select(index, index);
             uuSelec.merge(QItemSelection(index, index),
                           QItemSelectionModel::Deselect);
@@ -265,7 +265,7 @@ HierarchyViewItemDelegate::paint(QPainter *painter,
 
     if (option.state & QStyle::State_Selected) {
         r = g = b = 0.941f;
-    } else   {
+    } else {
         r = g = b = 0.11f;
     }
 
@@ -396,7 +396,7 @@ HierarchyViewPrivate::checkKnobVisibleState(DSKnob *dsKnob)
                 showContext = true;
             }
         }
-    } else   {
+    } else {
         showContext = knobGui->getCurve(ViewIdx(0), dim)->isAnimated();
     }
 
@@ -873,7 +873,7 @@ HierarchyView::getParentItem(QTreeWidgetItem *item) const
 
     if (parentItem) {
         ret = parentItem;
-    } else   {
+    } else {
         QTreeWidget *treeWidget = item->treeWidget();
         assert(treeWidget);
 
@@ -1007,7 +1007,7 @@ HierarchyView::onKeyframeSelectionChanged(bool recurse)
     // Compose tree selection from the selected keyframes
     if ( toCheck.empty() && selectedNodes.empty() ) {
         mySelecModel->selectWithRecursion(QItemSelection(), QItemSelectionModel::Clear, recurse);
-    } else   {
+    } else {
         std::set<QModelIndex> toSelect;
 
         for (std::set<boost::shared_ptr<DSKnob> >::const_iterator toCheckIt = toCheck.begin();
@@ -1079,7 +1079,7 @@ HierarchyView::onItemDoubleClicked(QTreeWidgetItem *item,
 
     if ( nodeGui && nodeGui->getParentMultiInstance() ) {
         panel = nodeGui->getParentMultiInstance()->getSettingPanel();
-    } else   {
+    } else {
         panel = nodeGui->getSettingPanel();
     }
 

@@ -166,14 +166,14 @@ public:
     void setUserKeyframe(int time);
 
     void removeUserKeyframe(int time);
-    
+
     /*
-     Controls animation of the center & offset not the pattern
+       Controls animation of the center & offset not the pattern
      */
     void clearAnimation();
     void clearAnimationBeforeTime(int time);
     void clearAnimationAfterTime(int time);
-    
+
     void removeAllUserKeyframes();
 
     std::pair<boost::shared_ptr<Image>, RectI> getMarkerImage(int time, const RectI& roi) const;

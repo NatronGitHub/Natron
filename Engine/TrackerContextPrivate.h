@@ -110,7 +110,7 @@ GCC_DIAG_ON(unused-parameter)
 #define kTrackerParamExportButton "export"
 #define kTrackerParamExportButtonLabel "Export"
 #define kTrackerParamExportButtonHint "Creates a node referencing the tracked data. The node type depends on the node selected by the Transform Type parameter. " \
-"The type of transformation applied by the created node depends on the Motion Type parameter. To activate this button you must select set the Motion Type to something other than None"
+    "The type of transformation applied by the created node depends on the Motion Type parameter. To activate this button you must select set the Motion Type to something other than None"
 
 #define kCornerPinInvertParamName "invert"
 
@@ -394,15 +394,15 @@ public:
 };
 
 
-class TrackerContextPrivate : public QObject
+class TrackerContextPrivate
+    : public QObject
 {
-    
     Q_OBJECT
-    
+
 public:
-    
-    
-    TrackerContext* _publicInterface;
+
+
+    TrackerContext * _publicInterface;
     boost::weak_ptr<Node> node;
     std::list<boost::weak_ptr<KnobI> > perTrackKnobs;
     boost::weak_ptr<KnobBool> enableTrackRed, enableTrackGreen, enableTrackBlue;
@@ -459,9 +459,8 @@ public:
     int selectionRecursion;
 
     TrackScheduler<TrackArgsLibMV> scheduler;
-    
-    
-    
+
+
     struct TransformData
     {
         Point translation;
@@ -471,7 +470,7 @@ public:
         double time;
         bool valid;
     };
-    
+
     struct CornerPinData
     {
         Transform::Matrix3x3 h;
@@ -479,32 +478,31 @@ public:
         double time;
         bool valid;
     };
+
     typedef boost::shared_ptr<QFutureWatcher<CornerPinData> > CornerPinSolverWatcher;
     typedef boost::shared_ptr<QFutureWatcher<TransformData> > TransformSolverWatcher;
-    
+
     struct SolveRequest
     {
         CornerPinSolverWatcher cpWatcher;
         TransformSolverWatcher tWatcher;
         double refTime;
-        
         std::set<double> keyframes;
         int jitterPeriod;
         bool jitterAdd;
         bool robustModel;
         std::vector<TrackMarkerPtr> allMarkers;
     };
-    
+
     SolveRequest lastSolveRequest;
 
-    
-    
+
     TrackerContextPrivate(TrackerContext* publicInterface, const boost::shared_ptr<Node> &node);
 
-    virtual ~TrackerContextPrivate() {
-        
+    virtual ~TrackerContextPrivate()
+    {
     }
-    
+
     /// Make all calls to getValue() that are global to the tracker context in here
     void beginLibMVOptionsForTrack(mv::TrackRegionOptions* options) const;
 
@@ -547,13 +545,13 @@ public:
     void linkMarkerKnobsToGuiKnobs(const std::list<TrackMarkerPtr >& markers,
                                    bool multipleTrackSelected,
                                    bool slave);
-    
+
     void createTransformFromSelection(bool linked);
-    
+
 
     void refreshVisibilityFromTransformType();
     void refreshVisibilityFromTransformTypeInternal(TrackerTransformNodeEnum transformType);
-    
+
     RectD getInputRoDAtTime(double time) const;
 
 
@@ -570,9 +568,8 @@ public:
                                            const libmv::TrackRegionResult* result,
                                            const TrackMarkerPtr& natronMarker);
     static bool trackStepLibMV(int trackIndex, const TrackArgsLibMV& args, int time);
-    
-    
-    
+
+
     /**
      * @brief Computes the translation that best fit the set of correspondences x1 and x2.
      * Requires at least 1 point. x1 and x2 must have the same size.
@@ -584,7 +581,7 @@ public:
                                               const std::vector<Point>& x2,
                                               int w1, int h1, int w2, int h2,
                                               Point* translation);
-    
+
     /**
      * @brief Computes the translation, rotation and scale that best fit the set of correspondences x1 and x2.
      * Requires at least 2 point. x1 and x2 must have the same size.
@@ -609,7 +606,7 @@ public:
                                              const std::vector<Point>& x2,
                                              int w1, int h1, int w2, int h2,
                                              Transform::Matrix3x3* homog);
-    
+
     /**
      * @brief Computes the fundamental matrix that best fit the set of correspondences x1 and x2.
      * Requires at least 7 point. x1 and x2 must have the same size.
@@ -621,7 +618,7 @@ public:
                                               const std::vector<Point>& x2,
                                               int w1, int h1, int w2, int h2,
                                               Transform::Matrix3x3* fundamental);
-    
+
     /**
      * @brief Extracts the values of the center point of the given markers at x1Time and x2Time.
      * @param jitterPeriod If jitterPeriod > 1 this is the amount of frames that will be averaged together to add
@@ -638,51 +635,50 @@ public:
                                                bool jitterAdd,
                                                std::vector<Point>* x1,
                                                std::vector<Point>* x2);
-   
-    
+
+
     TransformData computeTransformParamsFromTracksAtTime(double refTime,
                                                          double time,
                                                          int jitterPeriod,
                                                          bool jitterAdd,
                                                          bool robustModel,
                                                          const std::vector<TrackMarkerPtr>& allMarkers);
-    
+
     CornerPinData computeCornerPinParamsFromTracksAtTime(double refTime,
                                                          double time,
                                                          int jitterPeriod,
                                                          bool jitterAdd,
                                                          bool robustModel,
                                                          const std::vector<TrackMarkerPtr>& allMarkers);
-    
-    
+
+
     void resetTransformParamsAnimation();
-    
+
     void computeTransformParamsFromTracks();
-    
+
     void computeTransformParamsFromTracksEnd(double refTime,
                                              const QList<TransformData>& results);
-    
+
     void computeCornerParamsFromTracks();
-    
+
     void computeCornerParamsFromTracksEnd(double refTime,
                                           const QList<CornerPinData>& results);
-    
+
     void setSolverParamsEnabled(bool enabled);
-    
+
     void endSolve();
     
     bool isTransformAutoGenerationEnabled() const;
     
     void setTransformOutOfDate(bool outdated);
-    
+
 public Q_SLOTS:
 
     void onCornerPinSolverWatcherFinished();
     void onTransformSolverWatcherFinished();
-    
+
     void onCornerPinSolverWatcherProgress(int progress);
     void onTransformSolverWatcherProgress(int progress);
-    
 };
 
 NATRON_NAMESPACE_EXIT;

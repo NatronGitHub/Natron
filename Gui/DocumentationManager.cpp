@@ -56,7 +56,7 @@ DocumentationManager::startServer()
     server = new QHttpServer(this);
     connect( server, SIGNAL(newRequest(QHttpRequest*,QHttpResponse*)), this, SLOT(handler(QHttpRequest*,QHttpResponse*)) );
     connect( server, SIGNAL(newPort(int)), this, SLOT(setPort(int)) );
-    server->listen(QHostAddress::Any, 0);
+    server->listen(QHostAddress::LocalHost, 0);
 }
 
 void
@@ -114,10 +114,10 @@ DocumentationManager::handler(QHttpRequest *req,
                         Plugin* plugin = 0;
                         try {
                             plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
-                        }
-                        catch (const std::exception& e) {
+                        }catch (const std::exception& e) {
                             std::cerr << e.what() << std::endl;
                         }
+
                         if (plugin) {
                             QString isPyPlug = plugin->getPythonModule();
                             if ( !isPyPlug.isEmpty() ) { // loading pyplugs crash, so redirect to group
@@ -155,12 +155,12 @@ DocumentationManager::handler(QHttpRequest *req,
             QString notFound = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\"><html><head><title>Plugin not found</title><link rel=\"stylesheet\" href=\"/_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"/_static/pygments.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"/_static/style.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"/_static/jquery.js\"></script><script type=\"text/javascript\" src=\"/_static/dropdown.js\"></script></head><body><div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\"><h1>Plugin not found</h1></div></div></div></body></html>");
             body = parser(notFound, docDir).toAscii();
         }
-    } else if ( page == QString::fromUtf8("_prefs.html") )   {
+    } else if ( page == QString::fromUtf8("_prefs.html") ) {
         boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
         QString html = settings->makeHTMLDocumentation(false, false);
         html = parser(html, docDir);
         body = html.toAscii();
-    } else if ( page == QString::fromUtf8("_group.html") )   {
+    } else if ( page == QString::fromUtf8("_group.html") ) {
         QString html;
         QString group;
         QString groupHeader = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\"><html><head><title>__REPLACE_TITLE__ - ") + QString::fromUtf8(NATRON_APPLICATION_NAME) + QString::fromUtf8(" ") + QString::fromUtf8(NATRON_VERSION_STRING) + QString::fromUtf8(" documentation") + QString::fromUtf8("</title><link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/pygments.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" /></head><body>");
@@ -185,10 +185,10 @@ DocumentationManager::handler(QHttpRequest *req,
                 QString pluginID = QString::fromUtf8( it->c_str() );
                 try {
                     plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
-                }
-                catch (const std::exception& e) {
+                }catch (const std::exception& e) {
                     std::cerr << e.what() << std::endl;
                 }
+
                 if (plugin) {
                     QStringList groupList = plugin->getGrouping();
                     if (groupList.at(0) == group) {
@@ -220,7 +220,7 @@ DocumentationManager::handler(QHttpRequest *req,
                 html.append(groupBodyEnd);
                 html.append(groupFooter);
             }
-        } else   {
+        } else {
             QString groupBodyStart = QString::fromUtf8("<div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\"><h1>") + QObject::tr("Reference Guide") + QString::fromUtf8("</h1><p>") + QObject::tr("This manual is intended as a reference for all the parameters within each node in Natron.") + QString::fromUtf8("</p><div class=\"toctree-wrapper compound\"><ul>");
             html.append(groupHeader);
             html.replace( QString::fromUtf8("__REPLACE_TITLE__"), QString::fromUtf8("Reference Guide") );
@@ -234,10 +234,10 @@ DocumentationManager::handler(QHttpRequest *req,
                 QString pluginID = QString::fromUtf8( it->c_str() );
                 try {
                     plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
-                }
-                catch (const std::exception& e) {
+                }catch (const std::exception& e) {
                     std::cerr << e.what() << std::endl;
                 }
+
                 if (plugin) {
                     QStringList groupList = plugin->getGrouping();
                     groups << groupList.at(0);
@@ -259,7 +259,7 @@ DocumentationManager::handler(QHttpRequest *req,
     if ( page.endsWith( QString::fromUtf8(".html") ) || page.endsWith( QString::fromUtf8(".css") ) || page.endsWith( QString::fromUtf8(".js") ) || page.endsWith( QString::fromUtf8(".txt") ) || page.endsWith( QString::fromUtf8(".png") ) || page.endsWith( QString::fromUtf8(".jpg") ) ) {
         if ( page.startsWith( QString::fromUtf8("LOCAL_FILE/") ) ) {
             staticFileInfo = page.replace( QString::fromUtf8("LOCAL_FILE/"), QString::fromUtf8("") );
-        } else   {
+        } else {
             staticFileInfo = docDir + page;
         }
     }
@@ -270,10 +270,10 @@ DocumentationManager::handler(QHttpRequest *req,
                 QString input = QString::fromUtf8( staticFile.readAll() );
                 if ( input.contains( QString::fromUtf8("http://sphinx.pocoo.org/") ) && !input.contains( QString::fromUtf8("mainMenu") ) ) {
                     body = parser(input, docDir).toAscii();
-                } else   {
+                } else {
                     body = input.toAscii();
                 }
-            } else   {
+            } else {
                 body = staticFile.readAll();
             }
             staticFile.close();
@@ -290,15 +290,15 @@ DocumentationManager::handler(QHttpRequest *req,
     resp->setHeader( QString::fromUtf8("Content-Length"), QString::number( body.size() ) );
     if ( page.endsWith( QString::fromUtf8(".png") ) ) {
         resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("image/png") );
-    } else if ( page.endsWith( QString::fromUtf8(".jpg") ) )   {
+    } else if ( page.endsWith( QString::fromUtf8(".jpg") ) ) {
         resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("image/jpeg") );
-    } else if ( page.endsWith( QString::fromUtf8(".html") ) || page.endsWith( QString::fromUtf8(".htm") ) )   {
+    } else if ( page.endsWith( QString::fromUtf8(".html") ) || page.endsWith( QString::fromUtf8(".htm") ) ) {
         resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("text/html") );
-    } else if ( page.endsWith( QString::fromUtf8(".css") ) )   {
+    } else if ( page.endsWith( QString::fromUtf8(".css") ) ) {
         resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("text/css") );
-    } else if ( page.endsWith( QString::fromUtf8(".js") ) )   {
+    } else if ( page.endsWith( QString::fromUtf8(".js") ) ) {
         resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("application/javascript") );
-    } else if ( page.endsWith( QString::fromUtf8(".txt") ) )   {
+    } else if ( page.endsWith( QString::fromUtf8(".txt") ) ) {
         resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("text/plain") );
     }
 
@@ -347,12 +347,12 @@ DocumentationManager::parser(QString html,
             indexFile.close();
             menuHTML.append( QString::fromUtf8("</div>\n</div></div>\n") );
         }
-    } else   {
+    } else {
         menuHTML.append( QString::fromUtf8("</ul></div></div>") );
     }
 
     // add search
-    menuHTML.append(QString::fromUtf8("<div id=\"search\"><form id=\"rtd-search-form\" class=\"wy-form\" action=\"/search.html\" method=\"get\"><input type=\"text\" name=\"q\" placeholder=\"Search docs\" /><input type=\"hidden\" name=\"check_keywords\" value=\"yes\" /><input type=\"hidden\" name=\"area\" value=\"default\" /></form></div>"));
+    menuHTML.append( QString::fromUtf8("<div id=\"search\"><form id=\"rtd-search-form\" class=\"wy-form\" action=\"/search.html\" method=\"get\"><input type=\"text\" name=\"q\" placeholder=\"Search docs\" /><input type=\"hidden\" name=\"check_keywords\" value=\"yes\" /><input type=\"hidden\" name=\"area\" value=\"default\" /></form></div>") );
 
     // preferences
     /*boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();

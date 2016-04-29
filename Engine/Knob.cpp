@@ -685,63 +685,65 @@ KnobHelper::setSignalSlotHandler(const boost::shared_ptr<KnobSignalSlotHandler> 
 }
 
 void
-KnobHelper::deleteValuesAtTime(CurveChangeReason curveChangeReason, const std::list<double>& times, ViewSpec view, int dimension)
+KnobHelper::deleteValuesAtTime(CurveChangeReason curveChangeReason,
+                               const std::list<double>& times,
+                               ViewSpec view,
+                               int dimension)
 {
     if ( ( dimension > (int)_imp->curves.size() ) || (dimension < 0) ) {
         throw std::invalid_argument("KnobHelper::deleteValueAtTime(): Dimension out of range");
     }
-    
-    if (times.empty()) {
+
+    if ( times.empty() ) {
         return;
     }
-    
+
     if ( !canAnimate() || !isAnimated(dimension, view) ) {
         return;
     }
     boost::shared_ptr<Curve> curve;
     bool useGuiCurve = _imp->shouldUseGuiCurve();
     boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
-    
+
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
     } else {
         curve = hasGui->getCurve(view, dimension);
         setGuiCurveHasChanged(view, dimension, true);
     }
-    
+
     assert(curve);
-    
+
     try {
-        for (std::list<double>::const_iterator it = times.begin(); it!=times.end(); ++it) {
+        for (std::list<double>::const_iterator it = times.begin(); it != times.end(); ++it) {
             curve->removeKeyFrameWithTime(*it);
         }
-        
     } catch (const std::exception & e) {
         //qDebug() << e.what();
     }
-    
+
     if (!useGuiCurve && hasGui) {
         boost::shared_ptr<Curve> guiCurve = hasGui->getCurve(view, dimension);
         assert(guiCurve);
-        for (std::list<double>::const_iterator it = times.begin(); it!=times.end(); ++it) {
+        for (std::list<double>::const_iterator it = times.begin(); it != times.end(); ++it) {
             guiCurve->removeKeyFrameWithTime(*it);
         }
     }
-    
-    
+
+
     //virtual portion
-    for (std::list<double>::const_iterator it = times.begin(); it!=times.end(); ++it) {
+    for (std::list<double>::const_iterator it = times.begin(); it != times.end(); ++it) {
         keyframeRemoved_virtual(dimension, *it);
     }
-    
-    
+
+
     if (_imp->holder) {
         _imp->holder->updateHasAnimation();
     }
-    
-    
+
+
     ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited;
-    
+
     if (!useGuiCurve) {
         checkAnimationLevel(view, dimension);
         evaluateValueChange(dimension, *times.begin(), view, reason);
@@ -749,13 +751,12 @@ KnobHelper::deleteValuesAtTime(CurveChangeReason curveChangeReason, const std::l
     if (_signalSlotHandler) {
         _signalSlotHandler->s_redrawGuiCurve(curveChangeReason, view, dimension);
     }
-    
-    
+
+
     if (_signalSlotHandler /* && reason != eValueChangedReasonUserEdited*/) {
         _signalSlotHandler->s_multipleKeyFramesRemoved(times, view, dimension, (int)reason);
     }
-
-}
+} // KnobHelper::deleteValuesAtTime
 
 void
 KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
@@ -3146,10 +3147,10 @@ KnobHelper::copyAnimationToClipboard() const
 
 bool
 KnobHelper::slaveToInternal(int dimension,
-                    const KnobPtr & other,
-                    int otherDimension,
-                    ValueChangedReasonEnum reason,
-                    bool ignoreMasterPersistence)
+                            const KnobPtr & other,
+                            int otherDimension,
+                            ValueChangedReasonEnum reason,
+                            bool ignoreMasterPersistence)
 {
     assert(other.get() != this);
     assert( 0 <= dimension && dimension < (int)_imp->masters.size() );
@@ -4907,7 +4908,7 @@ KnobHolder::endChanges(bool discardRendering)
         return;
     }
 
-    
+
     bool thisChangeSignificant = false;
     bool thisBracketHadChange = false;
     KnobChanges knobChanged;
@@ -4915,20 +4916,19 @@ KnobHolder::endChanges(bool discardRendering)
         QMutexLocker l(&_imp->evaluationBlockedMutex);
 
         knobChanged = _imp->knobChanged;
-        for (KnobChanges::iterator it = knobChanged.begin(); it!=knobChanged.end(); ++it) {
-            if (it->knob->getEvaluateOnChange()) {
+        for (KnobChanges::iterator it = knobChanged.begin(); it != knobChanged.end(); ++it) {
+            if ( it->knob->getEvaluateOnChange() ) {
                 thisChangeSignificant = true;
             }
-            
-            if (!it->valueChangeBlocked && it->knob->getIsMetadataSlave()) {
+
+            if ( !it->valueChangeBlocked && it->knob->getIsMetadataSlave() ) {
                 ++_imp->nbChangesRequiringMetadataRefresh;
             }
-            
         }
         if (thisChangeSignificant) {
             ++_imp->nbSignificantChangesDuringEvaluationBlock;
         }
-        if (!knobChanged.empty()) {
+        if ( !knobChanged.empty() ) {
             ++_imp->nbChangesDuringEvaluationBlock;
             thisBracketHadChange = true;
         }
@@ -4942,7 +4942,6 @@ KnobHolder::endChanges(bool discardRendering)
         firstKnobReason = knobChanged.begin()->reason;
     }
     bool isChangeDueToTimeChange = firstKnobReason == eValueChangedReasonTimeChanged;
-
     bool isLoadingProject = false;
     if ( getApp() ) {
         isLoadingProject = getApp()->getProject()->isLoadingProject();
@@ -4955,7 +4954,7 @@ KnobHolder::endChanges(bool discardRendering)
     bool duringInputChangeAction = false;
     if (isEffect) {
         NodePtr node = isEffect->getNode();
-        if (isMT && node->duringInputChangedAction()) {
+        if ( isMT && node->duringInputChangedAction() ) {
             duringInputChangeAction = true;
         }
     }
@@ -4963,7 +4962,7 @@ KnobHolder::endChanges(bool discardRendering)
 
     // Increment hash only if significant
     if (thisChangeSignificant && thisBracketHadChange && !isLoadingProject && !duringInputChangeAction && !isChangeDueToTimeChange) {
-        onSignificantEvaluateAboutToBeCalled(firstKnobChanged.get());
+        onSignificantEvaluateAboutToBeCalled( firstKnobChanged.get() );
     }
 
     bool guiFrozen = firstKnobChanged ? getApp() && firstKnobChanged->getKnobGuiPointer() && firstKnobChanged->getKnobGuiPointer()->isGuiFrozenForPlayback() : false;
@@ -4996,7 +4995,7 @@ KnobHolder::endChanges(bool discardRendering)
             it->knob->refreshListenersAfterValueChange(it->view, it->originalReason, dimension);
         }
     }
-    
+
     int evaluationBlocked;
     bool hasHadSignificantChange = false;
     bool hasHadAnyChange = false;
@@ -5022,21 +5021,18 @@ KnobHolder::endChanges(bool discardRendering)
             _imp->nbChangesDuringEvaluationBlock = 0;
             _imp->nbChangesRequiringMetadataRefresh = 0;
         }
-        
     }
 
-    
+
     // Call getClipPreferences & render
-    if (hasHadAnyChange && !discardRendering && !isLoadingProject && !duringInputChangeAction && !isChangeDueToTimeChange && evaluationBlocked == 0) {
+    if ( hasHadAnyChange && !discardRendering && !isLoadingProject && !duringInputChangeAction && !isChangeDueToTimeChange && (evaluationBlocked == 0) ) {
         if (!isMT) {
             Q_EMIT doEvaluateOnMainThread(hasHadSignificantChange, mustRefreshMetadatas);
         } else {
             evaluate(hasHadSignificantChange, mustRefreshMetadatas);
         }
     }
-   
-}
-
+} // KnobHolder::endChanges
 
 void
 KnobHolder::onDoValueChangeOnMainThread(KnobI* knob,

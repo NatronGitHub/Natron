@@ -440,14 +440,13 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                 boost::shared_ptr<KnobSerialization> defaultFile = createDefaultValueForParam(kOfxImageEffectFileParamName, images);
                 CreateNodeArgs::DefaultValuesList list;
                 list.push_back(defaultFile);
-                
+
                 std::string canonicalFilename = images;
                 getApp()->getProject()->canonicalizePath(canonicalFilename);
-                int firstFrame,lastFrame;
+                int firstFrame, lastFrame;
                 Node::getOriginalFrameRangeForReader(getPluginID(), canonicalFilename, &firstFrame, &lastFrame);
-                list.push_back(createDefaultValueForParam(kReaderParamNameOriginalFrameRange, firstFrame, lastFrame));
+                list.push_back( createDefaultValueForParam(kReaderParamNameOriginalFrameRange, firstFrame, lastFrame) );
                 getNode()->setValuesFromSerialization(list);
-                
             }
             //////////////////////////////////////////////////////
 #endif
@@ -1808,8 +1807,8 @@ OfxEffectInstance::render(const RenderActionArgs& args)
             //    input and output images can be offset from the origin
             // Commented-out: Some Furnace plug-ins from The Foundry (e.g F_Steadiness) are not supporting multi-resolution but actually produce an output
             // with a RoD different from the input
-           /* assert(dstRod.x1 == 0);
-            assert(dstRod.y1 == 0);*/
+            /* assert(dstRod.x1 == 0);
+               assert(dstRod.y1 == 0);*/
         }
     }
 # endif // DEBUG

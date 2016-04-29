@@ -65,8 +65,8 @@ throwProsacError(ProsacReturnCodeEnum c,
         ss << nMinSamples;
         ss << " correspondences.";
         throw std::runtime_error( ss.str() );
+        break;
     }
-    break;
     case openMVG::robust::eProsacReturnCodeMaxIterationsFromProportionParamReached:
         throw std::runtime_error("Maximum iterations computed from outliers proportion reached");
         break;

@@ -153,23 +153,23 @@ private:
             QRect tmp = rect();
             r = tmp;
             r.setWidth(tmp.width() / 2.);
+            break;
         }
-        break;
         case TabWidget::eDropRectRightSplit: {
             QRect tmp = rect();
             r = QRect( tmp.left() + tmp.width() / 2., tmp.top(), tmp.width() / 2., tmp.height() );
+            break;
         }
-        break;
         case TabWidget::eDropRectTopSplit: {
             QRect tmp = rect();
             r = QRect(tmp.left(), tmp.top(), tmp.width(), tmp.height() / 2.);
+            break;
         }
-        break;
         case TabWidget::eDropRectBottomSplit: {
             QRect tmp = rect();
             r = QRect(tmp.left(), tmp.top() + tmp.height() / 2., tmp.width(), tmp.height() / 2.);
+            break;
         }
-        break;
         case TabWidget::eDropRectNone: {
             QWidget::paintEvent(e);
 

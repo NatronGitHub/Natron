@@ -2498,9 +2498,9 @@ exportKnobLinks(int indentLevel,
                 aliasName = groupName + QString::fromUtf8( aliasHolder->getNode()->getScriptName_mt_safe().c_str() );
             }
             aliasName += QChar::fromLatin1('.');
-            aliasName += QString::fromUtf8(alias->getName().c_str());
-            
-            WRITE_INDENT(indentLevel); WRITE_STRING(aliasName + QString::fromUtf8(".setAsAlias(param)"))	;
+            aliasName += QString::fromUtf8( alias->getName().c_str() );
+
+            WRITE_INDENT(indentLevel); WRITE_STRING( aliasName + QString::fromUtf8(".setAsAlias(param)") );
         } else {
             for (int i = 0; i < (*it2)->getDimension(); ++i) {
                 std::string expr = (*it2)->getExpression(i);
@@ -2551,8 +2551,12 @@ exportKnobLinks(int indentLevel,
     return hasExportedLink;
 } // exportKnobLinks
 
-
-static void exportGroupInternal(int indentLevel,const NodeCollection* collection, const NodePtr& upperLevelGroupNode,const QString& upperLevelGroupName, QTextStream& ts)
+static void
+exportGroupInternal(int indentLevel,
+                    const NodeCollection* collection,
+                    const NodePtr& upperLevelGroupNode,
+                    const QString& upperLevelGroupName,
+                    QTextStream& ts)
 {
     WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Create all nodes in the group");
     WRITE_STATIC_LINE("");
@@ -2562,18 +2566,18 @@ static void exportGroupInternal(int indentLevel,const NodeCollection* collection
     if (isGroup) {
         groupNode = isGroup->getNode();
     }
-    
+
     QString groupName = upperLevelGroupName + QString::fromUtf8("group");
-    
+
     if (isGroup) {
         WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Create the parameters of the group node the same way we did for all internal nodes");
         WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("lastNode = ") + groupName);
-        exportAllNodeKnobs(indentLevel,isGroup->getNode(),ts);
+        exportAllNodeKnobs(indentLevel, isGroup->getNode(), ts);
         WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del lastNode");
         WRITE_STATIC_LINE("");
     }
-    
-    
+
+
     NodesList nodes = collection->getNodes();
     NodesList exportedNodes;
 
@@ -2782,7 +2786,7 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
     WRITE_STATIC_LINE("def createInstance(app,group):");
 
     exportGroupInternal(1, this, NodePtr(), QString(), ts);
-    
+
     ///Import user hand-written code
     WRITE_INDENT(1); WRITE_STATIC_LINE("try:");
     WRITE_INDENT(2); WRITE_STRING( QString::fromUtf8("extModule = sys.modules[") + ESC(extModule) + QString::fromUtf8("]") );

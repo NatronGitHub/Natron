@@ -136,11 +136,12 @@ TabGroup::removeTab(KnobGroup* group)
 }
 
 void
-TabGroup::refreshTabSecretNess(KnobGroup* groupKnob, bool secret)
+TabGroup::refreshTabSecretNess(KnobGroup* groupKnob,
+                               bool secret)
 {
     bool isVisible = !secret;
     bool oneVisible = false;
-    
+
     for (std::size_t i = 0; i < _imp->tabs.size(); ++i) {
         if (_imp->tabs[i].groupKnob.lock().get() == groupKnob) {
             _imp->tabs[i].visible = isVisible;
@@ -166,7 +167,7 @@ TabGroup::refreshTabSecretNess(KnobGroup* groupKnob, bool secret)
 void
 TabGroup::refreshTabSecretNess(KnobGroup* groupKnob)
 {
-    refreshTabSecretNess(groupKnob,groupKnob->getIsSecret());
+    refreshTabSecretNess( groupKnob, groupKnob->getIsSecret() );
 }
 
 void

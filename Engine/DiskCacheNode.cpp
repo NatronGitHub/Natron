@@ -176,12 +176,12 @@ DiskCacheNode::getFrameRange(double *first,
         if (input) {
             input->getFrameRange_public(input->getHash(), first, last);
         }
+        break;
     }
-    break;
     case 1: {
         getApp()->getFrameRange(first, last);
+        break;
     }
-    break;
     case 2: {
         *first = _imp->firstFrame.lock()->getValue();
         *last = _imp->lastFrame.lock()->getValue();

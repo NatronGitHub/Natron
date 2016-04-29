@@ -95,8 +95,6 @@ static std::string namedGroupsOrdered[NAMED_PLUGIN_GROUP_NO] = {
     PLUGIN_GROUP_OTHER,
     PLUGIN_GROUP_DEFAULT
 };
-
-
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 static void
@@ -139,7 +137,6 @@ getPixmapForGrouping(QPixmap* pixmap,
 }
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
-
 
 void
 Gui::reloadStylesheet()
@@ -512,7 +509,7 @@ Gui::removeViewerTab(ViewerTab* tab,
     if (!graph) {
         throw std::logic_error("");
     }
-    
+
     ViewerTab* lastSelectedViewer = graph->getLastSelectedViewer();
 
     if (lastSelectedViewer == tab) {
@@ -1288,16 +1285,15 @@ Gui::createReader()
         if ( found == readersForFormat.end() ) {
             errorDialog( tr("Reader").toStdString(), tr("No plugin capable of decoding ").toStdString() + ext + tr(" was found.").toStdString(), false);
         } else {
-
-            CreateNodeArgs args(QString::fromUtf8(found->second.c_str()), eCreateNodeReasonUserCreate, group);
-            args.paramValues.push_back(createDefaultValueForParam(kOfxImageEffectFileParamName, pattern));
+            CreateNodeArgs args(QString::fromUtf8( found->second.c_str() ), eCreateNodeReasonUserCreate, group);
+            args.paramValues.push_back( createDefaultValueForParam(kOfxImageEffectFileParamName, pattern) );
             std::string canonicalFilename = pattern;
             getApp()->getProject()->canonicalizePath(canonicalFilename);
-            int firstFrame,lastFrame;
+            int firstFrame, lastFrame;
             Node::getOriginalFrameRangeForReader(found->second, canonicalFilename, &firstFrame, &lastFrame);
-            args.paramValues.push_back(createDefaultValueForParam(kReaderParamNameOriginalFrameRange, firstFrame, lastFrame));
+            args.paramValues.push_back( createDefaultValueForParam(kReaderParamNameOriginalFrameRange, firstFrame, lastFrame) );
 
-            
+
             ret = _imp->_appInstance->createNode(args);
 
             if (!ret) {
@@ -1308,7 +1304,7 @@ Gui::createReader()
     }
 
     return ret;
-}
+} // Gui::createReader
 
 NodePtr
 Gui::createWriter()

@@ -115,13 +115,13 @@ public:
     }
 
     void s_multipleKeyFramesRemoved(const std::list<double>& keys,
-                                ViewSpec view,
-                                int dimension,
-                                int reason)
+                                    ViewSpec view,
+                                    int dimension,
+                                    int reason)
     {
         Q_EMIT multipleKeyFramesRemoved(keys, view,  dimension, reason);
     }
-    
+
     void s_animationAboutToBeRemoved(ViewSpec view,
                                      int dimension)
     {
@@ -285,7 +285,7 @@ Q_SIGNALS:
     void keyFrameSet(double time, ViewSpec view, int dimension, int reason, bool added);
 
     void multipleKeyFramesSet(std::list<double>, ViewSpec view, int dimension, int reason);
-    
+
     void multipleKeyFramesRemoved(std::list<double>, ViewSpec view, int dimension, int reason);
 
     ///Emitted whenever a keyframe is removed with a reason different of eValueChangedReasonUserEdited
@@ -546,7 +546,6 @@ public:
      * @brief Removes the keyframe at the given time and dimension if it matches any.
      **/
     virtual void deleteValueAtTime(CurveChangeReason curveChangeReason, double time, ViewSpec view, int dimension) = 0;
-    
     virtual void deleteValuesAtTime(CurveChangeReason curveChangeReason, const std::list<double>& times, ViewSpec view, int dimension) = 0;
 
 
@@ -1051,7 +1050,7 @@ protected:
      * In case of success, this function returns true, otherwise false.
      **/
     virtual bool slaveToInternal(int dimension, const KnobPtr &  other, int otherDimension, ValueChangedReasonEnum reason,
-                         bool ignoreMasterPersistence) = 0;
+                                 bool ignoreMasterPersistence) = 0;
 
     /**
      * @brief Unslaves a previously slaved dimension. The implementation should assert that
@@ -1427,7 +1426,7 @@ private:
 
 
     virtual bool slaveToInternal(int dimension, const KnobPtr &  other, int otherDimension, ValueChangedReasonEnum reason
-                         , bool ignoreMasterPersistence) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                 , bool ignoreMasterPersistence) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 protected:
 
@@ -1635,8 +1634,8 @@ private:
 
 
     virtual void unSlaveInternal(int dimension,
-                         ValueChangedReasonEnum reason,
-                         bool copyState) OVERRIDE FINAL;
+                                 ValueChangedReasonEnum reason,
+                                 bool copyState) OVERRIDE FINAL;
 
 public:
 

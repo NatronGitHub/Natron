@@ -134,7 +134,7 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
 {
     infoViewer[0] = 0;
     infoViewer[1] = 0;
-    
+
     for (int i = 0; i < 2; ++i) {
         displayTextures[i].isPartialImage = false;
         displayTextures[i].gain = 1.;
@@ -222,15 +222,15 @@ static const GLubyte triangleStrip[28] = {
    0___1___2___3
  |  /|  /|  /|
  | / | / | / |
- ||/  |/  |/  |
+ ||||/  |/  |/  |
    4---5---6----7
  |  /|  /|  /|
  | / | / | / |
- ||/  |/  |/  |
+ ||||/  |/  |/  |
    8---9--10--11
  |  /|  /|  /|
  | / | / | / |
- ||/  |/  |/  |
+ ||||/  |/  |/  |
    12--13--14--15
  */
 void
@@ -431,8 +431,8 @@ ViewerGL::Implementation::initializeGL()
     if (!supportsOpenGL) {
         return;
     }
-    displayTextures[0].texture.reset(new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE));
-    displayTextures[1].texture.reset(new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE));
+    displayTextures[0].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
+    displayTextures[1].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
 
 
     // glGenVertexArrays(1, &_vaoId);

@@ -1342,8 +1342,8 @@ Histogram::mouseMoveEvent(QMouseEvent* e)
         _imp->hasBeenModifiedSinceResize = true;
 
         computeHistogramAndRefresh();
+        break;
     }
-    break;
     case eEventStateNone:
         _imp->updatePicker( newClick_opengl.x() );
         update();

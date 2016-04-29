@@ -221,9 +221,11 @@ bool
 Effect::isReaderNode()
 {
     NodePtr n = getInternalNode();
+
     if (!n) {
         return false;
     }
+
     return n->getEffectInstance()->isReader();
 }
 
@@ -231,9 +233,11 @@ bool
 Effect::isWriterNode()
 {
     NodePtr n = getInternalNode();
+
     if (!n) {
         return false;
     }
+
     return n->getEffectInstance()->isWriter();
 }
 

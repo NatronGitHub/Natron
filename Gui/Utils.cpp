@@ -78,10 +78,10 @@ convertFromPlainText(const QString &plain,
                     ++col;
                 }
                 bolagain = bol;
-            } else if ( ( bol || (mode == Qt::WhiteSpacePre) ) && plain[i].isSpace() )       {
+            } else if ( ( bol || (mode == Qt::WhiteSpacePre) ) && plain[i].isSpace() ) {
                 rich += QChar(0x00a0U);
                 bolagain = bol;
-            } else if ( plain[i] == QLatin1Char('<') )   {
+            } else if ( plain[i] == QLatin1Char('<') ) {
                 rich += QLatin1String("&lt;");
             } else if ( plain[i] == QLatin1Char('>') ) {
                 rich += QLatin1String("&gt;");

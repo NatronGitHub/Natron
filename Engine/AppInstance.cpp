@@ -98,15 +98,16 @@ FlagSetter::~FlagSetter()
 }
 
 FlagIncrementer::FlagIncrementer(int* p)
-: p(p)
-, lock(0)
+    : p(p)
+    , lock(0)
 {
     *p = *p + 1;
 }
 
-FlagIncrementer::FlagIncrementer(int* p, QMutex* mutex)
-: p(p)
-, lock(mutex)
+FlagIncrementer::FlagIncrementer(int* p,
+                                 QMutex* mutex)
+    : p(p)
+    , lock(mutex)
 {
     lock->lock();
     *p = *p + 1;
@@ -805,8 +806,7 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
     NodePtr node;
 
     {
-
-        FlagIncrementer fs(&_imp->_creatingGroup,&_imp->creatingGroupMutex);
+        FlagIncrementer fs(&_imp->_creatingGroup, &_imp->creatingGroupMutex);
         CreatingNodeTreeFlag_RAII createNodeTree(this);
         NodePtr containerNode;
         if (!istoolsetScript) {
@@ -916,9 +916,10 @@ AppInstance::createReader(const std::string& filename,
                           const boost::shared_ptr<NodeCollection>& group)
 {
     std::string pluginID;
+
 #ifdef NATRON_ENABLE_IO_META_NODES
     pluginID = PLUGINID_NATRON_READ;
-    CreateNodeArgs args(QString::fromUtf8(pluginID.c_str()),
+    CreateNodeArgs args(QString::fromUtf8( pluginID.c_str() ),
                         reason,
                         group);
 #else
@@ -938,14 +939,14 @@ AppInstance::createReader(const std::string& filename,
     CreateNodeArgs args(QString::fromUtf8( found->second.c_str() ), reason, group);
 #endif
 
-    args.paramValues.push_back(createDefaultValueForParam(kOfxImageEffectFileParamName, filename));
+    args.paramValues.push_back( createDefaultValueForParam(kOfxImageEffectFileParamName, filename) );
     std::string canonicalFilename = filename;
     getProject()->canonicalizePath(canonicalFilename);
-    
-    int firstFrame,lastFrame;
+
+    int firstFrame, lastFrame;
     Node::getOriginalFrameRangeForReader(pluginID, canonicalFilename, &firstFrame, &lastFrame);
-    args.paramValues.push_back(createDefaultValueForParam(kReaderParamNameOriginalFrameRange, firstFrame, lastFrame));
-    
+    args.paramValues.push_back( createDefaultValueForParam(kReaderParamNameOriginalFrameRange, firstFrame, lastFrame) );
+
     return createNode(args);
 }
 
@@ -1440,7 +1441,7 @@ AppInstance::parseHTMLDoc(const QString html,
             indexFile.close();
             menuHTML.append( QString::fromUtf8("</div>\n</div></div>\n") );
         }
-    } else   {
+    } else {
         menuHTML.append( QString::fromUtf8("</ul></div></div>") );
     }
 
